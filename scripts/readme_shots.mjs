@@ -24,6 +24,8 @@ const { cleanup, startDemo, startChrome } = sandbox('readme-shots');
 const tab = k => `(() => { const b = document.querySelector('#mvw .mvb[data-mv="${k}"]'); if (!b) throw new Error('no tab ${k}'); b.click(); return 1; })()`;
 const SHOTS = [
   { name: 'pipelines', async run(P) {
+    // ⚠Feature tabs render only after the first /api/state, so wait for the button before clicking.
+    await P.wait(`!!document.querySelector('#mvw .mvb[data-mv="pipe"]')`, 'pipe tab');
     await P.ev(tab('pipe'));
     await P.wait(`document.querySelectorAll('.plw .plcv .plnd').length >= 3 && !!document.querySelector('.plrtb')`, 'pipeline canvas');
     // Run overview + run bar + lit canvas + «By stage» table; the editor side panels and palette are not the subject.
