@@ -29,7 +29,7 @@ stderr    viewer.err          # append-only — old lines are fossils
 
 ### Dependency and runtime audit (monthly + before a release)
 
-- Run: `/usr/bin/python3 scripts/deps_audit.py [--online]` — `OK|WARN|FAIL item — detail`, exit 1 on FAIL. Full flow: pipeline `deps-audit` (Check → Triage → Update → Verify → Live verify).
+- Run: `/usr/bin/python3 scripts/deps_audit.py [--online]` — `OK|WARN|FAIL item — detail`, exit 1 on FAIL. Full flow: pipeline `deps-audit` (Check → Triage → Update → Verify → Live verify); run `security-checks` alongside it the same month.
 - FAIL = a non-stdlib Python import or a non-`node:` `.mjs` import. WARN = runtime past or within 180 days of EOL, or behind the latest patch (`--online`).
 - The EOL table in the script carries a `★source + date checked` line; refresh it from `--online` output.
 - ⚠Network only with `--online` (endoflife.date). Tests (`tests/test_deps_audit.py`) use tmp files, no clock or network.

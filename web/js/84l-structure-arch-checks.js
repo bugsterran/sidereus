@@ -179,7 +179,30 @@ function archChkWinHtml(p, d, S, cands){
       + '<span class=archckf title="' + esc(x.file + ':' + ln) + '">' + esc(x.file).replace(/\//g, '/<wbr>') + '<span class=archevl>:' + esc(ln) + '</span></span>'   // full path, may break after «/»
       + '<em title="' + esc(x.mod || '') + '">' + esc(x.mod || '') + '</em></button>'
       + (hp.desc || hp.url ? '<div class=archckh>' + (hp.desc ? '<span>' + esc(hp.desc) + '</span>' : '')
-        + (hp.url ? '<a href="' + esc(hp.url) + '" target=_blank rel="noopener noreferrer">' + esc(T('docs ↗')) + '</a>' : '') + '</div>' : '') + '</div></li>'; }).join('') + '</ol>';
+        + (hp.url ? '<a href="' + esc(hp.url) + '" target=_blank rel="noopener noreferrer">' + esc(T('docs ↗')) + '</a>' : '') + '</div>' : '') + '</div></li>'; }).join('') + '</ol>'
+    + (cat === 's' ? archChkLogHtml(sec.log) : '');
+}
+// Pure: read-only security history (sidereus/sec_checks.log_view) — last check age, then open / resolved / false-positive rows.
+//   Metadata only (sev · file:line · key · one-line desc); AI review rows are labelled as unverified model output.
+function archChkLogHtml(L){
+  L = L && typeof L === 'object' ? L : {};
+  const arr = k => (Array.isArray(L[k]) ? L[k] : []).filter(x => x && x.file), num = v => typeof v === 'number' && isFinite(v);
+  const open = arr('open'), res = arr('resolved'), fp = arr('fp');
+  const SV = { critical: T('critical', 'severity'), high: T('high', 'severity'), medium: T('medium', 'severity'), low: T('low', 'severity'), error: T('error', 'severity'), warning: T('warning', 'severity') };
+  const ST = { open: T('open', 'finding'), resolved: T('resolved', 'finding'), fp: T('false positive', 'finding') };
+  let h = '<div class=archckst>' + esc(num(L.at_scan) ? T('Last security check {t}').replace('{t}', () => agoAt(L.at_scan)) : T('Never checked'))
+    + (num(L.at_review) ? ' · ' + esc(T('Last AI review {t}').replace('{t}', () => agoAt(L.at_review))) : '')
+    + ' · ' + esc(T('Open {o} · resolved {r} · false positives {f}').replace('{o}', open.length).replace('{r}', res.length).replace('{f}', fp.length)) + '</div>';
+  const rows = [[open, 'open'], [res, 'resolved'], [fp, 'fp']].map(a => a[0].map(x => {
+    const ln = parseInt(x.line, 10) || 1, sv = ['critical', 'high', 'error'].indexOf(x.sev) >= 0 ? 'error' : 'warning';
+    const when = a[1] === 'open' ? '' : (num(x.at) ? ' · ' + hhmm(x.at, {date: true}) : '') + (x.commit ? ' · ' + String(x.commit).slice(0, 7) : '');
+    return '<li class="' + sv + '"><div class=ckwr><button type=button data-ckv data-af="' + esc(x.file) + '" data-al="' + esc(ln) + '" title="' + esc(T('View code')) + '">'
+      + '<b class=archcks>' + esc(SV[x.sev] || String(x.sev || '')) + '</b><small>' + esc(x.ai ? T('model-generated, unverified') : String(x.key || '').split(':')[0]) + '</small>'
+      + '<code title="' + esc(x.key || '') + '">' + esc(x.ai ? x.key || '' : String(x.key || '').split(':').slice(1).join(':')) + '</code>'
+      + '<span class=archckf title="' + esc(x.file + ':' + ln) + '">' + esc(x.file).replace(/\//g, '/<wbr>') + '<span class=archevl>:' + esc(ln) + '</span></span>'
+      + '<em>' + esc(ST[a[1]] + when) + '</em></button>' + (x.ai && x.desc ? '<div class=archckh><span>' + esc(x.desc) + '</span></div>' : '') + '</div></li>';
+  }).join('')).join('');
+  return h + (rows ? '<ol class=archckl>' + rows + '</ol>' : '');
 }
 // Pure: one request = recipient + exact body; a repeat of the last sent one needs a second deliberate click (archChkGoLabel).
 function archChkReqKey(sid, body){ return String(sid || '') + '\n' + String(body || ''); }

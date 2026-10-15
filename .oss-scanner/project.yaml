@@ -1,0 +1,25 @@
+# Sidereus enrolment for Anthropic OSS Scanner (filled from templates/oss-scanner/project.yaml).
+# Copy to projects/sidereus/project.yaml in github.com/anthropics/oss-scanner to enrol.
+
+# REQUIRED. The ONE git repository to scan, as an https:// URL. Optionally add #branch or #tag to pin one.
+repo: https://github.com/bugsterran/sidereus#main
+
+# REQUIRED. Who should we email our reports to, and use as the primary contact for questions.
+# ⚠ Placeholder: the repo publishes no contact address (SECURITY.md uses GitHub private vulnerability reporting).
+#   Replace with the maintainer's public address before enrolling.
+primary_contact: security@example.org
+
+# Optional. Additional email addresses we will CC on disclosure reports.
+auto_ccs: []
+
+# Optional. The project's home page.
+homepage: https://github.com/bugsterran/sidereus
+
+# Optional. true pauses reports without removing the enrolment; false (or omitting it) enables your project.
+disabled: false
+
+# REQUIRED: the Dockerfile in this repository.
+dockerfile: .oss-scanner/Dockerfile
+
+# Optional, but strongly recommended: the threat model in this repository.
+threat_model: .oss-scanner/threat_model.md

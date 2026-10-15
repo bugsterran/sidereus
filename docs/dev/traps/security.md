@@ -46,3 +46,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠The extension is checked on the realpath too: `a.png` symlinked to a text or secret file would otherwise be served as an image.
   - ⚠svg is active content: only ever shown via `<img>` (no script there), and the response carries `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox` + nosniff for a direct open. Never embed it as `<object>`/`<iframe>`/inline markup.
   - ⚠5 MB cap (`IMG_MAX_BYTES`) checked by `getsize` before reading, then rechecked on `cap+1` bytes read. Mime is fixed per extension (`IMG_TYPES`), never sniffed.
+- **Security log status is computed on read, never rewritten** (`sidereus/sec_checks.py` `log_view`, `arch/<key>/security-log.jsonl`).
+  - Identity = (src, key, file), not line. A scan finding resolves only when a later scan in which its own tool ran ok omits it; it reopens if it comes back.
+  - ⚠AI review findings are never resolved by absence: model review is not deterministic, so a missing finding is not evidence of a fix. Only a `--mark` record resolves them (last mark wins).
+  - ⚠Scan and review never resolve each other; a run where no tool ran ok is not logged (it would resolve everything).
+  - ⚠Records hold sev · file:line · key · one-line desc only — never Match / Secret / message text or source lines.

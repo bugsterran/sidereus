@@ -517,10 +517,16 @@ def _newest(rdir, name=CHECKS_FILE):
 
 def load_checks(root, map_dir, m, head=""):
     """`/api/arch` `checks`: newest checks.json of root's store (sibling commit dirs of map_dir), sanitised and
-    rolled up onto the map's modules, + `security` (same shape from checks-security.json, else None); None when
-    neither exists. Security alone gives an empty quality shell (commit "", no tools)."""
+    rolled up onto the map's modules, + `security` (same shape from checks-security.json, else None; `security.log` =
+    sec_checks.log_view); None when neither exists. Security alone gives an empty quality shell (commit "", no tools)."""
     q = _load_one(root, map_dir, m, head, CHECKS_FILE, TOOL_IDS)
     s = _load_one(root, map_dir, m, head, SC.SEC_FILE, SC.SEC_IDS)
+    lg = SC.log_view(os.path.dirname(map_dir))   # security history (status computed on read)
+    if lg["at_scan"] is not None or lg["at_review"] is not None:
+        s = dict(s or {"commit": "", "at": None, "stale": False, "dirty": False, "src_changed": False, "tools": [],
+                       "mods": {}, "other": {"error": 0, "warning": 0}, "top": [], "rules": {}}, log=lg)
+    elif s:
+        s["log"] = lg
     if not q and not s:
         return None
     return dict(q or {"commit": "", "at": None, "stale": False, "dirty": False, "src_changed": False, "tools": [],

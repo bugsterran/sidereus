@@ -40,7 +40,7 @@ A bug report needs: OS, Claude Code version (`claude --version`), and the output
 
 - SemVer, 0.x. The first public release is `0.1.0`.
 - [CHANGELOG.md](../../CHANGELOG.md) (Keep a Changelog) is the single source. Every feature or fix commit adds one line under `[Unreleased]`.
-- Before a release: pipeline `deps-audit`, then `bash scripts/check.sh --full`.
+- Before a release: pipelines `deps-audit` and `security-checks`, then `bash scripts/check.sh --full`.
 - Release:
   1. Rename `[Unreleased]` to `[x.y.z] - YYYY-MM-DD`, open a new empty `[Unreleased]`.
   2. Tag `vx.y.z`.
@@ -65,7 +65,7 @@ A bug report needs: OS, Claude Code version (`claude --version`), and the output
 One maintenance day a month:
 
 1. Triage open issues and PRs.
-2. Run the `deps-audit` pipeline (`/usr/bin/python3 scripts/deps_audit.py --online`).
+2. Run the `deps-audit` pipeline (`/usr/bin/python3 scripts/deps_audit.py --online`) and, alongside it, `security-checks` on this repository (scanners, then the threat-model review stage).
 3. Release if anything under `[Unreleased]` is ready.
 
 ## Release decisions

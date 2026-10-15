@@ -3,8 +3,8 @@
   "name": "security-checks",
   "title": "보안 검사 — 비밀값·의존성·SAST",
   "builtin": true,
-  "use": "Security scanners on a target repo (gitleaks, npm audit, osv-scanner, semgrep, bandit) for the Architecture map.",
-  "rules": "The target repo path is given in the request text. Do not edit, commit, checkout or install anything in the target repo; do not install tools. The runner writes only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<HEAD>/checks-security.json (same store key as arch-map). Metadata only: never copy tool messages, secret values, matched text or source lines into a report.",
+  "use": "Security scanners plus a threat-model AI review on a target repo; runs monthly alongside deps-audit.",
+  "rules": "The target repo path is given in the request text. Do not edit, commit, checkout or install anything in the target repo; do not install tools; never run the target repo's code. The runner writes only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<HEAD>/checks-security.json (same store key as arch-map). The threat-model review stage writes only through scripts/arch_checks.py --log-review / --mark, into ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/security-log.jsonl. A missing threat model is not a failure: one line pointing to templates/oss-scanner/. Metadata only: never copy tool messages, secret values, matched text or source lines into a report or the log.",
   "defaults": { "model": "inherit", "retry": 0 },
   "stages": [
     {
@@ -13,6 +13,12 @@
       "model": "sonnet",
       "task": "Run `/usr/bin/python3 scripts/arch_checks.py --repo <repo> --category security` once from this repository (it detects the scanners, runs each with a timeout and writes checks-security.json). Add `--net` only when the request asks for advisory lookups (npm audit, osv-scanner need the network; without it they are skipped). Report its printed line only. Do not rerun with other options, do not run any tool yourself, do not fix findings.",
       "gate": "/usr/bin/python3 scripts/arch_checks.py --verify --last --category security"
+    },
+    {
+      "title": "위협 모델 리뷰",
+      "agent": "general-purpose",
+      "model": "opus",
+      "task": "Read `<repo>/.oss-scanner/threat_model.md`, else `<repo>/threat_model.md`. Neither: print exactly `no threat model — copy <sidereus>/templates/oss-scanner/ to <repo>/.oss-scanner/` (<sidereus> = this repo), log nothing, end OK. Else, with A = `/usr/bin/python3 scripts/arch_checks.py --repo <repo>`: (1) `A --log-show` lists open AI findings. (2) Each one clearly fixed at HEAD: `A --mark <slug>@<file> resolved`. NEVER mark false-positive (human-only, via CLI); propose it in your report. (3) Review only in-scope components, rating by its severity rubric; pipe new findings to `A --log-review` as TSV `sev<TAB>file:line<TAB>slug<TAB>description` (sev critical|high|medium|low; slug = stable kebab id of the issue class; one line, own words). Never quote source lines, secret values or matched text; no edits, no runs, no installs in the target repo. Report counts per severity, resolved slugs, false-positive proposals; say findings are model-generated and unverified."
     }
   ]
 }

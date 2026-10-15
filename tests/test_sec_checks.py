@@ -186,11 +186,11 @@ SECJ = {"commit": "c" * 40, "tools": [{"id": "gitleaks", "rules": "default", "st
 QJ = {"commit": "abcdef123", "tools": [{"id": "ruff", "rules": "project", "status": "ok", "n": {"error": 0, "warning": 1}}],
       "top": [{"tool": "ruff", "file": "a.py", "line": 2, "rule": "F401", "sev": "warning"}]}
 FNS = ["strHdBadge", "hhmm", "archBase", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkTop", "archChkTopBtn",
-       "archChkBadge", "archChkHelp", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkWinHtml"]
+       "archChkBadge", "archChkHelp", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkWinHtml"]
 
 
 def run_js(body):
-    pre = "\n".join(["let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }", "const ARCH_PL = 'arch-map';",
+    pre = "\n".join(["let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }", "const ARCH_PL = 'arch-map';",
                      "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));"])
     js = pre + "\n" + "\n".join(js_fn(n) for n in FNS) + "\n" + body
     r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
@@ -218,6 +218,7 @@ class Ui(unittest.TestCase):
         self.assertEqual(body.splitlines()[2:4], [   # line 2 = target repository
                          "- warning · F401 · a.py:2",
                                                   "- error · GHSA-p6mc-m468-83gw · <lodash> · package-lock.json:1 (https://github.com/advisories/GHSA-p6mc-m468-83gw)"])
+        self.assertIn("<div class=archckst>점검한 적 없음", win)   # security tab ends with the (empty) history section
         self.assertNotIn("data-ckcat", plain)                  # no security results -> no tabs
         self.assertTrue(only.startswith("<button") and "보안 1" in only)   # security only: no empty quality badge
 

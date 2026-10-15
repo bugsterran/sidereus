@@ -11,7 +11,9 @@ import os
 import re
 import sys
 
+from sidereus import arch_verify as AV
 from sidereus.arch_checks_parse import clean_help
+from sidereus.arch_verify import COMMIT_RE, safe_rel
 
 # install hints per OS: (macOS, Windows, Linux). ⚠each fits why's 60-char cap (arch_checks.WHY_MAX).
 HINTS = {
@@ -313,3 +315,149 @@ def files(plan, res, repo):
         mt = _jd(out).get("metrics")
         return len([k for k in mt if k != "_totals"]) if isinstance(mt, dict) else 0
     return 0
+
+
+# ── security log: append-only history of scan / AI-review findings and their later status ──
+# ⚠Metadata only: sev · file:line · key · one-line desc. Never Match / Secret / message text or source lines.
+# Status is computed on read (log_view), never rewritten. Identity = (src, key, file), not line (lines move).
+LOG_FILE = "security-log.jsonl"   # in arch/<repo key>/, beside the per-commit dirs
+LOG_LINES = 500                   # only the newest lines are read
+LOG_TAIL_BYTES = 4 * 1024 * 1024
+LOG_ITEMS_MAX, LOG_DESC_MAX = 200, 160
+REVIEW_SEVS = ("critical", "high", "medium", "low")
+MARKS = ("resolved", "false-positive")
+SLUG_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,59}")
+_SEV_RANK = {"critical": 0, "error": 1, "high": 1, "medium": 2, "warning": 3, "low": 3}
+
+
+def log_dir(repo):
+    """arch/<repo key>/ (parent of arch_verify.store_dir); ARCH_DIR is read at call time so tests can patch it."""
+    return os.path.join(AV.ARCH_DIR, AV.repo_key(repo))
+
+
+def _desc(s):
+    return "".join(c for c in s if ord(c) >= 32 and ord(c) != 127).strip()[:LOG_DESC_MAX] if isinstance(s, str) else ""
+
+
+def _log_item(x, src):
+    """Clean finding {sev, file, line, key, desc} or None (unsafe path, bad key / severity)."""
+    if not isinstance(x, dict):
+        return None
+    f, ln, k, sv = safe_rel(x.get("file")), x.get("line"), x.get("key"), x.get("sev")
+    if src == "scan":
+        t, _c, r = k.partition(":") if isinstance(k, str) else ("", "", "")
+        ok_k, ok_s = t in SEC_IDS and bool(_RULE.fullmatch(r)), sv in ("error", "warning")
+    else:
+        ok_k, ok_s = isinstance(k, str) and bool(SLUG_RE.fullmatch(k)), sv in REVIEW_SEVS
+    if not (f and ok_k and ok_s and isinstance(ln, int) and not isinstance(ln, bool) and ln >= 0):
+        return None
+    return {"sev": sv, "file": f, "line": ln, "key": k, "desc": _desc(x.get("desc"))}
+
+
+def scan_record(commit, at, tools_ok, items):
+    """Scan record from checks-security items; tools_ok = ids that ran ok (only those can resolve their findings)."""
+    its = [_log_item({"sev": x.get("sev"), "file": x.get("file"), "line": x.get("line"),
+                      "key": "%s:%s" % (x.get("tool"), x.get("rule")), "desc": x.get("rule")}, "scan") for x in items]
+    return {"v": 1, "at": at, "commit": commit, "src": "scan", "tools": sorted(t for t in set(tools_ok) if t in SEC_IDS),
+            "items": [x for x in its if x][:LOG_ITEMS_MAX]}
+
+
+def review_record(commit, at, items):
+    its = [_log_item(x, "review") for x in items]
+    return {"v": 1, "at": at, "commit": commit, "src": "review", "items": [x for x in its if x][:LOG_ITEMS_MAX]}
+
+
+def mark_record(commit, at, key, file, status):
+    return {"v": 1, "at": at, "commit": commit, "src": "mark", "key": key, "file": file, "status": status, "by": "cli"}
+
+
+def log_append(kdir, rec):
+    """Append one record line; False on any failure (callers never change their exit code on it)."""
+    try:
+        os.makedirs(kdir, exist_ok=True)
+        with open(os.path.join(kdir, LOG_FILE), "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False, separators=(",", ":")) + "\n")
+    except (OSError, TypeError, ValueError):
+        return False
+    return True
+
+
+def _valid(r):
+    """Cleaned record or None (corrupt / foreign lines are skipped)."""
+    if not isinstance(r, dict) or r.get("v") != 1 or r.get("src") not in ("scan", "review", "mark"):
+        return None
+    at, cm = r.get("at"), r.get("commit")
+    if not isinstance(at, (int, float)) or isinstance(at, bool) or not (isinstance(cm, str) and COMMIT_RE.fullmatch(cm)):
+        return None
+    out = {"at": at, "commit": cm, "src": r["src"]}
+    if r["src"] == "mark":
+        k, f = r.get("key"), safe_rel(r.get("file"))
+        if not (isinstance(k, str) and SLUG_RE.fullmatch(k) and f and r.get("status") in MARKS):
+            return None
+        return dict(out, key=k, file=f, status=r["status"])
+    its = r.get("items") if isinstance(r.get("items"), list) else []
+    out["items"] = [y for y in (_log_item(x, r["src"]) for x in its[:LOG_ITEMS_MAX]) if y]
+    if r["src"] == "scan":
+        out["tools"] = [t for t in r.get("tools") or () if t in SEC_IDS] if isinstance(r.get("tools"), list) else []
+    return out
+
+
+def log_read(kdir):
+    """Valid records of the newest LOG_LINES lines, oldest first."""
+    try:
+        with open(os.path.join(kdir, LOG_FILE), "rb") as f:
+            f.seek(0, 2)
+            size = f.seek(max(0, f.tell() - LOG_TAIL_BYTES))
+            raw = f.read()
+    except OSError:
+        return []
+    lines = raw.split(b"\n")
+    if size:
+        lines = lines[1:]   # cut mid-line by the tail window
+    out = []
+    for ln in lines[-LOG_LINES - 1:]:
+        try:
+            r = _valid(json.loads(ln.decode("utf-8")))
+        except (ValueError, UnicodeDecodeError):
+            continue
+        if r:
+            out.append(r)
+    return out[-LOG_LINES:]
+
+
+def log_view(kdir):
+    """{at_scan, at_review, open, resolved, fp} — each finding {sev, file, line, key, desc, src, ai, status, at, commit}.
+    Scan: resolved when absent from a later scan in which its tool ran ok; reappearing reopens it.
+    Review: open until a mark (last mark wins); absence from a later review never resolves it.
+    ⚠Model review is not deterministic: a finding missing from the next review is not evidence it was fixed.
+    Open rows carry when they were (re)opened; resolved / false-positive rows when they were marked or resolved."""
+    st, at_scan, at_review = {}, None, None
+    for r in log_read(kdir):
+        if r["src"] == "mark":
+            x = st.get(("review", r["key"], r["file"]))
+            if x:
+                x.update(status="false-positive" if r["status"] == "false-positive" else "resolved", at=r["at"],
+                         commit=r["commit"])
+            continue
+        if r["src"] == "scan":
+            at_scan = r["at"]
+        else:
+            at_review = r["at"]
+        seen = set()
+        for y in r["items"]:
+            ident = (r["src"], y["key"], y["file"])
+            seen.add(ident)
+            x = st.get(ident)
+            if x is None or (x["status"] == "resolved"):
+                st[ident] = dict(y, src=r["src"], ai=r["src"] == "review", status="open", at=r["at"], commit=r["commit"])
+            else:
+                x.update(sev=y["sev"], line=y["line"], desc=y["desc"])
+        if r["src"] == "scan":
+            ran = set(r["tools"])
+            for ident, x in st.items():
+                if ident[0] == "scan" and ident not in seen and x["status"] == "open" and ident[1].split(":", 1)[0] in ran:
+                    x.update(status="resolved", at=r["at"], commit=r["commit"])
+    rows = sorted(st.values(), key=lambda x: (_SEV_RANK.get(x["sev"], 9), x["file"], x["line"], x["key"]))
+    pick = lambda s: [x for x in rows if x["status"] == s][:LOG_ITEMS_MAX]
+    return {"at_scan": at_scan, "at_review": at_review, "open": pick("open"), "resolved": pick("resolved"),
+            "fp": pick("false-positive")}

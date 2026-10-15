@@ -42,4 +42,5 @@ Settings go in `config.local.json` ([docs/CONFIG.md](docs/CONFIG.md)); restart t
 
 Please report privately through GitHub private vulnerability reporting (the repo's Security tab → "Report a vulnerability") rather than in a public issue. Include what you ran, what you saw,
 and the commit you tested.
+The threat model and scanner image for [Anthropic OSS Scanner](https://github.com/anthropics/oss-scanner) are in [`.oss-scanner/`](.oss-scanner/).
 There is no promise of a reply or a fix: the project is shared as-is, and PRs are accepted for extensions only ([README](README.md#how-this-project-works)).
