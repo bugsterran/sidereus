@@ -1,0 +1,203 @@
+/* ── Main UI layer (former ?ui=next, the only UI since 2026-09-23). html[data-ui=next] is always set by the <head> script.
+   ⚠Keep these scoped: the prefix is also what keeps a rule OUT of the #nxcss twin generator (it skips 'data-ui'),
+   and unscoping a rule with a size/color would get it twinned (+1px, remapped colors). Only size/color-free overrides were merged down. */
+/* Sidereus palette — dark monitoring look.
+   Surfaces are variables so the «Background tone» setting (html[data-tone]) swaps them; semantic colors are shared by all tones.
+   Hard-coded neutrals/blues elsewhere are remapped onto these by the #nxcss twins (script top).
+   Derivation (OKLCH L/C/H, rounded to sRGB hex; light theme in 91-light.css uses the same roles):
+   - Surfaces bg/panel/hover/rule = L0 + 0.04*i, neutral hue 262. black L0 .150 C .006 · grey L0 .226 C .009 ·
+     blue L0 .190 C .028 (+.006 per step, hue 266).
+   - Text t1 = L .855 C .020 H 284 (all tones). t3 = lowest L (0.01 steps) giving >=4.6:1 on the tone's --nx-hover
+     at C .010 H 276; t2 = t3 + .04. idle = L .595 C .010 H 276 (glyph grey, >=3:1 on every surface).
+   - Semantic hues: ok H142 C.148 L.742 · warn H96 C.165 L.885 · err H20 C.195 L.665 · info H257 C.150 L.680 ·
+     info-bg (white-text fill) H259 C.160 L.540.
+   ⚠New colors come from this system (pick a role + L step). Never paste hex from another product's theme. */
+html[data-ui=next]{--nx-bg:#0a0b0e;--nx-panel:#121417;--nx-hover:#1b1d20;--nx-rule:#252629;--nx-field:#6a6d74;
+  --nx-t1:#cdcedc;--nx-t2:#909298;--nx-t3:#84868c;
+  --nx-ok:#71c269;--nx-warn:#fad83e;--nx-err:#f45460;--nx-info:#5899f3;--nx-info-bg:#2e6bca;--nx-idle:#7d7e85;
+  --nx-active:#5b8def;   /* One running/active colour (.mvdot · run table) */
+  --nx-sans:Inter,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',"Segoe UI",Roboto,sans-serif}
+html[data-ui=next][data-tone=grey]{--nx-bg:#1a1c20;--nx-panel:#23262a;--nx-hover:#2d2f34;--nx-rule:#373a3e;--nx-field:#767980;--nx-t2:#a3a4ab;--nx-t3:#96989f}
+html[data-ui=next][data-tone=blue]{--nx-bg:#0e1320;--nx-panel:#151c2d;--nx-hover:#1d263a;--nx-rule:#253048;--nx-field:#6b748c;--nx-t2:#999ba2;--nx-t3:#8d8f95}
+/* --nx-field = input/select/textarea border only; ★>=3:1 on bg/panel/hover per tone (black 3.80/3.56/3.26 · grey 3.91/3.49/3.07 · blue 3.97/3.64/3.24; --nx-rule was 1.22-1.30). */
+/* ⚠t2/t3 are per tone: t3 keeps >=4.6 on that tone's --nx-hover (so >=5 on panel/bg, WCAG AA). --nx-info-bg + white text = 5.2. */
+/* One popover/panel shell (.thpop · #alarm · Cmd+K · .sdrwin; #sesdr already matches). --nx-shadow (92-sessions-drawer.css) carries the light value. */
+html[data-ui=next]{--pop-r:6px;--pop-sh:var(--nx-shadow);--pop-bd:1px solid var(--nx-rule)}
+html[data-ui=next][data-ui] .wkdz,html[data-ui=next][data-ui] .wkdl,html[data-ui=next][data-ui] .tlpar{font-size:11px}
+html[data-ui=next] body{font-size:14.5px;font-variant-numeric:tabular-nums}
+/* ⚠The doubled attribute ([data-ui=next][data-ui]) outranks the generated twins, which share the
+   plain html[data-ui=next] prefix and come later in the document. */
+html[data-ui=next][data-ui] body{background:var(--nx-bg);color:var(--nx-t1);font-family:var(--nx-sans)}
+html[data-ui=next][data-ui] header{background:var(--nx-bg);backdrop-filter:none;border-bottom:1px solid var(--nx-rule)}
+html[data-ui=next][data-ui] h1{font-size:16px;font-weight:600;letter-spacing:0;color:var(--nx-t1)}
+/* Panels: lighter surface on the canvas, 1px border, small radius, compact header row, 8px gutters. */
+html[data-ui=next][data-ui] aside{background:var(--nx-panel);border:1px solid var(--nx-rule);border-radius:3px}
+html[data-ui=next][data-ui] aside h2{display:flex;align-items:baseline;gap:8px;font-size:13px;font-weight:500;
+  letter-spacing:0;color:var(--nx-t1);padding-bottom:7px;border-bottom:1px solid var(--nx-rule)}
+html[data-ui=next][data-ui] aside > h2:first-child{margin:-11px -12px 8px;padding:8px 12px 7px}
+/* The h2 label stays one line; only the <small> (room name) ellipsizes */
+html[data-ui=next] .pside h2{white-space:nowrap}
+html[data-ui=next] aside h2 small{margin-left:auto;font-size:11.5px;font-weight:400;color:var(--nx-t2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Semantic status: green ok/running · yellow warn/waiting · red error · blue info/selected · grey idle. */
+html[data-ui=next][data-ui] .tlds{background:var(--nx-ok)}
+/* Account dot (35b-worklog-view.js account chip). */
+html[data-ui=next] .knad{color:var(--acc,var(--nx-t3));margin-right:4px;font-size:9px}
+/* Datadog-style list rows: status dot · name · right-aligned metric columns · hover highlight · 1px separators. */
+html[data-ui=next] .nxr{display:grid;grid-template-columns:10px minmax(0,1fr) 30px 58px 50px;gap:8px;align-items:center;
+  margin:0 -12px;padding:5px 12px;border-top:1px solid var(--nx-rule);font-size:12.5px;line-height:1.35}
+html[data-ui=next] .nxr:hover{background:var(--nx-hover)}
+html[data-ui=next] .nxr.nxh{border-top:0;padding-top:0;font-size:11px;color:var(--nx-t3)}
+html[data-ui=next] .nxr.nxh:hover{background:none}
+html[data-ui=next] .nxr.nxrm{grid-template-columns:minmax(0,1fr) auto 40px}
+html[data-ui=next] .nxr.nxrm.on{box-shadow:inset 2px 0 0 var(--nx-info)}
+html[data-ui=next] .nxn{min-width:0}
+html[data-ui=next] .nxn :is(b,small){display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .nxn b{font-weight:500;color:var(--nx-t1)}
+html[data-ui=next] .nxn small{font-size:11px;color:var(--nx-t2)}
+html[data-ui=next] .nxm{text-align:right;white-space:nowrap;color:var(--nx-t2)}
+html[data-ui=next] .nxm.nxo{color:var(--nx-warn)}
+html[data-ui=next] .nxd{width:8px;height:8px;border-radius:50%;box-sizing:border-box;border:1.5px solid var(--nx-idle)}
+html[data-ui=next] .nxd.on{background:var(--nx-ok);border-color:var(--nx-ok)}
+/* Heartbeat-only was grey-filled vs hollow grey: indistinguishable at 8px. Warn color makes the 3 states read apart. */
+html[data-ui=next] .nxd.idle{background:var(--nx-warn);border-color:var(--nx-warn)}
+html[data-ui=next] .nxlg{margin-top:7px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+html[data-ui=next] .nxlg span{display:inline-flex;align-items:center;gap:5px}
+html[data-ui=next] .tlq{font-style:normal;cursor:help;font-size:11px;color:var(--nx-t2);border:1px solid var(--nx-rule);
+  border-radius:50%;width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center;margin-left:6px}
+html[data-ui=next] .tlq:focus-visible{outline:2px solid var(--nx-info);outline-offset:1px}
+html[data-ui=next] .tlgl{font-style:normal;font-size:11px;color:var(--nx-t2);margin-left:10px;padding-left:10px;
+  border-left:1px solid var(--nx-rule)}
+html[data-ui=next] .tlgl:first-child{margin-left:0;padding-left:0;border-left:none}
+/* ?ui=next bottom status bar + drawer. The bar is the last flex child of body (body is a 100% flex column),
+   so it takes its own 24px row and never covers content. The drawer overlays upward from it. */
+.sbar,.sdrw{display:none}
+html[data-ui=next] .sbar{display:flex;flex:0 0 30px;height:30px;align-items:stretch;overflow:hidden;cursor:pointer;
+  background:var(--nx-panel);border-top:1px solid var(--nx-rule);font-size:12px;line-height:29px;color:var(--nx-t1);
+  font-variant-numeric:tabular-nums;white-space:nowrap;user-select:none}
+html[data-ui=next] .sbar:hover{background:var(--nx-hover)}
+html[data-ui=next] .sbar > span{padding:0 10px;border-left:1px solid var(--nx-rule);flex:0 0 auto}
+html[data-ui=next] .sbar > span:first-child{border-left:0}
+html[data-ui=next] .sbar > .sbgap{flex:1 1 auto;border-left:0;padding:0}
+html[data-ui=next] .sbar > .sbchev{border-left:1px solid var(--nx-rule);padding:0 12px}
+/* ⚠At 1280px the bar overflowed and clipped connection + chevron. Left items shrink/ellipsize; sb2 (projections) drop <1400px. */
+html[data-ui=next] .sbar > span:not(.sbconn):not(.sbchev):not(.sbgap){flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+html[data-ui=next] .sbar > .sbgap{min-width:0}
+/* sbFit (60-statusbar.js) measures with nothing shrinking, then hides .sbdN parts in order (.sbh). */
+html[data-ui=next] .sbar.sbfit > span{flex-shrink:0 !important}
+html[data-ui=next] .sbar .sbh{display:none !important}
+/* sbFit step 't': tighter cells before any text is dropped (10px -> 6px each side). */
+html[data-ui=next] .sbar.sbtight > span:not(.sbgap){padding:0 6px}
+html[data-ui=next] .sbar b{font-weight:600}
+/* Status-bar layer popover (60b-sbar-layer.js): account grid label / 5h / 7d / reset, then sessions · failures · kinds rows.
+   ⚠.thpop.sblpop: a bare .sblpop ties with .thpop (93 loads later) and loses its padding/gap. */
+html[data-ui=next] .thpop.sblpop{box-sizing:border-box;width:360px;min-width:320px;max-width:min(420px,calc(100vw - 16px));padding:8px 10px;gap:6px;font-size:12px;color:var(--nx-t2)}
+/* ⚠Per-row grids with auto columns sized each row to its own content (badge / reset text shifted the % columns): one table grid + subgrid rows. */
+html[data-ui=next] .sblpop .sbl-tbl{display:grid;grid-template-columns:minmax(0,1fr) auto auto minmax(4.5em,auto);gap:6px 10px;font-variant-numeric:tabular-nums}
+html[data-ui=next] .sblpop .sbl-acc{display:grid;grid-column:1/-1;grid-template-columns:subgrid;align-items:baseline;white-space:nowrap;font-variant-numeric:tabular-nums}
+html[data-ui=next] .sblpop .sbl-acc > :not(:first-child){text-align:right}
+html[data-ui=next] .sblpop .sbl-acc > *{min-width:0;overflow:hidden;text-overflow:ellipsis}
+html[data-ui=next] .sblpop .sbl-acc > :first-child{color:var(--acc,var(--nx-t1))}
+html[data-ui=next] .sblpop .sbl-sw{position:relative;cursor:pointer;border-radius:3px}
+/* Main row in the theme info blue (light twin via --nx-info), not its account hue: «which is main» reads at a glance. */
+html[data-ui=next] .sblpop .sbl-me > :first-child{color:var(--nx-info)}
+html[data-ui=next] .sblpop .sbl-me .sbl-badge{border-color:var(--nx-info);color:var(--nx-info)}
+html[data-ui=next] .sblpop .sbl-me .sbl-main{background:var(--nx-info)}
+html[data-ui=next] .sblpop .sbl-badge{margin-left:6px;padding:0 4px;border:1px solid var(--acc,var(--nx-field));border-radius:3px;font-size:10.5px;font-style:normal;color:var(--acc,var(--nx-t1))}
+/* Hint overlays the reset cell instead of taking a column, so hover never shifts layout. */
+html[data-ui=next] .sblpop .sbl-sw > .sbl-hint{position:absolute;top:0;right:0;bottom:0;display:flex;align-items:center;padding:0 4px 0 10px;background:var(--nx-hover);color:var(--nx-t1);font-style:normal;visibility:hidden}
+html[data-ui=next] .sblpop .sbl-sw:is(:hover,:focus-visible) > .sbl-hint{visibility:visible}
+html[data-ui=next] .sblpop .sbl-sw:hover{background:var(--nx-hover)}
+html[data-ui=next] .sblpop .sbl-sw:focus-visible{outline:1px solid var(--nx-t2);outline-offset:1px;background:var(--nx-hover)}
+/* Same tones as the bar's own % (.sbar .sbok…): those rules are scoped to .sbar and miss the popover. */
+html[data-ui=next] .sblpop .sbok{color:var(--nx-ok)}html[data-ui=next] .sblpop .sbwarn{color:var(--nx-warn)}html[data-ui=next] .sblpop .sberr{color:var(--nx-err)}
+html[data-ui=next] .sblpop .sbl-main{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--acc,var(--nx-t1));margin-right:5px;vertical-align:1px}
+html[data-ui=next] .sblpop .sbl-ses{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;border-top:1px solid var(--nx-rule);padding-top:6px}
+html[data-ui=next] .sblpop .sbl-btn{align-self:flex-start;padding:2px 8px;font-size:12px;border:1px solid var(--nx-field);border-radius:4px;background:transparent;color:var(--nx-t1);cursor:pointer}
+html[data-ui=next] .sblpop .sbl-btn:hover{background:var(--nx-hover)}
+html[data-ui=next] .sblpop .sbl-kpi{display:flex;align-items:center;gap:6px;justify-content:flex-end;color:var(--nx-t2)}
+html[data-ui=next] .sblpop .sbl-kpi select{max-width:60%;font-size:12px;padding:1px 4px;border:1px solid var(--nx-field);border-radius:4px;background:transparent;color:var(--nx-t1)}
+/* Gemini segment gives way first when the bar is tight, so Claude segments keep their width. */
+html[data-ui=next] .sbar > span.sbext:not(.sbconn):not(.sbchev):not(.sbgap){flex-shrink:8}
+html[data-ui=next] .sbar .ailg{display:inline-block;vertical-align:-1px}
+html[data-ui=next] .sbar .ailg svg{width:12px;height:12px}
+/* Reset times were unreadable at 12px/t3 on the bar; keep them one step below the values, not two (09-24: bar 13.5→12px at the user's request). */
+html[data-ui=next] .sbar small{font-size:11.5px;color:var(--nx-t2);margin-left:6px}
+html[data-ui=next] .sbar .sbok{color:var(--nx-ok)}
+html[data-ui=next] .sbar .sbwarn{color:var(--nx-warn)}
+html[data-ui=next] .sbar .sberr{color:var(--nx-err)}
+html[data-ui=next] .sbar .sbinfo{color:var(--nx-info)}
+html[data-ui=next] .sbar .sbidle{color:var(--nx-t2)}
+/* Server unreachable (html.agstale, 95-poll.js pollDown): held numbers are dimmed; the connection chip stays full strength. */
+html.agstale .sbar > span:not(.sbconn):not(.sbchev):not(.sbgap){opacity:.8;transition:opacity .2s}
+/* ⚠.45 + grayscale put light-theme status text at 1.81-2.63:1; .7 still left light .sbok at 2.89 — .8 = min 3.24 light / 3.88 dark (traps/ui.md «Stale dimming»). */
+.sbconn small{font-weight:400;opacity:.85}
+.connst{margin:0 0 6px;padding:3px 8px;border-radius:4px;font-size:12px;color:var(--nx-err,#f45460);background:rgba(244,84,96,.12)}
+html[data-ui=next] .sbar .sbgoal{color:var(--nx-info);border:1px solid currentColor;border-radius:9px;padding:0 7px;margin-right:6px}
+/* Quota detail opens as a modal from the status bar (user preference over a bottom drawer). */
+html[data-ui=next] .sdrw.on{display:flex;position:fixed;inset:0;z-index:60;background:#0008;align-items:center;justify-content:center;padding:16px}
+html[data-ui=next] .sdrw .sdrwin{width:min(820px,100%);max-height:85vh;overflow:auto;display:flex;flex-direction:column;gap:8px;
+  background:var(--nx-panel);border:var(--pop-bd);border-radius:var(--pop-r);box-shadow:var(--pop-sh);padding:12px 16px;box-sizing:border-box}
+html[data-ui=next] .sdrw .sdrwh{display:flex;align-items:center;gap:8px}
+html[data-ui=next] .sdrw .sdrwh b{font-size:15px}
+html[data-ui=next] .sdrw .sdrwh button{margin-left:auto;background:none;border:0;color:inherit;font-size:16px;cursor:pointer}
+html[data-ui=next] .sdrw :is(.saver,.quota,.burn){margin:0}
+html[data-ui=next] .sdrw .quota{cursor:default}
+html[data-ui=next] .sdrw .qwho{display:flex;flex-direction:column;gap:3px;font-size:12px}
+html[data-ui=next] .sdrw .qwho small{opacity:.7}
+html[data-ui=next] .sdrw .qwr{display:grid;grid-template-columns:minmax(0,180px) 1fr 40px 52px;gap:8px;align-items:center}
+html[data-ui=next] .sdrw .qwn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .sdrw .qwb{height:6px;background:#8883;border-radius:3px;overflow:hidden}
+html[data-ui=next] .sdrw .qwb i{display:block;height:100%}
+html[data-ui=next] .sdrw .qwr b{text-align:right}
+html[data-ui=next] .sdrw .qwe{opacity:.6}
+/* Burndown renders open in the drawer: no collapse toggle. */
+html[data-ui=next] .sdrw .burn .bnh{cursor:default}
+html[data-ui=next] .sdrw .burn .bnh i{display:none}
+html[data-ui=next] .sdrw .burn svg{width:100%;height:200px}
+/* Modal text sizes/colours: the sidebar-sized 9.5-10.5px greys (#5f6a7a 3.17:1, .qwe light 3.97:1) fail in the modal; tokens keep both themes >=4.5:1.
+   ⚠[data-ui] twice = #nxcss twin generator skips these rules and they outrank the sidebar rules' twins (05-controls.css). */
+html[data-ui=next][data-ui] .sdrw .burn .bleg{font-size:13px}
+html[data-ui=next][data-ui] .sdrw .burn .bnout{font-size:12.5px}
+html[data-ui=next][data-ui] .sdrw .burn .bhead{font-size:13px}
+html[data-ui=next][data-ui] .sdrw .burn .bhead.bheadwk{font-size:12.5px;color:var(--nx-t2)}
+html[data-ui=next][data-ui] .sdrw .burn .bhead .blab{color:var(--nx-t2)}
+html[data-ui=next][data-ui] .sdrw .quota small{font-size:12px;color:var(--nx-t2)}
+html[data-ui=next][data-ui] .sdrw .saver.sv2 span{font-size:12.5px}
+html[data-ui=next][data-ui] .sdrw .qwho small{opacity:1;color:var(--nx-t2)}
+html[data-ui=next][data-ui] .sdrw .qwe{opacity:1;color:var(--nx-t3)}
+/* Burndown explanation as a hover card in the modal (a native title cannot be styled and covers the modal title). */
+html[data-ui=next][data-ui] .bnhc{font-size:13px;line-height:1.45;white-space:pre-line;max-width:520px;z-index:61}
+/* Light theme: ■ swatches (orange 2.25:1 on the page) get a 1px dark ring so every hue reaches >=3:1. */
+html[data-ui=next][data-theme=light] .brn > span[style]{text-shadow:1px 0 #0009,-1px 0 #0009,0 1px #0009,0 -1px #0009}
+html[data-ui=next][data-theme=light] .rtlg em b{box-shadow:0 0 0 1px #0009}
+/* Diff window: disabled scope chips are real disabled buttons, dashed and readable (>=3:1), not a 40% fade. */
+html[data-ui=next][data-ui] .dscb{font-family:inherit;line-height:inherit}
+html[data-ui=next][data-ui] .dscb:disabled{opacity:1;cursor:not-allowed;background:transparent;border-style:dashed;color:var(--nx-t3)}
+html[data-ui=next][data-ui] .dscb:disabled:hover{border-color:var(--nx-rule)}
+/* ⚠File tree box cuts a row at its max-height: scroll shadows (local covers + scroll shades) show there is more below/above. */
+html[data-ui=next][data-ui] .dfl{background:linear-gradient(var(--nx-panel) 30%,transparent) top/100% 28px no-repeat local,
+  linear-gradient(transparent,var(--nx-panel) 70%) bottom/100% 28px no-repeat local,
+  radial-gradient(farthest-side at 50% 0,color-mix(in srgb,var(--nx-t1) 35%,transparent),transparent) top/100% 10px no-repeat scroll,
+  radial-gradient(farthest-side at 50% 100%,color-mix(in srgb,var(--nx-t1) 35%,transparent),transparent) bottom/100% 10px no-repeat scroll,
+  var(--nx-panel)}
+/* Base look for fields that have no rule of their own (pipeline canvas panel, palette): zero specificity, so every
+   classed field keeps its own style. ⚠Unstyled fields fell back to the browser's 2px inset box with a light fill. */
+:where(html[data-ui=next]) :where(input:not([type=checkbox],[type=radio],[type=range],[type=color],[type=button],[type=submit],[type=file]),select,textarea){
+  font:inherit;font-size:12px;color:var(--nx-t1);background-color:var(--nx-bg);border:1px solid var(--nx-field);border-radius:6px;padding:3px 7px;color-scheme:dark}
+:where(html[data-ui=next][data-theme=light]) :where(input,select,textarea){color-scheme:light}
+:where(html[data-ui=next]) :where(textarea){line-height:1.45}
+/* Unclassed fields: filled surface + bottom hairline (★--nx-field on --nx-hover 3.07-3.26:1 in black/grey/blue/light; the fill alone is 1.09-1.15:1).
+   ⚠border:0, not transparent — the border-colour rule below and 95-focus recolour borders at higher specificity; box-shadow carries the edge. */
+:where(html[data-ui=next]) :where(:is(input:not([type=checkbox],[type=radio],[type=range],[type=color],[type=button],[type=submit],[type=file]),select,textarea):not([class]):not([id])){background-color:var(--nx-hover);border:0;padding:4px 8px;box-shadow:inset 0 -1px 0 var(--nx-field)}
+:where(html[data-ui=next]) :where(:is(input:not([type=checkbox],[type=radio],[type=range],[type=color],[type=button],[type=submit],[type=file]),select,textarea):not([class]):not([id]):is(:hover,:focus)){box-shadow:inset 0 0 0 1px var(--nx-field)}
+:where(html[data-ui=next]) :where(select:not([class]):not([id])){font-weight:500}
+/* Every select: own thin chevron in currentColor (both themes, no colour literal).
+   ⚠!important: .tlsel, .straxw select and #cfgbox .cfgsel use the `background` shorthand, which would wipe the chevron after appearance:none removed the native arrow. */
+:where(html[data-ui=next]) :where(select:not([multiple]):not([size])){appearance:none;-webkit-appearance:none;text-overflow:ellipsis;padding-right:24px!important;
+  background-image:linear-gradient(45deg,transparent calc(50% - .7px),currentColor calc(50% - .7px),currentColor calc(50% + .7px),transparent calc(50% + .7px)),
+    linear-gradient(135deg,transparent calc(50% - .7px),currentColor calc(50% - .7px),currentColor calc(50% + .7px),transparent calc(50% + .7px))!important;
+  background-position:right 13px center,right 9px center!important;background-size:4px 4px!important;background-repeat:no-repeat!important}
+/* Field borders use --nx-field (★>=3:1, --nx-rule was 1.22-1.30); :where keeps (0,2,2) so focus/hover/state rules and #ids win. ⚠Do not point dividers at --nx-field. */
+html[data-ui=next][data-ui] :is(input,select,textarea):where(:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=button]):not([type=submit]):not([type=file]):not(:hover):not(:focus)){border-color:var(--nx-field)}
+html[data-ui=next][data-ui] #wkcbox:not(:hover):not(:focus),html[data-ui=next][data-ui] #cfgbox :is(.cfgsel,.svin):not(:hover):not(:focus){border-color:var(--nx-field)}

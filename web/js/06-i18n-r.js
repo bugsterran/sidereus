@@ -1,0 +1,20 @@
+// Korean for the structure source viewer (81b-structure-tree.js).
+Object.assign(I18N.ko, {
+  'Source|code': '소스', 'File tree and source': '파일 트리와 소스 보기', 'Whole file': '전체 파일',
+  'File cannot be opened': '열 수 없는 파일', 'Binary file': '바이너리 파일', 'First 512 KB only': '앞 512KB만',
+  'Not UTF-8 — shown with a guessed encoding': 'UTF-8 이 아닌 파일 — 인코딩을 추정해 보여줍니다',
+  'Reading the file list…': '파일 목록을 읽는 중…', 'No matching file': '일치하는 파일 없음', 'No files': '파일이 없습니다',
+  'Too many files — showing part of the list': '파일이 많아 일부만 보여줍니다',
+  'Pick a file on the left · ↑↓ move · Enter open · ←→ fold': '왼쪽에서 파일을 고르세요 · ↑↓ 이동 · Enter 열기 · ←→ 접기',
+  'Filter by file name': '파일 이름으로 거르기',
+  'Expand all folders': '트리 모두 펼치기', 'Collapse all folders': '트리 모두 접기',
+  'This file cannot be opened.': '열 수 없는 파일입니다.', 'This is a binary file.': '바이너리 파일입니다.',
+  'This file is not in the list.': '목록에 없는 파일입니다.', 'This location cannot be opened.': '열 수 없는 위치입니다.',
+  'Could not read the file.': '파일을 읽지 못했습니다.',
+  'Characters not readable as UTF-8/CP949 show as replacement characters': 'UTF-8/CP949 로 읽지 못한 글자는 대체 문자로 보입니다',
+  'Source text': '원문', 'Preview not supported for this type': '미리보기 미지원 형식',
+  'Fold/unfold': '접기/펼치기', 'Preview': '미리보기',
+  'Back (Alt+←)': '뒤로 (Alt+←)', 'Forward (Alt+→)': '앞으로 (Alt+→)',
+  'Deleted file': '삭제된 파일',
+  'This file was deleted.': '삭제된 파일입니다.',
+});

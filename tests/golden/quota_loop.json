@@ -1,0 +1,5318 @@
+{
+ "blocked_429_backoff": {
+  "clock": 1790000289.76,
+  "end": "stopped",
+  "hdr_at": [
+   1790000000.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1789999900,
+   "data": {
+    "extra": {
+     "limit": 5000,
+     "pct": 10,
+     "used": 500
+    },
+    "five_hour": {
+     "pct": 30
+    }
+   },
+   "err": "HTTP 429",
+   "src": "api"
+  },
+  "retry": [
+   7
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "hdr_at_set",
+    0,
+    1790000000.0
+   ],
+   [
+    "probe_hdr",
+    null
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 100,
+       "wait": 30
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "random",
+    0.0
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000010.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000020.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000030.0
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000030.0
+   ],
+   [
+    "from_omc",
+    270,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    2,
+    60
+   ],
+   [
+    "time",
+    1790000030.0
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 130,
+       "wait": 60
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    2,
+    60
+   ],
+   [
+    "time",
+    1790000030.0
+   ],
+   [
+    "random",
+    0.5
+   ],
+   [
+    "time",
+    1790000030.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000040.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000050.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000070.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000080.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000090.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    6.0
+   ],
+   [
+    "time",
+    1790000096.0
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000096.0
+   ],
+   [
+    "from_omc",
+    450,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    3,
+    120
+   ],
+   [
+    "time",
+    1790000096.0
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 196,
+       "wait": 120
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    3,
+    120
+   ],
+   [
+    "time",
+    1790000096.0
+   ],
+   [
+    "random",
+    0.99
+   ],
+   [
+    "time",
+    1790000096.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000106.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000116.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000126.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000136.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000146.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000156.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000166.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000176.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000186.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000196.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000206.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000216.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000226.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000236.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    3.76
+   ],
+   [
+    "time",
+    1790000239.76
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000239.76
+   ],
+   [
+    "from_omc",
+    630,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    4,
+    240
+   ],
+   [
+    "time",
+    1790000239.76
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 339,
+       "wait": 240
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    4,
+    240
+   ],
+   [
+    "time",
+    1790000239.76
+   ],
+   [
+    "random",
+    0.1
+   ],
+   [
+    "time",
+    1790000239.76
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000249.76
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000259.76
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000269.76
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000279.76
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ]
+  ]
+ },
+ "blocked_no_last": {
+  "clock": 1790000104.5,
+  "end": "stopped",
+  "hdr_at": [
+   1790000000.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 0,
+   "data": null,
+   "err": "timeout",
+   "src": "api"
+  },
+  "retry": [
+   7
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "hdr_at_set",
+    0,
+    1790000000.0
+   ],
+   [
+    "probe_hdr",
+    null
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000010.0
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000020.0
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000030.0
+   ],
+   [
+    "sleep",
+    1.5
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "from_omc",
+    270,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    2,
+    60
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000041.5
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000051.5
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000061.5
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000071.5
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000081.5
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000091.5
+   ],
+   [
+    "sleep",
+    3.0
+   ],
+   [
+    "time",
+    1790000094.5
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000094.5
+   ],
+   [
+    "from_omc",
+    450,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    3,
+    120
+   ],
+   [
+    "time",
+    1790000094.5
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000094.5
+   ],
+   [
+    "sleep",
+    10.0
+   ]
+  ]
+ },
+ "calib_raises_after_omc": {
+  "clock": 1790000080.0,
+  "end": "stopped",
+  "hdr_at": [
+   1790000000.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1790000005,
+   "data": {
+    "extra": {
+     "at": 1789999900,
+     "limit": 5000,
+     "pct": 10,
+     "used": 500
+    },
+    "five_hour": {
+     "pct": 33
+    }
+   },
+   "err": null,
+   "src": "omc"
+  },
+  "retry": [
+   7
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "from_omc",
+    90,
+    {
+     "at": 1790000005,
+     "data": {
+      "five_hour": {
+       "pct": 33
+      }
+     }
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "q_set",
+    "data",
+    {
+     "extra": {
+      "at": 1789999900,
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    }
+   ],
+   [
+    "q_set",
+    "at",
+    1790000005
+   ],
+   [
+    "q_set",
+    "err",
+    null
+   ],
+   [
+    "q_set",
+    "src",
+    "omc"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "save"
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "warn",
+    "loop:quota",
+    "Quota poller stopped — {err}",
+    [
+     [
+      "vars",
+      {
+       "err": "KeyError: 'c'"
+      }
+     ]
+    ]
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "loop_err_set",
+    "quota",
+    {
+     "at": 1790000000.0,
+     "err": "KeyError: 'c'"
+    }
+   ],
+   [
+    "sleep",
+    60
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "at": 1789999900,
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "at": 1789999900,
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000070.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "at": 1789999900,
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ]
+  ]
+ },
+ "fail_hdr_not_due_omc_old": {
+  "clock": 1790000120.0,
+  "end": "stopped",
+  "hdr_at": [
+   1789999995.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1789999900,
+   "data": {
+    "extra": {
+     "limit": 5000,
+     "pct": 10,
+     "used": 500
+    },
+    "five_hour": {
+     "pct": 30
+    }
+   },
+   "err": null,
+   "src": "api"
+  },
+  "retry": [
+   7
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "from_omc",
+    90,
+    {
+     "at": 1,
+     "data": {
+      "five_hour": {
+       "pct": 1
+      }
+     }
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "save"
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "sleep",
+    60
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "from_omc",
+    90,
+    {
+     "at": 1,
+     "data": {
+      "five_hour": {
+       "pct": 1
+      }
+     }
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "save"
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "sleep",
+    60
+   ]
+  ]
+ },
+ "fail_hdr_omc_new": {
+  "clock": 1790000130.0,
+  "end": "stopped",
+  "hdr_at": [
+   1790000000.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1790000005,
+   "data": {
+    "extra": {
+     "approx": true,
+     "at": 1790000000,
+     "limit": 5000,
+     "pct": 40,
+     "used": 2000
+    },
+    "five_hour": {
+     "pct": 33
+    }
+   },
+   "err": null,
+   "src": "omc"
+  },
+  "retry": [
+   7
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "hdr_at_set",
+    0,
+    1790000000.0
+   ],
+   [
+    "probe_hdr",
+    {
+     "pct": 40
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "q_set",
+    "data",
+    {
+     "extra": {
+      "approx": true,
+      "at": 1790000000,
+      "limit": 5000,
+      "pct": 40,
+      "used": 2000
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    }
+   ],
+   [
+    "exit"
+   ],
+   [
+    "save"
+   ],
+   [
+    "from_omc",
+    90,
+    {
+     "at": 1790000005,
+     "data": {
+      "five_hour": {
+       "pct": 33
+      }
+     }
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "q_set",
+    "data",
+    {
+     "extra": {
+      "approx": true,
+      "at": 1790000000,
+      "limit": 5000,
+      "pct": 40,
+      "used": 2000
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    }
+   ],
+   [
+    "q_set",
+    "at",
+    1790000005
+   ],
+   [
+    "q_set",
+    "err",
+    null
+   ],
+   [
+    "q_set",
+    "src",
+    "omc"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "save"
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "sleep",
+    60
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "from_omc",
+    90,
+    {
+     "at": 1790000005,
+     "data": {
+      "five_hour": {
+       "pct": 33
+      }
+     }
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "save"
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "sleep",
+    60
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000120.0
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "approx": true,
+      "at": 1790000000,
+      "limit": 5000,
+      "pct": 40,
+      "used": 2000
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000120.0
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000120.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "approx": true,
+      "at": 1790000000,
+      "limit": 5000,
+      "pct": 40,
+      "used": 2000
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ]
+  ]
+ },
+ "fail_then_omc_resets": {
+  "clock": 1790000186.0,
+  "end": "stopped",
+  "hdr_at": [
+   1790000000.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1790000005,
+   "data": {
+    "extra": {
+     "at": 1789999900,
+     "limit": 5000,
+     "pct": 10,
+     "used": 500
+    },
+    "five_hour": {
+     "pct": 33
+    }
+   },
+   "err": "429",
+   "src": "omc"
+  },
+  "retry": [
+   7
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 100,
+       "wait": 30
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000010.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000020.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000030.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    1.5
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "from_omc",
+    270,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    2,
+    60
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 131,
+       "wait": 60
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    2,
+    60
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000041.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000051.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000061.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000071.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000081.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000091.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    3.0
+   ],
+   [
+    "time",
+    1790000094.5
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000094.5
+   ],
+   [
+    "from_omc",
+    450,
+    {
+     "at": 1790000005,
+     "data": {
+      "five_hour": {
+       "pct": 33
+      }
+     }
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "q_set",
+    "data",
+    {
+     "extra": {
+      "at": 1789999900,
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    }
+   ],
+   [
+    "q_set",
+    "at",
+    1790000005
+   ],
+   [
+    "q_set",
+    "err",
+    null
+   ],
+   [
+    "q_set",
+    "src",
+    "omc"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "save"
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "sleep",
+    60
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000154.5
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "at": 1789999900,
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000154.5
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 149,
+       "wait": 30
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000154.5
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000154.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "at": 1789999900,
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000164.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "at": 1789999900,
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000174.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "at": 1789999900,
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000184.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "at": 1789999900,
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 33
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    1.5
+   ]
+  ]
+ },
+ "fetch_raises_then_ok": {
+  "clock": 1790000100.0,
+  "end": "stopped",
+  "hdr_at": [
+   0.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1789999900,
+   "data": {
+    "extra": {
+     "limit": 5000,
+     "pct": 10,
+     "used": 500
+    },
+    "five_hour": {
+     "pct": 30
+    }
+   },
+   "err": null,
+   "src": "api"
+  },
+  "retry": [
+   0
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "warn",
+    "loop:quota",
+    "Quota poller stopped — {err}",
+    [
+     [
+      "vars",
+      {
+       "err": "RuntimeError: boom"
+      }
+     ]
+    ]
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "loop_err_set",
+    "quota",
+    {
+     "at": 1790000000.0,
+     "err": "RuntimeError: boom"
+    }
+   ],
+   [
+    "sleep",
+    60
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "retry_set",
+    0,
+    0
+   ],
+   [
+    "save"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000070.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000080.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000090.0
+   ],
+   [
+    "sleep",
+    10
+   ]
+  ]
+ },
+ "hdr_no_limit_at_zero": {
+  "clock": 1790000070.0,
+  "end": "stopped",
+  "hdr_at": [
+   1790000000.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1790000000,
+   "data": {
+    "extra": {
+     "approx": true,
+     "at": 1790000000,
+     "pct": 12
+    }
+   },
+   "err": null,
+   "src": "api"
+  },
+  "retry": [
+   7
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "hdr_at_set",
+    0,
+    1790000000.0
+   ],
+   [
+    "probe_hdr",
+    {
+     "pct": 12
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "q_set",
+    "data",
+    {
+     "extra": {
+      "approx": true,
+      "at": 1790000000,
+      "pct": 12
+     }
+    }
+   ],
+   [
+    "q_set",
+    "at",
+    1790000000
+   ],
+   [
+    "exit"
+   ],
+   [
+    "save"
+   ],
+   [
+    "from_omc",
+    90,
+    {
+     "at": 1,
+     "data": {
+      "five_hour": {
+       "pct": 1
+      }
+     }
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "save"
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "sleep",
+    60
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "approx": true,
+      "at": 1790000000,
+      "pct": 12
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "approx": true,
+      "at": 1790000000,
+      "pct": 12
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ]
+  ]
+ },
+ "hdr_none_data_none": {
+  "clock": 1790000020.0,
+  "end": "stopped",
+  "hdr_at": [
+   1790000000.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 0,
+   "data": null,
+   "err": null,
+   "src": "api"
+  },
+  "retry": [
+   7
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "hdr_at_set",
+    0,
+    1790000000.0
+   ],
+   [
+    "probe_hdr",
+    null
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000010.0
+   ],
+   [
+    "sleep",
+    10.0
+   ]
+  ]
+ },
+ "ok_hold_short_interval": {
+  "clock": 1790000038.7,
+  "end": "stopped",
+  "hdr_at": [
+   1790000028.7
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1789999900,
+   "data": {
+    "extra": {
+     "limit": 5000,
+     "pct": 10,
+     "used": 500
+    },
+    "five_hour": {
+     "pct": 30
+    }
+   },
+   "err": null,
+   "src": "api"
+  },
+  "retry": [
+   0
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "retry_set",
+    0,
+    0
+   ],
+   [
+    "save"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "interval",
+    3.2
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "sleep",
+    3.2
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000003.2
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "retry_set",
+    0,
+    0
+   ],
+   [
+    "save"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "time",
+    1790000003.2
+   ],
+   [
+    "interval",
+    0.2
+   ],
+   [
+    "time",
+    1790000003.2
+   ],
+   [
+    "sleep",
+    0.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000003.7
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "retry_set",
+    0,
+    0
+   ],
+   [
+    "save"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "time",
+    1790000003.7
+   ],
+   [
+    "interval",
+    25
+   ],
+   [
+    "time",
+    1790000003.7
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000013.7
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000023.7
+   ],
+   [
+    "sleep",
+    5.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000028.7
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000028.7
+   ],
+   [
+    "hdr_at_set",
+    0,
+    1790000028.7
+   ],
+   [
+    "probe_hdr",
+    null
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000028.7
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000028.7
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ]
+  ]
+ },
+ "ok_normal": {
+  "clock": 1790000090.0,
+  "end": "stopped",
+  "hdr_at": [
+   0.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1789999900,
+   "data": {
+    "extra": {
+     "limit": 5000,
+     "pct": 10,
+     "used": 500
+    },
+    "five_hour": {
+     "pct": 30
+    }
+   },
+   "err": null,
+   "src": "api"
+  },
+  "retry": [
+   0
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "retry_set",
+    0,
+    0
+   ],
+   [
+    "save"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000010.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000020.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000030.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000040.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000050.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "retry_set",
+    0,
+    0
+   ],
+   [
+    "save"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000070.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000080.0
+   ],
+   [
+    "sleep",
+    10
+   ]
+  ]
+ },
+ "raise_after_fail_inc": {
+  "clock": 1790000163.0,
+  "end": "stopped",
+  "hdr_at": [
+   1790000000.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1789999900,
+   "data": {
+    "extra": {
+     "limit": 5000,
+     "pct": 10,
+     "used": 500
+    },
+    "five_hour": {
+     "pct": 30
+    }
+   },
+   "err": "429",
+   "src": "api"
+  },
+  "retry": [
+   7
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "hdr_at_set",
+    0,
+    1790000000.0
+   ],
+   [
+    "probe_hdr",
+    null
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 100,
+       "wait": 30
+      }
+     ]
+    ]
+   ],
+   [
+    "warn",
+    "loop:quota",
+    "Quota poller stopped — {err}",
+    [
+     [
+      "vars",
+      {
+       "err": "ValueError: w"
+      }
+     ]
+    ]
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "loop_err_set",
+    "quota",
+    {
+     "at": 1790000000.0,
+     "err": "ValueError: w"
+    }
+   ],
+   [
+    "sleep",
+    60
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "from_omc",
+    270,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    2,
+    60
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 160,
+       "wait": 60
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    2,
+    60
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000060.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000070.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000080.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000090.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000100.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000110.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000120.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    3.0
+   ],
+   [
+    "time",
+    1790000123.0
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000123.0
+   ],
+   [
+    "from_omc",
+    450,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    3,
+    120
+   ],
+   [
+    "time",
+    1790000123.0
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 223,
+       "wait": 120
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    3,
+    120
+   ],
+   [
+    "time",
+    1790000123.0
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000123.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000133.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000143.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000153.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ]
+  ]
+ },
+ "raise_mid_ok_keeps_fail": {
+  "clock": 1790000274.5,
+  "end": "stopped",
+  "hdr_at": [
+   1790000000.0
+  ],
+  "loop_err": {},
+  "quota": {
+   "at": 1789999900,
+   "data": {
+    "extra": {
+     "limit": 5000,
+     "pct": 10,
+     "used": 500
+    },
+    "five_hour": {
+     "pct": 30
+    }
+   },
+   "err": null,
+   "src": "api"
+  },
+  "retry": [
+   0
+  ],
+  "trace": [
+   [
+    "load"
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "hdr_at_set",
+    0,
+    1790000000.0
+   ],
+   [
+    "probe_hdr",
+    null
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 100,
+       "wait": 30
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000000.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000010.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000020.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000030.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    1.5
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "retry_set",
+    0,
+    0
+   ],
+   [
+    "save"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "time",
+    1790000031.5
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000041.5
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "warn",
+    "loop:quota",
+    "Quota poller stopped — {err}",
+    [
+     [
+      "vars",
+      {
+       "err": "OSError: disk"
+      }
+     ]
+    ]
+   ],
+   [
+    "time",
+    1790000051.5
+   ],
+   [
+    "loop_err_set",
+    "quota",
+    {
+     "at": 1790000051.5,
+     "err": "OSError: disk"
+    }
+   ],
+   [
+    "sleep",
+    60
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000111.5
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000111.5
+   ],
+   [
+    "warn",
+    "quota-429",
+    "Quota lookup blocked by 429 — retrying in {wait}s · showing the last good value ({ago}s ago)",
+    [
+     [
+      "log",
+      false
+     ],
+     [
+      "soft",
+      true
+     ],
+     [
+      "vars",
+      {
+       "ago": 211,
+       "wait": 30
+      }
+     ]
+    ]
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000111.5
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000111.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000121.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000131.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000141.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    1.5
+   ],
+   [
+    "time",
+    1790000143.0
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "retry_set",
+    0,
+    0
+   ],
+   [
+    "save"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "calibrate"
+   ],
+   [
+    "time",
+    1790000143.0
+   ],
+   [
+    "interval",
+    60
+   ],
+   [
+    "time",
+    1790000143.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000153.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000163.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000173.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000183.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000193.0
+   ],
+   [
+    "sleep",
+    10
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    false
+   ],
+   [
+    "time",
+    1790000203.0
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000203.0
+   ],
+   [
+    "from_omc",
+    90,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    1,
+    30
+   ],
+   [
+    "time",
+    1790000203.0
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000203.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000213.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000223.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000233.0
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    1.5
+   ],
+   [
+    "time",
+    1790000234.5
+   ],
+   [
+    "fetch"
+   ],
+   [
+    "loop_err_pop",
+    "quota"
+   ],
+   [
+    "time",
+    1790000234.5
+   ],
+   [
+    "from_omc",
+    270,
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ],
+   [
+    "wait_hint",
+    2,
+    60
+   ],
+   [
+    "time",
+    1790000234.5
+   ],
+   [
+    "random",
+    0.25
+   ],
+   [
+    "time",
+    1790000234.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000244.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000254.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ],
+   [
+    "time",
+    1790000264.5
+   ],
+   [
+    "omc_write",
+    {
+     "extra": {
+      "limit": 5000,
+      "pct": 10,
+      "used": 500
+     },
+     "five_hour": {
+      "pct": 30
+     }
+    },
+    true
+   ],
+   [
+    "sleep",
+    10.0
+   ]
+  ]
+ }
+}

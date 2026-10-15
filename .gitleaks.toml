@@ -1,0 +1,5 @@
+# Default rules only. Fake secrets in test fixtures are allowed per line
+# with an inline `gitleaks:allow` comment, so a real key added elsewhere
+# in the same file is still caught.
+[extend]
+useDefault = true

@@ -1,0 +1,36 @@
+{
+  "v": 1,
+  "name": "refactor",
+  "title": "리팩토링",
+  "rules": "Follow AGENTS.md in the repo.\nNever commit or push.",
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "기준선",
+      "agent": "sidereus-verifier",
+      "model": "sonnet",
+      "task": "Run the full test suite before any change and record the result as the baseline. Change nothing."
+    },
+    {
+      "title": "계획",
+      "agent": "sidereus-designer",
+      "task": "Plan the refactoring as small behaviour-preserving steps, each one testable on its own."
+    },
+    {
+      "title": "리팩토링",
+      "agent": "sidereus-implementer",
+      "task": "Apply the planned steps with no behaviour change. Run the tests after each step; on red, revert the step rather than patch it."
+    },
+    {
+      "title": "검증",
+      "agent": "sidereus-verifier",
+      "model": "sonnet",
+      "onFail": { "goto": "리팩토링", "max": 2 }
+    },
+    {
+      "title": "리뷰",
+      "agent": "sidereus-reviewer",
+      "onFail": { "goto": "리팩토링", "max": 1 }
+    }
+  ]
+}

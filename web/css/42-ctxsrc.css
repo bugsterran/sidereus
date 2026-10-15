@@ -1,0 +1,15 @@
+/* «Context sources» line in the session work view (web/js/35d-ctxsrc.js) — same frame as the edited-file tree (.agtr) */
+.ctxs{margin:0 0 10px;border:1px solid #232c38;border-radius:7px;background:#141a23}
+.ctxs>summary{cursor:pointer;padding:6px 10px;font-size:11.5px;color:#8b95a7;user-select:none}
+.ctxs[open]>summary{border-bottom:1px solid #232c38;color:#dfe5ee}
+.ctxb{padding:6px 10px;max-height:300px;overflow:auto}
+.ctxh{font-size:10.5px;color:#7e8896;margin:6px 0 2px}
+.ctxr{display:flex;gap:10px;font-size:11px;color:#b8c0cc;padding:1px 0}
+.ctxr>span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono,monospace)}
+.ctxr>i{flex:0 0 auto;font-style:normal;color:#7e8896}
+.ctxr>span.ctxw{white-space:normal;overflow-wrap:anywhere}
+.ctxp{display:flex}
+.ctxp>b{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:normal}
+.ctxp>em{flex:0 0 auto;font-style:normal;white-space:nowrap}
+html[data-theme=light] .ctxs{background:var(--nx-panel);border-color:var(--nx-rule)}
+html[data-theme=light] .ctxr{color:var(--nx-t1)}

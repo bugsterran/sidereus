@@ -1,0 +1,62 @@
+{
+  "v": 1,
+  "name": "sidereus-verify",
+  "title": "라이브 점검 — Sidereus viewer",
+  "use": "Live verification sweep: find real defects on the running/demo screens, fix only evidence-backed ones, ship once.",
+  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER restart the live viewer (8799), NEVER POST to it, NEVER open a visible browser (headless CDP only), NEVER commit/stash/checkout/reset/add, NEVER run screen_check --update.\nWrites (settings, mailbox, files) only in a sandbox viewer on a spare port with a temp HOME and temp CLAUDE_CONFIG_DIR; kill it when done and confirm the real files are unchanged.\nMetadata only in reports (rule 1): no message bodies or source text.\nA defect needs evidence: element/endpoint, measured value, width/theme/lang. Taste is not a defect. Desktop only: 900/1100/1440.",
+  "after": [
+    "launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer",
+    "screen-check the live page (900/1100/1440)",
+    "bash backup.sh",
+    "commit"
+  ],
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "점검 계획",
+      "agent": "sidereus-designer",
+      "task": "Split the request into independent check areas (e.g. a tab, a write flow, perf, reconnect, i18n). One slice per area: id = area, files = the code files that own it (read-only targets), task = what to exercise, widths/themes/langs, and whether it needs a sandbox. Skip areas checked and unchanged since the last sweep (see git log). Change nothing.",
+      "produces": "slices",
+      "ui": { "x": 44, "y": 24 }
+    },
+    {
+      "title": "점검",
+      "agent": "general-purpose",
+      "task": "Check your area only, on the live page read-only or in your own sandbox. Report each defect as a finding with evidence and the owning file:line; list what passed in summary. Fix nothing.",
+      "fanout": "slices",
+      "onError": "continue",
+      "ui": { "x": 292, "y": 24 }
+    },
+    {
+      "title": "트리아지",
+      "agent": "sidereus-reviewer",
+      "task": "Merge the findings: drop duplicates, taste and anything without evidence; keep defects that are real, reduce code or work, and are cheap to verify. Group the kept ones into fix slices with disjoint files. Owner decisions (rule changes, new features) go in summary, not in slices. Change nothing.",
+      "produces": "slices",
+      "ui": { "x": 540, "y": 24 }
+    },
+    {
+      "title": "수정",
+      "agent": "sidereus-implementer",
+      "task": "Fix your slice only with the smallest change and a regression test where logic changed. Report changed files; anything outside your slice goes in findings.",
+      "fanout": "slices",
+      "gate": "scripts/check.sh --fast",
+      "onError": "continue",
+      "ui": { "x": 788, "y": 24 }
+    },
+    {
+      "title": "검증",
+      "agent": "sidereus-verifier",
+      "model": "sonnet",
+      "task": "Run the gate once and report each failing step as a finding with file/line. A screen-regression diff that matches an intended fix is cause \"intended\" in summary, not a failure. Do not fix anything.",
+      "gate": "scripts/check.sh --full",
+      "onFail": { "goto": "수정", "max": 2 },
+      "ui": { "x": 1037, "y": 24 }
+    },
+    {
+      "title": "라이브 검증",
+      "skill": "sidereus-ship",
+      "agent": "general-purpose",
+      "ui": { "x": 1284, "y": 24, "color": "#fb923c" }
+    }
+  ]
+}

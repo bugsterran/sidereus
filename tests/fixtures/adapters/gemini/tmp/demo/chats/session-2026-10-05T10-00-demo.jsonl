@@ -1,0 +1,3 @@
+{"sessionId":"demo-gemini-0001","projectHash":"0000","startTime":"2026-10-05T01:00:00.000Z","kind":"main"}
+{"id":"m1","type":"user","timestamp":"2026-10-05T01:00:01.000Z","content":"CANARY-ADAPTER-USER-TEXT"}
+{"id":"m2","type":"gemini","timestamp":"2026-10-05T01:00:02.000Z","model":"gemini-2.5-flash","content":"CANARY-ADAPTER-ASSISTANT-TEXT","toolCalls":[{"name":"run_shell_command","args":{"command":"CANARY-ADAPTER-TOOL-INPUT"}}],"tokens":{"input":1000,"output":200,"cached":400,"thoughts":50,"tool":0}}

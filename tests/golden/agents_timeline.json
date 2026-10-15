@@ -1,0 +1,2311 @@
+{
+ "capped": {
+  "at": 1790000000,
+  "hours": 12.0,
+  "idle": [
+   [
+    1789956800,
+    1789971200
+   ],
+   [
+    1789980626,
+    1789982000
+   ]
+  ],
+  "naps": [
+   [
+    1789982000,
+    1789985570
+   ]
+  ],
+  "ok": true,
+  "peak": 2,
+  "rows": [
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789957799,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/a",
+    "depth": 0,
+    "desc": "Session",
+    "end": 1789999940,
+    "idle": 3,
+    "kind": "sess",
+    "last": "Bash · make",
+    "proj": "a",
+    "run": true,
+    "seen": 1789971100,
+    "segs": [
+     [
+      1789971200,
+      1789979822
+     ],
+     [
+      1789985570,
+      1789999940
+     ]
+    ],
+    "sid": "s1",
+    "start": 1789971200,
+    "state": "tool",
+    "tid": "sess:/w/a|s1",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "a"
+   },
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789957799,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/a",
+    "depth": 0,
+    "desc": "Session — past session s0",
+    "end": 1789999880,
+    "idle": 0,
+    "kind": "sess",
+    "last": "",
+    "proj": "a",
+    "run": false,
+    "seen": 1789971700,
+    "segs": [
+     [
+      1789971800,
+      1789980224
+     ],
+     [
+      1789985840,
+      1789999880
+     ]
+    ],
+    "sid": "s0",
+    "start": 1789971800,
+    "state": "",
+    "tid": "sess:/w/a|s0",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "a"
+   },
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789957799,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/b",
+    "depth": 0,
+    "desc": "Session — past session s2",
+    "end": 1789999820,
+    "idle": 0,
+    "kind": "sess",
+    "last": "",
+    "proj": "b",
+    "run": false,
+    "seen": 1789972300,
+    "segs": [
+     [
+      1789972400,
+      1789980626
+     ],
+     [
+      1789986110,
+      1789999820
+     ]
+    ],
+    "sid": "s2",
+    "start": 1789972400,
+    "state": "",
+    "tid": "sess:/w/b|s2",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "b"
+   },
+   {
+    "aid": "a22",
+    "cwd": "/w/b",
+    "depth": 2,
+    "desc": "job 2-2 job 2-2 job 2-2 job 2-2 job 2-2 job 2-2 ",
+    "end": 1789999020,
+    "fin": 0,
+    "last": "Read /p/b/s2/subagents/agent-a22.jsonlRead /p/b/s2/subagents/agent-a22.jsonlRead /p/b/s2/s",
+    "par": "a20",
+    "proj": "b",
+    "run": false,
+    "segs": [
+     [
+      1789990700,
+      1789993196
+     ],
+     [
+      1789994860,
+      1789999020
+     ]
+    ],
+    "start": 1789990700,
+    "tc": 5,
+    "tid": "toolu_22",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t2"
+   },
+   {
+    "aid": "a03",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 0-3 job 0-3 job 0-3 job 0-3 job 0-3 job 0-3 ",
+    "end": 1789998800,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-a03.jsonlRead /p/a/s1/subagents/agent-a03.jsonlRead /p/a/s1/s",
+    "par": "a00",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789991300,
+      1789993550
+     ],
+     [
+      1789995050,
+      1789998800
+     ]
+    ],
+    "start": 1789991300,
+    "tc": 5,
+    "tid": "toolu_03",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t3"
+   }
+  ],
+  "tok": {
+   "step": 180,
+   "sum": 105665,
+   "t0": 1789956800,
+   "v": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    7,
+    1013,
+    0,
+    0,
+    1020,
+    0,
+    0,
+    1020,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2013,
+    0,
+    0,
+    2013,
+    0,
+    0,
+    2013,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3013,
+    0,
+    3013,
+    0,
+    3013,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    4013,
+    4013,
+    0,
+    4013,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1040,
+    0,
+    0,
+    1040,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2033,
+    0,
+    0,
+    2033,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3033,
+    5013,
+    13059,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    8066,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    10066,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    6033,
+    6033,
+    0,
+    0,
+    0,
+    0,
+    18039,
+    0
+   ]
+  }
+ },
+ "h12": {
+  "at": 1790000000,
+  "hours": 12.0,
+  "idle": [
+   [
+    1789956800,
+    1789971200
+   ],
+   [
+    1789980626,
+    1789982000
+   ]
+  ],
+  "naps": [
+   [
+    1789982000,
+    1789985570
+   ]
+  ],
+  "ok": true,
+  "peak": 9,
+  "rows": [
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789957799,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/a",
+    "depth": 0,
+    "desc": "Session",
+    "end": 1789999940,
+    "idle": 3,
+    "kind": "sess",
+    "last": "Bash · make",
+    "proj": "a",
+    "run": true,
+    "seen": 1789971100,
+    "segs": [
+     [
+      1789971200,
+      1789979822
+     ],
+     [
+      1789985570,
+      1789999940
+     ]
+    ],
+    "sid": "s1",
+    "start": 1789971200,
+    "state": "tool",
+    "tid": "sess:/w/a|s1",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "a"
+   },
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789957799,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/a",
+    "depth": 0,
+    "desc": "Session — past session s0",
+    "end": 1789999880,
+    "idle": 0,
+    "kind": "sess",
+    "last": "",
+    "proj": "a",
+    "run": false,
+    "seen": 1789971700,
+    "segs": [
+     [
+      1789971800,
+      1789980224
+     ],
+     [
+      1789985840,
+      1789999880
+     ]
+    ],
+    "sid": "s0",
+    "start": 1789971800,
+    "state": "",
+    "tid": "sess:/w/a|s0",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "a"
+   },
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789957799,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/b",
+    "depth": 0,
+    "desc": "Session — past session s2",
+    "end": 1789999820,
+    "idle": 0,
+    "kind": "sess",
+    "last": "",
+    "proj": "b",
+    "run": false,
+    "seen": 1789972300,
+    "segs": [
+     [
+      1789972400,
+      1789980626
+     ],
+     [
+      1789986110,
+      1789999820
+     ]
+    ],
+    "sid": "s2",
+    "start": 1789972400,
+    "state": "",
+    "tid": "sess:/w/b|s2",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "b"
+   },
+   {
+    "aid": "a00",
+    "cwd": "/w/a",
+    "depth": 1,
+    "desc": "job 0-0 job 0-0 job 0-0 job 0-0 job 0-0 job 0-0 ",
+    "end": 1790000000,
+    "fin": 1,
+    "last": "Read /p/a/s1/subagents/agent-a00.jsonlRead /p/a/s1/subagents/agent-a00.jsonlRead /p/a/s1/s",
+    "par": "",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789989200,
+      1789992440
+     ],
+     [
+      1789994600,
+      1790000000
+     ]
+    ],
+    "start": 1789989200,
+    "tc": 5,
+    "tid": "toolu_00",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t0"
+   },
+   {
+    "aid": "a10",
+    "cwd": "/w/a",
+    "depth": 1,
+    "desc": "job 1-0 job 1-0 job 1-0 job 1-0 job 1-0 job 1-0 ",
+    "end": 1789999910,
+    "fin": 1,
+    "last": "Read /p/a/s0/subagents/agent-a10.jsonlRead /p/a/s0/subagents/agent-a10.jsonlRead /p/a/s0/s",
+    "par": "",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789989250,
+      1789992448
+     ],
+     [
+      1789994580,
+      1789999910
+     ]
+    ],
+    "start": 1789989250,
+    "tc": 5,
+    "tid": "toolu_10",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t0"
+   },
+   {
+    "aid": "a20",
+    "cwd": "/w/b",
+    "depth": 1,
+    "desc": "job 2-0 job 2-0 job 2-0 job 2-0 job 2-0 job 2-0 ",
+    "end": 1789999820,
+    "fin": 1,
+    "last": "Read /p/b/s2/subagents/agent-a20.jsonlRead /p/b/s2/subagents/agent-a20.jsonlRead /p/b/s2/s",
+    "par": "",
+    "proj": "b",
+    "run": false,
+    "segs": [
+     [
+      1789989300,
+      1789992456
+     ],
+     [
+      1789994560,
+      1789999820
+     ]
+    ],
+    "start": 1789989300,
+    "tc": 5,
+    "tid": "toolu_20",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t0"
+   },
+   {
+    "aid": "a01",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 0-1 job 0-1 job 0-1 job 0-1 job 0-1 job 0-1 ",
+    "end": 1789999600,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-a01.jsonlRead /p/a/s1/subagents/agent-a01.jsonlRead /p/a/s1/s",
+    "par": "a00",
+    "proj": "a",
+    "run": true,
+    "segs": [
+     [
+      1789989900,
+      1789992810
+     ],
+     [
+      1789994750,
+      1789999600
+     ]
+    ],
+    "start": 1789989900,
+    "tc": 5,
+    "tid": "toolu_01",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t1"
+   },
+   {
+    "aid": "a11",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 1-1 job 1-1 job 1-1 job 1-1 job 1-1 job 1-1 ",
+    "end": 1789999510,
+    "fin": 0,
+    "last": "Read /p/a/s0/subagents/agent-a11.jsonlRead /p/a/s0/subagents/agent-a11.jsonlRead /p/a/s0/s",
+    "par": "a10",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789989950,
+      1789992818
+     ],
+     [
+      1789994730,
+      1789999510
+     ]
+    ],
+    "start": 1789989950,
+    "tc": 5,
+    "tid": "toolu_11",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t1"
+   },
+   {
+    "aid": "a21",
+    "cwd": "/w/b",
+    "depth": 2,
+    "desc": "job 2-1 job 2-1 job 2-1 job 2-1 job 2-1 job 2-1 ",
+    "end": 1789999420,
+    "fin": 0,
+    "last": "Read /p/b/s2/subagents/agent-a21.jsonlRead /p/b/s2/subagents/agent-a21.jsonlRead /p/b/s2/s",
+    "par": "a20",
+    "proj": "b",
+    "run": false,
+    "segs": [
+     [
+      1789990000,
+      1789992826
+     ],
+     [
+      1789994710,
+      1789999420
+     ]
+    ],
+    "start": 1789990000,
+    "tc": 5,
+    "tid": "toolu_21",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t1"
+   },
+   {
+    "aid": "a02",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 0-2 job 0-2 job 0-2 job 0-2 job 0-2 job 0-2 ",
+    "end": 1789999200,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-a02.jsonlRead /p/a/s1/subagents/agent-a02.jsonlRead /p/a/s1/s",
+    "par": "a00",
+    "proj": "a",
+    "run": true,
+    "segs": [
+     [
+      1789990600,
+      1789993180
+     ],
+     [
+      1789994900,
+      1789999200
+     ]
+    ],
+    "start": 1789990600,
+    "tc": 5,
+    "tid": "toolu_02",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t2"
+   },
+   {
+    "aid": "a22",
+    "cwd": "/w/b",
+    "depth": 2,
+    "desc": "job 2-2 job 2-2 job 2-2 job 2-2 job 2-2 job 2-2 ",
+    "end": 1789999020,
+    "fin": 0,
+    "last": "Read /p/b/s2/subagents/agent-a22.jsonlRead /p/b/s2/subagents/agent-a22.jsonlRead /p/b/s2/s",
+    "par": "a20",
+    "proj": "b",
+    "run": false,
+    "segs": [
+     [
+      1789990700,
+      1789993196
+     ],
+     [
+      1789994860,
+      1789999020
+     ]
+    ],
+    "start": 1789990700,
+    "tc": 5,
+    "tid": "toolu_22",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t2"
+   },
+   {
+    "aid": "a03",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 0-3 job 0-3 job 0-3 job 0-3 job 0-3 job 0-3 ",
+    "end": 1789998800,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-a03.jsonlRead /p/a/s1/subagents/agent-a03.jsonlRead /p/a/s1/s",
+    "par": "a00",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789991300,
+      1789993550
+     ],
+     [
+      1789995050,
+      1789998800
+     ]
+    ],
+    "start": 1789991300,
+    "tc": 5,
+    "tid": "toolu_03",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t3"
+   }
+  ],
+  "tok": {
+   "step": 180,
+   "sum": 254100,
+   "t0": 1789956800,
+   "v": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    7,
+    1013,
+    0,
+    0,
+    1020,
+    0,
+    0,
+    1020,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2013,
+    0,
+    0,
+    2013,
+    0,
+    0,
+    2013,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3013,
+    0,
+    3013,
+    0,
+    3013,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    4013,
+    4013,
+    0,
+    4013,
+    7,
+    3113,
+    0,
+    0,
+    1040,
+    2080,
+    0,
+    0,
+    1040,
+    1040,
+    0,
+    0,
+    1040,
+    6099,
+    0,
+    6099,
+    0,
+    0,
+    4066,
+    0,
+    0,
+    2033,
+    0,
+    0,
+    6066,
+    3033,
+    9099,
+    6066,
+    5013,
+    13059,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    12099,
+    24198,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    10066,
+    15099,
+    15099,
+    5033,
+    0,
+    0,
+    0,
+    0,
+    6033,
+    6033,
+    6033,
+    6033,
+    12066,
+    0,
+    30105,
+    6033
+   ]
+  }
+ },
+ "h_clamp_high": {
+  "at": 1790000000,
+  "hours": 168,
+  "idle": [
+   [
+    1789395200,
+    1789924400
+   ],
+   [
+    1789925480,
+    1789926200
+   ],
+   [
+    1789928000,
+    1789971200
+   ],
+   [
+    1789980626,
+    1789982000
+   ]
+  ],
+  "naps": [
+   [
+    1789982000,
+    1789985570
+   ]
+  ],
+  "ok": true,
+  "peak": 9,
+  "rows": [
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789396199,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/a",
+    "depth": 0,
+    "desc": "Session",
+    "end": 1789999940,
+    "idle": 3,
+    "kind": "sess",
+    "last": "Bash · make",
+    "proj": "a",
+    "run": true,
+    "seen": 1789971100,
+    "segs": [
+     [
+      1789971200,
+      1789979822
+     ],
+     [
+      1789985570,
+      1789999940
+     ]
+    ],
+    "sid": "s1",
+    "start": 1789971200,
+    "state": "tool",
+    "tid": "sess:/w/a|s1",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "a"
+   },
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789396199,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/a",
+    "depth": 0,
+    "desc": "Session — past session s0",
+    "end": 1789999880,
+    "idle": 0,
+    "kind": "sess",
+    "last": "",
+    "proj": "a",
+    "run": false,
+    "seen": 1789971700,
+    "segs": [
+     [
+      1789971800,
+      1789980224
+     ],
+     [
+      1789985840,
+      1789999880
+     ]
+    ],
+    "sid": "s0",
+    "start": 1789971800,
+    "state": "",
+    "tid": "sess:/w/a|s0",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "a"
+   },
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789396199,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/b",
+    "depth": 0,
+    "desc": "Session — past session s2",
+    "end": 1789999820,
+    "idle": 0,
+    "kind": "sess",
+    "last": "",
+    "proj": "b",
+    "run": false,
+    "seen": 1789972300,
+    "segs": [
+     [
+      1789972400,
+      1789980626
+     ],
+     [
+      1789986110,
+      1789999820
+     ]
+    ],
+    "sid": "s2",
+    "start": 1789972400,
+    "state": "",
+    "tid": "sess:/w/b|s2",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "b"
+   },
+   {
+    "aid": "old",
+    "cwd": "/w/a",
+    "depth": 1,
+    "desc": "",
+    "end": 1789928000,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-old.jsonlRead /p/a/s1/subagents/agent-old.jsonlRead /p/a/s1/s",
+    "par": "",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789924400,
+      1789925480
+     ],
+     [
+      1789926200,
+      1789928000
+     ]
+    ],
+    "start": 1789924400,
+    "tc": 5,
+    "tid": "toolu_old",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "agent"
+   },
+   {
+    "aid": "a00",
+    "cwd": "/w/a",
+    "depth": 1,
+    "desc": "job 0-0 job 0-0 job 0-0 job 0-0 job 0-0 job 0-0 ",
+    "end": 1790000000,
+    "fin": 1,
+    "last": "Read /p/a/s1/subagents/agent-a00.jsonlRead /p/a/s1/subagents/agent-a00.jsonlRead /p/a/s1/s",
+    "par": "",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789989200,
+      1789992440
+     ],
+     [
+      1789994600,
+      1790000000
+     ]
+    ],
+    "start": 1789989200,
+    "tc": 5,
+    "tid": "toolu_00",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t0"
+   },
+   {
+    "aid": "a10",
+    "cwd": "/w/a",
+    "depth": 1,
+    "desc": "job 1-0 job 1-0 job 1-0 job 1-0 job 1-0 job 1-0 ",
+    "end": 1789999910,
+    "fin": 1,
+    "last": "Read /p/a/s0/subagents/agent-a10.jsonlRead /p/a/s0/subagents/agent-a10.jsonlRead /p/a/s0/s",
+    "par": "",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789989250,
+      1789992448
+     ],
+     [
+      1789994580,
+      1789999910
+     ]
+    ],
+    "start": 1789989250,
+    "tc": 5,
+    "tid": "toolu_10",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t0"
+   },
+   {
+    "aid": "a20",
+    "cwd": "/w/b",
+    "depth": 1,
+    "desc": "job 2-0 job 2-0 job 2-0 job 2-0 job 2-0 job 2-0 ",
+    "end": 1789999820,
+    "fin": 1,
+    "last": "Read /p/b/s2/subagents/agent-a20.jsonlRead /p/b/s2/subagents/agent-a20.jsonlRead /p/b/s2/s",
+    "par": "",
+    "proj": "b",
+    "run": false,
+    "segs": [
+     [
+      1789989300,
+      1789992456
+     ],
+     [
+      1789994560,
+      1789999820
+     ]
+    ],
+    "start": 1789989300,
+    "tc": 5,
+    "tid": "toolu_20",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t0"
+   },
+   {
+    "aid": "a01",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 0-1 job 0-1 job 0-1 job 0-1 job 0-1 job 0-1 ",
+    "end": 1789999600,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-a01.jsonlRead /p/a/s1/subagents/agent-a01.jsonlRead /p/a/s1/s",
+    "par": "a00",
+    "proj": "a",
+    "run": true,
+    "segs": [
+     [
+      1789989900,
+      1789992810
+     ],
+     [
+      1789994750,
+      1789999600
+     ]
+    ],
+    "start": 1789989900,
+    "tc": 5,
+    "tid": "toolu_01",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t1"
+   },
+   {
+    "aid": "a11",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 1-1 job 1-1 job 1-1 job 1-1 job 1-1 job 1-1 ",
+    "end": 1789999510,
+    "fin": 0,
+    "last": "Read /p/a/s0/subagents/agent-a11.jsonlRead /p/a/s0/subagents/agent-a11.jsonlRead /p/a/s0/s",
+    "par": "a10",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789989950,
+      1789992818
+     ],
+     [
+      1789994730,
+      1789999510
+     ]
+    ],
+    "start": 1789989950,
+    "tc": 5,
+    "tid": "toolu_11",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t1"
+   },
+   {
+    "aid": "a21",
+    "cwd": "/w/b",
+    "depth": 2,
+    "desc": "job 2-1 job 2-1 job 2-1 job 2-1 job 2-1 job 2-1 ",
+    "end": 1789999420,
+    "fin": 0,
+    "last": "Read /p/b/s2/subagents/agent-a21.jsonlRead /p/b/s2/subagents/agent-a21.jsonlRead /p/b/s2/s",
+    "par": "a20",
+    "proj": "b",
+    "run": false,
+    "segs": [
+     [
+      1789990000,
+      1789992826
+     ],
+     [
+      1789994710,
+      1789999420
+     ]
+    ],
+    "start": 1789990000,
+    "tc": 5,
+    "tid": "toolu_21",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t1"
+   },
+   {
+    "aid": "a02",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 0-2 job 0-2 job 0-2 job 0-2 job 0-2 job 0-2 ",
+    "end": 1789999200,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-a02.jsonlRead /p/a/s1/subagents/agent-a02.jsonlRead /p/a/s1/s",
+    "par": "a00",
+    "proj": "a",
+    "run": true,
+    "segs": [
+     [
+      1789990600,
+      1789993180
+     ],
+     [
+      1789994900,
+      1789999200
+     ]
+    ],
+    "start": 1789990600,
+    "tc": 5,
+    "tid": "toolu_02",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t2"
+   },
+   {
+    "aid": "a22",
+    "cwd": "/w/b",
+    "depth": 2,
+    "desc": "job 2-2 job 2-2 job 2-2 job 2-2 job 2-2 job 2-2 ",
+    "end": 1789999020,
+    "fin": 0,
+    "last": "Read /p/b/s2/subagents/agent-a22.jsonlRead /p/b/s2/subagents/agent-a22.jsonlRead /p/b/s2/s",
+    "par": "a20",
+    "proj": "b",
+    "run": false,
+    "segs": [
+     [
+      1789990700,
+      1789993196
+     ],
+     [
+      1789994860,
+      1789999020
+     ]
+    ],
+    "start": 1789990700,
+    "tc": 5,
+    "tid": "toolu_22",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t2"
+   },
+   {
+    "aid": "a03",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 0-3 job 0-3 job 0-3 job 0-3 job 0-3 job 0-3 ",
+    "end": 1789998800,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-a03.jsonlRead /p/a/s1/subagents/agent-a03.jsonlRead /p/a/s1/s",
+    "par": "a00",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789991300,
+      1789993550
+     ],
+     [
+      1789995050,
+      1789998800
+     ]
+    ],
+    "start": 1789991300,
+    "tc": 5,
+    "tid": "toolu_03",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t3"
+   }
+  ],
+  "tok": {
+   "step": 2520,
+   "sum": 275305,
+   "t0": 1789395200,
+   "v": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    7,
+    10132,
+    11066,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2040,
+    1020,
+    2013,
+    4026,
+    0,
+    9039,
+    0,
+    16199,
+    21464,
+    44369,
+    46363,
+    101534,
+    6033
+   ]
+  }
+ },
+ "h_clamp_low": {
+  "at": 1790000000,
+  "hours": 0.5,
+  "idle": [],
+  "naps": [
+   [
+    1789982000,
+    1789985600
+   ],
+   [
+    1789992800,
+    1789993700
+   ]
+  ],
+  "ok": true,
+  "peak": 9,
+  "rows": [
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789999199,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/a",
+    "depth": 0,
+    "desc": "Session",
+    "end": 1789999940,
+    "idle": 3,
+    "kind": "sess",
+    "last": "Bash · make",
+    "proj": "a",
+    "run": true,
+    "seen": 1789998100,
+    "segs": [
+     [
+      1789998200,
+      1789998722
+     ],
+     [
+      1789999070,
+      1789999940
+     ]
+    ],
+    "sid": "s1",
+    "start": 1789998200,
+    "state": "tool",
+    "tid": "sess:/w/a|s1",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "a"
+   },
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789999199,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/a",
+    "depth": 0,
+    "desc": "Session — past session s0",
+    "end": 1789999880,
+    "idle": 0,
+    "kind": "sess",
+    "last": "",
+    "proj": "a",
+    "run": false,
+    "seen": 1789998100,
+    "segs": [
+     [
+      1789998200,
+      1789998704
+     ],
+     [
+      1789999040,
+      1789999880
+     ]
+    ],
+    "sid": "s0",
+    "start": 1789998200,
+    "state": "",
+    "tid": "sess:/w/a|s0",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "a"
+   },
+   {
+    "blocked": "",
+    "comp": [
+     [
+      1789999199,
+      "auto"
+     ]
+    ],
+    "cwd": "/w/b",
+    "depth": 0,
+    "desc": "Session — past session s2",
+    "end": 1789999820,
+    "idle": 0,
+    "kind": "sess",
+    "last": "",
+    "proj": "b",
+    "run": false,
+    "seen": 1789998100,
+    "segs": [
+     [
+      1789998200,
+      1789998686
+     ],
+     [
+      1789999010,
+      1789999820
+     ]
+    ],
+    "sid": "s2",
+    "start": 1789998200,
+    "state": "",
+    "tid": "sess:/w/b|s2",
+    "tk": 21085,
+    "tks": [
+     6046,
+     15039
+    ],
+    "type": "b"
+   },
+   {
+    "aid": "a00",
+    "cwd": "/w/a",
+    "depth": 1,
+    "desc": "job 0-0 job 0-0 job 0-0 job 0-0 job 0-0 job 0-0 ",
+    "end": 1790000000,
+    "fin": 1,
+    "last": "Read /p/a/s1/subagents/agent-a00.jsonlRead /p/a/s1/subagents/agent-a00.jsonlRead /p/a/s1/s",
+    "par": "",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789998200,
+      1789998740
+     ],
+     [
+      1789999100,
+      1790000000
+     ]
+    ],
+    "start": 1789989200,
+    "tc": 5,
+    "tid": "toolu_00",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t0"
+   },
+   {
+    "aid": "a10",
+    "cwd": "/w/a",
+    "depth": 1,
+    "desc": "job 1-0 job 1-0 job 1-0 job 1-0 job 1-0 job 1-0 ",
+    "end": 1789999910,
+    "fin": 1,
+    "last": "Read /p/a/s0/subagents/agent-a10.jsonlRead /p/a/s0/subagents/agent-a10.jsonlRead /p/a/s0/s",
+    "par": "",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789998200,
+      1789998713
+     ],
+     [
+      1789999055,
+      1789999910
+     ]
+    ],
+    "start": 1789989250,
+    "tc": 5,
+    "tid": "toolu_10",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t0"
+   },
+   {
+    "aid": "a20",
+    "cwd": "/w/b",
+    "depth": 1,
+    "desc": "job 2-0 job 2-0 job 2-0 job 2-0 job 2-0 job 2-0 ",
+    "end": 1789999820,
+    "fin": 1,
+    "last": "Read /p/b/s2/subagents/agent-a20.jsonlRead /p/b/s2/subagents/agent-a20.jsonlRead /p/b/s2/s",
+    "par": "",
+    "proj": "b",
+    "run": false,
+    "segs": [
+     [
+      1789998200,
+      1789998686
+     ],
+     [
+      1789999010,
+      1789999820
+     ]
+    ],
+    "start": 1789989300,
+    "tc": 5,
+    "tid": "toolu_20",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t0"
+   },
+   {
+    "aid": "a01",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 0-1 job 0-1 job 0-1 job 0-1 job 0-1 job 0-1 ",
+    "end": 1789999600,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-a01.jsonlRead /p/a/s1/subagents/agent-a01.jsonlRead /p/a/s1/s",
+    "par": "a00",
+    "proj": "a",
+    "run": true,
+    "segs": [
+     [
+      1789998200,
+      1789998620
+     ],
+     [
+      1789998900,
+      1789999600
+     ]
+    ],
+    "start": 1789989900,
+    "tc": 5,
+    "tid": "toolu_01",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t1"
+   },
+   {
+    "aid": "a11",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 1-1 job 1-1 job 1-1 job 1-1 job 1-1 job 1-1 ",
+    "end": 1789999510,
+    "fin": 0,
+    "last": "Read /p/a/s0/subagents/agent-a11.jsonlRead /p/a/s0/subagents/agent-a11.jsonlRead /p/a/s0/s",
+    "par": "a10",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789998200,
+      1789998593
+     ],
+     [
+      1789998855,
+      1789999510
+     ]
+    ],
+    "start": 1789989950,
+    "tc": 5,
+    "tid": "toolu_11",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t1"
+   },
+   {
+    "aid": "a21",
+    "cwd": "/w/b",
+    "depth": 2,
+    "desc": "job 2-1 job 2-1 job 2-1 job 2-1 job 2-1 job 2-1 ",
+    "end": 1789999420,
+    "fin": 0,
+    "last": "Read /p/b/s2/subagents/agent-a21.jsonlRead /p/b/s2/subagents/agent-a21.jsonlRead /p/b/s2/s",
+    "par": "a20",
+    "proj": "b",
+    "run": false,
+    "segs": [
+     [
+      1789998200,
+      1789998566
+     ],
+     [
+      1789998810,
+      1789999420
+     ]
+    ],
+    "start": 1789990000,
+    "tc": 5,
+    "tid": "toolu_21",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t1"
+   },
+   {
+    "aid": "a02",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 0-2 job 0-2 job 0-2 job 0-2 job 0-2 job 0-2 ",
+    "end": 1789999200,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-a02.jsonlRead /p/a/s1/subagents/agent-a02.jsonlRead /p/a/s1/s",
+    "par": "a00",
+    "proj": "a",
+    "run": true,
+    "segs": [
+     [
+      1789998200,
+      1789998500
+     ],
+     [
+      1789998700,
+      1789999200
+     ]
+    ],
+    "start": 1789990600,
+    "tc": 5,
+    "tid": "toolu_02",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t2"
+   },
+   {
+    "aid": "a22",
+    "cwd": "/w/b",
+    "depth": 2,
+    "desc": "job 2-2 job 2-2 job 2-2 job 2-2 job 2-2 job 2-2 ",
+    "end": 1789999020,
+    "fin": 0,
+    "last": "Read /p/b/s2/subagents/agent-a22.jsonlRead /p/b/s2/subagents/agent-a22.jsonlRead /p/b/s2/s",
+    "par": "a20",
+    "proj": "b",
+    "run": false,
+    "segs": [
+     [
+      1789998200,
+      1789998446
+     ],
+     [
+      1789998610,
+      1789999020
+     ]
+    ],
+    "start": 1789990700,
+    "tc": 5,
+    "tid": "toolu_22",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t2"
+   },
+   {
+    "aid": "a03",
+    "cwd": "/w/a",
+    "depth": 2,
+    "desc": "job 0-3 job 0-3 job 0-3 job 0-3 job 0-3 job 0-3 ",
+    "end": 1789998800,
+    "fin": 0,
+    "last": "Read /p/a/s1/subagents/agent-a03.jsonlRead /p/a/s1/subagents/agent-a03.jsonlRead /p/a/s1/s",
+    "par": "a00",
+    "proj": "a",
+    "run": false,
+    "segs": [
+     [
+      1789998200,
+      1789998380
+     ],
+     [
+      1789998500,
+      1789998800
+     ]
+    ],
+    "start": 1789991300,
+    "tc": 5,
+    "tid": "toolu_03",
+    "tk": 21205,
+    "tks": [
+     6106,
+     15099
+    ],
+    "type": "t3"
+   }
+  ],
+  "tok": {
+   "step": 30,
+   "sum": 254016,
+   "t0": 1789998200,
+   "v": [
+    12336,
+    0,
+    0,
+    0,
+    2033,
+    2033,
+    2033,
+    0,
+    7099,
+    2033,
+    7079,
+    6059,
+    6066,
+    3033,
+    0,
+    0,
+    12099,
+    3033,
+    3033,
+    0,
+    10066,
+    11079,
+    6046,
+    3013,
+    7066,
+    0,
+    9066,
+    6033,
+    4033,
+    0,
+    0,
+    0,
+    13079,
+    10046,
+    13079,
+    0,
+    4033,
+    5033,
+    0,
+    0,
+    6033,
+    0,
+    0,
+    16079,
+    5013,
+    5033,
+    11046,
+    0,
+    5033,
+    0,
+    0,
+    0,
+    0,
+    0,
+    12046,
+    0,
+    6013,
+    6033,
+    6013,
+    0,
+    6033
+   ]
+  }
+ }
+}

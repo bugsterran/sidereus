@@ -1,0 +1,12 @@
+{
+  "name": "orbit",
+  "owner": { "name": "bugsterran" },
+  "metadata": { "description": "Pick a Claude Code config folder (CLAUDE_CONFIG_DIR) per project folder." },
+  "plugins": [
+    {
+      "name": "orbit",
+      "source": "./",
+      "description": "Pick a Claude Code config folder (CLAUDE_CONFIG_DIR) per project folder; never copies or swaps credentials."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "retro",
+  "title": "Insights",
+  "default_on_public": false,
+  "deps": ["hist", "failures"],
+  "modules": ["retro"],
+  "routes": ["/api/retro"],
+  "threads": [],
+  "state_keys": [],
+  "web": ["js/86-retro.js", "css/87-retro.css"],
+  "settings": []
+}

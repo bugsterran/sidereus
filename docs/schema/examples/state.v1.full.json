@@ -1,0 +1,58 @@
+{
+  "schema": "sidereus-state",
+  "version": 1,
+  "at": 1790000000,
+  "sessions": [
+    {
+      "sid": "demo-web-0001",
+      "id": "demo-web",
+      "plat": "cc",
+      "project": "shop-web",
+      "cwd": "/Users/demo/work/shop-web",
+      "branch": "feature/checkout",
+      "model": "opus",
+      "state": "tool",
+      "kind": "",
+      "ctx": 84000,
+      "win": 200000,
+      "ageSec": 4,
+      "tool": "Agent",
+      "plm": {"name": "release", "title": "build", "age": 30},
+      "sub": [
+        {"lab": "Explore: map the checkout flow", "aid": "a1b2c3d4", "tid": "toolu_demo_01", "min": 3, "idle": 5}
+      ]
+    },
+    {
+      "sid": "demo-api-0002",
+      "id": "demo-api",
+      "plat": "cx",
+      "project": "shop-api",
+      "cwd": "/Users/demo/work/shop-api",
+      "branch": "main",
+      "model": "gpt-5",
+      "state": "wait",
+      "kind": "",
+      "ctx": 12000,
+      "win": 0,
+      "ageSec": 310,
+      "tool": "",
+      "sub": []
+    }
+  ],
+  "quota": {
+    "five_hour": {"pct": 42, "resets_at": "2026-10-05T12:00:00Z", "leftSec": 3600},
+    "seven_day": {"pct": 17.5, "resets_at": "2026-10-09T00:00:00Z", "leftSec": 400000},
+    "plan": {"tier": "default_claude_max_5x"}
+  },
+  "saver": {"on": false, "pct": 42, "stage": 0},
+  "rooms": {
+    "release": {
+      "created": 1789900000000000000,
+      "owner": "web-lead",
+      "members": ["web-lead", "api-dev"],
+      "topic": "Release 1.5 coordination",
+      "invited": []
+    }
+  },
+  "x": {}
+}

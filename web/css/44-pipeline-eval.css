@@ -1,0 +1,34 @@
+/* Pipeline «Evaluation» button and panel (48i-pipeline-eval.js) */
+.plevb{margin-right:6px}
+.plevp{position:fixed;z-index:46;margin:0;padding:6px 10px;border:1px solid #2b3445;border-radius:6px;background:#141a24;display:inline-block;font-size:12px}
+html[data-ui=next] .thpop.plevp{padding:6px 10px;min-width:0;max-width:calc(100vw - 16px)}   /* .thpop shell (93-header-toolbar.css); ⚠.thpop.plevp beats the bare .thpop padding */
+.plevp table{border-collapse:collapse}
+.plevp th,.plevp td{padding:2px 10px 2px 0;text-align:left;color:#c7d0dc}
+.plevp th{color:#8fa0b8;font-weight:normal}
+/* ⚠scoped under .plevp td: the bare .pler-* rules lost to `.plevp td{color}` and every verdict read grey */
+.plevp td.pler-pass,.plevp td.pler-fail,.plevp td.pler-skip{padding-top:3px;padding-bottom:3px}
+.plevp .plerv{display:inline-block;padding:0 8px;border-radius:9px;font-size:11px;line-height:17px;border:1px solid}
+.plevp .pler-pass .plerv{color:#5fbf7f;background:rgba(95,191,127,.14);border-color:rgba(95,191,127,.45)}
+.plevp .pler-fail .plerv{color:#e06c6c;background:rgba(224,108,108,.14);border-color:rgba(224,108,108,.45)}
+.plevp .pler-skip .plerv{color:#8fa0b8;background:rgba(143,160,184,.10);border-color:rgba(143,160,184,.35)}
+.plevp .plerneed{color:#e0a53d;border-color:#e0a53d}
+.plevp td.plec-all{color:#5fbf7f}.plevp td.plec-part{color:#e0a53d}.plevp td.plec-none{color:#e06c6c}
+html[data-theme=light] .plevp .pler-pass .plerv{color:#1f7a3f}html[data-theme=light] .plevp .pler-fail .plerv{color:#b42828}
+html[data-theme=light] .plevp td.plec-all{color:#1f7a3f}html[data-theme=light] .plevp td.plec-part,html[data-theme=light] .plevp .plerneed{color:#9a5a00;border-color:#9a5a00}html[data-theme=light] .plevp td.plec-none{color:#b42828}
+.pleun{color:#e0a53d}
+.plevp .pleci{color:#8fa0b8;font-size:11px}   /* muted on purpose: the catch colour stays the signal */
+.pleag{color:#8fa0b8;margin-right:8px}.pleag-off{color:#e0a53d}
+html[data-theme=light] .plevp .pleci,html[data-theme=light] .pleag{color:#5b6a80}html[data-theme=light] .pleag-off{color:#9a5a00}
+.pleho td{border-top:1px solid #2b3445;color:#8fa0b8}
+.plerneed{font:inherit;font-size:11px;padding:0 6px;border:1px solid #e06c6c;border-radius:9px;background:transparent;color:#e06c6c;cursor:copy}   /* «red check needed»: click copies the command */
+.plesg{margin-top:8px;padding-top:6px;border-top:1px solid #2b3445;max-width:560px;color:#c7d0dc}
+.plesgh{display:flex;align-items:center;gap:8px;margin-bottom:4px}.plesgh b{font-weight:600}
+.plesg ul{margin:0;padding:0;list-style:none}
+.plesg li{display:flex;align-items:flex-start;gap:8px;padding:3px 0}.plesg li label{flex:1;line-height:1.4}
+.plesg li .wkrgb{flex:none;font-size:11px}
+.plesg .archdm{max-height:160px;overflow:auto;white-space:pre-wrap}
+.plesec{margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #2b3445;color:#c7d0dc;max-width:560px}   /* «Security n/m» (48i-pipeline-sec.js) */
+.plesech{color:#5fbf7f;cursor:default}.plesec-lo .plesech{color:#e0a53d}
+details.plesec>summary.plesech{cursor:pointer}
+.plesec ul{margin:4px 0 0;padding:0 0 0 14px}.plesec li{padding:2px 0;line-height:1.4}.plesec li span{color:#8fa0b8}
+html[data-theme=light] .plesech{color:#1f7a3f}html[data-theme=light] .plesec-lo .plesech{color:#9a5a00}html[data-theme=light] .plesec li span{color:#5b6a80}

@@ -1,0 +1,117 @@
+{
+ "v": 1,
+ "note": "A last stage run by main's own tagged Bash stays run (no Post comes) until main's git commit closes the run.",
+ "pipe": {
+  "name": "demo-flow",
+  "stages": [
+   {
+    "title": "구현",
+    "agent": "sidereus-implementer",
+    "gate": "scripts/check.sh --fast"
+   },
+   {
+    "title": "라이브 검증",
+    "agent": "general-purpose"
+   }
+  ]
+ },
+ "ev": [
+  {
+   "t": 0,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": "sidereus-implementer",
+   "model": null,
+   "bg": 0,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 10,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": "sidereus-implementer",
+   "model": null,
+   "bg": 0,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 20,
+   "e": "pre",
+   "tool": "Bash",
+   "tag": "[pl:demo-flow/라이브 검증]",
+   "sub": null,
+   "model": null,
+   "bg": 0,
+   "aid": null,
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 30,
+   "e": "pre",
+   "tool": "Bash",
+   "tag": "[pl:demo-flow/라이브 검증]",
+   "sub": null,
+   "model": null,
+   "bg": 0,
+   "aid": null,
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 40,
+   "e": "pre",
+   "tool": "Bash",
+   "tag": "",
+   "sub": null,
+   "model": null,
+   "bg": 0,
+   "aid": null,
+   "to": null,
+   "commit": 1,
+   "denied": 0
+  }
+ ],
+ "cp": [
+  {
+   "at": 2,
+   "act": "run",
+   "end": 0,
+   "cur": "라이브 검증",
+   "st": {
+    "구현": "done n=1",
+    "라이브 검증": "run n=0"
+   }
+  },
+  {
+   "at": 3,
+   "act": "run",
+   "end": 0,
+   "cur": "라이브 검증",
+   "st": {
+    "구현": "done n=1",
+    "라이브 검증": "run n=0"
+   }
+  },
+  {
+   "at": 4,
+   "act": "idle",
+   "end": 1,
+   "cur": "라이브 검증",
+   "st": {
+    "구현": "done n=1",
+    "라이브 검증": "done n=0"
+   }
+  }
+ ]
+}

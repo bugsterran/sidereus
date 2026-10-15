@@ -1,0 +1,6 @@
+/* Automation banner (98c-automation-banner.js): small centred pill on the top edge, click-through so it never covers controls.
+   ⚠Selectors carry [data-ui] so 00-core does not emit resized/retoned twins. */
+html[data-ui] #autobar{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:300;pointer-events:none;
+  padding:1px 10px 2px;border-radius:0 0 6px 6px;font:600 11px/1.4 var(--nx-sans,-apple-system,BlinkMacSystemFont,sans-serif);white-space:nowrap;
+  color:var(--nx-bg,#0a0b0e);background:var(--nx-warn,#fad83e);opacity:.92}
+html[data-ui][data-theme=light] #autobar{opacity:1}

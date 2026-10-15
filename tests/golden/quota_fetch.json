@@ -1,0 +1,3579 @@
+{
+ "acct_change": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "B",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "pct": 0,
+     "resets_at": null
+    },
+    "seven_day": {
+     "pct": 10,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "data",
+    null
+   ],
+   [
+    "slot_set",
+    "acct",
+    "B"
+   ],
+   [
+    "time"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "pct": 0,
+      "resets_at": null
+     },
+     "seven_day": {
+      "pct": 10,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "acct_first": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "pct": 42.5,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    },
+    "seven_day": {
+     "keptAt": 1789999900,
+     "pct": 58,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "iso_ts",
+    "2027-01-01T00:00:00+00:00",
+    1798761600.0
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "pct": 42.5,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     },
+     "seven_day": {
+      "keptAt": 1789999900,
+      "pct": 58,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "acct_none_keeps": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "keptAt": 1789999900,
+     "pct": 99,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    },
+    "seven_day": {
+     "keptAt": 1789999900,
+     "pct": 58,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "time"
+   ],
+   [
+    "iso_ts",
+    "2027-01-01T00:00:00+00:00",
+    1798761600.0
+   ],
+   [
+    "iso_ts",
+    "2027-01-01T00:00:00+00:00",
+    1798761600.0
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "keptAt": 1789999900,
+      "pct": 99,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     },
+     "seven_day": {
+      "keptAt": 1789999900,
+      "pct": 58,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "bad_json": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "JSONDecodeError",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    "JSONDecodeError"
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "JSONDecodeError"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "bad_utf8": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "UnicodeDecodeError",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    "UnicodeDecodeError"
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "UnicodeDecodeError"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "both_null_fresh": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "pct": 0,
+     "resets_at": null
+    },
+    "seven_day": {
+     "pct": 0,
+     "resets_at": null
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "pct": 0,
+      "resets_at": null
+     },
+     "seven_day": {
+      "pct": 0,
+      "resets_at": null
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "both_null_prev": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "keptAt": 1789999900,
+     "pct": 99,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    },
+    "seven_day": {
+     "keptAt": 1789999900,
+     "pct": 58,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "iso_ts",
+    "2027-01-01T00:00:00+00:00",
+    1798761600.0
+   ],
+   [
+    "iso_ts",
+    "2027-01-01T00:00:00+00:00",
+    1798761600.0
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "keptAt": 1789999900,
+      "pct": 99,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     },
+     "seven_day": {
+      "keptAt": 1789999900,
+      "pct": 58,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "empty_body": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "pct": 0,
+     "resets_at": null
+    },
+    "seven_day": {
+     "pct": 0,
+     "resets_at": null
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "pct": 0,
+      "resets_at": null
+     },
+     "seven_day": {
+      "pct": 0,
+      "resets_at": null
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "empty_token": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "Could not read the token from the keychain (access may need to be allowed)",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "Could not read the token from the keychain (access may need to be allowed)"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "fail_keeps_prev": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1789999900.0,
+   "data": {
+    "five_hour": {
+     "pct": 99,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    },
+    "seven_day": {
+     "pct": 58,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": "HTTPError 429",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "HTTPError 429"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "http_401": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "HTTPError 401",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "HTTPError 401"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "http_429_ra": {
+  "ra": [
+   120
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "HTTPError 429",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    120
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "HTTPError 429"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "http_429_ra_bad": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "HTTPError 429",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "HTTPError 429"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "http_429_ra_huge": {
+  "ra": [
+   3600
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "HTTPError 429",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    3600
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "HTTPError 429"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "http_429_ra_lower": {
+  "ra": [
+   7
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "HTTPError 429",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    7
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "HTTPError 429"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "http_429_ra_neg": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "HTTPError 429",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "HTTPError 429"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "http_500": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "HTTPError 500",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "HTTPError 500"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "http_503": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "HTTPError 503",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "HTTPError 503"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "member_both_bad": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": null,
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "warn_once",
+    "quota-member-five_hour",
+    "Quota response field {key} is not an object ({err}) — that slot stays unknown",
+    {
+     "err": "int",
+     "key": "five_hour"
+    }
+   ],
+   [
+    "warn_once",
+    "quota-member-seven_day",
+    "Quota response field {key} is not an object ({err}) — that slot stays unknown",
+    {
+     "err": "list",
+     "key": "seven_day"
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "member_str": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "seven_day": {
+     "pct": 10,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "warn_once",
+    "quota-member-five_hour",
+    "Quota response field {key} is not an object ({err}) — that slot stays unknown",
+    {
+     "err": "str",
+     "key": "five_hour"
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "seven_day": {
+      "pct": 10,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "missing_prev": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "extra": {
+     "at": 1790000000,
+     "cur": "EUR",
+     "limit": 5000,
+     "pct": 24.0,
+     "used": 1234
+    },
+    "five_hour": {
+     "keptAt": 1789999900,
+     "pct": 99,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    },
+    "seven_day": {
+     "keptAt": 1789999900,
+     "pct": 58,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "time"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "iso_ts",
+    "2027-01-01T00:00:00+00:00",
+    1798761600.0
+   ],
+   [
+    "iso_ts",
+    "2027-01-01T00:00:00+00:00",
+    1798761600.0
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "extra": {
+      "at": 1790000000,
+      "cur": "EUR",
+      "limit": 5000,
+      "pct": 24.0,
+      "used": 1234
+     },
+     "five_hour": {
+      "keptAt": 1789999900,
+      "pct": 99,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     },
+     "seven_day": {
+      "keptAt": 1789999900,
+      "pct": 58,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "no_token": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "Could not read the token from the keychain (access may need to be allowed)",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "Could not read the token from the keychain (access may need to be allowed)"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "ok_both": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "pct": 42.5,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    },
+    "seven_day": {
+     "pct": 10,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "pct": 42.5,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     },
+     "seven_day": {
+      "pct": 10,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "ok_extra": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "extra": {
+     "at": 1790000000,
+     "cur": "EUR",
+     "limit": 5000,
+     "pct": 24.0,
+     "used": 1234
+    },
+    "five_hour": {
+     "pct": 42.5,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    },
+    "seven_day": {
+     "pct": 10,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "time"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "extra": {
+      "at": 1790000000,
+      "cur": "EUR",
+      "limit": 5000,
+      "pct": 24.0,
+      "used": 1234
+     },
+     "five_hour": {
+      "pct": 42.5,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     },
+     "seven_day": {
+      "pct": 10,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "ok_extra_disabled": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "pct": 42.5,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    },
+    "seven_day": {
+     "pct": 0,
+     "resets_at": null
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "pct": 42.5,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     },
+     "seven_day": {
+      "pct": 0,
+      "resets_at": null
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "ok_extra_nocur": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "at": 1790000000.0,
+   "data": {
+    "extra": {
+     "at": 1790000000,
+     "cur": "USD",
+     "limit": 5000,
+     "pct": 24.0,
+     "used": 1234
+    },
+    "five_hour": {
+     "pct": 42.5,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    },
+    "seven_day": {
+     "pct": 0,
+     "resets_at": null
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "time"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "time"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "extra": {
+      "at": 1790000000,
+      "cur": "USD",
+      "limit": 5000,
+      "pct": 24.0,
+      "used": 1234
+     },
+     "five_hour": {
+      "pct": 42.5,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     },
+     "seven_day": {
+      "pct": 0,
+      "resets_at": null
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "ok_extra_notdict": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "pct": 0,
+     "resets_at": null
+    },
+    "seven_day": {
+     "pct": 10,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "pct": 0,
+      "resets_at": null
+     },
+     "seven_day": {
+      "pct": 10,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "prev_mix": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "pct": 0,
+     "resets_at": null
+    },
+    "seven_day": {
+     "keptAt": 1789996400,
+     "pct": 30,
+     "resets_at": null
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "iso_ts",
+    "2020-01-01T00:00:00Z",
+    1577836800.0
+   ],
+   [
+    "iso_ts",
+    null,
+    null
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "pct": 0,
+      "resets_at": null
+     },
+     "seven_day": {
+      "keptAt": 1789996400,
+      "pct": 30,
+      "resets_at": null
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "prev_old": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "pct": 0,
+     "resets_at": null
+    },
+    "seven_day": {
+     "pct": 0,
+     "resets_at": null
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "iso_ts",
+    null,
+    null
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "pct": 0,
+      "resets_at": null
+     },
+     "seven_day": {
+      "pct": 0,
+      "resets_at": null
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "prev_old_recent": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "extra": {
+     "at": 1790000000,
+     "cur": "EUR",
+     "limit": 5000,
+     "pct": 24.0,
+     "used": 1234
+    },
+    "five_hour": {
+     "keptAt": 1789996400,
+     "pct": 70,
+     "resets_at": null
+    },
+    "seven_day": {
+     "pct": 0,
+     "resets_at": null
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "time"
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "iso_ts",
+    null,
+    null
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "extra": {
+      "at": 1790000000,
+      "cur": "EUR",
+      "limit": 5000,
+      "pct": 24.0,
+      "used": 1234
+     },
+     "five_hour": {
+      "keptAt": 1789996400,
+      "pct": 70,
+      "resets_at": null
+     },
+     "seven_day": {
+      "pct": 0,
+      "resets_at": null
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "real_overrides_prev": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   true
+  ],
+  "slot": {
+   "acct": "A",
+   "at": 1790000000.0,
+   "data": {
+    "five_hour": {
+     "pct": 42.5,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    },
+    "seven_day": {
+     "keptAt": 1789999900,
+     "pct": 58,
+     "resets_at": "2027-01-01T00:00:00+00:00"
+    }
+   },
+   "err": null,
+   "next": 0,
+   "src": "api"
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "cc_account"
+   ],
+   [
+    "slot_set",
+    "acct",
+    "A"
+   ],
+   [
+    "time"
+   ],
+   [
+    "iso_ts",
+    "2027-01-01T00:00:00+00:00",
+    1798761600.0
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_set",
+    "data",
+    {
+     "five_hour": {
+      "pct": 42.5,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     },
+     "seven_day": {
+      "keptAt": 1789999900,
+      "pct": 58,
+      "resets_at": "2027-01-01T00:00:00+00:00"
+     }
+    }
+   ],
+   [
+    "slot_set",
+    "at",
+    1790000000.0
+   ],
+   [
+    "slot_set",
+    "err",
+    null
+   ],
+   [
+    "slot_set",
+    "src",
+    "api"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "timeout": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "timeout",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "timeout"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "timeout_err": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "timeout",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "timeout"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "top_list": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "shape TypeError",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "warn_once",
+    "quota-shape",
+    "Could not parse the quota response ({err}) — usage is empty",
+    {
+     "err": "TypeError"
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "shape TypeError"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "top_null": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "shape TypeError",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "warn_once",
+    "quota-shape",
+    "Could not parse the quota response ({err}) — usage is empty",
+    {
+     "err": "TypeError"
+    }
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "shape TypeError"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "url_error": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": "URLError",
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "ra_set",
+    0,
+    0
+   ],
+   [
+    "enter"
+   ],
+   [
+    "slot_set",
+    "err",
+    "URLError"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ },
+ "util_none": {
+  "ra": [
+   0
+  ],
+  "ret": [
+   "ret",
+   false
+  ],
+  "slot": {
+   "at": 0,
+   "data": null,
+   "err": null,
+   "next": 0
+  },
+  "trace": [
+   [
+    "oauth_token"
+   ],
+   [
+    "Request",
+    "https://api.anthropic.com/api/oauth/usage",
+    [
+     [
+      "Accept",
+      "application/json"
+     ],
+     [
+      "Authorization",
+      "Bearer tok"
+     ],
+     [
+      "User-Agent",
+      "claude-cli/2.1.232 (external, cli)"
+     ],
+     [
+      "anthropic-beta",
+      "oauth-2025-04-20"
+     ]
+    ],
+    []
+   ],
+   [
+    "urlopen",
+    [
+     "REQ",
+     "https://api.anthropic.com/api/oauth/usage"
+    ],
+    20,
+    []
+   ],
+   [
+    "resp_enter"
+   ],
+   [
+    "read"
+   ],
+   [
+    "resp_exit",
+    null
+   ],
+   [
+    "enter"
+   ],
+   [
+    "exit"
+   ]
+  ]
+ }
+}

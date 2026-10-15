@@ -1,0 +1,79 @@
+/* First-visit tour (98b-tour.js): full-screen click blocker, fixed spotlight ring (box-shadow cutout), bubble.
+   ⚠Every selector carries [data-ui] so 00-core does not emit resized/retoned twins of these rules — sizes and colours here are final. */
+html[data-ui] #tour{--tour-bg:#171b22;--tour-fg:#e8ebf1;--tour-t2:#b3bac6;--tour-rule:#2f3644;--tour-dim:rgba(4,6,10,.62);
+  --tour-acc:#a493ff;--tour-acc-bg:#8b7cf6;--tour-acc-fg:#120f24;--tour-ok:#71c269;--tour-run:#5899f3;--tour-code:#0d1015;
+  position:fixed;inset:0;z-index:200;font:13px/1.55 var(--nx-sans,-apple-system,BlinkMacSystemFont,sans-serif);color:var(--tour-fg);word-break:keep-all}
+html[data-ui][data-theme=light] #tour{--tour-bg:#ffffff;--tour-fg:#1f2329;--tour-t2:#474d56;--tour-rule:#d3d8e0;--tour-dim:rgba(18,22,30,.46);
+  --tour-acc:#5338c9;--tour-acc-bg:#5b3fd6;--tour-acc-fg:#ffffff;--tour-ok:#2a7d43;--tour-run:#1961d4;--tour-code:#f1f3f6}
+html[data-ui] #tour[hidden]{display:none}
+html[data-ui] #tour .tourblk{position:absolute;inset:0;background:transparent}
+html[data-ui] #tour.tourc .tourblk{background:var(--tour-dim)}
+html[data-ui] #tour .tourring{position:fixed;border-radius:8px;pointer-events:none;box-shadow:0 0 0 2px var(--tour-run),0 0 0 9999px var(--tour-dim);
+  transition:left .18s ease,top .18s ease,width .18s ease,height .18s ease}
+html[data-ui] #tour .tourring[hidden]{display:none}
+html[data-ui] #tour .tourbub{position:fixed;width:340px;max-width:calc(100vw - 48px);box-sizing:border-box;padding:14px 16px 12px;
+  background:var(--tour-bg);color:var(--tour-fg);border:1px solid var(--tour-rule);border-radius:10px;box-shadow:0 18px 48px rgba(0,0,0,.45)}
+html[data-ui][data-theme=light] #tour .tourbub{box-shadow:0 14px 36px rgba(20,24,32,.22)}
+html[data-ui] #tour.tourc .tourbub{left:50%!important;top:50%!important;transform:translate(-50%,-50%)}
+html[data-ui] #tour .tourbub:focus{outline:none}
+/* Pipeline steps: wider, accent top edge and badge — visibly the centrepiece. */
+html[data-ui] #tour .tourbub.tourpl{width:420px;border-top:3px solid var(--tour-acc-bg);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--tour-acc-bg) 12%,var(--tour-bg)) 0,var(--tour-bg) 96px)}
+html[data-ui] #tour .tourhd{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+html[data-ui] #tour .tourn{font-size:11.5px;color:var(--tour-t2);font-variant-numeric:tabular-nums}
+html[data-ui] #tour .tourbdg{font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--tour-acc-bg);color:var(--tour-acc-fg)}
+html[data-ui] #tour h3{margin:2px 0 8px;font-size:16px;font-weight:700;color:var(--tour-fg)}
+html[data-ui] #tour .tourpl h3{color:var(--tour-acc)}
+html[data-ui] #tour p{margin:0 0 8px;color:var(--tour-fg)}
+html[data-ui] #tour p.tourdim{color:var(--tour-t2);font-size:12px}
+html[data-ui] #tour p.tourval{font-weight:600}
+html[data-ui] #tour .tourterms{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:4px 0 10px;padding:8px 10px;
+  border:1px solid var(--tour-rule);border-radius:8px}
+html[data-ui] #tour .tourterms dt{margin:0;font-weight:700;color:var(--tour-acc)}
+html[data-ui] #tour .tourterms dd{margin:0;color:var(--tour-t2)}
+html[data-ui] #tour .tourcmd{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:5px 6px 5px 10px;border:1px solid var(--tour-rule);
+  border-radius:6px;background:var(--tour-code)}
+html[data-ui] #tour .tourcmd code{flex:1;min-width:0;font:12px/1.4 ui-monospace,Menlo,monospace;color:var(--tour-fg);overflow-wrap:anywhere}
+html[data-ui] #tour button{font:inherit;font-size:12.5px;cursor:pointer;border-radius:6px;padding:4px 12px;border:1px solid var(--tour-rule);
+  background:transparent;color:var(--tour-fg)}
+html[data-ui] #tour button:focus-visible{outline:2px solid var(--tour-run);outline-offset:1px}
+html[data-ui] #tour .tourcmd button{padding:2px 9px;font-size:12px;flex:none}
+html[data-ui] #tour .tourft{display:flex;align-items:center;gap:8px;margin-top:10px}
+html[data-ui] #tour .tourlk{border-color:transparent;color:var(--tour-t2);padding-left:0}
+html[data-ui] #tour .tourdots{display:flex;gap:4px;margin:0 auto}
+html[data-ui] #tour .tourdots i{width:6px;height:6px;border-radius:50%;background:var(--tour-rule)}
+html[data-ui] #tour .tourdots i.on{background:var(--tour-run);width:16px;border-radius:3px}
+html[data-ui] #tour .tourgo{background:var(--tour-run);border-color:var(--tour-run);color:#0b1220;font-weight:700}
+html[data-ui][data-theme=light] #tour .tourgo{color:#ffffff}
+html[data-ui] #tour .tourpl .tourgo{background:var(--tour-acc-bg);border-color:var(--tour-acc-bg);color:var(--tour-acc-fg)}
+/* Mini stepper: ✓ → ◉ → · with a PASS gate pill and a ↺ loop-back arc. */
+html[data-ui] #tour .tourms{position:relative;display:flex;align-items:flex-start;margin:22px 4px 12px;padding:0 6px}
+html[data-ui] #tour .tourmn{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none;width:54px}
+html[data-ui] #tour .tourmn b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;font-size:13px;border:2px solid var(--tour-rule);
+  background:var(--tour-bg);color:var(--tour-t2)}
+html[data-ui] #tour .tourmn em{font-style:normal;font-size:11.5px;color:var(--tour-t2)}
+html[data-ui] #tour .tourmn.ok b{border-color:var(--tour-ok);color:var(--tour-ok)}
+html[data-ui] #tour .tourmn.run b{border-color:var(--tour-run);color:var(--tour-run);animation:tourpulse 1.6s ease-in-out infinite}
+html[data-ui] #tour .tourmn.run em{color:var(--tour-fg);font-weight:700}
+html[data-ui] #tour .tourml{position:relative;flex:1;height:2px;margin-top:13px;background:var(--tour-rule)}
+html[data-ui] #tour .tourml.a::after{content:"";position:absolute;left:0;top:0;bottom:0;background:var(--tour-ok);animation:tourfill 2.4s ease-in-out infinite}
+html[data-ui] #tour .tourgate{position:absolute;left:50%;top:-10px;transform:translateX(-50%);font:700 10.5px/1 ui-monospace,Menlo,monospace;
+  padding:4px 7px;border-radius:999px;border:1px solid var(--tour-ok);background:var(--tour-bg);color:var(--tour-ok);animation:tourgate 2.4s ease-in-out infinite}
+html[data-ui] #tour .tourlp{position:absolute;left:50%;right:33px;top:-18px;height:18px;overflow:visible;pointer-events:none}
+html[data-ui] #tour .tourlp path{fill:none;stroke:var(--tour-acc);stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-dasharray:4 3;animation:tourdash 1.2s linear infinite}
+html[data-ui] #tour .tourlp path.tourah{stroke-dasharray:none;animation:none}
+html[data-ui] #tour .tourlpt{position:absolute;left:calc(75% - 16px);transform:translateX(-50%);top:-26px;line-height:1.2;font-size:11px;font-weight:700;color:var(--tour-acc);background:var(--tour-bg);padding:0 4px}
+html[data-ui] #tour .tourpl .tourlpt{background:color-mix(in srgb,var(--tour-acc-bg) 9%,var(--tour-bg))}
+@keyframes tourpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--tour-run) 55%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--tour-run) 0%,transparent)}}
+@keyframes tourfill{0%{right:100%}55%,100%{right:0}}
+@keyframes tourgate{0%,45%{border-color:var(--tour-rule)}60%,100%{border-color:var(--tour-ok)}}
+@keyframes tourdash{to{stroke-dashoffset:-14}}
+@media (prefers-reduced-motion:reduce){
+  html[data-ui] #tour *{animation:none!important;transition:none!important}
+  html[data-ui] #tour .tourml.a::after{right:0}
+}
+/* «Replay the tour» entry points: shortcut help (98-a11y.js) and the settings header (90-settings.js). */
+html[data-ui] .kbhtour{margin-top:9px;font:inherit;font-size:12px;padding:3px 10px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--nx-rule,#2a3342);background:transparent;color:var(--nx-t1,#dce8f8)}
+html[data-ui] .cfgtour{margin-left:auto;font:inherit;font-size:12px;padding:3px 10px;border-radius:6px;cursor:pointer;flex:none;
+  border:1px solid var(--nx-rule,#2a3342);background:transparent;color:var(--nx-t1,#dce8f8)}

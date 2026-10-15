@@ -1,0 +1,35 @@
+/* «Architecture» minimap (84j7): overlays the map's bottom-right corner, outside .archmap so a press here never starts the drag-pan.
+   ⚠The map is pinned to cell 1/1 too: an explicitly placed .archmm would otherwise push the auto-placed .archmap into the next cell. */
+.archbody>.archmap{grid-column:1;grid-row:1}
+.archmm{grid-column:1;grid-row:1;align-self:end;justify-self:end;margin:0 18px 18px 0;z-index:3;position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:4px;width:180px;padding:4px;border:1px solid var(--nx-rule,#2a3442);border-radius:8px;background:var(--nx-panel,#141a23);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.archmm svg{display:block;width:100%;height:auto;max-height:140px;cursor:pointer}
+.archmm svg text{display:none}
+/* ⚠The clone sits outside .mmd, which owns the --mmd-* vars the 75 shape rules read; without them every shape paints black (same tokens as 75 .mmd, both themes via --nx-*) */
+.archmm{--mmd-bg:var(--nx-bg,#0d1014);--mmd-node:color-mix(in srgb,var(--nx-t3,#8b95a7) 28%,var(--nx-panel,#151b24));--mmd-nbd:color-mix(in srgb,var(--nx-info,#5899f3) 75%,transparent);--mmd-tx:var(--nx-t1,#dfe5ee);--mmd-ln:var(--nx-t2,#9aa4b4);--mmd-sg:color-mix(in srgb,var(--nx-info,#5899f3) 6%,transparent);--mmd-sgbd:var(--nx-rule,#2f3a4a);--mmd-st:var(--nx-t2,#aab4c4)}
+.archmm svg{background:var(--mmd-bg)}
+/* ⚠At ~1:32 scale a 1.2-unit stroke is sub-pixel: keep 1 screen px; lighter fill (vars above) so modules read as blocks. Lit/dim rules below are more specific and still win. */
+.archmm svg .mmdn rect,.archmm svg .mmdn polygon,.archmm svg .mmdn circle,.archmm svg .mmdn path,.archmm svg .mmde,.archmm svg .mmdsg>rect{vector-effect:non-scaling-stroke;stroke-width:1}
+.archmm .mmdhit{fill:none;stroke:transparent}
+.archmm .mmdel{display:none}
+/* non-scaling strokes make markers scale with the map (~32x): drop arrowheads in the overview */
+.archmm svg .mmde{marker-end:none;marker-start:none}
+.archmm .mmdsg.archband>rect{fill:color-mix(in srgb,var(--nx-t3,#8b95a7) 12%,transparent);stroke:color-mix(in srgb,var(--nx-t3,#8b95a7) 55%,transparent);stroke-dasharray:3 3}
+.archmm .mmdsg.archgrp>rect{fill:color-mix(in srgb,var(--nx-info,#5899f3) 10%,transparent);stroke:color-mix(in srgb,var(--nx-info,#5899f3) 45%,transparent)}
+.archmm .mmdsg.archerow>rect{fill:color-mix(in srgb,var(--nx-info,#5899f3) 8%,transparent);stroke:none}
+.archmm .mmdfe[data-k=read] .mmde{stroke:var(--st-dat,#b07cf0)}
+.archmm .mmdfe[data-k=write] .mmde{stroke:var(--nx-warn,#e3b341)}
+.archmm .mmdfe[data-k=event] .mmde{stroke-dasharray:9 4}
+.archmm .mmdn[data-p^=en] polygon,.archmm .mmdn[data-p=ifx] rect{stroke:var(--nx-info,#5899f3);stroke-dasharray:4 3}
+.archmm-vp{fill:none;stroke:var(--nx-info,#5899f3);stroke-width:2;vector-effect:non-scaling-stroke;pointer-events:none}
+/* Icon-size chip overlaid on the panel corner so it takes no drawing height; static when off so the closed slot keeps a size. */
+.archmm-tg{position:absolute;top:6px;right:6px;z-index:1;width:18px;height:18px;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--nx-rule,#2a3442);border-radius:5px;background:color-mix(in srgb,var(--nx-bg,#0d1014) 85%,transparent);color:var(--nx-t2,#aab4c3);font-size:12px;line-height:1;cursor:pointer}
+.archmm.off .archmm-tg{position:static}
+.archmm-tg:hover{color:var(--nx-t1,#dfe5ee)}
+.archmm.off{width:auto;padding:0;border:0;background:transparent;box-shadow:none}
+.archmm.off svg,.archmm.off .archmm-vp{display:none}
+/* Lit flow mirrors the .archmap rules in 79-structure-arch.css (84j3 archLitPaint classes copied onto the clone) */
+.archmm svg.arlitdim .mmdn:not(.arlit) rect,.archmm svg.arlitdim .mmdn:not(.arlit) polygon{stroke:var(--nx-rule,#2a3442)}
+.archmm svg.arlitdim .mmdfe:not(.arlit) .mmde{stroke:var(--nx-rule,#2a3442)}
+.archmm svg.arlitdim .mmdn.arlit rect,.archmm svg.arlitdim .mmdn.arlit[data-p^=en] polygon{stroke:var(--nx-warn,#e3b341);stroke-width:2.2}
+.archmm svg.arlitdim .mmdfe.arlit .mmde{stroke:var(--nx-warn,#e3b341);stroke-width:2.2}
+.archmm svg.arlitdim .mmdfe.arlit.archfx .mmde{stroke:var(--nx-err,#f45460)}

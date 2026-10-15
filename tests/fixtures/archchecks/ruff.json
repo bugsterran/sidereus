@@ -1,0 +1,21 @@
+[
+ {
+  "code": "F401",
+  "filename": "@REPO@/pkg/mod.py",
+  "location": {
+   "row": 1,
+   "column": 8
+  },
+  "message": "secret message text",
+  "url": "https://docs.astral.sh/ruff/rules/unused-import"
+ },
+ {
+  "code": null,
+  "filename": "@REPO@/pkg/bad.py",
+  "location": {
+   "row": 2,
+   "column": 1
+  },
+  "message": "SyntaxError"
+ }
+]

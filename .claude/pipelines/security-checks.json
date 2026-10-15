@@ -1,0 +1,18 @@
+{
+  "v": 1,
+  "name": "security-checks",
+  "title": "보안 검사 — 비밀값·의존성·SAST",
+  "builtin": true,
+  "use": "Security scanners on a target repo (gitleaks, npm audit, osv-scanner, semgrep, bandit) for the Architecture map.",
+  "rules": "The target repo path is given in the request text. Do not edit, commit, checkout or install anything in the target repo; do not install tools. The runner writes only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<HEAD>/checks-security.json (same store key as arch-map). Metadata only: never copy tool messages, secret values, matched text or source lines into a report.",
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "보안 검사",
+      "agent": "general-purpose",
+      "model": "sonnet",
+      "task": "Run `/usr/bin/python3 scripts/arch_checks.py --repo <repo> --category security` once from this repository (it detects the scanners, runs each with a timeout and writes checks-security.json). Add `--net` only when the request asks for advisory lookups (npm audit, osv-scanner need the network; without it they are skipped). Report its printed line only. Do not rerun with other options, do not run any tool yourself, do not fix findings.",
+      "gate": "/usr/bin/python3 scripts/arch_checks.py --verify --last --category security"
+    }
+  ]
+}

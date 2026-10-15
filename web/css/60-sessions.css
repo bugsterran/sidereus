@@ -1,0 +1,321 @@
+/* ★Claude session work state — not the conversation but **what the session is doing now** (requested 2026-08-18).
+   No content: project, last tool and elapsed only (another session's prompts belong to that user). */
+h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
+.sx{display:flex;gap:6px;align-items:baseline;font-size:12.5px;padding:2px 0;line-height:1.45}
+.sx .sd{width:7px;height:7px;border-radius:50%;flex:0 0 auto;margin-top:4px;background:#3d4553}
+/* ⚠The dot (`.sd`) paints **state** only (`.s-*`, below). Do not put age colors (run/warm) here —
+   one dot gets two axes, and the 7 state colors cover it anyway so it is never visible (measured 2026-09-22:
+   `.sx.run .sd` and `.sx.warm .sd` both applied 0 times). Age is carried by `.sxw.idlelong .sx2`. */
+.sx .sp{color:#cfd8e6;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sx .st{color:#8b95a7;flex:0 0 auto;font-size:10.5px}
+/* ⚠Many badges overflowed the narrow column: «Log» broke one glyph per line and the name was squeezed to "repo-A-prescripti…".
+   ⚠Wrapping them onto a second line made rows 49-51px vs 24/28px (QA 2026-09-27: ↻ alone on line 2 in the 500px drawer).
+   ⇒ one line, one height: name/branch/worktree shrink with an ellipsis, chips never shrink, sessFit (40b) hides low-priority chips. */
+.sx{flex-wrap:nowrap;overflow:hidden;height:calc(1.45em + 8px);box-sizing:border-box}
+.sx > span{white-space:nowrap;flex:0 0 auto}
+.sx > :is(.sp,.sb,.swt){flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sx > .sp{flex:1 0 auto;max-width:50%}   /* the name keeps its width (up to half the row); branch/worktree give way */
+/* ⚠80-branch.css pins .swt to flex:0 0 auto under data-ui=next */
+.sx > :is(.sb,.swt),html[data-ui=next] .sx > .swt{max-width:150px;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sx > .sxh{display:none}
+.sx .sb{color:#8ab4ff}
+/* branch + git state in one chip: the name shrinks, the state never does */
+/* ⚠overflow:hidden + min-width:0 let the chip shrink past its content and clip the git state; floor = .sbt min + .sbg */
+.sx > .sb{display:inline-flex;gap:4px;align-items:baseline;overflow:visible;min-width:auto}
+.sx .sb .sbt{overflow:hidden;text-overflow:ellipsis;min-width:min(6ch,100%)}
+.sx .sb .sbg{flex:none;font-size:10px}
+.sxw{padding:5px 0;border-bottom:1px solid #151a22}
+.sxw > :is(.sx,.sx2,.sq){cursor:pointer}
+.sxw > .sx:hover .sp{text-decoration:underline;text-underline-offset:2px}
+.sxw:last-child{border-bottom:0}
+.sxw.run .sp{color:#eaf1fa;font-weight:600}
+.sx2{font-size:11.5px;color:#8b95a7;padding-left:13px}
+.sq{font-size:11.5px;color:#98a4b6;padding-left:13px;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ★4-step context color (requested 2026-08-19: green or blue when low) — the number already states the value,
+   so color is **a peripheral-vision aid** (colorblind users still read the %). Absolute values (k) with unknown window get no color. */
+.sc{font-size:10px;color:#8b95a7;flex:0 0 auto}
+.sc.cool{color:#6fd39a}                  /* ~39%  headroom */
+.sc.ok{color:#8ab4ff}                    /* 40~59% normal */
+.sc.mid{color:#c9a24a}                   /* 60~84% caution */
+.sc.hot{color:#e0725f;font-weight:600}
+/* ★Estimated window (learned from another session of the same model) — dashed line marks **weak evidence**.
+   Solid = the session proved it itself (observed >200k or its own auto-compaction). The tooltip states the evidence. */
+.sc.est{border-bottom:1px dotted #4a5462}
+.sg{font-size:10px;color:#8ab4ff;flex:0 0 auto}
+.se{font-size:10px;color:#e0725f;font-weight:700;flex:0 0 auto}
+.sm{font-size:9.5px;color:#6b7688;flex:0 0 auto}
+/* Account label chip (40b acctChip, >=2 accounts): colour from the row's .accN; long labels ellipsise at 10ch. */
+:is(.sx > .sacb,.srec .srecac){font-size:9.5px;color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 60%,transparent);background:color-mix(in srgb,var(--acc) 16%,transparent);border-radius:3px;padding:0 3px;flex:0 9 auto;min-width:3ch;max-width:10ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ⚠Main (.acc0) owns teal; the pool keeps six hues apart from it (acc5 lime), so main never shares a colour with another account. */
+.acc0{--acc:#3cc6c0}.acc1{--acc:#4fa3ff}.acc2{--acc:#e0a03a}.acc3{--acc:#3fbf7f}.acc4{--acc:#d070d0}.acc5{--acc:#a8c94a}.acc6{--acc:#b48cff}
+/* Account band (>=2 accounts, 40b acctCls): inset shadow, no layout shift. ⚠A blocked row's red .sxw:has(.sl.sblk) wins (higher specificity). */
+.acb:is(.sxw,.srecr,.atr){box-shadow:inset 3px 0 0 var(--acc)}
+/* Account pick collapsed line (40b acctOthHtml); dot = a hidden row needs you. */
+.acoth{font-size:10.5px;color:var(--nx-t2,#8a94a6);cursor:pointer;padding:3px 8px;display:flex;align-items:center;gap:5px}
+.acoth:hover{text-decoration:underline}
+.acothd{width:6px;height:6px;border-radius:50%;background:#e0725f;flex:0 0 auto}
+/* ★AI logo (2026-09-22) — session rows and the timeline use **the same mark**. ⚠Do not enlarge:
+   11px aligns its baseline with adjacent text (12px). Color is set only here (the SVG uses currentColor). */
+.ailg{display:inline-flex;align-items:center;flex:0 0 auto;margin-right:4px}
+.ailg svg{width:11px;height:11px;display:block}
+.ailg-cc{color:#d97757}
+.ailg-gm{color:#8ab4ff}
+.ailg-cx{color:#dfe3e8}
+.ailg-cp{color:#c9d1d9}
+.ailg-cu{color:#e6e6e6}
+.ailg-cl{color:#c7b8ff}
+.ailg-wf{color:#3ec9ad}
+.ailg-wp{color:#4cb3ff}
+.ailg-tr{color:#ff7a6b}
+.ailg-zd{color:#d8dee9}
+.ailg-gk{color:#e8eaed}
+.ailg-ds{color:#6d85ff}
+.ailg-qw{color:#8b86ff}
+.ailg-ki{color:#a08cff}
+.ailg-mi{color:#ff9a3c}
+.ailg-ol{color:#e0e4e8}
+.ailg-px{color:#38c6d9}
+.ailg-hf{color:#ffd21e}
+.ailg-ma{color:#4aa3ff}
+.ailg-or{color:#9aa8bd}
+    .sz{font-size:10px;color:#7e8896;margin-left:4px}
+    .sz.hot{color:#f59e0b;font-weight:600}
+    .sk{font-size:10px;color:#7e8896;margin-left:4px}
+    /* Leftover badge — no new color, reuses the existing warning color (#f59e0b, same as `.sz.hot`) */
+    .swr{font-size:10px;color:#f59e0b;font-weight:600;margin-left:4px;flex:0 0 auto;cursor:pointer}
+    .swr:hover{text-decoration:underline}
+.s-wait .sl.swait{color:#7ad4a0}
+/* Subagent silence indicator — not a verdict, only shows how quiet it has been */
+.stq{flex:0 0 auto;font-size:9.5px;color:#7e8896;border:1px solid #262e3b;border-radius:9px;padding:0 5px}
+.stqc{color:#c9a24a;border-color:#5a4a24}
+.stiw.stcold{opacity:.62}
+.stiw.stcold:hover{opacity:1}
+/* Tool the agent is running now — inline on the agent row (was its own .stn line, one extra line per agent) */
+.sti .tn{flex:0 0 auto;font-size:10px;color:#8b95a7}
+.sti .tg{flex:0 1 auto;min-width:0;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color:#9ccc8f;background:#181c22;border:1px solid #232a33;border-radius:3px;padding:0 4px}
+.stx{flex:0 0 auto;color:#6b7688;cursor:pointer;padding:0 3px;font-size:10px}
+.stx:hover{color:#e0725f}
+.sdrop{color:#7e8896;cursor:pointer;padding:0 3px;font-size:10px}
+.smon{color:#7e8896;font-size:10.5px;white-space:nowrap}
+.sslow{color:#c9a24a;cursor:help}      /* tool/thinking for 5min+ — may be stuck */
+/* 10min+ no transcript — don't assert `thinking` (it is unknown) */
+.s-tool .sl.smute,.s-think .sl.smute{color:#c9a24a;font-weight:600}
+.sdrop:hover{color:#e0725f}
+/* ↻ resume — copies the command that reopens a finished session. Noticeable but small so the row doesn't shift. */
+.srz{flex:0 0 auto;font-size:11px;color:#6b7688;cursor:copy;padding:0 1px;border-radius:3px}
+.srz:hover{color:#8ab4ff;background:#1b2330}
+/* «To terminal» chip (88d-term.js); .cp = copy-only fallback */
+.stm{flex:0 0 auto;font:inherit;font-size:11px;line-height:1;color:#6b7688;background:none;border:0;cursor:pointer;padding:0 2px;border-radius:3px}
+.stm.cp{cursor:copy}
+.stm:hover{color:#8ab4ff;background:#1b2330}
+.stm:focus-visible{outline:2px solid #5899f3;outline-offset:1px}
+/* History tab — date headers + session rows. No table (each row has chips, columns wouldn't align) */
+.hsd{display:flex;gap:8px;align-items:baseline;margin:14px 0 5px;font-size:12px;color:#c3ccda;
+  font-weight:600;border-top:1px solid #1a212b;padding-top:10px}
+.hsd i{margin-left:auto;font-weight:400;font-size:11px;color:#7e8896;font-style:normal}
+.hsr{display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #141a22;
+  font-size:11.5px;color:#a8b3c4}
+.hsr b{color:#dce8f8;font-weight:600}
+.hsr s{text-decoration:none;color:#7e8896;font-size:10.5px}
+.hsr > :is(b,s,.hsm){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}   /* one line per row at 900; full text in title */
+.hsr em{font-style:normal;margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap;
+  color:#8b95a7}
+.hst{font-variant-numeric:tabular-nums;color:#7e8896;white-space:nowrap}
+.hst.hsxd{color:#a3adbb;cursor:help}
+.hsm{color:#9dc0f0;font-size:10.5px}
+.hsti{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c4cfdf}
+.hsbr{flex:none;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;
+  color:#a9c7a0;border:1px solid #2a3a2a;border-radius:8px;padding:0 6px}
+/* History row expansion — clickable row + its work-unit list (main + sub-agents) */
+.hsx{cursor:pointer;border-radius:3px}
+.hsx:hover,.hsx.on{background:#151b24}
+.hsx:focus-visible,.hun:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:-2px}   /* theme token: light #1961d4 5.2:1 on #f4f5f7 (#5b8def was 2.96) */
+.hsc{width:10px;color:#6b7688;font-size:10px;flex:0 0 auto}
+/* ▸ on expandable rows (history · retro failures): it was 10px #6b7688 and read as decoration, not a control */
+.hsx .hsc,.rtsr .hsc{font-size:12px;color:var(--nx-t2,#a8b3c4)}
+.hsx:hover .hsc,.rtsr:hover .hsc{color:var(--nx-info,#5899f3)}
+/* «Copy resume» (history rows) — a worded button; the bare ↻ read as «refresh» */
+.hsrz{font:inherit;font-size:10.5px;line-height:1.4;background:none;border:1px solid var(--nx-rule,#2a3342);padding:0 6px;border-radius:8px;white-space:nowrap}
+.hsrz:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px}
+/* ⚠Fixed right column: the button sat after variable-width cells and its left edge jumped 599–869px row to row; the token cell gets a fixed min width */
+.hsr > .hsrz{margin-left:auto;display:inline-flex;align-items:center;gap:4px}
+.hsr > .hsrz + em{margin-left:0;min-width:8em;text-align:right}
+.hsrz .ic{margin-right:0;width:12px;height:12px}
+@media (max-width:1099px){ .hsrz .hsrzl{display:none} .hsr > .hsrz{padding:1px 5px} }
+/* «Running» after a live session's span (end clamped to now) */
+/* ⚠Project name keeps its width (capped) — with «Running» + «Copy resume» at 900 it shrank to «acme-w…» first; the title shrinks instead */
+.hsr > b{flex:0 0 auto;max-width:180px}
+.hslv{flex:none;font-size:10px;color:var(--nx-ok,#71c269);border:1px solid currentColor;border-radius:8px;padding:0 5px;white-space:nowrap}
+.hub{margin:2px 0 8px 18px;border-left:2px solid #243044;padding:4px 0 4px 6px}
+.huh{display:flex;align-items:center;gap:8px;font-size:11px;color:#8b95a7;margin:0 0 4px}
+.huh .wkrgb{margin-left:auto}
+.hun{display:flex;gap:8px;align-items:center;padding:3px 8px;font-size:11px;color:#a8b3c4;
+  border-radius:3px;cursor:pointer;min-width:0}
+.hun:hover{background:#18202b}
+/* History filters — project chips + title search (85-history.js, sidereus.histf) */
+.histq{flex:0 1 220px;width:220px;min-width:120px}
+.hpcs{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 2px}
+.hpc{font:inherit;font-size:11px;padding:1px 8px;border-radius:10px;cursor:pointer;background:none;
+  color:var(--nx-t2,#a8b3c4);border:1px solid var(--nx-rule,#2a3342)}
+/* ⚠html[data-ui] lifts these over the 00-core next-UI twin «html[data-ui=next] .hpc» (0,2,1) */
+html[data-ui] .hpc:hover{background:var(--nx-hover,#18202b)}
+html[data-ui] .hpc.on{color:var(--nx-t1,#dce8f8);border-color:var(--nx-info,#5899f3);background:color-mix(in srgb,var(--nx-info,#5899f3) 18%,transparent)}
+.hsfn{display:flex;align-items:center;gap:8px}
+.hun.off{cursor:default;opacity:.6}
+.hun b{color:#dce8f8;font-weight:600;white-space:nowrap}
+.hun b.hum{color:#9dc0f0}
+.hun s{text-decoration:none;color:#7e8896;font-size:10.5px;white-space:nowrap}
+.hue{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#a8b3c4}
+.hun em{font-style:normal;font-variant-numeric:tabular-nums;white-space:nowrap;color:#8b95a7}
+.hus{font-size:10px;padding:0 5px;border-radius:999px;border:1px solid #2a3340;color:#8b95a7;white-space:nowrap}
+.hus.hs-run{color:#6fcf97;border-color:#2e5a40}
+.hus.hs-done{color:#8ab4ff;border-color:#2d4263}
+.hus.hs-cut{color:#f59e0b;border-color:#5a4520}
+.sl{font-weight:600}
+/* ★Session filters and idle markers — past ten sessions, **rows needing action get buried** (backlog 2026-08-19).
+   State sort alone (ask→abort→tool→...) puts "done but left for 30 min" and "just finished" in the same bucket. */
+.sfil{display:flex;gap:4px;margin:-3px 0 7px;flex-wrap:wrap}
+.sfil span{background:#151a22;border:1px solid #232a35;color:#8b95a7;border-radius:999px;
+  padding:1px 8px;font-size:10px;cursor:pointer;user-select:none;white-space:nowrap}
+.sfil span:hover{border-color:#3a4756;color:#cfd7e4}
+.sfil span.on{background:#2a2417;border-color:#6b5a2e;color:#e0b45f}
+.sfil span.on.g{background:#1d2b42;border-color:#3a5a8c;color:#bcd4f5}
+/* Account picker (40b acctPickHtml, >=2 accounts): pill-sized select, last in the row; long labels ellipsise. */
+.acpk{background:#151a22;border:1px solid #232a35;color:#8b95a7;border-radius:999px;padding:0 4px;font-size:10px;max-width:14ch;text-overflow:ellipsis;cursor:pointer}
+.acpk:hover{border-color:#3a4756;color:#cfd7e4}
+/* Idle (human's turn, over the threshold) — **no extra text**: only color on the elapsed time (text would shift the row). */
+/* ★Idle vertical bar removed (2026-09-03: distracting, meaning unclear).
+   It meant `long idle`, but (a) several idle cards stacked at the same x looked like **one line across
+   the panel** and (b) the bar alone gave no way to know its meaning.
+   The same thing is already said in two places: state-row text color (below) and the «N min ago» elapsed time.
+   ⚠`blocked` (red) stays — it is rare and an **action request** (moves only when you press), so it must stand out. */
+.sxw.idlelong .sx2{color:#b39a5c}
+/* ★Context per request · burn per minute (2026-09-03). Measured: 97.9% of cost is cache reads —
+   so **context per request × request count** is the bill. Those two numbers sit on the session row as-is. */
+.sbn{font-size:9.5px;border:1px solid;border-radius:5px;padding:0 5px;margin-left:5px;
+  flex:0 0 auto;cursor:help;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sxw:hover{background:#141a23}
+.toast.tnote{font-size:11.5px;color:#cfd7e4;padding:7px 11px}
+/* ⚠Row end («opus-5») sat flush against the scrollbar and read as clipped at 1024px — keep a gutter + gap. */
+#sess{max-height:46vh;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:6px}
+#sess::-webkit-scrollbar{width:6px}
+#sess::-webkit-scrollbar-thumb{background:#242c38;border-radius:3px}
+.sfold{margin-top:6px;font-size:10.5px;color:#8b95a7;cursor:pointer;user-select:none}
+.sfold:hover{color:#8ab4ff}
+/* ★The pulse lets you notice "running" **even peripherally** (requested 2026-08-18).
+   The dot's ring spreads, three dots flow after the label, a faint band breathes at the row's left.
+   ⚠Accessibility: with prefers-reduced-motion all of it is off, falling back to static display (some users are motion-sensitive). */
+.s-tool .sd{background:#6fd39a;position:relative;animation:pl 1.5s cubic-bezier(.4,0,.6,1) infinite}
+/* ⚠Rings are transform/opacity on ::after and dots a clip-path reveal: box-shadow/content keyframes restyled every frame (~590 recalcs/10 s each, drawer open). */
+.s-tool .sd::after,.s-ask .sd::after{content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none}
+.s-tool .sd::after{background:#5fbf82;animation:plr 1.5s cubic-bezier(.4,0,.6,1) infinite}
+.s-tool .sl{color:#7ad4a0}
+.s-tool .sl::after{content:'···';display:inline-block;margin-right:.14em;text-align:left;
+  animation:dots 1.5s step-end infinite}
+.sxw.s-tool,.sxw.s-think{position:relative}
+.sxw.s-tool::before{content:'';position:absolute;left:-9px;top:4px;bottom:4px;width:2px;border-radius:2px;
+  background:#5fbf82;animation:bar 1.5s ease-in-out infinite}
+@keyframes dots{0%{clip-path:inset(0 100% 0 0)}12.5%{clip-path:inset(0 66.667% 0 0)}37.5%{clip-path:inset(0 33.333% 0 0)}62.5%,100%{clip-path:inset(0)}}
+@keyframes bar{0%,100%{opacity:.25}50%{opacity:.9}}
+@media(prefers-reduced-motion:reduce){
+  .sxw.s-tool::before,.s-tool .sd,.s-ask .sd::after,.s-tool .sl::after{animation:none}
+  .s-tool .sd::after{display:none}
+  .s-ask .sd::after{transform:scale(1.857);opacity:.18}
+}
+.s-ask .sd{background:#e0b45f;position:relative}
+.s-ask .sd::after{background:#e0b45f;animation:pl2 2s ease-in-out infinite}
+.s-ask .sl{color:#edc472;font-weight:700}
+.s-ask .sp{color:#f2ead9;font-weight:600}
+@keyframes pl2{0%,100%{transform:scale(1);opacity:.333}55%{transform:scale(2.714);opacity:0}}
+.s-think .sd{background:#5fb8bf;animation:pl3 1.2s ease-in-out infinite}
+.s-think .sl{color:#74cdd4}
+@keyframes pl3{0%,100%{opacity:.45}50%{opacity:1}}
+.s-abort .sd{background:#e0725f}
+.s-abort .sl{color:#ef8a76;font-weight:700}
+.s-abort .sp{color:#f5e3df}
+.s-wait .sd{background:#8ab4ff;box-shadow:0 0 0 3px #8ab4ff22}
+.s-wait .sl{color:#9cc0ff}
+/* Waiting on agent/command — not the human's turn but **waiting**. Grouped with the same family as green (running). */
+.s-wait .sl.swait{color:#7ad4a0}
+.s-wait .sp{color:#eaf1fa;font-weight:600}
+.s-done .sd{background:#3d4553}
+.s-done .sp,.s-done .sl{color:#7e8896}
+.s-gone .sd{background:transparent;border:1px dashed #6b7688}
+.s-gone .sp,.s-gone .sl{color:#7e8896}
+.s-unknown .sd{background:#0d1014;border:1px solid #6b7688}
+@keyframes pl{0%,100%{transform:scale(1)}70%{transform:scale(1.15)}}
+@keyframes plr{0%{transform:scale(1);opacity:.4}70%,100%{transform:scale(3);opacity:0}}
+.rinfo b{color:#bcd4f5;font-weight:600}
+/* ⚠The ≤1000px .wrap/#composein grids live in 45-saver-quota.css; only the aside stacking stays here (a pinned column moves above the feed). */
+@media(max-width:1000px){aside{position:static;order:-1}}
+.day{text-align:center;margin:16px 0 9px}
+.day span{background:#151a22;border:1px solid #232a35;border-radius:999px;
+  padding:2px 11px;font-size:11.5px;color:#8b95a7}
+/* Load earlier conversation — at the top (latest is at the bottom) */
+.older{margin:6px auto 12px;width:fit-content;background:#151a22;border:1px solid #2b3444;border-radius:999px;
+  padding:5px 14px;font-size:12px;color:#9aa5b8;cursor:pointer;user-select:none}
+.older:hover{border-color:#3a5a8c;color:#bcd4f5}
+.older span{color:#7e8896;font-size:11px;margin-left:6px}
+.older.hid{display:none}
+.row{display:flex;margin:7px 0;gap:8px}
+.row.me{flex-direction:row-reverse}
+.row.fresh .bub{animation:pop .45s ease-out}
+@keyframes pop{from{transform:translateY(6px);opacity:.2}to{transform:none;opacity:1}}
+.av{flex:0 0 27px;width:27px;height:27px;letter-spacing:-.3px;border-radius:50%;background:#243044;color:#9dc0f0;
+  display:grid;place-items:center;font-size:11px;font-weight:700;margin-top:17px}
+.row.me .av{background:#1f3b32;color:#86dcb4}
+.col{max-width:80%;min-width:0}
+.nm{font-size:11.5px;color:#8b95a7;margin:0 3px 2px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.row.me .nm{justify-content:flex-end}
+.nm b{color:#8ab4ff;font-weight:600}
+.row.me .nm b{color:#7ee0b8}
+.pill{border:1px solid #2a3342;border-radius:999px;padding:0 6px;font-size:10px;color:#8b95a7}
+.pill.thp{border-style:dashed;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kind{border-radius:5px;padding:0 6px;font-size:10.5px;font-weight:650}
+.k-ask{background:#3b2f10;color:#f0c674;border:1px solid #5a4718}
+.k-ans{background:#12301f;color:#7ee0a3;border:1px solid #1e4a30}
+.k-fix{background:#3a1a1a;color:#f09090;border:1px solid #5c2626}
+.k-note{background:#16283f;color:#8fbdf0;border:1px solid #24405f}
+.k-done{background:#1d2329;color:#8b95a7;border:1px solid #2b333d}
+/* «Awaiting reply» pill (10-feed.js) — scoped to span so state classes (#rail.open, #alarm.open) don't inherit it */
+span.open{background:#3b2f10;color:#f0c674;border:1px solid #5a4718;border-radius:5px;padding:0 6px;font-size:10.5px}
+.bub{background:#151a22;border:1px solid #232a35;border-radius:13px;padding:8px 13px;
+  border-top-left-radius:3px;overflow:hidden}
+.row.me .bub{background:#16211c;border-color:#263a30;border-top-left-radius:13px;border-top-right-radius:3px}
+.row.odd .bub{border-style:dashed;border-color:#3d3520;background:#17150f}
+.row.odd .av{background:#33291a;color:#d9b567}
+.row.odd .nm b{color:#d9b567}
+.subj{font-weight:650;color:#eaf0f8;font-size:13.5px}
+.bd{font-size:13px;margin-top:5px}
+.bd h3{font-size:13px;margin:10px 0 4px;color:#a8c6f0}
+.bd h3:first-child{margin-top:0}
+.bd p{margin:4px 0}
+.bd ul{margin:4px 0;padding-left:17px}
+.bd code{background:#0a0d12;border:1px solid #212832;border-radius:4px;padding:.5px 4px;font-size:12px}
+.bd pre{background:#0a0d12;border:1px solid #212832;border-radius:7px;padding:8px 11px;overflow-x:auto;margin:6px 0}
+/* Workflow-tool run node in the session tree (2026-09-26) — collapsible; children are the run's agents */
+.swf{margin:0}
+.swfall{display:flex;justify-content:flex-end;gap:4px;margin:0 0 4px}
+.swfall .swfa{font-size:10px;padding:1px 7px;white-space:nowrap}
+.swf > summary{cursor:pointer;list-style:none}
+.swf > summary::-webkit-details-marker{display:none}
+.swf > summary .v{color:#aab4c3}
+.sti .k.w{color:#c98fd8}
+.swf.on > summary .wfbar{color:#8ab4f8}
+.wfbar{font-style:normal;letter-spacing:-1px;color:#6b7688;font-size:10px}
+.wfn{font-weight:600;color:#aab4c3}
+.sti.wfa{padding-left:12px}
+.sti.wfa.on .v{color:#8ab4f8}
+.tlpar.tlwfk{color:#c98fd8;background:#c98fd81a;border-color:#4b2e55}
+/* ★border #4b2e55 = 1.71/1.75:1 (dark/light twin) -> 3.32-3.67 dark · 4.39-4.71 light on the tinted chip; scoped so twins skip it */
+html[data-ui=next][data-ui] .tlpar.tlwfk{border-color:#9a5aab}
+html[data-ui=next][data-ui][data-theme=light] .tlpar.tlwfk{border-color:#8a5c9a}
+.tlpar.tlwff{color:#e0725f;background:#e0725f1a;border-color:#5a2e28}
+/* ★border #5a2e28 = 1.30-1.56:1 dark (light twin also weak) -> #c0604f 3.53-4.23 dark · #b0564a 4.09-4.39 light on the tinted chip */
+html[data-ui=next][data-ui] .tlpar.tlwff{border-color:#c0604f}
+html[data-ui=next][data-ui][data-theme=light] .tlpar.tlwff{border-color:#b0564a}
+.tmt{font-style:normal;color:#7e8896;margin-left:4px}
+.sti .e.tmu{color:#f0b357}

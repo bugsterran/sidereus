@@ -1,0 +1,90 @@
+/* ★Left rail (#rail · 92d-rail.js): body.rail = shown (56px icons) · #rail.open = 208px · body.railpush pushes the page (>=1200px) · body.railover = overlay + #railscrim.
+   ⚠Scoped html[data-ui=next] so the #nxcss twin generator skips these rules; colours are tokens only (dark tones + «White»).
+   ⚠z: collapsed 25 (above header 20) · overlay rail 43 / scrim 42, below the sessions drawer 44, alarm 45, popups 46/47, modals 60. */
+html[data-ui=next] #rail,html[data-ui=next] #railscrim{display:none}
+html[data-ui=next] body.rail{padding-left:56px}
+html[data-ui=next] body.rail.railpush{padding-left:208px}
+html[data-ui=next] body.rail #rail{display:flex;position:fixed;left:0;top:0;bottom:0;z-index:25;box-sizing:border-box;width:56px;
+  flex-direction:column;align-items:center;padding:10px 0;overflow:hidden auto;background:var(--nx-panel);border-right:1px solid var(--nx-rule)}
+html[data-ui=next] body.rail #rail.open{width:208px;align-items:stretch;padding:10px 8px}
+html[data-ui=next] body.railover #rail{z-index:43;box-shadow:var(--nx-shadow)}
+html[data-ui=next] body.railover #railscrim:not([hidden]){display:block;position:fixed;inset:0;z-index:42;background:rgba(0,0,0,.45)}
+/* ⚠Collapsed labels are clipped, not display:none: screen_check and screen readers read the tab names from innerText */
+html[data-ui=next] #rail:not(.open) :is(.rbrand > h1,.mvl,.rlab){position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+/* brand = mark + wordmark (wordmark only while open) */
+/* ⚠Brand outranks the 20px view title (wordmark 23px bold); -3px top keeps its centre on the 48px header row and the rows below in place */
+html[data-ui=next] #rail .rbrand{position:relative;display:flex;align-items:center;gap:9px;flex:0 0 auto;min-height:34px;margin:-3px 0 11px}
+html[data-ui=next] #rail .rbrand > .brandmk{width:34px;height:34px;margin:0}
+html[data-ui=next] #rail .rbrand > h1{margin:0;font-size:23px;font-weight:700;line-height:1.2;letter-spacing:.02em;white-space:nowrap}
+html[data-ui=next] #rail.open .rbrand{padding:0 2px 0 6px}
+/* expand/collapse (#railtg, inside .rbrand): open = borderless «‹» at the right end of the brand row; collapsed = laid over the mark, «›» on hover/focus.
+   ⚠Expand target = the mark (top-left), collapse = the header's right end — the conventional sidebar placement; the pointer moves between them by design (an in-flow button under the mark read as a stray box). */
+html[data-ui=next] #rail .railtg{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:28px;height:28px;margin:0 0 0 auto;padding:0;
+  border:0;border-radius:7px;background:none;color:var(--nx-t2);cursor:pointer}
+html[data-ui=next] #rail .railtg:hover{background:var(--nx-hover);color:var(--nx-t1)}
+html[data-ui=next] #rail .railtg:focus-visible{outline:2px solid var(--nx-active);outline-offset:1px}
+html[data-ui=next] #rail .railtg .ic{width:15px;height:15px;margin:0}
+html[data-ui=next] #rail.open .railtg .ic{transform:rotate(180deg)}
+/* ⚠Collapsed: same 34px box as the mark, so the swap shifts nothing; the mark hides only while the button is hovered/focused */
+html[data-ui=next] #rail:not(.open) .railtg{position:absolute;left:0;top:50%;width:34px;height:34px;margin:-17px 0 0}
+html[data-ui=next] #rail:not(.open) .railtg .ic{opacity:0}
+html[data-ui=next] #rail:not(.open) .railtg:is(:hover,:focus-visible) .ic{opacity:1}
+html[data-ui=next] #rail:not(.open) .rbrand:has(> .railtg:is(:hover,:focus-visible)) > .brandmk{visibility:hidden}
+/* needs-me: icon + count when collapsed (#rattnb), titled list when open (#rattn; pills painted by 42-activity.js) */
+html[data-ui=next] #rail .rattn{display:none}
+html[data-ui=next] #rail.open .rattn:has(> #rattnl:not(:empty)){display:block;flex:0 0 auto;margin:0 0 10px;padding:0 0 10px;border-bottom:1px solid var(--nx-rule)}
+html[data-ui=next] #rail .rattn h4{display:flex;align-items:center;gap:6px;margin:0 0 6px;padding:0 10px;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--nx-t3);text-transform:uppercase}
+html[data-ui=next] #rail .rattn h4 b{margin-left:auto;min-width:18px;height:16px;line-height:16px;padding:0 4px;box-sizing:border-box;text-align:center;border-radius:8px;font-size:10px;background:var(--nx-err);color:#fff}
+html[data-ui=next] #rail .rattn h4 b:empty{display:none}
+html[data-ui=next] #rail .rattnb{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:40px;height:40px;margin:0 0 6px;padding:0;
+  border:0;border-radius:8px;background:none;color:var(--nx-warn);cursor:pointer}
+html[data-ui=next] #rail .rattnb:hover{background:var(--nx-hover)}
+html[data-ui=next] #rail .rattnb .ic{width:19px;height:19px;margin:0}
+html[data-ui=next] #rail .rattnb > b{position:absolute;top:2px;right:0;min-width:16px;height:16px;line-height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;
+  font-size:10px;font-weight:700;background:var(--nx-err);color:#fff;box-shadow:0 0 0 2px var(--nx-panel)}
+html[data-ui=next] #rail .rattnb > b:empty,html[data-ui=next] #rail.open .rattnb,html[data-ui=next] #rail .rattnb:has(> b:empty){display:none}
+html[data-ui=next] #rattnl{display:flex;flex-direction:column;gap:1px}
+html[data-ui=next] #rattnl > .acp{display:grid;grid-template-columns:8px minmax(0,1fr) auto;column-gap:8px;align-items:center;width:100%;max-width:none;box-sizing:border-box;
+  padding:5px 10px;border:0;border-radius:7px;background:none;text-align:left;line-height:1.35}
+html[data-ui=next] #rattnl > .acp:hover{background:var(--nx-hover)}
+html[data-ui=next] #rattnl > .acp .acd{grid-row:1;grid-column:1;margin:0}
+html[data-ui=next] #rattnl > .acp .acn{grid-row:1;grid-column:2;max-width:none;font-size:12.5px;white-space:nowrap}
+html[data-ui=next] #rattnl > .acp .ace{grid-row:1;grid-column:3;font-size:11px;color:var(--nx-t3)}
+html[data-ui=next] #rattnl > .acp .act{grid-row:2;grid-column:2/4;max-width:none;font-size:11.5px;color:var(--nx-t2);white-space:nowrap}
+/* view tabs: vertical icon stack; open = icon + label rows. #railtip carries the name while collapsed. */
+html[data-ui=next] #rail .mvw{display:flex;flex-direction:column;align-items:center;flex:0 0 auto;width:100%;margin:0;padding:0;border:0}
+html[data-ui=next][data-ui] #rail .mvg{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;background:none;border:0;border-radius:0;overflow:visible}
+html[data-ui=next][data-ui] #rail .mvb{position:relative;display:flex;align-items:center;justify-content:center;gap:11px;width:40px;height:40px;padding:0;
+  border:0;border-radius:8px;background:none;color:var(--nx-t2);font-size:13px;font-weight:500;white-space:nowrap}
+html[data-ui=next][data-ui] #rail .mvb:hover{background:var(--nx-hover);color:var(--nx-t1)}
+html[data-ui=next][data-ui] #rail .mvb.on{background:color-mix(in srgb,var(--nx-active) 15%,transparent);color:var(--nx-t1);font-weight:600}
+html[data-ui=next][data-ui] #rail .mvb.on::before{content:"";position:absolute;left:-8px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--nx-active)}
+html[data-ui=next] #rail .mvb .mvic{display:block;flex:0 0 auto;width:19px;height:19px;opacity:.75}
+html[data-ui=next] #rail .mvb:hover .mvic,html[data-ui=next] #rail .mvb.on .mvic{opacity:1}
+html[data-ui=next] #rail .mvb.on .mvic{color:var(--nx-active)}
+html[data-ui=next] #rail .mvb > i{position:absolute;top:5px;right:5px;margin:0}
+html[data-ui=next] #rail .mvb > i.mvnum{top:2px;right:0;min-width:14px;height:14px;line-height:14px;padding:0 4px;box-sizing:border-box;border-radius:7px;font-size:9px;box-shadow:0 0 0 2px var(--nx-panel)}
+html[data-ui=next] #rail .mvb > i.mvdot{box-shadow:0 0 0 2px var(--nx-panel)}
+html[data-ui=next] #rail.open .mvg{align-items:stretch}
+html[data-ui=next][data-ui] #rail.open .mvb{justify-content:flex-start;width:100%;height:36px;padding:0 10px}
+html[data-ui=next] #rail.open .mvb .mvic{width:17px;height:17px}
+html[data-ui=next] #rail.open .mvb > i{position:static;margin-left:auto;box-shadow:none}
+html[data-ui=next] #rail.open .mvb > i.mvnum{height:16px;line-height:16px;min-width:18px;font-size:10px;text-align:center}
+html[data-ui=next] #rail .mvl{overflow:hidden;text-overflow:ellipsis}
+/* bottom: alerts + settings (#bell / #gear, moved unchanged) */
+html[data-ui=next] #rail .rsp{flex:1 1 auto;min-height:8px}
+html[data-ui=next] #rail .rbot{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;width:36px;padding-top:8px;border-top:1px solid var(--nx-rule)}
+html[data-ui=next][data-ui] #rail .rbot > .bell{display:flex;align-items:center;justify-content:center;gap:11px;width:34px;height:34px;margin:0;padding:0}
+html[data-ui=next] #rail .rbot > .bell .ic{width:15px;height:15px}
+html[data-ui=next] #rail.open .rbot{width:100%;align-items:stretch;gap:2px}
+html[data-ui=next][data-ui] #rail.open .rbot > .bell{justify-content:flex-start;width:100%;height:36px;padding:0 10px;border:0;border-radius:8px;background:none;color:var(--nx-t2);font-size:13px}
+html[data-ui=next][data-ui] #rail.open .rbot > .bell:hover{background:var(--nx-hover);color:var(--nx-t1)}
+html[data-ui=next][data-ui] #rail.open .rbot > .bell .bdg{position:static;margin-left:auto}
+/* collapsed-rail tooltip (#railtip, 92d-rail.js railTip): right of the rail, centred on the icon; ⚠z 41 = above rail/header, below the scrim 42 and modals */
+html[data-ui=next] #railtip{position:fixed;z-index:41;transform:translateY(-50%);padding:4px 8px;border-radius:6px;pointer-events:none;white-space:nowrap;
+  font-size:12px;font-weight:500;line-height:1.4;background:var(--nx-t1);color:var(--nx-bg);box-shadow:var(--nx-shadow)}
+html[data-ui=next] #railtip[hidden],html[data-ui=next] body:is(.dpop,.spop,.wpop) #railtip{display:none}
+html[data-ui=next] #railtip kbd{margin-left:6px;font:inherit;font-size:11px;opacity:.6}
+/* ⚠Popup windows (diff / code / work) fill the window: no rail and no left padding there */
+html[data-ui=next] body:is(.dpop,.spop,.wpop) #rail,html[data-ui=next] body:is(.dpop,.spop,.wpop) #railscrim{display:none}
+html[data-ui=next] body.rail:is(.dpop,.spop,.wpop){padding-left:0}

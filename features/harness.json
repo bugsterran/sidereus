@@ -1,0 +1,12 @@
+{
+  "id": "harness",
+  "title": "Tooling map",
+  "default_on_public": false,
+  "deps": ["pipeline"],
+  "modules": ["harness", "harness_plat"],
+  "routes": ["/api/harness", "/api/harness/file"],
+  "threads": [],
+  "state_keys": [],
+  "web": ["js/47b-harness.js", "css/41b-harness.css"],
+  "settings": []
+}

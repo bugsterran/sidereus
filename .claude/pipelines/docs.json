@@ -1,0 +1,29 @@
+{
+  "v": 1,
+  "name": "docs",
+  "title": "문서 — 운영·개발 문서 한 건",
+  "use": "One operational or developer document: draft outside the repo, check it against the repo, place and commit.",
+  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nOne document per run. NEVER restart the viewer. Only the 반영 stage writes into the repo, and it commits only that one file.\nFollow the docnote skill: no process narrative, one item = cause / fix / ⚠prohibition; never shorten measured numbers (★) or prohibitions (⚠).\nDev docs (docs/dev/*) are English; Korean only in .ko.md user docs.",
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "초안",
+      "agent": "general-purpose",
+      "skill": "docnote",
+      "task": "Write the draft OUTSIDE the repo, in the session scratchpad, so a concurrent commit cannot pick it up. Report the draft path and the target path in the repo. English for dev docs. Do not touch the repo.",
+      "ui": { "x": 44, "y": 24 }
+    },
+    {
+      "title": "대조",
+      "agent": "Explore",
+      "task": "Check every command, path, file name, option and claim in the draft against the repo (read-only). Report each mismatch as a finding: draft line, what the repo says, file:line. PASS when none remain. Change nothing.",
+      "ui": { "x": 292, "y": 24 }
+    },
+    {
+      "title": "반영",
+      "agent": "general-purpose",
+      "task": "Fix every mismatch from 대조 in the draft, move it to its target path, and make one commit containing only that file (stage that one path only; never add other paths). Report the commit hash.",
+      "ui": { "x": 540, "y": 24, "color": "#2ec4b6" }
+    }
+  ]
+}

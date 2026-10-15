@@ -1,0 +1,116 @@
+# Local history only (no remote). Live data, logs, backups, tool state stay out; internal docs are tracked.
+
+# install-local config (ship config.example.json instead)
+config.local.json
+
+# not shipped by decision
+advocate/
+
+# live data
+bus.jsonl
+bus.jsonl.*
+acks.jsonl
+cards.jsonl
+cards-read.txt
+cards-read-ids.txt
+quota-log.jsonl
+quota-roots-pts.json
+otel-bysrc.json
+compact-win.json
+commit-links.json
+identity.json
+identity.json.*
+rooms.json
+profiles.json
+ext-sessions.json
+ext-runs.json
+*.cursor
+presence-*
+.wake/
+.watch-*
+.watch.pid
+.watch.session.pid
+*.pid
+.ext-hook.log
+*-cache.json
+usage-*.json
+win-model.json
+wreck-*.json
+struct-cache/
+Library/
+
+# _atomic_write tmp files (bus.py prefixes) left when a writer is SIGKILLed before os.replace
+.tmp-*
+.cards-*
+.usage-index.*
+.usage-cache.*
+.commit-links.*
+.anchor.*
+.quota-log.*
+.quota-cache.*
+.toolidx-*
+.otel-tools.*
+.otel-bysrc.*
+.qb-lim.*
+.config-local.*
+.eval-*
+.arch-*
+.sidereus-tmp.*
+
+# logs, backups, screenshots, tool state
+*.log
+*.err
+*.bak
+*.bak-*
+backup/
+__pycache__/
+*.png
+!docs/images/*.png
+.playwright-mcp/
+.claude/*
+!.claude/agents/
+!.claude/workflows/
+!.claude/pipelines/
+!.claude/skills/
+.claude.json
+
+refactor/snap/
+.stop-hook/
+.mail-worker
+branch-warm.json
+tests/.private-deny
+
+# tools manager backups/stash (may hold MCP env secrets)
+tool-trash/
+tool-stash.json
+
+# pipeline runtime: write backups + remembered project list
+pipeline-bak/
+pipeline-projects.json
+
+# pipeline stage marks from ~/.claude/hooks/pl-mark.py (runtime state)
+plmark/
+plbrief/
+# permission-prompt marks from hooks/perm_mark.py (runtime state)
+permwait/
+.DS_Store
+review-state.json
+# gate-run evidence from scripts/check.sh (scripts/evidence_rec.py)
+evidence.jsonl
+evidence.jsonl.tmp
+otel-tools.json
+otel-hooks.json
+otel-acct.json
+ui-prefs.json
+ui-prefs-bak/
+# Architecture maps (sidereus/arch_map.py store, DATA_DIR == repo root here) — generated, per machine
+/arch/
+/eval/
+archcrop/
+evstart/
+
+# oh-my-claudecode project state
+.omc/
+acct/
+sesspid/
+clears.jsonl

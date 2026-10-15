@@ -1,0 +1,78 @@
+/* ── Server self-status strip (2026-09-07) ────────────────────────────────────────
+   ★It lives **inside the header**. This is chat and scrolls to the bottom on open, so at the top of the document
+     it would normally never be on screen — same trap as the `.todo` comment above (bar y was -276,977px).
+   ★Normally not drawn at all (`:empty`) — an empty box declares "all clear" on every poll,
+     and then it goes unnoticed on the day it really shows.
+   ⚠**No close button, deliberately.** A stuck thread is not for the user to dismiss (it disappears only on server restart).
+   ★Only the warnings strip (.hlclk) is clickable: one click dismisses all (it is an acknowledgement);
+     dead / stale-only strips have no action, so cursor:default. Details are in the title tooltip.
+   No new colors, existing families as-is: red `.td.hot` (#2a1c19/#7a3b2e/#f0917c),
+   amber `.td.ask` (#2a2417/#6b5a2e/#edc472). */
+.hlb:empty{display:none}
+.hlb{margin-top:7px;border-radius:8px;padding:5px 10px;font-size:11.5px;cursor:default;user-select:none;
+  background:#2a1c19;border:1px solid #7a3b2e;color:#f0917c}
+.hlb.hlwarn{background:#2a2417;border-color:#6b5a2e;color:#edc472}
+.hlb b{font-weight:700}
+.hlb .hlmsg{display:inline-block;max-width:min(640px,60vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}   /* newest warning text on the strip */
+.hlb.hlclk{cursor:pointer}
+.hlb.hlclk:hover{border-color:#8f7a3c}
+/* Floating top-centre pill again
+   (838cca8 had moved it in flow under the header). ⚠Do not move it back in flow; it may cover the header tabs while shown — accepted.
+   ⚠:not(.td) — ★2026-09-27 QA: bare .stale also hid the «Stale threads» todo chip (.td.stale, 25-health-todo.js). */
+.stale:not(.td){display:none;position:fixed;left:50%;transform:translateX(-50%);top:10px;z-index:60;
+  background:#3a2b16;border:1px solid #7a5a24;color:#f0d9a8;border-radius:9px;padding:7px 13px;font-size:12px;
+  box-shadow:0 8px 24px #0009;white-space:nowrap}
+.stale:not(.td).on{display:block}
+.stale:not(.td) b{color:#fff;cursor:pointer;text-decoration:underline}
+.toasts{position:fixed;right:14px;bottom:88px;z-index:45;display:flex;flex-direction:column;gap:8px;
+  width:min(360px,88vw);pointer-events:none}
+.toast{pointer-events:auto;background:#12161dF2;border:1px solid #2b3444;border-radius:10px;padding:8px 10px;
+  box-shadow:0 10px 26px #0009;animation:tin .22s ease-out;cursor:pointer}
+.toast.out{animation:tout .3s ease-in forwards}
+@keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+@keyframes tout{to{transform:translateY(-4px);opacity:0}}
+.card{border-left:3px solid #2f4258;background:#151a22;border-radius:8px;padding:7px 9px;margin:6px 0}
+.card.new{border-left-color:#5fbf82;background:#16211c}
+/* ★Unread cards **mark read on click** (requested 2026-08-19) — cursor and hover signal clickability.
+   Read cards are history, not click targets (no mark-unread feature — it was not requested). */
+#alist .card.new{cursor:pointer}
+#alist .card.new:hover{background:#1a2a20;border-left-color:#7ad4a0}
+.toast .card.new{cursor:pointer}
+/* ★The hint is **a real child of the title row**. It was first lifted one line with `::after{float:right;margin-top:-14px}`,
+   and when the body's last line reached the right edge it **overlapped** (2026-08-19: overflow over the mark-read hint).
+   Overlapping via negative margin made the overlap **structural**, not accidental — in normal flow there is nowhere to overlap. */
+.chint{color:#5f7a68;font-size:9.5px;flex:0 0 auto;white-space:nowrap}
+html:not([data-theme=light]) .chint{color:#6b8a74}   /* dark: #5f7a68 was 3.93:1 on the card, below 4.5 */
+#alist .card.new:hover .chint,.toast:hover .chint{color:#7ad4a0}
+.aact #aunread.on{color:#e0b45f}
+.card.k-ask{border-left-color:#e0b45f}
+.card.k-abort{border-left-color:#e0725f}
+.card.k-done{border-left-color:#8ab4ff}
+.card.k-ctx{border-left-color:#e0725f}      /* compaction imminent — a card needing action */
+.card.k-fail{border-left-color:#e0736c;background:#1c1418}   /* failure — must be visually distinct from done */
+.card.k-agent,.card.k-bgdone{border-left-color:#7ad4a0}   /* a result arrived */
+/* Failure alerts (replaced the «Failures» tab 2026-09-23): response line + action buttons. */
+html[data-ui=next] .card.k-flimit,html[data-ui=next] .card.k-fwreck,html[data-ui=next] .card.k-fcheck{border-left-color:#e0736c}
+html[data-ui=next] .card.k-fcut{border-left-color:#e8b478}
+html[data-ui=next] .cfa{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+html[data-ui=next] .cfab{font:inherit;font-size:11px;padding:2px 9px;border-radius:6px;cursor:pointer;
+  background:#1d2533;border:1px solid #33425a;color:#c3d3ea}
+html[data-ui=next] .cfab:hover{background:#26324a;border-color:#4a6490;color:#eaf1fa}
+/* Failure cards: the body is not a read button any more — only .cfar («Read») marks read. */
+html[data-ui=next] #alist .card.new:has(> .cfa){cursor:default}
+html[data-ui=next] .cfab.cfar{margin-left:auto;background:none;color:var(--nx-t2)}
+.crow1{display:flex;gap:7px;align-items:baseline;font-size:12px}
+.crow1 b{color:#eaf1fa;flex:0 0 auto;white-space:nowrap}   /* ⚠without it the kind label shrinks and wraps per character */
+.cproj{color:#8ab4ff;font-size:11px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctime{margin-left:auto;color:#7e8896;font-size:10.5px;flex:0 0 auto}
+.ctxt{font-size:11.5px;color:#a8b3c4;margin-top:3px;white-space:pre-wrap;word-break:break-word}
+.cgl > div + div{margin-top:2px}
+.cglt{color:#7e8896;font-size:10.5px;font-variant-numeric:tabular-nums}
+.cgx{font:inherit;font-size:11px;margin-top:4px;padding:1px 8px;border-radius:6px;cursor:pointer;
+  background:none;border:1px solid #33425a;color:#8ab4ff}
+.cgx:hover{background:#1d2533}
+.jump{position:absolute;right:16px;top:-42px;z-index:30;background:#1d2b42;border:1px solid #3a5a8c;
+  color:#bcd4f5;border-radius:999px;padding:7px 14px;font:inherit;font-size:12px;cursor:pointer;display:none;
+  box-shadow:0 2px 10px #0009}
+.jump b{color:#fff}
+.empty{color:#8b95a7;text-align:center;padding:44px 0}

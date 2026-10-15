@@ -1,0 +1,6 @@
+# Fake test fixtures in the root commit, made before the inline gitleaks:allow comments.
+68268bb45e49173b95c62c9023df9628ed6c541d:tests/test_history_units.py:generic-api-key:103
+68268bb45e49173b95c62c9023df9628ed6c541d:tests/test_harness_plat.py:generic-api-key:17
+68268bb45e49173b95c62c9023df9628ed6c541d:tests/test_harness.py:generic-api-key:154
+68268bb45e49173b95c62c9023df9628ed6c541d:tests/test_redact.py:generic-api-key:76
+68268bb45e49173b95c62c9023df9628ed6c541d:web/js/90b-mypref.js:generic-api-key:9

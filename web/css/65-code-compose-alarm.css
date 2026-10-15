@@ -1,0 +1,152 @@
+/* ★IntelliJ Darcula palette (2026-08-25: classes and variables were indistinguishable).
+   Tokens are split by **shape**, not color alone: ident( → method · capitalized → type ·
+   ALL_CAPS → constant · @Xxx → annotation. A heuristic, not a parser, so sometimes wrong —
+   hence capped at 6 colors (more would make wrong coloring noticeable).
+   ⚠Only the type color differs from Darcula. The original leaves classes default-colored, which was exactly the complaint,
+   so only types got teal. The rest (keyword orange · string green · number blue · method yellow · field purple) are original values. */
+.bd pre.cb{position:relative;font:12px/1.55 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  background:#1e1f22;border-color:#2b2d30;color:#a9b7c6;padding-top:10px}
+.bd pre.cb code{font:inherit;color:inherit;background:none;border:0;padding:0}
+.bd pre.cb .cl{position:absolute;top:0;right:0;font-size:10.5px;letter-spacing:.02em;color:#7e8896;
+  background:#2b2d30;border-radius:0 7px 0 6px;padding:1px 6px;user-select:none}
+.bd pre.cb .cc{color:#8a8a8a;font-style:italic}   /* comment */
+.bd pre.cb .cs{color:#7a9a68}                     /* string */
+.bd pre.cb .cn{color:#6897bb}                     /* number */
+.bd pre.cb .ck{color:#cc7832}                     /* keyword */
+.bd pre.cb .cm{color:#ffc66d}                     /* method */
+.bd pre.cb .ct{color:#4ec9b0}                     /* type/class */
+.bd pre.cb .cf{color:#9876aa}                     /* field/constant */
+.bd pre.cb .ca{color:#bbb529}                     /* annotation */
+.bd pre code{border:0;background:none;padding:0}
+.bd table{border-collapse:collapse;margin:6px 0;display:block;overflow-x:auto;max-width:100%}
+.bd th,.bd td{border:1px solid #232a35;padding:3px 8px;font-size:12px;text-align:left}
+.bd th{background:#161c25;color:#bcd0ea}
+.bd strong{color:#fff2c9}
+/* ⚠The auto light twin of #fff2c9 is a brown at 4.28:1 (3.97 inside code) — pin it to body ink */
+html[data-ui=next][data-theme=light] .bd strong{color:var(--nx-t1)}
+.bd hr{border:0;border-top:1px solid #232a35;margin:9px 0}
+.hid{display:none}
+.bd{overflow-wrap:break-word}   /* long unbroken tokens (inline code, paths) break only when they would overflow the bubble */
+/* ★Long text is shown **as markdown** too — only the height is folded. Markdown reads cleaner than prose.
+   Showing only a summary dropped tables, code and emphasis entirely and was harder to read (86% of long text took this path). */
+.bd.clamp{max-height:300px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(#000 72%,transparent);mask-image:linear-gradient(#000 72%,transparent)}
+/* ★The input row sits on **the same width and grid as the conversation column** — it used to span the full screen, wider than bubbles,
+   making the eye move twice (user report). Uses the same max-width/grid as `.wrap`, with the right column left empty. */
+#compose{flex:0 0 auto;position:relative;background:#0d1014;border-top:1px solid #1a1f28;
+  padding:8px 0 12px}
+/* ★Must be **the same grid and max width** as .wrap for the input to align exactly with the feed column.
+   Measured 2026-08-25 (chat input spread over the Claude sessions area): the left card was added and
+   .wrap changed to 3 columns/1720px, but this stayed at the old 2 columns/1390px, so centers drifted and the input
+   spread under the left card. Writing the grid in two places causes this again — change both when values change. */
+#composein{max-width:2240px;margin:0 auto;padding:0 12px;display:grid;   /* ★12px left/right — must match .wrap (16px drifts by 4px) */
+  grid-template-columns:var(--wrl,360px) 1fr var(--wrr,500px);gap:8px}   /* ⚠gap = .wrap gap, or the input drifts right of the feed */
+#composein > .cwrap{min-width:0;grid-column:2}   /* left card slot left empty; placed only in the feed column */
+.crow{display:flex;gap:8px;align-items:flex-end}
+#cbox{flex:1;resize:none;min-height:40px;max-height:160px;background:#151a22;border:1px solid #232a35;
+  border-radius:9px;color:#dfe5ee;font:inherit;font-size:13px;line-height:1.5;padding:9px 11px}
+#cbox:focus{outline:none;border-color:#3a5a8c}
+#csend{background:#1d2b42;border:1px solid #3a5a8c;color:#bcd4f5;border-radius:9px;
+  padding:0 18px;height:40px;flex:0 0 auto;cursor:pointer;font:inherit;font-size:13px}   /* same as the input's 1-line height */
+#csend:disabled{opacity:.5;cursor:default}
+#rt{font-size:11.5px;color:#8b95a7;margin-bottom:6px;display:flex;gap:8px;align-items:center}
+#rt b{color:#8ab4ff;font-weight:600}
+#rt .x{cursor:pointer;color:#d9a}
+#cto{font-size:11.5px;color:#8b95a7;margin-bottom:6px}
+#cto b{color:var(--nx-t1,#e6edf3);font-weight:600}
+#cto .ctono{color:#d9a}
+.reply{font-size:11.5px;color:#8b95a7;border-left:2px solid #2f4258;padding:2px 0 2px 8px;margin:0 0 5px}
+.reply b{color:#8ab4ff;font-weight:600}
+.rbtn{background:none;border:0;color:#5b7ba8;cursor:pointer;font:inherit;font-size:11px;padding:0 0 0 6px}
+.hidnote{font-size:11px;color:#7e8896;margin:2px 0 8px}
+.sum{margin-top:5px;border-left:2px solid #2f4258;padding-left:9px}
+.sl{font-size:13px;color:#dbe4f0;margin:3px 0;line-height:1.55}
+.sl::before{content:'· ';color:#5b7ba8}
+.smeta{font-size:11px;color:#7e8896;margin-top:5px}
+.fold{max-height:220px;overflow:hidden;position:relative}
+.fold::after{content:'';position:absolute;left:0;right:0;bottom:0;height:56px;
+  background:linear-gradient(transparent,#151a22)}
+.row.me .fold::after{background:linear-gradient(transparent,#16211c)}
+.more{background:none;border:0;color:#8ab4ff;cursor:pointer;font:inherit;font-size:11.5px;padding:4px 0 0}
+.rd{font-size:10.5px;margin:2px 4px 0;color:#6b7688}
+.row.me .rd{text-align:right}
+.rd.ok{color:#6fb894}
+.rd.part{color:#c9a45c}
+.rd em{color:#8a7a4d;font-style:normal}
+/* ★Fixed position (bottom:16px) **covered the send button** (user report). Changed to absolute inside `#compose`
+   so it floats **right above** the input row — rises with the input when it grows to several lines (not a fixed value). */
+/* ★Alarms are **separate** from the session panel — session state is "how is it now", alarms are "what finished",
+   and it replaces external messenger notifications, so it must stand out (2026-08-19). */
+.ic{width:13px;height:13px;vertical-align:-2px;margin-right:5px;fill:none;
+  stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.bell .ic{margin-right:0}
+/* #wkm = the shell of the /work and /brdiff popup windows (body.wpop), filling the whole window.
+   ⚠Fixed 100vh height, not content-sized: split panes measure the body height. */
+html[data-ui=next] body.wpop{overflow:hidden}
+html[data-ui=next] body.wpop header,html[data-ui=next] body.wpop .wrap,html[data-ui=next] body.wpop #compose{display:none !important}
+html[data-ui=next] body.wpop .wkm{padding:0;background:var(--nx-panel)}
+html[data-ui=next] .wkm .wkmin{width:100%;height:100vh;display:flex;flex-direction:column;background:var(--nx-panel)}
+html[data-ui=next] .wkm .wkmh{display:flex;align-items:baseline;gap:10px;padding:10px 14px;border-bottom:1px solid var(--nx-rule)}
+html[data-ui=next] .wkm .wkmh b{font-size:14px;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .wkm .wkmh span{flex:1;min-width:0;color:var(--nx-t2);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .wkm .wkmh button{margin-left:auto;background:none;border:0;color:inherit;font-size:16px;cursor:pointer}
+html[data-ui=next] .wkm .wkmb{flex:1 1 auto;min-height:0;overflow:auto;padding:0 14px 14px}   /* ⚠no top padding: the sticky tab strip (top:0) would let text show above it */
+/* N-pane work-log grid (2026-09-23): fr tracks are set inline by workPaintSplit; 9px gutter tracks hold the .wsd dividers */
+html[data-ui=next] .wsp.wsg{display:grid;gap:0;align-items:stretch;min-height:280px}
+html[data-ui=next] .wsg > .wpn{min-width:0;min-height:0}
+html[data-ui=next] .wsg > .wsd[data-ax=c]{cursor:col-resize}
+html[data-ui=next] .wsg > .wsd[data-ax=r]{cursor:row-resize}
+html[data-ui=next] .wsg > .wsd[data-ax=r]::after{inset:4px 3px}
+html[data-ui=next] .wsg > .wpn.on{border-color:var(--nx-info);box-shadow:inset 0 0 0 1px var(--nx-info)}
+html[data-ui=next] body .wt1 em{font-size:10px}   /* the size-ladder twin of 8.5px lands at 9.5px; 10px is the readable floor */
+html[data-ui=next] .wt1.wtf em{background:var(--nx-info);color:var(--nx-bg);border-color:var(--nx-info)}
+html[data-ui=next] .wlo{margin-left:auto;display:inline-flex;flex-wrap:wrap;gap:3px;align-items:center;align-self:center;margin-bottom:4px}
+html[data-ui=next] .wlo > i{font-style:normal;font-size:10px;color:var(--nx-t3);margin-right:2px}
+html[data-ui=next] .wlo .wsb{margin:0}
+html[data-ui=next] .wpkw .wpe{padding:18px 12px 10px}
+html[data-ui=next] .wpkl{display:flex;flex-direction:column;gap:2px;max-width:520px;margin:0 auto;padding:0 8px 12px}
+html[data-ui=next] .wpkl > u{text-decoration:none;font-size:10.5px;color:var(--nx-t3);padding:4px 2px}
+html[data-ui=next] .wpk{display:flex;gap:6px;align-items:center;min-width:0;cursor:pointer;padding:5px 8px;border-radius:6px;
+  border:1px solid var(--nx-rule);font-size:12px;color:var(--nx-t1)}
+html[data-ui=next] .wpk:hover,html[data-ui=next] .wpk:focus{background:var(--nx-hover);outline:none;border-color:var(--nx-info)}
+html[data-ui=next] .wpk.wpka{margin-left:18px}
+html[data-ui=next] .wpk b{font-weight:500;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .wpk span{margin-left:auto;flex:0 0 auto;color:var(--nx-t2);font-size:11px}
+html[data-ui=next] .wpk .wtd{background:var(--nx-idle)}
+html[data-ui=next] .wpk .wtd.wpkr{background:var(--nx-info)}
+html[data-ui=next] .wpkn{color:var(--nx-t3);font-size:12px;text-align:center;padding:8px}
+/* ⚠Narrow windows: every multi layout stacks (a 3/4-column grid under 700px leaves unreadable slivers) */
+@media (max-width:699px){
+  html[data-ui=next] .wsp.wsg{display:flex;flex-direction:column;gap:8px;overflow-y:auto;overflow-x:hidden}
+  html[data-ui=next] .wsg > .wsd{display:none}
+  html[data-ui=next] .wsg > .wpn{flex:0 0 auto;height:min(70vh,520px)}
+}
+.bell{position:relative;background:#151a22;border:1px solid #232a35;color:#cfd8e6;border-radius:8px;
+  padding:4px 9px;font:inherit;font-size:13px;cursor:pointer}
+.bell:hover{border-color:#3a5a8c}
+.bell .bdg{position:absolute;top:-5px;right:-5px;min-width:15px;height:15px;padding:0 3px;border-radius:9px;
+  background:#e0725f;color:#fff;font:inherit;font-size:10px;line-height:15px;font-weight:700;display:none}
+.bell.has .bdg{display:block}
+/* ★2026-09-27 QA: white on the twin's #e05f67 was 3.5:1 -> light --nx-err #c11e32 gives 6.0:1. ⚠[data-ui] keeps the #nxcss twin from remapping it. */
+html[data-ui=next][data-ui] .bell .bdg{background:#c11e32;color:#fff}
+/* ★Resizable (2026-08-19) — `resize:both` needs `overflow:auto` (already present).
+   Anchored right (`right:14px`), so dragging the handle **widens to the left** — never off-screen.
+   The dragged size is kept in `localStorage` (persists across close/open). Caps in vw/vh keep it on screen. */
+/* ★The alarm window is **fixed right** (near the bell). It was briefly moved over the feed column and reverted —
+   covering the session card looked like a problem, but a popover covering what is behind is its nature,
+   and the user settled it: it is checked and closed (2026-08-27). Only vertical position is set by JS (alarmPlace). */
+/* z 45 > the sessions drawer (44): the open alarm list covers the drawer, both anchored top-right. Modals are 60. */
+.alarm{display:none;position:fixed;right:14px;top:56px;z-index:45;width:min(420px,92vw);
+  max-height:calc(100vh - 56px - 30px - 8px);min-width:300px;min-height:160px;max-width:96vw;resize:both;
+  overflow:auto;background:#12161d;border:1px solid #262e3b;border-radius:11px;
+  box-shadow:0 16px 40px #000a;padding:9px 11px 11px}
+.alarm::-webkit-resizer{background:#1b2330}
+.alarm.open{display:block}
+/* base text tone the panel always had (once inherited from the old unscoped `.open` pill); 10.5px is laddered to 12px in the next UI */
+.alarm{color:#f0c674;font-size:10.5px}
+html[data-ui=next][data-ui] .alarm{border:var(--pop-bd);border-radius:var(--pop-r);box-shadow:var(--pop-sh)}
+.ahead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:12px;color:#cfd8e6;
+  padding-bottom:7px;border-bottom:1px solid #1e232c;margin-bottom:7px}
+.aact{display:flex;gap:9px;font-size:11px;color:#8b95a7}
+.aact span{cursor:pointer}
+.aact span:hover{color:#8ab4ff}

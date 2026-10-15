@@ -1,0 +1,179 @@
+{
+ "v": 1,
+ "note": "A stage agent's own git commit (agent_id set) stamps cm on the stage and leaves the run open; the main agent's commit stamps cm and closes it.",
+ "pipe": {
+  "name": "demo-flow",
+  "stages": [
+   {
+    "title": "설계",
+    "agent": "sidereus-designer"
+   },
+   {
+    "title": "구현",
+    "agent": "sidereus-implementer",
+    "fanout": "slices",
+    "gate": "scripts/check.sh --fast",
+    "onError": "continue"
+   },
+   {
+    "title": "검증",
+    "agent": "sidereus-verifier",
+    "model": "sonnet",
+    "gate": "scripts/check.sh --full",
+    "onFail": {
+     "goto": "구현",
+     "max": 2
+    }
+   },
+   {
+    "title": "리뷰",
+    "agent": "sidereus-reviewer",
+    "onFail": {
+     "goto": "구현",
+     "max": 1,
+     "then": "재검증"
+    }
+   },
+   {
+    "title": "재검증",
+    "agent": "sidereus-verifier",
+    "model": "sonnet",
+    "onlyOnJump": true,
+    "onFail": {
+     "goto": "구현",
+     "max": 1
+    }
+   },
+   {
+    "title": "라이브 검증",
+    "agent": "general-purpose"
+   }
+  ]
+ },
+ "ev": [
+  {
+   "t": 0,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/설계]",
+   "sub": "sidereus-designer",
+   "model": null,
+   "bg": 0,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 10,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/설계]",
+   "sub": "sidereus-designer",
+   "model": null,
+   "bg": 0,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 20,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": "sidereus-implementer",
+   "model": null,
+   "bg": 0,
+   "aid": "a02",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 30,
+   "e": "pre",
+   "tool": "Bash",
+   "tag": "",
+   "sub": null,
+   "model": null,
+   "bg": 0,
+   "aid": "a02",
+   "to": null,
+   "commit": 1,
+   "denied": 0
+  },
+  {
+   "t": 40,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": "sidereus-implementer",
+   "model": null,
+   "bg": 0,
+   "aid": "a02",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 50,
+   "e": "pre",
+   "tool": "Bash",
+   "tag": "",
+   "sub": null,
+   "model": null,
+   "bg": 0,
+   "aid": null,
+   "to": null,
+   "commit": 1,
+   "denied": 0
+  }
+ ],
+ "cp": [
+  {
+   "at": 3,
+   "act": "run",
+   "end": 0,
+   "cur": "구현",
+   "st": {
+    "설계": "done n=1",
+    "구현": "run n=1"
+   },
+   "cm": {
+    "구현": 1,
+    "설계": 0
+   }
+  },
+  {
+   "at": 4,
+   "act": "run",
+   "end": 0,
+   "cur": "구현",
+   "st": {
+    "설계": "done n=1",
+    "구현": "done n=1"
+   },
+   "view": {
+    "status": "fin"
+   },
+   "cm": {
+    "구현": 1
+   }
+  },
+  {
+   "at": 5,
+   "act": "idle",
+   "end": 1,
+   "cur": "구현",
+   "st": {
+    "설계": "done n=1",
+    "구현": "done n=1"
+   },
+   "cm": {
+    "구현": 2,
+    "설계": 0
+   }
+  }
+ ]
+}

@@ -1,0 +1,1216 @@
+#!/usr/bin/env python3
+"""Pipeline flow hook: keeps a tagged pipeline run on its stage order and hands the main agent the next step.
+
+PreToolUse (Task|Agent|SendMessage, Bash): a `[pl:<name>/<stage>]` tag opens/advances a run in
+<data dir>/plmark/<session_id>.runs.json and denies: a jump past unrun, undeclared stages · an unknown stage title ·
+an Agent/Task whose subagent_type or model is not the stage's · an untagged SendMessage while a run is open.
+Bash descriptions `[pl-skip:<name>/<stage>]` and `[pl-model:<name>/<stage>=<model>]` declare a skip / model override.
+Per-stage outcome `st` = {title: {s: run|done|skip|back|fail, t0, t1, n}} (n = dispatches).
+Denies on a run: `deny` = count, `dl` = last DL_MAX {t, title, c} with c in DENY_CODES.
+PostToolUse (Task|Agent|SendMessage): when the stage's dispatches are back, adds «PASS → next … / FAIL → …» context.
+`--platform <key>` (other CLIs): a shell command STARTING with `[pl:<name>/<stage>]` (Pre) starts a stage and
+`[pl-end:<name>/<stage>]` / `[pl-end:<name>/<stage>|fail]` (Post) ends it with the PASS / FAIL hand-off.
+No `--platform` = cc (Claude Code), unchanged.
+Run end (last stage done · `[pl-end:]` · main's `git commit`): when the project has an answer key
+(<data dir>/eval/<repo key>/seeds.json) it launches `scripts/pl_eval.py score --auto` detached (no wait, no output).
+Stores stage titles, counts and times only -- never descriptions, commands, task text or tool output.
+Fail-open: any problem means no output and exit 0. Stdlib only, Python 3.9, no fcntl (Windows target).
+"""
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+# Same derivation as sidereus/config.py DATA_DIR and hooks/pl_mark.py (this hook cannot import either).
+DATA_DIR = os.path.expanduser(os.environ.get("MAILBOX_DIR") or "~/.mailbox-mcp")
+MARK_DIR = os.path.join(DATA_DIR, "plmark")
+CONFIG_PATH = None   # None = same rule as pipelines_brief.py; patched in tests
+TAG = re.compile(r"\[pl:([a-z0-9-]{1,40})/([^\]\n]{1,40})\]")
+SKIP_TAG = re.compile(r"\[pl-skip:([a-z0-9-]{1,40})/([^\]\n]{1,40})\]")
+END_TAG = re.compile(r"\[pl-end:([a-z0-9-]{1,40})/([^\]\n|]{1,40})\]")
+MODEL_TAG = re.compile(r"\[pl-model:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=([A-Za-z0-9._-]{1,40})\]")
+# Renamed recommended stage titles (old -> new): old tags and legacy files map to the new title. ⚠Same map in sidereus/pipeline_schema.py RENAMED.
+RENAMED = {"최종 검증": "재검증"}
+CLAUDE_DIR = None    # None = $CLAUDE_CONFIG_DIR or HOME_DIR/.claude (user agents); patched in tests
+BUILTIN = ("general-purpose", "Explore", "Plan")
+NO_AGENT = ("", "main", "claude")   # a stage the main agent runs itself: no subagent_type check
+SID = re.compile(r"^[0-9a-zA-Z-]{8,64}$")
+FIELD = {"Bash": "description", "Agent": "description", "Task": "description", "SendMessage": "summary"}
+DISPATCH = ("Agent", "Task", "SendMessage")
+# Same keys as sidereus/ext_store.py EXT_PLAT, plus cc; an unknown --platform does nothing.
+PLATFORMS = ("cc", "gemini", "codex", "copilot", "cursor", "cline", "windsurf", "warp", "trae", "zed", "grok",
+             "deepseek", "qwen", "kimi", "mistral", "ollama", "perplexity", "huggingface", "meta", "openrouter")
+EMIT = ("cc", "codex", "gemini")   # platforms that read PostToolUse additionalContext; others get no stdout
+EVENT = {"BeforeTool": "PreToolUse", "AfterTool": "PostToolUse"}   # Gemini names
+SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash",
+         "PowerShell")   # Bash/PowerShell only off cc; PowerShell = Claude Code's Windows shell tool
+# ⚠Same as pl_mark.py MARK; anchored at the command start so `grep "[pl:"` never counts.
+MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl(-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n|]{1,40})(\|fail)?)\]""")
+IDLE_S = 6 * 3600     # a run untouched this long is over; the next tag opens a new one
+LOST_S = 45 * 60      # ⚠a dispatch refused or failed before running gets no Post; its slice is presumed lost after this
+LOCK_WAIT_S, LOCK_STALE_S = 2.0, 5.0
+NUDGE_S = 600         # at most one untagged-Bash reminder per open run in this window
+# Async receipts: Agent run_in_background launch, SendMessage resume / queue (same texts sidereus/bgtasks_parse.py reads).
+BG_RE = re.compile(r"async_launched|Async agent launched|Resuming agent|resumed from transcript|resumedAgentId|"
+                   r"Message queued")
+
+
+# --- session pipeline dirs: identical block in pl_mark.py · pl_flow.py · pipelines_brief.py (tests compare) ---
+# ⚠A session often works in another project than its cwd (`cd ~/other`); reading only <cwd>/.claude/pipelines left it
+#   with no brief, nudge or hand-off. Only places the session moved to count (Bash `cd` targets, transcript `cwd`):
+#   paths merely read or written gave false matches (a session reading another repo's files got its pipelines).
+HOME_DIR = os.path.expanduser("~")             # patched in tests
+DIRS_DIR = os.path.join(DATA_DIR, "plbrief")   # <sid>.dirs cache (project paths only); patched in tests
+DIRS_TTL, DIRS_TAIL, DIRS_MAX = 60, 256 * 1024, 8
+_PLNAME = re.compile(r"[a-z0-9-]{1,40}")
+# gitinfo's, plus absolute; plus Windows `cd /d C:\x`, `Set-Location|sl [-Path]`, quoted drive paths with spaces
+_CD_RE = re.compile(r"(?:^|[\s;&|(])(?:cd(?:\s+/[dD](?=\s+[\"']?[A-Za-z]:))?|(?i:set-location|sl)(?:\s+-(?i:path))?)"
+                    r"\s+(?:\"([A-Za-z]:[^\"\n]*)\"|'([A-Za-z]:[^'\n]*)'|[\"']?([A-Za-z0-9_.~/\\][A-Za-z0-9_.\-/\\:]*))")
+
+
+def _git_root(d):
+    cur = os.path.abspath(d)
+    while True:
+        if os.path.exists(os.path.join(cur, ".git")):   # dir, or file in a worktree
+            return cur
+        up = os.path.dirname(cur)
+        if up == cur:
+            return ""
+        cur = up
+
+
+def _has_pl(d):
+    try:
+        return any(n.endswith(".json") and _PLNAME.fullmatch(n[:-5])
+                   for n in os.listdir(os.path.join(d, ".claude", "pipelines")))
+    except OSError:
+        return False
+
+
+def _scan_dirs(tp, cwd):
+    """Git roots with pipelines the session moved into in the transcript tail, newest first.
+    ⚠The mailbox data dir is skipped: every session touches it for mail, and its pipelines would nudge them all."""
+    try:
+        size = os.path.getsize(tp)
+        with open(tp, "rb") as f:
+            if size > DIRS_TAIL:
+                f.seek(size - DIRS_TAIL)
+                f.readline()
+            raw = f.read().decode("utf-8", "replace")
+    except OSError:
+        return []
+    home = HOME_DIR.rstrip(os.sep)
+    skip = {os.path.normpath(DATA_DIR), home}
+    out, seen, roots = [], set(), set()
+    for line in reversed(raw.splitlines()):
+        if '"tool_use"' not in line and '"cwd"' not in line:
+            continue
+        try:
+            e = json.loads(line)
+            c = (e.get("message") or {}).get("content") if e.get("type") == "assistant" else None
+        except Exception:
+            continue
+        found = [e["cwd"]] if isinstance(e.get("cwd"), str) and os.path.isabs(e["cwd"]) else []
+        for b in c if isinstance(c, list) else []:
+            inp = b.get("input") if isinstance(b, dict) and b.get("type") == "tool_use" else None
+            if not isinstance(inp, dict) or not isinstance(inp.get("command"), str):
+                continue
+            for m in _CD_RE.finditer(inp["command"]):   # ⚠`cd` targets only, never other path arguments
+                t = next((g for g in m.groups() if g), "")
+                if t == "~" or t[:2] in ("~/", "~" + os.sep):
+                    found.append(home + t[1:])
+                elif t and not t.startswith("~"):
+                    found.append(os.path.join(cwd, t))   # ⚠an absolute target (/x, C:\x) replaces cwd
+            for p in reversed(found):   # newest first: a later `cd` of one command beats an earlier one
+                p = os.path.normpath(p)
+                if not os.path.normcase(p).startswith(os.path.normcase(home + os.sep)) or p in seen:
+                    continue
+                seen.add(p)
+                r = _git_root(p if os.path.isdir(p) else os.path.dirname(p))
+                if r and r not in roots and r not in skip and r != cwd:
+                    roots.add(r)
+                    if _has_pl(r):
+                        out.append(r)
+                        if len(out) >= DIRS_MAX:
+                            return out
+    return out
+
+
+def session_dirs(ev, every=False):
+    """[cwd] + other project roots with pipelines this session works in (cached DIRS_TTL s per session).
+    No transcript = [cwd] alone (the old behaviour). `every` = scan even when the cwd has pipelines (pl_flow picks by fit)."""
+    cwd, sid, tp = ev.get("cwd"), ev.get("session_id"), ev.get("transcript_path")
+    if not (isinstance(tp, str) and os.path.isabs(tp) and isinstance(sid, str) and SID.match(sid)) or (not every and _has_pl(cwd)):
+        return [cwd]   # ⚠a cwd with its own pipelines never borrows another project's
+    path = os.path.join(DIRS_DIR, sid + ".dirs")
+    dirs = None
+    try:
+        if time.time() - os.path.getmtime(path) < DIRS_TTL:
+            with open(path, encoding="utf-8") as f:
+                dirs = json.load(f)
+    except Exception:
+        dirs = None
+    if not isinstance(dirs, list):
+        dirs = _scan_dirs(tp, cwd)
+        try:
+            os.makedirs(DIRS_DIR, exist_ok=True)
+            tmp = path + ".tmp.%d" % os.getpid()
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(dirs, f, ensure_ascii=False)
+            os.replace(tmp, path)
+        except OSError:
+            pass
+    return [cwd] + [d for d in dirs if isinstance(d, str) and os.path.isabs(d) and d != cwd]
+# --- end session pipeline dirs ---
+
+
+# Same as sidereus/gitinfo.py GIT_SAFE_OPTS (the plugin ships hooks/ only); ⚠repo config must not run programs.
+GIT_SAFE_OPTS = ["-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null", "-c", "core.quotePath=false"]
+
+
+def _head(proj):
+    """Short HEAD of the run's repo, or "" (git missing, not a repo, slow); never raises."""
+    try:
+        root = _git_root(os.path.realpath(proj)) if proj else ""
+        if not root:
+            return ""
+        kw = {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)} if os.name == "nt" else {}
+        p = subprocess.run(["git"] + GIT_SAFE_OPTS + ["-C", root, "rev-parse", "--short", "HEAD"],
+                           stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=1,
+                           env=dict(os.environ, GIT_OPTIONAL_LOCKS="0"), **kw)
+        h = (p.stdout or "").strip()
+        return h if p.returncode == 0 and re.fullmatch(r"[0-9a-f]{4,40}", h) else ""
+    except Exception:
+        return ""
+
+
+def _now():
+    return time.time()
+
+
+# --- auto catch-rate scoring at run end (scripts/pl_eval.py score --auto dedupes per (pipeline, commit)) ---
+SCORE_SCRIPT = None   # None = <hook dir>/../scripts/pl_eval.py, else <data dir>/scripts/pl_eval.py; patched in tests
+_CLOSED = []          # (project dir, pipeline name, since) of runs this hook call ended
+
+
+def _closed(proj, name, since=None):
+    """since = closing `git commit` Pre time: the scorer skips unless a commit at/after it landed."""
+    _CLOSED.append((proj, name, since))
+
+
+def _score_script():
+    if SCORE_SCRIPT:
+        return SCORE_SCRIPT
+    for d in (os.path.dirname(os.path.dirname(os.path.abspath(__file__))), DATA_DIR):
+        p = os.path.join(d, "scripts", "pl_eval.py")
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def _spawn(argv):
+    """Detached child: no wait, no pipes. ⚠Never let it block or fail the tool call."""
+    kw = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL, "close_fds": True}
+    if os.name == "nt":
+        kw["creationflags"] = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    else:
+        kw["start_new_session"] = True
+    subprocess.Popen(argv, **kw)
+
+
+def _autoscore():
+    """Score each run ended in this call, only where seeds.json exists (same key as sidereus/arch_verify.repo_key)."""
+    todo, _CLOSED[:] = list(dict.fromkeys(_CLOSED)), []
+    for proj, name, since in todo:
+        try:
+            if not (isinstance(proj, str) and os.path.isabs(proj) and isinstance(name, str) and _PLNAME.fullmatch(name)):
+                continue
+            key = hashlib.sha1(os.path.realpath(proj).encode("utf-8", "surrogateescape")).hexdigest()[:16]
+            pf, sc = os.path.join(proj, ".claude", "pipelines", name + ".json"), _score_script()
+            if sc and os.path.isfile(os.path.join(DATA_DIR, "eval", key, "seeds.json")) and os.path.isfile(pf):
+                _spawn([sys.executable or "python3", sc, "score", "--repo", proj, "--pipeline", pf, "--auto"]
+                       + (["--since", str(int(since))] if since else []))
+        except Exception:
+            pass
+
+
+def _installed(agent, dirs):
+    """True when `agent` is a builtin or a project/user `.claude/agents/<agent>.md` (same rule as 48b plAgMissing)."""
+    if agent in BUILTIN:
+        return True
+    c = os.environ.get("CLAUDE_CONFIG_DIR")
+    user = CLAUDE_DIR or (os.path.expanduser(c) if c else os.path.join(HOME_DIR, ".claude"))
+    return any(os.path.isfile(os.path.join(d, "agents", agent + ".md"))
+               for d in [os.path.join(x, ".claude") for x in dirs if x] + [user])
+
+
+def _fit(ev, tool, name, s, r, dirs):
+    """(code "agent"|"model", deny reason) when an Agent/Task does not use the stage's agent and model, else None.
+    ⚠An omitted model is a mismatch: the run record cannot tell which model the agent file picks."""
+    if tool not in ("Agent", "Task"):
+        return None
+    ti = ev.get("tool_input") or {}
+    want = s.get("agent") if isinstance(s.get("agent"), str) else ""
+    sub = ti.get("subagent_type") if isinstance(ti.get("subagent_type"), str) and ti.get("subagent_type") else "general-purpose"
+    ok_ag = want in NO_AGENT or sub == want or (sub == "general-purpose" and not _installed(want, dirs))
+    m = r["models"].get(s["title"]) or s.get("model")
+    m = m.strip().lower() if isinstance(m, str) else ""
+    got = ti.get("model").strip().lower() if isinstance(ti.get("model"), str) else ""
+    if ok_ag and (not m or m == "inherit" or got == m):
+        return None
+    exp = "subagent_type %s" % (want if want not in NO_AGENT else sub)
+    if want not in NO_AGENT and not _installed(want, dirs):
+        exp += " (not installed: general-purpose also accepted)"
+    if m and m != "inherit":
+        exp += " and model %s" % m
+    return ("model" if ok_ag else "agent",
+            "[pl:%s/%s] expects %s; this call has subagent_type %s, model %s. Dispatch again with those, or declare "
+            "another model first with a Bash description [pl-model:%s/%s=<model>]."
+            % (name, s["title"], exp, sub[:64], got[:40] or "(none)", name, s["title"]))
+
+
+def _open_run(path, now):
+    """(name, stage) of an open run in this session's runs file (touched within LOST_S, «Apply» on), else None."""
+    for n, r in sorted(_load(path)["runs"].items()):
+        if isinstance(r, dict) and not r.get("end") and now - float(r.get("t1") or 0) <= LOST_S \
+                and r.get("tail") != r.get("cur") and not _apply_off(r.get("proj") or r.get("cwd")):
+            return n, r.get("cur") or ""
+    return None
+
+
+def _apply_off(cwd):
+    """True when Sidereus's «Apply» is off for `cwd` (same rule as pl_mark.py); any problem = not off."""
+    try:
+        p = CONFIG_PATH or os.path.expanduser(os.environ.get("MAILBOX_CONFIG") or os.path.join(DATA_DIR, "config.local.json"))
+        with open(p, encoding="utf-8") as f:
+            v = json.load(f).get("pipeline_apply") or {}
+        return ((v.get("projects") or {}).get(cwd) or v.get("mode")) == "off"
+    except Exception:
+        return False
+
+
+def _project(ev, tool, name, title, keep):
+    """Project dir whose <name>.json this call belongs to, or None (ambiguous).
+    Order: the cwd project (cwd or its git root) when it owns <name>; else the open run's project `keep`; else the most
+    recent `cd` target owning it (session_dirs is newest first). ⚠Fit scoring let a same-named pipeline of a repo the
+    session only cd'd into take a run started in the cwd project; fit now only ranks owners found outside the
+    session's dirs (_known_owner): stage title +1, stage agent == subagent_type +2, cwd breaks ties."""
+    rel = os.path.join(".claude", "pipelines", name + ".json")
+    cwd = ev.get("cwd") or ""   # a hook event without cwd must not raise
+    hits = [d for d in session_dirs(ev, every=True) if d and os.path.isfile(os.path.join(d, rel))]
+    own = [d for d in (cwd, _git_root(cwd) if cwd else "") if d and os.path.isfile(os.path.join(d, rel))]
+    if own:
+        return own[0]
+    if hits:
+        return keep if keep in hits else hits[0]
+    hits = _known_owner(rel, ev)
+    if keep in hits or len(hits) <= 1:
+        return keep if keep in hits else (hits[0] if hits else None)
+    sub = (ev.get("tool_input") or {}).get("subagent_type") if tool in ("Agent", "Task") else None
+    score = {}
+    for d in hits:
+        pl = _stages(d, name)
+        s = [x for x in (pl[0] if pl else []) if x["title"] == title]
+        score[d] = (1 if s else 0) + (2 if s and isinstance(sub, str) and s[0].get("agent") == sub else 0)
+    top = max(score.values())
+    best = [d for d in hits if score[d] == top]
+    if len(best) == 1:
+        return best[0]
+    return cwd if cwd in best else None
+
+
+CLAUDE_JSON = None   # None = $CLAUDE_CONFIG_DIR/.claude.json or HOME_DIR/.claude.json; patched in tests
+PROJ_STORE = None    # None = DATA_DIR/pipeline-projects.json (sidereus/pipeline_projects.py PROJ_STORE); patched in tests
+TOUCH_TAIL = 1500000   # same tail as sidereus/gitinfo.session_repos (server `repos`)
+
+
+def _known_owner(rel, ev=None):
+    """Known projects (~/.claude.json `projects` keys + Sidereus's added projects) owning `rel`: the sole owner, else the
+    owners this session touched. ⚠A session launched in another folder found no pipelines and recorded nothing, so
+    Sidereus drew another session's stale run. Any error = []."""
+    try:
+        c = os.environ.get("CLAUDE_CONFIG_DIR")
+        cjs = [CLAUDE_JSON] if CLAUDE_JSON else [os.path.join(os.path.expanduser(c), ".claude.json")] * bool(c) + [
+            os.path.join(HOME_DIR, ".claude.json")]
+        st = PROJ_STORE or os.path.join(DATA_DIR, "pipeline-projects.json")
+        h = HOME_DIR.rstrip(os.sep) + os.sep   # ⚠default files only under HOME_DIR: tests patch it, so they never read live ones
+        ks = []
+        for p in [x for x in cjs if CLAUDE_JSON or x.startswith(h)] + [st] * bool(PROJ_STORE or st.startswith(h)):
+            try:
+                with open(p, encoding="utf-8") as f:
+                    v = json.load(f)
+            except Exception:
+                continue
+            v = v.get("projects") if isinstance(v, dict) else v
+            ks += list(v) if isinstance(v, (dict, list)) else []
+        own = []
+        for k in ks:
+            if isinstance(k, str) and os.path.isabs(k) and k not in own and os.path.isfile(os.path.join(k, rel)):
+                own.append(k)
+        return own if len(own) <= 1 else _touched(own, (ev or {}).get("transcript_path"))
+    except Exception:
+        return []
+
+
+def _touched(own, tp):
+    """Owners whose paths appear in tool_use inputs of the transcript tail (sidereus/gitinfo.session_repos = server `repos`).
+    ⚠Several known projects often own the same pipeline name; only the ones the session works in are candidates."""
+    if not (isinstance(tp, str) and os.path.isabs(tp)):
+        return []
+    with open(tp, "rb") as f:
+        size = os.path.getsize(tp)
+        if size > TOUCH_TAIL:
+            f.seek(size - TOUCH_TAIL)
+            f.readline()
+        raw = f.read().decode("utf-8", "replace")
+    blob = []
+    for line in raw.splitlines():
+        if '"tool_use"' not in line:
+            continue
+        try:
+            c = (json.loads(line).get("message") or {}).get("content")
+        except Exception:
+            continue
+        for b in c if isinstance(c, list) else []:
+            inp = b.get("input") if isinstance(b, dict) and b.get("type") == "tool_use" else None
+            if isinstance(inp, dict):
+                blob += [inp[k] for k in ("file_path", "path", "notebook_path", "command") if isinstance(inp.get(k), str)]
+    s = re.sub(r"(?<![\w/.-])~/", HOME_DIR.rstrip(os.sep) + "/", "\n".join(blob) + "\n")   # `cd ~/x` counts like the server
+    return [d for d in own if any(d + e in s for e in ("/", " ", "\n", "'", '"'))]
+
+
+def _ren(t):
+    return RENAMED.get(t, t) if isinstance(t, str) else t
+
+
+def _ren_stage(s):
+    """Copy of stage `s` with its title and onFail goto/then under their current names."""
+    s = dict(s, title=_ren(s["title"]))
+    if isinstance(s.get("onFail"), dict):
+        s["onFail"] = dict(s["onFail"], **{k: _ren(s["onFail"][k]) for k in ("goto", "then") if k in s["onFail"]})
+    return s
+
+
+def _stages(cwd, name):
+    """Stage dicts of <cwd>/.claude/pipelines/<name>.json, or None (missing/bad)."""
+    try:
+        with open(os.path.join(cwd, ".claude", "pipelines", name + ".json"), encoding="utf-8") as f:
+            d = json.load(f)
+        st = [_ren_stage(s) for s in d["stages"] if isinstance(s, dict) and isinstance(s.get("title"), str)]
+        after = [a for a in (d.get("after") or []) if isinstance(a, str)]
+    except Exception:
+        return None
+    return (st, after) if st else None
+
+
+class _Lock(object):
+    """O_CREAT|O_EXCL lockfile (portable); a lock older than LOCK_STALE_S is taken over."""
+
+    def __init__(self, path):
+        self.path, self.ok = path + ".lock", False
+
+    def __enter__(self):
+        end = time.monotonic() + LOCK_WAIT_S
+        while True:
+            try:
+                os.close(os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+                self.ok = True
+                return self
+            except OSError:
+                try:
+                    if time.time() - os.path.getmtime(self.path) > LOCK_STALE_S:
+                        os.remove(self.path)
+                        continue
+                except OSError:
+                    pass
+            if time.monotonic() >= end:
+                return self
+            time.sleep(0.02)
+
+    def __exit__(self, *a):
+        if self.ok:
+            try:
+                os.remove(self.path)
+            except OSError:
+                pass
+
+
+def _load(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            d = json.load(f)
+        if isinstance(d, dict) and isinstance(d.get("runs"), dict):
+            return d
+    except Exception:
+        pass
+    return {"v": 1, "runs": {}}
+
+
+def _save(path, d):
+    tmp = path + ".tmp.%d" % os.getpid()
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False)
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def _idx(st, title):
+    for i, s in enumerate(st):
+        if s["title"] == title:
+            return i
+    return -1
+
+
+def _onfail(s):
+    f = s.get("onFail")
+    return f if isinstance(f, dict) and isinstance(f.get("goto"), str) else None
+
+
+def _plain_next(st, i):
+    """Index of the next stage after i that is not onlyOnJump, or -1."""
+    for j in range(i + 1, len(st)):
+        if not st[j].get("onlyOnJump"):
+            return j
+    return -1
+
+
+def _new_run(cwd, now):
+    return {"cwd": cwd, "t0": now, "t1": now, "cur": "", "done": [], "inflight": {}, "ret": "",
+            "loops": {}, "skipok": [], "end": 0, "st": {}, "models": {}, "lb": [], "deny": 0, "dl": []}
+
+
+DENY_CODES = ("jump", "agent", "model", "tag", "stage", "stop")   # same set as sidereus/harness_flow.py HF_DENY_CODES
+DL_MAX = 20   # deny log entries kept per run
+
+
+def _deny_note(r, title, code, now):
+    """Count one deny on run `r`: deny += 1, dl += {t, title, c}. ⚠Fixed code + stage title only, never the tool
+    input; never raises — this hook runs live."""
+    try:
+        r["deny"] = int(r.get("deny") or 0) + 1
+        dl = r["dl"] if isinstance(r.get("dl"), list) else []
+        dl.append({"t": now, "title": title, "c": code})
+        r["dl"] = dl[-DL_MAX:]
+    except Exception:
+        pass
+
+
+def _is_open(r, now):
+    return isinstance(r, dict) and not r.get("end") and now - float(r.get("t1") or 0) <= IDLE_S
+
+
+def _deny_save(path, name, title, code, now):
+    """Record a deny on this session's open run `name` (lock + atomic save); fail-silent, nothing when none is open."""
+    try:
+        if not os.path.isfile(path):
+            return   # ⚠no runs file = no open run; also keeps _Lock from waiting LOCK_WAIT_S on a missing dir
+        with _Lock(path) as lk:
+            if not lk.ok:
+                return
+            d = _load(path)
+            r = d["runs"].get(name)
+            if _is_open(r, now):
+                _deny_note(r, title, code, now)
+                _save(path, d)
+    except Exception:
+        pass
+
+
+LB_MAX = 16   # loop-back edges kept per run
+
+
+def _lb(r, f, g, now):
+    """Count one loop-back f→g in r["lb"] as {f, g, n, t} (titles only); ⚠never raises — this hook runs live."""
+    try:
+        lb = r["lb"] if isinstance(r.get("lb"), list) else []
+        for e in lb:
+            if isinstance(e, dict) and e.get("f") == f and e.get("g") == g:
+                e["n"], e["t"] = int(e.get("n") or 0) + 1, now
+                break
+        else:
+            lb.append({"f": f, "g": g, "n": 1, "t": now})
+        r["lb"] = lb[-LB_MAX:]
+    except Exception:
+        pass
+
+
+def _mark(r, title, s, now, n=0):
+    """Set stage outcome `s` (run|done|skip|back|fail) in r["st"]; keys s/t0/t1/n (+ ag ids) only (metadata)."""
+    e = r["st"].get(title)
+    e = e if isinstance(e, dict) else {}
+    if s == "skip" and e.get("s") in ("done", "back", "fail"):
+        return   # ⚠a later skip of a stage that already ran this run keeps its real outcome, times and pass count
+    if "t0" not in e or s == "skip" or e.get("s") == "skip":
+        e["t0"] = now
+    r["st"][title] = {"s": s, "t0": e["t0"], "t1": now, "n": int(e.get("n") or 0) + n}
+    if isinstance(e.get("ag"), list):
+        r["st"][title]["ag"] = e["ag"]
+    if e.get("m") in (True, False):
+        r["st"][title]["m"] = e["m"]
+    if "p0" in e and s != "skip":
+        r["st"][title]["p0"], r["st"][title]["k"] = e["p0"], e.get("k") or 2
+    if isinstance(e.get("ps"), list):
+        r["st"][title]["ps"] = e["ps"]   # ⚠this dict is rebuilt: every new stage key needs a carry line here
+    if isinstance(e.get("cm"), list):
+        r["st"][title]["cm"] = e["cm"]
+
+
+PS_MAX = 6   # closed earlier passes kept per stage
+CM_MAX = 4   # commit times kept per stage
+
+
+def _ps(e, old):
+    """Append the pass `old` is closing to e["ps"] as {a, b, s} (times + outcome only); ⚠never raises — this hook runs live."""
+    try:
+        a = old.get("p0", old.get("t0"))
+        if isinstance(a, (int, float)) and isinstance(old.get("t1"), (int, float)) and isinstance(old.get("s"), str):
+            ps = [x for x in (e.get("ps") if isinstance(e.get("ps"), list) else []) if isinstance(x, dict)]
+            ps.append({"a": a, "b": old["t1"], "s": old["s"]})
+            e["ps"] = ps[-PS_MAX:]
+    except Exception:
+        pass
+
+
+AG_IDS_MAX = 8   # continued-agent ids kept per stage
+_AG_ID = re.compile(r"[0-9A-Za-z_-]{1,64}")
+
+
+def _ag_note(r, title, to):
+    """Record a SendMessage target id under `title` (an agent dispatched for another stage, continued into this one);
+    ⚠ids only — never the message. Never raises: this hook runs live."""
+    try:
+        e = r["st"].get(title)
+        if not isinstance(e, dict) or not isinstance(to, str) or not _AG_ID.fullmatch(to):
+            return
+        ids = [x for x in (e.get("ag") if isinstance(e.get("ag"), list) else []) if x != to] + [to]
+        e["ag"] = ids[-AG_IDS_MAX:]
+    except Exception:
+        pass
+
+
+# Background Agent launch receipt: "agentId: <id>" (text) or "agentId": "<id>" (structured); id only, never the body.
+# ⚠Searched JSON-dumped: "\nagentId" reads as "nagentId", so an escape counts as a boundary; "subagentId" must not match.
+_BG_AID_RE = re.compile(r"""(?:(?<![A-Za-z])|(?<=\\[nrt]))agentId["']?\s*[:=]\s*["']?([0-9A-Za-z_-]{1,64})""")
+
+
+def _bg_aid(ev):
+    """agentId from a background Agent/Task PostToolUse receipt, or None. Never raises."""
+    try:
+        resp = ev.get("tool_response")
+        v = resp.get("agentId") if isinstance(resp, dict) else None
+        if isinstance(v, str) and _AG_ID.fullmatch(v):   # structured receipt first; regex is the fallback
+            return v
+        if isinstance(resp, dict):   # ⚠an invalid top-level agentId must not be re-found by the regex as a prefix
+            resp = {k: x for k, x in resp.items() if k != "agentId"}
+        txt = resp if isinstance(resp, str) else json.dumps(resp, ensure_ascii=False)
+        m = _BG_AID_RE.search(txt[:4000])
+        return m.group(1) if m and _AG_ID.fullmatch(m.group(1)) else None
+    except Exception:
+        return None
+
+
+def _cm_stage(r, name, ev):
+    """Stage a subagent's commit stamps: the one listing its agent_id in `ag`, else the single stage whose pipeline
+    agent is its agent_type (running one preferred), else cur. ⚠Never raises: this hook runs live."""
+    cur = r.get("cur")
+    try:
+        st, aid = r.get("st") or {}, ev.get("agent_id")
+        if isinstance(aid, str) and aid:
+            hit = [t for t, e in st.items() if isinstance(e, dict) and isinstance(e.get("ag"), list) and aid in e["ag"]]
+            if len(hit) == 1:
+                return hit[0]
+            if cur in hit:
+                return cur
+        at = ev.get("agent_type")
+        pl = _stages(r.get("proj"), name) if isinstance(at, str) and at and at not in NO_AGENT else None
+        if pl:
+            hit = [s["title"] for s in pl[0] if s.get("agent") == at and isinstance(st.get(s["title"]), dict)]
+            run = [t for t in hit if st[t].get("s") == "run"]
+            if len(hit) == 1:
+                return hit[0]
+            if len(run) == 1:
+                return run[0]
+    except Exception:
+        pass
+    return cur
+
+
+def _jumped(st, r, title):
+    """Stages a Pre of `title` would pass over without running or a `[pl-skip:]` declaration."""
+    t, c = _idx(st, title), _idx(st, r["cur"])
+    if c < 0:
+        # ⚠A new run (or one opened by a [pl-skip:] declaration) starting mid-way left earlier stages «Waiting» forever.
+        return [s["title"] for s in st[:max(t, 0)] if not s.get("onlyOnJump") and s["title"] not in r["skipok"]]
+    if t <= c:
+        return []
+    # ⚠A skipped loop-back return stage (onFail `then`) is the new start: measuring from `cur` re-listed stages already run.
+    k = _idx(st, r.get("ret") or "")
+    if r.get("ret") in r["skipok"] and k > c:
+        c = k
+    allowed = {r["cur"], r["ret"]}
+    n = _plain_next(st, c)
+    if n >= 0:
+        allowed.add(st[n]["title"])
+    f = _onfail(st[c])
+    if f:
+        allowed.update([f["goto"], f.get("then") or ""])
+    if title in allowed:
+        return []
+    return [s["title"] for s in st[c + 1:t] if not s.get("onlyOnJump") and s["title"] not in r["skipok"]]
+
+
+def _reopen(st, r, g):
+    """Loop-back to stage index `g`: drop skip declarations from `g` on (st[t]["s"] skip marks stay)."""
+    # ⚠Without this a skip declared in round 1 waved the same stage through `_jumped` in every later round.
+    r["skipok"] = [x for x in r["skipok"] if _idx(st, x) < g]
+
+
+def pre(tool, cwd, name, title, st, r, now, shell=False):
+    """Advance run `r` for a tagged Pre; returns a deny reason or None (nothing changed on a deny)."""
+    skipped = _jumped(st, r, title)
+    if skipped:
+        # ⚠Denied every time: a deny-once guard let the retry through, so stages were skipped without a record.
+        return ("You skipped %s; run it, or declare each skip first with a Bash description "
+                "[pl-skip:%s/<stage>] <one-line reason>, then dispatch again." % (", ".join(skipped), name))
+    t = _idx(st, title)
+    c = _idx(st, r["cur"])
+    if 0 <= t < c:
+        _reopen(st, r, t)
+        f = _onfail(st[c])
+        if f and f["goto"] == title:
+            r["loops"][r["cur"]] = int(r["loops"].get(r["cur"]) or 0) + 1
+            _lb(r, r["cur"], title, now)
+            then = f.get("then")
+            r["ret"] = then if isinstance(then, str) and _idx(st, then) >= 0 else r["cur"]
+            _mark(r, r["cur"], "back", now)   # sent back (e.g. review fixes), not failed; a later pass marks it done
+        elif (r["st"].get(r["cur"]) or {}).get("s") == "run":
+            _mark(r, r["cur"], "back", now)   # ⚠undeclared backward move: no lb edge, but never leave it «run» forever
+    elif t > c >= 0 and (r["st"].get(r["cur"]) or {}).get("s") == "run":
+        _mark(r, r["cur"], "done", now)   # moving on from a stage that gets no Post (Bash, background)
+    if title == r["ret"]:
+        r["ret"] = ""   # the pending return stage is being run now
+    count = tool in DISPATCH or shell
+    old = r["st"].get(title)
+    again = isinstance(old, dict) and (old.get("s") in ("done", "back", "skip", "fail") or title != r["cur"])
+    if count or title != r["cur"] or title not in r["st"]:
+        _mark(r, title, "run", now, 1 if count else 0)
+    if again and r["st"][title]["t0"] != now:
+        e = r["st"][title]
+        _ps(e, old)
+        e["p0"], e["k"] = now, int(old.get("k") or 1) + 1   # a new pass: elapsed is shown per pass, t0 stays the first start
+    e = r["st"][title]
+    if tool in DISPATCH and "m" in e:
+        e["m"] = False   # a dispatch after main's own work: no longer main-only
+    elif tool not in DISPATCH and "m" not in e and (shell or e.get("n", 0) == 0):
+        e["m"] = True    # only main's own Bash/shell markers so far (n counts dispatches)
+    if title != r["cur"]:
+        r["inflight"] = {}   # ⚠counts left by background dispatches of another stage would block every hand-off
+        # HEAD at stage start (one git call per transition; a fresh run reuses h0)
+        h = r.get("h0") if not r["cur"] and r.get("h0") else _head(r.get("proj"))
+        if h:
+            r["h1"] = h
+    r["cur"], r["t1"] = title, now
+    if tool in DISPATCH:
+        r["inflight"][title] = int(r["inflight"].get(title) or 0) + 1
+    return None
+
+
+def _step(name, s):
+    out = "[pl:%s/%s] · agent %s" % (name, s["title"], s.get("agent") or "-")
+    for k in ("model", "skill", "gate"):
+        if isinstance(s.get(k), str) and s.get(k):
+            out += " · %s %s" % (k, s[k])
+    return out
+
+
+def post(name, title, st, after, r, bg, now):
+    """Hand-off text for a returned dispatch of `title`, or None while slices are still out."""
+    i = _idx(st, title)
+    if i < 0:
+        return None
+    left = max(0, int(r["inflight"].get(title) or 0) - 1)
+    r["inflight"][title] = left   # ⚠bg too: a background dispatch gets only this Post, skipping it leaked the count
+    if not bg:
+        if left and now - float(r["t1"] or 0) <= LOST_S:   # t1 = last Pre of this (current) stage
+            return None
+        r["inflight"][title] = 0
+    if title != r["cur"]:
+        return None   # a late slice of a stage the run already left
+    nxt = r["ret"] or ""
+    j = _idx(st, nxt) if nxt else _plain_next(st, i)
+    # ⚠ret is cleared by the Pre that runs it, not here: the skip guard needs it to let a jump (e.g. to an
+    # onlyOnJump stage) through.
+    if not bg and title not in r["done"]:
+        r["done"].append(title)
+    if not bg:
+        _mark(r, title, "done", now)
+    if j < 0:
+        if bg:
+            return "[pl:%s] when it finishes: last stage — run complete." % name
+        r["end"] = now
+        return "Run complete" + (": " + " · ".join(after) if after else ".")
+    lines = [("When it finishes, next: " if bg else "PASS → next: ") + _step(name, st[j])]
+    f = _onfail(st[i])
+    if f:
+        mx = int(f.get("max") or 1)
+        k = int(r["loops"].get(title) or 0) + 1
+        then = f.get("then")
+        if k <= mx:
+            lines.append("FAIL → SendMessage the %s agent tagged [pl:%s/%s] (round %d/%d; at max → %s)"
+                         % (f["goto"], name, f["goto"], k, mx,
+                            ("[pl:%s/%s]" % (name, then)) if then else "stop and report"))
+        else:
+            lines.append("FAIL → round limit %d/%d reached: %s" % (mx, mx,
+                         ("[pl:%s/%s]" % (name, then)) if then else "stop and report"))
+    if st[i].get("onError") == "continue":
+        lines.append("Failed fan-out slices do not block.")
+    return "\n".join(lines)
+
+
+def end(name, title, st, after, r, fail, now):
+    """Hand-off for a shell `[pl-end:]`: the result is known, so only the PASS or the FAIL branch is given."""
+    i = _idx(st, title)
+    if i < 0 or title != r["cur"]:
+        return None
+    if not fail:
+        r["inflight"][title] = 1   # one marker = one slice; the start marker never counted it
+        t = post(name, title, st, after, r, False, now)
+        return "\n".join(x for x in t.split("\n") if not x.startswith("FAIL")) if t else t
+    r["inflight"][title] = 0
+    _mark(r, title, "fail", now)
+    f = _onfail(st[i])
+    if not f:
+        return "FAIL → %s has no onFail: stop and report." % title
+    mx, k, then = int(f.get("max") or 1), int(r["loops"].get(title) or 0) + 1, f.get("then")
+    g = _idx(st, f["goto"])
+    if k > mx or g < 0:
+        return "FAIL → round limit %d/%d reached: %s" % (mx, mx, ("[pl:%s/%s]" % (name, then)) if then else "stop and report")
+    # ⚠The loop-back is counted here, and cur moves to the goto stage so its start marker is not counted again by pre().
+    r["loops"][title] = k
+    _lb(r, title, f["goto"], now)
+    _reopen(st, r, g)
+    r["ret"] = then if isinstance(then, str) and _idx(st, then) >= 0 else title
+    r["cur"], r["t1"], r["inflight"] = f["goto"], now, {}
+    return "FAIL (round %d/%d) → next: %s" % (k, mx, _step(name, st[g]))
+
+
+def _platform(argv):
+    if "--platform" not in argv:
+        return "cc"
+    i = argv.index("--platform") + 1
+    return argv[i] if i < len(argv) else ""
+
+
+def _shell_cmd(ti):
+    """Same as pl_mark.py shell_cmd."""
+    c = ti.get("command", ti.get("cmd")) if isinstance(ti, dict) else None
+    if isinstance(c, list):
+        c = c[-1] if c else None
+    return c if isinstance(c, str) else None
+
+
+def _is_bg(ev):
+    ti = ev.get("tool_input") or {}
+    if isinstance(ti, dict) and ti.get("run_in_background") is True:
+        return True
+    resp = ev.get("tool_response")
+    try:
+        txt = resp if isinstance(resp, str) else json.dumps(resp, ensure_ascii=False)
+    except Exception:
+        return False
+    return bool(BG_RE.search(txt[:4000]))   # only matched, never stored or echoed
+
+
+def _nudge(ev, desc, path, now):
+    """Untagged Bash Pre while a run is open: additionalContext reminder (never a deny), once per NUDGE_S; fail-silent."""
+    try:
+        # ⚠main only: a subagent's Bash shares the session id and would spend the run's one nudge per window
+        if ev.get("hook_event_name") != "PreToolUse" or ev.get("tool_name") != "Bash" or ev.get("agent_id") \
+                or "[pl:-]" in desc or "[pl-" in desc:
+            return
+        o = _open_run(path, now)
+        r = _load(path)["runs"].get(o[0]) if o else None   # lockless peek: most untagged Bash end here, no lock wait
+        if not isinstance(r, dict) or now - float(r.get("nudge_t") or 0) < NUDGE_S:
+            return
+        with _Lock(path) as lk:
+            if not lk.ok:
+                return
+            d = _load(path)
+            r = d["runs"].get(o[0])
+            if not isinstance(r, dict) or now - float(r.get("nudge_t") or 0) < NUDGE_S:
+                return
+            r["nudge_t"] = now
+            _save(path, d)   # ⚠raises on failure, so nothing prints: an unsaved nudge_t would nudge on every Bash
+        txt = ("Pipeline run %s is open (stage %s): start the description of stage-work Bash with [pl:%s/%s], "
+               "or [pl:-] for work outside the run." % (o[0], o[1] or "-", o[0], o[1] or "<stage>"))
+        sys.stdout.write(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": txt}},
+                                    ensure_ascii=False))
+    except Exception:
+        pass
+
+
+def _deny(why):
+    sys.stdout.write(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                                                        "permissionDecisionReason": why}}, ensure_ascii=False))
+    return True
+
+
+PAST_MAX = 5   # replaced runs kept per pipeline in runs.json "past" (oldest first)
+PAST_KEYS = ("st", "lb", "cur", "end", "t0", "t1")   # ⚠only what pl_runs reads: runs.json over its read cap parses as nothing
+
+
+def _archive(d, name, old):
+    """Append replaced run `old` (PAST_KEYS only) to d["past"][name], capped at PAST_MAX; ⚠never raises — runs live."""
+    try:
+        past = d["past"] if isinstance(d.get("past"), dict) else {}
+        lst = [x for x in (past.get(name) if isinstance(past.get(name), list) else []) if isinstance(x, dict)]
+        lst.append({k: old[k] for k in PAST_KEYS if k in old})
+        past[name] = lst[-PAST_MAX:]
+        d["past"] = past
+    except Exception:
+        pass
+
+
+def _boundary(st, r, title, now, cont=False):
+    """Close open run `r` when `title` is the first stage and the run is already past it, or (unless `cont`, a
+    SendMessage continuing one of its agents) any earlier stage while the run sits on its last stage (a new change).
+    A declared loop-back to it (cur's onFail goto, or pending ret) and a re-mark at cur stay in the same run.
+    Returns True when closed; the caller's `_run_of` then archives it and opens a fresh run."""
+    if not _is_open(r, now):
+        return False
+    t, c = _idx(st, title), _idx(st, r.get("cur") or "")
+    # ⚠A run sitting on its last stage is finished: a backward tag at any stage is a new request (one starting at
+    #   stage 2 after main did stage 1 itself reused the run and showed the old request's done marks).
+    if not (0 <= t < c and (t == _plain_next(st, -1) or (not cont and _plain_next(st, c) < 0))):
+        return False
+    f = _onfail(st[c])
+    if (f and f["goto"] == title) or r.get("ret") == title:
+        return False
+    stt = r.get("st") if isinstance(r.get("st"), dict) else {}
+    r["st"] = stt
+    if isinstance(stt.get(r["cur"]), dict) and stt[r["cur"]].get("s") == "run":
+        _mark(r, r["cur"], "done", now)   # same close as _commit_close
+    r["end"], r["t1"] = now, now
+    return True
+
+
+def _run_of(d, name, cwd, now, fresh=True):
+    """Run `name` in loaded runs file `d`, normalised; with `fresh` an ended or idle one is replaced by a new run
+    (the replaced one goes to d["past"])."""
+    old = d["runs"].get(name)
+    r = dict(_new_run(cwd, now), **old) if isinstance(old, dict) else None
+    if not r or (fresh and (r.get("end") or now - float(r.get("t1") or 0) > IDLE_S)):
+        if isinstance(old, dict):
+            _archive(d, name, old)
+        r = _new_run(cwd, now)
+    for k in ("st", "models", "loops", "inflight"):
+        if not isinstance(r.get(k), dict):
+            r[k] = {}
+    for k in ("skipok", "lb"):
+        if not isinstance(r.get(k), list):
+            r[k] = []
+    d["runs"][name] = r
+    return r
+
+
+def _declare(ev, cwd, path, desc, now):
+    """Bash `[pl-skip:name/stage]` / `[pl-model:name/stage=model]`: record on the run; deny reason for an unknown
+    stage, else None. Only the stage title and model name are stored, never the reason text."""
+    decl = [(m.group(1), _ren(m.group(2).strip()), None) for m in SKIP_TAG.finditer(desc)]
+    decl += [(m.group(1), _ren(m.group(2).strip()), m.group(3)) for m in MODEL_TAG.finditer(desc)]
+    decl += [(m.group(1), _ren(m.group(2).strip()), "") for m in END_TAG.finditer(desc)]   # "" = close the run
+    for name, title, model in decl:
+        old = _load(path)["runs"].get(name)
+        keep = old.get("proj") if isinstance(old, dict) and not old.get("end") else None
+        proj = _project(ev, "Bash", name, title, keep)
+        pl = _stages(proj, name) if proj else None
+        if not pl or _apply_off(proj):
+            continue
+        if _idx(pl[0], title) < 0:
+            _deny_save(path, name, "", "stage", now)   # ⚠"" title: an unknown title is description text
+            return "%s has no stage %s; stages: %s" % (name, title, " → ".join(x["title"] for x in pl[0]))
+        os.makedirs(MARK_DIR, exist_ok=True)
+        with _Lock(path) as lk:
+            if not lk.ok:
+                continue
+            d = _load(path)
+            if model == "":
+                r = d["runs"].get(name)
+                if isinstance(r, dict) and not r.get("end"):
+                    r = _run_of(d, name, cwd, now, False)
+                    _mark(r, title, "done", now)
+                    r["end"] = now
+                    _save(path, d)
+                    _closed(r.get("proj") or proj, name)
+                continue
+            o = d["runs"].get(name)
+            if model is None:
+                _boundary(pl[0], o, title, now)   # skipping the first stage of a run already past it = a new run
+            if model is None and _is_open(o, now) and 0 <= _idx(pl[0], title) <= _idx(pl[0], o.get("cur") or ""):
+                continue   # ⚠the open run already passed this stage: a no-op, never a second run
+            r = _run_of(d, name, cwd, now)
+            r["proj"] = proj
+            if model is None:
+                if title not in r["skipok"]:
+                    r["skipok"].append(title)
+                _mark(r, title, "skip", now)
+            else:
+                r["models"][title] = model.lower()
+            _save(path, d)
+    return None
+
+
+def main(argv=None):
+    plat = _platform(sys.argv[1:] if argv is None else argv)
+    if plat not in PLATFORMS:
+        return
+    ev = json.loads(sys.stdin.read() or "{}")
+    if not isinstance(ev, dict):
+        return
+    denied = False
+    try:
+        try:   # pipeline `guards` (hooks/pl_guard.py); ⚠fail-open: a missing or broken guard module runs the flow unguarded
+            import importlib.util as _iu
+            import types as _ty
+            _sp = _iu.spec_from_file_location("pl_guard", os.path.join(os.path.dirname(os.path.abspath(__file__)), "pl_guard.py"))
+            _g = _iu.module_from_spec(_sp)
+            _sp.loader.exec_module(_g)
+            _me = _ty.SimpleNamespace(**globals())   # this module's current (test-patched) names
+        except Exception:
+            _g = None
+        denied = _g.run(plat, ev, _me, _flow) if _g else _flow(plat, ev)
+    finally:
+        if not denied:   # ⚠a denied `git commit` never ran: closing the run anyway made every skip open a new run
+            _commit_close(ev, _now())
+        _autoscore()
+
+
+# `git commit` / `git -C <dir> commit` as a word; the command text itself is never stored.
+_COMMIT_RE = re.compile(r"(?:^|[\s;&|(])git(?:\s+-C\s+(\"[^\"]*\"|'[^']*'|\S+))?\s+commit(?![\w-])")
+
+
+def _commit_close(ev, now):
+    """Shell Pre running `git commit` closes this session's open run(s) of that project: cur «run» -> done, end=now.
+    ⚠Fail-silent and never denies — a commit is the natural end of one change, so the next tag opens a fresh run."""
+    try:
+        if EVENT.get(ev.get("hook_event_name"), ev.get("hook_event_name")) != "PreToolUse" or ev.get("tool_name") not in SHELL:
+            return
+        # ⚠A subagent's hook event carries the parent's session_id plus agent_id. A stage agent that commits its own
+        #   slice is still mid-stage; closing on it marked a live implement stage «Stopped» while its agent ran on.
+        #   So a subagent commit only stamps cm; main's commit stamps and closes.
+        sub = bool(ev.get("agent_id"))
+        sid, cwd, cmd = ev.get("session_id"), ev.get("cwd"), _shell_cmd(ev.get("tool_input"))
+        m = _COMMIT_RE.search(cmd or "")
+        if not m or "--dry-run" in cmd or not (isinstance(sid, str) and SID.match(sid) and isinstance(cwd, str) and os.path.isabs(cwd)):
+            return
+        # ⚠The commit's own tag picks the runs it may close: `[pl:-]` = work outside every run, `[pl:<name>/...]` = that
+        #   run only. A pipeline whose file lives in this repo but drives another one (arch-map) was closed mid-run by an
+        #   unrelated commit here, so its next stage was denied as a jump past stages that had run.
+        ti = ev.get("tool_input") if isinstance(ev.get("tool_input"), dict) else {}
+        desc = ti.get("description") if isinstance(ti.get("description"), str) else ""
+        mk, tg = MARK.match(cmd), TAG.search(desc)
+        if "[pl:-]" in desc or (mk and mk.group(2)):
+            return
+        only = tg.group(1) if tg else (mk.group(3) if mk else None)
+        dirs = [cwd]
+        if m.group(1):
+            c = m.group(1).strip("\"'")
+            dirs.append(c if os.path.isabs(c) else os.path.join(cwd, c))
+        dirs = [os.path.realpath(x) for x in dirs]
+        dirs += [g for g in (_git_root(x) for x in dirs) if g]
+        path = os.path.join(MARK_DIR, sid + ".runs.json")
+        if not os.path.exists(path):
+            return
+        with _Lock(path) as lk:
+            if not lk.ok:
+                return
+            d, hit = _load(path), False
+            for rn, r in d["runs"].items():
+                proj = r.get("proj") if isinstance(r, dict) else None
+                if (only and rn != only) or not isinstance(proj, str) or not proj or r.get("end") or now - float(r.get("t1") or 0) > IDLE_S:
+                    continue
+                p = os.path.realpath(proj)
+                if not any(x == p or x.startswith(p + os.sep) for x in dirs):
+                    continue
+                st = r.get("st") if isinstance(r.get("st"), dict) else {}
+                cur = r.get("cur")
+                r["st"], hit = st, True
+                # ⚠A slice agent of an earlier stage can commit after the run moved on: stamp its own stage, not cur.
+                c = _cm_stage(r, rn, ev) if sub else cur
+                if isinstance(st.get(c), dict):   # commit times of that stage (newest last, CM_MAX)
+                    cm = [x for x in (st[c].get("cm") if isinstance(st[c].get("cm"), list) else []) if isinstance(x, (int, float))]
+                    st[c]["cm"] = (cm + [now])[-CM_MAX:]
+                if sub:
+                    continue
+                if isinstance(st.get(cur), dict) and st[cur].get("s") == "run":
+                    _mark(r, cur, "done", now)
+                r["end"], r["t1"] = now, now
+                _closed(proj, rn, now)
+            if hit:
+                _save(path, d)
+    except Exception:
+        pass
+
+
+def _closed_tail(r, st, title, now):
+    """True when a Bash of `title` hits a run closed on its last stage `title`: only that stage's t1 moves.
+    ⚠more Bash of a closed last stage must not open a new run (its outcome map would reset); t1 moves so the stage's
+    elapsed covers that work instead of reading 0s. Last stage only: a run closed on an earlier stage swallowed that
+    stage's Bash mark of the next run (e.g. main's requirements stage), so the following dispatch was denied as
+    skipping it."""
+    if not (isinstance(r, dict) and r.get("end") and r.get("cur") == title
+            and _plain_next(st, _idx(st, title)) < 0 and now - float(r["end"]) <= IDLE_S):
+        return False
+    e = (r.get("st") or {}).get(title)
+    if isinstance(e, dict):
+        e["t1"] = now
+    return True
+
+
+def _flow(plat, ev):
+    event, tool = ev.get("hook_event_name"), ev.get("tool_name")
+    sid, cwd = ev.get("session_id"), ev.get("cwd")
+    if not isinstance(sid, str) or not SID.match(sid) or not (isinstance(cwd, str) and os.path.isabs(cwd)):
+        return
+    shell = ""   # "" = cc tag · "start" · "end" · "fail" (shell marker)
+    if plat == "cc":
+        field = FIELD.get(tool)
+        if not field or (event == "PostToolUse" and tool not in DISPATCH):
+            return
+        ti = ev.get("tool_input") or {}
+        desc = ti.get(field) if isinstance(ti, dict) else None
+        desc = desc if isinstance(desc, str) else ""
+        path = os.path.join(MARK_DIR, sid + ".runs.json")
+        if event == "PreToolUse" and tool == "Bash" and "[pl-" in desc:
+            why = _declare(ev, cwd, path, desc, _now())
+            if why:
+                return _deny(why)
+        m = TAG.search(desc)
+        if not m:
+            # ⚠Untagged Agent/Task is already denied by pl_mark.py nudge; only SendMessage is checked here.
+            if event == "PreToolUse" and tool == "SendMessage" and "[pl:-]" not in desc:
+                o = _open_run(path, _now())
+                if o:
+                    _deny("Pipeline run %s is open (stage %s): start the summary with [pl:%s/<stage>], or [pl:-] "
+                          "if this message is outside the run." % (o[0], o[1] or "-", o[0]))
+                    _deny_save(path, o[0], o[1], "tag", _now())
+                    return True
+            _nudge(ev, desc, path, _now())
+            return
+        name, title = m.group(1), _ren(m.group(2).strip())
+    else:
+        event = EVENT.get(event, event)
+        cmd = _shell_cmd(ev.get("tool_input")) if tool in SHELL else None
+        m = MARK.match(cmd) if cmd else None
+        if not m or m.group(2):
+            return
+        shell = "fail" if m.group(5) else "end" if m.group(1) else "start"
+        if (shell == "start") == (event == "PostToolUse"):   # start counts on Pre, end on Post
+            return
+        name, title = m.group(3), _ren(m.group(4).strip())
+    path = os.path.join(MARK_DIR, sid + ".runs.json")   # ⚠never <sid>.json: agents.plm_of reads that name
+    now = _now()
+    old = _load(path)["runs"].get(name)   # lockless peek: only for the open run's project
+    keep = old.get("proj") if isinstance(old, dict) and not old.get("end") and now - float(old.get("t1") or 0) <= IDLE_S else None
+    proj = _project(ev, tool, name, title, keep)
+    pl = _stages(proj, name) if proj else None
+    if not pl or _apply_off(proj):
+        return
+    st, after = pl
+    if _idx(st, title) < 0:
+        if event == "PreToolUse" and not shell:
+            _deny("%s has no stage %s; stages: %s" % (name, title, " → ".join(x["title"] for x in st)))
+            _deny_save(path, name, "", "stage", now)
+            return True
+        return
+    os.makedirs(MARK_DIR, exist_ok=True)
+    out = None
+    with _Lock(path) as lk:
+        if not lk.ok:
+            return
+        d = _load(path)
+        r = d["runs"].get(name)
+        if event == "PostToolUse":
+            if not isinstance(r, dict) or r.get("end"):
+                return
+            r = _run_of(d, name, cwd, now, False)
+            if shell:
+                text = end(name, title, st, after, r, shell == "fail", now)
+                text = text if plat in EMIT else None
+            else:
+                bg = _is_bg(ev)
+                if bg and tool in ("Agent", "Task"):   # a background agent's later commit then matches this stage by id
+                    _ag_note(r, title, _bg_aid(ev))
+                text = post(name, title, st, after, r, bg, now)
+            if r.get("end"):   # post() ended the run (last stage back)
+                _closed(r.get("proj") or proj, name)
+            if text:
+                out = {"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": text}}
+        else:
+            if tool == "Bash" and _closed_tail(r, st, title, now):
+                _save(path, d)
+                return
+            # ⚠Before was_open: a boundary-closed run is not open, so a refused dispatch below saves nothing.
+            _boundary(st, r, title, now, tool == "SendMessage")   # ⚠SendMessage = a fix loop of this run's agent
+            was_open = _is_open(r, now)
+            r = _run_of(d, name, cwd, now)
+            r["proj"] = proj   # later Bash/SendMessage/Post of this run use the same file
+            fit = None if shell else _fit(ev, tool, name, st[_idx(st, title)], r, [proj, cwd, _git_root(cwd)])
+            if fit:
+                _deny(fit[1])
+                if was_open:   # only the count is saved: the refused dispatch never ran, so no new run is created
+                    _deny_note(r, title, fit[0], now)
+                    try:
+                        _save(path, d)
+                    except Exception:
+                        pass
+                return True
+            if "h0" not in r:   # HEAD at run start; ⚠not in _commit_close (Pre runs before the commit exists)
+                h = _head(proj)
+                if h:
+                    r["h0"] = h
+            why = pre(tool, cwd, name, title, st, r, now, bool(shell))
+            if why and shell:
+                # ⚠No deny contract is verified for other CLIs: the jump is recorded as skip and the stage starts anyway.
+                for x in _jumped(st, r, title):
+                    r["skipok"].append(x)
+                    _mark(r, x, "skip", now)
+                why = pre(tool, cwd, name, title, st, r, now, True) and None
+            if not why and tool == "SendMessage":
+                ti = ev.get("tool_input")
+                _ag_note(r, title, ti.get("to") if isinstance(ti, dict) else None)
+            if not why and tool == "Bash" and not shell and not r["ret"] and _plain_next(st, _idx(st, title)) < 0:
+                # ⚠No `end` here: an ended run never takes the main marker, so the stage read as over while main still
+                #   worked through it. It stays «run» until a `git commit` or pl_runs' stale close; `tail` exempts it
+                #   from the untagged-SendMessage deny (it gets no Post, so it would deny for LOST_S).
+                r["tail"] = title
+                r["st"][title]["t1"] = now
+            if why:
+                _deny_note(r, title, "jump", now)
+                out = {"hookSpecificOutput": {"hookEventName": "PreToolUse",
+                                              "permissionDecision": "deny", "permissionDecisionReason": why}}
+        _save(path, d)
+    if out:
+        sys.stdout.write(json.dumps(out, ensure_ascii=False))
+    return bool(out) and event == "PreToolUse"
+
+
+if __name__ == "__main__":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")   # ⚠Windows console codepage cannot encode Korean deny reasons
+    except Exception:
+        pass
+    try:
+        main()
+    except Exception:
+        pass
+    sys.exit(0)

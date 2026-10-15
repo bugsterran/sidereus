@@ -1,0 +1,55 @@
+{
+  "v": 1,
+  "name": "deps-audit",
+  "title": "의존성·런타임 보안 점검",
+  "use": "Monthly and before a release: runtime/dependency security-patch check.",
+  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNo runtime switch (python interpreter in the launchd plist, Node major, Chrome channel) without owner approval: propose it in summary only.\nNo new third-party dependency: the code stays stdlib-only Python and node: builtins only.\nThe code must keep running on /usr/bin/python3 3.9 syntax.\nNEVER restart the live viewer, NEVER commit/stash/checkout/reset/add. Never read credentials.",
+  "after": [
+    "launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer",
+    "screen-check the live page (900/1100/1440)",
+    "bash backup.sh",
+    "commit"
+  ],
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "점검",
+      "agent": "sidereus-verifier",
+      "model": "sonnet",
+      "task": "Run `/usr/bin/python3 scripts/deps_audit.py --online` once and report every WARN/FAIL line verbatim as a finding (item and detail only). List OK lines in summary. Change nothing.",
+      "ui": { "x": 44, "y": 24 }
+    },
+    {
+      "title": "트리아지",
+      "agent": "sidereus-reviewer",
+      "model": "opus",
+      "task": "For each finding decide: action now, owner decision, or no action. Give the risk and what must not change. A runtime switch is always an owner decision (summary, not a slice). Slices only for approved, minimal work: EOL table/date refresh in scripts/deps_audit.py, code fixes for deprecations, removing a foreign import. Change nothing.",
+      "produces": "slices",
+      "ui": { "x": 292, "y": 24 }
+    },
+    {
+      "title": "업데이트",
+      "agent": "sidereus-implementer",
+      "task": "Do your slice only, minimal: refresh version tables and the checked date, or fix the deprecation. Keep 3.9 syntax and stdlib only. Report changed files; anything else goes in findings.",
+      "fanout": "slices",
+      "gate": "scripts/check.sh --fast",
+      "onError": "continue",
+      "ui": { "x": 540, "y": 24 }
+    },
+    {
+      "title": "검증",
+      "agent": "sidereus-verifier",
+      "model": "sonnet",
+      "task": "Run the gate once and report each failing step as a finding with file/line. Do not fix anything.",
+      "gate": "scripts/check.sh --full",
+      "onFail": { "goto": "업데이트", "max": 2 },
+      "ui": { "x": 788, "y": 24 }
+    },
+    {
+      "title": "라이브 검증",
+      "skill": "sidereus-ship",
+      "agent": "general-purpose",
+      "ui": { "x": 1037, "y": 24, "color": "#fb923c" }
+    }
+  ]
+}

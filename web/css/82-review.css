@@ -1,0 +1,68 @@
+/* Review queue (88c-review.js): #todo «Review» chip, right-side drawer #rvpop, relay preview #rvq. Tokens only (light twin via --nx-*). */
+html[data-ui=next] #rvpop[hidden],html[data-ui=next] #rvq[hidden],html[data-ui=next] #bdmq[hidden],#rvpop[hidden],#rvq[hidden],#bdmq[hidden]{display:none}   /* ⚠must match the display:flex rule's specificity */
+.td.rv{background:#1d2b42;border-color:#3a5a8c;color:#bcd4f5}
+html[data-ui=next] #rvpop,html[data-ui=next] #rvq,html[data-ui=next] #bdmq{position:fixed;z-index:47;display:flex;flex-direction:column;gap:8px;box-sizing:border-box;
+  padding:10px 12px;background:var(--nx-panel);color:var(--nx-t1);border:var(--pop-bd);border-radius:var(--pop-r);box-shadow:var(--pop-sh);font-size:12.5px}
+html[data-ui=next] #rvpop{top:56px;right:12px;width:min(460px,calc(100vw - 24px));max-height:calc(100vh - 72px)}
+html[data-ui=next] #rvq,html[data-ui=next] #bdmq{top:80px;left:50%;transform:translateX(-50%);width:min(520px,calc(100vw - 24px));max-height:calc(100vh - 110px);z-index:48}
+html[data-ui=next] #rvpop:focus,html[data-ui=next] #rvq:focus,html[data-ui=next] #bdmq:focus{outline:none}
+html[data-ui=next] .rvh{display:flex;align-items:center;gap:8px;min-width:0}
+html[data-ui=next] .rvh > span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--nx-t2)}
+html[data-ui=next] .rvh code{color:var(--nx-t3)}
+html[data-ui=next] .rvrl{font-size:11.5px;color:var(--nx-t3)}
+html[data-ui=next] .rvrl.s2{color:var(--nx-info)}
+html[data-ui=next] .rvrl.s3{color:var(--nx-ok)}
+html[data-ui=next] .rvx{margin-left:auto;background:none;border:none;color:var(--nx-t2);cursor:pointer;font-size:14px}
+html[data-ui=next] .rvmsg{color:var(--nx-t2);padding:6px 0}
+html[data-ui=next] .rvmsg.err{color:var(--nx-err)}
+html[data-ui=next] .rvl{list-style:none;margin:0;padding:0;overflow:auto;flex:1 1 auto;min-height:0;border-top:1px solid var(--nx-rule)}
+html[data-ui=next] .rvf{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--nx-rule)}
+html[data-ui=next] .rvf label{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0;cursor:pointer}
+html[data-ui=next] .rvf.on .rvp{color:var(--nx-t3)}
+html[data-ui=next] .rvst{flex:0 0 22px;font-family:ui-monospace,monospace;color:var(--nx-t3)}
+html[data-ui=next] .rvp{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .rvn{flex:0 0 auto;white-space:nowrap;font-style:normal}
+html[data-ui=next] .rvn i{font-style:normal}
+html[data-ui=next] .rvn .a{color:var(--nx-ok)}
+html[data-ui=next] .rvn .d{color:var(--nx-err)}
+html[data-ui=next] .rvft,html[data-ui=next] .rvact{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+html[data-ui=next] .rvft .rvc{margin-right:auto;color:var(--nx-t2)}
+html[data-ui=next] #rvq .rvft,html[data-ui=next] #bdmq .rvft{justify-content:flex-end}
+html[data-ui=next] #rvpop button:not(.rvx),html[data-ui=next] #rvq button,html[data-ui=next] #bdmq button{background:var(--nx-hover);color:var(--nx-t1);border:1px solid var(--nx-rule);
+  border-radius:var(--pop-r);padding:3px 10px;font:inherit;cursor:pointer}
+html[data-ui=next] #rvpop button:disabled,html[data-ui=next] #rvq button:disabled,html[data-ui=next] #bdmq button:disabled{opacity:.5;cursor:default}
+html[data-ui=next] .rvw{color:var(--nx-t2)}
+html[data-ui=next] .rvw.on{color:var(--nx-ok)}
+html[data-ui=next] .rvw.no,html[data-ui=next] .rvw.blk{color:var(--nx-warn)}
+html[data-ui=next] .rvw.off{color:var(--nx-err)}
+html[data-ui=next] .rvto{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;color:var(--nx-t2)}
+html[data-ui=next] .rvto b{color:var(--nx-t1)}
+html[data-ui=next] .rvbd,html[data-ui=next] .rvta{margin:0;padding:8px;background:var(--nx-bg);color:var(--nx-t1);border:1px solid var(--nx-rule);
+  border-radius:var(--pop-r);white-space:pre-wrap;word-break:break-word;overflow:auto;max-height:50vh;font:12px/1.5 ui-monospace,monospace}
+html[data-ui=next] .rvta{resize:vertical;min-height:90px;box-sizing:border-box;width:100%}
+/* Multi-session relay preview #bdmq (88f-bdmulti.js): recipient list + delivery note */
+html[data-ui=next] .bdml{list-style:none;margin:0;padding:0;max-height:30vh;overflow:auto;border-top:1px solid var(--nx-rule)}
+html[data-ui=next] .bdml li{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:4px 0;border-bottom:1px solid var(--nx-rule);min-width:0}
+html[data-ui=next] .bdml code{color:var(--nx-t3)}
+html[data-ui=next] .bdml i{font-style:normal;color:var(--nx-t2)}
+html[data-ui=next] .bdmn{color:var(--nx-t2);font-size:12px}
+/* Line comments (88e-rvnotes.js): diff-popup gutter «+», inline comment rows, drawer «Comments N». ⚠[data-ui] twice = skip the light-twin #fff rewrite. */
+html[data-ui=next] #rvpop .rvcm{color:var(--nx-info);font-size:12px}
+html[data-ui=next] .rvnbar{color:var(--nx-info)}
+html[data-ui=next] table.sbs[data-rvp] td.xn{position:relative}
+html[data-ui=next][data-ui] .rvnb{position:absolute;left:1px;top:1px;width:16px;height:16px;padding:0;border:none;border-radius:4px;
+  background:var(--nx-info-bg);color:#fff;font:600 12px/16px var(--nx-sans);text-align:center;cursor:pointer;opacity:0}
+html[data-ui=next] table.sbs tr:hover .rvnb,html[data-ui=next] .rvnb:focus-visible{opacity:1}
+html[data-ui=next] table.sbs tr.rvnr td{padding:4px 8px;background:var(--nx-panel);white-space:normal}
+html[data-ui=next] .rvnc{box-sizing:border-box;max-width:760px;padding:6px 8px;background:var(--nx-bg);color:var(--nx-t1);
+  border:1px solid var(--nx-rule);border-left:3px solid var(--nx-info);border-radius:var(--pop-r);font-family:var(--nx-sans)}
+html[data-ui=next] .rvnh{display:flex;align-items:center;gap:6px;min-width:0;font-size:12px;color:var(--nx-t2)}
+html[data-ui=next] .rvnh b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--nx-t1);font:12px ui-monospace,monospace}
+html[data-ui=next] .rvnh b + button,html[data-ui=next] .rvnk{margin-left:auto}
+html[data-ui=next] .rvnk{color:var(--nx-t3)}
+html[data-ui=next] .rvnx{margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}
+html[data-ui=next] .rvnta{display:block;box-sizing:border-box;width:100%;min-height:60px;margin:6px 0;padding:6px;resize:vertical;
+  background:var(--nx-panel);color:var(--nx-t1);border:1px solid var(--nx-rule);border-radius:var(--pop-r);font:12px/1.5 ui-monospace,monospace}
+html[data-ui=next] .rvnf{display:flex;justify-content:flex-end;gap:6px}
+html[data-ui=next] .rvnc button{padding:2px 8px;background:var(--nx-hover);color:var(--nx-t1);border:1px solid var(--nx-rule);
+  border-radius:var(--pop-r);font:inherit;font-size:12px;cursor:pointer}

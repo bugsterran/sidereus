@@ -1,0 +1,10 @@
+{
+  "name": "orbit",
+  "displayName": "Orbit",
+  "version": "0.2.0",
+  "description": "Pick a Claude Code config folder (CLAUDE_CONFIG_DIR) per project folder: register folders, map projects, warn on a mismatched session. Never copies or swaps credentials.",
+  "author": {
+    "name": "bugsterran"
+  },
+  "license": "MIT"
+}

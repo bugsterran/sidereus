@@ -1,0 +1,274 @@
+/* ── Structure treemap (structure tab) ────────────────────────────────────────────────────
+   ★Area = line count · color = edit count. All cells are drawn on **one canvas** (465 cells × replay
+     stutters in the DOM) — the CSS here is only the shell (target chips · legend · slider · tooltip). */
+.strps{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 9px;align-items:center}
+.strps>b{color:#6b7688;font-size:10.5px;font-weight:400;margin-right:2px;flex:0 0 auto}
+.strp{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}   /* look = 05-controls.css */
+.strseg{display:inline-flex;overflow:hidden;flex:0 0 auto}   /* look = 05-controls.css */
+.strseg button{border:0;font:inherit;cursor:pointer}
+.svin{background:#141a23;border:1px solid #232c38;color:#dfe5ee;border-radius:6px;padding:2px 6px;font:inherit;font-size:11px;width:74px;color-scheme:dark}
+/* Toolbar slot stays one line: the chip row (.ppcs) clips, «Projects ▾» lists the rest (08b-projpick.js) */
+html[data-ui=next] #tbstruct > .strps{flex-wrap:nowrap;overflow:hidden;min-width:0}
+html[data-ui=next] #tbstruct > .strps:first-child{flex:1 1 0}
+.strpc{font-size:9.5px;margin-left:1px}   /* sessions touching the project (>1 only) */
+html[data-ui=next] .strpc{color:var(--nx-t3)}   /* ⚠opacity .7 = 3.61:1 dark · 3.47:1 light; t3 is the >=4.5 muted token */
+html[data-ui=next] .on > .strpc{color:inherit}
+html[data-ui=next] #tbstruct .strp{flex:0 0 auto}
+.strload{color:#7e8896;font-size:12.5px;text-align:center;padding:70px 20px;line-height:1.9}
+.strload b{color:#a8b3c4}
+/* ★The structure tab is **one column flex block** (2026-09-22: use the screen fully, there is spare height —
+     measured canvas 1696x470 with 710px idle below).
+   Header, two chip tiers, legend and slider are fixed; **only the canvas** takes all remaining height.
+   ⚠Do not add `max-height` — it reverts to fixed height. Only a floor of 320px. */
+.strtab{display:flex;flex-direction:column;height:100%;min-height:320px}
+.strtab>*{flex:0 0 auto}
+.strwrap{position:relative;width:100%;border:1px solid #1a1f28;border-radius:7px;
+  overflow:hidden;background:#0d1014;flex:1 1 auto;min-height:320px}
+#strcv{display:block}
+/* Excluded row — answers «why isn't it shown» here (how many library/test lines were excluded) */
+.strex{color:#6b7688;font-size:10.5px;margin:-5px 0 8px}
+.strex b{color:#8b95a7;font-weight:400}
+.strck{display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#8b95a7;
+  margin-left:auto;flex:0 0 auto;white-space:nowrap}
+.strck input{accent-color:#5aa0e0;margin:0;width:12px;height:12px;cursor:pointer}
+/* «Color» / «Code» selects: right end of the title line (.strh). ⚠nowrap + shrinking note keep them on that line. */
+.wvh.strh{flex-wrap:nowrap}
+.wvh.strh>span{flex:1 1 auto;min-width:0}
+/* Note wraps, counts as tinted badges (80 strHdBadge). */
+:root{--st-up:#4cc38a;--st-dn:#5b9cf0;--st-dat:#b07cf0;--st-cy:#e57a6a}
+html[data-theme=light]{--st-up:#23874f;--st-dn:#2f6fd0;--st-dat:#7d4cc9;--st-cy:#bf4636}
+html[data-ui][data-ui] .wvh.strh>span{font-size:14px;white-space:normal;line-height:24px}   /* ⚠wraps instead of ellipsis: badges must stay readable at 900 */
+.strh .strlng{display:inline-block;max-width:100%;vertical-align:bottom;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* language counts wrap as one unit */
+.strh .strbg{--bgc:var(--nx-t2,#aab4c3);display:inline-block;margin:0 4px 0 0;padding:0 8px;border:1px solid color-mix(in srgb,var(--bgc) 50%,transparent);border-radius:10px;
+  background:color-mix(in srgb,var(--bgc) 14%,var(--nx-panel,#141a23));color:color-mix(in srgb,var(--bgc) 60%,var(--nx-t1,#dfe5ee));
+  font-style:normal;font-weight:600;font-size:12.5px;line-height:19px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.strh .strbg-n{--bgc:var(--nx-info,#5899f3)}.strh .strbg-up{--bgc:var(--st-up)}.strh .strbg-dn{--bgc:var(--st-dn)}.strh .strbg-dat{--bgc:var(--st-dat)}
+.strh .strbg-cy{--bgc:var(--st-cy)}.strh .strbg-cut{--bgc:var(--nx-warn,#e3b341)}.strh .strbg-hub{border-style:dashed}
+.strctl{display:flex;gap:12px;align-items:center;flex:0 0 auto;margin-left:auto;font-size:11px}
+.strctl .strck{margin-left:0}
+.straxw select{background:#141a23;border:1px solid #232c38;color:#bcd4f5;border-radius:5px;
+  padding:1px 4px;font:inherit;font-size:11px;cursor:pointer}
+.strlg u:empty{margin-right:2px}   /* the "recent change" axis has no text in the middle three cells (read by color band) */
+.strlg i.strts{background:#191720;border:1.4px dashed #55506b}
+/* Cell info panel — appears on clicking a function cell (meta + code + changes).
+   ★It is **the row below** the canvas (2026-09-22). It used to be a 290px note floating over the canvas; with code inside it
+     covered the treemap ⇒ moved down into a `.strtab` cell with **only the body** (`.strpnc`) scrolling.
+   ⚠Do not revert to `position:absolute` — close (✕) is relative to `.strpn`, so `relative` stays.
+   ⛔It holds **only the target project's source**. Other sessions' «conversations» are still never shown. */
+/* ⚠With `min-height` 0, on narrow screens (400px) it **squashes to 21px** and the list disappears
+     (measured 2026-09-22: 133px of content pressed to 21px). Keep enough so it doesn't collapse. */
+.strpn{position:relative;margin-top:8px;flex:0 1 auto;display:flex;flex-direction:column;
+  min-height:120px;max-height:46%;
+  background:#131922;border:1px solid #33405a;border-radius:8px;padding:9px 11px 10px;
+  box-shadow:0 6px 20px #000b;font-size:11px;line-height:1.66;color:#8b95a7}
+/* Body (code · changes · list) — only this scrolls. ⚠Without `min-height:0` the flex cell won't shrink */
+.strpnc{flex:1 1 auto;min-height:60px;overflow:auto;margin-top:6px;padding-top:6px;
+  border-top:1px solid #1e2735}
+.strpnc table.sbs{margin:0}
+.strpnc::-webkit-scrollbar{width:8px;height:8px}
+.strpnc::-webkit-scrollbar-thumb{background:#242c38;border-radius:4px}
+/* Code / changes — **switched** in one place (not stacked) */
+.strpnb{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:5px}
+.strpnb button{background:#161c25;border:1px solid #232c38;color:#8b95a7;border-radius:999px;
+  padding:2px 10px;font:inherit;font-size:11px;cursor:pointer}
+.strpnb button:hover{border-color:#3a4a63;color:#dfe5ee}
+.strpnb button.on{background:#1d2b42;border-color:#3f6ea8;color:#bcd4f5}
+.strpnb .strpnm{color:#6b7688;font-size:10px;margin-left:auto}
+.strpnl{color:#7e8896;padding:10px 2px}
+.strpnw{color:#e0b45f;padding:2px 0 5px}
+/* Sub-code list of an area cell — click to go to that function's code */
+.strfl{display:flex;gap:7px;align-items:baseline;width:100%;text-align:left;cursor:pointer;
+  background:none;border:0;border-bottom:1px solid #161d27;color:#a8b3c4;font:inherit;font-size:11px;
+  padding:3px 4px}
+.strfl:hover{background:#1b2231;color:#dfe5ee}
+.strfl b{flex:0 0 auto;color:#bcd4f5;font-weight:600;max-width:44%;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.strfl i{flex:1 1 auto;min-width:0;font-style:normal;color:#6b7688;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left}
+.strfl u{flex:0 0 auto;text-decoration:none;color:#8b95a7;font-variant-numeric:tabular-nums}
+.strfl u.chg{color:#ff8fbd;border-color:#7a3358}
+@media(max-width:560px){.strpn{max-height:54%}.strfl i{display:none}}
+/* Area child list (strPanList): fixed compact number columns on the right; ⚠scoped to .strpnc — .strfl is also the pair list */
+.strpnc .strfl,.strflh{align-items:center;gap:10px}
+/* ⚠top:-6px = .strpnc padding-top; with top:0 rows scrolled under it show through that 6px gap.
+   ⚠Background must equal .strpn's (next UI = --nx-panel, light theme too) or it reads as a see-through band */
+.strflh{display:flex;padding:6px 4px 2px;margin-top:-6px;color:#8b95a7;font-size:10px;border-bottom:1px solid #1e2735;
+  position:sticky;top:-6px;z-index:1;background:#131922}
+html[data-ui=next] .strflh{background:var(--nx-panel);border-bottom-color:var(--nx-rule)}
+/* Area list mode: canvas and list split the remaining height (measured 09-25: canvas pinned at its 320 floor left the
+   list 60-88px = ~3 rows, and at 1100x900 the 120px panel floor spilled 18px past its border onto the legend) */
+.strtab:has(.strpnL:not(.strpnC)) .strwrap{flex:2 1 0;min-height:180px}
+.strpn.strpnL{flex:3 1 0;min-height:150px;max-height:none}
+/* Folded list (default): title + summary line only, so the map keeps its height on a drill-down */
+.strpn.strpnL.strpnC{flex:0 0 auto;min-height:0}
+.strpn.strpnC .strpnh,.strpn.strpnC .strpnc{display:none}
+.strpn .strpnt{position:absolute;right:26px;top:5px}
+/* Folded: one line on the zoomed area's 20px header band (80-structure.js puts it inside .strwrap) — the map keeps its height */
+.strwrap>.strpn.strpnC{position:absolute;top:2px;right:6px;z-index:2;max-width:70%;height:18px;margin:0;padding:0;
+  flex-direction:row;align-items:center;gap:8px;background:none;border:0;box-shadow:none;line-height:18px;font-size:11px}
+.strwrap>.strpnC b.strpnn{display:none}   /* the band already shows the area name */
+.strwrap>.strpnC u{order:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+html[data-ui] .strwrap>.strpn.strpnC .strpnt{order:2;position:static;flex:0 0 auto;height:18px;padding:0 6px;font-size:11px}
+.strwrap>.strpnC .strpx{order:3;position:static}
+.strflh b,.strflh i{font-weight:400;color:inherit;font-style:normal}
+.strpnc .strfl s,.strflh s{flex:0 0 9px;height:9px;border-radius:2px;text-decoration:none}
+.strpnc .strfl b,.strflh b{flex:0 1 auto;width:22%;max-width:22%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strflh i{flex:1 1 auto;min-width:0}
+.strpnc .strfl u,.strflh u{text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none}
+.strpnc .strfl .c1,.strflh .c1{flex:0 0 48px}
+.strpnc .strfl .c2,.strflh .c2{flex:0 0 32px}
+.strpnc .strfl .c3,.strflh .c3{flex:0 0 76px}
+.strpnc .strfl .c4,.strflh .c4{flex:0 0 44px}
+.strpnc .strfl .c5,.strflh .c5{flex:0 0 76px}
+.strpnc .strfl .c4:not(.edpl):not(.edmn),.strpnc .strfl .c5.weak{color:#7d8796}   /* 4.86:1 on #131922 (#4c5563 was 2.45) */
+.strpn b.strpnn{display:block;color:#eaf1fa;font-size:12.5px;word-break:break-all;
+  padding-right:16px;margin-bottom:2px}
+.strpn u{display:block;text-decoration:none;word-break:break-all}
+.strpn em{font-style:normal;color:#bcd4f5}
+.strpn .strpx{position:absolute;right:7px;top:5px;cursor:pointer;color:#6b7688;font-size:12px}
+.strpn .strpx:hover{color:#dfe5ee}
+.strpn svg{display:block;width:100%;height:38px;margin:7px 0 1px}
+.strpn .strpnh{color:#6b7688;font-size:10px}
+.strtip{position:absolute;display:none;z-index:9;pointer-events:none;max-width:330px;
+  background:#131922;border:1px solid #33405a;border-radius:6px;padding:6px 9px;
+  box-shadow:0 3px 12px #000a;font-size:11px;line-height:1.62}
+.strtip b{display:block;color:#eaf1fa;font-size:12px;word-break:break-all}
+.strtip u{display:block;color:#8b95a7;text-decoration:none;word-break:break-all}
+.strtip i{display:block;color:#e0b45f;font-style:normal;margin-top:3px}
+.strlg{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin:8px 0 0;
+  font-size:10.5px;color:#6b7688}
+.strlg span{margin-right:6px;color:#8b95a7}
+.strlg i{width:13px;height:11px;border-radius:2px;display:inline-block;flex:0 0 auto}
+.strlg i.strnw{background:#1d2530;border:1.4px solid #e0b45f}
+.strlg u{text-decoration:none;margin-right:8px}
+.strbar{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.strpl{background:#1d2b42;border:1px solid #3f6ea8;color:#bcd4f5;border-radius:6px;
+  padding:3px 12px;font:inherit;font-size:12px;cursor:pointer;flex:0 0 auto}
+.strpl:hover{background:#253754}
+.strrg{flex:1 1 170px;min-width:110px;accent-color:#5aa0e0}
+.strlb{font-size:11px;color:#a8b3c4;flex:0 0 auto}
+.strlb u{text-decoration:none;color:#6b7688}
+.strpt{background:#3a2e14;border:1px solid #6b5520;color:#e0b45f;border-radius:4px;
+  padding:0 5px;font-size:10px;font-weight:400}
+.strtt{color:#eaf1fa;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;
+  margin-left:auto}
+.strbar em{font-style:normal;color:#7e8896;font-size:11px}
+/* Source <-> test pairing: list in the panel, split view (source left, test right) in the popup */
+.strpr{margin-top:6px;border-top:1px solid #1d2430;padding-top:5px}
+.strpr .strpnh b{color:#bcd4f5}
+.strprl{max-height:120px;overflow:auto;margin-top:3px}
+.strprl .strfl u.weak{color:#5d6675;font-style:italic}
+.strsp{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.strsp>div{min-width:0;overflow:auto}
+.strsp .strpnh{position:sticky;top:0;background:#0f141b;padding:3px 0;word-break:break-all}
+@media(max-width:760px){.strsp{grid-template-columns:1fr}.strsp>.strspg{display:none}}
+/* ⚠.wrap caps the app at 2240px for reading width; the structure drawing has no reading column, so it takes the whole screen (4K left blank margins). */
+html[data-mv=struct] .wrap{max-width:none}
+/* Source viewer (81b-structure-tree.js): tree left, file right; each side scrolls on its own. */
+.srt{display:grid;grid-template-columns:minmax(220px,26%) 1fr;gap:10px;height:100%;min-height:0}
+.srtl{display:flex;flex-direction:column;min-height:0;min-width:0}
+/* ⚠input[type=search] (45-saver-quota.css) sets flex:1 at (0,1,1) — two classes to win in this column flex. */
+.srtl .srtq{flex:0 0 auto;min-width:0;margin:0 0 6px;padding:4px 7px;font-size:11px;background:#0f141b;color:#c8d0dc;border:1px solid #2a3442;border-radius:5px}
+.srth{display:flex;align-items:flex-start;gap:4px}
+.srth .srtq{flex:1 1 auto}
+.srtfa{flex:0 0 auto;width:22px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:#0f141b;color:#8b95a7;border:1px solid #2a3442;border-radius:5px;cursor:pointer}
+.srtfa:hover{color:#c8d0dc;border-color:#3a6fb8}
+.srtfa svg{width:12px;height:12px}
+.srtt{flex:1 1 auto;min-height:0;overflow:auto;outline:none}
+.srtc{min-width:0;min-height:0;overflow:auto}
+.srtt .dfi.srtcur,.srtt .dfd.srtcur{box-shadow:inset 0 0 0 1px #3a6fb8}
+.srtt .dfi.dflk{cursor:default;opacity:.55}
+.srtt .dfi.dflk:hover{background:none}
+.srtlk{width:10px;height:10px;color:#8b95a7;vertical-align:-1px}
+.srtc tr.srtln td{background:#1f6feb26}
+/* «Structure» toolbar branch badge (strBrBadge) */
+.strbr{display:inline-flex;align-items:center;gap:4px;max-width:220px;white-space:nowrap}
+.strbr .strbrn{font-style:normal;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.strbr small{font-size:10px;color:#8b95a7;flex:none}
+.strbr .strbrd{color:#d29922}
+/* Source viewer: folding (81c), following (81d), git status colours. ⚠Child window has no --nx-* tokens — keep the fallbacks. */
+.srtr{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.srtr .srtc{flex:1 1 auto;outline:none}
+table.srft tr.srfh{display:none}
+table.srft .srfb{cursor:pointer;color:#6b7688;display:inline-block;width:100%}
+table.srft .srfb::before{content:'\25BE'}
+table.srft tr.srfc .srfb::before{content:'\25B8'}
+table.srft .srfb:hover{color:#dfe5ee}
+table.srft .srfn{display:none;margin-left:8px;padding:0 5px;border-radius:3px;background:#1d2533;color:#8b95a7;font-size:10px}
+table.srft tr.srfc .srfn{display:inline-block}
+.srmds{display:grid;grid-template-columns:1fr 1fr;gap:10px;height:100%;min-height:0}
+.srmdc,.srmds .srmdp{overflow:auto;min-height:0;min-width:0}
+/* Split grip (81i): out of flow, pinned to column 2's left edge inside the gap — the 1fr 1fr tracks stay as they were. */
+.strsp,.srmds,.srt{position:relative}
+.strspg{position:absolute;grid-column:2;grid-row:1;top:0;bottom:0;left:-9px;width:8px;cursor:col-resize;touch-action:none;z-index:3}
+.strspg::after{content:"";position:absolute;left:3px;top:0;bottom:0;width:2px;border-radius:1px;background:transparent}
+/* ⚠html[data-ui] lifts this over the 00-core next-UI twin «html[data-ui=next] .strspg::after» (0,2,2) */
+html[data-ui] .strspg:hover::after,html[data-ui] .strspg.on::after{background:var(--nx-t3,#8b95a7)}
+.srmdp{padding:2px 12px 10px;margin:0;color:#c8d0dc;line-height:1.55}
+.srmdp .mdln{display:block;height:0}
+.srmdp h1,.srmdp h2,.srmdp h3,.srmdp h4,.srmdp h5,.srmdp h6{color:#a8c6f0;margin:12px 0 5px}
+.srmdp h1{font-size:18px}.srmdp h2{font-size:15.5px}.srmdp h3{font-size:13.5px}.srmdp h4,.srmdp h5,.srmdp h6{font-size:12.5px}
+.srmdp table{border-collapse:collapse;margin:6px 0}
+.srmdp th,.srmdp td{border:1px solid #2a3442;padding:3px 7px}
+.srmdp a{color:var(--nx-info,#5899f3);cursor:pointer}
+.srmdp blockquote,.bd blockquote{margin:6px 0;padding:2px 0 2px 10px;border-left:3px solid var(--nx-rule,#2a3442);color:var(--nx-t2,#aab4c3)}
+.srmdp blockquote p,.bd blockquote p{margin:3px 0}
+/* md() task items: box sits where the bullet was */
+li.mdtask{list-style:none;margin-left:-15px}
+/* ⚠Chrome greys native disabled boxes (1.53:1 on the light bg) ⇒ draw our own box from the text tokens */
+li.mdtask>input{margin:0 5px 0 0;vertical-align:-2px;pointer-events:none;appearance:none;-webkit-appearance:none;
+  width:12px;height:12px;box-sizing:border-box;border:1px solid var(--nx-t2,#8b95a7);border-radius:2px;
+  position:relative;opacity:1;color:var(--nx-bg,#0f1218)}
+html[data-ui] li.mdtask>input:checked{background:var(--nx-t2,#8b95a7)}   /* ⚠prefix: the generated next-UI twin of the base rule would reset it */
+li.mdtask>input:checked::after{content:'';position:absolute;left:3px;top:0;width:3px;height:7px;
+  border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.srmdp .mdimg{color:#6b7688;font-style:italic}
+.srmdp img.mdimg1{display:block;max-width:100%;height:auto}
+.srtlg{font-size:10px;color:#6b7688;margin:0 0 5px}
+.srtlg:empty{display:none}
+.srtlg .srtA,.srtt .dfi.srtA .fp{color:var(--nx-ok,#71c269)}
+.srtlg .srtM,.srtt .dfi.srtM .fp{color:var(--nx-info,#5899f3)}
+.srtlg .srtD,.srtt .dfi.srtD .fp{color:var(--nx-t3,#84868c)}
+.srtt .dfi.srtD .fp{text-decoration:line-through}
+.srtt .dfd.srtdc{color:color-mix(in srgb,var(--nx-info,#5899f3) 45%,currentColor)}
+/* Mermaid flowcharts in the markdown preview (81e). Colours only through --mmd-* → --nx-* tokens (91-light redefines them). */
+.mmd{--mmd-bg:var(--nx-bg,#0d1014);--mmd-node:var(--nx-panel,#151b24);--mmd-nbd:color-mix(in srgb,var(--nx-info,#5899f3) 60%,var(--nx-rule,#2a3442));
+  --mmd-tx:var(--nx-t1,#dfe5ee);--mmd-ln:var(--nx-t2,#9aa4b4);--mmd-sg:color-mix(in srgb,var(--nx-info,#5899f3) 6%,transparent);
+  --mmd-sgbd:var(--nx-rule,#2f3a4a);--mmd-st:var(--nx-t2,#aab4c4);
+  margin:8px 0;border:1px solid var(--nx-rule,#2a3442);border-radius:6px;background:var(--mmd-bg)}
+.mmdbar{display:flex;justify-content:flex-end;padding:4px 6px 0}
+.mmdtg{font-size:11px;line-height:1.4;padding:1px 8px;border:1px solid var(--nx-rule,#2a3442);border-radius:4px;background:transparent;
+  color:var(--nx-t2,#9aa4b4);cursor:pointer}
+.mmdtg:hover{color:var(--nx-t1,#dfe5ee)}
+.mmdtg.on{color:var(--nx-info,#5899f3);border-color:var(--nx-info,#5899f3)}
+.mmdv{overflow-x:auto;padding:2px 8px 8px}
+.mmdsvg{display:block;margin:0 auto;max-width:none}
+.mmdsvg text{font-size:12px;fill:var(--mmd-tx);font-variant-numeric:normal}
+.mmdsvg .mmdst{fill:var(--mmd-st);font-weight:600}
+.mmdsg rect{fill:var(--mmd-sg);stroke:var(--mmd-sgbd);stroke-width:1}
+.mmdn rect,.mmdn polygon,.mmdn circle,.mmdn path{fill:var(--mmd-node);stroke:var(--mmd-nbd);stroke-width:1.2}
+.mmdn.s-sub path{fill:none}
+.mmde{fill:none;stroke:var(--mmd-ln);stroke-width:1.3}
+.mmde.e-dot{stroke-dasharray:4 3}
+.mmde.e-thick{stroke-width:2.6}
+.mmdah{fill:var(--mmd-ln)}
+.mmdel rect{fill:var(--mmd-bg);stroke:none;opacity:.92}
+.mmdel text{fill:var(--mmd-ln)}
+.mmdel.mmdnum rect{stroke:var(--mmd-ln);stroke-width:1}
+.mmdleg{list-style:none;margin:6px 0 0;padding:0 4px;font-size:12px;color:var(--mmd-tx)}
+.mmdleg b{font-weight:600;margin-right:4px}
+.mmdleg .mmdlft{color:var(--mmd-st)}
+.mmd .mmdsrc{display:none}
+.mmd.src .mmdsrc{display:block}
+.mmd.src .mmdv{display:none}
+.mmdsrc pre.cb{margin:4px 8px 8px}
+.mmdnote{font-size:11px;color:var(--nx-warn,#d6a64a);margin:6px 0 2px}
+/* sequenceDiagram (81h): lifelines, frames, notes, autonumber badges — same --mmd-* tokens. */
+.mmdahx{fill:none;stroke:var(--mmd-ln);stroke-width:1.5}
+.mmdseq .mmdll{stroke-width:1;opacity:.7}
+.mmdsqf rect{fill:none;stroke:var(--mmd-sgbd);stroke-width:1}
+.mmdsqf .mmdsqt{fill:var(--mmd-node);stroke:var(--mmd-sgbd);stroke-width:1}
+.mmdsqf .mmdsqd{fill:none;stroke:var(--mmd-sgbd);stroke-dasharray:4 3}
+.mmdsqnote rect{fill:color-mix(in srgb,var(--nx-warn,#d6a64a) 14%,var(--mmd-node));stroke:color-mix(in srgb,var(--nx-warn,#d6a64a) 55%,var(--mmd-sgbd));stroke-width:1}
+.mmdsqn circle{fill:var(--mmd-ln)}
+.mmdsvg .mmdsqn text{fill:var(--mmd-bg);font-size:10px}

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Compat alias for the pre-rename command name; same CLI as bin/orbit.
+exec "$(dirname "$0")/orbit" "$@"

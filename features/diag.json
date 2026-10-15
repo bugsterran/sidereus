@@ -1,0 +1,12 @@
+{
+  "id": "diag",
+  "title": "Diagnostics",
+  "default_on_public": true,
+  "deps": [],
+  "modules": ["hook_fields", "hook_diag"],
+  "routes": ["/api/diag"],
+  "threads": [],
+  "state_keys": [],
+  "web": ["js/90e-diag.js", "css/85c-diag.css"],
+  "settings": []
+}

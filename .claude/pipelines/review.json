@@ -1,0 +1,18 @@
+{
+  "v": 1,
+  "name": "review",
+  "title": "리뷰만",
+  "rules": "Follow AGENTS.md in the repo.\nNever commit or push.",
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "맥락 파악",
+      "agent": "sidereus-designer",
+      "task": "Read the change and its purpose. Summarise what it does and which files matter. Change nothing."
+    },
+    {
+      "title": "리뷰",
+      "agent": "sidereus-reviewer"
+    }
+  ]
+}

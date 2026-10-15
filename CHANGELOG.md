@@ -1,0 +1,169 @@
+# Changelog
+
+All notable changes to this project are documented here.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [Unreleased]
+
+## [0.1.0] - 2026-10-16
+
+### Added
+- Structure › Source: a Markdown preview shows repo-relative images (png, jpg, gif, webp, svg up to 5 MB) inline through `/api/structure/img`, which applies the same root and path checks as the file view; remote, absolute, out-of-repo and secret paths stay as grey alt text.
+- Attention: «agent completions unread» rows get a «Seen» button that marks those completion cards read (same store as the bell); opening that session does too, so the row no longer comes back on the next poll.
+- Structure › Architecture: feature/app-style maps draw 4 location bands (Entry · Client · Server · Stores) with a hover tip each; entry modules sit in left-aligned rows by kind (HTTP · Hook · Job …), each way in drawn once as a hexagon (a flow entry and its entry module no longer show as hexagon → box), and clicking it selects the module. Cross-band edges enter nodes from the top or bottom.
+- Structure › Architecture: corner minimap — the whole map scaled down in the bottom-right corner; its viewport rect follows scroll, click or drag moves the map, a lit flow is mirrored, and the show/hide toggle is remembered.
+- Accounts: with 2+ Claude accounts, Retro gets an «All accounts / <account>» picker above the six OTel cards (tool ranking, time spent, cache rewrites, hours, models, hook cost); incoming OTel records are now also aggregated per account (from the session id only — no email, uuid, config path or session ids stored). Records from before collection started have no account and count under All only («Records before <date> have no account»). Failure, weekly and commit cards stay All; picking never changes the main account.
+- Accounts: with 2+ Claude accounts, History and Tokens «Period totals» each get their own «All accounts / <account>» picker — History keeps only that account's rows (day headers recompute, «In other accounts: N»), Period totals recompute from that account's usage. Today's bar, donut, burn and live figures stay all accounts; picking never changes the main account.
+- Accounts: with 2+ Claude accounts, Sessions and Timeline each get an «All accounts / <account>» picker (per view, independent; replaces the «Only main account» toggle); the status-bar account layer gets «Show in bar» to show another account's 5h/7d in the bar. Picking never changes the main account.
+- Structure › Architecture: hovering a «Connections» row lights its edge and both modules on the map (the rest dims); an edge that is a step of a multi-step flow lights that flow. Clicking pins it (same row or empty space clears). The view never moves; an edge outside the visible map shows an «Off screen» marker on that side.
+- Tokens › Usage: «Daily» table under the trend chart — one row per day of the selected range (newest first) with tokens, cost and the top 2 projects; follows the 7/30-day switch in a fixed-height box so the content below does not move.
+- `room-minutes` skill + `scripts/room_log.py`: appends a dated Decisions / Open questions section for one mailbox room to `docs/decisions/<room>.md`, each line citing its message time and sender; reruns read only messages after the last section.
+- Status-bar layer: clicking the 5h/7d bar shows each signed-in account's 5h/7d left and reset (main marked) and open sessions (working / idle); «Quota details» opens the full quota window.
+- Status-bar layer: click another account's row to make it the main account (same setting as Preferences); names, % left and failure kinds are coloured.
+- New mark: the Moon as Galileo drew it in *Sidereus Nuncius*. The favicon is his first-quarter plate; the sidebar mark shows today's phase (rough terminator, maria, a lit peak, earthshine at new moon) with phase, age and % lit on hover, and still dims with a red edge when the viewer is offline. Replaces the orbiting Jupiter mark.
+- Several Claude Code accounts at once: sessions from every config root (`~/.claude`, `~/.claude-*`, `claude_roots`) with a label chip and a resume command that sets `CLAUDE_CONFIG_DIR`; limits and settings stay on the primary account. See docs/CONFIG.md.
+- Shown name is now Sidereus (also transliterated in the Korean UI), with a new mark and favicon (the Moon, see above). Identifiers followed in a later rename (see «Changed»).
+- SECURITY.md (+ .ko, repo root): what Sidereus never does, what a security review may ask about, and the switch for each; new `quota_lookup` (no keychain read, no quota call) and `keep_awake` config keys.
+- Settings «Preferences»: saver hook folder, auto-compact history, viewer name/default room, relation node cap and terminal app (server, `config.local.json` via `/api/prefs`, apply after restart; env-set keys read-only), plus chat thread tiers, start tab, tab order/hide and KPI card order/hide (browser). Empty config and storage keep today's screens.
+- Package cycle warnings list each hop with the class link behind it and the count of further links (popup and DM body).
+- Selections survive a refresh: chat place, filter/thread and grouping, token range, structure project and per-repo relation scope (validated; a room or project that is gone falls back to the default).
+- Local web viewer for Claude Code sessions (single entry `chat_server.py`, `http://127.0.0.1:8799`), standard library only.
+- Tabs: Timeline (with replay and hover card), Chat (mailbox bus), Tokens, Structure (code treemap, source/test pairs, Go scanning), Branches, History, Retro (30-day failures and activity).
+- Activity strip, four KPI cards (5-hour and 7-day quota, session states and context %, failures in the last hour) and a pinnable sessions drawer.
+- «Needs me» attention ranking; failure alert cards with one action line each, batch read, auto-expire and trim.
+- Branches tab: folder tree, commit graph, commits linked to their session with cost, worktree cards (quota share, uncommitted files and their owners, ahead/behind), «conflict risk» alert, remote fetch freshness.
+- Work popup can send a mailbox DM to a session (`/api/dm`), with watch state and ack/reply status.
+- Mailbox Stop hook `hooks/mailbox_stop.py`: unread mail notice at the end of a turn.
+- Sidereus MCP server `mcp/sidereus_mcp.py`: read-only `sidereus_quota`, `sidereus_peers`, `sidereus_file_peers`, `sidereus_attention`.
+- OTel log collector built in; by-source counts persist across restarts with a transcript comparison.
+- Quota attribution, keyboard navigation, own Sidereus palette, background tones including white.
+- Unit tests (`tests/`), golden tests for split functions, and a snapshot tool for refactor proofs.
+- `THIRD_PARTY_NOTICES.md`, non-affiliation note, neutral CX/GK glyphs.
+- Timeline «Changes» rail: diff vs a selectable base (auto → remote/last commit, or head/start/remote), session and repo pickers, per-file owner chip (agent task or session, edit count) and a red «Conflict» chip for concurrent edits, click-through to the work popup or a peer list.
+- Optional OS notification (Settings, off by default): desktop alert only on transitions into blocked/ask/abort/conflict, metadata only (project, reason, minutes), suppressed while the tab is focused.
+- Tokens tab «Top 5 costly runs» (today / 7 days): priciest subagent runs by tokens, with task, type, project, duration and share; click opens the work popup.
+- KPI headroom uncertainty (`±N%`): 5-hour and 7-day cards show a spread band while the estimate is still sharpening.
+- `/api/hookstate`: lightweight quota-only endpoint for the saver hook's poll (subset of `/api/state`).
+- Structure tab: code select (Source / All / Tests) and a color select, both at the top of the tab; the gray «+N more» area list gains fixed columns (color swatch, function, path, lines, edit count, last change, growth since first seen, first seen).
+- Timeline «Changes» rail is resizable (drag the divider, double-click to reset) and clicking a rail commit row opens its diff.
+- Attention ranking: below-threshold sessions (done/background-finished-only signals) collapse into a «N below threshold» row that expands on click.
+- Timeline sleep bands: `DarkWake`-split sleep intervals with no activity in between are joined into one gap instead of shown as repeated short wakes.
+- Structure relations view: drag individual boxes and cards (a card stays inside its box, which grows), background drag pans, lines re-route on drop; positions saved per repo and scope with a reset-layout button.
+- Icons on the header tabs (hidden at ≤1200px) and on the Settings categories.
+- Structure relations warnings (toolbar «Warnings N»; removed later with the static relations view): import and Spring injection cycles, duplicate MyBatis mapper namespaces (high); package cycles and ambiguous injection (medium); layer reversals and the same JVM class name in several packages (low). In-function Python imports are not counted; warning nodes are kept past the node cap; clicking a row shows only its nodes.
+- Warning relay: «DM» per warning or a bundled DM per kind (numbered, capped at the DM limit) to any mailbox session — this project's sessions first, each with its live state. Preview and explicit «Send» (no auto-send); a reply from the recipient marks it replied and re-checks the graph, and warnings gone after that are listed as resolved.
+
+### Changed
+- Structure › Architecture: every band and entry row is centred on one shared vertical axis (a focused module sits on that axis too); all modules served by an entry share the first row of the Server band.
+- Structure › Architecture: entry rows are centred in the Entry band; modules served directly by an entry (e.g. security/auth) sit in the first row of their band, and calls from other modules into them are drawn as dashed «uses» edges (legend item added) instead of solid calls.
+- Structure › Architecture: «map» is now «diagram» across the view, tour, guide and docs; the request button reads «Generate diagram» (none yet), «Update diagram» (older than the code) or «Redraw» (at HEAD) — same run, same confirm.
+- Timeline › «Changes» rail: repo chips read «main repo · branch» (a worktree shows its main repo name); a repo ahead of its upstream lists the unpushed commits' files and is no longer folded into «+N clean».
+- arch-map: a flow now covers every handler of its entry's module, up to 40 steps (was 20).
+- Structure › Architecture: arch-map draws one flow per entry point (cap raised from 8 to 40); the entry band wraps at 8 entries per row (8 or fewer render unchanged).
+- Structure › Architecture: arch-map edge kinds are defined language-neutral (precedence call > di > import).
+- Structure › Top issues: «Request fix» asks the recipient to re-run arch-map for the repo once the fix is committed.
+- Structure › Architecture: «Other» connections become «Not on a traced flow · N · all verified» (or «· M unverified»), split into «Wiring» (import/config/di) and «Calls» sub-groups with counts, both opened by «Expand all»; every edge whose from→to pair is a flow step is credited to that flow instead of staying in Other.
+- Structure › Architecture: «Connections» is a flow tree — one node per flow (module and step counts) with its ordered steps, plus «Other connections (not in a flow · #)»; default collapsed with Expand all / Collapse all. Hovering a flow lights the whole flow, a step lights its edge and both modules; clicking pins (same item or empty map clears) and a pinned step shows its evidence. The view never moves.
+- Header KPI strip removed; 5-hour and 7-day quota show in the status bar only, and tab content starts right under the top bar.
+- Code name renamed to Sidereus everywhere (package `sidereus/`, `python3 -m sidereus`, `sidereus.cmd`, MCP server `sidereus` with `sidereus_*` tools, launchd labels `io.sidereus.*`, scheduled task `Sidereus`, `SIDEREUS_*` env vars, `X-Sidereus-*` headers, agent/skill/pipeline names). The old names are no longer recognised — no fallback. Migrate:
+  - Rename every old-prefix env var to `SIDEREUS_*` (e.g. `SIDEREUS_PORT`).
+  - MCP: `claude mcp remove` the old server and add `sidereus` (the line `python3 -m sidereus setup-claude` prints), or reinstall the plugin. Update permission allow-lists to `mcp__sidereus__*`.
+  - Service: remove the old launchd agent / scheduled task, then re-run `python3 -m sidereus start --install-service`.
+- Claude Code plugin and marketplace renamed to `sidereus`. Reinstall: uninstall the old plugin (and `folder-accounts` if installed), remove its marketplace, `/plugin marketplace add <clone>`, `/plugin install sidereus@sidereus`.
+- Optional accounts plugin renamed `folder-accounts` → Orbit (`plugins/orbit/`, install `orbit@sidereus`; command `orbit`, `claude-account` kept as an alias). Registry `~/.claude-accounts` and the rc block are unchanged. Reinstall: `/plugin uninstall folder-accounts@sidereus`, `/plugin install orbit@sidereus`.
+- Main views moved into a collapsible left sidebar (56px icons, 208px open; pushes the page at ≥1200px, overlays below; Cmd/Ctrl+B; remembered; folded icons show a quick name tooltip with the shortcut digit). It also holds the logo, the «Attention» list of sessions that need you, and alerts/settings. The top bar is one 48px row: view title, running sessions, «needs me» chips, sessions. The header width-squeeze steps are gone.
+- Structure tab is now «Architecture» (agent-drawn, verified module map + process flows) and «Size» (treemap). The static relations view, its flow/path views, framework rules, warnings, `/api/structure/rel|path|calls`, the `rel_max_nodes` pref and `scripts/rel_route_check.mjs`/`stack_check.py` are removed. Language plug-in keys are now `exts`, `lang`, `scan`, `test`, `test_dirs`, `skip`, `gen`. A stored relations mode opens «Architecture».
+- Page moved into `web/` (byte-identical assembly); JS/CSS split into feature files, Python into the `sidereus/` package.
+- Route tables for GET/POST; large Python and JS functions split into named helpers; shared UI kit (overflow fold, popover, hover card).
+- Token widgets moved to the Tokens tab and the 5-hour card; per-tab toolbar below the KPI cards.
+- Failure tab replaced by actionable alert cards.
+
+- Structure relations regions are business packages (`com/<co>/<app>/<pkg>`, `features/<pkg>`), the same key in every lane; the lane comes from the deepest layer folder (`domain/` = data); the middle lane is Logic. Caps: 16 per lane, 48 total; small packages fold into linked or sibling packages before «Other».
+- 5-hour headroom pairs the official % with tokens up to the moment it was logged, and subtracts tokens spent since (it no longer rises between polls).
+- Relations view is not rebuilt by polls that change nothing it shows (no periodic twitch).
+
+### Fixed
+- Pipeline: the «Workflow» group label and the workflow head note are translated.
+- Config: a `claude_roots` list in `config.local.json` is kept on load (it was dropped as an unknown key, so extra account roots never applied).
+- Chat: the room «← Rooms» back button uses the shared 28px nav height and 13px label (was 24px / 12px, too small a target).
+- Sessions: a running background shell (e.g. a dev server) stays listed under its session past 2 hours; it closes on its completion notice, an error, session end or ✕.
+- Pipelines: the tab fills the window height and the run panels sit at the bottom (about 22px padding) at every width; narrow widths use a canvas-over-panes grid, and in-place size changes refit it.
+- Timeline › Changes: a session's repo list keeps repos it touched early in a long transcript (the whole transcript is scanned once, then only appended lines), instead of only those in the last 1.5MB.
+- Architecture gate: a step calling a Java record accessor or a Lombok-generated getter/setter now counts as defined when the call site names the type (it was dropped as «nodef»).
+- Left rail: with the rail collapsed, the Attention badge opens a temporary peek that closes on an outside click; only the rail toggle (or Cmd/Ctrl+B) saves the collapsed setting.
+- Structure › Architecture: the minimap reads at small scale (1px strokes that do not scale, no arrowheads, a small corner toggle), and a map opens centred once per map without ever re-centring on repaint or click.
+- Pipeline: a new request whose first tagged stage comes after the first stage (e.g. main did Requirements itself) now opens its own run instead of continuing the finished run as a second pass with its old done marks.
+
+### Security
+- `/api/*` GET requests with `Sec-Fetch-Site: cross-site` are refused (403), alongside the existing cross-origin POST check.
+- Work popup masks secrets (API keys, Bearer/JWT, AWS/GitHub/Slack tokens, private keys, `*_KEY=` values) before sending.
+- Git runs with fsmonitor and hooks disabled; diffs use `--no-ext-diff --no-textconv` and are read with a size cap.
+- User paths reach git as literal pathspecs; paths starting with `:` or containing NUL are refused (a glob pathspec could read the whole repo).
+- Structure/source roots exclude `/` and the home directory.
+- Request timeout 30s; `/api/*` GET also refuses `Sec-Fetch-Site: same-site`; data files are created 0600 and `backup.sh` runs with umask 077; two more HTML-escape fixes.
+- POST handlers type-check untrusted JSON and answer 400 instead of closing without a response.
+- Git calls ignore the worktree `.gitattributes` (`--attr-source` on git ≥ 2.40), so a cloned repo's filter drivers no longer run during status/diff; LFS/eol attributes are ignored for display.
+
+### Privacy (metadata only)
+- Sessions drawer and external-platform rows no longer carry task/reply text or tool input (Agent task descriptions only).
+- Failure samples, wreckage and Retro tool errors are grouped by a fixed label + tool name — no raw text or arguments.
+- Ask/abort cards are created with an empty body; old stored bodies are emptied on read.
+- Test fixtures use placeholder session ids and paths.
+
+### UI
+- A hidden tab polls every 30s instead of 2.5s (OS notifications still fire); becoming visible polls at once.
+- Poll repaints skip unchanged content, so hover and focus survive; idle timeline mutations per 10s 629 → 464, attribute mutations ~390 → ~70–115.
+- Structure: functions beyond the per-area cap are drawn as one grey cell per file; clicking expands the area filtered to that file.
+- One name per concept («Subagent», «Background tasks»); token and failure numbers state their scope with tooltips; the day/week/month toggle moved into the period totals title.
+- Four actions that failed silently (mark all read, history all, health/background dismiss) now show the error toast.
+- Structure relations: cards centred in their box both ways; «Layer N» is a chip on the band separator; merged lines leave boxes straight and same-row pairs are one straight line; «Fit to view» fits the canvas and the view can no longer drift off-screen; the selection card opens below the clicked node; Esc closes it.
+- Settings modal keeps a fixed height across categories; saver mode rows aligned; the target time is a plain HH:MM field.
+- Timeline axis labels never overlap (step from measured width); bar labels ≥ 4.5:1 contrast on every hue; name column scales with the window.
+- Tokens trend: round end dots, 1/2/5 y ticks, hover tooltip; top-5 rows align.
+- Sessions drawer rows stay on one line; less important chips hide first when narrow. Branch commit rows are aligned columns.
+- Popovers share one radius/shadow/border; the bell panel no longer touches the status bar; treemap labels are shortened by measured fit instead of cut.
+- Light-theme contrast fixes (chat bold text, blocked todo, commit author, KPI legend).
+- Segmented controls share one look and height (24px) and titles one scale; percentages, money and counts use one format everywhere (whole %, «<1%», uppercase K).
+- KPI cards stay on one row at 1081–1200px, so the feed is no longer pushed down.
+- Structure relations: a dropped box moves to the nearest free spot and is drawn on top, so boxes never overlap; narrow card text is centred.
+- Diff window: prose files (Markdown, text, logs) colour only headings and code; lines wrap at word boundaries.
+- More contrast fixes (work-popup send and token labels, Cmd+K paths, quick-reply buttons, rule-kind swatches).
+
+### Fixed
+- Branches: a repository listed in the picker is no longer refused («This repository is not in the list», 403) when a later session in the same folder did not carry it — the server gate now reads every session row, like the picker.
+- Structure: folding a flow or «Other» (caret or «Collapse all») unpins a pinned step or Other row that the fold hides, so the map no longer stays lit with no visible row; a pinned flow node stays lit.
+- Pipeline guard: a loop-back clears skip declarations from the loop-back stage on, so a stage skipped in round 1 must be run or declared skipped again in later rounds; «skip» marks on screen are unchanged.
+- Pipeline guard: declaring a skip of a loop-back's return stage no longer reports stages that already ran (e.g. verify, review) as skipped; the jump check starts at the declared return stage.
+- Pipelines: each request is its own run — a new first-stage tag closes the previous run, so a new run shows only its own progress; declared onFail loop-backs stay in one run, and earlier runs are reachable from «Run k/N ▾» (time + label).
+- Structure › Main issues and Pipeline «Ask AI»: a sent improvement request shows a green «✓ Requested → session · time» line plus a toast (failures show a red line); resending the same request takes a second click on «Sent · send again».
+- Tokens: a project keeps one name across the 7-day and 30-day views (one view no longer shows the folder slug while the other shows the project name).
+- 5h headroom no longer saw-tooths while the official % sits still: tokens pair with the first log of the current %.
+- Subagent completion detection for attachment notifications; live detection of resumed subagents.
+- Forked-away session pid no longer shows the old transcript as live.
+- Concurrency races (background dismiss, card read, mark-all, atomic saves, window save, wreck map); `saver_set` read-merge-write lock; quota attribution re-seeded on a new 5-hour cycle.
+- Failure scan no longer drops the first new line on each tick (failures tab, alert cards, wreckage and «Failures (1h)» were undercounted).
+- A background-task completion notice caught mid-write no longer leaves an agent «Running» forever.
+- One failing optional part of the state (quota, usage, health, attention, …) is sent empty with a warning instead of freezing the screen; the branch warm-up thread survives a failing tick.
+- Live probe: «nothing running» now flags a pending Bash approval; failed or skipped probes stay unknown.
+- Per-transcript and failure-scan bookkeeping for gone or 30-day-old files is pruned (was kept forever).
+- 20 duplicate English UI strings resolved (a later file overrode the earlier translation everywhere).
+- A 403/500 from the server lands in the normal error path instead of a JSON parse error.
+- History rows crossing midnight carry a previous-day / next-day mark («23:00~01:00» from the day before, «22:00~01:00» into the next day) instead of «00:00~00:00»; newest start first.
+- The new-version bar no longer covers the header tabs.
+- 5-hour and 7-day percentages now agree across the KPI cards, status bar and saver badge.
+- Invalid `font: Npx inherit` CSS was dropped by browsers (buttons fell back to 13.33px); font sizes now apply as intended.
+- The token trend tooltip no longer shows as an empty pill.
+
+### Internals
+- One shared bounded cache replaces 16 hand-written caches; shared timestamp formats; pure burndown math split out; attention ranking and branch graph split into collect and rank steps — outputs verified identical.
+- UI kit: one skip-if-unchanged repaint helper, JSON fetch helpers, a soft-error counter (one console warning per tag), one `HH:MM` formatter.
+- Tests: 47 for POST routes and live probe, duplicate-i18n-key check, metadata-only check.
+
+### Docs and install
+- Fresh install verified with an empty HOME: first start creates an empty 0600 bus file and a missing `~/.claude/projects` is not a warning (0 warnings).
+- Docs say what ships here (bus, `watch.sh`, Stop hook) vs the external mailbox MCP tools; the saver hook is optional; `launchctl bootstrap/bootout` throughout; the OTel endpoint must match `--port`.
+- launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
+- Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
+
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/bugsterran/sidereus/releases/tag/v0.1.0

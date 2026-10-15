@@ -1,0 +1,87 @@
+/* ★Sessions drawer (replaces the right column, top-right, popup-like). Not a modal: no backdrop, no scroll lock.
+   Closed = visibility:hidden (not display:none) so the aside keeps its scrollTop and polling keeps repainting it; hidden rows also leave the tab order.
+   ⚠body.sespin (pinned) restores the old right column exactly — every rule here is scoped to body:not(.sespin). */
+html[data-ui=next]{--nx-shadow:0 14px 38px #000b}
+html[data-ui=next][data-theme=light]{--nx-shadow:0 12px 32px #0003}
+html[data-ui=next] .sesb{display:inline-flex;align-items:center;gap:5px}
+/* ★2026-09-27 QA: the 12.5px label made a 20.25px line, so #sesb was 30.3px vs #bell/#gear 32.7px. ⚠10px = .bell padding 4+4 + border 1+1. */
+html[data-ui=next] .sesb{min-height:calc(1lh + 10px)}
+html[data-ui=next] .sesb .ic{margin-right:0}
+html[data-ui=next] .sesb .sesbl{font-size:12.5px}
+html[data-ui=next] .sesb b{font:inherit;font-size:11px;font-weight:600;line-height:16px;min-width:16px;padding:0 4px;border-radius:8px;text-align:center}
+html[data-ui=next] .sesb b:empty{display:none}
+html[data-ui=next] .sesb .sesbn{background:var(--nx-hover);color:var(--nx-t2);border:1px solid var(--nx-rule)}
+/* ⚠Neutral on purpose: the header «Need you N» pill already carries the alarm; a second red badge doubled it */
+html[data-ui=next] .sesb .sesba{background:var(--nx-hover);color:var(--nx-t1);border:1px solid var(--nx-rule)}
+html[data-ui=next] .sesb[aria-expanded=true]{border-color:var(--nx-info);color:var(--nx-t1)}
+/* Drawer head: title · pin · close */
+html[data-ui=next] h2.sesh{align-items:center}
+html[data-ui=next] h2.sesh .sesdb{background:none;border:1px solid var(--nx-rule);color:var(--nx-t2);border-radius:5px;
+  font:inherit;font-size:12px;line-height:1;padding:3px 7px;cursor:pointer}
+html[data-ui=next] h2.sesh .sesdb:hover{color:var(--nx-t1);border-color:var(--nx-info)}
+html[data-ui=next] h2.sesh #sespin{margin-left:auto}
+html[data-ui=next] h2.sesh #sespin[aria-pressed=true]{color:var(--nx-info);border-color:var(--nx-info)}
+html[data-ui=next] body.sespin h2.sesh #sesx{display:none}
+/* The drawer itself — out of the grid, anchored under the header (--sesdr-top is set by sesdrPlace) */
+html[data-ui=next][data-ui] body:not(.sespin) .wrap > .lside{display:flex;position:fixed;z-index:44;order:0;
+  top:var(--sesdr-top,56px);right:12px;width:min(var(--sesdr-w,640px),calc(100vw - 32px));
+  max-height:min(var(--sesdr-mh,100vh),calc(100vh - var(--sesdr-top,56px) - var(--sesdr-bot,12px)));box-shadow:var(--nx-shadow);border-radius:6px;
+  visibility:hidden;opacity:0;transform:translateY(-6px);pointer-events:none;
+  transition:opacity .12s ease,transform .12s ease,visibility 0s linear .12s}
+html[data-ui=next][data-ui] body.sesopen:not(.sespin) .wrap > .lside{visibility:visible;opacity:1;transform:none;pointer-events:auto;
+  transition:opacity .12s ease,transform .12s ease,visibility 0s}
+/* ★visibility:hidden does not stop CSS animations: the closed drawer's status dots (pl/pl2 box-shadow, dots content)
+   kept ~60 style recalcs/s at idle. ⇒ Pause everything inside while closed. */
+html[data-ui=next][data-ui] body:not(.sesopen):not(.sespin) .wrap > .lside *,
+html[data-ui=next][data-ui] body:not(.sesopen):not(.sespin) .wrap > .lside *::before,
+html[data-ui=next][data-ui] body:not(.sesopen):not(.sespin) .wrap > .lside *::after{animation-play-state:paused}
+html[data-ui=next] body:not(.sespin) .lside:focus{outline:none}
+/* ⚠#sess keeps its 46vh cap (60-sessions.css) for the pinned column; in the drawer the list fills down to the footer instead */
+/* ⚠The pinned column's 250px floor (50-layout-feed.css) left a blank band above «Recently ended sessions» with one live session (2026-09-27) — the drawer list sizes to its rows */
+/* ⚠A 46vh cap here made #sess a second scroller inside the scrolling drawer and clipped its last ~17px ⇒ no cap; only the drawer scrolls */
+html[data-ui=next][data-ui] body:not(.sespin) .wrap > .lside > #sess{max-height:none;overflow:visible;min-height:0;flex:0 0 auto}
+/* ⚠Any shrinking child collapsed (live rows to 0px, then «Recently ended sessions» to 5px under a tall live list) — nothing shrinks; the drawer itself scrolls */
+html[data-ui=next][data-ui] body:not(.sespin) .wrap > .lside{overflow-y:auto}
+html[data-ui=next][data-ui] body:not(.sespin) .wrap > .lside > h2.sesh{position:sticky;top:-11px;z-index:3;background:inherit}   /* keeps «Pin»/× in reach; -11px = aside padding */
+html[data-ui=next][data-ui] body:not(.sespin) .wrap > .lside > .srec{flex:0 0 auto}
+/* «Token widgets on the right» (sidereus.wkside) applies only to the pinned column */
+html[data-ui=next] body:not(.sespin) .lside > .wku{display:none}
+/* Size grips (41 sesdrRzWire): #sesrz overlays the open drawer (--sesdr-ch = measured height); bars show on hover/focus only, like .relhg (76). */
+#sesrz{display:none}
+html[data-ui=next] body.sesopen:not(.sespin) #sesrz{display:block;position:fixed;z-index:45;pointer-events:none;
+  top:var(--sesdr-top,56px);right:12px;width:min(var(--sesdr-w,640px),calc(100vw - 32px));height:var(--sesdr-ch,0px)}
+#sesrz .sesrz{position:absolute;pointer-events:auto;touch-action:none}
+#sesrz .sesrz-w{left:-4px;top:0;bottom:12px;width:8px;cursor:ew-resize}
+#sesrz .sesrz-s{left:12px;right:0;bottom:-4px;height:8px;cursor:ns-resize}
+#sesrz .sesrz-sw{left:-4px;bottom:-4px;width:16px;height:16px;cursor:nesw-resize}
+#sesrz .sesrz::after{content:'';position:absolute;border-radius:2px;background:var(--nx-info,#63a9e8);opacity:0}
+#sesrz .sesrz-w::after{left:2.5px;top:50%;width:3px;height:44px;margin-top:-22px}
+#sesrz .sesrz-s::after{top:2.5px;left:50%;width:44px;height:3px;margin-left:-22px}
+#sesrz .sesrz-sw::after{left:4px;bottom:4px;width:7px;height:7px;background:none;border:solid var(--nx-info,#63a9e8);border-width:0 0 2px 2px;border-radius:0 0 0 2px}
+#sesrz .sesrz:hover::after,#sesrz .sesrz:focus-visible::after,#sesrz .sesrz.on::after{opacity:.85}
+#sesrz .sesrz:focus{outline:none}
+@media (prefers-reduced-motion:reduce){ html[data-ui=next][data-ui] body:not(.sespin) .wrap > .lside{transition:none} }
+/* «Recently ended sessions» (41b-sesrecent.js): collapsed header row under the list; rows = name · branch · model · ctx · age · buttons */
+.srec{margin:6px 0 4px;border-top:1px solid var(--nx-rule,#333);padding-top:4px;font-size:12px}
+.srec .srech{display:flex;align-items:center;gap:4px;width:100%;background:none;border:0;color:var(--nx-t2,#aaa);font:inherit;padding:4px 2px;cursor:pointer;text-align:left}
+.srec .srech:hover{color:var(--nx-t1,#ddd)}
+.srec .srecc{width:12px;display:inline-block}
+.srec .srecn{font-weight:600;font-size:11px;padding:0 5px;border-radius:8px;background:var(--nx-hover,#2a2a2a);border:1px solid var(--nx-rule,#333)}
+.srec .srecf{width:100%;box-sizing:border-box;margin:2px 0 4px;font:inherit;padding:3px 6px}
+.srec .srecr{display:flex;align-items:center;gap:6px;padding:3px 2px;border-radius:4px;min-width:0}
+.srec .srecr:hover{background:var(--nx-hover,#2a2a2a)}
+.srec .srecnm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;max-width:40%;flex:none}
+/* ⚠Branch gives way first (max-width + shrink 9): a long branch squeezed the name to 20px and the description to 0 */
+.srec .srecbr{color:var(--nx-info,#63a9e8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;max-width:28%;flex:0 9 auto}
+.srec .srecmd,.srec .srecpc,.srec .srecag{color:var(--nx-t2,#aaa);white-space:nowrap;flex:none}
+.srec .srecsd{color:var(--nx-t2,#aaa);font-family:ui-monospace,Menlo,monospace;font-size:11px;white-space:nowrap;flex:none}
+.srec .srecds{color:var(--nx-t2,#aaa);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:48px;flex:1 1 0}
+.srec .srecag{margin-left:auto}
+.srec .srecgn{color:var(--nx-warn,#d9a441);flex:none}
+.srec .srecb{flex:none;background:none;border:1px solid var(--nx-rule,#333);color:var(--nx-t2,#aaa);border-radius:5px;font:inherit;font-size:11.5px;padding:1px 6px;cursor:pointer}
+.srec .srecb:hover{color:var(--nx-t1,#ddd);border-color:var(--nx-info,#63a9e8)}
+/* Manual-copy box under a row when «Copy command» fails (same as attention .atcp) */
+.srec .srcp{display:flex;gap:4px;padding:0 2px 4px}
+.srec .srcp input{flex:1 1 auto;min-width:0;font:11px ui-monospace,Menlo,monospace;padding:2px 5px;border:1px solid var(--nx-rule,#333);border-radius:4px;background:var(--nx-bg,#111);color:var(--nx-t1,#ddd)}
+html[data-ui=next][data-ui] .srec .srcp input:not(:hover):not(:focus){border-color:var(--nx-field)}   /* ★--nx-rule 1.22-1.30 -> --nx-field >=3:1 */
+.srec .srecm{color:var(--nx-t2,#aaa);padding:4px 2px}

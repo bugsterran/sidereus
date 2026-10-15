@@ -1,0 +1,481 @@
+{
+  "v": 1,
+  "groups": [
+    { "id": "understand", "en": "Understand" },
+    { "id": "research", "en": "Research" },
+    { "id": "design", "en": "Design" },
+    { "id": "build", "en": "Build" },
+    { "id": "test", "en": "Test" },
+    { "id": "quality", "en": "Quality" },
+    { "id": "security", "en": "Security" },
+    { "id": "consistency", "en": "Consistency" },
+    { "id": "verify", "en": "Verify" },
+    { "id": "review", "en": "Review" },
+    { "id": "release", "en": "Release" },
+    { "id": "ops", "en": "Guardrails" }
+  ],
+  "templates": [
+    {
+      "id": "code-map", "group": "understand", "title": { "ko": "코드 지도", "en": "Code map" }, "role": "probe", "model": "opus",
+      "task": "Draw a module map of this repo the way {sidereus}/.claude/pipelines/arch-map.json does in its first two stages: plan.json and map.json under the arch store dir, every edge citing file, line and symbol. Read-only on the repo. Report the module and edge counts only.",
+      "gate": "python3 {sidereus}/scripts/arch_verify.py --last", "gateHint": "",
+      "asserts": "Every edge is re-read at the commit; a map with 2+ modules and 0 proven edges fails.", "tools": []
+    },
+    {
+      "id": "reproduce", "group": "understand", "title": { "ko": "재현", "en": "Reproduce" }, "role": "probe",
+      "gate": "", "gateHint": "A command that fails while the bug is present, e.g. pytest -q tests/test_bug.py", "asserts": "", "tools": []
+    },
+    {
+      "id": "root-cause", "group": "understand", "title": { "ko": "원인", "en": "Root cause" }, "role": "triage",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "impact", "group": "understand", "title": { "ko": "영향 평가", "en": "Impact assessment" }, "role": "design",
+      "task": "List what the planned change touches: callers, modules, data, public APIs and tests that cover them, each with file:line. Mark the risky ones. Read only.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "explore", "group": "understand", "title": { "ko": "탐색", "en": "Explore" }, "role": "probe",
+      "task": "Explore the code the request touches: entry points, the modules involved and how data flows between them, with file:line. Read only.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "impact-scope", "group": "understand", "title": { "ko": "영향 범위", "en": "Impact scope" }, "role": "design",
+      "task": "List everything that loads, calls or depends on the part being changed (configs, hooks, callers, tests), with file:line. Read only.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "classify", "group": "understand", "title": { "ko": "분류", "en": "Classify" }, "role": "triage",
+      "task": "Classify the incident: what is broken, who is affected, since when, and the severity. Cite the evidence (logs, metrics, reports). Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "web-research", "group": "research", "title": { "ko": "웹 조사", "en": "Web research" }, "role": "probe",
+      "task": "Search the web for the question at hand and report conclusions only, each with the source URL and date. Prefer primary sources; mark anything unconfirmed. Change no files.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "prior-art", "group": "research", "title": { "ko": "선행 연구", "en": "Prior art + papers" }, "role": "probe",
+      "task": "Find related papers, standards or established industry practice for the problem. Summarise each in two lines with a full reference, and say what applies here. Change no files.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "docs-lookup", "group": "research", "title": { "ko": "라이브러리 문서 확인", "en": "Library + docs lookup" }, "role": "probe",
+      "task": "Look up the current official docs for the libraries and versions this repo uses (e.g. via context7) for the APIs the change needs. Report the exact usage and any deprecation, with doc links. Change no files.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "option-compare", "group": "research", "title": { "ko": "선택지 비교", "en": "Option comparison" }, "role": "design",
+      "task": "Compare 2 to 4 options for the decision in a table of criteria (fit, cost, risk, maintenance, licence), cite sources, and end with one recommendation and why. Change no files.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "spike", "group": "research", "title": { "ko": "스파이크", "en": "Spike + prototype" }, "role": "build",
+      "task": "Build a time-boxed throwaway proof in a scratch folder outside the repo's source to answer one question. Report what worked, what did not and the numbers measured; do not merge the prototype.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "reference-survey", "group": "research", "title": { "ko": "유사 도구 조사", "en": "Reference survey" }, "role": "probe",
+      "task": "Survey how 3 to 5 similar tools or competitors solve the same problem: approach, trade-offs and what to borrow or avoid, each with a link. Change no files.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "investigate", "group": "research", "title": { "ko": "조사", "en": "Investigate" }, "role": "probe",
+      "task": "Investigate the options for the request: available versions or tools, their changelogs and known issues, and what the switch requires. Report findings with sources. Change no files.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "requirements", "group": "design", "title": { "ko": "요구 정리", "en": "Requirements" }, "role": "design",
+      "task": "Restate the request as numbered requirements with acceptance criteria and open questions. Read only; change no files.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "scope", "group": "design", "title": { "ko": "범위 정의", "en": "Define scope" }, "role": "design",
+      "task": "Define what is in and out of scope for the request, the files likely to change and the done criteria. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "design", "group": "design", "title": { "ko": "설계", "en": "Design" }, "role": "design",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "api-design", "group": "design", "title": { "ko": "API 설계", "en": "API design" }, "role": "design",
+      "task": "Specify the API the change adds or alters: routes or function signatures, request and response shapes, errors and status codes, and compatibility with current callers. No code changes.",
+      "gate": "", "gateHint": "A schema lint, e.g. npx @redocly/cli lint openapi.yaml · buf lint", "asserts": "", "tools": []
+    },
+    {
+      "id": "data-plan", "group": "design", "title": { "ko": "데이터·마이그레이션 계획", "en": "Data + migration plan" }, "role": "design",
+      "task": "Plan the data change: schema or format before and after, the migration steps in order, how existing data is converted, how to roll back, and how to verify row counts. No code changes.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "threat-model", "group": "design", "title": { "ko": "위협 모델", "en": "Threat model" }, "role": "design",
+      "task": "Model threats for the planned change: entry points, trust boundaries, assets, and for each boundary the likely attacks (STRIDE) with a mitigation. No code changes.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "plan", "group": "design", "title": { "ko": "계획", "en": "Plan" }, "role": "design",
+      "task": "Plan the work as small steps in order, each testable on its own, with the files each step touches and how to verify it. No code changes.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "implement", "group": "build", "title": { "ko": "구현", "en": "Implement" }, "role": "build",
+      "gate": "", "gateHint": "The project's fast check, e.g. scripts/check.sh --fast · npm run lint", "asserts": "", "tools": []
+    },
+    {
+      "id": "fix", "group": "build", "title": { "ko": "수정", "en": "Fix" }, "role": "fix",
+      "gate": "", "gateHint": "The project's fast check, e.g. scripts/check.sh --fast · npm run lint", "asserts": "", "tools": []
+    },
+    {
+      "id": "write-tests", "group": "build", "title": { "ko": "테스트 작성", "en": "Write tests" }, "role": "build",
+      "task": "Add or extend tests that pin the intended behaviour; they should fail before the change and pass after it.",
+      "gate": "", "gateHint": "The test command, e.g. pytest -q · npm test · go test ./...", "asserts": "", "tools": []
+    },
+    {
+      "id": "refactor", "group": "build", "title": { "ko": "리팩토링", "en": "Refactor" }, "role": "build",
+      "task": "Restructure the named code without changing behaviour: same inputs give the same outputs and existing tests pass unchanged. Keep each step small and report what moved where.",
+      "gate": "", "gateHint": "The project's test command, e.g. pytest -q · npm test", "asserts": "", "tools": []
+    },
+    {
+      "id": "improve", "group": "build", "title": { "ko": "개선", "en": "Improve" }, "role": "build",
+      "task": "Make the small behaviour or UX enhancement asked for in existing code. Keep the scope tight: touch only what the request needs, and list what changed and why.",
+      "gate": "", "gateHint": "The project's fast check, e.g. scripts/check.sh --fast · npm run lint", "asserts": "", "tools": []
+    },
+    {
+      "id": "cleanup", "group": "build", "title": { "ko": "코드 정리", "en": "Cleanup" }, "role": "build",
+      "task": "Remove dead code, unused dependencies and stale comments in the named area without changing behaviour. Tests must stay green; list each removal with file:line.",
+      "gate": "", "gateHint": "The project's test command, e.g. pytest -q · npm test", "asserts": "", "tools": []
+    },
+    {
+      "id": "optimise", "group": "build", "title": { "ko": "최적화", "en": "Optimise" }, "role": "build",
+      "task": "Apply the planned optimisation to the measured bottleneck only, with no behaviour change. Keep each step small; revert any step that does not improve the measurement.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "fix-breakage", "group": "build", "title": { "ko": "깨진 곳 수정", "en": "Fix breakage" }, "role": "fix",
+      "task": "Fix what the upgrade broke: compile errors, changed APIs and failing tests, with the smallest change each. Do not widen the upgrade.",
+      "gate": "", "gateHint": "The project's test command, e.g. pytest -q · npm test", "asserts": "", "tools": []
+    },
+    {
+      "id": "write-hook", "group": "build", "title": { "ko": "훅 작성", "en": "Write hook" }, "role": "build",
+      "task": "Write or change the hook as specified: event, matcher and script. Fail safe (a hook error must not block the session) and keep it fast.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "write-skill", "group": "build", "title": { "ko": "스킬 작성", "en": "Write skill" }, "role": "build",
+      "task": "Write or change the skill file: a precise description of when to use it, the steps, and the limits. Keep it short and testable.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "unit-tests", "group": "test", "title": { "ko": "단위 테스트", "en": "Unit tests" }, "role": "check", "model": "sonnet",
+      "task": "Run the project's own test command once and report PASS or FAIL with the failing tests and file:line. Fix nothing.",
+      "gate": "", "gateHint": "The project's test command, e.g. pytest -q · npm test · go test ./... · ./gradlew test",
+      "asserts": "The test command exits 0; a run that collects no tests must fail (pytest exits 5).",
+      "loop": { "to": ["구현", "수정"], "max": 2 }, "tools": []
+    },
+    {
+      "id": "integration-tests", "group": "test", "title": { "ko": "통합 테스트", "en": "Integration tests" }, "role": "check", "model": "sonnet",
+      "task": "Run the project's integration test suite once against local services only (containers or fakes, never shared environments) and report PASS or FAIL with the failing tests and file:line. Fix nothing.",
+      "gate": "", "gateHint": "The integration test command, e.g. pytest -m integration · ./gradlew integrationTest",
+      "asserts": "", "loop": { "to": ["구현", "수정"], "max": 2 }, "tools": []
+    },
+    {
+      "id": "e2e", "group": "test", "title": { "ko": "E2E 테스트", "en": "E2E browser test" }, "role": "live", "model": "sonnet",
+      "task": "Run the end-to-end browser tests once against a locally started app and report PASS or FAIL per scenario with the failing step. Close the browser afterwards. Fix nothing.",
+      "gate": "", "gateHint": "An e2e runner, e.g. npx playwright test · npx cypress run",
+      "asserts": "", "loop": { "to": ["구현", "수정"], "max": 2 }, "tools": []
+    },
+    {
+      "id": "failing-test", "group": "test", "title": { "ko": "실패 테스트", "en": "Failing test" }, "role": "build",
+      "task": "Write a test that reproduces the bug and fails on the current code for the right reason. Report the test name and the failure. Do not fix the bug.",
+      "gate": "", "gateHint": "The test command, e.g. pytest -q tests/test_bug.py", "asserts": "", "tools": []
+    },
+    {
+      "id": "full-test", "group": "test", "title": { "ko": "전체 테스트", "en": "Full test" }, "role": "check", "model": "sonnet",
+      "task": "Run the project's full test suite once and report PASS or FAIL with each failing test and file:line. Fix nothing.",
+      "gate": "", "gateHint": "The project's full test command, e.g. pytest -q · npm test · ./gradlew test", "asserts": "", "loop": { "to": ["구현", "수정"], "max": 2 }, "tools": []
+    },
+    {
+      "id": "baseline", "group": "test", "title": { "ko": "기준선", "en": "Baseline" }, "role": "check", "model": "sonnet",
+      "task": "Run the full test suite before any change and record the result as the baseline. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "sec-regression", "group": "security", "title": { "ko": "보안·회귀 테스트", "en": "Security · regression tests" }, "role": "check", "model": "sonnet",
+      "task": "Add a test that proves the vulnerability is closed and run the regression suite. Report both results with file:line.",
+      "gate": "", "gateHint": "The project's test command, e.g. pytest -q · npm test", "asserts": "", "loop": { "to": ["구현", "수정"], "max": 2 }, "tools": []
+    },
+    {
+      "id": "hook-test", "group": "test", "title": { "ko": "훅 실행 시험", "en": "Hook run test" }, "role": "check", "model": "sonnet",
+      "task": "Run the hook script with sample event payloads (allow, deny, malformed input) and report each exit code and output. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "prompt-check", "group": "test", "title": { "ko": "프롬프트 검증", "en": "Prompt check" }, "role": "review",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "lint-static", "group": "quality", "title": { "ko": "린트·정적 분석", "en": "Lint + static analysis" }, "role": "check", "model": "sonnet",
+      "task": "Run `python3 {sidereus}/scripts/arch_checks.py --repo . --category quality` once from the repo root and report its printed line only. Do not install tools, do not run any tool yourself, fix nothing.",
+      "gate": "python3 {sidereus}/scripts/arch_checks.py --verify --last --category quality", "gateHint": "",
+      "asserts": "At least one tool ran and every tool that ran examined 1+ files; otherwise the gate fails as EMPTY.",
+      "loop": { "to": ["구현", "수정"], "max": 2 },
+      "tools": [
+        { "id": "ruff", "bin": "ruff", "install": "pipx install ruff", "net": false },
+        { "id": "mypy", "bin": "mypy", "install": "pipx install mypy", "net": false },
+        { "id": "eslint", "bin": "eslint", "install": "npm install -D eslint (in the repo)", "net": false },
+        { "id": "tsc", "bin": "tsc", "install": "npm install -D typescript (in the repo)", "net": false },
+        { "id": "go-vet", "bin": "go", "install": "Install Go from go.dev/dl", "net": false },
+        { "id": "clippy", "bin": "cargo-clippy", "install": "rustup component add clippy", "net": false }
+      ]
+    },
+    {
+      "id": "measure", "group": "quality", "title": { "ko": "측정", "en": "Measure" }, "role": "probe", "model": "sonnet",
+      "task": "Measure the slow path with a repeatable benchmark (fixed inputs, at least 5 runs) and report median and spread. Change nothing.",
+      "gate": "", "gateHint": "A benchmark, e.g. hyperfine · pytest-benchmark", "asserts": "", "tools": []
+    },
+    {
+      "id": "bottleneck", "group": "quality", "title": { "ko": "병목 분석", "en": "Bottleneck analysis" }, "role": "probe",
+      "task": "Profile the measured path and name the top hot spots with their share of time and file:line. Change nothing.",
+      "gate": "", "gateHint": "A profiler, e.g. py-spy · cProfile · node --prof", "asserts": "", "tools": []
+    },
+    {
+      "id": "re-measure", "group": "quality", "title": { "ko": "재측정", "en": "Re-measure" }, "role": "probe", "model": "sonnet",
+      "task": "Rerun the same benchmark as the first measurement on the same machine and inputs; report before, after and the change in percent. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "type-check", "group": "quality", "title": { "ko": "타입 검사", "en": "Type check" }, "role": "check", "model": "sonnet",
+      "task": "Run `python3 {sidereus}/scripts/arch_checks.py --repo . --category quality --only mypy,tsc` once from the repo root and report its printed line only. Do not install tools, do not run any tool yourself, fix nothing.",
+      "gate": "python3 {sidereus}/scripts/arch_checks.py --verify --last --category quality", "gateHint": "",
+      "asserts": "mypy or tsc ran and examined 1+ files; otherwise the gate fails as EMPTY.",
+      "loop": { "to": ["구현", "수정"], "max": 2 },
+      "tools": [
+        { "id": "mypy", "bin": "mypy", "install": "pipx install mypy", "net": false },
+        { "id": "tsc", "bin": "tsc", "install": "npm install -D typescript (in the repo)", "net": false }
+      ]
+    },
+    {
+      "id": "complexity", "group": "quality", "title": { "ko": "복잡도·중복 점검", "en": "Complexity + duplication" }, "role": "check", "model": "sonnet",
+      "task": "Report functions in the changed files whose cyclomatic complexity or length grew past the project's limit, and blocks duplicated elsewhere, each with file:line. Change nothing.",
+      "gate": "", "gateHint": "A threshold check, e.g. lizard -C 15 -w · npx jscpd --threshold 5", "asserts": "", "tools": []
+    },
+    {
+      "id": "coverage", "group": "quality", "title": { "ko": "커버리지 기준", "en": "Coverage threshold" }, "role": "check", "model": "sonnet",
+      "task": "Run the tests with coverage once and report total coverage and the changed lines that no test executes, with file:line. Fix nothing.",
+      "gate": "", "gateHint": "Coverage with a floor, e.g. pytest --cov --cov-fail-under=80 · npx nyc check-coverage --lines 80",
+      "asserts": "", "loop": { "to": ["테스트 작성", "구현", "수정"], "max": 2 }, "tools": []
+    },
+    {
+      "id": "secret-scan", "group": "security", "title": { "ko": "비밀 스캔", "en": "Secret scan" }, "role": "check", "model": "sonnet",
+      "task": "Run `python3 {sidereus}/scripts/arch_checks.py --repo . --category security --only gitleaks` once from the repo root and report its printed line only (counts and file:line; never copy a secret). Fix nothing.",
+      "gate": "python3 {sidereus}/scripts/arch_checks.py --verify --last --category security", "gateHint": "",
+      "asserts": "gitleaks ran and examined 1+ files; otherwise the gate fails as EMPTY.",
+      "tools": [{ "id": "gitleaks", "bin": "gitleaks", "install": "brew install gitleaks", "net": false }]
+    },
+    {
+      "id": "dep-audit", "group": "security", "title": { "ko": "의존성 감사", "en": "Dependency audit" }, "role": "check", "model": "sonnet",
+      "task": "Run `python3 {sidereus}/scripts/arch_checks.py --repo . --category security --only osv-scanner,npm-audit --net` once from the repo root and report its printed line only. Needs the network. Install nothing, fix nothing.",
+      "gate": "python3 {sidereus}/scripts/arch_checks.py --verify --last --category security", "gateHint": "",
+      "asserts": "At least one audit tool ran over a lockfile or manifest; otherwise the gate fails as EMPTY.",
+      "tools": [
+        { "id": "osv-scanner", "bin": "osv-scanner", "install": "brew install osv-scanner", "net": true },
+        { "id": "npm-audit", "bin": "npm", "install": "Install Node.js (npm audit ships with npm)", "net": true }
+      ]
+    },
+    {
+      "id": "security-review", "group": "security", "title": { "ko": "보안 리뷰", "en": "Security review" }, "role": "review",
+      "task": "Review the change for injection, path traversal, secrets in code and unchecked input; report findings with file:line. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "loop": { "to": ["구현", "수정"], "max": 1 }, "tools": []
+    },
+    {
+      "id": "sast", "group": "security", "title": { "ko": "정적 보안 분석", "en": "SAST" }, "role": "check", "model": "sonnet",
+      "task": "Run `python3 {sidereus}/scripts/arch_checks.py --repo . --category security --only semgrep,bandit` once from the repo root and report its printed line only. Semgrep uses the repo's own rules file only. Install nothing, fix nothing.",
+      "gate": "python3 {sidereus}/scripts/arch_checks.py --verify --last --category security", "gateHint": "",
+      "asserts": "semgrep (with a local rules file) or bandit ran and examined 1+ files; otherwise the gate fails as EMPTY.",
+      "loop": { "to": ["구현", "수정"], "max": 2 },
+      "tools": [
+        { "id": "semgrep", "bin": "semgrep", "install": "brew install semgrep", "net": false },
+        { "id": "bandit", "bin": "bandit", "install": "pipx install bandit", "net": false }
+      ]
+    },
+    {
+      "id": "license", "group": "security", "title": { "ko": "라이선스 점검", "en": "License check" }, "role": "check", "model": "sonnet",
+      "task": "List the licenses of the direct dependencies the change adds or upgrades and flag any that conflict with the project's license or policy (copyleft, unknown, none). Change nothing.",
+      "gate": "", "gateHint": "A license policy check, e.g. npx license-checker --failOn GPL · pip-licenses --fail-on GPL", "asserts": "", "tools": []
+    },
+    {
+      "id": "iac-scan", "group": "security", "title": { "ko": "컨테이너·IaC 스캔", "en": "Container + IaC scan" }, "role": "check", "model": "sonnet",
+      "task": "Review the changed Dockerfiles, compose files and infrastructure code for running as root, unpinned images, open ports, broad permissions and plain-text secrets. Report each with file:line. Change nothing.",
+      "gate": "", "gateHint": "A config scanner, e.g. trivy config . · hadolint Dockerfile · checkov -d .", "asserts": "", "tools": []
+    },
+    {
+      "id": "patch", "group": "security", "title": { "ko": "패치", "en": "Patch" }, "role": "fix",
+      "task": "Patch the vulnerability with the smallest change that closes it; validate input at the boundary. No unrelated changes.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "api-contract", "group": "consistency", "title": { "ko": "API 계약 비교", "en": "API contract diff" }, "role": "review",
+      "task": "Compare the public API before and after the change (routes, request and response shapes, status codes, exported signatures) and list every breaking difference with file:line. Change nothing.",
+      "gate": "", "gateHint": "A contract diff that exits non-zero on a breaking change, e.g. buf breaking · oasdiff breaking old.yaml new.yaml",
+      "asserts": "", "tools": []
+    },
+    {
+      "id": "contract-test", "group": "consistency", "title": { "ko": "계약 테스트", "en": "Contract test" }, "role": "check", "model": "sonnet",
+      "task": "Run the consumer and provider contract tests for the services the change touches and report each broken interaction with the consumer, request and expected response. Fix nothing.",
+      "gate": "", "gateHint": "A contract runner, e.g. pact verify · spring-cloud-contract tests", "asserts": "", "tools": []
+    },
+    {
+      "id": "schema-drift", "group": "consistency", "title": { "ko": "스키마 정합성", "en": "Schema drift" }, "role": "check",
+      "task": "Compare the data models in code with the migrations and the generated schema; list every table, column, type or constraint that differs, with file:line. Change nothing.",
+      "gate": "", "gateHint": "A drift check, e.g. alembic check · prisma migrate diff --exit-code", "asserts": "", "tools": []
+    },
+    {
+      "id": "equivalence", "group": "consistency", "title": { "ko": "동등성 검증", "en": "Equivalence check" }, "role": "check", "model": "sonnet",
+      "task": "Confirm the optimised code gives the same outputs as before on the same inputs, including edge cases. List each difference. Change nothing.",
+      "gate": "", "gateHint": "A golden-output comparison that exits non-zero on any difference", "asserts": "", "tools": []
+    },
+    {
+      "id": "verify", "group": "verify", "title": { "ko": "검증", "en": "Verify" }, "role": "check", "model": "sonnet",
+      "gate": "", "gateHint": "The project's full check, e.g. scripts/check.sh --full · npm test", "asserts": "",
+      "loop": { "to": ["구현", "수정"], "max": 2 }, "tools": []
+    },
+    {
+      "id": "live-verify", "group": "verify", "title": { "ko": "라이브 검증", "en": "Live verify" }, "role": "live",
+      "gate": "", "gateHint": "", "asserts": "", "loop": { "to": ["구현", "수정"], "max": 1 }, "tools": []
+    },
+    {
+      "id": "re-verify", "group": "verify", "title": { "ko": "재검증", "en": "Re-verify" }, "role": "check", "model": "sonnet",
+      "gate": "", "gateHint": "The same command as «Verify», e.g. scripts/check.sh --full", "asserts": "", "loop": { "to": ["구현", "수정"], "max": 2 }, "tools": []
+    },
+    {
+      "id": "screen-check", "group": "verify", "title": { "ko": "화면 확인", "en": "Screen check" }, "role": "live", "model": "sonnet",
+      "task": "Compare the changed screens at fixed widths (e.g. 900, 1100, 1440) with the previous screenshots and report each visual difference with the screen and width. Close the browser afterwards. Change nothing.",
+      "gate": "", "gateHint": "A visual regression run, e.g. npx playwright test --update-snapshots=none", "asserts": "", "loop": { "to": ["구현", "수정"], "max": 1 }, "tools": []
+    },
+    {
+      "id": "acceptance", "group": "verify", "title": { "ko": "수용 확인", "en": "Acceptance check" }, "role": "check",
+      "task": "Check each acceptance criterion from the requirements one by one and give the evidence (test, screen or output) for each as MET or NOT MET. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "live-session", "group": "verify", "title": { "ko": "실세션 확인", "en": "Live session check" }, "role": "live",
+      "task": "In a real session, trigger the changed hook or tool once and confirm it fires and behaves as intended. Report what was observed. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "connection", "group": "verify", "title": { "ko": "연결 확인", "en": "Connection check" }, "role": "live",
+      "task": "Start the new tool or MCP server and call one harmless operation; report whether it connects and answers. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "context", "group": "review", "title": { "ko": "맥락 파악", "en": "Understand context" }, "role": "design",
+      "task": "Read the change and its purpose. Summarise what it does and which files matter. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "a11y", "group": "review", "title": { "ko": "접근성 점검", "en": "Accessibility check" }, "role": "ux", "model": "sonnet",
+      "task": "Check the changed screens for accessibility: labels, contrast, keyboard order and focus, alt text and ARIA roles. Report each issue with the element and file:line. Change nothing.",
+      "gate": "", "gateHint": "An a11y scanner on a local page, e.g. npx @axe-core/cli http://localhost:3000 · pa11y",
+      "asserts": "", "tools": []
+    },
+    {
+      "id": "review", "group": "review", "title": { "ko": "리뷰", "en": "Review" }, "role": "review",
+      "gate": "", "gateHint": "", "asserts": "", "loop": { "to": ["구현", "수정"], "max": 1 }, "tools": []
+    },
+    {
+      "id": "ux-review", "group": "review", "title": { "ko": "UX 리뷰", "en": "UX review" }, "role": "ux",
+      "task": "Review the changed screens as a first-time user: wording, layout, empty and error states, and whether the main action is obvious. Report each issue with the screen and file:line. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "loop": { "to": ["구현", "수정"], "max": 1 }, "tools": []
+    },
+    {
+      "id": "second-opinion", "group": "review", "title": { "ko": "교차 리뷰", "en": "Second-opinion review" }, "role": "review", "model": "opus",
+      "task": "Review the change independently of earlier reviews: correctness, edge cases, simpler alternatives. Report only blocking findings with file:line, then non-blocking ones. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "ai-config", "group": "review", "title": { "ko": "AI 설정 점검", "en": "AI config review" }, "role": "review",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "verify-findings", "group": "review", "title": { "ko": "지적 검증", "en": "Verify findings" }, "role": "check",
+      "task": "Re-check each review finding against the code: confirm it with file:line or drop it as unfounded. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "docs", "group": "release", "title": { "ko": "문서화", "en": "Docs" }, "role": "build",
+      "task": "Update the user and developer docs the change affects: what changed, how to use it, and any new option or limit. Keep examples runnable. Change no code.",
+      "gate": "", "gateHint": "A docs link or build check, e.g. mkdocs build --strict · npx markdown-link-check", "asserts": "", "tools": []
+    },
+    {
+      "id": "changelog", "group": "release", "title": { "ko": "변경 기록", "en": "Changelog" },
+      "task": "Add the change to the changelog under the next unreleased version, in the file's existing format (Added, Changed, Fixed, Removed). User-visible effects only.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "version-bump", "group": "release", "title": { "ko": "버전 올림", "en": "Bump versions" },
+      "task": "Bump the version following semantic versioning from the changes since the last release, in every file that carries it. Report old and new versions. Never run git write commands.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "release-notes", "group": "release", "title": { "ko": "릴리스 노트", "en": "Release notes" },
+      "task": "Write release notes for users: highlights, breaking changes with the upgrade step, and known issues. Plain language, no internal names.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "build-artifact", "group": "release", "title": { "ko": "빌드 산출물", "en": "Build artifact" }, "role": "check", "model": "sonnet",
+      "task": "Build the release artifact once with the project's build command and report PASS or FAIL with the artifact path and size. Publish nothing.",
+      "gate": "", "gateHint": "The build command, e.g. npm run build · ./gradlew assemble · python3 -m build", "asserts": "", "tools": []
+    },
+    {
+      "id": "rollback-plan", "group": "release", "title": { "ko": "롤백 계획", "en": "Rollback plan" }, "role": "design",
+      "task": "Write the rollback plan for this release: the trigger, the exact steps in order, data that cannot be rolled back, and how to confirm recovery. No code changes.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "deploy-check", "group": "release", "title": { "ko": "배포 확인", "en": "Deploy check" }, "role": "live",
+      "task": "After the fix ships, confirm the deployed version is the patched one and the vulnerable path no longer responds as before. Report PASS or FAIL. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "rca", "group": "ops", "title": { "ko": "근본 원인", "en": "Root cause analysis" }, "role": "triage", "model": "opus",
+      "task": "After recovery, find the root cause and the contributing factors: the trigger, why safeguards missed it, and the timeline, with file:line or log evidence. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "permanent-fix", "group": "ops", "title": { "ko": "영구 수정", "en": "Permanent fix" }, "role": "fix",
+      "task": "Replace the incident mitigation with a fix for the root cause, plus a regression test that would have caught it.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "human-approval", "group": "ops", "title": { "ko": "사람 승인", "en": "Human approval" },
+      "task": "Summarise what the next stages will change and the risks, send the summary to the requester via the mailbox, and stop with APPROVAL NEEDED. Change nothing and do not continue on your own.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "notify", "group": "ops", "title": { "ko": "메일박스 알림", "en": "Mailbox notify" },
+      "task": "Send the requester a one-line status via the mailbox: the pipeline result and each stage's PASS or FAIL. Metadata only, no code or conversation text.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "commit-tidy", "group": "ops", "title": { "ko": "커밋 정리", "en": "Commit tidy" },
+      "task": "Propose how to split the changes into commits with a message for each. Never run git write commands.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "mitigate", "group": "ops", "title": { "ko": "완화", "en": "Mitigate" }, "role": "fix",
+      "task": "Stop the bleeding with the smallest reversible change (feature flag, rollback, config). Record exactly what was changed so it can be undone.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "recovery", "group": "ops", "title": { "ko": "복구 확인", "en": "Confirm recovery" }, "role": "live",
+      "task": "Confirm the service has recovered: the symptom is gone and the key metrics or checks are back to normal. Report evidence. Change nothing.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    },
+    {
+      "id": "retro", "group": "ops", "title": { "ko": "회고", "en": "Retrospective" },
+      "task": "Write a short blameless retrospective: timeline, root cause, what went well, what to change, with owners for each action. No code changes.",
+      "gate": "", "gateHint": "", "asserts": "", "tools": []
+    }
+  ]
+}

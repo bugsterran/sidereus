@@ -1,0 +1,7 @@
+/* Branch tab: commit -> session chip (88-branch.js brLkChip) and the detail "made by" rows. */
+/* Shrinks only after the title <b> is at 0 (see .brr b in 80-branch.css). */
+.brr .brlk{flex:0 1 auto;min-width:24px;max-width:190px;overflow:hidden;text-overflow:ellipsis;font-style:normal;
+  font-size:10px;line-height:15px;padding:0 6px;border-radius:4px;color:#9fb3cf;background:#16202e;
+  border:1px solid #26354a;font-variant-numeric:tabular-nums}
+html[data-ui=next] .brr .brlk{color:var(--nx-t2);background:var(--nx-hover);border-color:var(--nx-rule)}
+.brlkn{color:#6b7688}

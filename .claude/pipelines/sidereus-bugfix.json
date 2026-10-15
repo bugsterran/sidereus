@@ -1,0 +1,45 @@
+{
+  "v": 1,
+  "name": "sidereus-bugfix",
+  "title": "버그 수정 — Sidereus viewer",
+  "use": "One owner-reported screen or behaviour defect in the Sidereus viewer: diagnose, minimal fix, verify, ship.",
+  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER restart the viewer, NEVER commit/stash/checkout/reset/add, NEVER run screen_check --update. The orchestrator does those.\nOne defect per run: anything else you find goes in findings, not in the fix.\nNEVER press a real send/confirm button on the live viewer (8799); stub fetch for any write path.",
+  "after": [
+    "launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer",
+    "screen-check the live page (900/1100/1440)",
+    "bash backup.sh",
+    "commit"
+  ],
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "진단",
+      "agent": "Explore",
+      "task": "Read-only. Reproduce the reported defect from code and data (the live page read-only, or a demo/fixture). ⚠Confirm the cause of the symptom before naming a fix: reported symptoms often have a different cause. Put in summary: the causal chain with file:line, the minimal fix point (file + function) and the regression test to add. FAIL if the cause is not proven. Change nothing.",
+      "ui": { "x": 44, "y": 24 }
+    },
+    {
+      "title": "수정",
+      "agent": "sidereus-implementer",
+      "task": "Apply the minimal fix at the diagnosed point and add a regression test that fails before and passes after. ⚠Tests with a fixed functions list (FNS) must include every new helper you add. Report changed files; anything outside the fix goes in findings.",
+      "gate": "scripts/check.sh --fast",
+      "ui": { "x": 292, "y": 24 }
+    },
+    {
+      "title": "검증",
+      "agent": "sidereus-verifier",
+      "model": "sonnet",
+      "task": "Run the gate once and report each failing step as a finding with file/line. A screen-regression diff that matches the intended fix is cause \"intended\" in summary, not a failure. Do not fix anything.",
+      "gate": "scripts/check.sh --full",
+      "onFail": { "goto": "수정", "max": 2 },
+      "ui": { "x": 540, "y": 24 }
+    },
+    {
+      "title": "라이브 검증",
+      "skill": "sidereus-ship",
+      "agent": "general-purpose",
+      "task": "Show the reported symptom is gone on the live page with one piece of evidence (screen crop or measured value + width). ⚠Never press a real send button: stub fetch before exercising any write path.",
+      "ui": { "x": 788, "y": 24, "color": "#2ec4b6" }
+    }
+  ]
+}

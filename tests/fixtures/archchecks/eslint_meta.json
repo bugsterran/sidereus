@@ -1,0 +1,8 @@
+{"results": [{"filePath": "@REPO@/web/src/a.js", "messages": [
+  {"ruleId": "no-unused-vars", "severity": 2, "line": 3, "message": "secret message text"},
+  {"ruleId": "eqeqeq", "severity": 1, "line": 4, "message": "x"}
+]}],
+ "metadata": {"cwd": "@REPO@", "rulesMeta": {
+  "no-unused-vars": {"type": "problem", "docs": {"description": "Disallow unused variables", "url": "https://eslint.org/docs/latest/rules/no-unused-vars"}},
+  "eqeqeq": {"docs": {"description": "Require \u0007the use of === and !==", "url": "javascript:alert(1)"}}
+ }}}

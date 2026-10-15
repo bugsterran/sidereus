@@ -1,0 +1,5 @@
+{"reason":"compiler-artifact","package_id":"x"}
+{"reason":"compiler-message","message":{"level":"warning","code":{"code":"clippy::needless_return"},"message":"secret message text","spans":[{"file_name":"src/lib.rs","line_start":7,"is_primary":true}]}}
+{"reason":"compiler-message","message":{"level":"error","code":null,"message":"x","spans":[{"file_name":"src/main.rs","line_start":2,"is_primary":false},{"file_name":"src/main.rs","line_start":3,"is_primary":true}]}}
+{"reason":"compiler-message","message":{"level":"error","code":null,"message":"aborting","spans":[]}}
+{"reason":"build-finished","success":false}

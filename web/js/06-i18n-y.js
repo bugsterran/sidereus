@@ -1,0 +1,20 @@
+// Korean for the structure tab «Architecture» view (84j-structure-arch.js).
+Object.assign(I18N.ko, {
+  'Architecture': '아키텍처', 'Check failed': '검증 실패', 'No evidence': '근거가 없습니다', 'Edges': '연결',
+  'Generate diagram': '구조도 생성 요청', 'Update diagram': '구조도 업데이트 요청', 'Redraw': '다시 그리기', 'Request preview': '요청 미리보기', 'To session': '받는 세션', 'Sending…': '보내는 중…',
+  'Pick a project.': '프로젝트를 고르세요.', 'Loading the architecture diagram…': '아키텍처 구조도를 불러오는 중…',
+  'No architecture diagram yet': '아직 아키텍처 구조도가 없습니다',
+  'The arch-map pipeline reads the code, draws modules and edges, then checks each edge against its evidence (file:line). It never writes to the repository.': 'arch-map 파이프라인이 코드를 읽고 모듈과 연결을 그린 뒤, 연결마다 근거(파일:줄)를 검증합니다. 저장소에는 쓰지 않습니다.',
+  'The diagram is older than the code — a new one is built from the latest commit.': '구조도가 지금 코드보다 오래되었습니다 — 다시 만들면 최신 커밋 기준이 됩니다.',
+  'Diagram is older than the code': '구조도가 코드보다 오래됨',
+  'No edge passed the check.': '검증을 통과한 연결이 없습니다.', 'Click for evidence · click evidence for code': '누르면 근거 · 근거를 누르면 코드',
+  'Evidence is inferred, not a direct reference': '근거가 직접 호출이 아니라 추정입니다',
+  'The Sidereus repository location is unknown': '시데레우스 저장소 위치를 모릅니다',
+  'No live session': '열린 세션이 없습니다',
+  'That session is not logged in to the mailbox': '메일박스에 로그인하지 않은 세션입니다',
+  'In': '들어옴', 'Out': '나감', 'External': '외부', 'Include tests': '테스트 포함',
+  'Click a module to see only its edges': '모듈을 누르면 그 모듈의 연결만 봅니다', 'Click again to open the code': '다시 누르면 코드 열기',
+  'All edges': '모든 연결', '{n} indirect edges hidden — click a module for all': '간접 연결 {n}개 생략 — 모듈을 누르면 전부',
+  'Analysis requested': '분석 요청됨', 'Analysing': '분석 중', '{p} architecture diagram ready': '{p} 아키텍처 구조도 완성',
+  'Stage {n}/{m}': '{n}/{m} 단계', 'Sidereus pipeline — read-only': '시데레우스 파이프라인 — 보기 전용', 'A diagram run is in progress for this project — session {s}': '이 프로젝트의 구조도 생성이 진행 중입니다 — 세션 {s}',
+});
