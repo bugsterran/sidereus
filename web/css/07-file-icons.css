@@ -1,0 +1,16 @@
+/* File-type icons (07-file-icons.js fileIco). One hue per type; lightness/chroma per theme so glyphs follow light/dark.
+   ⚠Ink on filled tiles (.fo) is the panel colour, so it stays readable on both themes' tile lightness. */
+:root{--fic-l:.78;--fic-c:.12;--fic-on:var(--nx-panel,#0f1419)}
+html[data-theme=light]{--fic-l:.52;--fic-c:.14;--fic-on:var(--nx-panel,#fff)}
+.ftic{flex:none;display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;font-style:normal;line-height:0;
+  --h:262;--h2:var(--h);color:oklch(var(--fic-l) var(--fic-c) var(--h))}
+.ftic svg{display:block;overflow:visible}
+.ftic .fo{fill:var(--fic-on);font:800 7px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.4px}
+.ftic .fs{stroke:var(--fic-on);fill:none;stroke-linecap:round}
+.ftic .f2{fill:oklch(var(--fic-l) var(--fic-c) var(--h2))}
+.ftic-js{--h:95}.ftic-ts{--h:245}.ftic-jsx{--h:205;--h2:175}.ftic-tsx{--h:240;--h2:205}
+.ftic-py{--h:255;--h2:88}.ftic-java{--h:28}.ftic-kt{--h:300;--h2:40}.ftic-go{--h:210}.ftic-rs{--h:48}
+.ftic-html{--h:40}.ftic-css{--h:292}.ftic-json{--h:80}.ftic-config{--h:345}.ftic-sh{--h:145}.ftic-sql{--h:185}
+.ftic-image{--h:330}.ftic-lock{--h:65}.ftic-git{--h:30}.ftic-docker{--h:228}.ftic-make{--h:120}.ftic-readme{--h:175}
+.ftic-md,.ftic-txt,.ftic-file{--fic-c:.02}
+html[data-theme=light] .ftic-js{--fic-l:.8;--fic-c:.16;--fic-on:oklch(.28 .03 95)}   /* yellow is only yellow when light: dark ink */

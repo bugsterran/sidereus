@@ -1,0 +1,71 @@
+{
+  "v": 1,
+  "name": "sidereus-change",
+  "title": "변경 — Sidereus viewer",
+  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER restart the viewer, NEVER commit/stash/checkout/reset/add, NEVER run screen_check --update. The orchestrator does those.\nOther implementers edit other files in the same tree at the same time: touch only your own files, Edit only on existing files, re-read before each edit.",
+  "after": [
+    "launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer",
+    "screen-check the live page (900/1100/1440)",
+    "bash backup.sh",
+    "commit"
+  ],
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "요구사항",
+      "agent": "main",
+      "skill": "requirements",
+      "task": "The orchestrator itself writes R1..Rn checkable criteria plus one Non-goal for the request, following the requirements skill; the owner confirms once before 설계 is dispatched. No subagent.",
+      "ui": { "x": 44, "y": 24 }
+    },
+    {
+      "title": "설계",
+      "agent": "sidereus-designer",
+      "task": "Write the spec for the request: summary, rules affected, tests, screen expectations, risk. Put them in summary. Read-only. Consume the request's R1..Rn criteria; each slice names the R ids it covers; tests cite R ids.",
+      "produces": "slices",
+      "ui": { "x": 292, "y": 24 }
+    },
+    {
+      "title": "구현",
+      "agent": "sidereus-implementer",
+      "task": "Implement your slice only. Report the files you changed; put anything outside your slice in findings.",
+      "fanout": "slices",
+      "gate": "scripts/check.sh --fast",
+      "onError": "continue",
+      "ui": { "x": 540, "y": 24 }
+    },
+    {
+      "title": "검증",
+      "agent": "sidereus-verifier",
+      "model": "sonnet",
+      "task": "Run the gate once and report each failing step as a finding with file/line. Do not fix anything.",
+      "gate": "scripts/check.sh --full",
+      "onFail": { "goto": "구현", "max": 2 },
+      "ui": { "x": 788, "y": 24 }
+    },
+    {
+      "title": "리뷰",
+      "agent": "sidereus-reviewer",
+      "task": "Review the working-tree diff (git diff + untracked files) against AGENTS.md rules, security and simplicity. status FAIL only for blocking findings (file/line/rule + fix in text); put non-blocking notes in summary.",
+      "onFail": { "goto": "구현", "max": 1, "then": "재검증" },
+      "ui": { "x": 1036, "y": 24 }
+    },
+    {
+      "title": "재검증",
+      "agent": "sidereus-verifier",
+      "model": "sonnet",
+      "task": "Run the gate once after the review fix round and report. Do not fix anything.",
+      "gate": "scripts/check.sh --full",
+      "onlyOnJump": true,
+      "ui": { "x": 1285, "y": 23, "color": "#ff0000" },
+      "onFail": { "goto": "구현", "max": 1 }
+    },
+    {
+      "title": "라이브 검증",
+      "skill": "sidereus-ship",
+      "agent": "general-purpose",
+      "task": "Report each R line as PASS/FAIL + one piece of evidence (screen crop, test name or file:line).",
+      "ui": { "x": 1532, "y": 23, "color": "#2ec4b6" }
+    }
+  ]
+}

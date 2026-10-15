@@ -1,0 +1,286 @@
+/* Mode-tab count badge and empty-view notice (moved from the removed 30-failures.css, 2026-09-23). */
+.mvnum{font-style:normal;font-size:9.5px;margin-left:5px;padding:0 5px;border-radius:7px;
+  background:#e8b478;color:#1a1206;font-weight:600;vertical-align:1px}
+.mvnum.mvmsg{background:#5b8def;color:#0b1220}
+/* Header when the work log is drawn in the middle column */
+/* Work log: below the tab row(0) → 32. Timeline: no tab row above, so 0 (overridden by .wvht). */
+.wvh{position:sticky;top:34px;z-index:8;background:#0d1014;padding:0 0 8px;margin-bottom:4px;
+  border-bottom:1px solid #1a1f28;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.wvh.wvht{top:0}
+/* One divider per tab: the header rule (90-main-ui) only, so tab captions draw none; the timeline keeps it as its axis top. ⚠sticky caption has no edge while stuck (accepted). */
+.wvh.wvht{border-bottom-width:0}
+#feed .wvh.wvht:has(+ .tlaxr){border-bottom:1px solid var(--nx-rule)}
+/* Caption-only tab heads (title dropped, header names the tab): keep the titled row height so nothing shifts. */
+.wvh.wvht:not(:has(>b)){min-height:calc(var(--ttl-tab,13px) * 1.2)}
+.tlhd:empty{display:none}
+/* ⚠The header was 31.67px tall, stuck at 34px, while .aghd sticks at 66px: the 0.33px seam let log text show through
+   in the work popup (both themes, 2026-09-26). A 32px border-box floor closes the seam exactly. */
+.wvh:has(+ .aghd){box-sizing:border-box;min-height:32px}
+.extw{font-size:12px;color:#c9d1dc}
+.extw table{border-collapse:collapse;margin:4px 0 10px}
+.extw th,.extw td{padding:3px 10px 3px 0;text-align:left;vertical-align:top}
+.extw th{color:#7e8896;font-weight:500;white-space:nowrap}
+.extkv td{word-break:break-all}
+.extev td:first-child{color:#7e8896;font-variant-numeric:tabular-nums}
+.extnt{color:#7e8896;font-size:11px;margin:0 0 4px}
+.wvh b{color:#dfe5ee;font-size:13px;font-weight:600}
+.wvh span{color:#7e8896;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rooms{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}
+/* Weekly token donut — bottom of the session card */
+.wku{position:sticky;bottom:-11px;padding:8px 0 11px;background:#12161d;z-index:2;flex:0 0 auto}
+/* Aside token widgets only with «Token widgets on the right» on (body.wkside); off they live in the token tab and 5h card. */
+body:not(.wkside) .lside > .wku{display:none}
+/* Donut cell capped at 460px (donut clamps to 190px + 260px legend); today-by-project takes the rest with its top-6 list. */
+.wktab{display:grid;grid-template-columns:minmax(0,min(460px,50%)) minmax(0,1fr);gap:22px;margin:0 0 16px;padding-bottom:14px;border-bottom:1px solid #1e232c}
+.wktab .wktr{margin-top:0;border-top:0;padding-top:0}
+@media (max-width:900px){.wktab{grid-template-columns:minmax(0,1fr)}}
+/* ★Daily bars — fill the space left under the donut (2026-09-03). The donut is "who used it",
+   this is "when". Only today's bar has a bright piece on top: that is **the share added live since the
+   last ccusage query** (ccusage takes 20s, so it runs only once every 5 min). */
+.wkdy{margin-top:10px;padding-top:9px;border-top:1px solid #1e232c}
+.wkdh{font-size:11px;color:#8b95a7;margin-bottom:7px;display:flex;gap:6px;align-items:baseline}
+.wkdh b{color:#c3ccda;font-weight:600}
+.wkdh i{font-style:normal;font-size:10px;color:#6b7688;margin-left:auto}
+.wkdb{display:flex;gap:5px;align-items:flex-end;height:88px}
+.wkdc{flex:1 1 0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
+  gap:3px;min-width:0;cursor:help}
+/* ★Fixed color per weekday (rainbow pastel · 2026-09-03). Bound to **weekday**, not **position** —
+   coloring by position shifts a day's color daily, so the eye cannot learn weekdays by color. */
+.wkdv{width:100%;max-width:34px;border-radius:3px 3px 0 0;min-height:2px;position:relative;
+  opacity:.72;transition:opacity .15s}
+.wkdc.today .wkdv{opacity:1;box-shadow:0 0 0 1px #ffffff35}
+.wkdc:hover .wkdv{opacity:1;filter:brightness(1.12)}
+/* Live share is a white piece **regardless of color** — reads as 'extra' on any weekday color */
+/* ⚠Inside the bar (top:0), not above it — `bottom:100%` drew over the value label and the header note. */
+.wkdv i{display:block;position:absolute;left:0;right:0;top:0;border-radius:3px 3px 0 0;
+  background:#ffffffd0;min-height:2px}
+.wkdl{font-size:9px;color:#6b7688;white-space:nowrap}
+.wkdc.today .wkdl{font-weight:600}
+.wkdz{font-size:8.5px;color:#6b7688;white-space:nowrap}
+/* Live — last 30 min per minute (2026-09-03, for liveliness) */
+.wkrt{margin-top:9px;padding-top:8px;border-top:1px solid #1e232c}
+.wkrh{font-size:11px;color:#8b95a7;margin-bottom:5px;display:flex;gap:6px;align-items:baseline}
+.wkrh b{color:#c3ccda;font-weight:600}
+/* Today by project — shares split within one horizontal bar (separate rows only eat height) */
+.wktr{margin-top:9px;border-top:1px solid #1a212b;padding-top:7px}
+/* Tokens tab — consumption report */
+/* ⚠The old 1080px centered cap dated from the fixed right session column. Split by #feed width (container query), not viewport:
+   a pinned session column shrinks #feed and must fall back to one column. Empty first cell (no `.split2`, 50-layout-feed.css) = one column. */
+.brep{container-type:inline-size;padding:0 0 14px}   /* ⚠no side or top padding: #feed already gives the 12px gap/gutter every tab shares */
+.bsp{display:grid;grid-template-columns:minmax(0,1fr);column-gap:28px}
+.bsp > div{min-width:0}
+.bsp > div:empty{display:none}
+.brh{display:flex;gap:8px;align-items:baseline;margin-bottom:6px}
+.brh b{font-size:14px;color:#eaf1fa}
+.brh i,.brh2 i{font-style:normal;font-size:10.5px;color:#6b7688}
+.brh i{margin-left:auto}
+/* A heading right after a table/split opens a new section: same rule + spacing the .wktab block ends with */
+.brep > :is(.brt,.bsp) + .brh{margin-top:16px;padding-top:14px;border-top:1px solid var(--nx-rule,#1e232c)}
+.wkrt2{display:inline-flex;gap:3px;margin-left:8px}
+/* .wkrgb look = 05-controls.css */
+.mixbar{display:flex;height:9px;border-radius:5px;overflow:hidden;margin:7px 0 5px;background:#1b1f27}
+.mixbar span{display:block;min-width:1px}
+.mixlg{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:#8b95a7;margin-bottom:8px}
+.mixlg b{color:#cfe0f2;font-weight:600}
+.mixlg em{font-style:normal;display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
+.mixnote{font-size:11px;color:#7e8896;margin:0 0 8px}
+.rgw{position:relative;padding:2px 10px 16px 40px;margin:4px 0 10px}
+.rgp{position:relative}
+.rgs{display:block;width:100%;height:96px;overflow:visible}
+.rgs .gl{stroke:#1e2530;stroke-width:1;vector-effect:non-scaling-stroke}
+.rgs .ar{fill:url(#rgg)}
+.rgs .ln{fill:none;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.rgs .tl{fill:none;stroke:#7e8896;stroke-width:1.2;vector-effect:non-scaling-stroke}
+.rgdot{position:absolute;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;pointer-events:none;
+  box-shadow:0 0 0 1.5px var(--nx-panel,#0d1014)}
+.rgcur{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed #3a4454;pointer-events:none}
+.rgtip{position:absolute;top:0;z-index:3;display:flex;flex-direction:column;gap:2px;padding:5px 8px;pointer-events:none;
+  background:#151a22;border:1px solid #2c3340;border-radius:5px;font-size:10.5px;color:#8b95a7;white-space:nowrap}
+.rgtip[hidden]{display:none}
+.rgtip b{color:#dce8f8;font-weight:600}
+.rgtip em{display:inline-block;width:8px;height:2.5px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.rgtip s{text-decoration:none;color:#cfe0f2;font-variant-numeric:tabular-nums}
+.rgy{position:absolute;left:0;top:2px;bottom:16px;width:38px;pointer-events:none}
+.rgy i{position:absolute;right:4px;transform:translateY(-50%);font-style:normal;
+  font-size:10px;color:#6b7688;white-space:nowrap}
+.rgx{position:absolute;left:40px;right:10px;bottom:0;height:14px;pointer-events:none}
+.rgx i{position:absolute;transform:translateX(-50%);font-style:normal;font-size:10px;color:#6b7688}
+.rgx i.a0{transform:none;left:0}
+.rgx i.a1{transform:none;right:0;left:auto}
+.rglg{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:#8b95a7;margin:0 0 8px 40px}
+.rglg em{font-style:normal;display:inline-block;width:12px;height:2.5px;border-radius:2px;
+  margin-right:5px;vertical-align:middle}
+.rglg b{color:#cfe0f2;font-weight:600}
+.brh2{display:flex;gap:8px;align-items:baseline;margin:16px 0 6px;font-size:12px;color:#c3ccda;
+  font-weight:600;border-top:1px solid #1a212b;padding-top:12px}
+.brh2 i{margin-left:auto;font-weight:400}
+.brsum{font-size:11.5px;color:#8b95a7;margin-bottom:9px}
+.brsum b{color:#eaf1fa}
+.brt{width:100%;border-collapse:collapse;font-size:11.5px}
+.brt th{text-align:left;color:#7e8896;font-weight:400;font-size:10.5px;padding:3px 8px 5px 0;
+  border-bottom:1px solid #1a212b}
+.brt td{padding:5px 8px 5px 0;border-bottom:1px solid #141a22;color:#a8b3c4}
+.brt .brv{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.brt .brn{white-space:nowrap;color:#dce8f8}
+.brt .brn s{text-decoration:none;color:#7e8896;font-size:10.5px}
+.brt .brd{color:#8b95a7;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;max-width:280px}
+.brt .brg{width:34%}
+/* ⚠auto table layout grows to fit a nowrap name, so a long project path pushed the table past its card; max-width:0 lets the cell shrink and ellipsize. */
+.brt.rtpj .brn{max-width:0;width:30%;overflow:hidden;text-overflow:ellipsis}
+/* «Daily» table: ⚠fixed height (~8 rows, not max-height) + inner scroll so switching 7/30 days never moves what is below. */
+.tkdtw{height:226px;overflow-y:auto;margin:0 0 12px}
+.tkdt thead th{position:sticky;top:0;z-index:1;background:var(--nx-panel,#0d1014)}
+.tkdt .brv{width:1%}
+.tkdt .tkdtp{max-width:0;width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tkdt .tkdtp s,.tkdt .brn s{text-decoration:none;color:var(--nx-t3,#7e8896);font-size:10.5px}
+.tkdt tr.today td{color:var(--nx-t1,#eaf1fa);font-weight:600}
+.brb{display:block;height:7px;background:#1b2129;border-radius:4px;overflow:hidden}
+.brb i{display:block;height:100%;border-radius:4px}
+.brdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--nx-active,#5b8def);margin-right:5px;
+  animation:tldot 1.4s ease-in-out infinite}
+.brdot.off{background:var(--nx-idle,#7d7e85);animation:none}   /* token, not a literal: the light twin of #3a4657 fell to 1.23:1 (needs 3:1) */
+@media (prefers-reduced-motion:reduce){.brdot{animation:none}}
+.brok{font-style:normal;color:#7ad4a0}
+.brbad{font-style:normal;color:#e0b45f}
+.wktrh{font-size:11px;color:#8b95a7;display:flex;gap:6px;align-items:baseline;margin-bottom:6px}
+.wktrh b{color:#c3ccda;font-weight:600}
+.wktrh i{font-style:normal;font-size:10px;color:#6b7688;margin-left:auto;cursor:help;
+  font-variant-numeric:tabular-nums}
+.wktb{display:flex;height:20px;border-radius:5px;overflow:hidden;background:#1b2129}
+.wktb i{display:flex;align-items:center;justify-content:center;min-width:2px;cursor:help;
+  overflow:hidden;transition:none}
+.wktb i s{text-decoration:none;font-size:9.5px;color:#0d1014;font-weight:600;white-space:nowrap;
+  padding:0 4px;overflow:hidden;text-overflow:ellipsis}
+/* ⚠data-ui in the selector keeps the twin generator from turning #fff dark; dark text on WKC_LT fills was 3.7-4.49:1 */
+html[data-ui=next][data-theme=light] .wktb i s{color:#fff}
+.wktl{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
+.wktq{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.wktqr{display:grid;grid-template-columns:8px minmax(60px,150px) minmax(40px,1fr) auto 34px;gap:8px;align-items:center;
+  font-size:11px;color:#a8b3c4;cursor:help}
+.wktqr > b{width:8px;height:8px;border-radius:2px;display:block}
+.wktqr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wktqr em{display:block;height:6px;border-radius:3px;background:#1b2129;overflow:hidden}
+.wktqr em i{display:block;height:100%;border-radius:3px;opacity:.85}
+.wktqr s,.wktqr u{text-decoration:none;color:#8b95a7;font-size:10.5px;font-variant-numeric:tabular-nums;text-align:right}
+.wktqr u{color:#7e8896}
+.wktqm{font-size:10px;color:#6b7688;padding-left:16px}
+/* «Today's costly tasks» — same row look as .wktqr, wider grid for type/project/duration */
+.wktab .wktr.atp{margin-top:14px;border-top:1px solid #1a212b;padding-top:9px}
+.atpg{margin-left:auto;display:flex;gap:2px}
+/* .atpb look = 05-controls.css (compact height) */
+/* Type/project grow to their full text from free space (minmax(0,max-content)) and ellipsize only when it runs out.
+   ⚠Columns live on the list and rows are subgrid — per-row max-content tracks would misalign the bars row to row. */
+.atp .wktq{display:grid;row-gap:5px;column-gap:8px;
+  grid-template-columns:8px minmax(60px,1fr) minmax(0,max-content) minmax(0,max-content) minmax(30px,70px) auto 58px 38px}
+.wktqr.atpr{grid-column:1/-1;grid-template-columns:subgrid}
+.wktqr.atpr.atpk{cursor:pointer}
+.wktqr.atpr.atpk:hover{color:#dbe3ee}
+/* dur (2nd <s>, e.g. «1h 4m») must not wrap and row height must stay fixed; task <span> already ellipsizes */
+.wktqr.atpr s:nth-of-type(2){white-space:nowrap}
+.atpr code{font-size:9.5px;color:#9fb2cc;background:#1b2129;border-radius:3px;padding:0 5px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.atpr .atpn{color:#7e8896;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* narrow desktop (1100): desc keeps a 120px floor (auto badges once squeezed it to ~10 chars); type/project still
+   take the free space and ellipsize only past that floor (full value in the row's title=). */
+@media (max-width:1320px){
+  .atp .wktq{grid-template-columns:8px minmax(120px,1fr) minmax(0,max-content) minmax(0,max-content) minmax(24px,50px) auto 58px 38px}
+}
+.wktl em{font-style:normal;font-size:9.5px;color:#8b95a7;display:flex;gap:4px;align-items:center;
+  cursor:help}
+.wktl em b{width:7px;height:7px;border-radius:2px;display:block}
+.wktl em s{text-decoration:none;color:#7e8896;font-variant-numeric:tabular-nums}
+.wkrh i{font-style:normal;font-size:10px;color:#6b7688;margin-left:auto;
+  font-variant-numeric:tabular-nums}
+/* ★Taller (2026-09-03: live chart too small). 38 → 76px.
+   ⚠With `preserveAspectRatio=none`, stretching vertically **thickens the line too** and looks squashed —
+     `non-scaling-stroke` fixes the width in screen units.
+   ⚠For the same reason the `current dot` becomes an ellipse inside the SVG — it is an HTML element on top. */
+/* ★Axes added (2026-09-03: x = time, y = usage). Ticks inside the SVG (same coordinates as the line),
+   labels as HTML on top — `preserveAspectRatio=none` squashes text inside the SVG. */
+/* ⚠x labels are 12px x --fs (fsApply): the bottom band scales with --fs, or at 125% they touch the next block. */
+.wkrw{position:relative;padding:0 0 calc(13px * var(--fs,1)) 40px}
+.wkrp{position:relative}
+.wkry{position:absolute;left:0;top:0;width:38px;height:76px}
+.wkry i{position:absolute;right:0;transform:translateY(-50%);font-style:normal;font-size:8.5px;
+  color:#6b7688;white-space:nowrap;font-variant-numeric:tabular-nums}
+.wkry i.pc{color:#8b95a7}
+.wkrx{position:absolute;left:40px;right:0;bottom:0;height:calc(13px * var(--fs,1))}
+.wkrx i{position:absolute;transform:translateX(-50%);font-style:normal;font-size:8.5px;line-height:1;
+  color:#6b7688;white-space:nowrap}
+.wkrx i.a0{transform:none}
+.wkrx i.a1{transform:translateX(-100%)}
+.wkrs .gl{stroke:#1e2530;stroke-width:1;vector-effect:non-scaling-stroke}
+.wkrs{display:block;width:100%;height:76px;cursor:help}
+.wkrs .ar{fill:url(#wkrg)}
+.wkrs .ln{fill:none;stroke-width:1.6;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+/* Reference line — the rate that uses the 5h limit exactly in 5h */
+.wkrs .pc{stroke:#7e889680;stroke-width:1;stroke-dasharray:3 3;vector-effect:non-scaling-stroke}
+.wkrb{font-style:normal;font-size:9.5px;border:1px solid;border-radius:5px;padding:0 5px;
+  flex:0 0 auto;cursor:help}
+.wknow{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;
+  background:#9cc4ff;box-shadow:0 0 0 2px #0d1014;pointer-events:none}
+@keyframes wkpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.5}}
+.wknow.on{animation:wkpulse 1.4s ease-in-out infinite}
+.wkrz{font-size:10px;color:#6b7688;text-align:center;padding:9px 0 4px}
+/* Gauge + donut pushed to the bottom as one block */
+.lside > .quota{margin-top:auto;z-index:2}
+.wkh{font-size:11px;color:#8b95a7;margin-bottom:7px}
+.wkh{display:flex;align-items:center;gap:5px}
+.wkh i{font-style:normal;font-size:10px;color:#6b7688}
+.wkr{margin-left:auto;background:none;border:1px solid #232c38;color:#8b95a7;border-radius:6px;
+  cursor:pointer;font-size:12px;line-height:1;padding:2px 7px}
+.wkr:hover{border-color:#3a4a63;color:#8ab4f8}
+.wkr.spin{color:#8ab4f8;animation:wkspin 1s linear infinite}
+@keyframes wkspin{to{transform:rotate(360deg)}}
+.wkbox{display:flex;gap:12px;align-items:center}
+/* ★Donut scales with card width (2026-09-11: donut too small).
+   Measured: card 474px, donut fixed at 104px, legend taking 358px. A legend row actually
+   needs only 213px (name max 125px + value/%) ⇒ the spare width goes to the donut.
+   ⚠Do not enlarge with a fixed value — narrowing the window clips legend names. Hence clamp «42% of width,
+   max 190px», which always leaves 260px+ for the legend. Height does not grow (legend 216px). */
+.wksvg{width:clamp(104px,42%,190px);aspect-ratio:1;height:auto;flex:0 0 auto;transform:rotate(-90deg)}
+.wkarc{transition:stroke-width .1s}
+.wkarc:hover{stroke-width:8.4}
+.wkt1,.wkt2{transform:rotate(90deg);transform-origin:21px 21px;text-anchor:middle;fill:#cfd8e6}
+.wkt1{font-size:5.4px;font-weight:700}
+.wkt2{font-size:3.1px;fill:var(--nx-t3,#84868c)}   /* #6f7889 was 4.43:1 on the dark panel */
+.wkls{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.wkl{display:flex;gap:6px;align-items:center;font-size:11px;color:#a8b3c4;min-width:0}
+.wkd{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
+.wkn{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wkv{flex:0 0 auto;color:#8b95a7;font-size:10.5px;font-variant-numeric:tabular-nums}
+.wkp{flex:0 0 auto;color:#7e8896;font-size:10.5px;min-width:26px;text-align:right;
+  font-variant-numeric:tabular-nums}
+.pwhere{display:none;font:11.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:#8ab4f8;
+  padding:0 0 6px;border-bottom:1px solid #1e2530;margin-bottom:7px}
+.th{background:none;border:none;border-bottom:1px solid transparent;color:#8b95a7;
+  font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer;padding:1px 4px;
+  display:inline-flex;gap:5px;align-items:baseline;border-radius:4px}
+.th:hover{color:#dfe5ee;background:#1a2130}
+.th.on{color:#8ab4f8;border-bottom-color:#3f6ea8;background:#1a2130}
+.th i{font-style:normal;font-size:10px;color:#6b7688}
+.th.on i{color:#6f93c4}
+.rm{display:inline-flex;gap:6px;align-items:center}   /* look = 05-controls.css */
+
+/* ★Inside the session card, right above the weekly donut. Card is 500px wide, so flex-wrap lets it fold to two lines.
+   Sticky here too so it stays glued to `.wku` below (no gap between them). */
+.quota{display:flex;flex-direction:column;gap:3px;font-size:11px;color:#8b95a7;cursor:help;
+  margin:12px 0 0;padding:6px 9px;background:#151a22;
+  border:1px solid #232a35;border-radius:7px;max-width:100%;flex:0 0 auto}
+.qrow{display:flex;gap:7px;align-items:center;min-width:0;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.quota b{color:#cfd8e6;font-weight:600}
+.quota .qhot{color:#e0b45f}
+.quota .qcool{color:#6fd39a}
+.quota .qok{color:#8ab4ff}
+.quota .qmid{color:#c9a24a}
+.quota .qhot2{color:#e0725f}
+.quota .qover{color:#e0725f;text-decoration:underline}
+/* Stale value — dashed underline says "not the current value" (color alone doesn't read) */
+.quota .qstale{border-bottom:1px dotted currentColor;opacity:.75}
+/* Amount used — different source from % (official), so dimmer to mark it as secondary */
+.quota .qamt{color:#8b95a7;font-size:10.5px;margin:0 3px 0 1px;cursor:help}
+/* Gauge — thin. Uses the same 4 steps as the % (same meaning, same color) */
+.quota .qg{display:inline-block;width:54px;height:6px;border-radius:3px;background:#242c38;
+  overflow:hidden;vertical-align:middle;margin-right:5px}
+.quota .qg i{display:block;height:100%;background:currentColor;border-radius:3px}
+.quota .qold{color:#7e8896}

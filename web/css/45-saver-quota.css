@@ -1,0 +1,208 @@
+/* Saver mode — visible only when on. When off it takes no space.
+   ★Position: must be **right above the token card** (2026-09-04). The `margin-top:auto` that pushes to the bottom
+   was originally on `.quota`, which stuck the saver badge to the end of the session list, far from the card.
+   auto moved to the badge (only when on) and the following `.quota` auto went back to normal spacing —
+   with two autos they split the leftover space and both end up in between.
+   ★Pulse: make "on" noticeable (2026-09-04). Only border+glow blink —
+   changing size would push the card below. */
+.saver{display:none}
+.saver.on{display:flex;gap:7px;align-items:center;margin:0 0 6px;padding:5px 9px;
+  background:#2a2113;border:1px solid #5a4520;border-radius:8px;
+  animation:svpulse 2s ease-in-out infinite}
+.lside > .saver.on{margin-top:auto}
+.lside > .saver.on + .quota{margin-top:10px}
+@keyframes svpulse{
+  0%,100%{border-color:#5a4520;box-shadow:0 0 0 0 rgba(232,198,122,0)}
+  50%    {border-color:#9a7630;box-shadow:0 0 0 3px rgba(232,198,122,.13)}}
+.saver.on b{animation:svpulseb 2s ease-in-out infinite}
+@keyframes svpulseb{0%,100%{color:#e8c67a}50%{color:#ffe6a8}}
+.saver b{font-size:12px;color:#e8c67a;font-weight:600}
+/* ★2026-09-21 (text small and too faint) ⇒ hierarchy (`b` > `span` > `i`) kept,
+   **only the floor** raised. On `#2a2113`: b #e8c67a 9.7 > span #cbb48c 7.9 (was #a8926a 5.3)
+   > i #b09a70 5.8 (was #8a7550 **3.6** — the least readable). ⚠Do not lower it back. */
+.saver span{font-size:11px;color:#cbb48c;margin-right:auto}
+.saver i{font-style:normal;font-size:11px;color:#b09a70;cursor:help;border:1px solid #5a4520;
+  border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center}
+/* ★Badge for **non-saving** modes (goal · off · headroom) — reuses the `#saver` slot (2026-09-21: the goal label
+     belongs in the saver badge slot rather than the header).
+     A header chip (`.svchip`) was shipped a day earlier and removed — the same info in two places diverges.
+   ⚠**No pulse** (why it uses a state class distinct from `.saver.on`). Pulse and `body.svon` are
+     signals for saving stages only — lit in goal/headroom they make non-saving look like saving.
+   ⚠No new colors — headroom #6fd39a · goal #8ab4ff (+`.jump`'s #1d2b42/#3a5a8c) · neutral #8b95a7.
+   ⚠Headroom/off get **the lowest «emphasis»** (no background · border #232a35 like other cells) — if the normal state
+     is loud, warnings lose value. Still not hidden: if invisible, «hook is dead» and «headroom» cannot be
+     told apart (2026-09-22: keep the border — it was transparent before and not even visible as a cell).
+   ⚠What is lowered is «emphasis», not «lightness» (2026-09-21: too faint to read).
+     On sidebar `#12161d`: b #a8b3c4 8.6 > span·i #8b95a7 6.0. Off also drops #6b7688 (3.9) for
+     the same #8b95a7 — the difference comes from «no background». ⚠Do not lower it back. */
+.saver.sv2{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:0 0 6px;padding:4px 9px;
+  border:1px solid #232a35;border-radius:8px}
+.lside > .saver.sv2{margin-top:auto}          /* auto only when on — same rule as `.saver.on` */
+.lside > .saver.sv2 + .quota{margin-top:10px}
+/* Sessions column: pinned (body.sespin) = the old right column; otherwise it is the top-right drawer (92-sessions-drawer.css) and leaves the grid.
+   ⚠Change the `.wrap` and `#composein` grids together (fixing one pushes the input box) */
+@media (min-width:1321px){
+  html[data-ui=next] body:not(.sespin) .wrap,html[data-ui=next] body:not(.sespin) #composein{grid-template-columns:var(--wrl,360px) 1fr}
+  html[data-ui=next] body:not(.sespin) .wrap.nops{grid-template-columns:1fr}
+}
+/* ★Narrow chat grids (2026-09-24 · at 1000px the participants card sat on the feed and the input shrank to 88px).
+   Cause: the base `#composein` grid in 65 (id selector, later file) beat the ≤1320/≤1000 rules in 50/60, so the input kept `360px 1fr 500px`.
+   ⇒ All narrow grids live here at `html[data-ui=next] body…` specificity, .wrap and #composein together.
+   ⇒ Participants keep a column only while the feed stays ≥ ~620px (unpinned >1100 · pinned >1320); below that they fold into
+     a heading bar above the feed (`.pside.popen` opens it — 50-people.js). ⚠#composein gap must equal .wrap gap (8px).
+   (The ≤1320px .lside auto-hide in 50 that pinned used to override was removed 09-24.) */
+@media (min-width:1101px) and (max-width:1320px){
+  html[data-ui=next] body:not(.sespin) .wrap,html[data-ui=next] body:not(.sespin) #composein{grid-template-columns:var(--wrl,340px) 1fr}
+  html[data-ui=next] body:not(.sespin) .wrap.nops{grid-template-columns:1fr}
+}
+@media (max-width:1100px){
+  html[data-ui=next] body:not(.sespin) .wrap,html[data-ui=next] body:not(.sespin) #composein{grid-template-columns:minmax(0,1fr)}
+}
+@media (min-width:761px) and (max-width:1320px){
+  html[data-ui=next] body.sespin .wrap,html[data-ui=next] body.sespin #composein{grid-template-columns:minmax(0,1fr) var(--wrr,360px)}
+  html[data-ui=next] body.sespin .wrap > .lside{grid-column:2;grid-row:1/-1}
+}
+@media (max-width:760px){
+  html[data-ui=next] body.sespin .wrap,html[data-ui=next] body.sespin #composein{grid-template-columns:minmax(0,1fr)}
+}
+/* Folded participants — only where the grid above has no participants column. */
+@media (max-width:1320px){
+  html[data-ui=next] body.sespin .wrap:not(.nops){grid-template-rows:auto minmax(0,1fr)}
+  html[data-ui=next] body.sespin #composein > .cwrap{grid-column:1}
+  html[data-ui=next] body.sespin .wrap:not(.nops) > .pside{grid-column:1;grid-row:1}
+  html[data-ui=next] body.sespin .wrap:not(.nops) > main{grid-column:1;grid-row:2}
+}
+@media (max-width:1100px){
+  html[data-ui=next] body:not(.sespin) .wrap:not(.nops){grid-template-rows:auto minmax(0,1fr)}
+  html[data-ui=next] body:not(.sespin) #composein > .cwrap{grid-column:1}
+}
+@media (max-width:1320px){
+  html[data-ui=next][data-ui] body.sespin .wrap > .pside > h2:first-child{cursor:pointer}
+  html[data-ui=next][data-ui] body.sespin .wrap > .pside{max-height:40vh}
+  html[data-ui=next][data-ui] body.sespin .wrap > .pside:not(.popen) > :not(h2){display:none}
+  html[data-ui=next][data-ui] body.sespin .wrap > .pside:not(.popen) > h2:first-child{margin-bottom:-11px;border-bottom:0}
+  html[data-ui=next][data-ui] body.sespin .wrap > .pside > h2::before{content:'\25B8';color:var(--nx-t2)}
+  html[data-ui=next][data-ui] body.sespin .wrap > .pside.popen > h2::before{content:'\25BE'}
+}
+@media (max-width:1100px){
+  html[data-ui=next][data-ui] body:not(.sespin) .wrap > .pside > h2:first-child{cursor:pointer}
+  html[data-ui=next][data-ui] body:not(.sespin) .wrap > .pside{max-height:40vh}
+  html[data-ui=next][data-ui] body:not(.sespin) .wrap > .pside:not(.popen) > :not(h2){display:none}
+  html[data-ui=next][data-ui] body:not(.sespin) .wrap > .pside:not(.popen) > h2:first-child{margin-bottom:-11px;border-bottom:0}
+  html[data-ui=next][data-ui] body:not(.sespin) .wrap > .pside > h2::before{content:'\25B8';color:var(--nx-t2)}
+  html[data-ui=next][data-ui] body:not(.sespin) .wrap > .pside.popen > h2::before{content:'\25BE'}
+}
+.saver.sv2 b{font-size:11.5px;color:#a8b3c4}
+.saver.sv2 span{font-size:11px;color:#8b95a7;margin-right:auto}
+.saver.sv2 i{border-color:#3a4150;color:#8b95a7}
+.saver.sv2.svpace{background:#1d2b42;border-color:#3a5a8c}
+.saver.sv2.svpace b{color:#8ab4ff}
+.saver.sv2.svfree b{color:#6fd39a}
+.saver.sv2.svoff b{color:#8b95a7}
+/* Hook has not run for a while — dim the value, don't clear it (clearing misreads as "released") */
+.saver.sv2.svold{opacity:.55}
+/* ★Verdict chip — **color** reads before the name (2026-09-22: use a distinct badge color).
+   ⚠No new colors: fast #e0725f (`.qhot2` warning) · on-pace #6fd39a (headroom) · slow #8ab4ff (goal)
+   · pending #8b95a7 (neutral). ⚠Background is the same color at 12% — filling it mixes rank with saver-stage badges. */
+.saver .svj{font-style:normal;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;
+  border:1px solid transparent;cursor:help}
+.saver .svjfast{color:#e0725f;border-color:#e0725f;background:rgba(224,114,95,.12)}
+.saver .svjok{color:#6fd39a;border-color:#6fd39a;background:rgba(111,211,154,.12)}
+.saver .svjslow{color:#8ab4ff;border-color:#8ab4ff;background:rgba(138,180,255,.12)}
+.saver .svjwait{color:#8b95a7;border-color:#3a4150}
+/* ★«Much» uses the same color **filled** — the level gap is visible at a glance, not only in text (2026-09-22). */
+.saver .svjfast2{color:#1b1005;border-color:#e0725f;background:#e0725f}
+.saver .svjslow2{color:#0b1220;border-color:#8ab4ff;background:#8ab4ff}
+/* ★The banner is **always two lines** (2026-09-22: wrap from the start instead of changing with content).
+   It was a one-line flex + `flex-wrap`, so `?` dropped down only when text got long,
+   and height jumped around. ⚠Do not go back to `display:flex` — the same symptom returns. */
+.saver.on,.saver.sv2{display:block}
+.saver .svr1{display:flex;gap:7px;align-items:center}
+.saver .svr1 i{margin-left:auto}   /* detail moved to line 2, nothing left to push `?` */
+.saver .svr2{margin-top:3px;line-height:1.35}
+/* ★Credit-in-use badge (2026-09-09: show only a credit-in-use alert). Past the 5h limit
+   **real money is spent** — the quota % row alone does not make that transition readable.
+   ⚠No new colors (".hlb color rule") — warning red reuses `.quota .qhot2` (#e0725f). */
+.credit{display:none}
+.credit.on{display:flex;gap:7px;align-items:center;margin:6px 0 0;padding:5px 9px;
+  background:#2a1a17;border:1px solid #5a3128;border-radius:8px;cursor:help}
+.credit b{font-size:11.5px;color:#e0725f;font-weight:600}
+.credit span{font-size:10.5px;color:#a8776a;margin-left:auto}
+/* ★Limit burndown — one collapsible row right below the 5h gauge (2026-09-21). No value, no space taken.
+   ⚠No new colors (".hlb color rule") — neutral is the `.quota` gray family, warning is `.quota .qhot2`
+     (#e0725f), caution is `.qhot` (#e0b45f), as-is.
+   ⚠**It is an estimate.** Numbers are not as bright as `.quota b` (#cfd8e6 · 12.2:1) — the same weight as official
+     values would make it a lie. That **ceiling stays**.
+   ★2026-09-21 (text small and too faint; asked for a brighter tone) ⇒
+     **hierarchy kept, floor raised one step.** Contrast ladder on `#151a22` (order and gaps unchanged):
+     official #cfd8e6 12.2 > estimate number #b9c4d4 9.9 > body #a8b3c4 8.2 > aside #8b95a7 5.8.
+     Minimum text 10.5px (was 9-10px). ⚠**Do not lower it back** — dimness by design means «darker than
+     official», not «unreadable» (old values were #6d7a8c 4.0 · #5f6a7a 3.2). */
+.burn{display:none}
+.burn.on{display:block;margin:6px 0 0;padding:5px 9px;background:#151a22;
+  border:1px solid #232a35;border-radius:7px;font-size:11px;color:#a8b3c4}
+.burn .bnh{display:flex;gap:5px;align-items:center;cursor:pointer;min-width:0}
+.burn .bnh u{text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.burn .bnh .bnac{flex:0 0 auto;max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+/* ★The toggle is **a text label + button shape** (2026-09-21: the collapse toggle was too small).
+   With only a `▾` glyph nobody knew the row was clickable, and it was reported as "the curve is not showing".
+   ⚠No new colors — the blue pair of `.jump` (this file's existing «clickable pill») as-is.
+   ⚠The click area is the whole `.bnh` row (`cursor:pointer` is there too). Do not narrow it to this chip. */
+.burn .bnh i{font-style:normal;flex:0 0 auto;white-space:nowrap;font-size:10.5px;
+  color:#bcd4f5;background:#1d2b42;border:1px solid #3a5a8c;border-radius:999px;padding:1px 8px}
+.burn em{font-style:normal;color:#b9c4d4;font-weight:600}   /* estimate number — lower weight than official (.quota b) */
+/* ★Near-empty warning. ⚠**The selector was a descendant (`.burn .bwarn`), so until 2026-09-21 it never applied** —
+   `bwarn` is on `.burn` **itself** (`el.className = 'burn on' + ' bwarn'`). The fix also narrowed
+   the scope: not the whole block but **only the number that crossed** (`at reset N%` = `.bpj`) is red. "now N%"
+   has not crossed by itself, so it stays. #e0725f on #151a22 = 5.6:1 — lighter than official (#cfd8e6 12.2),
+   so the estimate rule holds too (distinguished by hue + weight 600). */
+.burn.bwarn .bpj{color:#e0725f}
+/* ★Row showing "% to empty" as tokens too (2026-09-21). ⚠Estimate, so `≈` and dimmer than `.burn em` —
+   must not look as weighty as the official 5h row. ⚠But «dim» must not become «unreadable» (same-day
+   report) — raised #6d7a8c/10px (4.0:1) → #8b95a7/10.5px (5.8:1). Do not lower it back. */
+.burn .bhead{color:#8b95a7;margin-top:2px;display:block;font-size:10.5px}
+/* ★Weekly row (2026-09-22) — **one step weaker** than the 5h row. The verdict axis is 5h only, so weekly must not
+   read with equal weight. ⚠Still never below 4.5:1 (#7b8496/9.5px ≈ 4.7:1) — "dim" has
+   become "unreadable" before (see `.bhead` comment above). `.blab` (5h/7d) is the label naming the axis. */
+.burn .bhead.bheadwk{color:#7b8496;font-size:9.5px;margin-top:1px}
+.burn .bhead .blab{font-weight:600;color:#5f6a7a;margin-right:3px;font-variant-numeric:tabular-nums}
+/* ⚠`.burn .svrow` (full goal/saver row) **was removed as a duplicate** (2026-09-21: shown twice).
+     The sidebar badge `.saver.sv2` already shows the same text. */
+.burn .bnb{margin-top:5px;border-top:1px solid #1a212b;padding-top:5px}
+.burn svg{display:block;width:100%;height:46px;overflow:visible}
+/* Run-out label row sits above the plot so it never overlaps the projection running along the 100% line. */
+.burn .bnout{position:relative;height:1.4em;font-size:10.5px}
+.burn .bnout span{position:absolute;top:0;white-space:nowrap;font-variant-numeric:tabular-nums}
+/* Legend — was 9px · #5f6a7a (3.2:1), effectively unreadable (2026-09-21). With `flex-wrap`, enlarging wraps
+   instead of pushing ⇒ 10.5px · #8b95a7 (5.8:1). ⚠Keep cell text short. */
+.burn .bleg{display:flex;gap:9px;margin-top:3px;color:#8b95a7;font-size:10.5px;flex-wrap:wrap}
+/* ★★Saver mode is signaled across **the whole screen** (2026-09-08: a slightly different background color is fine).
+   The badge sits at **the very bottom** of the left sidebar (`margin-top:auto`), easy to miss.
+   ⚠No new colors (".hlb color rule") — overlays the badge pulse's `rgba(232,198,122,...)` with
+     lower alpha; the border reuses amber `#6b5a2e` (`.hlb.hlwarn`).
+   ⚠Do not swap the background hex — `#0d1014` is shared by header, tab bar, sticky headers and more.
+     Change one and seams show. **Overlaying** via `background-image` keeps the original color.
+   ⚠**Painting only `body` changes half** — measured, only two elements actually paint the viewport:
+     `body` (100%) and `aside.lside` (20% · `#12161d`). Cells with their own background cover the body tint,
+     so they must be painted too or seams show. `.wpn` exists only in the multi-pane view (not the timeline view).
+   ⚠Keep alpha low ("slightly different") — this screen reads state from bar colors, so
+     a strong background blurs that reading. */
+body.svon{background-image:linear-gradient(rgba(232,198,122,.05),rgba(232,198,122,.05))}
+body.svon .lside,
+body.svon .wpn{background-image:linear-gradient(rgba(232,198,122,.045),rgba(232,198,122,.045))}
+body.svon header{box-shadow:inset 0 2px 0 #6b5a2e}
+/* ★Estimate badge — a % from local aggregation is **a different number from the official one**. Drawn in the same spot
+   with the same look, it appeared to drop 30%→25% when the official value returned (2026-09-04, reported as
+   a broken fix). Measured: at that moment local 30% · official 31% (10s ago) · the 25% on screen was an 18-min-old official value.
+   Both numbers were right — lacking a distinction, one only looked wrong. */
+/* No official value — don't invent a %, say it is missing */
+.quota .qnone{color:#8b95a7;font-size:10.5px;background:#231c1c;border:1px solid #3a2a2a;
+  border-radius:7px;padding:1px 6px;cursor:help}
+/* Value stale for 10+ min — gray alone kept getting overlooked */
+.quota .qstale2{color:#e0b45f !important;font-weight:600}
+input[type=search]{flex:1;min-width:150px;background:#151a22;border:1px solid #232a35;color:#dfe5ee;
+  border-radius:7px;padding:5px 10px;font:inherit;font-size:12.5px;line-height:1.4}
+input[type=search]:focus{outline:none;border-color:#3a5a8c}
+.tabs{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+/* .tab look (height · radius · colors · selected) = 05-controls.css */

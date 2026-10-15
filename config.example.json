@@ -1,0 +1,30 @@
+{
+  "_comment": "Copy to config.local.json (not shipped) and edit. Env vars MAILBOX_ME / MAILBOX_ALIASES / MAILBOX_SELF / MAILBOX_VIEWER_ROOM override these. Missing keys fall back to the defaults shown here.",
+  "self": {
+    "_comment": "ids: names this install posts as (first = monitor identity). aliases: addresses that count as mail to me. Example: ids [\"team-agent\"], aliases [\"team-agent\", \"agent\"].",
+    "ids": [],
+    "aliases": []
+  },
+  "alias_strip_prefixes": [],
+  "default_room": "general",
+  "viewer_me": "사용자",
+  "readcheck_peer": "",
+  "_saver_view_comment": "Optional (personal saver hook only; safe to delete). External quota-saver hook's snapshot file (not shipped here). Missing file: the saver chip/advice line just don't show.",
+  "saver_view_path": "~/.claude/hooks/.saver-view.json",
+  "hook_session_patterns": [],
+  "_launchd_comment": "Prefix for launchd job labels used by the scripts, e.g. <prefix>.viewer. launchd_labels: full label per job, overrides the prefix (\"\" = use the prefix).",
+  "launchd_label_prefix": "io.sidereus",
+  "launchd_labels": {"viewer": "", "watch": "", "databackup": ""},
+  "_quota_probe_comment": "true = while the usage API returns 429, send one paid Haiku call (max_tokens 1, about $0.00002) every 120s to read the credit ratio from response headers. Off by default. Env SIDEREUS_QUOTA_PROBE=1/0 overrides.",
+  "quota_probe": false,
+  "_security_comment": "quota_lookup: false = never read the Claude Code OAuth token from the keychain and never call api.anthropic.com (quota cards go blank). keep_awake: false = never hold caffeinate. See SECURITY.md.",
+  "quota_lookup": true,
+  "keep_awake": true,
+  "_prefs_comment": "Also editable in the viewer (설정 > 내 방식); applied after a restart. saver_hook_dir (optional, personal saver hook only; safe to delete): folder of .saver-force.json/.saver-goal.json. compact_history: [[\"YYYY-MM-DD\", autoCompactWindow or null], ...] ascending, [] = no history (current setting only).",
+  "saver_hook_dir": "~/.claude/hooks",
+  "compact_history": [],
+  "_port_comment": "Viewer port (1024..65535; also 설정 > 내 방식 «포트»). Env SIDEREUS_PORT overrides; `sidereus_cli.py start --port N` writes it here. Hooks, MCP and saver read the same value. Applies after a restart.",
+  "port": 8799,
+  "_features_comment": "Optional features (features/<id>.json manifests, docs/dev/FEATURES.md): {id: true|false}. A missing id is on; a feature whose dep is off is off too. Public default = core only. Applied after a restart.",
+  "features": {"pipeline": true, "retro": false, "harness": false, "diag": true}
+}

@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gates:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.9", "3.12"]
+        # setup-python may lack 3.9 for arm64 macOS runners; 3.9 is still covered on Linux.
+        exclude:
+          - os: macos-latest
+            python: "3.9"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        id: py
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: py_compile
+        env:
+          PYTHON: ${{ steps.py.outputs.python-path }}
+        run: |
+          for f in chat_server.py sidereus/*.py hooks/*.py mcp/*.py; do
+            "$PYTHON" -m py_compile "$f"
+          done
+
+      - name: node --check
+        run: |
+          for f in web/*.js web/js/*.js; do
+            node --check "$f"
+          done
+
+      - name: unit tests
+        env:
+          PYTHON: ${{ steps.py.outputs.python-path }}
+        run: bash tests/run.sh

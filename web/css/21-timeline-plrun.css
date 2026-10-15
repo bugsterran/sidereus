@@ -1,0 +1,165 @@
+/* Pipeline run on a session row (74c-timeline-plrun.js): `.tlnm > .tlpl` stepper + `.tlpl > .plev` gate line, `.tlrs .tlt` bands/ticks, `.tlrpl` row accent.
+   --pf comes from `.pf-*` (43-pipeline.css) with the family vars on `.tlwrap`. ⚠Colours are var() only, so the #nxcss twins copy them unchanged.
+   ⚠State rules set custom properties only and one base rule reads them: a state rule setting a colour directly gets its own next-UI twin and the cascade order flips.
+   ⚠Markup uses i/strong, not b/span: `.tlnm b` / `.tlnm span` (20-timeline.css) and their twins would restyle them. */
+.tlnm:has(> .tlpl){flex-wrap:wrap;row-gap:3px}
+/* Row accent: 3px bar inside the name cell — padding there (not on the row) keeps the bar track aligned with the time axis. */
+.tlrs.tlrpl > .tlnm{box-shadow:inset 3px 0 0 var(--tlpl-ac);padding-left:9px}
+.tlrpl-run{--tlpl-ac:var(--nx-info,#5899f3)}
+.tlrpl-fail{--tlpl-ac:var(--nx-err,#f45460)}
+.tlrpl-fin{--tlpl-ac:color-mix(in srgb,var(--nx-t3,#84868c) 55%,transparent)}
+/* Each run always takes its own line under the name (one layout at every width and --fs; no inline/wrap switch). */
+.tlnm > .tlpl{display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;flex:0 0 100%;max-width:100%;min-width:0;
+  font-size:12px;line-height:18px;color:var(--nx-t2,#909298);cursor:pointer;border-radius:6px}
+/* Stepper (plStepper, 74c): segmented bar, one `.tlpd` segment per stage with the stage name under it — 22x6 (min) in the row,
+   46x6 in the work popup (`.lg`, 35e). Rules hang off `.tlpst` so both share them. */
+.tlpst{--tlpl-acc:var(--nx-info,#5899f3);--tlpl-done:var(--nx-ok,#71c269);--tlpl-bk:var(--tlpl-back,#e0a53d);--tlpl-off:var(--nx-t3,#84868c);
+  --tlpl-wait:var(--nx-field,#6a6d74);--st-w:22px;--st-h:6px;--st-g:6px;
+  display:inline-flex;align-items:flex-start;gap:var(--st-g);min-width:0;font-style:normal}
+/* ⚠Waiting uses --nx-field in both themes (dark 3.3-3.8:1, light 3.2-3.7:1); a t3/rule mix was 2.49:1 on dark, under the 3:1 graphic floor. */
+html[data-theme=light] .tlpst{--tlpl-bk:var(--nx-warn,#8b6401)}
+/* Ended run: desaturated segments, no stripes; ⚠no opacity — popup names keep t1/t2/t3 contrast. */
+.tlpst.fin{--tlpl-done:color-mix(in srgb,var(--nx-ok,#71c269) 35%,var(--nx-t3,#84868c));
+  --tlpl-bk:color-mix(in srgb,var(--tlpl-back,#e0a53d) 35%,var(--nx-t3,#84868c))}
+.tlpst.lg{--st-w:46px;--st-h:6px;--st-g:6px}
+.tlpst > .tlpls{--s-bg:var(--tlpl-wait);--n-c:var(--nx-t3,#84868c);--n-w:400;
+  display:inline-flex;flex-direction:column;align-items:stretch;gap:4px;flex:0 1 auto;width:var(--st-w);min-width:6px;font-style:normal}
+/* Row: segment as wide as its name, shrinking to 22px with the name ellipsised (full name in title) — ⚠never wraps the bar. */
+.tlnm .tlpst > .tlpls{padding-top:3px;gap:3px;width:auto;min-width:var(--st-w)}
+.tlnm .tlpst .tlpn{overflow:hidden;text-overflow:ellipsis;padding:0 1.5px}
+/* Names never cut below 2 characters: 2-char names stay whole, longer (.ln) keep 2 chars + «…»; running stages keep the full name.
+   Only long names shrink; past all minimums tlPlFit (74c) drops names (.nn); overflow:hidden is only a safety net. */
+.tlnm .tlpst > .tlpls{flex-shrink:0}
+.tlnm .tlpst > .tlpls.ln{flex-shrink:1;min-width:calc(3em + 3px)}
+.tlnm .tlpst > .tlpls.pl-run, .tlnm .tlpst > .tlpls.pl-fail{flex-shrink:0}
+/* No name (tlPlFit, 74c): bare 22px segment; the hidden name keeps the line height. */
+.tlnm .tlpst > .tlpls.nn{flex:0 0 auto;width:var(--st-w);min-width:var(--st-w)}
+.tlnm .tlpst > .tlpls.nn .tlpn{visibility:hidden}
+/* Row: the counter and gate line wrap before the bar shrinks; segments shrink only when the bar alone exceeds the cell. */
+.tlnm .tlpst{flex:0 0 auto;max-width:100%;overflow:hidden}
+/* ⚠Width, not flex-basis: an inline-flex parent sizes from the items' content (empty segments = 0), so a basis alone collapsed them to min-width. */
+.tlpst.lg > .tlpls{flex:0 0 auto;width:auto;min-width:var(--st-w)}
+/* State rules set --s-bg only (see header ⚠); one base rule paints it. */
+.tlpst .tlpd{display:block;height:var(--st-h);border-radius:2px;background:var(--s-pat,none),var(--s-bg);background-size:6px 6px;box-shadow:var(--s-bd,none);clip-path:var(--s-clip,none)}
+.tlpst > .tlpls.pl-done{--s-bg:var(--tlpl-done)}
+.tlpst > .tlpls.pl-run{--s-bg:var(--tlpl-acc);--s-st:color-mix(in srgb,var(--nx-panel,#121417) 50%,transparent)}
+/* Stripes on a layer one tile wider than the segment, clipped by it: moving = transform only (see tlplstripe). */
+.tlpst > .tlpls.pl-run .tlpd{position:relative;overflow:hidden}
+.tlpst > .tlpls.pl-run .tlpd::before{content:'';position:absolute;top:0;bottom:0;left:0;right:-8px;pointer-events:none;
+  background:linear-gradient(45deg,var(--s-st) 25%,transparent 25%,transparent 50%,var(--s-st) 50%,var(--s-st) 75%,transparent 75%,transparent) 0 0/8px 8px}
+/* Non-hue cues (WCAG 1.4.1; done vs back was 1.0-1.53:1, glyphs no longer fit a 22x6 segment): back = left-pointing tip,
+   fail = static cross-hatch (tiny x marks), skip = hollow, run = moving stripes, done/wait/hold = plain bar. */
+.tlpst > .tlpls.pl-back{--s-bg:var(--tlpl-bk);--s-clip:polygon(4px 0,100% 0,100% 100%,4px 100%,0 50%)}
+.tlpst > .tlpls.pl-fail{--s-bg:var(--nx-err,#f45460);--s-x:color-mix(in srgb,var(--nx-panel,#121417) 70%,transparent);
+  --s-pat:linear-gradient(45deg,transparent 40%,var(--s-x) 40%,var(--s-x) 60%,transparent 60%),linear-gradient(-45deg,transparent 40%,var(--s-x) 40%,var(--s-x) 60%,transparent 60%)}
+.tlpst > .tlpls.pl-hold{--s-bg:var(--tlpl-off)}
+/* Skip = hollow box (1px t3 edge, >=3:1): a dashed fill merged with the gaps into one strip across neighbouring skips. */
+.tlpst > .tlpls.pl-skip{--s-bg:transparent;--s-bd:inset 0 0 0 1px var(--tlpl-off)}
+/* Names centre under their segment: the column spacing is split evenly on both sides so the text sits on the segment's midline. */
+.tlpst .tlpn{font-style:normal;font-size:12px;line-height:1.2;white-space:nowrap;padding:0 3px;text-align:center;color:var(--n-c);font-weight:var(--n-w)}
+.tlpst .tlpn em{font-style:normal;margin-left:2px;color:var(--tlpl-bk)}
+.tlpst > .tlpls.p{--n-c:var(--nx-t2,#909298)}
+.tlpst > .tlpls.cur{--n-c:var(--nx-t1,#cdcedc);--n-w:700}
+/* Every running stage (parallel stages too) names itself in the info colour; done names muted, waiting stays t3. */
+.tlpst > .tlpls.pl-done{--n-c:var(--nx-t2,#909298)}
+.tlpst > .tlpls.pl-run{--n-c:var(--nx-info,#5899f3);--n-w:700}
+/* Live stage stripes move; only a live run's stepper — callers mark every non-live run `.fin`. */
+/* ★background-position kept ~60 style recalcs/s on the timeline (demo 1,569/25s); a translated layer runs on the compositor. */
+.tlpst:not(.fin) > .tlpls.pl-run .tlpd::before{animation:tlplstripe .8s linear infinite}
+@keyframes tlplstripe{from{transform:translateX(0)}to{transform:translateX(-8px)}}
+.tlpst > .tlpls[role=button]:hover{--n-c:var(--nx-t1,#cdcedc)}
+/* Work popup: .me = this agent's stage (accent name, underlined); stages with agents open them on click. */
+.tlpst > .tlpls.me{--n-c:var(--nx-info,#5899f3);--n-w:700}
+.tlpst > .tlpls.me .tlpn{text-decoration:underline 2px;text-underline-offset:4px}
+.tlpst > .tlpls[role=button]{cursor:pointer}
+.tlpst > .tlpls[role=button]:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:1px;border-radius:4px}
+.tlnm .tlpc{font-style:normal;white-space:nowrap;color:var(--nx-t2,#909298)}
+.tlnm .tlpc strong{font-weight:600;color:var(--nx-t1,#cdcedc)}
+/* Ended run outcome (tlPlEnd; timeline row and work popup): success/error token text, so a finished run never reads as live.
+   ⚠Two classes each so they beat `.tlnm .tlpc strong` (same specificity, later wins). */
+.tlpe{font-style:normal;white-space:nowrap}
+.tlpe strong{font-weight:600;color:var(--nx-t1,#cdcedc)}
+.tlpe.tlpe-ok strong{color:var(--nx-ok,#71c269)}
+.tlpe.tlpe-fail strong{color:var(--nx-err,#f45460)}
+.tlpe strong > i{font-style:normal}
+.tlnm .tlplm{font-style:normal;font-weight:600;color:var(--nx-t2,#9aa6b8)}
+/* Pipeline name, only when a row stacks 2+ runs (tlPlStrip): own line heading its run; extra space between runs keeps
+   each gate line with its own stepper (inside-run gap 3px < between-run gap 9px). */
+.tlnm > .tlpl > .tlpnm{flex:0 0 100%;min-width:0;font-style:normal;font-size:11px;line-height:14px;color:var(--nx-t3,#84868c);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlnm > .tlpl:has(> .tlpnm) + .tlpl{margin-top:6px}
+.tlnm > .tlpl:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:1px}
+.tlnm > .tlplx{flex:0 0 auto;font:inherit;font-size:12px;line-height:18px;font-weight:600;padding:0;margin:0;cursor:pointer;
+  border:0;background:none;color:var(--nx-info,#5899f3)}
+.tlnm > .tlplx:hover{text-decoration:underline}
+.tlnm > .tlplx:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:1px}
+/* Gate line (plEvLine output) inside the top run's line: state dot + text, ellipsis when tight (full text in title). */
+.tlpl > .plev{--pv:var(--nx-ok,#71c269);flex:0 1 auto;min-width:0;max-width:100%;font-size:12px;line-height:18px;font-weight:600;
+  color:var(--nx-t2,#909298);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlpl > .plev::before{content:'';display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:50%;background:var(--pv);vertical-align:1px}
+.tlpl > .plev.plevng{--pv:var(--nx-err,#f45460)}
+/* Stage bands under the session's bars: 3px at the track bottom; bars stop 4px above it (.tlrs .tlb), so nothing is covered.
+   Family colour at .55 for settled stages; the running / sent-back / failed stage uses the stepper's colour at full strength. */
+/* ⚠The faint span tone is a color-mix background, not opacity: parent opacity would also dim the solid work pieces inside. */
+.tlrs .tlt .tlplb{--b-c:var(--pf,#5899f3);--b-o:.55;position:absolute;bottom:0;height:var(--b-h,3px);border-radius:2px 2px 0 0;background:color-mix(in srgb,var(--b-c) 30%,transparent);clip-path:var(--b-clip,none);cursor:help}
+.tlrs .tlt .tlplb > .tlplw{position:absolute;top:0;bottom:0;background:var(--b-c);opacity:var(--b-o)}
+.tlrs .tlt .tlplb.pl-run{--b-c:var(--nx-info,#5899f3);--b-o:1}
+/* Same shape cues as the stepper: back = left-pointing tip, fail = the full 4px lane (bars end 4px above the bottom). */
+.tlrs .tlt .tlplb.pl-back{--b-c:var(--tlpl-back,#e0a53d);--b-o:1;--b-clip:polygon(3px 0,100% 0,100% 100%,3px 100%,0 50%)}
+.tlrs .tlt .tlplb.pl-fail{--b-c:var(--nx-err,#f45460);--b-o:1;--b-h:4px}
+/* Re-run mark: an orange wedge in the 4px band lane, the ↺ text hidden (meaning stays in its title).
+   ⚠A 10px ↺ glyph at bottom:3px sat on top of the bars (.tlrs .tlb ends 4px above the track bottom) and read as a broken bar. */
+.tlrs .tlt .tlplk{position:absolute;bottom:0;width:9px;height:4px;transform:translateX(-50%);font-size:0;overflow:hidden;
+  background:var(--tlpl-back,#e0a53d);clip-path:polygon(50% 0,100% 100%,0 100%);cursor:help}
+/* ⚠Same selector as the animation rule: the shorter `.tlpst > .tlpls.pl-run .tlpd` lost on specificity and stripes kept moving. */
+@media (prefers-reduced-motion:reduce){.tlpst:not(.fin) > .tlpls.pl-run .tlpd::before{animation:none}}
+/* Stepper key (tlPlLegend, 74c) at the right end of the timeline header: the real segments laid out swatch + label inline.
+   ⚠In the header, not the axis row: the axis name cell has no room for six items and the axis row must keep its height. Wraps to its own line at 900. */
+/* ⚠Tight spacing (gap 5 · swatch 10): at 8/10/14px the en key was 467px and took its own header row at 1440 beside two run chips. */
+.wvh > .tlplg{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;line-height:16px;color:var(--nx-t2,#909298);white-space:nowrap}
+.tlplg .tlplgt{font-style:normal;font-weight:600;cursor:help}
+.tlplg .tlpst{gap:5px}
+.tlplg .tlpst > .tlpls{flex-direction:row;align-items:center;gap:3px;width:auto;min-width:0;cursor:help;--n-c:var(--nx-t2,#909298);--n-w:400}
+.tlplg .tlpd{flex:0 0 10px}
+.tlplg .tlpn{font-size:11px;padding:0}
+/* Run summary chips (tlPlHeadHtml, 74c) in the «Runs N» popover: neutral border; fail / back / stuck set --c-ac only (see header ⚠).
+   ⚠The line shrinks before it wraps: stage text ellipsises first, name and stepper keep their width. */
+.wvh > .tlplh{margin-left:auto;display:flex;align-items:center;gap:6px;min-width:0;max-width:100%;flex:0 1 auto}
+.tlplh > .tlplc{--c-ac:var(--nx-rule,#2a2f38);display:inline-flex;align-items:center;gap:6px;flex:0 1 auto;min-width:0;max-width:360px;
+  padding:1px 8px;overflow:hidden;border:1px solid var(--c-ac);border-radius:6px;font-size:11px;line-height:16px;color:var(--nx-t2,#909298);white-space:nowrap;cursor:pointer}
+.tlplh > .tlplc-fail{--c-ac:var(--nx-err,#f45460)}
+.tlplh > .tlplc-back{--c-ac:var(--tlpl-back,#e0a53d)}
+.tlplh > .tlplc-stuck{--c-ac:var(--nx-warn,#fad83e)}
+.tlplh > .tlplc:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:1px}
+.tlplc > i, .tlplc > strong{font-style:normal;flex:0 0 auto}
+.tlplc > .tlplcn{font-weight:600;color:var(--nx-t1,#cdcedc)}
+/* ⚠Stage text outlives the gate line: .plev shrinks 1000x faster and ellipsises first. */
+.tlplc > .tlplcs{flex:0 0 auto;max-width:14em;overflow:hidden;text-overflow:ellipsis}
+.tlplc > .tlplcw{font-weight:600;color:var(--c-ac)}
+.tlplc > .tlpe{flex:0 0 auto;max-width:18em;overflow:hidden;text-overflow:ellipsis}
+.tlplc > .tlpe.tlpe-ok strong{color:var(--nx-t1,#cdcedc)}
+/* Small stepper: bare 10px segments, names only in the title. */
+.tlplc > .tlpst{--st-w:10px;--st-h:5px;--st-g:2px;flex:0 0 auto}
+.tlplc > .tlpst > .tlpls{width:var(--st-w);gap:0}
+.tlplc > .tlpst .tlpn{display:none}
+.tlplc > .tlpst > .tlpls.pl-run .tlpd::before{animation:none}   /* ⚠no motion in the header; beats the live-stripe rule on specificity */
+.tlplc > .plev{--pv:var(--nx-t3,#84868c);flex:0 1000 auto;min-width:0;max-width:180px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlplc > .plev::before{content:'';display:inline-block;width:6px;height:6px;margin-right:4px;border-radius:50%;background:var(--pv);vertical-align:1px}
+.tlplc > .plev.plevng{--pv:var(--nx-err,#f45460)}
+.tlplh > .tlplhm{font-style:normal;font-weight:600;font-size:11px;color:var(--nx-t2,#909298);cursor:help}
+/* «Runs N» header chip (tlPlHeadBtn): border + dot take the worst run state; the chips live in the #tlplhp popover. */
+/* ⚠Out of flow, pinned to line 1's right end: in flow it wrapped alone to a new line when the key filled line 1 (header 34->61, body jumped).
+   The key keeps the chip's slot as right margin, so the chip appearing never moves or wraps anything. */
+.wvh > .tlplhb{--c-ac:var(--nx-rule,#2a2f38);position:absolute;top:2px;right:0;margin:0;box-sizing:border-box;max-width:72px;overflow:hidden;display:inline-flex;align-items:center;gap:5px;padding:1px 8px;
+  font:inherit;font-size:11px;line-height:16px;font-weight:600;color:var(--nx-t2,#909298);background:none;border:1px solid var(--c-ac);border-radius:6px;white-space:nowrap;cursor:pointer}
+.wvh > .tlplg{margin-right:80px}
+.wvh > .tlplhb-fail{--c-ac:var(--nx-err,#f45460)}
+.wvh > .tlplhb-back{--c-ac:var(--tlpl-back,#e0a53d)}
+.wvh > .tlplhb-stuck{--c-ac:var(--nx-warn,#fad83e)}
+.wvh > .tlplhb:not(.tlplhb-none)::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--c-ac)}
+.wvh > .tlplhb:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:1px}
+html[data-ui=next] .thpop.tlplhp{padding:6px;max-width:min(400px,calc(100vw - 16px))}
+.thpop.tlplhp > .tlplh{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0}
+/* «Pipeline recording off» (tlPlOffNote): own line under the name, warning tone, reason in the title. */
+.tlnm:has(> .tlploff){flex-wrap:wrap;row-gap:3px}
+.tlnm > .tlploff{flex:0 0 100%;min-width:0;font-style:normal;font-size:11px;line-height:16px;color:var(--nx-warn,#fad83e);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help}

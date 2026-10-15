@@ -1,0 +1,81 @@
+/* ── Work log 2-way split (2026-09-02, IDE-style window split) ──────────────────
+   ★For viewing two agents side by side. Keep one tab row and split **only the content** —
+     splitting the tab row too duplicates tabs on two rows, making it harder to tell which is where.
+   ★When split, **each pane** scrolls, not #feed (each pane has its own scroll position). */
+.wsb{margin-left:auto;flex:0 0 auto;align-self:center;margin-bottom:4px}   /* look = 05-controls.css */
+.wt1 em{font-style:normal;font-size:8.5px;color:#8ab4f8;margin-left:2px;
+  border:1px solid #35435a;border-radius:4px;padding:0 3px;line-height:1.5}
+.wsp{display:flex;gap:0;align-items:stretch;height:calc(100vh - 128px);min-height:280px}
+/* Splitter — drag to change the ratio. **Do not re-render** while dragging (a re-render removes the handle) */
+.wsd{flex:0 0 9px;cursor:col-resize;position:relative}
+.wsd[data-ax=c]{z-index:2}   /* 2x2: the column bar owns the crossing, or a drag there only moves the row bar */
+.wsd::after{content:'';position:absolute;inset:3px 4px;border-radius:2px;background:#1f2732}
+.wsd:hover::after,.wsd.on::after{background:#3f5170}
+/* Dropping a tab onto a pane opens it there */
+.wpn.drop{border-color:#5b8def;box-shadow:inset 0 0 0 1px #5b8def44}
+.wt1[draggable]{cursor:grab}
+.wt1.drag{opacity:.45}
+.wpn{flex:1 1 0;min-width:0;display:flex;flex-direction:column;background:#0e1217;
+  border:1px solid #1f2732;border-radius:9px;overflow:hidden}
+.wpn.on{border-color:#35435a}
+.wph{flex:0 0 auto;display:flex;gap:8px;align-items:center;padding:7px 10px;
+  background:#12161d;border-bottom:1px solid #1f2732;cursor:pointer}
+.wpn.on .wph{background:#171f2a}
+/* ⚠Title must shrink, or at 900px the desc span hits 0 and ⇄ overflows the pane */
+.wph b{color:#dfe5ee;font-size:12px;white-space:nowrap;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wph span{color:#7e8896;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* ⚠At the .12 split clamp a pane is ~104px: the header clips inside the pane instead of pushing ⇄ out */
+.wph{min-width:0;overflow:hidden}
+.wph{cursor:grab}
+.wph:active{cursor:grabbing}
+.wph u{text-decoration:none;margin-left:auto;font-size:10.5px;color:#6b7688;border:1px solid #232c38;
+  border-radius:5px;padding:0 5px;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Swap panes — dragging is the main path; this button works for someone who doesn't know that */
+.wpsw{font-style:normal;cursor:pointer;font-size:11px;line-height:1;color:#7e8896;
+  border:1px solid #232c38;border-radius:5px;padding:2px 6px;flex:0 0 auto;margin-left:4px}
+.wpsw:hover{color:#dce8f8;border-color:#3a4a63;background:#1d2836}
+.wpn.dropp{border-color:#7ad4a0;box-shadow:inset 0 0 0 1px #7ad4a044}
+.wpn.on .wph u{color:#8ab4f8;border-color:#35435a}
+.wpb{flex:1 1 auto;overflow:auto;padding:8px 10px 12px;min-height:0}
+.wpe{color:#7e8896;font-size:12px;text-align:center;padding:40px 16px;line-height:1.9}
+.wt1.wtend{color:#7e8896}
+.wt1.wtend.on{color:#a8b3c4}
+.wtx{font-weight:400;color:#6b7688;padding:0 1px;border-radius:3px}
+.wtx:hover{color:#ffb3ac;background:#3a1f22}
+/* Work-popup compose (36-wkcompose.js) — token colors so every dark tone and «White» follow; last flex child of .wkmin. */
+.wkc{flex:0 0 auto;border-top:1px solid var(--nx-rule,#252629);background:var(--nx-bg,#0a0b0e);color:var(--nx-t1,#cdcedc);padding:6px 14px 10px;font-size:12.5px}
+.wkc[hidden],.wkcq[hidden]{display:none}
+.wkch{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-bottom:5px;color:var(--nx-t2,#909298)}
+.wkch b{color:var(--nx-t1,#cdcedc);font-weight:600}
+.wkch small{color:var(--nx-t3,#84868c)}
+.wkcw{border:1px solid var(--nx-rule,#252629);border-radius:3px;padding:0 6px;line-height:18px}
+.wkcw.on{color:var(--nx-ok,#71c269)}
+.wkcw.no{color:var(--nx-t2,#909298)}
+.wkcw.off{color:var(--nx-err,#f45460)}
+.wkcw.blk{color:var(--nx-warn,#fad83e)}
+.wkcst{margin-left:auto;display:inline-flex;gap:4px;align-items:center}
+.wkcst em{font-style:normal;color:var(--nx-t3,#84868c)}
+.wkcs{font-style:normal;color:var(--nx-t3,#84868c);border:1px solid var(--nx-rule,#252629);border-radius:9px;padding:0 7px}
+.wkcs.on{color:var(--nx-ok,#71c269);border-color:var(--nx-ok,#71c269)}
+.wkcs.cur{color:var(--nx-info,#5899f3);border-color:var(--nx-info,#5899f3)}
+.wkcq{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin-bottom:6px;padding:6px 8px;border:1px solid var(--nx-warn,#fad83e);border-radius:3px;color:var(--nx-t1,#cdcedc)}
+.wkcq span{flex:1 1 260px}
+.wkcq button{background:var(--nx-info-bg,#2e6bca);color:#fff;border:0;border-radius:3px;padding:5px 12px;cursor:pointer;font:inherit}
+/* Same treatment as the chat box's #csend (65-code-compose-alarm.css); height stays 32 for the narrower popup. */
+#wkcsend{background:#1d2b42;border:1px solid #3a5a8c;color:#bcd4f5;border-radius:9px;padding:0 18px;height:34px;flex:0 0 auto;cursor:pointer;font:inherit;font-size:13px}
+.wkcq button[data-q=no]{background:transparent;color:var(--nx-t1,#cdcedc);border:1px solid var(--nx-rule,#252629)}
+.wkcr{display:flex;gap:8px;align-items:flex-end}
+#wkcbox{flex:1;resize:none;min-height:34px;max-height:140px;background:var(--nx-panel,#121417);color:var(--nx-t1,#cdcedc);border:1px solid var(--nx-rule,#252629);border-radius:3px;padding:7px 9px;font:inherit}
+#wkcbox:focus{outline:none;border-color:var(--nx-info,#5899f3)}
+#wkcbox:disabled,#wkcsend:disabled{opacity:.5;cursor:default}
+/* ⚠The light twin remaps #fff to #1a1a1a (3.2:1 on --nx-info-bg); white stays 5.2-5.4 on both themes. */
+html[data-ui=next][data-ui] .wkcq button:not([data-q=no]){color:#fff}
+/* Pipeline-run box at the bottom of an agent work popup (35e-worklog-plrun.js); the stepper inside is `.tlpst.lg` (21-timeline-plrun.css). */
+.wpl{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:12px 0 4px;padding:8px 10px;border:1px solid var(--nx-rule,#252629);border-radius:3px;font-size:11.5px;color:var(--nx-t2,#909298)}
+.wpl u{text-decoration:none;color:var(--nx-t1,#cdcedc);font-weight:600;margin-right:4px}
+.wplj{margin-left:auto;background:transparent;color:var(--nx-info,#5899f3);border:1px solid var(--nx-rule,#252629);border-radius:3px;padding:1px 8px;cursor:pointer;font:inherit}
+.wplc{display:flex;flex-wrap:wrap;gap:4px 6px;margin:0 0 6px;padding-left:8px;font-size:11.5px}
+.wplc span{border:1px solid var(--nx-rule,#252629);border-radius:3px;padding:0 6px;line-height:18px;cursor:pointer;color:var(--nx-t1,#cdcedc)}
+.wplc span:hover{border-color:var(--nx-info,#5899f3)}
+/* Account chip dot in the work-log header: the .knad colour rule is scoped to data-ui=next, which the popup may lack. */
+.wvac > .knad.acb{color:var(--acc,#6b7380);font-size:9px;margin-right:4px}

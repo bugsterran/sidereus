@@ -1,0 +1,12 @@
+/* Project picker (web/js/08b-projpick.js): rows/input/footer reuse the Cmd+K palette (.cmdk*); this adds the anchored box only. */
+.ppop{position:fixed;z-index:47;width:360px;max-height:min(420px,70vh)}
+.ppop[hidden]{display:none}
+.ppop .cmdkl{position:relative}   /* offsetTop of rows is relative to the list (keyboard scroll) */
+.ppg{padding:6px 12px 2px;font-size:10px;color:#8b95a7;letter-spacing:.3px}
+html[data-ui=next] .ppg{color:var(--nx-t3)}
+.ppop .cmdki.ppcur .cmdkp{color:var(--nx-active,#5b8def)}
+.ppdot{width:6px;height:6px;border-radius:50%;display:inline-block;background:#3fb97a;flex:0 0 auto;align-self:center}
+.ppf{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.ppcs{display:inline-flex;gap:5px;align-items:center;min-width:0;overflow:hidden;flex:0 1 auto}
+.ppbtn{flex:0 0 auto}
+.ppcs>.ppfold{display:none}   /* ppFit: trailing chips folded so the selection is not clipped (still in «More») */

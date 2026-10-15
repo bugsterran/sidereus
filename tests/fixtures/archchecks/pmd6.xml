@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pmd xmlns="http://pmd.sourceforge.net/report/2.0.0" version="6.55.0" timestamp="2026-01-01T00:00:00.000">
+<file name="@REPO@/src/main/java/shop/A.java">
+<violation beginline="4" endline="4" begincolumn="1" endcolumn="2" rule="EmptyCatchBlock" ruleset="Error Prone" priority="1">
+secret message text
+</violation>
+<violation beginline="7" endline="7" begincolumn="1" endcolumn="2" rule="ShortVariable" ruleset="Code Style" priority="3">
+x
+</violation>
+</file>
+</pmd>

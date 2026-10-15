@@ -1,0 +1,3 @@
+# shop/pay
+./pay/gateway.go:12:2: printf: fmt.Sprintf format %d has arg s of wrong type string
+pay/other.go:3:1: unreachable code

@@ -1,0 +1,49 @@
+{
+  "v": 1,
+  "name": "release",
+  "title": "릴리스 — 버전 자르기",
+  "use": "Cutting a version: audit, full gate, CHANGELOG section, release notes, owner confirm, local tag.",
+  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER restart the live viewer. NEVER push (no commits, no tags). NEVER create a tag before the owner confirms in 확인.\nNo runtime switch or new dependency: propose it in summary only.\nScreenshots only from a --demo viewer (never the live viewer: rule 1, metadata only).",
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "점검",
+      "agent": "sidereus-verifier",
+      "model": "sonnet",
+      "task": "Run `/usr/bin/python3 scripts/deps_audit.py --online` once and report every WARN/FAIL line verbatim as a finding (item and detail only). List OK lines in summary. Change nothing.",
+      "ui": { "x": 44, "y": 24 }
+    },
+    {
+      "title": "전체 검증",
+      "agent": "sidereus-verifier",
+      "model": "sonnet",
+      "task": "Run the gate once and report each failing step as a finding with file/line. Do not fix anything.",
+      "gate": "scripts/check.sh --full",
+      "ui": { "x": 292, "y": 24 }
+    },
+    {
+      "title": "CHANGELOG 정리",
+      "agent": "general-purpose",
+      "task": "Backfill CHANGELOG.md [Unreleased] from `git log` since the last tag (or the last versioned section): one line per user-visible feature or fix under Added/Changed/Fixed; skip refactors, tests and docs-only commits. Rename [Unreleased] to [x.y.z] - YYYY-MM-DD and add a new empty [Unreleased] above it. Edit CHANGELOG.md only; do not commit.",
+      "ui": { "x": 540, "y": 24 }
+    },
+    {
+      "title": "릴리스 노트",
+      "agent": "general-purpose",
+      "task": "Write the release notes from the new [x.y.z] section: 3-5 highlights, then the section as is. Screenshots only from a --demo viewer. Put the notes in the session scratchpad and report the path; do not commit.",
+      "ui": { "x": 788, "y": 24 }
+    },
+    {
+      "title": "확인",
+      "agent": "main",
+      "task": "Stop. The orchestrator shows the owner the version, the CHANGELOG diff and the notes path, and waits for an explicit confirm. ⚠No tag and no push before the owner says so.",
+      "ui": { "x": 1036, "y": 24, "color": "#ff0000" }
+    },
+    {
+      "title": "태그",
+      "agent": "general-purpose",
+      "task": "Only after the owner confirmed in 확인: commit CHANGELOG.md alone, then create an annotated tag vX.Y.Z on that commit (git tag -a). ⚠Never push commits or tags. Report the commit hash and the tag.",
+      "ui": { "x": 1284, "y": 24, "color": "#2ec4b6" }
+    }
+  ]
+}

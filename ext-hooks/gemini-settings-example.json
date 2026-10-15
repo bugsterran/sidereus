@@ -1,0 +1,37 @@
+{
+  "hooksConfig": { "enabled": true },
+  "mcpServers": {
+    "mailbox": { "command": "<MAILBOX_CODE_DIR>/ext-hooks/gemini_mailbox_mcp.sh" }
+  },
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "name": "sidereus", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform gemini", "timeout": 5000 } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "name": "sidereus", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform gemini", "timeout": 5000 } ] }
+    ],
+    "BeforeTool": [
+      { "matcher": ".*", "hooks": [ { "type": "command", "name": "sidereus", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform gemini", "timeout": 5000 } ] },
+      { "matcher": "run_shell_command", "hooks": [
+        { "type": "command", "name": "pl-mark", "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_mark.py --platform gemini", "timeout": 5000 },
+        { "type": "command", "name": "pl-flow", "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_flow.py --platform gemini", "timeout": 5000 }
+      ] }
+    ],
+    "AfterTool": [
+      { "matcher": ".*", "hooks": [ { "type": "command", "name": "sidereus", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform gemini", "timeout": 5000 } ] },
+      { "matcher": "run_shell_command", "hooks": [ { "type": "command", "name": "pl-flow", "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_flow.py --platform gemini", "timeout": 5000 } ] }
+    ],
+    "BeforeAgent": [
+      { "hooks": [ { "type": "command", "name": "sidereus", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform gemini", "timeout": 5000 } ] }
+    ],
+    "AfterAgent": [
+      { "hooks": [
+        { "type": "command", "name": "sidereus", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform gemini", "timeout": 5000 },
+        { "type": "command", "name": "mailbox", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/gemini_mail_stop.py", "timeout": 5000 }
+      ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "name": "sidereus", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform gemini", "timeout": 5000 } ] }
+    ]
+  }
+}

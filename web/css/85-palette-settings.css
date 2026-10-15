@@ -1,0 +1,149 @@
+/* ── Global search palette (Cmd+K) ─────────────────────────────────────────────
+   ★The only way to find a session **by name** — the three filters (state · git · idle) narrow, they don't find.
+   ⚠Only metadata is shown. No new colors; the `.alarm` family (#12161d/#262e3b) as-is. */
+.cmdk{display:none;position:fixed;inset:0;z-index:70;background:#000a;
+  align-items:flex-start;justify-content:center;padding-top:12vh}
+.cmdk.on{display:flex}
+.cmdkb{width:min(520px,94vw);max-height:66vh;display:flex;flex-direction:column;
+  background:#12161d;border:1px solid #262e3b;border-radius:11px;box-shadow:0 16px 40px #000a;overflow:hidden}
+html[data-ui=next][data-ui] .cmdkb{border:var(--pop-bd);border-radius:var(--pop-r);box-shadow:var(--pop-sh)}
+.cmdkb input{background:#0e1218;border:0;border-bottom:1px solid #1e232c;color:#eaf1fa;
+  font:inherit;font-size:13px;padding:11px 13px;outline:none}
+.cmdkl{overflow-y:auto;padding:4px 0}
+.cmdki{display:flex;gap:6px;align-items:baseline;padding:5px 12px;cursor:pointer;
+  font-size:12.5px;color:#cfd8e6;min-width:0}
+.cmdki.on{background:#1b2330}
+.cmdki:hover{background:#171d26}
+.cmdkp{font-weight:600;color:#eaf1fa;flex:0 0 auto}
+.cmdks{font-size:11px;color:#8b95a7;flex:0 0 auto}
+.cmdkm{font-size:9.5px;color:#6b7688;flex:0 0 auto}
+.cmdkc{font-size:10.5px;color:#586374;margin-left:auto;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ⚠#586374 twinned to 2.1-2.9:1 on dark tones; --nx-t3 is >=4.6 on every tone's hover (the .on row). */
+html[data-ui=next][data-ui] .cmdkc{color:var(--nx-t3)}
+.cmdkf{border-top:1px solid #1e232c;padding:5px 12px;font-size:10.5px;color:#6b7688}
+.cmdke{padding:9px 13px;font-size:12px;color:#6b7688}
+.sxw.cphit{outline:1px solid #8ab4ff;outline-offset:2px;border-radius:5px}
+@media(max-width:640px){.col{max-width:90%}}
+/* Settings modal behind the header gear (#gear). ⚠[hidden] must win over display:flex, hence the explicit rule. */
+.bell.on{border-color:#3f6ea8;background:#1d2b42;color:#dce8f8}
+.cfgm{position:fixed;inset:0;z-index:60;background:#0008;display:flex;align-items:center;justify-content:center;padding:16px}
+.cfgm[hidden]{display:none}
+.cfgbox{width:min(560px,100%);max-height:86vh;overflow:auto;background:#12161d;border:1px solid #262e3b;border-radius:10px;
+  box-shadow:0 16px 40px #000a;padding:12px 16px 14px;outline:none}
+.cfgh{display:flex;gap:9px;align-items:baseline;padding-bottom:9px;margin-bottom:6px;border-bottom:1px solid #1e232c}
+.cfgh b{color:#dfe5ee;font-size:14px}
+.cfgh span{color:#7e8896;font-size:11px;flex:1}
+.cfgx{background:none;border:1px solid transparent;color:#8b95a7;cursor:pointer;font-size:13px;border-radius:5px;padding:1px 6px}
+.cfgx:hover,.cfgx:focus-visible{border-color:#3a4a63;color:#dfe5ee}
+.cfgs{font-size:11px;color:#8b95a7;font-weight:600;margin:12px 0 7px;letter-spacing:.3px}
+/* Two-pane settings layout: category nav + one row card per setting.
+   ⚠Scoped html[data-ui=next][data-ui] #cfgbox so the #nxcss twin generator skips it and it outranks the old .cfgbox/.strp twins. */
+/* ⚠Fixed height, not content-driven: a centred auto-height box moved header/nav up to 182px per category switch. */
+html[data-ui=next][data-ui] #cfgbox{width:min(760px,100%);height:min(720px,calc(100vh - 32px));max-height:none;overflow:hidden;padding:0;display:flex;flex-direction:column;
+  background:var(--nx-panel);border:1px solid var(--nx-rule);border-radius:6px}
+html[data-ui=next][data-ui] #cfgbox .cfgh{padding:12px 16px;margin:0;border-bottom:1px solid var(--nx-rule);align-items:center}
+html[data-ui=next][data-ui] #cfgbox .cfgh b{font-size:15px;font-weight:600;color:var(--nx-t1)}
+html[data-ui=next][data-ui] #cfgbox .cfgh span{font-size:12px;color:var(--nx-t2)}
+html[data-ui=next][data-ui] #cfgbox .cfgbd{display:flex;flex:1 1 auto;min-height:0}
+html[data-ui=next][data-ui] #cfgbox .cfgnav{flex:0 0 150px;display:flex;flex-direction:column;gap:2px;padding:10px 8px;
+  border-right:1px solid var(--nx-rule);background:var(--nx-bg)}
+html[data-ui=next][data-ui] #cfgbox .cfgnv{background:none;border:0;text-align:left;color:var(--nx-t2);font:inherit;font-size:13px;
+  padding:8px 10px;border-radius:3px;cursor:pointer;white-space:nowrap}
+html[data-ui=next][data-ui] #cfgbox .cfgnv:hover{background:var(--nx-hover);color:var(--nx-t1)}
+html[data-ui=next][data-ui] #cfgbox .cfgnv.on{background:var(--nx-hover);color:var(--nx-t1);font-weight:600;box-shadow:inset 3px 0 0 var(--nx-info)}
+html[data-ui=next][data-ui] #cfgbox .cfgnv:focus-visible{outline:2px solid var(--nx-info);outline-offset:-2px}
+/* Category icon tile: muted tint, brighter on hover, accent when active. */
+html[data-ui=next][data-ui] #cfgbox .cfgnv{display:flex;align-items:center;gap:9px;padding:6px 10px 6px 7px}
+html[data-ui=next][data-ui] #cfgbox .cfgic{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+  border-radius:6px;color:var(--nx-t3);background:color-mix(in srgb,var(--nx-t2) 12%,transparent)}
+html[data-ui=next][data-ui] #cfgbox .cfgnv:hover .cfgic{color:var(--nx-t1);background:color-mix(in srgb,var(--nx-t2) 20%,transparent)}
+html[data-ui=next][data-ui] #cfgbox .cfgnv.on .cfgic{color:#fff;background:var(--nx-info-bg)}
+html[data-ui=next][data-ui] #cfgbox .cfgpn{flex:1 1 auto;min-width:0;overflow:auto;scrollbar-gutter:stable;padding:4px 20px 16px}
+html[data-ui=next][data-ui] #cfgbox .cfgpt{font-size:15px;font-weight:600;color:var(--nx-t1);margin:14px 0 6px}
+html[data-ui=next][data-ui] #cfgbox .cfgpd{font-size:12px;color:var(--nx-t2);margin:0 0 6px;line-height:1.5}
+html[data-ui=next][data-ui] #cfgbox .cfgsum{margin:6px 0 10px;padding:10px 12px;border:1px solid var(--nx-rule);border-left:3px solid var(--nx-info);
+  border-radius:4px;background:var(--nx-bg)}
+html[data-ui=next][data-ui] #cfgbox .cfgsum b{display:block;font-size:13.5px;font-weight:600;color:var(--nx-t1)}
+html[data-ui=next][data-ui] #cfgbox .cfgsum b.err{color:var(--nx-err)}
+html[data-ui=next][data-ui] #cfgbox .cfgsum span{display:block;font-size:12px;color:var(--nx-t2);margin-top:4px}
+html[data-ui=next][data-ui] #cfgbox .cfgr{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;
+  border-top:1px solid var(--nx-rule)}
+html[data-ui=next][data-ui] #cfgbox .cfgpt + .cfgr,html[data-ui=next][data-ui] #cfgbox .cfgpd + .cfgr,html[data-ui=next][data-ui] #cfgbox .cfgsum + .cfgr{border-top:0}
+html[data-ui=next][data-ui] #cfgbox .cfgrl{min-width:0;flex:1 1 auto}
+html[data-ui=next][data-ui] #cfgbox .cfgrl b{display:block;font-size:13.5px;font-weight:500;color:var(--nx-t1)}
+html[data-ui=next][data-ui] #cfgbox .cfgrl span{display:block;font-size:12px;color:var(--nx-t2);margin-top:3px;line-height:1.45;word-break:keep-all}
+html[data-ui=next][data-ui] #cfgbox .cfgrc{flex:0 0 auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+html[data-ui=next][data-ui] #cfgbox .cfgr.stk{flex-direction:column;align-items:stretch;gap:9px}
+html[data-ui=next][data-ui] #cfgbox .cfgr.stk .cfgrc{justify-content:flex-start}
+/* Segmented group: one joined bar per setting; selected = the shared --seg-on-* tint (05-controls.css), size stays 30px. */
+/* One control height (30px) for segments, buttons, inputs and selects so rows line up across categories. */
+html[data-ui=next][data-ui] #cfgbox .cfgseg{display:inline-flex;box-sizing:border-box;height:30px;border:1px solid var(--nx-rule);border-radius:4px;overflow:hidden}
+html[data-ui=next][data-ui] #cfgbox .cfgseg .strp{border:0;border-left:1px solid var(--nx-rule);border-radius:0;background:transparent;
+  color:var(--nx-t2);font-size:12.5px;line-height:1;height:100%;padding:0 12px;margin:0;white-space:nowrap}
+html[data-ui=next][data-ui] #cfgbox .cfgsegn .strp,html[data-ui=next][data-ui] #cfgbox .cfgseg .strp.sn{padding:0 11px;min-width:32px}
+html[data-ui=next][data-ui] #cfgbox .cfgsegm .cfgsegl{border-left:1px solid var(--nx-rule)}   /* «On» label mid-bar (saver mode row) */
+html[data-ui=next][data-ui] #cfgbox .cfgsegl{display:inline-flex;align-items:center;padding:0 9px 0 10px;font-size:12px;color:var(--nx-t3);white-space:nowrap}
+html[data-ui=next][data-ui] #cfgbox .cfgseg .strp:first-child{border-left:0}
+html[data-ui=next][data-ui] #cfgbox .cfgseg .strp:hover{background:var(--seg-hv-bg);color:var(--seg-hv-c)}
+html[data-ui=next][data-ui] #cfgbox .cfgseg .strp.on{background:var(--seg-on-bg);color:var(--seg-on-c);box-shadow:inset 0 0 0 1px var(--seg-on-bd)}
+html[data-ui=next][data-ui] #cfgbox .cfgrc > .strp{border:1px solid var(--nx-rule);border-radius:4px;background:var(--nx-bg);
+  color:var(--nx-t1);font-size:12.5px;line-height:1;box-sizing:border-box;height:30px;padding:0 12px;margin:0}
+html[data-ui=next][data-ui] #cfgbox .cfgrc > .strp:hover{border-color:var(--nx-info)}
+html[data-ui=next][data-ui] #cfgbox .cfgrc > .strp.on{background:var(--seg-on-bg);border-color:var(--seg-on-bd);color:var(--seg-on-c)}
+html[data-ui=next][data-ui] #cfgbox .strp:focus-visible{outline:2px solid var(--nx-info);outline-offset:-2px}
+html[data-ui=next][data-ui] #cfgbox .cfgsel,html[data-ui=next][data-ui] #cfgbox .svin{background:var(--nx-bg);border:1px solid var(--nx-rule);
+  color:var(--nx-t1);border-radius:4px;box-sizing:border-box;height:30px;padding:0 8px;margin:0;font:inherit;font-size:12.5px;color-scheme:dark}
+html[data-ui=next][data-ui] #cfgbox .svin::placeholder{color:var(--nx-t3)}
+html[data-ui=next][data-ui] #cfgbox .cfgsel{min-width:130px;cursor:pointer}
+html[data-ui=next][data-ui] #cfgbox .svin{width:84px}
+html[data-ui=next][data-ui] #cfgbox .svtm{width:92px;font-variant-numeric:tabular-nums}
+html[data-ui=next][data-ui] #cfgbox .cfgsel:focus-visible,html[data-ui=next][data-ui] #cfgbox .svin:focus-visible{outline:2px solid var(--nx-info);outline-offset:-1px}
+/* «Preferences» pane (90b-mypref.js): group headings, reorder lists, day inputs, server rows. */
+html[data-ui=next][data-ui] #cfgbox .cfgs{font-size:12px;color:var(--nx-t2);font-weight:600;margin:16px 0 2px;padding-bottom:6px;border-bottom:1px solid var(--nx-rule)}
+html[data-ui=next][data-ui] #cfgbox .cfgs + .cfgr{border-top:0}
+html[data-ui=next][data-ui] #cfgbox .cfgpd.err{color:var(--nx-err)}
+html[data-ui=next][data-ui] #cfgbox .cfgpd code,html[data-ui=next][data-ui] #cfgbox .mpro{font-size:11.5px;color:var(--nx-t1);word-break:break-all}
+html[data-ui=next][data-ui] #cfgbox .svcc{margin-top:10px}
+html[data-ui=next][data-ui] #cfgbox .svlv{border-top:1px solid var(--nx-rule);margin-top:10px}
+html[data-ui=next][data-ui] #cfgbox .svlv > summary{cursor:pointer;padding:10px 0;font-size:12.5px;font-weight:600;color:var(--nx-t2)}
+html[data-ui=next][data-ui] #cfgbox .svlv > summary:hover{color:var(--nx-t1)}
+html[data-ui=next][data-ui] #cfgbox .svlvt{width:100%;border-collapse:collapse;font-size:12px;color:var(--nx-t2)}
+html[data-ui=next][data-ui] #cfgbox .svlvt th{text-align:left;font-weight:600;padding:4px 8px;border-bottom:1px solid var(--nx-rule)}
+html[data-ui=next][data-ui] #cfgbox .svlvt td{padding:5px 8px;vertical-align:top;border-bottom:1px solid var(--nx-rule);line-height:1.45}
+html[data-ui=next][data-ui] #cfgbox .svlvt td:first-child,html[data-ui=next][data-ui] #cfgbox .svlvt td:nth-child(2){white-space:nowrap}
+html[data-ui=next][data-ui] #cfgbox .svlvt tr.on td{color:var(--nx-t1);background:var(--nx-info-bg)}
+html[data-ui=next][data-ui] #cfgbox .svlvt tr.on td:first-child{box-shadow:inset 2px 0 0 var(--nx-info)}
+html[data-ui=next][data-ui] #cfgbox .svlvh{margin:8px 0 4px;padding-left:18px;font-size:11.5px;color:var(--nx-t2);line-height:1.5}
+html[data-ui=next][data-ui] #cfgbox .svcc a{color:inherit;text-decoration:underline dotted;text-underline-offset:2px}
+html[data-ui=next][data-ui] #cfgbox .mpls{display:flex;flex-direction:column;gap:4px;width:100%}
+html[data-ui=next][data-ui] #cfgbox .mpli{display:flex;align-items:center;gap:6px}
+html[data-ui=next][data-ui] #cfgbox .mpli > span{flex:1 1 auto;font-size:12.5px;color:var(--nx-t1)}
+html[data-ui=next][data-ui] #cfgbox .mpli.off > span{color:var(--nx-t3);text-decoration:line-through}
+html[data-ui=next][data-ui] #cfgbox .mpli > .strp{border:1px solid var(--nx-rule);border-radius:4px;background:var(--nx-bg);color:var(--nx-t1);
+  font-size:12px;line-height:1;box-sizing:border-box;height:26px;min-width:30px;padding:0 9px;margin:0}
+html[data-ui=next][data-ui] #cfgbox .mpli > .strp.on{background:var(--seg-on-bg);border-color:var(--seg-on-bd);color:var(--seg-on-c)}
+html[data-ui=next][data-ui] #cfgbox .mpli > .strp:disabled{opacity:.4;cursor:default}
+html[data-ui=next][data-ui] #cfgbox .mpli > .strp:not(:disabled):not(.on):hover{background:var(--seg-hv-bg);color:var(--seg-hv-c)}   /* ⚠ID rule above outranks the shared hover */
+html[data-ui=next][data-ui] #cfgbox .mpin{width:auto;flex:1 1 260px;min-width:0;font-family:var(--mono,monospace)}
+html[data-ui=next][data-ui] #cfgbox .mpsrc{font-size:11px;color:var(--nx-t3);border:1px solid var(--nx-rule);border-radius:3px;padding:1px 5px}
+html[data-ui=next][data-ui] #cfgbox .mpsrc.s-env{color:var(--nx-t1);border-color:var(--nx-info)}
+html[data-ui=next][data-ui] #cfgbox .mpnote{font-size:12px;color:var(--nx-info)}
+html[data-ui=next][data-ui] #cfgbox .mpnote.err{color:var(--nx-err)}
+html[data-ui=next][data-ui] #cfgbox .mpfl{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--nx-t1);cursor:pointer}   /* «Features» toggle (90c-features.js) */
+html[data-ui=next][data-ui] #cfgbox .mpfl.off{color:var(--nx-t3);cursor:default}
+html[data-ui=next][data-ui] #cfgbox .cfgr.dis{opacity:.45}   /* dependent row whose parent setting is off (cfgSet dis) */
+html[data-ui=next][data-ui] #cfgbox .cfgr.dis :disabled{cursor:not-allowed}
+html[data-ui=next][data-ui] #cfgbox .mpadv{border-top:1px solid var(--nx-rule);margin-top:4px}
+html[data-ui=next][data-ui] #cfgbox .mpadv > summary{cursor:pointer;padding:10px 0;font-size:12.5px;font-weight:600;color:var(--nx-t2)}
+html[data-ui=next][data-ui] #cfgbox .mpadv > summary:hover{color:var(--nx-t1)}
+html[data-ui=next][data-ui] #cfgbox .mpadv > summary + .cfgr{border-top:0}
+@media(max-width:640px){
+  html[data-ui=next][data-ui] #cfgbox .cfgbd{flex-direction:column}
+  html[data-ui=next][data-ui] #cfgbox .cfgnav{flex:0 0 auto;flex-direction:row;overflow-x:auto;padding:6px 8px;
+    border-right:0;border-bottom:1px solid var(--nx-rule)}
+  html[data-ui=next][data-ui] #cfgbox .cfgnv.on{box-shadow:inset 0 -2px 0 var(--nx-info)}
+  html[data-ui=next][data-ui] #cfgbox .cfgpn{padding:2px 14px 14px}
+  html[data-ui=next][data-ui] #cfgbox .cfgr{flex-direction:column;align-items:stretch;gap:9px}
+  html[data-ui=next][data-ui] #cfgbox .cfgrc{justify-content:flex-start}
+}

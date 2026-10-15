@@ -1,0 +1,33 @@
+{
+  "description": "sidereus (mailbox viewer) session telemetry - replace <PLATFORM> with one of the supported platform values, <PYTHON> with /usr/bin/python3 (macOS) or py -3 / a full python.exe path (Windows). UNVERIFIED per CLI: the Stop event name and whether {decision: block, reason} continues the turn (gemini_mail_stop.py = mail at turn end)",
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform <PLATFORM>", "timeout": 5 } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform <PLATFORM>", "timeout": 3 } ] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform <PLATFORM>", "timeout": 5 } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": ".*", "hooks": [
+        { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform <PLATFORM>", "timeout": 5 },
+        { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_mark.py --platform <PLATFORM>", "timeout": 5 },
+        { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_flow.py --platform <PLATFORM>", "timeout": 5 }
+      ] }
+    ],
+    "PostToolUse": [
+      { "matcher": ".*", "hooks": [
+        { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform <PLATFORM>", "timeout": 5 },
+        { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_flow.py --platform <PLATFORM>", "timeout": 5 }
+      ] }
+    ],
+    "Stop": [
+      { "hooks": [
+        { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform <PLATFORM>", "timeout": 5 },
+        { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/gemini_mail_stop.py --platform <PLATFORM>", "timeout": 5 }
+      ] }
+    ]
+  }
+}

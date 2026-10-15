@@ -1,0 +1,22 @@
+{
+ "_doc": "maps: route glob -> shape-path globs whose dict keys are data (folded to {*} at take and again at diff, so older snapshots fold too). optional: route glob -> shape-path globs that may appear/vanish with live state. Found by diffing base vs base2.",
+ "maps": {
+  "/api/failures*": [
+   "$.rows[].projs",
+   "$.rows[].types"
+  ],
+  "/api/otel*": [
+   "${*}.names"
+  ]
+ },
+ "optional": {
+  "/api/branches*": [
+   "$.cached"
+  ],
+  "/api/state*": [
+   "$.saver.stage",
+   "$.saver.cap",
+   "$.saver.pct"
+  ]
+ }
+}

@@ -1,0 +1,73 @@
+/* Retrospect tab (86-retro.js) — tables reuse .brt/.brh2 from 40-tokens; only the stacked day bars are new. */
+/* ⚠The old 980px cap dated from the fixed right session column; with the drawer closed it left ~430px empty at 1440.
+   Container query (not viewport): pinned session column shrinks #feed, so the split follows the feed's own width. */
+.rtw{container-type:inline-size}
+.rtg{display:grid;grid-template-columns:minmax(0,1fr);column-gap:28px;--split2-a:1.2fr}   /* wide split: .split2 in 50 */
+.rtp{min-width:0}
+/* Long signatures / project lists: one line + ellipsis, full text in title.
+   ⚠A td ignores max-width:360px in auto table layout, so a long sig widened the table instead of ellipsizing;
+   max-width:0 + width:100% makes the cell take the leftover width and clip there. */
+.rtw .brt .brd{white-space:nowrap;max-width:0;width:100%}
+.rtrg{display:flex;gap:6px;align-items:center;margin:2px 0 6px}
+.tbs > .rtrg{margin:0}   /* range buttons sit in the header toolbar slot now */
+.rtrg i{font-style:normal;font-size:10.5px;color:var(--nx-t3,#7e8896)}
+.rtb{display:flex;gap:3px;align-items:flex-end;padding:4px 0 2px;border-bottom:1px solid var(--nx-rule,#252629)}
+.rtc{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.rts{display:flex;flex-direction:column-reverse;justify-content:flex-start;width:100%;max-width:26px}
+.rts i{display:block;width:100%}
+.rts i:nth-last-child(2){border-radius:2px 2px 0 0}
+.rtz{font-weight:400;text-align:center;font-size:9.5px;color:var(--nx-t2,#909298);font-variant-numeric:tabular-nums;min-height:12px}
+.rtl{font-size:9.5px;color:var(--nx-t3,#84868c);white-space:nowrap;min-height:12px}
+.rtlg{margin-bottom:6px}
+.rtw .brt .brd s{text-decoration:none;color:var(--nx-t3,#7e8896)}
+/* Failure drill-down (rtSigs/rtWhere): clickable rows, «to check» marks and the per-session list under a row. */
+.rtsr{cursor:pointer}
+.rtsr:hover td,.rtsr.on td{background:var(--nx-hover,#151b24)}
+.rtsr:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:-2px}
+.rtsr .hsc{display:inline-block;margin-right:4px}
+/* Grade chip per failure row + grade words in the summary carry a tooltip (RT_GRADE_TIP) */
+.rtgc{font-style:normal;font-size:10px;color:var(--nx-t3,#7e8896);border:1px solid var(--nx-rule,#2a3342);border-radius:8px;padding:0 5px;margin-left:4px;cursor:help}
+.rtgc.rtg-cut{color:var(--nx-info,#5b8def)}
+.rtgd{cursor:help}   /* ⚠no dotted underline — that look marks the clickable «to check» button (.rtchkb) */
+.rtchkt{font-style:normal;font-size:10px;color:var(--nx-warn,#e8913a);border:1px solid currentColor;border-radius:8px;padding:0 5px;margin-left:4px}
+.rtsr.rtflash td{background:color-mix(in srgb,var(--nx-info,#5899f3) 24%,transparent);transition:background .4s}
+.rtwr td{padding:2px 0 8px 18px}
+.rtwh{display:flex;gap:8px;align-items:center;padding:2px 0;font-size:11px;color:var(--nx-t2,#a8b3c4);min-width:0}
+.rtwh b{font-weight:600;color:var(--nx-t1,#dce8f8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtwh s{text-decoration:none;color:var(--nx-t3,#7e8896);font-variant-numeric:tabular-nums}
+.rtwn,.rtwt{font-variant-numeric:tabular-nums;white-space:nowrap}
+.rtwn{margin-left:auto}
+.rtwt{color:var(--nx-t3,#7e8896);min-width:56px;text-align:right}
+.rtchkb{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+/* ⚠html[data-ui] lifts this over the 00-core next-UI twin «html[data-ui=next] .rtchkb{color:inherit}» (0,2,1) */
+html[data-ui] .rtchkb:hover{color:var(--nx-t1,#eaf1fa)}
+/* Tool ranking card (rtRank): success-rate colours and the «N more» fold. */
+.rtw .brt .rtok{color:var(--nx-ok,#71c269)}
+.rtw .brt .rtwarn{color:var(--nx-warn,#fad83e)}
+.rtw .brt .rterr{color:var(--nx-err,#f45460)}
+/* ⚠width:100% on the name cell squeezed td.brg (the bar) to 8px — the name gets a share, the bar keeps its 34%. */
+.rtrk .brn{max-width:0;width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rtfold{cursor:pointer;color:var(--nx-t2,#909298)}
+.rtfold:hover td{background:var(--nx-hover,#151b24)}
+.rtfold:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:-2px}
+.rtfold .hsc{display:inline-block;margin-right:4px}
+.rtrest[hidden]{display:none}
+/* Activity by hour (rtHeat): 24 shrinkable columns fit at 900 with no horizontal scroll; --rth = one thc() accent.
+   ⚠Empty cells are an outline only and level 1 is a 22% fill, so the two stay apart in dark and light. */
+.rth{display:grid;grid-template-columns:2.6em repeat(24,minmax(0,1fr));gap:2px;margin:4px 0 8px;font-size:9.5px}
+.rthh{color:var(--nx-t3,#84868c);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:visible}
+.rthd{color:var(--nx-t2,#909298);align-self:center;white-space:nowrap}
+.rthc{display:block;height:16px;border-radius:2px;box-sizing:border-box;border:1px solid var(--nx-rule,#2a3342)}
+.rth1,.rth2,.rth3,.rth4,.rth5{border-color:transparent}
+.rth1{background:color-mix(in srgb,var(--rth) 22%,transparent)}
+.rth2{background:color-mix(in srgb,var(--rth) 40%,transparent)}
+.rth3{background:color-mix(in srgb,var(--rth) 60%,transparent)}
+.rth4{background:color-mix(in srgb,var(--rth) 80%,transparent)}
+.rth5{background:var(--rth)}
+/* Models (rtModels): bar width = token share, segments = main / subagent / side in the model colour at falling opacity. */
+.rtms{display:flex;height:100%}
+.rtms i{display:block;height:100%;background:var(--rtm);border-radius:0}
+.rtmdot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:0}
+.rtmk{display:inline-block;width:10px;height:8px;background:var(--rtm)}
+.rtms .rtmk1,.rtmk.rtmk1{opacity:.6}
+.rtms .rtmk2,.rtmk.rtmk2{opacity:.3}

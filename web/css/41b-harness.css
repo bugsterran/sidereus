@@ -1,0 +1,157 @@
+/* Pipeline tab «Harness» view (web/js/47b-harness.js): lifecycle lane of hook chips, rule files, agents ↔ pipelines */
+.hnw{min-width:0;max-width:100%;overflow-x:hidden}
+.hnw .plchips{margin:0 0 8px}
+.hnl{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px 4px;margin:4px 0 12px}
+.hncol{flex:1 1 150px;min-width:130px;max-width:260px;overflow:hidden;border:1px solid #232c38;border-radius:7px;background:#11161e;padding:6px;display:flex;flex-direction:column;gap:4px}
+/* ⚠Dim with a muted colour, not opacity: opacity .45 gave 1.56:1 («no hooks») and 2.45:1 (event name) on dark — --nx-t3 keeps ≥4.5:1 */
+.hncol.hnempty{background:transparent;border-style:dashed}
+.hncol.hnempty :is(.hnev,.hnnone){color:var(--nx-t3,#84868c)}
+.hncol.hntool{flex:0 0 auto;min-width:64px;justify-content:center;border-style:dashed;background:transparent}
+.hna{align-self:center;color:var(--nx-t2,#909298);font-size:12px}   /* #5d6878 was 3.29:1 on dark */
+.hnev{font-size:11px;font-weight:600;color:#9aa6b8;overflow-wrap:anywhere}
+.hnex>summary.hnev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hnnone{font-size:11px;color:var(--nx-t3,#84868c);font-style:normal}
+.hnc{border:1px solid #2a3442;border-left-width:3px;border-radius:5px;padding:3px 6px;min-width:0;font-size:11px;line-height:1.45}
+.hncn,.hncm{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hncn{font-weight:600;color:#c9d2df}
+.hncm{color:#7f8a9b;font-family:var(--mono,monospace)}
+.hnlg{display:flex;flex-wrap:wrap;gap:2px 12px;margin:2px 0 4px;font-size:11px;color:var(--nx-t2,#909298);min-width:0}
+.hnlg>span{display:inline-flex;align-items:center;gap:3px;min-width:0}
+.hnlg .hnef{cursor:default}
+.hnlgl{flex-basis:100%;color:var(--nx-t3,#84868c);overflow-wrap:anywhere}
+.hncb{display:flex;flex-wrap:wrap;gap:3px 4px;align-items:center;min-width:0}
+.hnef,.hnsc{font-style:normal;font-size:10px;padding:0 4px;border-radius:3px;border:1px solid #2a3442;color:#9aa6b8;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.hnef{cursor:help}
+.hncr{margin-left:auto;font-style:normal;color:#9aa6b8;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hnc.hne-inject{border-left-color:#5b8def}
+.hnc.hne-block{border-left-color:#d88a7a}
+.hnc.hne-log{border-left-color:#4f5b6b}
+.hnc.hne-unknown{border-left-color:#8a7f5b}
+.hnc.hne-bin,.hnc.hne-ext{border-left-color:#6b6f86}
+.hnef.hne-bin,.hnef.hne-ext{color:#a3a8c4;border-color:#3a3d50}
+.hnex{display:flex;flex-direction:column;gap:4px}
+.hnex>summary{cursor:pointer;list-style:none}
+.hnex>summary::before{content:'▸ ';color:#5d6878}
+.hnex[open]>summary::before{content:'▾ '}
+.hnex>.hnc{margin-top:4px}
+.hnef.hne-inject{color:#8fb2e0;border-color:#2f3f55}
+.hnef.hne-block{color:#d88a7a;border-color:#4d3430}
+.hnef.hne-unknown{color:#b8a46b;border-color:#4a4330}
+.hnbot{display:flex;flex-wrap:wrap;gap:12px}
+.hnbx{flex:1 1 380px;min-width:0}
+.hnrt{table-layout:fixed;width:100%}
+.hnrt th:nth-child(1){width:52px}
+.hnrt th:nth-child(3){width:72px}
+.hnrt td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hnrt .brd{max-width:none}
+.hnp{font-family:var(--mono,monospace)}
+.hnag{display:flex;flex-direction:column;gap:4px}
+.hnar{display:flex;align-items:center;gap:6px;min-width:0;font-size:12px}
+.hnan{flex:0 1 160px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hnar>.hnsc{flex-shrink:0;min-width:52px;box-sizing:border-box;text-align:center}   /* ⚠fixed width: the chip column starts after the badge, so «Project»/«user»/«?» would shift it per row */   /* scope badge keeps its word; pipeline chips wrap instead */
+.hnps{display:flex;flex-wrap:wrap;gap:3px;flex:1 1 0;min-width:0}   /* ⚠basis 0: an auto basis = all chips on one line, so a wrapping row shrank .hnan and its badge sat left of the other rows */
+.hnpc{font-size:10px;padding:0 5px;border-radius:3px;border:1px solid #2f3f55;color:#8fb2e0;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hncnt{display:flex;gap:4px;margin:12px 0 4px}
+.hncrg{border-bottom:1px dotted currentColor;cursor:help}
+.hnmore>summary{cursor:pointer;font-size:11px;color:#8a94a6;padding:3px 2px;list-style-position:inside}
+.hnmore[open]>summary{margin-bottom:2px}
+html[data-theme=light] .hnmore>summary{color:var(--nx-t2,#5a6270)}
+.hnplat{display:flex;gap:4px;margin:0 0 8px}
+.hnpb{display:inline-flex;align-items:center;justify-content:center;width:26px;height:22px;padding:0;border:1px solid #2a3442;border-radius:4px;background:transparent;cursor:pointer;opacity:.55}
+.hnpb svg{width:13px;height:13px;display:block}
+.hnpb:hover{opacity:.85}
+.hnpb.on{opacity:1;border-color:#4a6890;background:#ffffff0d}
+html[data-theme=light] .hnpb{border-color:var(--nx-rule)}
+html[data-theme=light] .hnpb.on{border-color:#7f9cc6;background:#0000000a}
+.hntl .hnan{flex:1 1 auto}
+.hntl .hnsc{flex:0 1 auto;min-width:0}
+.hntr{color:#8fc7b0;border-color:#2c4a40}
+.hntr-http{color:#b09ad8;border-color:#3e3456}
+.hntr-sse{color:#d8b07a;border-color:#4d4030}
+.hnplg{color:#c4a3c9;border-color:#45334a}
+.hnar:not(.hntl)>.hnplg{max-width:96px}   /* skill rows: long plugin names ellipsize inside the badge (full name in title) */
+.hnoff > :not(.hnoffb){color:var(--nx-t3,#84868c)}   /* muted colour, not opacity (contrast, see .hnempty) */
+.hnoff > .hnsc:not(.hnoffb){border-color:var(--nx-rule,#252629)}
+.hnoffb{color:#d88a7a;border-color:#4d3430}
+.hnst{flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:#5a6270}
+.hnst-ok{background:#4fb08a}
+.hnst-fail{background:#e06a5a}
+.hnfailb{color:#e8907f;border-color:#5a3530}
+html[data-theme=light] .hnfailb{color:#b0473a;border-color:#e6c0b9}
+html[data-theme=light] .hnst-none{background:#b8bcc6}
+html[data-theme=light] .hnst-ok{background:var(--nx-ok,#2a7d43)}   /* #4fb08a was 2.43:1 on light panels (non-text needs 3) */
+html[data-theme=light] .hncol{background:var(--nx-panel);border-color:var(--nx-rule)}
+html[data-theme=light] .hncol.hntool{background:transparent}
+html[data-theme=light] .hnc,html[data-theme=light] .hnef,html[data-theme=light] .hnsc{border-color:var(--nx-rule)}
+html[data-theme=light] .hncn{color:var(--nx-t1)}
+.hnco,.hnro{cursor:pointer}
+.hnco:hover,.hnro:hover{border-color:#3d5170;background:#ffffff08}
+html[data-theme=light] .hnpc{color:#2f5fa8;border-color:#b9cbe6}
+html[data-theme=light] .hntr{color:#2e7a5c;border-color:#b6d8c9}
+html[data-theme=light] .hntr-http{color:#6a4fa8;border-color:#cfc3e6}
+html[data-theme=light] .hntr-sse{color:#9a6420;border-color:#e3cfae}
+html[data-theme=light] .hnplg{color:#8a4f93;border-color:#dcc3e0}
+html[data-theme=light] .hnef.hne-inject{color:#2f5fa8;border-color:#b9cbe6}
+html[data-theme=light] .hnef.hne-block,html[data-theme=light] .hnoffb{color:#b0473a;border-color:#e6c0b9}
+html[data-theme=light] .hnef.hne-unknown{color:#8a6d1e;border-color:#e0d3a8}
+html[data-theme=light] .hnef.hne-bin,html[data-theme=light] .hnef.hne-ext{color:#555a78;border-color:#cdd0de}
+html[data-theme=light] .hnco:hover,html[data-theme=light] .hnro:hover{border-color:#8fb0e6;background:var(--nx-hover,#eceef2)}
+.hnflow>summary{display:block;cursor:pointer;list-style:none;margin-bottom:6px}   /* block + own marker: aligns at 900px */
+.hnflow>summary::-webkit-details-marker{display:none}
+.hnflow>summary .brh2::before{content:'▸';color:#5d6878}
+.hnflow[open]>summary .brh2::before{content:'▾'}
+.hnsum{font-size:11px;color:#8a94a6;margin:-2px 0 2px}
+.hnsum b{font-weight:400}
+.hnsum b.warn{color:var(--nx-warn,#fad83e);font-weight:600}
+/* «Check» line + flagged rows (harness_verdict vd) */
+.hnvdl{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 8px;font-size:12px}
+.hnvdc{font:inherit;font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid #2a3442;background:transparent;color:#9aa6b8}
+button.hnvdc{cursor:pointer}
+.hnvdz{color:var(--nx-t3,#84868c)}
+.hnvdc.hnvd-bad{color:#e8907f;border-color:#5a3530}
+.hnvdc.hnvd-check{color:#d8b07a;border-color:#4d4030}
+.hnar.hnvd{flex-wrap:wrap}
+.hnvdr{display:block;flex-basis:100%;font-size:10px;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+.hnvdr.hnvd-bad{color:#e8907f}
+.hnvdr.hnvd-check{color:#d8b07a}
+.hnc.hnvd-bad,.hnar.hnvd-bad{box-shadow:inset 0 0 0 1px #5a3530}
+.hnc.hnvd-check,.hnar.hnvd-check{box-shadow:inset 0 0 0 1px #4d4030}
+.hnvdon{outline:2px solid #7f9cc6;outline-offset:1px}
+html[data-theme=light] .hnvdr.hnvd-bad,html[data-theme=light] .hnvdc.hnvd-bad{color:#b0473a}
+html[data-theme=light] .hnvdr.hnvd-check,html[data-theme=light] .hnvdc.hnvd-check{color:#8a5a12}
+/* «Results» rows (gate evidence) + «Config map» fold; rows wrap, never scroll sideways */
+.hnres{margin:0 0 12px;min-width:0}
+.hnrun{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 10px;padding:4px 8px;margin:0 0 4px;border:1px solid var(--nx-rule,#232c38);border-left:3px solid var(--nx-ok,#71c269);border-radius:5px;font-size:11px;min-width:0}
+.hnrun.hnng{border-left-color:var(--nx-err,#f45460)}
+.hnrh{display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:4px;min-width:0}
+.hntm{font-style:normal;color:var(--nx-t2,#909298);font-variant-numeric:tabular-nums}   /* own class: .hnrt is the rules table (width:100%) */
+.hnrc{font-family:var(--mono,monospace);color:var(--nx-t1,#c9d2df)}
+.hnsc.hndirty{color:var(--nx-warn,#fad83e)}
+.hnpf{font-size:10px;font-weight:700;letter-spacing:.3px}
+.hnpf.hnok{color:var(--nx-ok,#71c269)}
+.hnpf.hnng{color:var(--nx-err,#f45460)}
+.hnsteps{display:flex;flex-wrap:wrap;gap:3px 6px;min-width:0;flex:1 1 300px}
+.hnstp{font-family:var(--mono,monospace);font-size:10px;padding:0 5px;border-radius:3px;border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#909298);overflow-wrap:anywhere;min-width:0}
+.hnstp.hnng{color:var(--nx-err,#f45460);border-color:var(--nx-err,#f45460)}
+/* «Red→Green» / «Pass stability» cards: side by side, one column under 1060px; text colours are >=4.5 tokens, no opacity */
+.hntr{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}
+.hntrc{min-width:0}
+.hntra{color:var(--nx-t2,#909298)}
+.hntrs{font-size:10px;font-weight:700;padding:0 5px;border-radius:3px;border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#909298)}
+.hntrs-ok{color:var(--nx-ok,#71c269);border-color:var(--nx-ok,#71c269)}
+.hntrs-ng{color:var(--nx-err,#f45460);border-color:var(--nx-err,#f45460)}
+.hntrs-re,.hntrs-rv{color:var(--nx-info,#5899f3);border-color:var(--nx-info,#5899f3)}
+.hntrs-gn{color:var(--nx-warn,#fad83e);border-color:var(--nx-warn,#fad83e)}
+.hntip{display:inline-block;width:14px;height:14px;line-height:12px;text-align:center;font-size:10px;font-weight:700;border-radius:50%;border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#909298);cursor:help}
+.hntip:focus-visible{outline:1px solid var(--nx-info,#5899f3)}
+.hntrs-uc{color:var(--nx-t2,#909298)}
+@media (max-width:1060px){.hntr{grid-template-columns:1fr}}
+.hncfg>summary{display:block;cursor:pointer;list-style:none;margin-bottom:6px}
+.hncfg>summary::-webkit-details-marker{display:none}
+.hncfg>summary .brh2::before{content:'▸';color:#5d6878}
+.hncfg[open]>summary .brh2::before{content:'▾'}
+.hnvdq{color:var(--nx-t3,#84868c)}
+.hnvdq.hnvd-bad{color:#e8907f}
+.hnvdq.hnvd-check{color:#d8b07a}
+html[data-theme=light] .hnvdq.hnvd-bad{color:#b0473a}
+html[data-theme=light] .hnvdq.hnvd-check{color:#8a5a12}

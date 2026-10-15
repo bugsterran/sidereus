@@ -1,0 +1,63 @@
+#!/bin/bash
+# ask-gemini "task" — run Gemini CLI once, read-only, as a sub-agent of the calling Claude session.
+# The Sidereus hooks (ext_hook.py) inherit SIDEREUS_PARENT_SID, so the run shows under that session in Sidereus.
+# ⚠Read-only: `--approval-mode plan` (built-in plan policy: read/search tools only; writes and shell are denied
+#   in headless mode). Exits with gemini's own code.
+# ★2026-09-24 a run went silent for 8+ min after one google_web_search, process alive, caller got no signal.
+#   ⇒ watchdog: hard cap ASK_GEMINI_TIMEOUT (600s, exit 124) and stall cap ASK_GEMINI_STALL (180s with no
+#   size/mtime change in this run's chat file, exit 125). macOS has no `timeout`, hence the poll loop.
+#   ⚠Keep the stall cap above one slow tool call: that search alone took 150s without a chat write.
+# ★Concurrency: "newest chat file after start" let two overlapping runs watch each other's file.
+#   ⇒ pass our own --session-id; Gemini names the file session-<ts>-<id8>.jsonl and writes the full id in
+#   the header line ({"sessionId":...}), so only that file is watched (id8 by name, full id by header).
+if [ $# -eq 0 ]; then
+  echo "usage: ask-gemini \"task\"" >&2
+  exit 2
+fi
+export SIDEREUS_PARENT_SID="${SIDEREUS_PARENT_SID:-${CLAUDE_CODE_SESSION_ID:-}}"
+HARD="${ASK_GEMINI_TIMEOUT:-600}"
+STALL="${ASK_GEMINI_STALL:-180}"
+SID="$(uuidgen | tr 'A-Z' 'a-z')" || exit 1
+
+killtree() {
+  local c
+  for c in $(pgrep -P "$1" 2>/dev/null); do killtree "$c" "$2"; done
+  kill "-$2" "$1" 2>/dev/null
+}
+stop() {
+  killtree "$PID" TERM
+  sleep 2
+  kill -0 "$PID" 2>/dev/null && killtree "$PID" KILL
+  wait "$PID" 2>/dev/null
+}
+
+# stdin is redirected explicitly: a background job would otherwise get /dev/null.
+gemini --skip-trust --approval-mode plan --session-id "$SID" -p "$*" <&0 &
+PID=$!
+trap 'stop; exit 130' INT TERM HUP
+
+start=$SECONDS
+last=$SECONDS
+sig=""
+chat=""
+while kill -0 "$PID" 2>/dev/null; do
+  sleep 1
+  if [ -z "$chat" ]; then
+    for f in "$HOME"/.gemini/tmp/*/chats/session-*-"${SID:0:8}".jsonl; do
+      [ -f "$f" ] && head -c 200 "$f" | grep -q "\"sessionId\":\"$SID\"" && { chat="$f"; break; }
+    done
+  fi
+  if [ -n "$chat" ]; then
+    now="$chat $(stat -f '%z %m' "$chat" 2>/dev/null)"
+    if [ "$now" != "$sig" ]; then sig="$now"; last=$SECONDS; fi
+  fi
+  if [ $((SECONDS - start)) -ge "$HARD" ]; then
+    stop; echo "ask-gemini: timed out ${HARD}s — killed" >&2; exit 124
+  fi
+  if [ $((SECONDS - last)) -ge "$STALL" ]; then
+    stop; echo "ask-gemini: stalled ${STALL}s (no chat progress) — killed" >&2; exit 125
+  fi
+done
+wait "$PID"
+rc=$?
+exit $rc

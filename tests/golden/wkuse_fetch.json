@@ -1,0 +1,5155 @@
+{
+ "cc_badjson": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 0.0,
+    "days": 7,
+    "err": "JSONDecodeError",
+    "rows": [],
+    "total": 0
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "enter",
+    "ccusage"
+   ],
+   [
+    "bin_path",
+    "ccusage"
+   ],
+   [
+    "rich_env"
+   ],
+   [
+    "run",
+    [
+     "/bin/ccusage",
+     "daily",
+     "--json",
+     "--instances",
+     "--since",
+     "20260915"
+    ],
+    [
+     [
+      "capture_output",
+      true
+     ],
+     [
+      "encoding",
+      "utf-8"
+     ],
+     [
+      "env",
+      {
+       "ENV": "1"
+      }
+     ],
+     [
+      "errors",
+      "replace"
+     ],
+     [
+      "text",
+      true
+     ],
+     [
+      "timeout",
+      180
+     ]
+    ]
+   ],
+   [
+    "exit",
+    "ccusage"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "slot_set",
+    "err",
+    "JSONDecodeError"
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "cc_empty_out": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "30": {
+    "at": 0.0,
+    "days": 30,
+    "err": "ccusage rc=0: warn",
+    "rows": [],
+    "total": 0
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    30
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1787494400.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260823"
+   ],
+   [
+    "enter",
+    "ccusage"
+   ],
+   [
+    "bin_path",
+    "ccusage"
+   ],
+   [
+    "rich_env"
+   ],
+   [
+    "run",
+    [
+     "/bin/ccusage",
+     "daily",
+     "--json",
+     "--instances",
+     "--since",
+     "20260823"
+    ],
+    [
+     [
+      "capture_output",
+      true
+     ],
+     [
+      "encoding",
+      "utf-8"
+     ],
+     [
+      "env",
+      {
+       "ENV": "1"
+      }
+     ],
+     [
+      "errors",
+      "replace"
+     ],
+     [
+      "text",
+      true
+     ],
+     [
+      "timeout",
+      180
+     ]
+    ]
+   ],
+   [
+    "exit",
+    "ccusage"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "slot_set",
+    "err",
+    "ccusage rc=0: warn"
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "cc_none_out": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 0.0,
+    "days": 7,
+    "err": "ccusage rc=0: ",
+    "rows": [],
+    "total": 0
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "enter",
+    "ccusage"
+   ],
+   [
+    "bin_path",
+    "ccusage"
+   ],
+   [
+    "rich_env"
+   ],
+   [
+    "run",
+    [
+     "/bin/ccusage",
+     "daily",
+     "--json",
+     "--instances",
+     "--since",
+     "20260915"
+    ],
+    [
+     [
+      "capture_output",
+      true
+     ],
+     [
+      "encoding",
+      "utf-8"
+     ],
+     [
+      "env",
+      {
+       "ENV": "1"
+      }
+     ],
+     [
+      "errors",
+      "replace"
+     ],
+     [
+      "text",
+      true
+     ],
+     [
+      "timeout",
+      180
+     ]
+    ]
+   ],
+   [
+    "exit",
+    "ccusage"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "slot_set",
+    "err",
+    "ccusage rc=0: "
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "cc_null": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 1790000000.0,
+    "cost": 0,
+    "daily": [
+     {
+      "cost": 0.0,
+      "d": "2026-09-15",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-16",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-17",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-18",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-19",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-20",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-21",
+      "tok": 0,
+      "top": []
+     }
+    ],
+    "days": 7,
+    "err": "",
+    "mix": {
+     "cc": 0,
+     "cr": 0,
+     "in": 0,
+     "out": 0,
+     "ratio": 0,
+     "tot": 0
+    },
+    "models": [],
+    "rows": [],
+    "total": 0,
+    "trend": []
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "enter",
+    "ccusage"
+   ],
+   [
+    "bin_path",
+    "ccusage"
+   ],
+   [
+    "rich_env"
+   ],
+   [
+    "run",
+    [
+     "/bin/ccusage",
+     "daily",
+     "--json",
+     "--instances",
+     "--since",
+     "20260915"
+    ],
+    [
+     [
+      "capture_output",
+      true
+     ],
+     [
+      "encoding",
+      "utf-8"
+     ],
+     [
+      "env",
+      {
+       "ENV": "1"
+      }
+     ],
+     [
+      "errors",
+      "replace"
+     ],
+     [
+      "text",
+      true
+     ],
+     [
+      "timeout",
+      180
+     ]
+    ]
+   ],
+   [
+    "exit",
+    "ccusage"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-15"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789568000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-16"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789654400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-17"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789740800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-18"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789827200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-19"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789913600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-20"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1790000000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-21"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_update",
+    {
+     "at": 1790000000.0,
+     "cost": 0,
+     "daily": [
+      {
+       "cost": 0.0,
+       "d": "2026-09-15",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-16",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-17",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-18",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-19",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-20",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-21",
+       "tok": 0,
+       "top": []
+      }
+     ],
+     "days": 7,
+     "err": "",
+     "mix": {
+      "cc": 0,
+      "cr": 0,
+      "in": 0,
+      "out": 0,
+      "ratio": 0,
+      "tot": 0
+     },
+     "models": [],
+     "rows": [],
+     "total": 0,
+     "trend": []
+    }
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "cc_ok": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 1790000000.0,
+    "cost": 2.86,
+    "daily": [
+     {
+      "cost": 0.0,
+      "d": "2026-09-15",
+      "tok": 50,
+      "top": [
+       {
+        "name": "N:-Users-b",
+        "slug": "-Users-b",
+        "tok": 50
+       }
+      ]
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-16",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-17",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-18",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.73,
+      "d": "2026-09-19",
+      "tok": 725,
+      "top": [
+       {
+        "name": "N:-Users-b",
+        "slug": "-Users-b",
+        "tok": 700
+       },
+       {
+        "name": "N:-Users-e",
+        "slug": "-Users-e",
+        "tok": 25
+       }
+      ]
+     },
+     {
+      "cost": 0.8,
+      "d": "2026-09-20",
+      "tok": 800,
+      "top": [
+       {
+        "name": "N:-Users-a",
+        "slug": "-Users-a",
+        "tok": 500
+       },
+       {
+        "name": "N:-Users-c",
+        "slug": "-Users-c",
+        "tok": 300
+       }
+      ]
+     },
+     {
+      "cost": 1.33,
+      "d": "2026-09-21",
+      "tok": 1100,
+      "top": [
+       {
+        "name": "N:-Users-a",
+        "slug": "-Users-a",
+        "tok": 1000
+       },
+       {
+        "name": "N:__scratchpad__",
+        "slug": "__scratchpad__",
+        "tok": 100
+       }
+      ]
+     }
+    ],
+    "days": 7,
+    "err": "",
+    "mix": {
+     "cc": 410,
+     "cr": 2152,
+     "in": 29,
+     "out": 40,
+     "ratio": 5.2,
+     "tot": 2631
+    },
+    "models": [
+     {
+      "cost": 1.23,
+      "name": "opus",
+      "tok": 1000
+     },
+     {
+      "cost": 0.5,
+      "name": "sonnet",
+      "tok": 500
+     },
+     {
+      "cost": 0.0,
+      "name": "?",
+      "tok": 4
+     }
+    ],
+    "rows": [
+     {
+      "cost": 1.73,
+      "days": 2,
+      "name": "N:-Users-a",
+      "slug": "-Users-a",
+      "tok": 1500
+     },
+     {
+      "cost": 0.7,
+      "days": 2,
+      "name": "N:-Users-b",
+      "slug": "-Users-b",
+      "tok": 750
+     },
+     {
+      "cost": 0.3,
+      "days": 1,
+      "name": "N:-Users-c",
+      "slug": "-Users-c",
+      "tok": 300
+     },
+     {
+      "cost": 0.1,
+      "days": 1,
+      "name": "N:__scratchpad__",
+      "slug": "__scratchpad__",
+      "tok": 100
+     },
+     {
+      "cost": 0.03,
+      "days": 1,
+      "name": "N:-Users-e",
+      "slug": "-Users-e",
+      "tok": 25
+     }
+    ],
+    "total": 2675,
+    "trend": [
+     {
+      "name": "N:-Users-a",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       500,
+       1000
+      ],
+      "slug": "-Users-a",
+      "tok": 1500
+     },
+     {
+      "name": "N:-Users-b",
+      "series": [
+       50,
+       0,
+       0,
+       0,
+       700,
+       0,
+       0
+      ],
+      "slug": "-Users-b",
+      "tok": 750
+     },
+     {
+      "name": "N:-Users-c",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       300,
+       0
+      ],
+      "slug": "-Users-c",
+      "tok": 300
+     },
+     {
+      "name": "기타 4개",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       25,
+       0,
+       100
+      ],
+      "slug": "",
+      "tok": 125
+     }
+    ]
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "enter",
+    "ccusage"
+   ],
+   [
+    "bin_path",
+    "ccusage"
+   ],
+   [
+    "rich_env"
+   ],
+   [
+    "run",
+    [
+     "/bin/ccusage",
+     "daily",
+     "--json",
+     "--instances",
+     "--since",
+     "20260915"
+    ],
+    [
+     [
+      "capture_output",
+      true
+     ],
+     [
+      "encoding",
+      "utf-8"
+     ],
+     [
+      "env",
+      {
+       "ENV": "1"
+      }
+     ],
+     [
+      "errors",
+      "replace"
+     ],
+     [
+      "text",
+      true
+     ],
+     [
+      "timeout",
+      180
+     ]
+    ]
+   ],
+   [
+    "exit",
+    "ccusage"
+   ],
+   [
+    "group",
+    "-Users-a",
+    "-Users-a"
+   ],
+   [
+    "group",
+    "-tmp-scratchpad-x",
+    "__scratchpad__"
+   ],
+   [
+    "group",
+    "-tmp-scratchpad-y",
+    "__scratchpad__"
+   ],
+   [
+    "group",
+    "-Users-b",
+    "-Users-b"
+   ],
+   [
+    "group",
+    "-Users-c",
+    "-Users-c"
+   ],
+   [
+    "group",
+    "-Users-d",
+    "-Users-d"
+   ],
+   [
+    "group",
+    "-Users-e",
+    "-Users-e"
+   ],
+   [
+    "group",
+    "-Users-f",
+    "-Users-f"
+   ],
+   [
+    "name",
+    "-Users-a"
+   ],
+   [
+    "name",
+    "__scratchpad__"
+   ],
+   [
+    "name",
+    "-Users-b"
+   ],
+   [
+    "name",
+    "-Users-c"
+   ],
+   [
+    "name",
+    "-Users-e"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-15"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789568000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-16"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789654400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-17"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789740800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-18"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789827200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-19"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789913600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-20"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1790000000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-21"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_update",
+    {
+     "at": 1790000000.0,
+     "cost": 2.86,
+     "daily": [
+      {
+       "cost": 0.0,
+       "d": "2026-09-15",
+       "tok": 50,
+       "top": [
+        {
+         "name": "N:-Users-b",
+         "slug": "-Users-b",
+         "tok": 50
+        }
+       ]
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-16",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-17",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-18",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.73,
+       "d": "2026-09-19",
+       "tok": 725,
+       "top": [
+        {
+         "name": "N:-Users-b",
+         "slug": "-Users-b",
+         "tok": 700
+        },
+        {
+         "name": "N:-Users-e",
+         "slug": "-Users-e",
+         "tok": 25
+        }
+       ]
+      },
+      {
+       "cost": 0.8,
+       "d": "2026-09-20",
+       "tok": 800,
+       "top": [
+        {
+         "name": "N:-Users-a",
+         "slug": "-Users-a",
+         "tok": 500
+        },
+        {
+         "name": "N:-Users-c",
+         "slug": "-Users-c",
+         "tok": 300
+        }
+       ]
+      },
+      {
+       "cost": 1.33,
+       "d": "2026-09-21",
+       "tok": 1100,
+       "top": [
+        {
+         "name": "N:-Users-a",
+         "slug": "-Users-a",
+         "tok": 1000
+        },
+        {
+         "name": "N:__scratchpad__",
+         "slug": "__scratchpad__",
+         "tok": 100
+        }
+       ]
+      }
+     ],
+     "days": 7,
+     "err": "",
+     "mix": {
+      "cc": 410,
+      "cr": 2152,
+      "in": 29,
+      "out": 40,
+      "ratio": 5.2,
+      "tot": 2631
+     },
+     "models": [
+      {
+       "cost": 1.23,
+       "name": "opus",
+       "tok": 1000
+      },
+      {
+       "cost": 0.5,
+       "name": "sonnet",
+       "tok": 500
+      },
+      {
+       "cost": 0.0,
+       "name": "?",
+       "tok": 4
+      }
+     ],
+     "rows": [
+      {
+       "cost": 1.73,
+       "days": 2,
+       "name": "N:-Users-a",
+       "slug": "-Users-a",
+       "tok": 1500
+      },
+      {
+       "cost": 0.7,
+       "days": 2,
+       "name": "N:-Users-b",
+       "slug": "-Users-b",
+       "tok": 750
+      },
+      {
+       "cost": 0.3,
+       "days": 1,
+       "name": "N:-Users-c",
+       "slug": "-Users-c",
+       "tok": 300
+      },
+      {
+       "cost": 0.1,
+       "days": 1,
+       "name": "N:__scratchpad__",
+       "slug": "__scratchpad__",
+       "tok": 100
+      },
+      {
+       "cost": 0.03,
+       "days": 1,
+       "name": "N:-Users-e",
+       "slug": "-Users-e",
+       "tok": 25
+      }
+     ],
+     "total": 2675,
+     "trend": [
+      {
+       "name": "N:-Users-a",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        500,
+        1000
+       ],
+       "slug": "-Users-a",
+       "tok": 1500
+      },
+      {
+       "name": "N:-Users-b",
+       "series": [
+        50,
+        0,
+        0,
+        0,
+        700,
+        0,
+        0
+       ],
+       "slug": "-Users-b",
+       "tok": 750
+      },
+      {
+       "name": "N:-Users-c",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        300,
+        0
+       ],
+       "slug": "-Users-c",
+       "tok": 300
+      },
+      {
+       "name": "기타 4개",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        25,
+        0,
+        100
+       ],
+       "slug": "",
+       "tok": 125
+      }
+     ]
+    }
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "cc_rc": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 0.0,
+    "days": 7,
+    "err": "ccusage rc=2: EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+    "rows": [],
+    "total": 0
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "enter",
+    "ccusage"
+   ],
+   [
+    "bin_path",
+    "ccusage"
+   ],
+   [
+    "rich_env"
+   ],
+   [
+    "run",
+    [
+     "/bin/ccusage",
+     "daily",
+     "--json",
+     "--instances",
+     "--since",
+     "20260915"
+    ],
+    [
+     [
+      "capture_output",
+      true
+     ],
+     [
+      "encoding",
+      "utf-8"
+     ],
+     [
+      "env",
+      {
+       "ENV": "1"
+      }
+     ],
+     [
+      "errors",
+      "replace"
+     ],
+     [
+      "text",
+      true
+     ],
+     [
+      "timeout",
+      180
+     ]
+    ]
+   ],
+   [
+    "exit",
+    "ccusage"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "slot_set",
+    "err",
+    "ccusage rc=2: EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "cc_rc_none_err": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 0.0,
+    "days": 7,
+    "err": "ccusage rc=1: ",
+    "rows": [],
+    "total": 0
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "enter",
+    "ccusage"
+   ],
+   [
+    "bin_path",
+    "ccusage"
+   ],
+   [
+    "rich_env"
+   ],
+   [
+    "run",
+    [
+     "/bin/ccusage",
+     "daily",
+     "--json",
+     "--instances",
+     "--since",
+     "20260915"
+    ],
+    [
+     [
+      "capture_output",
+      true
+     ],
+     [
+      "encoding",
+      "utf-8"
+     ],
+     [
+      "env",
+      {
+       "ENV": "1"
+      }
+     ],
+     [
+      "errors",
+      "replace"
+     ],
+     [
+      "text",
+      true
+     ],
+     [
+      "timeout",
+      180
+     ]
+    ]
+   ],
+   [
+    "exit",
+    "ccusage"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "slot_set",
+    "err",
+    "ccusage rc=1: "
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "cc_timeout": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 0.0,
+    "days": 7,
+    "err": "TimeoutError",
+    "rows": [],
+    "total": 0
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "enter",
+    "ccusage"
+   ],
+   [
+    "bin_path",
+    "ccusage"
+   ],
+   [
+    "rich_env"
+   ],
+   [
+    "run",
+    [
+     "/bin/ccusage",
+     "daily",
+     "--json",
+     "--instances",
+     "--since",
+     "20260915"
+    ],
+    [
+     [
+      "capture_output",
+      true
+     ],
+     [
+      "encoding",
+      "utf-8"
+     ],
+     [
+      "env",
+      {
+       "ENV": "1"
+      }
+     ],
+     [
+      "errors",
+      "replace"
+     ],
+     [
+      "text",
+      true
+     ],
+     [
+      "timeout",
+      180
+     ]
+    ]
+   ],
+   [
+    "exit",
+    "ccusage"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "slot_set",
+    "err",
+    "TimeoutError"
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "local_bad_shape": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 0.0,
+    "days": 7,
+    "err": "AttributeError",
+    "rows": [],
+    "total": 0
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "uidx",
+    7
+   ],
+   [
+    "group",
+    "-Users-a",
+    "-Users-a"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "slot_set",
+    "err",
+    "AttributeError"
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "local_empty": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 1790000000.0,
+    "cost": 0,
+    "daily": [
+     {
+      "cost": 0.0,
+      "d": "2026-09-15",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-16",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-17",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-18",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-19",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-20",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-21",
+      "tok": 0,
+      "top": []
+     }
+    ],
+    "days": 7,
+    "err": "",
+    "mix": {
+     "cc": 0,
+     "cr": 0,
+     "in": 0,
+     "out": 0,
+     "ratio": 0,
+     "tot": 0
+    },
+    "models": [],
+    "rows": [],
+    "total": 0,
+    "trend": []
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "uidx",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-15"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789568000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-16"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789654400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-17"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789740800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-18"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789827200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-19"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789913600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-20"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1790000000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-21"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_update",
+    {
+     "at": 1790000000.0,
+     "cost": 0,
+     "daily": [
+      {
+       "cost": 0.0,
+       "d": "2026-09-15",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-16",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-17",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-18",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-19",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-20",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-21",
+       "tok": 0,
+       "top": []
+      }
+     ],
+     "days": 7,
+     "err": "",
+     "mix": {
+      "cc": 0,
+      "cr": 0,
+      "in": 0,
+      "out": 0,
+      "ratio": 0,
+      "tot": 0
+     },
+     "models": [],
+     "rows": [],
+     "total": 0,
+     "trend": []
+    }
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "local_raises": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 0.0,
+    "days": 7,
+    "err": "OSError",
+    "rows": [],
+    "total": 0
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "uidx",
+    7
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "slot_set",
+    "err",
+    "OSError"
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "local_rich_1": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "1": {
+    "at": 1790000000.0,
+    "cost": 2.86,
+    "daily": [
+     {
+      "cost": 1.33,
+      "d": "2026-09-21",
+      "tok": 1100,
+      "top": [
+       {
+        "name": "N:-Users-a",
+        "slug": "-Users-a",
+        "tok": 1000
+       },
+       {
+        "name": "N:__scratchpad__",
+        "slug": "__scratchpad__",
+        "tok": 100
+       }
+      ]
+     }
+    ],
+    "days": 1,
+    "err": "",
+    "mix": {
+     "cc": 410,
+     "cr": 2152,
+     "in": 29,
+     "out": 40,
+     "ratio": 5.2,
+     "tot": 2631
+    },
+    "models": [
+     {
+      "cost": 1.23,
+      "name": "opus",
+      "tok": 1000
+     },
+     {
+      "cost": 0.5,
+      "name": "sonnet",
+      "tok": 500
+     },
+     {
+      "cost": 0.0,
+      "name": "?",
+      "tok": 4
+     }
+    ],
+    "rows": [
+     {
+      "cost": 1.73,
+      "days": 2,
+      "name": "N:-Users-a",
+      "slug": "-Users-a",
+      "tok": 1500
+     },
+     {
+      "cost": 0.7,
+      "days": 2,
+      "name": "N:-Users-b",
+      "slug": "-Users-b",
+      "tok": 750
+     },
+     {
+      "cost": 0.3,
+      "days": 1,
+      "name": "N:-Users-c",
+      "slug": "-Users-c",
+      "tok": 300
+     },
+     {
+      "cost": 0.1,
+      "days": 1,
+      "name": "N:__scratchpad__",
+      "slug": "__scratchpad__",
+      "tok": 100
+     },
+     {
+      "cost": 0.03,
+      "days": 1,
+      "name": "N:-Users-e",
+      "slug": "-Users-e",
+      "tok": 25
+     }
+    ],
+    "total": 2675,
+    "trend": [
+     {
+      "name": "N:-Users-a",
+      "series": [
+       1000
+      ],
+      "slug": "-Users-a",
+      "tok": 1000
+     },
+     {
+      "name": "N:-Users-b",
+      "series": [
+       0
+      ],
+      "slug": "-Users-b",
+      "tok": 0
+     },
+     {
+      "name": "N:-Users-c",
+      "series": [
+       0
+      ],
+      "slug": "-Users-c",
+      "tok": 0
+     },
+     {
+      "name": "기타 4개",
+      "series": [
+       100
+      ],
+      "slug": "",
+      "tok": 100
+     }
+    ]
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    1
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1790000000.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260921"
+   ],
+   [
+    "uidx",
+    1
+   ],
+   [
+    "group",
+    "-Users-a",
+    "-Users-a"
+   ],
+   [
+    "group",
+    "-tmp-scratchpad-x",
+    "__scratchpad__"
+   ],
+   [
+    "group",
+    "-tmp-scratchpad-y",
+    "__scratchpad__"
+   ],
+   [
+    "group",
+    "-Users-b",
+    "-Users-b"
+   ],
+   [
+    "group",
+    "-Users-c",
+    "-Users-c"
+   ],
+   [
+    "group",
+    "-Users-d",
+    "-Users-d"
+   ],
+   [
+    "group",
+    "-Users-e",
+    "-Users-e"
+   ],
+   [
+    "group",
+    "-Users-f",
+    "-Users-f"
+   ],
+   [
+    "name",
+    "-Users-a"
+   ],
+   [
+    "name",
+    "__scratchpad__"
+   ],
+   [
+    "name",
+    "-Users-b"
+   ],
+   [
+    "name",
+    "-Users-c"
+   ],
+   [
+    "name",
+    "-Users-e"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1790000000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-21"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_update",
+    {
+     "at": 1790000000.0,
+     "cost": 2.86,
+     "daily": [
+      {
+       "cost": 1.33,
+       "d": "2026-09-21",
+       "tok": 1100,
+       "top": [
+        {
+         "name": "N:-Users-a",
+         "slug": "-Users-a",
+         "tok": 1000
+        },
+        {
+         "name": "N:__scratchpad__",
+         "slug": "__scratchpad__",
+         "tok": 100
+        }
+       ]
+      }
+     ],
+     "days": 1,
+     "err": "",
+     "mix": {
+      "cc": 410,
+      "cr": 2152,
+      "in": 29,
+      "out": 40,
+      "ratio": 5.2,
+      "tot": 2631
+     },
+     "models": [
+      {
+       "cost": 1.23,
+       "name": "opus",
+       "tok": 1000
+      },
+      {
+       "cost": 0.5,
+       "name": "sonnet",
+       "tok": 500
+      },
+      {
+       "cost": 0.0,
+       "name": "?",
+       "tok": 4
+      }
+     ],
+     "rows": [
+      {
+       "cost": 1.73,
+       "days": 2,
+       "name": "N:-Users-a",
+       "slug": "-Users-a",
+       "tok": 1500
+      },
+      {
+       "cost": 0.7,
+       "days": 2,
+       "name": "N:-Users-b",
+       "slug": "-Users-b",
+       "tok": 750
+      },
+      {
+       "cost": 0.3,
+       "days": 1,
+       "name": "N:-Users-c",
+       "slug": "-Users-c",
+       "tok": 300
+      },
+      {
+       "cost": 0.1,
+       "days": 1,
+       "name": "N:__scratchpad__",
+       "slug": "__scratchpad__",
+       "tok": 100
+      },
+      {
+       "cost": 0.03,
+       "days": 1,
+       "name": "N:-Users-e",
+       "slug": "-Users-e",
+       "tok": 25
+      }
+     ],
+     "total": 2675,
+     "trend": [
+      {
+       "name": "N:-Users-a",
+       "series": [
+        1000
+       ],
+       "slug": "-Users-a",
+       "tok": 1000
+      },
+      {
+       "name": "N:-Users-b",
+       "series": [
+        0
+       ],
+       "slug": "-Users-b",
+       "tok": 0
+      },
+      {
+       "name": "N:-Users-c",
+       "series": [
+        0
+       ],
+       "slug": "-Users-c",
+       "tok": 0
+      },
+      {
+       "name": "기타 4개",
+       "series": [
+        100
+       ],
+       "slug": "",
+       "tok": 100
+      }
+     ]
+    }
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "local_rich_30str": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "30": {
+    "at": 1790000000.0,
+    "cost": 2.86,
+    "daily": [
+     {
+      "cost": 0.0,
+      "d": "2026-08-23",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-08-24",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-08-25",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-08-26",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-08-27",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-08-28",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-08-29",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-08-30",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-08-31",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-01",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-02",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-03",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-04",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-05",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-06",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-07",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-08",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-09",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-10",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-11",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-12",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-13",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-14",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-15",
+      "tok": 50,
+      "top": [
+       {
+        "name": "N:-Users-b",
+        "slug": "-Users-b",
+        "tok": 50
+       }
+      ]
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-16",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-17",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-18",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.73,
+      "d": "2026-09-19",
+      "tok": 725,
+      "top": [
+       {
+        "name": "N:-Users-b",
+        "slug": "-Users-b",
+        "tok": 700
+       },
+       {
+        "name": "N:-Users-e",
+        "slug": "-Users-e",
+        "tok": 25
+       }
+      ]
+     },
+     {
+      "cost": 0.8,
+      "d": "2026-09-20",
+      "tok": 800,
+      "top": [
+       {
+        "name": "N:-Users-a",
+        "slug": "-Users-a",
+        "tok": 500
+       },
+       {
+        "name": "N:-Users-c",
+        "slug": "-Users-c",
+        "tok": 300
+       }
+      ]
+     },
+     {
+      "cost": 1.33,
+      "d": "2026-09-21",
+      "tok": 1100,
+      "top": [
+       {
+        "name": "N:-Users-a",
+        "slug": "-Users-a",
+        "tok": 1000
+       },
+       {
+        "name": "N:__scratchpad__",
+        "slug": "__scratchpad__",
+        "tok": 100
+       }
+      ]
+     }
+    ],
+    "days": 30,
+    "err": "",
+    "mix": {
+     "cc": 410,
+     "cr": 2152,
+     "in": 29,
+     "out": 40,
+     "ratio": 5.2,
+     "tot": 2631
+    },
+    "models": [
+     {
+      "cost": 1.23,
+      "name": "opus",
+      "tok": 1000
+     },
+     {
+      "cost": 0.5,
+      "name": "sonnet",
+      "tok": 500
+     },
+     {
+      "cost": 0.0,
+      "name": "?",
+      "tok": 4
+     }
+    ],
+    "rows": [
+     {
+      "cost": 1.73,
+      "days": 2,
+      "name": "N:-Users-a",
+      "slug": "-Users-a",
+      "tok": 1500
+     },
+     {
+      "cost": 0.7,
+      "days": 2,
+      "name": "N:-Users-b",
+      "slug": "-Users-b",
+      "tok": 750
+     },
+     {
+      "cost": 0.3,
+      "days": 1,
+      "name": "N:-Users-c",
+      "slug": "-Users-c",
+      "tok": 300
+     },
+     {
+      "cost": 0.1,
+      "days": 1,
+      "name": "N:__scratchpad__",
+      "slug": "__scratchpad__",
+      "tok": 100
+     },
+     {
+      "cost": 0.03,
+      "days": 1,
+      "name": "N:-Users-e",
+      "slug": "-Users-e",
+      "tok": 25
+     }
+    ],
+    "total": 2675,
+    "trend": [
+     {
+      "name": "N:-Users-a",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       500,
+       1000
+      ],
+      "slug": "-Users-a",
+      "tok": 1500
+     },
+     {
+      "name": "N:-Users-b",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       50,
+       0,
+       0,
+       0,
+       700,
+       0,
+       0
+      ],
+      "slug": "-Users-b",
+      "tok": 750
+     },
+     {
+      "name": "N:-Users-c",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       300,
+       0
+      ],
+      "slug": "-Users-c",
+      "tok": 300
+     },
+     {
+      "name": "기타 4개",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       0,
+       25,
+       0,
+       100
+      ],
+      "slug": "",
+      "tok": 125
+     }
+    ]
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    30
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1787494400.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260823"
+   ],
+   [
+    "uidx",
+    30
+   ],
+   [
+    "group",
+    "-Users-a",
+    "-Users-a"
+   ],
+   [
+    "group",
+    "-tmp-scratchpad-x",
+    "__scratchpad__"
+   ],
+   [
+    "group",
+    "-tmp-scratchpad-y",
+    "__scratchpad__"
+   ],
+   [
+    "group",
+    "-Users-b",
+    "-Users-b"
+   ],
+   [
+    "group",
+    "-Users-c",
+    "-Users-c"
+   ],
+   [
+    "group",
+    "-Users-d",
+    "-Users-d"
+   ],
+   [
+    "group",
+    "-Users-e",
+    "-Users-e"
+   ],
+   [
+    "group",
+    "-Users-f",
+    "-Users-f"
+   ],
+   [
+    "name",
+    "-Users-a"
+   ],
+   [
+    "name",
+    "__scratchpad__"
+   ],
+   [
+    "name",
+    "-Users-b"
+   ],
+   [
+    "name",
+    "-Users-c"
+   ],
+   [
+    "name",
+    "-Users-e"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1787494400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-08-23"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1787580800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-08-24"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1787667200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-08-25"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1787753600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-08-26"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1787840000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-08-27"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1787926400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-08-28"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788012800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-08-29"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788099200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-08-30"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788185600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-08-31"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788272000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-01"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788358400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-02"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788444800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-03"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788531200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-04"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788617600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-05"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788704000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-06"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788790400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-07"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788876800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-08"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1788963200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-09"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789049600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-10"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789136000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-11"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789222400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-12"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789308800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-13"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789395200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-14"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-15"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789568000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-16"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789654400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-17"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789740800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-18"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789827200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-19"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789913600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-20"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1790000000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-21"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_update",
+    {
+     "at": 1790000000.0,
+     "cost": 2.86,
+     "daily": [
+      {
+       "cost": 0.0,
+       "d": "2026-08-23",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-08-24",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-08-25",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-08-26",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-08-27",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-08-28",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-08-29",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-08-30",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-08-31",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-01",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-02",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-03",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-04",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-05",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-06",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-07",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-08",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-09",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-10",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-11",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-12",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-13",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-14",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-15",
+       "tok": 50,
+       "top": [
+        {
+         "name": "N:-Users-b",
+         "slug": "-Users-b",
+         "tok": 50
+        }
+       ]
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-16",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-17",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-18",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.73,
+       "d": "2026-09-19",
+       "tok": 725,
+       "top": [
+        {
+         "name": "N:-Users-b",
+         "slug": "-Users-b",
+         "tok": 700
+        },
+        {
+         "name": "N:-Users-e",
+         "slug": "-Users-e",
+         "tok": 25
+        }
+       ]
+      },
+      {
+       "cost": 0.8,
+       "d": "2026-09-20",
+       "tok": 800,
+       "top": [
+        {
+         "name": "N:-Users-a",
+         "slug": "-Users-a",
+         "tok": 500
+        },
+        {
+         "name": "N:-Users-c",
+         "slug": "-Users-c",
+         "tok": 300
+        }
+       ]
+      },
+      {
+       "cost": 1.33,
+       "d": "2026-09-21",
+       "tok": 1100,
+       "top": [
+        {
+         "name": "N:-Users-a",
+         "slug": "-Users-a",
+         "tok": 1000
+        },
+        {
+         "name": "N:__scratchpad__",
+         "slug": "__scratchpad__",
+         "tok": 100
+        }
+       ]
+      }
+     ],
+     "days": 30,
+     "err": "",
+     "mix": {
+      "cc": 410,
+      "cr": 2152,
+      "in": 29,
+      "out": 40,
+      "ratio": 5.2,
+      "tot": 2631
+     },
+     "models": [
+      {
+       "cost": 1.23,
+       "name": "opus",
+       "tok": 1000
+      },
+      {
+       "cost": 0.5,
+       "name": "sonnet",
+       "tok": 500
+      },
+      {
+       "cost": 0.0,
+       "name": "?",
+       "tok": 4
+      }
+     ],
+     "rows": [
+      {
+       "cost": 1.73,
+       "days": 2,
+       "name": "N:-Users-a",
+       "slug": "-Users-a",
+       "tok": 1500
+      },
+      {
+       "cost": 0.7,
+       "days": 2,
+       "name": "N:-Users-b",
+       "slug": "-Users-b",
+       "tok": 750
+      },
+      {
+       "cost": 0.3,
+       "days": 1,
+       "name": "N:-Users-c",
+       "slug": "-Users-c",
+       "tok": 300
+      },
+      {
+       "cost": 0.1,
+       "days": 1,
+       "name": "N:__scratchpad__",
+       "slug": "__scratchpad__",
+       "tok": 100
+      },
+      {
+       "cost": 0.03,
+       "days": 1,
+       "name": "N:-Users-e",
+       "slug": "-Users-e",
+       "tok": 25
+      }
+     ],
+     "total": 2675,
+     "trend": [
+      {
+       "name": "N:-Users-a",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        500,
+        1000
+       ],
+       "slug": "-Users-a",
+       "tok": 1500
+      },
+      {
+       "name": "N:-Users-b",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        50,
+        0,
+        0,
+        0,
+        700,
+        0,
+        0
+       ],
+       "slug": "-Users-b",
+       "tok": 750
+      },
+      {
+       "name": "N:-Users-c",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        300,
+        0
+       ],
+       "slug": "-Users-c",
+       "tok": 300
+      },
+      {
+       "name": "기타 4개",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        25,
+        0,
+        100
+       ],
+       "slug": "",
+       "tok": 125
+      }
+     ]
+    }
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "local_rich_7": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 1790000000.0,
+    "cost": 2.86,
+    "daily": [
+     {
+      "cost": 0.0,
+      "d": "2026-09-15",
+      "tok": 50,
+      "top": [
+       {
+        "name": "N:-Users-b",
+        "slug": "-Users-b",
+        "tok": 50
+       }
+      ]
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-16",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-17",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-18",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.73,
+      "d": "2026-09-19",
+      "tok": 725,
+      "top": [
+       {
+        "name": "N:-Users-b",
+        "slug": "-Users-b",
+        "tok": 700
+       },
+       {
+        "name": "N:-Users-e",
+        "slug": "-Users-e",
+        "tok": 25
+       }
+      ]
+     },
+     {
+      "cost": 0.8,
+      "d": "2026-09-20",
+      "tok": 800,
+      "top": [
+       {
+        "name": "N:-Users-a",
+        "slug": "-Users-a",
+        "tok": 500
+       },
+       {
+        "name": "N:-Users-c",
+        "slug": "-Users-c",
+        "tok": 300
+       }
+      ]
+     },
+     {
+      "cost": 1.33,
+      "d": "2026-09-21",
+      "tok": 1100,
+      "top": [
+       {
+        "name": "N:-Users-a",
+        "slug": "-Users-a",
+        "tok": 1000
+       },
+       {
+        "name": "N:__scratchpad__",
+        "slug": "__scratchpad__",
+        "tok": 100
+       }
+      ]
+     }
+    ],
+    "days": 7,
+    "err": "",
+    "mix": {
+     "cc": 410,
+     "cr": 2152,
+     "in": 29,
+     "out": 40,
+     "ratio": 5.2,
+     "tot": 2631
+    },
+    "models": [
+     {
+      "cost": 1.23,
+      "name": "opus",
+      "tok": 1000
+     },
+     {
+      "cost": 0.5,
+      "name": "sonnet",
+      "tok": 500
+     },
+     {
+      "cost": 0.0,
+      "name": "?",
+      "tok": 4
+     }
+    ],
+    "rows": [
+     {
+      "cost": 1.73,
+      "days": 2,
+      "name": "N:-Users-a",
+      "slug": "-Users-a",
+      "tok": 1500
+     },
+     {
+      "cost": 0.7,
+      "days": 2,
+      "name": "N:-Users-b",
+      "slug": "-Users-b",
+      "tok": 750
+     },
+     {
+      "cost": 0.3,
+      "days": 1,
+      "name": "N:-Users-c",
+      "slug": "-Users-c",
+      "tok": 300
+     },
+     {
+      "cost": 0.1,
+      "days": 1,
+      "name": "N:__scratchpad__",
+      "slug": "__scratchpad__",
+      "tok": 100
+     },
+     {
+      "cost": 0.03,
+      "days": 1,
+      "name": "N:-Users-e",
+      "slug": "-Users-e",
+      "tok": 25
+     }
+    ],
+    "total": 2675,
+    "trend": [
+     {
+      "name": "N:-Users-a",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       500,
+       1000
+      ],
+      "slug": "-Users-a",
+      "tok": 1500
+     },
+     {
+      "name": "N:-Users-b",
+      "series": [
+       50,
+       0,
+       0,
+       0,
+       700,
+       0,
+       0
+      ],
+      "slug": "-Users-b",
+      "tok": 750
+     },
+     {
+      "name": "N:-Users-c",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       300,
+       0
+      ],
+      "slug": "-Users-c",
+      "tok": 300
+     },
+     {
+      "name": "기타 4개",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       25,
+       0,
+       100
+      ],
+      "slug": "",
+      "tok": 125
+     }
+    ]
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "uidx",
+    7
+   ],
+   [
+    "group",
+    "-Users-a",
+    "-Users-a"
+   ],
+   [
+    "group",
+    "-tmp-scratchpad-x",
+    "__scratchpad__"
+   ],
+   [
+    "group",
+    "-tmp-scratchpad-y",
+    "__scratchpad__"
+   ],
+   [
+    "group",
+    "-Users-b",
+    "-Users-b"
+   ],
+   [
+    "group",
+    "-Users-c",
+    "-Users-c"
+   ],
+   [
+    "group",
+    "-Users-d",
+    "-Users-d"
+   ],
+   [
+    "group",
+    "-Users-e",
+    "-Users-e"
+   ],
+   [
+    "group",
+    "-Users-f",
+    "-Users-f"
+   ],
+   [
+    "name",
+    "-Users-a"
+   ],
+   [
+    "name",
+    "__scratchpad__"
+   ],
+   [
+    "name",
+    "-Users-b"
+   ],
+   [
+    "name",
+    "-Users-c"
+   ],
+   [
+    "name",
+    "-Users-e"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-15"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789568000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-16"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789654400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-17"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789740800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-18"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789827200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-19"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789913600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-20"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1790000000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-21"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_update",
+    {
+     "at": 1790000000.0,
+     "cost": 2.86,
+     "daily": [
+      {
+       "cost": 0.0,
+       "d": "2026-09-15",
+       "tok": 50,
+       "top": [
+        {
+         "name": "N:-Users-b",
+         "slug": "-Users-b",
+         "tok": 50
+        }
+       ]
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-16",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-17",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-18",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.73,
+       "d": "2026-09-19",
+       "tok": 725,
+       "top": [
+        {
+         "name": "N:-Users-b",
+         "slug": "-Users-b",
+         "tok": 700
+        },
+        {
+         "name": "N:-Users-e",
+         "slug": "-Users-e",
+         "tok": 25
+        }
+       ]
+      },
+      {
+       "cost": 0.8,
+       "d": "2026-09-20",
+       "tok": 800,
+       "top": [
+        {
+         "name": "N:-Users-a",
+         "slug": "-Users-a",
+         "tok": 500
+        },
+        {
+         "name": "N:-Users-c",
+         "slug": "-Users-c",
+         "tok": 300
+        }
+       ]
+      },
+      {
+       "cost": 1.33,
+       "d": "2026-09-21",
+       "tok": 1100,
+       "top": [
+        {
+         "name": "N:-Users-a",
+         "slug": "-Users-a",
+         "tok": 1000
+        },
+        {
+         "name": "N:__scratchpad__",
+         "slug": "__scratchpad__",
+         "tok": 100
+        }
+       ]
+      }
+     ],
+     "days": 7,
+     "err": "",
+     "mix": {
+      "cc": 410,
+      "cr": 2152,
+      "in": 29,
+      "out": 40,
+      "ratio": 5.2,
+      "tot": 2631
+     },
+     "models": [
+      {
+       "cost": 1.23,
+       "name": "opus",
+       "tok": 1000
+      },
+      {
+       "cost": 0.5,
+       "name": "sonnet",
+       "tok": 500
+      },
+      {
+       "cost": 0.0,
+       "name": "?",
+       "tok": 4
+      }
+     ],
+     "rows": [
+      {
+       "cost": 1.73,
+       "days": 2,
+       "name": "N:-Users-a",
+       "slug": "-Users-a",
+       "tok": 1500
+      },
+      {
+       "cost": 0.7,
+       "days": 2,
+       "name": "N:-Users-b",
+       "slug": "-Users-b",
+       "tok": 750
+      },
+      {
+       "cost": 0.3,
+       "days": 1,
+       "name": "N:-Users-c",
+       "slug": "-Users-c",
+       "tok": 300
+      },
+      {
+       "cost": 0.1,
+       "days": 1,
+       "name": "N:__scratchpad__",
+       "slug": "__scratchpad__",
+       "tok": 100
+      },
+      {
+       "cost": 0.03,
+       "days": 1,
+       "name": "N:-Users-e",
+       "slug": "-Users-e",
+       "tok": 25
+      }
+     ],
+     "total": 2675,
+     "trend": [
+      {
+       "name": "N:-Users-a",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        500,
+        1000
+       ],
+       "slug": "-Users-a",
+       "tok": 1500
+      },
+      {
+       "name": "N:-Users-b",
+       "series": [
+        50,
+        0,
+        0,
+        0,
+        700,
+        0,
+        0
+       ],
+       "slug": "-Users-b",
+       "tok": 750
+      },
+      {
+       "name": "N:-Users-c",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        300,
+        0
+       ],
+       "slug": "-Users-c",
+       "tok": 300
+      },
+      {
+       "name": "기타 4개",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        25,
+        0,
+        100
+       ],
+       "slug": "",
+       "tok": 125
+      }
+     ]
+    }
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "local_rich_none_days": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "7": {
+    "at": 1790000000.0,
+    "cost": 2.86,
+    "daily": [
+     {
+      "cost": 0.0,
+      "d": "2026-09-15",
+      "tok": 50,
+      "top": [
+       {
+        "name": "N:-Users-b",
+        "slug": "-Users-b",
+        "tok": 50
+       }
+      ]
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-16",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-17",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-18",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.73,
+      "d": "2026-09-19",
+      "tok": 725,
+      "top": [
+       {
+        "name": "N:-Users-b",
+        "slug": "-Users-b",
+        "tok": 700
+       },
+       {
+        "name": "N:-Users-e",
+        "slug": "-Users-e",
+        "tok": 25
+       }
+      ]
+     },
+     {
+      "cost": 0.8,
+      "d": "2026-09-20",
+      "tok": 800,
+      "top": [
+       {
+        "name": "N:-Users-a",
+        "slug": "-Users-a",
+        "tok": 500
+       },
+       {
+        "name": "N:-Users-c",
+        "slug": "-Users-c",
+        "tok": 300
+       }
+      ]
+     },
+     {
+      "cost": 1.33,
+      "d": "2026-09-21",
+      "tok": 1100,
+      "top": [
+       {
+        "name": "N:-Users-a",
+        "slug": "-Users-a",
+        "tok": 1000
+       },
+       {
+        "name": "N:__scratchpad__",
+        "slug": "__scratchpad__",
+        "tok": 100
+       }
+      ]
+     }
+    ],
+    "days": 7,
+    "err": "",
+    "mix": {
+     "cc": 410,
+     "cr": 2152,
+     "in": 29,
+     "out": 40,
+     "ratio": 5.2,
+     "tot": 2631
+    },
+    "models": [
+     {
+      "cost": 1.23,
+      "name": "opus",
+      "tok": 1000
+     },
+     {
+      "cost": 0.5,
+      "name": "sonnet",
+      "tok": 500
+     },
+     {
+      "cost": 0.0,
+      "name": "?",
+      "tok": 4
+     }
+    ],
+    "rows": [
+     {
+      "cost": 1.73,
+      "days": 2,
+      "name": "N:-Users-a",
+      "slug": "-Users-a",
+      "tok": 1500
+     },
+     {
+      "cost": 0.7,
+      "days": 2,
+      "name": "N:-Users-b",
+      "slug": "-Users-b",
+      "tok": 750
+     },
+     {
+      "cost": 0.3,
+      "days": 1,
+      "name": "N:-Users-c",
+      "slug": "-Users-c",
+      "tok": 300
+     },
+     {
+      "cost": 0.1,
+      "days": 1,
+      "name": "N:__scratchpad__",
+      "slug": "__scratchpad__",
+      "tok": 100
+     },
+     {
+      "cost": 0.03,
+      "days": 1,
+      "name": "N:-Users-e",
+      "slug": "-Users-e",
+      "tok": 25
+     }
+    ],
+    "total": 2675,
+    "trend": [
+     {
+      "name": "N:-Users-a",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       500,
+       1000
+      ],
+      "slug": "-Users-a",
+      "tok": 1500
+     },
+     {
+      "name": "N:-Users-b",
+      "series": [
+       50,
+       0,
+       0,
+       0,
+       700,
+       0,
+       0
+      ],
+      "slug": "-Users-b",
+      "tok": 750
+     },
+     {
+      "name": "N:-Users-c",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       0,
+       300,
+       0
+      ],
+      "slug": "-Users-c",
+      "tok": 300
+     },
+     {
+      "name": "기타 4개",
+      "series": [
+       0,
+       0,
+       0,
+       0,
+       25,
+       0,
+       100
+      ],
+      "slug": "",
+      "tok": 125
+     }
+    ]
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    7
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260915"
+   ],
+   [
+    "uidx",
+    7
+   ],
+   [
+    "group",
+    "-Users-a",
+    "-Users-a"
+   ],
+   [
+    "group",
+    "-tmp-scratchpad-x",
+    "__scratchpad__"
+   ],
+   [
+    "group",
+    "-tmp-scratchpad-y",
+    "__scratchpad__"
+   ],
+   [
+    "group",
+    "-Users-b",
+    "-Users-b"
+   ],
+   [
+    "group",
+    "-Users-c",
+    "-Users-c"
+   ],
+   [
+    "group",
+    "-Users-d",
+    "-Users-d"
+   ],
+   [
+    "group",
+    "-Users-e",
+    "-Users-e"
+   ],
+   [
+    "group",
+    "-Users-f",
+    "-Users-f"
+   ],
+   [
+    "name",
+    "-Users-a"
+   ],
+   [
+    "name",
+    "__scratchpad__"
+   ],
+   [
+    "name",
+    "-Users-b"
+   ],
+   [
+    "name",
+    "-Users-c"
+   ],
+   [
+    "name",
+    "-Users-e"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789481600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-15"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789568000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-16"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789654400.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-17"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789740800.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-18"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789827200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-19"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789913600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-20"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1790000000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-21"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_update",
+    {
+     "at": 1790000000.0,
+     "cost": 2.86,
+     "daily": [
+      {
+       "cost": 0.0,
+       "d": "2026-09-15",
+       "tok": 50,
+       "top": [
+        {
+         "name": "N:-Users-b",
+         "slug": "-Users-b",
+         "tok": 50
+        }
+       ]
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-16",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-17",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-18",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.73,
+       "d": "2026-09-19",
+       "tok": 725,
+       "top": [
+        {
+         "name": "N:-Users-b",
+         "slug": "-Users-b",
+         "tok": 700
+        },
+        {
+         "name": "N:-Users-e",
+         "slug": "-Users-e",
+         "tok": 25
+        }
+       ]
+      },
+      {
+       "cost": 0.8,
+       "d": "2026-09-20",
+       "tok": 800,
+       "top": [
+        {
+         "name": "N:-Users-a",
+         "slug": "-Users-a",
+         "tok": 500
+        },
+        {
+         "name": "N:-Users-c",
+         "slug": "-Users-c",
+         "tok": 300
+        }
+       ]
+      },
+      {
+       "cost": 1.33,
+       "d": "2026-09-21",
+       "tok": 1100,
+       "top": [
+        {
+         "name": "N:-Users-a",
+         "slug": "-Users-a",
+         "tok": 1000
+        },
+        {
+         "name": "N:__scratchpad__",
+         "slug": "__scratchpad__",
+         "tok": 100
+        }
+       ]
+      }
+     ],
+     "days": 7,
+     "err": "",
+     "mix": {
+      "cc": 410,
+      "cr": 2152,
+      "in": 29,
+      "out": 40,
+      "ratio": 5.2,
+      "tot": 2631
+     },
+     "models": [
+      {
+       "cost": 1.23,
+       "name": "opus",
+       "tok": 1000
+      },
+      {
+       "cost": 0.5,
+       "name": "sonnet",
+       "tok": 500
+      },
+      {
+       "cost": 0.0,
+       "name": "?",
+       "tok": 4
+      }
+     ],
+     "rows": [
+      {
+       "cost": 1.73,
+       "days": 2,
+       "name": "N:-Users-a",
+       "slug": "-Users-a",
+       "tok": 1500
+      },
+      {
+       "cost": 0.7,
+       "days": 2,
+       "name": "N:-Users-b",
+       "slug": "-Users-b",
+       "tok": 750
+      },
+      {
+       "cost": 0.3,
+       "days": 1,
+       "name": "N:-Users-c",
+       "slug": "-Users-c",
+       "tok": 300
+      },
+      {
+       "cost": 0.1,
+       "days": 1,
+       "name": "N:__scratchpad__",
+       "slug": "__scratchpad__",
+       "tok": 100
+      },
+      {
+       "cost": 0.03,
+       "days": 1,
+       "name": "N:-Users-e",
+       "slug": "-Users-e",
+       "tok": 25
+      }
+     ],
+     "total": 2675,
+     "trend": [
+      {
+       "name": "N:-Users-a",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        500,
+        1000
+       ],
+       "slug": "-Users-a",
+       "tok": 1500
+      },
+      {
+       "name": "N:-Users-b",
+       "series": [
+        50,
+        0,
+        0,
+        0,
+        700,
+        0,
+        0
+       ],
+       "slug": "-Users-b",
+       "tok": 750
+      },
+      {
+       "name": "N:-Users-c",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        300,
+        0
+       ],
+       "slug": "-Users-c",
+       "tok": 300
+      },
+      {
+       "name": "기타 4개",
+       "series": [
+        0,
+        0,
+        0,
+        0,
+        25,
+        0,
+        100
+       ],
+       "slug": "",
+       "tok": 125
+      }
+     ]
+    }
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ },
+ "local_zero_rest": {
+  "ret": [
+   "ret",
+   null
+  ],
+  "slots": {
+   "3": {
+    "at": 1790000000.0,
+    "cost": 0.3,
+    "daily": [
+     {
+      "cost": 0.0,
+      "d": "2026-09-19",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.0,
+      "d": "2026-09-20",
+      "tok": 0,
+      "top": []
+     },
+     {
+      "cost": 0.3,
+      "d": "2026-09-21",
+      "tok": 27,
+      "top": [
+       {
+        "name": "N:-Users-a",
+        "slug": "-Users-a",
+        "tok": 10
+       },
+       {
+        "name": "N:-Users-b",
+        "slug": "-Users-b",
+        "tok": 9
+       }
+      ]
+     }
+    ],
+    "days": 3,
+    "err": "",
+    "mix": {
+     "cc": 0,
+     "cr": 0,
+     "in": 0,
+     "out": 0,
+     "ratio": 0,
+     "tot": 0
+    },
+    "models": [],
+    "rows": [
+     {
+      "cost": 0.1,
+      "days": 1,
+      "name": "N:-Users-a",
+      "slug": "-Users-a",
+      "tok": 10
+     },
+     {
+      "cost": 0.1,
+      "days": 1,
+      "name": "N:-Users-b",
+      "slug": "-Users-b",
+      "tok": 9
+     },
+     {
+      "cost": 0.1,
+      "days": 1,
+      "name": "N:-Users-c",
+      "slug": "-Users-c",
+      "tok": 8
+     }
+    ],
+    "total": 27,
+    "trend": [
+     {
+      "name": "N:-Users-a",
+      "series": [
+       0,
+       0,
+       10
+      ],
+      "slug": "-Users-a",
+      "tok": 10
+     },
+     {
+      "name": "N:-Users-b",
+      "series": [
+       0,
+       0,
+       9
+      ],
+      "slug": "-Users-b",
+      "tok": 9
+     },
+     {
+      "name": "N:-Users-c",
+      "series": [
+       0,
+       0,
+       8
+      ],
+      "slug": "-Users-c",
+      "tok": 8
+     }
+    ]
+   }
+  },
+  "trace": [
+   [
+    "wk_slot",
+    3
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789827200.0
+   ],
+   [
+    "strftime",
+    "%Y%m%d",
+    "20260919"
+   ],
+   [
+    "uidx",
+    3
+   ],
+   [
+    "group",
+    "-Users-a",
+    "-Users-a"
+   ],
+   [
+    "group",
+    "-Users-b",
+    "-Users-b"
+   ],
+   [
+    "group",
+    "-Users-c",
+    "-Users-c"
+   ],
+   [
+    "group",
+    "-Users-z",
+    "-Users-z"
+   ],
+   [
+    "name",
+    "-Users-a"
+   ],
+   [
+    "name",
+    "-Users-b"
+   ],
+   [
+    "name",
+    "-Users-c"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789827200.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-19"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1789913600.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-20"
+   ],
+   [
+    "time"
+   ],
+   [
+    "localtime",
+    1790000000.0
+   ],
+   [
+    "strftime",
+    "%Y-%m-%d",
+    "2026-09-21"
+   ],
+   [
+    "enter",
+    "wkuse"
+   ],
+   [
+    "time"
+   ],
+   [
+    "slot_update",
+    {
+     "at": 1790000000.0,
+     "cost": 0.3,
+     "daily": [
+      {
+       "cost": 0.0,
+       "d": "2026-09-19",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.0,
+       "d": "2026-09-20",
+       "tok": 0,
+       "top": []
+      },
+      {
+       "cost": 0.3,
+       "d": "2026-09-21",
+       "tok": 27,
+       "top": [
+        {
+         "name": "N:-Users-a",
+         "slug": "-Users-a",
+         "tok": 10
+        },
+        {
+         "name": "N:-Users-b",
+         "slug": "-Users-b",
+         "tok": 9
+        }
+       ]
+      }
+     ],
+     "days": 3,
+     "err": "",
+     "mix": {
+      "cc": 0,
+      "cr": 0,
+      "in": 0,
+      "out": 0,
+      "ratio": 0,
+      "tot": 0
+     },
+     "models": [],
+     "rows": [
+      {
+       "cost": 0.1,
+       "days": 1,
+       "name": "N:-Users-a",
+       "slug": "-Users-a",
+       "tok": 10
+      },
+      {
+       "cost": 0.1,
+       "days": 1,
+       "name": "N:-Users-b",
+       "slug": "-Users-b",
+       "tok": 9
+      },
+      {
+       "cost": 0.1,
+       "days": 1,
+       "name": "N:-Users-c",
+       "slug": "-Users-c",
+       "tok": 8
+      }
+     ],
+     "total": 27,
+     "trend": [
+      {
+       "name": "N:-Users-a",
+       "series": [
+        0,
+        0,
+        10
+       ],
+       "slug": "-Users-a",
+       "tok": 10
+      },
+      {
+       "name": "N:-Users-b",
+       "series": [
+        0,
+        0,
+        9
+       ],
+       "slug": "-Users-b",
+       "tok": 9
+      },
+      {
+       "name": "N:-Users-c",
+       "series": [
+        0,
+        0,
+        8
+       ],
+       "slug": "-Users-c",
+       "tok": 8
+      }
+     ]
+    }
+   ],
+   [
+    "exit",
+    "wkuse"
+   ]
+  ]
+ }
+}

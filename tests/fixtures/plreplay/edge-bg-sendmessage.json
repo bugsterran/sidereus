@@ -1,0 +1,213 @@
+{
+ "v": 1,
+ "note": "A background launch and a queued SendMessage retry get no hand-off: the stage stays run until the agent is done and the session idles.",
+ "pipe": {
+  "name": "demo-flow",
+  "stages": [
+   {
+    "title": "설계",
+    "agent": "sidereus-designer"
+   },
+   {
+    "title": "구현",
+    "agent": "sidereus-implementer",
+    "fanout": "slices",
+    "gate": "scripts/check.sh --fast",
+    "onError": "continue"
+   },
+   {
+    "title": "검증",
+    "agent": "sidereus-verifier",
+    "model": "sonnet",
+    "gate": "scripts/check.sh --full",
+    "onFail": {
+     "goto": "구현",
+     "max": 2
+    }
+   },
+   {
+    "title": "리뷰",
+    "agent": "sidereus-reviewer",
+    "onFail": {
+     "goto": "구현",
+     "max": 1,
+     "then": "재검증"
+    }
+   },
+   {
+    "title": "재검증",
+    "agent": "sidereus-verifier",
+    "model": "sonnet",
+    "onlyOnJump": true,
+    "onFail": {
+     "goto": "구현",
+     "max": 1
+    }
+   },
+   {
+    "title": "라이브 검증",
+    "agent": "general-purpose"
+   }
+  ]
+ },
+ "ev": [
+  {
+   "t": 0,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/설계]",
+   "sub": "sidereus-designer",
+   "model": null,
+   "bg": 1,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 1,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/설계]",
+   "sub": "sidereus-designer",
+   "model": null,
+   "bg": 1,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 30,
+   "e": "bgdone",
+   "tool": "Agent",
+   "tag": "",
+   "sub": null,
+   "model": null,
+   "bg": 1,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 40,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": "sidereus-implementer",
+   "model": null,
+   "bg": 1,
+   "aid": "a02",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 41,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": "sidereus-implementer",
+   "model": null,
+   "bg": 1,
+   "aid": "a02",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 50,
+   "e": "pre",
+   "tool": "SendMessage",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": null,
+   "model": null,
+   "bg": 1,
+   "aid": null,
+   "to": "a02",
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 51,
+   "e": "post",
+   "tool": "SendMessage",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": null,
+   "model": null,
+   "bg": 1,
+   "aid": null,
+   "to": "a02",
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 60,
+   "e": "bgdone",
+   "tool": "Agent",
+   "tag": "",
+   "sub": null,
+   "model": null,
+   "bg": 1,
+   "aid": "a02",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  }
+ ],
+ "cp": [
+  {
+   "at": 1,
+   "act": "run",
+   "end": 0,
+   "cur": "설계",
+   "st": {
+    "설계": "run n=1"
+   }
+  },
+  {
+   "at": 2,
+   "act": "idle",
+   "end": 0,
+   "cur": "설계",
+   "st": {
+    "설계": "run n=1"
+   },
+   "model": {
+    "설계": "done n=1"
+   },
+   "view": {
+    "설계": "done n=1",
+    "status": "fin"
+   }
+  },
+  {
+   "at": 6,
+   "act": "run",
+   "end": 0,
+   "cur": "구현",
+   "st": {
+    "설계": "done n=1",
+    "구현": "run n=2"
+   }
+  },
+  {
+   "at": 7,
+   "act": "idle",
+   "end": 0,
+   "cur": "구현",
+   "st": {
+    "설계": "done n=1",
+    "구현": "run n=2"
+   },
+   "model": {
+    "구현": "done n=2"
+   },
+   "view": {
+    "구현": "done n=2",
+    "status": "fin"
+   }
+  }
+ ]
+}

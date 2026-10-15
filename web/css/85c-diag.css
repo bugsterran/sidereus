@@ -1,0 +1,20 @@
+/* Settings «Diagnostics» pane (90e-diag.js): read-only lists; long commands/paths ellipsize, full text in the title. */
+html[data-ui=next][data-ui] #cfgbox .dxtop{justify-content:flex-end;margin:0 0 4px}
+html[data-ui=next][data-ui] #cfgbox .dxnote{font-weight:400;color:var(--nx-t3);margin-left:6px}
+html[data-ui=next][data-ui] #cfgbox .dxev{padding:8px 0;border-top:1px solid var(--nx-rule)}
+html[data-ui=next][data-ui] #cfgbox .cfgs + .dxev{border-top:0}
+html[data-ui=next][data-ui] #cfgbox .dxevh{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0}
+html[data-ui=next][data-ui] #cfgbox .dxevh > b{font-size:13px;font-weight:600;color:var(--nx-t1);margin-right:4px}
+html[data-ui=next][data-ui] #cfgbox .dxchip{font-size:11.5px;color:var(--nx-t1);background:var(--nx-info-bg);border:1px solid var(--nx-info);border-radius:3px;
+  padding:1px 6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next][data-ui] #cfgbox .dxl{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+html[data-ui=next][data-ui] #cfgbox .dxl > li{display:flex;align-items:baseline;gap:6px;min-width:0;font-size:12.5px;color:var(--nx-t1);padding:3px 0 3px 8px;
+  border-left:2px solid var(--nx-rule)}
+html[data-ui=next][data-ui] #cfgbox .dxl > li.dxw{border-left-color:var(--nx-warn)}
+html[data-ui=next][data-ui] #cfgbox .dxl > li.dxw > b{color:var(--nx-warn)}
+html[data-ui=next][data-ui] #cfgbox .dxl > li.off{color:var(--nx-t3)}
+html[data-ui=next][data-ui] #cfgbox .dxl b{font-weight:500;white-space:nowrap}
+html[data-ui=next][data-ui] #cfgbox .dxl code,html[data-ui=next][data-ui] #cfgbox .dxl > li > span{min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px}
+html[data-ui=next][data-ui] #cfgbox .dxl small{margin-left:auto;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--nx-t2)}
+html[data-ui=next][data-ui] #cfgbox .dxsrc,html[data-ui=next][data-ui] #cfgbox .dxok{flex:0 0 auto;font-size:11px;color:var(--nx-t3);border:1px solid var(--nx-rule);border-radius:3px;padding:0 5px}
+html[data-ui=next][data-ui] #cfgbox .dxok{color:var(--nx-info);border-color:var(--nx-info)}

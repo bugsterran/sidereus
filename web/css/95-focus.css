@@ -1,0 +1,25 @@
+/* Keyboard focus ring for every control, native or [data-kb] (98-a11y.js). Mouse clicks do not show it (:focus-visible). */
+[data-kb]:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px}
+/* ⚠Fields too: several rules (.tlsel, #cbox, #wkcbox, input[type=search]) set outline:none and only recolour a 1px border,
+   which is not a visible focus indicator. !important because those rules outrank any generic selector (ids included). */
+:is(input:not([type=checkbox],[type=radio],[type=range]),select,textarea):focus-visible{outline:2px solid var(--nx-info,#5899f3)!important;outline-offset:1px}
+/* Light: field edges were #d8dbe1 (1.27–1.37:1); #80868f reaches 3.36:1 on #f4f5f7 (WCAG 1.4.11). Width untouched, so
+   borderless fields stay borderless; :focus border-colour rules still win (higher specificity).
+   ⚠`[data-ui]` keeps 00-core from deriving a lightened twin of this rule (measured: it turned #80868f into #a9adb3, 2.07:1). */
+html[data-ui][data-theme=light] :is(input:not([type=checkbox],[type=radio],[type=range]),select,textarea){border-color:#80868f}
+/* Inside clipping containers (overflow:hidden/auto) the outside ring was cut at the edge — tab row, activity chips,
+   feed rows/toolbars, branch panes, status bar. Draw it inset there instead; overflow stays (it prevents layout overflow). */
+:is(.mvg,#feed,.tlt,#brmd,#brpan,.strps,.strseg) :focus-visible,#sbar:focus-visible{outline-offset:-2px}
+/* Shortcut help (98-a11y.js kbHelpOpen) — fixed top-centre, closed by Esc / outside click / ✕. */
+.kbhelp{position:fixed;z-index:80;top:72px;left:50%;transform:translateX(-50%);min-width:280px;max-width:420px;padding:10px 14px 12px;
+  background:var(--nx-panel,#141a23);color:var(--nx-t1,#dce8f8);border:1px solid var(--nx-rule,#2a3342);border-radius:8px;
+  box-shadow:0 8px 28px rgba(0,0,0,.35);font-size:12px}
+.kbhelp[hidden]{display:none}
+.kbhelp:focus{outline:none}
+.kbhh{display:flex;align-items:center;font-weight:600;margin-bottom:8px}
+.kbhx{margin-left:auto;font:inherit;background:none;border:0;color:var(--nx-t3,#7e8896);cursor:pointer;padding:0 4px}
+.kbhelp dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:0}
+.kbhelp dt{margin:0;text-align:right}
+.kbhelp dd{margin:0;color:var(--nx-t2,#a8b3c4)}
+.kbhelp kbd{font:11px ui-monospace,Menlo,monospace;padding:1px 6px;border:1px solid var(--nx-rule,#2a3342);border-radius:4px;background:var(--nx-bg,#0a0b0e)}
+.kbhn{margin-top:9px;font-size:10.5px;color:var(--nx-t3,#7e8896)}

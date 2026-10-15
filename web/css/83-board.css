@@ -1,0 +1,74 @@
+/* ── Branch tab «Board» (88b-board.js) ─────────────────────────────────────
+   Columns wrap (auto-fit, min 160px) instead of scrolling sideways — no horizontal page scroll at 900/1100/1440.
+   Colors are --nx-* tokens only, so the light theme (91-light.css) follows without twins. */
+.bdtab{display:flex;flex-direction:column;min-height:0}
+.bdcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;align-items:start;min-width:0}
+.bdcol{min-width:0;display:flex;flex-direction:column;gap:6px;padding:6px;border:1px solid var(--nx-rule,#2a2f37);border-radius:6px;
+  background:var(--nx-panel,#111418)}
+.bdcol > h4{margin:0 0 2px;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--nx-t1,#e6e8eb)}
+.bdcol > h4 > span{font-weight:500;color:var(--nx-t3,#8b95a7);font-variant-numeric:tabular-nums}
+.bdcol > h4::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--nx-idle,#6e7278);flex:0 0 auto}
+.bdcol.bd-blk > h4::before{background:var(--nx-err,#e0736c)}
+.bdcol.bd-run > h4::before{background:var(--nx-info,#5899f3)}
+.bdcol.bd-rv > h4::before{background:var(--nx-warn,#e0b45f)}
+.bdcol.bd-ok > h4::before{background:var(--nx-ok,#71c269)}
+.bde{font-size:11.5px;color:var(--nx-t3,#8b95a7);padding:6px 2px}
+.bdc{position:relative;min-width:0;display:flex;flex-direction:column;gap:3px;padding:6px 7px;border:1px solid var(--nx-rule,#2a2f37);
+  border-left-width:3px;border-radius:5px;background:var(--nx-bg,#0a0b0e);cursor:pointer}
+.bdc:hover{background:var(--nx-hover,#1a1e24)}
+.bdc.bd-blk{border-left-color:var(--nx-err,#e0736c)}
+.bdc.bd-run{border-left-color:var(--nx-info,#5899f3)}
+.bdc.bd-rv{border-left-color:var(--nx-warn,#e0b45f)}
+.bdc.bd-ok{border-left-color:var(--nx-ok,#71c269)}
+.bdt{all:unset;display:flex;flex-direction:column;min-width:0;cursor:pointer}
+.bdt:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:2px;border-radius:3px}
+.bdt b{font-size:12.5px;font-weight:600;color:var(--nx-t1,#e6e8eb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bdt i{font-style:normal;font-size:11px;color:var(--nx-t2,#b4bac4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bdm{display:flex;flex-wrap:wrap;gap:3px 7px;font-size:10.5px;color:var(--nx-t3,#8b95a7);min-width:0}
+.bdm code{font-size:10.5px;color:var(--nx-t2,#b4bac4)}
+.bdm em{font-style:normal}
+.bdx.hot{color:var(--nx-warn,#e0b45f)}
+.bdnf .ba{color:var(--nx-ok,#71c269);font-weight:500}
+.bdnf .bd{color:var(--nx-err,#e0736c);font-weight:500;font-size:inherit;margin:0}
+.bdw{font-size:11px;color:var(--nx-err,#e0736c)}
+.bdq{font-size:11px;color:var(--nx-t2,#b4bac4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bdrl{font-size:10.5px;color:var(--nx-t3,#8b95a7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}   /* own line above .bda */
+.bdrl.s2{color:var(--nx-info,#5899f3)}
+.bdrl.s3{color:var(--nx-ok,#71c269)}
+/* ⚠At 900 a 160px card truncated its three buttons to one glyph + «…» each (2026-09-27) — wrap to a second line instead of shrinking */
+.bda{position:relative;display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;min-width:0}
+.bda > button{flex:0 0 auto;min-width:0;height:22px;padding:0 7px;font:inherit;font-size:11px;line-height:1;cursor:pointer;
+  border:1px solid var(--seg-bd,var(--nx-rule,#2a2f37));border-radius:var(--seg-r,4px);background:var(--seg-bg,transparent);
+  color:var(--seg-c,var(--nx-t2,#b4bac4));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bda > button:hover{background:var(--seg-hv-bg,var(--nx-hover,#1a1e24));color:var(--seg-hv-c,var(--nx-t1,#e6e8eb))}
+.bda > .bdmb{margin-left:auto;flex:0 0 auto}
+.bda > button:focus-visible,.bdmenu button:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px}
+.bdmenu{position:absolute;right:0;top:calc(100% + 3px);z-index:20;display:flex;flex-direction:column;min-width:140px;padding:4px;
+  border:1px solid var(--pop-bd,var(--nx-rule,#2a2f37));border-radius:var(--pop-r,6px);background:var(--nx-panel,#111418);
+  box-shadow:var(--pop-sh,0 8px 24px #0006)}
+.bdmenu button{all:unset;padding:5px 8px;font-size:12px;color:var(--nx-t1,#e6e8eb);border-radius:4px;cursor:pointer;white-space:nowrap}
+/* ⚠html[data-ui] lifts this over the 00-core next-UI twin of «.bdmenu button{all:unset}» (0,2,2); same at .bdsbar below */
+html[data-ui] .bdmenu button:hover{background:var(--nx-hover,#1a1e24)}
+.bdhid{font-size:11px;color:var(--nx-t3,#8b95a7)}
+/* «Select» mode (88f-bdmulti.js): the action bar lives inside the sticky .wvh header, on its own line */
+.bdtab .wvh > .bdsel{margin-left:auto}
+.bdsel,.bdsbar button{height:22px;padding:0 8px;font:inherit;font-size:11.5px;line-height:1;cursor:pointer;
+  border:1px solid var(--seg-bd,var(--nx-rule,#2a2f37));border-radius:var(--seg-r,4px);background:var(--seg-bg,transparent);
+  color:var(--seg-c,var(--nx-t2,#b4bac4));white-space:nowrap}
+.bdsel.on{border-color:var(--nx-info,#5899f3);color:var(--nx-t1,#e6e8eb)}
+.bdsbar button:disabled{opacity:.5;cursor:default}
+.bdsel:focus-visible,.bdsbar button:focus-visible,.bdck input:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px}
+.bdsbar{flex:1 0 100%;display:flex;align-items:center;gap:8px;min-width:0;padding:5px 8px;border:1px solid var(--nx-info,#5899f3);
+  border-radius:5px;background:var(--nx-panel,#111418)}
+.wvh .bdsbar > b{font-size:12px;font-weight:600;color:var(--nx-t1,#e6e8eb);font-variant-numeric:tabular-nums}
+.bdsrel{position:relative;display:inline-flex}
+/* ⚠.wvh span{overflow:hidden} (40-tokens) clipped the «Relay ▾» menu — this wrapper must not clip */
+.wvh .bdsrel{overflow:visible}
+.bdsrel > .bdmenu{left:0;right:auto}
+.bdsbar .bdmenu button{height:auto;padding:5px 8px;font-size:12px;line-height:normal;text-align:left;border:none;background:none;color:var(--nx-t1,#e6e8eb)}
+html[data-ui] .bdsbar .bdmenu button:hover{background:var(--nx-hover,#1a1e24)}
+.bdc.bdpick{padding-right:26px}
+.bdc.bdon{border-color:var(--nx-info,#5899f3);background:var(--nx-hover,#1a1e24)}
+.bdck{position:absolute;top:4px;right:4px;display:flex;padding:2px;cursor:pointer}
+.bdck.off{cursor:not-allowed;opacity:.45}
+.bdck input{margin:0;cursor:inherit}

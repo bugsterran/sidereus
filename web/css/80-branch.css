@@ -1,0 +1,176 @@
+/* ── Branch flow ─────────────────────────────────────────────────────────
+   ★Lane colors cycle `HUE7` (**the same 7 colors** as repoHue and timeline chips) by lane number — no new colors.
+   ⚠Local is a filled chip (.brl) · remote is outline only (.brm). That contrast is the whole legend. */
+.brtab{display:flex;flex-direction:column;min-height:0}
+.brbody{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;min-height:0}
+.brgw{display:flex;align-items:flex-start;flex:1 1 380px;min-width:0}
+.brsvg{flex:0 0 auto;display:block}
+html[data-ui=next] .brsvg path,html[data-ui=next] .brsvg circle{transition:opacity .12s}
+html[data-ui=next] .brsvg.dim path:not(.hl),html[data-ui=next] .brsvg.dim circle:not(.hl){opacity:.16}
+html[data-ui=next] .brsvg.dim path.hl{stroke-width:2.6}
+/* Commit rows share one column grid: subject 1fr | author | session | time | hash. Rows are subgrids so auto tracks
+   size to the widest cell in the whole list and every column starts at the same x on every row.
+   ⚠Cells pin grid-row:1 + a column: an out-of-order cell (brLinksPaint inserts .brlk later) would otherwise wrap to a
+   2nd row. No column-gap: an empty session track would still carry a gap — cells use margin-left instead. */
+.brlist{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) repeat(4,auto);container-type:inline-size}
+.brr{grid-column:1/-1;display:grid;grid-template-columns:subgrid;align-items:center;padding:0 5px;overflow:hidden;
+  white-space:nowrap;border-radius:4px;cursor:pointer}
+.brr>*{grid-row:1}
+.brsj{grid-column:1;display:flex;gap:6px;align-items:center;min-width:0;overflow:hidden}
+.brr>s{grid-column:2}
+.brr>.brlk{grid-column:3;justify-self:start;margin-left:8px}
+.brr>em{grid-column:4;text-align:right}
+.brr>u{grid-column:5}
+/* ⇒ Narrow list (900px, or the detail pane open): drop the hash first — it is in the row tooltip and the detail pane
+   (with a copy button); author, session and time stay. Below 380px the author goes too. */
+@container (max-width:560px){.brr>u{display:none}}
+@container (max-width:380px){.brr>s{display:none}}
+.brr:hover{background:#161c25}
+/* ⚠The old 15% bg + dim outline read as "nothing happened" in every tone. The inset bar is a box-shadow on
+   purpose: the ?ui=next twins remap background/border/outline colors but never box-shadow. */
+.brr.on{background:#1f6feb47;outline:1px solid #4a8fe8;box-shadow:inset 3px 0 0 #58a6ff}
+.brr.on b{color:#eaf1fa;font-weight:600}
+/* ⚠Huge shrink on <b>: inside .brsj the title gives way first, ref chips (shrink 1) only once it hits 0. */
+.brr b{flex:1 1000000 auto;min-width:64px;overflow:hidden;text-overflow:ellipsis;color:#c3ccda;
+  font-weight:400;font-size:12px}
+.brsj .brf{flex:0 1 auto;min-width:34px;max-width:260px}
+.brsj .brfh{flex-shrink:0}
+.brsj .brmore{flex-shrink:0;min-width:0;color:var(--nx-t2,#909298);border-color:#3a4250;cursor:help}
+.brr u{margin-left:8px;text-decoration:none;color:var(--nx-t2,#909298);font:10.5px ui-monospace,Menlo,monospace}
+/* ⚠Author was #5d6675 (3.24:1 dark); --nx-t2 is >=4.5 in every tone and in light. Its track has no min: it ellipsizes last. */
+.brr s{margin-left:8px;min-width:0;max-width:120px;text-decoration:none;color:var(--nx-t2,#909298);font-size:10.5px;
+  overflow:hidden;text-overflow:ellipsis}
+.brr em{margin-left:8px;font-style:normal;color:#7e8896;font-size:10.5px}
+.brf{flex:0 0 auto;font-size:10px;font-style:normal;border-radius:999px;padding:0 6px;
+  line-height:15px;border:1px solid transparent;max-width:150px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.brf.brl{background:#1d2b42;border-color:#3f6ea8;color:#bcd4f5}
+.brf.brm{background:none;border-color:#3a4a63;color:#8b95a7}
+.brf.brh{background:#3a2e14;border-color:#e0b45f;color:#e6c887;font-weight:600}
+.brlg{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:6px 0 8px;
+  font-size:10.5px;color:#6b7688}
+.brlg span{margin-right:5px;color:#8b95a7}
+.brlg u{text-decoration:none;margin-right:9px}
+/* 236px truncated most branch names in the tree; 380px fits typical feature/... names without ellipsis. */
+/* max-height below is only the pre-JS fallback — brPanFit (88-branch.js) sets it to the room left in #feed; sticky keeps it in view. */
+/* ⚠Basis 42% (<=380px): at 900px with the 56px rail a fixed 380px pane left the list 374px and its author column dropped. */
+.brpan{flex:0 1 clamp(320px,42%,380px);min-width:300px;max-height:62vh;overflow:auto;position:sticky;top:0;
+  border-left:1px solid #1b222c;padding-left:10px}
+.brpan::-webkit-scrollbar{width:8px}
+.brpan::-webkit-scrollbar-thumb{background:#242c38;border-radius:4px}
+.brpr{display:flex;gap:5px;align-items:center;width:100%;text-align:left;cursor:pointer;
+  background:none;border:0;border-bottom:1px solid #161d27;color:#a8b3c4;font:inherit;font-size:11px;padding:4px 3px}
+.brpr:hover{background:#1b2231;color:#dfe5ee}
+.brpr.on{background:#1d2b42}
+.brpr b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-weight:600;color:#c3ccda}
+.brpr em{flex:0 0 auto;font-style:normal;color:#6b7688;font-size:10px}
+.brpr .brsg{color:#8ab4ff;font-size:10px;flex:0 0 auto}
+/* Remote ahead/behind older than the last fetch threshold: muted, dotted = has a tooltip. */
+.brsg.brsgo{opacity:.45;text-decoration:underline dotted;cursor:help}
+.wvh .brfro{color:var(--nx-warn,#fad83e)}
+.brfc{font:inherit;font-size:10px;padding:0 5px;margin-left:2px;border:1px solid var(--nx-rule,#252629);border-radius:3px;background:none;color:inherit;cursor:pointer}
+.brpr.hd b{color:#e0b45f;font-weight:600}
+.brhd{flex:0 0 auto;font-size:9px;letter-spacing:.3px;color:#e0b45f;border:1px solid #6b5426;border-radius:3px;padding:0 3px;line-height:max(14px, 1.15em)}   /* em: grows with --fs, 14px at 100% */
+/* Branch folder tree (brTreeHtml) */
+html[data-ui=next] .brth{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+html[data-ui=next] .brmg{margin-left:auto;background:none;border:1px solid #2a3444;border-radius:9px;color:var(--nx-t3);
+  font:inherit;font-size:10px;padding:1px 7px;cursor:pointer}
+html[data-ui=next] .brmg.on{border-color:#3f6ea8;color:#bcd4f5;background:#1d2b42}
+html[data-ui=next] .brth .brtall{font-size:10px;padding:1px 7px;white-space:nowrap}
+html[data-ui=next] .brtf{display:flex;gap:5px;align-items:center;width:100%;text-align:left;cursor:pointer;background:none;
+  border:0;border-bottom:1px solid #161d27;color:#8b95a7;font:inherit;font-size:11px;padding:3px}
+html[data-ui=next] .brtf:hover{background:#1b2231;color:#dfe5ee}
+html[data-ui=next] .brtf i{font-style:normal;width:10px;flex:0 0 auto;color:var(--nx-t3)}
+html[data-ui=next] .brtf b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+html[data-ui=next] .brtf em{font-style:normal;font-size:10px;color:var(--nx-t3)}
+html[data-ui=next] .brtf.brtg b{font-weight:700;color:#c3ccda}
+html[data-ui=next] .brtf:focus-visible,html[data-ui=next] .brtl:focus-visible,html[data-ui=next] .brmg:focus-visible{outline:1px solid #8ab4ff;outline-offset:-1px}
+html[data-ui=next] .brtw{flex:0 0 auto;font-size:10px;color:#7fbf9f;border:1px solid #2f5a45;border-radius:3px;padding:0 3px;line-height:14px}
+/* Commit details pane — replaces .brpan's branch list while a commit is selected. A side pane, not an inline
+   expansion: list rows must stay BR_RH tall or they drift off the SVG graph lanes. Sticky so it stays in view. */
+.brpan.brdt{flex:1 1 420px;max-width:56%;position:sticky;top:70px;max-height:calc(100vh - 90px)}
+/* Dragged width (88g-branch-resize.js) — both pane modes share it; max-width keeps the graph >= 400px (412 = 400 + 12px gap). */
+@media(min-width:821px){html.brpsz .brpan,html.brpsz .brpan.brdt{flex:0 0 var(--brpw);max-width:calc(100% - 412px)}}
+html.brpgr .brbody{cursor:col-resize}
+html.brpgr .brpan{border-left-color:var(--nx-t3,#3a4657)}
+.brdh{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.brdh b{color:#c3ccda;font-size:12px;font-weight:600}
+.brdb{background:#161c25;border:1px solid #2a3342;color:#a8b3c4;border-radius:4px;font:inherit;font-size:11px;padding:2px 8px;cursor:pointer}
+.brdb:hover{color:#dfe5ee;border-color:#3f6ea8}
+.brds{font-size:13px;font-weight:600;color:#dfe5ee;margin:0 0 6px;white-space:pre-wrap;word-break:break-word}
+.brdm{margin:0 0 8px;white-space:pre-wrap;word-break:break-word;font:11.5px/1.5 ui-monospace,Menlo,monospace;
+  color:#a8b3c4;background:#12161d;border:1px solid #1b222c;border-radius:4px;padding:6px 8px;max-height:220px;overflow:auto}
+.brdk{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;font-size:11px;color:#a8b3c4;margin-bottom:8px}
+.brdk i{font-style:normal;color:#6b7688}
+.brdk code{font-size:10.5px;color:#c3ccda;word-break:break-all}
+.brdc,.brdp{background:none;border:1px solid #2a3342;color:#8ab4ff;border-radius:3px;font:inherit;font-size:10.5px;padding:0 5px;cursor:pointer;margin:0 4px 0 0}
+.brdc{margin-left:6px}
+.brdc:hover,.brdp:hover{border-color:#3f6ea8}
+.brdf{display:flex;gap:6px;align-items:center;width:100%;text-align:left;background:none;border:0;
+  border-bottom:1px solid #161d27;color:#a8b3c4;font:inherit;font-size:11px;padding:3px 3px;cursor:pointer}
+.brdf:hover{background:#1b2231}
+.brdf.on{background:#1d2b42;box-shadow:inset 3px 0 0 #58a6ff}
+.brdf b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400;color:#c3ccda}
+.brdf em{font-style:normal;color:#6b7688;font-size:10px}
+.brdf .ba{color:#7fbf7f;font-size:10.5px}
+.brdf .bd{color:#cf8a8a;font-size:10.5px}
+/* Work unit rows (worktree <-> sessions) in the branch pane. State dot uses the --nx palette. */
+html[data-ui=next] .brwt{display:flex;gap:5px;align-items:center;width:100%;text-align:left;cursor:pointer;background:none;
+  border:0;border-top:1px solid var(--nx-rule);color:var(--nx-t1);font:inherit;font-size:11px;padding:5px 3px 3px}
+html[data-ui=next] .brwt:hover{background:var(--nx-hover)}
+html[data-ui=next] .brwt.on{box-shadow:inset 3px 0 0 var(--nx-info)}
+html[data-ui=next] .brwt b{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+html[data-ui=next] .brwt em{margin-left:auto;font-style:normal;color:var(--nx-t3);font-size:10px;flex:0 0 auto}
+html[data-ui=next] .brws,html[data-ui=next] .brwa{display:flex;gap:5px;align-items:center;cursor:pointer;
+  padding:2px 3px 2px 12px;font-size:10.5px;color:var(--nx-t2);min-width:0}
+html[data-ui=next] .brws:hover,html[data-ui=next] .brwa:hover{background:var(--nx-hover);color:var(--nx-t1)}
+html[data-ui=next] .brws .sd{width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:var(--nx-idle)}
+html[data-ui=next] .brws.st-tool .sd{background:var(--nx-ok)}
+html[data-ui=next] .brws.st-think .sd{background:var(--nx-info)}
+html[data-ui=next] .brws.st-wait .sd,html[data-ui=next] .brws.st-ask .sd{background:var(--nx-warn)}
+html[data-ui=next] .brws b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--nx-t1)}
+html[data-ui=next] .brws s,html[data-ui=next] .brws u{text-decoration:none;flex:0 0 auto;color:var(--nx-info)}
+html[data-ui=next] .brws .brwb{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--nx-t3)}
+html[data-ui=next] .brws em,html[data-ui=next] .brwa em{margin-left:auto;font-style:normal;color:var(--nx-t3);flex:0 0 auto}
+html[data-ui=next] .brwa{padding-left:22px}
+html[data-ui=next] .brwa i{font-style:normal;color:var(--nx-t3)}
+html[data-ui=next] .brwa span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .brwn{padding:2px 3px 3px 12px;font-size:10.5px;color:var(--nx-t3)}
+/* Work-unit signal line: attention chip, 5h share, today, health. Existing --nx tokens only (dark tones + light). */
+html[data-ui=next] .brwm{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:center;padding:0 3px 3px 12px;font-size:10px;color:var(--nx-t3)}
+html[data-ui=next] .brwm b{font-weight:600;color:var(--nx-t2)}
+html[data-ui=next] .brwm .brwat{cursor:pointer;padding:0 5px;border-radius:3px;border:1px solid var(--nx-err);color:var(--nx-err);font-weight:600}
+html[data-ui=next] .brwm .brwat:hover{background:var(--nx-hover)}
+html[data-ui=next] .brwm .brwd{color:var(--nx-warn)}
+html[data-ui=next] .brwm .brwst{padding:0 5px;border-radius:3px;border:1px solid var(--nx-rule);color:var(--nx-idle)}
+html[data-ui=next] .brwsep{border-top:1px solid var(--nx-rule);margin:4px 0 6px}
+html[data-ui=next] .brwall{margin:6px 0 2px;padding:4px 10px;font:inherit;font-size:11.5px;cursor:pointer;border-radius:3px;
+  background:var(--nx-info-bg);color:#fff;border:0}
+html[data-ui=next] .brwall[disabled]{opacity:.45;cursor:default}
+html[data-ui=next] .swt{font-size:10px;padding:0 5px;border-radius:3px;border:1px solid var(--nx-rule);color:var(--nx-t2);
+  cursor:pointer;white-space:nowrap;flex:0 0 auto}
+html[data-ui=next] .swt:hover{color:var(--nx-t1);border-color:var(--nx-info)}
+/* Parallel-work form (88-branch.js brPwHtml) and the worktree cleanup command (brWrmHtml). Existing tokens only. */
+.brpwb.on{border-color:var(--nx-info,#5899f3);color:var(--nx-info,#5899f3)}
+.brpw{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center;margin:0 0 8px;padding:6px 8px;font-size:11px;
+  border:1px solid var(--nx-rule,#252629);border-radius:4px}
+.brpw input{font:inherit;font-size:11.5px;width:220px;max-width:100%;padding:2px 6px;border-radius:3px;
+  border:1px solid var(--nx-rule,#252629);background:var(--nx-bg,#0a0b0e);color:inherit}
+.brpw select{font:inherit;font-size:11px;padding:1px 4px;border-radius:3px;
+  border:1px solid var(--nx-rule,#252629);background:var(--nx-bg,#0a0b0e);color:inherit}
+.brwpr{color:var(--nx-info,#5899f3)}
+.brpw .brfc{font-size:11px;padding:1px 8px}
+.brpw .brpwc:not([disabled]){border-color:var(--nx-info,#5899f3);color:var(--nx-info,#5899f3)}
+.brpw .brfc[disabled]{opacity:.45;cursor:default}
+.brpwm{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:3px 8px;align-items:center;min-width:0}
+.brpwm code{user-select:all;word-break:break-all;color:var(--nx-t1,#e6e6e6)}
+.brpwe{color:var(--nx-err,#f45460)}
+.brpww,.brwrw{color:var(--nx-warn,#f59e3b)}
+.brpwh{flex:1 1 100%;font-size:10px;color:var(--nx-t3,#6b7688)}
+.brwn .brwrm{margin-left:6px}
+.brwrw{margin-left:6px;font-size:10px}
+/* When narrow, author goes first — graph and title stay */
+@media(max-width:820px){.brpan{flex:1 1 100%;border-left:0;padding-left:0;max-height:34vh}
+  .brpan.brdt{max-width:none;position:static;max-height:70vh}
+  .brr>s{display:none}}

@@ -1,0 +1,359 @@
+/* «Pipelines» main tab (web/js/48-pipeline.js) + canvas editor (48d) — no sideways page scroll */
+.plw .hidnote{margin:4px 0}
+.plchips,.plnames,.plbar{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 8px}
+.plchips>b{font-size:12px;color:#8b95a5;margin-right:2px}
+.plchips .mvdot{margin-left:4px}
+.plnames .mvdot{margin-left:5px;vertical-align:1px}
+.plagrun{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px}   /* 48h read-only Sidereus pipeline run */
+/* «Running N» overview under the canvas, above the run table (48b plOvHtml): one row per running pipeline, stage strip ✓ done · ● running · · waiting */
+.plov{display:flex;flex-direction:column;gap:2px;margin:0 0 10px;padding:6px 8px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-left:3px solid var(--nx-active,#5b8def);border-radius:6px;font-size:12px}
+.plovh{color:var(--nx-t1,#cdcedc);margin-bottom:2px}
+.plovr{display:grid;grid-template-columns:minmax(80px,160px) minmax(80px,160px) 1fr auto;gap:10px;align-items:center;width:100%;padding:3px 6px;background:none;border:1px solid transparent;border-radius:4px;color:var(--nx-t2,#909298);font:inherit;text-align:left;cursor:pointer}
+html[data-ui] .plovr:hover{background:var(--nx-hover,#1b1d20)}
+/* ⚠html[data-ui] lifts this over the 00-core next-UI twin «html[data-ui=next] .plovr{border-color:transparent}» (0,2,1) and keeps the rewriter from twinning it */
+.plovr.on,html[data-ui] .plovr.on{border-color:color-mix(in srgb,var(--nx-active,#5b8def) 60%,transparent);background:color-mix(in srgb,var(--nx-active,#5b8def) 10%,transparent)}
+.plovp,.plovn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plovn{color:var(--nx-t1,#cdcedc)}
+.plovs{display:flex;flex-wrap:wrap;gap:2px 10px;min-width:0}
+.plovst{white-space:nowrap;color:var(--nx-t3,#84868c)}
+.plovst.plov-done{color:var(--nx-ok,#71c269)}
+.plovst.plov-run{color:var(--nx-active,#5b8def);font-weight:600}
+/* ⚠The ● glyph sits off-centre per font, so the dot is drawn by CSS (glyph kept transparent for textContent) and the ring centres on the box */
+.plovdot{position:relative;display:inline-block;width:.6em;height:.6em;margin-right:.15em;border-radius:50%;background:var(--nx-active,#5b8def);color:transparent;font-style:normal;line-height:.6em;overflow:visible;vertical-align:middle}
+/* Pulse ring = absolute pseudo with transform/opacity only: no line-height change, no text shift */
+.plov-pulse .plovdot::after{content:'';position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--nx-active,#5b8def);pointer-events:none;animation:plovpulse 1.6s ease-out infinite}
+@keyframes plovpulse{0%{transform:scale(1);opacity:.9}100%{transform:scale(2.3);opacity:0}}
+@media (prefers-reduced-motion:reduce){.plov-pulse .plovdot::after{animation:none;transform:scale(1.5);opacity:.7}}
+.plovst.plov-fail{color:var(--nx-err,#e5484d)}
+:root{--pl-back:#d9a441}   /* «back» amber; light value in 91-light.css (#d9a441 is 3.01:1 on white) */
+.plovst.plov-back{color:var(--pl-back)}
+html[data-ui] .plovst.plov-skip,html[data-ui] .plovst.plov-hold,html[data-ui] .plovr.on .plovst.plov-wait{color:var(--nx-t2,#909298)}   /* t3 drops to 4.48:1 on the selected row tint */
+.plova{color:var(--nx-t2,#909298);white-space:nowrap}
+.plovr{grid-template-columns:minmax(80px,160px) minmax(80px,160px) 1fr auto auto}
+.plrtb tbody tr{cursor:pointer}
+.plrtb tbody tr:hover td{background:var(--nx-hover,#1b1d20)}
+.plapk{position:fixed;z-index:60;display:flex;flex-direction:column;width:340px;max-height:50vh;overflow:auto;padding:4px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:12px}
+.plapkh{padding:3px 6px;color:var(--nx-t1,#cdcedc);font-weight:600}
+.plapki{display:flex;gap:8px;align-items:center;padding:4px 6px;background:none;border:0;border-radius:4px;color:var(--nx-t2,#909298);font:inherit;text-align:left;cursor:pointer}
+html[data-ui] .plapki:hover{background:var(--nx-hover,#1b1d20);color:var(--nx-t1,#cdcedc)}
+.plapki span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plapki i{font-style:normal;white-space:nowrap;color:var(--nx-active,#5b8def)}
+.plpsk{width:180px}
+.plrvm{width:300px}
+.plrv{font:inherit;font-size:11px;line-height:14px;padding:0 5px;margin-right:6px;background:none;border:1px solid var(--nx-rule,#252629);border-radius:4px;color:inherit;cursor:pointer}   /* ⚠14px line inside the 16px head line: the picker never grows the bar */
+.plrv.old{border-color:var(--nx-warn,#d6a04a);color:var(--nx-warn,#d6a04a)}
+html[data-ui] .plapki[aria-checked=true]{color:var(--nx-t1,#cdcedc);font-weight:600}
+/* Card pass picker: on the bottom edge, right of the loop-back port, so it never takes width from the title row */
+.plnd .plpass{position:absolute;right:10px;bottom:-9px;z-index:2;height:18px;padding:0 6px;font-family:inherit;font-size:11px;font-weight:600;line-height:16px;border-radius:9px;border:1px solid var(--nx-rule,#252629);background:var(--nx-panel,#121417);color:var(--nx-t2,#909298);cursor:pointer}
+html[data-ui] .plnd .plpass:hover,html[data-ui] .plnd .plpass.on{color:var(--nx-t1,#cdcedc);border-color:var(--pl-back,#e0a53d)}
+.plrm{margin-left:2px;padding:0 3px;border-radius:3px;color:#8b95a5;cursor:pointer}.plrm:hover{color:#f07178;background:#f0717822}
+.pladd{border-style:dashed}.pladdmsg{color:#f07178;font-size:12px;margin-top:6px}
+/* Folder browser modal (48f-pipeline-browse.js) on the settings-modal shell (.cfgm/.cfgbox). */
+.plbrbox{width:min(640px,100%);display:flex;flex-direction:column}
+.plbrc{display:flex;flex-wrap:wrap;align-items:center;gap:2px;font-size:12px;margin:4px 0 8px}.plbrc i{color:#5d6878;font-style:normal}
+.plbrs{background:none;border:0;color:#9ec1ee;cursor:pointer;font:inherit;padding:1px 3px;border-radius:4px}.plbrs:hover{background:#1d2b42}
+.plbrr{display:flex;gap:6px;align-items:center;margin-bottom:8px}.plbrh{display:flex;align-items:center;gap:3px;font-size:11.5px;color:#9aa5b4;white-space:nowrap;cursor:pointer}.plbrin{flex:1;font:inherit;font-size:12px;padding:3px 6px}
+.plbrl{border:1px solid #1e232c;border-radius:6px;height:min(50vh,420px);overflow:auto;padding:3px}
+.plbrd{display:flex;width:100%;align-items:center;gap:6px;background:none;border:0;color:#dfe5ee;cursor:pointer;font:inherit;font-size:12.5px;
+  text-align:left;padding:4px 8px;border-radius:4px}.plbrd:hover,.plbrd:focus-visible{background:#1a212c}
+.plbrd span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plbrb{font-size:10.5px;font-weight:600;padding:0 5px;border-radius:8px;border:1px solid}
+.plbrb.git{color:#e3a36b;border-color:#5a4029}.plbrb.cl{color:#a8a3f0;border-color:#3d3a6b}
+.plbre{color:#7e8896;font-size:12px;padding:8px}
+.plbrf{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
+html[data-theme=light] .plbrd{color:var(--nx-t1,#1f2430)}
+html[data-theme=light] .plbrd:hover,html[data-theme=light] .plbrd:focus-visible,html[data-theme=light] .plbrs:hover{background:var(--nx-hover,#eceef2)}
+html[data-theme=light] .plbrs{color:#2f5fa8}
+html[data-theme=light] .plbrl{border-color:var(--nx-rule,#d8dbe1)}
+html[data-theme=light] .plbrb.git{color:#9a5a1e;border-color:#e3c7a8}
+html[data-theme=light] .plbrb.cl{color:#4f49a8;border-color:#c9c6ec}
+.plbar>b{margin-right:6px}
+/* Save/run/delete: right end of the bar, colour-coded. ⚠Scoped like 05-controls.css so it outranks the shared .wkrgb look. */
+.plact{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none}
+html[data-ui=next][data-ui] :is(.plact,.plnames) .wkrgb.plsv{background:var(--nx-info-bg);border-color:var(--nx-info-bg);color:#fff;font-weight:600}
+html[data-ui=next][data-ui] :is(.plact,.plnames) .wkrgb.plsv:hover:not([disabled]){background:color-mix(in srgb,var(--nx-info-bg) 85%,#fff)}
+html[data-ui=next][data-ui] .plact .wkrgb.plrn{background:color-mix(in srgb,var(--nx-ok) 14%,transparent);border-color:color-mix(in srgb,var(--nx-ok) 60%,transparent);color:color-mix(in srgb,var(--nx-ok) 70%,var(--nx-t1));font-weight:600}
+/* ⚠plain --nx-ok text on its own 14%/26% tint was 3.91/3.32:1 in light; 70% ok + 30% t1 = 5.36/4.56 light, 7.28/5.55 dark */
+html[data-ui=next][data-ui] .plact .wkrgb.plrn:hover:not([disabled]),html[data-ui=next][data-ui] .plact .wkrgb.plrn.on{background:color-mix(in srgb,var(--nx-ok) 26%,transparent);border-color:var(--nx-ok)}
+html[data-ui=next][data-ui] .plact .wkrgb.pldl{margin-left:6px;background:transparent;border-color:color-mix(in srgb,var(--nx-err) 60%,transparent);color:var(--nx-err)}
+html[data-ui=next][data-ui] .plact .wkrgb.pldl:hover:not([disabled]){background:var(--nx-err);border-color:var(--nx-err);color:#fff}
+html[data-ui=next][data-ui] .plact .wkrgb[disabled]{opacity:.45;cursor:default}
+.plapply .tkvs{margin:0}
+.plapply label{display:inline-flex;align-items:center;gap:4px;font-size:12px;margin-left:6px}
+.plapply .hidnote{margin:0 0 0 6px}
+.plbad{border-color:#a0523d}
+.plt{font-weight:600}
+.pll{display:flex;align-items:center;gap:4px;font-size:12px;color:#8b95a5;min-width:0}
+.pll>span{flex:0 0 42px}
+.plbar .pll>span{flex:none}
+.plsel{flex:1 1 auto;min-width:0;max-width:100%;font-size:12px}
+.plwarn{color:#e0a53d;cursor:help}
+.plerrs{margin:4px 0 8px 18px;font-size:12px;color:#d98c7a}
+.pldiff{margin-top:8px}
+.pldiff pre{max-height:40vh;overflow:auto}
+/* 2b: live lighting (48b-pipeline-run.js plLight) + «Runs» panel */
+.plnd.pl-done{border-color:#3f7d4e}
+.plnd.pl-fail{border-color:#a0523d}
+.plnd.pl-back{border-color:var(--pl-back)}   /* loop-back (pl_flow «back»): amber, same as the ↺ glyph */
+.plnd.pl-skip{border-style:dashed}   /* skipped by [pl-skip:] (pl_runs st); ⚠no opacity: .6 put title/pill/↷ at 2.7–4.2:1 */
+.plls{font-size:11px;color:#9aa6b8}
+.plrt{margin:8px 0;font-size:12px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:6px;padding:6px 8px}   /* stage overview under the canvas (48b plRunTable) + 48g agent table: fixed layout, cells ellipsize */
+/* Poor contrast in the light theme ⇒ tokens only, both themes. Light contrast: t1 12.8 · t2 7.0 on header, pills 5.4 (active) · 5.5 (ok) · 5.2 (prev) */
+.plrth{display:flex;gap:10px;align-items:center;margin-bottom:6px;color:var(--nx-t1,#cdcedc)}
+.plrtb{width:100%;table-layout:fixed;border-collapse:collapse}
+.plrtb col.c1{width:18%}.plrtb col.c2{width:18%}.plrtb col.c4{width:12%}.plrtb col.c5{width:9%}.plrtb col.c6{width:26px}
+.plrtb th,.plrtb td{padding:4px 6px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid var(--nx-rule,#252629)}
+.plrtb th{color:var(--nx-t1,#cdcedc);font-weight:600;background:color-mix(in srgb,var(--nx-info,#5899f3) 7%,var(--nx-panel,#121417))}
+.plrtb td{color:var(--nx-t2,#909298)}
+.plrtb tr.on td{color:var(--nx-t1,#cdcedc);background:color-mix(in srgb,var(--nx-active,#5b8def) 6%,var(--nx-panel,#121417))}
+.plrtb tr.on td:first-child{box-shadow:inset 3px 0 0 var(--nx-active,#5b8def)}
+/* «Status» pill: text mixed toward t1 keeps >=4.5:1 on its own tint in both themes */
+.plrtpl{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;padding:0 7px;border-radius:9px;line-height:17px;font-size:11px}
+.plrtb td.plrt-run .plrtpl{color:color-mix(in srgb,var(--nx-active,#5b8def) 75%,var(--nx-t1,#cdcedc));background:color-mix(in srgb,var(--nx-active,#5b8def) 14%,transparent)}
+.plrtb td.plrt-done .plrtpl{color:color-mix(in srgb,var(--nx-ok,#71c269) 75%,var(--nx-t1,#cdcedc));background:color-mix(in srgb,var(--nx-ok,#71c269) 14%,transparent)}
+.plrtb td.plrt-back .plrtpl{color:color-mix(in srgb,var(--pl-back) 75%,var(--nx-t1,#cdcedc));background:color-mix(in srgb,var(--pl-back) 14%,transparent)}
+.plrtb tr.plso-w td,.plrtb td.plrt-skip,.plrtb td.plrt-hold{color:var(--nx-t3,#84868c)}.plrtb tbody tr.plso-w{cursor:default}
+.plrtdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--nx-active,#5b8def);margin-right:5px;vertical-align:1px;animation:tldot 1.4s ease-in-out infinite;animation-delay:var(--plt,0s)}
+@media (prefers-reduced-motion:reduce){.plrtdot{animation:none}}
+.plrunst{font-size:12px;color:#9aa6b8;margin:0 0 6px}
+.plrunst.on{color:#8fb3f5}
+.plrun{margin-top:10px;border:1px solid #2b3545;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:6px;max-width:900px}
+.plrun .pll>span{flex:0 0 64px}
+.plreq{flex:1 1 auto;min-width:0;font-size:12px}
+.plrms{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.plrmh{font-size:12px;color:#8b95a5;flex-basis:100%}
+.plrms .pll>span{flex:none}
+.plprev{white-space:pre-wrap;word-break:break-word;font-size:12px;margin:0}
+html[data-mv=pipe] .wrap{max-width:none}
+/* step 4 canvas: palette | canvas | panel, each split with a drag handle (.plgh) */
+.plgw{display:flex;gap:0;min-width:0;margin:4px 0 6px;height:clamp(360px,62vh,900px)}   /* pre-paint only: plGwFit fills to the feed bottom (floor max(360,min(700,62vh))) */
+.plro{display:contents}.plro .plpal,.plro .plpan,.plro .plnt{pointer-events:none;opacity:.55}   /* borrowed pipeline (48h): no editing controls */
+.plnames .plbrw{font-style:italic}
+.plpal{flex:0 1 var(--plpal,190px);min-width:110px;height:100%;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:4px;box-sizing:border-box}
+.plph{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;color:#8b95a5;margin:4px 2px}
+.plph .plti{flex:1;min-width:0;font:inherit;font-weight:700;color:var(--nx-t1,#e6e6e6);background:transparent;border:1px solid transparent;border-radius:4px;padding:1px 4px}.plph .plti:is(:hover,:focus){border-color:var(--nx-rule,#252629);background:var(--nx-field,#1a1c20)}   /* stage title, renamed in place */
+.pldiff .plwarnrun{color:var(--nx-warn,#e0a53d);margin:4px 2px}
+.plpi{font-size:12px;line-height:16px;padding:1px 6px;margin:2px 0;border:1px solid #2b3545;border-radius:4px;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;display:block;width:100%;box-sizing:border-box;text-align:left;font-family:inherit;color:inherit;background:none}
+/* «Stage catalog» group folds (48d plPalette): one line per item — name, graded mark, tool dot, «+ Add» — so it fits a 190px palette at 900 */
+.plci{display:flex;align-items:center;gap:3px;margin:2px 0;padding-right:2px;border:1px solid #2b3545;border-radius:4px}
+.plci .plpi{flex:1 1 auto;min-width:0;width:auto;margin:0;border:0}
+.plcg{flex:none;font-size:11px;color:var(--nx-ok,#4caf50);cursor:help}
+.plcdot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--nx-ok,#4caf50);cursor:help}.plcdot.part{background:#e0a53d}.plcdot.off{background:#6b7688}
+.plcadd{flex:none;font:inherit;font-size:11px;line-height:16px;padding:0 5px;border:1px solid var(--nx-rule,#2b3545);border-radius:4px;background:none;color:inherit;cursor:pointer;white-space:nowrap}.plcadd:hover{border-color:var(--pf,#5899f3)}
+.plgd{margin:0 0 4px}
+.plpnm{font-size:11px;color:var(--nx-t2,#8b95a5);margin:2px 2px 4px}.plpal .wkrgb.plhot{border-color:var(--nx-info,#5899f3);color:var(--nx-info,#5899f3);font-weight:700}   /* filter: no match */
+.plpal [hidden]{display:none}   /* ⚠.plci is display:flex, which beats the hidden attribute */
+.plci.used .plpi,.plci.used .plcu{opacity:.55}.plcu{flex:none;font-size:10px;line-height:16px;padding:0 4px;color:var(--nx-t2,#8b95a5);white-space:nowrap;cursor:help}   /* already on the canvas */
+.plgrp{font-size:11px;color:#8b95a5;cursor:pointer;padding:2px;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-ui=next] .plw .plgrp{color:var(--nx-t2)}
+.plgh{flex:0 0 6px;cursor:col-resize;align-self:stretch;min-height:40px}
+.plgh:hover{background:#2b3545}
+.plcvw{flex:1 1 300px;min-width:240px;height:100%;display:flex;flex-direction:column;gap:4px}
+/* ⚠Below 1000px the canvas squeezed to 348px and auto-fit dropped to 49% (6–8px text): canvas takes its own row. Never raise PL_ZFIT instead (48d plFit) */
+/* ⚠Keyed on the .brep container (40-tokens), not the viewport: at 1100 the 3-column canvas got 550px and fitted at 47%. 1220 = canvas ≥ ~700px beside 190+320 side panes */
+/* ⚠Narrow = grid sized by 48d plGwFit (floor = canvas floor + 6 + 420, the old pane cap): a fixed canvas + 420px panes left the run panels mid-column with a blank below on tall windows */
+@container (max-width:1220px){.plgw{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(clamp(360px,62vh,700px),3fr) minmax(420px,2fr);gap:6px;height:calc(clamp(360px,62vh,700px) + 426px)}.plgw>.plcvw{grid-area:1/1/2/3;height:auto;min-height:0}.plgw>.plgh{display:none}.plgw>.plpal{grid-area:2/1/3/2;height:auto;min-height:0}.plgw>.plpan{grid-area:2/2/3/3;height:auto;min-height:0}}
+.plcvw>.plerrs{flex:none;max-height:30%;overflow:auto;margin:0 0 0 18px}
+.plcv{position:relative;overflow:hidden;flex:1 1 auto;min-height:200px;border:1px solid #2b3545;border-radius:6px;background:#0f141b;cursor:grab;touch-action:none}
+.plcvi{position:absolute;left:0;top:0;transform-origin:0 0}
+.plsvg{position:absolute;left:0;top:0;overflow:visible}
+.plef{fill:none;stroke:#6d8fd6;stroke-width:2}
+.plel{fill:none;stroke:#e0a53d;stroke-width:2;stroke-dasharray:6 4}
+.plef.on,.plel.on{stroke-width:3.5}
+.plhit{fill:none;stroke:transparent;stroke-width:12;cursor:pointer}
+.plmf{fill:#6d8fd6}.plml{fill:#e0a53d}
+.pllt{cursor:pointer}
+.pllt rect{fill:#1d1a12;stroke:#e0a53d;stroke-width:1}
+.pllt text{fill:#f0c46a;font-size:12px}
+.pllt.on text{font-weight:700}
+/* ⚠Light: the derived twin keeps the dark pill (#1d1a12). `[data-ui]` in the selector keeps 00-core from deriving a
+   twin of this rule (it would lighten the fill again) and outranks the twin. Text #7a4a00 on #fdf3dc ≈ 7:1. */
+html[data-ui][data-theme=light] .pllt rect{fill:#fdf3dc;stroke:#c08a2a}
+html[data-ui][data-theme=light] .pllt text{fill:#7a4a00}
+.pltmp{fill:none;stroke:#9aa6b8;stroke-width:1.5;stroke-dasharray:4 3;pointer-events:none}
+.pltmp.loop{stroke:#e0a53d}
+/* width = content, 184..320px; height ≥100px grows with the gate result line (48d plMeasure reads both back into G.wd/G.ht for edges, lanes and «Arrange») */
+.plnd{position:absolute;width:max-content;min-width:184px;max-width:320px;min-height:100px;box-sizing:border-box;border:1px solid #2b3545;border-radius:6px;padding:5px 8px;background:#121821;cursor:move;user-select:none;overflow:visible}
+.plnd.on{border-color:#5b8def;box-shadow:0 0 0 1px #5b8def}
+.plnd.bad{border-color:#d9534f;background:#2a1618}
+.plnd .plt{white-space:nowrap;font-size:14px;overflow:hidden;text-overflow:ellipsis}
+.plna,.plnm{font-size:12px;color:#9aa6b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plnc{font-size:11px;color:#8fa0b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plunv{color:#e0a53d;border:1px solid #e0a53d;border-radius:8px;padding:0 5px;margin-right:4px;cursor:help}   /* stage without a gate (48d plNodeHtml) */
+.plcov{font-size:12px;color:#8fa0b8;margin-right:6px}.plcov.plcovlo{color:#e0a53d}
+.plnd .plls{font-size:12px}
+/* Stage card result line: the newest gate run inside the stage window (48d plEvLine) */
+.plnd .plev{font-size:11px;font-weight:600;color:var(--nx-ok,#71c269);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.plnd .plev.plevng{color:color-mix(in srgb,var(--nx-err,#f45460) 60%,var(--nx-t1,#cdcedc))}   /* plain err was 3.7–4.3:1 on the dark family tints; ≥4.7 */
+.plport{position:absolute;width:10px;height:10px;border-radius:50%;background:#1b2330;border:2px solid #6d8fd6;box-sizing:border-box}
+.plpin{left:-6px;top:calc(50% - 5px);pointer-events:none}
+.plpout{right:-6px;top:calc(50% - 5px);cursor:crosshair}
+.plpbk{left:calc(50% - 5px);bottom:-6px;border-color:#e0a53d;cursor:crosshair}
+.plport[data-plport]:hover{transform:scale(1.4)}
+.plcvt{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px;color:#8b95a5}
+.plhint{margin-left:6px}
+.plpan{flex:0 1 var(--plpan,320px);min-width:200px;height:100%;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:6px 8px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;min-width:0}
+.plfr{display:flex;align-items:center;gap:6px;font-size:12px;color:#8b95a5;min-width:0}
+.plfr>span{flex:0 0 64px}
+.plfr>select,.plfr>input,.plfr>textarea{flex:1 1 auto;min-width:0;font-size:12px}
+.plfta{align-items:flex-start}
+.plfta textarea{resize:vertical}
+.plfc{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:#9aa6b8}
+.plfd{font-size:12px;color:#6b7688}
+.plerrs li[data-plpick]{cursor:pointer;text-decoration:underline dotted}
+.plnew{border:1px solid #2b3545;border-radius:6px;padding:8px;margin:0 0 8px;display:flex;flex-direction:column;gap:6px;max-width:760px}
+.plnew .plfr>span{flex:0 0 64px}
+.plnew pre{max-height:40vh;overflow:auto;margin:0}
+.plnerr{color:#d98c7a}
+.pldt{font-size:12px;color:#9aa6b8}
+.pldt summary{cursor:pointer;color:#8b95a5}
+.pldt div{margin-top:4px;white-space:pre-wrap}
+.plpan .plfr{flex-direction:column;align-items:stretch;gap:2px}
+.plpan .plfr>span{flex:none}
+.plpan .plfta{flex:1 1 auto;min-height:120px}
+.plpan .plfta textarea{flex:1 1 auto;min-height:90px}
+.plnt{display:flex;gap:4px;align-items:center;min-width:0}
+.plnt input{flex:1 1 auto;min-width:0;width:9em;font-size:12px}
+.plpal .plnt{flex-direction:column;align-items:stretch;margin:2px 0 6px}
+.plpal .plnt input{flex:none;width:auto;box-sizing:border-box;height:var(--seg-h,26px);padding:0 var(--seg-px,10px)}   /* same box as the .wkrgb button under it */
+.plcvt .plnt input{width:18em}   /* ⚠9em clipped the placeholder «Stage name (empty = recommended)» (and its longer English) */
+/* Surfaces + stage families (areas must read apart): raised side cards, darker dotted canvas, tinted toolbar */
+.plw,.tlwrap{--plf-plan:#c297ff;--plf-build:var(--nx-info);--plf-check:var(--nx-ok);--plf-review:var(--nx-warn);--plf-cust:#2ec4b6;
+  --plf-rsch:#f58aa8;--plf-und:#8c96ff;--plf-test:#4cc6e8;--plf-sec:#ef6b6b;--plf-cons:#b2cd57;--plf-rel:#e07fdc;--plf-ops:#f09a4c;--plf-qual:#a9b8c9}
+
+/* One family per catalog group (PLG_GFAM): hues spread round the wheel; ⚠cust keeps teal, so test is cyan, not teal. Light values >=4.5:1 on white. */
+html[data-ui=next][data-theme=light] :is(.plw,.tlwrap){--plf-rsch:#b8336a;--plf-und:#4b57c8;--plf-test:#0b7896;--plf-sec:#c0292f;--plf-cons:#5c760e;--plf-rel:#a2309a;--plf-ops:#b0560a;--plf-qual:#4a5a6e}
+/* ⚠Scoped with html[data-ui=next]: the #nxcss twins (00-core.js) re-emit `.plnd`/`.plcv` hex colours at that weight and would win. */
+html[data-ui=next] .plw .plpal,html[data-ui=next] .plw .plpan{background:var(--nx-panel);border-color:var(--nx-rule);box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.plpal>.plph:first-child,.plpan>.plph:first-child{background:var(--nx-hover);margin:-4px -4px 4px;padding:5px 8px;border-bottom:1px solid var(--nx-rule);color:var(--nx-t2)}
+.plpan>.plph:first-child{margin:-6px -8px 2px}
+html[data-ui=next] .plw .plcv{background:var(--nx-bg) radial-gradient(circle,color-mix(in srgb,var(--nx-t3) 28%,transparent) 1px,transparent 1.3px) 0 0/18px 18px;border-color:var(--nx-rule)}
+html[data-ui=next] .plw .plcvt{background:color-mix(in srgb,var(--nx-info) 9%,var(--nx-panel));border:1px solid var(--nx-rule);border-radius:6px;padding:3px 6px}
+.pf-plan{--pf:var(--plf-plan)}.pf-build{--pf:var(--plf-build)}.pf-check{--pf:var(--plf-check)}.pf-review{--pf:var(--plf-review)}.pf-cust{--pf:var(--plf-cust)}
+.pf-rsch{--pf:var(--plf-rsch)}.pf-und{--pf:var(--plf-und)}.pf-test{--pf:var(--plf-test)}.pf-sec{--pf:var(--plf-sec)}.pf-cons{--pf:var(--plf-cons)}.pf-rel{--pf:var(--plf-rel)}.pf-ops{--pf:var(--plf-ops)}.pf-qual{--pf:var(--plf-qual)}
+/* Borders were indistinct: full family border + visible tint + shadow over a darker canvas.
+   ⚠:where keeps this at the weight of the lighting/selection twins (html[data-ui=next] .plnd.pl-*), which come later and win. */
+html[data-ui=next] .plw .plnd:where([class*=pf-]){background:color-mix(in srgb,var(--pf) 17%,var(--nx-panel));border:1.5px solid color-mix(in srgb,var(--pf) 65%,transparent);padding-left:13px;box-shadow:0 3px 10px rgba(0,0,0,.55)}
+.plnd:where([class*=pf-])::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--pf);border-radius:5px 0 0 5px}
+html[data-ui=next] .plw .plnd:where([class*=pf-]) .plt{color:var(--nx-t1);font-weight:700}
+html[data-ui=next] .plw .plnd:where([class*=pf-]) .plna,html[data-ui=next] .plw .plnd:where([class*=pf-]) .plnm{color:color-mix(in srgb,var(--nx-t1) 80%,var(--pf))}
+html[data-ui=next] .plw .plnd.pl-skip{border-style:dashed;border-color:var(--nx-t2)}html[data-ui=next] .plw .plnd.pl-skip .plsk{color:var(--nx-t2)}   /* beats the pf- border shorthand above */
+html[data-ui=next] .plw .plnd.pl-done,html[data-ui=next] .plw .plnd.pl-fail,html[data-ui=next] .plw .plnd.pl-run,html[data-ui=next] .plw .plnd.pl-back{border-width:2px}
+/* ⚠Lit nodes drop the 5px family bar: bar + 2px state border read as a bright side fading into a thin edge. */
+html[data-ui=next] .plw .plnd:is(.pl-done,.pl-fail,.pl-run,.pl-back)::before{content:none}
+html[data-ui=next] .plw .plnd.on{border-width:2px;outline:2px solid var(--nx-t1);outline-offset:2px}
+html[data-ui=next] .plw .plnd.bad{background:#2a1618}
+/* Ports: canvas-coloured fill, thin muted family ring (loop port muted orange); full ring on hover */
+html[data-ui=next] .plw .plport{background:var(--nx-bg);border:1.5px solid color-mix(in srgb,var(--pf,var(--nx-t3)) 60%,var(--nx-t3))}
+html[data-ui=next] .plw .plpbk{border-color:color-mix(in srgb,#e0a53d 60%,var(--nx-t3))}
+html[data-ui=next] .plw .plport[data-plport]:hover{border-color:var(--pf,var(--nx-t2))}
+html[data-ui=next] .plw .plpbk[data-plport]:hover{border-color:#e0a53d}
+.plef,.plel{stroke-width:2.5}.plef.on,.plel.on{stroke-width:3.5}
+html[data-ui=next] .plw .plci[class*=pf-]{border-color:color-mix(in srgb,var(--pf) 45%,var(--nx-rule));border-left:3px solid var(--pf);background:color-mix(in srgb,var(--pf) 8%,transparent)}
+.plsugb{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;border:1.5px dashed var(--nx-warn);border-radius:6px;padding:5px 10px;margin:0 0 6px;font-size:12px}
+.plsugb>span{color:var(--nx-t2)}
+/* «Standard templates» cards (48e plStdList): wrapping grid, no sideways overflow at 900px. */
+.plstd{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px;margin:0 0 8px}
+.plstdc{border:1px solid #2b3545;border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;gap:4px;min-width:0;font-size:12px}
+html[data-ui] .plstdc.on{border-color:var(--nx-warn)}
+.plstdch{overflow-wrap:anywhere}.plstdopt,.plstdgp{color:var(--nx-t2)}.plstdgp{font-size:11px}
+.plstdc .plbar{margin:0;justify-content:space-between}
+/* Live run (a visible running state): classes exist only while a run is known. */
+/* ⚠Dim by colour, never opacity: parent opacity also dims the «Waiting» pill (.plls opacity:1 cannot undo it) — .7 put it at 3.46:1 dark / 3.70:1 light.
+   Title t2 = ≥5.15:1 dark / 6.95:1 light, pill t2 on panel = 5.93 / 7.67. */
+html[data-ui=next] .plw .plnd:is(.pl-hold,.pl-wait){background:color-mix(in srgb,var(--pf,var(--nx-t3)) 7%,var(--nx-panel));border-color:color-mix(in srgb,var(--pf,var(--nx-t3)) 35%,var(--nx-rule))}
+html[data-ui=next] .plw .plnd:is(.pl-hold,.pl-wait) .plt{color:var(--nx-t2)}
+/* ★Running glow animates opacity only: box-shadow, a conic @property angle and background-position each forced
+   ~60 style recalcs/s (demo pipeline tab 1,584/25s). Glow = static big shadow on ::before whose opacity breathes over a small base glow. */
+html[data-ui=next] .plw .plnd.pl-run{border-color:var(--pf);box-shadow:0 0 6px 1px color-mix(in srgb,var(--pf) 35%,transparent)}   /* running keeps the stage-family hue; «sent back» has its own ↺ badge */
+html[data-ui=next] .plw .plnd.pl-run::before,.wfnd.pl-run::before{content:'';position:absolute;inset:-2px;width:auto;border-radius:6px;background:none;pointer-events:none;
+  box-shadow:0 0 24px 7px color-mix(in srgb,var(--pf) 70%,transparent);opacity:0;animation:plbreath 1.8s ease-in-out infinite;animation-delay:var(--plt,0s)}
+@keyframes plbreath{0%,100%{opacity:0}50%{opacity:1}}
+html[data-ui=next] .plw .plspin{display:inline-block;width:10px;height:10px;margin-right:6px;border:2px solid color-mix(in srgb,var(--pf) 30%,transparent);border-top-color:var(--pf);border-radius:50%;animation:plrot .8s linear infinite;animation-delay:var(--plt,0s);vertical-align:-1px;box-sizing:border-box}
+@keyframes plrot{to{transform:rotate(360deg)}}
+html[data-ui=next] .plw .plok{color:var(--nx-ok);margin-right:6px;display:inline-block}
+html[data-ui=next] .plw .plx{color:var(--nx-err);margin-right:6px;display:inline-block}
+.plsk{color:#9aa6b8;margin-right:6px;display:inline-block}.plsk.plbk{color:var(--pl-back)}
+html[data-ui=next] .plw .plnd.pl-new .plok{animation:plpop .5s cubic-bezier(.3,1.8,.5,1)}
+@keyframes plpop{from{transform:scale(0)}to{transform:scale(1)}}
+html[data-ui=next] .plw .plnd.pl-done.pl-new{animation:plflash .9s ease-out}
+@keyframes plflash{from{box-shadow:0 0 0 0 color-mix(in srgb,var(--nx-ok) 90%,transparent)}to{box-shadow:0 0 0 16px transparent}}
+html[data-ui=next] .plw .plnd.pl-fail.pl-new{animation:plshake .45s}
+@keyframes plshake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+html[data-ui=next] .plw .plrb{margin-left:6px;font-size:11px;font-weight:700;padding:0 6px;border-radius:8px;background:color-mix(in srgb,var(--nx-warn) 20%,transparent);color:var(--nx-warn);vertical-align:1px}   /* tint, not a solid fill: it marks a finished stage */
+/* Live label sits fully above the node (6px gap, left-aligned) so it never covers the title row at any zoom.
+   ⚠max-width = node + 24px: wider, it reached the next node's label across a 28px gap. The row-wrap connector runs at top-40
+   and rows leave 62px (48c plgFlowPath / plgRowH; checked by tests/test_pipeline_graph.py test_lanes_clear_status_pills) */
+html[data-ui=next] .plw .plnd .plls{position:absolute;z-index:3;left:-1px;bottom:calc(100% + 6px);height:22px;line-height:18px;box-sizing:border-box;max-width:calc(100% + 24px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;padding:1px 10px;border-radius:11px;background:var(--nx-panel);border:1px solid var(--nx-rule);color:var(--nx-t2);opacity:1}
+/* Rain on the edge into the running node: 3 dash layers, period 60, fronts aligned (offset = len - 14) = bright head + fading tail */
+html[data-ui=next] .plw .plef.run{stroke-width:1.5}
+html[data-ui=next] .plw .plrunst{display:flex;flex-direction:column;gap:4px;max-width:640px}
+.plbar>.plrunst{flex:1 1 0;min-width:0;margin:0 0 0 10px}   /* ⚠basis 0 + one 22px line: the live line appearing never wraps or grows the bar (the canvas below jumped) */
+html[data-ui=next] .plw .plbar>.plrunst{gap:2px}
+html[data-ui=next] .plw .plbar>.plrunst>span{line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-ui=next] .plw .plbar>.plrunst .plprog{height:4px}
+html[data-ui=next] .plw .plprog{display:block;height:6px;border-radius:3px;background:var(--nx-hover);overflow:hidden}
+html[data-ui=next] .plw .plprog>i{display:block;position:relative;overflow:hidden;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--plf-plan),var(--plf-build),var(--plf-cust),var(--plf-plan));background-size:200% 100%;transition:width .6s}
+/* Flowing gradient = a 4x-wide layer of two pattern periods translated by one period (transform only; was background-position). */
+html[data-ui=next] .plw .plrunst.on .plprog>i::before{content:'';position:absolute;top:0;bottom:0;left:0;width:400%;pointer-events:none;
+  background:linear-gradient(90deg,var(--plf-plan),var(--plf-build),var(--plf-cust),var(--plf-plan)) 0 0/50% 100% repeat-x;animation:plgrad 2.4s linear infinite}
+@keyframes plgrad{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+html[data-ui=next] .plw .plrunst.fin{color:var(--nx-ok)}
+html[data-ui=next] .plw .plrunst.fin .plprog>i{background:var(--nx-ok)}
+@media (prefers-reduced-motion:reduce){html[data-ui=next] .plw .plnd.pl-run::before,html[data-ui=next] .plw .plspin,html[data-ui=next] .plw .plrunst.on .plprog>i::before,html[data-ui=next] .plw .plnd.pl-new,html[data-ui=next] .plw .plnd.pl-new .plok{animation:none}}
+@media (prefers-reduced-motion:reduce){html[data-ui=next] .plw .plnd.pl-run::before{opacity:.5}}   /* ⚠animation:none left opacity 0: the glow vanished */
+@media (prefers-reduced-motion:reduce){html[data-ui=next] .plw .plef.run{stroke-width:2.5}}
+/* Modern edges (not default slide-deck arrows): thin muted line, round caps, small open chevron. Scoped so the #nxcss twins of the old hex rules lose. */
+html[data-ui=next] .plw .plef{stroke:color-mix(in srgb,var(--nx-t3) 65%,var(--nx-info));stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+html[data-ui=next] .plw .plel{stroke:color-mix(in srgb,var(--nx-warn) 70%,#e0a53d);stroke-width:1.6;stroke-dasharray:5 4;stroke-linecap:round;stroke-linejoin:round}
+html[data-ui=next] .plw .plef.on,html[data-ui=next] .plw .plel.on{stroke-width:2.6}
+html[data-ui=next] .plw .plmf,html[data-ui=next] .plw .plml{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+html[data-ui=next] .plw .plmf{stroke:color-mix(in srgb,var(--pf) 82%,var(--nx-t3))}
+html[data-ui=next] .plw .plgs{stop-color:color-mix(in srgb,var(--pf) 82%,var(--nx-t3))}
+/* Muted + translucent (opacity also dims the chevron), full on hover/select; no glow */
+html[data-ui=next] .plw .plef{opacity:.72;stroke-width:1.5;transition:opacity .15s,filter .15s}
+html[data-ui=next] .plw .plrin{opacity:.72}   /* ⚠same opacity as idle edges (.plef .72): end overlays at 1 read brighter than the line's middle */
+html[data-ui=next] .plw .plhit:hover+.plef,html[data-ui=next] .plw .plef.on{opacity:1;stroke-width:1.8;filter:drop-shadow(0 0 2px color-mix(in srgb,var(--nx-t1) 30%,transparent))}
+html[data-ui=next] .plw .plml{stroke:color-mix(in srgb,var(--nx-warn) 70%,#e0a53d)}
+/* An in-port circle hid the arrowhead: no in-port; out/loop ports are invisible handles that
+   show on node hover while editing (never during a live run). ⚠Keep them in the DOM — drag-to-connect starts from them. Chevron tips stop 0.8px short of the border (refX 8.9). */
+html[data-ui=next] .plw .plpin{display:none}
+html[data-ui=next] .plw .plport[data-plport]{opacity:0;transition:opacity .12s}
+html[data-ui=next] .plw .plnd:not([class*=" pl-"]):hover .plport[data-plport]{opacity:1}
+html[data-ui=next] .plw .plnd.hasloop .plpbk[data-plport]{opacity:0}   /* ⚠lane starts off-centre; the line itself marks the border (still grabbable) */
+/* User stage colour: --pfc (stage.ui.color) replaces the family hue everywhere --pf is read (bar, tint, glow, rain, ports, edges) */
+[style*="--pfc"]{--pf:var(--pfc)}
+.plcol{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.plsw{width:18px;height:18px;border-radius:50%;border:1px solid var(--nx-rule);padding:0;cursor:pointer}
+.plsw.on{outline:2px solid var(--nx-t1);outline-offset:1px}
+.plcol input[type=color]{width:26px;height:20px;padding:0;border:1px solid var(--nx-rule);background:none;cursor:pointer}
+html[data-ui=next] .plw .plef.pldrop{opacity:1;stroke-width:4;filter:drop-shadow(0 0 4px var(--nx-info))}   /* node drop target (insert between) */
+.plheads{pointer-events:none}
+.plhead{fill:none;stroke:none;opacity:.85}
+.plrin{fill:none;stroke:color-mix(in srgb,var(--pf,#6d8fd6) 82%,var(--nx-t3,#84868c));stroke-width:1.5}   /* tail into a running node, above its glow (48d plHeadsSvg); ⚠= the gradient end colour (.plgs) or the line reads two-tone at the target end */
+/* «Workflow» view (48g): read-only phase row; lighting mirrors the canvas node states (pl-run/done/fail/wait) */
+.wfgrp{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-left:8px;padding-left:10px;border-left:1px solid var(--nx-rule,#252629)}
+.wfgrp>b{font-size:12px;color:var(--nx-t2,#909298);font-weight:600}
+.wfph{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 8px}
+.wfarr{color:var(--nx-t3,#84868c);font-style:normal}
+.wfnd{--pf:var(--nx-active,#5b8def);position:relative;min-width:120px;max-width:240px;box-sizing:border-box;padding:6px 10px;border:1.5px solid var(--nx-rule,#252629);border-radius:6px;background:var(--nx-panel,#121417)}
+.wfnd .plt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:600;color:var(--nx-t1,#cdcedc)}
+.wfnd .plls{font-size:11px;color:var(--nx-t2,#909298)}
+.wfnd.pl-run{border:2px solid var(--pf);box-shadow:0 0 6px 1px color-mix(in srgb,var(--pf) 35%,transparent)}   /* glow layer: ::before with the canvas node (plbreath) */
+.wfnd.pl-done{border:2px solid var(--nx-ok,#71c269)}
+.wfnd.pl-fail{border:2px solid var(--nx-err,#e5484d)}
+html[data-ui] .wfnd.pl-wait .plt{color:var(--nx-t2,#909298);font-weight:500}   /* wait = plain rule border + muted title (canvas .pl-wait); ⚠dashed means skip everywhere, no opacity (.7 put «Waiting» at 3.5:1) */
+.plrtb td.plrt-fail .plrtpl{color:color-mix(in srgb,var(--nx-err,#e5484d) 75%,var(--nx-t1,#cdcedc));background:color-mix(in srgb,var(--nx-err,#e5484d) 14%,transparent)}
+@media (prefers-reduced-motion:reduce){.wfnd.pl-run::before{animation:none}}
+.wfsum{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--nx-t2,#909298);font-size:12px}
+.wfsum b{color:var(--nx-t1,#cdcedc);font-weight:600}
+/* two classes: must beat .plw .hidnote{margin:4px 0} above */
+.hidnote.wfnote{margin:0 0 0 4px;padding-left:10px;border-left:1px solid var(--nx-rule,#252629)}
+.wfprog{display:inline-block;width:56px;height:4px;border-radius:2px;background:var(--nx-rule,#252629);overflow:hidden}
+.wfprog>i{display:block;height:100%;background:var(--nx-active,#5b8def)}
+.pldrs>span{color:var(--nx-t3,#84868c)}html[data-ui] .pldrs>span.on{opacity:1;color:var(--nx-ok,#6fb894)}   /* draft strip: lit steps in the success colour; html[data-ui] so the next-UI twin cannot override the state */
+/* Loop-back pulse (48d plEdgesSvg): only while the target re-runs because of this edge; dashes flow source → target (the path runs that way).
+   ⚠html[data-ui] lifts it over the next-UI .plel rules and keeps the twin rewriter off it; reduced motion = a static thicker line */
+html[data-ui] .plw .plel.pulse{stroke:var(--nx-warn,#e0a53d);stroke-width:2.6;stroke-dasharray:3 9;animation:plpulse .9s linear infinite;animation-delay:var(--plt,0s)}
+@keyframes plpulse{to{stroke-dashoffset:-12}}
+@media (prefers-reduced-motion:reduce){html[data-ui] .plw .plel.pulse{animation:none;stroke-dasharray:none;stroke-width:3}}

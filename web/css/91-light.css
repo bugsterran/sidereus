@@ -1,0 +1,66 @@
+/* Light theme (html[data-theme=light], set by the <head> script from localStorage.mbTheme). Sidereus palette, light roles.
+   ⚠Redefines the same --nx-* tokens, so every token-based rule follows; the #nxlt twins (00-core.js) remap the rest.
+   Derivation (OKLCH, same system as 90-main-ui.css): surfaces hue 262 — bg L .970 C .003 · panel .996 C .002 ·
+   hover .948 C .006 · rule .892 C .009. Text t1 L .285 C .014 H254 · t2 .440 · t3 .505 · idle .550.
+   Semantic at L ~.52: ok H150 C.120 · warn H82 C.110 · err H22 C.195 · info H260 C.190 · info-bg L.530 H261 C.195.
+   --nx-field (field borders) #80858e: ★3.40 bg · 3.67 panel · 3.19 hover (--nx-rule 1.22-1.30).
+   ⚠Body text keeps >=4.5 contrast on --nx-panel and --nx-bg (t3 5.4 · ok 4.7 · warn 4.9 · err 5.5 · info 5.2 · white on info-bg 5.4). */
+html[data-ui=next][data-theme=light]{--nx-bg:#f4f5f7;--nx-panel:#fdfefe;--nx-hover:#eceef2;--nx-rule:#d8dbe1;--nx-field:#80858e;
+  --nx-t1:#252b31;--nx-t2:#4e535a;--nx-t3:#61656c;
+  --nx-ok:#2a7d43;--nx-warn:#8b6401;--nx-err:#c11e32;--nx-info:#1961d4;--nx-info-bg:#1f63da;--nx-idle:#6e7278;--nx-active:#2f63c8;color-scheme:light}
+html[data-ui=next][data-theme=light] #cfgbox .cfgsel,html[data-ui=next][data-theme=light] #cfgbox .svin,html[data-ui=next][data-theme=light] .svin{color-scheme:light}
+/* Scoped rules the twin generator skips (their selectors contain data-ui) but that carry literal dark colors. */
+html[data-ui=next][data-theme=light] .cfab{background:#e8eef8;border-color:#b7c6de;color:var(--nx-t1)}
+html[data-ui=next][data-theme=light] .cfab:hover{background:#dce6f7;border-color:#8fb0e6;color:var(--nx-t1)}
+html[data-ui=next][data-theme=light] .brmg{border-color:var(--nx-rule);color:var(--nx-t3)}
+html[data-ui=next][data-theme=light] .brmg.on{border-color:#6f9be0;color:#1b4fa8;background:#e3ecfa}
+html[data-ui=next][data-theme=light] .brtf{border-bottom-color:var(--nx-rule);color:var(--nx-t2)}
+html[data-ui=next][data-theme=light] .brtf:hover{background:var(--nx-hover);color:var(--nx-t1)}
+html[data-ui=next][data-theme=light] .brtf i,html[data-ui=next][data-theme=light] .brtf em{color:var(--nx-t3)}
+html[data-ui=next][data-theme=light] .brtf.brtg b{color:var(--nx-t1)}
+html[data-ui=next][data-theme=light] .brtf:focus-visible,html[data-ui=next][data-theme=light] .brtl:focus-visible,html[data-ui=next][data-theme=light] .brmg:focus-visible{outline-color:var(--nx-info)}
+html[data-ui=next][data-theme=light] .brtw{color:var(--nx-ok);border-color:#9fd0b3}
+html[data-ui=next][data-theme=light] .sdrw.on{background:#0004}
+html[data-ui=next][data-theme=light] .sdrw .sdrwin{box-shadow:0 12px 32px #0003}
+/* Neutral letter glyphs (cx/gk) are near-white on dark; darken them so they stay legible on white. */
+html[data-theme=light] .ailg-cx,html[data-theme=light] .ailg-gk{color:#4b5563}
+/* Timeline legend chips: hatch stripes use t3/idle (>=4.3:1 on panel) so the glyph reads on white. */
+html[data-ui=next][data-theme=light] .tlaxr .tllg{color:var(--nx-t3)}
+/* ★10-06: time cursor lines were 1.62/1.71/1.67:1 on the light bg ⇒ >=3:1 non-text contrast. ⚠Scoped to beat the next-UI twins of .tlcur.on/.rp. */
+html[data-ui=next][data-theme=light] .tlcur{background:var(--nx-info);opacity:1}
+html[data-ui=next][data-theme=light]{--tl-ring:var(--nx-info)}   /* running-bar ring (20-timeline.css); #8ab4f8 was 2.09:1 */
+/* Compaction chip: quiet tint, not the dark maroon block. ⚠!important because the base rule is !important. */
+html[data-ui=next][data-theme=light] .tlcpn{color:var(--nx-err) !important;background:color-mix(in srgb,var(--nx-err) 9%,var(--nx-panel)) !important}
+html[data-ui=next][data-theme=light] .tlclr{opacity:1}   /* /clear mark: full strength on the light canvas */
+html[data-ui=next][data-theme=light] .tlcur.on{background:#a85a00;box-shadow:0 0 6px #a85a0066}
+html[data-ui=next][data-theme=light] .tlcur.rp{background:#0f7a68;box-shadow:0 0 6px #0f7a6866}
+html[data-ui=next][data-theme=light] .tllg .tllgn{background:repeating-linear-gradient(-45deg,var(--nx-t3),var(--nx-t3) 1.5px,transparent 1.5px,transparent 4px);
+  border-color:var(--nx-t3)}
+html[data-ui=next][data-theme=light] .tllg .tllgu{background:repeating-linear-gradient(45deg,var(--nx-idle),var(--nx-idle) 1.5px,var(--nx-panel) 1.5px,var(--nx-panel) 4px);
+  border-color:var(--nx-idle)}
+html[data-ui=next][data-theme=light] :is(.plw,.tlwrap){--plf-plan:#8250df;--plf-cust:#0a7a72;--tlpl-back:#b45309}   /* .tlwrap: timeline pipeline strip (21-timeline-plrun.css) */
+html[data-ui=next][data-theme=light] .plw .plpal,html[data-ui=next][data-theme=light] .plw .plpan{box-shadow:0 1px 3px rgba(0,0,0,.12)}
+html[data-ui=next][data-theme=light] .plw .plcv{background:var(--nx-hover) radial-gradient(circle,color-mix(in srgb,var(--nx-t3) 35%,transparent) 1px,transparent 1.3px) 0 0/18px 18px}
+html[data-ui=next][data-theme=light] .plw .plnd.bad{background:#fbe9ea}
+html[data-ui=next]:where([data-theme=light]) .plw .plnd:where([class*=pf-]){background:color-mix(in srgb,var(--pf) 14%,var(--nx-panel));border-color:color-mix(in srgb,var(--pf) 70%,transparent);box-shadow:0 2px 6px rgba(0,0,0,.16)}
+html[data-ui=next][data-theme=light] .plw .plport{background:var(--nx-hover);border-color:color-mix(in srgb,var(--pf,var(--nx-t3)) 70%,var(--nx-t2))}
+html[data-ui=next][data-theme=light] .plw .plpbk{border-color:color-mix(in srgb,#d97706 70%,var(--nx-t2))}
+html[data-ui=next][data-theme=light] .plw .plport[data-plport]:hover{border-color:var(--pf,var(--nx-t1))}
+html[data-ui=next][data-theme=light] .plw .plpbk[data-plport]:hover{border-color:#d97706}
+html[data-ui=next][data-theme=light] .plw .plrb{background:color-mix(in srgb,#b45309 16%,transparent);color:color-mix(in srgb,#b45309 60%,var(--nx-t1))}
+html[data-ui=next][data-theme=light] .plovr.on .plovst.plov-done{color:#1f6635}
+html[data-ui=next][data-theme=light] .plnd .plev:not(.plevng){color:#1f6635}   /* --nx-ok was 4.02–4.2:1 on the family tints at 11px; 5.64+ */
+html[data-ui=next][data-theme=light] .plrtb td.plrt-back .plrtpl{color:color-mix(in srgb,#b45309 75%,var(--nx-t1));background:color-mix(in srgb,#b45309 14%,transparent)}   /* #d9a441 was 3.01:1; 5.45 */
+html[data-ui=next][data-theme=light]{--pl-back:#b45309}   /* «back» amber token (43-pipeline.css); 5.0:1 on white */
+html[data-ui=next][data-theme=light] .plw .plnd .plls{box-shadow:0 1px 3px rgba(0,0,0,.12)}
+html[data-ui=next][data-theme=light] .plw .plmf{stroke:color-mix(in srgb,var(--pf) 80%,var(--nx-t1))}
+html[data-ui=next][data-theme=light] .plw .plgs{stop-color:color-mix(in srgb,var(--pf) 80%,var(--nx-t1))}
+html[data-ui=next]:where([data-theme=light]) .plw .plef:not(.on),html[data-ui=next]:where([data-theme=light]) .plw .plrin{opacity:.75}
+html[data-ui=next][data-theme=light] .plw .plel,html[data-ui=next][data-theme=light] .plw .plml{stroke:#d97706}
+html[data-ui=next][data-theme=light] [style*="--pfc"]{--pf:color-mix(in srgb,var(--pfc) 72%,#000)}   /* deeper, like the light family hues */
+/* Account hues (60-sessions.css .acc0-6): deeper twins for the light panel. */
+/* ★acc0 #0a666c: 9.5px chip text on its 16% tint = 5.21:1 on #fdfefe, 4.85:1 on #f4f5f7 (#0f7f86 was 3.82:1). */
+html[data-ui=next][data-theme=light] .acc0{--acc:#0a666c}html[data-ui=next][data-theme=light] .acc1{--acc:#1f63da}html[data-ui=next][data-theme=light] .acc2{--acc:#8a5600}
+html[data-ui=next][data-theme=light] .acc3{--acc:#1b7a43}html[data-ui=next][data-theme=light] .acc4{--acc:#a63da6}html[data-ui=next][data-theme=light] .acc5{--acc:#5b7414}html[data-ui=next][data-theme=light] .acc6{--acc:#7a4fd0}
+/* Status-bar layer popover: a thin ring keeps the main-account dot visible on the white panel. */
+html[data-ui=next][data-theme=light] .sblpop .sbl-main{box-shadow:0 0 0 1px #0003}

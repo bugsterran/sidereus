@@ -1,0 +1,126 @@
+<!doctype html><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<script src="/api/ui-prefs.js"></script>
+<script>@@INCLUDE app-head.js@@</script>
+<title>Sidereus — Session control</title>
+<!-- favicon = the static Sidereus mark (Galileo's first-quarter moon: dark disc, right half lit, rough terminator, maria, a lit peak), no tile;
+     the mid-tone rim (#8a7a5f) keeps the dark half's edge on dark and light tab strips. The rail mark (#dot) shows the live phase instead.
+     Disc r12 at (16,16) in a 32-unit viewBox; the top-right corner stays free for the unread dot (15-alarms.js FAV_DOT).
+     Why a data URI — this server has only two file routes, / and /api, so an icon file would 404.
+     ⚠FAV_DOT is built by replacing the trailing %3C/svg%3E — the URI must keep ending with exactly that. -->
+<link rel=icon id=fav href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='%232b3140'/%3E%3Cpath d='M16 4A12 12 0 0 1 16 28L16.9 24.8L15 20.8L17.1 16.6L14.8 12.4L17.3 8.2Z' fill='%23efe6cf'/%3E%3Ccircle cx='20' cy='11.6' r='1.8' fill='%23c9bc9f'/%3E%3Ccircle cx='19.2' cy='20.4' r='1.3' fill='%23c9bc9f'/%3E%3Ccircle cx='23.4' cy='16.4' r='.9' fill='%23d8ccb0'/%3E%3Ccircle cx='13' cy='15' r='.9' fill='%23efe6cf'/%3E%3Ccircle cx='16' cy='16' r='11.5' fill='none' stroke='%238a7a5f' stroke-width='1'/%3E%3C/svg%3E">
+<style>@@INCLUDE css/*.css@@</style>
+<!-- Left rail (93b-rail.css · 92d-rail.js): brand, needs-me list, view tabs, alerts + settings. Collapsed = 56px icons; #rail.open = 208px. -->
+<nav id=rail aria-label="Main navigation">
+  <div class=rbrand><svg class=brandmk id=dot viewBox="0 0 32 32" role=img aria-label=Sidereus><title>Sidereus</title><clipPath id=bmclip><path d="M16,4A12 12 0 0 1 16,28L16.9,24.8L15,20.8L17.1,16.6L14.8,12.4L17.3,8.2Z"/></clipPath><circle class=bmdk cx="16" cy="16" r="12"/><path class=bmlit d="M16,4A12 12 0 0 1 16,28L16.9,24.8L15,20.8L17.1,16.6L14.8,12.4L17.3,8.2Z"/><g class=bmmar clip-path="url(#bmclip)"><circle cx="20" cy="11.6" r="1.8"/><circle cx="19.2" cy="20.4" r="1.3"/><circle cx="23.4" cy="16.4" r=".9"/><circle cx="12" cy="11.8" r="1.5"/><circle cx="11.2" cy="19.6" r="1.2"/><circle cx="8.6" cy="15.2" r=".8"/><circle cx="15.6" cy="7.6" r=".7"/></g><circle class="bmlit bmpk" cx="13" cy="14.6" r=".7"/><circle class=bmol cx="16" cy="16" r="11.6"/></svg><h1>Sidereus</h1><button class=railtg id=railtg type=button title="Expand sidebar" aria-label="Expand sidebar" aria-controls=rail aria-expanded=false><svg class=ic viewBox="0 0 16 16"><path d="M6 3.5L10.5 8 6 12.5"/></svg></button></div>
+  <section class=rattn id=rattn aria-labelledby=rattnh><h4 id=rattnh><span>Attention</span><b id=rattnn></b></h4><div class=rattnl id=rattnl role=group aria-labelledby=rattnh></div></section>
+  <button class=rattnb id=rattnb type=button title="Attention" aria-label="Attention" aria-controls=rail><svg class=ic viewBox="0 0 16 16"><path d="M8 2.2L14.2 13H1.8z"/><path d="M8 6.4v3.3M8 11.3v.2"/></svg><b></b></button>
+  <div class=mvw id=mvw></div>
+  <div class=rsp></div>
+  <div class=rbot>
+  <button class=bell id=bell title="Task-done alerts (they collect here)" aria-label="Completion alarms" aria-controls=alarm><svg class=ic viewBox="0 0 16 16"><path d="M8 2.2a3.6 3.6 0 0 0-3.6 3.6c0 3-1.2 3.9-1.2 3.9h9.6s-1.2-.9-1.2-3.9A3.6 3.6 0 0 0 8 2.2z"/><path d="M6.6 12a1.5 1.5 0 0 0 2.8 0"/></svg><span class=rlab>Alerts</span><span class=bdg id=bdg></span></button>
+  <button class=bell id=gear title="Settings" aria-label="Settings" aria-haspopup=dialog aria-expanded=false><svg class=ic viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.1"/><path d="M8 1.8v1.8M8 12.4v1.8M1.8 8h1.8M12.4 8h1.8M3.6 3.6l1.3 1.3M11.1 11.1l1.3 1.3M3.6 12.4l1.3-1.3M11.1 4.9l1.3-1.3"/><circle cx="8" cy="8" r="4.3"/></svg><span class=rlab>Settings</span></button>
+  </div>
+</nav>
+<div id=railscrim hidden></div>
+<!-- Row 1 = one 48px bar: view title · to-do chips · Sessions. -->
+<header><div class=hrow>
+  <h2 class=vtitle id=vtitle></h2>
+  <div class=todo id=todo></div>
+  <button class="bell sesb" id=sesb title="Show sessions" aria-label="Sessions" aria-controls=sesdr aria-expanded=false><svg class=ic viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="1.6"/><path d="M9.5 2.5v11M11 5.5h1.4M11 8h1.4"/></svg><span class=sesbl>Sessions</span><b class=sesbn id=sesbn></b><b class=sesba id=sesba></b></button>
+</div>
+<div class=todo2 id=todo2></div>
+<div class=hlb id=hlb></div>
+<!-- ★Per-tab toolbar row, last in the header (stays in view — only the content scrolls): one .tbs[data-tb=<mainView>] slot per tab; applyMainView shows only the current one (contract: VIEWER-HANDOVER pitfalls). -->
+<div class=tbar id=tbar>
+  <div class=tbs id=tbchat data-tb=chat><div class=rooms id=rooms></div><div class=tabs id=tabs></div>
+    <span class=tbr><span class=cnt id=cnt></span><input type=search id=q placeholder="Search text, title, sender">
+    <span class=vww><button class=tab id=vwb title="Saved views — pick one to restore that combination" hidden>Views ▾</button><button class=tab id=vwsave title="Name and save the current filter combination">+ Save</button><div class=vwpop id=vwpop hidden></div></span></span></div>
+  <div class=tbs id=tbtime data-tb=time hidden></div>
+  <div class=tbs id=tbtoken data-tb=token hidden></div>
+  <div class=tbs id=tbbr data-tb=br hidden></div>
+</div></header>
+<div class=stale id=stale>The server was updated — this tab shows the old screen. <b id=sreload>Reload</b></div>
+<div class=toasts id=toasts></div>
+<div class=alarm id=alarm>
+  <div class=ahead><b>Alerts — done · failed</b>
+    <span class=aact><span id=aunread title="Collapse to unread cards only (history is not deleted)">Unread only</span>
+    <span id=aread title="Clears the badge only — history is kept">Mark all read</span>
+    <span id=aall title="Include older cards">Full history</span><span id=aclose>✕</span></span></div>
+  <div id=alist></div>
+</div>
+<div class=cfgm id=cfgm hidden role=dialog aria-modal=true aria-labelledby=cfgmt><div class=cfgbox id=cfgbox tabindex=-1></div></div>
+<div class="cfgm wkm" id=wkm hidden role=dialog aria-modal=true aria-labelledby=wkmt><div class=wkmin><div class=wkmh><b id=wkmt></b><span id=wkms></span><button id=wkmx aria-label="Close">✕</button></div><div class=wkmb id=wkmb></div><div class=wkc id=wkc hidden><div class=wkch id=wkch></div><div class=wkcq id=wkcq hidden></div><div class=wkcr><textarea id=wkcbox rows=1></textarea><button id=wkcsend type=button></button></div></div></div></div>
+<div class=wrap>
+  <!-- ★Positions swapped (2026-08-27): **participants left · sessions right**.
+       Sessions moved to a standalone left card on 2026-08-25 (sharing a column with participants left too little height),
+       and sessions keep that width (500px) — the tree, agents and inline diff use it.
+       Participants can be narrow, so they take the 360px side. -->
+  <aside class=pside>
+    <h2>Participants</h2><div id=people></div>
+    <div class=rinfo id=rinfo></div>
+  </aside>
+  <main id=feed></main>
+  <aside class=lside id=sesdr tabindex=-1 aria-label="Sessions">
+    <h2 class=sesh><span class=seshn>Sessions</span><button class=sesdb id=sespin aria-pressed=false title="Pin as the right column (previous layout)">Pin</button><button class=sesdb id=sesx title="Close (Esc)" aria-label="Close">✕</button></h2>
+    <div class=attn id=attn></div>
+    <!-- ★The invite bar is outside #sess and **above the list** (2026-08-25).
+         Outside: the list redraws every 2.5s, so an input inside it would lose typing every time.
+         Above: with more sessions it got pushed below the list and needed scrolling — it must be in view right after picking. -->
+    <div class=sinv id=sinv></div>
+    <div class=sfil id=sfil></div><div id=sess></div>
+    <!-- ★Token info in one place (2026-08-27): weekly donut right below the quota gauges (5h·7d).
+         The gauge used to sit separately above the input, scattering one topic to both ends of the screen.
+         Both go after the list, stuck to the bottom with sticky — with more sessions the list grows and would need scrolling. -->
+    <div class=saver id=saver></div>
+    <div class=quota id=quota></div>
+    <!-- ★Limit burndown — right below the 5h gauge. The gauge says only «% now», not whether it runs out
+         before reset (2026-09-21: asked whether 12% left at 50 min is on pace). Extrapolated here. -->
+    <div class=burn id=burn></div>
+    <div class=credit id=credit></div>
+    <!-- ★Monitoring (donut · daily · today bar · live) **stays here** (2026-09-04: daily/live monitoring
+         must remain). What moved to a separate tab is the **report**. -->
+    <div class=wku id=wku></div>
+  </aside>
+</div>
+<!-- ★Global search palette — Cmd+K / Ctrl+K. Metadata only (no conversation content). -->
+<div class=cmdk id=cmdk>
+  <div class=cmdkb>
+    <input id=cmdkq type=text autocomplete=off spellcheck=false
+      placeholder="Search sessions — project · path · session id · model · state · platform">
+    <div class=cmdkl id=cmdkl></div>
+    <div class=cmdkf>↑↓ move · Enter select · Esc close — conversation text is never searched (metadata only)</div>
+  </div>
+</div>
+<!-- ★diff opens in a modal (2026-08-25). The left card is 420px, too narrow to read a diff —
+     inside the card you'd scan line by line with horizontal scroll and could not compare. -->
+<div id=dpop>
+  <div class=dhead><span class=dttl id=dttl></span><span class=dsub id=dsub></span>
+    <button class=dx id=dx title="Close this window (Esc)">✕</button></div>
+  <div class=dbody id=dbody></div>
+</div>
+<!-- ★Code/changes popup for the structure tab — same conventions as #dpop above (header · ✕ · Esc). The panel keeps only a summary. -->
+<div id=spop>
+  <div class=dhead><span class=dttl id=sptl></span><span class=dsub id=spsub></span>
+    <span class=strpnb id=spbtn></span>
+    <button class=dx id=spx title="Close (Esc)">✕</button></div>
+  <div class=dbody id=spbody></div>
+</div>
+<div id=compose>
+  <button class=jump id=jump>↓ New <b id=njump></b></button>
+  <!-- ★The token usage gauge sits at the **bottom** (2026-08-26: gauges conventionally go at the bottom).
+       No new grid; reuses `#composein`'s 3 columns — defining the grid in two places once
+       spread the input under the left card (see #composein comment above). Placed in column 2 to align with the feed. -->
+  <div id=composein><div class=cwrap>
+    <div id=rt style="display:none"></div>
+    <div id=cto></div>
+    <div class=crow>
+      <textarea id=cbox rows=1 placeholder="Type here — Enter to send · Shift+Enter for a new line"></textarea>
+      <button id=csend>Send</button>
+    </div>
+  </div><div></div></div>
+</div>
+<!-- ?ui=next only: bottom status bar and its drawer (both display:none without the flag). -->
+<div class=sdrw id=sdrw role=dialog aria-modal=true aria-labelledby=sdrwt><div class=sdrwin id=sdrwin></div></div>
+<div class=sbar id=sbar role=button tabindex=0 aria-controls=sblpop aria-expanded=false></div>
+<script>@@INCLUDE js/*.js@@</script>

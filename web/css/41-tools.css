@@ -1,0 +1,44 @@
+/* Token tab «Tool» view (web/js/47-tools.js) + the «Usage | Tools» switch (46-tokens-tab.js tkViewSeg) */
+.tkvs{display:flex;gap:4px;margin:0 0 10px}
+.tbs > .tkvs{margin:0}   /* Usage|Tools and Pipelines|Tooling sit in the header toolbar slot (#tbar) */
+.tvw .hidnote{margin:4px 0}
+.tvwg{margin-bottom:6px}
+.tvwt{table-layout:fixed}
+.tvwt th:nth-child(1){width:15%}
+.tvwt th:nth-child(2){width:18%}
+.tvwt th:nth-child(4){width:9%}
+.tvwt th:nth-child(5){width:9%}
+.tvwt th:nth-child(6){width:14%}
+.tvwt th:nth-child(7){width:7%}
+.tvwt th:nth-child(4),.tvwt th:nth-child(5){text-align:right}
+.tvwt td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tvwt .brd{max-width:none}
+.tvwt .brn{overflow:hidden;text-overflow:ellipsis}
+.tvwt .tvwp{font-family:var(--mono,monospace)}
+.tvwr{cursor:pointer}
+.tvwj{color:#6b7688}
+/* ⚠Scoped [data-ui=next][data-ui] so the 00-core twin skips it (the twin's --nx-panel hover was 1.07:1); t1 tint works on either theme */
+.tvwr:hover td,html[data-ui=next][data-ui] .tvwr:hover td{background:color-mix(in srgb,var(--nx-t1,#dfe5ee) 10%,transparent)}
+.tvwr:focus-visible{outline:1px solid #5b8def;outline-offset:-1px}
+.tvwr.on td{background:#16202e}
+/* ⚠Off rows dim through text colour, not opacity (opacity .6 put the text at 2.3-3.9:1) */
+.tvwr.off td,html[data-ui=next][data-ui] .tvwr.off td{color:var(--nx-t3,#8b95a7)}
+.tvwr.off .tvwo,html[data-ui=next][data-ui] .tvwr.off .tvwo{color:#d8a35b}
+.tvwfs{white-space:normal}
+.tvwf{display:inline-block;font-style:normal;font-size:10px;line-height:1.5;padding:0 5px;margin-right:3px;
+  border-radius:3px;border:1px solid #2a3442;color:#9aa6b8}
+.tvwf-unused{color:#b8a46b;border-color:#4a4330}
+.tvwf-dup{color:#d88a7a;border-color:#4d3430}
+.tvwf-near{color:#8fb2e0;border-color:#2f3f55}
+.tvwv{margin:8px 0 4px;border:1px solid #232c38;border-radius:7px;background:#11161e;padding:0 10px 8px}
+.tvwt td.tvwvc{white-space:normal;overflow:visible;padding:0 0 4px}
+.tvwv .brh2{margin:8px 0 6px;border-top:0;padding-top:0}
+.tvwv .brh2 i{margin-left:0;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tvwx{margin-left:auto;flex:0 0 auto}
+.tvwpre{margin:0;max-height:360px;overflow:auto;font-family:var(--mono,monospace);font-size:11px;line-height:1.5;
+  color:#c3ccda;white-space:pre-wrap;overflow-wrap:anywhere}
+html[data-ui=next][data-ui][data-theme=light] .tvwr.off .tvwo{color:var(--nx-warn,#8b6401)}
+html[data-theme=light] .tvwr.on td{background:var(--nx-hover,#eef2f7)}
+html[data-theme=light] .tvwv{background:var(--nx-panel);border-color:var(--nx-rule)}
+html[data-theme=light] .tvwpre{color:var(--nx-t1)}
+html[data-theme=light] .tvwf{border-color:var(--nx-rule)}

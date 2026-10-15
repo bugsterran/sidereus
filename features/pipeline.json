@@ -1,0 +1,12 @@
+{
+  "id": "pipeline",
+  "title": "Pipelines",
+  "default_on_public": true,
+  "deps": [],
+  "modules": ["pipeline", "pipeline_projects", "pipeline_std", "pipeline_schema", "stage_catalog", "pl_eval", "pl_eval_view", "pl_scorecard", "pipeline_del", "pipeline_new"],
+  "routes": ["/api/pipelines", "/api/pipelines/save", "/api/pipelines/create", "/api/pipelines/delete", "/api/pipelines/projects/add", "/api/pipelines/projects/remove", "/api/pipelines/apply", "/api/pipelines/projects/dirs", "/api/pick-folder", "/api/pipelines/eval"],
+  "threads": [],
+  "state_keys": [],
+  "web": ["js/48-pipeline.js", "js/48b-pipeline-run.js", "js/48c-pipeline-graph.js", "js/48d-pipeline-canvas.js", "js/48e-pipeline-new.js", "js/48f-pipeline-browse.js", "js/48h-pipeline-sidereus.js", "css/43-pipeline.css"],
+  "settings": []
+}

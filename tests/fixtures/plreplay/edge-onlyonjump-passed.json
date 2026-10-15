@@ -1,0 +1,244 @@
+{
+ "v": 1,
+ "note": "Review passes and the run goes straight to live verify: the onlyOnJump «재검증» gets no st entry and must read as skipped (not needed), never waiting; before the run passes it, it waits.",
+ "pipe": {
+  "name": "demo-flow",
+  "stages": [
+   {
+    "title": "설계",
+    "agent": "sidereus-designer"
+   },
+   {
+    "title": "구현",
+    "agent": "sidereus-implementer",
+    "fanout": "slices",
+    "gate": "scripts/check.sh --fast",
+    "onError": "continue"
+   },
+   {
+    "title": "검증",
+    "agent": "sidereus-verifier",
+    "model": "sonnet",
+    "gate": "scripts/check.sh --full",
+    "onFail": {
+     "goto": "구현",
+     "max": 2
+    }
+   },
+   {
+    "title": "리뷰",
+    "agent": "sidereus-reviewer",
+    "onFail": {
+     "goto": "구현",
+     "max": 1,
+     "then": "재검증"
+    }
+   },
+   {
+    "title": "재검증",
+    "agent": "sidereus-verifier",
+    "model": "sonnet",
+    "onlyOnJump": true,
+    "onFail": {
+     "goto": "구현",
+     "max": 1
+    }
+   },
+   {
+    "title": "라이브 검증",
+    "agent": "general-purpose"
+   }
+  ]
+ },
+ "ev": [
+  {
+   "t": 0,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/설계]",
+   "sub": "sidereus-designer",
+   "model": null,
+   "bg": 0,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 10,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/설계]",
+   "sub": "sidereus-designer",
+   "model": null,
+   "bg": 0,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 20,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": "sidereus-implementer",
+   "model": null,
+   "bg": 0,
+   "aid": "a02",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 30,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": "sidereus-implementer",
+   "model": null,
+   "bg": 0,
+   "aid": "a02",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 40,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/검증]",
+   "sub": "sidereus-verifier",
+   "model": "sonnet",
+   "bg": 0,
+   "aid": "a03",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 50,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/검증]",
+   "sub": "sidereus-verifier",
+   "model": "sonnet",
+   "bg": 0,
+   "aid": "a03",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 60,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/리뷰]",
+   "sub": "sidereus-reviewer",
+   "model": null,
+   "bg": 0,
+   "aid": "a04",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 70,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/리뷰]",
+   "sub": "sidereus-reviewer",
+   "model": null,
+   "bg": 0,
+   "aid": "a04",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 80,
+   "e": "pre",
+   "tool": "Bash",
+   "tag": "[pl:demo-flow/라이브 검증]",
+   "sub": null,
+   "model": null,
+   "bg": 0,
+   "aid": null,
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 90,
+   "e": "post",
+   "tool": "Bash",
+   "tag": "[pl:demo-flow/라이브 검증]",
+   "sub": null,
+   "model": null,
+   "bg": 0,
+   "aid": null,
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 100,
+   "e": "pre",
+   "tool": "Bash",
+   "tag": "[pl:demo-flow/라이브 검증]",
+   "sub": null,
+   "model": null,
+   "bg": 0,
+   "aid": null,
+   "to": null,
+   "commit": 1,
+   "denied": 0
+  }
+ ],
+ "cp": [
+  {
+   "at": 6,
+   "act": "run",
+   "end": 0,
+   "cur": "리뷰",
+   "st": {
+    "설계": "done n=1",
+    "구현": "done n=1",
+    "검증": "done n=1",
+    "리뷰": "run n=1"
+   }
+  },
+  {
+   "at": 8,
+   "act": "run",
+   "end": 0,
+   "cur": "라이브 검증",
+   "st": {
+    "설계": "done n=1",
+    "구현": "done n=1",
+    "검증": "done n=1",
+    "리뷰": "done n=1",
+    "라이브 검증": "run n=0"
+   },
+   "view": {
+    "재검증": "skip"
+   }
+  },
+  {
+   "at": 10,
+   "act": "idle",
+   "end": 1,
+   "cur": "라이브 검증",
+   "st": {
+    "설계": "done n=1",
+    "구현": "done n=1",
+    "검증": "done n=1",
+    "리뷰": "done n=1",
+    "라이브 검증": "done n=0"
+   },
+   "view": {
+    "재검증": "skip"
+   }
+  }
+ ]
+}

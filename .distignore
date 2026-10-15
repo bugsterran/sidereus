@@ -1,0 +1,70 @@
+# Not shipped (gitignore syntax). Install-local config, live data, internal notes.
+
+# install-local config (ship config.example.json instead)
+config.local.json
+
+# not shipped by decision
+advocate/
+
+# live data
+bus.jsonl
+bus.jsonl.*
+acks.jsonl
+cards.jsonl
+cards-read.txt
+cards-read-ids.txt
+quota-log.jsonl
+otel-bysrc.json
+compact-win.json
+commit-links.json
+identity.json
+identity.json.*
+rooms.json
+room-admin.json*
+room-tags.json*
+profiles.json
+ext-sessions.json
+ext-runs.json
+*.cursor
+presence-*
+.watch-*
+.watch.pid
+.watch.session.pid
+*.pid
+.ext-hook.log
+*-cache.json
+usage-*.json
+win-model.json
+wreck-*.json
+struct-cache/
+Library/
+
+# logs, backups, screenshots, tool state
+*.log
+*.err
+*.bak
+*.bak-*
+backup/
+__pycache__/
+*.png
+!docs/images/*.png
+.playwright-mcp/
+.claude/
+.claude.json
+
+# internal docs
+AGENTS.md
+VIEWER-HANDOVER.md
+AUDIT-*
+HANDOVER-*
+NOTES-*
+docs/dev/
+docs/notes/
+
+# refactor proof tool ships (snap.py, README, STAGE3 module map); its snapshots hold live metadata
+refactor/snap/
+.stop-hook/
+.mail-worker
+.gemini/
+branch-warm.json
+tests/.private-deny

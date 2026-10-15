@@ -1,0 +1,301 @@
+/* ── Structure «Architecture» view (84j-structure-arch.js) ──────────────────────
+   Colors only through --nx-* tokens (91-light redefines them), dark fallbacks. Desktop widths only (900/1100/1440).
+   ⚠Dim text uses --nx-t3 (>=4.5:1 in both themes), never opacity. */
+.archtab .strctl label.straxw{display:none}   /* color/code selects belong to «Size» */
+.archbody{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,360px);gap:12px;flex:1 1 auto;min-height:0;margin-top:8px;position:relative}   /* positioned: the .strspg grip sits in the gap */
+.archmap{min-width:0;overflow:auto;border:1px solid var(--nx-rule,#2a3442);border-radius:8px;background:var(--nx-bg,#0d1014);padding:6px 4px}
+.archmap .mmdv{overflow:visible}
+.archmap{cursor:grab}.archmap .archtop,.archmap .archbar{cursor:auto}.archmap.archpan,.archmap.archpan *{cursor:grabbing!important;user-select:none}   /* 84j drag-to-pan */
+/* ⚠.archmap is the scroller and .mmdv does not clip, so the bordered .mmd must grow with a wide SVG or nodes sit past its border */
+/* ⚠bar, notice and legend stay in view on a wide map: sticky at the scroller's top-left, opaque over the diagram */
+.archtop{position:sticky;top:-6px;left:-4px;z-index:2;background:var(--nx-bg,#0d1014)}
+.archdg .mmd{width:max-content;min-width:100%;box-sizing:border-box}
+.archdg .mmdtg{position:sticky;right:10px}   /* «Source text» stays at the visible right edge of the wider box */
+/* ⚠Focus view: the «Source text» row floats over the band's top-right corner — a row of its own (25px) cut the hub off the first screen at 900 */
+.archdg[data-fv] .mmdbar{position:relative;z-index:1;height:0;padding:0 6px;overflow:visible;align-items:flex-start}
+.archdg[data-fv] .mmdtg{margin-top:6px;background:var(--mmd-bg)}
+.archside{min-width:0;display:flex;flex-direction:column;border:1px solid var(--nx-rule,#2a3442);border-radius:8px;background:var(--nx-panel,#141a23);overflow:hidden}
+.archsh{display:flex;align-items:baseline;gap:8px;padding:8px 10px;border-bottom:1px solid var(--nx-rule,#2a3442)}
+.archsh b{font-size:13px;color:var(--nx-t1,#dfe5ee)}
+.archsh span{flex:1 1 auto;min-width:0;font-size:12px;color:var(--nx-t3,#8b95a7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.archrf{border:0;background:transparent;color:var(--nx-t2,#aab4c3);cursor:pointer;font:inherit;font-size:14px;padding:0 4px}
+.archrf:hover{color:var(--nx-t1,#dfe5ee)}
+.archel-list{list-style:none;margin:0;padding:4px;overflow-y:auto;flex:1 1 auto}
+.arche{border-radius:6px}
+.arche+.arche{margin-top:2px}
+.arche.on{background:var(--nx-hover,#1b2230)}
+.archeb{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;border:1px solid transparent;border-radius:6px;background:transparent;
+  color:var(--nx-t1,#dfe5ee);font:inherit;font-size:12.5px;padding:6px 8px;cursor:pointer}
+.archeb:hover{background:var(--nx-hover,#1b2230)}
+.archeb:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
+.archen{display:flex;align-items:baseline;gap:6px;min-width:0}
+.archen b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%}
+.archen i{font-style:normal;color:var(--nx-t3,#8b95a7)}
+.archem{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.archem small{font-size:11.5px;color:var(--nx-t3,#8b95a7)}
+.archk{font-style:normal;font-size:11.5px;color:color-mix(in srgb,var(--nx-info,#5899f3) 55%,var(--nx-t1,#dfe5ee))}
+.archbg{--bgc:var(--nx-t2,#aab4c3);font-style:normal;font-size:11px;font-weight:600;line-height:17px;padding:0 6px;border-radius:9px;
+  border:1px solid color-mix(in srgb,var(--bgc) 50%,transparent);background:color-mix(in srgb,var(--bgc) 14%,var(--nx-panel,#141a23));
+  color:color-mix(in srgb,var(--bgc) 60%,var(--nx-t1,#dfe5ee))}
+.archest{--bgc:var(--nx-warn,#e3b341);border-style:dashed}
+.archbad{--bgc:var(--nx-err,#f45460)}
+.archdev{--bgc:var(--st-cy,#e57a6a)}
+/* Style badge: one line, framework text (<=40 chars) clipped so it never wraps the header at 900 */
+.strh .strbg-asty{--bgc:var(--st-dat,#b07cf0);max-width:min(340px,40%);overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.strh .strbg-asty.strbg-cut{--bgc:var(--nx-warn,#e3b341)}
+.arche.bad .archen b{color:var(--nx-t2,#aab4c3)}
+.archel{font-size:12px;color:var(--nx-t2,#aab4c3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.archev{list-style:none;margin:0 0 6px;padding:0 8px 0 18px;border-left:2px solid color-mix(in srgb,var(--nx-info,#5899f3) 45%,transparent);margin-left:10px}
+.archev li+li{margin-top:1px}
+.archev button{display:flex;align-items:baseline;gap:0;width:100%;min-width:0;text-align:left;border:0;background:transparent;cursor:pointer;
+  font:inherit;font-size:12px;color:var(--nx-t2,#aab4c3);padding:3px 4px;border-radius:4px}
+.archev button:hover{background:var(--nx-panel,#141a23);color:var(--nx-t1,#dfe5ee)}
+.archevf{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left}   /* keep the file name, clip the dir */
+.archevl{flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--nx-t3,#8b95a7)}
+.archev code{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:8px;font-size:11.5px;
+  color:color-mix(in srgb,var(--nx-info,#5899f3) 55%,var(--nx-t1,#dfe5ee))}
+.archevn{font-size:12px;color:var(--nx-t3,#8b95a7);padding:2px 8px 6px 28px}
+/* Empty / stale states and the request preview */
+.archempty{max-width:620px;margin:48px auto 0;padding:22px 24px;text-align:center;border:1px dashed var(--nx-rule,#2a3442);border-radius:10px;
+  background:var(--nx-panel,#141a23);color:var(--nx-t2,#aab4c3)}
+.archempty>b{display:block;font-size:15px;color:var(--nx-t1,#dfe5ee);margin-bottom:6px}
+.archempty>p{margin:0 0 14px;font-size:13px;line-height:1.6}
+.archempty .archreq{text-align:left}
+/* Run / sent status inline in the header row. ⚠.wvh span (40) greys every span; capped so the row holds at 900 */
+.strctl .archsent{margin:0;padding:3px 10px;max-width:240px;min-width:0;flex:0 1 auto}
+.strctl .archsent span{color:inherit;font-size:12px}
+.strctl .strbg{margin:0}
+.archgo{border:1px solid color-mix(in srgb,var(--nx-info,#5899f3) 60%,transparent);background:color-mix(in srgb,var(--nx-info,#5899f3) 16%,var(--nx-panel,#141a23));
+  color:var(--nx-t1,#dfe5ee);font:inherit;font-size:13px;font-weight:600;padding:4px 14px;border-radius:6px;cursor:pointer}
+.archgo:hover{background:color-mix(in srgb,var(--nx-info,#5899f3) 26%,var(--nx-panel,#141a23))}
+.archwhy{margin-left:10px;font-size:12px;color:var(--nx-t3,#8b95a7)}
+.archreq{border:1px solid var(--nx-rule,#2a3442);border-radius:8px;background:var(--nx-bg,#0d1014);padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.archrqh{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12.5px;color:var(--nx-t2,#aab4c3)}
+.archrqh b{color:var(--nx-t1,#dfe5ee);font-size:13px}
+.archrqh select{max-width:100%;font:inherit;font-size:12px}
+.archdm{margin:0;padding:8px 10px;border-radius:6px;background:var(--nx-panel,#141a23);border:1px solid var(--nx-rule,#2a3442);color:var(--nx-t1,#dfe5ee);
+  font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-width:100%}
+.archrqb{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.archrqb .archwhy{margin-left:2px}
+/* ⚠05-controls dims a disabled .wkrgb with opacity (fails 4.5:1); here the reason sits beside it, so draw it with t3 instead */
+html[data-ui][data-ui][data-ui] .archtab .archok[disabled]{opacity:1;color:var(--nx-t3,#8b95a7);border-style:dashed}
+.archmsg{margin-top:8px;font-size:12.5px;color:var(--nx-t2,#aab4c3)}
+/* 900: the edge list goes under the diagram (no sideways scroll) */
+@media (max-width:1060px){
+  .archbody{grid-template-columns:minmax(0,1fr);grid-template-rows:100% auto}   /* ⚠map row = whole body, panel below in #feed's scroll: sharing the height left archFitOf too little room (null) */
+  .archside{max-height:360px;order:0}   /* ⚠60-sessions.css `aside{order:-1}` (≤1000) would lift the panel above the map */
+  .archbody>.strspg{display:none}
+}
+@media (min-width:1061px){.archbody[style*="--spw"]{grid-template-columns:minmax(0,1fr) min(var(--spw),60%)}}   /* dragged Edges width (81i); one column below */
+/* Diagram toolbar: overview hint + «Include tests», or «← All» + focused module + in/out legend (in = --nx-ok, out = --nx-info everywhere) */
+.archbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:2px 6px 8px;font-size:12.5px;color:var(--nx-t2,#aab4c3)}
+.archhint{flex:1 1 auto;min-width:0;color:var(--nx-t3,#8b95a7)}
+.archsel{color:var(--nx-t1,#dfe5ee);font-size:13px}
+/* Focus-view way out: filled accent so it reads as a button (plain text was missed); white on --nx-info-bg = 5.2 dark / 5.4 light */
+.archall{border:1px solid var(--nx-info-bg,#2e6bca);background:var(--nx-info-bg,#2e6bca);color:#fff;font:inherit;font-size:12.5px;font-weight:600;padding:4px 14px;border-radius:5px;cursor:pointer}
+.archall:hover{background:color-mix(in srgb,var(--nx-info-bg,#2e6bca) 85%,#fff)}
+/* ⚠The light twin remaps #fff to #1a1a1a (3.2:1 on --nx-info-bg): keep white explicitly */
+html[data-ui=next][data-ui] .archall{color:#fff}
+.archlg{display:inline-flex;align-items:center;gap:5px}
+.archlg::before{content:'';width:16px;height:0;border-top:2.4px solid var(--lc)}
+.archlg.in,.arche.in{--lc:var(--nx-ok,#71c269)}
+.archlg.out,.arche.out{--lc:var(--nx-info,#5899f3)}
+.archtg{margin-left:auto;display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--nx-t2,#aab4c3)}
+.archio{flex:0 0 auto;font-style:normal;font-size:11px;font-weight:600;padding:0 5px;border-radius:8px;line-height:16px;
+  border:1px solid color-mix(in srgb,var(--lc) 55%,transparent);color:color-mix(in srgb,var(--lc) 60%,var(--nx-t1,#dfe5ee))}
+/* Nodes are the click target (data-p from 81e tag mode); the overview keeps lines quiet so the boxes read first */
+.archmap svg [data-p]{cursor:pointer}
+.archmap svg [data-p]:hover rect{stroke:var(--nx-info,#5899f3)}
+.archmap svg [data-on] rect{stroke:var(--nx-t1,#dfe5ee);stroke-width:2.2}
+.archmap svg [data-on] text{font-weight:700}
+.archmap .mmde{stroke-width:1.1}
+/* v2 edge kinds (84j2, 81e data-k): call = default solid. ⚠Before the data-c / .archdim rules so focus and hover colours still win */
+.archmap .mmdfe[data-k=read] .mmde{stroke:var(--st-dat,#b07cf0)}
+.archmap .mmdfe[data-k=write] .mmde{stroke:var(--nx-warn,#e3b341)}
+.archmap .mmdfe[data-k=event] .mmde{stroke-dasharray:9 4}
+.archmap .mmdfe[data-k=uses] .mmde{stroke-width:.8;stroke-dasharray:3 3}   /* module -> front module (84j2 archFront): a dependency, not request order */
+/* v2 levels: band = grey fill + dashed grey edge, group = blue tint + solid blue edge, entry row = blue tint, no edge; lines pass through bands (81g pass).
+   ⚠★Dark black tone, band fill vs page was 1.04:1, edge 1.63; group edge (--nx-rule) 1.25 on the band — areas could not be told apart. Keep fills below the node box edges. */
+.archmap .mmdsg.archband>rect{fill:color-mix(in srgb,var(--nx-t3,#8b95a7) 12%,transparent);stroke:color-mix(in srgb,var(--nx-t3,#8b95a7) 55%,transparent);stroke-dasharray:3 3}
+.archmap .mmdsg.archband>text{font-size:13px;letter-spacing:.04em}
+.archmap .mmdsg.archgrp>rect{fill:color-mix(in srgb,var(--nx-info,#5899f3) 10%,transparent);stroke:color-mix(in srgb,var(--nx-info,#5899f3) 45%,transparent)}
+/* entry kind rows (84j2 Ek<k>r<r>): a tint, no outline, small title */
+.archmap .mmdsg.archerow>rect{fill:color-mix(in srgb,var(--nx-info,#5899f3) 8%,transparent);stroke:none}
+.archmap .mmdsg.archerow>text{font-size:11px;fill:var(--nx-t3,#8b95a7)}
+/* Edge click target: 81e tag mode puts a 10px transparent .mmdhit under each line (a 1.1px stroke is too thin to hit) */
+.archmap .mmdhit{fill:none;stroke:transparent;stroke-width:10;pointer-events:stroke}
+.archdg .mmdfe{cursor:pointer}
+.archmap .mmdfe[data-c=in] .mmde{stroke:var(--nx-ok,#71c269);stroke-width:1.8}
+.archmap .mmdfe[data-c=out] .mmde{stroke:var(--nx-info,#5899f3);stroke-width:1.8}
+.archmap .mmdfe[data-c=in] .mmdfl text{fill:color-mix(in srgb,var(--nx-ok,#71c269) 55%,var(--nx-t1,#dfe5ee))}
+.archmap .mmdfe[data-c=out] .mmdfl text{fill:color-mix(in srgb,var(--nx-info,#5899f3) 55%,var(--nx-t1,#dfe5ee))}
+/* Hover focus (84j archHovPaint), the relation view's .reldim pattern: lit = .arn, in = --nx-ok, out = --nx-info, rest dims.
+   ⚠Opacity here is transient (pointer on a node) like .reldim; scoped by svg.archdim so it outranks the data-c focus colours. */
+.archmap svg.archdim .mmdn:not(.arn),.archmap svg.archdim .mmdsg{opacity:.28}
+.archmap svg.archdim .mmdfe:not(.arn){opacity:.1}
+.archmap svg.archdim .mmdfe.arn .mmde{stroke-width:2.2}
+.archmap svg.archdim .mmdfe.arin .mmde,.archmap svg.archdim .mmdn.arin rect{stroke:var(--nx-ok,#71c269)}
+.archmap svg.archdim .mmdfe.arout .mmde,.archmap svg.archdim .mmdn.arout rect{stroke:var(--nx-info,#5899f3)}
+.archmap svg.archdim .mmdn.arin rect,.archmap svg.archdim .mmdn.arout rect{stroke-width:2}
+.archmap svg.archdim .mmdfe.arin .mmdfl text{fill:color-mix(in srgb,var(--nx-ok,#71c269) 55%,var(--nx-t1,#dfe5ee))}
+.archmap svg.archdim .mmdfe.arout .mmdfl text{fill:color-mix(in srgb,var(--nx-info,#5899f3) 55%,var(--nx-t1,#dfe5ee))}
+.archmap svg.archdim .mmdn.arh rect{stroke:var(--nx-t1,#dfe5ee);stroke-width:2.4}
+/* Structure mode switch «Architecture · Size»: the main control of this tab, so larger than 05-controls .strseg and a solid accent
+   when on. ⚠--nx-info-bg + #fff = 5.2:1 in both themes; html[data-ui] scope keeps the light twin from remapping #fff. */
+html[data-ui=next][data-ui] #strmd{height:30px;border-radius:6px}
+html[data-ui=next][data-ui] #strmd button{padding:0 16px;font-size:13px;font-weight:500;color:var(--nx-t2)}
+html[data-ui=next][data-ui] #strmd button.on{background:var(--nx-info-bg);color:#fff;font-weight:700;box-shadow:none}
+html[data-ui=next][data-ui] #strmd button.on:hover{background:color-mix(in srgb,var(--nx-info-bg) 88%,#fff)}
+/* ⚠Reserve each label's bold width (hidden 0-height copy) so moving .on never resizes the right-anchored switch. */
+#strmd button::after{content:attr(data-t);display:block;height:0;overflow:hidden;visibility:hidden;font-weight:700}
+/* Loading line (map fetch or first layout): the structure tab's .strload text + a spinning ring (20-timeline tlspin) */
+.archwait{display:flex;align-items:center;justify-content:center;gap:8px}
+.archspin{display:block;width:12px;height:12px;border-radius:50%;border:2px solid var(--nx-info,#5899f3);border-right-color:transparent;animation:tlspin .75s linear infinite}
+@media (prefers-reduced-motion:reduce){.archspin{animation:none}}
+/* Sent request: one status line in place of the request form (84j archSentHtml); spinner once the session is working */
+.archsent{display:inline-flex;align-items:center;gap:8px;margin:6px auto 0;padding:6px 12px;font-size:12.5px;color:var(--nx-t1,#dfe5ee);
+  border:1px solid color-mix(in srgb,var(--nx-info,#5aa0ff) 45%,var(--nx-rule,#2a3442));border-radius:8px;background:color-mix(in srgb,var(--nx-info,#5aa0ff) 7%,var(--nx-panel,#12161d))}
+/* Legend under the toolbar (84j archLegHtml): swatches are the diagram's own .mmde/.mmdn/.archdim classes; .mmd only supplies the --mmd-* vars */
+.archleg.mmd{display:flex;flex-wrap:wrap;align-items:center;gap:3px 12px;margin:0;padding:0 6px 6px;border:0;background:none;font-size:11.5px;color:var(--nx-t3,#8b95a7)}
+.archleg>span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.archleg .archlgh{margin-left:6px}
+.archsw{flex:0 0 auto;overflow:visible}
+.archlgx{font-weight:400;color:var(--mmd-ln)}
+/* Process flows (84k): picker in the toolbar, sequence diagram in .archfdg, failed steps (.archfx) in --nx-err; the dash comes from -->> */
+.archfl{display:inline-flex;align-items:center;gap:6px;color:var(--nx-t2,#aab4c3)}
+.archfl select{max-width:260px;font:inherit;font-size:12.5px;color:var(--nx-t1,#dfe5ee);background:var(--nx-panel,#141a23);border:1px solid var(--nx-rule,#2a3442);border-radius:5px;padding:2px 6px}
+.archfbt{border:1px solid var(--nx-rule,#2a3442);background:transparent;color:var(--nx-t2,#aab4c3);font:inherit;font-size:12px;padding:2px 8px;border-radius:5px;cursor:pointer}
+.archfbt:hover{background:var(--nx-hover,#1b2230);color:var(--nx-t1,#dfe5ee)}
+.archfbt.on{border-color:var(--nx-info,#5899f3);color:var(--nx-t1,#dfe5ee)}
+/* Flow entry nodes (84j2 'en<n>' hexagons in band L0) and their edge to the first module */
+.archmap .mmdn[data-p^=en] polygon{stroke:var(--nx-info,#5899f3);stroke-dasharray:4 3}
+.archmap svg [data-p^=en]{cursor:default}
+/* v2 focus view (84j4, .archdg[data-fv]): a label shows only for the one hovered edge (.arhe, 84j archHovPaint) or as a lit flow step number (.arlit);
+   box hover lights its edges but shows no text (all of a hub's labels at once piled up); solid pill so it never sits on other text; infra chip ifx = dashed accent */
+.archdg[data-fv] .mmdfe .mmdfl{visibility:hidden}
+.archdg[data-fv] svg.archdim .mmdfe.arhe .mmdfl{visibility:visible}
+.archdg[data-fv] .mmdfl rect{opacity:1;stroke:var(--nx-rule,#2a3442);stroke-width:1}
+.archdg[data-fv] svg.arlitdim .mmdfe.arlit .mmdfl{visibility:visible}
+.archdg[data-fv] svg [data-p^=en]{cursor:pointer}
+.archmap .mmdn[data-p=ifx] rect{stroke:var(--nx-info,#5899f3);stroke-dasharray:4 3}
+.archmap svg [data-p=ifx]{cursor:pointer}
+.archmap .mmdfe[data-k=entry] .mmde{stroke-width:1}
+.archfr{font-size:12px;color:var(--nx-ok,#71c269)}
+.archfr.bad{color:var(--nx-err,#f45460)}
+@media (min-width:1061px){.archbody:has(.archfdg){grid-template-columns:minmax(0,1fr) minmax(240px,280px)}}   /* flow view: the diagram gets the width; below 1061 the list stacks */
+.archfdg .mmdv{overflow-x:auto}   /* the fit SVG stops shrinking at 0.75 (84k); past that the diagram scrolls, not the pane */
+.archfdg svg [data-p]{cursor:default}
+.archfdg .mmdsqm{cursor:pointer}
+.archfdg .mmdsqm:hover .mmde{stroke:var(--nx-info,#5899f3);stroke-width:1.8}
+.archfdg .mmdsqm.archfx .mmde{stroke:var(--nx-err,#f45460)}
+.archfdg .mmdsqm.archfx>.mmdtx{fill:color-mix(in srgb,var(--nx-err,#f45460) 60%,var(--nx-t1,#dfe5ee))}
+.archfs .archio{--lc:var(--nx-t3,#8b95a7)}
+/* Project checks (84l): header badges, focus chip, request strip, top-issue popup, node count pills */
+.strh .strbg-archckd{--bgc:var(--nx-warn,#e3b341);border-style:dashed}
+.strh button.strbg-archcki{--bgc:var(--nx-err,#f45460);font-family:inherit;cursor:pointer}
+.strh button.strbg-archckiw{--bgc:var(--nx-warn,#e3b341)}
+.strh button.strbg-archcki:hover{background:color-mix(in srgb,var(--bgc) 26%,var(--nx-panel,#141a23))}
+.archckc{display:inline-flex;gap:4px;align-items:center}
+.archck{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:8px;min-width:0}
+.archck>.archreq{flex:1 1 100%}
+.strctl .archckgo{box-sizing:border-box;height:30px;padding:0 14px;white-space:nowrap;flex:0 0 auto}   /* header row: same height as #strmd */
+.strctl .archckgo.on{background:color-mix(in srgb,var(--nx-info,#5899f3) 30%,var(--nx-panel,#141a23))}
+.strctl .archckgo:disabled{opacity:.5;cursor:default}
+.archckst{font-size:12.5px;color:var(--nx-t2,#aab4c3)}
+/* Request record row (84l2 archReqRowHtml): state · receiving session · «Stop»; finished rows muted */
+.archpr{flex-wrap:wrap;margin:0}
+.archpr .archprw{color:var(--nx-t2,#aab4c3)}
+.archpr button{padding:2px 10px}
+.archpr.end{opacity:.7;border-color:var(--nx-rule,#2a3442);background:none}
+.archckst.archsent{color:var(--nx-ok,#71c269);font-weight:600}   /* fix request accepted: must not look like a scanner status line */
+.archmsg.archerr{color:var(--nx-err,#f45460)}
+/* Issues window (84l archChkWinOpen): header stays, list scrolls */
+body.ckwin{margin:0;padding:0;height:100vh;overflow:hidden}
+#ckroot{display:flex;flex-direction:column;gap:8px;height:100vh;box-sizing:border-box;padding:12px 16px}
+.ckwh{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding-bottom:10px;border-bottom:1px solid var(--nx-rule,#2a3442)}
+.ckwh b{font-size:15px;color:var(--nx-t1,#dfe5ee)}
+.ckwh span{font-size:12.5px;color:var(--nx-t2,#aab4c3)}
+.ckwh .ckwp{flex:1 1 auto;color:var(--nx-t3,#8b95a7)}
+.ckwa{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--nx-t2,#aab4c3);cursor:pointer}
+.ckwh .archgo:disabled{opacity:.5;cursor:default}
+.ckwh .archgo.on{background:color-mix(in srgb,var(--nx-info,#5899f3) 30%,var(--nx-panel,#141a23))}
+#ckroot>.archreq,#ckroot>.archckst,#ckroot>.archmsg{flex:0 0 auto}
+#ckroot .archdm{max-height:28vh;overflow:auto}
+.archckl li{display:flex;align-items:flex-start;gap:4px}
+.archckl li>input{flex:0 0 auto;margin:9px 2px 0 4px}
+.ckwr{flex:1 1 auto;min-width:0}
+.archckh{display:flex;flex-wrap:wrap;gap:4px 10px;padding:0 8px 6px calc(3em + 8px);font-size:12px;line-height:1.5;color:var(--nx-t3,#8b95a7)}
+.archckh a{color:var(--nx-info,#5899f3);white-space:nowrap}
+.archckl{flex:1 1 auto;min-height:0;list-style:none;margin:0;padding:4px;overflow-y:auto;border:1px solid var(--nx-rule,#2a3442);border-radius:8px;background:var(--nx-panel,#141a23)}
+.archckl li{border-left:3px solid var(--nx-warn,#e3b341);padding-left:4px}
+.archckl li.error{border-left-color:var(--nx-err,#f45460)}
+.archckl li+li{margin-top:1px}
+.archckl button{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 0;width:100%;min-width:0;text-align:left;border:0;background:transparent;cursor:pointer;
+  font:inherit;font-size:12.5px;line-height:1.5;color:var(--nx-t2,#aab4c3);padding:6px 8px;border-radius:4px}
+.archckl button:hover{background:var(--nx-hover,#1b2230);color:var(--nx-t1,#dfe5ee)}
+.archckl button>*{flex:0 0 auto;margin-right:8px;white-space:nowrap}
+.archckl .archcks{width:3em;font-size:11px;color:var(--nx-warn,#e3b341)}
+.archckl li.error .archcks{color:var(--nx-err,#f45460)}
+.archckl small{font-size:11px;color:var(--nx-t3,#8b95a7)}
+.archckl code{flex:0 1 auto;min-width:0;white-space:normal;overflow-wrap:anywhere;font-size:11.5px;color:var(--nx-t1,#dfe5ee)}
+.archckl .archckf{flex:1 1 220px;min-width:0;white-space:normal;overflow-wrap:anywhere}
+.archckl em{margin:0 0 0 auto;padding-left:8px;font-style:normal;font-size:11px;color:var(--nx-t3,#8b95a7)}
+/* ⚠Pills straddle the node's top edge: overflow visible so the top row is not clipped (paint only, no layout change) */
+.archdg svg{overflow:visible}
+.archmap svg .archckb rect{stroke:none!important}   /* ⚠node hover/focus rules stroke every rect in the node */
+.archmap svg .archckb rect.archcke{fill:var(--nx-err,#f45460)}
+.archmap svg .archckb rect.archckw{fill:var(--nx-warn,#e3b341)}
+.archmap svg .archckb text{font-size:10px;font-weight:700;fill:var(--nx-bg,#0d1014)}
+/* Module detail panel (84j3 archDetHtml): summary, layer/group/owns, neighbour tree Out/In → kind, flows through the module */
+.archdet{flex:1 1 auto;min-height:0;overflow-y:auto;padding:8px 10px;font-size:12.5px;color:var(--nx-t2,#aab4c3)}
+.archsum{margin:0 0 8px;color:var(--nx-t1,#dfe5ee);line-height:1.45}
+.archmeta{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0 0 10px}
+.archmeta dt{color:var(--nx-t3,#8b95a7)}
+.archmeta dd{margin:0;min-width:0;color:var(--nx-t1,#dfe5ee);overflow-wrap:anywhere}
+.archdh{display:flex;align-items:center;gap:8px;margin:10px 0 4px;padding-top:8px;border-top:1px solid var(--nx-rule,#2a3442)}
+.archdh b{flex:1 1 auto;font-size:12.5px;color:var(--nx-t1,#dfe5ee)}
+.archnxa,.archnxb,.archfv button,.archpath button{border:0;background:transparent;color:var(--nx-t2,#aab4c3);font:inherit;cursor:pointer;border-radius:4px}
+.archnxa{font-size:12px;padding:1px 6px;border:1px solid var(--nx-rule,#2a3442)}
+.archnxa:hover,.archnxb:hover,.archfv button:hover,.archpath button:hover{background:var(--nx-hover,#1b2230);color:var(--nx-t1,#dfe5ee)}
+.archnx,.archnx ul,.archfv{list-style:none;margin:0;padding:0}
+.archnx ul{padding-left:14px}
+.archnxb{display:flex;align-items:baseline;gap:6px;width:100%;text-align:left;padding:3px 4px;color:var(--nx-t1,#dfe5ee)}
+.archnxb i{font-style:normal;color:var(--nx-t3,#8b95a7);width:10px}
+.archnxb small{color:var(--nx-t3,#8b95a7)}
+.archnxd.in{--lc:var(--nx-ok,#71c269)}.archnxd.out{--lc:var(--nx-info,#5899f3)}
+.archnxd>.archnxb{font-weight:600;border-left:2.4px solid var(--lc)}
+.archfv button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;padding:4px 6px}
+.archfv button.on{background:var(--nx-hover,#1b2230);box-shadow:inset 2.4px 0 0 var(--nx-warn,#e3b341);color:var(--nx-t1,#dfe5ee)}
+.archfv small{color:var(--nx-t3,#8b95a7)}
+.archnxb:focus-visible,.archnxa:focus-visible,.archfv button:focus-visible,.archpath button:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
+/* Path bar «All › layer › group › module» first in the sticky .archtop (84j3 archPathHtml) */
+/* ⚠One line: only the group crumb shrinks with «…». A wrapped path (+28px at 1100) pushed the focused hub below the first screen */
+.archpath{display:flex;flex-wrap:nowrap;align-items:center;gap:2px 4px;padding:2px 6px 4px;font-size:12.5px;min-width:0}
+.archpath button{padding:2px 6px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.archpath button[data-arpath=group]{flex-shrink:1}
+.archpath button[aria-current]{color:var(--nx-t1,#dfe5ee);font-weight:600;flex-shrink:0;max-width:60%}
+.archpath i{font-style:normal;color:var(--nx-t3,#8b95a7);flex-shrink:0}
+/* Path-level / flow highlight (84j3 archLitPaint). ⚠Always-on state: colour only, no opacity (contrast 4.5:1); separate from hover .arn/.archdim, which wins while the pointer is on the map */
+.archmap svg.arlitdim:not(.archdim) .mmdn:not(.arlit) rect,.archmap svg.arlitdim:not(.archdim) .mmdn:not(.arlit) polygon{stroke:var(--nx-rule,#2a3442)}
+.archmap svg.arlitdim:not(.archdim) .mmdn:not(.arlit) text{fill:var(--nx-t3,#8b95a7)}
+.archmap svg.arlitdim:not(.archdim) .mmdfe:not(.arlit) .mmde{stroke:var(--nx-rule,#2a3442)}
+.archmap svg.arlitdim:not(.archdim) .mmdn.arlit rect{stroke:var(--nx-warn,#e3b341);stroke-width:2.2}
+.archmap svg.arlitdim:not(.archdim) .mmdfe.arlit .mmde{stroke:var(--nx-warn,#e3b341);stroke-width:2.2}
+.archmap svg.arlitdim:not(.archdim) .mmdfe.arlit.archfx .mmde{stroke:var(--nx-err,#f45460)}
+.archmap svg.arlitdim:not(.archdim) .mmdn.arlit[data-p^=en] polygon{stroke:var(--nx-warn,#e3b341);stroke-width:2.2}
+.archlitc{font-size:12px;color:var(--nx-warn,#e3b341)}.archlitc[hidden]{display:none}
+.archmap svg .mmdn.arflash rect,.archmap svg .mmdn.arflash polygon{animation:arflash 1s ease-out}   /* 84k «Next lit»: animation beats the lit stroke rules */
+@keyframes arflash{0%,50%{stroke:var(--nx-info,#5899f3);stroke-width:5}}
+/* Edge-row highlight (84j5): the row's own edge a little thicker inside its lit flow; «Off screen» marker sits in .archbody, outside the scroller */
+.archmap svg.arlitdim:not(.archdim) .mmdfe.arlit.arevk .mmde{stroke-width:3.4}
+.archoff{position:absolute;z-index:4;pointer-events:none;padding:1px 6px;border:1px solid var(--nx-warn,#e3b341);border-radius:9px;background:var(--nx-panel,#141a23);color:var(--nx-warn,#e3b341);font-size:11.5px;white-space:nowrap}
+.archoff.l{transform:translate(4px,-50%)}.archoff.r{transform:translate(calc(-100% - 4px),-50%)}.archoff.t{transform:translate(-50%,4px)}.archoff.b{transform:translate(-50%,calc(-100% - 4px))}
+/* «Connections» flow tree (84j6): flow node = edge-row button laid out in one line, steps / other edges indented under it */
+.archeth{display:flex;gap:6px;justify-content:flex-end;padding:4px 8px 0}
+.archet .archtn>.archtnb{flex-direction:row;align-items:baseline;gap:6px}
+.archtnb b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.archtnb small,.archtn>.archnxb small{font-size:11.5px;color:var(--nx-t3,#8b95a7);white-space:nowrap}
+.archtn>.archeb i,.archtn>.archnxb i{font-style:normal;color:var(--nx-t3,#8b95a7);width:10px;flex:none}
+.archetl{list-style:none;margin:0;padding:0 0 2px 14px}
+.archen small{font-size:11.5px;color:var(--nx-t3,#8b95a7);white-space:nowrap}   /* «+N same pair» on a step */
+.archsk{font-style:normal;font-size:11.5px;color:var(--nx-t3,#8b95a7);min-width:14px;text-align:right}

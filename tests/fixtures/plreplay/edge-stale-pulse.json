@@ -1,0 +1,287 @@
+{
+ "v": 1,
+ "note": "Only the loop-back that opened the current pass pulses; the earlier 검증 -> 구현 edge stays still on pass 3.",
+ "pipe": {
+  "name": "demo-flow",
+  "stages": [
+   {
+    "title": "설계",
+    "agent": "sidereus-designer"
+   },
+   {
+    "title": "구현",
+    "agent": "sidereus-implementer",
+    "fanout": "slices",
+    "gate": "scripts/check.sh --fast",
+    "onError": "continue"
+   },
+   {
+    "title": "검증",
+    "agent": "sidereus-verifier",
+    "model": "sonnet",
+    "gate": "scripts/check.sh --full",
+    "onFail": {
+     "goto": "구현",
+     "max": 2
+    }
+   },
+   {
+    "title": "리뷰",
+    "agent": "sidereus-reviewer",
+    "onFail": {
+     "goto": "구현",
+     "max": 1,
+     "then": "재검증"
+    }
+   },
+   {
+    "title": "재검증",
+    "agent": "sidereus-verifier",
+    "model": "sonnet",
+    "onlyOnJump": true,
+    "onFail": {
+     "goto": "구현",
+     "max": 1
+    }
+   },
+   {
+    "title": "라이브 검증",
+    "agent": "general-purpose"
+   }
+  ]
+ },
+ "ev": [
+  {
+   "t": 0,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/설계]",
+   "sub": "sidereus-designer",
+   "model": null,
+   "bg": 0,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 10,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/설계]",
+   "sub": "sidereus-designer",
+   "model": null,
+   "bg": 0,
+   "aid": "a01",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 20,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": "sidereus-implementer",
+   "model": null,
+   "bg": 0,
+   "aid": "a02",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 30,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": "sidereus-implementer",
+   "model": null,
+   "bg": 0,
+   "aid": "a02",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 40,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/검증]",
+   "sub": "sidereus-verifier",
+   "model": "sonnet",
+   "bg": 0,
+   "aid": "a03",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 50,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/검증]",
+   "sub": "sidereus-verifier",
+   "model": "sonnet",
+   "bg": 0,
+   "aid": "a03",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 60,
+   "e": "pre",
+   "tool": "SendMessage",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": null,
+   "model": null,
+   "bg": 1,
+   "aid": null,
+   "to": "a02",
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 61,
+   "e": "post",
+   "tool": "SendMessage",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": null,
+   "model": null,
+   "bg": 1,
+   "aid": null,
+   "to": "a02",
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 70,
+   "e": "bgdone",
+   "tool": "Agent",
+   "tag": "",
+   "sub": null,
+   "model": null,
+   "bg": 1,
+   "aid": "a02",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 80,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/검증]",
+   "sub": "sidereus-verifier",
+   "model": "sonnet",
+   "bg": 0,
+   "aid": "a04",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 90,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/검증]",
+   "sub": "sidereus-verifier",
+   "model": "sonnet",
+   "bg": 0,
+   "aid": "a04",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 100,
+   "e": "pre",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/리뷰]",
+   "sub": "sidereus-reviewer",
+   "model": null,
+   "bg": 0,
+   "aid": "a05",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 110,
+   "e": "post",
+   "tool": "Agent",
+   "tag": "[pl:demo-flow/리뷰]",
+   "sub": "sidereus-reviewer",
+   "model": null,
+   "bg": 0,
+   "aid": "a05",
+   "to": null,
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 120,
+   "e": "pre",
+   "tool": "SendMessage",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": null,
+   "model": null,
+   "bg": 1,
+   "aid": null,
+   "to": "a02",
+   "commit": 0,
+   "denied": 0
+  },
+  {
+   "t": 121,
+   "e": "post",
+   "tool": "SendMessage",
+   "tag": "[pl:demo-flow/구현]",
+   "sub": null,
+   "model": null,
+   "bg": 1,
+   "aid": null,
+   "to": "a02",
+   "commit": 0,
+   "denied": 0
+  }
+ ],
+ "cp": [
+  {
+   "at": 7,
+   "act": "run",
+   "end": 0,
+   "cur": "구현",
+   "pulse": [
+    [
+     "검증",
+     "구현"
+    ]
+   ],
+   "st": {
+    "설계": "done n=1",
+    "구현": "run k=2 via=검증 n=2",
+    "검증": "back n=1"
+   }
+  },
+  {
+   "at": 14,
+   "act": "run",
+   "end": 0,
+   "cur": "구현",
+   "pulse": [
+    [
+     "리뷰",
+     "구현"
+    ]
+   ],
+   "st": {
+    "설계": "done n=1",
+    "구현": "run k=3 via=리뷰 n=3",
+    "검증": "done k=2 n=2",
+    "리뷰": "back n=1"
+   }
+  }
+ ]
+}

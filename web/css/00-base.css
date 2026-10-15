@@ -1,0 +1,71 @@
+
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+/* ★The conversation area scrolls **independently** (2026-08-21: whole-page scroll felt wrong).
+   The page itself stays put and only the conversation column flows — header, sidebar and input row never move.
+   ⚠This change needs **JS too**: `atBottom`, auto-scroll and load-more position restore were all based on window scroll. */
+html,body{height:100%}
+body{margin:0;background:#0d1014;color:#dfe5ee;overflow:hidden;display:flex;flex-direction:column;
+  font:13.5px/1.62 -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',sans-serif}
+header{flex:0 0 auto;z-index:20;background:#0d1014f2;backdrop-filter:blur(10px);
+  border-bottom:1px solid #1e232c;padding:9px 16px}
+.hrow{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+h1{margin:0;font-size:14px;font-weight:650}
+/* ★Secondary-text gray ladder — 4 steps (2026-09-21, comment-like text was too faint to read).
+     Before: 24 neutral grays in use, the floor down to 2.03:1.
+   ⇒ #c3ccda(10.9) > #a8b3c4(8.6) > #8b95a7(6.3) > #7e8896(5.3) > #6b7688(4.2, floor) only.
+   ⚠No new colors were made (".hlb color rule") — the sprawl was **converged** onto these five.
+   ⚠Hierarchy kept, **everything raised one step**. Do not lower it back — the same complaint will return.
+   ⚠Measured on #0d1014. On lighter backgrounds like #1b2431 it is ~11% lower, so the floor (#6b7688) is 3.4:1. */
+.cnt{color:#8b95a7;font-size:11.5px}
+/* ★Usage (top left) — **the limit (%) cannot be shown** (no official API · anthropics/claude-code#43149).
+   We show amount used and reset time. The 5h block follows the ccusage rule (first activity floored to the hour + 5h). */
+/* Placed on **its own row below**, not in the title row (2026-08-20) — less crowded header, gauge stands out */
+/* ★Room row — must **look different** from filter chips. They were hard to find when mixed on one row, so
+   split by position (own row) + shape (filled pill · bold). Color alone does not separate them. */
+/* Middle-column mode toggle — a layer above rooms/filters, so the shape is stronger too */
+.mvw{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.mvg{display:inline-flex;background:#141a23;border:1px solid #263140;border-radius:8px;overflow:hidden}
+.mvb{background:none;border:none;color:#8b95a7;font:inherit;font-size:12px;font-weight:600;cursor:pointer;
+  padding:5px 14px}
+.mvb+.mvb{border-left:1px solid #263140}
+.mvb:hover{color:#dfe5ee}   /* .mvb.on = selected tint in 05-controls.css */
+/* Saved views — name a filter combination and restore it in one click. The list drops below the header button.
+   ★Why no native select: each item needs a delete (✕), which cannot go inside an option. */
+.vww{position:relative;display:inline-flex;gap:6px;align-items:center}
+/* max-width: a long view name otherwise widens the right-anchored popup off the left edge (.vwn ellipsizes) */
+.vwpop{position:absolute;top:calc(100% + 6px);left:0;z-index:40;min-width:190px;max-width:min(360px,90vw);max-height:320px;
+  overflow:auto;background:#12171f;border:1px solid #273040;border-radius:8px;padding:4px;
+  box-shadow:0 8px 24px #000a}
+.vwi{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;
+  color:#cfd8e6;font-size:12px}
+.vwi:hover{background:#1c2432}
+.vwn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vwx{color:#7e8896;font-style:normal;font-size:11px;padding:0 3px;border-radius:4px}
+.vwx:hover{color:#e0736c;background:#2a1e20}
+/* IDE-style tabs — only clicked items stack up, closed with ✕ */
+/* Tab row at the top of the work log — must stick while scrolling so you don't lose which tab you're on */
+.wtb{display:flex;gap:3px;align-items:flex-end;flex-wrap:wrap;position:sticky;top:0;z-index:9;
+  background:#0d1014;padding:2px 0 0;border-bottom:1px solid #1a1f28;margin-bottom:6px}
+.wt1{display:inline-flex;gap:6px;align-items:center;cursor:pointer;user-select:none;
+  background:#141a23;border:1px solid #232c38;border-bottom-color:transparent;
+  border-radius:7px 7px 0 0;padding:5px 9px 6px;font-size:11.5px;color:#8b95a7;
+  max-width:270px;white-space:nowrap}
+/* ★Tab labels are **truncated to one line** (2026-09-02: wrapping looked bad).
+   The label used to be a bare text node, so it wrapped inside flex and tab heights varied.
+   It must be wrapped in a span for min-width:0 + ellipsis to work (a flex child's default min-width is auto). */
+.wtl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
+.wt1:hover{color:#dfe5ee}
+.wt1.on{background:#1b2431;border-color:#35435a;color:#dce8f8;font-weight:600}
+.wtk{font-style:normal;font-size:9px;font-weight:700;border-radius:3px;padding:1px 4px;line-height:1.3}
+.wtks{background:#1f4b8f55;color:#a8c8f0}
+.wtka{background:#7a5a2455;color:#f0d9a8}
+/* Light: the twinned brown was 3.1:1 at 9px — tint the chip, dark text. */
+html[data-ui=next][data-ui][data-theme=light] .wtka{background:color-mix(in srgb,var(--nx-warn) 16%,transparent);color:var(--nx-t1)}
+html[data-ui=next][data-ui][data-theme=light] .wtks{background:color-mix(in srgb,var(--nx-info) 14%,transparent);color:var(--nx-t1)}   /* twin was 3.3:1 */
+/* Tab status dot — running pulses blue, finished is gray, unknown is hidden */
+.wtd{width:6px;height:6px;border-radius:50%;flex:0 0 auto;background:transparent}
+.wt1.wtrun .wtd{background:var(--nx-active,#5b8def);animation:tldot 1.4s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.wt1.wtrun .wtd{animation:none}}
+.wt1.wtend .wtd{background:#3a4657}
+html[data-ui=next][data-ui] .wt1.wtend .wtd{background:var(--nx-idle)}   /* ★#3a4657 = 1.82 dark · 1.15 light (twin) -> idle 4.18-4.87 · 4.43-4.79 */

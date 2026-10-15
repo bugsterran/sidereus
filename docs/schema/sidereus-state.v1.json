@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sidereus-state.v1",
+  "title": "sidereus-state v1",
+  "description": "Public, versioned snapshot of Sidereus (GET /api/v1/state). CONFORMANCE (MUST): this document carries metadata only. No field may carry the content of gen_ai.input.messages, gen_ai.output.messages, gen_ai.system_instructions, gen_ai.tool.call.arguments or gen_ai.tool.call.result. The only free-text fields are sessions[].sub[].lab, sessions[].plm.title and rooms.*.topic, each a one-line label set by the parent agent or room owner, never a message body or tool input. Producers MUST drop anything else rather than add it here; consumers MUST NOT expect conversation content. OTel GenAI mapping (INFORMATIVE — the semantic conventions are still Development and may change): sid -> gen_ai.conversation.id; model -> gen_ai.request.model; plat -> gen_ai.provider.name (cc -> anthropic, cx -> openai, gm -> gcp.gemini); sub[].lab -> gen_ai.agent.name / gen_ai.agent.description (\"<agentType>: <description>\"); sub[].aid -> gen_ai.agent.id; tool -> gen_ai.tool.name. A block whose feature is switched off is omitted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "at", "x"],
+  "properties": {
+    "schema": {"type": "string", "enum": ["sidereus-state"]},
+    "version": {"type": "integer", "enum": [1]},
+    "at": {"type": "integer", "description": "Build time, Unix seconds."},
+    "sessions": {"type": "array", "items": {"$ref": "#/$defs/session"}},
+    "quota": {"$ref": "#/$defs/quota"},
+    "saver": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["on", "pct", "stage"],
+      "properties": {
+        "on": {"type": "boolean"},
+        "pct": {"type": ["integer", "null"], "description": "Five-hour usage % the decision used; null when unknown."},
+        "stage": {"type": "integer", "description": "Saver stage, 0 = none."}
+      }
+    },
+    "rooms": {"type": "object", "additionalProperties": {"$ref": "#/$defs/room"}},
+    "x": {"type": "object", "description": "UNSTABLE extension bag — the only open object at the top level; keys may change without a version bump."}
+  },
+  "$defs": {
+    "session": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sid", "id", "plat", "project", "cwd", "branch", "model", "state", "kind", "ctx", "win", "ageSec", "tool", "sub"],
+      "properties": {
+        "sid": {"type": "string", "description": "Full session id."},
+        "id": {"type": "string", "maxLength": 8, "description": "Short session id (first 8 chars)."},
+        "plat": {"type": "string", "description": "Platform key: cc (Claude Code), cx (Codex), gm (Gemini), ... (sidereus/ext_store.py EXT_PLAT)."},
+        "project": {"type": "string"},
+        "cwd": {"type": "string"},
+        "branch": {"type": "string"},
+        "model": {"type": "string"},
+        "state": {"type": "string", "description": "think | tool | wait | ask | done | unknown (open set)."},
+        "kind": {"type": "string"},
+        "ctx": {"type": "integer", "description": "Context tokens of the last response."},
+        "win": {"type": "integer", "description": "Context window, 0 = unknown."},
+        "ageSec": {"type": "integer", "description": "Seconds since last activity."},
+        "tool": {"type": "string", "maxLength": 64, "description": "Tool name only — never its input."},
+        "plm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "title", "age"],
+          "properties": {
+            "name": {"type": "string", "maxLength": 40},
+            "title": {"type": "string", "maxLength": 40, "description": "Pipeline stage title (one-line label)."},
+            "age": {"type": "integer"}
+          }
+        },
+        "sub": {"type": "array", "items": {"$ref": "#/$defs/agent"}},
+        "acct": {"type": "string", "maxLength": 24, "description": "Claude config root label; present only for a non-primary root."}
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lab", "min"],
+      "properties": {
+        "lab": {"type": "string", "maxLength": 200, "description": "\"<agentType>: <description>\" one-line label."},
+        "aid": {"type": "string"},
+        "tid": {"type": "string", "description": "Parent's tool_use id."},
+        "min": {"type": "integer", "description": "Minutes running."},
+        "idle": {"type": "integer", "description": "Seconds since its own log last moved."}
+      }
+    },
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pct", "resets_at", "leftSec"],
+      "properties": {
+        "pct": {"type": ["number", "null"]},
+        "resets_at": {"type": ["string", "null"]},
+        "leftSec": {"type": ["integer", "null"]}
+      }
+    },
+    "quota": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "five_hour": {"$ref": "#/$defs/slot"},
+        "seven_day": {"$ref": "#/$defs/slot"},
+        "plan": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {"tier": {"type": "string"}, "seat": {"type": "string"}}
+        }
+      }
+    },
+    "room": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["created", "owner", "members", "topic", "invited"],
+      "properties": {
+        "created": {"type": "integer", "description": "Creation time, Unix nanoseconds."},
+        "owner": {"type": "string"},
+        "members": {"type": "array", "items": {"type": "string"}},
+        "topic": {"type": "string", "maxLength": 200, "description": "One-line room topic."},
+        "invited": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

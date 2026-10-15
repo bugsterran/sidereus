@@ -1,0 +1,45 @@
+/* ── Shared controls: one segmented-control look + one title scale.
+   ★Before: 6 «selected» looks (tint · solid blue · grey · grey+blue text · white text · light fill), heights 20-28px.
+   ⇒ Selected = blue tint (15% --nx-info fill, 67% border, --nx-t1 text): the main tabs/rooms/filters already used it,
+     it keeps t1 text contrast in every tone, and a solid --nx-info-bg fill stays reserved for primary actions (send, apply).
+   ⚠Rules here are scoped html[data-ui=next][data-ui] so the #nxcss twin generator skips them (no +1px / remapped colors)
+     and they outrank the twins of the old per-component rules. Component files keep layout only (gap, margin, max-width).
+   ⚠Light theme needs no copy: the tokens are built on --nx-* roles, which 91-light.css redefines. */
+:root{--seg-h:24px;--seg-h-sm:22px;--nav-h:28px;--seg-r:4px;--seg-fs:12px;--seg-px:10px;
+  --ttl-tab:14px;--ttl-sec:13px;--ttl-lab:12px}
+html[data-ui=next]{--seg-bg:transparent;--seg-bd:var(--nx-rule);--seg-c:var(--nx-t2);
+  --seg-hv-bg:var(--nx-hover);--seg-hv-c:var(--nx-t1);
+  --seg-on-bg:color-mix(in srgb,var(--nx-info) 15%,transparent);--seg-on-bd:color-mix(in srgb,var(--nx-info) 67%,transparent);--seg-on-c:var(--nx-t1)}
+/* Standalone segments (gapped buttons) and joined bars (.strseg; #cfgbox .cfgseg lives in 85-palette-settings.css). */
+html[data-ui=next][data-ui] :is(.rm,.tab,.wkrgb,.atpb,.strp,.wsb,.strpnb button){box-sizing:border-box;height:var(--seg-h);padding:0 var(--seg-px);
+  font-family:inherit;font-size:var(--seg-fs);font-weight:400;line-height:1;border:1px solid var(--seg-bd);border-radius:var(--seg-r);
+  background:var(--seg-bg);color:var(--seg-c);box-shadow:none;cursor:pointer}
+html[data-ui=next][data-ui] .wsb{display:inline-flex;align-items:center}   /* a span, not a button — centre it explicitly */
+html[data-ui=next][data-ui] .atpb{height:var(--seg-h-sm);padding:0 8px}     /* compact: sits in a 13px section title line */
+/* ⚠Rooms must stay distinct from the filter chips beside them (00-base note): same shape now, so weight + a divider carry it. */
+html[data-ui=next][data-ui] .rm{font-weight:600}
+html[data-ui=next][data-ui] .rm.rmback{height:var(--nav-h);padding:0 12px;font-size:13px}   /* room back: nav scale, 24px was too small a target */
+html[data-ui=next][data-ui] .tbs > .rooms:not(:empty) + .tabs:not(:empty){padding-left:10px;border-left:1px solid var(--nx-rule)}
+html[data-ui=next][data-ui] .strseg{box-sizing:border-box;height:var(--seg-h);border:1px solid var(--seg-bd);border-radius:var(--seg-r)}
+html[data-ui=next][data-ui] .strseg button{height:100%;padding:0 var(--seg-px);font-size:var(--seg-fs);line-height:1;background:var(--seg-bg);color:var(--seg-c)}
+html[data-ui=next][data-ui] .strseg button+button{border-left:1px solid var(--seg-bd)}
+html[data-ui=next][data-ui] :is(.rm,.tab,.wkrgb,.atpb,.strp,.wsb,.strseg button,.strpnb button):hover{background:var(--seg-hv-bg);color:var(--seg-hv-c)}
+html[data-ui=next][data-ui] :is(.rm,.tab,.wkrgb,.atpb,.strp,.wsb,.strseg button,.strpnb button,.mvb).on{background:var(--seg-on-bg);border-color:var(--seg-on-bd);color:var(--seg-on-c)}
+html[data-ui=next][data-ui] .strseg button.on{box-shadow:inset 0 0 0 1px var(--seg-on-bd)}   /* joined bar has no per-button border */
+/* ⚠Disabled must read as disabled — same look as enabled made a click on it seem to do nothing. */
+html[data-ui=next][data-ui] :is(.wkrgb,.strp)[disabled]{opacity:.45;cursor:default}
+html[data-ui=next][data-ui] :is(.wkrgb,.strp)[disabled]:hover:not(.on){background:var(--seg-bg);color:var(--seg-c)}
+html[data-ui=next][data-ui] .strp.strld{border-color:color-mix(in srgb,var(--nx-warn) 45%,transparent);color:var(--nx-warn)}   /* still loading */
+/* Header main tabs are navigation, not a segmented control: joined bar, no radius per tab, but on the same height scale. */
+html[data-ui=next][data-ui] .mvb{box-sizing:border-box;height:var(--nav-h)}
+/* «+N» list rows (.thpop .th) are navigation too: underline marks the current one, size/colours from the tokens. */
+html[data-ui=next][data-ui] .th{box-sizing:border-box;height:var(--nav-h);padding:0 8px;align-items:center;border-radius:var(--seg-r) var(--seg-r) 0 0;
+  font-family:inherit;font-size:var(--seg-fs);line-height:1;background:none;color:var(--seg-c);border-bottom:2px solid transparent}
+html[data-ui=next][data-ui] .th:hover{background:var(--seg-hv-bg);color:var(--seg-hv-c)}
+html[data-ui=next][data-ui] .th.on{background:var(--seg-on-bg);color:var(--seg-on-c);border-bottom-color:var(--nx-info)}
+html[data-ui=next][data-ui] .th i{font-size:calc(var(--seg-fs) - 1px);color:var(--nx-t3)}
+/* Title scale: tab title 14/600 · section 13/600 · label 12/500 muted. */
+html[data-ui=next][data-ui] :is(.wvh > b,.tlhd:not(.cwerr)){font-size:var(--ttl-tab);font-weight:600;font-style:normal;color:var(--nx-t1)}
+html[data-ui=next][data-ui] .tlhd.cwerr{font-size:var(--ttl-sec)}   /* error body in the title slot keeps .cwerr red */
+html[data-ui=next][data-ui] :is(.brh > b,.brh2,.tlghd > b,.brep .wkh,.brep .wktrh > b){font-size:var(--ttl-sec);font-weight:600;color:var(--nx-t1)}
+html[data-ui=next][data-ui] :is(.wvh > span,.tlhd > i,.brh > i,.brh2 > i,.brep .wkh > i,.brep .wktrh > i){font-size:var(--ttl-lab);font-weight:500;font-style:normal;color:var(--nx-t2)}

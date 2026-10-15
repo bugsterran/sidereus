@@ -1,0 +1,36 @@
+{
+  "v": 1,
+  "name": "arch-map",
+  "title": "아키텍처 구조도 — 모듈 + 근거 검증",
+  "use": "Draw a module map of one repo where every edge cites file/line/symbol, then verify it at the commit.",
+  "rules": "The target repo path is in the request. Read-only on the target repo (no write, commit, checkout, build).\nWrite only under the store dir S = ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/, key = `/usr/bin/python3 -c \"import hashlib,os,sys;print(hashlib.sha1(os.path.realpath(sys.argv[1]).encode()).hexdigest()[:16])\" <repo>`.\nStore metadata only (names, paths, lines, symbols); never source text.\nEdge kind (any language): call = `from` calls at run time a function/method/constructor defined in `to` (evidence = that call site in `from`, symbol = the called name); di = `from` gets a `to` instance by constructor, field or framework injection (Spring/Nest/Angular inject, FastAPI Depends, Go struct field), evidence = that injection point in `from`; import = `from` only names a `to` type/constant (import/use, annotation, extends), no run-time call; config = wiring outside code (routes file, compose, proxy, XML/YAML beans). Pick the strongest provable kind: call > di > import. Injected or imported, a call of a `to` symbol is call with that call site (a method defined only in an interface elsewhere stays di). read/write/serve/event as in the stage task.\nFlow coverage (Draw flows): a flow starts at its entry's handler, then adds every other handler of the owning module (serve edge `to`): union of their call chains, each from/to pair once (first proven call), by depth; past 40 steps keep the shallowest. Entries sharing an owner: its other handlers only in the first flow. FE screen entry: page -> FE api client (call) -> BE controller hop per static URL the page calls, then only those handlers' BE chain; the SPA-shell flow stops at the shell, not re-covering screens. That FE->BE hop: evidence symbol = the static `/...` URL literal exactly as on the FE call line; to_evidence = the BE mapping line (symbol: path literal or annotation), always, even est=1. Past 40 steps drop the deepest BE steps; upstream hops stay. FE->BE config edge with no BE flow: own flow while <= 40 flows.",
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "읽기 계획",
+      "agent": "general-purpose",
+      "model": "opus",
+      "task": "commit = HEAD sha. Write S/plan.json: {v:2, repo:<realpath>, commit, base, arch:{style:layered|modular|apps|routes|feature-pkgs|feature-folders|crates|mvvm|hexagonal|library|other, framework:str<=40, units:str<=120, evidence:[1..5 files]}, groups:[{id, name<=60, file}], modules:[{id, path, globs}], entries:[{id, ext:http|hook|mcp|cli|file|job, file}], stores:[{id, ext:store|file|queue|db, file}], changed:[ids]}. groups = boundary cuts; file = proof. With an FE, http entries = FE screens (one per screen/feature: router path -> page module, file = router line); BE controllers = api modules, not entries; BE http entries only for external callers (server-key API, SPA shell, /_meta), named by route/prefix, never «X controllers (n)». modules = arch units, globs disjoint, no `**`, repo-relative. base = newest older commit dir in S/.. or null; changed = all module ids if no base map v 2, else modules in `git -C <repo> diff --name-only <base>..HEAD`. Write S/../../_last.json = {repo, commit}."
+    },
+    {
+      "title": "모듈 그리기",
+      "agent": "general-purpose",
+      "model": "opus",
+      "task": "Read plan.json + changed modules at plan commit. Write S/map.json only: {v:2, repo, commit, modules:[{id, name<=60, path, kind:module|external|entry|store, ext?, role?, layer, group, summary<=120, owns?:[ids]}], edges:[{from, to, kind:import|call|config|di|read|write|serve|event, label<=60, evidence:[{file, line, symbol}] 1..5, est?:0|1}]}; `v: 2`, no other keys. layer entry|ui|api|service|domain|data|infra|shared; by role: web->api, view,viewmodel->ui, service,app->service, domain,model,port->domain, data->data, adapter->infra, shared->shared. Set role (table keys) only for layered/hexagonal/mvvm. group: plan.groups id. plan.entries/stores -> kind entry/store modules (same ext, layer entry/data); owns on owner. read|write module->store (evidence in from), serve entry->module (evidence in to; FE screen: component definition line, symbol = component name, not the router), event module->module. Evidence line holds the exact symbol (rules «Edge kind»). Reuse base map modules + edges."
+    },
+    {
+      "title": "흐름 그리기",
+      "agent": "general-purpose",
+      "model": "opus",
+      "task": "Read plan.json and map.json. Draw one flow per entry point (each serve edge's entry: HTTP route, CLI command, job, event/hook/MCP handler), at most 40, traced at the plan commit. Write S/flows.json only: {v:1, repo, commit, flows:[{id, name<=60, entry:{kind:http|cli|job|event|hook|mcp, label<=80}, steps:[{from, to, label<=60, evidence:{file, line, symbol}, to_evidence?:{file, line, symbol}, est?:0|1}] 1..40}]}. No other keys. from/to are map.json module ids; evidence is the call site in `from`: repo-relative file, line, and the exact case-sensitive symbol called there (defined in `to` unless to == from). An entry steps only to the module that owns its handler file (its serve edge's `to`; the page module for a FE screen entry); calls made inside that module's handlers start from it, never from the entry. Which handlers a flow covers: rules «Flow coverage». Fewer proven steps beat guesses; est=1 only for config/DI wiring."
+    },
+    {
+      "title": "검증",
+      "agent": "general-purpose",
+      "model": "sonnet",
+      "task": "Run the gate once and report its printed rate and flow line; when it fails, also report the schema error line(s) it printed (map.json v 2 keys) verbatim so Draw modules can fix them. It re-reads every cited file at the commit, drops unproven edges, marks unproven flow steps (advisory) and writes verify.json + flows.verify.json + map.md. Do not edit map.json or flows.json. Read-only on the target repo; write only under the store dir.",
+      "gate": "/usr/bin/python3 scripts/arch_verify.py --last",
+      "onFail": { "goto": "모듈 그리기", "max": 1 }
+    }
+  ]
+}

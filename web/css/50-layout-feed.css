@@ -1,0 +1,482 @@
+/* ★"Needs you now" row — this screen has really one purpose: **is it my turn.**
+   But the answer was scattered across mid-sidebar, inside scroll, inside the bell dropdown (the reason for state-first sort,
+   but sorting alone still makes the eye travel). This makes no new verdict; it **gathers existing verdicts into one spot**.
+   ⚠With nothing to show **the row disappears** — an empty box makes the screen declare "nothing to do" every time. */
+/* ★★The bar must be **inside the (sticky) header**. It first sat at the top of the document outside the header, but this is chat,
+   so it scrolls to the bottom on open ⇒ measured 2026-08-19: at scroll 277,049px the bar's y was **-276,977**.
+   So **normally it was not on screen at all** (visible only by chance when a thread filter shortened the page). */
+.todo:empty,.todo2:empty{display:none}
+.todo{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.todo2{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.td{background:#151a22;border:1px solid #232a35;border-radius:999px;padding:2px 11px;font-size:11.5px;
+  color:#9aa5b8;cursor:pointer;user-select:none;white-space:nowrap}
+.td:hover{border-color:#3a4756;color:#e6edf6}
+.td b{font-weight:700}
+.td.ask{background:#2a2417;border-color:#6b5a2e;color:#edc472}
+.td.abort{background:#2a1c19;border-color:#6b3a2e;color:#ef8a76}
+.td.hot{background:#2a1c19;border-color:#7a3b2e;color:#f0917c}
+.td.unread{background:#16211c;border-color:#2f5f42;color:#7ad4a0}
+.td.run{background:#16211c;border-color:#2f5f42;color:#7ad4a0}
+.td.stale{background:#1d2b42;border-color:#3a5a8c;color:#bcd4f5}
+.td.on{outline:1px solid #8ab4ff}
+.tdth{background:#151a22;border:1px solid #232a35;border-radius:6px;padding:1px 8px;font-size:10.5px;
+  color:#9aa5b8;cursor:pointer;white-space:nowrap}
+.tdth:hover{border-color:#3a5a8c;color:#bcd4f5}
+.tdth i{color:#8b95a7;font-style:normal}
+.tdth u{color:#edc472;text-decoration:none;margin-left:5px}   /* whose turn — the one to poke on sight */
+.tdnote{font-size:10px;color:#7e8896;padding:2px 4px;cursor:help}
+/* stale-thread «Clear» (per row, all, inline confirm) */
+.tdcl,.tdall,.tdq button{font:inherit;font-size:10px;background:#1b2230;border:1px solid #2f3b4f;border-radius:5px;
+  color:#9fb6d8;padding:0 6px;margin-left:6px;cursor:pointer}
+.tdcl:hover,.tdall:hover,.tdq button:hover{border-color:#6b8fc7;color:#dbe8fb}
+.tdall{font-size:10.5px;padding:1px 8px}
+.tdq{font-size:10.5px;color:#edc472;white-space:nowrap}
+.tdq [data-q=ok]{border-color:#7a5b2e;color:#edc472}
+/* ★Sidebar 236 → 320 (2026-08-19: widen to the left). Screen is 2294px but capped at 1240,
+   leaving wide margins. **Conversation column (966px) unchanged**; only the total widens by that much —
+   longer text lines read worse, so spare space goes only to sessions/participants. */
+.wrap{flex:1 1 auto;min-height:0;max-width:2240px;width:100%;margin:0 auto;display:grid;
+  /* ★Participants (narrow) · feed · sessions (wide) — left/right swapped on 2026-08-27 (see markup comment above) */
+  grid-template-columns:var(--wrl,360px) 1fr var(--wrr,500px);gap:8px;   /* --wrl/--wrr = drag grips (92b-wrap-resize.js) */
+  /* ★With `align-items:start` grid items grow **to content height**, removing the height limit,
+     and then `overflow-y:auto` does nothing (measured 2026-08-21: chat scroll did not work).
+     Let them fill the row height (stretch) and pin only the sidebar to the top with `align-self:start`. */
+  align-items:stretch;padding:12px 12px 10px}
+/* ★The participants column is used **only in chat** (2026-09-02). Useless in work log/timeline/failures, yet
+   it held 360px and narrowed the middle by that much — hide it and give the width to the middle.
+   ⚠This has **higher specificity** than the responsive rules below written with `.wrap` alone — narrow-screen rules must
+     also be written with `.nops` (otherwise the participants width comes back on narrow screens). */
+.wrap.nops{grid-template-columns:1fr var(--wrr,500px)}
+/* Column grips sit fixed in the .wrap gaps (92b-wrap-resize.js places them) */
+.wrg{position:fixed;z-index:30;cursor:col-resize;touch-action:none}
+.wrg::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;border-radius:1px;background:transparent}
+/* ⚠html[data-ui] lifts state rules over the 00-core next-UI twin of the base rule «.wrg::after» (0,2,2) */
+html[data-ui] .wrg:hover::after,html[data-ui] .wrg.on::after{background:var(--nx-t3,#3a4657)}
+.wrap.nops > .pside{display:none}
+main{min-width:0;min-height:0;height:100%;overflow-y:auto;overscroll-behavior:contain;padding-right:4px}
+main::-webkit-scrollbar{width:8px}
+main::-webkit-scrollbar-thumb{background:#242c38;border-radius:4px}
+aside{align-self:start;max-height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;background:#12161d;border:1px solid #1e232c;border-radius:10px;padding:11px 12px}
+    /* Left session card — fills the height (the tree gets long) */
+    /* ★The chart sticks to the card **bottom** — with a short list, sticky alone does not push it down (measured 2026-08-27:
+       card bottom 1179 but chart floating at 784). Column flex, and the list eats the leftover height. */
+    .lside{align-self:stretch;display:flex;flex-direction:column}
+    .lside > #sess{flex:1 1 auto;min-height:0}
+    /* ⚠At ~900px viewport height the 570px chart ate the column: #sess shrank to 0 and the sticky chart covered the hint.
+       Keep ≥1.5 cards (card ≈164px) and let the chart scroll with the column instead of pinning over it. */
+    html[data-ui=next] .lside > #sess{min-height:min(250px,46vh)}
+    html[data-ui=next] .lside > .wku{position:static}
+    /* ⚠Narrow-window grids (.wrap + #composein) live in 45-saver-quota.css; the old ≤1320px auto-hide of .lside went with the drawer (09-24). */
+/* Two-panel split once the #feed container is ≥1100px (tokens `.bsp`, retro `.rtg`); `--split2-a` sets the left share.
+   ⚠Container query on the feed, not the viewport — a pinned session column shrinks #feed and must fall back to one column.
+   ⚠Keep `.rtg.split2`: bare `.split2` loses to a later file's base grid (87 `.rtg`, same specificity, later wins). */
+@container (min-width:1100px){ .split2,.rtg.split2{grid-template-columns:minmax(0,var(--split2-a,1fr)) minmax(0,1fr)} }
+    /* Subtree */
+/* ★Vertical rail removed (2026-09-03: distracting, meaning unclear).
+   One per card stacked at the same x and looked like **a line across the panel**, with no meaning —
+   each row already has an `agent`/`command`/`watch` label and nesting is told by `├─`/`└─`.
+   Indentation stays (that is the part saying who owns what). */
+    .stree{margin:2px 0 4px 13px;padding-left:9px}
+    /* Lineage branch — agents spawned by an agent attach below it (2026-09-02) */
+    .stbr{font-style:normal;color:#6b7688;margin-right:1px;letter-spacing:-1px}
+
+    .sti{display:flex;gap:5px;align-items:baseline;font-size:11px;color:#8b95a7;line-height:1.5;padding:1px 0}
+    .sti .k{flex:0 0 auto;font-size:9.5px;padding:0 4px;border-radius:3px;background:#1b2231;color:#8b95a7}
+    .sti .k.a{color:#8ab4f8}.sti .k.b{color:#f0b357}.sti .k.m{color:#7fd1b9}
+    .sti .v{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sti .e{flex:0 0 auto;font-size:9.5px;color:#7e8896}
+    .sti .e.late{color:#f59e0b}
+    /* Agent row wrapper (the running tool is inline now: .sti in 60-sessions.css) */
+    .stiw{margin:0}
+    .sti .dp2{flex:0 0 auto;font-size:9px;color:#c98fd8;background:#241c2b;border-radius:3px;padding:0 3px}
+    .sti .sty{flex:0 1 auto;max-width:110px;min-width:min(6ch,40%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9.5px;color:#8b95a7;border:1px solid #2a3344;border-radius:3px;padding:0 3px}
+    /* Agent item — click for the footsteps modal */
+    .stiw.agh{cursor:pointer;border-radius:5px;margin-left:-4px;padding-left:4px}
+    .stiw.agh:hover{background:#1a2130}
+    /* Footsteps modal — flows as one stream like a console (no table: fixed columns make the eye jump) */
+    .agts{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 9px}
+    .console{font:12px/1.7 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+      background:#1e1f22;border:1px solid #2b2d30;border-radius:8px;padding:8px 10px}
+    .cline{display:flex;gap:8px;align-items:baseline;min-width:0}
+    .cline.crun:hover{background:#232730;border-radius:4px}
+    .ctm{flex:0 0 auto;color:#6b7688;font-size:11px}
+    .cnm{flex:0 0 auto;color:#8ab4f8;min-width:88px}
+    .cline.ced .cnm{color:#ffc66d}
+    .ccall{flex:1 1 auto;min-width:0;display:flex;align-items:baseline}
+    .cpar{flex:0 0 auto;color:#6b7688}
+    .carg{flex:0 1 auto;min-width:0;color:#9ccc8f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    /* Result — the `⎿` slot of the Claude Code console */
+    .cres{margin:0 0 4px 96px}
+    .crl{display:flex;gap:6px;align-items:baseline;min-width:0}
+    .crm{flex:0 0 auto;width:12px;color:#6b7688}
+    .crt{flex:1 1 auto;min-width:0;color:#8b95a7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cres.cerr .crt{color:#cf8a8a}
+    .crt.cmore{color:#6b7688}
+    /* Code-detected result — monospace + background like a code block (syntax color is carried by spans) */
+    .cres.ccode{background:#1e1f22;border-left:2px solid #2b2d30;border-radius:4px;
+      padding:2px 0 2px 6px;margin-left:90px}
+    .cres.ccode .crt{color:#a9b7c6;white-space:pre}
+    /* Agent utterance — indented one level inside the console, as prose */
+    .cbul{flex:0 0 auto;color:#5fd3ba}
+    .cbsay{flex:1 1 auto;min-width:0;font:13px/1.6 -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;
+      color:#cfd8e6;margin:6px 0}
+    .cbsay p{margin:2px 0}
+    .cex{margin:2px 0 6px 96px}
+    /* Received instruction — collapsible. Body uses the same markdown style as chat bodies (.bd) */
+    /* Expanding a diff grows the header — capped so it doesn't take the whole modal (overflow scrolls inside the header) */
+    /* ★Three sticky layers: tab row(0) → view header(32) → received instruction(64). Same top makes them cover each other
+     (measured 2026-09-01: the instruction covered the tab row). Stack them pushed down by height from the top. */
+    .aghd{position:sticky;top:66px;z-index:7;background:#0f141b;padding:0 0 6px;
+      max-height:52vh;overflow:auto;box-shadow:0 8px 12px -8px #0b0e13}
+    /* ★Inside a split pane **nothing is stacked above** — tab row and pane header are both outside the scroll.
+       Yet with top:66px as-is the instruction floats 66px from the pane top (2026-09-02:
+       instruction position off). When the scroll owner changes, the sticky reference must change too.
+       Height cap is reduced to pane scale as well — 52vh can exceed a single pane. */
+    .wpb .aghd,.tldc .aghd{top:0;max-height:46%;box-shadow:0 6px 10px -8px #0b0e13}
+    .wpb .aghd{top:-8px}   /* cancels .wpb's 8px top padding so rows don't show through above the sticky header */
+    .agp{margin:0 0 8px;border:1px solid #232c38;border-radius:7px;background:#141a23}
+    .agp>summary{cursor:pointer;padding:6px 10px;font-size:11.5px;color:#8b95a7;user-select:none}
+    .agp>summary:hover{color:#dfe5ee}
+    .agp[open]>summary{border-bottom:1px solid #232c38;color:#dfe5ee}
+    .agpb{padding:8px 12px;overflow-y:auto}   /* height is set by inline style (agPH) */
+    /* Bottom horizontal handle — drag up/down to change the instruction box height */
+    .agpg{height:9px;cursor:row-resize;border-radius:0 0 6px 6px;background:#141a23;position:relative}
+    .agpg:hover{background:#1d2836}
+    .agpg::after{content:'';position:absolute;top:3px;left:50%;width:34px;height:3px;
+      margin-left:-17px;border-radius:2px;background:#3a4657}
+    .agpg:hover::after{background:#5a6d88}
+    body.rowdrag{cursor:row-resize;user-select:none}
+    /* File diff inside a console row — file path in monospace */
+    .agwp{font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
+    .cwload{padding:3px 8px;font-size:11px;color:#8b95a7}
+    .cwerr{color:#cf8a8a}
+    /* diff modal file tree — directories dimmed, test files italic to separate from main code (not hidden) */
+    .dfcs{display:flex;gap:5px;padding:6px 6px 8px;flex-wrap:wrap}
+    .dfc{cursor:pointer;padding:2px 9px;border:1px solid #26303d;border-radius:11px;
+      font-size:10.5px;color:#8b95a7;user-select:none;white-space:nowrap}
+    .dfc:hover{color:#dfe5ee;border-color:#35435a}
+    .dfc.on{background:#1d2836;color:#dfe5ee;border-color:#35435a}
+    .dpws{display:inline-flex;gap:4px;margin-left:8px}
+    .dpw{font-size:10px;padding:1px 7px}
+    .dfall{margin-left:auto;border-style:dashed}
+    .dfd{font:10.5px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:#7e8896;cursor:pointer;
+      overflow-wrap:anywhere;padding-right:6px;user-select:none;border-radius:4px}
+    .dfd:hover{background:#1b2431;color:#c8d0dc}
+    .dfar{display:inline-block;width:11px;color:#6b7688}
+    .dfd:hover .dfar{color:#8b95a7}
+    .dfcn{margin-left:6px;color:#6b7688}
+    .fic{width:13px;height:13px;vertical-align:-2.5px;margin-right:5px;flex:0 0 auto}
+    .dfi .fp{display:flex;align-items:center;min-width:0;overflow:hidden;text-overflow:ellipsis;
+      white-space:nowrap}
+    .dfi{align-items:center !important}
+    .dfi.dft .fp{color:#8b95a7;font-style:italic}
+    .dfnone{padding:10px 8px;font-size:11px;color:#8b95a7}
+    /* Unpushed commit list — click a row to view only that commit */
+    /* Up to 34 today, so it is taller — the old 190px sized for 5 showed only two rows */
+    .dcl{margin:2px 0 10px;border:1px solid #212832;border-radius:7px;background:#141a23;
+      max-height:300px;overflow:auto}
+    .dcm{display:flex;gap:10px;align-items:baseline;padding:4px 9px;cursor:pointer;
+      font:11.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#a8b3c4}
+    .dcm+.dcm{border-top:1px solid #1a212b}
+    .dcm:hover{background:#1b2431;color:#fff}
+    .dcm.on{background:#1d2836;color:#fff;box-shadow:inset 2px 0 0 #5a8fd6}
+    .dcs{flex:0 0 auto;color:#e8913a}
+    .dct{flex:0 0 auto;color:#8b95a7;font-size:11px}
+    .dca{flex:0 0 auto;color:#6b7688;font-size:10.5px;min-width:52px}
+    .dcm.on .dcs{color:#ffc66d}
+    .dcx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    /* Already pushed — dimmed (reference, not something to revert) */
+    .dcp .dcm{color:#8b95a7}
+    .dcp .dcs{color:#8a6f4a}
+    .dcp .dcm:hover{color:#dfe5ee}
+    .dcp .dcm.on{color:#fff}
+    /* Edited file tree — repo > directory > file. Tests dimmed (not removed: hiding what exists is a lie) */
+    .agtr{margin:0 0 10px;border:1px solid #232c38;border-radius:7px;background:#141a23}
+    .agtr>summary{cursor:pointer;padding:6px 10px;font-size:11.5px;color:#8b95a7;user-select:none;
+      display:flex;gap:10px;align-items:baseline}
+    .agtr[open]>summary{border-bottom:1px solid #232c38;color:#dfe5ee}
+    .agtsum{color:#7e8896;font-size:10.5px}
+    .agtb{padding:6px 8px;max-height:340px;overflow:auto}
+    .agtf2{display:flex;gap:6px;margin:0 0 6px}
+    .agtc{cursor:pointer;padding:2px 9px;border:1px solid #26303d;border-radius:11px;
+      font-size:10.5px;color:#8b95a7;user-select:none}
+    .agtc:hover{color:#dfe5ee;border-color:#35435a}
+    .agtc.on{background:#1d2836;color:#dfe5ee;border-color:#35435a}
+    /* Blocked spot — must stand out most in the top bar (nothing happens unless you press) */
+    .td.blk{background:#3a1f22;border-color:#6b2f34;color:#ffb3ac}
+    .td.blk b{color:#fff}
+    /* ⚠Auto light twin of #ffb3ac on its pink fill was 4.15:1 */
+    html[data-ui=next][data-theme=light] .td.blk{color:var(--nx-err)}
+    .sl.sblk{color:#ffb3ac;font-weight:700}
+    .sxw:has(.sl.sblk){box-shadow:inset 2px 0 0 #b3474f}
+    .agtrp{margin:6px 0 2px;font-size:10.5px;color:#7e8896;letter-spacing:.02em}
+    .agtd{font:11px/1.75 ui-monospace,SFMono-Regular,Menlo,monospace;color:#7e8896}
+    .agtf{display:flex;gap:8px;justify-content:space-between;cursor:pointer;border-radius:4px;
+      font:11px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace;color:#c8d0dc}
+    .agtf:hover{background:#1b2431;color:#fff}
+    .agtt .agtn{color:#8b95a7;font-style:italic}   /* test code */
+    .agtn{overflow-wrap:anywhere}
+    .agts{flex:0 0 auto;font-size:10px;padding-right:6px}
+    .agwd{max-height:340px;overflow:auto;background:#1e1f22;border-radius:0 0 5px 5px}
+    /* Edit contents — folded under the footsteps row */
+    .aged{border:1px solid #232c38;border-radius:6px;background:#141a23;margin:2px 0}
+    .aged>summary{cursor:pointer;padding:3px 8px;font-size:11px;color:#8b95a7;user-select:none;
+      display:flex;gap:6px;align-items:baseline}
+    .aged>summary:hover{color:#dfe5ee}
+    .aged[open]>summary{border-bottom:1px solid #232c38;color:#dfe5ee}
+    .agesz{font-size:10.5px;color:#7e8896}
+    /* Edit +/- — only a row background inside the code block (syntax coloring stays alive) */
+    .edb{background:#1e1f22;max-height:300px;overflow:auto;
+      font:11.5px/1.6 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace}
+    .edmn{color:#cf8a8a} .edpl{color:#7fbf7f}
+    /* git badge — show that it is clickable */
+    /* ★Handles must be hittable — they were 11x15px (measured 2026-08-26: the user kept missing). */
+    .hit[data-diff]{cursor:pointer;border-radius:5px;padding:1px 6px;
+      border:1px solid transparent;transition:border-color .1s,color .1s}
+    .hit[data-diff]:hover{border-color:#3a4a63;color:#8ab4f8}
+    .sg.hit{background:#161c25;border-color:#232c38}
+    .sw{cursor:pointer;border-radius:5px;padding:1px 6px;background:#161c25;
+      border:1px solid #232c38;font-size:10.5px;color:#8b95a7}
+    .sw:hover{border-color:#3a4a63;color:#8ab4f8}
+    .sg.on{color:#8ab4f8;border-color:#2f5c96;background:#1f6feb26;font-weight:600}
+    .sb.hit{background:#161c25;border-color:#232c38}
+    /* ★diff opens in **a separate browser window** (2026-09-04: a separate window was requested, not an in-page popup).
+       `/diff?cwd=...` is opened via window.open.
+       — Why: window size, moving, sending to another monitor, opening several are handled **by the OS**.
+         Emulating in-page means implementing all of that, and it can never leave the browser window.
+       — Reuses the same document (no second copy of CSS/JS). In the popup, `dpop` is added to body
+         to hide the main view and show only the diff full screen. */
+    #dpop{display:none;position:fixed;inset:0;flex-direction:column;background:#12161d}
+    body.dpop{overflow:hidden}
+    body.dpop #dpop{display:flex}
+    body.dpop header,body.dpop .wrap,body.dpop #compose{display:none !important}
+    /* ★Code and changes in the structure tab also open in **a popup** (2026-09-22: the screen is already narrow).
+       Docking beside the canvas narrows the treemap by that much —
+       same reason the diff above moved to a modal on 2026-08-25.
+       ⚠No new widget. A **sibling element** using `#dpop`'s conventions (header · ✕ · Esc · full-screen flex) and `.dhead`/`.dbody`
+         as-is. `#dpop` itself is not reused because its close is
+         `diffClose()` (`window.close()` in a popup window), which means something else in the main view. */
+    #spop{display:none;position:fixed;inset:0;flex-direction:column;background:#12161d}
+    body.spop{overflow:hidden}
+    body.spop #spop{display:flex}
+    body.spop header,body.spop .wrap,body.spop #compose{display:none !important}
+    #spop .strpnh{color:#6b7688;font-size:10px;margin:0 0 5px}
+    #spop .strpnb{margin:0}
+    #spop table.sbs{margin:0}
+    .dhead{flex:0 0 auto;display:flex;gap:10px;align-items:baseline;padding:10px 12px;
+      border-bottom:1px solid #1e232c;background:#141a23}
+    .dttl{font-size:13.5px;font-weight:600;color:#eaf1fa}
+    .dsub{flex:1 1 auto;min-width:0;font-size:11px;color:#7e8896;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dx{flex:0 0 auto;background:#1b2231;border:0;color:#8b95a7;border-radius:6px;
+      padding:3px 9px;font-size:13px;cursor:pointer;font-family:inherit}
+    .dx:hover{background:#233046;color:#dfe5ee}
+    .dbody{flex:1 1 auto;min-height:0;overflow:auto;padding:10px 12px}
+    .dbody .t{font-size:11px;color:#7e8896;margin:8px 0 4px}
+    .dbody .t:first-child{margin-top:0}
+    .dbody pre{margin:0 0 8px;background:#1e1f22;border:1px solid #2b2d30;border-radius:7px;
+      padding:8px 10px;overflow-x:auto;
+      font:12px/1.55 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace}
+    .dbody pre.dst{color:#8b95a7}
+    .dbody .dl{display:block;white-space:pre}
+    .dbody .dp{color:#6a8759;background:#1c2620}      /* added */
+    .dbody .dm{color:#cf6a6a;background:#2a1e1e}      /* removed */
+    .dbody .da{color:#6897bb;background:#181f28}      /* @@ position */
+    /* File list + content, 2 columns */
+    /* ★Switching to a tree made indentation eat width and clip filenames — left column widened (2026-08-31) */
+    .dsplit{display:grid;grid-template-columns:30% 7px 1fr;gap:6px;align-items:start}
+    /* Left/right width handle — thin but keeps a grabbable width (7px) */
+    .dgrip{align-self:stretch;min-height:120px;cursor:col-resize;border-radius:4px;
+      background:#1c2430;position:relative}
+    .dgrip:hover{background:#2b3a4e}
+    .dgrip::after{content:'';position:absolute;left:2px;top:50%;width:3px;height:26px;
+      margin-top:-13px;border-radius:2px;background:#3a4657}
+    .dgrip:hover::after{background:#5a6d88}
+    body.dragging{cursor:col-resize;user-select:none}
+    .dfl{position:sticky;top:0;max-height:calc(93vh - 90px);overflow-y:auto;
+      border:1px solid #212832;border-radius:7px;background:#141a23;padding:4px}
+    .dfi{display:flex;gap:6px;align-items:baseline;padding:4px 6px;border-radius:5px;cursor:pointer;
+      font-size:11.5px;color:#a8b3c4}
+    .dfi:hover{background:#1b2231}
+    .dfi.on{background:#1f6feb26;color:#dfe5ee}
+    .dfi .fp{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dfi .fd{flex:0 0 auto;font-size:9.5px;color:#f0b357}
+    .dfi .fa{flex:0 0 auto;font-size:10px;color:#6a8759}
+    .dfi .fr{flex:0 0 auto;font-size:10px;color:#cf6a6a}
+    .dfi .fn{flex:0 0 auto;font-size:10px;color:#7e8896}
+    .dfv{min-width:0}
+    .dfh{display:flex;gap:8px;align-items:center}
+    .dfh .dfx{margin-left:auto;flex:0 0 auto;background:#1b2231;border:1px solid #232c38;color:#8b95a7;
+      border-radius:6px;padding:2px 9px;font-size:10.5px;cursor:pointer;font-family:inherit}
+    .dfh .dfx:hover{border-color:#3a4a63;color:#dfe5ee}
+    .dfh .dfx.on{background:#1f6feb26;border-color:#2f5c96;color:#dfe5ee}
+    .dfh .dwnv{margin-left:auto;display:flex;gap:4px;align-items:center}
+    .dfh .dwnv .dfx{margin-left:0}
+    .dfh .dwnv ~ .dfx{margin-left:0}   /* one auto margin only: the arrows sit with the view buttons, not mid-row */
+    .dfh .dfx:disabled{opacity:.45;cursor:default}
+    .dwnc{font-size:10.5px;color:#8b95a7;margin-left:2px;white-space:nowrap}
+    /* Whole-file view: the header with the change arrows stays at the top while the file scrolls (-10px = .dbody padding). */
+    .dfh.dfhs{position:sticky;top:-10px;z-index:2;background:#12161d;padding:6px 0;margin-top:0}
+    table.sbs tr.dnhit td{box-shadow:inset 0 2px 0 #f0b357}
+    .dhtg [data-dhist]{cursor:pointer}
+    /* ★IntelliJ diff — side by side. Colors are Darcula's diff colors:
+       added #294436 (green) · removed #484A4A (gray) · modified #385570 (blue) · no counterpart is darker. */
+    table.sbs{width:100%;border-collapse:collapse;table-layout:fixed;
+      font:12px/1.5 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+      background:#1e1f22;border:1px solid #2b2d30;border-radius:7px;overflow:hidden;margin:0 0 10px}
+    table.sbs td{vertical-align:top;padding:0}
+    table.sbs col.cg{width:46px}
+    table.sbs col.cm2{width:16px}
+    table.sbs .xk{text-align:center;color:#8b95a7;user-select:none;background:#26282c;
+      border-right:1px solid #2b2d30}
+    table.sbs tr.xa .xk{color:#7fbf7f;background:#233a2c}
+    table.sbs tr.xd .xk{color:#cf8a8a;background:#3a3030}
+    table.sbs .xn{text-align:right;padding:0 7px 0 4px;color:#7e8896;
+      background:#26282c;user-select:none;border-right:1px solid #2b2d30}
+    /* ★With table-layout:fixed, if specified widths sum over 100% it falls back to **equal split for all**
+       (measured 2026-08-26: 46px + 50% together made four columns 300px each). Only number columns are fixed;
+       body columns get no width so they split the remaining space in half. */
+    /* ⚠No break-all: it split words mid-way («c licking»); break-word only splits a token wider than the pane. */
+    table.sbs .xt{padding:0 8px;white-space:pre-wrap;word-break:normal;overflow-wrap:break-word;color:#acbac8}
+    table.sbs .xa{background:#294436}     /* added row */
+    /* ★Deletions are **red** (2026-08-31: +/- must be distinguishable at least by color). They were gray (#484a4a),
+       the side-by-side convention for dimming the removed side, which gave no contrast against added (green) in unified diff. */
+    table.sbs .xd{background:#3d2c2c}     /* removed row */
+    /* ★Modified rows get **a faint band**, only changed chars are strong — if both are strong you can't see what changed. */
+    table.sbs .xm{background:#2c3a47}     /* modified row (has a pair) — faint band */
+    table.sbs .wd{background:#5c3838;border-radius:2px}   /* changed chars (before); ⚠ keep >=1.2:1 vs .xd #3d2c2c or the highlight vanishes (#452a2a was 1.01) */
+    table.sbs .wa{background:#2a4c32;border-radius:2px}   /* changed chars (after) */
+    table.sbs .xe{background:#1a1b1e}     /* no counterpart on the other side */
+    table.sbs tr.xhk td{background:#181f28;color:#6897bb;padding:2px 8px;
+      border-top:1px solid #2b2d30;border-bottom:1px solid #2b2d30}
+    .dbody .t.xfh{margin-top:12px;color:#8b95a7;font-size:11.5px}
+    /* Unified view — two line-number columns (before/after) + body */
+    table.sbs.uni .xn:nth-child(2){border-right:1px solid #2b2d30}
+    table.sbs tr.xa .xt{background:#294436}
+    table.sbs tr.xd .xt{background:#3d2c2c}
+    table.sbs tr.xfl td{background:#181b20;color:#6b7688;padding:1px 8px}
+    /* Token colors stay readable over row backgrounds — background on tr/td, color on span, so layers don't clash */
+    table.sbs .cc{color:#b8b8b8;font-style:italic}   /* >=4.5:1 on every row band incl. .wa/.wd, both themes (#8a8a8a was 2.78) */
+    table.sbs .cs{color:#9ccc8f}
+    table.sbs .cn{color:#98bddd}
+    table.sbs .ck{color:#e9ab7d}
+    table.sbs .cm{color:#ffc66d}
+    table.sbs .ct{color:#5fd3ba}
+    table.sbs .cf{color:#c8afd8}
+    table.sbs .ca{color:#c9c34a}
+    /* ⚠Light: the derived twins measured 3.86:1 on the changed-chars band (#e7d8d8). These clear 4.6:1 on every light band;
+       `body` outranks the twin selector (0,3,2). */
+    html[data-theme=light] body table.sbs .cs{color:#2f5a24}
+    html[data-theme=light] body table.sbs .cn{color:#2b5a86}
+    html[data-theme=light] body table.sbs .ck{color:#82420f}
+    html[data-theme=light] body table.sbs .cm{color:#7a4a00}
+    html[data-theme=light] body table.sbs .ct{color:#165e4f}
+    html[data-theme=light] body table.sbs .cf{color:#6b3f86}
+    html[data-theme=light] body table.sbs .ca{color:#5c5a12}
+    /* Repo tabs — shown only when a session touches several repos */
+    .drt{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 9px}
+    .dtb{font-size:11.5px;color:#8b95a7;background:#161c25;border:1px solid #232c38;
+      border-radius:999px;padding:2px 10px;cursor:pointer}
+    .dtb:hover{border-color:#3a4a63;color:#dfe5ee}
+    /* ★Fixed color per repo (name hash). The selected tab is filled with that color so which repo you're viewing is obvious. */
+    .dtb.c0{color:#8ab4f8;border-color:#2b3d5c}  .dtb.c0.on{background:#8ab4f826;border-color:#8ab4f8}
+    .dtb.c1{color:#5fd3ba;border-color:#255049}  .dtb.c1.on{background:#5fd3ba26;border-color:#5fd3ba}
+    .dtb.c2{color:#f0b357;border-color:#5a4423}  .dtb.c2.on{background:#f0b35726;border-color:#f0b357}
+    .dtb.c3{color:#c98fd8;border-color:#4b2e55}  .dtb.c3.on{background:#c98fd826;border-color:#c98fd8}
+    .dtb.c4{color:#9ccc8f;border-color:#33502c}  .dtb.c4.on{background:#9ccc8f26;border-color:#9ccc8f}
+    .dtb.c5{color:#e88f8f;border-color:#5a2f2f}  .dtb.c5.on{background:#e88f8f26;border-color:#e88f8f}
+    .dtb.c6{color:#c9c34a;border-color:#54501d}  .dtb.c6.on{background:#c9c34a26;border-color:#c9c34a}
+    .dtb.on{color:#eaf1fa;font-weight:600}
+    /* Range selector — all / commits only / uncommitted */
+    .dsc{display:flex;gap:5px;align-items:center;margin:0 0 9px}
+    .dscb{font-size:11px;color:#8b95a7;background:#161c25;border:1px solid #232c38;
+      border-radius:5px;padding:2px 9px;cursor:pointer}
+    .dscb:hover{border-color:#3a4a63;color:#dfe5ee}
+    .dscb.on{background:#1f6feb26;border-color:#2f5c96;color:#dfe5ee;font-weight:600}
+    .dscb.dim{opacity:.4;cursor:default}
+    .dsn{font-size:10px;color:#7e8896;margin-left:4px}
+    @media (max-width:900px){ .dsplit{grid-template-columns:1fr !important} .dgrip{display:none}
+      .dfl{position:static;max-height:180px} }
+    .spick{margin:0 5px 0 0;flex:0 0 auto;cursor:pointer;accent-color:#8ab4f8}
+    .sinv{margin:2px 0 9px;padding:8px;border:1px solid #26303d;border-radius:8px;background:#141a23;display:none}
+    .sinv.on{display:block}
+    .sinv .t{font-size:11px;color:#8b95a7;margin-bottom:6px;line-height:1.5}
+    .sinv .t b{color:#dfe5ee}
+    .sinv .r{display:flex;gap:6px}
+    .sinv input{flex:1 1 auto;min-width:0;background:#0d1014;border:1px solid #2a3542;color:#dfe5ee;
+      border-radius:6px;padding:5px 7px;font-size:12px;font-family:inherit}
+    .sinv button{flex:0 0 auto;background:#1f6feb;border:0;color:#fff;border-radius:6px;padding:5px 11px;
+      font-size:12px;cursor:pointer;font-family:inherit}
+    .sinv button:disabled{background:#2a3542;color:#7e8896;cursor:default}
+    .sinv .c{margin-top:6px;font-size:10.5px;color:#7e8896}
+    /* Before selection — keeps its place but less prominent (no reason to outrank the feed) */
+    .sinv.idle{border-style:dashed;border-color:#232c38;background:transparent;padding:6px 8px}
+    .sinv.idle .t{margin:0;color:#7e8896}
+aside h2{margin:0 0 8px;font-size:11.5px;color:#8b95a7;font-weight:650;letter-spacing:.3px}
+.who{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid #1a1f28}
+.who:first-of-type{border-top:0}
+.wt{min-width:0;flex:1}
+.wt b{display:block;font-size:12px;color:#cfd7e4;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wt span{display:block;font-size:10.5px;color:#8b95a7;line-height:1.5}
+.wt em{color:#d9a; font-style:normal}
+.rinfo{margin-top:10px;padding-top:9px;border-top:1px solid #1a1f28;font-size:10.5px;color:#8b95a7}
+/* Chat room list (92 rcPaint): tag chips + card grid in #feed; colours from --nx-* so light (91-light.css) follows. */
+.rcw{padding:0 4px 20px}   /* top 0: #feed already gives the 12px header gap */
+.rcbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.rcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.rcard{display:flex;flex-direction:column;gap:6px;min-width:0;padding:10px 12px;border:1px solid var(--nx-rule,#252629);border-radius:8px;
+  background:var(--nx-panel,#121417);cursor:pointer}
+.rcard:hover{border-color:color-mix(in srgb,var(--nx-info,#5899f3) 60%,transparent)}
+/* ⚠No all:unset: 00-core turns its outline-color:unset into a [data-ui=next] rule that beats :focus-visible below */
+.rcnm{appearance:none;background:none;border:0;padding:0;margin:0;font:inherit;text-align:inherit;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--nx-t1,#cdcedc);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcnm:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:2px;border-radius:3px}
+.rcwho{font-size:11.5px;color:var(--nx-t2,#909298);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcwho b{font-weight:600;color:var(--nx-t1,#cdcedc)}
+.rcmeta{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--nx-t3,#84868c)}
+.rctags{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:22px}
+.rctg{font-size:11px;padding:1px 7px;border-radius:999px;color:var(--nx-info,#5899f3);background:color-mix(in srgb,var(--nx-info,#5899f3) 12%,transparent)}
+html[data-ui] .rcard .rcte{margin-left:auto;height:20px;font-size:11px;padding:0 8px}
+.rced{display:flex;flex-wrap:wrap;align-items:center;gap:6px;cursor:default}
+.rced .rcin{flex:1 1 100%;min-width:0}
+.rcdiff{flex:1 1 100%;font-size:11px;color:var(--nx-t2,#909298);display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.rcdiff i{font-style:normal;color:var(--nx-t3,#84868c)}
+.rcerr{font-size:11px;color:var(--nx-err,#f45460)}
+/* Room admin (92c): «Manage» button at the bar's right end; the tool row never wraps (900px) */
+.rcbar .raadm{margin-left:auto}
+.rcbar .rahid{position:relative}
+.radot{display:inline-block;width:6px;height:6px;margin-left:5px;border-radius:50%;background:var(--nx-warn,#e5a54b);vertical-align:middle}
+.rabar{display:flex;flex-wrap:nowrap;gap:6px;margin:-4px 0 12px;white-space:nowrap;overflow:hidden}
+.rabox{display:flex;flex-direction:column;gap:8px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--nx-rule,#252629);border-radius:8px;cursor:default}
+.rabox .rat{font-size:12.5px;color:var(--nx-t1,#cdcedc);display:flex;flex-wrap:wrap;gap:4px 10px}
+.rabox .rac,.rabox .rapv,.rabox .ranone{font-size:11.5px;color:var(--nx-t2,#909298)}
+/* preview of what «Confirm» sends — plain text in a quote bar, not link blue (it is not clickable) */
+.rabox .rapv{color:var(--nx-t1,#cdcedc);border-left:2px solid var(--nx-rule,#3a3d44);padding-left:8px}
+/* invite DM exactly as it will be sent (server dry build) */
+.rabox .rapb{margin:0;font-size:11.5px;line-height:1.5;font-family:inherit;white-space:pre-wrap;word-break:break-word;max-height:9em;overflow:auto;color:var(--nx-t1,#cdcedc);background:var(--nx-bg2,rgba(127,127,127,.08));border-radius:4px;padding:6px 8px}
+.rabox .rash{font-size:11px;color:var(--nx-t2,#909298);margin-bottom:-4px}
+.rabox .rain{width:100%;max-width:320px}
+.raok{display:flex;align-items:center;gap:6px}
+.raerr{font-size:11px;color:var(--nx-err,#f45460)}
+.rahr{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.rahr .raun{margin-left:auto}
+.rapick{display:flex;flex-direction:column;max-height:220px;overflow-y:auto}
+.rapr{display:grid;grid-template-columns:auto minmax(80px,max-content) minmax(0,1fr) auto;align-items:center;gap:8px;padding:3px 2px;font-size:11.5px;color:var(--nx-t2,#909298);cursor:pointer}
+.rapr b{font-weight:600;color:var(--nx-t1,#cdcedc)}
+.rapr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rapr i{font-style:normal;color:var(--nx-t3,#84868c)}
+.rapr.off{opacity:.4;cursor:not-allowed}
+html[data-ui] .rapr:not(.off):hover,html[data-ui] .rapr:has(.rasp:focus-visible){background:var(--nx-hover,#141a23);border-radius:4px}
+.rcard{position:relative}
+.rcard .rachk{position:absolute;top:10px;right:10px;margin:0}
+.rcard:has(.rachk) .rchd{padding-right:20px}
+.rchd{display:flex;align-items:center;gap:6px;min-width:0}
+.rchd .rcnm{min-width:0}
+.rcun{flex:none;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:var(--nx-err,#e5484d);color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center}
+.rcard.rapend{border-style:dashed;cursor:default}   /* ⚠not opacity: .7 put text and buttons at 3.1-3.6:1 */
+.raact{display:flex;gap:6px}
+html[data-ui] .raact .strp{height:20px;font-size:11px;padding:0 8px}
+/* Open room strip in the chat toolbar: back link · name · members */
+/* ⚠min-width:0 + ellipsis: a long room name (up to 200 chars) would otherwise push the strip past 900px */
+.rmname{font-size:13px;color:var(--nx-t1,#cdcedc);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.rooms > .rmback{flex:0 0 auto;white-space:nowrap}
+.rmmem{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;white-space:nowrap;overflow:hidden;max-width:520px}
+.rmmem i{font-style:normal;color:var(--nx-t3,#84868c)}

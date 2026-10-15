@@ -1,0 +1,69 @@
+/* ★Header = one 48px row «view title · todo · Sessions» → per-tab toolbar #tbar. Tabs, bell and gear live in the left rail (93b-rail.css).
+   ⚠Scoped html[data-ui=next] so the #nxcss twin generator skips these rules; colours are tokens only (dark tones + «White»). */
+html[data-ui=next] header{padding-top:0}
+html[data-ui=next][data-ui] .hrow{flex-wrap:nowrap;min-height:48px;column-gap:10px}
+html[data-ui=next] .hrow > .vtitle{flex:0 0 auto;margin:0;font-size:20px;font-weight:700;line-height:1.3;color:var(--nx-t1);white-space:nowrap}
+/* #todo takes the far-right push; #sesb then sits right after it */
+html[data-ui=next] .hrow > #todo{margin:0 0 0 auto;flex-wrap:nowrap;gap:5px;flex-shrink:0}
+html[data-ui=next] .hrow > #sesb{flex-shrink:0}
+html[data-ui=next] .hrow > #todo:not(:empty) ~ #sesb{margin-left:0}
+html[data-ui=next] .hrow > #todo .td{white-space:nowrap}
+/* ≤1000px: short chip labels, «Sessions» word hidden (count stays) so the one-row bar keeps room for the title. */
+.td .tds{display:none}
+@media (max-width:1000px){
+  html[data-ui=next] .hrow > #todo .td .tdl{display:none}
+  html[data-ui=next] .hrow > #todo .td .tds{display:inline}
+  html[data-ui=next] .hrow > #sesb .sesbl{display:none}
+}
+/* brand mark = live moon phase (92e-moon.js paints the paths) + live indicator (#dot; poll() toggles .off: lit part dimmed, error outline); .es = new and thin-crescent days (earthshine: lighter night side with faint maria, cream rim) */
+/* ⚠Colours are variables so the light theme overrides values only: a html[data-theme=light] .bmol rule would outrank .off's error stroke */
+.brandmk{--bm-dk:#2b3140;--bm-lit:#efe6cf;--bm-mar:#c9bc9f;--bm-ol:#6b7385;--bm-es:#5b6780;--bm-esmar:#48536a;--bm-esol:#a89f88;width:32px;height:32px;margin:-4px 0;flex:none}
+/* light theme: darker unlit disc so a thin crescent still shows on white */
+html[data-theme=light] .brandmk{--bm-dk:#b8bdc7;--bm-lit:#f4ecd6;--bm-mar:#d6c8a4;--bm-ol:#5a4632;--bm-es:#a9b1bf;--bm-esmar:#939cad;--bm-esol:#5a4632}
+.brandmk .bmdk{fill:var(--bm-dk)}
+.brandmk .bmlit{fill:var(--bm-lit)}
+.brandmk .bmmar{fill:var(--bm-mar)}
+.brandmk .bmol{fill:none;stroke:var(--bm-ol);stroke-width:.8}
+.brandmk.es .bmdk{fill:var(--bm-es)}
+.brandmk.es .bmmar{fill:var(--bm-esmar)}
+.brandmk.es .bmol{stroke:var(--bm-esol);stroke-width:1.2}
+.brandmk.off .bmlit{opacity:.4}
+.brandmk.off .bmmar{opacity:.4}
+.brandmk.off .bmol{stroke:var(--nx-err,#f45460)}
+/* Toolbar row (last in the header, below the title row): only the current tab's slot is shown; the row collapses when that slot is empty */
+html[data-ui=next] .tbar{margin-top:10px}
+html[data-ui=next] .tbar:not(:has(> .tbs:not([hidden]):not(:empty))){display:none}
+html[data-ui=next] .tbs{display:flex;align-items:center;gap:10px;min-width:0}
+html[data-ui=next] .tbs[hidden],html[data-ui=next] .tbs:empty{display:none}
+html[data-ui=next] .tbs > .rooms,html[data-ui=next] .tbs > .tabs{margin-top:0;flex:0 0 auto;flex-wrap:nowrap}
+html[data-ui=next] .tbs > .rooms:empty,html[data-ui=next] .tbs > .tabs:empty{display:none}
+/* ⚠An open room's member list is the only part that may shrink (full list is in its title): with 4 members + 5 filter
+   chips at 1100 the fixed parts pushed «Views ▾ · + Save» 33px past the edge. */
+html[data-ui=next] .tbs > .rooms{flex:0 1 auto;min-width:0}
+html[data-ui=next] .tbs > .rooms > .rmmem{flex:0 1 auto;min-width:0;text-overflow:ellipsis}
+/* ⚠.rmmem is flex, so its own text-overflow never applies; the last member is the item that shrinks with an ellipsis */
+html[data-ui=next] .tbs > .rooms > .rmmem > :last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+html[data-ui=next] #tbchat > .tbr{flex-shrink:0}
+/* «+N» lists (.thpop · placed by popAnchor in 08-ui-kit.js): fixed under the button so the header's layout never moves */
+html[data-ui=next] .thpop{position:fixed;z-index:46;display:flex;flex-direction:column;align-items:stretch;gap:1px;
+  max-height:min(420px,70vh);overflow:auto;min-width:220px;max-width:min(420px,calc(100vw - 16px));padding:4px;
+  background:var(--nx-panel);border:var(--pop-bd);border-radius:var(--pop-r);box-shadow:var(--pop-sh)}
+html[data-ui=next] .thpop[hidden]{display:none}
+html[data-ui=next] .thpop .th{flex:0 0 auto;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}html[data-ui=next] .tbr{display:flex;align-items:center;gap:8px;margin-left:auto;flex:0 1 auto;min-width:0}
+html[data-ui=next] .tbr > .cnt{white-space:nowrap}
+html[data-ui=next] .tbr .tab{white-space:nowrap;flex:0 0 auto}
+html[data-ui=next] .tbr > .vww{flex:0 0 auto}
+html[data-ui=next] .tbr .vwpop{left:auto;right:0}   /* saved-views list now opens from the right edge */
+html[data-ui=next] .tbr > input[type=search]{flex:0 1 240px;min-width:110px;width:240px}
+html[data-ui=next] .tbs > .tbl{font-size:12px;color:var(--nx-t2);white-space:nowrap}
+html[data-ui=next] .tbs > .tbg{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;min-width:0}
+html[data-ui=next] .tbs > .strps{margin:0}
+html[data-ui=next] .tbs > .tbx{margin-left:auto;display:inline-flex;gap:8px;align-items:center}
+/* ⚠The timeline axis is sticky at top:34px; without its controls the view header shrank to 31.7px and rows showed through the gap */
+html[data-ui=next] #feed .wvh.wvht:has(+ .tlaxr){min-height:34px}
+/* Below ~900px the toolbar may wrap to a second line rather than scroll sideways */
+@media (max-width:900px){
+  html[data-ui=next] .tbs{flex-wrap:wrap;row-gap:6px}
+  html[data-ui=next] .tbr{margin-left:0;flex:1 1 100%}
+  html[data-ui=next] .tbr > input[type=search]{flex:1 1 auto}
+}

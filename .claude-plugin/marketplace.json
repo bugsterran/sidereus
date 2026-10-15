@@ -1,0 +1,21 @@
+{
+  "name": "sidereus",
+  "owner": {
+    "name": "bugsterran"
+  },
+  "metadata": {
+    "description": "Sidereus: local session control viewer for Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "sidereus",
+      "source": "./plugin",
+      "description": "Sidereus for Claude Code: mailbox invites and stop-hook relay, pipeline brief, shared-file edit notice, pipeline stage marks and hand-offs, and the read-only Sidereus MCP server. Needs the local Sidereus viewer."
+    },
+    {
+      "name": "orbit",
+      "source": "./plugins/orbit",
+      "description": "Pick a Claude Code config folder (CLAUDE_CONFIG_DIR) per project folder; never copies or swaps credentials."
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+"""<Name> CLI adapter — copy to sidereus/plat_<name>.py, fill in, then register it in sidereus/ext_store.py PLAT_MODS
+and add `"<platform>": "<key>"` to ext_store.EXT_PLAT. Contract and checks: sidereus/adapter.py.
+
+⚠Metadata only: ids, timestamps, cwd, model, token counts. Never keep message text, prompts or tool input/output.
+⚠Local files only: no network, no writes. Python 3.9, stdlib only.
+"""
+import os
+
+from sidereus.ident import _proj_name, _real_home
+
+# ── required ────────────────────────────────────────────────────────────────
+PLAT = "<platform>"       # hook `platform` value (key of ext_store.EXT_PLAT)
+KEY = "xx"                # row `plat` key = EXT_PLAT[PLAT]; unique; "cc" is reserved for Claude
+NAME = "<Name>"
+CHILD_LABEL = "<name> -p"  # label of a run launched from a Claude session's Bash
+SCAN_MAX = 64 << 20       # record files larger than this are skipped by scan() and session_msgs()
+
+
+def root():
+    """The CLI's home folder (read at call time so tests can patch it)."""
+    return os.path.join(_real_home(), ".<name>")
+
+
+def path_ok(path):
+    """True only for a record file under root() — the path arrives in a hook POST."""
+    return bool(path) and os.path.realpath(path).startswith(os.path.realpath(root()) + os.sep)
+
+
+def scan(since=0.0):
+    """Record files modified since `since` -> rows:
+    {"sid", "path", "cwd", "project": _proj_name(cwd) or "?", "start": epoch, "kind": str,
+     "msgs": {id: (uncached in, out, cache, thought, ts, model, cost USD or None)}, "acts": {id: ts}}
+    optional row keys: "parent" (subagent -> parent sid), "rate" ((ts, {primary/secondary: {pct, win, reset}, plan}) or None).
+    ⚠Skip files over SCAN_MAX; an exception here becomes [] + one warning (adapter_scan)."""
+    return []
+
+
+def session_msgs(path):
+    """msgs dict (same shape as a scan row's msgs) of one live session file, or None when not readable/allowed."""
+    if not path_ok(path):
+        return None
+    return {}
+
+
+# ── optional ────────────────────────────────────────────────────────────────
+# TIME_BUDGET_S = 1.0                # scan() slower than this logs one warning
+# TAIL_READ = 8 << 20                # max bytes read per session_msgs() refresh
+# PRICE_VER = "YYYY-MM-DD"; def cost(model, ...) -> USD or None   (adapter-internal signature)
+# LANE = {native hook event: harness lane event or ""}; RULE_FILE = "<NAME>.md"
+# def harness_items(proj, top=""): -> harness rows (sidereus/harness_plat.py)
+# HOOK_EVENTS / HOOK_MARK / HOOK_DOC_EN; def hook_settings(); def hook_gaps(cfg); def used_since(since)
+#   (all of them, or none: sidereus/ext.py ext_hook_check opts in on hook_gaps)
