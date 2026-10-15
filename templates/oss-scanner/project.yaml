@@ -1,0 +1,31 @@
+# Copy this file into your repo's .oss-scanner/ for reference; the enrolment copy goes to projects/<name>/project.yaml
+# in github.com/anthropics/oss-scanner. Same fields as upstream templates/project.yaml.
+
+# REQUIRED. The ONE git repository to scan, as an https:// URL. Optionally add #branch or #tag to pin one.
+repo: https://github.com/example/project#main
+
+# REQUIRED. Who should we email our reports to, and use as the primary contact for questions.
+primary_contact: security@example.org
+
+# Optional. Additional email addresses we will CC on disclosure reports.
+auto_ccs:
+  - maintainer@example.org
+
+# Optional. The project's home page.
+homepage: https://example.org
+
+# Optional. Your armored OpenPGP public key. When set, every report is encrypted to it and goes to primary_contact only
+# (so it cannot be combined with auto_ccs).
+# pgp: |
+#   -----BEGIN PGP PUBLIC KEY BLOCK-----
+#   mDMEZ...
+#   -----END PGP PUBLIC KEY BLOCK-----
+
+# Optional. true pauses reports without removing the enrolment; false (or omitting it) enables your project.
+disabled: false
+
+# REQUIRED: the Dockerfile in your repository (start from Dockerfile in this folder).
+dockerfile: .oss-scanner/Dockerfile
+
+# Optional, but strongly recommended: the threat model in your repository (start from threat_model.md in this folder).
+threat_model: .oss-scanner/threat_model.md

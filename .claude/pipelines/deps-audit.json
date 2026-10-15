@@ -2,8 +2,8 @@
   "v": 1,
   "name": "deps-audit",
   "title": "의존성·런타임 보안 점검",
-  "use": "Monthly and before a release: runtime/dependency security-patch check.",
-  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNo runtime switch (python interpreter in the launchd plist, Node major, Chrome channel) without owner approval: propose it in summary only.\nNo new third-party dependency: the code stays stdlib-only Python and node: builtins only.\nThe code must keep running on /usr/bin/python3 3.9 syntax.\nNEVER restart the live viewer, NEVER commit/stash/checkout/reset/add. Never read credentials.",
+  "use": "Monthly and before a release: runtime/dependency security-patch check; run security-checks alongside.",
+  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNo runtime switch (python interpreter in the launchd plist, Node major, Chrome channel) without owner approval: propose it in summary only.\nNo new third-party dependency: the code stays stdlib-only Python and node: builtins only.\nThe code must keep running on /usr/bin/python3 3.9 syntax.\nNEVER restart the live viewer, NEVER commit/stash/checkout/reset/add. Never read credentials.\nThe security-checks pipeline (scanners + threat-model review) runs alongside this one each month; it is a separate run, not a stage here.",
   "after": [
     "launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer",
     "screen-check the live page (900/1100/1440)",

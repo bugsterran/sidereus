@@ -12,14 +12,14 @@ from tests._load import js_fn
 from tests._node import node_e
 
 FNS = ["strHdBadge", "hhmm", "archWhyOff", "archBase", "archCands", "archHome", "archChkN", "archChkTools", "archChkSum", "archChkStat",
-       "archChkBadge", "archChkOf", "archChkChip", "archChkSvg", "archChkTop", "archChkTopBtn", "archChkHelp", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkWinHtml", "archChkDmBody", "archChkReqHtml", "archChkSentOf", "archChkStrip", "archChkBtn"]
+       "archChkBadge", "archChkOf", "archChkChip", "archChkSvg", "archChkTop", "archChkTopBtn", "archChkHelp", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkWinHtml", "archChkDmBody", "archChkReqHtml", "archChkSentOf", "archChkStrip", "archChkBtn"]
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
 with open(_SRC_P, encoding="utf-8") as fh:
     _SRC = fh.read()
 SEND = re.search(r"^async function archChkSend\(.*?^}", _SRC, re.S | re.M).group(0)
 FIXSEND = re.search(r"^async function archChkFixSend\(.*?^}", _SRC, re.S | re.M).group(0)
 PRE = "\n".join([
-    "let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }",
+    "let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }",
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
     "const ARCH_PL = 'arch-map'; const ARCH_CHK_PL = 'project-checks'; const ARCH = { cache: {}, msg: '', creq: null, cop: false, csent: null };",
     "let SESS = [], POSTS = [], PAINTS = 0; function CLK(){ return '15:00'; } function paintStruct(){ PAINTS++; }",

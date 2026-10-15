@@ -55,6 +55,8 @@ flowchart LR
 
 The `security-checks` pipeline shows gitleaks, npm audit, osv-scanner, semgrep and bandit findings in the «Security» tab of the issues window. ⚠Secret values are never stored.
 
+Its second stage, «Threat model review», has a model review the code against the repo's threat model (`.oss-scanner/threat_model.md` or `threat_model.md`) and logs findings to `security-log.jsonl`. These findings are model-generated and unverified. Without a threat model the stage prints one line pointing to `templates/oss-scanner/` and passes.
+
 ## Size
 
 - A line-count treemap of functions per area. «Code» switches main / all / tests, «Color» the colouring.

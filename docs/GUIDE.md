@@ -110,6 +110,8 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 ### Top issues
 - «Top issues N» opens the findings; with security results it reads «Quality {q} · Security {s}» and the window gets Quality / Security tabs. Secrets are never shown.
 - «Request fix» sends the selected findings to a session, asking it to re-run `arch-map` once the fix is committed.
+- The Security tab ends with the check history (read-only): «Last security check» age, then open, resolved (date · commit) and false-positive findings. Rows from an AI review are marked «model-generated, unverified».
+- Scanner findings resolve when a later scan by the same tool no longer reports them. AI review findings stay open until marked: `scripts/arch_checks.py --repo <repo> --mark <slug>@<file> resolved|false-positive`.
 
 ### Size
 - A line-count treemap. «Code» switches Source / All / Tests; «Color» changes the colouring.

@@ -41,4 +41,5 @@
 ## 문제 알리기
 
 공개 이슈가 아니라 GitHub 의 비공개 취약점 신고(저장소 Security 탭 → «Report a vulnerability»)로 알려 주기 바란다. 실행한 것, 본 것, 시험한 커밋을 적는다.
+[Anthropic OSS Scanner](https://github.com/anthropics/oss-scanner) 용 위협 모델과 스캐너 이미지는 [`.oss-scanner/`](.oss-scanner/) 에 있다.
 답이나 수정을 약속하지 않는다. 이 프로젝트는 있는 그대로 공유하며, PR 은 확장만 받는다([README](README.ko.md#프로젝트-운영-방식)).

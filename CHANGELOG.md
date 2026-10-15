@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `templates/oss-scanner/`: threat model, `project.yaml` and Dockerfile in Anthropic OSS Scanner's format; Sidereus's own copy in `.oss-scanner/`.
+- security-checks: a threat-model review stage, and a per-repo findings log (open / resolved / false positive) shown in the Architecture map's Security tab with the time since the last check.
+
 ### Changed
 
 - Default tab order is now Timeline, Pipelines, Structure, Branches, Tokens, History, Insights, Chat. A saved custom order still wins.

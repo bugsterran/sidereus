@@ -9,10 +9,15 @@ usage: arch_checks.py (--repo <path> | --last | --verify --last) [--category qua
                     bandit). --only = comma-separated tool ids. --net lets advisory lookups use the network.
   --verify --last   validate the category's last checks file; exit 1 if invalid, if no tool ran or an ok tool examined
                     0 files (EMPTY).
+  --log-review      (--repo | --last) append AI review findings to arch/<key>/security-log.jsonl from stdin TSV
+                    `sev<TAB>file:line<TAB>slug<TAB>desc` (sev critical|high|medium|low).
+  --log-show        print open AI review findings (sev, file:line, slug).
+  --mark <slug>@<file> resolved|false-positive [--commit <sha>]   mark an AI review finding (default commit: HEAD).
 Prints one summary line. Only file / line / rule / severity (+ package) are stored — never tool message text or secrets.
 """
 import json
 import os
+import re
 import shutil
 import signal
 import stat
@@ -152,6 +157,9 @@ def run(repo, cat="quality", only=None, net=False):
                   prefix=".arch-", mode=0o644)
     _atomic_write(os.path.join(AV.ARCH_DIR, last), json.dumps({"repo": repo, "commit": head}).encode("utf-8"),
                   prefix=".arch-", mode=0o644)
+    ok = [t["id"] for t in j["tools"] if t["status"] == "ok"]
+    if cat == "security" and ok:   # ⚠a run where no tool ran ok must not resolve anything; log failure keeps rc
+        SC.log_append(os.path.dirname(d), SC.scan_record(head, j["at"], ok, j["items"]))
     return 0, summary(j, cat)
 
 
@@ -246,20 +254,77 @@ def _record(cat, rc, repo, commit):
 _verify_record = _record   # tests stub `_record` and restore it from here
 
 
+def _mark_arg(s):
+    """(slug, file) of `<slug>@<file>`, None when either part is invalid."""
+    k, _a, f = s.partition("@")
+    return (k, f) if SC.SLUG_RE.fullmatch(k) and AV.safe_rel(f) == f else None
+
+
+def review_items(text):
+    """(items, skipped) from TSV `sev<TAB>file:line<TAB>slug<TAB>desc` lines; bad lines are counted, not kept."""
+    its, bad = [], 0
+    for ln in text.splitlines():
+        if not ln.strip():
+            continue
+        p = ln.split("\t", 3)
+        f, _c, n = p[1].rpartition(":") if len(p) == 4 else ("", "", "")
+        x = SC._log_item({"sev": p[0].strip().lower(), "file": f.strip(), "line": int(n) if re.fullmatch(r"[0-9]{1,9}", n.strip()) else -1,
+                          "key": p[2].strip(), "desc": p[3]}, "review") if len(p) == 4 else None
+        if x and len(its) < SC.LOG_ITEMS_MAX:
+            its.append(x)
+        else:
+            bad += 1
+    return its, bad
+
+
+def log_cmd(a):
+    """--log-review / --log-show / --mark: (rc, output) on the repo's security log."""
+    repo = os.path.realpath(a["repo"]) if a["repo"] else _last(False, "security")[0]
+    kdir = SC.log_dir(repo)
+    if a["log-show"]:
+        rows = [x for x in SC.log_view(kdir)["open"] if x["ai"]]
+        return 0, "\n".join(["%s\t%s:%d\t%s" % (x["sev"], x["file"], x["line"], x["key"]) for x in rows]
+                            + ["arch_checks: %d open AI findings" % len(rows)])
+    head = a["commit"] or (_git(repo, ["rev-parse", "HEAD"]) or "").strip()
+    if not AV.COMMIT_RE.fullmatch(head):
+        return 1, "arch_checks: not a git repo with a commit"
+    if a["mark"]:
+        (k, f), st = a["mark"]
+        rec = SC.mark_record(head, round(time.time(), 3), k, f, st)
+        line = "arch_checks: marked %s@%s %s" % (k, f, st)
+    else:
+        its, bad = review_items(sys.stdin.read(4 * 1024 * 1024))
+        rec = SC.review_record(head, round(time.time(), 3), its)
+        line = "arch_checks: review · %d findings logged%s" % (len(its), " · %d lines skipped" % bad if bad else "")
+    return (0, line) if SC.log_append(kdir, rec) else (1, "arch_checks: security log not writable")
+
+
 def _args(argv):
-    """{verify, last, net, repo, category, only} or None on a usage error."""
-    a = {"verify": False, "last": False, "net": False, "repo": None, "category": "quality", "only": None}
+    """{verify, last, net, repo, category, only, log-review, log-show, mark, commit} or None on a usage error."""
+    a = {"verify": False, "last": False, "net": False, "repo": None, "category": "quality", "only": None,
+         "log-review": False, "log-show": False, "mark": None, "commit": None}
     it = iter(argv)
     for x in it:
-        if x in ("--verify", "--last", "--net"):
+        if x in ("--verify", "--last", "--net", "--log-review", "--log-show"):
             a[x[2:]] = True
-        elif x in ("--repo", "--category", "--only"):
+        elif x in ("--repo", "--category", "--only", "--commit"):
             a[x[2:]] = next(it, None)
             if not a[x[2:]]:
                 return None
+        elif x == "--mark":
+            k, st = _mark_arg(next(it, "")), next(it, None)
+            if not k or st not in SC.MARKS:
+                return None
+            a["mark"] = (k, st)
         else:
             return None
-    if a["category"] not in SC.CATEGORIES or a["last"] == bool(a["repo"]) or \
+    logm = a["log-review"] + a["log-show"] + bool(a["mark"])
+    if logm:   # log commands: one at a time, security only, --commit only with --mark (full hex id)
+        if logm > 1 or a["verify"] or a["only"] or a["net"] or a["category"] not in ("quality", "security") or \
+                a["last"] == bool(a["repo"]) or (a["commit"] and not (a["mark"] and AV.COMMIT_RE.fullmatch(a["commit"]))):
+            return None
+        return a
+    if a["commit"] or a["category"] not in SC.CATEGORIES or a["last"] == bool(a["repo"]) or \
             (a["verify"] and (a["repo"] or a["only"] or a["net"])):
         return None
     if a["only"] is not None:
@@ -275,7 +340,12 @@ def main(argv):
         print(__doc__.strip().splitlines()[2])
         return 2
     try:
-        if a["verify"]:
+        if a["log-review"] or a["log-show"] or a["mark"]:
+            if a["repo"] and not os.path.isdir(a["repo"]):
+                print("arch_checks: repo is not a directory")
+                return 1
+            rc, line = log_cmd(a)
+        elif a["verify"]:
             repo, commit = _last(True, a["category"])
             rc, line = verify(repo, commit, cat=a["category"])
             _record(a["category"], rc, repo, commit)
