@@ -89,7 +89,7 @@ Write the technical reason only. When editing a file, delete any such comment yo
 **New comments are written in English.** The goal is to publish as open source for others to fork.
 Comments hold no Hangul at all (`tests/test_no_hangul_comments*.py`); quote a UI label by its English text.
 - **UI strings are English-source**: code literals are English, Korean lives in `I18N.ko` (`web/js/06-i18n-*.js`), `T(s, ctx)` shows the source in English and the dictionary entry in Korean. `scripts/i18n_check.mjs` (in `--fast`) fails on a Korean UI literal or a T() literal without a ko entry. ⚠Never pass user data through `T()`.
-- **Language by audience**: English for code comments, AI-read files (skills · agents · pipeline `task`/`rules`/`use` · workflows · hook messages to the model) dev docs (`docs/dev/*`) and **commit messages** (subject and body hold no Hangul — quote a UI label by its English source, e.g. «Workflow», never «워크플로»). Korean only in the `I18N.ko` dictionaries, pipeline stage titles (shown on screen) and the `.ko.md` user docs (README/GUIDE keep an English original).
+- **Language by audience**: English for code comments, AI-read files (skills · agents · pipeline `task`/`rules`/`use` · workflows · hook messages to the model) dev docs (`docs/dev/*`) and **commit messages** (subject and body hold no Hangul — quote a UI label by its English source, e.g. «Workflow», never its Korean translation). Korean only in the `I18N.ko` dictionaries, pipeline stage titles (shown on screen) and the `.ko.md` user docs (README/GUIDE keep an English original).
 - ⚠Evidence (`★`) and prohibitions (`⚠`) must **not be shortened** even in English — shorten the prose, not the evidence.
 - The symbols (`★` · `⚠` · `⇒`) are used as-is in any language.
 

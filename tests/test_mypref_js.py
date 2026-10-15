@@ -38,7 +38,7 @@ R.tabs1 = X.mpTabs();
 c.UIS.setItem('mbTabs', '{broken');
 R.tabs2 = X.mpTabs();
 R.hideTime = X.mpOrderAct(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS, 'time', 'time', 'hide');
-R.up = X.mpOrderAct(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS, 'time', 'chat', 'up');
+R.up = X.mpOrderAct(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS, 'time', 'pipe', 'up');
 R.upTop = X.mpOrderAct(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS, 'time', 'time', 'up');
 R.allHidden = X.mpOrder({hide: X.MP_TABS}, X.MP_TABS, null);
 R.stock = [X.mpStock(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS), X.mpStock(R.up, X.MP_TABS)];
@@ -107,7 +107,7 @@ A.mpma(''); R.maClr = c.UIS.getItem('mbMainAcct'); R.maRd = c.RD;
 R.omRow = vm.runInContext('mpMainAcctRow()', c); R.omAct = 'mpom' in A;
 """
 
-TABS = ['time', 'chat', 'struct', 'br', 'pipe', 'token', 'hist', 'retro']
+TABS = ['time', 'pipe', 'struct', 'br', 'token', 'hist', 'retro', 'chat']
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
@@ -128,7 +128,7 @@ class MyPref(unittest.TestCase):
 
     def test_tabs_normalise(self):
         self.assertEqual(self.R["tabs0"], {"order": TABS, "hide": []})
-        self.assertEqual(self.R["tabs1"]["order"], ["retro", "chat", "time", "struct", "br", "pipe", "token", "hist"])
+        self.assertEqual(self.R["tabs1"]["order"], ["retro", "chat", "time", "pipe", "struct", "br", "token", "hist"])
         self.assertEqual(self.R["tabs1"]["hide"], ["chat"])     # 'time' dropped, unknown/dupes dropped
         self.assertEqual(self.R["tabs2"], {"order": TABS, "hide": []})
 
@@ -136,7 +136,7 @@ class MyPref(unittest.TestCase):
         self.assertEqual(self.R["hideTime"]["hide"], [])
 
     def test_order_move_and_stock(self):
-        self.assertEqual(self.R["up"]["order"], ["chat", "time"] + TABS[2:])
+        self.assertEqual(self.R["up"]["order"], ["pipe", "time"] + TABS[2:])
         self.assertEqual(self.R["upTop"]["order"], TABS)
         self.assertEqual(self.R["allHidden"]["hide"], [])
         self.assertEqual(self.R["stock"], [True, False])

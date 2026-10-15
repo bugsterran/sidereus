@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Default tab order is now Timeline, Pipelines, Structure, Branches, Tokens, History, Insights, Chat. A saved custom order still wins.
+
+### Fixed
+
+- CI: `AGENTS.md` no longer trips the no-Hangul docs test.
+- `scripts/readme_shots.mjs` waits for the Pipelines tab before clicking it.
+
 ## [0.1.0] - 2026-10-16
 
 ### Added

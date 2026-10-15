@@ -52,7 +52,7 @@ function buildMv(){
   // ★The «Failures» tab was removed — failures are bell alerts now.
   // ⚠The rebuild drops focus to <body>; remember it so a keyboard tab switch keeps focus (★ 2026-09-27 interaction audit).
   const hadF = el.contains(document.activeElement);
-  // «Tokens» sits after «Branches» (stock order = MP_TABS).
+  // Stock order = MP_TABS (90b-mypref.js).
   if(!setHtml(el, '<div class=mvg role=tablist aria-orientation=vertical aria-label="'+esc(T('Views'))+'">'
     // ⚠Feature tabs stay hidden until /api/state says the feature is on (a default-off tab would 404 if clicked before the first poll).
     +tp.order.filter(k => k === mainView || (!tp.hide.includes(k) && (!TAB_FEAT[k] || (STATE_IN && FEATS[TAB_FEAT[k]] !== false)))).map(k => tab(k, mvLab(k))).join('')
