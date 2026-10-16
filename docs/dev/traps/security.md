@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Security and privacy
 
+- ★**Work popup was readable by another OS user on a shared Mac** (2026-10-16). Loopback alone does not tell users apart. ⇒ `sidereus/peer.py`: on macOS the `/work` APIs need `lsof` to find the client end held by a process of the viewer's UID; non-root `lsof` cannot see other users' sockets, so «no same-UID client end found» also covers the other-user case.
+  - ⚠Filter on the client end (`<cport>-><viewer port>`), not the viewer's accepted socket — that one is always the viewer's own UID.
+  - ⚠Cache allows only (5 s per client port); never cache a refusal.
+  - ⚠Missing or slow `lsof` (1.5 s timeout) ⇒ popup 403. Fail-closed is intended; do not fall back to allow.
 - ★**`/api/ui-prefs.js` served `window.__UIP=…` (10 of 49 keys hold local paths) as executable JS** (2026-10-16). The shared GET guard passes a missing `Sec-Fetch-Site` (curl/hooks/OTel), so a browser without Sec-Fetch-* let a cross-origin `<script src>` read it. ⇒ `_g_ui_prefs` returns 403 unless `Sec-Fetch-Site` is exactly `same-origin`; the page then sees `__UIP` undefined ⇒ defaults in memory, nothing posted (web/app-head.js). Test `test_get_requires_same_origin`. ⚠Never serve private data as executable script without a same-origin check.
 - ★**The «Source» popup can open any file of CODE_DIR, and CODE_DIR is the mailbox data dir** (2026-09-29, `sidereus/structure_tree.py`). It holds `bus.jsonl` and other conversation data. ⇒ a file opens only if it is in the listing AND its realpath stays under the root; `*.jsonl` and anything under realpath(~/.claude) are refused; secret names lock, `PRIVATE KEY-----` refuses, other lines go through `redact()`. ⚠Never serve a path that skipped the listing check, and never drop the `*.jsonl` refusal.
 - ★**Handler had no socket timeout — one stalled client pinned a thread forever (slowloris)** (2026-09-25 audit). ⇒ `Handler.timeout = 30` (chat_server.py). ⚠No route holds a connection open; a future long-poll/SSE route must set its own socket timeout instead of removing this.
