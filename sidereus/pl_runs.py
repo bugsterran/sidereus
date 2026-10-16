@@ -284,7 +284,9 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=()):
                 continue
             title, aid, tid = _title(m.group(2)), str(x.get("aid") or "")[:64], str(x.get("tid") or "")[:64]
             hit = next((a for a in ags if (aid and a["aid"] == aid) or (tid and a["tid"] == tid)), None)
-            if hit is None and any((aid and a["aid"] == aid) or (tid and a["tid"] == tid) for a in byname.get(r["name"], ())):
+            mine = [a for a in byname.get(r["name"], ()) if (aid and a["aid"] == aid) or (tid and a["tid"] == tid)]
+            # ⚠Skip only when no meta falls in the window: in-window meta for a stage not yet in runs.json is this run's agent.
+            if hit is None and mine and not any(lo <= a["t0"] <= hi for a in mine):
                 continue   # still-live agent of an earlier run of this name (meta outside the window): not this run's work
             if hit is None:
                 if title not in stages:

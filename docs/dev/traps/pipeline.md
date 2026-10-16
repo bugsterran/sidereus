@@ -121,3 +121,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: the flow got the newest 120 evidence rows, so a run older than those rows showed empty gate/edit nodes as if nothing ran.
 - ⇒ `scan()` passes every row of the 512 KB tail (≤ `EV_SCAN_MAX`); each run takes [t0-5, (end|t1)+60]. Edit/commit fall back to runs.json `h0`/`h1` and `commits()`.
 - ⚠`floor` > 0 = the tail was cut there: a run starting below it is `why: "window"` (outside the read), never «no record».
+
+## Live tagged agent skipped as «earlier run» (`pl_runs.pl_model`)
+
+- Cause: a stage absent from runs.json (hook wrote nothing after a skip) is lit from the live `sub` row, but an aid present in `byname` was always taken as an earlier run's agent.
+- ⇒ skip only when none of its meta t0 values falls in the run window [t0-5, now+5]. `tests/test_pl_runs.py`.
+- ⚠Unexplained: `hooks/pl_flow.py` did not save runs.json after the skip although `_flow` in memory produces the stage; suspect the silent return on `_Lock` failure.
