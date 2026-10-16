@@ -498,6 +498,19 @@ class PlModel(unittest.TestCase):
         self.assertEqual((list(r["stages"]), r["lab"]), (["구현"], ""))
         self.assertEqual(r["stages"]["구현"]["ag"], [])
 
+    def test_live_agent_with_in_window_meta_lights_unrecorded_stage(self):
+        # runs.json has no entry for the stage yet; meta inside the run window is this run's agent, not an earlier run's.
+        t0 = NOW - 100
+        self._file({"bugfix": self._r(t0=t0, cur="", st={"재현": {"s": "skip", "t0": t0, "t1": t0, "n": 0}}, lb=[])})
+        self._ag("A", "[pl:bugfix/원인] diagnose", t0 + 25)
+        sub = [{"lab": "fixer: [pl:bugfix/원인] diagnose", "min": 1, "aid": "A", "tid": "tu_A"}]
+        s = PR.pl_model(SID, self.sd, sub, None, NOW, "run")[0]["stages"]
+        self.assertEqual(s["원인"]["o"], "run")
+        self.assertEqual([(a["aid"], a["run"]) for a in s["원인"]["ag"]], [("A", True)])
+        self._ag("B", "[pl:bugfix/분석] old", t0 - 500)   # control: meta outside the window stays skipped
+        sub = [{"lab": "fixer: [pl:bugfix/분석] old", "min": 9, "aid": "B", "tid": "tu_B"}]
+        self.assertNotIn("분석", PR.pl_model(SID, self.sd, sub, None, NOW, "run")[0]["stages"])
+
     def test_bad_proj(self):
         for bad in ("rel/path", "/a/../b", "/x\ny", "/" + "a" * 300, 5, None):
             self._file({"sidereus-change": self._r(proj=bad)})
