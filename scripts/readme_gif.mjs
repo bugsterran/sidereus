@@ -254,7 +254,7 @@ async function record(cdp, base, lang) {
   const P = await openApp(cdp, base, { name: 'hero', lang, w: VW, h: VH, dsf: APP_DSF, boot: BOOT });
   await P.ev(`(() => { const b = document.querySelector('#mvw .mvb[data-mv="pipe"]'); if (!b) throw new Error('no tab pipe'); b.click(); return 1; })()`);
   await P.wait(`document.querySelectorAll('.plw .plcv .plnd').length >= 3 && !!document.querySelector('.plrtb')`, 'pipeline canvas');
-  // Same focus CSS as the `pipelines` still (readme_shots.mjs).
+  // Focus CSS: run overview + run bar + lit canvas + «By stage» table; editor side panels and palette hidden.
   await P.css('.plchips,.plapply,.plnames,.plpal,.plpan,.plcvt,.plw>.tkvs{display:none!important}'
     + '.plw .plgw{height:260px!important;min-height:0!important}'
     + '.plgw>.plcvw{height:260px!important;max-height:260px!important;min-height:0!important}'
