@@ -8,7 +8,7 @@ What the viewer is, how to run and check it, and the feature record. Traps: [TRA
 - Entry `chat_server.py` · Python body in `sidereus/<domain>.py` · screen in `web/`, assembled into one inline PAGE at import (`_load_page`) ⇒ **restart to apply a UI change**.
 - Git remote `origin` is a private GitHub repo; the orchestrator commits and pushes only when the owner asks (agents never push; Sidereus itself never runs git write commands). Run `bash backup.sh` after a change (keeps the last 10).
 - Separate owners: this folder (viewer) is one session; other projects have their own sessions. Their files do not overlap.
-- ★**Name** (owner decision 2026-08-19): «Mailbox» → a new product name (since renamed **Sidereus**). It started as a viewer for inter-session chat; session control, alarms and stale-thread detection now sit on top, so «mailbox» no longer fits — «sidereus» (a square) does.
+- ★**Name** (owner decision 2026-08-19): «Mailbox» → «Agora» (a square: the place where agents exchange messages), since renamed **Sidereus** (2026-10-13). It started as a viewer for inter-session chat; session control, alarms and stale-thread detection now sit on top, so «mailbox» no longer fit.
   - ⚠**Only screen and document names changed.** `mailbox_*` tools · `MAILBOX_ME/SELF` · `~/.mailbox-mcp` · launchd labels · `bus.jsonl` stay as they are — they are baked into every session's config, and one wrong identity setting once swallowed messages (2026-08-07).
   - ⛔`advocate/CHARTER.md` was **deliberately left alone** — its sha256 **fingerprint is the contract** (§3 · §7), so even a one-line title change makes advocate report "the rules were changed behind our back". To rename it: announce in the room first and record it in §7.
 
