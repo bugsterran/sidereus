@@ -20,9 +20,9 @@ B = sidereus("bus")
 ORIGIN = "http://127.0.0.1:%d" % PORT
 
 
-def get_js():
+def get_js(extra="Sec-Fetch-Site: same-origin\r\n"):
     h = cs.Handler.__new__(cs.Handler)
-    h.headers = http.client.parse_headers(io.BytesIO(("Host: %s\r\n\r\n" % HOST).encode("latin-1")))
+    h.headers = http.client.parse_headers(io.BytesIO(("Host: %s\r\n%s\r\n" % (HOST, extra)).encode("latin-1")))
     h.rfile, h.wfile = io.BytesIO(b""), io.BytesIO()
     h.path, h.command, h.request_version = "/api/ui-prefs.js", "GET", "HTTP/1.1"
     h.requestline = "GET /api/ui-prefs.js HTTP/1.1"
@@ -60,6 +60,14 @@ class UiPrefs(unittest.TestCase):
         self.assertTrue(body.startswith("window.__UIP=") and body.endswith(";"))
         self.assertNotIn("</", body)
         self.assertEqual(json.loads(body[len("window.__UIP="):-1]), {"mbRoom": "a</script>", "dfW": 300})
+
+    def test_get_requires_same_origin(self):
+        post("/api/ui-prefs", {"set": {"mbRoom": "secret-path"}}, origin=ORIGIN)
+        for extra in ("", "Sec-Fetch-Site: cross-site\r\n", "Sec-Fetch-Site: same-site\r\n"):
+            head, body = get_js(extra)
+            self.assertIn("403", head.split("\r\n", 1)[0], extra)
+            self.assertNotIn("__UIP", body)
+            self.assertNotIn("secret-path", body)
 
     def test_merge_and_delete(self):
         post("/api/ui-prefs", {"set": {"mbA": 1, "sidereus.x": [1, 2]}}, origin=ORIGIN)
