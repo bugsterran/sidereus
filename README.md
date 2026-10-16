@@ -6,7 +6,9 @@
 ![Python 3.9, stdlib only](https://img.shields.io/badge/python-3.9%20stdlib%20only-3776AB.svg)
 ![Platform: macOS · Windows (untested)](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Windows%20(untested)-lightgrey.svg)
 
-**A local observatory for verifying, judging and steering parallel AI coding sessions on one screen — their results and their process. Pipelines lead: declare the stage order once, and each stage shows its progress and gate evidence.**
+**A local observatory for verifying AI coding sessions.**
+
+One screen to check the results and the process of several sessions, judge them, and direct them by relaying instructions.
 
 It runs beside the Claude Code, Codex CLI and Gemini CLI sessions already open in your terminals, and is built
 for one developer running several sessions at once. It never runs your agents or touches your terminal.
@@ -24,6 +26,12 @@ python3 -m sidereus start --demo --open      # port 18799, Ctrl-C stops it. Wind
 ```
 
 ## What it does
+
+Three connected views of the same sessions:
+
+- **Pipelines** — declare the stage order once; each stage shows progress and gate evidence.
+- **Timeline** — what each agent actually did, with pipeline stages overlaid.
+- **Structure analysis** — an AI-drawn architecture map, checked against the code (file, line, symbol) at a commit.
 
 **Evidence for each result.**
 
