@@ -143,3 +143,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ `paintPipe` skips a poll repaint while a `.plw` SELECT or a `.plnewm` item has focus; option text carries only dirty/running (no relative times). The «+ New ▾» menu renders inside `.plw`; an outside click removes the menu node without a repaint (a rebuild detaches `e.target` and swallows the click).
 - ⚠`.plhead` is taken by the canvas arrowheads (`fill:none;stroke:none;opacity:.85`): the row is `.pltop`. Check a new class name with `grep -rnw` over `web/` first.
 - ★Demo headless (2026-10-17): row height 30px, one row at 900 / 1100 / 1440 (ko, en).
+
+## Canvas row height follows the graph (48d `plCvNeed`/`plGwFit`, 43 `--plcvh`)
+
+- Cause: the canvas row was a fixed clamp(360px, 62vh, 700px), so at 1440x900 a one-row chain left the stage panel (Custom, the default) below the fold.
+- ⇒ `plCvNeed(G, cw, vh)` = graph height at min(1, width-fit) zoom + 8px, clamped to [200, 62vh]; `plGwFit` sets `--plcvh` = need + toolbar strip every pass (cards grow on later paints), floor = row + 6 + 420. The changed canvas height re-fits through `plFitKey`.
+- ⚠A dragged split (`sidereus.plpanh`) drops `--plcvh` so the canvas row stays flexible; do not pin both rows in px (the leftover height would sit empty).
+- ⚠Stage-name input: placeholder is the short «Stage name»; the long hint is its `title` (it clipped as a placeholder).

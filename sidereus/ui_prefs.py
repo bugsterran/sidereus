@@ -30,10 +30,12 @@ BODY_MAX = FILE_MAX + 4096
 RESET_BODY = {"_v": 1}
 
 
-def memory_only():
-    """`--demo`: keep prefs in memory only (called by chat_server.main before serving)."""
+def memory_only(seed=None):
+    """`--demo`: keep prefs in memory only (called by chat_server.main before serving); `seed` = starting prefs."""
     global PATH
     PATH = None
+    _MEM.clear()
+    _MEM.update((k, v) for k, v in (seed or {}).items() if _key_ok(k))
 
 
 def _key_ok(k):

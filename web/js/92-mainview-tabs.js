@@ -180,6 +180,7 @@ function setMainView(v){
   if(mainView === 'time'){
     agView = 'modal';
     buildMv(); paintTl(); mvScrollBack(); loadTl(true);
+    tlgTick();   // ⚠the Changes rail fetches only from tlgTick; waiting for poll() left it on «Loading…» after a tab switch
     return;
   }
   if(mainView === 'token'){
@@ -322,7 +323,8 @@ function rcPaint(force){
       + (t ? '#' + esc(t) : esc(T('All'))) + '</button>').join('') + raBarHtml() + '</div>' + raToolHtml(show) + raBoxHtml()
     + (show.length ? '<div class=rcgrid>' + show.map(raCardHtml).join('') + '</div>' : '<div class=empty>' + esc(T('No rooms match.')) + '</div>') + '</div>';
   const nr = show.filter(c => c.k !== 'dm').length;   // the «Outside rooms» card is not a room
-  document.getElementById('cnt').textContent = KE(U(nr, ' rooms'), PL(nr, 'room'));
+  // The dm card is named after the room count only when it is on screen, so the label matches the visible cards.
+  document.getElementById('cnt').textContent = KE(U(nr, ' rooms'), PL(nr, 'room')) + (show.length > nr ? ' + ' + T('Outside rooms') : '');
   if(feed._rcH === h && feed.querySelector(':scope > .rcw')) return;
   feed.innerHTML = h; feed._rcH = h; feed._sh = undefined;
   rcBind(show);

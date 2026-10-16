@@ -66,10 +66,11 @@ class RoomCount(unittest.TestCase):
         return run(js)
 
     def test_outside_rooms_card_is_not_counted(self):
-        self.assertEqual(self.cnt("en", ["dm"]), "0 rooms")
-        self.assertEqual(self.cnt("en", ["dm", "room"]), "1 room")
-        self.assertEqual(self.cnt("en", ["room", "dev", "dm"]), "2 rooms")
-        self.assertEqual(self.cnt("ko", ["dm", "room"]), "1개")
+        self.assertEqual(self.cnt("en", ["dm"]), "0 rooms + Outside rooms")
+        self.assertEqual(self.cnt("en", ["dm", "room"]), "1 room + Outside rooms")
+        self.assertEqual(self.cnt("en", ["room", "dev", "dm"]), "2 rooms + Outside rooms")
+        self.assertEqual(self.cnt("en", ["room", "dev"]), "2 rooms")
+        self.assertEqual(self.cnt("ko", ["room"]), "1개")
 
 
 if __name__ == "__main__":

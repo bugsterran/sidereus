@@ -545,7 +545,7 @@ class CssRules(unittest.TestCase):
         # grid row 1 = canvas across both columns; rows fill the plGwFit height (a fixed 420px pane row left a blank under the run panels)
         self.assertIn(".plgw>.plcvw{grid-area:1/1/2/3}", self.CSS)
         self.assertIn("minmax(420px,2fr)", self.CSS)
-        self.assertIn("floor = cf + 426;", js_all())   # floor = canvas floor + handle + default pane row
+        self.assertIn("floor = Math.round(row) + 426;", js_all())   # floor = plCvNeed canvas row + handle + default pane row
         self.assertIn("PLRO.observe(pw)", js_all())                      # in-place size changes re-fit too
         self.assertNotIn("@media (max-width:1000px){.plgw", self.CSS)
         self.assertIn("const PL_ZMIN = 0.8, PL_ZFIT = 0.4;", js_all())       # never raise the zoom floor instead

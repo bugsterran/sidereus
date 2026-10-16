@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- `--demo` opens on Pipelines; the real viewer still opens on Timeline unless a saved preference says otherwise.
+- Chat tab count reads «N rooms + Outside rooms» when the «Outside rooms» card is shown.
+
+### Fixed
+
+- Structure: on first open the map anchors at its top-left so the Entry band is not clipped; clicking a node never moves the scroll.
+- Pipelines: the canvas height is fitted so the stage edit panel is visible without scrolling at 1440x900.
+- Pipelines: the stage-name placeholder is no longer clipped, and the «Agent and model per stage» caption is separated from the title.
+- Timeline: switching from another tab left the Changes panel on «Loading…» until the next poll.
+
 ## [0.2.1] - 2026-10-17
 
 ### Changed
