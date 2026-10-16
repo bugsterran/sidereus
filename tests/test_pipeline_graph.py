@@ -211,6 +211,15 @@ class Graph(unittest.TestCase):
         self.assertEqual((cross["y"], cross["y2"]), (24 + rh + 100 + 34, 24 + 100 + 68))
         self.assertEqual(out["c"], [4, 4])
 
+    def test_wrap_cols_one_row_at_min_zoom(self):
+        # plWrapCols: one row readable at >= PL_ZMIN stays one row (4 stages, 832px canvas went 3+1); a long chain still wraps
+        fns = "const PL_ZMIN = 0.8;\n" + "\n".join(js_fn(f) for f in ("plFitRaw", "plWrapCols"))
+        out = _js(fns + "\nconst mk = k => plgFrom({name: 'x', defaults: {model: 'inherit', retry: 0}, stages: Array.from({length: k}, (_, i) => ({title: 's' + i, agent: 'a'}))});"
+                  "console.log(JSON.stringify([plWrapCols(mk(4), 832, 700), plWrapCols(mk(7), 785, 700), plWrapCols(mk(7), 1016, 700)]));")
+        self.assertEqual(out[0], 4)
+        self.assertLess(out[1], 7)
+        self.assertLess(out[2], 7)
+
     def test_variable_widths(self):
         # content-sized nodes (G.wd, measured by 48d): layout gap, edge endpoints and lanes use the real width, not PLG_W
         out = run("G.wd = {n1: 300, n2: 250}; plgLayout(G, 28, 9); const L = plgLoopLanes(G), pt = id => plgNode(G, id).ui;"

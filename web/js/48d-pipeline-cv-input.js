@@ -6,12 +6,8 @@ function plNoFirst(){ const E = plCurEnt(); if(E) E.first = false; }
 document.addEventListener('pointerdown', e => {
   if(e.button !== 0 || !e.target.closest || !e.target.closest('.plw')) return;
   plNoFirst();
-  const gh = e.target.closest('[data-plgh]');
-  if(gh){
-    const S = PL_SPLIT[gh.dataset.plgh], g = gh.closest('.plgw'), side = g && g.querySelector(gh.dataset.plgh === 'pal' ? '.plpal' : '.plpan');
-    if(!S || !side) return;
-    PLDRAG = { k: 'split', S, g, x0: e.clientX, w0: side.offsetWidth, w: side.offsetWidth }; e.preventDefault(); return;
-  }
+  const gh = e.target.closest('[data-plgh]'), g = gh && gh.closest('.plgw'), side = g && g.querySelector('.plpan');
+  if(side){ PLDRAG = { k: 'split', g, y0: e.clientY, h0: side.offsetHeight, h: side.offsetHeight }; e.preventDefault(); return; }
   const cv = e.target.closest('.plcv'), E = plCurEnt();
   if(!cv || !E || e.target.closest('.plcvt')) return;
   plView(E);
@@ -30,7 +26,7 @@ document.addEventListener('pointerdown', e => {
 document.addEventListener('pointermove', e => {
   const D = PLDRAG;
   if(!D) return;
-  if(D.k === 'split'){ D.w = Math.max(D.S.min, Math.min(D.S.max, D.w0 + D.S.sign * (e.clientX - D.x0))); D.g.style.setProperty(D.S.v, D.w + 'px'); return; }
+  if(D.k === 'split'){ D.h = plPanH(Math.max(1, D.h0 - (e.clientY - D.y0)), D.g.clientHeight); D.g.style.setProperty(PL_SPLIT.v, D.h + 'px'); plFitSoon(); return; }   // down = taller canvas
   const E = D.E;
   if(D.k === 'node'){
     const dx = (e.clientX - D.x0) / E.view.z, dy = (e.clientY - D.y0) / E.view.z;
@@ -55,7 +51,7 @@ document.addEventListener('pointerup', e => {
   const D = PLDRAG;
   if(!D) return;
   PLDRAG = null;
-  if(D.k === 'split'){ lsSet(D.S.key, String(Math.round(D.w))); return; }
+  if(D.k === 'split'){ lsSet(PL_SPLIT.key, String(Math.round(D.h))); return; }
   const E = D.E;
   if(D.k === 'node'){
     E.pxF = null; E.pyF = null;
@@ -234,4 +230,9 @@ document.addEventListener('input', e => {
   if(!el || !el.closest || !el.closest('.plpan') || !/^(instr|gate)$/.test(el.dataset.plf || '')) return;
   const E = plCurEnt();
   if(E) plField(E, el.dataset.plf, el);
+});
+document.addEventListener('dblclick', e => {
+  const gh = e.target.closest && e.target.closest('.plw [data-plgh]'), g = gh && gh.closest('.plgw');
+  if(!g) return;
+  lsSet(PL_SPLIT.key, ''); g.style.removeProperty(PL_SPLIT.v); plFitSoon();
 });
