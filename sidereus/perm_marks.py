@@ -3,8 +3,10 @@ import json
 import os
 import re
 import time
+from datetime import datetime
 from sidereus.config import DATA_DIR
-from sidereus.live_probe import _UUID_RE, tool_busy
+from sidereus.live_probe import _UUID_RE, _sid_transcript, tool_busy
+from sidereus.transcript import _TZ_OFF, _tail_lines
 
 
 # Permission-prompt markers from hooks/perm_mark.py (Notification permission_prompt): {sid, t} only.
@@ -44,6 +46,89 @@ def _mark_t(sid, act_at, now, skip_ask=False):
     if skip_ask and (d or {}).get("tool") == "AskUserQuestion":
         return 0
     return t if act_at < t <= now + 5 else 0
+
+
+_ASK_TOOLS = ("AskUserQuestion", "ExitPlanMode")
+_pend_cache = {}      # transcript path -> ((mtime, size), {tool name: oldest unanswered tool_use time, "": any tool})
+
+
+def _iso_s(ts):
+    """Epoch seconds (with fraction) of a transcript UTC timestamp, else 0."""
+    try:
+        base = datetime.strptime(ts[:19], "%Y-%m-%dT%H:%M:%S").timestamp() + _TZ_OFF
+    except (TypeError, ValueError, OverflowError, OSError):
+        return 0
+    m = re.match(r"\.(\d+)", ts[19:])
+    return base + (float("0." + m.group(1)) if m else 0.0)
+
+
+def _pend_ts(sid):
+    """Oldest unanswered tool_use time per tool name in the newest tool_use message ("" = any tool); {} when unknown."""
+    path = _sid_transcript(sid)
+    try:
+        st = os.stat(path) if path else None
+    except OSError:
+        st = None
+    if st is None:
+        return {}
+    key = (st.st_mtime, st.st_size)
+    hit = _pend_cache.get(path)
+    if hit and hit[0] == key:
+        return hit[1]
+    mid, uses, done = None, {}, set()
+    for line in reversed(_tail_lines(path, nbytes=200_000, limit=600)):
+        if '"tool_' not in line:
+            continue
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
+        msg = d.get("message") if isinstance(d, dict) else None
+        c = msg.get("content") if isinstance(msg, dict) else None
+        if not isinstance(c, list):
+            continue
+        if d.get("type") == "user":
+            done.update(x.get("tool_use_id") for x in c if isinstance(x, dict) and x.get("type") == "tool_result")
+            continue
+        calls = [x for x in c if isinstance(x, dict) and x.get("type") == "tool_use"] if d.get("type") == "assistant" else []
+        if not calls:
+            continue
+        # ⚠Parallel calls of one message are separate lines (same message.id); results seen so far are all newer.
+        if mid is None:
+            mid = msg.get("id") or line
+        elif msg.get("id") != mid:
+            break
+        for x in calls:
+            uses[x.get("id")] = (x.get("name") or "", _iso_s(d.get("timestamp")))
+    out = {}
+    for uid, (name, t) in uses.items():
+        if uid in done or not t:
+            continue
+        for k in (name, ""):
+            out[k] = min(out.get(k, t), t)
+    if len(_pend_cache) > 256:
+        _pend_cache.clear()
+    _pend_cache[path] = (key, out)
+    return out
+
+
+def _pend_mark(sid, now, ask=False):
+    """(t, tool) of the session marker when an unanswered tool_use of its tool (any, if unnamed) is no newer than it.
+    ⚠Covers a prompt opened mid-message: later parallel tool_use lines push last activity past the marker.
+    A marker older than every such tool_use is stale (an earlier prompt) and gives (0, "")."""
+    if not sid or not _UUID_RE.fullmatch(sid):
+        return 0, ""
+    d = _read(sid + ".json") or {}
+    try:
+        t = float(d.get("t") or 0)
+    except (ValueError, TypeError):
+        return 0, ""
+    tool = d.get("tool") if isinstance(d.get("tool"), str) else ""
+    # ⚠On an `ask` row a tool-less or AskUserQuestion marker is that question itself, not a separate approval.
+    if not t or t > now + 5 or (ask and (not tool or tool in _ASK_TOOLS)):
+        return 0, ""
+    p = _pend_ts(sid).get(tool)
+    return (t, tool) if p and p <= t else (0, "")
 
 
 # agent id -> its own log path, filled by bgtasks at each parse-cache refresh (bgtasks sits after this module, so it calls in).
@@ -228,11 +313,22 @@ def perm_rows(rows, now=None):
         sid, act = r.get("sid") or "", now - int(r.get("ageSec") or 0)
         # ⚠`think` + a named tool counts too: with parallel tool calls the first tool_result is the newest transcript line
         #   (shape result -> think) while the other call waits on its prompt; that prompt's marker is newer than the result line.
-        if r.get("state") == "tool" or (r.get("state") == "think" and r.get("tool")):
-            t = _mark_t(sid, act, now)
+        st = r.get("state")
+        if st in ("tool", "ask") or (st == "think" and r.get("tool")):
+            t = _mark_t(sid, act, now) if st != "ask" else 0
+            mtool = ""
+            if not t:
+                t, mtool = _pend_mark(sid, now, ask=st == "ask")
+            # ⚠Activity after the marker: OTel decisions are session-wide, so only a decision for the marker's own tool clears it.
+            if mtool:
+                _note_dec(r, now)
+                gone = ((_DEC_AT.get(sid) or {}).get("tools") or {}).get(mtool, 0) > t \
+                    or (mtool == "Bash" and _bash_running(dict(r, tool="Bash")))
+            else:
+                gone = bool(t) and (_answered(r, t, now) or _bash_running(r))
             # ⚠An approved long tool writes nothing until its result, so the marker stays newer than activity: clear on decision/running shell.
-            if t and not _answered(r, t, now) and not _bash_running(r):
-                tool = r.get("tool") or ""
+            if t and not gone:
+                tool = mtool or r.get("tool") or ""
                 base = tool.split("__")[-1] if tool.startswith("mcp__") else tool
                 # blockedAt = marker time: a stable episode id for attention `since` / OS-notify (a new prompt = a new episode).
                 # blockedTool = tool name alone so the client translates the fixed phrase; `blocked` keeps the old English form.
