@@ -34,7 +34,7 @@ async function poll(first){
     if(s.cfg) termCfg(s.cfg.termApp);   // «Terminal link» setting (88d-term.js)
     CUR=s.cursors; ROOMS=s.rooms; PROF=s.profiles; MINE=s.mine; PRES=s.presence||{}; ACK=s.acks||{}; ACKSINCE=s.acksSince||0; SESS=s.sessions||[]; ACCTS=s.accts||[];
     ARCHRUN = s.archRun || {}; SIDEREUS_DIR = s.codeDir || '';   // arch-map runs in progress per project (84j archRunOf, 48h)
-    PLREQ = s.plReq || {};   // who received each arch-map / project-checks request and its run state (84l2)
+    PLREQ = s.plReq || {};   // who received each arch-map request and its run state (84l2)
     PROJ_GONE = new Set(s.projGone || []);   // session folders deleted from disk — project chips skip them (80, 48)
     if(typeof roomTagsSet === 'function') roomTagsSet(s.roomTags);   // chat room card tags (92); missing key = {}
     if(typeof roomAdminSet === 'function') roomAdminSet(s.roomAdmin);   // hidden / pending rooms (92c); missing key = {}

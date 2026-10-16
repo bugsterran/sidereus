@@ -26,10 +26,10 @@ EVAL_FLAKY_DAYS = 14
 EVAL_LINE_K = 2              # a finding within line ±K of the seed counts (tools and agents report nearby lines)
 EVAL_SEEDS_MAX = 500
 EVAL_RED_MAX = 200           # redcheck.json entries kept (newest by `at`)
-SEED_KINDS = ("lint", "type", "secret", "dep", "sast", "logic")
-KIND_TOOLS = {"lint": ("eslint",), "type": ("tsc",), "secret": ("gitleaks",), "dep": ("npm-audit", "osv-scanner"),
+SEED_KINDS = ("secret", "dep", "sast", "logic")
+KIND_TOOLS = {"secret": ("gitleaks",), "dep": ("npm-audit", "osv-scanner"),
               "sast": ("semgrep", "bandit"), "logic": ()}   # logic seeds match --findings only
-CHECKS_FILES = {"checks-quality": "checks.json", "checks-security": "checks-security.json"}
+CHECKS_FILES = {"checks-security": "checks-security.json"}
 VERDICTS = ("pass", "fail", "skip")
 SEED_ID = re.compile(r"[a-z0-9-]{1,40}")
 _RULE = re.compile(r"[A-Za-z0-9_./@:-]{1,60}")     # = arch_checks.RULE_RE

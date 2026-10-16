@@ -15,7 +15,7 @@ from tests._load import ROOT, sidereus
 PE = sidereus("pl_eval")
 AV = sidereus("arch_verify")
 NOW = 1_800_000_000.0
-QGATE = "/usr/bin/python3 scripts/arch_checks.py --verify --last"
+SGATE = "/usr/bin/python3 scripts/arch_checks.py --verify --last --category security"
 
 
 def cli():
@@ -87,22 +87,22 @@ class Base(unittest.TestCase):
 
 class SeedsScore(Base):
     def test_seeds_and_score(self):
-        head = self.commit([{"title": "검사 실행", "agent": "x", "gate": QGATE}, {"title": "리뷰", "agent": "x"}])
+        head = self.commit([{"title": "검사 실행", "agent": "x", "gate": SGATE}, {"title": "리뷰", "agent": "x"}])
         sf = os.path.join(self.tmp, "seeds.json")
         with open(sf, "w") as f:
             json.dump({"v": 1, "seeds": [
-                {"id": "pub-a", "kind": "type", "file": "src/a.ts", "line": 5, "rule": "TS2322", "expectStage": "검사 실행"},
+                {"id": "pub-a", "kind": "secret", "file": "src/a.cfg", "line": 5, "rule": "generic-api-key", "expectStage": "검사 실행"},
                 {"id": "pub-b", "kind": "logic", "file": "src/a.ts", "line": 9, "expectStage": "리뷰"},
-                {"id": "hidden-holdout-x", "kind": "lint", "file": "src/a.ts", "line": 20, "expectStage": "검사 실행",
+                {"id": "hidden-holdout-x", "kind": "secret", "file": "src/a.cfg", "line": 20, "expectStage": "검사 실행",
                  "holdout": True}]}, f)
         rc, out = self.main("seeds", "--repo", self.repo, "--set", sf)
         self.assertEqual((rc, out.strip()), (0, "seeds: 3 (public 2 · holdout 1)"))
         self.assertEqual(self.main("seeds", "--repo", self.repo, "--check")[0], 0)
         d = os.path.join(AV.ARCH_DIR, AV.repo_key(self.repo), head)
         os.makedirs(d)
-        with open(os.path.join(d, "checks.json"), "w") as f:
-            json.dump({"items": [{"tool": "tsc", "file": "src/a.ts", "line": 6, "rule": "TS2322", "sev": "error"},
-                                 {"tool": "eslint", "file": "src/a.ts", "line": 21, "rule": "x", "sev": "error"}]}, f)
+        with open(os.path.join(d, "checks-security.json"), "w") as f:
+            json.dump({"items": [{"tool": "gitleaks", "file": "src/a.cfg", "line": 6, "rule": "generic-api-key", "sev": "error"},
+                                 {"tool": "gitleaks", "file": "src/a.cfg", "line": 21, "rule": "x", "sev": "error"}]}, f)
         rc, out = self.main("score", "--repo", self.repo, "--pipeline", self.pfile())
         self.assertEqual((rc, out.strip()), (1, "caught 1/2 · holdout 1/1"))
         ff = os.path.join(self.tmp, "f.json")
@@ -118,7 +118,7 @@ class SeedsScore(Base):
     def test_bad_seeds_print_no_ids(self):
         sf = os.path.join(self.tmp, "seeds.json")
         with open(sf, "w") as f:
-            json.dump({"v": 1, "seeds": [{"id": "ok-1", "kind": "lint", "file": "../x", "expectStage": "s", "holdout": True}]}, f)
+            json.dump({"v": 1, "seeds": [{"id": "ok-1", "kind": "secret", "file": "../x", "expectStage": "s", "holdout": True}]}, f)
         rc, out = self.main("seeds", "--repo", self.repo, "--set", sf)
         self.assertEqual(rc, 1)
         self.assertNotIn("ok-1", out)
@@ -193,30 +193,28 @@ class Red(Base):
 
     def fake_run(self, status="ok", report=True):
         def run(argv, cwd, env, timeout):
-            if "--repo" in argv:   # producer: write the temp store's checks.json like scripts/arch_checks.py would
+            if "--repo" in argv:   # producer: write the temp store's checks-security.json like scripts/arch_checks.py would
                 clone = argv[argv.index("--repo") + 1]
                 head = git(clone, "rev-parse", "HEAD").strip()
-                lines = rd(clone, "src", "a.ts").splitlines()
-                ln = next(i + 1 for i, x in enumerate(lines) if "sidereusRedType" in x)
+                self.assertTrue(rd(clone, "sidereus-redcheck.cfg").startswith('api_key = "'))
                 d = os.path.join(env["MAILBOX_DIR"], "arch", AV.repo_key(clone), head)
                 os.makedirs(d)
-                items = [{"tool": "tsc", "file": "src/a.ts", "line": ln, "rule": "TS2322", "sev": "error"}] if report else []
-                with open(os.path.join(d, "checks.json"), "w") as f:
-                    json.dump({"tools": [{"id": "tsc", "status": status}], "items": items}, f)
+                items = [{"tool": "gitleaks", "file": "sidereus-redcheck.cfg", "line": 1, "rule": "generic-api-key",
+                          "sev": "error"}] if report else []
+                with open(os.path.join(d, "checks-security.json"), "w") as f:
+                    json.dump({"tools": [{"id": "gitleaks", "status": status}], "items": items}, f)
             self.assertTrue(env["SIDEREUS_EVIDENCE"].startswith(env["MAILBOX_DIR"].rsplit("/", 1)[0]))
             return 0, False
         return run
 
-    def test_checks_quality(self):
-        self.w("src/a.ts", "export const a = 1;\n")
-        self.w("lib/b.ts", "export const b = 1;\n")
-        self.commit([{"title": "검사 실행", "agent": "x", "gate": QGATE}])
+    def test_checks_security(self):
+        self.commit([{"title": "검사 실행", "agent": "x", "gate": SGATE}])
         for kw, want in (({}, (0, "redcheck: pass — injected item reported")),
                          ({"report": False}, (1, "redcheck: fail — injected break not reported")),
-                         ({"status": "missing"}, (2, "redcheck: skip — tool missing: tsc, eslint"))):
+                         ({"status": "missing"}, (2, "redcheck: skip — tool missing: gitleaks"))):
             with mock.patch.object(self.cli, "_run", self.fake_run(**kw)):
                 self.assertEqual(self.red("검사 실행")[:2], want)
-            self.assertEqual(self.entry(QGATE)["verdict"], ("pass", "fail", "skip")[want[0]])
+            self.assertEqual(self.entry(SGATE)["verdict"], ("pass", "fail", "skip")[want[0]])
         self.assertEqual([r["rc"] for r in self.rows()], [0, 1, 2])
         self.assertEqual(git(self.repo, "status", "--porcelain"), "")
 
@@ -225,7 +223,6 @@ class Red(Base):
         exp, why = self.cli.inject("checks-security", self.repo)
         self.assertEqual(exp, [{"kind": "secret", "file": "sidereus-redcheck.cfg", "line": 1}])
         self.assertTrue(rd(self.repo, "sidereus-redcheck.cfg").startswith('api_key = "'))
-        self.assertEqual(self.cli.inject("checks-quality", self.repo), (None, "no .ts source to break"))
         self.assertEqual(self.cli.inject("fast", self.repo), (None, "no .py file to break"))
         self.assertEqual(self.main("redcheck", "--pipeline", self.pfile(), "--stage", "s", "--repo", self.repo)[0], 2)
 

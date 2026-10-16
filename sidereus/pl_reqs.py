@@ -1,4 +1,4 @@
-"""Pipeline run requests the page sent (arch-map diagram, project-checks) and their «Stop» instructions.
+"""Pipeline run requests the page sent (arch-map diagram) and their «Stop» instructions.
 
 DATA_DIR/plreq.json {"v": 1, "reqs": [{id, repo, pipeline, sid, to, mid, at, stop?: {mid, at}}]} keeps who received a
 request so the row survives a reload (`id` = `mid` = the request DM's mailbox id).
@@ -16,7 +16,7 @@ from sidereus.bus import RELAY_SID, _atomic_write
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
-PIPELINES = ("arch-map", "project-checks")
+PIPELINES = ("arch-map",)
 REQ_MAX = 50              # records kept, newest
 REQ_KEEP_S = 7 * 86400    # older records dropped
 REPO_MAX = 300

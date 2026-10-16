@@ -248,8 +248,8 @@ class Modes(unittest.TestCase):
 
     def test_gate_mode(self):
         for g, want in (("scripts/check.sh --fast", "fast"), ("bash scripts/check.sh --full", "full"),
-                        ("scripts/check.sh --fastx", None), ("/usr/bin/python3 scripts/arch_checks.py --verify --last", "checks-quality"),
-                        ("scripts/arch_checks.py --verify --category quality", "checks-quality"),
+                        ("scripts/check.sh --fastx", None), ("/usr/bin/python3 scripts/arch_checks.py --verify --last", None),
+                        ("scripts/arch_checks.py --verify --category quality", None),
                         ("scripts/arch_checks.py --verify --last --category security", "checks-security"),
                         ("scripts/arch_checks.py --verify --category style", None), ("scripts/arch_checks.py --last", None),
                         ("/usr/bin/python3 scripts/arch_verify.py --last", None), (None, None)):

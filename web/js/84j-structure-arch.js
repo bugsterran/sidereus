@@ -3,7 +3,7 @@
 // ⚠Evidence is file:line:symbol only (metadata); code opens on click through the existing popup (81 strPopOpenRel).
 // ⚠The request button never sends by itself: preview → a person presses confirm → /api/dm relay (AGENTS.md rule 7).
 const ARCH_PL = 'arch-map';
-const ARCH = { cache: {}, load: {}, op: '', req: null, msg: '', sel: null, tests: false, full: false, svg: {}, sent: null, flow: null, creq: null, csent: null, pstop: null, scope: null, lit: null, nx: {}, ifx: null, et: {} };   // et = «Connections» tree folds, key p\tn | p\tother, true = open (84j6) · ifx = {p, id} focus view with infrastructure unfolded (84j4) · scope = {p, layer, group} lit path level · lit = {p, flow, fs?} lit flow(s) · nx = folded neighbour branches (84j3)   // creq/csent = project-checks request · sent (84l)   // svg = archKey → rendered diagram; flow = {p, id} picked flow (84k)   // op = «path\tedge index» of the open evidence list; sel = {p, id} focused module
+const ARCH = { cache: {}, load: {}, op: '', req: null, msg: '', sel: null, tests: false, full: false, svg: {}, sent: null, flow: null, pstop: null, scope: null, lit: null, nx: {}, ifx: null, et: {} };   // et = «Connections» tree folds, key p\tn | p\tother, true = open (84j6) · ifx = {p, id} focus view with infrastructure unfolded (84j4) · scope = {p, layer, group} lit path level · lit = {p, flow, fs?} lit flow(s) · nx = folded neighbour branches (84j3)   // svg = archKey → rendered diagram; flow = {p, id} picked flow (84k)   // op = «path\tedge index» of the open evidence list; sel = {p, id} focused module
 const ARCH_DIR = 'TB';   // ★live map, 17 modules · 46 pairs: TB 917x1146px, 85 crossings · LR 2870x328px, 88 crossings
 
 // Fetch through fetch(), not getJSON: an allow-list refusal is a non-2xx whose JSON message must reach the screen.
@@ -55,7 +55,7 @@ function archHeadNote(d){
       T('Edges with checked evidence / all edges'))
     + strHdBadge('', T('{n} modules').replace('{n}', ((d && d.modules) || []).length))
     + (c ? strHdBadge(d.stale ? 'cut' : '', at ? T('Generated {t} · {c}').replace('{c}', c).replace('{t}', hhmm(at, { date: true, dsep: '-' })) : c, ahead + tip) : '')
-    + (d && d.checks ? archChkBadge(d) : '');
+    + (d && d.checks ? archChkTopBtn(d) : '');
 }
 // Pure: one-line legend under the toolbar. Swatches reuse the diagram's own classes (.mmde e-solid/e-dot, .mmdn s-stadium,
 // svg.archdim .arin/.arout) inside .mmd, so they cannot drift from what the diagram draws.
@@ -132,7 +132,7 @@ function archReqOf(d){
   if(!d || !d.ok || d.empty || d.bad || !(d.modules || []).length) return { lb: 'Generate diagram', vb: '생성' };
   return !d.stale && d.head && d.commit === d.head ? { lb: 'Redraw', vb: '다시 그리기' } : { lb: 'Update diagram', vb: '업데이트' };
 }
-// Header request button left of «Run project checks»: same place in every map state; disabled while a run/request is in flight.
+// Header request button: same place in every map state; disabled while a run/request is in flight.
 function archReqBtn(p, home, cands, d){
   const live = !!(archRunOf(p) || archSentPh(p) || (typeof archReqBusy === 'function' && archReqBusy(p, ARCH_PL))), open = !!(ARCH.req && ARCH.req.p === p), why = live ? '' : archWhyOff(home, cands, cands[0]);
   return '<button type=button class="archgo archckgo' + (open ? ' on' : '') + '" data-arq aria-expanded=' + (open ? 'true' : 'false') + (live ? ' disabled' : '')
@@ -286,7 +286,7 @@ function archFitOf(box){
 }
 // Pure: toolbar above the diagram — overview hint or «All» + focused name + in/out legend; the test toggle when there is one.
 // pick = flow picker html (84k archFlowPick), '' when the map has no flows.
-function archBarHtml(mods, edges, sel, tests, full, pick, chk, ifx){   // chk = 84l archChkChip html for the focused module · ifx = infrastructure unfolded (84j4)
+function archBarHtml(mods, edges, sel, tests, full, pick, ifx){   // ifx = infrastructure unfolded (84j4)
   const hasT = (mods || []).some(archIsTest), m = sel ? (mods || []).find(x => x && x.id === sel) : null;
   const tg = hasT ? '<label class=archtg><input type=checkbox data-art' + (tests ? ' checked' : '') + '> ' + esc(T('Include tests')) + '</label>' : '';
   if(!m){ const ps = archPairs(mods, edges, tests), cut = ps.length - archReduce(ps).length;
@@ -295,7 +295,7 @@ function archBarHtml(mods, edges, sel, tests, full, pick, chk, ifx){   // chk = 
     return '<div class=archbar>' + (pick || '') + '<span class=archhint>' + esc(hint) + '</span>' + ft + tg + '</div>'; }
   const ps = archPairs(mods, edges, tests), ni = ps.filter(p => p.to === sel).length, no = ps.filter(p => p.from === sel).length;
   return '<div class="archbar on"><button type=button class=archall data-arall title="' + esc(T('Back (Esc)')) + '">' + esc('← ' + T('Back to full diagram')) + '</button>'   // first: where the eye starts
-    + (pick || '') + '<b class=archsel>' + esc(m.name || m.id) + '</b>' + (chk || '')
+    + (pick || '') + '<b class=archsel>' + esc(m.name || m.id) + '</b>'
     + '<span class="archlg in">' + esc(T('In') + ' ' + ni) + '</span><span class="archlg out">' + esc(T('Out') + ' ' + no) + '</span>'
     + (ifx ? '<button type=button class=archfbt data-arifx>' + esc(T('Fold infrastructure')) + '</button>' : '') + tg + '</div>';
 }
@@ -346,7 +346,6 @@ function archDiagram(box, k, src, mods, si, kinds, fit, bp){
     if(slot && slot.dataset && slot.dataset.k === k){ slot.innerHTML = ARCH.svg[k];
       const pd = box._arpend; box._arpend = null;   // ⚠the paint put the scroll back onto the short loading line, which clamped it to 0
       if(pd) archScrollPut(box, pd[0], pd[1], pd[2]);
-      const cd = ARCH.cache[strOn[0] || '']; if(si === '' && cd && cd.checks) archChkPaint(slot, cd);   // overview count badges (84l)
       if(typeof archLitNow === 'function') archLitNow(slot); }
   };
   if(typeof requestAnimationFrame === 'function') requestAnimationFrame(() => setTimeout(fill, 0)); else setTimeout(fill, 0);
@@ -438,28 +437,27 @@ function archPaint(box, head){
   if(ARCH.req && !cands.some(c => c.sid === ARCH.req.sid) && cands.length) ARCH.req.sid = cands[0].sid;
   const fz = ARCH.sel && ARCH.sel.p === p ? archFitOf(box) : null, fzk = fz ? fz.w + 'x' + fz.h : '';   // focus room (resize repaints on change)
   // Poll repaints on every session change: same response + same view state keeps the drawing (no flicker, select keeps focus).
-  const sig = [p, LANG, ARCH.op, JSON.stringify(ARCH.req), ARCH.msg, archSentPh(p), run ? [run.stage, run.n, run.sid].join('/') : '', JSON.stringify(ARCH.sel), JSON.stringify(ARCH.flow || null), JSON.stringify([ARCH.creq || null, ARCH.csent || null]), JSON.stringify([ARCH.scope, ARCH.lit, ARCH.nx, ARCH.ifx, ARCH.et]), ARCH.tests, ARCH.full, fzk, typeof archReqSig === 'function' ? archReqSig(p) : '', cands.map(c => c.sid + (c.login ? '+' : '')).join(',')].join('\t');
+  const sig = [p, LANG, ARCH.op, JSON.stringify(ARCH.req), ARCH.msg, archSentPh(p), run ? [run.stage, run.n, run.sid].join('/') : '', JSON.stringify(ARCH.sel), JSON.stringify(ARCH.flow || null), JSON.stringify([ARCH.scope, ARCH.lit, ARCH.nx, ARCH.ifx, ARCH.et]), ARCH.tests, ARCH.full, fzk, typeof archReqSig === 'function' ? archReqSig(p) : '', cands.map(c => c.sid + (c.login ? '+' : '')).join(',')].join('\t');
   if(d && box._arj === d && box._arsig === sig && box.querySelector('.archtab')) return;
   box._arj = d; box._arsig = sig;
   const msg = ARCH.msg ? '<div class=archmsg role=status>' + esc(ARCH.msg) + '</div>' : '';
   if(!d){ box.innerHTML = '<div class="strtab archtab">' + head(esc(T('Loading…'))) + '' + archWaitHtml() + '</div>'; return; }
   const req = archReqHtml(ARCH.req, p, home, cands, ARCH.req && ARCH.req.busy, d);
-  const ck = typeof archChkStrip === 'function' ? archChkStrip(p, d, home, cands) : '';   // ⚠typeof: 84j tests load without 84l
-  const pre = archReqBtn(p, home, cands, d) + (typeof archChkBtn === 'function' ? archChkBtn(p, home, cands) : '');
+  const pre = archReqBtn(p, home, cands, d);
   if(!d.ok){   // allow-list refusal and other server errors: the server's own words
-    box.innerHTML = '<div class="strtab archtab">' + head('', '', d.empty ? pre : '') + (d.empty ? ck : '') + '<div class="tlhd cwerr">' + esc(d.msg ? TV(d) : T(String(d.error || '?'))) + '</div>'
+    box.innerHTML = '<div class="strtab archtab">' + head('', '', d.empty ? pre : '') + '<div class="tlhd cwerr">' + esc(d.msg ? TV(d) : T(String(d.error || '?'))) + '</div>'
       + (d.empty ? '<div class=archempty>' + archStatusHtml(p, req) + '</div>' : '') + msg + '</div>';
     return;
   }
   const mods = d.modules || [], edges = d.edges || [], names = {};
   mods.forEach(m => { if(m && m.id != null) names[m.id] = m.name || m.id; });
   if(d.bad){   // map on disk failed schema validation: say so instead of «No architecture diagram yet»
-    box.innerHTML = '<div class="strtab archtab">' + head('', '', pre) + ck + '<div class="tlhd cwerr">' + esc(T('The stored diagram is invalid — request a new one')) + '</div>'
+    box.innerHTML = '<div class="strtab archtab">' + head('', '', pre) + '<div class="tlhd cwerr">' + esc(T('The stored diagram is invalid — request a new one')) + '</div>'
       + '<div class=archempty>' + archStatusHtml(p, req) + '</div>' + msg + '</div>';
     return;
   }
   if(!mods.length || d.empty){   // `empty` may come on ok:true too
-    box.innerHTML = '<div class="strtab archtab">' + head('', '', pre) + ck + '<div class=archempty><b>' + esc(T('No architecture diagram yet')) + '</b><p>'
+    box.innerHTML = '<div class="strtab archtab">' + head('', '', pre) + '<div class=archempty><b>' + esc(T('No architecture diagram yet')) + '</b><p>'
       + esc(T('The arch-map pipeline reads the code, draws modules and edges, then checks each edge against its evidence (file:line). It never writes to the repository.')) + '</p>' + archStatusHtml(p, req) + '</div>' + msg + '</div>';
     return;
   }
@@ -496,8 +494,8 @@ function archPaint(box, head){
   const fhd = d.stale ? chip + archStatusHtml(p, archReqBtn(p, home, cands, d)) : hst;
   if(fl){ box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d), '', fhd) + (d.stale && req ? '<div class=archck>' + req + '</div>' : '') + msg + archFlowBody(fa.fls, fa.fi, names) + '</div>';
     archScrollPut(box, sm, sl); archFlowMark(box.querySelector && box.querySelector('.archfdg svg'), fl); return; }
-  box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d), '', hst + pre) + (rq ? '<div class=archck>' + rq + '</div>' : '') + ck + msg
-    + '<div class=archbody' + strSplitStyle('archbody') + '><div class=archmap><div class=archtop>' + (typeof archPathHtml === 'function' ? archPathHtml(mods, d.groups, sel, ARCH.scope && ARCH.scope.p === p ? ARCH.scope : null) : '') + archBarHtml(mods, edges, sel, tests, ARCH.full, fa ? archFlowPick(fa.fls, ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : '') : '', sel && d.checks ? archChkChip(sel, d) : '', fo)
+  box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d), '', hst + pre) + (rq ? '<div class=archck>' + rq + '</div>' : '') + msg
+    + '<div class=archbody' + strSplitStyle('archbody') + '><div class=archmap><div class=archtop>' + (typeof archPathHtml === 'function' ? archPathHtml(mods, d.groups, sel, ARCH.scope && ARCH.scope.p === p ? ARCH.scope : null) : '') + archBarHtml(mods, edges, sel, tests, ARCH.full, fa ? archFlowPick(fa.fls, ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : '') : '', fo)
     + (lay ? '' : '<div class="archmsg archnol" role=status>' + esc(T('No layers — redraw the diagram')) + '</div>')
     + (any ? archLegHtml(lay, !!kinds && Object.keys(kinds).some(x => kinds[x] === 'uses')) : '') + '</div>' + (any ? '<div class=archdg data-k="' + esc(k) + '"' + (fv ? ' data-fv' : '') + (sel && fz ? ' data-fit="' + esc(fzk) + '"' : '') + '>' + archDiagram(box, k, src, mods, si >= 0 ? si : '', kinds, sel ? fz : null, bp) + '</div>' : '<div class=strload>' + esc(T('No edge passed the check.')) + '</div>') + '</div>'
     + (any && lay && typeof archMmHtml === 'function' ? archMmHtml(archMmOn()) : '')   // minimap overlay (84j7), outside .archmap
@@ -510,7 +508,6 @@ function archPaint(box, head){
   // ⚠the room was measured on the previous paint (overview bar or none): re-measure once on the new frame and redraw if it moved
   if(sel && !box._arfit){ const f2 = archFitOf(box); if(f2 && f2.w + 'x' + f2.h !== fzk){ box._arfit = 1; box._arhold = [sm, sl, sd]; box._arsig = ''; try{ archPaint(box, head); } finally { box._arfit = 0; box._arhold = null; } return; } }
   if(typeof archLitNow === 'function') archLitNow(box.querySelector && box.querySelector('.archdg'));   // cached svg: lit classes go back on
-  if(!sel && d.checks) archChkPaint(box.querySelector && box.querySelector('.archdg'), d);   // cached svg: no fill() runs
 }
 // Restore the map/list scroll saved before an innerHTML repaint.
 function archScrollPut(box, sm, sl, sd){

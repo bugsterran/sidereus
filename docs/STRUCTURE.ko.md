@@ -47,13 +47,9 @@ flowchart LR
 - 연결의 70% 이상이 통과해야 게이트를 넘는다. `config`·`di`·`event` 연결은 늘 «추정» 으로 표시한다.
 - ⚠흐름은 참고용이다. 증명 안 된 단계는 표시만 하고 게이트는 바꾸지 않는다.
 
-## 프로젝트 검사
-
-«프로젝트 검사 실행» 버튼은 Sidereus 가 돌릴 수 있는 도구를 저장소가 설정해 둔 경우에만 보인다(Gradle/Maven checkstyle·pmd, ruff·mypy 설정, 로컬 바이너리가 있는 eslint/tsc, `go vet`, `cargo clippy`). 이미 기록된 결과는 어느 쪽이든 그대로 보인다.
-
 ## 보안 검사
 
-`security-checks` 파이프라인이 gitleaks·npm audit·osv-scanner·semgrep·bandit 결과를 «주요 문제» 창 «보안» 탭에 보여 준다. ⚠비밀값은 저장하지 않는다.
+`security-checks` 파이프라인이 gitleaks·npm audit·osv-scanner·semgrep·bandit 결과를 «주요 문제» 창에 보여 준다. ⚠비밀값은 저장하지 않는다.
 
 두 번째 단계 «위협 모델 리뷰» 는 저장소의 위협 모델(`.oss-scanner/threat_model.md` 또는 `threat_model.md`)을 기준으로 모델이 코드를 검토하고 결과를 `security-log.jsonl` 에 남긴다. 이 결과는 모델이 만든 것이라 검증되지 않았다. 위협 모델이 없으면 `templates/oss-scanner/` 를 가리키는 한 줄만 출력하고 통과한다.
 
@@ -114,7 +110,7 @@ flowchart LR
 
 `sidereus/arch_map.py`(`/api/arch`) · `arch_verify.py`(연결 검증, 저장) · `arch_flow.py`(흐름) · `arch_schema.py`(map.json 형식) ·
 `structure.py`, `structure_scan.py`, `structure_lang*.py`, `structure_plug.py`(트리맵) · `structure_tree.py`(소스 창) ·
-`arch_checks.py`(검사 결과) · `web/js/80`–`84k-structure*.js`, `web/js/84l-structure-arch-checks.js` ·
-`scripts/arch_checks.py`(검사 실행).
+`arch_checks.py`(보안 검사 결과) · `web/js/80`–`84k-structure*.js`, `web/js/84l-structure-arch-checks.js` ·
+`scripts/arch_checks.py`(보안 검사 실행).
 
 </details>

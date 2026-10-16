@@ -1,4 +1,4 @@
-// Pipeline request records (state `plReq`, PLREQ in 00-core): which session received an arch-map / project-checks request,
+// Pipeline request records (state `plReq`, PLREQ in 00-core): which session received an arch-map request,
 // how far its run got, and the «Stop» relay. Metadata only: project · session id · mailbox id · state · stage title.
 const ARCH_REQ_KEEP_MS = 3600000;   // a finished row (stopped/done/gone) stays as one muted line for an hour after the send
 const ARCH_REQ_LBL = { sent: 'Sent', run: 'Running', stopping: 'Stopping', stopped: 'Stopped', done: 'Done', gone: 'No session' };
@@ -46,7 +46,7 @@ function archReqSlot(p, pl, s, open, now){
 }
 // Paint signature part (84j archPaint): ⚠without it a state change of the record never repaints the cached view.
 function archReqSig(p){
-  return JSON.stringify([archReqLast(p, ARCH_PL), archReqLast(p, ARCH_CHK_PL), ARCH.pstop || null]);
+  return JSON.stringify([archReqLast(p, ARCH_PL), ARCH.pstop || null]);
 }
 // Guard + send: only the stop preview's confirm calls this (no auto-send).
 async function archStopSend(){

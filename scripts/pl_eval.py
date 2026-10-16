@@ -44,7 +44,7 @@ AUTO_SETTLE_S, AUTO_LOCK_MAX_S = 2.0, 300   # --auto: the hook fires on a `git c
 AUTO_STALE_S = 600
 _SKIP = {".git", "node_modules", "build", "target", "dist", "out", ".venv", "venv", "__pycache__", ".gradle"}
 _SHELL = ("&&", "||", ";", "|", ">", "<", "&")
-RED_TOOLS = {"checks-quality": ("tsc", "eslint"), "checks-security": ("gitleaks",)}
+RED_TOOLS = {"checks-security": ("gitleaks",)}
 RED_RC = {"pass": 0, "fail": 1, "skip": 2}
 
 
@@ -242,13 +242,6 @@ def _append(fp, text):
 def inject(mode, clone):
     """(expected findings, why). Expected = pseudo-seeds for checks-* modes ([] for rc-judged modes); None = nothing
     to break. ⚠Writes inside the clone only (symlinked files are never chosen)."""
-    if mode == "checks-quality":
-        ts = _files(clone, (".ts",))
-        if not ts:
-            return None, "no .ts source to break"
-        ln = _append(os.path.join(clone, ts[0]), 'const sidereusRedUnused = 1;\nconst sidereusRedType: number = "sidereus";\n')
-        return [{"kind": "type", "file": ts[0], "line": ln + 1, "rule": "TS2322"},
-                {"kind": "lint", "file": ts[0], "line": ln}], "unused const + TS2322 in " + ts[0]
     if mode == "checks-security":
         rel = "sidereus-redcheck.cfg"
         # Token derived at run time so no secret-looking literal sits in this source.

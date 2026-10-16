@@ -51,11 +51,11 @@ class Borrow(unittest.TestCase):
         return PL.runs_here(self.here, rows, {self.here: {"sid": "s1"}}, "arch-map")
 
     def test_builtin_hidden_from_list_and_borrowed(self):
-        _mk(self.sidereus, "project-checks", dict(P, builtin=True))
+        _mk(self.sidereus, "security-checks", dict(P, builtin=True))
         _mk(self.sidereus, "hidden", dict(P, builtin=True, use="x" * 200))   # schema-breaking too: still hidden
         _mk(self.here, "mine", dict(P, builtin=True))                     # ⚠key honoured only in the Sidereus repo (CODE_DIR)
         _mk(self.other, "theirs", dict(P, builtin=True))
-        rows = [{"sid": "s1", "cwd": self.here, "repos": [self.sidereus, self.other], "plrun": [{"name": "project-checks"}, {"name": "theirs"}]}]
+        rows = [{"sid": "s1", "cwd": self.here, "repos": [self.sidereus, self.other], "plrun": [{"name": "security-checks"}, {"name": "theirs"}]}]
         code, out = PL.pipelines(self.here, PL.runs_here(self.here, rows, {}, "arch-map"))
         self.assertEqual(code, 200)
         self.assertEqual([r["name"] for r in out["pipelines"]], ["bugfix", "mine"])
@@ -65,7 +65,7 @@ class Borrow(unittest.TestCase):
         with mock.patch.object(PL, "_remembered", lambda: []):   # ⚠never the live project store
             code, out = PL.pipelines("")
         self.assertEqual({p["path"]: p["n"] for p in out["projects"]}, {self.sidereus: 1, self.here: 2, self.other: 1})
-        self.assertTrue(os.path.isfile(os.path.join(self.sidereus, ".claude", "pipelines", "project-checks.json")))   # file stays for the hooks
+        self.assertTrue(os.path.isfile(os.path.join(self.sidereus, ".claude", "pipelines", "security-checks.json")))   # file stays for the hooks
 
     def test_shown_only_while_run_exists(self):
         code, out = PL.pipelines(self.here, self._arch_runs())

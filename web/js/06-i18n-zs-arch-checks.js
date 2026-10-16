@@ -1,17 +1,8 @@
-// Korean for the structure «Architecture» project checks (84l-structure-arch-checks.js).
+// Korean for the structure «Architecture» security issues window (84l-structure-arch-checks.js).
 Object.assign(I18N.ko, {
-  'Checks {n} · errors {e} · warnings {w}': '검사 {n}종 · 오류 {e} · 경고 {w}',
   'errors {e} · warnings {w}': '오류 {e} · 경고 {w}',
-  'errors {n}': '오류 {n}',
-  'warnings {n}': '경고 {n}',
-  'default rules': '기본 규칙',
-  "Not the project's own standard": '프로젝트 자체 기준이 아님',
-  'Source changed during checks': '검사 중 소스가 바뀜',
   'not available': '사용 불가',
   'timed out': '시간 초과',
-  'Checked {t} · {c}': '{t} 검사 · {c}',
-  'Older than HEAD': 'HEAD 보다 오래됨',
-  'Uncommitted changes were checked': '커밋 안 된 변경까지 검사함',
   'Top issues {n}': '주요 문제 {n}건',
   'error|severity': '오류',
   'warning|severity': '경고',
@@ -24,9 +15,6 @@ Object.assign(I18N.ko, {
   'Requested → {s} · {t}': '요청함 → {s} · {t}',
   'Sent · send again': '보냄 · 다시 보내기',
   'docs ↗': '문서 ↗',
-  'Run project checks': '프로젝트 검사 실행',
-  'Checks request preview': '검사 요청 미리보기',
-  'Checks requested': '검사 요청함',
   'Sent|pl request': '보냄',
   'Running|pl request': '실행 중',
   'Stopping|pl request': '중단 중',

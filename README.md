@@ -128,7 +128,7 @@ repos of sessions on this machine (the same allow list as diffs).
 | Chat | Mailbox rooms and DMs between sessions. You can post too. |
 | Tokens | Tokens and cost by model, project and platform; the five priciest subagent runs. |
 | Pipelines | Each project's declared stages with agent and model, the run in progress, and per-stage evidence: gate PASS/FAIL, tests, commit, loop-backs. A run request goes to a session through the mailbox. |
-| Structure | An agent-drawn module map where every edge is checked against the code, one flow per entry point, a minimap, and a treemap of how the code grew. Project lint and security scans (secrets, dependencies, SAST) per module; «Request fix» sends them to a session and asks for a re-map once the fix is committed. |
+| Structure | An agent-drawn module map where every edge is checked against the code, one flow per entry point, a minimap, and a treemap of how the code grew. Security scans (secrets, dependencies, SAST) per module; «Request fix» sends them to a session and asks for a re-map once the fix is committed. |
 | Branches | Which session made each commit and what it cost; uncommitted edits per worktree; conflict risk. |
 | History | Past sessions by day, split into work units. |
 | Insights | Failures and tool errors over 30 days. |

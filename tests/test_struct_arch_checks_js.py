@@ -1,5 +1,5 @@
-"""Structure «Architecture» project checks (web/js/84l-structure-arch-checks.js): header badge + cut style, default-rules chip,
-focus chip, missing-tool text, escaping in the issue list and node pills, DM body, no /api/dm call without confirm."""
+"""Structure «Architecture» security issues (web/js/84l-structure-arch-checks.js): header badge is the security issues button only,
+scanner status text, escaping in the issue list, issues window without tabs, fix request body, no /api/dm call without confirm."""
 import json
 import os
 import re
@@ -11,36 +11,34 @@ from tests._i18n_js import i18n_prelude
 from tests._load import js_fn
 from tests._node import node_e
 
-FNS = ["strHdBadge", "hhmm", "archWhyOff", "archBase", "archCands", "archHome", "archChkN", "archChkTools", "archChkSum", "archChkStat",
-       "archChkBadge", "archChkOf", "archChkChip", "archChkSvg", "archChkTop", "archChkTopBtn", "archChkHelp", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkWinHtml", "archChkDmBody", "archChkReqHtml", "archChkSentOf", "archChkStrip", "archChkBtn"]
+FNS = ["strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec",
+       "archChkTop", "archChkTopBtn", "archChkHelp", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkWinHtml"]
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
 with open(_SRC_P, encoding="utf-8") as fh:
     _SRC = fh.read()
-SEND = re.search(r"^async function archChkSend\(.*?^}", _SRC, re.S | re.M).group(0)
 FIXSEND = re.search(r"^async function archChkFixSend\(.*?^}", _SRC, re.S | re.M).group(0)
 PRE = "\n".join([
     "let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }",
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
-    "const ARCH_PL = 'arch-map'; const ARCH_CHK_PL = 'project-checks'; const ARCH = { cache: {}, msg: '', creq: null, cop: false, csent: null };",
-    "let SESS = [], POSTS = [], PAINTS = 0; function CLK(){ return '15:00'; } function paintStruct(){ PAINTS++; }",
-    "function plMem(){ return {}; } function lsSetJson(){}",
+    "const ARCH_PL = 'arch-map'; const ARCH = { cache: {}, msg: '' };",
+    "let SESS = [], POSTS = []; function lsSetJson(){}",
     "async function postJSON(u, b){ POSTS.push([u, b]); return { ok: true }; }",
 ])
 
-CHECKS = {"commit": "abcdef123", "at": 1700000000, "stale": False, "dirty": False, "src_changed": False,
-          "tools": [{"id": "ruff", "rules": "project", "status": "ok", "ms": 120, "n": {"error": 2, "warning": 3}},
-                    {"id": "mypy", "rules": "default", "status": "fail", "why": "exit 2", "ms": 900, "n": {"error": 1, "warning": 0}},
-                    {"id": "eslint", "rules": "default", "status": "missing", "why": "install: npm i -D eslint", "ms": 0, "n": {}},
-                    {"id": "tsc", "rules": "project", "status": "skipped", "why": "time budget used", "ms": 0, "n": {}}, {"id": "go", "rules": "project", "status": "skipped", "ms": 0, "n": {}}],
-          "mods": {"a": {"error": 2, "warning": 1}, "b": {"error": 0, "warning": 0}},
-          "other": {"error": 1, "warning": 2},
+# /api/arch `checks.security` (sidereus/sec_checks); CK = the whole `checks` object.
+CHECKS = {"commit": "abcdef123", "at": 1700000000,
+          "tools": [{"id": "gitleaks", "rules": "project", "status": "ok", "ms": 120, "n": {"error": 2, "warning": 3}},
+                    {"id": "semgrep", "rules": "default", "status": "fail", "why": "exit 2", "ms": 900, "n": {"error": 1, "warning": 0}},
+                    {"id": "osv", "rules": "default", "status": "missing", "why": "install: brew install osv-scanner", "ms": 0, "n": {}},
+                    {"id": "npm-audit", "rules": "project", "status": "skipped", "why": "time budget used", "ms": 0, "n": {}}, {"id": "go", "rules": "project", "status": "skipped", "ms": 0, "n": {}}],
           "top": [{"tool": "ruff", "file": "b.py", "line": "x", "rule": "W2", "sev": "warning", "mod": "b"},
                   {"tool": "ru<f>f", "file": "a/<x>.py", "line": 7, "rule": "E<1>\"", "sev": "error", "mod": "<m>"}]}
+CK = {"security": CHECKS}
 
 
 def run(body, lang="ko"):
     pre = PRE if lang == "ko" else PRE.replace("let LANG = 'ko';", "let LANG = 'en';", 1)
-    js = "process.env.TZ = 'UTC';\n" + pre + "\n" + "\n".join(js_fn(n) for n in FNS) + "\n" + SEND + "\n(async () => {\n" + body + "\n})().catch(e => { console.error(e); process.exit(1); });"
+    js = "process.env.TZ = 'UTC';\n" + pre + "\n" + "\n".join(js_fn(n) for n in FNS) + "\n(async () => {\n" + body + "\n})().catch(e => { console.error(e); process.exit(1); });"
     r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     if r.returncode != 0:
         raise AssertionError(r.stderr.decode())
@@ -49,57 +47,37 @@ def run(body, lang="ko"):
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class StructArchChecks(unittest.TestCase):
-    def test_badge_text_and_cut(self):
-        r = run("const d = {checks: " + json.dumps(CHECKS) + "}; const s = JSON.parse(JSON.stringify(d)); s.checks.stale = true;"
-                "console.log(JSON.stringify([archChkBadge(d), archChkBadge(s), archChkBadge({checks: null}), archChkBadge({})]));")
-        self.assertIn("검사 1종 · 오류 3 · 경고 3", r[0])
-        self.assertNotIn("strbg-cut", r[0])
-        self.assertIn("strbg-cut", r[1])
-        self.assertEqual(r[2:], ["", ""])
-
-    def test_english_badge(self):
-        r = run("console.log(JSON.stringify(archChkBadge({checks: " + json.dumps(CHECKS) + "})));", lang="en")
-        self.assertIn("Checks 1 · errors 3 · warnings 3", r)
-
-    def test_default_rules_chip_only_for_default(self):
-        r = run("const c = " + json.dumps(CHECKS) + "; const p = JSON.parse(JSON.stringify(c)); p.tools.forEach(t => { t.rules = 'project'; });"
-                "console.log(JSON.stringify([archChkBadge({checks: c}), archChkBadge({checks: p})]));")
-        self.assertIn("strbg-archckd", r[0])
-        chip = r[0].split("strbg-archckd")[1].split("</em>")[0]
-        self.assertIn('>기본 규칙', chip)                          # short text, tool ids in the tooltip
-        self.assertIn("프로젝트 자체 기준이 아님\nmypy\"", chip)    # only mypy ran with default rules (eslint missing)
-        self.assertNotIn("eslint", chip)
-        self.assertNotIn("ruff", chip)
-        self.assertNotIn("strbg-archckd", r[1])
-
     def test_tool_status_text(self):
-        r = run("const c = " + json.dumps(CHECKS) + "; console.log(JSON.stringify([c.tools.map(archChkStat), archChkBadge({checks: Object.assign({}, c, {src_changed: true})})]));")
-        self.assertEqual(r[0][2], "사용 불가: install: npm i -D eslint")   # no doubled «install:»
-        self.assertEqual(r[0][3], "건너뜀: time budget used")
-        self.assertEqual(r[0][4], "건너뜀")
-        self.assertEqual(r[0][1], "실패: exit 2")
-        self.assertIn("검사 중 소스가 바뀜", r[1])
+        r = run("const c = " + json.dumps(CHECKS) + "; console.log(JSON.stringify(c.tools.map(archChkStat)));")
+        self.assertEqual(r[2], "사용 불가: install: brew install osv-scanner")   # no doubled «install:»
+        self.assertEqual(r[3], "건너뜀: time budget used")
+        self.assertEqual(r[4], "건너뜀")
+        self.assertEqual(r[1], "실패: exit 2")
 
-    def test_chip_empty_when_zero(self):
-        r = run("const d = {checks: " + json.dumps(CHECKS) + "}; console.log(JSON.stringify([archChkChip('a', d), archChkChip('b', d), archChkChip('zz', d), archChkChip('a', {})]));")
-        self.assertIn("오류 2", r[0])
-        self.assertIn("경고 1", r[0])
-        self.assertEqual(r[1:], ["", "", ""])
-
-    def test_top_badge_present_absent(self):
-        r = run("const c = " + json.dumps(CHECKS) + "; const e = Object.assign({}, c, {top: []});"
-                "console.log(JSON.stringify([archChkBadge({checks: c}), archChkBadge({checks: e}), archChkTopBtn({checks: c})]));")
+    def test_badge_is_security_button_only(self):
+        q = {"commit": "abc", "tools": [{"id": "ruff", "status": "ok", "n": {"error": 1}}], "top": [{"tool": "ruff", "file": "a.py", "line": 1, "sev": "error"}]}
+        r = run("console.log(JSON.stringify([archChkTopBtn({checks: " + json.dumps(CK) + "}), archChkTopBtn({checks: " + json.dumps(q) + "}),"
+                "archChkTopBtn({checks: null}), archChkTopBtn({}), archChkTopBtn({checks: {security: {tools: [], top: []}}})]));")
+        self.assertTrue(r[0].startswith("<button") and r[0].endswith("</button>"))
+        self.assertEqual(r[0].count("<button"), 1)           # nothing besides the issues button
         self.assertIn("data-arck", r[0])
-        self.assertIn("주요 문제 2건", r[0])
-        self.assertLess(r[0].index("검사 1종"), r[0].index("data-arck"))   # right after the checks badge
-        self.assertNotIn("data-arck", r[1])
-        self.assertTrue(r[2].startswith("<button"))
-        self.assertNotIn("archckiw", r[0])                  # errors > 0 -> red
-        w = run("const c = " + json.dumps(CHECKS) + "; c.tools.forEach(t => { t.n = {warning: 1}; }); console.log(JSON.stringify(archChkTopBtn({checks: c})));")
+        self.assertIn(">보안 2</button>", r[0])
+        self.assertNotIn("<em", r[0])                         # no quality badges / chips
+        self.assertNotIn("archckiw", r[0])                    # errors > 0 -> red
+        self.assertEqual(r[1:4], ["", "", ""])                # a quality-only payload shows nothing
+        self.assertIn(">보안 0</button>", r[4])               # shown at 0 so missing scanners stay visible
+        w = run("const c = " + json.dumps(CHECKS) + "; c.tools.forEach(t => { t.n = {warning: 1}; }); console.log(JSON.stringify(archChkTopBtn({checks: {security: c}})));")
         self.assertIn("strbg-archckiw", w)                   # warnings only -> amber
 
+    def test_window_has_no_tablist(self):
+        r = run("const d = {checks: " + json.dumps(CK) + "}; console.log(JSON.stringify(archChkWinHtml('/r', d, {sel: {}, req: null}, [])));")
+        self.assertNotIn("tablist", r)
+        self.assertNotIn("data-ckcat", r)
+        self.assertIn("<div class=archckst>gitleaks · 정상", r)   # scanner states line
+        self.assertIn("점검한 적 없음", r)                        # security history section
+
     def test_popup_rows_escape_and_order(self):
-        r = run("const d = {checks: " + json.dumps(CHECKS) + "}; console.log(JSON.stringify([archChkWinHtml('/r', d, {sel: {}, req: null}, []), archChkTop({checks: {}})]));")
+        r = run("const d = {checks: " + json.dumps(CK) + "}; console.log(JSON.stringify([archChkWinHtml('/r', d, {sel: {}, req: null}, []), archChkTop({checks: {}})]));")
         h = r[0]
         self.assertIn('data-af="a/&lt;x&gt;.py"', h)
         self.assertIn("a/<wbr>&lt;x&gt;.py", h)             # full path, breakable after «/»
@@ -125,7 +103,7 @@ class StructArchChecks(unittest.TestCase):
         c["top"][1]["rk"] = "ruff:E1"; c["rules"] = {"ruff:E1": {"desc": "Use <b>\n hooks", "url": "https://x.dev/r?a=1&b=\"2\""}}
         c["top"][0]["url"] = "javascript:alert(1)"
         c["rules"]["ruff:W2"] = {"desc": "W two", "url": "http://plain"}
-        r = run("const d = {checks: " + json.dumps(c) + "}; console.log(JSON.stringify([archChkWinHtml('/r', d, {sel: {}, req: null}, []), archChkHelp(d.checks, Object.assign({}, d.checks.top[0], {url: ''}))]));")
+        r = run("const d = {checks: {security: " + json.dumps(c) + "}}; console.log(JSON.stringify([archChkWinHtml('/r', d, {sel: {}, req: null}, []), archChkHelp(d.checks, Object.assign({}, d.checks.security.top[0], {url: ''}))]));")
         h = r[0]
         self.assertIn("<span>Use &lt;b&gt; hooks</span>", h)
         self.assertNotIn("x.dev", h)                       # quote inside -> not a valid https url, dropped
@@ -133,7 +111,7 @@ class StructArchChecks(unittest.TestCase):
         self.assertNotIn("http://plain", h)
         self.assertEqual(r[1], {"desc": "W two", "url": ""})
         c["rules"]["ruff:E1"]["url"] = "https://docs.astral.sh/ruff/rules/x/"
-        h = run("const d = {checks: " + json.dumps(c) + "}; console.log(JSON.stringify(archChkWinHtml('/r', d, {sel: {}, req: null}, [])));")
+        h = run("const d = {checks: {security: " + json.dumps(c) + "}}; console.log(JSON.stringify(archChkWinHtml('/r', d, {sel: {}, req: null}, [])));")
         self.assertIn('<a href="https://docs.astral.sh/ruff/rules/x/" target=_blank rel="noopener noreferrer">문서 ↗</a>', h)
 
     def test_fix_request_body_and_states(self):
@@ -142,7 +120,7 @@ class StructArchChecks(unittest.TestCase):
                 {"sid": "s-new", "cwd": "/r", "mbox": "b", "mboxSrc": "identity", "state": "idle", "ageSec": 5},
                 {"sid": "s-out", "cwd": "/rx", "mbox": "c", "mboxSrc": "identity", "state": "idle", "ageSec": 1},
                 {"sid": "s-done", "cwd": "/r", "mbox": "d", "mboxSrc": "identity", "state": "done", "ageSec": 0}]
-        r = run("const d = {checks: " + json.dumps(c) + "}, c = archChkFixCands(" + json.dumps(sess) + ", '/r'), top = archChkTop(d);"
+        r = run("const d = {checks: {security: " + json.dumps(c) + "}}, c = archChkFixCands(" + json.dumps(sess) + ", '/r'), top = archChkTop(d);"
                 "const S = {sel: {}, req: null}; const h0 = archChkWinHtml('/r', d, S, c);"
                 "S.sel[archChkKey(top[0])] = 1; const h1 = archChkWinHtml('/r', d, S, c);"
                 "S.req = {sid: c[0].sid, busy: false}; const h2 = archChkWinHtml('/r', d, S, c);"
@@ -187,7 +165,7 @@ class StructArchChecks(unittest.TestCase):
                 {"sid": "p-nolog", "cwd": "/r", "mbox": "", "state": "idle", "ageSec": 2},
                 {"sid": "p-log", "cwd": "/r/a", "mbox": "pm", "mboxSrc": "identity", "state": "idle", "ageSec": 300, "model": "opus"},
                 {"sid": "cx", "cwd": "/r", "plat": "codex", "state": "idle"}, {"sid": "dn", "cwd": "/r", "state": "done"}]
-        r = run("const c = archChkFixCands(" + json.dumps(sess) + ", '/r'), d = {checks: " + json.dumps(CHECKS) + "};"
+        r = run("const c = archChkFixCands(" + json.dumps(sess) + ", '/r'), d = {checks: " + json.dumps(CK) + "};"
                 "const h = archChkWinHtml('/r', d, {sel: {}, req: {sid: 'u1', busy: false}}, c);"
                 "console.log(JSON.stringify([c.map(x => x.sid), c.map(archChkCandLabel), h]));")
         self.assertEqual(r[0], ["p-log", "p-nolog", "u1", "o-new"])   # tier, then logged-in, then age
@@ -199,13 +177,13 @@ class StructArchChecks(unittest.TestCase):
         self.assertLess(h.index('label="이 저장소를 쓰는 세션"'), h.index('label="다른 세션"'))
         self.assertIn("y · u1 · &lt;u&gt; · busy", h)
         self.assertIn('value="u1" selected', h)
-        r = run("const c = archChkFixCands(" + json.dumps(sess[:1]) + ", '/r'); console.log(JSON.stringify(archChkWinHtml('/r', {checks: " + json.dumps(CHECKS) + "}, {sel: {}, req: {sid: 'o-new', busy: false}}, c)));")
+        r = run("const c = archChkFixCands(" + json.dumps(sess[:1]) + ", '/r'); console.log(JSON.stringify(archChkWinHtml('/r', {checks: " + json.dumps(CK) + "}, {sel: {}, req: {sid: 'o-new', busy: false}}, c)));")
         self.assertNotIn("<optgroup label=\"이 프로젝트\"", r)            # empty group omitted
         self.assertIn('label="다른 세션"', r)
 
     def test_fix_btn_enabled_without_project_session(self):
         sess = [{"sid": "o1", "cwd": "/z", "mbox": "zz", "mboxSrc": "identity", "state": "idle", "ageSec": 1}]
-        r = run("const d = {checks: " + json.dumps(CHECKS) + "}, top = archChkTop(d), S = {sel: {}, req: null}; S.sel[archChkKey(top[0])] = 1;"
+        r = run("const d = {checks: " + json.dumps(CK) + "}, top = archChkTop(d), S = {sel: {}, req: null}; S.sel[archChkKey(top[0])] = 1;"
                 "console.log(JSON.stringify([archChkWinHtml('/r', d, S, archChkFixCands(" + json.dumps(sess) + ", '/r')), archChkWinHtml('/r', d, S, archChkFixCands([], '/r'))]));")
         self.assertNotIn("data-ckfix disabled", r[0])
         self.assertIn("data-ckfix disabled", r[1])
@@ -217,8 +195,8 @@ class StructArchChecks(unittest.TestCase):
                                               "Target repository: /x/shop-api — work there (cd), not in your own cwd."])
 
     def test_fix_body_requests_remap(self):
-        r = run("const it = [{tool: 'ruff', file: 'a.py', line: 3, rule: 'F1', sev: 'error'}], d = {sidereus: '/sid', checks: {commit: '', top: [{tool: 'ruff', file: 'a.py', line: 3, rule: 'F1', sev: 'error', mod: 'a'}]}};"
-                "const S = {sel: {}, req: {sid: 's1', busy: false}}; S.sel[archChkKey(d.checks.top[0])] = 1;"
+        r = run("const it = [{tool: 'ruff', file: 'a.py', line: 3, rule: 'F1', sev: 'error'}], d = {sidereus: '/sid', checks: {security: {commit: '', top: [{tool: 'ruff', file: 'a.py', line: 3, rule: 'F1', sev: 'error', mod: 'a'}]}}};"
+                "const S = {sel: {}, req: {sid: 's1', busy: false}}; S.sel[archChkKey(d.checks.security.top[0])] = 1;"
                 "console.log(JSON.stringify([archChkFixBody('/x/shop-api', {commit: ''}, it, '/sid'), archChkWinHtml('/x/shop-api', d, S, [{sid: 's1', g: 0, login: 1}])]));")
         for s in ("Once the fix is committed, request a re-analysis of /x/shop-api", "/sid/.claude/pipelines/arch-map.json",
                   "/usr/bin/python3 /sid/scripts/arch_verify.py --last"):
@@ -233,58 +211,9 @@ class StructArchChecks(unittest.TestCase):
                 "console.log(JSON.stringify([archChkPick(c, '/r'), archChkPick(c2, '/q'), archChkPick(c, '/none'), archChkPick([], '/r')]));")
         self.assertEqual(r, ["b2", "a1", "a1", ""])            # alive -> kept; dead/unknown -> first candidate
 
-    def test_svg_pills(self):
-        r = run("const R = {x: 10, y: 20, w: 100, h: 30};"
-                "console.log(JSON.stringify([archChkSvg(R, {e: 3, w: 0}), archChkSvg(R, {e: 0, w: 120}), archChkSvg(R, {e: 0, w: 0})]));")
-        self.assertIn("archcke", r[0])
-        self.assertNotIn("archckw", r[0])
-        self.assertIn(">99+<", r[1])
-        self.assertEqual(r[2], "")
-
-    def test_dm_body(self):
-        r = run("console.log(JSON.stringify(archChkDmBody('/repo/x', '/home/sidereus/')));")
-        self.assertIn("파이프라인 project-checks 실행", r)
-        self.assertIn("대상 저장소: /repo/x", r)
-        self.assertIn("읽기 전용", r)
-        self.assertIn("/home/sidereus/.claude/pipelines/project-checks.json", r)
-
-    def test_send_only_on_confirm(self):
-        r = run("SESS = [{sid: 's1', cwd: '/r', mbox: 'me', mboxSrc: 'identity', state: 'idle'}];"
-                "ARCH.cache['/r'] = {ok: true, sidereus: '/home/sidereus', checks_runnable: true};"
-                "const c = archCands('/home/sidereus', SESS, '/r'); const h0 = archChkBtn('/r', '/home/sidereus', c);"
-                "const s0 = archChkStrip('/r', ARCH.cache['/r'], '/home/sidereus', c);"
-                "const n0 = POSTS.length; const nx = await archChkSend();"   # no preview open -> nothing
-                "ARCH.creq = {p: '/r', sid: 's1', busy: false}; const h1 = archChkStrip('/r', ARCH.cache['/r'], '/home/sidereus', c);"
-                "const b1 = archChkBtn('/r', '/home/sidereus', c);"
-                "await archChkSend(); const h2 = archChkStrip('/r', ARCH.cache['/r'], '/home/sidereus', c);"
-                "console.log(JSON.stringify([h0, n0, nx, POSTS.length, h1, POSTS[0], h2, ARCH.creq, s0, b1, archChkBtn('/r', '/home/sidereus', c)]));")
-        self.assertIn("data-arcq", r[0])
-        self.assertEqual(r[8], "")   # button lives in the header; no list -> no strip
-        self.assertNotIn("data-arcq", r[4])
-        self.assertIn(" on", r[9])
-        self.assertEqual(r[10], "")   # hidden while the sent line shows
-        self.assertEqual([r[1], r[2], r[3]], [0, False, 1])
-        self.assertIn("data-arcgo", r[4])
-        self.assertIn("project-checks", r[4])
-        self.assertEqual(r[5][0], "/api/dm")
-        self.assertEqual(r[5][1]["thread"], "pipeline:project-checks")
-        self.assertEqual(r[5][1]["to"], "me")
-        self.assertEqual(r[5][1]["plreq"], {"kind": "req", "pipeline": "project-checks", "repo": "/r"})   # R1: server records the recipient
-        self.assertIn("검사 요청함", r[6])
-        self.assertIsNone(r[7])
-
-    def test_button_only_when_runnable(self):
-        r = run("const c = []; ARCH.cache['/r'] = {ok: true, checks_runnable: false}; const a = archChkBtn('/r', '/h', c);"
-                "ARCH.cache['/r'] = {ok: true}; const b = archChkBtn('/r', '/h', c);"
-                "ARCH.cache['/r'] = {ok: true, checks_runnable: true}; const d = archChkBtn('/r', '/h', c);"
-                "console.log(JSON.stringify([a, b, d]));")
-        self.assertEqual(r[:2], ["", ""])
-        self.assertIn("data-arcq", r[2])
-
-
     def test_fix_send_inflight_and_repeat_guard(self):
         sess = [{"sid": "s1", "cwd": "/r", "mbox": "me", "mboxSrc": "identity", "state": "idle", "ageSec": 1}]
-        r = run("SESS = " + json.dumps(sess) + "; const d = {checks: " + json.dumps(CHECKS) + "}; ARCH.cache['/r'] = d;"
+        r = run("SESS = " + json.dumps(sess) + "; const d = {checks: " + json.dumps(CK) + "}; ARCH.cache['/r'] = d;"
                 "let HTML = [], NOTES = [], PEND = null; function lsJson(){ return {}; } function note(m){ NOTES.push(m); }"
                 "const S = {p: '/r', sel: {}, req: null, sent: '', msg: ''}; let ARCH_CW = S; S.sel[archChkKey(archChkTop(d)[0])] = 1;"
                 "function archChkWinPaint(){ HTML.push(archChkWinHtml(S.p, ARCH.cache[S.p], S, archChkFixCands(SESS, S.p))); }"

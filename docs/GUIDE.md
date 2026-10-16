@@ -95,7 +95,7 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 ### Make or refresh the diagram
 - The request button → preview → «Confirm — send» asks an open session to run the `arch-map` pipeline (read-only). The diagram draws itself when it arrives.
 - The button reads «Generate diagram» (none yet), «Update diagram» (older than the code) or «Redraw» (at HEAD); same run, same confirm.
-- After a request (diagram or project checks) a row shows who received it — project · session · mailbox id — and its state: «Sent», «Running · <stage>», «Stopping», then «Stopped» / «Done» / «No session». It survives a reload. While running, «Stop» → preview → «Confirm — send» asks that session to finish the current stage and start no more.
+- After a diagram request a row shows who received it — project · session · mailbox id — and its state: «Sent», «Running · <stage>», «Stopping», then «Stopped» / «Done» / «No session». It survives a reload. While running, «Stop» → preview → «Confirm — send» asks that session to finish the current stage and start no more.
 
 ### View a flow
 
@@ -108,9 +108,9 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 - Bottom right; click or drag it to move the diagram. Its corner button hides or shows it.
 
 ### Top issues
-- «Top issues N» opens the findings; with security results it reads «Quality {q} · Security {s}» and the window gets Quality / Security tabs. Secrets are never shown.
+- «Top issues N» opens the security findings (gitleaks, npm audit, osv-scanner, semgrep, bandit — `security-checks` pipeline). Secrets are never shown.
 - «Request fix» sends the selected findings to a session, asking it to re-run `arch-map` once the fix is committed.
-- The Security tab ends with the check history (read-only): «Last security check» age, then open, resolved (date · commit) and false-positive findings. Rows from an AI review are marked «model-generated, unverified».
+- The window ends with the check history (read-only): «Last security check» age, then open, resolved (date · commit) and false-positive findings. Rows from an AI review are marked «model-generated, unverified».
 - Scanner findings resolve when a later scan by the same tool no longer reports them. AI review findings stay open until marked: `scripts/arch_checks.py --repo <repo> --mark <slug>@<file> resolved|false-positive`.
 
 ### Size

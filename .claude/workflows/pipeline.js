@@ -165,7 +165,7 @@ S.forEach((s, i) => {
   }
 })
 // guards (enforced by hooks/pl_guard.py): requireGates stages need a graded gate. ⚠GATE_MODES = sidereus/pipeline_schema.py GATE_MODES (tests pin).
-const GATE_MODES = [["(?:^|[\\s/])check\\.sh\\s+--fast(?![\\w-])", "fast"], ["(?:^|[\\s/])check\\.sh\\s+--full(?![\\w-])", "full"], ["arch_checks\\.py(?=.*\\s--verify(?![\\w-])).*\\s--category[\\s=]+security(?![\\w-])", "checks-security"], ["arch_checks\\.py(?=.*\\s--verify(?![\\w-]))(?!.*\\s--category[\\s=]+(?!quality(?![\\w-])))", "checks-quality"]]
+const GATE_MODES = [["(?:^|[\\s/])check\\.sh\\s+--fast(?![\\w-])", "fast"], ["(?:^|[\\s/])check\\.sh\\s+--full(?![\\w-])", "full"], ["arch_checks\\.py(?=.*\\s--verify(?![\\w-])).*\\s--category[\\s=]+security(?![\\w-])", "checks-security"]]
 if (P.guards !== undefined) {
   const G = P.guards
   if (!G || typeof G !== 'object' || Array.isArray(G) || Object.keys(G).some(k => !['requireGates', 'maxLoopBacks'].includes(k))) errs.push('guards: object with requireGates and/or maxLoopBacks')

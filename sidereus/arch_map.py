@@ -15,7 +15,7 @@ from sidereus.structure import _struct_src_root
 from sidereus.arch_verify import ARCH_DIR, NAME_MAX, PATH_MAX, SYM_MAX, est_of, head_of, read_json, render_md, repo_key, \
     schema_errors, COMMIT_RE, ARCH_GIT_TIMEOUT, ARCH_TREE_MAX, ID_RE, STYLES, ROLES, FW_MAX, UNITS_MAX, EV_MAX, SUM_MAX, OWNS_MAX
 from sidereus.arch_flow import load_flows
-from sidereus.arch_checks import checks_runnable, load_checks
+from sidereus.arch_checks import load_checks
 
 SIDEREUS_ROOT = os.path.realpath(CODE_DIR)   # repo holding .claude/pipelines/arch-map.json; the view relays «Request a map» to a session there
 ARCH_PL = "arch-map"
@@ -102,7 +102,7 @@ def load(path):
     head = head_of(root)
     base = {"ok": True, "empty": True, "sidereus": SIDEREUS_ROOT, "commit": "", "head": head, "stale": False,
             "behind": None, "at": None, "v": None, "groups": [], "modules": [], "edges": [], "rate": None, "md": "", "style": None, "dev": [], "flows": [],
-            "checks": None, "checks_runnable": checks_runnable(root)}
+            "checks": None}
     commit = _newest(os.path.join(ARCH_DIR, repo_key(root)))
     if not commit:
         return base

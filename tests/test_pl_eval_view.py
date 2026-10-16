@@ -195,14 +195,14 @@ class EvalUi(unittest.TestCase):
         self.assertIn("No evaluation yet", _node("console.log(JSON.stringify(plEvalPanel(%s)));" % json.dumps(e)))
 
 
-TPLS = [{"id": "lint-static", "group": "quality", "title": {"ko": "린트"}, "gate": "python3 x/arch_checks.py --verify --last --category quality",
-         "tools": [{"id": "eslint"}, {"id": "tsc"}, {"id": "ruff"}]},
-        {"id": "type-check", "group": "quality", "title": {"ko": "타입"}, "gate": "python3 x/arch_checks.py --verify --last --category quality",
-         "tools": [{"id": "tsc"}]},
-        {"id": "dep-audit", "group": "security", "title": {"ko": "의존"}, "gate": "python3 x/arch_checks.py --verify --last --category security",
+TPLS = [{"id": "dep-audit", "group": "security", "title": {"ko": "의존"}, "gate": "python3 x/arch_checks.py --verify --last --category security",
          "tools": [{"id": "npm-audit"}]},
         {"id": "sast", "group": "security", "title": {"ko": "정적"}, "gate": "python3 x/arch_checks.py --verify --last --category security",
          "tools": [{"id": "semgrep"}, {"id": "bandit"}]},
+        {"id": "secrets", "group": "security", "title": {"ko": "비밀"}, "gate": "python3 x/arch_checks.py --verify --last --category security",
+         "tools": [{"id": "gitleaks"}, {"id": "semgrep"}]},
+        {"id": "secret-scan", "group": "security", "title": {"ko": "비밀값"}, "gate": "python3 x/arch_checks.py --verify --last --category security",
+         "tools": [{"id": "gitleaks"}]},
         {"id": "unit-tests", "group": "test", "title": {"ko": "단위 테스트"}, "tools": []},
         {"id": "review", "group": "review", "title": {"ko": "리뷰"}, "tools": []}]
 
@@ -218,9 +218,9 @@ class Suggest(unittest.TestCase):
         ev = {"stages": [{"title": "impl", "n": 3, "caught": 1}], "holdout": {"n": 4, "caught": 2}}
         st = [{"title": "impl", "agent": "dev"}, {"title": "chk", "agent": "dev", "gate": "scripts/check.sh --fast"},
               {"title": "sec", "agent": "dev", "gate": "python3 a/arch_checks.py --verify --category security"}]
-        out = self.sg(st, ev, {"chk": "fail"}, unstable=["sec"], kinds={"impl": ["dep", "logic", "type"]})
+        out = self.sg(st, ev, {"chk": "fail"}, unstable=["sec"], kinds={"impl": ["dep", "logic", "secret"]})
         self.assertEqual(out, [
-            {"code": "add-gate", "stage": "impl", "kind": "type", "tpl": "type-check"},   # fewest tools wins
+            {"code": "add-gate", "stage": "impl", "kind": "secret", "tpl": "secret-scan"},   # fewest tools wins
             {"code": "add-gate", "stage": "impl", "kind": "dep", "tpl": "dep-audit"},     # logic has no tool gate
             {"code": "tighten-gate", "stage": "chk", "mode": "fast", "flags": "--fast", "tpl": ""},
             {"code": "unstable", "stage": "sec", "mode": "checks-security"},
@@ -249,7 +249,7 @@ class Suggest(unittest.TestCase):
         self.assertTrue(w.startswith("py ") and '--stage "a b"' in w)
 
     def test_missed_kinds_no_holdout(self):
-        pe = types.SimpleNamespace(load_seeds=lambda p: {"seeds": [{"id": "a", "kind": "dep"}, {"id": "h", "kind": "lint", "holdout": True}]})
+        pe = types.SimpleNamespace(load_seeds=lambda p: {"seeds": [{"id": "a", "kind": "dep"}, {"id": "h", "kind": "secret", "holdout": True}]})
         k = self.v._missed_kinds(pe, "/x", {"stages": [{"title": "s", "missed": ["a", "h"]}]})
         self.assertEqual(k, {"s": ["dep"]})
 

@@ -8,7 +8,7 @@ The server reads them at import and assembles an **inline PAGE with the same byt
 ⚠Split JS files **only at top-level statement boundaries** (each file passes `node --check` on its own) · removing/adding a trailing newline changes the PAGE bytes.
 ⚠UI changes are made in `web/`. It is read once at import, so **a change only shows after a restart.**
 `sidereus/attention.py` = ranking of «sessions that need me now» (`state().attention`, metadata only · top layer).
-`sidereus/arch_checks.py` = project lint results on the Architecture map (parsers + loader only — tools run in the `project-checks` pipeline runner `scripts/arch_checks.py`, never in Sidereus).
+`sidereus/arch_checks.py` = security check results (loader); runner `scripts/arch_checks.py --category security` (tools never run in Sidereus).
 No external libraries (must run offline). **Git: GitHub remote `origin`; the orchestrator commits, and pushes only when the owner asks · agents never push.**
 **Branches: work is committed on `dev`; `main` is the published default branch and only moves by merging `dev` when the owner says so · releases are SemVer tags `vX.Y.Z` on `main` (CHANGELOG in Keep a Changelog form).**
 

@@ -47,13 +47,9 @@ flowchart LR
 - At least 70% of edges must pass the gate. `config`, `di` and `event` edges are always shown as estimated.
 - ⚠Flows are advisory: an unproven step is marked, but never changes the gate.
 
-## Project checks
-
-«Run project checks» appears only for a repo that configures a tool Sidereus can run (Gradle/Maven checkstyle·pmd, ruff or mypy config, eslint/tsc with local binaries, `go vet`, `cargo clippy`). Results already recorded stay on screen either way.
-
 ## Security checks
 
-The `security-checks` pipeline shows gitleaks, npm audit, osv-scanner, semgrep and bandit findings in the «Security» tab of the issues window. ⚠Secret values are never stored.
+The `security-checks` pipeline shows gitleaks, npm audit, osv-scanner, semgrep and bandit findings in the issues window («Top issues N»). ⚠Secret values are never stored.
 
 Its second stage, «Threat model review», has a model review the code against the repo's threat model (`.oss-scanner/threat_model.md` or `threat_model.md`) and logs findings to `security-log.jsonl`. These findings are model-generated and unverified. Without a threat model the stage prints one line pointing to `templates/oss-scanner/` and passes.
 
@@ -114,7 +110,7 @@ A diagram without layers draws the older call-depth layout and says «No layers 
 
 `sidereus/arch_map.py` (`/api/arch`) · `arch_verify.py` (edge check, store) · `arch_flow.py` (flows) · `arch_schema.py` (map.json format) ·
 `structure.py`, `structure_scan.py`, `structure_lang*.py`, `structure_plug.py` (treemap) · `structure_tree.py`
-(source window) · `arch_checks.py` (check results) · `web/js/80`–`84k-structure*.js`, `web/js/84l-structure-arch-checks.js` ·
-`scripts/arch_checks.py` (check runner).
+(source window) · `arch_checks.py` (security check results) · `web/js/80`–`84k-structure*.js`, `web/js/84l-structure-arch-checks.js` ·
+`scripts/arch_checks.py` (security check runner).
 
 </details>

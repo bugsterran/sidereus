@@ -64,9 +64,10 @@ class Shipped(unittest.TestCase):
         self.assertEqual([s.get("task") for s in st], ["Measure it.", None])   # recommended title keeps the runner default only
 
     def test_only_lists_runner_tool_ids(self):
-        from sidereus import arch_checks, sec_checks
-        ids = {"quality": set(arch_checks.TOOL_IDS), "security": set(sec_checks.SEC_IDS)}
+        from sidereus import sec_checks
+        ids = {"security": set(sec_checks.SEC_IDS)}   # the runner has no other category
         for t in stage_catalog.load()["templates"]:
+            self.assertNotIn("--category quality", (t.get("task") or "") + (t.get("gate") or ""), t["id"])
             m = re.search(r"--category (\w+) --only ([\w,-]+)", t.get("task") or "")
             if m:                                                           # an unknown --only id is a runner usage error
                 self.assertLessEqual(set(m.group(2).split(",")), ids[m.group(1)], t["id"])
