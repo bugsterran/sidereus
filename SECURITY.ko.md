@@ -11,7 +11,8 @@
 - **POST 에 Origin 검사.** 다른 출처에서 브라우저가 보낸 POST 는 403 이다. `Origin` 이 없는 요청(OTel 내보내기, curl, 로컬 훅)은 통과한다. 브라우저는 교차 출처 POST 에 `Origin` 을 반드시 붙이기 때문이다.
 - **교차 사이트 GET 도 거부.** `Sec-Fetch-Site: cross-site` 가 붙은 `/api/*` GET 은 403 이다(교차 사이트 페이지가 `<img>` 등으로 부작용 있는/비싼 호출을 걸 수 있어서다). 같은 사이트 요청과 헤더 없는 요청(curl, 훅, MCP)은 통과한다.
 - **루프백 말고는 인증이 없다.** 같은 기계의 로컬 프로세스나 다른 OS 사용자는 API 를 부를 수 있다. 브라우저는 Host·Origin·`Sec-Fetch-Site` 검사로 막고, 페이지는 다른 페이지 안에 넣을 수 없다(`frame-ancestors 'none'`, `X-Frame-Options: DENY`).
-  ⚠ 작업 내역 팝업 엔드포인트(`/api/session/work`, `/api/agent/work`)도 여기에 들어간다. 이 엔드포인트는 실행 중인 세션의 저장소에 대해 대화 기록 끝부분을 돌려준다. 여러 계정이 함께 쓰는 Mac에서는 다른 계정이 `curl`로 그 내용을 읽을 수 있다.
+- **macOS 에서 작업 내역 팝업 엔드포인트는 같은 사용자만.** `/api/session/work`, `/api/agent/work`, `/api/ext/work` 는 대화 기록 끝부분을 돌려주므로, 루프백 연결의 클라이언트 쪽 소켓을 뷰어와 같은 OS 사용자의 프로세스가 쥐고 있지 않으면 403 이다(`/usr/sbin/lsof` 로 확인; `lsof` 가 없거나 느려도 403).
+  ⚠ 다른 OS 에서는 이 엔드포인트를 여전히 로컬 프로세스 누구나(다른 사용자의 `curl` 포함) 읽을 수 있다. 모든 OS 에서 나머지 `/api` 는 인증이 없고, `/work` HTML 껍데기는 로컬 누구에게나 나간다.
 - **프로세스를 띄우는 엔드포인트 없음.** 페이지의 어떤 요청도 셸·git checkout/merge·세션을 돌리지 않는다.
 - **메일박스 DM 은 등록된 id 에만**(`identity.json`) 보낸다. 추측한 이름으로는 보내지 않는다.
 - 밖으로 나가는 요청은 선택 사항인 `api.anthropic.com` 할당량 조회 하나뿐이고, macOS 키체인의 OAuth 토큰을 쓴다.

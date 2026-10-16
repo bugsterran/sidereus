@@ -18,6 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Project lint checks (`project-checks` pipeline, lint runner, Quality tab, «Checks n · errors · warnings» badge, «Run project checks» button). Security checks stay; the Architecture map's «Security N» button opens the issues window directly.
 
+### Security
+
+- macOS: the work-popup APIs (`/api/session/work`, `/api/agent/work`, `/api/ext/work`) refuse clients whose loopback connection is not owned by the viewer's OS user (checked with `lsof`, fail-closed).
+
 ### Fixed
 
 - CI: `AGENTS.md` no longer trips the no-Hangul docs test.

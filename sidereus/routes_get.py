@@ -14,6 +14,7 @@ from sidereus.ext import ext_work
 from sidereus.timeline import TL_HOURS, agents_timeline
 from sidereus.failures import FAIL_HOURS, failures, wreckage
 from sidereus.work import agent_work, session_work
+from sidereus.peer import peer_ok
 from sidereus.git import BRANCH_N_DEF, _branch_ok, branch_graph, git_commit, git_diff, git_file_diff, wt_files
 from sidereus.history import history, history_units
 from sidereus.recent import recent_sessions
@@ -209,6 +210,8 @@ class _GetRoutes(_StructRoutes):
                           "application/json; charset=utf-8")
 
     def _g_agent_work(self, u):
+        if not peer_ok(self.client_address):   # work popups carry transcript text: same-UID client only (macOS)
+            return self._send(403, "forbidden", "text/plain; charset=utf-8")
         q = parse_qs(u.query)
         try:
             out = agent_work(_q1(q, "cwd"), _q1(q, "tid"),
@@ -439,6 +442,8 @@ class _GetRoutes(_StructRoutes):
         self._raw_json(200, out)
 
     def _g_session_work(self, u):
+        if not peer_ok(self.client_address):
+            return self._send(403, "forbidden", "text/plain; charset=utf-8")
         q = parse_qs(u.query)
         try:
             # `sid` is optional — if absent, the latest transcript of cwd as before (backward compatible)
@@ -470,6 +475,8 @@ class _GetRoutes(_StructRoutes):
         self._raw_json(code, out)
 
     def _g_ext_work(self, u):
+        if not peer_ok(self.client_address):
+            return self._send(403, "forbidden", "text/plain; charset=utf-8")
         q = parse_qs(u.query)
         try:
             out = ext_work(_q1(q, "plat"), _q1(q, "sid"))

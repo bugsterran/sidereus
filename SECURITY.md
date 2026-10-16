@@ -11,7 +11,8 @@ Sidereus is a local monitor plus a control relay. Everything it does, and how to
 - **Origin check on POST.** A browser POST from another origin gets 403. Requests without `Origin` (OTel export, curl, local hooks) pass, because browsers always attach `Origin` to cross-origin POSTs.
 - **Cross-site GET refused too.** `/api/*` GETs with `Sec-Fetch-Site: cross-site` get 403 (a cross-site page could otherwise trigger side-effecting/expensive calls via `<img>`); same-site and header-less requests (curl, hooks, MCP) pass.
 - **No auth beyond loopback.** Any local process, or another OS user on the same machine, can call the API. Browsers are kept out by the Host, Origin and `Sec-Fetch-Site` checks, and the page refuses to be framed (`frame-ancestors 'none'`, `X-Frame-Options: DENY`).
-  ⚠ That includes the work-popup endpoints (`/api/session/work`, `/api/agent/work`), which return transcript tails for repos of live sessions. On a Mac shared with other accounts, they can read those tails with `curl`.
+- **Work-popup endpoints are same-user only on macOS.** `/api/session/work`, `/api/agent/work` and `/api/ext/work` return transcript tails, so they return 403 unless the client end of the loopback connection belongs to a process of the viewer's own OS user (checked with `/usr/sbin/lsof`; a missing or slow `lsof` also means 403).
+  ⚠ On other OSes those endpoints are still readable by any local process, including another user's `curl`. On every OS the rest of `/api` stays unauthenticated, and the `/work` HTML shell is served to anyone local.
 - **No process-spawning endpoints.** No request from the page runs a shell, git checkout/merge or a session.
 - **Mailbox DMs only to registered ids** (`identity.json`), never to a guessed name.
 - The only outbound request is the optional quota lookup to `api.anthropic.com`, using the OAuth token from the macOS keychain.
