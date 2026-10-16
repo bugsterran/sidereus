@@ -72,6 +72,7 @@ python3 -m sidereus start --demo --open      # 18799 포트, Ctrl-C로 끕니다
 
 - Python 3.9 이상. 표준 라이브러리만 사용합니다. macOS 기본 `/usr/bin/python3`로 동작합니다. 새 Mac에서는
   처음 실행할 때 Xcode Command Line Tools 설치 창이 뜨는데, 설치를 마친 뒤 명령을 다시 실행하면 됩니다.
+- 사용량: `--demo` 서버 RSS 약 30MB, 배포 코드 약 10MB (macOS, Python 3.9, 2026-10-16 측정).
 - Claude Code. 뷰어는 `~/.claude/projects/` 아래의 트랜스크립트를 읽습니다(`CLAUDE_CONFIG_DIR`가 설정돼 있으면 `$CLAUDE_CONFIG_DIR/projects/`).
 - 브랜치·구조·diff 화면을 쓰려면 `git`이 필요합니다.
 - macOS에서 테스트했습니다. Windows도 지원하지만 실제 기기에서는 아직 확인하지 못했습니다. Windows에서

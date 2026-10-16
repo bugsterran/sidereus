@@ -72,6 +72,7 @@ Design and scope: [docs/CONCEPT.md](docs/CONCEPT.md).
 
 - Python 3.9 or later, standard library only. The macOS system `/usr/bin/python3` works; on a fresh Mac its
   first run asks to install the Xcode Command Line Tools. Accept, then run the command again.
+- Footprint: the `--demo` server uses about 30 MB RSS and the shipped code is about 10 MB (macOS, Python 3.9, 2026-10-16).
 - Claude Code. The viewer reads its transcripts under `~/.claude/projects/` (`$CLAUDE_CONFIG_DIR/projects/` when that is set).
 - `git` for the Branches, Structure and diff views.
 - macOS is tested. Windows is supported but not yet verified on a real machine; what is off there is listed
