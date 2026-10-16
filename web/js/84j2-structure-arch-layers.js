@@ -126,7 +126,7 @@ function archBandSrc(mods, edges, tests, full, groups, ents, bp){
     const so = !ex && !!bp && !!bp.solo(+b.slice(1)) && B.ks.length === 1;
     B.ks.forEach(k => {
       const ms = B.by['\u0001' + k];
-      if(!ex && (!k || so)){ ms.forEach(m => ln.push(nd(m).slice(2))); return; }   // no group: straight in the band
+      if(!k || (!ex && so)){ ms.forEach(m => ln.push(nd(m).slice(2))); return; }   // no group or no ext: straight in the band (an External box inside the External band repeats it)
       ln.push('    subgraph G' + (n++) + '[' + archMq(ex ? k || T('External') : own.call(gn, k) ? gn[k] : k) + ']');
       if(wr) ln.push('      direction TB');
       ms.forEach(m => ln.push(nd(m)));

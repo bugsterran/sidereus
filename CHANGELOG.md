@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Demo Architecture map now draws layer bands and the minimap instead of «No layers — redraw the diagram».
+- An external module with no type goes straight into the «External» band, with no nested «External» box.
+- Flow view side panel (1061px and wider): the title stays on one line with an ellipsis and the hint gets its own line, so neither is clipped.
+
 ## [0.2.0] - 2026-10-16
 
 ### Added

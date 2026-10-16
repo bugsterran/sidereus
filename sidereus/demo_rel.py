@@ -37,11 +37,12 @@ def _ev(f, sym, needle=None):
 
 
 _ARCH_COMMIT = "4f1c2a9e7b3d5c8a0e6f2b1d9c7a5e3f1b0d8c6a"
-_ARCH_MODS = [{"id": "web", "name": "web", "path": "web/", "kind": "module", "role": "web"},
-              {"id": "order", "name": "order", "path": "order/", "kind": "module", "role": "service"},
-              {"id": "common", "name": "common", "path": "common/", "kind": "module", "role": "domain"},
-              {"id": "pay", "name": "pay", "path": "pay/", "kind": "module", "role": "adapter"},
-              {"id": "app", "name": "app (py)", "path": "app/", "kind": "module", "role": "web"},
+# v2 layers follow arch_schema.ROLE_LAYER. ⚠`db` stays external with no `ext` (reproduces an untyped external).
+_ARCH_MODS = [{"id": "web", "name": "web", "path": "web/", "kind": "module", "role": "web", "layer": "api"},
+              {"id": "order", "name": "order", "path": "order/", "kind": "module", "role": "service", "layer": "service"},
+              {"id": "common", "name": "common", "path": "common/", "kind": "module", "role": "domain", "layer": "domain"},
+              {"id": "pay", "name": "pay", "path": "pay/", "kind": "module", "role": "adapter", "layer": "infra"},
+              {"id": "app", "name": "app (py)", "path": "app/", "kind": "module", "role": "web", "layer": "api"},
               {"id": "db", "name": "PostgreSQL", "path": "", "kind": "external"}]
 # (from, to, kind, label, evidence, verified) — one unverified edge so the rate is not a flat 100 %
 _ARCH_EDGES = [("web", "order", "call", "find order", [_ev("web/OrderController.java", "service.find")], True),
@@ -70,7 +71,7 @@ def demo_arch(now):
               "steps": [{"from": a, "to": b, "label": sl, "est": 0, "ok": ok, "why": why, "evidence": ev}
                         for a, b, sl, ev, ok, why in st]} for i, n, k, lab, st in _ARCH_FLOWS]
     return {"ok": True, "empty": False, "sidereus": "", "commit": _ARCH_COMMIT, "head": _ARCH_COMMIT, "stale": False,
-            "behind": None, "at": now - 7200, "modules": _ARCH_MODS, "edges": edges,
+            "behind": None, "at": now - 7200, "v": 2, "groups": [], "modules": _ARCH_MODS, "edges": edges,
             "rate": round(sum(oks) / float(len(oks)), 2),
             "md": render_md(m, {"edges": [{"i": i, "ok": ok} for i, ok in enumerate(oks)]}),
             "style": {"style": "layered", "framework": "Spring Boot", "units": "top-level packages",
