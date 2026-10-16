@@ -77,7 +77,7 @@ class RunnerTest(Tmp):
         self.cli = cli()
         self.w("a.py", "x = 1\n")
         self.por = ["", ""]
-        git = lambda repo, args: (C1 + "\n") if args[0] == "rev-parse" else self.por.pop(0)
+        git = lambda repo, args: (C1 + "\n") if args[0] == "rev-parse" else "" if args[0] == "ls-files" else self.por.pop(0)
         out = json.dumps(BANDIT)
         self.p = [mock.patch.object(AV, "ARCH_DIR", self.store), mock.patch.object(self.cli, "_git", git),
                   mock.patch.object(self.cli, "_which", lambda n: "/bin/" + n if n == "bandit" else None),
