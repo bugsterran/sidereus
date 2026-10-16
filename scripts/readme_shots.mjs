@@ -18,6 +18,18 @@ const FW = 1280, FH = 800, FDSF = 1.25;     // frame page, 16:10 ⇒ output 1600
 const IW = 1152, IH = 720;                  // app image inside the frame, 16:10
 const DEADLINE_MS = 180000;
 const { cleanup, startDemo, startChrome } = sandbox('readme-shots');
+// ⚠The demo world carries a saver-hook snapshot (`saverView`) so screen_check covers the saver chip, but that hook
+// is not shipped: a public install has no snapshot file and never shows the chip. Drop it from /api/state here so
+// the README shows what users get (the demo itself keeps it — tests/test_demo.py and the screen baselines rely on it).
+const BOOT = `(() => {
+  const f = window.fetch;
+  window.fetch = function (a, o) {
+    const p = f.apply(this, arguments);
+    if (String(a).indexOf('/api/state') < 0) return p;
+    return p.then(r => r.clone().json().then(j => { j.saverView = null; j.saverViews = {};
+      return new Response(JSON.stringify(j), { status: r.status, headers: r.headers }); }, () => r));
+  };
+})();`;
 
 // ---- shots -------------------------------------------------------------------
 // Focus comes from picking the view and state.
@@ -73,7 +85,7 @@ const SHOTS = [
 ];
 
 async function shoot(cdp, base, shot, lang) {
-  const P = await openApp(cdp, base, { name: shot.name, lang, prefs: shot.prefs, w: VW, h: VH, dsf: 2 });
+  const P = await openApp(cdp, base, { name: shot.name, lang, prefs: shot.prefs, w: VW, h: VH, dsf: 2, boot: BOOT });
   const S = P.S;
   await shot.run(P);
   await sleep(1200);   // let resize re-fits, polls and fades settle
