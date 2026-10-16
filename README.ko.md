@@ -6,7 +6,7 @@
 ![Python 3.9, stdlib only](https://img.shields.io/badge/python-3.9%20stdlib%20only-3776AB.svg)
 ![Platform: macOS · Windows (untested)](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Windows%20(untested)-lightgrey.svg)
 
-**여러 AI 코딩 세션을 한 화면에서 보는 로컬 뷰어로, 결과마다 게이트를 통과했는지와 통과한 뒤 다시 깨지지 않았는지를 기록합니다.**
+**여러 AI 코딩 세션의 결과와 과정을 한 화면에서 검증하고, 판단하고, 방향을 잡는 로컬 관측소입니다. 중심은 파이프라인입니다. 단계 순서를 한 번 정해 두면 단계마다 진행 상황과 게이트 증거가 보입니다.**
 
 각자의 터미널에서 이미 돌고 있는 Claude Code, Codex CLI, Gemini CLI 세션 옆에서 동작하며, 여러 세션을 동시에
 돌리는 개발자 한 명을 위해 만들었습니다. 에이전트를 실행하거나 터미널을 조작하지 않습니다.

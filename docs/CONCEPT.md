@@ -12,16 +12,18 @@ Nobody reads the streams; the developer looks up when something stops.
 Every tool shows a slice: a CLI its own sessions, a dashboard tokens, an app diffs. There is no one place to judge
 from, and a request that needs the developer can sit unseen.
 
-Sidereus sits beside the terminals. It does not run the agents or take over a terminal. It checks two things:
+Sidereus sits beside the terminals and gives one screen to verify, judge and steer from. It does not run the agents or take over a terminal. It checks two things:
 
 - **the result** — did the gate pass, did a failing test turn green, did the pass hold, and can the gate catch a real defect at all;
 - **the process** — did the run follow the declared stages, with the chosen agent and model, and what is each session doing now.
+
+Pipelines carry both: the order is declared once, sessions follow it, and each stage shows its progress and the gate evidence behind its verdict.
 
 When an agent needs the developer — an answer, a permission, an approval — it rises to the top and stays there until
 they act or its session is known to have ended. They act from the same screen, and what they send is kept. Their conversations never leave the machine:
 metadata only, local, offline.
 
-Use it if it fits how you work. If it doesn't, fork it and change it, or leave it ([how this project works](../README.md#how-this-project-works)).
+It is a foundation to fork and extend, not a finished product. Use it if it fits how you work. If it doesn't, fork it and change it, or leave it ([how this project works](../README.md#how-this-project-works)).
 
 ## Direction and what we won't build
 

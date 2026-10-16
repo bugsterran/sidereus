@@ -6,7 +6,7 @@
 ![Python 3.9, stdlib only](https://img.shields.io/badge/python-3.9%20stdlib%20only-3776AB.svg)
 ![Platform: macOS · Windows (untested)](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Windows%20(untested)-lightgrey.svg)
 
-**A local viewer for parallel AI coding sessions that records whether each result passed its gate and stayed passed.**
+**A local observatory for verifying, judging and steering parallel AI coding sessions on one screen — their results and their process. Pipelines lead: declare the stage order once, and each stage shows its progress and gate evidence.**
 
 It runs beside the Claude Code, Codex CLI and Gemini CLI sessions already open in your terminals, and is built
 for one developer running several sessions at once. It never runs your agents or touches your terminal.
