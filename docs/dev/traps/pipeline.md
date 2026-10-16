@@ -133,6 +133,6 @@ Moved from «Platform, config, launcher, tests and tooling».
 ## Pipelines tab: no side-by-side layout on wide screens (`web/css/43-pipeline.css`, 48d `PL_SPLIT`)
 
 - Cause: above a 1220px container the stage panel and palette moved beside the canvas, so the canvas was narrower at 1440 than at 1100 and a pipeline that fit in one row wrapped.
-- ⇒ every width stacks canvas (full width) over panel (max 1000px, 2 field columns from ~710px) + palette; one row-resize handle `.plgh`, height in `sidereus.plpanh`, double-click = 420.
+- ⇒ every width stacks canvas (full width) over palette (left) + stage panel (right, max 1000px, 2 field columns from ~710px); one row-resize handle `.plgh`, height in `sidereus.plpanh`, double-click = 420.
 - ★Demo 4-stage pipeline, headless (2026-10-16): canvas 816 / 1016 / 1356 px at 900 / 1100 / 1440, one row at each (80% / 100% / 100%).
 - ⚠Do not bring the side layout back for wide screens; it costs canvas width exactly where there is the most room.

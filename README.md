@@ -141,7 +141,7 @@ repos of sessions on this machine (the same allow list as diffs).
 | History | Past sessions by day, split into work units. |
 | Insights | Failures and tool errors over 30 days. |
 
-![Pipelines: a change-flow run on the stage canvas — Design done, Implement done with gate PASS, test count and commit after one loop-back from Review, Verify running, the stage editor on the right](docs/images/pipeline-run-en.png)
+![Pipelines: a change-flow run on the stage canvas — Design done, Implement done with gate PASS, test count and commit after one loop-back from Review, Verify running, the stage catalog and stage editor below the canvas](docs/images/pipeline-run-en.png)
 
 | **Timeline + Changes**: what each subagent ran, next to the files changed vs the branch's remote | **Structure**: the architecture diagram; pick a flow to light its path from the entry point, each edge with its evidence |
 |---|---|

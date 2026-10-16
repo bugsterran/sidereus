@@ -154,7 +154,7 @@ The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`
 - A stage with no tagged run stays waiting.
 
 ### Edit
-- Rename a stage at the top of the right panel; «Save» → preview → «Confirm» writes it. «Arrange» and «Fit to view» tidy the canvas.
+- Rename a stage at the top of the stage panel under the canvas; «Save» → preview → «Confirm» writes it. «Arrange» and «Fit to view» tidy the canvas.
 - «Ask AI for a draft» asks an open session to write the pipeline file.
 
 ### Other runs
@@ -176,8 +176,8 @@ Tags and the pipeline file: [EXTENDING.md](EXTENDING.md).
 - «Details» › «Results» lists recorded check runs, newest first; with the [`ev_hook.py`](HOOKS.md#ev_hookpy) hook, test/build/lint commands from any project too.
 - A lit stage card names its newest gate run: «gate PASS · N tests · screen a/b» or a red «gate FAIL».
 - A stage with no gate command gets an amber «Unverified» pill; «Gates n/m» in the title counts machine-checked stages. Design and review are expected to stay unverified.
-- «Stage catalog» (canvas palette): «+ Add» or drag an item onto the canvas; ✓ items bring a gate command.
-- «Guards» (right panel, nothing selected): gates a run must pass before `git commit`, and «Max loop-backs» ([HOOKS.md](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
+- «Stage catalog» (under the canvas, left): «+ Add» or drag an item onto the canvas; ✓ items bring a gate command.
+- «Guards» (stage panel, nothing selected): gates a run must pass before `git commit`, and «Max loop-backs» ([HOOKS.md](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
 - «Evaluation» in the pipeline title: per-stage seeded-defect catch rate, red check and stability ([dev/PIPELINE.md](dev/PIPELINE.md#evaluation-seeds-red-check-flaky-gates)).
 - «Suggestions» under it: «Fix it myself» fills the editor; «Ask AI» previews a request to a session.
 - «Config map» (folded): hooks, rule files, agents, MCP servers and skills; the «Check» line counts «problems» and «to check» — click a count to step through.
