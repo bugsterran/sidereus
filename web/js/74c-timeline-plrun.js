@@ -310,7 +310,7 @@ function tlPlGo(el){
   setMainView('pipe');
   plOvPick(el.dataset.tlplp || (r ? r.dataset.tlc : '') || '', el.dataset.tlpln || '');
   // ⚠The strip/chip is gone with the timeline, so focus would fall to <body>: land on the picked pipeline, else the tab.
-  kbHold('.plw [data-pln].on', '.mvb.on');
+  kbHold('.plw [data-plsel]', '.mvb.on');
 }
 // ⚠paintTl replaces #feed's HTML, so a focused strip is lost; removal fires no reliable focusout, hence focusin/mousedown tracking.
 document.addEventListener('focusin', e => { const s = e.target && e.target.closest ? e.target.closest('.tlpl, .tlplx, .tlplc, .tlplhb') : null; TLPL_FO = s ? s.id : ''; });

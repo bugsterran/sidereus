@@ -146,7 +146,8 @@ Chat tab, then «Manage» on the room list. Room cards get a checkbox, «Invite�
 The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`. A stage lights up while its agent runs.
 
 ### Pick a project
-- Chips show the selection, working projects and recent ones; «More ▾» finds the rest and holds «+ Add project».
+- One row: «Project» (full name; click to search working, recent and all projects, «+ Add project» at the bottom), «Pipeline» (one entry per pipeline) and «+ New ▾».
+- «+ New ▾» holds «+ New pipeline», «Import from another project», «Ask AI for a draft» and «Standard templates».
 - A folder needs one Claude session before «+ New pipeline» appears there (pipelines live in its `.claude/`).
 
 ### How stages light up

@@ -65,7 +65,7 @@ class Views(unittest.TestCase):
     def _sug(self, plnew):
         stubs = ("Date.now = () => 1790000000000;\n"   # fixed clock
                  "var PLNEW = %s, PLSTD = false, ACK = {}, PLS = {proj: '/p/a', sugI: 0, data: {}, draft: Object.assign(%s, {at: 1790000000000})};\n"
-                 "function plCanvas(){ return {html: '<canvas>'}; }\nfunction plNewBtn(){ return ''; }\n"
+                 "function plCanvas(){ return {html: '<canvas>'}; }\nfunction plNewBtn(){ return ''; }\nfunction plHeadRow(hd, h){ return h; }\n"
                  "function plStdList(){ return ''; }\nfunction plDraftForm(){ return ''; }\nfunction plImpPick(){ return ''; }\n"
                  "function plNewNameErr(){ return ''; }\nfunction plTplList(){ return []; }\nfunction diffHtml(){ return ''; }\n"
                  "function agLang(){ return ''; }\nfunction KE(k){ return k; }\n") % (plnew, json.dumps(DR))

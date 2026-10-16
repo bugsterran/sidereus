@@ -6,7 +6,7 @@ const TOUR_STEPS = [
   {id: 'time',     tab: 'time',   sel: '#feed .tlr.tlrs'},
   {id: 'pl-what',  feat: 'pipeline', pl: 1},
   {id: 'pl-live',  tab: 'time',   sel: '#feed .tlpl', feat: 'pipeline', pl: 1},   // ⚠strip root only — its inner classes change
-  {id: 'pl-start', tab: 'pipe',   sel: '[data-plstd]', also: '[data-pldnew]', feat: 'pipeline', pl: 1},
+  {id: 'pl-start', tab: 'pipe',   sel: '[data-plnewm]', feat: 'pipeline', pl: 1},
   {id: 'arch',     tab: 'struct', sel: '.archtab'},   // ⚠never calls setStrMode — the user's structure mode stays
   {id: 'done'},
 ];
@@ -70,7 +70,7 @@ function tourBody(p, dir){
   if(p.id === 'pl-live') return {t: 'Live progress', h: (p.mode === 'spot' ? '' : tourStepper())
     + P('See the current stage and whether its gate passed here — the evidence stays in Pipelines › Tooling «Results»')
     + (p.mode === 'spot' ? '' : '<p class=tourdim>' + esc(T('No pipeline is running right now.')) + '</p>')};
-  if(p.id === 'pl-start') return {t: 'Your first pipeline', h: P('Start with the standard template «Review only» (2 stages) · if writing one is hard, use «Ask AI for a draft»')};
+  if(p.id === 'pl-start') return {t: 'Your first pipeline', h: P('Open «+ New ▾» and start with «Standard templates» › «Review only» (2 stages) · if writing one is hard, pick «Ask AI for a draft» there')};
   if(p.id === 'arch') return {t: 'Architecture', h: P('Architecture — a module diagram drawn by an agent; only edges that pass the evidence check remain')};
   return {t: 'You are set', cmds: tourPluginLines(dir),
     h: P('If you use Claude Code, these two lines install the Sidereus plugin (mailbox relay · pipeline stage marks · read-only MCP).')};

@@ -9,4 +9,5 @@ html[data-ui=next] .ppg{color:var(--nx-t3)}
 .ppf{display:flex;gap:8px;align-items:center;justify-content:space-between}
 .ppcs{display:inline-flex;gap:5px;align-items:center;min-width:0;overflow:hidden;flex:0 1 auto}
 .ppbtn{flex:0 0 auto}
+.ppcombo{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}   /* full name, never ellipsised (ppComboHtml) */
 .ppcs>.ppfold{display:none}   /* ppFit: trailing chips folded so the selection is not clipped (still in «More») */

@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Pipelines tab: the canvas spans the full width at every screen size, with the stage panel and palette below it; drag the handle between them to resize (double-click resets).
+- Pipelines tab header is one row: a project combobox (full name, same picker as Structure), a pipeline select, and a «+ New ▾» menu holding «+ New pipeline», «Import from another project», «Ask AI for a draft» and «Standard templates».
 
 ### Fixed
 

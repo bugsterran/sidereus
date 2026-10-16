@@ -1,4 +1,4 @@
-"""«Pipelines» chips (web/js/48-pipeline.js plChips): a project whose folder was deleted (state `projGone`) loses
+"""«Pipelines» project combobox (web/js/48-pipeline.js plChips): a project whose folder was deleted (state `projGone`) loses
 its chip even when the fetched project list still has it, and a selected one falls back to the first listed project."""
 import json
 import shutil
@@ -15,7 +15,7 @@ def run(body):
            "function plLiveProjs(){ return {}; } function plMem(){ return {}; } function plKnown(){ return null; }\n"
            "function strShort(p){ return p.split('/').pop(); } function strProjList(){ return []; }\n"
            "function plLiveDot(){ return ''; } function plAddForm(){ return ''; } function plPickProj(){} function plBrOpen(){}\n"
-           "function ppChipsHtml(cfg){ CFG = cfg; return ''; }\n"
+           "function ppComboHtml(cfg){ CFG = cfg; return ''; }\n"
            + js_fn("plChips") + "\nconst R = {};\n" + body + "\nprocess.stdout.write(JSON.stringify(R));")
     r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
     if r.returncode != 0:
