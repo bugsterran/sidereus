@@ -170,3 +170,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **A dismissed «blocked» row never came back for a new prompt** (A2, `attention._row_sigs`, 43 `ntfStep`). Cause: `since` = now - ageSec followed main-row activity, so dismissal and the OS alert keyed on the wrong episode.
   - ⇒ marker rows carry `blockedAt` (marker time); the blocked signal uses it as `since` and `ep`; `ntfStep` keys `sid|k|ep`. `tests/test_attention.py`, `tests/test_os_notify.py`.
   - ⚠Only marker-based rows get `ep` — transcript `_blocked` t0 jitters ±1 s and would re-fire every poll.
+- **A prompt opened mid-message never showed «blocked»** (`perm_marks.perm_rows`, `_pend_mark`). Cause: Write + Bash + AskUserQuestion in one message — the later tool_use lines pushed last activity past the Write marker (`_mark_t` needs `act_at < t`), and the row then went `ask`, which `perm_rows` skipped.
+  - ⇒ fallback compares the marker with the oldest unanswered tool_use of the newest tool_use message (`_pend_ts`, transcript tail, cached by mtime+size); `ask` rows are checked too. `tests/test_perm_mark.py`.
+  - ⚠On an `ask` row a tool-less or AskUserQuestion marker is the question itself. ⚠Only a decision for the marker's own tool clears it (OTel decisions are session-wide).
+  - ⚠Still open: one marker file per session — a later prompt overwrites the earlier record.

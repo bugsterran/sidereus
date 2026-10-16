@@ -37,7 +37,9 @@ class PermQueueActivity(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
-        for obj, k, v in ((LP, "PERM_DIR", self.tmp), (LP, "tool_busy", lambda: None), (LP, "_DEC_AT", {})):
+        self.tp = os.path.join(self.tmp, "t.jsonl")   # the same fake tail feeds perm_marks._pend_ts (never live paths)
+        for obj, k, v in ((LP, "PERM_DIR", self.tmp), (LP, "tool_busy", lambda: None), (LP, "_DEC_AT", {}),
+                          (LP, "_pend_cache", {}), (LP, "_sid_transcript", lambda sid: self.tp)):
             p = mock.patch.object(obj, k, v)
             p.start()
             self.addCleanup(p.stop)
@@ -45,7 +47,10 @@ class PermQueueActivity(unittest.TestCase):
             json.dump({"sid": SID, "t": T0 + 17}, f)          # Notification permission_prompt lands after the 6 s delay
 
     def _blocked(self, recs, now):
-        act = P._scan_tail([json.dumps(r) for r in recs])["actAt"]
+        with open(self.tp, "w") as f:
+            f.write("".join(json.dumps(r) + "\n" for r in recs))
+        LP._pend_cache.clear()
+        act =P._scan_tail([json.dumps(r) for r in recs])["actAt"]
         row = {"sid": SID, "state": "tool", "tool": "Bash", "ageSec": int(now - act), "blocked": "", "cwd": "/x"}
         return LP.perm_rows([row], now=now)[0].get("blocked")
 

@@ -28,7 +28,9 @@ class PermMark(unittest.TestCase):
             p.start()
             self.addCleanup(p.stop)
         self.busy = None                      # no live ps probe
-        for k, v in (("tool_busy", lambda: self.busy), ("_DEC_AT", {})):
+        self.tp = ""                          # transcript path for _pend_ts ("" = none; never the live projects dir)
+        for k, v in (("tool_busy", lambda: self.busy), ("_DEC_AT", {}), ("_pend_cache", {}),
+                     ("_sid_transcript", lambda sid: self.tp)):
             p = mock.patch.object(LP, k, v)
             p.start()
             self.addCleanup(p.stop)
@@ -192,6 +194,56 @@ class PermMark(unittest.TestCase):
         self.assertEqual(LP.perm_rows([dict(row, tool="")], now=NOW)[0]["blocked"], "")
         done = dict(row, otelEv="tool_decision", otelAt=int(NOW - 5))
         self.assertEqual(LP.perm_rows([done], now=NOW)[0]["blocked"], "")
+
+
+    def _transcript(self, lines):
+        self.tp = os.path.join(self.tmp, "t.jsonl")
+        with open(self.tp, "w") as f:
+            f.write("".join(json.dumps(x) + "\n" for x in lines))
+
+    @staticmethod
+    def _ts(t):
+        import datetime
+        return datetime.datetime.utcfromtimestamp(t).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
+    def _use(self, t, uid, name, mid="m1"):
+        return {"type": "assistant", "timestamp": self._ts(t),
+                "message": {"id": mid, "content": [{"type": "tool_use", "id": uid, "name": name, "input": {}}]}}
+
+    def test_ask_row_blocks_on_prompt_opened_mid_message(self):
+        # Write prompt opened at T; later Bash/AskUserQuestion lines of the same message push last activity past it.
+        T = NOW - 60
+        self._transcript([self._use(T - 0.3, "a", "Write"), self._use(T + 1.5, "b", "Bash"),
+                          self._use(T + 6.3, "c", "AskUserQuestion")])
+        self._hook({"hook_event_name": "PermissionRequest", "session_id": SID, "tool_name": "Write"}, t=T)
+        row = dict(self._row(age=int(NOW - T - 6), state="ask"), tool="AskUserQuestion")
+        out = LP.perm_rows([row], now=NOW)[0]
+        self.assertEqual((out["blocked"], out["blockedTool"], out["blockedAt"]), ("Write waiting for approval", "Write", int(T)))
+        # the same on a tool row whose newest line is the later Bash call
+        out = LP.perm_rows([dict(row, state="tool", tool="Bash")], now=NOW)[0]
+        self.assertEqual(out["blocked"], "Write waiting for approval")
+        # a decision for Write clears it; one for another tool does not
+        LP._DEC_AT[SID] = {"t": int(NOW), "tools": {"Bash": int(NOW)}}
+        self.assertEqual(LP.perm_rows([row], now=NOW)[0]["blocked"], "Write waiting for approval")
+        LP._DEC_AT[SID]["tools"]["Write"] = int(NOW)
+        self.assertEqual(LP.perm_rows([row], now=NOW)[0]["blocked"], "")
+
+    def test_stale_or_answered_marker_gives_no_badge(self):
+        T = NOW - 60
+        self._hook({"hook_event_name": "PermissionRequest", "session_id": SID, "tool_name": "Write"}, t=T)
+        row = dict(self._row(age=10, state="ask"), tool="AskUserQuestion")
+        # marker older than every pending tool_use (an earlier prompt)
+        self._transcript([self._use(T + 2, "a", "Write"), self._use(T + 3, "c", "AskUserQuestion")])
+        self.assertEqual(LP.perm_rows([row], now=NOW)[0]["blocked"], "")
+        # the Write call already has its tool_result
+        self._transcript([self._use(T - 0.3, "a", "Write"),
+                          {"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": "a"}]}},
+                          self._use(T + 6, "c", "AskUserQuestion")])
+        self.assertEqual(LP.perm_rows([row], now=NOW)[0]["blocked"], "")
+        # an AskUserQuestion marker on an ask row is the question itself
+        self._transcript([self._use(T - 0.3, "c", "AskUserQuestion")])
+        self._hook({"hook_event_name": "PermissionRequest", "session_id": SID, "tool_name": "AskUserQuestion"}, t=T)
+        self.assertEqual(LP.perm_rows([row], now=NOW)[0]["blocked"], "")
 
 
 if __name__ == "__main__":
