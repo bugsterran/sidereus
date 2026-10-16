@@ -16,6 +16,8 @@
 
 이유: 확장은 공유 형식에 꽂히므로 포크끼리 호환이 유지된다.
 
+확장 PR 은 이 문서와 [docs/EXTENDING.ko.md](docs/EXTENDING.ko.md) 만 따르면 된다. `AGENTS.md` 는 작성자 자신의 에이전트 작업 규칙(동시 편집 규약 · 파이프라인 단계)이라 지키지 않아도 된다.
+
 확장 문서: [docs/EXTENDING.ko.md](docs/EXTENDING.ko.md) (함께: [docs/ARCHITECTURE.ko.md § 8](docs/ARCHITECTURE.ko.md#확장) · [docs/STRUCTURE.ko.md](docs/STRUCTURE.ko.md)).
 
 ## PR 과 AI 도움

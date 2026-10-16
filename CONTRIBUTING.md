@@ -16,6 +16,8 @@ Settings › «Preferences» and `config.local.json` cover most needs without co
 
 Why: extensions plug into shared formats, so forks stay compatible with each other.
 
+An extension PR needs only this page and [docs/EXTENDING.md](docs/EXTENDING.md). `AGENTS.md` holds the author's own agent workflow (concurrent-edit protocol, pipeline stages); you do not need to follow it.
+
 Extension docs: [docs/EXTENDING.md](docs/EXTENDING.md) (also [docs/ARCHITECTURE.md § 8](docs/ARCHITECTURE.md#extending) · [docs/STRUCTURE.md](docs/STRUCTURE.md)).
 
 ## Pull requests and AI help

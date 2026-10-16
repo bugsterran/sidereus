@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Feature requests and core changes
+    url: https://github.com/bugsterran/sidereus/blob/main/CONTRIBUTING.md#what-we-accept
+    about: Not accepted — fork for core changes. Extension PRs (language plug-ins, CLI adapters, pipeline templates) are welcome.
+  - name: Security issue
+    url: https://github.com/bugsterran/sidereus/blob/main/SECURITY.md
+    about: Report privately as described in SECURITY.md, not as a public issue.
