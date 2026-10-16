@@ -34,10 +34,10 @@ class HarnessTest(unittest.TestCase):
         _w(os.path.join(cd, "settings.json"), {"hooks": {
             "Stop": [{"hooks": [{"type": "command", "command": "python3 " + os.path.join(hk, "log.py")}]}],
             "PreToolUse": [{"matcher": "Bash|Edit", "hooks": [
-                {"type": "command", "command": "/usr/bin/python3 -u " + os.path.join(hk, "block.py") + " --token=abc", "timeout": 5}]}],
+                {"type": "command", "command": "/usr/bin/python3 -u " + os.path.join(hk, "block.py") + " --token=xyzzy", "timeout": 5}]}],
             "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "FOO=secret node " + os.path.join(hk, "inject.py")}]}],
-            "SessionStart": [{"hooks": [{"type": "command", "command": "/nowhere/missing.sh --key=abc"}]}],
-            "Zeta": [{"hooks": [{"type": "command", "command": "--token=abc"}]}]}})
+            "SessionStart": [{"hooks": [{"type": "command", "command": "/nowhere/missing.sh --key=xyzzy"}]}],
+            "Zeta": [{"hooks": [{"type": "command", "command": "--token=xyzzy"}]}]}})
         _w(os.path.join(cd, "CLAUDE.md"), "rules\n")
         _w(os.path.join(self.proj, "AGENTS.md"), "proj rules\n")
         _w(os.path.join(self.proj, ".claude", "agents", "designer.md"), "---\nname: designer\n---\n")
@@ -75,7 +75,7 @@ class HarnessTest(unittest.TestCase):
 
     def test_event_order_and_fields(self):
         hk, hh = os.path.join(self.tmp, "claude", "hooks"), sidereus("toolidx").hook_hash
-        blk, log = "/usr/bin/python3 -u " + os.path.join(hk, "block.py") + " --token=abc", "python3 " + os.path.join(hk, "log.py")
+        blk, log = "/usr/bin/python3 -u " + os.path.join(hk, "block.py") + " --token=xyzzy", "python3 " + os.path.join(hk, "log.py")
         H.tool_uses = lambda d: {"hookc:PreToolUse:Bash#" + hh(blk): {"n": 3, "last": 10}, "hookc:PreToolUse:Read#" + hh(blk): {"n": 9, "last": 20},
                                  "hookc:Stop#" + hh(log): {"n": 2, "last": 5}}
         b = self._body()
@@ -120,7 +120,7 @@ class HarnessTest(unittest.TestCase):
         self.assertEqual(self._hook(b, "SessionStart")["cmd"], "missing.sh")
         self.assertEqual(self._hook(b, "Zeta")["cmd"], TV.MASK)
         blob = json.dumps(b["events"])   # rule paths and proj carry the tmp dir by design; hook rows never do
-        for bad in ("abc", "secret", "FOO", "/usr/bin", self.tmp):
+        for bad in ("xyzzy", "secret", "FOO", "/usr/bin", self.tmp):   # ⚠fixture secret must not be hex: rows carry hex "ch" hashes
             self.assertNotIn(bad, blob)
 
     def test_cmd_name_masks_inline_code(self):
