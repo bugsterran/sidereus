@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-17
+
 ### Changed
 
 - Pipelines tab: the canvas spans the full width at every screen size, with the stage panel and palette below it; drag the handle between them to resize (double-click resets).
@@ -212,6 +214,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/bugsterran/sidereus/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bugsterran/sidereus/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/bugsterran/sidereus/releases/tag/v0.1.0
