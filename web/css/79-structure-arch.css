@@ -190,12 +190,10 @@ html[data-ui=next][data-ui] #strmd button.on:hover{background:color-mix(in srgb,
 .archfdg .mmdsqm.archfx .mmde{stroke:var(--nx-err,#f45460)}
 .archfdg .mmdsqm.archfx>.mmdtx{fill:color-mix(in srgb,var(--nx-err,#f45460) 60%,var(--nx-t1,#dfe5ee))}
 .archfs .archio{--lc:var(--nx-t3,#8b95a7)}
-/* Project checks (84l): header badges, focus chip, request strip, top-issue popup, node count pills */
-.strh .strbg-archckd{--bgc:var(--nx-warn,#e3b341);border-style:dashed}
+/* Security issues (84l): header badge, request strip, issues window */
 .strh button.strbg-archcki{--bgc:var(--nx-err,#f45460);font-family:inherit;cursor:pointer}
 .strh button.strbg-archckiw{--bgc:var(--nx-warn,#e3b341)}
 .strh button.strbg-archcki:hover{background:color-mix(in srgb,var(--bgc) 26%,var(--nx-panel,#141a23))}
-.archckc{display:inline-flex;gap:4px;align-items:center}
 .archck{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:8px;min-width:0}
 .archck>.archreq{flex:1 1 100%}
 .strctl .archckgo{box-sizing:border-box;height:30px;padding:0 14px;white-space:nowrap;flex:0 0 auto}   /* header row: same height as #strmd */
@@ -240,12 +238,6 @@ body.ckwin{margin:0;padding:0;height:100vh;overflow:hidden}
 .archckl code{flex:0 1 auto;min-width:0;white-space:normal;overflow-wrap:anywhere;font-size:11.5px;color:var(--nx-t1,#dfe5ee)}
 .archckl .archckf{flex:1 1 220px;min-width:0;white-space:normal;overflow-wrap:anywhere}
 .archckl em{margin:0 0 0 auto;padding-left:8px;font-style:normal;font-size:11px;color:var(--nx-t3,#8b95a7)}
-/* ⚠Pills straddle the node's top edge: overflow visible so the top row is not clipped (paint only, no layout change) */
-.archdg svg{overflow:visible}
-.archmap svg .archckb rect{stroke:none!important}   /* ⚠node hover/focus rules stroke every rect in the node */
-.archmap svg .archckb rect.archcke{fill:var(--nx-err,#f45460)}
-.archmap svg .archckb rect.archckw{fill:var(--nx-warn,#e3b341)}
-.archmap svg .archckb text{font-size:10px;font-weight:700;fill:var(--nx-bg,#0d1014)}
 /* Module detail panel (84j3 archDetHtml): summary, layer/group/owns, neighbour tree Out/In → kind, flows through the module */
 .archdet{flex:1 1 auto;min-height:0;overflow-y:auto;padding:8px 10px;font-size:12.5px;color:var(--nx-t2,#aab4c3)}
 .archsum{margin:0 0 8px;color:var(--nx-t1,#dfe5ee);line-height:1.45}

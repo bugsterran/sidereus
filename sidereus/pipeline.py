@@ -155,7 +155,7 @@ def _names(proj):
 
 
 def _listed(proj):
-    """_names minus `"builtin": true` files (Sidereus plumbing run by its own buttons, e.g. project-checks): hidden
+    """_names minus `"builtin": true` files (Sidereus plumbing, e.g. security-checks): hidden
     from the list and borrowed rows. ⚠They stay in .claude/pipelines — the pl_* hooks and gates resolve them there.
     ⚠Honoured only in the Sidereus repo (CODE_DIR): elsewhere the key would hide a user's file with no way to reach it."""
     if os.path.realpath(proj) != os.path.realpath(CODE_DIR):

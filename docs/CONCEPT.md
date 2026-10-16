@@ -79,5 +79,5 @@ What sets it apart: several platforms on one sky, pipeline stages with evidence,
 
 - ⚠ Do not build a terminal, a spawner, or a git writer into the core. If people ask for these, they belong in an opt-in extension that is off by default.
 - ⚠ Do not use real platform logos inside the mark. Platform diversity shows on the map, not in the logo.
-- ⚠ Do not reduce a session, a change or a gate to one grade. Attention points only order the list; lint and security findings come from standard tools run with the project's config (or the tools' defaults) and show with `file:line`. Show facts and evidence, not judgements.
+- ⚠ Do not reduce a session, a change or a gate to one grade. Attention points only order the list; security findings come from standard scanners run with the project's config (or the tools' defaults) and show with `file:line`. Show facts and evidence, not judgements.
 - ⚠ Do not set up, store or switch accounts or credentials. Show whatever account layout is found.

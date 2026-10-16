@@ -1,5 +1,0 @@
-[{"filePath": "@REPO@/web/src/a.js", "messages": [
-  {"ruleId": "no-unused-vars", "severity": 2, "line": 3, "message": "secret message text"},
-  {"ruleId": "@typescript-eslint/no-explicit-any", "severity": 1, "line": 5, "message": "x"},
-  {"ruleId": null, "severity": 2, "fatal": true, "line": 9, "message": "Parsing error"}
-], "errorCount": 2, "warningCount": 1}]

@@ -12,10 +12,10 @@ PE = sidereus("pl_eval")
 AV = sidereus("arch_verify")
 C1 = "a" * 40
 NOW = 1_800_000_000.0
-TPL = [{"id": "lint-static", "title": {"ko": "린트·정적 분석", "en": "Lint"},
-        "gate": "python3 /a/scripts/arch_checks.py --verify --last --category quality"}]
+TPL = [{"id": "secrets", "title": {"ko": "비밀값 검사", "en": "Secrets"},
+        "gate": "python3 /a/scripts/arch_checks.py --verify --last --category security"}]
 STAGES = [{"title": "구현", "agent": "x"},
-          {"title": "검사 실행", "agent": "x", "gate": "/usr/bin/python3 scripts/arch_checks.py --verify --last"},
+          {"title": "검사 실행", "agent": "x", "gate": "/usr/bin/python3 scripts/arch_checks.py --verify --last --category security"},
           {"title": "리뷰", "agent": "x"}]
 
 
@@ -25,7 +25,7 @@ def rd(fp):
 
 
 def seed(i, **kw):
-    return dict({"id": i, "kind": "lint", "file": "src/a.ts", "line": 10, "expectStage": "검사 실행"}, **kw)
+    return dict({"id": i, "kind": "secret", "file": "src/a.ts", "line": 10, "expectStage": "검사 실행"}, **kw)
 
 
 def item(tool, line, rule="no-unused-vars", f="src/a.ts", pkg=None):
@@ -52,11 +52,12 @@ class Seeds(Tmp):
         self.assertEqual(PE.seed_errors({"v": 1, "seeds": [seed("a"), seed("b", holdout=True, rule="r", pkg="lodash")]}), [])
         bad = {"v": 1, "seeds": [seed("A"), seed("b", kind="x"), seed("c", file="../x"), seed("d", line=0),
                                  seed("e", rule="bad rule"), seed("f", expectStage=""), seed("g", holdout="yes"),
-                                 seed("h", msg="text"), seed("i", file="/abs"), seed("j"), seed("j")]}
-        self.assertEqual(PE.seed_errors(bad), ["seeds[0].id", "seeds[1].kind: lint|type|secret|dep|sast|logic",
+                                 seed("h", msg="text"), seed("i", file="/abs"), seed("j"), seed("j"), seed("k", kind="lint")]}
+        self.assertEqual(PE.seed_errors(bad), ["seeds[0].id", "seeds[1].kind: secret|dep|sast|logic",
                                                "seeds[2].file: repo-relative path", "seeds[3].line", "seeds[4].rule",
                                                "seeds[5].expectStage", "seeds[6].holdout", "seeds[7]: keys",
-                                               "seeds[8].file: repo-relative path", "seeds[10].id"])
+                                               "seeds[8].file: repo-relative path", "seeds[10].id",
+                                               "seeds[11].kind: secret|dep|sast|logic"])
         self.assertTrue(PE.seed_errors({"v": 2, "seeds": []}))
         self.assertEqual(PE.seed_errors({"v": 1, "seeds": [seed("s", kind="sast", rule="insecure-random-token")]}), [])
         self.assertTrue(PE.seed_errors({"v": 1, "seeds": [], "x": 1}))
@@ -75,13 +76,13 @@ class Seeds(Tmp):
 class Match(unittest.TestCase):
     def test_line_rule_pkg_tool(self):
         s = seed("a", rule="no-unused-vars")
-        self.assertTrue(PE.matches(s, item("eslint", 12)))
-        self.assertTrue(PE.matches(s, item("eslint", 8)))
-        self.assertFalse(PE.matches(s, item("eslint", 13)))
-        self.assertFalse(PE.matches(s, item("eslint", 10, rule="other")))
-        self.assertFalse(PE.matches(s, item("tsc", 10)))
-        self.assertFalse(PE.matches(s, item("eslint", 10, f="src/b.ts")))
-        self.assertTrue(PE.matches(seed("a"), item("eslint", 11, rule="anything")))   # no rule on the seed
+        self.assertTrue(PE.matches(s, item("gitleaks", 12)))
+        self.assertTrue(PE.matches(s, item("gitleaks", 8)))
+        self.assertFalse(PE.matches(s, item("gitleaks", 13)))
+        self.assertFalse(PE.matches(s, item("gitleaks", 10, rule="other")))
+        self.assertFalse(PE.matches(s, item("semgrep", 10)))
+        self.assertFalse(PE.matches(s, item("gitleaks", 10, f="src/b.ts")))
+        self.assertTrue(PE.matches(seed("a"), item("gitleaks", 11, rule="anything")))   # no rule on the seed
         dep = seed("d", kind="dep", file="package-lock.json", pkg="lodash")
         del dep["line"]
         self.assertTrue(PE.matches(dep, item("osv-scanner", 0, rule="GHSA-x", f="package-lock.json", pkg="lodash")))
@@ -90,7 +91,7 @@ class Match(unittest.TestCase):
         self.assertTrue(PE.matches(dep, item("npm-audit", 1, rule="GHSA-y", f="package-lock.json", pkg="lodash")))
         logic = seed("l", kind="logic")
         self.assertTrue(PE.matches(logic, item("", 10, rule=None)))
-        self.assertFalse(PE.matches(logic, item("eslint", 10)))
+        self.assertFalse(PE.matches(logic, item("gitleaks", 10)))
         sast = seed("s", kind="sast", rule="insecure-random-token")
         self.assertTrue(PE.matches(sast, item("semgrep", 11, rule="insecure-random-token")))
         self.assertTrue(PE.matches(sast, item("semgrep", 10, rule="rules.insecure-random-token")))   # dotted id
@@ -98,12 +99,12 @@ class Match(unittest.TestCase):
         self.assertFalse(PE.matches(sast, item("gitleaks", 10, rule="insecure-random-token")))
         self.assertFalse(PE.matches(sast, item("semgrep", 13, rule="insecure-random-token")))
         self.assertTrue(PE.matches(seed("b", kind="sast", rule="B311"), item("bandit", 10, rule="B311")))
-        self.assertFalse(PE.matches(seed("l", rule="a.b"), item("eslint", 10, rule="b")))   # only sast strips dots
+        self.assertFalse(PE.matches(seed("l", rule="a.b"), item("gitleaks", 10, rule="b")))   # only sast strips dots
 
     def test_stage_resolution(self):
         self.assertEqual(PE.stage_index("리뷰", STAGES, TPL), 2)
-        self.assertEqual(PE.stage_index("lint-static", STAGES, TPL), 1)       # catalog id -> same gate mode
-        self.assertEqual(PE.stage_index("린트·정적 분석", STAGES, TPL), 1)      # catalog title.ko
+        self.assertEqual(PE.stage_index("secrets", STAGES, TPL), 1)       # catalog id -> same gate mode
+        self.assertEqual(PE.stage_index("비밀값 검사", STAGES, TPL), 1)      # catalog title.ko
         self.assertIsNone(PE.stage_index("nope", STAGES, TPL))
 
 
@@ -111,7 +112,7 @@ class Score(Tmp):
     def test_holdout_secrecy_and_counts(self):
         seeds = [seed("pub-hit"), seed("pub-miss", line=40), seed("secret-holdout-id", holdout=True),
                  seed("logic-1", kind="logic", expectStage="리뷰"), seed("lost", expectStage="nowhere")]
-        items = {1: [item("eslint", 11)]}
+        items = {1: [item("gitleaks", 11)]}
         st, hold, unres = PE.score(seeds, STAGES, lambda i: items.get(i, []), [item("", 10, rule=None)], TPL)
         self.assertEqual([(s["n"], s["caught"], s["missed"]) for s in st], [(0, 0, []), (2, 1, ["pub-miss"]), (1, 1, [])])
         self.assertEqual((hold, unres), ({"n": 1, "caught": 1}, 1))
@@ -134,7 +135,6 @@ class Score(Tmp):
                                  {"tool": "gitleaks", "file": "/abs", "line": 1, "rule": "x", "sev": "error"}]}, f)
         self.assertEqual(PE.checks_items(self.repo, C1, "checks-security"),
                          [{"tool": "gitleaks", "file": "a.cfg", "line": 1, "rule": "generic-api-key", "pkg": None}])
-        self.assertEqual(PE.checks_items(self.repo, C1, "checks-quality"), [])
         self.assertEqual(PE.checks_items(self.repo, C1, "fast"), [])
 
 
@@ -144,7 +144,7 @@ class Flaky(Tmp):
                                                                    "repo": self.repo, "head": head, "dirty": dirty, "rc": rc}
         return [r(NOW - 100, 0), r(NOW - 50, 1),                               # fast: same head both ways -> unstable
                 r(NOW - 100, 0, "full"), r(NOW - 50, 1, "full", head="beef"),  # different heads: real change
-                r(NOW - 100, 0, "checks-quality"), r(NOW - 50, 1, "checks-quality", dirty=True),
+                r(NOW - 100, 0, "full", head="cafe"), r(NOW - 50, 1, "full", head="cafe", dirty=True),
                 r(NOW - 20 * 86400, 0, "checks-security"), r(NOW - 10, 1, "checks-security")]
 
     def test_flaky(self):
@@ -172,7 +172,7 @@ class Flaky(Tmp):
         g1 = STAGES[1]["gate"]
         P = {"name": "p", "stages": STAGES + [{"title": "검증", "agent": "x", "gate": "bash scripts/check.sh --fast"}]}
         self.assertEqual(PE.graded_summary(P, self.repo, NOW), {"n": 0, "m": 4, "unred": ["검사 실행", "검증"], "unstable": []})
-        PE.save_red(g1, {"pipeline": "p", "stage": "검사 실행", "mode": "checks-quality", "key": "k", "verdict": "pass",
+        PE.save_red(g1, {"pipeline": "p", "stage": "검사 실행", "mode": "checks-security", "key": "k", "verdict": "pass",
                          "why": "", "at": NOW, "ms": 5})
         PE.save_red("bash scripts/check.sh --fast", {"pipeline": "q", "stage": "x", "mode": "fast", "key": "k",
                                                      "verdict": "pass", "why": "", "at": NOW, "ms": 5})

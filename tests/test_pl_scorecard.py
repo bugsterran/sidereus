@@ -74,7 +74,7 @@ class Score(unittest.TestCase):
         self.assertEqual([_v(self.m.score([], g))[c] for c in ("secret-gate", "sast-gate", "dep-audit-gate")],
                          ["pass", "pass", "fail"])
         self.assertEqual(_v(self.m.score([], [SEC[0] + " --only=osv-scanner"]))["dep-audit-gate"], "pass")
-        self.assertEqual(_v(self.m.score([], ["arch_checks.py --verify --last --only gitleaks"]))["secret-gate"], "fail")   # quality mode
+        self.assertEqual(_v(self.m.score([], ["arch_checks.py --verify --last --only gitleaks"]))["secret-gate"], "fail")   # no security category
 
     def test_counts_skip_na(self):   # R2: 8 checks, 1 na, 5 pass -> n=5 m=7
         files = ["LICENSE", "SECURITY.md", "README.md", "renovate.json", "x.dll"]

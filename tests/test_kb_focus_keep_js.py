@@ -20,7 +20,6 @@ class KbFocusKeep(unittest.TestCase):
         a = src("web/js/84j-structure-arch.js")
         self.assertIn("kbHold('#strmd button[data-ma]')", a)
         self.assertIn("kbHold('.archtab [data-arq]')", a)
-        self.assertIn("kbHold('.archtab [data-arcq]')", src("web/js/84l-structure-arch-checks.js"))
 
     def test_git_close_focuses_toggle(self):
         s = src("web/js/77-timeline-git.js")

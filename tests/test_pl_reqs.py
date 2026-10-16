@@ -58,26 +58,25 @@ class StoreTest(_Base):
         with mock.patch.object(PQ, "_now", lambda: NOW + PQ.REQ_KEEP_S + 1):
             self.assertEqual(PQ.view([], {}), {})
 
-    def test_r3_stop_marker_merged_then_cleared_by_new_req(self):
+    def test_r3_stop_marker_replaced_then_cleared_by_new_req(self):
         os.makedirs(self.stop_dir)
         with open(os.path.join(self.stop_dir, SID + ".json"), "w", encoding="utf-8") as f:
-            json.dump({"project-checks": {"at": 1, "mid": "z", "of": "y"}}, f)
+            json.dump({"arch-map": {"at": 1, "mid": "z", "of": "y"}, "deps-audit": {"at": 1, "mid": "z", "of": "y"}}, f)
         self.req()
         p, why = PQ.check({"kind": "stop", "pipeline": "arch-map", "repo": REPO, "of": "m1"},
                           {"relay": True, "sid": SID, "to": "alice"})
         self.assertIsNone(why)
         PQ.stop(p, SID, "alice", "s1")
-        self.assertEqual(self.marker(), {"project-checks": {"at": 1, "mid": "z", "of": "y"},
-                                         "arch-map": {"at": NOW, "mid": "s1", "of": "m1"}})
-        self.req(mid="m2")   # a later request lifts the stop of that pipeline only
-        self.assertEqual(list(self.marker()), ["project-checks"])
+        self.assertEqual(self.marker(), {"arch-map": {"at": NOW, "mid": "s1", "of": "m1"}})   # unknown pipelines dropped
+        self.req(mid="m2")   # a later request lifts the stop
+        self.assertFalse(os.path.exists(os.path.join(self.stop_dir, SID + ".json")))
 
     def test_r3_check_refusals(self):
         self.req()
         ok = {"relay": True, "sid": SID, "to": "alice"}
         stop = {"kind": "stop", "pipeline": "arch-map", "repo": REPO, "of": "m1"}
         self.assertIsNone(PQ.check(stop, ok)[1])
-        for bad in (dict(stop, of="nope"), dict(stop, repo="/other"), dict(stop, pipeline="project-checks"),
+        for bad in (dict(stop, of="nope"), dict(stop, repo="/other"), dict(stop, pipeline="security-checks"),
                     dict(stop, of=None)):
             self.assertIsNotNone(PQ.check(bad, ok)[1], bad)
         self.assertIsNotNone(PQ.check(stop, dict(ok, to="bob"))[1])
@@ -101,15 +100,15 @@ class ViewStateTest(_Base):
     def row(self, state="think", **run):
         r = {"sid": SID, "project": "repo", "state": state}
         if run:
-            r["plrun"] = [dict({"name": "project-checks", "t0": NOW, "end": 0, "stop": 0, "cur": "Run"}, **run)]
+            r["plrun"] = [dict({"name": "arch-map", "t0": NOW, "end": 0, "stop": 0, "cur": "Run"}, **run)]
         return r
 
     def st(self, rows, arch=None, stopped=False):
         self.n = getattr(self, "n", 0) + 1
         mid = "m%d" % self.n
-        self.req(pipeline="project-checks", mid=mid)
+        self.req(pipeline="arch-map", mid=mid)
         if stopped:
-            PQ.stop({"pipeline": "project-checks", "of": mid}, SID, "alice", "s1")
+            PQ.stop({"pipeline": "arch-map", "of": mid}, SID, "alice", "s1")
         v = PQ.view(rows, arch or {})[REPO][0]
         return v["state"], v["stage"]
 

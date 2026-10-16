@@ -21,7 +21,7 @@ CONSTS = "\n".join(re.findall(r"^const ARCH_REQ_(?:KEEP_MS|LBL) = .*$", _SRC, re
 PRE = "\n".join([
     "let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }",
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
-    "const ARCH_PL = 'arch-map', ARCH_CHK_PL = 'project-checks'; const ARCH = { msg: '', pstop: null };",
+    "const ARCH_PL = 'arch-map'; const ARCH = { msg: '', pstop: null };",
     "let PLREQ = {}, POSTS = [], PAINTS = 0; function paintStruct(){ PAINTS++; }",
     "async function postJSON(u, b){ POSTS.push([u, b]); return { ok: true }; }",
     CONSTS,
@@ -72,7 +72,7 @@ class StructArchReq(unittest.TestCase):
     def test_slot_replaces_transient_line(self):   # R1
         PL = {"/r": [rows(state="sent"), rows(id="m-0", at=NOW - 9000, state="done")]}
         r = run("PLREQ = " + json.dumps(PL) + "; const now = " + str(NOW * 1000) + ";"
-                "const a = archReqSlot('/r', 'arch-map', '<TRANS>', '', now), b = archReqSlot('/r', 'project-checks', '<TRANS>', '', now);"
+                "const a = archReqSlot('/r', 'arch-map', '<TRANS>', '', now), b = archReqSlot('/r', 'other-pipeline', '<TRANS>', '', now);"
                 "PLREQ = {'/r': [Object.assign(" + json.dumps(ROW) + ", {state: 'done'})]};"
                 "const c = archReqSlot('/r', 'arch-map', '<TRANS>', '', now), e = archReqSlot('/r', 'arch-map', '<TRANS>', '', now + 7200000);"
                 "console.log(JSON.stringify([a, b, c, e, archReqBusy('/r', 'arch-map')]));")
@@ -100,8 +100,8 @@ class StructArchReq(unittest.TestCase):
         self.assertIsNone(r[4])
 
     def test_stop_body_metadata_only(self):   # R3
-        r = run("console.log(JSON.stringify(archStopBody('project-checks', '/r', 'm-9')))")
-        self.assertEqual(r, "Stop pipeline project-checks for /r (request m-9): let the running stage agent finish, dispatch no further stages, report and end.")
+        r = run("console.log(JSON.stringify(archStopBody('arch-map', '/r', 'm-9')))")
+        self.assertEqual(r, "Stop pipeline arch-map for /r (request m-9): let the running stage agent finish, dispatch no further stages, report and end.")
         self.assertNotIn("«", r)   # no request text quoted
 
     def test_stop_refused_when_not_running(self):   # R3

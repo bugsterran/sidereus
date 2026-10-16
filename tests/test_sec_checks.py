@@ -124,7 +124,7 @@ class Runner(Tmp):
         j = json.loads(raw)
         self.assertEqual(j["items"], [{"tool": "gitleaks", "file": "conf.py", "line": 1, "rule": "aws-access-token", "sev": "error"}])
         self.assertEqual([os.path.exists(r) for r in self.reports], [False])
-        self.assertFalse(os.path.exists(os.path.join(self.store, AV.repo_key(self.repo), C1, AC.CHECKS_FILE)))   # quality untouched
+        self.assertFalse(os.path.exists(os.path.join(self.store, AV.repo_key(self.repo), C1, "checks.json")))   # quality untouched
         self.assertEqual(self.main("--verify", "--last", "--category", "security")[0], 0)
         self.assertEqual(self.main("--verify", "--last")[0], 1)          # quality pointer was never written
         c = AC.load_checks(self.repo, os.path.join(self.store, AV.repo_key(self.repo), C1), {"modules": []}, C1)
@@ -185,8 +185,8 @@ SECJ = {"commit": "c" * 40, "tools": [{"id": "gitleaks", "rules": "default", "st
         "rules": {"npm-audit:GHSA-p6mc-m468-83gw": {"desc": "", "url": "https://github.com/advisories/GHSA-p6mc-m468-83gw"}}}
 QJ = {"commit": "abcdef123", "tools": [{"id": "ruff", "rules": "project", "status": "ok", "n": {"error": 0, "warning": 1}}],
       "top": [{"tool": "ruff", "file": "a.py", "line": 2, "rule": "F401", "sev": "warning"}]}
-FNS = ["strHdBadge", "hhmm", "archBase", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkTop", "archChkTopBtn",
-       "archChkBadge", "archChkHelp", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkWinHtml"]
+FNS = ["strHdBadge", "hhmm", "archBase", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec", "archChkTop", "archChkTopBtn",
+       "archChkHelp", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkWinHtml"]
 
 
 def run_js(body):
@@ -201,27 +201,29 @@ def run_js(body):
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class Ui(unittest.TestCase):
-    def test_badge_tabs_and_fix_body(self):
+    def test_badge_window_and_fix_body(self):   # security only: quality fields beside it are ignored
         c = dict(QJ, security=SECJ)
-        r = run_js("const d = {checks: " + json.dumps(c) + "}, S = {sel: {}, req: null, cat: 's'}; S.sel[archChkKey(d.checks.top[0])] = 1;"
+        r = run_js("const d = {checks: " + json.dumps(c) + "}, S = {sel: {}, req: null}; S.sel[archChkKey(d.checks.top[0])] = 1;"
                    "S.sel[archChkKey(d.checks.security.top[0])] = 1;"
                    "console.log(JSON.stringify([archChkTopBtn(d), archChkWinHtml('/r', d, S, []), archChkFixBody('/r', d.checks, archChkSel(d, S.sel)),"
-                   "archChkWinHtml('/r', {checks: " + json.dumps(QJ) + "}, {sel: {}, req: null, cat: 's'}, []), archChkBadge({checks: {commit: '', tools: [], top: [], security: d.checks.security}})]));")
+                   "archChkWinHtml('/r', {checks: " + json.dumps(QJ) + "}, {sel: {}, req: null}, []), archChkTopBtn({checks: {commit: '', tools: [], top: [], security: d.checks.security}})]));")
         btn, win, body, plain, only = r
-        self.assertIn("품질 1 · 보안 1", btn)
+        self.assertIn(">보안 1</button>", btn)
+        self.assertNotIn("품질", btn)
         self.assertNotIn("archckiw", btn)                     # security error -> red
         self.assertIn("install: &lt;b&gt;", btn)              # tool why escaped in the tooltip
-        self.assertIn('data-ckcat=s aria-selected=true', win)
+        self.assertNotIn("tablist", win)
+        self.assertNotIn("data-ckcat", win)
         self.assertIn("GHSA-p6mc-m468-83gw · &lt;lodash&gt;", win)
         self.assertNotIn("<lodash>", win)
-        self.assertNotIn("F401", win)                          # quality rows are on the other tab
-        self.assertEqual(body.splitlines()[2:4], [   # line 2 = target repository
-                         "- warning · F401 · a.py:2",
-                                                  "- error · GHSA-p6mc-m468-83gw · <lodash> · package-lock.json:1 (https://github.com/advisories/GHSA-p6mc-m468-83gw)"])
-        self.assertIn("<div class=archckst>점검한 적 없음", win)   # security tab ends with the (empty) history section
-        self.assertNotIn("data-ckcat", plain)                  # no security results -> no tabs
-        self.assertTrue(only.startswith("<button") and "보안 1" in only)   # security only: no empty quality badge
-
+        self.assertNotIn("F401", win)                          # quality rows are not listed
+        self.assertEqual(body.splitlines()[2:4], [   # line 2 = target repository; quality item dropped
+                         "- error · GHSA-p6mc-m468-83gw · <lodash> · package-lock.json:1 (https://github.com/advisories/GHSA-p6mc-m468-83gw)",
+                         "Fix the cause, keep behaviour, run the project's tests."])
+        self.assertIn("<div class=archckst>점검한 적 없음", win)   # window ends with the (empty) history section
+        self.assertNotIn("a.py", plain)                        # no security results -> nothing listed
+        self.assertNotIn("점검한 적 없음", plain)
+        self.assertTrue(only.startswith("<button") and only.endswith("</button>") and "보안 1" in only)
 
 if __name__ == "__main__":
     unittest.main()

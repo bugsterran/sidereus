@@ -57,12 +57,13 @@ class EvidenceRec(unittest.TestCase):
         self.assertEqual(recs[1]['steps'], [])
 
     def test_checks_modes_recorded(self):
-        self._w(self.tsv, 'ruff\t0\t12\t0\t1\n')
-        self._run(mode='checks-quality')
+        self._w(self.tsv, 'gitleaks\t0\t12\t0\t1\n')
+        self._run(mode='checks-security')
         self._run(mode='checks-security', rc='1')
+        self._run(mode='checks-quality')   # removed mode: rejected
         self._run(mode='checks-other')
         recs = self._lines()
-        self.assertEqual([(r['mode'], r['rc']) for r in recs], [('checks-quality', 0), ('checks-security', 1)])
+        self.assertEqual([(r['mode'], r['rc']) for r in recs], [('checks-security', 0), ('checks-security', 1)])
         self.assertEqual(set(recs[0]), {'v', 'kind', 'ts', 'mode', 'repo', 'head', 'dirty', 'rc', 'steps'})
 
     def test_bad_args_write_nothing(self):

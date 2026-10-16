@@ -135,14 +135,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Evidence counts only inside the edge's owner module (`from`; `to` when `from` is external; plan.json globs, else `path`) — symbol-only matching passed 48/48 live.
   - ⚠Labels swap `" | < > # & \`` for look-alikes, never `#NN;` entities — the page's flowchart parser (81e) shows those raw.
   - ⚠`arch_map` copies `ARCH_DIR` by value: tests patch `arch_map.ARCH_DIR` and `arch_verify.ARCH_DIR` separately.
-- **Project checks: stale reports and spawning** (`arch_checks`, `scripts/arch_checks.py`).
-  - Cause: a failed Gradle/Maven run leaves the previous build's reports in place, which would read as current results.
-  - ⇒ Reports count only when newer than the run start; an exit-0 run with none fresh (task up to date) may reuse the existing report.
+- **Check runner: spawning and stored fields** (`arch_checks`, `scripts/arch_checks.py`).
   - ⚠Sidereus never runs a tool (rule 7): `sidereus/arch_checks.py` has no subprocess; only the pipeline runner spawns, in its own process group (killed whole on timeout).
-  - ⚠Quality checks run only what the repo declares (Gradle/Maven checkstyle·pmd·spotbugs, ruff/mypy config, eslint/tsc config) — never a PATH CLI with our own rules. ★A repo without lint config got google_checks 2-space noise over 1,087 four-space Java files. Nothing declared → `--verify` says skip the stage.
-  - ⚠The «Run project checks» button shows only when `/api/arch` `checks_runnable` (`arch_checks.checks_runnable`: some detect() plan has an argv) — cached 300 s per repo, so a newly added tool config shows the button up to 5 minutes later.
-  - ⚠Only file / line / rule / severity are stored — `checks_errors` refuses unknown keys and `load_checks` re-drops bad rules and `..` paths.
-  - ⚠XML reports with `<!DOCTYPE`/`<!ENTITY` are refused before `xml.etree` parses them (entity expansion).
+  - ⚠Only file / line / rule / severity (+ package) are stored — `checks_errors` refuses unknown keys and `load_checks` re-drops bad rules and `..` paths.
+  - ⚠`--category security` is required: without it the runner and gate exit 1 (the lint category was removed; an old gate must not pass on nothing).
 - **Security checks: secrets and network** (`sec_checks`, `scripts/arch_checks.py --category security`).
   - Cause: a gitleaks report carries `Secret` / `Match` / `Line` (redacted or not); npm audit and osv-scanner fail without network and would read as «0 advisories».
   - ⇒ `parse_gitleaks` reads `RuleID` / `File` / `StartLine` only; the report sits in the runner's temp dir and `take_report` deletes it in `finally`. Advisory tools run only with `--net`; a DNS/connect error is `skipped «needs network»`.

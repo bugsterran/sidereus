@@ -76,48 +76,47 @@ def demo_arch(now):
             "style": {"style": "layered", "framework": "Spring Boot", "units": "top-level packages",
                       "evidence": [{"file": "pom.xml", "ok": True}, {"file": "web/OrderController.java", "ok": True}],
                       "ok": True},
-            "dev": [], "flows": flows, "checks": _demo_checks(now), "checks_runnable": True}
+            "dev": [], "flows": flows, "checks": _demo_checks(now)}
 
 
-# (tool, file, line, rule, sev) — totals 3 tools ok · 2 errors · 17 warnings on 4 shop modules
-_CHK_ITEMS = [("checkstyle", "web/OrderController.java", 1, "AvoidStarImport", "error"),
-              ("pmd", "order/JpaOrderRepository.java", 7, "AvoidCatchingGenericException", "error")] + \
-    [("checkstyle", f, ln, r, "warning") for f, ln, r in (
-        ("web/OrderController.java", 5, "MissingJavadocMethod"), ("web/OrderController.java", 7, "FinalParameters"),
-        ("web/OrderController.java", 7, "LineLength"), ("order/OrderService.java", 7, "MissingJavadocMethod"),
-        ("order/OrderService.java", 8, "FinalParameters"), ("order/OrderService.java", 8, "LineLength"),
-        ("common/BaseEntity.java", 4, "VisibilityModifier"), ("common/BaseEntity.java", 5, "VisibilityModifier"),
-        ("common/BaseEntity.java", 7, "MissingJavadocMethod"))] + \
-    [("pmd", f, ln, r, "warning") for f, ln, r in (
-        ("web/OrderController.java", 5, "ImmutableField"), ("order/OrderService.java", 7, "MethodArgumentCouldBeFinal"),
-        ("order/OrderService.java", 8, "ShortVariable"), ("order/JpaOrderRepository.java", 5, "ImmutableField"),
-        ("order/JpaOrderRepository.java", 7, "ShortVariable"), ("common/BaseEntity.java", 3, "AbstractClassWithoutAnyMethod"))] + \
-    [("ruff", "app/service.py", 4, "ANN201", "warning"), ("ruff", "app/api.py", 4, "ANN201", "warning")]
+# (tool, file, line, rule, sev, pkg) — security results on the shop modules (no secrets, metadata only)
+_SEC_ITEMS = [("gitleaks", "app/store.py", 3, "generic-api-key", "error", None),
+              ("bandit", "app/api.py", 4, "B105", "warning", None),
+              ("bandit", "app/service.py", 6, "B608", "warning", None),
+              ("osv-scanner", "pay/gateway.go", 1, "GHSA-qppj-fm5r-hxr3", "warning", "golang.org/x/net")]
 
 
 def _demo_checks(now):
-    """Demo `checks` (same keys as arch_checks.load_checks): one default-rules tool, one missing, one skipped."""
+    """Demo `checks` (same keys as arch_checks.load_checks): empty top-level shell + `security` with a short history."""
     mods, n = {}, {}
-    for t, f, _ln, _r, sev in _CHK_ITEMS:
+    for t, f, _ln, _r, sev, _p in _SEC_ITEMS:
         mods.setdefault(f.split("/", 1)[0], {"error": 0, "warning": 0})[sev] += 1
         n.setdefault(t, {"error": 0, "warning": 0})[sev] += 1
-    tools = [{"id": "checkstyle", "rules": "project", "status": "ok", "ms": 4200, "files": 38, "n": n["checkstyle"]},
-             {"id": "pmd", "rules": "default", "status": "ok", "ms": 6100, "files": 38, "n": n["pmd"]},
-             {"id": "spotbugs", "rules": "default", "status": "skipped", "why": "needs build", "ms": 0, "files": 0,
-              "n": {"error": 0, "warning": 0}},
-             {"id": "ruff", "rules": "project", "status": "ok", "ms": 300, "files": 12, "n": n["ruff"]},
-             {"id": "govet", "rules": "default", "status": "missing", "why": "install: brew install go", "ms": 0, "files": 0,
-              "n": {"error": 0, "warning": 0}}]
-    cat = {"AvoidStarImport": "imports", "MissingJavadocMethod": "javadoc", "FinalParameters": "misc",
-           "LineLength": "sizes", "VisibilityModifier": "design"}
-    rules = {"checkstyle:" + r: {"desc": "", "url": "https://checkstyle.org/checks/%s/%s.html#%s" % (c, r.lower(), r)}
-             for r, c in cat.items()}
-    rules["ruff:ANN201"] = {"desc": "missing return type undocumented public function",
-                            "url": "https://docs.astral.sh/ruff/rules/missing-return-type-undocumented-public-function"}
-    top = [{"tool": t, "file": f, "line": ln, "rule": r, "sev": sev, "mod": f.split("/", 1)[0],
-            "rk": t + ":" + r if t + ":" + r in rules else ""} for t, f, ln, r, sev in _CHK_ITEMS]
-    return {"commit": _ARCH_COMMIT, "at": now - 3600, "stale": False, "dirty": False, "src_changed": False,
-            "tools": tools, "mods": mods, "other": {"error": 0, "warning": 0}, "top": top, "rules": rules}
+    z = {"error": 0, "warning": 0}
+    tools = [{"id": "gitleaks", "rules": "default", "status": "ok", "ms": 900, "files": 64, "n": n["gitleaks"]},
+             {"id": "osv-scanner", "rules": "default", "status": "ok", "ms": 2100, "files": 2, "n": n["osv-scanner"]},
+             {"id": "bandit", "rules": "default", "status": "ok", "ms": 700, "files": 4, "n": n["bandit"]},
+             {"id": "semgrep", "rules": "project", "status": "missing", "why": "install: brew install semgrep", "ms": 0,
+              "files": 0, "n": z}]
+    rules = {"bandit:B105": {"desc": "hardcoded password string", "url": "https://bandit.readthedocs.io/en/latest/plugins/b105_hardcoded_password_string.html"},
+             "osv-scanner:GHSA-qppj-fm5r-hxr3": {"desc": "", "url": "https://github.com/advisories/GHSA-qppj-fm5r-hxr3"}}
+    top = [dict({"tool": t, "file": f, "line": ln, "rule": r, "sev": sev, "mod": f.split("/", 1)[0],
+                 "rk": t + ":" + r if t + ":" + r in rules else ""}, **({"pkg": pk} if pk else {}))
+           for t, f, ln, r, sev, pk in _SEC_ITEMS]
+    at = now - 3600
+
+    def row(sev, f, ln, key, desc, src, status):
+        return {"sev": sev, "file": f, "line": ln, "key": key, "desc": desc, "src": src, "ai": src == "review",
+                "status": status, "at": at, "commit": _ARCH_COMMIT}
+    log = {"at_scan": at, "at_review": at - 600,
+           "open": [row("error", "app/store.py", 3, "gitleaks:generic-api-key", "generic-api-key", "scan", "open"),
+                    row("high", "app/api.py", 9, "missing-authz", "Order lookup does not check the caller owns the order",
+                        "review", "open")],
+           "resolved": [row("warning", "app/models.py", 2, "bandit:B311", "B311", "scan", "resolved")], "fp": []}
+    sec = {"commit": _ARCH_COMMIT, "at": at, "stale": False, "dirty": False, "src_changed": False, "tools": tools,
+           "mods": mods, "other": dict(z), "top": top, "rules": rules, "log": log}
+    return {"commit": "", "at": None, "stale": False, "dirty": False, "src_changed": False, "tools": [], "mods": {},
+            "other": dict(z), "top": [], "rules": {}, "security": sec}
 
 
 def demo_src(path="", file="", line="1", lines="0"):

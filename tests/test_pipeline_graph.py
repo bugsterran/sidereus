@@ -431,7 +431,7 @@ class Graph(unittest.TestCase):
 CAT ={"groups": [{"id": "build", "en": "Build"}, {"id": "quality", "en": "Quality"}, {"id": "review", "en": "Review"}], "items": [
     {"id": "implement", "group": "build", "title": {"ko": "구현", "en": "Implement"}, "role": "build", "gate": "", "tools": []},
     {"id": "lint", "group": "quality", "title": {"ko": "린트·정적 분석", "en": "Lint"}, "role": "check", "model": "sonnet",
-     "instr": "Run the runner.", "gate": "python3 /a/scripts/arch_checks.py --verify --last --category quality",
+     "instr": "Run the runner.", "gate": "python3 /a/scripts/arch_checks.py --verify --last --category security",
      "loop": {"to": ["구현", "수정"], "max": 2}, "tools": []},
     {"id": "review", "group": "review", "title": {"ko": "리뷰", "en": "Review"}, "agent": "my-reviewer", "gate": "", "tools": []}]}
 

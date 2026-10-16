@@ -215,21 +215,6 @@
       "gate": "", "gateHint": "", "asserts": "", "tools": []
     },
     {
-      "id": "lint-static", "group": "quality", "title": { "ko": "린트·정적 분석", "en": "Lint + static analysis" }, "role": "check", "model": "sonnet",
-      "task": "Run `python3 {sidereus}/scripts/arch_checks.py --repo . --category quality` once from the repo root and report its printed line only. Do not install tools, do not run any tool yourself, fix nothing.",
-      "gate": "python3 {sidereus}/scripts/arch_checks.py --verify --last --category quality", "gateHint": "",
-      "asserts": "At least one tool ran and every tool that ran examined 1+ files; otherwise the gate fails as EMPTY.",
-      "loop": { "to": ["구현", "수정"], "max": 2 },
-      "tools": [
-        { "id": "ruff", "bin": "ruff", "install": "pipx install ruff", "net": false },
-        { "id": "mypy", "bin": "mypy", "install": "pipx install mypy", "net": false },
-        { "id": "eslint", "bin": "eslint", "install": "npm install -D eslint (in the repo)", "net": false },
-        { "id": "tsc", "bin": "tsc", "install": "npm install -D typescript (in the repo)", "net": false },
-        { "id": "go-vet", "bin": "go", "install": "Install Go from go.dev/dl", "net": false },
-        { "id": "clippy", "bin": "cargo-clippy", "install": "rustup component add clippy", "net": false }
-      ]
-    },
-    {
       "id": "measure", "group": "quality", "title": { "ko": "측정", "en": "Measure" }, "role": "probe", "model": "sonnet",
       "task": "Measure the slow path with a repeatable benchmark (fixed inputs, at least 5 runs) and report median and spread. Change nothing.",
       "gate": "", "gateHint": "A benchmark, e.g. hyperfine · pytest-benchmark", "asserts": "", "tools": []
@@ -243,17 +228,6 @@
       "id": "re-measure", "group": "quality", "title": { "ko": "재측정", "en": "Re-measure" }, "role": "probe", "model": "sonnet",
       "task": "Rerun the same benchmark as the first measurement on the same machine and inputs; report before, after and the change in percent. Change nothing.",
       "gate": "", "gateHint": "", "asserts": "", "tools": []
-    },
-    {
-      "id": "type-check", "group": "quality", "title": { "ko": "타입 검사", "en": "Type check" }, "role": "check", "model": "sonnet",
-      "task": "Run `python3 {sidereus}/scripts/arch_checks.py --repo . --category quality --only mypy,tsc` once from the repo root and report its printed line only. Do not install tools, do not run any tool yourself, fix nothing.",
-      "gate": "python3 {sidereus}/scripts/arch_checks.py --verify --last --category quality", "gateHint": "",
-      "asserts": "mypy or tsc ran and examined 1+ files; otherwise the gate fails as EMPTY.",
-      "loop": { "to": ["구현", "수정"], "max": 2 },
-      "tools": [
-        { "id": "mypy", "bin": "mypy", "install": "pipx install mypy", "net": false },
-        { "id": "tsc", "bin": "tsc", "install": "npm install -D typescript (in the repo)", "net": false }
-      ]
     },
     {
       "id": "complexity", "group": "quality", "title": { "ko": "복잡도·중복 점검", "en": "Complexity + duplication" }, "role": "check", "model": "sonnet",

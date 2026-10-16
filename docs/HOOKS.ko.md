@@ -129,8 +129,8 @@ Agent/Task/SendMessage 는 지운다. 파이프라인, 단계, 시각, cwd 만 �
 파이프라인 파일에 `"guards": {"requireGates": ["<단계>", …], "maxLoopBacks": 1..10}` 를 둘 수 있다(둘 다 선택.
 검증기는 없는 단계, `gate` 가 채점되지 않는 단계, 범위 밖 max 를 거절한다).
 
-- 채점되는 게이트 → 증거 모드: `check.sh --fast` → `fast`, `--full` → `full`, `arch_checks.py --verify`
-  (`--category quality` 또는 없음) → `checks-quality`, `--category security` → `checks-security`.
+- 채점되는 게이트 → 증거 모드: `check.sh --fast` → `fast`, `--full` → `full`, `arch_checks.py --verify
+  --category security` → `checks-security`.
 - 이 세션에 그 프로젝트의 열린 실행이 있고 `requireGates` 가 있으면 `git commit`(메인·서브에이전트)을 거절한다. 통과
   조건: 나열된 단계마다 완료(건너뜀 아님) + 그 단계의 마지막 회차 시작 이후 `evidence.jsonl` 에 그 모드의 `rc=0` 줄이
   있고 그 뒤에 실패 줄이 없을 것. 거절 이유에 빠진 단계가 나온다.

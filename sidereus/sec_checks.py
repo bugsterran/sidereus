@@ -1,5 +1,6 @@
-"""Security checks for the project-checks runner (`--category security`): tool plans, report parsers, files examined
-and network gating. Same checks.json v1 schema as sidereus/arch_checks.py plus item `pkg`, stored as checks-security.json.
+"""Security checks for the runner `scripts/arch_checks.py --category security`: tool plans, report parsers, files
+examined and network gating. Checks file v1 schema (sidereus/arch_checks.py) plus item `pkg`, stored as
+checks-security.json.
 
 ⚠Secrets: gitleaks findings keep RuleID / File / StartLine only — Secret, Match, Line and message are never read into
 results, logs or relays. Its report lives in the runner's temp dir and is deleted right after parsing (`take_report`).
@@ -37,7 +38,7 @@ def install_hint(tool):
 SEC_IDS = ("gitleaks", "npm-audit", "osv-scanner", "semgrep", "bandit")
 SEC_FILE = "checks-security.json"
 SEC_LAST = "_checks_last_security.json"   # {repo, commit} of the newest security run (gate `--verify --last --category security`)
-CATEGORIES = ("quality", "security")
+CATEGORIES = ("security",)
 PKG_RE = re.compile(r"[A-Za-z0-9@/._+:-]{1,100}")
 NET_RE = re.compile(r"ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|no such host|dial tcp|"
                     r"network is unreachable|getaddrinfo", re.I)
@@ -56,7 +57,7 @@ _WALK_DIRS, _WALK_DEPTH = 5000, 6
 
 
 def scan(repo):
-    """One bounded walk (same bounds as arch_checks._scan): files counted, python present, lockfile present."""
+    """One bounded walk: files counted, python present, lockfile present."""
     s = {"n": 0, "py": False, "lock": False}
     dirs = 0
     for dp, dns, fns in os.walk(repo):
@@ -94,7 +95,8 @@ def _npm_dirs(repo):
 
 
 def detect(repo, which, net=False):
-    """Security tool plans (same shape as arch_checks.detect). `src: report` = gitleaks' report file (see bind)."""
+    """Security tool plans: {id, rules, argv, cwd, src, ...} or {id, rules, status, why}. `src: report` = gitleaks'
+    report file (see bind)."""
     s, out = scan(repo), []
     exe = which("gitleaks")
     gl = "project" if os.path.isfile(os.path.join(repo, ".gitleaks.toml")) else "default"

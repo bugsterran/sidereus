@@ -21,7 +21,6 @@ GATE_MODES = (
     ("(?:^|[\\s/])check\\.sh\\s+--fast(?![\\w-])", "fast"),
     ("(?:^|[\\s/])check\\.sh\\s+--full(?![\\w-])", "full"),
     ("arch_checks\\.py(?=.*\\s--verify(?![\\w-])).*\\s--category[\\s=]+security(?![\\w-])", "checks-security"),
-    ("arch_checks\\.py(?=.*\\s--verify(?![\\w-]))(?!.*\\s--category[\\s=]+(?!quality(?![\\w-])))", "checks-quality"),
 )
 LOOP_MAX = 10
 

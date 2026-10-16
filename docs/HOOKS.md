@@ -138,8 +138,8 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
 A pipeline file may set `"guards": {"requireGates": ["<stage>", …], "maxLoopBacks": 1..10}` (both optional; the
 validators refuse an unknown stage, a listed stage whose `gate` is not graded, or a max out of range).
 
-- Graded gates → evidence mode: `check.sh --fast` → `fast`, `--full` → `full`, `arch_checks.py --verify`
-  (`--category quality` or none) → `checks-quality`, `--category security` → `checks-security`.
+- Graded gates → evidence mode: `check.sh --fast` → `fast`, `--full` → `full`, `arch_checks.py --verify
+  --category security` → `checks-security`.
 - `git commit` (main or subagent) while this session's open run of that project has `requireGates` is denied unless each
   listed stage is done (not skipped) and `evidence.jsonl` has an `rc=0` row of its mode at or after the stage's last
   pass start, with no later failing row of that mode. The reason names the missing stages.

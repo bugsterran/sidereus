@@ -18,12 +18,10 @@ EV_STAGES_MAX = 40
 EV_INT_MAX = 1_000_000
 EV_SUGG_MAX = 40
 # Seed kind -> tools whose findings catch it (= pl_eval.KIND_TOOLS; logic seeds have no tool gate).
-SG_KIND_TOOLS = {"lint": ("eslint",), "type": ("tsc",), "secret": ("gitleaks",), "dep": ("npm-audit", "osv-scanner"),
-                 "sast": ("semgrep", "bandit")}
-SG_KINDS = ("lint", "type", "secret", "dep", "sast", "logic")
+SG_KIND_TOOLS = {"secret": ("gitleaks",), "dep": ("npm-audit", "osv-scanner"), "sast": ("semgrep", "bandit")}
+SG_KINDS = ("secret", "dep", "sast", "logic")
 # Gate mode -> the flags that make an empty or broken run fail (arch_checks --verify fails when no tool ran / 0 files).
-SG_FLAGS = {"checks-quality": "--verify --last --category quality", "checks-security": "--verify --last --category security",
-            "fast": "--fast", "full": "--full"}
+SG_FLAGS = {"checks-security": "--verify --last --category security", "fast": "--fast", "full": "--full"}
 SG_REVIEW_GROUPS = ("review", "test")
 
 

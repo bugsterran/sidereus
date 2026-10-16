@@ -1,3 +1,0 @@
-pkg/mod.py:12: error: Incompatible return value type  [return-value]
-pkg/mod.py:13:5: note: secret note
-pkg/other.py:4: error: Name "x" is not defined

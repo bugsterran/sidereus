@@ -514,7 +514,7 @@ function paintStruct(){
         + esc(T(o[1])) + '</button>').join('') + '</span>';
   // ★Selects sit right-aligned on the view's title line
   //   (at the bottom-right above the replay bar they were 65x21px and went unnoticed). Every state uses head(), so they stay.
-  // pre = html placed immediately left of the switch (84j: «Run project checks»).
+  // pre = html placed immediately left of the switch (84j: the diagram request button).
   const head = (note, ex, pre) => '<div class="wvh wvht strh"><span>' + note + '</span>'
     + '<div class=strctl>' + ctl + (pre || '') + seg + '</div></div>' + (ex || '');
   if(strMode === 'arch'){ archPaint(box, head); return strWire(); }

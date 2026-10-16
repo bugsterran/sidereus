@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Append one gate-run record to the evidence file (called from check.sh's EXIT trap).
 
-usage: evidence_rec.py <file> <mode: fast|full|checks-quality|checks-security> <rc> <repo> <head> <dirty> <steps.tsv> [<screen.json>]
+usage: evidence_rec.py <file> <mode: fast|full|checks-security> <rc> <repo> <head> <dirty> <steps.tsv> [<screen.json>]
 
 steps.tsv lines: name<TAB>rc<TAB>n<TAB>failed<TAB>secs. Metadata only: counts and step names,
 never log lines, file names or test names. Never fails the gate: any problem -> exit 0, nothing written.
@@ -17,7 +17,7 @@ EV_CAP = 400    # rotate once the file grows past this many lines
 EV_KEEP = 200   # lines kept after rotation
 MAX_STEPS = 32
 # Gate modes a row may carry; ⚠hooks/pl_guard.py GATE_MODES maps gates to these (add new modes here first).
-MODES = ('fast', 'full', 'checks-quality', 'checks-security')
+MODES = ('fast', 'full', 'checks-security')
 MAX_SCREEN = 24
 _NAME = re.compile(r'^[A-Za-z0-9_-]{1,32}$')
 _HEAD = re.compile(r'^[0-9a-f]{4,40}$')

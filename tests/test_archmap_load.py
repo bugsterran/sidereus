@@ -25,8 +25,7 @@ class LoadTest(unittest.TestCase):
         roots = lambda p: (os.path.realpath(p) if p and os.path.realpath(p) in self.allowed else "")
         self.p = [mock.patch.object(AM, "ARCH_DIR", self.store), mock.patch.object(AM, "_struct_src_root", roots),
                   mock.patch.object(AM, "head_of", lambda r: self.head),
-                  mock.patch.object(AM, "behind_of", lambda r, c: 4),
-                  mock.patch.object(AM, "checks_runnable", lambda r: r == self.repo)]
+                  mock.patch.object(AM, "behind_of", lambda r, c: 4)]
         for p in self.p:
             p.start()
 
@@ -87,15 +86,16 @@ class LoadTest(unittest.TestCase):
 
     def test_checks(self):
         self.assertIsNone(AM.load(self.repo)["checks"])                  # empty store
-        self.assertIs(AM.load(self.repo)["checks_runnable"], True)      # present even with an empty store
         self.put(C1, 1000)
-        self.assertIsNone(AM.load(self.repo)["checks"])                  # old store: no checks.json
+        self.assertIsNone(AM.load(self.repo)["checks"])                  # old store: no checks-security.json
         d = os.path.join(self.store, AV.repo_key(self.repo), C1)
-        with open(os.path.join(d, "checks.json"), "w", encoding="utf-8") as f:
+        with open(os.path.join(d, "checks-security.json"), "w", encoding="utf-8") as f:
             json.dump({"v": 1, "repo": self.repo, "commit": C1, "dirty": False, "src_changed": False, "at": 5.0,
-                       "tools": [], "files": {"a/x.py": {"error": 1, "warning": 0}}, "items": []}, f)
+                       "tools": [{"id": "bandit", "rules": "default", "status": "ok", "ms": 1, "files": 1,
+                                  "n": {"error": 1, "warning": 0}}],
+                       "files": {"a/x.py": {"error": 1, "warning": 0}}, "items": []}, f)
         c = AM.load(self.repo)["checks"]
-        self.assertEqual((c["mods"], c["stale"]), ({"a": {"error": 1, "warning": 0}}, False))
+        self.assertEqual((c["security"]["mods"], c["security"]["stale"], c["tools"]), ({"a": {"error": 1, "warning": 0}}, False, []))
 
     def test_generated_at(self):
         self.put(C1, 1000)

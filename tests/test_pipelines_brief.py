@@ -61,20 +61,20 @@ class Brief(unittest.TestCase):
 
     def test_builtin_hidden_only_in_sidereus_repo(self):
         self._w("change", _pipe("change"))
-        self._w("project-checks", dict(_pipe("project-checks"), builtin=True))
+        self._w("security-checks", dict(_pipe("security-checks"), builtin=True))
         os.makedirs(os.path.join(self.tmp, "sidereus"))
         open(os.path.join(self.tmp, "sidereus", "config.py"), "w").close()
         with mock.patch.object(H, "CODE_DIR", self.tmp):
             t = H.brief(self.tmp)
             self.assertIn("- change —", t)
-            self.assertNotIn("project-checks", t)
+            self.assertNotIn("security-checks", t)
         other = os.path.join(self.tmp, "code")   # ⚠another repo: the key is ignored, the file is offered
         os.makedirs(os.path.join(other, "sidereus"))
         open(os.path.join(other, "sidereus", "config.py"), "w").close()
         with mock.patch.object(H, "CODE_DIR", other):
-            self.assertIn("project-checks", H.brief(self.tmp))
+            self.assertIn("security-checks", H.brief(self.tmp))
         with mock.patch.object(H, "CODE_DIR", os.path.join(self.tmp, "nowhere")):   # unresolved = not hidden
-            self.assertIn("project-checks", H.brief(self.tmp))
+            self.assertIn("security-checks", H.brief(self.tmp))
 
     def test_missing_agents_listed(self):
         self._agent(self.user, "impl")
