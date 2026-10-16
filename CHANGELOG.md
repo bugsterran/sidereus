@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - CI: `AGENTS.md` no longer trips the no-Hangul docs test.
 - `scripts/readme_shots.mjs` waits for the Pipelines tab before clicking it.
+- `scripts/screen_check.mjs` masks one-character Korean weekday labels, so the Korean screens no longer fail on some days.
 
 ## [0.1.0] - 2026-10-16
 
