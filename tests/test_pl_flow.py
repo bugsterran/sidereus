@@ -1010,6 +1010,51 @@ class Flow(unittest.TestCase):
             open(os.path.join(self.marks, SID + ".runs.json.lock"), "w").close()
             self.assertIsNone(self.bash("ls"))
 
+    def _whylog(self):
+        os.makedirs(self.marks, exist_ok=True)   # _why never creates the dir
+        p = os.path.join(self.marks, SID + ".why")
+        return open(p, encoding="utf-8").read() if os.path.exists(p) else ""
+
+    def test_why_logs_no_project_metadata_only(self):
+        self._whylog()
+        with mock.patch.object(H, "_project", lambda *a: None):
+            self.assertIsNone(self.pre("설계"))
+        w = self._whylog()
+        self.assertRegex(w, r"^\S+ PreToolUse Agent no-project\n$")
+        self.assertNotIn("secret", w)
+
+    def test_why_silent_for_untagged_calls(self):
+        self._whylog()
+        with mock.patch.object(H, "_project", lambda *a: None):
+            self._ev("PreToolUse", "", raw="plain task")
+            self._ev("PreToolUse", "", tool="Bash", raw="ls")
+            self._ev("PostToolUse", "", raw="plain task")
+        self.assertEqual(self._whylog(), "")
+
+    def test_why_logs_exception_type(self):
+        self._whylog()
+        def boom(*a):
+            raise KeyError("x secret")
+        with mock.patch.object(H, "_stages", boom):
+            with self.assertRaises(KeyError):   # __main__ swallows it; main() re-raises after logging
+                self.pre("설계")
+        w = self._whylog()
+        self.assertIn(" exc:KeyError\n", w)
+        self.assertNotIn("secret", w)
+
+    def test_why_log_capped(self):
+        self._whylog()
+        with mock.patch.object(H, "WHY_MAX", 2000), mock.patch.object(H, "_project", lambda *a: None):
+            for _ in range(300):
+                self.pre("설계")
+        self.assertLessEqual(len(self._whylog().encode()), 2000 + 100)
+        self.assertTrue(self._whylog().endswith("no-project\n"))
+
+    def test_why_never_raises(self):
+        with mock.patch.object(H, "MARK_DIR", os.path.join(self.tmp, "f")):
+            open(os.path.join(self.tmp, "f"), "w").close()   # MARK_DIR is a file: makedirs fails
+            H._why({"session_id": SID}, "x")
+
 
 class AwayHome(unittest.TestCase):
     """A session whose cwd has no pipelines still records its run in the known project that owns the tagged name."""
