@@ -191,6 +191,32 @@ def _now():
     return time.time()
 
 
+WHY_MAX = 32 * 1024   # <sid>.why cap; past it only the newer half of the lines is kept
+_WORD = re.compile(r"^[A-Za-z0-9_.:-]{1,40}$")
+
+
+def _why(ev, code):
+    """Diagnostic: one line `<iso> <event> <tool> <code>` in plmark/<sid>.why for a silent early exit.
+    ⚠Metadata only (sid from the payload, never tool input); must never raise."""
+    try:
+        sid = ev.get("session_id") if isinstance(ev, dict) else None
+        if not isinstance(sid, str) or not SID.match(sid):
+            return
+        w = [x if isinstance(x, str) and _WORD.match(x) else "-" for x in (ev.get("hook_event_name"), ev.get("tool_name"), code)]
+        if not os.path.isdir(MARK_DIR):   # a silent exit never creates the data dir
+            return
+        p = os.path.join(MARK_DIR, sid + ".why")
+        if os.path.isfile(p) and os.path.getsize(p) > WHY_MAX:
+            with open(p, encoding="utf-8", errors="replace") as f:
+                ls = f.readlines()
+            with open(p, "w", encoding="utf-8") as f:
+                f.writelines(ls[len(ls) // 2:])
+        with open(p, "a", encoding="utf-8") as f:
+            f.write("%s %s %s %s\n" % (time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(_now())), w[0], w[1], w[2]))
+    except Exception:
+        pass
+
+
 # --- auto catch-rate scoring at run end (scripts/pl_eval.py score --auto dedupes per (pipeline, commit)) ---
 SCORE_SCRIPT = None   # None = <hook dir>/../scripts/pl_eval.py, else <data dir>/scripts/pl_eval.py; patched in tests
 _CLOSED = []          # (project dir, pipeline name, since) of runs this hook call ended
@@ -988,6 +1014,9 @@ def main(argv=None):
         except Exception:
             _g = None
         denied = _g.run(plat, ev, _me, _flow) if _g else _flow(plat, ev)
+    except Exception as e:   # __main__ swallows it; leave the type name only
+        _why(ev, "exc:" + type(e).__name__)
+        raise
     finally:
         if not denied:   # ⚠a denied `git commit` never ran: closing the run anyway made every skip open a new run
             _commit_close(ev, _now())
@@ -1124,6 +1153,7 @@ def _flow(plat, ev):
     proj = _project(ev, tool, name, title, keep)
     pl = _stages(proj, name) if proj else None
     if not pl or _apply_off(proj):
+        _why(ev, "no-project" if not proj else "no-stages" if not pl else "apply-off")
         return
     st, after = pl
     if _idx(st, title) < 0:
@@ -1136,11 +1166,13 @@ def _flow(plat, ev):
     out = None
     with _Lock(path) as lk:
         if not lk.ok:
+            _why(ev, "lock")
             return
         d = _load(path)
         r = d["runs"].get(name)
         if event == "PostToolUse":
             if not isinstance(r, dict) or r.get("end"):
+                _why(ev, "post-no-run" if not isinstance(r, dict) else "post-ended")
                 return
             r = _run_of(d, name, cwd, now, False)
             if shell:

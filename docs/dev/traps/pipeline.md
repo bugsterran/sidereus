@@ -127,3 +127,5 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: a stage absent from runs.json (hook wrote nothing after a skip) is lit from the live `sub` row, but an aid present in `byname` was always taken as an earlier run's agent.
 - ⇒ skip only when none of its meta t0 values falls in the run window [t0-5, now+5]. `tests/test_pl_runs.py`.
 - ⚠Unexplained: `hooks/pl_flow.py` did not save runs.json after the skip although `_flow` in memory produces the stage; suspect the silent return on `_Lock` failure.
+- Diagnostic: each silent exit of `_flow` and each exception `main()` re-raises appends `<iso> <event> <tool> <code>` to `plmark/<sid>.why` (codes `no-project` · `no-stages` · `apply-off` · `lock` · `post-no-run` · `post-ended` · `exc:<Type>`; capped at 32 KB, written only if `plmark/` exists).
+- ⚠Metadata only — never tool input; `LOCK_WAIT_S` 2.0 < `LOCK_STALE_S` 5.0, so a waiter gives up before a stale lock can be taken over.
