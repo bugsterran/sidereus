@@ -562,6 +562,10 @@ class _GetRoutes(_StructRoutes):
 
     def _g_ui_prefs(self, u):
         # Page UI prefs as a script (loaded before app JS); `null` = no file yet, the page migrates localStorage once
+        # ⚠Only route serving private data as executable script: <script src> is readable cross-origin and the shared guard
+        # lets a missing Sec-Fetch-Site through, so require same-origin; without it __UIP stays undefined ⇒ defaults, no POST.
+        if self.headers.get("Sec-Fetch-Site") != "same-origin":
+            return self._send(403, "forbidden", "text/plain; charset=utf-8")
         try:
             body = ui_prefs_script()
         except Exception as e:
