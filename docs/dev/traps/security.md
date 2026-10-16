@@ -53,4 +53,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Records hold sev · file:line · key · one-line desc only — never Match / Secret / message text or source lines.
 - **gitleaks `dir` scans gitignored files** (`scripts/arch_checks.py` `run`, `sidereus/sec_checks.py` `drop_ignored`): ★1017 generic-api-key errors from local `.omc/` state filled the item cap (300) and the log cap (200), hiding real findings.
   - ⇒ after the scan, drop items under `git ls-files -z -o -i --exclude-standard --directory`; a git failure keeps every item.
-  - ⚠Never hard-code dot-dirs to skip — that would also hide `.env` / `.github`.
+  - ⚠Gitignored files (often `.env`) are skipped on purpose — they are not committed; never hard-code dot-dirs (would hide committed `.github` / `.env`).
+- **Work popup cut before redact** (`sidereus/steps.py` `_cut`, all caps in `_scan_blocks` / `_work_scan`): ★a fake DSN straddling the 4000 say cap showed `postgresql://u:FakePw123` — `_USERINFO` needs `@`, `_JSONKV` the closing quote.
+  - ⇒ `_cut` redacts `s[:n + 2048]` then cuts; `redact_work` stays as the second pass; `cut` flags compare raw lengths.
+  - ⚠Never cut raw text before redacting it.

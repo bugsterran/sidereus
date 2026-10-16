@@ -9,6 +9,7 @@ from tests._load import sidereus
 R = sidereus("redact")
 W = sidereus("work")
 S = sidereus("structure")
+ST = sidereus("steps")
 M = R.MASK
 
 
@@ -89,6 +90,27 @@ class WorkPayload(unittest.TestCase):
         for secret in ("sk-live1234567890", "tok_abcdef123", "pw1", "zzz9"):
             self.assertNotIn(secret, blob)
         self.assertEqual(out["steps"][0]["res"]["lines"][1], "plain")
+
+    def _scan(self, blocks):
+        steps, says, results = [], [], {}
+        ST._scan_blocks(blocks, steps, results, "", says, "")
+        for st in steps:                  # same join as session_work, then the second pass
+            if st.get("id") in results:
+                st["res"] = results[st["id"]]
+        return repr(R.redact_work({"ok": True, "steps": steps, "says": says}))
+
+    def test_secret_straddling_cut_masked(self):
+        # Fake secrets cut mid-way by the caps must not leak a fragment (redact before cut).
+        dsn = "x" * (ST.AGENT_SAY_MAX - 25) + " postgresql://u:FakePw123456@h/db"
+        js = "y" * (ST.AGENT_SAY_MAX - 20) + ' {"api_key": "FakeVal0987654321abcdefgh"}'
+        ed = "z" * (ST.AGENT_EDIT_MAX - 22) + ' {"secret": "FakeTok123456789abcdef"}'
+        res = "r" * (ST.AGENT_ARG_MAX - 20) + " mysql://u:FakeRes123456@h/db"
+        blob = self._scan([{"type": "text", "text": dsn}, {"type": "text", "text": js},
+                           {"type": "tool_use", "name": "Edit", "id": "e",
+                            "input": {"file_path": "/a.py", "old_string": "", "new_string": ed}},
+                           {"type": "tool_result", "tool_use_id": "e", "content": res}])
+        self.assertEqual([f for f in ("FakePw", "FakeVa", "FakeTok", "FakeRes") if f in blob], [])
+        self.assertIn("postgresql://u:", blob)
 
 
 class StructRoots(unittest.TestCase):

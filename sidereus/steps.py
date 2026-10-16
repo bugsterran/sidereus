@@ -4,6 +4,7 @@ import os
 import re
 from sidereus.transcript import _lines_until, _tail_lines, _tool_target
 from sidereus.gitinfo import _git_root
+from sidereus.redact import redact
 
 
 AGENT_STEPS_MAX = 400      # cap on one agent's tool footprints — if longer, keep the tail (recent)
@@ -195,6 +196,19 @@ def _wrote_files(cmd):
     return out
 
 
+_CUT_MARGIN = 2048         # longer than any token/DSN pattern; _PEM matches to \Z so a cut PEM still masks
+
+
+def _cut(s, n):
+    """Redact, then cut to n. ⚠Never cut before redacting: a secret straddling the cut loses its anchor (`@`, closing quote) and leaks."""
+    s = s or ""
+    head = s[:n + _CUT_MARGIN]
+    r = redact(head)
+    if len(r) < n < len(s):               # masking shrank the head below n: text past it would show unredacted
+        r = redact(s)
+    return r[:n]
+
+
 def _agent_arg(b):
     """**The actual argument** as printed in the console. The command, path or pattern itself, not the description.
 
@@ -205,8 +219,8 @@ def _agent_arg(b):
         v = a.get(k)
         if isinstance(v, str) and v.strip():
             v = " ".join(v.split())
-            return v[:AGENT_ARG_MAX]
-    return (a.get("description") or "")[:AGENT_ARG_MAX]
+            return _cut(v, AGENT_ARG_MAX)
+    return _cut(a.get("description") or "", AGENT_ARG_MAX)
 # ★Code changes sit inside `Edit`/`Write` calls as is (old_string/new_string · content).
 #   Showing only the tool name does not tell "what was changed" (2026-08-27), so the content goes along.
 _EDIT_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit"}
@@ -243,7 +257,7 @@ def _scan_blocks(c, steps, results, cwd, says, ts):
                 ls = [l for l in txt.splitlines()][:AGENT_RES_LINES]
                 more = len(txt.splitlines()) - len(ls)
                 results[b["tool_use_id"]] = {
-                    "lines": [l[:AGENT_ARG_MAX] for l in ls][:AGENT_RES_LINES],
+                    "lines": [_cut(l, AGENT_ARG_MAX) for l in ls],
                     "more": max(0, more),
                     "err": bool(b.get("is_error")),
                 }
@@ -279,8 +293,8 @@ def _scan_blocks(c, steps, results, cwd, says, ts):
                         st.setdefault("wrote", []).append(_ew)
                     st["edit"] = {
                         "path": a.get("file_path") or a.get("notebook_path") or "",
-                        "old": (old_s or "")[:AGENT_EDIT_MAX],
-                        "new": (new_s or "")[:AGENT_EDIT_MAX],
+                        "old": _cut(old_s, AGENT_EDIT_MAX),
+                        "new": _cut(new_s, AGENT_EDIT_MAX),
                         "cut": max(len(old_s or ""), len(new_s or "")) > AGENT_EDIT_MAX,
                     }
                 # MultiEdit is an edits array — report the count only (bodies are long, so folded)
@@ -290,12 +304,12 @@ def _scan_blocks(c, steps, results, cwd, says, ts):
                     _ew = _edit_target(a.get("file_path") or "")
                     if _ew and not st.get("wrote"):
                         st["wrote"] = [_ew]
-                    st["edits"] = [{"old": str(x.get("old_string") or "")[:AGENT_EDIT_MAX],
-                                    "new": str(x.get("new_string") or "")[:AGENT_EDIT_MAX]}
+                    st["edits"] = [{"old": _cut(str(x.get("old_string") or ""), AGENT_EDIT_MAX),
+                                    "new": _cut(str(x.get("new_string") or ""), AGENT_EDIT_MAX)}
                                    for x in eds[:20]]
             steps.append(st)
         elif b.get("type") == "text" and (b.get("text") or "").strip():
-            says.append({"t": (ts or ""), "text": b["text"][:AGENT_SAY_MAX]})
+            says.append({"t": (ts or ""), "text": _cut(b["text"], AGENT_SAY_MAX)})
 
 
 def _work_scan(_src, cwd=""):
@@ -327,7 +341,7 @@ def _work_scan(_src, cwd=""):
                 _u = c if isinstance(c, str) else (" ".join(
                     b.get("text", "") for b in c if isinstance(b, dict) and b.get("type") == "text")
                     if isinstance(c, list) else "")
-                _u = (_u or "")[:AGENT_TEXT_MAX]
+                _u = _cut(_u, AGENT_TEXT_MAX)
                 if not prompt:
                     prompt = _u
                 # ★Keep **the last** human utterance too. For an agent the first instruction is the task, but

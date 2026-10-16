@@ -321,7 +321,7 @@ def files(plan, res, repo):
 
 def drop_ignored(items, ignored):
     """items minus those under a gitignored path. ignored = `git ls-files -z -o -i --exclude-standard --directory`.
-    ⚠Filesystem scans (gitleaks dir) read ignored local state; asking git beats hard-coded dot-dirs (would hide .env/.github)."""
+    ⚠Gitignored files (often .env) are skipped on purpose — not committed; never hard-code dot-dirs (would hide committed .github/.env)."""
     ig = [p for p in (ignored or "").split("\0") if p]
     dirs, exact = tuple(p for p in ig if p.endswith("/")), set(p for p in ig if not p.endswith("/"))
     return [x for x in items if x["file"] not in exact and not x["file"].startswith(dirs)]
