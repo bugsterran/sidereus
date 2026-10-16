@@ -131,6 +131,27 @@ class Runner(Tmp):
         self.assertEqual((c["commit"], c["tools"], c["security"]["top"][0]["rule"]), ("", [], "aws-access-token"))
         self.assertNotIn(SECRET, json.dumps(c))
 
+    def test_gitignored_findings_dropped(self):
+        self.w(".omc/x.json", "{}")
+        real = self.cli._exec
+
+        def ex(p, t, tmp):
+            with open(p["report"], "w") as f:
+                json.dump([{"RuleID": "aws-access-token", "File": os.path.join(self.repo, n), "StartLine": 1}
+                           for n in ("conf.py", ".omc/x.json")], f)
+            return {"rc": 1, "out": "", "err": self.err, "t0": 0, "ms": 4}
+        fp = os.path.join(self.store, AV.repo_key(self.repo), C1, SC.SEC_FILE)
+        for ls, want in ((".omc/\0", ["conf.py"]), (None, [".omc/x.json", "conf.py"])):
+            git = lambda repo, args, ls=ls: (C1 + "\n") if args[0] == "rev-parse" else (ls if args[0] == "ls-files" else "")
+            with mock.patch.object(self.cli, "_exec", ex), mock.patch.object(self.cli, "_git", git):
+                self.assertEqual(self.main("--repo", self.repo, "--category", "security")[0], 0)
+            with open(fp) as f:
+                j = json.load(f)
+            self.assertEqual(sorted(x["file"] for x in j["items"]), want)
+            self.assertEqual((j["tools"][0]["n"]["error"], sorted(j["files"])), (len(want), want))
+        self.assertIs(self.cli._exec, real)
+        self.assertEqual(SC.drop_ignored([{"file": "a/b"}, {"file": "ab"}, {"file": "c"}], "a/\0c\0"), [{"file": "ab"}])
+
     def test_verify_records_evidence(self):
         ev = os.path.join(self.tmp, "ev.jsonl")
         self.cli._record = self.cli._verify_record   # cli() stubs it out for every other test

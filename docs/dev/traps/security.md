@@ -51,3 +51,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠AI review findings are never resolved by absence: model review is not deterministic, so a missing finding is not evidence of a fix. Only a `--mark` record resolves them (last mark wins).
   - ⚠Scan and review never resolve each other; a run where no tool ran ok is not logged (it would resolve everything).
   - ⚠Records hold sev · file:line · key · one-line desc only — never Match / Secret / message text or source lines.
+- **gitleaks `dir` scans gitignored files** (`scripts/arch_checks.py` `run`, `sidereus/sec_checks.py` `drop_ignored`): ★1017 generic-api-key errors from local `.omc/` state filled the item cap (300) and the log cap (200), hiding real findings.
+  - ⇒ after the scan, drop items under `git ls-files -z -o -i --exclude-standard --directory`; a git failure keeps every item.
+  - ⚠Never hard-code dot-dirs to skip — that would also hide `.env` / `.github`.

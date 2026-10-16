@@ -140,6 +140,9 @@ def run(repo, only=None, net=False):
             items += its
     finally:
         _rmtree(tmp)
+    ign = _git(repo, ["ls-files", "-z", "-o", "-i", "--exclude-standard", "--directory"])
+    if ign is not None:   # git failure keeps every item
+        items = SC.drop_ignored(items, ign)
     after = _git(repo, ["status", "--porcelain"])
     changed = before is None or after is None or before != after
     j = AC.build(repo, head, bool((before or "").strip()), changed, round(time.time(), 3), tools, items)

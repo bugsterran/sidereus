@@ -319,6 +319,14 @@ def files(plan, res, repo):
     return 0
 
 
+def drop_ignored(items, ignored):
+    """items minus those under a gitignored path. ignored = `git ls-files -z -o -i --exclude-standard --directory`.
+    ⚠Filesystem scans (gitleaks dir) read ignored local state; asking git beats hard-coded dot-dirs (would hide .env/.github)."""
+    ig = [p for p in (ignored or "").split("\0") if p]
+    dirs, exact = tuple(p for p in ig if p.endswith("/")), set(p for p in ig if not p.endswith("/"))
+    return [x for x in items if x["file"] not in exact and not x["file"].startswith(dirs)]
+
+
 # ── security log: append-only history of scan / AI-review findings and their later status ──
 # ⚠Metadata only: sev · file:line · key · one-line desc. Never Match / Secret / message text or source lines.
 # Status is computed on read (log_view), never rewritten. Identity = (src, key, file), not line (lines move).
