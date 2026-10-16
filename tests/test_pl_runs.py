@@ -216,6 +216,13 @@ class PlModel(unittest.TestCase):
                                             "run": True, "t0": NOW - 120, "t1": NOW}])
         self.assertEqual(sum(len(v["ag"]) for v in s.values()), 1)
 
+    def test_synth_stage_starts_at_agent_start(self):
+        # A stage made from a live agent starts when the agent did, not at `now` (read «Running · 0s»).
+        self._file({"sidereus-change": self._r()})
+        sub = [{"lab": "sidereus-reviewer: [pl:sidereus-change/리뷰] look", "min": 7, "aid": "z9", "tid": "tu_z9"}]
+        st = PR.pl_model(SID, self.sd, sub, None, NOW)[0]["stages"]["리뷰"]
+        self.assertEqual((st["t0"], st["t1"]), (NOW - 420, NOW))
+
     def test_long_title_one_stage(self):
         long = "긴단계" * 20   # 60 chars: over the old 40 cut, within the tag's 80
         self._file({"sidereus-change": self._r(st={long: {"s": "run", "t0": NOW - 50, "t1": NOW - 10, "n": 1}})})

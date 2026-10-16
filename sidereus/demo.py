@@ -17,7 +17,7 @@ from urllib.parse import parse_qs
 from sidereus.demo_data import (CX, GEM_ROW, H, REPOS, SEED, _WorldPanels,  # noqa: F401
                              _hex, _iso, _local_iso, _uuid)
 from sidereus.demo_git import _WorldGit   # branch tab + rail payloads (split out of demo_data)
-from sidereus.demo_rel import demo_arch, demo_file, demo_src, demo_tree   # structure arch/tree payloads
+from sidereus.demo_rel import _ARCH_COMMIT, _ARCH_MODS, demo_arch, demo_file, demo_src, demo_tree   # structure arch/tree payloads
 from sidereus.demo_tools import _demo_eval, _demo_evidence, _demo_harness, _demo_pl_evidence, _demo_pipelines, _demo_prefs, _demo_tools   # noqa: F401  tools/harness/prefs payloads
 
 MSG_FIRST, MSG_RANGE_MAX = 200, 1000   # ⚠mirror sidereus.bus (demo stays stdlib-only, never imports live-data modules)
@@ -535,6 +535,8 @@ def respond(world, path, u):
         return 200, {"ok": False, "msg": "The Structure tab is not used in demo mode"}
     if path == "/api/arch":
         return 200, demo_arch(w.a)
+    if path == "/api/arch/files":   # ⚠the bare {"ok": True} fallback left module detail «Files» empty
+        return 200, demo_arch_files(_q(u, "id"))
     if path == "/api/structure/src":
         return 200, demo_src(_q(u, "path"), _q(u, "file"), _q(u, "line", "1"), _q(u, "lines", "0"))
     if path == "/api/structure/tree":
@@ -542,6 +544,19 @@ def respond(world, path, u):
     if path == "/api/structure/file":
         return 200, demo_file(_q(u, "path"), _q(u, "file"), _q(u, "line", "1"))
     return 200, {"ok": True}
+
+
+def demo_arch_files(mid):
+    """Body of demo `GET /api/arch/files` — arch_map.files() keys, names from the demo tree under the module path."""
+    out = {"ok": True, "commit": _ARCH_COMMIT, "id": "", "path": "", "files": [], "total": 0, "cut": False, "why": ""}
+    mod = next((m for m in _ARCH_MODS if m["id"] == mid), None)
+    if mod is None:
+        return dict(out, why="bad")
+    out.update(id=mid, path=mod["path"])
+    if mod["kind"] == "external":
+        return dict(out, why="ext")
+    hit = [f["p"] for f in demo_tree()["files"] if f["p"].startswith(mod["path"])]
+    return dict(out, files=hit, total=len(hit), why="" if hit else "gone")
 
 
 def install(handler_cls, page_build):

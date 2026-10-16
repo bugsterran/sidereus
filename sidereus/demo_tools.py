@@ -156,14 +156,34 @@ DEMO_PIPE = {"name": "change-flow", "ok": True, "errs": [], "sha": "0d1e2m3o4p5i
                  {"title": "리뷰", "agent": "code-reviewer", "onFail": {"goto": "구현", "max": 1}, "ui": {"x": 788, "y": 24}}]}
 
 
+def _demo_catalog(demo_proj):
+    """stage_catalog.catalog() shape from sidereus/stage_catalog.json, read directly (stage_catalog is a pipeline-feature module);
+    ⚠fake `{sidereus}` path and `avail` pinned True (no `which` on the host). tests/test_demo.py asserts it equals catalog()."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "sidereus", "stage_catalog.json"), "rb") as f:
+            d = json.loads(f.read())
+    except (OSError, ValueError):
+        return {"groups": [], "items": []}
+    side = shlex.quote(os.path.join(os.path.dirname(demo_proj), "sidereus"))
+    items = []
+    for t in d.get("templates") or []:
+        it = {k: t[k] for k in ("id", "group", "title", "role", "agent", "model", "gateHint", "asserts", "loop") if k in t}
+        it["gate"] = t["gate"].replace("{sidereus}", side)
+        if t.get("task"):
+            it["instr"] = t["task"].replace("{sidereus}", side)
+        it["tools"] = [dict(x, avail=True) for x in t["tools"]]
+        items.append(it)
+    return {"groups": d.get("groups") or [], "items": items}
+
+
 def _demo_pipelines(proj, demo_proj):
-    """GET /api/pipelines in the pipeline.pipelines shape: the demo project only, nothing read from disk."""
+    """GET /api/pipelines in the pipeline.pipelines shape: the demo project only; the only disk read is the bundled stage catalog."""
     if not proj:
         return 200, {"ok": True, "projects": [{"path": demo_proj, "n": 1}], "added": []}
     if proj != demo_proj:
         return 400, {"ok": False, "msg": "unknown project"}   # ⚠not 404: the page reads 404 as «feature off»
     agents = [{"name": n, "scope": "project"} for n in ("code-reviewer", "implementer", "planner", "verifier")]
-    return 200, {"ok": True, "proj": proj, "pipelines": [json.loads(json.dumps(DEMO_PIPE))], "agents": agents,
+    return 200, {"ok": True, "proj": proj, "pipelines": [json.loads(json.dumps(DEMO_PIPE))], "agents": agents, "catalog": _demo_catalog(demo_proj),
                  "models": ["inherit", "opus", "sonnet", "haiku"], "roles": {}, "default_tasks": {}, "skills": [],
                  "rule_files": [], "workflows": [], "suggest": [], "std": [],
                  "apply": {"mode": "auto", "global": "auto", "own": None}}

@@ -80,10 +80,12 @@ function attnWhy(g){
   const w = g.why || '';
   if(g.k === 'blocked' && w === 'subagent waiting for approval') return T(w);   // fixed perm_marks label, both languages
   // '<tool> waiting for approval' (perm_marks/live_probe): only the fixed phrase is translated, the tool name never goes through T().
-  if(g.k === 'blocked' && LANG !== 'en'){
+  // ⚠Runs in every language: en used to drop the tool name and fall to the fixed «Waiting for permission».
+  if(g.k === 'blocked'){
     const bt = typeof g.tool === 'string' ? g.tool : (/ waiting for approval$/.test(w) ? w.slice(0, -21) : null);
-    if(bt !== null) return (bt ? bt + ' ' : '') + T('waiting for approval');
-    if(w === 'waiting for approval') return T(w);
+    if(bt) return bt + ' ' + T('waiting for approval');
+    if(LANG !== 'en' && bt !== null) return T('waiting for approval');
+    if(LANG !== 'en' && w === 'waiting for approval') return T(w);
   }
   if(LANG !== 'en') return w;
   const n = (w.match(/(\d+)/) || [])[1] || '';
