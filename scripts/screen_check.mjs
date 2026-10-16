@@ -153,7 +153,9 @@ const MONTH = /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b/g;
 function norm(text) {
   return String(text || '').split('\n').map(l => l
     .replace(/\d+/g, '#').replace(/#(?:[#.,:/\-]#)+/g, '#')
-    .replace(KO_UNIT, '#t').replace(EN_UNIT, '#t').replace(/#t(\s*#t)+/g, '#t')
+    // ⚠ bare ko weekday after a date: labels follow the real clock, demo values are seeded by day index; must run before KO_UNIT (Sunday char = day unit)
+    .replace(/#\s+[월화수목금토일](?=\s)/g, '# <wd>')
+    .replace(KO_UNIT,'#t').replace(EN_UNIT, '#t').replace(/#t(\s*#t)+/g, '#t')
     .replace(WEEKDAY, '<wd>').replace(MONTH, '<mon>').replace(/\b[AP]M\b|오전|오후/g, '<ap>')
     .replace(/\s+/g, ' ').trim()).filter(Boolean);
 }
