@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-16
+
 ### Added
 
 - `templates/oss-scanner/`: threat model, `project.yaml` and Dockerfile in Anthropic OSS Scanner's format; Sidereus's own copy in `.oss-scanner/`.
@@ -21,11 +23,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Security
 
 - macOS: the work-popup APIs (`/api/session/work`, `/api/agent/work`, `/api/ext/work`) refuse clients whose loopback connection is not owned by the viewer's OS user (checked with `lsof`, fail-closed).
+- `/api/ui-prefs.js` (holds local paths) is served only to same-origin requests; a missing or cross-site `Sec-Fetch-Site` gets 403.
+- Work popup: text is redacted before it is truncated, so a secret straddling a length cap no longer leaks partly.
 
 ### Fixed
 
 - Attention: a permission prompt opened mid-message (several tool calls in one turn, or followed by a question) now shows as blocked; it was dropped as stale.
 - Pipelines: a stage with a live tagged agent now lights as running even when the run record has no entry for it yet (it showed every stage waiting).
+- Security checks: gitleaks findings in gitignored paths are dropped; ignored local state filled the item cap and hid real findings.
 - CI: `AGENTS.md` no longer trips the no-Hangul docs test.
 - `scripts/readme_shots.mjs` waits for the Pipelines tab before clicking it.
 - `scripts/screen_check.mjs` masks one-character Korean weekday labels, so the Korean screens no longer fail on some days.
@@ -190,5 +195,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/bugsterran/sidereus/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/bugsterran/sidereus/releases/tag/v0.1.0
