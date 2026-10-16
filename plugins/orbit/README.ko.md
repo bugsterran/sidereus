@@ -1,7 +1,8 @@
 # Orbit
 
-프로젝트 폴더마다 다른 Claude Code 계정을 쓸 수 있게 해 줍니다. 계정 하나는 설정 폴더(`CLAUDE_CONFIG_DIR`)
-하나에 대응하고, `claude`를 실행하면 셸 함수가 현재 폴더에 맞는 설정 폴더를 골라 줍니다.
+Claude Code 계정이 섞이지 않게 해 줍니다. 폴더에 들어가 `claude`를 치면 그 폴더의 계정으로 실행됩니다.
+계정 하나는 설정 폴더(`CLAUDE_CONFIG_DIR`) 하나에 대응하고, 셸 함수가 맞는 폴더를 골라 줍니다. 세션이
+폴더 매핑과 다른 계정으로 실행되면 세션 시작 훅이 경고합니다(매핑이 없는 폴더에서는 경고하지 않습니다).
 
 ## 빠른 시작
 
@@ -86,12 +87,25 @@ default work
   `@import` 대신 계정 폴더에 복사해 두세요(exclude는 import도 막습니다). 이 exclude를
   `~/.claude/settings.json`에 넣으면 안 됩니다. 그러면 기본 계정에서 전역 지침이 빠집니다.
 
-## 다른 방법
+## 다른 도구
 
-- [ftery0/claude-account-switch](https://github.com/ftery0/claude-account-switch): 명령으로 계정을 전환합니다.
-- direnv 또는 mise: 폴더의 `.envrc`에 `export CLAUDE_CONFIG_DIR=~/.claude-work`를 적습니다.
+| 도구 | 형태 | 폴더별 고정 | 비고 |
+|---|---|---|---|
+| Orbit | Claude Code 플러그인 + 셸 함수 | 등록부의 `map`. 터미널에서 매핑·기본값이 없고 계정이 둘 이상인 폴더면 한 번 묻고, Enter/Y로 저장 | 그냥 `claude`. 계정 불일치 경고. 자동 전환·대화 기록 공유 없음, 자격 증명을 읽지 않음. |
+| [claude-swap](https://github.com/realiti4/claude-swap) | CLI `cswap` + TUI | `cswap map`, `cswap run`에서 사용. 하위 폴더는 가장 가까운 상위 매핑을 따름 | 5시간/7일 한도 근처에서 자동 전환(`cswap auto`, 기본 90%). 선택적 `--share-history`. macOS, Linux, Windows. |
+| [claude-code-profiles](https://github.com/quinnjr/claude-code-profiles) | 셸 래퍼 `claude-profile` | `.claude-profile` 파일, 가장 가까운 것 적용, `cd`할 때 전환 | 프로필마다 설정 폴더 하나. |
+| [claude-account-switch](https://github.com/ftery0/claude-account-switch) | npm, `CLAUDE_CONFIG_DIR` | 없음. 선택 창 또는 `cpf <이름>` | 명령으로 전환. |
+| [claude-account-switcher](https://github.com/ukogan/claude-account-switcher) | 셸 래퍼 + `/switch-profile`, `/whoami` | 없음. `claude <프로필>` 또는 셸 단위 | 설정은 심볼릭 링크로 공유. |
+| [claude-switch](https://github.com/SIRTHEO/claude-switch) | npm `@sirtheo/claude-switch` | 저장소에 커밋하는 `.claude-switch`. 이메일 도메인으로 계정을 고를 수 있음 | 저장소 규칙 하나를 팀이 함께 쓰는 용도. |
+| direnv / mise | 환경 변수 로더 | `.envrc`에 `export CLAUDE_CONFIG_DIR=~/.claude-work` 한 줄, 또는 `mise.toml`의 `[env]` | 묻기·불일치 경고 없음. |
 
-이 플러그인은 여기에 폴더 매핑, «이 폴더에 기억», 계정 불일치 경고, `list`를 더합니다.
+claude-swap은 여러 계정을 더 많이 쓰게 돕고(순환, 대화 기록 공유), Orbit은 계정을 떼어 둡니다. Orbit과
+가장 가까운 것은 claude-code-profiles입니다(`claude()` 래퍼, 기본 프로필, Windows, 스킬 풀까지 있어 지원
+플랫폼과 기능이 더 많습니다). Orbit은 폴더 매핑을 등록부 하나(`~/.claude-accounts`)에 두고 프로젝트 폴더에는
+아무것도 쓰지 않아, 회사 저장소에 커밋하거나 무시할 파일이 생기지 않습니다. 여기에 세션 시작 시 불일치 경고와
+한 번만 묻고 기억하는 프롬프트를 더했고, Claude Code 플러그인으로 설치됩니다. 순환이
+필요하면 claude-swap, 팀이 커밋한 저장소 규칙 하나가 필요하면 claude-switch, 이미 direnv나 mise를 쓰고 더
+필요한 게 없으면 그것을 쓰세요.
 
 ## 업데이트
 

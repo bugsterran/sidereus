@@ -1,7 +1,9 @@
 # Orbit
 
-Pick a Claude Code account by folder. Each account is its own config folder (`CLAUDE_CONFIG_DIR`);
-a small shell function picks the right one when you type `claude`.
+Keeps your Claude Code accounts from mixing: enter a folder, type `claude`, and it runs under that
+folder's account. Each account is its own config folder (`CLAUDE_CONFIG_DIR`); a small shell function
+picks it, and a session-start hook warns when a session runs under a different account than the
+folder's map (folders with no map get no warning).
 
 ## Quick start
 
@@ -82,12 +84,25 @@ credentials, the keychain, or history, and makes no network calls.
   `"claudeMdExcludes": ["/Users/<you>/.claude/CLAUDE.md"]` and copy the file into the account folder instead of `@import`ing it
   (the exclude also drops an import). Never put that exclude in `~/.claude/settings.json`: it drops your global rules there.
 
-## Alternatives
+## Other tools
 
-- [ftery0/claude-account-switch](https://github.com/ftery0/claude-account-switch): switch accounts by command.
-- direnv or mise: `export CLAUDE_CONFIG_DIR=~/.claude-work` in the folder's `.envrc`.
+| Tool | Form | Per-folder pin | Notes |
+|---|---|---|---|
+| Orbit | Claude Code plugin + shell function | `map` in the registry; in a terminal, an unmapped folder with no default and more than one account prompts once, Enter/Y saves it | Plain `claude`. Mismatch warning. No auto-switch, no history sharing, never reads credentials. |
+| [claude-swap](https://github.com/realiti4/claude-swap) | CLI `cswap` + TUI | `cswap map`, used by `cswap run`; subfolders follow the nearest mapped parent | Auto-switches near the 5h/7d limit (`cswap auto`, default 90%). Optional `--share-history`. macOS, Linux, Windows. |
+| [claude-code-profiles](https://github.com/quinnjr/claude-code-profiles) | Shell wrapper `claude-profile` | `.claude-profile` file, nearest wins, switches on `cd` | One config folder per profile. |
+| [claude-account-switch](https://github.com/ftery0/claude-account-switch) | npm, `CLAUDE_CONFIG_DIR` | No; picker or `cpf <name>` | Switch by command. |
+| [claude-account-switcher](https://github.com/ukogan/claude-account-switcher) | Shell wrapper + `/switch-profile`, `/whoami` | No; `claude <profile>` or per shell | Shares settings via symlinks. |
+| [claude-switch](https://github.com/SIRTHEO/claude-switch) | npm `@sirtheo/claude-switch` | Committed `.claude-switch` per repo; can match accounts by email domain | Aimed at teams sharing one repo rule. |
+| direnv / mise | Env loader | One line: `export CLAUDE_CONFIG_DIR=~/.claude-work` in `.envrc`, or under `[env]` in `mise.toml` | No prompt, no mismatch warning. |
 
-This plugin adds the folder map, «remember for this folder», the mismatch warning and `list`.
+claude-swap helps you get more out of several accounts (rotation, shared history); Orbit keeps them
+apart. Closest to Orbit is claude-code-profiles (also a `claude()` wrapper, default profile, Windows,
+a skills pool; it covers more platforms and features). Orbit keeps folder maps in one registry
+(`~/.claude-accounts`) and writes nothing into your project folders, so a work repo gets no file to
+commit or ignore; it adds the mismatch warning at session start and the remember-once prompt, and
+installs as a Claude Code plugin. Use claude-swap if you want rotation, claude-switch if a team needs one committed repo rule,
+direnv or mise if you already use them and need nothing more.
 
 ## Updating
 
