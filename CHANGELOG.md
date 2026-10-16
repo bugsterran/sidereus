@@ -15,6 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Demo Architecture map now draws layer bands and the minimap instead of «No layers — redraw the diagram».
 - An external module with no type goes straight into the «External» band, with no nested «External» box.
 - Flow view side panel (1061px and wider): the title stays on one line with an ellipsis and the hint gets its own line, so neither is clipped.
+- A pipeline stage lit by a running agent showed «0s»; it now counts from the agent's start.
+- English «Needs you» rows for a blocked session name the tool waiting for approval.
+- Architecture map: a module whose file list came back empty threw an error and stayed on «Loading files…».
+- Architecture map: picking a flow no longer grows the top bar and pushes the map down at 900 and 1100px; cut-off text shows in full on hover.
+- Demo Pipelines palette lists the stage catalog, and demo module details list their files; README pipeline screenshots retaken.
 
 ## [0.2.0] - 2026-10-16
 

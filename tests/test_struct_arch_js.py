@@ -487,6 +487,12 @@ class ArchOverview(unittest.TestCase):
         self.assertIn("position:sticky", rule)
         self.assertIn("left:", rule)
         self.assertIn("top:", rule)
+        # A flow pick adds buttons to the bar: the hint must shrink in its row, never wrap to a new one (bar height = map offset).
+        self.assertIn("flex-wrap:nowrap", re.search(r"^\.archbar:not\(\.on\)\{([^}]*)\}", css, re.M).group(1))
+        for sel in ("archhint", "archlitc"):
+            rule = re.search(r"^\.archbar:not\(\.on\) \." + sel + r"\{([^}]*)\}", css, re.M).group(1)
+            self.assertIn("text-overflow:ellipsis", rule)
+        self.assertIn('class=archhint title="', top)   # cut hint keeps its full text on hover
 
     def test_loading_state(self):
         r = run("const box = {innerHTML: '', querySelector(){ return null; }}; archPaint(box, head); console.log(JSON.stringify(box.innerHTML));")

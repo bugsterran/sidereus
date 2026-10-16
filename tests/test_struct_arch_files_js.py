@@ -74,6 +74,11 @@ class ArchFiles(unittest.TestCase):
             self.assertNotIn("<ul", h)
         self.assertEqual(len(set(r[:6])), 6)                   # each server reason has its own line
 
+    def test_ok_reply_without_files_is_empty_state(self):
+        h = run("console.log(JSON.stringify(archFilesHtml({ok: true}, false)));")
+        self.assertIn("No files at the diagram commit", h)
+        self.assertNotIn("Loading files", h)
+
     def test_r3_local_reasons_no_fetch(self):
         r = run("const m = [{id: 'np', name: 'NP', path: ''}, {id: 'x', name: 'X', path: 'x/', ext: 'pg'}], d = {commit: 'c1', modules: m, edges: []};"
                 "ARCH.cache['/r'] = d; ARCH.sel = {p: '/r', id: 'np'};"

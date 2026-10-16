@@ -181,7 +181,7 @@ function archLitCount(am){
   if(!c) return;
   const svg = am.querySelector('.archdg svg'), ns = svg ? Array.from(svg.querySelectorAll('[data-p].arlit')) : [], v = archViewRect(am);
   const t = v && ns.length ? archLitText(ns.length, archOffCount(ns.map(g => g.getBoundingClientRect()), v)) : '';
-  c.textContent = t; c.hidden = !t;
+  c.textContent = t; c.title = t; c.hidden = !t;   // title: the one-row bar may cut the count (79 css)
 }
 // Press only: scroll .archmap (never the page or an ancestor) so node g is centred, then flash it.
 function archLitGo(am, g){

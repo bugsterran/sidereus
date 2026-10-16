@@ -292,7 +292,7 @@ function archBarHtml(mods, edges, sel, tests, full, pick, ifx){   // ifx = infra
   if(!m){ const ps = archPairs(mods, edges, tests), cut = ps.length - archReduce(ps).length;
     const ft = cut ? '<label class=archtg><input type=checkbox data-arfull' + (full ? ' checked' : '') + '> ' + esc(T('All edges')) + '</label>' : '';
     const hint = cut && !full ? T('{n} indirect edges hidden — click a module for all').replace('{n}', cut) : T('Click a module to see only its edges');
-    return '<div class=archbar>' + (pick || '') + '<span class=archhint>' + esc(hint) + '</span>' + ft + tg + '</div>'; }
+    return '<div class=archbar>' + (pick || '') + '<span class=archhint title="' + esc(hint) + '">' + esc(hint) + '</span>' + ft + tg + '</div>'; }
   const ps = archPairs(mods, edges, tests), ni = ps.filter(p => p.to === sel).length, no = ps.filter(p => p.from === sel).length;
   return '<div class="archbar on"><button type=button class=archall data-arall title="' + esc(T('Back (Esc)')) + '">' + esc('← ' + T('Back to full diagram')) + '</button>'   // first: where the eye starts
     + (pick || '') + '<b class=archsel>' + esc(m.name || m.id) + '</b>'

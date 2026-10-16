@@ -279,6 +279,36 @@ class DemoTest(unittest.TestCase):
             self.assertIn(ev["symbol"], src["code"], ev)
         self.assertFalse(self.get("/api/structure/src", "file=../etc/passwd")["ok"])
 
+    def test_arch_files_shape(self):
+        """Module detail «Files»: arch_map.files() keys, names under the module path, ext/bad answered with a reason."""
+        keys = {"ok", "commit", "id", "path", "files", "total", "cut", "why"}
+        cm = self.get("/api/arch")["commit"]
+        r = self.get("/api/arch/files", "id=order")
+        self.assertEqual(set(r), keys)
+        self.assertEqual((r["commit"], r["why"], r["total"]), (cm, "", len(r["files"])))
+        self.assertTrue(r["files"] and all(f.startswith("order/") for f in r["files"]), r)
+        self.assertEqual(self.get("/api/arch/files", "id=db")["why"], "ext")
+        self.assertEqual(self.get("/api/arch/files", "id=nope")["why"], "bad")
+
+    def test_pipelines_catalog_shape(self):
+        """Stage palette: catalog {groups, items} from the bundled templates, no real install path, avail pinned."""
+        proj = self.get("/api/pipelines")["projects"][0]["path"]
+        c = self.get("/api/pipelines", "proj=" + proj)["catalog"]
+        self.assertEqual(set(c), {"groups", "items"})
+        self.assertTrue(c["groups"] and c["items"])
+        for it in c["items"]:
+            self.assertTrue({"id", "group", "title", "gate", "tools"} <= set(it), it)
+            self.assertNotIn("task", it)
+            self.assertTrue(all(x["avail"] is True for x in it["tools"]), it)
+        sc = sidereus("stage_catalog")
+        self.assertNotIn(sc.CODE_DIR, json.dumps(c))
+        self.assertIn("{sidereus}", json.dumps(sc.load()))   # the substitution is exercised
+        # same body as the real catalog() with the demo's fake path and every tool available
+        from unittest import mock
+        fake = os.path.join(os.path.dirname(proj), "sidereus")
+        with mock.patch.object(sc, "CODE_DIR", fake), mock.patch.object(sc, "_which", lambda b: "/bin/" + b):
+            self.assertEqual(c, sc.catalog())
+
     def test_structure_tree_and_file(self):
         """Demo file tree/viewer: real keys, arch evidence files open, .env locked, logo.png binary, unknown refused."""
         t = self.get("/api/structure/tree", "")

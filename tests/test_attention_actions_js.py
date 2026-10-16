@@ -28,13 +28,14 @@ FNS = ("attnPolOf", "attnWhy", "attnLbl", "attnLife", "attnTone", "attnAckLoad",
        "attnRpTo", "attnRpHTML", "attnRpClose", "attnRpKey", "attnRowHTML", "attnSeenKeys", "attnSeen")
 
 
-def run(body):
+def run(body, lang="ko", t="function T(s){ return s; }"):
     src = js_all()
+    stubs = STUBS.replace("const LANG = 'ko'; function T(s){ return s; }", "const LANG = '%s'; %s" % (lang, t))
     consts = "\n".join(re.search(r"^const " + n + r"\b.*?;$", src, re.M | re.S).group(0)
                        for n in ("ATTN_APOL", "ATTN_LIST_ONLY", "ATTN_ACK_TOL", "ATTN_LBL", "ATTN_AFTER"))
     rp = re.search(r"^let attnRp = .*?;$", src, re.M).group(0)
     rp += "\n" + re.search(r"^async function attnRpSend\(.*?^}$", src, re.M | re.S).group(0)   # js_fn skips async
-    js = STUBS + consts + "\n" + rp + "\n" + "\n".join(js_fn(n) for n in FNS) + "\n(async () => {\n" + body + "\n})();"
+    js = stubs + consts + "\n" + rp + "\n" + "\n".join(js_fn(n) for n in FNS) + "\n(async () => {\n" + body + "\n})();"
     return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
 
 
@@ -132,6 +133,26 @@ class SeenBgdone(unittest.TestCase):
         self.assertFalse(out["no"])
         self.assertEqual(out["posts"], [["/api/cards/read", {"keys": ["t1|agent|s1", "t2|agent|s1"]}]])
         self.assertEqual(out["left"], ["s2"])
+
+
+class BlockedToolName(unittest.TestCase):
+    """The blocked row keeps the tool name in every language; only the fixed phrase is translated."""
+
+    CASES = """console.log(JSON.stringify([
+      attnWhy({k: 'blocked', why: 'Write waiting for approval', tool: 'Write'}),
+      attnWhy({k: 'blocked', why: 'Bash waiting for approval'}),
+      attnWhy({k: 'blocked', why: 'waiting for approval', tool: ''}),
+      attnWhy({k: 'blocked', why: 'waiting for approval'})]));"""
+
+    def test_en_keeps_tool_name(self):
+        out = run(self.CASES, lang="en")
+        self.assertEqual(out, ["Write waiting for approval", "Bash waiting for approval",
+                               "Waiting for permission", "Waiting for permission"])
+
+    def test_ko_unchanged(self):
+        ko = "function T(s){ return s === 'waiting for approval' ? '승인 대기' : s; }"
+        out = run(self.CASES, lang="ko", t=ko)
+        self.assertEqual(out, ["Write 승인 대기", "Bash 승인 대기", "승인 대기", "승인 대기"])
 
 
 if __name__ == "__main__":

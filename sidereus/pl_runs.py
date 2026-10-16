@@ -289,12 +289,13 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=()):
             if hit is None and mine and not any(lo <= a["t0"] <= hi for a in mine):
                 continue   # still-live agent of an earlier run of this name (meta outside the window): not this run's work
             if hit is None:
+                mn = x.get("min")
+                t0 = now - 60 * mn if isinstance(mn, int) and not isinstance(mn, bool) and mn >= 0 else now
                 if title not in stages:
                     if len(stages) >= PLR_STAGES_MAX:
                         continue
-                    stages[title] = {"o": "run", "n": 0, "t0": now, "t1": now, "from": {}}
-                mn = x.get("min")
-                t0 = now - 60 * mn if isinstance(mn, int) and not isinstance(mn, bool) and mn >= 0 else now
+                    # ⚠t0 = agent start, not now: `now` showed «Running · 0s» for an agent minutes in.
+                    stages[title] = {"o": "run", "n": 0, "t0": t0, "t1": now, "from": {}}
                 hit = {"aid": aid, "tid": tid, "lab": redact(lab)[:PLR_LAB_MAX], "run": False, "t0": t0, "t1": now, "_t": title}
                 ags.append(hit)
             for a in [a for a in ags if a is hit or (hit["aid"] and a["aid"] == hit["aid"])]:

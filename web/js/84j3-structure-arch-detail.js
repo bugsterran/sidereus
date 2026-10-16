@@ -135,7 +135,7 @@ const ARCH_FL_WHY = { nopath: 'This module has no path', ext: 'External module �
   nomap: 'No diagram for this project', bad: 'Request refused', git: 'Could not list files' };
 // Pure: «Files <n>» fold header + flat path list (no row handler) + «+N more» / «N+ more» when cut; r null = loading; why = one-line reason.
 function archFilesHtml(r, fold){
-  const why = r && (r.why || (r.ok === false ? 'git' : '')), fs = r && !why && Array.isArray(r.files) ? r.files : null;
+  const why = r && (r.why || (r.ok === false ? 'git' : '')), fs = r && !why ? (Array.isArray(r.files) ? r.files : []) : null;   // ⚠ok reply without files = empty, not loading
   const tot = fs ? Math.max(typeof r.total === 'number' ? r.total : 0, fs.length) : 0, cut = !!(fs && r.cut);
   const hd = '<div class=archdh><button type=button class="archnxb archflb" data-arfiles aria-expanded=' + (fold ? 'false' : 'true') + '>'
     + '<i aria-hidden=true>' + (fold ? '▸' : '▾') + '</i>' + esc(T('Files')) + (fs ? '<small>' + tot + (cut ? '+' : '') + '</small>' : '') + '</button></div>';
