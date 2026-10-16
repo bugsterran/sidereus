@@ -1,7 +1,7 @@
 // ── Structure «Architecture» minimap: text-free clone of the cached diagram SVG + viewport rect; click / drag scrolls .archmap ──
 // ⚠Cloned once per diagram key and re-attached after each innerHTML repaint: never rebuilt per poll, scroll or hover.
 // ⚠.archmm sits outside .archmap (sibling in .archbody): archPanFrom never starts a pan here.
-// ⚠Only auto-centre: the first overview sync of a map identity at scroll 0,0 (archMmFirst); clicks / expands / lit / polls never centre.
+// ⚠Only auto-scroll: the first overview sync of a map identity at scroll 0,0 (archMmFirst); clicks / expands / lit / polls never centre.
 const ARCH_MM = { k: '', svg: null, raf: 0, seen: {} };
 // Pref: on unless stored '0' (missing key or a throwing store = on).
 function archMmOn(){ try{ return lsGet('sidereus.archmm', '1') !== '0'; }catch(e){ return true; } }
@@ -30,11 +30,12 @@ function archMmId(k){
   const f = String(k || '').split('\t'); if(/^fv/.test(f[0] || '')) f.shift();
   return f.length >= 8 ? { id: [f[0], f[6], f[7]].join('|'), all: f[1] === 'all' } : null;
 }
-// Pure: .archmap scroll that puts the map centre in the viewport centre (below the sticky top), clamped to [0, max].
-function archMmCentre(view, map){
-  const cl = (a, hi) => Math.max(0, Math.min(hi, a)), top = view.top || 0, vh = Math.max(0, view.ch - top);
-  return { left: Math.round(cl(map.x + map.w / 2 - view.cw / 2, Math.max(0, view.sw - view.cw))),
-    top: Math.round(cl(map.y + map.h / 2 - top - vh / 2, Math.max(0, view.sh - view.ch))) };
+// Pure: first-sight .archmap scroll: map top just below the sticky top; left centred if the map fits, else its left edge. Clamped to [0, max].
+// ⚠Not the map centre: on a map taller/wider than the view, centring clips the Entry band (top-left) out of sight.
+function archMmAnchor(view, map){
+  const cl = (a, hi) => Math.max(0, Math.min(hi, a)), top = view.top || 0;
+  const x = map.w <= view.cw ? map.x + map.w / 2 - view.cw / 2 : map.x;
+  return { left: Math.round(cl(x, Math.max(0, view.sw - view.cw))), top: Math.round(cl(map.y - top, Math.max(0, view.sh - view.ch))) };
 }
 // Live .archmap view + diagram svg rect in scroll content px (same frame as archViewRect).
 function archMmVM(am, svg){
@@ -42,7 +43,7 @@ function archMmVM(am, svg){
   return { view: { sl: am.scrollLeft, st: am.scrollTop, cw: am.clientWidth, ch: am.clientHeight, sw: am.scrollWidth, sh: am.scrollHeight, top: tp ? tp.offsetHeight : 0 },
     map: { x: r.left - b.left - (am.clientLeft || 0) + am.scrollLeft, y: r.top - b.top - (am.clientTop || 0) + am.scrollTop, w: r.width, h: r.height } };
 }
-// First sight of a map identity: centre it once, only on the overview and only if the user has not scrolled (0,0).
+// First sight of a map identity: anchor it once (archMmAnchor), only on the overview and only if the user has not scrolled (0,0).
 // A focus view or a scrolled scroller marks it seen without moving. A zero-size (hidden) layout is not marked.
 function archMmFirst(am, svg, k){
   const m = archMmId(k);
@@ -51,7 +52,7 @@ function archMmFirst(am, svg, k){
   if(!(vm.map.w > 0) || !(vm.view.cw > 0)) return;
   ARCH_MM.seen[m.id] = 1;
   if(!m.all || am.scrollLeft || am.scrollTop) return;
-  const to = archMmCentre(vm.view, vm.map);
+  const to = archMmAnchor(vm.view, vm.map);
   am.scrollLeft = to.left; am.scrollTop = to.top;
 }
 // Copy the lit state onto the clone index by index (text stripping keeps [data-p] / .mmdfe order).
@@ -88,7 +89,7 @@ function archMmView(am){
 function archMmSync(slot){
   const am = slot && slot.closest ? slot.closest('.archmap') : null, body = am && am.closest('.archbody'), mm = body && body.querySelector('.archmm');
   const svg = slot && slot.querySelector && slot.querySelector('svg'), k = (slot && slot.dataset && slot.dataset.k) || '';
-  archMmFirst(am, svg, k);   // ⚠before the minimap-off return: centring does not depend on the minimap
+  archMmFirst(am, svg, k);   // ⚠before the minimap-off return: the first-sight anchor does not depend on the minimap
   if(!mm || mm.classList.contains('off') || !svg) return;
   if(ARCH_MM.k !== k || !ARCH_MM.svg){
     const c = archMmClone(svg), vp = document.createElementNS('http://www.w3.org/2000/svg', 'rect');

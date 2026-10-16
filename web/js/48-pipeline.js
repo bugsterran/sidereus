@@ -320,7 +320,7 @@ function paintPipe(box, fromPoll){
   const hv = !PLS.off && plHnOn();
   tbSlot('pipe', PLS.off ? '' : plViewSeg());   // sub-view switch lives in the header toolbar slot, like Branches/Insights
   // Pipelines view: no <b>, the header title (#vtitle) already says «Pipelines».
-  const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Tooling')) + '</b>' : '') + '<span>'
+  const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Tooling')) + '</b>' : '') + '<span class=plcap>'
     + esc(hv ? T('Hooks · rules · agents · MCP · skills') : T('Agent and model per stage')) + '</span></div>';
   const body = PLS.off ? '<div class=hidnote>' + esc(T('The pipeline feature is off')) + '</div>'
     : (hv ? plChips() + hnHtml() : plMainBody());

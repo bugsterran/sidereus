@@ -2,7 +2,7 @@
 
 **English** · [Korean](GUIDE.ko.md)
 
-Install first: [GETTING-STARTED.md](GETTING-STARTED.md). Screenshots come from `python3 -m sidereus start --demo` (synthetic data).
+Install first: [GETTING-STARTED.md](GETTING-STARTED.md). Screenshots come from `python3 -m sidereus start --demo` (synthetic data); the demo opens on Pipelines, the real viewer on Timeline.
 The UI language follows the browser (English for `en*`, Korean otherwise); Settings › «Display language» overrides it.
 
 Screen layout: a sidebar on the left (logo, «Attention» list, the views, bell and settings at the bottom). It is an icon strip by default (hover or focus an icon for its name and shortcut digit); the toggle or Cmd/Ctrl+B widens it, and the choice is remembered. On wide windows (1200px and up) the open sidebar pushes the page; on narrower ones it slides over it.

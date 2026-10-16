@@ -7,7 +7,7 @@ import unittest
 from tests._load import js_fn
 from tests._node import node_e
 
-FNS = ["archMmOn", "archMmHtml", "archMmGeom", "archMmLit", "archMmId", "archMmCentre", "archMmVM", "archMmFirst"]
+FNS = ["archMmOn", "archMmHtml", "archMmGeom", "archMmLit", "archMmId", "archMmAnchor", "archMmVM", "archMmFirst"]
 PRE = """
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const T = s => 'T[' + s + ']';
@@ -57,12 +57,12 @@ class ArchMinimap(unittest.TestCase):
                 "console.log(JSON.stringify(o));")
         self.assertEqual(r, [True, [True, False, True], [False, True], False, False])
 
-    def test_first_sync_centres_once(self):
-        # 6000x2000 content, 1000x700 scroller, 100px sticky top; map spans x 10..5990, y 100..2000.
+    def test_first_sync_anchors_once(self):
+        # 6000x2000 content, 1000x700 scroller, 100px sticky top; map spans x 10..5990, y 300..2000 (wider than the view).
         r = run("const ARCH_MM = {seen: {}};"
                 "const am = {scrollLeft: 0, scrollTop: 0, clientWidth: 1000, clientHeight: 700, scrollWidth: 6000, scrollHeight: 2000,"
                 " getBoundingClientRect: () => ({left: 0, top: 0}), querySelector: q => q === '.archtop' ? {offsetHeight: 100} : null};"
-                "const sv = {getBoundingClientRect: () => ({left: 10 - am.scrollLeft, top: 100 - am.scrollTop, width: 5980, height: 1900})};"
+                "const sv = {getBoundingClientRect: () => ({left: 10 - am.scrollLeft, top: 300 - am.scrollTop, width: 5980, height: 1700})};"
                 "const K = c => [c, 'all', '', 0, 0, 'en', 40, 90].join('\\t'), F = c => ['fv0|', c, 'focus', 'm', 0, 0, 'en', 40, 90].join('\\t');"
                 "archMmFirst(am, sv, K('c1')); const o = [[am.scrollLeft, am.scrollTop]];"
                 "am.scrollLeft = 123; am.scrollTop = 45; archMmFirst(am, sv, K('c1')); o.push([am.scrollLeft, am.scrollTop]);"
@@ -70,11 +70,20 @@ class ArchMinimap(unittest.TestCase):
                 "am.scrollLeft = 0; am.scrollTop = 0; archMmFirst(am, sv, F('c2')); archMmFirst(am, sv, K('c2')); o.push([am.scrollLeft, am.scrollTop]);"
                 "am.scrollLeft = 7; archMmFirst(am, sv, K('c3')); o.push([am.scrollLeft, am.scrollTop]);"
                 "console.log(JSON.stringify(o));")
-        self.assertEqual(r[0], [(6000 - 1000) // 2, (2000 - 700) // 2])   # first overview sync centres
+        self.assertEqual(r[0], [10, 300 - 100])                            # wide map: left edge, top under the sticky bar (Entry visible)
         self.assertEqual(r[1], [123, 45])                                   # manual scroll kept on the next sync
         self.assertEqual(r[2], [123, 45])                                   # a click to focus never centres
         self.assertEqual(r[3], [0, 0])                                      # first seen as focus: overview later does not centre
         self.assertEqual(r[4], [7, 0])                                      # already scrolled new map: not moved
+
+    def test_first_sync_narrow_map_centred_horizontally(self):
+        # 2000x1500 content, 1000x700 scroller, 100px sticky top; 600px-wide map at x 500, y 250 fits the width.
+        r = run("const ARCH_MM = {seen: {}};"
+                "const am = {scrollLeft: 0, scrollTop: 0, clientWidth: 1000, clientHeight: 700, scrollWidth: 2000, scrollHeight: 1500,"
+                " getBoundingClientRect: () => ({left: 0, top: 0}), querySelector: q => q === '.archtop' ? {offsetHeight: 100} : null};"
+                "const sv = {getBoundingClientRect: () => ({left: 500 - am.scrollLeft, top: 250 - am.scrollTop, width: 600, height: 1200})};"
+                "archMmFirst(am, sv, ['c1', 'all', '', 0, 0, 'en', 40, 90].join('\\t')); console.log(JSON.stringify([am.scrollLeft, am.scrollTop]));")
+        self.assertEqual(r, [500 + 300 - 500, 250 - 100])                  # centred horizontally, top under the sticky bar
 
     def test_pref_default_on(self):
         r = run("const o = [archMmOn()]; STORE['sidereus.archmm'] = '0'; o.push(archMmOn()); STORE['sidereus.archmm'] = '1'; o.push(archMmOn());"

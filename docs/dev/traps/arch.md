@@ -92,7 +92,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ Keep `var`. 84j5 adds a second capture-phase `scroll` listener on `.archmap` (marker `.archoff`) next to 84k's count one; each throttles with its own rAF.
   - ⚠Neither may scroll; a stale `ARCH.op`/hover index after a refetch falls back to lit flow / scope in `archLitQ`.
 - **Arch minimap: clone once per svg key, rAF on scroll, sit outside `.archmap`** (84j7, 79c `.archmm`). ⚠Re-cloning on scroll/hover stalls large maps; inside `.archmap` a press starts the drag-pan; `.archmap` is pinned to grid cell 1/1 or the overlay pushes it to the next cell.
-- **Arch map centres once per map identity, never per svg key** (84j7 `archMmFirst`, `ARCH_MM.seen`). ⚠The svg key changes with selection / full / lit — keying the centre on it moves the view on clicks; only an overview at scroll 0,0 centres, and a hidden (zero-size) paint is not marked seen.
+- **Arch map scrolls once per map identity, never per svg key** (84j7 `archMmFirst`, `ARCH_MM.seen`). ⚠The svg key changes with selection / full / lit — keying the first scroll on it moves the view on clicks; only an overview at scroll 0,0 moves, and a hidden (zero-size) paint is not marked seen.
+- **First sight anchors the map, it does not centre it** (84j7 `archMmAnchor`).
+  - Cause: centring a map larger than the view put its middle on screen and clipped the Entry band (top-left) out of sight.
+  - ⇒ top = map.y − sticky `.archtop` height; left = centred only when the map fits the width, else map.x.
+  - ⚠Do not go back to the map centre for the first scroll; clicks, expands, lit flows and polls still never scroll.
 - **Arch map scroll is kept per project; the toolbar is sticky** (2026-10-14, 84j `archPaint` `box._arp`, 79 `.archtop`).
   - Cause: the repaint copied `.archmap` scroll from whatever was on screen, so project B opened at A's scroll (★2424, 949); bar/legend scrolled away on a ★4865×2438 banded map.
   - ⇒ Scroll is copied only when `box._arp` is the same project; bar, «No layers» notice and legend sit in one sticky `.archtop` (top/left = minus the scroller padding).

@@ -2,7 +2,7 @@
 
 [English](GUIDE.md) · **한국어**
 
-설치는 [GETTING-STARTED.ko.md](GETTING-STARTED.ko.md) 를 먼저 본다. 스크린숏은 `python3 -m sidereus start --demo` 의 합성 데이터다.
+설치는 [GETTING-STARTED.ko.md](GETTING-STARTED.ko.md) 를 먼저 본다. 스크린숏은 `python3 -m sidereus start --demo` 의 합성 데이터다. 데모는 파이프라인 탭으로, 실제 뷰어는 타임라인 탭으로 열린다.
 
 왼쪽에 사이드바가 있다(로고, «주목» 목록, 화면 목록, 맨 아래 벨과 설정). 기본은 아이콘 줄이고(아이콘에 마우스를 올리거나 포커스하면 이름과 단축키 숫자가 바로 뜬다), 토글이나 Cmd/Ctrl+B 로 넓힌다. 펼침 여부는 기억된다. 창이 넓으면(1200px 이상) 본문을 밀고, 좁으면 본문 위에 겹쳐 열린다.
 오른쪽은 위에서부터 한 줄 상단 바(화면 제목, 실행 중 세션, «나를 기다림» 칩, 세션 서랍), 본문 순이다. 상태 표시줄은 화면 맨 아래에 있다.

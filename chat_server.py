@@ -276,7 +276,7 @@ class Handler(_GetRoutes, _PostRoutes, BaseHTTPRequestHandler):
 def main():
     if "--demo" in argv:       # Synthetic world, no background threads, nothing real is read or written (sidereus/demo.py)
         from sidereus import demo
-        ui_prefs_memory_only()   # page UI prefs stay in memory: the demo writes nothing
+        ui_prefs_memory_only({"mbMainView": "pipe"})   # in memory only; the demo opens on Pipelines (real viewer: Timeline)
         pl_reqs_memory_only()    # run requests / stop markers too
         return demo.serve(Handler, PORT, PAGE_BUILD, "--no-open" not in argv)
     srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)   # Loopback only — no external exposure

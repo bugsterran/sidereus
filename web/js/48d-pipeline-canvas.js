@@ -164,7 +164,7 @@ function plCanvas(p, d, lt){
   const mx = Math.max(1200, ...VG.nodes.map(n => n.ui.x + plgW(G, n.id) + 240)), my = Math.max(600, ...VG.nodes.map(n => n.ui.y + plgH(G, n.id) + 240 + PLG_LANE * G.loops.length));
   // Toolbar is its own strip above the canvas (★2026-10-01 live check: overlaid, it hid the first nodes' titles).
   const sugg = ((d.catalog || {}).items || []).map(t => t.title.ko).filter(t => !G.nodes.some(n => n.title === t));   // catalog order
-  const tb = '<div class=plcvt><span class=plnt><input data-plnt maxlength=24 list=plsug placeholder="' + esc(T('Stage name (empty = recommended)')) + '">'
+  const tb = '<div class=plcvt><span class=plnt><input data-plnt maxlength=24 list=plsug placeholder="' + esc(T('Stage name')) + '" title="' + esc(T('Stage name (empty = recommended)')) + '">'   // ⚠the long hint clipped as a placeholder
     + '<datalist id=plsug>' + sugg.map(t => '<option value="' + esc(t) + '">').join('') + '</datalist>'
     + '<button class=wkrgb data-pladd title="' + esc(T('Adds a stage after the selected one (else at the end)')) + '">' + esc(T('+ Stage')) + '</button></span>'
     + '<button class=wkrgb data-plfit title="' + esc(T('Re-flow so every stage shows · zoom stays if it fits')) + '">' + esc(T('Arrange')) + '</button>'
@@ -338,6 +338,16 @@ function plFitRaw(G, cw, ch){
   const top = Math.min(...G.nodes.map(m => m.ui.y), PLG_Y0), bot = Math.max(...G.nodes.map(m => m.ui.y + plgH(G, m.id))) + PLG_LANE * (G.loops.length + 1);
   return Math.min(cw / w, ch / (bot - top + 2 * PLG_Y0));
 }
+// Canvas height the graph needs at min(1, width-fit) zoom + 8px margin, clamped to [200, 62vh] (same box as plFitRaw).
+// ⚠A fixed 62vh canvas row pushed the stage panel below the fold at 1440x900 for a one-row chain.
+function plCvNeed(G, cw, vh){
+  const cap = Math.max(200, Math.floor(0.62 * vh));
+  if(!G || !G.nodes.length) return 200;
+  if(!(cw > 0)) return cap;
+  const top = Math.min(...G.nodes.map(m => m.ui.y), PLG_Y0), bot = Math.max(...G.nodes.map(m => m.ui.y + plgH(G, m.id))) + PLG_LANE * (G.loops.length + 1);
+  const hh = bot - top + 2 * PLG_Y0, z = Math.min(1, plFitRaw(G, cw, Infinity));
+  return Math.max(200, Math.min(cap, Math.ceil(hh * z + 8)));
+}
 function plWrapCols(G, cw, ch){
   const n = plgOrder(G).order.length;
   let best = n, bz = -1;
@@ -382,13 +392,20 @@ function plGwFit(){
   const top = g.getBoundingClientRect().top - fd.getBoundingClientRect().top - fd.clientTop + fd.scrollTop;
   const pb = parseFloat(getComputedStyle(fd).paddingBottom) || 0;
   let h = Math.floor(fd.clientHeight - top - pb - 8);
-  const cf = Math.max(360, Math.min(700, 0.62 * innerHeight)), floor = cf + 426;   // same floor as 43-pipeline.css (canvas row + 6px handle + 420px pane row)
+  const E = plCurEnt(), cv = g.querySelector('.plcv'), cvw = cv && cv.parentNode;
+  // Canvas row = plCvNeed + the strip above the canvas (toolbar, errors); ⚠re-measured every pass: cards grow on a later paint.
+  // A dragged split keeps the flexible CSS row (--plpanh sizes the panes instead).
+  let row = Math.max(260, Math.min(700, 0.34 * innerHeight));   // no canvas yet: the CSS pre-paint row
+  if(E && cv && cvw){
+    row = plCvNeed(E.G, cv.clientWidth, innerHeight) + (cvw.clientHeight - cv.clientHeight);
+    if(+lsGet(PL_SPLIT.key, 0) || (PLDRAG && PLDRAG.k === 'split')) g.style.removeProperty('--plcvh'); else g.style.setProperty('--plcvh', Math.round(row) + 'px');
+  }
+  const floor = Math.round(row) + 426;   // canvas row + 6px handle + 420px pane row (43-pipeline.css)
   g.style.height = Math.max(floor, h) + 'px';
   const over = fd.scrollHeight - fd.clientHeight;   // whatever else still overflows (margins, a note line) comes off the editor
   if(over > 0){ h -= over; g.style.height = Math.max(floor, h) + 'px'; }
   const ph = plPanH(+lsGet(PL_SPLIT.key, 0), parseFloat(g.style.height));
   if(ph && !(PLDRAG && PLDRAG.k === 'split')) g.style.setProperty(PL_SPLIT.v, ph + 'px');   // ⚠mid-drag the stored value is stale
-  const E = plCurEnt(), cv = g.querySelector('.plcv');
   // ⚠Re-fit only when the canvas size changed: plGwFit runs on every paint (node click, poll) and must not move the zoom.
   if(E && cv && E.view && !E.touched && cv.clientWidth && E.fitK !== plFitKey(E, cv)){
     const clean = plgKey(E.G) === E.base;

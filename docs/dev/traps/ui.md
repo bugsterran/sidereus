@@ -211,3 +211,15 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `md(src, 1)` builds an HTML string, so an `<img>` there would fetch before any path check and show a broken icon.
 - ⇒ `mdLinks` marks only relative image URLs (no scheme, no leading `/`, image extension) as `span.mdimg[data-mdimg]`; `strMdImgs` runs right after `el.innerHTML` in `strTreePaintCode` and swaps in a DOM-built `img` only for a listed, non-secret file of 5 MB or less.
 - ⚠Never build an `<img` string or inline svg (alt is user data); `img.onerror` puts the span back. Unmarked spans keep the bytes pinned in `tests/test_structure_follow_js.py`.
+
+## Chat counter names the «Outside rooms» card (`92-mainview-tabs.js` rcPaint)
+
+- Cause: the counter excluded the dm card, so «2 rooms» showed above three cards.
+- ⇒ `nr` stays the room count; « + Outside rooms» is appended only while the dm card is in `show` (a tag filter hides it).
+- ⚠Do not count the dm card as a room — room actions (Invite · Hide · tags) never apply to it.
+
+## Demo start tab comes from a seeded pref (`ui_prefs.memory_only(seed)`)
+
+- Cause: the demo has no prefs file, so it opened on Timeline like a first run.
+- ⇒ `chat_server.main` `--demo` seeds `{"mbMainView": "pipe"}` into the memory store; the real viewer passes no seed and keeps Timeline.
+- ⚠Never write the seed to `PATH` — the demo writes nothing to disk.
