@@ -136,3 +136,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ every width stacks canvas (full width) over palette (left) + stage panel (right, max 1000px, 2 field columns from ~710px); one row-resize handle `.plgh`, height in `sidereus.plpanh`, double-click = 420.
 - ★Demo 4-stage pipeline, headless (2026-10-16): canvas 816 / 1016 / 1356 px at 900 / 1100 / 1440, one row at each (80% / 100% / 100%).
 - ⚠Do not bring the side layout back for wide screens; it costs canvas width exactly where there is the most room.
+
+## Pipelines tab head row: select under the poll, menu inside `.plw` (48 `plSelHtml`/`paintPipe`, 48e `plNewBtn`)
+
+- Cause: the head row is rebuilt on poll; a rebuild closes an open native `<select>` and drops focus in an open menu. Item handlers return early outside `.plw`, so a menu in a body-level popover would do nothing.
+- ⇒ `paintPipe` skips a poll repaint while a `.plw` SELECT or a `.plnewm` item has focus; option text carries only dirty/running (no relative times). The «+ New ▾» menu renders inside `.plw`; an outside click removes the menu node without a repaint (a rebuild detaches `e.target` and swallows the click).
+- ⚠`.plhead` is taken by the canvas arrowheads (`fill:none;stroke:none;opacity:.85`): the row is `.pltop`. Check a new class name with `grep -rnw` over `web/` first.
+- ★Demo headless (2026-10-17): row height 30px, one row at 900 / 1100 / 1440 (ko, en).

@@ -30,7 +30,7 @@ class KbFocusKeep(unittest.TestCase):
         s = src("web/js/74c-timeline-plrun.js")
         body = s[s.index("function tlPlGo("):]
         body = body[:body.index("\n}\n")]
-        self.assertIn("kbHold('.plw [data-pln].on', '.mvb.on')", body)
+        self.assertIn("kbHold('.plw [data-plsel]', '.mvb.on')", body)
 
     def test_esc_closes_hover_card(self):
         s = src("web/js/74-timeline.js")

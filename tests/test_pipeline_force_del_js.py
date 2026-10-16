@@ -16,7 +16,7 @@ let PLS = { proj: '/p', sel: 'bad', data: {}, g: {}, msg: '', saving: false, del
 let CUR = null, POSTS = [];
 function plCur(){ return CUR; }
 function plLiveProjs(){ return {}; } function plMem(){ return {}; } function plKnown(){ return []; }
-function plDirty(){ return false; } function plBorrowChips(){ return ''; } function plBorrowOf(){ return null; }
+function plDirty(){ return false; } function plSelHtml(){ return ''; } function plHeadRow(hd, h){ return h; } function plBorrowOf(){ return null; }
 function wfBtns(){ return ''; } function plNewBtn(){ return ''; } function plNewForm(){ return ''; }
 function plPaint(){} function plRefocus(){} function lsSet(){} function plEntKey(n){ return n; }
 async function plLoadProjs(){} async function plLoad(){}

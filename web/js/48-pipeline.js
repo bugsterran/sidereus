@@ -1,5 +1,5 @@
 // «Pipelines» main tab (mainView 'pipe', feature `pipeline`, docs/dev/PIPELINE.md step 2). Moved out of the «Tokens» tab.
-// Project chips → pipeline list → canvas editor (48c graph model, 48d canvas); «Save» = diff preview, «Confirm» writes (/api/pipelines/save).
+// Project combobox → pipeline select → canvas editor (48c graph model, 48d canvas); «Save» = diff preview, «Confirm» writes (/api/pipelines/save).
 // Stage `task` arrives as `instr` (user-written config, edited in the node panel); pipeline `rules` never leaves the server.
 // ⚠Korean on purpose: matched against stage titles as saved in the pipeline JSON (data, not UI text).
 const PL_JUDGED = ['설계', '리뷰', '원인'];     // judgment stages: a lowered model gets the ⚠ hint (judgment output is not machine-checked, so a weaker model fails silently)
@@ -154,21 +154,21 @@ function plKnown(){
 function plLiveN(live, known){ return known ? Object.values(live).reduce((a, l) => a + l.length, 0) : new Set([].concat(...Object.values(live))).size; }
 function plLiveDot(n){ return '<i class=mvdot title="' + esc(TV({msg: '{n} pipelines running', vars: {n: n}})) + '"></i>'; }
 // Projects = live projects (structure tab's strProjList) ∪ known projects that have .claude/pipelines.
-// Chip row + «Projects ▾» picker (08b); «+ Add project» sits in the picker footer.
+// Project combobox + picker popover (08b ppComboHtml); «+ Add project» sits in the picker footer.
+// ⚠The × of an added project is a sibling button: #ppop lives outside .plw, where the [data-plprojrm] handler never sees it.
+// ⚠Not data-plrm: 48b's run-model select (select.plrsel) carries data-plrm, so a click on it removed a project.
 function plChips(){
   const m = new Map(), live = plLiveProjs(SESS, plMem(), plKnown());
   ((PLS.projs && PLS.projs.projects) || []).forEach(x => { if(!PROJ_GONE.has(x.path)) m.set(x.path, { p: x.path, n: x.n }); });   // ⚠the list is fetched once; a folder deleted later is still in it
   (typeof strProjList === 'function' ? strProjList() : []).forEach(e => { const o = m.get(e.p) || { p: e.p, n: 0 }; o.live = e.open > 0; m.set(e.p, o); });
   if(PLS.proj && PROJ_GONE.has(PLS.proj)) PLS.proj = m.size ? m.keys().next().value : '';   // selected folder deleted -> first listed project
   if(PLS.proj && !m.has(PLS.proj)) m.set(PLS.proj, { p: PLS.proj, n: 0 });
-  const added = (PLS.projs && PLS.projs.added) || [];   // only «+ Add project» chips get ×
+  const added = (PLS.projs && PLS.projs.added) || [];   // only «+ Add project» projects get ×
   const items = [...m.values()].map(e => Object.assign(e, { name: strShort(e.p), run: !!live[e.p] }));
-  const chip = e => '<button class="strp' + (e.p === PLS.proj ? ' on' : '')
-    + '" data-plp="' + esc(e.p) + '" title="' + esc(e.p) + '">' + esc(e.name) + (e.n ? ' <small class=strpc>' + e.n + '</small>' : '')
-    + (live[e.p] ? plLiveDot(live[e.p].length) : '')
-    + (added.includes(e.p) ? ' <span class=plrm data-plrm="' + esc(e.p) + '" title="' + esc(T('Remove from list')) + '">×</span>' : '') + '</button>';
-  return '<div class=plchips>' + ppChipsHtml({ k: 'pl', label: T('Project'), items: items, cur: PLS.proj, rkey: 'sidereus.plrecent', chip: chip,
-    pick: plPickProj, extra: plAddForm(), onExtra: plBrOpen }) + '</div>';
+  const badge = e => (e.n ? ' <small class=strpc>' + e.n + '</small>' : '') + (live[e.p] ? plLiveDot(live[e.p].length) : '');
+  const rm = PLS.proj && added.includes(PLS.proj) ? '<button type=button class="strp plrm" data-plprojrm="' + esc(PLS.proj) + '" title="' + esc(T('Remove from list')) + '" aria-label="' + esc(T('Remove from list')) + '">×</button>' : '';
+  return '<div class=plchips>' + ppComboHtml({ k: 'pl', label: T('Project'), items: items, cur: PLS.proj, rkey: 'sidereus.plrecent', badge: badge,
+    pick: plPickProj, extra: plAddForm(), onExtra: plBrOpen }) + rm + '</div>';
 }
 function plPickProj(p){
   PLS.proj = p; lsSet('sidereus.plproj', PLS.proj); PLNEW = null; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint();
@@ -206,7 +206,19 @@ function plCur(){
   if(!ps.length){ const sg = (d && d.ok && d.suggest) || []; return sg[Math.min(PLS.sugI || 0, sg.length - 1)] || null; }   // unsaved «Suggested» (48e plSugBody)
   return ps.find(x => x.name === PLS.sel) || ps[0] || null;
 }
-function plBody(ov){
+// Pipeline <select> (own pipelines, then borrowed in an optgroup). sel null = none open (Workflow / arch-map / draft view): a «—» row holds the place.
+// ⚠Option text carries only what changes on a click or a run start/end (dirty •, running): the poll repaints this HTML.
+function plSelHtml(ps, sel, runs, d){
+  const op = (x, lab) => '<option value="' + esc(x.name) + '"' + (x === sel ? ' selected' : '') + ' title="' + esc(x.title || x.name) + '">'
+    + esc(lab + (plDirty(x.name) ? ' •' : '') + (runs.includes(x.name) ? ' · ' + T('running', 'exec') : '')) + '</option>';
+  const own = ps.map(x => op(x, x.name + (x.ok ? '' : ' ⚠'))).join(''), bo = plBorrows(d).map(b => op(b, plBorrowLab(b))).join('');
+  if(!own && !bo) return '';
+  return '<label class=plsell><b>' + esc(T('Pipeline')) + '</b><select data-plsel aria-label="' + esc(T('Pipeline')) + '">' + (sel ? '' : '<option value="" selected>—</option>')
+    + own + (bo ? '<optgroup label="' + esc(T('From other projects · read-only')) + '">' + bo + '</optgroup>' : '') + '</select></label>';
+}
+// Head row items: in a .pltop (hd given, plMainBody) or as a standalone .plnames row (tests, callers without a head).
+function plHeadRow(hd, html){ if(hd){ hd.row = html; return ''; } return '<div class=plnames>' + html + '</div>'; }
+function plBody(ov, hd){
   const d = PLS.data[PLS.proj];
   if(!PLS.proj) return '<div class=hidnote>' + esc(T('Pick a project')) + '</div>';
   if(!d) return '<div class=hidnote>' + esc(T('Loading…')) + '</div>';
@@ -217,20 +229,18 @@ function plBody(ov){
   const ps = d.pipelines || [];
   // Running pipelines of this project get the same live dot as the project chips (after the name, like chips and timeline rows), so the one to open is visible on its button.
   const runs = plLiveProjs(SESS, plMem(), plKnown())[PLS.proj] || [];
-  const names = sel => ps.map(x => '<button class="strp' + (x === sel ? ' on' : '') + (x.ok ? '' : ' plbad') + (runs.includes(x.name) ? ' plon' : '') + '" data-pln="'
-    + esc(x.name) + '" title="' + esc((x.title || x.name) + (runs.includes(x.name) ? ' · ' + T('running', 'exec') : '')) + '">'
-    + esc(x.name) + (plDirty(x.name) ? ' •' : '') + (runs.includes(x.name) ? '<i class=mvdot></i>' : '') + '</button>').join('') + plBorrowChips(d, sel, runs);
+  const names = sel => plSelHtml(ps, sel, runs, d);
   const ag = typeof plAgRun === 'function' ? plAgRun(PLS.proj) : null, agc = ag && !plBorrowOf(d, ARCH_PL) ? plAgChip(ag, PLAG) : '';   // Sidereus tool pipeline running here (48h, read-only); a borrowed row replaces the chip
   const wfb = wfBtns(PLS.proj) + agc, wfv = PLS.wf && wfBody(PLS.wf.sid, PLS.wf.id);   // «Workflow» group + open run (48g, read-only)
-  if(agc && PLAG) return '<div class=plnames>' + names(null) + plNewBtn(!ps.length) + wfb + '</div>' + plNewForm() + plAgBody(ag);
-  if(wfv) return '<div class=plnames>' + names(null) + plNewBtn(!ps.length) + wfb + '</div>' + plNewForm() + wfv;
-  if(PLS.std){ const sp = plCur(); if(sp && sp.std) return plStdBody(d, sp); }
+  if(agc && PLAG) return plHeadRow(hd, names(null) + plNewBtn(!ps.length) + wfb) + plNewForm() + plAgBody(ag);
+  if(wfv) return plHeadRow(hd, names(null) + plNewBtn(!ps.length) + wfb) + plNewForm() + wfv;
+  if(PLS.std){ const sp = plCur(); if(sp && sp.std) return plStdBody(d, sp, hd); }
   const bp = plBorrowOf(d, PLS.sel);
-  if(bp) return plBorrowBody(d, bp, '<div class=plnames>' + names(bp) + plNewBtn(!ps.length) + wfb + '</div>' + plNewForm(), ov);
-  if(!ps.length && (d.suggest || []).length) return plSugBody(d, agc);
-  if(!ps.length) return '<div class="hidnote plempty">' + esc(T('This project has no pipelines — start with «New pipeline»')) + '</div><div class=plnames>' + plNewBtn(1) + wfb + '</div>' + plNewForm() + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
+  if(bp) return plBorrowBody(d, bp, plHeadRow(hd, names(bp) + plNewBtn(!ps.length) + wfb) + plNewForm(), ov);
+  if(!ps.length && (d.suggest || []).length) return plSugBody(d, agc, hd);
+  if(!ps.length) return '<div class="hidnote plempty">' + esc(T('This project has no pipelines — start with «New pipeline»')) + '</div>' + plHeadRow(hd, names(null) + plNewBtn(1) + wfb) + plNewForm() + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
   const p = plCur();
-  const list = '<div class=plnames>' + names(p) + plNewBtn() + wfb + '</div>' + plNewForm();
+  const list = plHeadRow(hd, names(p) + plNewBtn() + wfb) + plNewForm();
   // ⚠a schema-breaking file has no editor, so «Force delete» is its only way out (same /delete guards: preview + confirm, moved to backup)
   if(!p.ok) return list + '<div class=hidnote>' + esc(T('The file breaks the schema — fix it by hand')) + '</div><ul class=plerrs>'
     + p.errs.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>'
@@ -299,8 +309,8 @@ function plPaint(fromPoll){
 // «Running N» overview sits under the canvas, above the run table: at the top its come-and-go moved the chips and canvas on every run start/end.
 // Bodies with no canvas (loading, empty, Workflow/arch panels) get it at their end instead.
 function plMainBody(){
-  const ov = plOverview(), pb = plBody(ov);
-  return plChips() + plApplySeg(PLS.data[PLS.proj]) + pb + (ov && pb.indexOf(ov) < 0 ? ov : '');
+  const ov = plOverview(), hd = { row: '' }, pb = plBody(ov, hd);   // one head row: project · pipeline · «+ New ▾» (· Workflow chips)
+  return '<div class=pltop>' + plChips() + hd.row + '</div>' + plApplySeg(PLS.data[PLS.proj]) + pb + (ov && pb.indexOf(ov) < 0 ? ov : '');
 }
 function paintPipe(box, fromPoll){
   if(PLDRAG) return;                   // ⚠a repaint mid-drag would drop the dragged node
@@ -319,6 +329,7 @@ function paintPipe(box, fromPoll){
   const fe = document.activeElement;   // ⚠a live run changes h every poll: never rebuild under an open select / the caret
   if(fromPoll && fe && fe.closest && fe.closest('.plw') && /^(SELECT|INPUT|TEXTAREA)$/.test(fe.tagName)) return;
   if(fromPoll && fe && fe.closest && fe.closest('.hnw')) return;   // harness chips/rows are focusable: a rebuild drops keyboard focus
+  if(fromPoll && fe && fe.closest && fe.closest('.plnewm')) return;   // ⚠open «+ New ▾» menu: a rebuild drops the focused item (48e)
   // ⚠Harness HTML changes every poll (relative times), and a rebuilt node drops its native title tooltip before the ~1s delay ends: hold while hovering one.
   if(fromPoll && box.querySelector('.hnw [title]:hover')) return;
   box._plw = h;
@@ -345,7 +356,7 @@ async function plSave(write){
   if(!r || !r.ok){ PLS.msg = T('Could not save') + ' — ' + ((r && r.err) || '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLS.diff = null; }
   else if(!write) PLS.diff = { name: p.name, text: r.diff || '' };
   else { PLS.diff = null; PLS.msg = T('Saved · backup') + ' ' + (r.backup || ''); await plLoad(PLS.proj, true); }
-  plPaint(); plRefocus('[data-plok]:not([disabled])', '[data-plsave]:not([disabled])', '[data-pln].on');   // awaited load: a later repaint would drop focus again
+  plPaint(); plRefocus('[data-plok]:not([disabled])', '[data-plsave]:not([disabled])', '[data-plsel]');   // awaited load: a later repaint would drop focus again
 }
 async function plDelete(write){
   const p = plCur();
@@ -363,12 +374,12 @@ async function plDelete(write){
     PLS.sel = '';   // plCur falls back to the first remaining pipeline
     PLS.projs = null; await Promise.all([plLoadProjs(), plLoad(PLS.proj, true)]);
   }
-  plPaint(); plRefocus('[data-pldelok]:not([disabled])', '[data-pldel]:not([disabled])', '[data-pln].on', '[data-plnew]:not([disabled])');
+  plPaint(); plRefocus('[data-pldelok]:not([disabled])', '[data-pldel]:not([disabled])', '[data-plsel]', '[data-plnewm]');
 }
 document.addEventListener('click', e => {
   if(!e.target.closest || !e.target.closest('.plw')) return;
-  const rm = e.target.closest('[data-plrm]');
-  if(rm){ e.preventDefault(); return plRemove(rm.dataset.plrm); }
+  const rm = e.target.closest('[data-plprojrm]');
+  if(rm){ e.preventDefault(); return plRemove(rm.dataset.plprojrm); }
   if(e.target.closest('[data-plprojadd]')) return plBrOpen();
   const ap = e.target.closest('[data-plap]');
   if(ap){ const a = (PLS.data[PLS.proj] || {}).apply; if(a && ap.dataset.plap !== a.mode) plApplySet(ap.dataset.plap, !!a.own); return; }
@@ -376,10 +387,6 @@ document.addEventListener('click', e => {
   if(apo){ const a = (PLS.data[PLS.proj] || {}).apply; if(!a) return;
     // ⚠the checkbox already flipped: put it back when cancelled (the repaint is skipped while the HTML is unchanged)
     plApplySet(apo.checked ? a.mode : null, true).then(ok => { if(!ok) apo.checked = !apo.checked; }); return; }
-  const c = e.target.closest('[data-plp]');
-  if(c){ ppRecent('sidereus.plrecent', c.dataset.plp); plPickProj(c.dataset.plp); return; }
-  const n = e.target.closest('[data-pln]');
-  if(n){ PLS.sel = n.dataset.pln; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint(); return; }
   if(e.target.closest('[data-plsave]')) return plSave(false);
   if(e.target.closest('[data-plok]')) return plSave(true);
   if(e.target.closest('[data-plno]')){ PLS.diff = null; plPaint(); return; }
@@ -387,4 +394,15 @@ document.addEventListener('click', e => {
   if(e.target.closest('[data-pldelok]')) return plDelete(true);
   if(e.target.closest('[data-pldelno]')){ PLS.del = null; plPaint(); return; }
   if(e.target.closest('[data-plreset]')){ const p = plCur(); if(p) delete PLS.g[plEntKey(p.name)]; PLS.diff = null; PLS.msg = ''; plPaint(); }
+});
+// Pipeline <select>: same state change the pipeline chip click made; «sug:k» = an unsaved suggestion (48e plSugBody).
+function plSelPick(v){
+  if(!v) return;
+  if(v.indexOf('sug:') === 0){ PLS.sugI = +v.slice(4) || 0; PLS.std = ''; plPaint(); return; }
+  PLS.sel = v; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = ''; plAgSet(false); plPaint();
+}
+document.addEventListener('change', e => {
+  const el = e.target;
+  if(!el || !el.matches || !el.matches('.plw select[data-plsel]')) return;
+  plSelPick(el.value); kbHold('.plw [data-plsel]');   // ⚠the repaint replaces the focused select
 });

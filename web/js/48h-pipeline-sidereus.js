@@ -2,6 +2,7 @@
 // The definition lives in the Sidereus repo (84j archHome), never in the target project; nothing here edits or runs it.
 // ⚠Run state = state `archRun` (sidereus/arch_map.runs) via 84j archRunOf; the hook keeps no plrun for such sessions.
 let PLAG = false;   // the «arch-map · Sidereus» chip is open
+function plAgSet(on){ PLAG = !!on; }
 function plAgHome(){ return SIDEREUS_DIR || (typeof archHome === 'function' ? archHome(null) : ''); }
 // Live run of the Sidereus pipeline on proj, or null; the Sidereus repo itself shows its own file instead.
 function plAgRun(proj){
@@ -40,9 +41,10 @@ function plAgBody(r, now){
     + '<div class=plagrun>' + plStepper(steps, ci, 'lg') + '<span class=hidnote>' + esc((plAgStageN(r) ? plAgStageN(r) + ' · ' : '') + r.stage
       + ' · ' + archRunEl(r, now || Date.now()) + ' · ' + T('Session') + ' ' + sid8(r.sid || '')) + '</span></div>';
 }
+// Any other head-row button (New menu, Workflow chips) leaves the arch-map view; the project picker and × do not.
 document.addEventListener('click', e => {
-  const b = e.target && e.target.closest ? e.target.closest('.plnames button') : null;
-  if(!b) return;
+  const b = e.target && e.target.closest ? e.target.closest('.plw :is(.pltop, .plnames) button') : null;
+  if(!b || b.matches('[data-ppk], [data-plprojrm], [data-plnewm]')) return;
   const on = b.hasAttribute('data-plag');
   if(on === PLAG) return;
   PLAG = on; plPaint();
@@ -54,11 +56,6 @@ function plBorrowOf(d, name){ return plBorrows(d).find(b => b && b.name === name
 function plRO(){ const p = plCur(); return !!(p && p.from); }   // canvas handlers (48d): borrowed view is read-only
 function plBorrowLab(b){
   return b.builtin ? b.name + ' · ' + T('Sidereus built-in') : TV({msg: '{name} · from {proj}', vars: {name: b.name, proj: strShort(b.from || '')}});
-}
-function plBorrowChips(d, sel, runs){
-  return plBorrows(d).map(b => '<button class="strp plbrw' + (b === sel ? ' on' : '') + (runs.includes(b.name) ? ' plon' : '') + '" data-pln="' + esc(b.name)
-    + '" title="' + esc(TV({msg: 'Defined in {proj} — read-only here', vars: {proj: b.from || ''}})) + '">' + esc(plBorrowLab(b))
-    + (runs.includes(b.name) ? '<i class=mvdot></i>' : '') + '</button>').join('');
 }
 // Run of borrowed `p` on proj, matching the server's attach (sidereus/pipeline.runs_here): the Sidereus tool run, else a plrun of a session in proj.
 function plBorrowLv(proj, p){

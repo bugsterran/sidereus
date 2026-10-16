@@ -1,5 +1,5 @@
-// Project picker shared by «Pipelines» (48 plChips) and «Structure» (80 paintStruct): a short chip row
-//   (selection · working · recent) + «More ▾» anchored search popover grouped Working / Recent / All.
+// Project picker shared by «Pipelines» (48 plChips, combobox) and «Structure» (80 paintStruct, short chip row
+//   selection · working · recent + «More ▾»): one anchored search popover grouped Working / Recent / All.
 //   Metadata only (paths, names, counts). Adapters keep their own state/storage and call ppRecent on a pick.
 const PP_RECENT_N = 5;
 const PPC = {};          // cfg by key, refreshed on every chip render (the popover reads the latest snapshot)
@@ -47,6 +47,14 @@ function ppChipsHtml(cfg){
   return '<b>' + esc(cfg.label) + '</b><span class=ppcs>' + g.chips.map(cfg.chip).join('') + '</span>'
     + '<button type=button class="strp ppbtn" data-ppk="' + esc(cfg.k) + '" aria-haspopup=listbox aria-controls=ppop aria-expanded="'
     + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '">' + esc(T('More ▾')) + '</button>';
+}
+// Combobox form (Pipelines): one button with the current project's full name; opens the same popover. cfg.badge(e) = trailing html (live dot).
+function ppComboHtml(cfg){
+  PPC[cfg.k] = cfg;
+  const p = cfg.cur || '', e = (cfg.items || []).find(x => x.p === p) || { p: p, name: p.slice(p.lastIndexOf('/') + 1) || p };
+  return '<b>' + esc(cfg.label) + '</b><button type=button class="strp ppbtn ppcombo" data-ppk="' + esc(cfg.k) + '" aria-haspopup=listbox aria-controls=ppop aria-expanded="'
+    + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '" title="' + esc(p) + '"><span class=ppcn>' + esc(p ? e.name || p : T('Pick a project')) + '</span>'
+    + (p && cfg.badge ? cfg.badge(e) : '') + ' ▾</button>';
 }
 // Pure: chip widths ws, flex gap, row width avail, index of the selection → indices to fold, nearest-to-selection first.
 //   ⚠The selection renders last (stable order), so a narrow row clipped exactly it; folded chips stay in «More».

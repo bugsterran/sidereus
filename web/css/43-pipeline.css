@@ -3,6 +3,15 @@
 .plchips,.plnames,.plbar{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 8px}
 .plchips>b{font-size:12px;color:#8b95a5;margin-right:2px}
 .plchips .mvdot{margin-left:4px}
+.pltop{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 8px}   /* project · pipeline · «+ New ▾» on one row (48 plMainBody) */
+.pltop>.plchips{margin:0}
+.plsell{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.plsell>b{font-size:12px;color:#8b95a5}
+.plsell select{max-width:280px;font-size:12.5px}
+.plnewmw{position:relative;display:inline-flex}
+.plnewmw>.wkrgb{white-space:nowrap}
+.plnewm{position:absolute;top:calc(100% + 4px);left:0;z-index:40;display:flex;flex-direction:column;gap:3px;padding:5px;min-width:max-content;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:6px;box-shadow:0 6px 18px #0006}   /* 48e plNewBtn menu, inside .plw */
+.plnewm .wkrgb{text-align:left}
 .plnames .mvdot{margin-left:5px;vertical-align:1px}
 .plagrun{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px}   /* 48h read-only Sidereus pipeline run */
 /* «Running N» overview under the canvas, above the run table (48b plOvHtml): one row per running pipeline, stage strip ✓ done · ● running · · waiting */
@@ -70,8 +79,8 @@ html[data-theme=light] .plbrb.cl{color:#4f49a8;border-color:#c9c6ec}
 .plbar>b{margin-right:6px}
 /* Save/run/delete: right end of the bar, colour-coded. ⚠Scoped like 05-controls.css so it outranks the shared .wkrgb look. */
 .plact{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none}
-html[data-ui=next][data-ui] :is(.plact,.plnames) .wkrgb.plsv{background:var(--nx-info-bg);border-color:var(--nx-info-bg);color:#fff;font-weight:600}
-html[data-ui=next][data-ui] :is(.plact,.plnames) .wkrgb.plsv:hover:not([disabled]){background:color-mix(in srgb,var(--nx-info-bg) 85%,#fff)}
+html[data-ui=next][data-ui] :is(.plact,.plnames,.pltop) .wkrgb.plsv{background:var(--nx-info-bg);border-color:var(--nx-info-bg);color:#fff;font-weight:600}
+html[data-ui=next][data-ui] :is(.plact,.plnames,.pltop) .wkrgb.plsv:hover:not([disabled]){background:color-mix(in srgb,var(--nx-info-bg) 85%,#fff)}
 html[data-ui=next][data-ui] .plact .wkrgb.plrn{background:color-mix(in srgb,var(--nx-ok) 14%,transparent);border-color:color-mix(in srgb,var(--nx-ok) 60%,transparent);color:color-mix(in srgb,var(--nx-ok) 70%,var(--nx-t1));font-weight:600}
 /* ⚠plain --nx-ok text on its own 14%/26% tint was 3.91/3.32:1 in light; 70% ok + 30% t1 = 5.36/4.56 light, 7.28/5.55 dark */
 html[data-ui=next][data-ui] .plact .wkrgb.plrn:hover:not([disabled]),html[data-ui=next][data-ui] .plact .wkrgb.plrn.on{background:color-mix(in srgb,var(--nx-ok) 26%,transparent);border-color:var(--nx-ok)}
@@ -81,7 +90,6 @@ html[data-ui=next][data-ui] .plact .wkrgb[disabled]{opacity:.45;cursor:default}
 .plapply .tkvs{margin:0}
 .plapply label{display:inline-flex;align-items:center;gap:4px;font-size:12px;margin-left:6px}
 .plapply .hidnote{margin:0 0 0 6px}
-.plbad{border-color:#a0523d}
 .plt{font-weight:600}
 .pll{display:flex;align-items:center;gap:4px;font-size:12px;color:#8b95a5;min-width:0}
 .pll>span{flex:0 0 42px}
@@ -131,7 +139,6 @@ html[data-mv=pipe] .wrap{max-width:none}
 .plgw>.plcvw{grid-area:1/1/2/3}.plgw>.plgh{grid-area:2/1/3/3}.plgw>.plpan{grid-area:3/2/4/3}.plgw>.plpal{grid-area:3/1/4/2}   /* palette left, editor right: keeps the left-to-right order of the former side layout */
 .plgh{cursor:row-resize}.plgh:hover{background:#2b3545}   /* canvas | panes split (48d PL_SPLIT) */
 .plro{display:contents}.plro .plpal,.plro .plpan,.plro .plnt{pointer-events:none;opacity:.55}   /* borrowed pipeline (48h): no editing controls */
-.plnames .plbrw{font-style:italic}
 .plpal{min-height:0;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:4px;box-sizing:border-box}
 .plph{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;color:#8b95a5;margin:4px 2px}
 .plph .plti{flex:1;min-width:0;font:inherit;font-weight:700;color:var(--nx-t1,#e6e6e6);background:transparent;border:1px solid transparent;border-radius:4px;padding:1px 4px}.plph .plti:is(:hover,:focus){border-color:var(--nx-rule,#252629);background:var(--nx-field,#1a1c20)}   /* stage title, renamed in place */

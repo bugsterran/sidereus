@@ -341,11 +341,11 @@ class Overview(unittest.TestCase):
         js = "(() => { %s globalThis.plBody = ov => '<CV/>' + (ov || '') + '<div class=plrt></div>'; const a = plMainBody();" \
              " globalThis.plBody = () => '<EMPTY/>'; return [a, plMainBody()]; })()" % stub
         a, b = _js(js, "plMainBody")
-        self.assertTrue(a.startswith("<CHIPS/>"), a)
+        self.assertTrue(a.startswith("<div class=pltop><CHIPS/></div><APPLY/>"), a)
         self.assertEqual(a.count("class=plov>"), 1)
         self.assertLess(a.index("<CV/>"), a.index("class=plov>"))
         self.assertLess(a.index("class=plov>"), a.index("class=plrt"))
-        self.assertEqual(b, "<CHIPS/><APPLY/><EMPTY/><div class=plov>OV</div>")   # no canvas: overview at the body end, still under the chips
+        self.assertEqual(b, "<div class=pltop><CHIPS/></div><APPLY/><EMPTY/><div class=plov>OV</div>")   # no canvas: overview at the body end, still under the chips
         self.assertIn("cv.html + (ov || '') + plRunTable(lv, p)", js_fn("plBody"))
         self.assertIn("cv.html + '</div>' + (ov || '') + plRunTable(lv, p)", js_fn("plBorrowBody"))
 

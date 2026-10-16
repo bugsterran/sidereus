@@ -68,7 +68,7 @@ class PipelineSidereus(unittest.TestCase):
 
     def test_suggested_view_carries_chip(self):
         sug = "function plCanvas(){ return {html: '<CV/>'}; } function plNewBtn(){ return '<NEW/>'; } function plNewForm(){ return ''; } let PLNEW = null;"
-        r = run(sug + "\n" + js_fn("plSugBody") + "\nconst d = {suggest: [{title: 'S', stages: []}]};"
+        r = run(sug + "\n" + js_fn("plSugBody") + "\n" + js_fn("plHeadRow") + "\nconst d = {suggest: [{title: 'S', stages: []}]};"
                 "ARCHRUN = {'/t': " + json.dumps(RUN) + "};"
                 "console.log(JSON.stringify([plSugBody(d, plAgChip(plAgRun('/t'), false)), plSugBody(d, plAgChip(plAgRun('/u'), false))]));")
         self.assertIn("data-plag", r[0].split("</div>")[0])   # inside the chip row
@@ -90,7 +90,7 @@ class PipelineSidereus(unittest.TestCase):
         self.assertEqual(r[0], {"/t": ["arch-map"]})
         self.assertEqual(r[1], {"/sidereus": ["arch-map"]})   # no target run known: the home keeps the tag
 
-BFNS = ("plBorrows", "plBorrowOf", "plRO", "plBorrowLab", "plBorrowChips", "plBorrowLv", "plBorrowBody", "plCur", "plOvPick")
+BFNS = ("plBorrows", "plBorrowOf", "plRO", "plBorrowLab", "plSelHtml", "plBorrowLv", "plBorrowBody", "plCur", "plOvPick")
 BPRE = "\n".join([
     "function strShort(p){ return p.slice(p.lastIndexOf('/') + 1); } let DIRTY = false; function plDirty(){ return DIRTY; } const LS = {}; function lsSet(k, v){ LS[k] = v; }",
     "let PLNEW = null, PAINTS = 0, SESS = [], PLVIEW = 'pipe'; function plPaint(){ PAINTS++; } function plLiveHead(lv){ return lv ? '<HEAD ' + lv.sid + '>' : ''; }",
@@ -141,11 +141,12 @@ class PipelineBorrow(unittest.TestCase):
 
     def test_labels_builtin_vs_other(self):
         r = brun("const d = {ok: true, borrowed: [" + json.dumps(BOR) + ", {name: 'deploy', from: '/w/app', ok: true}]};"
-                 "console.log(JSON.stringify(plBorrowChips(d, null, ['deploy'])));")
+                 "console.log(JSON.stringify(plSelHtml([], null, ['deploy'], d)));")
         self.assertIn("arch-map · Sidereus 내장", r)
         self.assertIn("deploy · app에서", r)
-        self.assertIn('data-pln="deploy"', r)
-        self.assertEqual(r.count("mvdot"), 1)
+        self.assertIn('<option value="deploy"', r)   # borrowed rows are options of the pipeline select (optgroup)
+        self.assertIn("<optgroup", r)
+        self.assertEqual(r.count("실행 중"), 1)
 
     def test_plrun_lighting_from_session_in_project(self):
         r = brun("SESS = [{sid: 'x', cwd: '/t', plrun: [{name: 'deploy', proj: '/w/app', t1: 5, stages: {}}]},"

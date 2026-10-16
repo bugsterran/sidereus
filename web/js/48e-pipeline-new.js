@@ -6,11 +6,40 @@ const PL_TPLS = [['empty', 'Empty pipeline (one stage)'], ['change', 'Change (de
 let PLNEW = null;            // open form {name, title, tpl, diff, busy, err}
 // A disabled button says why (one form at a time) — a silent dead click read as a bug.
 function plNewDis(on){ return on ? ' disabled title="' + esc(T('Close the open form first')) + '"' : ''; }
+// «+ New ▾» menu: the four ways to start a pipeline behind one button (one head row at 900px). Items keep their own attributes and handlers.
 // pri: the empty state's one action gets the primary fill (four equal outlines gave no starting point)
-function plNewBtn(pri){ return '<button class="wkrgb' + (pri ? ' plsv' : '') + '" data-plnew' + plNewDis(PLNEW) + '>' + esc(T('+ New pipeline')) + '</button>'
-  + '<button class="wkrgb" data-plimp' + plNewDis(PLNEW) + '>' + esc(T('Import from another project')) + '</button>'
-  + '<button class="wkrgb" data-pldnew' + plNewDis(PLDRAFT) + '>' + esc(T('Ask AI for a draft')) + '</button>'
-  + '<button class="wkrgb' + (PLSTD ? ' on' : '') + '" data-plstd>' + esc(T('Standard templates')) + '</button>'; }
+// ⚠The menu renders inside .plw: every item handler (here and 48e PLDRAFT) returns early for a click outside .plw.
+let PLNEWM = false;          // menu open
+function plNewBtn(pri){
+  const it = (cls, attr, dis, lab) => '<button type=button role=menuitem class="wkrgb' + cls + '" ' + attr + dis + '>' + esc(lab) + '</button>';
+  return '<span class=plnewmw><button type=button class="wkrgb' + (pri ? ' plsv' : '') + (PLNEWM ? ' on' : '') + '" data-plnewm aria-haspopup=menu aria-expanded="' + (PLNEWM ? 'true' : 'false') + '">'
+    + esc(T('+ New ▾')) + '</button>' + (PLNEWM ? '<div class=plnewm role=menu aria-label="' + esc(T('New pipeline')) + '">'
+    + it('', 'data-plnew', plNewDis(PLNEW), T('+ New pipeline')) + it('', 'data-plimp', plNewDis(PLNEW), T('Import from another project'))
+    + it('', 'data-pldnew', plNewDis(PLDRAFT), T('Ask AI for a draft')) + it(PLSTD ? ' on' : '', 'data-plstd', '', T('Standard templates')) + '</div>' : '') + '</span>';
+}
+function plNewMenu(on){ PLNEWM = !!on; plPaint(); plRefocus(on ? '.plnewm button:not([disabled])' : '[data-plnewm]'); }
+document.addEventListener('click', e => {
+  if(!PLNEWM || !e.target.closest) return;
+  // Capture phase: an item click closes the menu before its own handler repaints.
+  if(e.target.closest('[data-plnewm]')) return;
+  if(e.target.closest('.plnewm')){ if(e.target.closest('.plnewm button')) PLNEWM = false; return; }
+  // ⚠Outside click: drop the menu node without a repaint — a rebuild here would detach e.target and swallow the click.
+  PLNEWM = false;
+  document.querySelectorAll('.plw .plnewm').forEach(m => m.remove());
+  document.querySelectorAll('.plw [data-plnewm]').forEach(b => { b.classList.remove('on'); b.setAttribute('aria-expanded', 'false'); });
+}, true);
+document.addEventListener('click', e => {
+  if(e.target.closest && e.target.closest('.plw [data-plnewm]')) plNewMenu(!PLNEWM);
+});
+document.addEventListener('keydown', e => {
+  if(!PLNEWM || !e.target.closest || !e.target.closest('.plnewmw')) return;
+  if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); plNewMenu(false); return; }
+  if(e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  const bs = [...document.querySelectorAll('.plw .plnewm button:not([disabled])')];
+  if(!bs.length) return;
+  e.preventDefault();
+  bs[ppStep(bs.indexOf(e.target), e.key === 'ArrowDown' ? 1 : -1, bs.length)].focus({ preventScroll: true });
+});
 function plNewNameErr(name){
   const d = PLS.data[PLS.proj], have = ((d && d.pipelines) || []).map(x => x.name);
   if(!/^[a-z0-9-]{1,40}$/.test(name || '')) return T('Name: lowercase letters, digits and -, up to 40');
@@ -54,20 +83,20 @@ function plStdList(){
     + '<button class="wkrgb" data-plstdopen="' + esc(x.name) + '">' + esc(T('Open draft')) + '</button></div></div>').join('') + '</div>';
 }
 // Std draft view, like plSugBody; the canvas row is keyed 'std:<key>' (plCur) so it never shares an editor entry with a saved file.
-function plStdBody(d, p){
+function plStdBody(d, p, hd){
   const ps = d.pipelines || [], cv = plCanvas(p, d, null);
-  return '<div class=plnames>' + ps.map(x => '<button class="strp' + (x.ok ? '' : ' plbad') + '" data-pln="' + esc(x.name) + '" title="' + esc(x.title || x.name) + '">'
-      + esc(x.name) + '</button>').join('') + plNewBtn() + '</div>' + plNewForm()
+  return plHeadRow(hd, plSelHtml(ps, null, [], d) + plNewBtn()) + plNewForm()
     + '<div class=plsugb><b>' + esc(T('Standard template · not saved')) + '</b> <span>' + esc(T("A published standard process mapped to this project's agents — edit it after saving")) + '</span>'
     + '<button class="wkrgb" data-plstdsave' + (PLNEW ? ' disabled' : '') + '>' + esc(T('Save this draft')) + '</button></div>'
     + '<div class=plbar><b>' + esc(plgTplShow(p.title)) + '</b></div>' + cv.html;
 }
 // A project without pipelines opens on its first
 // suggestion, unsaved. ⚠Never auto-saved or sent; «Save this suggestion» = the normal create preview + «Confirm».
-function plSugBody(d, ex){   // ex = extra chips (48h Sidereus pipeline)
+function plSugBody(d, ex, hd){   // ex = extra chips (48h Sidereus pipeline) · hd = head row sink (48 plHeadRow)
   const sg = d.suggest, i = Math.min(PLS.sugI || 0, sg.length - 1), p = sg[i], cv = plCanvas(p, d, null);
-  return '<div class=plnames>' + (sg.length > 1 ? sg.map((x, k) => '<button class="strp' + (k === i ? ' on' : '') + '" data-plsug="' + k + '">'
-      + esc(T('Suggested') + ' · ' + x.title) + '</button>').join('') : '') + plNewBtn() + (ex || '') + '</div>' + plNewForm()
+  const sel = sg.length > 1 ? '<label class=plsell><b>' + esc(T('Pipeline')) + '</b><select data-plsel aria-label="' + esc(T('Pipeline')) + '">' + sg.map((x, k) => '<option value="sug:' + k + '"'
+    + (k === i ? ' selected' : '') + '>' + esc(T('Suggested') + ' · ' + x.title) + '</option>').join('') + '</select></label>' : '';
+  return plHeadRow(hd, sel + plNewBtn() + (ex || '')) + plNewForm()
     + '<div class=plsugb><b>' + esc(T('Suggested · not saved')) + '</b> <span>' + esc(T('Guessed from agent names — edit it after saving')) + '</span>'
     + '<button class="wkrgb" data-plsugsave' + (PLNEW ? ' disabled' : '') + '>' + esc(T('Save this suggestion')) + '</button></div>'
     + '<div class=plbar><b>' + esc(p.title) + '</b></div>' + cv.html;
@@ -94,16 +123,14 @@ async function plNewSend(write){
   if(!r || !r.ok){ PLNEW.err = T('Could not create') + ' — ' + ((r && r.err) || '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLNEW.diff = ''; }
   else if(!write){ PLNEW.diff = r.diff || ''; PLNEW.replaced = r.replaced || []; }
   else { PLS.sel = r.name; PLS.std = ''; PLS.msg = T('Created') + ' · .claude/pipelines/' + r.name + '.json'; PLNEW = null; PLS.projs = null; await Promise.all([plLoadProjs(), plLoad(PLS.proj, true)]); }
-  plPaint(); plRefocus('[data-plnok]:not([disabled])', '[data-plnprev]:not([disabled])', '[data-plnf=name]', '[data-pln].on');
+  plPaint(); plRefocus('[data-plnok]:not([disabled])', '[data-plnprev]:not([disabled])', '[data-plnf=name]', '[data-plsel]');
 }
 document.addEventListener('click', e => {
   if(!e.target.closest || !e.target.closest('.plw')) return;
   if(e.target.closest('[data-plnew]')){ PLNEW = { name: '', title: '', tpl: 'empty', diff: '', busy: false, err: '' }; PLDRAFT = null; plPaint(); plRefocus('[data-plnf=name]'); return; }
-  const sg = e.target.closest('[data-plsug]');
-  if(sg){ PLS.sugI = +sg.dataset.plsug; PLS.std = ''; plPaint(); return; }
-  if(e.target.closest('[data-plstd]')){ PLSTD = !PLSTD; plPaint(); plRefocus(PLSTD ? '.plstd [data-plstdopen]' : '', '[data-plstd]'); return; }
+  if(e.target.closest('[data-plstd]')){ PLSTD = !PLSTD; plPaint(); plRefocus(PLSTD ? '.plstd [data-plstdopen]' : '', '[data-plnewm]'); return; }
   const so = e.target.closest('[data-plstdopen]');
-  if(so){ PLS.std = so.dataset.plstdopen; PLS.diff = null; PLS.msg = ''; plPaint(); plRefocus('[data-plstdsave]:not([disabled])', '[data-plstd]'); return; }   // list stays open: nothing is saved yet, the card shows .on for the opened draft
+  if(so){ PLS.std = so.dataset.plstdopen; PLS.diff = null; PLS.msg = ''; plPaint(); plRefocus('[data-plstdsave]:not([disabled])', '[data-plnewm]'); return; }   // list stays open: nothing is saved yet, the card shows .on for the opened draft
   if(e.target.closest('[data-plstdsave]')){ const p = plCur(); if(p && p.std){ PLNEW = { name: p.key, title: p.title, tpl: 'std:' + p.key, diff: '', busy: false, err: '' }; PLDRAFT = null; plPaint(); } return; }
   if(e.target.closest('[data-plsugsave]')){ const p = plCur(); if(p && p.suggest){ PLNEW = { name: p.name, title: '', tpl: 'suggest:' + p.name, diff: '', busy: false, err: '' }; PLDRAFT = null; plPaint(); } return; }
   if(e.target.closest('[data-plimp]')){ PLNEW = { src: 'other', fproj: '', fname: '', name: '', title: '', diff: '', busy: false, err: '' }; PLDRAFT = null; plPaint(); return; }

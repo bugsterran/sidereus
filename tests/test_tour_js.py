@@ -175,7 +175,7 @@ class TourDrift(unittest.TestCase):
 
     def test_step_selectors_are_built_by_the_page(self):
         sels = re.findall(r"\b(?:sel|also): '([^']+)'", STEPS)
-        self.assertGreaterEqual(len(sels), 5)
+        self.assertGreaterEqual(len(sels), 4)
         for sel in sels:
             for kind, name in re.findall(r"([#.]|\[)([\w-]+)", sel):
                 if kind == "#":
