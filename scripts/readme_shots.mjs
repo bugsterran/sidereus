@@ -18,34 +18,21 @@ const FW = 1280, FH = 800, FDSF = 1.25;     // frame page, 16:10 ⇒ output 1600
 const IW = 1152, IH = 720;                  // app image inside the frame, 16:10
 const DEADLINE_MS = 180000;
 const { cleanup, startDemo, startChrome } = sandbox('readme-shots');
-// ⚠The demo world carries a saver-hook snapshot (`saverView`) so screen_check covers the saver chip, but that hook
-// is not shipped: a public install has no snapshot file and never shows the chip. Drop it from /api/state here so
-// the README shows what users get (the demo itself keeps it — tests/test_demo.py and the screen baselines rely on it).
-const BOOT = `(() => {
-  const f = window.fetch;
-  window.fetch = function (a, o) {
-    const p = f.apply(this, arguments);
-    if (String(a).indexOf('/api/state') < 0) return p;
-    return p.then(r => r.clone().json().then(j => { j.saverView = null; j.saverViews = {};
-      return new Response(JSON.stringify(j), { status: r.status, headers: r.headers }); }, () => r));
-  };
-})();`;
 
 // ---- shots -------------------------------------------------------------------
 // Focus comes from picking the view and state.
 const tab = k => `(() => { const b = document.querySelector('#mvw .mvb[data-mv="${k}"]'); if (!b) throw new Error('no tab ${k}'); b.click(); return 1; })()`;
+// Structure › Architecture, demo project's map loaded, then the named flow picked in «Flows» (lit on the map).
+async function archFlow(P, name) {
+  await P.wait(`!!document.querySelector('#mvw .mvb[data-mv="struct"]')`, 'struct tab');
+  await P.ev(tab('struct'));
+  await P.wait(`!!document.querySelector('.archtab select[data-arfl]')`, 'architecture map');
+  await P.ev(`(() => { const s = document.querySelector('.archtab select[data-arfl]');
+    const o = [...s.options].find(o => o.textContent.indexOf(${JSON.stringify(name)}) >= 0); if (!o) throw new Error('no flow ' + ${JSON.stringify(name)});
+    s.value = o.value; s.dispatchEvent(new Event('change', {bubbles: true})); return 1; })()`);
+  await P.wait(`!!document.querySelector('.archtab [data-arseq]')`, 'flow lit');
+}
 const SHOTS = [
-  { name: 'pipelines', async run(P) {
-    // ⚠Feature tabs render only after the first /api/state, so wait for the button before clicking.
-    await P.wait(`!!document.querySelector('#mvw .mvb[data-mv="pipe"]')`, 'pipe tab');
-    await P.ev(tab('pipe'));
-    await P.wait(`document.querySelectorAll('.plw .plcv .plnd').length >= 3 && !!document.querySelector('.plrtb')`, 'pipeline canvas');
-    // Run overview + run bar + lit canvas + «By stage» table; the editor side panels and palette are not the subject.
-    await P.css('.plchips,.plapply,.plnames,.plpal,.plpan,.plcvt,.plw>.tkvs{display:none!important}'
-      + '.plw .plgw{height:260px!important;min-height:0!important}'
-      + '.plgw>.plcvw{height:260px!important;max-height:260px!important;min-height:0!important}'
-      + '.plw .plcv{flex:1 1 0!important;min-height:0!important;height:auto!important}');
-  } },
   // tlnmW: the default name column (~290px at 1200px) truncates the row chips; the page clamps it to half the Gantt column.
   { name: 'timeline', prefs: { 'sidereus.tlgit': '1', 'sidereus.tlnmW': '400' }, async run(P) {
     await P.ev(tab('time'));
@@ -54,12 +41,23 @@ const SHOTS = [
     await P.wait(`/↑\\d/.test((document.getElementById('tlgit') || {}).innerText || '')`, 'upstream ahead/behind badge');
     await P.css('#tldrw{display:none!important}');
   } },
-  { name: 'structure', async run(P) {
-    await P.ev(tab('struct'));
-    await P.wait(`[...document.querySelectorAll('#feed text.mmdtx')].some(t => t.textContent.trim() === 'order')`, 'module map');
-    // Select one module: the map keeps only its edges and the side panel lists them with evidence.
-    await P.ev(`(() => { const t = [...document.querySelectorAll('#feed text.mmdtx')].find(t => t.textContent.trim() === 'order');
-      t.closest('g.mmdn').dispatchEvent(new MouseEvent('click', {bubbles: true})); return 1; })()`);
+  // Architecture map with one flow lit (entry -> modules -> external), the flow list beside it and the minimap.
+  // ⚠The layered map is ~920px tall: at zoom 1 the entry and PostgreSQL scroll off-screen, so shrink and drop the legend.
+  { name: 'structure-arch', zoom: 0.62, async run(P) {
+    await archFlow(P, 'Get an order');
+    await P.css('.archtab .archleg,.archtab .archhint{display:none!important}');
+    // Unfold the lit flow in the side list so its ordered steps show.
+    await P.ev(`(() => { const b = [...document.querySelectorAll('.archtab button.archtnb[data-aet]')].find(b => b.textContent.indexOf('Get an order') >= 0);
+      if (b && b.getAttribute('aria-expanded') !== 'true') b.click(); return 1; })()`);
+    await P.wait(`[...document.querySelectorAll('.archtab button.archtnb[data-aet]')].some(b => b.textContent.indexOf('Get an order') >= 0 && b.getAttribute('aria-expanded') === 'true')`, 'flow unfolded');
+    await sleep(300);
+    await P.ev(`(document.querySelector('.archmap').scrollTop = 0, 1)`);
+  } },
+  // The same flow as a sequence diagram.
+  { name: 'structure-flow', async run(P) {
+    await archFlow(P, 'Pay for an order');
+    await P.ev(`(document.querySelector('.archtab [data-arseq]').click(), 1)`);
+    await P.wait(`!!document.querySelector('.archtab .archfdg')`, 'sequence diagram');
   } },
   { name: 'branches', async run(P) {
     await P.ev(tab('br'));
@@ -85,7 +83,9 @@ const SHOTS = [
 ];
 
 async function shoot(cdp, base, shot, lang) {
-  const P = await openApp(cdp, base, { name: shot.name, lang, prefs: shot.prefs, w: VW, h: VH, dsf: 2, boot: BOOT });
+  // zoom < 1 = more CSS px in the same 2400x1500 capture (smaller text), for views taller than the viewport.
+  const z = shot.zoom || 1;
+  const P = await openApp(cdp, base, { name: shot.name, lang, prefs: shot.prefs, w: Math.round(VW / z), h: Math.round(VH / z), dsf: 2 * z });
   const S = P.S;
   await shot.run(P);
   await sleep(1200);   // let resize re-fits, polls and fades settle
