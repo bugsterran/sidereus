@@ -183,6 +183,10 @@ html[data-ui=next][data-ui] #strmd button.on:hover{background:color-mix(in srgb,
 .archfr{font-size:12px;color:var(--nx-ok,#71c269)}
 .archfr.bad{color:var(--nx-err,#f45460)}
 @media (min-width:1061px){.archbody:has(.archfdg){grid-template-columns:minmax(0,1fr) minmax(240px,280px)}}   /* flow view: the diagram gets the width; below 1061 the list stacks */
+/* ⚠flow panel is ~254px here: hint on its own wrapping line, title one line with ellipsis, ↻ stays beside the title */
+@media (min-width:1061px){.archbody:has(.archfdg) .archsh{flex-wrap:wrap;row-gap:2px}
+  .archbody:has(.archfdg) .archsh b{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .archbody:has(.archfdg) .archsh span{order:1;flex-basis:100%;white-space:normal}}
 .archfdg .mmdv{overflow-x:auto}   /* the fit SVG stops shrinking at 0.75 (84k); past that the diagram scrolls, not the pane */
 .archfdg svg [data-p]{cursor:default}
 .archfdg .mmdsqm{cursor:pointer}

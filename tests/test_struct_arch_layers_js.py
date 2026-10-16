@@ -81,6 +81,17 @@ class ArchLayers(unittest.TestCase):
         self.assertTrue(r[6])                              # escaped in the SVG
         self.assertEqual(r[7:], ["archgrp", "archband"])
 
+    def test_external_without_ext_no_box(self):
+        # an external with no ext sits straight in the External band; one with ext keeps its box
+        r = render("M.push({id: 'x3', name: 'Bare', kind: 'external', layer: 'infra'});"
+                   "const src = archBandSrc(M, E, false, true, GR), ls = src.split('\\n'), a = ls.findIndex(l => l.startsWith('  subgraph Lx['));"
+                   "const lx = ls.slice(a, ls.indexOf('  end', a));"
+                   "process.stdout.write(JSON.stringify([a >= 0, lx.filter(l => /subgraph G\\d+\\[/.test(l)).map(l => l.replace(/^.*\\[|\\]$/g, '')),"
+                   "lx.some(l => l.startsWith('    m8(['))]));")
+        self.assertTrue(r[0])
+        self.assertEqual(r[1], ['"db"', '"api"'])
+        self.assertTrue(r[2])
+
     def test_r3_edge_kinds(self):
         r = render(BANDED + "const k = (a, b) => (svg.match(new RegExp('data-k=\"(\\\\w+)\" data-f=\"' + a + '\" data-t=\"' + b + '\"')) || [])[1] || '';"
                    "process.stdout.write(JSON.stringify([k('m3', 'm5'), k('m2', 'm5'), k('m3', 'm4'), k('m2', 'm4'), k('m0', 'm2'), k('m3', 'm6'), k('m1', 'm5')]));")

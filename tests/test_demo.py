@@ -7,6 +7,7 @@ import json
 import os
 import unittest
 
+from sidereus import arch_schema
 from tests._load import sidereus
 
 # ⚠Real project/company words must not ship in this file: they come from tests/.private-deny
@@ -21,8 +22,8 @@ STATE_KEYS = {"presence", "acks", "acksSince", "messages", "cursors", "rooms", "
               "health", "cardsRead", "cardsReadIds", "fail1h", "extUsage", "mine", "cfg", "review", "roomTags", "accts"}
 
 # Same keys as sidereus/arch_map.load() output.
-ARCH_KEYS = {"ok", "empty", "sidereus", "commit", "head", "stale", "behind", "at", "modules", "edges", "rate", "md", "style",
-             "dev", "flows", "checks"}
+ARCH_KEYS = {"ok", "empty", "sidereus", "commit", "head", "stale", "behind", "at", "v", "groups", "modules", "edges", "rate", "md",
+             "style", "dev", "flows", "checks"}
 
 
 class _U:
@@ -246,6 +247,14 @@ class DemoTest(unittest.TestCase):
         r = self.get("/api/arch", "path=" + self.demo.REPOS["acme-web"][0])
         self.assertEqual(set(r), ARCH_KEYS)
         self.assertTrue(r["ok"] and not r["empty"] and not r["stale"])
+        # v2 with a valid layer on every non-external module, or the screen drops the layer bands (archHasLayers).
+        self.assertEqual(r["v"], 2)
+        for m in r["modules"]:
+            if m["kind"] != "external":
+                self.assertIn(m.get("layer"), arch_schema.LAYERS, m)
+                self.assertEqual(arch_schema.ROLE_LAYER[m["role"]], m["layer"], m)
+            else:
+                self.assertNotIn("ext", m)
         ids = {m["id"] for m in r["modules"]}
         self.assertEqual(len(ids), len(r["modules"]))
         for e in r["edges"]:
