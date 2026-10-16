@@ -12,6 +12,16 @@ The server reads them at import and assembles an **inline PAGE with the same byt
 No external libraries (must run offline). **Git: GitHub remote `origin`; the orchestrator commits, and pushes only when the owner asks · agents never push.**
 **Branches: work is committed on `dev`; `main` is the published default branch and only moves by merging `dev` when the owner says so · releases are SemVer tags `vX.Y.Z` on `main` (CHANGELOG in Keep a Changelog form).**
 
+## Direction
+
+Refuse work that does not fit this; long form in `docs/CONCEPT.md`.
+
+- **Identity**: a local observatory where one person verifies, judges and steers the results and process of several AI coding sessions on one screen.
+- **Lead feature = pipelines**: the order is declared once, sessions follow it, each stage shows progress and evidence. Gate evidence is what makes a verdict trustworthy — show it, not just the headline.
+- **Goal**: a foundation to fork and extend, not a finished product. Extension PRs (language plug-ins, CLI adapters, pipeline templates) accepted · core PRs closed · bug reports welcome (`CONTRIBUTING.md`).
+- **Never**: runs agents or attaches to terminals · shows conversation content · remote/enterprise monitoring · tied to one vendor (Claude Code, Codex CLI, Gemini CLI, …).
+- **Filter for new work, in order**: fits the identity? → helps others extend it? → fixes a real defect? A «no» stops it.
+
 ```
 restart   launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer
 check     curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8799/api/state
