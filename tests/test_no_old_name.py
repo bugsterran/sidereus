@@ -10,6 +10,8 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # ⚠ Built from two halves so this file does not match itself.
 OLD = re.compile("ag" + "ora", re.IGNORECASE)
+# Name history is recorded on purpose; only the line starting with this marker in this file may keep the old name.
+ALLOW = {"docs/dev/HANDOVER.md": "- ★**Name** "}
 
 
 def tracked():
@@ -35,6 +37,8 @@ class NoOldName(unittest.TestCase):
             text = data.decode("utf-8", "replace")
             for n, line in enumerate(text.splitlines(), 1):
                 if OLD.search(line):
+                    if p in ALLOW and line.startswith(ALLOW[p]):
+                        continue
                     bad.append("%s:%d" % (p, n))
                     break
         self.assertEqual(bad, [], "tracked text files with the old name (first line each)")
