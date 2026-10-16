@@ -1,8 +1,7 @@
-// «Pipelines» canvas editor (step 4): palette | canvas | node panel, each split with a drag handle.
+// «Pipelines» canvas editor (step 4): canvas on top, node panel | palette below (43-pipeline.css grid).
 // Nodes drag, background drag pans, Ctrl+wheel zooms; right port -> next stage (flow), bottom port -> earlier stage (loop-back = onFail).
 // ⚠Never auto-centre on a click — the view moves only on a drag, zoom, «Arrange» or the first open.
-const PL_SPLIT = { pal: { v: '--plpal', key: 'sidereus.plpal', min: 110, max: 320, sign: 1 },
-  pan: { v: '--plpan', key: 'sidereus.plpan', min: 220, max: 560, sign: -1 } };
+const PL_SPLIT = { v: '--plpanh', key: 'sidereus.plpanh', min: 200, cv: 200 };   // pane row height under the canvas; cv = canvas row floor while dragged
 let PLDRAG = null;          // active pointer gesture {k: node|pan|edge|split, ...}; poll repaints wait while set
 function plEntKey(name){ return PLS.proj + '\n' + name; }
 // Editor entry per pipeline: graph copy, its saved key (dirty check), selection and view. Rebuilt when the file sha changes.
@@ -177,8 +176,8 @@ function plCanvas(p, d, lt){
     + VG.nodes.map(n => plNodeHtml(E, n, bad[n.id], lt)).join('')
     + '<svg class="plsvg plheads" width="' + mx + '" height="' + my + '"><defs>' + plMarkers(G) + '</defs><g class=plhd>' + plHeadsSvg(E) + '</g></svg></div></div>';
   const errs = chk.errs.length ? '<ul class=plerrs>' + chk.errs.map(x => '<li' + (x.id ? ' data-plpick="' + esc(x.id) + '"' : '') + '>' + esc(x.msg) + '</li>').join('') + '</ul>' : '';
-  return { html: '<div class=plgw>' + plPalette(E, d.catalog) + '<div class=plgh data-plgh=pal title="' + esc(T('Drag to resize')) + '"></div>'
-    + cv + errs + '</div><div class=plgh data-plgh=pan title="' + esc(T('Drag to resize')) + '"></div>' + plPanel(E, d) + '</div>', ok: !chk.errs.length };
+  return { html: '<div class=plgw>' + plPalette(E, d.catalog)
+    + cv + errs + '</div><div class=plgh data-plgh title="' + esc(T('Drag to resize · double-click to reset', 'height')) + '"></div>' + plPanel(E, d) + '</div>', ok: !chk.errs.length };
 }
 const PL_SWATCH = ['#c297ff', '#5899f3', '#71c269', '#fad83e', '#2ec4b6', '#f472b6', '#fb923c', '#94a3b8'];   // 5 families + pink, orange, slate
 function plSetColor(E, c){
@@ -342,6 +341,9 @@ function plFitRaw(G, cw, ch){
 function plWrapCols(G, cw, ch){
   const n = plgOrder(G).order.length;
   let best = n, bz = -1;
+  // One row readable at >= PL_ZMIN wins (same rule as plgCols); max-zoom search alone wrapped 4 stages into 3+1 at 1440.
+  const T1 = JSON.parse(JSON.stringify(G)); plgLayout(T1, 28, n);
+  if(Math.min(1, plFitRaw(T1, cw, ch)) >= PL_ZMIN) return n;
   for(let c = n; c >= 1; c--){
     const T = JSON.parse(JSON.stringify(G));
     plgLayout(T, 28, c);
@@ -371,6 +373,8 @@ function plApplyView(E, cv){
 }
 // The editor fills from its top to the feed's bottom (like brPanFit);
 // columns scroll inside. Until the user pans/zooms (E.touched), a resize re-fits the chain to the new canvas width.
+// Dragged pane height clamped to the editor height H (canvas row keeps PL_SPLIT.cv); 0 = not dragged (CSS default row).
+function plPanH(h, H){ return h ? Math.max(PL_SPLIT.min, Math.min(H - 6 - PL_SPLIT.cv, h)) : 0; }
 function plGwFit(){
   const g = document.querySelector('.plw .plgw'), fd = document.getElementById('feed');
   if(!g || !fd || mainView !== 'pipe') return;
@@ -378,10 +382,12 @@ function plGwFit(){
   const top = g.getBoundingClientRect().top - fd.getBoundingClientRect().top - fd.clientTop + fd.scrollTop;
   const pb = parseFloat(getComputedStyle(fd).paddingBottom) || 0;
   let h = Math.floor(fd.clientHeight - top - pb - 8);
-  const cf = Math.max(360, Math.min(700, 0.62 * innerHeight)), floor = getComputedStyle(g).display === 'grid' ? cf + 426 : cf;   // same floors as 43-pipeline.css (narrow grid adds the 6px gap + 420px pane row)
+  const cf = Math.max(360, Math.min(700, 0.62 * innerHeight)), floor = cf + 426;   // same floor as 43-pipeline.css (canvas row + 6px handle + 420px pane row)
   g.style.height = Math.max(floor, h) + 'px';
   const over = fd.scrollHeight - fd.clientHeight;   // whatever else still overflows (margins, a note line) comes off the editor
   if(over > 0){ h -= over; g.style.height = Math.max(floor, h) + 'px'; }
+  const ph = plPanH(+lsGet(PL_SPLIT.key, 0), parseFloat(g.style.height));
+  if(ph && !(PLDRAG && PLDRAG.k === 'split')) g.style.setProperty(PL_SPLIT.v, ph + 'px');   // ⚠mid-drag the stored value is stale
   const E = plCurEnt(), cv = g.querySelector('.plcv');
   // ⚠Re-fit only when the canvas size changed: plGwFit runs on every paint (node click, poll) and must not move the zoom.
   if(E && cv && E.view && !E.touched && cv.clientWidth && E.fitK !== plFitKey(E, cv)){
@@ -442,8 +448,7 @@ function plAfterPaint(box){
   if(plMeasure(E0, cv0)) plPaintEdgesNodes(E0, cv0);   // new widths can push neighbours; before plGwFit: an auto re-flow («Arrange») needs the real widths
   plGwFit();
   if(PLRO){ PLRO.disconnect(); const pw = box.querySelector('.plw'); if(pw) PLRO.observe(pw); }
-  const E = plCurEnt(), cv = box.querySelector('.plcv'), g = box.querySelector('.plgw');
+  const E = plCurEnt(), cv = box.querySelector('.plcv');
   if(E && cv && !E.view){ E.first = true; E.ctrd = true; E.laid = E.auto; plFit(E, cv, E.auto); E.auto = false; plWrapFirst(E, cv); if(E.view){ if(E.laid) E.base = plgKey(E.G); plApplyView(E, cv); plPaintEdgesNodes(E, cv); plZoomLabel(cv, E.view.z); } }
   plFitPills(box);
-  if(g) Object.keys(PL_SPLIT).forEach(k => { const w = +lsGet(PL_SPLIT[k].key, 0); if(w) g.style.setProperty(PL_SPLIT[k].v, w + 'px'); });
 }

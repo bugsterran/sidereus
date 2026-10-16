@@ -125,11 +125,14 @@ html[data-ui=next][data-ui] .plact .wkrgb[disabled]{opacity:.45;cursor:default}
 .plrms .pll>span{flex:none}
 .plprev{white-space:pre-wrap;word-break:break-word;font-size:12px;margin:0}
 html[data-mv=pipe] .wrap{max-width:none}
-/* step 4 canvas: palette | canvas | panel, each split with a drag handle (.plgh) */
-.plgw{display:flex;gap:0;min-width:0;margin:4px 0 6px;height:clamp(360px,62vh,900px)}   /* pre-paint only: plGwFit fills to the feed bottom (floor max(360,min(700,62vh))) */
+/* step 4 canvas: canvas row on top, stage panel | palette below at every width (side panes beside it made the 1440 canvas narrower than 1100's) */
+/* ⚠Grid sized by 48d plGwFit (floor = canvas floor + 6px handle + 420 pane row; a dragged --plpanh moves the split inside that height); this height is pre-paint only. Panel ≤1000px keeps lines readable, palette ≥220px */
+.plgw{display:grid;grid-template-columns:minmax(0,1000px) minmax(220px,1fr);grid-template-rows:minmax(200px,3fr) 6px var(--plpanh,minmax(420px,2fr));gap:0 6px;min-width:0;margin:4px 0 6px;height:calc(clamp(360px,62vh,700px) + 426px)}
+.plgw>.plcvw{grid-area:1/1/2/3}.plgw>.plgh{grid-area:2/1/3/3}.plgw>.plpan{grid-area:3/1/4/2}.plgw>.plpal{grid-area:3/2/4/3}
+.plgh{cursor:row-resize}.plgh:hover{background:#2b3545}   /* canvas | panes split (48d PL_SPLIT) */
 .plro{display:contents}.plro .plpal,.plro .plpan,.plro .plnt{pointer-events:none;opacity:.55}   /* borrowed pipeline (48h): no editing controls */
 .plnames .plbrw{font-style:italic}
-.plpal{flex:0 1 var(--plpal,190px);min-width:110px;height:100%;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:4px;box-sizing:border-box}
+.plpal{min-height:0;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:4px;box-sizing:border-box}
 .plph{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;color:#8b95a5;margin:4px 2px}
 .plph .plti{flex:1;min-width:0;font:inherit;font-weight:700;color:var(--nx-t1,#e6e6e6);background:transparent;border:1px solid transparent;border-radius:4px;padding:1px 4px}.plph .plti:is(:hover,:focus){border-color:var(--nx-rule,#252629);background:var(--nx-field,#1a1c20)}   /* stage title, renamed in place */
 .pldiff .plwarnrun{color:var(--nx-warn,#e0a53d);margin:4px 2px}
@@ -146,13 +149,8 @@ html[data-mv=pipe] .wrap{max-width:none}
 .plci.used .plpi,.plci.used .plcu{opacity:.55}.plcu{flex:none;font-size:10px;line-height:16px;padding:0 4px;color:var(--nx-t2,#8b95a5);white-space:nowrap;cursor:help}   /* already on the canvas */
 .plgrp{font-size:11px;color:#8b95a5;cursor:pointer;padding:2px;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html[data-ui=next] .plw .plgrp{color:var(--nx-t2)}
-.plgh{flex:0 0 6px;cursor:col-resize;align-self:stretch;min-height:40px}
-.plgh:hover{background:#2b3545}
-.plcvw{flex:1 1 300px;min-width:240px;height:100%;display:flex;flex-direction:column;gap:4px}
+.plcvw{min-width:0;min-height:0;display:flex;flex-direction:column;gap:4px}
 /* ⚠Below 1000px the canvas squeezed to 348px and auto-fit dropped to 49% (6–8px text): canvas takes its own row. Never raise PL_ZFIT instead (48d plFit) */
-/* ⚠Keyed on the .brep container (40-tokens), not the viewport: at 1100 the 3-column canvas got 550px and fitted at 47%. 1220 = canvas ≥ ~700px beside 190+320 side panes */
-/* ⚠Narrow = grid sized by 48d plGwFit (floor = canvas floor + 6 + 420, the old pane cap): a fixed canvas + 420px panes left the run panels mid-column with a blank below on tall windows */
-@container (max-width:1220px){.plgw{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(clamp(360px,62vh,700px),3fr) minmax(420px,2fr);gap:6px;height:calc(clamp(360px,62vh,700px) + 426px)}.plgw>.plcvw{grid-area:1/1/2/3;height:auto;min-height:0}.plgw>.plgh{display:none}.plgw>.plpal{grid-area:2/1/3/2;height:auto;min-height:0}.plgw>.plpan{grid-area:2/2/3/3;height:auto;min-height:0}}
 .plcvw>.plerrs{flex:none;max-height:30%;overflow:auto;margin:0 0 0 18px}
 .plcv{position:relative;overflow:hidden;flex:1 1 auto;min-height:200px;border:1px solid #2b3545;border-radius:6px;background:#0f141b;cursor:grab;touch-action:none}
 .plcvi{position:absolute;left:0;top:0;transform-origin:0 0}
@@ -192,7 +190,8 @@ html[data-ui][data-theme=light] .pllt text{fill:#7a4a00}
 .plport[data-plport]:hover{transform:scale(1.4)}
 .plcvt{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px;color:#8b95a5}
 .plhint{margin-left:6px}
-.plpan{flex:0 1 var(--plpan,320px);min-width:200px;height:100%;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:6px 8px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;min-width:0}
+.plpan{min-height:0;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:6px 8px;box-sizing:border-box;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));align-content:start;gap:6px 12px;min-width:0}
+.plpan>*{grid-column:1/-1}.plpan>.plfr:not(.plfta){grid-column:auto}   /* 2 columns from ~710px panel width; only one-line fields pair up, headers/notes/textareas span */
 .plfr{display:flex;align-items:center;gap:6px;font-size:12px;color:#8b95a5;min-width:0}
 .plfr>span{flex:0 0 64px}
 .plfr>select,.plfr>input,.plfr>textarea{flex:1 1 auto;min-width:0;font-size:12px}
@@ -210,7 +209,7 @@ html[data-ui][data-theme=light] .pllt text{fill:#7a4a00}
 .pldt div{margin-top:4px;white-space:pre-wrap}
 .plpan .plfr{flex-direction:column;align-items:stretch;gap:2px}
 .plpan .plfr>span{flex:none}
-.plpan .plfta{flex:1 1 auto;min-height:120px}
+.plpan .plfta{min-height:120px}
 .plpan .plfta textarea{flex:1 1 auto;min-height:90px}
 .plnt{display:flex;gap:4px;align-items:center;min-width:0}
 .plnt input{flex:1 1 auto;min-width:0;width:9em;font-size:12px}

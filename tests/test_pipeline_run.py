@@ -536,11 +536,15 @@ class CssRules(unittest.TestCase):
         self.assertNotIn("' · ' + k + ' / ' + n + ' · '", js)
 
     def test_canvas_full_row_when_narrow(self):
-        # keyed on the .brep container width (1100 viewport squeezed the canvas to 550px at 47%), not the viewport
-        m = re.search(r"@container \(max-width:1220px\)\{(.*)\}\n", self.CSS)
+        # stacked at every width: side panes beside the canvas left 1440 narrower than 1100 (832 vs 1014px)
+        self.assertNotIn("@container (max-width:1220px)", self.CSS)
+        self.assertIn("6px var(--plpanh,minmax(420px,2fr))", self.CSS)   # one row handle; dragged pane height persists (sidereus.plpanh)
+        self.assertIn(".plgw>.plgh{grid-area:2/1/3/3}", self.CSS)
+        self.assertIn(".plgw{display:grid;grid-template-columns:minmax(0,1000px) minmax(220px,1fr);", self.CSS)
         # grid row 1 = canvas across both columns; rows fill the plGwFit height (a fixed 420px pane row left a blank under the run panels)
-        self.assertTrue(m and ".plgw{display:grid" in m.group(1) and ".plcvw{grid-area:1/1/2/3" in m.group(1) and "minmax(420px,2fr)" in m.group(1))
-        self.assertIn("display === 'grid' ? cf + 426 : cf", js_all())   # narrow floor = canvas floor + gap + old pane cap
+        self.assertIn(".plgw>.plcvw{grid-area:1/1/2/3}", self.CSS)
+        self.assertIn("minmax(420px,2fr)", self.CSS)
+        self.assertIn("floor = cf + 426;", js_all())   # floor = canvas floor + handle + default pane row
         self.assertIn("PLRO.observe(pw)", js_all())                      # in-place size changes re-fit too
         self.assertNotIn("@media (max-width:1000px){.plgw", self.CSS)
         self.assertIn("const PL_ZMIN = 0.8, PL_ZFIT = 0.4;", js_all())       # never raise the zoom floor instead
@@ -559,7 +563,7 @@ class CanvasFit(unittest.TestCase):
                    "plDrawBox", "plCentre", "plVisY", "plgLoopLanes", *extra)
 
     # Stub editor (globals: the extracted functions are top-level): feed 900 tall, editor top at 100, canvas column = toolbar 40 + canvas.
-    DOM = ("mainView = 'pipe'; innerHeight = 1000; plCurEnt = () => E; plgKey = G => JSON.stringify(G.nodes);"
+    DOM = ("mainView = 'pipe'; innerHeight = 1000; lsGet = () => 0; PL_SPLIT = {key: 'k', min: 200, cv: 200}; plCurEnt = () => E; plgKey = G => JSON.stringify(G.nodes);"
            " plApplyView = () => 0; plPaintEdgesNodes = () => 0; plZoomLabel = () => 0;"
            " fd = {clientTop: 0, scrollTop: 0, clientHeight: 900, scrollHeight: 900, getBoundingClientRect: () => ({top: 0})};"
            " g = {style: {height: ''}, getBoundingClientRect: () => ({top: 100})};"
@@ -569,17 +573,18 @@ class CanvasFit(unittest.TestCase):
            " off = () => { const B = plDrawBox(plVG(E)), z = E.view.z; return [E.view.x + (B.l + B.r) / 2 * z - cv.clientWidth / 2, E.view.y + (B.t + B.b) / 2 * z - cv.clientHeight / 2]; };")
 
     def test_first_open_centres_then_camera_stays(self):
-        r = self._run(self.DOM + " plGwFit(); const h = parseFloat(g.style.height); E.first = true; plWrapBest(E, cv, false); const a = off();"
-                      " E.first = false; E.touched = true; E.view.x = 5; E.view.y = 7; fd.clientHeight = 700; plGwFit();"   # resize after a pan
-                      " return [h, a, E.view.x, E.view.y, parseFloat(g.style.height)];", ids="abcd", extra=("plGwFit",), loops=(("c", "b"), ("d", "b")))
-        self.assertEqual(r[0], 792)                                      # full height kept (fill to the feed bottom)
+        # feed taller than the stacked floor (cf 620 + 426 = 1046), so the fill is what sets the height
+        r = self._run(self.DOM + " fd.clientHeight = fd.scrollHeight = 1300; plGwFit(); const h = parseFloat(g.style.height); E.first = true; plWrapBest(E, cv, false); const a = off();"
+                      " E.first = false; E.touched = true; E.view.x = 5; E.view.y = 7; fd.clientHeight = fd.scrollHeight = 1200; plGwFit();"   # resize after a pan
+                      " return [h, a, E.view.x, E.view.y, parseFloat(g.style.height)];", ids="abcd", extra=("plGwFit", "plPanH"), loops=(("c", "b"), ("d", "b")))
+        self.assertEqual(r[0], 1192)                                     # full height kept (fill to the feed bottom)
         self.assertLessEqual(max(abs(r[1][0]), abs(r[1][1])), 1)         # first open: drawn graph centred on both axes
         self.assertEqual(r[2:4], [5, 7])                                 # touched: re-sizing never moves the camera
-        self.assertEqual(r[4], 620)
+        self.assertEqual(r[4], 1092)
 
     def test_fit_button_centres_and_later_fits_stay_centred(self):
         r = self._run(self.DOM + " plGwFit(); plWrapBest(E, cv, false); const x0 = E.view.x;"
-                      " plWrapBest(E, cv, false, true); const a = off(); plWrapBest(E, cv, false); return [x0, a, off()];", ids="abcd", extra=("plGwFit",))
+                      " plWrapBest(E, cv, false, true); const a = off(); plWrapBest(E, cv, false); return [x0, a, off()];", ids="abcd", extra=("plGwFit", "plPanH"))
         self.assertEqual(r[0], 0)                                        # never centred: today's anchor
         self.assertLessEqual(max(abs(r[1][0]), abs(r[1][1])), 1)         # Fit to view (ctr) centres
         self.assertLessEqual(max(abs(r[2][0]), abs(r[2][1])), 1)         # a later untouched re-fit keeps it centred
@@ -588,14 +593,14 @@ class CanvasFit(unittest.TestCase):
         # first open -> stage click (E.first off) -> stage added (fit key changes) -> plGwFit re-fit
         r = self._run(self.DOM + " plGwFit(); E.first = true; E.ctrd = true; plWrapBest(E, cv, false); E.first = false;"
                       " E.G.nodes.push({id: 'e', title: 'e', ui: {x: 44 + 248 * 4, y: 24}}); E.G.flow.push(['d', 'e']);"
-                      " const stale = E.fitK !== plFitKey(E, cv); plGwFit(); return [stale, off()];", ids="abcd", extra=("plGwFit",))
+                      " const stale = E.fitK !== plFitKey(E, cv); plGwFit(); return [stale, off()];", ids="abcd", extra=("plGwFit", "plPanH"))
         self.assertTrue(r[0])
         self.assertLessEqual(max(abs(r[1][0]), abs(r[1][1])), 1)
 
     def test_pan_then_refit_keeps_camera(self):
         r = self._run(self.DOM + " plGwFit(); E.first = true; E.ctrd = true; plWrapBest(E, cv, false);"
                       " E.first = false; E.ctrd = false; E.touched = true; E.view.x = 5; E.view.y = 7;"   # what a pan sets
-                      " E.G.nodes.push({id: 'e', title: 'e', ui: {x: 44 + 248 * 4, y: 24}}); plGwFit(); return [E.view.x, E.view.y];", ids="abcd", extra=("plGwFit",))
+                      " E.G.nodes.push({id: 'e', title: 'e', ui: {x: 44 + 248 * 4, y: 24}}); plGwFit(); return [E.view.x, E.view.y];", ids="abcd", extra=("plGwFit", "plPanH"))
         self.assertEqual(r, [5, 7])
 
     def test_centre_in_visible_band(self):
