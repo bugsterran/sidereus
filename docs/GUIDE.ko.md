@@ -110,6 +110,7 @@
 - «주요 문제 N건» 을 누르면 보안 문제 창이 열린다(gitleaks·npm audit·osv-scanner·semgrep·bandit — `security-checks` 파이프라인). 비밀값은 나오지 않는다.
 - «개선 요청» 은 고른 문제를 세션에 보내고, 수정이 커밋되면 `arch-map` 을 다시 돌려 달라고 함께 요청한다.
 - 창 아래에는 점검 이력이 나온다(보기 전용). «마지막 보안 점검» 경과 시간, 열린 문제, 해결된 문제(날짜 · 커밋), 오탐 순이다. AI 리뷰에서 나온 줄에는 «모델 생성 · 검증 안 됨» 이 붙는다.
+- «마지막 보고서» (보안 점검이 보고서를 남긴 뒤에 나온다) 는 가장 최근 `security-report-*.md` 를 별도 창에 일반 텍스트로 연다.
 - 스캐너 결과는 같은 도구의 다음 점검에서 사라지면 해결로 바뀐다. AI 리뷰 결과는 표시할 때까지 열려 있다: `scripts/arch_checks.py --repo <repo> --mark <slug>@<file> resolved|false-positive`.
 
 ### 크기

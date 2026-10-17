@@ -12,6 +12,7 @@ import re
 from sidereus.arch_verify import COMMIT_RE, owns, plan_globs, read_json, safe_rel
 from sidereus.arch_checks_parse import SEVS, clean_help
 from sidereus import sec_checks as SC
+from sidereus import sec_report as SR
 
 STATUSES = ("ok", "fail", "timeout", "missing", "skipped")
 RULE_RE = re.compile(r"[A-Za-z0-9_./@:-]{1,60}")
@@ -193,14 +194,30 @@ def _newest(rdir, name):
 def load_checks(root, map_dir, m, head=""):
     """`/api/arch` `checks`: an empty top-level shell (commit "", no tools; payload shape kept for the page) + `security`
     = newest checks-security.json of root's store (sibling commit dirs of map_dir), sanitised and rolled up onto the
-    map's modules, `security.log` = sec_checks.log_view; None when there is neither a result nor a log."""
+    map's modules, `security.log` = sec_checks.log_view, `security.report` = newest report {name, at} or None;
+    None when there is no result, log or report."""
     s = _load_one(root, map_dir, m, head, SC.SEC_FILE, SC.SEC_IDS)
-    lg = SC.log_view(os.path.dirname(map_dir))   # security history (status computed on read)
-    if lg["at_scan"] is not None or lg["at_review"] is not None:
+    kdir = os.path.dirname(map_dir)
+    lg = SC.log_view(kdir)   # security history (status computed on read)
+    rep = _report(kdir)
+    if lg["at_scan"] is not None or lg["at_review"] is not None or rep:
         s = dict(s or _shell(), log=lg)
     elif s:
         s["log"] = lg
+    if s:
+        s["report"] = rep
     return dict(_shell(), security=s) if s else None
+
+
+def _report(kdir):
+    """{name, at} of the newest security report beside the log (name only — the text is served by /api/arch/secreport)."""
+    name = SR.newest(kdir)
+    if not isinstance(name, str) or not SR.REPORT_RE.fullmatch(name):
+        return None
+    try:
+        return {"name": name, "at": os.lstat(os.path.join(kdir, name)).st_mtime}
+    except OSError:
+        return None
 
 
 def _shell():

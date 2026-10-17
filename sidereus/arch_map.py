@@ -16,6 +16,7 @@ from sidereus.arch_verify import ARCH_DIR, NAME_MAX, PATH_MAX, SYM_MAX, est_of, 
     schema_errors, COMMIT_RE, ARCH_GIT_TIMEOUT, ARCH_TREE_MAX, ID_RE, STYLES, ROLES, FW_MAX, UNITS_MAX, EV_MAX, SUM_MAX, OWNS_MAX
 from sidereus.arch_flow import load_flows
 from sidereus.arch_checks import load_checks
+from sidereus import sec_report as SR
 
 SIDEREUS_ROOT = os.path.realpath(CODE_DIR)   # repo holding .claude/pipelines/arch-map.json; the view relays «Request a map» to a session there
 ARCH_PL = "arch-map"
@@ -206,6 +207,20 @@ def files(path, mid):
     if not hit:
         return dict(out, cut=cut, why="gone")
     return dict(out, files=hit[:FILES_MAX], total=len(hit), cut=cut)
+
+
+def security_report(path, name):
+    """`GET /api/arch/secreport?path=&name=` body: one security report file of an allowed repo's store.
+    ⚠Serves only `security-report-*.md` under ARCH_DIR/<key>/ (name pattern + sec_report.read_text guards); nothing else."""
+    root = _struct_src_root(path)
+    if not root:
+        return {"ok": False, "err": "Only projects shown on screen can be opened."}
+    if not isinstance(name, str) or not SR.REPORT_RE.fullmatch(name):
+        return {"ok": False, "err": "bad name"}
+    text = SR.read_text(os.path.join(ARCH_DIR, repo_key(root)), name)
+    if not isinstance(text, str):
+        return {"ok": False, "err": "no report"}
+    return {"ok": True, "name": name, "text": text}
 
 def _titles():
     """Stage titles of the arch-map pipeline in order, [] if unreadable (read directly: sidereus.pipeline is a feature module)."""

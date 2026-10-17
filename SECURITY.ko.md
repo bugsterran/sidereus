@@ -44,6 +44,8 @@
 
 `scripts/arch_checks.py --category security` 는 설치된 스캐너를 쓴다. 설정 > 진단 > «보안 도구» 는 `PATH` 에서 찾은 도구와 설치 파일에서 읽은 버전을 보여 준다. Sidereus 는 이 도구들을 실행하거나 설치하지 않는다. «복사» 는 명령을 클립보드에 넣기만 한다.
 
+한 번 돌릴 때마다 Markdown 보고서 하나를 `~/.mailbox-mcp` 아래 `arch/<key>/security-report-YYYYMMDD-HHMM.md` 로 쓴다(최근 10개만 남긴다). 스캐너마다 상태(ok · 건너뜀 — 오프라인 · 없음 · 실패)와 개수, 결과는 규칙 id · `파일:줄` · 심각도(+패키지), 트리아지 상태, 직전 검사 대비 새로 생긴 것·사라진 것, 그리고 대상이 이 Sidereus 저장소일 때만 의존성·런타임 점검(`scripts/deps_audit.py`; `--dev` 면 Node·Chrome·브라우저 드라이버까지)을 담는다. 도구 메시지·비밀값·AI 리뷰 문장은 넣지 않는다.
+
 | 도구 | 잡는 것 | 설치 (macOS · Windows) | 네트워크 필요? |
 |---|---|---|---|
 | `gitleaks` | 저장소에 커밋된 비밀값 (API 키·토큰·비밀번호) | `brew install gitleaks` · `winget install Gitleaks.Gitleaks` | 아니오 |

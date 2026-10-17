@@ -84,7 +84,8 @@ Flows (`sidereus/arch_flow.py`) check every step the same way, but never change 
 
 ### Security checks
 
-`scripts/arch_checks.py --repo <repo> --category security [--offline]` writes `checks-security.json`: rule, `file:line`, package only.
+`scripts/arch_checks.py --repo <repo> --category security [--offline] [--dev]` writes `checks-security.json`: rule, `file:line`, package only.
+Each run also writes one Markdown report, `arch/<key>/security-report-YYYYMMDD-HHMM.md` (newest 10 kept): tool status, findings, triage, delta since the previous scan, and the `scripts/deps_audit.py` lines when the repo is this Sidereus checkout (`--dev` adds the dev tooling).
 ⚠Secret values and matched text are never stored; advisory lookups (and semgrep registry packs when there is no local config) run online by default; offline or `--offline` = skipped, never «0 issues».
 
 ### map.json v2

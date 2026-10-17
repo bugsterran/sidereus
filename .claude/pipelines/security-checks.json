@@ -4,7 +4,7 @@
   "title": "보안 검사 — 비밀값·의존성·SAST",
   "builtin": true,
   "use": "Security scanners plus a threat-model AI review on a target repo; runs monthly alongside deps-audit.",
-  "rules": "The target repo path is given in the request text. Do not edit, commit, checkout or install anything in the target repo; do not install tools; never run the target repo's code. The runner writes only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<HEAD>/checks-security.json (same store key as arch-map). The threat-model review stage writes only through scripts/arch_checks.py --log-review / --mark, into ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/security-log.jsonl. A missing threat model is not a failure: one line pointing to templates/oss-scanner/. Metadata only: never copy tool messages, secret values, matched text or source lines into a report or the log.",
+  "rules": "The target repo path is given in the request text. Do not edit, commit, checkout or install anything in the target repo; do not install tools; never run the target repo's code. The runner writes only ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<HEAD>/checks-security.json (same store key as arch-map) and one Markdown report arch/<key>/security-report-YYYYMMDD-HHMM.md per run (newest 10 kept). The threat-model review stage writes only through scripts/arch_checks.py --log-review / --mark, into ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/security-log.jsonl. A missing threat model is not a failure: one line pointing to templates/oss-scanner/. Metadata only: never copy tool messages, secret values, matched text or source lines into a report or the log.",
   "defaults": { "model": "inherit", "retry": 0 },
   "stages": [
     {

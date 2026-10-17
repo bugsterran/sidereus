@@ -10,7 +10,7 @@
       "title": "점검",
       "agent": "sidereus-verifier",
       "model": "sonnet",
-      "task": "Run `/usr/bin/python3 scripts/deps_audit.py` once (online lookups incl. OSV.dev are on by default) and report every WARN/FAIL line verbatim as a finding (item and detail only). List OK lines in summary. Change nothing.",
+      "task": "Run `/usr/bin/python3 scripts/arch_checks.py --repo <this repo> --category security --dev` once from this repository: it runs the security scanners and the dependency/runtime audit (scripts/deps_audit.py, incl. its --dev tooling lines) and writes one Markdown report. Its printed summary line ends with `· report <name>` (plus `· deps N FAIL/M WARN`); the report is ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<name> (find it with `ls ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/*/<name>`). Read it and report as findings every FAIL/WARN line of «Dependencies and runtimes» (item and detail only) and every scanner finding (rule id, file:line, severity); name tools that were skipped, missing or failed. List OK lines in summary. Change nothing; do not rerun.",
       "ui": { "x": 44, "y": 24 }
     },
     {

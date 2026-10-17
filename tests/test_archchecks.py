@@ -198,7 +198,7 @@ class LoadTest(Tmp):
                  "other": {"error": 0, "warning": 0}, "top": [], "rules": {}}
         self.assertEqual({k: v for k, v in c.items() if k != "security"}, shell)   # payload shape kept for the page
         s = c["security"]
-        self.assertEqual(set(s), set(shell) | {"log"})
+        self.assertEqual(set(s), set(shell) | {"log", "report"})   # report = newest security-report-*.md meta, None here
         self.assertEqual(s["mods"], {"web": {"error": 1, "warning": 0}, "core": {"error": 0, "warning": 2}})
         self.assertEqual(s["other"], {"error": 0, "warning": 1})
         self.assertEqual([(t["id"], t["files"]) for t in s["tools"]], [("bandit", 5)])

@@ -96,6 +96,18 @@ class LoadTest(unittest.TestCase):
                        "files": {"a/x.py": {"error": 1, "warning": 0}}, "items": []}, f)
         c = AM.load(self.repo)["checks"]
         self.assertEqual((c["security"]["mods"], c["security"]["stale"], c["tools"]), ({"a": {"error": 1, "warning": 0}}, False, []))
+        self.assertIsNone(c["security"]["report"])                      # no report file
+
+    def test_checks_report(self):
+        self.put(C1, 1000)
+        kdir = os.path.join(self.store, AV.repo_key(self.repo))
+        name = "security-report-20261017-0930.md"
+        with open(os.path.join(kdir, name), "w", encoding="utf-8") as f:
+            f.write("# body never in /api/arch\n")
+        os.utime(os.path.join(kdir, name), (1234, 1234))
+        c = AM.load(self.repo)["checks"]                                 # a report alone still opens the security shell
+        self.assertEqual(c["security"]["report"], {"name": name, "at": 1234})
+        self.assertNotIn("body never", json.dumps(c))
 
     def test_generated_at(self):
         self.put(C1, 1000)

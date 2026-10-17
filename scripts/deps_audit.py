@@ -1,14 +1,17 @@
 #!/usr/bin/python3
-"""Dependency and runtime security-patch audit. Prints «OK|WARN|FAIL|INFO item — detail» lines; exit 1 on any FAIL.
+"""Dependency and runtime security-patch audit of what this checkout depends on. Prints «OK|WARN|FAIL|INFO item —
+detail» lines; exit 1 on any FAIL. `collect(argv)` returns the same lines for scripts/arch_checks.py's report.
 
-  /usr/bin/python3 scripts/deps_audit.py             import guard + runtime EOL table, then online lookups: latest
-                                                     Python / Node patch (endoflife.date) and OSV.dev advisories
+  /usr/bin/python3 scripts/deps_audit.py             python import guard + runtime EOL, then online: latest Python
+                                                     patch (endoflife.date)
+  /usr/bin/python3 scripts/deps_audit.py --dev       also the dev tooling: node import guard + EOL, Chrome, latest Node
+                                                     patch and OSV.dev advisories for browser drivers
   /usr/bin/python3 scripts/deps_audit.py --offline   skip every online lookup (--online is accepted as a no-op)
 
 ⚠Online lookups run after one reachability probe; unreachable or --offline = a «skipped» line, never «no advisories».
-OSV.dev covers npm/PyPI packages only (Claude Code CLI, browser drivers) — not the CPython / Node / Chrome runtimes,
-which keep the EOL lines. Reads metadata only: plist ProgramArguments, app Info.plist versions,
-installed_plugins.json name/version — never credentials or session files.
+OSV.dev covers npm packages only (browser drivers) — not the CPython / Node / Chrome runtimes, which keep the EOL
+lines. Reads metadata only: plist ProgramArguments and app Info.plist versions — never credentials or session files.
+Writes nothing.
 """
 import ast
 import datetime
@@ -241,12 +244,9 @@ def osv_vulns(eco, name, version, fetch=None):
     return out
 
 
-def osv_targets(mjs_files, root, claude_version):
-    """[(ecosystem, package, version)] OSV can answer for: the Claude Code CLI (npm) and installed browser drivers."""
+def osv_targets(mjs_files, root):
+    """[(ecosystem, package, version)] OSV can answer for: installed browser drivers imported by scripts/*.mjs."""
     out = []
-    m = re.match(r"\s*(\d+\.\d+\.\d+)", claude_version or "")
-    if m:
-        out.append(("npm", "@anthropic-ai/claude-code", m.group(1)))
     used = set()
     for f in mjs_files:
         with open(f, encoding="utf-8") as h:
@@ -260,72 +260,68 @@ def osv_targets(mjs_files, root, claude_version):
     return out
 
 
-def main(argv):
+def _online_eol(prod, cur, key, today):
+    """One endoflife.date line (level, item, detail): local patch vs the cycle's latest, and the newest cycle."""
+    try:
+        rows = _fetch("https://endoflife.date/api/%s.json" % prod)
+    except Exception as e:   # network errors of any kind are a WARN, never a crash
+        return "WARN", "online %s" % prod, "fetch failed: %s" % type(e).__name__
+    row = next((r for r in rows if str(r.get("cycle")) == key), None)
+    newest = rows[0] if rows else {}
+    if not row:
+        return "WARN", "online %s" % prod, "cycle %s not listed" % key
+    behind = _ver_tuple(cur or "0") < _ver_tuple(str(row.get("latest", "0")))
+    return ("WARN" if behind or row.get("eol") is True or str(row.get("eol")) <= today.isoformat() else "OK",
+            "online %s" % prod, "local %s · latest %s %s (EOL %s) · newest cycle %s → %s (EOL %s)" % (
+                cur, key, row.get("latest"), row.get("eol"), newest.get("cycle"), newest.get("latest"), newest.get("eol")))
+
+
+def collect(argv):
+    """[(level, item, detail)]. Default = the viewer's own runtime (python); --dev adds the dev tooling (node, Chrome,
+    browser drivers). ⚠Prints and writes nothing: scripts/arch_checks.py calls this in-process for its report."""
+    dev = "--dev" in argv
     today = datetime.date.today()
-    lines = []
+    out = []
+    emit = lambda level, item, detail: out.append((level, item, detail))
 
-    def emit(level, item, detail):
-        lines.append(level)
-        print("%-4s %s — %s" % (level, item, detail))
-
-    # 1. third-party dependency guard
     bad = foreign_py(_walk_py(ROOT), ROOT)
     emit("FAIL" if bad else "OK", "python imports", "; ".join("%s: %s" % b for b in bad) if bad else "stdlib + first-party only")
-    mjs = [os.path.join(ROOT, "scripts", f) for f in sorted(os.listdir(os.path.join(ROOT, "scripts"))) if f.endswith(".mjs")]
-    bad = foreign_mjs(mjs, ROOT)
-    emit("FAIL" if bad else "OK", "node imports", "; ".join("%s: %s" % b for b in bad) if bad else
-         "node: builtins only (%d scripts/*.mjs)" % len(mjs))
+    mjs = []
+    if dev:
+        sd = os.path.join(ROOT, "scripts")
+        mjs = [os.path.join(sd, f) for f in sorted(os.listdir(sd)) if f.endswith(".mjs")] if os.path.isdir(sd) else []
+        bad = foreign_mjs(mjs, ROOT)
+        emit("FAIL" if bad else "OK", "node imports", "; ".join("%s: %s" % b for b in bad) if bad else
+             "node: builtins only (%d scripts/*.mjs)" % len(mjs))
 
-    # 2. runtimes
     lpy = _launchd_python()
     pyv = _run([lpy if os.path.isabs(lpy) else "/usr/bin/python3", "-c", "import platform;print(platform.python_version())"])
     cyc = ".".join(pyv.split(".")[:2])
     lvl, det = eol_status(cyc, PY_EOL, today)
     emit(lvl, "python (launchd: %s)" % lpy, "%s · %s" % (pyv or "?", det))
-    nodev = _run(["node", "--version"]).lstrip("v")
-    if nodev:
-        lvl, det = eol_status(nodev.split(".")[0], NODE_EOL, today)
-        emit(lvl, "node (dev tooling)", "%s · %s" % (nodev, det))
-    else:
-        emit("WARN", "node (dev tooling)", "not found")
-    try:
-        with open(os.path.join(CHROME_APP, "Contents", "Info.plist"), "rb") as h:
-            cv = plistlib.load(h).get("CFBundleShortVersionString", "?")
-        emit("OK", "browser (screen_check)", "raw CDP, no driver package · Chrome %s (auto-updates)" % cv)
-    except (OSError, ValueError, plistlib.InvalidFileException):
-        emit("WARN", "browser (screen_check)", "Chrome not found at %s (set CHROME)" % CHROME_APP)
-    cv = _run(["claude", "--version"])
-    emit("OK" if cv else "WARN", "claude code cli", cv or "not found")
-    cfg = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
-    try:
-        with open(os.path.join(cfg, "plugins", "installed_plugins.json"), encoding="utf-8") as h:
-            plugs = json.load(h).get("plugins") or {}
-        emit("OK", "claude plugins", ", ".join("%s %s" % (k, (v[0] or {}).get("version", "?") if v else "?")
-                                           for k, v in sorted(plugs.items())) or "none")
-    except (OSError, ValueError, AttributeError):
-        emit("OK", "claude plugins", "no installed_plugins.json under %s" % cfg)
+    nodev = ""
+    if dev:
+        nodev = _run(["node", "--version"]).lstrip("v")
+        if nodev:
+            lvl, det = eol_status(nodev.split(".")[0], NODE_EOL, today)
+            emit(lvl, "node (dev tooling)", "%s · %s" % (nodev, det))
+        else:
+            emit("WARN", "node (dev tooling)", "not found")
+        try:
+            with open(os.path.join(CHROME_APP, "Contents", "Info.plist"), "rb") as h:
+                cv = plistlib.load(h).get("CFBundleShortVersionString", "?")
+            emit("OK", "browser (screen_check)", "raw CDP, no driver package · Chrome %s (auto-updates)" % cv)
+        except (OSError, ValueError, plistlib.InvalidFileException):
+            emit("WARN", "browser (screen_check)", "Chrome not found at %s (set CHROME)" % CHROME_APP)
 
-    # 3. online: latest patch per cycle + OSV.dev advisories
     why = offline_reason(argv)   # --online is a no-op: online is the default
     if why:
         emit("WARN", "online lookups", "skipped — %s (no advisory data, not «clean»)" % why)
-    else:
-        for prod, cur, key in (("python", pyv, cyc), ("nodejs", nodev, (nodev or "x").split(".")[0])):
-            try:
-                rows = _fetch("https://endoflife.date/api/%s.json" % prod)
-            except Exception as e:   # network errors of any kind are a WARN, never a crash
-                emit("WARN", "online %s" % prod, "fetch failed: %s" % type(e).__name__)
-                continue
-            row = next((r for r in rows if str(r.get("cycle")) == key), None)
-            newest = rows[0] if rows else {}
-            if not row:
-                emit("WARN", "online %s" % prod, "cycle %s not listed" % key)
-                continue
-            behind = _ver_tuple(cur or "0") < _ver_tuple(str(row.get("latest", "0")))
-            emit("WARN" if behind or row.get("eol") is True or str(row.get("eol")) <= today.isoformat() else "OK",
-                 "online %s" % prod, "local %s · latest %s %s (EOL %s) · newest cycle %s → %s (EOL %s)" % (
-                     cur, key, row.get("latest"), row.get("eol"), newest.get("cycle"), newest.get("latest"), newest.get("eol")))
-        for eco, pkg, ver in osv_targets(mjs, ROOT, cv):
+        return out
+    emit(*_online_eol("python", pyv, cyc, today))
+    if dev:
+        emit(*_online_eol("nodejs", nodev, (nodev or "x").split(".")[0], today))
+        for eco, pkg, ver in osv_targets(mjs, ROOT):
             try:
                 vs = osv_vulns(eco, pkg, ver)
             except Exception as e:   # a lookup error is «skipped», never «no advisories»
@@ -334,7 +330,14 @@ def main(argv):
             emit("WARN" if vs else "OK", "osv %s %s" % (pkg, ver),
                  ", ".join("%s (%s)" % v for v in vs) if vs else "no advisories (OSV.dev %s)" % eco)
         emit("INFO", "osv runtimes", "CPython, Node.js and Chrome are not OSV ecosystems — not checked there (see EOL lines)")
-    return 1 if "FAIL" in lines else 0
+    return out
+
+
+def main(argv):
+    lines = collect(argv)
+    for lv, item, detail in lines:
+        print("%-4s %s — %s" % (lv, item, detail))
+    return 1 if any(x[0] == "FAIL" for x in lines) else 0
 
 
 if __name__ == "__main__":

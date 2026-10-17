@@ -4,7 +4,7 @@ from urllib.parse import parse_qs
 
 from sidereus.structure import structure, structure_src, structure_pair
 from sidereus.structure_tree import structure_file, structure_img, structure_tree
-from sidereus.arch_map import files as arch_files, load as arch_load
+from sidereus.arch_map import files as arch_files, load as arch_load, security_report as arch_secreport
 
 
 def _q1(q, k, d=""):
@@ -121,6 +121,15 @@ class _StructRoutes:
         q = parse_qs(u.query)
         try:
             out = arch_files(_q1(q, "path") or None, _q1(q, "id"))
+        except Exception as e:
+            out = {"ok": False, **_exc_msg(e)}
+        self._raw_json(200, out)
+
+    def _g_arch_secreport(self, u):
+        # Security tab «Last report»: one report file; allow list, name pattern and file guards inside arch_map.security_report().
+        q = parse_qs(u.query)
+        try:
+            out = arch_secreport(_q1(q, "path") or None, _q1(q, "name"))
         except Exception as e:
             out = {"ok": False, **_exc_msg(e)}
         self._raw_json(200, out)
