@@ -126,6 +126,8 @@ def hist_compute(log_rows, ev, now, cuts=None):
 
 def _log_rows():
     rows = []
+    if not os.path.exists(QUOTA_LOG):   # ⚠fresh install: no quota sample written yet; empty history, not a failure
+        return rows
     with open(QUOTA_LOG, encoding="utf-8", errors="ignore") as f:
         for ln in f:
             try:

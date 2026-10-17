@@ -93,5 +93,15 @@ class Est(unittest.TestCase):
         self.assertEqual((e["h5_left"], e["wk_left"]), (None, None))
 
 
+class MissingQuotaLog(unittest.TestCase):
+    def test_missing_log_is_empty_not_error(self):
+        import os
+        import tempfile
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as d, \
+             mock.patch.object(h, "QUOTA_LOG", os.path.join(d, "quota-log.jsonl")):
+            self.assertEqual(h._log_rows(), [])
+
+
 if __name__ == "__main__":
     unittest.main()
