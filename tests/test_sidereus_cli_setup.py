@@ -50,7 +50,7 @@ class SetupClaude(unittest.TestCase):
             self.assertEqual([g.get("matcher") for g in hooks[ev]], [g.get("matcher") for g in groups])
             for g, pg in zip(hooks[ev], groups):
                 for h, ph in zip(g["hooks"], pg["hooks"]):
-                    name = ph["command"].split("/hooks/")[1].rstrip('"')
+                    name = ph["command"].split("/hooks/")[-1].rstrip('"')   # last path: the launcher comes first
                     path = os.path.join(cli.CODE_DIR, "hooks", name)
                     self.assertTrue(h["command"].endswith(path), h["command"])
                     self.assertTrue(os.path.isfile(path), path)

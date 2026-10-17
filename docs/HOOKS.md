@@ -26,7 +26,7 @@ Every hook is standalone stdlib Python 3.9 and follows two rules:
 | `perm_mark.py` | `PermissionRequest` + `Notification` (`permission_prompt`), 5 s | marks the session as waiting on a permission prompt |
 | `room_auto.py` | `SessionStart` | joins rooms by path from `room-map.json` (optional, not in the plugin) |
 
-The plugin (`scripts/build_plugin.py`) registers the nine hooks other than `room_auto.py`. `python3 -m sidereus setup-claude` prints the
+The plugin (`scripts/build_plugin.py`) registers the nine hooks other than `room_auto.py` (via `hooks/pyrun.sh`; on Windows that needs Git Bash). `python3 -m sidereus setup-claude` (Windows: `py -m sidereus setup-claude`) prints the
 same nine hooks with this clone's paths; it never writes settings. ⚠Use the plugin or the manual blocks, not both (every hook would run twice).
 
 ⚠`pl_mark.py` and `pl_flow.py` are the only hooks that deny a tool call (plugin or manual), and only in a

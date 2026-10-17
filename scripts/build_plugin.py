@@ -32,7 +32,7 @@ FA_ENTRY = {"name": "orbit", "source": "./plugins/orbit",
 COPY = ("LICENSE", "mailbox_config.py", "mcp/sidereus_mcp.py",
         "hooks/invite_notice.py", "hooks/mailbox_stop.py", "hooks/mailbox_wake.py", "hooks/pipelines_brief.py",
         "hooks/file_peers_notice.py", "hooks/pl_mark.py", "hooks/pl_flow.py", "hooks/pl_guard.py",
-        "hooks/perm_mark.py", "hooks/ev_hook.py")
+        "hooks/perm_mark.py", "hooks/ev_hook.py", "hooks/pyrun.sh")
 
 # Source of the hook set: `sidereus_cli.py setup-claude` prints plugin/hooks/hooks.json with the clone's real paths.
 # (event, matcher or None, script, timeout s)
@@ -70,7 +70,9 @@ def hooks_json():
     ev = {}
     for event, matcher, script, timeout, *extra in HOOKS:
         # ⚠${CLAUDE_PLUGIN_ROOT} stays quoted: the plugin cache path may contain spaces.
-        cmd = {"type": "command", "command": 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/%s"' % script, "timeout": timeout}
+        # pyrun.sh picks a real Python on Windows (python3 there may be the Store stub); elsewhere it execs python3.
+        cmd = {"type": "command", "command": 'sh "${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh" "${CLAUDE_PLUGIN_ROOT}/hooks/%s"'
+               % script, "timeout": timeout}
         cmd.update(extra[0] if extra else {})
         groups = ev.setdefault(event, [])
         grp = next((g for g in groups if g.get("matcher") == matcher), None)
@@ -135,7 +137,7 @@ def build():
         os.makedirs(os.path.dirname(p), exist_ok=True)
         with open(p, "wb") as f:
             f.write(data)
-        if rel.endswith(".py"):
+        if rel.endswith((".py", ".sh")):
             shutil.copymode(os.path.join(ROOT, rel[len("plugin/"):]), p)
     return sorted(exp)
 

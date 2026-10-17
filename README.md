@@ -92,6 +92,7 @@ git clone https://github.com/bugsterran/sidereus.git ~/sidereus && cd ~/sidereus
 python3 -m sidereus start --open             # http://127.0.0.1:8799; Windows: sidereus.cmd start --open
 ```
 
+On Windows write `py` wherever these docs say `python3`, or run `sidereus.cmd` from the clone folder.
 That is the whole install for the screen. Commands, ports and start at login: [Getting started §2–3](docs/GETTING-STARTED.md#2-start-the-viewer).
 
 If 8799 is taken (another clone, or another account on the same Mac running Sidereus), `status` only says
@@ -166,8 +167,8 @@ a few lines to the calling session's context. Diagram and details: [docs/ARCHITE
 
 ## Agents can ask too (MCP)
 
-Already there if you installed the plugin. Manual registration (macOS, from the clone; on Windows use the
-line `python3 -m sidereus setup-claude` prints):
+Already there if you installed the plugin (on Windows the plugin's MCP server runs bare `python3`, so without one on PATH register it by hand as below). Manual registration (macOS, from the clone; on Windows run `py -m sidereus setup-claude`
+in the clone and use the `claude mcp add` line it prints):
 
 ```sh
 claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.py"

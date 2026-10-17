@@ -554,7 +554,7 @@ def _shq(p):
     return p if re.match(r"^[\w@%+=:,./-]+$", p) else "'" + p.replace("'", "'\\''") + "'"
 
 
-_PLUGIN_CMD = re.compile(r'^python3 "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/([\w.-]+\.py)"$')
+_PLUGIN_CMD = re.compile(r'^sh "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/pyrun\.sh" "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/([\w.-]+\.py)"$')
 
 
 def setup_hooks(python, code=CODE_DIR):

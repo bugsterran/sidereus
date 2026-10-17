@@ -7,8 +7,8 @@ Answers contain metadata only (ids, names, states, tool names, counts, times).
 
 ## Register
 
-The plugin registers it (as `plugin:sidereus:sidereus`). ⚠If you use the plugin, skip the line below, or the server is
-registered twice. Manual, from the clone on macOS (on Windows use the line `python3 -m sidereus setup-claude` prints):
+The plugin registers it (as `plugin:sidereus:sidereus`); on Windows the plugin's MCP server runs bare `python3`, so without one on PATH register it by hand as below. ⚠If you use the plugin, skip the line below, or the server is
+registered twice. Manual, from the clone on macOS (on Windows run `py -m sidereus setup-claude` in the clone and use the `claude mcp add` line it prints):
 
 ```sh
 claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.py"

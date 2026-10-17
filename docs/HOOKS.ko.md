@@ -26,7 +26,7 @@
 | `perm_mark.py` | `PermissionRequest` + `Notification`(`permission_prompt`), 5초 | 세션이 권한 확인 창에서 기다리는 중임을 표시한다 |
 | `room_auto.py` | `SessionStart` | `room-map.json` 의 경로별 방에 들어간다(선택. 플러그인에는 없다) |
 
-플러그인(`scripts/build_plugin.py`)이 `room_auto.py` 를 뺀 9개를 모두 등록한다. `python3 -m sidereus setup-claude` 는 이 클론 경로로
+플러그인(`scripts/build_plugin.py`)이 `room_auto.py` 를 뺀 9개를 모두 등록한다(`hooks/pyrun.sh` 경유라 Windows 에서는 Git Bash 가 필요하다). `python3 -m sidereus setup-claude`(Windows: `py -m sidereus setup-claude`)는 이 클론 경로로
 같은 훅 9개를 출력만 하고, 설정 파일은 쓰지 않는다. ⚠플러그인과 수동 등록 중 하나만 쓴다(둘 다 하면 훅이 모두 두 번 돈다).
 
 ⚠도구 호출을 거부하는 훅은 `pl_mark.py`, `pl_flow.py` 뿐이고(플러그인·수동 모두), `.claude/pipelines/*.json` 이 있는 프로젝트에서만이다
