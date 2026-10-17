@@ -133,3 +133,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ `pyrun.sh`: `SIDEREUS_PYTHON`, else a cache (`$CLAUDE_PLUGIN_DATA/sidereus-pyrun.cache` = PATH + exe; hit = shell builtins only), else probe `py -3`, `python3`, `python`, skipping any path under `WindowsApps` unrun. Plugin MCP `command` = `${SIDEREUS_PYTHON:-python3}` (★expansion verified on Claude Code 2.1.302). Stdio entry points reconfigure stdout to UTF-8 at start (`tests/test_stdio_cp949.py` runs the MCP server under `PYTHONIOENCODING=cp949`).
 - ⚠MCP stdio is spawned with no shell: `pyrun.sh` cannot pick the server's Python and there is no per-platform config, so Windows users must set `SIDEREUS_PYTHON` (docs). Do not change the command to `py` — macOS/Linux have none.
 - ⚠The probe writes `sys.executable` with `/` and no newline: a Windows `print` adds `\r`, which `$(...)` keeps and the cached path then never exists.
+
+### Plugin update brings nothing when `version` is unchanged
+Cause: Claude Code caches an installed plugin per `version` in `plugin.json`; `plugin update` with the same version keeps the old copy.
+Fix: bump `VERSION` in `scripts/build_plugin.py` (then rebuild) in every commit that changes `plugin/`.
+⚠ ★2026-10-17: version stayed 0.1.0 through three releases; the Windows hook fix did not arrive on a real PC after update.
