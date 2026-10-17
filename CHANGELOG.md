@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CI: a non-blocking `windows-latest` job (Python 3.9 and 3.12) runs the same gates and unit tests plus a `start --demo` smoke test.
 - Docs: [REVIEW-PIPELINES](docs/REVIEW-PIPELINES.md) summarises what Anthropic, OpenAI, Google, Meta, Cursor and GitHub published on AI code review, maps it to pipeline fields, and ships review templates for Claude Code, Codex CLI and Gemini CLI (`docs/examples/pipelines/`; Codex and Gemini untested).
 
+### Fixed
+
+- Windows: the `invite_notice` and `room_auto` hooks looped forever walking up from the project folder (a drive root `C:\` is its own parent and never equals `/`), so every prompt waited for the 10 s hook timeout.
+
 ### Changed
 
 - Plugin version is 0.3.1 (was 0.1.0 since the first release): Claude Code caches plugins per version, so plugin fixes never reached installed copies on update.

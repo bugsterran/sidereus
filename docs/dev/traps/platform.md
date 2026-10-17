@@ -138,3 +138,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 Cause: Claude Code caches an installed plugin per `version` in `plugin.json`; `plugin update` with the same version keeps the old copy.
 Fix: bump `VERSION` in `scripts/build_plugin.py` (then rebuild) in every commit that changes `plugin/`.
 ⚠ ★2026-10-17: version stayed 0.1.0 through three releases; the Windows hook fix did not arrive on a real PC after update.
+
+### Parent-directory walks never end on Windows
+Cause: `while p != "/": p = os.path.dirname(p)` — `dirname("C:\\")` returns `C:\\`, so the loop spins until the hook timeout.
+Fix: stop when `dirname(p) == p` (`tests/test_hook_drive_root.py`).
+⚠ ★2026-10-17: every prompt on a real Windows PC waited 10 s for `invite_notice`; CI did not catch it because no test walked up to a drive root.
