@@ -318,12 +318,19 @@ class ClearRecord(unittest.TestCase):
     def test_shell_parent_skipped(self):
         inv._claude_pid = _MOD_SAVED["_claude_pid"]
         r = type("R", (), {"stdout": " 555 /bin/zsh\n"})()
-        with mock.patch.object(inv.subprocess, "run", return_value=r), mock.patch.object(inv.os, "getppid",
-                                                                                        return_value=900):
+        # pin the POSIX branch so the ps path is tested on every OS
+        with mock.patch.object(inv.sys, "platform", "darwin"), mock.patch.object(inv.subprocess, "run", return_value=r), \
+                mock.patch.object(inv.os, "getppid", return_value=900):
             self.assertEqual(inv._claude_pid(), 555)
         r.stdout = " 555 claude\n"
-        with mock.patch.object(inv.subprocess, "run", return_value=r), mock.patch.object(inv.os, "getppid",
-                                                                                        return_value=900):
+        with mock.patch.object(inv.sys, "platform", "darwin"), mock.patch.object(inv.subprocess, "run", return_value=r), \
+                mock.patch.object(inv.os, "getppid", return_value=900):
+            self.assertEqual(inv._claude_pid(), 900)
+
+    def test_win32_returns_parent_without_ps(self):
+        inv._claude_pid = _MOD_SAVED["_claude_pid"]
+        with mock.patch.object(inv.sys, "platform", "win32"), mock.patch.object(inv.os, "getppid", return_value=900), \
+                mock.patch.object(inv.subprocess, "run", side_effect=AssertionError("ps spawned on win32")):
             self.assertEqual(inv._claude_pid(), 900)
 
 

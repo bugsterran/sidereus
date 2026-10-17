@@ -168,7 +168,10 @@ class SetupWrite(unittest.TestCase):
         rc, out = self.run_write(claude=None)
         self.assertEqual(rc, 1)
         self.assertIn("not on PATH", out)
-        self.assertIn("mcp add --scope user sidereus", out)
+        line = out.split("not on PATH", 1)[1].splitlines()[1].strip()
+        # Windows quotes every arg ("claude" "mcp" ...); compare unquoted tokens so both OSes check the same argv
+        self.assertEqual([a.strip("\"'") for a in line.split()][:6], ["claude", "mcp", "add", "--scope", "user", "sidereus"])
+        self.assertEqual(line, cli._argv_text(cli.mcp_add_argv("claude", PY)))
         self.assertEqual(self.calls, [])
         self.assertIn("hooks", json.loads(self.read()))      # hooks still written
 
