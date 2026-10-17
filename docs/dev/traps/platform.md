@@ -126,3 +126,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: any Sidereus (another data dir) or app answering 200 on 8799 read as «Already running», exit 0, and its port was saved.
 - ⇒ Every reply carries `X-Sidereus-Instance` (16-hex sha256 of the data dir realpath); a viewer without it counts as ours only when our `sidereus.pid` records a live pid on that port.
 - ⚠A viewer started before this header existed reads as «taken» until it is restarted.
+
+## Windows: Store `python3` alias and cp949 stdio (`hooks/pyrun.sh` · plugin `.mcp.json` · stdio entry points)
+
+- Cause: `python3` on PATH is the Microsoft Store alias (`WindowsApps\python3.exe`, exit 49); every Python start costs ~0.5-1.5 s, so a probe that ran up to three of them overran the 10 s UserPromptSubmit timeout. Pipes and redirects use the ANSI code page (cp949 has no «—»), so `tools/list` and `setup-claude` died on their first write.
+- ⇒ `pyrun.sh`: `SIDEREUS_PYTHON`, else a cache (`$CLAUDE_PLUGIN_DATA/sidereus-pyrun.cache` = PATH + exe; hit = shell builtins only), else probe `py -3`, `python3`, `python`, skipping any path under `WindowsApps` unrun. Plugin MCP `command` = `${SIDEREUS_PYTHON:-python3}` (★expansion verified on Claude Code 2.1.302). Stdio entry points reconfigure stdout to UTF-8 at start (`tests/test_stdio_cp949.py` runs the MCP server under `PYTHONIOENCODING=cp949`).
+- ⚠MCP stdio is spawned with no shell: `pyrun.sh` cannot pick the server's Python and there is no per-platform config, so Windows users must set `SIDEREUS_PYTHON` (docs). Do not change the command to `py` — macOS/Linux have none.
+- ⚠The probe writes `sys.executable` with `/` and no newline: a Windows `print` adds `\r`, which `$(...)` keeps and the cached path then never exists.

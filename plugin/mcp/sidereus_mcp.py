@@ -328,6 +328,16 @@ def handle(msg, cwd=None):
     return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": "method not found: %s" % method}}
 
 
+def utf8_stdio(streams=None):
+    """Re-encode stdio as UTF-8. ⚠Windows pipes default to the ANSI code page (cp949 cannot encode the em dash in
+    tools/list) and the server died on the first reply."""
+    for s in streams or (sys.stdin, sys.stdout, sys.stderr):
+        try:
+            s.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
+
 def serve(inp=None, out=None):
     inp, out = inp or sys.stdin, out or sys.stdout
     cwd = os.getcwd()
@@ -352,4 +362,5 @@ def serve(inp=None, out=None):
 
 if __name__ == "__main__":
     DETECT_SELF = True      # only the real server reads ~/.claude/sessions; imported (tests) it stays off
+    utf8_stdio()
     serve()

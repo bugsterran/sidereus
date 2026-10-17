@@ -174,6 +174,10 @@ def launchd_label(name):
 
 if __name__ == "__main__":
     # `--get KEY` / `--label NAME` / `--port` print one value for shell scripts.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")   # ⚠Windows pipes use the ANSI code page; values may hold Korean
+    except Exception:
+        pass
     if len(sys.argv) == 3 and sys.argv[1] == "--get":
         v = get(sys.argv[2])
         print(v if isinstance(v, str) else json.dumps(v, ensure_ascii=False))

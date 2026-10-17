@@ -253,6 +253,8 @@ def _prune(d):
 def _claude_pid():
     """Pid of the Claude process: the hook's parent, or its parent when the hook was launched through a shell."""
     p = os.getppid()
+    if sys.platform == "win32":
+        return p          # ⚠no `ps` on Windows (Git Bash's MSYS ps has no -o); a spawn attempt only adds hook latency
     try:
         r = subprocess.run(["ps", "-o", "ppid=,comm=", "-p", str(p)], capture_output=True, text=True, timeout=2)
         parts = r.stdout.strip().split(None, 1)

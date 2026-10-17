@@ -94,8 +94,10 @@ def expected():
         "name": NAME, "version": VERSION, "description": DESC,
         "author": {"name": AUTHOR}, "license": _license_id()})
     out["plugin/hooks/hooks.json"] = _json(hooks_json())
+    # ⚠MCP stdio is spawned with no shell, so pyrun.sh cannot pick the Python here; on Windows `python3` is the Store
+    # alias (exit 49) and the user sets SIDEREUS_PYTHON=py. `${VAR:-default}` verified on Claude Code 2.1.302.
     out["plugin/.mcp.json"] = _json({"mcpServers": {MCP_NAME: {
-        "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/sidereus_mcp.py"]}}})
+        "command": "${SIDEREUS_PYTHON:-python3}", "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/sidereus_mcp.py"]}}})
     out[".claude-plugin/marketplace.json"] = _json({
         "name": NAME, "owner": {"name": AUTHOR},
         "metadata": {"description": "Sidereus: local session control viewer for Claude Code."},

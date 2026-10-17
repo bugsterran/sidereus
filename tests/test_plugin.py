@@ -71,7 +71,7 @@ class PluginTest(unittest.TestCase):
 
     def test_mcp(self):
         s = _json("plugin/.mcp.json")["mcpServers"]["sidereus"]
-        self.assertEqual(s["command"], "python3")
+        self.assertEqual(s["command"], "${SIDEREUS_PYTHON:-python3}")   # Windows: python3 is the Store alias
         self.assertEqual(s["args"], ["${CLAUDE_PLUGIN_ROOT}/mcp/sidereus_mcp.py"])
 
     def test_marketplace_points_at_plugin(self):
@@ -146,39 +146,88 @@ class PyrunTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp)
 
-    def stub(self, name, ok):
-        # ok: passes the version probe; the real run echoes its name, args and stdin.
-        with open(os.path.join(self.tmp, name), "w", encoding="utf-8") as f:
-            f.write('#!/bin/sh\ncase " $* " in *" -c "*) exit %d;; esac\necho "%s $*"; cat; exit 7\n' % (0 if ok else 9, name))
-        os.chmod(os.path.join(self.tmp, name), 0o755)
+    def stub(self, name, ok, d=None):
+        # ok: passes the version probe and prints its own path (sys.executable); the real run echoes name, args, stdin.
+        # A probe also appends to probes.log, so a test can tell a cached run (no probe) from a probed one.
+        p = os.path.join(d or self.tmp, name)
+        log = os.path.join(self.tmp, "probes.log")
+        with open(p, "w", encoding="utf-8") as f:
+            f.write('#!/bin/sh\ncase " $* " in *" -c "*) echo %s >>"%s"; [ %d = 0 ] && printf %%s "$0"; exit %d;; esac\n'
+                    'echo "%s $*"; cat; exit 7\n' % (name, log, 0 if ok else 9, 0 if ok else 9, name))
+        os.chmod(p, 0o755)
 
-    def run_sh(self, os_name):
-        # ⚠PATH = stubs only (+ cat): a real python/py in /usr/bin would win the probe on some hosts.
-        if not os.path.exists(os.path.join(self.tmp, "cat")):
-            os.symlink(shutil.which("cat"), os.path.join(self.tmp, "cat"))
-        env = {"PATH": self.tmp}
+    def probes(self):
+        log = os.path.join(self.tmp, "probes.log")
+        if not os.path.exists(log):
+            return []
+        with open(log, encoding="utf-8") as f:
+            names = f.read().split()
+        os.remove(log)
+        return names
+
+    def run_sh(self, os_name, path=None, **extra):
+        # ⚠PATH = stubs only (+ cat/mv/rm): a real python/py in /usr/bin would win the probe on some hosts.
+        for tool in ("cat", "mv", "rm"):
+            if not os.path.exists(os.path.join(self.tmp, tool)):
+                os.symlink(shutil.which(tool), os.path.join(self.tmp, tool))
+        env = dict({"PATH": path or self.tmp, "CLAUDE_PLUGIN_DATA": self.tmp}, **extra)
         if os_name:
             env["OS"] = os_name
         return subprocess.run(["/bin/sh", os.path.join(ROOT, "hooks", "pyrun.sh"), "a b.py", "x"], input="{}",
                               env=env, capture_output=True, text=True, timeout=10, encoding="utf-8")
 
+    def drop_cache(self):
+        c = os.path.join(self.tmp, "sidereus-pyrun.cache")
+        if os.path.exists(c):
+            os.remove(c)
+
     def test_non_windows_runs_python3_unprobed(self):
         self.stub("python3", False)    # probe would fail; must not be probed off Windows
         r = self.run_sh(None)
         self.assertEqual((r.returncode, r.stdout), (7, "python3 a b.py x\n{}"))
+        self.stub("mypy3", False)
+        r = self.run_sh(None, SIDEREUS_PYTHON="mypy3")
+        self.assertEqual((r.returncode, r.stdout), (7, "mypy3 a b.py x\n{}"))
 
     def test_windows_order(self):
-        self.stub("python3", False)    # Store stub
+        self.stub("python3", False)
         self.stub("py", True)
         self.stub("python", True)
         r = self.run_sh("Windows_NT")
-        self.assertEqual((r.returncode, r.stdout), (7, "py -3 a b.py x\n{}"))
+        self.assertEqual((r.returncode, r.stdout, self.probes()), (7, "py a b.py x\n{}", ["py"]))
+        self.drop_cache()
         os.remove(os.path.join(self.tmp, "py"))
         r = self.run_sh("Windows_NT")
-        self.assertEqual((r.returncode, r.stdout), (7, "python a b.py x\n{}"))
+        self.assertEqual((r.returncode, r.stdout, self.probes()), (7, "python a b.py x\n{}", ["python3", "python"]))
+        self.drop_cache()
         self.stub("python3", True)
         r = self.run_sh("Windows_NT")
         self.assertEqual((r.returncode, r.stdout), (7, "python3 a b.py x\n{}"))
+
+    def test_windows_cache_hit_runs_no_probe(self):
+        self.stub("py", True)
+        self.assertEqual(self.run_sh("Windows_NT").stdout, "py a b.py x\n{}")
+        self.assertEqual(self.probes(), ["py"])
+        r = self.run_sh("Windows_NT")
+        self.assertEqual((r.returncode, r.stdout, self.probes()), (7, "py a b.py x\n{}", []))
+        os.remove(os.path.join(self.tmp, "py"))     # cached exe gone -> probe again
+        self.stub("python", True)
+        r = self.run_sh("Windows_NT")
+        self.assertEqual((r.stdout, self.probes()), ("python a b.py x\n{}", ["python"]))
+
+    def test_windows_skips_store_alias_unrun(self):
+        apps = os.path.join(self.tmp, "WindowsApps")
+        os.mkdir(apps)
+        self.stub("python3", True, apps)     # a working-looking alias must still never be run
+        self.stub("python", True)
+        r = self.run_sh("Windows_NT", path=apps + os.pathsep + self.tmp)
+        self.assertEqual((r.stdout, self.probes()), ("python a b.py x\n{}", ["python"]))
+
+    def test_windows_override(self):
+        self.stub("py", True)
+        self.stub("mypy", False)
+        r = self.run_sh("Windows_NT", SIDEREUS_PYTHON=os.path.join(self.tmp, "mypy"))
+        self.assertEqual((r.returncode, r.stdout, self.probes()), (7, "mypy a b.py x\n{}", []))
 
     def test_windows_none_found(self):
         self.stub("python3", False)

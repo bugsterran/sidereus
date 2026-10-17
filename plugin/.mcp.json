@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "sidereus": {
-      "command": "python3",
+      "command": "${SIDEREUS_PYTHON:-python3}",
       "args": [
         "${CLAUDE_PLUGIN_ROOT}/mcp/sidereus_mcp.py"
       ]

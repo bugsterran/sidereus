@@ -86,8 +86,10 @@ Pick one way. ⚠ Not both: you would get every hook twice and two MCP servers (
 
 **Plugin (recommended).** Registers the `sidereus` MCP server and the nine hooks in
 [HOOKS.md](HOOKS.md#claude-code-hooks). Its hooks run `python3` on macOS/Linux; on Windows they look on PATH
-for Python 3.9+ as `python3`, then `py -3`, then `python`, and run through Git Bash, so install Git for Windows.
-Its MCP server runs bare `python3`: on Windows without it, also register the server with the line from **Manual** below.
+for Python 3.9+ as `py -3`, then `python3`, then `python` (the Microsoft Store `python3` alias is skipped, the find
+is cached), and run through Git Bash, so install Git for Windows.
+Its MCP server runs `python3`, or `SIDEREUS_PYTHON` when set. On Windows `python3` is usually the Store alias, so
+run `setx SIDEREUS_PYTHON py` once and restart Claude Code (the hooks use the same variable).
 
 ```text
 /plugin marketplace add <path to your clone>
@@ -96,7 +98,18 @@ Its MCP server runs bare `python3`: on Windows without it, also register the ser
 
 Uninstall: `claude plugin uninstall sidereus@sidereus`, then `claude plugin marketplace remove sidereus`.
 
-**Manual.** Print the lines with this clone's paths and Python (writes nothing), then use what it prints:
+**Manual.** Let it do the work (Windows: `py -m sidereus setup-claude --write`):
+
+```sh
+python3 -m sidereus setup-claude --write
+```
+
+It shows the `claude mcp add` command it will run and a diff of `settings.json` (in `$CLAUDE_CONFIG_DIR`, else
+`~/.claude`), asks `Apply? [y/N]`, then backs the file up to `settings.json.bak-YYYYMMDD-HHMMSS`, merges the hooks
+and registers the MCP server. Re-running adds nothing twice. With the plugin installed it adds no hooks (they would
+run twice). `--yes` skips the question for scripts; without a terminal and without `--yes` it writes nothing.
+
+To do it by hand instead, print the lines with this clone's paths and Python (writes nothing):
 
 ```sh
 python3 -m sidereus setup-claude [--mailbox-mcp DIR]

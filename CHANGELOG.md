@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Structure: «Run security check» in the security window relays a `security-checks` run request to a logged-in session of the project (preview + confirm), or shows the terminal command (`python3` / Windows `py`) to copy when there is none; the window refreshes when the new scan lands.
+- `setup-claude --write` shows the `claude mcp add` command and a `settings.json` diff, asks, then backs up, merges the hooks idempotently (none when the plugin is installed) and registers the MCP server; `--yes` for scripts.
 - CI: a non-blocking `windows-latest` job (Python 3.9 and 3.12) runs the same gates and unit tests plus a `start --demo` smoke test.
 - Docs: [REVIEW-PIPELINES](docs/REVIEW-PIPELINES.md) summarises what Anthropic, OpenAI, Google, Meta, Cursor and GitHub published on AI code review, maps it to pipeline fields, and ships review templates for Claude Code, Codex CLI and Gemini CLI (`docs/examples/pipelines/`; Codex and Gemini untested).
 
@@ -29,7 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Structure: coming back from another tab puts the architecture map (overview or focus view) back at the scroll it was left at instead of the top-left.
-- Plugin (Windows): hooks run through `hooks/pyrun.sh`, which finds a real Python 3.9+ (`python3` unless it is the Microsoft Store stub, then `py -3`, then `python`); macOS/Linux still exec `python3`.
+- Plugin (Windows): hooks run through `hooks/pyrun.sh`, which finds a real Python 3.9+ (`py -3`, then `python3`, then `python`; a Microsoft Store alias under `WindowsApps` is never run) and caches the exe per PATH, so a hook starts one Python instead of up to three (UserPromptSubmit overran its 10 s timeout); `SIDEREUS_PYTHON` overrides it and also sets the plugin MCP server's command (`${SIDEREUS_PYTHON:-python3}`; `python3` alone hit the Store stub, exit 49); macOS/Linux still exec `python3`.
+- Windows: the MCP server, `sidereus` CLI, viewer banner, `mailbox_config.py`, `scripts/room_log.py` and `scripts/deps_audit.py` write UTF-8 stdout (a cp949 pipe could not encode «—», so `tools/list` and `setup-claude` crashed).
 - Windows: every text-mode file open in the product and tests names `encoding="utf-8"` (the cp1252 default broke reads of UTF-8 files; guarded by `tests/test_open_encoding.py`), and a test module that fails to import is reported by name instead of aborting its whole parallel group.
 - Windows CI: checkouts keep LF (`.gitattributes` `* text=auto eol=lf`, images binary); tests remove temp git repos with read-only objects (`tests/_fs.py`), skip POSIX-only checks (permission bits, FIFOs, `pwd`/`resource`, the shell launcher and `check.sh`) and compare paths with the OS separator.
 - Windows: `C:\…` edit paths now count for file owners, conflicts, review and the git rail (were dropped as non-absolute); session repos, project names and hook script names parse `\` paths; the git rail reads files without `O_NOFOLLOW`; Structure dates no longer use `%-m`; pre-1970 cut-offs and near-epoch room-log times no longer raise Errno 22; `scripts/evidence_rec.py` imports without `fcntl` (no evidence row, like the hook).

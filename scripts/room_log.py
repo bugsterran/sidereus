@@ -157,4 +157,8 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")   # ⚠Windows pipes use the ANSI code page; messages hold any script
+    except Exception:
+        pass
     sys.exit(main())

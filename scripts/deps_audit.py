@@ -341,4 +341,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")   # ⚠Windows console code page cannot encode the em dash in each line
+    except Exception:
+        pass
     sys.exit(main(sys.argv[1:]))
