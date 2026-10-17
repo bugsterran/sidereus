@@ -16,6 +16,7 @@ Sidereus is a local monitor plus a control relay. Everything it does, and how to
 - **No process-spawning endpoints.** No request from the page runs a shell, git checkout/merge or a session.
 - **Mailbox DMs only to registered ids** (`identity.json`), never to a guessed name.
 - The only outbound request is the optional quota lookup to `api.anthropic.com`, using the OAuth token from the macOS keychain.
+- **Dev scripts, not the viewer:** `scripts/arch_checks.py --category security` and `scripts/deps_audit.py` query free advisory sources (OSV.dev, npm, semgrep registry, endoflife.date) when you run them — package names and versions only; `--offline` skips them, and an unreachable network is reported as skipped, never as clean.
 - **Paid quota probe — off by default.** With `quota_probe: true` (or `SIDEREUS_QUOTA_PROBE=1`), while the lookup returns 429 the viewer sends one Haiku request to `api.anthropic.com/v1/messages` every 120 s with the same token (`max_tokens 1`, about $0.00002 each, billed to that account) and reads only the rate-limit headers; the body is discarded.
 
 ## What it never does

@@ -65,7 +65,7 @@ A bug report needs: OS, Claude Code version (`claude --version`), and the output
 One maintenance day a month:
 
 1. Triage open issues and PRs.
-2. Run the `deps-audit` pipeline (`/usr/bin/python3 scripts/deps_audit.py --online`) and, alongside it, `security-checks` on this repository (scanners, then the threat-model review stage).
+2. Run the `deps-audit` pipeline (`/usr/bin/python3 scripts/deps_audit.py`, online incl. OSV.dev by default) and, alongside it, `security-checks` on this repository (scanners, then the threat-model review stage).
 3. Release if anything under `[Unreleased]` is ready.
 
 ## Release decisions

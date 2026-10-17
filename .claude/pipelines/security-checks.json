@@ -11,7 +11,7 @@
       "title": "보안 검사",
       "agent": "general-purpose",
       "model": "sonnet",
-      "task": "Run `/usr/bin/python3 scripts/arch_checks.py --repo <repo> --category security` once from this repository (it detects the scanners, runs each with a timeout and writes checks-security.json). Add `--net` only when the request asks for advisory lookups (npm audit, osv-scanner need the network; without it they are skipped). Report its printed line only. Do not rerun with other options, do not run any tool yourself, do not fix findings.",
+      "task": "Run `/usr/bin/python3 scripts/arch_checks.py --repo <repo> --category security` once from this repository (it detects the scanners, runs each with a timeout and writes checks-security.json). Online lookups (npm audit, osv-scanner, semgrep registry packs) run by default after a reachability probe; offline they are reported skipped. Add `--offline` only when the request asks for no network. Report its printed line only. Do not rerun with other options, do not run any tool yourself, do not fix findings.",
       "gate": "/usr/bin/python3 scripts/arch_checks.py --verify --last --category security"
     },
     {

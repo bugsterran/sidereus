@@ -69,6 +69,17 @@ class OssScannerFiles(unittest.TestCase):
             for ln in tail:
                 self.assertIsNone(FETCH.search(ln), "%s: network fetch after COPY: %s" % (d, ln))
 
+    def test_dockerfile_base_pinned_and_upgraded(self):
+        # An unpinned or EOL tag silently goes stale; digest pin + apt-get upgrade keeps the base reproducible and patched.
+        for d in DIRS:
+            text = read(d + "/Dockerfile")
+            froms = [ln for ln in text.splitlines() if ln.startswith("FROM ")]
+            self.assertEqual(len(froms), 1, d)
+            self.assertRegex(froms[0], r"^FROM [\w./-]+:[\w.-]+@sha256:[0-9a-f]{64}$", d)
+            self.assertRegex(text, r"apt-get update && apt-get upgrade -y\s*\\\s*\n\s*&& apt-get install -y --no-install-recommends", d)
+            self.assertIn("rm -rf /var/lib/apt/lists/*", text, d)
+        self.assertRegex(read(".oss-scanner/Dockerfile"), r"(?m)^FROM python:3\.9[\w.-]*-slim-[a-z]+@sha256:")
+
     def test_security_links_scanner_folder(self):
         for f in ("SECURITY.md", "SECURITY.ko.md"):
             self.assertIn("(.oss-scanner/)", read(f), f)

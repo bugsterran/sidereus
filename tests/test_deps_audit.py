@@ -63,5 +63,38 @@ class Eol(unittest.TestCase):
         self.assertEqual(da.plist_program("<plist/>"), "?")
 
 
+class Online(unittest.TestCase):
+    def test_offline_reason_probe_both_ways(self):
+        self.assertIsNone(da.offline_reason([], lambda: True))
+        self.assertEqual(da.offline_reason([], lambda: False), "offline")
+        self.assertEqual(da.offline_reason(["--offline"], lambda: 1 / 0), "--offline")   # opt-out never probes
+        self.assertIsNone(da.offline_reason(["--online"], lambda: True))   # legacy flag: no-op
+
+    def test_osv_vulns_pages_and_severity(self):
+        pages = [{"vulns": [{"id": "GHSA-aaaa-bbbb-cccc", "database_specific": {"severity": "HIGH"}, "details": "x"}],
+                  "next_page_token": "t"}, {"vulns": [{"id": "CVE-1"}]}]
+        sent = []
+        fetch = lambda url, body: sent.append(body) or pages[len(sent) - 1]
+        self.assertEqual(da.osv_vulns("npm", "p", "1.0.0", fetch), [("GHSA-aaaa-bbbb-cccc", "high"), ("CVE-1", "unrated")])
+        self.assertEqual((sent[0]["package"], "page_token" in sent[0], sent[1]["page_token"]),
+                         ({"name": "p", "ecosystem": "npm"}, False, "t"))
+        self.assertEqual(da.osv_vulns("npm", "p", "1", lambda u, b: {}), [])
+        with self.assertRaises(ValueError):
+            da.osv_vulns("npm", "p", "1", lambda u, b: [])
+
+    def test_osv_targets(self):
+        root = tempfile.mkdtemp(prefix="deps-audit-")
+        self.addCleanup(shutil.rmtree, root)
+        os.makedirs(os.path.join(root, "node_modules", "playwright"))
+        with open(os.path.join(root, "node_modules", "playwright", "package.json"), "w") as h:
+            h.write('{"version": "1.2.3"}')
+        f = os.path.join(root, "a.mjs")
+        with open(f, "w") as h:
+            h.write("import { chromium } from 'playwright';\nimport p from 'puppeteer';\n")
+        self.assertEqual(da.osv_targets([f], root, "2.1.302 (Claude Code)"),
+                         [("npm", "@anthropic-ai/claude-code", "2.1.302"), ("npm", "playwright", "1.2.3")])
+        self.assertEqual(da.osv_targets([], root, ""), [])
+
+
 if __name__ == "__main__":
     unittest.main()

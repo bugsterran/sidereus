@@ -249,7 +249,7 @@
     },
     {
       "id": "dep-audit", "group": "security", "title": { "ko": "의존성 감사", "en": "Dependency audit" }, "role": "check", "model": "sonnet",
-      "task": "Run `python3 {sidereus}/scripts/arch_checks.py --repo . --category security --only osv-scanner,npm-audit --net` once from the repo root and report its printed line only. Needs the network. Install nothing, fix nothing.",
+      "task": "Run `python3 {sidereus}/scripts/arch_checks.py --repo . --category security --only osv-scanner,npm-audit` once from the repo root and report its printed line only. Needs the network (offline = skipped). Install nothing, fix nothing.",
       "gate": "python3 {sidereus}/scripts/arch_checks.py --verify --last --category security", "gateHint": "",
       "asserts": "At least one audit tool ran over a lockfile or manifest; otherwise the gate fails as EMPTY.",
       "tools": [

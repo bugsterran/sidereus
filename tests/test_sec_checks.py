@@ -45,8 +45,14 @@ class Plans(Tmp):
         allx = SC.detect(self.repo, lambda n: "/bin/" + n, net=True)
         npm = next(p for p in allx if p["id"] == "npm-audit")
         self.assertEqual((npm["argv"], npm["cwd"], npm["net"]), (["/bin/npm", "audit", "--json"], os.path.join(self.repo, "web"), True))
-        self.assertEqual(next(p for p in allx if p["id"] == "semgrep")["status"], "skipped")   # no local rules
-        gl = next(p for p in allx if p["id"] == "gitleaks")
+        sg = next(p for p in allx if p["id"] == "semgrep")   # no local rules + net: registry packs, metrics off
+        self.assertEqual((sg["rules"], sg["net"], sg["argv"][:3]), ("default", True, ["/bin/semgrep", "scan", "--config"]))
+        self.assertIn("--metrics=off", sg["argv"])
+        self.assertNotIn("auto", sg["argv"])
+        offl = next(p for p in SC.detect(self.repo, lambda n: "/bin/" + n) if p["id"] == "semgrep")
+        self.assertEqual(offl["status"], "skipped")
+        self.assertTrue(SC.net_fail(sg, {"rc": 2, "err": "HTTPSConnectionPool: Max retries exceeded", "out": ""}))
+        gl =next(p for p in allx if p["id"] == "gitleaks")
         self.assertIn("--redact", gl["argv"])
         b = SC.bind(gl, "/t")
         self.assertEqual((b["argv"][-2:], b["report"]), (["--report-path", "/t/gitleaks-report.json"], "/t/gitleaks-report.json"))
@@ -195,8 +201,31 @@ class Runner(Tmp):
         bad = dict(j, items=[dict(j["items"][0], pkg="x y")])
         self.assertEqual(AC.checks_errors(bad, ids=SC.SEC_IDS), ["items"])
         for a in (["--repo", self.repo, "--category", "bogus"], ["--repo", self.repo, "--only", "gitleaks"],
-                  ["--verify", "--last", "--net"], ["--repo"], ["--last", "--repo", self.repo]):
+                  ["--verify", "--last", "--net"], ["--verify", "--last", "--offline"], ["--repo"],
+                  ["--last", "--repo", self.repo]):
             self.assertEqual(self.main(*a)[0], 2, a)
+
+    def test_online_by_default_with_probe(self):
+        self.w("requirements.txt", "x==1\n")
+        fp = os.path.join(self.store, AV.repo_key(self.repo), C1, SC.SEC_FILE)
+        probes, ran = [], []
+        osv = lambda p, t, tmp: ran.append(p["id"]) or {"rc": 0, "out": '{"results": []}', "err": "", "ms": 1}
+
+        def go(up, *extra):
+            del probes[:], ran[:]
+            with mock.patch.object(self.cli, "_which", lambda n: "/bin/" + n if n == "osv-scanner" else None), \
+                    mock.patch.object(self.cli, "_exec", osv), \
+                    mock.patch.object(self.cli, "_probe", lambda: probes.append(1) or up):
+                self.assertEqual(self.main("--repo", self.repo, "--category", "security", "--only", "osv-scanner",
+                                           *extra)[0], 0)
+            with open(fp) as f:
+                return json.load(f)["tools"][0]
+        self.assertEqual((go(True)["status"], probes, ran), ("ok", [1], ["osv-scanner"]))
+        t = go(False)   # unreachable: skipped, never «0 issues»
+        self.assertEqual((t["status"], t["why"], ran), ("skipped", SC.WHY_NET, []))
+        t = go(True, "--offline")   # opt-out: no probe at all
+        self.assertEqual((t["status"], probes, ran), ("skipped", [], []))
+        self.assertEqual(go(True, "--net")["status"], "ok")   # --net stays accepted (no-op)
 
 
 SECJ = {"commit": "c" * 40, "tools": [{"id": "gitleaks", "rules": "default", "status": "ok", "n": {"error": 1, "warning": 0}},

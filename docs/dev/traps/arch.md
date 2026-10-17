@@ -145,7 +145,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠`--category security` is required: without it the runner and gate exit 1 (the lint category was removed; an old gate must not pass on nothing).
 - **Security checks: secrets and network** (`sec_checks`, `scripts/arch_checks.py --category security`).
   - Cause: a gitleaks report carries `Secret` / `Match` / `Line` (redacted or not); npm audit and osv-scanner fail without network and would read as «0 advisories».
-  - ⇒ `parse_gitleaks` reads `RuleID` / `File` / `StartLine` only; the report sits in the runner's temp dir and `take_report` deletes it in `finally`. Advisory tools run only with `--net`; a DNS/connect error is `skipped «needs network»`.
+  - ⇒ `parse_gitleaks` reads `RuleID` / `File` / `StartLine` only; the report sits in the runner's temp dir and `take_report` deletes it in `finally`. Advisory tools (and semgrep registry packs, never `--config auto` — refused with `--metrics=off`) run unless the probe fails or `--offline`; a DNS/connect error is `skipped`.
   - ⚠Never store, log or relay `Secret` / `Match` / `Line` / message (bandit: `code`, `issue_text`) — not even in `why`.
   - ⚠gitleaks writes `[]` even when it read nothing: «did work» needs its `scanned ~N bytes` with N > 0, else files 0 (gate EMPTY).
 - **Arch flows must not move the gate** (`arch_flow`, `scripts/arch_verify.py`).

@@ -29,10 +29,10 @@ stderr    viewer.err          # append-only — old lines are fossils
 
 ### Dependency and runtime audit (monthly + before a release)
 
-- Run: `/usr/bin/python3 scripts/deps_audit.py [--online]` — `OK|WARN|FAIL item — detail`, exit 1 on FAIL. Full flow: pipeline `deps-audit` (Check → Triage → Update → Verify → Live verify); run `security-checks` alongside it the same month.
-- FAIL = a non-stdlib Python import or a non-`node:` `.mjs` import. WARN = runtime past or within 180 days of EOL, or behind the latest patch (`--online`).
-- The EOL table in the script carries a `★source + date checked` line; refresh it from `--online` output.
-- ⚠Network only with `--online` (endoflife.date). Tests (`tests/test_deps_audit.py`) use tmp files, no clock or network.
+- Run: `/usr/bin/python3 scripts/deps_audit.py [--offline]` — `OK|WARN|FAIL item — detail`, exit 1 on FAIL. Full flow: pipeline `deps-audit` (Check → Triage → Update → Verify → Live verify); run `security-checks` alongside it the same month.
+- FAIL = a non-stdlib Python import or a non-`node:` `.mjs` import. WARN = runtime past or within 180 days of EOL, or behind the latest patch, or an OSV.dev advisory (online lookups).
+- The EOL table in the script carries a `★source + date checked` line; refresh it from the online output.
+- ⚠Online by default after a 3 s probe (endoflife.date, OSV.dev for npm packages — not the CPython/Node/Chrome runtimes); unreachable or `--offline` = a «skipped» WARN, never «no advisories». Tests (`tests/test_deps_audit.py`) use tmp files, no clock or network.
 - ⚠A runtime switch (launchd interpreter, Node major) is an owner decision — the audit and pipeline only report it.
 
 ## Feature log 2026-08-19 (§1–§37)

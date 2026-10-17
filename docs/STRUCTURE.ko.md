@@ -84,8 +84,8 @@ flowchart LR
 
 ### 보안 검사
 
-`scripts/arch_checks.py --repo <저장소> --category security [--net]` 가 `checks-security.json` 에 규칙·`파일:줄`·패키지만 남긴다.
-⚠비밀값·일치 문자열은 저장하지 않는다. 의존성 조회는 `--net` 일 때만. semgrep 은 로컬 규칙만 쓴다.
+`scripts/arch_checks.py --repo <저장소> --category security [--offline]` 가 `checks-security.json` 에 규칙·`파일:줄`·패키지만 남긴다.
+⚠비밀값·일치 문자열은 저장하지 않는다. 의존성 조회와 semgrep 레지스트리 규칙(로컬 설정이 없을 때)은 기본으로 온라인에서 돈다. 오프라인이거나 `--offline` 이면 «0건» 이 아니라 건너뜀.
 
 ### map.json v2
 
