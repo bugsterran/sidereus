@@ -16,13 +16,15 @@ def _load(name):
 
 
 def _bounded_dirname():
+    # ⚠ bind now: on Windows os.path IS ntpath, so a late lookup would hit this patched wrapper
+    real = ntpath.dirname
     calls = []
 
     def dn(p):
         calls.append(p)
         if len(calls) > 50:
             raise AssertionError("parent walk did not stop at the drive root")
-        return ntpath.dirname(p)
+        return real(p)
     return dn
 
 

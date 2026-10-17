@@ -479,6 +479,7 @@ class Stop(CliBase):
         def slow(url, timeout=None):
             raise err
         self.cli._urlopen = slow
+        self.cli.port_bound = lambda port: True       # a busy server holds its port; keeps the IS_WIN branch off the real bind
 
     def test_answering_timeout_is_busy_not_down(self):
         self._busy()
