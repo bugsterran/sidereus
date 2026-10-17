@@ -383,11 +383,7 @@ def _git_rail(cwd, run, st=None, since=0, mode="auto"):
         mode = "remote" if not unborn and _has_remote(cwd, head["upstream"]) else "head"
     base, kind, ref, no_remote = ((EMPTY_TREE, "head", "", False) if unborn
                                   else _rail_base(cwd, run, head["branch"], since, mode, head["upstream"]))
-    # ⚠head mode on a clean branch with unpushed commits would list 0 files and fold the repo chip; show the unpushed diff.
-    if mode == "head" and not unborn and head["ahead"] > 0 and head["upstream"]:
-        up = _rail_base(cwd, run, head["branch"], 0, "upstream", head["upstream"])
-        if up[1] == "remote":
-            base, kind, ref, no_remote = up
+    # ⚠head = strictly working tree + index vs HEAD (what an IDE shows); unpushed commits are the "upstream" mode, never a fallback.
     files = _raw_numstat(run(["diff", base, "--raw", "--numstat", "-z", "-M", "--"]))
     seen = {f["path"] for f in files}
     untr = [p for p in _status_untracked(st) if p not in seen]   # `git rm --cached x`: D in diff + ? in status

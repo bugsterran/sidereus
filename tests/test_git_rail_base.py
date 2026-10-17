@@ -218,18 +218,20 @@ class RailUpstreamMode(unittest.TestCase):
 
 
 class RailHeadAhead(RailBase):
-    """head mode: a clean branch with unpushed commits diffs against its upstream so the repo chip does not fold."""
+    """head mode is strictly uncommitted: a clean branch with unpushed commits lists nothing; upstream mode lists them."""
 
-    def test_clean_ahead_with_upstream_lists_unpushed_files(self):
+    def test_clean_ahead_head_is_empty_upstream_lists_unpushed(self):
         self.git("init", "-q", "-b", "main")
         self.commit("a.txt", "1\n", at=T0)
         self.git("checkout", "-qb", "feat")
         self.git("branch", "-q", "-u", "main")                # local upstream: no remote, no network
         self.commit("b.txt", "x\n")
         d = self.rail(mode="head")
-        self.assertEqual((d["baseKind"], d["baseRef"], d["ahead"], d["noRemote"]), ("remote", "main", 1, False))
-        self.assertEqual([x["path"] for x in d["files"]], ["b.txt"])
+        self.assertEqual((d["baseKind"], d["base"], d["ahead"], d["files"]), ("head", "", 1, []))
         self.assertNotIn("main", d)                            # plain repo: no main-repo label
+        u = self.rail(mode="upstream")
+        self.assertEqual((u["baseKind"], u["baseRef"], u["noRemote"]), ("remote", "main", False))
+        self.assertEqual([x["path"] for x in u["files"]], ["b.txt"])
 
     def test_ahead_without_upstream_keeps_head(self):
         self.git("init", "-q", "-b", "main")

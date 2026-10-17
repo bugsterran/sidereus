@@ -50,17 +50,18 @@ def stable_py():
 
 def expand(p):
     p = p.strip()
-    if p == "~" or p.startswith("~/"):
+    if p == "~" or p.startswith(("~/", "~" + os.sep)):
         p = home() + p[1:]
     return os.path.abspath(p)
 
 
 def tilde(p):
-    h = home().rstrip("/")
+    # The registry always stores "~/a/b" (one file shared by Git Bash and POSIX shells); "/" on every OS.
+    h = os.path.abspath(home()).rstrip(os.sep)
     p = os.path.abspath(p)
-    if p == h:
+    if os.path.normcase(p) == os.path.normcase(h):
         return "~"
-    return "~" + p[len(h):] if p.startswith(h + "/") else p
+    return "~/" + p[len(h) + 1:].replace(os.sep, "/") if under(p, h) else p
 
 
 def real(p):
@@ -69,7 +70,8 @@ def real(p):
 
 def under(child, parent):
     """True when `child` is `parent` or below it, on path-component boundaries (realpaths)."""
-    return child == parent or child.startswith(parent.rstrip("/") + "/")
+    c, q = os.path.normcase(child), os.path.normcase(parent)   # ⚠Windows paths compare case-insensitively
+    return c == q or c.startswith(q.rstrip(os.sep) + os.sep)
 
 
 # ---- registry -------------------------------------------------------------------------------------------------
@@ -98,7 +100,8 @@ def safe_owner(st):
     """Registry must be ours and not group/world-writable: it picks the config folder (hooks, settings) we run with."""
     if hasattr(os, "getuid") and st.st_uid != os.getuid():
         return False
-    return not st.st_mode & 0o022
+    # ⚠Windows st_mode reports 0o666 for every writable file (ACLs are not mode bits): the check would refuse all.
+    return os.name == "nt" or not st.st_mode & 0o022
 
 
 class Registry(object):

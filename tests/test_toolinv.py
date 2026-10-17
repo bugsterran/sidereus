@@ -83,7 +83,7 @@ class ToolInvTest(unittest.TestCase):
         self.assertFalse(by[("mcp", "project", "gh")]["on"])
         self.assertTrue(by[("mcp", "project", "ok")]["on"])
         r = by[("skill", "project", "ship")]
-        self.assertEqual((r["bytes"], r["tok"], r["proj"]), (70, 20, self.proj))
+        self.assertEqual((r["bytes"], r["tok"], r["proj"]), (70, 20, tv._abbrev(self.proj)))   # Windows temp is under ~
         self.assertEqual((by[("skill", "user", "ship")]["uses"], by[("skill", "user", "ship")]["last"]), (4, 100))
 
     def test_flags(self):

@@ -11,7 +11,7 @@ from sidereus.ident import _cwd_from_slug, _proj_name, _sid8
 from sidereus.usage import _cost4, _uidx, _uidx_lock, _uidx_refresh
 from sidereus.usage_index import _model_disp, _uidx_snap
 from sidereus.live import _sid_transcript, sid_alive
-from sidereus.agents import _agent_fin, _agent_meta, _agent_tools, sub_sess_dir
+from sidereus.agents import _agent_fin, _agent_meta, _agent_tools, slash, sub_sess_dir
 from sidereus.work import _SID_SAFE, _under_projects
 from sidereus.ext import PLAT_MODS
 from sidereus.warn import warn_once
@@ -163,11 +163,11 @@ def history(days=7):
     _uidx_refresh()
     with _uidx_lock:
         items = [(fp, e.get("sl") or "?", _uidx_snap(e.get("h"))) for fp, e in _uidx["files"].items()]
-        meta = {fp: _title_branch(e) for fp, e in _uidx["files"].items() if "/subagents/" not in fp}
+        meta = {fp: _title_branch(e) for fp, e in _uidx["files"].items() if "/subagents/" not in slash(fp)}
     cutday = ymd(now - (days - 1) * 86400)
     agg, dc, hs = {}, {}, {}
     for fp, slug, h in items:
-        sub = "/subagents/" in fp
+        sub = "/subagents/" in slash(fp)
         if sub:
             # `<project>/<session>/subagents/agent-*.jsonl` — subagent share goes onto **the parent session**
             sid = os.path.basename(sub_sess_dir(fp))   # plain or Workflow-tool agent (one level deeper)
@@ -290,9 +290,9 @@ def history_units(sid):
     _uidx_refresh()
     tail = os.sep + sid + ".jsonl"
     with _uidx_lock:
-        main = next((fp for fp in _uidx["files"] if fp.endswith(tail) and "/subagents/" not in fp), "")
+        main = next((fp for fp in _uidx["files"] if fp.endswith(tail) and "/subagents/" not in slash(fp)), "")
         subtok = {fp: _idx_tok(e.get("h")) for fp, e in _uidx["files"].items()
-                  if ("/" + sid + "/subagents/") in fp}
+                  if ("/" + sid + "/subagents/") in slash(fp)}
         mh = dict((_uidx["files"].get(main) or {}).get("h") or {}) if main else {}
         mtok = _idx_tok(mh)
     main = main or _sid_transcript(sid)

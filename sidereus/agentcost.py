@@ -3,6 +3,7 @@ import json
 import os
 import threading
 import time
+from sidereus.agents import slash
 from sidereus.redact import redact
 from sidereus.warn import warn_once
 from sidereus.usage import _cost4, _uidx, _uidx_lock, _uidx_refresh
@@ -65,7 +66,6 @@ def _agc_snap(h):
 def _agc_top(items, since, n=AGT_TOP):
     """Top-n subagent runs by tokens in hour buckets >= `since`. items = [(fp, h)].
     Returns (rows [(tok, fp)], total tokens of every transcript in the window — the share denominator)."""
-    sep = os.sep + "subagents" + os.sep
     runs, tot = [], 0
     for fp, h in items:
         tk = 0
@@ -81,7 +81,7 @@ def _agc_top(items, since, n=AGT_TOP):
                 except (TypeError, ValueError, IndexError, KeyError):
                     continue
         tot += tk
-        if tk > 0 and sep in fp:
+        if tk > 0 and "/subagents/" in slash(fp):   # ⚠Windows index paths may use `\` or mix both
             runs.append((tk, fp))
     runs.sort(key=lambda x: -x[0])
     return runs[:n], tot
@@ -128,7 +128,6 @@ def _agc_fetch():
         #   The loop below guards per row (measured 2026-09-21: planting a string mt in the index raised ValueError,
         #   killed the whole aggregate, and froze the screen on the old value).
         items = [(fp, _agc_snap(e.get("h")), e.get("mt") or 0) for fp, e in _uidx["files"].items()]
-    sep = os.sep + "subagents" + os.sep
     agg, all_c, all_t = {}, 0.0, 0
     for fp, h, mt in items:
         c, tk = 0.0, 0
@@ -143,7 +142,7 @@ def _agc_fetch():
                     continue
         all_c += c
         all_t += tk
-        if sep not in fp:
+        if "/subagents/" not in slash(fp):
             continue
         a = agg.setdefault(_agc_type(fp), [0, 0, 0.0, 0.0])
         a[0] += 1

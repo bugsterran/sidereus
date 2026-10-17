@@ -52,12 +52,12 @@ class SetupClaude(unittest.TestCase):
                 for h, ph in zip(g["hooks"], pg["hooks"]):
                     name = ph["command"].split("/hooks/")[-1].rstrip('"')   # last path: the launcher comes first
                     path = os.path.join(cli.CODE_DIR, "hooks", name)
-                    self.assertTrue(h["command"].endswith(path), h["command"])
+                    self.assertTrue(h["command"].rstrip('"').endswith(path), h["command"])   # Windows quotes every path
                     self.assertTrue(os.path.isfile(path), path)
                     self.assertNotIn("CLAUDE_PLUGIN_ROOT", h["command"])
                     self.assertEqual({k: v for k, v in h.items() if k != "command"},
                                      {k: v for k, v in ph.items() if k != "command"})
-        wake = [h for g in hooks["Stop"] for h in g["hooks"] if h["command"].endswith("mailbox_wake.py")]
+        wake = [h for g in hooks["Stop"] for h in g["hooks"] if h["command"].rstrip('"').endswith("mailbox_wake.py")]
         self.assertEqual(len(wake), 1)
         self.assertTrue(wake[0].get("asyncRewake"))
 
@@ -68,7 +68,7 @@ class SetupClaude(unittest.TestCase):
         finally:
             os.rmdir(d)
         self.assertEqual(rc, 0)
-        self.assertIn("uv --directory %s run mailbox-mcp" % os.path.abspath(d), out)
+        self.assertIn("uv --directory %s run mailbox-mcp" % cli._shq(os.path.abspath(d)), out)   # quoted on Windows
         self.assertNotIn("<path-to-mailbox-mcp>", out)
 
     def test_windows_always_double_quotes(self):

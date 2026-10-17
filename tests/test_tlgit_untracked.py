@@ -19,7 +19,7 @@ SESS = [{"sid": "s1", "cwd": "/r/a", "project": "a", "ageSec": 5}, {"sid": "s2",
 
 def run(body, sess=SESS):
     ttl = re.search(r"^const TLG_TTL_S = .*$", js_all(), re.M).group(0)
-    pre = ("let tlgSel = '', mainView = 'time', NOW = 1e9, SESS = %s; const tlgC = {}, urls = [], opened = [];\n"
+    pre = ("let tlgSel = '', tlgBase = 'head', mainView = 'time', NOW = 1e9, SESS = %s; const tlgC = {}, urls = [], opened = [];\n"
            "const document = {hidden: false}; Date.now = () => NOW;\n"
            "function T(s){ return s; } function TV(o){ return T(o.msg).replace(/\\{(\\w+)\\}/g, (m, k) => String(o.vars[k])); }\n"
            "function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }\n"
@@ -28,7 +28,7 @@ def run(body, sess=SESS):
            "function getJSON(u){ urls.push(u); return new Promise(() => {}); }\n"
            "function loadDiff(...a){ opened.push(a); }\n" % json.dumps(sess))
     fns = re.search(r"^const TLG_AUTO = .*$", js_all(), re.M).group(0) + "\n" + "\n".join(js_fn(n) for n in ("tlgShownN", "tlgNum", "tlgShared", "tlgAge", "tlgName", "tlgSessions", "tlgTarget",
-                                        "ppComboHtml", "tlgProj", "tlgNote", "tlgSelHtml", "tlgChipInner", "tlgFetch", "tlgTick", "tlgOpen"))
+                                        "ppComboHtml", "tlgProj", "tlgNote", "tlgSelHtml", "tlgBaseTip", "tlgChipInner", "tlgFetch", "tlgTick", "tlgOpen"))
     r = subprocess.run(node_e(ttl + "\n" + pre + fns + "\n" + body), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr)
@@ -80,7 +80,7 @@ class Chip(unittest.TestCase):
                 " NOW += 2e3; tlgTick(); const c = urls.length; mainView = 'chat'; NOW += 60e3; tlgC['/r/a'].busy = false;"
                 " tlgTick(); process.stdout.write(JSON.stringify({a, b, c, d: urls.length, u: urls[0]}));")
         self.assertEqual((o["a"], o["b"], o["c"], o["d"]), (1, 1, 2, 2))
-        self.assertEqual(o["u"], "/api/git/diff?view=rail&cwd=%2Fr%2Fa&base=auto")
+        self.assertEqual(o["u"], "/api/git/diff?view=rail&cwd=%2Fr%2Fa&base=head&sid=s1")
 
     def test_click_opens_at_baseline_with_sid(self):
         o = run("const tg = tlgTarget(); tlgOpen(); tlgC[tg.ck] = {d: {ok: true, base: 'abc1234'}}; tlgOpen();"

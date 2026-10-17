@@ -50,8 +50,10 @@ def _under_projects(fp):
     except (OSError, ValueError, TypeError):
         return ""
     for p in claude_roots.projects_dirs(CLAUDE_PROJECTS):
-        base = os.path.realpath(p).rstrip(os.sep)
-        if base and rp.startswith(base + os.sep):   # ⚠"/" strips to "" and would match everything
+        base = os.path.realpath(p)
+        if base == os.path.dirname(base):   # ⚠a root ("/", "D:\") would match everything; rstrip(os.sep) kept "D:"
+            continue
+        if os.path.normcase(rp).startswith(os.path.normcase(base) + os.sep):   # normcase: Windows ignores case
             return rp
     return ""
 

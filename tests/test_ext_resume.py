@@ -14,11 +14,26 @@ gm = sidereus("plat_gemini")
 NOW = 1790000000.0
 
 
+def _alive_via(kill, pid):
+    """config.pid_alive's POSIX branch over a fake kill."""
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return None
+    if pid <= 0:
+        return None
+    try:
+        kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    return True
+
+
 class Resume(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.saved = (st._ext_save_locked, st.EXT_RUNS_FILE, dict(ext._ext), dict(ext._runs),
-                      os.kill, st._pid_start, ext.time.time, gm.scan)
+                      os.kill, st._pid_start, ext.time.time, gm.scan, st.pid_alive)
         self.saves = []
         st._ext_save_locked = lambda: self.saves.append(1)
         st.EXT_RUNS_FILE = os.path.join(self.tmp, "ext-runs.json")
@@ -32,6 +47,8 @@ class Resume(unittest.TestCase):
             if pid not in self.alive:
                 raise ProcessLookupError(errno.ESRCH, "no such process")
         os.kill = kill
+        # ⚠Windows config.pid_alive uses OpenProcess, not os.kill: drive the store's own name through the fake kill.
+        st.pid_alive = lambda pid: _alive_via(kill, pid)
         st._pid_start = lambda pid: "Thu Sep 24 20:30:27 2026" if pid in self.alive else ""
         self.clock = [NOW]
         ext.time.time = lambda: self.clock[0]
@@ -39,7 +56,7 @@ class Resume(unittest.TestCase):
 
     def tearDown(self):
         (st._ext_save_locked, st.EXT_RUNS_FILE, e, r, os.kill, st._pid_start, ext.time.time,
-         gm.scan) = self.saved
+         gm.scan, st.pid_alive) = self.saved
         ext._ext.clear(); ext._ext.update(e)
         ext._runs.clear(); ext._runs.update(r)
         shutil.rmtree(self.tmp)

@@ -23,7 +23,8 @@ def i18n():
     for p in sorted(glob.glob(os.path.join(ROOT, "web", "js", "0[56]*.js"))):
         with open(p, encoding="utf-8") as fh:
             out.append(fh.read())
-    return "\n".join(out)
+    # ⚠Node exposes navigator.language (en-US on CI runners) -> langPick picks 'en'; tests expect Korean by default.
+    return "\n".join(out) + "\nLANG = 'ko';\n"
 
 
 BASE = """

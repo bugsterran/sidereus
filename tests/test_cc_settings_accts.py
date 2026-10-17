@@ -44,7 +44,7 @@ class CcAccts(unittest.TestCase):
         self.addCleanup(CR.reset)
 
     def _put(self, p, text=None):
-        with open(p, "w", encoding="utf-8") as f:
+        with open(p, "w", encoding="utf-8", newline="") as f:   # LF fixture on Windows too
             f.write(text if text is not None else json.dumps(SETTINGS, indent=2) + "\n")
         return self._b(p)
 

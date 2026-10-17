@@ -91,6 +91,8 @@ jobs:
         run: bash tests/run.sh
 
       - name: demo smoke test
+        # Runs even when unit tests failed: it checks a different thing (the server starts and serves the page).
+        if: success() || failure()
         env:
           PYTHON: ${{ steps.py.outputs.python-path }}
         run: |

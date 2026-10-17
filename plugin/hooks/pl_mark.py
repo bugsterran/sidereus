@@ -40,9 +40,9 @@ HOME_DIR = os.path.expanduser("~")             # patched in tests
 DIRS_DIR = os.path.join(DATA_DIR, "plbrief")   # <sid>.dirs cache (project paths only); patched in tests
 DIRS_TTL, DIRS_TAIL, DIRS_MAX = 60, 256 * 1024, 8
 _PLNAME = re.compile(r"[a-z0-9-]{1,40}")
-# gitinfo's, plus absolute; plus Windows `cd /d C:\x`, `Set-Location|sl [-Path]`, quoted drive paths with spaces
+# gitinfo's, plus absolute; plus Windows `cd /d C:\x`, `Set-Location|sl [-Path]`, quoted drive paths with spaces, `~` inside a path (8.3 `RUNNER~1`)
 _CD_RE = re.compile(r"(?:^|[\s;&|(])(?:cd(?:\s+/[dD](?=\s+[\"']?[A-Za-z]:))?|(?i:set-location|sl)(?:\s+-(?i:path))?)"
-                    r"\s+(?:\"([A-Za-z]:[^\"\n]*)\"|'([A-Za-z]:[^'\n]*)'|[\"']?([A-Za-z0-9_.~/\\][A-Za-z0-9_.\-/\\:]*))")
+                    r"\s+(?:\"([A-Za-z]:[^\"\n]*)\"|'([A-Za-z]:[^'\n]*)'|[\"']?([A-Za-z0-9_.~/\\][A-Za-z0-9_.\-/\\:~]*))")
 
 
 def _git_root(d):
@@ -286,6 +286,11 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    for _s in (sys.stdin, sys.stdout):   # ⚠Windows pipes default to the ANSI codepage; hook JSON is UTF-8
+        try:
+            _s.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     try:
         main()
     except Exception:

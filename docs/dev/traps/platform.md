@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Platform, config, launcher, tests and tooling
 
+- **Orbit registry has no owner/mode check on Windows** (`plugins/orbit/scripts/accounts.py` `safe_owner`).
+  - Cause: Windows has no `getuid`, and `st_mode` reports 0o666 for every writable file (ACLs are not mode bits), so the 0o022 check refused every registry.
+  - ⇒ `os.name == "nt"` skips the mode check; protection rests on the default user-only ACL of `%USERPROFILE%`.
+  - ⚠A registry under a shared or loosened-ACL home is trusted as is. Do not re-add the mode check for nt; an ACL check would need `win32security` (not stdlib).
 - **Plugin cache keeps old versions; only `installPath` counts** (`sidereus/hook_diag.py`).
   - ★2026-10-14: `plugins/cache/omc/oh-my-claudecode/` held 3.7.2 on disk while `installed_plugins.json` said 5.6.2.
   - ⇒ Plugins come from `installed_plugins.json` `installPath` only, deduped by realpath; the cache folder is never walked.

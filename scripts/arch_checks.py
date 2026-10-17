@@ -262,7 +262,7 @@ def verify(repo, commit):
     return 0, summary(j)
 
 
-_EV_PY = "/usr/bin/python3"
+_EV_PY = "/usr/bin/python3" if os.path.exists("/usr/bin/python3") else sys.executable   # ⚠Windows has no /usr/bin
 _EV_REC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "evidence_rec.py")
 
 

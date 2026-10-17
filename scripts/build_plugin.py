@@ -108,7 +108,7 @@ def plugin_files():
     got = []
     for d, dirs, files in os.walk(OUT):
         dirs[:] = [x for x in dirs if x != "__pycache__"]
-        got += [os.path.relpath(os.path.join(d, f), ROOT) for f in files]
+        got += [os.path.relpath(os.path.join(d, f), ROOT).replace(os.sep, "/") for f in files]   # keys of expected() use "/"
     return sorted(got)
 
 

@@ -66,9 +66,9 @@ HOME_DIR = os.path.expanduser("~")             # patched in tests
 DIRS_DIR = os.path.join(DATA_DIR, "plbrief")   # <sid>.dirs cache (project paths only); patched in tests
 DIRS_TTL, DIRS_TAIL, DIRS_MAX = 60, 256 * 1024, 8
 _PLNAME = re.compile(r"[a-z0-9-]{1,40}")
-# gitinfo's, plus absolute; plus Windows `cd /d C:\x`, `Set-Location|sl [-Path]`, quoted drive paths with spaces
+# gitinfo's, plus absolute; plus Windows `cd /d C:\x`, `Set-Location|sl [-Path]`, quoted drive paths with spaces, `~` inside a path (8.3 `RUNNER~1`)
 _CD_RE = re.compile(r"(?:^|[\s;&|(])(?:cd(?:\s+/[dD](?=\s+[\"']?[A-Za-z]:))?|(?i:set-location|sl)(?:\s+-(?i:path))?)"
-                    r"\s+(?:\"([A-Za-z]:[^\"\n]*)\"|'([A-Za-z]:[^'\n]*)'|[\"']?([A-Za-z0-9_.~/\\][A-Za-z0-9_.\-/\\:]*))")
+                    r"\s+(?:\"([A-Za-z]:[^\"\n]*)\"|'([A-Za-z]:[^'\n]*)'|[\"']?([A-Za-z0-9_.~/\\][A-Za-z0-9_.\-/\\:~]*))")
 
 
 def _git_root(d):
@@ -405,7 +405,13 @@ def _touched(own, tp):
             if isinstance(inp, dict):
                 blob += [inp[k] for k in ("file_path", "path", "notebook_path", "command") if isinstance(inp.get(k), str)]
     s = re.sub(r"(?<![\w/.-])~/", HOME_DIR.rstrip(os.sep) + "/", "\n".join(blob) + "\n")   # `cd ~/x` counts like the server
-    return [d for d in own if any(d + e in s for e in ("/", " ", "\n", "'", '"'))]
+    s = _pkey(s)
+    return [d for d in own if any(_pkey(d) + e in s for e in ("/", " ", "\n", "'", '"'))]
+
+
+def _pkey(s):
+    """Unchanged on POSIX. ⚠Windows: tool inputs mix `\\` and `/` (`~/x` expands onto a `C:\\` home) and ignore case."""
+    return s if os.sep == "/" else s.replace("\\", "/").lower()
 
 
 def _ren(t):
@@ -1237,10 +1243,11 @@ def _flow(plat, ev):
 
 
 if __name__ == "__main__":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")   # ⚠Windows console codepage cannot encode Korean deny reasons
-    except Exception:
-        pass
+    for _s in (sys.stdin, sys.stdout):   # ⚠Windows codepage cannot encode Korean deny reasons; hook JSON is UTF-8
+        try:
+            _s.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     try:
         main()
     except Exception:

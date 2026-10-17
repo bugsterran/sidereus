@@ -55,7 +55,8 @@ class Plans(Tmp):
         gl =next(p for p in allx if p["id"] == "gitleaks")
         self.assertIn("--redact", gl["argv"])
         b = SC.bind(gl, "/t")
-        self.assertEqual((b["argv"][-2:], b["report"]), (["--report-path", "/t/gitleaks-report.json"], "/t/gitleaks-report.json"))
+        rp = os.path.join("/t", "gitleaks-report.json")   # native join: `\` on Windows
+        self.assertEqual((b["argv"][-2:], b["report"]), (["--report-path", rp], rp))
 
     def test_npm_audit_parse(self):
         its = SC.parse_npm_audit(json.dumps(NPM))

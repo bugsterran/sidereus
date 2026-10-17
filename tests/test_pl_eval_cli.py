@@ -85,6 +85,8 @@ class Base(unittest.TestCase):
         return os.path.join(self.repo, ".claude", "pipelines", "p.json")
 
 
+# ⚠Gates here run /usr/bin/python3 and bash: POSIX-only fixtures.
+@unittest.skipUnless(os.name == "posix", "gate fixtures call /usr/bin/python3 and bash")
 class SeedsScore(Base):
     def test_seeds_and_score(self):
         head = self.commit([{"title": "검사 실행", "agent": "x", "gate": SGATE}, {"title": "리뷰", "agent": "x"}])
@@ -156,6 +158,7 @@ class SeedsScore(Base):
         self.assertEqual(self.main("score", "--repo", self.repo, "--pipeline", self.pfile(), "--auto", "--since", str(ct))[0], 1)
 
 
+@unittest.skipUnless(os.name == "posix", "gate fixtures call /usr/bin/python3 and bash")
 class Red(Base):
     def red(self, title="검증"):
         before = git(self.repo, "status", "--porcelain")

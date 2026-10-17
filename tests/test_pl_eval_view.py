@@ -241,10 +241,10 @@ class Suggest(unittest.TestCase):
         self.assertEqual(self.sg([{"title": "단위 테스트", "agent": "x"}], ev, {}), [])   # a test catalog stage exists
 
     def test_cmd_quoted(self):
-        c = self.v.redcheck_cmd("/p q", "flow", "it's")
-        self.assertIn("--pipeline '/p q/.claude/pipelines/flow.json'", c)
+        c = self.v.redcheck_cmd("/p q", "flow", "it's", nt=False)   # POSIX quoting; joins still use os.sep
+        self.assertIn("--pipeline '%s'" % os.path.join("/p q", ".claude", "pipelines", "flow.json"), c)
         self.assertIn("--stage 'it'\"'\"'s' --repo '/p q'", c)
-        self.assertTrue(c.startswith("python3 ") and "/scripts/pl_eval.py redcheck" in c)
+        self.assertTrue(c.startswith("python3 ") and os.path.join("scripts", "pl_eval.py") + " redcheck" in c)
         w = self.v.redcheck_cmd("C:\\p q", "flow", "a b", code_dir="C:\\ag", nt=True)
         self.assertTrue(w.startswith("py ") and '--stage "a b"' in w)
 

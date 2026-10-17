@@ -6,11 +6,11 @@ config.local.json are never read or written.
 import json
 import os
 import shutil
-import stat
 import tempfile
 import unittest
 from unittest import mock
 
+from tests._fs import assert_mode
 from tests._load import load, sidereus
 from tests.test_routes_post import post, EVIL
 from tests.test_prefs import ORIGIN, get
@@ -44,7 +44,7 @@ class CcSettings(unittest.TestCase):
         self.addCleanup(sidereus("claude_roots").reset)
 
     def _put(self, obj=None, text=None, mode=0o600):
-        with open(self.sp, "w", encoding="utf-8") as f:
+        with open(self.sp, "w", encoding="utf-8", newline="") as f:   # exact bytes: no CRLF on Windows
             f.write(text if text is not None else json.dumps(obj if obj is not None else SETTINGS, ensure_ascii=False, indent=2) + "\n")
         os.chmod(self.sp, mode)
 
@@ -75,7 +75,7 @@ class CcSettings(unittest.TestCase):
         self.assertEqual([k for k in after if k != "autoCompactEnabled"], list(before))
         for k in before:
             self.assertEqual(json.dumps(after[k], ensure_ascii=False).encode(), json.dumps(before[k], ensure_ascii=False).encode(), k)
-        self.assertEqual(stat.S_IMODE(os.stat(self.sp).st_mode), 0o640)
+        assert_mode(self, self.sp, 0o640)
         self.assertFalse([f for f in os.listdir(self.tmp) if ".sidereus-tmp." in f])
         self.assertFalse(os.path.exists(self.cp))                         # enabled toggle does not touch compact_history
 

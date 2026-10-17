@@ -40,7 +40,7 @@ The saver verdict in the status bar changes only when the projection is more tha
 ## Trace what a session did
 
 1. Open the Timeline tab. Each session and subagent has a row; hover for the task description. Set «Rows» in the toolbar to «Running only» to hide finished subagent rows; session rows stay (remembered per browser). Drag the right edge of the name column in the time-axis row to widen it (double-click resets). On a session row a red line marks a compaction and a dashed blue line marks a /clear (hover for the time and the new and previous session ids).
-2. The «Changes · N files +a −d» chip in the Timeline toolbar counts files changed in the followed session (with 2+ sessions the «Session» search combobox beside it picks one, or «Auto (latest active)»); «⚠ n shared» means two sessions touched the same file. Click it to open the diff window at the same base. Its base buttons are «Uncommitted» (last commit), «Since session start», «vs main / master» and «All» (upstream); untracked files are hidden unless «Include untracked files» is ticked. When the session spans several repos, a tab per repo picks one.
+2. The «Changes · N files +a −d» chip in the Timeline toolbar counts files changed in the followed session against «Changes baseline» (default «Uncommitted»: working tree and index vs the last commit; the tooltip names the baseline) (with 2+ sessions the «Session» search combobox beside it picks one, or «Auto (latest active)»); «⚠ n shared» means two sessions touched the same file. Click it to open the diff window at the same base. Its base buttons are «Uncommitted» (last commit), «Since session start», «vs main / master» and «All» (upstream); untracked files are hidden unless «Include untracked files» is ticked. When the session spans several repos, a tab per repo picks one.
    The summary in the bottom drawer shows «Results» (commits, pipeline runs ✓/✕/↺) and «Evidence» (gate PASS/FAIL, first failing step); «More» adds time waited on you, outliers and cost (tokens, tokens per commit), and stays open once chosen.
 3. Click a commit row for its diff, or a session for its work popup.
 4. For older work, open the History tab and expand a session. With 2+ accounts its toolbar has an account picker («All accounts» / one account): other accounts' Claude rows fold into «In other accounts: N», external CLI rows stay, and day headers count the shown rows only.
@@ -227,6 +227,7 @@ Settings (gear) has one tab per group, in this order. «Replay the tour» in the
 
 «Timeline»
 - «Replay speed», «Refresh interval», «Range».
+- «Changes baseline»: what the «Changes» chip counts against — «Uncommitted» (default) · «Unpushed» · «Since session start» · «Since the default branch» · «Auto» (the default branch when the repo has a remote).
 - «Show task description on subagent rows»: label by the one-line task description, type as a chip. Off shows the type only.
 
 «Preferences»

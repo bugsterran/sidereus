@@ -1,10 +1,35 @@
-// ── Timeline toolbar «Changes» chip: files changed vs the auto baseline in the followed session's repo (view only, metadata only) ──
-// Data: /api/git/diff?view=rail&base=auto (numstat + base, no patch). Fetched by tlgTick only while the Timeline tab is shown.
+// ── Timeline toolbar «Changes» chip: files changed vs the chosen baseline in the followed session's repo (view only, metadata only) ──
+// Data: /api/git/diff?view=rail&base=<tlgBase> (numstat + base, no patch). Fetched by tlgTick only while the Timeline tab is shown.
 // Click opens the diff window at the same baseline; file tree, other baselines, untracked files and repo tabs live there (35c diffShow).
 // ★The right rail was removed: at 1100 it left the Gantt ~386px and hid most bar labels; one chip keeps the count at every width.
 const TLG_TTL_S = 30;
 let tlgSel = '';   // chosen cpKey ('' = auto, latest active); kept across refresh by 97b (sidereus.tlgsel)
 const tlgC = {};   // cwd -> {at, d, busy}
+// Baseline = git_rail mode (Settings › Timeline «Changes baseline»). ⚠auto on a feature branch = since the default branch (hundreds of files).
+const TLG_BASES = [['head', 'Uncommitted'], ['upstream', 'Unpushed'], ['start', 'Since session start'], ['remote', 'Since the default branch'], ['auto', 'Auto']];
+let tlgBase = (v => TLG_BASES.some(x => x[0] === v) ? v : 'head')(lsGet('sidereus.tlgbase', 'head'));
+function tlgBaseSet(v){
+  if(!TLG_BASES.some(x => x[0] === v)) return;
+  tlgBase = v; lsSet('sidereus.tlgbase', v);
+  for(const k of Object.keys(tlgC)) delete tlgC[k];   // replies are per baseline; an in-flight one lands on its detached entry
+  const tg = tlgTarget();
+  if(tg && mainView === 'time') tlgFetch(tg, true);
+  tlgPaint();
+}
+// Tooltip line naming what the count is compared with (rail reply fields only: baseKind · baseRef · base · nCommits · branch).
+function tlgBaseTip(d){
+  if(!d || !d.ok) return '';
+  const v = {b: d.branch || '', r: d.baseRef || '', s: String(d.base || '').slice(0, 7), n: d.nCommits || 0};
+  const k = d.baseKind;
+  const msg = k === 'start' ? 'Compared with: {b} at session start ({s}), {n} commits'
+    : k === 'branch' ? 'Compared with: the default branch {r} (merge-base {s}), {n} commits'
+    : k === 'remote' ? 'Compared with: {r} (merge-base {s}), {n} commits'
+    : v.b ? 'Compared with: uncommitted changes on {b}' : 'Compared with: uncommitted changes';
+  let t = TV({msg: msg, vars: v});
+  if(k === 'head' && d.baseMode && d.baseMode !== 'head') t += '\n' + T('No such baseline here — showing uncommitted changes');
+  else if(d.noRemote) t += '\n' + T('No remote branch — compared with the session start');
+  return t;
+}
 // Untracked files (server `new:True`) never count — scratch files read as changes. Same rule for files, +a and −d.
 function tlgShownN(d){ return Math.max(0, (d.n || 0) - (d.untracked || (d.files || []).filter(f => f.new).length)); }
 function tlgNum(a, d){ return '<span class=tlga>+' + a + '</span><span class=tlgd>−' + d + '</span>'; }
@@ -59,7 +84,8 @@ function tlgChipInner(tg){
     if(sh.length) body += '<span class=tlgsh title="' + esc(T('Also edited by another live session within 30 min:') + '\n' + sh.join('\n')) + '">'
       + esc(' · ⚠ ' + TV({msg: '{n} shared', vars: {n: sh.length}})) + '</span>';
   }
-  const tip = T('Open the changes in the diff window (git · view only)') + (tg ? '\n' + tg.cwd : '');
+  const bt = tlgBaseTip(d);
+  const tip = T('Open the changes in the diff window (git · view only)') + (bt ? '\n' + bt : '') + (tg ? '\n' + tg.cwd : '');
   return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + ' title="' + esc(tip) + '">' + body + '</button>';
 }
 function tlgChipHtml(){ return '<span class=tlgb id=tlgb>' + tlgChipInner(tlgTarget()) + '</span>'; }
@@ -82,7 +108,7 @@ function tlgFetch(tg, force){
   const c = tlgC[tg.ck] || (tlgC[tg.ck] = {at: 0, d: null, busy: false});
   if(c.busy || (!force && Date.now() - c.at < TLG_TTL_S * 1000)) return;
   c.busy = true;
-  getJSON('/api/git/diff?view=rail&cwd=' + encodeURIComponent(tg.cwd) + '&base=auto')
+  getJSON('/api/git/diff?view=rail&cwd=' + encodeURIComponent(tg.cwd) + '&base=' + encodeURIComponent(tlgBase) + (tg.sid ? '&sid=' + encodeURIComponent(tg.sid) : ''))
     .then(j => { c.d = j; }, () => { if(!c.d) c.d = {ok: false}; })
     .then(() => { c.at = Date.now(); c.busy = false; tlgPaint(); });
 }

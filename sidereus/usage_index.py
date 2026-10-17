@@ -11,7 +11,7 @@ from sidereus.warn import warn_once
 from sidereus.bus import _atomic_write
 from sidereus.config import DATA_DIR
 from sidereus.transcript import CLAUDE_PROJECTS, _line_ts
-from sidereus.agents import sub_globs, sub_sess_dir
+from sidereus.agents import slash, sub_globs, sub_sess_dir
 from sidereus.claude_roots import accounts, acct_of, projects_dirs
 from sidereus.timefmt import iso_z as _uidx_isoz, ymd
 
@@ -244,7 +244,7 @@ def _uidx_meta(raw, ent):
 def _uidx_meta_probe(fp, ent):
     """One-time tail read for an entry cached before titles existed. Returns bytes read."""
     ent["tv"] = UIDX_META_V
-    if "/subagents/" in fp:
+    if "/subagents/" in slash(fp):
         return 0
     try:
         with open(fp, "rb") as f:
@@ -277,7 +277,7 @@ def _uidx_scan(fp, ent):
             ent.pop(k, None)
         off = 0
     ent["tv"] = UIDX_META_V
-    meta = "/subagents/" not in fp
+    meta = "/subagents/" not in slash(fp)
     h = ent.setdefault("h", {})
     seed = max(0, off - UIDX_REWIND)
     win, wset, wi = [], set(), 0
