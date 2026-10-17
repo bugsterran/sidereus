@@ -225,6 +225,7 @@ Object.assign(I18N.ko, {
   'effects are estimates · counts = last {n} days': '효과는 추정 · 횟수는 최근 {n}일',
   // 48-pipeline.js
   '{n} pipelines running': '파이프라인 {n}개 실행 중',
+  '{n} pipelines': '파이프라인 {n}개',
   // 48b-pipeline-run.js
   'By stage · agents {n}': '단계별 실행 · 에이전트 {n}',
   'total {n} · pass {m}': '처음부터 {n} · {m}회째',

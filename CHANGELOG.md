@@ -7,7 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Pipelines: the project button shows only the name and the live dot; the pipeline file count moved to the tooltip and the picker rows.
+- Pipelines: the header actions read «Run», a divider, then «Undo» · «Save» · «Delete» (file operations grouped, Delete last).
 - Structure: the project picker is the same search combobox as Pipelines instead of a chip row (session count in the tooltip and picker rows).
+- Branches: the repository picker is the same search combobox as Pipelines and Structure instead of a chip row (full path in the tooltip).
+- History: the project filter is the same search combobox as Pipelines, Structure and Branches in the toolbar instead of a chip row (single select, «All» first, session count per row).
+- Timeline: «Running only» is a «Rows» select («All rows» / «Running only») like Range instead of a toggle chip.
+- Timeline: the session picker beside «Changes» is the same search combobox as Pipelines, Structure and Branches instead of a native select (project · sid · state per row, «Auto (latest active)» first).
+- Structure: opening a module's focus view centres the focused module horizontally once; later clicks, polls and repaints of that view keep the scroll.
+
+### Fixed
+
+- Structure: coming back from another tab puts the architecture map (overview or focus view) back at the scroll it was left at instead of the top-left.
 
 ## [0.3.0] - 2026-10-17
 

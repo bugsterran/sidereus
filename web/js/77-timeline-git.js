@@ -27,16 +27,26 @@ function tlgTarget(){
   if(!row) return null;
   return {cwd: row.cwd, row, how, all, key: cpKey(row), ck: row.cwd, sid: (row.plat || 'cc') === 'cc' ? (row.sid || '') : ''};
 }
-// Compact session select, only when there is a choice (2+ sessions). Labels are project · sid · state (metadata only).
+// Session combobox (08b ppComboHtml, same as Pipelines/Structure/Branches), only when there is a choice (2+ sessions).
+// Rows are project · sid · state, tooltip cwd · sid (metadata only); the first row 'auto' = tlgSel '' (follow the latest active).
+const TLG_AUTO = 'auto';   // ⚠never a cpKey ('s:'/'c:' prefix), so 97b cannot restore it as a pick
+function tlgProj(x){ return x.project || x.cwd.split('/').pop() || x.cwd; }
+function tlgNote(x){ return [x.sid ? sid8(x.sid) : '', x.state ? (stateLbl(x.state) || T(x.state)) : ''].filter(Boolean).join(' · '); }
 function tlgSelHtml(tg){
   if(!tg || tg.all.length < 2) return '';
-  const lab = x => (x.project || x.cwd.split('/').pop() || x.cwd) + (x.sid ? ' · ' + sid8(x.sid) : '')
-    + (x.state ? ' · ' + (stateLbl(x.state) || T(x.state)) : '');
-  return '<select class=tlgss id=tlgss aria-label="' + esc(T('Session')) + '" title="' + esc(tg.cwd + (tg.row.sid ? ' · ' + tg.row.sid : '')) + '">'
-    + '<option value=""' + (tg.how === 'auto' ? ' selected' : '') + '>' + esc(T('Auto (latest active)', 'chip')
-      + (tg.how === 'auto' ? ' — ' + lab(tg.row) : '')) + '</option>'
-    + tg.all.map(x => '<option value="' + esc(cpKey(x)) + '"' + (tg.how === 'pick' && cpKey(x) === tg.key ? ' selected' : '') + '>'
-      + esc(lab(x)) + '</option>').join('') + '</select>';
+  const AL = T('Auto (latest active)', 'chip');
+  const it = x => ({ p: cpKey(x), name: tlgProj(x), note: tlgNote(x), tip: x.cwd + (x.sid ? ' · ' + x.sid : '') });
+  const items = [Object.assign(it(tg.all[0]), { p: TLG_AUTO, auto: true })].concat(tg.all.map(it));
+  const cur = tg.how === 'auto' ? TLG_AUTO : tg.key;
+  const row = (e, i) => '<div class="cmdki' + (PPS && i === PPS.i ? ' on' : '') + (e.p === cur ? ' ppcur' : '') + '" role=option data-ppi="' + i + '" title="' + esc(e.tip) + '">'
+    + '<span class=cmdkp>' + esc(e.auto ? AL : e.name) + '</span><span class=cmdkc>' + esc(e.auto ? [e.name, e.note].filter(Boolean).join(' · ') : e.note) + '</span></div>';
+  const flat = q => {
+    const s = String(q || '').trim().toLowerCase();
+    return items.filter(e => !s || [e.name, e.tip, e.auto ? AL : ''].some(v => String(v).toLowerCase().includes(s)));
+  };
+  return ppComboHtml({ k: 'tlgs', label: T('Session'), items: items, cur: cur, ph: T('Find a session'), empty: T('No matching sessions'), flat: flat, rowHtml: row,
+    tip: e => (e.auto ? AL + '\n' : '') + e.tip, badge: e => e.auto ? '<span class=tlgau>' + esc(T('auto', 'mark')) + '</span>' : '',
+    pick: p => { tlgSel = p === TLG_AUTO ? '' : p; tlgKeepSave(); tlgTick(); } });
 }
 // «Changes · N files +a −d» (+ «· ⚠ n shared»); no target or no reply yet = «Changes» alone.
 function tlgChipInner(tg){
@@ -56,13 +66,13 @@ function tlgChipHtml(){ return '<span class=tlgb id=tlgb>' + tlgChipInner(tlgTar
 // Id of the focused chip control, or ''. paintTl and tlgPaint refocus it after a rebuild.
 function tlgFocusId(){
   const ae = document.activeElement;
-  return ae && (ae.id === 'tlgss' || ae.id === 'tlgcp') ? ae.id : '';
+  return ae && ae.id === 'tlgcp' ? ae.id : '';
 }
 function tlgPaint(){
   const el = document.getElementById('tlgb');
   if(!el) return;
+  if(popIsOpen('ppop')) return;   // ⚠a repaint would replace the session picker's opener under its popover
   const fo = tlgFocusId();
-  if(fo === 'tlgss') return;   // ⚠a repaint would close the open dropdown
   if(!setHtml(el, tlgChipInner(tlgTarget()))) return;
   if(el.parentElement) el.parentElement._sh = null;   // ⚠the toolbar slot's setHtml cache no longer matches its DOM; the next tbSet must rewrite
   if(fo){ const f = document.getElementById(fo); if(f) f.focus({preventScroll: true}); }
@@ -93,11 +103,4 @@ function tlgOpen(){
 function tlgWire(){
   const b = document.getElementById('tlgcp');
   if(b) b.onclick = tlgOpen;
-  const s = document.getElementById('tlgss');
-  if(s) s.onchange = () => {
-    tlgSel = s.value;
-    tlgKeepSave();
-    s.blur();   // tlgPaint skips while the select has focus
-    tlgTick();
-  };
 }

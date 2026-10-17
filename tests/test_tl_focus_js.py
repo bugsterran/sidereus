@@ -75,7 +75,7 @@ document.activeElement = null; R.nul = tlgFocusId();
         self.assertTrue(self.R["knPrevented"])
 
     def test_rail_focus_id(self):
-        self.assertEqual(self.R["fo"], "tlgss")
+        self.assertEqual(self.R["fo"], "")   # the session select became a combobox (08b); only the chip is tracked
         self.assertEqual(self.R["fo2"], "tlgcp")
         self.assertEqual(self.R["none"], "")
         self.assertEqual(self.R["nul"], "")

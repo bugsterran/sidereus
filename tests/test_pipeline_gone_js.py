@@ -32,6 +32,12 @@ class PipelineGone(unittest.TestCase):
         self.assertEqual(r["items"], ["/u/keep"])
         self.assertEqual(r["proj"], "/u/keep")
 
+    def test_count_in_row_note_not_on_button(self):
+        r = run("PLS.projs = {ok: true, projects: [{path: '/u/a', n: 3}], added: []}; PLS.proj = '/u/a'; plChips();"
+                " R.badge = CFG.badge({p: '/u/a', n: 3}); R.note = CFG.note({p: '/u/a', n: 3});")
+        self.assertNotIn("strpc", r["badge"])
+        self.assertIn(">3<", r["note"])
+
     def test_nothing_left_clears_selection(self):
         r = run("PLS.projs = {ok: true, projects: [{path: '/u/wt', n: 2}], added: []};"
                 " PLS.proj = '/u/wt'; PROJ_GONE = new Set(['/u/wt']); plChips(); R.items = CFG.items.length; R.proj = PLS.proj;")

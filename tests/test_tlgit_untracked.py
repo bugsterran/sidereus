@@ -24,10 +24,11 @@ def run(body, sess=SESS):
            "function T(s){ return s; } function TV(o){ return T(o.msg).replace(/\\{(\\w+)\\}/g, (m, k) => String(o.vars[k])); }\n"
            "function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }\n"
            "const cpKey = x => 's:' + x.sid, sid8 = s => s.slice(0, 8), stateLbl = s => s; function tlgPaint(){}\n"
+           "const PPC = {}; let PPS = null;\n"
            "function getJSON(u){ urls.push(u); return new Promise(() => {}); }\n"
            "function loadDiff(...a){ opened.push(a); }\n" % json.dumps(sess))
-    fns = "\n".join(js_fn(n) for n in ("tlgShownN", "tlgNum", "tlgShared", "tlgAge", "tlgName", "tlgSessions", "tlgTarget",
-                                        "tlgSelHtml", "tlgChipInner", "tlgFetch", "tlgTick", "tlgOpen"))
+    fns = re.search(r"^const TLG_AUTO = .*$", js_all(), re.M).group(0) + "\n" + "\n".join(js_fn(n) for n in ("tlgShownN", "tlgNum", "tlgShared", "tlgAge", "tlgName", "tlgSessions", "tlgTarget",
+                                        "ppComboHtml", "tlgProj", "tlgNote", "tlgSelHtml", "tlgChipInner", "tlgFetch", "tlgTick", "tlgOpen"))
     r = subprocess.run(node_e(ttl + "\n" + pre + fns + "\n" + body), capture_output=True, text=True, timeout=20)
     if r.returncode:
         raise AssertionError(r.stderr)
@@ -40,7 +41,7 @@ def chip(reply, sess=SESS):
 
 
 def text(h):
-    return re.sub(r"<[^>]*>", "", h.split("<button", 1)[1].split(">", 1)[1])
+    return re.sub(r"<[^>]*>", "", h.split("id=tlgcp", 1)[1].split(">", 1)[1])
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
@@ -67,11 +68,11 @@ class Chip(unittest.TestCase):
     def test_no_session_is_disabled_without_select(self):
         h = chip(None, [])
         self.assertIn(" disabled", h)
-        self.assertNotIn("<select", h)
+        self.assertNotIn("data-ppk", h)
 
-    def test_select_only_with_two_sessions(self):
-        self.assertIn("<select", chip(None))
-        self.assertNotIn("<select", chip(None, SESS[:1]))
+    def test_picker_only_with_two_sessions(self):
+        self.assertIn('data-ppk="tlgs"', chip(None))
+        self.assertNotIn("data-ppk", chip(None, SESS[:1]))
 
     def test_tick_gating_and_ttl(self):
         # getJSON never settles here, so a finished fetch is simulated: busy off, at = now.

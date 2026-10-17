@@ -93,6 +93,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Neither may scroll; a stale `ARCH.op`/hover index after a refetch falls back to lit flow / scope in `archLitQ`.
 - **Arch minimap: clone once per svg key, rAF on scroll, sit outside `.archmap`** (84j7, 79c `.archmm`). ⚠Re-cloning on scroll/hover stalls large maps; inside `.archmap` a press starts the drag-pan; `.archmap` is pinned to grid cell 1/1 or the overlay pushes it to the next cell.
 - **Arch map scrolls once per map identity, never per svg key** (84j7 `archMmFirst`, `ARCH_MM.seen`). ⚠The svg key changes with selection / full / lit — keying the first scroll on it moves the view on clicks; only an overview at scroll 0,0 moves, and a hidden (zero-size) paint is not marked seen.
+- **Focus view centres its hub once per focus identity** (84j7 `archMmFirst`/`archMmHub`, 84j `.archdg[data-hub]`).
+  - Cause: the focus view is a new map that kept the overview scroll and never anchored, so the clicked module jumped (★1100: (209,387) → (293,543)).
+  - ⇒ First sight of map + focused module (`ARCH_MM.seen['f\t'…]`): left = hub `[data-p]` centre, top = archMmAnchor rule; no hub element = archMmAnchor on the map rect. Whatever the inherited scroll.
+  - ⚠Key it on the focus identity, not the svg key (fv/lit/fit change it); it also marks the overview seen so going back never centres.
 - **First sight centres the map horizontally; vertically it centres only a map that fits** (84j7 `archMmAnchor`).
   - Cause: centring a map taller than the view put its middle on screen and clipped the Entry band (top row) out of sight; anchoring it top-left instead lost the centred first view.
   - ⇒ left = map centre (bands share one centre axis); top = centred when the map fits below the sticky `.archtop`, else map.y − its height.
@@ -285,3 +289,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: sessions keep their `cwd`/`repos` after the folder is removed, so every old worktree stayed a chip.
   - ⇒ `/api/state` `projGone` (`sidereus/state.py` `proj_gone`, isdir memo per path `PROJ_DIR_TTL_S` 30 s) → `PROJ_GONE`; `strProjList`/`strDefProj` skip those paths, a selected gone project re-picks the default (Structure) or the first listed one (Pipelines).
   - ⚠Filter chips only — session rows, timeline and history keep the gone folder's sessions.
+- **Architecture map back from another tab sat at the top-left** (84j `archPaint`, 84j7 `archMmKeep`·`archMmPos`).
+  - Cause: every main tab paints into the shared `#feed`; returning rebuilds `.archmap` at 0,0, `keep('.archmap')` finds no old node, and `archMmFirst` never re-centres a seen view.
+  - ⇒ The capture scroll listener stores `[scrollTop, scrollLeft]` per view key (`archMmVk`: map identity + focused module); `archPaint` restores it when no `.archmap` is in the DOM, before `archDiagram` copies `box._arsm`.
+  - ⚠Record on every scroll event, not inside the rAF throttle — the last position before leaving must win.
+  - ⚠A view-key change (focus → overview) must also take the saved entry (`archMmPick`): the carried `.archmap` scroll is the other view's.

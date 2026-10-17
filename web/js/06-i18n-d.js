@@ -8,6 +8,7 @@ Object.assign(I18N.ko, {
   'Changes|chip': '변경', 'Auto (latest active)|chip': '자동(최근 활동)', '{n} shared': '공유 {n}개',
   'Also edited by another live session within 30 min:': '다른 실행 중 세션도 30분 안에 고친 파일:',
   'Open the changes in the diff window (git · view only)': '변경 내용을 diff 창에서 열기 (git · 보기만)',
+  'Find a session': '세션 찾기', 'auto|mark': '자동',
 });
 // Diff window baselines + untracked toggle (35c-worklog-pop.js diffShow).
 Object.assign(I18N.ko, {

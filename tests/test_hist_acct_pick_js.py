@@ -12,7 +12,7 @@ from tests._node import node_e
 
 FNS = ("acctList", "mainAcct", "mainAcctOk", "lsGet", "lsSet", "lsDel", "acctLabel", "acctPick", "acctInPick",
        "acctPickHtml", "acctPickFocusId", "acctPickWire", "acctOthHtml", "acctOthClick",
-       "histMatch", "histExtKeys", "histDayTot", "paintHist")
+       "histMatch", "histExtKeys", "histDayTot", "histProjs", "histProjHtml", "paintHist")
 
 STUBS = r"""
 let ACCTS = [], STORE = {}, TB = '', HIST = null, histDays = 7, histBusy = 0, histWant = 0, histProj = [], histQ = '';
@@ -21,6 +21,7 @@ const BOX = {innerHTML: '', querySelectorAll: () => [], querySelector: () => nul
 var document = {getElementById: id => id === 'feed' ? BOX : null, activeElement: null};
 const UIS = {getItem: k => k in STORE ? STORE[k] : null, setItem: (k, v) => { STORE[k] = String(v); }, removeItem: k => { delete STORE[k]; }};
 function softErr(){}
+function popIsOpen(){ return false; }
 function tbSlot(k, h){ TB = h; return null; }
 function platName(k){ return k; }
 function histSpan(){ return ''; }

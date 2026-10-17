@@ -257,9 +257,12 @@ function tlCtlHtml(){
               + rangeLbl(h) + '</option>').join('')
               + '<option value="custom">'+T('Custom…')+'</option>'; })()
       + '</select>'
-      + '<em class="tlrf tlro' + (tlRunOnly ? ' on' : '') + '" id=tlro role=button tabindex=0 aria-pressed="' + tlRunOnly + '" title="'
-        + esc(T('When on, finished subagent rows are hidden — session rows stay')) + '">'
-        + esc(T('Running only')) + '</em>'
+      + '<i class=tlgl>'+esc(T('Rows'))+'</i>'
+      + '<select class=tlsel id=tlro title="'
+        + esc(T('«Running only» hides finished subagent rows — session rows stay')) + '">'
+        + '<option value="0"' + (tlRunOnly ? '' : ' selected') + '>' + esc(T('All rows')) + '</option>'
+        + '<option value="1"' + (tlRunOnly ? ' selected' : '') + '>' + esc(T('Running only')) + '</option>'
+      + '</select>'
       + (typeof acctPickHtml === 'function' ? acctPickHtml('time') : '')   // '' below 2 accounts
       + '</span>'
       + '<em class=tlq id=tlq role=button tabindex=0 aria-haspopup=dialog aria-expanded=false title="'+esc(tlHelp)+'">?</em>';
@@ -308,11 +311,10 @@ function tlWireCtl(apFo){
     lsSet('mbTlRp', tlRpSpeed); };
   const ro = document.getElementById('tlro');
   if(ro){
-    // ⚠paintTl rewrites the toolbar (the «on» class changes), so keyboard focus is put back on the new chip.
-    ro.onclick = () => { const f = document.activeElement === ro;
-      tlRunOnly = !tlRunOnly; lsSet('sidereus.tlrun', tlRunOnly ? '1' : '0'); paintTl();
+    // ⚠paintTl rewrites the toolbar, so keyboard focus is put back on the new select.
+    ro.onchange = () => { const f = document.activeElement === ro;
+      tlRunOnly = ro.value === '1'; lsSet('sidereus.tlrun', tlRunOnly ? '1' : '0'); paintTl();
       const n = f && document.getElementById('tlro'); if(n) n.focus({preventScroll: true}); };
-    ro.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); ro.click(); } };
   }
 }
 // Roving focus: a row is one tab stop (98-a11y gives bars tabIndex -1); arrows walk its bars and the rows above/below.
