@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import unittest
 
+from tests._fs import rmtree_force
 from tests._load import sidereus
 
 gr = sidereus("git_rail")
@@ -12,7 +13,7 @@ gr = sidereus("git_rail")
 class RailMemo(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.d)
+        self.addCleanup(rmtree_force, self.d)
         self.reads = []
         real = gr._read_small
         gr._read_small = lambda p: (self.reads.append(p), real(p))[1]

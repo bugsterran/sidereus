@@ -173,7 +173,7 @@ class AcctRecord(unittest.TestCase):
 
     def test_session_start_writes(self):
         inv.record_acct("SessionStart", SID)
-        self.assertEqual(self.read(), "/x/cfg-a\n")
+        self.assertEqual(self.read(), os.path.abspath("/x/cfg-a") + "\n")
         self.assertEqual(os.listdir(inv.ACCT_DIR), [SID])          # no tmp left
 
     def test_prompt_submit_does_not_write(self):
@@ -189,12 +189,12 @@ class AcctRecord(unittest.TestCase):
         inv.record_acct("SessionStart", SID)
         os.environ["CLAUDE_CONFIG_DIR"] = "/x/cfg-b"
         inv.record_acct("SessionStart", SID)
-        self.assertEqual(self.read(), "/x/cfg-b\n")
+        self.assertEqual(self.read(), os.path.abspath("/x/cfg-b") + "\n")
 
     def test_default_is_home_claude(self):
         os.environ.pop("CLAUDE_CONFIG_DIR", None)
         inv.record_acct("SessionStart", SID)
-        self.assertEqual(self.read(), os.path.expanduser("~/.claude") + "\n")
+        self.assertEqual(self.read(), os.path.abspath(os.path.expanduser("~/.claude")) + "\n")
 
     def test_prune_old_records(self):
         os.makedirs(inv.ACCT_DIR)
@@ -235,7 +235,7 @@ class AcctRecord(unittest.TestCase):
             for k, v in saved.items():
                 setattr(inv, k, v)
         self.assertEqual(out.getvalue(), "")
-        self.assertEqual(self.read(), "/x/cfg-a\n")
+        self.assertEqual(self.read(), os.path.abspath("/x/cfg-a") + "\n")
 
 
 

@@ -205,7 +205,7 @@ def _proj_name(cwd):
     If the basename is a common word, prefix one parent level (admin → proj-C/admin)."""
     if not cwd:
         return ""
-    cwd = _proj_root(cwd)
+    cwd = _proj_root(cwd).replace(os.sep, "/")   # Windows `C:\a\b` splits like POSIX; no-op elsewhere
     parts = [x for x in cwd.rstrip("/").split("/") if x]
     if not parts:
         return ""

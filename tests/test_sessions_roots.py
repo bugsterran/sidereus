@@ -152,6 +152,7 @@ class RowTest(RootsBase):
         self.assertEqual(S._row_acct(SID, fp), {"acct": "work", "acctDir": self.work})
         self.assertEqual(S._row_acct("../etc", fp), {"acct": "work", "acctDir": self.work})
 
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "FIFOs are POSIX only")
     def test_acct_record_fifo_ignored(self):
         S = _load.sidereus("sessions")
         self._rec(SID, None)

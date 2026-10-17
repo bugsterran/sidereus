@@ -5,25 +5,28 @@ import subprocess
 import tempfile
 import unittest
 
+from tests._fs import rmtree_force
 from tests._load import sidereus
 
 gv = sidereus("git_view")
+# ⚠'*' is invalid in Windows file names; '[ab]' is still a glob that must be taken literally.
+GLOB = "x*" if os.name == "posix" else "x[ab]"
 
 
 class FilePathspec(unittest.TestCase):
     def setUp(self):
         self.d = os.path.realpath(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, self.d)
+        self.addCleanup(rmtree_force, self.d)
         self._sess = gv.sessions_rows
         gv.sessions_rows = lambda **k: [{"cwd": self.d, "repos": []}]
         self.addCleanup(setattr, gv, "sessions_rows", self._sess)
         self.git("init", "-q", "-b", "main")
-        for p in ("a.txt", "b.txt", "x*"):
+        for p in ("a.txt", "b.txt", GLOB):
             with open(os.path.join(self.d, p), "w", encoding="utf-8") as fh:
                 fh.write(p + "\n")
         self.git("add", "-A")
         self.git("commit", "-qm", "init")
-        for p in ("a.txt", "b.txt", "x*"):
+        for p in ("a.txt", "b.txt", GLOB):
             with open(os.path.join(self.d, p), "a", encoding="utf-8") as fh:
                 fh.write("more\n")
 
@@ -41,9 +44,9 @@ class FilePathspec(unittest.TestCase):
     def test_glob_chars_are_literal(self):
         r = gv.git_file_diff(self.d, "*.txt", "work")
         self.assertFalse(r["ok"])                     # no file named `*.txt`, and it must not match a.txt/b.txt
-        r = gv.git_file_diff(self.d, "x*", "work")
+        r = gv.git_file_diff(self.d, GLOB, "work")
         self.assertTrue(r["ok"])
-        self.assertIn("b/x*", r["diff"])
+        self.assertIn("b/" + GLOB, r["diff"])
         self.assertNotIn("a.txt", r["diff"])
 
     def test_plain_file_unchanged(self):

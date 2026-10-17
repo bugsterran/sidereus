@@ -43,7 +43,12 @@ def slug(room):
 
 def fmt_t(t_ns):
     """Local ISO time (seconds) of an epoch-ns stamp."""
-    return datetime.datetime.fromtimestamp(int(t_ns) / 1e9).astimezone().isoformat(timespec="seconds")
+    # ⚠aware UTC first: naive .astimezone() probes ts - 1 day, which Windows rejects near the epoch (Errno 22)
+    utc = datetime.datetime.fromtimestamp(int(t_ns) / 1e9, datetime.timezone.utc)
+    try:
+        return utc.astimezone().isoformat(timespec="seconds")
+    except (OSError, OverflowError, ValueError):
+        return utc.isoformat(timespec="seconds")
 
 
 def parse_since(s):

@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import unittest
 
+from tests._fs import rmtree_force
 from tests._load import sidereus
 
 gv = sidereus("git_view")
@@ -16,7 +17,7 @@ T0, T2 = 1790000000, 1790007200          # two commit times; the session starts 
 class RailBase(unittest.TestCase):
     def setUp(self):
         self.d = os.path.realpath(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, self.d)
+        self.addCleanup(rmtree_force, self.d)
         self._sess = gv.sessions_rows
         gv.sessions_rows = lambda **k: [{"cwd": self.d, "repos": []}]
         self.addCleanup(setattr, gv, "sessions_rows", self._sess)
@@ -70,7 +71,7 @@ class RailBase(unittest.TestCase):
 
     def test_auto_with_remote_is_remote(self):
         bare = os.path.realpath(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, bare)
+        self.addCleanup(rmtree_force, bare)
         subprocess.run(["git", "init", "-q", "--bare", bare], check=True, capture_output=True)
         self.git("init", "-q", "-b", "main")
         pushed = self.commit("a.txt", "1\n")
@@ -109,7 +110,7 @@ class RailBase(unittest.TestCase):
 
     def test_remote_mode_upstream_bare_repo(self):
         bare = os.path.realpath(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, bare)
+        self.addCleanup(rmtree_force, bare)
         subprocess.run(["git", "init", "-q", "--bare", bare], check=True, capture_output=True)
         self.git("init", "-q", "-b", "main")
         pushed = self.commit("a.txt", "1\n")

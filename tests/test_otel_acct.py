@@ -18,7 +18,8 @@ H = sidereus("otel_hooks")
 CR = sidereus("claude_roots")
 
 ACCTS = [{"dir": "/cfg/main", "label": "me", "primary": True}, {"dir": "/cfg/work", "label": "work", "primary": False}]
-RECS = {"sid-main-0001": "/cfg/main", "sid-work-0001": "/cfg/work"}
+# _acct_rec returns a realpath (`D:\cfg\main` on Windows), so the fake does too
+RECS = {"sid-main-0001": os.path.realpath("/cfg/main"), "sid-work-0001": os.path.realpath("/cfg/work")}
 T0 = time.mktime(time.strptime("2026-10-14 12", "%Y-%m-%d %H"))
 
 
@@ -95,7 +96,7 @@ class IngestTests(Base):
 
     def test_unknown_is_memoised_then_retried_after_ttl(self):
         self.assertIsNone(A._oa_label("sid-late-0001"))
-        RECS["sid-late-0001"] = "/cfg/work"
+        RECS["sid-late-0001"] = os.path.realpath("/cfg/work")
         self.addCleanup(RECS.pop, "sid-late-0001", None)
         self.assertIsNone(A._oa_label("sid-late-0001"))           # within the TTL: no second record read
         self.assertEqual(CR._acct_rec.call_count, 1)

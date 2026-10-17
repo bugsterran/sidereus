@@ -1,6 +1,9 @@
 """Work-popup secret redaction + structure allowed-roots denial of ~ and / (security audit 2026-09-25)."""
 import os
-import pwd
+try:
+    import pwd   # POSIX only
+except ImportError:
+    pwd = None
 import unittest
 from unittest import mock
 
@@ -114,6 +117,7 @@ class WorkPayload(unittest.TestCase):
 
 
 class StructRoots(unittest.TestCase):
+    @unittest.skipUnless(pwd is not None, "uses the POSIX passwd database")
     def test_home_and_root_denied(self):
         home = os.path.realpath(pwd.getpwuid(os.getuid()).pw_dir)
         repo = os.path.join(home, "some", "repo")

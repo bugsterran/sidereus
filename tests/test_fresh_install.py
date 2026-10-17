@@ -7,6 +7,7 @@ import tempfile
 import time
 import unittest
 
+from tests._fs import assert_mode
 from tests._load import sidereus
 
 bus = sidereus("bus")
@@ -24,7 +25,7 @@ class FreshInstall(unittest.TestCase):
         p = os.path.join(self.tmp, "bus.jsonl")
         bus.ensure_bus(p)
         self.assertEqual(os.path.getsize(p), 0)
-        self.assertEqual(stat.S_IMODE(os.stat(p).st_mode), 0o600)
+        assert_mode(self, p, 0o600)
 
     def test_ensure_bus_keeps_existing(self):
         p = os.path.join(self.tmp, "bus.jsonl")
@@ -34,7 +35,7 @@ class FreshInstall(unittest.TestCase):
         bus.ensure_bus(p)
         with open(p, encoding="utf-8") as f:
             self.assertEqual(f.read(), '{"t": 1}\n')
-        self.assertEqual(stat.S_IMODE(os.stat(p).st_mode), 0o644)
+        assert_mode(self, p, 0o644)
 
     def test_ensure_bus_missing_dir_is_quiet(self):
         p = os.path.join(self.tmp, "nope", "bus.jsonl")

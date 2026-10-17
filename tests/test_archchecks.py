@@ -44,6 +44,7 @@ class Tmp(unittest.TestCase):
 
 
 class ExecTest(unittest.TestCase):
+    @unittest.skipUnless(os.name == "posix", "the killpg branch; Windows uses taskkill")
     def test_timeout_drain_is_bounded(self):
         import subprocess
         c, seen = cli(), []

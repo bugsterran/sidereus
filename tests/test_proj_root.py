@@ -52,6 +52,14 @@ class ProjRoot(unittest.TestCase):
         with mock.patch.object(ident, "_real_home", lambda: self.tmp):
             self.assertEqual(self.proj(d), ("proj", d))
 
+    def test_windows_name_is_basename(self):
+        import ntpath
+        import types
+        with mock.patch.object(ident, "os", types.SimpleNamespace(path=ntpath, sep="\\")), \
+                mock.patch.object(ident, "_proj_root", lambda c: c):
+            self.assertEqual(ident._proj_name("C:\\w\\repo-a"), "repo-a")
+            self.assertEqual(ident._proj_name("C:\\w\\proj-C\\admin\\.claude\\worktrees\\agent-x"), "proj-C/admin")
+
     def test_outside_git_unchanged(self):
         d = self.mk("plain", "backup")
         self.assertEqual(self.proj(d), ("backup", d))

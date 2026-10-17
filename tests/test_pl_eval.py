@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from unittest import mock
 
+from tests._fs import assert_mode
 from tests._load import sidereus
 
 PE = sidereus("pl_eval")
@@ -66,7 +67,7 @@ class Seeds(Tmp):
         d = {"v": 1, "seeds": [seed("a"), seed("h", holdout=True)]}
         PE.save_seeds(self.repo, d)
         fp = os.path.join(PE.EVAL_DIR, AV.repo_key(self.repo), "seeds.json")
-        self.assertEqual(os.stat(fp).st_mode & 0o777, 0o600)
+        assert_mode(self, fp, 0o600)
         self.assertEqual(PE.load_seeds(self.repo), d)
         self.assertEqual(PE.counts(d), {"n": 2, "public": 1, "holdout": 1})
         with self.assertRaises(ValueError):

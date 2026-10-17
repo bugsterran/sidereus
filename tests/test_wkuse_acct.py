@@ -4,6 +4,7 @@ acct="" stays the exact all-accounts path; a pick keeps only files whose account
 matches, lives in its own slot outside `_wkuse_by`/`_wkuse_loop`, and adds no live share. Everything is stubbed.
 """
 import json
+import os
 import threading
 import time as _rt
 import types
@@ -26,6 +27,7 @@ FILES = {
     "/p/-b/s2/subagents/agent-x.jsonl": {"sl": "-b", "h": {H0: {"claude-sonnet-5": [100, 0, 0, 0]}}},
     "/p/-b/s3.jsonl": {"sl": "-b", "h": {H0: {"claude-sonnet-5": [1000, 0, 0, 0]}}},
 }
+FILES = {k.replace("/", os.sep): v for k, v in FILES.items()}   # glob gives os.sep paths; sub_sess_dir splits on it
 WORK_SIDS = {"s2"}
 
 

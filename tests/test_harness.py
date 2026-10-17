@@ -333,5 +333,18 @@ class HarnessTest(unittest.TestCase):
         self.assertEqual(H.harness(self.proj, "x")[0], 400)
 
 
+class WindowsArgv(unittest.TestCase):
+    """POSIX shlex eats `\\`; on Windows hook commands keep their drive paths (simulated via os.name)."""
+
+    def test_backslash_paths_kept(self):
+        from unittest import mock
+        hf = sidereus("hook_fields")
+        cmd = 'python "C:\\a b\\hooks\\inject.py" --x C:\\h\\y.py'
+        with mock.patch.object(H.os, "name", "nt"):
+            for f in (H._argv, hf._argv):
+                self.assertEqual(f(cmd), ["python", "C:\\a b\\hooks\\inject.py", "--x", "C:\\h\\y.py"])
+        self.assertEqual(H._argv("python '/a b/x.py'"), ["python", "/a b/x.py"])
+
+
 if __name__ == "__main__":
     unittest.main()

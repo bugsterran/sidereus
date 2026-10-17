@@ -141,6 +141,13 @@ class RoomLogTest(unittest.TestCase):
         self.assertEqual(len(err.splitlines()), 1)
         self.assertIn("unparseable", err)
 
+    def test_fmt_t_same_as_naive_and_epoch_safe(self):
+        """fmt_t goes through aware UTC (Windows rejects naive .astimezone() near the epoch); output is unchanged."""
+        import datetime
+        for t in (1790000000 * S, 1700000000 * S + 5):
+            self.assertEqual(RL.fmt_t(t), datetime.datetime.fromtimestamp(t / 1e9).astimezone().isoformat(timespec="seconds"))
+        self.assertEqual(RL.parse_since(RL.fmt_t(0)), 0)
+
     def test_r4_nothing_new(self):
         """R4: nothing after the marker -> n=0 and no message lines; a known empty room is not an error."""
         self.write([rec("00000001", 100 * S)])

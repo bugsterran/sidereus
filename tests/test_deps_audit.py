@@ -31,12 +31,12 @@ class ImportGuard(unittest.TestCase):
         self.assertEqual(da.foreign_py([f], self.root), [])
 
     def test_third_party_flagged(self):
-        f = self._w("sidereus/b.py", "import requests\nfrom yaml import safe_load\nimport os.path\n")
-        self.assertEqual(da.foreign_py([f], self.root), [("sidereus/b.py", "requests"), ("sidereus/b.py", "yaml")])
+        f = self._w(os.path.join("sidereus", "b.py"), "import requests\nfrom yaml import safe_load\nimport os.path\n")
+        self.assertEqual(da.foreign_py([f], self.root), [(os.path.join("sidereus", "b.py"), "requests"), (os.path.join("sidereus", "b.py"), "yaml")])
 
     def test_syntax_error_reported(self):
-        f = self._w("sidereus/c.py", "def (:\n")
-        self.assertEqual(da.foreign_py([f], self.root), [("sidereus/c.py", "<syntax>")])
+        f = self._w(os.path.join("sidereus", "c.py"), "def (:\n")
+        self.assertEqual(da.foreign_py([f], self.root), [(os.path.join("sidereus", "c.py"), "<syntax>")])
 
     def test_mjs_guard(self):
         ok = self._w("ok.mjs", "import fs from 'node:fs'\nimport { a } from './x.mjs'\nconst p = await import('playwright')\n")

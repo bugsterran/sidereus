@@ -1,7 +1,10 @@
 """hooks/mailbox_stop.py (Stop hook): synthetic data dir only — never the live bus, identity or state."""
 import json
 import os
-import resource
+try:
+    import resource   # POSIX only
+except ImportError:
+    resource = None
 import shutil
 import subprocess
 import sys
@@ -13,9 +16,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOOK = os.path.join(ROOT, "hooks", "mailbox_stop.py")
 CWD = "/p/work"
 ME = "alice"
+# The launchd interpreter where it exists (3.9 floor); CI on Windows has only sys.executable.
+PY = "/usr/bin/python3" if os.path.exists("/usr/bin/python3") else sys.executable
 
 
 def _child_cpu():
+    if resource is None:
+        return 0.0
     r = resource.getrusage(resource.RUSAGE_CHILDREN)
     return r.ru_utime + r.ru_stime
 
@@ -56,7 +63,7 @@ class MailboxStop(unittest.TestCase):
             inp["stop_hook_active"] = active
         inp = json.dumps(inp)
         c0 = _child_cpu()
-        r = subprocess.run(["/usr/bin/python3", HOOK], input=inp, capture_output=True, text=True,
+        r = subprocess.run([PY, HOOK], input=inp, capture_output=True, text=True,
                            env=env, timeout=10, encoding="utf-8")
         self.cpu = _child_cpu() - c0
         self.assertEqual(r.returncode, 0)
@@ -132,9 +139,10 @@ class MailboxStop(unittest.TestCase):
             f.write("{broken")
         self.assertIsNone(self.run_hook())
         env = dict(os.environ, MAILBOX_DIR=self.d)
-        r = subprocess.run(["/usr/bin/python3", HOOK], input="not json", capture_output=True, text=True, env=env, encoding="utf-8")
+        r = subprocess.run([PY, HOOK], input="not json", capture_output=True, text=True, env=env, encoding="utf-8")
         self.assertEqual((r.returncode, r.stdout), (0, ""))
 
+    @unittest.skipUnless(resource is not None, "child CPU time needs the POSIX resource module")
     def test_time_budget_on_large_bus(self):
         # ⚠Child CPU time against a small-bus baseline from this run: wall time failed under parallel load (0.65s).
         base = []

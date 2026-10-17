@@ -33,7 +33,7 @@ BODY_KEYS = ("reply", "task", "prompt", "says", "arg")
 
 
 def _rel(p):
-    return os.path.relpath(p, ROOT)
+    return os.path.relpath(p, ROOT).replace(os.sep, "/")   # baseline keys use '/' on every OS
 
 
 def _read(p):

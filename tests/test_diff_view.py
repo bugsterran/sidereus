@@ -7,6 +7,7 @@ import subprocess
 import unittest
 
 from tests._i18n_js import i18n_prelude
+from tests._fs import rmtree_force
 from tests._load import js_all, js_fn
 from tests._node import node_e
 
@@ -153,7 +154,7 @@ class DiffUntracked(unittest.TestCase):
         from tests._load import sidereus
         self.gv = gv = sidereus("git_view")
         self.d = d = os.path.realpath(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, d)
+        self.addCleanup(rmtree_force, d)
         self.addCleanup(setattr, gv, "sessions_rows", gv.sessions_rows)
         gv.sessions_rows = lambda **k: [{"cwd": d, "repos": []}]
         self.git("init", "-q", "-b", "main")

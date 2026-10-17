@@ -3,6 +3,7 @@ import json
 import os
 import re
 from sidereus.transcript import _lines_until, _tail_lines, _tool_target
+from sidereus.config import IS_WIN
 from sidereus.gitinfo import _git_root
 from sidereus.redact import redact
 
@@ -100,7 +101,15 @@ _WRITE_SIG = re.compile(
     r"""|\bsed\s+-i\b|\btee\b|\bpatch\b"""
     r"""|>\s*['"]?[\w./~-]+\.[A-Za-z0-9]{1,8}"""   # redirect (targets with an extension only — excludes 2>&1)
     r"""|\b(cp|mv)\s+[\w./~-]+\s""")
-_CD_RE = re.compile(r"\bcd\s+([\w./~-]+)")
+def _path_res(win):
+    """(cd regex, write-target path regex). ⚠Windows adds `C:` and `\\`; on POSIX a `\\` is a shell escape, so it stays out."""
+    if win:                                       # `~` too: 8.3 short names like `RUNNER~1`
+        return (re.compile(r"\bcd\s+((?:[A-Za-z]:)?[\w./\\~-]+)"),
+                re.compile(r"(?:[A-Za-z]:)?[\w./\\~-]+\.[A-Za-z0-9]{1,8}"))
+    return re.compile(r"\bcd\s+([\w./~-]+)"), _PATH_RE2
+
+
+_CD_RE, _WPATH_RE = _path_res(IS_WIN)
 _BUILD_DIRS = {"build", "target", "node_modules", "dist", "out", "coverage", ".gradle",
                ".git", "__pycache__", ".venv", "vendor", ".next", ".cache"}
 
@@ -113,13 +122,13 @@ def _outside(rel):
 def _edit_target(path):
     """Absolute path of Edit/Write -> `{cwd: git root, path: root-relative path}`. None outside a repo.
     ★Returns **the same shape** as `_wrote_files` — so the UI (tree, inline diff) needs only one format."""
-    if not path or not path.startswith("/"):
+    if not path or not os.path.isabs(path):
         return None
     root = _git_root(os.path.dirname(path))
     if not root:
         return None
     try:
-        rel = os.path.relpath(path, root)
+        rel = os.path.relpath(path, root).replace(os.sep, "/")   # output is always `/`-separated (Windows relpath uses `\`)
     except ValueError:
         return None
     if _outside(rel) or any(seg in _BUILD_DIRS for seg in rel.split("/")):
@@ -141,8 +150,10 @@ def _wrote_files(cmd):
     if work and not repo:
         return []
     seen, out = set(), []
-    for pm in _PATH_RE2.finditer(cmd):
+    for pm in _WPATH_RE.finditer(cmd):
         rel = pm.group(0).strip("'\"")
+        if os.sep == "\\":
+            rel = rel.replace("\\", "/")          # one separator for the checks below; ntpath accepts `/`
         if os.path.splitext(rel)[1].lower() not in _EXT_LANG:
             continue
         if rel.startswith(("./",)):
@@ -167,10 +178,10 @@ def _wrote_files(cmd):
         # ⚠Drop anything that resolves outside the repo (same rule as `_edit_target`): an absolute path used to
         #   pass through raw as {"cwd": repo, "path": "/abs/..."}, and `../x` escaped the root unchecked.
         out_path, out_cwd = rel, repo
-        if rel.startswith("/"):
+        if os.path.isabs(rel):
             if repo:
                 try:
-                    out_path = os.path.relpath(os.path.normpath(rel), repo)
+                    out_path = os.path.relpath(os.path.normpath(rel), repo).replace(os.sep, "/")
                 except ValueError:
                     continue
                 if _outside(out_path):
@@ -183,7 +194,7 @@ def _wrote_files(cmd):
                 out_path, out_cwd = t["path"], t["cwd"]
         elif repo and work:
             try:
-                out_path = os.path.relpath(os.path.normpath(os.path.join(work, rel)), repo)
+                out_path = os.path.relpath(os.path.normpath(os.path.join(work, rel)), repo).replace(os.sep, "/")
             except ValueError:
                 continue
             if _outside(out_path):

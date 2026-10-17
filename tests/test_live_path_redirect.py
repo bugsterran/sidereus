@@ -45,7 +45,10 @@ class LivePathCopies(unittest.TestCase):
                 continue
             for k, v in vars(m).items():
                 if k.isupper() and isinstance(v, str) and os.path.isabs(v):
-                    rel = os.path.relpath(os.path.realpath(v), live)
+                    try:
+                        rel = os.path.relpath(os.path.realpath(v), live)
+                    except ValueError:   # Windows: another drive is never under the live dir
+                        continue
                     if not rel.startswith("..") and rel != "." and rel.split(os.sep)[0] not in code:
                         bad.append(n + "." + k + "=" + v)
         self.assertEqual(bad, [])

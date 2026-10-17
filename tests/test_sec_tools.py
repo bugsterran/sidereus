@@ -36,7 +36,8 @@ class SecTools(unittest.TestCase):
         os.makedirs(os.path.join(t, "pipx/venvs/semgrep/lib/python3.12/site-packages/semgrep-1.90.0.dist-info"))
         os.symlink(os.path.join(t, "pipx/venvs/semgrep/bin/semgrep"), os.path.join(t, "bin/semgrep"))
         _touch(os.path.join(t, "venv/bin/bandit"))
-        os.makedirs(os.path.join(t, "venv/lib/python3.9/site-packages/bandit-1.7<b>;x.dist-info"))
+        junk = "1.7<b>;x" if os.name == "posix" else "1.7;x"   # ⚠'<' '>' are invalid in Windows file names
+        os.makedirs(os.path.join(t, "venv/lib/python3.9/site-packages/bandit-%s.dist-info" % junk))
         self.where = {"gitleaks": os.path.join(t, "bin/gitleaks"), "npm": os.path.join(t, "node/bin/npm"),
                       "semgrep": os.path.join(t, "bin/semgrep"), "bandit": os.path.join(t, "venv/bin/bandit")}
 

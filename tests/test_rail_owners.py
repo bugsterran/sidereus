@@ -1,4 +1,5 @@
 """Rail owner join (git_rail._rail_owners): file_owner index -> per-file `own` chips + cross-session `conflict` flag."""
+import os
 import time
 import unittest
 
@@ -17,7 +18,8 @@ class TestRailOwners(unittest.TestCase):
         self.now = time.time()
         self._idx = fo.index
         self.fake = {}
-        fo.index = lambda now=None: self.fake
+        # keys as the rail builds them (normpath: `\` on Windows), so the POSIX literals below match on any OS
+        fo.index = lambda now=None: {os.path.normpath(k): v for k, v in self.fake.items()}
         self._home, self.homes = gv._rail_home, {}
         gv._rail_home = lambda fo_, sid, *cwds: self.homes.get(sid, "")   # no live ~/.claude/projects reads
 

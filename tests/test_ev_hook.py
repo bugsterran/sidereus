@@ -25,6 +25,20 @@ rec = _load("evidence_rec_t", "scripts/evidence_rec.py")
 SHA = "0123456789abcdef0123456789abcdef01234567"
 
 
+class NoFlock(unittest.TestCase):
+    """Windows has no fcntl: both modules still import, and no evidence row is written (documented degrade)."""
+
+    def test_no_row_without_flock(self):
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        p = os.path.join(d, "evidence.jsonl")
+        for m in (ev, rec):
+            with mock.patch.object(m, "fcntl", None):
+                self.assertFalse(m.append(p, "{}\n"))
+        self.assertFalse(os.path.exists(p))
+
+
+@unittest.skipIf(ev.fcntl is None, "no flock (Windows): evidence rows are off")
 class EvHook(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()

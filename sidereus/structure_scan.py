@@ -430,5 +430,5 @@ def _struct_label(ts):
     (measured 2026-09-22 repo-A: 400 commits spanning several years were stamped `9/25 → 5/24 → 2/14`)."""
     d = datetime.fromtimestamp(ts)
     if d.year != datetime.now().year:
-        return d.strftime("%Y.%-m.%-d")
-    return d.strftime("%-m/%-d %H:%M")
+        return "%d.%d.%d" % (d.year, d.month, d.day)
+    return "%d/%d %s" % (d.month, d.day, d.strftime("%H:%M"))   # ⚠`%-m` is glibc/BSD only; Windows strftime raises
