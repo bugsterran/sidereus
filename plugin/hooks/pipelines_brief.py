@@ -276,7 +276,7 @@ def _stat_key(dirs):
                 parts.append("%s:%d:%d" % (n, st.st_mtime_ns, st.st_size))
             except OSError:
                 pass
-    return hashlib.sha1("\n".join(parts).encode("utf-8")).hexdigest()
+    return hashlib.sha1("\n".join(parts).encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
 def _content_key(dirs):
@@ -295,7 +295,7 @@ def _content_key(dirs):
             except Exception:
                 S = []
             parts.append(name + "=" + "\x1f".join(S))
-    return hashlib.sha1("\n".join(parts).encode("utf-8")).hexdigest()
+    return hashlib.sha1("\n".join(parts).encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
 def _changed(sid, dirs, first):
@@ -313,7 +313,7 @@ def _changed(sid, dirs, first):
         return False
     ck = _content_key(dirs)
     # No record yet on a prompt (session predates this hook): brief only if there is something to say.
-    hit = first or (old.get("c") != ck if old else ck != hashlib.sha1("\n".join(dirs).encode("utf-8")).hexdigest())
+    hit = first or (old.get("c") != ck if old else ck != hashlib.sha1("\n".join(dirs).encode("utf-8"), usedforsecurity=False).hexdigest())
     try:
         os.makedirs(BRIEF_DIR, exist_ok=True)
         tmp = path + ".tmp.%d" % os.getpid()

@@ -254,7 +254,7 @@ def _autoscore():
         try:
             if not (isinstance(proj, str) and os.path.isabs(proj) and isinstance(name, str) and _PLNAME.fullmatch(name)):
                 continue
-            key = hashlib.sha1(os.path.realpath(proj).encode("utf-8", "surrogateescape")).hexdigest()[:16]
+            key = hashlib.sha1(os.path.realpath(proj).encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()[:16]
             pf, sc = os.path.join(proj, ".claude", "pipelines", name + ".json"), _score_script()
             if sc and os.path.isfile(os.path.join(DATA_DIR, "eval", key, "seeds.json")) and os.path.isfile(pf):
                 _spawn([sys.executable or "python3", sc, "score", "--repo", proj, "--pipeline", pf, "--auto"]

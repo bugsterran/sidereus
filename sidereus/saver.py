@@ -343,7 +343,7 @@ def _saver_levels_clean(d):
 
 def _saver_view_tag(d):
     """File tag for an account's snapshot. ⚠The hook computes the same formula — change both or neither."""
-    return hashlib.sha1(os.path.realpath(d).encode()).hexdigest()[:10]
+    return hashlib.sha1(os.path.realpath(d).encode(), usedforsecurity=False).hexdigest()[:10]
 
 
 def _saver_views():

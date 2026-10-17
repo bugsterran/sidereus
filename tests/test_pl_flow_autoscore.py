@@ -20,7 +20,7 @@ class AutoScore(_Base):
             self.addCleanup(p.stop)
 
     def seeds(self):
-        key = hashlib.sha1(os.path.realpath(self.proj).encode("utf-8")).hexdigest()[:16]
+        key = hashlib.sha1(os.path.realpath(self.proj).encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
         d = os.path.join(self.tmp, "eval", key)
         os.makedirs(d)
         open(os.path.join(d, "seeds.json"), "w").close()

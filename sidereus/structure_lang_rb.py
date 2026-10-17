@@ -428,7 +428,7 @@ def rb_scan(src):
         cls = d["owner"]["name"] if d["owner"] else ""
         body = src[d["hs"]:d["close"]]
         out.append({"name": (cls + "." if cls else "") + d["name"], "lang": "rb", "line": a, "lines": b - a + 1,
-                    "h": hashlib.md5(body.encode("utf-8", "replace")).hexdigest()[:12]})
+                    "h": hashlib.md5(body.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]})
     return out
 
 

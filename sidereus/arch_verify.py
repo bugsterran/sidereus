@@ -50,7 +50,7 @@ STYLE_FLOW = {
 
 
 def repo_key(repo):
-    return hashlib.sha1(os.path.realpath(repo).encode("utf-8", "surrogateescape")).hexdigest()[:16]
+    return hashlib.sha1(os.path.realpath(repo).encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()[:16]
 
 
 def store_dir(repo, commit):

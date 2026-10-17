@@ -328,7 +328,7 @@ def _struct_build(items, tests=False, fkeys=None):
     fns = []
     skipped = 0                                   # number of files the parser gave up on (java)
     for rel, b in items:
-        ck = ("f", rel, hashlib.md5(b).hexdigest())
+        ck = ("f", rel, hashlib.md5(b, usedforsecurity=False).hexdigest())
         if fkeys is not None:
             fkeys.append(ck)
         with _struct_lock:

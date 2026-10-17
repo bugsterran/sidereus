@@ -297,7 +297,7 @@ def php_scan(src):
         cls = p["types"][x["cls"]]["name"] + "." if x["cls"] >= 0 else ""
         body = src[x["at"]:x["close"] + 1]
         out.append({"name": cls + x["name"], "lang": "php", "line": a, "lines": b - a + 1,
-                    "h": hashlib.md5(body.encode("utf-8", "replace")).hexdigest()[:12]})
+                    "h": hashlib.md5(body.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]})
     return out
 
 

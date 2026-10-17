@@ -212,7 +212,7 @@ def rs_scan(src):
         if x["k"] != "fn":
             continue
         on = _owner(x)
-        h = hashlib.md5(src[x["hs"]:x["close"] + 1].encode("utf-8", "replace")).hexdigest()[:12]
+        h = hashlib.md5(src[x["hs"]:x["close"] + 1].encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]
         out.append(dict({"name": (on + "::" if on else "") + x["name"], "lang": "rust", "line": x["line"],
                          "lines": max(1, x["end"] - x["line"] + 1), "h": h}, **({"owner": on} if on else {})))
     return sorted(out, key=lambda r: r["line"])
