@@ -49,6 +49,8 @@ function archChkHelp(c, x){
   const desc = String(r.desc || '').replace(/\s+/g, ' ').trim().slice(0, 140), url = String(r.url || '').trim();
   return { desc, url: /^https:\/\/[^\s"'<>]+$/i.test(url) ? url : '' };
 }
+// Pure: rule label — rule · CVE aliases (dependency findings, ids only) · package; raw text, callers esc().
+function archChkRule(x){ return [x.rule || ''].concat(Array.isArray(x.cve) ? x.cve.filter(c => typeof c === 'string' && /^CVE-\d{4}-\d{4,7}$/.test(c)) : [], x.pkg ? [x.pkg] : []).join(' · '); }
 function archChkKey(x){ return [x.tool || '', x.file, parseInt(x.line, 10) || 1, x.rule || ''].join('\t'); }
 // Pure: selected items in list order (keys of items no longer listed drop out).
 function archChkSel(d, sel){ return archChkTop(d).filter(x => sel && sel[archChkKey(x)]); }
@@ -76,10 +78,63 @@ function archChkFixBody(p, c, items, home){
   return 'Please fix these ' + tools + ' findings in ' + p + (cm ? ' (commit ' + cm + ')' : '') + ':\n'
     + 'Target repository: ' + p + ' — work there (cd), not in your own cwd.\n'   // recipient may be a session of another repo (tier 1/2)
     + items.map(x => { const h = archChkHelp(c, x);
-      return '- ' + (x.sev === 'error' ? 'error' : 'warning') + ' · ' + (x.rule || '?') + (x.pkg ? ' · ' + x.pkg : '') + ' · ' + x.file + ':' + (parseInt(x.line, 10) || 1)
+      return '- ' + (x.sev === 'error' ? 'error' : 'warning') + ' · ' + (archChkRule(x) || '?') + ' · ' + x.file + ':' + (parseInt(x.line, 10) || 1)
         + (h.desc ? ' — ' + h.desc : '') + (h.url ? ' (' + h.url + ')' : ''); }).join('\n')
     + "\nFix the cause, keep behaviour, run the project's tests."
     + "\nOnce the fix is committed, request a re-analysis of " + p + " so the architecture diagram reflects it — run:\n" + archDmBody(ARCH_PL, p, home);   // map is per commit; a stale one hides the fix
+}
+// ── «Run security check»: relays a security-checks run request (preview + confirm), or shows the terminal command ──
+// ⚠Sidereus never runs the scanners itself (AGENTS.md rule 7): a session of the project runs the pipeline.
+const ARCH_SEC_PL = 'security-checks';
+// Pure: issues badge, or a «Security check» button that opens the window with no results yet (also on the no-map states).
+function archChkEntry(d){
+  return archChkTopBtn(d) || (d ? '<button type=button class="strbg strbg-archcki strbg-archckiw" data-arck aria-haspopup=dialog>' + esc(T('Security check')) + '</button>' : '');
+}
+// Pure: map header entry ('' unless the map payload is ok).
+function archChkHdBtn(d){ return d && d.ok ? archChkEntry(d) : ''; }
+// Pure: recipients = logged-in live sessions whose cwd or repos is the project (fix-request tiers 0-1 only).
+function archChkRunCands(cands){ return (cands || []).filter(c => c && c.g <= 1 && c.login); }
+// Pure: DM body (mailbox wire text in the archDmBody format, not UI); absolute paths under the Sidereus repo (home).
+function archChkRunBody(p, home){
+  const h = home ? String(home).replace(/\/+$/, '') + '/' : '';
+  return '파이프라인 ' + ARCH_SEC_PL + ' 실행 — 요청: «' + p + ' 보안 점검»\n'
+    + 'Target repository: ' + p + '\n'
+    + 'Pipeline: ' + h + '.claude/pipelines/' + ARCH_SEC_PL + '.json (scanners → threat-model review); run it from ' + (h || 'the Sidereus repository') + ' with --repo ' + p + '\n'
+    + 'Gate: /usr/bin/python3 ' + h + 'scripts/arch_checks.py --verify --last --category security';
+}
+// Pure: terminal commands {sh, win} for the no-session fallback; null when home is unknown or a path could break the quoting (⚠cmd expands %VAR% / !VAR! even inside quotes).
+function archChkRunCmds(p, home){
+  const ok = x => !!x && !/["`$%!\r\n]/.test(x), h = String(home || '').replace(/[\\/]+$/, '');
+  if(!ok(p) || !ok(h)) return null;
+  const tail = ' --repo "' + p + '" --category security';
+  return { sh: 'python3 "' + h + '/scripts/arch_checks.py"' + tail, win: 'py "' + h + '/scripts/arch_checks.py"' + tail };
+}
+// Pure: newest scan time (seconds) the page knows for the project: checks file `at` or the log's last scan.
+function archChkScanAt(d){
+  const s = archChkSec(d), n = v => typeof v === 'number' && isFinite(v) ? v : 0;
+  return s ? Math.max(n(s.at), n(s.log && s.log.at_scan)) : 0;
+}
+// Pure: run panel — preview + confirm to a session of the project, or the copyable command when none is logged in.
+function archChkRunHtml(p, d, S, cands){
+  const sent = S.runSent && S.runSent.to ? archChkSentHtml({ sent: S.runSent }) + (S.runSent.done ? '' : '<div class=archckst>' + esc(T('Waiting for the security check results')) + '</div>') : '';
+  const err = S.runMsg ? '<div class="archmsg archerr" role=alert>' + esc(S.runMsg) + '</div>' : '';   // run send failure, beside its own button
+  if(!S.run) return sent + err;
+  const home = archHome(d), rc = archChkRunCands(cands), head = '<div class=archrqh><b>' + esc(T('Run security check')) + '</b>';
+  if(!rc.length){
+    const cm = archChkRunCmds(p, home), row = (k, lb) => '<div class=archckst><small>' + esc(lb) + '</small> <code>' + esc(cm[k]) + '</code> <button type=button class=wkrgb data-ckcp="' + k + '">'
+      + esc(S.cp && S.cp.k === k ? T(S.cp.ok ? 'Copied' : 'Copy failed — select and copy') : T('Copy')) + '</button></div>';
+    return '<div class=archreq role=group aria-label="' + esc(T('Run security check')) + '">' + head + '</div>'
+      + '<div class=archckst>' + esc(T('No session of this project is logged in to the mailbox — run this in a terminal:')) + '</div>'
+      + (cm ? row('sh', 'macOS / Linux') + row('win', 'Windows') : '<div class=archwhy>' + esc(T('The Sidereus repository location is unknown')) + '</div>')
+      + '<div class=archrqb><button type=button class=wkrgb data-ckrx>' + esc(T('Cancel')) + '</button></div></div>' + sent;
+  }
+  const cur = rc.find(c => c.sid === S.run.sid) || null, body = archChkRunBody(p, home), off = !home ? T('The Sidereus repository location is unknown') : !cur ? T('No live session') : '';
+  return '<div class=archreq role=group aria-label="' + esc(T('Run security check')) + '">' + head
+    + '<label>' + esc(T('To session')) + ' <select data-ckrs>' + rc.map(x => '<option value="' + esc(x.sid) + '"' + (cur && x.sid === cur.sid ? ' selected' : '') + '>' + esc(archChkCandLabel(x)) + '</option>').join('')
+    + '</select></label></div><pre class=archdm>' + esc(body) + '</pre><div class=archrqb>'
+    + '<button type=button class="wkrgb archok" data-ckrgo' + (off || S.run.busy ? ' disabled' : '') + (off ? ' title="' + esc(off) + '"' : '') + '>'
+    + esc(T(archChkGoLabel({ req: S.run, sent: S.runSent }, archChkReqKey(cur && cur.sid, body)))) + '</button>'
+    + '<button type=button class=wkrgb data-ckrx>' + esc(T('Cancel')) + '</button>' + (off ? '<span class=archwhy>' + esc(off) + '</span>' : '') + '</div></div>' + err + sent;
 }
 // Pure: window body — header (counts · select all · «Request fix»), preview / sent line, issue rows.
 function archChkWinHtml(p, d, S, cands){
@@ -90,7 +145,9 @@ function archChkWinHtml(p, d, S, cands){
     + '</span><span class=ckwp title="' + esc(p) + '">' + esc(archBase(p) + (cm ? ' · ' + cm : '')) + '</span>'
     + '<label class=ckwa><input type=checkbox data-ckall' + (top.length && top.every(x => S.sel && S.sel[archChkKey(x)]) ? ' checked' : '') + '>' + esc(T('Select all')) + '</label>'
     + '<button type=button class="archgo' + (S.req ? ' on' : '') + '" data-ckfix' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Request fix') + (n ? ' (' + n + ')' : '')) + '</button>'
-    + (why ? '<span class=archwhy>' + esc(why) + '</span>' : '') + '</div>';
+    + (why ? '<span class=archwhy>' + esc(why) + '</span>' : '')
+    + '<button type=button class="archgo' + (S.run ? ' on' : '') + '" data-ckrun aria-expanded=' + (S.run ? 'true' : 'false') + (S.run && S.run.busy ? ' disabled' : '') + '>' + esc(T('Run security check')) + '</button></div>';
+  h += archChkRunHtml(p, d, S, cands);
   // scanner states (why is tool text: esc)
   if(sec) h += '<div class=archckst>' + esc(archChkTools(sec).map(t => String(t.id) + ' · ' + archChkStat(t)).join(' | ')) + '</div>';
   if(S.req){
@@ -106,12 +163,12 @@ function archChkWinHtml(p, d, S, cands){
   return h + '<ol class=archckl>' + top.map(x => { const k = archChkKey(x), ln = parseInt(x.line, 10) || 1, sv = x.sev === 'error' ? 'error' : 'warning', hp = archChkHelp(c, x);
     return '<li class="' + sv + '"><input type=checkbox data-ckk="' + esc(k) + '"' + (S.sel && S.sel[k] ? ' checked' : '') + ' aria-label="' + esc(x.file + ':' + ln) + '"><div class=ckwr>'
       + '<button type=button data-ckv data-af="' + esc(x.file) + '" data-al="' + esc(ln) + '" title="' + esc(T('View code')) + '">'
-      + '<b class=archcks>' + esc(sv === 'error' ? T('error', 'severity') : T('warning', 'severity')) + '</b><small title="' + esc(x.tool || '') + '">' + esc(x.tool || '') + '</small><code title="' + esc((x.rule || '') + (x.pkg ? ' · ' + x.pkg : '')) + '">' + esc((x.rule || '') + (x.pkg ? ' · ' + x.pkg : '')) + '</code>'
+      + '<b class=archcks>' + esc(sv === 'error' ? T('error', 'severity') : T('warning', 'severity')) + '</b><small title="' + esc(x.tool || '') + '">' + esc(x.tool || '') + '</small><code title="' + esc(archChkRule(x)) + '">' + esc(archChkRule(x)) + '</code>'
       + '<span class=archckf title="' + esc(x.file + ':' + ln) + '">' + esc(x.file).replace(/\//g, '/<wbr>') + '<span class=archevl>:' + esc(ln) + '</span></span>'   // full path, may break after «/»
       + '<em title="' + esc(x.mod || '') + '">' + esc(x.mod || '') + '</em></button>'
       + (hp.desc || hp.url ? '<div class=archckh>' + (hp.desc ? '<span>' + esc(hp.desc) + '</span>' : '')
         + (hp.url ? '<a href="' + esc(hp.url) + '" target=_blank rel="noopener noreferrer">' + esc(T('docs ↗')) + '</a>' : '') + '</div>' : '') + '</div></li>'; }).join('') + '</ol>'
-    + (sec ? archChkLogHtml(sec.log, sec.report) : '');
+    + (sec ? archChkLogHtml(sec.log, sec.report) : '<div class=archckst>' + esc(T('No security check yet')) + '</div>');
 }
 // Pure: read-only security history (sidereus/sec_checks.log_view) — last check age, then open / resolved / false-positive rows.
 //   Metadata only (sev · file:line · key · one-line desc); AI review rows are labelled as unverified model output.
@@ -152,7 +209,7 @@ let ARCH_CW = null;
 // ⚠Events are forwarded by a script in the window's own realm: window.open (code popup) needs that window's user activation.
 const ARCH_CW_JS = "['click','change','keydown'].forEach(function(t){document.addEventListener(t,function(e){try{if(opener&&opener.archChkWinEv)opener.archChkWinEv(e,window);}catch(x){}});});";
 function archChkWinOpen(p){
-  if(!archChkSec(ARCH.cache[p])) return;
+  if(!ARCH.cache[p]) return;   // opens without results too: «Run security check» starts the first one
   let w = ARCH_CW && ARCH_CW.w;
   try{ if(w && w.closed) w = null; }catch(e){ w = null; }
   if(w && ARCH_CW.p === p){ try{ w.focus(); }catch(e){ softErr('archck-focus', e); } archChkWinPaint(); return; }
@@ -164,7 +221,7 @@ function archChkWinOpen(p){
     + '<body class=ckwin><div id=ckroot></div><script>' + ARCH_CW_JS + '</' + 'script>');
   dc.close();
   strWinTheme(w);
-  ARCH_CW = { p, w, sel: Object.create(null), req: null, sent: '', msg: '' };
+  ARCH_CW = { p, w, sel: Object.create(null), req: null, sent: '', msg: '', run: null, runSent: null, cp: null, seen: ARCH.cache[p] };
   try{ w.focus(); }catch(e){ softErr('archck-focus', e); }
   archChkWinPaint();
 }
@@ -195,6 +252,7 @@ function archChkWinEv(e, w){
       archChkTop(ARCH.cache[S.p]).forEach(x => { const k = archChkKey(x); if(t.checked) S.sel[k] = 1; else delete S.sel[k]; }); }
     else if(t.matches('[data-ckk]')){ if(t.checked) S.sel[t.dataset.ckk] = 1; else delete S.sel[t.dataset.ckk]; }
     else if(t.matches('[data-cks]') && S.req){ S.req.sid = t.value; S.req.again = false; }
+    else if(t.matches('[data-ckrs]') && S.run){ S.run.sid = t.value; S.run.again = false; }
     else return;
     archChkWinPaint(); return;
   }
@@ -206,6 +264,14 @@ function archChkWinEv(e, w){
     else if(!S.req.busy) S.req = null;   // second press closes the preview
     archChkWinPaint(); return;
   }
+  if(t.closest('[data-ckrun]')){
+    if(!S.run){ S.run = { sid: (archChkRunCands(archChkFixCands(SESS, S.p))[0] || {}).sid || '', busy: false }; S.runMsg = ''; S.cp = null; }
+    else if(!S.run.busy) S.run = null;
+    archChkWinPaint(); return;
+  }
+  if(t.closest('[data-ckrx]')){ if(S.run && !S.run.busy) S.run = null; archChkWinPaint(); return; }
+  if(t.closest('[data-ckrgo]')){ archChkRunSend(); return; }
+  if((b = t.closest('[data-ckcp]'))){ archChkCopy(S, w, b); return; }
   if(t.closest('[data-ckx]')){ if(S.req && !S.req.busy) S.req = null; archChkWinPaint(); return; }
   if(t.closest('[data-ckgo]')) archChkFixSend();
 }
@@ -242,6 +308,49 @@ async function archChkFixSend(){
   archChkWinPaint();
   return true;
 }
+// «Copy»: the issues window's own clipboard (the click's user activation lives there); on failure the command is selected.
+function archChkCopy(S, w, b){
+  const k = b.dataset.ckcp, cm = archChkRunCmds(S.p, archHome(ARCH.cache[S.p])), txt = cm && cm[k];
+  if(!txt) return;
+  const done = ok => { S.cp = { k, ok }; archChkWinPaint();
+    if(!ok){ try{ const c = w.document.querySelector('[data-ckcp="' + k + '"]'), code = c && c.previousElementSibling, r = w.document.createRange(); if(code){ r.selectNodeContents(code); const sl = w.getSelection(); sl.removeAllRanges(); sl.addRange(r); } }catch(e){ softErr('archck-sel', e); } } };
+  try{ w.navigator.clipboard.writeText(txt).then(() => done(true), () => done(false)); }catch(e){ done(false); }
+}
+// Guard + send: only the run preview's confirm calls this (no auto-send, AGENTS.md rule 7).
+async function archChkRunSend(){
+  const S = ARCH_CW, q = S && S.run;
+  if(!q || q.busy) return false;
+  const d = ARCH.cache[S.p], home = archHome(d), cur = archChkRunCands(archChkFixCands(SESS, S.p)).find(c => c.sid === q.sid);
+  if(!home || !cur) return false;
+  const body = archChkRunBody(S.p, home), key = archChkReqKey(cur.sid, body);
+  if(S.runSent && S.runSent.key === key && !q.again){ q.again = true; archChkWinPaint(); return false; }   // first click on «Sent · send again» only arms
+  q.busy = true; archChkWinPaint();
+  try{
+    const j = await postJSON('/api/dm', { to: cur.id, body, relay: true, sid: cur.sid, thread: 'pipeline:' + ARCH_SEC_PL });
+    if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');
+    S.run = null; S.runMsg = ''; S.runSent = { to: archChkCandLabel(cur), at: hhmm(new Date()), key, t: Date.now(), base: archChkScanAt(d) };
+    note(T('Requested → {s} · {t}').replace('{s}', () => S.runSent.to).replace('{t}', () => S.runSent.at));
+  }catch(e){ q.busy = false; S.runMsg = T('Could not send') + ': ' + String((e && e.message) || e); }
+  archChkWinPaint();
+  return true;
+}
+// While the window is open: repaint when the project's /api/arch data changed; after a run request, re-read it every
+// ARCH_POLL_MS until a newer scan shows up (gives up after 3 h so a lost request does not poll forever).
+function archChkTick(now){
+  const S = ARCH_CW;
+  if(!S || document.hidden) return false;
+  try{ if(!S.w || S.w.closed) return false; }catch(e){ return false; }
+  const d = ARCH.cache[S.p];
+  if(d !== S.seen){ S.seen = d; archChkWinPaint(); }
+  const q = S.runSent;
+  if(!q || q.done) return false;
+  if(archChkScanAt(d) > q.base){ q.done = 1; note(T('Security check finished — {p}').replace('{p}', () => archBase(S.p))); archChkWinPaint(); return false; }
+  if(ARCH.load[S.p] || now - q.t > 3 * 3600000 || now - (q.polled || q.t) < ARCH_POLL_MS) return false;
+  q.polled = now;
+  archFetch(S.p, true);
+  return true;
+}
+setInterval(() => archChkTick(Date.now()), 5000);
 document.addEventListener('click', ev => {
   const t = ev.target && ev.target.closest ? ev.target : null;
   if(!t || !t.closest('.archtab') || strMode !== 'arch') return;

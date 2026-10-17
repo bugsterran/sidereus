@@ -453,6 +453,11 @@ class Stop(CliBase):
             self.assertEqual(self.cli.main(["status"]), 0)
         return buf.getvalue()
 
+    def test_status_config_path_normalised(self):
+        raw = self.tmp + "/sub" + os.sep + "config.local.json"     # Windows: «C:\Users\x/.mailbox-mcp\config.local.json»
+        with mock.patch.object(self.cli.mailbox_config, "config_path", lambda: raw):
+            self.assertIn(os.path.normpath(raw), self._status_out())
+
     def test_status_dead_recorded_pid(self):
         self._pidfile()
         self.cli.pid_alive = lambda pid: False
@@ -480,6 +485,29 @@ class Stop(CliBase):
         self.assertEqual(self.cli.answering(8799), self.cli.BUSY)
         self.cli._urlopen = self._fake_urlopen
         self.assertEqual(self.cli.answering(8799), 0)          # refused stays «down»
+
+    def test_windows_timeout_on_free_port_is_down_and_start_spawns(self):
+        self._busy()
+        self.cli.IS_WIN = True
+        self.cli.port_bound = lambda port: False                # Windows: closed port times out instead of refusing
+        self.assertEqual(self.cli.answering(8799), 0)
+        self.cli._urlopen = self._win_slow_until_up
+        self.assertEqual(self.cli.main(["start"]), 0)
+        self.assertEqual(len(self.spawned), 1)
+
+    def _win_slow_until_up(self, url, timeout=None):
+        if not self.up:
+            import socket
+            err = OSError("timed out")
+            err.reason = socket.timeout("timed out")
+            raise err
+        return self._fake_urlopen(url, timeout)
+
+    def test_windows_timeout_on_bound_port_stays_busy(self):
+        self._busy()
+        self.cli.IS_WIN = True
+        self.cli.port_bound = lambda port: True
+        self.assertEqual(self.cli.answering(8799), self.cli.BUSY)
 
     def test_stop_busy_live_pid_keeps_record(self):
         self._pidfile()

@@ -3,7 +3,7 @@ aggregation and the `/api/arch` `checks` loader (plans and parsers: sidereus/sec
 
 ⚠No subprocess here — Sidereus never runs a tool (AGENTS.md rule 7). The runner `scripts/arch_checks.py --category
 security` (gate of `.claude/pipelines/security-checks.json`) executes the argv built by `sec_checks.detect()` and writes
-arch/<key>/<commit>/checks-security.json. Only file / line / rule id / severity (+ package) are kept, never tool message
+arch/<key>/<commit>/checks-security.json. Only file / line / rule id / severity (+ package, CVE aliases) are kept, never tool message
 text. Stdlib only, Python 3.9.
 """
 import os
@@ -94,7 +94,8 @@ def build(repo, commit, dirty, src_changed, at, tools, items):
     return {"v": 1, "repo": repo, "commit": commit, "dirty": bool(dirty), "src_changed": bool(src_changed), "at": at,
             "tools": out_t, "files": dict(sorted(files.items())[:FILES_MAX]),
             "items": [dict({"tool": x["tool"], "file": x["file"], "line": x["line"], "rule": x["rule"], "sev": x["sev"]},
-                           **({"pkg": x["pkg"]} if x.get("pkg") else {})) for x in its], "rules": rules}
+                           **({"pkg": x["pkg"]} if x.get("pkg") else {}), **({"cve": x["cve"]} if x.get("cve") else {}))
+                      for x in its], "rules": rules}
 
 
 # ── schema (gate) and page loader ──
@@ -159,7 +160,11 @@ def _clean_item(x, ids=()):
         return None
     if "pkg" in x and not (isinstance(pk, str) and SC.PKG_RE.fullmatch(pk)):
         return None
-    return dict({"tool": x["tool"], "file": f, "line": ln, "rule": r, "sev": x["sev"]}, **({"pkg": pk} if "pkg" in x else {}))
+    cv = x.get("cve")   # optional CVE aliases of a dependency finding; display only, not part of the key
+    if "cve" in x and not (isinstance(cv, list) and cv and SC.cves(cv) == cv):
+        return None
+    return dict({"tool": x["tool"], "file": f, "line": ln, "rule": r, "sev": x["sev"]}, **({"pkg": pk} if "pkg" in x else {}),
+                **({"cve": cv} if "cve" in x else {}))
 
 
 def aggregate(files, mods, globs):

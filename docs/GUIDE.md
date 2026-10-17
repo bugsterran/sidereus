@@ -112,6 +112,7 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 
 ### Top issues
 - «Top issues N» opens the security findings (gitleaks, npm audit, osv-scanner, semgrep, bandit — `security-checks` pipeline). Secrets are never shown.
+- «Run security check» in that window sends a `security-checks` run request to a logged-in session of the project (preview + confirm); with none, it shows the terminal command to copy. Dependency findings list their CVE ids next to the GHSA rule.
 - «Request fix» sends the selected findings to a session, asking it to re-run `arch-map` once the fix is committed.
 - The window ends with the check history (read-only): «Last security check» age, then open, resolved (date · commit) and false-positive findings. Rows from an AI review are marked «model-generated, unverified».
 - «Last report» (shown once a security run has written a report) opens the newest `security-report-*.md` as plain text in its own window.

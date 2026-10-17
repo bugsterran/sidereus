@@ -55,7 +55,7 @@ function archHeadNote(d){
       T('Edges with checked evidence / all edges'))
     + strHdBadge('', T('{n} modules').replace('{n}', ((d && d.modules) || []).length))
     + (c ? strHdBadge(d.stale ? 'cut' : '', at ? T('Generated {t} · {c}').replace('{c}', c).replace('{t}', hhmm(at, { date: true, dsep: '-' })) : c, ahead + tip) : '')
-    + (d && d.checks ? archChkTopBtn(d) : '');
+    + (typeof archChkHdBtn === 'function' ? archChkHdBtn(d) : '');   // 84l: issues badge, or «Security check» when the project has no results yet
 }
 // Pure: one-line legend under the toolbar. Swatches reuse the diagram's own classes (.mmde e-solid/e-dot, .mmdn s-stadium,
 // svg.archdim .arin/.arout) inside .mmd, so they cannot drift from what the diagram draws.
@@ -443,21 +443,21 @@ function archPaint(box, head){
   const msg = ARCH.msg ? '<div class=archmsg role=status>' + esc(ARCH.msg) + '</div>' : '';
   if(!d){ box.innerHTML = '<div class="strtab archtab">' + head(esc(T('Loading…'))) + '' + archWaitHtml() + '</div>'; return; }
   const req = archReqHtml(ARCH.req, p, home, cands, ARCH.req && ARCH.req.busy, d);
-  const pre = archReqBtn(p, home, cands, d);
+  const pre = archReqBtn(p, home, cands, d), pre0 = pre + (typeof archChkEntry === 'function' ? archChkEntry(d) : '');   // no-map states: security check entry too (84l)
   if(!d.ok){   // allow-list refusal and other server errors: the server's own words
-    box.innerHTML = '<div class="strtab archtab">' + head('', '', d.empty ? pre : '') + '<div class="tlhd cwerr">' + esc(d.msg ? TV(d) : T(String(d.error || '?'))) + '</div>'
+    box.innerHTML = '<div class="strtab archtab">' + head('', '', d.empty ? pre0 : '') + '<div class="tlhd cwerr">' + esc(d.msg ? TV(d) : T(String(d.error || '?'))) + '</div>'
       + (d.empty ? '<div class=archempty>' + archStatusHtml(p, req) + '</div>' : '') + msg + '</div>';
     return;
   }
   const mods = d.modules || [], edges = d.edges || [], names = {};
   mods.forEach(m => { if(m && m.id != null) names[m.id] = m.name || m.id; });
   if(d.bad){   // map on disk failed schema validation: say so instead of «No architecture diagram yet»
-    box.innerHTML = '<div class="strtab archtab">' + head('', '', pre) + '<div class="tlhd cwerr">' + esc(T('The stored diagram is invalid — request a new one')) + '</div>'
+    box.innerHTML = '<div class="strtab archtab">' + head('', '', pre0) + '<div class="tlhd cwerr">' + esc(T('The stored diagram is invalid — request a new one')) + '</div>'
       + '<div class=archempty>' + archStatusHtml(p, req) + '</div>' + msg + '</div>';
     return;
   }
   if(!mods.length || d.empty){   // `empty` may come on ok:true too
-    box.innerHTML = '<div class="strtab archtab">' + head('', '', pre) + '<div class=archempty><b>' + esc(T('No architecture diagram yet')) + '</b><p>'
+    box.innerHTML = '<div class="strtab archtab">' + head('', '', pre0) + '<div class=archempty><b>' + esc(T('No architecture diagram yet')) + '</b><p>'
       + esc(T('The arch-map pipeline reads the code, draws modules and edges, then checks each edge against its evidence (file:line). It never writes to the repository.')) + '</p>' + archStatusHtml(p, req) + '</div>' + msg + '</div>';
     return;
   }
