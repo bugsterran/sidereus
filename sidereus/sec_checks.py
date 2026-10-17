@@ -4,8 +4,9 @@ checks-security.json.
 
 ⚠Secrets: gitleaks findings keep RuleID / File / StartLine only — Secret, Match, Line and message are never read into
 results, logs or relays. Its report lives in the runner's temp dir and is deleted right after parsing (`take_report`).
-⚠No subprocess here (AGENTS.md rule 7). Advisory lookups (npm audit, osv-scanner) need the network: planned only with
-the runner's `--net`, and a network error is `skipped`, never `0 issues`. Stdlib only, Python 3.9.
+⚠No subprocess here (AGENTS.md rule 7). Advisory lookups (npm audit, osv-scanner, semgrep registry packs) need the
+network: planned unless the runner is offline (probe failed or `--offline`), and a network error is `skipped`,
+never `0 issues`. Stdlib only, Python 3.9.
 """
 import json
 import os
@@ -41,8 +42,9 @@ SEC_LAST = "_checks_last_security.json"   # {repo, commit} of the newest securit
 CATEGORIES = ("security",)
 PKG_RE = re.compile(r"[A-Za-z0-9@/._+:-]{1,100}")
 NET_RE = re.compile(r"ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|no such host|dial tcp|"
-                    r"network is unreachable|getaddrinfo", re.I)
-WHY_NET = "needs network (run with --net)"
+                    r"network is unreachable|getaddrinfo|Max retries exceeded|Failed to resolve|"
+                    r"nodename nor servname|Temporary failure in name resolution", re.I)
+WHY_NET = "offline (network unreachable or --offline)"
 WHY_NET_FAIL = "needs network"
 _RULE = re.compile(r"[A-Za-z0-9_./@:-]{1,60}")      # same shape as arch_checks.RULE_RE
 _GHSA = re.compile(r"GHSA(?:-[a-z0-9]{4}){3}")
@@ -51,6 +53,7 @@ _OSV_N = re.compile(r"Scanned .+? file and found (\d+) packages?")
 _LOCKS = ("package-lock.json", "yarn.lock", "pnpm-lock.yaml", "poetry.lock", "Pipfile.lock", "uv.lock", "requirements.txt",
           "go.sum", "Cargo.lock", "Gemfile.lock", "composer.lock", "gradle.lockfile")
 _SEMGREP_CFG = (".semgrep.yml", ".semgrep.yaml", ".semgrep")
+SEMGREP_PACKS = ("p/python", "p/javascript", "p/secrets")   # registry packs used online when no local config
 _SKIP = {".git", "node_modules", "build", "target", ".gradle", "dist", "out", ".venv", "venv", "__pycache__", ".idea",
          ".mvn", ".tox", ".mypy_cache", ".ruff_cache"}
 _WALK_DIRS, _WALK_DEPTH = 5000, 6
@@ -118,10 +121,15 @@ def detect(repo, which, net=False):
                    _tool("osv-scanner", "default", status="missing", why=install_hint("osv-scanner")))
     exe = which("semgrep")
     cfg = next((c for c in _SEMGREP_CFG if os.path.exists(os.path.join(repo, c))), None)
+    tail = ["--json", "--metrics=off", "--disable-version-check", "--quiet", "."]
+    # ⚠not `--config auto`: semgrep refuses auto with --metrics=off, so name registry packs explicitly.
+    reg = [a for p in SEMGREP_PACKS for a in ("--config", p)]
     out.append(_tool("semgrep", "project", status="missing", why=install_hint("semgrep")) if not exe else
-               _tool("semgrep", "project", status="skipped", why="no local rules (--config auto needs network)") if not cfg else
-               _tool("semgrep", "project", argv=[exe, "scan", "--config", cfg, "--json", "--metrics=off",
-                                                 "--disable-version-check", "--quiet", "."], cwd=repo, src="stdout", ok_rc=(0, 1)))
+               _tool("semgrep", "project", argv=[exe, "scan", "--config", cfg] + tail, cwd=repo, src="stdout",
+                     ok_rc=(0, 1)) if cfg else
+               _tool("semgrep", "default", argv=[exe, "scan"] + reg + tail, cwd=repo, src="stdout", ok_rc=(0, 1),
+                     net=True) if net else
+               _tool("semgrep", "project", status="skipped", why="no local rules; registry packs offline"))
     if s["py"]:
         exe = which("bandit")
         own = bool(re.search(r"^\[tool\.bandit\]", _read(os.path.join(repo, "pyproject.toml")), re.M))

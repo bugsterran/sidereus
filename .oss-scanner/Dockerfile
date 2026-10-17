@@ -4,12 +4,15 @@
 # node is needed for the JS syntax gate, git for tests that read repo metadata.
 # ⚠ Nothing after the final `COPY . /src` may download; the scan runs offline.
 # 3.9 is the supported floor (stock macOS python), so the gates run on the oldest interpreter Sidereus promises.
-FROM python:3.9-slim
+# ⚠ 3.9 is EOL: upstream stopped rebuilding python:3.9-* (last push 2025-11-01), so the base OS packages go stale.
+# Variant + digest pin keeps builds reproducible; `apt-get upgrade` below pulls Debian security fixes at build time.
+# Refresh the digest: docker pull python:3.9.25-slim-trixie && docker inspect --format '{{index .RepoDigests 0}}' python:3.9.25-slim-trixie
+FROM python:3.9.25-slim-trixie@sha256:2d97f6910b16bd338d3060f261f53f144965f755599aab1acda1e13cf1731b1b
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHON=python3 \
     PYTHONDONTWRITEBYTECODE=1
-RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates git nodejs curl \
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends ca-certificates git nodejs curl \
     && rm -rf /var/lib/apt/lists/*
 
 # scanner contract: the checkout lives inside the image, at /src

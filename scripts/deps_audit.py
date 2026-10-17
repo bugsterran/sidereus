@@ -1,10 +1,13 @@
 #!/usr/bin/python3
-"""Dependency and runtime security-patch audit. Prints «OK|WARN|FAIL item — detail» lines; exit 1 on any FAIL.
+"""Dependency and runtime security-patch audit. Prints «OK|WARN|FAIL|INFO item — detail» lines; exit 1 on any FAIL.
 
-  /usr/bin/python3 scripts/deps_audit.py            offline: import guard + local runtime versions vs the EOL table
-  /usr/bin/python3 scripts/deps_audit.py --online   also fetch the latest Python / Node releases (endoflife.date)
+  /usr/bin/python3 scripts/deps_audit.py             import guard + runtime EOL table, then online lookups: latest
+                                                     Python / Node patch (endoflife.date) and OSV.dev advisories
+  /usr/bin/python3 scripts/deps_audit.py --offline   skip every online lookup (--online is accepted as a no-op)
 
-⚠Network only with --online. Reads metadata only: plist ProgramArguments, app Info.plist versions,
+⚠Online lookups run after one reachability probe; unreachable or --offline = a «skipped» line, never «no advisories».
+OSV.dev covers npm/PyPI packages only (Claude Code CLI, browser drivers) — not the CPython / Node / Chrome runtimes,
+which keep the EOL lines. Reads metadata only: plist ProgramArguments, app Info.plist versions,
 installed_plugins.json name/version — never credentials or session files.
 """
 import ast
@@ -18,7 +21,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# ★Source: endoflife.date (python, nodejs) — checked 2026-10-12. Refresh with --online; update when a cycle changes.
+# ★Source: endoflife.date (python, nodejs) — checked 2026-10-12. Refresh from the online lines; update when a cycle changes.
 PY_EOL = {"3.9": "2025-10-31", "3.10": "2026-10-01", "3.11": "2027-10-31", "3.12": "2028-10-31",
           "3.13": "2029-10-31", "3.14": "2030-10-31", "3.15": "2031-10-31"}
 NODE_EOL = {"18": "2025-04-30", "20": "2026-04-30", "22": "2027-04-30", "24": "2028-04-30", "26": "2029-04-30"}
@@ -185,15 +188,79 @@ def _run(argv):
         return ""
 
 
-def _fetch(url):
+def _fetch(url, body=None):
+    """GET (or POST json when body is given) and decode json."""
     import urllib.request
-    req = urllib.request.Request(url, headers={"User-Agent": "deps-audit"})
+    data = None if body is None else json.dumps(body).encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers={"User-Agent": "deps-audit", "Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=15) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
+OSV_QUERY = "https://api.osv.dev/v1/query"
+
+
+def _probe():
+    """True when OSV.dev answers at all within 3 s (an HTTP error status still means reachable)."""
+    import urllib.error
+    import urllib.request
+    try:
+        urllib.request.urlopen(urllib.request.Request("https://api.osv.dev/", method="HEAD"), timeout=3).close()
+    except urllib.error.HTTPError:
+        return True
+    except Exception:
+        return False
+    return True
+
+
+def offline_reason(argv, probe=None):
+    """Why online lookups are skipped ('--offline' | 'offline'), or None when they run."""
+    if "--offline" in argv:
+        return "--offline"
+    return None if (probe or _probe)() else "offline"
+
+
+def osv_vulns(eco, name, version, fetch=None):
+    """[(advisory id, severity)] from OSV.dev for one package version. Raises on network/format errors."""
+    fetch = fetch or _fetch
+    out, token = [], None
+    for _ in range(10):   # ⚠the query API pages long lists via next_page_token
+        body = {"package": {"name": name, "ecosystem": eco}, "version": version}
+        if token:
+            body["page_token"] = token
+        j = fetch(OSV_QUERY, body)
+        if not isinstance(j, dict):
+            raise ValueError("osv: not an object")
+        for v in j.get("vulns") or ():
+            if isinstance(v, dict) and isinstance(v.get("id"), str):
+                sev = (v.get("database_specific") or {}).get("severity") if isinstance(v.get("database_specific"), dict) else None
+                out.append((v["id"], str(sev).lower() if sev else "unrated"))
+        token = j.get("next_page_token")
+        if not token:
+            break
+    return out
+
+
+def osv_targets(mjs_files, root, claude_version):
+    """[(ecosystem, package, version)] OSV can answer for: the Claude Code CLI (npm) and installed browser drivers."""
+    out = []
+    m = re.match(r"\s*(\d+\.\d+\.\d+)", claude_version or "")
+    if m:
+        out.append(("npm", "@anthropic-ai/claude-code", m.group(1)))
+    used = set()
+    for f in mjs_files:
+        with open(f, encoding="utf-8") as h:
+            used |= {s.split("/")[0] for s in mjs_specifiers(h.read())} & set(KNOWN_DRIVERS)
+    for pkg in sorted(used):
+        try:
+            with open(os.path.join(root, "node_modules", pkg, "package.json"), encoding="utf-8") as h:
+                out.append(("npm", pkg, json.load(h)["version"]))
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+    return out
+
+
 def main(argv):
-    online = "--online" in argv
     today = datetime.date.today()
     lines = []
 
@@ -238,8 +305,11 @@ def main(argv):
     except (OSError, ValueError, AttributeError):
         emit("OK", "claude plugins", "no installed_plugins.json under %s" % cfg)
 
-    # 3. online: latest patch per cycle
-    if online:
+    # 3. online: latest patch per cycle + OSV.dev advisories
+    why = offline_reason(argv)   # --online is a no-op: online is the default
+    if why:
+        emit("WARN", "online lookups", "skipped — %s (no advisory data, not «clean»)" % why)
+    else:
         for prod, cur, key in (("python", pyv, cyc), ("nodejs", nodev, (nodev or "x").split(".")[0])):
             try:
                 rows = _fetch("https://endoflife.date/api/%s.json" % prod)
@@ -255,6 +325,15 @@ def main(argv):
             emit("WARN" if behind or row.get("eol") is True or str(row.get("eol")) <= today.isoformat() else "OK",
                  "online %s" % prod, "local %s · latest %s %s (EOL %s) · newest cycle %s → %s (EOL %s)" % (
                      cur, key, row.get("latest"), row.get("eol"), newest.get("cycle"), newest.get("latest"), newest.get("eol")))
+        for eco, pkg, ver in osv_targets(mjs, ROOT, cv):
+            try:
+                vs = osv_vulns(eco, pkg, ver)
+            except Exception as e:   # a lookup error is «skipped», never «no advisories»
+                emit("WARN", "osv %s %s" % (pkg, ver), "skipped — fetch failed: %s" % type(e).__name__)
+                continue
+            emit("WARN" if vs else "OK", "osv %s %s" % (pkg, ver),
+                 ", ".join("%s (%s)" % v for v in vs) if vs else "no advisories (OSV.dev %s)" % eco)
+        emit("INFO", "osv runtimes", "CPython, Node.js and Chrome are not OSV ecosystems — not checked there (see EOL lines)")
     return 1 if "FAIL" in lines else 0
 
 

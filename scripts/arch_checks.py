@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 """Runner + gate of the security-checks pipeline: run the repo's security scanners, write checks-security.json.
 
-usage: arch_checks.py (--repo <path> | --last | --verify --last) --category security [--only <ids>] [--net]
+usage: arch_checks.py (--repo <path> | --last | --verify --last) --category security [--only <ids>] [--offline]
   --repo / --last   detect scanners (sidereus/sec_checks.py), run each (300 s each, 900 s total), write
                     arch/<key>/<HEAD>/checks-security.json + its last pointer.
                     --last = the repo of the last security checks (else of the last map run).
   --category        security (required): gitleaks, npm audit, osv-scanner, semgrep, bandit.
-                    --only = comma-separated tool ids. --net lets advisory lookups use the network.
+                    --only = comma-separated tool ids. Online lookups (npm audit, osv-scanner, semgrep registry
+                    packs) run by default after one reachability probe; unreachable or --offline = skipped.
+                    --net is accepted as a no-op (older callers).
   --verify --last   validate the last checks-security.json; exit 1 if invalid, if no tool ran or an ok tool examined
                     0 files (EMPTY).
   --log-review      (--repo | --last) append AI review findings to arch/<key>/security-log.jsonl from stdin TSV
@@ -35,6 +37,20 @@ from sidereus.gitinfo import git_argv, git_env  # noqa: E402
 
 
 _which = shutil.which   # tests patch this, never PATH
+PROBE_URL = "https://api.osv.dev/"
+
+
+def _probe():
+    """True when the advisory services look reachable (one HEAD, 3 s). Any answer counts, even an HTTP error."""
+    import urllib.error
+    import urllib.request
+    try:
+        urllib.request.urlopen(urllib.request.Request(PROBE_URL, method="HEAD"), timeout=3).close()
+    except urllib.error.HTTPError:
+        return True
+    except Exception:   # DNS, connect, TLS, timeout: offline
+        return False
+    return True
 
 
 def _git(repo, args):
@@ -102,14 +118,16 @@ def _exec(plan, timeout, tmp):
     return dict(res, rc=p.returncode, out=dec(out), err=dec(err), ms=int((time.time() - t0) * 1000))
 
 
-def run(repo, only=None, net=False):
+def run(repo, only=None, offline=False):
     """(exit code, summary line). Writes checks-security.json for the repo's HEAD."""
     head = (_git(repo, ["rev-parse", "HEAD"]) or "").strip()
     if not AV.COMMIT_RE.fullmatch(head):
         return 1, "arch_checks: not a git repo with a commit"
     before = _git(repo, ["status", "--porcelain"])
-    plans = SC.detect(repo, _which, net)
-    plans = [p for p in plans if not only or p["id"] in only]
+    plans = [p for p in SC.detect(repo, _which, not offline) if not only or p["id"] in only]
+    # ⚠probe only when an online tool would actually run; unreachable re-plans them as skipped, never «0 issues»
+    if any(p.get("net") and not p.get("status") for p in plans) and not _probe():
+        plans = [p for p in SC.detect(repo, _which, False) if not only or p["id"] in only]
     t_all, tools, items, cache = time.time(), [], [], {}
     tmp = tempfile.mkdtemp(prefix="sidereus-checks-")
     try:
@@ -291,11 +309,11 @@ def log_cmd(a):
 
 def _args(argv):
     """{verify, last, net, repo, category, only, log-review, log-show, mark, commit} or None on a usage error."""
-    a = {"verify": False, "last": False, "net": False, "repo": None, "category": None, "only": None,
+    a = {"verify": False, "last": False, "net": False, "offline": False, "repo": None, "category": None, "only": None,
          "log-review": False, "log-show": False, "mark": None, "commit": None}
     it = iter(argv)
     for x in it:
-        if x in ("--verify", "--last", "--net", "--log-review", "--log-show"):
+        if x in ("--verify", "--last", "--net", "--offline", "--log-review", "--log-show"):
             a[x[2:]] = True
         elif x in ("--repo", "--category", "--only", "--commit"):
             a[x[2:]] = next(it, None)
@@ -310,12 +328,12 @@ def _args(argv):
             return None
     logm = a["log-review"] + a["log-show"] + bool(a["mark"])
     if logm:   # log commands: one at a time, security only, --commit only with --mark (full hex id)
-        if logm > 1 or a["verify"] or a["only"] or a["net"] or a["category"] not in (None, "security") or \
+        if logm > 1 or a["verify"] or a["only"] or a["net"] or a["offline"] or a["category"] not in (None, "security") or \
                 a["last"] == bool(a["repo"]) or (a["commit"] and not (a["mark"] and AV.COMMIT_RE.fullmatch(a["commit"]))):
             return None
         return a
     if a["commit"] or a["category"] not in SC.CATEGORIES + (None,) or a["last"] == bool(a["repo"]) or \
-            (a["verify"] and (a["repo"] or a["only"] or a["net"])):
+            (a["verify"] and (a["repo"] or a["only"] or a["net"] or a["offline"])):
         return None
     if a["only"] is not None:
         a["only"] = set(a["only"].split(","))
@@ -342,12 +360,12 @@ def main(argv):
             rc, line = verify(repo, commit)
             _record(rc, repo, commit)
         elif a["last"]:
-            rc, line = run(_last(False)[0], a["only"], a["net"])
+            rc, line = run(_last(False)[0], a["only"], a["offline"])
         else:
             if not os.path.isdir(a["repo"]):
                 print("arch_checks: repo is not a directory")
                 return 1
-            rc, line = run(os.path.realpath(a["repo"]), a["only"], a["net"])
+            rc, line = run(os.path.realpath(a["repo"]), a["only"], a["offline"])
     except ValueError as e:
         print("arch_checks: %s" % e)
         return 1

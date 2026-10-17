@@ -16,6 +16,7 @@
 - **프로세스를 띄우는 엔드포인트 없음.** 페이지의 어떤 요청도 셸·git checkout/merge·세션을 돌리지 않는다.
 - **메일박스 DM 은 등록된 id 에만**(`identity.json`) 보낸다. 추측한 이름으로는 보내지 않는다.
 - 밖으로 나가는 요청은 선택 사항인 `api.anthropic.com` 할당량 조회 하나뿐이고, macOS 키체인의 OAuth 토큰을 쓴다.
+- **뷰어가 아닌 개발 스크립트:** `scripts/arch_checks.py --category security` 와 `scripts/deps_audit.py` 는 실행할 때 무료 취약점 소스(OSV.dev·npm·semgrep 레지스트리·endoflife.date)를 조회한다 — 패키지 이름과 버전만 보낸다. `--offline` 이면 건너뛰고, 네트워크가 안 닿으면 «문제 없음» 이 아니라 건너뜀으로 적는다.
 - **유료 할당량 프로브 — 기본 꺼짐.** `quota_probe: true`(또는 `SIDEREUS_QUOTA_PROBE=1`)면, 조회가 429 를 받는 동안 같은 토큰으로 120초마다 `api.anthropic.com/v1/messages` 에 Haiku 요청 1회를 보낸다(`max_tokens 1`, 회당 약 $0.00002, 그 계정에 청구). 레이트 리밋 헤더만 읽고 본문은 버린다.
 
 ## 하지 않는 것

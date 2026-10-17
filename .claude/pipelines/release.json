@@ -10,7 +10,7 @@
       "title": "점검",
       "agent": "sidereus-verifier",
       "model": "sonnet",
-      "task": "Run `/usr/bin/python3 scripts/deps_audit.py --online` once and report every WARN/FAIL line verbatim as a finding (item and detail only). List OK lines in summary. Change nothing.",
+      "task": "Run `/usr/bin/python3 scripts/deps_audit.py` once (online lookups incl. OSV.dev are on by default) and report every WARN/FAIL line verbatim as a finding (item and detail only). List OK lines in summary. Change nothing.",
       "ui": { "x": 44, "y": 24 }
     },
     {

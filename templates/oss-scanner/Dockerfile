@@ -4,9 +4,12 @@
 # the image. Network access is available during this Dockerfile build and is removed after this point, so
 # all code that an agent might need to perform its tests must be fetched here.
 # ⚠ Fetch everything (packages, toolchains, test data) BEFORE the final `COPY . /src`; nothing after it may download.
-FROM debian:bookworm
+# Pin variant + digest so builds are reproducible; `apt-get upgrade` below still pulls OS security fixes.
+# Refresh: docker pull debian:bookworm && docker inspect --format '{{index .RepoDigests 0}}' debian:bookworm
+FROM debian:bookworm@sha256:2c037a04925515fdd6ea85ea14a682d0e79931f5e9f5d07b6dbfc6ba12f9e858
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
       ca-certificates build-essential git python3 \
     && rm -rf /var/lib/apt/lists/*
 

@@ -84,8 +84,8 @@ Flows (`sidereus/arch_flow.py`) check every step the same way, but never change 
 
 ### Security checks
 
-`scripts/arch_checks.py --repo <repo> --category security [--net]` writes `checks-security.json`: rule, `file:line`, package only.
-⚠Secret values and matched text are never stored; advisory lookups run only with `--net`. semgrep uses local rules only.
+`scripts/arch_checks.py --repo <repo> --category security [--offline]` writes `checks-security.json`: rule, `file:line`, package only.
+⚠Secret values and matched text are never stored; advisory lookups (and semgrep registry packs when there is no local config) run online by default; offline or `--offline` = skipped, never «0 issues».
 
 ### map.json v2
 
