@@ -33,4 +33,4 @@ User docs have a Korean version alongside (`*.ko.md`).
 | `dev/FILEMAP.md` | One row per `web/js` and `web/css` file |
 | `notes/` | Design notes and deferred research |
 
-`AGENTS.md`, `dev/` and `notes/` are internal and left out of the published copy (`.distignore`).
+`AGENTS.md`, `dev/` and `notes/` are internal. `.distignore` (mirrored as `export-ignore` in `.gitattributes`) leaves them out of the `git archive` zip only; the git repository and its forks contain them.

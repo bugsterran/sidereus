@@ -71,7 +71,7 @@ One maintenance day a month:
 ## Release decisions
 
 - **Comments in English only** — one language in code; two would mean duplicated files that diverge. ⚠Do not shorten `★` evidence or `⚠` prohibitions; ⚠never quote request text.
-- **Docs split by audience, not translated** — public `README` · `docs/HOOKS.md` · `docs/CONFIG.md` (English + `.ko.md`); internal `AGENTS.md` · `docs/dev/` · `docs/notes/` are excluded by `.distignore`.
+- **Docs split by audience, not translated** — public `README` · `docs/HOOKS.md` · `docs/CONFIG.md` (English + `.ko.md`); internal `AGENTS.md` · `docs/dev/` · `docs/notes/` are left out of the zip by `.distignore` (git and forks still contain them).
 - **UI strings are English-source**, Korean in `I18N.ko` (`AGENTS.md` «Style»).
 - `.distignore`: `refactor/` ships (`snap.py`, README, `STAGE3.md`) but `refactor/snap/` does not (live metadata); `tests/` incl. `golden/` ships (synthetic, leak grep 0); `.playwright-mcp/`, `HANDOVER-*`, `NOTES-*`, `AUDIT-*` stay out.
 - Provenance (2026-09-24): copied code · CDN · bundled libraries **0**; file-type icons (`web/js/07-file-icons.js`) and favicon self-made; Codex and Grok marks replaced by self-made «CX» / «GK» glyphs; the other logos are simple-icons, attributed in `THIRD_PARTY_NOTICES.md` (CC0 17 + Copilot MIT).

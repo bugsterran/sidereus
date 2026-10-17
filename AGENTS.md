@@ -46,8 +46,8 @@ stderr    viewer.err                # ★append-only — old lines are fossils
    - `for f in web/*.js web/js/*.js; do node --check "$f"; done`. The Python compile cannot catch JS errors.
 4. **Verify on the screen.** Check the **rendered page**, not `/api/...` responses
    (an older handover said to verify with curl — that is stale; the API has been right while the screen was wrong more than once).
-5. **Never open a new browser.** The user's tab is already open (`--no-open` in the plist).
-   Opening `http://127.0.0.1:8799/` with playwright is fine.
+5. **Never open a new browser.** The person opens the viewer tab themselves.
+   Opening `http://127.0.0.1:8799/` with playwright for checks is fine.
 6. **Documentation is required for every feature added or changed.** Traps go in `docs/dev/traps/<domain>.md` (index: `docs/dev/TRAPS.md`; was the traps section of `VIEWER-HANDOVER.md`).
 7. **Sidereus = monitoring + relaying control.** It is not a read-only web page — it **relays** a person's instruction to a session, and the session executes it with its own permissions.
    - Allowed: sending instructions via the mailbox (DM · room) · signals the session reads itself, such as the mailbox-wide switch (`PAUSED`).
@@ -63,17 +63,6 @@ stderr    viewer.err                # ★append-only — old lines are fossils
      ⚠Delete never deletes — it moves the file to the backup folder (can be undone).
    - **Each account's `settings.json` (`claude_roots.accounts()`, primary `~/.claude/settings.json` first): three keys only** — `autoCompactEnabled`·`autoCompactWindow` (`sidereus/cc_settings.py`, Settings › «Preferences»; one save writes every account, or with «Per account» only the accounts whose values changed — an unchanged account is not written; an extra that is missing/invalid/symlinked is skipped, never created). Same guards per file (confirm · backup · Origin) + no other key changes by a single character. Owner-approved, exposed as a settings option.
      + `env.OTEL_EXPORTER_OTLP_ENDPOINT` (primary file only) — only its port, only in the same confirm as a «Port» save, only while it is the local `http://127.0.0.1|localhost:<port>` form (raw-byte replace). Owner-approved.
-
-## When saver mode lifts, go back to delegating on the spot
-
-★Recurring failure (3 days running): after saver mode ended, the main agent kept doing investigation and edits itself by inertia
-and only delegated once told to.
-
-- What failed was the **behaviour**, not the notice — the lift injection arrived correctly, and that turn still did all the grep · edit · verify directly.
-- On seeing the saver-lift or subagent-default injection (`~/.claude/hooks/saver.py`), delegate **from the next investigation · edit · verification**.
-  Do directly only «work where you already know where to look».
-- ⚠If that notice keeps coming, it means **you have not fixed it yet** (`~/.claude/hooks/saver.py` repeats it up to 6 times
-  until you actually delegate — calling Task/Agent stops it at once).
 
 ## Concurrent-edit protocol (put this in the brief when delegating to an agent)
 
@@ -123,7 +112,7 @@ sidereus-review-verifier→ review confirm: disproves each finding (code · git 
 - **Default = the pipeline, run directly**: follow `.claude/pipelines/sidereus-change.json` yourself with the Agent tool — stage order · agent · model · `skill` · `gate` · `onFail` — without the user pressing «Run» and without the Workflow tool (cheaper).
   Live verification sweeps (find defects on the running/demo screens, then fix) follow `.claude/pipelines/sidereus-verify.json` the same way.
   Each stage's Agent description starts with `[pl:sidereus-change/<stage title>]` (Sidereus lights stages from it; ⚠cut at 40 chars). Loop-backs and retries continue the same agent with SendMessage (its `summary` carries the same tag — the hook denies it otherwise). A small fix the user asks for directly may skip it.
-  A stage the orchestrator does itself (restart · live check · commit): start the Bash description with the same tag — `~/.claude/hooks/pl-mark.py` records only pipeline/stage/time in `plmark/<sid>.json`, Sidereus lights it as «main» for 2 min, and dispatching a tagged Agent/SendMessage clears it (main is waiting, not working); `[pl:-]` clears it.
+  A stage the orchestrator does itself (restart · live check · commit): start the Bash description with the same tag — `hooks/pl_mark.py` (shipped in the plugin as `plugin/hooks/pl_mark.py`) records only pipeline/stage/time in `plmark/<sid>.json`, Sidereus lights it as «main» for 2 min, and dispatching a tagged Agent/SendMessage clears it (main is waiting, not working); `[pl:-]` clears it.
   **A stage that is not needed is skipped and the run goes on to the next one** — first run a Bash described `[pl-skip:<name>/<stage title>] <reason>` (`hooks/pl_flow.py` denies an undeclared jump every time), and name the skipped stage and why in one line of the report.
   Pass the stage agent as `subagent_type` and its model as `model` (denied otherwise; another model: Bash `[pl-model:<name>/<stage title>=<model>]`). While a run is open, every SendMessage summary carries its stage tag or `[pl:-]`.
   ⚠Start the session in the project that owns the pipeline file — Sidereus attaches a run by the session's cwd / repos (a run started in another folder showed nowhere). Stage work (verify, live check) carries its stage tag; `[pl:-]` is only for work outside the pipeline.
