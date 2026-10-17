@@ -92,6 +92,7 @@ git clone https://github.com/bugsterran/sidereus.git ~/sidereus && cd ~/sidereus
 python3 -m sidereus start --open             # http://127.0.0.1:8799. Windows: sidereus.cmd start --open
 ```
 
+Windows에서는 문서의 `python3`를 `py`로 바꿔 쓰거나, 클론 폴더에서 `sidereus.cmd`를 실행하세요.
 화면만 쓴다면 설치는 이것으로 끝입니다. 명령·포트·로그인 시 자동 실행은 [시작하기 2~3장](docs/GETTING-STARTED.ko.md#2-뷰어-띄우기)을 보세요.
 
 8799가 이미 쓰이고 있으면(다른 클론, 또는 같은 Mac의 다른 계정이 띄운 Sidereus) `status`는 8799에 무언가 응답하지만
@@ -165,8 +166,8 @@ Claude Code 연결은 플러그인과 수동 훅 중 하나만 고릅니다([5�
 
 ## 에이전트에서 쓰기 (MCP)
 
-플러그인을 설치했다면 이미 등록돼 있습니다. 직접 등록하려면 클론 폴더에서 아래 명령을 실행합니다(macOS 기준.
-Windows에서는 `python3 -m sidereus setup-claude`가 출력한 명령을 쓰세요).
+플러그인을 설치했다면 이미 등록돼 있습니다(Windows에서는 플러그인 MCP 서버가 `python3`를 그대로 부르니, PATH에 없으면 아래처럼 직접 등록하세요). 직접 등록하려면 클론 폴더에서 아래 명령을 실행합니다(macOS 기준.
+Windows에서는 클론 안에서 `py -m sidereus setup-claude`를 실행해 나온 `claude mcp add` 명령을 쓰세요).
 
 ```sh
 claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.py"

@@ -19,6 +19,8 @@
 /usr/bin/python3 mailbox_config.py --label NAME    # launchd label for job NAME
 ```
 
+Windows 에서는 `py mailbox_config.py ...` 로 실행한다. 데이터 폴더 기본값은 `%USERPROFILE%\.mailbox-mcp` 다.
+
 설정 파일이 없거나 읽을 수 없으면 경고 한 줄을 내고 기본값으로 돈다.
 
 ## 키 (`config.local.json`)
@@ -137,6 +139,9 @@ Claude Code 의 `settings.json` 에 쓰는 키가 둘 있다(`src:"claude"`). �
 
 ## 서비스 (macOS launchd)
 
+macOS 전용이다. Windows 에는 뷰어 자동 실행만 있고(아래), 감시·데이터 백업 작업은 자동 실행이 없다.
+그 셸 스크립트는 Git Bash 나 WSL 이 있어야 돈다.
+
 작업마다 `~/Library/LaunchAgents/<Label>.plist` 로 저장한다. `<CODE_DIR>`·`<DATA_DIR>` 는 절대 경로로 쓴다.
 launchd 는 `~` 를 풀지 않는다. `MAILBOX_DIR` 등 변수는 `EnvironmentVariables` 딕셔너리에 넣는다.
 `<DATA_DIR>` 를 먼저 만든다. 없는 폴더에는 launchd 가 로그를 쓰지 못한다.
@@ -183,7 +188,10 @@ launchctl bootout gui/$(id -u)/io.sidereus.viewer                               
 rm ~/Library/LaunchAgents/io.sidereus.viewer.plist   # also delete it, or stop/status still see a service
 ```
 
-Windows: `--install-service` 가 로그온 작업 `Sidereus` 를 만든다. 지울 때는 `schtasks /End /TN Sidereus` 다음 `schtasks /Delete /TN Sidereus /F`.
+Windows(확인 못 함): `--install-service` 가 로그온 작업 `Sidereus` 를 만든다(`schtasks /Create /SC ONLOGON`,
+`pythonw.exe chat_server.py --no-open` 실행). 죽으면 다시 뜨지 않는다. 만들 때 관리자 권한이 필요할 수 있다.
+`Access is denied` 가 나오면 «관리자 권한으로 실행» 한 터미널에서 다시 한다. 재시작: `schtasks /End /TN Sidereus` 다음
+`schtasks /Run /TN Sidereus`. 제거: `/End` 다음 `schtasks /Delete /TN Sidereus /F`.
 
 ## 백업
 

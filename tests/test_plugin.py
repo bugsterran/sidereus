@@ -3,6 +3,9 @@ import importlib.util
 import json
 import os
 import re
+import shutil
+import subprocess
+import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -54,6 +57,8 @@ class PluginTest(unittest.TestCase):
                     self.assertEqual(c["type"], "command")
                     self.assertIsInstance(c["timeout"], int)
                     self.assertIn('"${CLAUDE_PLUGIN_ROOT}/', c["command"])   # quoted: cache path may hold spaces
+                    # every hook goes through the launcher (Windows: python3 may be the Store stub)
+                    self.assertTrue(c["command"].startswith('sh "${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh" "'), c["command"])
 
     def test_plugin_root_paths_exist(self):
         for rel in ("plugin/hooks/hooks.json", "plugin/.mcp.json"):
@@ -130,6 +135,56 @@ class PluginTest(unittest.TestCase):
                     if "leakscan: allow" in line:
                         continue
                     self.assertIsNone(DENY.search(line), "%s:%d" % (rel, n))
+
+
+@unittest.skipIf(os.name == "nt" or not os.path.exists("/bin/sh"), "POSIX sh stubs")
+class PyrunTest(unittest.TestCase):
+    """hooks/pyrun.sh with a fake PATH of stub interpreters (POSIX sh only; no real Python is run)."""
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def stub(self, name, ok):
+        # ok: passes the version probe; the real run echoes its name, args and stdin.
+        with open(os.path.join(self.tmp, name), "w") as f:
+            f.write('#!/bin/sh\ncase " $* " in *" -c "*) exit %d;; esac\necho "%s $*"; cat; exit 7\n' % (0 if ok else 9, name))
+        os.chmod(os.path.join(self.tmp, name), 0o755)
+
+    def run_sh(self, os_name):
+        # ⚠PATH = stubs only (+ cat): a real python/py in /usr/bin would win the probe on some hosts.
+        if not os.path.exists(os.path.join(self.tmp, "cat")):
+            os.symlink(shutil.which("cat"), os.path.join(self.tmp, "cat"))
+        env = {"PATH": self.tmp}
+        if os_name:
+            env["OS"] = os_name
+        return subprocess.run(["/bin/sh", os.path.join(ROOT, "hooks", "pyrun.sh"), "a b.py", "x"], input="{}",
+                              env=env, capture_output=True, text=True, timeout=10)
+
+    def test_non_windows_runs_python3_unprobed(self):
+        self.stub("python3", False)    # probe would fail; must not be probed off Windows
+        r = self.run_sh(None)
+        self.assertEqual((r.returncode, r.stdout), (7, "python3 a b.py x\n{}"))
+
+    def test_windows_order(self):
+        self.stub("python3", False)    # Store stub
+        self.stub("py", True)
+        self.stub("python", True)
+        r = self.run_sh("Windows_NT")
+        self.assertEqual((r.returncode, r.stdout), (7, "py -3 a b.py x\n{}"))
+        os.remove(os.path.join(self.tmp, "py"))
+        r = self.run_sh("Windows_NT")
+        self.assertEqual((r.returncode, r.stdout), (7, "python a b.py x\n{}"))
+        self.stub("python3", True)
+        r = self.run_sh("Windows_NT")
+        self.assertEqual((r.returncode, r.stdout), (7, "python3 a b.py x\n{}"))
+
+    def test_windows_none_found(self):
+        self.stub("python3", False)
+        r = self.run_sh("Windows_NT")
+        self.assertEqual((r.returncode, r.stdout), (127, ""))
+        self.assertIn("no Python 3.9+", r.stderr)
 
 
 if __name__ == "__main__":

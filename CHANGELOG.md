@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- CI: a non-blocking `windows-latest` job (Python 3.9 and 3.12) runs the same gates and unit tests plus a `start --demo` smoke test.
+
 ### Changed
 
 - Pipelines: the project button shows only the name and the live dot; the pipeline file count moved to the tooltip and the picker rows.
@@ -15,10 +19,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Timeline: «Running only» is a «Rows» select («All rows» / «Running only») like Range instead of a toggle chip.
 - Timeline: the session picker beside «Changes» is the same search combobox as Pipelines, Structure and Branches instead of a native select (project · sid · state per row, «Auto (latest active)» first).
 - Structure: opening a module's focus view centres the focused module horizontally once; later clicks, polls and repaints of that view keep the scroll.
+- Docs: setup pages give the Windows form of each command (`py` / `sidereus.cmd`, `schtasks` for the logon task, `%USERPROFILE%` paths) and list what needs Git Bash or WSL.
 
 ### Fixed
 
 - Structure: coming back from another tab puts the architecture map (overview or focus view) back at the scroll it was left at instead of the top-left.
+- Plugin (Windows): hooks run through `hooks/pyrun.sh`, which finds a real Python 3.9+ (`python3` unless it is the Microsoft Store stub, then `py -3`, then `python`); macOS/Linux still exec `python3`.
 
 ## [0.3.0] - 2026-10-17
 

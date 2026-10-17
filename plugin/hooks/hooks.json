@@ -5,12 +5,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/invite_notice.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/invite_notice.py\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pipelines_brief.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/pipelines_brief.py\"",
             "timeout": 5
           }
         ]
@@ -21,12 +21,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/invite_notice.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/invite_notice.py\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pipelines_brief.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/pipelines_brief.py\"",
             "timeout": 5
           }
         ]
@@ -37,12 +37,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/mailbox_stop.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/mailbox_stop.py\"",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/mailbox_wake.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/mailbox_wake.py\"",
             "timeout": 21720,
             "asyncRewake": true
           }
@@ -55,7 +55,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/file_peers_notice.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/file_peers_notice.py\"",
             "timeout": 2
           }
         ]
@@ -65,12 +65,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_mark.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_mark.py\"",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_flow.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_flow.py\"",
             "timeout": 5
           }
         ]
@@ -80,17 +80,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_mark.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_mark.py\"",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_flow.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_flow.py\"",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ev_hook.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/ev_hook.py\"",
             "timeout": 3
           }
         ]
@@ -102,7 +102,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_flow.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_flow.py\"",
             "timeout": 5
           }
         ]
@@ -112,7 +112,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ev_hook.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/ev_hook.py\"",
             "timeout": 3
           }
         ]
@@ -124,7 +124,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/perm_mark.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/perm_mark.py\"",
             "timeout": 5
           }
         ]
@@ -136,7 +136,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ev_hook.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/ev_hook.py\"",
             "timeout": 3
           }
         ]

@@ -11,7 +11,12 @@ git clone https://github.com/bugsterran/sidereus.git ~/sidereus      # 폴더는
 ```
 
 Python 3.9 이상만 있으면 된다. macOS 기본 `/usr/bin/python3` 로 된다.
-데이터(로그·캐시·메일박스·설정)는 `$MAILBOX_DIR` 에 쌓이고, 기본값은 `~/.mailbox-mcp` 다.
+데이터(로그·캐시·메일박스·설정)는 `$MAILBOX_DIR` 에 쌓이고, 기본값은 `~/.mailbox-mcp` 다
+(Windows: `%USERPROFILE%\.mailbox-mcp`).
+
+**Windows**(실제 기기에서는 아직 확인 못 함): 이 문서의 `python3`·`/usr/bin/python3` 는 `py` 로 바꿔 쓴다.
+`python3 -m sidereus …` 는 아무 폴더에서 `C:\path\sidereus\sidereus.cmd …` 로 해도 된다(`py -3`, 없으면 `python` 을 쓴다).
+`py -m sidereus` 는 클론 안에서만 된다. `~/.claude/settings.json` 은 `%USERPROFILE%\.claude\settings.json` 이다.
 
 ## 2. 뷰어 띄우기
 
@@ -32,9 +37,9 @@ python3 -m sidereus stop
 `caffeinate` 를 잡는다. 끄려면 `config.local.json` 에 `"quota_lookup": false`, `"keep_awake": false`.
 [SECURITY.md](../SECURITY.md) 참고.
 
-Windows(실제 기기에서는 아직 확인 못 함): 아무 폴더에서 `C:\path\sidereus\sidereus.cmd start --open`, 또는 클론
-안에서 `py -m sidereus start`. 뷰어·트랜스크립트·메일박스는 된다. 실시간 프로세스 확인, 터미널 이동, 할당량
-조회, 잠자기 방지는 꺼진다. `watch.sh` 는 Git Bash 나 WSL 이 있어야 돈다.
+Windows 에서도 뷰어·트랜스크립트·메일박스는 된다. 꺼지는 것: 실시간 프로세스 확인, 터미널 이동, 할당량
+조회, 잠자기 방지, 하네스 증거 기록(`hooks/ev_hook.py` 가 `fcntl` 을 쓴다).
+셸 스크립트(`watch.sh`, `backup.sh`, `backup-data.sh`)는 Git Bash 나 WSL 이 있어야 돈다.
 
 ## 3. 계속 띄워 두기
 
@@ -52,8 +57,11 @@ launchctl bootout gui/$(id -u)/io.sidereus.viewer          # 멈춤
 rm ~/Library/LaunchAgents/io.sidereus.viewer.plist         # 제거. 안 지우면 stop/status 가 서비스가 있다고 본다
 ```
 
-Windows 는 로그온 작업 `Sidereus` 를 만든다(확인 못 함). 지우려면
-`schtasks /End /TN Sidereus`, `schtasks /Delete /TN Sidereus /F`.
+Windows 는 `schtasks /Create /SC ONLOGON` 으로 로그온 작업 `Sidereus` 를 만들고 한 번 실행한다(확인 못 함).
+로그인할 때 뜨지만 죽으면 다시 뜨지 않는다. 만들 때 관리자 권한이 필요할 수 있다. `Access is denied` 가 나오면
+«관리자 권한으로 실행» 한 터미널에서 같은 `start --install-service` 를 다시 실행한다.
+여기서도 `sidereus stop` 은 작업을 건드리지 않는다. 멈춤: `schtasks /End /TN Sidereus`, 다시 띄우기:
+`schtasks /Run /TN Sidereus`, 제거: `/End` 다음 `schtasks /Delete /TN Sidereus /F`.
 
 ## 4. OpenTelemetry 로 세션 상태 보내기
 
@@ -77,7 +85,8 @@ Claude Code 는 세션 상태(생각 중, 어떤 도구)를 Sidereus 로 바로 
 둘 중 한 방법만 고른다. ⚠ 둘 다 하면 훅이 모두 두 번 걸리고 MCP 서버도 둘(`sidereus`, `plugin:sidereus:sidereus`)이 된다.
 
 **플러그인 (권장).** `sidereus` MCP 서버와 [HOOKS.ko.md](HOOKS.ko.md#claude-code-훅) 의 훅 9개를 등록한다.
-PATH 에 `python3` 가 있어야 한다.
+훅은 macOS/Linux 에서 `python3` 를 부른다. Windows 에서는 PATH 에서 `python3`, `py -3`, `python` 순으로 Python 3.9 이상을 찾고
+Git Bash 로 돌아가니 Git for Windows 를 설치한다. MCP 서버는 `python3` 를 그대로 부른다. Windows 에 그것이 없으면 아래 **수동** 의 줄로 서버도 등록한다.
 
 ```text
 /plugin marketplace add <클론 경로>
@@ -140,7 +149,7 @@ claude mcp add --scope user mailbox -- uv --directory <path-to-mailbox-mcp> run 
 
 | 증상 | 할 일 |
 |---|---|
-| 화면이 안 뜬다 | `python3 -m sidereus status` 로 보고 띄운다(서비스면 `launchctl kickstart -k ...`) |
+| 화면이 안 뜬다 | `python3 -m sidereus status` 로 보고 띄운다(서비스면 `launchctl kickstart -k ...`, Windows 는 `schtasks /Run /TN Sidereus`) |
 | 코드를 고쳤는데 안 바뀐다 | 화면은 시작할 때 만들어진다. 뷰어를 재시작한다. |
 | 세션이 하나도 안 보인다 | `~/.claude/projects/` 에 최근 `.jsonl` 파일이 있는지 본다. `CLAUDE_CONFIG_DIR` 을 쓰면 뷰어에도 같은 변수를 준다(launchd: `EnvironmentVariables`) |
 | MCP 도구가 "not reachable" | 뷰어가 꺼졌거나 막 재시작했다. 다시 부른다. |

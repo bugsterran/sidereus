@@ -7,8 +7,8 @@
 
 ## 등록
 
-플러그인이 등록해 준다(`plugin:sidereus:sidereus`). ⚠플러그인을 쓰면 아래 줄은 건너뛴다. 둘 다 하면 서버가 두 번
-등록된다. 손으로 등록할 때는 macOS 에서 클론 안에서 실행한다(Windows 는 `python3 -m sidereus setup-claude` 가 출력한 줄을 쓴다).
+플러그인이 등록해 준다(`plugin:sidereus:sidereus`). Windows 에서는 플러그인 MCP 서버가 `python3` 를 그대로 부르니, PATH 에 없으면 아래처럼 손으로 등록한다. ⚠플러그인을 쓰면 아래 줄은 건너뛴다. 둘 다 하면 서버가 두 번
+등록된다. 손으로 등록할 때는 macOS 에서 클론 안에서 실행한다(Windows 는 클론 안에서 `py -m sidereus setup-claude` 를 실행해 나온 `claude mcp add` 줄을 쓴다).
 
 ```sh
 claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.py"

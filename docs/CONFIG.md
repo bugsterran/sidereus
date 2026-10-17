@@ -19,6 +19,8 @@ Each value: environment variable > config file > default.
 /usr/bin/python3 mailbox_config.py --label NAME    # launchd label for job NAME
 ```
 
+On Windows run them as `py mailbox_config.py ...`. The data dir default is `%USERPROFILE%\.mailbox-mcp`.
+
 A missing or unreadable config file prints one warning and the defaults apply.
 
 ## Keys (`config.local.json`)
@@ -137,6 +139,9 @@ Two keys write Claude Code's `settings.json` (`src:"claude"`) — the default ac
 
 ## Services (macOS launchd)
 
+macOS only. On Windows only the viewer has an autostart (below); the watch and data-backup jobs have
+none, and their shell scripts need Git Bash or WSL.
+
 Save each job as `~/Library/LaunchAgents/<Label>.plist`. Use absolute paths for `<CODE_DIR>` and `<DATA_DIR>`;
 launchd does not expand `~`. Put `MAILBOX_DIR` and other variables in an `EnvironmentVariables` dict.
 Create `<DATA_DIR>` first: launchd cannot write a log into a missing folder.
@@ -183,7 +188,10 @@ launchctl bootout gui/$(id -u)/io.sidereus.viewer                               
 rm ~/Library/LaunchAgents/io.sidereus.viewer.plist   # also delete it, or stop/status still see a service
 ```
 
-Windows: `--install-service` creates the logon task `Sidereus`. Remove it with `schtasks /End /TN Sidereus` then `schtasks /Delete /TN Sidereus /F`.
+Windows (unverified): `--install-service` creates the logon task `Sidereus` (`schtasks /Create /SC ONLOGON`, runs
+`pythonw.exe chat_server.py --no-open`). It is not restarted if it dies. Creating it may need an Administrator prompt;
+on `Access is denied`, rerun from «Run as administrator». Restart: `schtasks /End /TN Sidereus` then
+`schtasks /Run /TN Sidereus`. Remove: `/End`, then `schtasks /Delete /TN Sidereus /F`.
 
 ## Backups
 

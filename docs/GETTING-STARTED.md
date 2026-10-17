@@ -11,7 +11,13 @@ git clone https://github.com/bugsterran/sidereus.git ~/sidereus      # any folde
 ```
 
 Needs Python 3.9 or later, nothing else; the macOS `/usr/bin/python3` works.
-Data (logs, caches, mailbox, config) goes to `$MAILBOX_DIR`, default `~/.mailbox-mcp`.
+Data (logs, caches, mailbox, config) goes to `$MAILBOX_DIR`, default `~/.mailbox-mcp`
+(Windows: `%USERPROFILE%\.mailbox-mcp`).
+
+**Windows** (not yet verified on a real machine): wherever this page says `python3` or `/usr/bin/python3`, write
+`py`. For `python3 -m sidereus …` you can also run `C:\path\sidereus\sidereus.cmd …` from any folder
+(it uses `py -3`, else `python`); `py -m sidereus` works only inside the clone.
+`~/.claude/settings.json` is `%USERPROFILE%\.claude\settings.json`.
 
 ## 2. Start the viewer
 
@@ -32,9 +38,9 @@ By default Sidereus reads the Claude Code OAuth token from the macOS keychain fo
 `caffeinate` while sessions work. Off: `"quota_lookup": false`, `"keep_awake": false` in
 `config.local.json`. See [SECURITY.md](../SECURITY.md).
 
-Windows (not yet verified on a real machine): `C:\path\sidereus\sidereus.cmd start --open` from any folder, or
-`py -m sidereus start` in the clone. The viewer, transcripts and mailbox work. Live process probes, terminal
-jump, the quota lookup and idle-sleep prevention are off. `watch.sh` needs Git Bash or WSL.
+On Windows the viewer, transcripts and mailbox work. Off there: live process probes, terminal jump, the
+quota lookup, idle-sleep prevention, and harness evidence rows (`hooks/ev_hook.py` needs `fcntl`).
+The shell scripts (`watch.sh`, `backup.sh`, `backup-data.sh`) need Git Bash or WSL.
 
 ## 3. Keep it running
 
@@ -51,8 +57,11 @@ launchctl bootout gui/$(id -u)/io.sidereus.viewer          # stop
 rm ~/Library/LaunchAgents/io.sidereus.viewer.plist         # uninstall; otherwise stop/status still see a service
 ```
 
-Windows creates the logon task `Sidereus` (unverified). Remove it with
-`schtasks /End /TN Sidereus` and `schtasks /Delete /TN Sidereus /F`.
+Windows (unverified) creates the logon task `Sidereus` with `schtasks /Create /SC ONLOGON` and runs it once.
+It starts at login but is not restarted if it dies. Creating it may need an Administrator prompt: if you
+see `Access is denied`, run the same `start --install-service` from a terminal opened with «Run as administrator».
+`sidereus stop` leaves the task alone here too. Stop: `schtasks /End /TN Sidereus`; start again:
+`schtasks /Run /TN Sidereus`; uninstall: `/End`, then `schtasks /Delete /TN Sidereus /F`.
 
 ## 4. Session state over OpenTelemetry
 
@@ -76,7 +85,9 @@ transcripts, a little later.
 Pick one way. ⚠ Not both: you would get every hook twice and two MCP servers (`sidereus` and `plugin:sidereus:sidereus`).
 
 **Plugin (recommended).** Registers the `sidereus` MCP server and the nine hooks in
-[HOOKS.md](HOOKS.md#claude-code-hooks). It needs `python3` on PATH.
+[HOOKS.md](HOOKS.md#claude-code-hooks). Its hooks run `python3` on macOS/Linux; on Windows they look on PATH
+for Python 3.9+ as `python3`, then `py -3`, then `python`, and run through Git Bash, so install Git for Windows.
+Its MCP server runs bare `python3`: on Windows without it, also register the server with the line from **Manual** below.
 
 ```text
 /plugin marketplace add <path to your clone>
@@ -142,7 +153,7 @@ Everyday use, with screenshots: [GUIDE.md](GUIDE.md).
 
 | Symptom | Fix |
 |---|---|
-| Page does not load | `python3 -m sidereus status`, then start it (or `launchctl kickstart -k ...`) |
+| Page does not load | `python3 -m sidereus status`, then start it (service: `launchctl kickstart -k ...`; Windows: `schtasks /Run /TN Sidereus`) |
 | A code change does not show | The page is built at start. Restart the viewer. |
 | No sessions listed | Check that `~/.claude/projects/` has recent `.jsonl` files. With `CLAUDE_CONFIG_DIR` set, the viewer must see the same variable (launchd: `EnvironmentVariables`) |
 | MCP tools say "not reachable" | The viewer is down or just restarted. Call again. |
