@@ -30,12 +30,13 @@ function archMmId(k){
   const f = String(k || '').split('\t'); if(/^fv/.test(f[0] || '')) f.shift();
   return f.length >= 8 ? { id: [f[0], f[6], f[7]].join('|'), all: f[1] === 'all' } : null;
 }
-// Pure: first-sight .archmap scroll: map top just below the sticky top; left centred if the map fits, else its left edge. Clamped to [0, max].
-// ⚠Not the map centre: on a map taller/wider than the view, centring clips the Entry band (top-left) out of sight.
+// Pure: first-sight .archmap scroll: horizontally the map centre (bands share one centre axis, so the modules sit there);
+//   vertically centred when the map fits below the sticky top, else its top just below it. Clamped to [0, max].
+// ⚠Not the vertical centre of a tall map: that clipped the Entry band (top row) out of sight.
 function archMmAnchor(view, map){
-  const cl = (a, hi) => Math.max(0, Math.min(hi, a)), top = view.top || 0;
-  const x = map.w <= view.cw ? map.x + map.w / 2 - view.cw / 2 : map.x;
-  return { left: Math.round(cl(x, Math.max(0, view.sw - view.cw))), top: Math.round(cl(map.y - top, Math.max(0, view.sh - view.ch))) };
+  const cl = (a, hi) => Math.max(0, Math.min(hi, a)), top = view.top || 0, vh = Math.max(0, view.ch - top);
+  const y = map.h <= vh ? map.y + map.h / 2 - top - vh / 2 : map.y - top;
+  return { left: Math.round(cl(map.x + map.w / 2 - view.cw / 2, Math.max(0, view.sw - view.cw))), top: Math.round(cl(y, Math.max(0, view.sh - view.ch))) };
 }
 // Live .archmap view + diagram svg rect in scroll content px (same frame as archViewRect).
 function archMmVM(am, svg){
