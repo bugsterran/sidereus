@@ -87,6 +87,8 @@ Sessions can check this themselves with the MCP tool `sidereus_file_peers`; see 
 
 The Structure tab opens on «Architecture», a diagram of the project's modules.
 
+- «Project» in the header is the same search picker as in Pipelines: the button shows the name, a dot while a pipeline runs there and «…» while loading; hover for the path and sessions.
+
 ### Read the diagram
 - Only edges with checked evidence are drawn («Verified N/M»); «All edges» also shows implied ones.
 - Bands run top to bottom: layered styles show their layers; feature or app layouts show where code runs (Entry · Client · Server · Stores). Hover a band for its meaning.
