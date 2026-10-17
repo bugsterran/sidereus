@@ -104,7 +104,7 @@ _WRITE_SIG = re.compile(
 def _path_res(win):
     """(cd regex, write-target path regex). ⚠Windows adds `C:` and `\\`; on POSIX a `\\` is a shell escape, so it stays out."""
     if win:                                       # `~` too: 8.3 short names like `RUNNER~1`
-        return (re.compile(r"\bcd\s+((?:[A-Za-z]:)?[\w./\\~-]+)"),
+        return (re.compile(r"\bcd\s+(?:/[dD]\s+)?((?:[A-Za-z]:)?[\w./\\~-]+)"),   # cmd `cd /d C:\x`: skip the flag
                 re.compile(r"(?:[A-Za-z]:)?[\w./\\~-]+\.[A-Za-z0-9]{1,8}"))
     return re.compile(r"\bcd\s+([\w./~-]+)"), _PATH_RE2
 

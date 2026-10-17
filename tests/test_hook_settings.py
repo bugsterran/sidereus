@@ -85,6 +85,9 @@ class HookSettings(unittest.TestCase):
         cfg = _full()
         del cfg["hooks"]["SessionEnd"]
         self._write(cfg)
+        sp = os.path.join(self.gdir, "settings.json")
+        mt = os.stat(sp).st_mtime + 5
+        os.utime(sp, (mt, mt))            # ⚠coarse Windows mtime: two quick writes can share one stamp
         self.assertEqual(ext.ext_hook_check(NOW + 10), {})                        # within HOOK_CHECK_S
         self.assertEqual(ext.ext_hook_check(NOW + ext.HOOK_CHECK_S), {"gemini": ["SessionEnd"]})
         self.assertEqual(len(self.warned), 1)

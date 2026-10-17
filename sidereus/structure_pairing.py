@@ -1,6 +1,7 @@
 """Source <-> test pairing for the structure view: name/mirror/dir rules, the reference fallback, and the file list.
 Split from sidereus/structure.py (2026-09-24); the endpoint `structure_pair()` and its result cache stay there."""
 import os
+import posixpath   # repo-relative paths are "/"-joined on every OS (os.path on Windows splits on "\")
 import re
 import time
 from sidereus.memo import BoundedMemo
@@ -85,7 +86,7 @@ def _struct_pair_index(files):
     for f in files:
         if _struct_is_test(f):
             continue
-        stem, ext = os.path.splitext(f)
+        stem, ext = posixpath.splitext(f)
         if ext == ".py":
             parts = stem.split("/")
             if parts[-1] == "__init__":
@@ -150,8 +151,8 @@ def _struct_pair_targets(trel, body, idx, uses=None):
         if f and f not in seen and f != trel:
             seen.add(f)
             out.append((f, via))
-    ext = os.path.splitext(trel)[1]
-    tdir = os.path.dirname(trel)
+    ext = posixpath.splitext(trel)[1]
+    tdir = posixpath.dirname(trel)
     if ext == ".py":
         py = idx["py"]
         raw = body
@@ -212,8 +213,8 @@ def _struct_pair_targets(trel, body, idx, uses=None):
             spec = m.group(1)
             nb = jbind.get(spec, ())
             if spec.startswith("."):
-                key = os.path.normpath(os.path.join(tdir, spec)).replace(os.sep, "/")
-                key = os.path.splitext(key)[0] if key.endswith(_PAIR_JS) else key
+                key = posixpath.normpath(posixpath.join(tdir, spec))
+                key = posixpath.splitext(key)[0] if key.endswith(_PAIR_JS) else key
                 put(js.get(key), "import", *nb)
             elif spec.startswith(("@/", "~/")):      # common `@/` -> `src/` alias
                 tail = "src/" + spec[2:]
@@ -234,8 +235,8 @@ def _struct_pair_match(rel, files, read=None):
     """Pure matcher. rel + all relative paths (+ reader for the reference fallback) ->
     (is rel a test, [{file, reason}] strongest first). reason: mirror · name · dir · ref."""
     is_test = _struct_is_test(rel)
-    d, base = os.path.split(rel)
-    stem, ext = os.path.splitext(base)
+    d, base = posixpath.split(rel)
+    stem, ext = posixpath.splitext(base)
     out, seen = [], {rel}
 
     def add(f, why):
@@ -248,12 +249,12 @@ def _struct_pair_match(rel, files, read=None):
         wext = wext or ext
         fam = _struct_pair_fam(wext)
         cands = [f for f in files if not _struct_is_test(f)
-                 and os.path.splitext(os.path.basename(f))[0] == want and f.endswith(fam)
-                 and (wext != ".go" or os.path.dirname(f) == d)]   # ⚠Go tests live in their package's dir
-        mir = _struct_pair_mirror(os.path.join(d, want + wext))
-        pdir = os.path.dirname(d)            # tests/x_test.py -> sibling of tests/, __tests__/x.test.ts -> parent
-        for f in sorted(cands, key=lambda f: (f != mir, os.path.dirname(f) not in (d, pdir), len(f), f)):
-            add(f, "mirror" if f == mir else ("dir" if os.path.dirname(f) in (d, pdir) else "name"))
+                 and posixpath.splitext(posixpath.basename(f))[0] == want and f.endswith(fam)
+                 and (wext != ".go" or posixpath.dirname(f) == d)]   # ⚠Go tests live in their package's dir
+        mir = _struct_pair_mirror(posixpath.join(d, want + wext))
+        pdir = posixpath.dirname(d)            # tests/x_test.py -> sibling of tests/, __tests__/x.test.ts -> parent
+        for f in sorted(cands, key=lambda f: (f != mir, posixpath.dirname(f) not in (d, pdir), len(f), f)):
+            add(f, "mirror" if f == mir else ("dir" if posixpath.dirname(f) in (d, pdir) else "name"))
         if not out and read:
             uses = {}
             refs = _struct_pair_targets(rel, read(rel) or "", _struct_pair_index(files), uses)
@@ -264,23 +265,23 @@ def _struct_pair_match(rel, files, read=None):
     else:
         fam = _struct_pair_fam(ext)
         mir = _struct_pair_mirror(rel)
-        mird = os.path.dirname(mir) if mir else None
+        mird = posixpath.dirname(mir) if mir else None
         tests = [f for f in files if _struct_is_test(f)]
         for f in tests:
-            s2, e2 = _struct_pair_subject(os.path.basename(f))
+            s2, e2 = _struct_pair_subject(posixpath.basename(f))
             ok = bool(s2) and s2 == stem and e2 in fam
             if not ok:     # `__tests__/x.ts` — the directory alone marks it as the test of `x.ts`
-                ok = (os.path.splitext(os.path.basename(f))[0] == stem and f.endswith(fam)
+                ok = (posixpath.splitext(posixpath.basename(f))[0] == stem and f.endswith(fam)
                       and ("__tests__" in f.split("/") or bool(_struct_pair_proj(f))))
             if not ok:
                 continue
-            fd = os.path.dirname(f)
+            fd = posixpath.dirname(f)
             if ext == ".go" and fd != d:   # ⚠`b/x_test.go` cannot test `a/x.go` (one package = one dir)
                 continue
             pj = _struct_pair_proj(f)
-            if mird is not None and fd == mird or pj and os.path.dirname(pj) == d:
+            if mird is not None and fd == mird or pj and posixpath.dirname(pj) == d:
                 why = "mirror"
-            elif fd == d or os.path.dirname(fd) == d or fd == os.path.join(d, "__tests__"):
+            elif fd == d or posixpath.dirname(fd) == d or fd == posixpath.join(d, "__tests__"):
                 why = "dir"
             else:
                 why = "name"
@@ -289,7 +290,7 @@ def _struct_pair_match(rel, files, read=None):
         if not out and read:
             idx = None
             hits = []
-            probe = os.path.basename(d) if stem == "index" and d else stem   # `./api` imports `api/index.ts`
+            probe = posixpath.basename(d) if stem == "index" and d else stem   # `./api` imports `api/index.ts`
             for f in tests[:STRUCT_PAIR_SCAN]:
                 b = read(f) or ""
                 if probe not in b:                # cheap prefilter before parsing imports

@@ -10,7 +10,6 @@ dirs of older versions are never read.
 """
 import os
 import re
-import shlex
 import threading
 import time
 
@@ -81,7 +80,7 @@ def _disp(c, path):
     if path:
         return os.path.basename(path)[:DX_NAME_MAX]
     try:
-        toks = shlex.split(c)
+        toks = hook_fields.split_cmd(c)
     except ValueError:      # unbalanced quotes: treat as a one-liner
         return _inline("shell")
     if not toks or _DX_SHELL_OPS.search(c) or toks[0] in _DX_SHELL_KW:

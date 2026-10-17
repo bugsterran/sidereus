@@ -153,6 +153,7 @@ class ShellQuote(unittest.TestCase):
         js = fns + "process.stdout.write(JSON.stringify(srecCmd(%s)));" % json.dumps({"cwd": cwd, "sid": sid})
         return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
+    @unittest.skipUnless(os.path.exists("/bin/sh"), "needs /bin/sh")
     def test_paths_round_trip(self):
         base = tempfile.mkdtemp(prefix="sidereus-shq-")
         try:

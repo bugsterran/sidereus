@@ -19,7 +19,8 @@ CHILD = textwrap.dedent(r'''
     ROOT = sys.argv[1]
     for m in ("fcntl", "pwd", "grp", "termios", "resource"):
         sys.modules[m] = None
-    del os.getuid
+    if hasattr(os, "getuid"):      # real Windows has none
+        del os.getuid
     sys.platform = "win32"
     os.name = "nt"                 # ⚠after the pre-imports: os.path stays posixpath, only `os.name == "nt"` branches flip
     def _nope(*a, **k):

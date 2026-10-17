@@ -187,7 +187,7 @@ class AccountsTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         dst = os.path.join(self.home, ".claude-work")
         assert_mode(self, dst, 0o700)
-        got = sorted(os.path.relpath(os.path.join(d, f), dst) for d, _, fs in os.walk(dst) for f in fs)
+        got = sorted(os.path.relpath(os.path.join(d, f), dst).replace(os.sep, "/") for d, _, fs in os.walk(dst) for f in fs)
         self.assertEqual(got, [".claude.json", "agents/x.md", "settings.json"])
         with open(os.path.join(dst, ".claude.json"), encoding="utf-8") as f:
             self.assertEqual(json.load(f), {"mcpServers": {"m": {"command": "c"}}})

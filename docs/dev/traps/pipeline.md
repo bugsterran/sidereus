@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Runs, stage hooks and evaluation
 
+- **`_touched` lowercases the whole tool-input blob on Windows** (hooks/pl_flow.py `_pkey`).
+  - Cause: inputs mix `\` and `/` (`~/x` expands onto a `C:\` home) and Windows paths ignore case, so `C:\u\agent` never matched `c:/u/agent/docs`.
+  - ⇒ Both the blob and each owner path go through `_pkey` (`\`→`/`, lower) on Windows only; POSIX is unchanged.
+  - ⚠The result is a membership test only. Never return or show the `_pkey` form; the owner path is returned in its original spelling.
+
 - ★**A subagent's `git commit` must not close the pipeline run** (2026-10-08). Hook events from inside a subagent carry the parent's `session_id` plus `agent_id`; `_commit_close` (hooks/pl_flow.py) took a stage agent committing its own slice as the end of the change and set `end`, so the timeline showed «Stopped · Implement» while that agent was still running.
   - ⇒ `_commit_close` returns when `agent_id` is present; only the main agent's commit closes a run. Test: `test_subagent_commit_keeps_run_open`.
 - ⚠**A subagent's commit stamps its own stage, not `cur`** (2026-10-09). A slice agent of Implement that commits after the run moved to Verify put `cm` on Verify. ⇒ `_cm_stage`: stage whose `ag` lists the `agent_id` (SendMessage `to`, or a background launch's `agentId` — structured key first, regex fallback), else the single stage whose pipeline `agent` == `agent_type` (running one preferred), else `cur`. ⚠`agent_type` on subagent hook events is not seen in repo fixtures — `.get()` only, falls back to `cur`. ⚠The receipt is matched JSON-dumped: a letter before `agentId` blocks the match (`subagentId`) unless it is an escape (`\nagentId` reads `nagentId`). Tests: `test_subagent_commit_*`, `test_bg_*`.

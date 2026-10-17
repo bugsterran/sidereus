@@ -42,7 +42,7 @@ class Browse(unittest.TestCase):
     def test_subdir_parent_and_tilde(self):
         code, out = PP.browse_dirs(os.path.join(self.home, "b-proj"))
         self.assertEqual((code, out["parent"], out["dirs"]), (200, self.home, []))   # .git is hidden
-        with mock.patch.dict(os.environ, {"HOME": self.home}):
+        with mock.patch.dict(os.environ, {"HOME": self.home, "USERPROFILE": self.home}):   # Windows expanduser reads USERPROFILE
             self.assertEqual(PP.browse_dirs("~/zz")[1]["path"], os.path.join(self.home, "zz"))
 
     def test_boundary(self):

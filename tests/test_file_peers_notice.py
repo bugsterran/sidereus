@@ -68,7 +68,7 @@ class FilePeersNotice(unittest.TestCase):
         self.file(ed("22222222", ago=30))
         line = fpn.decide(self.inp(tool="NotebookEdit", path="nb/x.ipynb", key="notebook_path"), now=1000)
         self.assertIn("<1 min ago", line)
-        self.assertEqual(self.calls[0][0], "/w/proj/nb/x.ipynb")
+        self.assertEqual(self.calls[0][0], os.path.normpath("/w/proj/nb/x.ipynb"))   # backslashes on Windows
 
     def test_dedup_within_ttl_then_again(self):
         self.file(ed("22222222"))
@@ -90,7 +90,7 @@ class FilePeersNotice(unittest.TestCase):
         line = fpn.decide(self.inp(), now=1.0 + fpn.PRUNE_S)
         self.assertNotIn("uncommitted", line)
         with open(fpn.STATE, encoding="utf-8") as f:
-            self.assertEqual(list(json.load(f)), ["%s|%s|22222222" % (ME, FILE)])
+            self.assertEqual(list(json.load(f)), ["%s|%s|22222222" % (ME, os.path.normpath(FILE))])
 
     def test_main_emits_pretooluse_json_never_deny(self):
         self.file(ed("22222222"))

@@ -19,7 +19,7 @@ SECRET = "SENTINEL-sk-9f8e7d"  # gitleaks:allow
 
 def _w(p, body):
     os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p, "w", encoding="utf-8") as f:
+    with open(p, "w", encoding="utf-8", newline="") as f:   # LF fixture on Windows too
         f.write(body if isinstance(body, str) else json.dumps(body))
 
 

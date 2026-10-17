@@ -186,7 +186,8 @@ def _proj(v):
     """Absolute project path from runs.json, or "" (non-str, relative, `..`, control chars, > PLR_PROJ_MAX)."""
     if not isinstance(v, str) or not v or len(v) > PLR_PROJ_MAX or not os.path.isabs(v):
         return ""
-    if any(ord(c) < 32 or c == "\x7f" for c in v) or ".." in v.split(os.sep):
+    # ⚠Split on both: Windows takes `/` too, so `/a/../b` slipped past a split on os.sep alone.
+    if any(ord(c) < 32 or c == "\x7f" for c in v) or ".." in v.replace("\\", "/").split("/"):
         return ""
     return v
 

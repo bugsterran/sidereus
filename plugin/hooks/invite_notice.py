@@ -149,13 +149,13 @@ def watch_mode(cwd):
     if not isinstance(mw, dict):
         return "on"
     best, val = -1, mw.get("mode")
-    here = os.path.normpath(cwd) if cwd else ""
+    here = os.path.normcase(os.path.normpath(cwd)) if cwd else ""   # ⚠normcase: Windows ignores case, `/` = `\`
     projects = mw.get("projects")
     for p, v in (projects.items() if isinstance(projects, dict) else []):
         if not isinstance(p, str) or not p:
             continue
-        root = os.path.normpath(os.path.expanduser(p))
-        if (here == root or here.startswith(root.rstrip("/") + "/")) and len(root) > best:
+        root = os.path.normcase(os.path.normpath(os.path.expanduser(p)))
+        if (here == root or here.startswith(root.rstrip(os.sep) + os.sep)) and len(root) > best:
             best, val = len(root), v
     return "off" if val == "off" else "on"
 
@@ -367,6 +367,11 @@ def main():
 
 
 if __name__ == "__main__":
+    for _s in (sys.stdin, sys.stdout):   # ⚠Windows pipes default to the ANSI codepage; hook output is UTF-8
+        try:
+            _s.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     try:
         main()
     except Exception:

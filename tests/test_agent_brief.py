@@ -1,5 +1,6 @@
 """sidereus/agent_brief.py — read-only briefs for the MCP server. No live files: every reader is monkeypatched."""
 import json
+import os
 import unittest
 from tests._load import sidereus
 
@@ -51,7 +52,7 @@ class TestPeers(Patch):
 class TestFile(Patch):
     def test_recent_editors_live_and_dirty(self):
         now = 10000.0
-        p = ROOT + "/a.py"
+        p = os.path.normpath(ROOT + "/a.py")   # brief_file normpaths (backslashes on Windows)
         idx = {p: {("aaaaaaaa-1", "main"): {"ts": now - 60, "agent": "", "desc": SECRET, "cwd": ROOT},
                    ("aaaaaaaa-1", "bbbbbbbbcc"): {"ts": now - 120, "agent": "general-purpose", "desc": SECRET,
                                                   "cwd": ROOT},

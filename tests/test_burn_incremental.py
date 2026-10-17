@@ -45,7 +45,7 @@ class BurnIncremental(unittest.TestCase):
         return os.path.join(p, name)
 
     def _append(self, fp, text, now=NOW):
-        with open(fp, "a", encoding="utf-8") as f:
+        with open(fp, "a", encoding="utf-8", newline="") as f:   # byte counts assume LF on Windows too
             f.write(text)
         os.utime(fp, (now, now))
 

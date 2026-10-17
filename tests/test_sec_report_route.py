@@ -41,7 +41,7 @@ class SecReportRoute(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def put(self, name, text):
-        with open(os.path.join(self.kdir, name), "w", encoding="utf-8") as f:
+        with open(os.path.join(self.kdir, name), "w", encoding="utf-8", newline="") as f:   # LF fixture on Windows too
             f.write(text)
 
     def get(self, path, name):

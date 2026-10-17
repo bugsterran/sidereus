@@ -4,6 +4,7 @@ import os
 import threading
 import time
 from sidereus import claude_roots
+from sidereus.agents import slash
 from sidereus.memo import BoundedMemo
 from sidereus.redact import redact
 from sidereus.transcript import _model_label
@@ -118,7 +119,7 @@ def recent_sessions(days=7):
     cut = now - days * 86400
     cand = []
     for fp, sl, mt, sz, br in ents:
-        if "/subagents/" in fp or not fp.endswith(".jsonl") or mt < cut:
+        if "/subagents/" in slash(fp) or not fp.endswith(".jsonl") or mt < cut:   # ⚠Windows: `\` separators
             continue
         sid = os.path.basename(fp)[:-6]
         if not _SID_SAFE.match(sid) or sid in live or sid_alive(sid):

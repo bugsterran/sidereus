@@ -217,6 +217,12 @@ def unit_label(u, o):
     return lab if len(lab) <= FO_LAB_MAX else lab[:FO_LAB_MAX - 1] + "…"
 
 
+def _fkey(p):
+    """Compare key of an abs path: normpath; ⚠Windows also normcase (git and transcripts disagree on drive/dir case).
+    Index keys keep the transcript's spelling for display; only lookups use this."""
+    return os.path.normcase(os.path.normpath(p))
+
+
 def _dirty(root, now):
     """Abs paths of tracked uncommitted files in a repo (wt_files, cached FO_TTL); None if git refused."""
     hit = _FO_GIT.get(root)
@@ -240,13 +246,18 @@ def conflicts(rows, now=None):
     live = _live_units(rows)
     if len(live) < 2:
         return []
-    grp = {}
+    grp, dk = {}, {}   # dk: repo root -> normcased dirty set (Windows only), built once per repo
     for p, own in index(now).items():
         hs = _hot(own, live, now)
         if len(hs) < 2:
             continue
         t = _edit_target(p)
         d = _dirty(t["cwd"], now) if t else None
+        if d and p not in d and os.name == "nt":
+            if t["cwd"] not in dk:
+                dk[t["cwd"]] = {_fkey(x) for x in d}
+            if _fkey(p) in dk[t["cwd"]]:
+                d = {p}
         if not d or p not in d:
             continue
         g = grp.setdefault(tuple(hs), {"units": list(hs), "sids": sorted({u[0] for u in hs}),
@@ -272,8 +283,10 @@ def wt_owners(cwd, rows=None, now=None):
     live = {r.get("sid") for r in rows if isinstance(r, dict) and r.get("sid") and r.get("state") != "done"}
     lu = _live_units(rows)
     root, idx, own_out, warn = _git_root(cwd) or cwd, index(now), {}, []
+    if os.name == "nt":
+        idx = {_fkey(k): v for k, v in idx.items()}
     for f in out.get("files") or []:
-        units = idx.get(os.path.normpath(os.path.join(root, f["path"])))
+        units = idx.get(_fkey(os.path.join(root, f["path"])))
         if not units:
             continue
         own_out[f["path"]] = [{"sid8": _sid8(s), "proj": proj.get(s) or os.path.basename(o["cwd"] or ""),

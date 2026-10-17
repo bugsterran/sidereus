@@ -154,6 +154,11 @@ def main():
 
 
 if __name__ == "__main__":
+    for _s in (sys.stdin, sys.stdout):   # ⚠Windows pipes default to the ANSI codepage; hook output is UTF-8
+        try:
+            _s.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     try:
         main()
     except Exception:

@@ -213,6 +213,8 @@ function cfgPaneTl(){
           sel('ta', T('Refresh interval'), TL_EVERY.map(x => [x[0], x[0] ? T(x[1]) : T('Manual')]), tlAuto))
     + set(T('Range'), T('Recent period the timeline shows.'),
           sel('th', T('Range'), hrs.map(h => [h, rangeLbl(h)]), tlHours))
+    + set(T('Changes baseline'), T('What the «Changes» chip in the toolbar counts against. Uncommitted = working tree and index vs the last commit, like an editor.'),
+          sel('tgb', T('Changes baseline'), TLG_BASES.map(x => [x[0], T(x[1], 'base')]), tlgBase))
     + set(T('Show task description on subagent rows'), T('Labels subagent rows by the one-line task description given to the subagent, with the type as a chip. Off shows the type only.'),
           seg(T('Show task description on subagent rows'), opt('agd','1',T('On'),tlAgDesc) + opt('agd','0',T('Off'),!tlAgDesc)));
 }
@@ -262,6 +264,7 @@ function cfgActs(){
     ta:   v => { tlAuto = +v; lsSet('mbTlAuto', tlAuto);
                  if(mainView === 'time'){ if(tlAuto) loadTl(true); else paintTl(); } },
     th:   v => { tlHours = +v; lsSet('mbTlHours', tlHours); if(mainView === 'time') loadTl(true); },
+    tgb:  v => tlgBaseSet(v),   // 77-timeline-git.js
     agd:  v => { tlAgDesc = (v === '1'); lsSet('sidereus.agdesc', tlAgDesc ? '1' : '0'); if(mainView === 'time') paintTl(); },
     vw:   v => { const it = vwLoad()[+v]; cfgClose(); if(it) vwApply(it); },
     svl:  v => { SVERR = ''; return svLimSet(v); },   // any new saver action drops the stale error; ⚠return the save promise so cfgBind refocuses after the async repaint

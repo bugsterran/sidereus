@@ -103,7 +103,7 @@ class EvalWin(unittest.TestCase):
     def test_gate_cwd_compares_case_blind(self):
         with mock.patch.object(E.os.path, "normcase", lambda s: s.lower()):
             got = E._gate_cwd("/Repo/.claude/pipelines/p.json", "/repo", "/clone")
-        self.assertEqual(got, "/clone")
+        self.assertEqual(got, os.path.normpath("/clone"))   # result is normpath'd (backslash on Windows)
 
 
 class HookWin(unittest.TestCase):

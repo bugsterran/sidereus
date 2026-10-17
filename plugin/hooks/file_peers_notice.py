@@ -147,5 +147,10 @@ def main():
 
 
 if __name__ == "__main__":
+    for _s in (sys.stdin, sys.stdout):   # ⚠Windows pipes default to the ANSI codepage; hook JSON is UTF-8
+        try:
+            _s.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     main()
     sys.exit(0)

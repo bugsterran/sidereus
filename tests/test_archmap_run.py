@@ -1,4 +1,5 @@
 """arch_map.runs: `/api/state` `archRun` from session rows + a temp store (store dir, Sidereus root and stage titles patched)."""
+import json
 import os
 import shutil
 import tempfile
@@ -133,7 +134,7 @@ class RunTest(unittest.TestCase):
         return d
 
     def test_store_dir_cwd_resolves_to_plan_repo(self):
-        d = self.store_dir('{"v": 1, "repo": "%s", "commit": "%s"}' % (self.repo, C1))
+        d = self.store_dir(json.dumps({"v": 1, "repo": self.repo, "commit": C1}))   # json.dumps escapes Windows backslashes
         s = self.row(cwd=d, repos=[d, self.home], sub=[{"lab": "[pl:arch-map/모듈 그리기] x", "min": 1}])
         self.assertEqual(list(AM.runs([s], NOW)), [self.repo])
         self.assertEqual(AM._target(self.row(cwd=os.path.join(d, "sub"), repos=[]), NOW)[0], self.repo)

@@ -29,8 +29,9 @@ class WorkAcct(unittest.TestCase):
         wk._sid_path = lambda cwd, sid: self.fp
         st._git_root = lambda d: None
         cr.SCAN_HOME = "/h"
-        self.accs = [{"dir": "/h/.claude", "label": "me", "primary": True},
-                     {"dir": "/h/.claude-work", "label": "work", "primary": False}]
+        # os.sep joins: _work_acct matches SCAN_HOME + os.sep (backslash on Windows)
+        self.accs = [{"dir": os.path.join("/h", ".claude"), "label": "me", "primary": True},
+                     {"dir": os.path.join("/h", ".claude-work"), "label": "work", "primary": False}]
         self.rec = ("", "")
         cr.accounts = lambda: [dict(a) for a in self.accs]
         cr.acct_of = lambda sid, fp: self.rec
@@ -41,12 +42,12 @@ class WorkAcct(unittest.TestCase):
 
     def test_primary(self):
         d = wk.session_work("/x", sid="abcdef12-0000")
-        self.assertEqual((d["acct"], d["acctDir"], d["acctPrimary"]), ("me", "~/.claude", True))
+        self.assertEqual((d["acct"], d["acctDir"], d["acctPrimary"]), ("me", os.path.join("~", ".claude"), True))
 
     def test_non_primary(self):
-        self.rec = ("work", "/h/.claude-work")
+        self.rec = ("work", os.path.join("/h", ".claude-work"))
         d = wk.session_work("/x", sid="abcdef12-0000")
-        self.assertEqual((d["acct"], d["acctDir"], d["acctPrimary"]), ("work", "~/.claude-work", False))
+        self.assertEqual((d["acct"], d["acctDir"], d["acctPrimary"]), ("work", os.path.join("~", ".claude-work"), False))
 
     def test_single_account(self):
         self.accs = self.accs[:1]

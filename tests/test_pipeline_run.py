@@ -1,6 +1,7 @@
 """«파이프라인» 실행 + lighting (web/js/48b-pipeline-run.js): run name, Workflow lighting, plrun model rendering, DM text.
 Pure functions only, run under node; the runner's args.models check runs in scripts/pipeline_check.mjs (check.sh)."""
 import json
+import os
 import re
 import subprocess
 import unittest
@@ -500,7 +501,7 @@ class LoopBack(unittest.TestCase):
 
 class CssRules(unittest.TestCase):
     """43-pipeline.css: pulse + reduced motion, readable wait nodes, full-row canvas below 1000px."""
-    CSS = open(__file__.rsplit("/tests/", 1)[0] + "/web/css/43-pipeline.css", encoding="utf-8").read()
+    CSS = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "css", "43-pipeline.css"), encoding="utf-8").read()
 
     def test_pulse_and_reduced_motion(self):
         self.assertIn("html[data-ui] .plw .plel.pulse{", self.CSS)          # outranks html[data-ui=next] .plw .plel
@@ -524,7 +525,7 @@ class CssRules(unittest.TestCase):
     def test_back_amber_token(self):
         # one «back» token with a light value >=3:1; no hard-coded #d9a441 left in the canvas or the overview
         self.assertIn(":root{--pl-back:#d9a441}", self.CSS)
-        light = open(__file__.rsplit("/tests/", 1)[0] + "/web/css/91-light.css", encoding="utf-8").read()
+        light = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "css", "91-light.css"), encoding="utf-8").read()
         self.assertIn("html[data-ui=next][data-theme=light]{--pl-back:#b45309}", light)
         self.assertIn(".plovst.plov-back{color:var(--pl-back)}", self.CSS)
         self.assertNotIn("d9a441", js_all())

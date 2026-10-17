@@ -378,7 +378,8 @@ class PortConfig(CliBase):
     def test_install_service_plist_follows_config(self):
         self.cli.IS_MAC, self.cli.IS_WIN = True, False
         self.cli.wait_up = lambda port: 200   # nothing really starts
-        self.cli.main(["start", "--port", "9127", "--install-service"])
+        with mock.patch.object(os, "getuid", lambda: 501, create=True):   # ⚠no os.getuid on Windows (mac branch forced)
+            self.cli.main(["start", "--port", "9127", "--install-service"])
         self.assertEqual(self._cfg_port(), 9127)
         path = self.cli.mac_plist_path(self.cli.mac_label())
         with open(path, "rb") as f:
@@ -538,7 +539,7 @@ class ServiceBuilders(CliBase):
         self.assertEqual(d["Label"], "io.sidereus.viewer")
         self.assertEqual(d["ProgramArguments"], ["/usr/bin/python3", os.path.join("/c", "chat_server.py"), "--no-open"])
         self.assertTrue(d["RunAtLoad"] and d["KeepAlive"])
-        self.assertEqual(d["StandardErrorPath"], "/d/viewer.err")
+        self.assertEqual(d["StandardErrorPath"], os.path.join("/d", "viewer.err"))
         self.assertEqual(d["WorkingDirectory"], "/c")
         self.assertIn("--port", plistlib.loads(self.cli.build_plist("x", 9000, "/d").encode())["ProgramArguments"])
 

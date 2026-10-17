@@ -64,10 +64,13 @@ def _src(it):
 
 def _argv(cmd):
     try:
-        if os.name == "nt":  # ⚠POSIX shlex eats `\`: `C:\h\x.py` became `C:hx.py` (masked, unresolved); same in hook_fields
-            return [t[1:-1] if len(t) > 1 and t[0] == t[-1] and t[0] in "\"'" else t
-                    for t in shlex.split(cmd, posix=False)]
-        return shlex.split(cmd)
+        if os.name != "nt":
+            return shlex.split(cmd)
+        # ⚠Windows: escapes off so `C:\h\x.py` keeps its `\` (POSIX shlex gave `C:hx.py`); quotes still removed,
+        # also inside a token (`"${ROOT}"/x.mjs`, kept by posix=False). Same as hook_fields.split_cmd.
+        lx = shlex.shlex(cmd, posix=True)
+        lx.whitespace_split, lx.escape, lx.commenters = True, "", ""
+        return list(lx)
     except ValueError:       # unbalanced quotes: a plain split still finds the script token
         return cmd.split()
 

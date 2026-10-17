@@ -125,8 +125,14 @@ def watch_on(cwd, v=None):
             v = _v_watch(v)
         except ValueError:
             return True
-    hit = [k for k in v["projects"] if cwd == k or cwd.startswith(k.rstrip(os.sep) + os.sep)]
+    c = _path_key(cwd)
+    hit = [k for k in v["projects"] if c == _path_key(k) or c.startswith(_path_key(k).rstrip(os.sep) + os.sep)]
     return (v["projects"][max(hit, key=len)] if hit else v["mode"]) == "on"
+
+
+def _path_key(p):
+    """Path form for prefix compares: unchanged on POSIX; ⚠Windows mixes `/` and `\\` and ignores case."""
+    return p if os.sep == "/" else os.path.normcase(os.path.normpath(p))
 
 
 ROOTS_MAX = 16

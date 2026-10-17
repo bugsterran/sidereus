@@ -297,7 +297,6 @@ WF_LIVE_S = 120        # a run whose journal or agent log moved this recently co
 WF_KEEP_S = 300        # a finished run stays in the session tree this long, like a just-finished row
 WF_HIST_S = 6 * 3600   # finished runs kept for the pipeline-tab Workflow view (`wfh`), same window as pl_runs.PLR_KEEP_S
 WF_HIST_N = 10         # newest finished runs per session in `wfh` — bounds the /api/state payload
-_WF_SEP = os.sep + "subagents" + os.sep
 
 
 def sub_globs(root):
@@ -313,9 +312,14 @@ def sub_paths(root):
     return list(dict.fromkeys(out))   # the patterns cannot overlap; dedupe anyway so a stubbed glob stays exact
 
 
+def slash(fp):
+    """`fp` with `/` separators, for substring tests like "/subagents/" (Windows paths use `\\` or a mix)."""
+    return fp if os.sep == "/" else fp.replace(os.sep, "/")
+
+
 def sub_sess_dir(fp):
     """Session directory of a subagent transcript (plain or workflow); '' when `fp` is not one."""
-    i = fp.rfind(_WF_SEP)
+    i = slash(fp).rfind("/subagents/")   # os.sep is one char, so the index holds for `fp`
     return fp[:i] if i >= 0 else ""
 
 
@@ -358,7 +362,7 @@ def _wf_journal(fp):
     return _WF_JOURNAL.put(fp, out, stamp=sig)
 
 
-_WF_SCRIPT = re.compile(rb'\\nScript file: ([^"\\]+?)\.js')
+_WF_SCRIPT = re.compile(rb'\\nScript file: ((?:[^"\\]|\\\\)+?)\.js')   # `\\` pair = a JSON-escaped Windows separator
 
 
 def _wf_name(sess_dir, run_dir):
@@ -374,7 +378,8 @@ def _wf_name(sess_dir, run_dir):
         return ""
     if hit and (hit[1] >= sz or time.time() - hit[2] < 30):
         return ""
-    key = ("workflows/" + os.path.basename(run_dir)).encode()
+    rid = os.path.basename(run_dir).encode()
+    keys = (b"workflows/" + rid, b"workflows\\\\" + rid)   # ⚠Windows: the JSON line holds a backslash escaped as `\\`
     name = ""
     try:
         with open(tp, "rb") as f:
@@ -383,12 +388,14 @@ def _wf_name(sess_dir, run_dir):
                 f.seek(hit[1] - 65536)
                 f.readline()
             for ln in f:
-                i = ln.find(key)
-                if i < 0:
-                    continue
-                m = _WF_SCRIPT.match(ln, i + len(key))
+                m = None
+                for key in keys:
+                    i = ln.find(key)
+                    if i >= 0:
+                        m = _WF_SCRIPT.match(ln, i + len(key))
+                        break
                 if m:
-                    name = os.path.basename(m.group(1).decode("utf-8", "replace"))
+                    name = os.path.basename(m.group(1).replace(b"\\\\", b"/").decode("utf-8", "replace"))
                     # ⚠Saved copies are `<name>-<run_id>.js` (same as wf_meta.script_name) — drop the run-id suffix.
                     sfx = "-" + os.path.basename(run_dir)
                     name = (name[:-len(sfx)] if name.endswith(sfx) and len(name) > len(sfx) else name)[:60]

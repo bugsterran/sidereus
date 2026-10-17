@@ -1,4 +1,5 @@
 """agentcost iterates a snapshot of the usage index, not the live dicts a concurrent scan mutates."""
+import os
 import unittest
 
 from tests._load import sidereus, load
@@ -21,7 +22,7 @@ class AgcSnapshot(unittest.TestCase):
     def test_fetch_survives_concurrent_mutation(self):
         """Mutate the live index from inside the loop (as another thread would): the fetch must not raise."""
         U = sidereus("usage_index")
-        fp = "/p/sid1/subagents/agent-a.jsonl"
+        fp = os.path.join("/p", "sid1", "subagents", "agent-a.jsonl")   # _agc_fetch matches os.sep + "subagents" + os.sep
         live_h = {str(3600 * k): {"m": [10, 0, 0, 0]} for k in range(3)}
         saved = (dict(U._uidx["files"]), ac._uidx_refresh, ac._cost4, ac._agc_type, ac._agc_rows)
         calls = {"n": 0}
