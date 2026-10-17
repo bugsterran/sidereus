@@ -241,7 +241,7 @@ def c_scan(src):
     lang = "cpp" if _CPP_HINT.search(m) else "c"
     out = []
     for f in c_walk(m)[1]:
-        h = hashlib.md5(src[f["hs"]:f["close"] + 1].encode("utf-8", "replace")).hexdigest()[:12]
+        h = hashlib.md5(src[f["hs"]:f["close"] + 1].encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]
         out.append(dict({"name": (f["owner"] + "::" if f["owner"] else "") + f["name"], "lang": lang, "line": f["line"],
                          "lines": max(1, f["end"] - f["line"] + 1), "h": h}, **({"owner": f["owner"]} if f["owner"] else {})))
     return sorted(out, key=lambda r: r["line"])

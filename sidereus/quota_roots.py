@@ -270,7 +270,7 @@ def _pts_add(label, uid, out, now):
     pct = fh.get("pct")
     if not isinstance(pct, (int, float)) or isinstance(pct, bool):
         return
-    ah, r5 = hashlib.sha1(uid.encode("utf-8")).hexdigest()[:12], _reset_ep(fh)
+    ah, r5 = hashlib.sha1(uid.encode("utf-8"), usedforsecurity=False).hexdigest()[:12], _reset_ep(fh)
     with _acc_lock:
         g = _pts.get(label)
         if not g or g.get("acct") != ah or not _same_reset(g.get("reset5"), r5):

@@ -112,7 +112,7 @@ def _struct_cache_get(root, ck, key, now):
             _struct_out_cache[ck] = (key, hit[1], now)
             return dict(hit[1], warm=True), None
     # disk — same key reuses it even after restart. The key must be **identical** to the memory cache for results to match.
-    dkey = "out|%s|%s" % (root, hashlib.sha1(repr(key).encode("utf-8", "replace")).hexdigest())
+    dkey = "out|%s|%s" % (root, hashlib.sha1(repr(key).encode("utf-8", "replace"), usedforsecurity=False).hexdigest())
     dout = _struct_disk_read("out", dkey)
     if isinstance(dout, dict) and dout.get("ok"):
         with _struct_lock:

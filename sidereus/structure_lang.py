@@ -36,7 +36,7 @@ def _struct_py_fns(src):
         b = getattr(n, "end_lineno", None) or a
         body = "\n".join(lines[a - 1:b])
         out.append({"name": n.name, "lang": "py", "line": a, "lines": max(1, b - a + 1),
-                    "h": hashlib.md5(body.encode("utf-8", "replace")).hexdigest()[:12]})
+                    "h": hashlib.md5(body.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]})
     return out
 
 
@@ -170,7 +170,7 @@ def _js_scan(blk, base):
             continue
         out.append({"name": nm, "lang": "js", "line": base + blk[:m.start()].count("\n"),
                     "lines": ln,
-                    "h": hashlib.md5(body.encode("utf-8", "replace")).hexdigest()[:12]})
+                    "h": hashlib.md5(body.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]})
     return out
 
 
@@ -314,7 +314,7 @@ def _java_scan(src, lang="java"):
                 body = src[i0:i + 1]
                 out.append({"name": nm, "lang": lang, "line": ln0,
                             "lines": max(1, line - ln0 + 1),
-                            "h": hashlib.md5(body.encode("utf-8", "replace")).hexdigest()[:12]})
+                            "h": hashlib.md5(body.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]})
             while clses and clses[-1][1] == depth:
                 clses.pop()
             depth -= 1
@@ -381,7 +381,7 @@ def _go_scan(src):
         if ln > 900:
             continue
         out.append({"name": nm, "lang": "go", "line": src[:m.start()].count("\n") + 1, "lines": ln,
-                    "h": hashlib.md5(body.encode("utf-8", "replace")).hexdigest()[:12]})
+                    "h": hashlib.md5(body.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]})
     return out
 
 
@@ -389,7 +389,7 @@ def _struct_flat_fns(rel, src):
     """Files without function units (JSP etc.) — **one file as one cell**. `line` is always 1."""
     return [{"name": os.path.basename(rel), "lang": "jsp", "line": 1,
              "lines": src.count("\n") + 1,
-             "h": hashlib.md5(src.encode("utf-8", "replace")).hexdigest()[:12]}]
+             "h": hashlib.md5(src.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]}]
 
 
 # ⚠Do not write the opening/closing script tags **as literals in the source** — this file itself embeds the screen JS

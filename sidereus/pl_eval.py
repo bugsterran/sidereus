@@ -266,7 +266,7 @@ def red_row(repo, head, mode, verdict, ts):
 # ── red check store ──
 
 def gate_key(gate):
-    return hashlib.sha1(gate.encode("utf-8", "surrogateescape")).hexdigest()[:16]
+    return hashlib.sha1(gate.encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()[:16]
 
 
 def _red_file():

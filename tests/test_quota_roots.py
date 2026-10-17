@@ -276,7 +276,7 @@ class PtsRing(Base):
             raw = f.read()
         for bad in ("uuid-w", "a@b.c", "TOK-W", self.home):
             self.assertNotIn(bad, raw)
-        self.assertEqual(json.loads(raw)["work"]["acct"], hashlib.sha1(b"uuid-w").hexdigest()[:12])
+        self.assertEqual(json.loads(raw)["work"]["acct"], hashlib.sha1(b"uuid-w", usedforsecurity=False).hexdigest()[:12])
 
     def test_new_reset_clears_but_jitter_does_not(self):
         self._tick(10)

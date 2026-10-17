@@ -25,7 +25,7 @@ class SaverViews(unittest.TestCase):
             self.addCleanup(p.stop)
 
     def put(self, d, body):
-        tag = hashlib.sha1(os.path.realpath(d).encode()).hexdigest()[:10]
+        tag = hashlib.sha1(os.path.realpath(d).encode(), usedforsecurity=False).hexdigest()[:10]
         with open(os.path.join(self.tmp, ".saver-view-%s.json" % tag), "w") as f:
             f.write(body)
 

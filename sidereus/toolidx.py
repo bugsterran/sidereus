@@ -84,7 +84,7 @@ def _key_of(block):
 
 def hook_hash(cmd):
     """12-hex digest of a hook command — matches config to `hook_success.command` without keeping the text."""
-    return hashlib.sha1(cmd.encode("utf-8", "replace")).hexdigest()[:12]
+    return hashlib.sha1(cmd.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]
 
 
 def _line_events(d):

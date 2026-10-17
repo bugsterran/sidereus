@@ -36,7 +36,7 @@ def _struct_disk_file(kind, key):
     two copies of different versions alternately overwrite the same file and neither side's cache hits
     (measured 2026-09-22: changing the rules version and running once invalidated repo-B's blob cache entirely)."""
     h = hashlib.sha1(("%d|%d|%s" % (STRUCT_DISK_VER, STRUCT_RULES_VER, key))
-                     .encode("utf-8", "replace")).hexdigest()
+                     .encode("utf-8", "replace"), usedforsecurity=False).hexdigest()
     return os.path.join(STRUCT_DISK_DIR, "%s-%s.json.gz" % (kind, h))
 
 
@@ -130,7 +130,7 @@ def _struct_fcache_save(root, tests, fkeys):
     """Keep only the keys `_struct_now` used this time. Do not write if nothing changed."""
     ck = (root, _struct_tmode(tests))
     sig =hashlib.md5("\n".join(sorted(k[1] + "\t" + k[2] for k in fkeys))
-                      .encode("utf-8", "replace")).hexdigest()
+                      .encode("utf-8", "replace"), usedforsecurity=False).hexdigest()
     if _struct_fc_sig.get(ck) == sig:
         return
     with _struct_lock:
