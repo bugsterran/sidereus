@@ -57,6 +57,20 @@ function plRO(){ const p = plCur(); return !!(p && p.from); }   // canvas handle
 function plBorrowLab(b){
   return b.builtin ? b.name + ' · ' + T('Sidereus built-in') : TV({msg: '{name} · from {proj}', vars: {name: b.name, proj: strShort(b.from || '')}});
 }
+// Head-row chip of a borrowed pipeline running here (like plAgChip); the combobox lists own pipelines only.
+function plBorrowChip(b, on){
+  return '<button class="strp plon plbor' + (on ? ' on' : '') + '" data-plbor="' + esc(b.name) + '" title="' + esc(TV({msg: 'Defined in {proj} — read-only here', vars: {proj: b.from || ''}}) + ' · ' + T('running', 'exec')) + '">'
+    + esc(plBorrowLab(b)) + '<i class=mvdot></i></button>';
+}
+// ⚠Live runs only: the server lists every borrowed pipeline with a run record here, ended ones included.
+function plBorrowChips(d){
+  const on = b => b.name === PLS.sel && !PLAG && !PLS.wf && !PLS.std;
+  return plBorrows(d).filter(b => { const lv = plBorrowLv(PLS.proj, b); return !!(lv && lv.run && lv.run.run); }).map(b => plBorrowChip(b, on(b))).join('');
+}
+document.addEventListener('click', e => {
+  const b = e.target && e.target.closest ? e.target.closest('.plw [data-plbor]') : null;
+  if(b) plSelPick(b.dataset.plbor);
+});
 // Run of borrowed `p` on proj, matching the server's attach (sidereus/pipeline.runs_here): the Sidereus tool run, else a plrun of a session in proj.
 function plBorrowLv(proj, p){
   const a = p.name === ARCH_PL ? plAgRun(proj) : null;

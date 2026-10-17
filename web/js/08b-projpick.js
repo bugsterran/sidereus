@@ -49,12 +49,19 @@ function ppChipsHtml(cfg){
     + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '">' + esc(T('More ▾')) + '</button>';
 }
 // Combobox form (Pipelines): one button with the current project's full name; opens the same popover. cfg.badge(e) = trailing html (live dot).
+//   Optional (pipeline picker, 48 plPickHtml): flat(q) → rows without group headers · rowHtml(e, i) · ph (search placeholder)
+//   · none (button text with no cur) · empty (no-match text); no rkey = no recent list. Absent = project behaviour unchanged.
 function ppComboHtml(cfg){
   PPC[cfg.k] = cfg;
   const p = cfg.cur || '', e = (cfg.items || []).find(x => x.p === p) || { p: p, name: p.slice(p.lastIndexOf('/') + 1) || p };
   return '<b>' + esc(cfg.label) + '</b><button type=button class="strp ppbtn ppcombo" data-ppk="' + esc(cfg.k) + '" aria-haspopup=listbox aria-controls=ppop aria-expanded="'
-    + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '" title="' + esc(p) + '"><span class=ppcn>' + esc(p ? e.name || p : T('Pick a project')) + '</span>'
+    + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '" title="' + esc(p) + '"><span class=ppcn>' + esc(p ? e.name || p : cfg.none || T('Pick a project')) + '</span>'
     + (p && cfg.badge ? cfg.badge(e) : '') + ' ▾</button>';
+}
+// Pure: items whose name or p contains q (case-insensitive), order kept; the flat list of a cfg.flat picker.
+function ppFilter(items, q){
+  const s = String(q || '').trim().toLowerCase();
+  return (items || []).filter(e => !s || String(e.name || '').toLowerCase().includes(s) || String(e.p).toLowerCase().includes(s));
 }
 // Pure: chip widths ws, flex gap, row width avail, index of the selection → indices to fold, nearest-to-selection first.
 //   ⚠The selection renders last (stable order), so a narrow row clipped exactly it; folded chips stay in «More».
@@ -89,13 +96,14 @@ function ppRowHtml(e, i){
 function ppListPaint(){
   const l = document.querySelector('#ppop .cmdkl');
   if(!l || !PPS) return;
-  const g = ppGroups(PPS.cfg.items, tabJson(PPS.cfg.rkey, []), PPS.cfg.cur, PPS.q);
-  PPS.rows = g.work.concat(g.rec, g.all);
+  const c = PPS.cfg, row = c.rowHtml || ppRowHtml;
+  const g = c.flat ? null : ppGroups(c.items, tabJson(c.rkey, []), c.cur, PPS.q);
+  PPS.rows = g ? g.work.concat(g.rec, g.all) : c.flat(PPS.q);
   if(PPS.i >= PPS.rows.length) PPS.i = PPS.rows.length - 1;
   let i = 0;
-  const grp = (t, a) => a.length ? '<div class=ppg>' + esc(T(t)) + '</div>' + a.map(e => ppRowHtml(e, i++)).join('') : '';
-  l.innerHTML = PPS.rows.length ? grp('Working', g.work) + grp('Recent', g.rec) + grp('All', g.all)
-    : '<div class=cmdke>' + esc(T('No matching projects')) + '</div>';
+  const grp = (t, a) => a.length ? '<div class=ppg>' + esc(T(t)) + '</div>' + a.map(e => row(e, i++)).join('') : '';
+  l.innerHTML = !PPS.rows.length ? '<div class=cmdke>' + esc(c.empty || T('No matching projects')) + '</div>'
+    : g ? grp('Working', g.work) + grp('Recent', g.rec) + grp('All', g.all) : PPS.rows.map(e => row(e, i++)).join('');
   const on = l.querySelector('.cmdki.on');
   // ⚠Scroll the list box only — scrollIntoView could move the page under a fixed popover.
   if(on){ if(on.offsetTop < l.scrollTop) l.scrollTop = on.offsetTop; else if(on.offsetTop + on.offsetHeight > l.scrollTop + l.clientHeight) l.scrollTop = on.offsetTop + on.offsetHeight - l.clientHeight; }
@@ -109,9 +117,10 @@ function ppClose(focusBack){
 function ppOpen(cfg, btn){
   if(PPS){ const same = PPS.cfg.k === cfg.k; ppClose(false); if(same) return; }
   const p = popGet('ppop', 'cmdkb ppop');
-  p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', T('Find a project'));
+  const ph = cfg.ph || T('Find a project');
+  p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', ph);
   PPS = { cfg: cfg, q: '', i: -1, rows: [] };
-  p.innerHTML = '<input type=text data-ppq placeholder="' + esc(T('Find a project')) + '" aria-label="' + esc(T('Find a project')) + '">'
+  p.innerHTML = '<input type=text data-ppq placeholder="' + esc(ph) + '" aria-label="' + esc(ph) + '">'
     + '<div class=cmdkl role=listbox></div><div class="cmdkf ppf">' + (cfg.extra || '') + '<span>' + esc(T('↑↓ move')) + ' · '
     + esc(T('Enter pick')) + ' · ' + esc(T('Esc close')) + '</span></div>';
   PPS.i = 0;
@@ -124,7 +133,7 @@ function ppPick(i){
   if(!e) return;
   const cfg = PPS.cfg;
   ppClose(true);
-  ppRecent(cfg.rkey, e.p);
+  if(cfg.rkey) ppRecent(cfg.rkey, e.p);
   cfg.pick(e.p);
   const b = ppBtn(cfg.k);   // a full repaint (pipeline tab) replaces the opener: focus its successor
   if(b && document.activeElement !== b) b.focus({ preventScroll: true });

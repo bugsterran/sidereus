@@ -137,11 +137,12 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ★Demo 4-stage pipeline, headless (2026-10-16): canvas 816 / 1016 / 1356 px at 900 / 1100 / 1440, one row at each (80% / 100% / 100%).
 - ⚠Do not bring the side layout back for wide screens; it costs canvas width exactly where there is the most room.
 
-## Pipelines tab head row: select under the poll, menu inside `.plw` (48 `plSelHtml`/`paintPipe`, 48e `plNewBtn`)
+## Pipelines tab head row: comboboxes under the poll, menu inside `.plw` (48 `plPickHtml`/`paintPipe`, 48e `plNewBtn`, 48h `plBorrowChips`)
 
-- Cause: the head row is rebuilt on poll; a rebuild closes an open native `<select>` and drops focus in an open menu. Item handlers return early outside `.plw`, so a menu in a body-level popover would do nothing.
-- ⇒ `paintPipe` skips a poll repaint while a `.plw` SELECT or a `.plnewm` item has focus; option text carries only dirty/running (no relative times). The «+ New ▾» menu renders inside `.plw`; an outside click removes the menu node without a repaint (a rebuild detaches `e.target` and swallows the click).
-- ⚠`.plhead` is taken by the canvas arrowheads (`fill:none;stroke:none;opacity:.85`): the row is `.pltop`. Check a new class name with `grep -rnw` over `web/` first.
+- Cause: the head row is rebuilt on poll; a native `<select>` closed under it, and a menu item lost focus. Item handlers return early outside `.plw`, so a menu in a body-level popover would do nothing.
+- ⇒ Project and pipeline pickers are both 08b `ppComboHtml` (`data-ppk` `pl` / `plsel`); the list is `#ppop` outside `.plw`, so a repaint keeps it open and `ppPick` refocuses the new button. «+ New ▾» renders inside `.plw`; an outside click removes it without a repaint.
+- ⇒ Borrowed pipelines are head-row chips only while `plBorrowLv` reports a live run; the server lists ended runs too.
+- ⚠Refocus/kbHold targets are `[data-ppk="plsel"]`; `data-plsel` no longer exists. `.plhead` is taken by the canvas arrowheads: the row is `.pltop`.
 - ★Demo headless (2026-10-17): row height 30px, one row at 900 / 1100 / 1440 (ko, en).
 
 ## Canvas row height follows the graph (48d `plCvNeed`/`plGwFit`, 43 `--plcvh`)
