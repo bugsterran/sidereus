@@ -221,7 +221,7 @@ Object.assign(I18N.ko, {
   'no record {n}': '기록 없음 {n}',
   'can block {n}': '차단 가능 {n}',
   '{n} more': '나머지 {n}개',
-  '{n} commits': '커밋 {n}개',
+  '{n} commits': '커밋 {n}개', '{n} commit': '커밋 {n}개',
   'effects are estimates · counts = last {n} days': '효과는 추정 · 횟수는 최근 {n}일',
   // 48-pipeline.js
   '{n} pipelines running': '파이프라인 {n}개 실행 중',

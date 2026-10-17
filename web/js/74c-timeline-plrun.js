@@ -238,7 +238,15 @@ function tlPlSig(sess){
   return JSON.stringify((sess || []).filter(x => x && x.plrun && x.plrun.length).map(x => [x.sid, x.plrun.map(r => [r.name, r.end ? 1 : 0, r.cur,
     Object.keys(r.stages || {}).map(t => { const s = r.stages[t] || {}; return [t, s.o, s.k || 0, s.via || '', (s.ag || []).filter(a => a && a.run).length]; })])]));
 }
-function tlPlSync(){ const s = tlPlSig(SESS); if(s === TLPL_SIG) return; const first = !TLPL_SIG; TLPL_SIG = s; if(!first) tlPlRepaint(); }
+// ⚠Repaint on the first signature too: a Timeline painted before the first poll (no plrun, no accounts yet) otherwise kept
+//   no «Runs n» lane and no account picker until the next loadTl (30 s, never in Manual). Account labels join the signature
+//   because the picker is built only in paintTl. tlPlRepaint is debounced, so this costs one paint.
+function tlPlSync(){
+  const a = typeof acctList === 'function' ? (acctList() || []).map(x => x && x.label).join(',') : '';
+  const s = tlPlSig(SESS) + '|' + a;
+  if(s === TLPL_SIG) return;
+  TLPL_SIG = s; tlPlRepaint();
+}
 // ⚠If another caller holds PLS.busy[proj], plLoad returns at once with no data: re-arm silently (repainting here would spin).
 function tlPlLoad(proj){
   const q = plLoad(proj);

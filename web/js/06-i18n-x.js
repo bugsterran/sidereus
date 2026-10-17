@@ -16,7 +16,7 @@ Object.assign(I18N.ko, {
   'A check that went from FAIL to PASS. Shows the commits in between and the steps that flipped FAIL→PASS.': '같은 점검이 FAIL 뒤 PASS 로 바뀐 기록. 사이 커밋 수와 FAIL→PASS 로 바뀐 단계를 보여 줍니다.',
   'Whether the latest PASS stayed green. Regressed = same step FAIL again · Re-fixed = PASS again after a regression · Reverted = that commit was reverted · Dropped = not in the current branch history · Unverified = PASS taken with uncommitted changes.': '최근 PASS 가 이후에도 유지됐는지. Regressed = 같은 단계가 다시 FAIL · Re-fixed = 회귀 뒤 다시 PASS · Reverted = 그 커밋이 리버트됨 · Dropped = 현재 브랜치 이력에 없음 · Unverified = 미커밋 변경 상태의 PASS.',
   'unchanged': '그대로',
-  'n/a': '해당 없음', 'Details': '상세', '{n} declared skip(s)': '건너뜀 선언 {n}', '{n} loop-back(s)': '되돌림 {n}', '{n} files': '파일 {n}개', 'Blocked {n}': '차단 {n}',   // 47c flow
+  'n/a': '해당 없음', 'Details': '상세', '{n} declared skip(s)': '건너뜀 선언 {n}', '{n} loop-back(s)': '되돌림 {n}', '{n} files': '파일 {n}개', '{n} file': '파일 {n}개', 'Blocked {n}': '차단 {n}',   // 47c flow
   'not recorded': '기록 없음', 'not yet': '아직', 'outside read window': '읽기 범위 밖',
   'No gate evidence for this repo — the check gate or ev_hook did not capture it': '이 저장소의 게이트 증거가 없습니다 — check 게이트나 ev_hook 이 남기지 않았습니다',
   'Run still open or uncommitted': '실행이 아직 열려 있거나 커밋 전입니다',
