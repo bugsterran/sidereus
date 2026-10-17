@@ -82,7 +82,7 @@ class Runs(unittest.TestCase):
         r = ext._runs["g1"]
         self.assertEqual((r["parent"], r["start"], r["end"], r["state"], r["model"]),
                          (PAR, T0, T0 + 10, "done", "gemini-2.5-flash"))
-        with open(st.EXT_RUNS_FILE) as f:
+        with open(st.EXT_RUNS_FILE, encoding="utf-8") as f:
             self.assertNotIn(SECRET, f.read())
 
     def test_not_top_level_but_under_parent(self):

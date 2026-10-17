@@ -149,7 +149,7 @@ R.idle = burnIdle(burnUse().label);
 STORE.mbMainAcct = 'w<b>'; BURN.use = {label: 'me', primary: true};
 R.main = burnUse();
 """ + "\nprocess.stdout.write(JSON.stringify(R));")
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         R = json.loads(r.stdout)

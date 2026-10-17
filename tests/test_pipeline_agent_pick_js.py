@@ -17,7 +17,7 @@ def _js(expr):
     consts = "\n".join(re.search(r"^const %s[^\n]*$" % c, js_all(), re.M).group(0) for c in ("PL_PICK_BUILTIN", "PL_BUILTIN_AG"))
     pre = "const esc = s => String(s), T = s => s;\n" + js_fn("plOpt") + "\n" + js_fn("plGrpOpts") + "\n" + js_fn("plAgOpts") + "\n" + js_fn("plSkOpts") + "\n"
     src = pre + consts + "\n" + js_fn("plAgMissing") + "\n" + js_fn("plFolder") + "\n" + js_fn("plStem") + "\n" + js_fn("plOwnName") + "\n" + js_fn("plPickScoped") + "\n" + js_fn("plPickAgents") + "\n" + js_fn("plPickSkills") + "\nconsole.log(JSON.stringify(" + expr + "));"
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")

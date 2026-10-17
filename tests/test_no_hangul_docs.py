@@ -14,7 +14,7 @@ HANGUL = re.compile("[가-힣ᄀ-ᇿ㄰-㆏]")
 
 def tracked_md():
     try:
-        out = subprocess.run(["git", "-C", ROOT, "ls-files", "*.md"], capture_output=True, text=True, timeout=20)
+        out = subprocess.run(["git", "-C", ROOT, "ls-files", "*.md"], capture_output=True, text=True, timeout=20, encoding="utf-8")
     except (OSError, subprocess.SubprocessError):
         return None
     if out.returncode:

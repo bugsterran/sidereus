@@ -28,7 +28,7 @@ def run(rows, ack, polls=1):
             " out.push({shown: a.shown.map(x => x.id), quiet: a.quiet, badges: a.shown.filter(x => x.badge).length,"
             " keys: a.shown.map(x => x.key), ack: LS.mbAttnAck}); }"
             " console.log(JSON.stringify(out));" % json.dumps(per, ensure_ascii=False))
-    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 def row(sid, *sigs, cwd="/w/p"):

@@ -42,7 +42,7 @@ class Load(unittest.TestCase):
         try:
             for n in ("structure_lang_b.py", "structure_lang_a.py", "structure_lang_bad.py", "structure_lang.py",
                       "other_lang_c.py"):
-                open(os.path.join(d, n), "w").close()
+                open(os.path.join(d, n), "w", encoding="utf-8").close()
             seen, warned = [], []
 
             def imp(mod):

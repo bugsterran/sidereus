@@ -22,7 +22,7 @@ def _tables():
 def run(lang, expr):
     js = (STUB % json.dumps(lang) + i18n_switch(("T", "TV", "U")) + _tables() + "\n" + js_fn("stateLbl") + "\n" + js_fn("attnLbl") + "\n"
           + js_fn("actWhat")) + "\n" + js_fn("attnWhy") + "\nconsole.log(JSON.stringify(" + expr + "));"
-    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 class ActWhat(unittest.TestCase):

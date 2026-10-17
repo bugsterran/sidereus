@@ -15,7 +15,7 @@ class DiffEmptyNoUp(unittest.TestCase):
         src = (i18n_prelude("'ko'", ("T", "TV", "U")) + "const esc = s => s, agoAt = s => s;\n"
                "function dfFiles(d){ return []; }\nfunction commitList(d){ return ''; }\n"
                + js_fn("diffBody") + "\nprocess.stdout.write(diffBody(" + json.dumps(d) + "));")
-        return subprocess.run(node_e(src), check=True, capture_output=True, text=True).stdout
+        return subprocess.run(node_e(src), check=True, capture_output=True, text=True, encoding="utf-8").stdout
 
     def test_no_upstream(self):
         out = self.body({"ok": True, "hasUp": False})

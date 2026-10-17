@@ -28,21 +28,21 @@ class RemoteInfo(unittest.TestCase):
         self.main = os.path.join(self.d, "app")
         self.gd = os.path.join(self.main, ".git")
         os.makedirs(os.path.join(self.gd, "worktrees", "fix"))
-        with open(os.path.join(self.gd, "config"), "w") as f:
+        with open(os.path.join(self.gd, "config"), "w", encoding="utf-8") as f:
             f.write(CFG)
         # Worktree layout as git writes it: <wt>/.git file -> <main>/.git/worktrees/fix, commondir = ../..
         self.wt = os.path.join(self.d, "wt-fix")
         os.makedirs(os.path.join(self.wt, "sub"))
-        with open(os.path.join(self.wt, ".git"), "w") as f:
+        with open(os.path.join(self.wt, ".git"), "w", encoding="utf-8") as f:
             f.write("gitdir: " + os.path.join(self.gd, "worktrees", "fix") + "\n")
-        with open(os.path.join(self.gd, "worktrees", "fix", "commondir"), "w") as f:
+        with open(os.path.join(self.gd, "worktrees", "fix", "commondir"), "w", encoding="utf-8") as f:
             f.write("../..\n")
 
     def tearDown(self):
         shutil.rmtree(self.d)
 
     def touch(self, p, t):
-        open(p, "w").close()
+        open(p, "w", encoding="utf-8").close()
         os.utime(p, (t, t))
 
     def test_never_fetched(self):

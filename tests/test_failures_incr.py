@@ -30,7 +30,7 @@ class IncrementalReadTests(unittest.TestCase):
         self.d.cleanup()
 
     def _append(self, s):
-        with open(self.fp, "a") as f:
+        with open(self.fp, "a", encoding="utf-8") as f:
             f.write(s)
 
     def test_appends_counted(self):

@@ -16,7 +16,7 @@ SC = sidereus("sec_checks")
 
 def _touch(p, text=""):
     os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p, "w") as f:
+    with open(p, "w", encoding="utf-8") as f:
         f.write(text)
 
 

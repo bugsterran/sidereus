@@ -9,7 +9,7 @@ from tests._node import node_e
 
 def count(patch):
     js = "const NL='\\n';\n" + js_fn("dfChangeN") + "\nprocess.stdout.write(JSON.stringify(dfChangeN(" + json.dumps(patch) + ")));"
-    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 class ChangeCount(unittest.TestCase):

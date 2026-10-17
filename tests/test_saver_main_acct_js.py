@@ -13,7 +13,7 @@ def run(body):
     src = ("let ACCTS = [], STORE = {};\nconst UIS = {getItem: k => k in STORE ? STORE[k] : null};\n"
            + "\n".join(js_fn(f) for f in ("acctList", "mainAcct", "mainAcctOk", "saverViewFor"))
            + "\nconst R = {};\n" + body + "\nprocess.stdout.write(JSON.stringify(R));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

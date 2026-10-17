@@ -71,7 +71,7 @@ class SrcPersistCase(unittest.TestCase):
         now = T0 + 3600
         self._add(T0, "m|a", 10)
         o._otel_src_save(now=now, force=True)
-        with open(o.OTEL_SRC_FILE) as f:
+        with open(o.OTEL_SRC_FILE, encoding="utf-8") as f:
             self.assertIn(str(T0), json.load(f)["b"])
         self._reset()
         self._add(T0 + 5, "m|a", 1)              # ingested before the first load
@@ -79,7 +79,7 @@ class SrcPersistCase(unittest.TestCase):
         self.assertEqual(o._otel_src[T0]["m|a"], [2, 11])
 
     def test_load_corrupt_file_is_quiet(self):
-        with open(o.OTEL_SRC_FILE, "w") as f:
+        with open(o.OTEL_SRC_FILE, "w", encoding="utf-8") as f:
             f.write("{not json")
         o._otel_src_load()
         self.assertEqual(o._otel_src, {})

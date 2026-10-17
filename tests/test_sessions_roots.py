@@ -18,7 +18,7 @@ NOW = 1_800_000_000.0   # fixed epoch: tests never read the real clock
 
 def _w(fp, body="{}\n", mt=None):
     os.makedirs(os.path.dirname(fp), exist_ok=True)
-    with open(fp, "w") as f:
+    with open(fp, "w", encoding="utf-8") as f:
         f.write(body)
     if mt:
         os.utime(fp, (mt, mt))
@@ -160,7 +160,7 @@ class RowTest(RootsBase):
         self.assertEqual(S._row_acct(SID, fp), {"acct": "work", "acctDir": self.work})
 
     def _reg(self, text):
-        with open(os.path.join(self.home, ".claude-accounts"), "w") as f:
+        with open(os.path.join(self.home, ".claude-accounts"), "w", encoding="utf-8") as f:
             f.write(text)
 
     def test_single_root_no_acct(self):
@@ -187,7 +187,7 @@ class ResumeAcctTest(unittest.TestCase):
         js = "\n".join([_load.js_fn("shq"), _load.js_fn("resumeCmd"),
                         "console.log(JSON.stringify([resumeCmd('/w', '%s', \"/h/.claude-it's\"), resumeCmd('/w', '%s')]));"
                         % (sid, sid)])
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         out = json.loads(r.stdout)
         self.assertEqual(out[0], "cd '/w' && CLAUDE_CONFIG_DIR='/h/.claude-it'\\''s' claude --resume " + sid)

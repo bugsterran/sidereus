@@ -21,14 +21,14 @@ class Wake(unittest.TestCase):
     def setUp(self):
         self.store = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.store)
-        with open(os.path.join(self.store, "identity.json"), "w") as f:
+        with open(os.path.join(self.store, "identity.json"), "w", encoding="utf-8") as f:
             json.dump({"/proj": "me"}, f)
         self.inp = {"session_id": "sess-0001", "cwd": "/proj"}
 
     def post(self, **m):
         m.setdefault("t", time.time_ns())
         m.setdefault("id", "p%d" % m["t"])
-        with open(os.path.join(self.store, "bus.jsonl"), "a") as f:
+        with open(os.path.join(self.store, "bus.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps(m) + "\n")
 
     def run_w(self, life=0.05, on_sleep=None):
@@ -72,7 +72,7 @@ class Wake(unittest.TestCase):
     def test_one_waiter_per_session(self):
         lp = W.lock_path(self.store, "sess-0001")
         os.makedirs(os.path.dirname(lp))
-        with open(lp, "w") as f:
+        with open(lp, "w", encoding="utf-8") as f:
             f.write("999999")                      # fresh heartbeat held by another waiter
         self.assertEqual(self.run_w(life=5)[0], 0)
         old = time.time() - 60
@@ -93,7 +93,7 @@ class Wake(unittest.TestCase):
         self.assertIn("block", out.getvalue())
 
     def _state(self):
-        with open(W.MS.state_path(self.store, self.inp["session_id"])) as f:
+        with open(W.MS.state_path(self.store, self.inp["session_id"]), encoding="utf-8") as f:
             return json.load(f)
 
     def test_pending_only_does_not_wake(self):

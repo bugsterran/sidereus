@@ -92,7 +92,7 @@ class GitTreeDeadline(unittest.TestCase):
 class FailedStageNotPersisted(unittest.TestCase):
     def setUp(self):
         self.root = tempfile.mkdtemp()
-        with open(os.path.join(self.root, "a.py"), "w") as f:
+        with open(os.path.join(self.root, "a.py"), "w", encoding="utf-8") as f:
             f.write("def f():\n    return 1\n")
         S._struct_out_cache.clear()
 

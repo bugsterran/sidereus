@@ -98,7 +98,7 @@ class Log(Tmp):
         self.assertEqual(r["items"][0]["desc"], "x[31m" + "y" * 155)
         self.assertEqual(len(rev(1, C1, [{"file": "f%d.py" % i, "key": "k"} for i in range(300)])["items"]), SC.LOG_ITEMS_MAX)
         self.add(r)
-        with open(os.path.join(self.k, SC.LOG_FILE), "a") as f:
+        with open(os.path.join(self.k, SC.LOG_FILE), "a", encoding="utf-8") as f:
             f.write("{not json\n" + json.dumps({"v": 1, "at": 1, "commit": "zz", "src": "review", "items": []}) + "\n")
         self.add(rev(20, C2, [{"file": "b.py", "key": "k5"}]))
         v = SC.log_view(self.k)
@@ -111,7 +111,7 @@ class Log(Tmp):
         self.assertEqual(SC.log_view(self.k)["open"], [])
 
     def test_write_failure_returns_false(self):
-        with open(os.path.join(self.tmp, "file"), "w") as f:
+        with open(os.path.join(self.tmp, "file"), "w", encoding="utf-8") as f:
             f.write("x")
         self.assertFalse(SC.log_append(os.path.join(self.tmp, "file", "sub"), rev(1, C1, [])))
 
@@ -121,7 +121,7 @@ class Cli(Tmp):
         super().setUp()
         self.store = os.path.join(self.tmp, "store")
         self.cli = cli()
-        with open(os.path.join(self.repo, "conf.py"), "w") as f:
+        with open(os.path.join(self.repo, "conf.py"), "w", encoding="utf-8") as f:
             f.write("x = 1\n")
         self.calls = 0
 
@@ -129,7 +129,7 @@ class Cli(Tmp):
             self.calls += 1
             if "report" not in p:
                 return {"rc": 0, "out": "[]", "err": "", "t0": 0, "ms": 1}
-            with open(p["report"], "w") as f:
+            with open(p["report"], "w", encoding="utf-8") as f:
                 json.dump([{"RuleID": "aws-access-token", "File": os.path.join(self.repo, "conf.py"), "StartLine": 1,
                             "Secret": SECRET, "Match": "k = " + SECRET}], f)
             return {"rc": 1, "out": "", "err": "INF scanned ~2048 bytes", "t0": 0, "ms": 4}
@@ -156,7 +156,7 @@ class Cli(Tmp):
     def lines(self):
         if not os.path.exists(self.log):
             return []
-        with open(self.log) as f:
+        with open(self.log, encoding="utf-8") as f:
             return [json.loads(x) for x in f]
 
     def test_security_run_logs_one_scan_quality_none(self):
@@ -165,7 +165,7 @@ class Cli(Tmp):
         self.assertEqual([(r["src"], r["tools"], [x["key"] for x in r["items"]]) for r in rows],
                          [("scan", ["gitleaks"], ["gitleaks:aws-access-token"])])
         self.assertNotIn(SECRET, json.dumps(rows))
-        with open(os.path.join(self.repo, "ruff.toml"), "w") as f:
+        with open(os.path.join(self.repo, "ruff.toml"), "w", encoding="utf-8") as f:
             f.write("")
         self.main("--repo", self.repo)                       # quality run: nothing logged
         self.assertEqual(len(self.lines()), 1)

@@ -14,7 +14,7 @@ def run(state):
           "const S = " + json.dumps(state) + ";\nvar SOLE = S.sole || '';\n"
           "MSGS = S.msgs || []; place = S.place; replyTo = S.reply || null; CFG = S.cfg || {};\n"
           "process.stdout.write(JSON.stringify(chatTarget()));")
-    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 CFG = {"defaultRoom": "general", "viewerMe": "me"}

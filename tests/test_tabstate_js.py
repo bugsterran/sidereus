@@ -40,7 +40,7 @@ const st = tabStores(); R.layer = [st[0] === sessionStorage, st[1] === UIS];
 R.get = tabGet('v', 'd'); tabSet('w', 'br'); R.w = [UIS.d.w, sessionStorage.d.w, 'w' in localStorage.d];
 process.stdout.write(JSON.stringify(R));
 """
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         cls.R = json.loads(r.stdout)

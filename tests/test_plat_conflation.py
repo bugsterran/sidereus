@@ -25,7 +25,7 @@ def _fn(fname, name):
 
 def _node(sess, body, fns):
     js = "\n".join(["let SESS = " + json.dumps(sess) + ";"] + [_fn(f, n) for f, n in fns] + [body])
-    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

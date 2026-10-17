@@ -74,23 +74,23 @@ class SessionReposIncremental(unittest.TestCase):
         return (json.dumps({"message": {"content": "x" * 1000}}) + "\n") * 1700   # >1.5MB, past a tail window
 
     def test_cold_scan_finds_early_root(self):
-        with open(self.fp, "w") as f:
+        with open(self.fp, "w", encoding="utf-8") as f:
             f.write(self._edit(self.wt) + self._filler())
         self.assertEqual(gi.session_repos(self.fp, 1.0, None), [self.wt])
 
     def test_root_survives_append_and_recent_first(self):
-        with open(self.fp, "w") as f:
+        with open(self.fp, "w", encoding="utf-8") as f:
             f.write(self._edit(self.wt))
         self.assertEqual(gi.session_repos(self.fp, 1.0, None), [self.wt])
-        with open(self.fp, "a") as f:
+        with open(self.fp, "a", encoding="utf-8") as f:
             f.write(self._filler() + self._edit(self.other))
         self.assertEqual(gi.session_repos(self.fp, 2.0, None), [self.other, self.wt])
 
     def test_shrunk_file_rescans_from_zero(self):
-        with open(self.fp, "w") as f:
+        with open(self.fp, "w", encoding="utf-8") as f:
             f.write(self._edit(self.wt) + self._filler())
         gi.session_repos(self.fp, 1.0, None)
-        with open(self.fp, "w") as f:
+        with open(self.fp, "w", encoding="utf-8") as f:
             f.write(self._edit(self.other))
         self.assertEqual(gi.session_repos(self.fp, 2.0, None), [self.other])
 

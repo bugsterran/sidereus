@@ -31,7 +31,7 @@ MARKER = re.compile(r"\s*room=(\S+)\s+until=(\d+)\s+last=(\S+)\s*")
 
 
 def room_field(room):
-    """Room as written in the header and marker: percent-encoded so spaces etc. round-trip through `\S+`."""
+    """Room as written in the header and marker: percent-encoded so spaces etc. round-trip through `\\S+`."""
     return urllib.parse.quote(room, safe="")
 
 

@@ -22,7 +22,7 @@ ACCTS = [{label: 'me', primary: true}, {label: 'bad'}, {label: 'ok'}];
 
 def run_js(body, fns=FNS, pre=STUBS):
     src = pre + i18n() + "\n" + jconst("esc") + "\n" + "\n".join(js_fn(f) for f in fns) + "\n" + body
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

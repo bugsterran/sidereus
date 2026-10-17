@@ -67,7 +67,7 @@ R.same = kids.indexOf(document.activeElement);                     // the new «
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class SettingsOnce(unittest.TestCase):
     def test_one_confirm_one_post_per_action(self):
-        r = subprocess.run(node_e("const ROOT = %s;\n" % json.dumps(ROOT) + ONCE), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e("const ROOT = %s;\n" % json.dumps(ROOT) + ONCE), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         R = json.loads(r.stdout)
         self.assertEqual(R["cc"], [1, [["/api/prefs/set", "cc_auto_compact", False]]])
@@ -83,7 +83,7 @@ document.activeElement = kids[0]; kids[0].dataset = {mpx: 'gone'};
 paintCfg(); R.box = document.activeElement === box;                // no equivalent control: the dialog box, never BODY
 process.stdout.write(JSON.stringify(R));
 """
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         R = json.loads(r.stdout)
         self.assertEqual(R["same"], 1)

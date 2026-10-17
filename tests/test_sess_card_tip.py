@@ -26,7 +26,7 @@ class SessCardTipTest(unittest.TestCase):
         js = "\n".join(["const NL = String.fromCharCode(10);", i18n_prelude("'ko'", ("T", "TV")),
                         _fn(self.src, "sessCardTip"),
                         "console.log(JSON.stringify(%s.map(sessCardTip)));" % json.dumps(rows)])
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         return json.loads(r.stdout)
 

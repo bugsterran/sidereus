@@ -32,7 +32,7 @@ def run(body):
     dft = re.search(r"^const DF_TEST = .*$", js_all(), re.M).group(0)
     src = BASE + dft + "\n" + "\n".join(js_fn(f) for f in FNS) + "\nconst D = " + json.dumps(DIFF) \
         + ";\nconst R = {};\n" + body + "\nprocess.stdout.write(JSON.stringify(R));"
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)
@@ -157,18 +157,18 @@ class DiffUntracked(unittest.TestCase):
         self.addCleanup(setattr, gv, "sessions_rows", gv.sessions_rows)
         gv.sessions_rows = lambda **k: [{"cwd": d, "repos": []}]
         self.git("init", "-q", "-b", "main")
-        with open(os.path.join(d, "a.txt"), "w") as fh:
+        with open(os.path.join(d, "a.txt"), "w", encoding="utf-8") as fh:
             fh.write("a\n")
         self.git("add", "-A")
         self.git("commit", "-qm", "init")
         os.makedirs(os.path.join(d, "n"))
         for i in range(gv.DIFF_UNTR_MAX + 5):
-            with open(os.path.join(d, "n", "f%02d.txt" % i), "w") as fh:
+            with open(os.path.join(d, "n", "f%02d.txt" % i), "w", encoding="utf-8") as fh:
                 fh.write("x%d\n" % i)
 
     def git(self, *a):
         return subprocess.run(["git", "-C", self.d, "-c", "user.name=t", "-c", "user.email=t@t",
-                               "-c", "commit.gpgsign=false"] + list(a), check=True, capture_output=True, text=True).stdout
+                               "-c", "commit.gpgsign=false"] + list(a), check=True, capture_output=True, text=True, encoding="utf-8").stdout
 
     def test_untracked_only_when_asked_and_capped(self):
         off = self.gv.git_diff(self.d, "work")

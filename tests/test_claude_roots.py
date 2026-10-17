@@ -71,7 +71,7 @@ class ClaudeRootsTest(unittest.TestCase):
         self.assertEqual(r[2]["dir"], ext)
 
     def _reg(self, text):
-        with open(os.path.join(self.home, ".claude-accounts"), "w") as f:
+        with open(os.path.join(self.home, ".claude-accounts"), "w", encoding="utf-8") as f:
             f.write(text)
 
     def test_registry_label(self):
@@ -102,10 +102,10 @@ class ClaudeRootsTest(unittest.TestCase):
         os.makedirs(os.path.join(ext, "b"))
         os.makedirs(os.path.join(ext, "nosign", "projects"))   # registry-only: projects/ without .claude.json
         for x in ("a", "b"):
-            with open(os.path.join(ext, x, ".claude.json"), "w") as f:
+            with open(os.path.join(ext, x, ".claude.json"), "w", encoding="utf-8") as f:
                 f.write("{}")
         os.makedirs(os.path.join(ext, "empty"))
-        with open(os.path.join(self.home, ".claude.json"), "w") as f:   # signed home: still refused as too wide
+        with open(os.path.join(self.home, ".claude.json"), "w", encoding="utf-8") as f:   # signed home: still refused as too wide
             f.write("{}")
         work = self._mk(".claude-work")
         self._reg("account a %s/a\naccount b %s/b\naccount e %s/empty\naccount n %s/nosign\n"
@@ -131,7 +131,7 @@ class ClaudeRootsTest(unittest.TestCase):
         alt = os.path.join(self.home, ".claude-alt")
         os.makedirs(alt)
         os.symlink(os.path.join(self.prim, "projects"), os.path.join(alt, "projects"))
-        with open(os.path.join(alt, ".claude.json"), "w") as f:
+        with open(os.path.join(alt, ".claude.json"), "w", encoding="utf-8") as f:
             f.write("{}")
         self._reg("account me ~/.claude\naccount job ~/.claude-alt\n")
         pp = os.path.join(self.prim, "projects")

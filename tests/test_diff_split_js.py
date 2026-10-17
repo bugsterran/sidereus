@@ -42,7 +42,7 @@ class DiffSplit(unittest.TestCase):
         self.git("mv", "p.txt", "q.txt")
         self.put("sp ace.sql", "-- keep\n")
         self.put("img.bin", b"\0\3\2" * 60)
-        self.put("new.bin", b"\0\9" * 10)
+        self.put("new.bin", b"\0\\9" * 10)
         self.git("add", "-A")
         self.git("commit", "-qm", "renames")
         self.sha = self.git("rev-parse", "HEAD").strip()
@@ -54,14 +54,14 @@ class DiffSplit(unittest.TestCase):
     def git(self, *a):
         return subprocess.run(["git", "-C", self.d, "-c", "user.name=t", "-c", "user.email=t@t",
                                "-c", "commit.gpgsign=false"] + list(a),
-                              check=True, capture_output=True, text=True).stdout
+                              check=True, capture_output=True, text=True, encoding="utf-8").stdout
 
     def node(self, d):
         src = "const NL = String.fromCharCode(10); const T = s => s;\n" + "\n".join(js_fn(f) for f in FNS) \
             + "\nconst d = " + json.dumps(d) + ";\nconst f = dfFiles(d), p = splitDiff(d.diff);\n" \
             + "process.stdout.write(JSON.stringify({files: f.map(x => [x.path, x.add, x.del, x.cut || '']),\n" \
             + "  split: p.map(x => [x.path, x.add, x.del, x.isBin])}));"
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         return json.loads(r.stdout)
@@ -110,7 +110,7 @@ class DiffSplit(unittest.TestCase):
                "const hd = d => d.scopeBase ? TV({msg: 'Since {n}', vars: {n: d.scopeBase}}) : T(d.scope);\n"
                "const r = [hd(" + json.dumps(d) + "), hd(" + json.dumps(w) + ")];\n"
                "LANG = 'ko'; r.push(hd(" + json.dumps(d) + "));\nprocess.stdout.write(JSON.stringify(r));")
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(json.loads(r.stdout), ["Since " + base[:7], "Working tree (uncommitted)", "기준 " + base[:7] + " 이후"])
         body = js_fn("diffBody")

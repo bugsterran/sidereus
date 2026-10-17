@@ -86,10 +86,10 @@ class Online(unittest.TestCase):
         root = tempfile.mkdtemp(prefix="deps-audit-")
         self.addCleanup(shutil.rmtree, root)
         os.makedirs(os.path.join(root, "node_modules", "playwright"))
-        with open(os.path.join(root, "node_modules", "playwright", "package.json"), "w") as h:
+        with open(os.path.join(root, "node_modules", "playwright", "package.json"), "w", encoding="utf-8") as h:
             h.write('{"version": "1.2.3"}')
         f = os.path.join(root, "a.mjs")
-        with open(f, "w") as h:
+        with open(f, "w", encoding="utf-8") as h:
             h.write("import { chromium } from 'playwright';\nimport p from 'puppeteer';\n")
         self.assertEqual(da.osv_targets([f], root), [("npm", "playwright", "1.2.3")])
         self.assertEqual(da.osv_targets([], root), [])
@@ -102,9 +102,9 @@ class Collect(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.root)
         os.makedirs(os.path.join(self.root, "scripts"))
         os.makedirs(os.path.join(self.root, "node_modules", "playwright"))
-        with open(os.path.join(self.root, "node_modules", "playwright", "package.json"), "w") as h:
+        with open(os.path.join(self.root, "node_modules", "playwright", "package.json"), "w", encoding="utf-8") as h:
             h.write('{"version": "1.2.3"}')
-        with open(os.path.join(self.root, "scripts", "a.mjs"), "w") as h:
+        with open(os.path.join(self.root, "scripts", "a.mjs"), "w", encoding="utf-8") as h:
             h.write("import { chromium } from 'playwright';\n")
         self.ran, self.fetched = [], []
         rows = {"python": [{"cycle": "3.9", "latest": "3.9.6", "eol": "2025-10-31"}],

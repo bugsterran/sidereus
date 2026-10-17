@@ -180,7 +180,7 @@ class AgentViewSignatureTest(_Base):
 
     def reg(self, pid, sid, status="idle"):
         fp = os.path.join(self.cfg, "sessions", "%d.json" % pid)
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             json.dump({"pid": pid, "sessionId": sid, "cwd": "/w", "status": status}, f)
         os.utime(fp, ns=(self.clock_ns(), self.clock_ns()))
 
@@ -367,7 +367,7 @@ class SidProbeTest(_Base):
         d = os.path.join(self.proj, slug)
         os.makedirs(d, exist_ok=True)
         fp = os.path.join(d, sid + ".jsonl")
-        with open(fp, "w"):
+        with open(fp, "w", encoding="utf-8"):
             pass
         os.utime(fp, (mtime, mtime))
         return fp

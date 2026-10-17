@@ -43,12 +43,12 @@ class WorkflowRuns(unittest.TestCase):
         self.rd = os.path.join(self.sd, "subagents", "workflows", "wf_abc123-d10")
         os.makedirs(self.rd)
         now = time.time()
-        with open(self.sd + ".jsonl", "w") as f:        # parent transcript: the launch result names the script
+        with open(self.sd + ".jsonl", "w", encoding="utf-8") as f:        # parent transcript: the launch result names the script
             f.write(json.dumps({"type": "user", "message": {"content": [{"type": "tool_result", "content":
                     "Transcript dir: %s\nScript file: /repo/.claude/workflows/sidereus-change.js\nRun ID: wf_abc123-d10"
                     % self.rd}]}}) + "\n")
         os.makedirs(os.path.join(self.sd, "subagents"), exist_ok=True)
-        with open(os.path.join(self.sd, "subagents", "agent-aplain.jsonl"), "w") as f:
+        with open(os.path.join(self.sd, "subagents", "agent-aplain.jsonl"), "w", encoding="utf-8") as f:
             f.write(_usage_line(now - 50, "p1", 7))
         jr = [{"type": "launched"},
               {"type": "failed", "key": "k0", "agentId": ""},
@@ -57,12 +57,12 @@ class WorkflowRuns(unittest.TestCase):
               {"type": "started", "key": "k2", "agentId": "a2", "label": "impl s1", "phase": "Implement"},
               {"type": "started", "key": "k3", "agentId": "a3", "label": "impl s2", "phase": "Implement"},
               {"type": "failed", "key": "k3", "agentId": "a3"}]
-        with open(os.path.join(self.rd, "journal.jsonl"), "w") as f:
+        with open(os.path.join(self.rd, "journal.jsonl"), "w", encoding="utf-8") as f:
             f.write("".join(json.dumps(e) + "\n" for e in jr))
         for i, aid in enumerate(("a1", "a2", "a3")):
-            with open(os.path.join(self.rd, "agent-%s.jsonl" % aid), "w") as f:
+            with open(os.path.join(self.rd, "agent-%s.jsonl" % aid), "w", encoding="utf-8") as f:
                 f.write(_usage_line(now - 100 + i, "m" + aid, 100 * (i + 1)))
-            with open(os.path.join(self.rd, "agent-%s.meta.json" % aid), "w") as f:
+            with open(os.path.join(self.rd, "agent-%s.meta.json" % aid), "w", encoding="utf-8") as f:
                 json.dump({"agentType": "general-purpose", "description": "meta " + aid, "workflowPhase": "X"}, f)
         ag._WF_NAME.clear()
         ag._WF_JOURNAL.clear()
@@ -103,7 +103,7 @@ class WorkflowRuns(unittest.TestCase):
                          [("design", "Design", "done"), ("impl s1", "Implement", "run"), ("impl s2", "Implement", "fail")])
 
     def test_name_drops_run_id_suffix_of_saved_script(self):
-        with open(self.sd + ".jsonl", "w") as f:        # saved-script launch: <sess>/workflows/scripts/<name>-<run_id>.js
+        with open(self.sd + ".jsonl", "w", encoding="utf-8") as f:        # saved-script launch: <sess>/workflows/scripts/<name>-<run_id>.js
             f.write(json.dumps({"type": "user", "message": {"content": [{"type": "tool_result", "content":
                     "Transcript dir: %s\nScript file: %s/workflows/scripts/sidereus-wf-livecheck-wf_abc123-d10.js\nRun ID: wf_abc123-d10"
                     % (self.rd, self.sd)}]}}) + "\n")

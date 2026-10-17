@@ -66,7 +66,7 @@ class Base(unittest.TestCase):
                 "payload": {"id": sid, "cwd": cwd, "timestamp": _iso(self.now - 900), "cli_version": "0.156.1",
                             "source": "exec", "model_provider": "openai", "parent_thread_id": None,
                             "base_instructions": {"text": SECRET}}}
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             f.write("".join(json.dumps(o) + "\n" for o in [meta] + lines))
         os.utime(p, (self.now, self.now))   # mtime follows the pinned clock (scan filters on it)
         return p
@@ -231,7 +231,7 @@ class SbarRate(unittest.TestCase):
         js = STUBS + "const KE = (k, e) => k;\n" + js_fn("fmtMoney") + "\n" + js_fn("fmtPct") + "\n" + js_fn("extCostStr") + "\n" \
             + js_fn("extRateStr") + "\n" + _fn("60-statusbar.js", "sbExt") + "\n" \
             + _fn("60-statusbar.js", "sbExtSeg") + "\nprocess.stdout.write(JSON.stringify(sbExt(" + json.dumps(extu) + ")));"
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         return json.loads(r.stdout)
 

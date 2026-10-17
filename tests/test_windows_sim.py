@@ -132,7 +132,7 @@ class WindowsSim(unittest.TestCase):
                    CODEX_HOME=os.path.join(os.devnull, "no-codex-home"))
         env.pop("MAILBOX_CONFIG", None)
         p = subprocess.run([PY, "-c", CHILD, ROOT], env=env, cwd=self.tmp,
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, timeout=120, encoding="utf-8")
         line = [x for x in p.stdout.splitlines() if x.startswith("RESULT ")]
         self.assertTrue(line, "child failed:\n" + p.stderr[-3000:])
         out = json.loads(line[-1][7:])

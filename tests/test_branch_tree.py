@@ -24,7 +24,7 @@ def _run(branches, head):
         "const out = {}; const walk = (n, d) => { out[n.id] = brTreeOpen(n, d); n.kids.forEach(k => walk(k, d + 1)); };",
         "brTreeModel().forEach(g => walk(g, 0)); console.log(JSON.stringify(out));",
     ])
-    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

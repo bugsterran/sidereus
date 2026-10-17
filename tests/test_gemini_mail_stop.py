@@ -27,7 +27,7 @@ class GeminiMailStop(unittest.TestCase):
         self.now = time.time_ns()
         self.n = 0
         self.ident({self.cwd: "claude-a", "gemini:" + self.cwd: "gem-a"})
-        open(self.p("bus.jsonl"), "w").close()
+        open(self.p("bus.jsonl"), "w", encoding="utf-8").close()
 
     def tearDown(self):
         shutil.rmtree(self.d, ignore_errors=True)
@@ -80,11 +80,11 @@ class GeminiMailStop(unittest.TestCase):
         self.post("gem-a")
         env = dict(os.environ, MAILBOX_DIR=self.d)
         out = subprocess.run([sys.executable, HOOK], input=json.dumps({"session_id": "g2", "cwd": self.cwd}),
-                             capture_output=True, text=True, env=env, timeout=10)
+                             capture_output=True, text=True, env=env, timeout=10, encoding="utf-8")
         self.assertEqual(out.returncode, 0)
         self.assertEqual(json.loads(out.stdout)["decision"], "block")
         bad = subprocess.run([sys.executable, HOOK], input="not json", capture_output=True, text=True,
-                             env=env, timeout=10)
+                             env=env, timeout=10, encoding="utf-8")
         self.assertEqual((bad.returncode, bad.stdout), (0, ""))
 
 
@@ -103,7 +103,7 @@ class GeminiMailWorker(GeminiMailStop):
         super().tearDown()
 
     def mark(self):
-        open(os.path.join(self.cwd, gms.WORKER_MARK), "w").close()
+        open(os.path.join(self.cwd, gms.WORKER_MARK), "w", encoding="utf-8").close()
 
     def chat(self, text):
         """Append a Gemini transcript "user" row (text "" = a tool response row)."""
@@ -127,7 +127,7 @@ class GeminiMailWorker(GeminiMailStop):
         env = dict(os.environ, MAILBOX_DIR=self.d)
         env.pop("SIDEREUS_MAIL_WORKER", None)
         out = subprocess.run([sys.executable, HOOK], capture_output=True, text=True, env=env, timeout=10,
-                             input=json.dumps({"session_id": "g9", "cwd": self.cwd, "stop_hook_active": active}))
+                             input=json.dumps({"session_id": "g9", "cwd": self.cwd, "stop_hook_active": active}), encoding="utf-8")
         self.assertEqual(out.returncode, 0)
         return out.stdout
 
@@ -199,7 +199,7 @@ class GeminiMailWorker(GeminiMailStop):
         os.environ["SIDEREUS_MAIL_WORKER_MAX_IDLE"] = "2"
         self.work(human="hi")
         self.work()
-        with open(self.p("read-gem-a.cursor"), "w") as f:
+        with open(self.p("read-gem-a.cursor"), "w", encoding="utf-8") as f:
             f.write(str(self.now))
         self.assertIn("(빈 대기 0/2)", self.work()["reason"])
 
@@ -233,7 +233,7 @@ class OtherPlatformMailStop(unittest.TestCase):
     def hook(self, *args):
         env = dict(os.environ, MAILBOX_DIR=self.d, SIDEREUS_MAIL_WORKER="1")
         out = subprocess.run([sys.executable, HOOK] + list(args), capture_output=True, text=True, env=env,
-                             timeout=10, input=json.dumps({"session_id": "c1", "cwd": self.cwd}))
+                             timeout=10, input=json.dumps({"session_id": "c1", "cwd": self.cwd}), encoding="utf-8")
         self.assertEqual(out.returncode, 0)
         return out.stdout
 

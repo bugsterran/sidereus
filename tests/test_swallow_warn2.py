@@ -100,7 +100,7 @@ class ExpectedStayQuiet(unittest.TestCase):
 
     def test_narrowed_does_not_hide_bugs(self):
         with _Patch(bus, json=None):
-            open(os.path.join(self.d, "a.json"), "w").close()
+            open(os.path.join(self.d, "a.json"), "w", encoding="utf-8").close()
             with _Patch(bus, DATA_DIR=self.d):
                 self.assertRaises(AttributeError, bus._load, "a.json", {})
 

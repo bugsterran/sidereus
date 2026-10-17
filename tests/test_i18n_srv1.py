@@ -32,7 +32,7 @@ process.stdout.write(JSON.stringify(I.ko));
 
 
 def _ko():
-    out = subprocess.run(node_e(_LOAD, os.path.join(ROOT, "web", "js")), capture_output=True, text=True, check=True)
+    out = subprocess.run(node_e(_LOAD, os.path.join(ROOT, "web", "js")), capture_output=True, text=True, check=True, encoding="utf-8")
     return json.loads(out.stdout)
 
 

@@ -41,7 +41,7 @@ class StatusLeavesIndexAlone(unittest.TestCase):
                    GIT_COMMITTER_EMAIL="t@t")
         for c in (["init", "-q"], ["add", "a.txt"], ["commit", "-qm", "x"]):
             if c[0] == "add":
-                with open(os.path.join(d, "a.txt"), "w") as f:
+                with open(os.path.join(d, "a.txt"), "w", encoding="utf-8") as f:
                     f.write("a\n")
             subprocess.run(["git", "-C", d] + c, check=True, env=env, capture_output=True)
         self.idx = os.path.join(d, ".git", "index")
@@ -85,7 +85,7 @@ class StructErrorsNotCached(unittest.TestCase):
 
     def test_plain_error_not_cached_but_size_cap_is(self):
         p = os.path.join(self.td.name, "x.py")
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             f.write("x = 1\n")
 
         def boom(*a, **k):

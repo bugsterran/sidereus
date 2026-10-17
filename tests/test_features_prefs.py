@@ -102,7 +102,7 @@ class FeaturePaneJs(unittest.TestCase):
     def test_toggle_logic(self):
         src = "let MPSRV = null, MPF_PEND = null, MPF_NOTE = null;\n" + "\n".join(
             js_fn(f) for f in ("mpfRows", "mpfWant", "mpfEff", "mpfAct")) + "\n" + JS
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         R = json.loads(r.stdout)
         self.assertEqual((R["on"], R["depOff"], R["core"], R["cycle"]), (True, False, True, True))

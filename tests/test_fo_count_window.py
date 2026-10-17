@@ -46,13 +46,13 @@ class FoCountWindow(unittest.TestCase):
         os.makedirs(os.path.join(root, "-r"))
         fp = os.path.join(root, "-r", "sid1.jsonl")
         t0 = time.time()
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write("\n".join(_edit_line("/r/a.py", t0 - 60 * k) for k in (30, 20, 10)) + "\n")
         idx = fo.index(t0)
         self.assertEqual(idx["/r/a.py"][("sid1", fo.FO_MAIN)]["n"], 3)
         # A day later one fresh edit arrives: the three old calls must drop out of the count.
         later = t0 + fo.FO_KEEP_S + fo.FO_TTL
-        with open(fp, "a") as f:
+        with open(fp, "a", encoding="utf-8") as f:
             f.write(_edit_line("/r/a.py", later - 5) + "\n")
         os.utime(fp, (later, later))
         self.assertEqual(fo.index(later)["/r/a.py"][("sid1", fo.FO_MAIN)]["n"], 1)

@@ -23,7 +23,7 @@ LIST = ("[{date: 'd1', rows: [{project: 'b', sid: 's1'}, {project: 'a', sid: 's2
 def run(body):
     src = (PRE + "\n".join(js_fn(n) for n in ("ppComboHtml", "ppFilter", "histProjs", "histProjHtml", "histPickProj"))
            + "\n" + body + "\nprocess.stdout.write(JSON.stringify(R));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

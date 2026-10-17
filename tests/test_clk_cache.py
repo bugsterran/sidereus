@@ -23,7 +23,7 @@ for(const l of ['ko', 'en', 'ko', 'en']){          // switching back and forth k
   }
 }
 process.stdout.write(JSON.stringify({bad: bad, ko: ko.slice(0, 5), keys: Object.keys(CLK.fmt).sort(), inv: CLK(new Date(NaN))}));"""
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         out = json.loads(r.stdout)
         self.assertEqual(out["bad"], [])

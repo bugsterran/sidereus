@@ -24,7 +24,7 @@ const mk = () => {
 const keys = rs => rs.map(g => g.key);
 process.stdout.write(JSON.stringify({all: keys(tlOrdered(mk())), on: keys(tlOrdered(mk(), true))}));
 """
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         cls.R = json.loads(r.stdout)

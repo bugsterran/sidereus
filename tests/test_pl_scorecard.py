@@ -92,7 +92,7 @@ class Scorecard(unittest.TestCase):
         self.proj = tempfile.mkdtemp(prefix="pl-sc-")
         d = os.path.join(self.proj, ".claude", "pipelines")
         os.makedirs(d)
-        with open(os.path.join(d, "flow.json"), "w") as f:
+        with open(os.path.join(d, "flow.json"), "w", encoding="utf-8") as f:
             json.dump({"name": "flow", "stages": [{"title": "t", "gate": SEC[0]}]}, f)
         self.calls = []
         self._saved = [(self.m, "_tracked", self.m._tracked), (self.m, "SC_CACHE", self.m.SC_CACHE)]

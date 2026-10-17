@@ -65,7 +65,7 @@ class ApplyJs(unittest.TestCase):
     def _html(self, d):
         with open(_F, encoding="utf-8") as f:
             src = _STUB + i18n_prelude("'ko'", ("T", "TV", "U")) + f.read() + "\nconsole.log(JSON.stringify(plApplySeg(%s)))" % json.dumps(d)
-        return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
     def test_render(self):
         h = self._html({"ok": True, "apply": {"mode": "ask", "global": "auto", "own": "ask"}})
@@ -87,7 +87,7 @@ class ApplyJs(unittest.TestCase):
                    "\nasync function postJSON(u, b){ POSTS.push([u, b]); return {ok: true, apply: {mode: b.mode}}; } function plPaint(){}"
                    "\nPLS.proj = '/w/a'; PLS.data = {'/w/a': {ok: true, apply: {mode: 'auto', global: 'auto', own: null}}, '/w/b': {ok: true}};"
                    "\nplApplySet('off').then(ok => console.log(JSON.stringify([ok, POSTS, Object.keys(PLS.data), ASKED[0]])));")
-        ok, posts, keys, asked = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        ok, posts, keys, asked = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertTrue(ok)
         self.assertEqual(posts, [["/api/pipelines/apply", {"proj": "/w/a", "mode": "off"}]])
         self.assertEqual(keys, ["/w/a", "/w/b"])

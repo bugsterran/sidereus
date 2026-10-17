@@ -73,7 +73,7 @@ class ServerTextKo2(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         out = subprocess.run(node_e(_LOAD, os.path.join(ROOT, "web", "js")),
-                             capture_output=True, text=True, check=True)
+                             capture_output=True, text=True, check=True, encoding="utf-8")
         cls.ko = json.loads(out.stdout)
         cls.found = _templates()
 

@@ -20,7 +20,7 @@ class PlmOf(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _w(self, sid, body):
-        with open(os.path.join(self.tmp, sid + ".json"), "w") as f:
+        with open(os.path.join(self.tmp, sid + ".json"), "w", encoding="utf-8") as f:
             f.write(body if isinstance(body, str) else json.dumps(body))
 
     def test_fresh_present_only_three_fields(self):

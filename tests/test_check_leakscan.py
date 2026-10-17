@@ -32,7 +32,7 @@ class Matcher(unittest.TestCase):
         d = tempfile.mkdtemp()
         try:
             g = os.path.join(d, "global.cfg")
-            with open(g, "w") as f:
+            with open(g, "w", encoding="utf-8") as f:
                 f.write("[user]\n\tname = %s\n\temail = %s\n" % glob if glob else "")
             subprocess.run(["git", "init", "-q", d], check=True)
             if local:

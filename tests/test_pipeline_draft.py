@@ -14,7 +14,7 @@ STUBS = ("var PL_DRAFT_TTL = 600000;\n"
 def _js(expr):
     src = STUBS + "\n".join(js_fn(f) for f in ("plDraftSteps", "plDraftStrip", "plDraftRestore", "strShort")) \
         + "\nconsole.log(JSON.stringify(" + expr + "));"
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 DR = {"id": "m1", "to": "s-abc", "proj": "/p/a", "cwd": "/p/a", "name": "bugfix", "at": 1000, "ok": True}
@@ -71,7 +71,7 @@ class Views(unittest.TestCase):
                  "function agLang(){ return ''; }\nfunction KE(k){ return k; }\n") % (plnew, json.dumps(DR))
         src = STUBS + stubs + "\n".join(js_fn(f) for f in ("plDraftSteps", "plDraftStrip", "strShort", "plNewForm", "plSugBody")) \
             + "\nconsole.log(JSON.stringify(plSugBody({suggest: [{title: 'x'}]})));"
-        return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
     def test_suggestion_view_shows_strip(self):
         self.assertIn("pldrs", self._sug("null"))

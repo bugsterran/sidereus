@@ -31,14 +31,14 @@ class HistoryUnitsTest(unittest.TestCase):
         sd = os.path.join(pd, SID, "subagents")
         os.makedirs(sd)
         self.main = os.path.join(pd, SID + ".jsonl")
-        with open(self.main, "w") as f:
+        with open(self.main, "w", encoding="utf-8") as f:
             f.write(_line(type="user", cwd=CWD, message={"role": "user", "content": "hi"}))
         self.agent = os.path.join(sd, "agent-aaa1.jsonl")
-        with open(self.agent, "w") as f:
+        with open(self.agent, "w", encoding="utf-8") as f:
             f.write(_line(type="assistant", message={"content": [
                 {"type": "tool_use", "id": "t1", "name": "Read", "input": {"file_path": "/w/proj/x"}}]}))
             f.write(_line(type="assistant", message={"content": [{"type": "text", "text": "done"}]}))
-        with open(os.path.join(sd, "agent-aaa1.meta.json"), "w") as f:
+        with open(os.path.join(sd, "agent-aaa1.meta.json"), "w", encoding="utf-8") as f:
             json.dump({"agentType": "Explore", "description": "find the thing", "toolUseId": "toolu_X",
                        "spawnDepth": 1}, f)
         # Main file lives 10h past now; activity only in two hour buckets inside it (a resumed session's shape)
@@ -97,7 +97,7 @@ class HistoryUnitsTest(unittest.TestCase):
     def test_work_by_agent_id(self):   # resumed agent: row tid = SendMessage id (not in meta) -> the agent id opens it
         sd = os.path.dirname(self.agent)
         shutil.copy(self.agent, os.path.join(sd, "agent-a0123456789abcdef.jsonl"))
-        with open(os.path.join(sd, "agent-a0123456789abcdef.meta.json"), "w") as f:
+        with open(os.path.join(sd, "agent-a0123456789abcdef.meta.json"), "w", encoding="utf-8") as f:
             json.dump({"agentType": "Plan", "description": "d", "toolUseId": "toolu_Y"}, f)
         self.assertEqual(W.agent_work(CWD, "a0123456789abcdef", SID)["type"], "Plan")
         for bad in ("toolu_SENDMSG", "", "aaa1", "../a0123456789abcdef", "a0123456789abcdef/x", "/etc/passwd", "a0123456789abcdee"):  # gitleaks:allow

@@ -8,7 +8,7 @@ from tests._node import node_e
 
 
 def node(src):
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 class SubLab(unittest.TestCase):

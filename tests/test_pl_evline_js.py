@@ -12,7 +12,7 @@ def _ev(rows, L, commits=None):
     call = "plEvLine(%s, %s)" % (json.dumps(rows), json.dumps(L)) if commits is None else "plEvLine(%s, %s, %s)" % (json.dumps(rows), json.dumps(L), json.dumps(commits))
     src = (i18n_prelude("'ko'", ("T", "TV", "U")) + "const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n"
            + js_fn("plEvLine") + "\nconsole.log(JSON.stringify(%s))" % call)
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 PASS = {"ts": 1000, "rc": 0, "steps": [{"name": "tests", "rc": 0, "n": 2908, "failed": 0}],
@@ -46,7 +46,7 @@ class EvLine(unittest.TestCase):
         src = (i18n_prelude("'ko'", ("T", "TV", "U")) + "const esc = s => String(s);\nconst plAgLab = a => a.lab;\n" + js_fn("plAgLabs") + "\n" + js_fn("plPass")
                + "\n" + js_fn("plEvLine") + "\nconst L = %s;\nconsole.log(JSON.stringify([plEvLine(%s, Object.assign({}, L, plPass(L, 0))), plEvLine(%s, L)]))"
                % (json.dumps({"w0": 850, "w1": 1010, "k": 2, "p0": 950, "ag": [], "ps": [{"a": 850, "b": 940, "s": "back"}]}), json.dumps([PASS, FAIL]), json.dumps([PASS, FAIL])))
-        one, latest = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        one, latest = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertIn("게이트 FAIL", one)
         self.assertIn("게이트 PASS", latest)
 

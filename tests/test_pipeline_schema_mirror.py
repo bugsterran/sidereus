@@ -101,7 +101,7 @@ def _runner(items):
           "const v = new Function('P', 'pipelineName', 'STAGE_TITLES', 'MODELS', src.slice(a, b) + '\\nreturn errs');"
           "const input = JSON.parse(fs.readFileSync(0, 'utf8'));"
           "console.log(JSON.stringify(input.map(([n, P]) => v(P, n, T, M))));") % json.dumps(RUNNER)
-    r = subprocess.run(node_e(js), input=json.dumps(items, ensure_ascii=False), capture_output=True, text=True, timeout=30)
+    r = subprocess.run(node_e(js), input=json.dumps(items, ensure_ascii=False), capture_output=True, text=True, timeout=30, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

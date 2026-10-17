@@ -47,7 +47,7 @@ class AgeSpan(unittest.TestCase):
               "for(const s of [null,0,1,59,60,61,119,120,121,599,3599,3600,3601,7199,7200,86399,86400,90000,200000]){"
               "const o=JSON.stringify(oldAll(s)), n=JSON.stringify(newAll(s)); if(o!==n) bad.push([L,s,o,n]);}}"
               "process.stdout.write(JSON.stringify(bad));")
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(json.loads(r.stdout), [])
 

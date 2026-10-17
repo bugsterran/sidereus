@@ -30,7 +30,7 @@ class HistTitle(unittest.TestCase):
 
     def _scan(self, lines, name="s.jsonl", ent=None):
         fp = os.path.join(self.d, name)
-        with open(fp, "a") as f:
+        with open(fp, "a", encoding="utf-8") as f:
             f.write("".join(lines))
         ent = ent if ent is not None else {"sl": "x", "off": 0, "sz": -1, "mt": 0.0, "h": {}}
         us._uidx_scan(fp, ent)

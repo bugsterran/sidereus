@@ -12,7 +12,7 @@ def run(body):
            "const T = s => s;\n" + js_fn("brNorm") + "\n" + js_fn("strBrRows") + "\n" + js_fn("strBrPick")
            + "\n" + js_fn("strBrInfo") + "\n" + js_fn("strBrBadge")
            + "\n" + body)
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

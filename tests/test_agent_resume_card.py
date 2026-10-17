@@ -102,7 +102,7 @@ class GroupDistinctTest(unittest.TestCase):
             _fn(src, "grpRows"),
             "console.log(JSON.stringify(grpRows({kind: 'agent', items: " + json.dumps(items) + "})));",
         ])
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         rows = json.loads(r.stdout)
         self.assertEqual(len(rows), 2)
@@ -115,7 +115,7 @@ class GroupDistinctTest(unittest.TestCase):
         js = "\n".join(["const T = s => s;", _plstrip(), re.search(r"^function cardText\(.*$", src, re.M).group(0),
                         re.search(r"^const agDesc = .*$", src, re.M).group(0), _fn(src, "grpRows"),
                         "console.log(grpRows({kind: 'agent', items: " + json.dumps(items) + "}).length);"])
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual((r.returncode, r.stdout.strip()), (0, "2"), r.stderr)
 
 

@@ -67,7 +67,7 @@ class SidecarDescRedact(unittest.TestCase):
     def _meta_pair(self, desc):
         d = tempfile.mkdtemp(prefix="sidereus-lr-")
         fp = os.path.join(d, "agent-a1.jsonl")
-        with open(fp[:-6] + ".meta.json", "w") as f:
+        with open(fp[:-6] + ".meta.json", "w", encoding="utf-8") as f:
             json.dump({"agentType": "x", "description": desc, "toolUseId": "t"}, f)
         return fp
 

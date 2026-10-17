@@ -32,9 +32,9 @@ class EvHook(unittest.TestCase):
         self.repo = os.path.join(self.d, "repo")
         os.makedirs(os.path.join(self.repo, ".git", "refs", "heads"))
         os.makedirs(os.path.join(self.repo, "sub"))
-        with open(os.path.join(self.repo, ".git", "HEAD"), "w") as f:
+        with open(os.path.join(self.repo, ".git", "HEAD"), "w", encoding="utf-8") as f:
             f.write("ref: refs/heads/main\n")
-        with open(os.path.join(self.repo, ".git", "refs", "heads", "main"), "w") as f:
+        with open(os.path.join(self.repo, ".git", "refs", "heads", "main"), "w", encoding="utf-8") as f:
             f.write(SHA + "\n")
         self.clock = [1000.0]
         self.git = mock.Mock(return_value="")
@@ -120,7 +120,7 @@ class EvHook(unittest.TestCase):
     def test_pipeline_gate(self):
         pd = os.path.join(self.repo, ".claude", "pipelines")
         os.makedirs(pd)
-        with open(os.path.join(pd, "p.json"), "w") as f:
+        with open(os.path.join(pd, "p.json"), "w", encoding="utf-8") as f:
             json.dump({"stages": [{"title": "a", "gate": "make  test"}, {"title": "b", "gate": "./verify.sh"},
                                   {"title": "c", "gate": "scripts/check.sh --fast"}]}, f)
         self.assertEqual(self.evt("PostToolUse", "make test")["mode"], "gate-test")
@@ -148,7 +148,7 @@ class EvHook(unittest.TestCase):
     def test_sweep_old_starts(self):
         os.makedirs(ev.START_DIR)
         old = os.path.join(ev.START_DIR, "old")
-        open(old, "w").close()
+        open(old, "w", encoding="utf-8").close()
         os.utime(old, (0, 0))
         self.clock[0] = 10000.0
         self.evt("PreToolUse", "npm test", tuid="new")

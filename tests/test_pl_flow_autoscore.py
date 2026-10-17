@@ -23,7 +23,7 @@ class AutoScore(_Base):
         key = hashlib.sha1(os.path.realpath(self.proj).encode("utf-8"), usedforsecurity=False).hexdigest()[:16]
         d = os.path.join(self.tmp, "eval", key)
         os.makedirs(d)
-        open(os.path.join(d, "seeds.json"), "w").close()
+        open(os.path.join(d, "seeds.json"), "w", encoding="utf-8").close()
 
     def close_by_commit(self):
         self.pre("설계"), self.post("설계"), self.pre("구현")

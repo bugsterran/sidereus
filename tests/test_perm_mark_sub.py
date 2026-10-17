@@ -49,7 +49,7 @@ class PermMarkSub(unittest.TestCase):
 
     def test_hook_writes_sub_file_without_text(self):
         self._sub_req()
-        with open(os.path.join(self.tmp, SID + "." + AID + ".json")) as f:
+        with open(os.path.join(self.tmp, SID + "." + AID + ".json"), encoding="utf-8") as f:
             raw = f.read()
         self.assertEqual(json.loads(raw), {"sid": SID, "t": NOW - 10, "k": "req", "aid": AID, "tool": "Bash"})
         self.assertNotIn("SECRET", raw)
@@ -62,7 +62,7 @@ class PermMarkSub(unittest.TestCase):
     def test_main_notification_keeps_request_tool(self):
         self._hook({"hook_event_name": "PermissionRequest", "tool_name": "AskUserQuestion"}, t=NOW - 10)
         self._hook({"hook_event_name": "Notification", "notification_type": "permission_prompt"}, t=NOW - 4)
-        with open(os.path.join(self.tmp, SID + ".json")) as f:
+        with open(os.path.join(self.tmp, SID + ".json"), encoding="utf-8") as f:
             self.assertEqual(json.load(f), {"sid": SID, "t": NOW - 4, "tool": "AskUserQuestion"})
 
     def test_hook_prunes_old_sub_markers(self):
@@ -114,7 +114,7 @@ class PermMarkSub(unittest.TestCase):
     def test_sub_log_flush_just_after_marker_still_badges(self):
         # Hook lines timestamped before the prompt are flushed ~0.1 s later, after the marker.
         log = os.path.join(self.tmp, "agent-f.jsonl.log")
-        with open(log, "w") as f:
+        with open(log, "w", encoding="utf-8") as f:
             f.write("{}\n")
         LP.note_sub_log(AID, log)
         self._sub_req(t=NOW - 10)
@@ -198,7 +198,7 @@ class PermMarkSub(unittest.TestCase):
             self.assertEqual(LP.perm_rows([dict(wait, state=st, ageSec=1)], now=NOW)[0]["blocked"], "")
 
     def test_r3_old_marker_parses(self):
-        with open(os.path.join(self.tmp, SID + ".json"), "w") as f:
+        with open(os.path.join(self.tmp, SID + ".json"), "w", encoding="utf-8") as f:
             json.dump({"sid": SID, "t": NOW - 10}, f)
         r = {"sid": SID, "state": "tool", "tool": "Edit", "ageSec": 30, "blocked": ""}
         self.assertEqual(LP.perm_rows([r], now=NOW)[0]["blocked"], "Edit waiting for approval")
@@ -206,7 +206,7 @@ class PermMarkSub(unittest.TestCase):
     def test_sub_badge_steady_across_polls_with_frozen_idle(self):
         # Sub log last written at NOW-20, prompt at NOW-10; `idle` was snapshotted at NOW-15 and stays frozen.
         log = os.path.join(self.tmp, "agent-x.jsonl.log")
-        with open(log, "w") as f:
+        with open(log, "w", encoding="utf-8") as f:
             f.write("{}\n")
         os.utime(log, (NOW - 20, NOW - 20))
         LP.note_sub_log(AID, log)

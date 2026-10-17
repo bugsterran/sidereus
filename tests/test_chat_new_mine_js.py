@@ -24,7 +24,7 @@ MSGS = peer.concat(own);
 R.after = chatNew();
 process.stdout.write(JSON.stringify(R));
 """
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(json.loads(r.stdout), {"before": 2, "after": 2})
 

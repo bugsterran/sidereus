@@ -20,7 +20,7 @@ def place(inner_w, saved_w, bell_right):
            "alarmPlace();\n"
            "const l = parseFloat(a.style.left), w = Math.min(parseFloat(a.style.width) || 420, parseFloat(a.style.maxWidth));\n"
            "process.stdout.write(JSON.stringify([l, l + w, parseFloat(a.style.maxWidth)]));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)
@@ -49,7 +49,7 @@ class AlarmPlace(unittest.TestCase):
                "const innerWidth = 900, innerHeight = 800;\n"
                + js_fn("popAnchor") + "\n" + js_fn("alarmPlace") + "\n"
                "alarmPlace(); process.stdout.write(JSON.stringify(a.style));")
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         st = json.loads(r.stdout)
         self.assertEqual((st["left"], st["top"], st["bottom"]), ("64px", "auto", "60px"))

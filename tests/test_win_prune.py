@@ -18,7 +18,7 @@ class WinPrune(unittest.TestCase):
 
     def mk(self, name, age_days):
         p = os.path.join(self.d, name)
-        open(p, "w").close()
+        open(p, "w", encoding="utf-8").close()
         t = NOW - age_days * 86400
         os.utime(p, (t, t))
         return p

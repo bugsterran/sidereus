@@ -117,7 +117,7 @@ class BranchBootWarm(unittest.TestCase):
 
     def test_missing_or_bad_file(self):
         self.assertEqual(g._br_seen_load(self.now), {})
-        with open(g.BR_WARM_FILE, "w") as f:
+        with open(g.BR_WARM_FILE, "w", encoding="utf-8") as f:
             f.write("{not json")
         self.assertEqual(g._br_seen_load(self.now), {})
 

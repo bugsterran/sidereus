@@ -176,14 +176,14 @@ class FilterDriver(unittest.TestCase):
         def git(*a):
             subprocess.run(["git", "-C", self.repo] + list(a), check=True, env=env, capture_output=True)
         git("init", "-q")
-        with open(os.path.join(self.repo, "f.txt"), "w") as f:
+        with open(os.path.join(self.repo, "f.txt"), "w", encoding="utf-8") as f:
             f.write("a\n")
         git("add", "f.txt")
         git("commit", "-qm", "init")
         git("config", "filter.evil.clean", "touch '%s'; cat" % self.marker)
-        with open(os.path.join(self.repo, ".gitattributes"), "w") as f:
+        with open(os.path.join(self.repo, ".gitattributes"), "w", encoding="utf-8") as f:
             f.write("* filter=evil\n")
-        with open(os.path.join(self.repo, "f.txt"), "a") as f:
+        with open(os.path.join(self.repo, "f.txt"), "a", encoding="utf-8") as f:
             f.write("b\n")
         self._env = gi.git_env
         gi.git_env = lambda: dict(env, GIT_OPTIONAL_LOCKS="0")

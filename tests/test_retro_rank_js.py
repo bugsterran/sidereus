@@ -46,7 +46,7 @@ class RetroRank(unittest.TestCase):
         esc = re.search(r"^const esc = .*?;$", core, re.S | re.M).group(0)   # arrow const: js_fn finds functions only
         help_ = esc + "\n" + js_fn("fmtPct")
         r = subprocess.run(node_e("const ROOT = %s;\nconst HELP = %s;\n" % (json.dumps(ROOT), json.dumps(help_)) + SRC),
-                           capture_output=True, text=True, timeout=20)
+                           capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         cls.R = json.loads(r.stdout)

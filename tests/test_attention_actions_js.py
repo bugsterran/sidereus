@@ -36,7 +36,7 @@ def run(body, lang="ko", t="function T(s){ return s; }"):
     rp = re.search(r"^let attnRp = .*?;$", src, re.M).group(0)
     rp += "\n" + re.search(r"^async function attnRpSend\(.*?^}$", src, re.M | re.S).group(0)   # js_fn skips async
     js = stubs + consts + "\n" + rp + "\n" + "\n".join(js_fn(n) for n in FNS) + "\n(async () => {\n" + body + "\n})();"
-    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 def row(sid, k="ask", since=1000):

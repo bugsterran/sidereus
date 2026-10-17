@@ -19,7 +19,7 @@ class WakeWatch(unittest.TestCase):
         g["mailbox_watches"] = lambda: {}
         os.makedirs(os.path.join(self.tmp, ".wake"))
         self.lock = os.path.join(self.tmp, ".wake", SID + ".lock")
-        with open(self.lock, "w") as f:
+        with open(self.lock, "w", encoding="utf-8") as f:
             f.write("12345")
         os.utime(self.lock, (1000.0, 1000.0))
         self.fp = os.path.join(self.tmp, "proj", SID + ".jsonl")

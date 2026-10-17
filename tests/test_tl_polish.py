@@ -19,7 +19,7 @@ let LIGHT = false; const thc = (dk, lt) => LIGHT ? lt : dk;   // 00-core.js them
 
 def run(body):
     src = LUM + js_fn("agColor") + "\n" + js_fn("tlInk") + "\n" + js_fn("tlHovPos") + "\n" + body
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

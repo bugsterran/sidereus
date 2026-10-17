@@ -200,7 +200,7 @@ class HarnessTest(unittest.TestCase):
 
     def test_hook_script_redacted(self):
         gh, sk = "ghp_" + "A1b2C3d4E5f6G7h8", "sk-ant-api03-" + "Zz9Yy8Xx7Ww6Vv5"
-        with open(os.path.join(self.tmp, "claude", "hooks", "block.py"), "a") as f:
+        with open(os.path.join(self.tmp, "claude", "hooks", "block.py"), "a", encoding="utf-8") as f:
             f.write("TOK = '%s'\nK = '%s'\nsys.exit(2)\n" % (gh, sk))
         code, f = H.harness_file(self.proj, "h:PreToolUse:0")
         self.assertEqual(code, 200)

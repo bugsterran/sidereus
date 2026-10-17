@@ -41,7 +41,7 @@ a11yOne(bar); a11yOne(row);
 R.barTab = bar.tabIndex; R.barKb = 'data-kb' in bar.attrs; R.rowTab = row.tabIndex;
 process.stdout.write(JSON.stringify(R));
 """
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         cls.R = json.loads(r.stdout)

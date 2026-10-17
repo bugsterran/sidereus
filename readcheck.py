@@ -20,7 +20,7 @@ rows = [json.loads(l) for l in open(os.path.join(HOME, "bus.jsonl"), encoding="u
 cur = {}
 for p in glob.glob(os.path.join(HOME, "read-*.cursor")):
     who = os.path.basename(p)[5:-7]
-    try: cur[who] = int(open(p).read().strip())
+    try: cur[who] = int(open(p, encoding="utf-8").read().strip())
     except Exception: pass
 fmt = lambda t: datetime.fromtimestamp(t / 1e9).strftime("%m-%d %H:%M")
 now = datetime.now().timestamp() * 1e9

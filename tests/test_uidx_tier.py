@@ -49,7 +49,7 @@ class UidxTier(unittest.TestCase):
             self.addCleanup(p.stop)
 
     def _write(self, *lines):
-        with open(self.fp, "w") as f:
+        with open(self.fp, "w", encoding="utf-8") as f:
             f.write("".join(lines))
 
     def _keys(self):
@@ -77,10 +77,10 @@ class UidxTier(unittest.TestCase):
         st = os.stat(self.fp)
         stale = {"sl": "-proj", "off": st.st_size, "sz": st.st_size, "mt": st.st_mtime, "tv": U.UIDX_META_V,
                  "h": {str(T0): {HK: [150_000, 7, 0, 0]}}}
-        with open(self.idx, "w") as f:
+        with open(self.idx, "w", encoding="utf-8") as f:
             json.dump({"v": 1, "files": {self.fp: stale}}, f)
         self.assertEqual(self._keys(), {HK + "|long": [150_000, 7, 0, 0]})
-        with open(self.idx) as f:
+        with open(self.idx, encoding="utf-8") as f:
             self.assertEqual(json.load(f)["v"], U.UIDX_V)
 
     def test_breakdown_and_history_merge_by_model(self):

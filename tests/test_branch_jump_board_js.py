@@ -21,7 +21,7 @@ def _run(tail):
         "function brNorm(p){ return p; } function brRepos(){ return ['/r']; } function tabSet(){} function brWtFind(){ return null; } function brWuFetch(){}",
         _fn(src, "strBrGo"), _fn(src, "brWuJump"), tail,
     ])
-    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

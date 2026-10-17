@@ -35,7 +35,7 @@ class EvidenceTest(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _write(self, lines):
-        with open(self.f, "w") as f:
+        with open(self.f, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
 
     def test_missing_file(self):

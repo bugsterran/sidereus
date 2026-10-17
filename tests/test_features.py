@@ -89,9 +89,9 @@ class Features(unittest.TestCase):
         self.assertEqual(s["features"], {"hist": True, "retro": False})
 
     def test_load_skips_bad_manifest(self):
-        with open(os.path.join(self.tmp, "a.json"), "w") as f:
+        with open(os.path.join(self.tmp, "a.json"), "w", encoding="utf-8") as f:
             json.dump(_m("ok"), f)
-        with open(os.path.join(self.tmp, "b.json"), "w") as f:
+        with open(os.path.join(self.tmp, "b.json"), "w", encoding="utf-8") as f:
             f.write("{broken")
         with mock.patch.object(F, "warn_once", lambda *a, **k: None):
             self.assertEqual(sorted(F._load(self.tmp)), ["ok"])

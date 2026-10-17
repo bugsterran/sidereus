@@ -28,7 +28,7 @@ class CheckEmptyTest(unittest.TestCase):
         env["GIT_CEILING_DIRECTORIES"] = self.tmp
         p = subprocess.run(["bash", os.path.join(self.repo, "scripts", "check.sh"), "--fast"],
                            cwd=self.repo, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                           universal_newlines=True, timeout=60)
+                           universal_newlines=True, timeout=60, encoding="utf-8")
         self.assertEqual(p.returncode, 1, p.stdout)
         self.assertIn("EMPTY: py_compile", p.stdout)
         self.assertNotIn("ok    py_compile", p.stdout)

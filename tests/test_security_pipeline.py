@@ -78,7 +78,7 @@ class ReportRun(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tmp, True)
         self.repo, self.store = os.path.join(self.tmp, "repo"), os.path.join(self.tmp, "store")
         os.makedirs(self.repo)
-        with open(os.path.join(self.repo, "a.py"), "w") as f:
+        with open(os.path.join(self.repo, "a.py"), "w", encoding="utf-8") as f:
             f.write("x = 1\n")
         self.deps_argv = []
 

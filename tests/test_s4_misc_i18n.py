@@ -37,7 +37,7 @@ class SessKidLab(unittest.TestCase):
         code = (i18n_prelude("'ko'") + fn
                 + "console.log(JSON.stringify([sessKidLab('Insights'), sessKidLab('Pipelines'),"
                   " sessKidLab('Mailbox watch'), sessKidLab('Mailbox watch · me')]));")
-        out = json.loads(subprocess.run(node_e(code), capture_output=True, text=True, check=True).stdout)
+        out = json.loads(subprocess.run(node_e(code), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertEqual(out[:2], ["Insights", "Pipelines"])   # descriptions that happen to equal a dictionary key
         self.assertNotEqual(out[2], "Mailbox watch")           # the fixed watcher label is still translated
         self.assertTrue(out[3].endswith(" · me"))
@@ -50,7 +50,7 @@ class SessKidLab(unittest.TestCase):
         out = {}
         for lang in ("ko", "en"):
             code = ("let LANG = '%s';\nconst I18N = {ko: {}};\n" % lang) + src + ("console.log(JSON.stringify([monLab('%sSidereus x'), monLab('Bash run'), monLab('x %s')]));" % (pre, pre))
-            out[lang] = json.loads(subprocess.run(node_e(code), capture_output=True, text=True, check=True).stdout)
+            out[lang] = json.loads(subprocess.run(node_e(code), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertEqual(out["ko"], [pre + "Sidereus x", "Bash run", "x " + pre])   # ko screen unchanged
         self.assertEqual(out["en"], ["Monitor Sidereus x", "Bash run", "x " + pre])
 

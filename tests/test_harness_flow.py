@@ -48,7 +48,7 @@ class FlowTest(unittest.TestCase):
 
     def _write(self, sid, runs, mtime=NOW):
         fp = os.path.join(self.plm, sid + ".runs.json")
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write(runs if isinstance(runs, str) else json.dumps({"v": 1, "runs": runs}))
         os.utime(fp, (mtime, mtime))
 

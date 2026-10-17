@@ -18,7 +18,7 @@ def card(lang, c):
           "const esc = s => String(s), FA_ACTS = {}, faTip = () => '', faLine = () => '', faBtns = () => '',"
           " ckey = c => c.kind, isoHM = () => '';\n" + js_fn("cardHTML")
           + "\nprocess.stdout.write(JSON.stringify(cardHTML(%s, '', true)));" % json.dumps(c))
-    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

@@ -25,11 +25,11 @@ class EvidenceRec(unittest.TestCase):
         shutil.rmtree(self.d, ignore_errors=True)
 
     def _w(self, path, text):
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding="utf-8") as f:
             f.write(text)
 
     def _lines(self):
-        with open(self.out) as f:
+        with open(self.out, encoding="utf-8") as f:
             return [json.loads(x) for x in f.read().splitlines()]
 
     def _run(self, *extra, rc='0', mode='fast', ts=1000):

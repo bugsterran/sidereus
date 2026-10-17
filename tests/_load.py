@@ -20,7 +20,7 @@ os.environ["SIDEREUS_HOOK_NO_PID"] = "1"
 # are copied by value into many modules, so only the env var reaches them all.
 DATA_TMP = tempfile.mkdtemp(prefix="sidereus-data-")
 os.environ["MAILBOX_DIR"] = DATA_TMP
-with open(os.path.join(DATA_TMP, "config.local.json"), "w") as _f:
+with open(os.path.join(DATA_TMP, "config.local.json"), "w", encoding="utf-8") as _f:
     _f.write("{}\n")   # empty config = defaults, without the «not found» warning
 
 

@@ -21,7 +21,7 @@ FILES = [{"p": "docs/x.png", "sec": 0, "bytes": 10}, {"p": "docs/big.png", "sec"
 def run(body):
     src = PRE + "\n".join(js_fn(f) for f in ("mdLinks", "strMdRel", "strMdImgSrc")) + "\nconst R = {};\n" + body \
         + "\nprocess.stdout.write(JSON.stringify(R));"
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

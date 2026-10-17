@@ -53,7 +53,7 @@ class Mine(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
         self.pipe = os.path.join(self.tmp, "secret-proj-change.json")
-        with open(self.pipe, "w") as fh:
+        with open(self.pipe, "w", encoding="utf-8") as fh:
             json.dump(PIPE, fh)
         tag = "[pl:secret-proj-change/design] SECRET-DESC"
         parent = [
@@ -93,7 +93,7 @@ class Mine(unittest.TestCase):
         self.txt = json.dumps(self.out, ensure_ascii=False)
 
     def _write(self, p, rows):
-        with open(p, "w") as fh:
+        with open(p, "w", encoding="utf-8") as fh:
             for r in rows:
                 fh.write(json.dumps(r) + "\n")
 

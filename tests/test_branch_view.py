@@ -31,7 +31,7 @@ def run(body):
     consts = "\n".join(re.search(p, src, re.M).group(0) for p in (r"^const BR_RH = \d+;", r"^const BR_CHIPS = \d+;", r"^const BR_ERRS = .*;$", r"^const brBad = new Set\(\);", r"^const thc = .*;$"))
     js = BASE + consts + "\n" + "\n".join(js_fn(f) for f in FNS) + "\nconst R = {};\n(async () => {\n" + body \
         + "\nprocess.stdout.write(JSON.stringify(R));\n})().catch(e => { console.error(e); process.exit(1); });"
-    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

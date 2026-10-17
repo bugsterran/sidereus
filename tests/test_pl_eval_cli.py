@@ -34,7 +34,7 @@ def rd(*parts):
 def git(repo, *args):
     env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
     return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "core.hooksPath=/dev/null",
-                           "-C", repo] + list(args), check=True, capture_output=True, text=True, env=env).stdout
+                           "-C", repo] + list(args), check=True, capture_output=True, text=True, env=env, encoding="utf-8").stdout
 
 
 class Base(unittest.TestCase):
@@ -78,7 +78,7 @@ class Base(unittest.TestCase):
     def rows(self):
         if not os.path.exists(self.ev):
             return []
-        with open(self.ev) as f:
+        with open(self.ev, encoding="utf-8") as f:
             return [json.loads(x) for x in f]
 
     def pfile(self):
@@ -89,7 +89,7 @@ class SeedsScore(Base):
     def test_seeds_and_score(self):
         head = self.commit([{"title": "검사 실행", "agent": "x", "gate": SGATE}, {"title": "리뷰", "agent": "x"}])
         sf = os.path.join(self.tmp, "seeds.json")
-        with open(sf, "w") as f:
+        with open(sf, "w", encoding="utf-8") as f:
             json.dump({"v": 1, "seeds": [
                 {"id": "pub-a", "kind": "secret", "file": "src/a.cfg", "line": 5, "rule": "generic-api-key", "expectStage": "검사 실행"},
                 {"id": "pub-b", "kind": "logic", "file": "src/a.ts", "line": 9, "expectStage": "리뷰"},
@@ -100,13 +100,13 @@ class SeedsScore(Base):
         self.assertEqual(self.main("seeds", "--repo", self.repo, "--check")[0], 0)
         d = os.path.join(AV.ARCH_DIR, AV.repo_key(self.repo), head)
         os.makedirs(d)
-        with open(os.path.join(d, "checks-security.json"), "w") as f:
+        with open(os.path.join(d, "checks-security.json"), "w", encoding="utf-8") as f:
             json.dump({"items": [{"tool": "gitleaks", "file": "src/a.cfg", "line": 6, "rule": "generic-api-key", "sev": "error"},
                                  {"tool": "gitleaks", "file": "src/a.cfg", "line": 21, "rule": "x", "sev": "error"}]}, f)
         rc, out = self.main("score", "--repo", self.repo, "--pipeline", self.pfile())
         self.assertEqual((rc, out.strip()), (1, "caught 1/2 · holdout 1/1"))
         ff = os.path.join(self.tmp, "f.json")
-        with open(ff, "w") as f:
+        with open(ff, "w", encoding="utf-8") as f:
             json.dump([{"file": "src/a.ts", "line": 10}], f)
         rc, out = self.main("score", "--repo", self.repo, "--pipeline", self.pfile(), "--findings", ff)
         self.assertEqual((rc, out.strip()), (0, "caught 2/2 · holdout 1/1"))
@@ -117,7 +117,7 @@ class SeedsScore(Base):
 
     def test_bad_seeds_print_no_ids(self):
         sf = os.path.join(self.tmp, "seeds.json")
-        with open(sf, "w") as f:
+        with open(sf, "w", encoding="utf-8") as f:
             json.dump({"v": 1, "seeds": [{"id": "ok-1", "kind": "secret", "file": "../x", "expectStage": "s", "holdout": True}]}, f)
         rc, out = self.main("seeds", "--repo", self.repo, "--set", sf)
         self.assertEqual(rc, 1)
@@ -138,7 +138,7 @@ class SeedsScore(Base):
         self.assertEqual(self.main("score", "--repo", self.repo, "--pipeline", self.pfile())[0], 1)   # manual score is never deduped
         cf = os.path.join(PE.EVAL_DIR, AV.repo_key(self.repo), head, "auto-p")
         self.assertEqual(rd(cf), "done")
-        with open(cf, "w") as f:
+        with open(cf, "w", encoding="utf-8") as f:
             f.write("run")   # crashed earlier run: retaken only once stale
         self.assertIn("already", self.main("score", "--repo", self.repo, "--pipeline", self.pfile(), "--auto")[1])
         os.utime(cf, (1, 1))
@@ -163,7 +163,7 @@ class Red(Base):
         return rc, out.strip(), before
 
     def entry(self, gate):
-        with open(os.path.join(PE.EVAL_DIR, "redcheck.json")) as f:
+        with open(os.path.join(PE.EVAL_DIR, "redcheck.json"), encoding="utf-8") as f:
             return json.load(f)["gates"][PE.gate_key(gate)]
 
     def test_fast_pass_fail_and_target_changed(self):
@@ -201,7 +201,7 @@ class Red(Base):
                 os.makedirs(d)
                 items = [{"tool": "gitleaks", "file": "sidereus-redcheck.cfg", "line": 1, "rule": "generic-api-key",
                           "sev": "error"}] if report else []
-                with open(os.path.join(d, "checks-security.json"), "w") as f:
+                with open(os.path.join(d, "checks-security.json"), "w", encoding="utf-8") as f:
                     json.dump({"tools": [{"id": "gitleaks", "status": status}], "items": items}, f)
             self.assertTrue(env["SIDEREUS_EVIDENCE"].startswith(env["MAILBOX_DIR"].rsplit("/", 1)[0]))
             return 0, False

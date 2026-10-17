@@ -82,7 +82,7 @@ class AgentLastIsToolName(unittest.TestCase):
 
     def last(self, block):
         fp = os.path.join(self.d, "agent-%d.jsonl" % len(os.listdir(self.d)))
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write(json.dumps({"type": "assistant", "message": {"content": [block]}}) + "\n")
         return agents._agent_last(fp)
 
@@ -126,7 +126,7 @@ class FailuresPayload(_Patch):
         d = tempfile.mkdtemp(prefix="sidereus-meta-fr-")
         self.addCleanup(shutil.rmtree, d, True)
         fp = os.path.join(d, "s.jsonl")
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write(json.dumps({"type": "assistant", "timestamp": T0, "message": {"content": [
                 {"type": "tool_use", "id": "toolu_Z9", "name": "Edit", "input": {"old_string": SECRET}}]}},
                 separators=(",", ":")) + "\n")
@@ -143,7 +143,7 @@ class WreckageSteps(_Patch):
         d = tempfile.mkdtemp(prefix="sidereus-meta-wr-")
         self.addCleanup(shutil.rmtree, d, True)
         fp = os.path.join(d, "agent-x.jsonl")
-        open(fp, "w").close()
+        open(fp, "w", encoding="utf-8").close()
         steps = [{"tool": "Bash", "arg": SECRET, "targ": SECRET, "t": "2026-09-25T10:11:12", "id": "i", "res": {"ok": 1}}]
         self.patch(F, "_open_or_tail", lambda p, tail=0: [])
         self.patch(F, "_work_scan", lambda rows, cwd: ((steps, None, None, None, "", ""), ""))

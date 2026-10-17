@@ -20,13 +20,13 @@ class NumstatRenames(unittest.TestCase):
             setattr(gv, name, val)
         self.git("init", "-q", "-b", "main")
         os.makedirs(os.path.join(self.d, "client"))
-        with open(os.path.join(self.d, "client", "m.ts"), "w") as fh:
+        with open(os.path.join(self.d, "client", "m.ts"), "w", encoding="utf-8") as fh:
             fh.write("".join("line %d\n" % i for i in range(9)))
         self.git("add", "-A")
         self.git("commit", "-qm", "init")
         os.makedirs(os.path.join(self.d, "shared"))
         self.git("mv", "client/m.ts", "shared/m.ts")
-        with open(os.path.join(self.d, "shared", "m.ts"), "a") as fh:
+        with open(os.path.join(self.d, "shared", "m.ts"), "a", encoding="utf-8") as fh:
             fh.write("a\nb\nc\nd\n")
         self.git("add", "-A")
         self.git("commit", "-qm", "move")
@@ -35,7 +35,7 @@ class NumstatRenames(unittest.TestCase):
     def git(self, *a):
         return subprocess.run(["git", "-C", self.d, "-c", "user.name=t", "-c", "user.email=t@t",
                                "-c", "commit.gpgsign=false"] + list(a),
-                              check=True, capture_output=True, text=True).stdout
+                              check=True, capture_output=True, text=True, encoding="utf-8").stdout
 
     def test_parser_rename_and_binary(self):
         rows = gv._numstat("3\t1\ta.txt\0" "4\t0\t\0old/x\0new/x\0" "-\t-\tb.bin\0")
@@ -59,7 +59,7 @@ class NumstatRenames(unittest.TestCase):
 
     def test_cut_patch_keeps_full_file_list(self):
         for i in range(30):
-            with open(os.path.join(self.d, "f%02d.txt" % i), "w") as fh:
+            with open(os.path.join(self.d, "f%02d.txt" % i), "w", encoding="utf-8") as fh:
                 fh.write("x" * 80 + "\n" + "".join("row %d\n" % k for k in range(20)))
         self.git("add", "-A")
         self.git("commit", "-qm", "big")

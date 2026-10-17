@@ -22,7 +22,7 @@ def fs_keep():
 def run(calls):
     """calls: [[value, laddered, floor|None], ...] -> fsSize results."""
     js = js_fn("fsSize") + "\nconsole.log(JSON.stringify(%s.map(a => fsSize(a[0], a[1], a[2] == null ? undefined : a[2]))));" % json.dumps(calls)
-    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 def css_sizes():

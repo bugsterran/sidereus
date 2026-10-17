@@ -15,7 +15,7 @@ def run(body):
     src = ("const PP_RECENT_N = 5;\nconst ppByName = (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);\n"
            + "\n".join(js_fn(f) for f in FNS) + "\nconst R = {};\n" + body
            + "\nprocess.stdout.write(JSON.stringify(R));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)
@@ -86,7 +86,7 @@ function tabJson(k, d){ return d; } function tabSetJson(k, v){ WR.push(k); } fun
 """
     fns = ("ppGroups", "ppRecentList", "ppRecent", "ppFilter", "ppComboHtml", "ppRowHtml", "ppListPaint", "ppBtn", "ppClose", "ppPick")
     src = pre + "\n".join(js_fn(f) for f in fns) + "\nconst R = {};\n" + body + "\nprocess.stdout.write(JSON.stringify(R));"
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

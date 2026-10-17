@@ -50,7 +50,7 @@ class AgentMeta(unittest.TestCase):
 
     def test_non_dict_meta_warns(self):
         os.makedirs(os.path.join(self.d, "subagents"))
-        with open(os.path.join(self.d, "subagents", "agent-x.meta.json"), "w") as f:
+        with open(os.path.join(self.d, "subagents", "agent-x.meta.json"), "w", encoding="utf-8") as f:
             json.dump([1, 2], f)
         with _Warns(ag) as got:
             self.assertEqual(ag._agent_meta(self.d), {})
@@ -112,7 +112,7 @@ class TodayScanVanishedFile(unittest.TestCase):
         os.makedirs(os.path.join(proj, "gone.jsonl"))       # open() -> IsADirectoryError
         import time as _t
         ts = _t.strftime("%Y-%m-%dT%H:%M:%S", _t.gmtime())
-        with open(os.path.join(proj, "ok.jsonl"), "w") as f:
+        with open(os.path.join(proj, "ok.jsonl"), "w", encoding="utf-8") as f:
             f.write(json.dumps({"timestamp": ts, "requestId": "r1",
                                 "message": {"id": "m1", "usage": {"input_tokens": 7}}}) + "\n")
         bs.CLAUDE_PROJECTS, bs._slug_name = self.d, (lambda s: s)

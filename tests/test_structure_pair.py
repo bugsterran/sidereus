@@ -139,7 +139,7 @@ class Endpoint(unittest.TestCase):
                           ("node_modules/x/core.test.js", "")):
             p = os.path.join(self.d, rel)
             os.makedirs(os.path.dirname(p), exist_ok=True)
-            with open(p, "w") as f:
+            with open(p, "w", encoding="utf-8") as f:
                 f.write(body)
         S._struct_pair_ls.clear()
         S._struct_pair_cache.clear()

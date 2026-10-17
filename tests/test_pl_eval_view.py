@@ -21,7 +21,7 @@ class EvalApi(unittest.TestCase):
         self.proj = tempfile.mkdtemp(prefix="pl-eval-")
         d = os.path.join(self.proj, ".claude", "pipelines")
         os.makedirs(d)
-        with open(os.path.join(d, "flow.json"), "w") as f:
+        with open(os.path.join(d, "flow.json"), "w", encoding="utf-8") as f:
             json.dump(PIPE, f)
         pp, sc = sidereus("pipeline_projects"), sidereus("pl_scorecard")
         self._saved = [(pp, "_proj_ok", pp._proj_ok), (self.v, "_pe", self.v._pe), (self.v, "_head", self.v._head),

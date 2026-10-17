@@ -37,7 +37,7 @@ def run(body):
                        + [js_fn(f) for f in ("plStepper", "plPrLive", "wpLive", "wpRunOf", "wpOrder", "wpLabel", "plWhy", "wpAgId", "wpAgs", "wpStripHtml", "wpJumpRecv",
                                                       "tidSid", "wpSessRuns", "wpHitOf", "wpView", "wpPlrunHook", "wpRefresh", "wpJumpKnown", "tlPlEnd", "tlPlSt")])
            + "\nDate.now = () => %d;\nconst R = {};\n" % NOW + body + "\nprocess.stdout.write(JSON.stringify(R));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

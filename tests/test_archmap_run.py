@@ -35,7 +35,7 @@ class RunTest(unittest.TestCase):
         d = os.path.join(self.store, AV.repo_key(self.repo), C1)
         os.makedirs(d, exist_ok=True)
         fp = os.path.join(d, name)
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write("{}")
         os.utime(fp, (mtime, mtime))
 
@@ -128,7 +128,7 @@ class RunTest(unittest.TestCase):
     def store_dir(self, plan):
         d = os.path.join(self.store, AV.repo_key(self.repo), C1)
         os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, "plan.json"), "w") as f:
+        with open(os.path.join(d, "plan.json"), "w", encoding="utf-8") as f:
             f.write(plan)
         return d
 

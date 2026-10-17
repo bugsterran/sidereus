@@ -122,7 +122,7 @@ class MailboxConfigLoad(unittest.TestCase):
         env = dict(os.environ, MAILBOX_DIR=tmp, MAILBOX_CONFIG=path)
         code = ("import json; from sidereus import prefs, features; "
                 "print(json.dumps([prefs.effective('features'), features._TOGGLES, prefs.effective('pipeline_apply')['mode']]))")
-        out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
+        out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, env=env, capture_output=True, text=True, timeout=60, encoding="utf-8")
         self.assertEqual(out.returncode, 0, out.stderr[-500:])
         eff, tog, mode = json.loads(out.stdout.strip().splitlines()[-1])
         self.assertEqual((eff, tog, mode), ({"retro": False}, {"retro": False}, "off"))

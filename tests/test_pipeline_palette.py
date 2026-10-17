@@ -26,7 +26,7 @@ def _js(body, lang="ko"):
     fns = "\n".join(js_fn(f) for f in ("plgShow", "plgBase", "plPalHit", "plgFam", "plgColor", "plgHue", "plgPfc", "plgTpl", "plPalette", "plFlagChips", "plNodeHtml",
                                         "plgGraded", "plgGuards", "plRow", "plGuardsPane"))
     code = "let LANG = %s;\n" % json.dumps(lang) + STUBS + consts + "\n" + fns + "\n" + body
-    return subprocess.run(node_e(code), capture_output=True, text=True, check=True).stdout
+    return subprocess.run(node_e(code), capture_output=True, text=True, check=True, encoding="utf-8").stdout
 
 
 def _hex(s):

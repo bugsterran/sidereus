@@ -29,7 +29,7 @@ class PlOff(unittest.TestCase):
         S._PL_APPLY.update(self.memo0)
 
     def _apply(self, v):
-        with open(self.cfg, "w") as f:
+        with open(self.cfg, "w", encoding="utf-8") as f:
             json.dump({"pipeline_apply": v}, f)
         S._PL_APPLY.update(at=0.0, v=None)
 
@@ -54,7 +54,7 @@ class PlOff(unittest.TestCase):
         self.assertFalse(S._pl_off("", "/sd", lab, "", 1000))
 
     def test_row_key_only_when_true(self):
-        with open(S.__file__) as f:
+        with open(S.__file__, encoding="utf-8") as f:
             self.assertIn('**({"plOff": True} if ploff else {})', f.read())
 
 

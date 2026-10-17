@@ -58,7 +58,7 @@ class MapperXmlSrc(unittest.TestCase):
         shutil.rmtree(self.d, ignore_errors=True)
 
     def _w(self, rel, txt):
-        with open(os.path.join(self.d, rel), "w") as f:
+        with open(os.path.join(self.d, rel), "w", encoding="utf-8") as f:
             f.write(txt)
 
     def test_mapper_only(self):

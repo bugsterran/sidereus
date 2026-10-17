@@ -32,7 +32,7 @@ class PipelineDel(unittest.TestCase):
     def _file(self, d):
         os.makedirs(d, exist_ok=True)
         f = os.path.join(d, "demo.json")
-        with open(f, "w") as fh:
+        with open(f, "w", encoding="utf-8") as fh:
             fh.write("{}")
         return f
 

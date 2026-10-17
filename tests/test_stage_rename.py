@@ -37,7 +37,7 @@ class Copies(unittest.TestCase):
         m = re.search(r"^const RENAMED = (\{[^}]*\})", src, re.M)
         self.assertEqual(json.loads(m.group(1).replace("'", '"')), want)
         out = subprocess.run(node_e(js_fn("plTk") + "\nconsole.log(JSON.stringify([plTk(%s), plTk('x'), plTk('constructor'), plTk(null)]))"
-                              % json.dumps(OLD)), capture_output=True, text=True, check=True).stdout
+                              % json.dumps(OLD)), capture_output=True, text=True, check=True, encoding="utf-8").stdout
         self.assertEqual(json.loads(out), [NEW, "x", "constructor", None])
 
     def test_new_title_is_recommended(self):
@@ -83,7 +83,7 @@ class CanvasRename(unittest.TestCase):
                         "const G = {nodes: [{id: 'a', title: '리뷰'}, {id: 'b', title: '재검증'}], loops: [{from: 'a', to: 'a', max: 1, then: '재검증'}]};",
                         "plRetitle({G, sel: {k: 'n', id: 'b'}}, %s);" % json.dumps(val),
                         "console.log(JSON.stringify([G.nodes.map(n => n.title), G.loops[0].then, PLS.msg, touched]));"])
-        return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
     def test_rename_follows_then(self):
         self.assertEqual(self._run("  Again  "), [["리뷰", "Again"], "Again", "", 1])

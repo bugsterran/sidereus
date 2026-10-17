@@ -9,7 +9,7 @@ from tests._node import node_e
 
 
 def run(src):
-    r = subprocess.run(node_e("const RAIL_W = 1200;\n" + src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e("const RAIL_W = 1200;\n" + src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

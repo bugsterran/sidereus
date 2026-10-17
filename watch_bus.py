@@ -48,7 +48,7 @@ def report(new, prefix):
 # ── Single instance — two running means multiple wakes per post and confusion over which one is alive ──
 old = None
 try:
-    old = int(open(PIDFILE).read().strip())
+    old = int(open(PIDFILE, encoding="utf-8").read().strip())
 except Exception:
     pass
 if old and old != os.getpid() and alive(old):
@@ -62,16 +62,16 @@ if old and old != os.getpid() and alive(old):
         print(f"이미 감시가 살아 있습니다(PID {old}) — 중복 실행하지 않습니다."
               f" 강제로 잡으려면 WATCH_FORCE=1 로 실행하세요.", flush=True)
         sys.exit(3)
-open(PIDFILE, "w").write(str(os.getpid()))
+open(PIDFILE, "w", encoding="utf-8").write(str(os.getpid()))
 
 # ── Cursor (t): first check posts that arrived while dead ──
 cur = rows()
 try:
-    seen_t = int(open(CURSOR).read().strip())
+    seen_t = int(open(CURSOR, encoding="utf-8").read().strip())
 except Exception:
     seen_t = latest_t(cur)        # first run — don't re-read the whole past
 gap = new_for_me(seen_t, cur)
-open(CURSOR, "w").write(str(latest_t(cur)))
+open(CURSOR, "w", encoding="utf-8").write(str(latest_t(cur)))
 if gap:
     report(gap, "감시 공백 중 도착한 글")
     print("(알림 후 종료합니다 — 처리하고 감시를 다시 띄우세요)", flush=True)
@@ -86,7 +86,7 @@ while time.time() - t0 < TIMEOUT_S:
     cur = rows()
     new = new_for_me(seen_t, cur)
     seen_t = max(seen_t, latest_t(cur))
-    open(CURSOR, "w").write(str(seen_t))     # persist the seen point (next start knows the gap)
+    open(CURSOR, "w", encoding="utf-8").write(str(seen_t))     # persist the seen point (next start knows the gap)
     if new:
         report(new, "새 글")
         sys.exit(0)                          # exit = session notification

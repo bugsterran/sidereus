@@ -11,7 +11,7 @@ wk = sidereus("work")
 
 
 def _session(fp, n):
-    with open(fp, "w") as f:
+    with open(fp, "w", encoding="utf-8") as f:
         for i in range(n):
             eds = [{"old_string": "o" * 7000, "new_string": "n" * 7000} for _ in range(25)]
             f.write(json.dumps({"type": "assistant", "timestamp": "2026-10-05T00:%02d:%02d.000Z" % (i // 60 % 60, i % 60),

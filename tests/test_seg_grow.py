@@ -53,7 +53,7 @@ class SegGrowTest(unittest.TestCase):
         self.d = tempfile.mkdtemp()
         self.fp = os.path.join(self.d, "s.jsonl")
         n = 3000
-        with open(self.fp, "w") as f:   # 3000 lines over 75 h, ~90 s apart
+        with open(self.fp, "w", encoding="utf-8") as f:   # 3000 lines over 75 h, ~90 s apart
             f.write("\n".join(_line(i, T0 + i * 90) for i in range(n)) + "\n")
         self.end = T0 + (n - 1) * 90
         self.box = [0]

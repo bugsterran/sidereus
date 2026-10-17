@@ -20,7 +20,7 @@ class Nudge(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tmp)
         self.proj = os.path.join(self.tmp, "proj")
         os.makedirs(os.path.join(self.proj, ".claude", "pipelines"))
-        with open(os.path.join(self.proj, ".claude", "pipelines", "db-migration.json"), "w") as f:
+        with open(os.path.join(self.proj, ".claude", "pipelines", "db-migration.json"), "w", encoding="utf-8") as f:
             f.write("{}")
         self.cfg = os.path.join(self.tmp, "config.local.json")
         for k, v in (("MARK_DIR", os.path.join(self.tmp, "plmark")),
@@ -56,7 +56,7 @@ class Nudge(unittest.TestCase):
         self.assertIsNone(self._run("x", tool="Bash"))
         self.assertIsNone(self._run("x", cwd=self.tmp))                    # no pipelines
         self.assertIsNone(self._run("x", cwd="relative"))
-        with open(self.cfg, "w") as f:
+        with open(self.cfg, "w", encoding="utf-8") as f:
             json.dump({"pipeline_apply": {"mode": "off"}}, f)
         self.assertIsNone(self._run("x"))                                   # «적용» off: no nudge
 

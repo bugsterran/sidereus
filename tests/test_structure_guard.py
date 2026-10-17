@@ -19,7 +19,7 @@ class _Tree(unittest.TestCase):
         self.d = os.path.realpath(tempfile.mkdtemp())
         for i in range(self.N):
             os.makedirs(os.path.join(self.d, "d%02d" % i))
-            with open(os.path.join(self.d, "d%02d" % i, "m.py"), "w") as f:
+            with open(os.path.join(self.d, "d%02d" % i, "m.py"), "w", encoding="utf-8") as f:
                 f.write("def f%d():\n    return %d\n" % (i, i))
         S._struct_out_cache.clear()
         w = mock.patch.object(S, "sessions_snapshot_wait", lambda: None)   # no in-flight poll unless a test says so

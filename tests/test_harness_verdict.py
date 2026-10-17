@@ -104,7 +104,7 @@ class HookRowFieldsTest(unittest.TestCase):
     def test_miss_and_ch(self):
         tmp = os.path.realpath(tempfile.mkdtemp(prefix="sidereus-vd-"))
         here = os.path.join(tmp, "here.py")
-        with open(here, "w") as f:
+        with open(here, "w", encoding="utf-8") as f:
             f.write("print(1)\n")
         gone = os.path.join(tmp, "gone.py")
         cmds = ["python3 " + here, "python3 " + gone]
@@ -131,7 +131,7 @@ class HookRowFieldsTest(unittest.TestCase):
         tmp = os.path.realpath(tempfile.mkdtemp(prefix="sidereus-vdp-"))
         for d in ("a", "b"):
             os.makedirs(os.path.join(tmp, d))
-            with open(os.path.join(tmp, d, "hook.py"), "w") as f:
+            with open(os.path.join(tmp, d, "hook.py"), "w", encoding="utf-8") as f:
                 f.write("print(1)\n")
 
         class Mod:

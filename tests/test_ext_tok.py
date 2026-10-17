@@ -45,7 +45,7 @@ class ExtTok(unittest.TestCase):
         shutil.rmtree(self.home, ignore_errors=True)
 
     def write(self, *objs, mode="a", raw=""):
-        with open(self.path, mode) as f:
+        with open(self.path, mode, encoding="utf-8") as f:
             for o in objs:
                 f.write(json.dumps(o) + "\n")
             f.write(raw)
@@ -93,7 +93,7 @@ class ExtTok(unittest.TestCase):
 
     def test_path_outside_gemini_is_ignored(self):
         other = os.path.join(self.home, "elsewhere.jsonl")
-        with open(other, "w") as f:
+        with open(other, "w", encoding="utf-8") as f:
             f.write(json.dumps(_msg("g1", self.now, 100, 10)) + "\n")
         ext.ext_tok_refresh("gemini", "abc", other)
         ext.ext_tok_refresh("codex", "abc", self.path)

@@ -117,7 +117,7 @@ class Suggest(unittest.TestCase):
 
     def test_cart_api_global_by_dir_name(self):
         os.makedirs(os.path.join(self.tmp, "cart-api"))
-        open(os.path.join(self.tmp, "cart-api", "AGENTS.md"), "w").close()
+        open(os.path.join(self.tmp, "cart-api", "AGENTS.md"), "w", encoding="utf-8").close()
         got, out = self._sug("cart-api", [], user=["cart-api-be", "cart-api-bugfix", "cart-api-qa", "cart-gate",
                                                     "cart-live-verify", "cart-triage", "ledger-probe"])
         self.assertEqual(got["bugfix"], [("재현", "cart-api-bugfix"), ("원인", "cart-api-bugfix"), ("수정", "cart-api-bugfix"),
@@ -151,8 +151,8 @@ class Routes(unittest.TestCase):
         os.makedirs(os.path.join(self.proj, ".claude", "agents"))
         os.makedirs(os.path.join(self.tmp, "home", "agents"))
         for n in ("designer", "impl", "verifier", "reviewer"):
-            open(os.path.join(self.proj, ".claude", "agents", n + ".md"), "w").close()
-        open(os.path.join(self.tmp, "home", "agents", "helper.md"), "w").close()
+            open(os.path.join(self.proj, ".claude", "agents", n + ".md"), "w", encoding="utf-8").close()
+        open(os.path.join(self.tmp, "home", "agents", "helper.md"), "w", encoding="utf-8").close()
         self.file = os.path.join(self.proj, ".claude", "pipelines", "demo.json")
         self.raw = PS.dump(_copy())
         with open(self.file, "w", encoding="utf-8") as f:
@@ -412,7 +412,7 @@ class Routes(unittest.TestCase):
 
     def test_create_keeps_existing_agents_and_makes_dir(self):
         shutil.rmtree(os.path.join(self.proj, ".claude", "pipelines"))
-        open(os.path.join(self.proj, ".claude", "agents", "sidereus-verifier.md"), "w").close()
+        open(os.path.join(self.proj, ".claude", "agents", "sidereus-verifier.md"), "w", encoding="utf-8").close()
         code, out, _ = self._create({"name": "fresh", "title": "새 것", "dry": False})
         self.assertEqual(code, 200, out)
         with open(os.path.join(self.proj, ".claude", "pipelines", "fresh.json"), encoding="utf-8") as f:
@@ -437,16 +437,16 @@ class Routes(unittest.TestCase):
                 self.assertEqual(self._create({"proj": other, "name": "c2", "from": src, "dry": True})[0], 400, src)
 
     def test_rule_files_and_workflows_names_only(self):
-        open(os.path.join(self.proj, "AGENTS.md"), "w").close()
+        open(os.path.join(self.proj, "AGENTS.md"), "w", encoding="utf-8").close()
         os.makedirs(os.path.join(self.proj, ".claude", "workflows"))
         for n in ("flow.js", "bad name.js", "notes.txt"):
-            open(os.path.join(self.proj, ".claude", "workflows", n), "w").close()
+            open(os.path.join(self.proj, ".claude", "workflows", n), "w", encoding="utf-8").close()
         out = self._list()
         self.assertEqual((out["rule_files"], out["workflows"]), (["AGENTS.md"], ["flow.js"]))
 
     def test_suggest_listed_and_created(self):
-        open(os.path.join(self.proj, ".claude", "agents", "fixer.md"), "w").close()
-        open(os.path.join(self.proj, ".claude", "agents", "implementer.md"), "w").close()
+        open(os.path.join(self.proj, ".claude", "agents", "fixer.md"), "w", encoding="utf-8").close()
+        open(os.path.join(self.proj, ".claude", "agents", "implementer.md"), "w", encoding="utf-8").close()
         sug = self._list()["suggest"]
         self.assertEqual([x["name"] for x in sug], ["bugfix", "change"])
         self.assertTrue(sug[0]["suggest"])
@@ -542,7 +542,7 @@ class Routes(unittest.TestCase):
         for origin in (None, EVIL):
             self.assertEqual(self._del({"dry": False}, origin=origin)[0], 403)
         out = os.path.join(self.tmp, "outside.json")                   # symlink pointing outside the project
-        with open(out, "w") as f:
+        with open(out, "w", encoding="utf-8") as f:
             f.write("{}")
         os.symlink(out, os.path.join(self.proj, ".claude", "pipelines", "lnk.json"))
         self.assertEqual(self._del({"name": "lnk", "dry": False})[0], 400)

@@ -14,7 +14,7 @@ def model(sess, rrows, arows):
     src = (blk + "\n" + js_fn("brBoardModel") + "\nconst r = brBoardModel(" + json.dumps(sess) + ", " + json.dumps(rrows)
            + ", " + json.dumps(arows) + ");\nconsole.log(JSON.stringify({hidden: r.hidden, cols: Object.fromEntries("
            "Object.entries(r.cols).map(([k, v]) => [k, v.map(c => (c.x || c.r).sid + (c.why ? ':' + c.why : ''))]))}));")
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 class BoardModel(unittest.TestCase):
@@ -35,7 +35,7 @@ class BoardModel(unittest.TestCase):
 
 def relay(sid, msgs, ack):
     src = js_fn("relayStat") + "\nconsole.log(JSON.stringify(relayStat(" + ", ".join(json.dumps(v) for v in (sid, msgs, ack)) + ")));"
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 class RelayStat(unittest.TestCase):
@@ -63,7 +63,7 @@ def rvn_text(notes):
 
 def rvn_js(expr):
     src = js_fn("rvnQuote") + "\n" + js_fn("rvnPack") + "\nconsole.log(JSON.stringify(" + expr + "));"
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 class RvnText(unittest.TestCase):
@@ -101,7 +101,7 @@ class RvnText(unittest.TestCase):
 
 def sel_js(expr):
     src = "\n".join(js_fn(f) for f in ("bdSelWhy", "bdSelToggle", "bdSelKeep", "bdRcpt")) + "\nconsole.log(JSON.stringify(" + expr + "));"
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 class BoardMultiSelect(unittest.TestCase):

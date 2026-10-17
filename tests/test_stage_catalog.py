@@ -77,7 +77,7 @@ class Shipped(unittest.TestCase):
         names = re.search(r"^const PLG_NAMES = [\s\S]*?^PLG_NAMES\.ko = \{\};", src, re.M).group(0)
         titles = [t["title"] for t in stage_catalog.load()["templates"]]
         code = "%s\nconsole.log(JSON.stringify(%s.map(t => PLG_NAMES.en[t.ko] || t.ko)));" % (names, json.dumps(titles))
-        out = json.loads(subprocess.run(node_e(code), capture_output=True, text=True, check=True).stdout)
+        out = json.loads(subprocess.run(node_e(code), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertEqual(out, [t["en"] for t in titles])
 
 

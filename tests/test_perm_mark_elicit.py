@@ -32,7 +32,7 @@ class PermMarkElicit(unittest.TestCase):
 
     def test_elicitation_writes_marker(self):
         self._hook("elicitation_dialog")
-        with open(os.path.join(self.tmp, SID + ".json")) as f:
+        with open(os.path.join(self.tmp, SID + ".json"), encoding="utf-8") as f:
             self.assertEqual(json.load(f), {"sid": SID, "t": NOW})
 
     def test_idle_prompt_still_ignored(self):
