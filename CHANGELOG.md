@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Structure: the project picker is the same search combobox as Pipelines instead of a chip row (session count in the tooltip and picker rows).
+
 ## [0.3.0] - 2026-10-17
 
 ### Added

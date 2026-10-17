@@ -1,4 +1,4 @@
-"""Project picker core (web/js/08b-projpick.js): ppGroups chip order and disjoint groups, ppRecentList cap/dedup,
+"""Project picker core (web/js/08b-projpick.js): ppGroups disjoint groups, ppRecentList cap/dedup,
 ppStep wrap. Pure functions only; one node run."""
 import json
 import shutil
@@ -8,7 +8,7 @@ import unittest
 from tests._load import js_fn
 from tests._node import node_e
 
-FNS = ("ppGroups", "ppStep", "ppRecentList", "ppFitHide")
+FNS = ("ppGroups", "ppStep", "ppRecentList")
 
 
 def run(body):
@@ -41,29 +41,12 @@ R.g = ppGroups(I, ['/u/old', '/u/alpha', '/gone'], '/u/quiet', '');
 R.f1 = ppGroups(I, [], '', 'SID');
 R.f2 = ppGroups(I, [], '', 'deep');
 R.none = ppGroups(I, ['/u/old'], '/u/quiet', 'nothing-matches');
-R.stable = (() => { const rec0 = ['/u/old', '/r/r1', '/r/r0'], a = ppGroups(I, rec0, '/u/old', '').chips.map(e => e.p);
-  const b = ppGroups(I, ppRecentList(rec0, '/r/r1'), '/r/r1', '').chips.map(e => e.p); return [a, b]; })();
 R.cap = ppGroups(I, ['/r/r0', '/r/r1', '/r/r2', '/r/r3', '/r/r4', '/r/r5'], '', '');
 let l = [];
 ['a', 'b', 'c', 'a', 'd', 'e', 'f'].forEach(p => { l = ppRecentList(l, p); });
 R.rec = l;
-R.fit = [ppFitHide([50, 50, 50, 80], 5, 300, 3), ppFitHide([50, 50, 50, 80], 5, 200, 3), ppFitHide([50, 50, 50, 80], 5, 90, 3),
-  ppFitHide([50, 50, 50, 80], 5, 100, -1), ppFitHide([50, 80, 50], 5, 140, 1)];
 R.step = [ppStep(0, 1, 3), ppStep(2, 1, 3), ppStep(0, -1, 3), ppStep(-1, 1, 3), ppStep(-1, -1, 3), ppStep(0, 1, 0)];
 """ % json.dumps(ITEMS))
-
-    def test_chip_order(self):
-        # running → live (by name) → recent (by name) → selection last; '/gone' is not listed so it never becomes a chip
-        self.assertEqual([e["p"] for e in self.R["g"]["chips"]],
-                         ["/u/beta", "/u/alpha", "/u/zeta", "/u/old", "/u/quiet"])
-
-    def test_pick_in_row_keeps_order(self):
-        a, b = self.R["stable"]
-        self.assertEqual(a, b)
-        self.assertEqual(a[3:], ["/u/old", "/r/r0", "/r/r1"])
-
-    def test_selection_kept(self):
-        self.assertEqual(self.R["none"]["chips"][-1]["p"], "/u/quiet")   # not live, not recent, filtered out of groups
 
     def test_groups_disjoint(self):
         g = self.R["g"]
@@ -140,10 +123,3 @@ R.proj = (() => { PPS = {cfg: {k: 'pl', items, cur: '', rkey: 'rk', pick(){}}, q
 if __name__ == "__main__":
     unittest.main()
 
-    def test_fit_keeps_selection_visible(self):
-        fits, one, only, nosel, mid = self.R["fit"]
-        self.assertEqual(fits, [])            # 245 <= 300
-        self.assertEqual(one, [2])            # fold the chip next to the selection: 190 <= 200
-        self.assertEqual(only, [2, 1, 0])     # selection alone even when it still overflows
-        self.assertEqual(nosel, [])           # no selection: nothing to protect, keep the plain clip
-        self.assertEqual(mid, [2])            # selection not last: trailing chip folds first

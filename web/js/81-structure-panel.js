@@ -503,8 +503,6 @@ function strWire(){
   if(rf) rf.onclick = () => { strStop(); strOn.forEach(p => { delete strCache[strCk(p)]; });
                               STR = null; strErr = '';
                               paintStruct(); loadStruct(true); };
-  // Only **one** project is on (2026-09-22: multi-select not needed) — clicking switches.
-  document.querySelectorAll('#tbstruct .strp[data-sp]').forEach(b => b.onclick = () => { ppRecent('sidereus.strrecent', b.dataset.sp || ''); strPickProj(b.dataset.sp || ''); });
   // "Include tests" — the cache key changes, so each toggle **calls the server again** (cache if already fetched)
   // Color axis — no server call. It only reads the same response with different colors.
   // «Size» — view switch only (Architecture uses data-ma, wired in 84j); each mode fetches its own data on paint.

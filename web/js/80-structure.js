@@ -469,24 +469,20 @@ function paintStruct(){
   const box = document.getElementById('feed');
   if(!box) return;
   strPickDef();
-  const on = {};
-  strOn.forEach(p => { on[p] = 1; });
   strSessSig = strSessKey();
-  // One tier — projects (single selection); a count shows when more than one session touches it.
-  // Chip row (selection · working · recent) + «Projects ▾» picker (08b); run = a pipeline running there (48).
+  // One tier — projects (single selection). Combobox + search popover (08b ppComboHtml, same as Pipelines); run = a pipeline running there (48).
   const run = typeof plLiveProjs === 'function' && typeof PLS === 'object' ? plLiveProjs(SESS, plMem(), plKnown()) : {};
   const items = strProjList().map(e => Object.assign({}, e, { live: e.open > 0, run: !!run[e.p] }));
-  const pChips = ppChipsHtml({ k: 'str', label: T('Project'), items: items, cur: strOn[0] || '', rkey: 'sidereus.strrecent', pick: strPickProj,
-    chip: e => { const p = e.p, ld = strLoad[strCk(p)];
-    return '<button class="strp' + (on[p] ? ' on' : '') + (ld ? ' strld' : '')
-    + '" data-sp="' + esc(p) + '" title="' + esc(p + (e.ss.length ? '\n' + T('Sessions') + ' ' + e.ss.length + ': ' + e.ss.join(', ') : '')
-    + (ld ? ' — ' + T('loading') : '')) + '">' + esc(e.name)
-    + (e.ss.length > 1 ? ' <small class=strpc>' + e.ss.length + '</small>' : '')
-    + (ld ? ' …' : '') + '</button>'; } });
-  // Project chips and ↻ live in the header toolbar slot (strWire wires both the slot and #feed).
-  // ★2026-09-29 the screen flickered: chip titles list session names, so every session change rewrote the slot.
+  // Button = name + live dot + «…» while loading; the session count lives in the tooltip and the popover rows only.
+  const pCombo = ppComboHtml({ k: 'str', label: T('Project'), items: items, cur: strOn[0] || '', rkey: 'sidereus.strrecent', pick: strPickProj,
+    badge: e => (run[e.p] ? plLiveDot(run[e.p].length) : '') + (strLoad[strCk(e.p)] ? ' …' : ''),
+    tip: e => { const ss = e.ss || [];
+      return e.p + (ss.length ? '\n' + T('Sessions') + ' ' + ss.length + ': ' + ss.join(', ') : '') + (strLoad[strCk(e.p)] ? ' — ' + T('loading') : ''); },
+    note: e => (e.ss && e.ss.length > 1 ? ' <small class=strpc>' + e.ss.length + '</small>' : '') });
+  // Project combobox and ↻ live in the header toolbar slot (strWire wires both the slot and #feed).
+  // ★2026-09-29 the screen flickered: the project tooltip lists session names, so every session change rewrote the slot.
   //   ⇒ Once the slot exists it is patched (morphHtml), not rebuilt.
-  const tsl = document.getElementById('tbstruct'), tbh = '<span class="strps tbg">' + pChips + '</span>'
+  const tsl = document.getElementById('tbstruct'), tbh = '<span class="strps tbg">' + pCombo + '</span>'
     + '<span class=tbx><em class="tlrf strsrcb" id=strsrc title="' + esc(T('File tree and source')) + '">' + esc(T('Source', 'code')) + '</em>'
     + (strBrH = strBrHtml())
     + '<em class=tlrf id=strrf title="'

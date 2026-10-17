@@ -75,9 +75,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ Tag mode puts a transparent 10px `.mmdhit` copy of each line (same `d`) first in its `.mmdfe` group; a click maps `data-f`/`data-t` to the first passed edge and toggles `ARCH.op`.
   - ⚠Tag mode only — untagged `mmdSvg` output is sha256-pinned (`test_svg_untagged_pinned`); do not add it to the shared path.
 - **Picker popover vs. the morphed toolbar** (2026-10-08, 80 `paintStruct`, 08b).
-  - Cause: `#tbstruct` is patched by index (`morphHtml`); a poll that changes the chip count would turn the «Projects ▾» node into a chip and drop its focus/`aria-expanded`.
-  - ⇒ Chip markup is `<b>` · `<span class=ppcs>` · button (fixed index), and the patch is skipped while `#ppop` is open.
-  - ⚠Do not put chips directly beside the button again or remove the open-popover skip.
+  - Cause: `#tbstruct` is patched by index (`morphHtml`); a poll that changed the node count beside the opener would turn it into another node and drop its focus/`aria-expanded`.
+  - ⇒ Picker markup is a fixed `<b>` · combobox button (08b `ppComboHtml`), and the patch is skipped while `#ppop` is open.
+  - ⚠Do not add a variable-length node list beside the button or remove the open-popover skip.
 - **Arch hover dims with opacity** (2026-10-07, 84j `archHovPaint`).
   - Cause: like `.reldim`, hover-only dimming needs the rest of the map pushed back.
   - ⇒ `svg.archdim` uses opacity only while the pointer is on the map; colours are class-only on the cached SVG.

@@ -29,7 +29,6 @@ html[data-ui=next][data-ui] .strseg button.on{box-shadow:inset 0 0 0 1px var(--s
 /* ⚠Disabled must read as disabled — same look as enabled made a click on it seem to do nothing. */
 html[data-ui=next][data-ui] :is(.wkrgb,.strp)[disabled]{opacity:.45;cursor:default}
 html[data-ui=next][data-ui] :is(.wkrgb,.strp)[disabled]:hover:not(.on){background:var(--seg-bg);color:var(--seg-c)}
-html[data-ui=next][data-ui] .strp.strld{border-color:color-mix(in srgb,var(--nx-warn) 45%,transparent);color:var(--nx-warn)}   /* still loading */
 /* Header main tabs are navigation, not a segmented control: joined bar, no radius per tab, but on the same height scale. */
 html[data-ui=next][data-ui] .mvb{box-sizing:border-box;height:var(--nav-h)}
 /* «+N» list rows (.thpop .th) are navigation too: underline marks the current one, size/colours from the tokens. */

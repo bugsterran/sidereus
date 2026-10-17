@@ -1,28 +1,22 @@
-// Project picker shared by «Pipelines» (48 plChips, combobox) and «Structure» (80 paintStruct, short chip row
-//   selection · working · recent + «More ▾»): one anchored search popover grouped Working / Recent / All.
+// Project picker shared by «Pipelines» (48 plChips) and «Structure» (80 paintStruct), both the ppComboHtml combobox:
+//   one anchored search popover grouped Working / Recent / All.
 //   Metadata only (paths, names, counts). Adapters keep their own state/storage and call ppRecent on a pick.
 const PP_RECENT_N = 5;
-const PPC = {};          // cfg by key, refreshed on every chip render (the popover reads the latest snapshot)
+const PPC = {};          // cfg by key, refreshed on every combobox render (the popover reads the latest snapshot)
 let PPS = null;          // open popover {cfg, q, i, rows}
 const ppByName = (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-// Pure: items [{p, name, live, run}] → {chips, work, rec, all}. q filters the groups only (chips ignore it).
+// Pure: items [{p, name, live, run}] → {work, rec, all}, disjoint; q filters by name or path.
 function ppGroups(items, recent, cur, q){
   items = items || []; recent = recent || [];
   const by = new Map(items.map(e => [e.p, e]));
   const work = items.filter(e => e.live || e.run).sort((a, b) => (b.run ? 1 : 0) - (a.run ? 1 : 0) || ppByName(a, b));
-  const chips = [], seen = new Set();
-  const push = e => { if(e && !seen.has(e.p)){ seen.add(e.p); chips.push(e); } };
-  // ⚠Stable order (working → recent by name → selection last): recency picks members, never positions, so a click does not reshuffle the row.
-  work.forEach(push);
-  recent.slice(0, PP_RECENT_N).map(p => by.get(p)).filter(Boolean).sort(ppByName).forEach(push);
-  if(cur) push(by.get(cur) || { p: cur, name: cur.slice(cur.lastIndexOf('/') + 1) || cur });   // selection always shows
   const s = String(q || '').trim().toLowerCase();
   const hit = e => !s || String(e.name || '').toLowerCase().includes(s) || String(e.p).toLowerCase().includes(s);
   const w = work.filter(hit), wk = new Set(w.map(e => e.p));
   const rec = recent.slice(0, PP_RECENT_N).map(p => by.get(p)).filter(e => e && hit(e) && !wk.has(e.p));
   const rk = new Set(rec.map(e => e.p));
   const all = items.filter(e => hit(e) && !wk.has(e.p) && !rk.has(e.p)).sort(ppByName);
-  return { chips: chips, work: w, rec: rec, all: all };
+  return { work: w, rec: rec, all: all };
 }
 // Pure: ↑↓ step through n rows, wrapping at both ends; -1 when the list is empty.
 function ppStep(i, d, n){
@@ -38,24 +32,15 @@ function ppRecent(key, p){
   tabSetJson(key, l);
   return l;
 }
-// cfg: {k, label, items, cur, rkey, chip(e) → html, pick(p), extra (footer html), onExtra()}
-function ppChipsHtml(cfg){
-  PPC[cfg.k] = cfg;
-  const g = ppGroups(cfg.items, tabJson(cfg.rkey, []), cfg.cur, '');
-  ppFitSoon();   // callers insert the html themselves; fit after it lands (a morph patch may drop .ppfold)
-  // ⚠Fixed shape <b> · <span> · <button>: the structure toolbar is morph-patched by index, so the button keeps its node.
-  return '<b>' + esc(cfg.label) + '</b><span class=ppcs>' + g.chips.map(cfg.chip).join('') + '</span>'
-    + '<button type=button class="strp ppbtn" data-ppk="' + esc(cfg.k) + '" aria-haspopup=listbox aria-controls=ppop aria-expanded="'
-    + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '">' + esc(T('More ▾')) + '</button>';
-}
-// Combobox form (Pipelines): one button with the current project's full name; opens the same popover. cfg.badge(e) = trailing html (live dot).
+// Combobox (Pipelines · Structure): one button with the current project's full name; opens the same popover. cfg.badge(e) = trailing html (live dot).
 //   Optional (pipeline picker, 48 plPickHtml): flat(q) → rows without group headers · rowHtml(e, i) · ph (search placeholder)
 //   · none (button text with no cur) · empty (no-match text); no rkey = no recent list. Absent = project behaviour unchanged.
+//   Optional tip(e) → button title (default: the path) · note(e) → trailing html on a popover row (Structure: session count).
 function ppComboHtml(cfg){
   PPC[cfg.k] = cfg;
   const p = cfg.cur || '', e = (cfg.items || []).find(x => x.p === p) || { p: p, name: p.slice(p.lastIndexOf('/') + 1) || p };
   return '<b>' + esc(cfg.label) + '</b><button type=button class="strp ppbtn ppcombo" data-ppk="' + esc(cfg.k) + '" aria-haspopup=listbox aria-controls=ppop aria-expanded="'
-    + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '" title="' + esc(p) + '"><span class=ppcn>' + esc(p ? e.name || p : cfg.none || T('Pick a project')) + '</span>'
+    + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '" title="' + esc(cfg.tip && p ? cfg.tip(e) : p) + '"><span class=ppcn>' + esc(p ? e.name || p : cfg.none || T('Pick a project')) + '</span>'
     + (p && cfg.badge ? cfg.badge(e) : '') + ' ▾</button>';
 }
 // Pure: items whose name or p contains q (case-insensitive), order kept; the flat list of a cfg.flat picker.
@@ -63,35 +48,10 @@ function ppFilter(items, q){
   const s = String(q || '').trim().toLowerCase();
   return (items || []).filter(e => !s || String(e.name || '').toLowerCase().includes(s) || String(e.p).toLowerCase().includes(s));
 }
-// Pure: chip widths ws, flex gap, row width avail, index of the selection → indices to fold, nearest-to-selection first.
-//   ⚠The selection renders last (stable order), so a narrow row clipped exactly it; folded chips stay in «More».
-function ppFitHide(ws, gap, avail, on){
-  const out = [];
-  if(on < 0) return out;
-  let tot = ws.reduce((a, w) => a + w, 0) + gap * Math.max(0, ws.length - 1);
-  for(let i = ws.length - 1; i >= 0 && tot > avail + 0.5; i--){
-    if(i === on) continue;
-    out.push(i); tot -= ws[i] + gap;
-  }
-  return out;
-}
-let ppFitQ = 0;
-function ppFit(){
-  ppFitQ = 0;
-  document.querySelectorAll('.ppcs').forEach(row => {
-    const cs = [...row.children];
-    cs.forEach(c => c.classList.remove('ppfold'));
-    if(row.scrollWidth <= row.clientWidth + 0.5) return;
-    const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
-    ppFitHide(cs.map(c => c.getBoundingClientRect().width), gap, row.clientWidth, cs.findIndex(c => c.classList.contains('on')))
-      .forEach(i => cs[i].classList.add('ppfold'));
-  });
-}
-function ppFitSoon(){ if(!ppFitQ && typeof requestAnimationFrame === 'function') ppFitQ = requestAnimationFrame(ppFit); }
 function ppRowHtml(e, i){
   return '<div class="cmdki' + (i === PPS.i ? ' on' : '') + (e.p === PPS.cfg.cur ? ' ppcur' : '') + '" role=option data-ppi="' + i + '" title="' + esc(e.p) + '">'
     + '<span class=cmdkp>' + esc(e.name || e.p) + '</span>' + (e.run ? '<i class=mvdot></i>' : e.live ? '<i class=ppdot></i>' : '')
-    + '<span class=cmdkc>' + esc(e.p) + '</span></div>';
+    + (PPS.cfg.note ? PPS.cfg.note(e) : '') + '<span class=cmdkc>' + esc(e.p) + '</span></div>';
 }
 function ppListPaint(){
   const l = document.querySelector('#ppop .cmdkl');
@@ -156,4 +116,4 @@ document.addEventListener('keydown', e => {
   if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); PPS.i = ppStep(PPS.i, e.key === 'ArrowDown' ? 1 : -1, PPS.rows.length); ppListPaint(); }
   else if(e.key === 'Enter'){ e.preventDefault(); ppPick(PPS.i); }
 });
-window.addEventListener('resize', () => { ppClose(false); ppFitSoon(); });
+window.addEventListener('resize', () => { ppClose(false); });
