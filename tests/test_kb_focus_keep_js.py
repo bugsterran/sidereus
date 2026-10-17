@@ -1,4 +1,4 @@
-"""Keyboard focus survives repaints: segment toggles, the git panel close, timeline pipeline chips, and Esc on #tlhc."""
+"""Keyboard focus survives repaints: segment toggles, the git chip repaint, timeline pipeline chips, and Esc on #tlhc."""
 import os
 import unittest
 
@@ -21,10 +21,12 @@ class KbFocusKeep(unittest.TestCase):
         self.assertIn("kbHold('#strmd button[data-ma]')", a)
         self.assertIn("kbHold('.archtab [data-arq]')", a)
 
-    def test_git_close_focuses_toggle(self):
+    def test_git_chip_repaint_refocuses(self):
         s = src("web/js/77-timeline-git.js")
-        i = s.index("t.closest('#tlgx')")
-        self.assertIn("kbHold('#tlgb')", s[i:i + 120])
+        body = s[s.index("function tlgPaint("):]
+        body = body[:body.index("\n}\n")]
+        self.assertIn("if(fo === 'tlgss') return;", body)   # an open dropdown is never repainted
+        self.assertIn("f.focus({preventScroll: true})", body)
 
     def test_pipeline_chip_lands_on_pipeline(self):
         s = src("web/js/74c-timeline-plrun.js")

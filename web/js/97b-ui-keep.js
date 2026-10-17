@@ -12,15 +12,13 @@ function uiKeepApply(s){
   if(uiKeepOk(s.filter)) setFilter(s.filter);
   if(Object.prototype.hasOwnProperty.call(WKR_LABEL, s.wkr)) WKRANGE = +s.wkr;
 }
-// Timeline «Changed» rail: followed session · repo chip · base mode.
-// ⚠A session/repo that is gone falls back silently: tlgTarget drops a missing tlgSel once SESS is loaded, a missing repo shows the cwd.
+// Timeline «Changes» chip: followed session only (old saved rkey/repo/mode values are ignored).
+// ⚠A session that is gone falls back silently: tlgTarget drops a missing tlgSel once SESS is loaded.
 const TLGK_KEY = 'sidereus.tlgsel';
-function tlgKeepSnap(){ return { sel: tlgSel, rkey: tlgRepoSel.key, repo: tlgRepoSel.repo, mode: tlgMode }; }
+function tlgKeepSnap(){ return { sel: tlgSel }; }
 function tlgKeepApply(s){
   if(!s || typeof s !== 'object') return;
   if(uiKeepOk(s.sel) && /^[sc]:/.test(s.sel)) tlgSel = s.sel;
-  if(uiKeepOk(s.rkey) && uiKeepOk(s.repo) && s.repo.charAt(0) === '/') tlgRepoSel = {key: s.rkey, repo: s.repo};
-  if(s.mode === 'auto' || TLG_MODES.some(m => m[0] === s.mode)) tlgMode = s.mode;
 }
 function tlgKeepSave(){ if(!ISPOP && !ISWP && !ISBP) tabSetJson(TLGK_KEY, tlgKeepSnap()); }
 if(!ISPOP && !ISWP && !ISBP){

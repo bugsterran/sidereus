@@ -12,6 +12,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: the pipeline picker is the same search combobox as the project picker and lists this project's pipelines only (⚠ invalid, • unsaved, dot = running).
 - Pipelines: a pipeline defined in another project shows only while it runs here, as a read-only chip at the end of the header row.
 - Pipelines: «Apply» always sets the mode for the selected project; the «This project only» checkbox is gone.
+- Pipelines: on windows 1600px and wider the palette («Make your own» + «Stage catalog») is a 280px column left of the canvas; below that the palette caps at 360px and the stage editor takes the rest. One-line editor fields cap at 420px.
+- Timeline: a toolbar chip «Changes · N files +a −d» (with a session select when 2+ sessions) opens the diff window at the same base; «⚠ n shared» counts files two sessions touched.
+- Diff window: «Since session start» and «vs main / master» base buttons and an «Include untracked files» checkbox.
+- Security checks: advisory lookups (npm audit, osv-scanner, semgrep registry packs, OSV.dev, endoflife.date) run by default; offline or `--offline` marks them «skipped». The OSS Scanner image pins its base by digest and applies OS security updates.
+- Timeline «Window summary»: Results (commits, pipeline runs) and Evidence (gate PASS/FAIL, first failing step) by default; «More» adds Waited on you, Outliers and Cost (tokens, tokens per commit), remembered.
+
+### Removed
+
+- Timeline: the right «Changes» rail and its width grip, the per-file «edited by» chips and the conflict popover (stored prefs `sidereus.tlgit`/`tlgw`/`tlgUntr` are no longer read).
+- Timeline «Window summary»: «Longest gap» and «Running now».
 
 ### Fixed
 

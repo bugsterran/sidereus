@@ -6,12 +6,10 @@
 /* ★Full width like the structure tab — a Gantt has no reading column; .wrap caps at 2240px otherwise. */
 html[data-mv=time] .wrap{max-width:none}
 /* Rows scroll inside .tlscr; #feed itself does not, so the window summary (#tldrw) stays pinned at the bottom and the gap sits above it.
-   ⚠Height comes from #feed (the viewport-bound grid cell), never the git rail beside it: a tall rail once scrolled #feed past every row. */
+   ⚠Height comes from #feed (the viewport-bound grid cell), never from a sibling panel: a tall side rail once scrolled #feed past every row. */
 html[data-mv=time] #feed:has(.tlscr){overflow:hidden;display:flex;flex-direction:column}
-html[data-mv=time] :is(#feed,.tlgmn) > *{flex:0 0 auto}
-html[data-mv=time] #feed:has(.tlscr) > .tlgw{flex:1 1 0;min-height:0}
-html[data-mv=time] .tlgw > .tlgmn{display:flex;flex-direction:column;min-height:0;align-self:stretch}
-html[data-mv=time] :is(#feed,.tlgmn) > .tlscr{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+html[data-mv=time] #feed > *{flex:0 0 auto}
+html[data-mv=time] #feed > .tlscr{flex:1 1 0;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .tlr{display:flex;gap:12px;align-items:center;padding:3px 0;cursor:pointer;border-radius:6px}
 .tlr:hover{background:#161c25}
 .tlr:hover .tlnm b{color:#8ab4f8}
@@ -311,13 +309,17 @@ html[data-ui=next][data-theme=light] .tlsi i{filter:brightness(.7)}
 .tlrf{font-style:normal;cursor:pointer;font-size:11px;color:#8b95a7;border:1px solid #232c38;
   border-radius:6px;padding:1px 7px}
 .tlrf:hover{color:#8ab4f8;border-color:#3a4a63}
-/* «Running only» toggle; #id outranks html[data-ui=next] .tlrf like #tlgb */
+/* «Running only» toggle; #id outranks html[data-ui=next] .tlrf */
 #tlro.on{color:var(--seg-on-c,#dfe5ee);background:var(--seg-on-bg,#5b8def26);border-color:var(--seg-on-bd,#5b8def)}
 /* Controls start at the toolbar's left edge like other tabs; only «Changes» is pushed right (like .tbx) */
 .tlhx{display:inline-flex;gap:5px;align-items:center;flex:0 0 auto}
 /* Account picker (40b acctPickHtml) sized like the other toolbar selects */
 .tlhx .acpk{font-size:11px;padding:2px 6px;max-width:16em}
 .tbs > .tlgb{margin-left:auto}
+/* Window summary «More / Less» toggle (76 #tlsmore): reads as a button, not body text */
+.tlsmore{display:inline-block;font-size:11px;color:var(--nx-t2);border:1px solid var(--nx-rule);border-radius:6px;padding:1px 8px;cursor:pointer}
+.tlsmore:hover{color:var(--nx-t1);border-color:var(--nx-t3)}
+.tlsmore:focus-visible{outline:2px solid var(--nx-info);outline-offset:1px}
 /* ★Clicking a bar expands it **at the bottom of this view** (2026-09-03: don't jump to the work log).
    Jumping to a tab loses the timeline and you have to find it again — side-by-side comparison is this view's purpose.
    ⚠The timeline replaces innerHTML every 30s, so **the body is redrawn only inside this shell**

@@ -42,11 +42,10 @@ async function timeTab(P) {
 }
 const SHOTS = [
   // tlnmW: the default name column (~290px at 1200px) truncates the row chips; the page clamps it to half the Gantt column.
-  { name: 'timeline', prefs: { 'sidereus.tlgit': '1', 'sidereus.tlnmW': '400' }, async run(P) {
+  // The Gantt is full width; the toolbar «Changes» chip carries the file count once the rail reply lands.
+  { name: 'timeline', prefs: { 'sidereus.tlnmW': '400' }, async run(P) {
     await timeTab(P);
-    await P.wait(`!!document.getElementById('tlgbm')`, 'changes rail');
-    await P.ev(`(() => { const s = document.getElementById('tlgbm'); s.value = 'upstream'; s.dispatchEvent(new Event('change', {bubbles: true})); return 1; })()`);
-    await P.wait(`/↑\\d/.test((document.getElementById('tlgit') || {}).innerText || '')`, 'upstream ahead/behind badge');
+    await P.wait(`/\\d/.test((document.getElementById('tlgcp') || {}).textContent || '')`, 'changes chip count');
     await P.css('#tldrw{display:none!important}');
   } },
   // Architecture map with one flow lit (entry -> modules -> external), the flow list beside it and the minimap.

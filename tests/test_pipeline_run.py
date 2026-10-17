@@ -540,7 +540,7 @@ class CssRules(unittest.TestCase):
         self.assertNotIn("@container (max-width:1220px)", self.CSS)
         self.assertIn("6px var(--plpanh,minmax(420px,2fr))", self.CSS)   # one row handle; dragged pane height persists (sidereus.plpanh)
         self.assertIn(".plgw>.plgh{grid-area:2/1/3/3}", self.CSS)
-        self.assertIn(".plgw{display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,1000px);", self.CSS)
+        self.assertIn(".plgw{display:grid;grid-template-columns:minmax(220px,360px) minmax(0,1fr);", self.CSS)
         self.assertIn(".plgw>.plpan{grid-area:3/2/4/3}.plgw>.plpal{grid-area:3/1/4/2}", self.CSS)   # palette left, editor right
         # grid row 1 = canvas across both columns; rows fill the plGwFit height (a fixed 420px pane row left a blank under the run panels)
         self.assertIn(".plgw>.plcvw{grid-area:1/1/2/3}", self.CSS)

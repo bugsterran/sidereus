@@ -175,7 +175,6 @@ Object.assign(I18N.ko, {
   'depth {n}': '깊이 {n}',
   'Instruction received ({n} chars)': '받은 지시 ({n}자)',
   // 35c-worklog-pop.js
-  'Since the rail baseline {n} — pick a scope above to go back': '변경 사항 기준 {n} 이후 — 위 칸을 누르면 돌아갑니다',
   // 35d-ctxsrc.js
   'Context ≈ {n} tokens': '컨텍스트 ≈ {n} 토큰',
   '≈{n} tok': '약 {n} 토큰',

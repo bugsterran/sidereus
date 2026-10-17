@@ -501,7 +501,7 @@ class _GetRoutes(_StructRoutes):
         try:
             out = git_diff(cwd, (q.get("scope") or ["all"])[0],
                            (q.get("pw") or ["today"])[0], _q1(q, "view") or "", _q1(q, "new") or "",
-                           _q1(q, "sid") or "", _q1(q, "base") or "")
+                           _q1(q, "sid") or "", _q1(q, "base") or "", "1" if _q1(q, "untr") == "1" else "")
         except Exception as e:
             out = {"ok": False, "msg": "Failed ({err})", "vars": {"err": f"{type(e).__name__}: {e}"}}
         self._raw_json(200, out)

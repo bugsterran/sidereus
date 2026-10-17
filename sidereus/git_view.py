@@ -16,6 +16,7 @@ from sidereus.git_flow import (BR_FETCH_STALE_H, _git_common_dir, flow_base, flo
 
 FULL_MAX = 400_000          # full-expand cap — a single file, so more generous than the diff cap
 STAT_FILES_MAX = 2000       # numstat rows sent with the diff window (the patch itself is cut at DIFF_MAX)
+DIFF_UNTR_MAX = 40          # untracked files appended with `untr=1`; each is read whole up to RAIL_READ_MAX
 
 
 def _numstat(text):
@@ -267,11 +268,12 @@ def _base_scope(cwd, scope):
     return sha if p.returncode == 0 else None
 
 
-def git_diff(cwd, scope="all", pwin="today", view="", new="", sid="", base_mode=""):
+def git_diff(cwd, scope="all", pwin="today", view="", new="", sid="", base_mode="", untr=""):
     """Changes in the session's working tree. staged + unstaged at once, plus the unpushed commit list.
     view="rail": numstat file list + branch header + last commits only (`_git_rail`, no patch body);
     `base_mode` = one of RAIL_MODES ("" = auto); `sid` = the followed session, whose start time the start mode uses.
     scope="b:<sha>": working tree vs that baseline (the rail's file click; `_base_scope` guards it).
+    untr="1": with scope work or b:, append up to DIFF_UNTR_MAX untracked files as all-added patches (diff window toggle).
 
     ★cwd is allowed **only for paths of currently live sessions**. Accepting arbitrary paths would make this endpoint
       "a window that reads any directory" (even on loopback, a browser can reach it).
@@ -349,10 +351,18 @@ def git_diff(cwd, scope="all", pwin="today", view="", new="", sid="", base_mode=
         body, total = _git_run_capped(cwd, ["diff", "-M"] + args, DIFF_TIMEOUT, DIFF_MAX)
         # One untracked file the rail asked for (`new`), appended as an all-added patch. ⚠Only that file —
         # the blanket untracked list stays out of this view (2026-08-25 decision above).
-        if new and (scope == "work" or base):
-            extra = _untracked_patch(cwd, new)
-            body += extra
-            total += len(extra)
+        if (new or untr) and (scope == "work" or base):
+            paths = [new] if new else []
+            if untr:
+                from sidereus.git_rail import RAIL_STATUS, _status_untracked  # ⚠lazy: git_rail imports git_view
+                st = _git_run(cwd, RAIL_STATUS, DIFF_TIMEOUT)
+                paths += [p for p in _status_untracked(st.stdout if st.returncode == 0 else "") if p != new][:DIFF_UNTR_MAX]
+            for p in paths:
+                if total > DIFF_MAX:
+                    break   # body is already capped; reading more untracked files only costs memory and git calls
+                extra = _untracked_patch(cwd, p)   # ⚠keeps its own literal/realpath/size guards per path
+                body += extra
+                total += len(extra)
         unpushed = _commits(run, "@{u}..HEAD") if has_up else []
         pushed, pushed_all, pushed_win = _pushed_log(run, has_up, pwin)
     except subprocess.TimeoutExpired:

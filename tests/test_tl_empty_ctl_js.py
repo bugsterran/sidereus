@@ -20,7 +20,7 @@ const box = {innerHTML: ''};
 const document = {getElementById: id => id === 'feed' ? box : null};
 const esc = s => s;
 const tbSet = (k, h) => calls.push(['tbSet', k, h]);
-const tlCtlHtml = () => '<CTL>', tlgBtnHtml = () => '<GIT>';
+const tlCtlHtml = () => '<CTL>', tlgChipHtml = () => '<GIT>', tlgWire = () => calls.push(['gitwire']);
 const tlWireCtl = () => calls.push(['wire']);
 let TLD = {ok: true, hours: 12, rows: ROWS};
 try{ paintTl(); }catch(e){ calls.push(['threw']); }
@@ -33,7 +33,8 @@ process.stdout.write(JSON.stringify({calls, html: box.innerHTML}));
 
     def test_empty_rows_still_set_and_wire_controls(self):
         R = self.run_paint([])
-        self.assertIn(["tbSet", "time", "<CTL>"], R["calls"])
+        self.assertIn(["tbSet", "time", "<CTL><GIT>"], R["calls"])   # the git chip stays without subagent rows
+        self.assertIn(["gitwire"], R["calls"])
         self.assertIn(["wire"], R["calls"])
         self.assertIn("No subagents ran in the last 12h", R["html"])
         self.assertNotIn(["threw"], R["calls"])

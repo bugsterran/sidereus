@@ -144,5 +144,48 @@ R.testFalse = ['src/main/Contest.java', 'src/latest.py', 'src/app.py', 'EDIT.jav
         self.assertEqual(e[3], 0)
 
 
+@unittest.skipUnless(shutil.which("git"), "git not installed")
+class DiffUntracked(unittest.TestCase):
+    """git_diff(untr="1"): untracked files as all-added patches for work/b: scopes, capped at DIFF_UNTR_MAX (temp repo)."""
+    def setUp(self):
+        import os
+        import tempfile
+        from tests._load import sidereus
+        self.gv = gv = sidereus("git_view")
+        self.d = d = os.path.realpath(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, d)
+        self.addCleanup(setattr, gv, "sessions_rows", gv.sessions_rows)
+        gv.sessions_rows = lambda **k: [{"cwd": d, "repos": []}]
+        self.git("init", "-q", "-b", "main")
+        with open(os.path.join(d, "a.txt"), "w") as fh:
+            fh.write("a\n")
+        self.git("add", "-A")
+        self.git("commit", "-qm", "init")
+        os.makedirs(os.path.join(d, "n"))
+        for i in range(gv.DIFF_UNTR_MAX + 5):
+            with open(os.path.join(d, "n", "f%02d.txt" % i), "w") as fh:
+                fh.write("x%d\n" % i)
+
+    def git(self, *a):
+        return subprocess.run(["git", "-C", self.d, "-c", "user.name=t", "-c", "user.email=t@t",
+                               "-c", "commit.gpgsign=false"] + list(a), check=True, capture_output=True, text=True).stdout
+
+    def test_untracked_only_when_asked_and_capped(self):
+        off = self.gv.git_diff(self.d, "work")
+        self.assertTrue(off["ok"])
+        self.assertNotIn("n/f00.txt", off["diff"])
+        on = self.gv.git_diff(self.d, "work", untr="1")
+        self.assertIn("diff --git a/n/f00.txt b/n/f00.txt\nnew file mode 100644\n--- /dev/null\n+++ b/n/f00.txt\n@@ -0,0 +1,1 @@\n+x0\n",
+                      on["diff"])
+        self.assertEqual(on["diff"].count("new file mode"), self.gv.DIFF_UNTR_MAX)
+        self.assertEqual(self.gv.DIFF_UNTR_MAX, 40)
+
+    def test_commit_scopes_ignore_untr(self):
+        # (no upstream here: «all» falls back to the working tree, so only a single commit is checked)
+        sha = self.git("rev-parse", "HEAD").strip()
+        self.assertNotIn("n/f00.txt", self.gv.git_diff(self.d, "c:" + sha, untr="1")["diff"])
+        self.assertIn("n/f00.txt", self.gv.git_diff(self.d, "b:" + sha, untr="1")["diff"])
+
+
 if __name__ == "__main__":
     unittest.main()

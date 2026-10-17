@@ -40,6 +40,7 @@ GEM_ROW = {
 CX = {"sid": "3c9e5a71-8d20-4f6b-a1e4-7b0c2d9f5e38", "id": "3c9e5a71", "model": "gpt-5-codex",
       "tokSplit": {"in": 318_400, "out": 42_700, "cache": 1_106_200, "thought": 0}, "estCost": 0.87}
 CX["tok"] = sum(CX["tokSplit"].values())
+DEMO_WT = {"web": [4, 1380], "cart": [2, 420], "bill": [3, 660]}   # session row `wt` = timeline._tl_sess_row
 # One `gemini -p` run launched from the billing session (ext-hooks/ask-gemini) — a timeline child row.
 GEM_CHILD = {"sid": "b41d7e09-2c6a-4f3e-8d15-9a0e6c3b7f24", "model": "gemini-2.5-flash", "tok": 48_200}
 
@@ -244,7 +245,8 @@ class _WorldPanels:
                          "sid": s["sid"],   # = timeline._tl_sess_row: the timeline joins SESS[].plrun to a row by sid
                          "tk": sum(tks), "last": ((s["tool"] + " · " + s["targ"]) if s["tool"] in ("Agent", "Task")
                                                   else s["tool"]) if s["tool"] else "",
-                         "tks": tks, **_tl_acct(s["k"])})
+                         "tks": tks, **_tl_acct(s["k"]),
+                         **({"wt": DEMO_WT[s["k"]]} if s["k"] in DEMO_WT else {})})
         # Synthetic Gemini row (same shape as timeline_ext._plat_rows for gemini); tokens stay out of the Claude strip `v`.
         gsegs = [[max(t0, a - m0 * 60), a - m1 * 60] for m0, m1 in ((96, 71), (24, 3)) if a - m1 * 60 > t0]
         if gsegs:

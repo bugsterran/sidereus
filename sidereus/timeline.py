@@ -16,7 +16,7 @@ from sidereus.timeline_ext import _plat_tl_rows
 # ⚠Re-exported for importers (chat_server, burn_usage, usage lazy import) and for the golden test, which patches
 #   `_sess_segments`/`_compacts`/`naps` here. Patch scan internals (`_seg_scan`, `_naps_fetch`, ...) on timeline_scan.
 from sidereus.timeline_scan import (TL_HOURS, SEG_CAP_BYTES, _SEG_WIN, _fast_ts, _resp_key,
-                                 _sess_segments, _compacts, naps, _naps_awake, _idle_gaps)
+                                 _sess_segments, _sess_waits, _compacts, naps, _naps_awake, _idle_gaps)
 
 
 # Cap on transcripts read per project — count all, but prevent runaway (measured 2026-09-09: max 4 per
@@ -328,6 +328,7 @@ def _tl_sess_row(fp, sid, srow, cut, cwd, proj):
     born = getattr(stt, "st_birthtime", stt.st_ctime)
     _tk = []
     segs, seen0 = _sess_segments(fp, cut, tok_out=_tk)   # segments that actually moved
+    _wt = _sess_waits(fp, cut)                # waits on the person, from the scan just cached
     comp = _compacts(fp, cut)                 # compaction history (where context was lost)
     # tid always carries the sid: a plain `sess:<cwd>` opens the cwd's newest file, not this one.
     row = {"tid": "sess:" + cwd + "|" + sid,
@@ -351,6 +352,8 @@ def _tl_sess_row(fp, sid, srow, cut, cwd, proj):
     clr = clear_of(sid)               # /clear that started this sid; key absent otherwise (goldens stay byte-equal)
     if clr:
         row["clr"] = [{"at": c["at"], "old8": _sid8(c["old"]), "new8": _sid8(c["new"])} for c in clr]
+    if _wt:                           # [prompts that waited on the person, seconds]; key absent at 0 (goldens)
+        row["wt"] = [len(_wt), sum(_wt)]
     return row
 
 

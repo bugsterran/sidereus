@@ -40,7 +40,8 @@ The saver verdict in the status bar changes only when the projection is more tha
 ## Trace what a session did
 
 1. Open the Timeline tab. Each session and subagent has a row; hover for the task description. Turn on «Running only» in the toolbar to hide finished subagent rows; session rows stay (remembered per browser). Drag the right edge of the name column in the time-axis row to widen it (double-click resets). On a session row a red line marks a compaction and a dashed blue line marks a /clear (hover for the time and the new and previous session ids).
-2. The «Changes» rail lists files changed against a base (auto, last commit, session start, remote) and the session that edited each. Untracked files are hidden; tick «Include untracked files» or click «N untracked hidden» to show them (remembered per browser). When the tree has folders, «Expand all» / «Collapse all» on the summary line open or close them all. When the session spans several repos, a chip per repo (labelled main repo · branch) picks one; repos with no changes or unpushed commits in the current compare mode are folded into one «+N clean» chip (click to show them until you follow another session).
+2. The «Changes · N files +a −d» chip in the Timeline toolbar counts files changed in the followed session (with 2+ sessions a small select beside it picks one); «⚠ n shared» means two sessions touched the same file. Click it to open the diff window at the same base. Its base buttons are «Uncommitted» (last commit), «Since session start», «vs main / master» and «All» (upstream); untracked files are hidden unless «Include untracked files» is ticked. When the session spans several repos, a tab per repo picks one.
+   The summary in the bottom drawer shows «Results» (commits, pipeline runs ✓/✕/↺) and «Evidence» (gate PASS/FAIL, first failing step); «More» adds time waited on you, outliers and cost (tokens, tokens per commit), and stays open once chosen.
 3. Click a commit row for its diff, or a session for its work popup.
 4. For older work, open the History tab and expand a session. With 2+ accounts its toolbar has an account picker («All accounts» / one account): other accounts' Claude rows fold into «In other accounts: N», external CLI rows stay, and day headers count the shown rows only.
 
@@ -178,7 +179,7 @@ Tags and the pipeline file: [EXTENDING.md](EXTENDING.md).
 - «Details» › «Results» lists recorded check runs, newest first; with the [`ev_hook.py`](HOOKS.md#ev_hookpy) hook, test/build/lint commands from any project too.
 - A lit stage card names its newest gate run: «gate PASS · N tests · screen a/b» or a red «gate FAIL».
 - A stage with no gate command gets an amber «Unverified» pill; «Gates n/m» in the title counts machine-checked stages. Design and review are expected to stay unverified.
-- «Stage catalog» (under the canvas, left): «+ Add» or drag an item onto the canvas; ✓ items bring a gate command.
+- «Stage catalog» (left of the canvas on windows 1600px and wider, under it on the left below that): «+ Add» or drag an item onto the canvas; ✓ items bring a gate command.
 - «Guards» (stage panel, nothing selected): gates a run must pass before `git commit`, and «Max loop-backs» ([HOOKS.md](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
 - «Evaluation» in the pipeline title: per-stage seeded-defect catch rate, red check and stability ([dev/PIPELINE.md](dev/PIPELINE.md#evaluation-seeds-red-check-flaky-gates)).
 - «Suggestions» under it: «Fix it myself» fills the editor; «Ask AI» previews a request to a session.

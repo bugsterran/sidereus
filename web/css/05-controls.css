@@ -41,5 +41,5 @@ html[data-ui=next][data-ui] .th i{font-size:calc(var(--seg-fs) - 1px);color:var(
 /* Title scale: tab title 14/600 · section 13/600 · label 12/500 muted. */
 html[data-ui=next][data-ui] :is(.wvh > b,.tlhd:not(.cwerr)){font-size:var(--ttl-tab);font-weight:600;font-style:normal;color:var(--nx-t1)}
 html[data-ui=next][data-ui] .tlhd.cwerr{font-size:var(--ttl-sec)}   /* error body in the title slot keeps .cwerr red */
-html[data-ui=next][data-ui] :is(.brh > b,.brh2,.tlghd > b,.brep .wkh,.brep .wktrh > b){font-size:var(--ttl-sec);font-weight:600;color:var(--nx-t1)}
+html[data-ui=next][data-ui] :is(.brh > b,.brh2,.brep .wkh,.brep .wktrh > b){font-size:var(--ttl-sec);font-weight:600;color:var(--nx-t1)}
 html[data-ui=next][data-ui] :is(.wvh > span,.tlhd > i,.brh > i,.brh2 > i,.brep .wkh > i,.brep .wktrh > i){font-size:var(--ttl-lab);font-weight:500;font-style:normal;color:var(--nx-t2)}
