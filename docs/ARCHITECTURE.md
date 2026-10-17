@@ -2,6 +2,12 @@
 
 **English** · [Korean](ARCHITECTURE.ko.md)
 
+Where to change things:
+
+- Screen: `web/` — `index.html` skeleton plus `js/NN-*.js` and `css/NN-*.css`, assembled into one page at import; restart the viewer to see a change.
+- Data and server: `sidereus/<domain>.py`; the entry point is `chat_server.py`.
+- Which file owns which feature: [dev/FILEMAP.md](dev/FILEMAP.md).
+
 Sidereus is a local viewer for AI coding sessions. It shows what each session and subagent is doing and relays a
 person's instructions to a session through the mailbox; the session runs them with its own permissions.
 Rules: `AGENTS.md`. Traps: `docs/dev/TRAPS.md` (index of `docs/dev/traps/`). Module order: `refactor/STAGE3.md`.

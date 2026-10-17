@@ -46,6 +46,14 @@ bash tests/run.sh              # unit tests only
 ```
 
 - ⚠Use `/usr/bin/python3` (3.9) — launchd runs the viewer with it; a newer Python lets 3.9-incompatible syntax slip in. Tests never touch live files, the clock or the network.
+- On Linux `/usr/bin/python3` is usually there; `PYTHON=<python> bash tests/run.sh` picks another one.
+- ⚠Windows: `scripts/check.sh` calls `/usr/bin/python3` only, so it fails in Git Bash. Run the same gates as the Windows CI job (Git Bash, Python 3.9 if you can):
+
+```sh
+for f in chat_server.py sidereus/*.py hooks/*.py mcp/*.py; do py -m py_compile "$f"; done
+for f in web/*.js web/js/*.js; do node --check "$f"; done
+PYTHON=py bash tests/run.sh
+```
 
 ## Keep these if you want the metadata-only guarantee
 

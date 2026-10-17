@@ -37,7 +37,7 @@ claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.
 
 - Viewer routes: `GET /api/agent/{quota,peers,file,attention}` in `sidereus/routes_get.py`; bodies from `sidereus/agent_brief.py`. Same Host check as every GET.
 - Warm calls take under 2 ms. The first `file` call scans the owner index (~0.4 s).
-- JSON-RPC 2.0 over stdio, standard library only, `/usr/bin/python3`.
+- JSON-RPC 2.0 over stdio, standard library only, Python 3.9+ (`/usr/bin/python3` on macOS, `py` on Windows).
 - HTTP timeout 8 s; the first call after a viewer restart can take over 3 s.
 - Port: `SIDEREUS_PORT` > config `port` > 8799.
 - If Sidereus is down or too old (404), the tool returns an error text; the server does not exit.

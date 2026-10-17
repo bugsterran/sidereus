@@ -37,7 +37,7 @@ claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.
 
 - 뷰어 라우트: `sidereus/routes_get.py` 의 `GET /api/agent/{quota,peers,file,attention}`. 본문은 `sidereus/agent_brief.py` 가 만든다. 다른 GET 과 같은 Host 검사를 거친다.
 - 웜 호출은 2 ms 미만. 첫 `file` 호출은 소유자 인덱스를 훑느라 ~0.4 s 걸린다.
-- stdio 위 JSON-RPC 2.0, 표준 라이브러리만, `/usr/bin/python3`.
+- stdio 위 JSON-RPC 2.0, 표준 라이브러리만, Python 3.9 이상(macOS `/usr/bin/python3`, Windows `py`).
 - HTTP 타임아웃 8 s. 뷰어 재시작 직후 첫 호출은 3 s 를 넘을 수 있다.
 - 포트: `SIDEREUS_PORT` > 설정 `port` > 8799.
 - 시데레우스가 꺼져 있거나 옛 버전(404)이면 도구가 오류 문구를 돌려줄 뿐 서버는 죽지 않는다.
