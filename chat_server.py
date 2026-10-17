@@ -319,4 +319,9 @@ def main():
 
 
 if __name__ == "__main__":
+    for _s in (sys.stdout, sys.stderr):   # ⚠a redirected Windows run uses the ANSI code page; the banner holds an em dash
+        try:
+            _s.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     main()

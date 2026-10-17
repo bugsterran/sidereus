@@ -14,6 +14,7 @@ stop    stops only the pid this launcher recorded, and only while that pid is al
 status  prints what it sees; writes nothing.
 setup-claude [--mailbox-mcp DIR]
         prints the `claude mcp add` lines and the hooks JSON block with this clone's real paths; writes nothing.
+        --write shows the MCP command and a settings.json diff, asks, then backs up, merges hooks and registers MCP.
 """
 import getpass
 import json
@@ -33,6 +34,20 @@ import webbrowser
 CODE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CODE_DIR)
 import mailbox_config  # noqa: E402
+
+
+def utf8_stdio(streams=None):
+    """Re-encode non-UTF-8 stdio as UTF-8, keeping each stream's error mode.
+    ⚠Windows pipes and redirects default to the ANSI code page (cp949 cannot encode the em dash in setup-claude)."""
+    for s in streams or (sys.stdout, sys.stderr):
+        try:
+            if (getattr(s, "encoding", "") or "").lower().replace("-", "") != "utf8":
+                s.reconfigure(encoding="utf-8", errors=s.errors)
+        except Exception:
+            pass
+
+
+utf8_stdio()   # module level: `python -m sidereus` reaches main() through an import, not __main__
 
 IS_WIN = sys.platform == "win32"
 IS_MAC = sys.platform == "darwin"
@@ -118,14 +133,35 @@ MSG = {
     "st_dead": (" (실행 중 아님)", " (not running)"),
     "st_unowned": ("%d 포트에 무언가 응답합니다 (실행 기록 없음)", "something answers on %d (no run record)"),
     "usage": ("사용법: python3 -m sidereus start [--port N] [--open] [--demo] [--install-service] | stop | status [--port N]"
-              " | setup-claude [--mailbox-mcp DIR]",
+              " | setup-claude [--mailbox-mcp DIR] [--write [--yes]]",
               "usage: python3 -m sidereus start [--port N] [--open] [--demo] [--install-service] | stop | status [--port N]"
-              " | setup-claude [--mailbox-mcp DIR]"),
+              " | setup-claude [--mailbox-mcp DIR] [--write [--yes]]"),
     "setup_mcp": ("# 1) MCP 등록 — 터미널에서 실행하세요", "# 1) Register the MCP servers — run these in a terminal"),
     "setup_nombx": ("# mailbox-mcp 는 별도 패키지입니다 — 경로를 --mailbox-mcp DIR 로 주면 아래 줄이 채워집니다",
                     "# mailbox-mcp is a separate package — pass --mailbox-mcp DIR to fill in the line below"),
     "setup_hooks": ("# 2) ~/.claude/settings.json 의 \"hooks\" 에 합쳐 넣으세요 (이 명령은 아무 파일도 쓰지 않습니다)",
                     "# 2) Merge into \"hooks\" in ~/.claude/settings.json (this command writes no file)"),
+    "w_mcp_run": ("MCP 등록 — 실행할 명령:\n  %s", "MCP registration — will run:\n  %s"),
+    "w_mcp_have": ("MCP: sidereus 가 이미 등록되어 있습니다 — 건너뜁니다.", "MCP: sidereus is already registered — skipping."),
+    "w_no_claude": ("MCP: `claude` 를 PATH 에서 찾지 못했습니다 — 터미널을 다시 연 뒤 다시 실행하거나 직접 실행하세요:\n  %s",
+                    "MCP: `claude` is not on PATH — reopen the terminal and rerun, or run it yourself:\n  %s"),
+    "w_plugin": ("훅: Sidereus 플러그인이 설치되어 있어 훅을 넣지 않습니다(두 번 실행됨). MCP 만 등록합니다.",
+                 "Hooks: the Sidereus plugin is installed, so no hooks are added (they would run twice). Only MCP is registered."),
+    "w_hooks_have": ("훅: %s 에 이미 모두 들어 있습니다.", "Hooks: already all present in %s."),
+    "w_diff": ("훅: %s 변경 내용:", "Hooks: changes to %s:"),
+    "w_symlink": ("%s 는 심볼릭 링크입니다 — 쓰지 않습니다. 실제 파일에 직접 합치세요.",
+                  "%s is a symlink — not writing it. Merge into the real file by hand."),
+    "w_invalid": ("%s 를 JSON 객체로 읽지 못했습니다 — 쓰지 않습니다. 파일을 고친 뒤 다시 실행하세요.",
+                  "%s is not a valid JSON object — not writing it. Fix the file and rerun."),
+    "w_nothing": ("바꿀 것이 없습니다.", "Nothing to change."),
+    "w_ask": ("적용할까요? [y/N] ", "Apply? [y/N] "),
+    "w_notty": ("터미널이 아니라 묻지 못했습니다 — 아무것도 쓰지 않았습니다. 적용하려면 --yes 를 붙이세요.",
+                "Not a terminal, cannot ask — nothing written. Add --yes to apply."),
+    "w_cancel": ("취소했습니다 — 아무것도 쓰지 않았습니다.", "Cancelled — nothing written."),
+    "w_backup": ("백업: %s", "Backup: %s"),
+    "w_wrote": ("썼습니다: %s", "Wrote: %s"),
+    "w_mcp_ok": ("MCP: sidereus 를 등록했습니다.", "MCP: sidereus registered."),
+    "w_mcp_fail": ("MCP 등록 실패 (rc=%s) — 직접 실행하세요:\n  %s", "MCP registration failed (rc=%s) — run it yourself:\n  %s"),
 }
 
 
@@ -589,7 +625,7 @@ def setup_hooks(python, code=CODE_DIR):
 
 
 def setup_claude_text(python, code=CODE_DIR, mailbox_mcp=None):
-    """Text of `setup-claude` (pure). ⚠Print only: Sidereus never writes ~/.claude.json or settings.json for this."""
+    """Text of `setup-claude` (pure, prints only). Writing is `--write` (cmd_setup_write): confirm + backup first."""
     hooks = setup_hooks(python, code)
     lines = [t("setup_mcp"),
              "claude mcp add --scope user sidereus -- %s %s" % (_shq(python), _shq(os.path.join(code, "mcp", "sidereus_mcp.py")))]
@@ -623,7 +659,190 @@ def setup_python(exe=None, probe=_probe_exe, doc="/usr/bin/python3"):
         return exe
 
 
+_which = shutil.which      # tests replace these module attributes
+_isatty = lambda: sys.stdin.isatty()   # noqa: E731
+_input = input
+_sub_run = subprocess.run
+
+
+def claude_home():
+    from sidereus import config as _scfg    # lazy: the launcher must not pull the viewer package at import
+    return _scfg.claude_home()
+
+
+def plugin_installed(home):
+    """True when an enabled `sidereus@...` plugin with an existing installPath is in this account's registry."""
+    def load(p):
+        try:
+            with open(p, encoding="utf-8") as f:
+                v = json.load(f)
+            return v if isinstance(v, dict) else {}
+        except (OSError, ValueError):
+            return {}
+    reg = load(os.path.join(home, "plugins", "installed_plugins.json")).get("plugins")
+    en = {}
+    for name in ("settings.json", "settings.local.json"):
+        e = load(os.path.join(home, name)).get("enabledPlugins")
+        if isinstance(e, dict):
+            en.update(e)
+    for k, insts in (reg.items() if isinstance(reg, dict) else ()):
+        if str(k).partition("@")[0] != "sidereus" or en.get(k, True) is False:   # missing key = enabled
+            continue
+        for inst in insts if isinstance(insts, list) else ():
+            ip = inst.get("installPath") if isinstance(inst, dict) else None
+            if isinstance(ip, str) and os.path.isdir(ip):
+                return True
+    return False
+
+
+def merge_hooks(settings, hooks):
+    """Copy of settings with every hook command of `hooks` not yet present under its event appended (exact command match)."""
+    out = dict(settings)
+    cur = out.get("hooks") if isinstance(out.get("hooks"), dict) else {}
+    cur = dict(cur)
+    for ev, groups in hooks.items():
+        have = list(cur.get(ev)) if isinstance(cur.get(ev), list) else []
+        seen = {h.get("command") for g in have if isinstance(g, dict)
+                for h in (g.get("hooks") if isinstance(g.get("hooks"), list) else []) if isinstance(h, dict)}
+        added = False
+        for g in groups:
+            new = [h for h in g.get("hooks", []) if h.get("command") not in seen]
+            if new:
+                have.append(dict(g, hooks=new))
+                seen.update(h.get("command") for h in new)
+                added = True
+        if added:
+            cur[ev] = have
+    if cur != (settings.get("hooks") if isinstance(settings.get("hooks"), dict) else {}):
+        out["hooks"] = cur
+    return out
+
+
+def _indent_of(text):
+    """The file's JSON indent (first indented line), default 2; a tab stays a tab."""
+    m = re.search(r"\n([ \t]+)\S", text)
+    if not m:
+        return 2
+    ws = m.group(1)
+    return "\t" if ws.startswith("\t") else len(ws)
+
+
+def mcp_add_argv(claude, python, code=CODE_DIR, win=None):
+    """`claude mcp add` argv. ⚠name before -e: --env is variadic and would swallow the name. Windows gets UTF-8 stdio:
+    a cp949 console crashed the server on a non-ASCII dash."""
+    argv = [claude, "mcp", "add", "--scope", "user", "sidereus"]
+    if IS_WIN if win is None else win:
+        argv += ["-e", "PYTHONUTF8=1", "-e", "PYTHONIOENCODING=utf-8"]
+    return argv + ["--", python, os.path.join(code, "mcp", "sidereus_mcp.py")]
+
+
+def _argv_text(argv):
+    return " ".join(_shq(a) for a in argv)
+
+
+def _write_settings(path, text):
+    """Atomic replace that keeps the original file mode."""
+    d = os.path.dirname(path) or "."
+    os.makedirs(d, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".settings.", suffix=".tmp", dir=d)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+        if os.path.exists(path):
+            shutil.copymode(path, tmp)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def cmd_setup_write(python, yes=False):
+    """`setup-claude --write`: show the MCP command and the settings.json diff, confirm, back up, write, register."""
+    import difflib
+    home = claude_home()
+    path = os.path.join(home, "settings.json")
+    plugin = plugin_installed(home)
+    old_text, obj = "", {}
+    if os.path.islink(path):
+        print(t("w_symlink", path))
+        return 1
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8", newline="") as f:
+                old_text = f.read()
+            obj = json.loads(old_text) if old_text.strip() else {}
+        except (OSError, ValueError):
+            obj = None
+        if not isinstance(obj, dict):
+            print(t("w_invalid", path))
+            return 1
+    new_obj = obj if plugin else merge_hooks(obj, setup_hooks(python)["hooks"])
+    new_text = old_text
+    if new_obj != obj:
+        nl = "\r\n" if "\r\n" in old_text else "\n"
+        tail = nl if (old_text.endswith(("\n", "\r\n")) or not old_text) else ""
+        new_text = json.dumps(new_obj, indent=_indent_of(old_text), ensure_ascii=False).replace("\n", nl) + tail
+    claude = _which("claude")
+    add = mcp_add_argv(claude or "claude", python)
+    have_mcp = False
+    if claude:
+        try:
+            have_mcp = _sub_run([claude, "mcp", "get", "sidereus"], stdin=subprocess.DEVNULL, capture_output=True,
+                                timeout=30).returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            have_mcp = False
+    if not claude:
+        print(t("w_no_claude", _argv_text(add)))
+    elif have_mcp:
+        print(t("w_mcp_have"))
+    else:
+        print(t("w_mcp_run", _argv_text(add)))
+    if plugin:
+        print(t("w_plugin"))
+    elif new_text == old_text:
+        print(t("w_hooks_have", path))
+    else:
+        print(t("w_diff", path))
+        sys.stdout.writelines(difflib.unified_diff(old_text.splitlines(True), new_text.splitlines(True), path, path + " (new)"))
+        print()
+    run_mcp = bool(claude) and not have_mcp
+    if new_text == old_text and not run_mcp:
+        print(t("w_nothing"))
+        return 0 if claude else 1
+    if not yes:
+        if not _isatty():
+            print(t("w_notty"))
+            return 1
+        if _input(t("w_ask")).strip().lower() not in ("y", "yes"):
+            print(t("w_cancel"))
+            return 1
+    if new_text != old_text:
+        if os.path.exists(path):
+            bak = "%s.bak-%s" % (path, time.strftime("%Y%m%d-%H%M%S", time.localtime(_now())))
+            shutil.copy2(path, bak)
+            print(t("w_backup", bak))
+        _write_settings(path, new_text)
+        print(t("w_wrote", path))
+    rc = 0 if claude else 1
+    if run_mcp:
+        try:
+            r = _sub_run(add, stdin=subprocess.DEVNULL, timeout=60).returncode
+        except (OSError, subprocess.SubprocessError):
+            r = None
+        if r == 0:
+            print(t("w_mcp_ok"))
+        else:
+            print(t("w_mcp_fail", r, _argv_text(add)))
+            rc = 1
+    return rc
+
+
 def cmd_setup_claude(rest):
+    if "--write" in rest:
+        return cmd_setup_write(setup_python(), "--yes" in rest)
     mbx = None
     if "--mailbox-mcp" in rest:
         try:

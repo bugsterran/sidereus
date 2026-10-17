@@ -85,8 +85,10 @@ Claude Code 는 세션 상태(생각 중, 어떤 도구)를 Sidereus 로 바로 
 둘 중 한 방법만 고른다. ⚠ 둘 다 하면 훅이 모두 두 번 걸리고 MCP 서버도 둘(`sidereus`, `plugin:sidereus:sidereus`)이 된다.
 
 **플러그인 (권장).** `sidereus` MCP 서버와 [HOOKS.ko.md](HOOKS.ko.md#claude-code-훅) 의 훅 9개를 등록한다.
-훅은 macOS/Linux 에서 `python3` 를 부른다. Windows 에서는 PATH 에서 `python3`, `py -3`, `python` 순으로 Python 3.9 이상을 찾고
-Git Bash 로 돌아가니 Git for Windows 를 설치한다. MCP 서버는 `python3` 를 그대로 부른다. Windows 에 그것이 없으면 아래 **수동** 의 줄로 서버도 등록한다.
+훅은 macOS/Linux 에서 `python3` 를 부른다. Windows 에서는 PATH 에서 `py -3`, `python3`, `python` 순으로 Python 3.9 이상을 찾고
+(Microsoft Store 의 `python3` 별칭은 건너뛰고, 찾은 결과는 캐시한다) Git Bash 로 돌아가니 Git for Windows 를 설치한다.
+MCP 서버는 `python3` 를, `SIDEREUS_PYTHON` 이 있으면 그것을 부른다. Windows 의 `python3` 는 대개 Store 별칭이니
+`setx SIDEREUS_PYTHON py` 를 한 번 실행하고 Claude Code 를 다시 띄운다(훅도 같은 변수를 쓴다).
 
 ```text
 /plugin marketplace add <클론 경로>
@@ -95,7 +97,18 @@ Git Bash 로 돌아가니 Git for Windows 를 설치한다. MCP 서버는 `pytho
 
 제거: `claude plugin uninstall sidereus@sidereus` 다음 `claude plugin marketplace remove sidereus`.
 
-**수동.** 이 클론의 경로와 Python 으로 만든 줄을 출력한다(아무것도 쓰지 않는다). 나온 것을 그대로 쓴다.
+**수동.** 명령에 맡긴다(Windows: `py -m sidereus setup-claude --write`).
+
+```sh
+python3 -m sidereus setup-claude --write
+```
+
+실행할 `claude mcp add` 명령과 `settings.json`(`$CLAUDE_CONFIG_DIR`, 없으면 `~/.claude`)의 diff 를 보여 주고
+`Apply? [y/N]` 을 묻는다. 승인하면 파일을 `settings.json.bak-YYYYMMDD-HHMMSS` 로 백업하고 훅을 합친 뒤 MCP 를 등록한다.
+다시 실행해도 같은 항목을 두 번 넣지 않는다. 플러그인이 설치돼 있으면 훅은 넣지 않는다(두 번 실행된다).
+`--yes` 는 질문을 건너뛴다(스크립트용). 터미널이 아니고 `--yes` 도 없으면 아무것도 쓰지 않는다.
+
+손으로 하려면 이 클론의 경로와 Python 으로 만든 줄을 출력한다(아무것도 쓰지 않는다).
 
 ```sh
 python3 -m sidereus setup-claude [--mailbox-mcp DIR]
