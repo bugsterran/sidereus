@@ -100,6 +100,21 @@ def live(*sids, state="run", subs=()):
              "sub": [{"aid": a, "lab": "x", "tid": "t"} for a in subs]} for s in sids]
 
 
+class WindowsEdits(unittest.TestCase):
+    """Windows `file_path`s are absolute too: they used to be dropped by a `startswith("/")` test (ntpath simulated)."""
+
+    def test_drive_paths_kept(self):
+        import ntpath
+        import types
+        from unittest import mock
+        ts = 1_700_000_000
+        lines = [edit_line(ts, "Edit", "C:\\w\\repo\\a.py"), edit_line(ts, "Write", "C:/w/repo/b.js"),
+                 edit_line(ts, "Edit", "repo\\rel.py")]
+        with mock.patch.object(fo, "os", types.SimpleNamespace(path=ntpath, sep="\\")):
+            got = fo._edits(lines)
+        self.assertEqual([p for p, _ in got], ["C:\\w\\repo\\a.py", "C:\\w\\repo\\b.js"])
+
+
 class TestConflict(Base):
     def test_two_live_parents_within_window(self):
         self.main("s1", [edit_line(self.now - 100, "Edit", self.p("a.py")), edit_line(self.now - 100, "Edit", self.p("b.js"))])

@@ -6,6 +6,8 @@ import subprocess
 import tempfile
 import unittest
 
+from tests._fs import rmtree_force
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _spec = importlib.util.spec_from_file_location("leakscan", os.path.join(ROOT, "scripts", "leakscan.py"))
 L = importlib.util.module_from_spec(_spec)
@@ -48,7 +50,7 @@ class Matcher(unittest.TestCase):
                     os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
             return lambda t: [h[2] for h in L.scan_text("a.py", t, ids)]
         finally:
-            shutil.rmtree(d)
+            rmtree_force(d)
 
     PRIV = ("Kim Tester/Platform Team/CL", "kim.tester@acmecorp.example")
     PUB = ("nickpub", "nickpub@mailhost.example")
@@ -94,7 +96,7 @@ class Matcher(unittest.TestCase):
 class Files(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp(prefix="leakscan-")
-        self.addCleanup(shutil.rmtree, self.d)
+        self.addCleanup(rmtree_force, self.d)
 
     def w(self, rel, data):
         p = os.path.join(self.d, rel)

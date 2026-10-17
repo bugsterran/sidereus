@@ -148,7 +148,7 @@ def brief_file(path, cwd="", rows=None, now=None):
     now = time.time() if now is None else now
     if not path:
         return {"ok": False, "err": "path required"}
-    if not path.startswith("/"):
+    if not os.path.isabs(path):                  # isabs: Windows `C:\...` is absolute too
         if not cwd:
             return {"ok": False, "err": "relative path needs cwd"}
         path = os.path.join(cwd, path)

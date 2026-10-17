@@ -204,8 +204,12 @@ def _repo_root(cwd):
 def _read_small(p):
     """Regular (non-symlink) file <= RAIL_READ_MAX -> bytes, else None.
     ⚠One fd, no check-then-open race: O_NOFOLLOW refuses a symlink, O_NONBLOCK keeps a FIFO from blocking."""
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    # ⚠Windows has neither flag: fall back to an islink check (racy, but still refuses a plain symlink).
+    if not nofollow and os.path.islink(p):
+        return None
     try:
-        fd = os.open(p, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        fd = os.open(p, os.O_RDONLY | nofollow | getattr(os, "O_NONBLOCK", 0))
     except OSError:
         return None
     try:

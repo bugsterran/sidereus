@@ -21,7 +21,7 @@ class SessionReposPaths(unittest.TestCase):
         self.home = os.path.realpath(tempfile.mkdtemp(prefix="sidereus-home-"))
         self.saved = (gi._HOME, gi._PATH_RE)
         gi._HOME = self.home
-        gi._PATH_RE = re.compile(re.escape(self.home) + r"/[A-Za-z0-9_.\-/]+")
+        gi._PATH_RE = gi._path_re(self.home)       # the product builder: `\` separators on Windows
         gi._REPO_CACHE.clear()
         gi._GITROOT.clear()
         self.launch = self.mk("launch", git=False)
@@ -62,6 +62,14 @@ class SessionReposPaths(unittest.TestCase):
         self.mk("plain", git=False)
         got = self.repos([tu(command="cd plain; cd nowhere; ls ~/plain/src ~/gone/z")])
         self.assertEqual(got, [])
+
+    def test_windows_path_re(self):
+        """Windows transcripts carry `C:\\Users\\me\\repo\\a.py` (or `/`, mixed, any case); POSIX pattern unchanged."""
+        w = gi._path_re("C:\\Users", win=True)
+        for s in ("C:\\Users\\me\\repo\\src\\a.py", "C:/Users/me/repo/a.py", "c:\\users\\me\\repo/a.py"):
+            self.assertEqual([m.group(0) for m in w.finditer("x " + s + " y")], [s])
+        self.assertEqual(w.findall("D:\\Users\\me\\a.py"), [])
+        self.assertEqual(gi._path_re("/home", win=False).pattern, r"/home/[A-Za-z0-9_.-]+/[A-Za-z0-9_.\-/]+")
 
     def test_cd_outside_home_ignored(self):
         self.assertEqual(self.repos([tu(command="cd /")]), [])

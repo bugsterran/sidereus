@@ -36,7 +36,7 @@ class Base(unittest.TestCase):
         cl._cl.update(self.saved[2])
 
     def write(self, rel, rows, mode="w"):
-        fp = os.path.join(cl.CL_ROOT, rel)
+        fp = os.path.normpath(os.path.join(cl.CL_ROOT, rel))   # the scan keys files by OS-separated glob paths
         os.makedirs(os.path.dirname(fp), exist_ok=True)
         with open(fp, mode, encoding="utf-8") as f:
             for r in rows:
@@ -56,8 +56,8 @@ class Detect(unittest.TestCase):
         self.assertEqual([(x["sha"], x["subj"], x["dir"]) for x in r], [("abc1234", "Add x", "/w")])
 
     def test_dash_C_and_cd(self):
-        self.assertEqual(self.one("git -C /repo/a commit -m y", "[main 1234567] y")[0]["dir"], "/repo/a")
-        self.assertEqual(self.one("cd sub && git commit -m y", "[main 1234567] y")[0]["dir"], "/w/sub")
+        self.assertEqual(self.one("git -C /repo/a commit -m y", "[main 1234567] y")[0]["dir"], os.path.normpath("/repo/a"))
+        self.assertEqual(self.one("cd sub && git commit -m y", "[main 1234567] y")[0]["dir"], os.path.normpath("/w/sub"))
 
     def test_amend_and_root(self):
         self.assertEqual(self.one("git commit --amend --no-edit", "[master def5678] y")[0]["sha"], "def5678")

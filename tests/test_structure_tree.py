@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from unittest import mock
 
+from tests._fs import rmtree_force
 from tests._load import sidereus
 
 T = sidereus("structure_tree")
@@ -265,7 +266,7 @@ class GitStatusTest(Base):
             out = self.tree()
         self.assertNotIn("stn", out)
         self.assertNotIn("st", out["files"][0])
-        shutil.rmtree(os.path.join(self.root, ".git"))
+        rmtree_force(os.path.join(self.root, ".git"))
         with mock.patch.object(T, "_tree_git_status", lambda r: self.fail("status on non-git")):
             out = self.tree()
             self.assertNotIn("stn", out)

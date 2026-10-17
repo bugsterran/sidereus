@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from types import SimpleNamespace
 
+from tests._fs import rmtree_force
 from tests._load import sidereus
 
 gv = sidereus("git_view")
@@ -97,11 +98,11 @@ class UntrackedPatch(unittest.TestCase):
     def setUp(self):
         import shutil
         self.root = os.path.realpath(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, self.root)
+        self.addCleanup(rmtree_force, self.root)
         os.mkdir(os.path.join(self.root, ".git"))
         os.mkdir(os.path.join(self.root, "sub"))
         self.out = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.out)
+        self.addCleanup(rmtree_force, self.out)
         for p, b in (("sub/n.js", b"a\nb"), ("blob", b"\x00x"), (os.path.join(self.out, "secret"), b"s\n")):
             with open(os.path.join(self.root, p), "wb") as fh:
                 fh.write(b)
@@ -156,7 +157,7 @@ class RealRepo(unittest.TestCase):
         import subprocess
         self.sp = subprocess
         self.d = os.path.realpath(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, self.d)
+        self.addCleanup(rmtree_force, self.d)
         self._sess = gv.sessions_rows
         gv.sessions_rows = lambda **k: [{"cwd": self.d, "repos": []}]
         self.addCleanup(setattr, gv, "sessions_rows", self._sess)
@@ -199,9 +200,10 @@ class ReadSmall(unittest.TestCase):
     def setUp(self):
         import shutil
         self.d = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.d)
+        self.addCleanup(rmtree_force, self.d)
         gr._rail_lc.clear()
 
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "FIFOs are POSIX only")
     def test_fifo_and_symlink_refused(self):
         f = os.path.join(self.d, "pipe")
         os.mkfifo(f)

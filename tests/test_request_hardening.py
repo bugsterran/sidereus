@@ -3,6 +3,7 @@ import threading
 import unittest
 from http.server import ThreadingHTTPServer
 
+from tests._fs import assert_mode
 from tests._load import load, sidereus
 from tests.test_guard_close import _exchange
 
@@ -86,11 +87,11 @@ class RequestHardeningTest(unittest.TestCase):
         for i, kw in enumerate(({}, {"tmp": os.path.join(d, "t.tmp")})):
             p = os.path.join(d, "f%d.json" % i)
             bus._atomic_write(p, b"{}", **kw)
-            self.assertEqual(os.stat(p).st_mode & 0o777, 0o600)
+            assert_mode(self, p, 0o600)
         p = os.path.join(d, "a.jsonl")
         with bus._open_append(p) as f:
             f.write("x\n")
-        self.assertEqual(os.stat(p).st_mode & 0o777, 0o600)
+        assert_mode(self, p, 0o600)
 
     def test_state_no_header(self):
         self.assertEqual(self._get(b"/api/state").split()[1], b"200")

@@ -43,6 +43,9 @@ _BIN_MAGIC = (b"\x7fELF", b"MZ", b"\xcf\xfa\xed\xfe", b"\xce\xfa\xed\xfe", b"\xc
 
 def _argv(cmd):
     try:
+        if os.name == "nt":  # ⚠POSIX shlex eats `\` in `C:\...`; same as harness._argv
+            return [t[1:-1] if len(t) > 1 and t[0] == t[-1] and t[0] in "\"'" else t
+                    for t in shlex.split(cmd, posix=False)]
         return shlex.split(cmd)
     except ValueError:
         return cmd.split()

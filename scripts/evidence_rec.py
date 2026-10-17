@@ -6,12 +6,16 @@ usage: evidence_rec.py <file> <mode: fast|full|checks-security> <rc> <repo> <hea
 steps.tsv lines: name<TAB>rc<TAB>n<TAB>failed<TAB>secs. Metadata only: counts and step names,
 never log lines, file names or test names. Never fails the gate: any problem -> exit 0, nothing written.
 """
-import fcntl
 import json
 import os
 import re
 import sys
 import time
+
+try:
+    import fcntl
+except ImportError:   # Windows: no flock, so no row (same as hooks/ev_hook.py; never a partial write)
+    fcntl = None
 
 EV_CAP = 400    # rotate once the file grows past this many lines
 EV_KEEP = 200   # lines kept after rotation
@@ -93,6 +97,8 @@ def build(argv, ts):
 
 def append(path, line):
     """Append under flock; past EV_CAP lines, rewrite the last EV_KEEP via tmp + rename."""
+    if fcntl is None:
+        return False
     d = os.path.dirname(path)
     if d:
         os.makedirs(d, exist_ok=True)

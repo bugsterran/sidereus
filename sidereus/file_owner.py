@@ -58,7 +58,7 @@ def _edits(lines):
                 continue
             inp = it.get("input") or {}
             p = inp.get("file_path") or inp.get("notebook_path") or ""
-            if isinstance(p, str) and p.startswith("/") and ts:
+            if isinstance(p, str) and os.path.isabs(p) and ts:   # isabs: Windows edits are `C:\...`
                 out.append((os.path.normpath(p), ts))
     return out
 

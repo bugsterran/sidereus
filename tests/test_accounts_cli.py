@@ -9,6 +9,8 @@ import os
 import shutil
 import tempfile
 import unittest
+
+from tests._fs import POSIX, assert_mode
 from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -91,6 +93,7 @@ class AccountsTest(unittest.TestCase):
         with open(p, "rb") as f:
             self.assertEqual(f.read(), b"account work ~/.claude-\xff\n")
 
+    @unittest.skipUnless(POSIX, "control-char dir names and permission bits are POSIX only")
     def test_unsafe_registry_and_hand_edits_ignored(self):
         work = self.mk(".claude-work")
         self.mk(".claude-ev il")
@@ -108,7 +111,7 @@ class AccountsTest(unittest.TestCase):
             self.assertEqual(self.resolve(self.home), ("default", "-"))
         os.remove(p)
         self.assertEqual(self.run_cli("default", "default")[0], 0)
-        self.assertEqual(os.stat(p).st_mode & 0o777, 0o600)                  # new registry is private
+        assert_mode(self, p, 0o600)                  # new registry is private
 
     def test_bad_names_refused(self):
         for n in ("accounts", "Work", "-x", "a" * 33, "a b"):
@@ -183,7 +186,7 @@ class AccountsTest(unittest.TestCase):
         rc, out, _ = self.run_cli("add", "work", "--copy", "settings,agents,mcp", "--yes")
         self.assertEqual(rc, 0)
         dst = os.path.join(self.home, ".claude-work")
-        self.assertEqual(os.stat(dst).st_mode & 0o777, 0o700)
+        assert_mode(self, dst, 0o700)
         got = sorted(os.path.relpath(os.path.join(d, f), dst) for d, _, fs in os.walk(dst) for f in fs)
         self.assertEqual(got, [".claude.json", "agents/x.md", "settings.json"])
         with open(os.path.join(dst, ".claude.json"), encoding="utf-8") as f:
@@ -213,10 +216,12 @@ class AccountsTest(unittest.TestCase):
         self.assertIn("[link]", out)
         self.assertEqual(self.run_cli("add", "work", "--copy", "skills,settings", "--yes")[0], 0)
         dst = os.path.join(self.home, ".claude-work")
-        self.assertEqual(os.readlink(os.path.join(dst, "skills")), real_skills)
-        self.assertEqual(os.readlink(os.path.join(dst, "settings.json")), "/nonexistent/settings.json")
+        if POSIX:   # Windows readlink returns a \\?\ prefixed path
+            self.assertEqual(os.readlink(os.path.join(dst, "skills")), real_skills)
+            self.assertEqual(os.readlink(os.path.join(dst, "settings.json")), "/nonexistent/settings.json")
         self.assertEqual(os.listdir(real_skills), ["s.md"])                    # target untouched
 
+    @unittest.skipUnless(POSIX, "newline in a dir name is invalid on Windows")
     def test_control_chars_in_paths_refused_on_write(self):
         self.mk(".claude-work")
         self.write_reg("account work ~/.claude-work\n")
@@ -229,6 +234,7 @@ class AccountsTest(unittest.TestCase):
         self.assertIn("not remembered", err.getvalue())
         self.assertEqual(self.reg_text(), before)
 
+    @unittest.skipUnless(hasattr(os, "geteuid"), "file ownership check is POSIX only")
     def test_writes_refused_when_home_not_owned(self):
         self.mk(".claude-work")
         self.write_reg("account work ~/.claude-work\n")

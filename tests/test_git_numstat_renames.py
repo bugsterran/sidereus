@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import unittest
 
+from tests._fs import rmtree_force
 from tests._load import sidereus
 
 gv = sidereus("git_view")
@@ -13,7 +14,7 @@ gv = sidereus("git_view")
 class NumstatRenames(unittest.TestCase):
     def setUp(self):
         self.d = os.path.realpath(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, self.d)
+        self.addCleanup(rmtree_force, self.d)
         for name, val in (("sessions_rows", lambda **k: [{"cwd": self.d, "repos": []}]),
                           ("_branch_ok", lambda cwd: True)):
             self.addCleanup(setattr, gv, name, getattr(gv, name))

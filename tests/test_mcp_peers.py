@@ -88,7 +88,7 @@ class TestWarning(unittest.TestCase):
 class TestBriefFileSids(Patch):
     def test_live_sids_distinct(self):
         now, p = 10000.0, ROOT + "/a.py"
-        idx = {p: {("aaaaaaaa-1", "main"): {"ts": now - 60, "agent": "", "cwd": ROOT},
+        idx = {os.path.normpath(p): {("aaaaaaaa-1", "main"): {"ts": now - 60, "agent": "", "cwd": ROOT},
                    ("aaaaaaaa-1", "bbbbbbbbcc"): {"ts": now - 90, "agent": "general-purpose", "cwd": ROOT}}}
         self.patch(ab._fo, "index", lambda n=None: idx)
         self.patch(ab._fo, "_live_units", lambda rows: {("aaaaaaaa-1", "main"), ("aaaaaaaa-1", "bbbbbbbbcc")})

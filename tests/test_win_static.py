@@ -27,7 +27,7 @@ def _files():
     out = []
     for p in pats:
         out += sorted(glob.glob(os.path.join(ROOT, p)))
-    return [os.path.relpath(f, ROOT) for f in out]
+    return [os.path.relpath(f, ROOT).replace(os.sep, "/") for f in out]   # allow-list keys use `/` on every OS
 
 
 def _parents(tree):

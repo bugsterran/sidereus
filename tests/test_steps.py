@@ -82,6 +82,46 @@ class EditTarget(Base):
         self.assertFalse(st._outside("src/x.py"))
 
 
+class WindowsPaths(unittest.TestCase):
+    """Windows edit paths (`C:\\...`, `C:/...`) resolve like POSIX ones; simulated with ntpath on any OS."""
+
+    R = "C:\\Users\\user\\TMP~1\\Temp\\repo"
+
+    def setUp(self):
+        import ntpath
+        import types
+        from unittest import mock
+        fake_os = types.SimpleNamespace(path=ntpath, sep="\\")
+        root = lambda d: self.R if ntpath.normcase(d + "\\").startswith(ntpath.normcase(self.R + "\\")) else ""
+        cd, wp = st._path_res(True)
+        for name, val in (("os", fake_os), ("_git_root", root), ("_CD_RE", cd), ("_WPATH_RE", wp)):
+            p = mock.patch.object(st, name, val)
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_edit_target(self):
+        R = self.R
+        self.assertEqual(st._edit_target(R + "\\src\\a.py"), {"cwd": R, "path": "src/a.py"})
+        self.assertEqual(st._edit_target("C:/Users/user/TMP~1/Temp/repo/src/a.py"), {"cwd": R, "path": "src/a.py"})
+        self.assertIsNone(st._edit_target(R + "\\node_modules\\x\\a.js"))
+        self.assertIsNone(st._edit_target("D:\\elsewhere\\a.py"))
+        self.assertIsNone(st._edit_target("src\\a.py"))
+
+    def test_wrote_files(self):
+        R = self.R
+        self.assertEqual(st._wrote_files(f"cd {R} && sed -i s/a/b/ src/a.py"), [{"cwd": R, "path": "src/a.py"}])
+        self.assertEqual(st._wrote_files(f"cd {R} && sed -i s/a/b/ {R}\\src\\a.py"), [{"cwd": R, "path": "src/a.py"}])
+        self.assertEqual(st._wrote_files(f"sed -i s/a/b/ {R}\\lib\\b.py"), [{"cwd": R, "path": "lib/b.py"}])
+        # ⚠the drive letter used to be cut off (`cd C`), resolving to an unrelated repo under the cwd
+        self.assertEqual(st._wrote_files(f"cd {R} && sed -i s/a/b/ C:\\Users\\user\\TMP~1\\Temp\\other/b.py"), [])
+        self.assertEqual(st._wrote_files("cd D:\\plain && sed -i s/a/b/ src/a.py"), [])
+
+    def test_posix_regex_unchanged(self):
+        cd, wp = st._path_res(False)
+        self.assertIs(wp, st._PATH_RE2)
+        self.assertEqual(cd.search("cd /a/b\\ c && x").group(1), "/a/b")
+
+
 class WorkScanWiring(Base):
     """Callers read `wrote` from _work_scan: in-repo paths keep their old shape; Bash without cd gets the session cwd."""
 

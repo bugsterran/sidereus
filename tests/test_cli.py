@@ -8,6 +8,8 @@ import shutil
 import sys
 import tempfile
 import unittest
+
+from tests._fs import assert_mode
 from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -99,7 +101,7 @@ class FirstRun(CliBase):
             cfg = json.load(f)
         self.assertEqual(cfg["self"]["ids"], ["tester-sidereus"])
         self.assertEqual(cfg["self"]["aliases"], ["tester-sidereus"])
-        self.assertEqual(oct(os.stat(self.cfg).st_mode & 0o777), "0o600")
+        assert_mode(self, self.cfg, 0o600)
         self.assertEqual(len(self.spawned), 1)
         self.assertEqual(self.tabs, [])     # a tab only with --open
         argv, kw = self.spawned[0]
@@ -534,7 +536,7 @@ class ServiceBuilders(CliBase):
         txt = self.cli.build_plist("io.sidereus.viewer", 8799, "/d", code="/c")
         d = plistlib.loads(txt.encode("utf-8"))
         self.assertEqual(d["Label"], "io.sidereus.viewer")
-        self.assertEqual(d["ProgramArguments"], ["/usr/bin/python3", "/c/chat_server.py", "--no-open"])
+        self.assertEqual(d["ProgramArguments"], ["/usr/bin/python3", os.path.join("/c", "chat_server.py"), "--no-open"])
         self.assertTrue(d["RunAtLoad"] and d["KeepAlive"])
         self.assertEqual(d["StandardErrorPath"], "/d/viewer.err")
         self.assertEqual(d["WorkingDirectory"], "/c")

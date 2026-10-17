@@ -230,6 +230,8 @@ def _take_secs(tuid, now):
 
 def append(path, line):
     """Append under flock; past EV_CAP lines, rewrite the last EV_KEEP via tmp + rename."""
+    if fcntl is None:
+        return False
     d = os.path.dirname(path)
     if d:
         os.makedirs(d, exist_ok=True)

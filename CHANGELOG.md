@@ -26,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: coming back from another tab puts the architecture map (overview or focus view) back at the scroll it was left at instead of the top-left.
 - Plugin (Windows): hooks run through `hooks/pyrun.sh`, which finds a real Python 3.9+ (`python3` unless it is the Microsoft Store stub, then `py -3`, then `python`); macOS/Linux still exec `python3`.
 - Windows: every text-mode file open in the product and tests names `encoding="utf-8"` (the cp1252 default broke reads of UTF-8 files; guarded by `tests/test_open_encoding.py`), and a test module that fails to import is reported by name instead of aborting its whole parallel group.
+- Windows CI: checkouts keep LF (`.gitattributes` `* text=auto eol=lf`, images binary); tests remove temp git repos with read-only objects (`tests/_fs.py`), skip POSIX-only checks (permission bits, FIFOs, `pwd`/`resource`, the shell launcher and `check.sh`) and compare paths with the OS separator.
+- Windows: `C:\…` edit paths now count for file owners, conflicts, review and the git rail (were dropped as non-absolute); session repos, project names and hook script names parse `\` paths; the git rail reads files without `O_NOFOLLOW`; Structure dates no longer use `%-m`; pre-1970 cut-offs and near-epoch room-log times no longer raise Errno 22; `scripts/evidence_rec.py` imports without `fcntl` (no evidence row, like the hook).
 
 ## [0.3.0] - 2026-10-17
 

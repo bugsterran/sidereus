@@ -9,6 +9,7 @@ import tempfile
 import unittest
 
 from tests._i18n_js import i18n_switch
+from tests._fs import rmtree_force
 from tests._load import sidereus, js_all, js_fn
 from tests._node import node_e
 
@@ -22,7 +23,7 @@ FNS = ("gitUnq", "dfHdrPath", "splitDiff", "dfFiles")
 class DiffSplit(unittest.TestCase):
     def setUp(self):
         self.d = os.path.realpath(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, self.d)
+        self.addCleanup(rmtree_force, self.d)
         self._sess = gv.sessions_rows
         gv.sessions_rows = lambda **k: [{"cwd": self.d, "repos": []}]
         self.addCleanup(setattr, gv, "sessions_rows", self._sess)

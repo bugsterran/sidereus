@@ -9,6 +9,8 @@ import tempfile
 import threading
 import unittest
 
+from tests._fs import assert_mode
+
 from tests import _load
 
 u = _load.sidereus("usage")
@@ -157,12 +159,12 @@ class AtomicSaves(unittest.TestCase):
     def test_atomic_write_mode_and_like(self):
         p = os.path.join(self.d, "f.json")
         bus._atomic_write(p, b"1")
-        self.assertEqual(os.stat(p).st_mode & 0o777, 0o600)
+        assert_mode(self, p, 0o600)
         bus._atomic_write(p, b"2", mode=0o644)
-        self.assertEqual(os.stat(p).st_mode & 0o777, 0o644)
+        assert_mode(self, p, 0o644)
         os.chmod(p, 0o640)
         bus._atomic_write(p, b"3", mode=0o644, like=p)    # like wins when the file exists
-        self.assertEqual(os.stat(p).st_mode & 0o777, 0o640)
+        assert_mode(self, p, 0o640)
         self.assertEqual(self.leftovers("f.json"), [])
 
     def test_prefs_write_keeps_mode_no_tmp(self):
@@ -170,10 +172,10 @@ class AtomicSaves(unittest.TestCase):
         p = os.path.join(self.d, "sub", "config.local.json")
         self.patch(pr, CONFIG_PATH=p)
         pr._write({"a": 1})
-        self.assertEqual(os.stat(p).st_mode & 0o777, 0o644)
+        assert_mode(self, p, 0o644)
         os.chmod(p, 0o640)
         pr._write({"a": 2})
-        self.assertEqual(os.stat(p).st_mode & 0o777, 0o640)
+        assert_mode(self, p, 0o640)
         with open(p, encoding="utf-8") as f:
             self.assertEqual(json.load(f), {"a": 2})
         self.assertEqual(sorted(os.listdir(os.path.dirname(p))), ["config.local.json", "config.local.json.bak"])
@@ -187,7 +189,7 @@ class AtomicSaves(unittest.TestCase):
         self.assertIs(av._atomic_write, bus._atomic_write)
         p = os.path.join(self.d, "verify.json")
         av._write(p, "{}\n")
-        self.assertEqual(os.stat(p).st_mode & 0o777, 0o644)
+        assert_mode(self, p, 0o644)
         self._fail_replace()
         with self.assertRaises(OSError):
             av._write(p, "{\"x\": 1}\n")

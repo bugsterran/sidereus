@@ -34,6 +34,8 @@ else:
 SHELLS = ["bash"] + (["zsh"] if shutil.which("zsh") else [])
 
 
+# ⚠Windows "bash" on PATH can resolve to WSL; the launcher is POSIX-shell only.
+@unittest.skipUnless(os.name == "posix", "POSIX shell launcher")
 class LauncherTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()

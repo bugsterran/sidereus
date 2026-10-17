@@ -188,7 +188,15 @@ def _git_state(cwd, ttl=20):
 _REPO_CACHE = {}          # transcript path -> (mtime, [git roots]), LRU order (oldest first)
 _REPO_CACHE_MAX = 128
 # Home parent comes from expanduser (`/Users` on macOS, `/home` on Linux); on macOS the pattern is byte-identical to the old literal.
-_PATH_RE = re.compile(re.escape(os.path.dirname(os.path.expanduser("~")) or "/Users") + r"/[A-Za-z0-9_.-]+/[A-Za-z0-9_.\-/]+")
+def _path_re(base, win=os.sep == "\\"):
+    """Absolute paths under `base`. ⚠Windows paths use `\\` or `/` (often mixed) and any drive-letter case."""
+    if win:
+        b = r"[\\/]".join(re.escape(p) for p in re.split(r"[\\/]", base))
+        return re.compile(b + r"[\\/][A-Za-z0-9_.~-]+[\\/][A-Za-z0-9_.~\-/\\]+", re.I)
+    return re.compile(re.escape(base) + r"/[A-Za-z0-9_.-]+/[A-Za-z0-9_.\-/]+")
+
+
+_PATH_RE = _path_re(os.path.dirname(os.path.expanduser("~")) or "/Users")
 # ⚠Sessions also write `~/repo/...` and `cd repo` (relative to cwd); absolute-only matching returned [] for them.
 _HOME = os.path.expanduser("~")
 _TILDE_RE = re.compile(r"(?<![\w/~.-])~/[A-Za-z0-9_.\-/]+")

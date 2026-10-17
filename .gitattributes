@@ -1,3 +1,12 @@
+# LF everywhere on checkout (Windows autocrlf would break byte-exact PAGE assembly and parsers); later rules override.
+* text=auto eol=lf
+*.png binary
+*.gif binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
 # git archive ships the public set only: every .distignore path is export-ignore (keep the two in sync).
 # ⚠gitattributes has no '!' negation and no trailing-slash dir match: dirs become **/dir/**, exceptions -export-ignore.
 config.local.json export-ignore

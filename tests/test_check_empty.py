@@ -12,6 +12,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHECK = os.path.join(ROOT, "scripts", "check.sh")
 
 
+# ⚠Windows "bash" on PATH can resolve to WSL; check.sh is POSIX-shell only.
+@unittest.skipUnless(os.name == "posix", "POSIX shell script")
 class CheckEmptyTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
