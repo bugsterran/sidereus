@@ -4,6 +4,17 @@
 
 1~2단계면 화면이 뜬다. 나머지는 필요할 때 한다.
 
+## 0. 준비
+
+- **Python 3.9 이상.** macOS: 기본 `/usr/bin/python3` 로 된다. Windows: [python.org](https://www.python.org/downloads/windows/)
+  설치 프로그램. `py` 가 같이 깔린다.
+- **Git.** Windows: Git for Windows(`winget install --id Git.Git -e --source winget`, 또는
+  [git-scm.com](https://git-scm.com/install/windows)). 플러그인 훅이 여기 들어 있는 Git Bash 로 돈다.
+- **Claude Code** ([설치 안내](https://code.claude.com/docs/en/setup)). macOS/Linux: `curl -fsSL https://claude.ai/install.sh | bash`,
+  Windows PowerShell: `irm https://claude.ai/install.ps1 | iex`.
+
+설치한 뒤에는 터미널을 새로 연다. 열려 있던 터미널은 예전 PATH 를 그대로 써서 `claude` 를 찾지 못한다("not recognized").
+
 ## 1. 코드 받기
 
 ```sh
@@ -14,9 +25,12 @@ Python 3.9 이상만 있으면 된다. macOS 기본 `/usr/bin/python3` 로 된�
 데이터(로그·캐시·메일박스·설정)는 `$MAILBOX_DIR` 에 쌓이고, 기본값은 `~/.mailbox-mcp` 다
 (Windows: `%USERPROFILE%\.mailbox-mcp`).
 
-**Windows**(실제 기기에서는 아직 확인 못 함): 이 문서의 `python3`·`/usr/bin/python3` 는 `py` 로 바꿔 쓴다.
+**Windows**(Windows 11 PC 에서 확인, 2026-10-17): 이 문서의 `python3`·`/usr/bin/python3` 는 `py` 로 바꿔 쓴다.
+거기서 `python3` 는 대개 Microsoft Store 별칭이라 종료 코드 49 로 끝나고 아무것도 하지 않는다.
 `python3 -m sidereus …` 는 아무 폴더에서 `C:\path\sidereus\sidereus.cmd …` 로 해도 된다(`py -3`, 없으면 `python` 을 쓴다).
 `py -m sidereus` 는 클론 안에서만 된다. `~/.claude/settings.json` 은 `%USERPROFILE%\.claude\settings.json` 이다.
+PowerShell 에서 변수는 `$env:SIDEREUS_PYTHON` 으로 본다(`echo %SIDEREUS_PYTHON%` 는 cmd 문법이라 글자가 그대로 찍힌다).
+`setx` 는 그 뒤에 연 창에만 적용된다. PowerShell 과 Claude Code 를 닫았다가 다시 연다.
 
 ## 2. 뷰어 띄우기
 
@@ -37,7 +51,8 @@ python3 -m sidereus stop
 `caffeinate` 를 잡는다. 끄려면 `config.local.json` 에 `"quota_lookup": false`, `"keep_awake": false`.
 [SECURITY.md](../SECURITY.md) 참고.
 
-Windows 에서도 뷰어·트랜스크립트·메일박스는 된다. 꺼지는 것: 실시간 프로세스 확인, 터미널 이동, 할당량
+Windows 실제 PC 에서 뷰어·경로·플러그인 훅과 MCP·세션 목록·타임라인·작업 기록 팝업·diff·«Changes» 칩을 확인했다(2026-10-17).
+아직 확인 못 한 것: 로그온 서비스(3장), 메일박스 감시 감지, 하네스 증거 기록. 꺼지는 것: 실시간 프로세스 확인, 터미널 이동, 할당량
 조회, 잠자기 방지, 하네스 증거 기록(`hooks/ev_hook.py` 가 `fcntl` 을 쓴다).
 셸 스크립트(`watch.sh`, `backup.sh`, `backup-data.sh`)는 Git Bash 나 WSL 이 있어야 돈다.
 
@@ -57,7 +72,7 @@ launchctl bootout gui/$(id -u)/io.sidereus.viewer          # 멈춤
 rm ~/Library/LaunchAgents/io.sidereus.viewer.plist         # 제거. 안 지우면 stop/status 가 서비스가 있다고 본다
 ```
 
-Windows 는 `schtasks /Create /SC ONLOGON` 으로 로그온 작업 `Sidereus` 를 만들고 한 번 실행한다(확인 못 함).
+Windows 는 `schtasks /Create /SC ONLOGON` 으로 로그온 작업 `Sidereus` 를 만들고 한 번 실행한다(실제 PC 에서는 아직 확인 못 함).
 로그인할 때 뜨지만 죽으면 다시 뜨지 않는다. 만들 때 관리자 권한이 필요할 수 있다. `Access is denied` 가 나오면
 «관리자 권한으로 실행» 한 터미널에서 같은 `start --install-service` 를 다시 실행한다.
 여기서도 `sidereus stop` 은 작업을 건드리지 않는다. 멈춤: `schtasks /End /TN Sidereus`, 다시 띄우기:
@@ -82,20 +97,39 @@ Claude Code 는 세션 상태(생각 중, 어떤 도구)를 Sidereus 로 바로 
 
 ## 5. MCP 와 훅
 
-둘 중 한 방법만 고른다. ⚠ 둘 다 하면 훅이 모두 두 번 걸리고 MCP 서버도 둘(`sidereus`, `plugin:sidereus:sidereus`)이 된다.
+둘 중 한 방법만 고른다. ⚠ 둘 다 하면 훅이 모두 두 번 걸리고 `claude mcp list` 에 MCP 서버도 둘(`sidereus`, `plugin:sidereus:sidereus`)이 된다.
+둘 다 있으면 플러그인을 남기고 `claude mcp remove sidereus -s user` 를 실행한다.
 
 **플러그인 (권장).** `sidereus` MCP 서버와 [HOOKS.ko.md](HOOKS.ko.md#claude-code-훅) 의 훅 9개를 등록한다.
 훅은 macOS/Linux 에서 `python3` 를 부른다. Windows 에서는 PATH 에서 `py -3`, `python3`, `python` 순으로 Python 3.9 이상을 찾고
 (Microsoft Store 의 `python3` 별칭은 건너뛰고, 찾은 결과는 캐시한다) Git Bash 로 돌아가니 Git for Windows 를 설치한다.
-MCP 서버는 `python3` 를, `SIDEREUS_PYTHON` 이 있으면 그것을 부른다. Windows 의 `python3` 는 대개 Store 별칭이니
-`setx SIDEREUS_PYTHON py` 를 한 번 실행하고 Claude Code 를 다시 띄운다(훅도 같은 변수를 쓴다).
+MCP 서버는 `python3` 를, `SIDEREUS_PYTHON` 이 있으면 그것을 부른다(훅도 같은 변수를 쓴다).
+
+**Windows 는 플러그인 설치 전에:** PowerShell 에서 한 번 실행하고, PowerShell 과 Claude Code 를 닫았다가 다시 연다.
+안 하면 `claude mcp list` 에 `plugin:sidereus:sidereus: python3 ... ✘ Failed to connect` 가 나온다.
+
+```powershell
+setx SIDEREUS_PYTHON py
+```
+
+설치는 Claude Code 안에서:
 
 ```text
 /plugin marketplace add <클론 경로>
 /plugin install sidereus@sidereus
 ```
 
-`git pull` 뒤 업데이트: `claude plugin marketplace update sidereus` → `claude plugin update sidereus@sidereus` → Claude Code 재시작. Claude Code 는 플러그인 버전별로 사본을 캐시하므로 `plugin/.claude-plugin/plugin.json` 의 `version` 이 바뀌어야 업데이트가 들어온다.
+`git pull` 뒤 업데이트:
+
+```sh
+claude plugin marketplace update sidereus
+claude plugin update sidereus@sidereus
+claude plugin list          # Claude Code 재시작 뒤. Version 이 새 버전이어야 한다
+```
+
+Claude Code 는 플러그인 버전별로 사본을 캐시하므로 `plugin/.claude-plugin/plugin.json` 의 `version` 이 바뀌어야
+업데이트가 들어온다. Version 이 그대로면 클론에서 `git status` 를 본다. 커밋 안 한 로컬 수정이 있으면 `git pull` 이
+멈춘다. 그것도 아니면 제거했다가 다시 설치한다.
 
 제거: `claude plugin uninstall sidereus@sidereus` 다음 `claude plugin marketplace remove sidereus`.
 
@@ -152,6 +186,8 @@ claude mcp add --scope user mailbox -- uv --directory <path-to-mailbox-mcp> run 
 - 세션 서랍(오른쪽 위)에 내 세션이 보인다.
 - 상태 표시줄의 5시간 수치에 `≈` 가 붙어 나온다. 추정치라 몇 주기 지나면 정확해진다.
 - 새 세션에 `sidereus_quota` 를 불러 보라고 하면 몇 줄로 답한다.
+- `claude mcp list` 에 `plugin:sidereus:sidereus ... ✔ Connected`(플러그인) 또는 `sidereus ... ✔ Connected`(수동)가 보인다.
+- 프롬프트를 보낼 때 `UserPromptSubmit hook ... timed out after 10s` 가 나오지 않는다.
 
 평소 쓰는 법은 스크린샷과 함께 [GUIDE.ko.md](GUIDE.ko.md) 에 있다.
 
@@ -169,5 +205,9 @@ claude mcp add --scope user mailbox -- uv --directory <path-to-mailbox-mcp> run 
 | 세션이 하나도 안 보인다 | `~/.claude/projects/` 에 최근 `.jsonl` 파일이 있는지 본다. `CLAUDE_CONFIG_DIR` 을 쓰면 뷰어에도 같은 변수를 준다(launchd: `EnvironmentVariables`) |
 | MCP 도구가 "not reachable" | 뷰어가 꺼졌거나 막 재시작했다. 다시 부른다. |
 | MCP 도구가 없다 | `claude mcp add` 뒤에 시작한 세션에만 있다 |
+| `claude` 를 찾지 못한다(not recognized) | 터미널을 새로 연다. 열려 있던 터미널은 예전 PATH 를 쓴다 |
+| Windows: `plugin:sidereus:sidereus ... ✘ Failed to connect` | `setx SIDEREUS_PYTHON py` 뒤 PowerShell 과 Claude Code 를 다시 연다(5장) |
+| Windows: `UserPromptSubmit hook ... timed out after 10s` | 플러그인 0.3.2 에서 고쳤다. 플러그인을 업데이트한다(5장) |
+| Windows: 아무것도 안 듣는데 `start` 가 포트를 쓰는 중이라고 한다 | 지금 코드에서 고쳤다. `git pull` 한다 |
 
 로그: `~/.mailbox-mcp/viewer.err`. 덧붙이기만 하는 파일이라 오래된 줄은 지난 기록이지 지금 오류가 아니다.
