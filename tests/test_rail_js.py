@@ -90,7 +90,7 @@ class RailJs(unittest.TestCase):
                + js_fn("railTipText") + "\n"
                "const tabs = Array.from({length: 10}, (_, i) => mk('Tab' + i));\n"
                "process.stdout.write(JSON.stringify([railTipText(tabs[0], tabs), railTipText(tabs[8], tabs), railTipText(tabs[9], tabs),"
-               " railTipText(mk(null, 'Expand sidebar', 'railtg'), tabs, true), railTipText(mk(null, 'Expand sidebar', 'railtg'), tabs, false), railTipText(mk('Alerts', 'Completion alarms', 'bell'), tabs),"
+               " railTipText(mk(null, 'Expand sidebar', 'railtg'), tabs, true), railTipText(mk(null, 'Expand sidebar', 'railtg'), tabs, false), railTipText(mk('Alerts', 'Alerts — done · failed', 'bell'), tabs),"
                " railTipText(mk(null, 'Attention 3', 'rattnb'), tabs), railTipText(mk(null, null), tabs), railTipText(null, tabs)]));")
         self.assertEqual(run(src), [["Tab0", "1"], ["Tab8", "9"], ["Tab9", ""], ["Expand sidebar", "\u2318B"], ["Expand sidebar", "Ctrl+B"], ["Alerts", ""],
                                     ["Attention 3", ""], None, None])

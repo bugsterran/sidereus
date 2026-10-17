@@ -392,11 +392,11 @@ function subLab(lab){
   return {ty: SUB_PLAIN_TY.includes(ty) ? '' : ty, desc: desc || ty};
 }
 // Tree rows for one kind (agent 'a' · command 'b' · watch 'm').
-// Server row label -> shown text; the watcher label (sidereus/live.py «Mailbox watch[ · id]») keeps its own Korean reading.
+// Server row label -> shown text; the watcher label (sidereus/live.py «Mailbox watch[ · id]») is translated, the id suffix kept.
 function sessKidLab(s){
   const m = /^Mailbox watch( · .*)?$/.exec(s);
   // ⚠Other labels are agent/command descriptions (user data) — never through T().
-  return m ? T('Mailbox watch', 'kid') + (m[1] || '') : s;
+  return m ? T('Mailbox watch') + (m[1] || '') : s;
 }
 function sessKid(kind, cls2, items){
   return (items||[]).map(v => {

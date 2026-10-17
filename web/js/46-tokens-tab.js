@@ -339,7 +339,7 @@ function wkTab(d){
   return '<div class=wktab><div class=wktabc>' + wkDonut(d, '') + '</div>'
     + '<div class=wktabc>' + (d && !d.err ? wkTrend(d, true) + tkTopRuns(d) : '') + '</div></div>';
 }
-// «Top 5 costly runs today» — subagent runs by tokens (server agc.top, 2-min TTL); metadata only, click opens the work popup.
+// «Top 5 costly runs today» — subagent runs by tokens (server agc.top, 2-min TTL); metadata only, click opens the work log.
 let AGT_ND = '1';
 function tkTopRuns(d){
   const tp = (d && d.agc && d.agc.top) || {}, rs = tp[AGT_ND] || [];

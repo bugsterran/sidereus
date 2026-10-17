@@ -1,4 +1,4 @@
-"""Work-popup peer check: is the client end of a loopback connection held by a process of the viewer's own UID?"""
+"""Work-log peer check: is the client end of a loopback connection held by a process of the viewer's own UID?"""
 import os
 import subprocess
 import time

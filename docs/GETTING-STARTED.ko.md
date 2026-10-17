@@ -51,7 +51,7 @@ python3 -m sidereus stop
 `caffeinate` 를 잡는다. 끄려면 `config.local.json` 에 `"quota_lookup": false`, `"keep_awake": false`.
 [SECURITY.md](../SECURITY.md) 참고.
 
-Windows 실제 PC 에서 뷰어·경로·플러그인 훅과 MCP·세션 목록·타임라인·작업 기록 팝업·diff·«Changes» 칩을 확인했다(2026-10-17).
+Windows 실제 PC 에서 뷰어·경로·플러그인 훅과 MCP·세션 목록·타임라인·작업 내역·diff·«Changes» 칩을 확인했다(2026-10-17).
 아직 확인 못 한 것: 로그온 서비스(3장), 메일박스 감시 감지, 하네스 증거 기록. 꺼지는 것: 실시간 프로세스 확인, 터미널 이동, 할당량
 조회, 잠자기 방지, 하네스 증거 기록(`hooks/ev_hook.py` 가 `fcntl` 을 쓴다).
 셸 스크립트(`watch.sh`, `backup.sh`, `backup-data.sh`)는 Git Bash 나 WSL 이 있어야 돈다.
@@ -167,7 +167,7 @@ python3 -m sidereus setup-claude [--mailbox-mcp DIR]
 ## 6. 세션 사이 메일박스
 
 메일박스는 이 저장소에 들어 있다(`bus.jsonl`, `watch.sh`, `monitor_stream.py`, `mailbox_core.py`, Stop 훅).
-채팅 탭과 작업 팝업 DM 은 이미 이걸 쓴다. 세션은 둘 중 한 방법으로 메일을 본문까지 받는다.
+채팅 탭과 작업 내역 DM 은 이미 이걸 쓴다. 세션은 둘 중 한 방법으로 메일을 본문까지 받는다.
 
 - 즉시: Stop 비동기 훅 `hooks/mailbox_wake.py`(asyncRewake)가 쉬고 있는 세션을 깨운다. `mailbox_inbox` 로 읽는다.
   - 플러그인이나 `setup-claude` 훅 JSON(5장)을 넣으면 켜진다. 따로 띄울 것은 없다.

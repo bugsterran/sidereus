@@ -1,4 +1,4 @@
-"""Mask secrets in raw text the work popup carries (tool results, args, says, prompt)."""
+"""Mask secrets in raw text the work log carries (tool results, args, says, prompt)."""
 import re
 
 MASK = "•••"

@@ -11,7 +11,7 @@ Object.assign(I18N.ko, {
   'Reorder or hide the view tabs at the top. The timeline cannot be hidden.': '위 보기 탭의 순서를 바꾸거나 숨깁니다. 타임라인은 숨길 수 없습니다.',
   'Up': '위로', 'Down': '아래로', 'Shown|visible': '보임', 'The timeline cannot be hidden': '타임라인은 숨길 수 없습니다',
   'Advanced': '고급', "Read-only — applying a compact threshold records it under today's date.": '읽기 전용 — 압축 기준을 적용하면 오늘 날짜로 남습니다.',
-  'Cards in the alarm list': '알람 목록에 보일 카드', 'No target': '목표 없음',
+  'Cards in the alerts list': '알림 목록에 보일 카드', 'No target': '목표 없음',
   'Unused while «Notify when a session waits for me» is off.': '«세션이 나를 기다리면 알림» 이 꺼져 있어 쓰이지 않습니다.',
   'Used only when the mode is «Auto».': '작동 모드가 «자동» 일 때만 쓰입니다.',
   'Could not read the server settings': '서버 설정을 읽지 못했습니다',

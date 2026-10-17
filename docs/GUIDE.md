@@ -5,7 +5,7 @@
 Install first: [GETTING-STARTED.md](GETTING-STARTED.md). Screenshots come from `python3 -m sidereus start --demo` (synthetic data); the demo opens on Pipelines, the real viewer on Timeline.
 The UI language follows the browser (English for `en*`, Korean otherwise); Settings › «Display language» overrides it.
 
-Screen layout: a sidebar on the left (logo, «Attention» list, the views, bell and settings at the bottom). It is an icon strip by default (hover or focus an icon for its name and shortcut digit); the toggle or Cmd/Ctrl+B widens it, and the choice is remembered. On wide windows (1200px and up) the open sidebar pushes the page; on narrower ones it slides over it.
+Screen layout: a sidebar on the left (logo, «Attention» list, the views, «Alerts» and settings at the bottom). It is an icon strip by default (hover or focus an icon for its name and shortcut digit); the toggle or Cmd/Ctrl+B widens it, and the choice is remembered. On wide windows (1200px and up) the open sidebar pushes the page; on narrower ones it slides over it.
 On the right, top to bottom: one bar (view title, running sessions, «needs me» chips, session drawer), then the view body. The status bar sits at the bottom of the window.
 
 ## Find the session waiting for you
@@ -13,7 +13,7 @@ On the right, top to bottom: one bar (view title, running sessions, «needs me»
 1. Read the «Attention» list in the sidebar (a count badge when it is folded). It is ordered by how much each session needs you. A pending question or approval stays there however long it waits; it leaves only when answered or when its session is known to have ended.
    Each row acts in one click: «Terminal» raises its tab, «Reply» opens a one-line box under the row (the recipient is shown; Enter sends to that session's mailbox, Esc closes), «Done» hides that one request (a new request from the session shows again), «Later» snoozes it for 30 min, «Seen» on an «agent completions unread» row marks those completion cards read (opening that session does too). Clicking the row itself still opens the session as before.
 2. Open the session drawer in the top bar for the full list. Each session is running a tool, thinking, waiting for you, done, or stalled.
-3. Click a row to open its work popup. If a terminal app is set, it also switches to that session's tab.
+3. Click a row to open its work log. If a terminal app is set, it also switches to that session's tab.
    Supported: iTerm2, Terminal.app, Orca (the exact Orca tab needs the CLI from Orca › Settings › General; without it only the app comes forward).
 4. Clicking a waiting-for-you alert (blocked or awaiting an answer) — panel card, toast, «Attention» row or pill, or OS notification — brings that session's terminal tab forward. If the tab cannot be reached, the click does what it did before.
 
@@ -42,24 +42,24 @@ The saver verdict in the status bar changes only when the projection is more tha
 1. Open the Timeline tab. Each session and subagent has a row; hover for the task description. Set «Rows» in the toolbar to «Running only» to hide finished subagent rows; session rows stay (remembered per browser). Drag the right edge of the name column in the time-axis row to widen it (double-click resets). On a session row a red line marks a compaction and a dashed blue line marks a /clear (hover for the time and the new and previous session ids).
 2. The «Changes · N files +a −d» chip in the Timeline toolbar counts files changed in the followed session against «Changes baseline» (default «Uncommitted»: working tree and index vs the last commit; the tooltip names the baseline) (with 2+ sessions the «Session» search combobox beside it picks one, or «Auto (latest active)»); «⚠ n shared» means two sessions touched the same file. Click it to open the diff window at the same base. Its base buttons are «Uncommitted» (last commit), «Since session start», «vs main / master» and «All» (upstream); untracked files are hidden unless «Include untracked files» is ticked. When the session spans several repos, a tab per repo picks one.
    The summary in the bottom drawer shows «Results» (commits, pipeline runs ✓/✕/↺) and «Evidence» (gate PASS/FAIL, first failing step); «More» adds time waited on you, outliers and cost (tokens, tokens per commit), and stays open once chosen.
-3. Click a commit row for its diff, or a session for its work popup.
+3. Click a commit row for its diff, or a session for its work log.
 4. For older work, open the History tab and expand a session. With 2+ accounts its toolbar has an account picker («All accounts» / one account): other accounts' Claude rows fold into «In other accounts: N», external CLI rows stay, and day headers count the shown rows only.
 
 A session running a pipeline gets a stage-by-stage progress bar under its name (green done, striped blue current, amber sent back, red failed); click it to open the run in the Pipeline view.
 
 The «Runs N» chip in the timeline header lists open and just-ended runs from every session, outlined in the worst run's colour (yellow «Stuck» when a stage looks stuck).
 
-⚠ The screen shows metadata only. Another session's conversation appears only in the work popup, after a click.
+⚠ The screen shows metadata only. Another session's conversation appears only in the work log, after a click.
 
-While a work popup is open, clicking another session or agent adds it there as a tab; Shift+click opens a separate window. A log opened at a past moment (a failure row in Insights) always gets its own window.
+While a work log window is open, clicking another session or agent adds it there as a tab; Shift+click opens a separate window. A log opened at a past moment (a failure row in Insights) always gets its own window.
 
 ![Timeline](images/timeline-en.png)
 
 ## Stop two agents editing the same file
 
-1. When the bell shows «Conflict risk», click it. It names the file and the two sessions.
+1. When «Alerts» shows «Conflict risk», click it. It names the file and the two sessions.
 2. In the Branches tab, pick the repository with the same search combobox as Pipelines and Structure. Each worktree card lists uncommitted files and their session. Commit-row chips show the session that made the commit and its cost.
-3. To ask one session to stop, write in the work popup's message box. It shows a preview; after you confirm it goes through the mailbox.
+3. To ask one session to stop, write in the work log's message box. It shows a preview; after you confirm it goes through the mailbox.
 
 Sessions can check this themselves with the MCP tool `sidereus_file_peers`; see [MCP.md](MCP.md).
 
@@ -217,7 +217,7 @@ Settings (gear) has one tab per group, in this order. «Replay the tour» in the
 «Alerts»
 - «Alert level»: «Important only» (questions, aborts, failures) · «Everything» · «Custom» (per kind: «Badge» · «List only» · «hidden»).
 - «Group repeats per session (30 min)»: same path and kind within 30 min count once.
-- «Cards in the alarm list»: «Full history» or «Unread only».
+- «Cards in the alerts list»: «Full history» or «Unread only».
 - «Notify when a session waits for me»: OS notification, off by default. «Also when this tab is visible» adds the visible-tab case.
 
 «Saver mode» (same file as `/saver`, applies to every session)

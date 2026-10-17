@@ -92,8 +92,8 @@ class SettingsPane(unittest.TestCase):
     def test_kind_rows_only_custom(self):
         self.assertNotIn("data-ak=", self.R["alImp"])
         self.assertEqual(self.R["alCustom"].count('data-ak="ask:'), 3)   # badge · list · hide
-        self.assertIn("알람 목록에 보일 카드", self.R["alImp"])
-        self.assertNotIn("작업 완료 알람", self.R["alImp"])
+        self.assertIn("알림 목록에 보일 카드", self.R["alImp"])
+        self.assertNotIn("알람", self.R["alImp"])
 
     def test_visible_row_depends_on_notify(self):
         self.assertIn(" dis", self.R["osvOff"])

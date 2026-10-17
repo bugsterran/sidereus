@@ -9,7 +9,6 @@ Object.assign(I18N.ko, {
   '{n} files|bare': '파일 {n}',
   'Off|state': '끔',
   'On|state': '켬',
-  'Mailbox watch|full': '메일박스 감시',
   'Default|value': '기본값',
   'Changed|state': '바뀜',
   '{n} more|count': '{n}개 더',

@@ -192,7 +192,7 @@
   ],
   "tab:pipe": [
    "Pipelines",
-   "Tooling",
+   "Harness",
    "Agent and model per stage",
    "Project",
    "acme-web",
@@ -1410,7 +1410,7 @@
    "▴"
   ],
   "pop:work": [
-   "Activity",
+   "Work log",
    "over #t · Tool calls # · Errors # · Files changed # · Last action Edit · #t ago",
    "✕",
    "A",
@@ -1451,7 +1451,7 @@
    "▴"
   ],
   "pop:sess": [
-   "Activity",
+   "Work log",
    "last #t · Tool calls # · Errors # · Files changed # · Last action Bash · #t ago",
    "✕",
    "S",

@@ -31,7 +31,7 @@ function srecRows(){
       + (r.gone ? '<span class=srecgn title="' + esc(T('The folder no longer exists')) + '">⚠</span>' : '')
       + '<span class=srecag>' + esc(agoAt(+r.endedAt || 0)) + '</span>'
       + (cmd ? '<button type=button class=srecb data-a=copy title="' + esc(T('Paste into a terminal to resume this session') + '\n' + cmd) + '">' + esc(cpfbLabel('srec:' + r.sid, T('Copy command'))) + '</button>' : '')
-      + (r.cwd ? '<button type=button class=srecb data-a=work>' + esc(T('Activity')) + '</button>' : '')
+      + (r.cwd ? '<button type=button class=srecb data-a=work>' + esc(T('Work log')) + '</button>' : '')
       + '</div>' + cpfbBox('srec:' + r.sid, cmd, 'srcp', 'type=button class=srecb data-a=cpx');
   }).join('') + oth;
 }

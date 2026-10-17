@@ -54,7 +54,7 @@ function tlPlCur(pl){
 function tlPlSt(pl){ return pl.titles.some(t => pl.lt[t] && pl.lt[t].st === 'fail') ? 'fail' : pl.fin ? 'fin' : 'run'; }
 // Class hook for the session row (74b): left accent bar coloured by the row status (tlPlRun st); '' without a run.
 function tlPlRowCls(pl){ return pl ? ' tlrpl tlrpl-' + pl.st : ''; }
-// Shared stage stepper (timeline row here, work popup in 35e — hoisted, both run after load): one bar segment per stage
+// Shared stage stepper (timeline row here, work log in 35e — hoisted, both run after load): one bar segment per stage
 // (`.tlpd`, colour = state; name under it, ellipsised in the row, title keeps stage + state), p/cur mark steps before / at ci. steps = [{st, nm, tip, cls (escaped class suffix), attr (escaped attributes), extra (escaped html)}];
 // mod = root class suffix ('fin' ended, 'lg' popup size). Styles: 21-timeline-plrun.css.
 function plStepper(steps, ci, mod){
@@ -367,7 +367,7 @@ function tlPlWire(box){
   if(hp && !hp.hidden){ if(hb) tlPlHeadFill(hp); else tlPlHeadClose(false); }
   box.querySelectorAll('.tlplx[data-tlplx]').forEach(b => {
     b.onclick = e => { e.stopPropagation(); TLPL_FO = b.id; tlPlExp(b.dataset.tlplx); };
-    b.onkeydown = e => e.stopPropagation();   // native Enter/Space click; keep the row's Enter (opens the work popup) out
+    b.onkeydown = e => e.stopPropagation();   // native Enter/Space click; keep the row's Enter (opens the work log) out
   });
   const a = document.activeElement;
   if(TLPL_FO && (!a || a === document.body)){

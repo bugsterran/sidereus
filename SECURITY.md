@@ -11,7 +11,7 @@ Sidereus is a local monitor plus a control relay. Everything it does, and how to
 - **Origin check on POST.** A browser POST from another origin gets 403. Requests without `Origin` (OTel export, curl, local hooks) pass, because browsers always attach `Origin` to cross-origin POSTs.
 - **Cross-site GET refused too.** `/api/*` GETs with `Sec-Fetch-Site: cross-site` get 403 (a cross-site page could otherwise trigger side-effecting/expensive calls via `<img>`); same-site and header-less requests (curl, hooks, MCP) pass.
 - **No auth beyond loopback.** Any local process, or another OS user on the same machine, can call the API. Browsers are kept out by the Host, Origin and `Sec-Fetch-Site` checks, and the page refuses to be framed (`frame-ancestors 'none'`, `X-Frame-Options: DENY`).
-- **Work-popup endpoints are same-user only on macOS.** `/api/session/work`, `/api/agent/work` and `/api/ext/work` return transcript tails, so they return 403 unless the client end of the loopback connection belongs to a process of the viewer's own OS user (checked with `/usr/sbin/lsof`; a missing or slow `lsof` also means 403).
+- **Work-log endpoints are same-user only on macOS.** `/api/session/work`, `/api/agent/work` and `/api/ext/work` return transcript tails, so they return 403 unless the client end of the loopback connection belongs to a process of the viewer's own OS user (checked with `/usr/sbin/lsof`; a missing or slow `lsof` also means 403).
   ⚠ On other OSes those endpoints are still readable by any local process, including another user's `curl`. On every OS the rest of `/api` stays unauthenticated, and the `/work` HTML shell is served to anyone local.
 - **No process-spawning endpoints.** No request from the page runs a shell, git checkout/merge or a session.
 - **Mailbox DMs only to registered ids** (`identity.json`), never to a guessed name.
@@ -22,7 +22,7 @@ Sidereus is a local monitor plus a control relay. Everything it does, and how to
 ## What it never does
 
 - **No telemetry.** Nothing about you or your sessions leaves the machine (the one exception is the quota lookup above).
-- **Conversation content never reaches the page or the MCP tools.** Only metadata: path, session id, model, the agent's one-line task label. The single exception is the work popup, which opens only on click. The leak scan and the tests enforce this.
+- **Conversation content never reaches the page or the MCP tools.** Only metadata: path, session id, model, the agent's one-line task label. The single exception is the work log, which opens only on click. The leak scan and the tests enforce this.
 - **No git writes.** Every git call goes through `git_argv`, with `core.fsmonitor=false` and `core.hooksPath=/dev/null`.
 - **No direct CLI control.** No pty, no stdin injection, no send-keys, no spawn or kill of sessions. Instructions go through the mailbox, and only after you preview and confirm them.
 

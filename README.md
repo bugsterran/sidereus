@@ -12,7 +12,7 @@ One screen to check the results and the process of several sessions, judge them,
 
 It runs beside the Claude Code, Codex CLI and Gemini CLI sessions already open in your terminals, and is built
 for one developer running several sessions at once. It never runs your agents or touches your terminal.
-Metadata only; the one exception is a work popup you open by click ([Privacy](#privacy)).
+Metadata only; the one exception is a work log you open by click ([Privacy](#privacy)).
 
 ![Animated: a change-flow run lighting its stages in turn — Design, Implement, Verify, Review sends it back once, Implement and Verify again, then Review done](docs/images/hero-en.gif)
 
@@ -123,7 +123,7 @@ Other sessions' conversations never appear on the page. Lists, timeline, cards a
 metadata only: path, session id, model, state, counts, and an agent's one-line task description.
 This is enforced in code.
 
-The one exception is the work popup. Clicking a session or agent reads the tail of that transcript and
+The one exception is the work log. Clicking a session or agent reads the tail of that transcript and
 shows the recent instruction, replies, tool footprints and file diffs. It opens only on click, only for
 repos of sessions on this machine (the same allow list as diffs).
 
@@ -131,10 +131,10 @@ repos of sessions on this machine (the same allow list as diffs).
 
 | Part | Answers |
 |---|---|
-| Left rail · Attention | Who needs me now? «Attention» lists sessions by how much they need you, each with Done, Later and Reply on the row. With the rail collapsed, its badge opens the list as a peek. The rail also holds the tabs, bell and settings. |
+| Left rail · Attention | Who needs me now? «Attention» lists sessions by how much they need you, each with Done, Later and Reply on the row. With the rail collapsed, its badge opens the list as a peek. The rail also holds the tabs, «Alerts» and settings. |
 | Status bar | Will I run out before the reset? 5-hour and 7-day usage and the projected headroom at the reset. Click it for each account's limits, and open sessions, and to switch the main account. |
 | Sessions drawer | Which sessions are live, and is each running, thinking, waiting for me, done or stopped? |
-| Bell | What failed and what to do about it. Optional OS notification, off by default. |
+| Alerts | What finished, what failed and what to do about it. Optional OS notification, off by default. |
 | Timeline | What each session and subagent did, and when. A «Changes» chip counts the files changed against a base («⚠ shared» when two sessions touched one) and opens the diff. |
 | Chat | Mailbox rooms and DMs between sessions. You can post too. |
 | Tokens | Tokens and cost by model, project and platform; the five priciest subagent runs. |

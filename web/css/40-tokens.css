@@ -14,7 +14,7 @@
 .wvh.wvht:not(:has(>b)){min-height:calc(var(--ttl-tab,13px) * 1.2)}
 .tlhd:empty{display:none}
 /* ⚠The header was 31.67px tall, stuck at 34px, while .aghd sticks at 66px: the 0.33px seam let log text show through
-   in the work popup (both themes, 2026-09-26). A 32px border-box floor closes the seam exactly. */
+   in the work log (both themes, 2026-09-26). A 32px border-box floor closes the seam exactly. */
 .wvh:has(+ .aghd){box-sizing:border-box;min-height:32px}
 .extw{font-size:12px;color:#c9d1dc}
 .extw table{border-collapse:collapse;margin:4px 0 10px}

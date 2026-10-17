@@ -31,13 +31,13 @@ function popBlocked(url, name){
   box.appendChild(el);
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, 9000);
 }
-// Work items join an open work popup as tabs; Shift+click keeps a separate window. WKHOST = last used host, WKAT = moment windows.
+// Work items join an open work log window as tabs; Shift+click keeps a separate window. WKHOST = last used host, WKAT = moment windows.
 let WKHOST = '', WKSHIFT = 0;
 const WKAT = {};
 // ⚠Callers pass no event, so the modifier comes from the last click/Enter (capture phase runs before their handler).
 document.addEventListener('click', e => { WKSHIFT = e.shiftKey ? Date.now() : 0; }, true);
 document.addEventListener('keydown', e => { if(e.key === 'Enter') WKSHIFT = e.shiftKey ? Date.now() : 0; }, true);
-// Which open work popup takes this item: its own window, else one already holding the tab, else the last host.
+// Which open work log window takes this item: its own window, else one already holding the tab, else the last host.
 // ⚠A moment (&at=) window is never a host: its first tid reads the frozen window (workUrl), a live tab of it would too.
 function wkHostOf(cwd, tid, nm, solo){
   const ok = k => { try{ const w = POPS[k]; return k.indexOf('sidereus_work_') === 0 && !WKAT[k] && !!w && !w.closed && typeof w.wkReopen === 'function'; }catch(e){ return false; } };

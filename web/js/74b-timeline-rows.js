@@ -340,7 +340,7 @@ document.addEventListener('keydown', e => {
   const t = e.target;
   if(!t || !t.matches || !t.matches('#feed .tlr[data-kb], #feed .tlr .tlb[data-kb]')) return;
   if((e.key === 'Enter' || e.key === ' ') && !t.classList.contains('tlb')){
-    // ⚠The row's own click lands on .tlwrap and toggles the time-cursor pin; the name cell is what opens the work popup.
+    // ⚠The row's own click lands on .tlwrap and toggles the time-cursor pin; the name cell is what opens the work log.
     const nm = t.querySelector('.tlnm[data-tlt]');
     if(nm && nm.dataset.tlt && !e.repeat){ e.preventDefault(); nm.click(); }
     return;

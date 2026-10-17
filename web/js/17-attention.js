@@ -21,7 +21,7 @@ function cpfbCopy(key, cmd, redraw, okMsg){
 }
 // Inline «Reply» composer: one row at a time. ⚠The draft lives here, not in the DOM — buildAttn replaces innerHTML on change.
 let attnRp = {id: '', to: '', draft: '', busy: false};
-// Mailbox recipient of a row's session (same rule as the work-popup composer wkcTarget): id only when logged in.
+// Mailbox recipient of a row's session (same rule as the work-log composer wkcTarget): id only when logged in.
 function attnRpTo(s){
   const id = (s && s.mboxSrc === 'identity' && s.mbox) || '', pr = (typeof PRES === 'object' && PRES || {})[id];
   return {id, watch: !!(s && (s.mon || []).some(v => v && v.src === 'proc')) || !!(pr && pr.online && pr.source === 'watch')};
@@ -232,7 +232,7 @@ function attnRowHTML(x){
     + '<div class=at1><i class="atd ' + tone + '"></i><b' + (r.project && r.project !== nm ? ' title="' + esc(r.project) + '"' : '') + '>' + esc(nm) + '</b>'
     + (r.branch ? '<span class=atbr>' + esc(r.branch) + '</span>' : '')
     + '<span class=atw>' + esc(x.why) + '</span><span class=ata>' + esc(x.since ? agoAt(x.since) : '') + '</span></div>'
-    + '<div class=at2>' + b('work', T('Activity'), T("Open this session's work log"))
+    + '<div class=at2>' + b('work', T('Work log'),T("Open this session's work log"))
     + (hasDiff ? (isExt ? b('diff', T('Folder diff'), T('View changes (diff) in this folder — by folder, not by session'))
                         : b('diff', 'diff', T("View this session's changes (diff)"))) : '')
     + (rzCmd ? b('rz', rzLbl, rzCmd) : '') + termBtnHtml(s, 'at')

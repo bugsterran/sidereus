@@ -299,7 +299,7 @@ function brWuJump(root, cwd){
   brWuFetch(root);
   if(mainView !== 'br') setMainView('br'); else loadBr(false);
 }
-// One /work popup with every session of this worktree, split by count (1 single, 2 side by side, 3 columns, 4 grid; first 4 only).
+// One /work log window with every session of this worktree, split by count (1 single, 2 side by side, 3 columns, 4 grid; first 4 only).
 function brWuOpenAll(){
   const w = brWtFind(brWu), ss = w ? brWtSess(w.path).slice(0, 4) : [];
   if(!ss.length) return;

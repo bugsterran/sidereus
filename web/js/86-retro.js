@@ -78,7 +78,7 @@ function rtWhere(x){
       + '<s>'+esc(String(w.sid || '').slice(0, 8))+'</s>'
       + '<span class=rtwn>'+esc(U(w.n, '×'))+'</span><span class=rtwt title="'+esc(stamp(w.last))+'">'+agoAt(w.last)+'</span>'
       + (ok ? '<button class=wkrgb data-rtw="'+esc(w.sid)+'" data-rtc="'+esc(w.cwd)+'" data-rtt="'+(+w.last || 0)+'"'
-        + ' title="'+esc(T('Opens the work log up to the last failure'))+'">'+esc(T('Activity'))+'</button>' : '')+'</div>';
+        + ' title="'+esc(T('Opens the work log up to the last failure'))+'">'+esc(T('Work log'))+'</button>' : '')+'</div>';
   }).join('') + ((x.wn || 0) > ws.length ? '<div class=hidnote>'+esc(T('{n} more sessions').replace('{n}', (x.wn - ws.length)))+'</div>' : '');
 }
 function rtSigs(r){

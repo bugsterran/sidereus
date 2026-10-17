@@ -326,7 +326,7 @@ function plStageAgents(lt, title, now){
   return use.map(a => ({ id: a.aid || a.tid || '', run: !!a.run, lab: plAgLab(a), tid: a.aid === 'main' ? '' : subWorkId(a), t0: a.t0 || 0,
     sec: Math.max(0, Math.round((a.run ? now / 1000 : a.t1 || a.t0 || 0) - (a.t0 || 0))) })).sort((p, q) => q.t0 - p.t0);
 }
-// Work popup (sidereus/work.py, click only): an agent with a tid → its own log, else (main mark, workflow) the session's.
+// Work log (sidereus/work.py, click only): an agent with a tid → its own log, else (main mark, workflow) the session's.
 function plOpenWork(sid, tid){
   const x = (SESS || []).find(r => r.sid === sid);
   if(!x || !x.cwd) return;
@@ -362,7 +362,7 @@ function plPassSel(E, id, L){
   if(!L || c.k !== L.k || !plPass(L, c.i)){ delete E.pass[id]; return -1; }
   return c.i;
 }
-// Card pass picker (.plpass): same fixed menu as #plapk. ⚠Its pointerdown must not start a node drag or the work popup.
+// Card pass picker (.plpass): same fixed menu as #plapk. ⚠Its pointerdown must not start a node drag or the work log.
 let PLPSK = null;   // open pass menu {id}
 function plPskClose(){ const el = document.getElementById('plpsk'); if(el) el.remove(); PLPSK = null; }
 function plPskOpen(id, rc){
@@ -398,7 +398,7 @@ function plPassTip(r){
   const ls = (r.ps || []).filter(Boolean).map(p => pl(p.k, p.st, p.sec));
   return [TV({msg: 'total {n} · pass {m}', vars: {n: ago(r.tot), m: r.k}})].concat(ls.length ? ls.concat(pl(r.k, r.st, r.sec)) : []).join('\n');
 }
-// Row click = the newest agent's work popup, or the chooser for 2+ (48d plNodeWork, same as a running node click).
+// Row click = the newest agent's work log, or the chooser for 2+ (48d plNodeWork, same as a running node click).
 document.addEventListener('click', e => {
   const tr = e.target.closest && e.target.closest('.plrt tr[data-plst]');
   if(tr && typeof plNodeWork === 'function') plNodeWork(tr.dataset.plst, tr.getBoundingClientRect());

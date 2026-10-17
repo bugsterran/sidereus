@@ -150,8 +150,8 @@ function cfgPaneAl(){
         .map(x => opt('ak', r[0]+':'+x[0], T(x[1]), apolOf(r[0]) === x[0])).join('')))).join(''))
     + set(T('Group repeats per session (30 min)'), T('Consecutive cards with the same path and kind within 30 minutes collapse into one entry and count once on the badge.'),
           seg(T('Group repeats per session (30 min)'), opt('ag','1',T('On'),APOL.group) + opt('ag','0',T('Off'),!APOL.group)))
-    + set(T('Cards in the alarm list'), T('Show the full alarm history or only unread cards.'),
-          seg(T('Cards in the alarm list'), opt('uo','0',T('Full history'),!unreadOnly) + opt('uo','1',T('Unread only'),unreadOnly)))
+    + set(T('Cards in the alerts list'), T('Show the full alert history or only unread cards.'),
+          seg(T('Cards in the alerts list'), opt('uo','0',T('Full history'),!unreadOnly) + opt('uo','1',T('Unread only'),unreadOnly)))
     + set(T('Notify when a session waits for me'), ntfHint(),   // 43-notify.js
           seg(T('Notify when a session waits for me'), opt('osn','0',T('Off', 'state'),!ntfOn()) + opt('osn','1',T('On', 'state'),ntfOn())))
     + set(T('Also when this tab is visible'), T('When off, notifies only while this tab is hidden (another tab or minimized).'),

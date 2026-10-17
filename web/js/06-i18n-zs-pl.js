@@ -8,7 +8,7 @@ Object.assign(I18N.ko, {
   'Stage name cannot contain / ] |': '단계 이름에 / ] | 는 쓸 수 없습니다',
   'A run of this pipeline is open — its running tags use the old stage name': '이 파이프라인의 실행이 열려 있습니다 — 진행 중인 태그는 옛 단계 이름을 씁니다',
   // Run summary chips at the timeline head (74c tlPlHeadHtml).
-  'Stuck': '막힘',
+  'Stuck': '정체',
   'no activity {t}': '{t} 동안 기록 없음',
   'waiting for an answer': '답을 기다리는 중',
   '+{n} runs': '실행 {n}개 더',

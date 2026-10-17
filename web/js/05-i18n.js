@@ -7,13 +7,13 @@
 //   (failure signatures, burn row names) goes through srvEn() (06-i18n-g.js) at the caller.
 const I18N = { ko: {
   // tabs
-  'Chat': '채팅', 'Activity': '작업 내역', 'Timeline': '타임라인', 'Failures': '실패',
+  'Chat': '채팅', 'Work log': '작업 내역', 'Timeline': '타임라인', 'Failures': '실패',
   'Tokens': '토큰', 'Structure': '구조', 'Branches': '브랜치', 'History': '이력', 'Settings': '설정',
   'Tool calls': '도구 호출', 'Errors': '오류', 'Files changed': '고친 파일', 'Last action': '마지막 동작',
   'Popup blocked — allow popups for this site.': '팝업이 차단됐습니다 — 이 사이트의 팝업을 허용해 주세요.',
   'Open in a new window': '새 창으로 열기',
-  // work-popup compose (36-wkcompose.js)
-  'To': '받는 사람', "(subagent's parent session)": '(서브에이전트의 부모 세션)', 'No mailbox watch': '감시없음',
+  // work-log compose (36-wkcompose.js)
+  'To': '받는 사람', "(subagent's parent session)": '(서브에이전트의 부모 세션)', 'No mailbox watch': '메일박스 감시 없음',
   'Not logged into the mailbox — cannot receive': '메일박스 미접속 — 받을 수 없습니다',
   'Waiting for permission — read on the next turn': '권한 대기 중 — 다음 턴에 읽힘',
   'Message this session — Enter to send · Shift+Enter for newline': '이 세션에 메시지 — Enter 전송 · Shift+Enter 줄바꿈',
@@ -27,7 +27,7 @@ const I18N = { ko: {
   'System follows the OS: white when light, your last dark tone when dark.': '시스템은 OS 가 라이트면 화이트, 다크면 마지막 어두운 톤입니다.',
   // settings modal (header gear)
   '(unknown)': '(알 수 없음)',
-  'Burndown curve': '번다운 곡선', 'Completion alarms': '작업 완료 알람', 'Full history': '이력 전체',
+  'Burndown curve': '번다운 곡선', 'Full history': '이력 전체',
   'Unread only': '읽지 않은 것만', 'Replay speed': '재생 속도', 'Refresh interval': '갱신 주기', 'Saved views': '저장된 뷰',
   'Show task description on subagent rows': '서브에이전트 행에 작업 설명 표시',
   'Labels subagent rows by the one-line task description given to the subagent, with the type as a chip. Off shows the type only.': '서브에이전트 행 이름을 서브에이전트에게 맡긴 한 줄 작업 설명으로 보이고, 유형은 옆 칩으로 둡니다. 끄면 유형만 보입니다.',
@@ -37,10 +37,10 @@ const I18N = { ko: {
   'Display settings are saved on the viewer server and shared by every browser; saver mode applies to every session.': '화면 설정은 뷰어 서버에 저장돼 모든 브라우저가 같이 쓰고, 절약 모드는 모든 세션에 적용됩니다.',
   'Applies immediately, no reload needed.': '새로고침 없이 바로 바뀝니다.',
   // settings modal — saver switch (same files as /saver)
-  'Saver mode': '절약 모드', 'Auto': '자동', 'Off': '끄기', 'On · stage 1': '켜기 1단계', 'On · stage 2': '켜기 2단계',
-  'On · stage 3': '켜기 3단계', 'On · stage 4': '켜기 4단계', 'Target burn': '목표 소진율', 'Target time': '목표 시각',
+  'Saver mode': '절약 모드', 'Auto': '자동', 'Off': '끄기', 'On · stage 1': '켜기 수준 1', 'On · stage 2': '켜기 수준 2',
+  'On · stage 3': '켜기 수준 3', 'On · stage 4': '켜기 수준 4', 'Target burn': '목표 소진율', 'Target time': '목표 시각',
   'Apply': '적용', 'Clear': '해제', 'off': '끔', 'default': '기본값', 'Manual on': '수동 켜기', 'Manual off': '수동 끄기',
-  'stage {n}': '{n}단계', 'not saving': '절약 모드 아님', 'In effect': '현재 적용', 'Save failed': '저장 실패',
+  'stage {n}': '수준 {n}', 'not saving': '절약 모드 아님', 'In effect': '현재 적용', 'Save failed': '저장 실패',
   // settings modal — two-pane layout (category nav + row descriptions)
   'Display': '화면', 'Settings categories': '설정 분류', 'Mode': '작동 모드',
   'Color of the page background and panels.': '화면 바탕과 패널의 색입니다.',
@@ -48,7 +48,7 @@ const I18N = { ko: {
   'Keeps the weekly donut, daily, today-by-project and live charts under the session list. When off, they are in the Tokens tab and the 5h card at the top.': '주간 도넛·일별·당일 프로젝트별·실시간을 오른쪽 세션 목록 아래에 둡니다. 끄면 토큰 탭과 위 5시간 카드에서 봅니다.',
   'Live share since the last fetch (estimate)': '마지막 조회 이후 실시간분(추정)',
   'Show or collapse the usage burndown curve.': '사용량 번다운 곡선을 보이거나 접습니다.',
-  'Show the full alarm history or only unread cards.': '알람 목록에 이력 전체를 보일지, 읽지 않은 카드만 보일지 고릅니다.',
+  'Show the full alert history or only unread cards.': '알림 목록에 이력 전체를 보일지, 읽지 않은 카드만 보일지 고릅니다.',
   // settings modal — alert policy («Alerts»)
   'Alerts': '알림', 'Alert level': '알림 수준', 'Important only': '중요만', 'Everything': '전부', 'Custom': '사용자 지정',
   'Badge': '배지', 'List only': '목록만', 'On': '켜기', 'Subagent done': '서브에이전트 완료', 'Subagent done|legacy': '에이전트 완료', 'Background done': '백그라운드 완료',
@@ -63,7 +63,7 @@ const I18N = { ko: {
   'Show {n} more': '{n}개 더 보기', 'resumed {n}×': '이어서 {n}회',
   'click = mark read · groups as a whole · failures via the Read button': '클릭 = 읽음 · 묶음은 통째로 · 실패는 읽음 버튼',
   'Alerts — done · failed': '알림 — 완료·실패','{n} cards hidden by alert settings': '알림 설정에서 숨긴 카드 {n}개',
-  // alarm panel (static header + list notes) · sidebar token card · quota legend
+  // alerts panel (static header + list notes) · sidebar token card · quota legend
   'click = mark read': '클릭 = 읽음', 'Mark all read': '모두 읽음', 'Include older cards': '옛 카드까지 전부',
   'Done': '완료', 'Context nearly full': '컨텍스트 임박',
   'Clears the badge only — history is kept': '배지만 지웁니다 — 이력은 남습니다',
@@ -71,10 +71,10 @@ const I18N = { ko: {
   'Showing the latest {n} — the other {m} are under `Full history`': '최근 {n}개만 보입니다 — 나머지 {m}개는 `이력 전체` 로',
   '{n} read cards hidden — turn off `Unread only` to see them': '읽은 카드 {n}개 숨김 — `읽지 않은 것만` 을 끄면 보입니다',
   'No unread cards — turn off `Unread only` to see {n} in history.': '읽지 않은 카드가 없습니다 — `읽지 않은 것만` 을 끄면 이력 {n}개가 보입니다.',
-  'No alarms yet — they pile up here when a session ends its turn.': '아직 알람이 없습니다 — 세션이 턴을 끝내면 여기 쌓입니다.',
+  'No alerts yet — they pile up here when a session ends its turn.': '아직 알림이 없습니다 — 세션이 턴을 끝내면 여기 쌓입니다.',
   'tail-capped': '꼬리제한', 'median': '중앙값',
   '⚠Very large transcripts are read only in their last 60MB — early hours may be missing.': '⚠아주 큰 기록 파일은 꼬리 60MB 만 읽습니다 — 이른 시간대가 빠질 수 있습니다.',
-  'Auto picks the stage from the target burn; On pins a stage.': '자동은 목표 소진율로 단계를 정하고, 켜기는 단계를 고정합니다.',
+  'Auto picks the stage from the target burn; On pins a stage.': '자동은 목표 소진율로 수준을 정하고, 켜기는 수준을 고정합니다.',
   'Share of the 5-hour limit auto mode aims to use by the reset.': '자동 모드에서 5시간 리셋 때까지 쓸 한도 비율입니다.',
   'Paces usage to spread 100% of the limit until this time.': '이 시각까지 한도를 100% 나눠 쓰도록 맞춥니다.',
   'Timeline time played per second of replay.': '타임라인을 재생할 때 1초에 흐르는 시간입니다.',

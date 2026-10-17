@@ -313,7 +313,7 @@ function mdLinks(h){
     return '<a class=mdrel data-mdrel="' + u + '">' + t + '</a>';
   });
 }
-// ⚠md(src) without doc must stay byte-identical — chat, digest and work popup use it (tests/test_structure_follow_js.py pins it).
+// ⚠md(src) without doc must stay byte-identical — chat, digest and work log use it (tests/test_structure_follow_js.py pins it).
 // ln (split view only): an empty <i class=mdln data-ln=<1-based line>> precedes each top-level block for scroll sync (81c strMdSync).
 // ⚠A separate marker, not an attribute on the block — tests pin the block tags byte-for-byte.
 function md(src, doc, ln){

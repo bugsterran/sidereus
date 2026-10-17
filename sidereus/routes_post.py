@@ -365,7 +365,7 @@ class _PostRoutes:
         return self._send(200, json.dumps({"ok": True, "id": msg["id"]}), "application/json; charset=utf-8")
 
     def _p_dm(self, u):
-        # Work-popup compose: one DM to a logged-in session's mailbox id (sidereus/bus.py:dm_send validates).
+        # Work-log compose: one DM to a logged-in session's mailbox id (sidereus/bus.py:dm_send validates).
         req = self._body_json(65536, None)
         if not isinstance(req, dict):
             return self._send(400, json.dumps({"ok": False, "error": "Could not read the body"}, ensure_ascii=False),

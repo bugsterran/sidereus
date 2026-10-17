@@ -297,7 +297,7 @@ function brWire(){
     const ws = t.closest('[data-wks]');
     if(ws) return wkPopup(ws.dataset.wks, ws.dataset.wkt);
     const lw = t.closest('[data-blw]');
-    if(lw) return wkPopup(lw.dataset.blc, lw.dataset.blw);    // same /work popup the history tab opens
+    if(lw) return wkPopup(lw.dataset.blc, lw.dataset.blw);    // same /work log window the history tab opens
     const wd = t.closest('[data-wkd]');
     if(wd) return loadDiff(wd.dataset.wkd);
   };

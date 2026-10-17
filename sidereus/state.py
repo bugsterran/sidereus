@@ -231,7 +231,7 @@ def state(since=0, ncards=50):
         # ⚠External CLI tokens today, per platform — never merged into `usage`/`quota` (those are Claude-only).
         "extUsage": _piece("extUsage", ext_usage_today, {}),
         # ⚠Includes VIEWER_ME: /api/say · /api/dm · invites write from=VIEWER_ME, and the page marks `m.mine` from this
-        #   list — without it the work-popup DM trail (36-wkcompose.js) and unread/no-ack filters never saw the page's own posts.
+        #   list — without it the work-log DM trail (36-wkcompose.js) and unread/no-ack filters never saw the page's own posts.
         #   ⚠Both default spellings while viewer_me is unset — the author id follows the UI language (config.viewer_me_for).
         "mine": MINE + [i for i in viewer_ids(VIEWER_ME) if i not in MINE],
         # Settings only (never conversation content): JS strips these id prefixes in nmKey.
