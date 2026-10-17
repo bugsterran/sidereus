@@ -26,8 +26,8 @@ class TabDivider(unittest.TestCase):
         self.assertIn(".wvh.wvht{border-bottom-width:0}", css)
         self.assertIn("#feed .wvh.wvht:has(+ .tlaxr){border-bottom:1px solid var(--nx-rule)}", css)
         # the timeline caption is directly followed by the axis row
-        self.assertIn("box.innerHTML = tlgWrap(tlHead\n", src("web/js/74-timeline.js"))
-        self.assertRegex(src("web/js/74-timeline.js"), r"tlgWrap\(tlHead\s*(//[^\n]*\n\s*)*\+ \('<div class=tlaxr>")
+        self.assertIn("box.innerHTML = tlHead\n", src("web/js/74-timeline.js"))
+        self.assertRegex(src("web/js/74-timeline.js"), r"= tlHead\s*(//[^\n]*\n\s*)*\+ \('<div class=tlaxr>")
 
     def test_no_extra_top_padding(self):
         self.assertIn(".brep{container-type:inline-size;padding:0 0 14px}", src("web/css/40-tokens.css"))

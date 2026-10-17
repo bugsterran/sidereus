@@ -130,11 +130,13 @@ html[data-ui=next][data-ui] .plact .wkrgb[disabled]{opacity:.45;cursor:default}
 .plprev{white-space:pre-wrap;word-break:break-word;font-size:12px;margin:0}
 html[data-mv=pipe] .wrap{max-width:none}
 /* step 4 canvas: canvas row on top, stage panel | palette below at every width (side panes beside it made the 1440 canvas narrower than 1100's) */
-/* ⚠Grid sized by 48d plGwFit (floor = --plcvh canvas row from plCvNeed + 6px handle + 420 pane row; a dragged --plpanh moves the split inside that height); this height is pre-paint only. Panel ≤1000px keeps lines readable, palette ≥220px */
+/* ⚠Grid sized by 48d plGwFit (floor = --plcvh canvas row from plCvNeed + 6px handle + 420 pane row; a dragged --plpanh moves the split inside that height); this height is pre-paint only. Palette 220–360px, editor takes the rest; one-line fields cap at 420px instead */
 /* ⚠A fixed 62vh canvas row pushed the stage panel below the fold at 1440x900: the row follows the graph height instead (pre-paint guess = one row of stages) */
-.plgw{display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,1000px);grid-template-rows:var(--plcvh,minmax(200px,3fr)) 6px var(--plpanh,minmax(420px,2fr));gap:0 6px;min-width:0;margin:4px 0 6px;height:calc(clamp(260px,34vh,700px) + 426px)}
+.plgw{display:grid;grid-template-columns:minmax(220px,360px) minmax(0,1fr);grid-template-rows:var(--plcvh,minmax(200px,3fr)) 6px var(--plpanh,minmax(420px,2fr));gap:0 6px;min-width:0;margin:4px 0 6px;height:calc(clamp(260px,34vh,700px) + 426px)}
 .plw .wvh>.plcap,html[data-ui=next][data-ui] .plw .wvh>span.plcap{font-size:11px;font-weight:400;color:var(--nx-t3,#8b95a5)}   /* caption, not part of the header title */
 .plgw>.plcvw{grid-area:1/1/2/3}.plgw>.plgh{grid-area:2/1/3/3}.plgw>.plpan{grid-area:3/2/4/3}.plgw>.plpal{grid-area:3/1/4/2}   /* palette left, editor right: keeps the left-to-right order of the former side layout */
+/* ≥1600px the canvas is wide enough beside a 280px palette column: palette spans all rows, canvas/handle/editor stack right (48d refits on canvas clientWidth) */
+@media (min-width:1600px){.plgw{grid-template-columns:280px minmax(0,1fr)}.plgw>.plpal{grid-area:1/1/4/2}.plgw>.plcvw{grid-area:1/2/2/3}.plgw>.plgh{grid-area:2/2/3/3}.plgw>.plpan{grid-area:3/2/4/3}}
 .plgh{cursor:row-resize}.plgh:hover{background:#2b3545}   /* canvas | panes split (48d PL_SPLIT) */
 .plro{display:contents}.plro .plpal,.plro .plpan,.plro .plnt{pointer-events:none;opacity:.55}   /* borrowed pipeline (48h): no editing controls */
 .plpal{min-height:0;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:4px;box-sizing:border-box}
@@ -214,6 +216,7 @@ html[data-ui][data-theme=light] .pllt text{fill:#7a4a00}
 .pldt div{margin-top:4px;white-space:pre-wrap}
 .plpan .plfr{flex-direction:column;align-items:stretch;gap:2px}
 .plpan .plfr>span{flex:none}
+.plpan .plfr>:is(select,input){max-width:420px}   /* a full-width editor stretched one-line fields past reading width; textareas keep the full width */
 .plpan .plfta{min-height:120px}
 .plpan .plfta textarea{flex:1 1 auto;min-height:90px}
 .plnt{display:flex;gap:4px;align-items:center;min-width:0}

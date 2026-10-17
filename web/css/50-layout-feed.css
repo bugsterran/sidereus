@@ -386,8 +386,10 @@ aside{align-self:start;max-height:100%;min-height:0;overflow-y:auto;overscroll-b
     .dtb.c5{color:#e88f8f;border-color:#5a2f2f}  .dtb.c5.on{background:#e88f8f26;border-color:#e88f8f}
     .dtb.c6{color:#c9c34a;border-color:#54501d}  .dtb.c6.on{background:#c9c34a26;border-color:#c9c34a}
     .dtb.on{color:#eaf1fa;font-weight:600}
-    /* Range selector — all / commits only / uncommitted */
-    .dsc{display:flex;gap:5px;align-items:center;margin:0 0 9px}
+    /* Range selector — all / commits only / uncommitted · session start / vs main · untracked toggle */
+    .dsc{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:0 0 9px}
+    .dsun{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#8b95a7;margin-left:6px;cursor:pointer}
+    .dsun input{margin:0;width:12px;height:12px;cursor:pointer}
     .dscb{font-size:11px;color:#8b95a7;background:#161c25;border:1px solid #232c38;
       border-radius:5px;padding:2px 9px;cursor:pointer}
     .dscb:hover{border-color:#3a4a63;color:#dfe5ee}

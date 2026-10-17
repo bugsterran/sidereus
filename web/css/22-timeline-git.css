@@ -1,110 +1,19 @@
-/* Timeline right rail — uncommitted changes of the followed repo (77-timeline-git.js). Theme tokens only. */
-.tlgw{display:flex;align-items:flex-start}
-.tlgmn{flex:1 1 auto;min-width:0}
-/* Resize grip between Gantt and rail; replaces the old 10px gap. Width is set inline by tlgWrap (drag + sidereus.tlgw). */
-/* Sticky + height from JS (tlgFitH) so the grip spans the rail, not the whole Gantt. */
-.tlgrs{flex:0 0 10px;align-self:flex-start;cursor:col-resize;position:sticky;top:0;touch-action:none}
-.tlgrs::after{content:"";position:absolute;left:4px;top:0;bottom:0;width:2px;border-radius:1px;background:transparent}
-.tlgrs:hover::after,.tlgrs.on::after{background:var(--nx-t3)}
-/* Fixed 400px default (drag still 380..960). ⚠max-height:100% of .tlgw (= #feed) — a viewport calc let a tall rail outgrow the feed when tlgFitH exits early. */
-.tlg{flex:0 0 400px;width:400px;min-width:0;max-width:50%;max-height:100%;position:sticky;top:0;overflow:auto;box-sizing:border-box;
-  background:var(--nx-panel);color:var(--nx-t1);border:1px solid var(--nx-rule);border-radius:8px;
-  padding:8px 8px 10px;font:12px/1.45 var(--nx-sans);scrollbar-width:thin;scrollbar-color:var(--nx-field) transparent}
-/* ⚠Below TLG_MIN_W the rail and its toggle hide (the Gantt needs the width); JS stops polling too. */
-@media (max-width:1099px){ .tlg,.tlgb,.tlgrs{display:none !important} }
-/* Toggle button: visible border when closed, pressed tint when open (--seg-on-* tokens, 05-controls.css).
-   ⚠#id selector on purpose — html[data-ui=next] .tlrf (0,2,1) otherwise flattens the border to --nx-rule. */
-#tlgb{display:inline-flex;align-items:center;gap:5px;color:var(--nx-t2);border:1px solid var(--nx-t3);border-radius:6px;padding:1px 8px}
-#tlgb:hover{color:var(--nx-t1);border-color:var(--nx-t2)}
-#tlgb.on{color:var(--seg-on-c);background:var(--seg-on-bg);border-color:var(--seg-on-bd)}
-/* Panel glyph: a box with a right column that fills when the rail is open. */
-.tlgbi{width:11px;height:9px;box-sizing:border-box;border:1.5px solid currentColor;border-radius:2px;position:relative;flex:none}
-.tlgbi::after{content:"";position:absolute;top:0;bottom:0;right:0;width:3px;border-left:1.5px solid currentColor}
-#tlgb.on .tlgbi::after{background:currentColor}
-/* «Session» / «Compare» rows: label column + select. Filled look as the base field (90-main-ui.css); chevron comes from the global select rule.
-   ⚠border:0 + box-shadow edge — the (0,2,2)/(0,3,1) border-colour rules (90-main-ui, 95-focus) would otherwise draw a full outline. */
-.tlgfs{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 8px;align-items:center;margin-bottom:6px}
-.tlgfl{color:var(--nx-t2);font-size:11px;cursor:pointer}
-.tlgss{width:100%;min-width:0;height:var(--seg-h,24px);box-sizing:border-box;font:500 12px var(--nx-sans);color:var(--nx-t1);background-color:var(--nx-hover);
+/* Timeline toolbar «Changes» chip + compact session select (77-timeline-git.js). Theme tokens only. */
+.tlgb{display:inline-flex;align-items:center;gap:6px;min-width:0}
+/* ⚠#id selector on purpose — html[data-ui=next] .tlrf (0,2,1) otherwise flattens the border to --nx-rule. */
+#tlgcp{display:inline-flex;align-items:center;gap:4px;color:var(--nx-t2);border:1px solid var(--nx-t3);border-radius:6px;padding:1px 8px;
+  background:none;font:inherit;font-size:11px;white-space:nowrap;cursor:pointer}
+#tlgcp:hover{color:var(--nx-t1);border-color:var(--nx-t2)}
+#tlgcp:disabled{opacity:.55;cursor:default}
+.tlgsh{color:var(--nx-warn,var(--nx-err))}
+/* ⚠border:0 + box-shadow edge — the (0,2,2)/(0,3,1) border-colour rules (90-main-ui, 95-focus) would otherwise draw a full outline. */
+.tlgss{max-width:16em;min-width:0;height:var(--seg-h,24px);box-sizing:border-box;font:500 11px var(--nx-sans);color:var(--nx-t1);background-color:var(--nx-hover);
   border:0;border-radius:6px;padding:0 8px;box-shadow:inset 0 -1px 0 var(--nx-field);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .tlgss:hover,.tlgss:focus{box-shadow:inset 0 0 0 1px var(--nx-field)}
-.tlgbs{color:var(--nx-t2);font-size:11px;margin-top:2px;overflow-wrap:anywhere}
-.tlgrp{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 6px}
-.tlgrc{font-style:normal;cursor:pointer;font-size:11px;color:var(--nx-t2);border:1px solid var(--nx-rule);border-radius:10px;padding:0 7px;
-  max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tlgrc:hover{color:var(--nx-t1);border-color:var(--nx-t3)}
-.tlgrc.on{color:var(--seg-on-c);border-color:var(--seg-on-bd);background:var(--seg-on-bg)}
-.tlgrc.tlgrx{border-style:dashed;color:var(--nx-t3)}   /* «+N clean» reveal control, not a repo */
-.tlghd{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-.tlghd b{flex:1;font-size:12.5px}
-.tlgx2{font-style:normal;cursor:pointer;color:var(--nx-t3);display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;flex:none}
-.tlgx2:hover{background:var(--nx-hover);color:var(--nx-t1)}
-.tlgun{display:flex;align-items:center;gap:8px;min-width:0;color:var(--nx-t2);font-size:11px;margin:-2px 0 6px}
-.tlgunl{display:inline-flex;align-items:center;gap:4px;cursor:pointer;flex:none}
-.tlgunl input{margin:0;accent-color:var(--nx-info);width:12px;height:12px;cursor:pointer}
-.tlgunh{font-style:normal;cursor:pointer;color:var(--nx-t3);margin-left:auto;text-decoration:underline dotted;text-underline-offset:2px}
-.tlgunh:hover{color:var(--nx-t1)}
-.tlgcm s{text-decoration:none;flex:none;color:var(--nx-info);font:10.5px ui-monospace,SFMono-Regular,Menlo,monospace}
-.tlgbr{display:flex;align-items:center;gap:8px;min-width:0;font-weight:600}
-.tlgbn{display:flex;min-width:0;flex:1 1 auto}
-.tlgab{flex:none;color:var(--nx-t2);font-weight:400;font-variant-numeric:tabular-nums}
-.tlgsm{display:flex;align-items:center;gap:6px;color:var(--nx-t2);font-size:11px;margin:2px 0 6px;
-  padding-bottom:6px;border-bottom:1px solid var(--nx-rule)}
-.tlgsm > span:first-child{flex:1;min-width:0}
-/* Tree «Expand all / Collapse all»: shared .relfx button look (also the branch tree's .brtall); .tlgfa makes it compact. */
+/* «Expand all / Collapse all»: shared .relfx button look (branch tree .brtall, sessions list .swfa). */
 .relfx{background:var(--nx-panel,#141a23);border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#bcd4f5);
   border-radius:6px;padding:2px 9px;font:inherit;font-size:11px;cursor:pointer}
 .relfx:hover{border-color:var(--nx-info,#3f6ea8);color:var(--nx-t1,#dfe5ee)}
-.tlgsm .tlgfa{flex:none;font-size:10px;padding:1px 7px;white-space:nowrap}
-/* Middle truncation: head shrinks with an ellipsis, tail never shrinks. */
-.tlgnm{display:flex;min-width:0;flex:1 1 auto;white-space:nowrap}
-.tlgnh{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
-.tlgnt{flex:none}
-.tlga,.tlgd,.tlgc,.tlgbin{flex:none;font-size:10.5px;font-variant-numeric:tabular-nums}
+.tlga,.tlgd{flex:none;font-size:10.5px;font-variant-numeric:tabular-nums}
 .tlga{color:var(--nx-ok)}
 .tlgd{color:var(--nx-err)}
-.tlgc{color:var(--nx-t3)}
-.tlgbin{color:var(--nx-t3)}
-/* Owner line (who edited the file): wraps to a full-width muted second line under the name, indented past the icon (14px + 5px gap). */
-.tlgfw{flex-wrap:wrap;row-gap:0;padding-bottom:3px}
-.tlgol{flex:1 0 100%;display:flex;align-items:center;gap:4px;min-width:0;padding-left:19px;margin-top:-2px;font-size:10.5px;line-height:14px;color:var(--nx-t3)}
-.tlgow{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
-.tlgol > b{flex:none;font-weight:400;font-variant-numeric:tabular-nums}
-.tlgol.main .tlgow{font-style:italic}
-/* line-height em: the pill grows with --fs (12px at 100%) instead of the text poking out of it */
-.tlgcf{flex:none;font-size:9.5px;line-height:max(12px, 1em);padding:0 4px;border-radius:6px;color:var(--nx-err);
-  border:1px solid color-mix(in srgb,var(--nx-err) 60%,transparent);background:color-mix(in srgb,var(--nx-err) 12%,transparent)}
-.tlgol{cursor:pointer}
-.tlgol:hover .tlgow{color:var(--nx-t1);text-decoration:underline}
-.tlgcf{cursor:pointer}
-.tlgcfp{position:fixed;z-index:60;min-width:220px;max-width:340px;padding:4px;border-radius:6px;background:var(--nx-panel);
-  border:1px solid var(--nx-rule);box-shadow:var(--nx-shadow);font-size:11px;color:var(--nx-t1)}
-.tlgcfh{padding:2px 6px 4px;color:var(--nx-t3);font-size:10px}
-.tlgcfr{display:flex;gap:6px;align-items:baseline;min-width:0;padding:3px 6px;border-radius:4px;cursor:pointer}
-.tlgcfr:hover{background:var(--nx-hover)}
-.tlgcfr.off{cursor:default;opacity:.55}
-.tlgcfr.off:hover{background:none}
-.tlgcfr > b{flex:none;font-weight:600}
-.tlgcfr > span{flex:none;color:var(--nx-t3);font-variant-numeric:tabular-nums}
-.tlgcfr > em{font-style:normal;color:var(--nx-t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.tlgr{display:flex;align-items:center;gap:5px;min-width:0;padding:1px 4px;border-radius:4px;cursor:pointer}
-.tlgr:hover{background:var(--nx-hover)}
-.tlgdir{color:var(--nx-t2)}
-.tlgar{flex:none;width:10px;color:var(--nx-t3);font-size:10px}
-/* Status = file-name colour (user 09-25): added blue · modified/renamed green · deleted grey + strike · conflict red.
-   ⚠Existing role tokens only, so both themes keep >=4.5:1 on --nx-panel (see 90-main-ui.css / 91-light.css). */
-.tlgf{--tlg-st:var(--nx-t1)}
-.tlgf-a{--tlg-st:var(--nx-info)}
-.tlgf-m,.tlgf-r{--tlg-st:var(--nx-ok)}
-.tlgf-d{--tlg-st:var(--nx-t3)}
-.tlgf-u{--tlg-st:var(--nx-err)}
-.tlgf .tlgnm{color:var(--tlg-st)}
-.tlgf-d .tlgnm span{text-decoration:line-through;text-decoration-thickness:1px}
-/* File-type icons: shared .ftic from css/07-file-icons.css (fileIco in js/07-file-icons.js). */
-.tlgmt{color:var(--nx-t3);font-size:11px;padding:4px 2px}
-.tlgft{margin-top:8px;padding-top:6px;border-top:1px solid var(--nx-rule)}
-.tlgfh{color:var(--nx-t3);font-size:11px;margin-bottom:3px}
-.tlgcm{display:flex;align-items:center;gap:6px;min-width:0;font-size:11px;padding:1px 2px;margin:0 -2px;border-radius:3px;cursor:pointer}
-.tlgcm:hover{background:var(--nx-hover)}
-.tlgcm span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tlgcm i{flex:none;font-style:normal;color:var(--nx-t3)}

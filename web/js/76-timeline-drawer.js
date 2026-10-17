@@ -96,30 +96,13 @@ function tlSyncState(){
 // ⇒ Default is a summary card; clicking a bar covers it with detail; closing returns to the summary (2026-09-22).
 // ⚠Do not fill it via auto-selection — `paintTl` redraws every 2.5s and the viewed detail would bounce.
 // ⚠**No conversation content** — only path, model, time, counts, tokens (`desc`/`last` are forbidden).
-// The only input is the already-received `TLD` — no new API (`tok.sum` · `rows[].segs` · `naps`).
+// Inputs are already-received data — `TLD` rows, `SESS[].plrun` and the 48f gate-evidence cache; no new API.
 let tlSumHtml = '';
 function tlSumDur(s){
   s = Math.max(0, Math.round(s));
   if(s < 60) return U(s,'s');
   const m = Math.round(s / 60);
   return m < 60 ? U(m,'m') : U(Math.floor(m / 60),'h') + ' ' + U(m % 60,'m');
-}
-// ★2026-09-25: summary said «longest gap 17:29~18:03 · 34 min» while pmset had one sleep 15:30~20:26 —
-// `_naps_awake` cuts sleep at 1-45 s session segments written during DarkWakes (a background monitor firing).
-// ⇒ Bands separated by less than TL_NAP_JOIN_S are one sleep; `[a, b, autoWakes]`.
-// ⚠60 s: the longest measured DarkWake was 45 s (14:45:18~14:46:03); real wakes were followed by minutes of work.
-// ⚠Summary only — the hatch keeps per-band drawing: separators are narrower than a pixel there, and
-//   carving out activity is what keeps a long DarkWake with real work (★09-18, 27 min) visible.
-const TL_NAP_JOIN_S = 60;
-function tlNapJoin(naps, joinS){
-  const src = (naps || []).filter(n => n && n[1] > n[0]).slice().sort((x, y) => x[0] - y[0]);
-  const out = [];
-  for(const n of src){
-    const l = out[out.length - 1];
-    if(l && n[0] - l[1] < joinS){ if(n[0] > l[1]) l[2]++; if(n[1] > l[1]) l[1] = n[1]; }
-    else out.push([n[0], n[1], 0]);
-  }
-  return out;
 }
 // External-platform tokens {plat: n}: whole row (`tk`) when bs is null, else only bars starting at/after bs (`tks[i]`).
 function tlExtTok(rows, bs){
@@ -134,88 +117,98 @@ function tlExtTok(rows, bs){
   }
   return o;
 }
+// «More» state of the summary card. ⚠Storage may throw (private mode, quota); the card must still render.
+const TLSUM_MORE_KEY = 'sidereus.tlsumMore';
+function tlSumMoreOn(){ try{ return lsGet(TLSUM_MORE_KEY, '0') === '1'; }catch(e){ return false; } }
+function tlSumMoreSet(on){ try{ lsSet(TLSUM_MORE_KEY, on ? '1' : '0'); }catch(e){ softErr('ls', e); } }
+// Results + Evidence from the gate-evidence cache of 48f (PLEV, read only): commits, runs and gate rows inside [t0, t1].
+// ⚠Metadata only — counts, short step names and times; commit subjects never reach the page.
+function tlSumWork(ss, t0, t1){
+  const ps = [];
+  for(const r of ss){
+    const s = tlLiveOf(r.cwd, r.plat), p = (s && Array.isArray(s.repos) && s.repos[0]) || r.cwd;
+    if(p && ps.indexOf(p) < 0) ps.push(p);
+    if(ps.length >= 6) break;
+  }
+  const hs = new Set(), ev = [];
+  for(const p of ps){
+    for(const e of (plEvRows(p) || [])) if(e && e.ts >= t0 && e.ts <= t1) ev.push(e);
+    for(const c of (plEvCommits(p) || [])) if(c && typeof c.h === 'string' && c.ct >= t0 && c.ct <= t1) hs.add(c.h);
+  }
+  let ok = 0, bad = 0, lb = 0, n = 0;
+  (SESS || []).forEach(x => ((x && x.plrun) || []).forEach(r => [r].concat((r && r.past) || []).forEach(u => {
+    if(!u || !(u.t0 >= t0 && u.t0 <= t1)) return;
+    const st = Object.values(u.stages || {}).filter(Boolean);
+    n++;
+    if(st.some(g => g.o === 'fail')) bad++; else if(u.end) ok++;
+    st.forEach(g => Object.values(g.from || {}).forEach(k => { lb += (+k || 0); }));
+  })));
+  ev.sort((a, b) => b.ts - a.ts);
+  const pass = ev.filter(e => e.rc === 0).length, nf = ev.find(e => e.rc !== 0);
+  const st = nf && Array.isArray(nf.steps) ? nf.steps.find(g => g && g.rc !== 0) : null;
+  const step = st && typeof st.name === 'string' && /^[a-z0-9_-]{1,20}$/.test(st.name) ? st.name : '';   // = harness_evidence.EV_STEP
+  return {c: hs.size, n, ok, bad, lb, ev: ev.length, pass, fail: ev.length - pass, step};
+}
 function tlSumDraw(host){
   const d = TLD, rows = (d && d.ok) ? (d.rows || []) : [];
   // For an empty window the header above already says "no agents ran" — do not list 0 on four lines
   if(!rows.length){ host.innerHTML = ''; tlSumHtml = ''; return; }
   const t1 = d.at, t0 = (d.tok && d.tok.t0) || (t1 - (d.hours || 12) * 3600);
   const ss = rows.filter(r => r.kind === 'sess'), ag = rows.filter(r => r.kind !== 'sess');
-  const iv = [], sl = tlNapJoin(d.naps, TL_NAP_JOIN_S);
-  for(const r of rows) for(const g of (r.segs || [])){
-    const a = Math.max(t0, g[0]), b = Math.min(t1, g[1]);
-    // DarkWake blips inside one joined sleep do not end the gap (★ at tlNapJoin)
-    if(b >= a && !sl.some(n => a >= n[0] && b <= n[1])) iv.push([a, b]);
-  }
-  // (1) Whole-window total — bars are individual, so the total does not read
-  // ★Before it wrote "N active fragments" (count of `segs`) — because the response had no tool-call count, and "fragment"
-  // was hard to understand. Now each row carries `tc` (tool calls made by that agent) (2026-09-22).
-  let tcN = 0;
-  for(const r of ag) tcN += (r.tc || 0);
-  // ★Only tokens use the «current 5h limit window» (2026-09-22) — cause: `tok.sum` is the timeline's 12h window total,
-  // so with a just-reset limit at 2% the screen showed 157M including the previous window's share.
-  // Reported by the user: the hourly usage should restart from the newly granted quota.
-  // ⚠Do not revert — reverting to `tok.sum` brings back exactly the same confusion.
-  // ⚠Boundary cells (straddling `start`) are dropped entirely, keeping «under- rather than over-count» — pre-window consumption
-  // mixed into the new window would disagree with the limit gauge. Session/agent/tool counts stay as the 12h activity totals.
-  // ★The math is consolidated in one `curWinTok()` (2026-09-22) — the 5h quota row and burndown header had three copies
-  // of the same formula, and copies are how one side gets fixed and the windows diverge again. ⚠Do not inline it again here.
-  const _w = curWinTok();
-  // ⚠`tok.sum`/curWinTok are Claude-only; external rows are added per platform behind their logo (logo-only rule),
-  //   same window and same «drop the straddling piece» rule (`tks` per bar), so the count and the tokens cover the same sessions.
-  const bs = (_w == null) ? null : BURN.cur.start, xt = tlExtTok(rows, bs);
-  const xs = Object.keys(xt).map(p => ' · ' + aiLogo(p) + ' ' + fmtTok(xt[p])).join('');
-  const cl = xs ? aiLogo('cc') + ' ' : '';
-  const tkTxt = (_w == null) ? T('tokens') + ' ' + cl + fmtTok((d.tok || {}).sum || 0) + xs   // Fallback: label as before too
-                             : T('this-window tokens') + ' ' + cl + fmtTok(_w) + xs;
-  let h = '<u><i>'+T('Total')+'</i><b>' + TV({msg: '{s} sessions · {a} subagents · {t} tool calls', vars: {s: ss.length, a: ag.length, t: tcN}}) + ' · ' + tkTxt + '</b></u>';
-  // (2) Longest gap — empty space is not drawn, so «absence» is invisible unless the screen says so
-  iv.sort((x, y) => x[0] - y[0]);
-  let gs = 0, ge = 0, cur = t0;
-  for(const g of iv){
-    if(g[0] - cur > ge - gs){ gs = cur; ge = g[0]; }
-    if(g[1] > cur) cur = g[1];
-  }
-  if(t1 - cur > ge - gs){ gs = cur; ge = t1; }
-  if(ge - gs >= 60){
-    let nap = 0, wk = 0;         // Overlapping a sleep span means «stopped», not «unused»
-    for(const n of sl){
-      const o = Math.min(ge, n[1]) - Math.max(gs, n[0]);
-      if(o > 0){ nap += o; wk += n[2]; }
+  const row = (k, v) => '<u><i>' + T(k) + '</i><b>' + v + '</b></u>';
+  const w = tlSumWork(ss, t0, t1);
+  // (1) Results — commits and pipeline runs that landed in this window
+  let h = row('Results', TV({msg: '{n} commits', vars: {n: w.c}})
+    + (w.n ? ' · ' + TV({msg: '{n} pipeline runs', vars: {n: w.n}}) + ' <s>✓' + w.ok + ' ✕' + w.bad + (w.lb ? ' ↺' + w.lb : '') + '</s>' : ''));
+  // (2) Evidence — gate runs recorded in the window; on FAIL the newest failing run's first failed step
+  h += row('Evidence', !w.ev ? T('no gate runs')
+    : TV({msg: '{n} gate runs', vars: {n: w.ev}}) + ' · PASS ' + w.pass + ' · FAIL ' + w.fail
+      + (w.step ? ' <s>· ' + T('last failure') + ' ' + esc(w.step) + '</s>' : ''));
+  const more = tlSumMoreOn();
+  let m = '';
+  if(more){
+    // (3) Waited on you — server `wt` = [human prompts that came ≥30 s after the previous line, seconds]
+    let wn = 0, ws = 0;
+    for(const r of ss) if(Array.isArray(r.wt)){ wn += (+r.wt[0] || 0); ws += (+r.wt[1] || 0); }
+    m += row('Waited on you', wn ? TV({msg: '{n} prompts', vars: {n: wn}}) + ' · ' + tlSumDur(ws) : '—');
+    // (4) Outliers — ⚠measured only with fields **actually present** in the response (start/end · fin).
+    // ★End state is not a «status field» in the source — all there is is **the shape of the last record**, so
+    // it is called "cut off without report", not "abnormal exit" (server `_agent_ended`, 2026-09-22).
+    // ⚠Just-finished rows may be about to write their report, so only count those over 5 min — otherwise 1-2 always show.
+    // With few samples the median is meaningless, so that piece is dropped.
+    const ox = [];
+    if(ag.length >= 4){
+      const du = ag.map(r => r.end - r.start).sort((a, b) => a - b);
+      const med = du[du.length >> 1];
+      const lim = Math.max(300, med * 3);
+      const big = ag.filter(r => r.end - r.start >= lim)
+                    .sort((a, b) => (b.end - b.start) - (a.end - a.start));
+      if(big.length) ox.push(TV({msg: '{n} at 3×+ the median duration {d}', vars: {n: big.length, d: tlSumDur(med)}}) + ' '
+        + '<s>' + big.slice(0, 2).map(r =>
+            esc(r.type || T('Subagent')) + ' ' + tlSumDur(r.end - r.start)).join(' · ') + '</s>');
     }
-    h += '<u><i>'+T('Longest gap')+'</i><b>' + hhmm(gs) + '~' + hhmm(ge) + ' · ' + tlSumDur(ge - gs)
-       + (nap > (ge - gs) * 0.5 ? ' <s>· ' + T('asleep') + ' ' + tlSumDur(nap)
-          + (wk ? ' · ' + TV({msg: '{n} auto-wakes in between', vars: {n: wk}}) : '') + '</s>' : '') + '</b></u>';
+    const dead = ag.filter(r => !r.run && r.fin === 0 && t1 - r.end > 300).length;
+    if(dead) ox.push(TV({msg: '{n} cut off without a report', vars: {n: dead}}));
+    if(ox.length) m += row('Outliers', ox.join(' · '));
+    // (5) Cost — window tokens, activity counts and tokens per commit
+    let tcN = 0;
+    for(const r of ag) tcN += (r.tc || 0);
+    // ★Tokens use the «current 5h limit window» (curWinTok, 55a) — `tok.sum` is the timeline's 12h total and showed the
+    //   previous window's share right after a reset. ⚠Do not revert to `tok.sum` and do not inline the math here.
+    const _w = curWinTok();
+    // ⚠`tok.sum`/curWinTok are Claude-only; external rows are added per platform behind their logo (logo-only rule),
+    //   same window and same «drop the straddling piece» rule (`tks` per bar), so the count and the tokens cover the same sessions.
+    const bs = (_w == null) ? null : BURN.cur.start, xt = tlExtTok(rows, bs);
+    const xs = Object.keys(xt).map(p => ' · ' + aiLogo(p) + ' ' + fmtTok(xt[p])).join('');
+    const cl = xs ? aiLogo('cc') + ' ' : '';
+    const cc = (_w == null) ? ((d.tok || {}).sum || 0) : _w;
+    const tkTxt = ((_w == null) ? T('tokens') : T('this-window tokens')) + ' ' + cl + fmtTok(cc) + xs;
+    const all = cc + Object.keys(xt).reduce((s, p) => s + (xt[p] || 0), 0);
+    m += row('Cost', tkTxt + ' · ' + T('per commit') + ' ' + (w.c ? fmtTok(Math.round(all / w.c)) : '—')
+      + ' <s>· ' + TV({msg: '{s} sessions · {a} subagents · {t} tool calls', vars: {s: ss.length, a: ag.length, t: tcN}}) + '</s>');
   }
-  // (3) Running now — if none, drop this row entirely (do not write 0)
-  const liv = ss.filter(r => r.run), lag = ag.filter(r => r.run).length;
-  if(liv.length || lag){
-    const nm = liv.slice(0, 3).map(r => {
-      const s = tlLiveOf(r.cwd, r.plat);      // Model uses the same value as the session card (same plat)
-      return esc(r.proj || r.cwd) + (s && s.model ? ' <s>' + esc(s.model) + '</s>' : '');
-    }).join(' · ');
-    h += '<u><i>'+T('Running now')+'</i><b>' + nm
-       + (liv.length > 3 ? ' <s>' + T('+{n} more', 'drawer').replace('{n}', liv.length - 3) + '</s>' : '')
-       + (lag ? (nm ? ' · ' : '') + '<s>' + TV({msg: '{n} subagents', vars: {n: lag}}) + '</s>' : '') + '</b></u>';
-  }
-  // (4) Outliers — ⚠measured only with fields **actually present** in the response (start/end · fin).
-  // ★End state is not a «status field» in the source — all there is is **the shape of the last record**, so
-  // it is called "cut off without report", not "abnormal exit" (server `_agent_ended`, 2026-09-22).
-  // ⚠Just-finished rows may be about to write their report, so only count those over 5 min — otherwise 1-2 always show.
-  // With few samples the median is meaningless, so that piece is dropped.
-  const ox = [];
-  if(ag.length >= 4){
-    const du = ag.map(r => r.end - r.start).sort((a, b) => a - b);
-    const med = du[du.length >> 1];
-    const lim = Math.max(300, med * 3);
-    const big = ag.filter(r => r.end - r.start >= lim)
-                  .sort((a, b) => (b.end - b.start) - (a.end - a.start));
-    if(big.length) ox.push(TV({msg: '{n} at 3×+ the median duration {d}', vars: {n: big.length, d: tlSumDur(med)}}) + ' '
-      + '<s>' + big.slice(0, 2).map(r =>
-          esc(r.type || T('Subagent')) + ' ' + tlSumDur(r.end - r.start)).join(' · ') + '</s>');
-  }
-  const dead = ag.filter(r => !r.run && r.fin === 0 && t1 - r.end > 300).length;
-  if(dead) ox.push(TV({msg: '{n} cut off without a report', vars: {n: dead}}));
-  if(ox.length) h += '<u><i>'+T('Outliers')+'</i><b>' + ox.join(' · ') + '</b></u>';
+  h += m + '<u><i></i><b><span class=tlsmore id=tlsmore role=button tabindex=0 style="cursor:pointer">'
+    + (more ? T('Less') + ' ▴' : T('More') + ' ▾') + '</span></b></u>';
   const html = '<div class=tldrw><div class=tldh><b>'+T('Window summary')+'</b><span>'
     + rangeLbl(d.hours)
     + ' — ' + T('click a bar to open its work log in a new window') + '</span></div>'
@@ -226,6 +219,11 @@ function tlSumDraw(host){
   if(host.firstChild && html === tlSumHtml) return;
   tlSumHtml = html;
   host.innerHTML = html;
+  const mb = document.getElementById('tlsmore');
+  if(mb) mb.onclick = mb.onkeydown = ev => {
+    if(ev.type === 'keydown' && ev.key !== 'Enter' && ev.key !== ' ') return;
+    tlSumMoreSet(!tlSumMoreOn()); tlSumHtml = ''; tlSumDraw(host);
+  };
 }
 function tlDrawer(){
   const host = document.getElementById('tldrw');

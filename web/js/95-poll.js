@@ -81,7 +81,7 @@ async function poll(first){
     if(fresh.length){ MSGS=MSGS.concat(fresh); MSGS.forEach(decorate); }
     // ★In work-history mode **skip** chat rendering — otherwise polling overwrites the console
     loadTl();
-    try{ tlgTick(); }catch(e){ softErr('tlgTick', e); }   // timeline git rail (77-timeline-git.js) — throttled inside, open + visible only
+    try{ tlgTick(); }catch(e){ softErr('tlgTick', e); }   // Timeline «Changes» chip (77-timeline-git.js) — throttled inside, Timeline tab visible only
     // ★Drawing chat into #feed happens **only in chat mode**. Before, mode was not checked, so while viewing timeline/work history
     // a new post made `append` attach chat there (2026-09-01: chat messages flashed briefly
     // below the timeline). The next re-render erased it, so it looked like a 'flicker'.

@@ -64,6 +64,13 @@ def _compacts(fp, cut):
     return [dict(it) for it in ent[7] if it["at"] >= cut][-20:]   # copies: don't leak the cached original
 
 
+def _sess_waits(fp, cut):
+    """One wait (seconds, clipped to `cut`) per human prompt at/after `cut`, from the scan `_sess_segments(fp, cut)` just cached.
+    ⚠No scan of its own: without a cached entry it returns [] (row key omitted)."""
+    ent = _SEG_RAW.get(fp)
+    return [int(v - max(p, cut)) for v, p in ent[9] if v >= cut] if ent else []
+
+
 def _cpt_item(ln):
     """A `compact_boundary` line -> compaction item, else None."""
     try:
@@ -95,7 +102,9 @@ SEG_CACHE_MAX = 1500
 # ★Per-file **raw-material cache** (see ★ in `_seg_scan`) — one slot per path, so an active file just
 #   refreshes its slot. Value is `(nb, lim, start, end, oldest, ts_all, tok_all, cpt_all, trimmed)` — `start`/`end`
 #   are the **byte range** read so far (bookmarks for growing either end); `cpt_all` feeds `_compacts`.
+#   + `hp_all` [(prompt time, previous line time)] and `last` (time of the last line read) for `_sess_waits`.
 _SEG_RAW = {}
+WAIT_MIN_S = 30            # a human prompt this long after the previous line = the session waited on the person
 
 
 # ★**Canonical token definition** (2026-09-09; the agent timeline, daily and per-project totals all disagreed).
@@ -155,8 +164,14 @@ def _line_tokens(ln):
     return sum(got.values())
 
 
-def _scan_lines(lines, oldest, ts_all, tok_all, cpt_all):
-    """Append each line's time · tokens · compaction to the lists; returns `(oldest, ts_all, tok_all, cpt_all)`."""
+def _is_prompt(ln):
+    """Typed human prompt line, by markers only (no parse; message text is never read into anything)."""
+    return ('"type":"user"' in ln and '"type":"tool_result"' not in ln and '"isMeta":true' not in ln)
+
+
+def _scan_lines(lines, oldest, ts_all, tok_all, cpt_all, hp_all, last):
+    """Append each line's time · tokens · compaction · prompt wait to the lists;
+    returns `(oldest, ts_all, tok_all, cpt_all, hp_all, last)`."""
     for ln in lines:
         if "compact_boundary" in ln:
             it = _cpt_item(ln)
@@ -170,6 +185,10 @@ def _scan_lines(lines, oldest, ts_all, tok_all, cpt_all):
             continue
         if oldest is None or v < oldest:
             oldest = v      # ★this is **the read range** — where the window reached, not activity, so count all
+        # ⚠`last` includes queue-operation lines: a prompt queued while the model ran did not keep it waiting.
+        if last is not None and v - last >= WAIT_MIN_S and _is_prompt(ln):
+            hp_all.append((v, last))
+        last = v
         # ★`queue-operation` is **not activity** (measured 2026-09-09). Lines the user queued while the model ran
         #   carry no trace of the model working. But they have timestamps and made bars —
         #   repo-A's 06:07~06:14 bar was **only 8 `queue-operation` lines** with 0 tokens.
@@ -184,7 +203,7 @@ def _scan_lines(lines, oldest, ts_all, tok_all, cpt_all):
             n = _line_tokens(ln)
             if n:
                 tok_all.append((v, n, _resp_key_line(ln)))
-    return oldest, ts_all, tok_all, cpt_all
+    return oldest, ts_all, tok_all, cpt_all, hp_all, last
 
 
 def _seg_scan(fp, cut, nb, lim):
@@ -224,15 +243,16 @@ def _seg_scan(fp, cut, nb, lim):
     if _bs is None:
         return [], None, []
     if _rs or ent is None:
-        oldest, ts_all, tok_all, cpt_all, trimmed = None, [], [], [], False
+        oldest, ts_all, tok_all, cpt_all, trimmed, hp_all, last = None, [], [], [], False, [], None
     else:
-        oldest, ts_all, tok_all, cpt_all, trimmed = ent[4], ent[5], ent[6], ent[7], ent[8]
+        oldest, ts_all, tok_all, cpt_all, trimmed, hp_all, last = ent[4], ent[5], ent[6], ent[7], ent[8], ent[9], ent[10]
     if front and not _rs:
-        f_old, f_ts, f_tok, f_cpt = _scan_lines(front, None, [], [], [])
+        # ⚠The old range's first line gains a predecessor here but is not rechecked: at most one prompt is missed.
+        f_old, f_ts, f_tok, f_cpt, f_hp, _fl = _scan_lines(front, None, [], [], [], [], None)
         if f_old is not None and (oldest is None or f_old < oldest):
             oldest = f_old
-        ts_all, tok_all, cpt_all = f_ts + ts_all, f_tok + tok_all, f_cpt + cpt_all
-    oldest, ts_all, tok_all, cpt_all = _scan_lines(lines, oldest, ts_all, tok_all, cpt_all)
+        ts_all, tok_all, cpt_all, hp_all = f_ts + ts_all, f_tok + tok_all, f_cpt + cpt_all, f_hp + hp_all
+    oldest, ts_all, tok_all, cpt_all, hp_all, last = _scan_lines(lines, oldest, ts_all, tok_all, cpt_all, hp_all, last)
     ts, tok = [], []
     seen_resp = set()      # ★response dedup — within this scan only (see ⚠ at `_resp_key_line` above)
     # ⚠Incremental reads never drop the front, so the accumulation outgrows the window ⇒ trim **from the front** at `lim`.
@@ -242,6 +262,7 @@ def _seg_scan(fp, cut, nb, lim):
         ts_all = ts_all[-lim:]
         _v0 = min(ts_all)
         tok_all = [t for t in tok_all if t[0] >= _v0]
+        hp_all = [t for t in hp_all if t[0] >= _v0]
         oldest = _v0
         trimmed = True
     # ⚠Compactions are not trimmed by `lim` (they used their own wider read); output takes `[-20:]` anyway.
@@ -249,7 +270,7 @@ def _seg_scan(fp, cut, nb, lim):
         cpt_all = cpt_all[-200:]
     if len(_SEG_RAW) > SEG_CACHE_MAX:
         _SEG_RAW.clear()
-    _SEG_RAW[fp] = (nb, lim, _bs, _be, oldest, ts_all, tok_all, cpt_all, trimmed)
+    _SEG_RAW[fp] = (nb, lim, _bs, _be, oldest, ts_all, tok_all, cpt_all, trimmed, hp_all, last)
     ts = [v for v in ts_all if v >= cut]
     for v, n, k in tok_all:
         if v < cut:

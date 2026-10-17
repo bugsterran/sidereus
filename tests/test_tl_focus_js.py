@@ -1,5 +1,5 @@
 """Timeline focus: popTabOut closes a popover with nothing focusable when Tab leaves its opener (others unchanged);
-tlgFocusId names a focused rail select; paintTl refocuses it after rebuilding the rail; #tlq has a focus ring."""
+tlgFocusId names a focused chip control; paintTl refocuses it after rebuilding the toolbar; #tlq has a focus ring."""
 import json
 import os
 import shutil
@@ -56,8 +56,9 @@ document.activeElement = knc; e = ev('Tab'); popTabOut(e);
 R.knOpener = closed.slice();
 document.activeElement = btn; e = ev('Tab'); popTabOut(e);
 R.knLast = closed.slice(); R.knPrevented = e.prevented;
-document.activeElement = {id: 'tlgbm'}; R.fo = tlgFocusId();
-document.activeElement = {id: 'tlgx'}; R.none = tlgFocusId();
+document.activeElement = {id: 'tlgss'}; R.fo = tlgFocusId();
+document.activeElement = {id: 'tlgcp'}; R.fo2 = tlgFocusId();
+document.activeElement = {id: 'tlgbm'}; R.none = tlgFocusId();
 document.activeElement = null; R.nul = tlgFocusId();
 """)
 
@@ -74,14 +75,15 @@ document.activeElement = null; R.nul = tlgFocusId();
         self.assertTrue(self.R["knPrevented"])
 
     def test_rail_focus_id(self):
-        self.assertEqual(self.R["fo"], "tlgbm")
+        self.assertEqual(self.R["fo"], "tlgss")
+        self.assertEqual(self.R["fo2"], "tlgcp")
         self.assertEqual(self.R["none"], "")
         self.assertEqual(self.R["nul"], "")
 
     def test_paint_tl_refocuses_rail(self):
         s = js_fn("paintTl")
         self.assertIn("tlgFocusId()", s)
-        self.assertLess(s.index("tlgFocusId()"), s.index("box.innerHTML = tlgWrap("))
+        self.assertLess(s.index("tlgFocusId()"), s.index("tbSet('time', tlCtlHtml() + tlgChipHtml());\n"))
         self.assertIn("getElementById(tlgFo)", s)
 
     def test_tlq_focus_ring(self):

@@ -70,7 +70,7 @@ function tlHovPos(w, h, x, y, box, av){
 }
 function tlHovPlace(c, x, y){
   c.hidden = false;
-  // ⚠Bounded by the Gantt (.tlwrap), not the window — the «Changed» rail sits to its right and the card covered it.
+  // ⚠Bounded by the Gantt (.tlwrap), not the window — a panel beside the Gantt would be covered by the card.
   const wr = document.querySelector('#feed .tlwrap'), a = wr ? wr.getBoundingClientRect() : null, pad = 8;
   const box = {l: Math.max(pad, a ? a.left : 0), r: Math.min(innerWidth - pad, a ? a.right : innerWidth), t: pad, b: innerHeight - pad};
   const p = document.getElementById('tlcurp');
@@ -145,8 +145,8 @@ function paintTl(){
   const rows = (d.rows || []).filter(r => typeof acctInPick !== 'function' || acctInPick(r, 'time', tpk));
   // No sessions at all = a first run: add the next step, otherwise an empty timeline is just a quiet period.
   const tlNext = (SESS || []).length ? '' : '<div class=hidnote>' + T('Next: start an AI coding-agent session — its subagents are drawn here.') + '</div>';
-  // ⚠Controls before the empty return: widening the range is the only way out of an empty window (no rail is drawn, so no git chip)
-  if(!rows.length){ tbSet('time', tlCtlHtml()); box.innerHTML = '<div class=tlhd><i>' + (typeof tlEmptyMsg === 'function' ? tlEmptyMsg(d, rows) : esc(TV({msg: 'No subagents ran in the last {n}h', vars: {n: d.hours}}))) + '</i></div>' + tlNext; return void tlWireCtl(apFo); }
+  // ⚠Controls before the empty return: widening the range is the only way out of an empty window ; the git chip stays (changes exist without subagents)
+  if(!rows.length){ tbSet('time', tlCtlHtml() + tlgChipHtml()); tlgWire(); box.innerHTML = '<div class=tlhd><i>' + (typeof tlEmptyMsg === 'function' ? tlEmptyMsg(d, rows) : esc(TV({msg: 'No subagents ran in the last {n}h', vars: {n: d.hours}}))) + '</i></div>' + tlNext; return void tlWireCtl(apFo); }
   const {t0, t1, span, pct} = tlRange(d, rows);
   const {ticks, axis} = tlAxis(d, t0, t1, span, pct);
   const drawn = tlDrawn(rows, pct);
@@ -160,10 +160,10 @@ function paintTl(){
   const L = {pct, t0, idleb, ticks, napb};
   const bars = ordered.map((g, gi) => tlRow(g, gi, L)).join('');
   const tlHead = tlHeadHtml(d, rows, tlHidden, tlPlLegendFor(ordered, L));
-  tbSet('time', tlCtlHtml() + tlgBtnHtml());
-  const tlgFo = tlgFocusId();   // ⚠rebuilding the rail drops a focused select to <body>; refocused by id below
+  const tlgFo = tlgFocusId();   // ⚠rebuilding the toolbar drops a focused chip control to <body>; refocused by id below
+  tbSet('time', tlCtlHtml() + tlgChipHtml());
   const sc0 = box.querySelector('.tlscr'), scTop = sc0 ? sc0.scrollTop : 0;   // ⚠the rows scroller is rebuilt every repaint — keep its position
-  box.innerHTML = tlgWrap(tlHead
+  box.innerHTML = tlHead
     // ★No bands on the axis row (2026-09-18: mark spans only on bar rows, leave the time band alone
     // · it hurt visibility). Before, bands were laid in four places incl. the axis row and top graph row, and hatching covered
     // the screen. ⚠The axis row label («asleep N min») was removed at the same time — the bar-row band tooltip carries the explanation
@@ -180,7 +180,7 @@ function paintTl(){
       + T('Below is a <b>summary</b> of this window; click a bar to open its work log in a new window.') + ' '
       + T('Hover <b>outside</b> the bars for a snapshot of that moment; <b>click to pin</b> it.') + ' '
       + T('Press <b>▶</b> and the cursor walks by itself (replay).') + '</div>'
-      + '<div id=tldrw></div>'));
+      + '<div id=tldrw></div>');
   const sc1 = box.querySelector('.tlscr'); if(sc1 && scTop) sc1.scrollTop = scTop;
   tlWireCtl(apFo);
   tlgWire();

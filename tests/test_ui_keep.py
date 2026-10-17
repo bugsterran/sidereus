@@ -31,13 +31,12 @@ class UiKeepJs(unittest.TestCase):
 
 
 class TlgKeepJs(unittest.TestCase):
-    """Timeline rail pick: restored shape-checked; a pick that is gone falls back to auto once sessions load."""
-    PRE = ("let tlgSel = '', tlgRepoSel = {key: '', repo: ''}, tlgMode = 'auto';\n"
-           "const TLG_MODES = [['head'], ['start'], ['remote']];\n"
-           "const cpKey = x => x.sid ? 's:' + x.sid : 'c:' + x.cwd; const tlgRepos = c => [c];\n")
+    """Timeline chip session pick: restored shape-checked; a pick that is gone falls back to auto once sessions load."""
+    PRE = ("let tlgSel = '';\n"
+           "const cpKey = x => x.sid ? 's:' + x.sid : 'c:' + x.cwd;\n")
 
     def run_js(self, saved, sess, tail="console.log(JSON.stringify(tlgKeepSnap()));"):
-        fns = ("uiKeepOk", "tlgKeepApply", "tlgKeepSnap", "tlgAge", "tlgName", "tlgSessions", "tlgRepoOrder", "tlgTarget")
+        fns = ("uiKeepOk", "tlgKeepApply", "tlgKeepSnap", "tlgAge", "tlgName", "tlgSessions", "tlgTarget")
         src = self.PRE + "let SESS = " + json.dumps(sess) + ";\n" + "\n".join(js_fn(f) for f in fns) \
             + "\ntlgKeepApply(" + json.dumps(saved) + ");\ntlgTarget();\n" + tail
         return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
@@ -47,12 +46,15 @@ class TlgKeepJs(unittest.TestCase):
          {"sid": "c", "cwd": "/r/c", "project": "c"}]
 
     def test_round_trip(self):
-        s = {"sel": "s:a", "rkey": "s:a", "repo": "/r/a", "mode": "start"}
-        self.assertEqual(self.run_js(s, self.S), s)
+        self.assertEqual(self.run_js({"sel": "s:a"}, self.S), {"sel": "s:a"})
+
+    def test_old_rail_keys_ignored(self):
+        # rkey/repo/mode came from the removed rail; the snapshot is the session pick only.
+        got = self.run_js({"sel": "s:a", "rkey": "s:a", "repo": "/r/a", "mode": "start"}, self.S)
+        self.assertEqual(got, {"sel": "s:a"})
 
     def test_missing_pick_falls_back(self):
-        got = self.run_js({"sel": "s:gone", "rkey": "x", "repo": "rel", "mode": "evil"}, self.S)
-        self.assertEqual((got["sel"], got["mode"]), ("", "auto"))
+        self.assertEqual(self.run_js({"sel": "s:gone"}, self.S), {"sel": ""})
 
     def test_pick_survives_empty_sessions(self):
         self.assertEqual(self.run_js({"sel": "s:gone"}, [])["sel"], "s:gone")
@@ -60,8 +62,6 @@ class TlgKeepJs(unittest.TestCase):
     def test_newest_first(self):
         order = self.run_js(None, self.S, "console.log(JSON.stringify(tlgSessions().map(x => x.sid)));")
         self.assertEqual(order, ["b", "a", "c"])
-        rp = self.run_js(None, self.S, "console.log(JSON.stringify(tlgRepoOrder(['/r/c', '/r/a', '/r/b'])));")
-        self.assertEqual(rp, ["/r/b", "/r/a", "/r/c"])
 
 
 if __name__ == "__main__":

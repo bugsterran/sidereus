@@ -92,15 +92,24 @@ function diffShow(){
   const noUp = diffData && diffData.ok && diffData.hasUp === false;
   // Real buttons; without an upstream «All»/«Commits only» are disabled and the tooltip says why.
   // ⚠No upstream: the body is the worktree diff, so «Uncommitted» is the active one (not the disabled «All»).
-  const scOn = noUp && (diffScope === 'all' || diffScope === 'commit') ? 'work' : diffScope;
+  const scOn = dfBaseK ? '' : (noUp && (diffScope === 'all' || diffScope === 'commit') ? 'work' : diffScope);
+  // Baselines the removed timeline rail offered; «Since session start» needs the session id (&sid from the Timeline chip).
+  const BS = [['start', 'Since session start', 'Every change since this session started — commits + uncommitted'],
+              ['remote', 'vs main / master', 'Everything since this branch left main / master — commits + uncommitted']];
+  const bsb = BS.map(([k, l, tip]) => { const off = k === 'start' && !dfSid;
+      return '<button type=button class="dscb' + (dfBaseK === k ? ' on' : '') + (off ? ' dim' : '') + '" data-dbase="' + k + '"' + (off ? ' disabled' : '')
+      + ' title="' + esc(off ? T('Session unknown — open this window from the Timeline «Changes» chip') : T(tip)) + '">' + esc(T(l, 'diff')) + '</button>'; }).join('');
+  // Untracked files only exist against the working tree: «Uncommitted» or a b: baseline (server gates `untr` the same way).
+  const unOk = diffScope === 'work' || String(diffScope).indexOf('b:') === 0 || (noUp && (diffScope === 'all' || diffScope === 'commit'));
+  const unb = unOk ? '<label class=dsun><input type=checkbox id=dfun' + (dfUntr ? ' checked' : '') + '> ' + esc(T('Include untracked files')) + '</label>' : '';
   const scb = '<div class=dsc>' + SC.map(([k,l]) => { const off = noUp && k!=='work';
       return '<button type=button class="dscb'+(scOn===k?' on':'')+(off?' dim':'')+'" data-scope="'+k+'"'+(off?' disabled':'')+' title="'
       + esc((off ? T('No upstream — only uncommitted changes can be shown') + '\n' : '') + T(k==='all' ? 'Everything not on the remote yet — commits + uncommitted'
           : (k==='commit' ? 'Only what is committed but not pushed' : 'Only what is not committed yet')))
-      + '">'+esc(T(l))+'</button>'; }).join('')
+      + '">'+esc(T(l))+'</button>'; }).join('') + bsb + unb
     + (noUp ? '<span class=dsn>'+T('No upstream — only uncommitted changes can be shown')+'</span>' : '')
     + (onCommit ? '<span class=dsn>'+T('Viewing one commit — click a tab above to go back')+'</span>' : '')
-    + (String(diffScope).indexOf('b:') === 0 ? '<span class=dsn>'+esc(TV({msg: 'Since the rail baseline {n} — pick a scope above to go back', vars: {n: String(diffScope).slice(2, 9)}}))+'</span>' : '') + '</div>';
+    + (String(diffScope).indexOf('b:') === 0 && !dfBaseK ? '<span class=dsn>'+esc(TV({msg: 'Since {n} — pick a scope above to go back', vars: {n: String(diffScope).slice(2, 9)}}))+'</span>' : '') + '</div>';
   document.getElementById('dbody').innerHTML = tabs + scb + diffBody(diffData);
   rvnPaint();   // review popup (&rvsid): line comments are re-inserted after every full re-render
 }
@@ -112,7 +121,7 @@ function loadRepo(repo){
   if(dfWant) dfNew = [repo, dfWant];   // keep the rail's file through later reloads of the same repo
   const nw = (dfNew && dfNew[0] === repo && (diffScope === 'work' || String(diffScope).indexOf('b:') === 0)) ? '&new=' + encodeURIComponent(dfNew[1]) : '';
   getJSON('/api/git/diff?cwd='+encodeURIComponent(repo)+'&scope='+encodeURIComponent(diffScope)
-        +'&pw='+encodeURIComponent(dfPW) + nw)
+        +'&pw='+encodeURIComponent(dfPW) + nw + (dfUntr && String(diffScope).indexOf('c:') !== 0 ? '&untr=1' : ''))
     // ★Rendering is moved **outside catch** (measured 2026-09-04). `.then(...).catch(...)` also catches exceptions thrown
     //   inside then, so what diffShow() threw was disguised as «Could not fetch — check the server»
     //   and looked **like a network problem** (the real cause was agLang being undefined).
@@ -122,8 +131,26 @@ function loadRepo(repo){
     .then(() => { if(diffRepo===repo) diffShow(); });
 }
 let dfWant = '';   // popup `file` param: pick this path once the first diff arrives (timeline git rail)
-let dfNew = null;  // [repo, path]: the rail file sent as `new=` so an untracked one appears as an all-added patch
-function loadDiff(cwd, file, scope, rvsid){   // rvsid: opened from the review drawer → line-comment gutter (88e)
+let dfNew = null;  // [repo, path]: the opened file sent as `new=` so an untracked one appears as an all-added patch
+let dfSid = '';    // popup `sid` param (Timeline chip): the session whose start «Since session start» measures from
+let dfBaseK = '';  // 'start' | 'remote' while a baseline button set diffScope; '' after any other scope pick
+let dfUntr = lsGet('sidereus.dfUntr', '') === '1';   // diff window «Include untracked files» pref
+// «Since session start» / «vs main / master»: ask the rail endpoint for that baseline once, then load scope b:<sha>.
+// ⚠No base back (no session start, no remote) = the uncommitted view, never a silent «All».
+function dfBaseGo(k){
+  const repo = diffRepo;
+  if(!repo) return;
+  getJSON('/api/git/diff?view=rail&cwd=' + encodeURIComponent(repo) + '&base=' + k + (dfSid ? '&sid=' + encodeURIComponent(dfSid) : ''))
+    .then(j => {
+      if(diffRepo !== repo) return;
+      if(!j || !j.ok){ diffData = {ok: false, msg: (j && j.msg) || 'Could not fetch — check the server', vars: j && j.vars}; diffShow(); return; }
+      dfBaseK = k; diffScope = /^[0-9a-f]{4,40}$/i.test(j.base || '') ? 'b:' + j.base : 'work';
+      diffPick = -1; dfShut.clear();
+      loadRepo(repo);
+    }, () => { if(diffRepo === repo){ diffData = {ok: false, msg: T('Could not fetch — check the server')}; diffShow(); } });
+}
+// rvsid: opened from the review drawer → line-comment gutter (88e) · sid: the Timeline chip's session (dfSid in the popup).
+function loadDiff(cwd, file, scope, rvsid, sid){
   // ★Opens **a separate browser window** (not an
   //   in-page popup). Window size, moving, sending to another monitor, opening several are
   //   handled by the OS. The window name is the cwd, so clicking the same session badge again brings
@@ -135,17 +162,19 @@ function loadDiff(cwd, file, scope, rvsid){   // rvsid: opened from the review d
     loadRepo((rp && rp.length) ? rp[0] : cwd);
     return;
   }
-  const url = '/diff?cwd=' + encodeURIComponent(cwd) + (file ? '&scope=' + encodeURIComponent(scope || 'work') + '&file=' + encodeURIComponent(file) : '')
-    + (rvsid ? '&rvsid=' + encodeURIComponent(rvsid) : '');
+  const url = '/diff?cwd=' + encodeURIComponent(cwd) + (file || scope ? '&scope=' + encodeURIComponent(scope || 'work') : '')
+    + (file ? '&file=' + encodeURIComponent(file) : '') + (rvsid ? '&rvsid=' + encodeURIComponent(rvsid) : '')
+    + (sid ? '&sid=' + encodeURIComponent(sid) : '');
   const nm = 'sidereus_diff_' + cwd.replace(/[^A-Za-z0-9]/g, '_');
-  if(file && POPS[nm]) try{ if(!POPS[nm].closed) POPS[nm].location.href = url; }catch(e){}   // popOpen only focuses an open window
+  if((file || scope) && POPS[nm]) try{ if(!POPS[nm].closed) POPS[nm].location.href = url; }catch(e){}   // popOpen only focuses an open window
   popOpen(url, nm, 1700, 1100);
 }
 // diff operations — meaningful only inside the popup window (the main view has no diff)
 document.addEventListener('click', e => {
   if(e.target.closest && e.target.closest('#dx')){ diffClose(); return; }
   const tb = e.target.closest && e.target.closest('.dtb[data-repo]');
-  if(tb){ loadRepo(tb.getAttribute('data-repo')); return; }
+  // ⚠A baseline sha belongs to one repo: with a baseline button on, ask the new repo for its own baseline.
+  if(tb){ const r = tb.getAttribute('data-repo'); if(dfBaseK){ diffRepo = r; diffData = null; diffShow(); dfBaseGo(dfBaseK); } else loadRepo(r); return; }
   if(e.target.closest && e.target.closest('.dwfull')){ toggleFull(); return; }
   if(e.target.closest && e.target.closest('.dwsbs')){ sbsOn = !sbsOn; diffShow(); return; }
   const nvb = e.target.closest && e.target.closest('[data-dnav]');
@@ -171,19 +200,27 @@ document.addEventListener('click', e => {
     diffShow(); return;
   }
   const sc = e.target.closest && e.target.closest('.dscb[data-scope]:not([disabled])');
-  if(sc){ diffScope = sc.getAttribute('data-scope'); if(diffRepo) loadRepo(diffRepo); return; }
+  if(sc){ diffScope = sc.getAttribute('data-scope'); dfBaseK = ''; if(diffRepo) loadRepo(diffRepo); return; }
+  const bb = e.target.closest && e.target.closest('.dscb[data-dbase]:not([disabled])');
+  if(bb){ dfBaseGo(bb.getAttribute('data-dbase') === 'start' ? 'start' : 'remote'); return; }
   const cm = e.target.closest && e.target.closest('.dcm[data-sha]');
   if(cm){
     const sha = cm.getAttribute('data-sha');
     // clicking the same commit again clears it — back to the full scope
     diffScope = (diffScope === 'c:' + sha) ? 'all' : ('c:' + sha);
-    diffPick = -1; dfShut.clear();
+    diffPick = -1; dfShut.clear(); dfBaseK = '';
     if(diffRepo) loadRepo(diffRepo);
     return;
   }
   const fi = e.target.closest && e.target.closest('.dfi[data-fi]');
   if(fi){ diffPick = parseInt(fi.getAttribute('data-fi'), 10); fullOn = false; diffShow(); return; }
   // ★'click outside = close' was removed — a floating window exists so you can use what is outside it.
+});
+document.addEventListener('change', e => {
+  if(!e.target || e.target.id !== 'dfun') return;
+  dfUntr = !!e.target.checked;
+  lsSet('sidereus.dfUntr', dfUntr ? '1' : '0');
+  if(diffRepo) loadRepo(diffRepo);
 });
 document.addEventListener('keydown', e => {
   // in the popup, Esc closes that window. The main view has no diff anymore.

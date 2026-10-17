@@ -281,7 +281,6 @@
 "test_tl_rove_js": 0.09,
 "test_tl_runonly_js": 0.08,
 "test_tl_warm": 0.13,
-"test_tlgit_tree": 0.34,
 "test_tlgit_untracked": 0.24,
 "test_toast_cap_js": 0.10,
 "test_token_colors_js": 0.17,

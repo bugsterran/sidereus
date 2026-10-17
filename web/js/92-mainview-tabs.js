@@ -180,7 +180,7 @@ function setMainView(v){
   if(mainView === 'time'){
     agView = 'modal';
     buildMv(); paintTl(); mvScrollBack(); loadTl(true);
-    tlgTick();   // ⚠the Changes rail fetches only from tlgTick; waiting for poll() left it on «Loading…» after a tab switch
+    tlgTick();   // ⚠the «Changes» chip fetches only from tlgTick; waiting for poll() left it without numbers after a tab switch
     return;
   }
   if(mainView === 'token'){

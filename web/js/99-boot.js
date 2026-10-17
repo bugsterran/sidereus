@@ -5,11 +5,13 @@ feed.addEventListener('scroll',()=>{ if(atBottom()){ pending=0; jump.style.displ
 if(ISPOP){
   document.body.classList.add('dpop');
   document.getElementById('dbody').innerHTML = '<div class=t>' + T('Loading…') + '</div>';
-  { const dq = new URLSearchParams(location.search);   // timeline git rail: open at one file, or at one commit
+  { const dq = new URLSearchParams(location.search);   // open at one file, one commit or a baseline
     if(dq.get('file')) dfWant = dq.get('file');
-    // b:<sha> = the rail's baseline · c:<sha> = one commit (rail commit row click); the server re-validates both.
+    // b:<sha> = a baseline (Timeline chip) · c:<sha> = one commit; the server re-validates both.
     const sc = dq.get('scope') || '';
-    if(sc === 'work' || /^[bc]:[0-9a-f]{4,40}$/i.test(sc)) diffScope = sc; }
+    if(sc === 'work' || /^[bc]:[0-9a-f]{4,40}$/i.test(sc)) diffScope = sc;
+    const sd = dq.get('sid') || '';   // Timeline chip session: id shape only, the server resolves it
+    if(/^[0-9a-f][0-9a-f-]{7,63}$/i.test(sd)) dfSid = sd; }
   Promise.resolve(poll(true)).then(() => loadDiff(DPOP_CWD), () => loadDiff(DPOP_CWD));
   setInterval(poll, 15000);
 } else if(ISWP){
