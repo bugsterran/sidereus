@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Settings › «Diagnostics» › «Security tools»: gitleaks, semgrep, bandit, osv-scanner and npm — installed or not, version, what each catches, and this OS's install command with «Copy» (clipboard only; nothing is run or installed). Same list as the new SECURITY.md table.
+
 ### Changed
 
 - `--demo` opens on Pipelines; the real viewer still opens on Timeline unless a saved preference says otherwise.

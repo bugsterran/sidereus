@@ -40,6 +40,18 @@
 
 설정은 `config.local.json` 에 넣는다([docs/CONFIG.ko.md](docs/CONFIG.ko.md)). 넣은 뒤 뷰어를 재시작한다.
 
+## 보안 도구
+
+`scripts/arch_checks.py --category security` 는 설치된 스캐너를 쓴다. 설정 > 진단 > «보안 도구» 는 `PATH` 에서 찾은 도구와 설치 파일에서 읽은 버전을 보여 준다. Sidereus 는 이 도구들을 실행하거나 설치하지 않는다. «복사» 는 명령을 클립보드에 넣기만 한다.
+
+| 도구 | 잡는 것 | 설치 (macOS · Windows) | 네트워크 필요? |
+|---|---|---|---|
+| `gitleaks` | 저장소에 커밋된 비밀값 (API 키·토큰·비밀번호) | `brew install gitleaks` · `winget install Gitleaks.Gitleaks` | 아니오 |
+| `semgrep` | 여러 언어의 위험한 코드 패턴 (인젝션·안전하지 않은 호출 등) | `brew install semgrep` · `pip install semgrep` | 레지스트리 규칙만 (로컬 `.semgrep.yml` 이 없을 때) |
+| `bandit` | Python 코드의 흔한 보안 문제 | `brew install bandit` · `pip install bandit` | 아니오 |
+| `osv-scanner` | 락파일로 읽은 의존성의 알려진 취약점 | `brew install osv-scanner` · `winget install Google.OSVScanner` | 예 |
+| `npm` | npm 패키지의 알려진 취약점 (npm audit) | `brew install node` · `winget install OpenJS.NodeJS.LTS` | 예 |
+
 ## 문제 알리기
 
 공개 이슈가 아니라 GitHub 의 비공개 취약점 신고(저장소 Security 탭 → «Report a vulnerability»)로 알려 주기 바란다. 실행한 것, 본 것, 시험한 커밋을 적는다.

@@ -28,6 +28,7 @@ from sidereus.pipeline_projects import browse_dirs as pipeline_dirs
 from sidereus.pl_eval_view import pl_eval as pipeline_eval
 from sidereus.harness_plat import harness_evidence_only, harness_plat, harness_plat_file
 from sidereus.hook_diag import diag as hook_diag
+from sidereus.sec_tools import tools as sec_tools
 from sidereus.burn import WK_DAYS, _WK_RANGES, _live_buckets, _wk_slot, _wkuse_busy, burn_use, quota_burn, quota_burn_acct, quota_burn_peek, wk_stale, wkuse, wkuse_refresh
 from sidereus.claude_roots import accounts as claude_accounts
 from sidereus.saver_cap import cap as saver_cap
@@ -397,6 +398,14 @@ class _GetRoutes(_StructRoutes):
             code, out = 500, {"ok": False, **_exc_msg(e)}
         self._raw_json(code, out)
 
+    def _g_sec_tools(self, u):
+        # Settings › «Diagnostics» › «Security tools»: installed + version from PATH/file layout only, nothing run (sidereus/sec_tools.py)
+        try:
+            code, out = 200, {"ok": True, "tools": sec_tools()}
+        except Exception as e:
+            code, out = 500, {"ok": False, **_exc_msg(e)}
+        self._raw_json(code, out)
+
     def _g_harness_file(self, u):
         # One card's config/script text on click, by opaque ref (path re-derived and root-checked in sidereus/harness.py)
         q = parse_qs(u.query)
@@ -601,7 +610,7 @@ class _GetRoutes(_StructRoutes):
         "/api/sessions/recent": _g_sessions_recent, "/api/prefs": _g_prefs, "/api/ui-prefs.js": _g_ui_prefs,
         "/api/session/context": _g_session_context,
         "/api/tools": _g_tools, "/api/tools/file": _g_tools_file,
-        "/api/pipelines": _g_pipelines, "/api/pipelines/projects/dirs": _g_pipeline_dirs, "/api/pipelines/eval": _g_pipeline_eval, "/api/harness": _g_harness, "/api/harness/file": _g_harness_file, "/api/harness/evidence": _g_harness_evidence, "/api/diag": _g_diag,
+        "/api/pipelines": _g_pipelines, "/api/pipelines/projects/dirs": _g_pipeline_dirs, "/api/pipelines/eval": _g_pipeline_eval, "/api/harness": _g_harness, "/api/harness/file": _g_harness_file, "/api/harness/evidence": _g_harness_evidence, "/api/diag": _g_diag, "/api/sec-tools": _g_sec_tools,
         "/api/agents/timeline": _g_timeline, "/api/failures": _g_failures, "/api/wreckage": _g_failures,
         "/api/session/work": _g_session_work, "/api/ext/work": _g_ext_work, "/api/git/file": _g_git_file, "/api/git/diff": _g_git_diff,
         "/api/cards": _g_cards, "/api/messages": _g_messages, "/api/state": _g_state, "/api/v1/state": _g_state_v1, "/api/hookstate": _g_hookstate,

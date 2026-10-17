@@ -133,7 +133,7 @@ repos of sessions on this machine (the same allow list as diffs).
 | Status bar | Will I run out before the reset? 5-hour and 7-day usage and the projected headroom at the reset. Click it for each account's limits, and open sessions, and to switch the main account. |
 | Sessions drawer | Which sessions are live, and is each running, thinking, waiting for me, done or stopped? |
 | Bell | What failed and what to do about it. Optional OS notification, off by default. |
-| Timeline | What each session and subagent did, and when. The Changes rail lists every file changed against a base, with owner, edit count and a conflict chip. |
+| Timeline | What each session and subagent did, and when. A «Changes» chip counts the files changed against a base («⚠ shared» when two sessions touched one) and opens the diff. |
 | Chat | Mailbox rooms and DMs between sessions. You can post too. |
 | Tokens | Tokens and cost by model, project and platform; the five priciest subagent runs. |
 | Pipelines | Each project's declared stages with agent and model, the run in progress, and per-stage evidence: gate PASS/FAIL, tests, commit, loop-backs. A run request goes to a session through the mailbox. |
@@ -144,9 +144,9 @@ repos of sessions on this machine (the same allow list as diffs).
 
 ![Pipelines: a change-flow run on the stage canvas — Design done, Implement done with gate PASS, test count and commit after one loop-back from Review, Verify running, the stage catalog and stage editor below the canvas](docs/images/pipeline-run-en.png)
 
-| **Timeline + Changes**: what each subagent ran, next to the files changed vs the branch's remote | **Structure**: the architecture diagram; pick a flow to light its path from the entry point, each edge with its evidence |
+| **Timeline**: what each subagent ran, with the «Changes» chip in the toolbar | **Structure**: the architecture diagram; pick a flow to light its path from the entry point, each edge with its evidence |
 |---|---|
-| ![Subagent timeline beside the Changes panel with ahead/behind badges and per-file line counts](docs/images/timeline-en.png) | ![Architecture diagram with the «Get an order» flow lit from its HTTP entry through web and order to PostgreSQL, the flow list on the right and a minimap](docs/images/structure-arch-en.png) |
+| ![Full-width subagent timeline with the «Changes · N files» chip in the toolbar](docs/images/timeline-en.png) | ![Architecture diagram with the «Get an order» flow lit from its HTTP entry through web and order to PostgreSQL, the flow list on the right and a minimap](docs/images/structure-arch-en.png) |
 | **Branches**: which session made each commit; worktrees with conflict risk | **Tokens**: weekly use per project, today's costliest runs, per-platform totals |
 | ![Commit graph with session chips per commit and worktree rows with conflict risk and uncommitted counts](docs/images/branches-en.png) | ![Weekly token donut by project, today's split, top costly runs and per-platform table](docs/images/tokens-en.png) |
 
