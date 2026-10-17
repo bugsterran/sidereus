@@ -95,6 +95,8 @@ MCP 서버는 `python3` 를, `SIDEREUS_PYTHON` 이 있으면 그것을 부른다
 /plugin install sidereus@sidereus
 ```
 
+`git pull` 뒤 업데이트: `claude plugin marketplace update sidereus` → `claude plugin update sidereus@sidereus` → Claude Code 재시작. Claude Code 는 플러그인 버전별로 사본을 캐시하므로 `plugin/.claude-plugin/plugin.json` 의 `version` 이 바뀌어야 업데이트가 들어온다.
+
 제거: `claude plugin uninstall sidereus@sidereus` 다음 `claude plugin marketplace remove sidereus`.
 
 **수동.** 명령에 맡긴다(Windows: `py -m sidereus setup-claude --write`).

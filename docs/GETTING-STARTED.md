@@ -96,6 +96,8 @@ run `setx SIDEREUS_PYTHON py` once and restart Claude Code (the hooks use the sa
 /plugin install sidereus@sidereus
 ```
 
+Update after `git pull`: `claude plugin marketplace update sidereus`, then `claude plugin update sidereus@sidereus`, then restart Claude Code. Claude Code keeps a cached copy per plugin version, so an update only arrives when `version` in `plugin/.claude-plugin/plugin.json` changed.
+
 Uninstall: `claude plugin uninstall sidereus@sidereus`, then `claude plugin marketplace remove sidereus`.
 
 **Manual.** Let it do the work (Windows: `py -m sidereus setup-claude --write`):
