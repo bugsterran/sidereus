@@ -351,12 +351,12 @@ class TlPlRepaint(unittest.TestCase):
         self.assertEqual(out, 1)
 
     def test_plrun_change_repaints_once(self):
-        # Stage outline change between polls repaints; elapsed-only changes and the first sync do not.
+        # The first sync repaints (a Timeline painted before the first poll has no lane yet); elapsed-only changes do not.
         out = _async("const r = SESS[0].plrun[0], seen = []; tlPlSync();"
                      "setTimeout(() => { seen.push(PAINTS); r.t1 = 1600; r.stages['구현'].t1 = 1600; tlPlSync(); }, 100);"
                      "setTimeout(() => { seen.push(PAINTS); r.stages['구현'].o = 'done'; r.stages['검증'] = { o: 'run', t0: 1600, t1: 1600 }; tlPlSync(); tlPlSync(); }, 200);"
                      "setTimeout(() => console.log(JSON.stringify(seen.concat(PAINTS))), 400);", sess=[{"sid": "s1", "plrun": [json.loads(json.dumps(OPEN))]}])
-        self.assertEqual(out, [0, 0, 1])
+        self.assertEqual(out, [1, 1, 2])
 
     def test_sync_wired_into_poll_marker_update(self):
         self.assertIn("tlPlSync()", js_fn("tlSyncState"))

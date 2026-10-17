@@ -44,7 +44,7 @@ function tlgChipInner(tg){
   let body = esc(T('Changes', 'chip'));
   if(d && d.ok){
     const hid = (d.files || []).filter(f => f.new), sum = k => hid.reduce((s, f) => s + (f[k] || 0), 0);
-    body += esc(' · ' + TV({msg: '{n} files', vars: {n: tlgShownN(d)}}) + ' ') + tlgNum(Math.max(0, (d.add || 0) - sum('add')), Math.max(0, (d.del || 0) - sum('del')));
+    body += esc(' · ' + TV({msg: tlgShownN(d) === 1 ? '{n} file' : '{n} files', vars: {n: tlgShownN(d)}}) + ' ') + tlgNum(Math.max(0, (d.add || 0) - sum('add')), Math.max(0, (d.del || 0) - sum('del')));
     const sh = tlgShared(d);
     if(sh.length) body += '<span class=tlgsh title="' + esc(T('Also edited by another live session within 30 min:') + '\n' + sh.join('\n')) + '">'
       + esc(' · ⚠ ' + TV({msg: '{n} shared', vars: {n: sh.length}})) + '</span>';

@@ -113,7 +113,7 @@ Object.assign(I18N.ko, {
   '{s} sessions · {a} subagents · {t} tool calls': '세션 {s}개 · 서브에이전트 {a}건 · 도구 {t}건',
   'Evidence': '증거', 'Waited on you': '나를 기다림', 'Less': '접기', 'per commit': '커밋당',
   '{n} pipeline runs': '파이프라인 실행 {n}회', '{n} gate runs': '게이트 실행 {n}회', 'no gate runs': '게이트 실행 없음',
-  'last failure': '마지막 실패', '{n} prompts': '프롬프트 {n}회',
+  'last failure': '마지막 실패', '{n} prompts': '프롬프트 {n}회', '{n} prompt': '프롬프트 {n}회',
   '{n} at 3×+ the median duration {d}': '기간 중앙값 {d}의 3배 이상 {n}건',
   '{n} cut off without a report': '보고 없이 끊김 {n}건',
   'Last commit': '직전 커밋',

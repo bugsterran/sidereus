@@ -29,6 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: the canvas height is fitted so the stage edit panel is visible without scrolling at 1440x900.
 - Pipelines: the stage-name placeholder is no longer clipped, and the «Agent and model per stage» caption is separated from the title.
 - Timeline: switching from another tab left the Changes panel on «Loading…» until the next poll.
+- Timeline: a Timeline painted before the first poll never showed the account picker or the «Runs n» lane (until the next reload, never in Manual).
+- Counts read «1 file», «1 commit», «1 prompt» instead of the plural.
 
 ## [0.2.1] - 2026-10-17
 

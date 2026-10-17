@@ -158,7 +158,7 @@ function tlSumDraw(host){
   const row = (k, v) => '<u><i>' + T(k) + '</i><b>' + v + '</b></u>';
   const w = tlSumWork(ss, t0, t1);
   // (1) Results — commits and pipeline runs that landed in this window
-  let h = row('Results', TV({msg: '{n} commits', vars: {n: w.c}})
+  let h = row('Results', TV({msg: w.c === 1 ? '{n} commit' : '{n} commits', vars: {n: w.c}})
     + (w.n ? ' · ' + TV({msg: '{n} pipeline runs', vars: {n: w.n}}) + ' <s>✓' + w.ok + ' ✕' + w.bad + (w.lb ? ' ↺' + w.lb : '') + '</s>' : ''));
   // (2) Evidence — gate runs recorded in the window; on FAIL the newest failing run's first failed step
   h += row('Evidence', !w.ev ? T('no gate runs')
@@ -170,7 +170,7 @@ function tlSumDraw(host){
     // (3) Waited on you — server `wt` = [human prompts that came ≥30 s after the previous line, seconds]
     let wn = 0, ws = 0;
     for(const r of ss) if(Array.isArray(r.wt)){ wn += (+r.wt[0] || 0); ws += (+r.wt[1] || 0); }
-    m += row('Waited on you', wn ? TV({msg: '{n} prompts', vars: {n: wn}}) + ' · ' + tlSumDur(ws) : '—');
+    m += row('Waited on you', wn ? TV({msg: wn === 1 ? '{n} prompt' : '{n} prompts', vars: {n: wn}}) + ' · ' + tlSumDur(ws) : '—');
     // (4) Outliers — ⚠measured only with fields **actually present** in the response (start/end · fin).
     // ★End state is not a «status field» in the source — all there is is **the shape of the last record**, so
     // it is called "cut off without report", not "abnormal exit" (server `_agent_ended`, 2026-09-22).
