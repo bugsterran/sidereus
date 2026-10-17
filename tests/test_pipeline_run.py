@@ -14,7 +14,7 @@ def _js(expr, *fns):
     consts = "\n".join(re.search(r"^const %s[^\n]*$" % c, js_all(), re.M).group(0) for c in ("PL_RETRY_RE", "PLG_TITLES", "PL_DESC_RE", "PL_BUILTIN_AG", "PL_OS", "PL_MK"))
     names = re.search(r"^const PLG_NAMES.*?^}, ko: {} };$", js_all(), re.S | re.M).group(0)   # 06-i18n-w.js stage display names
     src = "var LANG = 'ko';\n" + i18n_switch(("T", "TV", "U", "KE")) + consts + "\n" + names + "\n" + "\n".join(js_fn(f) for f in fns + ("plTk", "plgSlots", "plgShow", "plgBase", "plgTplShow", "subWorkId", "plKnown", "plAway", "plTagNames", "plHomes", "plLabType", "plDescStage", "plStrip")) + "\nconsole.log(JSON.stringify(" + expr + "));"
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 def _ag(phase, st, lab, start, end):

@@ -40,7 +40,7 @@ class GeminiSubagent(unittest.TestCase):
         pdir = os.path.join(self.root, ".gemini", "tmp", "proj")
         self.chats = os.path.join(pdir, "chats")
         os.makedirs(os.path.join(self.chats, PAR))
-        with open(os.path.join(pdir, ".project_root"), "w") as f:
+        with open(os.path.join(pdir, ".project_root"), "w", encoding="utf-8") as f:
             f.write("/w/proj")
         self.write("session-2026-10-01T05-52-d6dd36b4.jsonl", PAR, "main",
                    [{"id": "u1", "type": "user", "content": "SECRET prompt", "timestamp": _iso(T0)},
@@ -57,7 +57,7 @@ class GeminiSubagent(unittest.TestCase):
     def write(self, name, sid, kind, lines):
         p = os.path.join(self.chats, name)
         head = {"sessionId": sid, "projectHash": "h", "startTime": _iso(T0), "lastUpdated": _iso(T0), "kind": kind}
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             f.write("".join(json.dumps(o) + "\n" for o in [head] + lines))
         os.utime(p, (T0 + 30, T0 + 30))
 
@@ -103,7 +103,7 @@ class JsBucket(unittest.TestCase):
         js = "\n".join(["let SESS = [];", js_fn("tlLiveOf"), js_fn("tlSessions"),
                         "const r = tlSessions(" + json.dumps([kid, gmh]) + ", 0, 10);"
                         "console.log(JSON.stringify(r.sessOrder.map(v => [v.cwd, v.plat, !!v.head, v.kids.length])));"])
-        p = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        p = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertEqual(json.loads(p.stdout), [["/w/p", "gm", True, 1]])
 

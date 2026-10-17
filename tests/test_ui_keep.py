@@ -14,7 +14,7 @@ class UiKeepJs(unittest.TestCase):
                "function setFilter(k){ filter = (typeof k === 'string' && k) ? k : 'all'; }\n")
         src = pre + "\n".join(js_fn(f) for f in ("uiKeepOk", "uiKeepApply", "uiKeepSnap")) \
             + "\nuiKeepApply(" + json.dumps(saved) + ");\nconsole.log(JSON.stringify(uiKeepSnap()));"
-        return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
     def test_round_trip(self):
         s = {"place": "room:release", "filter": "thread:경고DM·x", "wkr": 30}
@@ -39,7 +39,7 @@ class TlgKeepJs(unittest.TestCase):
         fns = ("uiKeepOk", "tlgKeepApply", "tlgKeepSnap", "tlgAge", "tlgName", "tlgSessions", "tlgTarget")
         src = self.PRE + "let SESS = " + json.dumps(sess) + ";\n" + "\n".join(js_fn(f) for f in fns) \
             + "\ntlgKeepApply(" + json.dumps(saved) + ");\ntlgTarget();\n" + tail
-        return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
     S = [{"sid": "a", "cwd": "/r/a", "project": "a", "ageSec": 90},
          {"sid": "b", "cwd": "/r/b", "project": "b", "ageSec": 5},

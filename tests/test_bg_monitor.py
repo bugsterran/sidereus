@@ -57,7 +57,7 @@ class BgMonitor(unittest.TestCase):
         shutil.rmtree(self.dir, ignore_errors=True)
 
     def add(self, *recs):
-        with open(self.fp, "a") as f:
+        with open(self.fp, "a", encoding="utf-8") as f:
             for r in recs:
                 f.write(json.dumps(r) + "\n")
 
@@ -106,7 +106,7 @@ class BgMonitor(unittest.TestCase):
         # A subagent's foreground Bash moved to the background at its timeout: recorded only in the agent's
         # transcript, closed by the notice in the parent transcript.
         sub = os.path.join(self.dir, "sess", "subagents", "agent-a1.jsonl")
-        with open(sub, "w") as f:
+        with open(sub, "w", encoding="utf-8") as f:
             for r in (_launch("TS1", "Bash", {"command": "load.sh", "description": "Reload files into MySQL"}),
                       _result("TS1", "Command did not complete within its 120s timeout and was moved to the "
                                      "background (ID: bo02ikjet). Output is being written to: /x")):

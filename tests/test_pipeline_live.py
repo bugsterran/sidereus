@@ -15,7 +15,7 @@ def _live(sess, mem=None, known=None, count=False, orph=False, pre=""):
     src = const + "\n" + pre + "\n" + "\n".join(js_fn(f) for f in fns) \
         + "\nconst O = []; const L = plLiveProjs(%s, %s, %s, O); console.log(JSON.stringify([L, plLiveN(L, %s), O]));" % (
             json.dumps(sess), json.dumps(mem or {}), json.dumps(known), json.dumps(known))
-    out = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    out = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
     if orph:
         return out[0], out[2]                                           # [map, orphan tags]
     return out[:2] if known is not None or count else out[0]            # [map, tab count] when asked

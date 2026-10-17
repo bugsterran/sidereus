@@ -67,7 +67,7 @@ class Rail(unittest.TestCase):
         self.assertNotIn("files", d)
 
     def test_untracked(self):
-        with open(os.path.join(self.cwd, "new.txt"), "w") as fh:
+        with open(os.path.join(self.cwd, "new.txt"), "w", encoding="utf-8") as fh:
             fh.write("a\nb\nc")                                 # 3 lines, no trailing newline
         with open(os.path.join(self.cwd, "blob.bin"), "wb") as fh:
             fh.write(b"\x00\x01\x02")
@@ -166,7 +166,7 @@ class RealRepo(unittest.TestCase):
                     + list(a), check=True, capture_output=True)
 
     def put(self, p, b):
-        with open(os.path.join(self.d, p), "w") as fh:
+        with open(os.path.join(self.d, p), "w", encoding="utf-8") as fh:
             fh.write(b)
 
     def test_not_a_repo(self):
@@ -206,7 +206,7 @@ class ReadSmall(unittest.TestCase):
         f = os.path.join(self.d, "pipe")
         os.mkfifo(f)
         self.assertIsNone(gv._read_small(f))                   # returns, does not block on open/read
-        with open(os.path.join(self.d, "real"), "w") as fh:
+        with open(os.path.join(self.d, "real"), "w", encoding="utf-8") as fh:
             fh.write("a\n")
         os.symlink(os.path.join(self.d, "real"), os.path.join(self.d, "ln"))
         self.assertIsNone(gv._read_small(os.path.join(self.d, "ln")))
@@ -215,7 +215,7 @@ class ReadSmall(unittest.TestCase):
 
     def test_line_count_cache(self):
         p = os.path.join(self.d, "t.txt")
-        with open(p, "w") as fh:
+        with open(p, "w", encoding="utf-8") as fh:
             fh.write("1\n2\n")
         opens = []
         real = os.open
@@ -224,7 +224,7 @@ class ReadSmall(unittest.TestCase):
         self.assertEqual(gr._untracked_rec(self.d, "t.txt")["add"], 2)
         self.assertEqual(gr._untracked_rec(self.d, "t.txt")["add"], 2)
         self.assertEqual(len(opens), 1)                        # second poll served from the cache
-        with open(p, "a") as fh:
+        with open(p, "a", encoding="utf-8") as fh:
             fh.write("3\n4\n5\n")                              # size changes -> re-read
         self.assertEqual(gr._untracked_rec(self.d, "t.txt")["add"], 5)
         self.assertEqual(len(opens), 2)

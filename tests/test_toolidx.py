@@ -346,7 +346,7 @@ class ToolIdxDiskTest(unittest.TestCase):
         self.assertEqual(got["skill:ship"], 2)
 
     def test_malformed_cache_rescans(self):
-        with open(ti.TI_CACHE, "w") as f:
+        with open(ti.TI_CACHE, "w", encoding="utf-8") as f:
             f.write("{not json")
         warned, real = [], ti.warn_once
         ti.warn_once = lambda k, *a, **kw: warned.append(k)   # capture: the warning is expected, keep stderr clean
@@ -359,7 +359,7 @@ class ToolIdxDiskTest(unittest.TestCase):
         self.assertEqual(warned, ["toolidx-cache"])
 
     def test_bad_typed_entry_dropped(self):
-        with open(ti.TI_CACHE) as f:
+        with open(ti.TI_CACHE, encoding="utf-8") as f:
             lines = f.read().splitlines()
         p = os.path.join(self.tmp, "-proj", "s1.jsonl")
         for i, ln in enumerate(lines[1:], 1):
@@ -368,7 +368,7 @@ class ToolIdxDiskTest(unittest.TestCase):
                 row[3]["mcp:docs"][1][0] = "not-a-number"
                 row[4]["mcp:x"] = "bad"
                 lines[i] = json.dumps(row)
-        with open(ti.TI_CACHE, "w") as f:
+        with open(ti.TI_CACHE, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
         warned, real = [], ti.warn_once
         ti.warn_once = lambda k, *a, **kw: warned.append(k)
@@ -397,7 +397,7 @@ class ToolIdxDiskTest(unittest.TestCase):
 
     def test_old_version_discarded_silently(self):
         p = os.path.join(self.tmp, "-proj", "s1.jsonl")
-        with open(ti.TI_CACHE, "w") as f:            # v3 shape: one JSON object, per-event [key, ts] lists
+        with open(ti.TI_CACHE, "w", encoding="utf-8") as f:            # v3 shape: one JSON object, per-event [key, ts] lists
             json.dump({"v": 3, "files": {p: {"sz": 1, "off": 1, "ev": {"t#x": ["tool:Old", NOW]}, "fail": {}, "conn": {}}}}, f)
         warned, real = [], ti.warn_once
         ti.warn_once = lambda k, *a, **kw: warned.append(k)

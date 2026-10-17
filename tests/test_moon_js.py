@@ -26,7 +26,7 @@ def _src():
 class MoonJs(unittest.TestCase):
     def js(self, expr):
         src = STUBS + _src() + "\nprocess.stdout.write(JSON.stringify(" + expr + "));"
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         return json.loads(r.stdout)

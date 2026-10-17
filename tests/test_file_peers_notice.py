@@ -84,12 +84,12 @@ class FilePeersNotice(unittest.TestCase):
                          "Sidereus: 44444444 (other) 1 min ago edited this file (uncommitted) — check before overwriting.")
 
     def test_state_pruned(self):
-        with open(fpn.STATE, "w") as f:
+        with open(fpn.STATE, "w", encoding="utf-8") as f:
             json.dump({"old|x|y": 1.0, "bad": "z"}, f)
         self.file(ed("22222222"), unc=False)
         line = fpn.decide(self.inp(), now=1.0 + fpn.PRUNE_S)
         self.assertNotIn("uncommitted", line)
-        with open(fpn.STATE) as f:
+        with open(fpn.STATE, encoding="utf-8") as f:
             self.assertEqual(list(json.load(f)), ["%s|%s|22222222" % (ME, FILE)])
 
     def test_main_emits_pretooluse_json_never_deny(self):

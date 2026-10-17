@@ -113,14 +113,14 @@ class RunnerTest(Tmp):
         self.assertEqual(self.main("--verify", "--last", "--category", "security")[0], 0)
         self.assertFalse(os.path.exists(os.path.join(os.path.dirname(self.fp()), "checks.json")))
         j["items"][0]["msg"] = "leak"
-        with open(self.fp(), "w") as f:
+        with open(self.fp(), "w", encoding="utf-8") as f:
             json.dump(j, f)
         self.assertEqual(self.main("--verify", "--last", "--category", "security")[0], 1)
 
     def rewrite(self, tools):
         j = AV.read_json(self.fp())
         j["tools"] = tools
-        with open(self.fp(), "w") as f:
+        with open(self.fp(), "w", encoding="utf-8") as f:
             json.dump(j, f)
 
     def test_verify_empty(self):
@@ -174,7 +174,7 @@ class LoadTest(Tmp):
                        {"id": "nope", "rules": "x", "status": "ok", "ms": 0, "n": {}}],
              "files": files, "items": items}
         j.update(kw)
-        with open(os.path.join(d, name or SC.SEC_FILE), "w") as f:
+        with open(os.path.join(d, name or SC.SEC_FILE), "w", encoding="utf-8") as f:
             json.dump(j, f)
 
     def test_none_without_security(self):
@@ -183,7 +183,7 @@ class LoadTest(Tmp):
         self.assertIsNone(AC.load_checks(self.repo, self.mdir, self.m, C1))
 
     def test_aggregate_and_sanitise(self):
-        with open(os.path.join(self.mdir, "plan.json"), "w") as f:
+        with open(os.path.join(self.mdir, "plan.json"), "w", encoding="utf-8") as f:
             json.dump({"modules": [{"id": "core", "globs": ["lib/*"]}]}, f)
         files = {"web/a.py": {"error": 1, "warning": 0}, "lib/b.py": {"error": 0, "warning": 2},
                  "tools/c.py": {"error": 0, "warning": 1}, "../x.py": {"error": 9, "warning": 9}}

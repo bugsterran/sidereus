@@ -244,8 +244,8 @@ def prompt(reg, live, cwd, ask_in, ask_out):
     own = ask_in is None
     if own:
         try:
-            ask_in = open("/dev/tty")
-            ask_out = open("/dev/tty", "w")
+            ask_in = open("/dev/tty", encoding="utf-8")
+            ask_out = open("/dev/tty", "w", encoding="utf-8")
         except (IOError, OSError):
             return None
     try:

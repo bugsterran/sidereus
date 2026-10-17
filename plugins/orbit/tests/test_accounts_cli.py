@@ -37,7 +37,7 @@ class AccountsTest(unittest.TestCase):
         self.addCleanup(p.stop)
         self.addCleanup(shutil.rmtree, self.tmp, True)
         self.launcher = os.path.join(self.tmp, "launcher.sh")
-        with open(self.launcher, "w") as f:
+        with open(self.launcher, "w", encoding="utf-8") as f:
             f.write("claude() { :; }\n")
         lp = mock.patch.object(acc, "LAUNCHER", self.launcher)
         lp.start()
@@ -49,11 +49,11 @@ class AccountsTest(unittest.TestCase):
         return rc, out.getvalue(), err.getvalue()
 
     def reg_text(self):
-        with open(os.path.join(self.home, ".claude-accounts")) as f:
+        with open(os.path.join(self.home, ".claude-accounts"), encoding="utf-8") as f:
             return f.read()
 
     def write_reg(self, text):
-        with open(os.path.join(self.home, ".claude-accounts"), "w") as f:
+        with open(os.path.join(self.home, ".claude-accounts"), "w", encoding="utf-8") as f:
             f.write(text)
 
     def mk(self, *parts):
@@ -168,9 +168,9 @@ class AccountsTest(unittest.TestCase):
                           ("projects/p/s.jsonl", "conv"), ("history.jsonl", "hist")):
             p = os.path.join(prim, rel)
             os.makedirs(os.path.dirname(p), exist_ok=True)
-            with open(p, "w") as f:
+            with open(p, "w", encoding="utf-8") as f:
                 f.write(body)
-        with open(os.path.join(self.home, ".claude.json"), "w") as f:
+        with open(os.path.join(self.home, ".claude.json"), "w", encoding="utf-8") as f:
             json.dump({"oauthAccount": {"emailAddress": "x@example.com"}, "mcpServers": {"m": {"command": "c"}},
                        "projects": {}}, f)
         rc, out, _ = self.run_cli("add", "work", "--copy", "settings,agents,mcp")
@@ -188,7 +188,7 @@ class AccountsTest(unittest.TestCase):
         got = sorted(os.path.relpath(os.path.join(d, f), dst) for d, _, fs in os.walk(dst) for f in fs)
         self.assertEqual(got, [".claude.json", "agents/x.md", "settings.json"])
         self.assertEqual(os.stat(os.path.join(dst, "settings.json")).st_mode & 0o777, 0o600)
-        with open(os.path.join(dst, ".claude.json")) as f:
+        with open(os.path.join(dst, ".claude.json"), encoding="utf-8") as f:
             self.assertEqual(json.load(f), {"mcpServers": {"m": {"command": "c"}}})
         self.assertIn("plugins must be installed per account", out)
         self.assertIn("sign in: claude -A work, then /login", out)
@@ -196,18 +196,18 @@ class AccountsTest(unittest.TestCase):
 
     def test_add_existing_folder_keeps_contents_and_never_overwrites(self):
         d = self.mk(".claude-personal")
-        with open(os.path.join(d, "settings.json"), "w") as f:
+        with open(os.path.join(d, "settings.json"), "w", encoding="utf-8") as f:
             f.write("mine")
-        with open(os.path.join(self.home, ".claude", "settings.json"), "w") as f:
+        with open(os.path.join(self.home, ".claude", "settings.json"), "w", encoding="utf-8") as f:
             f.write("primary")
         self.assertEqual(self.run_cli("add", "personal", "--copy", "settings", "--yes")[0], 0)
-        with open(os.path.join(d, "settings.json")) as f:
+        with open(os.path.join(d, "settings.json"), encoding="utf-8") as f:
             self.assertEqual(f.read(), "mine")
 
     def test_copy_recreates_top_level_symlinks(self):
         prim = os.path.join(self.home, ".claude")
         real_skills = self.mk("dotfiles", "skills")
-        with open(os.path.join(real_skills, "s.md"), "w") as f:
+        with open(os.path.join(real_skills, "s.md"), "w", encoding="utf-8") as f:
             f.write("x")
         os.symlink(real_skills, os.path.join(prim, "skills"))
         os.symlink("/nonexistent/settings.json", os.path.join(prim, "settings.json"))
@@ -251,10 +251,10 @@ class AccountsTest(unittest.TestCase):
         p = os.path.join(d, ".claude.json")
         self.assertIs(acc.signed_in(d), False)                                  # no file
         for body, want in (('{"x": "oauthAccount", "y": 1}', False), ('{"oauthAccount" : {}}', True)):
-            with open(p, "w") as f:
+            with open(p, "w", encoding="utf-8") as f:
                 f.write(body)
             self.assertIs(acc.signed_in(d), want, body)
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             f.write('{"pad": "' + "a" * 100 + '", "oauthAccount": {"emailAddress": "s"}}')
         with mock.patch.object(acc, "SCAN_CHUNK", 7):                           # key split across chunks
             self.assertIs(acc.signed_in(d), True)
@@ -283,7 +283,7 @@ class AccountsTest(unittest.TestCase):
 
     def test_first_add_installs_launcher_in_one_step(self):
         rc = os.path.join(self.home, ".zshrc")
-        with open(rc, "w") as f:
+        with open(rc, "w", encoding="utf-8") as f:
             f.write("mine\n")
         code, out, _ = self.run_cli("add", "work")
         self.assertEqual(code, 0)
@@ -291,7 +291,7 @@ class AccountsTest(unittest.TestCase):
         self.assertIn("launcher not installed: append block in ~/.zshrc", out)
         self.assertFalse(os.path.exists(os.path.join(self.home, ".claude-work")))
         self.assertFalse(os.path.exists(os.path.join(self.home, ".claude-accounts")))
-        with open(rc) as f:
+        with open(rc, encoding="utf-8") as f:
             self.assertEqual(f.read(), "mine\n")
         code, out, _ = self.run_cli("add", "work", "--yes")
         self.assertEqual(code, 0)
@@ -299,11 +299,11 @@ class AccountsTest(unittest.TestCase):
         self.assertIn("launcher installed in ~/.zshrc", out)
         self.assertTrue(os.path.isdir(os.path.join(self.home, ".claude-work")))
         self.assertTrue(os.path.isfile(acc.stable_py()))
-        with open(rc) as f:
+        with open(rc, encoding="utf-8") as f:
             once = f.read()
         self.assertEqual(once.count(acc.BEGIN + "\n"), 1)
         self.assertEqual(once, "mine\n\n" + acc.block_text())               # no labels or paths reach the rc
-        with open(rc + ".bak-folder-accounts") as f:
+        with open(rc + ".bak-folder-accounts", encoding="utf-8") as f:
             self.assertEqual(f.read(), "mine\n")
         code, out, _ = self.run_cli("add", "two")                       # launcher ready: dry run without the rc
         self.assertEqual(code, 0)
@@ -318,14 +318,14 @@ class AccountsTest(unittest.TestCase):
         self.assertIn("shell   reinstall: replace block", out)
         code, out, _ = self.run_cli("add", "two", "--shell", "--yes")    # refresh: same block, idempotent
         self.assertIn("launcher installed", out)
-        with open(rc) as f:
+        with open(rc, encoding="utf-8") as f:
             self.assertEqual(f.read(), once)
         custom = os.path.join(self.tmp, "brc")
         self.assertEqual(self.run_cli("add", "three", "--rc", custom, "--yes")[0], 0)
-        with open(custom) as f:
+        with open(custom, encoding="utf-8") as f:
             self.assertEqual(f.read().count(acc.BEGIN + "\n"), 1)
         self.assertEqual(self.run_cli("shell", "uninstall", "--yes")[0], 0)  # standalone command still works
-        with open(rc) as f:
+        with open(rc, encoding="utf-8") as f:
             self.assertEqual(f.read(), "mine\n")
 
     def test_resolve_signed_in_field_only_on_request(self):
@@ -334,13 +334,13 @@ class AccountsTest(unittest.TestCase):
         self.assertEqual(self.run_cli("resolve", "--cwd", self.home, "--tty", "0")[1], "work\t%s\n" % work)
         with mock.patch.dict(os.environ, {"FA_RESOLVE_FIELDS": "3"}):
             self.assertEqual(self.run_cli("resolve", "--cwd", self.home, "--tty", "0")[1], "work\t%s\t0\n" % work)
-            with open(os.path.join(work, ".claude.json"), "w") as f:
+            with open(os.path.join(work, ".claude.json"), "w", encoding="utf-8") as f:
                 json.dump({"oauthAccount": {"emailAddress": "secret@example.com"}}, f)
             out = self.run_cli("resolve", "--cwd", self.home, "--tty", "0")[1]
             self.assertEqual(out, "work\t%s\t1\n" % work)
             self.assertEqual(self.run_cli("resolve", "--cwd", self.home, "--account", "default", "--tty", "0")[1],
                              "default\t-\t0\n")
-            with open(os.path.join(self.home, ".claude.json"), "w") as f:
+            with open(os.path.join(self.home, ".claude.json"), "w", encoding="utf-8") as f:
                 json.dump({"oauthAccount": {}}, f)                     # primary reads ~/.claude.json
             self.assertEqual(self.run_cli("resolve", "--cwd", self.home, "--account", "default", "--tty", "0")[1],
                              "default\t-\t1\n")
@@ -382,7 +382,7 @@ class AccountsTest(unittest.TestCase):
         d = self.mk(".claude-work")
         self.mk(".claude-found", "projects")
         self.mk(".claude-empty")
-        with open(os.path.join(d, ".claude.json"), "w") as f:
+        with open(os.path.join(d, ".claude.json"), "w", encoding="utf-8") as f:
             json.dump({"oauthAccount": {"emailAddress": "secret@example.com"}}, f)
         self.write_reg("account work ~/.claude-work\ndefault work\n")
         self.mk("p")
@@ -400,40 +400,40 @@ class AccountsTest(unittest.TestCase):
     def test_rc_install_uninstall_byte_identical(self):
         rc = os.path.join(self.home, ".zshrc")
         for orig in ("", "a", "a\n", "a\n\n", "x\n# >>> folder-accounts >>> not a marker\n"):
-            with open(rc, "w") as f:
+            with open(rc, "w", encoding="utf-8") as f:
                 f.write(orig)
             for p in (rc + ".bak-folder-accounts",):
                 if os.path.exists(p):
                     os.remove(p)
             self.assertEqual(self.run_cli("shell", "install", "--yes")[0], 0)
-            with open(rc) as f:
+            with open(rc, encoding="utf-8") as f:
                 once = f.read()
             self.assertEqual(once.count(acc.BEGIN + "\n"), 1)
             self.assertIn('export FA_PY="$HOME/.local/share/folder-accounts/accounts.py"', once)
             self.assertIn("claude() { :; }\n", once)
             self.run_cli("shell", "install", "--yes")                       # idempotent
-            with open(rc) as f:
+            with open(rc, encoding="utf-8") as f:
                 self.assertEqual(f.read(), once)
-            with open(rc + ".bak-folder-accounts") as f:
+            with open(rc + ".bak-folder-accounts", encoding="utf-8") as f:
                 self.assertEqual(f.read(), orig)
             self.assertEqual(self.run_cli("shell", "uninstall", "--yes")[0], 0)
-            with open(rc) as f:
+            with open(rc, encoding="utf-8") as f:
                 self.assertEqual(f.read(), orig, repr(orig))
         self.assertTrue(os.path.isfile(os.path.join(self.home, ".local/share/folder-accounts/accounts.py")))
 
     def test_rc_block_in_middle_and_dry_run(self):
         rc = os.path.join(self.tmp, "custom_rc")
-        with open(rc, "w") as f:
+        with open(rc, "w", encoding="utf-8") as f:
             f.write("top\n")
         rcode, out, _ = self.run_cli("shell", "install", "--rc", rc)
         self.assertIn("dry run", out)
-        with open(rc) as f:
+        with open(rc, encoding="utf-8") as f:
             self.assertEqual(f.read(), "top\n")
         self.run_cli("shell", "install", "--rc", rc, "--yes")
-        with open(rc, "a") as f:
+        with open(rc, "a", encoding="utf-8") as f:
             f.write("bottom\n")
         self.run_cli("shell", "uninstall", "--rc", rc, "--yes")
-        with open(rc) as f:
+        with open(rc, encoding="utf-8") as f:
             self.assertEqual(f.read(), "top\n\nbottom\n")
 
     # ---- hook ----------------------------------------------------------------------------------------------
@@ -462,17 +462,17 @@ class AccountsTest(unittest.TestCase):
             os.umask(old)
         self.assertEqual(os.stat(p).st_mode & 0o777, 0o600)          # no explicit mode, no prior file
         victim = os.path.join(self.tmp, "victim")
-        with open(victim, "w") as f:
+        with open(victim, "w", encoding="utf-8") as f:
             f.write("keep")
         os.symlink(victim, p + ".tmp-folder-accounts")
         with self.assertRaises(OSError):
             acc.write_atomic(p, "evil")
-        with open(victim) as f:
+        with open(victim, encoding="utf-8") as f:
             self.assertEqual(f.read(), "keep")
-        with open(p) as f:
+        with open(p, encoding="utf-8") as f:
             self.assertEqual(f.read(), "secret")
         os.remove(p + ".tmp-folder-accounts")
-        with open(p + ".tmp-folder-accounts", "w") as f:             # stale regular tmp from a killed run
+        with open(p + ".tmp-folder-accounts", "w", encoding="utf-8") as f:             # stale regular tmp from a killed run
             f.write("stale")
         acc.write_atomic(p, "new", 0o644)
         self.assertEqual(os.stat(p).st_mode & 0o777, 0o644)
@@ -480,7 +480,7 @@ class AccountsTest(unittest.TestCase):
 
     def test_rc_backup_does_not_follow_dangling_symlink(self):
         rc = os.path.join(self.home, ".zshrc")
-        with open(rc, "w") as f:
+        with open(rc, "w", encoding="utf-8") as f:
             f.write("mine\n")
         target = os.path.join(self.tmp, "planted")
         os.symlink(target, rc + ".bak-folder-accounts")

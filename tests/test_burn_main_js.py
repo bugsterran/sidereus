@@ -21,7 +21,7 @@ def run(body):
            "const UIS = {getItem: k => k in STORE ? STORE[k] : null};\n"
            + i18n() + "\n" + jconst("esc") + "\n" + "\n".join(js_fn(f) for f in FNS)
            + "\nconst R = {};\nLANG = 'en';\n" + body + "\nprocess.stdout.write(JSON.stringify(R));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

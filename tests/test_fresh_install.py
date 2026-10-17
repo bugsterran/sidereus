@@ -28,11 +28,11 @@ class FreshInstall(unittest.TestCase):
 
     def test_ensure_bus_keeps_existing(self):
         p = os.path.join(self.tmp, "bus.jsonl")
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             f.write('{"t": 1}\n')
         os.chmod(p, 0o644)
         bus.ensure_bus(p)
-        with open(p) as f:
+        with open(p, encoding="utf-8") as f:
             self.assertEqual(f.read(), '{"t": 1}\n')
         self.assertEqual(stat.S_IMODE(os.stat(p).st_mode), 0o644)
 

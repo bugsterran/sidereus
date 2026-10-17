@@ -26,7 +26,7 @@ def _run(br, expr):
         "function brWtSig(w){ return (BR.wtSig || {})[w.path] || null; }", _fn(src, "brWrmHtml"),
         "console.log(JSON.stringify(" + expr + "));",
     ])
-    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)
@@ -69,7 +69,7 @@ class ParallelWork(unittest.TestCase):
     def test_command_quotes_path_with_space_and_quote(self):
         cmd = _run(BR, "brPwCmd('feat-x')")
         self.assertEqual(cmd, "cd '/w/it'\\''s a repo' && claude -w feat-x --tmux")
-        out = subprocess.run(["sh", "-c", "printf %s " + cmd.split(" && ")[0][3:]], capture_output=True, text=True).stdout
+        out = subprocess.run(["sh", "-c", "printf %s " + cmd.split(" && ")[0][3:]], capture_output=True, text=True, encoding="utf-8").stdout
         self.assertEqual(out, MAIN)
 
     def plan(self, typ, name, flow):
@@ -109,7 +109,7 @@ class ParallelWork(unittest.TestCase):
         self.assertEqual(cmd, "git -C " + q + "' worktree add " + q + ".wt/feature-login' -b 'feature/login' 'develop'"
                          " && cd " + q + ".wt/feature-login' && claude")
         argv = subprocess.run(["sh", "-c", "for a in " + cmd.split(" && ")[0][4:] + "; do printf '%s\\n' \"$a\"; done"],
-                              capture_output=True, text=True).stdout.splitlines()
+                              capture_output=True, text=True, encoding="utf-8").stdout.splitlines()
         self.assertEqual(argv, ["-C", MAIN, "worktree", "add", MAIN + ".wt/feature-login", "-b", "feature/login", "develop"])
 
     def test_flow_collisions(self):

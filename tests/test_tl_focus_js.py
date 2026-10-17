@@ -36,7 +36,7 @@ const ev = (k, sh) => ({key: k, shiftKey: !!sh, prevented: false, preventDefault
 def run(body):
     code = (STUB + js_fn("popTabOut") + "\n" + js_fn("tlgFocusId")
             + "\nconst R = {};\n" + body + "\nprocess.stdout.write(JSON.stringify(R));")
-    r = subprocess.run(node_e(code), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(code), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

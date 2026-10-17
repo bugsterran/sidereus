@@ -66,12 +66,12 @@ class HistGemini(unittest.TestCase):
         d = os.path.join(self.g, "tmp", dirname, "chats")
         os.makedirs(d, exist_ok=True)
         if root is not None:
-            with open(os.path.join(self.g, "tmp", dirname, ".project_root"), "w") as f:
+            with open(os.path.join(self.g, "tmp", dirname, ".project_root"), "w", encoding="utf-8") as f:
                 f.write(root + "\n")
         p = os.path.join(d, "session-2026-09-24T05-00-%s.jsonl" % sid[:8])
         head = {"sessionId": sid, "projectHash": phash, "startTime": _iso(self.now - 7200),
                 "lastUpdated": _iso(self.now), "kind": "main"}
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             f.write("".join(json.dumps(o) + "\n" for o in [head] + lines))
         os.utime(p, (self.now, self.now))                         # plat_gemini filters by mtime
         return p
@@ -97,7 +97,7 @@ class HistGemini(unittest.TestCase):
         path = "/work/hashed-proj"
         h = hashlib.sha256(path.encode()).hexdigest()
         os.makedirs(self.g, exist_ok=True)
-        with open(os.path.join(self.g, "projects.json"), "w") as f:
+        with open(os.path.join(self.g, "projects.json"), "w", encoding="utf-8") as f:
             json.dump({"projects": {path: "hashed-proj"}}, f)
         self._chat(h, "bbbbbbbb-2", [_msg("g1", self.now - 60, 1, 1)], phash=h)
         c = pg.chats(0)

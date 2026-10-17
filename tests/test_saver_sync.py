@@ -67,7 +67,7 @@ def run_js(body):
     sv_set = re.search(r"^async function svSet\(.*?^}", js_all(), re.S | re.M).group(0)   # js_fn matches plain `function` only
     src = (JS_BASE + jconst("SV_LIM") + "\n" + sv_set + "\n" + "\n".join(js_fn(f) for f in ("svSwSync", "svLimSet", "cfgActs"))
            + "\nconst R = {};\n(async () => {\n" + body + "\nprocess.stdout.write(JSON.stringify(R));\n})();")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

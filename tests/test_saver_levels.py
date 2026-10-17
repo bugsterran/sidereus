@@ -44,7 +44,7 @@ class Clean(unittest.TestCase):
         tmp = tempfile.mkdtemp(prefix="sidereus-svlv-")
         self.addCleanup(shutil.rmtree, tmp, True)
         p = os.path.join(tmp, ".saver-view.json")
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             json.dump({"stage": 1, "levels": "bogus", "how": HOW}, f)
         with mock.patch.object(sv, "SAVER_VIEW", p):
             self.assertEqual(sv._saver_view(), {"stage": 1, "how": HOW})
@@ -56,7 +56,7 @@ class Fold(unittest.TestCase):
         esc = js_all().split("const esc = ", 1)[1].split(";\n", 1)[0]
         src = ("const T = s => s; const lsGet = () => ''; const esc = " + esc + ";\nlet SV = " + json.dumps(sv_obj) + ";\n"
                + js_fn("svLevelsFold") + "\nprocess.stdout.write(JSON.stringify(svLevelsFold()));")
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         return json.loads(r.stdout)

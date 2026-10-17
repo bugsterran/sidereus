@@ -90,10 +90,10 @@ class SetupPython(unittest.TestCase):
         self.exe = os.path.join(self.d, "python3")
         self.other = os.path.join(self.d, "python3.14")
         for p in (self.exe, self.other):
-            with open(p, "w"):
+            with open(p, "w", encoding="utf-8"):
                 pass
         self.doc = os.path.join(self.d, "doc-python3")
-        with open(self.doc, "w"):
+        with open(self.doc, "w", encoding="utf-8"):
             pass
 
     def tearDown(self):

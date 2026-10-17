@@ -21,7 +21,7 @@ class ResumeCmdTest(unittest.TestCase):
             src = fh.read()
         js = "\n".join([_fn(src, "shq"), _fn(src, "resumeCmd"),
                         "console.log(JSON.stringify(%s.map(a => resumeCmd(a[0], a[1]))));" % json.dumps(cases)])
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         return json.loads(r.stdout)
 

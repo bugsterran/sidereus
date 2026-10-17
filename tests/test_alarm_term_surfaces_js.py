@@ -30,7 +30,7 @@ def run(sess, body, term_app="auto"):
         "var window = {focus(){ out.focus++; }};\n"
         + "\n".join(js_fn(n) for n in FNS) + "\n"
         + body + "\nprocess.stdout.write(JSON.stringify(out));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

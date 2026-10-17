@@ -19,7 +19,7 @@ UNIT = "const UNIT_KO = {' rooms':'개'};\n"
 
 
 def run(js):
-    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 def el():

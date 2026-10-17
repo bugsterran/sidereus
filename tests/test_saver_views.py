@@ -26,7 +26,7 @@ class SaverViews(unittest.TestCase):
 
     def put(self, d, body):
         tag = hashlib.sha1(os.path.realpath(d).encode(), usedforsecurity=False).hexdigest()[:10]
-        with open(os.path.join(self.tmp, ".saver-view-%s.json" % tag), "w") as f:
+        with open(os.path.join(self.tmp, ".saver-view-%s.json" % tag), "w", encoding="utf-8") as f:
             f.write(body)
 
     def test_tag_maps_to_label_broken_skipped(self):

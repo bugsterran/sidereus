@@ -213,8 +213,8 @@ class StructArch(unittest.TestCase):
               "for(const d of [{ok: true, empty: true, modules: [], edges: [], head: 'h1'}, Object.assign({ok: true, commit: 'c1', head: 'h2', stale: true}, m),"
               " Object.assign({ok: true, commit: 'h1', head: 'h1'}, m)]){"
               " ARCH.cache['/r'] = d; ARCH.req = {p: '/r', sid: '', busy: false}; box._arsig = ''; archPaint(box, head);"
-              " const h = box.innerHTML, b = h.slice(h.indexOf('data-arq')), t = h.match(/<div class=archrqh><b>([^<]*)<\/b>/);"
-              " out.push([b.slice(b.indexOf('>') + 1, b.indexOf('</button>')), t ? t[1] : null, (h.match(/«\/r 아키텍처 구조도 ([^»]*)»/) || [])[1] || null]); }"
+              " const h = box.innerHTML, b = h.slice(h.indexOf('data-arq')), t = h.match(/<div class=archrqh><b>([^<]*)<\\/b>/);"
+              " out.push([b.slice(b.indexOf('>') + 1, b.indexOf('</button>')), t ? t[1] : null, (h.match(/«\\/r 아키텍처 구조도 ([^»]*)»/) || [])[1] || null]); }"
               "console.log(JSON.stringify(out));")
         self.assertEqual(run(js), [["구조도 생성 요청", "구조도 생성 요청", "생성"], ["구조도 업데이트 요청", "구조도 업데이트 요청", "업데이트"],
                                    ["다시 그리기", "다시 그리기", "다시 그리기"]])

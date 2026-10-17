@@ -119,7 +119,7 @@ class EditCutCount(unittest.TestCase):
             self.skipTest("node not installed")
         m = re.search(r"const nWrote = \(d\.steps\|\|\[\]\)\.filter\((.+?)\)\.length;", js_all())
         r = subprocess.run(node_e("process.stdout.write(String(" + json.dumps(steps)
-                            + ".filter(" + m.group(1) + ").length))"), capture_output=True, text=True, timeout=20)
+                            + ".filter(" + m.group(1) + ").length))"), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.stdout, "4", r.stderr)
 
 

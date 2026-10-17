@@ -43,11 +43,11 @@ class PermQueueActivity(unittest.TestCase):
             p = mock.patch.object(obj, k, v)
             p.start()
             self.addCleanup(p.stop)
-        with open(os.path.join(self.tmp, SID + ".json"), "w") as f:
+        with open(os.path.join(self.tmp, SID + ".json"), "w", encoding="utf-8") as f:
             json.dump({"sid": SID, "t": T0 + 17}, f)          # Notification permission_prompt lands after the 6 s delay
 
     def _blocked(self, recs, now):
-        with open(self.tp, "w") as f:
+        with open(self.tp, "w", encoding="utf-8") as f:
             f.write("".join(json.dumps(r) + "\n" for r in recs))
         LP._pend_cache.clear()
         act =P._scan_tail([json.dumps(r) for r in recs])["actAt"]

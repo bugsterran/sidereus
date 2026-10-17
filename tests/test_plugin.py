@@ -148,7 +148,7 @@ class PyrunTest(unittest.TestCase):
 
     def stub(self, name, ok):
         # ok: passes the version probe; the real run echoes its name, args and stdin.
-        with open(os.path.join(self.tmp, name), "w") as f:
+        with open(os.path.join(self.tmp, name), "w", encoding="utf-8") as f:
             f.write('#!/bin/sh\ncase " $* " in *" -c "*) exit %d;; esac\necho "%s $*"; cat; exit 7\n' % (0 if ok else 9, name))
         os.chmod(os.path.join(self.tmp, name), 0o755)
 
@@ -160,7 +160,7 @@ class PyrunTest(unittest.TestCase):
         if os_name:
             env["OS"] = os_name
         return subprocess.run(["/bin/sh", os.path.join(ROOT, "hooks", "pyrun.sh"), "a b.py", "x"], input="{}",
-                              env=env, capture_output=True, text=True, timeout=10)
+                              env=env, capture_output=True, text=True, timeout=10, encoding="utf-8")
 
     def test_non_windows_runs_python3_unprobed(self):
         self.stub("python3", False)    # probe would fail; must not be probed off Windows

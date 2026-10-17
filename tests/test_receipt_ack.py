@@ -13,7 +13,7 @@ def _receipt(acks, audience):
           "const ACK={m1:{ack:%s}};" % json.dumps([{"who": w} for w in acks])
           + js_fn("readersOf") + js_fn("receipt") +
           "process.stdout.write(JSON.stringify(receipt({id:'m1',from:'me',t:1,audience:%s})));" % json.dumps(audience))
-    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

@@ -140,13 +140,13 @@ class BurnAcct(unittest.TestCase):
         self.addCleanup(lambda: os.path.exists(conf) and os.remove(conf))
         self.rows([row(pts=[[int(NOW - 600), 30.0]])])
         self.assertIsNone(bu.quota_burn_acct("work")["est"])      # no .claude.json: no est, as before
-        with open(conf, "w") as f:
+        with open(conf, "w", encoding="utf-8") as f:
             json.dump({"oauthAccount": {"accountUuid": "u1", "organizationType": "claude_max"}}, f)
         bu._qb_acct.clear()
         e = bu.quota_burn_acct("work")["est"]
         self.assertEqual((e["h5_per_pct"], e["h5_n"], e["h5_left"]), (1000, 22, 70000))
         self.assertEqual((e["wk_per_pct"], e["wk_left"], e["wk_used"]), (5000, 440000, 60000))
-        with open(conf, "w") as f:
+        with open(conf, "w", encoding="utf-8") as f:
             json.dump({"oauthAccount": {"accountUuid": "u1"}}, f)   # plan unknown: no plan-less fallback
         bu._qb_acct.clear()
         self.assertIsNone(bu.quota_burn_acct("work")["est"])

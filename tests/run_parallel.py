@@ -26,7 +26,7 @@ def _mods():
 
 def _groups(mods, n):
     try:
-        with open(DUR) as f:
+        with open(DUR, encoding="utf-8") as f:
             dur = json.load(f)
     except (OSError, ValueError):
         dur = {}
@@ -54,21 +54,47 @@ def _measure():
         subprocess.run([PY, "-m", "unittest", "-q", "tests." + m], cwd=ROOT,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         out[m] = round(time.time() - t, 2)
-    with open(DUR, "w") as f:
+    with open(DUR, "w", encoding="utf-8") as f:
         f.write("{\n" + ",\n".join('"%s": %.2f' % kv for kv in sorted(out.items())) + "\n}\n")
     print("wrote %s (%d files, %.1f s)" % (DUR, len(out), sum(out.values())))
+
+
+def _run_group(mods):
+    """One group process: load each module on its own so one import error cannot hide the rest."""
+    import traceback
+    import unittest
+    sys.path[0] = ROOT   # same import root as `python -m unittest` from ROOT
+    for st in (sys.stdout, sys.stderr):   # ⚠the parent reads the log as UTF-8; cp1252 stdio cannot print every test name
+        st.reconfigure(encoding="utf-8", errors="backslashreplace")
+    loader, suite = unittest.TestLoader(), unittest.TestSuite()
+    for m in mods:
+        try:
+            suite.addTests(loader.loadTestsFromName("tests." + m))
+        except Exception:
+            tb = traceback.format_exc()
+
+            def test_import(self, tb=tb):
+                raise ImportError("module failed to import:\n" + tb)
+            cls = type("ImportFailure", (unittest.TestCase,), {"test_import": test_import})
+            cls.__module__ = "tests." + m   # ⚠ERROR line must name the module
+            suite.addTest(cls("test_import"))
+    res = unittest.TextTestRunner(verbosity=2).run(suite)
+    return 0 if res.wasSuccessful() else 1
 
 
 def main():
     if "--measure" in sys.argv:
         return _measure()
+    if sys.argv[1:2] == ["--group"]:
+        return _run_group(sys.argv[2:])
+    sys.stdout.reconfigure(errors="backslashreplace")   # a console codec without a test's characters must not crash the summary
     t0 = time.time()
     groups = _groups(_mods(), _workers())
     tmp = tempfile.mkdtemp(prefix="sidereus-tests-")
     procs = []
     for i, g in enumerate(groups):
-        log = open(os.path.join(tmp, "g%d.log" % i), "w+")
-        p = subprocess.Popen([PY, "-m", "unittest", "-v"] + ["tests." + m for m in g],
+        log = open(os.path.join(tmp, "g%d.log" % i), "w+", encoding="utf-8", errors="replace")
+        p = subprocess.Popen([PY, os.path.abspath(__file__), "--group"] + g,
                              cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
         procs.append((p, log, g))
     ran = fails = errors = skipped = 0

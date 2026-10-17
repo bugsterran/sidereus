@@ -130,7 +130,7 @@ class Files(unittest.TestCase):
         for rel in ["a.py", "tests/test_a.py", "node_modules/x.js", ".hidden/y.py", "doc.md", "src/B.java"]:
             p = os.path.join(self.d, rel)
             os.makedirs(os.path.dirname(p), exist_ok=True)
-            open(p, "w").close()
+            open(p, "w", encoding="utf-8").close()
         P._struct_pair_ls.pop(self.d, None)
 
     def tearDown(self):
@@ -140,7 +140,7 @@ class Files(unittest.TestCase):
     def test_walk_filters_and_caches(self):
         got = P._struct_pair_files(self.d)
         self.assertEqual(got, ["a.py", "src/B.java", "tests/test_a.py"])
-        open(os.path.join(self.d, "new.py"), "w").close()
+        open(os.path.join(self.d, "new.py"), "w", encoding="utf-8").close()
         self.assertEqual(P._struct_pair_files(self.d), got)     # within TTL: cached list
 
 

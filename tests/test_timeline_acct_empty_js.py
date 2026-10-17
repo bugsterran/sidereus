@@ -23,7 +23,7 @@ LANG = 'ko'; R.ko = tlEmptyMsg(D, []);
 def run():
     src = ("var document = {getElementById: () => null};\n" + i18n() + "\n" + jconst("esc") + "\n" + js_fn("tlEmptyMsg")
            + "\nconst R = {};\nLANG = 'en';\n" + SCEN + "\nprocess.stdout.write(JSON.stringify(R));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

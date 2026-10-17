@@ -38,7 +38,7 @@ class TimelineWait(unittest.TestCase):
         shutil.rmtree(self.d)
 
     def _write(self, lines, mode="w"):
-        with open(self.fp, mode) as f:
+        with open(self.fp, mode, encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
 
     def _wt(self, cut=T0):

@@ -26,7 +26,7 @@ class AgentCaches(unittest.TestCase):
         self.fps = []
         for i in range(self.N):
             fp = os.path.join(self.d, "agent-%d.jsonl" % i)
-            with open(fp, "w") as f:
+            with open(fp, "w", encoding="utf-8") as f:
                 f.write(_line([{"type": "tool_use", "name": "Read", "input": {"file_path": "/x/%d.py" % i}}]))
                 f.write(_line([{"type": "text", "text": "done"}]))
             self.fps.append(fp)
@@ -84,7 +84,7 @@ class AgentCaches(unittest.TestCase):
         self.assertEqual(ag._agent_fin(fp), True)
         self.assertEqual(ag._agent_last(fp), "Read")     # tool name only — no path (rule 1)
         for i in range(5):
-            with open(fp, "a") as f:
+            with open(fp, "a", encoding="utf-8") as f:
                 f.write(_line([{"type": "tool_use", "name": "Grep", "input": {"pattern": "p%d" % i}}]))
             st = os.stat(fp)
             os.utime(fp, (st.st_atime, st.st_mtime + 10 * (i + 1)))

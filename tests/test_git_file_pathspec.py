@@ -19,18 +19,18 @@ class FilePathspec(unittest.TestCase):
         self.addCleanup(setattr, gv, "sessions_rows", self._sess)
         self.git("init", "-q", "-b", "main")
         for p in ("a.txt", "b.txt", "x*"):
-            with open(os.path.join(self.d, p), "w") as fh:
+            with open(os.path.join(self.d, p), "w", encoding="utf-8") as fh:
                 fh.write(p + "\n")
         self.git("add", "-A")
         self.git("commit", "-qm", "init")
         for p in ("a.txt", "b.txt", "x*"):
-            with open(os.path.join(self.d, p), "a") as fh:
+            with open(os.path.join(self.d, p), "a", encoding="utf-8") as fh:
                 fh.write("more\n")
 
     def git(self, *a):
         return subprocess.run(["git", "-C", self.d, "-c", "user.name=t", "-c", "user.email=t@t",
                                "-c", "commit.gpgsign=false"] + list(a),
-                              check=True, capture_output=True, text=True).stdout
+                              check=True, capture_output=True, text=True, encoding="utf-8").stdout
 
     def test_magic_and_nul_refused(self):
         for p in (":(glob)**", ":/", ":!a.txt", "a.txt\0b", ":(literal)a.txt"):

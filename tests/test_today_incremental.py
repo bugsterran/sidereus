@@ -45,7 +45,7 @@ class TodayIncremental(unittest.TestCase):
         return os.path.join(p, name)
 
     def _append(self, fp, text, now=NOW):
-        with open(fp, "a") as f:
+        with open(fp, "a", encoding="utf-8") as f:
             f.write(text)
         os.utime(fp, (now, now))
 
@@ -81,12 +81,12 @@ class TodayIncremental(unittest.TestCase):
         a = self._fp("pa", "s1.jsonl")
         self._append(a, _line(NOW - 60, "m1", "r1", 10) + _line(NOW - 60, "m2", "r2", 20))
         self.assertEqual(self._result()[0][0][1], 32)
-        with open(a, "w") as f:
+        with open(a, "w", encoding="utf-8") as f:
             f.write(_line(NOW - 60, "m9", "r9", 3))
         os.utime(a, (NOW, NOW))
         self.assertEqual(self._result()[0][0][1], 4)
         tmp = a + ".tmp"
-        with open(tmp, "w") as f:
+        with open(tmp, "w", encoding="utf-8") as f:
             f.write(_line(NOW - 60, "m9", "r9", 3) + _line(NOW - 60, "m8", "r8", 40) + _line(NOW - 60, "m7", "r7", 1))
         os.utime(tmp, (NOW, NOW))
         os.replace(tmp, a)                     # new inode, larger size

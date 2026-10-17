@@ -83,7 +83,7 @@ class SameKeysAsRealBuilders(_Patch):
         d = tempfile.mkdtemp(prefix="sidereus-demo-work-")
         self.addCleanup(shutil.rmtree, d, True)
         fp = os.path.join(d, "s.jsonl")
-        open(fp, "w").close()
+        open(fp, "w", encoding="utf-8").close()
         scan = ([{"t": "2026-09-24T00:00:00", "tool": "Read", "targ": "a", "arg": "", "id": "i"}],
                 [{"t": "2026-09-24T00:00:00", "text": "x"}], {}, "p", "f", "l", "u")
         self.patch(work, "_allowed_cwds", lambda: {"/w/r": {"project": "r"}})

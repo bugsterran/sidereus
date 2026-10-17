@@ -38,7 +38,7 @@ class SegWholeTest(unittest.TestCase):
 
     def write(self, name, n):
         fp = os.path.join(self.d, name)
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write("\n".join(_line(i * 7) for i in range(n)) + "\n")
         return fp
 

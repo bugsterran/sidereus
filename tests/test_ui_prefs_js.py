@@ -111,7 +111,7 @@ b = boot({mbTone: 'grey'}, null, 200, false, '?nosave=10', SS2); b.U.mbTone = 'b
 class UiPrefs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        r = subprocess.run(node_e(SRC, ROOT), capture_output=True, text=True, timeout=30)
+        r = subprocess.run(node_e(SRC, ROOT), capture_output=True, text=True, timeout=30, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         cls.R = json.loads(r.stdout)

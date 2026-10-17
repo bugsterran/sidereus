@@ -25,8 +25,8 @@ class Browse(unittest.TestCase):
         self.home = os.path.join(self.tmp, "home")
         for d in ("b-proj/.git", "A-cl/.claude", "c-md", ".hidden", "zz"):
             os.makedirs(os.path.join(self.home, d))
-        open(os.path.join(self.home, "c-md", "AGENTS.md"), "w").close()
-        open(os.path.join(self.home, "file.txt"), "w").close()
+        open(os.path.join(self.home, "c-md", "AGENTS.md"), "w", encoding="utf-8").close()
+        open(os.path.join(self.home, "file.txt"), "w", encoding="utf-8").close()
         os.makedirs(os.path.join(self.tmp, "outside"))
         p = mock.patch.object(PP, "USER_HOME", self.home)
         p.start()
@@ -82,7 +82,7 @@ class BrowseJs(unittest.TestCase):
              "dirs": [{"name": "<img onerror=1>", "git": True, "claude": True}, {"name": "a\"b", "git": False, "claude": False}]}
         with open(_F, encoding="utf-8") as f:
             src = _STUB + i18n_prelude("'ko'", ("T", "TV", "U")) + f.read() + "\nconsole.log(JSON.stringify(plBrHtml(%s)))" % json.dumps(B)
-        out = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        out = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         for bad in ("<img", "<x>", "<m>", 'a"b'):
             self.assertNotIn(bad, out)
         self.assertIn("&lt;img onerror=1&gt;", out)
@@ -95,7 +95,7 @@ class BrowseJs(unittest.TestCase):
              "dirs": [{"name": "d", "git": False, "claude": False}]}
         with open(_F, encoding="utf-8") as f:
             src = _STUB + i18n_prelude("'ko'", ("T", "TV", "U")) + f.read() + "\nconsole.log(JSON.stringify([plBrCrumbs(%s), plBrList(%s)]))" % (json.dumps(B), json.dumps(B))
-        c, l = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        c, l = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertIn('data-plbrgo="C:\\Users\\me\\w">w<', c)
         self.assertIn('data-plbrgo="C:\\Users\\me\\w\\p">p<', c)
         self.assertIn('data-plbrgo="C:\\Users\\me\\w\\p\\d"', l)
@@ -117,7 +117,7 @@ function lsGet(k, d){ return d; } function lsSet(){} function plBrOpen(){ opened
 const ev = attr => ({ preventDefault(){}, target: { closest: s => (s === '.plw' || s === attr) ? { dataset: {} } : null } });
 """
         body = "\nL.forEach(f => f(ev('[data-pladd]'))); const a = opened; L.forEach(f => f(ev('[data-plprojadd]'))); console.log(JSON.stringify([a, opened]));"
-        out = subprocess.run(node_e(stub + src + body), capture_output=True, text=True, check=True).stdout
+        out = subprocess.run(node_e(stub + src + body), capture_output=True, text=True, check=True, encoding="utf-8").stdout
         self.assertEqual(json.loads(out), [0, 1])
         self.assertIn("data-plprojadd>", src)
 

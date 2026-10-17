@@ -116,7 +116,7 @@ class MyPref(unittest.TestCase):
     def setUpClass(cls):
         tabf = "\n".join(js_fn(f) for f in ("tabRead", "tabStores", "tabOwn"))
         r = subprocess.run(node_e("const ROOT = %s;\nconst TABF = %s;\n" % (json.dumps(ROOT), json.dumps(tabf)) + SRC),
-                           capture_output=True, text=True, timeout=20)
+                           capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         cls.R = json.loads(r.stdout)

@@ -24,7 +24,7 @@ class RailMemo(unittest.TestCase):
 
     def _w(self, name, body, mt=None):
         p = os.path.join(self.d, name)
-        with open(p, "w") as fh:
+        with open(p, "w", encoding="utf-8") as fh:
             fh.write(body)
         if mt:
             os.utime(p, ns=(mt, mt))

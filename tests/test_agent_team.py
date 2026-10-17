@@ -20,7 +20,7 @@ SECRET_D, SECRET_T = "SECRET-TASK-DESCRIPTION", "SECRET-INBOX-TEXT"
 
 def _w(fp, obj):
     os.makedirs(os.path.dirname(fp), exist_ok=True)
-    with open(fp, "w") as f:
+    with open(fp, "w", encoding="utf-8") as f:
         json.dump(obj, f)
 
 
@@ -44,7 +44,7 @@ class AgentTeam(unittest.TestCase):
                {"agentType": "general-purpose", "description": "Teammate", "name": name, "model": "haiku",
                 "toolUseId": "toolu_%d" % n, "spawnDepth": 1})
             blk = {"type": "text", "text": "done"} if last == "text" else {"type": "tool_use", "name": "Read", "input": {}}
-            with open(os.path.join(sub, "agent-a%d.jsonl" % n), "w") as f:
+            with open(os.path.join(sub, "agent-a%d.jsonl" % n), "w", encoding="utf-8") as f:
                 f.write(json.dumps({"type": "assistant", "message": {"content": [blk]}}) + "\n")
         ag._AGENT_META.clear()
         self.p = mock.patch.object(ag, "TEAM_ROOT", self.home)
@@ -79,7 +79,7 @@ class AgentTeam(unittest.TestCase):
         for root, _d, fs in os.walk(self.home):
             for fn in fs:
                 if fn.endswith(".json") and "tasks" in root:
-                    with open(os.path.join(root, fn)) as f:
+                    with open(os.path.join(root, fn), encoding="utf-8") as f:
                         t = json.load(f)
                     t["status"] = "completed"
                     _w(os.path.join(root, fn), t)

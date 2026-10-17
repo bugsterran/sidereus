@@ -46,7 +46,7 @@ class CompactWinTest(unittest.TestCase):
     def test_default_and_unreadable(self):
         self.write({"env": {}}, 1000)
         self.assertEqual(bu._compact_win(now=5000)["value"], 1_000_000)
-        with open(self.stg, "w") as f:
+        with open(self.stg, "w", encoding="utf-8") as f:
             f.write("{half")
         self.assertEqual(bu._compact_win(now=6000)["value"], 1_000_000)   # half-written file: keep state
 

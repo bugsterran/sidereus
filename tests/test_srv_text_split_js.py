@@ -14,7 +14,7 @@ from tests._node import node_e
 def run(lang, body, fns):
     js = ("let LANG = %s;\n" % json.dumps(lang) + i18n_switch(("T", "TV", "U", "TN", "srvEn")) + "\n"
           + "\n".join(js_fn(f) for f in fns) + "\nprocess.stdout.write(JSON.stringify(" + body + "));")
-    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

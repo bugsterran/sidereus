@@ -199,7 +199,7 @@ class AcctRecord(unittest.TestCase):
     def test_prune_old_records(self):
         os.makedirs(inv.ACCT_DIR)
         old = os.path.join(inv.ACCT_DIR, "old-session-1")
-        with open(old, "w") as f:
+        with open(old, "w", encoding="utf-8") as f:
             f.write("/x\n")
         os.utime(old, (1000.0, 1000.0))
         now = 1000.0 + inv.ACCT_KEEP_S + 10
@@ -213,7 +213,7 @@ class AcctRecord(unittest.TestCase):
         self.assertEqual(sorted(os.listdir(inv.ACCT_DIR)), [SID])
 
     def test_write_error_silent(self):
-        with open(os.path.join(self.d, "acct"), "w") as f:      # a file where the dir should be
+        with open(os.path.join(self.d, "acct"), "w", encoding="utf-8") as f:      # a file where the dir should be
             f.write("")
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
@@ -311,7 +311,7 @@ class ClearRecord(unittest.TestCase):
         self.assertEqual(c[-1]["new"], "sid-00000009")
 
     def test_error_silent(self):
-        with open(os.path.join(self.d, "sesspid"), "w") as f:     # a file where the dir should be
+        with open(os.path.join(self.d, "sesspid"), "w", encoding="utf-8") as f:     # a file where the dir should be
             f.write("")
         inv.record_clear("SessionStart", "startup", self.OLD)
 

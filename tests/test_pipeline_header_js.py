@@ -13,12 +13,12 @@ from tests._node import node_e
 PRE = """
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const T = s => s; let PPS = null; const PPC = {};
-const TV = o => o.msg.replace(/\{(\w+)\}/g, (_, k) => o.vars[k]);
+const TV = o => o.msg.replace(/\\{(\\w+)\\}/g, (_, k) => o.vars[k]);
 """
 
 
 def run(body):
-    r = subprocess.run(node_e(PRE + body), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(PRE + body), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

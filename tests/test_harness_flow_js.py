@@ -35,7 +35,7 @@ def _js(body):
     for p in (_B, _C):
         with open(p, encoding="utf-8") as f:
             src += f.read() + "\n"
-    return json.loads(subprocess.run(node_e(src + body), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src + body), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 class HarnessFlowJs(unittest.TestCase):

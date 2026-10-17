@@ -12,7 +12,7 @@ def run(body):
            "function esc(s){ return String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c])); }\n"
            "const inline = x => esc(x); const mdLinks = x => x; const codeBlock = b => '<pre>' + esc(b) + '</pre>';\n"
            + js_fn("md") + "\n" + body)
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=30)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=30, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

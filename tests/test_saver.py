@@ -188,7 +188,7 @@ class SaverSetShapeTest(_TempSaver):
         self.assertEqual(json.loads(self.raw(self.goal)), {"goal": 0})
 
     def test_mode_switch_drops_stale_keys_but_keeps_unknown(self):
-        with open(self.force, "w") as f:
+        with open(self.force, "w", encoding="utf-8") as f:
             f.write('{"mode":"pace","until":"19:00","note":"x"}\n')
         sv.saver_set({"mode": "on", "stage": 1})
         self.assertEqual(json.loads(self.raw(self.force)), {"mode": "on", "stage": 1, "note": "x"})
@@ -234,7 +234,7 @@ class SaverSetLockTest(_TempSaver):
         return state["max"]
 
     def test_same_file_both_merges_survive(self):
-        with open(self.force, "w") as f:
+        with open(self.force, "w", encoding="utf-8") as f:
             f.write('{"mode":"off","note":"x"}\n')
         # Each thread writes the merged file; with the lock both reads see a whole file and "note" survives.
         peak = self._race([{"mode": "on", "stage": 2}, {"mode": "pace", "until": "19:00"}])
@@ -267,9 +267,9 @@ class SaverSwitchReadTest(_TempSaver):
                          {"mode": "pace", "stage": 0, "until": "7:30", "goal": None, "goalSet": True, "limit": "advise"})
 
     def test_garbage_files_fall_back(self):
-        with open(self.force, "w") as f:
+        with open(self.force, "w", encoding="utf-8") as f:
             f.write('{"mode":"on","stage":9}')
-        with open(self.goal, "w") as f:
+        with open(self.goal, "w", encoding="utf-8") as f:
             f.write("not json")
         v = sv._saver_switch()
         self.assertEqual((v["mode"], v["stage"], v["goal"], v["goalSet"]), ("on", 3, 100, False))
@@ -284,7 +284,7 @@ class SaverSwitchReadTest(_TempSaver):
         self.assertFalse(sv._saver_state(99, 0)["on"])
 
     def _view(self, **kw):
-        with open(sv.SAVER_VIEW, "w") as f:
+        with open(sv.SAVER_VIEW, "w", encoding="utf-8") as f:
             json.dump(dict({"at": 1000, "mode": "auto", "stage": 1}, **kw), f)
 
     def test_auto_follows_fresh_hook_stage(self):
@@ -371,7 +371,7 @@ class RepoAllowListTest(unittest.TestCase):
     def test_repo_ok_worktree_of_allowed_main(self):
         wt = os.path.join(self.tmp, "wt")
         os.makedirs(wt)
-        with open(os.path.join(wt, ".git"), "w") as f:
+        with open(os.path.join(wt, ".git"), "w", encoding="utf-8") as f:
             f.write("gitdir: %s/.git/worktrees/wt\n" % self.a)
         main = gitm._wt_main(wt)
         self.assertEqual(gitm._repo_ok(wt, {self.a}), main == self.a)

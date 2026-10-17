@@ -132,7 +132,7 @@ class Scan(Base):
         d = "-w/psid/subagents"
         fp = self.write(d + "/agent-x.jsonl", [_asst("2026-09-20T00:00:00Z", "m1", 5, ("t1", "git commit -m s")),
                                                _res("2026-09-20T00:00:02Z", "t1", "[wt ccccccc] s")])
-        with open(fp[:-6] + ".meta.json", "w") as f:
+        with open(fp[:-6] + ".meta.json", "w", encoding="utf-8") as f:
             json.dump({"agentType": "general-purpose", "toolUseId": "toolu_1"}, f)
         self.write("-w/psid.jsonl", [{"type": "user", "cwd": "/main", "timestamp": "2026-09-20T00:00:00Z",
                                       "message": {"content": "hi"}}, _asst("2026-09-20T00:00:00Z", "z", 1)])

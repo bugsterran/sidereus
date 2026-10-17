@@ -41,9 +41,9 @@ class BgCompletion(unittest.TestCase):
     def agent(self, aid, tuid, last, quiet_s=0):
         """Register a subagent: meta + own log whose last message record is `last`."""
         base = os.path.join(self.dir, "sess", "subagents", "agent-" + aid)
-        with open(base + ".meta.json", "w") as f:
+        with open(base + ".meta.json", "w", encoding="utf-8") as f:
             json.dump({"toolUseId": tuid, "agentType": "fe-builder", "description": "d"}, f)
-        with open(base + ".jsonl", "w") as f:
+        with open(base + ".jsonl", "w", encoding="utf-8") as f:
             f.write(json.dumps({"type": "user", "message": {"role": "user", "content": "go"}}) + "\n")
             f.write(json.dumps(last) + "\n")
             f.write(json.dumps({"type": "attachment", "attachment": {"type": "hook_success"}}) + "\n")
@@ -52,7 +52,7 @@ class BgCompletion(unittest.TestCase):
         sidereus("agents")._AGENT_META.pop(os.path.join(self.dir, "sess"), None)
 
     def add(self, *recs):
-        with open(self.fp, "a") as f:
+        with open(self.fp, "a", encoding="utf-8") as f:
             for r in recs:
                 f.write(json.dumps(r) + "\n")
 
@@ -118,10 +118,10 @@ class BgCompletion(unittest.TestCase):
         line = json.dumps({"type": "attachment", "timestamp": _ts(), "attachment": {
             "type": "queued_command", "commandMode": "task-notification", "prompt": _notice("a8", "T8")}}) + "\n"
         half = len(line) // 2
-        with open(self.fp, "a") as f:
+        with open(self.fp, "a", encoding="utf-8") as f:
             f.write(line[:half])
         self.assertEqual(self.open_ids(), ["T8"])
-        with open(self.fp, "a") as f:
+        with open(self.fp, "a", encoding="utf-8") as f:
             f.write(line[half:])
         self.assertEqual(self.open_ids(), [])
 
@@ -180,7 +180,7 @@ class BgCompletion(unittest.TestCase):
     def grow(self, aid, rec, quiet_s=0):
         """Append a record to the agent's own log (the resumed turn) and set its mtime."""
         f = os.path.join(self.dir, "sess", "subagents", "agent-%s.jsonl" % aid)
-        with open(f, "a") as fh:
+        with open(f, "a", encoding="utf-8") as fh:
             fh.write(json.dumps(rec) + "\n")
         t = time.time() - quiet_s
         os.utime(f, (t, t))
@@ -392,16 +392,16 @@ class LiveSiblingsConflict(unittest.TestCase):
     def test_two_live_siblings_conflict(self):
         now = time.time()
         pa = os.path.join(self.repo, "a.py")
-        with open(self.fp, "w") as f:
+        with open(self.fp, "w", encoding="utf-8") as f:
             for tu in ("V1", "V2"):
                 f.write(json.dumps({"type": "assistant", "timestamp": _ts(), "message": {"content": [
                     {"type": "tool_use", "id": tu, "name": "Agent",
                      "input": {"subagent_type": "general-purpose", "description": tu}}]}}) + "\n")
         for aid, tu in (("x1", "V1"), ("x2", "V2")):
             base = os.path.join(self.sd, "subagents", "agent-" + aid)
-            with open(base + ".meta.json", "w") as f:
+            with open(base + ".meta.json", "w", encoding="utf-8") as f:
                 json.dump({"toolUseId": tu, "agentType": "general-purpose", "description": tu}, f)
-            with open(base + ".jsonl", "w") as f:
+            with open(base + ".jsonl", "w", encoding="utf-8") as f:
                 f.write(json.dumps({"type": "assistant", "timestamp": _ts(-30), "cwd": self.repo, "message": {
                     "stop_reason": "tool_use", "content": [
                         {"type": "tool_use", "name": "Edit", "id": "e", "input": {"file_path": pa}}]}}) + "\n")

@@ -11,7 +11,7 @@ from tests._node import node_e
 
 
 def run(js):
-    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 def async_fn(name):

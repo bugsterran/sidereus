@@ -408,7 +408,7 @@ class Flow(unittest.TestCase):
 
     def test_loopback_denied_records_nothing(self):
         os.makedirs(os.path.join(self.proj, ".claude", "agents"))
-        open(os.path.join(self.proj, ".claude", "agents", "sidereus-implementer.md"), "w").close()
+        open(os.path.join(self.proj, ".claude", "agents", "sidereus-implementer.md"), "w", encoding="utf-8").close()
         self.pre("설계"), self.post("설계"), self.pre("구현"), self.post("구현"), self.pre("검증"), self.post("검증")
         self.assertEqual(self.pre("구현", sub="Explore")["permissionDecision"], "deny")   # loop-back dispatch refused
         self.assertEqual((self.run_()["lb"], self.run_()["loops"]), ([], {}))
@@ -719,7 +719,7 @@ class Flow(unittest.TestCase):
 
     def test_agent_mismatch_denied(self):
         os.makedirs(os.path.join(self.proj, ".claude", "agents"))
-        open(os.path.join(self.proj, ".claude", "agents", "sidereus-designer.md"), "w").close()
+        open(os.path.join(self.proj, ".claude", "agents", "sidereus-designer.md"), "w", encoding="utf-8").close()
         o = self.pre("설계", sub="general-purpose")
         self.assertEqual(o["permissionDecision"], "deny")
         self.assertIn("expects subagent_type sidereus-designer;", o["permissionDecisionReason"])
@@ -733,7 +733,7 @@ class Flow(unittest.TestCase):
         o = self.pre("설계", sub="Explore")
         self.assertIn("general-purpose also accepted", o["permissionDecisionReason"])
         os.makedirs(os.path.join(self.user, "agents"))
-        open(os.path.join(self.user, "agents", "sidereus-designer.md"), "w").close()   # user-level install counts
+        open(os.path.join(self.user, "agents", "sidereus-designer.md"), "w", encoding="utf-8").close()   # user-level install counts
         self.assertIsNotNone(self.pre("설계", sub="general-purpose"))
 
     def test_model_mismatch_and_override(self):
@@ -843,7 +843,7 @@ class Flow(unittest.TestCase):
         self.assertIsNone(self.post("설계", tool="Bash"))
 
     def test_apply_off_silent(self):
-        with open(self.cfg, "w") as f:
+        with open(self.cfg, "w", encoding="utf-8") as f:
             json.dump({"pipeline_apply": {"projects": {self.proj: "off"}}}, f)
         self.assertIsNone(self.pre("설계"))
         self.assertIsNone(self.post("설계"))
@@ -1007,7 +1007,7 @@ class Flow(unittest.TestCase):
     def test_nudge_silent_when_lock_held(self):
         self.pre("설계")
         with mock.patch.object(H, "LOCK_WAIT_S", 0.0):
-            open(os.path.join(self.marks, SID + ".runs.json.lock"), "w").close()
+            open(os.path.join(self.marks, SID + ".runs.json.lock"), "w", encoding="utf-8").close()
             self.assertIsNone(self.bash("ls"))
 
     def _whylog(self):
@@ -1052,7 +1052,7 @@ class Flow(unittest.TestCase):
 
     def test_why_never_raises(self):
         with mock.patch.object(H, "MARK_DIR", os.path.join(self.tmp, "f")):
-            open(os.path.join(self.tmp, "f"), "w").close()   # MARK_DIR is a file: makedirs fails
+            open(os.path.join(self.tmp, "f"), "w", encoding="utf-8").close()   # MARK_DIR is a file: makedirs fails
             H._why({"session_id": SID}, "x")
 
 

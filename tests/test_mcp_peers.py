@@ -70,7 +70,7 @@ class TestWarning(unittest.TestCase):
     def test_self_sid_from_parent_session_file(self):
         with tempfile.TemporaryDirectory() as td:
             os.makedirs(os.path.join(td, "sessions"))
-            with open(os.path.join(td, "sessions", "%d.json" % os.getppid()), "w") as f:
+            with open(os.path.join(td, "sessions", "%d.json" % os.getppid()), "w", encoding="utf-8") as f:
                 json.dump({"pid": os.getppid(), "sessionId": "deadbeef-0000"}, f)
             old = os.environ.get("CLAUDE_CONFIG_DIR")
             os.environ["CLAUDE_CONFIG_DIR"] = td

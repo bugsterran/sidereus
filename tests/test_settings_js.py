@@ -84,7 +84,7 @@ process.stdout.write(JSON.stringify(R));
 class SettingsPane(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        r = subprocess.run(node_e("const ROOT = %s;\n" % json.dumps(ROOT) + SRC), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e("const ROOT = %s;\n" % json.dumps(ROOT) + SRC), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         cls.R = json.loads(r.stdout)

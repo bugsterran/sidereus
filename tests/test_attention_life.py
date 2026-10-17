@@ -17,7 +17,7 @@ def life(sig, now, lang="ko"):
     src = ("const LANG = %s;\n" % json.dumps(lang) + i18n_switch(("T",))
            + aft + "\n" + js_fn("hhmm") + "\n" + js_fn("CLK") + "\n" + js_fn("attnLife")
            + "\nconsole.log(JSON.stringify(attnLife(" + json.dumps(sig) + ", " + json.dumps(now) + ")));")
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 def clock(ts):

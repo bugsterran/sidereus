@@ -15,7 +15,7 @@ CWD = "/x/proj"
 
 
 def _write(fp, cmd):
-    with open(fp, "w") as f:
+    with open(fp, "w", encoding="utf-8") as f:
         f.write(json.dumps({"type": "assistant", "timestamp": "2026-10-05T00:00:00.000Z", "message": {"content": [
             {"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": cmd}}]}}) + "\n")
 

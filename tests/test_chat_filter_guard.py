@@ -25,7 +25,7 @@ class SetFilter(unittest.TestCase):
         js = ("let filter='x', place='room:keep', ROOMS=" + json.dumps(rooms) + ", MSGS=" + json.dumps(msgs) + ";\n"
               + "\n".join(js_fn(n) for n in ("roomNames", "soleRoom", "absorbed", "chatFilterKey", "setFilter"))
               + "\nconst o=[];" + body + "process.stdout.write(JSON.stringify(o));")
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         return json.loads(r.stdout)
 

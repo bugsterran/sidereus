@@ -32,7 +32,7 @@ def run(body):
     decl = "".join(re.search(r"^(?:const|let) " + n + r"\b[^\n]*$", src, re.M).group(0) + "\n" for n in CONSTS)
     fns = ("attnName", "ntfPref", "ntfSave", "ntfOn", "ntfStep", "ntfGate", "ntfText", "ntfClick", "ntfTick", "ntfSet")
     src = PRELUDE + i18n_switch() + decl + re.search(r"^const ATTN_LBL = \{.*?\};", src, re.S | re.M).group(0) + "\n" + js_fn("attnLbl") + "\n" + "\n".join(js_fn(n) for n in fns) + "\n" + body
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

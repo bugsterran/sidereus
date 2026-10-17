@@ -30,7 +30,7 @@ R.fire('pointermove', {buttons: 1, clientX: 10});
 R.fire('pointermove', {buttons: 1, clientX: 30});
 R.fire('pointerup', {});
 process.stdout.write(JSON.stringify({caps, moves, ends, left: R.n()}));""")
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         return json.loads(r.stdout)
 

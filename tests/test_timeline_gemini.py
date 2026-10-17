@@ -36,7 +36,7 @@ class GeminiTimeline(unittest.TestCase):
         pg._cache.clear()
         pdir = os.path.join(self.root, ".gemini", "tmp", "proj")
         os.makedirs(os.path.join(pdir, "chats"))
-        with open(os.path.join(pdir, ".project_root"), "w") as f:
+        with open(os.path.join(pdir, ".project_root"), "w", encoding="utf-8") as f:
             f.write("/w/proj")
         self.chats = os.path.join(pdir, "chats")
 
@@ -47,7 +47,7 @@ class GeminiTimeline(unittest.TestCase):
 
     def write(self, name, lines, mtime):
         p = os.path.join(self.chats, name)
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             for o in lines:
                 f.write(json.dumps(o) + "\n")
         os.utime(p, (mtime, mtime))
@@ -94,7 +94,7 @@ class GeminiTimeline(unittest.TestCase):
     def test_incremental_append(self):
         p = self.write("session-i.jsonl", [self.hdr("inc", T0), _gem("a", T0, 10)], T0)
         self.assertEqual(te._plat_rows(GM, T0 - 60, T0 + 60)[0]["tk"], 25)
-        with open(p, "a") as f:
+        with open(p, "a", encoding="utf-8") as f:
             f.write(json.dumps(_gem("a", T0, 10)) + "\n" + json.dumps(_gem("b", T0 + 30, 20)) + "\n")
         os.utime(p, (T0 + 30, T0 + 30))
         self.assertEqual(te._plat_rows(GM, T0 - 60, T0 + 60)[0]["tk"], 60)

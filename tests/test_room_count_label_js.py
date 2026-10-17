@@ -19,7 +19,7 @@ def cnt(lang, cards, tag=""):
           "function rcCards(){return CS;} function raBarHtml(){return '';} function raToolHtml(){return '';}\n"
           "function raBoxHtml(){return '';} function raCardHtml(){return '';} function rcBind(){}\n"
           + js_fn("rcPaint") + "\nrcPaint();\nprocess.stdout.write(JSON.stringify(E.cnt.textContent));")
-    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 class RoomCountLabel(unittest.TestCase):

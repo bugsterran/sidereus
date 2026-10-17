@@ -18,7 +18,7 @@ class NodeArgv(unittest.TestCase):
         pad = "// " + "x" * 300000 + "\n"
         argv = node_e(pad + "const fs = require('fs'); process.stdout.write(JSON.stringify([process.argv.slice(1), typeof module]));", "a", "b")
         self.assertTrue(all(len(a) < ARG_MAX_SAFE for a in argv))
-        r = subprocess.run(argv, capture_output=True, text=True, timeout=20)
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(json.loads(r.stdout), [["a", "b"], "object"])
         self.assertFalse(os.path.exists(argv[3]))   # loader removes its temp file

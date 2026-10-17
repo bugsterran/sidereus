@@ -133,7 +133,7 @@ process.stdout.write(JSON.stringify(R));
 class SettingsDefaultShown(unittest.TestCase):
     def test_settings_show_lang_default(self):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        r = json.loads(subprocess.run(node_e(JS, root), capture_output=True, text=True, check=True).stdout)
+        r = json.loads(subprocess.run(node_e(JS, root), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertEqual(r["en"], [["user", "user"], ["user", "user"], ["나", "user"], ["사용자", "사용자"]])
         self.assertEqual(r["ko"], [["사용자", "사용자"], ["사용자", "사용자"], ["나", "사용자"], ["사용자", "사용자"]])
 

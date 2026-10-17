@@ -23,7 +23,7 @@ process.stdout.write(JSON.stringify({
                    {clr: [{at: 250, old8: '<o>', new8: 'n"'}]}], pct),
 }));
 """
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         cls.R = json.loads(r.stdout)

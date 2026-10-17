@@ -44,7 +44,7 @@ class CompactCap(unittest.TestCase):
 
     def mk(self, name, rows):
         fp = os.path.join(self.d, "proj", name + ".jsonl")
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write("".join(json.dumps(r) + "\n" for r in rows))
         return fp
 
@@ -73,7 +73,7 @@ class CompactCap(unittest.TestCase):
         self.assertEqual(L._ctx_window("claude-sonnet-5", 172_453, ""), (0, ""))   # no clean evidence -> no %
 
     def test_compact_state_extends_history(self):
-        with open(L.COMPACT_STATE_FILE, "w") as f:
+        with open(L.COMPACT_STATE_FILE, "w", encoding="utf-8") as f:
             json.dump({"value": 200_000, "since": datetime(2026, 9, 26).timestamp()}, f)
         self.mk("e", _lines("claude-sonnet-4-6", (2026, 9, 27), 180_000))
         self.assertEqual(self.scan(datetime(2026, 9, 28).timestamp()), {})

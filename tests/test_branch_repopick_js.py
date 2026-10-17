@@ -21,7 +21,7 @@ function tabSet(k, v){ R.set.push([k, v]); } function loadBr(f){ R.load.push(f);
 def run(body):
     src = (PRE + js_fn("ppComboHtml") + "\n" + js_fn("brBarPaint") + "\n" + js_fn("brPickRepo") + "\n" + body
            + "\nprocess.stdout.write(JSON.stringify(R));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

@@ -23,7 +23,7 @@ cr = sidereus("claude_roots")
 def _touch(*parts):
     p = os.path.join(*parts)
     os.makedirs(os.path.dirname(p), exist_ok=True)
-    with open(p, "w") as f:
+    with open(p, "w", encoding="utf-8") as f:
         f.write("{}\n")
     return p
 

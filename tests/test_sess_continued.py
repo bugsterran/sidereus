@@ -17,7 +17,7 @@ PATCH = ("live_cwds", "_recent_transcripts", "_parse_transcript", "sid_alive", "
 
 
 def _write(path, recs):
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         for r in recs:
             f.write(json.dumps(r, separators=(",", ":")) + "\n")
 

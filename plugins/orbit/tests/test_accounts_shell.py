@@ -42,13 +42,13 @@ class LauncherTest(unittest.TestCase):
         os.makedirs(self.home)
         os.makedirs(self.bin)
         fake = os.path.join(self.bin, "claude")
-        with open(fake, "w") as f:
+        with open(fake, "w", encoding="utf-8") as f:
             f.write(FAKE_CLAUDE)
         os.chmod(fake, 0o755)
         self.stub = os.path.join(self.tmp, "accounts.py")
-        with open(self.stub, "w") as f:
+        with open(self.stub, "w", encoding="utf-8") as f:
             f.write(STUB_PY)
-        with open(os.path.join(self.home, ".claude-accounts"), "w") as f:
+        with open(os.path.join(self.home, ".claude-accounts"), "w", encoding="utf-8") as f:
             f.write("account default ~/.claude\naccount work ~/.claude-work\n")
 
     def tearDown(self):
@@ -60,12 +60,12 @@ class LauncherTest(unittest.TestCase):
         argv = [sh, "-f", "-c"] if sh == "zsh" else [sh, "--norc", "--noprofile", "-c"]
         p = subprocess.run(argv + ['. "$0"; ' + cmd, LAUNCHER], env=env, cwd=self.home,
                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                           universal_newlines=True, timeout=20)
+                           universal_newlines=True, timeout=20, encoding="utf-8")
         return p.returncode, p.stdout.splitlines(), p.stderr
 
     def stub_log(self):
         try:
-            with open(self.stub + ".log") as f:
+            with open(self.stub + ".log", encoding="utf-8") as f:
                 return f.read().splitlines()
         except OSError:
             return []
@@ -127,7 +127,7 @@ class LauncherTest(unittest.TestCase):
     def test_resolver_failure_still_starts_claude(self):
         bodies = {"exit1": "import sys; sys.exit(1)\n", "garbage": "print('no tab here')\n"}
         for label, body in bodies.items():
-            with open(self.stub, "w") as f:
+            with open(self.stub, "w", encoding="utf-8") as f:
                 f.write(body)
             for sh in SHELLS:
                 with self.subTest(sh=sh, stub=label):
@@ -151,7 +151,7 @@ class LauncherTest(unittest.TestCase):
         for body, hint in (("print('work\\t/acc/work\\t0')", True), ("print('work\\t/acc/work\\t1')", False),
                            ("print('work\\t/acc/work')", False),
                            ("import os; print('work\\t/acc/work\\t' + os.environ.get('FA_RESOLVE_FIELDS', '-'))", False)):
-            with open(self.stub, "w") as f:
+            with open(self.stub, "w", encoding="utf-8") as f:
                 f.write(body + "\n")
             for sh in SHELLS:
                 with self.subTest(sh=sh, stub=body):

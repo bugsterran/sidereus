@@ -45,7 +45,7 @@ class PermMark(unittest.TestCase):
     def test_hook_stores_no_text(self):
         self._hook({"hook_event_name": "Notification", "session_id": SID, "notification_type": "permission_prompt",
                     "message": "Claude needs your permission to use SECRET", "title": "t", "cwd": "/x"})
-        with open(os.path.join(self.tmp, SID + ".json")) as f:
+        with open(os.path.join(self.tmp, SID + ".json"), encoding="utf-8") as f:
             self.assertEqual(json.load(f), {"sid": SID, "t": NOW})
 
     def test_hook_ignores_other_notifications_and_bad_sid(self):
@@ -198,7 +198,7 @@ class PermMark(unittest.TestCase):
 
     def _transcript(self, lines):
         self.tp = os.path.join(self.tmp, "t.jsonl")
-        with open(self.tp, "w") as f:
+        with open(self.tp, "w", encoding="utf-8") as f:
             f.write("".join(json.dumps(x) + "\n" for x in lines))
 
     @staticmethod

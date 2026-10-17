@@ -33,7 +33,7 @@ const out = (x) => process.stdout.write(JSON.stringify(x));
 
 def _node(body):
     src = PRE % {"lib": json.dumps(os.path.join(ROOT, "scripts", "i18n_flip.mjs")), "fix": json.dumps(FIX)} + body
-    r = subprocess.run(["node", "--input-type=module", "-e", src], capture_output=True, text=True, timeout=60, cwd=ROOT)
+    r = subprocess.run(["node", "--input-type=module", "-e", src], capture_output=True, text=True, timeout=60, cwd=ROOT, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr[-2000:])
     return json.loads(r.stdout)

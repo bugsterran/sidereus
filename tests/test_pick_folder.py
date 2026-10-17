@@ -135,7 +135,7 @@ class PickJs(unittest.TestCase):
         with open(_F, encoding="utf-8") as f:
             src = _STUB + i18n_prelude("'ko'", ("T", "TV", "U")) + f.read() + "\nconsole.log(JSON.stringify([%s].map(plBrHtml)))" % ",".join(
                 json.dumps(dict(B, **x)) for x in ({}, {"pick": True}, {"pick": True, "picking": True, "hidden": True}))
-        off, on, busy = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        off, on, busy = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertNotIn("data-plbrpick", off)                       # unsupported OS: no button
         self.assertIn("data-plbrpick>", on)
         self.assertIn("data-plbrpick disabled", busy)

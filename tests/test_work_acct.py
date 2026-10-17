@@ -20,7 +20,7 @@ class WorkAcct(unittest.TestCase):
     def setUp(self):
         fd, self.fp = tempfile.mkstemp(suffix=".jsonl")
         os.close(fd)
-        with open(self.fp, "w") as f:
+        with open(self.fp, "w", encoding="utf-8") as f:
             f.write(json.dumps({"type": "assistant", "timestamp": "2026-10-05T00:00:00.000Z",
                                 "message": {"content": [{"type": "tool_use", "id": "t1", "name": "Read",
                                                          "input": {"file_path": "/x/a.py"}}]}}) + "\n")
@@ -86,7 +86,7 @@ def run(body):
     src = ("var document = {getElementById: () => null};\nconst UIS = {getItem: () => ''};\nlet ACCTS = [];\n" + i18n() + "\n" + jconst("esc") + "\n"
            + "\n".join(js_fn(f) for f in FNS) + "\nconst R = {};\nLANG = 'en';\n" + body
            + "\nprocess.stdout.write(JSON.stringify(R));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

@@ -27,10 +27,10 @@ class RailBase(unittest.TestCase):
             env["GIT_COMMITTER_DATE"] = env["GIT_AUTHOR_DATE"] = "%d +0000" % at
         return subprocess.run(["git", "-C", self.d, "-c", "user.name=t", "-c", "user.email=t@t",
                                "-c", "commit.gpgsign=false"] + list(a),
-                              check=True, capture_output=True, text=True, env=env).stdout.strip()
+                              check=True, capture_output=True, text=True, env=env, encoding="utf-8").stdout.strip()
 
     def put(self, p, b):
-        with open(os.path.join(self.d, p), "w") as fh:
+        with open(os.path.join(self.d, p), "w", encoding="utf-8") as fh:
             fh.write(b)
 
     def commit(self, p, b, at=None):
@@ -169,7 +169,7 @@ class RailBase(unittest.TestCase):
 
     def test_session_start_from_transcript(self):
         fp = os.path.join(self.d, "t.jsonl")
-        with open(fp, "w") as fh:
+        with open(fp, "w", encoding="utf-8") as fh:
             fh.write('{"type":"mode"}\n{"type":"x","timestamp":"2026-09-23T18:53:09.336Z"}\n')
         real = gr._sid_path
         gr._sid_path = lambda cwd, sid: fp if sid == "abc" else ""

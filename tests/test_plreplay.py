@@ -232,7 +232,7 @@ class Replay(object):
                + "  const fin = !(!a.pr.end && plPrLive(a.pr)), pl = tlPlOne({ sid: 'x', r: a.pr }, fin, null, { now: a.now });\n"
                + "  return { lt: pl.lt, titles: pl.titles, cur: tlPlCur(pl), status: tlPlSt(pl),\n"
                + "    pulse: LOOPS.filter(l => plPulseOn(pl.lt, l[0], l[1])) }; })))")
-        p = subprocess.run(node_e(src), capture_output=True, text=True)
+        p = subprocess.run(node_e(src), capture_output=True, text=True, encoding="utf-8")
         if p.returncode:
             return {i: ["ev %d layer 3: node failed: %s" % (i, p.stderr.strip()[-300:])] for i, _, _ in rows}
         out = {}
@@ -299,13 +299,13 @@ class PlReplay(unittest.TestCase):
         L = {"k": 3, "p0": 300, "w0": 100, "ag": [], "ps": [{"a": 100, "b": 190, "s": "back"}, {"a": 200, "b": 290, "s": "back"}],
              "cm": [150, 250, 320]}
         src = js_fn("plAgLabs") + js_fn("plAgLab") + js_fn("plPass") + "\nconst L = %s;\nconsole.log(JSON.stringify([plPass(L, 0).cm, plPass(L, 1).cm]))" % json.dumps(L)
-        out = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        out = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertEqual(out, [[150], [250]])
 
     def test_pulse_predicate(self):
         src = js_fn("plPulseOn") + "\nconst lt = %s;\nconsole.log(JSON.stringify([plPulseOn(lt, 'b', 'a'), plPulseOn(lt, 'c', 'a'), plPulseOn(lt, 'b', 'd'), plPulseOn(null, 'b', 'a')]))" \
             % json.dumps({"a": {"st": "run", "via": "b", "from": {"b": 1, "c": 2}}, "d": {"st": "done", "via": "b", "from": {"b": 1}}})
-        out = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        out = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertEqual(out, [True, False, False, False])
 
 

@@ -25,7 +25,7 @@ def _js(body):
     # plgShow: a minimal English stage-name table (the real one is 06-i18n-w.js PLG_NAMES).
     i18n += "\nvar LANG = 'en'; const PLG_NAMES = {en: {'설계': 'Design', '구현': 'Implement', '검증': 'Verify', '리뷰': 'Review'}};"
     code = i18n + "\n" + consts + "\n" + "\n".join(js_fn(f) for f in FNS) + "\n{\n" + body + "\n}\n"   # block: a test may declare its own T
-    return json.loads(subprocess.run(node_e(code), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(code), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 P = {"name": "demo", "defaults": {"model": "inherit", "retry": 0}, "stages": [

@@ -29,7 +29,7 @@ class _Base(unittest.TestCase):
         self.root = os.path.join(self.tmp, "repo")
         os.makedirs(os.path.join(self.root, ".git"))
         for f in ("a.py", "b.py"):
-            with open(os.path.join(self.root, f), "w") as fh:
+            with open(os.path.join(self.root, f), "w", encoding="utf-8") as fh:
                 fh.write("x\n")
         self.diff = {"a.py": ("M", 3, 1), "b.py": ("A", 10, 0)}
         self.head = "c0ffee"

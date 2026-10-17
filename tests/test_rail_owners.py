@@ -116,9 +116,9 @@ class TestRailOwners(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             sub = os.path.join(d, "-r", "s1", "subagents")
             os.makedirs(sub)
-            with open(os.path.join(sub, "agent-x1.meta.json"), "w") as f:
+            with open(os.path.join(sub, "agent-x1.meta.json"), "w", encoding="utf-8") as f:
                 json.dump({"toolUseId": "toolu_1", "agentType": "Explore"}, f)
-            open(os.path.join(d, "-r", "s3.jsonl"), "w").close()          # main-only session: no <sid> dir
+            open(os.path.join(d, "-r", "s3.jsonl"), "w", encoding="utf-8").close()          # main-only session: no <sid> dir
             fo.CLAUDE_PROJECTS = d
             try:
                 self.assertEqual(gv._rail_home(fo, "s1", "", "/r"), "-r")

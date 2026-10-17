@@ -61,7 +61,7 @@ class HistRetroUx(unittest.TestCase):
         help_ = "\n".join([esc, js_fn("fmtPct"), js_fn("histExtKeys"), js_fn("histDayTot"), js_fn("histSpan"),
                            js_fn("histLive"), "function stamp(t){ return String(t); }", "function agoAt(t){ return 'ago'; }"])
         r = subprocess.run(node_e("const ROOT = %s;\nconst HELP = %s;\n" % (json.dumps(ROOT), json.dumps(help_)) + SRC),
-                           capture_output=True, text=True, timeout=20)
+                           capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         cls.R = json.loads(r.stdout)

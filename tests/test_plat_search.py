@@ -24,7 +24,7 @@ class PlatSearch(unittest.TestCase):
     def ids(self, q):
         src = STUBS + "\n".join(js_fn(n) for n in ("platName", "platHay", "cpHay", "cpMatch")) \
             + "\nprocess.stdout.write(JSON.stringify(cpMatch(" + json.dumps(q) + ", " + json.dumps(ROWS) + ").map(x => x.id)));"
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         return json.loads(r.stdout)

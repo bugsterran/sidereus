@@ -130,7 +130,7 @@ class Score(Tmp):
     def test_checks_items(self):
         d = os.path.join(AV.ARCH_DIR, AV.repo_key(self.repo), C1)
         os.makedirs(d)
-        with open(os.path.join(d, "checks-security.json"), "w") as f:
+        with open(os.path.join(d, "checks-security.json"), "w", encoding="utf-8") as f:
             json.dump({"items": [{"tool": "gitleaks", "file": "a.cfg", "line": 1, "rule": "generic-api-key", "sev": "error"},
                                  {"tool": "gitleaks", "file": "/abs", "line": 1, "rule": "x", "sev": "error"}]}, f)
         self.assertEqual(PE.checks_items(self.repo, C1, "checks-security"),
@@ -150,7 +150,7 @@ class Flaky(Tmp):
     def test_flaky(self):
         self.assertEqual(PE.flaky(self.rows(), NOW), ["fast"])
         self.assertEqual(PE.flaky(self.rows(), NOW, days=30), ["checks-security", "fast"])
-        with open(PE.EVAL_EV_FILE, "w") as f:
+        with open(PE.EVAL_EV_FILE, "w", encoding="utf-8") as f:
             for x in self.rows() + [dict(self.rows()[1], repo="/elsewhere", mode="full", head="beef", rc=0)]:
                 f.write(json.dumps(x) + "\n")
             f.write("not json\n")
@@ -182,7 +182,7 @@ class Flaky(Tmp):
         st = PE.redcheck_status("p", P["stages"])
         self.assertEqual((st["검사 실행"]["verdict"], st["검사 실행"]["same"], st["검증"]["same"]), ("pass", True, False))
         self.assertEqual(PE.graded_summary(P, self.repo, NOW), {"n": 2, "m": 4, "unred": [], "unstable": []})
-        with open(PE.EVAL_EV_FILE, "w") as f:
+        with open(PE.EVAL_EV_FILE, "w", encoding="utf-8") as f:
             for x in self.rows()[:2]:
                 f.write(json.dumps(x) + "\n")
         self.assertEqual(PE.graded_summary(P, self.repo, NOW), {"n": 1, "m": 4, "unred": [], "unstable": ["검증"]})

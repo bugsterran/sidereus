@@ -14,7 +14,7 @@ FNS = ("codeBlock", "mdLinks", "md", "mmdLabel", "mmdSplit", "mmdChain", "mmdPar
        "mmdPav", "mmdOrder", "mmdLayers", "mmdPlace", "mmdAnc", "mmdRoute", "mmdSegRect", "mmdSpread", "mmdUncross", "mmdRouteAll", "mmdPathD", "mmdNum",
        "mmdLabels", "mmdQuality", "mmdLayout", "mmdPoly", "mmdTip", "mmdFlPlace", "mmdSvg", "mmdLegend", "mmdSeqParse", "mmdSeqLayout", "mmdSeqSvg", "mmdBlock")
 # The grid router (81g0) runs whole: its RR_* constants and relRRB buffer are top-level statements, not functions.
-ROUTER = open(__import__("os").path.join(__import__("os").path.dirname(__file__), "..", "web", "js", "81g0-structure-grid-router.js")).read()
+ROUTER = open(__import__("os").path.join(__import__("os").path.dirname(__file__), "..", "web", "js", "81g0-structure-grid-router.js"), encoding="utf-8").read()
 
 PRE = (r"""const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const NL = String.fromCharCode(10);
@@ -127,7 +127,7 @@ MD = ("# T\n\n```mermaid\nsequenceDiagram\n  A->>B: hi\n```\n\n```mermaid\nflowc
 
 def run(body):
     src = PRE + "const MMD_BUDGET = 1e9, MMD_UNCROSS = 1e9;\n" + ROUTER + "\n" + "\n".join(js_fn(f) for f in FNS) + "\nconst R = {};\n" + body + "\nprocess.stdout.write(JSON.stringify(R));"
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

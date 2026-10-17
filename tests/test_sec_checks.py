@@ -30,7 +30,7 @@ class Plans(Tmp):
     def w(self, rel, text=""):
         fp = os.path.join(self.repo, rel)
         os.makedirs(os.path.dirname(fp), exist_ok=True)
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write(text)
 
     def test_missing_and_network_gating(self):
@@ -89,14 +89,14 @@ class Runner(Tmp):
         super().setUp()
         self.store = os.path.join(self.tmp, "store")
         self.cli = cli()
-        with open(os.path.join(self.repo, "conf.py"), "w") as f:
+        with open(os.path.join(self.repo, "conf.py"), "w", encoding="utf-8") as f:
             f.write("x = 1\n")
         self.err = "INF scanned ~2048 bytes (2.05 KB) in 9ms"
         self.reports = []
 
         def ex(p, t, tmp):
             self.reports.append(p["report"])
-            with open(p["report"], "w") as f:
+            with open(p["report"], "w", encoding="utf-8") as f:
                 json.dump([{"RuleID": "aws-access-token", "File": os.path.join(self.repo, "conf.py"), "StartLine": 1,
                             "Secret": SECRET, "Match": MATCH, "Line": LINE, "Description": "AWS " + SECRET}], f)
             return {"rc": 1, "out": "", "err": self.err, "t0": 0, "ms": 4}
@@ -123,7 +123,7 @@ class Runner(Tmp):
         self.assertEqual(rc, 0, line)
         self.assertTrue(line.startswith("arch_checks: security · 1 tools · 1 errors · 0 warnings"), line)
         fp = os.path.join(self.store, AV.repo_key(self.repo), C1, SC.SEC_FILE)
-        with open(fp) as f:
+        with open(fp, encoding="utf-8") as f:
             raw = f.read()
         for leak in (SECRET, MATCH, LINE.strip(), "AWS "):
             self.assertNotIn(leak, raw + line)
@@ -142,7 +142,7 @@ class Runner(Tmp):
         real = self.cli._exec
 
         def ex(p, t, tmp):
-            with open(p["report"], "w") as f:
+            with open(p["report"], "w", encoding="utf-8") as f:
                 json.dump([{"RuleID": "aws-access-token", "File": os.path.join(self.repo, n), "StartLine": 1}
                            for n in ("conf.py", ".omc/x.json")], f)
             return {"rc": 1, "out": "", "err": self.err, "t0": 0, "ms": 4}
@@ -151,7 +151,7 @@ class Runner(Tmp):
             git = lambda repo, args, ls=ls: (C1 + "\n") if args[0] == "rev-parse" else (ls if args[0] == "ls-files" else "")
             with mock.patch.object(self.cli, "_exec", ex), mock.patch.object(self.cli, "_git", git):
                 self.assertEqual(self.main("--repo", self.repo, "--category", "security")[0], 0)
-            with open(fp) as f:
+            with open(fp, encoding="utf-8") as f:
                 j = json.load(f)
             self.assertEqual(sorted(x["file"] for x in j["items"]), want)
             self.assertEqual((j["tools"][0]["n"]["error"], sorted(j["files"])), (len(want), want))
@@ -171,7 +171,7 @@ class Runner(Tmp):
             self.assertEqual(self.main("--verify", "--last", "--category", "security")[0], 0)
             with mock.patch.object(self.cli, "_EV_PY", "/nonexistent/python"):   # recording failure keeps the rc
                 self.assertEqual(self.main("--verify", "--last", "--category", "security")[0], 0)
-        with open(ev) as f:
+        with open(ev, encoding="utf-8") as f:
             rows = [json.loads(x) for x in f]
         self.assertEqual(len(rows), 1)
         self.assertEqual((rows[0]["mode"], rows[0]["rc"], rows[0]["repo"]), ("checks-security", 0, self.repo))
@@ -218,7 +218,7 @@ class Runner(Tmp):
                     mock.patch.object(self.cli, "_probe", lambda: probes.append(1) or up):
                 self.assertEqual(self.main("--repo", self.repo, "--category", "security", "--only", "osv-scanner",
                                            *extra)[0], 0)
-            with open(fp) as f:
+            with open(fp, encoding="utf-8") as f:
                 return json.load(f)["tools"][0]
         self.assertEqual((go(True)["status"], probes, ran), ("ok", [1], ["osv-scanner"]))
         t = go(False)   # unreachable: skipped, never «0 issues»

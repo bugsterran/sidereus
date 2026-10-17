@@ -13,7 +13,7 @@ STUB = ("var LANG = 'ko'; const esc = s => String(s).replace(/&/g, '&amp;').repl
 
 def _js(expr, sess, *fns):
     src = STUB + "var SESS = %s;\n" % json.dumps(sess) + "\n".join(js_fn(f) for f in ("plStrip",) + fns) + "\nconsole.log(JSON.stringify(" + expr + "));"
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 def _ag(phase, st, lab, start=100, end=200):

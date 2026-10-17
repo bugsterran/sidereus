@@ -27,7 +27,7 @@ class MailboxStop(unittest.TestCase):
         self.n = 0
         self.w("identity.json", {CWD: ME, "/p/other": "bob"})
         self.w("rooms.json", {"r1": {"members": [ME, "bob"]}, "r2": {"members": ["bob", "carol"]}})
-        open(self.p("bus.jsonl"), "w").close()
+        open(self.p("bus.jsonl"), "w", encoding="utf-8").close()
 
     def tearDown(self):
         shutil.rmtree(self.d, ignore_errors=True)
@@ -57,7 +57,7 @@ class MailboxStop(unittest.TestCase):
         inp = json.dumps(inp)
         c0 = _child_cpu()
         r = subprocess.run(["/usr/bin/python3", HOOK], input=inp, capture_output=True, text=True,
-                           env=env, timeout=10)
+                           env=env, timeout=10, encoding="utf-8")
         self.cpu = _child_cpu() - c0
         self.assertEqual(r.returncode, 0)
         return json.loads(r.stdout) if r.stdout.strip() else None
@@ -69,13 +69,13 @@ class MailboxStop(unittest.TestCase):
 
     def test_watch_running_is_silent(self):
         self.post("bob", to=ME)
-        with open(self.p(f".watch-{ME}.pid"), "w") as f:
+        with open(self.p(f".watch-{ME}.pid"), "w", encoding="utf-8") as f:
             f.write(str(os.getpid()))
         self.assertIsNone(self.run_hook())
 
     def test_dead_watch_lock_does_not_silence(self):
         self.post("bob", to=ME)
-        with open(self.p(f".watch-{ME}.pid"), "w") as f:
+        with open(self.p(f".watch-{ME}.pid"), "w", encoding="utf-8") as f:
             f.write("999999")
         self.assertIsNotNone(self.run_hook())
 
@@ -106,16 +106,16 @@ class MailboxStop(unittest.TestCase):
         self.post("bob", to="carol")                # someone else's DM
         self.assertIsNone(self.run_hook(sid="a"))
         read = self.post("bob", to=ME)
-        with open(self.p(f"read-{ME}.cursor"), "w") as f:
+        with open(self.p(f"read-{ME}.cursor"), "w", encoding="utf-8") as f:
             f.write(str(self.now + self.n * 1000))  # cursor at the last post
         self.assertIsNone(self.run_hook(sid="b"))
         os.unlink(self.p(f"read-{ME}.cursor"))
-        with open(self.p("acks.jsonl"), "w") as f:
+        with open(self.p("acks.jsonl"), "w", encoding="utf-8") as f:
             f.write(json.dumps({"id": read, "who": ME, "kind": "ack", "t": self.now}) + "\n")
         self.assertIsNone(self.run_hook(sid="c"))
 
     def test_old_messages_outside_lookback_ignored(self):
-        with open(self.p("bus.jsonl"), "a") as f:
+        with open(self.p("bus.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps({"id": "old", "t": self.now - 7 * 3600 * 10 ** 9, "from": "bob", "to": ME}) + "\n")
         self.assertIsNone(self.run_hook())
 
@@ -128,11 +128,11 @@ class MailboxStop(unittest.TestCase):
         self.assertIn("1건", out["reason"])
 
     def test_broken_inputs_exit_zero(self):
-        with open(self.p("identity.json"), "w") as f:
+        with open(self.p("identity.json"), "w", encoding="utf-8") as f:
             f.write("{broken")
         self.assertIsNone(self.run_hook())
         env = dict(os.environ, MAILBOX_DIR=self.d)
-        r = subprocess.run(["/usr/bin/python3", HOOK], input="not json", capture_output=True, text=True, env=env)
+        r = subprocess.run(["/usr/bin/python3", HOOK], input="not json", capture_output=True, text=True, env=env, encoding="utf-8")
         self.assertEqual((r.returncode, r.stdout), (0, ""))
 
     def test_time_budget_on_large_bus(self):
@@ -143,7 +143,7 @@ class MailboxStop(unittest.TestCase):
             self.assertIsNotNone(self.run_hook())
             base.append(self.cpu)
         big = json.dumps({"id": "z", "t": self.now - 10 ** 12, "from": "bob", "room": "r1", "body": "x" * 400})
-        with open(self.p("bus.jsonl"), "a") as f:
+        with open(self.p("bus.jsonl"), "a", encoding="utf-8") as f:
             f.write((big + "\n") * 60000)          # ~27 MB: a full scan costs >= 0.12 s CPU, the tail read ~5 ms
         cost = []
         for _ in range(2):
@@ -166,7 +166,7 @@ class MailboxStop(unittest.TestCase):
 
     def hooked(self):
         try:
-            with open(self.p("acks.jsonl")) as f:
+            with open(self.p("acks.jsonl"), encoding="utf-8") as f:
                 return [json.loads(x) for x in f if '"hooked"' in x]
         except OSError:
             return []
@@ -203,7 +203,7 @@ class MailboxStop(unittest.TestCase):
     def test_relay_already_hooked_or_acked_skipped(self):
         a = self.relay()
         b = self.relay()
-        with open(self.p("acks.jsonl"), "w") as f:
+        with open(self.p("acks.jsonl"), "w", encoding="utf-8") as f:
             f.write(json.dumps({"id": a, "who": ME, "kind": "hooked", "t": self.now}) + "\n")
             f.write(json.dumps({"id": b, "who": ME, "kind": "ack", "t": self.now}) + "\n")
         self.assertIsNone(self.run_hook())
@@ -211,7 +211,7 @@ class MailboxStop(unittest.TestCase):
     def test_relay_watcher_delivered_still_handed_over(self):
         # A watcher's "delivered" only notifies — the body must still reach the session.
         a = self.relay(body="BODY-W")
-        with open(self.p("acks.jsonl"), "w") as f:
+        with open(self.p("acks.jsonl"), "w", encoding="utf-8") as f:
             f.write(json.dumps({"id": a, "who": ME, "kind": "delivered", "t": self.now}) + "\n")
         out = self.run_hook()
         self.assertIn("BODY-W", out["reason"])
@@ -304,7 +304,7 @@ class MailboxStop(unittest.TestCase):
 
     # --- two-phase delivery (stop_hook_active) ---
     def state(self, sid="s1"):
-        with open(os.path.join(self.d, ".stop-hook", sid + ".json")) as f:
+        with open(os.path.join(self.d, ".stop-hook", sid + ".json"), encoding="utf-8") as f:
             return json.load(f)
 
     def test_block_stages_pending_cursor_unchanged(self):
@@ -344,7 +344,7 @@ class MailboxStop(unittest.TestCase):
     def _edit_pending(self, **kv):
         st = self.state()
         st["pending"].update(kv)
-        with open(os.path.join(self.d, ".stop-hook", "s1.json"), "w") as f:
+        with open(os.path.join(self.d, ".stop-hook", "s1.json"), "w", encoding="utf-8") as f:
             json.dump(st, f)
 
     def test_stale_pending_with_true_is_redelivered(self):
@@ -379,14 +379,14 @@ class MailboxStop(unittest.TestCase):
     def test_relay_delivered_while_watcher_alive(self):
         self.post("bob", to=ME)
         self.relay()
-        with open(self.p(f".watch-{ME}.pid"), "w") as f:
+        with open(self.p(f".watch-{ME}.pid"), "w", encoding="utf-8") as f:
             f.write(str(os.getpid()))
         out = self.run_hook()
         self.assertIn("DO-THIS", out["reason"])
         self.assertNotIn("[메일박스]", out["reason"])
 
     def test_relay_older_than_24h_ignored(self):
-        with open(self.p("bus.jsonl"), "a") as f:
+        with open(self.p("bus.jsonl"), "a", encoding="utf-8") as f:
             f.write(json.dumps({"id": "old", "t": self.now - 25 * 3600 * 10 ** 9, "from": "h", "to": ME,
                                 "kind": "relay", "idSrc": "viewer", "body": "x"}) + "\n")
         self.assertIsNone(self.run_hook())

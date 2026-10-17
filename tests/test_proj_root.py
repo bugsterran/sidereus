@@ -42,7 +42,7 @@ class ProjRoot(unittest.TestCase):
 
     def test_worktree_git_file(self):
         wt = self.mk("repo-b", ".claude", "worktrees", "agent-1")
-        with open(os.path.join(wt, ".git"), "w") as f:
+        with open(os.path.join(wt, ".git"), "w", encoding="utf-8") as f:
             f.write("gitdir: /nowhere\n")
         self.assertEqual(self.proj(self.mk("repo-b", ".claude", "worktrees", "agent-1", "sub")), ("repo-b", wt))
 

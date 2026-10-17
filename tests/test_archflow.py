@@ -63,14 +63,14 @@ class Base(unittest.TestCase):
         m = json.loads(json.dumps(self.m))
         if not edge_ok:
             m["edges"][0]["evidence"][0]["symbol"] = "nothere"
-        with open(os.path.join(d, "map.json"), "w") as f:
+        with open(os.path.join(d, "map.json"), "w", encoding="utf-8") as f:
             json.dump(m, f)
         fp = os.path.join(d, "flows.json")
         if flows is None:
             if os.path.exists(fp):
                 os.remove(fp)
         else:
-            with open(fp, "w") as f:
+            with open(fp, "w", encoding="utf-8") as f:
                 json.dump(flows, f)
         return d
 
@@ -219,7 +219,7 @@ class HttpStepTest(Base):
         self.assertEqual((errs, [x["id"] for x in kept], dropped), ([], ["login"], 1))
         self.assertEqual(kept[0]["steps"][0]["to_evidence"], good["to_evidence"])
         d = self.put(self.fl([flow([self.hop(2, "/api/objectchange/")])]))
-        with open(os.path.join(d, "flows.verify.json"), "w") as f:
+        with open(os.path.join(d, "flows.verify.json"), "w", encoding="utf-8") as f:
             json.dump({"commit": C, "flows": [{"id": "login", "steps": [{"ok": False, "why": "noroute"}]}]}, f)
         out = AF.load_flows(d, self.m, self.repo, C)
         self.assertEqual(out[0]["steps"][0]["why"], "noroute")
@@ -240,7 +240,7 @@ class RunTest(Base):
         good, bad = step(ev("app/api.py", 3, "connect")), step(ev("app/api.py", 3, "nothere"))
         d = self.put(self.fl([flow([good, good]), flow([good, bad], "f2"), flow([], "f3")]))
         self.assertEqual(AF.run(self.repo, C), " · flows 1/2 (steps 3/4) · 1 flow(s) dropped")
-        with open(os.path.join(d, "flows.verify.json")) as f:
+        with open(os.path.join(d, "flows.verify.json"), encoding="utf-8") as f:
             v = json.load(f)
         self.assertEqual((v["v"], v["commit"], v["total"], v["passed"], v["rate"], v["dropped"]), (1, C, 4, 3, 0.75, 1))
         self.assertEqual(v["flows"][1], {"id": "f2", "ok": False, "steps": [{"ok": True, "why": None}, {"ok": False, "why": "nosym"}]})

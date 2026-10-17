@@ -45,7 +45,7 @@ class BurnIncremental(unittest.TestCase):
         return os.path.join(p, name)
 
     def _append(self, fp, text, now=NOW):
-        with open(fp, "a") as f:
+        with open(fp, "a", encoding="utf-8") as f:
             f.write(text)
         os.utime(fp, (now, now))
 
@@ -122,7 +122,7 @@ class BurnIncremental(unittest.TestCase):
         self._append(a, _line(NOW - 60, "m1", "r1", 10) + _line(NOW - 60, "m2", "r2", 20))
         self.assertEqual(self._result()[3], 30)
         tmp = a + ".tmp"
-        with open(tmp, "w") as f:
+        with open(tmp, "w", encoding="utf-8") as f:
             f.write(_line(NOW - 60, "m9", "r9", 3) + _line(NOW - 60, "m8", "r8", 40) + _line(NOW - 60, "m7", "r7", 1))
         os.utime(tmp, (NOW, NOW))
         os.replace(tmp, a)                     # new inode, larger size

@@ -60,7 +60,7 @@ IS_WIN = sys.platform == "win32"
 @contextlib.contextmanager
 def file_lock(path):
     """Exclusive lock on `path` (opened for append) for the with-block: fcntl.flock, else msvcrt byte-0 lock."""
-    with open(path, "a") as lf:
+    with open(path, "a", encoding="utf-8") as lf:
         try:
             import fcntl
         except ImportError:

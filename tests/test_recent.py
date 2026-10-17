@@ -64,7 +64,7 @@ class RecentList(unittest.TestCase):
                  {"type": "assistant", "cwd": cwd, "sessionId": sid, "timestamp": "2026-09-20T01:00:05Z",
                   "message": {"model": "claude-opus-4-1", "content": [{"type": "text", "text": body}],
                               "usage": {"input_tokens": 10, "cache_read_input_tokens": ctx, "cache_creation_input_tokens": 0}}}]
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write("\n".join(json.dumps(x) for x in lines) + "\n")
         sz = os.path.getsize(fp)
         self.files[fp] = {"sl": "-w-p", "mt": NOW - age_s, "sz": sz, "br": "old-br",
@@ -104,7 +104,7 @@ class RecentList(unittest.TestCase):
                 {"type": "assistant", "message": {"content": [
                     {"type": "tool_use", "name": "Agent", "input": {"description": "  fix\nthe  chat ", "prompt": "SECRET-B"}},
                     {"type": "tool_use", "name": "Bash", "input": {"command": "SECRET-C", "description": "SECRET-D"}}]}}]
-        with open(fp, "a") as f:
+        with open(fp, "a", encoding="utf-8") as f:
             f.write("\n".join(json.dumps(x) for x in msgs) + "\n")
         self.files[fp]["sz"] = os.path.getsize(fp)
         out = R.recent_sessions(7)
@@ -151,7 +151,7 @@ class ShellQuote(unittest.TestCase):
         fns += re.search(r"^function resumeCmd\(.*?^}\n", src, re.M | re.S).group(0)
         fns += re.search(r"^function srecCmd\(r\).*$\n", src, re.M).group(0)
         js = fns + "process.stdout.write(JSON.stringify(srecCmd(%s)));" % json.dumps({"cwd": cwd, "sid": sid})
-        return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
     def test_paths_round_trip(self):
         base = tempfile.mkdtemp(prefix="sidereus-shq-")
@@ -162,7 +162,7 @@ class ShellQuote(unittest.TestCase):
                 cmd = self._cmd(d, _sid(1))
                 self.assertTrue(cmd.endswith(" && claude --resume " + _sid(1)), cmd)
                 probe = cmd.replace("claude --resume " + _sid(1), "pwd -P")
-                got = subprocess.run(["/bin/sh", "-c", probe], capture_output=True, text=True, check=True).stdout.rstrip("\n")
+                got = subprocess.run(["/bin/sh", "-c", probe], capture_output=True, text=True, check=True, encoding="utf-8").stdout.rstrip("\n")
                 self.assertEqual(got, os.path.realpath(d))
         finally:
             shutil.rmtree(base, ignore_errors=True)

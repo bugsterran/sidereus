@@ -29,7 +29,7 @@ def run(body, sess=SESS):
            "function loadDiff(...a){ opened.push(a); }\n" % json.dumps(sess))
     fns = re.search(r"^const TLG_AUTO = .*$", js_all(), re.M).group(0) + "\n" + "\n".join(js_fn(n) for n in ("tlgShownN", "tlgNum", "tlgShared", "tlgAge", "tlgName", "tlgSessions", "tlgTarget",
                                         "ppComboHtml", "tlgProj", "tlgNote", "tlgSelHtml", "tlgChipInner", "tlgFetch", "tlgTick", "tlgOpen"))
-    r = subprocess.run(node_e(ttl + "\n" + pre + fns + "\n" + body), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(ttl + "\n" + pre + fns + "\n" + body), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

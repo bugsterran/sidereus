@@ -28,7 +28,7 @@ function platName(k){ return AILG[k][0]; }
 def _js(body):
     with open(_F, encoding="utf-8") as f:   # the whole file: it is self-contained apart from the stubs above
         src = _STUB + i18n_switch() + "const document = {addEventListener(){}};\n" + f.read() + "\n" + body
-    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
 class Harness(unittest.TestCase):

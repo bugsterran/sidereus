@@ -28,7 +28,7 @@ def make_repo(tmp):
     for a in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "fixture"]):
         subprocess.run(["git", "-C", repo] + a, check=True, env=GENV, capture_output=True)
     head = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"], check=True, env=GENV, capture_output=True,
-                          text=True).stdout.strip()
+                          text=True, encoding="utf-8").stdout.strip()
     return os.path.realpath(repo), head
 
 
@@ -82,7 +82,7 @@ class Base(unittest.TestCase):
     def put(self, m):
         d = AV.store_dir(self.repo, self.commit)
         os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, "map.json"), "w") as f:
+        with open(os.path.join(d, "map.json"), "w", encoding="utf-8") as f:
             json.dump(m, f)
         return d
 
@@ -110,7 +110,7 @@ class EvidenceTest(Base):
         self.assertEqual([e["why"] for e in v["edges"]], ["nofile", "range", "bad", "bad", "bad", "range"])
 
     def test_reads_commit_not_working_tree(self):
-        with open(os.path.join(self.repo, "lib", "extra.py"), "w") as f:
+        with open(os.path.join(self.repo, "lib", "extra.py"), "w", encoding="utf-8") as f:
             f.write("ghost = 1\n")
         try:
             v = self.verdict([edge([ev("lib/extra.py", 1, "ghost")])])
@@ -162,7 +162,7 @@ class OwnerTest(Base):
         plan = {"modules": [{"id": "app", "globs": ["app/*", 3]}, {"id": "x", "globs": "y"}, "z"]}
         self.assertEqual(AV.plan_globs(plan), {"app": ["app/*"]})
         d = self.put(m)
-        with open(os.path.join(d, "plan.json"), "w") as f:
+        with open(os.path.join(d, "plan.json"), "w", encoding="utf-8") as f:
             json.dump({"modules": [{"id": "app", "globs": ["lib/d*"]}, {"id": "lib", "globs": ["lib/u*.py"]}]}, f)
         self.assertEqual(AV.run(self.repo, self.commit), (0, "arch_verify: rate 1.00 (1/1)"))
 
@@ -211,7 +211,7 @@ class RunTest(Base):
         out = io.StringIO()
         with redirect_stdout(out):
             self.assertEqual(cli.main(["--last"]), 1)                 # no _last.json
-            with open(os.path.join(self.store, "_last.json"), "w") as f:
+            with open(os.path.join(self.store, "_last.json"), "w", encoding="utf-8") as f:
                 json.dump({"repo": self.repo, "commit": self.commit}, f)
             self.assertEqual(cli.main(["--last"]), 1)                 # low rate
             self.put(self.map([edge([ev("lib/db.py", 1, "connect")])]))
@@ -241,7 +241,7 @@ class OverlapDefTest(Base):
         self.assertEqual((v["overlap"]["n"], v["overlap"]["files"], v["overlap"]["pairs"]), (1, ["lib/db.py"], [["app", "lib"]]))
         self.assertEqual([(e["ok"], e["why"]) for e in v["edges"]], [(False, "overlap"), (True, None)])
         d = self.put(m)
-        with open(os.path.join(d, "plan.json"), "w") as f:
+        with open(os.path.join(d, "plan.json"), "w", encoding="utf-8") as f:
             json.dump({"modules": [{"id": "app", "globs": ["app/*", "lib/db.py"]}, {"id": "lib", "globs": ["lib/*"]}]}, f)
         self.assertEqual(AV.run(self.repo, self.commit), (1, "arch_verify: rate 0.50 (1/2) · overlap 1"))
 
@@ -372,7 +372,7 @@ class MermaidTest(Base):
         body = self.md().split("\n", 1)[1].rsplit("```", 1)[0]
         src = "\n".join(js_fn(n) for n in ("mmdLabel", "mmdSplit", "mmdChain", "mmdParse")) + \
             "\nconst g = mmdParse(%s); console.log(JSON.stringify([g.nodes.n0.label, g.edges[0].label]));" % json.dumps(body)
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         want = AV.mm_text(self.NAME)
         self.assertEqual(json.loads(r.stdout), [want, want])
@@ -444,14 +444,14 @@ class StyleTest(Base):
 
     def test_run_writes_style_gate_unaffected(self):
         d = self.put(self.map([edge([ev("lib/db.py", 1, "connect")])]))
-        with open(os.path.join(d, "plan.json"), "w") as f:
+        with open(os.path.join(d, "plan.json"), "w", encoding="utf-8") as f:
             json.dump({"arch": dict(self.ARCH, evidence=["app/main.py", "nope.txt"])}, f)
         self.assertEqual(AV.run(self.repo, self.commit), (0, "arch_verify: rate 1.00 (1/1)"))
         v = json.loads(_read(os.path.join(d, "verify.json")))
         self.assertEqual((v["style"]["ok"], v["style"]["evidence"][1], v["dev"]), (False, {"file": "nope.txt", "ok": False}, []))
         self.put(self.map([edge([ev("lib/db.py", 1, "zzz")])]))
         self.assertEqual(AV.run(self.repo, self.commit)[0], 1)          # style present: low rate still fails the same way
-        with open(os.path.join(d, "plan.json"), "w") as f:
+        with open(os.path.join(d, "plan.json"), "w", encoding="utf-8") as f:
             json.dump({"arch": {"style": "bogus"}}, f)
         self.put(self.map([edge([ev("lib/db.py", 1, "connect")])]))
         self.assertEqual(AV.run(self.repo, self.commit)[0], 0)          # invalid arch never fails the gate

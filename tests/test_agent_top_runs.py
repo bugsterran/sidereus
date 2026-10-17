@@ -45,8 +45,8 @@ class TopRuns(unittest.TestCase):
         sub = os.path.join(root, "-x-proj", "sid9", "subagents")
         os.makedirs(sub)
         fp = os.path.join(sub, "agent-z.jsonl")
-        open(fp, "w").close()
-        with open(fp[:-6] + ".meta.json", "w") as f:
+        open(fp, "w", encoding="utf-8").close()
+        with open(fp[:-6] + ".meta.json", "w", encoding="utf-8") as f:
             json.dump({"agentType": "Explore", "description": "Find thing", "toolUseId": "toolu_1"}, f)
         orig = ac._agc_cwd
         ac._agc_cwd = lambda slug: ""

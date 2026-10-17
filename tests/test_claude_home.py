@@ -28,13 +28,13 @@ class ClaudeHomeTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td, tempfile.TemporaryDirectory() as data:
             env = dict(os.environ, CLAUDE_CONFIG_DIR=td, MAILBOX_DIR=data, SIDEREUS_HOOK_NO_PID="1",
                        CODEX_HOME=os.path.join(os.devnull, "no-codex-home"))
-            with open(os.path.join(data, "config.local.json"), "w") as f:
+            with open(os.path.join(data, "config.local.json"), "w", encoding="utf-8") as f:
                 f.write("{}\n")
             code = ("import json, sidereus.transcript as t, sidereus.ctxsrc as c, sidereus.burn_scan as b, sidereus.quota as q;"
                     "print(json.dumps([t.CLAUDE_PROJECTS, c.CLAUDE_DIR, c.CLAUDE_JSON, b.CLAUDE_SETTINGS,"
                     " q.CLAUDE_CONF, q.OMC_CACHE]))")
             out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, env=env, capture_output=True,
-                                 text=True, timeout=60)
+                                 text=True, timeout=60, encoding="utf-8")
             self.assertEqual(out.returncode, 0, out.stderr[-2000:])
             got = json.loads(out.stdout.strip().splitlines()[-1])
             self.assertEqual(got, [os.path.join(td, "projects"), td, os.path.join(td, ".claude.json"),

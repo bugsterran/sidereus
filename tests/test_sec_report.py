@@ -93,10 +93,10 @@ class Files(unittest.TestCase):
 
     def test_write_prune_newest(self):
         other = os.path.join(self.d, "notes.md")
-        with open(other, "w") as f:
+        with open(other, "w", encoding="utf-8") as f:
             f.write("keep")
         tgt = os.path.join(self.d, "target.txt")
-        with open(tgt, "w") as f:
+        with open(tgt, "w", encoding="utf-8") as f:
             f.write("t")
         link = "security-report-19990101-0000.md"
         os.symlink(tgt, os.path.join(self.d, link))
@@ -114,7 +114,7 @@ class Files(unittest.TestCase):
         n = SR.write(self.d, AT, "ok\n")
         self.assertEqual(SR.read_text(self.d, n), "ok\n")
         tgt = os.path.join(self.d, "t.md")
-        with open(tgt, "w") as f:
+        with open(tgt, "w", encoding="utf-8") as f:
             f.write("secret")
         os.symlink(tgt, os.path.join(self.d, "security-report-20000101-0000.md"))
         big = os.path.join(self.d, "security-report-20000101-0001.md")

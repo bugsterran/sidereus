@@ -40,7 +40,7 @@ buildSbar();
 process.stdout.write(JSON.stringify(OUT));
 """
         src = STUBS + i18n() + "\n" + jconst("esc") + "\n" + js_fn("fmtPct") + "\n" + js_fn("buildSbar") + "\n" + "\n".join(js_fn(f) for f in ("burnEst", "burnEstTip", "burnWkEst")) + "\n" + body
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         h = json.loads(r.stdout)
@@ -62,7 +62,7 @@ process.stdout.write(JSON.stringify(OUT));
 """
         src = STUBS + i18n() + "\n" + jconst("esc") + "\n" + js_fn("fmtPct") + "\n" + js_fn("buildSbar") + "\n" \
             + "\n".join(js_fn(f) for f in ("burnEst", "burnEstTip", "burnWkEst")) + "\n" + body
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         h = json.loads(r.stdout)
@@ -95,7 +95,7 @@ process.stdout.write(JSON.stringify([OUT, EL.title]));
 """ % (n, src_kind)
         src = STUBS + i18n() + "\n" + jconst("esc") + "\n" + js_fn("fmtPct") + "\n" + js_fn("buildSbar") + "\n" \
             + "\n".join(js_fn(f) for f in ("burnEst", "burnEstTip", "burnWkEst")) + "\n" + body
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         return json.loads(r.stdout)[0]
@@ -109,7 +109,7 @@ process.stdout.write(JSON.stringify(OUT));
 """ % proj
         src = STUBS + i18n() + "\n" + jconst("esc") + "\n" + js_fn("fmtPct") + "\n" + js_fn("buildSbar") + "\n" \
             + "\n".join(js_fn(f) for f in ("burnEst", "burnEstTip", "burnWkEst")) + "\n" + body
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         return json.loads(r.stdout)
@@ -139,7 +139,7 @@ const o = [svWhyEn({mode: 'auto', pct: 62, leftMin: 185, lv: 2, earlyMin: 153, g
 process.stdout.write(JSON.stringify(o));
 """
         src = STUBS + i18n() + "\n" + js_fn("svWhyEn") + "\n" + body
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"))
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         full, nopct, none, off = json.loads(r.stdout)

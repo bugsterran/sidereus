@@ -120,7 +120,7 @@ class PlanEstJs(unittest.TestCase):
         src = ("var document = {getElementById: () => null};\n" + i18n() + "\n" + js_fn("burnEstTip") + "\n" + js_fn("burnEst") + """
 const b = {est_why: 'plan', est: {low: true, h5_left: 82000000, wk_left: null, h5_n: 0, wk_n: 0}};
 process.stdout.write(JSON.stringify([burnEst(b, '5h', 1e6, 18), burnEst(b, '7d', null, 5)]));""")
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         e5, e7 = json.loads(r.stdout)
         self.assertEqual(e5["left"], 82000000)

@@ -75,7 +75,7 @@ class StdDrafts(unittest.TestCase):
               "const out = {}; for (const d of %s) out[d.name] = v(d.P, d.name, T, M); console.log(JSON.stringify(out));"
               ) % (json.dumps(runner), json.dumps(drafts, ensure_ascii=False))
         import subprocess
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=30)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=30, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         for name, errs in json.loads(r.stdout).items():
             self.assertEqual(errs, [], name)

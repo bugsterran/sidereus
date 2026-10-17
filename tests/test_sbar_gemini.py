@@ -23,7 +23,7 @@ def _fn(fname, name):
 
 STUBS = """
 const T = s => s, esc = s => String(s).replace(/"/g, '&quot;');
-const TV = j => String((j && j.msg) || '').replace(/\{(\w+)\}/g, (m, k) => (j.vars && k in j.vars) ? String(j.vars[k]) : m);
+const TV = j => String((j && j.msg) || '').replace(/\\{(\\w+)\\}/g, (m, k) => (j.vars && k in j.vars) ? String(j.vars[k]) : m);
 const fmtTok = n => n >= 1e6 ? Math.round(n/1e6) + 'M' : n >= 1e3 ? Math.round(n/1e3) + 'K' : String(n);
 const aiLogo = p => '<i class="ailg ailg-' + p + '" title="x">L</i>';
 const AILG = {gm: ['Gemini', ''], cx: ['Codex', '']};
@@ -37,7 +37,7 @@ class SbarGemini(unittest.TestCase):
         js = STUBS + js_fn("fmtMoney") + "\n" + js_fn("fmtPct") + "\n" + js_fn("extCostStr") + "\n" + js_fn("extRateStr") + "\n" + _fn("60-statusbar.js", "sbExt") + "\n" \
             + _fn("60-statusbar.js", "sbExtSeg") \
             + "\nprocess.stdout.write(JSON.stringify(sbExt(" + json.dumps(extu) + ")));"
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         return json.loads(r.stdout)

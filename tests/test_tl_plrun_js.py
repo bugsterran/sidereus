@@ -44,7 +44,7 @@ def _run(sess, expr, feats=None, g=None, pls=None, attn=None):
                      "PLS.data = " + json.dumps(pls or {}) + ";",
                      "const pl = tlPlRun(g, L);",
                      "console.log(JSON.stringify(" + expr + "));"])
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)
@@ -153,7 +153,7 @@ const el = { children: segs, clientWidth: 260, get scrollWidth(){ return segs.re
 tlPlFit(el);
 console.log(JSON.stringify({ order: tlPlDrop(sts), nn: segs.filter(s => s.c.has('nn')).map(s => s.i), sw: el.scrollWidth, n: segs.length }));
 """ % (json.dumps(sts), json.dumps(names))])
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         r = json.loads(r.stdout)
@@ -172,7 +172,7 @@ console.log(JSON.stringify({ order: tlPlDrop(sts), nn: segs.filter(s => s.c.has(
                          "const esc = s => s; const plgShow = t => t; const ago = s => '3m'; const AGO = t => t + ' ago';",
                          "const tlPlSt = r => 'fin';",
                          "console.log(JSON.stringify(tlPlEnd({ pr: { end: 100 }, titles: ['a'], lt: { a: { st: 'done' } }, now: 280 }, '')));"])
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(json.loads(r.stdout), '<i class="tlpc tlpe tlpe-ok"><strong><i aria-hidden=true>✓</i> Done</strong> · 3m ago</i>')
 
     def test_more_chip(self):
@@ -279,7 +279,7 @@ console.log(JSON.stringify({ order: tlPlDrop(sts), nn: segs.filter(s => s.c.has(
                          "const S = {a: {t0: 1000, t1: 3400, k: 2, p0: 2000, ag: [{t0: 1000, t1: 1720}]}};",
                          "const row = {runs: [{name: 'x', titles: ['a'], lt: {a: {st: 'done'}}, pr: {stages: S}}]};",
                          "console.log(JSON.stringify(tlPlBands(row, {t0: 0, now: 5000, pct: v => v / 50})));"])
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         h = json.loads(r.stdout)
         self.assertIn("work 12m of 40m", h)
@@ -326,7 +326,7 @@ def _async(body, sess=None):
                      "let LOADRES; const plLoad = p => new Promise(r => { LOADRES = r; }); const PLEV = {};",
                      js_fn("tlPlRepaint").replace("function", "let TLPL_RP = 0; function", 1), js_fn("tlPlLoad"),
                      _const("TLPL_EVW"), js_fn("tlPlEvSig"), js_fn("tlPlEvWatch"), body])
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)
@@ -393,7 +393,7 @@ class TlPlLegend(unittest.TestCase):
         src = "\n".join([PRE.replace(HEAD_KO, "let LANG = 'en';\n" + i18n_switch()),
                          _const("TLPL_ICON"), _LEG(), js_fn("plStepper"), js_fn("tlPlLegend"),
                          "console.log(JSON.stringify(tlPlLegend()));"])
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         h = json.loads(r.stdout)
         self.assertEqual(re.findall(r"<i class=tlpn>([^<]*)</i>", h), ["Done", "Running", "Sent back", "Failed", "Waiting", "Skipped"])

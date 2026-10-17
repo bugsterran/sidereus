@@ -49,7 +49,7 @@ class SettingsFocusJs(unittest.TestCase):
     def test_pipeline_off_and_focus(self):
         fns = [_async_fn("mwLoadProjs"), js_fn("mwFocusAfter")]
         src = "\n".join(fns) + "\n" + JS.replace("let CFGCAT = 'me';", "let CFGCAT = 'me';\n" + js_fn("cfgRefocus"))
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         R = json.loads(r.stdout)
         self.assertEqual(R["off"], [])                     # no /api/pipelines request with the feature off

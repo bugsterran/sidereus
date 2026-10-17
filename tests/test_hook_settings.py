@@ -40,7 +40,7 @@ class HookSettings(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _write(self, cfg):
-        with open(os.path.join(self.gdir, "settings.json"), "w") as f:
+        with open(os.path.join(self.gdir, "settings.json"), "w", encoding="utf-8") as f:
             json.dump(cfg, f)
 
     def test_complete_settings_no_warning(self):

@@ -88,7 +88,7 @@ def scan_file(root, rel, idents):
 
 
 def _git(root, *args):
-    return subprocess.run(["git", "-C", root] + list(args), capture_output=True, text=True, check=True).stdout
+    return subprocess.run(["git", "-C", root] + list(args), capture_output=True, text=True, encoding="utf-8", check=True).stdout
 
 
 def shipped(root):

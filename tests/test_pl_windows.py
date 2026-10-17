@@ -90,7 +90,7 @@ class EvalWin(unittest.TestCase):
     def test_rmtree_chmods_and_retries_never_raises(self):
         d = tempfile.mkdtemp()
         fp = os.path.join(d, "f")
-        open(fp, "w").close()
+        open(fp, "w", encoding="utf-8").close()
 
         def fake(path, onerror):
             onerror(os.remove, fp, None)

@@ -21,7 +21,7 @@ def run(n):
            "for (let i = 0; i < " + str(n) + "; i++) toast({kind: 'ask', project: 'p' + i});\n"
            "process.stdout.write(JSON.stringify(box.kids.map(e => e.innerHTML)));")
     src = "const TOAST_MS = 10000, TOAST_LEAVE_MS = 3000, TOAST_MAX = " + str(MAX) + ";\n" + src
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

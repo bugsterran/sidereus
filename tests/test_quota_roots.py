@@ -92,10 +92,10 @@ class Base(unittest.TestCase):
         d = os.path.join(self.home, name)
         os.makedirs(d, exist_ok=True)
         if uuid is not None:
-            with open(os.path.join(d, ".claude.json"), "w") as f:
+            with open(os.path.join(d, ".claude.json"), "w", encoding="utf-8") as f:
                 json.dump({"oauthAccount": {"accountUuid": uuid, "emailAddress": "a@b.c"}}, f)
         if creds:
-            with open(os.path.join(d, ".credentials.json"), "w") as f:
+            with open(os.path.join(d, ".credentials.json"), "w", encoding="utf-8") as f:
                 json.dump({"claudeAiOauth": {"accessToken": creds}}, f)
         self.roots.append({"dir": d, "label": name.lstrip(".").replace("claude-", ""), "primary": False})
         return d
@@ -179,7 +179,7 @@ class OmcCache(Base):
         self._patch(qr, IS_MAC=False)
         p = self._omc_dir(d)
         qr.tick()
-        with open(p) as f:
+        with open(p, encoding="utf-8") as f:
             c = json.load(f)
         self.assertTrue(c["sidereus"])
         self.assertEqual(c["data"]["fiveHourPercent"], 40)
@@ -190,11 +190,11 @@ class OmcCache(Base):
         self._patch(qr, IS_MAC=False)
         p = self._omc_dir(self.prim)
         os.symlink(os.path.join(self.prim, "plugins"), os.path.join(d, "plugins"))
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             json.dump({"timestamp": NOW * 1000, "data": {"fiveHourPercent": 99}}, f)
         self.http["TOK-W"] = urllib.error.HTTPError("u", 429, "x", {}, None)
         qr.tick()
-        with open(p) as f:
+        with open(p, encoding="utf-8") as f:
             self.assertEqual(json.load(f)["data"]["fiveHourPercent"], 99)   # untouched
         self.assertIsNone(qr._omc_path(d))
         self.assertNotIn("five_hour", qr.quota_accounts()[0])               # primary's HUD value not adopted
@@ -272,7 +272,7 @@ class PtsRing(Base):
         self._tick(10)
         self._tick(12)
         self.assertEqual(self._ring(), [[int(NOW), 10], [int(NOW) + 120, 12]])
-        with open(qr.PTS_FILE) as f:
+        with open(qr.PTS_FILE, encoding="utf-8") as f:
             raw = f.read()
         for bad in ("uuid-w", "a@b.c", "TOK-W", self.home):
             self.assertNotIn(bad, raw)
@@ -288,7 +288,7 @@ class PtsRing(Base):
     def test_account_change_clears(self):
         self._tick(10)
         self._tick(12)
-        with open(os.path.join(self.d, ".claude.json"), "w") as f:
+        with open(os.path.join(self.d, ".claude.json"), "w", encoding="utf-8") as f:
             json.dump({"oauthAccount": {"accountUuid": "uuid-other"}}, f)
         os.utime(os.path.join(self.d, ".claude.json"), (NOW + 999, NOW + 999))
         self._tick(30)
@@ -322,7 +322,7 @@ class PtsRing(Base):
         self.roots[:] = []
         qr.tick()
         self.assertNotIn("work", qr._pts)
-        with open(qr.PTS_FILE) as f:
+        with open(qr.PTS_FILE, encoding="utf-8") as f:
             self.assertEqual(json.load(f), {})
 
     def test_row_pts_only_with_matching_reset_and_two_points(self):

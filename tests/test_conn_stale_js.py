@@ -16,7 +16,7 @@ FNS = ("ago", "connBackoffMs", "connMark", "connWait", "connAge", "connStaleNote
 def run(body):
     src = (BASE + i18n() + "\n" + "\n".join(js_fn(f) for f in FNS)
            + "\nconst R = {};\n" + body + "\nprocess.stdout.write(JSON.stringify(R));")
-    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
         raise AssertionError(r.stderr)
     return json.loads(r.stdout)

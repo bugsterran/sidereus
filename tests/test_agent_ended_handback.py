@@ -24,7 +24,7 @@ class HandbackEnded(unittest.TestCase):
 
     def _fp(self, *recs):
         fp = os.path.join(self.d, "agent-%d.jsonl" % len(os.listdir(self.d)))
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write("".join(recs) + json.dumps({"type": "attachment"}) + "\n")
         return fp
 

@@ -52,15 +52,15 @@ class Base(unittest.TestCase):
         return os.path.join(self.repo, rel)
 
     def main(self, sid, lines):
-        with open(os.path.join(self.proj, "-repo", sid + ".jsonl"), "a") as f:
+        with open(os.path.join(self.proj, "-repo", sid + ".jsonl"), "a", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
 
     def sub(self, sid, aid, atype, lines, desc=""):
         d = os.path.join(self.proj, "-repo", sid, "subagents")
         os.makedirs(d, exist_ok=True)
-        with open(os.path.join(d, "agent-%s.jsonl" % aid), "a") as f:
+        with open(os.path.join(d, "agent-%s.jsonl" % aid), "a", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
-        with open(os.path.join(d, "agent-%s.meta.json" % aid), "w") as f:
+        with open(os.path.join(d, "agent-%s.meta.json" % aid), "w", encoding="utf-8") as f:
             json.dump({"agentType": atype, "description": desc}, f)
 
 

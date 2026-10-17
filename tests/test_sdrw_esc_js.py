@@ -24,7 +24,7 @@ class DrawerEsc(unittest.TestCase):
         js = ("let SDRW_OPEN = true, cpOn = %s, closed = 0; const sdrwSet = v => { if(!v) closed++; };\n"
               "const h = %s;\nh({key: 'Escape', defaultPrevented: %s});\nprocess.stdout.write(JSON.stringify(closed));"
               % (json.dumps(palette), _handler(), json.dumps(prevented)))
-        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         return json.loads(r.stdout)
 

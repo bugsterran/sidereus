@@ -18,7 +18,7 @@ class LangPick(unittest.TestCase):
         cases = [(None, "en-US"), (None, "en"), (None, "EN-gb"), (None, "ko-KR"), (None, "ja"), (None, ""),
                  (None, None), ("ko", "en-US"), ("en", "ko-KR"), ("junk", "en-US"), ("junk", "fr")]
         src = jconst("langPick") + "\nprocess.stdout.write(JSON.stringify(%s.map(c => langPick(c[0], c[1]))));" % json.dumps(cases)
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(json.loads(r.stdout), ["en", "en", "en", "ko", "ko", "ko", "ko", "ko", "en", "en", "ko"])
 

@@ -41,7 +41,7 @@ class SessionReposPaths(unittest.TestCase):
 
     def repos(self, lines):
         fp = os.path.join(self.home, "t.jsonl")
-        with open(fp, "w") as f:
+        with open(fp, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
         return gi.session_repos(fp, os.path.getmtime(fp), self.launch)
 

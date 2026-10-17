@@ -16,7 +16,7 @@ class RelLang(unittest.TestCase):
 process.stdout.write(JSON.stringify([strRelLang('inc/async.h', 'cpp'), strRelLang('inc/async.h', ''), strRelLang('a.c', 'c'),
   strRelLang('a/B.cs', 'cs'), strRelLang('a/B.java', 'java')]));
 """
-        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         self.assertEqual(json.loads(r.stdout), [{"hl": "c", "label": "cpp"}, {"hl": "c", "label": "c"}, {"hl": "c", "label": "c"},
