@@ -110,12 +110,13 @@ function brMsg(st, j){
   return e || (T('Could not fetch') + (st ? ' (' + st + ')' : ''));
 }
 // ── paintBr sections: each helper returns one HTML piece (brBarPaint / brKidSet paint or set state); paintBr assembles.
-// Repo chips and ↻ live in the header toolbar slot (brWire wires both the slot and #feed).
+// Repo combobox (08b ppComboHtml, same as Pipelines/Structure) and ↻ live in the header toolbar slot.
 function brBarPaint(ps){
-  const chips = '<b>' + esc(T('Repository')) + '</b>' + (ps.length
-    ? ps.map(p => '<button class="strp' + (p === brRepo ? ' on' : '') + '" data-bp="' + esc(p)
-        + '" title="' + esc(p) + '">' + esc(strShort(p)) + '</button>').join('')
-    : '<span class=strpnl>' + esc(T(STATE_IN ? 'None' : 'Loading…')) + '</span>');
+  // ⚠Skip while the picker is open: a poll repaint would replace its opener under the popover.
+  if(popIsOpen('ppop')) return;
+  const chips = ps.length
+    ? ppComboHtml({ k: 'br', label: T('Repository'), items: ps.map(p => ({ p: p, name: strShort(p) })), cur: brRepo, rkey: 'sidereus.brrecent', pick: brPickRepo })
+    : '<b>' + esc(T('Repository')) + '</b><span class=strpnl>' + esc(T(STATE_IN ? 'None' : 'Loading…')) + '</span>';
   tbSet('br', brModeHtml() + '<span class="strps tbg">' + chips + (BR && BR.ok ? '<button class="brfc brpwb' + (brPw ? ' on' : '') + '" id=brpwb title="'
       + esc(T('Copy a command that makes another worktree and starts a separate session there (Sidereus does not run it)')) + '">' + esc(T('＋ Parallel work')) + '</button>' : '') + '</span>'
     + '<span class=tbx><em class=tlrf id=brrf title="' + esc(T('Reload now')) + '">↻</em></span>');
@@ -251,14 +252,15 @@ function paintBr(){
   brWire();
   brLinksLoad();
 }
+function brPickRepo(p){
+  if(!p || p === brRepo) return;
+  brRepo = p; brSel = ''; brDet = null; BR = null;
+  tabSet('mbBrRepo', brRepo);
+  loadBr(true);
+}
 function brWire(){
   const box = document.getElementById('feed');
   if(!box) return;
-  document.querySelectorAll('#feed .strp[data-bp], #tbbr .strp[data-bp]').forEach(el => { el.onclick = () => {
-    if(el.dataset.bp === brRepo) return;
-    brRepo = el.dataset.bp; brSel = ''; brDet = null; BR = null;
-    tabSet('mbBrRepo', brRepo);
-    loadBr(true); }; });
   const rf = document.getElementById('brrf');
   if(rf) rf.onclick = () => loadBr(true);
   brPwWire();

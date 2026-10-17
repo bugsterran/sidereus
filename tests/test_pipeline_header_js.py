@@ -13,6 +13,7 @@ from tests._node import node_e
 PRE = """
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const T = s => s; let PPS = null; const PPC = {};
+const TV = o => o.msg.replace(/\{(\w+)\}/g, (_, k) => o.vars[k]);
 """
 
 
@@ -47,7 +48,8 @@ class PipelineHeader(unittest.TestCase):
         a, b = r
         self.assertEqual(a.count("data-ppk="), 1)              # one combobox, no chip row
         self.assertIn("aria-haspopup=listbox", a)
-        self.assertIn('title="/w/b"', a)
+        self.assertIn('title="/w/b\n2 pipelines"', a)         # file count moved into the tooltip
+        self.assertNotIn("strpc", a)                            # ...and off the button
         self.assertIn("class=mvdot", a)                         # live dot kept
         self.assertNotIn("More ▾", a)
         self.assertNotIn("ppcs", a)
@@ -177,6 +179,20 @@ console.log(JSON.stringify([item, esc_, out]));""")
         with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as f:
             css = f.read()
         self.assertRegex(css, r"\.pltop\{display:flex;[^}]*align-items:center")
+
+    def test_action_order_run_divider_file_ops(self):
+        # .plact: Run, divider, then Undo (dirty only) · Save · Delete; Run stays disabled while dirty.
+        s = js_fn("plBody")
+        g = s[s.index("'<span class=plact>'"):]
+        g = g[:g.index("'</span></div>'")]
+        idx = [g.index(k) for k in ("data-plrun", "class=plsep", "data-plreset", "data-plsave", "data-pldel")]
+        self.assertEqual(idx, sorted(idx))
+        self.assertIn("(dirty ? '<button class=\"wkrgb\" data-plreset>'", g)
+        self.assertIn("(dirty ? ' disabled title=\"' + esc(T('Save before running'))", g)
+        with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as f:
+            css = f.read()
+        self.assertRegex(css, r"\.plsep\{width:1px;height:16px;[^}]*var\(--nx-rule")
+        self.assertNotRegex(css, r"\.wkrgb\.pldl\{margin-left")   # divider replaces the old extra gap
 
 
 if __name__ == "__main__":

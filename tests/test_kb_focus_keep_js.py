@@ -25,7 +25,7 @@ class KbFocusKeep(unittest.TestCase):
         s = src("web/js/77-timeline-git.js")
         body = s[s.index("function tlgPaint("):]
         body = body[:body.index("\n}\n")]
-        self.assertIn("if(fo === 'tlgss') return;", body)   # an open dropdown is never repainted
+        self.assertIn("if(popIsOpen('ppop')) return;", body)   # an open session picker is never repainted
         self.assertIn("f.focus({preventScroll: true})", body)
 
     def test_pipeline_chip_lands_on_pipeline(self):

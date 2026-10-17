@@ -21,12 +21,32 @@ function loadHist(force, want){
                    if(mainView === 'hist') paintHist(); });
   return true;
 }
-// ★2026-09-28 UX audit: project chips + title search over the loaded list; kept in UIS sidereus.histf {p:[names], q}.
+// ★2026-09-28 UX audit: project pick + title search over the loaded list; kept in UIS sidereus.histf {p:[name] or [], q}.
 let histProj = [], histQ = '';
+// ⚠Single select: a stored multi-pick from the old chip row keeps only its first entry.
 try{ const v = JSON.parse(tabGet('sidereus.histf', null) || 'null');
-     if(v && typeof v === 'object'){ histProj = Array.isArray(v.p) ? v.p.filter(x => typeof x === 'string').slice(0, 50) : [];
+     if(v && typeof v === 'object'){ histProj = Array.isArray(v.p) ? v.p.filter(x => typeof x === 'string').slice(0, 1) : [];
                                      histQ = typeof v.q === 'string' ? v.q.slice(0, 200) : ''; } }catch(e){ softErr('histf-read', e); }
 function histFSave(){ tabSetJson('sidereus.histf', {p: histProj, q: histQ}); }
+// Projects in the loaded range (sorted) + distinct session count per project, all filters ignored.
+function histProjs(list){
+  const cnt = {};
+  (list || []).forEach(d => (d.rows || []).concat(...histExtKeys(d).map(k => d[k].rows)).forEach(x => {
+    const p = x.project || '?'; (cnt[p] = cnt[p] || new Set()).add(x.sid || '');
+  }));
+  const projs = Object.keys(cnt).sort((a, b) => a.localeCompare(b)), n = {};
+  projs.forEach(p => { n[p] = cnt[p].size; });
+  return { projs: projs, cnt: n };
+}
+// Project combobox (08b ppComboHtml, same as Pipelines/Structure/Branches): «All» row (p '') + one row per project; '' below 2 projects.
+function histProjHtml(projs, cnt, cur){
+  if(projs.length < 2) return '';
+  const tot = projs.reduce((a, p) => a + (cnt[p] || 0), 0);
+  const items = [{ p: '', name: T('All'), n: tot }].concat(projs.map(p => ({ p: p, name: p, n: cnt[p] || 0 })));
+  return '<span class="strps tbg">' + ppComboHtml({ k: 'hist', label: T('Project'), none: T('All'), items: items, cur: cur,
+    flat: q => ppFilter(items, q), note: e => ' <small class=strpc>' + (+e.n || 0) + '</small>', pick: histPickProj }) + '</span>';
+}
+function histPickProj(p){ histProj = p ? [p] : []; histFSave(); paintHist(); }
 function histMatch(x, ps){
   if(ps.length && ps.indexOf(x.project || '?') < 0) return false;
   const q = histQ.trim().toLowerCase();
@@ -73,8 +93,11 @@ function paintHist(){
   // The range toggle lives in the header toolbar slot (wired below, before any early return).
   // ⚠No value= in the markup: setHtml would rewrite the slot on every keystroke and drop focus — the value is set below.
   const cur = histBusy ? histWant : histDays, fo = acctPickFocusId();   // ⚠tbSlot below replaces a focused picker
-  const tb = tbSlot('hist', '<span class=tbg><input type=search id=histq class=histq placeholder="'+esc(T('Search session titles'))+'"'
-    + ' aria-label="'+esc(T('Search session titles'))+'" title="'+esc(T('Search session titles'))+' (/ · Esc '+esc(T('clear'))+')"></span>'
+  // A saved pick missing from this range is ignored, not stuck on.
+  const hp = histProjs(HIST && HIST.ok ? HIST.list : []), projs = hp.projs, ps = histProj.filter(p => projs.indexOf(p) >= 0);
+  // ⚠Skip the toolbar repaint while the picker is open: it would replace the opener under the popover.
+  const tb = popIsOpen('ppop') ? document.getElementById('tbhist') : tbSlot('hist', '<span class=tbg><input type=search id=histq class=histq placeholder="'+esc(T('Search session titles'))+'"'
+    + ' aria-label="'+esc(T('Search session titles'))+'" title="'+esc(T('Search session titles'))+' (/ · Esc '+esc(T('clear'))+')"></span>' + histProjHtml(projs, hp.cnt, ps[0] || '')
     + '<span class="tbg rtrg">' + HIST_STEPS.map(x => '<button class="wkrgb'+(x === cur ? ' on' : '')+'" data-hd="'+x+'" aria-pressed="'+(x === cur)+'">'
       + esc(T('Last {n} days').replace('{n}', x))+'</button>').join('') + (histBusy ? ' <i>'+esc(T('Loading…', 'read'))+'</i>' : '') + '</span>'
     + acctPickHtml('hist'));   // '' below 2 accounts
@@ -94,16 +117,9 @@ function paintHist(){
       + esc(TV({msg: HIST.msg || 'Unknown', vars: HIST.vars})) + '</div>'; return; }
   const list = HIST.list || [];
   if(!list.length){ box.innerHTML = head + '<div class=hidnote>'+esc(T('No sessions were active in this period.'))+'</div>'; return; }
-  // Chips list every project in the loaded range; a saved pick missing from this range is ignored, not stuck on.
-  const projs = [...new Set([].concat(...list.map(d => (d.rows||[]).concat(...histExtKeys(d).map(k => d[k].rows))))
-    .map(x => x.project || '?'))].sort((a, b) => a.localeCompare(b));
-  // Account pick (40b acctInPick 'hist'): narrows like a filter, so day headers recompute from shown rows; uf = chip/search only.
+  // Account pick (40b acctInPick 'hist'): narrows like a filter, so day headers recompute from shown rows; uf = project/search only.
   const pk = acctPick('hist'), ap = !!pk && !ACC_OTH.hist;
-  const ps = histProj.filter(p => projs.indexOf(p) >= 0), uf = !!(ps.length || histQ.trim()), filt = uf || ap;
-  const chips = projs.length > 1 ? '<div class=hpcs role=group aria-label="'+esc(T('Project'))+'">'
-    + '<button class="hpc'+(ps.length ? '' : ' on')+'" data-hp="" aria-pressed="'+!ps.length+'">'+esc(T('All'))+'</button>'
-    + projs.map(p => '<button class="hpc'+(ps.indexOf(p) >= 0 ? ' on' : '')+'" data-hp="'+esc(p)+'" aria-pressed="'+(ps.indexOf(p) >= 0)+'">'
-      + esc(p)+'</button>').join('') + '</div>' : '';
+  const uf = !!(ps.length || histQ.trim()), filt = uf || ap;
   let shown = 0, hid = 0;
   const body = list.map(d => {
     // Gemini rows come in a separate `gm` block (never in Claude totals); interleave by start time for display.
@@ -152,16 +168,10 @@ function paintHist(){
   }).join('');
   const fnote = uf ? '<div class="hidnote hsfn">'+esc(T('Showing {n} sessions').replace('{n}', shown))
     + ' <button class=wkrgb data-hpx>'+esc(T('Clear filters'))+'</button></div>' : '';
-  box.innerHTML = head + chips + fnote + acctOthHtml('hist', hid) + (uf && !shown
+  box.innerHTML = head + fnote + acctOthHtml('hist', hid) + (uf && !shown
     ? '<div class=hidnote>'+esc(T('No sessions match — change the project selection or the search.'))+'</div>' : body);
   const aoe = box.querySelector('.acoth[data-ao]');
   if(aoe) aoe.onclick = e => acctOthClick(e, paintHist);
-  box.querySelectorAll('.hpc[data-hp]').forEach(b => b.onclick = () => {
-    const p = b.getAttribute('data-hp');
-    histProj = !p ? [] : ps.indexOf(p) >= 0 ? ps.filter(x => x !== p) : ps.concat([p]);
-    histFSave(); paintHist();
-    const n = [...document.querySelectorAll('#feed .hpc[data-hp]')].find(e => e.getAttribute('data-hp') === p); if(n) n.focus();
-  });
   const fx = box.querySelector('[data-hpx]');
   if(fx) fx.onclick = () => { histProj = []; histQ = ''; if(qi) qi.value = ''; histFSave(); paintHist(); };
   // This view binds the ↻ chip itself — the session list's delegated handler does not watch `#feed`

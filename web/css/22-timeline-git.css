@@ -1,15 +1,15 @@
-/* Timeline toolbar «Changes» chip + compact session select (77-timeline-git.js). Theme tokens only. */
+/* Timeline toolbar «Changes» chip + session combobox (77-timeline-git.js). Theme tokens only. */
 .tlgb{display:inline-flex;align-items:center;gap:6px;min-width:0}
+/* ⚠Timeline toolbar is the widest (en 1100 needed 1264px): wrap the session/Changes group to a second line instead of scrolling sideways */
+html[data-ui=next] .tbs:has(> .tlgb){flex-wrap:wrap;row-gap:6px}
 /* ⚠#id selector on purpose — html[data-ui=next] .tlrf (0,2,1) otherwise flattens the border to --nx-rule. */
 #tlgcp{display:inline-flex;align-items:center;gap:4px;color:var(--nx-t2);border:1px solid var(--nx-t3);border-radius:6px;padding:1px 8px;
   background:none;font:inherit;font-size:11px;white-space:nowrap;cursor:pointer}
 #tlgcp:hover{color:var(--nx-t1);border-color:var(--nx-t2)}
 #tlgcp:disabled{opacity:.55;cursor:default}
 .tlgsh{color:var(--nx-warn,var(--nx-err))}
-/* ⚠border:0 + box-shadow edge — the (0,2,2)/(0,3,1) border-colour rules (90-main-ui, 95-focus) would otherwise draw a full outline. */
-.tlgss{max-width:16em;min-width:0;height:var(--seg-h,24px);box-sizing:border-box;font:500 11px var(--nx-sans);color:var(--nx-t1);background-color:var(--nx-hover);
-  border:0;border-radius:6px;padding:0 8px;box-shadow:inset 0 -1px 0 var(--nx-field);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
-.tlgss:hover,.tlgss:focus{box-shadow:inset 0 0 0 1px var(--nx-field)}
+.tlgb>b{color:var(--nx-t3);font-size:10.5px;font-weight:400;flex:0 0 auto}   /* combobox label, as .strps>b */
+.tlgau{color:var(--nx-t3);font-size:10px}
 /* «Expand all / Collapse all»: shared .relfx button look (branch tree .brtall, sessions list .swfa). */
 .relfx{background:var(--nx-panel,#141a23);border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#bcd4f5);
   border-radius:6px;padding:2px 9px;font:inherit;font-size:11px;cursor:pointer}

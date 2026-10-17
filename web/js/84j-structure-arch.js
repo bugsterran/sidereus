@@ -477,7 +477,7 @@ function archPaint(box, head){
   // ⚠refit pass, or a paint while the diagram is still loading (a lit flow's off-screen count resizes the bar, so the next poll repaints):
   //   the DOM scroll was clamped to 0 under the loading line, use the saved one
   const hold = box._arfit ? box._arhold : same && box._arpend && box._arpend[0] ? box._arpend : null;
-  const sm = hold ? hold[0] : keep('.archmap'), sl = hold ? hold[1] : keep('.archel-list'), sd = hold ? hold[2] : keep('.archdet');   // ⚠innerHTML resets scroll: clicks must not move the view
+  let sm = hold ? hold[0] : keep('.archmap'); const sl = hold ? hold[1] : keep('.archel-list'), sd = hold ? hold[2] : keep('.archdet');   // ⚠innerHTML resets scroll: clicks must not move the view
   box._arsm = [sm, sl, sd];   // a cache miss draws after a frame (archDiagram fill): it restores this once the diagram is in
   const devAt = {}, devSn = d.style && d.style.style ? archStyleName(d.style) : '';   // edge index -> deviation (server validated i)
   if(devSn) (Array.isArray(d.dev) ? d.dev : []).forEach(x => { if(x && typeof x.i === 'number') devAt[x.i] = x; });
@@ -489,6 +489,10 @@ function archPaint(box, head){
   const bp = lay && typeof archBandPlan === 'function' ? archBandPlan(d, mods, tests) : null;   // band mode from the map style (84j2)
   const kinds = fv ? archFocusKinds(mods, edges, tests, sel, ents, fo, flit, bp) : lay ? archKindMap(mods, edges, tests, ents, bp) : null;
   const src = fv ? archFocusSrc(mods, edges, tests, sel, d.groups, ents, fo, flit, fz, bp) : lay && !sel ? archBandSrc(mods, edges, tests, ARCH.full, d.groups, ents, bp) : archSrc(mods, edges, tests, sel, ARCH.full), any = edges.some(e => e && e.ok), k = archKey(d, sel, tests, ARCH.full, ents, fx) + (sel && fz ? '\t' + fzk : '');
+  // ⚠no .archmap in the DOM (back from another main tab / «Size» / a flow) or a view-key change (focus -> overview): put back that view's last scroll (84j7)
+  //   instead of the carried one; before archDiagram reads box._arsm. No saved entry = carried scroll (archMmFirst rules apply).
+  if(same && !hold && typeof archMmPick === 'function'){ const od = box.querySelector && box.querySelector('.archdg');
+    const pv = archMmPick(sm, od && od.dataset ? od.dataset.k : null, k); if(pv !== sm){ sm = pv; box._arsm = [sm, sl, sd]; } }
   const fa = Array.isArray(d.flows) && d.flows.length ? archFlowAt(d, p) : null, fl = fa && fa.fi >= 0 ? fa.fls[fa.fi] : null;   // ⚠no flows: no 84k call, same page as before
   // Flow view has no header buttons: a stale map puts its request button next to the chip; an open preview sits under the header.
   const fhd = d.stale ? chip + archStatusHtml(p, archReqBtn(p, home, cands, d)) : hst;
@@ -497,7 +501,7 @@ function archPaint(box, head){
   box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d), '', hst + pre) + (rq ? '<div class=archck>' + rq + '</div>' : '') + msg
     + '<div class=archbody' + strSplitStyle('archbody') + '><div class=archmap><div class=archtop>' + (typeof archPathHtml === 'function' ? archPathHtml(mods, d.groups, sel, ARCH.scope && ARCH.scope.p === p ? ARCH.scope : null) : '') + archBarHtml(mods, edges, sel, tests, ARCH.full, fa ? archFlowPick(fa.fls, ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : '') : '', fo)
     + (lay ? '' : '<div class="archmsg archnol" role=status>' + esc(T('No layers — redraw the diagram')) + '</div>')
-    + (any ? archLegHtml(lay, !!kinds && Object.keys(kinds).some(x => kinds[x] === 'uses')) : '') + '</div>' + (any ? '<div class=archdg data-k="' + esc(k) + '"' + (fv ? ' data-fv' : '') + (sel && fz ? ' data-fit="' + esc(fzk) + '"' : '') + '>' + archDiagram(box, k, src, mods, si >= 0 ? si : '', kinds, sel ? fz : null, bp) + '</div>' : '<div class=strload>' + esc(T('No edge passed the check.')) + '</div>') + '</div>'
+    + (any ? archLegHtml(lay, !!kinds && Object.keys(kinds).some(x => kinds[x] === 'uses')) : '') + '</div>' + (any ? '<div class=archdg data-k="' + esc(k) + '"' + (fv ? ' data-fv' : '') + (si >= 0 ? ' data-hub="m' + si + '"' : '') + (sel && fz ? ' data-fit="' + esc(fzk) + '"' : '') + '>' + archDiagram(box, k, src, mods, si >= 0 ? si : '', kinds, sel ? fz : null, bp) + '</div>' : '<div class=strload>' + esc(T('No edge passed the check.')) + '</div>') + '</div>'
     + (any && lay && typeof archMmHtml === 'function' ? archMmHtml(archMmOn()) : '')   // minimap overlay (84j7), outside .archmap
     + (sel && typeof archDetHtml === 'function' ? archDetHtml(d, sel, names, ARCH.nx, { op: i => ARCH.op === p + '\t' + i, dv: i => devAt[i], sn: devSn, drawn: archDrawn(mods, edges, tests, sel, ARCH.full), lit: ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : null })   // module detail (84j3)
       : '<aside class=archside><div class=archsh><b>' + esc(T('Edges')) + '</b><span>' + esc(T('Click for evidence · click evidence for code')) + '</span>'

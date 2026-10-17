@@ -39,8 +39,8 @@ The saver verdict in the status bar changes only when the projection is more tha
 
 ## Trace what a session did
 
-1. Open the Timeline tab. Each session and subagent has a row; hover for the task description. Turn on «Running only» in the toolbar to hide finished subagent rows; session rows stay (remembered per browser). Drag the right edge of the name column in the time-axis row to widen it (double-click resets). On a session row a red line marks a compaction and a dashed blue line marks a /clear (hover for the time and the new and previous session ids).
-2. The «Changes · N files +a −d» chip in the Timeline toolbar counts files changed in the followed session (with 2+ sessions a small select beside it picks one); «⚠ n shared» means two sessions touched the same file. Click it to open the diff window at the same base. Its base buttons are «Uncommitted» (last commit), «Since session start», «vs main / master» and «All» (upstream); untracked files are hidden unless «Include untracked files» is ticked. When the session spans several repos, a tab per repo picks one.
+1. Open the Timeline tab. Each session and subagent has a row; hover for the task description. Set «Rows» in the toolbar to «Running only» to hide finished subagent rows; session rows stay (remembered per browser). Drag the right edge of the name column in the time-axis row to widen it (double-click resets). On a session row a red line marks a compaction and a dashed blue line marks a /clear (hover for the time and the new and previous session ids).
+2. The «Changes · N files +a −d» chip in the Timeline toolbar counts files changed in the followed session (with 2+ sessions the «Session» search combobox beside it picks one, or «Auto (latest active)»); «⚠ n shared» means two sessions touched the same file. Click it to open the diff window at the same base. Its base buttons are «Uncommitted» (last commit), «Since session start», «vs main / master» and «All» (upstream); untracked files are hidden unless «Include untracked files» is ticked. When the session spans several repos, a tab per repo picks one.
    The summary in the bottom drawer shows «Results» (commits, pipeline runs ✓/✕/↺) and «Evidence» (gate PASS/FAIL, first failing step); «More» adds time waited on you, outliers and cost (tokens, tokens per commit), and stays open once chosen.
 3. Click a commit row for its diff, or a session for its work popup.
 4. For older work, open the History tab and expand a session. With 2+ accounts its toolbar has an account picker («All accounts» / one account): other accounts' Claude rows fold into «In other accounts: N», external CLI rows stay, and day headers count the shown rows only.
@@ -58,7 +58,7 @@ While a work popup is open, clicking another session or agent adds it there as a
 ## Stop two agents editing the same file
 
 1. When the bell shows «Conflict risk», click it. It names the file and the two sessions.
-2. In the Branches tab, each worktree card lists uncommitted files and their session. Commit-row chips show the session that made the commit and its cost.
+2. In the Branches tab, pick the repository with the same search combobox as Pipelines and Structure. Each worktree card lists uncommitted files and their session. Commit-row chips show the session that made the commit and its cost.
 3. To ask one session to stop, write in the work popup's message box. It shows a preview; after you confirm it goes through the mailbox.
 
 Sessions can check this themselves with the MCP tool `sidereus_file_peers`; see [MCP.md](MCP.md).
@@ -199,19 +199,52 @@ On the first visit a short tour points at the screen in order. Pipelines are the
 
 ## Change settings
 
-Settings (gear) › «Display»: «Background tone» defaults to «System», which follows the OS light/dark setting live.
-«Text size» (90 / 100 / 110 / 125 %) scales text only; layout and widths stay the same. It applies at once.
+Settings (gear) has one tab per group, in this order. «Replay the tour» in the header restarts the first-visit tour.
 
-Settings › «Preferences»: start tab, tab order and hiding, language, OS notifications (off by default), feature toggles.
-
-- Browser-side values apply at once. Server-side values (`config.local.json`) apply after a viewer restart.
-- «Default» on each item restores the default.
-- Hook folder, port and compact history are in the «Advanced» fold. Compact history is read-only.
+- Screen values are saved on the viewer server and shared by every browser; they apply at once. Server values (`config.local.json`) apply after a viewer restart.
 - A row with no effect right now is dimmed and disabled; hover it for the reason, for example «Used only when the mode is «Auto».».
-- Settings › «Saver mode»: the «Mode» bar has «Auto · Target time · On 1-4 · Off». «Target time» shows an HH:MM box and «Apply».
-  «What each level does» (folded) lists each level's concurrency cap and added rules, current level highlighted; shown only when the saver hook sends the table.
-- «Moon mark» (Preferences, browser-side `mbMoonReal`): «Hourly cycle» (default) runs the sidebar mark through a full lunation every hour; «Real phase» shows today's moon. The tooltip always shows the real moon.
-- Settings › «Diagnostics» (read-only, only «Refresh»): other hooks on the same events as Sidereus, a CLAUDE.md that shadows AGENTS.md, hooks that look silently off (static estimate) and installed plugins with versions and accounts. «Security tools» lists the scanners the security checks use (installed + version, or the install command with «Copy»; nothing is run). Hidden when the `diag` feature is off.
+
+«Display»
+- «Display language»: Korean or English, no reload.
+- «Background tone»: Black · Grey · Blue · White · «System» (default, follows the OS light/dark setting live).
+- «Text size»: 90 / 100 / 110 / 125 %, text only; layout and widths stay the same.
+- «Session list»: «Drawer» (opens from «Sessions» at the top) or «Pinned right».
+- «Token widgets on the right»: weekly donut, daily, today-by-project and live charts under the session list. Off moves them to the Tokens tab.
+- «Burndown curve»: «Show curve» or «Collapse».
+- «Terminal integration»: Auto · iTerm2 · Terminal.app · Orca · Off. Picks what the «Terminal» button brings to the front.
+
+«Alerts»
+- «Alert level»: «Important only» (questions, aborts, failures) · «Everything» · «Custom» (per kind: «Badge» · «List only» · «hidden»).
+- «Group repeats per session (30 min)»: same path and kind within 30 min count once.
+- «Cards in the alarm list»: «Full history» or «Unread only».
+- «Notify when a session waits for me»: OS notification, off by default. «Also when this tab is visible» adds the visible-tab case.
+
+«Saver mode» (same file as `/saver`, applies to every session)
+- «Mode»: «Auto · Target time · On 1-4 · Off». «Target time» shows an HH:MM box and «Apply».
+- «Target burn»: share of the 5-hour limit auto mode aims to use by the reset — «No target» · 50 · 80 · 100 % or a typed value. Auto mode only.
+- «At the target limit»: «Notify only» · «Warn, then allow» (blocks the first prompt; the same prompt again within 10 min goes through) · «Block» (prompts and tool runs).
+- «What each level does» (folded): each level's concurrency cap and added rules, current level highlighted; shown only when the saver hook sends the table.
+
+«Timeline»
+- «Replay speed», «Refresh interval», «Range».
+- «Show task description on subagent rows»: label by the one-line task description, type as a chip. Off shows the type only.
+
+«Preferences»
+- «Start view»: «Last tab viewed» (default) or one tab.
+- «Moon mark»: «Hourly cycle» (default) runs the sidebar mark through a full lunation every hour; «Real phase» shows today's moon. The tooltip always shows the real moon.
+- «Tab order and visibility»: reorder or hide the top tabs; the timeline cannot be hidden.
+- «Main account»: only with two or more Claude accounts.
+- «Reset display settings»: moves the screen settings to the backup folder and reloads. Note drafts and notification permission stay.
+- Server: «My name», «Default room». «Saver hook folder», «Auto-compact history» (read-only) and «Port» are in the «Advanced» fold. «default» restores an item.
+- «Auto-compact» and «Compact threshold (tokens)»: written to each account's Claude Code `settings.json`, from new sessions. «Per account» sets them per account; «Apply to changed accounts» writes only those.
+- «Features»: switch a feature off (its tab, requests and background work stop). «Save», then restart.
+- «Mailbox watch»: «New sessions turn on mailbox watch automatically», with a per-project override. Applies to sessions started after the change.
+
+«Diagnostics» (read-only, only «Refresh»; hidden when the `diag` feature is off)
+- Other hooks on the same events as Sidereus, a CLAUDE.md that shadows AGENTS.md, hooks that look silently off (static estimate) and installed plugins with versions and accounts.
+- «Security tools»: the scanners the security checks use — installed + version, or the install command with «Copy». Nothing is run.
+
+«Saved views» (only when one exists): «Apply» switches to that view and closes settings.
 
 Keys: [README «Customising»](../README.md#customising), [CONFIG.md](CONFIG.md).
 

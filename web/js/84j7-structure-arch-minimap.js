@@ -1,8 +1,8 @@
 // ── Structure «Architecture» minimap: text-free clone of the cached diagram SVG + viewport rect; click / drag scrolls .archmap ──
 // ⚠Cloned once per diagram key and re-attached after each innerHTML repaint: never rebuilt per poll, scroll or hover.
 // ⚠.archmm sits outside .archmap (sibling in .archbody): archPanFrom never starts a pan here.
-// ⚠Only auto-scroll: the first overview sync of a map identity at scroll 0,0 (archMmFirst); clicks / expands / lit / polls never centre.
-const ARCH_MM = { k: '', svg: null, raf: 0, seen: {} };
+// ⚠Only auto-scroll: first sight of a map identity (overview at 0,0) or of a focus identity (hub centred) in archMmFirst; clicks / expands / lit / polls never centre.
+const ARCH_MM = { k: '', svg: null, raf: 0, seen: {}, pos: {} };   // pos: view key -> last .archmap [scrollTop, scrollLeft]
 // Pref: on unless stored '0' (missing key or a throwing store = on).
 function archMmOn(){ try{ return lsGet('sidereus.archmm', '1') !== '0'; }catch(e){ return true; } }
 // Pure: slot + icon chip (label in title/aria-label); the clone is attached by archMmSync.
@@ -28,7 +28,24 @@ function archMmGeom(view, map, box){
 // ⚠Not the svg key: that changes with selection / full / lit, and centring on those would move the view on a click.
 function archMmId(k){
   const f = String(k || '').split('\t'); if(/^fv/.test(f[0] || '')) f.shift();
-  return f.length >= 8 ? { id: [f[0], f[6], f[7]].join('|'), all: f[1] === 'all' } : null;
+  return f.length >= 8 ? { id: [f[0], f[6], f[7]].join('|'), all: f[1] === 'all', sel: f[1] === 'all' ? '' : f[2] } : null;
+}
+// Pure: view key = map identity + focused module ('' = overview); lit / full / fit changes keep the key.
+function archMmVk(k){ const m = archMmId(k); return m ? m.id + '\t' + (m.all ? '' : m.sel) : ''; }
+// Record the live scroll of a .archmap under its view key (scroll listener below).
+function archMmKeep(am){
+  const dg = am && am.querySelector ? am.querySelector('.archdg') : null, vk = archMmVk(dg && dg.dataset && dg.dataset.k);
+  if(!vk) return;
+  if(!(vk in ARCH_MM.pos) && Object.keys(ARCH_MM.pos).length >= 100) ARCH_MM.pos = {};
+  ARCH_MM.pos[vk] = [am.scrollTop, am.scrollLeft];
+}
+// Saved scroll for the view of archKey k, or null. ⚠#feed is shared by every main tab: coming back rebuilds .archmap at 0,0, and archMmFirst never re-centres a seen view.
+function archMmPos(k){ const v = ARCH_MM.pos[archMmVk(k)]; return v ? v.slice() : null; }
+// Scroll for a paint of view k: carried (old .archmap scroll, null = none) unless there was no map or the view key changed (old key ok),
+//   then k's saved entry; no saved entry keeps the carried one. ⚠Same key never swaps: clicks / polls must not move the view.
+function archMmPick(carried, ok, k){
+  if(carried && ok != null && archMmVk(ok) === archMmVk(k)) return carried;
+  return archMmPos(k) || carried;
 }
 // Pure: first-sight .archmap scroll: horizontally the map centre (bands share one centre axis, so the modules sit there);
 //   vertically centred when the map fits below the sticky top, else its top just below it. Clamped to [0, max].
@@ -38,6 +55,12 @@ function archMmAnchor(view, map){
   const y = map.h <= vh ? map.y + map.h / 2 - top - vh / 2 : map.y - top;
   return { left: Math.round(cl(map.x + map.w / 2 - view.cw / 2, Math.max(0, view.sw - view.cw))), top: Math.round(cl(y, Math.max(0, view.sh - view.ch))) };
 }
+// Pure: archMmAnchor with left = the hub's centre (hub = {x, w} in content px); no hub = archMmAnchor unchanged.
+function archMmHub(view, map, hub){
+  const to = archMmAnchor(view, map);
+  if(hub && hub.w > 0) to.left = Math.round(Math.max(0, Math.min(Math.max(0, view.sw - view.cw), hub.x + hub.w / 2 - view.cw / 2)));
+  return to;
+}
 // Live .archmap view + diagram svg rect in scroll content px (same frame as archViewRect).
 function archMmVM(am, svg){
   const b = am.getBoundingClientRect(), r = svg.getBoundingClientRect(), tp = am.querySelector('.archtop');
@@ -45,14 +68,21 @@ function archMmVM(am, svg){
     map: { x: r.left - b.left - (am.clientLeft || 0) + am.scrollLeft, y: r.top - b.top - (am.clientTop || 0) + am.scrollTop, w: r.width, h: r.height } };
 }
 // First sight of a map identity: anchor it once (archMmAnchor), only on the overview and only if the user has not scrolled (0,0).
-// A focus view or a scrolled scroller marks it seen without moving. A zero-size (hidden) layout is not marked.
-function archMmFirst(am, svg, k){
+// First sight of a focus identity (map + focused module): centre the hub (data-p = hub, 84j data-hub) whatever the scroll,
+//   which is the previous view's. ⚠Marks the overview seen too: returning to it never centres. A zero-size (hidden) layout is not marked.
+function archMmFirst(am, svg, k, hub){
   const m = archMmId(k);
-  if(!am || !svg || !m || ARCH_MM.seen[m.id]) return;
+  if(!am || !svg || !m) return;
+  const fk = m.all ? '' : 'f\t' + m.id + '\t' + m.sel;
+  if(fk ? ARCH_MM.seen[fk] : ARCH_MM.seen[m.id]) return;
   const vm = archMmVM(am, svg);
   if(!(vm.map.w > 0) || !(vm.view.cw > 0)) return;
   ARCH_MM.seen[m.id] = 1;
-  if(!m.all || am.scrollLeft || am.scrollTop) return;
+  if(fk){ ARCH_MM.seen[fk] = 1;
+    const h = /^m\d+$/.test(hub || '') && svg.querySelector ? svg.querySelector('[data-p="' + hub + '"]') : null, r = h && h.getBoundingClientRect ? h.getBoundingClientRect() : null;
+    const b = am.getBoundingClientRect(), to = archMmHub(vm.view, vm.map, r ? { x: r.left - b.left - (am.clientLeft || 0) + am.scrollLeft, w: r.width } : null);
+    am.scrollLeft = to.left; am.scrollTop = to.top; return; }
+  if(am.scrollLeft || am.scrollTop) return;
   const to = archMmAnchor(vm.view, vm.map);
   am.scrollLeft = to.left; am.scrollTop = to.top;
 }
@@ -90,7 +120,7 @@ function archMmView(am){
 function archMmSync(slot){
   const am = slot && slot.closest ? slot.closest('.archmap') : null, body = am && am.closest('.archbody'), mm = body && body.querySelector('.archmm');
   const svg = slot && slot.querySelector && slot.querySelector('svg'), k = (slot && slot.dataset && slot.dataset.k) || '';
-  archMmFirst(am, svg, k);   // ⚠before the minimap-off return: the first-sight anchor does not depend on the minimap
+  archMmFirst(am, svg, k, slot && slot.dataset && slot.dataset.hub);   // ⚠before the minimap-off return: the first-sight anchor does not depend on the minimap
   if(!mm || mm.classList.contains('off') || !svg) return;
   if(ARCH_MM.k !== k || !ARCH_MM.svg){
     const c = archMmClone(svg), vp = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -104,7 +134,9 @@ function archMmSync(slot){
 // ⚠scroll does not bubble: capture phase, one rect move per frame.
 document.addEventListener('scroll', ev => {
   const am = ev.target;
-  if(ARCH_MM.raf || !am || !am.matches || !am.matches('.archtab .archmap')) return;
+  if(!am || !am.matches || !am.matches('.archtab .archmap')) return;
+  archMmKeep(am);   // every event, not per frame: the last position before leaving the tab must be the one kept
+  if(ARCH_MM.raf) return;
   ARCH_MM.raf = requestAnimationFrame(() => { ARCH_MM.raf = 0; archMmView(am); });
 }, true);
 // Press / drag on the minimap: centre the map on that point. ⚠A poll repaint swaps .archmap mid-drag: re-query on every move.

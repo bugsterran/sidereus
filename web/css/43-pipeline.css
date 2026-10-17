@@ -76,12 +76,13 @@ html[data-theme=light] .plbrb.cl{color:#4f49a8;border-color:#c9c6ec}
 .plbar>b{margin-right:6px}
 /* Save/run/delete: right end of the bar, colour-coded. ⚠Scoped like 05-controls.css so it outranks the shared .wkrgb look. */
 .plact{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none}
+.plsep{width:1px;height:16px;margin:0 2px;background:var(--nx-rule,#8884);flex:none}   /* Run | file operations (48 plBody) */
 html[data-ui=next][data-ui] :is(.plact,.plnames,.pltop) .wkrgb.plsv{background:var(--nx-info-bg);border-color:var(--nx-info-bg);color:#fff;font-weight:600}
 html[data-ui=next][data-ui] :is(.plact,.plnames,.pltop) .wkrgb.plsv:hover:not([disabled]){background:color-mix(in srgb,var(--nx-info-bg) 85%,#fff)}
 html[data-ui=next][data-ui] .plact .wkrgb.plrn{background:color-mix(in srgb,var(--nx-ok) 14%,transparent);border-color:color-mix(in srgb,var(--nx-ok) 60%,transparent);color:color-mix(in srgb,var(--nx-ok) 70%,var(--nx-t1));font-weight:600}
 /* ⚠plain --nx-ok text on its own 14%/26% tint was 3.91/3.32:1 in light; 70% ok + 30% t1 = 5.36/4.56 light, 7.28/5.55 dark */
 html[data-ui=next][data-ui] .plact .wkrgb.plrn:hover:not([disabled]),html[data-ui=next][data-ui] .plact .wkrgb.plrn.on{background:color-mix(in srgb,var(--nx-ok) 26%,transparent);border-color:var(--nx-ok)}
-html[data-ui=next][data-ui] .plact .wkrgb.pldl{margin-left:6px;background:transparent;border-color:color-mix(in srgb,var(--nx-err) 60%,transparent);color:var(--nx-err)}
+html[data-ui=next][data-ui] .plact .wkrgb.pldl{background:transparent;border-color:color-mix(in srgb,var(--nx-err) 60%,transparent);color:var(--nx-err)}
 html[data-ui=next][data-ui] .plact .wkrgb.pldl:hover:not([disabled]){background:var(--nx-err);border-color:var(--nx-err);color:#fff}
 html[data-ui=next][data-ui] .plact .wkrgb[disabled]{opacity:.45;cursor:default}
 .plapply .tkvs{margin:0}

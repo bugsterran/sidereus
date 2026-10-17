@@ -155,14 +155,8 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .hun{display:flex;gap:8px;align-items:center;padding:3px 8px;font-size:11px;color:#a8b3c4;
   border-radius:3px;cursor:pointer;min-width:0}
 .hun:hover{background:#18202b}
-/* History filters — project chips + title search (85-history.js, sidereus.histf) */
+/* History filters — title search + project combobox in the toolbar (85-history.js, sidereus.histf) */
 .histq{flex:0 1 220px;width:220px;min-width:120px}
-.hpcs{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 2px}
-.hpc{font:inherit;font-size:11px;padding:1px 8px;border-radius:10px;cursor:pointer;background:none;
-  color:var(--nx-t2,#a8b3c4);border:1px solid var(--nx-rule,#2a3342)}
-/* ⚠html[data-ui] lifts these over the 00-core next-UI twin «html[data-ui=next] .hpc» (0,2,1) */
-html[data-ui] .hpc:hover{background:var(--nx-hover,#18202b)}
-html[data-ui] .hpc.on{color:var(--nx-t1,#dce8f8);border-color:var(--nx-info,#5899f3);background:color-mix(in srgb,var(--nx-info,#5899f3) 18%,transparent)}
 .hsfn{display:flex;align-items:center;gap:8px}
 .hun.off{cursor:default;opacity:.6}
 .hun b{color:#dce8f8;font-weight:600;white-space:nowrap}
@@ -184,8 +178,9 @@ html[data-ui] .hpc.on{color:var(--nx-t1,#dce8f8);border-color:var(--nx-info,#589
 .sfil span.on{background:#2a2417;border-color:#6b5a2e;color:#e0b45f}
 .sfil span.on.g{background:#1d2b42;border-color:#3a5a8c;color:#bcd4f5}
 /* Account picker (40b acctPickHtml, >=2 accounts): pill-sized select, last in the row; long labels ellipsise. */
-.acpk{background:#151a22;border:1px solid #232a35;color:#8b95a7;border-radius:999px;padding:0 4px;font-size:10px;max-width:14ch;text-overflow:ellipsis;cursor:pointer}
-.acpk:hover{border-color:#3a4756;color:#cfd7e4}
+/* Account picker: same box as the other toolbar selects (.tlsel), not a pill — it sat next to them in the Timeline toolbar. */
+.acpk{background:#141a23;border:1px solid #232c38;color:#a8b3c4;border-radius:6px;padding:0 4px;font-size:10px;max-width:14ch;text-overflow:ellipsis;cursor:pointer}
+.acpk:hover{border-color:#3a4a63;color:#dfe5ee}
 /* Idle (human's turn, over the threshold) — **no extra text**: only color on the elapsed time (text would shift the row). */
 /* ★Idle vertical bar removed (2026-09-03: distracting, meaning unclear).
    It meant `long idle`, but (a) several idle cards stacked at the same x looked like **one line across

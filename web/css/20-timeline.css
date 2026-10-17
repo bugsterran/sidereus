@@ -309,8 +309,6 @@ html[data-ui=next][data-theme=light] .tlsi i{filter:brightness(.7)}
 .tlrf{font-style:normal;cursor:pointer;font-size:11px;color:#8b95a7;border:1px solid #232c38;
   border-radius:6px;padding:1px 7px}
 .tlrf:hover{color:#8ab4f8;border-color:#3a4a63}
-/* «Running only» toggle; #id outranks html[data-ui=next] .tlrf */
-#tlro.on{color:var(--seg-on-c,#dfe5ee);background:var(--seg-on-bg,#5b8def26);border-color:var(--seg-on-bd,#5b8def)}
 /* Controls start at the toolbar's left edge like other tabs; only «Changes» is pushed right (like .tbx) */
 .tlhx{display:inline-flex;gap:5px;align-items:center;flex:0 0 auto}
 /* Account picker (40b acctPickHtml) sized like the other toolbar selects */

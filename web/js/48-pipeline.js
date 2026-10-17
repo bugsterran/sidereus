@@ -165,9 +165,12 @@ function plChips(){
   if(PLS.proj && !m.has(PLS.proj)) m.set(PLS.proj, { p: PLS.proj, n: 0 });
   const added = (PLS.projs && PLS.projs.added) || [];   // only «+ Add project» projects get ×
   const items = [...m.values()].map(e => Object.assign(e, { name: strShort(e.p), run: !!live[e.p] }));
-  const badge = e => (e.n ? ' <small class=strpc>' + e.n + '</small>' : '') + (live[e.p] ? plLiveDot(live[e.p].length) : '');
+  // Button = name + live dot; the pipeline file count lives in the tooltip and the popover rows only.
+  const badge = e => (live[e.p] ? plLiveDot(live[e.p].length) : '');
   const rm = PLS.proj && added.includes(PLS.proj) ? '<button type=button class="strp plrm" data-plprojrm="' + esc(PLS.proj) + '" title="' + esc(T('Remove from list')) + '" aria-label="' + esc(T('Remove from list')) + '">×</button>' : '';
   return '<div class=plchips>' + ppComboHtml({ k: 'pl', label: T('Project'), items: items, cur: PLS.proj, rkey: 'sidereus.plrecent', badge: badge,
+    tip: e => e.p + (e.n ? '\n' + TV({msg: '{n} pipelines', vars: {n: e.n}}) : ''),
+    note: e => (e.n ? ' <small class=strpc>' + e.n + '</small>' : ''),
     pick: plPickProj, extra: plAddForm(), onExtra: plBrOpen }) + rm + '</div>';
 }
 function plPickProj(p){
@@ -261,9 +264,11 @@ function plBody(ov, hd){
   const cov = plGateCov(plEnt(p).G);   // from the editor graph: unsaved gate edits count
   const ev = p.sha && !p.std ? plEvalOf(PLS.proj, p.name) : null; plEvalCov(cov, ev, dirty);   // saved file only (48i)
   const bar = '<div class=plbar><b>' + esc(p.title) + '</b><span class="plcov' + (cov.n < cov.m ? ' plcovlo' : '') + '" title="' + esc(TV({msg: 'Stages machine-checked by a gate command: {n} of {m}', vars: {n: cov.n, m: cov.m}})) + '">' + esc(TV({msg: 'Gates {n}/{m}', vars: {n: cov.n, m: cov.m}})) + '</span>' + plEvalHead(ev, PLEVAL_OPEN === p.name) + plLiveHead(lv, lt) + '<span class=plact>'   // right-aligned, colour-coded action group (43-pipeline.css)
+    // Run first (primary; relays a run request to a session), then a divider, then the file operations; Delete last.
+    + '<button class="wkrgb plrn' + (PLRUN && PLRUN.name === p.name ? ' on' : '') + '" data-plrun' + (dirty ? ' disabled title="' + esc(T('Save before running')) + '"' : '') + '>' + esc(T('Run')) + '</button>'
+    + '<span class=plsep aria-hidden=true></span>'   // Save always follows, so the divider never trails
     + (dirty ? '<button class="wkrgb" data-plreset>' + esc(T('Undo')) + '</button>' : '')
     + '<button class="wkrgb plsv" data-plsave' + (dirty && cv.ok && !PLS.saving ? '' : ' disabled') + (cv.ok ? '' : ' title="' + esc(T('Fix the red items before saving')) + '"') + '>' + esc(T('Save')) + '</button>'
-    + '<button class="wkrgb plrn' + (PLRUN && PLRUN.name === p.name ? ' on' : '') + '" data-plrun' + (dirty ? ' disabled title="' + esc(T('Save before running')) + '"' : '') + '>' + esc(T('Run')) + '</button>'
     + (p.std || !p.sha ? '' : '<button class="wkrgb pldl" data-pldel' + (PLS.saving ? ' disabled' : '') + '>' + esc(T('Delete')) + '</button>') + '</span></div>';   // unsaved draft: no file
   const diff = PLS.diff && PLS.diff.name === p.name ? '<div class=pldiff><div class=brh2><b>' + esc(T('Changes', 'preview')) + '</b> <i>.claude/pipelines/'
     + esc(p.name) + '.json</i></div><pre>' + diffHtml(PLS.diff.text, agLang('x.json')) + '</pre>' + plRenameWarn(p, lv) + '<div class=plbar>'
