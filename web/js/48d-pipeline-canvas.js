@@ -113,7 +113,7 @@ function plEdgesSvg(E){
 // Stage outcome word on the node pill (plrun `o`, 48b plPrLt).
 // ⚠back = an onFail loop-back sent work back (e.g. non-blocking review fixes); only a shell [pl-end:…|fail] is a failure.
 // ⚠Show through plOc(): 'run' is 'Running|stage' in Korean (plain 'Running' is another word).
-const PL_OUTCOME = { run: 'Running', done: 'Done', skip: 'Skipped', back: 'Sent back', fail: 'Failures', hold: 'Paused' };
+const PL_OUTCOME = { run: 'Running', done: 'Done', skip: 'Skipped', back: 'Sent back', fail: 'Failed', hold: 'Paused' };
 function plOc(st){ return T(PL_OUTCOME[st], 'stage'); }
 // Stage flags under the card as readable [label, tooltip] pairs (was raw config keys like «onError continue»).
 function plFlagChips(n){

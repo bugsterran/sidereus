@@ -121,7 +121,7 @@ Object.assign(I18N.ko, {
   'Applies to sessions started after the change': '새로 시작하는 세션부터 적용됩니다',
   'Change how sessions apply pipelines? Applies to sessions started after the change.': '파이프라인 적용 방식을 바꿀까요? 새로 시작하는 세션부터 적용됩니다.',
   'Could not change it': '바꾸지 못했습니다',
-  'Tooling': '하네스',
+  'Harness': '하네스',
   'Hooks · rules · agents · MCP · skills': '훅 · 규칙 · 에이전트 · MCP · 스킬',
   // 48b-pipeline-run.js
   'Mode|how': '방식',

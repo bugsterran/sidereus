@@ -2,7 +2,7 @@
 Object.assign(I18N.ko, {
   'Compact threshold: {n}': '컴팩트 기준: {n}',
   'Auto-compact off': '자동 컴팩트 꺼짐',
-  'change it in My settings': '«내 방식»에서 변경',
+  'change it in Preferences': '«환경설정»에서 변경',
   'What each level does': '단계별 동작',
   'Level': '단계',
   'Max concurrent agents': '최대 동시 에이전트',

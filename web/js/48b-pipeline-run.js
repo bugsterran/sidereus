@@ -458,7 +458,7 @@ function plOrphHtml(orph){
     + sid8(o.sid) + ' — ' + T('pipeline file not found')) + '</div>').join('');
 }
 function plOvPick(proj, name){   // same as a chip click + pipeline pick; ⚠never scroll or centre
-  if(PLVIEW !== 'pipe'){ PLVIEW = 'pipe'; lsSet('sidereus.plview', PLVIEW); }   // ⚠a remembered Tooling sub-view would hide the picked pipeline
+  if(PLVIEW !== 'pipe'){ PLVIEW = 'pipe'; lsSet('sidereus.plview', PLVIEW); }   // ⚠a remembered Harness sub-view would hide the picked pipeline
   PLS.proj = proj; PLS.sel = name; PLS.wf = null; lsSet('sidereus.plproj', PLS.proj);
   if(!PLS.projs) PLS.pend = proj;   // ⚠plLoadProjs would reset a project not in its list (borrowed-only) to the first one
   PLAG = false;   // an open arch-map panel (48h) would hide the picked pipeline

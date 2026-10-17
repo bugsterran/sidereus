@@ -265,7 +265,7 @@ function buildAttn(){
   if(!shown.length) h = '<div class="ath none">' + esc(T('No sessions need you')) + low + wake + '</div>' + lowH + oth;
   else {
     const vis = attnMore ? shown : shown.slice(0, ATTN_MAX), rest = shown.length - vis.length;
-    h = '<div class=ath>' + esc(T('Sessions needing you')) + ' <b>' + shown.length + '</b>' + low + wake + '</div>'
+    h = '<div class=ath>' + esc(T('Attention')) + ' <b>' + shown.length + '</b>' + low + wake + '</div>'
       + vis.map(attnRowHTML).join('')
       + (rest ? '<div class=atmore data-aa="more">' + esc(T('+{n} more').replace('{n}', rest)) + '</div>'
               : (attnMore && shown.length > ATTN_MAX ? '<div class=atmore data-aa="more">' + esc(T('Collapse')) + '</div>' : ''))

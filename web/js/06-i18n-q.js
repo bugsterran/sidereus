@@ -1,6 +1,6 @@
 // Korean for the settings category «Preferences» (90b-mypref.js).
 Object.assign(I18N.ko, {
-  'Preferences': '내 방식', 'Server': '서버', 'File': '파일', 'Applies after restart': '재시작 후 적용',
+  'Preferences': '환경설정', 'Server': '서버', 'File': '파일', 'Applies after restart': '재시작 후 적용',
   'Display items are saved on the viewer server and shared by every browser. Server items are written to config.local.json and apply after a restart.': '화면 항목은 뷰어 서버에 저장돼 모든 브라우저가 같이 씁니다. 서버 항목은 config.local.json 에 쓰고 재시작 후 적용됩니다.',
   'Reset display settings': '설정 초기화', 'Reset': '초기화',
   'Returns display settings (sizes, filters, selected tabs and so on) to their initial state. Note drafts and notification permission stay.': '화면 설정(크기·필터·선택한 탭 등)을 처음 상태로 되돌립니다. 메모 초안과 알림 권한은 그대로입니다.',

@@ -51,7 +51,7 @@ The «Runs N» chip in the timeline header lists open and just-ended runs from e
 
 ⚠ The screen shows metadata only. Another session's conversation appears only in the work popup, after a click.
 
-While a work popup is open, clicking another session or agent adds it there as a tab; Shift+click opens a separate window. A log opened at a past moment (Retro failure row) always gets its own window.
+While a work popup is open, clicking another session or agent adds it there as a tab; Shift+click opens a separate window. A log opened at a past moment (a failure row in Insights) always gets its own window.
 
 ![Timeline](images/timeline-en.png)
 
@@ -172,9 +172,9 @@ Tags and the pipeline file: [EXTENDING.md](EXTENDING.md).
 
 ### Reading the harness view
 
-«Tooling» in the same tab answers «did the work come out right?».
+«Harness» in the same tab answers «did the work come out right?».
 
-![Tooling flow strip](images/harness-flow-en.png)
+![Harness flow strip](images/harness-flow-en.png)
 
 - «Flow» shows one pipeline run as seven boxes: Request → Guard → Edit → Gate → Review → Commit → Kept. Chips above pick a recent run; click a box for its records.
 - Gate shows PASS/FAIL per step, and Red→Green when a FAIL turned into a PASS. Kept says whether the last commit's PASS held.

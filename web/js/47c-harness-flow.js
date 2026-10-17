@@ -1,4 +1,4 @@
-// «Tooling» (harness) flow strip (47b hnHtml top): one pipeline run as 7 nodes req → guard → edit → gate → review → commit → keep (/api/harness `flow`).
+// «Harness» flow strip (47b hnHtml top): one pipeline run as 7 nodes req → guard → edit → gate → review → commit → keep (/api/harness `flow`).
 // ⚠Metadata only; every value goes through esc() and `st` reaches a class only via HN_FST. Run/node choice lives in HN.flowRun/HN.flowNode.
 const HN_FST = { ok: 'ok', ng: 'ng', run: 'run', none: 'none' };
 // HN_FK / HN_FO / HN_FD are shown as T(x, 'flow') — 'Edit' and 'running' alone are other Korean words.

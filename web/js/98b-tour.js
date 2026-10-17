@@ -68,10 +68,10 @@ function tourBody(p, dir){
     + '<dl class=tourterms>' + [[T('Stage'), 'One stretch of work owned by one agent'], [T('Gate'), 'A check that must pass before the next stage'],
         [T('Sent back'), 'A failed gate sends the work back to an earlier stage']].map(x => '<dt>' + esc(x[0]) + '</dt><dd>' + esc(T(x[1])) + '</dd>').join('') + '</dl>'};
   if(p.id === 'pl-live') return {t: 'Live progress', h: (p.mode === 'spot' ? '' : tourStepper())
-    + P('See the current stage and whether its gate passed here — the evidence stays in Pipelines › Tooling «Results»')
+    + P('See the current stage and whether its gate passed here — the evidence stays in Pipelines › Harness «Results»')
     + (p.mode === 'spot' ? '' : '<p class=tourdim>' + esc(T('No pipeline is running right now.')) + '</p>')};
   if(p.id === 'pl-start') return {t: 'Your first pipeline', h: P('Open «+ New ▾» and start with «Standard templates» › «Review only» (2 stages) · if writing one is hard, pick «Ask AI for a draft» there')};
-  if(p.id === 'arch') return {t: 'Architecture', h: P('Architecture — a module diagram drawn by an agent; only edges that pass the evidence check remain')};
+  if(p.id === 'arch') return {t: 'Structure › Architecture', h: P('Architecture — a module diagram drawn by an agent; only edges that pass the evidence check remain')};
   return {t: 'You are set', cmds: tourPluginLines(dir),
     h: P('If you use Claude Code, these two lines install the Sidereus plugin (mailbox relay · pipeline stage marks · read-only MCP).')};
 }

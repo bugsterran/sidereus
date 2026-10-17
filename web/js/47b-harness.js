@@ -1,4 +1,4 @@
-// «Tooling» (harness) view of the pipeline tab (48-pipeline.js PLVIEW, project = PLS.proj): hook lifecycle lane + rule files + agent ↔ pipeline map.
+// «Harness» view of the pipeline tab (48-pipeline.js PLVIEW, project = PLS.proj): hook lifecycle lane + rule files + agent ↔ pipeline map.
 // ⚠Metadata only (GET /api/harness): names, paths, sizes, counts. File text only on a card click (/api/harness/file by opaque ref) into 81's code window.
 const HN = { data: {}, at: {}, busy: {}, vdAt: {}, days: 30, opening: '', exOpen: false, flowRun: '', flowNode: '', fold: {}, plat: lsGet('sidereus.hnplat', 'cc') || 'cc', flowOpen: lsGet('sidereus.hnflow', '1') !== '0', cfgOpen: lsGet('sidereus.hncfg', '0') === '1' };   // opening = ref being fetched (double-click guard); exOpen survives repaints; plat = global choice
 // Cache key per platform + project (the same project looks different per CLI).
@@ -337,7 +337,7 @@ function hnHtml(){
   let body;
   if(!proj) body = '<div class=hidnote>' + esc(T('Pick a project')) + '</div>';
   else if(!d) body = '<div class=hidnote>' + esc(T('Loading…')) + '</div>';
-  else if(d.ok === false) body = '<div class=hidnote>' + esc(T('Could not read the tooling')) + (d.msg ? ' — ' + esc(hnMsg(d.msg)) : '') + '</div>';
+  else if(d.ok === false) body = '<div class=hidnote>' + esc(T('Could not read the harness')) + (d.msg ? ' — ' + esc(hnMsg(d.msg)) : '') + '</div>';
   // Flow first (47c), results + trail fold under «Details» (open when there is no flow), then the config map (closed by default, HN.cfgOpen).
   else return '<div class=hnw>' + hnFlowDet(d) + '<details class=hncfg' + (HN.cfgOpen ? ' open' : '') + '><summary class=hncfgs><div class=brh2><b>' + esc(T('Config map')) + '</b>'
     + hnVdSum(d.verdict) + '</div></summary>' + hnPlatSwitch(HN.plats) + hnVdLine(d.verdict) + (d.scanning ? '<div class=hidnote>' + esc(T('Counting runs…')) + '</div>' : '')

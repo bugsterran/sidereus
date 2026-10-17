@@ -4,7 +4,7 @@ Object.assign(I18N.ko, {
   'Changes|preview': '바뀌는 내용', 'Judgment stages should keep a strong model': '판단 단계는 강한 모델 권장',
   'Pick a project': '프로젝트를 고르세요', 'Could not read the pipelines': '파이프라인을 읽지 못했습니다',
   'The file breaks the schema — fix it by hand': '규칙에 맞지 않는 파일입니다 — 직접 고쳐야 합니다',
-  'Pipelines': '파이프라인', 'Agent and model per stage': '단계별 에이전트와 모델', 'The pipeline feature is off': '파이프라인 기능이 꺼져 있습니다', 'The retro feature is off': '돌아보기 기능이 꺼져 있습니다',
+  'Pipelines': '파이프라인', 'Agent and model per stage': '단계별 에이전트와 모델', 'The pipeline feature is off': '파이프라인 기능이 꺼져 있습니다', 'The Insights feature is off': '인사이트 기능이 꺼져 있습니다',
   'Saved · backup': '저장했습니다 · 백업',
   'Delete pipeline': '파이프라인 삭제', 'Backup (expected)': '백업 위치(예상)', 'Deleted · backup': '삭제했습니다 · 백업', 'Could not delete': '삭제하지 못했습니다',
   'The file is moved to the backup folder — move it back to undo': '파일은 백업 폴더로 옮겨집니다 — 되돌리려면 다시 옮기면 됩니다',

@@ -1,9 +1,9 @@
-// Korean for the pipeline tab «Tooling» (harness) view (47b-harness.js).
+// Korean for the pipeline tab «Harness» view (47b-harness.js).
 Object.assign(I18N.ko, {
   'Tool runs': '도구 실행', 'no hooks': '훅 없음', 'No rule files': '규칙 파일이 없습니다',
   'No agents': '에이전트가 없습니다', 'not in a pipeline': '파이프라인에 없음', 'Show in the tools list': '도구 목록에서 보기',
-  'Could not read the tooling': '하네스를 읽지 못했습니다', 'Counting runs…': '실행 횟수 집계 중…', 'Hook flow': '훅 흐름',
-  'Rule files': '규칙 파일', 'load order': '읽는 순서', 'Agents ↔ pipelines': '에이전트 ↔ 파이프라인', 'Tooling map': '하네스 지도',
+  'Could not read the harness': '하네스를 읽지 못했습니다', 'Counting runs…': '실행 횟수 집계 중…', 'Hook flow': '훅 흐름',
+  'Rule files': '규칙 파일', 'load order': '읽는 순서', 'Agents ↔ pipelines': '에이전트 ↔ 파이프라인', 'Harness map': '하네스 지도',
   'Estimate — guessed from the hook event and its config': '추정 — 훅 종류와 설정으로 어림한 값',
   'adds a note to the conversation context': '대화 맥락에 안내문을 끼워 넣음', 'stops the tool call when its condition matches': '조건이 맞으면 도구 실행을 막음',
   'writes a file or updates state only': '파일에 기록하거나 상태만 갱신', 'not read, so the effect is unknown': '내용을 읽지 않아 효과를 모름',
