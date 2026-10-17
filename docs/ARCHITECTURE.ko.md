@@ -2,6 +2,12 @@
 
 [English](ARCHITECTURE.md) · **한국어**
 
+어디를 고치나:
+
+- 화면: `web/` — `index.html` 뼈대와 `js/NN-*.js`, `css/NN-*.css` 를 import 때 한 페이지로 합친다. 고친 뒤 뷰어를 재시작해야 보인다.
+- 데이터·서버: `sidereus/<domain>.py`, 진입점은 `chat_server.py`.
+- 기능별 담당 파일: [dev/FILEMAP.md](dev/FILEMAP.md).
+
 시데레우스는 AI 코딩 세션을 보는 로컬 뷰어다. 세션과 서브에이전트가 무엇을 하는지 보여 주고, 사람이 쓴 지시를
 메일박스로 세션에 전달한다. 실행은 그 세션이 자기 권한으로 한다.
 규칙은 `AGENTS.md`, 함정은 `docs/dev/TRAPS.md`(`docs/dev/traps/` 목차), 모듈 순서는 `refactor/STAGE3.md` 에 있다.

@@ -46,6 +46,14 @@ bash tests/run.sh              # 단위 테스트만
 ```
 
 - ⚠`/usr/bin/python3`(3.9)을 쓴다 — launchd 가 이것으로 뷰어를 돌린다. 새 Python 으로 통과시키면 3.9 에 없는 문법이 새어 들어간다. 테스트는 라이브 파일·시계·네트워크를 쓰지 않는다.
+- Linux 는 보통 `/usr/bin/python3` 가 있다. 다른 Python 은 `PYTHON=<python> bash tests/run.sh` 로 고른다.
+- ⚠Windows: `scripts/check.sh` 는 `/usr/bin/python3` 만 부르므로 Git Bash 에서 실패한다. Windows CI 작업과 같은 게이트를 돌린다(Git Bash, 되면 Python 3.9):
+
+```sh
+for f in chat_server.py sidereus/*.py hooks/*.py mcp/*.py; do py -m py_compile "$f"; done
+for f in web/*.js web/js/*.js; do node --check "$f"; done
+PYTHON=py bash tests/run.sh
+```
 
 ## 메타데이터만 보장을 유지하려면 지킬 것
 

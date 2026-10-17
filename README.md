@@ -209,7 +209,7 @@ or a `git commit` before the run's `guards` gates pass. Off per project with «A
 ## Customising
 
 Settings (gear icon) hold the language, background tone and «Preferences». Server-side values go
-to `config.local.json` and apply after a restart. `/usr/bin/python3 mailbox_config.py` prints the config
+to `config.local.json` and apply after a restart. `/usr/bin/python3 mailbox_config.py` (Windows: `py mailbox_config.py`) prints the config
 path and the merged result. Every key, and the settings API: [docs/CONFIG.md](docs/CONFIG.md).
 
 ## Other CLIs

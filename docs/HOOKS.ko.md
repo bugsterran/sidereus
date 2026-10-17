@@ -75,7 +75,7 @@
 
 이 예시와 `ext-hooks/*.json` 의 `<PYTHON>`: macOS 는 `/usr/bin/python3`, Windows 는 `py -3`(또는 `python.exe` 전체 경로).
 
-테스트: `/usr/bin/python3 -m unittest tests.test_mailbox_stop -v`.
+테스트: `/usr/bin/python3 -m unittest tests.test_mailbox_stop -v`(Windows: `py -m unittest ...`).
 
 ### invite_notice.py
 

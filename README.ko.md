@@ -208,7 +208,7 @@ Sidereus는 세션을 시작하거나 멈추지 않습니다. 파이프라인 �
 ## 설정 바꾸기
 
 설정(톱니바퀴)에서 언어, 배경 톤, «내 방식»을 바꿀 수 있습니다. 서버 쪽 값은 `config.local.json`에 저장되며
-재시작해야 적용됩니다. `/usr/bin/python3 mailbox_config.py`를 실행하면 설정 파일 경로와 병합된 결과를 볼 수
+재시작해야 적용됩니다. `/usr/bin/python3 mailbox_config.py`(Windows: `py mailbox_config.py`)를 실행하면 설정 파일 경로와 병합된 결과를 볼 수
 있습니다. 전체 키와 설정 API는 [docs/CONFIG.ko.md](docs/CONFIG.ko.md)에 있습니다.
 
 ## 다른 CLI

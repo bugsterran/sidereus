@@ -80,7 +80,7 @@ delivered with its body.
 
 `<PYTHON>` in this and the `ext-hooks/*.json` examples: `/usr/bin/python3` on macOS, `py -3` (or a full `python.exe` path) on Windows.
 
-Tests: `/usr/bin/python3 -m unittest tests.test_mailbox_stop -v`.
+Tests: `/usr/bin/python3 -m unittest tests.test_mailbox_stop -v` (Windows: `py -m unittest ...`).
 
 ### invite_notice.py
 
