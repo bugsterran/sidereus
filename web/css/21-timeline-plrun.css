@@ -12,7 +12,7 @@
 .tlnm > .tlpl{display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;flex:0 0 100%;max-width:100%;min-width:0;
   font-size:12px;line-height:18px;color:var(--nx-t2,#909298);cursor:pointer;border-radius:6px}
 /* Stepper (plStepper, 74c): segmented bar, one `.tlpd` segment per stage with the stage name under it — 22x6 (min) in the row,
-   46x6 in the work popup (`.lg`, 35e). Rules hang off `.tlpst` so both share them. */
+   46x6 in the work log (`.lg`, 35e). Rules hang off `.tlpst` so both share them. */
 .tlpst{--tlpl-acc:var(--nx-info,#5899f3);--tlpl-done:var(--nx-ok,#71c269);--tlpl-bk:var(--tlpl-back,#e0a53d);--tlpl-off:var(--nx-t3,#84868c);
   --tlpl-wait:var(--nx-field,#6a6d74);--st-w:22px;--st-h:6px;--st-g:6px;
   display:inline-flex;align-items:flex-start;gap:var(--st-g);min-width:0;font-style:normal}
@@ -68,14 +68,14 @@ html[data-theme=light] .tlpst{--tlpl-bk:var(--nx-warn,#8b6401)}
 .tlpst:not(.fin) > .tlpls.pl-run .tlpd::before{animation:tlplstripe .8s linear infinite}
 @keyframes tlplstripe{from{transform:translateX(0)}to{transform:translateX(-8px)}}
 .tlpst > .tlpls[role=button]:hover{--n-c:var(--nx-t1,#cdcedc)}
-/* Work popup: .me = this agent's stage (accent name, underlined); stages with agents open them on click. */
+/* Work log: .me = this agent's stage (accent name, underlined); stages with agents open them on click. */
 .tlpst > .tlpls.me{--n-c:var(--nx-info,#5899f3);--n-w:700}
 .tlpst > .tlpls.me .tlpn{text-decoration:underline 2px;text-underline-offset:4px}
 .tlpst > .tlpls[role=button]{cursor:pointer}
 .tlpst > .tlpls[role=button]:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:1px;border-radius:4px}
 .tlnm .tlpc{font-style:normal;white-space:nowrap;color:var(--nx-t2,#909298)}
 .tlnm .tlpc strong{font-weight:600;color:var(--nx-t1,#cdcedc)}
-/* Ended run outcome (tlPlEnd; timeline row and work popup): success/error token text, so a finished run never reads as live.
+/* Ended run outcome (tlPlEnd; timeline row and work log): success/error token text, so a finished run never reads as live.
    ⚠Two classes each so they beat `.tlnm .tlpc strong` (same specificity, later wins). */
 .tlpe{font-style:normal;white-space:nowrap}
 .tlpe strong{font-weight:600;color:var(--nx-t1,#cdcedc)}

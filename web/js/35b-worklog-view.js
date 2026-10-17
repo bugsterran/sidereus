@@ -60,7 +60,7 @@ function workPaint(){
   const cd = (wtKeyOf(wtFocus) && wtData[wtKeyOf(wtFocus)]) || agentData;
   wkSumSet(cd);
   if(ISWP){ const tt = wtabs.find(x => x.key === wtKeyOf(wtFocus));
-            document.title = ((cd && cd.ok && cd.type && wkLab(cd.type)) || (tt && tt.label) || T('Activity')) + ' — ' + PAGE_NAME; }
+            document.title = ((cd && cd.ok && cd.type && wkLab(cd.type)) || (tt && tt.label) || T('Work log')) + ' — ' + PAGE_NAME; }
   // ★This used to close the modal — the modal itself is gone (2026-09-04 diff = floating window), so nothing to do.
   try{ wkcPaint(); }catch(e){ softErr('wkcPaint', e); }     // compose box follows the focused pane (36-wkcompose.js)
   if(wtSplit) return workPaintSplit(box);
@@ -68,7 +68,7 @@ function workPaint(){
   //   Hanging on one global opens holes like the coupling above again.
   const d = (wtPanes[0] && wtData[wtPanes[0]]) || agentData;
   ctxsTag(d, wtabs.find(x => x.key === wtPanes[0]) || {cwd: agentCwd, tid: agentTid});   // context-sources line (35d-ctxsrc.js)
-  const head = '<div class=wvh><b>' + esc(d && d.ok ? wkLab(d.type) : T('Activity')) + '</b>'
+  const head = '<div class=wvh><b>' + esc(d && d.ok ? wkLab(d.type) : T('Work log')) + '</b>'
     + '<span>' + esc(d && d.ok ? wkLab(d.desc || agentCwd) : (agentCwd || '')) + '</span>' + wkAcct(d) + '</div>';
   box.innerHTML = wtStrip() + head + agentBody(d) + wpPlrunHook(d);   // pipeline-run strip (35e-worklog-plrun.js)
   wtBind(box);
@@ -117,7 +117,7 @@ function wtBindSplitter(box){
     };
   });
 }
-// Empty-pane picker (2026-09-23): a /work popup starts with only its own tab, so empty panes list live sessions
+// Empty-pane picker (2026-09-23): a /work log window starts with only its own tab, so empty panes list live sessions
 // and their subagents from SESS. ⚠Metadata only (project · agent label · state) — never conversation text.
 // ⚠A resumed (SendMessage) agent's sub.tid is the SendMessage tool_use id, absent from meta ⇒ «Could not find that subagent's record».
 // openAgent id for a SESS[].sub row: the agent id (meta file name, agent_work accepts it) survives resumes; else tid.

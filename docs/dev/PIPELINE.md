@@ -78,7 +78,7 @@ Default tasks (instructions an AI can follow, plus rules): runner `DEFAULT_TASKS
   - `model`: `inherit | opus | sonnet | haiku`.
   - `agent`: candidates = project `.claude/agents` + `~/.claude/agents`; «Import» copies an agent file from another project / `~/.claude/agents` into this project; «New agent» writes a new `.md` — both through the same guards.
 - Live lighting: a Workflow run's phase title == stage title (`plLight`); otherwise the row's `plrun` (`sidereus/pl_runs.pl_model`: runs.json outcomes + loop-backs + tagged agents + live subs + main mark) → `plPrLt` (48b). The client renders only — a stage absent from `plrun` is wait. The newest 2 runs carry `ag`; `{aid:"main"}` = the orchestrator itself.
-- Under the canvas: one row per stage (outcome · ↺n · agents · elapsed · newest agent type, `plRunTable`). Row or running-node click = newest agent's work popup, or a chooser for 2+ (`plNodeWork`, 48d).
+- Under the canvas: one row per stage (outcome · ↺n · agents · elapsed · newest agent type, `plRunTable`). Row or running-node click = newest agent's work log, or a chooser for 2+ (`plNodeWork`, 48d).
 - Loop-back edge: `.plel.pulse` (flowing dash, source → target) only while the target runs with `from[source]`; afterwards the dashed lane keeps «↺ n» on its pill. Reduced motion = static thicker line.
 - «Run»: pick a live session of that project → one-line request → DM preview (pipeline name, the request, and each stage with agent·model in order) → send on confirm via `/api/dm`.
 - Client: `web/js/48-pipeline.js` · `web/css/43-pipeline.css` — stage boxes with arrows (flex, no SVG), `<select>` for agent and model per stage.
@@ -94,7 +94,7 @@ Default tasks (instructions an AI can follow, plus rules): runner `DEFAULT_TASKS
 
 ## Workflow view (read-only)
 
-The name list ends with a «Workflow» group: one button per Workflow-tool run in the project (`SESS[].wf`, runs named `pipeline` are the runner and stay on the canvas). A click shows the run instead of the canvas: done/total agents, elapsed, tokens (`run.tok`), phase boxes lit like canvas nodes, and an agent table (row = session work popup). Running ones also appear in «Running N». Metadata only: phase titles, one-line labels, states, times (`web/js/48g-pipeline-wf.js`).
+The name list ends with a «Workflow» group: one button per Workflow-tool run in the project (`SESS[].wf`, runs named `pipeline` are the runner and stay on the canvas). A click shows the run instead of the canvas: done/total agents, elapsed, tokens (`run.tok`), phase boxes lit like canvas nodes, and an agent table (row = session work log). Running ones also appear in «Running N». Metadata only: phase titles, one-line labels, states, times (`web/js/48g-pipeline-wf.js`).
 - ⚠Nothing is editable or sent from this view.
 - ⚠Two windows (`sessions._wf_sets`): `wf` = running + finished < 300 s (`WF_KEEP_S`; tree, «Running», attention, saver); `wfh` = older finished runs < 6 h, newest 10 per session, always `run:false` — read only by this view. Don't widen `wf` instead: every other consumer treats it as «now».
 

@@ -68,7 +68,7 @@ document.addEventListener('pointerup', e => {
   }
   plPaint();
 });
-// Running node / overview row click → that stage's newest agent work popup; several agents → a small picker. Metadata only.
+// Running node / overview row click → that stage's newest agent work log; several agents → a small picker. Metadata only.
 let PLAPK = null;   // open picker {sid, list}
 function plApkClose(){ const el = document.getElementById('plapk'); if(el) el.remove(); PLAPK = null; }
 function plNodeWork(title, rc){

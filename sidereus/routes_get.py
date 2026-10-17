@@ -211,7 +211,7 @@ class _GetRoutes(_StructRoutes):
                           "application/json; charset=utf-8")
 
     def _g_agent_work(self, u):
-        if not peer_ok(self.client_address):   # work popups carry transcript text: same-UID client only (macOS)
+        if not peer_ok(self.client_address):   # work logs carry transcript text: same-UID client only (macOS)
             return self._send(403, "forbidden", "text/plain; charset=utf-8")
         q = parse_qs(u.query)
         try:

@@ -1,4 +1,4 @@
-// Pipeline-run strip at the bottom of an agent's or session's work popup: SESS[].plrun (metadata only — titles, states, counts, labels).
+// Pipeline-run strip at the bottom of an agent's or session's work log: SESS[].plrun (metadata only — titles, states, counts, labels).
 // The popup polls /api/state itself (95-poll), so SESS here is its own copy, same source as the main window.
 const WP_TAG = /\[pl:([^\/\]]{1,60})\/([^\]]{1,80})\]/;
 let WPCH = null;          // open inline agent chooser {k: tab key, t: stage title} (null = none)

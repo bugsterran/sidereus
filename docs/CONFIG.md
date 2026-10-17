@@ -121,8 +121,8 @@ Two keys write Claude Code's `settings.json` (`src:"claude"`) — the default ac
 | `SIDEREUS_LAUNCHD_LABEL` | `mcp/sidereus_mcp.py` | from config | Viewer job label in the MCP down hint. |
 | `SIDEREUS_QUOTA_PROBE` | `sidereus/quota.py` | `quota_probe` | `1` / `0`: paid quota probe on / off. |
 | `SIDEREUS_QUOTA_LOOKUP` | `sidereus/quota.py` | `quota_lookup` | `1` / `0`: allow / forbid the keychain read and quota API call. |
-| `MAILBOX_CARD_WAIT` | `sidereus/notes.py` | off | `1`: bell alert when a session goes idle waiting for input. |
-| `MAILBOX_CARD_CTX` | `sidereus/notes.py` | off | `1`: bell alert when context is nearly full. |
+| `MAILBOX_CARD_WAIT` | `sidereus/notes.py` | off | `1`: «Alerts» card when a session goes idle waiting for input. |
+| `MAILBOX_CARD_CTX` | `sidereus/notes.py` | off | `1`: «Alerts» card when context is nearly full. |
 | `MAILBOX_NAG_S` | `monitor_stream.py` | `300` | Seconds unacknowledged before a reminder. |
 | `MAILBOX_NAG_EVERY_S` | `monitor_stream.py` | `600` | Seconds between reminders. |
 | `MAILBOX_NAG_MAX_TIMES` | `monitor_stream.py` | `2` | Reminders per message. |

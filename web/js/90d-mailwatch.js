@@ -33,7 +33,7 @@ function mwPane(){
   if(!sv) return '';
   mwLoadProjs();
   const w = mwWant(), ch = mwDiff(sv, w);
-  let h = '<div class=mwsec><div class=cfgs>' + esc(T('Mailbox watch', 'full')) + '</div>'
+  let h = '<div class=mwsec><div class=cfgs>' + esc(T('Mailbox watch')) + '</div>'
     + '<div class=cfgpd>' + esc(T('Applies to sessions started after the change')) + '</div>'
     + cfgSet(T('New sessions turn on mailbox watch automatically'),
         T('A per-project setting overrides this'),

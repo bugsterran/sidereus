@@ -298,7 +298,7 @@ def _rail_home(fo, sid, *cwds):
 
 
 def _rail_pcwd(home, *cwds):
-    """cwd for the work popup: work.agent_work/_past_row only look under `_slug(cwd)`, so it must slug to `home`.
+    """cwd for the work log: work.agent_work/_past_row only look under `_slug(cwd)`, so it must slug to `home`.
     ⚠The edit's own cwd can differ (worktree-isolated agent, cd'd session) — sending it made the popup fail."""
     cwds = [c for c in cwds if c]
     if home:
@@ -326,7 +326,7 @@ def _rail_tid(fo, sid, aid, home):
 
 def _rail_owners(root, files, rows=None, now=None, dirty=None):
     """Adds `own` [{sid8, sid, cwd, proj, main, tid, lab, agent, n, ago}] and `conflict` to each listed file from file_owner's cached index.
-    sid/cwd/tid (ids only) let the rail open the work popup (cwd = `_rail_pcwd`, not the edit's own cwd); proj labels the conflict popover.
+    sid/cwd/tid (ids only) let the rail open the work log (cwd = `_rail_pcwd`, not the edit's own cwd); proj labels the conflict popover.
     ★Conflict = file_owner's live + FO_CONFLICT_S rule, but only across >= 2 distinct sessions (user 09-25: sibling
       agents of one session are not a conflict here).
     ★`dirty` = tracked uncommitted paths (`_status_tracked`): like file_owner.conflicts, a committed file is never a conflict

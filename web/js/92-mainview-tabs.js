@@ -92,7 +92,7 @@ function wkOpenModal(){
   wkOn = true;
   if(!wtSplit) wtFocus = 1;
   m.hidden = false;
-  const t = document.getElementById('wkmt'); if(t) t.textContent = T('Activity');
+  const t = document.getElementById('wkmt'); if(t) t.textContent = T('Work log');
   const x = document.getElementById('wkmx');
   if(x){ x.setAttribute('aria-label', T('Close')); x.title = T('Close'); x.focus(); }
 }

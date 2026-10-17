@@ -18,13 +18,13 @@ The user's install keeps every feature on; a fresh public install starts core-on
 - On by default (`default_on_public: true`): **session control** (core · attention) · **quota pace + limit block** (core · saver) · **structure** (`struct`, AI-written code map) · **pipeline** (per-stage agent/model, run, live stage).
 - ★2026-10-01 requirement: pipeline is a headline feature, not secondary.
 - Timeline (first screen) carries open pipeline runs: per-session stage strip + gate result line + stage bands from `SESS[].plrun` (`web/js/74c-timeline-plrun.js`, `web/css/21-timeline-plrun.css`); click opens the Pipeline view.
-  - Up to 3 live runs stack one line each (newest first, «+N» for more); ended runs in the window fold behind a «+N ended» chip (in-memory toggle). Row accent fail > run > fin; bands and the gate pill follow the top run. The work popup stacks every run an agent appears in (session tab ≤ 3).
+  - Up to 3 live runs stack one line each (newest first, «+N» for more); ended runs in the window fold behind a «+N ended» chip (in-memory toggle). Row accent fail > run > fin; bands and the gate pill follow the top run. The work log stacks every run an agent appears in (session tab ≤ 3).
 - Everything else ships off (`default_on_public: false`) and is switched on in Settings › Features: branch · timeline · retro · history · tools · tokens · failures · awake.
 - ⚠The `struct` manifest (migration step) must set `default_on_public: true`.
 
 ## Core (never off)
 
-sessions · live · attention · cards · bus/chat · dm · otel · hook · term · work popup · prefs · quota/usage/saver/burn · first-visit tour (`98b-tour.js`, no toggle; steps for off features are skipped; `/api/state` `codeDir` is core).
+sessions · live · attention · cards · bus/chat · dm · otel · hook · term · work log · prefs · quota/usage/saver/burn · first-visit tour (`98b-tour.js`, no toggle; steps for off features are skipped; `/api/state` `codeDir` is core).
 
 ## Features and couplings (measured 2026-10-01)
 

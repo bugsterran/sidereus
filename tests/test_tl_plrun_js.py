@@ -472,7 +472,7 @@ class TlPlHead(unittest.TestCase):
         self.assertEqual(self._ks([{"sid": "s1", "plrun": [OPEN]}], attn=attn), [["open", "stuck", "서브에이전트 멈춤"]])
         self.assertEqual(self._ks([{"sid": "s1", "plrun": [OPEN]}], attn={"rows": [{"sid": "s2", "sigs": [{"k": "stall"}]}]})[0][1], "run")
         h = _run([{"sid": "s1", "state": "ask", "plrun": [OPEN]}], "tlPlHeadHtml(tlPlHead(SESS, null, 3000))")
-        self.assertIn("<strong class=tlplcw>막힘</strong>", h)
+        self.assertIn("<strong class=tlplcw>정체</strong>", h)
         self.assertIn("답을 기다리는 중", re.search(r'title="([^"]*)"', h).group(1))   # reason in the tooltip
 
     def test_back_and_fail_beat_stuck(self):

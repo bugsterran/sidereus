@@ -154,14 +154,14 @@ function hdrLang(){
                        e.title = T('Saved views — pick one to restore that combination'); });
   set('vwsave', e => { e.textContent = '+ ' + T('Save');
                        e.title = T('Name and save the current filter combination'); });
-  set('bell',   e => { e.title = T('Task-done alerts (they collect here)'); e.setAttribute('aria-label', T('Completion alarms'));
+  set('bell',   e => { e.title = T('Alerts — done · failed'); e.setAttribute('aria-label', T('Alerts — done · failed'));
     e.setAttribute('aria-controls', 'alarm'); if(!e.hasAttribute('aria-expanded')) e.setAttribute('aria-expanded', 'false'); });
   set('gear',   e => { e.title = T('Settings'); e.setAttribute('aria-label', T('Settings')); });
   set('cmdkq',  e => e.placeholder = T('Search sessions — project · path · session id · model · state · platform'));
   // The monitoring panel heading is static markup as well, so it rides along here.
   const sh = document.querySelector('h2.sesh .seshn'); if(sh) sh.textContent = T('Sessions');
   try{ sesdrLang(); }catch(e){ softErr('sesdrLang', e); }   // drawer button, pin/close labels (41-sesdrawer.js)
-  // Alarm panel header is static markup too.
+  // Alerts panel header is static markup too.
   const ah = document.querySelector('#alarm .ahead > b'); if(ah) ah.textContent = T('Alerts — done · failed');
   set('aunread', e => { e.textContent = T('Unread only'); e.title = T('Collapse to unread cards only (history is not deleted)'); });
   set('aread',   e => { e.textContent = T('Mark all read'); e.title = T('Clears the badge only — history is kept'); });

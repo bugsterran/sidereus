@@ -168,7 +168,7 @@ Agents rarely call the tools unprompted. Add to your `AGENTS.md` or `CLAUDE.md`:
 ## 6. Mailbox between sessions
 
 The mailbox ships here (`bus.jsonl`, `watch.sh`, `monitor_stream.py`, `mailbox_core.py`, the Stop hook).
-The Chat tab and the work-popup DM already use it. A session receives mail, full body included, in one of
+The Chat tab and the work-log DM already use it. A session receives mail, full body included, in one of
 two ways:
 
 - Instantly: the Stop async hook `hooks/mailbox_wake.py` (asyncRewake) wakes an idle session on new mail;

@@ -57,7 +57,7 @@ PYTHON=py bash tests/run.sh
 
 ## 메타데이터만 보장을 유지하려면 지킬 것
 
-- 대화 내용·도구 입력을 페이지나 MCP 답에 싣지 않는다 — 경로, 세션 id, 모델, 상태, 개수, 시각만. 예외는 클릭해야 열리는 작업 팝업(`sidereus/work.py`) 하나다.
+- 대화 내용·도구 입력을 페이지나 MCP 답에 싣지 않는다 — 경로, 세션 id, 모델, 상태, 개수, 시각만. 예외는 클릭해야 열리는 작업 내역(`sidereus/work.py`) 하나다.
 - 루프백 전용. 모든 POST 에 Host/Origin 가드를 둔다. `innerHTML` 에 넣는 값은 `esc()` 한다.
 - git 쓰기·CLI 제어(pty, send-keys, spawn/kill) 없음. git 호출은 `git_argv` 를 거친다.
 - 표준 라이브러리만. 오프라인에서 돌아야 한다.

@@ -57,7 +57,7 @@ PYTHON=py bash tests/run.sh
 
 ## Keep these if you want the metadata-only guarantee
 
-- Never put conversation text or tool inputs on the page or in an MCP answer — paths, session ids, models, states, counts and times only. The one exception is the click-to-open work popup (`sidereus/work.py`).
+- Never put conversation text or tool inputs on the page or in an MCP answer — paths, session ids, models, states, counts and times only. The one exception is the click-to-open work log (`sidereus/work.py`).
 - Loopback only; keep the Host/Origin guard on every POST. `esc()` anything put into `innerHTML`.
 - No git writes, no CLI control (pty, send-keys, spawn/kill). Git calls go through `git_argv`.
 - Standard library only; it must run offline.

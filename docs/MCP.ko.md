@@ -18,7 +18,7 @@ claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.
 
 | 도구 | 인자 | 답 |
 |---|---|---|
-| `sidereus_quota` | 없음 | 5h/7d 사용 %, 이번 5h 창에 이 PC 가 쓴 토큰(남은 예산은 없음), 리셋 시각, 이 속도로 바닥나는 시각, 목표 대비 속도, 절약 단계, 조언 한 줄 |
+| `sidereus_quota` | 없음 | 5h/7d 사용 %, 이번 5h 창에 이 PC 가 쓴 토큰(남은 예산은 없음), 리셋 시각, 이 속도로 바닥나는 시각, 목표 대비 속도, 절약 수준, 조언 한 줄 |
 | `sidereus_file_peers` | `path`(필수), `sid`, `cwd` | 최근 30분 안에 이 파일을 고친 세션·에이전트(sid8/unit, 에이전트 종류, 프로젝트, 경과 시간, 살아 있는지)와 미커밋 여부. 없는 경로는 `no such file` |
 | `sidereus_peers` | `cwd` | 같은 저장소(worktree 무관)에서 살아 있는 세션·서브에이전트: 상태, 지금 도구, ctx % |
 | `sidereus_attention` | 없음 | 지금 사용자가 봐야 할 세션(라벨만) |
@@ -29,9 +29,9 @@ claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.
 - 호출한 쪽은 MCP 프로세스의 cwd 로 알아낸다. Claude Code 가 세션 cwd 에서 띄우기 때문이다. `cwd` 인자가 우선한다.
 - `sidereus_file_peers` 는 부모 Claude 프로세스로 호출한 세션을 찾아 `(you)` 를 붙인다. `sid` 인자가 우선한다. `sidereus_peers` 에는 자기 세션도 나온다.
 - 인자는 도구마다 `inputSchema`(타입, 모르는 키, 필수)로 검사한다. 어긋나면 JSON-RPC `-32602`.
-- 조언 줄은 절약 훅의 판정(`.saver-view.json` 의 `lv` 와 단계)을 옮긴 것이다. 서버에는 자체 규칙이 없다.
+- 조언 줄은 절약 훅의 판정(`.saver-view.json` 의 `lv` 와 수준)을 옮긴 것이다. 서버에는 자체 규칙이 없다.
   훅(`~/.claude/hooks/saver.py`)은 선택 사항이고 동봉하지 않는다. 훅이나 스냅숏이 없어도 `sidereus_quota` 는 사용량을
-  답하고, 단계는 비우고 조언은 «no pace verdict» 가 된다. 예상 소진 시각이 5h 리셋보다 앞이면 조언이 경고로 바뀐다.
+  답하고, 수준은 비우고 조언은 «no pace verdict» 가 된다. 예상 소진 시각이 5h 리셋보다 앞이면 조언이 경고로 바뀐다.
 
 ## 구현
 

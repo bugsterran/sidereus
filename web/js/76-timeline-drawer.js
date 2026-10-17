@@ -10,7 +10,7 @@ const tlSelD = {};         // key → fetched work history (shows instantly on r
 function tlKey(cwd, tid){ return (tid||'')+'@'+(cwd||''); }
 function tlOpen(cwd, tid){
   if(!cwd || !tid) return;
-  if(/^wfa?:/.test(String(tid))) return;   // workflow run/agent rows have no Agent tool_use id, so no work popup
+  if(/^wfa?:/.test(String(tid))) return;   // workflow run/agent rows have no Agent tool_use id, so no work log
   // Timeline bar/name clicks open the work-log modal (user-confirmed 2026-09-23), not the bottom drawer below.
   if(String(tid).indexOf('sess:') === 0 || String(tid).indexOf('ext:') === 0) return openSession(cwd, tid);
   return openAgent(cwd, tid);
@@ -233,7 +233,7 @@ function tlDrawer(){
   const k = tlKey(tlSel.cwd, tlSel.tid);
   const d = tlSelD[k];
   const isS = String(tlSel.tid).indexOf('sess:') === 0;
-  const ttl = (d && d.ok) ? (wkLab(d.type) || T('Activity')) : (isS ? T('Session') : T('Subagent'));
+  const ttl = (d && d.ok) ? (wkLab(d.type) || T('Work log')) : (isS ? T('Session') : T('Subagent'));
   const sub = (d && d.ok) ? wkLab(d.desc || tlSel.cwd) : tlSel.cwd;
   // ★Preserve scroll position — polling redraws every 2.5s, so without it the view keeps jumping while reading.
   // ⚠Deciding «first render» by **DOM presence** was wrong: right after clicking there is no value yet, so only the shell

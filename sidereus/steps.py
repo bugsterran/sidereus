@@ -360,7 +360,7 @@ def _work_scan(_src, cwd=""):
                 if _u.strip():
                     luser = _u
                 # ⚠tool_result blocks arrive on `user` lines — the bare `continue` here dropped every result, so the
-                #   work popup always said «0 errors» and showed no `⎿`. Only tool_result blocks: user text is not a «says».
+                #   work log always said «0 errors» and showed no `⎿`. Only tool_result blocks: user text is not a «says».
                 if isinstance(c, list):
                     _scan_blocks([b for b in c if isinstance(b, dict) and b.get("type") == "tool_result"],
                                  steps, results, cwd, says, ts)

@@ -238,13 +238,13 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★**Diff window counted files from the cut patch** (412 KB commit cut at 220000 B: «6 files» vs `git show --stat` 30; this repo's 111babd: patch 7 vs 29 files, +2603/−2264).
   - ⇒ `git_diff` sends `numstat` (`--numstat -z -M`, cap `STAT_FILES_MAX`) + `numstatN`; `dfFiles` (30-diff.js) takes counts from it and marks files past the cut «patch cut», the cut-through one «patch partial».
   - ⚠Key is `numstat`, not `files` — `files` means the rail view (`test_git_rail`). Branches commit detail uses `-M` too; a rename's patch needs both `:(literal)old` and `:(literal)new`, or git shows an added file.
-- ★**Work popup had no total size cap** (2026-10-05 synthetic: 400 MultiEdit steps → 96,240,940 bytes; per-step caps alone allow 240k chars).
+- ★**Work log had no total size cap** (2026-10-05 synthetic: 400 MultiEdit steps → 96,240,940 bytes; per-step caps alone allow 240k chars).
   - ⇒ `steps._cap_edit_bodies` spends `AGENT_EDIT_BUDGET` (2M chars) newest step first; older steps drop `edit`/`edits`, get `editCut`, and the response carries `cutEdits` (popup head «edit bodies of the first N steps cut»). After: 1,975,134 bytes.
   - ⚠Do not remove step metadata to save bytes — only edit bodies are cut; every step stays listed.
 - ★**Resumed agent: `sub.tid` = the SendMessage tool_use id ≠ meta `toolUseId` → «Could not find that subagent's record»** (2026-10-02 live: row `toolu_01B3…` failed, meta `toolu_017DS…` opened the same agent).
   - ⇒ Open by agent id: `subWorkId(v)` (35b) sends `sub.aid`, falls back to tid; `agent_work` also matches the meta `_id` (strict `^a[0-9a-f]{6,40}$`, lookup only, never a path).
-  - ⚠Do not key a work popup on `sub.tid` — it changes on every resume.
-- **Work items join an open work popup as tabs** (`wkPopup` → `wkHostOf`, 35c; popup side `wkReopen` 35b · `wkHasTab` 65).
+  - ⚠Do not key a work log on `sub.tid` — it changes on every resume.
+- **Work items join an open work log as tabs** (`wkPopup` → `wkHostOf`, 35c; popup side `wkReopen` 35b · `wkHasTab` 65).
   - ⚠Cross-window lookups must go through functions: top-level `let wtabs` is not a `window` property, so the main window calls `POPS[k].wkHasTab()`.
   - ⚠A moment (`&at=`) window is never a host — `workUrl` applies `at` to the popup's first tid, so a live click on that tid would show the frozen window.
   - ⇒ Shift comes from a capture-phase click/Enter stamp (`WKSHIFT`, 1.5 s) since callers pass no event. A throwing cross-window call falls back to a new window.

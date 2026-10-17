@@ -11,7 +11,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-from sidereus import redact as _r  # noqa: E402  (secret regexes shared with the work popup)
+from sidereus import redact as _r  # noqa: E402  (secret regexes shared with the work log)
 
 ALLOW_MARK = "leakscan: allow"
 # Fabricated ids and fake secrets are expected here (fixtures, demo data); identifiers are still scanned.

@@ -135,7 +135,7 @@ html[data-ui=next][data-ui] .bell .bdg{background:#c11e32;color:#fff}
 /* ★The alarm window is **fixed right** (near the bell). It was briefly moved over the feed column and reverted —
    covering the session card looked like a problem, but a popover covering what is behind is its nature,
    and the user settled it: it is checked and closed (2026-08-27). Only vertical position is set by JS (alarmPlace). */
-/* z 45 > the sessions drawer (44): the open alarm list covers the drawer, both anchored top-right. Modals are 60. */
+/* z 45 > the sessions drawer (44): the open alerts list covers the drawer, both anchored top-right. Modals are 60. */
 .alarm{display:none;position:fixed;right:14px;top:56px;z-index:45;width:min(420px,92vw);
   max-height:calc(100vh - 56px - 30px - 8px);min-width:300px;min-height:160px;max-width:96vw;resize:both;
   overflow:auto;background:#12161d;border:1px solid #262e3b;border-radius:11px;

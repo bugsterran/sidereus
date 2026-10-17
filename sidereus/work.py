@@ -104,7 +104,7 @@ def _past_row(cwd, sid):
 def session_work(cwd, sid="", at=None):
     """**What the session (main shell) did recently** — same view and parser as the subagent modal.
 
-    Shown the same way as subagents: the work popup is the one owner-approved exception to "metadata only" (AGENTS.md rule 1).
+    Shown the same way as subagents: the work log is the one owner-approved exception to "metadata only" (AGENTS.md rule 1).
     With `sid`, **that session's file** is read; cwd alone opened the newest session in that folder, not the clicked one.
     ⚠Every current caller sends `sess:<cwd>|<sid>`; the no-sid branch (cwd's newest) is kept only for old saved tabs.
     ★Reads only the tail — session transcripts grow to 910MB."""
@@ -173,7 +173,7 @@ _AID_RE = re.compile(r"^a[0-9a-f]{6,40}$")   # agent id = subagents/agent-<id>.m
 
 def agent_work(cwd, tid, sid=""):
     """What the subagent did — **tool footprints** (name, target, time) plus its own text replies (`says`,
-    steps.py assistant text blocks — the approved work-popup exception, AGENTS.md rule 1).
+    steps.py assistant text blocks — the approved work-log exception, AGENTS.md rule 1).
 
     ★Not uploading conversation bodies is this page's principle (file header comment). But for "what did the agent
       do", the tool calls are the answer, so metadata suffices — what it read and ran is all in the footprints.

@@ -144,11 +144,11 @@ R.moneyEn = creditMoney(1234, 'EUR');
 
     def test_saver_stage_labels(self):
         st = self.R["st"]
-        self.assertEqual(st[0][:3], ["svwarn", "절약 1단계 · 50%", 1])
-        self.assertEqual(st[1][:3], ["svwarn", "절약 2단계", 2])
-        self.assertEqual(st[2][:3], ["svhot", "절약 3단계 · 92%", 3])
-        self.assertEqual(st[3][:3], ["svhot", "절약 3단계", 3])          # manual on defaults to stage 3
-        self.assertEqual(st[4][:3], ["svwarn", "절약 1단계", 1])
+        self.assertEqual(st[0][:3], ["svwarn", "절약 수준 1 · 50%", 1])
+        self.assertEqual(st[1][:3], ["svwarn", "절약 수준 2", 2])
+        self.assertEqual(st[2][:3], ["svhot", "절약 수준 3 · 92%", 3])
+        self.assertEqual(st[3][:3], ["svhot", "절약 수준 3", 3])          # manual on defaults to stage 3
+        self.assertEqual(st[4][:3], ["svwarn", "절약 수준 1", 1])
         self.assertEqual(st[5][:3], ["svoff", "절약 꺼짐", 0])           # off forces stage 0
         self.assertEqual(st[6][:3], ["svoff", "한도 모름", 0])
         self.assertEqual(st[7][:3], ["svfree", "제한 없음", 0])

@@ -269,7 +269,7 @@ def presence():
         return {}
 
 
-DM_MAX = 20_000            # work-popup DMs are typed by hand; the chat tab's 200 KB cap is for pasted logs
+DM_MAX = 20_000            # work-log DMs are typed by hand; the chat tab's 200 KB cap is for pasted logs
 RELAY_SID = re.compile(r"^[0-9a-fA-F][0-9a-fA-F-]{7,63}$")   # session id carried by a review/board relay
 
 
@@ -289,7 +289,7 @@ def dm_target_error(to, me):
 
 
 def dm_send(req, me):
-    """Direct message from the viewer identity `me` to one mailbox id (work popup compose, 2026-09-24).
+    """Direct message from the viewer identity `me` to one mailbox id (work log compose, 2026-09-24).
     ⚠Only ids a session confirmed via `mailbox_login` (identity.json values) — never a folder-name guess (2026-08-12 incident)."""
     to = str((req or {}).get("to") or "").strip()
     body = str((req or {}).get("body") or "").strip()

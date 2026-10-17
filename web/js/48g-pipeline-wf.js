@@ -58,7 +58,7 @@ function wfBtns(proj){
     + '" data-wfs="' + esc(o.sid) + '" data-wfi="' + esc(o.run.id) + '" title="' + esc((o.run.name || o.run.id) + ' · ' + sid8(o.sid) + (o.run.run ? ' · ' + T('Running') : '')) + '">'
     + esc(o.run.name || o.run.id) + (o.run.run ? '<i class=mvdot></i>' : '') + '</button>').join('') + '</span>';
 }
-const WF_ST = { run: ['Running', 'plrt-run'], done: ['Done', 'plrt-done'], fail: ['Failures', 'plrt-fail'], cut: ['Aborted', 'plrt-fail'] };
+const WF_ST = { run: ['Running', 'plrt-run'], done: ['Done', 'plrt-done'], fail: ['Failed', 'plrt-fail'], cut: ['Aborted', 'plrt-fail'] };
 function wfBody(sid, id){
   const f = wfFind(sid, id);
   if(!f) return '';
@@ -70,7 +70,7 @@ function wfBody(sid, id){
   const ags = (r.agents || []).slice().sort((a, b) => ((b.st === 'run') - (a.st === 'run')) || ((b.start || 0) - (a.start || 0)));
   const rows = ags.map(a => { const s = WF_ST[a.st] || WF_ST.done, live = a.st === 'run' && r.run;
     return '<tr data-wfw="' + esc(sid) + '"' + (live ? ' class=on' : '') + '><td title="' + esc(a.lab || '') + '">' + esc(a.lab || '') + '</td><td title="' + esc(a.phase || '') + '">'
-      + esc(a.phase || '') + '</td><td class=' + s[1] + '><span class=plrtpl>' + (live ? '<i class=plrtdot></i>' : '') + esc(T(s[0])) + '</span></td><td>'
+      + esc(a.phase || '') + '</td><td class=' + s[1] + '><span class=plrtpl>' + (live ? '<i class=plrtdot></i>' : '') + esc(T(s[0], 'stage')) + '</span></td><td>'
       + esc(ago(Math.max(0, Math.round((live ? now : (a.end || 0)) - (a.start || 0))))) + '</td></tr>'; }).join('');
   return head + '<div class=wfph>' + (ph || '<span class=hidnote>' + esc(T('No phases')) + '</span>') + '</div>'
     + '<div class=plrt><div class=plrth><b>' + esc(T('Agent') + ' ' + ags.length) + '</b></div><table class="plrtb wftb"><colgroup><col><col class=c2><col class=c4><col class=c5></colgroup><thead><tr><th>'
@@ -81,5 +81,5 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-wfi]');
   if(b){ PLS.wf = { sid: b.dataset.wfs, id: b.dataset.wfi }; PLNEW = null; PLS.std = ''; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint(); return; }
   const tr = e.target.closest('tr[data-wfw]');
-  if(tr) plOpenWork(tr.dataset.wfw);   // the session's work popup (workflow agents carry no tid)
+  if(tr) plOpenWork(tr.dataset.wfw);   // the session's work log (workflow agents carry no tid)
 });

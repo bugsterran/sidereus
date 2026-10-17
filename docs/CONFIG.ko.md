@@ -35,7 +35,7 @@ Windows 에서는 `py mailbox_config.py ...` 로 실행한다. 데이터 폴더 
 | `default_room` | 문자열 | `"general"` | 뷰어가 열고 글을 쓰는 방. 1~64자, `/ \` 불가. |
 | `viewer_me` | 문자열 | `"사용자"` | 뷰어에서 쓴 글의 이름. 1~64자. 비워 두거나 `"사용자"`/`"user"` 면 화면 언어를 따른다(한국어 `사용자`, 영어 `user`). 두 이름으로 쓴 글 모두 내 글로 본다. |
 | `readcheck_peer` | 문자열 | `""` | 인자 없이 `readcheck.py` 를 돌릴 때의 상대. |
-| `saver_view_path` | 문자열 | `"~/.claude/hooks/.saver-view.json"` | 외부 절약 훅(동봉 안 함)이 쓰는 스냅숏. 파일이 없으면 절약 칩과 조언 줄이 안 뜰 뿐이다. 선택 키 `levels`(`[{lv, cap, rules}]`)·`how`(문자열 목록)가 있으면 설정 › «절약 모드» › «단계별 동작» 을 채운다. 없거나 형식이 틀리면 접기 자체를 숨긴다. |
+| `saver_view_path` | 문자열 | `"~/.claude/hooks/.saver-view.json"` | 외부 절약 훅(동봉 안 함)이 쓰는 스냅숏. 파일이 없으면 절약 칩과 조언 줄이 안 뜰 뿐이다. 선택 키 `levels`(`[{lv, cap, rules}]`)·`how`(문자열 목록)가 있으면 설정 › «절약 모드» › «수준별 동작» 을 채운다. 없거나 형식이 틀리면 접기 자체를 숨긴다. |
 | `saver_hook_dir` | 문자열 | `"~/.claude/hooks"` | 절약 훅의 `.saver-force.json`·목표 파일 폴더. 절대 경로나 `~`, `..` 불가. |
 | `hook_session_patterns` | 문자열 목록 | `[]` | 훅이 띄운 세션의 작업 폴더 정규식. 맞으면 숨긴다. |
 | `launchd_label_prefix` | 문자열 | `"io.sidereus"` | `--label viewer` 가 `<접두어>.viewer` 를 낸다. `ext-hooks/demo.sh` 와 MCP 의 다운 안내가 쓴다. 동봉 plist 는 이 값을 읽지 않는다. |
@@ -121,8 +121,8 @@ Claude Code 의 `settings.json` 에 쓰는 키가 둘 있다(`src:"claude"`). �
 | `SIDEREUS_LAUNCHD_LABEL` | `mcp/sidereus_mcp.py` | 설정값 | MCP 다운 안내에 쓰는 뷰어 작업 라벨. |
 | `SIDEREUS_QUOTA_PROBE` | `sidereus/quota.py` | `quota_probe` | `1`/`0`: 유료 할당량 탐침 켜기/끄기. |
 | `SIDEREUS_QUOTA_LOOKUP` | `sidereus/quota.py` | `quota_lookup` | `1`/`0`: 키체인 읽기와 할당량 API 호출 허용/금지. |
-| `MAILBOX_CARD_WAIT` | `sidereus/notes.py` | 꺼짐 | `1`: 세션이 입력을 기다리며 멈추면 벨 알림. |
-| `MAILBOX_CARD_CTX` | `sidereus/notes.py` | 꺼짐 | `1`: 컨텍스트가 거의 차면 벨 알림. |
+| `MAILBOX_CARD_WAIT` | `sidereus/notes.py` | 꺼짐 | `1`: 세션이 입력을 기다리며 멈추면 알림 카드. |
+| `MAILBOX_CARD_CTX` | `sidereus/notes.py` | 꺼짐 | `1`: 컨텍스트가 거의 차면 알림 카드. |
 | `MAILBOX_NAG_S` | `monitor_stream.py` | `300` | 확인 없이 이만큼(초) 지나면 재촉. |
 | `MAILBOX_NAG_EVERY_S` | `monitor_stream.py` | `600` | 재촉 간격(초). |
 | `MAILBOX_NAG_MAX_TIMES` | `monitor_stream.py` | `2` | 메시지당 재촉 횟수. |

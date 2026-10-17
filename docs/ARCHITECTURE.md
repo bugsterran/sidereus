@@ -15,7 +15,7 @@ Rules: `AGENTS.md`. Traps: `docs/dev/TRAPS.md` (index of `docs/dev/traps/`). Mod
 Constraints that shape the design:
 
 - Metadata only. Pages, cards, timeline and MCP carry path, session id, model and the one-line Agent `description`,
-  never message bodies or tool input. The one exception is the work popup (`sidereus/work.py`), opened by a click.
+  never message bodies or tool input. The one exception is the work log (`sidereus/work.py`), opened by a click.
 - `127.0.0.1` only, Python 3.9 stdlib (`/usr/bin/python3`), no packages. The only outbound call is the optional
   quota lookup.
 - ⚠Sidereus never types into a session (no pty, `tmux send-keys`, stdin), never spawns or kills one, never runs git

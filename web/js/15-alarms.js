@@ -3,7 +3,7 @@
 //   ★Both at once: a new card passes as **a 5s toast**, and **stacks in the bell until acknowledged.**
 //   Read state is on the server (cards-read.txt), so it survives closing the browser. Cards themselves are never deleted (history).
 let CARDS=[], CREAD='', CRIDS=new Set(), seenToast=null, alarmOpen=false;
-// ★The alarm list draws **only the latest 50** (2026-08-26). To see older cards press «Full history» —
+// ★The alerts list draws **only the latest 50** (2026-08-26). To see older cards press «Full history» —
 //   only then is the cap lifted (that is why the button exists). What is hidden is stated on screen.
 const ALARM_MAX = 50;
 let alarmAll = false;
@@ -67,10 +67,10 @@ const isDecided = m => { const t = tagOf(m); return DONE.has(t) || DONE.has(Stri
 const isFixed = m => FIXT.has(tagOf(m));
 // ── Failure alerts: response line + action buttons (2026-09-23, replaced the «Failures» tab) ──
 //   ⚠Actions stay read-only toward sessions: «Copy resume prompt» only copies a generic prompt, never sends it.
-const FA_ACTS = { flimit: [['work','Open activity']],
-                  fcut:   [['copy','Copy resume prompt'], ['work','Open activity']],
+const FA_ACTS = { flimit: [['work','Open work log']],
+                  fcut:   [['copy','Copy resume prompt'], ['work','Open work log']],
                   fwreck: [['diff','Open diff'], ['copy','Copy resume prompt']],
-                  fcheck: [['work','Open activity at that point']] };
+                  fcheck: [['work','Open work log at that point']] };
 function faLine(c){
   if(c.kind === 'flimit') return (c.reset ? T('Stopped by the usage limit — rerun after the {w} reset at {t}').replace('{t}', c.reset)
                                           : T('Stopped by the usage limit — rerun after the {w} reset')).replace('{w}', c.win || '5h');
@@ -229,7 +229,7 @@ function buildAlarm(){
       + (polN ? '<div class=hidnote>'+esc(T('{n} cards hidden by alert settings').replace('{n}', polN))+'</div>' : '')
     : (CARDS.length
         ? '<div class=hidnote>'+esc(T('No unread cards — turn off `Unread only` to see {n} in history.').replace('{n}', CARDS.length))+'</div>'
-        : '<div class=hidnote>'+esc(T('No alarms yet — they pile up here when a session ends its turn.'))+'</div>'));
+        : '<div class=hidnote>'+esc(T('No alerts yet — they pile up here when a session ends its turn.'))+'</div>'));
   // ★Tab title and favicon use **the same value** (unread card count) — the title used to be 'sessions awaiting input',
   //   meaning something different from the bell badge, which prompted "why is (2) there?" (2026-08-19).
   // ★The popup's title is left alone — diffShow puts that window's repo name in it
@@ -346,7 +346,7 @@ function openAlarm(force){
   if(alarmOpen && !was){ a.tabIndex = -1; a.focus({preventScroll: true}); }
   else if(!alarmOpen && was && a.contains(document.activeElement)){ const b = document.getElementById('bell'); if(b) b.focus({preventScroll: true}); }
 }
-// Esc closes the alarm panel first; preventDefault so later Esc handlers (branch detail etc.) skip this press.
+// Esc closes the alerts panel first; preventDefault so later Esc handlers (branch detail etc.) skip this press.
 document.addEventListener('keydown', e => {
   if(e.key !== 'Escape' || !alarmOpen || e.defaultPrevented || e.isComposing) return;
   e.preventDefault(); openAlarm(false);

@@ -10,7 +10,7 @@ let SESPIN = false, SESOPEN = false, sesdrBdg = '';
 })();
 function sesdrPinned(){ return SESPIN; }
 function sesdrSave(){ lsSet('sidereus.sespin', SESPIN ? '1' : '0') && lsSet('sidereus.sesdr', SESOPEN ? '1' : '0'); }
-// Anchor right under the button row (like the alarm panel) — the header below it grows with tabs/cards and would eat the drawer height.
+// Anchor right under the button row (like the alerts panel) — the header below it grows with tabs/cards and would eat the drawer height.
 function sesdrPlace(){
   const h = document.querySelector('header .hrow'); if(h) document.body.style.setProperty('--sesdr-top', Math.round(h.getBoundingClientRect().bottom + 6) + 'px');
   // Bottom edge stops just above the status bar (#sbar), so the drawer uses the viewport minus header and footer.

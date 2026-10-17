@@ -422,7 +422,7 @@ def commit_links(repo, shas=""):
         fp, ent = idx[id(r)]
         sid, agent = ent.get("sid") or "", ent.get("agent") or ""
         if agent:
-            # the /work popup takes the parent session's launch cwd for an agent tid (same form as the history tab)
+            # the /work log window takes the parent session's launch cwd for an agent tid (same form as the history tab)
             main = files.get(sub_sess_dir(fp) + ".jsonl") or {}
             cwd = main.get("scwd") or ent.get("scwd") or ""
             tid = (ent.get("tuid") + "|" + sid) if ent.get("tuid") else ""

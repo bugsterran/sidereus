@@ -226,7 +226,7 @@ Kept as recorded. Written against the single-file `chat_server.py`: `:NNNN` line
     bubble `✓ sent · Unread` · participants `Unread N` · tab `Not read by them N` (the run-together short form `Unread|short` was fixed too).
     ⚠The old short form in code comments·docstrings was left (internal term) — align it if the mismatch ever confuses.
 
-31. ★**The card hint overlapped the body** (2026-08-19, overflow over the mark-read hint in the alarm list).
+31. ★**The card hint overlapped the body** (2026-08-19, overflow over the mark-read hint in the alerts list).
     - **The overlap was built in**: `::after{content:'<mark-read hint>';float:right;margin-top:-14px}` —
       it was **pulled up one line** over the last line, so when the last body line reached the right edge it sat on top.
       Cards without a body overlapped the time on the title row (`.ctime`). The overlap was **structural**, not accidental.
@@ -371,7 +371,7 @@ Kept as recorded. Written against the single-file `chat_server.py`: `:NNNN` line
 - ⚠`cursor:pointer` is the contract — remove it and the element leaves the tab order. Elements that already have `tabindex` (`.wpk`·`.sbar`) have their own keydown and are skipped (overlap = double press).
 - Failure cards (flimit·fcut·fcheck·fwreck): body clicks·action buttons do not mark read. Unread cards only get a `Read` (`data-fread`) button. Toasts: body/action = close only, `Read` = read + close.
 
-### Sending a message from the work popup (2026-09-24)
+### Sending a message from the work log (2026-09-24)
 - `36-wkcompose.js` · `#wkc` (last cell of `.wkmin` in index.html) · CSS at the end of `10-worklog-split.css`. Visible only in the `/work` window (`ISWP`).
 - Recipient = cwd of the focused pane's tab → the `mbox` of that `SESS` row (agent tabs use the parent session). In a split one box follows focus (draft kept) · empty pane focused = pane 1.
 - State: `mboxSrc!=='identity'` → disabled «not logged in to the mailbox» · `mon[].src==='proc'` (or presence watch) → ●watch · otherwise ○No mailbox watch · `blocked` → «Waiting for permission».
@@ -451,7 +451,7 @@ Kept as recorded. Written against the single-file `chat_server.py`: `:NNNN` line
 - Server `sidereus/ctxsrc.py` → `GET /api/session/context?cwd=&sid=` (60 s cache per cwd). 400 = missing cwd·relative path · sid format · cwd not on screen.
 - Response `{ok,cwd,root,at,bytes,tokens,instr:[{path,scope,bytes,tokens}],memory:{dir,index,bytes,tokens,files},mcp:[{name,scope}],hooks:[{event,n}],skills:{user,project},agents:{user,project},counts:{instr,memory,mcp,hooks}}`.
 - Scanned: `~/.claude/CLAUDE.md`·`~/.claude/rules` · `CLAUDE.md`/`CLAUDE.local.md`/`AGENTS.md`/`.claude/CLAUDE.md`/`.claude/rules/*.md` from git root→cwd (cwd only without a root) · `~/.claude/projects/<slug>/memory` (cwd → root slug) · MCP names = `~/.claude.json` (user·`projects[cwd]`) + `.mcp.json` · hooks = event counts in user/project `settings(.local).json` · counts of skills (folders with `SKILL.md`)·agents (`*.md`).
-- Screen: session work popup (`sess:` tabs only), a folded line «Context ≈ N tokens · instructions · memory · MCP · hooks» under the received instruction. Tokens = bytes/3.5 rough estimate («≈»).
+- Screen: session work log (`sess:` tabs only), a folded line «Context ≈ N tokens · instructions · memory · MCP · hooks» under the received instruction. Tokens = bytes/3.5 rough estimate («≈»).
 - ⚠Paths·sizes·counts·names only — file contents·memory bodies·MCP commands/env·hook commands are never read into the response (AGENTS.md rule 1; tests/test_ctxsrc.py enforces it).
 
 ### Preferences (2026-09-28)

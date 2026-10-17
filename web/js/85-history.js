@@ -215,7 +215,7 @@ function histGmRow(x){
     + '<s title="'+esc(T('session id'))+' '+esc(x.sid)+'">'+esc(x.id)+'</s>'
     + '<em>'+fmtTok(x.tok)+est+'</em></div>';
 }
-// ── Row expansion — the session's work units (main + sub-agents), each opening the /work popup ──
+// ── Row expansion — the session's work units (main + sub-agents), each opening the /work log window ──
 // Clicking a history row lists the session's own and its sub-agents' work, click → popup.
 // ⚠Metadata only on this page (type · Agent `description` · times · tokens · tool count · status); content lives in /work.
 const HUNITS = {};                 // sid -> /api/history/units response (server caches 30s; fetched on expand only)
