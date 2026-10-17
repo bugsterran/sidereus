@@ -363,7 +363,7 @@ function paintRetro(){
   // ⚠While switching ranges the old range's charts stayed up for ~3 s with only a dim hint — show the loading box instead.
   if(!r || retroBusy) body = '<div class=strload><b>'+esc(T('Loading insights…'))+'</b><br>'
       + esc(T('Gathering failures, tokens and commits — 30 days takes a few seconds the first time.'))+'</div>';
-  else if(r.off) body = '<div class=hidnote>'+esc(T('The retro feature is off'))+'</div>';
+  else if(r.off) body = '<div class=hidnote>'+esc(T('The Insights feature is off'))+'</div>';
   else if(!r.ok) body = '<div class=hidnote>'+esc(T('Could not read'))+' — '+esc(TV({msg: r.msg || 'Unknown', vars: r.vars}))+'</div>';
   else {
     // Two rows of two panels; `.split2` splits side by side only when the feed is wide (container query in 50-layout-feed.css).

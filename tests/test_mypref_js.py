@@ -1,4 +1,4 @@
-"""«내 방식» screen prefs (web/js/90b-mypref.js + 05-i18n.js mainView): normalisers, 'time' unhideable, day clamps,
+"""«Preferences» screen prefs (web/js/90b-mypref.js + 05-i18n.js mainView): normalisers, 'time' unhideable, day clamps,
 start view 'last' default. One node run; UIS is an in-memory stub (no live browser data)."""
 import json
 import os

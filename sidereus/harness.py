@@ -1,4 +1,4 @@
-"""«Tooling map» — what Claude Code wraps around a session in one project (GET /api/harness).
+"""«Harness map» — what Claude Code wraps around a session in one project (GET /api/harness).
 
 Hooks per event (scope · source file · matcher · command basename · timeout · effect · run count), rule files in load
 order, agents with the pipeline stages that use them, skill/cmd/MCP counts, MCP servers (name · scope · transport) and

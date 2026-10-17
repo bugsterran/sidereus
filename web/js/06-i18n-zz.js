@@ -100,7 +100,7 @@ Object.assign(I18N.ko, {
   'Estimate from OpenAI API list prices · a ChatGPT login is not billed per token': 'OpenAI 공개 API 단가 기준 추정 · ChatGPT 로그인이면 토큰 단위 청구 없음',
   // shared quota / failure labels
   'per 10 min': '10분 단위',
-  'Click to open the failure trend in the Retro tab': '눌러서 돌아보기 탭의 실패 추이 보기',
+  'Click to open the failure trend in the Insights tab': '눌러서 인사이트 탭의 실패 추이 보기',
   'Your turn (waiting) · resting (idle) — same split as the activity strip': '사람 차례(대기)·쉬는 세션(유휴) — 상단 활동 줄과 같은 분류',
   'Tokens used': '사용 토큰',
   'Resets': '리셋 시각',

@@ -50,7 +50,7 @@ function wkcPaint(){
   let h = '<span class=wkcto>→ <b>'+esc(g && g.id ? g.id : '—')+'</b>'
     + (g && g.agent ? ' <small>'+esc(T("(subagent's parent session)"))+'</small>' : '') + '</span>';
   if(off) h += '<span class="wkcw off">'+esc(T('Not logged into the mailbox — cannot receive'))+'</span>';
-  else h += '<span class="wkcw '+(g.watch ? 'on' : 'no')+'">'+esc(g.watch ? '● '+T('Mailbox watch') : '○ '+T('No mailbox watch'))+'</span>';
+  else h += '<span class="wkcw '+(g.watch ? 'on' : 'no')+'">'+esc(g.watch ? '● '+T('Mailbox watch', 'kid') : '○ '+T('No mailbox watch'))+'</span>';
   if(g && g.login && g.blocked) h += '<span class="wkcw blk">'+esc(T('Waiting for permission — read on the next turn'))+'</span>';
   const m = wkcLast && g && g.id === wkcLast.to ? MSGS.find(x => x.id === wkcLast.id) : null;
   if(m) h += wkcStat(m);

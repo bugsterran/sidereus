@@ -374,7 +374,7 @@ class _GetRoutes(_StructRoutes):
         self._raw_json(code, out)
 
     def _g_harness(self, u):
-        # «Tooling map» (feature `harness`): hook/rule/agent metadata only — script text never leaves sidereus/harness.py
+        # «Harness map» (feature `harness`): hook/rule/agent metadata only — script text never leaves sidereus/harness.py
         q = parse_qs(u.query)
         try:
             code, out = harness_plat(_q1(q, "plat", "cc"), _q1(q, "proj"), _q1(q, "days", "30"))   # plat validated there

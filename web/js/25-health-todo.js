@@ -66,7 +66,7 @@ function buildTodo(){
   const cells = [];
   // ★Blocked/ask/abort/85% cells merged into one attention count (2026-09-23) — same sessions as the #attn strip, same number as the tab [N].
   const attnN = attnBadgeN();
-  if(attnN)        cells.push(['blk',   T('Need you'), attnN,     'attn', T('Attn')]);
+  if(attnN)        cells.push(['blk',   T('Attention'), attnN,     'attn', T('Attn')]);
   // Review queue (88c-review.js): sessions whose changes wait for a human look.
   const rvN = (typeof REVIEW !== 'undefined' && REVIEW && +REVIEW.n) || 0;
   if(rvN)          cells.push(['rv',    T('Awaiting review'), rvN,          'review', T('Review')]);

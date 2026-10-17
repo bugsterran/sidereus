@@ -85,10 +85,10 @@ const SHOTS = [
     await P.ev(tab('pipe'));
     await P.wait(`!!document.querySelector('.plw .plcv .plcvi') && !!document.querySelector('.plw .plrunst.on') && !!document.querySelector('.plw .plov')`, 'lit run');
   } },
-  // GUIDE.md only: «Tooling» › «Flow» strip (crop from the header to the seven boxes).
+  // GUIDE.md only: «Harness» › «Flow» strip (crop from the header to the seven boxes).
   { name: 'harness-flow', crop: { from: '.plw', to: '.plw .hnfrow' }, async run(P) {
     await P.ev(tab('pipe'));
-    await P.wait(`!!document.querySelector('.wkrgb[data-plv="harness"]')`, 'Tooling toggle');
+    await P.wait(`!!document.querySelector('.wkrgb[data-plv="harness"]')`, 'Harness toggle');
     await P.ev(`(document.querySelector('.wkrgb[data-plv="harness"]').click(), 1)`);
     await P.wait(`document.querySelectorAll('.plw .hnfrow .hnfn').length === 7`, 'flow strip');
   } },

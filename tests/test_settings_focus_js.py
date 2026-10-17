@@ -1,4 +1,4 @@
-"""Settings «내 방식»: mail-watch skips /api/pipelines with the pipeline feature off (90d-mailwatch.js mwLoadProjs);
+"""Settings «Preferences»: mail-watch skips /api/pipelines with the pipeline feature off (90d-mailwatch.js mwLoadProjs);
 focus survives a repaint that drops the pressed button (mwFocusAfter · 90-settings.js cfgRefocus). Fake DOM only."""
 import json
 import re

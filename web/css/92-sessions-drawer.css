@@ -11,7 +11,7 @@ html[data-ui=next] .sesb .sesbl{font-size:12.5px}
 html[data-ui=next] .sesb b{font:inherit;font-size:11px;font-weight:600;line-height:16px;min-width:16px;padding:0 4px;border-radius:8px;text-align:center}
 html[data-ui=next] .sesb b:empty{display:none}
 html[data-ui=next] .sesb .sesbn{background:var(--nx-hover);color:var(--nx-t2);border:1px solid var(--nx-rule)}
-/* ⚠Neutral on purpose: the header «Need you N» pill already carries the alarm; a second red badge doubled it */
+/* ⚠Neutral on purpose: the header «Attention N» pill already carries the alarm; a second red badge doubled it */
 html[data-ui=next] .sesb .sesba{background:var(--nx-hover);color:var(--nx-t1);border:1px solid var(--nx-rule)}
 html[data-ui=next] .sesb[aria-expanded=true]{border-color:var(--nx-info);color:var(--nx-t1)}
 /* Drawer head: title · pin · close */

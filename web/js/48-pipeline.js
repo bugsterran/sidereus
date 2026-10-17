@@ -16,12 +16,12 @@ function plSelBind(o){
     set(v){ if(!m) m = plSelMap(); if(v) m[o.proj] = String(v); else delete m[o.proj]; lsSetJson('sidereus.plselp', m); } });
 }
 plSelBind(PLS);
-// «Pipelines | Tooling» view toggle (harness body = 47b-harness.js hnHtml, same project chips); hidden when feature `harness` is off.
+// «Pipelines | Harness» view toggle (harness body = 47b-harness.js hnHtml, same project chips); hidden when feature `harness` is off.
 let PLVIEW = lsGet('sidereus.plview', 'pipe') === 'harness' ? 'harness' : 'pipe';
 function plHnOn(){ return PLVIEW === 'harness' && FEATS.harness !== false && typeof hnHtml === 'function'; }
 function plViewSeg(){
   if(FEATS.harness === false) return '';
-  return '<div class=tkvs>' + [['pipe', 'Pipelines'], ['harness', 'Tooling']].map(([k, en]) => '<button class="wkrgb'
+  return '<div class=tkvs>' + [['pipe', 'Pipelines'], ['harness', 'Harness']].map(([k, en]) => '<button class="wkrgb'
     + (k === (plHnOn() ? 'harness' : 'pipe') ? ' on" aria-pressed="true' : '" aria-pressed="false') + '" data-plv="' + k + '">' + esc(T(en)) + '</button>').join('') + '</div>';
 }
 document.addEventListener('click', e => {
@@ -329,7 +329,7 @@ function paintPipe(box, fromPoll){
   const hv = !PLS.off && plHnOn();
   tbSlot('pipe', PLS.off ? '' : plViewSeg());   // sub-view switch lives in the header toolbar slot, like Branches/Insights
   // Pipelines view: no <b>, the header title (#vtitle) already says «Pipelines».
-  const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Tooling')) + '</b>' : '') + '<span class=plcap>'
+  const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Harness')) + '</b>' : '') + '<span class=plcap>'
     + esc(hv ? T('Hooks · rules · agents · MCP · skills') : T('Agent and model per stage')) + '</span></div>';
   const body = PLS.off ? '<div class=hidnote>' + esc(T('The pipeline feature is off')) + '</div>'
     : (hv ? plChips() + hnHtml() : plMainBody());

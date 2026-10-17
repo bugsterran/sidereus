@@ -79,7 +79,7 @@ Claude Code 를 설정 폴더 여러 개로 쓰면(`CLAUDE_CONFIG_DIR` 로 계�
 
 ## 설정 API
 
-설정 › «내 방식» 은 라우트 두 개를 쓴다. 쓸 수 있는 키: `saver_hook_dir`, `compact_history`, `viewer_me`,
+설정 › «환경설정» 은 라우트 두 개를 쓴다. 쓸 수 있는 키: `saver_hook_dir`, `compact_history`, `viewer_me`,
 `default_room`, `port`, `features`, `pipeline_apply`, `mailbox_watch`, `claude_roots`(뒤의 넷은 `GET` 의 `keys` 에 없다. 셋은 따로 창이 있고 `claude_roots` 는 아직 화면이 없다).
 
 | 라우트 | 본문 | 응답 |

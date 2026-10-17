@@ -188,7 +188,7 @@ function cfgPaneSv(){
     + set(T('At the target limit'), T('Notify only = just notify, as now · Warn, then allow = blocks the first prompt of each session; sending the same prompt again within 10 min goes through · Block = blocks both prompts and tool runs.')
         + ' ' + T('Starting a prompt with «{kw}» lifts it for that session for 30 min.').replace('{kw}', '한도해제'),   // keyword matched by the saver hook, not UI
           seg(T('At the target limit'), ['advise','warn','block'].map(k => opt('svl', k, T(SV_LIM[k]), (sw.limit || 'advise') === k)).join('')))
-    + (cch ? '<div class="cfgpd svcc">' + esc(cch) + ' · <a href="#" id=svccgo>' + esc(T('change it in My settings')) + '</a></div>' : '')
+    + (cch ? '<div class="cfgpd svcc">' + esc(cch) + ' · <a href="#" id=svccgo>' + esc(T('change it in Preferences')) + '</a></div>' : '')
     + svLevelsFold();
 }
 // «What each level does»: table copied from the hook snapshot (`levels` / `how`, saver.py RULES); hidden when absent.

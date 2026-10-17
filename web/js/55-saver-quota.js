@@ -56,7 +56,7 @@ function buildSaver(sv){
   const cap = snap ? r.rec : (sv.cap == null ? null : sv.cap);
   const spct = snap ? r.pct : (sv ? sv.pct : null);
   const capTxt = cap == null ? '' : (cap > 0 ? (T('Subagents at once') + ' ' + U(cap,'#'))
-                 : (st >= 4 ? T('No subagents · wrap up') : T('No subagents')));
+                 : (st >= 4 ? T('Subagents off · wrap up') : T('Subagents off')));
   // ★Goal must stay visible even with a saver stage — the reason for tightening is "over goal" (2026-09-22).
   // ⚠`stage>0` goes through `legacyBadge` and does not use `r.sub`. Fixing only the stage-0 label leaves this empty.
   // ⚠Do not recompute the verdict — only copy the `goal` that `svParts` passed (a key absent from server `sv`).
@@ -309,7 +309,7 @@ function svParts(v, nowS, live){
     // CAP.get(stage)` **before** the pace branch. So with a stage, `rec` is not the pace verdict
     // (`pace_rec`) but the **cap**. Hence with a stage we do not look up `SV_JREC` —
     // doing so would read the cap number as a verdict name and say something wrong.
-    tag = stage ? (TV({msg: 'Saver: level {n}', vars: {n: stage}}) + ' · ' + (rec ? T('At once') + ' ' + U(rec,' max') : T('No subagents')))
+    tag = stage ? (TV({msg: 'Saver: level {n}', vars: {n: stage}}) + ' · ' + (rec ? T('At once') + ' ' + U(rec,' max') : T('Subagents off')))
                 : '';
     // ★The verdict is a **color chip** instead of a name (same word, same color as headroom/saver badges). Level comes from the snapshot `lv`
     // — ⚠with a stage, `rec` is a **cap**, not a verdict, so it is not used as fallback either (⚠⚠ above).
@@ -326,7 +326,7 @@ function svParts(v, nowS, live){
     main = TV({msg: 'Saver: level {n}', vars: {n: stage}}) + (pct == null ? '' : ' · ' + fmtPct(shown));
     if(mode !== 'on'){ const rt = svRate(v, live);
       judge = svJudge(v); if(rt) sub.push(rt); if(goal != null) sub.push(T('Goal') + ' ' + goal + '%'); }
-    if(rec != null) sub.push(rec ? T('At once') + ' ' + U(rec,' max') : T('No subagents'));
+    if(rec != null) sub.push(rec ? T('At once') + ' ' + U(rec,' max') : T('Subagents off'));
   }else if(pct == null){
     // ⚠auto without `pct` = **limit could not be read**, not headroom. Printing "headroom" would be a lie.
     cls = 'svoff'; main = T('Limit unknown'); sub.push(T('No response from Sidereus'));

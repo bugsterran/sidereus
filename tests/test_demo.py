@@ -81,7 +81,7 @@ class DemoTest(unittest.TestCase):
         self.assertTrue(all(r["sid"] in sids for r in st["attention"]["rows"]))
 
     def test_prefs_has_real_shape(self):
-        # 90b-mypref.js treats a reply without `keys` as a read failure (red error in 내 방식).
+        # 90b-mypref.js treats a reply without `keys` as a read failure (red error in Preferences).
         out = self.get("/api/prefs")
         prefs, cc = sidereus("prefs"), sidereus("cc_settings")
         self.assertTrue(out["ok"])

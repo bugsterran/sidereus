@@ -1,6 +1,6 @@
 // Korean for the left rail (92d-rail.js · 42-activity.js needs-me list · 98-a11y.js shortcut help).
 Object.assign(I18N.ko, {
-  'Attention': '주목',
+  'Attention': '주의',
   'Collapse sidebar': '사이드바 접기',
   'Expand sidebar': '사이드바 펼치기',
   'Main navigation': '주 메뉴',

@@ -1,6 +1,6 @@
 {
   "id": "harness",
-  "title": "Tooling map",
+  "title": "Harness map",
   "default_on_public": false,
   "deps": ["pipeline"],
   "modules": ["harness", "harness_plat"],

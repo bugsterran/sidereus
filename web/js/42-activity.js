@@ -12,7 +12,7 @@ function actAge(x){ return (x.ageSec || 0) + (Date.now() - actAt) / 1000; }
 //   clock at 08:07) printed «8:06 AM · 32s» at 09:58. ageSec is server-relative, so the start must be too.
 let actSrv = 0;
 function actStart(x){ return new Date((actSrv || actAt) - (x.ageSec || 0) * 1000); }
-// ⚠Needs-me = every badge row of attnRows (the same rows as the header «Need you N» chip), plus blocked/ask session flags.
+// ⚠Needs-me = every badge row of attnRows (the same rows as the header «Attention N» chip), plus blocked/ask session flags.
 function actNeedOf(x, am){
   const a = am.get(x.sid) || am.get('c:' + x.cwd);
   if(x.blocked) return { k: 'blocked', i: -2 };

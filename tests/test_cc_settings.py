@@ -1,4 +1,4 @@
-"""«내 방식» Claude Code keys (sidereus/cc_settings.py): only autoCompactEnabled / autoCompactWindow of settings.json.
+"""«Preferences» Claude Code keys (sidereus/cc_settings.py): only autoCompactEnabled / autoCompactWindow of settings.json.
 
 ⚠SETTINGS_PATH, TRASH_DIR and prefs.CONFIG_PATH point at a temp dir — the live ~/.claude/settings.json and
 config.local.json are never read or written.

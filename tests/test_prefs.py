@@ -1,4 +1,4 @@
-"""«내 방식» server prefs (sidereus/prefs.py + GET /api/prefs, POST /api/prefs/set).
+"""«Preferences» server prefs (sidereus/prefs.py + GET /api/prefs, POST /api/prefs/set).
 
 ⚠prefs.CONFIG_PATH points at a temp dir in every test — the live config.local.json is never read or written.
 """

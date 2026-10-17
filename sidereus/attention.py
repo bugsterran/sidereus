@@ -1,4 +1,4 @@
-"""«Sessions needing you» — rank sessions by how much they need the user right now."""
+"""«Attention» — rank sessions by how much they need the user right now."""
 import re
 import threading
 import time

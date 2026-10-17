@@ -62,7 +62,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Same family (2026-09-26): the work popup's `.wvh` was 31.67px while `.aghd` is sticky at `top:66px` (=34+32), so log text showed through a 0.33px gap. ⇒ `.wvh:has(+ .aghd){box-sizing:border-box;min-height:32px}` (`40-tokens.css`). When changing a sticky head's height, check the `top` of the layer below.
 - **One header→content divider** (2026-10-13). Cause: tab captions `.wvh.wvht` drew a second full-width rule under the header rule, and `.brep`/`.rcw` top padding doubled the 12px gap (24–26px).
   - ⇒ Only the header's `var(--nx-rule)` line, then `#feed`'s 12px. `.wvh.wvht{border-bottom-width:0}`; the timeline keeps its line as the axis top (`:has(+ .tlaxr)`). `.brep`/`.rcw` have no top padding.
-  - ⇒ Sub-view switches (Tokens «Usage | Tools», Pipelines «Pipelines | Tooling») go in `#tbar` via `tbSet('token')`/`tbSlot('pipe')`, never in the body.
+  - ⇒ Sub-view switches (Tokens «Usage | Tools», Pipelines «Pipelines | Harness») go in `#tbar` via `tbSet('token')`/`tbSlot('pipe')`, never in the body.
   - ⚠The sticky caption has no bottom edge while stuck (accepted); a new caption/toolbar row must not add its own rule.
 - ★**Right session column → top-right drawer** (2026-09-24). Default is no column; the header «Session» button (`#sesb`, badge = running tool/think · needs-me sessions `attnBadgeN`) opens it. `#lstog` · `body.lsoff/lson` are gone.
   - ⇒ State `sidereus.sespin` (1 = pinned = the old right column) · `sidereus.sesdr` (1 = drawer open). Old `sidereusLsOff` is migrated once ('0' → pinned, else → drawer) then deleted. `sidereus.wkside` shows only when pinned.
@@ -172,7 +172,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Server `fail1h` and `extUsage[].rate10` stay in `state()` with no page reader (no API change).
 - **Tab content heads do not repeat the header title** (`#vtitle`). Timeline · Tokens · Tools · Insights · Pipelines · Structure · Branches heads keep only the caption (age, status, «Tool list»).
   - ⇒ caption-only `.wvh.wvht` keeps the titled row height via `.wvh.wvht:not(:has(>b))` (40-tokens.css); retro emits no `.tlhd` until it has an age.
-  - ⚠Do not add the tab name back as a `<b>`; a head whose title narrows the scope («Subagent timeline», «Tooling», «Board») stays. `test_tab_head_dedupe_a_js`.
+  - ⚠Do not add the tab name back as a `<b>`; a head whose title narrows the scope («Subagent timeline», «Harness», «Board») stays. `test_tab_head_dedupe_a_js`.
 
 ## Filled fields: the edge must be a box-shadow (`90-main-ui.css` base field rule)
 
