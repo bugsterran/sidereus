@@ -74,6 +74,7 @@ class MailboxStop(unittest.TestCase):
         self.assertIsNone(self.run_hook(cwd="/p/unregistered"))
         self.assertIsNone(self.run_hook(cwd="/p/work/sub"))      # no ancestor fallback
 
+    @unittest.skipIf(os.name == "nt", "watch_alive is always False on Windows (no safe pid probe; watch.sh needs Git Bash/WSL)")
     def test_watch_running_is_silent(self):
         self.post("bob", to=ME)
         with open(self.p(f".watch-{ME}.pid"), "w", encoding="utf-8") as f:
@@ -384,6 +385,7 @@ class MailboxStop(unittest.TestCase):
         self.assertEqual([x["id"] for x in self.hooked()], [mid])
         self.assertIsNone(self.run_hook(active=None))
 
+    @unittest.skipIf(os.name == "nt", "watch_alive is always False on Windows (no safe pid probe; watch.sh needs Git Bash/WSL)")
     def test_relay_delivered_while_watcher_alive(self):
         self.post("bob", to=ME)
         self.relay()

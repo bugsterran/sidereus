@@ -78,7 +78,7 @@ A pipeline is the order of stages; a skill is the procedure inside one stage (a 
    [pl_flow](HOOKS.md#pl_flowpy)); `guards` make listed gates required before commit ([Guards](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
 4. View: «Pipelines» tab ([GUIDE](GUIDE.md#watch-a-pipeline-run)) and timeline ([GUIDE](GUIDE.md#trace-what-a-session-did)).
 
-Internals: [dev/PIPELINE.md](dev/PIPELINE.md).
+Internals: [dev/PIPELINE.md](dev/PIPELINE.md). Review pipelines per CLI, with templates: [REVIEW-PIPELINES.md](REVIEW-PIPELINES.md).
 
 `<project>/.claude/pipelines/<name>.json`, name `[a-z0-9-]{1,40}`. Example `.claude/pipelines/sidereus-change.json`.
 

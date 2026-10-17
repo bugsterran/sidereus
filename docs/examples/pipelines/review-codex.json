@@ -1,0 +1,32 @@
+{
+  "v": 1,
+  "name": "review-codex",
+  "title": "Review (Codex CLI, untested)",
+  "use": "Untested template: one-pass Codex review, a separate verify pass, block only on confirmed P0/P1 findings.",
+  "rules": "Read the nearest AGENTS.md section «Code Review Rules» (older repos: «Review guidelines»); it defines what counts as a defect.\nRead-only: never edit, commit or push.\nStart each stage with a shell command `echo \"[pl:review-codex/<stage>]\"` and end it with `echo \"[pl-end:review-codex/<stage>]\"` (append `|fail` inside the brackets on FAIL) so Sidereus can light it.\nEvery finding = file:line + the rule or failure scenario. Style and formatting are not findings (CI owns them).",
+  "after": ["Before pushing, a person can also run /review in Codex CLI on the same branch."],
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "Context",
+      "agent": "codex",
+      "task": "Read the change (git diff against the base branch plus untracked files) and its purpose. List the files that matter, the callers they affect and the AGENTS.md rules that apply. Change nothing."
+    },
+    {
+      "title": "Find",
+      "agent": "codex",
+      "task": "One pass over the diff with the whole repo open (read callers, run the tests if the rules allow). Report every candidate with file:line, the rule or scenario and a priority P0-P3; do not filter here. After a loop-back, review only the fix diff and report only new findings."
+    },
+    {
+      "title": "Verify",
+      "agent": "codex",
+      "task": "Try to disprove each Find candidate against the code (git blame, git log -L, the tests). Tag each survivor Important (P0/P1), Nit or Pre-existing. Drop Nits. Report confirmed findings by priority, then one line per candidate: id, rule, verdict (confirmed|disproved|pre-existing)."
+    },
+    {
+      "title": "Gate",
+      "agent": "codex",
+      "task": "FAIL only if Verify confirmed an Important (P0/P1) finding introduced by this diff; list each with file:line and the fix in text. Pre-existing never blocks. On the second FAIL stop and ask the author to rethink the change instead of another round.",
+      "onFail": { "goto": "Find", "max": 1 }
+    }
+  ]
+}

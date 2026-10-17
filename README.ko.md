@@ -201,6 +201,7 @@ Sidereus는 세션을 시작하거나 멈추지 않습니다. 파이프라인 �
 | [docs/STRUCTURE.ko.md](docs/STRUCTURE.ko.md) | 구조 탭: 아키텍처 구조도와 흐름, 크기 트리맵, 지원 언어 |
 | [docs/ARCHITECTURE.ko.md](docs/ARCHITECTURE.ko.md) | 서버·화면·훅·메일박스의 연결 구조 |
 | [docs/EXTENDING.ko.md](docs/EXTENDING.ko.md) | CLI 플랫폼·언어 플러그인·파이프라인 추가 |
+| [docs/REVIEW-PIPELINES.ko.md](docs/REVIEW-PIPELINES.ko.md) | 플랫폼 공개 자료에 기반한 CLI 별 리뷰 파이프라인과 템플릿 |
 | [docs/schema/sidereus-state.v1.json](docs/schema/sidereus-state.v1.json) | `GET /api/v1/state`의 안정 메타데이터 스키마 |
 
 ## 설정 바꾸기

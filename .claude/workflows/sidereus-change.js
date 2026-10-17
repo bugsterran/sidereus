@@ -1,12 +1,13 @@
 export const meta = {
   name: 'sidereus-change',
-  description: 'Sidereus viewer change: design -> parallel implementers -> verify (retry x2) -> review -> final verify. No commit, no restart.',
+  description: 'Sidereus viewer change: design -> parallel implementers -> verify (retry x2) -> review find x2 -> review confirm -> final verify. No commit, no restart.',
   whenToUse: 'A change request for ~/.mailbox-mcp (Sidereus viewer). Arg: the request text. The orchestrator restarts, screen-checks live, backs up and commits afterwards.',
   phases: [
     { title: 'Design', detail: 'sidereus-designer writes the spec and disjoint file slices' },
     { title: 'Implement', detail: 'one sidereus-implementer per slice, in parallel' },
     { title: 'Verify', detail: 'sidereus-verifier runs scripts/check.sh --full; failures loop back (max 2)' },
-    { title: 'Review', detail: 'sidereus-reviewer on git diff; blocking findings loop back once' },
+    { title: 'Review-find', detail: 'two sidereus-reviewer lenses (rules + security, logic/regressions) list candidate findings' },
+    { title: 'Review-confirm', detail: 'sidereus-review-verifier disproves each finding; a confirmed Important loops back once' },
     { title: 'Re-verify', detail: 'sidereus-verifier once more after review fixes' },
   ],
 }
@@ -66,17 +67,39 @@ const VERDICT = {
   },
   required: ['result', 'failures'],
 }
-const REVIEW = {
+const FINDINGS = {
   type: 'object',
   properties: {
-    verdict: { type: 'string', enum: ['CLEAN', 'BLOCKING'] },
-    blocking: {
+    findings: {
       type: 'array',
-      items: { type: 'object', properties: { file: { type: 'string' }, line: { type: 'integer' }, rule: { type: 'string' }, fix: { type: 'string' } }, required: ['file', 'rule', 'fix'] },
+      items: {
+        type: 'object',
+        properties: { id: { type: 'string' }, file: { type: 'string' }, line: { type: 'integer' }, rule: { type: 'string' }, excerpt: { type: 'string' }, fix: { type: 'string' } },
+        required: ['id', 'file', 'rule', 'excerpt', 'fix'],
+      },
     },
-    nonblocking: { type: 'array', items: { type: 'string' } },
   },
-  required: ['verdict', 'blocking', 'nonblocking'],
+  required: ['findings'],
+}
+// Confirmed findings only (Nits dropped); ledger = one metadata row per received finding.
+const CONFIRM = {
+  type: 'object',
+  properties: {
+    verdict: { type: 'string', enum: ['PASS', 'FAIL'] },
+    confirmed: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { id: { type: 'string' }, file: { type: 'string' }, line: { type: 'integer' }, tag: { type: 'string', enum: ['Important', 'Pre-existing'] }, rule: { type: 'string' }, fix: { type: 'string' } },
+        required: ['id', 'file', 'tag', 'rule', 'fix'],
+      },
+    },
+    ledger: {
+      type: 'array',
+      items: { type: 'object', properties: { id: { type: 'string' }, rule: { type: 'string' }, verdict: { type: 'string', enum: ['confirmed', 'disproved', 'pre-existing'] } }, required: ['id', 'rule', 'verdict'] },
+    },
+  },
+  required: ['verdict', 'confirmed', 'ledger'],
 }
 
 // ⚠Project agent types are only registered in sessions started after .claude/agents/ existed, so each
@@ -150,16 +173,28 @@ if (!v || v.result !== 'PASS') {
   return { status: 'FAIL_VERIFY', summary: spec.summary, changed: [...changed].sort(), failures: v ? v.failures : [], slices: reports }
 }
 
-// ---- Review (blocking findings loop back once)
-phase('Review')
-const rv = await agent(role('sidereus-reviewer',
-  `${RULES}\n\nReview the working-tree diff (git diff + untracked files) for this change.\n${specText}\nChanged files reported: ${[...changed].join(', ')}`),
-  { agentType: AT, schema: REVIEW, phase: 'Review', label: 'review' })
+// ---- Review: find (two lenses in parallel) -> confirm (disprove each; only a confirmed Important blocks, loops back once)
+phase('Review-find')
+const LENSES = [['rules', 'AGENTS.md rules + security (esc, path/arg checks, git_argv, metadata only)'],
+  ['logic', 'logic/behaviour bugs incl. regressions']]
+const found = await parallel(LENSES.map(([k, lens]) => () => agent(role('sidereus-reviewer',
+  `${RULES}\n\nFollow .claude/review-guide.md. Your lens only: ${lens}. List candidate findings in the working-tree diff ` +
+  `(git diff + untracked files); each = file:line + rule or failure scenario + a short diff excerpt; ids prefixed ${k}-.\n` +
+  `${specText}\nChanged files reported: ${[...changed].join(', ')}`),
+  { agentType: AT, model: 'opus', schema: FINDINGS, phase: 'Review-find', label: `review ${k}` })))
+const cands = found.flatMap(f => (f && f.findings) || [])
+phase('Review-confirm')
+const rv = cands.length ? await agent(role('sidereus-review-verifier',
+  `${RULES}\n\nFollow .claude/review-guide.md. Try to disprove each finding against the code, git blame and git log -L.\n` +
+  `FINDINGS:\n${cands.map(c => `${c.id} | ${c.file}${c.line ? ':' + c.line : ''} | ${c.rule} | ${c.excerpt} | ${c.fix}`).join('\n')}`),
+  { agentType: AT, model: 'opus', schema: CONFIRM, phase: 'Review-confirm', label: 'review confirm' })
+  : { verdict: 'PASS', confirmed: [], ledger: [] }
 let final = v
-if (rv && rv.verdict === 'BLOCKING' && rv.blocking.length) {
-  log(`review BLOCKING (${rv.blocking.length}) -> one fix round`)
-  const by = route(rv.blocking.map(b => ({ file: b.file, text: `[review:${b.rule}] ${b.file}${b.line ? ':' + b.line : ''} ${b.fix}` })))
-  await fixRound(by, 'Review', 'review-fix')
+const blocking = rv ? rv.confirmed.filter(c => c.tag === 'Important') : []
+if (rv && rv.verdict === 'FAIL' && blocking.length) {
+  log(`review confirmed ${blocking.length} Important -> one fix round`)
+  const by = route(blocking.map(b => ({ file: b.file, text: `[review:${b.rule}] ${b.file}${b.line ? ':' + b.line : ''} ${b.fix}` })))
+  await fixRound(by, 'Review-confirm', 'review-fix')
   phase('Re-verify')
   final = await verify('Re-verify', 're-verify')
 }
@@ -172,7 +207,7 @@ return {
   screen: spec.screen,
   risk: spec.risk,
   verify_retries: retries,
-  review: rv ? { verdict: rv.verdict, blocking: rv.blocking, nonblocking: rv.nonblocking } : null,
+  review: rv ? { verdict: rv.verdict, confirmed: rv.confirmed, ledger: rv.ledger } : null,
   failures: ok ? [] : (final ? final.failures : []),
   orchestrator_todo: ['launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer', 'screen-check the live page (900/1100/1440)', 'bash backup.sh', 'commit'],
 }

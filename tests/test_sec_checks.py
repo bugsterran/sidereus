@@ -159,6 +159,7 @@ class Runner(Tmp):
         self.assertIs(self.cli._exec, real)
         self.assertEqual(SC.drop_ignored([{"file": "a/b"}, {"file": "ab"}, {"file": "c"}], "a/\0c\0"), [{"file": "ab"}])
 
+    @unittest.skipIf(os.name == "nt", "evidence_rec.py writes no row without fcntl (documented: no evidence rows on Windows)")
     def test_verify_records_evidence(self):
         ev = os.path.join(self.tmp, "ev.jsonl")
         self.cli._record = self.cli._verify_record   # cli() stubs it out for every other test

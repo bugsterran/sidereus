@@ -202,6 +202,7 @@ or a `git commit` before the run's `guards` gates pass. Off per project with «A
 | [docs/STRUCTURE.md](docs/STRUCTURE.md) | Structure tab: Architecture diagram and flows, Size treemap, languages |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the server, page, hooks and mailbox fit together |
 | [docs/EXTENDING.md](docs/EXTENDING.md) | Adding a CLI platform, language plug-in or pipeline |
+| [docs/REVIEW-PIPELINES.md](docs/REVIEW-PIPELINES.md) | Review pipelines per CLI, based on what the platforms published; templates |
 | [docs/schema/sidereus-state.v1.json](docs/schema/sidereus-state.v1.json) | `GET /api/v1/state`, the stable metadata-only schema |
 
 ## Customising

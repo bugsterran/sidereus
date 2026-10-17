@@ -76,7 +76,7 @@ lang_register("rust", {"exts": (".rs",), "scan": rs_scan,
    [pl_flow](HOOKS.ko.md#pl_flowpy)). `guards` 는 지정한 게이트를 커밋 전 필수로 만든다([가드](HOOKS.ko.md#가드-hookspl_guardpy-claude-code-만)).
 4. 보기: «파이프라인» 탭([GUIDE](GUIDE.ko.md#파이프라인-진행-보기))과 타임라인([GUIDE](GUIDE.ko.md#세션이-한-일-되짚기)).
 
-내부 구조: [dev/PIPELINE.md](dev/PIPELINE.md).
+내부 구조: [dev/PIPELINE.md](dev/PIPELINE.md). CLI 별 리뷰 파이프라인과 템플릿: [REVIEW-PIPELINES.ko.md](REVIEW-PIPELINES.ko.md).
 
 `<project>/.claude/pipelines/<name>.json`, 이름은 `[a-z0-9-]{1,40}`. 예: `.claude/pipelines/sidereus-change.json`.
 

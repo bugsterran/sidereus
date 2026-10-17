@@ -90,8 +90,29 @@ class WindowsPaths(unittest.TestCase):
             with mock.patch.object(w.claude_roots, "projects_dirs", lambda prim: ["D:\\"]):
                 self.assertEqual(w._under_projects("D:\\etc\\hosts"), "")
             with mock.patch.object(w.claude_roots, "projects_dirs", lambda prim: ["D:\\cl\\projects"]):
-                self.assertEqual(w._under_projects("d:\\CL\\projects\\p\\s.jsonl"), "d:\\CL\\projects\\p\\s.jsonl")
+                # real ntpath.realpath upper-cases the drive letter; only the case-folded path is the contract
+                self.assertEqual(ntpath.normcase(w._under_projects("d:\\CL\\projects\\p\\s.jsonl")),
+                                 ntpath.normcase("d:\\CL\\projects\\p\\s.jsonl"))
                 self.assertEqual(w._under_projects("D:\\cl\\projects2\\s.jsonl"), "")
+
+    def test_pl_flow_touched_backslash_home(self):
+        spec = importlib.util.spec_from_file_location("pl_flow_win", os.path.join(ROOT, "hooks", "pl_flow.py"))
+        H = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(H)
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        tp = os.path.join(d, "t.jsonl")
+        with open(tp, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"message": {"content": [{"type": "tool_use", "input": {"command": "cd ~/agent/docs"}}]}}) + "\n")
+
+        class _SepOs:   # `\` separator only; real os.path so the tmp transcript stays absolute
+            sep = "\\"
+
+            def __getattr__(self, name):
+                return getattr(os, name)
+        home = "C:\\Users\\RUNNER~1"   # ⚠`\U` was read as a regex template escape and raised
+        with mock.patch.object(H, "os", _SepOs()), mock.patch.object(H, "HOME_DIR", home):
+            self.assertEqual(H._touched([home + "\\agent", home + "\\origin"], tp), [home + "\\agent"])
 
     def test_subagent_paths_any_separator(self):
         ag = sidereus("agents")

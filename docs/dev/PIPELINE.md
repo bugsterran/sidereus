@@ -26,6 +26,8 @@ Check: `node scripts/pipeline_check.mjs` (in `scripts/check.sh --fast`) runs the
 
 **Orchestrator stage (agent `main`)** — a stage the main session runs itself, no subagent (`hooks/pl_flow.py` `NO_AGENT` skips the `subagent_type` check). Marked by a Bash described `[pl:<pipeline>/<title>]`.
 sidereus-change starts with one: the Requirements stage (skill `requirements`) — R1..Rn checkable criteria + one Non-goal, owner confirms once; Design slices name the R ids, Live verify reports each R PASS/FAIL with evidence, the commit body ends with `Done when:` / `Not doing:`.
+
+Review in sidereus-change is two stages (find/verify split, https://claude.dev/blog/solving-code-review-at-anthropic/): «Review-find» = 2 `sidereus-reviewer` (opus, `parallel: 2`), one lens each (AGENTS.md rules + security · logic/regressions), every finding file:line + rule/scenario + diff excerpt, always PASS · «Review-confirm» = `sidereus-review-verifier` (opus) disproves each against the code and `git blame`/`git log -L`, tags Important/Nit/Pre-existing, drops Nits, FAILs only on a confirmed Important from this diff (→ Implement once, then Re-verify), and ends with a metadata-only ledger (id · rule · verdict). Both read `.claude/review-guide.md`. Small change (< ~100 lines, no security/metadata path): one reviewer covers both lenses, its FAIL is final, and «Review-confirm» is declared `[pl-skip:]`.
 ⚠`main` stages work only when the orchestrator runs the pipeline itself — the Workflow runner (`.claude/workflows/pipeline.js`) has no `main` branch and would dispatch it as general-purpose with no owner confirm.
 
 ```
@@ -147,7 +149,7 @@ The name list ends with a «Workflow» group: one button per Workflow-tool run i
 
 - Stages that use `general-purpose` (sidereus-change does) cannot light by `agentType` — phase-title match comes first for Workflow runs.
 - Plain-subagent runs could match several templates; only the one DM'd to that session lights (name kept in viewer memory for 2 h).
-- Only `~/.mailbox-mcp` has a workflow today (`sidereus-change.js`, 5 phases); other projects have agents only.
+- Only `~/.mailbox-mcp` has a workflow today (`sidereus-change.js`, 6 phases); other projects have agents only.
 
 ## Prior art (researched 2026-09-30)
 
