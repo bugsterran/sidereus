@@ -237,6 +237,16 @@ class StructArchChecks(unittest.TestCase):
         self.assertEqual(len(r[9]), 1)
         self.assertEqual(r[10], 2)
 
+    def test_last_report_button(self):
+        rep = {"name": 'security-report-"<x>".md', "at": 1700000000}
+        r = run("console.log(JSON.stringify([archChkLogHtml({}, null), archChkLogHtml({}, " + json.dumps(rep) + "),"
+                "archChkWinHtml('/r', {checks: {security: Object.assign({}, " + json.dumps(CHECKS) + ", {report: " + json.dumps(rep) + "})}}, {sel: {}}, [])]));")
+        self.assertNotIn("data-ckrep", r[0])                             # no report: no button
+        self.assertIn("마지막 보고서 ", r[1])
+        self.assertIn('data-ckrep="security-report-&quot;&lt;x&gt;&quot;.md"', r[1])
+        self.assertNotIn("<x>", r[1])
+        self.assertIn("data-ckrep=", r[2])                                # window passes security.report through
+
 
 if __name__ == "__main__":
     unittest.main()

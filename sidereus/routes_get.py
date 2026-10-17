@@ -605,7 +605,7 @@ class _GetRoutes(_StructRoutes):
         "/api/quota/burn": _g_quota_burn, "/api/structure/src": _StructRoutes._g_structure_src,
         "/api/structure/pair": _StructRoutes._g_structure_pair, "/api/structure": _StructRoutes._g_structure,
         "/api/structure/tree": _StructRoutes._g_structure_tree,
-        "/api/structure/file": _StructRoutes._g_structure_file, "/api/structure/img": _StructRoutes._g_structure_img, "/api/arch": _StructRoutes._g_arch, "/api/arch/files": _StructRoutes._g_arch_files, "/api/wkuse": _g_wkuse,
+        "/api/structure/file": _StructRoutes._g_structure_file, "/api/structure/img": _StructRoutes._g_structure_img, "/api/arch": _StructRoutes._g_arch, "/api/arch/files": _StructRoutes._g_arch_files, "/api/arch/secreport": _StructRoutes._g_arch_secreport, "/api/wkuse": _g_wkuse,
         "/api/retro": _g_retro, "/api/review": _g_review, "/api/history": _g_history, "/api/history/units": _g_history_units,
         "/api/sessions/recent": _g_sessions_recent, "/api/prefs": _g_prefs, "/api/ui-prefs.js": _g_ui_prefs,
         "/api/session/context": _g_session_context,

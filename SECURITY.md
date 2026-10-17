@@ -44,6 +44,8 @@ Settings go in `config.local.json` ([docs/CONFIG.md](docs/CONFIG.md)); restart t
 
 `scripts/arch_checks.py --category security` uses these scanners when they are installed. Settings > Diagnostics > «Security tools» shows which ones are found on `PATH` and their version, read from the install's files; Sidereus never runs or installs them. «Copy» only puts the command on the clipboard.
 
+Each run writes one Markdown report, `arch/<key>/security-report-YYYYMMDD-HHMM.md` under `~/.mailbox-mcp` (the newest 10 are kept): each scanner's status (ok, skipped — offline, missing, failed) and counts, findings as rule id · `file:line` · severity (+ package), triage state, what is new or gone since the previous scan, and — only when the target is this Sidereus checkout — the dependency and runtime audit (`scripts/deps_audit.py`; `--dev` adds Node, Chrome and browser drivers). The report never holds tool messages, secret values or AI review text.
+
 | Tool | What it catches | Install (macOS · Windows) | Needs network? |
 |---|---|---|---|
 | `gitleaks` | Secrets committed to the repo (API keys, tokens, passwords) | `brew install gitleaks` · `winget install Gitleaks.Gitleaks` | no |

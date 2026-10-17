@@ -1,9 +1,12 @@
 #!/usr/bin/python3
 """Runner + gate of the security-checks pipeline: run the repo's security scanners, write checks-security.json.
 
-usage: arch_checks.py (--repo <path> | --last | --verify --last) --category security [--only <ids>] [--offline]
+usage: arch_checks.py (--repo <path> | --last | --verify --last) --category security [--only <ids>] [--offline] [--dev]
   --repo / --last   detect scanners (sidereus/sec_checks.py), run each (300 s each, 900 s total), write
-                    arch/<key>/<HEAD>/checks-security.json + its last pointer.
+                    arch/<key>/<HEAD>/checks-security.json + its last pointer, and one Markdown report
+                    arch/<key>/security-report-YYYYMMDD-HHMM.md (scanners, triage, delta, deps; newest 10 kept).
+                    Deps = scripts/deps_audit.py lines, only when the repo is this Sidereus checkout;
+                    --dev adds its dev tooling lines (node, Chrome, browser drivers).
                     --last = the repo of the last security checks (else of the last map run).
   --category        security (required): gitleaks, npm audit, osv-scanner, semgrep, bandit.
                     --only = comma-separated tool ids. Online lookups (npm audit, osv-scanner, semgrep registry
@@ -32,11 +35,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sidereus import arch_checks as AC  # noqa: E402  (path set just above)
 from sidereus import arch_verify as AV  # noqa: E402
 from sidereus import sec_checks as SC  # noqa: E402
+from sidereus import sec_report as SR  # noqa: E402
 from sidereus.bus import _atomic_write  # noqa: E402
 from sidereus.gitinfo import git_argv, git_env  # noqa: E402
 
 
 _which = shutil.which   # tests patch this, never PATH
+HERE = os.path.dirname(os.path.abspath(__file__))
+SIDEREUS_ROOT = os.path.realpath(os.path.dirname(HERE))   # deps lines describe this checkout only
 PROBE_URL = "https://api.osv.dev/"
 
 
@@ -118,8 +124,34 @@ def _exec(plan, timeout, tmp):
     return dict(res, rc=p.returncode, out=dec(out), err=dec(err), ms=int((time.time() - t0) * 1000))
 
 
-def run(repo, only=None, offline=False):
-    """(exit code, summary line). Writes checks-security.json for the repo's HEAD."""
+def _load_deps():
+    """scripts/deps_audit.py as a module (it is a script, not a package member)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("deps_audit", os.path.join(HERE, "deps_audit.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _deps(repo, dev, offline):
+    """deps_audit lines for this Sidereus checkout, None for any other repo (its dependencies are not ours to judge)."""
+    if os.path.realpath(repo) != SIDEREUS_ROOT:
+        return None
+    try:
+        return _load_deps().collect((["--dev"] if dev else []) + (["--offline"] if offline else []))
+    except Exception as e:   # noqa: BLE001 — a deps failure is a report line, never a lost scan
+        return [("WARN", "deps audit", "failed: %s" % type(e).__name__)]
+
+
+def _report(kdir, j, ok, deps):
+    """Write the run's Markdown report; its name, "" when not written."""
+    recs = SC.log_read(kdir)
+    prev, cur = SR.scan_pair(recs, j["at"]) if ok else (None, None)
+    return SR.write(kdir, j["at"], SR.render(j, SC.log_view(kdir), prev, cur, deps))
+
+
+def run(repo, only=None, offline=False, dev=False):
+    """(exit code, summary line). Writes checks-security.json for the repo's HEAD and one Markdown report."""
     head = (_git(repo, ["rev-parse", "HEAD"]) or "").strip()
     if not AV.COMMIT_RE.fullmatch(head):
         return 1, "arch_checks: not a git repo with a commit"
@@ -173,10 +205,17 @@ def run(repo, only=None, offline=False):
     ok = [t["id"] for t in j["tools"] if t["status"] == "ok"]
     if ok:   # ⚠a run where no tool ran ok must not resolve anything; log failure keeps rc
         SC.log_append(os.path.dirname(d), SC.scan_record(head, j["at"], ok, j["items"]))
-    return 0, summary(j)
+    deps = _deps(repo, dev, offline)
+    name = _report(os.path.dirname(d), j, ok, deps)   # ⚠after log_append: the delta reads this run's scan record
+    extra = " · report %s" % (name or "not written")
+    if deps is None:
+        extra += " · deps n/a"
+    else:
+        extra += " · deps %d FAIL/%d WARN" % (sum(1 for x in deps if x[0] == "FAIL"), sum(1 for x in deps if x[0] == "WARN"))
+    return 0, summary(j, extra)
 
 
-def summary(j):
+def summary(j, extra=""):
     ok = [t for t in j["tools"] if t["status"] == "ok"]
     e = sum(t["n"]["error"] for t in j["tools"])
     w = sum(t["n"]["warning"] for t in j["tools"])
@@ -185,7 +224,7 @@ def summary(j):
         ids = [t["id"] for t in j["tools"] if t["status"] == st]
         if ids:
             line += " · %s: %s" % (st, ",".join(ids))
-    return line + (" · source changed by a tool" if j.get("src_changed") else "")
+    return line + extra + (" · source changed by a tool" if j.get("src_changed") else "")
 
 
 def _last(need_commit):
@@ -308,12 +347,13 @@ def log_cmd(a):
 
 
 def _args(argv):
-    """{verify, last, net, repo, category, only, log-review, log-show, mark, commit} or None on a usage error."""
-    a = {"verify": False, "last": False, "net": False, "offline": False, "repo": None, "category": None, "only": None,
+    """{verify, last, net, offline, dev, repo, category, only, log-review, log-show, mark, commit} or None on a usage error."""
+    a = {"verify": False, "last": False, "net": False, "offline": False, "dev": False, "repo": None, "category": None,
+         "only": None,
          "log-review": False, "log-show": False, "mark": None, "commit": None}
     it = iter(argv)
     for x in it:
-        if x in ("--verify", "--last", "--net", "--offline", "--log-review", "--log-show"):
+        if x in ("--verify", "--last", "--net", "--offline", "--dev", "--log-review", "--log-show"):
             a[x[2:]] = True
         elif x in ("--repo", "--category", "--only", "--commit"):
             a[x[2:]] = next(it, None)
@@ -328,12 +368,13 @@ def _args(argv):
             return None
     logm = a["log-review"] + a["log-show"] + bool(a["mark"])
     if logm:   # log commands: one at a time, security only, --commit only with --mark (full hex id)
-        if logm > 1 or a["verify"] or a["only"] or a["net"] or a["offline"] or a["category"] not in (None, "security") or \
+        if logm > 1 or a["verify"] or a["only"] or a["net"] or a["offline"] or a["dev"] or \
+                a["category"] not in (None, "security") or \
                 a["last"] == bool(a["repo"]) or (a["commit"] and not (a["mark"] and AV.COMMIT_RE.fullmatch(a["commit"]))):
             return None
         return a
     if a["commit"] or a["category"] not in SC.CATEGORIES + (None,) or a["last"] == bool(a["repo"]) or \
-            (a["verify"] and (a["repo"] or a["only"] or a["net"] or a["offline"])):
+            (a["verify"] and (a["repo"] or a["only"] or a["net"] or a["offline"] or a["dev"])):
         return None
     if a["only"] is not None:
         a["only"] = set(a["only"].split(","))
@@ -360,12 +401,12 @@ def main(argv):
             rc, line = verify(repo, commit)
             _record(rc, repo, commit)
         elif a["last"]:
-            rc, line = run(_last(False)[0], a["only"], a["offline"])
+            rc, line = run(_last(False)[0], a["only"], a["offline"], a["dev"])
         else:
             if not os.path.isdir(a["repo"]):
                 print("arch_checks: repo is not a directory")
                 return 1
-            rc, line = run(os.path.realpath(a["repo"]), a["only"], a["offline"])
+            rc, line = run(os.path.realpath(a["repo"]), a["only"], a["offline"], a["dev"])
     except ValueError as e:
         print("arch_checks: %s" % e)
         return 1

@@ -84,7 +84,8 @@ flowchart LR
 
 ### 보안 검사
 
-`scripts/arch_checks.py --repo <저장소> --category security [--offline]` 가 `checks-security.json` 에 규칙·`파일:줄`·패키지만 남긴다.
+`scripts/arch_checks.py --repo <저장소> --category security [--offline] [--dev]` 가 `checks-security.json` 에 규칙·`파일:줄`·패키지만 남긴다.
+매번 Markdown 보고서 하나도 `arch/<key>/security-report-YYYYMMDD-HHMM.md` 로 쓴다(최근 10개 유지): 도구 상태·결과·트리아지·직전 검사 대비 변화, 그리고 대상이 이 Sidereus 저장소일 때 `scripts/deps_audit.py` 결과(`--dev` 면 개발 도구까지).
 ⚠비밀값·일치 문자열은 저장하지 않는다. 의존성 조회와 semgrep 레지스트리 규칙(로컬 설정이 없을 때)은 기본으로 온라인에서 돈다. 오프라인이거나 `--offline` 이면 «0건» 이 아니라 건너뜀.
 
 ### map.json v2

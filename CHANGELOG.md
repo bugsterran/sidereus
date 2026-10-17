@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Diff window: «Since session start» and «vs main / master» base buttons and an «Include untracked files» checkbox.
 - Security checks: advisory lookups (npm audit, osv-scanner, semgrep registry packs, OSV.dev, endoflife.date) run by default; offline or `--offline` marks them «skipped». The OSS Scanner image pins its base by digest and applies OS security updates.
 - Timeline «Window summary»: Results (commits, pipeline runs) and Evidence (gate PASS/FAIL, first failing step) by default; «More» adds Waited on you, Outliers and Cost (tokens, tokens per commit), remembered.
+- Security checks: one run writes one Markdown report (`security-report-YYYYMMDD-HHMM.md` beside `security-log.jsonl`, newest 10 kept) with scanner status, findings, triage, the delta since the previous scan and — for this checkout only — the dependency and runtime audit. The `deps-audit` and `release` «Check» stages run it; `deps_audit.py` covers only what the viewer depends on by default (`--dev` adds Node, Chrome and browser drivers) and no longer checks the Claude Code CLI or plugins.
 
 ### Removed
 

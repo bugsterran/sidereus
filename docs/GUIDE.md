@@ -112,6 +112,7 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 - «Top issues N» opens the security findings (gitleaks, npm audit, osv-scanner, semgrep, bandit — `security-checks` pipeline). Secrets are never shown.
 - «Request fix» sends the selected findings to a session, asking it to re-run `arch-map` once the fix is committed.
 - The window ends with the check history (read-only): «Last security check» age, then open, resolved (date · commit) and false-positive findings. Rows from an AI review are marked «model-generated, unverified».
+- «Last report» (shown once a security run has written a report) opens the newest `security-report-*.md` as plain text in its own window.
 - Scanner findings resolve when a later scan by the same tool no longer reports them. AI review findings stay open until marked: `scripts/arch_checks.py --repo <repo> --mark <slug>@<file> resolved|false-positive`.
 
 ### Size

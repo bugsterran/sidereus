@@ -9,6 +9,8 @@ Object.assign(I18N.ko, {
   'resolved|finding': '해결',
   'false positive|finding': '오탐',
   'model-generated, unverified': '모델 생성 · 검증 안 됨',
+  'Last report {t}': '마지막 보고서 {t}',
+  'Could not load the report': '보고서를 불러오지 못했습니다',
   'critical|severity': '치명',
   'high|severity': '높음',
   'medium|severity': '중간',

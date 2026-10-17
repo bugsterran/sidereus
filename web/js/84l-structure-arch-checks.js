@@ -111,11 +111,11 @@ function archChkWinHtml(p, d, S, cands){
       + '<em title="' + esc(x.mod || '') + '">' + esc(x.mod || '') + '</em></button>'
       + (hp.desc || hp.url ? '<div class=archckh>' + (hp.desc ? '<span>' + esc(hp.desc) + '</span>' : '')
         + (hp.url ? '<a href="' + esc(hp.url) + '" target=_blank rel="noopener noreferrer">' + esc(T('docs ↗')) + '</a>' : '') + '</div>' : '') + '</div></li>'; }).join('') + '</ol>'
-    + (sec ? archChkLogHtml(sec.log) : '');
+    + (sec ? archChkLogHtml(sec.log, sec.report) : '');
 }
 // Pure: read-only security history (sidereus/sec_checks.log_view) — last check age, then open / resolved / false-positive rows.
 //   Metadata only (sev · file:line · key · one-line desc); AI review rows are labelled as unverified model output.
-function archChkLogHtml(L){
+function archChkLogHtml(L, rep){
   L = L && typeof L === 'object' ? L : {};
   const arr = k => (Array.isArray(L[k]) ? L[k] : []).filter(x => x && x.file), num = v => typeof v === 'number' && isFinite(v);
   const open = arr('open'), res = arr('resolved'), fp = arr('fp');
@@ -124,6 +124,9 @@ function archChkLogHtml(L){
   let h = '<div class=archckst>' + esc(num(L.at_scan) ? T('Last security check {t}').replace('{t}', () => agoAt(L.at_scan)) : T('Never checked'))
     + (num(L.at_review) ? ' · ' + esc(T('Last AI review {t}').replace('{t}', () => agoAt(L.at_review))) : '')
     + ' · ' + esc(T('Open {o} · resolved {r} · false positives {f}').replace('{o}', open.length).replace('{r}', res.length).replace('{f}', fp.length)) + '</div>';
+  if(rep && typeof rep === 'object' && typeof rep.name === 'string' && rep.name)   // security.report {name, at}: name is file data, esc
+    h += '<div class=archckst><button type=button class=wkrgb data-ckrep="' + esc(rep.name) + '" title="' + esc(rep.name) + '">'
+      + esc(T('Last report {t}').replace('{t}', () => num(rep.at) ? hhmm(rep.at, {date: true}) : rep.name)) + '</button></div>';
   const rows = [[open, 'open'], [res, 'resolved'], [fp, 'fp']].map(a => a[0].map(x => {
     const ln = parseInt(x.line, 10) || 1, sv = ['critical', 'high', 'error'].indexOf(x.sev) >= 0 ? 'error' : 'warning';
     const when = a[1] === 'open' ? '' : (num(x.at) ? ' · ' + hhmm(x.at, {date: true}) : '') + (x.commit ? ' · ' + String(x.commit).slice(0, 7) : '');
@@ -197,6 +200,7 @@ function archChkWinEv(e, w){
   }
   let b;
   if((b = t.closest('[data-ckv]'))){ strPopOpenRel(S.p, b.dataset.af, parseInt(b.dataset.al, 10) || 1, 80, ''); return; }
+  if((b = t.closest('[data-ckrep]'))){ archChkReportOpen(S.p, b.dataset.ckrep); return; }
   if(t.closest('[data-ckfix]')){
     if(!S.req){ S.req = { sid: archChkPick(archChkFixCands(SESS, S.p), S.p), busy: false }; S.msg = ''; }   // S.sent stays: it marks a repeat
     else if(!S.req.busy) S.req = null;   // second press closes the preview
@@ -204,6 +208,20 @@ function archChkWinEv(e, w){
   }
   if(t.closest('[data-ckx]')){ if(S.req && !S.req.busy) S.req = null; archChkWinPaint(); return; }
   if(t.closest('[data-ckgo]')) archChkFixSend();
+}
+// «Last report»: named about:blank window, report text written as an escaped <pre> (no markdown render, no route).
+// ⚠window.open runs before the fetch: after an await the click's user activation may be gone and the popup blocked.
+async function archChkReportOpen(p, name){
+  let w = null;
+  try{ w = window.open('', 'sidereus_secreport', popFeat(900, 760, 0) + ',scrollbars=yes,resizable=yes'); }catch(e){ softErr('archrep-open', e); }
+  if(!w){ note(T('Popup blocked — allow popups for this site.')); return; }
+  const put = body => { const dc = w.document; dc.open(); dc.write('<!doctype html><meta charset=utf-8><title>' + esc(name) + '</title><body style="margin:0">' + body); dc.close(); };
+  put('<pre style="padding:12px">' + esc(T('Loading…')) + '</pre>');
+  let j = null;
+  try{ j = await getJSON('/api/arch/secreport?path=' + encodeURIComponent(p) + '&name=' + encodeURIComponent(name)); }catch(e){ softErr('archrep-get', e); }
+  try{ if(w.closed) return; }catch(e){ return; }
+  put('<pre style="padding:12px;white-space:pre-wrap;word-break:break-word">' + esc(j && j.ok ? String(j.text || '') : T('Could not load the report') + (j && j.err ? ': ' + j.err : '')) + '</pre>');
+  try{ w.focus(); }catch(e){ softErr('archrep-focus', e); }
 }
 // Guard + send: only the preview's confirm calls this (no auto-send, AGENTS.md rule 7).
 async function archChkFixSend(){
