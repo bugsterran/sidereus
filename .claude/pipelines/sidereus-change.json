@@ -44,11 +44,21 @@
       "ui": { "x": 788, "y": 24 }
     },
     {
-      "title": "리뷰",
+      "title": "리뷰-찾기",
       "agent": "sidereus-reviewer",
-      "task": "Review the working-tree diff (git diff + untracked files) against AGENTS.md rules, security and simplicity. status FAIL only for blocking findings (file/line/rule + fix in text); put non-blocking notes in summary.",
+      "model": "opus",
+      "task": "Find candidate defects in the working-tree diff (git diff + untracked files); follow .claude/review-guide.md. Two reviewers in one message, one lens each: (a) AGENTS.md rules + security (esc, path/arg checks, git_argv, metadata only); (b) logic/behaviour bugs incl. regressions. Every finding = file:line + the rule or failure scenario + a short diff excerpt; style, naming, cleanup and nits are not findings. Report PASS with the candidates; 리뷰-확인 decides. After a loop-back, review only the fix diff. Small change (under ~100 changed lines, no security/metadata path: routes, work.py, MCP, innerHTML, git calls): one reviewer covering both lenses, its FAIL is final, then declare [pl-skip:sidereus-change/리뷰-확인].",
       "onFail": { "goto": "구현", "max": 1, "then": "재검증" },
+      "parallel": 2,
       "ui": { "x": 1036, "y": 24 }
+    },
+    {
+      "title": "리뷰-확인",
+      "agent": "sidereus-review-verifier",
+      "model": "opus",
+      "task": "Try to disprove each 리뷰-찾기 finding against the code, git blame and git log -L. Tag survivors Important / Nit / Pre-existing, drop Nits, report only confirmed findings ranked by severity, plus one line per finding: id, rule, verdict (confirmed|disproved|pre-existing). status FAIL only on a confirmed Important introduced by this diff; Pre-existing never blocks.",
+      "onFail": { "goto": "구현", "max": 1, "then": "재검증" },
+      "ui": { "x": 1160, "y": 140 }
     },
     {
       "title": "재검증",

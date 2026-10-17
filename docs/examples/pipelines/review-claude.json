@@ -1,0 +1,34 @@
+{
+  "v": 1,
+  "name": "review-claude",
+  "title": "Review (Claude Code)",
+  "use": "Review a diff before merge: parallel finders, a separate verifier, block only on confirmed Important findings.",
+  "rules": "Read REVIEW.md (or .claude/review-guide.md) and AGENTS.md/CLAUDE.md first; they define what counts as a defect.\nRead-only: never edit, commit or push.\nEvery finding = file:line + the rule or failure scenario. Style, naming, formatting and cleanup are not findings (CI and linters own them).",
+  "after": ["Keep the verify ledger (id, rule, verdict) to measure how many findings the author acted on."],
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "Context",
+      "agent": "Explore",
+      "task": "Read the change (git diff against the base branch plus untracked files) and its purpose. List the files that matter, the callers they affect and the rules file sections that apply. Change nothing."
+    },
+    {
+      "title": "Find",
+      "agent": "general-purpose",
+      "model": "opus",
+      "parallel": 2,
+      "task": "Find candidate defects in the diff with the whole repo open (read callers, run the tests if the rules allow). Two finders in one message, one lens each: (a) the rules file + security; (b) logic and regressions. Report every candidate with file:line and the rule or scenario; do not filter here. After a loop-back, review only the fix diff and report only new findings."
+    },
+    {
+      "title": "Verify",
+      "agent": "general-purpose",
+      "task": "Try to disprove each Find candidate against the code (git blame, git log -L, the tests). Tag each survivor Important, Nit or Pre-existing. Drop Nits. Report confirmed findings by severity, then one line per candidate: id, rule, verdict (confirmed|disproved|pre-existing)."
+    },
+    {
+      "title": "Gate",
+      "agent": "general-purpose",
+      "task": "FAIL only if Verify confirmed an Important finding introduced by this diff; list each with file:line and the fix in text. Pre-existing never blocks. On the second FAIL stop and ask the author to rethink the change instead of another round.",
+      "onFail": { "goto": "Find", "max": 1 }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "v": 1,
+  "name": "review-gemini",
+  "title": "Review (Gemini CLI, untested)",
+  "use": "Untested template: one-pass Gemini review, a separate verify pass, block only on confirmed HIGH/CRITICAL findings.",
+  "rules": "Read .gemini/styleguide.md and .gemini/config.yaml first: skip files matching code_review.ignore_patterns and report nothing below code_review.comment_severity_threshold (MEDIUM when unset).\nRead-only: never edit, commit or push.\nStart each stage with a shell command `echo \"[pl:review-gemini/<stage>]\"` and end it with `echo \"[pl-end:review-gemini/<stage>]\"` (append `|fail` inside the brackets on FAIL) so Sidereus can light it.\nEvery finding = file:line + the rule or failure scenario. Style and formatting are not findings (CI owns them).",
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "Context",
+      "agent": "gemini",
+      "task": "Read the change (git diff against the base branch plus untracked files) and its purpose. List the files that matter, the callers they affect and the style guide rules that apply. Change nothing."
+    },
+    {
+      "title": "Find",
+      "agent": "gemini",
+      "task": "One pass over the diff with the whole repo open (read callers, run the tests if the rules allow). Report every candidate with file:line, the rule or scenario and a severity LOW, MEDIUM, HIGH or CRITICAL; do not filter here. After a loop-back, review only the fix diff and report only new findings."
+    },
+    {
+      "title": "Verify",
+      "agent": "gemini",
+      "task": "Try to disprove each Find candidate against the code (git blame, git log -L, the tests). Tag each survivor Important (HIGH/CRITICAL), Nit or Pre-existing. Drop Nits. Report confirmed findings by severity, then one line per candidate: id, rule, verdict (confirmed|disproved|pre-existing)."
+    },
+    {
+      "title": "Gate",
+      "agent": "gemini",
+      "task": "FAIL only if Verify confirmed an Important (HIGH/CRITICAL) finding introduced by this diff; list each with file:line and the fix in text. Pre-existing never blocks. On the second FAIL stop and ask the author to rethink the change instead of another round.",
+      "onFail": { "goto": "Find", "max": 1 }
+    }
+  ]
+}

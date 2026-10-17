@@ -8,9 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - CI: a non-blocking `windows-latest` job (Python 3.9 and 3.12) runs the same gates and unit tests plus a `start --demo` smoke test.
+- Docs: [REVIEW-PIPELINES](docs/REVIEW-PIPELINES.md) summarises what Anthropic, OpenAI, Google, Meta, Cursor and GitHub published on AI code review, maps it to pipeline fields, and ships review templates for Claude Code, Codex CLI and Gemini CLI (`docs/examples/pipelines/`; Codex and Gemini untested).
 
 ### Changed
 
+- Pipelines: sidereus-change review is split into «Review-find» (two opus reviewers, one lens each, evidence required) and «Review-confirm» (a verifier that disproves each finding and blocks only on a confirmed Important from the diff), with a shared `.claude/review-guide.md`; the reviewer's UI-string rule now matches English-source + `I18N.ko`. Find/verify split after [Solving code review at Anthropic](https://claude.dev/blog/solving-code-review-at-anthropic/).
 - Timeline: the «Changes» chip counts uncommitted changes by default (was everything since the default branch); Settings › Timeline «Changes baseline» picks Uncommitted · Unpushed · Since session start · Since the default branch · Auto, and the tooltip names the baseline; the diff window's «Uncommitted» tab now shows only uncommitted changes (no fallback to unpushed commits).
 - Pipelines: the project button shows only the name and the live dot; the pipeline file count moved to the tooltip and the picker rows.
 - Pipelines: the header actions read «Run», a divider, then «Undo» · «Save» · «Delete» (file operations grouped, Delete last).
@@ -29,7 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Windows: every text-mode file open in the product and tests names `encoding="utf-8"` (the cp1252 default broke reads of UTF-8 files; guarded by `tests/test_open_encoding.py`), and a test module that fails to import is reported by name instead of aborting its whole parallel group.
 - Windows CI: checkouts keep LF (`.gitattributes` `* text=auto eol=lf`, images binary); tests remove temp git repos with read-only objects (`tests/_fs.py`), skip POSIX-only checks (permission bits, FIFOs, `pwd`/`resource`, the shell launcher and `check.sh`) and compare paths with the OS separator.
 - Windows: `C:\…` edit paths now count for file owners, conflicts, review and the git rail (were dropped as non-absolute); session repos, project names and hook script names parse `\` paths; the git rail reads files without `O_NOFOLLOW`; Structure dates no longer use `%-m`; pre-1970 cut-offs and near-epoch room-log times no longer raise Errno 22; `scripts/evidence_rec.py` imports without `fcntl` (no evidence row, like the hook).
-- Windows: hooks read and write UTF-8 on stdin/stdout (Korean block reasons came out empty on a cp1252 pipe); subagent, workflow-name, mailbox-watch, Structure pairing and pipeline-owner path checks accept `\`, mixed separators and any case; the transcript path guard refuses a drive root (`D:\`) like `/`; a runs.json project with `..` is refused on either separator; hook commands keep `\` and drop quotes inside a token; `cd /d C:\x` and 8.3 names (`RUNNER~1`) parse; Orbit reads its registry (Windows mode bits are not ACLs) and writes `~/...` paths.
+- Windows: hooks read and write UTF-8 on stdin/stdout (Korean block reasons came out empty on a cp1252 pipe); subagent, workflow-name, mailbox-watch, Structure pairing and pipeline-owner path checks accept `\`, mixed separators and any case; the transcript path guard refuses a drive root (`D:\`) like `/`; a runs.json project with `..` is refused on either separator; hook commands keep `\` and drop quotes inside a token; `cd /d C:\x` and 8.3 names (`RUNNER~1`) parse; Orbit reads its registry (Windows mode bits are not ACLs) and writes `~/...` paths; the pipeline-owner match no longer raises on a `C:\Users\…` home (it was read as a regex escape, so a session that only `cd ~/x` recorded no run).
 
 ## [0.3.0] - 2026-10-17
 

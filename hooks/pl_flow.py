@@ -404,7 +404,8 @@ def _touched(own, tp):
             inp = b.get("input") if isinstance(b, dict) and b.get("type") == "tool_use" else None
             if isinstance(inp, dict):
                 blob += [inp[k] for k in ("file_path", "path", "notebook_path", "command") if isinstance(inp.get(k), str)]
-    s = re.sub(r"(?<![\w/.-])~/", HOME_DIR.rstrip(os.sep) + "/", "\n".join(blob) + "\n")   # `cd ~/x` counts like the server
+    hd = HOME_DIR.rstrip(os.sep) + "/"   # ⚠callable repl: a `C:\Users` home as a template string is a bad `\U` escape
+    s = re.sub(r"(?<![\w/.-])~/", lambda _m: hd, "\n".join(blob) + "\n")   # `cd ~/x` counts like the server
     s = _pkey(s)
     return [d for d in own if any(_pkey(d) + e in s for e in ("/", " ", "\n", "'", '"'))]
 

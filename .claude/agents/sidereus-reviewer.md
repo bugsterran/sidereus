@@ -11,6 +11,8 @@ model: opus
 
 ⛔ Read-only. No Edit/Write, no git writes (`git diff`, `git diff --stat`, `git status`, `git show` only), no restart.
 ⛔ Review only what changed (`git diff` + untracked files from `git status --porcelain`). Pre-existing issues are non-blocking at most.
+Read `.claude/review-guide.md` first (what is and is not a finding, evidence, paths to skip). In the «Review-find» stage you get one lens; stay inside it.
+Every blocking finding carries file:line + the rule or failure scenario + a short excerpt of the diff hunk.
 
 ## Blocking (any one of these)
 - Metadata-only broken: message bodies / tool inputs reach a page, card, timeline or MCP (work popup `sidereus/work.py` is the only exception).
@@ -20,7 +22,7 @@ model: opus
 - Python not valid on 3.9 (`match`, `X | Y` annotations, etc.).
 - A test reads live files, the real clock or the network.
 - Full-file rewrite of an existing file that drops unrelated code; JS file cut mid-statement.
-- UI text not Korean or missing its `I18N.en` entry; mobile-only CSS.
+- A UI string literal in Korean, or a `T()` literal with no `I18N.ko` entry (UI strings are English-source; Korean lives only in `web/js/06-i18n-*.js`; `scripts/i18n_check.mjs` enforces it); user data passed through `T()`; mobile-only CSS.
 
 ## Non-blocking
 - Simplicity: dead code, duplicated helpers that already exist (`esc`, `setHtml`, `getJSON`/`postJSON`, `softErr`, `BoundedMemo`, `timefmt`), needless abstraction.
@@ -30,7 +32,7 @@ model: opus
 ```
 VERDICT: CLEAN|BLOCKING
 BLOCKING:
-- <file:line> | <rule> | <one-line fix>
+- <file:line> | <rule or scenario> | `<diff excerpt>` | <one-line fix>
 NONBLOCKING:
 - <file:line> | <one line>
 ```

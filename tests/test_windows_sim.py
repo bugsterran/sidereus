@@ -128,12 +128,13 @@ class WindowsSim(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
+    @unittest.skipIf(os.name == "nt", "simulates Windows on a POSIX host; on Windows the real suite and demo smoke run instead")
     def test_loads_and_serves_state(self):
-        env = dict(os.environ, MAILBOX_DIR=self.tmp, HOME=self.tmp, SIDEREUS_HOOK_NO_PID="1",
+        env = dict(os.environ, MAILBOX_DIR=self.tmp, HOME=self.tmp, SIDEREUS_HOOK_NO_PID="1", PYTHONIOENCODING="utf-8",
                    CODEX_HOME=os.path.join(os.devnull, "no-codex-home"))
         env.pop("MAILBOX_CONFIG", None)
         p = subprocess.run([PY, "-c", CHILD, ROOT], env=env, cwd=self.tmp,
-                           capture_output=True, text=True, timeout=120, encoding="utf-8")
+                           capture_output=True, text=True, timeout=120, encoding="utf-8", errors="replace")   # ⚠strict decode failure left stderr None
         line = [x for x in p.stdout.splitlines() if x.startswith("RESULT ")]
         self.assertTrue(line, "child failed:\n" + p.stderr[-3000:])
         out = json.loads(line[-1][7:])

@@ -113,7 +113,9 @@ sidereus-designer   → spec (disjoint file slices · rules · tests · screen e
 sidereus-implementer→ one per slice, in parallel · reports after scripts/check.sh --fast passes
 sidereus-verifier   → scripts/check.sh --full (gates · tests · leak scan · scripts/screen_check.mjs) · fixes nothing
                    on FAIL, back to that file's implementer (at most 2 times)
-sidereus-reviewer   → reviews git diff against this file's rules · security (esc · path/arg checks · git_argv · metadata only) · simplicity
+sidereus-reviewer ×2→ review find: one lens each (this file's rules + security: esc · path/arg checks · git_argv · metadata only | logic/regressions)
+                   every finding file:line + rule/scenario + diff excerpt · .claude/review-guide.md · small diff: one reviewer, confirm skipped
+sidereus-review-verifier→ review confirm: disproves each finding (code · git blame · git log -L) · blocks only on a confirmed Important from this diff
                    if blocking, implementer once → final verifier
 ```
 

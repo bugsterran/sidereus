@@ -1,6 +1,7 @@
 """GET /api/pipelines/eval body (sidereus/pl_eval_view.py) and its header/panel render (web/js/48i). No live files."""
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -241,10 +242,11 @@ class Suggest(unittest.TestCase):
         self.assertEqual(self.sg([{"title": "단위 테스트", "agent": "x"}], ev, {}), [])   # a test catalog stage exists
 
     def test_cmd_quoted(self):
-        c = self.v.redcheck_cmd("/p q", "flow", "it's", nt=False)   # POSIX quoting; joins still use os.sep
+        c = self.v.redcheck_cmd("/p q", "flow", "it's", code_dir="/ag", nt=False)   # POSIX quoting; joins still use os.sep
         self.assertIn("--pipeline '%s'" % os.path.join("/p q", ".claude", "pipelines", "flow.json"), c)
         self.assertIn("--stage 'it'\"'\"'s' --repo '/p q'", c)
-        self.assertTrue(c.startswith("python3 ") and os.path.join("scripts", "pl_eval.py") + " redcheck" in c)
+        # ⚠shlex quotes a `\` path (os.sep on Windows), so compare against the quoted script path
+        self.assertTrue(c.startswith("python3 ") and shlex.quote(os.path.join("/ag", "scripts", "pl_eval.py")) + " redcheck" in c)
         w = self.v.redcheck_cmd("C:\\p q", "flow", "a b", code_dir="C:\\ag", nt=True)
         self.assertTrue(w.startswith("py ") and '--stage "a b"' in w)
 
