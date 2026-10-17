@@ -4,6 +4,17 @@
 
 Steps 1 and 2 give you the screen. The rest is optional.
 
+## 0. Prerequisites
+
+- **Python 3.9 or later.** macOS: the system `/usr/bin/python3` works. Windows: the installer from
+  [python.org](https://www.python.org/downloads/windows/), which provides `py`.
+- **Git.** Windows: Git for Windows (`winget install --id Git.Git -e --source winget`, or
+  [git-scm.com](https://git-scm.com/install/windows)); the plugin hooks run through its Git Bash.
+- **Claude Code** ([setup](https://code.claude.com/docs/en/setup)). macOS/Linux: `curl -fsSL https://claude.ai/install.sh | bash`;
+  Windows PowerShell: `irm https://claude.ai/install.ps1 | iex`.
+
+After installing any of these, open a new terminal: an open one keeps the old PATH, so `claude` is "not recognized".
+
 ## 1. Get the code
 
 ```sh
@@ -14,10 +25,12 @@ Needs Python 3.9 or later, nothing else; the macOS `/usr/bin/python3` works.
 Data (logs, caches, mailbox, config) goes to `$MAILBOX_DIR`, default `~/.mailbox-mcp`
 (Windows: `%USERPROFILE%\.mailbox-mcp`).
 
-**Windows** (not yet verified on a real machine): wherever this page says `python3` or `/usr/bin/python3`, write
-`py`. For `python3 -m sidereus …` you can also run `C:\path\sidereus\sidereus.cmd …` from any folder
+**Windows** (verified on a Windows 11 PC, 2026-10-17): wherever this page says `python3` or `/usr/bin/python3`, write
+`py`. `python3` there is usually the Microsoft Store alias: it exits with code 49 and does nothing. For `python3 -m sidereus …` you can also run `C:\path\sidereus\sidereus.cmd …` from any folder
 (it uses `py -3`, else `python`); `py -m sidereus` works only inside the clone.
 `~/.claude/settings.json` is `%USERPROFILE%\.claude\settings.json`.
+In PowerShell read a variable with `$env:SIDEREUS_PYTHON` (`echo %SIDEREUS_PYTHON%` is cmd syntax and prints
+the text as is). `setx` applies only to windows opened afterwards: close and reopen PowerShell and Claude Code.
 
 ## 2. Start the viewer
 
@@ -38,7 +51,9 @@ By default Sidereus reads the Claude Code OAuth token from the macOS keychain fo
 `caffeinate` while sessions work. Off: `"quota_lookup": false`, `"keep_awake": false` in
 `config.local.json`. See [SECURITY.md](../SECURITY.md).
 
-On Windows the viewer, transcripts and mailbox work. Off there: live process probes, terminal jump, the
+On Windows the viewer, paths, plugin hooks and MCP, session list, timeline, work-log popup, diff and the «Changes» chip
+were checked on a real PC (2026-10-17). Not yet checked there: the logon service (§3), mailbox watch detection and
+harness evidence rows. Off there: live process probes, terminal jump, the
 quota lookup, idle-sleep prevention, and harness evidence rows (`hooks/ev_hook.py` needs `fcntl`).
 The shell scripts (`watch.sh`, `backup.sh`, `backup-data.sh`) need Git Bash or WSL.
 
@@ -57,7 +72,7 @@ launchctl bootout gui/$(id -u)/io.sidereus.viewer          # stop
 rm ~/Library/LaunchAgents/io.sidereus.viewer.plist         # uninstall; otherwise stop/status still see a service
 ```
 
-Windows (unverified) creates the logon task `Sidereus` with `schtasks /Create /SC ONLOGON` and runs it once.
+Windows (not yet checked on a real PC) creates the logon task `Sidereus` with `schtasks /Create /SC ONLOGON` and runs it once.
 It starts at login but is not restarted if it dies. Creating it may need an Administrator prompt: if you
 see `Access is denied`, run the same `start --install-service` from a terminal opened with «Run as administrator».
 `sidereus stop` leaves the task alone here too. Stop: `schtasks /End /TN Sidereus`; start again:
@@ -82,21 +97,40 @@ transcripts, a little later.
 
 ## 5. MCP and hooks
 
-Pick one way. ⚠ Not both: you would get every hook twice and two MCP servers (`sidereus` and `plugin:sidereus:sidereus`).
+Pick one way. ⚠ Not both: you would get every hook twice and two MCP servers (`sidereus` and `plugin:sidereus:sidereus`
+in `claude mcp list`). If you have both, keep the plugin and run `claude mcp remove sidereus -s user`.
 
 **Plugin (recommended).** Registers the `sidereus` MCP server and the nine hooks in
 [HOOKS.md](HOOKS.md#claude-code-hooks). Its hooks run `python3` on macOS/Linux; on Windows they look on PATH
 for Python 3.9+ as `py -3`, then `python3`, then `python` (the Microsoft Store `python3` alias is skipped, the find
 is cached), and run through Git Bash, so install Git for Windows.
-Its MCP server runs `python3`, or `SIDEREUS_PYTHON` when set. On Windows `python3` is usually the Store alias, so
-run `setx SIDEREUS_PYTHON py` once and restart Claude Code (the hooks use the same variable).
+Its MCP server runs `python3`, or `SIDEREUS_PYTHON` when set (the hooks use the same variable).
+
+**Windows, before installing the plugin:** run this once in PowerShell, then close and reopen PowerShell and Claude Code.
+Without it `claude mcp list` shows `plugin:sidereus:sidereus: python3 ... ✘ Failed to connect`.
+
+```powershell
+setx SIDEREUS_PYTHON py
+```
+
+Install, inside Claude Code:
 
 ```text
 /plugin marketplace add <path to your clone>
 /plugin install sidereus@sidereus
 ```
 
-Update after `git pull`: `claude plugin marketplace update sidereus`, then `claude plugin update sidereus@sidereus`, then restart Claude Code. Claude Code keeps a cached copy per plugin version, so an update only arrives when `version` in `plugin/.claude-plugin/plugin.json` changed.
+Update after `git pull`:
+
+```sh
+claude plugin marketplace update sidereus
+claude plugin update sidereus@sidereus
+claude plugin list          # after restarting Claude Code: Version should be the new one
+```
+
+Claude Code keeps a cached copy per plugin version, so an update only arrives when `version` in
+`plugin/.claude-plugin/plugin.json` changed. If Version stays the same, check `git status` in the clone: uncommitted
+local edits stop `git pull`. Otherwise uninstall and install again.
 
 Uninstall: `claude plugin uninstall sidereus@sidereus`, then `claude plugin marketplace remove sidereus`.
 
@@ -156,6 +190,8 @@ claude mcp add --scope user mailbox -- uv --directory <path-to-mailbox-mcp> run 
 - Your sessions show up in the sessions drawer (top right).
 - The status bar shows the 5-hour figure with `≈`. It is an estimate and sharpens over a few cycles.
 - A new session asked to call `sidereus_quota` answers in a few lines.
+- `claude mcp list` shows `plugin:sidereus:sidereus ... ✔ Connected` (plugin) or `sidereus ... ✔ Connected` (manual).
+- A prompt does not show `UserPromptSubmit hook ... timed out after 10s`.
 
 Everyday use, with screenshots: [GUIDE.md](GUIDE.md).
 
@@ -173,5 +209,9 @@ Everyday use, with screenshots: [GUIDE.md](GUIDE.md).
 | No sessions listed | Check that `~/.claude/projects/` has recent `.jsonl` files. With `CLAUDE_CONFIG_DIR` set, the viewer must see the same variable (launchd: `EnvironmentVariables`) |
 | MCP tools say "not reachable" | The viewer is down or just restarted. Call again. |
 | MCP tools missing | Only sessions started after `claude mcp add` have them |
+| `claude` is not recognized | Open a new terminal; the open one has the old PATH |
+| Windows: `plugin:sidereus:sidereus ... ✘ Failed to connect` | `setx SIDEREUS_PYTHON py`, then reopen PowerShell and Claude Code (§5) |
+| Windows: `UserPromptSubmit hook ... timed out after 10s` | Fixed in plugin 0.3.2. Update the plugin (§5) |
+| Windows: `start` says the port is busy but nothing listens | Fixed in the current code. `git pull` |
 
 Log: `~/.mailbox-mcp/viewer.err`. It is append-only, so old lines are history, not current errors.

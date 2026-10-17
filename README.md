@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.9, stdlib only](https://img.shields.io/badge/python-3.9%20stdlib%20only-3776AB.svg)
-![Platform: macOS · Windows (untested)](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Windows%20(untested)-lightgrey.svg)
+![Platform: macOS · Windows](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Windows-lightgrey.svg)
 
 **A local observatory for verifying AI coding sessions.**
 
@@ -75,7 +75,7 @@ Design and scope: [docs/CONCEPT.md](docs/CONCEPT.md).
 - Footprint: the `--demo` server uses about 30 MB RSS and the shipped code is about 10 MB (macOS, Python 3.9, 2026-10-16).
 - Claude Code. The viewer reads its transcripts under `~/.claude/projects/` (`$CLAUDE_CONFIG_DIR/projects/` when that is set).
 - `git` for the Branches, Structure and diff views.
-- macOS is tested. Windows is supported but not yet verified on a real machine; what is off there is listed
+- macOS is tested. Windows 11 was checked on a real PC (2026-10-17); what is off or not yet checked there is listed
   in [GETTING-STARTED](docs/GETTING-STARTED.md#2-start-the-viewer). Linux is untested.
 
 ## Before you install
@@ -93,6 +93,7 @@ python3 -m sidereus start --open             # http://127.0.0.1:8799; Windows: s
 ```
 
 On Windows write `py` wherever these docs say `python3`, or run `sidereus.cmd` from the clone folder.
+Windows needs Python, Git for Windows and Claude Code first: [Getting started §0](docs/GETTING-STARTED.md#0-prerequisites).
 That is the whole install for the screen. Commands, ports and start at login: [Getting started §2–3](docs/GETTING-STARTED.md#2-start-the-viewer).
 
 If 8799 is taken (another clone, or another account on the same Mac running Sidereus), `status` only says
@@ -167,7 +168,7 @@ a few lines to the calling session's context. Diagram and details: [docs/ARCHITE
 
 ## Agents can ask too (MCP)
 
-Already there if you installed the plugin (on Windows the plugin's MCP server runs bare `python3`, so without one on PATH register it by hand as below). Manual registration (macOS, from the clone; on Windows run `py -m sidereus setup-claude`
+Already there if you installed the plugin (on Windows run `setx SIDEREUS_PYTHON py` first, see [§5](docs/GETTING-STARTED.md#5-mcp-and-hooks)). Manual registration (macOS, from the clone; on Windows run `py -m sidereus setup-claude`
 in the clone and use the `claude mcp add` line it prints):
 
 ```sh

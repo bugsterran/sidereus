@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.9, stdlib only](https://img.shields.io/badge/python-3.9%20stdlib%20only-3776AB.svg)
-![Platform: macOS · Windows (untested)](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Windows%20(untested)-lightgrey.svg)
+![Platform: macOS · Windows](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Windows-lightgrey.svg)
 
 **여러 AI 코딩 세션을 검증하는 로컬 관측소입니다.**
 
@@ -75,8 +75,8 @@ python3 -m sidereus start --demo --open      # 18799 포트, Ctrl-C로 끕니다
 - 사용량: `--demo` 서버 RSS 약 30MB, 배포 코드 약 10MB (macOS, Python 3.9, 2026-10-16 측정).
 - Claude Code. 뷰어는 `~/.claude/projects/` 아래의 트랜스크립트를 읽습니다(`CLAUDE_CONFIG_DIR`가 설정돼 있으면 `$CLAUDE_CONFIG_DIR/projects/`).
 - 브랜치·구조·diff 화면을 쓰려면 `git`이 필요합니다.
-- macOS에서 테스트했습니다. Windows도 지원하지만 실제 기기에서는 아직 확인하지 못했습니다. Windows에서
-  꺼지는 기능은 [시작하기](docs/GETTING-STARTED.ko.md#2-뷰어-띄우기)에 정리했습니다. Linux는 테스트하지 않았습니다.
+- macOS에서 테스트했습니다. Windows 11은 실제 PC에서 확인했습니다(2026-10-17). Windows에서 꺼지거나
+  아직 확인하지 못한 기능은 [시작하기](docs/GETTING-STARTED.ko.md#2-뷰어-띄우기)에 정리했습니다. Linux는 테스트하지 않았습니다.
 
 ## 설치 전에
 
@@ -93,6 +93,7 @@ python3 -m sidereus start --open             # http://127.0.0.1:8799. Windows: s
 ```
 
 Windows에서는 문서의 `python3`를 `py`로 바꿔 쓰거나, 클론 폴더에서 `sidereus.cmd`를 실행하세요.
+Windows는 Python·Git for Windows·Claude Code를 먼저 설치합니다: [시작하기 0장](docs/GETTING-STARTED.ko.md#0-준비).
 화면만 쓴다면 설치는 이것으로 끝입니다. 명령·포트·로그인 시 자동 실행은 [시작하기 2~3장](docs/GETTING-STARTED.ko.md#2-뷰어-띄우기)을 보세요.
 
 8799가 이미 쓰이고 있으면(다른 클론, 또는 같은 Mac의 다른 계정이 띄운 Sidereus) `status`는 8799에 무언가 응답하지만
@@ -166,7 +167,7 @@ Claude Code 연결은 플러그인과 수동 훅 중 하나만 고릅니다([5�
 
 ## 에이전트에서 쓰기 (MCP)
 
-플러그인을 설치했다면 이미 등록돼 있습니다(Windows에서는 플러그인 MCP 서버가 `python3`를 그대로 부르니, PATH에 없으면 아래처럼 직접 등록하세요). 직접 등록하려면 클론 폴더에서 아래 명령을 실행합니다(macOS 기준.
+플러그인을 설치했다면 이미 등록돼 있습니다(Windows에서는 먼저 `setx SIDEREUS_PYTHON py`를 실행하세요. [5장](docs/GETTING-STARTED.ko.md#5-mcp-와-훅) 참고). 직접 등록하려면 클론 폴더에서 아래 명령을 실행합니다(macOS 기준.
 Windows에서는 클론 안에서 `py -m sidereus setup-claude`를 실행해 나온 `claude mcp add` 명령을 쓰세요).
 
 ```sh
