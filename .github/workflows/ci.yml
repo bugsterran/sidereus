@@ -50,8 +50,6 @@ jobs:
   windows:
     runs-on: windows-latest
     timeout-minutes: 20
-    # Windows not yet verified; failures are reported, not blocking.
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:

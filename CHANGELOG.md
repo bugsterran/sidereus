@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Structure: «Run security check» in the security window relays a `security-checks` run request to a logged-in session of the project (preview + confirm), or shows the terminal command (`python3` / Windows `py`) to copy when there is none; the window refreshes when the new scan lands.
 - `setup-claude --write` shows the `claude mcp add` command and a `settings.json` diff, asks, then backs up, merges the hooks idempotently (none when the plugin is installed) and registers the MCP server; `--yes` for scripts.
-- CI: a non-blocking `windows-latest` job (Python 3.9 and 3.12) runs the same gates and unit tests plus a `start --demo` smoke test.
+- CI: a required `windows-latest` job (Python 3.9 and 3.12) runs the same gates and unit tests plus a `start --demo` smoke test.
 - Docs: [REVIEW-PIPELINES](docs/REVIEW-PIPELINES.md) summarises what Anthropic, OpenAI, Google, Meta, Cursor and GitHub published on AI code review, maps it to pipeline fields, and ships review templates for Claude Code, Codex CLI and Gemini CLI (`docs/examples/pipelines/`; Codex and Gemini untested).
 
 ### Fixed
