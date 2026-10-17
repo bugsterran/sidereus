@@ -102,7 +102,7 @@ function archDmBody(name, repo, home, verb){   // verb = archReqOf(d).vb (wire t
     + '대상 저장소: ' + repo + '\n'
     + '읽기 전용, 저장소에 쓰지 않음 — 쓰기는 ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ 아래만 (key: 파이프라인 rules)\n'
     + '파이프라인: ' + h + '.claude/pipelines/' + name + '.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n'
-    + '게이트: /usr/bin/python3 ' + h + 'scripts/arch_verify.py --last';
+    + '게이트: python3 ' + h + 'scripts/arch_verify.py --last (Windows: py ' + h + 'scripts/arch_verify.py --last)';   // ⚠page has no server-OS signal: both forms
 }
 // Sidereus repo: the server's `sidereus` field, else the project whose pipeline list holds arch-map (48 PLS, if loaded).
 function archHome(d){

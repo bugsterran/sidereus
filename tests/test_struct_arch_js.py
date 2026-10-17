@@ -329,7 +329,8 @@ class StructArch(unittest.TestCase):
         self.assertIn("/repo/x", r)
         self.assertIn("읽기 전용, 저장소에 쓰지 않음", r)
         self.assertIn("/sidereus/.claude/pipelines/arch-map.json", r)   # absolute: the recipient may sit in another repo
-        self.assertIn("/usr/bin/python3 /sidereus/scripts/arch_verify.py --last", r)
+        self.assertNotIn("/usr/bin/python3", r)   # absent on Windows
+        self.assertIn("게이트: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last)", r)
         self.assertIn("/arch/<key>/<commit>/", r)
 
     def test_no_send_without_confirm(self):

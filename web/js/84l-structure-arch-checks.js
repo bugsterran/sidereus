@@ -100,7 +100,7 @@ function archChkRunBody(p, home){
   return '파이프라인 ' + ARCH_SEC_PL + ' 실행 — 요청: «' + p + ' 보안 점검»\n'
     + 'Target repository: ' + p + '\n'
     + 'Pipeline: ' + h + '.claude/pipelines/' + ARCH_SEC_PL + '.json (scanners → threat-model review); run it from ' + (h || 'the Sidereus repository') + ' with --repo ' + p + '\n'
-    + 'Gate: /usr/bin/python3 ' + h + 'scripts/arch_checks.py --verify --last --category security';
+    + 'Gate: python3 ' + h + 'scripts/arch_checks.py --verify --last --category security (Windows: py ' + h + 'scripts/arch_checks.py --verify --last --category security)';
 }
 // Pure: terminal commands {sh, win} for the no-session fallback; null when home is unknown or a path could break the quoting (⚠cmd expands %VAR% / !VAR! even inside quotes).
 function archChkRunCmds(p, home){
