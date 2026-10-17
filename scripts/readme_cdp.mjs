@@ -51,9 +51,11 @@ export function sandbox(prefix) {
     const watchdog = 'import os,sys,threading,runpy\n'
       + 'threading.Thread(target=lambda: (sys.stdin.buffer.read(), os._exit(0)), daemon=True).start()\n'
       + 'sys.argv = sys.argv[1:]\nrunpy.run_path(sys.argv[0], run_name="__main__")\n';
+    // ⚠CLAUDE_CONFIG_DIR (set when run from a Claude Code session) would point the demo at the real Claude root.
+    const env = { ...process.env, HOME: home, MAILBOX_DIR: path.join(home, 'data') };
+    delete env.CLAUDE_CONFIG_DIR;
     const p = spawn(PY, ['-c', watchdog, path.join(ROOT, 'chat_server.py'), '--demo', '--no-open', '--port', String(port)], {
-      cwd: ROOT, detached: true, stdio: ['pipe', 'ignore', 'pipe'],
-      env: { ...process.env, HOME: home, MAILBOX_DIR: path.join(home, 'data') },
+      cwd: ROOT, detached: true, stdio: ['pipe', 'ignore', 'pipe'], env,
     });
     procs.push(p);
     let err = '';

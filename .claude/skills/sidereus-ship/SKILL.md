@@ -21,9 +21,12 @@ Tag each Bash description with `[pl:<pipeline>/<stage>]` when running inside a p
 4. **Live screen check** — the rendered page at 900 / 1100 / 1440 widths, console errors 0.
    Headless playwright on `http://127.0.0.1:8799/?nosave=1` is fine (⚠always `?nosave=1`: MCP browsers report `navigator.webdriver=false`, so without it a click writes the owner's prefs). ⚠Never open a new browser for the user (their tab is open; just ask them to refresh).
    ⚠API responses are not proof — the API has been right while the screen was wrong more than once.
-5. **Backup** — `bash backup.sh` (keeps the last 10).
-6. **CHANGELOG** — for a user-visible change, add one line under `CHANGELOG.md` `[Unreleased]` (Added / Changed / Fixed), in the same commit.
-7. **Commit** — the pre-commit hook runs `scripts/check.sh --fast` (install: `bash scripts/install-hooks.sh`).
+5. **README images** — if the change touched `web/` and a screen shown in `docs/images/` looks different, regenerate with
+   `node scripts/readme_shots.mjs` / `node scripts/readme_gif.mjs` (en + ko, demo world) and commit only images whose pixels changed.
+   ⚠Never capture images by hand — a shot with no generator goes stale silently after the next UI change.
+6. **Backup** — `bash backup.sh` (keeps the last 10).
+7. **CHANGELOG** — for a user-visible change, add one line under `CHANGELOG.md` `[Unreleased]` (Added / Changed / Fixed), in the same commit.
+8. **Commit** — the pre-commit hook runs `scripts/check.sh --fast` (install: `bash scripts/install-hooks.sh`).
    Message ends with the attribution lines given by the session. Local git only — no remote, no push.
    The body (before the attribution lines) ends with the criteria block from the `requirements` skill:
    ```
