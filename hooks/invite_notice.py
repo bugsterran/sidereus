@@ -112,7 +112,10 @@ def whoami(cwd):
         while p and p != "/":
             if p in ident:
                 return ident[p], "parent"
-            p = os.path.dirname(p)
+            up = os.path.dirname(p)
+            if up == p:   # ⚠a Windows drive root (C:\\) is its own dirname and never equals "/": stop here
+                break
+            p = up
     env = (os.environ.get("MAILBOX_ME") or "").strip()
     if env:
         return env, "env"

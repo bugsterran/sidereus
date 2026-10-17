@@ -64,7 +64,10 @@ def whoami(cwd):
     while p and p != "/":
         if p in ident:
             return ident[p]
-        p = os.path.dirname(p)
+        up = os.path.dirname(p)
+        if up == p:   # ⚠a Windows drive root (C:\\) is its own dirname and never equals "/": stop here
+            break
+        p = up
     return ident.get("default") or ""
 
 
