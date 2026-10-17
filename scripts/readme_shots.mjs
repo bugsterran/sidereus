@@ -42,7 +42,7 @@ async function timeTab(P) {
 }
 const SHOTS = [
   // tlnmW: the default name column (~290px at 1200px) truncates the row chips; the page clamps it to half the Gantt column.
-  // The Gantt is full width; the toolbar «Changes» chip carries the file count once the rail reply lands.
+  // The Gantt is full width; the toolbar «Changes» chip carries the file count once the diff summary reply lands.
   { name: 'timeline', prefs: { 'sidereus.tlnmW': '400' }, async run(P) {
     await timeTab(P);
     await P.wait(`/\\d/.test((document.getElementById('tlgcp') || {}).textContent || '')`, 'changes chip count');

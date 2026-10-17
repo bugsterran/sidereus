@@ -28,6 +28,8 @@ HINTS = {
              "checkstyle + pmd releases (GitHub download)"),
     "ruff": ("brew install ruff", "pip install ruff", "pip install ruff"),
     "go": ("brew install go", "winget install GoLang.Go", "go.dev/dl (or the package manager)"),
+    "bandit": ("brew install bandit", "pip install bandit", "pip install bandit"),
+    "npm": ("brew install node", "winget install OpenJS.NodeJS.LTS", "nodejs.org"),
 }
 
 
@@ -35,6 +37,11 @@ def install_hint(tool):
     """«install: …» for the OS this runs on (read at call time so tests can patch os.name / sys.platform)."""
     mac, win, lin = HINTS[tool]
     return "install: " + (win if os.name == "nt" else mac if sys.platform == "darwin" else lin)
+
+
+def install_cmd(tool):
+    """This OS's HINTS entry without its trailing « (…)» note: a copyable command (or a URL) for Settings «Security tools»."""
+    return re.sub(r" \([^()]*\)$", "", install_hint(tool)[len("install: "):])
 
 SEC_IDS = ("gitleaks", "npm-audit", "osv-scanner", "semgrep", "bandit")
 SEC_FILE = "checks-security.json"

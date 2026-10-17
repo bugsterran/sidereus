@@ -250,6 +250,7 @@ function cfgActs(){
     wks:  v => { wkSideSet(v === '1'); buildWku(); if(mainView === 'token') paintToken(); },
     term: v => termSet(v),   // 88d-term.js
     dxr:  () => dxLoad(true),   // «Diagnostics» Refresh (90e-diag.js)
+    dxcp: v => dxCopy(v),      // «Security tools» Copy: clipboard only (90e-diag.js)
     burn: v => { BURN_OPEN = (v === '1'); lsSet('sidereus.burn', BURN_OPEN?'1':'0'); buildBurn(); },
     uo:   v => { if((v === '1') !== unreadOnly){ const t = document.getElementById('aunread'); if(t) t.click(); } },
     ap:   v => { APOL.preset = v; if(v !== 'custom') APOL.kinds = Object.assign({}, APOL_PRESET[v]); apolSave(); buildAlarm(); },

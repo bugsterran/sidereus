@@ -1,11 +1,14 @@
 // Settings «Diagnostics»: read-only view of GET /api/diag (hook overlaps, rule-file shadowing, silently-off hooks, plugins).
 // ⚠Read-only by design: the only control is «Refresh». Every value is tool/config text: esc(), never T().
 let DX = null, DX_LD = false;   // last /api/diag reply ({ok, ...} or {err}) · request in flight
+let DXT = null, DXCP = null;     // last /api/sec-tools reply ({ok, tools} or {err}) · last «Copy» result {id, ok}
+const dxGet = async u => { try{ const r = await getJSON(u); return r && r.ok ? r : { err: String((r && (r.error || r.err)) || '?') }; }
+  catch(e){ return { err: String((e && e.message) || e) }; } };
 async function dxLoad(force){
   if(DX_LD || (DX && !force)) return;
-  DX_LD = true;
-  try{ const r = await getJSON('/api/diag'); DX = r && r.ok ? r : { err: String((r && (r.error || r.err)) || '?') }; }
-  catch(e){ DX = { err: String((e && e.message) || e) }; }
+  DX_LD = true; DXCP = null;
+  const rs = await Promise.all([dxGet('/api/diag'), dxGet('/api/sec-tools')]);
+  DX = rs[0]; DXT = rs[1];
   DX_LD = false;
   if(typeof paintCfg === 'function') paintCfg();
 }
@@ -49,11 +52,45 @@ function dxPlugins(d){
     + (x.known && x.checked ? ' <span class=dxok>' + esc(T('checked')) + '</span>' : '')
     + '<small>' + esc((Array.isArray(x.accts) ? x.accts : []).join(', ')) + '</small></li>').join('') + '</ul>';
 }
+// «what it catches» per scanner: same text as the SECURITY.md «Security tools» table (tests/test_sec_tools.py checks it).
+const SEC_CATCH = {
+  'gitleaks': 'Secrets committed to the repo (API keys, tokens, passwords)',
+  'semgrep': 'Risky code patterns such as injection or unsafe calls, in many languages',
+  'bandit': 'Common security issues in Python code',
+  'osv-scanner': 'Known vulnerabilities in dependencies, read from lockfiles',
+  'npm': 'Known vulnerabilities in npm packages (npm audit)',
+};
+const dxOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+// Pure: «Security tools» — installed + version, or this OS's install command with «Copy». Nothing is run or sent.
+// ⚠Copy only for a real command (brew/winget/pip/go/scoop); a URL hint stays plain text. Server values: esc(), never T().
+function dxSecTools(rows){
+  const L = dxArr(rows);
+  if(!L.length) return dxEmpty(T('Could not load'));
+  const net = {'yes': T('needs network'), 'registry': T('network for registry rules')};
+  return '<ul class=dxt>' + L.map(x => {
+    const id = String(x.id || ''), cmd = x.cmd ? String(x.cmd) : '', ok = x.installed === true;
+    const st = ok ? '<span class=dxok>' + esc(T('Installed')) + (x.version ? ' · ' + esc(x.version) : '') + '</span>' : '<span class=dxmiss>' + esc(T('Not installed')) + '</span>';
+    const nt = dxOwn(net, String(x.net)) ? ' <span class=dxnote>' + esc(net[String(x.net)]) + '</span>' : '';
+    const how = ok || !cmd ? '' : '<div class=dxin><code>' + esc(cmd) + '</code>'
+      + (/^(brew|winget|pip|go|scoop) /.test(cmd) ? cfgOpt('dxcp', id, T('Copy'))
+        + (DXCP && DXCP.id === id ? '<span class=dxnote>' + esc(T(DXCP.ok ? 'Copied' : 'Copy failed')) + '</span>' : '') : '') + '</div>';
+    return '<li' + (ok ? '' : ' class=dxw') + '><b>' + esc(id) + '</b>' + st + nt
+      + '<small>' + (dxOwn(SEC_CATCH, id) ? esc(T(SEC_CATCH[id])) : '') + '</small>' + how + '</li>';
+  }).join('') + '</ul>';
+}
+// «Copy»: clipboard only (copyText, 40b-sessions-list.js) — no POST, no mailbox.
+function dxCopy(id){
+  const x = dxArr(DXT && DXT.tools).find(r => String(r.id) === id);
+  if(!x || !x.cmd) return;
+  return copyText(String(x.cmd)).then(ok => { DXCP = {id, ok: !!ok}; paintCfg(); });
+}
 function cfgPaneDx(){
   if(!DX && !DX_LD) dxLoad();   // first paint of the category only; never at load time
   const top = '<div class="cfgrc dxtop">' + cfgOpt('dxr', '1', T('Refresh'), DX_LD) + '</div>';
   if(!DX) return top + dxEmpty(T('Loading…'));
   if(DX.err) return top + '<div class="cfgpd err">' + esc(T('Could not load')) + ': ' + esc(DX.err) + '</div>';
   return top + dxSec(T('Hooks on the same event'), '', dxOverlaps(DX)) + dxSec(T('Rule files'), '', dxShadow(DX))
-    + dxSec(T('Silently off'), T('static estimate'), dxSilent(DX)) + dxSec(T('Plugins'), '', dxPlugins(DX));
+    + dxSec(T('Silently off'), T('static estimate'), dxSilent(DX)) + dxSec(T('Plugins'), '', dxPlugins(DX))
+    + dxSec(T('Security tools'), T('found on PATH; nothing is run'), DXT && DXT.err
+      ? '<div class="cfgpd err">' + esc(T('Could not load')) + ': ' + esc(DXT.err) + '</div>' : dxSecTools(DXT && DXT.tools));
 }

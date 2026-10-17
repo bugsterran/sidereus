@@ -208,7 +208,7 @@ Settings › «Preferences»: start tab, tab order and hiding, language, OS noti
 - Settings › «Saver mode»: the «Mode» bar has «Auto · Target time · On 1-4 · Off». «Target time» shows an HH:MM box and «Apply».
   «What each level does» (folded) lists each level's concurrency cap and added rules, current level highlighted; shown only when the saver hook sends the table.
 - «Moon mark» (Preferences, browser-side `mbMoonReal`): «Hourly cycle» (default) runs the sidebar mark through a full lunation every hour; «Real phase» shows today's moon. The tooltip always shows the real moon.
-- Settings › «Diagnostics» (read-only, only «Refresh»): other hooks on the same events as Sidereus, a CLAUDE.md that shadows AGENTS.md, hooks that look silently off (static estimate) and installed plugins with versions and accounts. Hidden when the `diag` feature is off.
+- Settings › «Diagnostics» (read-only, only «Refresh»): other hooks on the same events as Sidereus, a CLAUDE.md that shadows AGENTS.md, hooks that look silently off (static estimate) and installed plugins with versions and accounts. «Security tools» lists the scanners the security checks use (installed + version, or the install command with «Copy»; nothing is run). Hidden when the `diag` feature is off.
 
 Keys: [README «Customising»](../README.md#customising), [CONFIG.md](CONFIG.md).
 

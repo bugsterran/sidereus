@@ -18,3 +18,13 @@ html[data-ui=next][data-ui] #cfgbox .dxl code,html[data-ui=next][data-ui] #cfgbo
 html[data-ui=next][data-ui] #cfgbox .dxl small{margin-left:auto;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--nx-t2)}
 html[data-ui=next][data-ui] #cfgbox .dxsrc,html[data-ui=next][data-ui] #cfgbox .dxok{flex:0 0 auto;font-size:11px;color:var(--nx-t3);border:1px solid var(--nx-rule);border-radius:3px;padding:0 5px}
 html[data-ui=next][data-ui] #cfgbox .dxok{color:var(--nx-info);border-color:var(--nx-info)}
+/* «Security tools» (dxSecTools): the «what it catches» line always takes its own line — a shared line wrapped differently per row; the install command wraps inside <code> so 900px never scrolls sideways. */
+html[data-ui=next][data-ui] #cfgbox .dxt{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+html[data-ui=next][data-ui] #cfgbox .dxt > li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;min-width:0;font-size:12.5px;color:var(--nx-t1);
+  padding:4px 0 4px 8px;border-left:2px solid var(--nx-rule)}
+html[data-ui=next][data-ui] #cfgbox .dxt > li.dxw{border-left-color:var(--nx-warn)}
+html[data-ui=next][data-ui] #cfgbox .dxt b{font-weight:500;white-space:nowrap}
+html[data-ui=next][data-ui] #cfgbox .dxt small{flex:1 1 100%;min-width:0;font-size:11.5px;color:var(--nx-t2)}
+html[data-ui=next][data-ui] #cfgbox .dxmiss{flex:0 0 auto;font-size:11px;color:var(--nx-warn);border:1px solid var(--nx-warn);border-radius:3px;padding:0 5px}
+html[data-ui=next][data-ui] #cfgbox .dxin{flex:1 1 100%;display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0}
+html[data-ui=next][data-ui] #cfgbox .dxin code{min-width:0;font-size:11.5px;white-space:pre-wrap;overflow-wrap:anywhere}

@@ -40,6 +40,18 @@ Sidereus is a local monitor plus a control relay. Everything it does, and how to
 
 Settings go in `config.local.json` ([docs/CONFIG.md](docs/CONFIG.md)); restart the viewer afterwards.
 
+## Security tools
+
+`scripts/arch_checks.py --category security` uses these scanners when they are installed. Settings > Diagnostics > «Security tools» shows which ones are found on `PATH` and their version, read from the install's files; Sidereus never runs or installs them. «Copy» only puts the command on the clipboard.
+
+| Tool | What it catches | Install (macOS · Windows) | Needs network? |
+|---|---|---|---|
+| `gitleaks` | Secrets committed to the repo (API keys, tokens, passwords) | `brew install gitleaks` · `winget install Gitleaks.Gitleaks` | no |
+| `semgrep` | Risky code patterns such as injection or unsafe calls, in many languages | `brew install semgrep` · `pip install semgrep` | only for registry rules (no local `.semgrep.yml`) |
+| `bandit` | Common security issues in Python code | `brew install bandit` · `pip install bandit` | no |
+| `osv-scanner` | Known vulnerabilities in dependencies, read from lockfiles | `brew install osv-scanner` · `winget install Google.OSVScanner` | yes |
+| `npm` | Known vulnerabilities in npm packages (npm audit) | `brew install node` · `winget install OpenJS.NodeJS.LTS` | yes |
+
 ## Reporting a problem
 
 Please report privately through GitHub private vulnerability reporting (the repo's Security tab → "Report a vulnerability") rather than in a public issue. Include what you ran, what you saw,

@@ -4,6 +4,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Security and privacy
 
+- ★**«Security tools» must find a tool installed after the viewer started, without running it** (2026-10-17, `sidereus/sec_tools.py`). launchd's PATH is `/usr/bin:/bin:/usr/sbin:/sbin`, and `ident.bin_path` caches a miss forever. ⇒ `_which` = `shutil.which(name, path=ident.rich_env()["PATH"])`, no cache; version from `os.path.realpath` layout only (Cellar segment, npm package.json, dist-info).
+  - ⚠Never `--version` the tool (rule 7) and never use `bin_path` here. ⚠Brew's `bin/npm` resolves to `npm/bin/npm-cli.js`, not a Cellar path — check both the link dir and the realpath dir.
 - ★**Work popup was readable by another OS user on a shared Mac** (2026-10-16). Loopback alone does not tell users apart. ⇒ `sidereus/peer.py`: on macOS the `/work` APIs need `lsof` to find the client end held by a process of the viewer's UID; non-root `lsof` cannot see other users' sockets, so «no same-UID client end found» also covers the other-user case.
   - ⚠Filter on the client end (`<cport>-><viewer port>`), not the viewer's accepted socket — that one is always the viewer's own UID.
   - ⚠Cache allows only (5 s per client port); never cache a refusal.

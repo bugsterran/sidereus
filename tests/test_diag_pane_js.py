@@ -21,6 +21,12 @@ DATA = {"ok": True,
         "plugins": [{"name": "sp", "market": "m", "version": "1.2", "accts": ["main", "work"], "on": True, "known": True, "checked": True},
                     {"name": "raw", "market": "m", "version": "0.1", "accts": ["main"], "on": True, "known": False, "checked": True}],
         "shadow": [{"proj": "/r/<p>", "claude": "/r/<p>/CLAUDE.md", "agents": "/r/<p>/AGENTS.md"}]}
+TOOLS = {"ok": True, "tools": [
+    {"id": "gitleaks", "installed": True, "version": "8.18.0<i>", "cmd": None, "net": "no"},
+    {"id": "semgrep", "installed": True, "version": None, "cmd": None, "net": "registry"},
+    {"id": "bandit", "installed": False, "version": None, "cmd": "pip install <bandit>", "net": "no"},
+    {"id": "osv-scanner", "installed": False, "version": None, "cmd": "brew install osv-scanner", "net": "yes"},
+    {"id": "npm", "installed": False, "version": None, "cmd": "nodejs.org", "net": "yes"}]}
 
 SRC = i18n_prelude("'ko'", ("T",)) + r"""
 const fs = require('fs'), vm = require('vm'), path = require('path');
@@ -30,7 +36,7 @@ const c = {T, softErr: () => {}, tabGet: (k, d) => d, lsGet: (k, d) => d, lsSet:
   matchMedia: () => ({matches: false, addEventListener: () => {}}),
   document: {documentElement: {dataset: {}, style: {setProperty(){}, removeProperty(){}}}, getElementById: () => null, querySelector: () => null},
   GETS: [], LANG: 'ko'};
-c.getJSON = async u => { c.GETS.push(u); return DATA; };
+c.getJSON = async u => { c.GETS.push(u); return u === '/api/sec-tools' ? TOOLS : DATA; };
 vm.createContext(c);
 vm.runInContext(js('90-settings.js') + '\n' + js('90e-diag.js'), c);
 (async () => {
@@ -40,6 +46,8 @@ vm.runInContext(js('90-settings.js') + '\n' + js('90e-diag.js'), c);
   R.gets = c.GETS.slice();
   R.pane = vm.runInContext('cfgPaneDx()', c);
   R.gets2 = c.GETS.length;
+  R.sec = vm.runInContext('dxSecTools(DXT.tools)', c);
+  R.secErr = vm.runInContext("DXT = {err: '<t>'}; cfgPaneDx()", c);
   R.empty = vm.runInContext('DX = {ok: true}; cfgPaneDx()', c);
   R.err = vm.runInContext("DX = {err: '<boom>'}; cfgPaneDx()", c);
   const box = {querySelector: () => null, contains: () => false}, m = {hidden: false};
@@ -53,7 +61,7 @@ vm.runInContext(js('90-settings.js') + '\n' + js('90e-diag.js'), c);
 
 
 def run():
-    js = "const ROOT = " + json.dumps(ROOT) + ", DATA = " + json.dumps(DATA) + ";\n" + SRC
+    js = "const ROOT = " + json.dumps(ROOT) + ", DATA = " + json.dumps(DATA) + ", TOOLS = " + json.dumps(TOOLS) + ";\n" + SRC
     r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
     if r.returncode != 0:
         raise AssertionError(r.stderr.decode())
@@ -68,8 +76,8 @@ class DiagPane(unittest.TestCase):
 
     def test_fetch_on_first_paint_only(self):
         self.assertIn("불러오는 중", self.r["loading"])
-        self.assertEqual(self.r["gets"], ["/api/diag"])
-        self.assertEqual(self.r["gets2"], 1)                      # repaint does not refetch
+        self.assertEqual(self.r["gets"], ["/api/diag", "/api/sec-tools"])
+        self.assertEqual(self.r["gets2"], 2)                      # repaint does not refetch
 
     def test_sections_r1_r4(self):
         h = self.r["pane"]
@@ -90,14 +98,30 @@ class DiagPane(unittest.TestCase):
     def test_read_only_and_escaped(self):
         h = self.r["pane"]
         btns = re.findall(r"<button[^>]*>", h)
-        self.assertEqual(len(btns), 1)
+        self.assertEqual(len(btns), 3)                            # «Refresh» + «Copy» on the two missing rows with a command
         self.assertIn("data-dxr", btns[0])
+        self.assertTrue(all("data-dxcp" in b for b in btns[1:]))
         self.assertIn(">갱신<", h)                              # shared ko entry (05-i18n.js)
         self.assertNotIn("<evil>", h)
         self.assertIn("&lt;evil&gt;", h)
         self.assertNotIn("<x>", h)
         self.assertIn("&lt;boom&gt;", self.r["err"])
         self.assertNotIn("<boom>", self.r["err"])
+
+    def test_security_tools(self):
+        h, rows = self.r["sec"], self.r["sec"].split("<li")[1:]
+        self.assertIn("보안 도구", self.r["pane"])
+        self.assertIn("설치됨 · 8.18.0&lt;i&gt;", rows[0])          # version escaped, never raw
+        self.assertNotIn("<i>", h)
+        self.assertIn("<span class=dxok>설치됨</span>", rows[1])     # installed, version null
+        self.assertIn("레지스트리 규칙에 네트워크 필요", rows[1])
+        self.assertIn("<code>pip install &lt;bandit&gt;</code>", rows[2])
+        self.assertIn('data-dxcp="bandit"', rows[2])
+        self.assertIn('data-dxcp="osv-scanner"', rows[3])
+        self.assertIn("<code>nodejs.org</code>", rows[4])            # URL hint: plain text, no Copy
+        self.assertNotIn("data-dxcp", rows[0] + rows[1] + rows[4])
+        self.assertIn("Python 코드의 흔한 보안 문제", rows[2])
+        self.assertIn("&lt;t&gt;", self.r["secErr"])
 
     def test_inline_cmd_allow_list(self):
         h = self.r["pane"]
