@@ -70,7 +70,7 @@ class ArchMinimap(unittest.TestCase):
                 "am.scrollLeft = 0; am.scrollTop = 0; archMmFirst(am, sv, F('c2')); archMmFirst(am, sv, K('c2')); o.push([am.scrollLeft, am.scrollTop]);"
                 "am.scrollLeft = 7; archMmFirst(am, sv, K('c3')); o.push([am.scrollLeft, am.scrollTop]);"
                 "console.log(JSON.stringify(o));")
-        self.assertEqual(r[0], [10, 300 - 100])                            # wide map: left edge, top under the sticky bar (Entry visible)
+        self.assertEqual(r[0], [10 + 2990 - 500, 300 - 100])               # wide, tall map: centred horizontally, top under the sticky bar (Entry visible)
         self.assertEqual(r[1], [123, 45])                                   # manual scroll kept on the next sync
         self.assertEqual(r[2], [123, 45])                                   # a click to focus never centres
         self.assertEqual(r[3], [0, 0])                                      # first seen as focus: overview later does not centre
@@ -101,3 +101,10 @@ class ArchMinimap(unittest.TestCase):
         self.assertIn("data-armm", off)
         self.assertIn('title="T[Hide minimap]" aria-label="T[Hide minimap]"', on)   # icon chip: label only in title/aria
         self.assertNotIn(">T[", on.split("<button", 1)[1])
+
+class AnchorShortMap(unittest.TestCase):
+    def test_short_map_centred_both_ways(self):
+        # 1000x700 scroller, 100px sticky top (600px visible); 400x300 map at x 1000, y 500 in 3000x2000 content.
+        r = run("const v = {cw: 1000, ch: 700, sw: 3000, sh: 2000, top: 100}, m = {x: 1000, y: 500, w: 400, h: 300};"
+                "console.log(JSON.stringify(archMmAnchor(v, m)));")
+        self.assertEqual(r, {"left": 1000 + 200 - 500, "top": 500 + 150 - 100 - 300})
