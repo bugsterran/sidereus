@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `--demo` opens on Pipelines; the real viewer still opens on Timeline unless a saved preference says otherwise.
 - Chat tab count reads «N rooms + Outside rooms» when the «Outside rooms» card is shown.
+- Pipelines: the pipeline picker is the same search combobox as the project picker and lists this project's pipelines only (⚠ invalid, • unsaved, dot = running).
+- Pipelines: a pipeline defined in another project shows only while it runs here, as a read-only chip at the end of the header row.
+- Pipelines: «Apply» always sets the mode for the selected project; the «This project only» checkbox is gone.
 
 ### Fixed
 

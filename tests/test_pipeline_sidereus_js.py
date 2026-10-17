@@ -90,13 +90,13 @@ class PipelineSidereus(unittest.TestCase):
         self.assertEqual(r[0], {"/t": ["arch-map"]})
         self.assertEqual(r[1], {"/sidereus": ["arch-map"]})   # no target run known: the home keeps the tag
 
-BFNS = ("plBorrows", "plBorrowOf", "plRO", "plBorrowLab", "plSelHtml", "plBorrowLv", "plBorrowBody", "plCur", "plOvPick")
+BFNS = ("plBorrows", "plBorrowOf", "plRO", "plBorrowLab", "plBorrowChip", "plBorrowChips", "plBorrowLv", "plBorrowBody", "plCur", "plOvPick")
 BPRE = "\n".join([
     "function strShort(p){ return p.slice(p.lastIndexOf('/') + 1); } let DIRTY = false; function plDirty(){ return DIRTY; } const LS = {}; function lsSet(k, v){ LS[k] = v; }",
     "let PLNEW = null, PAINTS = 0, SESS = [], PLVIEW = 'pipe'; function plPaint(){ PAINTS++; } function plLiveHead(lv){ return lv ? '<HEAD ' + lv.sid + '>' : ''; }",
     "function plRunTable(lv){ return lv ? '<TABLE/>' : ''; } let CVLT = null; function plCanvas(p, d, lt){ CVLT = lt; return {html: '<CV ' + p.name + '/>', ok: true}; }",
     "function plPrLive(r){ return Object.values(r.stages || {}).some(s => s.o === 'run'); }",
-    "function plPrLv(sid, pr, st){ return {sid, pr, lt: {x: pr.name}, run: {run: true}}; }",
+    "function plPrLv(sid, pr, st){ return {sid, pr, lt: {x: pr.name}, run: {run: plPrLive(pr)}}; }",
 ])
 BOR = {"name": "arch-map", "ok": True, "title": "Map", "from": "/sidereus", "builtin": True, "sha": "1",
        "stages": [{"title": "읽기 계획"}, {"title": "모듈 그리기"}, {"title": "검증"}]}
@@ -139,14 +139,25 @@ class PipelineBorrow(unittest.TestCase):
         self.assertIn("if(!E || !e.dataTransfer || plRO()) return;", src)  # palette drop
         self.assertIn("if(pan && plRO()) return;", src)                    # panel change
 
-    def test_labels_builtin_vs_other(self):
-        r = brun("const d = {ok: true, borrowed: [" + json.dumps(BOR) + ", {name: 'deploy', from: '/w/app', ok: true}]};"
-                 "console.log(JSON.stringify(plSelHtml([], null, ['deploy'], d)));")
-        self.assertIn("arch-map · Sidereus 내장", r)
-        self.assertIn("deploy · app에서", r)
-        self.assertIn('<option value="deploy"', r)   # borrowed rows are options of the pipeline select (optgroup)
-        self.assertIn("<optgroup", r)
-        self.assertEqual(r.count("실행 중"), 1)
+    def test_chips_live_borrowed_only(self):
+        # Borrowed pipelines leave the combobox; one head-row chip per borrowed pipeline RUNNING here, none for an ended run.
+        d = {"ok": True, "pipelines": [], "borrowed": [BOR, {"name": "deploy", "from": "/w/app", "ok": True}, {"name": "old", "from": "/w/app", "ok": True}]}
+        r = brun("PLS.data['/t'] = " + json.dumps(d) + "; PLS.proj = '/t'; ARCHRUN = {'/t': " + json.dumps(RUN) + "};"
+                 "SESS = [{sid: 'x', cwd: '/t', plrun: [{name: 'deploy', proj: '/w/app', t1: 5, stages: {a: {o: 'run'}}},"
+                 "  {name: 'old', proj: '/w/app', t1: 9, stages: {a: {o: 'done'}}}]}];"
+                 "const a = plBorrowChips(PLS.data['/t']); PLS.sel = 'deploy'; const b = plBorrowChips(PLS.data['/t']);"
+                 "ARCHRUN = {}; SESS = []; const c = plBorrowChips(PLS.data['/t']);"
+                 "console.log(JSON.stringify([a, b, c]));")
+        a, b, c = r
+        self.assertEqual(a.count("data-plbor="), 2)
+        self.assertIn('data-plbor="arch-map"', a)
+        self.assertIn("arch-map · Sidereus 내장", a)
+        self.assertIn("deploy · app에서", a)
+        self.assertIn("mvdot", a)
+        self.assertNotIn('data-plbor="old"', a)                    # listed by the server, run ended: no chip
+        self.assertNotIn(" on", a)
+        self.assertIn('plbor on" data-plbor="deploy"', b)          # selected chip is on
+        self.assertEqual(c, "")                                    # no live run: no chip
 
     def test_plrun_lighting_from_session_in_project(self):
         r = brun("SESS = [{sid: 'x', cwd: '/t', plrun: [{name: 'deploy', proj: '/w/app', t1: 5, stages: {}}]},"

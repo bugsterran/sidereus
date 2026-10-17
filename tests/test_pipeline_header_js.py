@@ -1,5 +1,5 @@
-"""«Pipelines» head row (48 plChips/plSelHtml/plMainBody, 48e plNewBtn, 08b ppComboHtml): project combobox · pipeline
-select · «+ New ▾» menu on one row above «Apply». Pure functions and listeners under node with stubs; no live files."""
+"""«Pipelines» head row (48 plChips/plPickHtml/plMainBody, 48e plNewBtn, 08b ppComboHtml): project combobox · pipeline
+combobox · «+ New ▾» menu on one row above «Apply». Pure functions and listeners under node with stubs; no live files."""
 import json
 import os
 import re
@@ -78,24 +78,31 @@ class PipelineHeader(unittest.TestCase):
         # paintPipe loads the picked project's list (plLoad(PLS.proj)), as the chip click did
         self.assertIn("if(PLS.projs) plLoad(PLS.proj, false);", js_fn("paintPipe"))
 
-    def test_R2_one_option_per_pipeline_selected(self):
-        r = run("let DIRTY = {b: 1}; function plDirty(n){ return !!DIRTY[n]; }\n"
-                "function plBorrows(d){ return d.borrowed || []; } function plBorrowLab(b){ return b.name + ' · from x'; }\n"
-                + js_fn("plSelHtml") + "\n"
-                "const ps = [{name: 'a', ok: true, title: 'A t'}, {name: 'b', ok: true}, {name: 'c', ok: false}], d = {borrowed: [{name: 'arch-map', from: '/s'}]};"
-                "console.log(JSON.stringify([plSelHtml(ps, ps[1], ['b'], d), plSelHtml(ps, null, [], {}), plSelHtml([], null, [], {})]));")
-        a, b, c = r
-        self.assertEqual(a.count("<option value="), 4)          # 3 own + 1 borrowed
-        self.assertEqual(a.count(" selected"), 1)
-        self.assertIn('<option value="b" selected', a)
-        self.assertIn("b • · running", a)                       # dirty + running in the option text
-        self.assertIn('title="A t"', a)
-        self.assertLess(a.index('value="c"'), a.index("<optgroup"))   # own first, then borrowed
-        self.assertIn("data-plsel", a)
-        self.assertIn('<option value="" selected>—</option>', b)   # nothing open: placeholder row
+    def test_R2_pipeline_combobox_own_only(self):
+        r = run("let DIRTY = {b: 1}; function plDirty(n){ return !!DIRTY[n]; } function plLiveDot(){ return '<i class=mvdot></i>'; } function plSelPick(){}\n"
+                + js_fn("ppComboHtml") + "\n" + js_fn("ppFilter") + "\n" + js_fn("plPickHtml") + "\n" + js_fn("plComboHtml") + "\n"
+                "const ps = [{name: 'a', ok: true, title: 'A t'}, {name: 'b', ok: true}, {name: 'c', ok: false}];"
+                "const a = plPickHtml(ps, ps[1], ['b']), cb = PPC.plsel; const b = plPickHtml(ps, null, []);"
+                "PPS = {i: 0, q: '', cfg: PPC.plsel};"
+                "console.log(JSON.stringify([a, b, plPickHtml([], null, []), cb.flat('').map(e => cb.rowHtml(e, ps.indexOf(ps.find(x => x.name === e.p)))),"
+                "  cb.flat('C').map(e => e.p), cb.rkey || null, cb.none, cb.ph]));")
+        a, b, c, rows, flt, rkey, none, ph = r
+        self.assertIn('data-ppk="plsel"', a)
+        self.assertIn("ppbtn ppcombo", a)                        # same class as the project combobox
+        self.assertNotIn("<select", a)
+        self.assertNotIn("<option", a)
+        self.assertIn("<span class=ppcn>b</span> •<i class=mvdot></i> ▾", a)   # dirty + live dot, no running text
+        self.assertNotIn("running", a)
+        self.assertIn("<span class=ppcn>—</span>", b)             # nothing open: «—»
         self.assertEqual(c, "")
+        self.assertEqual(len(rows), 3)                            # own pipelines only
+        self.assertIn('<span class=cmdkp>c ⚠</span>', rows[2])
+        self.assertIn('title="A t"', rows[0])
+        self.assertIn('<span class=cmdkp>b •</span><i class=mvdot></i>', rows[1])
+        self.assertEqual(flt, ["c"])
+        self.assertEqual((rkey, none, ph), (None, "—", "Find a pipeline"))
 
-    def test_R2_change_opens_pipeline(self):
+    def test_R2_pick_opens_pipeline(self):
         r = run("let PLS = {sel: '', std: 'x', wf: {}, diff: 1, del: 1, msg: 'm', sugI: 0}, PAINT = 0, AG = null;"
                 "function plPaint(){ PAINT++; } function plAgSet(v){ AG = v; }\n" + js_fn("plSelPick") + "\n"
                 "plSelPick('b'); const a = Object.assign({}, PLS, {AG, PAINT}); plSelPick('sug:1'); plSelPick('');"
@@ -103,8 +110,10 @@ class PipelineHeader(unittest.TestCase):
         a, sug, n = r
         self.assertEqual({k: a[k] for k in ("sel", "std", "wf", "diff", "del", "msg", "AG", "PAINT")},
                          {"sel": "b", "std": "", "wf": None, "diff": None, "del": None, "msg": "", "AG": False, "PAINT": 1})
-        self.assertEqual((sug, n), (1, 2))                       # empty value («—») does nothing
-        self.assertIn("el.matches('.plw select[data-plsel]')", _src("48-pipeline.js"))
+        self.assertEqual((sug, n), (1, 2))                       # empty value does nothing
+        src = _src("48-pipeline.js") + _src("48e-pipeline-new.js") + _src("74c-timeline-plrun.js")
+        self.assertNotIn("data-plsel", src)                      # no native select left in the head row
+        self.assertNotIn("select[data-plsel]", src)
 
     MENU = """
 let PLNEW = null, PLDRAFT = null, PLSTD = false, PAINT = 0, FOC = [], L = [];
@@ -159,12 +168,12 @@ console.log(JSON.stringify([item, esc_, out]));""")
         stubs = ("let PLS = {proj: '/p', sel: 'a', data: {'/p': {ok: true, pipelines: [{name: 'a', ok: false, errs: ['x']}]}}, std: '', wf: null, msg: '', saving: false, del: null};"
                  "const SESS = []; function plCur(){ return PLS.data['/p'].pipelines[0]; } function plLiveProjs(){ return {}; } function plMem(){} function plKnown(){}"
                  "function plBorrowOf(){ return null; } function wfBtns(){ return '<WF/>'; } function plNewBtn(){ return '<NEW/>'; } function plNewForm(){ return ''; }"
-                 "function plDelPrev(){ return ''; } function plSelHtml(){ return '<select data-plsel></select>'; }\n")
+                 "function plDelPrev(){ return ''; } function plPickHtml(){ return '<PICK/>'; } function plBorrowChips(){ return '<BOR/>'; }\n")
         a, b = run(stubs + js_fn("plHeadRow") + "\n" + js_fn("plBody") + "\nconst hd = {}; const a = plBody('', hd);"
                    "console.log(JSON.stringify([[a, hd.row], plBody('')]));")
         self.assertNotIn("plnames", a[0])
-        self.assertEqual(a[1], "<select data-plsel></select><NEW/><WF/>")
-        self.assertTrue(b.startswith("<div class=plnames><select data-plsel>"), b)
+        self.assertEqual(a[1], "<PICK/><NEW/><WF/><BOR/>")      # borrowed run chips after the Workflow group
+        self.assertTrue(b.startswith("<div class=plnames><PICK/>"), b)
         with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as f:
             css = f.read()
         self.assertRegex(css, r"\.pltop\{display:flex;[^}]*align-items:center")

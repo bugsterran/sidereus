@@ -146,9 +146,10 @@ Chat tab, then «Manage» on the room list. Room cards get a checkbox, «Invite�
 The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`. A stage lights up while its agent runs.
 
 ### Pick a project
-- One row: «Project» (full name; click to search working, recent and all projects, «+ Add project» at the bottom), «Pipeline» (one entry per pipeline) and «+ New ▾».
+- One row: «Project» (full name; click to search working, recent and all projects, «+ Add project» at the bottom), «Pipeline» (same search picker, this project's pipelines only; ⚠ = file breaks the schema, • = unsaved edits, a dot = running) and «+ New ▾».
 - «+ New ▾» holds «+ New pipeline», «Import from another project», «Ask AI for a draft» and «Standard templates».
 - A folder needs one Claude session before «+ New pipeline» appears there (pipelines live in its `.claude/`).
+- «Apply» («Auto · Ask each time · Off») sets how new sessions use pipelines in this project.
 
 ### How stages light up
 - A run is tagged when the Agent description starts with `[pl:<pipeline>/<stage title>]`. Sessions are reminded to tag on their own.
@@ -160,7 +161,7 @@ The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`
 
 ### Other runs
 - Workflow-tool runs appear as a read-only «Workflow» group.
-- A pipeline defined in another project shows as «<name> · from <project>» («Sidereus built-in» for `arch-map`). It is read-only here.
+- A pipeline defined in another project appears only while it runs here: a chip «<name> · from <project>» («Sidereus built-in» for `arch-map`) at the end of the header row. Click it for the read-only canvas and run.
 
 Tags and the pipeline file: [EXTENDING.md](EXTENDING.md).
 

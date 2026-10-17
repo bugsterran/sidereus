@@ -85,7 +85,7 @@ function plStdList(){
 // Std draft view, like plSugBody; the canvas row is keyed 'std:<key>' (plCur) so it never shares an editor entry with a saved file.
 function plStdBody(d, p, hd){
   const ps = d.pipelines || [], cv = plCanvas(p, d, null);
-  return plHeadRow(hd, plSelHtml(ps, null, [], d) + plNewBtn()) + plNewForm()
+  return plHeadRow(hd, plPickHtml(ps, null, []) + plNewBtn()) + plNewForm()
     + '<div class=plsugb><b>' + esc(T('Standard template · not saved')) + '</b> <span>' + esc(T("A published standard process mapped to this project's agents — edit it after saving")) + '</span>'
     + '<button class="wkrgb" data-plstdsave' + (PLNEW ? ' disabled' : '') + '>' + esc(T('Save this draft')) + '</button></div>'
     + '<div class=plbar><b>' + esc(plgTplShow(p.title)) + '</b></div>' + cv.html;
@@ -94,8 +94,7 @@ function plStdBody(d, p, hd){
 // suggestion, unsaved. ⚠Never auto-saved or sent; «Save this suggestion» = the normal create preview + «Confirm».
 function plSugBody(d, ex, hd){   // ex = extra chips (48h Sidereus pipeline) · hd = head row sink (48 plHeadRow)
   const sg = d.suggest, i = Math.min(PLS.sugI || 0, sg.length - 1), p = sg[i], cv = plCanvas(p, d, null);
-  const sel = sg.length > 1 ? '<label class=plsell><b>' + esc(T('Pipeline')) + '</b><select data-plsel aria-label="' + esc(T('Pipeline')) + '">' + sg.map((x, k) => '<option value="sug:' + k + '"'
-    + (k === i ? ' selected' : '') + '>' + esc(T('Suggested') + ' · ' + x.title) + '</option>').join('') + '</select></label>' : '';
+  const sel = sg.length > 1 ? plComboHtml({ cur: 'sug:' + i, items: sg.map((x, k) => ({ p: 'sug:' + k, name: T('Suggested') + ' · ' + x.title })) }) : '';
   return plHeadRow(hd, sel + plNewBtn() + (ex || '')) + plNewForm()
     + '<div class=plsugb><b>' + esc(T('Suggested · not saved')) + '</b> <span>' + esc(T('Guessed from agent names — edit it after saving')) + '</span>'
     + '<button class="wkrgb" data-plsugsave' + (PLNEW ? ' disabled' : '') + '>' + esc(T('Save this suggestion')) + '</button></div>'
@@ -123,7 +122,7 @@ async function plNewSend(write){
   if(!r || !r.ok){ PLNEW.err = T('Could not create') + ' — ' + ((r && r.err) || '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLNEW.diff = ''; }
   else if(!write){ PLNEW.diff = r.diff || ''; PLNEW.replaced = r.replaced || []; }
   else { PLS.sel = r.name; PLS.std = ''; PLS.msg = T('Created') + ' · .claude/pipelines/' + r.name + '.json'; PLNEW = null; PLS.projs = null; await Promise.all([plLoadProjs(), plLoad(PLS.proj, true)]); }
-  plPaint(); plRefocus('[data-plnok]:not([disabled])', '[data-plnprev]:not([disabled])', '[data-plnf=name]', '[data-plsel]');
+  plPaint(); plRefocus('[data-plnok]:not([disabled])', '[data-plnprev]:not([disabled])', '[data-plnf=name]', '[data-ppk="plsel"]');
 }
 document.addEventListener('click', e => {
   if(!e.target.closest || !e.target.closest('.plw')) return;

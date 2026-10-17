@@ -71,12 +71,27 @@ class ApplyJs(unittest.TestCase):
         h = self._html({"ok": True, "apply": {"mode": "ask", "global": "auto", "own": "ask"}})
         self.assertIn('class="wkrgb on" data-plap="ask"', h)
         self.assertEqual(h.count('data-plap='), 3)
-        self.assertIn("data-plapown checked", h)
+        self.assertNotIn("data-plapown", h)                   # «This project only» checkbox removed
+        self.assertNotIn("checkbox", h)
         self.assertIn("새로 시작하는 세션부터 적용됩니다", h)
         h = self._html({"ok": True, "apply": {"mode": "auto", "global": "auto", "own": None}})
         self.assertIn('class="wkrgb on" data-plap="auto"', h)
         self.assertNotIn("checked", h)
         self.assertEqual(self._html({"ok": False}), "")
+
+    def test_set_always_posts_proj(self):
+        # Pipelines are per project: Apply always posts {proj, mode}, and other projects' cache stays.
+        with open(_F, encoding="utf-8") as f:
+            src = (_STUB + i18n_prelude("'ko'", ("T", "TV", "U")) + f.read()
+                   + "\nlet POSTS = [], ASKED = []; globalThis.confirm = m => { ASKED.push(m); return true; }; globalThis.alert = () => {};"
+                   "\nasync function postJSON(u, b){ POSTS.push([u, b]); return {ok: true, apply: {mode: b.mode}}; } function plPaint(){}"
+                   "\nPLS.proj = '/w/a'; PLS.data = {'/w/a': {ok: true, apply: {mode: 'auto', global: 'auto', own: null}}, '/w/b': {ok: true}};"
+                   "\nplApplySet('off').then(ok => console.log(JSON.stringify([ok, POSTS, Object.keys(PLS.data), ASKED[0]])));")
+        ok, posts, keys, asked = json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True).stdout)
+        self.assertTrue(ok)
+        self.assertEqual(posts, [["/api/pipelines/apply", {"proj": "/w/a", "mode": "off"}]])
+        self.assertEqual(keys, ["/w/a", "/w/b"])
+        self.assertIn("/w/a", asked)
 
 
 if __name__ == "__main__":
