@@ -55,6 +55,8 @@ WHY_NET = "offline (network unreachable or --offline)"
 WHY_NET_FAIL = "needs network"
 _RULE = re.compile(r"[A-Za-z0-9_./@:-]{1,60}")      # same shape as arch_checks.RULE_RE
 _GHSA = re.compile(r"GHSA(?:-[a-z0-9]{4}){3}")
+CVE_RE = re.compile(r"CVE-\d{4}-\d{4,7}")
+CVE_MAX = 3   # extra CVE aliases shown next to the rule; ⚠never part of the finding key (rule stays GHSA-first)
 _SCANNED = re.compile(r"scanned ~?(\d[\d,]*) bytes")
 _OSV_N = re.compile(r"Scanned .+? file and found (\d+) packages?")
 _LOCKS = ("package-lock.json", "yarn.lock", "pnpm-lock.yaml", "poetry.lock", "Pipfile.lock", "uv.lock", "requirements.txt",
@@ -184,7 +186,12 @@ def net_fail(plan, res):
     return bool(NET_RE.search(txt))
 
 
-def _it(f, line, rule, sev, pkg=None, url=None, desc=None):
+def cves(xs):
+    """Sorted, deduped CVE ids (capped) from an id list; anything not shaped like a CVE id is dropped."""
+    return sorted({x for x in xs if isinstance(x, str) and CVE_RE.fullmatch(x)})[:CVE_MAX]
+
+
+def _it(f, line, rule, sev, pkg=None, url=None, desc=None, cve=()):
     try:
         ln = max(0, int(line))
     except (TypeError, ValueError):
@@ -195,6 +202,9 @@ def _it(f, line, rule, sev, pkg=None, url=None, desc=None):
     x = {"file": f if isinstance(f, str) else "", "line": ln, "rule": r, "sev": sev}
     if isinstance(pkg, str) and PKG_RE.fullmatch(pkg):
         x["pkg"] = pkg
+    cv = cves(cve or ())
+    if cv:
+        x["cve"] = cv
     h = clean_help(desc, url)
     if h:
         x["help"] = h
@@ -227,21 +237,23 @@ def parse_npm_audit(text):
         raise ValueError("npm audit: not an object")
     out, seen = [], set()
 
-    def add(rule, pkg, sev, url):
+    def add(rule, pkg, sev, url, cv=()):
         if (rule, pkg) not in seen:
             seen.add((rule, pkg))
-            out.append(_it("package-lock.json", 1, rule, _sev(sev), pkg, url))
+            out.append(_it("package-lock.json", 1, rule, _sev(sev), pkg, url, None, cv))
     for name, v in (j.get("vulnerabilities") or {}).items() if isinstance(j.get("vulnerabilities"), dict) else ():
         for via in (v.get("via") or ()) if isinstance(v, dict) else ():
             if isinstance(via, dict):   # string entries name another vulnerable package (listed on its own)
                 url = via.get("url") if isinstance(via.get("url"), str) else ""
                 m = _GHSA.search(url)
-                add(m.group(0) if m else str(via.get("source")), via.get("name") or name, via.get("severity"), url)
+                add(m.group(0) if m else str(via.get("source")), via.get("name") or name, via.get("severity"), url,
+                    via.get("cves") if isinstance(via.get("cves"), list) else ())
     for a in (j.get("advisories") or {}).values() if isinstance(j.get("advisories"), dict) else ():
         if isinstance(a, dict):
             url = a.get("url") if isinstance(a.get("url"), str) else ""
             m = _GHSA.search(url + " " + str(a.get("github_advisory_id") or ""))
-            add(m.group(0) if m else str(a.get("id")), a.get("module_name"), a.get("severity"), url)
+            add(m.group(0) if m else str(a.get("id")), a.get("module_name"), a.get("severity"), url,
+                a.get("cves") if isinstance(a.get("cves"), list) else ())
     return out
 
 
@@ -269,7 +281,7 @@ def parse_osv(text):
                 except (TypeError, ValueError):
                     hi = False
                 out.append(_it(path, 1, rule, "error" if hi or _sev(sv) == "error" else "warning", name,
-                               "https://osv.dev/vulnerability/" + v["id"] if _RULE.fullmatch(v["id"]) else None))
+                               "https://osv.dev/vulnerability/" + v["id"] if _RULE.fullmatch(v["id"]) else None, None, ids))
     return out
 
 

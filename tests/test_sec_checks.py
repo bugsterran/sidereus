@@ -65,6 +65,26 @@ class Plans(Tmp):
                           ("1179", "minimist", "warning", "package-lock.json", 1)])
         self.assertEqual(SC.files({"id": "npm-audit"}, {"out": json.dumps(NPM)}, self.repo), 1)
 
+    def test_cve_aliases_kept_beside_key(self):   # rule (finding key) stays GHSA-first; CVE ids ride in a separate field
+        osv = {"results": [{"source": {"path": "web/package-lock.json"}, "packages": [{"package": {"name": "lodash"}, "groups": [],
+               "vulnerabilities": [{"id": "GHSA-p6mc-m468-83gw", "aliases": ["CVE-2020-8203", "CVE-2020-8203", "CVE-x", "CVE-2020-8203; rm",
+                                                                              "CVE-2021-1"]},
+                                   {"id": "PYSEC-2024-1", "aliases": ["GHSA-aaaa-bbbb-cccc", "CVE-2024-0001", "CVE-2023-12345", "CVE-2022-9999",
+                                                                       "CVE-2021-1111"]},
+                                   {"id": "GO-2024-1"}]}]}]}
+        its = SC.parse_osv(json.dumps(osv))
+        self.assertEqual([(x["rule"], x.get("cve")) for x in its],
+                         [("GHSA-p6mc-m468-83gw", ["CVE-2020-8203"]),
+                          ("GHSA-aaaa-bbbb-cccc", ["CVE-2021-1111", "CVE-2022-9999", "CVE-2023-12345"]), ("GO-2024-1", None)])
+        npm6 = {"advisories": {"1": {"id": 1, "module_name": "minimist", "severity": "high", "cves": ["CVE-2021-44906", "junk"],
+                                     "url": "https://github.com/advisories/GHSA-xvch-5gv4-984h"}}}
+        self.assertEqual([(x["rule"], x["cve"]) for x in SC.parse_npm_audit(json.dumps(npm6))], [("GHSA-xvch-5gv4-984h", ["CVE-2021-44906"])])
+        self.assertTrue(all("cve" not in x for x in SC.parse_npm_audit(json.dumps(NPM))))   # npm 7 `via` carries no CVE
+        it = {k: v for k, v in dict(its[0], tool="osv-scanner").items() if k != "help"}   # help is stored per rule, not per item
+        self.assertEqual(AC._clean_item(it, SC.SEC_IDS), it)
+        for bad in (["CVE-x"], [], "CVE-2020-8203", ["CVE-2020-8203", "CVE-2020-8203"]):
+            self.assertIsNone(AC._clean_item(dict(it, cve=bad), SC.SEC_IDS))
+
     def test_offline_is_skipped(self):
         self.w("package-lock.json", "{}")
         p = {"id": "npm-audit", "rules": "default", "argv": ["npm"], "cwd": self.repo, "src": "stdout", "ok_rc": (0, 1), "net": True}
@@ -238,7 +258,7 @@ SECJ = {"commit": "c" * 40, "tools": [{"id": "gitleaks", "rules": "default", "st
 QJ = {"commit": "abcdef123", "tools": [{"id": "ruff", "rules": "project", "status": "ok", "n": {"error": 0, "warning": 1}}],
       "top": [{"tool": "ruff", "file": "a.py", "line": 2, "rule": "F401", "sev": "warning"}]}
 FNS = ["strHdBadge", "hhmm", "archBase", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec", "archChkTop", "archChkTopBtn",
-       "archChkHelp", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkWinHtml"]
+       "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkRunHtml", "archChkWinHtml"]
 
 
 def run_js(body):
@@ -275,6 +295,8 @@ class Ui(unittest.TestCase):
         self.assertIn("<div class=archckst>점검한 적 없음", win)   # window ends with the (empty) history section
         self.assertNotIn("a.py", plain)                        # no security results -> nothing listed
         self.assertNotIn("점검한 적 없음", plain)
+        r2 = run_js("console.log(JSON.stringify([archChkRule({rule: 'GHSA-1', cve: ['CVE-2020-8203', '<b>'], pkg: 'lodash'}), archChkRule({rule: 'B105'})]));")
+        self.assertEqual(r2, ["GHSA-1 · CVE-2020-8203 · lodash", "B105"])
         self.assertTrue(only.startswith("<button") and only.endswith("</button>") and "보안 1" in only)
 
 if __name__ == "__main__":

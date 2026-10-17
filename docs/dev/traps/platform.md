@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Platform, config, launcher, tests and tooling
 
+- **A closed localhost port times out on Windows, not refuses** (`sidereus_cli.py` `answering`).
+  - Cause: Windows retries the SYN to a closed 127.0.0.1 port for ~2 s, so the 2 s `/api/state` probe timed out and `start` reported a free port as BUSY and never spawned.
+  - ⇒ On Windows a timeout is BUSY only when `port_bound()` (a probe bind on 127.0.0.1) fails; a free port returns 0.
+  - ⚠Keep the timeout-is-BUSY rule for a bound port — a live `/api/state` can take >2 s; do not raise the probe timeout instead.
 - **Orbit registry has no owner/mode check on Windows** (`plugins/orbit/scripts/accounts.py` `safe_owner`).
   - Cause: Windows has no `getuid`, and `st_mode` reports 0o666 for every writable file (ACLs are not mode bits), so the 0o022 check refused every registry.
   - ⇒ `os.name == "nt"` skips the mode check; protection rests on the default user-only ACL of `%USERPROFILE%`.

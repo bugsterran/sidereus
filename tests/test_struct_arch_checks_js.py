@@ -12,7 +12,7 @@ from tests._load import js_fn
 from tests._node import node_e
 
 FNS = ["strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec",
-       "archChkTop", "archChkTopBtn", "archChkHelp", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkWinHtml"]
+       "archChkTop", "archChkTopBtn", "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkEntry", "archChkHdBtn", "archChkRunCands", "archChkRunBody", "archChkRunCmds", "archChkScanAt", "archChkRunHtml", "archChkWinHtml"]
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
 with open(_SRC_P, encoding="utf-8") as fh:
     _SRC = fh.read()
@@ -20,7 +20,7 @@ FIXSEND = re.search(r"^async function archChkFixSend\(.*?^}", _SRC, re.S | re.M)
 PRE = "\n".join([
     "let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }",
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
-    "const ARCH_PL = 'arch-map'; const ARCH = { cache: {}, msg: '' };",
+    "const ARCH_PL = 'arch-map', ARCH_SEC_PL = 'security-checks'; const ARCH = { cache: {}, msg: '' };",
     "let SESS = [], POSTS = []; function lsSetJson(){}",
     "async function postJSON(u, b){ POSTS.push([u, b]); return { ok: true }; }",
 ])
@@ -236,6 +236,44 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("boom", r[8])
         self.assertEqual(len(r[9]), 1)
         self.assertEqual(r[10], 2)
+
+    def test_run_security_check(self):   # relay preview to a logged-in project session, else the terminal command; never sends by itself
+        sess = [{"sid": "a1", "cwd": "/x/shop", "mbox": "a", "mboxSrc": "identity", "state": "idle", "ageSec": 1},
+                {"sid": "b2", "cwd": "/z", "repos": ["/x/shop"], "mbox": "b", "state": "idle", "ageSec": 1},
+                {"sid": "c3", "cwd": "/q", "mbox": "c", "mboxSrc": "identity", "state": "idle", "ageSec": 1}]
+        r = run("const d = {ok: true, sidereus: '/sid', checks: null}, c = archChkFixCands(" + json.dumps(sess) + ", '/x/shop'), rc = archChkRunCands(c);"
+                "const S = {sel: {}, req: null, run: {sid: rc[0].sid, busy: false}, runSent: null};"
+                "const none = Object.assign({}, S, {run: {sid: '', busy: false}});"
+                "console.log(JSON.stringify([rc.map(x => x.sid), archChkRunBody('/x/shop', '/sid/'), archChkRunCmds('/x/shop', '/sid'),"
+                "archChkRunCmds('/x/\"; rm', '/sid'), archChkRunCmds('/x/shop', ''), archChkRunCmds('/x/%PATH%', '/sid'), archChkRunCmds('/x/!a!', '/sid'), archChkWinHtml('/x/shop', d, S, c), archChkWinHtml('/x/shop', d, none, []),"
+                "archChkHdBtn(d), archChkHdBtn({ok: false}), archChkWinHtml('/x/shop', d, Object.assign({}, S, {run: Object.assign({}, S.run, {busy: true})}), c),"
+                "archChkScanAt({checks: {security: {at: 5, log: {at_scan: 9}}}}), archChkScanAt({})]));")
+        self.assertEqual(r[0], ["a1"])                       # repos-only session is not logged in; other projects never
+        self.assertEqual(r[1].splitlines()[0], "파이프라인 security-checks 실행 — 요청: «/x/shop 보안 점검»")
+        self.assertIn("/sid/.claude/pipelines/security-checks.json", r[1])
+        self.assertIn("--repo /x/shop", r[1])
+        self.assertEqual(r[2], {"sh": 'python3 "/sid/scripts/arch_checks.py" --repo "/x/shop" --category security',
+                                "win": 'py "/sid/scripts/arch_checks.py" --repo "/x/shop" --category security'})
+        self.assertEqual(r[3:7], [None] * 4)                 # quoting-breaking path / unknown home / cmd %VAR% !VAR! -> no command
+        del r[5:7]
+        self.assertIn("data-ckrgo>", r[5])                    # confirm enabled, preview shown
+        self.assertIn("security-checks.json", r[5])
+        self.assertIn("아직 보안 점검 없음", r[5])
+        self.assertNotIn("data-ckrgo", r[6])                  # no session: command + copy, no send button
+        self.assertIn('data-ckcp="sh"', r[6])
+        self.assertIn('data-ckcp="win"', r[6])
+        self.assertIn("터미널에서 실행하세요", r[6])
+        self.assertIn(">보안 점검</button>", r[7])
+        self.assertEqual(r[8], "")                            # map header: ok payload only
+        e = run("console.log(JSON.stringify([archChkEntry({ok: false, empty: true}), archChkEntry(null)]));")
+        self.assertIn(">보안 점검</button>", e[0])            # no-map states still get the entry
+        self.assertEqual(e[1], "")
+        m = run("const S = {sel: {}, req: null, run: {sid: 'a1', busy: false}, runSent: null, runMsg: 'Could not send: boom', msg: ''};"
+                "console.log(JSON.stringify(archChkRunHtml('/x/shop', {sidereus: '/sid'}, S, [{sid: 'a1', g: 0, login: true}])));")
+        self.assertRegex(m, r'data-ckrx>.*</div></div><div class="archmsg archerr" role=alert>Could not send: boom</div>$')
+        self.assertIn("data-ckrun aria-expanded=true disabled", r[9])   # busy: run toggle and confirm disabled
+        self.assertIn("data-ckrgo disabled", r[9])
+        self.assertEqual([r[10], r[11]], [9, 0])
 
     def test_last_report_button(self):
         rep = {"name": 'security-report-"<x>".md', "at": 1700000000}

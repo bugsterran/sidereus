@@ -182,6 +182,18 @@ def pid_alive(pid):
     return True
 
 
+def port_bound(port):
+    """True when something holds 127.0.0.1:port (our probe bind fails)."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(("127.0.0.1", int(port)))
+        return False
+    except OSError:
+        return True          # in use, or reserved/denied (WSAEACCES): not free either way
+    finally:
+        s.close()
+
+
 def answering(port):
     """HTTP status of /api/state on port, BUSY on timeout, 0 when nothing answers. ⚠Only 200 means Sidereus (is_sidereus)."""
     try:
@@ -194,6 +206,9 @@ def answering(port):
     except Exception as e:
         # ⚠A timeout is not «down»: /api/state can take >2 s (measured up to 6.5 s); treating it as 0 dropped live records.
         if isinstance(e, socket.timeout) or isinstance(getattr(e, "reason", None), socket.timeout):
+            # ⚠Windows retries SYN to a closed localhost port for ~2 s, so a free port also times out; only a bound one is BUSY.
+            if IS_WIN and not port_bound(port):
+                return 0
             return BUSY
         return int(getattr(e, "code", 0) or 0)
 
@@ -542,7 +557,7 @@ def cmd_status(port=None):
         print(t("st_pid", "%d (port %d)%s" % (rec["pid"], rec["port"], "" if pid_alive(rec["pid"]) else t("st_dead"))))
     else:
         print(t("st_pid", t("st_norec")))
-    print(t("st_cfg", mailbox_config.config_path(), "" if os.path.exists(mailbox_config.config_path()) else t("st_missing")))
+    print(t("st_cfg", os.path.normpath(mailbox_config.config_path()), "" if os.path.exists(mailbox_config.config_path()) else t("st_missing")))
     print(t("st_svc", t("st_inst") if svc else t("st_noinst")))
     return 0
 

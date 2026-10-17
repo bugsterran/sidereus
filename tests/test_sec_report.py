@@ -31,7 +31,7 @@ T_ALL = [
 ]
 ITEMS = [{"tool": "gitleaks", "file": "conf.py", "line": 3, "rule": "aws-access-token", "sev": "error"},
          {"tool": "osv-scanner", "file": "package-lock.json", "line": 0, "rule": "GHSA-aaaa-bbbb-cccc", "sev": "warning",
-          "pkg": "lodash@4.17.0"}]
+          "pkg": "lodash@4.17.0", "cve": ["CVE-2020-8203"]}]
 VIEW = {"open": [{"sev": "high", "file": "a.py", "line": 4, "key": "path-traversal", "desc": DESC, "ai": True},
                  {"sev": "error", "file": "conf.py", "line": 3, "key": "gitleaks:aws-access-token", "desc": "x", "ai": False}],
         "resolved": [{"sev": "low", "file": "b.py", "line": 1, "key": "old", "desc": DESC, "ai": True}],
@@ -48,7 +48,7 @@ class Render(unittest.TestCase):
         for w in ("| gitleaks | ok | 12 | 1 | 0 | 1.2 s |", "| osv-scanner | skipped — offline |",
                   "| semgrep | missing — install: brew install semgrep |", "| bandit | failed — exit 2 |",
                   "| npm-audit | failed — timeout |", "## Findings (2)", "| error | gitleaks | aws-access-token | conf.py:3 |",
-                  "lodash@4.17.0", "open 2 (scan 1 · AI review 1) · resolved 1 · false-positive 0",
+                  "| GHSA-aaaa-bbbb-cccc · CVE-2020-8203 | package-lock.json:0 | lodash@4.17.0 |", "open 2 (scan 1 · AI review 1) · resolved 1 · false-positive 0",
                   "| high | AI review | path-traversal | a.py:4 |", "- new 1 · gone 1",
                   "- new: gitleaks:aws-access-token · conf.py:3 · error", "- gone: gitleaks:gone-rule · old.py:1 · warning",
                   "- FAIL python (launchd: /x) — EOL past", "- WARN online lookups — skipped — offline",

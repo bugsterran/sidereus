@@ -62,6 +62,12 @@ def _ident(x):
     return (x.get("key"), x.get("file"))
 
 
+def _rule(x):
+    """Rule id plus its CVE aliases (dependency findings), e.g. `GHSA-… · CVE-…`."""
+    cv = [c for c in x.get("cve") or () if isinstance(c, str)] if isinstance(x.get("cve"), list) else []
+    return " · ".join([str(x.get("rule") or "")] + cv)
+
+
 def render(j, view, prev_items, cur_items, deps):
     """Markdown text. j = checks-security dict; view = sec_checks.log_view(); prev/cur = scan_pair();
     deps = [(level, item, detail)] or None when not applicable."""
@@ -96,7 +102,7 @@ def render(j, view, prev_items, cur_items, deps):
     if items:
         out += ["| Severity | Tool | Rule | Location | Package |", "|---|---|---|---|---|"]
         for x in items[:ROWS_MAX]:
-            out.append("| %s | %s | %s | %s | %s |" % (_cell(x.get("sev")), _cell(x.get("tool")), _cell(x.get("rule"), 60),
+            out.append("| %s | %s | %s | %s | %s |" % (_cell(x.get("sev")), _cell(x.get("tool")), _cell(_rule(x), 100),
                                                      _loc(x), _cell(x.get("pkg") or "", 100)))
     v = view or {}
     op, rs, fp = v.get("open") or [], v.get("resolved") or [], v.get("fp") or []
