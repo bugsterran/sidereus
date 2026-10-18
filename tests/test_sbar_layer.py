@@ -24,8 +24,12 @@ let PUTS = [], REDRAW = 0, PAINT = 0;
 const mpPut = (k, v) => { PUTS.push([k, v]); MAIN = v || ''; return true; };
 const mpMainAcctRedraw = () => { REDRAW++; };
 const sblPaint = () => { PAINT++; };
+let BURN = null, BURNM_B = null;
+const burnFor = () => BURNM_B;
+const fmtTok = n => (n / 1e6).toFixed(1) + 'M';
 """
-FNS = ("fmtPct", "acctList", "mainAcct", "mainAcctOk", "sblAccRows", "sblHtml", "sbPctCls", "sblMakeMain")
+FNS = ("fmtPct", "acctList", "mainAcct", "mainAcctOk", "sblAccRows", "sblHtml", "sbPctCls", "sblMakeMain",
+       "sblEst", "sblEstHtml", "burnEst", "burnEstTip", "burnWkEst")
 
 N = "Date.parse('2030-01-01T00:00:00Z')"
 QUOTA = """
@@ -117,6 +121,20 @@ process.stdout.write(JSON.stringify([a, b, c]));
         self.assertEqual(len(sw), 2)
         for r in sw:
             self.assertIn("<em class=sbl-hint aria-hidden=true>메인으로</em>", r)
+
+    def test_token_estimate_per_row(self):
+        # Primary row from BURN, the non-primary main row from its own body; low est says so in the tooltip.
+        low = "{ok: true, cur: {now_pct: 90}, est: {low: true, h5_left: 7e6, wk_left: 1.6e8, wk_used: 4e7}}"
+        h = self.run_js(QUOTA + "MAIN = '<w>&'; BURNM_B = " + low + ";"
+                        "BURN = {ok: true, cur: {now_pct: 38, used_local: 1e6}, est: {h5_left: 2.5e7, h5_n: 5, h5_src: 'med'}};"
+                        "process.stdout.write(JSON.stringify(sblHtml(N)));")
+        self.assertIn(">≈ 25.0M 남음</small>", h)          # primary 5h
+        self.assertIn(">≈ 7.0M 남음</small>", h)           # main account 5h (own window, low)
+        self.assertIn(">≈ 160.0M 남음</small>", h)         # main account 7d
+        self.assertEqual(h.count("class=sbl-est"), 3)     # no 7d est for the primary; none for the third row
+        self.assertIn("정확도 낮음", h)
+        h2 = self.run_js(QUOTA + "BURNM_B = " + low + "; process.stdout.write(JSON.stringify(sblHtml(N)));")
+        self.assertNotIn("sbl-est", h2)                   # not main: its body is not fetched -> nothing
 
     def test_single_account_not_switchable(self):
         # Switchable rows need 2+ signed-in accounts.
