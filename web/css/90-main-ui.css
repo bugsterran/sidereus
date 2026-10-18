@@ -66,7 +66,9 @@ html[data-ui=next] .nxlg span{display:inline-flex;align-items:center;gap:5px}
 html[data-ui=next] .tlq{font-style:normal;cursor:help;font-size:11px;color:var(--nx-t2);border:1px solid var(--nx-rule);
   border-radius:50%;width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center;margin-left:6px}
 html[data-ui=next] .tlq:focus-visible{outline:2px solid var(--nx-info);outline-offset:1px}
-html[data-ui=next] .tlgl{font-style:normal;font-size:11px;color:var(--nx-t2);margin-left:10px;padding-left:10px;
+html[data-ui=next] .tbs > .tlq{margin-left:0}   /* the toolbar slot gap already separates it */
+/* ⚠8px, not 10: en at 900 needed 825px in an 812px toolbar slot and wrapped the «?» to a second line. */
+html[data-ui=next] .tlgl{font-style:normal;font-size:11px;color:var(--nx-t2);margin-left:8px;padding-left:8px;
   border-left:1px solid var(--nx-rule)}
 html[data-ui=next] .tlgl:first-child{margin-left:0;padding-left:0;border-left:none}
 /* ?ui=next bottom status bar + drawer. The bar is the last flex child of body (body is a 100% flex column),
