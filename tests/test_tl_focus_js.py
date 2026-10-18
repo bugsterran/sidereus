@@ -82,9 +82,10 @@ document.activeElement = null; R.nul = tlgFocusId();
 
     def test_paint_tl_refocuses_rail(self):
         s = js_fn("paintTl")
-        self.assertIn("tlgFocusId()", s)
-        self.assertLess(s.index("tlgFocusId()"), s.index("tbSet('time', tlCtlHtml() + tlgChipHtml());\n"))
-        self.assertIn("getElementById(tlgFo)", s)
+        self.assertIn("tbSet('time', tlCtlHtml());", s)   # the «Changes» group moved to the head row
+        self.assertLess(s.index("const gk = tlgKeep(box)"), s.index("box.innerHTML = tlHead"))
+        self.assertLess(s.index("box.innerHTML = tlHead"), s.rindex("tlgRestore(gk)"))
+        self.assertIn("tlgFocusId()", js_fn("tlgKeep"))
 
     def test_tlq_focus_ring(self):
         self.assertIn(".tlq:focus-visible{outline:2px solid var(--nx-info)", src("web/css/90-main-ui.css"))
