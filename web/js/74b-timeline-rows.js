@@ -225,7 +225,7 @@ function tlHeadHtml(d, rows, tlHidden, lg){
       + (tlErr ? '<em class=tlage style="color:'+thc('#f0b357','var(--nx-warn)')+'"> · '+esc(T(tlErr))+'</em>' : '')
       + '</span>'
       // The label above was removed (2026-09-01) — the session card already says the same. The marker goes **on that row**.
-    + (lg || '') + '</div>';
+    + (typeof tlgChipHtml === 'function' ? tlgChipHtml() : '') + (lg || '') + '</div>';   // «Changes» group before the legend, pushed right (22 css)
   return tlHead;
 }
 // Controls and «?» live in the header toolbar slot (tbSet, 92-mainview-tabs.js); ids are global so tlWireCtl finds them.

@@ -313,7 +313,6 @@ html[data-ui=next][data-theme=light] .tlsi i{filter:brightness(.7)}
 .tlhx{display:inline-flex;gap:5px;align-items:center;flex:0 0 auto}
 /* Account picker (40b acctPickHtml) sized like the other toolbar selects */
 .tlhx .acpk{font-size:11px;padding:2px 6px;max-width:16em}
-.tbs > .tlgb{margin-left:auto}
 /* Window summary «More / Less» toggle (76 #tlsmore): reads as a button, not body text */
 .tlsmore{display:inline-block;font-size:11px;color:var(--nx-t2);border:1px solid var(--nx-rule);border-radius:6px;padding:1px 8px;cursor:pointer}
 .tlsmore:hover{color:var(--nx-t1);border-color:var(--nx-t3)}

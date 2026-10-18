@@ -1,7 +1,18 @@
 /* Timeline toolbar «Changes» chip + session combobox (77-timeline-git.js). Theme tokens only. */
 .tlgb{display:inline-flex;align-items:center;gap:6px;min-width:0}
-/* ⚠Timeline toolbar is the widest (en 1100 needed 1264px): wrap the session/Changes group to a second line instead of scrolling sideways */
-html[data-ui=next] .tbs:has(> .tlgb){flex-wrap:wrap;row-gap:6px}
+/* Group lives in the timeline head row (74b tlHeadHtml) or the empty-window line, right-aligned before the pipeline legend.
+   ⚠.wvh span / .wvh b (40-tokens) and .wvh > span (05) restyle every span in the head; #feed id selectors reassert the chip look. */
+#feed :is(.wvh,.tlhd) > .tlgb{margin-left:auto;font-size:11px;font-weight:400;color:var(--nx-t2);overflow:visible;white-space:nowrap}
+/* ⚠The «Runs N» chip (.tlplhb) is absolute at line 1's right end; keep its slot free as .tlplg does (21-timeline-plrun.css). */
+#feed .wvh:has(> .tlplhb) > .tlgb{margin-right:80px}
+#feed .tlhd:has(> .tlgb){display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#feed .wvh .tlgb span{overflow:visible;text-overflow:clip;font-size:inherit;color:inherit}
+#feed .wvh .tlgb > b{color:var(--nx-t3);font-size:10.5px;font-weight:400}
+#feed .wvh .tlgb .tlga{color:var(--nx-ok)}
+#feed .wvh .tlgb .tlgd{color:var(--nx-err)}
+#feed .wvh .tlgb :is(.tlgsh,.tlgbkw){color:var(--nx-warn,var(--nx-err))}
+#feed .wvh .tlgb :is(.tlgbk,.tlgau){font-size:10px}
+#feed .wvh .tlgb .tlgbk:not(.tlgbkw),#feed .wvh .tlgb .tlgau{color:var(--nx-t3)}
 /* ⚠#id selector on purpose — html[data-ui=next] .tlrf (0,2,1) otherwise flattens the border to --nx-rule. */
 #tlgcp{display:inline-flex;align-items:center;gap:4px;color:var(--nx-t2);border:1px solid var(--nx-t3);border-radius:6px;padding:1px 8px;
   background:none;font:inherit;font-size:11px;white-space:nowrap;cursor:pointer}

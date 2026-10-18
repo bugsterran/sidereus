@@ -102,13 +102,25 @@ function tlgFocusId(){
   const ae = document.activeElement;
   return ae && ae.id === 'tlgcp' ? ae.id : '';
 }
+// paintTl rebuilds #feed (head included): keep the old group while the session picker is open (its opener) or holds focus.
+function tlgKeep(box){
+  const og = box.querySelector ? box.querySelector('#tlgb') : null, ae = document.activeElement;
+  const fo = !!(og && ae && og.contains(ae));
+  return {el: og && (popIsOpen('ppop') || fo) ? og : null, ae: fo ? ae : null, id: tlgFocusId()};
+}
+function tlgRestore(k){
+  const nw = document.getElementById('tlgb');
+  if(k && k.el && nw && nw !== k.el) nw.replaceWith(k.el);   // ⚠a detached node loses focus; refocused below
+  const f = k && (k.ae || (k.id && document.getElementById(k.id)));
+  if(f && f.focus) f.focus({preventScroll: true});
+  tlgWire();
+}
 function tlgPaint(){
   const el = document.getElementById('tlgb');
   if(!el) return;
   if(popIsOpen('ppop')) return;   // ⚠a repaint would replace the session picker's opener under its popover
   const fo = tlgFocusId();
   if(!setHtml(el, tlgChipInner(tlgTarget()))) return;
-  if(el.parentElement) el.parentElement._sh = null;   // ⚠the toolbar slot's setHtml cache no longer matches its DOM; the next tbSet must rewrite
   if(fo){ const f = document.getElementById(fo); if(f) f.focus({preventScroll: true}); }
   tlgWire();
 }
