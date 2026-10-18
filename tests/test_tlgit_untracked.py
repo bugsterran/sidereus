@@ -24,6 +24,7 @@ def run(body, sess=SESS):
            "function T(s){ return s; } function TV(o){ return T(o.msg).replace(/\\{(\\w+)\\}/g, (m, k) => String(o.vars[k])); }\n"
            "function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }\n"
            "const cpKey = x => 's:' + x.sid, sid8 = s => s.slice(0, 8), stateLbl = s => s; function tlgPaint(){}\n"
+           "function tlgBaseLabel(){ return ''; }\n"   # baseline badge: tests/test_tlg_base_badge_js.py
            "const PPC = {}; let PPS = null;\n"
            "function getJSON(u){ urls.push(u); return new Promise(() => {}); }\n"
            "function loadDiff(...a){ opened.push(a); }\n" % json.dumps(sess))

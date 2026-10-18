@@ -194,7 +194,7 @@ class Outcome(unittest.TestCase):
         d = os.path.join(self.tmp, "eval", OC.repo_key(self.proj), "reports")
         os.makedirs(d)
         for n in ("2026-10-01.md", "2026-10-09.md", "notes.md"):
-            open(os.path.join(d, n), "w").close()
+            open(os.path.join(d, n), "w", encoding="utf-8").close()
         self.assertEqual(OC.latest_report(self.proj), {"date": "2026-10-09", "path": os.path.join(d, "2026-10-09.md")})
 
     def test_states_since(self):

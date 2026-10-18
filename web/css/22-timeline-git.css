@@ -8,6 +8,8 @@ html[data-ui=next] .tbs:has(> .tlgb){flex-wrap:wrap;row-gap:6px}
 #tlgcp:hover{color:var(--nx-t1);border-color:var(--nx-t2)}
 #tlgcp:disabled{opacity:.55;cursor:default}
 .tlgsh{color:var(--nx-warn,var(--nx-err))}
+.tlgbk{flex:none;font-size:10px;color:var(--nx-t3);border:1px solid var(--nx-rule);border-radius:4px;padding:0 5px;white-space:nowrap}   /* baseline badge */
+.tlgbk.tlgbkw{color:var(--nx-warn,var(--nx-err));border-color:var(--nx-warn,var(--nx-err))}
 .tlgb>b{color:var(--nx-t3);font-size:10.5px;font-weight:400;flex:0 0 auto}   /* combobox label, as .strps>b */
 .tlgau{color:var(--nx-t3);font-size:10px}
 /* «Expand all / Collapse all»: shared .relfx button look (branch tree .brtall, sessions list .swfa). */
