@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-18
+
 ### Added
 
 - Structure: «Run security check» in the security window relays a `security-checks` run request to a logged-in session of the project (preview + confirm), or shows the terminal command (`python3` / Windows `py`) to copy when there is none; the window refreshes when the new scan lands.
@@ -12,32 +14,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CI: a required `windows-latest` job (Python 3.9 and 3.12) runs the same gates and unit tests plus a `start --demo` smoke test.
 - Docs: [REVIEW-PIPELINES](docs/REVIEW-PIPELINES.md) summarises what Anthropic, OpenAI, Google, Meta, Cursor and GitHub published on AI code review, maps it to pipeline fields, and ships review templates for Claude Code, Codex CLI and Gemini CLI (`docs/examples/pipelines/`; Codex and Gemini untested).
 
-### Fixed
-
-- Windows: the `invite_notice` and `room_auto` hooks looped forever walking up from the project folder (a drive root `C:\` is its own parent and never equals `/`), so every prompt waited for the 10 s hook timeout.
-
 ### Changed
 
-- Plugin version is 0.3.1 (was 0.1.0 since the first release): Claude Code caches plugins per version, so plugin fixes never reached installed copies on update.
+- Plugin version is 0.3.2 (was 0.1.0 since the first release): Claude Code caches plugins per version, so plugin fixes never reached installed copies on update.
 - Security checks: osv-scanner and npm audit findings also list their CVE ids (up to 3) next to the GHSA rule in the issues window and the report; finding keys and triage history are unchanged.
 - Pipelines: sidereus-change review is split into «Review-find» (two opus reviewers, one lens each, evidence required) and «Review-confirm» (a verifier that disproves each finding and blocks only on a confirmed Important from the diff), with a shared `.claude/review-guide.md`; the reviewer's UI-string rule now matches English-source + `I18N.ko`. Find/verify split after [Solving code review at Anthropic](https://claude.dev/blog/solving-code-review-at-anthropic/).
 - Timeline: the «Changes» chip counts uncommitted changes by default (was everything since the default branch); Settings › Timeline «Changes baseline» picks Uncommitted · Unpushed · Since session start · Since the default branch · Auto, and the tooltip names the baseline; the diff window's «Uncommitted» tab now shows only uncommitted changes (no fallback to unpushed commits).
 - UI names: one concept, one name in English, Korean and the internal id — Pipelines «Tooling» is «Harness»; the attention list is «Attention» everywhere; the Korean labels of «Insights» and «Preferences» match their English names; «Stuck» no longer shares its Korean word with «Paused»; the canvas fail state reads «Failed»; «No subagents» reads «Subagents off».
 - UI names, second pass: the bell panel is «Alerts» everywhere (tooltip «Alerts — done · failed»); the work-log popup is «Work log» (was «Activity», «work popup»); the Korean for «Mailbox watch» no longer shares its word with «Monitors»; the Korean for «Stuck» and the saver table's «Level» no longer reuse the words of «Blocked» and pipeline «Stage»; the workflow agent table's fail state reads «Failed»; the Korean README names the History tab as the UI does.
-- Docs: ARCHITECTURE opens with where to change things; CONTRIBUTING, README, HOOKS and MCP give the Windows `py` form next to `/usr/bin/python3`; AGENTS.md holds project rules only.
 - Pipelines: the project button shows only the name and the live dot; the pipeline file count moved to the tooltip and the picker rows.
 - Pipelines: the header actions read «Run», a divider, then «Undo» · «Save» · «Delete» (file operations grouped, Delete last).
 - Structure: the project picker is the same search combobox as Pipelines instead of a chip row (session count in the tooltip and picker rows).
 - Branches: the repository picker is the same search combobox as Pipelines and Structure instead of a chip row (full path in the tooltip).
+- Timeline: the account picker is a select box like the other toolbar selects instead of a pill.
 - History: the project filter is the same search combobox as Pipelines, Structure and Branches in the toolbar instead of a chip row (single select, «All» first, session count per row).
 - Timeline: «Running only» is a «Rows» select («All rows» / «Running only») like Range instead of a toggle chip.
 - Timeline: the session picker beside «Changes» is the same search combobox as Pipelines, Structure and Branches instead of a native select (project · sid · state per row, «Auto (latest active)» first).
 - Structure: opening a module's focus view centres the focused module horizontally once; later clicks, polls and repaints of that view keep the scroll.
-- Docs: setup pages give the Windows form of each command (`py` / `sidereus.cmd`, `schtasks` for the logon task, `%USERPROFILE%` paths) and list what needs Git Bash or WSL.
+- Docs: ARCHITECTURE opens with where to change things; setup pages, CONTRIBUTING, README, HOOKS and MCP give the Windows form of each command (`py` next to `/usr/bin/python3`, `sidereus.cmd`, `schtasks` for the logon task, `%USERPROFILE%` paths) and list what needs Git Bash or WSL; the Windows setup page follows a real Windows 11 run; AGENTS.md holds project rules only.
 
 ### Fixed
 
+- Structure: the first view centres the map horizontally again (0.3.0 anchored it at the top-left); a tall map still keeps the Entry band visible under the toolbar.
 - Structure: coming back from another tab puts the architecture map (overview or focus view) back at the scroll it was left at instead of the top-left.
+- Structure: relayed arch-map and security-check requests name both the `python3` and the Windows `py` gate commands (was `/usr/bin/python3` only, which does not exist on Windows).
+- Quota history: a missing `quota-log.jsonl` on a fresh install is empty history instead of a `FileNotFoundError` repeated in the warning bar every minute.
+- Windows: the `invite_notice` and `room_auto` hooks looped forever walking up from the project folder (a drive root `C:\` is its own parent and never equals `/`), so every prompt waited for the 10 s hook timeout.
 - Plugin (Windows): hooks run through `hooks/pyrun.sh`, which finds a real Python 3.9+ (`py -3`, then `python3`, then `python`; a Microsoft Store alias under `WindowsApps` is never run) and caches the exe per PATH, so a hook starts one Python instead of up to three (UserPromptSubmit overran its 10 s timeout); `SIDEREUS_PYTHON` overrides it and also sets the plugin MCP server's command (`${SIDEREUS_PYTHON:-python3}`; `python3` alone hit the Store stub, exit 49); macOS/Linux still exec `python3`.
 - Windows: the MCP server, `sidereus` CLI, viewer banner, `mailbox_config.py`, `scripts/room_log.py` and `scripts/deps_audit.py` write UTF-8 stdout (a cp949 pipe could not encode «—», so `tools/list` and `setup-claude` crashed).
 - Windows: every text-mode file open in the product and tests names `encoding="utf-8"` (the cp1252 default broke reads of UTF-8 files; guarded by `tests/test_open_encoding.py`), and a test module that fails to import is reported by name instead of aborting its whole parallel group.
@@ -288,7 +290,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/bugsterran/sidereus/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bugsterran/sidereus/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/bugsterran/sidereus/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bugsterran/sidereus/compare/v0.1.0...v0.2.0
