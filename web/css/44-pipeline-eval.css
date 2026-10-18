@@ -21,6 +21,9 @@ html[data-theme=light] .plevp td.plec-all{color:#1f7a3f}html[data-theme=light] .
 html[data-theme=light] .plevp .pleci,html[data-theme=light] .pleag{color:#5b6a80}html[data-theme=light] .pleag-off{color:#9a5a00}
 .pleho td{border-top:1px solid #2b3445;color:#8fa0b8}
 .plerneed{font:inherit;font-size:11px;padding:0 6px;border:1px solid #e06c6c;border-radius:9px;background:transparent;color:#e06c6c;cursor:copy}   /* «red check needed»: click copies the command */
+.pleoc{margin-top:8px;padding-top:6px;border-top:1px solid #2b3445;max-width:560px;color:#c7d0dc}   /* «Result layer» facts (plEvalOutcome) */
+.pleoc b{font-weight:600}.pleoc ul{margin:4px 0 0;padding:0 0 0 14px}.pleoc li{padding:1px 0;line-height:1.4}
+.pleocr{margin-top:4px;color:#8fa0b8;font-size:11px;word-break:break-all}html[data-theme=light] .pleocr{color:#5b6a80}
 .plesg{margin-top:8px;padding-top:6px;border-top:1px solid #2b3445;max-width:560px;color:#c7d0dc}
 .plesgh{display:flex;align-items:center;gap:8px;margin-bottom:4px}.plesgh b{font-weight:600}
 .plesg ul{margin:0;padding:0;list-style:none}

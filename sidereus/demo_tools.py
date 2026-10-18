@@ -204,7 +204,11 @@ DEMO_EVAL = {"ok": True, "graded": {"n": 1, "m": 4, "unred": 1, "unstable": ["ê²
              "security": {"n": 5, "m": 7, "checks": [
                  {"id": "security-policy", "v": "fail"}, {"id": "license", "v": "pass"}, {"id": "pinned-deps", "v": "pass"},
                  {"id": "dep-update-tool", "v": "fail"}, {"id": "secret-gate", "v": "pass"}, {"id": "sast-gate", "v": "pass"},
-                 {"id": "dep-audit-gate", "v": "na"}, {"id": "binary-artifacts", "v": "pass"}]}}
+                 {"id": "dep-audit-gate", "v": "na"}, {"id": "binary-artifacts", "v": "pass"}]},
+             # = pl_outcome.counts() shape (no per-PASS list); path is a fake data dir, never the real install
+             "outcome": {"proc": {"runs": 14, "jump": 3}, "lb": {"cur": {"n": 14, "k": 4}, "prev": {"n": 11, "k": 5}},
+                         "result": {"n": 12, "broke": 2, "fixed": 3, "unchecked": 1, "partial": False}},
+             "rep": {"date": "2026-10-14", "path": "~/.mailbox-mcp/eval/3f9c2ab0d1e2a4b5/reports/2026-10-14.md"}}
 
 
 def _demo_eval(proj, demo_proj, name):

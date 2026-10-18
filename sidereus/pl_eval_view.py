@@ -34,6 +34,15 @@ def _pe():
         return None
 
 
+def _oc():
+    """sidereus.pl_outcome or None (lazy like _pe: the result layer is optional)."""
+    try:
+        from sidereus import pl_outcome
+        return pl_outcome
+    except Exception:
+        return None
+
+
 def _now():
     return time.time()
 
@@ -160,6 +169,24 @@ def redcheck_cmd(proj, name, title, code_dir=None, nt=None):
     return subprocess.list2cmdline(argv) if nt else " ".join(shlex.quote(a) for a in argv)
 
 
+def review_titles(stages):
+    """Titles of review/test stages (same rule as suggestion (d)); pl_outcome counts loop-backs leaving them."""
+    cat = _catalog()
+    return [s["title"] for s in stages if isinstance(s, dict) and isinstance(s.get("title"), str) and _is_review(s, cat)]
+
+
+def _outcome(proj, name, stages):
+    """(outcome, rep) for the result layer, (None, None) when pl_outcome is absent or fails."""
+    m = _oc()
+    if m is None:
+        return None, None
+    try:
+        return m.outcome(proj, name, review_titles(stages), _now()), m.latest_report(proj)
+    except Exception as e:
+        warn_once("pl_outcome", "Pipeline evaluation could not be read: {e}", soft=True, vars={"e": type(e).__name__})
+        return None, None
+
+
 def _missed_kinds(pe, proj, ev):
     """{stage title: [kinds]} of missed public seeds. ⚠Seeds hold holdout ids: only kinds leave this function."""
     ld = getattr(pe, "load_seeds", None)
@@ -181,9 +208,16 @@ def _sec(sec):
     return {"n": _int(sec.get("n")), "m": _int(sec.get("m")), "checks": cs}
 
 
-def body(name, titles, ev, red, graded, commit, sugg=None, agree=None, sec=None):
+def _rep(r):
+    """{date, path} of the latest report, or None."""
+    if not isinstance(r, dict) or not isinstance(r.get("date"), str) or not isinstance(r.get("path"), str):
+        return None
+    return {"date": r["date"][:10], "path": r["path"][:400]}
+
+
+def body(name, titles, ev, red, graded, commit, sugg=None, agree=None, sec=None, outcome=None, rep=None):
     """Response body from already-loaded parts (pure; tests drive it directly). agree = {title: {k, n}} (gate_agreement) ·
-    sec = pl_scorecard.score() result."""
+    sec = pl_scorecard.score() result · outcome = pl_outcome.outcome() (only counts leave) · rep = latest report."""
     by = {}
     for s in (ev or {}).get("stages") or []:
         if isinstance(s, dict) and isinstance(s.get("title"), str):
@@ -200,7 +234,12 @@ def body(name, titles, ev, red, graded, commit, sugg=None, agree=None, sec=None)
     ho = _counts((ev or {}).get("holdout"), "n", "caught") if isinstance(ev, dict) else None
     ho = dict(ho, ci=wilson(min(ho["caught"], ho["n"]), ho["n"])) if ho and ho["n"] else None   # pl_eval fills an absent holdout with zeros
     return {"ok": True, "name": name, "graded": g, "stages": stages, "holdout": ho, "commit": commit[:12] if commit else "",
-            "sugg": list(sugg or [])[:EV_SUGG_MAX], "security": _sec(sec)}
+            "sugg": list(sugg or [])[:EV_SUGG_MAX], "security": _sec(sec), "outcome": _oc_counts(outcome), "rep": _rep(rep)}
+
+
+def _oc_counts(oc):
+    m = _oc()
+    return m.counts(oc) if m and oc is not None else None   # ⚠never the per-PASS list: it holds file names
 
 
 def pl_eval(proj, name):
@@ -220,9 +259,10 @@ def pl_eval(proj, name):
         sec = pl_scorecard.scorecard(proj, commit)
     except Exception as e:   # independent of the eval core: shown even when pl_eval is absent
         warn_once("pl_scorecard", "Pipeline evaluation could not be read: {e}", soft=True, vars={"e": type(e).__name__})
+    oc, rp = _outcome(proj, name, stages)
     pe = _pe()
     if pe is None:
-        return 200, body(name, titles, None, None, None, commit, sec=sec)
+        return 200, body(name, titles, None, None, None, commit, sec=sec, outcome=oc, rep=rp)
     ev = red = graded = agree = None
     sugg = []
     try:
@@ -239,7 +279,7 @@ def pl_eval(proj, name):
     except Exception as e:   # partial results still render; the header falls back to the editor count when graded is missing
         warn_once("pl_eval_view", "Pipeline evaluation could not be read: {e}", soft=True, vars={"e": type(e).__name__})
     return 200, body(name, titles, ev if isinstance(ev, dict) else None, red if isinstance(red, dict) else None, graded, commit,
-                     sugg, agree, sec)
+                     sugg, agree, sec, oc, rp)
 
 
 def _catalog():

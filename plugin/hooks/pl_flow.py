@@ -22,6 +22,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 
 # Same derivation as sidereus/config.py DATA_DIR and hooks/pl_mark.py (this hook cannot import either).
@@ -247,20 +248,94 @@ def _spawn(argv):
     subprocess.Popen(argv, **kw)
 
 
+REPORT_SCRIPT = None   # None = pl_report.py next to pl_eval.py; patched in tests
+
+
+def _report_script():
+    if REPORT_SCRIPT:
+        return REPORT_SCRIPT
+    sc = _score_script()
+    p = os.path.join(os.path.dirname(sc), "pl_report.py") if sc else ""
+    return p if p and os.path.isfile(p) else None
+
+
+def _key(proj):
+    """= sidereus/arch_verify.repo_key (sha1 of realpath, 16 hex)."""
+    return hashlib.sha1(os.path.realpath(proj).encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()[:16]
+
+
 def _autoscore():
-    """Score each run ended in this call, only where seeds.json exists (same key as sidereus/arch_verify.repo_key)."""
+    """Score each run ended in this call where seeds.json exists, and ask for the weekly report (pl_report --auto)."""
     todo, _CLOSED[:] = list(dict.fromkeys(_CLOSED)), []
     for proj, name, since in todo:
         try:
             if not (isinstance(proj, str) and os.path.isabs(proj) and isinstance(name, str) and _PLNAME.fullmatch(name)):
                 continue
-            key = hashlib.sha1(os.path.realpath(proj).encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()[:16]
+            key = _key(proj)
             pf, sc = os.path.join(proj, ".claude", "pipelines", name + ".json"), _score_script()
             if sc and os.path.isfile(os.path.join(DATA_DIR, "eval", key, "seeds.json")) and os.path.isfile(pf):
                 _spawn([sys.executable or "python3", sc, "score", "--repo", proj, "--pipeline", pf, "--auto"]
                        + (["--since", str(int(since))] if since else []))
+            rp = _report_script()
+            # ⚠--data-dir: the child derives every path from it, so a hook run against a patched DATA_DIR stays there
+            if rp and os.path.isfile(pf) and _git_root(os.path.realpath(proj)):
+                _spawn([sys.executable or "python3", rp, "--repo", proj, "--pipeline", pf, "--auto", "--data-dir", DATA_DIR])
         except Exception:
             pass
+
+
+# --- run ledger: one row per ended run in DATA_DIR/eval/<key>/runs.jsonl (sidereus/pl_outcome.py reads it) ---
+OC_LEDGER_MAX = 2000   # = sidereus/pl_outcome.py OC_LEDGER_MAX
+_HEXH = re.compile(r"[0-9a-f]{4,40}")
+
+
+def _ledger_add(r, name, now):
+    """Append ended run `r` as {name, t0, end, lb, deny, dc, h0, h1}. ⚠Titles, counts and hashes only, never tool
+    input; only for a git repo (the result layer needs one); fail-silent — this hook runs live."""
+    try:
+        proj = r.get("proj") if isinstance(r, dict) else None
+        if not (isinstance(proj, str) and os.path.isabs(proj) and isinstance(name, str) and _PLNAME.fullmatch(name)):
+            return
+        if not _git_root(os.path.realpath(proj)):
+            return
+        dc = {}
+        for e in r.get("dl") if isinstance(r.get("dl"), list) else []:
+            if isinstance(e, dict) and e.get("c") in DENY_CODES:
+                dc[e["c"]] = dc.get(e["c"], 0) + 1
+        lb = [{"f": e.get("f"), "g": e.get("g"), "n": int(e.get("n") or 0)} for e in r.get("lb") or []
+              if isinstance(e, dict) and isinstance(e.get("f"), str) and isinstance(e.get("g"), str)]
+        row = {"name": name, "t0": float(r.get("t0") or now), "end": float(now), "lb": lb, "deny": int(r.get("deny") or 0), "dc": dc}
+        for k in ("h0", "h1"):
+            if isinstance(r.get(k), str) and _HEXH.fullmatch(r[k]):
+                row[k] = r[k]
+        d = os.path.join(DATA_DIR, "eval", _key(proj))
+        os.makedirs(d, mode=0o700, exist_ok=True)
+        p = os.path.join(d, "runs.jsonl")
+        line = json.dumps(row, ensure_ascii=False) + "\n"
+        with _Lock(p) as lk:   # ⚠sessions end runs concurrently: an unlocked trim drops the other session's row
+            if not lk.ok:
+                return
+            try:
+                with open(p, encoding="utf-8", errors="replace") as f:
+                    old = f.readlines()
+            except OSError:
+                old = []
+            if len(old) < OC_LEDGER_MAX:
+                with open(p, "a", encoding="utf-8") as f:
+                    f.write(line)
+                return
+            fd, tmp = tempfile.mkstemp(dir=d, prefix=".runs-", suffix=".tmp")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    f.writelines(old[-(OC_LEDGER_MAX - 1):] + [line])
+                os.replace(tmp, p)
+            except Exception:
+                try:
+                    os.remove(tmp)
+                except OSError:
+                    pass
+    except Exception:
+        pass
 
 
 def _installed(agent, dirs):
@@ -790,6 +865,7 @@ def post(name, title, st, after, r, bg, now):
         if bg:
             return "[pl:%s] when it finishes: last stage — run complete." % name
         r["end"] = now
+        _ledger_add(r, name, now)
         return "Run complete" + (": " + " · ".join(after) if after else ".")
     lines = [("When it finishes, next: " if bg else "PASS → next: ") + _step(name, st[j])]
     f = _onfail(st[i])
@@ -982,12 +1058,13 @@ def _declare(ev, cwd, path, desc, now):
                     r = _run_of(d, name, cwd, now, False)
                     _mark(r, title, "done", now)
                     r["end"] = now
+                    _ledger_add(r, name, now)
                     _save(path, d)
                     _closed(r.get("proj") or proj, name)
                 continue
             o = d["runs"].get(name)
-            if model is None:
-                _boundary(pl[0], o, title, now)   # skipping the first stage of a run already past it = a new run
+            if model is None and _boundary(pl[0], o, title, now):   # skipping the first stage of a run already past it = a new run
+                _ledger_add(o, name, now)
             if model is None and _is_open(o, now) and 0 <= _idx(pl[0], title) <= _idx(pl[0], o.get("cur") or ""):
                 continue   # ⚠the open run already passed this stage: a no-op, never a second run
             r = _run_of(d, name, cwd, now)
@@ -1090,6 +1167,7 @@ def _commit_close(ev, now):
                 if isinstance(st.get(cur), dict) and st[cur].get("s") == "run":
                     _mark(r, cur, "done", now)
                 r["end"], r["t1"] = now, now
+                _ledger_add(r, rn, now)
                 _closed(proj, rn, now)
             if hit:
                 _save(path, d)
@@ -1199,7 +1277,8 @@ def _flow(plat, ev):
                 _save(path, d)
                 return
             # ⚠Before was_open: a boundary-closed run is not open, so a refused dispatch below saves nothing.
-            _boundary(st, r, title, now, tool == "SendMessage")   # ⚠SendMessage = a fix loop of this run's agent
+            if _boundary(st, r, title, now, tool == "SendMessage"):   # ⚠SendMessage = a fix loop of this run's agent
+                _ledger_add(r, name, now)
             was_open = _is_open(r, now)
             r = _run_of(d, name, cwd, now)
             r["proj"] = proj   # later Bash/SendMessage/Post of this run use the same file

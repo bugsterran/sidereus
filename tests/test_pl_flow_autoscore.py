@@ -1,4 +1,5 @@
-"""hooks/pl_flow.py run end -> detached `pl_eval.py score --auto`: only with seeds.json, once per closed run. Tmp dirs only."""
+"""hooks/pl_flow.py run end -> detached `pl_eval.py score --auto` (only with seeds.json) and `pl_report.py --auto` (git repo),
+once per closed run. Tmp dirs only."""
 import hashlib
 import os
 import unittest
@@ -55,6 +56,14 @@ class AutoScore(_Base):
             self.pre(s), self.post(s)
         self.pre("라이브 검증"), self.post("라이브 검증")   # last stage back -> run complete
         self.assertEqual(len(self.spawned), 2)
+
+    def test_close_spawns_report_in_git_repo(self):
+        os.makedirs(os.path.join(self.proj, ".git"))
+        with mock.patch.object(H, "REPORT_SCRIPT", "/x/scripts/pl_report.py"):
+            self.close_by_commit()
+        pf = os.path.join(self.proj, ".claude", "pipelines", "sidereus-change.json")
+        self.assertEqual([a[1:] for a in self.spawned],   # no seeds: only the report, every closed run
+                         [["/x/scripts/pl_report.py", "--repo", self.proj, "--pipeline", pf, "--auto", "--data-dir", self.tmp]])
 
     def test_spawn_error_fails_open(self):
         self.seeds()
