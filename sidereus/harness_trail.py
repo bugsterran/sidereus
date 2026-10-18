@@ -16,6 +16,8 @@ TR_SPAWN_MAX = 12          # git processes per call (HEAD lookup included)
 TR_LOG_MAX = 50            # commits after a PASS head scanned for a tree rollback
 TR_HEAD_TTL = 20           # seconds the resolved HEAD is reused, so a repaint spawns nothing
 TR_CACHE_MAX = 64
+TR_STATES_MAX = 30         # PASS rows states() returns
+TR_STATES_GIT = 4          # git processes budgeted per PASS in states() (merge-base · rev-parse · log, + slack)
 TR_HEX = re.compile(r"[0-9a-f]{4,40}")
 TR_MODE = re.compile(r"[a-z0-9_-]{0,20}")
 TR_STEP = re.compile(r"[a-z0-9_-]{1,20}")
@@ -53,8 +55,9 @@ def _norm(r):
 class _Ctx(object):
     """Per-call git budget + memo; `ok` drops to False on the first git failure."""
 
-    def __init__(self, repo, on):
+    def __init__(self, repo, on, cap=None):
         self.repo, self.on, self.ok, self.n, self.memo = repo, on, True, 0, {}
+        self.cap = cap or TR_SPAWN_MAX
 
     def run(self, args):
         key = tuple(args)
@@ -62,7 +65,7 @@ class _Ctx(object):
             return self.memo[key]
         if not self.on:
             return None
-        if self.n >= TR_SPAWN_MAX:
+        if self.n >= self.cap:
             self.ok = False   # capped rows are incomplete — never cache them as a final answer
             return None
         self.n += 1
@@ -178,4 +181,22 @@ def trail(rows, repo, git=True):
         if len(_TR_CACHE) >= TR_CACHE_MAX:
             _TR_CACHE.clear()
         _TR_CACHE[key] = out
+    return out
+
+
+def states(rows, repo, since, git=True, only=None):
+    """Held state of every PASS with ts >= since (and ts in `only` when given), newest first (<= TR_STATES_MAX).
+    Same rules as trail()["held"]; ⚠a git miss or exhausted budget turns a clean «held» into «unchecked», never «held».
+    Not cached here (pl_outcome caches its whole result)."""
+    rows = sorted((r for r in (_norm(x) for x in (rows if isinstance(rows, list) else [])) if r), key=lambda r: r["ts"])
+    ps = [r for r in rows if r["rc"] == 0 and r["ts"] >= since and (only is None or r["ts"] in only)][-TR_STATES_MAX:]
+    if not ps:
+        return []
+    ctx = _Ctx(repo, bool(git and isinstance(repo, str) and repo), 1 + TR_STATES_GIT * len(ps))
+    head = _head(ctx) if ctx.on else ""
+    ctx.on = bool(head)
+    out = [_held(p, rows, ctx, head) for p in reversed(ps)]
+    for h in out:
+        if h["state"] == "held" and h["head"] and not h["dirty"] and not h["git"]:
+            h["state"] = "unchecked"   # head known but git never answered: not evidence that it held
     return out

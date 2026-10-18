@@ -44,4 +44,12 @@ Object.assign(I18N.ko, {
   'Add a semgrep or bandit gate': 'semgrep 또는 bandit 게이트를 추가하세요',
   'Add an npm audit or osv-scanner gate': 'npm audit 또는 osv-scanner 게이트를 추가하세요',
   'Remove tracked binaries': '추적 중인 바이너리를 제거하세요',
+  'Result layer': '결과 층',
+  'Gate: {g} of {m} gates confirmed able to fail': '게이트: {m}개 중 {g}개가 실패할 수 있음을 확인',
+  'Procedure: {runs} runs, {jump} order violations blocked': '절차: 실행 {runs}회, 순서 위반 {jump}건 차단',
+  'Result: {broke} of {n} passes broke later, fix followed {fixed}': '결과: 통과 {n}건 중 {broke}건이 나중에 깨짐, 뒤이은 수정 {fixed}건',
+  'Review loop-backs: {cur}% of runs (last 30 days) vs {prev}% (30 days before)': '리뷰 되돌림: 실행의 {cur}% (최근 30일) · 그 전 30일 {prev}%',
+  'Review loop-backs: {cur}% of runs (last 30 days), no earlier data': '리뷰 되돌림: 실행의 {cur}% (최근 30일), 이전 자료 없음',
+  'Latest report {date} · {path}': '최근 리포트 {date} · {path}',
+  'No report yet': '아직 리포트 없음',
 });

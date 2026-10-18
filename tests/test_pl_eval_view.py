@@ -26,7 +26,15 @@ class EvalApi(unittest.TestCase):
             json.dump(PIPE, f)
         pp, sc = sidereus("pipeline_projects"), sidereus("pl_scorecard")
         self._saved = [(pp, "_proj_ok", pp._proj_ok), (self.v, "_pe", self.v._pe), (self.v, "_head", self.v._head),
-                       (sc, "scorecard", sc.scorecard)]
+                       (sc, "scorecard", sc.scorecard), (self.v, "_oc", self.v._oc)]
+        oc = sidereus("pl_outcome")
+        self.oc_calls = []
+        fake_oc = types.SimpleNamespace(
+            counts=oc.counts, latest_report=lambda p: {"date": "2026-10-14", "path": "/d/eval/k/reports/2026-10-14.md"},
+            outcome=lambda p, name, review, now: self.oc_calls.append((name, review)) or {
+                "proc": {"runs": 3, "jump": 1}, "lb": {"cur": {"n": 3, "k": 1}, "prev": {"n": 0, "k": 0}},
+                "result": {"n": 2, "broke": 1, "fixed": 1, "list": [{"sha": "abc", "files": ["secret_file.py"]}]}})
+        self.v._oc = lambda: fake_oc
         sc.scorecard = lambda p, head: {"n": 1, "m": 2, "path": p, "checks": [
             {"id": "license", "v": "pass", "file": "LICENSE"}, {"id": "sast-gate", "v": "fail"}, {"id": "zz", "v": "pass"},
             {"id": "pinned-deps", "v": "na"}]}
@@ -56,7 +64,12 @@ class EvalApi(unittest.TestCase):
     def test_body_shape(self):
         code, b = self.v.pl_eval(self.proj, "flow")
         self.assertEqual(code, 200)
-        self.assertEqual(set(b), {"ok", "name", "graded", "stages", "holdout", "commit", "sugg", "security"})
+        self.assertEqual(set(b), {"ok", "name", "graded", "stages", "holdout", "commit", "sugg", "security", "outcome", "rep"})
+        self.assertEqual(b["outcome"], {"proc": {"runs": 3, "jump": 1}, "lb": {"cur": {"n": 3, "k": 1}, "prev": {"n": 0, "k": 0}},
+                                        "result": {"n": 2, "broke": 1, "fixed": 1, "unchecked": 0, "partial": False}})   # R3: counts only, no list/files
+        self.assertEqual(b["rep"], {"date": "2026-10-14", "path": "/d/eval/k/reports/2026-10-14.md"})
+        self.assertEqual(self.oc_calls, [("flow", [])])   # _is_review: agent "a" and a non-catalog title are not review
+        self.assertEqual(self.v.review_titles([{"title": "x", "agent": "my-reviewer"}, {"title": "y", "agent": "a"}]), ["x"])
         self.assertEqual(b["graded"], {"n": 1, "m": 3, "unred": 0, "unstable": ["check"]})   # check is red-checked but flaky
         self.assertEqual(b["stages"], [
             {"title": "build", "catch": {"caught": 7, "n": 8}, "red": "pass", "unstable": False, "ci": {"lo": 53, "hi": 98},
@@ -72,6 +85,8 @@ class EvalApi(unittest.TestCase):
         self.assertNotIn("secret-case", s)
         self.assertNotIn("case-17", s)
         self.assertNotIn("why", s)
+        self.assertNotIn("secret_file", s)
+        self.assertNotIn('"list"', s)
 
     def test_security_block(self):   # R4: id/v/n/m only, unknown ids and extra keys dropped
         _c, b = self.v.pl_eval(self.proj, "flow")
@@ -90,6 +105,14 @@ class EvalApi(unittest.TestCase):
         self.assertEqual(self.v.pl_eval("/nope", "flow")[0], 400)
         self.assertEqual(self.v.pl_eval(self.proj, "../x")[0], 400)
         self.assertEqual(self.v.pl_eval(self.proj, "other")[0], 400)
+
+    def test_outcome_fail_soft(self):
+        self.v._oc = lambda: None
+        _c, b = self.v.pl_eval(self.proj, "flow")
+        self.assertEqual((b["outcome"], b["rep"]), (None, None))
+        boom = types.SimpleNamespace(outcome=lambda *a: 1 / 0, latest_report=lambda p: None, counts=lambda o: o)
+        self.v._oc = lambda: boom
+        self.assertEqual(self.v.pl_eval(self.proj, "flow")[1]["outcome"], None)
 
     def test_core_missing(self):
         self.v._pe = lambda: None
@@ -125,7 +148,8 @@ class EvalApi(unittest.TestCase):
                                        "cmd": self.v.redcheck_cmd("/demo", "change-flow", "검증", code_dir="/sidereus", nt=False)}]
         ag = {"구현": {"k": 3, "n": 3}, "검증": {"k": 2, "n": 3}}
         want = self.v.body("change-flow", ["설계", "구현", "검증", "리뷰"], ev, red, d.DEMO_EVAL["graded"], "3f9c2ab0d1e2", sg, ag,
-                           sec=d.DEMO_EVAL["security"])
+                           sec=d.DEMO_EVAL["security"], outcome=d.DEMO_EVAL["outcome"], rep=d.DEMO_EVAL["rep"])
+        self.assertTrue(all(v for v in want["outcome"]["proc"].values()) and want["outcome"]["result"]["n"])   # demo shows non-zero
         code, b = d._demo_eval("/demo", "/demo", "change-flow")
         self.assertEqual((code, b), (200, want))
         self.assertEqual(d._demo_eval("/x", "/demo", "change-flow")[0], 400)

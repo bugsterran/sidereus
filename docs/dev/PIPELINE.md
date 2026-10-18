@@ -224,6 +224,17 @@ Borrowed into the schema:
 - «Holdout» shows counts only.
 - With `seeds.json` present, each finished run is scored once per commit in the background; the red «red check needed» badge copies the command to run.
 
+### Reading the result layer
+
+The panel's «Result layer» block states facts per pipeline, no score (`sidereus/pl_outcome.py`, sentences `OC_SENT`).
+
+- Gate: graded gates / gates (same as «Gates n/m»).
+- Procedure: ended runs in the ledger `eval/<key>/runs.jsonl` and order violations the `pl_flow` hook blocked (deny code `jump`).
+- Result: of the gate PASSes in the last 30 days, how many later broke (reverted · gone · broke, as in the harness «Kept» check) and how many had a commit within 14 days touching a file that PASS changed («fix followed», file names only).
+- Review loop-backs: share of runs with a loop-back from a review stage, last 30 days vs the 30 days before. A falling share with «fix followed» flat means review finds less, not that code got better — read the two together.
+- Report: `scripts/pl_report.py` writes the same sentences plus the broken / fix-followed PASS list (short sha, file names) to `eval/<key>/reports/YYYY-MM-DD.md`; a run end regenerates it when the newest is older than 7 days.
+- ⚠«Fix followed» is a proxy: any commit touching the same file counts, including unrelated work. It flags where to look, not a defect count.
+
 Basis: seeded defects stand in for real ones because mutant detection correlates with real-fault detection (Just et al., FSE 2014); a gate that passes and fails on the same code is flaky and its verdict carries no signal (Luo et al., FSE 2014); a check counts only once it is seen failing on a known-bad input, as SWE-bench Verified validated each task's tests against the broken and fixed code.
 
 Adapting it: seeds and the answer key are data — write your own `seeds.json` (schema `seed_errors`) and store it with `pl_eval.py seeds --set`. Matching is `matches()` and the kind → tool map `KIND_TOOLS`; the line window is `EVAL_LINE_K`, the unstable window `EVAL_FLAKY_DAYS`, the graded rule `graded_summary()` (all in `sidereus/pl_eval.py`). Breaks per gate mode are `inject()` in `scripts/pl_eval.py`; a new gate mode needs a row in `pipeline_schema.GATE_MODES`. Pass/fail of `score` (every public seed caught) is in `cmd_score()`.

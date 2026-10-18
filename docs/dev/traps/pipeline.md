@@ -157,3 +157,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ `plCvNeed(G, cw, vh)` = graph height at min(1, width-fit) zoom + 8px, clamped to [200, 62vh]; `plGwFit` sets `--plcvh` = need + toolbar strip every pass (cards grow on later paints), floor = row + 6 + 420. The changed canvas height re-fits through `plFitKey`.
 - ⚠A dragged split (`sidereus.plpanh`) drops `--plcvh` so the canvas row stays flexible; do not pin both rows in px (the leftover height would sit empty).
 - ⚠Stage-name input: placeholder is the short «Stage name»; the long hint is its `title` (it clipped as a placeholder).
+
+
+## «Result layer» sentences are keyed twice (48i `PLE_OC`, `pl_outcome.OC_SENT`)
+
+- Cause: the panel renders the sentences itself from counts; the report renders them in Python. Same English text, two places.
+- ⇒ `PLE_OC` values are the `OC_SENT` templates verbatim (each is also an `I18N.ko` key); numbers go in `vars`, never through `T()`. Percentages round half up in JS (`Math.round`).
+- ⚠Rewording one side breaks the ko lookup or makes panel and report disagree; change both and `06-i18n-zx-eval.js` together (`tests/test_pl_outcome_js.py` checks the key list).

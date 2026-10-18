@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Pipelines: the «Evaluation» panel's «Result layer» states per pipeline, without a score, how many gates were seen failing, runs and blocked order violations, how many gate passes in the last 30 days broke later or had a fix follow within 14 days, and the review loop-back share against the 30 days before; `scripts/pl_report.py` writes the same facts to a dated report, refreshed weekly at run end.
+
 ### Fixed
 
 - Quota: a non-primary «Main account» had no «left ≈» token estimate; until it has history it gets a low-accuracy estimate from its own tokens in this window, shown per account in the status-bar layer («≈ N left» under the 5h/7d %).

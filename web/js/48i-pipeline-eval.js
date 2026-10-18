@@ -70,6 +70,23 @@ function plEvalPre(S, L){ if(!S.init && L.length){ L.forEach((s, i) => { S.sel[i
 // Pure: «7/8» + muted 95% Wilson range (server-computed) · «2/3 agree» = runs at one commit matching the majority verdict.
 function plEvalCi(ci){ return ci && ci.hi != null ? ' <span class=pleci title="' + esc(T('Seeded defects n; the range narrows as more are seeded')) + '">' + esc(TV({msg: '95% {lo}–{hi}%', vars: {lo: ci.lo | 0, hi: ci.hi | 0}})) + '</span>' : ''; }
 function plEvalAgree(a){ return a && a.n ? '<span class="pleag' + (a.k < a.n ? ' pleag-off' : '') + '">' + esc(TV({msg: '{k}/{n} agree', vars: {k: a.k | 0, n: a.n | 0}})) + '</span>' : ''; }
+// Server sentence templates (sidereus/pl_outcome.OC_SENT): msg = fixed English key, numbers are vars (never through T).
+const PLE_OC = { gate: 'Gate: {g} of {m} gates confirmed able to fail', proc: 'Procedure: {runs} runs, {jump} order violations blocked',
+  result: 'Result: {broke} of {n} passes broke later, fix followed {fixed}',
+  lb: 'Review loop-backs: {cur}% of runs (last 30 days) vs {prev}% (30 days before)', lb0: 'Review loop-backs: {cur}% of runs (last 30 days), no earlier data',
+  rep: 'Latest report {date} · {path}', norep: 'No report yet' };
+const plOcPct = c => c && c.n ? Math.round((c.k | 0) * 100 / c.n) : 0;
+// Pure: «Result layer» block — gate / procedure / result facts, loop-back trend, latest report. Counts only, no score.
+function plEvalOutcome(ev){
+  const o = ev && ev.outcome;
+  if(!o || !((o.result && o.result.n) || (o.proc && o.proc.runs))) return '';   // pl_outcome always sends outcome: hide it until there is data
+  const g = ev.graded || {}, p = o.proc || {}, r = o.result || {}, lb = o.lb || {}, cur = lb.cur || {}, prev = lb.prev || {};
+  const L = [TV({msg: PLE_OC.gate, vars: {g: g.n | 0, m: g.m | 0}}), TV({msg: PLE_OC.proc, vars: {runs: p.runs | 0, jump: p.jump | 0}}),
+    TV({msg: PLE_OC.result, vars: {broke: r.broke | 0, n: r.n | 0, fixed: r.fixed | 0}})];
+  if(cur.n || prev.n) L.push(TV(prev.n ? {msg: PLE_OC.lb, vars: {cur: plOcPct(cur), prev: plOcPct(prev)}} : {msg: PLE_OC.lb0, vars: {cur: plOcPct(cur)}}));   // no runs in either window: no line
+  const rp = ev.rep && ev.rep.date ? TV({msg: PLE_OC.rep, vars: {date: String(ev.rep.date), path: String(ev.rep.path || '')}}) : T(PLE_OC.norep);
+  return '<div class=pleoc><b>' + esc(T('Result layer')) + '</b><ul>' + L.map(s => '<li>' + esc(s) + '</li>').join('') + '</ul><div class=pleocr>' + esc(rp) + '</div></div>';
+}
 function plEvalPanel(ev){
   if(!ev) return '';
   const st = Array.isArray(ev.stages) ? ev.stages : [];
@@ -85,7 +102,7 @@ function plEvalPanel(ev){
   const empty = !st.some(s => s.catch || PLE_RED[s.red]) && !h;
   if(typeof requestAnimationFrame === 'function') requestAnimationFrame(plEvalPlace);   // placed after paintPipe writes it
   const S = typeof PLS === 'object' ? plEvalPre(plEvalState(plCur()), plEvalSgList(ev)) : { sel: {} }, sg = plEvalSgList(ev).length ? plEvalSgHtml(ev, S, plEvalCands(), typeof plCat === 'function' ? plCat() : null) : '';
-  return '<div id=plevp class="thpop plevp">' + (typeof plEvalSec === 'function' ? plEvalSec(ev.security, PLE_SEC_OPEN) : '') + '<table><tr><th>' + esc(T('Stage')) + '</th><th>' + esc(T('Catch')) + '</th><th>' + esc(T('Red check')) + '</th><th>' + esc(T('Agreement')) + '</th></tr>' + rows + ho + '</table>'
+  return '<div id=plevp class="thpop plevp">' + (typeof plEvalSec === 'function' ? plEvalSec(ev.security, PLE_SEC_OPEN) : '') + '<table><tr><th>' + esc(T('Stage')) + '</th><th>' + esc(T('Catch')) + '</th><th>' + esc(T('Red check')) + '</th><th>' + esc(T('Agreement')) + '</th></tr>' + rows + ho + '</table>' + (typeof plEvalOutcome === 'function' ? plEvalOutcome(ev) : '')
     + (empty && !sg ? '<div class=hidnote>' + esc(T('No evaluation yet')) + '</div>' : '') + sg + '</div>';
 }
 // Floating under the button (popAnchor, fixed): an inline panel pushed the canvas down. ⚠Rebuilt by every repaint ⇒ re-anchored each time.
