@@ -30,6 +30,14 @@ function tlgBaseTip(d){
   else if(d.noRemote) t += '\n' + T('No remote branch — compared with the session start');
   return t;
 }
+// Chip badge: the EFFECTIVE baseline from the reply (server may fall back), else the chosen mode; warn = chosen mode not honoured.
+const TLG_KIND = {head: 'head', start: 'start', branch: 'remote', remote: 'upstream'};
+function tlgBaseLabel(d){
+  const ok = d && d.ok, k = ok ? (TLG_KIND[d.baseKind] || 'head') : tlgBase;
+  const warn = !!(ok && ((d.baseKind === 'head' && d.baseMode && d.baseMode !== 'head') || d.noRemote));
+  const lb = (TLG_BASES.find(x => x[0] === k) || TLG_BASES[0])[1];
+  return '<span class="tlgbk' + (warn ? ' tlgbkw' : '') + '">' + esc(T(lb, 'base')) + '</span>';
+}
 // Untracked files (server `new:True`) never count — scratch files read as changes. Same rule for files, +a and −d.
 function tlgShownN(d){ return Math.max(0, (d.n || 0) - (d.untracked || (d.files || []).filter(f => f.new).length)); }
 function tlgNum(a, d){ return '<span class=tlga>+' + a + '</span><span class=tlgd>−' + d + '</span>'; }
@@ -76,7 +84,7 @@ function tlgSelHtml(tg){
 // «Changes · N files +a −d» (+ «· ⚠ n shared»); no target or no reply yet = «Changes» alone.
 function tlgChipInner(tg){
   const d = tg && (tlgC[tg.ck] || {}).d;
-  let body = esc(T('Changes', 'chip'));
+  let body = tlgBaseLabel(d) + esc(T('Changes', 'chip'));
   if(d && d.ok){
     const hid = (d.files || []).filter(f => f.new), sum = k => hid.reduce((s, f) => s + (f[k] || 0), 0);
     body += esc(' · ' + TV({msg: tlgShownN(d) === 1 ? '{n} file' : '{n} files', vars: {n: tlgShownN(d)}}) + ' ') + tlgNum(Math.max(0, (d.add || 0) - sum('add')), Math.max(0, (d.del || 0) - sum('del')));

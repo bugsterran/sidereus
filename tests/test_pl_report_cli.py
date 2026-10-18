@@ -73,7 +73,7 @@ class Report(unittest.TestCase):
 
     def test_auto_cadence(self):
         os.makedirs(self.rep)
-        open(os.path.join(self.rep, "2026-10-12.md"), "w").close()   # 6 days old
+        open(os.path.join(self.rep, "2026-10-12.md"), "w", encoding="utf-8").close()   # 6 days old
         self.assertEqual(self.run_("--auto"), 0)
         self.assertEqual(os.listdir(self.rep), ["2026-10-12.md"])
         self.now = NOW + 2 * 86400   # 8 days
