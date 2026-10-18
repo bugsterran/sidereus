@@ -43,7 +43,8 @@ class BurnAcct(unittest.TestCase):
         self.addCleanup(bu._qb_acct.clear)
         for obj, name, val in ((bu.time, "time", lambda: NOW), (rg, "claude_accounts", lambda: [dict(a) for a in ACCTS]),
                                (rg, "saver_cap", lambda now, out: {"n": 1}),
-                               (rg, "burn_use", lambda: dict(USE_P))):
+                               (rg, "burn_use", lambda: dict(USE_P)),
+                               (bu, "acct_tokens", lambda a, t0, t1: 0)):   # ⚠never the live usage index
             p = mock.patch.object(obj, name, val)
             p.start()
             self.addCleanup(p.stop)
@@ -150,6 +151,58 @@ class BurnAcct(unittest.TestCase):
             json.dump({"oauthAccount": {"accountUuid": "u1"}}, f)   # plan unknown: no plan-less fallback
         bu._qb_acct.clear()
         self.assertIsNone(bu.quota_burn_acct("work")["est"])
+
+    def _no_hist(self, tab):
+        bh = sidereus("burn_hist")
+        conf = os.path.join(WORK, ".claude.json")
+        with open(conf, "w", encoding="utf-8") as f:
+            json.dump({"oauthAccount": {"accountUuid": "u2", "organizationType": "claude_pro"}}, f)
+        self.addCleanup(lambda: os.path.exists(conf) and os.remove(conf))
+        seen = []
+        for obj, name, val in ((bh, "_hist_get", lambda now: tab), (bh, "plan_cut", lambda a: (None, False)),
+                               (bu, "plan_cut", lambda a: (None, False)),
+                               (bu.claude_roots, "accounts", lambda: [dict(a) for a in ACCTS]),
+                               (bu, "acct_tokens", lambda a, t0, t1: seen.append((a, t0, t1)) or
+                                (3_000_000 if t1 - t0 <= 5 * 3600 else 24_000_000))):
+            p = mock.patch.object(obj, name, val)
+            p.start()
+            self.addCleanup(p.stop)
+        self.rows([row(pts=[[int(NOW - 600), 30.0]])])
+        return seen
+
+    def test_no_history_gets_own_window_est(self):
+        seen = self._no_hist({})
+        b = bu.quota_burn_acct("work")
+        e = b["est"]
+        # own window: 3M / 30% = 100k per 1% -> 70% left = 7M; 7d 24M at 12% -> lim 200M, left 176M
+        self.assertEqual((e["low"], e["h5_per_pct"], e["h5_left"]), (True, 100000, 7000000))
+        self.assertEqual((e["wk_left"], e["wk_used"]), (176000000, 24000000))
+        self.assertEqual(b["est_why"], "hist")
+        self.assertNotIn("head", b)                       # ⚠a body head would flip saver_cap to conf high
+        self.assertEqual(seen[0], ("work", NOW + 7200 - 5 * 3600, NOW))   # this account's label, its window
+
+    def test_history_rows_win_over_window(self):
+        self._no_hist({"u2|claude_pro": {"h5_per_pct": 50000, "h5_n": 4, "h5_src": "med",
+                                         "wk_per_pct": 300000, "wk_n": 20}})
+        b = bu.quota_burn_acct("work")
+        e = b["est"]
+        self.assertFalse(e.get("low"))
+        self.assertEqual((e["h5_per_pct"], e["h5_left"], e["wk_left"]), (50000, 3500000, 26400000))
+        self.assertNotIn("est_why", b)
+
+    def test_acct_tokens_own_files_pro_rata(self):
+        ui = sidereus("usage_index")
+        files = {"/p/a.jsonl": {"h": {"3600": {"m": [100, 0, 0, 0]}, "7200": {"m": [10, 20, 30, 40]}}},
+                 "/p/b.jsonl": {"h": {"7200": {"m": [999, 0, 0, 0]}}}}
+        for obj, name, val in ((ui, "_uidx_refresh", lambda: (0, 0)), (ui, "_uidx", {"files": files}),
+                               (ui, "accounts", lambda: [dict(a) for a in ACCTS]),
+                               (ui, "acct_of", lambda sid, fp: ("work", WORK) if sid == "a" else ("", ""))):
+            p = mock.patch.object(obj, name, val)
+            p.start()
+            self.addCleanup(p.stop)
+        # bucket 3600 holds t0 = 5400 -> half of it (50) + bucket 7200 whole (100); b.jsonl is the primary's
+        self.assertEqual(ui.acct_tokens("work", 5400, 9000), 150)
+        self.assertEqual(ui.acct_tokens("work", 10800, 11500), 0)
 
 
 if __name__ == "__main__":

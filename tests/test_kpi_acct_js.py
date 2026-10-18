@@ -11,7 +11,7 @@ from tests.test_saver_quota_js import i18n, jconst
 from tests._node import node_e
 
 FNS = ("fmtPct", "acctList", "mainAcct", "mainAcctOk", "knQ", "knQFor", "kpiAcct", "kpiQ",
-       "sblAccRows", "sblHtml", "sbPctCls")
+       "sblAccRows", "sblHtml", "sbPctCls", "sblEst", "sblEstHtml")
 
 STUBS = """
 var document = {getElementById: () => null};

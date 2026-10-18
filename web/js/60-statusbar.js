@@ -186,7 +186,8 @@ function buildSbar(sv){
     const w = k === '7d' && n == null && est0.wk_used != null ? burnWkEst(BURN) : null;
     // main account: measured tokens are the primary's, so only «left ≈» from the main account's own history (est)
     const bm = ma && !kx && typeof burnFor === 'function' ? burnFor() : null;
-    const e = ma ? (bm && (k === '7d' ? burnWkEst(bm) : burnEst(bm, k, null, p))) : w || burnEst(BURN, k, n, p);
+    // ⚠A low (own-window) est stays in the layer (sblEst) only — the bar keeps its length.
+    const e = ma ? (bm && !(bm.est && bm.est.low) && (k === '7d' ? burnWkEst(bm) : burnEst(bm, k, null, p))) : w || burnEst(BURN, k, n, p);
     // Remaining %; colour still keyed on used (≥70/≥90 used = ≤30/≤10 left). Tooltip keeps used %.
     return (p == null ? '' : '<small>' + esc(T('left')) + '</small> <b class=' + pc(p) + '>' + esc(fmtPct(Math.max(0, 100 - p))) + '</b>') + (n != null ? sbt(T('used'), n) : w ? sbt(T('used ≈'), w.used) : '')
       + (e ? '<span class=sbd3>' + sbt(T('left ≈'), e.left) + '</span>' : '');

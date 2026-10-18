@@ -456,6 +456,29 @@ def _uidx_sid(fp):
     return os.path.basename(sd) if sd else os.path.splitext(os.path.basename(fp))[0]
 
 
+def acct_tokens(acct, t0, t1):
+    """Raw tokens (in + out + cc + cr) account label `acct` ran in hour buckets overlapping [t0, t1].
+    ⚠Hour granularity: the bucket holding t0 counts pro rata — a low-confidence input only (burn `_qb_acct_win`)."""
+    _uidx_refresh()
+    with _uidx_lock:
+        fl = [(fp, _uidx_snap(e.get("h"))) for fp, e in _uidx["files"].items()]
+    prim = next((a["label"] for a in accounts() if a.get("primary")), "")
+    memo, tot = {}, 0.0
+    for fp, h in fl:
+        hs = [(int(k), mm) for k, mm in h.items() if t0 - 3600 < int(k) <= t1]
+        if not hs:
+            continue                         # ⚠period cut before acct_of, same as `_uidx_projects`
+        sid = _uidx_sid(fp)
+        if sid not in memo:
+            memo[sid] = acct_of(sid, fp)[0] or prim
+        if memo[sid] != acct:
+            continue
+        for k, mm in hs:
+            w = min(1.0, (k + 3600 - max(k, t0)) / 3600.0)
+            tot += w * sum(sum(v[:4]) for v in mm.values() if isinstance(v, list))
+    return int(tot)
+
+
 def _uidx_projects(nd, acct=""):
     """Build `projects` in **the same shape** as `ccusage daily --json --instances --since`:
     {slug: [{date, inputTokens, …, totalTokens, totalCost, modelBreakdowns}]}.

@@ -104,6 +104,8 @@ html[data-ui=next] .sblpop .sbl-me > :first-child{color:var(--nx-info)}
 html[data-ui=next] .sblpop .sbl-me .sbl-badge{border-color:var(--nx-info);color:var(--nx-info)}
 html[data-ui=next] .sblpop .sbl-me .sbl-main{background:var(--nx-info)}
 html[data-ui=next] .sblpop .sbl-badge{margin-left:6px;padding:0 4px;border:1px solid var(--acc,var(--nx-field));border-radius:3px;font-size:10.5px;font-style:normal;color:var(--acc,var(--nx-t1))}
+/* Token estimate on its own line under the % so the 360px layer never widens. */
+html[data-ui=next] .sblpop .sbl-est{display:block;font-size:10.5px;color:var(--nx-t3,var(--nx-t2))}
 /* Hint overlays the reset cell instead of taking a column, so hover never shifts layout. */
 html[data-ui=next] .sblpop .sbl-sw > .sbl-hint{position:absolute;top:0;right:0;bottom:0;display:flex;align-items:center;padding:0 4px 0 10px;background:var(--nx-hover);color:var(--nx-t1);font-style:normal;visibility:hidden}
 html[data-ui=next] .sblpop .sbl-sw:is(:hover,:focus-visible) > .sbl-hint{visibility:visible}

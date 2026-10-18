@@ -20,6 +20,19 @@ function sblAccRows(q, list, main){
   rows[mi >= 0 ? mi : 0].main = true;
   return rows;
 }
+// Remaining-token estimate {left, tip} for a row: primary = BURN, the non-primary main = its own body (burnFor); else null.
+function sblEst(r, k){
+  const prim = r.primary, b = prim ? (typeof BURN !== 'undefined' ? BURN : null) : (r.c && r.c === mainAcct() && typeof burnFor === 'function' ? burnFor() : null);
+  if(!(b && b.ok)) return null;
+  const c = b.cur || {}, p = k === '5h' ? r.u5 : r.u7;
+  if(p == null) return null;
+  if(k === '5h') return burnEst(b, '5h', prim ? c.used_local : null, p);
+  return prim && c.wk_used_local != null ? burnEst(b, '7d', c.wk_used_local, p) : burnWkEst(b);
+}
+function sblEstHtml(r, k){
+  const e = sblEst(r, k);
+  return e && e.left != null ? '<small class=sbl-est title="' + esc(e.tip) + '">' + esc(TV({msg: '≈ {n} left', vars: {n: fmtTok(e.left)}})) + '</small>' : '';
+}
 function sblHtml(nowMs){
   const q = typeof QLAST !== 'undefined' && QLAST && QLAST.q;
   const rows = sblAccRows(q, acctList(), mainAcct());
@@ -41,7 +54,7 @@ function sblHtml(nowMs){
     + (r.main ? '<i class=sbl-main title="' + esc(T('Main account')) + '"></i>' : '') + esc(r.label)
     + (r.main ? '<em class=sbl-badge>' + esc(T('Main')) + '</em>' : '')
     + (r.err ? '<em class="sbl-badge sbl-err" title="' + esc(T('Quota fetch failed for this account')) + '">' + esc(T('Failed', 'short')) + '</em>' : '') + '</span>'
-    + '<b' + pcls(r.u5) + '>' + esc(r.l5) + '</b><b' + pcls(r.u7) + '>' + esc(r.l7) + '</b><small>' + esc(r.rs5 || '—') + '</small>'
+    + '<span><b' + pcls(r.u5) + '>' + esc(r.l5) + '</b>' + (r.err ? '' : sblEstHtml(r, '5h')) + '</span><span><b' + pcls(r.u7) + '>' + esc(r.l7) + '</b>' + (r.err ? '' : sblEstHtml(r, '7d')) + '</span><small>' + esc(r.rs5 || '—') + '</small>'
     // Hint overlays the reset cell (absolute), shown by CSS on :hover/:focus-visible only, so columns never shift.
     + (sw(r) ? '<em class=sbl-hint aria-hidden=true>' + esc(T('Make main')) + '</em>' : '') + '</div>').join('');
   if(!rows.length) h += '<div class=sbl-acc><span>—</span></div>';

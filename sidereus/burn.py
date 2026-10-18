@@ -9,6 +9,7 @@ from sidereus.bus import _atomic_write
 from sidereus.transcript import _tail_incr, iso_epoch
 from sidereus.usage import _anchors
 from sidereus.timeline import _tok_events
+from sidereus.usage_index import acct_tokens
 from sidereus.quota import QUOTA_LOG, _cc_account, quota, quota_calibrating
 from sidereus.quota_roots import _conf_path, quota_accounts, ring_last
 from sidereus import claude_roots, ui_prefs
@@ -230,8 +231,29 @@ def _qb_acct_body(label, now):
         out["wk"] = {"now_pct": round(float(wk["pct"]), 1), "left": int(wk["leftSec"])}
     key = _qb_acct_key(label)
     out["est"] = burn_est(out, key)   # same history est as the primary body; None when the key is unknown
-    est_fill(out, key)
+    if out["est"] is None or plan_cut(key)[1]:
+        # No history yet: this account's own window per-1% (plan_est, low). ⚠`head` stays on a copy — on the body it
+        #   would flip saver_cap to conf high; never the primary's per-1% (plans sit 5-9x apart).
+        tmp = dict(out, head=_qb_acct_win(label, out, now))
+        est_fill(tmp, key)
+        out["est"] = tmp["est"]
+        if "est_why" in tmp:
+            out["est_why"] = tmp["est_why"]
     return out
+
+
+def _qb_acct_win(label, out, now):
+    """`plan_est` inputs from this account's own tokens since its 5h/7d window start (usage index), else None."""
+    c, w = out["cur"], out.get("wk") or {}
+    n5 = acct_tokens(label, now + c["left"] - QBURN_WIN, now)
+    if n5 <= 0 or c["now_pct"] <= 0:
+        return None
+    hd = {"per_pct": int(n5 / c["now_pct"]), "src": "win", "wk": None}
+    if w.get("now_pct", 0) >= 1:
+        n7 = acct_tokens(label, now + w["left"] - 7 * 86400, now)
+        if n7 > 0:
+            hd["wk"] = {"lim": int(n7 / w["now_pct"] * 100), "used": n7}
+    return hd
 
 
 def _qb_acct_key(label):
