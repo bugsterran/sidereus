@@ -32,6 +32,15 @@ HOW = "Default = run the pipeline directly: " + _RUN
 HOW_ASK = ("Before starting work on a request that fits one of these pipelines, ask the user which to use "
            "(AskUserQuestion: the fitting pipelines + «파이프라인 없이 진행»), then run the choice; "
            "questions and one-line fixes do not ask. To run one: " + _RUN)
+# Codex has no Agent tool / SendMessage; pl_mark.py --platform codex marks stages by a leading shell `[pl:]` marker.
+_RUN_CODEX = ("follow .claude/pipelines/<name>.json yourself, doing each stage's task in order "
+              "(gate, onFail; stage agent/model are Claude settings, a stage skill means follow that skill). "
+              "Start each stage with a shell command echo \"[pl:<name>/<stage title>]\" and end it with "
+              "echo \"[pl-end:<name>/<stage title>]\" (\"|fail\" before \"]\" when its gate failed); echo \"[pl:-]\" clears.")
+HOW_CODEX = "Default = run the pipeline directly: " + _RUN_CODEX
+HOW_ASK_CODEX = ("Before starting work on a request that fits one of these pipelines, ask the user which to use "
+                 "(the fitting pipelines + «파이프라인 없이 진행»), then run the choice; "
+                 "questions and one-line fixes do not ask. To run one: " + _RUN_CODEX)
 # Sidereus's «Apply» setting (sidereus/prefs.py `pipeline_apply`): auto = HOW, ask = HOW_ASK, off = no output.
 BRIEF_DIR = os.path.join(os.path.expanduser(os.environ.get("MAILBOX_DIR") or "~/.mailbox-mcp"), "plbrief")   # patched in tests
 SID = re.compile(r"^[0-9a-zA-Z-]{8,64}$")
@@ -214,9 +223,9 @@ def _short(d):
     return "~/" + d[len(h):] if d.startswith(h) else d
 
 
-def brief(cwd, extra=()):
+def brief(cwd, extra=(), plat="cc"):
     """additionalContext text for project `cwd` plus the session's other projects `extra`, or "" when none has
-    readable pipelines. Another project's pipeline is named «name (path)»."""
+    readable pipelines. Another project's pipeline is named «name (path)». plat "codex" = shell-marker how-to."""
     if not (isinstance(cwd, str) and os.path.isabs(cwd)):
         return ""
     lines, mode, other = [], None, False
@@ -244,7 +253,10 @@ def brief(cwd, extra=()):
         other = other or (got and d != cwd)
     if not lines:
         return ""
-    how = HOW_ASK if mode == "ask" else HOW
+    if plat == "codex":
+        how = HOW_ASK_CODEX if mode == "ask" else HOW_CODEX
+    else:
+        how = HOW_ASK if mode == "ask" else HOW
     head = ("Pipelines (.claude/pipelines/ of this project, or of the project in parentheses):" if other
             else "Pipelines in this project (.claude/pipelines/):")
     size = lambda xs: len("\n".join([head] + xs + [how]).encode("utf-8"))
@@ -325,7 +337,18 @@ def _changed(sid, dirs, first):
     return hit
 
 
-def main():
+def _platform(argv):
+    """`--platform <key>` value, else "cc". ⚠Flag only: the SessionStart payload carries no verified Codex marker."""
+    if "--platform" not in argv:
+        return "cc"
+    i = argv.index("--platform") + 1
+    return argv[i] if i < len(argv) else ""
+
+
+def main(argv=None):
+    plat = _platform(sys.argv[1:] if argv is None else argv)
+    if plat not in ("cc", "codex"):
+        return 0
     try:
         data = json.loads(sys.stdin.read() or "{}")
         if not isinstance(data, dict):
@@ -340,7 +363,7 @@ def main():
                 return 0
         elif event == "UserPromptSubmit":
             return 0
-        text = brief(cwd, dirs[1:])
+        text = brief(cwd, dirs[1:], plat)
         if text:
             sys.stdout.write(json.dumps({"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}},
                                         ensure_ascii=False))

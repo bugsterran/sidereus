@@ -172,6 +172,10 @@ WAKE_KO = ("새 메일은 Stop 훅(mailbox_wake)이 세션을 깨워 줍니다 �
            " 깨워지면 mailbox_inbox 로 읽으십시오.")
 WAKE_EN = ("New mail wakes this session via the Stop hook (mailbox_wake) — do not start Monitor or watch.sh."
            " When woken, read it with mailbox_inbox.")
+# Codex has no mailbox_wake/Monitor: ext-hooks/gemini_mail_stop.py --platform codex holds the turn end once on new mail.
+WAKE_KO_CODEX = "새 메일은 턴이 끝날 때 Stop 훅이 알려 줍니다 — 알림이 오면 mailbox_inbox 로 읽으십시오."
+WAKE_EN_CODEX = "New mail is delivered at turn end by the Stop hook — when it arrives, read it with mailbox_inbox."
+PLATFORM = "cc"   # set from --platform in main(); only "codex" changes anything
 
 
 def notice_unregistered(cwd, watch=True):
@@ -205,7 +209,32 @@ def notice_wake(me):
     """Registered session: one line saying the Stop hook wakes it. SessionStart only.
 
     ⚠No «watcher off» warning any more — without Monitor that is the normal state."""
-    print(f"[메일박스] 아이디 `{me}` · " + WAKE_KO if _lang() == "ko" else f"[mailbox] id `{me}` · " + WAKE_EN)
+    cx = PLATFORM == "codex"
+    if _lang() == "ko":
+        print(f"[메일박스] 아이디 `{me}` · " + (WAKE_KO_CODEX if cx else WAKE_KO))
+    else:
+        print(f"[mailbox] id `{me}` · " + (WAKE_EN_CODEX if cx else WAKE_EN))
+
+
+def codex_id(cwd):
+    """Codex session's mailbox id: identity.json["codex:<realpath>"] or "<basename>-codex"; "" if it equals a Claude id.
+
+    ⚠Same rule as ext-hooks/gemini_mail_stop.py gemini_id (inlined: standalone hook). identity.json[cwd] is the Claude id."""
+    ident = load(IDENTITY, {})
+    ident = ident if isinstance(ident, dict) else {}
+    real = os.path.realpath(cwd)
+    me = ident.get("codex:" + real)
+    if not isinstance(me, str) or not me:
+        me = os.path.basename(real.rstrip("/")) + "-codex"
+    return "" if me in {v for k, v in ident.items() if not str(k).startswith("codex:")} else me
+
+
+def _platform(argv):
+    """`--platform <key>` value, else "cc". ⚠Flag only: the SessionStart payload carries no verified Codex marker."""
+    if "--platform" not in argv:
+        return "cc"
+    i = argv.index("--platform") + 1
+    return argv[i] if i < len(argv) else ""
 
 
 def record_acct(event, sid):
@@ -309,7 +338,11 @@ def record_clear(event, source, sid):
         pass
 
 
-def main():
+def main(argv=None):
+    global PLATFORM
+    PLATFORM = _platform(sys.argv[1:] if argv is None else argv)
+    if PLATFORM not in ("cc", "codex"):
+        return
     try:
         raw = sys.stdin.read()
         inp = json.loads(raw) if raw.strip() else {}
@@ -319,13 +352,17 @@ def main():
     event = inp.get("hook_event_name") or ""
     cwd = inp.get("cwd") or os.getcwd()
     sid = inp.get("session_id") or ""
-    record_acct(event, sid)
-    record_clear(event, inp.get("source") or "", sid)
-
-    me, src = whoami(cwd)
+    if PLATFORM == "codex":   # ⚠acct/sesspid records are Claude config dir / Claude pid; Codex ids always have a default
+        me = codex_id(cwd)
+        if event == "SessionStart" and me and watch_mode(cwd) == "on":
+            notice_wake(me)
+    else:
+        record_acct(event, sid)
+        record_clear(event, inp.get("source") or "", sid)
+        me, src = whoami(cwd)
 
     # Identity/wake notices only once at SessionStart. They are mutually exclusive.
-    if event == "SessionStart":
+    if event == "SessionStart" and PLATFORM == "cc":
         watch_on = watch_mode(cwd) == "on"
         if not is_registered(src):
             if not skipped(cwd) and mailbox_registered(cwd):

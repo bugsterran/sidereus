@@ -10,6 +10,7 @@ Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`):
 - Codex: `codex-hooks-example.json` into `~/.codex/hooks.json` (`timeout` = seconds, SessionEnd at most 3)
   - Append the entries as a new group per event (keep existing groups first): Codex stores approval per `event:group:entry`, so other tools' approvals stay valid. Then approve them once in the Codex TUI with `/hooks` — the lines read `ext_hook.py` / `gemini_mail_stop.py`, not «Sidereus». ★Verified on 0.163.0 (2026-10-19): list, state, turn-end mail, `[pl:]` marks.
   - Without hooks a Codex session whose rollout changed in the last 10 minutes gets a coarse row marked «Hooks not connected» (folder, model, state unknown); the hook row replaces it once events arrive.
+  - Optional `SessionStart` notices (room invites + turn-end mail line, the project's pipelines): add `<PYTHON> <MAILBOX_CODE_DIR>/hooks/invite_notice.py --platform codex` (timeout 10) and `<PYTHON> <MAILBOX_CODE_DIR>/hooks/pipelines_brief.py --platform codex` (timeout 5). ⚠Without `--platform codex` they print the Claude wording (mailbox_wake, Agent tool). On 0.163 `SessionStart` fires with the first turn, not at launch.
 - The other 18: in `generic-hooks-example.json`, **replace every** `<PLATFORM>` with a value from the list above and use it as that CLI's hook config file (JSON allows no comments, so only the placeholder is left)
 
 ## Receiving mail — in code (no Monitor or watch.sh needed)

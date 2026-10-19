@@ -297,6 +297,11 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 - `PermissionRequest` 는 행을 막힘으로 표시한다. 스크립트가 아무것도 출력하지 않으므로 Codex 는 평소처럼 묻는다.
 - 훅이 없어도(승인 전) 최근 10분 안에 rollout 이 바뀐 Codex 세션은 «훅 미연결» 표시가 붙은 행으로 나온다. 폴더와
   모델만 보이고 상태는 알 수 없다. 훅 이벤트가 들어오면 훅 행으로 바뀐다.
+- 선택 `SessionStart` 안내: `<PYTHON> <MAILBOX_CODE_DIR>/hooks/invite_notice.py --platform codex`(timeout 10) 와
+  `<PYTHON> <MAILBOX_CODE_DIR>/hooks/pipelines_brief.py --platform codex`(timeout 5). Codex 문구는 새 메일이 턴 끝에
+  `Stop` 훅으로 온다(아이디 `codex:<cwd>` 키 또는 `<폴더>-codex`)는 것과, 단계를 세션이 직접 순서대로 돌리며
+  `echo "[pl:<name>/<stage>]"` / `[pl-end:...]` 셸 표시를 남긴다는 것이다. ⚠플래그가 없으면 Claude 문구(`mailbox_wake`,
+  Agent 도구)가 나간다. 플래그만 보고, 페이로드로 추측하지 않는다. 0.163 에서는 `SessionStart` 가 첫 턴과 함께 실행된다.
 - `sidereus/plat_codex.py` 가 `$CODEX_HOME/sessions/**/rollout-*.jsonl` 과 `archived_sessions/` 에서 토큰, 모델, 비용, 사용
   한도를 읽는다. 메시지 내용은 읽지 않는다.
   ⚠`input_tokens` 에는 캐시가 들어 있어 따로 뺀다. 요청은 누적값이 아니라 `last_token_usage` 로 더한다.
