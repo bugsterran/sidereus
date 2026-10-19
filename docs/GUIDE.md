@@ -154,6 +154,7 @@ The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`
 - One row: «Project» (full name; click to search working, recent and all projects, «+ Add project» at the bottom), «Pipeline» (same search picker, this project's pipelines only; ⚠ = file breaks the schema, • = unsaved edits, a dot = running) and «+ New ▾».
 - «+ New ▾» holds «+ New pipeline», «Import from another project», «Ask AI for a draft» and «Standard templates».
 - A folder needs one Claude session before «+ New pipeline» appears there (pipelines live in its `.claude/`).
+- A project with no pipelines shows «Start from a template»: click one for the preview, then «Confirm — create» writes `.claude/pipelines/<name>.json`.
 - «Apply» («Auto · Ask each time · Off») sets how new sessions use pipelines in this project.
 
 ### How stages light up

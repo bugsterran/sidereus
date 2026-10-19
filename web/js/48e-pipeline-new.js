@@ -6,6 +6,11 @@ const PL_TPLS = [['empty', 'Empty pipeline (one stage)'], ['change', 'Change (de
 let PLNEW = null;            // open form {name, title, tpl, diff, busy, err}
 // A disabled button says why (one form at a time) — a silent dead click read as a bug.
 function plNewDis(on){ return on ? ' disabled title="' + esc(T('Close the open form first')) + '"' : ''; }
+// Empty project, no suggestions: template buttons in place of a note; a click only opens the preview (create still needs «Confirm — create»).
+function plTplPick(){
+  return '<div class=pltpl><span class=pltplh>' + esc(T('Start from a template')) + '</span>' + PL_TPLS.map(([k, lab]) =>
+    '<button type=button class=wkrgb data-pltpl="' + esc(k) + '"' + plNewDis(PLNEW || PLDRAFT) + '>' + esc(T(lab)) + '</button>').join('') + '</div>';
+}
 // «+ New ▾» menu: the four ways to start a pipeline behind one button (one head row at 900px). Items keep their own attributes and handlers.
 // pri: the empty state's one action gets the primary fill (four equal outlines gave no starting point)
 // ⚠The menu renders inside .plw: every item handler (here and 48e PLDRAFT) returns early for a click outside .plw.
@@ -132,6 +137,8 @@ document.addEventListener('click', e => {
   if(so){ PLS.std = so.dataset.plstdopen; PLS.diff = null; PLS.msg = ''; plPaint(); plRefocus('[data-plstdsave]:not([disabled])', '[data-plnewm]'); return; }   // list stays open: nothing is saved yet, the card shows .on for the opened draft
   if(e.target.closest('[data-plstdsave]')){ const p = plCur(); if(p && p.std){ PLNEW = { name: p.key, title: p.title, tpl: 'std:' + p.key, diff: '', busy: false, err: '' }; PLDRAFT = null; plPaint(); } return; }
   if(e.target.closest('[data-plsugsave]')){ const p = plCur(); if(p && p.suggest){ PLNEW = { name: p.name, title: '', tpl: 'suggest:' + p.name, diff: '', busy: false, err: '' }; PLDRAFT = null; plPaint(); } return; }
+  const tp = e.target.closest('[data-pltpl]');
+  if(tp){ if(PLNEW || PLDRAFT) return; const k = tp.dataset.pltpl; PLNEW = { name: k === 'empty' ? 'main' : k, title: '', tpl: k, diff: '', busy: false, err: '' }; return plNewSend(false); }
   if(e.target.closest('[data-plimp]')){ PLNEW = { src: 'other', fproj: '', fname: '', name: '', title: '', diff: '', busy: false, err: '' }; PLDRAFT = null; plPaint(); return; }
   if(e.target.closest('[data-plnx]')){ PLNEW = null; plPaint(); return; }
   if(e.target.closest('[data-plnprev]')) return plNewSend(false);

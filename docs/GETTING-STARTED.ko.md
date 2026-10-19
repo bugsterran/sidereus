@@ -115,11 +115,14 @@ setx SIDEREUS_PYTHON py
 설치는 Claude Code 안에서:
 
 ```text
-/plugin marketplace add <클론 경로>
+/plugin marketplace add bugsterran/sidereus
 /plugin install sidereus@sidereus
 ```
 
-`git pull` 뒤 업데이트:
+대안: 로컬 클론은 `/plugin marketplace add <클론 경로>`. 플러그인도 뷰어가 떠 있어야 하고(2장), 클론이 없으면
+파이프라인 채점(`scripts/pl_eval.py`)은 건너뛴다.
+
+업데이트(로컬 클론은 `git pull` 뒤):
 
 ```sh
 claude plugin marketplace update sidereus
@@ -188,6 +191,8 @@ claude mcp add --scope user mailbox -- uv --directory <path-to-mailbox-mcp> run 
 - 새 세션에 `sidereus_quota` 를 불러 보라고 하면 몇 줄로 답한다.
 - `claude mcp list` 에 `plugin:sidereus:sidereus ... ✔ Connected`(플러그인) 또는 `sidereus ... ✔ Connected`(수동)가 보인다.
 - 프롬프트를 보낼 때 `UserPromptSubmit hook ... timed out after 10s` 가 나오지 않는다.
+- `python3 -m sidereus doctor` 가 모든 줄에 `OK` 를 낸다(Python, git, claude, 훅, 뷰어. Windows 는 인터프리터도).
+  `FAIL` 줄 끝에 해결 방법이 붙는다. 아무 파일도 쓰지 않는다.
 
 평소 쓰는 법은 스크린샷과 함께 [GUIDE.ko.md](GUIDE.ko.md) 에 있다.
 
@@ -200,6 +205,7 @@ claude mcp add --scope user mailbox -- uv --directory <path-to-mailbox-mcp> run 
 
 | 증상 | 할 일 |
 |---|---|
+| 무엇이 빠졌는지 모르겠다 | `python3 -m sidereus doctor`. 점검마다 `OK`/`FAIL` 한 줄, `FAIL` 에는 해결 방법이 붙는다 |
 | 화면이 안 뜬다 | `python3 -m sidereus status` 로 보고 띄운다(서비스면 `launchctl kickstart -k ...`, Windows 는 `schtasks /Run /TN Sidereus`) |
 | 코드를 고쳤는데 안 바뀐다 | 화면은 시작할 때 만들어진다. 뷰어를 재시작한다. |
 | 세션이 하나도 안 보인다 | `~/.claude/projects/` 에 최근 `.jsonl` 파일이 있는지 본다. `CLAUDE_CONFIG_DIR` 을 쓰면 뷰어에도 같은 변수를 준다(launchd: `EnvironmentVariables`) |

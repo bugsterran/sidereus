@@ -12,6 +12,7 @@ start   first run copies config.example.json -> config.local.json (never overwri
 stop    stops only the pid this launcher recorded, and only while that pid is alive and its port answers.
         A viewer owned by launchd/schtasks is left alone.
 status  prints what it sees; writes nothing.
+doctor  one OK/FAIL line per setup check (Python, git, claude, hooks, viewer; Windows interpreter); exit 1 on a FAIL.
 setup-claude [--mailbox-mcp DIR]
         prints the `claude mcp add` lines and the hooks JSON block with this clone's real paths; writes nothing.
         --write shows the MCP command and a settings.json diff, asks, then backs up, merges hooks and registers MCP.
@@ -133,9 +134,35 @@ MSG = {
     "st_dead": (" (실행 중 아님)", " (not running)"),
     "st_unowned": ("%d 포트에 무언가 응답합니다 (실행 기록 없음)", "something answers on %d (no run record)"),
     "usage": ("사용법: python3 -m sidereus start [--port N] [--open] [--demo] [--install-service] | stop | status [--port N]"
-              " | setup-claude [--mailbox-mcp DIR] [--write [--yes]]",
+              " | setup-claude [--mailbox-mcp DIR] [--write [--yes]] | doctor [--port N]",
               "usage: python3 -m sidereus start [--port N] [--open] [--demo] [--install-service] | stop | status [--port N]"
-              " | setup-claude [--mailbox-mcp DIR] [--write [--yes]]"),
+              " | setup-claude [--mailbox-mcp DIR] [--write [--yes]] | doctor [--port N]"),
+    "dr_line": ("%-4s  %s — %s", "%-4s  %s — %s"),
+    "dr_fix": (" — 해결: %s", " — fix: %s"),
+    "dr_notfound": ("찾지 못함", "not found"),
+    "dr_python": ("Python 3.9 이상", "Python 3.9+"),
+    "dr_python_fix": ("Python 3.9 이상을 설치하세요", "install Python 3.9 or newer"),
+    "dr_git": ("PATH 의 git", "git on PATH"),
+    "dr_git_fix": ("git 을 설치하고 PATH 에 넣으세요", "install git and put it on PATH"),
+    "dr_claude": ("PATH 의 claude", "claude on PATH"),
+    "dr_claude_fix": ("Claude Code 를 설치하거나 터미널을 다시 여세요", "install Claude Code or reopen the terminal"),
+    "dr_hooks": ("훅 연결", "hooks connected"),
+    "dr_hooks_plugin": ("플러그인 설치됨", "plugin installed"),
+    "dr_hooks_manual": ("%s 에 모두 있음", "all present in %s"),
+    "dr_hooks_none": ("플러그인 없음, %s 에 빠진 훅 있음", "no plugin, hooks missing from %s"),
+    "dr_hooks_fix": ("Claude Code 에서 /plugin install sidereus@sidereus 또는 python3 -m sidereus setup-claude --write",
+                     "/plugin install sidereus@sidereus in Claude Code, or python3 -m sidereus setup-claude --write"),
+    "dr_viewer": ("뷰어 응답", "viewer answering"),
+    "dr_viewer_other": ("Sidereus 가 아닌 응답 %d", "non-Sidereus answer %d"),
+    "dr_viewer_fix": ("python3 -m sidereus start", "python3 -m sidereus start"),
+    "dr_winpy": ("SIDEREUS_PYTHON", "SIDEREUS_PYTHON"),
+    "dr_unset": ("설정 안 됨", "not set"),
+    "dr_nofile": ("%s (파일도 PATH 의 명령도 아님)", "%s (not a file or a command on PATH)"),
+    "dr_alias_unused": ("%s (SIDEREUS_PYTHON 이 먼저 쓰여 문제없음)", "%s (unused: SIDEREUS_PYTHON is used first)"),
+    "dr_winpy_fix": ("python.exe 전체 경로로 설정하세요: setx SIDEREUS_PYTHON C:\\...\\python.exe",
+                     "set it to the full python.exe path: setx SIDEREUS_PYTHON C:\\...\\python.exe"),
+    "dr_alias": ("python3 가 스토어 별칭이 아님", "python3 is not the Store alias"),
+    "dr_alias_fix": ("설정 › 앱 실행 별칭에서 python3 를 끄세요", "turn off python3 in Settings > App execution aliases"),
     "setup_mcp": ("# 1) MCP 등록 — 터미널에서 실행하세요", "# 1) Register the MCP servers — run these in a terminal"),
     "setup_nombx": ("# mailbox-mcp 는 별도 패키지입니다 — 경로를 --mailbox-mcp DIR 로 주면 아래 줄이 채워집니다",
                     "# mailbox-mcp is a separate package — pass --mailbox-mcp DIR to fill in the line below"),
@@ -857,12 +884,78 @@ def cmd_setup_claude(rest):
     return 0
 
 
+def _read_settings(home):
+    try:
+        with open(os.path.join(home, "settings.json"), encoding="utf-8") as f:
+            v = json.load(f)
+        return v if isinstance(v, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _hook_cmds(hooks):
+    return [h.get("command") or "" for groups in (hooks.values() if isinstance(hooks, dict) else ())
+            for g in (groups if isinstance(groups, list) else ()) if isinstance(g, dict)
+            for h in (g.get("hooks") if isinstance(g.get("hooks"), list) else ()) if isinstance(h, dict)]
+
+
+def missing_hook_scripts(settings, want):
+    """Hook script file names of `want` that no settings.json hook command mentions.
+    ⚠By basename, any path/interpreter: an exact-command match failed working setups whose hooks live elsewhere."""
+    names = sorted({m.group(1) for c in _hook_cmds(want) for m in [re.search(r"([\w.-]+\.py)['\"]?$", c)] if m})
+    have = _hook_cmds(settings.get("hooks") if isinstance(settings, dict) else None)
+    return [n for n in names if not any(re.search(r"(^|[\\/'\"\s])" + re.escape(n) + r"(['\"\s]|$)", c) for c in have)]
+
+
+def doctor_checks(port, home, python, win=None, env=None, version=None):
+    """[(name, ok, detail, fix)] for `doctor`; reads only (PATH, settings.json, plugin registry, one GET on port)."""
+    win = IS_WIN if win is None else win
+    env = os.environ if env is None else env
+    version = tuple(sys.version_info[:3]) if version is None else tuple(version)
+    out = [(t("dr_python"), version >= (3, 9), ".".join(str(n) for n in version), t("dr_python_fix"))]
+    for tool in ("git", "claude"):
+        p = _which(tool)
+        out.append((t("dr_" + tool), bool(p), p or t("dr_notfound"), t("dr_%s_fix" % tool)))
+    spath = os.path.join(home, "settings.json")
+    if plugin_installed(home):
+        out.append((t("dr_hooks"), True, t("dr_hooks_plugin"), ""))
+    else:
+        miss = missing_hook_scripts(_read_settings(home), setup_hooks(python)["hooks"])
+        ok = not miss
+        out.append((t("dr_hooks"), ok, t("dr_hooks_manual", spath) if ok else
+                    t("dr_hooks_none", spath) + " (" + ", ".join(miss) + ")", t("dr_hooks_fix")))
+    code = answering(port)
+    # ⚠BUSY = bound and slow (a cold /api/state took 6.5 s); telling the user to `start` again would be wrong.
+    ok = is_sidereus(code) or code == BUSY
+    detail = t("answer", code) if ok and code != BUSY else (t("st_busy") if code == BUSY else
+                                                            (t("dr_viewer_other", code) if code else t("st_none")))
+    out.append((t("dr_viewer"), ok, "http://127.0.0.1:%d — %s" % (int(port), detail), t("dr_viewer_fix")))
+    if win:
+        sp = env.get("SIDEREUS_PYTHON") or ""
+        sp_ok = bool(sp) and (os.path.isfile(sp) or bool(_which(sp)))    # a command name (`py`) is the documented form
+        out.append((t("dr_winpy"), sp_ok, (sp if sp_ok else t("dr_nofile", sp)) if sp else t("dr_unset"),
+                    t("dr_winpy_fix")))
+        p3 = _which("python3") or ""
+        alias = "windowsapps" in p3.lower()     # ⚠the Store stub opens the Store instead of running a hook
+        # pyrun.sh and .mcp.json use SIDEREUS_PYTHON first, so the alias only matters without it.
+        out.append((t("dr_alias"), not alias or sp_ok, t("dr_alias_unused", p3) if alias and sp_ok
+                    else (p3 or t("dr_notfound")), t("dr_alias_fix")))
+    return out
+
+
+def cmd_doctor(port=None):
+    rows = doctor_checks(port or configured_port(), claude_home(), setup_python())
+    for name, ok, detail, fix in rows:
+        print(t("dr_line", "OK" if ok else "FAIL", name, detail) + ("" if ok else t("dr_fix", fix)))
+    return 0 if all(r[1] for r in rows) else 1
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and (argv[0] == "help" or "--help" in argv or "-h" in argv):
         print(t("usage"))
         return 0
-    if not argv or argv[0] not in ("start", "stop", "status", "setup-claude"):
+    if not argv or argv[0] not in ("start", "stop", "status", "setup-claude", "doctor"):
         print(t("usage"))
         return 2
     cmd, rest = argv[0], argv[1:]
@@ -886,6 +979,8 @@ def main(argv=None):
         return cmd_start(port, "--install-service" in rest, "--open" in rest)
     if cmd == "stop":
         return cmd_stop()
+    if cmd == "doctor":
+        return cmd_doctor(port)
     return cmd_status(port)
 
 

@@ -248,7 +248,7 @@ function plBody(ov, hd){
   const bp = plBorrowOf(d, PLS.sel);
   if(bp) return plBorrowBody(d, bp, plHeadRow(hd, names(null) + plNewBtn(!ps.length) + wfb) + plNewForm(), ov);
   if(!ps.length && (d.suggest || []).length) return plSugBody(d, agc + plBorrowChips(d), hd);
-  if(!ps.length) return '<div class="hidnote plempty">' + esc(T('This project has no pipelines — start with «New pipeline»')) + '</div>' + plHeadRow(hd, names(null) + plNewBtn(1) + wfb) + plNewForm() + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
+  if(!ps.length) return plTplPick() + plHeadRow(hd, names(null) + plNewBtn(1) + wfb) + plNewForm() + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
   const p = plCur();
   const list = plHeadRow(hd, names(p) + plNewBtn() + wfb) + plNewForm();
   // ⚠a schema-breaking file has no editor, so «Force delete» is its only way out (same /delete guards: preview + confirm, moved to backup)
