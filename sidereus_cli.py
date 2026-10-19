@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sidereus launcher: start [--port N] [--open] [--demo] [--install-service] | stop | status  (stdlib only, Python 3.9).
+"""Sidereus launcher: start [--port N] [--open] [--demo] [--install-service] | stop [--port N] | status  (stdlib only, Python 3.9).
 Run as `python3 -m sidereus ...` (sidereus/__main__.py) or `python3 sidereus_cli.py ...`.
 
 Port: --port N > env SIDEREUS_PORT > config `port` > 8799 (mailbox_config.port()). `start --port N` saves N to the config
@@ -10,7 +10,7 @@ start   first run copies config.example.json -> config.local.json (never overwri
         Opens a browser tab only with --open.
         --demo runs chat_server.py --demo in the foreground (port --port or 18799); no config, no pid record.
 stop    stops only the pid this launcher recorded, and only while that pid is alive and its port answers.
-        A viewer owned by launchd/schtasks is left alone.
+        A viewer owned by launchd/schtasks (on that port) is left alone.
 status  prints what it sees; writes nothing.
 doctor  one OK/FAIL line per setup check (Python, git, claude, hooks, viewer; Windows interpreter); exit 1 on a FAIL.
 setup-claude [--mailbox-mcp DIR]
@@ -115,6 +115,8 @@ MSG = {
     "st_busy": ("응답 지연(바쁨)", "slow answer (busy)"),
     "svc_owned": ("서비스(%s)가 관리 중이라 멈추지 않습니다 — 서비스 도구로 멈추세요.",
                   "Managed by a service (%s), not stopping it — stop it with the service tool."),
+    "stop_other": ("%d 포트의 Sidereus 는 이 데이터 폴더에서 띄운 것이 아니거나 `--demo` 입니다 — 띄운 터미널에서 Ctrl+C 로, 또는 그 데이터 폴더에서 멈추세요.",
+                   "The Sidereus on port %d was not started from this data dir, or is a `--demo` — stop it with Ctrl+C in its own terminal, or from that data dir."),
     "no_pid": ("실행 기록(sidereus.pid)이 없습니다 — 할 일이 없습니다.", "No run record (sidereus.pid) — nothing to do."),
     "gone": ("기록된 프로세스(pid %d)는 이미 멈췄습니다 — 기록을 지웠습니다.",
              "The recorded process (pid %d) already stopped — record removed."),
@@ -129,6 +131,7 @@ MSG = {
     "st_missing": (" (없음 — start 가 만듭니다)", " (missing — `start` creates it)"),
     "st_svc": ("서비스: %s", "service: %s"),
     "st_inst": ("설치됨", "installed"),
+    "st_inst_port": ("설치됨 (포트 %d)", "installed (port %d)"),
     "st_noinst": ("없음", "none"),
     "foreign": ("%d 포트를 Sidereus 가 아닌 다른 프로그램이 쓰고 있습니다 (응답 %d) — 다른 포트를 쓰세요: --port N",
                 "Port %d is in use by something that isn't Sidereus (answered %d) — pick another: --port N"),
@@ -137,9 +140,9 @@ MSG = {
     "bad_port": ("--port 에는 1024–65535 사이의 숫자가 필요합니다.", "--port needs a number in 1024–65535."),
     "st_dead": (" (실행 중 아님)", " (not running)"),
     "st_unowned": ("%d 포트에 무언가 응답합니다 (실행 기록 없음)", "something answers on %d (no run record)"),
-    "usage": ("사용법: python3 -m sidereus start [--port N] [--open] [--demo] [--install-service] | stop | status [--port N]"
+    "usage": ("사용법: python3 -m sidereus start [--port N] [--open] [--demo] [--install-service] | stop [--port N] | status [--port N]"
               " | setup-claude [--mailbox-mcp DIR] [--write [--yes]] | doctor [--port N]",
-              "usage: python3 -m sidereus start [--port N] [--open] [--demo] [--install-service] | stop | status [--port N]"
+              "usage: python3 -m sidereus start [--port N] [--open] [--demo] [--install-service] | stop [--port N] | status [--port N]"
               " | setup-claude [--mailbox-mcp DIR] [--write [--yes]] | doctor [--port N]"),
     "dr_line": ("%-4s  %s — %s", "%-4s  %s — %s"),
     "dr_fix": (" — 해결: %s", " — fix: %s"),
@@ -476,6 +479,42 @@ def service_installed():
     return False
 
 
+def _run_out(argv):
+    """Run a read-only service query; its stdout text, or "" on failure."""
+    try:
+        r = subprocess.run(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                           stderr=subprocess.DEVNULL, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return r.stdout.decode("utf-8", "replace").replace("\x00", "") if r.returncode == 0 else ""
+
+
+def service_port():
+    """Port the installed service serves, None when not installed or unreadable.
+    No --port in its argv = it follows the config (server_argv / schtasks_argv omit the flag then)."""
+    args = None
+    if IS_MAC:
+        try:
+            with open(mac_plist_path(mac_label()), "rb") as f:
+                args = " ".join(str(a) for a in plistlib.load(f).get("ProgramArguments") or [])
+        except Exception:
+            return None
+    elif IS_WIN:
+        args = _run_out(["schtasks", "/Query", "/TN", WIN_TASK, "/XML"])
+    if not args:
+        return None
+    m = re.search(r"--port\s+(\d+)", args)
+    return int(m.group(1)) if m else configured_port()
+
+
+def svc_owns(port):
+    # ⚠Installed alone is not ownership: a --demo or second instance on another port is not the service's.
+    if not service_installed():
+        return False
+    sp = service_port()
+    return sp is None or sp == int(port)
+
+
 def install_service(port):
     code = answering(port)
     if code == BUSY:
@@ -589,13 +628,16 @@ def _keep_port(port, explicit):
         print(t("port_unsaved", mailbox_config.config_path()))
 
 
-def cmd_stop():
-    if service_installed():
+def cmd_stop(port=None):
+    rec = read_pid()
+    if port is None:
+        port = rec["port"] if rec else configured_port()
+    if svc_owns(port):
         print(t("svc_owned", "launchd" if IS_MAC else "schtasks"))
         return 0
-    rec = read_pid()
-    if not rec:
-        print(t("no_pid"))
+    if not rec or rec["port"] != port:
+        # No handle on that process: never kill by port, only point at whoever started it.
+        print(t("stop_other", port) if is_sidereus(answering(port)) else t("no_pid"))
         return 0
     code = answering(rec["port"])
     # BUSY + live pid = our server, just slow: still ours to stop, never «already stopped».
@@ -624,17 +666,19 @@ def cmd_status(port=None):
         port = rec["port"] if rec else configured_port()
     code = answering(port)
     svc = service_installed()
+    sport = service_port() if svc else None
+    owns = svc and (sport is None or sport == port)
     print(t("st_url", port, t("st_busy") if code == BUSY else (code or t("st_none"))))
     if code and code != BUSY and not is_sidereus(code):
         print(t("foreign", port, code))
-    elif code and not rec and not svc:
+    elif code and not rec and not owns:
         print(t("st_unowned", port))     # not started from this data dir: don't present it as yours
     if rec:
         print(t("st_pid", "%d (port %d)%s" % (rec["pid"], rec["port"], "" if pid_alive(rec["pid"]) else t("st_dead"))))
     else:
         print(t("st_pid", t("st_norec")))
     print(t("st_cfg", os.path.normpath(mailbox_config.config_path()), "" if os.path.exists(mailbox_config.config_path()) else t("st_missing")))
-    print(t("st_svc", t("st_inst") if svc else t("st_noinst")))
+    print(t("st_svc", (t("st_inst_port", sport) if sport else t("st_inst")) if svc else t("st_noinst")))
     return 0
 
 
@@ -993,7 +1037,7 @@ def main(argv=None):
     if cmd == "start":
         return cmd_start(port, "--install-service" in rest, "--open" in rest)
     if cmd == "stop":
-        return cmd_stop()
+        return cmd_stop(port)
     if cmd == "doctor":
         return cmd_doctor(port)
     return cmd_status(port)

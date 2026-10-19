@@ -60,6 +60,7 @@ The first `start` writes `config.local.json` (never overwrites); its default `se
 is fine. Sessions appear within a few seconds. If Claude Code has never run here, the page is empty with
 no warnings. Without the launcher: `/usr/bin/python3 chat_server.py [--no-open] [--port N]`.
 A second clone or data dir needs its own `--port N`; on 8799 `start` stops with "another Sidereus (different data dir)".
+`stop --port N` stops only what this data dir started; a `--demo` or another data dir's viewer stops with Ctrl-C in its own terminal or `stop` from that data dir.
 
 By default Sidereus reads the Claude Code OAuth token from the macOS keychain for the quota lookup and holds
 `caffeinate` while sessions work. Off: `"quota_lookup": false`, `"keep_awake": false` in

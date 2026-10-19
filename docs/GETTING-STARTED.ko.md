@@ -60,6 +60,7 @@ python3 -m sidereus stop
 그대로 써도 된다. 세션은 몇 초 안에 나타난다. 이 기기에서 Claude Code 를 한 번도 안 돌렸다면 경고 없이
 빈 화면이 나온다. 런처 없이 띄우려면 `/usr/bin/python3 chat_server.py [--no-open] [--port N]`.
 두 번째 클론이나 다른 데이터 폴더는 `--port N` 으로 다른 포트를 써야 한다. 8799 에서는 `start` 가 «다른 Sidereus(다른 데이터 폴더)» 라며 멈춘다.
+`stop --port N` 은 이 데이터 폴더에서 띄운 것만 멈춘다. `--demo` 나 다른 데이터 폴더의 뷰어는 띄운 터미널에서 Ctrl-C 로, 또는 그 데이터 폴더에서 `stop` 한다.
 
 기본 설정에서는 할당량 조회를 위해 macOS 키체인에서 Claude Code OAuth 토큰을 읽고, 세션이 일하는 동안
 `caffeinate` 를 잡는다. 끄려면 `config.local.json` 에 `"quota_lookup": false`, `"keep_awake": false`.
