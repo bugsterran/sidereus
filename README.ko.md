@@ -224,7 +224,7 @@ Gemini CLI와 Codex CLI는 훅으로 상태를 보내 Claude Code 세션 옆에 
 - 있는 그대로 공개합니다. 핵심 기능을 바꾸고 싶다면 포크해 주세요.
 - 버그 리포트는 환영합니다. PR은 확장 기능(언어 플러그인, CLI 어댑터, 파이프라인 템플릿)만 받습니다.
   자세한 내용은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
-- 보안 모델과 비공개 신고 방법은 [SECURITY.md](SECURITY.md), 변경 기록은 [CHANGELOG.md](CHANGELOG.md)에 있습니다.
+- 보안 모델과 비공개 신고 방법은 [SECURITY.md](SECURITY.md), 변경 기록은 [CHANGELOG.md](CHANGELOG.md)에 있습니다. 다음 출시 일정과 진행 상황은 [Milestones](https://github.com/bugsterran/sidereus/milestones)에서 볼 수 있습니다.
 
 [ccusage](https://github.com/ryoppippi/ccusage)(5시간 블록 규칙, `message.id` + `requestId` 중복 제거 키),
 Grafana, Datadog, Paseo, Orca, SourceTree, Conductor, Codex, Vibe Kanban에서 아이디어를 얻었습니다. 코드는 직접 작성했습니다.

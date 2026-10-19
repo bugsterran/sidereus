@@ -225,7 +225,7 @@ Until then no Codex row appears.
 - Shared as is. Forks are the way to change the core.
 - Bug reports welcome. PRs accepted for extensions only (language plug-ins, CLI adapters, pipeline
   templates). See [CONTRIBUTING.md](CONTRIBUTING.md).
-- Security model and private reporting: [SECURITY.md](SECURITY.md). Release notes: [CHANGELOG.md](CHANGELOG.md).
+- Security model and private reporting: [SECURITY.md](SECURITY.md). Release notes: [CHANGELOG.md](CHANGELOG.md). Next release date and progress: [Milestones](https://github.com/bugsterran/sidereus/milestones).
 
 Ideas borrowed from [ccusage](https://github.com/ryoppippi/ccusage) (the 5-hour block rule and the
 `message.id` + `requestId` dedup key), Grafana, Datadog, Paseo, Orca, SourceTree, Conductor, Codex and

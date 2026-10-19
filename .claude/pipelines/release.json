@@ -42,7 +42,7 @@
     {
       "title": "태그",
       "agent": "general-purpose",
-      "task": "Only after the owner confirmed in 확인: commit CHANGELOG.md alone (the commit body ends with the `Closes #N, closes #M, ...` line from the notes, so the issues close when main receives it), then create an annotated tag vX.Y.Z on that commit (git tag -a). ⚠Never push commits or tags. Report the commit hash and the tag.",
+      "task": "Only after the owner confirmed in 확인: commit CHANGELOG.md alone (the commit body ends with the `Closes #N, closes #M, ...` line from the notes, so the issues close when main receives it), then create an annotated tag vX.Y.Z on that commit (git tag -a). ⚠Never push commits or tags. Then close GitHub milestone x.y.z and open the next one (next minor, due about one week later) with `gh api repos/<owner>/<repo>/milestones -f title=<next> -f due_on=<YYYY-MM-DD>T23:59:59Z`; the README links to the Milestones page, never to a date. Report the commit hash and the tag.",
       "ui": { "x": 1284, "y": 24, "color": "#2ec4b6" }
     }
   ]
