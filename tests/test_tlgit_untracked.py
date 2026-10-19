@@ -24,7 +24,7 @@ def run(body, sess=SESS):
            "function T(s){ return s; } function TV(o){ return T(o.msg).replace(/\\{(\\w+)\\}/g, (m, k) => String(o.vars[k])); }\n"
            "function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }\n"
            "const cpKey = x => 's:' + x.sid, sid8 = s => s.slice(0, 8), stateLbl = s => s; function tlgPaint(){}\n"
-           "function tlgBaseLabel(){ return ''; }\n"   # baseline badge: tests/test_tlg_base_badge_js.py
+           "function tlgBaseLabel(){ return ''; } function tlgBaseText(){ return 'Base'; }\n"   # baseline badge: tests/test_tlg_base_badge_js.py
            "const PPC = {}; let PPS = null;\n"
            "function getJSON(u){ urls.push(u); return new Promise(() => {}); }\n"
            "function loadDiff(...a){ opened.push(a); }\n" % json.dumps(sess))
@@ -49,7 +49,8 @@ def text(h):
 class Chip(unittest.TestCase):
     def test_counts_exclude_untracked(self):
         h = chip(REPLY)
-        self.assertIn("Changes · 3 files +15−6", text(h))      # 30-15 added, untracked file and its lines left out
+        self.assertEqual(text(h).split(" · ")[0], "3 files +15−6")      # 30-15 added, untracked file and its lines left out; «Changes» only in aria
+        self.assertIn('aria-label="Changes · Base · 3 files +15 −6', h)
 
     def test_shared_count_and_paths_only(self):
         h = chip(REPLY)

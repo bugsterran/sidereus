@@ -397,9 +397,48 @@ class TlPlLegend(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         h = json.loads(r.stdout)
         self.assertEqual(re.findall(r"<i class=tlpn>([^<]*)</i>", h), ["Done", "Running", "Sent back", "Failed", "Waiting", "Skipped"])
-        self.assertIn(">Pipeline</i>", h)
+        self.assertIn(">Pipeline<i class=tlplgc aria-hidden=true> ▾</i></i>", h)
         self.assertIn('title="Sent back: this stage sent the run back to an earlier stage"', h)
         self.assertNotRegex(h, r"[\uac00-\ud7a3]")   # no Korean left in en
+
+    def test_key_markup(self):
+        h = _run([{"sid": "s1", "plrun": [OPEN]}], "tlPlLegendFor([g], L)")
+        self.assertIn("<i class=tlplgc aria-hidden=true> ▾</i></i>", h)   # fold glyph, hidden while expanded (21 css)
+        pop = h[h.index("<div class=tlplgp id=tlplgp>"):h.index('class="tlplhb ')]
+        self.assertIn('<i class="tlpst tlplgs">', pop)   # every swatch is inside the popover container
+        self.assertEqual(h.count("tlplgs"), pop.count("tlplgs"))
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "css", "21-timeline-plrun.css"), encoding="utf-8") as fh:
+            css = fh.read()
+        self.assertIn(".tlplg.tlplgf:is(:hover,:focus-within) > .tlplgp{display:flex}", css)
+
+    def test_key_fit(self):
+        # Stubbed rects: the wrapper's top follows the head width; the decision reads the EXPANDED layout only.
+        src = js_fn("tlPlKeyWraps") + js_fn("tlPlKeyFit") + r"""
+let TLPL_KRO = null, W = 0, seen = [];
+const cls = new Set(), attrs = {};
+const lab = {tabIndex: -1, setAttribute: (k, v) => { attrs[k] = v; }, removeAttribute: k => { delete attrs[k]; if(k === 'tabindex') lab.tabIndex = -1; }};
+const pop = {setAttribute: (k, v) => { attrs['pop.' + k] = v; }, removeAttribute: k => { delete attrs['pop.' + k]; }};
+const g = {classList: {remove: c => cls.delete(c), toggle: (c, f) => f ? cls.add(c) : cls.delete(c)}, querySelector: q => q === '.tlplgt' ? lab : pop};
+const sum = {getBoundingClientRect: () => ({top: 3, height: 19})};
+const hr = {getBoundingClientRect: () => { seen.push(cls.has('tlplgf')); return {top: W < 1000 ? 32 : 0}; }};
+const head = {querySelector: q => q === '.tlplg' ? g : q === '.tlsum' ? sum : q === '.tlhr' ? hr : null};
+const box = {querySelector: () => head};
+const out = {};
+W = 1440; tlPlKeyFit(box); out.wide = [cls.has('tlplgf'), lab.tabIndex, attrs['aria-describedby'] || ''];
+W = 900; tlPlKeyFit(box); out.narrow = [cls.has('tlplgf'), lab.tabIndex, attrs['aria-describedby'], attrs['pop.role']];
+tlPlKeyFit(box); out.again = cls.has('tlplgf');
+W = 1440; tlPlKeyFit(box); out.back = [cls.has('tlplgf'), lab.tabIndex];
+out.seen = seen;
+console.log(JSON.stringify(out));
+"""
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        o = json.loads(r.stdout)
+        self.assertEqual(o["wide"], [False, -1, ""])
+        self.assertEqual(o["narrow"], [True, 0, "tlplgp", "tooltip"])   # folded: focusable label describing the popover
+        self.assertTrue(o["again"])   # stable: same width, same answer
+        self.assertEqual(o["back"], [False, -1])
+        self.assertEqual(o["seen"], [False] * 4)   # always measured with the fold class removed
 
 
 class TlPlCss(unittest.TestCase):

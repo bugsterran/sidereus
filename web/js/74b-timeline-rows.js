@@ -203,8 +203,15 @@ function tlHelpText(){
 // Header row: window summary, token total, hidden-session count, age / error.
 // lg = pipeline stepper key (tlPlLegendFor, 74c) or ''; sits at the header's right end, wraps under it when the line is full.
 function tlHeadHtml(d, rows, tlHidden, lg){
+  const sum = TV({msg: 'Last {t} · {n} subagents · peak {p} at once', vars: {t: d.hours < 1 ? U(Math.round(d.hours*60),'m') : U(d.hours,'h'), n: rows.filter(r=>r.kind!=='sess').length, p: d.peak}});
+  const hidT = tlHidden ? TV({msg: '{n} off-window sessions hidden', vars: {n: tlHidden}}) : '';
+  // ⚠.tlsum wraps by a 200px basis then ellipsizes (20 css), so the head's line count never follows the text length; title = the same counts in full.
+  const tip = [tlErr ? T(tlErr) : '', sum, d.tok ? T('tokens') + ' ' + fmtTok(d.tok.sum||0) : '', hidT].filter(Boolean).join(' · ');
   const tlHead = '<div class="wvh wvht"><b>'+T('Subagent timeline')+'</b>'
-    + '<span>'+TV({msg: 'Last {t} · {n} subagents · peak {p} at once', vars: {t: d.hours < 1 ? U(Math.round(d.hours*60),'m') : U(d.hours,'h'), n: rows.filter(r=>r.kind!=='sess').length, p: d.peak}})
+    + '<span class=tlsum title="' + esc(tip) + '">'
+      // ★State failures in text instead of erasing bars (loadTl). ⚠First: the span ellipsizes at its end, so a failure is never cut off.
+      + (tlErr ? '<em class=tlage style="color:'+thc('#f0b357','var(--nx-warn)')+'">'+esc(T(tlErr))+' · </em>' : '')
+      + sum
       // ★Tokens are **the sum of bars this screen drew** — may differ from the sidebar's "today by project".
       // ★There are **only two** sources of difference (re-summarized 2026-09-09 after totals were reported as inconsistent).
       // (1) Window: here the last N hours, today card from midnight, daily per day.
@@ -219,13 +226,12 @@ function tlHeadHtml(d, rows, tlHidden, lg){
           + '">· '+(rows.some(r => r.plat) ? aiLogo('cc') + ' ' : '')+T('tokens')+' '+fmtTok(d.tok.sum||0)+'</em>' : '')
       // ★Write **how many** sessions were hidden (see `sessShown` comment above) — removing silently reads as "none".
       + (tlHidden ? '<em class=tlhid title="'+esc(T('Sessions with no bars in this window and no live connection — widen the window to see them'))+'">· '
-          + TV({msg: '{n} off-window sessions hidden', vars: {n: tlHidden}})+'</em>' : '')
+          + hidT+'</em>' : '')
       + '<em class=tlage id=tlage></em>'
-      // ★State failures **in text** — instead of erasing bars (★ in loadTl above)
-      + (tlErr ? '<em class=tlage style="color:'+thc('#f0b357','var(--nx-warn)')+'"> · '+esc(T(tlErr))+'</em>' : '')
       + '</span>'
       // The label above was removed (2026-09-01) — the session card already says the same. The marker goes **on that row**.
-    + (typeof tlgChipHtml === 'function' ? tlgChipHtml() : '') + (lg || '') + '</div>';   // «Changes» group before the legend, pushed right (22 css)
+    // ⚠«Changes» group + pipeline key share one right-aligned wrapper: they wrap together, so neither lands under the «Runs N» chip (21 css)
+    + '<div class=tlhr>' + (typeof tlgChipHtml === 'function' ? tlgChipHtml() : '') + (lg || '') + '</div></div>';
   return tlHead;
 }
 // Controls and «?» live in the header toolbar slot (tbSet, 92-mainview-tabs.js); ids are global so tlWireCtl finds them.
