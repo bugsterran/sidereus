@@ -116,11 +116,14 @@ setx SIDEREUS_PYTHON py
 Install, inside Claude Code:
 
 ```text
-/plugin marketplace add <path to your clone>
+/plugin marketplace add bugsterran/sidereus
 /plugin install sidereus@sidereus
 ```
 
-Update after `git pull`:
+Alternative: local clone, `/plugin marketplace add <path to your clone>`. The plugin still needs a running viewer
+(§2); without a clone, pipeline scoring (`scripts/pl_eval.py`) is skipped.
+
+Update (local clone: after `git pull`):
 
 ```sh
 claude plugin marketplace update sidereus
@@ -192,6 +195,8 @@ claude mcp add --scope user mailbox -- uv --directory <path-to-mailbox-mcp> run 
 - A new session asked to call `sidereus_quota` answers in a few lines.
 - `claude mcp list` shows `plugin:sidereus:sidereus ... ✔ Connected` (plugin) or `sidereus ... ✔ Connected` (manual).
 - A prompt does not show `UserPromptSubmit hook ... timed out after 10s`.
+- `python3 -m sidereus doctor` prints `OK` on every line (Python, git, claude, hooks, viewer; on Windows also the
+  interpreter). A `FAIL` line ends with its fix; the command writes nothing.
 
 Everyday use, with screenshots: [GUIDE.md](GUIDE.md).
 
@@ -204,6 +209,7 @@ Everyday use, with screenshots: [GUIDE.md](GUIDE.md).
 
 | Symptom | Fix |
 |---|---|
+| Not sure what is missing | `python3 -m sidereus doctor`: one `OK`/`FAIL` line per check, each `FAIL` with its fix |
 | Page does not load | `python3 -m sidereus status`, then start it (service: `launchctl kickstart -k ...`; Windows: `schtasks /Run /TN Sidereus`) |
 | A code change does not show | The page is built at start. Restart the viewer. |
 | No sessions listed | Check that `~/.claude/projects/` has recent `.jsonl` files. With `CLAUDE_CONFIG_DIR` set, the viewer must see the same variable (launchd: `EnvironmentVariables`) |

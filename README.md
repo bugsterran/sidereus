@@ -106,9 +106,12 @@ python3 -m sidereus start --port 8800 --open   # the port is saved in config.loc
 Connect Claude Code with the plugin or the manual hooks, not both ([§5](docs/GETTING-STARTED.md#5-mcp-and-hooks)). The plugin, inside Claude Code:
 
 ```text
-/plugin marketplace add ~/sidereus
+/plugin marketplace add bugsterran/sidereus
 /plugin install sidereus@sidereus
 ```
+
+Alternative: local clone, `/plugin marketplace add ~/sidereus`. The plugin still needs a running viewer; without a clone,
+pipeline scoring (`scripts/pl_eval.py`) is skipped.
 
 Hooks and MCP tools reach only sessions started after the install, so restart Claude Code once.
 

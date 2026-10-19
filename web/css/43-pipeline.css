@@ -9,6 +9,8 @@
 .plnewmw>.wkrgb{white-space:nowrap}
 .plnewm{position:absolute;top:calc(100% + 4px);left:0;z-index:40;display:flex;flex-direction:column;gap:3px;padding:5px;min-width:max-content;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:6px;box-shadow:0 6px 18px #0006}   /* 48e plNewBtn menu, inside .plw */
 .plnewm .wkrgb{text-align:left}
+.pltpl{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 8px}   /* 48e plTplPick: wraps at 900px */
+.pltplh{font-size:12px;color:var(--nx-t2,#8b95a5);margin-right:4px}
 .plnames .mvdot{margin-left:5px;vertical-align:1px}
 .plagrun{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px}   /* 48h read-only Sidereus pipeline run */
 /* «Running N» overview under the canvas, above the run table (48b plOvHtml): one row per running pipeline, stage strip ✓ done · ● running · · waiting */

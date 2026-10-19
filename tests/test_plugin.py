@@ -137,6 +137,87 @@ class PluginTest(unittest.TestCase):
                     self.assertIsNone(DENY.search(line), "%s:%d" % (rel, n))
 
 
+class SelfContainedTest(unittest.TestCase):
+    """A copy of plugin/ (what `/plugin install` caches, no clone) imports nothing but stdlib and its own files."""
+    PLATFORM_ONLY = {"fcntl", "msvcrt", "winreg", "_winapi", "termios", "pwd", "grp", "resource"}
+
+    def setUp(self):
+        import sysconfig
+        self.tmp = tempfile.mkdtemp()
+        self.copy = os.path.realpath(os.path.join(self.tmp, "plugin"))
+        shutil.copytree(PLUGIN, self.copy)
+        self.std = tuple(os.path.realpath(p) + os.sep for p in {sysconfig.get_paths()["stdlib"],
+                                                               sysconfig.get_paths()["platstdlib"]})
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def sources(self):
+        for d in ("", "hooks", "mcp"):
+            base = os.path.join(self.copy, d)
+            for n in sorted(os.listdir(base)):
+                if n.endswith(".py"):
+                    yield os.path.join(base, n)
+
+    def is_std(self, f):
+        return os.path.realpath(f).startswith(self.std)
+
+    def test_imports_resolve_inside_copy(self):
+        import ast
+        import importlib.util as iu
+        own = {os.path.basename(p)[:-3] for p in self.sources()}
+        for path in self.sources():
+            with open(path, encoding="utf-8") as f:
+                tree = ast.parse(f.read(), path)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    names = [a.name.split(".")[0] for a in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    self.assertEqual(node.level, 0, path)
+                    names = [node.module.split(".")[0]]
+                else:
+                    continue
+                for n in names:
+                    if n in own or n in self.PLATFORM_ONLY:
+                        continue
+                    spec = iu.find_spec(n)
+                    self.assertIsNotNone(spec, "%s: %s" % (os.path.basename(path), n))
+                    ok = spec.origin in ("built-in", "frozen") or self.is_std(spec.origin or "")
+                    self.assertTrue(ok, "%s imports non-stdlib %s (%s)" % (os.path.basename(path), n, spec.origin))
+
+    def test_load_from_copy_only(self):
+        import contextlib
+        import io
+        import sys
+        from unittest import mock
+        own = {os.path.basename(p)[:-3] for p in self.sources()}
+        saved_mods, saved_path = dict(sys.modules), list(sys.path)
+        for n in own:      # ⚠a repo copy already imported (mailbox_config) would satisfy the import from outside the copy
+            sys.modules.pop(n, None)
+        sys.path[:] = [p for p in sys.path if (os.path.realpath(p or os.getcwd()) + os.sep).startswith(self.std)]
+        env = {"MAILBOX_DIR": os.path.join(self.tmp, "data"), "CLAUDE_CONFIG_DIR": os.path.join(self.tmp, "cc"),
+               "HOME": self.tmp, "USERPROFILE": self.tmp}
+        try:
+            with mock.patch.dict(os.environ, env), contextlib.redirect_stderr(io.StringIO()):   # config-missing notice
+                for k in ("MAILBOX_CONFIG", "SIDEREUS_PORT"):
+                    os.environ.pop(k, None)
+                files = [p for p in self.sources() if os.path.dirname(p) != self.copy]
+                for i, path in enumerate(files):
+                    spec = importlib.util.spec_from_file_location("plugin_copy_%d" % i, path)
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+            outside = sorted(n for n, m in sys.modules.items() if n not in saved_mods
+                             and getattr(m, "__file__", None) and not self.is_std(m.__file__)
+                             and not os.path.realpath(m.__file__).startswith(self.copy + os.sep))
+            self.assertEqual(outside, [])
+            self.assertTrue(len(files) >= 10, files)
+        finally:
+            sys.path[:] = saved_path
+            for n in [n for n in sys.modules if n not in saved_mods]:
+                del sys.modules[n]
+            sys.modules.update(saved_mods)
+
+
 @unittest.skipIf(os.name == "nt" or not os.path.exists("/bin/sh"), "POSIX sh stubs")
 class PyrunTest(unittest.TestCase):
     """hooks/pyrun.sh with a fake PATH of stub interpreters (POSIX sh only; no real Python is run)."""

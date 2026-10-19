@@ -106,9 +106,12 @@ python3 -m sidereus start --port 8800 --open   # 포트는 config.local.json에 
 Claude Code 연결은 플러그인과 수동 훅 중 하나만 고릅니다([5장](docs/GETTING-STARTED.ko.md#5-mcp-와-훅)). 플러그인은 Claude Code 안에서:
 
 ```text
-/plugin marketplace add ~/sidereus
+/plugin marketplace add bugsterran/sidereus
 /plugin install sidereus@sidereus
 ```
+
+대안: 로컬 클론은 `/plugin marketplace add ~/sidereus`. 플러그인도 뷰어가 떠 있어야 하고, 클론이 없으면
+파이프라인 채점(`scripts/pl_eval.py`)은 건너뜁니다.
 
 훅과 MCP 도구는 설치 뒤에 시작한 세션에만 걸리므로 Claude Code를 한 번 다시 시작하세요.
 

@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: the «Evaluation» panel's «Result layer» states per pipeline, without a score, how many gates were seen failing, runs and blocked order violations, how many gate passes in the last 30 days broke later or had a fix follow within 14 days, and the review loop-back share against the 30 days before; `scripts/pl_report.py` writes the same facts to a dated report, refreshed weekly at run end.
 - Timeline: the «Session» picker and «Changes» chip moved from the toolbar to the right of the «Subagent timeline» head line (the toolbar no longer wraps at 1100px). The «Changes» chip starts with a badge naming the baseline the files are counted against (Uncommitted, Unpushed, Since session start, Since the default branch); it turns the warning colour when the chosen baseline was not available and another was used.
 - Timeline: the head line no longer reflows as its text changes. The summary wraps by a fixed basis and ends in «…» when it runs long (full text in its tooltip); the «Session» label and the word «Changes» moved into the accessible name and tooltip; the pipeline key shows inline when the line has room and folds to «Pipeline ▾» with a hover/focus popover when it does not.
+- Plugin: installs straight from GitHub (`/plugin marketplace add bugsterran/sidereus`), no clone needed; a local clone still works. Without a clone, pipeline scoring is skipped.
+- Pipelines: the «Pipelines» empty state shows the template choices instead of a blank list.
+- `python3 -m sidereus doctor` prints one `OK`/`FAIL` line per setup check (Python 3.9+, git, claude, hooks connected, viewer answering; on Windows `SIDEREUS_PYTHON` and the Store alias) with the fix on each `FAIL`; exit 1 on any `FAIL`, writes nothing.
 
 ### Fixed
 

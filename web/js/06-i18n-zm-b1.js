@@ -115,7 +115,7 @@ Object.assign(I18N.ko, {
   'Recent runs': '최근 실행',
   'Recent records': '최근 기록',
   // 48-pipeline.js
-  'This project has no pipelines — start with «New pipeline»': '이 프로젝트에는 파이프라인이 없습니다 — «새 파이프라인» 으로 시작',
+  'Start from a template': '템플릿으로 시작',
   'Run': '실행',
   'Delete': '삭제',
   'Applies to sessions started after the change': '새로 시작하는 세션부터 적용됩니다',
