@@ -181,6 +181,17 @@ class BurnAcct(unittest.TestCase):
         self.assertNotIn("head", b)                       # ⚠a body head would flip saver_cap to conf high
         self.assertEqual(seen[0], ("work", NOW + 7200 - 5 * 3600, NOW))   # this account's label, its window
 
+    def test_own_used_acct_not_primary_sum(self):
+        seen = self._no_hist({})
+        tok = mock.patch.object(bu, "_tok_events", lambda u0: [(NOW - 60, 99_999_999)])   # primary's: never used
+        tok.start()
+        self.addCleanup(tok.stop)
+        b = bu.quota_burn_acct("work")
+        self.assertEqual((b["cur"]["used_acct"], b["wk"]["used_acct"]), (3_000_000, 24_000_000))
+        self.assertNotIn("used_local", json.dumps(b))
+        self.assertNotIn("head", b)
+        self.assertEqual(len(seen), 2)                    # one 5h + one 7d count, not repeated for the est
+
     def test_history_rows_win_over_window(self):
         self._no_hist({"u2|claude_pro": {"h5_per_pct": 50000, "h5_n": 4, "h5_src": "med",
                                          "wk_per_pct": 300000, "wk_n": 20}})

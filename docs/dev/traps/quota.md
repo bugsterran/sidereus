@@ -54,6 +54,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Fix: with no history est, the account body runs `plan_est` on a copy carrying that account's own window per-1% (its sessions' tokens since the 5h/7d start, hour buckets, `low`); the layer shows «≈ N left» per row, the bar stays as it was (history est only).
   - ⚠Never put that `head` on the body (saver_cap would read conf high) and never use the primary's per-1% for another account (plans sit 5-9x apart).
   - ⚠Own per-account history is not built: the log has one writer for the primary and `_tok_scan` does not attribute tokens per account.
+- **Main account bar dropped every token figure** (`burn._qb_acct_body`, `60-statusbar.js use`).
+  - Cause: the account body had no used sum and the bar blanks the primary's `used_local` while a main account is set.
+  - Fix: the body carries `cur.used_acct` / `wk.used_acct` = `acct_tokens` hour-bucket sums since that account's 5h/7d start (counted once, shared with `_qb_acct_win`); the bar shows them as «used ≈».
+  - ⚠Never name them `used_local` (exact measured sum, read by `quota_used5`/MCP) and never fill them from the primary's `_tok_events`. Tests `test_burn_acct.test_own_used_acct_not_primary_sum` · `test_main_acct_js.test_main_own_used_is_approx`.
 - ★**Quota history mixed plans after an upgrade** — old-plan windows skewed `base` · `delta` · `est` · held `_qb_lim`.
   - Cause: `~/.claude.json` plan fields (`userRateLimitTier`) lag the upgrade by ~1.6 days, so rows keep the old plan code.
   - Fix: log rows carry `plan`; `burn_hist` groups by `acct|plan` (untagged rows stay `acct`). Fallback: `plan_shift` — this window's per-1% ≥ 2x or ≤ 0.5x history (≥ 3 windows) sets `_plan_cut[acct]` = window start; older windows leave the baseline (`base.why = "plan"`), `est` is null (`est_why = "plan"`) until the next pass, an older `_qb_lim` is stale. The cut only moves forward and never clears; with tagged rows the baseline prefers current-plan windows.
