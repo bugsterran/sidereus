@@ -124,6 +124,8 @@ function plTagNames(x, mem){
   // hook already closed the run (last main stage sets end on its first Bash), so an ended run of that name never dots.
   const pr = x.plm && (x.plrun || []).find(r => r && r.name === x.plm.name);
   if(x.plm && x.plm.name && x.plm.name !== '-' && !(pr && pr.end)) names.push(x.plm.name);
+  // Open server runs too: plrun is written at the first [pl:] call, subagent labels lag up to the 20 s agent-meta TTL (Timeline already showed it).
+  if(typeof plPrLive === 'function') (x.plrun || []).forEach(r => { if(r && r.name && !r.end && plPrLive(r) && !names.includes(r.name)) names.push(r.name); });
   return names;
 }
 // A session launched in another folder (cwd/repos own no pipeline of that name): home = the one known project owning it.
