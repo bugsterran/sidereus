@@ -58,6 +58,7 @@ class CliBase(unittest.TestCase):
         self.call_env = []
         c._call = lambda argv, env=None: self.called.append(argv) or self.call_env.append(env) or 0
         c._run = lambda argv: self.ran.append(argv) or 1
+        c._run_out = lambda argv: ""    # never query the real schtasks
         c._sleep = lambda s: None
         c._home = lambda p: os.path.join(self.tmp, "home")
         c.pid_alive = lambda pid: True
@@ -579,6 +580,66 @@ class ServiceBuilders(CliBase):
         self.assertTrue(argv[7].endswith("chat_server.py\" --no-open"))
         self.assertEqual(self.ran, [])
         self.assertEqual(self.spawned, [])
+
+
+
+class ServicePort(CliBase):
+    """A service on one port does not own a --demo / second instance on another (Refs #11)."""
+    def setUp(self):
+        super().setUp()
+        c = self.cli
+        c.IS_MAC, c.IS_WIN = True, False
+        self.plist = c.mac_plist_path(c.mac_label())
+        os.makedirs(os.path.dirname(self.plist), exist_ok=True)
+        with open(self.plist, "w", encoding="utf-8") as f:
+            f.write(c.build_plist(c.mac_label(), 8799, self.tmp))     # config port 8799: no --port flag in the argv
+        self.up = True
+
+    def _pidfile(self, pid, port):
+        with open(os.path.join(self.tmp, "sidereus.pid"), "w", encoding="utf-8") as f:
+            json.dump({"pid": pid, "port": port, "started": 1}, f)
+
+    def _main(self, argv):
+        buf = io.StringIO()
+        with mock.patch("sys.stdout", new=buf):
+            rc = self.cli.main(argv)
+        return rc, buf.getvalue()
+
+    def test_service_port_from_plist(self):
+        self.assertEqual(self.cli.service_port(), 8799)
+        with open(self.plist, "w", encoding="utf-8") as f:
+            f.write(self.cli.build_plist(self.cli.mac_label(), 9000, self.tmp))
+        self.assertEqual(self.cli.service_port(), 9000)
+        self.assertFalse(self.cli.svc_owns(8799))
+
+    def test_stop_other_port_kills_recorded_pid(self):
+        self._pidfile(777, 18799)
+        self.cli._sleep = lambda s: setattr(self, "up", False)
+        rc, out = self._main(["stop", "--port", "18799"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.killed, [777])
+        self.assertNotIn("Managed by a service", out)
+
+    def test_stop_service_port_still_refused(self):
+        self._pidfile(777, 8799)
+        rc, out = self._main(["stop"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.killed, [])
+        self.assertIn("Managed by a service", out)
+
+    def test_stop_unrecorded_answering_port_hints(self):
+        rc, out = self._main(["stop", "--port", "18799"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.killed, [])
+        self.assertIn("not started from this data dir", out)
+
+    def test_status_other_port_not_owned_by_service(self):
+        rc, out = self._main(["status", "--port", "18799"])
+        self.assertEqual(rc, 0)
+        self.assertIn("something answers on 18799 (no run record)", out)
+        self.assertIn("installed (port 8799)", out)
+        rc, out = self._main(["status", "--port", "8799"])
+        self.assertNotIn("no run record", out)
 
 
 if __name__ == "__main__":
