@@ -80,7 +80,7 @@ Design and scope: [docs/CONCEPT.md](docs/CONCEPT.md).
 
 ## Before you install
 
-- On macOS it reads the Claude Code token from the keychain for the quota lookup at `api.anthropic.com`, the only outbound request (`"quota_lookup": false` turns it off), and holds `caffeinate` while sessions work (`"keep_awake": false`).
+- On macOS it reads the Claude Code token from the keychain for the quota lookup at `api.anthropic.com` (`"quota_lookup": false` turns it off); the only other outbound requests are the security checks' package-name and version lookups at `api.osv.dev` (skipped offline), and holds `caffeinate` while sessions work (`"keep_awake": false`).
 - Its hooks apply to every Claude Code session; in a project with `.claude/pipelines/*.json` they can deny an out-of-order step or an early `git commit` ([details](#agents-can-ask-too-mcp)).
 - On a Mac shared with other accounts, they can call this viewer's API too: there is no auth beyond loopback ([SECURITY.md](SECURITY.md#model)).
 - Everything that touches the keychain, network, AppleScript or files, and the optional paid quota probe (off by default): [SECURITY.md](SECURITY.md), [CONFIG.md](docs/CONFIG.md).

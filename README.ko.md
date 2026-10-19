@@ -80,7 +80,7 @@ python3 -m sidereus start --demo --open      # 18799 포트, Ctrl-C로 끕니다
 
 ## 설치 전에
 
-- macOS에서는 사용량 조회를 위해 키체인의 Claude Code 토큰을 읽어 `api.anthropic.com`에 보냅니다. 밖으로 나가는 요청은 이것 하나입니다(`"quota_lookup": false`로 끔). 세션이 일하는 동안 `caffeinate`를 겁니다(`"keep_awake": false`로 끔).
+- macOS에서는 사용량 조회를 위해 키체인의 Claude Code 토큰을 읽어 `api.anthropic.com`에 보냅니다. (`"quota_lookup": false`로 끔). 그 밖에 밖으로 나가는 요청은 보안 점검이 `api.osv.dev`에 패키지 이름·버전을 조회하는 것뿐입니다(오프라인이면 건너뜀). 세션이 일하는 동안 `caffeinate`를 겁니다(`"keep_awake": false`로 끔).
 - 훅은 이 컴퓨터의 모든 Claude Code 세션에 걸립니다. `.claude/pipelines/*.json`이 있는 프로젝트에서는 순서를 건너뛴 단계나 이른 `git commit`을 막을 수 있습니다([자세히](#에이전트에서-쓰기-mcp)).
 - 여러 계정이 함께 쓰는 Mac에서는 다른 계정도 이 뷰어의 API를 부를 수 있습니다. 루프백 말고는 인증이 없습니다([SECURITY.ko.md](SECURITY.ko.md#모델)).
 - 키체인·네트워크·AppleScript·파일에 접근하는 부분과, 기본으로 꺼진 유료 할당량 탐침은 [SECURITY.md](SECURITY.md), [CONFIG.ko.md](docs/CONFIG.ko.md)에 있습니다.

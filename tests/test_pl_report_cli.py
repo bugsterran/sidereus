@@ -5,12 +5,12 @@ import io
 import json
 import os
 import shutil
-import stat
 import tempfile
 import time
 import unittest
 from unittest import mock
 
+from tests._fs import assert_mode
 from tests._load import ROOT, load, sidereus
 
 load()
@@ -61,7 +61,7 @@ class Report(unittest.TestCase):
     def test_dated_file_and_sentences(self):
         self.assertEqual(self.run_(), 0)
         path = os.path.join(self.rep, "2026-10-18.md")
-        self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
+        assert_mode(self, path, 0o600)
         with open(path, encoding="utf-8") as f:
             text = f.read()
         oc = OC.outcome(self.proj, "flow", ["review"], NOW)
