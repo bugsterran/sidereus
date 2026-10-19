@@ -135,6 +135,22 @@ def mbox_of(cwd):
     return "", "none"
 
 
+def mbox_codex(cwd):
+    """(id, source) of a Codex session — same rule as hooks/invite_notice.py `codex_id`.
+    ⚠Not mbox_of: identity.json[cwd] is the Claude id of that folder, so a Codex row there would get the Claude mailbox."""
+    if not cwd:
+        return "", "none"
+    ident = _load("identity.json", {})
+    ident = ident if isinstance(ident, dict) else {}
+    real = os.path.realpath(cwd)
+    me, src = ident.get("codex:" + real), "identity"
+    if not isinstance(me, str) or not me:
+        me, src = os.path.basename(real.rstrip("/")) + "-codex", "folder"
+    if me in {v for k, v in ident.items() if not str(k).startswith("codex:")}:
+        return "", "none"          # the hook refuses an id a Claude session owns, so no send
+    return me, src
+
+
 def _slug(cwd):
     """cwd -> directory name under `~/.claude/projects/`. Every non-alphanumeric becomes `-` (matches observed harness values).
 

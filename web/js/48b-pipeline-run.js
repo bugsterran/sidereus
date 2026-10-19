@@ -241,10 +241,25 @@ function plDmDirect(p, req, models, dt){
     + 'Report each stage in ≤10 lines. Never restart or commit unless the rules say so.\n'
     + 'Default instructions (also .claude/pipelines/_defaults.json in the Sidereus repo):\n' + (defs || '(custom stages only — use their task)');
 }
+// Codex recipient: no Agent tool / SendMessage / Workflow, so one session runs every stage and lights it with shell markers
+// (same wording as hooks/pipelines_brief.py _RUN_CODEX; pl_mark.py --platform codex). ⚠Model overrides do not apply there.
+function plDmCodex(p, req, models, dt){
+  const used = p.stages.map(s => s.title);
+  const steps = p.stages.map((s, i) => (i + 1) + '. ' + s.title + (s.skill ? ' · skill ' + s.skill : '') + (s.gate ? ' · gate `' + s.gate + '`' : '')
+    + (s.onFail ? ' · onFail → ' + s.onFail.goto + ' (max ' + s.onFail.max + (s.onFail.then ? ', then ' + s.onFail.then : '') + ')' : '')).join('\n');
+  const defs = used.filter(t => dt && dt[t]).map(t => t + ': ' + dt[t]).join('\n');
+  return '파이프라인 ' + p.name + ' 실행 (세션 직접) — 요청: «' + req + '»\n'
+    + 'Run .claude/pipelines/' + p.name + '.json yourself in this session, doing each stage\'s task in order (stage agent/model are Claude settings; a stage skill means follow that skill). Stages in order:\n' + steps + '\n'
+    + 'Start each stage with a shell command echo "[pl:' + p.name + '/<stage title>]" and end it with echo "[pl-end:' + p.name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.\n'
+    + 'Each stage: the default instruction for the title + the stage "task" + the pipeline "rules" + this request + earlier stage results. Each stage ends with status PASS/FAIL, summary, findings (file/line/text), changed files.\n'
+    + 'onFail: redo the goto stage with the findings, then rerun the failing stage — at most max times; after it passes go to "then" if set.\n'
+    + 'Report each stage in ≤10 lines. Never restart or commit unless the rules say so.\n'
+    + 'Default instructions (also .claude/pipelines/_defaults.json in the Sidereus repo):\n' + (defs || '(custom stages only — use their task)');
+}
 function plModeOf(name){ return lsGet('sidereus.plmode.' + name, 'direct') === 'wf' ? 'wf' : 'direct'; }
-function plDmFor(p, req, models){
+function plDmFor(p, req, models, cx){   // cx = Codex recipient: ignores PLRUN.mode
   const d = PLS.data[PLS.proj] || {};
-  return (PLRUN && PLRUN.mode === 'wf' ? plDmText(p, req, models) : plDmDirect(p, req, models, d.default_tasks || {})) + plDmMissing(p, d.agents);
+  return (cx ? plDmCodex(p, req, models, d.default_tasks || {}) : PLRUN && PLRUN.mode === 'wf' ? plDmText(p, req, models) : plDmDirect(p, req, models, d.default_tasks || {})) + (cx ? '' : plDmMissing(p, d.agents));   // Codex runs no agents
 }
 // DM body: one-line request + how to run it (Workflow runner args) + stage summary with the effective model.
 function plDmText(p, req, models){
@@ -258,8 +273,8 @@ function plDmText(p, req, models){
 }
 // Live sessions of the project (metadata only: sid, model, state, mailbox login, project, running Agent one-line description).
 function plSessions(proj){
-  return plProjSess(proj).filter(x => x.state !== 'done' && (!x.plat || x.plat === 'cc'))
-    .map(x => ({ sid: x.sid, model: x.model || '', state: x.state || '', id: x.mbox || '', login: !!(x.mbox && x.mboxSrc === 'identity'),
+  return plProjSess(proj).filter(x => x.state !== 'done' && (!x.plat || x.plat === 'cc' || x.plat === 'cx'))
+    .map(x => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', state: x.state || '', id: x.mbox || '', login: !!(x.mbox && x.mboxSrc === 'identity'),
       project: x.project || '', doing: ['tool', 'think'].includes(x.state) ? plStrip(x.targ || '') : '' }));   // doing: same rule as sessTaskHtml (targ = Agent description only)
 }
 function plRunModels(p){   // overrides that differ from the saved value only
@@ -300,16 +315,16 @@ function plRunPanel(p, models){
   const req = String(PLRUN.req || '').trim();
   const why = plGoWhy(cur, req, PLRUN.busy);
   return '<div class=plrun><div class=brh2><b>' + esc(T('Send a run request')) + '</b> <i>' + esc(T('The session runs it — Sidereus runs nothing')) + '</i></div>'
-    + '<label class=pll><span>' + esc(T('Mode', 'how')) + '</span><select class=plrsel data-plmode>'
-    + '<option value=direct' + (PLRUN.mode === 'wf' ? '' : ' selected') + '>' + esc(T('Session runs it directly (default)')) + '</option>'
-    + '<option value=wf' + (PLRUN.mode === 'wf' ? ' selected' : '') + '>Workflow</option></select></label>'
+    + '<label class=pll><span>' + esc(T('Mode', 'how')) + '</span><select class=plrsel data-plmode' + (cur && cur.cx ? ' disabled title="' + esc(T('Workflow mode is not available for this session')) + '"' : '') + '>'
+    + '<option value=direct' + (PLRUN.mode === 'wf' && !(cur && cur.cx) ? '' : ' selected') + '>' + esc(T('Session runs it directly (default)')) + '</option>'
+    + '<option value=wf' + (PLRUN.mode === 'wf' && !(cur && cur.cx) ? ' selected' : '') + '>Workflow</option></select></label>'
     + '<div class=plfd>' + esc(T('Direct reuses the same agent on loop-backs and retries (fewer tokens) · Workflow starts a new agent per stage')) + '</div>'
     + (ss.length ? '<label class=pll><span>' + esc(T('Sessions')) + '</span><select class=plrsel data-plrs>' + sOpts + '</select></label>'
       : '<div class=hidnote>' + esc(T('No live session in this project')) + '</div>')
     + '<label class=pll><span>' + esc(T('Request')) + '</span><input class=plreq data-plrq maxlength=500 value="' + esc(PLRUN.req || '') + '" placeholder="' + esc(T('One-line request')) + '"></label>'
     + '<div class=plrms><span class=plrmh>' + esc(T('Change models for this run only')) + '</span>' + mRows + '</div>'
     + '<div class=brh2><b>' + esc(T('Message to send')) + '</b>' + (cur && cur.id ? ' <i>→ ' + esc(cur.id) + '</i>' : '') + '</div>'
-    + '<pre class=plprev>' + esc(plDmFor(p, req || '…', plRunModels(p))) + '</pre>'
+    + '<pre class=plprev>' + esc(plDmFor(p, req || '…', plRunModels(p), !!(cur && cur.cx))) + '</pre>'
     + '<div class=plbar><button class="wkrgb" data-plgo' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Confirm — send')) + '</button>'
     + '<button class="wkrgb" data-plrx>' + esc(T('Cancel')) + '</button></div></div>';
 }
@@ -490,7 +505,7 @@ async function plRunSend(){
   if(!cur || !cur.login || !req) return;
   PLRUN.busy = true; plPaint();
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, body: plDmFor(p, req, plRunModels(p)), relay: true, sid: cur.sid, thread: 'pipeline:' + p.name });
+    const j = await postJSON('/api/dm', { to: cur.id, body: plDmFor(p, req, plRunModels(p), !!cur.cx), relay: true, sid: cur.sid, thread: 'pipeline:' + p.name });
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');   // ⚠ok first: nothing went out, remember nothing
     const m = plMem(); m[cur.sid] = { name: p.name, at: Date.now() }; lsSetJson('sidereus.plrun', m);
     PLRUN = null; PLS.msg = T('Sent') + ' → ' + cur.id;
@@ -516,8 +531,8 @@ document.addEventListener('input', e => {
   if(!PLRUN || !s || !s.closest || !s.closest('.plw') || s.dataset.plrq == null) return;
   PLRUN.req = s.value;
   const p = plCur(), pre = s.closest('.plw').querySelector('.plprev'), go = s.closest('.plw').querySelector('[data-plgo]');
-  if(p && pre) pre.textContent = plDmFor(p, String(PLRUN.req).trim() || '…', plRunModels(p));
   const cur = plSessions(PLS.proj).find(x => x.sid === PLRUN.sid);
+  if(p && pre) pre.textContent = plDmFor(p, String(PLRUN.req).trim() || '…', plRunModels(p), !!(cur && cur.cx));
   plGoSet(go, cur, PLRUN.req, PLRUN.busy);
 });
 // Called from each /api/state poll (95-poll.js): relight the open pipeline view from the fresh SESS rows.

@@ -48,7 +48,7 @@ Object.assign(I18N.ko, {
   'Write new from a purpose': '설명으로 새로 쓰기', 'Port an existing workflow': '기존 워크플로 옮기기', 'Port from a rule document': '규칙 문서에서 옮기기', 'Suggested': '자동 제안', 'Order': '순서', 'Pick a colour': '직접 고르기', 'Suggested · not saved': '자동 제안 · 저장 안 됨', 'Save this suggestion': '이 제안 저장',
   'Guessed from agent names — edit it after saving': '에이전트 이름으로 짐작한 순서입니다 — 저장한 뒤 고칠 수 있습니다', 'Pipelines are saved in .claude/pipelines/ inside the project, so they open only for folders where a Claude session has run.': '파이프라인은 프로젝트의 .claude/pipelines/ 에 저장돼서, Claude 세션을 연 적 있는 폴더에서만 열 수 있습니다.',
   'Open a Claude session in this folder once and «+ New pipeline» appears here.': '이 폴더에서 Claude 세션을 한 번 열면 여기에 «+ 새 파이프라인» 이 생깁니다.', 'Follow the project rule file': '프로젝트 규칙 파일 따르기',
-  'The session runs it — Sidereus runs nothing': '세션이 받아 실행합니다 — 시데레우스는 실행하지 않습니다', 'Session runs it directly (default)': '세션 직접 실행 (기본)',
+  'The session runs it — Sidereus runs nothing': '세션이 받아 실행합니다 — 시데레우스는 실행하지 않습니다', 'Session runs it directly (default)': '세션 직접 실행 (기본)', 'Workflow mode is not available for this session': '이 세션은 Workflow 모드를 쓸 수 없습니다',
   'Direct reuses the same agent on loop-backs and retries (fewer tokens) · Workflow starts a new agent per stage': '직접 실행은 되돌림·재시도 때 같은 에이전트를 이어 써서 토큰이 적게 듭니다 · Workflow 는 단계마다 새 에이전트',
   'Custom|build': '직접 만들기', 'Stage name': '단계 이름', '+ Custom stage': '+ 직접 만들기',
   'Stage name (empty = recommended)': '단계 이름 (비우면 추천)', 'A stage with that name exists': '같은 이름의 단계가 이미 있습니다',

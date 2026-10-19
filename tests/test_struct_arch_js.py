@@ -357,14 +357,43 @@ class StructArch(unittest.TestCase):
 
     def test_cands_order_and_default(self):
         r = run("SESS = [{sid: 'z1', cwd: '/other'}, {sid: 'a1', cwd: '/sidereus', mbox: 'ag', mboxSrc: 'identity'}, {sid: 'p1', cwd: '/r'},"
-                " {sid: 'p2', cwd: '/r', mbox: 'pm', mboxSrc: 'identity'}, {sid: 'c', cwd: '/r', state: 'done'}, {sid: 'd', cwd: '/r', plat: 'codex'}];"
+                " {sid: 'p2', cwd: '/r', mbox: 'pm', mboxSrc: 'identity'}, {sid: 'c', cwd: '/r', state: 'done'}, {sid: 'd', cwd: '/r', plat: 'cx', mbox: 'cxm', mboxSrc: 'identity'},"
+                " {sid: 'g', cwd: '/r', plat: 'gm', mbox: 'gmm', mboxSrc: 'identity'}];"
                 "ARCH.cache['/r'] = {ok: true, modules: [], edges: [], sidereus: '/sidereus'}; ARCH.req = {p: '/r', sid: 'gone', busy: false};"
                 "const box = {innerHTML: '', querySelector(){ return null; }}; archPaint(box, head);"
-                "console.log(JSON.stringify([archCands('/sidereus', SESS, '/r').map(c => c.sid), ARCH.req.sid, box.innerHTML]));")
-        self.assertEqual(r[0], ["p2", "p1", "a1", "z1"])
+                "console.log(JSON.stringify([archCands('/sidereus', SESS, '/r').map(c => c.sid), ARCH.req.sid, box.innerHTML, archCands('/sidereus', SESS, '/r').map(c => c.cx)]));")
+        self.assertEqual(r[0], ["p2", "d", "p1", "a1", "z1"])   # live plat 'cx' (Codex) included · 'gm' not
+        self.assertEqual(r[3], [False, True, False, False, False])
         self.assertEqual(r[1], "p2")                       # project session preselected
         self.assertIn('value="p2" selected>r · p2', r[2])  # folder name in the label
         self.assertIn(">other · z1", r[2])
+
+    def test_dm_body_codex_markers(self):
+        r = run("console.log(JSON.stringify([archDmBody('arch-map', '/r', '/sidereus/', '업데이트', false), archDmBody('arch-map', '/r', '/sidereus/', '업데이트'),"
+                " archDmBody('arch-map', '/r', '/sidereus/', '업데이트', true)]));")
+        self.assertEqual(r[0], ARCH_DM_CC)          # Claude recipient: bytes unchanged
+        self.assertEqual(r[1], ARCH_DM_CC)
+        self.assertTrue(r[2].startswith(ARCH_DM_CC + "\n"))
+        self.assertIn('echo "[pl:arch-map/<stage title>]"', r[2])
+        self.assertIn('echo "[pl-end:arch-map/<stage title>]"', r[2])
+        for w in CLAUDE_ONLY:
+            self.assertNotIn(w, r[2])
+
+    def test_codex_recipient_preview_matches_send(self):
+        r = run("SESS = [{sid: 'd1', cwd: '/r', plat: 'cx', mbox: 'cx', mboxSrc: 'identity'}];"
+                "ARCH.cache['/r'] = {ok: true, modules: [], edges: [], sidereus: '/sidereus'}; ARCH.req = {p: '/r', sid: 'd1', busy: false};"
+                "const box = {innerHTML: '', querySelector(){ return null; }}; archPaint(box, head); const h = box.innerHTML; await archSend();"
+                "console.log(JSON.stringify([h, POSTS[0][1].body]));")
+        self.assertIn("[pl:arch-map/", r[1])
+        self.assertIn(r[1].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"), r[0])
+
+
+# frozen output of archDmBody before Codex recipients existed (Claude request bytes must not change)
+ARCH_DM_CC = ("파이프라인 arch-map 실행 — 요청: «/r 아키텍처 구조도 업데이트»\n대상 저장소: /r\n"
+              "읽기 전용, 저장소에 쓰지 않음 — 쓰기는 ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ 아래만 (key: 파이프라인 rules)\n"
+              "파이프라인: /sidereus/.claude/pipelines/arch-map.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n"
+              "게이트: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last)")
+CLAUDE_ONLY = ("Agent tool", "subagent_type", "SendMessage", "Workflow", "pl-model", "AskUserQuestion")
 
 MAP = {"modules": MODS + [{"id": "gates", "name": "Check scripts + tests", "kind": "module"},
                           {"id": "x", "name": "Ext \"q\" | <b>", "kind": "external"}],

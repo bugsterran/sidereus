@@ -96,13 +96,15 @@ function archEdgeRow(e, names, i, open, io, dv, sn){
 // Pure: DM body the person previews; names the pipeline and the target repo, read-only by contract.
 // Mailbox wire text in the same format as 48b pipeline run requests, not UI.
 // ⚠Absolute paths under the Sidereus repo (home): the recipient may run in another repo, where relative ones miss.
-function archDmBody(name, repo, home, verb){   // verb = archReqOf(d).vb (wire text, default generate)
+function archDmBody(name, repo, home, verb, cx){   // verb = archReqOf(d).vb (wire text, default generate) · cx = Codex recipient
   const h = home ? String(home).replace(/\/+$/, '') + '/' : '';
   return '파이프라인 ' + name + ' 실행 — 요청: «' + repo + ' 아키텍처 구조도 ' + (verb || '생성') + '»\n'
     + '대상 저장소: ' + repo + '\n'
     + '읽기 전용, 저장소에 쓰지 않음 — 쓰기는 ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ 아래만 (key: 파이프라인 rules)\n'
     + '파이프라인: ' + h + '.claude/pipelines/' + name + '.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n'
-    + '게이트: python3 ' + h + 'scripts/arch_verify.py --last (Windows: py ' + h + 'scripts/arch_verify.py --last)';   // ⚠page has no server-OS signal: both forms
+    + '게이트: python3 ' + h + 'scripts/arch_verify.py --last (Windows: py ' + h + 'scripts/arch_verify.py --last)'   // ⚠page has no server-OS signal: both forms
+    // ⚠No Agent tool there: stages are lit by a leading shell marker (hooks/pl_mark.py --platform codex MARK).
+    + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + name + '/<stage title>]" and end it with echo "[pl-end:' + name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.' : '');
 }
 // Sidereus repo: the server's `sidereus` field, else the project whose pipeline list holds arch-map (48 PLS, if loaded).
 function archHome(d){
@@ -112,12 +114,12 @@ function archHome(d){
 }
 // Pure: last path segment (option labels tell sessions apart by folder).
 function archBase(p){ const s = String(p || '').replace(/[\\/]+$/, ''); return s.slice(Math.max(s.lastIndexOf('/'), s.lastIndexOf('\\')) + 1) || s; }
-// Live Claude sessions (metadata only): target project p, then the Sidereus repo, then the rest; mailbox login first in each group.
+// Live Claude / Codex sessions (metadata only): target project p, then the Sidereus repo, then the rest; mailbox login first in each group.
 // The first entry is the default recipient — the project's own session already holds that repo.
 function archCands(home, sess, p){
   const g = x => x.cwd === p ? 0 : home && x.cwd === home ? 1 : 2;
-  return (sess || []).filter(x => x && x.sid && x.state !== 'done' && (!x.plat || x.plat === 'cc'))
-    .map((x, i) => ({ sid: x.sid, model: x.model || '', id: x.mbox || '', login: !!(x.mbox && x.mboxSrc === 'identity'), dir: archBase(x.cwd), g: g(x), i }))
+  return (sess || []).filter(x => x && x.sid && x.state !== 'done' && (!x.plat || x.plat === 'cc' || x.plat === 'cx'))
+    .map((x, i) => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', id: x.mbox || '', login: !!(x.mbox && x.mboxSrc === 'identity'), dir: archBase(x.cwd), g: g(x), i }))
     .sort((a, b) => a.g - b.g || (b.login ? 1 : 0) - (a.login ? 1 : 0) || a.i - b.i);
 }
 // Why «Confirm — send» is disabled ('' = enabled).
@@ -145,7 +147,7 @@ function archReqHtml(req, repo, home, cands, busy, d){
   return '<div class=archreq role=group aria-label="' + esc(T('Request preview')) + '"><div class=archrqh><b>' + esc(T(rk.lb)) + '</b>'
     + '<label>' + esc(T('To session')) + ' <select data-ars>' + (cands.length ? cands.map(c => '<option value="' + esc(c.sid) + '"' + (c.sid === req.sid ? ' selected' : '') + '>'
       + esc((c.dir ? c.dir + ' · ' : '') + sid8(c.sid) + (c.model ? ' · ' + c.model : '') + (c.id ? ' · ' + c.id : '')) + '</option>').join('') : '<option value="">' + esc(T('None')) + '</option>')
-    + '</select></label></div><pre class=archdm>' + esc(archDmBody(ARCH_PL, repo, home, rk.vb)) + '</pre><div class=archrqb>'
+    + '</select></label></div><pre class=archdm>' + esc(archDmBody(ARCH_PL, repo, home, rk.vb, !!(cur && cur.cx))) + '</pre><div class=archrqb>'
     + '<button type=button class="wkrgb archok" data-argo' + (why || busy ? ' disabled' : '') + (why ? ' title="' + esc(why) + '"' : '') + '>' + esc(T(busy ? 'Sending…' : 'Confirm — send')) + '</button>'
     + '<button type=button class=wkrgb data-arx>' + esc(T('Cancel')) + '</button>' + (why ? '<span class=archwhy>' + esc(why) + '</span>' : '') + '</div></div>';
 }
@@ -526,7 +528,7 @@ async function archSend(){
   if(!cur || !cur.login || archRunOf(q.p) || (typeof archReqBusy === 'function' && archReqBusy(q.p, ARCH_PL))) return false;
   q.busy = true; paintStruct();
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, body: archDmBody(ARCH_PL, q.p, home, archReqOf(d).vb), relay: true, sid: cur.sid, thread: 'pipeline:' + ARCH_PL,
+    const j = await postJSON('/api/dm', { to: cur.id, body: archDmBody(ARCH_PL, q.p, home, archReqOf(d).vb, !!cur.cx), relay: true, sid: cur.sid, thread: 'pipeline:' + ARCH_PL,
       plreq: { kind: 'req', pipeline: ARCH_PL, repo: q.p } });   // server records who received it (state `plReq`)
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');   // ⚠ok first: nothing went out, remember nothing
     const m = plMem(); m[cur.sid] = { name: ARCH_PL, at: Date.now() }; lsSetJson('sidereus.plrun', m);   // same lighting memo as 48b plRunSend
