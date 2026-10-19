@@ -217,7 +217,11 @@ Gemini CLI와 Codex CLI는 훅으로 상태를 보내 Claude Code 세션 옆에 
 ⚠ 이 토큰은 Claude의 5시간·7일 한도나 비용에 절대 합산하지 않습니다. 설정 방법은 [docs/HOOKS.ko.md](docs/HOOKS.ko.md)를 보세요.
 
 ⚠ Codex는 TUI에서 `/hooks`로 한 번 승인하기 전까지 `hooks.json`을 무시하며, 파일을 수정할 때마다 다시
-승인해야 합니다. 승인 전에는 Codex 세션이 목록에 나타나지 않습니다.
+승인해야 합니다(항목 이름은 «Sidereus»가 아니라 `ext_hook.py`로 보입니다). 승인 전에는 Codex 세션이 토큰 영역과
+타임라인에만 나오고 세션 목록에는 나타나지 않습니다.
+
+macOS에서 확인된 것: Codex CLI 0.163.0 — 세션 목록·상태, 턴 끝 메일 전달, 파이프라인 단계 표시, «터미널» 버튼.
+Gemini CLI 0.61.0 — 턴 끝 메일 전달, 단계 표시. 다른 CLI는 확인하지 않았습니다.
 
 ## 프로젝트 운영 방식
 
