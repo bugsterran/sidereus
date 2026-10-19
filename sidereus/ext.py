@@ -81,6 +81,8 @@ def ext_usage_today(now=None):
         p = out.get(EXT_PLAT.get(plat, plat))
         ws = {k: w for k, w in rt.items() if isinstance(w, dict) and (not w.get("reset") or w["reset"] > t.timestamp())}
         if p is not None and ws:
+            if isinstance(rt.get("plan"), str):   # plan rides along only with a live window, never alone
+                ws["plan"] = rt["plan"]
             p["rate"] = ws
     return out
 

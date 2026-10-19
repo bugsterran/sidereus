@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: the «Pipelines» empty state shows the template choices instead of a blank list.
 - Install without a clone: `pipx install git+https://github.com/bugsterran/sidereus` (or `uv tool install git+…`) puts `sidereus` on PATH; `start`, `status`, `doctor` work from it, start at login still needs a clone.
 - `python3 -m sidereus doctor` prints one `OK`/`FAIL` line per setup check (Python 3.9+, git, claude, hooks connected, viewer answering; on Windows `SIDEREUS_PYTHON` and the Store alias) with the fix on each `FAIL`; exit 1 on any `FAIL`, writes nothing.
+- Tokens: the Codex row of «By platform» shows each plan-limit window with its used %, reset time and the plan name (read locally from the newest rollout record that carries limits; «No limit data» when none did); the Codex status-bar tooltip shows the same line.
 
 ### Fixed
 

@@ -211,4 +211,8 @@ Object.assign(I18N.ko, {
   "State read from Codex's record file; set up hooks — docs/HOOKS.md": 'Codex 기록 파일에서 읽은 상태입니다 · 훅 설정은 docs/HOOKS.md',
   " session — read from its CLI's record file (hooks not connected)": ' 세션 — CLI 기록 파일에서 읽음 (훅 미연결)',
   'Last activity {n}m ago': '마지막 활동 {n}분 전',
+  'No limit data': '한도 데이터 없음',
+  'resets {t}': '{t} 리셋',
+  'plan {p}': '요금제 {p}',
+  'window': '구간',
 });

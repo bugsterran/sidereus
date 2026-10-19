@@ -75,7 +75,8 @@ function sbExtSeg(k, e){
     + ((e.models || []).length ? '\n' + T('Model') + ': ' + e.models.join(', ') : '')
     + (e.n_sessions ? '\n' + T('Sessions') + ': ' + e.n_sessions : '')
     + '\n' + (e.cost == null ? T('Model not in the price table') : extCostStr(e.cost) + ' — ' + T('Cost is an estimate from the bundled price table'))
-    + (e.costMiss ? ' (' + e.costMiss + ' ' + T('requests left out (model not in the price table)') + ')' : '');
+    + (e.costMiss ? ' (' + e.costMiss + ' ' + T('requests left out (model not in the price table)') + ')' : '')
+    + (k === 'cx' ? '\n' + extRateDetail(e.rate, k, true) : '');
   // The logo's own title would shadow the segment tooltip, so it is dropped. ⚠Logo only — the name lives in the tooltip.
   return '<span class=sbext title="' + esc(tip) + '">' + aiLogo(k).replace(/ title="[^"]*"/, '')
     + '<small class="sbxd sbd4">' + esc(T('Today')) + '</small> <b>' + esc(fmtTok(e.tok)) + '</b>'

@@ -151,3 +151,8 @@ Fix: bump `VERSION` in `scripts/build_plugin.py` (then rebuild) in every commit 
 Cause: `while p != "/": p = os.path.dirname(p)` — `dirname("C:\\")` returns `C:\\`, so the loop spins until the hook timeout.
 Fix: stop when `dirname(p) == p` (`tests/test_hook_drive_root.py`).
 ⚠ ★2026-10-17: every prompt on a real Windows PC waited 10 s for `invite_notice`; CI did not catch it because no test walked up to a drive root.
+
+### Codex `rate_limits` is often null on token events (`sidereus/plat_codex.py` `_rate` · `sidereus/ext.py`)
+Cause: Codex writes `rate_limits: null` on many `token_count` events (Codex #14880), so the last event alone often has no limits.
+Fix: the newest non-null `rate_limits` wins; windows past their `resets_at` are dropped, and `plan` is sent only with a live window. No window -> «No limit data» on Codex rows.
+⚠Never fill a missing window, guess a percentage, or carry a value past its reset — the screen shows only what the CLI reported.
