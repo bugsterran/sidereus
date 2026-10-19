@@ -15,7 +15,7 @@ function rvKey(r){ return r ? [r.nf, r.add, r.del, r.done, r.since].join('|') : 
 function rvTarget(sid){
   const x = (SESS || []).find(s => s.sid === sid && (!s.plat || s.plat === 'cc')) || null;
   const id = (x && x.mbox) || '', pr = (PRES || {})[id];
-  return {id, login: !!(x && id && x.mboxSrc === 'identity'), blocked: !!(x && x.blocked),
+  return {id, login: !!(id && mboxIn(x)), blocked: !!(x && x.blocked),
           watch: !!(x && (x.mon || []).some(v => v && v.src === 'proc')) || !!(pr && pr.online && pr.source === 'watch')};
 }
 // /api/dm body cap from state().cfg.dmMax (CFG, when the poll exposes it); 20000 = sidereus/bus.py DM_MAX.

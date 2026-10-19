@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Mailbox: a Codex session no longer shows as «not logged in» when its launcher id (`<folder>-codex`) has a reader — Sidereus hooks connected, or a read cursor for a rollout-only row — and no other live Codex session shares that id; viewer DMs and run requests reach it. Folder guesses stay refused, and the check fails closed until the first session poll.
 - Status bar: with a main account chosen, the Claude 5h and 7d segments show that account's own «used ≈» tokens (counted from its own sessions, hourly, so approximate) instead of no token figure at all; without a main account nothing changes.
 - Pipelines: a running pipeline shows in the «Pipelines» tab as soon as the Timeline shows it, instead of 10–20 s later (the tab waited for subagent labels, refreshed every 20 s).
 - `sidereus stop --port N` / `status --port N`: a background service on another port no longer claims the port — `stop` used to print «Managed by a service» and exit 0 while a `--demo` on 18799 kept running. `stop` now takes `--port`, refuses only when the service serves that port, and points at Ctrl-C / the other data dir for a viewer it did not start; `status` shows the service's port (Refs #11).

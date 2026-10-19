@@ -119,7 +119,7 @@ function archBase(p){ const s = String(p || '').replace(/[\\/]+$/, ''); return s
 function archCands(home, sess, p){
   const g = x => x.cwd === p ? 0 : home && x.cwd === home ? 1 : 2;
   return (sess || []).filter(x => x && x.sid && x.state !== 'done' && (!x.plat || x.plat === 'cc' || x.plat === 'cx'))
-    .map((x, i) => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', id: x.mbox || '', login: !!(x.mbox && x.mboxSrc === 'identity'), dir: archBase(x.cwd), g: g(x), i }))
+    .map((x, i) => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', id: x.mbox || '', login: mboxIn(x), dir: archBase(x.cwd), g: g(x), i }))
     .sort((a, b) => a.g - b.g || (b.login ? 1 : 0) - (a.login ? 1 : 0) || a.i - b.i);
 }
 // Why «Confirm — send» is disabled ('' = enabled).

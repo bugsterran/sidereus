@@ -21,7 +21,7 @@ from sidereus.projcost import _projcost_of
 from sidereus.bgtasks import _bg_open
 from sidereus.notes import _note_bg_done, _note_ctx, _note_transition, _sess_state
 from sidereus.parse import _parse_transcript
-from sidereus.ext import ext_children, ext_rollout_rows, ext_rows
+from sidereus.ext import codex_env_dedupe, ext_children, ext_rollout_rows, ext_rows
 from sidereus import pl_runs, prefs   # module access: tests stub pl_runs._ag_by_name
 from sidereus.perm_marks import perm_wait
 from sidereus.term import term_attach
@@ -467,8 +467,8 @@ def _sessions(max_age_h, cap):
     except Exception as e:
         warn_once("ext-children", "Could not attach child Gemini runs ({err})",
                   vars={"err": f"{type(e).__name__}: {e}"})
-    out.extend(ext_rows())
-    out.extend(ext_rollout_rows())                # Codex without hooks: fresh rollout -> coarse row (hook row wins)
+    # Codex without hooks: fresh rollout -> coarse row (hook row wins); a launcher id shared by two live rows is not «logged in»
+    out.extend(codex_env_dedupe(ext_rows() + ext_rollout_rows()))
     try:   # ⚠after ext_rows: external rows need `term` too (before, Codex rows always showed «Copy command»)
         term_attach(out)                          # row.term = {app, tty} for «To terminal» (metadata only)
     except Exception as e:

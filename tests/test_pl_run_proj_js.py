@@ -75,8 +75,17 @@ class CodexRecipient(unittest.TestCase):
         sess = [{"sid": "s1", "cwd": "/a"}, {"sid": "s2", "cwd": "/a", "plat": "cc"}, {"sid": "s3", "cwd": "/a", "plat": "cx", "mbox": "cx", "mboxSrc": "identity"},
                 {"sid": "s4", "cwd": "/a", "plat": "gm"}, {"sid": "s5", "cwd": "/a", "plat": "cx", "state": "done"}]
         stub = "Object.assign(globalThis, {SESS: %s, PLS: {data: {}}, lsJson: () => ({})});" % json.dumps(sess)
-        r = _js("(() => { %s return plSessions('/a').map(x => [x.sid, x.cx, x.login]); })()" % stub, "plSessions", "plProjSess", "plMem", "plSubsOf")
+        r = _js("(() => { %s return plSessions('/a').map(x => [x.sid, x.cx, x.login]); })()" % stub, "mboxIn", "plSessions", "plProjSess", "plMem", "plSubsOf")
         self.assertEqual(r, [["s1", False, False], ["s2", False, False], ["s3", True, True]])
+
+    def test_codex_launcher_env_id_is_logged_in(self):
+        # cx env = launcher id with a read cursor (server-checked); a Claude env (MAILBOX_ME guess) stays off
+        sess = [{"sid": "c1", "cwd": "/a", "plat": "cx", "mbox": "a-codex", "mboxSrc": "env"},
+                {"sid": "c2", "cwd": "/a", "plat": "cx", "mbox": "a-codex", "mboxSrc": "folder"},
+                {"sid": "c3", "cwd": "/a", "plat": "cc", "mbox": "me", "mboxSrc": "env"}]
+        stub = "Object.assign(globalThis, {SESS: %s, PLS: {data: {}}, lsJson: () => ({})});" % json.dumps(sess)
+        r = _js("(() => { %s return plSessions('/a').map(x => [x.sid, x.login]); })()" % stub, "mboxIn", "plSessions", "plProjSess", "plMem", "plSubsOf")
+        self.assertEqual(r, [["c1", True], ["c2", False], ["c3", False]])
 
     def test_claude_bytes_frozen(self):
         self.assertEqual(_dm("direct", False), DM_DIRECT)

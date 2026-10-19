@@ -21,9 +21,14 @@ function cpfbCopy(key, cmd, redraw, okMsg){
 }
 // Inline «Reply» composer: one row at a time. ⚠The draft lives here, not in the DOM — buildAttn replaces innerHTML on change.
 let attnRp = {id: '', to: '', draft: '', busy: false};
+// Logged-in mailbox id: identity.json, or a Codex launcher id with a read cursor (src env, server-checked in dm_target_error).
+// ⚠env on a Claude row is MAILBOX_ME from ~/.claude.json — the server refuses it, so cx rows only.
+function mboxIn(x){
+  return !!(x && x.mbox && (x.mboxSrc === 'identity' || (x.plat === 'cx' && x.mboxSrc === 'env')));
+}
 // Mailbox recipient of a row's session (same rule as the work-log composer wkcTarget): id only when logged in.
 function attnRpTo(s){
-  const id = (s && s.mboxSrc === 'identity' && s.mbox) || '', pr = (typeof PRES === 'object' && PRES || {})[id];
+  const id = (mboxIn(s) && s.mbox) || '', pr = (typeof PRES === 'object' && PRES || {})[id];
   return {id, watch: !!(s && (s.mon || []).some(v => v && v.src === 'proc')) || !!(pr && pr.online && pr.source === 'watch')};
 }
 // ⚠The recipient line is the send preview (Enter sends with no confirm) — keep it visible. No body is ever rendered.

@@ -23,7 +23,7 @@ function termBtnHtml(s){ return '<button data-term="' + esc(s.sid || '') + '">Te
 function note(s){ NOTES.push(s); } function buildAttn(){}
 async function postJSON(u, b){ POSTS.push([u, b]); return REPLY; }
 """
-FNS = ("attnPolOf", "attnWhy", "attnLbl", "attnLife", "attnTone", "attnAckLoad", "attnAckSave", "attnRowId", "attnAckKey",
+FNS = ("mboxIn", "attnPolOf", "attnWhy", "attnLbl", "attnLife", "attnTone", "attnAckLoad", "attnAckSave", "attnRowId", "attnAckKey",
        "attnAckParse", "attnAckHit", "attnDone", "attnSnzLoad", "attnSnzSave", "attnRows", "attnSess", "attnName",
        "attnRpTo", "attnRpHTML", "attnRpClose", "attnRpKey", "attnRowHTML", "attnSeenKeys", "attnSeen")
 

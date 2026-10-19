@@ -17,7 +17,7 @@ function wkcTarget(){
   const id = row && row.mbox || '';
   const pr = (PRES || {})[id];
   return {t, row, id,
-    login: !!(row && id && row.mboxSrc === 'identity'),
+    login: !!(id && mboxIn(row)),
     watch: !!(row && (row.mon || []).some(v => v && v.src === 'proc')) || !!(pr && pr.online && pr.source === 'watch'),
     blocked: !!(row && row.blocked), agent: t.kind === 'agent'};
 }

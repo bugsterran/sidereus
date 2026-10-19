@@ -11,7 +11,7 @@ from tests._i18n_js import i18n_prelude
 from tests._load import js_fn
 from tests._node import node_e
 
-FNS = ["strHdBadge", "archRate", "archHeadNote", "archEvHtml", "archEdgeRow", "archDmBody", "archHome", "archCands",
+FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archEvHtml", "archEdgeRow", "archDmBody", "archHome", "archCands",
        "archWhyOff", "archReqOf", "archReqBtn", "archReqHtml", "archPaint", "archIsTest", "archMq", "archPairs", "archReduce", "archRanks", "archSrc", "archBarHtml", "archKey", "archWaitHtml", "archDiagram", "archHov", "archHovPaint",
        "archSentRun", "archSentPh", "archEl", "archSentDone", "archSentHtml", "archSentFin", "archTick", "archBase", "archRunOf", "archRunEl", "archRunHtml", "archStatusHtml", "archLegHtml", "hhmm",
        "archStyleName", "archRoleName", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",
@@ -386,6 +386,14 @@ class StructArch(unittest.TestCase):
                 "console.log(JSON.stringify([h, POSTS[0][1].body]));")
         self.assertIn("[pl:arch-map/", r[1])
         self.assertIn(r[1].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"), r[0])
+
+    def test_codex_launcher_env_id_sendable(self):
+        # cx mboxSrc env = launcher id with a read cursor; the request goes to it
+        r = run("SESS = [{sid: 'd1', cwd: '/r', plat: 'cx', mbox: 'r-codex', mboxSrc: 'env'}];"
+                "ARCH.cache['/r'] = {ok: true, modules: [], edges: [], sidereus: '/sidereus'}; ARCH.req = {p: '/r', sid: 'd1', busy: false};"
+                "const box = {innerHTML: '', querySelector(){ return null; }}; archPaint(box, head); await archSend();"
+                "console.log(JSON.stringify([POSTS.length, POSTS[0] && POSTS[0][1].to]));")
+        self.assertEqual(r, [1, "r-codex"])
 
 
 # frozen output of archDmBody before Codex recipients existed (Claude request bytes must not change)

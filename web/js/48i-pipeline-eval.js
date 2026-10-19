@@ -123,7 +123,7 @@ function plEvalRecips(sess, proj, name, runSid){
   const mine = r => r && r.name === name && r.proj === proj;
   const ran = (sess || []).filter(x => x && x.sid && x.state !== 'done' && x.state !== 'gone' && (!x.plat || x.plat === 'cc') && (x.sid === runSid || (x.plrun || []).some(mine)));
   const t1 = x => x.sid === runSid ? Infinity : Math.max(0, ...(x.plrun || []).filter(mine).map(r => +r.t1 || 0));
-  const rc = ran.sort((a, b) => t1(b) - t1(a)).map(x => ({ sid: x.sid, model: x.model || '', id: x.mbox || '', login: !!(x.mbox && x.mboxSrc === 'identity'), dir: archBase(x.cwd), age: +x.ageSec || 0, ran: true }));
+  const rc = ran.sort((a, b) => t1(b) - t1(a)).map(x => ({ sid: x.sid, model: x.model || '', id: x.mbox || '', login: mboxIn(x), dir: archBase(x.cwd), age: +x.ageSec || 0, ran: true }));
   return rc.concat((typeof archChkFixCands === 'function' ? archChkFixCands(sess, proj) : []).filter(c => !rc.some(r => r.sid === c.sid)));
 }
 // Pure: default recipient — a mailbox-logged-in run session, else any logged-in one, else the first (preview shows why it cannot send).
