@@ -2,7 +2,9 @@
   "description": "sidereus (mailbox viewer) session telemetry for Codex CLI 0.156.1. Copy to ~/.codex/hooks.json; replace <PYTHON> with /usr/bin/python3 (macOS) or py -3 / a full python.exe path (Windows). TRUST GATE: Codex skips these hooks until you approve them once in the TUI with /hooks (the stored trusted_hash must match, so re-approve after every edit). timeout is in SECONDS (default 600; SessionEnd/Interrupt are capped at 3). The script prints nothing and exits 0, so PermissionRequest makes no decision and Codex asks you as usual. Stop also runs gemini_mail_stop.py --platform codex (mail at turn end; needs the mailbox MCP in ~/.codex/config.toml, see ext-hooks/README.md). hooks/pl_mark.py and hooks/pl_flow.py --platform codex track [pl:] shell markers (README «파이프라인 단계 표시»); pl_flow prints a PostToolUse additionalContext hand-off at a [pl-end:] marker.",
   "hooks": {
     "SessionStart": [
-      { "hooks": [ { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform codex", "timeout": 5 } ] }
+      { "hooks": [ { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform codex", "timeout": 5 },
+                   { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/invite_notice.py --platform codex", "timeout": 10 },
+                   { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pipelines_brief.py --platform codex", "timeout": 5 } ] }
     ],
     "SessionEnd": [
       { "hooks": [ { "type": "command", "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform codex", "timeout": 3 } ] }

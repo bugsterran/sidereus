@@ -306,6 +306,11 @@ Copy `ext-hooks/codex-hooks-example.json` to `~/.codex/hooks.json`. Checked with
 - ⚠Codex ignores the entries until approved with `/hooks`, and again after every edit (it stores a hash). Do not
   default to `--dangerously-bypass-hook-trust`.
 - `PermissionRequest` marks the row blocked; the script prints nothing, so Codex still asks you.
+- Optional `SessionStart` notices: `<PYTHON> <MAILBOX_CODE_DIR>/hooks/invite_notice.py --platform codex` (timeout 10) and
+  `<PYTHON> <MAILBOX_CODE_DIR>/hooks/pipelines_brief.py --platform codex` (timeout 5). Codex wording: mail arrives at
+  turn end through the `Stop` hook (id `codex:<cwd>` key or `<folder>-codex`), and stages are run in order by the session
+  itself with `echo "[pl:<name>/<stage>]"` / `[pl-end:...]` shell markers. ⚠No flag = Claude wording (`mailbox_wake`,
+  Agent tool); the flag is the only signal, the payload is not used to guess. On 0.163 `SessionStart` fires with the first turn.
 - Without hooks (not yet approved) a Codex session whose rollout changed in the last 10 minutes still gets a row,
   marked «Hooks not connected»: folder and model only, state unknown. Once hook events arrive the hook row replaces it.
 - `sidereus/plat_codex.py` reads tokens, model, cost and rate limits from `$CODEX_HOME/sessions/**/rollout-*.jsonl` and

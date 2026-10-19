@@ -17,8 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `sidereus stop --port N` / `status --port N`: a background service on another port no longer claims the port — `stop` used to print «Managed by a service» and exit 0 while a `--demo` on 18799 kept running. `stop` now takes `--port`, refuses only when the service serves that port, and points at Ctrl-C / the other data dir for a viewer it did not start; `status` shows the service's port (Refs #11).
 - Codex: a session whose hooks are not approved yet now appears in the session list when its rollout changed in the last 10 minutes, marked «Hooks not connected» (folder and model, state unknown); the hook row replaces it once events arrive (Refs #6).
 - Codex: a second Codex session no longer disappears from the list (every Codex TUI runs its hooks under one shared `codex app-server`, so two sessions reported the same pid and were merged as a resume); the session row's «Terminal» button now finds the Codex tab by its folder and brings it forward, and the copied command is `codex resume <sid>` instead of `claude --resume`. Measured on Codex 0.163.0: list, state, turn-end mail and `[pl:]` stage marks work through the hooks.
+- Codex: `hooks/invite_notice.py` and `hooks/pipelines_brief.py` take `--platform codex` for `SessionStart` notices that name the Codex parts (mail at turn end via the `Stop` hook under the `<folder>-codex` id, stages run in order with `[pl:]` shell markers) instead of `mailbox_wake` and the Agent tool; without the flag the output is unchanged (Refs #7).
 - Quota: a non-primary «Main account» had no «left ≈» token estimate; until it has history it gets a low-accuracy estimate from its own tokens in this window, shown per account in the status-bar layer («≈ N left» under the 5h/7d %).
 
 ## [0.4.0] - 2026-10-18
