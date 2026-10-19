@@ -181,16 +181,18 @@ function buildSbar(sv){
   const cu0 = (!ma && BURN && BURN.cur) || {}, est0 = (!ma && BURN && BURN.est) || {};
   // 7d measured sum: top-level `wk.used_local` also covers a body without `cur` (5h cycle just ended).
   const wkU = ma ? null : cu0.wk_used_local != null ? cu0.wk_used_local : (BURN && BURN.wk && BURN.wk.used_local != null ? BURN.wk.used_local : null);
+  // ⚠Main account: its own hour-bucket sums (`used_acct`, approximate) shown as «used ≈», never the primary's used_local.
+  const bmA = ma && !kx && typeof burnFor === 'function' ? burnFor() : null, au5 = bmA && bmA.cur ? bmA.cur.used_acct : null, au7 = bmA && bmA.wk ? bmA.wk.used_acct : null;
   // «left N%»; «left ≈» from `burnEst` (history per-1%); 7d unmeasured: «Used ≈ · left ≈».
   const sbt = (l, v) => ' <small>· ' + esc(l) + '</small> <b>' + esc(fmtTok(v)) + '</b>';
-  const use = (p, n, k) => {
+  const use = (p, n, k, a) => {
     const w = k === '7d' && n == null && est0.wk_used != null ? burnWkEst(BURN) : null;
     // main account: measured tokens are the primary's, so only «left ≈» from the main account's own history (est)
     const bm = ma && !kx && typeof burnFor === 'function' ? burnFor() : null;
     // ⚠A low (own-window) est stays in the layer (sblEst) only — the bar keeps its length.
     const e = ma ? (bm && !(bm.est && bm.est.low) && (k === '7d' ? burnWkEst(bm) : burnEst(bm, k, null, p))) : w || burnEst(BURN, k, n, p);
     // Remaining %; colour still keyed on used (≥70/≥90 used = ≤30/≤10 left). Tooltip keeps used %.
-    return (p == null ? '' : '<small>' + esc(T('left')) + '</small> <b class=' + pc(p) + '>' + esc(fmtPct(Math.max(0, 100 - p))) + '</b>') + (n != null ? sbt(T('used'), n) : w ? sbt(T('used ≈'), w.used) : '')
+    return (p == null ? '' : '<small>' + esc(T('left')) + '</small> <b class=' + pc(p) + '>' + esc(fmtPct(Math.max(0, 100 - p))) + '</b>') + (n != null ? sbt(T('used'), n) : w ? sbt(T('used ≈'), w.used) : a != null ? sbt(T('used ≈'), a) : '')
       + (e ? '<span class=sbd3>' + sbt(T('left ≈'), e.left) + '</span>' : '');
   };
   if(fh){
@@ -201,11 +203,12 @@ function buildSbar(sv){
     const e5 = ma ? (bm5 && burnEst(bm5, '5h', null, fh.pct)) : burnEst(BURN, '5h', cu0.used_local, fh.pct);
     const t5 =T('5-hour limit — official usage') + ' ' + (fh.pct == null ? '?' : fmtPct(fh.pct)) + mtip(k5)
       + (cu0.used_local != null ? '\n' + T('Tokens used') + ' ' + fmtTok(cu0.used_local) + ' — ' + burnUsedTip() : '')
+      + (au5 != null ? '\n' + T('used ≈') + ' ' + fmtTok(au5) : '')
       + (e5 ? '\n' + T('left ≈') + ' ' + fmtTok(e5.left) + ' — ' + e5.tip : '')   // same pick as the bar text
       + (!isNaN(ms) ? '\n' + T('Resets', 'card') + ' ' + CLK(new Date(ms)) : '');
     // Claude logo leads the Claude group (5h … 7d); external platforms lead theirs in sbExt.
     out.push('<span title="' + esc(t5) + '">' + aiLogo('cc').replace(/ title="[^"]*"/, '') + '<b>5h</b> '
-      + use(fh.pct, cu0.used_local, '5h')
+      + use(fh.pct, cu0.used_local, '5h', au5)
       + (m != null ? ' <small class="sbd6' + (m < 30 ? ' sbwarn' : '') + '">· ' + esc(T('reset')) + ' ' + esc(LATER(HM(m))) + '</small>' : '') + '</span>');
     // Projected remaining at reset = 100 - burndown projection % (same «left» framing as the 5h segment); colour keyed on used.
     const bf = kx ? null : burnFor(), pj = bf && bf.proj;
@@ -236,9 +239,10 @@ function buildSbar(sv){
     const t7 = T('7-day limit — official usage') + ' ' + (sd.pct == null ? '?' : fmtPct(sd.pct)) + mtip(k7)
       + '\n' + T('Account limit window: from the reset · includes other devices and claude.ai (the Tokens tab «last 7 days» is this PC · calendar days)')
       + (wkU != null ? '\n' + T('Tokens used') + ' ' + fmtTok(wkU) + ' — ' + burnUsedTip() : '')
+      + (au7 != null ? '\n' + T('used ≈') + ' ' + fmtTok(au7) : '')
       + (est0.wk_left != null ? '\n' + T('left ≈') + ' ' + fmtTok(est0.wk_left) + ' — ' + burnEstTip('7d', est0) : '')
       + (d && !isNaN(d) ? '\n' + T('Resets', 'card') + ' ' + RST7(d).abs + ' · ' + RST7(d).rel : '');
-    out.push('<span title="' + esc(t7) + '"><b>7d</b> <small class=sbd6>' + esc(T('account')) + '</small> ' + use(sd.pct, wkU, '7d')
+    out.push('<span title="' + esc(t7) + '"><b>7d</b> <small class=sbd6>' + esc(T('account')) + '</small> ' + use(sd.pct, wkU, '7d', au7)
       + (d && !isNaN(d) ? ' <small class="sbd6' + (d - now < 6*3600e3 ? ' sbwarn' : '') + '">· ' + esc(T('reset')) + ' ' + esc(RST7(d).rel) + '</small>' : '') + '</span>');   // rel piece only: abs+rel pushed other segments out at 1100 (full text in the title)
   }
   const gx = sbExt(typeof EXTU === 'undefined' ? null : EXTU);

@@ -229,12 +229,19 @@ def _qb_acct_body(label, now):
     wk = (row.get("seven_day") or {})
     if _qb_num(wk.get("pct")) and _qb_num(wk.get("leftSec")) and wk["leftSec"] > 0:
         out["wk"] = {"now_pct": round(float(wk["pct"]), 1), "left": int(wk["leftSec"])}
+    # ⚠`used_acct` = acct_tokens hour-bucket sum (first hour pro rata): approximate, never `used_local` (exact sum)
+    n5 = acct_tokens(label, now + int(left) - QBURN_WIN, now)
+    n7 = acct_tokens(label, now + out["wk"]["left"] - 7 * 86400, now) if "wk" in out else 0
+    if n5 > 0:
+        out["cur"]["used_acct"] = int(n5)
+    if n7 > 0:
+        out["wk"]["used_acct"] = int(n7)
     key = _qb_acct_key(label)
     out["est"] = burn_est(out, key)   # same history est as the primary body; None when the key is unknown
     if out["est"] is None or plan_cut(key)[1]:
         # No history yet: this account's own window per-1% (plan_est, low). ⚠`head` stays on a copy — on the body it
         #   would flip saver_cap to conf high; never the primary's per-1% (plans sit 5-9x apart).
-        tmp = dict(out, head=_qb_acct_win(label, out, now))
+        tmp = dict(out, head=_qb_acct_win(out, n5, n7))
         est_fill(tmp, key)
         out["est"] = tmp["est"]
         if "est_why" in tmp:
@@ -242,15 +249,13 @@ def _qb_acct_body(label, now):
     return out
 
 
-def _qb_acct_win(label, out, now):
-    """`plan_est` inputs from this account's own tokens since its 5h/7d window start (usage index), else None."""
+def _qb_acct_win(out, n5, n7):
+    """`plan_est` inputs from this account's own tokens `n5`/`n7` since its 5h/7d window start (usage index), else None."""
     c, w = out["cur"], out.get("wk") or {}
-    n5 = acct_tokens(label, now + c["left"] - QBURN_WIN, now)
     if n5 <= 0 or c["now_pct"] <= 0:
         return None
     hd = {"per_pct": int(n5 / c["now_pct"]), "src": "win", "wk": None}
     if w.get("now_pct", 0) >= 1:
-        n7 = acct_tokens(label, now + w["left"] - 7 * 86400, now)
         if n7 > 0:
             hd["wk"] = {"lim": int(n7 / w["now_pct"] * 100), "used": n7}
     return hd

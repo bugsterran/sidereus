@@ -128,6 +128,8 @@ QLAST = {q: {five_hour: {pct: 10}, seven_day: {pct: 20}, accounts: [{label: 'wor
 R.b0 = bar(); R.n0 = sbPrimNote();
 STORE.mbMainAcct = 'work'; R.b1 = bar(); R.n1 = sbPrimNote();
 BURNM_DIR = '/w'; BURNM = {ok: true, at: 1, cur: {now_pct: 33, rate_pph: 10}, proj: {pct: 60, over_at: 1}}; R.b3 = bar(); BURNM = null;
+BURNM = {ok: true, at: 1, est: {low: true}, cur: {now_pct: 33, used_acct: 777}, wk: {now_pct: 44, used_acct: 8888}, proj: {pct: 60}};
+R.b4 = bar(); R.t4 = HTML; BURNM = null;
 QLAST.q.accounts[0].err = 'http'; R.b2 = bar();
 """
 
@@ -158,6 +160,13 @@ class StatusBarFollowsMain(unittest.TestCase):
         b3 = self.R["b3"]   # main's own ?dir= body: projection + ETA come back, tokens stay hidden
         self.assertTrue(b3[2] and b3[3])
         self.assertNotIn("used", b3[0])
+
+    def test_main_own_used_is_approx(self):
+        b = self.R["b4"]   # main's own hour-bucket sums: «used ≈», never «used», low est keeps «left ≈» out
+        self.assertIn("used ≈</small> <b>777</b>", b[0]); self.assertIn("used ≈</small> <b>8888</b>", b[1])
+        self.assertNotIn("<small>· used</small>", self.R["t4"]); self.assertNotIn("left ≈</small>", self.R["t4"])
+        self.assertNotIn("5000", self.R["t4"])   # ⚠never the primary's used_local
+        self.assertNotIn("left ≈", self.R["b1"][0]); self.assertNotIn("used", self.R["b1"][0])
 
     def test_main_unknown_falls_back(self):
         b = self.R["b2"]
