@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Structure: the «Stop» button on a running pipeline request is drawn in the error colour so it stands out on the status line.
 - Status bar: the primary account's 5h and 7d «used» (and the «left ≈» history behind them) count only that account's sessions. When accounts share one projects folder (a symlinked `projects/`), every account's sessions were summed, so the 7d figure ran far ahead of the 5h one.
 - Mailbox: a Codex session no longer shows as «not logged in» when its launcher id (`<folder>-codex`) has a reader — Sidereus hooks connected, or a read cursor for a rollout-only row — and no other live Codex session shares that id; viewer DMs and run requests reach it. Folder guesses stay refused, and the check fails closed until the first session poll.
 - Status bar: with a main account chosen, the Claude 5h and 7d segments show that account's own «used ≈» tokens (counted from its own sessions, hourly, so approximate) instead of no token figure at all; without a main account nothing changes.
