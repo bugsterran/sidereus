@@ -59,7 +59,7 @@ class WheelBuild(unittest.TestCase):
         _stage(src)
         r = subprocess.run([PY, "-m", "pip", "wheel", "--no-build-isolation", "--no-deps", "--no-index",
                             "--disable-pip-version-check", "-q", "-w", dist, src],
-                           capture_output=True, text=True, cwd=cls.tmp, timeout=300)
+                           capture_output=True, text=True, encoding="utf-8", cwd=cls.tmp, timeout=300)
         whl = [f for f in os.listdir(dist) if f.endswith(".whl")] if os.path.isdir(dist) else []
         cls.build_err = "" if r.returncode == 0 and len(whl) == 1 else (r.stdout + r.stderr)[-2000:]
         cls.whl = os.path.join(dist, whl[0]) if whl else ""
@@ -91,7 +91,7 @@ class WheelBuild(unittest.TestCase):
             z.extractall(site)
         env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "PYTHONPATH": site, "MAILBOX_DIR": data,
                "HOME": self.tmp, "PYTHONDONTWRITEBYTECODE": "1"}
-        r = subprocess.run([PY, "-c", PROBE], capture_output=True, text=True, cwd=self.tmp, env=env, timeout=120)
+        r = subprocess.run([PY, "-c", PROBE], capture_output=True, text=True, encoding="utf-8", cwd=self.tmp, env=env, timeout=120)
         self.assertEqual(r.returncode, 0, r.stderr[-2000:])
         got = json.loads(r.stdout.strip().splitlines()[-1])
         real = os.path.realpath(site)
@@ -105,7 +105,7 @@ class WheelBuild(unittest.TestCase):
 class SetupCompiles(unittest.TestCase):
     def test_py_compile_39(self):
         if os.path.exists(PY):
-            r = subprocess.run([PY, "-m", "py_compile", os.path.join(REPO, "setup.py")], capture_output=True, text=True,
+            r = subprocess.run([PY, "-m", "py_compile", os.path.join(REPO, "setup.py")], capture_output=True, text=True, encoding="utf-8",
                                env=dict(os.environ, PYTHONPYCACHEPREFIX=tempfile.gettempdir()))
             self.assertEqual(r.returncode, 0, r.stderr)
         else:

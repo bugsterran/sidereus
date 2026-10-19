@@ -145,6 +145,7 @@ notes · parse · adapter · plat_gemini · plat_codex · ext_store · ext · se
 - `ext` split in two (2026-09-24): `ext_store` (`PLAT_MODS`, `EXT_PLAT`/`EXT_STATE`/`EXT_*` limits, `_ext`/`_ext_lock`/`_ext_stat`/`_HOST`, `EXT_FILE` save/load/prune,
   child runs `EXT_RUNS_FILE`/`_runs` + `_run_note_locked`/`ext_runs`, `ext_ingest`, dedupe, pid probes, `ext_gone_check`, token store `_tok`/`ext_tok_refresh`/`ext_tok`) ·
   `ext` (views: `ext_usage_today`, `ext_work`, `ext_rows`, `ext_children`, hook check `ext_hook_check`/`_hook_chk`; re-exports 18 store names).
+  + `ext_rollout_rows` (2026-10-19): Codex rows from rollouts modified within `ROLL_WIN_S` (owned by `ext`, = `ext_store.EXT_ENDED_KEEP_S` 600) when no hook entry, child run or recently ended sid exists (`ext_store` owns `_ext_ended` + `ext_ended()`, filled on SessionEnd / gone / dismiss); reads `live_probe._ps_snap_cache` (never forks `ps`). Tests patch `plat_codex.root`, `_ps_snap_cache`, `ext._ext_prune_locked`/`ext_gone_check`.
   ⚠Patch store internals (`_ext_save_locked`, `_runs_save_locked`, `EXT_FILE`/`EXT_RUNS_FILE`, `_pid_start`) on `ext_store` — tests/_load.py redirects the paths there.
   `ext-hooks/demo.sh` now reads `EXT_PLAT`/`EXT_STATE` from `ext_store.py`. Proof: 49 top-level names = 11 + 38, 23 functions bytecode-identical, 213 global lookups resolve, 13 imported names `is`-same.
 

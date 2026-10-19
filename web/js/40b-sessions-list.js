@@ -139,10 +139,13 @@ function sessBranchHtml(x){
 }
 // Identity row: pick box · dot · platform logo · project · branch · badges.
 function sessIdRow(x){
-  const pl = aiLogo(x.plat, x.plat && x.plat !== 'cc'
-    ? T(' session — drawn from events its CLI hooks send (the transcript is not read)') : T(' session'));
+  // ⚠A rollout row (x.rollout) has no hook events behind it — its tooltip must not claim they are the source.
+  const pl = aiLogo(x.plat, x.rollout ? T(" session — read from its CLI's record file (hooks not connected)")
+    : x.plat && x.plat !== 'cc' ? T(' session — drawn from events its CLI hooks send (the transcript is not read)') : T(' session'));
+  const nohk = x.rollout ? '<span class="sz snohk" title="'+esc(T("State read from Codex's record file; set up hooks — docs/HOOKS.md"))+'">'
+    + esc(T('Hooks not connected'))+'</span>' : '';
   return '<div class=sx>'+sessPickHtml(x)+'<span class=sd></span>'+pl+'<span class=sp title="'+esc(x.project)+'">'+esc(x.project)+'</span>'+sessBranchHtml(x)+acctChip(x, 'sacb')
-    + sessBadges(x) + '</div>';
+    + nohk + sessBadges(x) + '</div>';
 }
 // Current-task line under the state row ('' when there is nothing to show).
 function sessTaskHtml(x){

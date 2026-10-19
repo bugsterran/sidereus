@@ -77,6 +77,9 @@ function sessLabel(x){
   if(!x) return stateLbl('unknown');
   const st = x.state || 'unknown';
   if(st === 'gone') return T(x.goneWhy === 'silent' ? 'Disconnected?' : 'Disconnected');   // external CLI killed without SessionEnd (sidereus/ext.py)
+  // ⚠Codex row read from its rollout file (no hooks): only the file's age is known — never an input/answer/blocked state.
+  if(x.rollout) return typeof x.ageSec === 'number'
+    ? TV({msg: 'Last activity {n}m ago', vars: {n: Math.max(0, Math.floor(x.ageSec / 60))}}) : stateLbl('unknown');
   // ⚠Fixed server label: must not reach the split below, or "subagent" is shown as a tool name.
   if(x.blocked === 'subagent waiting for approval') return T('Blocked') + ' · ' + T(x.blocked);
   // sidereus/live_probe.py sends '<Tool> waiting for approval': the tool name stays as-is, only the suffix is translated.
