@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: a running pipeline shows in the «Pipelines» tab as soon as the Timeline shows it, instead of 10–20 s later (the tab waited for subagent labels, refreshed every 20 s).
 - `sidereus stop --port N` / `status --port N`: a background service on another port no longer claims the port — `stop` used to print «Managed by a service» and exit 0 while a `--demo` on 18799 kept running. `stop` now takes `--port`, refuses only when the service serves that port, and points at Ctrl-C / the other data dir for a viewer it did not start; `status` shows the service's port (Refs #11).
 - Codex: a session whose hooks are not approved yet now appears in the session list when its rollout changed in the last 10 minutes, marked «Hooks not connected» (folder and model, state unknown); the hook row replaces it once events arrive (Refs #6).
 - Codex: a second Codex session no longer disappears from the list (every Codex TUI runs its hooks under one shared `codex app-server`, so two sessions reported the same pid and were merged as a resume); the session row's «Terminal» button now finds the Codex tab by its folder and brings it forward, and the copied command is `codex resume <sid>` instead of `claude --resume`. Measured on Codex 0.163.0: list, state, turn-end mail and `[pl:]` stage marks work through the hooks.

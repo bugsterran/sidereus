@@ -164,3 +164,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: the panel renders the sentences itself from counts; the report renders them in Python. Same English text, two places.
 - ⇒ `PLE_OC` values are the `OC_SENT` templates verbatim (each is also an `I18N.ko` key); numbers go in `vars`, never through `T()`. Percentages round half up in JS (`Math.round`).
 - ⚠Rewording one side breaks the ko lookup or makes panel and report disagree; change both and `06-i18n-zx-eval.js` together (`tests/test_pl_outcome_js.py` checks the key list).
+
+## Pipelines tab dot lagged the Timeline (48 `plTagNames`)
+
+- Cause: the tab took run names only from live tags (Workflow row, `[pl:]` subagent label, `plm`); subagent labels come through `agents._agent_meta` (TTL 20 s), so a run showed 10–20 s after the Timeline, which reads `plrun`.
+- ⇒ `plTagNames` also adds open `plrun` runs (`!r.end && plPrLive(r)`); the project is still picked by `plHomes` (`r.proj` first), so one run lands in one project.
+- ⚠Do not add ended runs or bypass `plHomes`: the dot would stay after the run or show in every repo of the session.
