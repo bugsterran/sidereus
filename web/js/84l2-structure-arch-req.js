@@ -27,7 +27,7 @@ function archReqRowHtml(r, open){
   const st = esc(T(ARCH_REQ_LBL[r.state] || '?', 'pl request')) + (r.state === 'run' && r.stage ? ' · ' + esc(String(r.stage)) : '');
   return '<div class="archsent archpr' + (r.state === 'run' ? ' run' : archReqLive(r) ? '' : ' end') + '" role=status data-arpr="' + esc(r.id) + '" title="' + esc(r.pipeline + ' · ' + r.id) + '">'
     + (r.state === 'run' ? '<i class=archspin></i>' : '') + '<span>' + st + '</span><span class=archprw>' + esc(archReqWho(r)) + '</span>'
-    + (archReqStopOk(r) && !open ? '<button type=button class=wkrgb data-arstop="' + esc(r.id) + '">' + esc(T('Stop', 'pl request')) + '</button>' : '') + '</div>';
+    + (archReqStopOk(r) && !open ? '<button type=button class="wkrgb archstop" data-arstop="' + esc(r.id) + '">' + esc(T('Stop', 'pl request')) + '</button>' : '') + '</div>';
 }
 // Pure: stop preview (rule 7: Sidereus composes this text, so it needs preview + confirm).
 function archReqStopHtml(r, repo, busy){
