@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Codex: a second Codex session no longer disappears from the list (every Codex TUI runs its hooks under one shared `codex app-server`, so two sessions reported the same pid and were merged as a resume); the session row's «Terminal» button now finds the Codex tab by its folder and brings it forward, and the copied command is `codex resume <sid>` instead of `claude --resume`. Measured on Codex 0.163.0: list, state, turn-end mail and `[pl:]` stage marks work through the hooks.
 - Quota: a non-primary «Main account» had no «left ≈» token estimate; until it has history it gets a low-accuracy estimate from its own tokens in this window, shown per account in the status-bar layer («≈ N left» under the 5h/7d %).
 
 ## [0.4.0] - 2026-10-18

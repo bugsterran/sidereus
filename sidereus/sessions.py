@@ -461,11 +461,6 @@ def _sessions(max_age_h, cap):
         for info, txt in zip(out, said):
             _note_transition(dict(info, **txt))
             _note_ctx(info)
-    try:
-        term_attach(out)                          # row.term = {app, tty} for «To terminal» (metadata only)
-    except Exception as e:
-        warn_once("term-attach", "Could not attach terminal tab info ({err})",
-                  vars={"err": type(e).__name__}, soft=True)
     # ⚠External CLI rows are merged **after** the `_note_*` above — feeding them in would raise cards (transition·context) wrongly.
     try:
         ext_children(out)                         # Gemini runs launched by a Claude session hang under it
@@ -473,6 +468,11 @@ def _sessions(max_age_h, cap):
         warn_once("ext-children", "Could not attach child Gemini runs ({err})",
                   vars={"err": f"{type(e).__name__}: {e}"})
     out.extend(ext_rows())
+    try:   # ⚠after ext_rows: external rows need `term` too (before, Codex rows always showed «Copy command»)
+        term_attach(out)                          # row.term = {app, tty} for «To terminal» (metadata only)
+    except Exception as e:
+        warn_once("term-attach", "Could not attach terminal tab info ({err})",
+                  vars={"err": type(e).__name__}, soft=True)
     rank = {"ask": 0, "abort": 1, "tool": 2, "think": 3, "wait": 4, "unknown": 5, "done": 6}
     out.sort(key=lambda r: (rank.get(r.get("state"), 9), r.get("ageSec", 0)))
     # ★Fill the session id → project map. Live top3 uses it to turn OTel's session.id into a human-readable

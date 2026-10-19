@@ -1,6 +1,6 @@
 """«To terminal»: bring a live session's terminal tab to the front (iTerm2 / Terminal.app / Orca).
 Detection is metadata only (tty + TERM_PROGRAM of the claude pid). Focus runs a fixed AppleScript with the tty
-as an argv item — never text injection (AGENTS.md rule 7). Orca: fixed `orca terminal switch` argv, same rule. Owns `TERM_CFG_FILE`, `_TTY_CACHE`, `_TTY_FAIL`, `_TTY_LOCK`, `_JUMP_FAILS`."""
+as an argv item — never text injection (AGENTS.md rule 7). Orca: fixed `orca terminal switch` argv, same rule. Owns `TERM_CFG_FILE`, `_TTY_CACHE`, `_TTY_FAIL`, `_TTY_LOCK`, `_JUMP_FAILS`, `_CWD_CACHE`, `_CWD_FAIL`."""
 import os
 import re
 import shutil
@@ -23,12 +23,16 @@ FOCUS_TIMEOUT = 5
 _TTY_CACHE = {}                            # pid(str) -> (probed at, tty or None, app, orca handle or None)
 _TTY_FAIL = [0.0]
 _TTY_LOCK = threading.Lock()
+_CWD_CACHE = {}                            # pid(str) -> (probed at, cwd or "") for the external-row cwd fallback
+_CWD_FAIL = [0.0]
 _ENV_PROG = re.compile(r"(?:^|\s)TERM_PROGRAM=(\S+)")
 _ENV_LCT = re.compile(r"(?:^|\s)LC_TERMINAL=(\S+)")
 _ENV_ORCA = re.compile(r"(?:^|\s)ORCA_TERMINAL_HANDLE=(\S+)")
 # ⚠The handle becomes an argv item of the orca CLI: no leading '-', no spaces, bounded. It stays server-side (never in `term`).
 ORCA_HANDLE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 ORCA_BUNDLE = "com.stablyai.orca"
+# External row `plat` -> (CLI process basename, resume command prefix). Unlisted platforms get no command, not a wrong one.
+EXT_CLI = {"cx": ("codex", "codex resume ")}
 ORCA_CLIS = ("orca", "orca-ide")           # orca-ide = Linux binary name
 
 # ⚠The tty arrives only as `item 1 of argv` — never format it into the script text.
@@ -192,15 +196,89 @@ def _resolve(sid):
     return True, _term_of(pids)
 
 
+def _is_ext(r):
+    """External CLI row (Codex, Gemini, ...): its sid never matches a `claude` process."""
+    return bool(r.get("ext")) or r.get("plat") not in (None, "", "cc")
+
+
+def _row_pid(r):
+    """Hook-reported CLI pid of an external row as a str, or ''."""
+    p = r.get("pid")
+    return str(p) if isinstance(p, int) and not isinstance(p, bool) and p > 1 else ""
+
+
+def _probe_cwd(pids, force=False):
+    """One `lsof -d cwd` for pids not cached or past TTL -> fills `_CWD_CACHE` (same TTL/fail rules as `_probe`).
+    The poll path reuses it, so the external-row cwd fallback is not an lsof per poll."""
+    now = time.time()
+    with _TTY_LOCK:
+        if not force:
+            for p in [p for p, v in _CWD_CACHE.items() if p not in pids and now - v[0] > TTY_TTL]:
+                _CWD_CACHE.pop(p, None)
+        want = [p for p in pids if p.isdigit() and (p not in _CWD_CACHE or now - _CWD_CACHE[p][0] > TTY_TTL)][:64]
+        if not want or not IS_MAC or (not force and now - _CWD_FAIL[0] < TTY_FAIL_TTL):
+            return
+        try:
+            txt = subprocess.run(["lsof", "-a", "-d", "cwd", "-Fpn", "-p", ",".join(sorted(want, key=int))],
+                                 capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                 timeout=TTY_TIMEOUT).stdout
+        except Exception:
+            _CWD_FAIL[0] = now
+            return
+        got, cur = {}, ""
+        for ln in txt.splitlines():
+            if ln.startswith("p"):
+                cur = ln[1:]
+            elif ln.startswith("n") and cur:
+                got[cur] = ln[1:]
+        for p in want:
+            _CWD_CACHE[p] = (now, got.get(p, ""))
+
+
+def _resolve_ext(r, snap, force=True):
+    """External row -> (pids, term or None, err). Stored hook pid first; else the platform CLI in the row's cwd.
+    ⚠The hook pid may be a tty-less helper (Codex app-server), so a pid without a terminal also falls back.
+    ⚠Several CLI terminals in the same cwd -> refuse rather than guess the tab."""
+    p = _row_pid(r)
+    if p:
+        _probe({p}, force=force)
+        t = _term_of([p])
+        if t:
+            return [p], t, ""
+    name, cwd = EXT_CLI.get(r.get("plat"), ("", ""))[0], r.get("cwd") or ""
+    cands = [str(q) for q, _pp, cmd in snap or [] if name and cmd.split() and os.path.basename(cmd.split()[0]) == name]
+    if not cwd or not cands:
+        return [], None, "no process for session"
+    _probe_cwd(set(cands), force=force)
+    pids = [q for q in cands if _CWD_CACHE.get(q, (0, ""))[1] == cwd]
+    if not pids:
+        return [], None, "no process for session"
+    _probe(set(pids), force=force)
+    hits = {}
+    for q in pids:
+        t = _term_of([q])
+        if t:
+            hits.setdefault((t.get("app"), t.get("tty")), (q, t))
+    if len(hits) > 1:
+        return pids, None, "several terminals in this folder"
+    if not hits:
+        return pids, None, ""
+    q, t = next(iter(hits.values()))
+    return [q], t, ""
+
+
 def term_attach(rows):
-    """Set `row["term"] = {app, tty}` (or None) on Claude rows. ⚠Reads live_probe's caches only — never forks them."""
-    sp = _sid_pids(_av_cache[1], _ps_snap_cache[1])
+    """Set `row["term"] = {app, tty}` (or None) on rows. ⚠Reads live_probe's caches only — never forks them.
+    External rows: stored hook pid, else the cached cwd fallback (`_probe_cwd`, at most one lsof per TTL)."""
+    snap = _ps_snap_cache[1]
+    sp = _sid_pids(_av_cache[1], snap)
     _probe({p for ps in sp.values() for p in ps})
     for r in rows:
-        if r.get("ext"):
-            continue
         r["term"] = None
         if r.get("state") == "done":
+            continue
+        if _is_ext(r):
+            r["term"] = _resolve_ext(r, snap, force=False)[1]
             continue
         r["term"] = _term_of(sp.get(r.get("sid") or "", []))
 
@@ -271,15 +349,28 @@ def term_focus(sid, rows, cfg=None):
 
 
 def _focus(sid, rows, cfg):
-    cmd = "claude --resume " + sid
-    row = next((r for r in rows or [] if r.get("sid") == sid and not r.get("ext") and r.get("state") != "done"), None)
+    row = next((r for r in rows or [] if r.get("sid") == sid and r.get("state") != "done"), None)
+    ext = bool(row) and _is_ext(row)
+    pre = EXT_CLI.get(row.get("plat"), ("", ""))[1] if ext else "claude --resume "
+    cmd = pre + sid if pre else ""
     if row is None:   # ⚠notfound, not 400: the page reads a 400 here as a permission problem
         return 200, {"ok": False, "how": "notfound", "cmd": cmd, "err": "session not live on screen"}
     t = row.get("term")
     app = cfg or term_cfg()
     if app == "off":
         return 200, {"ok": False, "how": "off", "cmd": cmd}
-    if not isinstance(t, dict):
+    xpids = []
+    if ext:
+        try:
+            snap = _ps_snap()
+        except Exception:
+            snap = _ps_snap_cache[1]
+        xpids, t, err = _resolve_ext(row, snap)
+        if err:
+            return 200, {"ok": False, "how": "notfound", "cmd": cmd, "err": err}
+        if not isinstance(t, dict):
+            return 200, {"ok": False, "how": "unsupported", "cmd": cmd}
+    elif not isinstance(t, dict):
         found, t = _resolve(sid)
         if not found:
             return 200, {"ok": False, "how": "notfound", "cmd": cmd, "err": "no process for session"}
@@ -288,7 +379,8 @@ def _focus(sid, rows, cfg):
     if app == "auto":
         app = t.get("app")
     if app == "orca":
-        return _focus_orca(cmd, _orca_handle(sid))
+        h = next((_TTY_CACHE[p][3] for p in xpids if _TTY_CACHE.get(p) and _TTY_CACHE[p][3]), None)
+        return _focus_orca(cmd, h if ext else _orca_handle(sid))
     tty = t.get("tty")
     if not isinstance(tty, str) or not TTY_RE.match(tty):
         return 200, {"ok": False, "how": "notfound", "cmd": cmd, "err": "bad tty"}
