@@ -16,6 +16,7 @@ FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archEvHtml", "archEd
        "archSentRun", "archSentPh", "archEl", "archSentDone", "archSentHtml", "archSentFin", "archTick", "archBase", "archRunOf", "archRunEl", "archRunHtml", "archStatusHtml", "archLegHtml", "hhmm",
        "archStyleName", "archRoleName", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",
        "archHasLayers", "archEntPair", "archBandSrc", "archBandFix", "archBandHint", "archFront", "archKindMap", "archKindLegHtml"]   # 84j2 (archPaint calls them)
+FNS.append("plCxHint")   # 48b: Codex recipient hint (archReqHtml calls it)
 def _read(p):
     with open(p, encoding="utf-8") as fh:
         return fh.read()
@@ -386,6 +387,23 @@ class StructArch(unittest.TestCase):
                 "console.log(JSON.stringify([h, POSTS[0][1].body]));")
         self.assertIn("[pl:arch-map/", r[1])
         self.assertIn(r[1].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"), r[0])
+
+    def test_codex_turn_end_hint(self):
+        # Codex recipient: UI-only hint under the preview; a Claude recipient gets none and the body never carries it
+        js = ("SESS = [{sid: 'd1', cwd: '/r', plat: 'cx', mbox: 'cx', mboxSrc: 'identity'}, {sid: 'p1', cwd: '/r', mbox: 'pm', mboxSrc: 'identity'}];"
+              "ARCH.cache['/r'] = {ok: true, modules: [], edges: [], sidereus: '/sidereus'}; const out = [];"
+              "for(const s of ['d1', 'p1']){ ARCH.req = {p: '/r', sid: s, busy: false}; POSTS = [];"
+              " const box = {innerHTML: '', querySelector(){ return null; }}; archPaint(box, head); await archSend(); out.push([box.innerHTML, POSTS[0][1].body]); }"
+              "console.log(JSON.stringify(out));")
+        ko = "이 세션은 지금 턴이나 다음 턴이 끝날 때 받습니다"
+        r = run(js)
+        self.assertIn("data-cxhint", r[0][0])
+        self.assertIn(ko, r[0][0])
+        self.assertNotIn("data-cxhint", r[1][0])
+        for _h, body in r:
+            self.assertNotIn(ko, body)
+            self.assertNotIn("turn ends", body)
+        self.assertIn("picks it up when its current or next turn ends", run(js, lang="en")[0][0])
 
     def test_codex_launcher_env_id_sendable(self):
         # cx mboxSrc env = launcher id with a read cursor; the request goes to it

@@ -104,6 +104,17 @@ class CodexRecipient(unittest.TestCase):
             for w in CLAUDE_ONLY:
                 self.assertNotIn(w, t)
 
+    def test_codex_turn_end_hint(self):
+        # UI-only hint for a Codex recipient; none for Claude; the panel shows it after the preview, never in plDmFor
+        r = _js("(globalThis.esc = s => String(s), [plCxHint({cx: true, id: 'x'}), plCxHint({cx: false, id: 'y'}), plCxHint(null)])", "plCxHint")
+        self.assertIn("data-cxhint", r[0])
+        self.assertIn("이 세션은 지금 턴이나 다음 턴이 끝날 때 받습니다", r[0])
+        self.assertEqual(r[1:], ["", ""])
+        from tests._load import js_all, js_fn
+        self.assertIn("+ plCxHint(cur)", js_all())
+        for f in DM_FNS:
+            self.assertNotIn("plCxHint", js_fn(f))
+
 
 if __name__ == "__main__":
     unittest.main()
