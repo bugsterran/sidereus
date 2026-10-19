@@ -349,3 +349,5 @@ html[data-ui=next][data-theme=light] .tlsi i{filter:brightness(.7)}
 /* «?» help popover (74b tlqToggle) — a .thpop shell; text wraps instead of the list-row nowrap. */
 html[data-ui] em.tlq{cursor:pointer}   /* beats 90-main-ui `.tlq{cursor:help}` (loads later) */
 html[data-ui=next] .thpop.tlqp{gap:4px;padding:8px 10px;max-width:min(380px,calc(100vw - 16px));font-size:12px;line-height:1.5;color:var(--nx-t1);white-space:normal}
+/* Timeline head summary (74b tlHeadHtml): wraps by the 200px basis, then grows and ellipsizes, so its text length never changes the head's line count. */
+#feed .wvh.wvht > .tlsum{flex:1 1 200px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}

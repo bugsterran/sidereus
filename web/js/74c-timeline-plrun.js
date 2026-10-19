@@ -71,8 +71,30 @@ const TLPL_LEGEND = [['done', 'Done', 'this stage finished'], ['run', 'Running',
 function tlPlLegend(){
   // ⚠'Failed|stage' context: plain 'Failed' maps to a different Korean sentence.
   const steps = TLPL_LEGEND.map(([st, k, tip, c]) => { const nm = st === 'fail' ? T('Failed', 'stage') : T(k, c); return { st, nm, tip: nm + ': ' + T(tip) }; });
-  return '<div class=tlplg><i class=tlplgt title="' + esc(T('A finished run reads ✓ Done · ✕ Failed · ⏸ Aborted')) + '">' + esc(T('Pipeline')) + '</i>'
-    + plStepper(steps, -1, 'tlplgs') + '</div>';
+  // Expanded inline; tlPlKeyFit folds it (.tlplgf: «Pipeline ▾» + hover/focus popover) only when the head would take two lines.
+  return '<div class=tlplg><i class=tlplgt title="' + esc(T('A finished run reads ✓ Done · ✕ Failed · ⏸ Aborted')) + '">' + esc(T('Pipeline')) + '<i class=tlplgc aria-hidden=true> ▾</i></i>'
+    + '<div class=tlplgp id=tlplgp>' + plStepper(steps, -1, 'tlplgs') + '</div></div>';
+}
+// Pure: fold when the expanded head wrapped (the .tlhr wrapper starts below the summary's middle line).
+function tlPlKeyWraps(sum, hr){ return !!(sum && hr) && hr.top > sum.top + sum.height / 2; }
+// ⚠Decided from the expanded layout only, in one synchronous pass (expand → measure → fold): .tlsum wraps by its 200px basis,
+//   so the answer depends on width alone and the observer cannot flap. Folded = focusable label describing the popover.
+let TLPL_KRO = null;
+function tlPlKeyFit(box){
+  if(TLPL_KRO){ TLPL_KRO.disconnect(); TLPL_KRO = null; }
+  const head = box && box.querySelector('.wvh.wvht'), g = head && head.querySelector('.tlplg');
+  if(!g) return;
+  const fit = () => {
+    const lab = g.querySelector('.tlplgt'), pop = g.querySelector('.tlplgp');
+    g.classList.remove('tlplgf');
+    const sm = head.querySelector('.tlsum'), hr = head.querySelector('.tlhr');
+    const f = tlPlKeyWraps(sm && sm.getBoundingClientRect(), hr && hr.getBoundingClientRect());
+    g.classList.toggle('tlplgf', f);
+    if(lab){ if(f){ lab.tabIndex = 0; lab.setAttribute('aria-describedby', 'tlplgp'); } else { lab.removeAttribute('tabindex'); lab.removeAttribute('aria-describedby'); } }
+    if(pop){ if(f) pop.setAttribute('role', 'tooltip'); else pop.removeAttribute('role'); }
+  };
+  fit();
+  if(typeof ResizeObserver !== 'undefined'){ TLPL_KRO = new ResizeObserver(fit); TLPL_KRO.observe(head); const hr = head.querySelector('.tlhr'); if(hr) TLPL_KRO.observe(hr); }
 }
 // Header: the key only when a drawn row (gs = tlOrdered groups) has a run, then the «Runs N» chip (every session, not only drawn rows; chips open in a popover).
 // ⚠The chip is out of flow (21-timeline-plrun.css): in flow it wrapped alone to a new header line and shifted the body.

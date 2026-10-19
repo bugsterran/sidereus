@@ -116,8 +116,20 @@ html[data-theme=light] .tlpst{--tlpl-bk:var(--nx-warn,#8b6401)}
 /* Stepper key (tlPlLegend, 74c) at the right end of the timeline header: the real segments laid out swatch + label inline.
    ⚠In the header, not the axis row: the axis name cell has no room for six items and the axis row must keep its height. Wraps to its own line at 900. */
 /* ⚠Tight spacing (gap 5 · swatch 10): at 8/10/14px the en key was 467px and took its own header row at 1440 beside two run chips. */
-.wvh > .tlplg{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11px;line-height:16px;color:var(--nx-t2,#909298);white-space:nowrap}
+.tlhr > .tlplg{position:relative;display:flex;align-items:center;gap:6px;font-size:11px;line-height:16px;color:var(--nx-t2,#909298);white-space:nowrap}
 .tlplg .tlplgt{font-style:normal;font-weight:600;cursor:help}
+.tlplg .tlplgt:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:1px}
+/* Expanded (default): swatches inline after the label. Folded (.tlplgf, 74c tlPlKeyFit when the head would wrap): «Pipeline ▾»,
+   ⚠swatches open below the label on hover / keyboard focus, out of flow so the head and body never reflow. */
+.tlplg > .tlplgp{display:flex}
+.tlplg:not(.tlplgf) .tlplgc{display:none}
+.tlplg.tlplgf > .tlplgp{display:none;position:absolute;top:100%;right:0;margin-top:4px;z-index:30;padding:6px 8px;
+  background:var(--nx-panel,#141a23);border:1px solid var(--nx-rule,#232c38);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.tlplg.tlplgf:is(:hover,:focus-within) > .tlplgp{display:flex}
+/* Head wrapper (74b tlHeadHtml): «Changes» group + key, right-aligned, wraps as one unit. */
+.wvh > .tlhr{margin-left:auto;display:flex;align-items:center;gap:9px;min-width:0}
+/* ⚠The absolute «Runs N» slot is head padding, not a wrapper margin: the growing summary (.tlsum) must stop before it on line 1 too. */
+#feed .wvh.wvht:has(.tlplhb){padding-right:80px}
 .tlplg .tlpst{gap:5px}
 .tlplg .tlpst > .tlpls{flex-direction:row;align-items:center;gap:3px;width:auto;min-width:0;cursor:help;--n-c:var(--nx-t2,#909298);--n-w:400}
 .tlplg .tlpd{flex:0 0 10px}
@@ -149,15 +161,14 @@ html[data-theme=light] .tlpst{--tlpl-bk:var(--nx-warn,#8b6401)}
 .tlplh > .tlplhm{font-style:normal;font-weight:600;font-size:11px;color:var(--nx-t2,#909298);cursor:help}
 /* «Runs N» header chip (tlPlHeadBtn): border + dot take the worst run state; the chips live in the #tlplhp popover. */
 /* ⚠Out of flow, pinned to line 1's right end: in flow it wrapped alone to a new line when the key filled line 1 (header 34->61, body jumped).
-   The key keeps the chip's slot as right margin, so the chip appearing never moves or wraps anything. */
-.wvh > .tlplhb{--c-ac:var(--nx-rule,#2a2f38);position:absolute;top:2px;right:0;margin:0;box-sizing:border-box;max-width:72px;overflow:hidden;display:inline-flex;align-items:center;gap:5px;padding:1px 8px;
+   The head keeps the chip's slot as right padding, so the chip appearing never moves or wraps anything. */
+.wvh .tlplhb{--c-ac:var(--nx-rule,#2a2f38);position:absolute;top:2px;right:0;margin:0;box-sizing:border-box;max-width:72px;overflow:hidden;display:inline-flex;align-items:center;gap:5px;padding:1px 8px;
   font:inherit;font-size:11px;line-height:16px;font-weight:600;color:var(--nx-t2,#909298);background:none;border:1px solid var(--c-ac);border-radius:6px;white-space:nowrap;cursor:pointer}
-.wvh > .tlplg{margin-right:80px}
-.wvh > .tlplhb-fail{--c-ac:var(--nx-err,#f45460)}
-.wvh > .tlplhb-back{--c-ac:var(--tlpl-back,#e0a53d)}
-.wvh > .tlplhb-stuck{--c-ac:var(--nx-warn,#fad83e)}
-.wvh > .tlplhb:not(.tlplhb-none)::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--c-ac)}
-.wvh > .tlplhb:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:1px}
+.wvh .tlplhb-fail{--c-ac:var(--nx-err,#f45460)}
+.wvh .tlplhb-back{--c-ac:var(--tlpl-back,#e0a53d)}
+.wvh .tlplhb-stuck{--c-ac:var(--nx-warn,#fad83e)}
+.wvh .tlplhb:not(.tlplhb-none)::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--c-ac)}
+.wvh .tlplhb:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:1px}
 html[data-ui=next] .thpop.tlplhp{padding:6px;max-width:min(400px,calc(100vw - 16px))}
 .thpop.tlplhp > .tlplh{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0}
 /* «Pipeline recording off» (tlPlOffNote): own line under the name, warning tone, reason in the title. */

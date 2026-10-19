@@ -32,11 +32,13 @@ function tlgBaseTip(d){
 }
 // Chip badge: the EFFECTIVE baseline from the reply (server may fall back), else the chosen mode; warn = chosen mode not honoured.
 const TLG_KIND = {head: 'head', start: 'start', branch: 'remote', remote: 'upstream'};
+function tlgBaseText(d){
+  const k = d && d.ok ? (TLG_KIND[d.baseKind] || 'head') : tlgBase;
+  return T((TLG_BASES.find(x => x[0] === k) || TLG_BASES[0])[1], 'base');
+}
 function tlgBaseLabel(d){
-  const ok = d && d.ok, k = ok ? (TLG_KIND[d.baseKind] || 'head') : tlgBase;
-  const warn = !!(ok && ((d.baseKind === 'head' && d.baseMode && d.baseMode !== 'head') || d.noRemote));
-  const lb = (TLG_BASES.find(x => x[0] === k) || TLG_BASES[0])[1];
-  return '<span class="tlgbk' + (warn ? ' tlgbkw' : '') + '">' + esc(T(lb, 'base')) + '</span>';
+  const warn = !!(d && d.ok && ((d.baseKind === 'head' && d.baseMode && d.baseMode !== 'head') || d.noRemote));
+  return '<span class="tlgbk' + (warn ? ' tlgbkw' : '') + '">' + esc(tlgBaseText(d)) + '</span>';
 }
 // Untracked files (server `new:True`) never count — scratch files read as changes. Same rule for files, +a and −d.
 function tlgShownN(d){ return Math.max(0, (d.n || 0) - (d.untracked || (d.files || []).filter(f => f.new).length)); }
@@ -77,24 +79,30 @@ function tlgSelHtml(tg){
     const s = String(q || '').trim().toLowerCase();
     return items.filter(e => !s || [e.name, e.tip, e.auto ? AL : ''].some(v => String(v).toLowerCase().includes(s)));
   };
-  return ppComboHtml({ k: 'tlgs', label: T('Session'), items: items, cur: cur, ph: T('Find a session'), empty: T('No matching sessions'), flat: flat, rowHtml: row,
+  return ppComboHtml({ k: 'tlgs', label: T('Session'), bare: true, items: items, cur: cur, ph: T('Find a session'), empty: T('No matching sessions'), flat: flat, rowHtml: row,
     tip: e => (e.auto ? AL + '\n' : '') + e.tip, badge: e => e.auto ? '<span class=tlgau>' + esc(T('auto', 'mark')) + '</span>' : '',
     pick: p => { tlgSel = p === TLG_AUTO ? '' : p; tlgKeepSave(); tlgTick(); } });
 }
-// «Changes · N files +a −d» (+ «· ⚠ n shared»); no target or no reply yet = «Changes» alone.
+// «[baseline] N files +a −d» (+ «· ⚠ n shared»); no target or no reply yet = «[baseline] Changes».
+// ⚠The word «Changes» is dropped beside counts so the head holds one line at 1100; it stays the aria name and first tooltip line.
 function tlgChipInner(tg){
-  const d = tg && (tlgC[tg.ck] || {}).d;
-  let body = tlgBaseLabel(d) + esc(T('Changes', 'chip'));
+  const d = tg && (tlgC[tg.ck] || {}).d, CH = T('Changes', 'chip');
+  let body = tlgBaseLabel(d), aria = [CH, tlgBaseText(d)];
   if(d && d.ok){
     const hid = (d.files || []).filter(f => f.new), sum = k => hid.reduce((s, f) => s + (f[k] || 0), 0);
-    body += esc(' · ' + TV({msg: tlgShownN(d) === 1 ? '{n} file' : '{n} files', vars: {n: tlgShownN(d)}}) + ' ') + tlgNum(Math.max(0, (d.add || 0) - sum('add')), Math.max(0, (d.del || 0) - sum('del')));
+    const nf = TV({msg: tlgShownN(d) === 1 ? '{n} file' : '{n} files', vars: {n: tlgShownN(d)}}), a = Math.max(0, (d.add || 0) - sum('add')), dl = Math.max(0, (d.del || 0) - sum('del'));
+    body += esc(nf + ' ') + tlgNum(a, dl);
+    aria.push(nf + ' +' + a + ' −' + dl);
     const sh = tlgShared(d);
-    if(sh.length) body += '<span class=tlgsh title="' + esc(T('Also edited by another live session within 30 min:') + '\n' + sh.join('\n')) + '">'
-      + esc(' · ⚠ ' + TV({msg: '{n} shared', vars: {n: sh.length}})) + '</span>';
-  }
+    if(sh.length){
+      const st = TV({msg: '{n} shared', vars: {n: sh.length}});
+      body += '<span class=tlgsh title="' + esc(T('Also edited by another live session within 30 min:') + '\n' + sh.join('\n')) + '">' + esc(' · ⚠ ' + st) + '</span>';
+      aria.push('⚠ ' + st);
+    }
+  } else body += esc(CH);
   const bt = tlgBaseTip(d);
-  const tip = T('Open the changes in the diff window (git · view only)') + (bt ? '\n' + bt : '') + (tg ? '\n' + tg.cwd : '');
-  return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + ' title="' + esc(tip) + '">' + body + '</button>';
+  const tip = CH + '\n' + T('Open the changes in the diff window (git · view only)') + (bt ? '\n' + bt : '') + (tg ? '\n' + tg.cwd : '');
+  return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + ' aria-label="' + esc(aria.join(' · ')) + '" title="' + esc(tip) + '">' + body + '</button>';
 }
 function tlgChipHtml(){ return '<span class=tlgb id=tlgb>' + tlgChipInner(tlgTarget()) + '</span>'; }
 // Id of the focused chip control, or ''. paintTl and tlgPaint refocus it after a rebuild.

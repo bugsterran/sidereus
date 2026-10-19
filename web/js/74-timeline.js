@@ -184,6 +184,7 @@ function paintTl(){
   const sc1 = box.querySelector('.tlscr'); if(sc1 && scTop) sc1.scrollTop = scTop;
   tlWireCtl(apFo);
   tlgRestore(gk);
+  if(typeof tlPlKeyFit === 'function') tlPlKeyFit(box);   // after the group is back: its width decides the fold
   tlAxFit(box);
   tlAgeTick();
   tlWireRows(box);

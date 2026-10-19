@@ -38,9 +38,12 @@ def run(body):
 class TlgSessPick(unittest.TestCase):
     def test_combobox_not_select(self):
         h = run("R.h = tlgSelHtml(tlgTarget());")["h"]
-        self.assertIn('<b>Session</b><button type=button class="strp ppbtn ppcombo" data-ppk="tlgs"', h)
+        self.assertIn('<button type=button class="strp ppbtn ppcombo" data-ppk="tlgs"', h)
+        self.assertNotIn('<b>Session</b>', h)   # bare: the label is the aria name and first title line, not visible
+        self.assertIn('aria-label="Session: a"', h)
+        self.assertIn('title="Session\n', h)
         self.assertIn("<span class=ppcn>a</span><span class=tlgau>auto</span> ▾</button>", h)
-        self.assertIn('title="Auto (latest active)\n/r/a · s1aaaaaaaa"', h)
+        self.assertIn('title="Session\nAuto (latest active)\n/r/a · s1aaaaaaaa"', h)
         self.assertNotIn("<select", h)
         self.assertNotIn("<select", js_fn("tlgSelHtml"))
 

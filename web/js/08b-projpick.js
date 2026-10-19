@@ -36,11 +36,14 @@ function ppRecent(key, p){
 //   Optional (pipeline picker, 48 plPickHtml): flat(q) → rows without group headers · rowHtml(e, i) · ph (search placeholder)
 //   · none (button text with no cur) · empty (no-match text); no rkey = no recent list. Absent = project behaviour unchanged.
 //   Optional tip(e) → button title (default: the path) · note(e) → trailing html on a popover row (Structure: session count).
+//   · bare: no visible label; it moves to the button's aria-label and first title line (tight rows, Timeline head).
 function ppComboHtml(cfg){
   PPC[cfg.k] = cfg;
   const p = cfg.cur || '', e = (cfg.items || []).find(x => x.p === p) || { p: p, name: p.slice(p.lastIndexOf('/') + 1) || p };
-  return '<b>' + esc(cfg.label) + '</b><button type=button class="strp ppbtn ppcombo" data-ppk="' + esc(cfg.k) + '" aria-haspopup=listbox aria-controls=ppop aria-expanded="'
-    + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '" title="' + esc(cfg.tip && p ? cfg.tip(e) : p) + '"><span class=ppcn>' + esc(p ? e.name || p : cfg.none || T('Pick a project')) + '</span>'
+  const nm = p ? e.name || p : cfg.none || T('Pick a project'), tt = cfg.tip && p ? cfg.tip(e) : p;
+  return (cfg.bare ? '' : '<b>' + esc(cfg.label) + '</b>') + '<button type=button class="strp ppbtn ppcombo" data-ppk="' + esc(cfg.k) + '" aria-haspopup=listbox aria-controls=ppop aria-expanded="'
+    + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '"' + (cfg.bare ? ' aria-label="' + esc(cfg.label + ': ' + nm) + '"' : '')
+    + ' title="' + esc(cfg.bare ? cfg.label + (tt ? '\n' + tt : '') : tt) + '"><span class=ppcn>' + esc(nm) + '</span>'
     + (p && cfg.badge ? cfg.badge(e) : '') + ' ▾</button>';
 }
 // Pure: items whose name or p contains q (case-insensitive), order kept; the flat list of a cfg.flat picker.

@@ -25,7 +25,7 @@ def _run(body, lang="en", base="head"):
     src = js_all()
     consts = re.search(r"^const TLG_BASES = [^\n]*$", src, re.M).group(0)
     consts += "\n" + re.search(r"^const TLG_KIND = [^\n]*$", src, re.M).group(0)
-    fns = "\n".join(js_fn(f) for f in ("T", "tlgBaseLabel"))
+    fns = "\n".join(js_fn(f) for f in ("T", "tlgBaseText", "tlgBaseLabel"))
     code = ("let LANG = %s;\nlet tlgBase = %s;\n" % (json.dumps(lang), json.dumps(base)) + STUBS + _ko() + "\n"
             + consts + "\n" + fns + "\n" + body)
     r = subprocess.run(node_e(code), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
@@ -52,7 +52,9 @@ class BaseBadge(unittest.TestCase):
         self.assertEqual(r, ['<span class="tlgbk tlgbkw">Uncommitted</span>', '<span class="tlgbk tlgbkw">Since session start</span>'])
 
     def test_badge_leads_chip(self):
-        self.assertIn("tlgBaseLabel(d) + esc(T('Changes', 'chip'))", js_fn("tlgChipInner"))
+        s = js_fn("tlgChipInner")
+        self.assertIn("let body = tlgBaseLabel(d)", s)
+        self.assertIn("} else body += esc(CH);", s)   # the word «Changes» only without counts
 
     def test_ko(self):
         self.assertIn("기본 브랜치 이후", _run("console.log(JSON.stringify(tlgBaseLabel({ok: true, baseKind: 'branch'})));", "ko"))
