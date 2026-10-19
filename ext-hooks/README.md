@@ -8,6 +8,8 @@ Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`):
   - `gemini_mail_stop.py` — AfterAgent hook. At turn end, if there is new mail, it blocks once so the agent reads it (same rule as Claude `hooks/mailbox_stop.py`; id is `<folder>-gemini`)
   - `gemini_mailbox_mcp.sh` — mailbox MCP launcher for Gemini. Picks a per-folder id and never uses the Claude id (`docs/HOOKS.md` «Gemini CLI: mail at turn end»)
 - Codex: `codex-hooks-example.json` into `~/.codex/hooks.json` (`timeout` = seconds, SessionEnd at most 3)
+  - Append the entries as a new group per event (keep existing groups first): Codex stores approval per `event:group:entry`, so other tools' approvals stay valid. Then approve them once in the Codex TUI with `/hooks` — the lines read `ext_hook.py` / `gemini_mail_stop.py`, not «Sidereus». ★Verified on 0.163.0 (2026-10-19): list, state, turn-end mail, `[pl:]` marks.
+  - Without hooks a Codex session shows only in the token area and the timeline, never in the session list.
 - The other 18: in `generic-hooks-example.json`, **replace every** `<PLATFORM>` with a value from the list above and use it as that CLI's hook config file (JSON allows no comments, so only the placeholder is left)
 
 ## Receiving mail — in code (no Monitor or watch.sh needed)
@@ -15,7 +17,7 @@ The turn-end hook `gemini_mail_stop.py --platform <key>` (default gemini) blocks
 - Start the mailbox MCP with the same id: `gemini_mailbox_mcp.sh <key>`. For Codex, in `~/.codex/config.toml`: `[mcp_servers.mailbox]` `command = "<MAILBOX_CODE_DIR>/ext-hooks/gemini_mailbox_mcp.sh"` `args = ["codex"]`.
   ⚠Not verified that Codex starts MCP servers in the session folder — if not, the hook and the MCP get different ids.
 - Gemini: `AfterAgent` — ★verified end to end on 0.61.0 (2026-09-24).
-- Codex: `Stop` — only the `decision:block`+`reason` contract was confirmed, from 0.156.1 binary strings; a real run is unverified.
+- Codex: `Stop` — ★verified end to end on 0.163.0 (2026-10-19): the hook blocked once and the session read its inbox; id `<folder>-codex`.
 - Others: `Stop` in `generic-hooks-example.json` — ⚠event name and blocking contract both unverified.
 
 Waking an idle session (Claude's `asyncRewake`, `hooks/mailbox_wake.py`) is Claude-only. Other CLIs receive at the next turn end.

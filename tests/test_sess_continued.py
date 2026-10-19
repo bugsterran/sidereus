@@ -70,6 +70,32 @@ class SessContinued(unittest.TestCase):
                           {"type": "user", "sessionId": OLD}])
         self.assertEqual(self.states(), {OLD: "wait", NEW: "done"})
 
+    def test_ext_rows_get_term_on_poll(self):
+        # ⚠term_attach must run after ext_rows are merged, or Codex rows never get `term` («Copy command» only).
+        term = sidereus("term")
+        _write(self.old, [{"type": "user", "sessionId": OLD}])
+        ss.ext_rows = lambda: [{"sid": "cx-1", "state": "ask", "plat": "cx", "cwd": "/w/b", "pid": 4671, "ageSec": 0}]
+        ps = {"4507": "4507 ttys005 /x/codex TERM_PROGRAM=iTerm.app", "4671": "4671 ?? /y/codex app-server"}
+
+        def run(argv, **kw):
+            pids = argv[-1].split(",")
+            out = ("\n".join(ps[p] for p in pids if p in ps) + "\n" if argv[0] == "ps"
+                   else "".join("p%s\nn/w/b\n" % p for p in pids if p in ps) if argv[0] == "lsof" else "")
+            return type("R", (), {"stdout": out, "stderr": ""})()
+        saved = {k: getattr(term, k) for k in ("IS_MAC", "_TTY_CACHE", "_TTY_FAIL", "_CWD_CACHE", "_CWD_FAIL",
+                                               "_av_cache", "_ps_snap_cache")}
+        old_run = term.subprocess.run
+        term.IS_MAC, term._TTY_CACHE, term._TTY_FAIL, term._CWD_CACHE, term._CWD_FAIL = True, {}, [0.0], {}, [0.0]
+        term._av_cache, term._ps_snap_cache = [0.0, {}], [0.0, [("4507", "1", "/x/codex"), ("4671", "4507", "/y/codex app-server")]]
+        term.subprocess.run = run
+        try:
+            rows = {r["sid"]: r for r in ss.sessions()}
+        finally:
+            term.subprocess.run = old_run
+            for k, v in saved.items():
+                setattr(term, k, v)
+        self.assertEqual(rows["cx-1"]["term"], {"app": "iterm", "tty": "ttys005"})
+
 
 if __name__ == "__main__":
     unittest.main()

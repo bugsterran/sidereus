@@ -53,7 +53,7 @@ class Detect(Base):
         self.assertEqual(rows[0]["term"], {"app": "iterm", "tty": "ttys003"})
         self.assertIsNone(rows[1]["term"])          # "??" = no tty
         self.assertIsNone(rows[2]["term"])          # ended row
-        self.assertNotIn("term", rows[3])           # external CLI rows untouched
+        self.assertIsNone(rows[3]["term"])          # external row without a hook pid: no terminal, no extra probe
         self.assertEqual(run.calls, [["ps", "-Ewwo", "pid=,tty=,command=", "-p", "101,202"]])
         term.term_attach(rows)                      # cached: no second fork
         self.assertEqual(len(run.calls), 1)
@@ -180,6 +180,89 @@ class Focus(Base):
         self.run.out = lambda argv: "101 ttys007 claude TERM_PROGRAM=iTerm.app\n" if argv[0] == "ps" else "ok\n"
         self.assertEqual(term.term_focus(SID, [dict(self.ROW, term=None)])[1]["how"], "focused")
         self.assertEqual(self.run.calls[-1][3], "/dev/ttys007")
+
+
+class ExtFocus(Base):
+    """Codex rows: stored hook pid, else the `codex` process in the row's cwd; never `claude --resume`."""
+    ROW = {"sid": SID, "state": "wait", "plat": "cx", "cwd": "/w/proj", "pid": 0, "term": None}
+    PS = {"4507": "4507 ttys005 codex TERM_PROGRAM=iTerm.app", "4671": "4671 ?? codex app-server",
+          "9001": "9001 ttys008 codex TERM_PROGRAM=iTerm.app"}
+
+    def setUp(self):
+        self.patch(term, "IS_MAC", True)
+        self.patch(term, "_TTY_CACHE", {})
+        self.patch(term, "_TTY_FAIL", [0.0])
+        self.patch(term, "_CWD_CACHE", {})
+        self.patch(term, "_CWD_FAIL", [0.0])
+        self.patch(term, "_JUMP_FAILS", {})
+        self.patch(term, "warn_once", lambda *a, **k: None)
+        self.patch(term, "term_cfg", lambda: "auto")
+        self.patch(term, "_resolve", lambda sid: self.fail("claude lookup used for an external row"))
+        self.snap = [("4505", "1", "node /opt/homebrew/bin/codex"), ("4507", "4505", "/x/bin/codex"),
+                     ("4671", "4507", "/y/bin/codex app-server"), ("777", "1", "claude --resume " + SID)]
+        self.patch(term, "_ps_snap", lambda: self.snap)
+        self.cwds = {"4507": "/w/proj", "4671": "/w/proj"}
+        self.run = _Run(self.answer)
+        self.patch(term.subprocess, "run", self.run)
+
+    def answer(self, argv):
+        if argv[0] == "ps":
+            return "\n".join(self.PS[p] for p in argv[-1].split(",") if p in self.PS) + "\n"
+        if argv[0] == "lsof":
+            return "".join("p%s\nfcwd\nn%s\n" % (p, self.cwds[p]) for p in argv[-1].split(",") if p in self.cwds)
+        return "ok\n"
+
+    def test_stored_pid_reaches_osascript(self):
+        code, out = term.term_focus(SID, [dict(self.ROW, pid=4507)])
+        self.assertEqual((out["how"], out["cmd"]), ("focused", "codex resume " + SID))
+        self.assertEqual(self.run.calls[-1][:2], ["osascript", "-e"])
+        self.assertEqual(self.run.calls[-1][3], "/dev/ttys005")
+        self.assertFalse([c for c in self.run.calls if c[0] == "lsof"])     # pid had a tty: no cwd scan
+
+    def test_cwd_fallback_skips_ttyless_helper(self):
+        out = term.term_focus(SID, [dict(self.ROW, pid=4671)])[1]       # hook pid = tty-less app-server
+        self.assertEqual((out["how"], self.run.calls[-1][3]), ("focused", "/dev/ttys005"))
+        lsof = [c for c in self.run.calls if c[0] == "lsof"]
+        self.assertEqual(lsof[0][-1], "4507,4671")                          # only `codex` argv[0], not node/claude
+        out = term.term_focus(SID, [dict(self.ROW)])[1]                     # no pid stored at all
+        self.assertEqual((out["how"], self.run.calls[-1][3]), ("focused", "/dev/ttys005"))
+
+    def test_ambiguous_or_missing_refuses(self):
+        self.snap.append(("9001", "1", "/x/bin/codex"))
+        self.cwds["9001"] = "/w/proj"
+        out = term.term_focus(SID, [dict(self.ROW)])[1]
+        self.assertEqual((out["how"], out["err"]), ("notfound", "several terminals in this folder"))
+        self.assertFalse([c for c in self.run.calls if c[0] == "osascript"])
+        self.cwds.clear()
+        term._CWD_CACHE.clear()
+        out = term.term_focus(SID, [dict(self.ROW)])[1]
+        self.assertEqual((out["how"], out["cmd"]), ("notfound", "codex resume " + SID))
+
+    def test_unknown_platform_has_no_command(self):
+        out = term.term_focus(SID, [dict(self.ROW, plat="gm")])[1]
+        self.assertEqual((out["how"], out["cmd"]), ("notfound", ""))
+        self.assertNotIn("claude", json.dumps(out))
+
+    def test_attach_uses_stored_pid(self):
+        self.patch(term, "_av_cache", [0.0, {}])
+        self.patch(term, "_ps_snap_cache", [0.0, []])
+        rows = [dict(self.ROW, pid=4507)]
+        term.term_attach(rows)
+        self.assertEqual(rows[0]["term"], {"app": "iterm", "tty": "ttys005"})
+
+    def test_attach_cwd_fallback_cached_and_refuses_ambiguous(self):
+        self.patch(term, "_av_cache", [0.0, {}])
+        self.patch(term, "_ps_snap_cache", [0.0, self.snap])
+        self.patch(term, "_ps_snap", lambda: self.fail("poll path forked ps"))
+        rows = [dict(self.ROW, pid=4671, state="ask")]                    # live shape: tty-less app-server pid
+        term.term_attach(rows)
+        self.assertEqual(rows[0]["term"], {"app": "iterm", "tty": "ttys005"})   # button reads «Terminal»
+        term.term_attach(rows)
+        self.assertEqual(len([c for c in self.run.calls if c[0] == "lsof"]), 1)  # cached: one lsof per TTL
+        self.snap.append(("9001", "1", "/x/bin/codex"))
+        self.cwds["9001"] = "/w/proj"
+        term.term_attach(rows)
+        self.assertIsNone(rows[0]["term"])                                  # two tabs in the folder: no guess
 
 
 class Orca(Base):

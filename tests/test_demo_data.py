@@ -74,8 +74,8 @@ class SameKeysAsRealBuilders(_Patch):
                      "ext_tok_refresh": lambda *a: None, "ext_tok": lambda *a: {}}.items():
             self.patch(ext, n, v)
         (real,) = ext.ext_rows()
-        # goneWhy: set only by ext_rows (the page treats a missing value as ""), not carried by the fixture.
-        self.assertEqual(set(dd.GEM_ROW), set(real) - {"goneWhy"})
+        # goneWhy/pid: set only by ext_rows (page reads missing goneWhy as ""; term reads missing pid as none), not in the fixture.
+        self.assertEqual(set(dd.GEM_ROW), set(real) - {"goneWhy", "pid"})
         self.assertEqual(set(dd.GEM_ROW["tokSplit"]), set(real["tokSplit"]))
         self.assertEqual(set(dd.GEM_ROW["runmin"]), set(real["runmin"]))
 

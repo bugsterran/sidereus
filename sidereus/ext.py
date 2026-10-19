@@ -176,6 +176,7 @@ def ext_rows():
                 "otel": True,             # this row's state is **event-based** (not inferred)
                 "otelEv": v.get("state") or "",
                 "goneWhy": v.get("goneWhy") or "",     # «Disconnected»: "pid" = process gone, "silent" = no news (guess)
+                "pid": v.get("pid") if isinstance(v.get("pid"), int) else 0,   # hook-reported CLI pid, for «To terminal»
             })
             plm = None if v.get("goneWhy") else plm_of(sid, now)   # shell-marker [pl:] stage; added only when live, like Claude rows
             if plm:

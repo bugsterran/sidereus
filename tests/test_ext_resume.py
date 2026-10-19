@@ -103,6 +103,36 @@ class Resume(unittest.TestCase):
         self.feed("SessionStart", NOW - 10, "c", platform="codex")
         self.assertEqual(sorted(ext._ext), [("codex", "c"), ("gemini", "g")])
 
+    def test_codex_shared_app_server_pid_not_merged_and_jumps(self):
+        # Two Codex TUIs report the same app-server pid; both rows must stay and each must reach its own tab.
+        self.feed("SessionStart", NOW - 20, "c1", platform="codex", cwd="/w/one")
+        self.feed("UserPromptSubmit", NOW - 10, "c2", platform="codex", cwd="/w/two")
+        rows = ext.ext_rows()
+        self.assertEqual(sorted(r["sid"] for r in rows), ["c1", "c2"])
+        term = sidereus("term")
+        ps = {"4242": "4242 ?? codex app-server", "501": "501 ttys005 codex TERM_PROGRAM=iTerm.app",
+              "502": "502 ttys006 codex TERM_PROGRAM=iTerm.app"}
+        cwd = {"501": "/w/one", "502": "/w/two"}
+
+        def run(argv, **kw):
+            pids = argv[-1].split(",")
+            out = {"ps": "\n".join(ps[p] for p in pids if p in ps) + "\n",
+                   "lsof": "".join("p%s\nn%s\n" % (p, cwd[p]) for p in pids if p in cwd)}.get(argv[0], "ok\n")
+            calls.append(argv)
+            return type("R", (), {"stdout": out, "stderr": ""})()
+        calls = []
+        old = (term.IS_MAC, term._TTY_CACHE, term.subprocess.run, term._ps_snap, term.term_cfg, term.warn_once,
+               term._CWD_CACHE)
+        term.IS_MAC, term._TTY_CACHE, term.subprocess.run, term._CWD_CACHE = True, {}, run, {}
+        term._ps_snap = lambda: [("4242", "1", "/x/codex app-server"), ("501", "1", "/x/codex"), ("502", "1", "/x/codex")]
+        term.term_cfg, term.warn_once = (lambda: "auto"), (lambda *a, **k: None)
+        try:
+            out = term.term_focus("c2", rows)[1]
+        finally:
+            (term.IS_MAC, term._TTY_CACHE, term.subprocess.run, term._ps_snap, term.term_cfg, term.warn_once,
+             term._CWD_CACHE) = old
+        self.assertEqual((out["how"], out["cmd"], calls[-1][3]), ("focused", "codex resume c2", "/dev/ttys006"))
+
 
 if __name__ == "__main__":
     unittest.main()

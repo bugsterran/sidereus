@@ -41,6 +41,9 @@ PLAT_MODS = {m.PLAT: m for m in (adapter_register(x, EXT_PLAT) for x in (plat_ge
 EXT_STATE = {"SessionStart": "wait", "UserPromptSubmit": "think", "PreToolUse": "tool",
              "PostToolUse": "think", "Stop": "wait", "Notification": "ask"}   # ⚠`Stop` is `wait` - with `ask` (rank 0) ended sessions occupy the top of the list for 24h
              # SessionEnd is a removal, so absent
+# ⚠Platforms whose hooks run in one shared helper (Codex: every TUI's hooks run under the first TUI's `codex app-server`),
+#   so the hook pid is the same for different sessions: never merge rows by it (it dropped a live second Codex session).
+EXT_SHARED_PID = {"codex"}
 EXT_EV_N = 20       # ring size of recent hook events kept per session (for the work panel)
 _ext_lock = threading.Lock()
 _ext = {}            # (platform, session_id) → cwd·model·transcript_path·state·tool·turnId·first/lastSeen
@@ -275,7 +278,7 @@ def _ext_dedupe_locked():
     (host checked at ingest), so (plat, pid, pstart) implies the host. Returns True when a row was dropped."""
     best = {}
     for k, v in _ext.items():
-        if not v.get("pid") or not v.get("pstart"):
+        if not v.get("pid") or not v.get("pstart") or k[0] in EXT_SHARED_PID:
             continue
         g = (k[0], v["pid"], v["pstart"])
         best.setdefault(g, []).append(k)
