@@ -47,6 +47,20 @@ EXT_SHARED_PID = {"codex"}
 EXT_EV_N = 20       # ring size of recent hook events kept per session (for the work panel)
 _ext_lock = threading.Lock()
 _ext = {}            # (platform, session_id) → cwd·model·transcript_path·state·tool·turnId·first/lastSeen
+EXT_ENDED_KEEP_S = 600   # ⚠ext.ROLL_WIN_S follows this: an ended sid must outlive its rollout's freshness window
+_ext_ended = {}      # (platform, session_id) → end/gone/dismiss time; hides the rollout-only row (ext_rollout_rows)
+
+
+def _ended_note_locked(key, now):
+    _ext_ended[key] = now
+    for k in [k for k, t in _ext_ended.items() if now - t > EXT_ENDED_KEEP_S]:
+        _ext_ended.pop(k, None)
+
+
+def ext_ended(plat, now):
+    """Sids of `plat` that ended, went gone or were dismissed within EXT_ENDED_KEEP_S."""
+    with _ext_lock:
+        return {k[1] for k, t in _ext_ended.items() if k[0] == plat and now - t <= EXT_ENDED_KEEP_S}
 _ext_stat = {"posts": 0, "kept": 0, "drop": 0, "lastPost": 0.0, "lastKept": 0.0}
 _HOST = socket.gethostname()
 
@@ -222,6 +236,7 @@ def ext_ingest(req):
     with _ext_lock:
         _ext_prune_locked(now)
         if ev == "SessionEnd":
+            _ended_note_locked(key, now)
             gone = _ext.pop(key, None)
             if gone is not None:
                 if _run_note_locked(plat, sid, gone, ev, ts):
@@ -362,6 +377,7 @@ def ext_gone_check(now=None):
                         runs = True
             if v.get("gone") and now - float(v["gone"]) > EXT_GONE_GRACE_S:
                 _ext.pop(k, None)
+                _ended_note_locked(k, now)
                 _run_note_locked(k[0], k[1], v, "SessionEnd", last)
                 changed = True
                 runs = runs or bool(v.get("parent"))
@@ -378,9 +394,14 @@ def ext_dismiss(sid):
         return 0
     n = 0
     with _ext_lock:
+        now = time.time()
+        if not any(k[1] == sid for k in _ext):   # a rollout-only Codex row: hide it for its window
+            _ended_note_locked(("codex", sid), now)
+            n += 1
         for k, v in list(_ext.items()):
             if k[1] == sid and not v.get("pid") and _pending(v):
                 _ext.pop(k, None)
+                _ended_note_locked(k, now)
                 if _run_note_locked(k[0], k[1], v, "SessionEnd", float(v.get("lastSeen") or 0)):
                     _runs_save_locked()
                 n += 1

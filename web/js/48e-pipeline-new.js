@@ -9,7 +9,10 @@ function plNewDis(on){ return on ? ' disabled title="' + esc(T('Close the open f
 // Empty project, no suggestions: template buttons in place of a note; a click only opens the preview (create still needs «Confirm — create»).
 function plTplPick(){
   return '<div class=pltpl><span class=pltplh>' + esc(T('Start from a template')) + '</span>' + PL_TPLS.map(([k, lab]) =>
-    '<button type=button class=wkrgb data-pltpl="' + esc(k) + '"' + plNewDis(PLNEW || PLDRAFT) + '>' + esc(T(lab)) + '</button>').join('') + '</div>';
+    '<button type=button class=wkrgb data-pltpl="' + esc(k) + '"' + plNewDis(PLNEW || PLDRAFT) + '>' + esc(T(lab)) + '</button>').join('')
+    // Same attributes and disable rules as the «+ New ▾» items: the existing handlers open the draft form / standard list only.
+    + '<button type=button class=wkrgb data-pldnew' + plNewDis(PLDRAFT) + '>' + esc(T('Ask AI for a draft')) + '</button>'
+    + '<button type=button class="wkrgb' + (PLSTD ? ' on' : '') + '" data-plstd>' + esc(T('Standard templates')) + '</button></div>';
 }
 // «+ New ▾» menu: the four ways to start a pipeline behind one button (one head row at 900px). Items keep their own attributes and handlers.
 // pri: the empty state's one action gets the primary fill (four equal outlines gave no starting point)

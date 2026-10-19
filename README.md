@@ -232,8 +232,8 @@ Gemini CLI and Codex CLI report through hooks and appear next to Claude Code ses
 token counts. ⚠ Their tokens never count toward Claude's 5h/7d limits or cost. Setup: [docs/HOOKS.md](docs/HOOKS.md).
 
 ⚠ Codex ignores `hooks.json` until you approve it once with `/hooks` in its TUI, and again after every edit
-(the entries read `ext_hook.py`, not «Sidereus»). Until then a Codex session shows only in the token area and
-the timeline, not in the session list.
+(the entries read `ext_hook.py`, not «Sidereus»). Until then a Codex session that wrote in the last 10 minutes
+shows in the session list marked «Hooks not connected», with folder and model only and no state.
 
 Verified on macOS: Codex CLI 0.163.0 — session list and state, turn-end mail, pipeline stage marks and the
 «Terminal» button; Gemini CLI 0.61.0 — turn-end mail and stage marks. Other CLIs are untested.

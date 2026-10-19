@@ -13,7 +13,7 @@ from tests._node import node_e
 PRE = """
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const T = s => s;
-let SESS = [], PLAG = false, ARCH_PL = 'arch-map', PLNEW = null, PLDRAFT = null, POSTS = [], PAINT = 0;
+let SESS = [], PLAG = false, ARCH_PL = 'arch-map', PLNEW = null, PLDRAFT = null, PLSTD = false, POSTS = [], PAINT = 0;
 function plLiveProjs(){ return {}; } function plMem(){ return {}; } function plKnown(){ return null; }
 function plPickHtml(){ return ''; } function plNewBtn(){ return '<NEWBTN/>'; } function plNewForm(){ return ''; }
 function wfBtns(){ return ''; } function plBorrowChips(){ return ''; } function plBorrowOf(){ return null; }
@@ -62,13 +62,35 @@ class PipelineEmptyTpl(unittest.TestCase):
         self.assertEqual(c, "<SUG/>")                                      # suggestions keep plSugBody
         self.assertNotIn("data-pltpl", d)                                  # a project with pipelines
 
+    def test_draft_and_std_buttons_follow_menu_rules(self):
+        r = run(_tpls() + "\n" + FNS +
+                "const p = () => plTplPick(); const a = p(); PLNEW = {}; const b = p(); PLNEW = null;"
+                "PLDRAFT = {}; const c = p(); PLDRAFT = null; PLSTD = true; const d = p();"
+                "console.log(JSON.stringify([a, b, c, d]));")
+        a, b, c, d = r
+        dn = lambda h: re.search(r"<button[^>]*data-pldnew[^>]*>", h).group(0)
+        sd = lambda h: re.search(r"<button[^>]*data-plstd[^>]*>", h).group(0)
+        self.assertIn("Ask AI for a draft", a)
+        self.assertIn("Standard templates", a)
+        self.assertNotIn("disabled", dn(a) + sd(a))
+        self.assertNotIn("disabled", dn(b))                                # plNewDis(PLDRAFT): a «+ New» form leaves it on
+        self.assertIn("disabled", dn(c))                                   # a draft form is open
+        self.assertNotIn("disabled", sd(c))                                # standard list is never disabled
+        self.assertNotIn(" on", sd(a))
+        self.assertIn('class="wkrgb on"', sd(d))                           # PLSTD open: .on like the menu item
+
+    def test_reuses_menu_handlers(self):
+        s = _src("48e-pipeline-new.js")
+        self.assertEqual(s.count("e.target.closest('[data-pldnew]')"), 1)  # no second handler
+        self.assertEqual(s.count("e.target.closest('[data-plstd]')"), 1)
+
     def test_click_opens_dry_run_preview(self):
         s = _src("48e-pipeline-new.js")
         h = s[s.index("document.addEventListener('click', e => {\n  if(!e.target.closest || !e.target.closest('.plw')) return;\n  if(e.target.closest('[data-plnew]'))"):]
         h = h[:h.index("\n});\n") + 5]
         send = s[s.index("async function plNewSend("):]
         send = send[:send.index("\n}\n") + 3]
-        r = run("let PLS = {proj: '/p', data: {'/p': {ok: true, pipelines: []}}}, PLSTD = false;\n"
+        r = run("let PLS = {proj: '/p', data: {'/p': {ok: true, pipelines: []}}};\n"
                 + js_fn("plNewNameErr") + "\n" + send + "\n"
                 "let L = []; const document = { addEventListener(t, f){ L.push(f); } };\n" + h +
                 "\nconst ev = k => ({ preventDefault(){}, target: { closest: s => s === '.plw' ? {} : (s === '[data-pltpl]' ? { dataset: { pltpl: k } } : null) } });"

@@ -101,6 +101,19 @@ def _rate(rl):
 _WANT = (b'"session_meta"', b'"turn_context"', b'"token_count"')
 
 
+_SID_CH = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def _parent_thread(p):
+    """Parent thread id of a subagent rollout (top-level or one level inside source.subagent), else ""."""
+    cands = [p.get("parent_thread_id")]
+    sub = p.get("source").get("subagent") if isinstance(p.get("source"), dict) else None
+    if isinstance(sub, dict):
+        cands.append(sub.get("parent_thread_id"))
+        cands.extend(v.get("parent_thread_id") for v in sub.values() if isinstance(v, dict))
+    return next((c for c in cands if isinstance(c, str) and _SID_CH.match(c)), "")
+
+
 def read(path):
     """One rollout file -> {head, msgs, acts, rate}. msgs: key -> per-request tuple; acts: key -> ts."""
     head, msgs, acts, rate = {}, {}, {}, None
@@ -119,9 +132,13 @@ def read(path):
                 p, typ = o["payload"], o.get("type")
                 t = iso_epoch(o.get("timestamp"))
                 if typ == "session_meta" and not head:
+                    src = p.get("source")
+                    # ⚠A subagent rollout has an object source ({"subagent": ...}); keep only the marker and parent id.
                     head = {"id": str(p.get("id") or "")[:64], "cwd": str(p.get("cwd") or ""),
                             "start": iso_epoch(p.get("timestamp")) or t,
-                            "source": p.get("source") if isinstance(p.get("source"), str) else ""}
+                            "source": src if isinstance(src, str) else ("subagent" if isinstance(src, dict)
+                                                                        and "subagent" in src else ""),
+                            "parentThread": _parent_thread(p)}
                 elif typ == "turn_context":
                     # ★session_meta has no model; it is per turn and can change.
                     model = str(p.get("model") or model)[:40]
@@ -146,7 +163,7 @@ def read(path):
                         acts[k] = t
     except OSError:
         return None
-    return {"head": head, "msgs": msgs, "acts": acts, "rate": rate}
+    return {"head": head, "msgs": msgs, "acts": acts, "rate": rate, "model": model}
 
 
 SCAN_MAX = 256 << 20      # skip rollout files larger than this
@@ -199,9 +216,11 @@ def session_msgs(path):
 
 
 def codex_rollouts(since=0.0):
-    """Rollouts modified since `since` -> [{sid, path, cwd, project, start, kind, msgs, acts, rate}]
-    (the `plat_gemini.chats` shape). Same sid in two files (archived copy, resume) merges by request key."""
+    """Rollouts modified since `since` -> [{sid, path, cwd, project, start, kind, msgs, acts, rate, model, mtime, live}]
+    (the `plat_gemini.chats` shape). Same sid in two files (archived copy, resume) merges by request key.
+    `model` = last turn_context of the newest file · `live` = some file is under sessions/, not archived_sessions/."""
     by, seen, zst = {}, set(), 0
+    live_dir = os.path.join(os.path.realpath(root()), "sessions") + os.sep
     for p in _files(root()):
         if p.endswith(".jsonl.zst"):
             zst += 1
@@ -224,7 +243,12 @@ def codex_rollouts(since=0.0):
             cwd = r["head"].get("cwd") or ""
             c = by[sid] = {"sid": sid, "path": p, "cwd": cwd, "project": _proj_name(cwd) or "?",
                            "start": r["head"].get("start") or 0.0, "kind": r["head"].get("source") or "",
-                           "msgs": {}, "acts": {}, "rate": None}
+                           "parentThread": r["head"].get("parentThread") or "",
+                           "msgs": {}, "acts": {}, "rate": None, "model": "", "mtime": 0.0, "live": False}
+        if st.st_mtime >= c["mtime"]:
+            c["mtime"] = st.st_mtime
+            c["model"] = r.get("model") or c["model"]
+        c["live"] = c["live"] or os.path.realpath(p).startswith(live_dir)
         c["msgs"].update(r["msgs"])
         c["acts"].update(r["acts"])
         if r["rate"] and (c["rate"] is None or r["rate"][0] >= c["rate"][0]):

@@ -9,7 +9,7 @@ Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`):
   - `gemini_mailbox_mcp.sh` — mailbox MCP launcher for Gemini. Picks a per-folder id and never uses the Claude id (`docs/HOOKS.md` «Gemini CLI: mail at turn end»)
 - Codex: `codex-hooks-example.json` into `~/.codex/hooks.json` (`timeout` = seconds, SessionEnd at most 3)
   - Append the entries as a new group per event (keep existing groups first): Codex stores approval per `event:group:entry`, so other tools' approvals stay valid. Then approve them once in the Codex TUI with `/hooks` — the lines read `ext_hook.py` / `gemini_mail_stop.py`, not «Sidereus». ★Verified on 0.163.0 (2026-10-19): list, state, turn-end mail, `[pl:]` marks.
-  - Without hooks a Codex session shows only in the token area and the timeline, never in the session list.
+  - Without hooks a Codex session whose rollout changed in the last 10 minutes gets a coarse row marked «Hooks not connected» (folder, model, state unknown); the hook row replaces it once events arrive.
 - The other 18: in `generic-hooks-example.json`, **replace every** `<PLATFORM>` with a value from the list above and use it as that CLI's hook config file (JSON allows no comments, so only the placeholder is left)
 
 ## Receiving mail — in code (no Monitor or watch.sh needed)

@@ -306,6 +306,8 @@ Copy `ext-hooks/codex-hooks-example.json` to `~/.codex/hooks.json`. Checked with
 - ⚠Codex ignores the entries until approved with `/hooks`, and again after every edit (it stores a hash). Do not
   default to `--dangerously-bypass-hook-trust`.
 - `PermissionRequest` marks the row blocked; the script prints nothing, so Codex still asks you.
+- Without hooks (not yet approved) a Codex session whose rollout changed in the last 10 minutes still gets a row,
+  marked «Hooks not connected»: folder and model only, state unknown. Once hook events arrive the hook row replaces it.
 - `sidereus/plat_codex.py` reads tokens, model, cost and rate limits from `$CODEX_HOME/sessions/**/rollout-*.jsonl` and
   `archived_sessions/`, never message text.
   ⚠`input_tokens` includes cache (split out); requests sum `last_token_usage`, not the total.

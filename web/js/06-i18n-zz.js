@@ -207,4 +207,8 @@ Object.assign(I18N.ko, {
   'Account': '계정',
   'Date': '날짜',
   'Cost excludes the live share since the last count': '비용은 마지막 집계 이후 실시간분 제외',
+  'Hooks not connected': '훅 미연결',
+  "State read from Codex's record file; set up hooks — docs/HOOKS.md": 'Codex 기록 파일에서 읽은 상태입니다 · 훅 설정은 docs/HOOKS.md',
+  " session — read from its CLI's record file (hooks not connected)": ' 세션 — CLI 기록 파일에서 읽음 (훅 미연결)',
+  'Last activity {n}m ago': '마지막 활동 {n}분 전',
 });

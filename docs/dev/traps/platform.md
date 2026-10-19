@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Platform, config, launcher, tests and tooling
 
+- **A Codex rollout-only row is a guess** (`sidereus/ext.py` `ext_rollout_rows`).
+  - Cause: without approved hooks there are no events, only a rollout file whose mtime moved in `ROLL_WIN_S` (600 s).
+  - ⇒ State stays `unknown`, `rollout: True`, no `plm`/`plrun`/notes; skip `exec`/`subagent` rollouts, archived files, any sid in `_ext`/`_runs`/`_ext_ended` (ended, gone, dismissed), and a cached `ps` snapshot with no codex process.
+  - ⚠Never fork `ps` here (read `live_probe._ps_snap_cache` only) and never give this row attention signals — it cannot know «waiting».
 - **CODE_DIR is site-packages in a pipx/uv install** (`setup.py`, `mailbox_config.asset_dir`).
   - Cause: the wheel installs code flat, so CODE_DIR means «repo root» in a clone but «site-packages» when installed; `web/`, `hooks/`, `docs/` are not there.
   - ⇒ Read assets via `ASSET_DIR` (`asset_dir()`: CODE_DIR if it has `web/`, else `sidereus/_bundle`); `setup.py` copies an explicit allow-list into the bundle (`tests/test_wheel_build.py`).

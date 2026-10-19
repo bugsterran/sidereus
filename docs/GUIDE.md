@@ -19,6 +19,7 @@ On the right, top to bottom: one bar (view title, running sessions, «needs me»
 
 - A «Awaiting input» session with live monitors gets a muted «· N monitors» beside the label. The state stays your turn.
 - Sessions that are only done, or only finished background work, fold into «N low-priority» at the end.
+- A Codex session without hooks is read from its record file: it carries «Hooks not connected» and shows only «Last activity N m ago» (set up hooks: [HOOKS.md](HOOKS.md)).
 - The «Idle filter off» and «Git filter off» chips cycle on each click and show the current step. Idle: off, 10, 30, 60 min. Git: off, unpushed ↑, unpushed or dirty ↑~.
 - The branch chip shows git state (`~N`) and opens that session's diff.
 - Subagent rows show the task description. Only agents other than general-purpose get a type chip.
@@ -154,7 +155,7 @@ The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`
 - One row: «Project» (full name; click to search working, recent and all projects, «+ Add project» at the bottom), «Pipeline» (same search picker, this project's pipelines only; ⚠ = file breaks the schema, • = unsaved edits, a dot = running) and «+ New ▾».
 - «+ New ▾» holds «+ New pipeline», «Import from another project», «Ask AI for a draft» and «Standard templates».
 - A folder needs one Claude session before «+ New pipeline» appears there (pipelines live in its `.claude/`).
-- A project with no pipelines shows «Start from a template»: click one for the preview, then «Confirm — create» writes `.claude/pipelines/<name>.json`.
+- A project with no pipelines shows «Start from a template»: click one for the preview, then «Confirm — create» writes `.claude/pipelines/<name>.json`. «Ask AI for a draft» and «Standard templates» sit in the same row.
 - «Apply» («Auto · Ask each time · Off») sets how new sessions use pipelines in this project.
 
 ### How stages light up

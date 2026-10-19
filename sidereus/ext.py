@@ -7,16 +7,19 @@ from sidereus.warn import warn_once
 from sidereus.ident import _proj_name, _sid8
 from sidereus.timefmt import iso_local
 from sidereus.adapter import adapter_scan
+from sidereus import live_probe   # module access: `_ps_snap_cache` is read at call time (tests patch it)
 from sidereus.agents import plm_of
 from sidereus.pl_runs import pl_act, pl_model
 # Re-exported: chat_server, timeline, history import these from `sidereus.ext`.
 # ⚠Patch store internals (`_ext_save_locked`, `_runs_save_locked`, `EXT_FILE`/`EXT_RUNS_FILE`, `_pid_start`) on `ext_store`.
 from sidereus.ext_store import (PLAT_MODS, EXT_PLAT, EXT_EV_N, EXT_RATE_WIN, _ext_lock, _ext,
                              _ext_stat, _runs, _tok_lock, _tok, _ext_prune_locked, ext_ingest, ext_runs,
-                             ext_gone_check, ext_dismiss, ext_tok_refresh, _tok_sum, ext_tok)
+                             ext_gone_check, ext_dismiss, ext_tok_refresh, _tok_sum, ext_tok,
+                             EXT_ENDED_KEEP_S, ext_ended)
 
 
 EXT_NAME = {m.KEY: m.NAME for m in PLAT_MODS.values()}
+ROLL_WIN_S = EXT_ENDED_KEEP_S   # 600 s: a Codex rollout written this recently, with no hook event, gets a row
 
 
 def ext_usage_today(now=None):
@@ -82,7 +85,78 @@ def ext_usage_today(now=None):
     return out
 
 
-def ext_work(plat, sid):
+def _codex_running():
+    """False only when the cached process list (never a fresh `ps`) is non-empty and holds no codex process."""
+    snap = live_probe._ps_snap_cache[1]
+    if not snap:
+        return True
+    for row in snap:
+        argv = str(row[2] if len(row) > 2 else "").split()[:3]
+        if any(os.path.basename(a).startswith("codex") for a in argv):
+            return True
+    return False
+
+
+def _rollouts(now):
+    mod = PLAT_MODS.get("codex")
+    return adapter_scan(mod, now - ROLL_WIN_S) if mod is not None else []
+
+
+def _rollout_of(sid, now=None):
+    now = now or time.time()
+    return next((c for c in _rollouts(now) if c.get("sid") == sid and c.get("live")), None)
+
+
+def ext_rollout_rows(now=None):
+    """Codex sessions seen only through a fresh rollout file (hooks not connected) -> ext_rows-shaped rows.
+    ⚠State is unknown (no events); `rollout: True` lets the screen mark it. A hook row for the same sid wins."""
+    now = now or time.time()
+    rows = []
+    try:
+        cands = [c for c in _rollouts(now)
+                 if c.get("live") and c.get("kind") not in ("exec", "subagent")
+                 and (c.get("mtime") or 0) >= now - ROLL_WIN_S]
+        if not cands or not _codex_running():
+            return rows
+        with _ext_lock:
+            known = {sid for (p, sid) in _ext if p == "codex"} | set(_runs)
+        known |= ext_ended("codex", now)          # ended / gone / dismissed: never back as a rollout row
+        for c in cands:
+            sid = c.get("sid") or ""
+            if not sid or sid in known:
+                continue
+            cwd = c.get("cwd") or ""
+            last = float(c.get("mtime") or now)
+            first = float(c.get("start") or last)
+            tk = _tok_sum(c.get("msgs") or {})
+            row = {
+                "id": "", "sid": "", "project": "?", "gotPrompt": 0,
+                "creq": 0, "burn": 0, "rpm": 0, "cwd": "", "branch": "",
+                "tool": "", "targ": "", "sub": [], "bgs": [], "mon": [],
+                "runmin": {}, "kind": "", "ageSec": 0, "bytes": 0, "repos": [],
+                "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": "",
+                "win": 0, "winSrc": "", "winN": 0,
+                "git": "", "state": "unknown", "blocked": "",
+                "otel": False, "otelEv": "", "otelAt": 0, "err": False, "plat": EXT_PLAT["codex"],
+            }
+            row.update({
+                "id": _sid8(sid), "sid": sid, "project": _proj_name(cwd) or "?", "cwd": cwd,
+                "model": str(c.get("model") or "")[:40],
+                "tok": tk.get("tok", 0),
+                "tokSplit": {k: tk.get(k, 0) for k in ("in", "out", "cache", "thought")},
+                "estCost": tk.get("cost"), "costMiss": tk.get("costMiss", 0),
+                "ageSec": max(0, int(now - last)),
+                "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
+                "kind": "codex", "goneWhy": "", "pid": 0, "rollout": True,
+            })
+            rows.append(row)
+    except Exception as e:                        # the rest of the list must survive
+        # Reuses the ext_rows template so no new I18N.ko entry is needed.
+        warn_once("ext-rollout-rows", "Could not build external session rows ({err})", vars={"err": type(e).__name__})
+    return rows
+
+
+def ext_work(plat, sid, now=None):
     """Work panel for one external session, resolved by (platform, session_id) only.
     ⚠Never by cwd/project — a Claude session in the same folder would answer instead (user report 2026-09-24)."""
     plat = str(plat or "").strip().lower()
@@ -97,6 +171,11 @@ def ext_work(plat, sid):
     if not v and r and r.get("plat") == name:     # an ended child run — only its stored metadata is left
         v = {"cwd": r.get("cwd") or "", "model": r.get("model") or "", "state": "done",
              "firstSeen": r.get("start"), "lastSeen": r.get("end"), "parent": r.get("parent")}
+    if not v and name == "codex":                 # a rollout-only row (no hooks): metadata from the record scan
+        c = _rollout_of(sid, now)
+        if c:
+            v = {"cwd": c["cwd"], "model": c.get("model") or "", "state": "unknown",
+                 "firstSeen": c.get("start") or c.get("mtime"), "lastSeen": c.get("mtime")}
     if not v:
         return {"ok": False, "msg": "External session not found"}
     key = EXT_PLAT[name]
