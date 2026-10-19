@@ -147,7 +147,7 @@ function archReqHtml(req, repo, home, cands, busy, d){
   return '<div class=archreq role=group aria-label="' + esc(T('Request preview')) + '"><div class=archrqh><b>' + esc(T(rk.lb)) + '</b>'
     + '<label>' + esc(T('To session')) + ' <select data-ars>' + (cands.length ? cands.map(c => '<option value="' + esc(c.sid) + '"' + (c.sid === req.sid ? ' selected' : '') + '>'
       + esc((c.dir ? c.dir + ' · ' : '') + sid8(c.sid) + (c.model ? ' · ' + c.model : '') + (c.id ? ' · ' + c.id : '')) + '</option>').join('') : '<option value="">' + esc(T('None')) + '</option>')
-    + '</select></label></div><pre class=archdm>' + esc(archDmBody(ARCH_PL, repo, home, rk.vb, !!(cur && cur.cx))) + '</pre><div class=archrqb>'
+    + '</select></label></div><pre class=archdm>' + esc(archDmBody(ARCH_PL, repo, home, rk.vb, !!(cur && cur.cx))) + '</pre>' + plCxHint(cur) + '<div class=archrqb>'
     + '<button type=button class="wkrgb archok" data-argo' + (why || busy ? ' disabled' : '') + (why ? ' title="' + esc(why) + '"' : '') + '>' + esc(T(busy ? 'Sending…' : 'Confirm — send')) + '</button>'
     + '<button type=button class=wkrgb data-arx>' + esc(T('Cancel')) + '</button>' + (why ? '<span class=archwhy>' + esc(why) + '</span>' : '') + '</div></div>';
 }

@@ -325,8 +325,13 @@ function plRunPanel(p, models){
     + '<div class=plrms><span class=plrmh>' + esc(T('Change models for this run only')) + '</span>' + mRows + '</div>'
     + '<div class=brh2><b>' + esc(T('Message to send')) + '</b>' + (cur && cur.id ? ' <i>→ ' + esc(cur.id) + '</i>' : '') + '</div>'
     + '<pre class=plprev>' + esc(plDmFor(p, req || '…', plRunModels(p), !!(cur && cur.cx))) + '</pre>'
+    + plCxHint(cur)
     + '<div class=plbar><button class="wkrgb" data-plgo' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Confirm — send')) + '</button>'
     + '<button class="wkrgb" data-plrx>' + esc(T('Cancel')) + '</button></div></div>';
+}
+// Pure: UI-only note for a Codex recipient (it reads the mailbox at a turn end); never part of the sent body.
+function plCxHint(cur){
+  return cur && cur.cx ? '<div class=plfd data-cxhint>' + esc(T('This session picks it up when its current or next turn ends — type a line in its terminal if it is idle')) + '</div>' : '';
 }
 // Label "<type>: [pl:x/y] <desc>" -> {type, desc} (tag stripped); shared by the stage overview and the node tooltip.
 function plLabParts(lab){

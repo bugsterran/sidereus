@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Install without a clone: `pipx install git+https://github.com/bugsterran/sidereus` (or `uv tool install git+…`) puts `sidereus` on PATH; `start`, `status`, `doctor` work from it, start at login still needs a clone.
 - `python3 -m sidereus doctor` prints one `OK`/`FAIL` line per setup check (Python 3.9+, git, claude, hooks connected, viewer answering; on Windows `SIDEREUS_PYTHON` and the Store alias) with the fix on each `FAIL`; exit 1 on any `FAIL`, writes nothing.
 - Tokens: the Codex row of «By platform» shows each plan-limit window with its used %, reset time and the plan name (read locally from the newest rollout record that carries limits; «No limit data» when none did); the Codex status-bar tooltip shows the same line.
-- Structure / Pipelines: arch-map and pipeline run requests can be sent to Codex sessions. A Codex recipient gets the stages to run in that session with `[pl:]` shell markers instead of the Agent tool; it needs one `mailbox_login` in that session first (until then send stays off, as for any session not logged in). Requests to Claude sessions are unchanged.
+- Structure / Pipelines: arch-map and pipeline run requests can be sent to Codex sessions. A Codex recipient gets the stages to run in that session with `[pl:]` shell markers instead of the Agent tool; it needs one `mailbox_login` in that session first (until then send stays off, as for any session not logged in). Requests to Claude sessions are unchanged. With a Codex recipient both dialogs note that it picks the request up when its current or next turn ends (an idle Codex session is not woken).
 
 ### Fixed
 

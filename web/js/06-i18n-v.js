@@ -78,5 +78,6 @@ Object.assign(I18N.ko, {
   'No phases': '단계 없음', 'Stage': '단계', 'Elapsed': '경과',   // 48g «Workflow» view
   'Skipped': '건너뜀',   // 48d stage outcome pill («Running» already in 05a-i18n-en)
   'Sent back': '되돌림', 'Paused': '멈춤',   // 48d stage outcome: onFail loop-back, not a failure
+  'This session picks it up when its current or next turn ends — type a line in its terminal if it is idle': '이 세션은 지금 턴이나 다음 턴이 끝날 때 받습니다 — 쉬고 있으면 그 터미널에 한 줄 입력해 주세요',   // 48b/84j Codex recipient hint
   'Run {k}/{n}': '실행 {k}/{n}', 'Run {k}': '실행 {k}', 'ended {t}': '{t} 종료', 'Back to current': '현재 실행으로', 'current|run': '현재',   // 48b run picker
 });
