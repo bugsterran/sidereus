@@ -1,0 +1,4 @@
+# Build backend only: metadata lives in setup.py (stock macOS /usr/bin/python3 3.9 ships setuptools 58, no PEP 621 support).
+[build-system]
+requires = ["setuptools>=40.8", "wheel"]
+build-backend = "setuptools.build_meta"

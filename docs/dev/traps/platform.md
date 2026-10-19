@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Platform, config, launcher, tests and tooling
 
+- **CODE_DIR is site-packages in a pipx/uv install** (`setup.py`, `mailbox_config.asset_dir`).
+  - Cause: the wheel installs code flat, so CODE_DIR means «repo root» in a clone but «site-packages» when installed; `web/`, `hooks/`, `docs/` are not there.
+  - ⇒ Read assets via `ASSET_DIR` (`asset_dir()`: CODE_DIR if it has `web/`, else `sidereus/_bundle`); `setup.py` copies an explicit allow-list into the bundle (`tests/test_wheel_build.py`).
+  - ⚠Never glob the repo root into the bundle — it may hold live data (`bus.jsonl`, `identity.json`, `config.local.json`). A new asset read = one `BUNDLE` row.
 - **A closed localhost port times out on Windows, not refuses** (`sidereus_cli.py` `answering`).
   - Cause: Windows retries the SYN to a closed 127.0.0.1 port for ~2 s, so the 2 s `/api/state` probe timed out and `start` reported a free port as BUSY and never spawned.
   - ⇒ On Windows a timeout is BUSY only when `port_bound()` (a probe bind on 127.0.0.1) fails; a free port returns 0.

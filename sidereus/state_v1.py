@@ -9,7 +9,7 @@ import os
 import threading
 import time
 
-from sidereus.config import CODE_DIR
+from sidereus.config import ASSET_DIR
 from sidereus.features import state_off
 from sidereus.bus import _load
 from sidereus.redact import redact_rooms
@@ -21,7 +21,7 @@ from sidereus.state import STATE_COLD_S, STATE_FRESH_S, STATE_WAIT_S
 V1_VERSION = 1
 V1_TTL = 1.0           # same freshness as /api/state's shared body cache
 V1_LAB_MAX = 200       # one-line labels (subagent lab · room topic)
-V1_SCHEMA = os.path.join(CODE_DIR, "docs", "schema", "sidereus-state.v1.json")
+V1_SCHEMA = os.path.join(ASSET_DIR, "docs", "schema", "sidereus-state.v1.json")
 V1_CACHE = {"at": None, "obj": None}
 V1_LOCK = threading.Lock()   # ⚠guards V1_CACHE only — the build runs outside it
 

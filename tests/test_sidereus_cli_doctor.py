@@ -23,7 +23,7 @@ class Doctor(unittest.TestCase):
     def setUp(self):
         self.home = tempfile.mkdtemp()
         self.pyexe = os.path.join(self.home, "python.exe")
-        open(self.pyexe, "w").close()
+        open(self.pyexe, "w", encoding="utf-8").close()
 
     def tearDown(self):
         shutil.rmtree(self.home, ignore_errors=True)

@@ -14,7 +14,7 @@ import threading
 import time
 
 from sidereus import claude_roots, ctxsrc, hook_fields, toolinv
-from sidereus.config import CODE_DIR, DATA_DIR
+from sidereus.config import ASSET_DIR, DATA_DIR
 from sidereus.harness import cmd_name
 
 DX_TTL_S = 30
@@ -22,8 +22,8 @@ DX_ROWS_MAX = 200
 DX_MD_HEAD = 4096
 DX_NAME_MAX = 80
 DX_JSON_MAX = 256 * 1024   # a larger settings / hooks.json is skipped, not parsed
-DX_HOOK_DIRS = (os.path.join(DATA_DIR, "hooks"), os.path.join(CODE_DIR, "hooks"))
-DX_HOOKS_DOC = os.path.join(CODE_DIR, "docs", "HOOKS.md")
+DX_HOOK_DIRS = (os.path.join(DATA_DIR, "hooks"), os.path.join(ASSET_DIR, "hooks"))
+DX_HOOKS_DOC = os.path.join(ASSET_DIR, "docs", "HOOKS.md")
 DX_PLUGIN = "sidereus"       # our own plugin (scripts/build_plugin.py NAME)
 _DIAG_CACHE = {"t": 0.0, "v": None}
 _DX_NAMES = {"key": None, "v": frozenset()}

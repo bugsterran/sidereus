@@ -10,11 +10,11 @@ import json
 import os
 import re
 
-from sidereus.config import CODE_DIR
+from sidereus.config import ASSET_DIR
 from sidereus.warn import warn_once
 from sidereus.prefs import effective, saved
 
-FEATURES_DIR = os.path.join(CODE_DIR, "features")
+FEATURES_DIR = os.path.join(ASSET_DIR, "features")
 _ID_RE = re.compile(r"[a-z][a-z0-9_]{0,31}\Z")   # ⚠`$` also matches before a final "\n" — use \Z
 _LIST_FIELDS = ("deps", "modules", "routes", "threads", "state_keys", "web", "settings")
 

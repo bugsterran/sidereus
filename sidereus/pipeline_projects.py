@@ -8,7 +8,7 @@ import os
 import subprocess
 import threading
 
-from sidereus import prefs
+from sidereus import config, prefs
 from sidereus.bus import _atomic_write
 from sidereus.config import CODE_DIR, DATA_DIR, IS_MAC, IS_WIN
 from sidereus.toolinv import known_projects
@@ -28,7 +28,7 @@ def _proj_ok(proj):
 def allowed_projects():
     """Exact-match allow-list = the pipeline tab's chips: known_projects() ∪ live sessions' repos ∪ Sidereus itself.
     ★2026-10-01 a chip from a session's `repos` was refused (not a cwd). Real dirs only."""
-    out = set(known_projects()) | {CODE_DIR} | set(_remembered())
+    out = set(known_projects()) | ({CODE_DIR} if config.IS_CLONE else set()) | set(_remembered())   # installed package: not a project
     for r in _allowed_cwds().values():   # never raises: falls back to its last good value
         out |= set(x for x in (r.get("repos") or []) if isinstance(x, str))
     return sorted(p for p in out if os.path.isabs(p) and os.path.isdir(p))

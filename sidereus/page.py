@@ -5,7 +5,7 @@ import os
 import re
 import time
 
-from sidereus.config import CODE_DIR
+from sidereus.config import ASSET_DIR
 
 # ★Stage 1 split (2026-09-23): the page source lives in web/ — index.html is the skeleton, and each
 #   `@@INCLUDE <file>@@` marker is replaced by that file's exact content (app-head.js, app.css, app.js).
@@ -13,8 +13,8 @@ from sidereus.config import CODE_DIR
 # ★Stage 2 (2026-09-23): a marker may be a glob (`js/*.js`, `css/*.css`) — matches are concatenated in sorted
 #   name order, so the NN- prefix is the load order. ⚠Parts are joined with no separator: each file must keep its trailing newline.
 # ⚠Read once at import — editing web/ still needs a server restart. newline="" keeps bytes exact (no newline translation).
-# ⚠CODE_DIR is the repo root (the old `dirname(chat_server.py)`), so WEB_DIR is unchanged.
-WEB_DIR = os.path.join(CODE_DIR, "web")
+# ⚠ASSET_DIR is the repo root in a clone (the old `dirname(chat_server.py)`), so WEB_DIR is unchanged there.
+WEB_DIR = os.path.join(ASSET_DIR, "web")
 _WEB_INCLUDE = re.compile(r"@@INCLUDE ([\w.*/-]+)@@")
 
 

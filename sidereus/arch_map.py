@@ -9,7 +9,7 @@ import re
 import subprocess
 import time
 
-from sidereus.config import CODE_DIR
+from sidereus.config import CODE_DIR, IS_CLONE
 from sidereus.gitinfo import _git_run, _git_run_capped
 from sidereus.structure import _struct_src_root
 from sidereus.arch_verify import ARCH_DIR, NAME_MAX, PATH_MAX, SYM_MAX, est_of, head_of, read_json, render_md, repo_key, \
@@ -18,7 +18,7 @@ from sidereus.arch_flow import load_flows
 from sidereus.arch_checks import load_checks
 from sidereus import sec_report as SR
 
-SIDEREUS_ROOT = os.path.realpath(CODE_DIR)   # repo holding .claude/pipelines/arch-map.json; the view relays «Request a map» to a session there
+SIDEREUS_ROOT = os.path.realpath(CODE_DIR) if IS_CLONE else ""   # "" = installed package, no repo to relay to; repo holding .claude/pipelines/arch-map.json; the view relays «Request a map» to a session there
 ARCH_PL = "arch-map"
 _ARCH_TAG = re.compile(r"\[pl:arch-map/([^\]]{1,80})\]")
 ARCH_RUN_GAP_S = 180       # a run stays «in progress» this long after its last tagged sign (main thinks between stages)
@@ -224,6 +224,8 @@ def security_report(path, name):
 
 def _titles():
     """Stage titles of the arch-map pipeline in order, [] if unreadable (read directly: sidereus.pipeline is a feature module)."""
+    if not SIDEREUS_ROOT:
+        return []
     try:
         with open(os.path.join(SIDEREUS_ROOT, ".claude", "pipelines", ARCH_PL + ".json"), "rb") as f:
             P = json.loads(f.read(65536))

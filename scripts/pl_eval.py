@@ -28,7 +28,10 @@ import tempfile
 import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(_HERE))
+_UP = os.path.dirname(_HERE)
+if not os.path.isdir(os.path.join(_UP, "sidereus")):   # pipx/uv: sidereus/_bundle/scripts -> site-packages
+    _UP = os.path.dirname(os.path.dirname(_UP))
+sys.path.insert(0, _UP)
 sys.path.insert(0, _HERE)
 from sidereus import config  # noqa: E402  (path set just above)
 from sidereus import pl_eval as PE  # noqa: E402

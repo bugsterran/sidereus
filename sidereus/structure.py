@@ -5,6 +5,7 @@ import re
 import subprocess
 import tarfile
 import time
+from sidereus import config
 from sidereus.config import CODE_DIR
 from sidereus.warn import warn_once
 from sidereus.gitinfo import SHA_HEX_RE, _git_slot, git_argv, git_env
@@ -271,7 +272,7 @@ def _struct_allowed_roots():
             snap = sessions_snapshot_wait()
         if snap is None:
             cands = list(_struct_warm_targets())
-        elif os.path.isdir(CODE_DIR):      # same isdir filter _struct_warm_targets applies
+        elif config.IS_CLONE and os.path.isdir(CODE_DIR):      # same isdir filter _struct_warm_targets applies
             cands = [CODE_DIR]
         for r in snap or ():
             cands.append(r.get("cwd"))
@@ -491,7 +492,7 @@ _struct_prune_at = [0.0]
 def _struct_warm_targets():
     """Warm-up targets = union of sessions' `cwd` + `repos` (+ Sidereus itself). ⚠Not recomputed —
     it is the value `_allowed_cwds()` already holds with a 5s cache."""
-    cands = [CODE_DIR]
+    cands = [CODE_DIR] if config.IS_CLONE else []   # installed package: not a repo to warm
     try:
         for cwd, row in _allowed_cwds().items():
             cands.append(cwd)

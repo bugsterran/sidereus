@@ -92,6 +92,17 @@ git clone https://github.com/bugsterran/sidereus.git ~/sidereus && cd ~/sidereus
 python3 -m sidereus start --open             # http://127.0.0.1:8799. Windows: sidereus.cmd start --open
 ```
 
+클론 없이 쓰려면 [pipx](https://pipx.pypa.io)나 [uv](https://docs.astral.sh/uv/)로 `sidereus` 명령을 설치하세요:
+
+```sh
+pipx install git+https://github.com/bugsterran/sidereus    # 또는: uv tool install git+https://github.com/bugsterran/sidereus
+sidereus start --demo --open                               # 그 밖에: sidereus start --open · status · doctor · stop
+```
+
+업그레이드는 `pipx upgrade sidereus`(`uv tool upgrade sidereus`)입니다. 로그인 시 자동 실행(`start --install-service`)은
+클론에서만 됩니다(pipx/uv 설치 경로는 다시 설치할 때마다 바뀝니다). Claude Code는 아래의 GitHub 플러그인으로 연결하세요.
+파이프라인 채점(`scripts/pl_eval.py`)은 클론에서만 돌아갑니다.
+
 Windows에서는 문서의 `python3`를 `py`로 바꿔 쓰거나, 클론 폴더에서 `sidereus.cmd`를 실행하세요.
 Windows는 Python·Git for Windows·Claude Code를 먼저 설치합니다: [시작하기 0장](docs/GETTING-STARTED.ko.md#0-준비).
 화면만 쓴다면 설치는 이것으로 끝입니다. 명령·포트·로그인 시 자동 실행은 [시작하기 2~3장](docs/GETTING-STARTED.ko.md#2-뷰어-띄우기)을 보세요.

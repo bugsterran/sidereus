@@ -50,6 +50,12 @@ _PREFS_OWN = ("features", "pipeline_apply", "mailbox_watch", "claude_roots")
 
 CODE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
+def asset_dir(code=CODE_DIR):
+    """Folder holding web/, docs/, hooks/, mcp/: `code` itself in a clone, else `code/sidereus/_bundle` (pipx/uv install).
+    ⚠Clone first — a clone must resolve exactly as before, even if a stale _bundle sits next to it."""
+    return code if os.path.isdir(os.path.join(code, "web")) else os.path.join(code, "sidereus", "_bundle")
+
 _cache = None
 _warned = set()
 FILE_OK = None   # False after a missing/broken file (already warned); callers skip follow-up warnings

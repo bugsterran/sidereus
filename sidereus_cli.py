@@ -36,6 +36,10 @@ CODE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, CODE_DIR)
 import mailbox_config  # noqa: E402
 
+# Same rule as sidereus/config.py: assets (web/, hooks/, mcp/, plugin/) sit in sidereus/_bundle when pipx/uv installed.
+ASSET_DIR = mailbox_config.asset_dir(CODE_DIR)
+IS_CLONE = ASSET_DIR == CODE_DIR
+
 
 def utf8_stdio(streams=None):
     """Re-encode non-UTF-8 stdio as UTF-8, keeping each stream's error mode.
@@ -187,6 +191,12 @@ MSG = {
     "w_cancel": ("취소했습니다 — 아무것도 쓰지 않았습니다.", "Cancelled — nothing written."),
     "w_backup": ("백업: %s", "Backup: %s"),
     "w_wrote": ("썼습니다: %s", "Wrote: %s"),
+    "svc_pkg": ("--install-service 는 git clone 에서만 됩니다 — pipx/uv 가 쓰는 Python 이 바뀌면 설치 경로도 바뀝니다. "
+                "clone 을 쓰거나, 로그인할 때 `sidereus start` 를 실행하세요.",
+                "--install-service works only from a git clone — the pipx/uv install path changes when its Python changes. "
+                "Use a clone, or run `sidereus start` at login."),
+    "setup_pkg": ("# 먼저 GitHub 의 Sidereus 플러그인을 권합니다 (Claude Code: /plugin marketplace add bugsterran/sidereus) — 아래는 수동 설정입니다",
+                  "# Prefer the Sidereus plugin from GitHub first (Claude Code: /plugin marketplace add bugsterran/sidereus) — manual setup below"),
     "w_mcp_ok": ("MCP: sidereus 를 등록했습니다.", "MCP: sidereus registered."),
     "w_mcp_fail": ("MCP 등록 실패 (rc=%s) — 직접 실행하세요:\n  %s", "MCP registration failed (rc=%s) — run it yourself:\n  %s"),
 }
@@ -314,7 +324,7 @@ def ensure_config():
     path = mailbox_config.config_path()
     if os.path.exists(path):
         return False
-    with open(os.path.join(CODE_DIR, "config.example.json"), encoding="utf-8") as f:
+    with open(os.path.join(ASSET_DIR, "config.example.json"), encoding="utf-8") as f:
         cfg = json.load(f)
     # The example's header says «copy to config.local.json»; optional saver-hook keys equal to the defaults add nothing.
     cfg.pop("_comment", None)
@@ -517,6 +527,9 @@ def cmd_demo(port=None, open_tab=False):
 
 
 def cmd_start(port=None, install=False, open_tab=False):
+    if install and not IS_CLONE:
+        print(t("svc_pkg"))   # ⚠the venv path changes when pipx/uv's Python changes, so a service would break; writes nothing
+        return 2
     created = ensure_config()
     if created:
         print(t("first_run", mailbox_config.config_path()))
@@ -635,7 +648,7 @@ def _shq(p):
 _PLUGIN_CMD = re.compile(r'^sh "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/pyrun\.sh" "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/([\w.-]+\.py)"$')
 
 
-def setup_hooks(python, code=CODE_DIR):
+def setup_hooks(python, code=ASSET_DIR):
     """The plugin's hook set (plugin/hooks/hooks.json, built by scripts/build_plugin.py) with this clone's paths.
     ⚠Derived, not hand-copied: a hand-kept list here missed mailbox_wake and the pipeline hooks."""
     with open(os.path.join(code, "plugin", "hooks", "hooks.json"), encoding="utf-8") as f:
@@ -651,7 +664,7 @@ def setup_hooks(python, code=CODE_DIR):
                       for ev, groups in src.get("hooks", {}).items()}}
 
 
-def setup_claude_text(python, code=CODE_DIR, mailbox_mcp=None):
+def setup_claude_text(python, code=ASSET_DIR, mailbox_mcp=None):
     """Text of `setup-claude` (pure, prints only). Writing is `--write` (cmd_setup_write): confirm + backup first."""
     hooks = setup_hooks(python, code)
     lines = [t("setup_mcp"),
@@ -754,7 +767,7 @@ def _indent_of(text):
     return "\t" if ws.startswith("\t") else len(ws)
 
 
-def mcp_add_argv(claude, python, code=CODE_DIR, win=None):
+def mcp_add_argv(claude, python, code=ASSET_DIR, win=None):
     """`claude mcp add` argv. ⚠name before -e: --env is variadic and would swallow the name. Windows gets UTF-8 stdio:
     a cp949 console crashed the server on a non-ASCII dash."""
     argv = [claude, "mcp", "add", "--scope", "user", "sidereus"]
@@ -880,7 +893,9 @@ def cmd_setup_claude(rest):
         if not os.path.isdir(mbx):
             print(t("usage"))
             return 2
-    print(setup_claude_text(setup_python(), CODE_DIR, mbx))
+    if not IS_CLONE:
+        print(t("setup_pkg"))
+    print(setup_claude_text(setup_python(), ASSET_DIR, mbx))
     return 0
 
 

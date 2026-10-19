@@ -25,7 +25,7 @@ function tourShouldAuto(done, webdriver, search){
   return !(q === '0' || webdriver || done);
 }
 function tourPluginLines(dir){
-  return ['/plugin marketplace add ' + (dir || T('<Sidereus folder>')), '/plugin install sidereus@sidereus'];
+  return ['/plugin marketplace add ' + (dir || 'bugsterran/sidereus'), '/plugin install sidereus@sidereus'];   // no clone (pipx/uv) = GitHub
 }
 let tourI = -1, tourList = [], tourFrom = '', tourBack = null, tourDir = '', tourTimer = 0, tourSpot = null, tourCmds = [];
 function tourIsOpen(){ const r = document.getElementById('tour'); return !!(r && !r.hidden); }
