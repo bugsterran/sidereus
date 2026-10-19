@@ -19,6 +19,8 @@ from sidereus.config import DATA_DIR
 from sidereus.warn import warn_once
 from sidereus.bus import _atomic_write
 from sidereus.transcript import CLAUDE_PROJECTS, iso_epoch
+from sidereus.claude_roots import primary_owned
+from sidereus.agents import sub_sess_dir
 from sidereus.quota import QUOTA_LOG, _plan_code
 from sidereus.burn_calc import QBURN_WIN, _qburn_cycles
 
@@ -183,13 +185,20 @@ def _tok_file(fp, st, t0):
 
 def _tok_scan(t0):
     """`(t, tokens)` from every transcript touched since t0, deduped by (message.id, requestId)."""
-    ev, seen, live = [], {}, set()
-    # ⚠Primary root only: the quota log it is matched against belongs to the viewer's own account.
+    ev, seen, live, own = [], {}, set(), {}
+    # ⚠Primary account only: the quota log it is matched against is the viewer's own account, and the primary
+    #   projects dir may be shared (symlinked) with other accounts -> filter per session, not per root.
     # ⚠glob order is filesystem-defined (APFS name order, ext4 hash order) -> dedup must not depend on it
     for fp in glob.glob(os.path.join(CLAUDE_PROJECTS, "**", "*.jsonl"), recursive=True):
         try:
             st = os.stat(fp)
             if st.st_mtime < t0:
+                continue
+            sd = sub_sess_dir(fp)
+            sid = os.path.basename(sd) if sd else os.path.splitext(os.path.basename(fp))[0]
+            if sid not in own:
+                own[sid] = primary_owned(sid, fp)
+            if not own[sid]:
                 continue
             fev = _tok_file(fp, st, t0)
         except OSError:

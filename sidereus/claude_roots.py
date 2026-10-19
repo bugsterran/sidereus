@@ -235,3 +235,18 @@ def acct_of(sid, fp):
     if a:
         return ("", "") if a["primary"] else (a["label"], a["dir"])
     return root_of(fp)
+
+
+def primary_owned(sid, fp):
+    """True when `sid` (transcript `fp`) ran under the primary account — for primary-only token sums.
+    ⚠Unlike acct_of, no record is not «primary» when another account shares the primary's projects dir
+      (symlinked history): that dir mixes accounts, so unknown sessions are excluded there rather than overcounted."""
+    rd = _acct_rec(sid)
+    if rd:
+        a = _cached()[2].get(rd)
+        return bool(a and a["primary"])   # a recorded but unlisted config dir is never the primary
+    if root_of(fp)[0]:
+        return False
+    rows, acc, _br = _cached()
+    pr = _real_projects(rows[0]["dir"])
+    return not any(_real_projects(a["dir"]) == pr for a in acc if not a["primary"])

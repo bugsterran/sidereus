@@ -104,7 +104,7 @@ def _tl_pick(cut, rows=None):
 
 
 def _tok_events(since_ts):
-    """Raw `(ts, tokens)` pairs from every transcript active since `since_ts`.
+    """Raw `(ts, tokens)` pairs from every primary-account transcript active since `since_ts`.
 
     ★Why (2026-09-23): `quota_burn` used to read `agents_timeline()`'s render
       buckets, whose width is `max(30, span/240)` — i.e. the quota denominator
@@ -124,9 +124,15 @@ def _tok_events(since_ts):
     cut = float(since_ts)
     ev, seen = [], set()
     rows, fresh = _tl_snap_rows()
+    own = {}                                 # sid -> primary? (one record lookup per session per scan)
     for _cwd, _proj, pick, _newest in _tl_pick(cut, rows):
         for fp in pick:
             _sd = fp[:-len(".jsonl")]
+            _sid = os.path.basename(_sd)
+            if _sid not in own:
+                own[_sid] = claude_roots.primary_owned(_sid, fp)
+            if not own[_sid]:
+                continue                     # ⚠primary sums only: a shared projects dir holds other accounts' sessions
             for f2 in [mm.get("_file") or "" for mm in _agent_meta(_sd, ttl=10).values()] + wf_agent_files(_sd):
                 if not f2 or f2 in seen:
                     continue
