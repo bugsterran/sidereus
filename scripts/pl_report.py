@@ -34,7 +34,10 @@ def _load(data_dir):
     """Import the core after MAILBOX_DIR is set: config derives DATA_DIR (and every eval/evidence path) at import."""
     if data_dir:
         os.environ["MAILBOX_DIR"] = data_dir
-    sys.path.insert(0, os.path.dirname(_HERE))
+    up = os.path.dirname(_HERE)
+    if not os.path.isdir(os.path.join(up, "sidereus")):   # pipx/uv: sidereus/_bundle/scripts -> site-packages
+        up = os.path.dirname(os.path.dirname(up))
+    sys.path.insert(0, up)
     from sidereus import pl_outcome, pl_eval_view
     return pl_outcome, pl_eval_view
 

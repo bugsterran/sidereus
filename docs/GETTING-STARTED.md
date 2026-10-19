@@ -21,6 +21,20 @@ After installing any of these, open a new terminal: an open one keeps the old PA
 git clone https://github.com/bugsterran/sidereus.git ~/sidereus      # any folder works
 ```
 
+Or, without a clone, install the `sidereus` command (stdlib only, no dependencies):
+
+```sh
+pipx install git+https://github.com/bugsterran/sidereus    # or: uv tool install git+https://github.com/bugsterran/sidereus
+sidereus start --demo --open                               # `sidereus` replaces `python3 -m sidereus` below
+sidereus status
+sidereus doctor
+```
+
+Upgrade: `pipx upgrade sidereus` (`uv tool upgrade sidereus`). Not available this way: start at login
+(`start --install-service`, §3 — the install path changes on every reinstall) and `scripts/` tools; connect Claude Code
+with the plugin from GitHub (§5).
+Pipeline scoring (`scripts/pl_eval.py`) runs only from a clone.
+
 Needs Python 3.9 or later, nothing else; the macOS `/usr/bin/python3` works.
 Data (logs, caches, mailbox, config) goes to `$MAILBOX_DIR`, default `~/.mailbox-mcp`
 (Windows: `%USERPROFILE%\.mailbox-mcp`).

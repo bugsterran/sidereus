@@ -114,3 +114,8 @@ evstart/
 acct/
 sesspid/
 clears.jsonl
+
+# wheel build output (setup.py)
+build/
+dist/
+*.egg-info/

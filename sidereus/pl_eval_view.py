@@ -5,6 +5,7 @@ import math
 import os
 import shlex
 import subprocess
+import sys
 import time
 
 from sidereus import config, gitinfo, pipeline, pipeline_projects, pl_scorecard
@@ -164,7 +165,8 @@ def suggest(stages, ev, red, unstable, kinds, templates, cmd_of):
 def redcheck_cmd(proj, name, title, code_dir=None, nt=None):
     """Copyable red-check command for one stage: `py` + list2cmdline on Windows, `python3` + POSIX quoting elsewhere."""
     nt = os.name == "nt" if nt is None else nt
-    argv = ["py" if nt else "python3", os.path.join(code_dir or config.CODE_DIR, "scripts", "pl_eval.py"), "redcheck",
+    py = ("py" if nt else "python3") if config.IS_CLONE else (sys.executable or "python3")   # install: the venv has the package
+    argv = [py, os.path.join(code_dir or config.ASSET_DIR, "scripts", "pl_eval.py"), "redcheck",
             "--pipeline", os.path.join(proj, ".claude", "pipelines", name + ".json"), "--stage", title, "--repo", proj]
     return subprocess.list2cmdline(argv) if nt else " ".join(shlex.quote(a) for a in argv)
 

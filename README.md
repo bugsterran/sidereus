@@ -92,6 +92,17 @@ git clone https://github.com/bugsterran/sidereus.git ~/sidereus && cd ~/sidereus
 python3 -m sidereus start --open             # http://127.0.0.1:8799; Windows: sidereus.cmd start --open
 ```
 
+Without a clone, install the `sidereus` command with [pipx](https://pipx.pypa.io) or [uv](https://docs.astral.sh/uv/):
+
+```sh
+pipx install git+https://github.com/bugsterran/sidereus    # or: uv tool install git+https://github.com/bugsterran/sidereus
+sidereus start --demo --open                               # also: sidereus start --open · status · doctor · stop
+```
+
+Upgrade with `pipx upgrade sidereus` (`uv tool upgrade sidereus`). Start at login (`start --install-service`) needs a
+clone: the pipx/uv install path changes on every reinstall. Connect Claude Code with the plugin from GitHub (below).
+Pipeline scoring (`scripts/pl_eval.py`) runs only from a clone.
+
 On Windows write `py` wherever these docs say `python3`, or run `sidereus.cmd` from the clone folder.
 Windows needs Python, Git for Windows and Claude Code first: [Getting started §0](docs/GETTING-STARTED.md#0-prerequisites).
 That is the whole install for the screen. Commands, ports and start at login: [Getting started §2–3](docs/GETTING-STARTED.md#2-start-the-viewer).

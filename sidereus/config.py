@@ -34,6 +34,12 @@ except Exception as _e:
     print(f"⚠ chat_server: mailbox_config unavailable ({type(_e).__name__}: {_e}) — using defaults",
           file=sys.stderr, flush=True)
     CFG = {}
+# ASSET_DIR = where web/, docs/, hooks/, mcp/ are read from: CODE_DIR in a clone, CODE_DIR/sidereus/_bundle in a pipx/uv install.
+try:
+    ASSET_DIR = _mcfg.asset_dir(CODE_DIR)
+except Exception:
+    ASSET_DIR = CODE_DIR
+IS_CLONE = ASSET_DIR == CODE_DIR   # False = installed package: no repo to point sessions at (pipelines, tour, arch-map)
 MINE = list((CFG.get("self") or {}).get("ids") or [])      # our (this session's) ids — right-side bubbles
 # Port: --port (below) > env SIDEREUS_PORT > config `port` > 8799, via mailbox_config.port() — the same resolver the clients use.
 try:

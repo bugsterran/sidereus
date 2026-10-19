@@ -5,6 +5,7 @@ import os
 import re
 import stat as _st                     # git_diff has a local named `stat`
 import subprocess
+from sidereus import config
 from sidereus.config import CODE_DIR
 from sidereus.gitinfo import DIFF_MAX, DIFF_TIMEOUT, SHA_HEX_RE, _git_run, _git_run_capped, _wt_main
 from sidereus.sessions import sessions_rows
@@ -389,7 +390,7 @@ def _branch_ok(cwd):
       repos an earlier session in that cwd touched (picker listed the repo, server said «not allowed»)."""
     if not cwd or not isinstance(cwd, str):   # ⚠realpath("") = process cwd = CODE_DIR -> would pass
         return False
-    allowed = {CODE_DIR}
+    allowed = {CODE_DIR} if config.IS_CLONE else set()   # installed package: not a repo
     try:
         for r in sessions_rows():   # ⚠request path: snapshot allow-list, never a cold sessions()
             if r.get("cwd"):

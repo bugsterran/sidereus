@@ -21,6 +21,20 @@
 git clone https://github.com/bugsterran/sidereus.git ~/sidereus      # 폴더는 어디든 된다
 ```
 
+클론 없이 `sidereus` 명령만 설치해도 된다(표준 라이브러리만 쓰고 의존성은 없다):
+
+```sh
+pipx install git+https://github.com/bugsterran/sidereus    # 또는: uv tool install git+https://github.com/bugsterran/sidereus
+sidereus start --demo --open                               # 아래의 `python3 -m sidereus` 대신 `sidereus`
+sidereus status
+sidereus doctor
+```
+
+업그레이드: `pipx upgrade sidereus`(`uv tool upgrade sidereus`). 이 방식으로는 로그인 시 자동 실행
+(`start --install-service`, 3장 — 설치 경로가 다시 설치할 때마다 바뀐다)과 `scripts/` 도구를 쓸 수 없다.
+Claude Code 는 GitHub 플러그인으로 연결한다(5장).
+파이프라인 채점(`scripts/pl_eval.py`)은 클론에서만 돌아간다.
+
 Python 3.9 이상만 있으면 된다. macOS 기본 `/usr/bin/python3` 로 된다.
 데이터(로그·캐시·메일박스·설정)는 `$MAILBOX_DIR` 에 쌓이고, 기본값은 `~/.mailbox-mcp` 다
 (Windows: `%USERPROFILE%\.mailbox-mcp`).

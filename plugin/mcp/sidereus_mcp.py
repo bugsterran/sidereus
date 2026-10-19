@@ -19,10 +19,16 @@ import urllib.request
 NAME, VERSION = "sidereus", "0.1.0"
 
 
+def _cfg_root():
+    """Folder holding mailbox_config.py: the parent (clone, plugin), else site-packages for sidereus/_bundle/mcp (pipx/uv)."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return root if os.path.isfile(os.path.join(root, "mailbox_config.py")) else os.path.dirname(os.path.dirname(root))
+
+
 def _port():
     """Viewer port via mailbox_config.port() (env SIDEREUS_PORT > config `port` > 8799); 8799 if it cannot load."""
     try:
-        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        root = _cfg_root()
         if root not in sys.path:
             sys.path.insert(0, root)
         import mailbox_config
@@ -62,7 +68,7 @@ def launchd_label():
     if env:
         return env
     try:
-        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        root = _cfg_root()
         if root not in sys.path:
             sys.path.insert(0, root)
         import mailbox_config

@@ -89,8 +89,8 @@ R.finish = {writes: writes.slice(), tabs: tabs.slice(), hidden: root.hidden};
 
     def test_plugin_lines(self):
         self.assertEqual(self.R["withDir"], ["/plugin marketplace add /opt/sidereus", "/plugin install sidereus@sidereus"])
-        self.assertEqual(self.R["noDir"][0], "/plugin marketplace add <시데레우스 폴더>")
-        self.assertEqual(self.R["noDirEn"][0], "/plugin marketplace add <Sidereus folder>")
+        self.assertEqual(self.R["noDir"][0], "/plugin marketplace add bugsterran/sidereus")
+        self.assertEqual(self.R["noDirEn"][0], "/plugin marketplace add bugsterran/sidereus")
         self.assertEqual(self.R["doneBody"], self.R["withDir"])
 
     def test_guide_text_platform_neutral(self):

@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Timeline: the head line no longer reflows as its text changes. The summary wraps by a fixed basis and ends in «…» when it runs long (full text in its tooltip); the «Session» label and the word «Changes» moved into the accessible name and tooltip; the pipeline key shows inline when the line has room and folds to «Pipeline ▾» with a hover/focus popover when it does not.
 - Plugin: installs straight from GitHub (`/plugin marketplace add bugsterran/sidereus`), no clone needed; a local clone still works. Without a clone, pipeline scoring is skipped.
 - Pipelines: the «Pipelines» empty state shows the template choices instead of a blank list.
+- Install without a clone: `pipx install git+https://github.com/bugsterran/sidereus` (or `uv tool install git+…`) puts `sidereus` on PATH; `start`, `status`, `doctor` work from it, start at login still needs a clone.
 - `python3 -m sidereus doctor` prints one `OK`/`FAIL` line per setup check (Python 3.9+, git, claude, hooks connected, viewer answering; on Windows `SIDEREUS_PYTHON` and the Store alias) with the fix on each `FAIL`; exit 1 on any `FAIL`, writes nothing.
 
 ### Fixed

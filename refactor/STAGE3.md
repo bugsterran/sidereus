@@ -182,6 +182,7 @@ notes · parse · adapter · plat_gemini · plat_codex · ext_store · ext · se
 - Everything else shared is a container mutated in place (dict/list/set/Lock/Condition), so `from sidereus.x import name` shares the same object.
 - `chat_server.py` imports by name only what it uses (104 names until the 2026-09-24 entry split, now 27; modules it uses nothing from stay as `import sidereus.<m>` for load order). Star re-exports removed 2026-09-23; the now-unused per-module `__all__` lists removed 2026-09-24 (bgtasks/burn/timeline too — `grep __all__ sidereus/` = 0).
 - `CODE_DIR` in sidereus/config.py is one level up from the file (repo root); same value as before.
+- `ASSET_DIR` · `IS_CLONE` are owned by sidereus/config.py (`mailbox_config.asset_dir(CODE_DIR)`, fallback CODE_DIR): web/, docs/, hooks/, features/ and the pipeline runner are read from ASSET_DIR (= CODE_DIR in a clone, `CODE_DIR/sidereus/_bundle` in a pipx/uv install). Readers use `config.IS_CLONE` at call time so tests patch it on `config`; `arch_map.SIDEREUS_ROOT` reads it once at import. `sidereus_cli.py` keeps its own `ASSET_DIR`/`IS_CLONE` by the same rule (it must not import the viewer package).
 
 ## Proof (per module moved, then on the final tree)
 - `/usr/bin/python3 -m py_compile` every file; module load (no threads started).

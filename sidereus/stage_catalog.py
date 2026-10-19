@@ -8,6 +8,7 @@ import re
 import shlex
 import shutil
 
+from sidereus import config
 from sidereus.config import CODE_DIR
 from sidereus.pipeline_schema import MODELS, validate
 
@@ -91,6 +92,8 @@ def catalog():
     for t in d["templates"]:
         if errors(t, sidereus) or t["id"] in seen or t["title"]["ko"] in seen:
             continue
+        if not config.IS_CLONE and any("{sidereus}" in str(t.get(k) or "") for k in ("gate", "task")):
+            continue   # pipx/uv install: {sidereus}/scripts and .claude/ are not shipped, so the gate would fail
         seen.update((t["id"], t["title"]["ko"]))
         it = {k: t[k] for k in ("id", "group", "title", "role", "agent", "model", "gateHint", "asserts", "loop") if k in t}
         it["gate"] = _subst(t["gate"], sidereus)

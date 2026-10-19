@@ -17,7 +17,7 @@ import threading
 import time
 
 from sidereus import ctxsrc
-from sidereus.config import CODE_DIR, DATA_DIR
+from sidereus.config import ASSET_DIR, CODE_DIR, DATA_DIR
 from sidereus.bus import _atomic_write
 from sidereus.pipeline_projects import _proj_ok, _remembered, allowed_projects, apply_get
 from sidereus.pipeline_schema import _AGENT, _COLOR, _NAME, GATE_MODES, MODELS, dump, validate
@@ -29,7 +29,7 @@ PIPE_FILE_MAX = 64 * 1024
 SAVE_BODY_MAX = 16 * 1024
 BAK_DIR = None               # None = DATA_DIR/pipeline-bak; ⚠tests set a tmp dir
 _LOCK = threading.Lock()
-RUNNER = os.path.join(CODE_DIR, ".claude", "workflows", "pipeline.js")   # DEFAULT_TASKS source of truth
+RUNNER = os.path.join(ASSET_DIR, ".claude", "workflows", "pipeline.js")   # DEFAULT_TASKS source of truth
 _DT_RE = re.compile(r"// DEFAULT_TASKS-BEGIN\nconst DEFAULT_TASKS = (.*?)\n// DEFAULT_TASKS-END", re.S)
 
 

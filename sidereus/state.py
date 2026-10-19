@@ -242,7 +242,7 @@ def state(since=0, ncards=50):
                 "dmMax": DM_MAX,             # /api/dm body cap — the page packs review notes under it
                 "termApp": _piece("termApp", term_cfg, "auto")},   # «To terminal» app override (auto|iterm|apple|orca|off)
         "features": features_snapshot(),   # {id: on} per manifest (sidereus/features.py) — core key
-        "codeDir": os.path.realpath(config.CODE_DIR),   # clone path for the tour's `/plugin marketplace add` — core key
+        "codeDir": os.path.realpath(config.CODE_DIR) if config.IS_CLONE else "",   # clone path ("" = pip install) for the tour's `/plugin marketplace add` — core key
     }
     _ac = _piece("accts", _accts, None)   # labels only, present only with >=2 accounts (not in state_v1)
     if _ac:

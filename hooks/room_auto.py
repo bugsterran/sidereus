@@ -22,7 +22,10 @@ import sys
 import time
 import tempfile
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_UP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if not os.path.isfile(os.path.join(_UP, "mailbox_config.py")):   # pipx/uv: sidereus/_bundle/hooks -> site-packages
+    _UP = os.path.dirname(os.path.dirname(_UP))
+sys.path.insert(0, _UP)
 import mailbox_config  # noqa: E402
 
 STORE = mailbox_config.data_dir()
