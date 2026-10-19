@@ -143,7 +143,7 @@ class Parse(Base):
         self.assertFalse(cx.path_ok(os.path.join(self.home, "config.jsonl")))
 
 
-class Wiring(Base):
+class _WiringBase(Base):
     def setUp(self):
         super().setUp()
         self.saved = (st._ext_save_locked, st._runs_save_locked, dict(ext._ext), dict(ext._runs), dict(ext._tok))
@@ -160,6 +160,8 @@ class Wiring(Base):
         ext._tok.clear(); ext._tok.update(k)
         super().tearDown()
 
+
+class Wiring(_WiringBase):
     def test_event_map_mirrored(self):
         self.assertEqual(hook.EVENTS["codex"], cx.EVENTS)
         out, _ = hook.build("codex", {"hook_event_name": "PermissionRequest", "session_id": SID,
@@ -187,7 +189,7 @@ class Wiring(Base):
         lines = self.std()
         lines[8]["payload"]["rate_limits"]["primary"]["resets_at"] = int(self.now - 10)
         self.rollout(lines)
-        self.assertEqual(list(ext.ext_usage_today(now=self.now)["cx"]["rate"]), ["secondary"])
+        self.assertEqual(list(ext.ext_usage_today(now=self.now)["cx"]["rate"]), ["secondary", "plan"])
 
     def test_timeline_rows(self):
         self.rollout(self.std())
@@ -229,7 +231,7 @@ class SbarRate(unittest.TestCase):
         if not _sh.which("node"):
             self.skipTest("node not installed")
         js = STUBS + "const KE = (k, e) => k;\n" + js_fn("fmtMoney") + "\n" + js_fn("fmtPct") + "\n" + js_fn("extCostStr") + "\n" \
-            + js_fn("extRateStr") + "\n" + _fn("60-statusbar.js", "sbExt") + "\n" \
+            + js_fn("extRateStr") + "\n" + js_fn("extWinLbl") + "\n" + js_fn("hhmm") + "\n" + js_fn("extRateDetail") + "\n" + _fn("60-statusbar.js", "sbExt") + "\n" \
             + _fn("60-statusbar.js", "sbExtSeg") + "\nprocess.stdout.write(JSON.stringify(sbExt(" + json.dumps(extu) + ")));"
         r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -242,6 +244,75 @@ class SbarRate(unittest.TestCase):
         self.assertNotIn("<b>Codex</b>", h)          # logo only — name stays in the tooltip
         self.assertIn("limit 5h 13% · 7d 30%", h)   # English source (T stub = identity)
         self.assertNotIn("limit 5", self.run_js({"cx": {"tok": 3670, "cost": 0.01}}))
+
+    def test_tooltip_detail(self):
+        h = self.run_js({"cx": {"tok": 1, "rate": {"primary": {"pct": 4, "win": 43200}, "plan": "free"}}})
+        self.assertIn("30d 4% · plan free", h)
+        self.assertIn("No limit data", self.run_js({"cx": {"tok": 1}}))
+        self.assertNotIn("No limit data", self.run_js({"gm": {"tok": 1}}))
+
+
+def _detail_js(calls):
+    """Runs extRateDetail / extWinLbl with identity T — returns the list of results."""
+    import shutil as _sh
+    import subprocess
+    from tests.test_sbar_gemini import STUBS
+    if not _sh.which("node"):
+        raise unittest.SkipTest("node not installed")
+    js = STUBS + js_fn("fmtPct") + "\n" + js_fn("hhmm") + "\n" + js_fn("extWinLbl") + "\n" + js_fn("extRateDetail") \
+        + "\nprocess.stdout.write(JSON.stringify([" + ",".join(calls) + "]));"
+    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
+    if r.returncode != 0:
+        raise AssertionError(r.stderr)
+    return json.loads(r.stdout)
+
+
+class PlanLimits(_WiringBase):
+    """Codex limit windows: per-window % · reset · plan; null rate_limits never invent values."""
+    def _one_free(self, t, pct=4.0, reset=None):
+        return _tc(t, _u(100, 0, 10), _u(100, 0, 10),
+                   rate={"primary": {"used_percent": pct, "window_minutes": 43200,
+                                     "resets_at": int(reset or self.now + 86400 * 20)},
+                         "secondary": None, "plan_type": "free"})
+
+    def test_one_window_free(self):
+        self.rollout([self._one_free(self.now - 100)])
+        rt = ext.ext_usage_today(now=self.now)["cx"]["rate"]
+        self.assertEqual(sorted(rt), ["plan", "primary"])
+        self.assertEqual((rt["primary"]["pct"], rt["plan"]), (4.0, "free"))
+        h = _detail_js(["extRateDetail(" + json.dumps(rt) + ", 'cx')"])[0]
+        for s in ("30d 4%", "resets ", "plan free"):
+            self.assertIn(s, h)
+
+    def test_two_windows(self):
+        self.rollout(self.std())
+        rt = ext.ext_usage_today(now=self.now)["cx"]["rate"]
+        self.assertEqual((rt["primary"]["win"], rt["secondary"]["win"], rt["plan"]), (300, 10080, "plus"))
+        h = _detail_js(["extRateDetail(" + json.dumps(rt) + ", 'cx')"])[0]
+        self.assertIn("5h 13% · resets ", h)
+        self.assertIn("7d 30% · resets ", h)
+        self.assertTrue(h.endswith("plan plus"))
+
+    def test_null_no_rate(self):
+        t = self.now - 100
+        self.rollout([_tc(t, _u(10, 0, 5), _u(10, 0, 5))])
+        u = ext.ext_usage_today(now=self.now)
+        self.assertNotIn("rate", u["cx"])
+        self.assertEqual(_detail_js(["extRateDetail(undefined, 'cx')", "extRateDetail(undefined, 'gm')"]),
+                         ["No limit data", ""])
+
+    def test_last_valid_kept(self):
+        t = self.now - 200
+        self.rollout([self._one_free(t, pct=7.0), _tc(t + 50, _u(20, 0, 5), _u(120, 0, 15))])   # later event: null
+        self.assertEqual(ext.ext_usage_today(now=self.now)["cx"]["rate"]["primary"]["pct"], 7.0)
+
+    def test_expired_not_carried(self):
+        self.rollout([self._one_free(self.now - 100, reset=self.now - 10)])
+        self.assertNotIn("rate", ext.ext_usage_today(now=self.now)["cx"])   # plan alone is not a limit
+
+    def test_window_labels(self):
+        self.assertEqual(_detail_js(["extWinLbl(90)", "extWinLbl(0)", "extWinLbl(300)", "extWinLbl(43200)"]),
+                         ["90m", "window", "5h", "30d"])
 
 
 if __name__ == "__main__":

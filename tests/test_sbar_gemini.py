@@ -34,7 +34,7 @@ const platName = k => AILG[k] ? AILG[k][0] : k;   // real one (40b-sessions-list
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class SbarGemini(unittest.TestCase):
     def run_js(self, extu):
-        js = STUBS + js_fn("fmtMoney") + "\n" + js_fn("fmtPct") + "\n" + js_fn("extCostStr") + "\n" + js_fn("extRateStr") + "\n" + _fn("60-statusbar.js", "sbExt") + "\n" \
+        js = STUBS + js_fn("fmtMoney") + "\n" + js_fn("fmtPct") + "\n" + js_fn("extCostStr") + "\n" + js_fn("extRateStr") + "\n" + js_fn("extWinLbl") + "\n" + js_fn("hhmm") + "\n" + js_fn("extRateDetail") + "\n" + _fn("60-statusbar.js", "sbExt") + "\n" \
             + _fn("60-statusbar.js", "sbExtSeg") \
             + "\nprocess.stdout.write(JSON.stringify(sbExt(" + json.dumps(extu) + ")));"
         r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")

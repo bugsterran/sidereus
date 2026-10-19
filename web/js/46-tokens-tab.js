@@ -272,12 +272,26 @@ function tkMix(mx){
 // With a single model it is one 100% row that only takes space — shown only when mixed
 // External CLI cost: «≈ $x.xx» estimate (null = no priced request). ⚠Display only — never added to Claude totals.
 function extCostStr(c){ return c == null ? '—' : '≈ ' + fmtMoney(c); }
+// Window length in minutes -> «30d» / «5h» / «90m»; 0 or missing -> «window».
+function extWinLbl(m){
+  return !m ? T('window') : m % 1440 === 0 ? TV({msg: '{n}d', vars: {n: m / 1440}}) : m % 60 === 0 ? TV({msg: '{n}h', vars: {n: m / 60}}) : TV({msg: '{n}m', vars: {n: m}});
+}
 // The platform's own limit windows (extUsage[k].rate, e.g. Codex 5h/weekly) — only sent when its record had them.
 function extRateStr(rt){
-  const w = m => !m ? '' : m % 1440 === 0 ? TV({msg: '{n}d', vars: {n: m / 1440}}) : m % 60 === 0 ? TV({msg: '{n}h', vars: {n: m / 60}}) : TV({msg: '{n}m', vars: {n: m}});
   const ws = ['primary', 'secondary'].map(k => rt && rt[k]).filter(Boolean)
-    .map(x => (w(x.win) ? w(x.win) + ' ' : '') + fmtPct(x.pct));
+    .map(x => (x.win ? extWinLbl(x.win) + ' ' : '') + fmtPct(x.pct));
   return ws.length ? T('limit') + ' ' + ws.join(' · ') : '';
+}
+// Per-window detail (label · used % · reset) + plan; escaped HTML, or plain text with `raw` (tooltips escape later).
+// ⚠Shows only what the CLI last reported — never filled in.
+function extRateDetail(rt, k, raw){
+  const ws = ['primary', 'secondary'].map(n => rt && rt[n]).filter(Boolean)
+    .map(x => extWinLbl(x.win) + ' ' + fmtPct(x.pct)
+      + (x.reset ? ' · ' + TV({msg: 'resets {t}', vars: {t: hhmm(x.reset, {date: 'other'})}}) : ''));
+  // Plan is the CLI's own string: TV substitutes it after translation, so it never goes through T().
+  const s = !ws.length ? (k === 'cx' ? T('No limit data') : '')
+    : ws.join(' · ') + (rt.plan ? ' · ' + TV({msg: 'plan {p}', vars: {p: rt.plan}}) : '');
+  return raw ? s : esc(s);
 }
 function extCostTip(c, miss, k){
   if(c == null) return T('Model not in the price table');
@@ -297,11 +311,11 @@ function tkPlat(d){
     + '<td class=brv>' + fmtTok(tok) + '</td>' + cell + '<td class=brd>' + sub + '</td><td class=brv>' + n + '</td></tr>';
   const rows = (t ? row('cc', t.tok + (d.liveAdd || 0), '<td class=brv>' + fmtMoney(t.cost || 0) + '</td>',
                         esc(T('this PC · incl. subagents')) + ' · ' + esc(T('Counts toward the 5h/7d limits')), nc) : '')
-    + ks.map(k => { const e = ex[k];
+    + ks.map(k => { const e = ex[k], rd = extRateDetail(e.rate, k);
         return row(k, e.tok, '<td class=brv title="' + esc(extCostTip(e.cost, e.costMiss, k)) + '">' + extCostStr(e.cost) + '</td>',
           esc(T('Input')) + ' ' + fmtTok(e.in) + ' · ' + esc(T('Cache')) + ' ' + fmtTok(e.cache)
           + ' · ' + esc(T('Output')) + ' ' + fmtTok(e.out) + ' · ' + esc(T('Thinking')) + ' ' + fmtTok(e.thought)
-          + (e.rate ? ' · ' + esc(extRateStr(e.rate)) : ''), e.n_sessions); }).join('');
+          + (rd ? ' · ' + rd : ''), e.n_sessions); }).join('');
   return '<div class=brh><b>' + esc(T('By platform')) + '</b><i>' + esc(T('Today')) + ' · '
     + esc(T('Limits are Claude only · other platforms’ cost is estimated')) + '</i></div>'
     + '<table class=brt><thead><tr><th>' + esc(T('Platform')) + '</th><th>' + esc(T('Tokens')) + '</th><th>' + esc(T('Cost'))
