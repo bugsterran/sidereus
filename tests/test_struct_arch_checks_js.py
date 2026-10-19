@@ -11,7 +11,7 @@ from tests._i18n_js import i18n_prelude
 from tests._load import js_fn
 from tests._node import node_e
 
-FNS = ["strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec",
+FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec",
        "archChkTop", "archChkTopBtn", "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkEntry", "archChkHdBtn", "archChkRunCands", "archChkRunBody", "archChkRunCmds", "archChkScanAt", "archChkRunHtml", "archChkWinHtml"]
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
 with open(_SRC_P, encoding="utf-8") as fh:

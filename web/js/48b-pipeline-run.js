@@ -274,7 +274,7 @@ function plDmText(p, req, models){
 // Live sessions of the project (metadata only: sid, model, state, mailbox login, project, running Agent one-line description).
 function plSessions(proj){
   return plProjSess(proj).filter(x => x.state !== 'done' && (!x.plat || x.plat === 'cc' || x.plat === 'cx'))
-    .map(x => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', state: x.state || '', id: x.mbox || '', login: !!(x.mbox && x.mboxSrc === 'identity'),
+    .map(x => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', state: x.state || '', id: x.mbox || '', login: mboxIn(x),
       project: x.project || '', doing: ['tool', 'think'].includes(x.state) ? plStrip(x.targ || '') : '' }));   // doing: same rule as sessTaskHtml (targ = Agent description only)
 }
 function plRunModels(p){   // overrides that differ from the saved value only

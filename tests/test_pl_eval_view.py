@@ -331,7 +331,7 @@ function archChkFixCands(sess, p){ return (sess || []).filter(x => x.state !== '
 
 
 def _recip(body):
-    code = RECIP + "\n".join(js_fn(f) for f in ("plEvalRecips", "plEvalPick", "plEvalPre")) + "\n" + body
+    code = RECIP + "\n".join(js_fn(f) for f in ("mboxIn", "plEvalRecips", "plEvalPick", "plEvalPre")) + "\n" + body
     r = subprocess.run(node_e(code), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     if r.returncode != 0:
         raise AssertionError(r.stderr.decode())

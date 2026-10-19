@@ -276,6 +276,38 @@ RELAY_SID = re.compile(r"^[0-9a-fA-F][0-9a-fA-F-]{7,63}$")   # session id carrie
 DM_THREAD = re.compile(r"^[\w가-힣][\w가-힣 .·:\-]{0,59}$")   # optional named thread: short label, no control chars
 
 
+CODEX_ENV_ID = re.compile(r"^[A-Za-z0-9_.][A-Za-z0-9_.-]{0,62}-codex$")   # launcher id `<basename>-codex`; no path separators
+_codex_ok = None   # launcher ids judged sendable by ext.codex_env_dedupe on the last poll; ⚠None = no poll yet -> refuse
+
+
+def codex_ok_set(ids):
+    """Publish the sendable Codex launcher ids (owned here so dm_target_error needs no upward import)."""
+    global _codex_ok
+    _codex_ok = frozenset(i for i in ids if isinstance(i, str))
+
+
+def codex_id_ok(mbox, ident=None):
+    """Static checks on a Codex MCP launcher id (`MAILBOX_ME=<basename>-codex`, env source in the mailbox server):
+    charset (no path separators / ``..``) and not an id a Claude session owns (non-`codex:` identity value, 2026-08-12 rule)."""
+    if not isinstance(mbox, str) or not CODEX_ENV_ID.match(mbox) or ".." in mbox:
+        return False
+    if ident is None:
+        ident = _load("identity.json", {})
+    ident = ident if isinstance(ident, dict) else {}
+    return mbox not in {v for k, v in ident.items() if not str(k).startswith("codex:")}
+
+
+def codex_cursor(mbox):
+    """`read-<id>.cursor` exists: the session has read this inbox at least once. Call only after codex_id_ok."""
+    return os.path.isfile(os.path.join(DATA_DIR, "read-%s.cursor" % mbox))
+
+
+def codex_env_ok(mbox, ident=None):
+    """True when the last poll published `mbox` as sendable and it still passes the static checks.
+    ⚠Not a folder guess: the reader proof (hook-fed row or read cursor) and uniqueness are judged in ext.codex_env_dedupe."""
+    return _codex_ok is not None and mbox in _codex_ok and codex_id_ok(mbox, ident)
+
+
 def dm_target_error(to, me):
     """None when `to` may receive a viewer DM, else the refusal text. Shared by dm_send and /api/say replies."""
     # ⚠Self first: while viewer_me is a default, «user» and «user» are both the viewer (config.viewer_ids).
@@ -283,6 +315,9 @@ def dm_target_error(to, me):
         return "Sender and recipient are the same"
     ident = _load("identity.json", {})
     known = set(ident.values()) if isinstance(ident, dict) else set()
+    # A Codex launcher id with a reader is declared by the launcher env, not guessed — checked here, never from mboxSrc.
+    if to and to not in known and codex_env_ok(to, ident):
+        return None
     if not to or to not in known:
         return "Not logged into the mailbox — cannot receive"
     return None

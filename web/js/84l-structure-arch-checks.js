@@ -61,7 +61,7 @@ function archChkFixCands(sess, p){
   const inRepo = x => !!p && (x.cwd === p || String(x.cwd || '').startsWith(p + '/') || !!(x.wt && x.wt.main && x.wt.main === p));
   const tier = x => inRepo(x) ? 0 : p && Array.isArray(x.repos) && x.repos.indexOf(p) >= 0 ? 1 : 2;
   return (sess || []).filter(x => x && x.sid && x.state !== 'done' && (!x.plat || x.plat === 'cc'))
-    .map(x => ({ sid: x.sid, model: x.model || '', id: x.mbox || '', login: !!(x.mbox && x.mboxSrc === 'identity'), proj: x.project || archBase(x.cwd), age: +x.ageSec || 0,
+    .map(x => ({ sid: x.sid, model: x.model || '', id: x.mbox || '', login: mboxIn(x), proj: x.project || archBase(x.cwd), age: +x.ageSec || 0,
       g: tier(x), st: typeof sessLabel === 'function' ? sessLabel(x) : String(x.state || '') }))
     .sort((a, b) => a.g - b.g || (b.login ? 1 : 0) - (a.login ? 1 : 0) || a.age - b.age);
 }

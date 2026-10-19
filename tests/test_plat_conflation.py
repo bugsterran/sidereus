@@ -128,7 +128,7 @@ class JsLookups(unittest.TestCase):
                 " {key: 'g', cwd: '/w/p', tid: 'ext:gm|gm-1'}]; let wk = 'c'; const wtKeyOf = () => wk;")
         o = _node([GM, CC], stub + "const a = wkcTarget(); wk = 'g'; const b = wkcTarget();"
                   "console.log(JSON.stringify([a.row.sid, a.id, b.row.sid, b.id]));",
-                  [("36-wkcompose.js", "wkcTarget")])
+                  [("17-attention.js", "mboxIn"), ("36-wkcompose.js", "wkcTarget")])
         self.assertEqual(o, ["cc-1", "me-p", "gm-1", ""])
 
 

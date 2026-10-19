@@ -11,7 +11,7 @@ Do not step on these again. One file per area under [traps/](traps/); read the a
 | [traps/pipeline.md](traps/pipeline.md) | Pipeline runs, `pl_flow` stage hooks, stage lighting, gates, evaluation | 45 |
 | [traps/git.md](traps/git.md) | Branch tab, board, git, worktrees, History and retro tabs | 20 |
 | [traps/attention.md](traps/attention.md) | Alarms, cards, health strip, attention ranking | 20 |
-| [traps/mailbox.md](traps/mailbox.md) | Mailbox, chat rooms, mail watch (`mailbox_wake`) | 23 |
+| [traps/mailbox.md](traps/mailbox.md) | Mailbox, chat rooms, mail watch (`mailbox_wake`) | 24 |
 | [traps/ui.md](traps/ui.md) | UI kit, CSS, layout, header, i18n (`T()`), animations, drag-resize | 66 |
 | [traps/server.md](traps/server.md) | Server, `/api/state` payload, caching, performance | 20 |
 | [traps/security.md](traps/security.md) | Security and privacy (CSP, guards, metadata-only) | 25 |

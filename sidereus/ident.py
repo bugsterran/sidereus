@@ -4,7 +4,7 @@ import os
 import re
 import shutil
 from sidereus.config import IS_MAC, IS_WIN, claude_json
-from sidereus.bus import _load
+from sidereus.bus import _load, codex_env_ok
 from sidereus.memo import BoundedMemo
 
 
@@ -148,6 +148,8 @@ def mbox_codex(cwd):
         me, src = os.path.basename(real.rstrip("/")) + "-codex", "folder"
     if me in {v for k, v in ident.items() if not str(k).startswith("codex:")}:
         return "", "none"          # the hook refuses an id a Claude session owns, so no send
+    if src == "folder" and codex_env_ok(me, ident):
+        src = "env"                # last poll published it as sendable (ext.codex_env_dedupe re-judges every poll)
     return me, src
 
 

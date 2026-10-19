@@ -4,6 +4,7 @@ import json
 import os
 import time
 from sidereus.warn import warn_once
+from sidereus.bus import _load, codex_cursor, codex_id_ok, codex_ok_set
 from sidereus.ident import _proj_name, _sid8, mbox_codex
 from sidereus.timefmt import iso_local
 from sidereus.adapter import adapter_scan
@@ -276,6 +277,31 @@ def ext_rows():
             rows.append(row)
     except Exception as e:                        # even if external sessions break, the Claude list must survive
         warn_once("ext-rows", "Could not build external session rows ({err})", vars={"err": f"{type(e).__name__}: {e}"})
+    return rows
+
+
+def codex_env_dedupe(rows):
+    """Hook + rollout Codex rows -> same rows with launcher ids judged: «env» (sendable) when the id is held by exactly
+    one live row AND that row has a reader — hook-fed (the Codex Stop hook checks the id's inbox at turn end) or
+    `read-<id>.cursor` exists (rollout-only rows need the cursor). Published via bus.codex_ok_set for dm_target_error.
+    ⚠A reader proves someone reads `<basename>-codex`, not which row — two folders named `app` share the id."""
+    seen, live = set(), {}
+    for r in rows:
+        sid = r.get("sid")
+        if r.get("plat") != EXT_PLAT["codex"] or not sid or sid in seen:
+            continue
+        seen.add(sid)
+        if r.get("goneWhy") or r.get("state") == "done" or r.get("mboxSrc") not in ("env", "folder"):
+            continue
+        if r.get("mbox"):
+            live.setdefault(r["mbox"], []).append(r)
+    ident = _load("identity.json", {})
+    ok = {m for m, rs in live.items() if len(rs) == 1 and codex_id_ok(m, ident)
+          and (not rs[0].get("rollout") or codex_cursor(m))}
+    codex_ok_set(ok)
+    for r in rows:
+        if r.get("plat") == EXT_PLAT["codex"] and r.get("mboxSrc") in ("env", "folder") and r.get("mbox"):
+            r["mboxSrc"] = "env" if r["mbox"] in ok else "folder"
     return rows
 
 
