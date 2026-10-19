@@ -4,7 +4,7 @@ import json
 import os
 import time
 from sidereus.warn import warn_once
-from sidereus.ident import _proj_name, _sid8
+from sidereus.ident import _proj_name, _sid8, mbox_codex
 from sidereus.timefmt import iso_local
 from sidereus.adapter import adapter_scan
 from sidereus import live_probe   # module access: `_ps_snap_cache` is read at call time (tests patch it)
@@ -151,6 +151,7 @@ def ext_rollout_rows(now=None):
                 "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
                 "kind": "codex", "goneWhy": "", "pid": 0, "rollout": True,
             })
+            row["mbox"], row["mboxSrc"] = mbox_codex(cwd)
             rows.append(row)
     except Exception as e:                        # the rest of the list must survive
         # Reuses the ext_rows template so no new I18N.ko entry is needed.
@@ -259,6 +260,8 @@ def ext_rows():
                 "goneWhy": v.get("goneWhy") or "",     # «Disconnected»: "pid" = process gone, "silent" = no news (guess)
                 "pid": v.get("pid") if isinstance(v.get("pid"), int) else 0,   # hook-reported CLI pid, for «To terminal»
             })
+            if plat == "codex":   # only Codex hooks log in to the mailbox; other CLIs keep "" (send off)
+                row["mbox"], row["mboxSrc"] = mbox_codex(cwd)
             plm = None if v.get("goneWhy") else plm_of(sid, now)   # shell-marker [pl:] stage; added only when live, like Claude rows
             if plm:
                 row["plm"] = plm
