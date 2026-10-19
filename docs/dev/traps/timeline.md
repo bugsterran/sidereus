@@ -5,7 +5,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 ## Timeline
 
 - ★**The right «Changes» rail is gone; a toolbar chip replaces it** (2026-10-17). Cause: at 1100 the 400px rail left the Gantt ~386px and hid most bar labels; the rail entries below are history.
-  - ⇒ `tlgChipHtml` (77) «Changes · N files +a −d», untracked excluded; «· ⚠ n shared» = rail files with `conflict` (tooltip lists paths only). Click = `loadDiff(cwd, '', b:<base>|work, '', sid)`; tree, baselines, untracked and repo tabs live in the diff window.
+  - ⇒ `tlgChipHtml` (77, on the head line since b6be62f8) «[baseline badge] N files +a −d» (the word «Changes» is in aria-label/tooltip only), untracked excluded; «· ⚠ n shared» = rail files with `conflict` (tooltip lists paths only). Click = `loadDiff(cwd, '', b:<base>|work, '', sid)`; tree, baselines, untracked and repo tabs live in the diff window.
   - ⚠`tlgPaint` rewrites only `#tlgb` and clears the toolbar slot's `_sh`; without that, the next `tbSet` would compare against stale markup and skip a needed rewrite.
   - ⚠Fetch only from `tlgTick` while `mainView === 'time'` and the tab is visible, 30 s per cwd (`TLG_TTL_S`). Saved snapshot is `{sel}` only; old `sidereus.tlgit`/`tlgw`/`tlgUntr` prefs are ignored.
 - ⚠**Timeline marks inside `.tlt` stay in the 4px band lane** (2026-10-08). Session bars fill 4..20px of the 24px track and `.tlt` is overflow:hidden; the pipeline «↺ sent back» glyph (`.tlplk`, 10px at bottom:3px) sat on top of the bars and read as broken. ⇒ It is now a 9x4px orange wedge in the band lane, text hidden, meaning kept in the title tooltip (21-timeline-plrun.css).
