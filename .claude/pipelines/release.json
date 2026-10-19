@@ -30,7 +30,7 @@
     {
       "title": "릴리스 노트",
       "agent": "general-purpose",
-      "task": "Write the release notes from the new [x.y.z] section: 3-5 highlights, then the section as is. Screenshots only from a --demo viewer. Put the notes in the session scratchpad and report the path; do not commit.",
+      "task": "Write the release notes from the new [x.y.z] section: 3-5 highlights, then the section as is. Screenshots only from a --demo viewer. List the open issues of GitHub milestone x.y.z (`gh issue list --milestone x.y.z --state open`) and end the notes with one line that repeats the keyword per issue, `Closes #N, closes #M, ...` (GitHub closes only the issue right after each keyword). Put the notes in the session scratchpad and report the path; do not commit.",
       "ui": { "x": 788, "y": 24 }
     },
     {
@@ -42,7 +42,7 @@
     {
       "title": "태그",
       "agent": "general-purpose",
-      "task": "Only after the owner confirmed in 확인: commit CHANGELOG.md alone, then create an annotated tag vX.Y.Z on that commit (git tag -a). ⚠Never push commits or tags. Report the commit hash and the tag.",
+      "task": "Only after the owner confirmed in 확인: commit CHANGELOG.md alone (the commit body ends with the `Closes #N, closes #M, ...` line from the notes, so the issues close when main receives it), then create an annotated tag vX.Y.Z on that commit (git tag -a). ⚠Never push commits or tags. Report the commit hash and the tag.",
       "ui": { "x": 1284, "y": 24, "color": "#2ec4b6" }
     }
   ]
