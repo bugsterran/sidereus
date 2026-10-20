@@ -2,8 +2,9 @@
 """Gate of the arch-map pipeline: verify a stored map.json against its commit (sidereus/arch_verify.py).
 
 usage: arch_verify.py --last | --repo <path> --commit <sha>
-Prints one line with the rate; exit 0 if rate >= ARCH_GATE_MIN, 1 on schema error or a low rate, 2 on usage.
-Flows (flows.json) add an advisory suffix to that line; they never change the exit code.
+Prints one line with the rate; exit 0 if rate >= ARCH_GATE_MIN and no quality check fails (sidereus/arch_quality.py),
+1 on schema error, a low rate or a quality FAIL, 2 on usage.
+Flows (flows.json) add an advisory suffix to that line; flow verdicts never change the exit code.
 """
 import os
 import sys
@@ -11,6 +12,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sidereus import arch_verify as AV  # noqa: E402  (path set just above)
 from sidereus import arch_flow as AF  # noqa: E402
+from sidereus import arch_quality as AQ  # noqa: E402
 
 
 def main(argv):
@@ -35,6 +37,13 @@ def main(argv):
             line += AF.run(os.path.realpath(repo), commit)
         except Exception as e:  # noqa: BLE001
             line += " · flows error (%s)" % type(e).__name__
+        try:
+            failed, sfx = AQ.run(os.path.realpath(repo), commit)
+            line += sfx
+            rc = 1 if failed else rc
+        except Exception as e:  # noqa: BLE001
+            line += " · quality error (%s)" % type(e).__name__
+            rc = 1                                 # fail closed: a gate check that could not run is not a pass
     print(line)
     return rc
 

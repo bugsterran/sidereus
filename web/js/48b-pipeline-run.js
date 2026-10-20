@@ -251,6 +251,7 @@ function plDmCodex(p, req, models, dt){
   return '파이프라인 ' + p.name + ' 실행 (세션 직접) — 요청: «' + req + '»\n'
     + 'Run .claude/pipelines/' + p.name + '.json yourself in this session, doing each stage\'s task in order (stage agent/model are Claude settings; a stage skill means follow that skill). Stages in order:\n' + steps + '\n'
     + 'Start each stage with a shell command echo "[pl:' + p.name + '/<stage title>]" and end it with echo "[pl-end:' + p.name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.\n'
+    + 'At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.\n'   // ⚠one Codex context holds every stage
     + 'Each stage: the default instruction for the title + the stage "task" + the pipeline "rules" + this request + earlier stage results. Each stage ends with status PASS/FAIL, summary, findings (file/line/text), changed files.\n'
     + 'onFail: redo the goto stage with the findings, then rerun the failing stage — at most max times; after it passes go to "then" if set.\n'
     + 'Report each stage in ≤10 lines. Never restart or commit unless the rules say so.\n'

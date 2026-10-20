@@ -90,6 +90,7 @@ class CodexRecipient(unittest.TestCase):
     def test_claude_bytes_frozen(self):
         self.assertEqual(_dm("direct", False), DM_DIRECT)
         self.assertEqual(_dm("wf", False), DM_WF)
+        self.assertNotIn("re-read only", _dm("direct", False))
 
     def test_codex_shell_markers_any_mode(self):
         for mode in ("direct", "wf"):
@@ -100,6 +101,7 @@ class CodexRecipient(unittest.TestCase):
             self.assertIn("2. 수정 · gate `bash t.sh`", t)
             self.assertIn("3. 리뷰 · onFail → 수정 (max 2)", t)
             self.assertIn("원인: DEF-CAUSE", t)
+            self.assertIn("At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.", t)
             self.assertNotIn("haiku", t)              # model overrides do not apply to a Codex session
             for w in CLAUDE_ONLY:
                 self.assertNotIn(w, t)
