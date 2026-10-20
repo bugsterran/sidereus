@@ -105,6 +105,7 @@ ui-prefs.json
 ui-prefs-bak/
 # Architecture maps (sidereus/arch_map.py store, DATA_DIR == repo root here) — generated, per machine
 /arch/
+/arch-prov/
 /eval/
 archcrop/
 evstart/
