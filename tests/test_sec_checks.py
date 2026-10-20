@@ -1,4 +1,5 @@
 """Security category of project checks: plans, parsers (secrets never kept), network gating, runner + gate, loader, UI."""
+import importlib.util
 import io
 import json
 import os
@@ -9,7 +10,7 @@ from contextlib import redirect_stdout
 from unittest import mock
 
 from tests._i18n_js import i18n_prelude
-from tests._load import sidereus, js_fn
+from tests._load import sidereus, js_fn, ROOT
 from tests.test_archchecks import C1, Tmp, cli
 from tests._node import node_e
 
@@ -150,7 +151,7 @@ class Runner(Tmp):
         def ex(p, t, tmp):
             self.reports.append(p["report"])
             with open(p["report"], "w", encoding="utf-8") as f:
-                json.dump([{"RuleID": "aws-access-token", "File": os.path.join(self.repo, "conf.py"), "StartLine": 1,
+                json.dump([{"RuleID": "aws-access-token", "File": os.path.join(p["cwd"], "conf.py"), "StartLine": 1,
                             "Secret": SECRET, "Match": MATCH, "Line": LINE, "Description": "AWS " + SECRET}], f)
             return {"rc": 1, "out": "", "err": self.err, "t0": 0, "ms": 4}
         git = lambda repo, args: (C1 + "\n") if args[0] == "rev-parse" else ""
@@ -190,26 +191,59 @@ class Runner(Tmp):
         self.assertEqual((c["commit"], c["tools"], c["security"]["top"][0]["rule"]), ("", [], "aws-access-token"))
         self.assertNotIn(SECRET, json.dumps(c))
 
-    def test_gitignored_findings_dropped(self):
-        self.w(".omc/x.json", "{}")
-        real = self.cli._exec
+    @unittest.skipUnless(shutil.which("git"), "needs git")
+    def test_scans_head_export_not_worktree(self):   # results are stored under HEAD, so only HEAD's files are scanned
+        g = lambda *a: subprocess.run(["git", "-C", self.repo, "-c", "user.name=t", "-c", "user.email=t@t", "-c",
+                                       "commit.gpgsign=false"] + list(a), capture_output=True, text=True, encoding="utf-8",
+                                      check=True).stdout
+        self.w(".gitignore", ".env\n")
+        g("init", "-q")
+        g("add", "-A")
+        g("commit", "-qm", "c")
+        head = g("rev-parse", "HEAD").strip()
+        self.w("conf.py", "edited = 1\n")   # uncommitted edit
+        self.w("new.py", "x = 2\n")         # untracked
+        self.w(".env", "K=1\n")             # gitignored
+        por, seen = g("status", "--porcelain"), []
 
         def ex(p, t, tmp):
+            src = p["cwd"]
+            with open(os.path.join(src, "conf.py"), encoding="utf-8") as f:
+                seen.append((src, sorted(os.listdir(src)), f.read()))
             with open(p["report"], "w", encoding="utf-8") as f:
-                json.dump([{"RuleID": "aws-access-token", "File": os.path.join(self.repo, n), "StartLine": 1}
-                           for n in ("conf.py", ".omc/x.json")], f)
+                json.dump([{"RuleID": "r", "File": os.path.join(src, "conf.py"), "StartLine": 1}], f)
             return {"rc": 1, "out": "", "err": self.err, "t0": 0, "ms": 4}
-        fp = os.path.join(self.store, AV.repo_key(self.repo), C1, SC.SEC_FILE)
-        for ls, want in ((".omc/\0", ["conf.py"]), (None, [".omc/x.json", "conf.py"])):
-            git = lambda repo, args, ls=ls: (C1 + "\n") if args[0] == "rev-parse" else (ls if args[0] == "ls-files" else "")
-            with mock.patch.object(self.cli, "_exec", ex), mock.patch.object(self.cli, "_git", git):
-                self.assertEqual(self.main("--repo", self.repo, "--category", "security")[0], 0)
-            with open(fp, encoding="utf-8") as f:
-                j = json.load(f)
-            self.assertEqual(sorted(x["file"] for x in j["items"]), want)
-            self.assertEqual((j["tools"][0]["n"]["error"], sorted(j["files"])), (len(want), want))
-        self.assertIs(self.cli._exec, real)
-        self.assertEqual(SC.drop_ignored([{"file": "a/b"}, {"file": "ab"}, {"file": "c"}], "a/\0c\0"), [{"file": "ab"}])
+        spec = importlib.util.spec_from_file_location("arch_checks_cli_export", os.path.join(ROOT, "scripts", "arch_checks.py"))
+        c = importlib.util.module_from_spec(spec)   # fresh module: real _git and _export (cli() stubs both)
+        spec.loader.exec_module(c)
+        c._record = lambda *a: False
+        with mock.patch.object(c, "_exec", ex), \
+                mock.patch.object(c, "_which", lambda n: "/bin/gitleaks" if n == "gitleaks" else None):
+            rc, line = c.run(self.repo)
+        self.assertEqual(rc, 0, line)
+        src, names, text = seen[0]
+        self.assertNotEqual(src, self.repo)
+        self.assertEqual((names, text), ([".gitignore", "conf.py"], "x = 1\n"))
+        self.assertFalse(os.path.exists(src))   # export dir removed
+        j = AV.read_json(os.path.join(self.store, AV.repo_key(self.repo), head, SC.SEC_FILE))
+        self.assertEqual(([x["file"] for x in j["items"]], j["dirty"], j["src_changed"]), (["conf.py"], True, False))
+        self.assertTrue(os.path.isfile(os.path.join(self.repo, j["items"][0]["file"])))
+        self.assertEqual(g("status", "--porcelain"), por)   # repo untouched
+
+    def test_export_drops_unsafe_members(self):
+        import tarfile
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w") as tf:
+            for name, kind, link in (("ok.txt", tarfile.REGTYPE, ""), ("../up.txt", tarfile.REGTYPE, ""),
+                                     ("/abs.txt", tarfile.REGTYPE, ""), ("in", tarfile.SYMTYPE, "ok.txt"),
+                                     ("out", tarfile.SYMTYPE, "../../etc/passwd"), ("abs", tarfile.SYMTYPE, "/etc"),
+                                     ("dev", tarfile.CHRTYPE, "")):
+                ti = tarfile.TarInfo(name)
+                ti.type, ti.linkname = kind, link
+                tf.addfile(ti, io.BytesIO(b"") if kind == tarfile.REGTYPE else None)
+        buf.seek(0)
+        with tarfile.open(fileobj=buf) as tf:
+            self.assertEqual([m.name for m in self.cli._safe_members(tf, self.repo)], ["ok.txt", "in"])
 
     @unittest.skipIf(os.name == "nt", "evidence_rec.py writes no row without fcntl (documented: no evidence rows on Windows)")
     def test_verify_records_evidence(self):

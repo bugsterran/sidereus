@@ -130,7 +130,7 @@ class Cli(Tmp):
             if "report" not in p:
                 return {"rc": 0, "out": "[]", "err": "", "t0": 0, "ms": 1}
             with open(p["report"], "w", encoding="utf-8") as f:
-                json.dump([{"RuleID": "aws-access-token", "File": os.path.join(self.repo, "conf.py"), "StartLine": 1,
+                json.dump([{"RuleID": "aws-access-token", "File": os.path.join(p["cwd"], "conf.py"), "StartLine": 1,
                             "Secret": SECRET, "Match": "k = " + SECRET}], f)
             return {"rc": 1, "out": "", "err": "INF scanned ~2048 bytes", "t0": 0, "ms": 4}
         git = lambda repo, args: (C1 + "\n") if args[0] == "rev-parse" else ""
