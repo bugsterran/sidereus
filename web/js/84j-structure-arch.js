@@ -374,13 +374,16 @@ function archSentPh(p){
 }
 function archEl(q, now){ return ago(Math.max(0, Math.floor((now - q.at) / 1000))); }
 // Server-side run in progress for p (state `archRun`, sidereus/arch_map.runs; ARCHRUN in 00-core): survives reload, ends with the run.
-function archRunOf(p){ const r = p && ARCHRUN && ARCHRUN[p]; return r && typeof r === 'object' && r.stage ? r : null; }
+// pl: pipeline name (default arch-map); security-checks = state `secRun` (SECRUN, 84l ARCH_SEC_PL). ⚠typeof: tests define ARCHRUN only.
+function archRunOf(p, pl){ const M = !pl || pl === ARCH_PL ? ARCHRUN : pl === 'security-checks' && typeof SECRUN !== 'undefined' ? SECRUN : null;
+  const r = p && M && M[p]; return r && typeof r === 'object' && r.stage ? r : null; }
 function archRunEl(r, now){ return ago(Math.max(0, Math.floor(now / 1000 - (+r.t0 || now / 1000)))); }
 // Pure: in-progress line replacing the request button; ⚠the stage title is a pipeline stage id, never through T().
-function archRunHtml(r, now){
-  const st = (r.n && r.of ? T('Stage {n}/{m}').replace('{n}', r.n).replace('{m}', r.of) + ' · ' : '') + r.stage;
-  return '<div class="archsent run archrun" role=status title="' + esc(T('A diagram run is in progress for this project — session {s}').replace('{s}', sid8(r.sid || ''))) + '">'
-    + '<i class=archspin></i><span>' + esc(T('Analysing') + ' · ' + st + ' · ') + '<span data-arel>' + esc(archRunEl(r, now || Date.now())) + '</span></span></div>';
+function archRunHtml(r, now, pl){
+  const sec = pl === 'security-checks', st = (r.n && r.of ? T('Stage {n}/{m}').replace('{n}', r.n).replace('{m}', r.of) + ' · ' : '') + r.stage;
+  const tip = sec ? T('A security check run is in progress for this project — session {s}') : T('A diagram run is in progress for this project — session {s}');
+  return '<div class="archsent run archrun" role=status title="' + esc(tip.replace('{s}', sid8(r.sid || ''))) + '">'
+    + '<i class=archspin></i><span>' + esc(T(sec ? 'Checking' : 'Analysing') + ' · ' + st + ' · ') + '<span data-arel>' + esc(archRunEl(r, now || Date.now())) + '</span></span></div>';
 }
 // Status slot: a live server run wins over the page's own request memo, which wins over the request button.
 // A request record (84l2 archReqSlot, state `plReq`) shows the receiving session and replaces the transient line; ⚠typeof: tests load without 84l2.

@@ -172,5 +172,75 @@ class RunTest(unittest.TestCase):
         self.assertEqual(AM._target(self.row(cwd=other, repos=[other, self.repo]), NOW), (self.repo, NOW - 300))   # pending wins
 
 
+SEC_TITLES = ["보안 검사", "위협 모델 리뷰"]
+
+
+class SecRunTest(RunTest):
+    """sec_runs: `/api/state` `secRun` — same tracking as archRun for security-checks; the run ends on the security log
+    (review / mark records) or on the run record closing, never on stage 1's checks-security.json."""
+    def setUp(self):
+        super().setUp()
+        os.makedirs(os.path.join(self.home, ".claude", "pipelines"))
+        with open(os.path.join(self.home, ".claude", "pipelines", "security-checks.json"), "w", encoding="utf-8") as f:
+            json.dump({"stages": [{"title": t} for t in SEC_TITLES]}, f)
+        for p in (mock.patch.object(AM, "_SEC_SEEN", {}), mock.patch.object(AM, "_SEC_LOG_CACHE", {})):
+            p.start()
+            self.p.append(p)
+
+    def log(self, src, at, repo=None):
+        d = os.path.join(self.store, AV.repo_key(repo or self.repo))
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, AM.SEC_LOG_FILE), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"v": 1, "at": at, "commit": C1, "src": src, "items": []}) + "\n")
+
+    def test_r1_claude_subagent_stage_and_elapsed(self):
+        s = self.row(sub=[{"lab": "general-purpose: [pl:security-checks/위협 모델 리뷰] review", "min": 3}])
+        self.assertEqual(AM.sec_runs([s], NOW), {self.repo: {"stage": "위협 모델 리뷰", "n": 2, "of": 2, "t0": NOW - 180, "sid": "s1"}})
+        self.assertEqual(AM.runs([s], NOW), {})                                   # arch-map map untouched
+        AM._SEC_SEEN.clear()
+        arch = self.row(sub=[{"lab": "[pl:arch-map/검증] x", "min": 1}])
+        self.assertEqual(AM.sec_runs([arch], NOW), {})                            # and the other way round
+
+    def test_r4_codex_shell_marker(self):
+        s = self.row(plm={"name": "security-checks", "title": "보안 검사", "age": 40})
+        self.assertEqual(AM.sec_runs([s], NOW)[self.repo], {"stage": "보안 검사", "n": 1, "of": 2, "t0": NOW - 40, "sid": "s1"})
+
+    def test_r2_scan_does_not_end_but_log_does(self):
+        self.put("checks-security.json", NOW + 5)                                 # stage 1 wrote its scan
+        self.log("scan", NOW + 5)                                                 # and appended a scan record
+        pr = [{"name": "security-checks", "end": 0, "cur": "보안 검사", "t0": NOW - 20, "t1": NOW + 6}]
+        s = self.row(plrun=pr)                                                    # between stages: no live tagged agent
+        self.assertIn(self.repo, AM.sec_runs([s], NOW + 10))
+        self.assertEqual(AM.result_at(AM.SEC_PL, self.repo), 0.0)                 # request records ignore scans too
+        self.log("review", NOW + 20)                                              # review stage logged: run over
+        self.assertEqual(AM.sec_runs([s], NOW + 30), {})
+        self.assertEqual(AM.result_at(AM.SEC_PL, self.repo), NOW + 20)
+
+    def test_mark_record_ends_and_cache_follows_log(self):
+        self.log("mark", NOW - 5)
+        self.assertEqual(AM._sec_final_at(self.repo), NOW - 5)
+        self.log("review", NOW + 7)                                               # append changes size: re-read
+        self.assertEqual(AM._sec_final_at(self.repo), NOW + 7)
+
+    def test_sidereus_repo_itself_is_a_security_target(self):
+        s = self.row(cwd=self.home, repos=[self.home], sub=[{"lab": "[pl:security-checks/보안 검사] x", "min": 1}])
+        self.assertEqual(list(AM.sec_runs([s], NOW)), [self.home])
+        self.assertEqual(AM.runs([dict(s, sub=[{"lab": "[pl:arch-map/검증] x", "min": 1}])], NOW), {})   # arch-map exclusion kept
+
+    def test_r2_closed_record_ends_without_gap(self):
+        pr = [{"name": "security-checks", "end": 0, "cur": "위협 모델 리뷰", "t0": NOW - 300, "t1": NOW - 10}]
+        self.assertIn(self.repo, AM.sec_runs([self.row(plrun=pr)], NOW))
+        done = [dict(pr[0], end=NOW + 5)]                                         # no threat model: nothing logged, record closed
+        self.assertEqual(AM.sec_runs([self.row(plrun=done)], NOW + 10), {})
+
+    def test_r3_stalled_or_dead_session_drops_run(self):
+        tagged = self.row(sub=[{"lab": "[pl:security-checks/보안 검사] x", "min": 0}])
+        AM.sec_runs([tagged], NOW)
+        self.assertIn(self.repo, AM.sec_runs([self.row()], NOW + 30))            # stage gap
+        self.assertEqual(AM.sec_runs([self.row()], NOW + 30 + AM.ARCH_RUN_GAP_S + 1), {})   # stalled past the gap
+        AM.sec_runs([tagged], NOW)
+        self.assertEqual(AM.sec_runs([self.row(state="gone")], NOW + 5), {})      # disconnected
+
+
 if __name__ == "__main__":
     unittest.main()

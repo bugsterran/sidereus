@@ -180,6 +180,24 @@ class ViewStateTest(_Base):
         self.assertEqual(self.st([self.row(end=NOW + 70, t1=NOW + 70)]), ("done", ""))
         self.assertEqual(self.st([self.row(state="done", end=NOW + 30, t1=NOW + 30)]), ("done", ""))
 
+    def test_security_checks_record(self):
+        # R3: security-checks requests are recorded too: secRun drives «run», a gone session shows «No session», a review
+        #   record after the request ends a hookless (Codex) record; archRun of the repo never counts for it
+        PQ.record({"kind": "req", "pipeline": "security-checks", "repo": REPO}, SID, "alice", "c1")
+        row = {"sid": SID, "project": "repo", "state": "think"}
+        sec = lambda rows, a=None, s=None: [(v["state"], v["stage"]) for v in PQ.view(rows, a or {}, s or {})[REPO] if v["pipeline"] == "security-checks"][0]
+        self.assertEqual(sec([row], s={REPO: {"stage": "보안 검사", "sid": SID}}), ("run", "보안 검사"))
+        self.assertEqual(sec([row], a={REPO: {"stage": "Draw", "sid": SID}}), ("sent", ""))
+        self.assertEqual(sec([]), ("gone", ""))
+        d = os.path.join(self.store, AM.repo_key(REPO))
+        os.makedirs(d)
+        with open(os.path.join(d, AM.SEC_LOG_FILE), "w", encoding="utf-8") as f:
+            f.write(json.dumps({"v": 1, "at": NOW + 300, "src": "scan"}) + "\n")
+        self.assertEqual(sec([row]), ("sent", ""))                       # stage 1's scan record is not the end
+        with open(os.path.join(d, AM.SEC_LOG_FILE), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"v": 1, "at": NOW + 400, "src": "review"}) + "\n")
+        self.assertEqual(sec([row]), ("done", ""))
+
     def test_arch_run_counts_as_running(self):
         PQ.record({"kind": "req", "pipeline": "arch-map", "repo": REPO}, SID, "alice", "a1")
         v = PQ.view([self.row()], {REPO: {"stage": "Draw", "sid": SID}})[REPO][0]

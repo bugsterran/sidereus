@@ -391,7 +391,7 @@ const WPQ = new URLSearchParams(location.search);
 const ISWP = location.pathname === '/work' && !!(WPQ.get('cwd') && WPQ.get('tid'));
 const ISBP = location.pathname === '/brdiff' && !!(WPQ.get('repo') && WPQ.get('sha') && WPQ.get('path'));
 let MSGS=[], CUR={}, ROOMS={}, PROF={}, MINE=[], PRES={}, ACK={}, SESS=[], since=0;
-let ARCHRUN = {}, SIDEREUS_DIR = '';   // state `archRun` (84j, 48h) · `codeDir` = the Sidereus repo holding its tool pipelines
+let ARCHRUN = {}, SECRUN = {}, SIDEREUS_DIR = '';   // state `archRun` (84j, 48h) · `secRun` (84l) · `codeDir` = the Sidereus repo holding its tool pipelines
 let PLREQ = {};   // state `plReq`: pipeline request records per repo (84l2 archReqRows)
 let PROJ_GONE = new Set();   // state `projGone`: session folders deleted from disk (80 strProjList skips them)
 // ⚠Empty `SESS` before the first /api/state is "not loaded", not "none" — views must show loading until this flips.

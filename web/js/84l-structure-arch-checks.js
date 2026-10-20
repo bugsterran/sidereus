@@ -150,8 +150,16 @@ function archChkScanAt(d){
   return s ? Math.max(n(s.at), n(s.log && s.log.at_scan)) : 0;
 }
 // Pure: run panel — preview + confirm to a session of the project, or the copyable command when none is logged in.
+// Pure: progress line of the run — server run (stage · elapsed, as arch-map) › request record (sent / no session / done) › waiting.
+function archChkProgHtml(p, S, now){
+  const run = archRunOf(p, ARCH_SEC_PL);
+  if(run) return archRunHtml(run, now, ARCH_SEC_PL);
+  const pr = typeof archReqLast === 'function' ? archReqLast(p, ARCH_SEC_PL, now) : null;   // ⚠no «Stop» here: its handler lives in the main page
+  if(pr && (archReqLive(pr) || (S.runSent && !S.runSent.done))) return archReqRowHtml(pr, true);
+  return S.runSent && S.runSent.to && !S.runSent.done ? '<div class=archckst>' + esc(T('Waiting for the security check results')) + '</div>' : '';
+}
 function archChkRunHtml(p, d, S, cands){
-  const sent = S.runSent && S.runSent.to ? archChkSentHtml({ sent: S.runSent }) + (S.runSent.done ? '' : '<div class=archckst>' + esc(T('Waiting for the security check results')) + '</div>') : '';
+  const sent = (S.runSent && S.runSent.to ? archChkSentHtml({ sent: S.runSent }) : '') + archChkProgHtml(p, S);
   const err = S.runMsg ? '<div class="archmsg archerr" role=alert>' + esc(S.runMsg) + '</div>' : '';   // run send failure, beside its own button
   if(!S.run) return sent + err;
   const home = archHome(d), rc = archChkRunCands(cands), head = '<div class=archrqh><b>' + esc(T('Run security check')) + '</b>';
@@ -380,7 +388,8 @@ async function archChkRunSend(){
   if(S.runSent && S.runSent.key === key && !q.again){ q.again = true; archChkWinPaint(); return false; }   // first click on «Sent · send again» only arms
   q.busy = true; archChkWinPaint();
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, body, relay: true, sid: cur.sid, thread: 'pipeline:' + ARCH_SEC_PL });
+    const j = await postJSON('/api/dm', { to: cur.id, body, relay: true, sid: cur.sid, thread: 'pipeline:' + ARCH_SEC_PL,
+      plreq: { kind: 'req', pipeline: ARCH_SEC_PL, repo: S.p } });   // server records the receiver (state `plReq`: no session / done)
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');
     S.run = null; S.runMsg = ''; S.runSent = { to: archChkCandLabel(cur), at: hhmm(new Date()), key, t: Date.now(), base: archChkScanAt(d) };
     note(T('Requested → {s} · {t}').replace('{s}', () => S.runSent.to).replace('{t}', () => S.runSent.at));
@@ -394,11 +403,15 @@ function archChkTick(now){
   const S = ARCH_CW;
   if(!S || document.hidden) return false;
   try{ if(!S.w || S.w.closed) return false; }catch(e){ return false; }
-  const d = ARCH.cache[S.p];
-  if(d !== S.seen){ S.seen = d; archChkWinPaint(); }
+  const d = ARCH.cache[S.p], sr = archRunOf(S.p, ARCH_SEC_PL), pr = typeof archReqLast === 'function' ? archReqLast(S.p, ARCH_SEC_PL, now) : null;
+  const sig = JSON.stringify([sr && [sr.stage, sr.n, sr.sid], pr && [pr.id, pr.state, pr.stage]]), was = S.rsig || '';
+  if(d !== S.seen || sig !== was){ S.seen = d; S.rsig = sig; archChkWinPaint();
+    if(was && JSON.parse(was)[0] && !sr && !ARCH.load[S.p]){ archFetch(S.p, true); return true; } }   // run ended: pull the new results at once
+  else if(sr){ try{ const el = S.w.document.querySelector('.archrun [data-arel]'); if(el) el.textContent = archRunEl(sr, now); }catch(e){ softErr('archck-el', e); } }
   const q = S.runSent;
   if(!q || q.done) return false;
-  if(archChkScanAt(d) > q.base){ q.done = 1; note(T('Security check finished — {p}').replace('{p}', () => archBase(S.p))); archChkWinPaint(); return false; }
+  if(archChkScanAt(d) > q.base && !sr){   // ⚠not while a run is live: stage 1 writes the scan, the review stage may still run
+    q.done = 1; note(T('Security check finished — {p}').replace('{p}', () => archBase(S.p))); archChkWinPaint(); return false; }
   if(ARCH.load[S.p] || now - q.t > 3 * 3600000 || now - (q.polled || q.t) < ARCH_POLL_MS) return false;
   q.polled = now;
   archFetch(S.p, true);

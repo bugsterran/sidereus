@@ -20,5 +20,7 @@ Object.assign(I18N.ko, {
   'No security check yet': '아직 보안 점검 없음',
   'Waiting for the security check results': '보안 점검 결과를 기다리는 중',
   'Security check finished — {p}': '{p} 보안 점검 완료',
+  'Checking': '점검 중',
+  'A security check run is in progress for this project — session {s}': '이 프로젝트의 보안 점검이 진행 중입니다 — 세션 {s}',
   'No session of this project is logged in to the mailbox — run this in a terminal:': '이 프로젝트의 세션 중 메일함에 로그인된 것이 없습니다 — 터미널에서 실행하세요:',
 });

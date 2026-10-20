@@ -17,16 +17,20 @@ from sidereus.arch_verify import ARCH_DIR, NAME_MAX, PATH_MAX, SYM_MAX, est_of, 
 from sidereus.arch_flow import load_flows
 from sidereus.arch_checks import load_checks
 from sidereus import sec_report as SR
+from sidereus.sec_checks import LOG_FILE as SEC_LOG_FILE
 
 SIDEREUS_ROOT = os.path.realpath(CODE_DIR) if IS_CLONE else ""   # "" = installed package, no repo to relay to; repo holding .claude/pipelines/arch-map.json; the view relays «Request a map» to a session there
 ARCH_PL = "arch-map"
 _ARCH_TAG = re.compile(r"\[pl:arch-map/([^\]]{1,80})\]")
+SEC_PL = "security-checks"   # = ARCH_SEC_PL (84l); its runs are tracked the same way (state `secRun`)
+_TAGS = {ARCH_PL: _ARCH_TAG, SEC_PL: re.compile(r"\[pl:security-checks/([^\]]{1,80})\]")}
 ARCH_RUN_GAP_S = 180       # a run stays «in progress» this long after its last tagged sign (main thinks between stages)
 ARCH_BUSY_S = 30 * 60      # a busy session keeps its open plrun only this long after the run last moved
 ARCH_PEND_S = 6 * 3600     # = pl_runs.PLR_KEEP_S: an older plan.json without verify.json is an abandoned run
 FILES_MAX = 200            # file names per module in /api/arch/files; total still counts all
 _TREE_CACHE = {}           # (realpath, commit) -> (sorted names, cut); a commit's tree never changes, 4 entries kept
 _RUN_SEEN = {}             # project path -> {stage, sid, t0, at}: last tagged sign per project (bridges stage gaps)
+_SEC_SEEN = {}             # same for security-checks runs
 
 
 def _cut(s, mx):
@@ -234,6 +238,74 @@ def _titles():
         return []
 
 
+def _pl_titles(pl):
+    """Stage titles of pipeline pl (arch-map through _titles so tests can patch it)."""
+    if pl == ARCH_PL:
+        return _titles()
+    if not SIDEREUS_ROOT or pl not in _TAGS:
+        return []
+    try:
+        with open(os.path.join(SIDEREUS_ROOT, ".claude", "pipelines", pl + ".json"), "rb") as f:
+            P = json.loads(f.read(65536))
+        return [s["title"] for s in P["stages"] if isinstance(s, dict) and isinstance(s.get("title"), str)]
+    except (OSError, ValueError, TypeError, KeyError):
+        return []
+
+
+def _mtime(fp):
+    try:
+        return os.path.getmtime(fp)
+    except OSError:
+        return 0.0
+
+
+SEC_TAIL_MAX = 65536   # bytes of security-log.jsonl read from its end
+_SEC_LOG_CACHE = {}    # log path -> ((mtime, size), newest review/mark `at`)
+
+
+def _sec_final_at(root):
+    """Newest `at` of a review-stage record (src review | mark) in root's security-log.jsonl tail, 0 if none.
+    ⚠Not the log mtime or checks-security.json: stage 1 appends a scan record and writes the scan file, so either
+    would end the run before the threat-model review. Re-read only when the log's mtime/size changes."""
+    fp = os.path.join(ARCH_DIR, repo_key(root), SEC_LOG_FILE)
+    try:
+        st = os.stat(fp)
+    except OSError:
+        return 0.0
+    sig = (st.st_mtime, st.st_size)
+    hit = _SEC_LOG_CACHE.get(fp)
+    if hit and hit[0] == sig:
+        return hit[1]
+    best = 0.0
+    try:
+        with open(fp, "rb") as f:
+            f.seek(max(0, st.st_size - SEC_TAIL_MAX))
+            tail = f.read(SEC_TAIL_MAX)
+    except OSError:
+        return 0.0
+    for ln in tail.split(b"\n"):
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            continue   # empty or cut first line
+        if isinstance(r, dict) and r.get("src") in ("review", "mark"):
+            best = max(best, _tnum(r.get("at")))
+    if len(_SEC_LOG_CACHE) >= 32:
+        _SEC_LOG_CACHE.clear()
+    _SEC_LOG_CACHE[fp] = (sig, best)
+    return best
+
+
+def _final_at(pl, root):
+    """Result time that ends a run of pl (arch-map: the gate's verify.json · security-checks: a review-stage record)."""
+    return _result_at(root) if pl == ARCH_PL else _sec_final_at(root)
+
+
+def result_at(pl, root):
+    """Result time a request record of pl compares with its send time (sidereus/pl_reqs.py)."""
+    return _final_at(pl, root)
+
+
 def _pending_at(root):
     """mtime of the newest plan.json under root's store with no newer verify.json (a run past stage 1), 0 if none."""
     rdir, best = os.path.join(ARCH_DIR, repo_key(root)), 0.0
@@ -279,11 +351,11 @@ def _tnum(v):
     return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0.0
 
 
-def _closed_by_result(r, root):
-    """True when an open arch-map plrun r has a gate result for root newer than every sign of the run
+def _closed_by_result(r, root, pl=ARCH_PL):
+    """True when an open plrun r of pl has a gate result for root newer than every sign of the run
     (run/stage t0 · t1 · p0, agent t1; a live agent or main marker carries t1 = now, so it stays open).
     ⚠Codex may re-emit a stage marker and never send the last stage or [pl-end:]: the record stays end 0 for hours."""
-    if not isinstance(r, dict) or r.get("name") != ARCH_PL or _tnum(r.get("end")) or _tnum(r.get("stop")):
+    if not isinstance(r, dict) or r.get("name") != pl or _tnum(r.get("end")) or _tnum(r.get("stop")):
         return False
     st = r.get("stages") if isinstance(r.get("stages"), dict) else {}
     signs = [_tnum(r.get("t0")), _tnum(r.get("t1"))]
@@ -291,48 +363,57 @@ def _closed_by_result(r, root):
         if isinstance(s, dict):
             signs += [_tnum(s.get(k)) for k in ("t0", "t1", "p0")]
             signs += [_tnum(a.get("t1")) for a in s.get("ag") or () if isinstance(a, dict)]
-    v = _result_at(root)
+    v = result_at(pl, root)
     return bool(v) and v > max(signs)
 
 
-def _finished(p, s, sg, pt, old):
-    """True when p's run already has its result: a verify.json newer than any sign of this run started, and either the
+def _finished(p, s, sg, pt, old, pl=ARCH_PL):
+    """True when p's run already has its result: a final result newer than any sign of this run started, and either the
     run record closed after it or no tagged subagent / Agent call is still live in the session."""
-    v = _result_at(p)
+    v, tag = _final_at(pl, p), _TAGS[pl]
     if not v or pt > v or sg[1] > v or (old and old["t0"] > v):
         return False
     for r in s.get("plrun") or ():
-        e = r.get("end") if isinstance(r, dict) and r.get("name") == ARCH_PL else None
+        e = r.get("end") if isinstance(r, dict) and r.get("name") == pl else None
         if isinstance(e, (int, float)) and not isinstance(e, bool) and e >= v:
             return True
-    subs = any(isinstance(x, dict) and isinstance(x.get("lab"), str) and _ARCH_TAG.search(x["lab"]) for x in s.get("sub") or ())
-    targ = s.get("tool") in ("Agent", "Task") and isinstance(s.get("targ"), str) and _ARCH_TAG.search(s["targ"])
+    subs = any(isinstance(x, dict) and isinstance(x.get("lab"), str) and tag.search(x["lab"]) for x in s.get("sub") or ())
+    targ = s.get("tool") in ("Agent", "Task") and isinstance(s.get("targ"), str) and tag.search(s["targ"])
     return not (subs or targ)
 
 
-def _sign(s, now):
-    """(stage title, start time | 0) of a live arch-map stage in one session row, None if none.
+def _ended_run(s, pl, t0):
+    """True when the session's plrun of pl closed at/after t0 (the run is over, not in a stage gap)."""
+    for r in s.get("plrun") or () if isinstance(s, dict) else ():
+        if isinstance(r, dict) and r.get("name") == pl and max(_tnum(r.get("end")), _tnum(r.get("stop"))) >= t0 > 0:
+            return True
+    return False
+
+
+def _sign(s, now, pl=ARCH_PL):
+    """(stage title, start time | 0) of a live stage of pl in one session row, None if none.
     Sources: open plrun run · live subagent label · main's [pl:] marker · the Agent call in flight (targ)."""
+    tag = _TAGS[pl]
     for r in s.get("plrun") or ():
-        if isinstance(r, dict) and r.get("name") == ARCH_PL and not r.get("end") and isinstance(r.get("cur"), str) and r["cur"]:
+        if isinstance(r, dict) and r.get("name") == pl and not r.get("end") and isinstance(r.get("cur"), str) and r["cur"]:
             # ⚠An open run is kept by the hook for hours: count it only while the session works or the run moved recently.
             t1 = r.get("t1") if isinstance(r.get("t1"), (int, float)) and not isinstance(r.get("t1"), bool) else 0
             if now - t1 <= (ARCH_BUSY_S if s.get("state") in ("think", "tool") else ARCH_RUN_GAP_S):
                 return r["cur"], float(r.get("t0") or 0)
     for x in s.get("sub") or ():
-        m = _ARCH_TAG.search(x.get("lab") or "") if isinstance(x, dict) and isinstance(x.get("lab"), str) else None
+        m = tag.search(x.get("lab") or "") if isinstance(x, dict) and isinstance(x.get("lab"), str) else None
         if m:
             mn = x.get("min")
             return m.group(1), (now - 60 * mn if isinstance(mn, int) and not isinstance(mn, bool) and mn >= 0 else 0.0)
     plm = s.get("plm")
-    if isinstance(plm, dict) and plm.get("name") == ARCH_PL and isinstance(plm.get("title"), str) and plm["title"]:
+    if isinstance(plm, dict) and plm.get("name") == pl and isinstance(plm.get("title"), str) and plm["title"]:
         # ⚠No arch-map plrun (Codex / hookless): with start 0 any older verify.json ended the run; the marker's own time
         #   (now - age, the stage start for shell markers) is the only start reachable here. A hooked run keeps 0.
         age = plm.get("age")
-        hookless = not any(isinstance(r, dict) and r.get("name") == ARCH_PL for r in s.get("plrun") or ())
+        hookless = not any(isinstance(r, dict) and r.get("name") == pl for r in s.get("plrun") or ())
         ok = hookless and isinstance(age, int) and not isinstance(age, bool) and age >= 0
         return plm["title"], (float(now - age) if ok else 0.0)
-    m = _ARCH_TAG.search(s.get("targ") or "") if s.get("tool") in ("Agent", "Task") and isinstance(s.get("targ"), str) else None
+    m = tag.search(s.get("targ") or "") if s.get("tool") in ("Agent", "Task") and isinstance(s.get("targ"), str) else None
     return (m.group(1), 0.0) if m else None
 
 
@@ -362,8 +443,8 @@ def _store_repo(c):
     return repo if repo_key(repo) == parts[0] and not repo.startswith(store + os.sep) else ""
 
 
-def _target(s, now):
-    """Project an arch-map session works on: the candidate (cwd + repos) with a pending store dir, else the first candidate
+def _target(s, now, pl=ARCH_PL):
+    """Project a run of pl works on: the candidate (cwd + repos) with a pending arch-map store dir, else the first candidate
     that is not the Sidereus repo (the pipeline's home, not the target), else ""."""
     cands = []
     for c in [s.get("cwd")] + list(s.get("repos") or ()):
@@ -371,11 +452,13 @@ def _target(s, now):
             c = _store_repo(c)
             if c and c not in cands:
                 cands.append(c)
-    pend = [(t, c) for c, t in ((c, _pending_at(c)) for c in cands) if t and now - t <= ARCH_PEND_S]
+    pend = [(t, c) for c, t in ((c, _pending_at(c) if pl == ARCH_PL else 0.0) for c in cands) if t and now - t <= ARCH_PEND_S]
     if pend:
         return max(pend)[1], max(pend)[0]
     # Stage 1 writes no plan.json yet: a Sidereus-cwd session still names its target in repos (reload keeps «Analysing»).
     other = [c for c in cands if os.path.realpath(c) != SIDEREUS_ROOT]
+    if not other and pl != ARCH_PL and cands:   # a security check of the Sidereus repo itself: home is the target
+        return cands[0], 0.0
     return (other[0], 0.0) if other else ("", 0.0)
 
 
@@ -384,24 +467,31 @@ def seen_runs():
     return {p: {"sid": v.get("sid") or ""} for p, v in list(_RUN_SEEN.items()) if isinstance(v, dict)}
 
 
-def runs(sessions, now=None):
-    """`/api/state` `archRun`: {project path: {stage, n, of, t0, sid}} for arch-map runs in progress, from session rows.
+def sec_runs(sessions, now=None):
+    """`/api/state` `secRun`: runs() for security-checks (same shape; ends on a review/mark log record)."""
+    return runs(sessions, now, SEC_PL)
+
+
+def runs(sessions, now=None, pl=ARCH_PL):
+    """`/api/state` `archRun`: {project path: {stage, n, of, t0, sid}} for runs of pl in progress, from session rows.
     ⚠Metadata only — stage title, times, session id. The pipeline hook keeps no run for a session whose cwd has its own
     pipelines (arch-map lives in the Sidereus repo), so the row's live [pl:arch-map/…] tags are the source, not plrun alone."""
     now = time.time() if now is None else now
-    seen, ended = {}, set()
+    seen, ended, mem = {}, set(), _RUN_SEEN if pl == ARCH_PL else _SEC_SEEN
+    rows = {}
     for s in sessions or ():
         if not isinstance(s, dict) or s.get("state") in ("done", "gone"):
             continue
-        sg = _sign(s, now)
+        rows[str(s.get("sid") or "")] = s
+        sg = _sign(s, now, pl)
         if not sg:
             continue
-        p, pt = _target(s, now)
+        p, pt = _target(s, now, pl)
         if not p:
             continue
-        old = _RUN_SEEN.get(p)
+        old = mem.get(p)
         # ⚠A busy orchestrator keeps signs alive long after the gate passed: once the result exists the run is over.
-        if _finished(p, s, sg, pt, old):
+        if _finished(p, s, sg, pt, old, pl):
             ended.add(p)
             continue
         t0s = [t for t in (sg[1], pt, old and old["t0"]) if t]
@@ -410,12 +500,12 @@ def runs(sessions, now=None):
     # ⚠One session = one run: stage 1 guesses the target (no plan.json yet), so when plan.json names another repo the
     #   guessed key must not be carried beside the real one (one run showed on two projects).
     live = {v["sid"] for v in seen.values()}
-    for p, v in list(_RUN_SEEN.items()):   # ⚠a stage gap keeps the run only while its session lives; past the gap it is over
+    for p, v in list(mem.items()):   # ⚠a stage gap keeps the run only while its session lives; past the gap it is over
         if p not in seen and p not in ended and v["sid"] in alive and v["sid"] not in live and now - v["at"] <= ARCH_RUN_GAP_S \
-                and _result_at(p) < v["t0"]:
+                and _final_at(pl, p) < v["t0"] and not _ended_run(rows.get(v["sid"]), pl, v["t0"]):
             seen[p] = v
-    _RUN_SEEN.clear()
-    _RUN_SEEN.update(seen)
-    titles = _titles()
+    mem.clear()
+    mem.update(seen)
+    titles = _pl_titles(pl)
     return {p: {"stage": v["stage"], "n": titles.index(v["stage"]) + 1 if v["stage"] in titles else 0, "of": len(titles),
                 "t0": v["t0"], "sid": v["sid"]} for p, v in seen.items()}
