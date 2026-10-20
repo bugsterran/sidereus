@@ -400,8 +400,15 @@ document.addEventListener('click', e => {
   if(e.target.closest('[data-pldel]')) return plDelete(false);
   if(e.target.closest('[data-pldelok]')) return plDelete(true);
   if(e.target.closest('[data-pldelno]')){ PLS.del = null; plPaint(); return; }
-  if(e.target.closest('[data-plreset]')){ const p = plCur(); if(p) delete PLS.g[plEntKey(p.name)]; PLS.diff = null; PLS.msg = ''; plPaint(); }
+  if(e.target.closest('[data-plreset]')){ plResetEnt(plCur()); PLS.diff = null; PLS.msg = ''; plPaint(); }
 });
+// «Undo»: graph back to the file, view kept (a click never re-centres, 48d).
+function plResetEnt(p){
+  if(!p) return;
+  const k = plEntKey(p.name), O = PLS.g[k];
+  delete PLS.g[k];
+  plViewCarry(plEnt(p), O);
+}
 // Pipeline combobox pick / borrowed run chip (48h): opens that pipeline; «sug:k» = an unsaved suggestion (48e plSugBody).
 function plSelPick(v){
   if(!v) return;
