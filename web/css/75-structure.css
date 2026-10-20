@@ -37,7 +37,7 @@ html[data-ui=next] #tbstruct .strp{flex:0 0 auto}
 /* Note wraps, counts as tinted badges (80 strHdBadge). */
 :root{--st-up:#4cc38a;--st-dn:#5b9cf0;--st-dat:#b07cf0;--st-cy:#e57a6a}
 html[data-theme=light]{--st-up:#23874f;--st-dn:#2f6fd0;--st-dat:#7d4cc9;--st-cy:#bf4636}
-html[data-ui][data-ui] .wvh.strh>span{font-size:14px;white-space:normal;line-height:24px}   /* ⚠wraps instead of ellipsis: badges must stay readable at 900 */
+html[data-ui][data-ui] .wvh.strh>span{font-size:14px;white-space:normal;line-height:24px;text-wrap:balance}   /* ⚠wraps instead of ellipsis: badges must stay readable at 900; balance = even lines, no lone badge on the last one */
 .strh .strlng{display:inline-block;max-width:100%;vertical-align:bottom;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* language counts wrap as one unit */
 .strh .strbg{--bgc:var(--nx-t2,#aab4c3);display:inline-block;margin:0 4px 0 0;padding:0 8px;border:1px solid color-mix(in srgb,var(--bgc) 50%,transparent);border-radius:10px;
   background:color-mix(in srgb,var(--bgc) 14%,var(--nx-panel,#141a23));color:color-mix(in srgb,var(--bgc) 60%,var(--nx-t1,#dfe5ee));
