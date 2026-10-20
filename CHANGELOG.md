@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Structure: the architecture header shows which AI drew the map — platform logo and model after «Generated», each model when stages used different ones (stage names in the tooltip). Sidereus records it from the running session's own metadata in its own store, not from the map files; older maps show «Drawn by: unknown».
 
+### Changed
+
+- Chat: the «Participants» panel shows each participant's platform logo when the id matches a live session.
+
 ### Fixed
 
 - Work popup: sending to a Codex session no longer asks «cannot receive right now — send anyway?»; the recipient line says it is delivered when the session's next turn ends.
