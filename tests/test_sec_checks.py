@@ -324,7 +324,8 @@ SECJ = {"commit": "c" * 40, "tools": [{"id": "gitleaks", "rules": "default", "st
 QJ = {"commit": "abcdef123", "tools": [{"id": "ruff", "rules": "project", "status": "ok", "n": {"error": 0, "warning": 1}}],
       "top": [{"tool": "ruff", "file": "a.py", "line": 2, "rule": "F401", "sev": "warning"}]}
 FNS = ["strHdBadge", "hhmm", "archBase", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec", "archChkTop", "archChkTopBtn",
-       "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkRunHtml", "archChkWinHtml"]
+       "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkRunHtml", "archChkWinHtml",
+       "archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkView"]   # hidden-rule view helpers (archChkTopBtn / archChkWinHtml call them)
 
 
 def run_js(body):
