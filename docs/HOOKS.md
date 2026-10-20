@@ -307,12 +307,15 @@ Copy `ext-hooks/codex-hooks-example.json` to `~/.codex/hooks.json`. Checked with
 - ⚠Codex ignores the entries until approved with `/hooks`, and again after every edit (it stores a hash). Do not
   default to `--dangerously-bypass-hook-trust`.
 - `PermissionRequest` marks the row blocked; the script prints nothing, so Codex still asks you.
-- Idle wake: the `Stop` entry `gemini_mail_stop.py --platform codex --wait` (timeout 3600) waits on `bus.jsonl` for up
-  to 59 min (`SIDEREUS_MAIL_WAIT_S`, 60-3540) and blocks with the mail line when mail arrives; no mail = exit 0, no
-  output, no model call. Copy the example's entry and re-approve with `/hooks`.
+- Idle wake (**opt-in, unattended sessions only**): the example's `Stop` entry is `gemini_mail_stop.py --platform codex`
+  (timeout 5, mail at turn end). Adding `--wait` (set timeout 3600) waits on `bus.jsonl` for up to 59 min
+  (`SIDEREUS_MAIL_WAIT_S`, 60-3540) and blocks with the mail line when mail arrives; no mail = exit 0, no output, no
+  model call. Re-approve with `/hooks` after the edit.
   ★0.163.0 (2026-10-20): no cap on a sync Stop wait (default 600 s, 3600 accepted); a timeout ends the turn cleanly;
   a block continues the same turn.
-  ⚠While waiting the TUI shows «Working · Running hook» and typed input queues until Esc or the wait ends.
+  ⚠The wait runs after every interactive turn: the TUI shows «Working · Running hook» and a typed prompt only queues
+  (Codex does not cancel the hook) until mail, the timeout or Esc. ★Measured a 1884 s dead gap inside one turn; Codex
+  looked hung on simple requests. Never make `--wait` the default for an interactive Codex.
   ⚠After 59 min the turn ends; waiting resumes only after the next prompt (the attention signal covers the gap).
   After `SIDEREUS_MAIL_WAIT_MAX` (20) wakes without a human prompt it stops waiting until you type.
   ⚠`codex exec` never waits: the rollout's `session_meta` (originator `codex_exec` / source `exec`) skips it, and so
