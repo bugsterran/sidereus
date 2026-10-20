@@ -13,6 +13,7 @@ from tests._node import node_e
 
 FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec",
        "archChkTop", "archChkTopBtn", "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkEntry", "archChkHdBtn", "archChkRunCands", "archChkRunBody", "archChkRunCmds", "archChkScanAt", "archChkRunHtml", "archChkWinHtml"]
+FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
 with open(_SRC_P, encoding="utf-8") as fh:
     _SRC = fh.read()
@@ -276,6 +277,24 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("data-ckrun aria-expanded=true disabled", r[9])   # busy: run toggle and confirm disabled
         self.assertIn("data-ckrgo disabled", r[9])
         self.assertEqual([r[10], r[11]], [9, 0])
+
+    def test_run_security_check_codex(self):   # a logged-in Codex session of the repo is a run recipient, never a fix-request one
+        sess = [{"sid": "x1", "plat": "cx", "cwd": "/x/shop", "mbox": "admin-codex", "mboxSrc": "identity", "state": "idle", "ageSec": 1}]
+        r = run("const fc = archChkFixCands(" + json.dumps(sess) + ", '/x/shop'), rc = archChkRunCands(archChkFixCands(" + json.dumps(sess) + ", '/x/shop', true));"
+                "const S = {sel: {}, req: null, run: {sid: 'x1', busy: false}, runSent: null};"
+                "console.log(JSON.stringify([fc.length, rc.map(x => [x.sid, x.g, x.cx]), archChkRunBody('/x/shop', '/sid/', true), archChkRunBody('/x/shop', '/sid/'),"
+                "archChkRunBody('/x/shop', '/sid/', false), archChkRunHtml('/x/shop', {sidereus: '/sid'}, S, rc)]));")
+        self.assertEqual(r[0], 0)
+        self.assertEqual(r[1], [["x1", 0, True]])
+        self.assertTrue(r[2].startswith(r[3] + "\n"))
+        self.assertIn('echo "[pl:security-checks/<stage title>]"', r[2])
+        self.assertIn("report once after the last stage", r[2])
+        for w in ("Agent tool", "SendMessage", "Workflow"):
+            self.assertNotIn(w, r[2])
+        self.assertEqual(r[3], r[4])
+        self.assertNotIn("[pl:", r[3])
+        self.assertIn("data-cxhint", r[5])
+        self.assertIn("[pl:security-checks/", r[5])
 
     def test_last_report_button(self):
         rep = {"name": 'security-report-"<x>".md', "at": 1700000000}
