@@ -60,7 +60,7 @@ class GeminiMailStop(unittest.TestCase):
         self.post("gem-a")
         r = self.decide()
         self.assertIn("`gem-a`", r)
-        self.assertIn("1건", r)
+        self.assertIn("1 new mail", r)
         self.assertNotIn("SECRET-BODY", r)
         self.assertIsNone(self.decide())
 
@@ -163,15 +163,15 @@ class GeminiMailWorker(GeminiMailStop):
         self.mark()
         os.environ["SIDEREUS_MAIL_WORKER_MAX_IDLE"] = "12"
         r = [self.work(human="hi")["reason"]] + [self.work()["reason"] for _ in range(4)]
-        self.assertIn("(빈 대기 0/12)", r[0])
-        self.assertIn("(빈 대기 4/12)", r[4])
+        self.assertIn("(empty waits 0/12)", r[0])
+        self.assertIn("(empty waits 4/12)", r[4])
 
     def test_default_k_and_hour_wait(self):
         # One wait per hour (timeout_s=3540), so the default K is 3 (~3 h idle max), not 12 (~12 h).
         self.mark()
         r = self.work(human="hi")["reason"]
         self.assertIn("timeout_s=3540, round=1", r)
-        self.assertIn("(빈 대기 0/3)", r)
+        self.assertIn("(empty waits 0/3)", r)
         self.work()
         self.work()
         self.assertIn("systemMessage", self.work())                      # idle 3 -> stop
@@ -187,12 +187,19 @@ class GeminiMailWorker(GeminiMailStop):
     def test_machine_prompts_are_not_human(self):
         self.chat("hi")
         self.chat("System: Potential loop detected. Details: Repeated tool call")
-        self.chat("[메일박스] `gem-a` 앞으로 새 메일")
+        self.chat("[mailbox] 1 new mail for `gem-a`")
         self.chat("")
         self.assertEqual(gms.human_key({"transcript_path": self.p("chat.jsonl")}), "u1")
         k = gms.human_key({"transcript_path": "", "prompt": "hi"})
         self.assertTrue(k.startswith("p:") and "hi" not in k[2:])       # hashed: no prompt text persisted
         self.assertEqual(k, gms.human_key({"transcript_path": "", "prompt": "hi"}))
+
+    def test_old_korean_and_new_english_prefixes_are_not_human(self):
+        # Transcripts from before the English switch still hold the Korean block reasons.
+        self.chat("hi")
+        self.chat("[메일 일꾼] old reason")
+        self.chat("[mail worker] new reason")
+        self.assertEqual(gms.human_key({"transcript_path": self.p("chat.jsonl")}), "u1")
 
     def test_cursor_move_resets_idle(self):
         self.mark()
@@ -201,14 +208,14 @@ class GeminiMailWorker(GeminiMailStop):
         self.work()
         with open(self.p("read-gem-a.cursor"), "w", encoding="utf-8") as f:
             f.write(str(self.now))
-        self.assertIn("(빈 대기 0/2)", self.work()["reason"])
+        self.assertIn("(empty waits 0/2)", self.work()["reason"])
 
     def test_pending_mail_uses_todays_path(self):
         self.mark()
         self.post("gem-a")
         out = json.loads(self.run_hook())
         self.assertEqual(out["decision"], "block")
-        self.assertIn("새 메일 1건", out["reason"])
+        self.assertIn("1 new mail", out["reason"])
         self.assertNotIn("mailbox_wait", out["reason"])
 
 
@@ -241,12 +248,12 @@ class OtherPlatformMailStop(unittest.TestCase):
         out = json.loads(self.hook("--platform", "codex"))
         self.assertEqual(out["decision"], "block")
         self.assertIn("-codex`", out["reason"])
-        self.assertIn("새 메일 1건", out["reason"])
+        self.assertIn("1 new mail", out["reason"])
         self.assertIn(" mailbox_inbox ", out["reason"])
         self.assertNotIn("mcp_mailbox_", out["reason"])
         self.assertNotIn("SECRET-BODY", out["reason"])
         again = json.loads(self.hook("--platform", "codex"))     # same mail never blocks twice -> worker block
-        self.assertNotIn("새 메일", again["reason"])
+        self.assertNotIn("new mail", again["reason"])
         self.assertIn(" mailbox_wait ", again["reason"])
         self.assertNotIn("mcp_mailbox_", again["reason"])
 
@@ -338,7 +345,7 @@ class CodexMailWorker(unittest.TestCase):
         os.environ["SIDEREUS_MAIL_WORKER"] = "1"
         r = self.work(human="hi")["reason"]
         self.assertIn(f"`{self.me}`", r)
-        self.assertIn(" mailbox_wait 를 timeout_s=3540, round=1", r)
+        self.assertIn(" mailbox_wait with timeout_s=3540, round=1", r)
         self.assertNotIn("mcp_mailbox_", r)
 
     def test_human_key_skips_codex_injected_rows(self):
@@ -355,10 +362,10 @@ class CodexMailWorker(unittest.TestCase):
     def test_new_human_prompt_resets_idle(self):
         os.environ["SIDEREUS_MAIL_WORKER"] = "1"
         os.environ["SIDEREUS_MAIL_WORKER_MAX_IDLE"] = "2"
-        self.assertIn("(빈 대기 0/2)", self.work(human="hi")["reason"])
-        self.assertIn("(빈 대기 1/2)", self.work()["reason"])   # injected hook_prompt row is not human
+        self.assertIn("(empty waits 0/2)", self.work(human="hi")["reason"])
+        self.assertIn("(empty waits 1/2)", self.work()["reason"])   # injected hook_prompt row is not human
         self.assertIn("systemMessage", self.work())
-        self.assertIn("(빈 대기 0/2)", self.work(human="go on")["reason"])
+        self.assertIn("(empty waits 0/2)", self.work(human="go on")["reason"])
 
 
 if __name__ == "__main__":

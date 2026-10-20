@@ -130,13 +130,13 @@ def decide(inp, store=None, now_ns=None):
     names = []
     for m in cand:
         who = str(m.get("from") or "?")
-        tag = f"{who}(방 {m['room']})" if m.get("room") else f"{who}(DM)"
+        tag = f"{who}(room {m['room']})" if m.get("room") else f"{who}(DM)"
         if tag not in names:
             names.append(tag)
-    more = f" 외 {len(names) - ms.MAX_NAMES}" if len(names) > ms.MAX_NAMES else ""
-    return (f"[메일박스] `{me}` 앞으로 새 메일 {len(cand)}건 — 보낸이: {', '.join(names[:ms.MAX_NAMES])}{more}. "
-            f"끝내기 전에 {TOOL_PREFIX}mailbox_inbox 로 읽고 답하거나 {TOOL_PREFIX}mailbox_ack 하십시오. "
-            "(같은 글로 다시 막지 않습니다.)")
+    more = f" and {len(names) - ms.MAX_NAMES} more" if len(names) > ms.MAX_NAMES else ""
+    return (f"[mailbox] {len(cand)} new mail for `{me}` — from: {', '.join(names[:ms.MAX_NAMES])}{more}. "
+            f"Before ending, read it with {TOOL_PREFIX}mailbox_inbox and reply, or {TOOL_PREFIX}mailbox_ack it. "
+            "(The same mail will not block again.)")
 
 
 def worker_on(cwd):
@@ -155,7 +155,8 @@ def worker_max_idle():
         return WORKER_MAX_IDLE
 
 
-MACHINE_PROMPTS = ("[메일 일꾼]", "[메일박스]", "System: ")
+# ⚠Keep the old Korean prefixes: transcripts written before the English switch still hold them.
+MACHINE_PROMPTS = ("[mail worker]", "[mailbox]", "[메일 일꾼]", "[메일박스]", "System: ")
 # Codex 0.163.0 user rows that no human typed: hook block reasons (`<hook_prompt hook_run_id=...>`), the
 # environment context, and AGENTS.md / user instructions that older builds logged as user rows.
 CODEX_INJECTED = ("<hook_prompt", "<environment_context", "<user_instructions", "<turn_aborted",
@@ -236,14 +237,15 @@ def worker(inp, store=None, now_ns=None):
                            w_human=human if human is not None else st.get("w_human")))
     k = worker_max_idle()
     if idle >= k:
-        return {"systemMessage": f"[메일 일꾼] 빈 대기 {idle}회 연속 — 루프를 멈추고 쉽니다. "
-                                 "다시 시작하려면 아무 프롬프트나 입력하세요."}
+        return {"systemMessage": f"[mail worker] {idle} empty waits in a row — stopping the loop. "
+                                 "Type any prompt to start again."}
     return {"decision": "block", "reason": (
-        f"[메일 일꾼] `{me}` 앞으로 대기 중인 메일이 없습니다. "
-        f"{TOOL_PREFIX}mailbox_wait 를 timeout_s={WORKER_WAIT_S}, round={rnd} 로 부르십시오. "
-        f"작업 메일이 오면 그 일을 하고, 보낸이에게 {TOOL_PREFIX}mailbox_send 로 답하십시오"
-        "(to=보낸이, 같은 thread · subject 앞에 [답]). 그다음 턴을 끝내십시오. "
-        f"'(메일 없음' 이면 아무것도 하지 말고 바로 턴을 끝내십시오. (빈 대기 {idle}/{k})")}
+        f"[mail worker] No pending mail for `{me}`. "
+        f"Call {TOOL_PREFIX}mailbox_wait with timeout_s={WORKER_WAIT_S}, round={rnd}. "
+        f"If a task mail arrives, do that task and reply to the sender with {TOOL_PREFIX}mailbox_send "
+        "(to=sender, same thread, subject prefixed with the server's reply tag [답]). Then end the turn. "
+        # ⚠mailbox_wait returns the Korean line "(메일 없음 — N초 대기)" on timeout; quote it verbatim.
+        f"If it returns '(메일 없음' (no mail), do nothing and end the turn at once. (empty waits {idle}/{k})")}
 
 
 def main():
