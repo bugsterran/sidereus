@@ -17,6 +17,7 @@ from sidereus.arch_verify import ARCH_DIR, NAME_MAX, PATH_MAX, SYM_MAX, est_of, 
 from sidereus.arch_flow import load_flows
 from sidereus.arch_checks import load_checks
 from sidereus import sec_report as SR
+from sidereus import arch_prov
 from sidereus.sec_checks import LOG_FILE as SEC_LOG_FILE
 
 SIDEREUS_ROOT = os.path.realpath(CODE_DIR) if IS_CLONE else ""   # "" = installed package, no repo to relay to; repo holding .claude/pipelines/arch-map.json; the view relays «Request a map» to a session there
@@ -107,7 +108,7 @@ def load(path):
     head = head_of(root)
     base = {"ok": True, "empty": True, "sidereus": SIDEREUS_ROOT, "commit": "", "head": head, "stale": False,
             "behind": None, "at": None, "v": None, "groups": [], "modules": [], "edges": [], "rate": None, "md": "", "style": None, "dev": [], "flows": [],
-            "checks": None}
+            "checks": None, "prov": None}
     commit = _newest(os.path.join(ARCH_DIR, repo_key(root)))
     if not commit:
         return base
@@ -139,7 +140,15 @@ def load(path):
                 v=m["v"], groups=groups, modules=mods, edges=edges,
                 rate=rate if isinstance(rate, (int, float)) and not isinstance(rate, bool) else None,
                 md=md, style=_style(v.get("style")), dev=_dev(v.get("dev"), edges), flows=load_flows(d, m, root, commit),
-                checks=load_checks(root, d, m, head))
+                checks=load_checks(root, d, m, head), prov=_prov(root, commit, d))
+
+
+def _prov(root, commit, d):
+    """Provenance of the shown map (arch_prov), None = unknown; ⚠never read from the store dir the agent writes."""
+    try:
+        return arch_prov.load_prov(root, commit, os.path.getmtime(os.path.join(d, "verify.json")))
+    except (OSError, ValueError, TypeError, KeyError):
+        return None
 
 
 def _ls(root, commit):
@@ -462,6 +471,17 @@ def _target(s, now, pl=ARCH_PL):
     return (other[0], 0.0) if other else ("", 0.0)
 
 
+def _record_prov(p, old, row):
+    """Provenance of a tracked run that just ended: the session last seen on the run (_RUN_SEEN sid) drew/verified it."""
+    try:
+        c = _newest(os.path.join(ARCH_DIR, repo_key(p)))
+        vt = _mtime(os.path.join(ARCH_DIR, repo_key(p), c, "verify.json")) if c else 0.0
+        if vt > old["t0"]:
+            arch_prov.record(p, c, vt, row, old["t0"])
+    except (OSError, ValueError, TypeError, KeyError):
+        return   # provenance is best-effort (shown as unknown); a run's end must not fail on it
+
+
 def seen_runs():
     """{project: {sid}} of the last runs() result (= state `archRun` keys) without recomputing; for GET /api/pipelines."""
     return {p: {"sid": v.get("sid") or ""} for p, v in list(_RUN_SEEN.items()) if isinstance(v, dict)}
@@ -477,7 +497,7 @@ def runs(sessions, now=None, pl=ARCH_PL):
     ⚠Metadata only — stage title, times, session id. The pipeline hook keeps no run for a session whose cwd has its own
     pipelines (arch-map lives in the Sidereus repo), so the row's live [pl:arch-map/…] tags are the source, not plrun alone."""
     now = time.time() if now is None else now
-    seen, ended, mem = {}, set(), _RUN_SEEN if pl == ARCH_PL else _SEC_SEEN
+    seen, ended, fin, mem = {}, set(), [], _RUN_SEEN if pl == ARCH_PL else _SEC_SEEN
     rows = {}
     for s in sessions or ():
         if not isinstance(s, dict) or s.get("state") in ("done", "gone"):
@@ -493,6 +513,8 @@ def runs(sessions, now=None, pl=ARCH_PL):
         # ⚠A busy orchestrator keeps signs alive long after the gate passed: once the result exists the run is over.
         if _finished(p, s, sg, pt, old, pl):
             ended.add(p)
+            if old and pl == ARCH_PL:
+                fin.append((p, old, s))
             continue
         t0s = [t for t in (sg[1], pt, old and old["t0"]) if t]
         seen[p] = {"stage": sg[0][:80], "sid": str(s.get("sid") or "")[:64], "t0": min(t0s) if t0s else now, "at": now}
@@ -504,8 +526,14 @@ def runs(sessions, now=None, pl=ARCH_PL):
         if p not in seen and p not in ended and v["sid"] in alive and v["sid"] not in live and now - v["at"] <= ARCH_RUN_GAP_S \
                 and _final_at(pl, p) < v["t0"] and not _ended_run(rows.get(v["sid"]), pl, v["t0"]):
             seen[p] = v
+        elif p not in seen and p not in ended and pl == ARCH_PL and _final_at(pl, p) >= v["t0"]:
+            # ⚠Usual end: verify.json written, verify agent ends, plrun closes, marker clears -> no sign, _finished never runs.
+            fin.append((p, v, None))
     mem.clear()
     mem.update(seen)
+    every = {str(s.get("sid") or ""): s for s in sessions or () if isinstance(s, dict)}   # a just-ended row is «done»
+    for p, old, s in fin:
+        _record_prov(p, old, rows.get(old["sid"]) or every.get(old["sid"]) or s or {"sid": old["sid"]})
     titles = _pl_titles(pl)
     return {p: {"stage": v["stage"], "n": titles.index(v["stage"]) + 1 if v["stage"] in titles else 0, "of": len(titles),
                 "t0": v["t0"], "sid": v["sid"]} for p, v in seen.items()}

@@ -305,3 +305,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ The capture scroll listener stores `[scrollTop, scrollLeft]` per view key (`archMmVk`: map identity + focused module); `archPaint` restores it when no `.archmap` is in the DOM, before `archDiagram` copies `box._arsm`.
   - ⚠Record on every scroll event, not inside the rAF throttle — the last position before leaving must win.
   - ⚠A view-key change (focus → overview) must also take the saved entry (`archMmPick`): the carried `.archmap` scroll is the other view's.
+- **Map provenance (platform · model · session) must not be forgeable by the drawing model** (`sidereus/arch_prov.py`).
+  - Cause: the agent may write anything under `arch/<key>/<commit>/`; a self-declared model there proves nothing.
+  - ⇒ Stored in `arch-prov/<key>/<commit>.json` (written only by Sidereus), sid from the run Sidereus tracked, models observed in transcripts (`message.model` · Codex `turn_context`), bound to verify.json mtime (±2 s).
+  - Fallback after a restart: exactly one plmark arch-map run whose session `cwd` is the repo (or its store dir) covering verify.json mtime, within `PROV_LATE_S` (6 h). ⚠Not runs.json `proj` — that is the pipeline owner (the Sidereus repo).
+  - Capture also runs from the `runs()` gap loop: a run usually ends with no live sign left, so `_finished` alone missed it.
+  - ⚠Unknown is never guessed: zero/several candidates, a sid in two accounts, or a vt mismatch -> `prov: null`. ⚠Never read map.json or files under the store dir for it.

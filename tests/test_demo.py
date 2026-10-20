@@ -22,7 +22,7 @@ STATE_KEYS = {"presence", "acks", "acksSince", "messages", "cursors", "rooms", "
               "health", "cardsRead", "cardsReadIds", "fail1h", "extUsage", "mine", "cfg", "review", "roomTags", "accts"}
 
 # Same keys as sidereus/arch_map.load() output.
-ARCH_KEYS = {"ok", "empty", "sidereus", "commit", "head", "stale", "behind", "at", "v", "groups", "modules", "edges", "rate", "md",
+ARCH_KEYS = {"ok", "prov", "empty", "sidereus", "commit", "head", "stale", "behind", "at", "v", "groups", "modules", "edges", "rate", "md",
              "style", "dev", "flows", "checks"}
 
 

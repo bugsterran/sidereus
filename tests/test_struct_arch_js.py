@@ -11,7 +11,7 @@ from tests._i18n_js import i18n_prelude
 from tests._load import js_fn
 from tests._node import node_e
 
-FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archEvHtml", "archEdgeRow", "archDmBody", "archHome", "archCands",
+FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archProvNote", "archEvHtml", "archEdgeRow", "archDmBody", "archHome", "archCands",
        "archWhyOff", "archReqOf", "archReqBtn", "archReqHtml", "archPaint", "archIsTest", "archMq", "archPairs", "archReduce", "archRanks", "archSrc", "archBarHtml", "archKey", "archWaitHtml", "archDiagram", "archHov", "archHovPaint",
        "archSentRun", "archSentPh", "archEl", "archSentDone", "archSentHtml", "archSentFin", "archTick", "archBase", "archRunOf", "archRunEl", "archRunHtml", "archStatusHtml", "archLegHtml", "hhmm",
        "archStyleName", "archRoleName", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",

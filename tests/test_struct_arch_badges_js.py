@@ -67,5 +67,59 @@ class BadgeSlide(unittest.TestCase):
         self.assertEqual(self.c["leg"], 1)
 
 
+# archProvNote: «drawn by» badge from the /api/arch `prov` field
+PROV_PRE = """
+const I18N = { ko: {} }; let LANG = 'en';
+const T = s => LANG === 'ko' && I18N.ko[s] ? I18N.ko[s] : s;
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const AILG = { cc: ['Claude', '<svg>CC</svg>'], cx: ['Codex', '<svg>CX</svg>'] };
+"""
+PROV_BODY = """
+const P = (plat, model, stages) => ({ v: 1, plat, sid: 's1', model, stages, at: 1, vt: 2 });
+process.stdout.write(JSON.stringify({
+  one: archProvNote(P('cx', 'gpt-5', [])),
+  multi: archProvNote(P('cc', 'opus', [{ t: 'Map <a>', model: 'opus' }, { t: 'Verify', model: 'haiku' }])),
+  same: archProvNote(P('cc', 'opus', [{ t: 'Map', model: 'opus' }, { t: 'Verify', model: 'opus' }])),
+  none: archProvNote(null), old: archProvNote(undefined), bad: archProvNote(P('zz', 'm', [])),
+}));
+"""
+
+
+class ProvBadge(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        js = "\n".join([PROV_PRE, js_fn("strHdBadge"), js_fn("aiLogo"), js_fn("archProvNote"), PROV_BODY])
+        r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+        if r.returncode != 0:
+            raise AssertionError(r.stderr.decode())
+        cls.o = json.loads(r.stdout)
+
+    def test_r2_logo_and_model(self):
+        """R2: platform logo + model name for a one-model map."""
+        h = self.o["one"]
+        self.assertIn("ailg-cx", h)
+        self.assertIn("<span>gpt-5</span>", h)
+        self.assertNotIn("Codex<", h.replace('title="Codex"', ""))   # vendor name only in the logo title
+
+    def test_r2_per_stage_models(self):
+        """R2: each stage's model when stages used different models."""
+        h = self.o["multi"]
+        self.assertIn("ailg-cc", h)
+        self.assertIn("<span>opus · haiku</span>", h)   # distinct models inline; per-stage titles in the tooltip
+        self.assertIn('title="Map &lt;a&gt;: opus\nVerify: haiku"', h)
+        self.assertIn("<span>opus</span>", self.o["same"])   # one model across stages -> plain model
+
+    def test_r3_unknown_without_claude_logo(self):
+        """R3: null prov / unknown platform -> «unknown», no Claude fallback logo."""
+        for k in ("none", "old", "bad"):
+            self.assertIn("Drawn by: unknown", self.o[k])
+            self.assertNotIn("ailg", self.o[k])
+
+    def test_r3_ko_entry(self):
+        """R3: the «unknown» label has a ko entry."""
+        from tests._load import js_all
+        self.assertIn("'Drawn by: unknown':", js_all())
+
+
 if __name__ == "__main__":
     unittest.main()

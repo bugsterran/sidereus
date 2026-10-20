@@ -10,6 +10,8 @@ from tests._load import sidereus
 
 AM = sidereus("arch_map")
 AV = sidereus("arch_verify")
+AP = sidereus("arch_prov")
+PLR = sidereus("pl_runs")
 BEHIND_OF = AM.behind_of   # real reader; setUp patches the module attribute
 C1, C2 = "a" * 40, "b" * 40
 
@@ -25,7 +27,9 @@ class LoadTest(unittest.TestCase):
         roots = lambda p: (os.path.realpath(p) if p and os.path.realpath(p) in self.allowed else "")
         self.p = [mock.patch.object(AM, "ARCH_DIR", self.store), mock.patch.object(AM, "_struct_src_root", roots),
                   mock.patch.object(AM, "head_of", lambda r: self.head),
-                  mock.patch.object(AM, "behind_of", lambda r, c: 4)]
+                  mock.patch.object(AM, "behind_of", lambda r, c: 4),
+                  mock.patch.object(AP, "PROV_DIR", os.path.join(self.tmp, "prov")), mock.patch.object(AP, "_MISS", {}),
+                  mock.patch.object(PLR, "PLR_DIR", os.path.join(self.tmp, "plmark"))]
         for p in self.p:
             p.start()
 
@@ -216,6 +220,44 @@ class LoadTest(unittest.TestCase):
         self.assertEqual((out["ok"], out.get("bad"), out["modules"]), (True, True, []))
         self.put(C1, 1000, repo="/elsewhere")            # map from another repo's store is refused
         self.assertTrue(AM.load(self.repo).get("bad"))
+
+    def prov(self, commit, vt, **kw):
+        p = dict({"v": 1, "plat": "cc", "sid": "aaaabbbb-1111", "model": "opus-4-1",
+                  "stages": [{"t": "Draw", "model": "sonnet-4-5"}], "at": vt, "vt": vt}, **kw)
+        fp = os.path.join(AP.PROV_DIR, AV.repo_key(self.repo), commit + ".json")
+        os.makedirs(os.path.dirname(fp), exist_ok=True)
+        with open(fp, "w", encoding="utf-8") as f:
+            json.dump(p, f)
+
+    def test_r3_old_store_prov_none_rest_unchanged(self):
+        # R3: a map saved before provenance existed loads with prov null and every other key as before.
+        self.put(C1, 1000)
+        with open(os.path.join(self.store, AV.repo_key(self.repo), C1, "prov.json"), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "plat": "cc", "sid": "aaaabbbb-1111", "model": "forged", "stages": [], "vt": 1000}, f)
+        out = AM.load(self.repo)
+        self.assertIsNone(out["prov"])                  # R1: a prov file inside the agent-writable store is never read
+        self.prov(C1, 1000)
+        out2 = AM.load(self.repo)
+        self.assertEqual(out2["prov"], {"v": 1, "plat": "cc", "sid": "aaaabbbb-1111", "model": "opus-4-1",
+                                        "stages": [{"t": "Draw", "model": "sonnet-4-5"}], "at": 1000.0, "vt": 1000.0})
+        out.pop("prov"), out2.pop("prov")
+        self.assertEqual(out, out2)
+        self.assertIsNone(AM.load(os.path.join(self.tmp, "nope")).get("prov"))   # disallowed body has no prov key
+
+    def test_r3_vt_mismatch_none(self):
+        self.put(C1, 1000)
+        self.prov(C1, 1003)                             # written for an older gate run of the same commit
+        self.assertIsNone(AM.load(self.repo)["prov"])
+        self.prov(C1, 1001.5)
+        self.assertEqual(AM.load(self.repo)["prov"]["model"], "opus-4-1")
+
+    def test_r3_invalid_model_none(self):
+        self.put(C1, 1000)
+        for bad in ({"model": "<img onerror=x>"}, {"model": "x" * 41}, {"plat": "zz"}, {"sid": "../x"},
+                    {"stages": [{"t": "a", "model": "bad\"q"}]}, {"stages": "x"}):
+            self.prov(C1, 1000, **bad)
+            self.assertIsNone(AM.load(self.repo)["prov"], bad)
+        self.assertEqual(AM.load(self.repo)["empty"], False)
 
 
 if __name__ == "__main__":
