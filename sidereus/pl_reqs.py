@@ -1,4 +1,4 @@
-"""Pipeline run requests the page sent (arch-map diagram) and their «Stop» instructions.
+"""Pipeline run requests the page sent (arch-map diagram, security-checks) and their «Stop» instructions.
 
 DATA_DIR/plreq.json {"v": 1, "reqs": [{id, repo, pipeline, sid, to, mid, at, stop?: {mid, at}}]} keeps who received a
 request so the row survives a reload (`id` = `mid` = the request DM's mailbox id).
@@ -17,7 +17,7 @@ from sidereus import arch_map
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
-PIPELINES = ("arch-map",)
+PIPELINES = ("arch-map", "security-checks")
 REQ_MAX = 50              # records kept, newest
 REQ_KEEP_S = 7 * 86400    # older records dropped
 REPO_MAX = 300
@@ -162,7 +162,7 @@ def stop(p, sid, to, mid):
 
 
 def _state(r, row, arch):
-    """(state, stage title) of one record against its session row and the arch-map run of its repo."""
+    """(state, stage title) of one record against its session row and the server-tracked run (archRun/secRun) of its repo."""
     alive = isinstance(row, dict) and row.get("state") not in ("done", "gone")
     run = None
     if isinstance(row, dict):
@@ -171,13 +171,12 @@ def _state(r, row, arch):
                     and (run is None or _num(x.get("t0")) > _num(run.get("t0"))):
                 run = x
     ended = run is not None and bool(_num(run.get("end")) or _num(run.get("stop")))
-    # ⚠Codex leaves an arch-map record at end 0: a gate result newer than its last sign ends it unless archRun still runs it.
+    # ⚠Codex leaves a record at end 0: a result newer than its last sign ends it unless the tracked run still runs it.
     mine = isinstance(arch, dict) and arch.get("sid") == r["sid"]
-    ended = ended or (run is not None and r["pipeline"] == "arch-map" and not mine
-                      and arch_map._closed_by_result(run, r["repo"]))
+    ended = ended or (run is not None and not mine and arch_map._closed_by_result(run, r["repo"], r["pipeline"]))
     stage = (run.get("cur") if run is not None and isinstance(run.get("cur"), str) else "") or ""
     is_open = alive and run is not None and not ended
-    if r["pipeline"] == "arch-map" and alive and isinstance(arch, dict) and arch.get("sid") == r["sid"] and not ended:
+    if alive and isinstance(arch, dict) and arch.get("sid") == r["sid"] and not ended:
         is_open, stage = True, (arch.get("stage") if isinstance(arch.get("stage"), str) else "") or stage
     if r.get("stop"):
         return ("stopping" if is_open else "stopped"), stage if is_open else ""
@@ -186,12 +185,12 @@ def _state(r, row, arch):
     if ended:
         return "done", ""
     # ⚠Codex / hookless runs leave no plrun: the repo's gate result written after the request is the only end signal.
-    if run is None and r["pipeline"] == "arch-map" and arch_map._result_at(r["repo"]) > r["at"]:
+    if run is None and arch_map.result_at(r["pipeline"], r["repo"]) > r["at"]:
         return "done", ""
     return ("sent" if alive else "gone"), ""
 
 
-def view(sessions, arch_run, now=None):
+def view(sessions, arch_run, sec_run=None, now=None):
     """`/api/state` `plReq`: {repo: [{id, pipeline, sid, to, project, state, stage, at, stopAt?}]} newest first."""
     now = _now() if now is None else now
     with _LOCK:
@@ -200,13 +199,13 @@ def view(sessions, arch_run, now=None):
     for s in sessions or ():
         if isinstance(s, dict) and isinstance(s.get("sid"), str) and s["sid"]:
             rows.setdefault(s["sid"], s)
-    arch_run = arch_run if isinstance(arch_run, dict) else {}
+    runs = {"arch-map": arch_run if isinstance(arch_run, dict) else {}, "security-checks": sec_run if isinstance(sec_run, dict) else {}}
     out = {}
     for r in recs:
         if len(out.get(r["repo"], ())) >= VIEW_PER_REPO:
             continue
         row = rows.get(r["sid"])
-        st, stage = _state(r, row, arch_run.get(r["repo"]))
+        st, stage = _state(r, row, runs.get(r["pipeline"], {}).get(r["repo"]))
         v = {"id": r["id"], "pipeline": r["pipeline"], "sid": r["sid"], "to": r["to"],
              "project": (row.get("project") if isinstance(row, dict) and isinstance(row.get("project"), str) else ""),
              "state": st, "stage": stage[:80], "at": r["at"]}

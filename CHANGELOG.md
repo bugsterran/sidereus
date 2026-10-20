@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Structure: the security issues window shows a running security check as «Running · stage n/of · <stage> · <elapsed>», the same progress line as an architecture-map run, for Claude and Codex sessions; a check ends only when the review stage writes its record (the scan stage's log record no longer ends it), and a dead session reads «No session».
 - Chat: room cards, the open room's member strip and the invite picker show each participant's platform logo (from the live session list; no logo when the id matches no session).
 - Mailbox: an idle Codex session picks up mail. The example Codex Stop hook (`ext-hooks/codex-hooks-example.json`, `--wait`, timeout 3600) waits inside its own Stop by polling the bus file's stat every 2 s (same code on every OS, no model call while waiting; `SIDEREUS_MAIL_WAIT_MAX` caps wakes per human prompt) and skips the wait under `codex exec`. One wake-method table (`hooks/mail_wait.py`): Claude async rewake, Codex Stop wait, Gemini turn end, others none. A session that cannot be woken with mail unread for 10+ minutes shows in attention as «Mail waiting · session idle» (counts and age only). Refs #14.
 - Structure: the security issues window filters by severity («All / Errors only») and tool, and «Hide rule» hides a rule per repo until «N rules hidden · Show»; the tab badge counts only rules not hidden (tooltip says how many are hidden). View only — check results, log and report are unchanged.
@@ -24,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Structure: an architecture focus-view edge label near the right edge is no longer cut off by the drawing's edge.
+- Codex: the SessionStart mailbox notice no longer fails with «hook returned invalid session start JSON output».
 - Security checks: the scan reads the files of the commit it is stored under (a `git archive` export of HEAD in a temp folder) instead of the working tree, so uncommitted edits and untracked files no longer leak into a result labelled with that commit. The repo itself is only read.
 - Security checks: the dependency scan no longer disappears when a repo has no lockfile — the osv-scanner row shows «skipped» with the reason («Gradle without lockfile: gradle dependencies --write-locks» or «no dependency manifest»), so a Gradle repo no longer reads as clean. Java manifests osv-scanner reads are now detected: `pom.xml`, `buildscript-gradle.lockfile`, `gradle/verification-metadata.xml`, `gradle/libs.versions.toml`.
 - Pipelines: the editor canvas keeps where you panned it after «Save» (it snapped to the left edge) and after «Undo» (it re-centred, as on first open). A pipeline opened for the first time still fits and centres.

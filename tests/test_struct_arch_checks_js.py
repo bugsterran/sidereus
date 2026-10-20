@@ -15,15 +15,21 @@ FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "arch
        "archChkTop", "archChkTopBtn", "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkEntry", "archChkHdBtn", "archChkRunCands", "archChkRunBody", "archChkRunCmds", "archChkScanAt", "archChkRunHtml", "archChkWinHtml"]
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
 FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
+FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqWho",
+        "archReqRowHtml", "archChkProgHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
 with open(_SRC_P, encoding="utf-8") as fh:
     _SRC = fh.read()
+with open(os.path.join(os.path.dirname(_SRC_P), "84l2-structure-arch-req.js"), encoding="utf-8") as fh:
+    _REQ_SRC = fh.read()
 FIXSEND = re.search(r"^async function archChkFixSend\(.*?^}", _SRC, re.S | re.M).group(0)
 PRE = "\n".join([
     "let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }",
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
     "const ARCH_PL = 'arch-map', ARCH_SEC_PL = 'security-checks'; const ARCH = { cache: {}, msg: '' };",
     "let SESS = [], POSTS = []; function lsSetJson(){}",
+    "let ARCHRUN = {}, SECRUN = {}, PLREQ = {};",
+    re.search(r"^const ARCH_REQ_KEEP_MS = .*$", _REQ_SRC, re.M).group(0), re.search(r"^const ARCH_REQ_LBL = .*$", _REQ_SRC, re.M).group(0),
     "async function postJSON(u, b){ POSTS.push([u, b]); return { ok: true }; }",
 ])
 
@@ -418,6 +424,37 @@ class StructArchCheckFilters(unittest.TestCase):
         self.assertIn("b1.py:3", pre)
         self.assertNotIn("k.env", pre)                            # filtered-out selection stays out of the request body
         self.assertNotIn("B602", pre)
+
+    def test_run_progress_line(self):
+        # R1: a live server run (state `secRun`) replaces «Waiting…» with stage n/of · title · elapsed (same line as arch-map);
+        # stage title is a pipeline id (esc, never T()). R2: run gone + new scan -> no progress line. R3: a request record whose
+        # session is gone shows «No session», never a spinner. ARCHRUN of the same repo must not leak into the security window.
+        run_ = {"stage": "위협 모델 리뷰<b>", "n": 2, "of": 2, "t0": 1000, "sid": "s1234567890"}
+        r = run("const S = {runSent: {to: 'shop · a1', at: '10:00', done: 0}}, now = 1000 * 1000 + 125000;"
+                "ARCHRUN = {'/x': {stage: 'Draw', n: 1, of: 4, t0: 1, sid: 'z'}};"
+                "const wait = archChkProgHtml('/x', S, now);"
+                "SECRUN = {'/x': " + json.dumps(run_) + "}; const live = archChkProgHtml('/x', S, now), win = archChkRunHtml('/x', {}, S, []);"
+                "SECRUN = {}; const fin = archChkProgHtml('/x', {runSent: Object.assign({}, S.runSent, {done: 1})}, now);"
+                "PLREQ = {'/x': [{id: 'm1', pipeline: 'security-checks', sid: 's1', to: 'a', state: 'gone', at: now / 1000 - 60}]};"
+                "const gone = archChkProgHtml('/x', S, now);"
+                "PLREQ = {'/x': [{id: 'm1', pipeline: 'security-checks', sid: 's1', to: 'a', state: 'run', stage: 'S', at: now / 1000 - 60}]};"
+                "const rec = archChkProgHtml('/x', {}, now);"
+                "console.log(JSON.stringify([wait, live, win, fin, gone, rec]));")
+        self.assertIn("보안 점검 결과를 기다리는 중", r[0])              # no run yet; arch-map run of the repo ignored
+        self.assertNotIn("Draw", r[0])
+        self.assertIn("archrun", r[1])
+        self.assertIn("점검 중 · 2/2 단계 · 위협 모델 리뷰&lt;b&gt; · ", r[1])
+        self.assertIn("<span data-arel>2분</span>", r[1])
+        self.assertIn("이 프로젝트의 보안 점검이 진행 중입니다 — 세션 s1234567", r[1])
+        self.assertNotIn("기다리는 중", r[2])
+        self.assertIn("archrun", r[2])
+        self.assertEqual(r[3], "")                                           # R2
+        self.assertIn("archpr end", r[4])                                    # R3: no session -> muted end row
+        self.assertNotIn("archspin", r[4])
+        self.assertNotIn("data-arstop", r[5])                                # live record without a run: no Stop button in the window
+
+    def test_run_request_records_receiver(self):   # R3: the run request carries plreq so pl_reqs tracks no session / done
+        self.assertIn("plreq: { kind: 'req', pipeline: ARCH_SEC_PL, repo: S.p }", _SRC)
 
 
 if __name__ == "__main__":

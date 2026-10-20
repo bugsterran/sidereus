@@ -326,10 +326,11 @@ QJ = {"commit": "abcdef123", "tools": [{"id": "ruff", "rules": "project", "statu
 FNS = ["strHdBadge", "hhmm", "archBase", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec", "archChkTop", "archChkTopBtn",
        "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkRunHtml", "archChkWinHtml",
        "archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkView"]   # hidden-rule view helpers (archChkTopBtn / archChkWinHtml call them)
+FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archChkProgHtml"]   # run progress line (archChkRunHtml calls it)
 
 
 def run_js(body):
-    pre = "\n".join(["let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }", "const ARCH_PL = 'arch-map';",
+    pre = "\n".join(["let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }", "const ARCH_PL = 'arch-map', ARCH_SEC_PL = 'security-checks'; let ARCHRUN = {}, SECRUN = {};",
                      "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));"])
     js = pre + "\n" + "\n".join(js_fn(n) for n in FNS) + "\n" + body
     r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)

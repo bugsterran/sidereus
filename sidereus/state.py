@@ -23,7 +23,7 @@ from sidereus.claude_roots import accounts as claude_accounts
 from sidereus.saver import _saver_state, _saver_switch, _saver_view, _saver_views
 from sidereus.mail_idle import annotate as mail_idle_annotate
 from sidereus.attention import attention
-from sidereus.arch_map import runs as arch_runs
+from sidereus.arch_map import runs as arch_runs, sec_runs
 from sidereus.pl_reqs import view as pl_reqs_view
 from sidereus.review import review
 from sidereus.room_tags import load as room_tags_load
@@ -195,6 +195,7 @@ def state(since=0, ncards=50):
     _who = _piece("quotaWho", quota_who, None, _q0)
     _usg, _who = _piece("used5", _used5_one, (_usg, _who), _usg, _who)   # one 5h «used» figure on every surface
     _arun = _piece("archRun", arch_runs, {}, _sessions)
+    _srun = _piece("secRun", sec_runs, {}, _sessions)
     out = {
         "presence": _presence,
         "acks": _acks,
@@ -212,7 +213,8 @@ def state(since=0, ncards=50):
         "attention": _attn,       # who needs me now (metadata only)
         "review": _piece("review", review, None, _sessions),   # finished sessions' unreviewed uncommitted files (metadata only)
         "archRun": _arun,   # arch-map runs in progress per project (sidereus/arch_map.py)
-        "plReq": _piece("plReq", pl_reqs_view, {}, _sessions, _arun),   # sent run requests + receiver state (sidereus/pl_reqs.py)
+        "secRun": _srun,   # security-checks runs in progress per project (same shape)
+        "plReq": _piece("plReq", pl_reqs_view, {}, _sessions, _arun, _srun),   # sent run requests + receiver state (sidereus/pl_reqs.py)
         "wtOrder": _piece("wtOrder", wt_orders, {}, _sessions, _attn),   # Branches tab card order per repo — server is the only sorter
         "build": PAGE_BUILD,      # ★if an open tab holds old JS the screen does not render (measured 2026-08-19)
         "usage": _usg,
