@@ -57,7 +57,7 @@ class ExtRowPlm(unittest.TestCase):
 
     def setUp(self):
         ext = self.ext = sidereus("ext")
-        names = ("_ext", "time", "ext_gone_check", "_ext_prune_locked", "ext_tok_refresh", "ext_tok", "plm_of")
+        names = ("_ext", "time", "ext_gone_check", "_ext_prune_locked", "ext_tok_refresh", "ext_tok", "plm_of", "mbox_codex")
         self._saved = {n: getattr(ext, n) for n in names}
         now = self.NOW
         ext._ext = {}
@@ -79,6 +79,22 @@ class ExtRowPlm(unittest.TestCase):
         rows = {r["sid"]: r for r in self.ext.ext_rows()}
         self.assertEqual(rows["s-live-1234"]["plm"], {"name": "bugfix", "title": "수정", "age": 5})
         self.assertNotIn("plm", rows["s-none-1234"])
+
+    def _row_after_stop(self, stop_t, state="wait"):
+        t = self.NOW - 10
+        self.ext._ext[("codex", "s-live-1234")] = {"cwd": "/w/p", "state": state, "lastSeen": t, "firstSeen": t,
+                                                   "ev": [{"e": "Stop", "tool": "", "t": stop_t}]}
+        self.ext.mbox_codex = lambda cwd: ("", "")
+        return {r["sid"]: r for r in self.ext.ext_rows()}["s-live-1234"]
+
+    def test_stop_after_mark_drops_plm(self):
+        self.assertNotIn("plm", self._row_after_stop(self.NOW - 2))   # mark t = NOW - 5
+
+    def test_stop_before_mark_keeps_plm(self):
+        self.assertIn("plm", self._row_after_stop(self.NOW - 8))
+
+    def test_stop_after_mark_but_running_keeps_plm(self):
+        self.assertIn("plm", self._row_after_stop(self.NOW - 2, state="run"))
 
 
 if __name__ == "__main__":

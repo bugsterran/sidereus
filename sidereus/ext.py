@@ -202,6 +202,15 @@ def ext_work(plat, sid, now=None):
             "steps": [], "cutSteps": 0, "says": []}
 
 
+def _stop_after(v, t):
+    """True when the store row's hook ring has a Stop at or after t (the CLI ended its turn after the [pl:] mark)."""
+    try:
+        return any(isinstance(e, dict) and e.get("e") == "Stop" and float(e.get("t") or 0) >= t
+                   for e in (v.get("ev") or []))
+    except (TypeError, ValueError):
+        return False
+
+
 def ext_rows():
     """External CLI sessions → rows with **the same key set** as `_session_row`.
     ⚠Missing even one key breaks the frontend at that spot ⇒ lay down safe defaults for all and override only what is known."""
@@ -264,6 +273,8 @@ def ext_rows():
             if plat == "codex":   # only Codex hooks log in to the mailbox; other CLIs keep "" (send off)
                 row["mbox"], row["mboxSrc"] = mbox_codex(cwd)
             plm = None if v.get("goneWhy") else plm_of(sid, now)   # shell-marker [pl:] stage; added only when live, like Claude rows
+            if plm and st in ("wait", "abort") and _stop_after(v, now - plm.get("age", 0)):
+                plm = None   # ⚠turn ended after the mark: a held (45-min) shell marker would keep the stage «running»
             if plm:
                 row["plm"] = plm
             try:   # merged run model; external CLIs have no subagent dir or sub rows
