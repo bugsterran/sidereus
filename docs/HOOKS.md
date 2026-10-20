@@ -307,8 +307,15 @@ Copy `ext-hooks/codex-hooks-example.json` to `~/.codex/hooks.json`. Checked with
 - ⚠Codex ignores the entries until approved with `/hooks`, and again after every edit (it stores a hash). Do not
   default to `--dangerously-bypass-hook-trust`.
 - `PermissionRequest` marks the row blocked; the script prints nothing, so Codex still asks you.
-- Idle wake (**opt-in, unattended sessions only**): the example's `Stop` entry is `gemini_mail_stop.py --platform codex`
-  (timeout 5, mail at turn end). Adding `--wait` (set timeout 3600) waits on `bus.jsonl` for up to 59 min
+- Mail wake (`--wake`, the example's default, timeout 5): `Stop` spawns a detached waiter (`ext-hooks/codex_wake.py`)
+  and returns at once. When mail arrives it starts one turn on the session's own thread through the local Codex
+  app-server socket; the turn text is the «[mailbox] N new mail …» line (ids and a count only). Typing first makes the
+  waiter exit. No daemon, a thread not loaded in it, or `codex exec` = nothing happens; «Mail waiting» is the fallback.
+  Set `default_tools_approval_mode = "approve"` on `[mcp_servers.mailbox]` (`ext-hooks/codex-config-example.toml`):
+  only the mailbox tools are auto-approved, shell and other approvals are unchanged; restart the session after editing.
+  ⚠Experimental app-server API (★checked on 0.163.0, 2026-10-21: turn ran in 17 s, all hooks fired, shown in the TUI).
+  ⚠macOS/Linux only; on Windows nothing is spawned.
+- Idle wake by blocking (**opt-in, unattended sessions only**): replacing `--wake` with `--wait` (set timeout 3600) waits on `bus.jsonl` for up to 59 min
   (`SIDEREUS_MAIL_WAIT_S`, 60-3540) and blocks with the mail line when mail arrives; no mail = exit 0, no output, no
   model call. Re-approve with `/hooks` after the edit.
   ★0.163.0 (2026-10-20): no cap on a sync Stop wait (default 600 s, 3600 accepted); a timeout ends the turn cleanly;

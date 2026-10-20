@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Shared mail waiter for hooks: one waiter per session, waits on bus.jsonl, calls `check` when the bus changes (and every retry_s if given).
 
-Used by hooks/mailbox_wake.py (Claude, asyncRewake) and ext-hooks/gemini_mail_stop.py --wait (Codex, sync Stop wait).
+Used by hooks/mailbox_wake.py (Claude, asyncRewake), ext-hooks/gemini_mail_stop.py --wait (sync Stop wait) and
+ext-hooks/codex_wake.py (Codex, app-server turn).
 Rules:
 - WAKE is the adapter table: how each CLI's idle session is woken. A new CLI = one row here + its contract test
   (tests/test_mail_wake_table.py checks every EXT_PLAT key has a row).
@@ -15,16 +16,18 @@ import os
 import time
 
 # async-rewake: background Stop hook, exit 2 wakes the idle session (Claude Code asyncRewake).
-# stop-wait: the sync Stop hook itself waits; a block reason continues the turn (Codex).
+# stop-wait: the sync Stop hook itself waits; a block reason continues the turn (Codex `--wait`).
 #   ⚠Opt-in (`--wait`): it also holds every interactive turn, so typed input queues; the example ships it off.
+# app-server-turn: the Stop hook spawns a detached waiter that starts a turn through the Codex app-server daemon
+#   (ext-hooks/codex_wake.py, `--wake`); typed input never queues behind it. `--wait` still works on these CLIs.
 # turn-end: mail only at the next turn end (Gemini AfterAgent; worker mode is the opt-in idle wait).
 # none: not measured; turn-end hook from generic-hooks-example.json at best.
-WAKE = {"claude": "async-rewake", "codex": "stop-wait", "gemini": "turn-end",
+WAKE = {"claude": "async-rewake", "codex": "app-server-turn", "gemini": "turn-end",
         "copilot": "none", "cursor": "none", "cline": "none", "windsurf": "none", "warp": "none",
         "trae": "none", "zed": "none", "grok": "none", "deepseek": "none", "qwen": "none", "kimi": "none",
         "mistral": "none", "ollama": "none", "perplexity": "none", "huggingface": "none", "meta": "none",
         "openrouter": "none"}
-METHODS = ("async-rewake", "stop-wait", "turn-end", "none")
+METHODS = ("async-rewake", "stop-wait", "app-server-turn", "turn-end", "none")
 
 POLL_S = 2.0
 RETRY_S = 30.0             # ⚠Claude's plan() also reads non-bus inputs (time budget, cursor, rooms, pending): retry without a bus change
@@ -52,6 +55,14 @@ def take_lock(path, now):
     with open(path, "w", encoding="utf-8") as f:
         f.write(str(os.getpid()))
     return True
+
+
+def slot_free(store, sid, now):
+    """True when no live waiter holds the session's slot (lock missing or its heartbeat is stale)."""
+    try:
+        return now - os.path.getmtime(lock_path(store, sid)) >= STALE_S
+    except OSError:
+        return True
 
 
 def owns(path):

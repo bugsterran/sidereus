@@ -4,6 +4,13 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Platform, config, launcher, tests and tooling
 
+- **Codex mail wake rides an experimental API** (`ext-hooks/codex_wake.py`, 2026-10-21).
+  - Cause: the app-server daemon socket (`/private/tmp/codex-daemon-$UID/<hash>`, WebSocket over a unix socket) is an experimental API; ★checked on 0.163.0 only (injected turn ran in 17 s, all hooks fired, shown in the TUI).
+  - ⇒ Pin the doc claims to 0.163.0; any failure (no daemon, thread not loaded, `codex exec`, Windows) = do nothing, «Mail waiting» is the fallback.
+  - ⚠macOS `AF_UNIX` paths are capped at 104 bytes — do not build the socket path under a longer temp root.
+  - ⚠Changing `~/.codex/hooks.json` (e.g. adding `--wake`) changes its hash: Codex skips the entry until re-approved with `/hooks`.
+  - ⚠Only the session's own hook may connect to app-server; the Sidereus server never does (AGENTS.md rule 7).
+  - ⚠Codex keeps appending turn-end rows to the rollout after the Stop hook returns, so the waiter takes its «typed» snapshot at the first check (`FIRST_S` = 3 s), not at spawn — a snapshot at spawn makes every waiter exit as typed. How late those rows can come is unmeasured.
 - **A Codex rollout-only row is a guess** (`sidereus/ext.py` `ext_rollout_rows`).
   - Cause: without approved hooks there are no events, only a rollout file whose mtime moved in `ROLL_WIN_S` (600 s).
   - ⇒ State stays `unknown`, `rollout: True`, no `plm`/`plrun`/notes; skip `exec`/`subagent` rollouts, archived files, any sid in `_ext`/`_runs`/`_ext_ended` (ended, gone, dismissed), and a cached `ps` snapshot with no codex process.

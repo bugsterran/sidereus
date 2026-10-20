@@ -277,7 +277,7 @@ class OtherPlatformMailStop(unittest.TestCase):
 
     def test_example_configs_wire_the_mail_hook(self):
         want = {"gemini-settings-example.json": ("AfterAgent", "gemini_mail_stop.py"),
-                "codex-hooks-example.json": ("Stop", "gemini_mail_stop.py --platform codex"),
+                "codex-hooks-example.json": ("Stop", "gemini_mail_stop.py --platform codex --wake"),
                 "generic-hooks-example.json": ("Stop", "gemini_mail_stop.py --platform <PLATFORM>")}
         for name, (event, cmd) in want.items():
             with open(os.path.join(ROOT, "ext-hooks", name), encoding="utf-8") as f:
@@ -411,6 +411,57 @@ class CodexMailWait(unittest.TestCase):
         self.assertIn("systemMessage", capped)
         self.assertNotIn("SECRET-BODY", json.dumps(capped))
         self.assertEqual(self.wait(post_at=1, human="go on")["decision"], "block")
+
+    def wake_main(self):
+        """main() with --wake, a fake Popen and MAILBOX_DIR on the temp store; returns (stdout, spawn argv list)."""
+        import io
+        spawned, old = [], (gms.Popen, sys.stdin, sys.stdout, sys.argv, os.environ.get("MAILBOX_DIR"))
+        gms.Popen = lambda argv, **kw: spawned.append((argv, kw))
+        sys.stdin = io.StringIO(json.dumps({"session_id": "c1", "cwd": self.cwd, "transcript_path": self.tp}))
+        sys.stdout, sys.argv = io.StringIO(), ["x", "--platform", "codex", "--wake"]
+        os.environ["MAILBOX_DIR"] = self.d
+        try:
+            gms.T0 = time.monotonic()
+            gms.main()
+            return sys.stdout.getvalue(), spawned
+        finally:
+            gms.Popen, sys.stdin, sys.stdout, sys.argv = old[:4]
+            os.environ.pop("MAILBOX_DIR", None)
+            if old[4] is not None:
+                os.environ["MAILBOX_DIR"] = old[4]
+
+    def test_wake_spawns_detached_waiter_once(self):
+        out, spawned = self.wake_main()
+        self.assertEqual(out, "")
+        self.assertEqual(len(spawned), 1)
+        argv, kw = spawned[0]
+        self.assertEqual(argv[1:], [gms.WAKER, "c1", self.cwd, self.tp, self.me])
+        self.assertTrue(kw["start_new_session"] and kw["close_fds"])
+        self.assertEqual({kw[k] for k in ("stdin", "stdout", "stderr")}, {subprocess.DEVNULL})
+        self.assertEqual(gms.mw.wake_method("codex"), "app-server-turn")
+
+    def test_wake_with_pending_mail_blocks_without_spawn(self):
+        self.dm()
+        out, spawned = self.wake_main()
+        self.assertEqual(json.loads(out)["decision"], "block")
+        self.assertNotIn("SECRET-BODY", out)
+        self.assertEqual(spawned, [])
+
+    def test_wake_skips_exec_and_busy_slot(self):
+        self.meta("codex_exec", "exec")
+        self.assertEqual(self.wake_main(), ("", []))
+        self.meta("codex-tui", "cli")
+        lp = gms.mw.lock_path(self.d, "c1")
+        os.makedirs(os.path.dirname(lp))
+        with open(lp, "w", encoding="utf-8") as f:
+            f.write("99999")
+        self.assertEqual(self.wake_main(), ("", []))
+
+    def test_wake_not_spawned_at_cap(self):
+        os.environ["SIDEREUS_MAIL_WAIT_MAX"] = "1"
+        sp = gms.ms.state_path(self.d, "codex:c1")
+        gms.ms.save_state(sp, {"wake_n": 1})
+        self.assertEqual(self.wake_main(), ("", []))
 
     def test_human_key_skips_codex_injected_rows(self):
         self.row("<environment_context>  <cwd>/x</cwd></environment_context>",
