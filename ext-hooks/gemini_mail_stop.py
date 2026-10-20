@@ -3,7 +3,7 @@
 
 Wired in ext-hooks/*-example.json: Gemini AfterAgent (default), Codex Stop (`--platform codex`), other CLIs' Stop
 (`--platform <key>`, unverified). `--platform` only changes the id namespace below (`<key>:` / `-<key>`) and drops
-the Gemini-only tool-name prefix; worker mode is Gemini-only, `--wait` acts only where hooks/mail_wait.WAKE says stop-wait. ⚠Must match the mailbox MCP launcher's id (gemini_mailbox_mcp.sh <key>).
+the Gemini-only tool-name prefix; worker mode is Gemini-only, `--wait` acts only where hooks/mail_wait.WAKE says stop-wait or app-server-turn, `--wake` only on app-server-turn. ⚠Must match the mailbox MCP launcher's id (gemini_mailbox_mcp.sh <key>).
 Codex 0.156.1 Stop takes the same {"decision": "block", "reason"} shape (binary strings: "hook returned
 decision:block without a non-empty reason", "Stop hook requested continuation without a prompt").
 
@@ -47,6 +47,8 @@ timeout ends the turn cleanly; a block continues the same turn; an empty exit 0 
   ⚠Codex wraps our block reason in `<hook_prompt ...>` and logs environment context as a user row: human_key()
   skips both, or the injected rows would reset the count every round.
 - Lock key = plain session_id (.wake/<sid>.lock, same slot rule as hooks/mailbox_wake.py).
+- `--wake` (app-server-turn): instead of waiting in the Stop hook, spawn ext-hooks/codex_wake.py detached and end the
+  turn at once; the waiter starts a «[mailbox]» turn through the app-server daemon, so typed input never queues.
 - ⚠No wait under `codex exec` (a script would hang up to 59 min). The Stop input has no exec field (0.163.0 schema:
   cwd, hook_event_name, last_assistant_message, model, permission_mode, session_id, stop_hook_active,
   transcript_path, turn_id), so the signal is the rollout's first row: session_meta originator "codex_exec" /
@@ -54,6 +56,7 @@ timeout ends the turn cleanly; a block continues the same turn; an empty exit 0 
 """
 import json
 import os
+import subprocess
 import sys
 import time
 
@@ -71,6 +74,8 @@ WORKER_MAX_IDLE = 3
 WORKER_WAIT_S = 3540     # one round per hour; needs mcpServers.mailbox.timeout > 3540 s in Gemini
 WAIT_S = 3540            # Stop-hook wait; below the example's 3600 s hook timeout
 WAIT_MAX = 20
+WAKER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "codex_wake.py")
+Popen = subprocess.Popen   # module attribute so tests can replace the spawn
 
 
 def set_platform(plat):
@@ -93,8 +98,10 @@ def gemini_id(cwd, ident):
     return None if me in claude_ids else me
 
 
-def decide(inp, store=None, now_ns=None):
-    """Return the block reason string, or None to let the turn end."""
+def decide(inp, store=None, now_ns=None, hold=None):
+    """Return the block reason string, or None to let the turn end.
+
+    hold (dict): do not mark the mail as surfaced; fill hold["newest"] for mark_surfaced() once it was delivered."""
     store = store or ms.data_dir()
     now_ns = now_ns or time.time_ns()
     sid = str(inp.get("session_id") or "")
@@ -135,9 +142,10 @@ def decide(inp, store=None, now_ns=None):
         return None
 
     newest = max(int(m.get("t") or 0) for m in cand)
-    # Keep other fields (wake_n, worker counters): the wait's runaway guard lives in the same state file.
-    ms.save_state(sp, dict(st if isinstance(st, dict) else {}, last_t=newest, me=me, at=now_ns))
-    ms.prune_states(os.path.dirname(sp), time.time())
+    if isinstance(hold, dict):
+        hold.update(newest=newest, me=me, at=now_ns)
+    else:
+        mark_surfaced(sp, newest, me, now_ns)
 
     names = []
     for m in cand:
@@ -149,6 +157,13 @@ def decide(inp, store=None, now_ns=None):
     return (f"[mailbox] {len(cand)} new mail for `{me}` — from: {', '.join(names[:ms.MAX_NAMES])}{more}. "
             f"Before ending, read it with {TOOL_PREFIX}mailbox_inbox and reply, or {TOOL_PREFIX}mailbox_ack it. "
             "(The same mail will not block again.)")
+
+
+def mark_surfaced(sp, newest, me, now_ns):
+    st = ms.load(sp, {})
+    # Keep other fields (wake_n, worker counters): the wait's runaway guard lives in the same state file.
+    ms.save_state(sp, dict(st if isinstance(st, dict) else {}, last_t=newest, me=me, at=now_ns))
+    ms.prune_states(os.path.dirname(sp), time.time())
 
 
 def worker_on(cwd):
@@ -286,17 +301,12 @@ def wait_mail(inp, store=None, sleep=time.sleep, clock=time.monotonic):
     store = store or ms.data_dir()
     sid = str(inp.get("session_id") or "")
     cwd = inp.get("cwd") or ""
-    if not sid or not cwd or mw.wake_method(PLATFORM) != "stop-wait":
+    if not sid or not cwd or mw.wake_method(PLATFORM) not in ("stop-wait", "app-server-turn"):
         return None
     me = gemini_id(cwd, ms.load(os.path.join(store, "identity.json"), {}))
     if not me or ms.watch_alive(store, me) or not interactive(inp):
         return None
-    sp = ms.state_path(store, KEY_PREFIX + sid)
-    st = ms.load(sp, {})
-    st = st if isinstance(st, dict) else {}
-    human = human_key(inp)
-    n = 0 if (human is not None and human != st.get("wake_human")) else int(st.get("wake_n") or 0)
-    cap = _env_int("SIDEREUS_MAIL_WAIT_MAX", WAIT_MAX, 0, 10 ** 6)
+    n, cap, human = wake_count(inp, store)
     if n >= cap:
         return {"systemMessage": f"[mailbox] {n} mail wakes in a row without a human prompt — stopped waiting. "
                                  "Type any prompt to start again."}
@@ -309,10 +319,44 @@ def wait_mail(inp, store=None, sleep=time.sleep, clock=time.monotonic):
                           sleep=sleep, clock=clock)
     if got != "hit":
         return None
+    bump_wake(inp, store, n, human)
+    return {"decision": "block", "reason": reason}
+
+
+def wake_count(inp, store):
+    """(wakes since the last human prompt, cap, human key): the runaway guard shared by --wait and codex_wake."""
+    st = ms.load(ms.state_path(store, KEY_PREFIX + str(inp.get("session_id") or "")), {})
+    st = st if isinstance(st, dict) else {}
+    human = human_key(inp)
+    n = 0 if (human is not None and human != st.get("wake_human")) else int(st.get("wake_n") or 0)
+    return n, _env_int("SIDEREUS_MAIL_WAIT_MAX", WAIT_MAX, 0, 10 ** 6), human
+
+
+def bump_wake(inp, store, n, human):
+    sp = ms.state_path(store, KEY_PREFIX + str(inp.get("session_id") or ""))
     st = ms.load(sp, {})
     st = st if isinstance(st, dict) else {}
     ms.save_state(sp, dict(st, wake_n=n + 1, wake_human=human if human is not None else st.get("wake_human")))
-    return {"decision": "block", "reason": reason}
+
+
+def spawn_wake(inp, store=None):
+    """`--wake`: start the detached app-server waiter; True when spawned (the hook then ends the turn at once)."""
+    store = store or ms.data_dir()
+    sid = str(inp.get("session_id") or "")
+    cwd = inp.get("cwd") or ""
+    tp = str(inp.get("transcript_path") or "")
+    if not sid or not cwd or not tp or mw.wake_method(PLATFORM) != "app-server-turn":
+        return False
+    me = gemini_id(cwd, ms.load(os.path.join(store, "identity.json"), {}))
+    if os.name == "nt" or not me or ms.watch_alive(store, me) or not interactive(inp):
+        return False      # no daemon socket on Windows
+    n, cap, _ = wake_count(inp, store)
+    if n >= cap or not mw.slot_free(store, sid, time.time()):
+        return False
+    # ⚠Ids and paths only: the waiter rebuilds its prompt from decide(), never from hook input text.
+    Popen([sys.executable, WAKER, sid, cwd, tp, me], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+          stderr=subprocess.DEVNULL, close_fds=True, start_new_session=True)
+    return True
 
 
 def main():
@@ -329,6 +373,8 @@ def main():
         reason = decide(inp)
         if reason:
             sys.stdout.write(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
+            return
+        if "--wake" in argv and spawn_wake(inp):
             return
         out = wait_mail(inp) if "--wait" in argv else None
         out = out or worker(inp)

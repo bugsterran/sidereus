@@ -15,7 +15,7 @@ Do not step on these again. One file per area under [traps/](traps/); read the a
 | [traps/ui.md](traps/ui.md) | UI kit, CSS, layout, header, i18n (`T()`), animations, drag-resize | 67 |
 | [traps/server.md](traps/server.md) | Server, `/api/state` payload, caching, performance | 20 |
 | [traps/security.md](traps/security.md) | Security and privacy (CSP, guards, metadata-only) | 32 |
-| [traps/platform.md](traps/platform.md) | Platform, config, launcher, Windows, plugin, tests and tooling | 48 |
+| [traps/platform.md](traps/platform.md) | Platform, config, launcher, Windows, plugin, tests and tooling | 49 |
 | [traps/general.md](traps/general.md) | General lessons that span areas | 30 |
 | [traps/archive.md](traps/archive.md) | Removed features — evidence only, not current rules | 4 |
 

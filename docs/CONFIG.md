@@ -208,6 +208,18 @@ Cursors, PID files and presence are excluded: restoring them would rewind delive
 (bus, cursors, presence, caches, identity), logs, backups, screenshots, tool state and internal notes.
 They are install-specific or hold private conversation data.
 
+## Codex mail wake
+
+`ext-hooks/codex-hooks-example.json` runs `gemini_mail_stop.py --platform codex --wake` on `Stop`: a detached waiter
+starts one turn on the session's own thread through the local Codex app-server socket when mail arrives, and exits
+if you type first. `--wait` (timeout 3600) blocks inside `Stop` instead — unattended sessions only.
+
+- Merge `ext-hooks/codex-config-example.toml` into `~/.codex/config.toml`. Its `default_tools_approval_mode = "approve"`
+  auto-approves only the mailbox tools; shell and other approvals are unchanged. Restart the session after editing.
+- Editing `hooks.json` changes its hash: approve again with `/hooks`.
+- ⚠Experimental app-server API, checked on Codex 0.163.0 only. macOS/Linux only; on Windows nothing is spawned.
+- Details: [HOOKS › Codex CLI](HOOKS.md#codex-cli).
+
 ## Using with oh-my-claudecode
 
 Sidereus runs next to oh-my-claudecode (OMC) 3.x and 5.x without changing OMC or `~/.claude`.

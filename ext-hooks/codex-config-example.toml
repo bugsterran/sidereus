@@ -1,0 +1,10 @@
+# Sidereus mailbox MCP for Codex CLI: merge into ~/.codex/config.toml.
+# Replace <MAILBOX_CODE_DIR> with the folder that holds ext-hooks/.
+[mcp_servers.mailbox]
+command = "<MAILBOX_CODE_DIR>/ext-hooks/gemini_mailbox_mcp.sh"
+args = ["codex"]
+tool_timeout_sec = 3600
+# Auto-approves only this server's tools, so a turn started by codex_wake.py can read mail without a prompt.
+# Shell commands and every other approval are unchanged.
+# ⚠Restart the Codex session after editing; a running session keeps the old setting.
+default_tools_approval_mode = "approve"

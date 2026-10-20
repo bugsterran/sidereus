@@ -299,6 +299,15 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 - ⚠Codex 는 `/hooks` 로 승인하기 전까지 항목을 무시하고, 고칠 때마다 다시 승인해야 한다(해시를 저장한다).
   `--dangerously-bypass-hook-trust` 를 기본으로 쓰지 않는다.
 - `PermissionRequest` 는 행을 막힘으로 표시한다. 스크립트가 아무것도 출력하지 않으므로 Codex 는 평소처럼 묻는다.
+- 메일 깨우기(`--wake`, 예시 기본값, timeout 5): `Stop` 이 분리된 대기 프로세스(`ext-hooks/codex_wake.py`)를 띄우고
+  바로 끝난다. 메일이 오면 로컬 Codex app-server 소켓으로 그 세션의 스레드에 턴 하나를 시작한다. 턴 문구는
+  «[mailbox] N new mail …» 한 줄(아이디와 개수만)이다. 사람이 먼저 입력하면 대기 프로세스는 끝난다. 데몬이 없거나,
+  스레드가 데몬에 없거나, `codex exec` 면 아무 일도 없고 «메일 대기» 표시가 대신한다.
+  `[mcp_servers.mailbox]` 에 `default_tools_approval_mode = "approve"` 를 둔다(`ext-hooks/codex-config-example.toml`).
+  메일박스 도구만 자동 승인되고 셸과 다른 승인은 그대로다. 고친 뒤 세션을 다시 시작한다.
+  ⚠실험 단계 API 다(★0.163.0 에서만 확인, 2026-10-21: 17초 만에 턴 실행, 훅 전부 실행, TUI 에 표시).
+  ⚠macOS/Linux 만. Windows 에서는 아무것도 띄우지 않는다.
+- 막고 기다리기(`--wait`, timeout 3600)는 사람 없이 도는 세션 전용이다. 입력이 메일·시간 초과·Esc 까지 대기열에 쌓인다.
 - 훅이 없어도(승인 전) 최근 10분 안에 rollout 이 바뀐 Codex 세션은 «훅 미연결» 표시가 붙은 행으로 나온다. 폴더와
   모델만 보이고 상태는 알 수 없다. 훅 이벤트가 들어오면 훅 행으로 바뀐다.
 - 선택 `SessionStart` 안내: `<PYTHON> <MAILBOX_CODE_DIR>/hooks/invite_notice.py --platform codex`(timeout 10) 와

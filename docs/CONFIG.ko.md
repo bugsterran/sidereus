@@ -207,6 +207,18 @@ Windows(확인 못 함): `--install-service` 가 로그온 작업 `Sidereus` 를
 `.distignore`(gitignore 문법)에 공개본에 넣으면 안 되는 것을 적는다: `config.local.json`, 실데이터(버스·커서·presence·캐시·신원),
 로그, 백업, 스크린숏, 도구 상태, 내부 노트. 설치마다 다르거나 개인 대화가 들어 있기 때문이다.
 
+## Codex 메일 깨우기
+
+`ext-hooks/codex-hooks-example.json` 은 `Stop` 에서 `gemini_mail_stop.py --platform codex --wake` 를 돌린다. 분리된 대기
+프로세스가 메일이 오면 로컬 Codex app-server 소켓으로 그 세션의 스레드에 턴 하나를 시작하고, 사람이 먼저 입력하면
+끝난다. `--wait`(timeout 3600)는 `Stop` 안에서 막고 기다린다 — 사람 없이 도는 세션 전용이다.
+
+- `ext-hooks/codex-config-example.toml` 을 `~/.codex/config.toml` 에 합친다. `default_tools_approval_mode = "approve"` 는
+  메일박스 도구만 자동 승인한다. 셸과 다른 승인은 그대로다. 고친 뒤 세션을 다시 시작한다.
+- `hooks.json` 을 고치면 해시가 바뀐다. `/hooks` 로 다시 승인한다.
+- ⚠실험 단계 app-server API, Codex 0.163.0 에서만 확인했다. macOS/Linux 만. Windows 에서는 아무것도 띄우지 않는다.
+- 자세히: [훅 › Codex CLI](HOOKS.ko.md#codex-cli).
+
 ## oh-my-claudecode 와 함께 쓰기
 
 Sidereus 는 oh-my-claudecode(OMC) 3.x·5.x 와 함께 돈다. OMC 나 `~/.claude` 는 고치지 않는다.
