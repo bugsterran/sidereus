@@ -89,7 +89,8 @@ function buildPeople(){
     return '<div class=nxr title="' + esc([liveTip, p.role, p.read ? T('viewed') + ' ' + agoNs(p.read) : T('No read record'),
         p.rooms.length ? T('Rooms') + ' ' + p.rooms.join(', ') : T('No room')].filter(Boolean).join(' · ')) + '">'
       + '<i class="nxd ' + (cls === 'on' || cls === 'idle' ? cls : '') + '"></i>'
-      + '<span class=nxn><b' + nmSty(p.id) + '>' + esc(p.id) + '</b><small>' + esc(liveTxt) + '</small></span>'
+      // Logo only when a live session row owns this mbox (rcWho in 92-mainview-tabs.js); no guessing from the id.
+      + '<span class=nxn><b' + nmSty(p.id) + '>' + rcWho(p.id) + '</b><small>' + esc(liveTxt) + '</small></span>'
       + '<span class=nxm>' + p.n + '</span><span class=nxm>' + (p.sent ? agoNs(p.sent) : '—') + '</span>'
       + '<span class="nxm' + (owe ? ' nxo' : '') + '">' + (owe || '—') + '</span></div>';
   }).join('') || '<div class=wt><span>' + esc(T('No participants')) + '</span></div>');
