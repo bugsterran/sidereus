@@ -232,6 +232,10 @@ body.ckwin{margin:0;padding:0;height:100vh;overflow:hidden}
 .ckwa{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--nx-t2,#aab4c3);cursor:pointer}
 .ckwh .archgo:disabled{opacity:.5;cursor:default}
 .ckwh .archgo.on{background:color-mix(in srgb,var(--nx-info,#5899f3) 30%,var(--nx-panel,#141a23))}
+.ckwf{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:12.5px;color:var(--nx-t2,#aab4c3)}   /* issue filters (84l): view only */
+.ckwf select{max-width:100%}
+.ckwhid{display:inline-flex;align-items:center;gap:4px;color:var(--nx-t3,#8b95a7)}
+.archckl .ckhide{flex:0 0 auto;width:auto;margin:5px 4px 0 0;padding:1px 8px;font-size:11px;white-space:nowrap;border:1px solid var(--nx-rule,#2a3442);color:var(--nx-t3,#8b95a7)}   /* ⚠overrides the full-width .archckl button */
 #ckroot>.archreq,#ckroot>.archckst,#ckroot>.archmsg{flex:0 0 auto}
 #ckroot .archdm{max-height:28vh;overflow:auto}
 .archckl li{display:flex;align-items:flex-start;gap:4px}

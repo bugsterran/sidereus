@@ -4,6 +4,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Security and privacy
 
+- **Hidden security rules persist across scans and lower the tab badge** (`web/js/84l-structure-arch-checks.js`, ui-pref `sidereus.ckhide`, per repo). Hiding is view-only, so a new scan that still finds a hidden error keeps it out of the count; with only hidden errors left the badge turns amber, not red. ⇒ the badge tooltip states how many rules are hidden and the window shows «N rules hidden · Show».
+  - ⚠Never drop the hidden count from the tooltip, and never write hiding into `checks-security.json`, `security-log.jsonl` or the report — false positives stay CLI-only (`scripts/arch_checks.py --mark … false-positive`).
 - ★**Security reports are pruned with a real `os.remove`** (2026-10-17, `sidereus/sec_report.py`). Reports are generated data the next run rebuilds; «delete never deletes» (AGENTS.md rule 7) covers tool config only. ⇒ prune keeps the newest `KEEP` (10) names matching `REPORT_RE`; other names and symlinks are never touched. `read_text` refuses bad names, symlinks, files over 256 KiB and paths whose realpath leaves the dir.
   - ⚠Never put tool message text, secret values or the AI-review `desc` in the report — rule id · `file:line` · severity (+ package) and runner-composed status words only.
 - ★**«Security tools» must find a tool installed after the viewer started, without running it** (2026-10-17, `sidereus/sec_tools.py`). launchd's PATH is `/usr/bin:/bin:/usr/sbin:/sbin`, and `ident.bin_path` caches a miss forever. ⇒ `_which` = `shutil.which(name, path=ident.rich_env()["PATH"])`, no cache; version from `os.path.realpath` layout only (Cellar segment, npm package.json, dist-info).

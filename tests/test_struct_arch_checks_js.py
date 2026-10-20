@@ -14,6 +14,7 @@ from tests._node import node_e
 FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec",
        "archChkTop", "archChkTopBtn", "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkEntry", "archChkHdBtn", "archChkRunCands", "archChkRunBody", "archChkRunCmds", "archChkScanAt", "archChkRunHtml", "archChkWinHtml"]
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
+FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
 with open(_SRC_P, encoding="utf-8") as fh:
     _SRC = fh.read()
@@ -305,6 +306,118 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn('data-ckrep="security-report-&quot;&lt;x&gt;&quot;.md"', r[1])
         self.assertNotIn("<x>", r[1])
         self.assertIn("data-ckrep=", r[2])                                # window passes security.report through
+
+
+# Filter fixture: one item per scanner + two bandit:B110 items (R1..R5).
+FT = {"commit": "c0ffee00", "tools": [{"id": t, "status": "ok", "n": {"error": 1, "warning": 1}} for t in ("gitleaks", "semgrep", "bandit", "osv-scanner", "npm-audit")],
+      "top": [{"tool": "gitleaks", "file": "k.env", "line": 1, "rule": "aws-key", "sev": "error"},
+              {"tool": "semgrep", "file": "s.py", "line": 2, "rule": "py.eval", "sev": "warning"},
+              {"tool": "bandit", "file": "b1.py", "line": 3, "rule": "B110", "sev": "warning"},
+              {"tool": "bandit", "file": "b2.py", "line": 4, "rule": "B110", "sev": "error"},
+              {"tool": "bandit", "file": "b3.py", "line": 5, "rule": "B602", "sev": "warning"},
+              {"tool": "osv-scanner", "file": "package-lock.json", "line": 1, "rule": "GHSA-x", "sev": "error"},
+              {"tool": "npm-audit", "file": "package.json", "line": 1, "rule": "lodash", "sev": "warning"}]}
+# In-memory pref store; ⚠no live localStorage.
+MEMJS = ("const MEM = {}, SETS = []; globalThis.lsJson = (k, d) => Object.prototype.hasOwnProperty.call(MEM, k) ? JSON.parse(MEM[k]) : d;"
+         "lsSetJson = (k, v) => { SETS.push(k); MEM[k] = JSON.stringify(v); return true; }; const d = {checks: {security: " + json.dumps(FT) + "}};"
+         "const rows = h => (h.split('<ol class=archckl>')[1] || '').split('</ol>')[0].split('<li ').length - 1;")
+# Window event driver: ARCH_CW + stubbed paints (archChkWinEv is the real one).
+EVJS = ("globalThis.ARCH_CW = null; let PAINTS = 0, TABS = 0; globalThis.archChkWinPaint = () => { PAINTS++; }; globalThis.archChkTabRepaint = () => { TABS++; };"
+        "const W = {close(){}}; const ev = (type, attrs, extra) => ({type, target: Object.assign({closest(s){ const m = s.match(/^\\[data-([a-z]+)\\]$/); return m && Object.prototype.hasOwnProperty.call(attrs, m[1]) ? this : null; },"
+        " matches(s){ return !!this.closest(s); }, dataset: attrs}, extra || {})});")
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class StructArchCheckFilters(unittest.TestCase):
+    def test_r1_errors_only_filters_and_counts(self):
+        r = run(MEMJS + "const a = archChkWinHtml('/r', d, {sel: {}, sev: 'all', tool: ''}, []), e = archChkWinHtml('/r', d, {sel: {}, sev: 'error', tool: ''}, []);"
+                "console.log(JSON.stringify([rows(a), rows(e), a, e, archChkView(d, {sev: 'error'}, []).map(x => x.sev)]));", lang="en")
+        self.assertEqual([r[0], r[1]], [7, 3])
+        self.assertIn("Top issues 7", r[2])
+        self.assertIn("errors 3 · warnings 4</span>", r[2])     # from the listed items; no «shown» without a filter
+        self.assertIn("Top issues 3", r[3])
+        self.assertIn("errors 3 · warnings 0 · shown 3 of 7", r[3])
+        self.assertNotIn('<li class="warning"', r[3])
+        self.assertIn('<option value=error selected>Errors only</option>', r[3])
+        self.assertEqual(r[4], ["error"] * 3)
+
+    def test_r2_tool_filter_only_that_tool(self):
+        r = run(MEMJS + "const T5 = ['gitleaks', 'semgrep', 'bandit', 'osv-scanner', 'npm-audit'];"
+                "console.log(JSON.stringify([T5.map(t => [...new Set(archChkView(d, {sev: 'all', tool: t}, []).map(x => x.tool))]), T5.map(t => rows(archChkWinHtml('/r', d, {sel: {}, tool: t}, []))),"
+                "archChkWinHtml('/r', d, {sel: {}, tool: 'osv-scanner'}, [])]));", lang="en")
+        self.assertEqual(r[0], [["gitleaks"], ["semgrep"], ["bandit"], ["osv-scanner"], ["npm-audit"]])
+        self.assertEqual(r[1], [1, 1, 3, 1, 1])
+        self.assertIn('<option value="osv-scanner" selected>osv-scanner</option>', r[2])
+        self.assertIn('data-cktool', r[2])
+        self.assertIn("shown 1 of 7", r[2])
+
+    def test_r3_hide_rule_removes_all_items_and_shows_line(self):
+        r = run(MEMJS + EVJS + "ARCH.cache['/r'] = d; ARCH_CW = {p: '/r', w: W, sel: {}, sev: 'all', tool: ''};"
+                "const h0 = archChkWinHtml('/r', d, ARCH_CW, []); archChkWinEv(ev('click', {ckhide: 'bandit:B110'}), W);"
+                "const h1 = archChkWinHtml('/r', d, ARCH_CW, []);"
+                "console.log(JSON.stringify([h0, h1, rows(h1), archChkHidden('/r'), PAINTS, TABS]));", lang="en")
+        self.assertEqual(r[0].count('data-ckhide="bandit:B110"'), 2)
+        self.assertNotIn("bandit:B110", r[1].split("<ol class=archckl>")[1])
+        self.assertIn("B602", r[1])                               # other bandit rule stays
+        self.assertEqual(r[2], 5)
+        self.assertIn("1 rules hidden · <button type=button class=wkrgb data-ckunhide>Show</button>", r[1])
+        self.assertNotIn("data-ckunhide", r[0])
+        self.assertEqual(r[3:], [["bandit:B110"], 1, 1])         # window and tab badge repainted once
+
+    def test_r4_hidden_persist_per_repo_and_show_restores(self):
+        r = run(MEMJS + EVJS + "archChkSetHidden('/r', ['bandit:B110', 'bandit:B110', 'x'.repeat(201)]);"
+                "const a = [archChkHidden('/r'), archChkHidden('/other'), rows(archChkWinHtml('/r', d, {sel: {}}, [])), rows(archChkWinHtml('/other', d, {sel: {}}, []))];"
+                "const stored = MEM['sidereus.ckhide'];"   # a reopen / restart reads the same stored pref
+                "ARCH.cache['/r'] = d; ARCH_CW = {p: '/r', w: W, sel: {}}; archChkWinEv(ev('click', {ckunhide: ''}), W);"
+                "for(let i = 0; i < 45; i++) archChkSetHidden('/q' + i, ['a:b']); const keys = Object.keys(JSON.parse(MEM['sidereus.ckhide']));"
+                "archChkSetHidden('/big', Array.from({length: 250}, (_, i) => 't:' + i));"
+                "console.log(JSON.stringify([a, stored, archChkHidden('/r'), rows(archChkWinHtml('/r', d, {sel: {}}, [])), keys.length, keys[0], archChkHidden('/big').length]));", lang="en")
+        self.assertEqual(r[0], [["bandit:B110"], [], 5, 7])      # per repo; over-long key dropped, duplicates merged
+        self.assertEqual(json.loads(r[1]), {"/r": ["bandit:B110"]})
+        self.assertEqual([r[2], r[3]], [[], 7])                   # «Show» restores
+        self.assertEqual([r[4], r[5]], [40, "/q5"])               # 40 repos, oldest dropped
+        self.assertEqual(r[6], 200)
+
+    def test_r5_view_only_no_posts(self):
+        r = run(MEMJS + EVJS + "const F = []; globalThis.fetch = u => { F.push(u); return Promise.resolve({json: () => ({})}); };"
+                "ARCH.cache['/r'] = d; ARCH_CW = {p: '/r', w: W, sel: {}, sev: 'all', tool: ''};"
+                "archChkWinEv(ev('change', {cksev: ''}, {}), W); ARCH_CW.sev = 'all';"
+                "const tg = ev('change', {cksev: ''}); tg.target.value = 'error'; archChkWinEv(tg, W);"
+                "const tt = ev('change', {cktool: ''}); tt.target.value = 'bandit'; archChkWinEv(tt, W);"
+                "archChkWinEv(ev('click', {ckhide: 'bandit:B602'}), W); archChkWinEv(ev('click', {ckunhide: ''}), W);"
+                "console.log(JSON.stringify([ARCH_CW.sev, ARCH_CW.tool, [...new Set(SETS)], POSTS, F]));")
+        self.assertEqual(r[:2], ["error", "bandit"])
+        self.assertEqual(r[2], ["sidereus.ckhide"])               # the only write: the view pref
+        self.assertEqual([r[3], r[4]], [[], []])                  # no /api/arch* or /api/dm call
+
+    def test_badge_respects_hidden(self):
+        r = run(MEMJS + "const b0 = archChkTopBtn(d, '/r'); archChkSetHidden('/r', ['gitleaks:aws-key', 'bandit:B110', 'osv-scanner:GHSA-x']);"
+                "const b1 = archChkTopBtn(d, '/r'), b2 = archChkTopBtn(d, '/other');"
+                "const q = {checks: {security: {tools: [{id: 'bandit', status: 'ok', n: {error: 1}}], top: [{tool: 'bandit', file: 'a.py', line: 1, rule: 'B110', sev: 'error'}]}}};"
+                "console.log(JSON.stringify([b0, b1, b2, archChkTopBtn(q, '/r')]));", lang="en")
+        self.assertIn(">Security 7</button>", r[0])
+        self.assertIn(">Security 3</button>", r[1])
+        self.assertIn("3 rules hidden", r[1])                      # tooltip
+        self.assertNotIn("archckiw", r[1])                        # tool totals still hold unlisted errors
+        self.assertIn(">Security 7</button>", r[2])               # other repo unaffected
+        self.assertIn("strbg-archckiw", r[3])                     # only error hidden -> amber
+        self.assertIn(">Security 0</button>", r[3])
+
+    def test_select_all_visible_only(self):
+        r = run(MEMJS + EVJS + "ARCH.cache['/r'] = d; ARCH_CW = {p: '/r', w: W, sel: {}, sev: 'all', tool: 'bandit'}; archChkSetHidden('/r', ['bandit:B602']);"
+                "const all = ev('change', {ckall: ''}); all.target.checked = true; archChkWinEv(all, W);"
+                "ARCH_CW.tool = ''; ARCH_CW.sel[archChkKey(archChkTop(d)[0])] = 1; ARCH_CW.tool = 'bandit';"
+                "const sel = archChkSel(d, ARCH_CW.sel, ARCH_CW, archChkHidden('/r'));"
+                "const h = archChkWinHtml('/r', d, Object.assign({}, ARCH_CW, {req: {sid: 's1', busy: false}}), [{sid: 's1', g: 0, login: 1}]);"
+                "console.log(JSON.stringify([Object.keys(ARCH_CW.sel).length, sel.map(x => x.file), h]));", lang="en")
+        self.assertEqual(r[0], 3)                                 # 2 visible bandit:B110 + the gitleaks one set by hand
+        self.assertEqual(r[1], ["b2.py", "b1.py"])                # selection = visible items only (errors first)
+        self.assertIn("Request fix (2)", r[2])
+        self.assertIn("data-ckall checked", r[2])
+        pre = r[2].split("<pre class=archdm>")[1].split("</pre>")[0]
+        self.assertIn("b1.py:3", pre)
+        self.assertNotIn("k.env", pre)                            # filtered-out selection stays out of the request body
+        self.assertNotIn("B602", pre)
 
 
 if __name__ == "__main__":

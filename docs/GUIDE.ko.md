@@ -113,6 +113,7 @@
 - «주요 문제 N건» 을 누르면 보안 문제 창이 열린다(gitleaks·npm audit·osv-scanner·semgrep·bandit — `security-checks` 파이프라인). 비밀값은 나오지 않는다.
 - 그 창의 «보안 점검 실행» 은 프로젝트의 메일함 로그인 세션에 `security-checks` 실행 요청을 보낸다(미리보기 + 확인). 그런 세션이 없으면 터미널에서 실행할 명령을 복사하게 보여 준다. 의존성 결과는 GHSA 규칙 옆에 CVE 번호도 보인다.
 - «개선 요청» 은 고른 문제를 세션에 보내고, 수정이 커밋되면 `arch-map` 을 다시 돌려 달라고 함께 요청한다.
+- 필터로 목록을 좁힌다: «모든 심각도 / 오류만» 과 도구 필터(«모든 도구» · gitleaks·semgrep·bandit·osv-scanner·npm-audit). 항목의 «규칙 숨기기» 는 그 규칙을 이 저장소에서 숨기고, 새 점검 뒤에도 «규칙 N개 숨김 · 보이기» 를 누를 때까지 숨긴 채로 둔다. 탭 배지는 숨기지 않은 규칙만 센다(툴팁에 숨긴 개수). 보기만 바뀐다 — `checks-security.json`·`security-log.jsonl`·보고서는 그대로이고, 오탐 표시는 여전히 `scripts/arch_checks.py --mark … false-positive` 로 한다.
 - 창 아래에는 점검 이력이 나온다(보기 전용). «마지막 보안 점검» 경과 시간, 열린 문제, 해결된 문제(날짜 · 커밋), 오탐 순이다. AI 리뷰에서 나온 줄에는 «모델 생성 · 검증 안 됨» 이 붙는다.
 - «마지막 보고서» (보안 점검이 보고서를 남긴 뒤에 나온다) 는 가장 최근 `security-report-*.md` 를 별도 창에 일반 텍스트로 연다.
 - 스캐너 결과는 같은 도구의 다음 점검에서 사라지면 해결로 바뀐다. AI 리뷰 결과는 표시할 때까지 열려 있다: `scripts/arch_checks.py --repo <repo> --mark <slug>@<file> resolved|false-positive`.

@@ -32,14 +32,17 @@ function archChkTop(d){
   return top.filter(x => x.sev === 'error').concat(top.filter(x => x.sev !== 'error'));
 }
 // Pure: header badge that opens the issues window; '' without security results.
-function archChkTopBtn(d){
+function archChkTopBtn(d, p){   // p = repo of the hidden-rule pref, default the shown project
   const sec = archChkSec(d);
   if(!sec) return '';
-  const e = archChkSum(sec).e;   // red only with errors, amber otherwise
+  if(p === undefined) p = typeof strOn !== 'undefined' && strOn ? strOn[0] || '' : '';
+  const hid = archChkHidden(p), H = archChkHidSet(hid), top = archChkTop(d), vis = top.filter(x => !H[archChkRk(x)]);
+  // red only with errors, amber otherwise; ⚠tool totals exceed the 50-item list, so only listed hidden errors are subtracted
+  const e = Math.max(0, archChkSum(sec).e - top.filter(x => x.sev === 'error' && H[archChkRk(x)]).length);
   // shown even at 0 so missing scanners stay visible; scanner states in the tooltip
-  const tip = archChkTools(sec).map(t => String(t.id) + ' · ' + archChkStat(t)).join('\n');
+  const tip = archChkTools(sec).map(t => String(t.id) + ' · ' + archChkStat(t)).join('\n') + (hid.length ? '\n' + T('{n} rules hidden').replace('{n}', hid.length) : '');
   return '<button type=button class="strbg strbg-archcki' + (e ? '' : ' strbg-archckiw') + '" data-arck aria-haspopup=dialog title="' + esc(tip) + '">'
-    + esc(T('Security {n}').replace('{n}', archChkTop(d).length)) + '</button>';
+    + esc(T('Security {n}').replace('{n}', vis.length)) + '</button>';
 }
 // Pure: one-line rule help — checks.security.rules[item.rk | "tool:rule"]; url kept only when https.
 function archChkHelp(c, x){
@@ -52,8 +55,36 @@ function archChkHelp(c, x){
 // Pure: rule label — rule · CVE aliases (dependency findings, ids only) · package; raw text, callers esc().
 function archChkRule(x){ return [x.rule || ''].concat(Array.isArray(x.cve) ? x.cve.filter(c => typeof c === 'string' && /^CVE-\d{4}-\d{4,7}$/.test(c)) : [], x.pkg ? [x.pkg] : []).join(' · '); }
 function archChkKey(x){ return [x.tool || '', x.file, parseInt(x.line, 10) || 1, x.rule || ''].join('\t'); }
-// Pure: selected items in list order (keys of items no longer listed drop out).
-function archChkSel(d, sel){ return archChkTop(d).filter(x => sel && sel[archChkKey(x)]); }
+// Pure: rule key of an item for the hidden-rule pref ("tool:rule").
+function archChkRk(x){ return String((x && x.tool) || '') + ':' + String((x && x.rule) || ''); }
+// ⚠null prototype: a «__proto__» rule key stays data.
+function archChkHidSet(hid){ const H = Object.create(null); (hid || []).forEach(k => { H[k] = 1; }); return H; }
+// Hidden rules per repo (localStorage sidereus.ckhide = {repo: ["tool:rule", ...]}); view-only, never sent anywhere.
+function archChkHidPref(){
+  const m = typeof lsJson === 'function' ? lsJson('sidereus.ckhide', {}) : {};
+  return Object.assign(Object.create(null), m && typeof m === 'object' && !Array.isArray(m) ? m : {});
+}
+function archChkHidden(p){
+  const m = archChkHidPref(), a = p && Object.prototype.hasOwnProperty.call(m, p) ? m[p] : null;
+  return Array.isArray(a) ? a.filter(k => typeof k === 'string' && k && k.length <= 200).slice(0, 200) : [];
+}
+// Caps: 200 keys per repo, 200 chars per key, 40 repos (the least recently changed repo drops first).
+function archChkSetHidden(p, keys){
+  if(!p || typeof lsSetJson !== 'function') return false;
+  const m = archChkHidPref(), ks = (keys || []).filter((k, i, a) => typeof k === 'string' && k && k.length <= 200 && a.indexOf(k) === i).slice(0, 200);
+  delete m[p];
+  if(ks.length) m[p] = ks;   // re-inserted last = most recent
+  const rs = Object.keys(m);
+  rs.slice(0, Math.max(0, rs.length - 40)).forEach(r => { delete m[r]; });
+  return lsSetJson('sidereus.ckhide', m);
+}
+// Pure: listed items = top issues minus hidden rules, then severity (S.sev 'all'|'error') and tool (S.tool, '' = all) filters.
+function archChkView(d, S, hid){
+  const H = archChkHidSet(hid), sev = S && S.sev === 'error', tool = S && S.tool ? String(S.tool) : '';
+  return archChkTop(d).filter(x => !H[archChkRk(x)] && (!sev || x.sev === 'error') && (!tool || String(x.tool || '') === tool));
+}
+// Pure: selected items in list order, visible ones only (keys of items no longer listed drop out).
+function archChkSel(d, sel, S, hid){ return archChkView(d, S, hid).filter(x => sel && sel[archChkKey(x)]); }
 // Pure: fix-request targets = every live cc session, tiered g: 0 cwd is p / under p/ / worktree of p (wt.main),
 //   1 lists p in `repos` (touched it, works elsewhere), 2 the rest. Tier, then logged-in first, then most recently active.
 //   ⚠`repos` is tier 1, never 0 — it lists every repo a session touched; the body names the target path instead.
@@ -142,15 +173,23 @@ function archChkRunHtml(p, d, S, cands){
 }
 // Pure: window body — header (counts · select all · «Request fix»), preview / sent line, issue rows.
 function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (Codex included), default cands
-  const c = d && d.checks, sec = archChkSec(d);
-  const top = archChkTop(d), s = archChkSum(sec), sel = archChkSel(d, S.sel), n = sel.length, cm = String((sec && sec.commit) || '').slice(0, 8);
+  const c = d && d.checks, sec = archChkSec(d), hid = archChkHidden(p), all = archChkView(d, {}, hid);
+  const top = archChkView(d, S, hid), sel = archChkSel(d, S.sel, S, hid), n = sel.length, cm = String((sec && sec.commit) || '').slice(0, 8);
+  const ne = top.filter(x => x.sev === 'error').length, flt = S.sev === 'error' || !!S.tool;
+  const tids = archChkTools(sec).map(t => String(t.id)).concat(archChkTop(d).map(x => String(x.tool || ''))).filter((t, i, a) => t && a.indexOf(t) === i);
   const why = !cands.length ? T('No live session') : !n ? T('Select at least one issue') : '';
-  let h = '<div class=ckwh><b>' + esc(T('Top issues {n}').replace('{n}', top.length)) + '</b><span>' + esc(T('errors {e} · warnings {w}').replace('{e}', s.e).replace('{w}', s.w))
+  let h = '<div class=ckwh><b>' + esc(T('Top issues {n}').replace('{n}', top.length)) + '</b><span>' + esc(T('errors {e} · warnings {w}').replace('{e}', ne).replace('{w}', top.length - ne))
+    + (flt ? ' · ' + esc(T('shown {n} of {m}').replace('{n}', top.length).replace('{m}', all.length)) : '')
     + '</span><span class=ckwp title="' + esc(p) + '">' + esc(archBase(p) + (cm ? ' · ' + cm : '')) + '</span>'
     + '<label class=ckwa><input type=checkbox data-ckall' + (top.length && top.every(x => S.sel && S.sel[archChkKey(x)]) ? ' checked' : '') + '>' + esc(T('Select all')) + '</label>'
     + '<button type=button class="archgo' + (S.req ? ' on' : '') + '" data-ckfix' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Request fix') + (n ? ' (' + n + ')' : '')) + '</button>'
     + (why ? '<span class=archwhy>' + esc(why) + '</span>' : '')
     + '<button type=button class="archgo' + (S.run ? ' on' : '') + '" data-ckrun aria-expanded=' + (S.run ? 'true' : 'false') + (S.run && S.run.busy ? ' disabled' : '') + '>' + esc(T('Run security check')) + '</button></div>';
+  // filter row: view only (R5) — tool ids are tool output, esc'd and never through T()
+  h += '<div class=ckwf><select data-cksev aria-label="' + esc(T('Severity')) + '">' + [['all', 'All severities'], ['error', 'Errors only']].map(o => '<option value=' + o[0] + ((S.sev || 'all') === o[0] ? ' selected' : '') + '>' + esc(T(o[1])) + '</option>').join('')
+    + '</select><select data-cktool aria-label="' + esc(T('Tool')) + '"><option value=""' + (S.tool ? '' : ' selected') + '>' + esc(T('All tools')) + '</option>'
+    + tids.map(t => '<option value="' + esc(t) + '"' + (S.tool === t ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>'
+    + (hid.length ? '<span class=ckwhid title="' + esc(hid.join('\n')) + '">' + esc(T('{n} rules hidden').replace('{n}', hid.length)) + ' · <button type=button class=wkrgb data-ckunhide>' + esc(T('Show', 'hidden rules')) + '</button></span>' : '') + '</div>';
   h += archChkRunHtml(p, d, S, rcands || cands);
   // scanner states (why is tool text: esc)
   if(sec) h += '<div class=archckst>' + esc(archChkTools(sec).map(t => String(t.id) + ' · ' + archChkStat(t)).join(' | ')) + '</div>';
@@ -171,7 +210,8 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
       + '<span class=archckf title="' + esc(x.file + ':' + ln) + '">' + esc(x.file).replace(/\//g, '/<wbr>') + '<span class=archevl>:' + esc(ln) + '</span></span>'   // full path, may break after «/»
       + '<em title="' + esc(x.mod || '') + '">' + esc(x.mod || '') + '</em></button>'
       + (hp.desc || hp.url ? '<div class=archckh>' + (hp.desc ? '<span>' + esc(hp.desc) + '</span>' : '')
-        + (hp.url ? '<a href="' + esc(hp.url) + '" target=_blank rel="noopener noreferrer">' + esc(T('docs ↗')) + '</a>' : '') + '</div>' : '') + '</div></li>'; }).join('') + '</ol>'
+        + (hp.url ? '<a href="' + esc(hp.url) + '" target=_blank rel="noopener noreferrer">' + esc(T('docs ↗')) + '</a>' : '') + '</div>' : '') + '</div>'
+      + '<button type=button class="wkrgb ckhide" data-ckhide="' + esc(archChkRk(x)) + '" title="' + esc(T('Hide every item of this rule (this view only)')) + '">' + esc(T('Hide rule')) + '</button></li>'; }).join('') + '</ol>'
     + (sec ? archChkLogHtml(sec.log, sec.report) : '<div class=archckst>' + esc(T('No security check yet')) + '</div>');
 }
 // Pure: read-only security history (sidereus/sec_checks.log_view) — last check age, then open / resolved / false-positive rows.
@@ -221,11 +261,11 @@ function archChkWinOpen(p){
   if(!w){ note(T('Popup blocked — allow popups for this site.')); return; }
   const css = Array.prototype.map.call(document.querySelectorAll('style'), z => z.textContent).join('\n'), dc = w.document;
   dc.open();
-  dc.write('<!doctype html><meta charset=utf-8><title>' + esc(T('Top issues {n}').replace('{n}', archChkTop(ARCH.cache[p]).length)) + '</title><style>' + css + '</style>'
+  dc.write('<!doctype html><meta charset=utf-8><title>' + esc(T('Top issues {n}').replace('{n}', archChkView(ARCH.cache[p], {}, archChkHidden(p)).length)) + '</title><style>' + css + '</style>'
     + '<body class=ckwin><div id=ckroot></div><script>' + ARCH_CW_JS + '</' + 'script>');
   dc.close();
   strWinTheme(w);
-  ARCH_CW = { p, w, sel: Object.create(null), req: null, sent: '', msg: '', run: null, runSent: null, cp: null, seen: ARCH.cache[p] };
+  ARCH_CW = { p, w, sel: Object.create(null), req: null, sent: '', msg: '', run: null, runSent: null, cp: null, seen: ARCH.cache[p], sev: 'all', tool: '' };   // filters reset on reopen
   try{ w.focus(); }catch(e){ softErr('archck-focus', e); }
   archChkWinPaint();
 }
@@ -238,7 +278,7 @@ function archChkWinPaint(){
   if(S.req && cands.length && !cands.some(c => c.sid === S.req.sid)) S.req.sid = archChkPick(cands, S.p);
   root.innerHTML = archChkWinHtml(S.p, ARCH.cache[S.p], S, cands, archChkFixCands(SESS, S.p, true));
   const l2 = root.querySelector('.archckl'); if(l2) l2.scrollTop = st;
-  w.document.title = T('Top issues {n}').replace('{n}', archChkTop(ARCH.cache[S.p]).length) + ' — ' + archBase(S.p);
+  w.document.title = T('Top issues {n}').replace('{n}', archChkView(ARCH.cache[S.p], S, archChkHidden(S.p)).length) + ' — ' + archBase(S.p);
   return true;
 }
 // Events from the issues window (forwarded by ARCH_CW_JS). Esc closes the preview first, then the window.
@@ -253,7 +293,9 @@ function archChkWinEv(e, w){
   }
   if(e.type === 'change'){
     if(t.matches('[data-ckall]')){
-      archChkTop(ARCH.cache[S.p]).forEach(x => { const k = archChkKey(x); if(t.checked) S.sel[k] = 1; else delete S.sel[k]; }); }
+      archChkView(ARCH.cache[S.p], S, archChkHidden(S.p)).forEach(x => { const k = archChkKey(x); if(t.checked) S.sel[k] = 1; else delete S.sel[k]; }); }   // visible items only
+    else if(t.matches('[data-cksev]')) S.sev = t.value === 'error' ? 'error' : 'all';
+    else if(t.matches('[data-cktool]')) S.tool = String(t.value || '');
     else if(t.matches('[data-ckk]')){ if(t.checked) S.sel[t.dataset.ckk] = 1; else delete S.sel[t.dataset.ckk]; }
     else if(t.matches('[data-cks]') && S.req){ S.req.sid = t.value; S.req.again = false; }
     else if(t.matches('[data-ckrs]') && S.run){ S.run.sid = t.value; S.run.again = false; }
@@ -261,6 +303,8 @@ function archChkWinEv(e, w){
     archChkWinPaint(); return;
   }
   let b;
+  if((b = t.closest('[data-ckhide]'))){ const hid = archChkHidden(S.p); archChkSetHidden(S.p, hid.concat([b.dataset.ckhide])); archChkWinPaint(); archChkTabRepaint(); return; }
+  if(t.closest('[data-ckunhide]')){ archChkSetHidden(S.p, []); archChkWinPaint(); archChkTabRepaint(); return; }
   if((b = t.closest('[data-ckv]'))){ strPopOpenRel(S.p, b.dataset.af, parseInt(b.dataset.al, 10) || 1, 80, ''); return; }
   if((b = t.closest('[data-ckrep]'))){ archChkReportOpen(S.p, b.dataset.ckrep); return; }
   if(t.closest('[data-ckfix]')){
@@ -278,6 +322,12 @@ function archChkWinEv(e, w){
   if((b = t.closest('[data-ckcp]'))){ archChkCopy(S, w, b); return; }
   if(t.closest('[data-ckx]')){ if(S.req && !S.req.busy) S.req = null; archChkWinPaint(); return; }
   if(t.closest('[data-ckgo]')) archChkFixSend();
+}
+// After hide/show: the arch tab badge counts hidden rules too. ⚠archPaint skips an unchanged sig (the pref is not in it): drop it first; never call this from a paint.
+function archChkTabRepaint(){
+  const f = typeof document !== 'undefined' && document.getElementById ? document.getElementById('feed') : null;
+  if(f) f._arsig = '';
+  if(typeof paintStruct === 'function' && typeof strMode !== 'undefined' && strMode === 'arch') paintStruct();
 }
 // «Last report»: named about:blank window, report text written as an escaped <pre> (no markdown render, no route).
 // ⚠window.open runs before the fetch: after an await the click's user activation may be gone and the popup blocked.
@@ -297,7 +347,7 @@ async function archChkReportOpen(p, name){
 async function archChkFixSend(){
   const S = ARCH_CW, q = S && S.req;
   if(!q || q.busy) return false;
-  const d = ARCH.cache[S.p], items = archChkSel(d, S.sel), cur = archChkFixCands(SESS, S.p).find(c => c.sid === q.sid);
+  const d = ARCH.cache[S.p], items = archChkSel(d, S.sel, S, archChkHidden(S.p)), cur = archChkFixCands(SESS, S.p).find(c => c.sid === q.sid);
   if(!items.length || !cur || !cur.login) return false;
   const body = archChkFixBody(S.p, d && d.checks, items, archHome(d)), key = archChkReqKey(cur.sid, body);
   if(S.sent && S.sent.key === key && !q.again){ q.again = true; archChkWinPaint(); return false; }   // first click on «Sent · send again» only arms
