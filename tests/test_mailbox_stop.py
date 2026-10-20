@@ -92,15 +92,15 @@ class MailboxStop(unittest.TestCase):
         self.post("bob", room="r1")
         out = self.run_hook()
         self.assertEqual(out["decision"], "block")
-        self.assertIn("2건", out["reason"])
+        self.assertIn("2 new mail", out["reason"])
         self.assertIn("bob(DM)", out["reason"])
-        self.assertIn("bob(방 r1)", out["reason"])
+        self.assertIn("bob(room r1)", out["reason"])
         self.assertNotIn("SECRET-BODY", out["reason"])
         self.assertIsNone(self.run_hook(active=True))           # same set -> never twice
         self.assertIsNone(self.run_hook(active=False))
         self.post("carol", to=ME)
         out = self.run_hook(active=True)
-        self.assertIn("1건", out["reason"])
+        self.assertIn("1 new mail", out["reason"])
         self.assertIn("carol(DM)", out["reason"])
 
     def test_state_is_per_session(self):
@@ -133,7 +133,7 @@ class MailboxStop(unittest.TestCase):
         self.post("x", raw='{"t": "NaN", "from": "bob", "to": "alice"}')
         self.post("bob", to=ME)
         out = self.run_hook()
-        self.assertIn("1건", out["reason"])
+        self.assertIn("1 new mail", out["reason"])
 
     def test_broken_inputs_exit_zero(self):
         with open(self.p("identity.json"), "w", encoding="utf-8") as f:
@@ -187,7 +187,7 @@ class MailboxStop(unittest.TestCase):
         self.assertIn("DO-THIS", out["reason"])
         self.assertIn(f"id {mid}", out["reason"])
         self.assertIn("mailbox_ack(id)", out["reason"])
-        self.assertNotIn("[메일박스]", out["reason"])       # relays are not in the metadata notice
+        self.assertNotIn("[mailbox]", out["reason"])       # relays are not in the metadata notice
         self.assertEqual(self.hooked(), [])                 # staged until the block is honoured
         self.assertIsNone(self.run_hook(sid="s1", active=True))
         h = self.hooked()
@@ -198,7 +198,7 @@ class MailboxStop(unittest.TestCase):
         self.assertIsNone(self.run_hook(sid="s1"))
         self.relay(src="mcp")                               # not from Sidereus -> plain mail, metadata only
         out = self.run_hook(sid="s1")
-        self.assertIn("[메일박스]", out["reason"])
+        self.assertIn("[mailbox]", out["reason"])
         self.assertNotIn("DO-THIS", out["reason"])
         self.assertEqual(self.hooked(), [])
 
@@ -243,16 +243,16 @@ class MailboxStop(unittest.TestCase):
         mid = self.relay(body="y" * 21000)
         out = self.run_hook()
         r = out["reason"]
-        self.assertTrue("y" * 20000 + f"… (잘림 — mailbox_inbox 로 전문 확인, id {mid})" in r)
+        self.assertTrue("y" * 20000 + f"… (truncated — read the full text with mailbox_inbox, id {mid})" in r)
         self.assertFalse("y" * 20001 in r)
-        self.assertLess(r.index("[아고라 전달"), r.index("[메일박스]"))
-        self.assertIn("1건", r)                            # the relay is not counted as mail
+        self.assertLess(r.index("[Sidereus relay"), r.index("[mailbox]"))
+        self.assertIn("1 new mail", r)                            # the relay is not counted as mail
 
     def test_relay_ui_sized_body_whole(self):
         self.relay(body="z" * 19000)
         r = self.run_hook()["reason"]
         self.assertTrue("z" * 19000 + "\n" in r)
-        self.assertNotIn("잘림", r)
+        self.assertNotIn("truncated", r)
 
     def test_relay_total_cap_defers_not_cuts(self):
         a = self.relay(body="A" * 15000)
@@ -393,7 +393,7 @@ class MailboxStop(unittest.TestCase):
             f.write(str(os.getpid()))
         out = self.run_hook()
         self.assertIn("DO-THIS", out["reason"])
-        self.assertNotIn("[메일박스]", out["reason"])
+        self.assertNotIn("[mailbox]", out["reason"])
 
     def test_relay_older_than_24h_ignored(self):
         with open(self.p("bus.jsonl"), "a", encoding="utf-8") as f:

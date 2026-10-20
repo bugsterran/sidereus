@@ -29,7 +29,7 @@ POLL_S = 2.0
 FIRST_DELAY_S = 3.0        # the sync Stop hook commits first at the same turn end; avoids a double surface
 LIFE_S = 6 * 3600          # below the hook timeout in hooks.json; renewal re-arms through the next turn end
 STALE_S = 15.0             # heartbeat older than this = the owning waiter is gone
-RENEW = ("[메일박스] 감시 갱신 — 새 메일 없음. 할 일이 없으니 도구를 부르지 말고 응답 없이 턴을 끝내십시오.")
+RENEW = ("[mailbox] watch renewed — no new mail. Nothing to do: call no tools and end the turn without a reply.")
 
 
 def lock_path(store, sid):
@@ -74,8 +74,10 @@ def beat(store, me):
 def deliver(p, err):
     """mailbox_stop.commit() order (cursor -> output -> receipts), output to stderr for the rewake."""
     # mailbox_stop's notice says the watch is off; here the waiter itself is the watch.
-    p["reason"] = p["reason"].replace("(감시가 꺼져 있어 턴 끝에 알립니다. 같은 글로 다시 막지 않습니다.)",
-                                      "(대기 훅이 깨웠습니다. 같은 글로 다시 깨우지 않습니다.)")
+    # ⚠Must equal the closing sentence of mailbox_stop.notice() byte for byte, or the swap silently does nothing.
+    p["reason"] = p["reason"].replace(
+        "(No mailbox watch is running, so this is reported at turn end. The same mail will not block again.)",
+        "(The wait hook woke you. The same mail will not wake you again.)")
     MS.save_state(p["sp"], p["state"])     # plan() state has no `pending`: committed past everything
     MS.prune_states(os.path.dirname(p["sp"]), time.time())
     err.write(p["reason"] + "\n")

@@ -148,8 +148,8 @@ def relay_part(t, m):
     hm = time.strftime("%H:%M", time.localtime(t / 1e9))
     body = str(m.get("body") or "")
     if len(body) > RELAY_BODY_MAX:
-        body = body[:RELAY_BODY_MAX] + f"… (잘림 — mailbox_inbox 로 전문 확인, id {m.get('id')})"
-    return (f"[아고라 전달 — 사람이 아고라에서 보낸 지시] 보낸이 {m.get('from') or '?'} · {hm} "
+        body = body[:RELAY_BODY_MAX] + f"… (truncated — read the full text with mailbox_inbox, id {m.get('id')})"
+    return (f"[Sidereus relay — an instruction a person sent from Sidereus] from {m.get('from') or '?'} · {hm} "
             f"· id {m.get('id')}\n{body}")
 
 
@@ -312,13 +312,13 @@ def notice(me, cand):
     names = []
     for m in cand:
         who = str(m.get("from") or "?")
-        tag = f"{who}(방 {m['room']})" if m.get("room") else f"{who}(DM)"
+        tag = f"{who}(room {m['room']})" if m.get("room") else f"{who}(DM)"
         if tag not in names:
             names.append(tag)
-    more = f" 외 {len(names) - MAX_NAMES}" if len(names) > MAX_NAMES else ""
-    return (f"[메일박스] `{me}` 앞으로 새 메일 {len(cand)}건 — 보낸이: {', '.join(names[:MAX_NAMES])}{more}. "
-            "끝내기 전에 mailbox_inbox 로 읽고 답하거나 mailbox_ack 하십시오. "
-            "(감시가 꺼져 있어 턴 끝에 알립니다. 같은 글로 다시 막지 않습니다.)")
+    more = f" and {len(names) - MAX_NAMES} more" if len(names) > MAX_NAMES else ""
+    return (f"[mailbox] {len(cand)} new mail for `{me}` — from: {', '.join(names[:MAX_NAMES])}{more}. "
+            "Before ending, read it with mailbox_inbox and reply, or mailbox_ack it. "
+            "(No mailbox watch is running, so this is reported at turn end. The same mail will not block again.)")
 
 
 def main():
