@@ -42,7 +42,7 @@ class InviteNoticeWatch(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
         self._saved = {k: getattr(inv, k) for k in ("STORE", "ROOMS", "IDENTITY", "SKIP", "SEEN", "CONFIG",
-                                                  "CLAUDE_JSON", "_lang", "ACCT_DIR", "time")}
+                                                  "CLAUDE_JSON", "ACCT_DIR", "time")}
         inv.STORE = self.d
         inv.ROOMS = os.path.join(self.d, "rooms.json")
         inv.IDENTITY = os.path.join(self.d, "identity.json")
@@ -50,7 +50,6 @@ class InviteNoticeWatch(unittest.TestCase):
         inv.SEEN = os.path.join(self.d, "invite-seen.json")
         inv.CONFIG = os.path.join(self.d, "config.local.json")
         inv.CLAUDE_JSON = os.path.join(self.d, "claude.json")
-        inv._lang = lambda: "ko"
         inv.ACCT_DIR = os.path.join(self.d, "acct")
         self.write("claude.json", {"mcpServers": {"mailbox": {"command": "uv"}}})
         self.write("identity.json", {PROJ: ME})
@@ -89,7 +88,7 @@ class InviteNoticeWatch(unittest.TestCase):
         self.assertEqual(out.count("\n"), 1)           # one line
         self.assertIn("mailbox_wake", out)
         self.assertIn("mailbox_inbox", out)
-        self.assertIn("띄우지 마십시오", out)
+        self.assertIn("do not start Monitor", out)
         self.assertNoStartOrder(out)
 
     def test_compact_resume_same_line(self):
@@ -100,11 +99,7 @@ class InviteNoticeWatch(unittest.TestCase):
 
     def test_unregistered_has_wake_line_not_monitor(self):
         out = self.run_hook(cwd="/w/unregistered")
-        self.assertIn("미등록", out)
-        self.assertIn("mailbox_wake", out)
-        self.assertNoStartOrder(out)
-        inv._lang = lambda: "en"
-        out = self.run_hook(cwd="/w/unregistered")
+        self.assertIn("no registered mailbox identity", out)
         self.assertIn("mailbox_wake", out)
         self.assertNoStartOrder(out)
 
@@ -126,7 +121,7 @@ class InviteNoticeWatch(unittest.TestCase):
     def test_off_keeps_login_notice_without_watch_line(self):
         self.write("config.local.json", {"mailbox_watch": {"mode": "off"}})
         out = self.run_hook(cwd="/w/unregistered")
-        self.assertIn("미등록", out)
+        self.assertIn("no registered mailbox identity", out)
         self.assertNotIn("watch.sh", out)
         self.assertNotIn("Monitor", out)
 
@@ -134,11 +129,11 @@ class InviteNoticeWatch(unittest.TestCase):
         self.write("claude.json", {"mcpServers": {"sidereus": {}}, "projects": {"/w/other": {"mcpServers": {"mailbox": {}}}}})
         self.assertEqual(self.run_hook(cwd="/w/unregistered"), "")
         self.write("claude.json", {"projects": {"/w/unregistered": {"mcpServers": {"mailbox": {}}}}})
-        self.assertIn("미등록", self.run_hook(cwd="/w/unregistered"))     # project scope counts
+        self.assertIn("no registered mailbox identity", self.run_hook(cwd="/w/unregistered"))     # project scope counts
 
-    def test_login_prompt_english_outside_ko(self):
-        inv._lang = lambda: "en"
-        out = self.run_hook(cwd="/w/unregistered")
+    def test_login_prompt_english_even_in_ko_locale(self):
+        with mock.patch.dict(os.environ, {"LANG": "ko_KR.UTF-8"}):   # model-facing text ignores the locale
+            out = self.run_hook(cwd="/w/unregistered")
         self.assertIn("no registered mailbox identity", out)
         self.assertNotIn("미등록", out)
 

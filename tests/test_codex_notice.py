@@ -47,7 +47,7 @@ class InviteCodex(unittest.TestCase):
                 "SEEN": os.path.join(self.d, "seen.json"), "CONFIG": os.path.join(self.d, "config.local.json"),
                 "CLAUDE_JSON": os.path.join(self.d, "claude.json"), "ACCT_DIR": os.path.join(self.d, "acct"),
                 "SESSPID_DIR": os.path.join(self.d, "sesspid"), "CLEAR_FILE": os.path.join(self.d, "clears.jsonl"),
-                "_claude_pid": lambda: 4242, "_lang": lambda: "en", "PLATFORM": "cc"}
+                "_claude_pid": lambda: 4242, "PLATFORM": "cc"}
         for k, v in vals.items():
             p = mock.patch.object(inv, k, v)
             p.start()
@@ -76,7 +76,6 @@ class InviteCodex(unittest.TestCase):
         for w in CLAUDE_ONLY:
             self.assertNotIn(w, out)
         self.assertFalse(os.path.exists(os.path.join(self.d, "acct")))   # Claude-only records skipped
-        inv._lang = lambda: "ko"
         self.assertNotIn("mailbox_wake", self.run_hook(["--platform", "codex"]))
 
     def test_codex_identity_key_and_invites(self):
