@@ -22,7 +22,8 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 /* branch + git state in one chip: the name shrinks, the state never does */
 /* ⚠overflow:hidden + min-width:0 let the chip shrink past its content and clip the git state; floor = .sbt min + .sbg */
 .sx > .sb{display:inline-flex;gap:4px;align-items:baseline;overflow:visible;min-width:auto}
-.sx .sb .sbt{overflow:hidden;text-overflow:ellipsis;min-width:min(6ch,100%)}
+/* ⚠No % floor on .sbt: min(6ch,100%) sized as 0 for the chip but 6ch at layout, so «dev» spilled over .sacb */
+.sx .sb .sbt{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .sx .sb .sbg{flex:none;font-size:10px}
 .sxw{padding:5px 0;border-bottom:1px solid #151a22}
 .sxw > :is(.sx,.sx2,.sq){cursor:pointer}
