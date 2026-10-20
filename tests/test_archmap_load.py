@@ -90,12 +90,12 @@ class LoadTest(unittest.TestCase):
         self.assertIsNone(AM.load(self.repo)["checks"])                  # old store: no checks-security.json
         d = os.path.join(self.store, AV.repo_key(self.repo), C1)
         with open(os.path.join(d, "checks-security.json"), "w", encoding="utf-8") as f:
-            json.dump({"v": 1, "repo": self.repo, "commit": C1, "dirty": False, "src_changed": False, "at": 5.0,
-                       "tools": [{"id": "bandit", "rules": "default", "status": "ok", "ms": 1, "files": 1,
-                                  "n": {"error": 1, "warning": 0}}],
-                       "files": {"a/x.py": {"error": 1, "warning": 0}}, "items": []}, f)
+            n = {"critical": 1, "high": 0, "medium": 0, "low": 0}
+            json.dump({"v": 2, "repo": self.repo, "commit": C1, "dirty": False, "src_changed": False, "at": 5.0,
+                       "tools": [{"id": "bandit", "rules": "default", "status": "ok", "ms": 1, "files": 1, "n": n}],
+                       "files": {"a/x.py": n}, "items": []}, f)
         c = AM.load(self.repo)["checks"]
-        self.assertEqual((c["security"]["mods"], c["security"]["stale"], c["tools"]), ({"a": {"error": 1, "warning": 0}}, False, []))
+        self.assertEqual((c["security"]["mods"], c["security"]["stale"], c["tools"]), ({"a": n}, False, []))
         self.assertIsNone(c["security"]["report"])                      # no report file
 
     def test_checks_report(self):

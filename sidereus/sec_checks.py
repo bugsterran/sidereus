@@ -1,5 +1,5 @@
 """Security checks for the runner `scripts/arch_checks.py --category security`: tool plans, report parsers, files
-examined and network gating. Checks file v1 schema (sidereus/arch_checks.py) plus item `pkg`, stored as
+examined and network gating. Checks file v2 schema (sidereus/arch_checks.py) plus item `pkg`, stored as
 checks-security.json.
 
 ⚠Secrets: gitleaks findings keep RuleID / File / StartLine only — Secret, Match, Line and message are never read into
@@ -14,7 +14,7 @@ import re
 import sys
 
 from sidereus import arch_verify as AV
-from sidereus.arch_checks_parse import clean_help
+from sidereus.arch_checks_parse import SEV_RANK, SEVS, clean_help, level
 from sidereus.arch_verify import COMMIT_RE, safe_rel
 
 # install hints per OS: (macOS, Windows, Linux). ⚠each fits why's 60-char cap (arch_checks.WHY_MAX).
@@ -232,11 +232,27 @@ def parse_gitleaks(text):
     j = _json(text)
     if not isinstance(j, list):
         raise ValueError("gitleaks: not a list")
-    return [_it(x.get("File"), x.get("StartLine"), x.get("RuleID"), "error") for x in j if isinstance(x, dict)]
+    return [_it(x.get("File"), x.get("StartLine"), x.get("RuleID"), _lv("gitleaks", None)) for x in j if isinstance(x, dict)]
 
 
-def _sev(s):
-    return "error" if str(s).lower() in ("high", "critical") else "warning"
+_WORD = {"critical": "critical", "high": "high", "moderate": "medium", "medium": "medium", "low": "low", "info": "low",
+         "error": "high", "warning": "medium"}
+
+
+def _lv(tool, raw):
+    """Level of one finding from the tool's own severity field (osv: (cvss score, GHSA label)); unknown -> medium."""
+    if tool == "gitleaks":
+        return "high"   # a committed secret has no tool severity
+    if tool == "osv-scanner":
+        score, label = raw
+        try:
+            s = float(score)
+        except (TypeError, ValueError):
+            s = None
+        if s is not None and s > 0:
+            return "critical" if s >= 9.0 else "high" if s >= 7.0 else "medium" if s >= 4.0 else "low"
+        raw = label
+    return _WORD.get(str(raw or "").lower(), "medium")
 
 
 def parse_npm_audit(text):
@@ -249,7 +265,7 @@ def parse_npm_audit(text):
     def add(rule, pkg, sev, url, cv=()):
         if (rule, pkg) not in seen:
             seen.add((rule, pkg))
-            out.append(_it("package-lock.json", 1, rule, _sev(sev), pkg, url, None, cv))
+            out.append(_it("package-lock.json", 1, rule, _lv("npm-audit", sev), pkg, url, None, cv))
     for name, v in (j.get("vulnerabilities") or {}).items() if isinstance(j.get("vulnerabilities"), dict) else ():
         for via in (v.get("via") or ()) if isinstance(v, dict) else ():
             if isinstance(via, dict):   # string entries name another vulnerable package (listed on its own)
@@ -285,11 +301,7 @@ def parse_osv(text):
                 rule = next((i for i in ids if _GHSA.fullmatch(i)), v["id"])
                 sv = str((v.get("database_specific") or {}).get("severity") or "")
                 g = next((g for g in groups if v["id"] in (g.get("ids") or ())), {})
-                try:
-                    hi = float(g.get("max_severity") or 0) >= 7.0
-                except (TypeError, ValueError):
-                    hi = False
-                out.append(_it(path, 1, rule, "error" if hi or _sev(sv) == "error" else "warning", name,
+                out.append(_it(path, 1, rule, _lv("osv-scanner", (g.get("max_severity"), sv)), name,
                                "https://osv.dev/vulnerability/" + v["id"] if _RULE.fullmatch(v["id"]) else None, None, ids))
     return out
 
@@ -304,7 +316,7 @@ def parse_semgrep(text):
             ex = x.get("extra") if isinstance(x.get("extra"), dict) else {}
             md = ex.get("metadata") if isinstance(ex.get("metadata"), dict) else {}
             out.append(_it(x.get("path"), (x.get("start") or {}).get("line"), x.get("check_id"),
-                           "error" if ex.get("severity") == "ERROR" else "warning", None, md.get("source")))
+                           _lv("semgrep", ex.get("severity")), None, md.get("source")))
     return out
 
 
@@ -317,7 +329,7 @@ def parse_bandit(text):
     for x in j.get("results") or ():
         if isinstance(x, dict):
             tn = x.get("test_name") if isinstance(x.get("test_name"), str) else ""
-            out.append(_it(x.get("filename"), x.get("line_number"), x.get("test_id"), _sev(x.get("issue_severity")),
+            out.append(_it(x.get("filename"), x.get("line_number"), x.get("test_id"), _lv("bandit", x.get("issue_severity")),
                            None, x.get("more_info"), tn.replace("_", " ")))
     return out
 
@@ -370,10 +382,10 @@ LOG_FILE = "security-log.jsonl"   # in arch/<repo key>/, beside the per-commit d
 LOG_LINES = 500                   # only the newest lines are read
 LOG_TAIL_BYTES = 4 * 1024 * 1024
 LOG_ITEMS_MAX, LOG_DESC_MAX = 200, 160
-REVIEW_SEVS = ("critical", "high", "medium", "low")
+REVIEW_SEVS = SEVS
 MARKS = ("resolved", "false-positive")
 SLUG_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,59}")
-_SEV_RANK = {"critical": 0, "error": 1, "high": 1, "medium": 2, "warning": 3, "low": 3}
+_SEV_RANK = SEV_RANK
 
 
 def log_dir(repo):
@@ -389,13 +401,13 @@ def _log_item(x, src):
     """Clean finding {sev, file, line, key, desc} or None (unsafe path, bad key / severity)."""
     if not isinstance(x, dict):
         return None
-    f, ln, k, sv = safe_rel(x.get("file")), x.get("line"), x.get("key"), x.get("sev")
+    f, ln, k, sv = safe_rel(x.get("file")), x.get("line"), x.get("key"), level(x.get("sev"))   # old error/warning lines read as levels
     if src == "scan":
         t, _c, r = k.partition(":") if isinstance(k, str) else ("", "", "")
-        ok_k, ok_s = t in SEC_IDS and bool(_RULE.fullmatch(r)), sv in ("error", "warning")
+        ok_k = t in SEC_IDS and bool(_RULE.fullmatch(r))
     else:
-        ok_k, ok_s = isinstance(k, str) and bool(SLUG_RE.fullmatch(k)), sv in REVIEW_SEVS
-    if not (f and ok_k and ok_s and isinstance(ln, int) and not isinstance(ln, bool) and ln >= 0):
+        ok_k = isinstance(k, str) and bool(SLUG_RE.fullmatch(k))
+    if not (f and ok_k and sv and isinstance(ln, int) and not isinstance(ln, bool) and ln >= 0):
         return None
     return {"sev": sv, "file": f, "line": ln, "key": k, "desc": _desc(x.get("desc"))}
 

@@ -1,4 +1,5 @@
 """Demo Structure data (split out of sidereus/demo.py for the size cap): demo_arch / demo_src / demo_tree / demo_file."""
+from sidereus.arch_checks_parse import zero
 from sidereus.arch_verify import render_md
 
 
@@ -81,19 +82,19 @@ def demo_arch(now):
 
 
 # (tool, file, line, rule, sev, pkg) — security results on the shop modules (no secrets, metadata only)
-_SEC_ITEMS = [("gitleaks", "app/store.py", 3, "generic-api-key", "error", None),
-              ("bandit", "app/api.py", 4, "B105", "warning", None),
-              ("bandit", "app/service.py", 6, "B608", "warning", None),
-              ("osv-scanner", "pay/gateway.go", 1, "GHSA-qppj-fm5r-hxr3", "warning", "golang.org/x/net")]
+_SEC_ITEMS = [("gitleaks", "app/store.py", 3, "generic-api-key", "high", None),
+              ("osv-scanner", "pay/gateway.go", 1, "GHSA-qppj-fm5r-hxr3", "high", "golang.org/x/net"),
+              ("bandit", "app/api.py", 4, "B105", "medium", None),
+              ("bandit", "app/service.py", 6, "B608", "medium", None)]
 
 
 def _demo_checks(now):
     """Demo `checks` (same keys as arch_checks.load_checks): empty top-level shell + `security` with a short history."""
     mods, n = {}, {}
     for t, f, _ln, _r, sev, _p in _SEC_ITEMS:
-        mods.setdefault(f.split("/", 1)[0], {"error": 0, "warning": 0})[sev] += 1
-        n.setdefault(t, {"error": 0, "warning": 0})[sev] += 1
-    z = {"error": 0, "warning": 0}
+        mods.setdefault(f.split("/", 1)[0], zero())[sev] += 1
+        n.setdefault(t, zero())[sev] += 1
+    z = zero()
     tools = [{"id": "gitleaks", "rules": "default", "status": "ok", "ms": 900, "files": 64, "n": n["gitleaks"]},
              {"id": "osv-scanner", "rules": "default", "status": "ok", "ms": 2100, "files": 2, "n": n["osv-scanner"]},
              {"id": "bandit", "rules": "default", "status": "ok", "ms": 700, "files": 4, "n": n["bandit"]},
@@ -110,10 +111,10 @@ def _demo_checks(now):
         return {"sev": sev, "file": f, "line": ln, "key": key, "desc": desc, "src": src, "ai": src == "review",
                 "status": status, "at": at, "commit": _ARCH_COMMIT}
     log = {"at_scan": at, "at_review": at - 600,
-           "open": [row("error", "app/store.py", 3, "gitleaks:generic-api-key", "generic-api-key", "scan", "open"),
+           "open": [row("high", "app/store.py", 3, "gitleaks:generic-api-key", "generic-api-key", "scan", "open"),
                     row("high", "app/api.py", 9, "missing-authz", "Order lookup does not check the caller owns the order",
                         "review", "open")],
-           "resolved": [row("warning", "app/models.py", 2, "bandit:B311", "B311", "scan", "resolved")], "fp": []}
+           "resolved": [row("low", "app/models.py", 2, "bandit:B311", "B311", "scan", "resolved")], "fp": []}
     sec = {"commit": _ARCH_COMMIT, "at": at, "stale": False, "dirty": False, "src_changed": False, "tools": tools,
            "mods": mods, "other": dict(z), "top": top, "rules": rules, "log": log}
     return {"commit": "", "at": None, "stale": False, "dirty": False, "src_changed": False, "tools": [], "mods": {},

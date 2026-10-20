@@ -245,14 +245,18 @@ body.ckwin{margin:0;padding:0;height:100vh;overflow:hidden}
 .archckh a{color:var(--nx-info,#5899f3);white-space:nowrap}
 .archckl{flex:1 1 auto;min-height:0;list-style:none;margin:0;padding:4px;overflow-y:auto;border:1px solid var(--nx-rule,#2a3442);border-radius:8px;background:var(--nx-panel,#141a23)}
 .archckl li{border-left:3px solid var(--nx-warn,#e3b341);padding-left:4px}
-.archckl li.error{border-left-color:var(--nx-err,#f45460)}
+.archckl li.critical,.archckl li.high{border-left-color:var(--nx-err,#f45460)}
+.archckl li.low{border-left-color:var(--nx-t3,#7d8796)}
 .archckl li+li{margin-top:1px}
 .archckl button{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 0;width:100%;min-width:0;text-align:left;border:0;background:transparent;cursor:pointer;
   font:inherit;font-size:12.5px;line-height:1.5;color:var(--nx-t2,#aab4c3);padding:6px 8px;border-radius:4px}
 .archckl button:hover{background:var(--nx-hover,#1b2230);color:var(--nx-t1,#dfe5ee)}
 .archckl button>*{flex:0 0 auto;margin-right:8px;white-space:nowrap}
-.archckl .archcks{width:3em;font-size:11px;color:var(--nx-warn,#e3b341)}
-.archckl li.error .archcks{color:var(--nx-err,#f45460)}
+.archckl .archcks{width:4.8em;font-size:11px;   /* fits bold «critical» (~42px at 11px); 3em clipped «medium» into the tool name */
+color:var(--nx-warn,#e3b341)}
+.archckl li.critical .archcks,.archckl li.high .archcks{color:var(--nx-err,#f45460)}
+.archckl li.critical .archcks{font-weight:700}
+.archckl li.low .archcks{color:var(--nx-t3,#7d8796)}
 .archckl small{font-size:11px;color:var(--nx-t3,#8b95a7)}
 .archckl code{flex:0 1 auto;min-width:0;white-space:normal;overflow-wrap:anywhere;font-size:11.5px;color:var(--nx-t1,#dfe5ee)}
 .archckl .archckf{flex:1 1 220px;min-width:0;white-space:normal;overflow-wrap:anywhere}

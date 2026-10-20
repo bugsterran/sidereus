@@ -4,9 +4,23 @@ per-finding message). Stdlib only; no sidereus imports.
 """
 import re
 
-SEVS = ("error", "warning")
+SEVS = ("critical", "high", "medium", "low")   # most severe first; the single owner of the level names
+LEGACY = {"error": "high", "warning": "medium"}   # v1 checks files and old security-log lines
+SEV_RANK = {s: i for i, s in enumerate(SEVS)}
 HELP_DESC_MAX, HELP_URL_MAX = 140, 300
 _URL_BAD = re.compile(r"[\s\x00-\x1f\x7f\"'<>\\]")
+
+
+def level(s):
+    """A level name as is, a legacy name (error/warning) mapped, anything else None."""
+    if not isinstance(s, str):
+        return None
+    return s if s in SEV_RANK else LEGACY.get(s)
+
+
+def zero():
+    """Fresh {level: 0} counter."""
+    return {s: 0 for s in SEVS}
 
 
 def clean_help(desc, url):

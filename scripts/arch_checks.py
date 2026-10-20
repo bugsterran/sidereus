@@ -284,9 +284,8 @@ def run(repo, only=None, offline=False, dev=False):
 
 def summary(j, extra=""):
     ok = [t for t in j["tools"] if t["status"] == "ok"]
-    e = sum(t["n"]["error"] for t in j["tools"])
-    w = sum(t["n"]["warning"] for t in j["tools"])
-    line = "arch_checks: security · %d tools · %d errors · %d warnings" % (len(ok), e, w)
+    c = tuple(sum(t["n"][k] for t in j["tools"]) for k in AC.SEVS)
+    line = "arch_checks: security · %d tools · %d critical · %d high · %d medium · %d low" % ((len(ok),) + c)
     for st in ("fail", "timeout", "missing", "skipped"):
         ids = [t["id"] for t in j["tools"] if t["status"] == st]
         if ids:
@@ -353,7 +352,7 @@ def _record(rc, repo, commit):
                     if isinstance(t, dict) and isinstance(t.get("id"), str):
                         n = t.get("n") if isinstance(t.get("n"), dict) else {}
                         f.write("%s\t%d\t%d\t%d\t%d\n" % (t["id"], 0 if t.get("status") == "ok" else 1, int(t.get("files") or 0),
-                                                          int(n.get("error") or 0) + int(n.get("warning") or 0),
+                                                          sum(int(n.get(k) or 0) for k in AC.SEVS),
                                                           int(t.get("ms") or 0) // 1000))
             subprocess.run([_EV_PY, _EV_REC, ev, "checks-security", str(rc), root, commit or "",
                             "1" if j.get("dirty") is True else "0", tsv], stdin=subprocess.DEVNULL,

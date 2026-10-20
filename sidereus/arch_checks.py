@@ -10,7 +10,7 @@ import os
 import re
 
 from sidereus.arch_verify import COMMIT_RE, owns, plan_globs, read_json, safe_rel
-from sidereus.arch_checks_parse import SEVS, clean_help
+from sidereus.arch_checks_parse import SEV_RANK, SEVS, clean_help, level, zero
 from sidereus import sec_checks as SC
 from sidereus import sec_report as SR
 
@@ -72,26 +72,25 @@ def _judge(plan, res, repo):
 
 
 def build(repo, commit, dirty, src_changed, at, tools, items):
-    """checks.json v1 dict. tools = [{id, rules, status, why?, ms, files}] (n added here); items errors first, capped."""
+    """checks.json v2 dict. tools = [{id, rules, status, why?, ms, files}] (n added here); items most severe first, capped."""
     files, n = {}, {}
     for x in items:
-        c = files.setdefault(x["file"], {"error": 0, "warning": 0})
-        c[x["sev"]] += 1
-        n.setdefault(x["tool"], {"error": 0, "warning": 0})[x["sev"]] += 1
+        files.setdefault(x["file"], zero())[x["sev"]] += 1
+        n.setdefault(x["tool"], zero())[x["sev"]] += 1
     out_t = []
     for t in tools:
         e = {"id": t["id"], "rules": t["rules"], "status": t["status"], "ms": int(t.get("ms") or 0),
-             "files": int(t.get("files") or 0), "n": n.get(t["id"], {"error": 0, "warning": 0})}
+             "files": int(t.get("files") or 0), "n": n.get(t["id"], zero())}
         if t.get("why"):
             e["why"] = t["why"][:WHY_MAX]
         out_t.append(e)
-    its = sorted(items, key=lambda x: (x["sev"] != "error", x["file"], x["line"], x["tool"]))[:ITEMS_MAX]
+    its = sorted(items, key=lambda x: (SEV_RANK[x["sev"]], x["file"], x["line"], x["tool"]))[:ITEMS_MAX]
     rules = {}
     for x in its:   # help only for rules that reach the stored items; first finding's metadata wins
         h = clean_help((x.get("help") or {}).get("desc"), (x.get("help") or {}).get("url"))
         if h:
             rules.setdefault(x["tool"] + ":" + x["rule"], h)
-    return {"v": 1, "repo": repo, "commit": commit, "dirty": bool(dirty), "src_changed": bool(src_changed), "at": at,
+    return {"v": 2, "repo": repo, "commit": commit, "dirty": bool(dirty), "src_changed": bool(src_changed), "at": at,
             "tools": out_t, "files": dict(sorted(files.items())[:FILES_MAX]),
             "items": [dict({"tool": x["tool"], "file": x["file"], "line": x["line"], "rule": x["rule"], "sev": x["sev"]},
                            **({"pkg": x["pkg"]} if x.get("pkg") else {}), **({"cve": x["cve"]} if x.get("cve") else {}))
@@ -105,8 +104,16 @@ def _nat(x):
 
 
 def _cnt(c):
-    return isinstance(c, dict) and set(c) == {"error", "warning"} and \
-        all(isinstance(c[k], int) and not isinstance(c[k], bool) and c[k] >= 0 for k in SEVS)
+    return isinstance(c, dict) and set(c) == set(SEVS) and all(_nat(c[k]) for k in SEVS)
+
+
+def _counts(c, v):
+    """Level counts of a stored counter, or None. ⚠v1 files hold {error, warning}: read as {high, medium}."""
+    if v == 1:
+        if not (isinstance(c, dict) and set(c) == {"error", "warning"} and _nat(c["error"]) and _nat(c["warning"])):
+            return None
+        return dict(zero(), high=c["error"], medium=c["warning"])
+    return {k: c[k] for k in SEVS} if _cnt(c) else None
 
 
 def checks_errors(j, repo=None, commit=None, ids=()):
@@ -122,8 +129,8 @@ def checks_errors(j, repo=None, commit=None, ids=()):
                                                               or clean_help(v.get("desc"), v.get("url")) != v
                                                               for k, v in rs.items()):
         errs.append("rules")
-    if j.get("v") != 1:
-        errs.append("v must be 1")
+    if j.get("v") != 2:
+        errs.append("v must be 2")
     if not isinstance(j.get("repo"), str) or (repo and os.path.realpath(j.get("repo") or "") != os.path.realpath(repo)):
         errs.append("repo")
     if not (isinstance(j.get("commit"), str) and COMMIT_RE.fullmatch(j["commit"])) or (commit and j.get("commit") != commit):
@@ -153,7 +160,8 @@ def _rule_key(k, ids=()):
 
 
 def _clean_item(x, ids=()):
-    if not isinstance(x, dict) or x.get("tool") not in ids or x.get("sev") not in SEVS:
+    sv = level(x.get("sev")) if isinstance(x, dict) else None
+    if not sv or x.get("tool") not in ids:
         return None
     f, r, ln, pk = safe_rel(x.get("file")), x.get("rule"), x.get("line"), x.get("pkg")
     if not f or not (isinstance(r, str) and RULE_RE.fullmatch(r)) or not isinstance(ln, int) or isinstance(ln, bool) or ln < 0:
@@ -163,17 +171,17 @@ def _clean_item(x, ids=()):
     cv = x.get("cve")   # optional CVE aliases of a dependency finding; display only, not part of the key
     if "cve" in x and not (isinstance(cv, list) and cv and SC.cves(cv) == cv):
         return None
-    return dict({"tool": x["tool"], "file": f, "line": ln, "rule": r, "sev": x["sev"]}, **({"pkg": pk} if "pkg" in x else {}),
+    return dict({"tool": x["tool"], "file": f, "line": ln, "rule": r, "sev": sv}, **({"pkg": pk} if "pkg" in x else {}),
                 **({"cve": cv} if "cve" in x else {}))
 
 
 def aggregate(files, mods, globs):
-    """({module id: {error, warning}}, other) — each file counts for its first owning module, else `other`."""
+    """({module id: {level: n}}, other) — each file counts for its first owning module, else `other`."""
     ms = [d for d in mods if isinstance(d, dict) and d.get("kind") == "module"]
-    out, other = {}, {"error": 0, "warning": 0}
+    out, other = {}, zero()
     for f, c in files.items():
         o = next((d["id"] for d in ms if owns(d, f, globs)), None)
-        t = out.setdefault(o, {"error": 0, "warning": 0}) if o else other
+        t = out.setdefault(o, zero()) if o else other
         for k in SEVS:
             t[k] += c[k]
     return out, other
@@ -227,7 +235,7 @@ def _report(kdir):
 
 def _shell():
     return {"commit": "", "at": None, "stale": False, "dirty": False, "src_changed": False, "tools": [],
-            "mods": {}, "other": {"error": 0, "warning": 0}, "top": [], "rules": {}}
+            "mods": {}, "other": zero(), "top": [], "rules": {}}
 
 
 def _load_one(root, map_dir, m, head, name, ids):
@@ -239,23 +247,22 @@ def _load_one(root, map_dir, m, head, name, ids):
         j = read_json(os.path.join(rdir, c, name))
     except (OSError, ValueError):
         return None
-    if not isinstance(j, dict) or j.get("v") != 1 or j.get("commit") != c or not isinstance(j.get("repo"), str) \
+    if not isinstance(j, dict) or j.get("v") not in (1, 2) or j.get("commit") != c or not isinstance(j.get("repo"), str) \
             or os.path.realpath(j["repo"]) != os.path.realpath(root):
         return None
     tools = []
     for t in j.get("tools") if isinstance(j.get("tools"), list) else ():
         if isinstance(t, dict) and t.get("id") in ids and t.get("status") in STATUSES:
-            n = t.get("n") if _cnt(t.get("n")) else {"error": 0, "warning": 0}
+            n = _counts(t.get("n"), j["v"]) or zero()
             ms = t.get("ms") if isinstance(t.get("ms"), int) and not isinstance(t.get("ms"), bool) else 0
             e = {"id": t["id"], "rules": "project" if t.get("rules") == "project" else "default", "status": t["status"],
-                 "ms": ms, "files": t["files"] if _nat(t.get("files")) else 0, "n": {"error": n["error"], "warning": n["warning"]}}
+                 "ms": ms, "files": t["files"] if _nat(t.get("files")) else 0, "n": n}
             why = t.get("why")
             if isinstance(why, str) and why:
                 e["why"] = "".join(ch for ch in why[:WHY_MAX] if ord(ch) >= 32)
             tools.append(e)
     fs = j.get("files") if isinstance(j.get("files"), dict) else {}
-    files = {k: {"error": v["error"], "warning": v["warning"]} for k, v in list(fs.items())[:FILES_MAX]
-             if safe_rel(k) == k and _cnt(v)}
+    files = {k: _counts(v, j["v"]) for k, v in list(fs.items())[:FILES_MAX] if safe_rel(k) == k and _counts(v, j["v"])}
     try:
         globs = plan_globs(read_json(os.path.join(map_dir, "plan.json")))
     except (OSError, ValueError):
