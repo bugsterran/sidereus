@@ -131,7 +131,7 @@ class ProvTest(unittest.TestCase):
         os.makedirs(s)
         forged = {"v": 1, "plat": "cc", "sid": SID, "model": "forged", "stages": [], "at": T, "vt": T + 200}
         for name in ("prov.json", C1 + ".json"):
-            with open(os.path.join(s, name), "w") as f:
+            with open(os.path.join(s, name), "w", encoding="utf-8") as f:
                 json.dump(forged, f)
         self.assertIsNone(AP.load_prov(self.repo, C1, T + 200))
 
@@ -168,7 +168,7 @@ class ProvTest(unittest.TestCase):
         self.cc_session(SID, [])
         d = os.path.join(AM.ARCH_DIR, AV.repo_key(self.repo), C1)
         os.makedirs(d)
-        with open(os.path.join(d, "verify.json"), "w") as f:
+        with open(os.path.join(d, "verify.json"), "w", encoding="utf-8") as f:
             f.write("{}")
         os.utime(os.path.join(d, "verify.json"), (T + 200, T + 200))
         row = {"sid": SID, "plat": "cc", "cwd": self.repo, "model": "opus-4-1", "state": "think", "tool": "",

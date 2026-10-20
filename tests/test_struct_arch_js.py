@@ -93,9 +93,9 @@ class StructArch(unittest.TestCase):
         self.assertIn(">10-08 14:20 생성 · abc1234</em>", ko[0])
         self.assertNotIn("strbg-cut", ko[0])
         self.assertIn('<em class="strbg strbg-cut" title="HEAD 가 5커밋 앞섬 · ', ko[1])
-        self.assertIn(">10-08 14:20 생성 · abc1234</em>", ko[1])
+        self.assertIn(">⚠ 10-08 14:20 생성 · abc1234</em>", ko[1])
         self.assertIn(">Generated 10-08 14:20 · abc1234</em>", en[0])
-        self.assertIn('title="HEAD is 5 commits ahead · Diagram commit abc1234 · HEAD now 9998887"', en[1])
+        self.assertIn('title="HEAD is 5 commits ahead · Diagram commit abc1234 · HEAD now 9998887\nThe diagram is older than the code', en[1])
         self.assertIn(">abc1234</em>", ko[2])          # no time known: commit only
         self.assertNotIn("생성", ko[2])
 
@@ -222,22 +222,29 @@ class StructArch(unittest.TestCase):
         self.assertEqual(run(js, "en"), [["Generate diagram", "Generate diagram", "생성"], ["Update diagram", "Update diagram", "업데이트"],
                                          ["Redraw", "Redraw", "다시 그리기"]])
 
-    def test_stale_chip_in_header_no_band(self):
-        # Stale map / live run: chip and run status sit in the header; no full-width band and no dismiss control.
+    def test_stale_marker_on_stamp_no_chip(self):
+        # Stale map / live run: no separate stale chip in the controls (it wrapped the header badges); the «Generated»
+        # stamp carries the ⚠ marker, cut style and the explanation tooltip; run status inline; no band, no dismiss.
         r = run("const box = {innerHTML: '', querySelector(){ return null; }}, out = [], m = " + json.dumps({"modules": MODS, "edges": EDGES}) + ";"
                 "globalThis.archMmd = s => '<M/>';"
                 "const pt = d => { ARCH.cache['/r'] = d; box._arsig = ''; archPaint(box, head); out.push(box.innerHTML); };"
                 "pt(Object.assign({ok: true, commit: 'c1'}, m)); pt(Object.assign({ok: true, commit: 'c1', stale: true}, m));"
                 "ARCHRUN = {'/r': {stage: '검증', n: 4, of: 4, sid: 'abcdef123', t0: 1}}; pt(Object.assign({ok: true, commit: 'c1'}, m));"
                 "console.log(JSON.stringify(out));")
-        self.assertNotIn("구조도가 코드보다 오래됨", r[0])
+        self.assertNotIn("구조도가 지금 코드보다 오래되었습니다", r[0])
+        self.assertNotIn("⚠", r[0].split("</H>")[0])
         hd, body = r[1].split("</H>", 1)
-        self.assertIn("strbg-cut", hd)
-        self.assertIn("구조도가 코드보다 오래됨", hd)
+        stamp = re.findall(r'<em class="strbg strbg-cut" title="([^"]*)">([^<]*)</em>', hd)
+        self.assertEqual(len(stamp), 1, hd)                       # one cut badge: the stamp, no extra chip
+        self.assertTrue(stamp[0][1].startswith("⚠ "), stamp)
+        self.assertIn("c1", stamp[0][1])
+        self.assertIn("구조도가 지금 코드보다 오래되었습니다", stamp[0][0])
+        self.assertEqual(hd.count("구조도가 지금 코드보다 오래되었습니다"), 1)
+        self.assertNotIn("구조도가 코드보다 오래됨", hd)
         for h in r:
             self.assertNotIn("archstale", h)
             self.assertNotIn("data-arsx", h)
-        self.assertNotIn("구조도가 코드보다 오래됨", body)
+        self.assertNotIn("오래되었습니다", body)
         self.assertIn("archrun", r[2].split("</H>")[0])   # run-only: status inline in the header
         self.assertNotIn("archrun", r[2].split("</H>", 1)[1])
 

@@ -45,16 +45,17 @@ function archStyleNote(d){
     + (dv ? strHdBadge('cy', T('{n} outside {s} flow').replace('{n}', dv).replace('{s}', archStyleName(st)), T('Edges whose module roles go against this style')) : '');
 }
 // Pure: header badges — pass rate, modules, and a document-style version stamp «Generated MM-DD HH:MM · commit» (server `at`).
-// A stale map keeps the stamp in the «cut» style; how far HEAD moved goes to its tooltip.
+// A stale map keeps the stamp in the «cut» style with a ⚠ marker; how far HEAD moved goes to its tooltip.
 function archHeadNote(d){
   const r = archRate(d), c = String((d && d.commit) || '').slice(0, 7), h = String((d && d.head) || '').slice(0, 7);
   const at = d && typeof d.at === 'number' && isFinite(d.at) && d.at > 0 ? d.at : 0;
   const tip = T('Diagram commit {n} · HEAD now {m}').replace('{n}', c).replace('{m}', h);
   const ahead = d && d.stale ? (typeof d.behind === 'number' ? TV({msg: 'HEAD is {n} commits ahead', vars: {n: d.behind}}) : T('stale')) + ' · ' : '';
+  const why = d && d.stale ? '\n' + T('The diagram is older than the code — a new one is built from the latest commit.') : '';
   return archStyleNote(d) + strHdBadge('n', T('Verified {n}/{m} ({k}%)').replace('{n}', r.n).replace('{m}', r.m).replace('{k}', r.pct),
       T('Edges with checked evidence / all edges'))
     + strHdBadge('', T('{n} modules').replace('{n}', ((d && d.modules) || []).length))
-    + (c ? strHdBadge(d.stale ? 'cut' : '', at ? T('Generated {t} · {c}').replace('{c}', c).replace('{t}', hhmm(at, { date: true, dsep: '-' })) : c, ahead + tip) : '')
+    + (c ? strHdBadge(d.stale ? 'cut' : '', (d.stale ? '⚠ ' : '') + (at ? T('Generated {t} · {c}').replace('{c}', c).replace('{t}', hhmm(at, { date: true, dsep: '-' })) : c), ahead + tip + why) : '')
     + archProvNote(d && d.prov)
     + (typeof archChkHdBtn === 'function' ? archChkHdBtn(d) : '');   // 84l: issues badge, or «Security check» when the project has no results yet
 }
@@ -483,10 +484,10 @@ function archPaint(box, head){
       + esc(T('The arch-map pipeline reads the code, draws modules and edges, then checks each edge against its evidence (file:line). It never writes to the repository.')) + '</p>' + archStatusHtml(p, req) + '</div>' + msg + '</div>';
     return;
   }
-  // Stale map / live run: a small header chip + inline status, not a full-width band (small enough to need no dismiss).
-  const chip = d.stale ? strHdBadge('cut', T('Diagram is older than the code'), T('The diagram is older than the code — a new one is built from the latest commit.')) : '';
+  // Stale map / live run: inline status in the header, not a full-width band; staleness itself is the ⚠ «Generated» badge
+  // (a separate chip widened the controls and wrapped the header badges onto many lines at 900-1440px).
   const prow = typeof archReqLast === 'function' ? archReqLast(p, ARCH_PL) : null;   // request record (84l2): a live one takes the header line's place
-  const hst = chip + (prow && archReqLive(prow) ? '' : run ? archRunHtml(run) : d.stale ? archSentHtml(p) : '');
+  const hst = (prow && archReqLive(prow) ? '' : run ? archRunHtml(run) : d.stale ? archSentHtml(p) : '');
   const rq0 = req || (!d.stale && !run ? archSentHtml(p) : ''), rq = prow ? archReqSlot(p, ARCH_PL, rq0, req) : rq0;   // map preview / sent line under the header
   // Selection survives poll repaints; a module gone from a rebuilt map falls back to the overview.
   const si = ARCH.sel && ARCH.sel.p === p ? mods.findIndex(m => m && m.id === ARCH.sel.id) : -1, sel = si >= 0 ? mods[si].id : '';
@@ -516,8 +517,8 @@ function archPaint(box, head){
   if(same && !hold && typeof archMmPick === 'function'){ const od = box.querySelector && box.querySelector('.archdg');
     const pv = archMmPick(sm, od && od.dataset ? od.dataset.k : null, k); if(pv !== sm){ sm = pv; box._arsm = [sm, sl, sd]; } }
   const fa = Array.isArray(d.flows) && d.flows.length ? archFlowAt(d, p) : null, fl = fa && fa.fi >= 0 ? fa.fls[fa.fi] : null;   // ⚠no flows: no 84k call, same page as before
-  // Flow view has no header buttons: a stale map puts its request button next to the chip; an open preview sits under the header.
-  const fhd = d.stale ? chip + archStatusHtml(p, archReqBtn(p, home, cands, d)) : hst;
+  // Flow view has no header buttons: a stale map puts its request button in the controls; an open preview sits under the header.
+  const fhd = d.stale ? archStatusHtml(p, archReqBtn(p, home, cands, d)) : hst;
   if(fl){ box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d), '', fhd) + (d.stale && req ? '<div class=archck>' + req + '</div>' : '') + msg + archFlowBody(fa.fls, fa.fi, names) + '</div>';
     archScrollPut(box, sm, sl); archFlowMark(box.querySelector && box.querySelector('.archfdg svg'), fl); return; }
   box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d), '', hst + pre) + (rq ? '<div class=archck>' + rq + '</div>' : '') + msg

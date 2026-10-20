@@ -6,7 +6,6 @@ Object.assign(I18N.ko, {
   'No architecture diagram yet': '아직 아키텍처 구조도가 없습니다',
   'The arch-map pipeline reads the code, draws modules and edges, then checks each edge against its evidence (file:line). It never writes to the repository.': 'arch-map 파이프라인이 코드를 읽고 모듈과 연결을 그린 뒤, 연결마다 근거(파일:줄)를 검증합니다. 저장소에는 쓰지 않습니다.',
   'The diagram is older than the code — a new one is built from the latest commit.': '구조도가 지금 코드보다 오래되었습니다 — 다시 만들면 최신 커밋 기준이 됩니다.',
-  'Diagram is older than the code': '구조도가 코드보다 오래됨',
   'No edge passed the check.': '검증을 통과한 연결이 없습니다.', 'Click for evidence · click evidence for code': '누르면 근거 · 근거를 누르면 코드',
   'Evidence is inferred, not a direct reference': '근거가 직접 호출이 아니라 추정입니다',
   'The Sidereus repository location is unknown': '시데레우스 저장소 위치를 모릅니다',
