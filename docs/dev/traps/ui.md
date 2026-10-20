@@ -223,3 +223,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: the demo has no prefs file, so it opened on Timeline like a first run.
 - ⇒ `chat_server.main` `--demo` seeds `{"mbMainView": "pipe"}` into the memory store; the real viewer passes no seed and keeps Timeline.
 - ⚠Never write the seed to `PATH` — the demo writes nothing to disk.
+
+## Branch chip name has no % floor (`60-sessions.css` `.sx .sb .sbt`)
+
+- Cause: `.sbt{min-width:min(6ch,100%)}` — the % resolves to 0 when the chip (`overflow:visible`) is sized, then to the chip width at layout; a short name («dev») took 6ch and the git state spilled over the account chip.
+- ★Headless Chrome: «dev ↑20 ~2» sbt 47px in a 54px chip, 22px over `.sacb`; with `min-width:0` 19px, no overlap; long names unchanged.
+- ⇒ `.sbt{min-width:0}`; the chip floor is `.sb{min-width:auto}` (content, capped by `max-width:150px`).
+- ⚠Do not put a percentage `min-width` on a child of a box with `overflow:visible` and an automatic min size.
