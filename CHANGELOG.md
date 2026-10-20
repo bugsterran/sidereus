@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Structure: a framework name joined with « + » or «, » (e.g. a BE and an FE stack) shows as one badge per part, so each wraps instead of being clipped; the full name stays in the tooltip.
 - Chat: the «Participants» panel shows each participant's platform logo when the id matches a live session.
 
 ### Fixed

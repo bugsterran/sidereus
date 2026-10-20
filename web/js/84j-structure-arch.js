@@ -30,6 +30,8 @@ const ARCH_ROLE_LBL = { web: 'Web', service: 'Service', data: 'Data', domain: 'D
   view: 'View', viewmodel: 'ViewModel', model: 'Model', shared: 'Shared' };
 function archStyleName(st){ const k = String((st && st.style) || ''); return T(Object.prototype.hasOwnProperty.call(ARCH_STYLE_LBL, k) ? ARCH_STYLE_LBL[k] : 'Other', 'arch style'); }
 function archRoleName(r){ r = String(r || ''); return Object.prototype.hasOwnProperty.call(ARCH_ROLE_LBL, r) ? T(ARCH_ROLE_LBL[r], 'arch role') : r; }
+// Pure: framework string -> parts split on « + » / «, »; one badge per part wraps onto the next line instead of an ellipsis.
+function archFwParts(fw){ return String(fw || '').split(/\s+\+\s+|,\s+/).map(x => x.trim()).filter(Boolean); }
 // Pure: style badges «Layered» (+ «estimated» when an evidence file is not in the commit) · framework · «Evidence N files»,
 // then the deviation count; '' when the server sent no style. Evidence tooltip = files + units (strHdBadge escapes both).
 function archStyleNote(d){
@@ -40,7 +42,7 @@ function archStyleNote(d){
   const dv = Array.isArray(d.dev) ? d.dev.length : 0;
   // Separate badges: a long framework inside one combined badge got truncated along with the evidence count.
   return strHdBadge(st.ok === false ? 'cut strbg-asty' : 'asty', archStyleName(st) + (st.ok === false ? ' · ' + T('estimated') : ''))
-    + (fw ? strHdBadge('dat', fw, fw) : '')
+    + archFwParts(fw).map(x => strHdBadge('dat', x, fw)).join('')
     + strHdBadge('', T('Evidence {n} files').replace('{n}', ev.length), tip)
     + (dv ? strHdBadge('cy', T('{n} outside {s} flow').replace('{n}', dv).replace('{s}', archStyleName(st)), T('Edges whose module roles go against this style')) : '');
 }
