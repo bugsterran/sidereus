@@ -391,7 +391,19 @@ if __name__ == "__main__":
             _s.reconfigure(encoding="utf-8")
         except Exception:
             pass
+    # ⚠Codex parses SessionStart stdout that starts with `[` or `{` as JSON and fails the hook on «[mailbox] …»,
+    #   so under --platform codex the text goes out wrapped as hookSpecificOutput.additionalContext.
+    import io
+    _cx = _platform(sys.argv[1:]) == "codex"
+    _buf, _out = io.StringIO(), sys.stdout
+    if _cx:
+        sys.stdout = _buf
     try:
         main()
     except Exception:
         pass          # a notification failure must never block the session
+    finally:
+        sys.stdout = _out
+    if _cx and _buf.getvalue().strip():
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart",
+                                                 "additionalContext": _buf.getvalue().rstrip("\n")}}, ensure_ascii=False))
