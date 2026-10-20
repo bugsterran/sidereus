@@ -60,15 +60,6 @@ CLAUDE_JSON = (os.path.join(os.path.expanduser(os.environ["CLAUDE_CONFIG_DIR"]),
                if os.environ.get("CLAUDE_CONFIG_DIR") else os.path.expanduser("~/.claude.json"))
 
 
-def _lang():
-    """'ko' when the first set of LC_ALL / LC_MESSAGES / LANG starts with 'ko', else 'en' (same rule as sidereus_cli)."""
-    for k in ("LC_ALL", "LC_MESSAGES", "LANG"):
-        v = os.environ.get(k)
-        if v:
-            return "ko" if v.lower().startswith("ko") else "en"
-    return "en"
-
-
 def mailbox_registered(cwd):
     """Is a mailbox MCP server visible to this session (user/project scope in ~/.claude.json, or cwd/.mcp.json)?
 
@@ -168,12 +159,9 @@ def watch_mode(cwd):
 
 # ★Monitor is off by company policy (DISABLE_TELEMETRY). New mail wakes the session via the Stop async hook
 #   `mailbox_wake.py` (asyncRewake) — never tell a session to start Monitor / watch.sh.
-WAKE_KO = ("새 메일은 Stop 훅(mailbox_wake)이 세션을 깨워 줍니다 — Monitor·watch.sh 를 띄우지 마십시오."
-           " 깨워지면 mailbox_inbox 로 읽으십시오.")
 WAKE_EN = ("New mail wakes this session via the Stop hook (mailbox_wake) — do not start Monitor or watch.sh."
            " When woken, read it with mailbox_inbox.")
 # Codex has no mailbox_wake/Monitor: ext-hooks/gemini_mail_stop.py --platform codex holds the turn end once on new mail.
-WAKE_KO_CODEX = "새 메일은 턴이 끝날 때 Stop 훅이 알려 줍니다 — 알림이 오면 mailbox_inbox 로 읽으십시오."
 WAKE_EN_CODEX = "New mail is delivered at turn end by the Stop hook — when it arrives, read it with mailbox_inbox."
 PLATFORM = "cc"   # set from --platform in main(); only "codex" changes anything
 
@@ -181,27 +169,16 @@ PLATFORM = "cc"   # set from --platform in main(); only "codex" changes anything
 def notice_unregistered(cwd, watch=True):
     """Unregistered-identity notice. SessionStart only — the goal is for the session to ask the user and register."""
     folder = os.path.basename(cwd.rstrip("/")) or "unknown"
-    if _lang() != "ko":
-        print("\n".join([
-            f"[mailbox] This project has no registered mailbox identity (path: {cwd}).",
-            "Until it is registered it cannot receive room invites, and posting is blocked by the identity guard.",
-            'Ask the user with AskUserQuestion — "This project has no mailbox id. Register one?"',
-            f"  Options: (1) register as `{folder}`  (2) type a name  (3) no (don't ask again)",
-            'Register with mailbox_login {as_id:"<name>"} — remember (default) saves it to identity.json.',
-        ] + ([WAKE_EN] if watch else []) + [
-            f"If the user picks (3), add this path to {_tilde(SKIP)}.",
-            "Do not choose an id yourself before the user answers.",
-        ]))
-        return
+    # Model-facing text is English only; the session asks the user in the user's own language.
     print("\n".join([
-        f"[메일박스] 이 프로젝트는 메일박스 신원이 미등록입니다(경로: {cwd}).",
-        "등록 전에는 방 초대를 받을 수 없고, 글을 쓰면 신원 방어막에 막힙니다.",
-        '사용자에게 AskUserQuestion 으로 물어보십시오 — "이 프로젝트는 메일박스 아이디가 없어. 등록할까?"',
-        f"  선택지: (1) `{folder}` 로 등록  (2) 직접 입력  (3) 안 함(다시 묻지 않음)",
-        '등록은 mailbox_login {as_id:"<이름>"} — remember 기본값이 identity.json 에 저장합니다.',
-    ] + ([WAKE_KO] if watch else []) + [
-        f"(3) 을 고르면 이 경로를 {_tilde(SKIP)} 에 추가하십시오.",
-        "사용자가 답하기 전에 스스로 아이디를 정하지 마십시오.",
+        f"[mailbox] This project has no registered mailbox identity (path: {cwd}).",
+        "Until it is registered it cannot receive room invites, and posting is blocked by the identity guard.",
+        'Ask the user with AskUserQuestion, in the user\'s language — "This project has no mailbox id. Register one?"',
+        f"  Options: (1) register as `{folder}`  (2) type a name  (3) no (don't ask again)",
+        'Register with mailbox_login {as_id:"<name>"} — remember (default) saves it to identity.json.',
+    ] + ([WAKE_EN] if watch else []) + [
+        f"If the user picks (3), add this path to {_tilde(SKIP)}.",
+        "Do not choose an id yourself before the user answers.",
     ]))
 
 
@@ -210,10 +187,7 @@ def notice_wake(me):
 
     ⚠No «watcher off» warning any more — without Monitor that is the normal state."""
     cx = PLATFORM == "codex"
-    if _lang() == "ko":
-        print(f"[메일박스] 아이디 `{me}` · " + (WAKE_KO_CODEX if cx else WAKE_KO))
-    else:
-        print(f"[mailbox] id `{me}` · " + (WAKE_EN_CODEX if cx else WAKE_EN))
+    print(f"[mailbox] id `{me}` · " + (WAKE_EN_CODEX if cx else WAKE_EN))
 
 
 def codex_id(cwd):
