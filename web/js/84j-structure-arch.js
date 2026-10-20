@@ -104,7 +104,8 @@ function archDmBody(name, repo, home, verb, cx){   // verb = archReqOf(d).vb (wi
     + '파이프라인: ' + h + '.claude/pipelines/' + name + '.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n'
     + '게이트: python3 ' + h + 'scripts/arch_verify.py --last (Windows: py ' + h + 'scripts/arch_verify.py --last)'   // ⚠page has no server-OS signal: both forms
     // ⚠No Agent tool there: stages are lit by a leading shell marker (hooks/pl_mark.py --platform codex MARK).
-    + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + name + '/<stage title>]" and end it with echo "[pl-end:' + name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.' : '');
+    + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + name + '/<stage title>]" and end it with echo "[pl-end:' + name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
+      + ' At each stage start re-read only the files the previous stage wrote (for arch-map: plan.json, then map.json, then flows.json); do not rely on earlier stage context.' : '');   // ⚠one Codex context holds every stage: stale earlier reads leak into later stages
 }
 // Sidereus repo: the server's `sidereus` field, else the project whose pipeline list holds arch-map (48 PLS, if loaded).
 function archHome(d){

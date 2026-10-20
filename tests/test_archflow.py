@@ -251,18 +251,26 @@ class RunTest(Base):
         d = self.put(None)
         self.assertEqual(AF.run(self.repo, C), "")
         self.assertFalse(os.path.exists(os.path.join(d, "flows.verify.json")))
-        self.assertEqual(self.cli(), (0, "arch_verify: rate 1.00 (1/1)"))
+        # "lib" has no map edge: the quality warning is the only suffix, no flow part.
+        self.assertEqual(self.cli(), (0, "arch_verify: rate 1.00 (1/1) · warn isolated"))
 
     def test_exit_code_unchanged(self):
-        failing = self.fl([flow([step(ev("app/api.py", 3, "nothere"))] * 3, "f%d" % k) for k in range(8)])
+        fls = [flow([step(ev("app/api.py", 3, "nothere"))] * 3, "f%d" % k) for k in range(8)]
+        for k, x in enumerate(fls):
+            x["entry"]["label"] = "POST /login%d" % k      # distinct entries: entry-dup must not fire here
+        failing = self.fl(fls)
         for edge_ok in (True, False):
             self.put(None, edge_ok)
             rc0, line0 = self.cli()
             self.put(failing, edge_ok)
             rc1, line1 = self.cli()
             self.assertEqual(rc1, rc0)
-            self.assertEqual(line1, line0 + " · flows 0/8 (steps 0/24)")
+            self.assertEqual(line1, line0.replace(" · warn", " · flows 0/8 (steps 0/24) · warn", 1))
         self.assertEqual(rc0, 1)
+        self.put(self.fl([flow([step(ev("app/api.py", 3, "connect"))], "f%d" % k) for k in range(2)]))
+        rc, line = self.cli()                                     # same entry on two flows: quality FAIL alone sets rc 1
+        self.assertEqual(rc, 1)
+        self.assertIn(" · quality FAIL (entry-dup)", line)
         self.m["modules"][0]["kind"] = "bogus"                    # invalid map: no flow suffix at all
         self.put(failing)
         rc, line = self.cli()

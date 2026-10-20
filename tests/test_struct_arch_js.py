@@ -386,6 +386,7 @@ class StructArch(unittest.TestCase):
                 "const box = {innerHTML: '', querySelector(){ return null; }}; archPaint(box, head); const h = box.innerHTML; await archSend();"
                 "console.log(JSON.stringify([h, POSTS[0][1].body]));")
         self.assertIn("[pl:arch-map/", r[1])
+        self.assertIn("re-read only the files the previous stage wrote (for arch-map: plan.json, then map.json, then flows.json)", r[1])
         self.assertIn(r[1].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"), r[0])
 
     def test_codex_turn_end_hint(self):

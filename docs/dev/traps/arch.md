@@ -4,6 +4,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Structure tab (Architecture · Size)
 
+- **Arch-map quality thresholds come from two maps only** (`sidereus/arch_quality.py` `QUAL_*`).
+  - Cause: a map can pass every evidence check and still say nothing — copied flows, labels that repeat the target name.
+  - ★2026-10-20: Codex map FAIL (flow pair Jaccard 0.949, label-target 165/179 = 0.92, 1 duplicate entry); Claude map PASS (J 0.705, 1/355 = 0.003).
+  - ⇒ Fail on label-target (>= 3 edges and >= 25%) and entry-dup; flow-overlap (J >= 0.80, flows with >= 3 pairs) only warns. Re-measure before moving a threshold.
+  - ⚠flow-overlap stays a warning: two entries sharing one long downstream chain (GET /items, GET /items/{id}) reach J 0.80 legitimately and have no fix.
+  - ⚠Never fail on accessor names (`getX`/`setX` calls): real cross-module getters exist, so accessor-call stays a warning.
 - ⚠**An unquoted SVG attribute right before `/>` swallows the slash** (2026-10-09). `ry=5/>` parses as `ry="5/"` and logs «Expected length» on every paint (arch legend swatches). ⇒ Put a space before `/>` or quote the value. The demo had no arch map, so only the live console showed it.
 - ⚠**`ast.parse` on a user's repo prints SyntaxWarning to viewer.err on Python 3.12+** (2026-10-13). Invalid escapes like `"\{"` in the analysed project's own files surfaced as `<unknown>:26: SyntaxWarning`. ⇒ structure_lang and arch_verify parse with the pseudo-filename `<user-src>`, and a module-level `filterwarnings("ignore", SyntaxWarning, module="<user-src>$")` silences only those. ⚠Not `catch_warnings` — it is not thread-safe. Test: `test_user_src_warnings.py`.
 - **Anything new drawn by `archPaint` must join its paint signature** (`84j` `archPaint` `sig`, `84l2` `archReqSig`).
