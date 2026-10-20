@@ -382,10 +382,8 @@ LOG_FILE = "security-log.jsonl"   # in arch/<repo key>/, beside the per-commit d
 LOG_LINES = 500                   # only the newest lines are read
 LOG_TAIL_BYTES = 4 * 1024 * 1024
 LOG_ITEMS_MAX, LOG_DESC_MAX = 200, 160
-REVIEW_SEVS = SEVS
 MARKS = ("resolved", "false-positive")
 SLUG_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,59}")
-_SEV_RANK = SEV_RANK
 
 
 def log_dir(repo):
@@ -398,7 +396,8 @@ def _desc(s):
 
 
 def _log_item(x, src):
-    """Clean finding {sev, file, line, key, desc} or None (unsafe path, bad key / severity)."""
+    """Clean finding {sev, file, line, key, desc} or None (unsafe path, bad key / severity).
+    Scan and review rows alike read v1 error/warning as high/medium (level())."""
     if not isinstance(x, dict):
         return None
     f, ln, k, sv = safe_rel(x.get("file")), x.get("line"), x.get("key"), level(x.get("sev"))   # old error/warning lines read as levels
@@ -515,7 +514,7 @@ def log_view(kdir):
             for ident, x in st.items():
                 if ident[0] == "scan" and ident not in seen and x["status"] == "open" and ident[1].split(":", 1)[0] in ran:
                     x.update(status="resolved", at=r["at"], commit=r["commit"])
-    rows = sorted(st.values(), key=lambda x: (_SEV_RANK.get(x["sev"], 9), x["file"], x["line"], x["key"]))
+    rows = sorted(st.values(), key=lambda x: (SEV_RANK.get(x["sev"], 9), x["file"], x["line"], x["key"]))
     pick = lambda s: [x for x in rows if x["status"] == s][:LOG_ITEMS_MAX]
     return {"at_scan": at_scan, "at_review": at_review, "open": pick("open"), "resolved": pick("resolved"),
             "fp": pick("false-positive")}

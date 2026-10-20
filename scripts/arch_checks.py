@@ -16,7 +16,8 @@ usage: arch_checks.py (--repo <path> | --last | --verify --last) --category secu
   --verify --last   validate the last checks-security.json; exit 1 if invalid, if no tool ran or an ok tool examined
                     0 files (EMPTY).
   --log-review      (--repo | --last) append AI review findings to arch/<key>/security-log.jsonl from stdin TSV
-                    `sev<TAB>file:line<TAB>slug<TAB>desc` (sev critical|high|medium|low).
+                    `sev<TAB>file:line<TAB>slug<TAB>desc` (sev critical|high|medium|low;
+                    old error|warning read as high|medium).
   --log-show        print open AI review findings (sev, file:line, slug).
   --mark <slug>@<file> resolved|false-positive [--commit <sha>]   mark an AI review finding (default commit: HEAD).
 Prints one summary line. Only file / line / rule / severity (+ package) are stored — never tool message text or secrets.
