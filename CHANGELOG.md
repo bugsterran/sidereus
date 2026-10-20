@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-20
+
 ### Added
 
 - Structure: the security issues window shows a running security check as «Running · stage n/of · <stage> · <elapsed>», the same progress line as an architecture-map run, for Claude and Codex sessions; a check ends only when the review stage writes its record (the scan stage's log record no longer ends it), and a dead session reads «No session».
@@ -26,9 +28,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Security checks: findings use the levels critical / high / medium / low instead of error / warning (older result files are converted on load); the issues window header counts each level, the tab badge is red with any critical or high finding.
+- Hooks: mailbox relay headers, stop-hook block reasons and invite notices shown to the model are in English.
 
 ### Fixed
 
+- Sessions: a short branch name (such as «dev») no longer spills over the account chip.
+- Sessions: a session with one watcher shows the watcher's label (e.g. «Mailbox watch») instead of «watch 1» followed by a stale last tool.
+- Timeline: the English toolbar fits on one line at 900px (the «?» help wrapped to a second line).
 - Structure: an architecture focus-view edge label near the right edge is no longer cut off by the drawing's edge.
 - Codex: the SessionStart mailbox notice no longer fails with «hook returned invalid session start JSON output».
 - Security checks: the scan reads the files of the commit it is stored under (a `git archive` export of HEAD in a temp folder) instead of the working tree, so uncommitted edits and untracked files no longer leak into a result labelled with that commit. The repo itself is only read.
@@ -333,7 +339,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/bugsterran/sidereus/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/bugsterran/sidereus/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bugsterran/sidereus/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/bugsterran/sidereus/compare/v0.2.0...v0.2.1
