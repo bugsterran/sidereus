@@ -16,6 +16,7 @@ import time
 
 # async-rewake: background Stop hook, exit 2 wakes the idle session (Claude Code asyncRewake).
 # stop-wait: the sync Stop hook itself waits; a block reason continues the turn (Codex).
+#   ⚠Opt-in (`--wait`): it also holds every interactive turn, so typed input queues; the example ships it off.
 # turn-end: mail only at the next turn end (Gemini AfterAgent; worker mode is the opt-in idle wait).
 # none: not measured; turn-end hook from generic-hooks-example.json at best.
 WAKE = {"claude": "async-rewake", "codex": "stop-wait", "gemini": "turn-end",

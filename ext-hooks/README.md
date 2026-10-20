@@ -25,8 +25,8 @@ The turn-end hook `gemini_mail_stop.py --platform <key>` (default gemini) blocks
 
 Waking an idle session: each CLI's method is one row of `WAKE` in `hooks/mail_wait.py` (a new CLI = one row + `tests/test_mail_wake_table.py`). All of them watch `bus.jsonl` the same way on every OS (stat every 2 s, no model call while waiting).
 - Claude: `async-rewake` (`hooks/mailbox_wake.py`, background Stop hook, exit 2 wakes the session).
-- Codex: `stop-wait` — the Stop entry `gemini_mail_stop.py --platform codex --wait` (timeout 3600) waits up to 59 min (`SIDEREUS_MAIL_WAIT_S`) and blocks when mail arrives. To turn it on, copy the example's Stop entry and re-approve it with `/hooks` (the hash changes).
-  - ⚠While it waits the TUI shows «Working · Running hook» and typed input queues until Esc or the wait ends.
+- Codex: `stop-wait`, **opt-in, for unattended sessions only** — the example ships `gemini_mail_stop.py --platform codex` (timeout 5, mail at turn end only). To enable, add `--wait` and set timeout 3600 in `~/.codex/hooks.json`, then re-approve with `/hooks` (the hash changes). It waits up to 59 min (`SIDEREUS_MAIL_WAIT_S`) and blocks when mail arrives.
+  - ⚠The wait runs after every interactive turn: the TUI shows «Working · Running hook» and a prompt you type only queues (Codex does not cancel the hook) until mail arrives, the timeout, or Esc. ★0.163.0 (2026-10-20): a 1884 s dead gap inside one turn — Codex looked hung on simple requests. Never make `--wait` the default for an interactive Codex.
   - ⚠After 59 min the turn ends and waiting resumes only after the next prompt; the attention signal covers that gap.
   - After `SIDEREUS_MAIL_WAIT_MAX` (20) mail wakes without a human prompt it stops waiting until you type.
   - `codex exec` never waits (detected from the rollout's `session_meta`; an unreadable rollout also skips the wait).
