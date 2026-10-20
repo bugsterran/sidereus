@@ -15,6 +15,7 @@ from tests.test_archchecks import C1, Tmp, cli
 from tests._node import node_e
 
 AC = sidereus("arch_checks")
+ACP = sidereus("arch_checks_parse")
 AV = sidereus("arch_verify")
 SC = sidereus("sec_checks")
 SECRET, MATCH, LINE = "AKIAREALLOOKING7Q2Z9XK", "aws_key = AKIAREALLOOKING7Q2Z9XK", "    aws_key = 'AKIAREALLOOKING7Q2Z9XK'"
@@ -94,8 +95,8 @@ class Plans(Tmp):
     def test_npm_audit_parse(self):
         its = SC.parse_npm_audit(json.dumps(NPM))
         self.assertEqual([(x["rule"], x["pkg"], x["sev"], x["file"], x["line"]) for x in its],
-                         [("GHSA-p6mc-m468-83gw", "lodash", "error", "package-lock.json", 1),
-                          ("1179", "minimist", "warning", "package-lock.json", 1)])
+                         [("GHSA-p6mc-m468-83gw", "lodash", "critical", "package-lock.json", 1),
+                          ("1179", "minimist", "medium", "package-lock.json", 1)])
         self.assertEqual(SC.files({"id": "npm-audit"}, {"out": json.dumps(NPM)}, self.repo), 1)
 
     def test_cve_aliases_kept_beside_key(self):   # rule (finding key) stays GHSA-first; CVE ids ride in a separate field
@@ -134,8 +135,53 @@ class Plans(Tmp):
                "metrics": {"_totals": {}, "./a.py": {}}}
         its = SC.parse_bandit(json.dumps(rep))
         self.assertNotIn(SECRET, json.dumps(its))
-        self.assertEqual((its[0]["rule"], its[0]["sev"], its[0]["help"]["desc"]), ("B105", "warning", "hardcoded password string"))
+        self.assertEqual((its[0]["rule"], its[0]["sev"], its[0]["help"]["desc"]), ("B105", "low", "hardcoded password string"))
         self.assertEqual(SC.files({"id": "bandit"}, {"out": json.dumps(rep)}, self.repo), 1)
+
+    def test_levels_per_tool(self):   # R1: each tool's own severity field -> critical/high/medium/low
+        def osv(score, label=None):
+            v = {"id": "GHSA-aaaa-bbbb-cccc"}
+            if label:
+                v["database_specific"] = {"severity": label}
+            g = [{"ids": [v["id"]], "max_severity": score}] if score is not None else []
+            j = {"results": [{"source": {"path": "go.sum"}, "packages": [{"package": {"name": "x"}, "groups": g,
+                                                                           "vulnerabilities": [v]}]}]}
+            return SC.parse_osv(json.dumps(j))[0]["sev"]
+        self.assertEqual([osv("9.8"), osv("7.0"), osv("4.0"), osv("3.9"), osv(None, "MODERATE"), osv(None, "CRITICAL"),
+                          osv(None)], ["critical", "high", "medium", "low", "medium", "critical", "medium"])
+        self.assertEqual(osv("3.9", "CRITICAL"), "low")   # a CVSS score wins over the advisory label
+        bd = lambda s: SC.parse_bandit(json.dumps({"results": [{"filename": "a.py", "line_number": 1, "test_id": "B1",
+                                                                "issue_severity": s}]}))[0]["sev"]
+        self.assertEqual([bd(s) for s in ("HIGH", "MEDIUM", "LOW", "UNDEFINED")], ["high", "medium", "low", "medium"])
+        sg = lambda s: SC.parse_semgrep(json.dumps({"results": [{"path": "a.py", "start": {"line": 1}, "check_id": "r",
+                                                                 "extra": {"severity": s}}]}))[0]["sev"]
+        self.assertEqual([sg(s) for s in ("CRITICAL", "ERROR", "WARNING", "INFO", "HIGH", "LOW")],
+                         ["critical", "high", "medium", "low", "high", "low"])
+        self.assertEqual(SC.parse_gitleaks(json.dumps([{"RuleID": "k", "File": "a", "StartLine": 1}]))[0]["sev"], "high")
+        npm = lambda s: SC.parse_npm_audit(json.dumps({"advisories": {"1": {"id": 1, "module_name": "m", "severity": s}}}))[0]["sev"]
+        self.assertEqual([npm(s) for s in ("critical", "high", "moderate", "low", "info")],
+                         ["critical", "high", "medium", "low", "low"])
+        self.assertEqual(SC.REVIEW_SEVS, ("critical", "high", "medium", "low"))
+
+    def test_severity_table(self):   # one table: CVSS bands (boundaries inclusive), GHSA words, v1 legacy names
+        for raw, want in ((("10.0", None), "critical"), (("9.0", None), "critical"), (("8.99", None), "high"),
+                          (("7.0", None), "high"), (("6.99", None), "medium"), (("4.0", None), "medium"),
+                          (("3.99", None), "low"), (("0.1", None), "low"),
+                          ((None, "CRITICAL"), "critical"), ((None, "HIGH"), "high"), ((None, "MODERATE"), "medium"),
+                          ((None, "LOW"), "low"), (("0", "HIGH"), "high"), (("n/a", "LOW"), "low"), ((None, None), "medium"),
+                          (("9.0", "LOW"), "critical")):   # a CVSS score wins over the advisory word
+            self.assertEqual(SC._lv("osv-scanner", raw), want, raw)
+        for raw, want in (("error", "high"), ("warning", "medium"), ("critical", "critical"), ("low", "low"),
+                          ("bogus", None), (None, None), (1, None)):
+            self.assertEqual(ACP.level(raw), want, raw)
+        self.assertEqual((ACP.SEVS, ACP.LEGACY), (("critical", "high", "medium", "low"), {"error": "high", "warning": "medium"}))
+        j = AC.build("/r", "a" * 40, False, False, 1.0, [{"id": "bandit", "rules": "default", "status": "ok", "files": 1}],
+                     [{"tool": "bandit", "file": "a.py", "line": 1, "rule": "B1", "sev": s} for s in ("low", "critical")])
+        self.assertEqual(([x["sev"] for x in j["items"]], j["v"]), (["critical", "low"], 2))   # most severe first
+        self.assertEqual(AC.checks_errors(j, ids=SC.SEC_IDS), [])
+        self.assertIn("v must be 2", AC.checks_errors(dict(j, v=1), ids=SC.SEC_IDS))   # gate: v2 only
+        bad = dict(j, items=[dict(j["items"][0], sev="error")])
+        self.assertEqual(AC.checks_errors(bad, ids=SC.SEC_IDS), ["items"])             # never error/warning in a v2 file
 
 
 class Runner(Tmp):
@@ -175,14 +221,14 @@ class Runner(Tmp):
     def test_secrets_never_stored_and_report_removed(self):
         rc, line = self.main("--repo", self.repo, "--category", "security")
         self.assertEqual(rc, 0, line)
-        self.assertTrue(line.startswith("arch_checks: security · 1 tools · 1 errors · 0 warnings"), line)
+        self.assertTrue(line.startswith("arch_checks: security · 1 tools · 0 critical · 1 high · 0 medium · 0 low"), line)
         fp = os.path.join(self.store, AV.repo_key(self.repo), C1, SC.SEC_FILE)
         with open(fp, encoding="utf-8") as f:
             raw = f.read()
         for leak in (SECRET, MATCH, LINE.strip(), "AWS "):
             self.assertNotIn(leak, raw + line)
         j = json.loads(raw)
-        self.assertEqual(j["items"], [{"tool": "gitleaks", "file": "conf.py", "line": 1, "rule": "aws-access-token", "sev": "error"}])
+        self.assertEqual(j["items"], [{"tool": "gitleaks", "file": "conf.py", "line": 1, "rule": "aws-access-token", "sev": "high"}])
         self.assertEqual([os.path.exists(r) for r in self.reports], [False])
         self.assertFalse(os.path.exists(os.path.join(self.store, AV.repo_key(self.repo), C1, "checks.json")))   # quality untouched
         self.assertEqual(self.main("--verify", "--last", "--category", "security")[0], 0)
@@ -281,7 +327,7 @@ class Runner(Tmp):
 
     def test_pkg_schema_and_usage(self):
         j = AC.build(self.repo, C1, False, False, 1.0, [{"id": "npm-audit", "rules": "default", "status": "ok", "files": 1}],
-                     [{"tool": "npm-audit", "file": "package-lock.json", "line": 1, "rule": "GHSA-p6mc-m468-83gw", "sev": "error",
+                     [{"tool": "npm-audit", "file": "package-lock.json", "line": 1, "rule": "GHSA-p6mc-m468-83gw", "sev": "critical",
                        "pkg": "@scope/x"}])
         self.assertEqual(j["items"][0]["pkg"], "@scope/x")
         self.assertEqual(AC.checks_errors(j, ids=SC.SEC_IDS), [])
@@ -316,14 +362,15 @@ class Runner(Tmp):
         self.assertEqual(go(True, "--net")["status"], "ok")   # --net stays accepted (no-op)
 
 
-SECJ = {"commit": "c" * 40, "tools": [{"id": "gitleaks", "rules": "default", "status": "ok", "n": {"error": 1, "warning": 0}},
+SECJ = {"commit": "c" * 40, "tools": [{"id": "gitleaks", "rules": "default", "status": "ok",
+                                       "n": {"critical": 0, "high": 1, "medium": 0, "low": 0}},
                                       {"id": "semgrep", "rules": "project", "status": "missing", "why": "install: <b>", "n": {}}],
-        "top": [{"tool": "npm-audit", "file": "package-lock.json", "line": 1, "rule": "GHSA-p6mc-m468-83gw", "sev": "error",
+        "top": [{"tool": "npm-audit", "file": "package-lock.json", "line": 1, "rule": "GHSA-p6mc-m468-83gw", "sev": "high",
                  "pkg": "<lodash>", "rk": "npm-audit:GHSA-p6mc-m468-83gw"}],
         "rules": {"npm-audit:GHSA-p6mc-m468-83gw": {"desc": "", "url": "https://github.com/advisories/GHSA-p6mc-m468-83gw"}}}
-QJ = {"commit": "abcdef123", "tools": [{"id": "ruff", "rules": "project", "status": "ok", "n": {"error": 0, "warning": 1}}],
-      "top": [{"tool": "ruff", "file": "a.py", "line": 2, "rule": "F401", "sev": "warning"}]}
-FNS = ["strHdBadge", "hhmm", "archBase", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec", "archChkTop", "archChkTopBtn",
+QJ = {"commit": "abcdef123", "tools": [{"id": "ruff", "rules": "project", "status": "ok", "n": {"critical": 0, "high": 0, "medium": 1, "low": 0}}],
+      "top": [{"tool": "ruff", "file": "a.py", "line": 2, "rule": "F401", "sev": "medium"}]}
+FNS = ["strHdBadge", "hhmm", "archBase", "archChkLv", "archChkLvLbl", "archChkSevF", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec", "archChkTop", "archChkTopBtn",
        "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkRunHtml", "archChkWinHtml",
        "archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkView"]   # hidden-rule view helpers (archChkTopBtn / archChkWinHtml call them)
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archChkProgHtml"]   # run progress line (archChkRunHtml calls it)
@@ -358,7 +405,7 @@ class Ui(unittest.TestCase):
         self.assertNotIn("<lodash>", win)
         self.assertNotIn("F401", win)                          # quality rows are not listed
         self.assertEqual(body.splitlines()[2:4], [   # line 2 = target repository; quality item dropped
-                         "- error · GHSA-p6mc-m468-83gw · <lodash> · package-lock.json:1 (https://github.com/advisories/GHSA-p6mc-m468-83gw)",
+                         "- high · GHSA-p6mc-m468-83gw · <lodash> · package-lock.json:1 (https://github.com/advisories/GHSA-p6mc-m468-83gw)",
                          "Fix the cause, keep behaviour, run the project's tests."])
         self.assertIn("<div class=archckst>점검한 적 없음", win)   # window ends with the (empty) history section
         self.assertNotIn("a.py", plain)                        # no security results -> nothing listed

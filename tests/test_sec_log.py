@@ -22,7 +22,7 @@ SECRET = "AKIAREALLOOKING7Q2Z9XK"
 
 
 def scan(at, commit, tools, items):
-    return SC.scan_record(commit, at, tools, [dict({"line": 1, "sev": "error"}, **x) for x in items])
+    return SC.scan_record(commit, at, tools, [dict({"line": 1, "sev": "high"}, **x) for x in items])
 
 
 def rev(at, commit, items):
@@ -46,12 +46,19 @@ class Log(Tmp):
         self.add(scan(10, C1, ["gitleaks"], [{"tool": "gitleaks", "file": "a.py", "rule": "aws-token"}]))
         v = SC.log_view(self.k)
         self.assertEqual(v["at_scan"], 10)
-        self.assertEqual(v["open"], [{"sev": "error", "file": "a.py", "line": 1, "key": "gitleaks:aws-token", "desc": "aws-token",
+        self.assertEqual(v["open"], [{"sev": "high", "file": "a.py", "line": 1, "key": "gitleaks:aws-token", "desc": "aws-token",
                                       "src": "scan", "ai": False, "status": "open", "at": 10, "commit": C1}])
+
+    def test_legacy_error_warning_lines_read_as_levels(self):   # lines written before the 4 levels: error -> high, warning -> medium
+        self.add({"v": 1, "at": 10, "commit": C1, "src": "scan", "tools": ["bandit", "gitleaks"],
+                  "items": [{"sev": "error", "file": "a.py", "line": 1, "key": "gitleaks:aws-token", "desc": "aws-token"},
+                            {"sev": "warning", "file": "b.py", "line": 2, "key": "bandit:B105", "desc": "B105"},
+                            {"sev": "bogus", "file": "c.py", "line": 3, "key": "bandit:B1", "desc": "B1"}]})
+        self.assertEqual(sorted((x["file"], x["sev"]) for x in SC.log_view(self.k)["open"]), [("a.py", "high"), ("b.py", "medium")])
 
     def test_scan_resolution_reopen_and_partial_run(self):
         g = {"tool": "gitleaks", "file": "a.py", "rule": "aws-token"}
-        b = {"tool": "bandit", "file": "b.py", "rule": "B105", "sev": "warning"}
+        b = {"tool": "bandit", "file": "b.py", "rule": "B105", "sev": "medium"}
         self.add(scan(10, C1, ["gitleaks", "bandit"], [g, b]),
                  scan(20, C2, ["bandit"], [b]))          # gitleaks did not run ok: its finding stays open
         self.assertEqual(len(SC.log_view(self.k)["open"]), 2)
@@ -206,7 +213,7 @@ class Cli(Tmp):
             self.assertEqual(self.main(*a)[0], 2, a)
 
 
-FNS = ["hhmm", "archChkLogHtml"]
+FNS = ["hhmm", "archChkLv", "archChkLvLbl", "archChkLogHtml"]
 
 
 def run_js(body, lang="ko"):
@@ -226,7 +233,7 @@ class Ui(unittest.TestCase):
         L = {"at_scan": 1700000000, "at_review": 1700000100,
              "open": [{"sev": "high", "file": "a/<x>.py", "line": 3, "key": "sql<inj>", "desc": "<b>bad</b>", "src": "review", "ai": True,
                        "status": "open", "at": 1, "commit": C1}],
-             "resolved": [{"sev": "error", "file": "b.py", "line": 1, "key": "gitleaks:aws-token", "desc": "aws-token", "src": "scan",
+             "resolved": [{"sev": "high", "file": "b.py", "line": 1, "key": "gitleaks:aws-token", "desc": "aws-token", "src": "scan",
                            "ai": False, "status": "resolved", "at": 1700000000, "commit": C2}],
              "fp": [{"sev": "low", "file": "c.py", "line": 2, "key": "k", "desc": "", "src": "review", "ai": True,
                      "status": "false-positive", "at": 1700000000, "commit": C3}]}

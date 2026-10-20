@@ -116,11 +116,11 @@ class RunnerTest(Tmp):
             rc, line = self.cli.run(self.repo)
         self.assertFalse(os.path.exists(os.path.join(self.repo, "new.txt")))
         self.assertEqual((rc, line.split(" · gitleaks")[0].split(" · missing")[0]),
-                         (0, "arch_checks: security · 1 tools · 0 errors · 1 warnings"))
+                         (0, "arch_checks: security · 1 tools · 0 critical · 0 high · 0 medium · 1 low"))
         self.assertTrue(line.endswith(" · source changed by a tool"), line)
         j = AV.read_json(self.fp())
         self.assertEqual((j["commit"], j["dirty"], j["src_changed"]), (C1, False, True))
-        self.assertEqual(j["files"], {"a.py": {"error": 0, "warning": 1}})
+        self.assertEqual((j["v"], j["files"]), (2, {"a.py": {"critical": 0, "high": 0, "medium": 0, "low": 1}}))
         self.assertNotIn("secret", json.dumps(j))
         self.assertEqual(AC.checks_errors(j, self.repo, C1, SC.SEC_IDS), [])
         self.assertEqual(AC.checks_errors(j), ["rules"] + ["tools[%d]" % i for i in range(len(j["tools"]))] + ["items"])   # no ids: nothing accepted
@@ -139,7 +139,7 @@ class RunnerTest(Tmp):
 
     def test_verify_empty(self):
         self.cli.run(self.repo)
-        ok = {"id": "bandit", "rules": "default", "status": "ok", "ms": 1, "files": 1, "n": {"error": 0, "warning": 0}}
+        ok = {"id": "bandit", "rules": "default", "status": "ok", "ms": 1, "files": 1, "n": {"critical": 0, "high": 0, "medium": 0, "low": 0}}
         miss = dict(ok, status="missing", why="install: pip install bandit", files=0)
         for tools, rc, want in (([ok], 0, "arch_checks: security · 1 tools"),
                                 ([dict(ok, files=0)], 1, "arch_checks: EMPTY: bandit examined 0 files"),
@@ -183,8 +183,9 @@ class LoadTest(Tmp):
     def put(self, commit, files, items, name=None, **kw):
         d = os.path.join(self.rdir, commit)
         os.makedirs(d, exist_ok=True)
-        j = {"v": 1, "repo": self.repo, "commit": commit, "dirty": False, "src_changed": False, "at": 123.0,
-             "tools": [{"id": "bandit", "rules": "default", "status": "ok", "ms": 3, "files": 5, "n": {"error": 1, "warning": 2}},
+        j = {"v": 2, "repo": self.repo, "commit": commit, "dirty": False, "src_changed": False, "at": 123.0,
+             "tools": [{"id": "bandit", "rules": "default", "status": "ok", "ms": 3, "files": 5,
+                        "n": {"critical": 1, "high": 0, "medium": 2, "low": 0}},
                        {"id": "nope", "rules": "x", "status": "ok", "ms": 0, "n": {}}],
              "files": files, "items": items}
         j.update(kw)
@@ -196,7 +197,7 @@ class LoadTest(Tmp):
         self.put(C1, {}, [], name="checks.json")        # a leftover lint result is never read
         self.assertIsNone(AC.load_checks(self.repo, self.mdir, self.m, C1))
 
-    def test_aggregate_and_sanitise(self):
+    def test_aggregate_and_sanitise(self):   # a v1 file: error/warning are read as high/medium
         with open(os.path.join(self.mdir, "plan.json"), "w", encoding="utf-8") as f:
             json.dump({"modules": [{"id": "core", "globs": ["lib/*"]}]}, f)
         files = {"web/a.py": {"error": 1, "warning": 0}, "lib/b.py": {"error": 0, "warning": 2},
@@ -205,25 +206,41 @@ class LoadTest(Tmp):
                  {"tool": "bandit", "file": "lib/b.py", "line": 1, "rule": "bad rule!", "sev": "warning"},
                  {"tool": "bandit", "file": "../x.py", "line": 1, "rule": "B1", "sev": "warning"},
                  {"tool": "bandit", "file": "lib/b.py", "line": 2, "rule": "B2", "sev": "warning", "msg": "secret"}]
-        self.put(C1, files, items, rules={"bandit:B105": {"desc": "hardcoded password", "url": "https://bandit.readthedocs.io/b105"},
+        self.put(C1, files, items, v=1, tools=[{"id": "bandit", "rules": "default", "status": "ok", "ms": 3, "files": 5,
+                                                 "n": {"error": 1, "warning": 2}}],
+                 rules={"bandit:B105": {"desc": "hardcoded password", "url": "https://bandit.readthedocs.io/b105"},
                                           "bandit:B2": {"desc": "x", "url": "http://insecure"}, "bandit:B9": {"desc": "unused"}})
         c = AC.load_checks(self.repo, self.mdir, self.m, C1)
         shell = {"commit": "", "at": None, "stale": False, "dirty": False, "src_changed": False, "tools": [], "mods": {},
-                 "other": {"error": 0, "warning": 0}, "top": [], "rules": {}}
+                 "other": {"critical": 0, "high": 0, "medium": 0, "low": 0}, "top": [], "rules": {}}
         self.assertEqual({k: v for k, v in c.items() if k != "security"}, shell)   # payload shape kept for the page
         s = c["security"]
         self.assertEqual(set(s), set(shell) | {"log", "report"})   # report = newest security-report-*.md meta, None here
-        self.assertEqual(s["mods"], {"web": {"error": 1, "warning": 0}, "core": {"error": 0, "warning": 2}})
-        self.assertEqual(s["other"], {"error": 0, "warning": 1})
-        self.assertEqual([(t["id"], t["files"]) for t in s["tools"]], [("bandit", 5)])
-        self.assertEqual(s["top"], [{"tool": "bandit", "file": "web/a.py", "line": 3, "rule": "B105", "sev": "error", "mod": "web",
+        self.assertEqual(s["mods"], {"web": {"critical": 0, "high": 1, "medium": 0, "low": 0},
+                                     "core": {"critical": 0, "high": 0, "medium": 2, "low": 0}})
+        self.assertEqual(s["other"], {"critical": 0, "high": 0, "medium": 1, "low": 0})
+        self.assertEqual([(t["id"], t["files"], t["n"]) for t in s["tools"]],
+                         [("bandit", 5, {"critical": 0, "high": 1, "medium": 2, "low": 0})])
+        self.assertEqual(s["top"], [{"tool": "bandit", "file": "web/a.py", "line": 3, "rule": "B105", "sev": "high", "mod": "web",
                                      "rk": "bandit:B105"},
-                                    {"tool": "bandit", "file": "lib/b.py", "line": 2, "rule": "B2", "sev": "warning", "mod": "core",
+                                    {"tool": "bandit", "file": "lib/b.py", "line": 2, "rule": "B2", "sev": "medium", "mod": "core",
                                      "rk": "bandit:B2"}])
         self.assertEqual(s["rules"], {"bandit:B105": {"desc": "hardcoded password", "url": "https://bandit.readthedocs.io/b105"},
                                       "bandit:B2": {"desc": "x", "url": ""}})      # insecure url dropped, unused B9 not sent
         self.assertNotIn("secret", json.dumps(c))
         self.assertFalse(s["stale"])
+
+    def test_v2_levels(self):   # v2 counters keep all four levels; a v1-shaped counter in a v2 file is dropped
+        lv = {"critical": 1, "high": 0, "medium": 0, "low": 3}
+        self.put(C1, {"web/a.py": lv, "web/b.py": {"error": 1, "warning": 0}},
+                 [{"tool": "bandit", "file": "web/a.py", "line": 1, "rule": "B1", "sev": "low"},
+                  {"tool": "bandit", "file": "web/a.py", "line": 2, "rule": "B2", "sev": "critical"},
+                  {"tool": "bandit", "file": "web/a.py", "line": 3, "rule": "B3", "sev": "bogus"}])
+        s = AC.load_checks(self.repo, self.mdir, self.m, C1)["security"]
+        self.assertEqual((s["mods"], s["tools"][0]["n"]), ({"web": lv}, {"critical": 1, "high": 0, "medium": 2, "low": 0}))
+        self.assertEqual([(x["rule"], x["sev"]) for x in s["top"]], [("B1", "low"), ("B2", "critical")])
+        self.put(C1, {}, [], v=3)
+        self.assertIsNone(AC.load_checks(self.repo, self.mdir, self.m, C1))
 
     def test_stale_and_foreign_repo(self):
         self.put(C2, {}, [])

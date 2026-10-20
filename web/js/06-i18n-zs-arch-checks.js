@@ -1,11 +1,9 @@
 // Korean for the structure «Architecture» security issues window (84l-structure-arch-checks.js).
 Object.assign(I18N.ko, {
-  'errors {e} · warnings {w}': '오류 {e} · 경고 {w}',
+  'critical {c} · high {h} · medium {m} · low {l}': '치명 {c} · 높음 {h} · 중간 {m} · 낮음 {l}',
   'not available': '사용 불가',
   'timed out': '시간 초과',
   'Top issues {n}': '주요 문제 {n}건',
-  'error|severity': '오류',
-  'warning|severity': '경고',
   'Request fix': '개선 요청',
   'No running session in this project': '이 프로젝트에서 실행 중인 세션이 없음',
   'Select at least one issue': '문제를 하나 이상 고르세요',
@@ -17,7 +15,8 @@ Object.assign(I18N.ko, {
   'docs ↗': '문서 ↗',
   'Severity': '심각도',
   'All severities': '모든 심각도',
-  'Errors only': '오류만',
+  'High and above': '높음 이상',
+  'Critical only': '치명만',
   'All tools': '모든 도구',
   'Hide rule': '규칙 숨기기',
   'Hide every item of this rule (this view only)': '이 규칙의 항목을 모두 숨김 (보기에서만)',

@@ -11,6 +11,7 @@ import stat
 import sys
 import time
 
+from sidereus.arch_checks_parse import SEVS
 from sidereus.arch_verify import safe_rel
 from sidereus.bus import _atomic_write
 from sidereus.sec_checks import LOG_ITEMS_MAX
@@ -81,20 +82,20 @@ def render(j, view, prev_items, cur_items, deps):
     tools = [t for t in j.get("tools") or () if isinstance(t, dict)]
     out += ["", "## Tools", ""]
     if tools:
-        out += ["| Tool | Status | Files | Errors | Warnings | Time |", "|---|---|---|---|---|---|"]
+        out += ["| Tool | Status | Files | Critical | High | Medium | Low | Time |", "|---|---|---|---|---|---|---|---|"]
         for t in tools:
             n = t.get("n") if isinstance(t.get("n"), dict) else {}
-            out.append("| %s | %s | %d | %d | %d | %.1f s |" % (
-                _cell(t.get("id")), status_label(t), int(t.get("files") or 0), int(n.get("error") or 0),
-                int(n.get("warning") or 0), int(t.get("ms") or 0) / 1000.0))
+            out.append("| %s | %s | %d | %d | %d | %d | %d | %.1f s |" % (
+                (_cell(t.get("id")), status_label(t), int(t.get("files") or 0))
+                + tuple(int(n.get(k) or 0) for k in SEVS) + (int(t.get("ms") or 0) / 1000.0,)))
     else:
         out.append("The repo configures no scanner this runner knows.")
     ok = [t for t in tools if t.get("status") == "ok"]
     items = [x for x in j.get("items") or () if isinstance(x, dict)]
-    total = sum(int((t.get("n") or {}).get(k) or 0) for t in tools for k in ("error", "warning"))
+    total = sum(int((t.get("n") or {}).get(k) or 0) for t in tools for k in SEVS)
     out += ["", "## Findings (%d)" % max(total, len(items)), ""]
     if len(items) < total:
-        out.append("Showing the first %d (errors first); checks-security.json keeps the same cap." % len(items))
+        out.append("Showing the first %d (most severe first); checks-security.json keeps the same cap." % len(items))
     if not ok:
         out.append("⚠No tool ran — this is not a clean result.")
     elif not items:

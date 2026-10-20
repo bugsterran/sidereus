@@ -11,7 +11,7 @@ from tests._i18n_js import i18n_prelude
 from tests._load import js_fn
 from tests._node import node_e
 
-FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "archChkTools", "archChkSum", "archChkStat", "archChkSec",
+FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "archChkTools", "archChkLv", "archChkLvLbl", "archChkSevF", "archChkSum", "archChkStat", "archChkSec",
        "archChkTop", "archChkTopBtn", "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkEntry", "archChkHdBtn", "archChkRunCands", "archChkRunBody", "archChkRunCmds", "archChkScanAt", "archChkRunHtml", "archChkWinHtml"]
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
 FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
@@ -35,12 +35,12 @@ PRE = "\n".join([
 
 # /api/arch `checks.security` (sidereus/sec_checks); CK = the whole `checks` object.
 CHECKS = {"commit": "abcdef123", "at": 1700000000,
-          "tools": [{"id": "gitleaks", "rules": "project", "status": "ok", "ms": 120, "n": {"error": 2, "warning": 3}},
-                    {"id": "semgrep", "rules": "default", "status": "fail", "why": "exit 2", "ms": 900, "n": {"error": 1, "warning": 0}},
+          "tools": [{"id": "gitleaks", "rules": "project", "status": "ok", "ms": 120, "n": {"high": 2, "medium": 3}},
+                    {"id": "semgrep", "rules": "default", "status": "fail", "why": "exit 2", "ms": 900, "n": {"high": 1, "medium": 0}},
                     {"id": "osv", "rules": "default", "status": "missing", "why": "install: brew install osv-scanner", "ms": 0, "n": {}},
                     {"id": "npm-audit", "rules": "project", "status": "skipped", "why": "time budget used", "ms": 0, "n": {}}, {"id": "go", "rules": "project", "status": "skipped", "ms": 0, "n": {}}],
-          "top": [{"tool": "ruff", "file": "b.py", "line": "x", "rule": "W2", "sev": "warning", "mod": "b"},
-                  {"tool": "ru<f>f", "file": "a/<x>.py", "line": 7, "rule": "E<1>\"", "sev": "error", "mod": "<m>"}]}
+          "top": [{"tool": "ruff", "file": "b.py", "line": "x", "rule": "W2", "sev": "medium", "mod": "b"},
+                  {"tool": "ru<f>f", "file": "a/<x>.py", "line": 7, "rule": "E<1>\"", "sev": "high", "mod": "<m>"}]}
 CK = {"security": CHECKS}
 
 
@@ -101,9 +101,9 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("data-ckfix disabled", h)            # no live session at all
         self.assertIn("열린 세션이 없습니다", h)
         self.assertNotIn("archckh", h)                     # no help data -> no help line
-        self.assertLess(h.index('class="error"'), h.index('class="warning"'))   # errors first
-        self.assertIn(">오류</b>", h)
-        self.assertIn(">경고</b>", h)
+        self.assertLess(h.index('class="high"'), h.index('class="medium"'))   # higher level first
+        self.assertIn(">높음</b>", h)
+        self.assertIn(">중간</b>", h)
         self.assertEqual(r[1], [])
 
     def test_rule_help_https_only(self):
@@ -144,7 +144,7 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("Please fix these ru&lt;f&gt;f findings in /r (commit abcdef12):", r[3])   # escaped in the preview
         self.assertEqual(r[4], "Please fix these ru<f>f, ruff findings in /r (commit abcdef12):\n"
                                "Target repository: /r — work there (cd), not in your own cwd.\n"
-                               "- error · E<1>\" · a/<x>.py:7 — Bad thing\n- warning · W2 · b.py:1\n"
+                               "- high · E<1>\" · a/<x>.py:7 — Bad thing\n- medium · W2 · b.py:1\n"
                                "Fix the cause, keep behaviour, run the project's tests.\n"
                                "Once the fix is committed, request a re-analysis of /r so the architecture diagram reflects it — run:\n"
                                "파이프라인 arch-map 실행 — 요청: «/r 아키텍처 구조도 생성»\n대상 저장소: /r\n"
@@ -314,15 +314,15 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("data-ckrep=", r[2])                                # window passes security.report through
 
 
-# Filter fixture: one item per scanner + two bandit:B110 items (R1..R5).
-FT = {"commit": "c0ffee00", "tools": [{"id": t, "status": "ok", "n": {"error": 1, "warning": 1}} for t in ("gitleaks", "semgrep", "bandit", "osv-scanner", "npm-audit")],
-      "top": [{"tool": "gitleaks", "file": "k.env", "line": 1, "rule": "aws-key", "sev": "error"},
-              {"tool": "semgrep", "file": "s.py", "line": 2, "rule": "py.eval", "sev": "warning"},
-              {"tool": "bandit", "file": "b1.py", "line": 3, "rule": "B110", "sev": "warning"},
-              {"tool": "bandit", "file": "b2.py", "line": 4, "rule": "B110", "sev": "error"},
-              {"tool": "bandit", "file": "b3.py", "line": 5, "rule": "B602", "sev": "warning"},
-              {"tool": "osv-scanner", "file": "package-lock.json", "line": 1, "rule": "GHSA-x", "sev": "error"},
-              {"tool": "npm-audit", "file": "package.json", "line": 1, "rule": "lodash", "sev": "warning"}]}
+# Filter fixture: one item per scanner + two bandit:B110 items (R1..R5); v2 levels.
+FT = {"commit": "c0ffee00", "tools": [{"id": t, "status": "ok", "n": {"high": 1, "medium": 1}} for t in ("gitleaks", "semgrep", "bandit", "osv-scanner", "npm-audit")],
+      "top": [{"tool": "gitleaks", "file": "k.env", "line": 1, "rule": "aws-key", "sev": "critical"},
+              {"tool": "semgrep", "file": "s.py", "line": 2, "rule": "py.eval", "sev": "medium"},
+              {"tool": "bandit", "file": "b1.py", "line": 3, "rule": "B110", "sev": "low"},
+              {"tool": "bandit", "file": "b2.py", "line": 4, "rule": "B110", "sev": "high"},
+              {"tool": "bandit", "file": "b3.py", "line": 5, "rule": "B602", "sev": "medium"},
+              {"tool": "osv-scanner", "file": "package-lock.json", "line": 1, "rule": "GHSA-x", "sev": "high"},
+              {"tool": "npm-audit", "file": "package.json", "line": 1, "rule": "lodash", "sev": "low"}]}
 # In-memory pref store; ⚠no live localStorage.
 MEMJS = ("const MEM = {}, SETS = []; globalThis.lsJson = (k, d) => Object.prototype.hasOwnProperty.call(MEM, k) ? JSON.parse(MEM[k]) : d;"
          "lsSetJson = (k, v) => { SETS.push(k); MEM[k] = JSON.stringify(v); return true; }; const d = {checks: {security: " + json.dumps(FT) + "}};"
@@ -335,17 +335,56 @@ EVJS = ("globalThis.ARCH_CW = null; let PAINTS = 0, TABS = 0; globalThis.archChk
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class StructArchCheckFilters(unittest.TestCase):
-    def test_r1_errors_only_filters_and_counts(self):
-        r = run(MEMJS + "const a = archChkWinHtml('/r', d, {sel: {}, sev: 'all', tool: ''}, []), e = archChkWinHtml('/r', d, {sel: {}, sev: 'error', tool: ''}, []);"
-                "console.log(JSON.stringify([rows(a), rows(e), a, e, archChkView(d, {sev: 'error'}, []).map(x => x.sev)]));", lang="en")
+    def test_r2_severity_filters_and_counts(self):
+        r = run(MEMJS + "const a = archChkWinHtml('/r', d, {sel: {}, sev: 'all', tool: ''}, []), e = archChkWinHtml('/r', d, {sel: {}, sev: 'high', tool: ''}, []);"
+                "const c = archChkWinHtml('/r', d, {sel: {}, sev: 'critical', tool: ''}, []);"
+                "console.log(JSON.stringify([rows(a), rows(e), a, e, archChkView(d, {sev: 'high'}, []).map(x => x.sev), archChkView(d, {sev: 'critical'}, []).map(x => x.sev),"
+                "archChkView(d, {sev: 'error'}, []).map(x => x.sev), c, archChkTop(d).map(x => x.file)]));", lang="en")
         self.assertEqual([r[0], r[1]], [7, 3])
         self.assertIn("Top issues 7", r[2])
-        self.assertIn("errors 3 · warnings 4</span>", r[2])     # from the listed items; no «shown» without a filter
+        self.assertIn("critical 1 · high 2 · medium 2 · low 2</span>", r[2])   # from the listed items; no «shown» without a filter
         self.assertIn("Top issues 3", r[3])
-        self.assertIn("errors 3 · warnings 0 · shown 3 of 7", r[3])
-        self.assertNotIn('<li class="warning"', r[3])
-        self.assertIn('<option value=error selected>Errors only</option>', r[3])
-        self.assertEqual(r[4], ["error"] * 3)
+        self.assertIn("critical 1 · high 2 · medium 0 · low 0 · shown 3 of 7", r[3])
+        self.assertNotIn('<li class="medium"', r[3])
+        self.assertNotIn('<li class="low"', r[3])
+        self.assertIn('<option value=high selected>High and above</option>', r[3])
+        self.assertEqual(r[4], ["critical", "high", "high"])            # high = critical + high
+        self.assertEqual(r[5], ["critical"])                            # critical only
+        self.assertEqual(r[6], r[4])                                    # old "error" filter value -> high and above
+        self.assertIn('<option value=critical selected>Critical only</option>', r[7])
+        self.assertIn("critical 1 · high 0 · medium 0 · low 0 · shown 1 of 7", r[7])
+        self.assertEqual(r[8], ["k.env", "b2.py", "package-lock.json", "s.py", "b3.py", "b1.py", "package.json"])   # by level, list order kept within
+        self.assertIn('<li class="critical"', r[2])
+        self.assertIn('<li class="low"', r[2])
+
+    def test_r3_levels_legacy_and_labels(self):
+        r = run("console.log(JSON.stringify([['critical', 'high', 'medium', 'low', 'error', 'warning', 'bogus', null].map(archChkLv),"
+                "['all', 'high', 'critical', 'error', 'x', undefined].map(archChkSevF), ['critical', 'high', 'medium', 'low'].map(archChkLvLbl),"
+                "archChkSum({tools: [{id: 'a', n: {critical: 1, high: 2, medium: 3, low: 4}}, {id: 'b', n: {error: 5, warning: 6}}]}),"
+                "archChkLogHtml({open: [{file: 'a.py', line: 1, sev: 'error', key: 'ruff:E1'}, {file: 'b.py', line: 2, sev: 'low', key: 'ruff:L1'}]})]));")
+        self.assertEqual(r[0], ["critical", "high", "medium", "low", "high", "medium", "medium", "medium"])
+        self.assertEqual(r[1], ["all", "high", "critical", "high", "all", "all"])
+        self.assertEqual(r[2], ["치명", "높음", "중간", "낮음"])
+        self.assertEqual(r[3], {"c": 1, "h": 7, "m": 9, "l": 4})
+        self.assertIn('<li class="high"><div class=ckwr>', r[4])       # legacy log row "error" -> high
+        self.assertIn('<b class=archcks>높음</b>', r[4])
+        self.assertIn('<li class="low">', r[4])
+
+    def test_r3_badge_levels(self):
+        def q(sev, n):
+            return {"checks": {"security": {"tools": [{"id": "bandit", "status": "ok", "n": n}], "top": [{"tool": "bandit", "file": "a.py", "line": 1, "rule": "B1", "sev": sev}]}}}
+        r = run(MEMJS + "const qs = " + json.dumps([q("high", {"high": 1}), q("medium", {"medium": 1}), q("low", {"low": 1}), q("critical", {"critical": 1}), q("error", {"error": 1})]) + ";"
+                "const b = qs.map(x => archChkTopBtn(x, '/r')); archChkSetHidden('/r', ['bandit:B1']);"
+                "console.log(JSON.stringify(b.concat([archChkTopBtn(qs[0], '/r'), archChkTopBtn(qs[3], '/r')])));", lang="en")
+        self.assertNotIn("archckiw", r[0])                     # one high -> red
+        self.assertIn("strbg-archckiw", r[1])                  # medium only -> amber
+        self.assertIn("strbg-archckiw", r[2])                  # low only -> amber
+        self.assertNotIn("archckiw", r[3])                     # critical -> red
+        self.assertNotIn("archckiw", r[4])                     # legacy error -> high -> red
+        self.assertIn(">Security 1</button>", r[0])
+        self.assertIn("strbg-archckiw", r[5])                  # that rule hidden -> amber
+        self.assertIn("strbg-archckiw", r[6])
+        self.assertIn(">Security 0</button>", r[5])
 
     def test_r2_tool_filter_only_that_tool(self):
         r = run(MEMJS + "const T5 = ['gitleaks', 'semgrep', 'bandit', 'osv-scanner', 'npm-audit'];"
@@ -392,7 +431,7 @@ class StructArchCheckFilters(unittest.TestCase):
                 "const tt = ev('change', {cktool: ''}); tt.target.value = 'bandit'; archChkWinEv(tt, W);"
                 "archChkWinEv(ev('click', {ckhide: 'bandit:B602'}), W); archChkWinEv(ev('click', {ckunhide: ''}), W);"
                 "console.log(JSON.stringify([ARCH_CW.sev, ARCH_CW.tool, [...new Set(SETS)], POSTS, F]));")
-        self.assertEqual(r[:2], ["error", "bandit"])
+        self.assertEqual(r[:2], ["high", "bandit"])   # an old "error" value maps to high
         self.assertEqual(r[2], ["sidereus.ckhide"])               # the only write: the view pref
         self.assertEqual([r[3], r[4]], [[], []])                  # no /api/arch* or /api/dm call
 
@@ -417,7 +456,7 @@ class StructArchCheckFilters(unittest.TestCase):
                 "const h = archChkWinHtml('/r', d, Object.assign({}, ARCH_CW, {req: {sid: 's1', busy: false}}), [{sid: 's1', g: 0, login: 1}]);"
                 "console.log(JSON.stringify([Object.keys(ARCH_CW.sel).length, sel.map(x => x.file), h]));", lang="en")
         self.assertEqual(r[0], 3)                                 # 2 visible bandit:B110 + the gitleaks one set by hand
-        self.assertEqual(r[1], ["b2.py", "b1.py"])                # selection = visible items only (errors first)
+        self.assertEqual(r[1], ["b2.py", "b1.py"])                # selection = visible items only (high before low)
         self.assertIn("Request fix (2)", r[2])
         self.assertIn("data-ckall checked", r[2])
         pre = r[2].split("<pre class=archdm>")[1].split("</pre>")[0]
