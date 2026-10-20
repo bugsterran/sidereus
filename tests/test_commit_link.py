@@ -2,6 +2,7 @@
 import json
 import os
 import tempfile
+import types
 import unittest
 
 from tests._load import sidereus
@@ -136,6 +137,10 @@ class Scan(Base):
             json.dump({"agentType": "general-purpose", "toolUseId": "toolu_1"}, f)
         self.write("-w/psid.jsonl", [{"type": "user", "cwd": "/main", "timestamp": "2026-09-20T00:00:00Z",
                                       "message": {"content": "hi"}}, _asst("2026-09-20T00:00:00Z", "z", 1)])
+        # pin the clock: fixture timestamps must stay inside the CL_DAYS scan/return window
+        saved_time = cl.time
+        cl.time = types.SimpleNamespace(time=lambda: 1789862400.0)   # 2026-09-20T00:00:00Z
+        self.addCleanup(setattr, cl, "time", saved_time)
         cl._cl["files"].clear()
         cl._cl_refresh()
         ent = cl._cl["files"][fp]
