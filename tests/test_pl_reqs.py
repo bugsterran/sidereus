@@ -149,7 +149,36 @@ class ViewStateTest(_Base):
         self.assertEqual(self.st([self.row()]), ("sent", ""))
         os.utime(fp, (NOW + 300, NOW + 300))
         self.assertEqual(self.st([self.row()]), ("done", ""))
-        self.assertEqual(self.st([self.row(cur="Lint")]), ("run", "Lint"))   # a plrun record still decides first
+        self.assertEqual(self.st([self.row(cur="Lint", t1=NOW + 400)]), ("run", "Lint"))   # a sign newer than the result
+
+    def _gate(self, at):
+        d = os.path.join(self.store, AM.repo_key(REPO), "b" * 40)
+        os.makedirs(d, exist_ok=True)
+        fp = os.path.join(d, "verify.json")
+        open(fp, "w", encoding="utf-8").close()
+        os.utime(fp, (at, at))
+
+    def test_open_record_ended_by_newer_gate_result(self):
+        # Codex re-emitted a stage marker and never sent the last stage or [pl-end:]: the record stays end 0
+        st = {"Plan": {"o": "done", "t0": NOW, "t1": NOW + 15},
+              "Draw": {"o": "run", "t0": NOW + 15, "t1": NOW + 54, "p0": NOW + 54, "k": 2},
+              "Flows": {"o": "back", "t0": NOW + 32, "t1": NOW + 54}}
+        row = self.row(state="wait", cur="Draw", t1=NOW + 54, stages=st)
+        self._gate(NOW + 64)
+        self.assertEqual(self.st([row]), ("done", ""))
+        self.assertEqual(self.st([row], arch={REPO: {"stage": "Draw", "sid": SID}}), ("run", "Draw"))   # archRun still runs it
+        live = dict(st, Draw=dict(st["Draw"], ag=[{"aid": "main", "run": True, "t1": NOW + 600}]))
+        self.assertEqual(self.st([self.row(cur="Draw", t1=NOW + 54, stages=live)]), ("run", "Draw"))   # live sign
+
+    def test_open_record_with_sign_newer_than_result_runs(self):
+        self._gate(NOW + 40)
+        st = {"Draw": {"o": "run", "t0": NOW + 15, "t1": NOW + 30, "p0": NOW + 54, "k": 2}}
+        self.assertEqual(self.st([self.row(cur="Draw", t1=NOW + 30, stages=st)]), ("run", "Draw"))
+
+    def test_ended_record_unchanged_by_result(self):
+        self._gate(NOW + 64)
+        self.assertEqual(self.st([self.row(end=NOW + 70, t1=NOW + 70)]), ("done", ""))
+        self.assertEqual(self.st([self.row(state="done", end=NOW + 30, t1=NOW + 30)]), ("done", ""))
 
     def test_arch_run_counts_as_running(self):
         PQ.record({"kind": "req", "pipeline": "arch-map", "repo": REPO}, SID, "alice", "a1")

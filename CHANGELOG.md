@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Structure: an arch-map request whose session never marked its last stage (a Codex run that skipped the verify marker) no longer shows «running · <stage>» forever; the gate's result written after the run's last stage sign closes it as «Done».
 - Structure: the «Run security check» recipient picker lists Codex sessions too (it showed Claude sessions only, so a repo with only a Codex session offered just the Sidereus session). A Codex recipient gets the stages with `[pl:]` shell markers, run back to back in one turn, and the same next-turn note as arch-map requests; «Request fix» stays Claude-only.
 - Codex pipeline runs: a Codex session running a pipeline whose file lives in another project (an arch-map request from Sidereus) now gets its run record, so the next-stage hand-off reaches it after each stage and it no longer ends its turn between stages; Codex run requests also say to run all stages back to back in one turn. The hook's owner lookup failed silently when `CLAUDE_CONFIG_DIR` was unset, as it always is for Codex. Structure: a request to a session without a run record shows «Done» once the repo's result is newer than the request, instead of staying «Sent», and an older result no longer ends a run that is still drawing.
 - Structure: the «Stop» button on a running pipeline request is drawn in the error colour so it stands out on the status line.

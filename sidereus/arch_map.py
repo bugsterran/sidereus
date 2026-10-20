@@ -275,6 +275,26 @@ def _result_at(root):
     return best
 
 
+def _tnum(v):
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0.0
+
+
+def _closed_by_result(r, root):
+    """True when an open arch-map plrun r has a gate result for root newer than every sign of the run
+    (run/stage t0 · t1 · p0, agent t1; a live agent or main marker carries t1 = now, so it stays open).
+    ⚠Codex may re-emit a stage marker and never send the last stage or [pl-end:]: the record stays end 0 for hours."""
+    if not isinstance(r, dict) or r.get("name") != ARCH_PL or _tnum(r.get("end")) or _tnum(r.get("stop")):
+        return False
+    st = r.get("stages") if isinstance(r.get("stages"), dict) else {}
+    signs = [_tnum(r.get("t0")), _tnum(r.get("t1"))]
+    for s in st.values():
+        if isinstance(s, dict):
+            signs += [_tnum(s.get(k)) for k in ("t0", "t1", "p0")]
+            signs += [_tnum(a.get("t1")) for a in s.get("ag") or () if isinstance(a, dict)]
+    v = _result_at(root)
+    return bool(v) and v > max(signs)
+
+
 def _finished(p, s, sg, pt, old):
     """True when p's run already has its result: a verify.json newer than any sign of this run started, and either the
     run record closed after it or no tagged subagent / Agent call is still live in the session."""

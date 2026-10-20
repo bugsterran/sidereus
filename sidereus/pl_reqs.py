@@ -171,6 +171,10 @@ def _state(r, row, arch):
                     and (run is None or _num(x.get("t0")) > _num(run.get("t0"))):
                 run = x
     ended = run is not None and bool(_num(run.get("end")) or _num(run.get("stop")))
+    # ⚠Codex leaves an arch-map record at end 0: a gate result newer than its last sign ends it unless archRun still runs it.
+    mine = isinstance(arch, dict) and arch.get("sid") == r["sid"]
+    ended = ended or (run is not None and r["pipeline"] == "arch-map" and not mine
+                      and arch_map._closed_by_result(run, r["repo"]))
     stage = (run.get("cur") if run is not None and isinstance(run.get("cur"), str) else "") or ""
     is_open = alive and run is not None and not ended
     if r["pipeline"] == "arch-map" and alive and isinstance(arch, dict) and arch.get("sid") == r["sid"] and not ended:
