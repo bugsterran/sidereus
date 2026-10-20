@@ -46,7 +46,7 @@ class MailReactProbeTest(unittest.TestCase):
 
     def cursor(self, t, mtime):
         p = os.path.join(self.d, "read-tgt-codex.cursor")
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             f.write(str(t))
         os.utime(p, (mtime, mtime))
 
@@ -101,7 +101,7 @@ class MailReactProbeTest(unittest.TestCase):
         self.assertEqual((round(res["read_s"], 3), res["reply_s"]), (3.0, None))
 
     def test_platform(self):
-        with open(os.path.join(self.d, "identity.json"), "w") as f:
+        with open(os.path.join(self.d, "identity.json"), "w", encoding="utf-8") as f:
             json.dump({"/x/a": "probe-cc", "codex:/x/b": "b-codex", "gemini:/x/c": "named"}, f)
         self.assertEqual(P.platform_of(self.d, "probe-cc"), "claude")
         self.assertEqual(P.platform_of(self.d, "b-codex"), "codex")
