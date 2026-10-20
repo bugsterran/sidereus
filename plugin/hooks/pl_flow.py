@@ -434,7 +434,8 @@ def _known_owner(rel, ev=None):
     Sidereus drew another session's stale run. Any error = []."""
     try:
         c = os.environ.get("CLAUDE_CONFIG_DIR")
-        cjs = [CLAUDE_JSON] if CLAUDE_JSON else [os.path.join(os.path.expanduser(c), ".claude.json")] * bool(c) + [
+        # ⚠guard before expanduser: expanduser(None) raised when CLAUDE_CONFIG_DIR is unset (every Codex process) -> []
+        cjs = [CLAUDE_JSON] if CLAUDE_JSON else ([os.path.join(os.path.expanduser(c), ".claude.json")] if c else []) + [
             os.path.join(HOME_DIR, ".claude.json")]
         st = PROJ_STORE or os.path.join(DATA_DIR, "pipeline-projects.json")
         h = HOME_DIR.rstrip(os.sep) + os.sep   # ⚠default files only under HOME_DIR: tests patch it, so they never read live ones

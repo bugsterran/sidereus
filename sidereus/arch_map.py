@@ -306,7 +306,12 @@ def _sign(s, now):
             return m.group(1), (now - 60 * mn if isinstance(mn, int) and not isinstance(mn, bool) and mn >= 0 else 0.0)
     plm = s.get("plm")
     if isinstance(plm, dict) and plm.get("name") == ARCH_PL and isinstance(plm.get("title"), str) and plm["title"]:
-        return plm["title"], 0.0
+        # ⚠No arch-map plrun (Codex / hookless): with start 0 any older verify.json ended the run; the marker's own time
+        #   (now - age, the stage start for shell markers) is the only start reachable here. A hooked run keeps 0.
+        age = plm.get("age")
+        hookless = not any(isinstance(r, dict) and r.get("name") == ARCH_PL for r in s.get("plrun") or ())
+        ok = hookless and isinstance(age, int) and not isinstance(age, bool) and age >= 0
+        return plm["title"], (float(now - age) if ok else 0.0)
     m = _ARCH_TAG.search(s.get("targ") or "") if s.get("tool") in ("Agent", "Task") and isinstance(s.get("targ"), str) else None
     return (m.group(1), 0.0) if m else None
 

@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Codex pipeline runs: a Codex session running a pipeline whose file lives in another project (an arch-map request from Sidereus) now gets its run record, so the next-stage hand-off reaches it after each stage and it no longer ends its turn between stages; Codex run requests also say to run all stages back to back in one turn. The hook's owner lookup failed silently when `CLAUDE_CONFIG_DIR` was unset, as it always is for Codex. Structure: a request to a session without a run record shows «Done» once the repo's result is newer than the request, instead of staying «Sent», and an older result no longer ends a run that is still drawing.
 - Structure: the «Stop» button on a running pipeline request is drawn in the error colour so it stands out on the status line.
 - Status bar: the primary account's 5h and 7d «used» (and the «left ≈» history behind them) count only that account's sessions. When accounts share one projects folder (a symlinked `projects/`), every account's sessions were summed, so the 7d figure ran far ahead of the 5h one.
 - Mailbox: a Codex session no longer shows as «not logged in» when its launcher id (`<folder>-codex`) has a reader — Sidereus hooks connected, or a read cursor for a rollout-only row — and no other live Codex session shares that id; viewer DMs and run requests reach it. Folder guesses stay refused, and the check fails closed until the first session poll.

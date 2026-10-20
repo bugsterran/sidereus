@@ -254,7 +254,7 @@ function plDmCodex(p, req, models, dt){
     + 'At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.\n'   // ⚠one Codex context holds every stage
     + 'Each stage: the default instruction for the title + the stage "task" + the pipeline "rules" + this request + earlier stage results. Each stage ends with status PASS/FAIL, summary, findings (file/line/text), changed files.\n'
     + 'onFail: redo the goto stage with the findings, then rerun the failing stage — at most max times; after it passes go to "then" if set.\n'
-    + 'Report each stage in ≤10 lines. Never restart or commit unless the rules say so.\n'
+    + 'Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage (≤10 lines per stage). Never restart or commit unless the rules say so.\n'   // ⚠Codex ended its turn after each stage
     + 'Default instructions (also .claude/pipelines/_defaults.json in the Sidereus repo):\n' + (defs || '(custom stages only — use their task)');
 }
 function plModeOf(name){ return lsGet('sidereus.plmode.' + name, 'direct') === 'wf' ? 'wf' : 'direct'; }

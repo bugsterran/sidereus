@@ -10,6 +10,7 @@ from unittest import mock
 from tests._load import sidereus
 
 PQ = sidereus("pl_reqs")
+AM = sidereus("arch_map")
 SID = "0a1b2c3d-0000"
 NOW = 1_000_000.0
 REPO = "/tmp/repo"
@@ -25,6 +26,10 @@ class _Base(unittest.TestCase):
             p = mock.patch.object(PQ, k, v)
             p.start()
             self.addCleanup(p.stop)
+        self.store = os.path.join(self.tmp, "arch")
+        p = mock.patch.object(AM, "ARCH_DIR", self.store)   # gate results: tmp store, never the live one
+        p.start()
+        self.addCleanup(p.stop)
 
     def req(self, pipeline="arch-map", mid="m1"):
         PQ.record({"kind": "req", "pipeline": pipeline, "repo": REPO}, SID, "alice", mid)
@@ -133,6 +138,18 @@ class ViewStateTest(_Base):
         self.assertEqual(self.st([self.row(cur="Lint")], stopped=True), ("stopping", "Lint"))
         self.assertEqual(self.st([self.row(stop=NOW + 3)], stopped=True)[0], "stopped")
         self.assertEqual(self.st([], stopped=True)[0], "stopped")
+
+    def test_hookless_result_after_request_is_done(self):
+        # Codex row: no plrun, archRun gone once finished; the repo's verify.json mtime vs the request time decides
+        d = os.path.join(self.store, AM.repo_key(REPO), "a" * 40)
+        os.makedirs(d)
+        fp = os.path.join(d, "verify.json")
+        open(fp, "w", encoding="utf-8").close()
+        os.utime(fp, (NOW - 300, NOW - 300))
+        self.assertEqual(self.st([self.row()]), ("sent", ""))
+        os.utime(fp, (NOW + 300, NOW + 300))
+        self.assertEqual(self.st([self.row()]), ("done", ""))
+        self.assertEqual(self.st([self.row(cur="Lint")]), ("run", "Lint"))   # a plrun record still decides first
 
     def test_arch_run_counts_as_running(self):
         PQ.record({"kind": "req", "pipeline": "arch-map", "repo": REPO}, SID, "alice", "a1")
