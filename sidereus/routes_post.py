@@ -81,8 +81,11 @@ class _PostRoutes:
 
         # Check the targets are sessions on screen now with confirmed identity — never invite by a guessed id
         known = {}
+        ident = _load("identity.json", {})
         for r in sessions_rows(max_age=10):   # ⚠request path: short wait for a just-started session, never cold
-            if r.get("mbox") and r.get("mboxSrc") == "identity":
+            # A Codex launcher id counts only under the DM rule (bus.codex_env_ok: published by the poll, fails closed)
+            if r.get("mbox") and (r.get("mboxSrc") == "identity"
+                                  or (r.get("mboxSrc") == "env" and _busmod.codex_env_ok(r["mbox"], ident))):
                 known[r["mbox"]] = r.get("project") or r.get("cwd") or ""
         bad = [i for i in ids if i not in known]
         if bad:

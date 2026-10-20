@@ -139,7 +139,7 @@ Chat tab, then «Manage» on the room list. Room cards get a checkbox, «Invite�
 4. Invite: «Invite» on a card, pick sessions, then «Confirm».
 
 - Hiding only changes the view. Posts stay in the mailbox; the hidden list is `room-admin.json`.
-- Only sessions with a confirmed identity can be picked. Invites are sent as mailbox DMs.
+- Only logged-in sessions can be picked (a confirmed identity, or a Codex launcher id that has a reader). Invites are sent as mailbox DMs.
 - The «To» line above the input shows where Enter posts: `# room`, or `DM → peer` when replying to a DM.
   In «Outside rooms», a new post that is not a reply goes to the default room (`# room (default room)`, config `default_room`).
 - The dashed chip in a post header is its thread name.
