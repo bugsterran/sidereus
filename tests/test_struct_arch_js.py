@@ -14,7 +14,7 @@ from tests._node import node_e
 FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archProvNote", "archEvHtml", "archEdgeRow", "archDmBody", "archHome", "archCands",
        "archWhyOff", "archReqOf", "archReqBtn", "archReqHtml", "archPaint", "archIsTest", "archMq", "archPairs", "archReduce", "archRanks", "archSrc", "archBarHtml", "archKey", "archWaitHtml", "archDiagram", "archHov", "archHovPaint",
        "archSentRun", "archSentPh", "archEl", "archSentDone", "archSentHtml", "archSentFin", "archTick", "archBase", "archRunOf", "archRunEl", "archRunHtml", "archStatusHtml", "archLegHtml", "hhmm",
-       "archStyleName", "archRoleName", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",
+       "archStyleName", "archRoleName", "archFwParts", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",
        "archHasLayers", "archEntPair", "archBandSrc", "archBandFix", "archBandHint", "archFront", "archKindMap", "archKindLegHtml"]   # 84j2 (archPaint calls them)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archReqHtml calls it)
 def _read(p):
@@ -154,7 +154,8 @@ class StructArch(unittest.TestCase):
         self.assertIn(">Evidence 2 files</em>", en[0])
         long_fw = "modular python stdlib http.server + importlib"
         lf = run("const d = " + json.dumps(dict(d, style=dict(st, framework=long_fw))) + "; console.log(JSON.stringify([archHeadNote(d)]));", "en")
-        self.assertIn(">" + long_fw + "</em>", lf[0])  # framework never truncated
+        self.assertIn('title="' + long_fw + '">modular python stdlib http.server</em>', lf[0])  # split, never truncated
+        self.assertIn('title="' + long_fw + '">importlib</em>', lf[0])
         self.assertNotIn("…", lf[0])
         self.assertNotIn("<img", ko[0])                   # tooltip escaped
         self.assertIn("&quot;&gt;&lt;img", ko[0])
@@ -168,6 +169,23 @@ class StructArch(unittest.TestCase):
         self.assertIn(">근거 파일 0개</em>", ko[4])
         self.assertNotIn("strbg-dat", ko[4])            # no framework -> no framework badge  # unknown id -> 'Other', never the raw id
         self.assertNotIn("zz", ko[4])
+
+    def test_framework_split_badges(self):
+        def note(fw):
+            d = {"edges": [], "modules": [], "dev": [], "style": {"style": "layered", "framework": fw, "ok": True, "evidence": []}}
+            return run("console.log(JSON.stringify([archStyleNote(" + json.dumps(d) + ")]));", "en")[0]
+        two = note("A + B")
+        self.assertEqual(two.count("strbg-dat"), 2)
+        self.assertIn('<em class="strbg strbg-dat" title="A + B">A</em><em class="strbg strbg-dat" title="A + B">B</em>', two)
+        three = note("A, B + C")
+        self.assertEqual(three.count("strbg-dat"), 3)
+        self.assertEqual(three.count('title="A, B + C"'), 3)
+        self.assertIn('<em class="strbg strbg-dat" title="Plain">Plain</em>', note("Plain"))
+        self.assertEqual(note("Plain").count("strbg-dat"), 1)
+        x = note("<b> + x&y")
+        self.assertNotIn("<b>", x)
+        self.assertIn('title="&lt;b&gt; + x&amp;y">&lt;b&gt;</em>', x)
+        self.assertIn('>x&amp;y</em>', x)
 
     def test_dev_badges(self):
         d = {"edges": [], "modules": [], "style": {"style": "hexagonal", "framework": "", "ok": True, "evidence": []},
