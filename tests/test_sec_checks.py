@@ -161,7 +161,7 @@ class Plans(Tmp):
         npm = lambda s: SC.parse_npm_audit(json.dumps({"advisories": {"1": {"id": 1, "module_name": "m", "severity": s}}}))[0]["sev"]
         self.assertEqual([npm(s) for s in ("critical", "high", "moderate", "low", "info")],
                          ["critical", "high", "medium", "low", "low"])
-        self.assertEqual(SC.REVIEW_SEVS, ("critical", "high", "medium", "low"))
+        self.assertEqual(SC.SEVS, ("critical", "high", "medium", "low"))
 
     def test_severity_table(self):   # one table: CVSS bands (boundaries inclusive), GHSA words, v1 legacy names
         for raw, want in ((("10.0", None), "critical"), (("9.0", None), "critical"), (("8.99", None), "high"),
