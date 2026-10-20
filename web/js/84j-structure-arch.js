@@ -55,7 +55,22 @@ function archHeadNote(d){
       T('Edges with checked evidence / all edges'))
     + strHdBadge('', T('{n} modules').replace('{n}', ((d && d.modules) || []).length))
     + (c ? strHdBadge(d.stale ? 'cut' : '', at ? T('Generated {t} · {c}').replace('{c}', c).replace('{t}', hhmm(at, { date: true, dsep: '-' })) : c, ahead + tip) : '')
+    + archProvNote(d && d.prov)
     + (typeof archChkHdBtn === 'function' ? archChkHdBtn(d) : '');   // 84l: issues badge, or «Security check» when the project has no results yet
+}
+// Pure: «drawn by» badge from server `prov` (platform logo + model; per-stage models when they differ).
+// ⚠aiLogo falls back to the Claude mark for unknown codes — only call it when AILG has the code. Stage titles are stored data: esc, never T().
+function archProvNote(p){
+  const unk = () => strHdBadge('', T('Drawn by: unknown'));
+  if(!p || typeof p !== 'object' || typeof AILG !== 'object' || !AILG[p.plat]) return unk();
+  const st = (Array.isArray(p.stages) ? p.stages : []).filter(s => s && typeof s === 'object' && s.model);
+  const per = st.map(s => String(s.t || '') + ': ' + String(s.model));
+  const multi = new Set(st.map(s => String(s.model))).size > 1;
+  // Badge lists only the distinct models in stage order; stage titles live in the tooltip. With titles inline the
+  // ellipsis cut off the second model at 900-1100px, hiding the very fact that the run mixed models.
+  const txt = multi ? [...new Set(st.map(s => String(s.model)))].join(' · ') : String(p.model || (st[0] && st[0].model) || T('unknown'));
+  const tip = multi ? per.join('\n') : txt;
+  return '<em class="strbg strbg-prov" title="' + esc(tip) + '">' + aiLogo(p.plat) + '<span>' + esc(txt) + '</span></em>';
 }
 // Pure: one-line legend under the toolbar. Swatches reuse the diagram's own classes (.mmde e-solid/e-dot, .mmdn s-stadium,
 // svg.archdim .arin/.arout) inside .mmd, so they cannot drift from what the diagram draws.

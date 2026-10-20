@@ -43,6 +43,9 @@
 /* Style badge: one line, framework text (<=40 chars) clipped so it never wraps the header at 900 */
 .strh .strbg-asty{--bgc:var(--st-dat,#b07cf0);max-width:min(340px,40%);overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
 .strh .strbg-asty.strbg-cut{--bgc:var(--nx-warn,#e3b341)}
+/* Drawn-by badge: logo + model text, clipped so per-stage models never wrap the header at 900 (full list in title) */
+.strh .strbg-prov{max-width:260px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;vertical-align:bottom}
+.strh .strbg-prov .ailg{display:inline-flex;vertical-align:-1px}
 .arche.bad .archen b{color:var(--nx-t2,#aab4c3)}
 .archel{font-size:12px;color:var(--nx-t2,#aab4c3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .archev{list-style:none;margin:0 0 6px;padding:0 8px 0 18px;border-left:2px solid color-mix(in srgb,var(--nx-info,#5899f3) 45%,transparent);margin-left:10px}

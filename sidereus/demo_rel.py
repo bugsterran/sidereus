@@ -78,7 +78,10 @@ def demo_arch(now):
             "style": {"style": "layered", "framework": "Spring Boot", "units": "top-level packages",
                       "evidence": [{"file": "pom.xml", "ok": True}, {"file": "web/OrderController.java", "ok": True}],
                       "ok": True},
-            "dev": [], "flows": flows, "checks": _demo_checks(now)}
+            "dev": [], "flows": flows, "checks": _demo_checks(now),
+            "prov": {"v": 1, "plat": "cc", "sid": "d3m0a1b2-c3d4-4e5f-8a9b-0c1d2e3f4a5b", "model": "opus-4-1",
+                     "stages": [{"t": "모듈 그리기", "model": "opus-4-1"}, {"t": "흐름 그리기", "model": "sonnet-4-5"}],
+                     "at": now - 7200, "vt": now - 7200}}
 
 
 # (tool, file, line, rule, sev, pkg) — security results on the shop modules (no secrets, metadata only)

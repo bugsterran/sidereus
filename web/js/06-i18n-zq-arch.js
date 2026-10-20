@@ -2,6 +2,7 @@
 Object.assign(I18N.ko, {
   'Generated {t} · {c}': '{t} 생성 · {c}',
   'HEAD is {n} commits ahead': 'HEAD 가 {n}커밋 앞섬',
+  'Drawn by: unknown': '그린 모델: 알 수 없음',
   'Legend': '범례',
   'Direct reference': '직접 참조',
   'Estimated': '추정',
