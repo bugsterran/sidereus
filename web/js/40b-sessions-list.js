@@ -223,7 +223,8 @@ function sessTreeHtml(x){
 function sessPickHtml(x){
   // ★Only sessions whose identity is explicit in the path can be picked. Inviting by an id picked up from a folder name etc.
   //   calls the wrong session — same spot as the measured incident (2026-08-12).
-  const pickable = x.state !== 'done' && x.mbox && x.mboxSrc === 'identity';
+  //   Logged-in rule is mboxIn (17): identity.json or a cx launcher id; the server re-checks it in _room_invite.
+  const pickable = x.state !== 'done' && mboxIn(x);
   return pickable
     ? '<input type=checkbox class=spick data-mb="'+esc(x.mbox)+'"'+(picked.has(x.mbox)?' checked':'')
       + ' title="'+esc(TV({msg: 'Pick {n} to invite to a room', vars: {n: x.mbox}}))+'">'

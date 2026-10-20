@@ -387,6 +387,34 @@ class RoomInviteTest(_Base):
         self.assertIn("bob", out["vars"]["ids"])
         self._nothing_written()
 
+    def _codex_rows(self, ok):
+        self.patch(RP, "sessions_rows", lambda **k: [
+            {"mbox": "alice", "mboxSrc": "identity", "project": "p1"},
+            {"mbox": "p-codex", "mboxSrc": "env", "plat": "cx", "project": "p"},
+            {"mbox": "g-codex", "mboxSrc": "folder", "plat": "cx", "project": "g"}])
+        self.patch(bus, "_codex_ok", ok)
+
+    def test_codex_launcher_id_invited_when_published(self):
+        self._codex_rows(frozenset({"p-codex", "g-codex"}))
+        out = post("/api/room/invite", {"room": "r", "ids": ["p-codex"], "dry": True}, origin=OWN)[1]
+        self.assertEqual((out["ok"], out["added"]), (True, ["p-codex"]))
+        out = post("/api/room/invite", {"room": "r", "ids": ["g-codex"]}, origin=OWN)[1]   # folder guess: never
+        self.assertFalse(out["ok"])
+        self._nothing_written()
+
+    def test_codex_launcher_id_refused_without_server_rule(self):
+        for ok in (None, frozenset()):   # no poll yet / not published (no reader or not unique)
+            self._codex_rows(ok)
+            out = post("/api/room/invite", {"room": "r", "ids": ["p-codex"]}, origin=OWN)[1]
+            self.assertFalse(out["ok"], ok)
+            self.assertIn("p-codex", out["vars"]["ids"])
+        self._codex_rows(frozenset({"p-codex"}))
+        with open(os.path.join(self.tmp, "identity.json"), "w", encoding="utf-8") as f:
+            json.dump({"/r/p": "p-codex"}, f)   # a Claude session owns the id -> codex_id_ok refuses the env path
+        self.patch(RP, "sessions_rows", lambda **k: [{"mbox": "p-codex", "mboxSrc": "env", "plat": "cx"}])
+        self.assertFalse(post("/api/room/invite", {"room": "r", "ids": ["p-codex"]}, origin=OWN)[1]["ok"])
+        self._nothing_written()
+
     def test_cross_origin(self):
         self.assertRefused("/api/room/invite", {"room": "r", "ids": ["alice"]})
         self._nothing_written()

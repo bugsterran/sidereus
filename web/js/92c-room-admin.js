@@ -39,12 +39,12 @@ function raToolHtml(cs){
     + '<button class="strp raop rahsel"' + (n ? '' : ' disabled') + '>' + esc(T('Hide selected ({n})').replace('{n}', n)) + '</button>'
     + '<button class="strp raop ranew' + (raBox && raBox.k === 'new' ? ' on' : '') + '">' + esc(T('New room')) + '</button></div>';
 }
-// Session picker: identity-confirmed live sessions only are pickable (same rule as 40b sessPickHtml).
+// Session picker: logged-in live sessions only are pickable (mboxIn, same rule as 40b sessPickHtml).
 function raPickerHtml(){
   const rows = (SESS || []).filter(x => x.state !== 'done');
   if(!rows.length) return '<div class=ranone>' + esc(T('No sessions to pick')) + '</div>';
   return '<div class=rapick>' + rows.map(x => {
-    const ok = !!(x.mbox && x.mboxSrc === 'identity');
+    const ok = mboxIn(x);
     return '<label class="raop rapr' + (ok ? '' : ' off') + '"' + (ok ? '' : ' title="' + esc(T('Cannot invite — identity not confirmed')) + '"') + '>'
       + '<input type=checkbox class="raop rasp" data-mb="' + esc(x.mbox || '') + '"' + (ok ? (raPick.has(x.mbox) ? ' checked' : '') : ' disabled') + '>'
       + '<b>' + esc(x.mbox || '—') + '</b><span title="' + esc(x.cwd || '') + '">' + esc(x.cwd || '') + '</span><i>' + esc(x.model || '') + '</i></label>';

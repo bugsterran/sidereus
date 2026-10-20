@@ -120,15 +120,25 @@ class MboxCodex(unittest.TestCase):
         rows = ext.codex_env_dedupe([dict(self._cx("x%d" % i), mbox=b, mboxSrc="folder") for i, b in enumerate(bad[:5])])
         self.assertEqual({r["mboxSrc"] for r in rows}, {"folder"})
 
-    def test_invite_picker_stays_identity_only(self):
-        # routes_post room invites still require identity.json, so a cx env row is not pickable
+    def test_invite_pickers_take_cx_env_login(self):
+        # both invite pickers share mboxIn: a cx launcher-id login is pickable, folder guesses and Claude env stay greyed
         from tests._load import js_fn
         from tests._node import node_e
         import subprocess
-        js = ("const T = s => s, TV = o => o.msg, esc = s => String(s), picked = new Set();\n" + js_fn("sessPickHtml")
-              + "\nconsole.log(JSON.stringify(sessPickHtml({state: 'idle', plat: 'cx', mbox: 'p-codex', mboxSrc: 'env'})));")
+        rows = [{"state": "idle", "plat": "cx", "mbox": "p-codex", "mboxSrc": "env"},
+                {"state": "idle", "plat": "cx", "mbox": "q-codex", "mboxSrc": "folder"},
+                {"state": "idle", "mbox": "claude-env", "mboxSrc": "env"},
+                {"state": "idle", "mbox": "alice", "mboxSrc": "identity"}]
+        js = ("const T = s => s, TV = o => o.msg, esc = s => String(s), picked = new Set(), raPick = new Set();\n"
+              + "\n".join(js_fn(n) for n in ("mboxIn", "sessPickHtml", "raPickerHtml"))
+              + "\nconst SESS = " + json.dumps(rows) + ";\nconsole.log(JSON.stringify({s: SESS.map(sessPickHtml), r: raPickerHtml()}));")
         out = json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
-        self.assertNotIn("checkbox", out)
+        self.assertEqual(["checkbox" in h for h in out["s"]], [True, False, False, True])
+        r = out["r"]
+        self.assertIn('data-mb="p-codex">', r)
+        self.assertIn('data-mb="alice">', r)
+        self.assertIn('data-mb="q-codex" disabled>', r)
+        self.assertIn('data-mb="claude-env" disabled>', r)
 
     def test_empty_cwd(self):
         self.assertEqual(ident.mbox_codex(""), ("", "none"))
