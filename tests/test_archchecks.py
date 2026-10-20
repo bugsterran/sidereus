@@ -110,7 +110,7 @@ class RunnerTest(Tmp):
         self.assertEqual(j["files"], {"a.py": {"error": 0, "warning": 1}})
         self.assertNotIn("secret", json.dumps(j))
         self.assertEqual(AC.checks_errors(j, self.repo, C1, SC.SEC_IDS), [])
-        self.assertEqual(AC.checks_errors(j), ["rules", "tools[0]", "tools[1]", "tools[2]", "items"])   # no ids: nothing accepted
+        self.assertEqual(AC.checks_errors(j), ["rules"] + ["tools[%d]" % i for i in range(len(j["tools"]))] + ["items"])   # no ids: nothing accepted
         self.assertEqual(self.main("--verify", "--last", "--category", "security")[0], 0)
         self.assertFalse(os.path.exists(os.path.join(os.path.dirname(self.fp()), "checks.json")))
         j["items"][0]["msg"] = "leak"

@@ -60,7 +60,12 @@ CVE_MAX = 3   # extra CVE aliases shown next to the rule; ⚠never part of the f
 _SCANNED = re.compile(r"scanned ~?(\d[\d,]*) bytes")
 _OSV_N = re.compile(r"Scanned .+? file and found (\d+) packages?")
 _LOCKS = ("package-lock.json", "yarn.lock", "pnpm-lock.yaml", "poetry.lock", "Pipfile.lock", "uv.lock", "requirements.txt",
-          "go.sum", "Cargo.lock", "Gemfile.lock", "composer.lock", "gradle.lockfile")
+          "go.sum", "Cargo.lock", "Gemfile.lock", "composer.lock", "gradle.lockfile", "buildscript-gradle.lockfile",
+          "pom.xml", "libs.versions.toml")   # ⚠osv-scanner reads none of build.gradle(.kts): those are BUILDS only
+_GRADLE_META = "verification-metadata.xml"   # counts only directly under a `gradle/` folder
+_BUILDS = ("build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts")
+WHY_GRADLE = "Gradle without lockfile: gradle dependencies --write-locks"   # ⚠must not match sec_report._NET
+WHY_NO_DEPS = "no dependency manifest"
 _SEMGREP_CFG = (".semgrep.yml", ".semgrep.yaml", ".semgrep")
 SEMGREP_PACKS = ("p/python", "p/javascript", "p/secrets")   # registry packs used online when no local config
 _SKIP = {".git", "node_modules", "build", "target", ".gradle", "dist", "out", ".venv", "venv", "__pycache__", ".idea",
@@ -70,7 +75,7 @@ _WALK_DIRS, _WALK_DEPTH = 5000, 6
 
 def scan(repo):
     """One bounded walk: files counted, python present, lockfile present."""
-    s = {"n": 0, "py": False, "lock": False}
+    s = {"n": 0, "py": False, "lock": False, "build": False}
     dirs = 0
     for dp, dns, fns in os.walk(repo):
         rel = os.path.relpath(dp, repo)
@@ -81,7 +86,9 @@ def scan(repo):
             break
         s["n"] += len(fns)
         s["py"] = s["py"] or any(f.endswith(".py") for f in fns)
-        s["lock"] = s["lock"] or any(f in _LOCKS for f in fns)
+        s["lock"] = s["lock"] or any(f in _LOCKS for f in fns) or (
+            os.path.basename(dp) == "gradle" and _GRADLE_META in fns)
+        s["build"] = s["build"] or any(f in _BUILDS for f in fns)
     return s
 
 
@@ -128,6 +135,8 @@ def detect(repo, which, net=False):
                    _tool("osv-scanner", "default", argv=[exe, "--format", "json", "-r", "."], cwd=repo, src="stdout",
                          ok_rc=(0, 1), net=True) if exe else
                    _tool("osv-scanner", "default", status="missing", why=install_hint("osv-scanner")))
+    else:   # ⚠keep the row: a missing row reads as «dependencies clean» on screen and in the report
+        out.append(_tool("osv-scanner", "default", status="skipped", why=WHY_GRADLE if s["build"] else WHY_NO_DEPS))
     exe = which("semgrep")
     cfg = next((c for c in _SEMGREP_CFG if os.path.exists(os.path.join(repo, c))), None)
     tail = ["--json", "--metrics=off", "--disable-version-check", "--quiet", "."]
