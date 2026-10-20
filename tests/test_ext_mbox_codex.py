@@ -129,7 +129,7 @@ class MboxCodex(unittest.TestCase):
                 {"state": "idle", "plat": "cx", "mbox": "q-codex", "mboxSrc": "folder"},
                 {"state": "idle", "mbox": "claude-env", "mboxSrc": "env"},
                 {"state": "idle", "mbox": "alice", "mboxSrc": "identity"}]
-        js = ("const T = s => s, TV = o => o.msg, esc = s => String(s), picked = new Set(), raPick = new Set();\n"
+        js = ("const T = s => s, TV = o => o.msg, esc = s => String(s), picked = new Set(), raPick = new Set(), aiLogo = p => '';\n"
               + "\n".join(js_fn(n) for n in ("mboxIn", "sessPickHtml", "raPickerHtml"))
               + "\nconst SESS = " + json.dumps(rows) + ";\nconsole.log(JSON.stringify({s: SESS.map(sessPickHtml), r: raPickerHtml()}));")
         out = json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)

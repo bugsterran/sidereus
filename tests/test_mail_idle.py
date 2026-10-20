@@ -37,7 +37,7 @@ class MailIdle(unittest.TestCase):
 
     def lock(self, sid, age_s):
         p = os.path.join(self.tmp, ".wake", sid + ".lock")
-        open(p, "w").close()
+        open(p, "w", encoding="utf-8").close()
         os.utime(p, (NOW - age_s, NOW - age_s))
 
     def run1(self, rows, msgs, cursors=None, acks=None, rooms=None):
