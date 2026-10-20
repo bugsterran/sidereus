@@ -48,11 +48,11 @@ class Wake(unittest.TestCase):
         self.assertEqual(rc, 2)
         self.assertIn("peer(DM)", out)
         self.assertNotIn("SECRET BODY", out)
-        self.assertIn("대기 훅이 깨웠습니다", out)
-        self.assertNotIn("감시가 꺼져", out)
+        self.assertIn("The wait hook woke you", out)
+        self.assertNotIn("No mailbox watch is running", out)
         rc2, out2 = self.run_w(life=0.01)           # same post never wakes twice (shared cursor)
         self.assertEqual(rc2, 2)
-        self.assertIn("감시 갱신", out2)
+        self.assertIn("watch renewed", out2)
 
     def test_mail_arriving_while_waiting(self):
         def later(n):
@@ -60,12 +60,12 @@ class Wake(unittest.TestCase):
                 self.post(**{"from": "peer", "to": "me"})
         rc, out = self.run_w(life=5, on_sleep=later)
         self.assertEqual(rc, 2)
-        self.assertIn("새 메일 1건", out)
+        self.assertIn("1 new mail", out)
 
     def test_own_posts_and_unregistered_cwd_stay_silent(self):
         self.post(**{"from": "me", "to": "me"})
         rc, out = self.run_w(life=0.01)
-        self.assertIn("감시 갱신", out)              # only the renewal, not the own post
+        self.assertIn("watch renewed", out)              # only the renewal, not the own post
         self.inp["cwd"] = "/other"
         self.assertEqual(self.run_w()[0], 0)
 
@@ -100,7 +100,7 @@ class Wake(unittest.TestCase):
         self.post(**{"from": "peer", "to": "me"})
         self._stage()
         rc, out = self.run_w(life=0.01)
-        self.assertIn("감시 갱신", out)
+        self.assertIn("watch renewed", out)
         self.assertIn("pending", self._state())
 
     def test_new_mail_delivers_pending_and_new_then_clears(self):
@@ -109,7 +109,7 @@ class Wake(unittest.TestCase):
         self.post(**{"from": "other", "to": "me"})
         rc, out = self.run_w(life=5)
         self.assertEqual(rc, 2)
-        self.assertIn("새 메일 2건", out)
+        self.assertIn("2 new mail", out)
         st = self._state()
         self.assertNotIn("pending", st)
         self.assertGreater(st["last_t"], 0)
