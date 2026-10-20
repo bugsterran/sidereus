@@ -387,6 +387,7 @@ class StructArch(unittest.TestCase):
                 "console.log(JSON.stringify([h, POSTS[0][1].body]));")
         self.assertIn("[pl:arch-map/", r[1])
         self.assertIn("re-read only the files the previous stage wrote (for arch-map: plan.json, then map.json, then flows.json)", r[1])
+        self.assertIn("Run all stages back to back in this turn: do not end the turn or report between stages", r[1])
         self.assertIn(r[1].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"), r[0])
 
     def test_codex_turn_end_hint(self):

@@ -102,6 +102,7 @@ class CodexRecipient(unittest.TestCase):
             self.assertIn("3. 리뷰 · onFail → 수정 (max 2)", t)
             self.assertIn("원인: DEF-CAUSE", t)
             self.assertIn("At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.", t)
+            self.assertIn("Run all stages back to back in this turn: do not end the turn or report between stages", t)   # one turn: Codex ended its turn after each stage
             self.assertNotIn("haiku", t)              # model overrides do not apply to a Codex session
             for w in CLAUDE_ONLY:
                 self.assertNotIn(w, t)

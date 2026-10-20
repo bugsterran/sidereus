@@ -1113,6 +1113,20 @@ class AwayHome(unittest.TestCase):
         self._known([self.cwd, self.b])
         self.assertEqual(self._proj(tp=False), self.b)
 
+    def test_no_config_dir_default_claude_json(self):
+        # Codex processes never set CLAUDE_CONFIG_DIR; the default HOME_DIR/.claude.json must still be read.
+        self._known([self.cwd, self.b])
+        env = {k: v for k, v in os.environ.items() if k != "CLAUDE_CONFIG_DIR"}
+        rel = os.path.join(".claude", "pipelines", N + ".json")
+        with mock.patch.object(H, "CLAUDE_JSON", None), mock.patch.dict(os.environ, env, clear=True):
+            self.assertEqual(H._known_owner(rel), [self.b])
+            ev = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "session_id": SID, "cwd": self.cwd,
+                  "tool_input": {"command": ": [pl:%s/설계]" % N}}
+            with mock.patch("sys.stdin", io.StringIO(json.dumps(ev))), mock.patch("sys.stdout", io.StringIO()):
+                H.main(["--platform", "codex"])
+        with open(os.path.join(self.marks, SID + ".runs.json"), encoding="utf-8") as f:
+            self.assertEqual(json.load(f)["runs"][N]["proj"], self.b)
+
 
 if __name__ == "__main__":
     unittest.main()

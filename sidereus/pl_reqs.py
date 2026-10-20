@@ -13,6 +13,7 @@ import time
 
 from sidereus.config import DATA_DIR
 from sidereus.bus import RELAY_SID, _atomic_write
+from sidereus import arch_map
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
@@ -179,6 +180,9 @@ def _state(r, row, arch):
     if is_open:
         return "run", stage
     if ended:
+        return "done", ""
+    # ⚠Codex / hookless runs leave no plrun: the repo's gate result written after the request is the only end signal.
+    if run is None and r["pipeline"] == "arch-map" and arch_map._result_at(r["repo"]) > r["at"]:
         return "done", ""
     return ("sent" if alive else "gone"), ""
 

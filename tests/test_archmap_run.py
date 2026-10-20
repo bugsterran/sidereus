@@ -121,6 +121,14 @@ class RunTest(unittest.TestCase):
         AM._RUN_SEEN.clear()
         self.assertIn(self.repo, AM.runs([self.row(sub=[{"lab": "[pl:arch-map/읽기 계획] x", "min": 1}])], NOW))
 
+    def test_hookless_marker_needs_result_newer_than_its_stage(self):
+        # Codex-shaped row: no plrun, only the shell [pl:] marker (age = seconds since that stage started)
+        self.put("verify.json", NOW - 3000)                                     # older run's gate result
+        s = self.row(plm={"name": "arch-map", "title": "모듈 그리기", "age": 10})
+        self.assertEqual(AM.runs([s], NOW)[self.repo]["stage"], "모듈 그리기")
+        self.put("verify.json", NOW + 5)                                        # this run's gate, after the last sign
+        self.assertEqual(AM.runs([dict(s, plm=dict(s["plm"], age=15))], NOW + 10), {})
+
     def test_verified_store_not_pending(self):
         self.put("plan.json", NOW - 300)
         self.put("verify.json", NOW - 200)
