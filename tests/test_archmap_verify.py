@@ -392,7 +392,7 @@ class StyleTest(Base):
         self.assertIsNone(AV.plan_arch(None))
 
     def test_plan_arch_long_text_is_cut_not_refused(self):
-        a = AV.plan_arch({"arch": dict(self.ARCH, framework="x" * 41, units="u" * 124)})
+        a = AV.plan_arch({"arch": dict(self.ARCH, framework="x" * 81, units="u" * 124)})
         self.assertEqual((len(a["framework"]), a["framework"][-1]), (AV.FW_MAX, "\u2026"))
         self.assertEqual((len(a["units"]), a["style"]), (AV.UNITS_MAX, "layered"))
 

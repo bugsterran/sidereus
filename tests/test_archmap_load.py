@@ -161,14 +161,14 @@ class LoadTest(unittest.TestCase):
         out = AM.load(self.repo)
         self.assertEqual((out["style"], out["dev"]), (None, []))          # old store
         self.assertEqual(AM.load(os.path.join(self.tmp, "nope")).get("style"), None)
-        st = {"style": "layered", "framework": "F" * 99, "units": "u" * 300, "ok": True, "x": "never shown",
+        st = {"style": "layered", "framework": "F" * 199, "units": "u" * 300, "ok": True, "x": "never shown",
               "evidence": [{"file": "a/%d.py" % k, "ok": True} for k in range(9)] + [{"file": 3}]}
         dev = [{"i": 0, "a": "web", "b": "data"}, {"i": 1, "a": "web", "b": "data"},      # edge 1 failed verification
                {"i": 9, "a": "web", "b": "data"}, {"i": True, "a": "web", "b": "data"}, {"i": 0, "a": "boss", "b": "data"}, 3]
         self.put(C1, 1000, vx={"style": st, "dev": dev})
         out = AM.load(self.repo)
         self.assertEqual(len(out["style"]["evidence"]), 5)
-        self.assertEqual((len(out["style"]["framework"]), len(out["style"]["units"])), (40, 120))
+        self.assertEqual((len(out["style"]["framework"]), len(out["style"]["units"])), (80, 120))
         self.assertEqual(set(out["style"]), {"style", "framework", "units", "evidence", "ok"})
         self.assertEqual(out["dev"], [{"i": 0, "a": "web", "b": "data"}])
         self.put(C1, 1000, vx={"style": dict(st, style="bogus"), "dev": "x"})

@@ -181,7 +181,7 @@ Borrowed into the schema:
 
 ## arch-map: architecture style
 
-- Stage 1 writes `plan.arch` = {style, framework ≤40, units ≤120, evidence: 1..5 repo-relative files}; modules are cut by that unit. Stage 2 may set module `role` (layered · hexagonal · mvvm only).
+- Stage 1 writes `plan.arch` = {style, framework ≤80, units ≤120, evidence: 1..5 repo-relative files}; modules are cut by that unit. Stage 2 may set module `role` (layered · hexagonal · mvvm only).
 - Gate (`arch_verify.run`) adds `verify.json` `style` (each evidence file must exist at the commit) and `dev` [{i, a, b}] = verified non-estimated import/call edges whose role pair is outside `STYLE_FLOW`.
 - ⚠Advisory only: a missing/invalid arch or any deviation never changes the rate, the summary line or the exit code. Old plans/maps without `arch`/`role` load as `style: null`, `dev: []`.
 

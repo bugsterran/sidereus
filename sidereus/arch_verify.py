@@ -38,7 +38,7 @@ ARCH_GIT_TIMEOUT = 10
 EST_KINDS = ("config", "di", "event")   # config/DI/event (v2) wiring cannot be proven by one symbol: always estimated
 STYLES = ("layered", "modular", "apps", "routes", "feature-pkgs", "feature-folders", "crates", "mvvm", "hexagonal",
           "library", "other")
-FW_MAX, UNITS_MAX = 40, 120
+FW_MAX, UNITS_MAX = 80, 120  # framework holds a BE and an FE stack joined by " + "; 40 cut the FE part
 # Allowed role -> role edges per style; every style also allows same-role and x -> shared. Styles without a table judge none.
 STYLE_FLOW = {
     "layered": frozenset([("web", "service"), ("web", "domain"), ("service", "data"), ("service", "domain"),
