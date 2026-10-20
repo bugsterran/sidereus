@@ -12,8 +12,18 @@ function plEnt(p){
   if(!E || E.sha !== p.sha){
     const G = plgFrom(p);
     // auto = the file has no node positions: the first paint lays the chain out to the canvas width (base re-keyed then, not dirty)
-    E = PLS.g[k] = { G, sha: p.sha, base: plgKey(G), sel: null, view: (E && E.view) || null, auto: !p.stages.every(s => s.ui) };
+    const O = E;
+    E = PLS.g[k] = { G, sha: p.sha, base: plgKey(G), sel: null, view: null, auto: !p.stages.every(s => s.ui) };
+    plViewCarry(E, O);
   }
+  return E;
+}
+// ⚠A rebuilt entry (save = new sha, «Undo») must keep the view and its fit flags: without touched/fitK plGwFit re-fitted (x snapped to 0)
+// and a null view ran the first-open fit + centre after a click. An unplaced file (auto) still gets the first-open layout.
+function plViewCarry(E, O){
+  if(!E || !O || !O.view || E.auto) return E;
+  E.view = Object.assign({}, O.view);
+  ['touched', 'first', 'ctrd', 'laid', 'fitK', 'visY'].forEach(f => { if(O[f] !== undefined) E[f] = O[f]; });
   return E;
 }
 function plCurEnt(){ return plEnt(plCur()); }
