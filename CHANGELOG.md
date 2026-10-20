@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Security checks: the scan reads the files of the commit it is stored under (a `git archive` export of HEAD in a temp folder) instead of the working tree, so uncommitted edits and untracked files no longer leak into a result labelled with that commit. The repo itself is only read.
 - Security checks: the dependency scan no longer disappears when a repo has no lockfile — the osv-scanner row shows «skipped» with the reason («Gradle without lockfile: gradle dependencies --write-locks» or «no dependency manifest»), so a Gradle repo no longer reads as clean. Java manifests osv-scanner reads are now detected: `pom.xml`, `buildscript-gradle.lockfile`, `gradle/verification-metadata.xml`, `gradle/libs.versions.toml`.
 - Pipelines: the editor canvas keeps where you panned it after «Save» (it snapped to the left edge) and after «Undo» (it re-centred, as on first open). A pipeline opened for the first time still fits and centres.
 - Structure: an arch-map request whose session never marked its last stage (a Codex run that skipped the verify marker) no longer shows «running · <stage>» forever; the gate's result written after the run's last stage sign closes it as «Done».

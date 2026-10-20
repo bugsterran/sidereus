@@ -2,7 +2,8 @@
 """Runner + gate of the security-checks pipeline: run the repo's security scanners, write checks-security.json.
 
 usage: arch_checks.py (--repo <path> | --last | --verify --last) --category security [--only <ids>] [--offline] [--dev]
-  --repo / --last   detect scanners (sidereus/sec_checks.py), run each (300 s each, 900 s total), write
+  --repo / --last   export HEAD's tracked files (git archive) to a temp dir, so results match the commit they are
+                    stored under; detect scanners there (sidereus/sec_checks.py), run each (300 s each, 900 s total), write
                     arch/<key>/<HEAD>/checks-security.json + its last pointer, and one Markdown report
                     arch/<key>/security-report-YYYYMMDD-HHMM.md (scanners, triage, delta, deps; newest 10 kept).
                     Deps = scripts/deps_audit.py lines, only when the repo is this Sidereus checkout;
@@ -28,6 +29,7 @@ import signal
 import stat
 import subprocess
 import sys
+import tarfile
 import tempfile
 import time
 
@@ -67,6 +69,69 @@ def _git(repo, args):
     except (subprocess.SubprocessError, OSError):
         return None
     return r.stdout if r.returncode == 0 else None
+
+
+def _safe_members(tf, dest):
+    """Regular files and dirs (and links that stay inside dest) of a tar; anything else is dropped, never extracted.
+    ⚠Python 3.9 has no extraction filter: absolute names, `..` and outside links are checked here."""
+    root = os.path.realpath(dest)
+    inside = lambda p: os.path.realpath(p) == root or os.path.realpath(p).startswith(root + os.sep)
+    out = []
+    for m in tf.getmembers():
+        fp = os.path.join(root, m.name)
+        if os.path.isabs(m.name) or ".." in m.name.replace("\\", "/").split("/") or not inside(fp):
+            continue
+        if m.issym():
+            if os.path.isabs(m.linkname) or not inside(os.path.join(os.path.dirname(fp), m.linkname)):
+                continue
+        elif m.islnk():
+            if os.path.isabs(m.linkname) or not inside(os.path.join(root, m.linkname)):
+                continue
+        elif not (m.isfile() or m.isdir()):
+            continue
+        out.append(m)
+    return out
+
+
+def _export(repo, head, dest, tmp):
+    """Unpack the tracked files of commit head into dest (`git archive`, read-only on the repo); False on failure.
+    ⚠export-ignore / export-subst gitattributes change what is scanned. Never `git worktree add`: it writes .git."""
+    tar = os.path.join(tmp, "src.tar")
+    try:
+        with open(tar, "wb") as f:
+            r = subprocess.run(git_argv(repo, ["archive", "--format=tar", head]), stdout=f, stderr=subprocess.DEVNULL,
+                               stdin=subprocess.DEVNULL, timeout=300, env=git_env())
+        if r.returncode != 0:
+            return False
+        with tarfile.open(tar) as tf:
+            kw = {"filter": "data"} if hasattr(tarfile, "data_filter") else {}
+            tf.extractall(dest, members=_safe_members(tf, dest), **kw)
+    except (subprocess.SubprocessError, OSError, tarfile.TarError):
+        return False
+    finally:
+        _rm_quiet(tar)
+    return True
+
+
+def _rm_quiet(fp):
+    try:
+        os.remove(fp)
+    except OSError:
+        pass
+
+
+def _tree_sig(root):
+    """(path, size, mtime) of every file under root: a tool that writes into the scanned tree changes it."""
+    sig = []
+    for dp, dns, fns in os.walk(root):
+        dns.sort()
+        for fn in sorted(fns):
+            try:
+                st = os.lstat(os.path.join(dp, fn))
+            except OSError:
+                continue
+            sig.append((os.path.relpath(os.path.join(dp, fn), root), st.st_size, st.st_mtime_ns))
+    return sig
 
 
 def _kill_tree(p):
@@ -155,14 +220,19 @@ def run(repo, only=None, offline=False, dev=False):
     head = (_git(repo, ["rev-parse", "HEAD"]) or "").strip()
     if not AV.COMMIT_RE.fullmatch(head):
         return 1, "arch_checks: not a git repo with a commit"
-    before = _git(repo, ["status", "--porcelain"])
-    plans = [p for p in SC.detect(repo, _which, not offline) if not only or p["id"] in only]
-    # ⚠probe only when an online tool would actually run; unreachable re-plans them as skipped, never «0 issues»
-    if any(p.get("net") and not p.get("status") for p in plans) and not _probe():
-        plans = [p for p in SC.detect(repo, _which, False) if not only or p["id"] in only]
+    before = _git(repo, ["status", "--porcelain"])   # dirty is info only: the scan reads HEAD's tracked files
     t_all, tools, items, cache = time.time(), [], [], {}
     tmp = tempfile.mkdtemp(prefix="sidereus-checks-")
+    # ⚠realpath: macOS /var -> /private/var, else tool paths fail rel_path against src
+    src = os.path.realpath(tempfile.mkdtemp(prefix="sidereus-src-"))
     try:
+        if not _export(repo, head, src, tmp):
+            return 1, "arch_checks: git archive of HEAD failed"
+        plans = [p for p in SC.detect(src, _which, not offline) if not only or p["id"] in only]
+        # ⚠probe only when an online tool would actually run; unreachable re-plans them as skipped, never «0 issues»
+        if any(p.get("net") and not p.get("status") for p in plans) and not _probe():
+            plans = [p for p in SC.detect(src, _which, False) if not only or p["id"] in only]
+        sig = _tree_sig(src)
         for p in plans:
             if p.get("status"):
                 tools.append({"id": p["id"], "rules": p["rules"], "status": p["status"], "why": p.get("why"), "ms": 0,
@@ -179,22 +249,19 @@ def run(repo, only=None, offline=False, dev=False):
                     continue
                 cache[key] = _exec(p, min(AC.TOOL_TIMEOUT_S, left), tmp)
             res = cache[key]
-            st, why, its, nf = AC.judge(p, res, repo)
+            st, why, its, nf = AC.judge(p, res, src)
             left = AC.TOTAL_S - (time.time() - t_all)
             if st == "fail" and p.get("fallback") and left >= 5:   # e.g. eslint without the json-with-metadata format
                 p2 = dict(p, argv=p["fallback"])
                 r2 = _exec(p2, min(AC.TOOL_TIMEOUT_S, left), tmp)
-                st, why, its, nf = AC.judge(p2, r2, repo)
+                st, why, its, nf = AC.judge(p2, r2, src)
                 res = dict(r2, ms=res.get("ms", 0) + r2.get("ms", 0))
             tools.append({"id": p["id"], "rules": p["rules"], "status": st, "why": why, "ms": res.get("ms", 0), "files": nf})
             items += its
+        changed = _tree_sig(src) != sig   # a tool wrote into the scanned tree
     finally:
         _rmtree(tmp)
-    ign = _git(repo, ["ls-files", "-z", "-o", "-i", "--exclude-standard", "--directory"])
-    if ign is not None:   # git failure keeps every item
-        items = SC.drop_ignored(items, ign)
-    after = _git(repo, ["status", "--porcelain"])
-    changed = before is None or after is None or before != after
+        _rmtree(src)
     j = AC.build(repo, head, bool((before or "").strip()), changed, round(time.time(), 3), tools, items)
     d = AV.store_dir(repo, head)
     os.makedirs(d, exist_ok=True)

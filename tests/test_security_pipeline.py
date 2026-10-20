@@ -94,6 +94,7 @@ class ReportRun(unittest.TestCase):
                   mock.patch.object(self.cli, "_which", lambda n: "/bin/" + n if n == "bandit" else None),
                   mock.patch.object(self.cli, "_exec", lambda p, t, tmp: {"rc": 1, "out": out, "err": "", "t0": 0, "ms": 5}),
                   mock.patch.object(self.cli, "_probe", lambda: False),
+                  mock.patch.object(self.cli, "_export", lambda r, h, d, t: shutil.copytree(r, d, dirs_exist_ok=True) and True),
                   mock.patch.object(self.cli, "_load_deps", lambda: Deps),
                   mock.patch.object(self.cli.time, "time", lambda: 1760000000.0)):   # no clock: one fixed minute
             p.start()

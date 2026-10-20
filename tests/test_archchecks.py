@@ -23,7 +23,13 @@ def cli():
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     m._record = lambda *a: False   # ⚠never append to the live evidence file; tests/test_sec_checks.py covers _record
+    m._export = _copy_export   # fixtures stub _git, so no real archive; tests/test_sec_checks.py covers the real one
     return m
+
+
+def _copy_export(repo, head, dest, tmp):
+    shutil.copytree(repo, dest, dirs_exist_ok=True)
+    return True
 
 
 class Tmp(unittest.TestCase):
@@ -100,8 +106,15 @@ class RunnerTest(Tmp):
         return rc, out.getvalue()
 
     def test_run_writes_and_verifies(self):
-        self.por = ["", "?? new.txt\n"]
-        rc, line = self.cli.run(self.repo)
+        out = json.dumps(BANDIT)
+
+        def ex(p, t, tmp):   # a tool that writes into the scanned tree
+            with open(os.path.join(p["cwd"], "new.txt"), "w", encoding="utf-8") as f:
+                f.write("x")
+            return {"rc": 1, "out": out, "err": "", "t0": 0, "ms": 5}
+        with mock.patch.object(self.cli, "_exec", ex):
+            rc, line = self.cli.run(self.repo)
+        self.assertFalse(os.path.exists(os.path.join(self.repo, "new.txt")))
         self.assertEqual((rc, line.split(" · gitleaks")[0].split(" · missing")[0]),
                          (0, "arch_checks: security · 1 tools · 0 errors · 1 warnings"))
         self.assertTrue(line.endswith(" · source changed by a tool"), line)
