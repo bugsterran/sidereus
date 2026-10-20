@@ -114,6 +114,24 @@ class Wake(unittest.TestCase):
         self.assertNotIn("pending", st)
         self.assertGreater(st["last_t"], 0)
 
+    def test_R1_claude_unchanged(self):
+        # Exit codes and stderr are what Claude's asyncRewake contract expects; plan() runs only on bus changes.
+        real, n = W.MS.plan, []
+
+        def plan(*a, **k):
+            n.append(1)
+            return real(*a, **k)
+        with mock.patch.object(W.MS, "plan", plan):
+            rc, out = self.run_w(life=0.05)
+            self.assertEqual((rc, out), (2, W.RENEW + "\n"))
+            self.assertEqual(len(n), 1)                     # empty bus never changed: one check only
+            self.post(**{"from": "peer", "to": "me"})
+            rc, out = self.run_w(life=5)
+        self.assertEqual(rc, 2)
+        self.assertTrue(out.startswith("[mailbox] 1 new mail"), out)
+        self.assertTrue(out.endswith("(The wait hook woke you. The same mail will not wake you again.)\n"), out)
+        self.assertIs(W.lock_path, W.MW.lock_path)
+
     def test_bad_input_never_wakes(self):
         self.inp = {}
         self.assertEqual(self.run_w()[0], 0)

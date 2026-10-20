@@ -24,51 +24,14 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mailbox_stop as MS  # noqa: E402
+import mail_wait as MW  # noqa: E402
 
-POLL_S = 2.0
+POLL_S = MW.POLL_S
 FIRST_DELAY_S = 3.0        # the sync Stop hook commits first at the same turn end; avoids a double surface
 LIFE_S = 6 * 3600          # below the hook timeout in hooks.json; renewal re-arms through the next turn end
-STALE_S = 15.0             # heartbeat older than this = the owning waiter is gone
+STALE_S = MW.STALE_S
 RENEW = ("[mailbox] watch renewed — no new mail. Nothing to do: call no tools and end the turn without a reply.")
-
-
-def lock_path(store, sid):
-    return os.path.join(store, ".wake", "%s.lock" % "".join(c for c in sid if c.isalnum() or c in "-_")[:64])
-
-
-def take_lock(path, now):
-    """True when this process owns the session's waiter slot."""
-    try:
-        if now - os.path.getmtime(path) < STALE_S:
-            with open(path, encoding="utf-8") as f:
-                if f.read().strip() != str(os.getpid()):
-                    return False
-    except OSError:
-        pass
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(str(os.getpid()))
-    return True
-
-
-def owns(path):
-    try:
-        with open(path, encoding="utf-8") as f:
-            return f.read().strip() == str(os.getpid())
-    except OSError:
-        return False
-
-
-def beat(store, me):
-    """Same presence heartbeat watch.sh writes (mailbox_core.touch_presence «watch»): peers see this id as watching."""
-    try:
-        name = "".join(c for c in str(me) if c.isalnum() or c in "-_")[:64]
-        if not name:
-            return
-        with open(os.path.join(store, "presence-%s.watch" % name), "w", encoding="utf-8") as f:
-            f.write(str(int(time.time())))
-    except OSError:
-        pass
+lock_path, take_lock, owns, beat = MW.lock_path, MW.take_lock, MW.owns, MW.beat   # re-exported for tests
 
 
 def deliver(p, err):
@@ -94,31 +57,17 @@ def run(inp, store=None, life_s=LIFE_S, poll_s=POLL_S, first_s=FIRST_DELAY_S, er
     ident = MS.load(os.path.join(store, "identity.json"), {})
     if not sid or not cwd or not isinstance(ident, dict) or not isinstance(ident.get(cwd), str):
         return 0
-    lp = lock_path(store, sid)
-    if not take_lock(lp, time.time()):
-        return 0
-    end = time.monotonic() + life_s
-    sleep(first_s)
-    try:
-        while time.monotonic() < end:
-            if not owns(lp):
-                return 0           # a newer waiter took the slot
-            os.utime(lp, None)
-            beat(store, ident[cwd])
-            p = MS.plan(inp, store=store, t0=time.monotonic(), over_pending=True)   # sync-hook budget per poll
-            if p:
-                deliver(p, err)
-                return 2
-            sleep(poll_s)
-        err.write(RENEW + "\n")
-        err.flush()
+    # The bus check runs when bus.jsonl changes, and every RETRY_S since plan() can miss for non-bus reasons (budget).
+    st, p = MW.wait(store, sid, ident[cwd], lambda: MS.plan(inp, store=store, t0=time.monotonic(), over_pending=True),
+                    life_s, poll_s=poll_s, first_s=first_s, sleep=sleep, retry_s=MW.RETRY_S)
+    if st == "hit":
+        deliver(p, err)
         return 2
-    finally:
-        try:
-            if owns(lp):
-                os.remove(lp)
-        except OSError:
-            pass
+    if st != "timeout":
+        return 0                   # another waiter owns or took the slot
+    err.write(RENEW + "\n")
+    err.flush()
+    return 2
 
 
 def headless(env=None):

@@ -280,7 +280,7 @@ Stop hook rules above; Gemini sends `reason` as a new prompt. `gemini_mailbox_mc
   (`IneligibleTierError`, 0.61.0); use an AI Studio key.
 - ★End-to-end 2026-09-24: one block, inbox, reply "pong", ack.
 
-<details><summary>Worker mode: an idle Gemini or Codex waits for mail</summary>
+<details><summary>Worker mode: an idle Gemini waits for mail</summary>
 
 Worker mode (`touch .mail-worker` in the folder, or `SIDEREUS_MAIL_WORKER=1`) keeps an idle Gemini waiting for mail:
 at turn end with nothing pending it blocks with «`mailbox_wait`, do the task, reply on the same thread».
@@ -291,10 +291,7 @@ at turn end with nothing pending it blocks with «`mailbox_wait`, do the task, r
   `{"model": {"disableLoopDetection": true}}` in the worker folder.
 - ★About $0.024 per empty round, one per hour. After `SIDEREUS_MAIL_WORKER_MAX_IDLE` (3) empty rounds it goes idle.
 - ⚠While waiting the TUI shows «Running a tool»; it is not hung. ⚠The worker folder decides what it can read.
-- Codex (`Stop`, same opt-in): set `tool_timeout_sec = 3600` in `[mcp_servers.mailbox]`. `codex exec` also needs
-  `-c 'mcp_servers.mailbox.default_tools_approval_mode="approve"'`.
-  ★0.163.0 (2026-10-20): 8 blocks in a row accepted, no loop detector; mail → reply → next block → stopped after
-  `MAX_IDLE` empty rounds, `codex exec` exits 0. Each round re-sends the context (~33k input tokens, mostly cached).
+- Gemini only. Codex ignores `.mail-worker`: it waits in the Stop hook instead (below), with no model call per round.
 
 </details>
 
@@ -310,6 +307,16 @@ Copy `ext-hooks/codex-hooks-example.json` to `~/.codex/hooks.json`. Checked with
 - ⚠Codex ignores the entries until approved with `/hooks`, and again after every edit (it stores a hash). Do not
   default to `--dangerously-bypass-hook-trust`.
 - `PermissionRequest` marks the row blocked; the script prints nothing, so Codex still asks you.
+- Idle wake: the `Stop` entry `gemini_mail_stop.py --platform codex --wait` (timeout 3600) waits on `bus.jsonl` for up
+  to 59 min (`SIDEREUS_MAIL_WAIT_S`, 60-3540) and blocks with the mail line when mail arrives; no mail = exit 0, no
+  output, no model call. Copy the example's entry and re-approve with `/hooks`.
+  ★0.163.0 (2026-10-20): no cap on a sync Stop wait (default 600 s, 3600 accepted); a timeout ends the turn cleanly;
+  a block continues the same turn.
+  ⚠While waiting the TUI shows «Working · Running hook» and typed input queues until Esc or the wait ends.
+  ⚠After 59 min the turn ends; waiting resumes only after the next prompt (the attention signal covers the gap).
+  After `SIDEREUS_MAIL_WAIT_MAX` (20) wakes without a human prompt it stops waiting until you type.
+  ⚠`codex exec` never waits: the rollout's `session_meta` (originator `codex_exec` / source `exec`) skips it, and so
+  does an unreadable rollout.
 - Optional `SessionStart` notices: `<PYTHON> <MAILBOX_CODE_DIR>/hooks/invite_notice.py --platform codex` (timeout 10) and
   `<PYTHON> <MAILBOX_CODE_DIR>/hooks/pipelines_brief.py --platform codex` (timeout 5). Codex wording: mail arrives at
   turn end through the `Stop` hook (id `codex:<cwd>` key or `<folder>-codex`), and stages are run in order by the session

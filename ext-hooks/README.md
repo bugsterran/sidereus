@@ -16,17 +16,22 @@ Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`):
 ## Receiving mail — in code (no Monitor or watch.sh needed)
 The turn-end hook `gemini_mail_stop.py --platform <key>` (default gemini) blocks once when there is new mail so the agent reads it. The id is the `<key>:<cwd>` key or `<folder>-<key>` — ⚠never Claude's `identity.json[cwd]` (it would take the Claude mail of the same folder).
 - Start the mailbox MCP with the same id: `gemini_mailbox_mcp.sh <key>`. For Codex, in `~/.codex/config.toml`: `[mcp_servers.mailbox]` `command = "<MAILBOX_CODE_DIR>/ext-hooks/gemini_mailbox_mcp.sh"` `args = ["codex"]` `tool_timeout_sec = 3600`.
-  - `tool_timeout_sec` must exceed the worker's `mailbox_wait(timeout_s=3540)`; ★0.163.0 (2026-10-20): `tool_timeout_sec = 30` cut a 60 s wait («timed out awaiting tools/call after 30s»).
+  - `tool_timeout_sec` only matters for long `mailbox_wait` calls the agent makes itself; ★0.163.0 (2026-10-20): `tool_timeout_sec = 30` cut a 60 s wait («timed out awaiting tools/call after 30s»).
   - ⚠`codex exec` refuses MCP calls («approval policy is never») unless the tools are approved: add `-c 'mcp_servers.mailbox.default_tools_approval_mode="approve"'`. The TUI asks instead.
   - ★0.163.0 (2026-10-20): Codex starts the MCP in the session folder — hook and MCP both resolved `<folder>-codex`.
 - Gemini: `AfterAgent` — ★verified end to end on 0.61.0 (2026-09-24).
 - Codex: `Stop` — ★verified end to end on 0.163.0 (2026-10-19): the hook blocked once and the session read its inbox; id `<folder>-codex`.
 - Others: `Stop` in `generic-hooks-example.json` — ⚠event name and blocking contract both unverified.
 
-Waking an idle session (Claude's `asyncRewake`, `hooks/mailbox_wake.py`) is Claude-only. Other CLIs receive at the next turn end.
-- Gemini: none (no such key in the 0.61.0 bundle). Instead, worker mode (`.mail-worker`, Gemini and Codex) waits with `mailbox_wait`.
-- Codex: the 0.156.1 hook config has `async`·`asyncRewake` keys, but behaviour is unverified — not put in the example. Worker mode works (docs/HOOKS.md «Worker mode»).
-- The other 17: unverified.
+Waking an idle session: each CLI's method is one row of `WAKE` in `hooks/mail_wait.py` (a new CLI = one row + `tests/test_mail_wake_table.py`). All of them watch `bus.jsonl` the same way on every OS (stat every 2 s, no model call while waiting).
+- Claude: `async-rewake` (`hooks/mailbox_wake.py`, background Stop hook, exit 2 wakes the session).
+- Codex: `stop-wait` — the Stop entry `gemini_mail_stop.py --platform codex --wait` (timeout 3600) waits up to 59 min (`SIDEREUS_MAIL_WAIT_S`) and blocks when mail arrives. To turn it on, copy the example's Stop entry and re-approve it with `/hooks` (the hash changes).
+  - ⚠While it waits the TUI shows «Working · Running hook» and typed input queues until Esc or the wait ends.
+  - ⚠After 59 min the turn ends and waiting resumes only after the next prompt; the attention signal covers that gap.
+  - After `SIDEREUS_MAIL_WAIT_MAX` (20) mail wakes without a human prompt it stops waiting until you type.
+  - `codex exec` never waits (detected from the rollout's `session_meta`; an unreadable rollout also skips the wait).
+- Gemini: `turn-end` (no async key in the 0.61.0 bundle). Worker mode (`.mail-worker`, Gemini only) waits with `mailbox_wait`.
+- The other 17: `none` (unverified).
 - `watch.sh` is optional — while it runs, the turn-end hook stays quiet (while `.watch-<id>.pid` is alive).
 
 ## Pipeline stage marks — shell markers
