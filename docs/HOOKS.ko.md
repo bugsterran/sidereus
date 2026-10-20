@@ -269,7 +269,7 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
   (`IneligibleTierError`, 0.61.0). AI Studio 키를 쓴다.
 - ★2026-09-24 끝까지 확인: 한 번 막힘, 편지함, "pong" 답장, ack.
 
-<details><summary>일꾼 모드: 쉬는 Gemini 가 메일을 기다린다</summary>
+<details><summary>일꾼 모드: 쉬는 Gemini·Codex 가 메일을 기다린다</summary>
 
 일꾼 모드(폴더에 `touch .mail-worker`, 또는 `SIDEREUS_MAIL_WORKER=1`)는 쉬는 Gemini 를 메일 대기 상태로 둔다. 턴이
 끝났는데 할 일이 없으면 «`mailbox_wait`, 일 하기, 같은 스레드로 답하기» 로 막는다.
@@ -280,6 +280,10 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
   일꾼 폴더에 `{"model": {"disableLoopDetection": true}}` 를 둔다.
 - ★빈 라운드 하나에 약 $0.024, 한 시간에 한 번. 빈 라운드가 `SIDEREUS_MAIL_WORKER_MAX_IDLE`(3)번 이어지면 쉰다.
 - ⚠기다리는 동안 TUI 에 «도구 실행 중» 이 보인다. 멈춘 것이 아니다. ⚠일꾼 폴더가 읽을 수 있는 파일을 정한다.
+- Codex(`Stop`, 켜는 법 같음): `[mcp_servers.mailbox]` 에 `tool_timeout_sec = 3600`. `codex exec` 는
+  `-c 'mcp_servers.mailbox.default_tools_approval_mode="approve"'` 도 필요하다.
+  ★0.163.0(2026-10-20): 연속 8번 막아도 받아들임, 반복 감지기 없음. 메일 → 답장 → 다시 막음 → 빈 라운드
+  `MAX_IDLE` 번 뒤 멈춤, `codex exec` 는 0 으로 끝남. 라운드마다 맥락을 다시 보낸다(입력 약 3.3만 토큰, 대부분 캐시).
 
 </details>
 

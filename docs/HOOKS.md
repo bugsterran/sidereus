@@ -280,7 +280,7 @@ Stop hook rules above; Gemini sends `reason` as a new prompt. `gemini_mailbox_mc
   (`IneligibleTierError`, 0.61.0); use an AI Studio key.
 - ★End-to-end 2026-09-24: one block, inbox, reply "pong", ack.
 
-<details><summary>Worker mode: an idle Gemini waits for mail</summary>
+<details><summary>Worker mode: an idle Gemini or Codex waits for mail</summary>
 
 Worker mode (`touch .mail-worker` in the folder, or `SIDEREUS_MAIL_WORKER=1`) keeps an idle Gemini waiting for mail:
 at turn end with nothing pending it blocks with «`mailbox_wait`, do the task, reply on the same thread».
@@ -291,6 +291,10 @@ at turn end with nothing pending it blocks with «`mailbox_wait`, do the task, r
   `{"model": {"disableLoopDetection": true}}` in the worker folder.
 - ★About $0.024 per empty round, one per hour. After `SIDEREUS_MAIL_WORKER_MAX_IDLE` (3) empty rounds it goes idle.
 - ⚠While waiting the TUI shows «Running a tool»; it is not hung. ⚠The worker folder decides what it can read.
+- Codex (`Stop`, same opt-in): set `tool_timeout_sec = 3600` in `[mcp_servers.mailbox]`. `codex exec` also needs
+  `-c 'mcp_servers.mailbox.default_tools_approval_mode="approve"'`.
+  ★0.163.0 (2026-10-20): 8 blocks in a row accepted, no loop detector; mail → reply → next block → stopped after
+  `MAX_IDLE` empty rounds, `codex exec` exits 0. Each round re-sends the context (~33k input tokens, mostly cached).
 
 </details>
 

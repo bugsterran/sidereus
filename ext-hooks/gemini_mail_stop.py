@@ -3,7 +3,7 @@
 
 Wired in ext-hooks/*-example.json: Gemini AfterAgent (default), Codex Stop (`--platform codex`), other CLIs' Stop
 (`--platform <key>`, unverified). `--platform` only changes the id namespace below (`<key>:` / `-<key>`) and drops
-the Gemini-only tool-name prefix and worker mode. ⚠Must match the mailbox MCP launcher's id (gemini_mailbox_mcp.sh <key>).
+the Gemini-only tool-name prefix; worker mode runs on gemini and codex only. ⚠Must match the mailbox MCP launcher's id (gemini_mailbox_mcp.sh <key>).
 Codex 0.156.1 Stop takes the same {"decision": "block", "reason"} shape (binary strings: "hook returned
 decision:block without a non-empty reason", "Stop hook requested continuation without a prompt").
 
@@ -36,6 +36,13 @@ instruction to call mailbox_wait, do the task that arrives, reply with mailbox_s
 - ⚠ Each block passes a fresh `round` to mailbox_wait. Gemini's loop detector (TOOL_CALL_LOOP_THRESHOLD=5
   identical name+args per prompt_id, and the whole worker chain is one prompt_id) otherwise injects
   "Potential loop detected" at the 5th wait and hard-aborts the turn (no AfterAgent) at the next one.
+- Codex (Stop, `--platform codex`), ★measured on 0.163.0 (2026-10-20, `codex exec`): 8 consecutive Stop blocks
+  accepted in one turn_id with no loop detector; stop_hook_active is false on round 1 and true from round 2;
+  mailbox_wait is cut by `[mcp_servers.mailbox] tool_timeout_sec` (30 -> "timed out awaiting tools/call after 30s"),
+  so it must exceed WORKER_WAIT_S; each round re-sends the context (~33k input tokens per round, ~96% cached).
+  ⚠`codex exec` refuses MCP calls ("approval policy is never") unless the mailbox server's tools are approved.
+  ⚠Codex wraps our block reason in `<hook_prompt ...>` and logs environment context as a user row: human_key()
+  skips both, or the injected rows would reset the idle count every round.
 """
 import json
 import os
@@ -133,7 +140,8 @@ def decide(inp, store=None, now_ns=None):
 
 
 def worker_on(cwd):
-    if PLATFORM != "gemini":       # ⚠the round/loop guards are tuned to Gemini 0.61.0 only
+    # ⚠Only CLIs whose block/loop/timeout behaviour was measured (see the module docstring); others stay off.
+    if PLATFORM not in ("gemini", "codex"):
         return False
     if os.environ.get("SIDEREUS_MAIL_WORKER") == "1":
         return True
@@ -148,7 +156,31 @@ def worker_max_idle():
 
 
 MACHINE_PROMPTS = ("[메일 일꾼]", "[메일박스]", "System: ")
+# Codex 0.163.0 user rows that no human typed: hook block reasons (`<hook_prompt hook_run_id=...>`), the
+# environment context, and AGENTS.md / user instructions that older builds logged as user rows.
+CODEX_INJECTED = ("<hook_prompt", "<environment_context", "<user_instructions", "<turn_aborted",
+                  "# AGENTS.md instructions")
 TRANSCRIPT_TAIL = 256 * 1024
+
+
+def _row_user_text(r):
+    """(id, text) of a user prompt row in a Gemini or Codex transcript, else None."""
+    if r.get("type") == "user":                                  # Gemini chat jsonl
+        rid, c = r.get("id") or r.get("timestamp"), r.get("content")
+    elif r.get("type") == "response_item":                       # Codex rollout jsonl
+        p = r.get("payload")
+        if not isinstance(p, dict) or p.get("type") != "message" or p.get("role") != "user":
+            return None
+        meta = p.get("internal_chat_message_metadata_passthrough")
+        kinds = meta.get("content_item_kinds") if isinstance(meta, dict) else None
+        if isinstance(kinds, list) and "user.text" not in kinds:  # environment context, hook prompt ("unknown")
+            return None
+        rid, c = p.get("id") or r.get("timestamp"), p.get("content")
+    else:
+        return None
+    text = c if isinstance(c, str) else "".join(
+        str(x.get("text") or "") for x in (c or []) if isinstance(x, dict))
+    return rid, text.strip()
 
 
 def human_key(inp):
@@ -156,20 +188,20 @@ def human_key(inp):
 
     Gemini's transcript (transcript_path, jsonl) logs prompts as type "user" rows; tool responses are
     user rows with no text, and our block reasons / loop-detector feedback start with MACHINE_PROMPTS.
+    Codex's rollout logs them as response_item / message / role "user"; injected rows are skipped by
+    content_item_kinds and by the CODEX_INJECTED prefixes.
     Falls back to the AfterAgent `prompt` field (the chain's original request) when there is no transcript."""
     rows = ms.tail_rows(str(inp.get("transcript_path") or ""), TRANSCRIPT_TAIL)
     if not rows:
         p = inp.get("prompt")
         return ("p:" + _h(p)) if p else None
     for r in reversed(rows):
-        if r.get("type") != "user":
+        got = _row_user_text(r) if isinstance(r, dict) else None
+        if not got:
             continue
-        c = r.get("content")
-        text = c if isinstance(c, str) else "".join(
-            str(x.get("text") or "") for x in (c or []) if isinstance(x, dict))
-        text = text.strip()
-        if text and not text.startswith(MACHINE_PROMPTS):
-            return str(r.get("id") or r.get("timestamp") or _h(text))
+        rid, text = got
+        if text and not text.startswith(MACHINE_PROMPTS + CODEX_INJECTED):
+            return str(rid or _h(text))
     return None
 
 
@@ -208,8 +240,8 @@ def worker(inp, store=None, now_ns=None):
                                  "다시 시작하려면 아무 프롬프트나 입력하세요."}
     return {"decision": "block", "reason": (
         f"[메일 일꾼] `{me}` 앞으로 대기 중인 메일이 없습니다. "
-        f"mcp_mailbox_mailbox_wait 를 timeout_s={WORKER_WAIT_S}, round={rnd} 로 부르십시오. "
-        "작업 메일이 오면 그 일을 하고, 보낸이에게 mcp_mailbox_mailbox_send 로 답하십시오"
+        f"{TOOL_PREFIX}mailbox_wait 를 timeout_s={WORKER_WAIT_S}, round={rnd} 로 부르십시오. "
+        f"작업 메일이 오면 그 일을 하고, 보낸이에게 {TOOL_PREFIX}mailbox_send 로 답하십시오"
         "(to=보낸이, 같은 thread · subject 앞에 [답]). 그다음 턴을 끝내십시오. "
         f"'(메일 없음' 이면 아무것도 하지 말고 바로 턴을 끝내십시오. (빈 대기 {idle}/{k})")}
 
