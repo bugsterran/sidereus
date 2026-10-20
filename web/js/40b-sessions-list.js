@@ -157,7 +157,9 @@ function sessTaskHtml(x){
 }
 // State row: label · tool · elapsed · burn chip · dismiss handle.
 function sessStateRow(x, st){
-  const tool = x.tool ? esc(x.tool) : '—';
+  // ⚠Waiting with a watcher shown: the last tool is stale and read as the watcher's name, so it is dropped.
+  const ms = monSuffix(x, st);
+  const tool = ms ? '' : (x.tool ? esc(x.tool) : '—');
   // ★What is **running now** — tool calls with no result yet. A session can look «Response done» while
   //   a subagent is actually running, so that is attached next to the state row.
   //   Per this file's no-emoji rule it is written as text, and what is running goes verbatim in the tooltip.
@@ -197,7 +199,7 @@ function sessStateRow(x, st){
   //   «Awaiting answer» (ask) is more urgent, so it is not overridden.
   return '<div class=sx2><span class="sl'+(x.blocked?' sblk':'')+(waitOn?' swait':'')+(mute?' smute':'')+'" title="'
     + esc(x.blocked ? T(BLKTIP) : (mute ? MUTETIP : (waitOn ? T(WAITTIP) : T(TIP[st]||''))))+'">'
-    + esc(sessLabel(x))+'</span>'+(monSuffix(x, st) ? ' <span class=smon>'+esc(monSuffix(x, st))+'</span>' : '')+' '+tool+' · '
+    + esc(sessLabel(x))+'</span>'+(ms ? ' <span class=smon>'+esc(ms)+'</span>' : '')+' '+(tool ? tool+' · ' : '· ')
     + sessAgoHtml(x, st)
     + sessBurn(x)
     + drop+'</div>';

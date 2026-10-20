@@ -107,11 +107,17 @@ function waitOnLabel(x, st){
   const w1 = (x.sub||[]).length ? T('Subagent') : ((x.bgs||[]).length ? T('Command') : '');
   return w1 ? w1 + ' ' + T('waiting on work') : '';
 }
-// Muted «· Mailbox watch N» beside «Awaiting input» ('' otherwise). ⚠Count only — monitors don't change the state (still the human's turn).
+// Muted «· <watcher>» / «· N monitors» beside «Awaiting input» ('' otherwise). ⚠Monitors don't change the state (still the human's turn).
+// ⚠One watcher shows its label: a bare «1 monitor» read as «monitor 1 = <last tool>» next to the tool name.
 function monSuffix(x, st){
   if(!x || st !== 'wait' || x.blocked || x.gotPrompt > 0 || waitOnLabel(x, st)) return '';
-  const n = (x.mon || []).length;
-  return n ? '· ' + TV({msg: n === 1 ? '{n} monitor' : '{n} monitors', vars: {n}}) : '';
+  const M = x.mon || [], n = M.length;
+  if(n === 1){
+    const v = M[0], raw = (v && v.lab != null) ? String(v.lab) : String(v);
+    const lab = monLab(sessKidLab(raw));
+    return '· ' + (lab.length > 40 ? lab.slice(0, 39) + '…' : lab);
+  }
+  return n ? '· ' + TV({msg: '{n} monitors', vars: {n}}) : '';
 }
 // Slot the timeline uses — checks **the live session list (SESS)** first.
 // ⚠The timeline response is up to 30s stale (refresh period). Cards are 2.5s — so the same session looked different.
