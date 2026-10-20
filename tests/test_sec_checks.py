@@ -58,6 +58,38 @@ class Plans(Tmp):
         rp = os.path.join("/t", "gitleaks-report.json")   # native join: `\` on Windows
         self.assertEqual((b["argv"][-2:], b["report"]), (["--report-path", rp], rp))
 
+    def osv(self, net=False):
+        return next(p for p in SC.detect(self.repo, lambda n: "/bin/" + n, net=net) if p["id"] == "osv-scanner")
+
+    def test_osv_row_without_lockfile(self):   # a vanished osv row read as «dependencies clean»
+        self.w("README.md", "x\n")
+        self.assertEqual((self.osv(True)["status"], self.osv(True)["why"]), ("skipped", SC.WHY_NO_DEPS))
+        self.w("admin/build.gradle.kts", "plugins {}\n")
+        self.w("admin/src/A.java", "class A {}\n")
+        p = self.osv(True)
+        self.assertEqual((p["status"], p["why"]), ("skipped", SC.WHY_GRADLE))
+        self.assertLessEqual(len(SC.WHY_GRADLE), AC.WHY_MAX)
+        SR = sidereus("sec_report")
+        self.assertIsNone(SR._NET.search(SC.WHY_GRADLE))
+        md = SR.render({"repo": "/r", "commit": "a" * 40, "at": 0, "tools": [dict(p, ms=0, files=0)], "items": []},
+                       {}, None, None, None)
+        self.assertIn("| osv-scanner | skipped — %s |" % SC.WHY_GRADLE, md)
+        self.assertIn("No tool ran", md)
+
+    def test_osv_java_manifests_planned(self):
+        for rel in ("pom.xml", "gradle/verification-metadata.xml", "gradle/libs.versions.toml"):
+            shutil.rmtree(self.repo)
+            os.makedirs(self.repo)
+            self.w("build.gradle", "")
+            self.w(rel, "<x/>")
+            p = self.osv(True)
+            self.assertEqual((p.get("argv"), p.get("net")), (["/bin/osv-scanner", "--format", "json", "-r", "."], True), rel)
+            self.assertEqual(self.osv()["why"], SC.WHY_NET, rel)   # a real manifest offline keeps the network reason
+        shutil.rmtree(self.repo)
+        os.makedirs(self.repo)
+        self.w("docs/verification-metadata.xml", "<x/>")   # outside gradle/: not a manifest osv-scanner reads
+        self.assertEqual(self.osv(True)["why"], SC.WHY_NO_DEPS)
+
     def test_npm_audit_parse(self):
         its = SC.parse_npm_audit(json.dumps(NPM))
         self.assertEqual([(x["rule"], x["pkg"], x["sev"], x["file"], x["line"]) for x in its],
