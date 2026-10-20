@@ -11,7 +11,7 @@ function wkcTarget(){
   const t = (wtabs || []).find(x => x.key === k);
   if(!t) return null;
   const et = String(t.tid || '').indexOf('ext:') === 0 ? String(t.tid).slice(String(t.tid).indexOf('|') + 1) : '';
-  // ⚠Gemini tab -> that sid only; Claude tab -> Claude rows only (a Gemini row at the same cwd has no mailbox)
+  // ⚠ext tab (Codex/Gemini) -> that sid only; Claude tab -> Claude rows only (Gemini rows have no mailbox -> not logged in)
   const rows = (SESS || []).filter(x => et ? x.sid === et : (x.cwd === t.cwd && (!x.plat || x.plat === 'cc')));
   const row = rows.find(x => x.state !== 'done') || rows[0] || null;
   const id = row && row.mbox || '';
@@ -19,6 +19,7 @@ function wkcTarget(){
   return {t, row, id,
     login: !!(id && mboxIn(row)),
     watch: !!(row && (row.mon || []).some(v => v && v.src === 'proc')) || !!(pr && pr.online && pr.source === 'watch'),
+    turn: !!(row && row.plat === 'cx'),   // Codex has no watcher; its Stop hook reads mail at turn end
     blocked: !!(row && row.blocked), agent: t.kind === 'agent'};
 }
 // Replies: that id's DMs to me that answer this message (replyTo/thread), or arrive before my next DM to it.
@@ -50,6 +51,7 @@ function wkcPaint(){
   let h = '<span class=wkcto>→ <b>'+esc(g && g.id ? g.id : '—')+'</b>'
     + (g && g.agent ? ' <small>'+esc(T("(subagent's parent session)"))+'</small>' : '') + '</span>';
   if(off) h += '<span class="wkcw off">'+esc(T('Not logged into the mailbox — cannot receive'))+'</span>';
+  else if(!g.watch && g.turn) h += '<span class="wkcw no">'+esc('○ '+T('Delivered when its next turn ends · if idle at the prompt, after the next input'))+'</span>';
   else h += '<span class="wkcw '+(g.watch ? 'on' : 'no')+'">'+esc(g.watch ? '● '+T('Mailbox watch') : '○ '+T('No mailbox watch'))+'</span>';
   if(g && g.login && g.blocked) h += '<span class="wkcw blk">'+esc(T('Waiting for permission — read on the next turn'))+'</span>';
   const m = wkcLast && g && g.id === wkcLast.to ? MSGS.find(x => x.id === wkcLast.id) : null;
@@ -78,7 +80,7 @@ async function wkcPost(to, body){
 function wkcSend(){
   const ta = document.getElementById('wkcbox'), body = ta.value.trim(), g = wkcTarget();
   if(!body || !g || !g.login || wkcAsk) return;
-  if(g.watch) return wkcPost(g.id, body);
+  if(g.watch || g.turn) return wkcPost(g.id, body);   // turn-end delivery is already stated on the status line
   // No watcher: the message waits in the mailbox — ask first, never send on the same keystroke.
   wkcAsk = {to: g.id, body};
   const q = document.getElementById('wkcq');

@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Work popup: sending to a Codex session no longer asks «cannot receive right now — send anyway?»; the recipient line says it is delivered when the session's next turn ends.
 - Structure: the architecture header no longer wraps into many lines at narrow widths — the «older than the code» notice moved onto the «Generated» badge (⚠ + tooltip) and the framework badge is capped with its full name in the tooltip.
 
 ## [0.5.0] - 2026-10-20
