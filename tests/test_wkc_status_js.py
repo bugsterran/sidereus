@@ -18,11 +18,11 @@ def async_fn(name):
     return re.compile(r"^async function " + name + r"\(.*?^}", re.S | re.M).search(js_all()).group(0)
 
 
-def harness(after, agent="false"):
+def harness(after, agent="false", watch="true", turn="false"):
     # Target s1 is logged in and watched; an older DM to it (body «old») sits in MSGS.
     return ("let ISWP=true, wkcAsk=null, wkcBusy=false, wkcHtml='', wkcLast=null, wkcSentAt=0;\n"
             "function mk(){return {hidden:true, disabled:false, innerHTML:'', textContent:'', placeholder:'', value:'',"
-            " style:{}, focus(){}};}\n"
+            " style:{}, focus(){}, querySelector(){return {focus(){}};}};}\n"
             "const E={wkc:mk(), wkch:mk(), wkcbox:mk(), wkcsend:mk(), wkcq:mk()};\n"
             "const document={getElementById:i=>E[i]};\n"
             "const MINE=['me'], ACK={}, CUR={}, PRES={};\n"
@@ -31,11 +31,11 @@ def harness(after, agent="false"):
             "async function poll(){ MSGS.push({id:'n1', mine:true, to:'s1', t:5, body:'secret'},"
             " {id:'r1', from:'s1', to:'me', t:6, replyTo:'n1', body:'answer'}); }\n"
             "function postJSON(){return Promise.resolve({ok:true, id:'n1', to:'s1'});}\n"
-            "function wkcTarget(){return {id:'s1', login:true, watch:true, blocked:false, agent:" + agent + "};}\n"
-            + "\n".join(js_fn(n) for n in ("wkcReplies", "wkcStage", "wkcStat", "wkcPaint", "wkcCancel")) + "\n"
+            "function wkcTarget(){return {id:'s1', login:true, watch:" + watch + ", turn:" + turn + ", blocked:false, agent:" + agent + "};}\n"
+            + "\n".join(js_fn(n) for n in ("wkcReplies", "wkcStage", "wkcStat", "wkcPaint", "wkcCancel", "wkcSend")) + "\n"
             + async_fn("wkcPost") + "\n"
             "Promise.resolve(wkcPaint()).then(()=>" + after + ").then(()=>process.stdout.write(JSON.stringify("
-            "{h:E.wkch.innerHTML, boxOff:E.wkcbox.disabled, sendOff:E.wkcsend.disabled})));")
+            "{h:E.wkch.innerHTML, boxOff:E.wkcbox.disabled, sendOff:E.wkcsend.disabled, q:E.wkcq.innerHTML, ask:wkcAsk, last:wkcLast})));")
 
 
 class WorkCompose(unittest.TestCase):
@@ -61,6 +61,18 @@ class WorkCompose(unittest.TestCase):
         self.assertNotIn("secret", r["h"])
         self.assertNotIn("answer", r["h"])
         self.assertIn("→ <b>s1</b>", r["h"])
+
+    def test_codex_turn_end_status_and_no_confirm(self):
+        r = run(harness("(E.wkcbox.value='hi', wkcSend())", watch="false", turn="true"))
+        self.assertIn("Delivered when its next turn ends · if idle at the prompt, after the next input", r["h"])
+        self.assertNotIn("No mailbox watch", r["h"])
+        self.assertEqual([r["q"], r["ask"], r["last"]], ["", None, {"id": "n1", "to": "s1"}])
+
+    def test_no_watch_claude_still_confirms(self):
+        r = run(harness("(E.wkcbox.value='hi', wkcSend())", watch="false"))
+        self.assertIn("No mailbox watch", r["h"])
+        self.assertIn("Send anyway?", r["q"])
+        self.assertIsNone(r["last"])
 
 
 if __name__ == "__main__":

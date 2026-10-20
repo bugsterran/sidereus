@@ -131,6 +131,14 @@ class JsLookups(unittest.TestCase):
                   [("17-attention.js", "mboxIn"), ("36-wkcompose.js", "wkcTarget")])
         self.assertEqual(o, ["cc-1", "me-p", "gm-1", ""])
 
+    def test_compose_target_codex_env_mailbox(self):
+        cx = {"sid": "cx-1", "cwd": "/w/p", "plat": "cx", "state": "wait", "mbox": "admin-codex", "mboxSrc": "env"}
+        stub = ("let PRES = {}, wtFocus = 0, wtPanes = [], wtabs = [{key: 'x', cwd: '/w/p', tid: 'ext:cx|cx-1'}];"
+                " const wtKeyOf = () => 'x';")
+        o = _node([CC, cx], stub + "const a = wkcTarget(); console.log(JSON.stringify([a.row.sid, a.id, a.login, a.watch, a.turn]));",
+                  [("17-attention.js", "mboxIn"), ("36-wkcompose.js", "wkcTarget")])
+        self.assertEqual(o, ["cx-1", "admin-codex", True, False, True])
+
 
 if __name__ == "__main__":
     unittest.main()
