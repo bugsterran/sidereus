@@ -47,7 +47,7 @@ function raPickerHtml(){
     const ok = mboxIn(x);
     return '<label class="raop rapr' + (ok ? '' : ' off') + '"' + (ok ? '' : ' title="' + esc(T('Cannot invite — identity not confirmed')) + '"') + '>'
       + '<input type=checkbox class="raop rasp" data-mb="' + esc(x.mbox || '') + '"' + (ok ? (raPick.has(x.mbox) ? ' checked' : '') : ' disabled') + '>'
-      + '<b>' + esc(x.mbox || '—') + '</b><span title="' + esc(x.cwd || '') + '">' + esc(x.cwd || '') + '</span><i>' + esc(x.model || '') + '</i></label>';
+      + '<b>' + aiLogo(x.plat) + esc(x.mbox || '—') + '</b><span title="' + esc(x.cwd || '') + '">' + esc(x.cwd || '') + '</span><i>' + esc(x.model || '') + '</i></label>';
   }).join('') + '</div>';
 }
 function raPreview(){

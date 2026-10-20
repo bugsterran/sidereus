@@ -291,6 +291,9 @@ function rcEditHtml(c){
 }
 const rcDiff = (a, b) => '<span>' + esc(T('Before')) + ':</span> ' + (a.length ? a.map(rcChip).join(' ') : '<i>' + esc(T('None')) + '</i>')
   + ' <span>→ ' + esc(T('After')) + ':</span> ' + (b.length ? b.map(rcChip).join(' ') : '<i>' + esc(T('None')) + '</i>');
+// Member id -> platform from the live session list (same `plat` the session rows draw). ⚠'' when no session matches — aiLogo would guess Claude.
+function rcPlat(w){ const x = (SESS || []).find(s => s && s.mbox === w); return x ? (x.plat || 'cc') : ''; }
+function rcWho(w){ const p = rcPlat(w); return (p ? aiLogo(p) : '') + esc(w); }
 // opts (room admin, 92c): {pend, adm, sel} — pending class, plus checkbox and «Invite» · «Hide» when adm.
 function rcCardHtml(c, opts){
   const nm = c.who.join(', '), o = opts || {};
@@ -298,7 +301,7 @@ function rcCardHtml(c, opts){
     + (o.adm ? '<input type=checkbox class="raop rachk" data-r="' + esc(c.name) + '"' + (o.sel ? ' checked' : '') + ' aria-label="' + esc(T('Select')) + '">' : '')
     + '<div class=rchd><button class=rcnm data-p="' + esc(c.k) + '" title="' + esc(rcLabel(c) + ' — ' + T('Open this room')) + '">' + esc(rcLabel(c)) + '</button>'
     + (c.un ? '<span class=rcun title="' + esc((c.un === 1 ? T('{n} unread post') : T('{n} unread posts')).replace('{n}', c.un)) + '">' + (c.un > 99 ? '99+' : c.un) + '</span>' : '') + '</div>'
-    + '<div class=rcwho title="' + esc(nm) + '"><b>' + esc((c.who.length === 1 ? T('{n} person') : T('{n} people')).replace('{n}', c.who.length)) + '</b> ' + esc(nm || '—') + '</div>'
+    + '<div class=rcwho title="' + esc(nm) + '"><b>' + esc((c.who.length === 1 ? T('{n} person') : T('{n} people')).replace('{n}', c.who.length)) + '</b> ' + (c.who.length ? c.who.map(rcWho).join(', ') : '—') + '</div>'
     + '<div class=rcmeta><span>' + esc((c.n === 1 ? T('{n} post') : T('{n} posts')).replace('{n}', c.n)) + '</span><span>' + esc(rcAgo(c.last)) + '</span></div>'
     + (rcEdit && rcEdit.room === c.name && c.k !== 'dm' ? rcEditHtml(c)
       : '<div class=rctags>' + c.tags.map(rcChip).join('')
@@ -410,7 +413,7 @@ function buildRooms(){
   if(!setHtml(el, '<button class="rm rmback" title="'+esc(T('Back to the room list'))+'">'+esc(T('← Rooms'))+'</button>'
     + '<b class=rmname title="'+esc(rcLabel(c))+'">'+esc(rcLabel(c))+'</b>'
     + '<span class=rmmem title="'+esc(c.who.join(', '))+'"><i>'+esc((c.who.length === 1 ? T('{n} person') : T('{n} people')).replace('{n}', c.who.length))+'</i>'
-    + who.map(w => '<span class=rmw'+nmSty(w)+'>'+esc(w)+'</span>').join('')
+    + who.map(w => '<span class=rmw'+nmSty(w)+'>'+rcWho(w)+'</span>').join('')
     + (c.who.length > who.length ? '<i>+'+(c.who.length - who.length)+'</i>' : '')+'</span>')) return;   // unchanged: keep the handler
   el.querySelector('.rmback').onclick = () => rcOpen('all');
 }

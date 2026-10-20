@@ -464,7 +464,7 @@ html[data-ui] .rcard .rcte{margin-left:auto;height:20px;font-size:11px;padding:0
 .rapr{display:grid;grid-template-columns:auto minmax(80px,max-content) minmax(0,1fr) auto;align-items:center;gap:8px;padding:3px 2px;font-size:11.5px;color:var(--nx-t2,#909298);cursor:pointer}
 .rapr b{font-weight:600;color:var(--nx-t1,#cdcedc)}
 .rapr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rapr i{font-style:normal;color:var(--nx-t3,#84868c)}
+.rapr > i{font-style:normal;color:var(--nx-t3,#84868c)}
 .rapr.off{opacity:.4;cursor:not-allowed}
 html[data-ui] .rapr:not(.off):hover,html[data-ui] .rapr:has(.rasp:focus-visible){background:var(--nx-hover,#141a23);border-radius:4px}
 .rcard{position:relative}
@@ -481,4 +481,6 @@ html[data-ui] .raact .strp{height:20px;font-size:11px;padding:0 8px}
 .rmname{font-size:13px;color:var(--nx-t1,#cdcedc);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .rooms > .rmback{flex:0 0 auto;white-space:nowrap}
 .rmmem{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;white-space:nowrap;overflow:hidden;max-width:520px}
-.rmmem i{font-style:normal;color:var(--nx-t3,#84868c)}
+.rmmem > i{font-style:normal;color:var(--nx-t3,#84868c)}
+/* member platform logos (rcWho): ⚠child-only `> i` above, or the grey would override the logo colour */
+.rcwho .ailg,.rmw .ailg,.rapr b .ailg{vertical-align:-1px}
