@@ -94,7 +94,7 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 - Only edges with checked evidence are drawn («Verified N/M»); «All edges» also shows implied ones.
 - Bands run top to bottom: layered styles show their layers; feature or app layouts show where code runs (Entry · Client · Server · Stores). Hover a band for its meaning.
 - Click an edge for its evidence, then the evidence for the code. Click a module to see only it and its neighbours.
-- An amber «Diagram is older than the code» chip means the diagram predates the current commit.
+- A ⚠ amber «Generated …» badge means the diagram predates the current commit; its tooltip says how far HEAD moved.
 - The badge after «Generated» shows which AI drew the map: platform logo and model (when stages used different models, each model; the tooltip names the stage), recorded by Sidereus from the running session. Older maps show «Drawn by: unknown».
 
 ### Make or refresh the diagram
