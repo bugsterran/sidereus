@@ -435,5 +435,25 @@ setTimeout(() => process.stdout.write(JSON.stringify([h, slot.innerHTML, am.scro
         self.assertTrue(same)                                             # no plan = layer plan, same bytes
 
 
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class ArchFocusPillClamp(unittest.TestCase):
+    def test_pill_near_right_edge_stays_inside(self):
+        # Badge at the right edge (x 290..300 of a 300px SVG) with a 150px pill: the pill must not run past L.w.
+        js = "\n".join(["function esc(s){ return String(s); }", "function mmdTw(t){ return t.length * 7; }",
+                        "function mmdFlPlace(g, L){ return {labs: L.edges.map((e, i) => ({R: L.R[i]}))}; }",
+                        js_fn("archFocusPills"),
+                        "const g = {edges: [{from: 'a', to: 'b'}, {from: 'c', to: 'd'}]};"
+                        "const lab = {'a\\u0001b': 'x'.repeat(20), 'c\\u0001d': 'y'.repeat(60)};"
+                        "const L = {w: 300, edges: [{from: 'a', to: 'b'}, {from: 'c', to: 'd'}], R: [{x: 290, y: 40, w: 10, h: 10}, {x: 150, y: 80, w: 10, h: 10}]};"
+                        "const o = archFocusPills(g, L, lab);"
+                        "process.stdout.write(JSON.stringify(Array.from(o.matchAll(/<rect x=\"([\\d.-]+)\" y=\"[\\d.-]+\" width=\"([\\d.]+)\"/g)).map(m => [+m[1], +m[2]])));"])
+        p = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
+        self.assertEqual(p.returncode, 0, p.stderr.decode())
+        (x1, w1), (x2, w2) = json.loads(p.stdout)
+        self.assertGreaterEqual(x1, 0)
+        self.assertLessEqual(x1 + w1, 300)                                # clamped inside the SVG
+        self.assertEqual(x2, 2)                                           # wider than the SVG: left-aligned at 2
+
+
 if __name__ == "__main__":
     unittest.main()

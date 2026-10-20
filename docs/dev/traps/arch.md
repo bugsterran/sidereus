@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Structure tab (Architecture · Size)
 
+- **Focus-view edge label pill cut at the SVG's right edge** (84j4 `archFocusPills`).
+  - Cause: the pill (`mmdTw(t) + 8` wide) was centred on the narrow badge rect `mmdFlPlace` placed; near the right side it ran past `L.w`.
+  - ⇒ Clamp the pill centre into `[w/2 + 2, L.w - w/2 - 2]`; a pill wider than the SVG is left-aligned at 2.
+  - ⚠Don't centre a wide pill on the narrow badge without clamping, and don't widen the layout instead (R3 above `archFocusStrip`).
+
 - **Arch-map quality thresholds come from two maps only** (`sidereus/arch_quality.py` `QUAL_*`).
   - Cause: a map can pass every evidence check and still say nothing — copied flows, labels that repeat the target name.
   - ★2026-10-20: Codex map FAIL (flow pair Jaccard 0.949, label-target 165/179 = 0.92, 1 duplicate entry); Claude map PASS (J 0.705, 1/355 = 0.003).

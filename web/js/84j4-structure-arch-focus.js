@@ -101,7 +101,9 @@ function archFocusPills(g, L, lab){
   const P = mmdFlPlace(g, L);
   let o = '';
   L.edges.forEach((e, i) => { const p = P.labs[i]; if(!p || !p.R || !e.label) return;
-    const t = String(e.label), w = mmdTw(t) + 8, cx = p.R.x + p.R.w / 2, cy = p.R.y + p.R.h / 2, m = ge[e.from + '\u0001' + e.to] || {};
+    // ⚠The pill is wider than the placed badge: clamp its centre into [0, L.w] or the SVG cuts it at the right edge.
+    const t = String(e.label), w = mmdTw(t) + 8, cy = p.R.y + p.R.h / 2, m = ge[e.from + '\u0001' + e.to] || {};
+    const cx = w > L.w - 4 ? 2 + w / 2 : Math.min(Math.max(p.R.x + p.R.w / 2, w / 2 + 2), L.w - w / 2 - 2);
     o += '<g class=mmdfe data-c="' + esc((m.calls || []).join(' ')) + '"' + (m.kind ? ' data-k="' + esc(m.kind) + '"' : '') + ' data-f="' + esc(e.from) + '" data-t="' + esc(e.to) + '">'
       + '<g class="mmdel mmdfl"><rect x="' + f(cx - w / 2) + '" y="' + f(cy - 9) + '" width="' + f(w) + '" height="18" rx="3"/><text class=mmdtx x="' + f(cx)
       + '" text-anchor=middle dominant-baseline=central><tspan x="' + f(cx) + '" y="' + f(cy) + '">' + esc(t) + '</tspan></text></g></g>'; });
