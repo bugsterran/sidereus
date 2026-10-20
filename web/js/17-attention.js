@@ -71,7 +71,7 @@ const ATTN_LIST_ONLY = new Set(['done', 'bgdone', 'gone']);
 // ⚠Show through attnLbl() (88b and 89 read this table too): 'done' is 'Done|work' in Korean, unlike plain 'Done'.
 const ATTN_LBL = { blocked:'Blocked', ask:'Awaiting answer', abort:'Aborted', ctx95:'Context 95%+', fail:'Failures', wreck:'Half-edited files',
                    stall:'Subagent stalled', loop:'Repeated calls', toolfail:'Tool failures', ctx85:'Context 85%+',
-                   done:'Done', bgdone:'Background done', conflict:'Conflict risk', gone:'Disconnected' };
+                   done:'Done', bgdone:'Background done', conflict:'Conflict risk', gone:'Disconnected', mailidle:'Mail waiting' };
 function attnLbl(k){ return T(ATTN_LBL[k] || k, 'work'); }
 function attnPolOf(k){
   if(ATTN_LIST_ONLY.has(k)) return 'list';
@@ -105,6 +105,7 @@ function attnWhy(g){
     case 'loop': { const m = w.match(/^(.*?) 같은 호출 (\d+)회/); return 'Same action repeated ' + (m ? m[2] + '× · ' + m[1] : n + '×'); }
     case 'toolfail': { const m = w.match(/(\d+)회 반복 · (.*)$/); return 'Same error repeated ' + (m ? m[1] + '× · ' + m[2] : n + '×'); }
     case 'fail': { const m = w.match(/등 (\d+)건/); return 'Failure alert' + (m ? ' (' + m[1] + ')' : ''); }
+    case 'mailidle': { const m = w.match(/(\d+)\D+(\d+)/); return T('Mail waiting · session idle') + (m ? ' · ' + PL(m[1], 'message') + ' · ' + U(m[2], 'm') : ''); }
     case 'done': return 'Done · waiting for input ' + U(n, 'm');
     case 'bgdone': return PL(n, 'agent completion') + ' unread';
     case 'gone': return w === '끊김?' ? 'Disconnected?' : 'Disconnected';

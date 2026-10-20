@@ -3,7 +3,7 @@
 
 Wired in ext-hooks/*-example.json: Gemini AfterAgent (default), Codex Stop (`--platform codex`), other CLIs' Stop
 (`--platform <key>`, unverified). `--platform` only changes the id namespace below (`<key>:` / `-<key>`) and drops
-the Gemini-only tool-name prefix; worker mode runs on gemini and codex only. ⚠Must match the mailbox MCP launcher's id (gemini_mailbox_mcp.sh <key>).
+the Gemini-only tool-name prefix; worker mode is Gemini-only, `--wait` acts only where hooks/mail_wait.WAKE says stop-wait. ⚠Must match the mailbox MCP launcher's id (gemini_mailbox_mcp.sh <key>).
 Codex 0.156.1 Stop takes the same {"decision": "block", "reason"} shape (binary strings: "hook returned
 decision:block without a non-empty reason", "Stop hook requested continuation without a prompt").
 
@@ -36,13 +36,21 @@ instruction to call mailbox_wait, do the task that arrives, reply with mailbox_s
 - ⚠ Each block passes a fresh `round` to mailbox_wait. Gemini's loop detector (TOOL_CALL_LOOP_THRESHOLD=5
   identical name+args per prompt_id, and the whole worker chain is one prompt_id) otherwise injects
   "Potential loop detected" at the 5th wait and hard-aborts the turn (no AfterAgent) at the next one.
-- Codex (Stop, `--platform codex`), ★measured on 0.163.0 (2026-10-20, `codex exec`): 8 consecutive Stop blocks
-  accepted in one turn_id with no loop detector; stop_hook_active is false on round 1 and true from round 2;
-  mailbox_wait is cut by `[mcp_servers.mailbox] tool_timeout_sec` (30 -> "timed out awaiting tools/call after 30s"),
-  so it must exceed WORKER_WAIT_S; each round re-sends the context (~33k input tokens per round, ~96% cached).
-  ⚠`codex exec` refuses MCP calls ("approval policy is never") unless the mailbox server's tools are approved.
+
+Idle wake on Codex (`--platform codex --wait`, hooks/mail_wait.py "stop-wait"): with no pending mail the sync Stop
+hook itself waits on bus.jsonl; mail -> {"decision": "block", "reason"} exit 0, lifetime end -> exit 0, no output.
+★Measured on Codex 0.163.0 (2026-10-20): a sync Stop wait has no timeout cap (default 600 s, 3600 accepted); a hook
+timeout ends the turn cleanly; a block continues the same turn; an empty exit 0 makes no model call; the TUI shows
+«Working · Running hook» while waiting; typed input queues until the wait ends; Esc aborts the wait.
+- Runaway guard: `wake_n` counts wait-blocks since the last human prompt (human_key); at SIDEREUS_MAIL_WAIT_MAX
+  (default 20) it prints a systemMessage and stops waiting until a human prompt.
   ⚠Codex wraps our block reason in `<hook_prompt ...>` and logs environment context as a user row: human_key()
-  skips both, or the injected rows would reset the idle count every round.
+  skips both, or the injected rows would reset the count every round.
+- Lock key = plain session_id (.wake/<sid>.lock, same slot rule as hooks/mailbox_wake.py).
+- ⚠No wait under `codex exec` (a script would hang up to 59 min). The Stop input has no exec field (0.163.0 schema:
+  cwd, hook_event_name, last_assistant_message, model, permission_mode, session_id, stop_hook_active,
+  transcript_path, turn_id), so the signal is the rollout's first row: session_meta originator "codex_exec" /
+  source "exec" (★0.163.0 rollouts: exec 6/6, TUI 0/4 had it). Unreadable rollout = no wait (fail safe).
 """
 import json
 import os
@@ -51,6 +59,7 @@ import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hooks"))
 import mailbox_stop as ms  # noqa: E402
+import mail_wait as mw  # noqa: E402
 
 T0 = time.monotonic()
 PLATFORM = "gemini"
@@ -60,6 +69,8 @@ TOOL_PREFIX = "mcp_mailbox_"   # Gemini's MCP tool naming; other CLIs get the ba
 WORKER_MARK = ".mail-worker"
 WORKER_MAX_IDLE = 3
 WORKER_WAIT_S = 3540     # one round per hour; needs mcpServers.mailbox.timeout > 3540 s in Gemini
+WAIT_S = 3540            # Stop-hook wait; below the example's 3600 s hook timeout
+WAIT_MAX = 20
 
 
 def set_platform(plat):
@@ -124,7 +135,8 @@ def decide(inp, store=None, now_ns=None):
         return None
 
     newest = max(int(m.get("t") or 0) for m in cand)
-    ms.save_state(sp, {"last_t": newest, "me": me, "at": now_ns})
+    # Keep other fields (wake_n, worker counters): the wait's runaway guard lives in the same state file.
+    ms.save_state(sp, dict(st if isinstance(st, dict) else {}, last_t=newest, me=me, at=now_ns))
     ms.prune_states(os.path.dirname(sp), time.time())
 
     names = []
@@ -140,8 +152,8 @@ def decide(inp, store=None, now_ns=None):
 
 
 def worker_on(cwd):
-    # ⚠Only CLIs whose block/loop/timeout behaviour was measured (see the module docstring); others stay off.
-    if PLATFORM not in ("gemini", "codex"):
+    # Gemini only: Codex idles through the Stop-hook wait (`--wait`), which costs no model call per round.
+    if PLATFORM != "gemini":
         return False
     if os.environ.get("SIDEREUS_MAIL_WORKER") == "1":
         return True
@@ -248,6 +260,61 @@ def worker(inp, store=None, now_ns=None):
         f"If it returns '(메일 없음' (no mail), do nothing and end the turn at once. (empty waits {idle}/{k})")}
 
 
+def _env_int(name, default, lo, hi):
+    try:
+        return min(hi, max(lo, int(os.environ.get(name, default))))
+    except (TypeError, ValueError):
+        return default
+
+
+def interactive(inp):
+    """True only when the rollout's session_meta row is readable and not a `codex exec` run."""
+    try:
+        with open(str(inp.get("transcript_path") or ""), "rb") as f:
+            first = f.readline(4 * 1024 * 1024)
+        row = json.loads(first.decode("utf-8"))
+        meta = row.get("payload") if row.get("type") == "session_meta" else None
+        if not isinstance(meta, dict):
+            return False
+        return meta.get("originator") != "codex_exec" and meta.get("source") != "exec"
+    except Exception:
+        return False
+
+
+def wait_mail(inp, store=None, sleep=time.sleep, clock=time.monotonic):
+    """Stop-hook wait (stop-wait CLIs): hook output dict on mail or at the runaway cap, None on timeout or busy slot."""
+    store = store or ms.data_dir()
+    sid = str(inp.get("session_id") or "")
+    cwd = inp.get("cwd") or ""
+    if not sid or not cwd or mw.wake_method(PLATFORM) != "stop-wait":
+        return None
+    me = gemini_id(cwd, ms.load(os.path.join(store, "identity.json"), {}))
+    if not me or ms.watch_alive(store, me) or not interactive(inp):
+        return None
+    sp = ms.state_path(store, KEY_PREFIX + sid)
+    st = ms.load(sp, {})
+    st = st if isinstance(st, dict) else {}
+    human = human_key(inp)
+    n = 0 if (human is not None and human != st.get("wake_human")) else int(st.get("wake_n") or 0)
+    cap = _env_int("SIDEREUS_MAIL_WAIT_MAX", WAIT_MAX, 0, 10 ** 6)
+    if n >= cap:
+        return {"systemMessage": f"[mailbox] {n} mail wakes in a row without a human prompt — stopped waiting. "
+                                 "Type any prompt to start again."}
+
+    def check():
+        global T0
+        T0 = time.monotonic()      # ⚠decide() gives up after BUDGET_S from T0; each bus check gets a fresh budget
+        return decide(inp, store=store)
+    got, reason = mw.wait(store, sid, me, check, _env_int("SIDEREUS_MAIL_WAIT_S", WAIT_S, 60, WAIT_S),
+                          sleep=sleep, clock=clock)
+    if got != "hit":
+        return None
+    st = ms.load(sp, {})
+    st = st if isinstance(st, dict) else {}
+    ms.save_state(sp, dict(st, wake_n=n + 1, wake_human=human if human is not None else st.get("wake_human")))
+    return {"decision": "block", "reason": reason}
+
+
 def main():
     try:
         raw = sys.stdin.read()
@@ -263,7 +330,8 @@ def main():
         if reason:
             sys.stdout.write(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
             return
-        out = worker(inp)
+        out = wait_mail(inp) if "--wait" in argv else None
+        out = out or worker(inp)
         if out:
             sys.stdout.write(json.dumps(out, ensure_ascii=False))
     except Exception:

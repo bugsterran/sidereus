@@ -30,7 +30,8 @@ FA_ENTRY = {"name": "orbit", "source": "./plugins/orbit",
 # Repo file -> same relative path inside plugin/. mailbox_config.py sits at the plugin root because
 # hooks/invite_notice.py and mcp/sidereus_mcp.py import it from their parent folder.
 COPY = ("LICENSE", "mailbox_config.py", "mcp/sidereus_mcp.py",
-        "hooks/invite_notice.py", "hooks/mailbox_stop.py", "hooks/mailbox_wake.py", "hooks/pipelines_brief.py",
+        "hooks/invite_notice.py", "hooks/mailbox_stop.py", "hooks/mailbox_wake.py", "hooks/mail_wait.py",
+        "hooks/pipelines_brief.py",
         "hooks/file_peers_notice.py", "hooks/pl_mark.py", "hooks/pl_flow.py", "hooks/pl_guard.py",
         "hooks/perm_mark.py", "hooks/ev_hook.py", "hooks/pyrun.sh")
 

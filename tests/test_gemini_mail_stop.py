@@ -252,10 +252,12 @@ class OtherPlatformMailStop(unittest.TestCase):
         self.assertIn(" mailbox_inbox ", out["reason"])
         self.assertNotIn("mcp_mailbox_", out["reason"])
         self.assertNotIn("SECRET-BODY", out["reason"])
-        again = json.loads(self.hook("--platform", "codex"))     # same mail never blocks twice -> worker block
-        self.assertNotIn("new mail", again["reason"])
-        self.assertIn(" mailbox_wait ", again["reason"])
-        self.assertNotIn("mcp_mailbox_", again["reason"])
+        self.assertEqual(self.hook("--platform", "codex"), "")   # same mail never blocks twice; no Codex worker
+
+    def test_R2_worker_off_for_codex(self):
+        open(os.path.join(self.cwd, gms.WORKER_MARK), "w", encoding="utf-8").close()
+        self.hook("--platform", "codex")                         # consumes the pending-mail block
+        self.assertEqual(self.hook("--platform", "codex"), "")   # marker + SIDEREUS_MAIL_WORKER=1: still silent
 
     def test_worker_stays_off_on_unmeasured_platforms(self):
         self.hook("--platform", "cursor")                        # consumes the pending-mail block if any
@@ -275,7 +277,7 @@ class OtherPlatformMailStop(unittest.TestCase):
 
     def test_example_configs_wire_the_mail_hook(self):
         want = {"gemini-settings-example.json": ("AfterAgent", "gemini_mail_stop.py"),
-                "codex-hooks-example.json": ("Stop", "gemini_mail_stop.py --platform codex"),
+                "codex-hooks-example.json": ("Stop", "gemini_mail_stop.py --platform codex --wait"),
                 "generic-hooks-example.json": ("Stop", "gemini_mail_stop.py --platform <PLATFORM>")}
         for name, (event, cmd) in want.items():
             with open(os.path.join(ROOT, "ext-hooks", name), encoding="utf-8") as f:
@@ -285,8 +287,8 @@ class OtherPlatformMailStop(unittest.TestCase):
             self.assertFalse(any("watch.sh" in c for c in cmds), name)
 
 
-class CodexMailWorker(unittest.TestCase):
-    """Worker mode on Codex: same opt-in as Gemini; human_key reads Codex rollout rows and skips injected ones."""
+class CodexMailWait(unittest.TestCase):
+    """Codex idles in the Stop-hook wait (`--wait`), not worker mode; human_key reads rollout rows, skips injected ones."""
 
     def setUp(self):
         self.d = tempfile.mkdtemp()
@@ -298,14 +300,23 @@ class CodexMailWorker(unittest.TestCase):
             json.dump({self.cwd: "claude-a"}, f)
         open(os.path.join(self.d, "bus.jsonl"), "w", encoding="utf-8").close()
         self.tp = os.path.join(self.d, "rollout.jsonl")
-        self._env = {k: os.environ.pop(k) for k in ("SIDEREUS_MAIL_WORKER", "SIDEREUS_MAIL_WORKER_MAX_IDLE")
-                     if k in os.environ}
+        self._keys = ("SIDEREUS_MAIL_WORKER", "SIDEREUS_MAIL_WORKER_MAX_IDLE", "SIDEREUS_MAIL_WAIT_S",
+                      "SIDEREUS_MAIL_WAIT_MAX")
+        self._env = {k: os.environ.pop(k) for k in self._keys if k in os.environ}
+        os.environ["SIDEREUS_MAIL_WAIT_S"] = "60"
+        self.meta("codex-tui", "cli")
         gms.set_platform("codex")
+
+    def meta(self, originator, source):
+        """Rollout first row (session_meta), shaped like Codex 0.163.0."""
+        with open(self.tp, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"timestamp": "2026-10-20T00:00:00Z", "type": "session_meta",
+                                "payload": {"id": "c1", "originator": originator, "source": source}}) + "\n")
 
     def tearDown(self):
         gms.set_platform("gemini")
-        os.environ.pop("SIDEREUS_MAIL_WORKER", None)
-        os.environ.pop("SIDEREUS_MAIL_WORKER_MAX_IDLE", None)
+        for k in self._keys:
+            os.environ.pop(k, None)
         os.environ.update(self._env)
         shutil.rmtree(self.d, ignore_errors=True)
         shutil.rmtree(self.cwd, ignore_errors=True)
@@ -321,32 +332,85 @@ class CodexMailWorker(unittest.TestCase):
             f.write(json.dumps({"ordinal": self.n, "timestamp": "2026-10-20T00:00:00Z", "type": "response_item",
                                 "payload": p}, ensure_ascii=False) + "\n")
 
-    def work(self, human=None):
+    def dm(self):
+        with open(os.path.join(self.d, "bus.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"id": "m%d" % time.time_ns(), "t": time.time_ns(), "from": "zed", "to": self.me,
+                                "body": "SECRET-BODY"}) + "\n")
+
+    def wait(self, post_at=None, human=None):
+        """wait_mail() with an injected clock; post_at = sleep call number at which a DM arrives."""
         if human:
             self.row(human)
-        out = gms.worker({"session_id": "c1", "cwd": self.cwd, "transcript_path": self.tp},
-                         store=self.d, now_ns=self.now)
+        clk = {"t": 0.0, "n": 0}
+
+        def sleep(s):
+            clk["n"] += 1
+            clk["t"] += max(s, 0.5)
+            if clk["n"] == post_at:
+                self.dm()
+        out = gms.wait_mail({"session_id": "c1", "cwd": self.cwd, "transcript_path": self.tp}, store=self.d,
+                            sleep=sleep, clock=lambda: clk["t"])
         if out and out.get("decision") == "block":
             self.row('<hook_prompt hook_run_id="stop:1:hooks.json">' + out["reason"] + "</hook_prompt>",
                      kind="unknown")
         return out
 
-    def test_worker_on_codex_marker_and_env(self):
+    def test_R2_worker_off_for_codex(self):
         self.assertFalse(gms.worker_on(self.cwd))
         os.environ["SIDEREUS_MAIL_WORKER"] = "1"
-        self.assertTrue(gms.worker_on(self.cwd))
-        os.environ.pop("SIDEREUS_MAIL_WORKER")
         open(os.path.join(self.cwd, gms.WORKER_MARK), "w", encoding="utf-8").close()
-        self.assertTrue(gms.worker_on(self.cwd))
-        gms.set_platform("cursor")
         self.assertFalse(gms.worker_on(self.cwd))
+        self.assertIsNone(gms.worker({"session_id": "c1", "cwd": self.cwd}, store=self.d))
+        gms.set_platform("gemini")
+        self.assertTrue(gms.worker_on(self.cwd))
 
-    def test_codex_block_uses_bare_tool_names(self):
-        os.environ["SIDEREUS_MAIL_WORKER"] = "1"
-        r = self.work(human="hi")["reason"]
-        self.assertIn(f"`{self.me}`", r)
-        self.assertIn(" mailbox_wait with timeout_s=3540, round=1", r)
-        self.assertNotIn("mcp_mailbox_", r)
+    def test_R1_codex_wait_blocks_on_dm(self):
+        out = self.wait(post_at=3, human="hi")
+        self.assertEqual(out["decision"], "block")
+        self.assertIn("`%s`" % self.me, out["reason"])
+        self.assertIn(" mailbox_inbox ", out["reason"])
+        self.assertNotIn("SECRET-BODY", out["reason"])
+        self.assertFalse(os.path.exists(os.path.join(self.d, ".wake", "c1.lock")))   # slot released
+
+    def test_R2_codex_empty_wait_no_output(self):
+        n = []
+        real = gms.decide
+
+        def decide(*a, **k):
+            n.append(1)
+            return real(*a, **k)
+        gms.decide = decide
+        try:
+            self.assertIsNone(self.wait(human="hi"))
+        finally:
+            gms.decide = real
+        self.assertEqual(len(n), 1)                         # bus never changed: one check, then silence
+
+    def test_no_wait_under_codex_exec(self):
+        for orig, src in (("codex_exec", "exec"), ("codex_exec", "cli"), ("x", "exec")):
+            self.meta(orig, src)
+            self.assertIsNone(self.wait(post_at=1))
+        os.remove(self.tp)                                  # unreadable rollout: fail safe, no wait
+        self.assertIsNone(self.wait(post_at=1))
+        self.assertFalse(os.path.exists(os.path.join(self.d, ".wake")))
+        self.meta("codex-tui", "vscode")
+        self.assertEqual(self.wait(post_at=1)["decision"], "block")
+
+    def test_wait_off_for_other_platforms(self):
+        for plat in ("gemini", "cursor"):
+            gms.set_platform(plat)
+            self.assertIsNone(self.wait(post_at=1))
+        self.assertFalse(os.path.exists(os.path.join(self.d, ".wake")))
+
+    def test_R2_runaway_cap_resets_on_human(self):
+        os.environ["SIDEREUS_MAIL_WAIT_MAX"] = "2"
+        self.assertEqual(self.wait(post_at=1, human="hi")["decision"], "block")
+        self.assertEqual(self.wait(post_at=1)["decision"], "block")     # injected hook_prompt row is not human
+        capped = self.wait(post_at=1)
+        self.assertNotIn("decision", capped)
+        self.assertIn("systemMessage", capped)
+        self.assertNotIn("SECRET-BODY", json.dumps(capped))
+        self.assertEqual(self.wait(post_at=1, human="go on")["decision"], "block")
 
     def test_human_key_skips_codex_injected_rows(self):
         self.row("<environment_context>  <cwd>/x</cwd></environment_context>",
@@ -358,14 +422,6 @@ class CodexMailWorker(unittest.TestCase):
         self.row("assistant text", role="assistant")
         self.assertEqual(gms.human_key({"transcript_path": self.tp}), "msg_2")
         self.assertNotIn("do the thing", json.dumps(gms.human_key({"transcript_path": self.tp})))
-
-    def test_new_human_prompt_resets_idle(self):
-        os.environ["SIDEREUS_MAIL_WORKER"] = "1"
-        os.environ["SIDEREUS_MAIL_WORKER_MAX_IDLE"] = "2"
-        self.assertIn("(empty waits 0/2)", self.work(human="hi")["reason"])
-        self.assertIn("(empty waits 1/2)", self.work()["reason"])   # injected hook_prompt row is not human
-        self.assertIn("systemMessage", self.work())
-        self.assertIn("(empty waits 0/2)", self.work(human="go on")["reason"])
 
 
 if __name__ == "__main__":

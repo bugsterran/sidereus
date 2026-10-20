@@ -21,6 +21,7 @@ from sidereus.quota import quota
 from sidereus.quota_roots import quota_accounts
 from sidereus.claude_roots import accounts as claude_accounts
 from sidereus.saver import _saver_state, _saver_switch, _saver_view, _saver_views
+from sidereus.mail_idle import annotate as mail_idle_annotate
 from sidereus.attention import attention
 from sidereus.arch_map import runs as arch_runs
 from sidereus.pl_reqs import view as pl_reqs_view
@@ -187,6 +188,8 @@ def state(since=0, ncards=50):
         _rooms = redact_rooms(_load("rooms.json", {}))   # topic is free text that reaches the page
         _profiles = _load("profiles.json", {})
     # ── assembling the dict itself needs no lock (only consistency at the moment each piece is read mattered)
+    # unread mail on a session nothing will wake -> row mailIdle; needs the cursors/acks/rooms read above (bus lines from its parse cache)
+    _sessions = _piece("mailIdle", mail_idle_annotate, _sessions, _sessions, None, _cursors, _acks, _rooms)
     _attn = _piece("attention", attention, None, _sessions, _cards, _q0, _cread, _cread_ids)
     _fh = (_q0 or {}).get("five_hour") or {}
     _who = _piece("quotaWho", quota_who, None, _q0)

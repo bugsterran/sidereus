@@ -61,7 +61,7 @@ class Base(unittest.TestCase):
 
 class TestPoints(Base):
     def test_point_table(self):
-        self.assertEqual(att.ATT_PTS, {"blocked": 100, "ask": 90, "conflict": 85, "abort": 70, "ctx95": 65, "fail": 60,
+        self.assertEqual(att.ATT_PTS, {"blocked": 100, "ask": 90, "conflict": 85, "mailidle": 75, "abort": 70, "ctx95": 65, "fail": 60,
                                        "wreck": 60, "stall": 55, "loop": 50, "toolfail": 45, "ctx85": 25,
                                        "done": 20, "bgdone": 15})
 
@@ -131,6 +131,16 @@ class TestDone(Base):
     def test_not_with_sub_or_bgs(self):
         self.assertNotIn("done", self.kinds(sess("a", state="wait", age=600, sub=[{"idle": 1}])))
         self.assertEqual(self.kinds(sess("a", state="wait", age=600, bgs=[{"id": "b"}])), [])
+
+
+class TestMailIdle(Base):
+    def test_R3_mailidle_sig_pts(self):
+        row = self.one(sess("a", state="wait", age=30, mailIdle={"n": 3, "age": 720}))
+        sg = [s for s in row["sigs"] if s["k"] == "mailidle"][0]
+        self.assertEqual((sg["pts"], row["score"]), (75, 75))
+        self.assertEqual(sg["why"], "메일 3통 대기 · 세션 쉼 12분")
+        self.assertEqual(set(sg), SIG_KEYS)
+        self.assertEqual(self.kinds(sess("a", state="tool", age=30, mailIdle={"n": 3, "age": 720})), [])
 
 
 class TestStall(Base):
