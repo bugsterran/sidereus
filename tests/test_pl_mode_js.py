@@ -218,7 +218,7 @@ class PlMode(unittest.TestCase):
         for k in ("Gates {n}/{m}", "plEvalHead(ev", "mb + plRunBtn(p, dirty)", "data-plsave", "data-pldel"):
             self.assertIn(k, body[i:])
         mb = js_fn("plMainBody")
-        self.assertIn("(wt ? '' : plApplySeg(PLS.data[PLS.proj]))", mb)
+        self.assertIn("(wt || !((PLS.data[PLS.proj] || {}).pipelines || []).length ? '' : plApplySeg(PLS.data[PLS.proj]))", mb)
         self.assertIn("plModeBand()", mb)
 
     def test_r3_edit_band_and_done(self):

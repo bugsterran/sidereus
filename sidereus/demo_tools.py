@@ -176,14 +176,17 @@ def _demo_catalog(demo_proj):
     return {"groups": d.get("groups") or [], "items": items}
 
 
-def _demo_pipelines(proj, demo_proj):
-    """GET /api/pipelines in the pipeline.pipelines shape: the demo project only; the only disk read is the bundled stage catalog."""
+def _demo_pipelines(proj, demo_proj, empty_proj=None):
+    """GET /api/pipelines in the pipeline.pipelines shape: the demo project plus `empty_proj` (no pipelines, so the empty-project
+    start row is reachable in the demo); the only disk read is the bundled stage catalog."""
     if not proj:
-        return 200, {"ok": True, "projects": [{"path": demo_proj, "n": 1}], "added": []}
-    if proj != demo_proj:
+        projects = [{"path": demo_proj, "n": 1}] + ([{"path": empty_proj, "n": 0}] if empty_proj else [])
+        return 200, {"ok": True, "projects": projects, "added": []}
+    if proj != demo_proj and not (empty_proj and proj == empty_proj):
         return 400, {"ok": False, "msg": "unknown project"}   # ⚠not 404: the page reads 404 as «feature off»
     agents = [{"name": n, "scope": "project"} for n in ("code-reviewer", "implementer", "planner", "verifier")]
-    return 200, {"ok": True, "proj": proj, "pipelines": [json.loads(json.dumps(DEMO_PIPE))], "agents": agents, "catalog": _demo_catalog(demo_proj),
+    pls = [json.loads(json.dumps(DEMO_PIPE))] if proj == demo_proj else []
+    return 200, {"ok": True, "proj": proj, "pipelines": pls, "agents": agents, "catalog": _demo_catalog(demo_proj),
                  "models": ["inherit", "opus", "sonnet", "haiku"], "roles": {}, "default_tasks": {}, "skills": [],
                  "rule_files": [], "workflows": [], "suggest": [], "std": [],
                  "apply": {"mode": "auto", "global": "auto", "own": None}}

@@ -10,12 +10,10 @@
 .plnewm{position:absolute;top:calc(100% + 4px);left:0;z-index:40;display:flex;flex-direction:column;gap:3px;padding:5px;min-width:max-content;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:6px;box-shadow:0 6px 18px #0006}   /* 48e plNewBtn menu, inside .plw */
 .plnewm .wkrgb{text-align:left}
 .pltpl{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 8px}   /* 48e plTplPick: wraps at 900px */
-.pltplh{font-size:12px;color:var(--nx-t2,#8b95a5);margin-right:4px}
-.pltpl .wkrgb.plsv{background:var(--nx-info-bg,#2f6fd6);border-color:var(--nx-info-bg,#2f6fd6);color:#fff;font-weight:600}   /* 48e plStartBtns: the two primary starts */
+.pltpl .wkrgb.plsv{background:var(--nx-info-bg,#2f6fd6);border-color:var(--nx-info-bg,#2f6fd6);color:#fff;font-weight:600}   /* 48e plStartBtns: the one primary start (AI draft) */
 .pltpl .wkrgb.plsv:hover:not([disabled]){background:color-mix(in srgb,var(--nx-info-bg,#2f6fd6) 85%,#fff)}
 /* Empty project: the start row is the only thing to do, so it is a panel with full-size controls. ⚠Scoped like 05-controls.css so it outranks the shared 22px .wkrgb look. */
 html[data-ui] .pltpl{gap:6px;margin:2px 0 10px;padding:10px 12px;border:1px solid var(--nx-rule,#8884);border-radius:8px;background:var(--nx-panel,transparent)}
-html[data-ui] .pltpl .pltplh{font-size:12px;margin:0 2px 0 6px}
 html[data-ui=next][data-ui] .pltpl .wkrgb{height:auto;min-height:26px;padding:3px 10px;border-radius:5px;font-size:12px;line-height:18px;color:var(--nx-t1);border-color:var(--nx-t3);background:var(--nx-hover);cursor:pointer}
 html[data-ui=next][data-ui] .pltpl .wkrgb:hover:not([disabled]){border-color:var(--nx-info);background:color-mix(in srgb,var(--nx-info) 12%,var(--nx-hover))}
 html[data-ui=next][data-ui] .pltpl .wkrgb.plsv{min-height:30px;padding:5px 14px;font-size:13px;font-weight:600;background:var(--nx-info-bg);border-color:var(--nx-info-bg);color:#fff}

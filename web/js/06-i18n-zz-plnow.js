@@ -10,5 +10,5 @@ Object.assign(I18N.ko, {
   'Draft — not saved yet': '초안 — 아직 저장 안 됨',
   'Collapse list': '목록 접기',
   'Expand list': '목록 펼치기',
-  'Or start from:': '또는 이것으로 시작:',
+  'Quick templates ▾': '빠른 템플릿 ▾',
 });

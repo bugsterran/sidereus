@@ -8,14 +8,16 @@ let PLNEW = null;            // open form {name, title, tpl, diff, busy, err}
 // A disabled button says why (one form at a time) — a silent dead click read as a bug.
 function plNewDis(on){ return on ? ' disabled title="' + esc(T('Close the open form first')) + '"' : ''; }
 // Empty project, no suggestions: template buttons in place of a note; a click only opens the preview (create still needs «Confirm — create»).
-// Two primary starts up front; same attributes and disable rules as the «+ New ▾» items, so the existing handlers do the work.
+// One filled primary (AI draft) then the outlined standard list; same attributes and disable rules as the «+ New ▾» items, so the existing handlers do the work.
 function plStartBtns(){
-  return '<button type=button class="wkrgb plsv' + (PLSTD ? ' on' : '') + '" data-plstd>' + esc(T('Start from a template')) + '</button>'
-    + '<button type=button class="wkrgb plsv" data-pldnew' + plNewDis(PLDRAFT) + '>' + esc(T('Ask AI for a draft')) + '</button>';
+  return '<button type=button class="wkrgb plsv" data-pldnew' + plNewDis(PLDRAFT) + '>' + esc(T('Ask AI for a draft')) + '</button>'
+    + '<button type=button class="wkrgb' + (PLSTD ? ' on' : '') + '" data-plstd>' + esc(T('Start from a template')) + '</button>';
 }
+let PLTPLO = false;          // quick-template row open (folded at first, not persisted)
 function plTplPick(){
-  return '<div class=pltpl>' + plStartBtns() + '<span class=pltplh>' + esc(T('Or start from:')) + '</span>' + PL_TPLS.map(([k, lab]) =>
-    '<button type=button class=wkrgb data-pltpl="' + esc(k) + '"' + plNewDis(PLNEW || PLDRAFT) + '>' + esc(T(lab)) + '</button>').join('') + '</div>';
+  return '<div class=pltpl>' + plStartBtns() + '<button type=button class="wkrgb' + (PLTPLO ? ' on' : '') + '" data-pltplo aria-expanded="' + (PLTPLO ? 'true' : 'false') + '">'
+    + esc(T('Quick templates ▾')) + '</button>' + (PLTPLO ? PL_TPLS.map(([k, lab]) =>
+    '<button type=button class=wkrgb data-pltpl="' + esc(k) + '"' + plNewDis(PLNEW || PLDRAFT) + '>' + esc(T(lab)) + '</button>').join('') : '') + '</div>';
 }
 // «+ New ▾» menu: the four ways to start a pipeline behind one button (one head row at 900px). Items keep their own attributes and handlers.
 // pri: primary fill when the project has no pipelines and no start buttons are shown (the empty state fills 48e plStartBtns instead)
@@ -170,6 +172,7 @@ async function plNewSend(write){
 document.addEventListener('click', e => {
   if(!e.target.closest || !e.target.closest('.plw')) return;
   if(e.target.closest('[data-plnew]')){ PLNEW = { name: '', title: '', tpl: 'empty', diff: '', busy: false, err: '' }; PLDRAFT = null; plPaint(); plRefocus('[data-plnf=name]'); return; }
+  if(e.target.closest('[data-pltplo]')){ PLTPLO = !PLTPLO; plPaint(); plRefocus('[data-pltplo]'); return; }
   if(e.target.closest('[data-plstd]')){ PLSTD = !PLSTD; plPaint(); plRefocus(PLSTD ? '.plstd [data-plstdopen]' : '', '[data-plnewm]'); return; }
   const so = e.target.closest('[data-plstdopen]');
   if(so){ PLS.std = so.dataset.plstdopen; PLS.diff = null; PLS.msg = ''; plPaint(); plRefocus('[data-plstdsave]:not([disabled])', '[data-plnewm]'); return; }   // list stays open: nothing is saved yet, the card shows .on for the opened draft
