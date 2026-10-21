@@ -178,7 +178,7 @@ function plChips(){
 }
 function plPickProj(p){
   PLS.proj = p; lsSet('sidereus.plproj', PLS.proj); PLNEW = null; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = '';
-  PLS.nowSid = '';   // 48j: the previous project's session pick
+  PLS.nowSid = ''; PLS.nowPick = null;   // 48j: the previous project's session / stage pick
   plPaint();
 }
 // «+ Add project»: the person adds a folder explicitly, never automatically; opens the folder browser (48f plBrOpen).
@@ -255,7 +255,7 @@ function plBody(ov, hd){
   if(!ps.length && (d.suggest || []).length) return plSugBody(d, agc + plBorrowChips(d), hd);
   if(!ps.length) return plTplPick() + plHeadRow(hd, names(null) + plNewBtn() + wfb) + plNewForm() + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
   const p = plCur(), wt = typeof plWatchFor === 'function' && plWatchFor(p);   // wt = 48k Watch: Run only, file operations wait for «Edit»
-  const mb = typeof plModeBtn === 'function' ? plModeBtn() : '';   // «Edit»/«Done» sits right before «Run»
+  const mb = typeof plModeBtn === 'function' ? plModeBtn() : '';   // «Edit»/«Close» sits right before «Run»
   if(hd) hd.mb = true;
   if(wt) return plWatchBody(p, d, names(p) + wfb, hd, ov, mb);
   const list = plHeadRow(hd, names(p) + plNewBtn() + wfb) + plNewForm();
@@ -275,6 +275,7 @@ function plBody(ov, hd){
     // Run first (primary; relays a run request to a session), then a divider, then the file operations; Delete last.
     + mb + plRunBtn(p, dirty) + '<span class=plsep aria-hidden=true></span>'   // Save always follows, so the divider never trails
     + (dirty ? '<button class="wkrgb" data-plreset>' + esc(T('Undo')) + '</button>' : '')
+    + (typeof plCancelBtn === 'function' ? plCancelBtn(p) : '')
     + '<button class="wkrgb plsv" data-plsave' + (dirty && cv.ok && !PLS.saving ? '' : ' disabled') + (cv.ok ? '' : ' title="' + esc(T('Fix the red items before saving')) + '"') + '>' + esc(T('Save')) + '</button>'
     + (p.std || !p.sha ? '' : '<button class="wkrgb pldl" data-pldel' + (PLS.saving ? ' disabled' : '') + '>' + esc(T('Delete')) + '</button>') + '</span></div>';   // unsaved draft: no file
   const diff = PLS.diff && PLS.diff.name === p.name ? '<div class=pldiff><div class=brh2><b>' + esc(T('Changes', 'preview')) + '</b> <i>.claude/pipelines/'
@@ -354,7 +355,7 @@ function paintPipe(box, fromPoll){
   const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Harness')) + '</b>' : '') + '<span class=plcap>'
     + esc(hv ? T('Hooks · rules · agents · MCP · skills') : T('Agent and model per stage')) + '</span></div>';
   const body = PLS.off ? '<div class=hidnote>' + esc(T('The pipeline feature is off')) + '</div>'
-    : (hv ? plChips() + hnHtml() : (plNowShown() ? plNowWrap(plMainBody()) : plMainBody()));   // 48j list | run view; 48k Edit puts the palette in that column
+    : (hv ? plChips() + hnHtml() : (plNowPickApply(), plNowShown() ? plNowWrap(plMainBody()) : plMainBody()));   // 48j list | run view; 48k Edit puts the palette in that column
   const h = '<div class="brep plw">' + head + body + '</div>';
   if(box._plw === h && box.querySelector('.plw')) return;   // ⚠poll repaints would close an open <select>
   const fe = document.activeElement;   // ⚠a live run changes h every poll: never rebuild under an open select / the caret
@@ -388,7 +389,7 @@ async function plSave(write){
   PLS.saving = false;
   if(!r || !r.ok){ PLS.msg = T('Could not save') + ' — ' + ((r && r.err) || '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLS.diff = null; }
   else if(!write) PLS.diff = { name: p.name, text: r.diff || '' };
-  else { PLS.diff = null; PLS.msg = T('Saved · backup') + ' ' + (r.backup || ''); await plLoad(PLS.proj, true); }
+  else { PLS.diff = null; PLS.msg = T('Saved · backup') + ' ' + (r.backup || ''); await plLoad(PLS.proj, true); if(typeof plModeSet === 'function') plModeSet('watch', true); }   // a confirmed save ends the edit
   plPaint(); plRefocus('[data-plok]:not([disabled])', '[data-plsave]:not([disabled])', '[data-ppk="plsel"]');   // awaited load: a later repaint would drop focus again
 }
 async function plDelete(write){

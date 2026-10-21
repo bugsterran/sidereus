@@ -152,13 +152,17 @@ function tlAgentRow(g, gi, nmOpen, lanes, run, L){
             + tlStateDot(g.items[g.items.length-1])
           // ★The dot sits **right after the name** — same position (after name) as the session row's state marker
           // ★Agent rows get the same AI mark as sessions (per the original orca screen) — plat is that of the owning session
-          : '<i class=tlbr2>'+'　'.repeat(g.lv||0)+(g.br||'├')+'─</i>'+aiLogo(g.plat)+tlAgNm(g)
-            + '<i class="tlds'+(run?' on':'')+'"></i>'
-            + (g._par > 1 ? '<i class=tlpar>'+g._pi+'/'+g._par+'</i>' : ''))
+          : tlAgNmB(g, run))
       + (n > 1 ? '<u>'+U(n,'×')+(lanes > 1 ? ' · '+TV({msg: '{n} parallel', vars: {n: lanes}}) : '')+'</u>' : '') + '</b>'
       // ★The inline «N min total · desc» was removed (2026-09-24: always truncated) — the hover card carries it in full.
       + '</div>'
       + '<div class=tlt style="height:'+rowH+'px">'+idleb+ticks+napb+segs+'</div></div>';
+}
+// Agent name cell «├─ logo · name · type · running dot»; also the «Working now» subagent rows (48j).
+function tlAgNmB(g, run){
+  return '<i class=tlbr2>'+'　'.repeat(g.lv||0)+(g.br||'├')+'─</i>'+aiLogo(g.plat)+tlAgNm(g)
+            + '<i class="tlds'+(run?' on':'')+'"></i>'
+            + (g._par > 1 ? '<i class=tlpar>'+g._pi+'/'+g._par+'</i>' : '');
 }
 // Bar label ink per bar colour. ⚠#0d1014 on mid-lightness hues was 3.5-4.1:1; one fixed ink cannot pass on all 360 hues.
 function tlInk(bg){

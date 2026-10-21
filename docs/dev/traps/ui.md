@@ -231,3 +231,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★Headless Chrome: «dev ↑20 ~2» sbt 47px in a 54px chip, 22px over `.sacb`; with `min-width:0` 19px, no overlap; long names unchanged.
 - ⇒ `.sbt{min-width:0}`; the chip floor is `.sb{min-width:auto}` (content, capped by `max-width:150px`).
 - ⚠Do not put a percentage `min-width` on a child of a box with `overflow:visible` and an automatic min size.
+
+## Esc: menus clear their flags before later handlers run
+- Cause: the menus' document keydown listeners (48b PLPSK/PLRV, 48d PLAPK) are registered first and null their flags on Esc; a later handler (48e plDraftEsc) saw no open menu and also closed the draft.
+- ★Demo 10-21: draft + pass menu open, one Esc → both closed.
+- ⇒ `plEscSnap` (capture phase, never stops the event) records `plMenuOpen()`; plDraftEsc/plEditEsc read that snapshot.
+- ⚠Do not move plDraftEsc itself to capture: it would run before layers that preventDefault in bubble (48e new-menu, 48f browser).

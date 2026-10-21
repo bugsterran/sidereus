@@ -21,6 +21,7 @@ function lsSet(k, v){ LS[k] = String(v); }
 function lsJson(k, d){ try{ return k in LS ? JSON.parse(LS[k]) : d; }catch(e){ return d; } }
 function plPaint(){ PAINT++; }
 function plCur(){ return CUR; }
+let DIRTY = false; function plDirty(){ return DIRTY; }
 const PLS = { proj: '/p', wf: null, g: {} };
 """
 CANVAS_STUB = """
@@ -142,7 +143,7 @@ class PlMode(unittest.TestCase):
         self.assertIn("data-plmode=edit", w)
         self.assertIn("<span aria-hidden=true>✎</span> Edit</button>", w)         # R3 pencil glyph + label
         self.assertIn("data-plmode=watch", e)
-        self.assertIn(">Done</button>", e)
+        self.assertIn(">Close</button>", e)                                    # clean Edit: one «Close», no «Done»
         self.assertIn("disabled", b)
         self.assertIn("Read-only — edit it in its own project", b)
         self.assertEqual([std, sug], ["", ""])
@@ -297,7 +298,7 @@ class PlMode(unittest.TestCase):
             self.assertIn("e.target.closest('[" + attr + "]')", s)
 
     def test_r6_esc_closes_draft(self):
-        r = run("let mainView = 'pipe', PLNEWM = false, PLRV = false, PLPSK = null, PLAPK = null, PLNEW = {}, PLDRAFT = {}; PLS.std = 'x';\n" + js_fn("plEscOwned") + "\n" + js_fn("plDraftEsc")
+        r = run("let mainView = 'pipe', PLNEWM = false, PLRV = false, PLPSK = null, PLAPK = null, PLRUN = null, PLESC_MENU = false, PLNEW = {}, PLDRAFT = {}; PLS.std = 'x';\n" + js_fn("plEscOwned") + "\n" + js_fn("plMenuOpen") + "\n" + js_fn("plEscSnap") + "\n" + js_fn("plDraftEsc")
                 + "\nconst ev = (k, tag, dp) => ({key: k, target: {tagName: tag}, defaultPrevented: !!dp});"
                 "const o = [plDraftEsc(ev('Escape', 'INPUT')), PLNEW !== null, plDraftEsc(ev('Escape', 'BUTTON')), PLNEW, PLDRAFT !== null,"
                 " plDraftEsc(ev('Escape', 'DIV')), plDraftEsc(ev('Escape', 'DIV')), PLS.std, plDraftEsc(ev('Escape', 'DIV')), plDraftEsc(ev('Enter', 'DIV'))];"
@@ -305,8 +306,8 @@ class PlMode(unittest.TestCase):
         self.assertEqual(r, [False, True, True, None, True, True, True, "", False, False, False, 3])
 
     def test_r6_esc_left_to_open_layers(self):
-        base = "let mainView = 'pipe', PLNEWM = false, PLRV = false, PLPSK = null, PLAPK = null, PLNEW = null, PLDRAFT = {desc: 'typed'};"
-        fns = js_fn("plEscOwned") + "\n" + js_fn("plDraftEsc")
+        base = "let mainView = 'pipe', PLNEWM = false, PLRV = false, PLPSK = null, PLAPK = null, PLRUN = null, PLESC_MENU = false, PLNEW = null, PLDRAFT = {desc: 'typed'};"
+        fns = js_fn("plEscOwned") + "\n" + js_fn("plMenuOpen") + "\n" + js_fn("plEscSnap") + "\n" + js_fn("plDraftEsc")
         ev = "\nconst ev = {key: 'Escape', target: {tagName: 'DIV'}, defaultPrevented: false};"
         o = []
         for g in ("let SDRW_OPEN = true;", "const ISPOP = true;", "let strPop = {ak: 1};", "let cpOn = true;",
@@ -316,6 +317,55 @@ class PlMode(unittest.TestCase):
         r = run(base + "let railOpen = true; function railMode(){ return 'docked'; } const innerWidth = 1440;\n" + fns + ev
                 + "console.log(JSON.stringify([plDraftEsc(ev), PLDRAFT]));")
         self.assertEqual(r, [True, None])                                    # docked rail: no layer, Esc closes the draft
+
+    def test_edit_close_or_cancel(self):
+        r = run(MODE + "let RESET = 0; function plResetEnt(){ RESET++; } const o = [];"
+                "CUR = " + SAVED + "; plModeSet('edit', true); o.push(plModeBtn(), plCancelBtn(CUR));"
+                "DIRTY = true; o.push(plModeBtn(), plCancelBtn(CUR)); PLS.msg = 'm'; plCancelEdit(); o.push(RESET, PLMODE, PLS.msg, LS);"
+                "console.log(JSON.stringify(o));")
+        close, c0, mb, cancel, reset, mode, msg, ls = r
+        self.assertIn(">Close</button>", close)
+        self.assertEqual(c0, "")
+        self.assertEqual(mb, "")                                               # dirty: no «Close» before Run
+        self.assertIn("data-plcancel", cancel)
+        self.assertIn(">Cancel</button>", cancel)
+        self.assertEqual([reset, mode, msg, ls["sidereus.plmode"]], [1, "watch", "", "watch"])   # discard locally, back to Watch
+        self.assertNotIn("postJSON", js_fn("plCancelEdit"))                   # no server write
+        body = _src("web/js/48-pipeline.js")
+        self.assertIn("(typeof plCancelBtn === 'function' ? plCancelBtn(p) : '')\n    + '<button class=\"wkrgb plsv\" data-plsave", body)   # «Cancel» right before «Save»
+        self.assertIn("await plLoad(PLS.proj, true); if(typeof plModeSet === 'function') plModeSet('watch', true); }", body)   # only the confirmed write branch
+
+    def test_edit_esc_closes_only_when_clean(self):
+        pre = ("let mainView = 'pipe', PLNEWM = false, PLRV = false, PLPSK = null, PLAPK = null, PLRUN = null, PLESC_MENU = false, PLNEW = null, PLDRAFT = null; PLS.std = '';"
+               "function plEscOwned(){ return false; }" + js_fn("plMenuOpen") + MODE + "CUR = " + SAVED + "; const K = {key: 'Escape', target: {tagName: 'DIV'}};")
+        r = run(pre + "const o = []; plModeSet('edit', true); DIRTY = true; o.push(plEditEsc(K), PLMODE);"
+                "DIRTY = false; o.push(plEditEsc({key: 'Escape', target: {tagName: 'INPUT'}}), PLMODE);"
+                "PLS.diff = {}; o.push(plEditEsc(K)); PLS.diff = null; o.push(plEditEsc(K), PLMODE);"
+                "plModeSet('edit', true); CUR = {name: 'std:x', ok: true, std: 1}; o.push(plEditEsc(K), PLMODE);"
+                "console.log(JSON.stringify(o));")
+        self.assertEqual(r, [False, "edit", False, "edit", False, True, "watch", False, "edit"])
+        self.assertIn("document.addEventListener('keydown', plEditEsc);", _src("web/js/48k-pipeline-mode.js"))
+
+    def test_esc_menu_clearing_its_flag_first_keeps_draft(self):
+        # The menu's own listener runs before plDraftEsc and nulls its flag; the capture snapshot still sees it open.
+        fns = js_fn("plEscOwned") + "\n" + js_fn("plMenuOpen") + "\n" + js_fn("plEscSnap") + "\n" + js_fn("plDraftEsc")
+        o = []
+        for flag in ("PLPSK", "PLRV", "PLAPK"):
+            o.append(run("let mainView = 'pipe', PLNEWM = false, PLRV = false, PLPSK = null, PLAPK = null, PLRUN = null, PLESC_MENU = false, PLNEW = {}, PLDRAFT = null; PLS.std = '';\n"
+                         + fns + "\nconst ev = {key: 'Escape', target: {tagName: 'DIV'}, defaultPrevented: false};"
+                         + flag + " = {}; plEscSnap(ev); " + flag + " = null;"               # capture snapshot, then the menu closes itself
+                         + "const a = plDraftEsc(ev); plEscSnap(ev); const b = plDraftEsc(ev);"   # next Esc: nothing open, the draft closes
+                         + "console.log(JSON.stringify([a, b, PLNEW]));"))
+        self.assertEqual(o, [[False, True, None]] * 3)
+        self.assertIn("document.addEventListener('keydown', plEscSnap, true);", _src("web/js/48e-pipeline-new.js"))
+        self.assertNotIn("stopPropagation", js_fn("plEscSnap"))
+
+    def test_esc_run_panel_keeps_new_form(self):
+        r = run("let mainView = 'pipe', PLNEWM = false, PLRV = false, PLPSK = null, PLAPK = null, PLRUN = {name: 'chg'}, PLESC_MENU = false, PLNEW = {}, PLDRAFT = null; PLS.std = '';\n"
+                + js_fn("plEscOwned") + "\n" + js_fn("plMenuOpen") + "\n" + js_fn("plEscSnap") + "\n" + js_fn("plDraftEsc")
+                + "\nconst ev = {key: 'Escape', target: {tagName: 'DIV'}, defaultPrevented: false}; plEscSnap(ev);"
+                "console.log(JSON.stringify([plDraftEsc(ev), PLNEW, PLRUN]));")
+        self.assertEqual(r, [False, {}, {"name": "chg"}])
 
 if __name__ == "__main__":
     unittest.main()

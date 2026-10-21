@@ -40,6 +40,14 @@
 .plnlpulse{position:relative}.plnlpulse::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--nx-info,#5899f3);animation:plr 1.5s cubic-bezier(.4,0,.6,1) infinite}   /* running run; plr keyframes = 60-sessions.css */
 @media (prefers-reduced-motion:reduce){.plnlpulse::after{animation:none;display:none}}
 .plnlh>small.plnln{min-width:18px;padding:0 6px;border-radius:9px;background:color-mix(in srgb,var(--nx-info,#5899f3) 20%,transparent);color:var(--nx-info,#5899f3);font-weight:600;text-align:center;line-height:16px}
+/* Subagent tree under a card: the Timeline agent name cell (74b tlAgNmB) as flat buttons; quiet = no log write for 2 min */
+.plnag{display:flex;flex-direction:column;gap:1px;margin:2px 0 2px 8px;min-width:0}
+.plw .plnl .plnagr.tlnm{flex:none;display:flex;width:100%;min-height:22px;padding:1px 6px;background:none;border:0;border-radius:4px;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow:hidden}
+.plw .plnl .plnagr.tlnm>b{flex:0 1 auto;min-width:0;font-size:11.5px;font-weight:500}
+.plw .plnl .plnagr:hover{background:var(--nx-hover,#1b1e23)}
+.plw .plnl .plnagr:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
+.plnagr.quiet{opacity:.55}
+.plnagm{padding:1px 6px 1px 22px;font-size:11px;color:var(--nx-t3,#84868c)}
 /* R5: collapsed = slim rail (fold button + one dot per session); ⚠the global aside box (50/90 css) adds border + 12px padding that overflowed 28px */
 html[data-ui] .plw aside.plnl.plnlc{padding:4px 0;border:0;background:none;overflow:hidden;align-items:center;gap:8px}
 .plnlc>.plnlh{justify-content:center}.plnlc .plnlf{margin:0}

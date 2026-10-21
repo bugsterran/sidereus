@@ -13,6 +13,8 @@ from tests._node import node_e
 PRE = """
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const T = s => s;
+const TV = o => o.msg.replace(/\{(\w+)\}/g, (m, k) => o.vars[k]);
+let tlAgDesc = true;
 const CSS = { escape: s => String(s).replace(/(["\\\\/ ])/g, '\\\\$1') };
 let SESS = [], PLNEW = null, PLDRAFT = null, PLSTD = false, GO = [], MV = [], PAINT = 0, FIT = 0, LS = {};
 function aiLogo(p){ return '<i class="ailg ailg-' + esc(p || 'cc') + '"></i>'; }
@@ -39,10 +41,12 @@ def _const(name, file):
     return s[i:s.index(";", i) + 1]
 
 
-NOW = "\n".join([_const("PL_DESC_RE", "48b-pipeline-run.js"), _const("STR_SPLIT_KEYS", "81i-structure-split.js")]
+NOW = ("\n".join([_const("PL_DESC_RE", "48b-pipeline-run.js"), _const("STR_SPLIT_KEYS", "81i-structure-split.js")]
                 + [js_fn(n) for n in ("sessPlChip", "plStrip", "plTk", "plDescStage", "plSubsOf", "plLabType", "plLabParts", "plLabDesc", "plLabTip",
                                       "strSplitGet", "strSplitCols", "strSplitDecl", "strSplitStyle", "strSplitGrip",
-                                      "tlSessNmB", "plNowSt", "plNowRun", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj")]) + "\n" + _const("PLNOW_ST", "48j-pipeline-now.js") + "\n"
+                                      "tlSessNmB", "tlAgNmB", "tlAgNm", "tlAgLab", "plNowAgents", "plNowPickApply",
+                                      "plNowSt", "plNowRun", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj")])
+       + "\n" + _const("PLNOW_ST", "48j-pipeline-now.js") + "\n" + _const("PLNOW_AGMAX", "48j-pipeline-now.js") + "\n")
 LIVE = """[{state: 'tool', sid: 's1', cwd: '/a', plat: 'cx', project: 'alpha', plrun: [{name: 'chg', cur: 'Implement'}]},
 {state: 'wait', sid: 's2', cwd: '/b', plat: 'cc', project: 'beta', plNone: {cat: 'docs'}},
 {state: 'think', sid: 's3', cwd: '/c', project: 'gamma', plNone: {u: 1}},
@@ -117,12 +121,13 @@ class PlNow(unittest.TestCase):
         self.assertIn("No sessions working now", h)
         self.assertIn("class=plnle", h)
 
-    def test_r1_targ_and_description_never_in_text(self):
+    def test_r1_targ_never_in_text_description_label_only(self):
         h = run(NOW + "PLS.nowSid = 's1'; console.log(JSON.stringify(plNowList([{state: 'tool', sid: 's1', cwd: '/a', project: 'p',"
                 " targ: 'SECRET-TASK', tool: 'Bash', prompt: 'SECRET-PROMPT',"
                 " sub: [{lab: 'impl: [pl:chg/Implement] build the DESCX thing'}]}])));")
         self.assertNotIn("SECRET", h)
-        self.assertNotIn("DESCX", h)                                          # no agent rows: the description never reaches the list
+        self.assertIn("build the DESCX thing", h)                             # rule 1: the one-line Agent description label is allowed
+        self.assertNotIn("[pl:", re.sub(r'title="[^"]*"', "", h))             # the tag itself is stripped from the label
 
     def test_r2_pick_open_run_project_beats_cwd(self):
         r = run(NOW + "SESS = [{state: 'tool', sid: 's1', cwd: '/a', plat: 'cx', plrun: [{name: 'old', end: 5, proj: '/z'}, {name: 'chg', proj: '/p'}]}];"
@@ -193,7 +198,7 @@ class PlNow(unittest.TestCase):
             self.assertIn(".plw .plnl " + a, s)
         self.assertNotIn("data-pntl", s)
         self.assertNotIn("plNowGo(", s)
-        for gone in ("data-pnst", "plNowStage", "plNowPickApply", "nowPick"):
+        for gone in ("plNowStage",):
             self.assertNotIn(gone, s)
 
     def test_r3_start_buttons_first(self):
@@ -212,6 +217,42 @@ class PlNow(unittest.TestCase):
 
 
 
+
+    def test_r9_subagent_tree_reuses_timeline_cell(self):
+        src = ("[{state: 'tool', sid: 's1', cwd: '/a', plat: 'cc', project: 'a', sub: ["
+               "{lab: 'impl: [pl:chg/Implement] build it', aid: 'a1', idle: 5}, {lab: 'Explore: look <x &', aid: 'a2', idle: 600},"
+               " {lab: 'rev: review', aid: 'a3', plat: 'cx'}, {lab: 'b: 1', aid: 'b1'}, {lab: 'b: 2', aid: 'b2'}, {lab: 'b: 3', aid: 'b3'}]}]")
+        h = run(NOW + "console.log(JSON.stringify(plNowList(" + src + ")));")
+        rows = re.findall(r'<button type=button class="plnagr tlnm( quiet)?"([^>]*)><b>(.*?)</b></button>', h)
+        self.assertEqual(len(rows), 6)
+        self.assertNotIn("plnagm", h)
+        many = run(NOW + "console.log(JSON.stringify(plNowAgents({cwd: '/a', sub: Array.from({length: 12}, (_, i) => ({lab: 'b: ' + i}))})));")
+        self.assertEqual(many.count('class="plnagr'), 6)                      # capped at 6
+        self.assertIn("<div class=plnagm>+6 more</div>", many)
+        self.assertEqual(rows[-1][0], " quiet")                               # quiet (idle 600s) sorts last, dimmed
+        first = rows[0][2]
+        self.assertTrue(first.startswith("<i class=tlbr2>├─</i><i class=\"ailg ailg-cc\"></i><em class=tlagd"))   # timeline connector + logo
+        self.assertIn('<i class="tlds on"></i>', first)                       # running dot
+        self.assertIn('data-pnname="chg" data-pnst="Implement"', rows[0][1])
+        self.assertIn('ailg-cx', rows[1][2])                                  # a Codex child keeps its own logo
+        self.assertNotIn("data-pnname", rows[1][1])                           # untagged: session only
+        self.assertIn("look &lt;x &amp;", h)                                  # escaped
+        self.assertIn('<i class="tlds"></i>', rows[-1][2])                    # quiet: no running dot
+        c = run(NOW + "LS['sidereus.plnowc'] = '1'; console.log(JSON.stringify(plNowList(" + src + ")));")
+        self.assertNotIn("plnagr", c)                                         # hidden in the collapsed rail
+
+    def test_r9_agent_click_selects_stage_no_view_move(self):
+        s = _src("48j-pipeline-now.js")
+        self.assertIn("if(t.dataset.pnname){ PLS.sel = t.dataset.pnname; PLS.nowPick = { name: t.dataset.pnname, title: t.dataset.pnst }; plPaint(); }", s)
+        r = run(NOW + "const E = {G: {nodes: [{id: 'n1', title: 'Design'}, {id: 'n2', title: 'Implement'}]}, sel: null, first: true, view: {x: 1, y: 2, z: 1}};"
+                "let CUR = {name: 'chg'}; function plCur(){ return CUR; } function plEnt(){ return E; }"
+                "PLS.proj = '/p'; PLS.nowPick = {name: 'chg', title: 'Implement'}; plNowPickApply(); const a = PLS.nowPick;"
+                "PLS.data['/p'] = {ok: true}; plNowPickApply(); console.log(JSON.stringify([a, E.sel, E.first, E.view, FIT, PLS.nowPick]));")
+        self.assertEqual(r[0], {"name": "chg", "title": "Implement"})       # project still loading: pick kept
+        self.assertEqual(r[1:], [{"k": "n", "id": "n2"}, False, {"x": 1, "y": 2, "z": 1}, 0, None])
+        for bad in ("plFit", "plCentre", "scrollIntoView", "E.view ="):
+            self.assertNotIn(bad, js_fn("plNowPickApply"))
+        self.assertIn("plNowPickApply(), plNowShown()", js_fn("paintPipe"))
 
 if __name__ == "__main__":
     unittest.main()

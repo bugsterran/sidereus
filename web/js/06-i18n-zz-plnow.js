@@ -5,6 +5,7 @@ Object.assign(I18N.ko, {
   'Needs you': '응답 필요',
   'Editing': '편집 중',
   'Close this draft without saving': '저장하지 않고 이 초안 닫기',
+  'Discard unsaved changes and go back to watching runs': '저장 안 한 변경을 버리고 실행 보기로 돌아가기',
   'No runs running': '실행 중인 파이프라인 없음',
   'Draft — not saved yet': '초안 — 아직 저장 안 됨',
   'Collapse list': '목록 접기',

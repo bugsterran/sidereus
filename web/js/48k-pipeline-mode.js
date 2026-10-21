@@ -16,11 +16,28 @@ function plModeBtn(){
   const p = plCur();
   if(!p || !p.ok || !p.sha || p.std || p.suggest || PLS.wf || (typeof PLAG !== 'undefined' && PLAG)) return '';
   if(p.from) return '<button class="wkrgb plmode" data-plmode=edit disabled title="' + esc(T('Read-only — edit it in its own project')) + '">' + esc(T('Edit')) + '</button>';
-  // Sits right before «Run» in the action group (48 plBody/plWatchBody); Edit shows «Done» in the same spot.
-  if(PLMODE !== 'watch') return '<button class="wkrgb plmode on" data-plmode=watch aria-pressed=true title="' + esc(T('Back to watching runs')) + '">' + esc(T('Done')) + '</button>';
+  // Sits right before «Run» in the action group (48 plBody/plWatchBody); clean Edit shows «Close» there, dirty Edit shows «Cancel» by «Save» (plCancelBtn).
+  if(PLMODE !== 'watch') return plDirty(p.name) ? '' : '<button class="wkrgb plmode on" data-plmode=watch aria-pressed=true title="' + esc(T('Back to watching runs')) + '">' + esc(T('Close')) + '</button>';
   return '<button class="wkrgb plmode" data-plmode=edit aria-pressed=false title="' + esc(T('Edit stages, agents and gates')) + '"><span aria-hidden=true>✎</span> ' + esc(T('Edit')) + '</button>';
 }
-// Edit mode band above the head row: says which file is being edited («Done» is in the action group).
+// Dirty Edit: «Cancel» drops the unsaved edits (no server write) and returns to Watch; «Save» keeps its preview + confirm.
+function plCancelBtn(p){
+  return PLMODE === 'edit' && p && !p.from && plDirty(p.name) ? '<button class="wkrgb plmode" data-plcancel title="' + esc(T('Discard unsaved changes and go back to watching runs')) + '">' + esc(T('Cancel')) + '</button>' : '';
+}
+function plCancelEdit(){ plResetEnt(plCur()); PLS.msg = ''; plModeSet('watch'); }
+// Esc in a clean Edit = «Close»; ⚠with unsaved changes Esc does nothing, so a key never discards work.
+function plEditEsc(e){
+  if(e.key !== 'Escape' || e.defaultPrevented || mainView !== 'pipe' || PLMODE !== 'edit') return false;
+  const t = e.target;
+  if(t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName || '')) return false;
+  if(PLESC_MENU || plMenuOpen() || PLNEW || PLDRAFT || PLS.std || PLS.diff || PLS.del) return false;
+  if(plEscOwned()) return false;
+  const p = plCur();
+  if(!plModeBtn() || plDirty(p.name)) return false;   // no «Close» on screen: draft, borrowed, agent/workflow view
+  plModeSet('watch');
+  return true;
+}
+// Edit mode band above the head row: says which file is being edited («Close»/«Cancel» are in the action group).
 function plModeBand(){
   const p = plCur();
   if(PLMODE !== 'edit' || !p || !p.ok || !p.sha || p.std || p.suggest || p.from || PLS.wf || (typeof PLAG !== 'undefined' && PLAG)) return '';
@@ -112,8 +129,10 @@ document.addEventListener('dblclick', e => {
   if(typeof plFitSoon === 'function') plFitSoon();
 });
 document.addEventListener('click', e => {
-  const t = e.target.closest && e.target.closest('.plw [data-plmode],.plw .plwp [data-plwsid]');
+  const t = e.target.closest && e.target.closest('.plw [data-plmode],.plw [data-plcancel],.plw .plwp [data-plwsid]');
   if(!t || t.disabled) return;
+  if(t.hasAttribute('data-plcancel')) return plCancelEdit();
   if(t.hasAttribute('data-plmode')) return plModeSet(t.dataset.plmode);
   plOpenWork(t.dataset.plwsid, t.dataset.plwtid);   // work popup: the click-only exception (sidereus/work.py)
 });
+document.addEventListener('keydown', plEditEsc);
