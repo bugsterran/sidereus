@@ -2,8 +2,8 @@
   "v": 1,
   "name": "release",
   "title": "릴리스 — 버전 자르기",
-  "use": "Cutting a version: audit, full gate, CHANGELOG section, release notes, owner confirm, local tag.",
-  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER restart the live viewer. NEVER push (no commits, no tags). NEVER create a tag before the owner confirms in 확인.\nNo runtime switch or new dependency: propose it in summary only.\nScreenshots only from a --demo viewer (never the live viewer: rule 1, metadata only).",
+  "use": "Cutting a version: audit, full gate, CI green on every OS, CHANGELOG, notes, confirm, tag, publish.",
+  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER restart the live viewer. Agents NEVER push; only the orchestrator pushes, and only in «CI 확인» (dev) and «배포» (main + tag, after the owner confirms). NEVER create a tag before the owner confirms in 확인.\nNo runtime switch or new dependency: propose it in summary only.\nScreenshots only from a --demo viewer (never the live viewer: rule 1, metadata only).",
   "defaults": { "model": "inherit", "retry": 0 },
   "stages": [
     {
@@ -22,28 +22,40 @@
       "ui": { "x": 292, "y": 24 }
     },
     {
+      "title": "CI 확인",
+      "agent": "main",
+      "task": "The orchestrator pushes dev (the owner approved pushing for this release), then waits for the CI run of that exact commit (`gh run list --branch dev --limit 1`, `gh run watch <id> --exit-status`). Pass only when the run and every job conclude success; read step conclusions too (a Windows job has hidden a failed step before). On failure: list each failing job, step and test with its error line (`gh run view <id> --log-failed`), say how long the branch has been red (`gh run list --branch main --limit 5`), and stop; fix through sidereus-bugfix, then rerun this stage. ⚠A local check --full on one OS is not a substitute: Windows and other Python versions only run in CI.",
+      "ui": { "x": 540, "y": 24, "color": "#ff9f1c" }
+    },
+    {
       "title": "CHANGELOG 정리",
       "agent": "general-purpose",
       "task": "Backfill CHANGELOG.md [Unreleased] from `git log` since the last tag (or the last versioned section): one line per user-visible feature or fix under Added/Changed/Fixed; skip refactors, tests and docs-only commits. Rename [Unreleased] to [x.y.z] - YYYY-MM-DD and add a new empty [Unreleased] above it. Edit CHANGELOG.md only; do not commit.",
-      "ui": { "x": 540, "y": 24 }
+      "ui": { "x": 788, "y": 24 }
     },
     {
       "title": "릴리스 노트",
       "agent": "general-purpose",
       "task": "Write the release notes from the new [x.y.z] section: 3-5 highlights, then the section as is. Screenshots only from a --demo viewer. List the open issues of GitHub milestone x.y.z (`gh issue list --milestone x.y.z --state open`) and end the notes with one line that repeats the keyword per issue, `Closes #N, closes #M, ...` (GitHub closes only the issue right after each keyword). Put the notes in the session scratchpad and report the path; do not commit.",
-      "ui": { "x": 788, "y": 24 }
+      "ui": { "x": 1036, "y": 24 }
     },
     {
       "title": "확인",
       "agent": "main",
       "task": "Stop. The orchestrator shows the owner the version, the CHANGELOG diff and the notes path, and waits for an explicit confirm. ⚠No tag and no push before the owner says so.",
-      "ui": { "x": 1036, "y": 24, "color": "#ff0000" }
+      "ui": { "x": 1284, "y": 24, "color": "#ff0000" }
     },
     {
       "title": "태그",
       "agent": "general-purpose",
-      "task": "Only after the owner confirmed in 확인: commit CHANGELOG.md alone (the commit body ends with the `Closes #N, closes #M, ...` line from the notes, so the issues close when main receives it), then create an annotated tag vX.Y.Z on that commit (git tag -a). ⚠Never push commits or tags. Then close GitHub milestone x.y.z and open the next one (next minor, due about one week later) with `gh api repos/<owner>/<repo>/milestones -f title=<next> -f due_on=<YYYY-MM-DD>T23:59:59Z`; the README links to the Milestones page, never to a date. Report the commit hash and the tag.",
-      "ui": { "x": 1284, "y": 24, "color": "#2ec4b6" }
+      "task": "Only after the owner confirmed in 확인: commit CHANGELOG.md alone (the commit body ends with the `Closes #N, closes #M, ...` line from the notes, so the issues close when main receives it), then create an annotated tag vX.Y.Z on that commit (git tag -a). ⚠Never push commits or tags here. ⚠If any commit lands after the tag (a CI fix), delete and recreate the local tag on the new HEAD before «배포»; a pushed tag is never moved. Then close GitHub milestone x.y.z and open the next one (next minor, due about one week later) with `gh api repos/<owner>/<repo>/milestones -f title=<next> -f due_on=<YYYY-MM-DD>T23:59:59Z`; the README links to the Milestones page, never to a date. Report the commit hash and the tag.",
+      "ui": { "x": 1532, "y": 24, "color": "#2ec4b6" }
+    },
+    {
+      "title": "배포",
+      "agent": "main",
+      "task": "Only after the owner says to publish: the orchestrator fast-forwards main to dev (`git checkout main && git merge --ff-only dev`, back to dev after), pushes dev, main and the tag vX.Y.Z. Then wait for the main CI run of that commit and require it green as in «CI 확인», and check the GitHub release for vX.Y.Z exists (`gh release view vX.Y.Z`; create it from the notes with `gh release create vX.Y.Z -F <notes>` if the workflow did not). ⚠Never force-push; if main cannot fast-forward, stop and ask. Report the main hash, the CI run and the release URL.",
+      "ui": { "x": 1780, "y": 24, "color": "#2ec4b6" }
     }
   ]
 }
