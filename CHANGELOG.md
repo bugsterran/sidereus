@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-22
+
 ### Added
 
 - Pipelines: clickable marks are at least 24px; session state is named in words (title and accessible name), not only by its dot; «↺n», «Unverified» and the stage commit explain themselves on hover; the canvas refits on first open when live run data widens the cards, so it no longer opens clipped at 900/1100.
@@ -18,11 +20,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - First screen: the viewer opens on Pipelines and the rail lists Pipelines before Timeline; Timeline becomes the evidence view behind a verdict. A saved tab or tab order still wins. The Pipelines tab has a collapsible, resizable «Working now» list on the left (each live session's Timeline name cell plus a one-line run summary; click a session to open its run on the right; collapsed it is a rail of status dots). The tab is split into «Watch» (list, select-only canvas, the running or last finished stage's result and gate evidence) and «Edit» (palette, editable canvas, stage editor under an «Editing <name>» band; «Apply», gate counts and evaluation live here) behind «✎ Edit»; «Edit» shows «Close» while nothing changed and «Cancel» beside «Save» once something did (Cancel writes nothing); drafts show a «Draft — not saved yet» band with «✓ Save this draft» and «Cancel» (Esc does the same); the mode is remembered, unsaved edits survive the switch, a new pipeline opens in «Edit» and a borrowed one stays in «Watch». A project with no pipelines leads with «Start from a template» and «Ask AI for a draft».
+- Pipelines: each «Working now» card lists its live subagents as a tree (Timeline agent cell, running first, at most 6 then «+N more»); clicking one selects the session's run and that agent's stage.
+- Pipelines: «Watch» fills the window — canvas, result pane and an always-present «Running N» card, split by drag grips (default shares 0.75 / 0.14 / 0.11, saved; double-click resets); the per-stage run table is gone since the canvas and result pane carry that state. «Project»/«Pipeline» pickers and canvas toolbar buttons read as controls (28px, border, focus ring).
+- Timeline: light-theme bars, histogram and stage bands are desaturated so they sit calmer; neutral name-cell chips use stronger text with a ring.
 - Structure: a framework name joined with « + » or «, » (e.g. a BE and an FE stack) shows as one badge per part, so each wraps instead of being clipped; the full name stays in the tooltip.
 - Chat: the «Participants» panel shows each participant's platform logo when the id matches a live session.
 
 ### Fixed
 
+- Pipelines: the Watch resize grips have their own 24px row, so a press on the canvas edge (or a «Pass» button there) no longer starts a resize; the collapsed «Working now» rail scrolls instead of clipping dots and pushing the page.
+- Pipelines: the «pipeline file not found» note for a run whose pipeline file is missing shows in a project with no pipelines too.
+- Sessions: the pipeline chip keeps the stage name visible (only the run name ellipsizes) and the space before it.
+- Structure: framework names up to 80 characters are kept, so a BE + FE value no longer cuts the FE badge.
 - Pipelines: canvas stages and edges are reachable with Tab and selected with Enter/Space; the Watch and split grips move with the arrow keys and carry labels and values for screen readers.
 - Pipelines: the run summary in «Working now» widens with the list instead of stopping at 16 characters.
 - Pipelines: the «Running N» card lists failed or blocked runs first and always shows at least two rows; a failed run was cut off below the first row.
@@ -40,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Attention: «... done N unread» no longer waits for «Seen» once the session has carried on past the completion (more than 60 s of later activity in the same session), like failure cards.
 - Pipelines: a Codex (or other non-Claude CLI) stage no longer stays «running» for 45 minutes after its turn ends without an end marker; it closes like a Claude stage when main stops.
 - Work popup: sending to a Codex session no longer asks «cannot receive right now — send anyway?»; the recipient line says it is delivered when the session's next turn ends.
-- Structure: the architecture header no longer wraps into many lines at narrow widths — the «older than the code» notice moved onto the «Generated» badge (⚠ + tooltip) and the framework badge is capped with its full name in the tooltip.
+- Structure: the architecture header no longer wraps into many lines at narrow widths — the «older than the code» notice moved onto the «Generated» badge (⚠ + tooltip) and the framework badge is capped with its full name in the tooltip; when it does wrap, badges spread evenly across the lines.
 
 ## [0.5.0] - 2026-10-20
 
@@ -376,7 +385,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/bugsterran/sidereus/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bugsterran/sidereus/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/bugsterran/sidereus/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/bugsterran/sidereus/compare/v0.2.1...v0.3.0
