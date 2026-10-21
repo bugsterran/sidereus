@@ -97,6 +97,8 @@ class FakeDaemon(object):
         return [m for m, _ in self.calls if m != "noise"]
 
 
+# The app-server daemon socket (/tmp/codex-daemon-<uid>, AF_UNIX) exists only on macOS/Linux.
+@unittest.skipIf(sys.platform == "win32" or not hasattr(socket, "AF_UNIX"), "codex_wake uses a POSIX unix socket")
 class CodexWake(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()

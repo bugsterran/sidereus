@@ -57,7 +57,8 @@ class MailReactProbeTest(unittest.TestCase):
         self.assertEqual(set(rs[0]), {"id", "t", "from", "idSrc", "to", "room", "subject", "thread", "body"})
         self.assertEqual((rs[0]["to"], rs[0]["room"], rs[0]["subject"]), ("tgt-codex", None, "[probe] n0nce12345"))
         self.assertIn("PONG n0nce12345", rs[0]["body"])
-        self.assertEqual(os.stat(self.bus).st_mode & 0o777, 0o600)
+        if os.name != "nt":   # ⚠Windows st_mode only reflects the read-only bit (0o666/0o444)
+            self.assertEqual(os.stat(self.bus).st_mode & 0o777, 0o600)
 
     def test_probe_alone_is_not_a_reply_or_read(self):
         P.send(self.d, self.probe)

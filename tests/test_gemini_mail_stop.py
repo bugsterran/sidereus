@@ -433,6 +433,9 @@ class CodexMailWait(unittest.TestCase):
     def test_wake_spawns_detached_waiter_once(self):
         out, spawned = self.wake_main()
         self.assertEqual(out, "")
+        if os.name == "nt":   # spawn_wake refuses on Windows: codex_wake needs an AF_UNIX app-server socket
+            self.assertEqual(spawned, [])
+            return
         self.assertEqual(len(spawned), 1)
         argv, kw = spawned[0]
         self.assertEqual(argv[1:], [gms.WAKER, "c1", self.cwd, self.tp, self.me])
