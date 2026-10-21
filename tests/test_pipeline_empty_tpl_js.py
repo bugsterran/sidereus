@@ -15,7 +15,7 @@ const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 const T = s => s;
 let SESS = [], PLAG = false, ARCH_PL = 'arch-map', PLNEW = null, PLDRAFT = null, PLSTD = false, POSTS = [], PAINT = 0;
 function plLiveProjs(){ return {}; } function plMem(){ return {}; } function plKnown(){ return null; }
-function plPickHtml(){ return ''; } function plNewBtn(){ return '<NEWBTN/>'; } function plNewForm(){ return ''; }
+function plPickHtml(){ return ''; } function plNewBtn(p){ return p ? '<NEWBTN pri/>' : '<NEWBTN/>'; } function plNewForm(){ return ''; }
 function wfBtns(){ return ''; } function plBorrowChips(){ return ''; } function plBorrowOf(){ return null; }
 function plSugBody(){ return '<SUG/>'; } function plDelPrev(){ return ''; } function plCur(){ return {ok: false, errs: []}; }
 function plPaint(){ PAINT++; } function plRefocus(){}
@@ -40,7 +40,7 @@ def _tpls():
     return s[s.index("const PL_TPLS"):s.index("];", s.index("const PL_TPLS")) + 2]
 
 
-FNS = "\n".join(js_fn(n) for n in ("plNewDis", "plTplPick", "plHeadRow", "plBody")) + "\n"
+FNS = "\n".join(js_fn(n) for n in ("plNewDis", "plStartBtns", "plTplPick", "plHeadRow", "plBody")) + "\n"
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
@@ -57,7 +57,7 @@ class PipelineEmptyTpl(unittest.TestCase):
         self.assertIn("Start from a template", a)
         self.assertNotIn("plempty", a)
         self.assertNotIn("has no pipelines", a)
-        self.assertIn("<NEWBTN/>", a)                                      # «+ New» head row kept
+        self.assertIn("<NEWBTN/>", a)                                      # «+ New» head row kept, not primary (two start buttons are)
         self.assertEqual(b.count("disabled"), len(keys))                   # a form is open: buttons disabled
         self.assertEqual(c, "<SUG/>")                                      # suggestions keep plSugBody
         self.assertNotIn("data-pltpl", d)                                  # a project with pipelines
@@ -71,13 +71,13 @@ class PipelineEmptyTpl(unittest.TestCase):
         dn = lambda h: re.search(r"<button[^>]*data-pldnew[^>]*>", h).group(0)
         sd = lambda h: re.search(r"<button[^>]*data-plstd[^>]*>", h).group(0)
         self.assertIn("Ask AI for a draft", a)
-        self.assertIn("Standard templates", a)
+        self.assertIn("data-plstd>Start from a template<", a)                       # R3: the standard list opens from the primary start
         self.assertNotIn("disabled", dn(a) + sd(a))
         self.assertNotIn("disabled", dn(b))                                # plNewDis(PLDRAFT): a «+ New» form leaves it on
         self.assertIn("disabled", dn(c))                                   # a draft form is open
         self.assertNotIn("disabled", sd(c))                                # standard list is never disabled
         self.assertNotIn(" on", sd(a))
-        self.assertIn('class="wkrgb on"', sd(d))                           # PLSTD open: .on like the menu item
+        self.assertIn('class="wkrgb plsv on"', sd(d))                           # PLSTD open: .on like the menu item
 
     def test_cross_review_template_listed(self):
         r = run(_tpls() + "\nconsole.log(JSON.stringify(PL_TPLS.map(x => x[0])));")

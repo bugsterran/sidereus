@@ -17,7 +17,7 @@ Sidereus sits beside the terminals and gives one screen to verify, judge and dir
 - **the result** — did the gate pass, did a failing test turn green, did the pass hold, and can the gate catch a real defect at all;
 - **the process** — did the run follow the declared stages, with the chosen agent and model, and what is each session doing now.
 
-Three connected views carry both: pipelines (the order is declared once, sessions follow it, and each stage shows its progress and the gate evidence behind its verdict), the timeline (what each agent actually did, with the stages overlaid), and structure analysis (an AI-drawn architecture map checked against the code at a commit).
+Two core views carry both: pipelines (the order is declared once, sessions follow it, and each stage shows its progress and the gate evidence behind its verdict) and structure analysis (an AI-drawn architecture map checked against the code at a commit). The timeline is the evidence view behind them: what each agent actually did, with the stages overlaid.
 
 When an agent needs the developer — an answer, a permission, an approval — it rises to the top and stays there until
 they act or its session is known to have ended. They act from the same screen, and what they send is kept. Their conversations never leave the machine:

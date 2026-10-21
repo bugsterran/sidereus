@@ -4,6 +4,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## UI kit, CSS, layout, header, i18n
 
+- ⚠**Default tab is Pipelines, fallback stays Timeline.** Nothing saved / invalid opens `pipe` (05-i18n.js `mainView`), but `pipe` is feature-gated, so `time` remains the unhideable lock (`mpTabs`), the `setMainView`/`buildMv` fallback and the boot choice when `mbTabsOff` lists `pipe`. ⚠Do not make `pipe` the fallback or the lock — a feature-off pipe would open a 404 tab.
 - ⚠**`.open` in 60-sessions.css was an unscoped pill rule** (2026-10-13, fixed). It matched any element with an `open` class: `#rail.open` got its border (1px shift) and `#alarm.open` painted alarm text gold. ⇒ Scoped to `span.open` (the «Awaiting reply» pill, 10-feed.js); the 93b-rail.css reset is gone. ⚠Never style a bare state class (`.open`, `.on`) globally — prefix it with its element/component.
 - **Font sizes are rewritten in place once, last** (`fsApply`, 00-core.js). Every px `font-size` becomes `calc(max(12, ladder)px * var(--fs,1))`; px `line-height` below the new size becomes `max(Npx, 1.2em)`.
   - ⇒ call it only after `#nxcss`/`#nxlt` are appended; size math goes through `fsSize`.

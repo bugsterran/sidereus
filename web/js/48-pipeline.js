@@ -251,7 +251,7 @@ function plBody(ov, hd){
   const bp = plBorrowOf(d, PLS.sel);
   if(bp) return plBorrowBody(d, bp, plHeadRow(hd, names(null) + plNewBtn(!ps.length) + wfb) + plNewForm(), ov);
   if(!ps.length && (d.suggest || []).length) return plSugBody(d, agc + plBorrowChips(d), hd);
-  if(!ps.length) return plTplPick() + plHeadRow(hd, names(null) + plNewBtn(1) + wfb) + plNewForm() + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
+  if(!ps.length) return plTplPick() + plHeadRow(hd, names(null) + plNewBtn() + wfb) + plNewForm() + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
   const p = plCur();
   const list = plHeadRow(hd, names(p) + plNewBtn() + wfb) + plNewForm();
   // ⚠a schema-breaking file has no editor, so «Force delete» is its only way out (same /delete guards: preview + confirm, moved to backup)
@@ -335,7 +335,7 @@ function paintPipe(box, fromPoll){
   const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Harness')) + '</b>' : '') + '<span class=plcap>'
     + esc(hv ? T('Hooks · rules · agents · MCP · skills') : T('Agent and model per stage')) + '</span></div>';
   const body = PLS.off ? '<div class=hidnote>' + esc(T('The pipeline feature is off')) + '</div>'
-    : (hv ? plChips() + hnHtml() : plMainBody());
+    : (hv ? plChips() + hnHtml() : plNowHtml() + plMainBody());   // 48j «Working now» strip, fixed height
   const h = '<div class="brep plw">' + head + body + '</div>';
   if(box._plw === h && box.querySelector('.plw')) return;   // ⚠poll repaints would close an open <select>
   const fe = document.activeElement;   // ⚠a live run changes h every poll: never rebuild under an open select / the caret
