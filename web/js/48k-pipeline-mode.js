@@ -69,7 +69,7 @@ function plWatchPane(E, d, lv, lt){
 // Watch is three stacked regions: canvas | result pane | «Running N» card, split by two drag grips (p, r).
 // Sizes are kept as shares of the free height (sidereus.plwv = [canvas, pane, card]) so a window resize keeps the proportions.
 // ⚠Mins canvas 260 · pane 80 · card 84 (header + 2 rows; 48 clipped the 2nd row); the whole stack ends at the feed bottom (plGwFit passes h) and never scrolls the page.
-const PLW_MIN = [260, 80, 84], PLW_GRIP = 8, PLW_DEF = [0.75, 0.14, 0.11];   // default shares of the free height; a longer pane/card scrolls inside
+const PLW_MIN = [260, 80, 84], PLW_GRIP = 24, PLW_DEF = [0.75, 0.14, 0.11];   // default shares of the free height; a longer pane/card scrolls inside
 let PLWDRAG = null;
 const PLW_STEP = 24;   // keyboard step, same as the session drawer grips (41 SESDR_STEP)
 // aria-valuenow = the boundary position as a percent of the stack (p: under the canvas, r: under the pane); plWApply keeps it live.
