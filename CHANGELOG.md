@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: canvas stages and edges are reachable with Tab and selected with Enter/Space; the Watch and split grips move with the arrow keys and carry labels and values for screen readers.
+- Pipelines: the run summary in «Working now» widens with the list instead of stopping at 16 characters.
 - Pipelines: the «Running N» card lists failed or blocked runs first and always shows at least two rows; a failed run was cut off below the first row.
 - Pipelines: «Working now» subagent rows show the task description instead of only the agent type (the type moves to the tooltip).
 - Pipelines: switching project (picker, «Working now», overview, workflow row, «+ Add project») closes an open «Ask AI for a draft» form and «Standard templates» panel instead of leaving them above the new project's canvas.

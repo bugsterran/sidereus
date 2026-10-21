@@ -412,7 +412,7 @@ class LoopBack(unittest.TestCase):
     STUB = ("globalThis.T = s => s; globalThis.KE = (k, e) => LANG === 'en' ? e : k; globalThis.esc = s => String(s).replace(/</g, '&lt;');"
             " globalThis.ago = s => s + 's'; globalThis.plLabTip = s => s; globalThis.plgFam = () => 'cust'; globalThis.plgHue = () => ''; globalThis.plgPfc = () => '';"
             " globalThis.PL_JUDGED = []; globalThis.PL_LOW = [];")
-    CANVAS = ("plEdgesSvg", "plPulseOn", "plVG", "plgNode", "plgW", "plgH", "plgFlowPath", "plgLoopLanes", "plgLoopPath", "plFlagChips", "plNodeHtml", "plEvRows", "plEvLine", "plPassSel", "plPass", "plAgLabs", "plAgLab")
+    CANVAS = ("plEdgesSvg", "plHitA", "plPulseOn", "plVG", "plgNode", "plgW", "plgH", "plgFlowPath", "plgLoopLanes", "plgLoopPath", "plFlagChips", "plNodeHtml", "plEvRows", "plEvLine", "plPassSel", "plPass", "plAgLabs", "plAgLab")
 
     def _cv(self, body, extra=()):
         geo = re.search(r"^const PLG_W = [^\n]*$", js_all(), re.M).group(0).replace("const ", "", 1)   # sloppy-mode globals: the extracted functions live outside this IIFE
@@ -486,6 +486,14 @@ class LoopBack(unittest.TestCase):
                      " E.G.loops[1].then = '재검증 아주 긴 이름'; return plEdgesSvg(E);")
         xs = [float(x) for x in re.findall(r'<rect x="(-?[\d.]+)"', h)]
         self.assertTrue(xs and min(xs) >= 4, xs)
+
+    def test_loop_pill_is_not_a_tab_stop(self):
+        # ⚠98-a11y marked g.pllt (cursor:pointer) as a nameless duplicate of the loop hit path; own tabindex=-1 makes it skip it
+        h = self._cv("return plEdgesSvg(E);")
+        pills = re.findall(r'<g class="pllt[^"]*"[^>]*>', h)
+        self.assertTrue(pills and all("tabindex=-1" in p and "aria-hidden=true" in p and 'data-pledge="l:' in p for p in pills), pills)
+        hits = re.findall(r'<path class=plhit[^>]*data-pledge="l:[^>]*>', h)
+        self.assertTrue(hits and all("tabindex=0" in p and "aria-label=" in p for p in hits), hits)
 
     def test_no_pulse_once_done(self):
         for st in ("done", "back", "fail", "wait"):

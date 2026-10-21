@@ -6,4 +6,7 @@ Object.assign(I18N.ko, {
   'Click a stage to see its result': '단계를 누르면 결과를 봅니다',
   'No gate evidence for this stage yet': '이 단계의 게이트 증거가 아직 없습니다',
   'Unsaved changes — Edit to save': '저장 안 된 변경 — 편집에서 저장하세요',
+  'Resize canvas and result pane': '캔버스와 결과 창 크기 조절',
+  'Resize result pane and Running card': '결과 창과 실행 중 카드 크기 조절',
+  'Resize panes': '창 크기 조절',
 });

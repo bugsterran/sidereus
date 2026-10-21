@@ -204,6 +204,7 @@ table.srft tr.srfc .srfn{display:inline-block}
 .strspg::after{content:"";position:absolute;left:3px;top:0;bottom:0;width:2px;border-radius:1px;background:transparent}
 /* ⚠html[data-ui] lifts this over the 00-core next-UI twin «html[data-ui=next] .strspg::after» (0,2,2) */
 html[data-ui] .strspg:hover::after,html[data-ui] .strspg.on::after{background:var(--nx-t3,#8b95a7)}
+html[data-ui] .strspg:focus-visible::after{background:var(--nx-info,#5899f3)}.strspg:focus{outline:none}   /* keyboard focus = lit bar */
 .srmdp{padding:2px 12px 10px;margin:0;color:#c8d0dc;line-height:1.55}
 .srmdp .mdln{display:block;height:0}
 .srmdp h1,.srmdp h2,.srmdp h3,.srmdp h4,.srmdp h5,.srmdp h6{color:#a8c6f0;margin:12px 0 5px}
