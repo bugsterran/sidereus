@@ -156,7 +156,7 @@ The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`
 ### Watch and Edit
 - The tab opens in «Watch»: the «Working now» list, the canvas (click a stage to select it), and below it that stage's result and gate evidence. With nothing selected the pane shows the running stage, else the last finished one; with no run it is empty.
 - The head row in «Watch» holds the pickers, the run bar, «✎ Edit» and «▶ Run».
-- «✎ Edit» switches to «Edit»: the palette, the editable canvas and the stage editor (no list), under an «Editing <name>» band. «Apply», gate counts and evaluation live here. «Done» goes back to «Watch». The tab remembers the last mode.
+- «✎ Edit» switches to «Edit»: the palette, the editable canvas and the stage editor (no list), under an «Editing <name>» band. «Apply», gate counts and evaluation live here. With no unsaved changes «Close» (or Esc) goes back to «Watch». With changes, «Cancel» drops them (nothing is written) and goes back, and «Save» (preview + confirm) saves and goes back; Esc does nothing then. The tab remembers the last mode.
 - Unsaved edits stay while you watch: the pipeline keeps its • mark and «Watch» shows «Unsaved changes — Edit to save». A page reload drops them.
 - A new pipeline opens in «Edit». A pipeline borrowed from another project is watch-only.
 - A draft (template, AI draft or «+ New») shows a «Draft — not saved yet» band: «✓ Save this draft» writes it, «← Back» or Esc closes it without writing.
@@ -165,6 +165,7 @@ The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`
 - The list on the left shows every live session the way the Timeline names it (logo, project, state), plus a one-line run summary: «● Working · <stage>», «● Needs you · <stage>» (amber), «✓ <name> done».
 - «● Idle · <stage>» (grey) = the run is still open but the session is not working right now (its turn ended).
 - Click a session to open its pipeline run on the right. Each stage's agent is shown on the canvas.
+- Under each session its subagents are listed as in the Timeline (logo, type, one-line task, running dot): running ones first, quiet ones dimmed, up to 6 then «+N more». Click one to open that run and select its stage (if the agent is tagged with one).
 - Collapse the list to a rail of status dots (click a dot to expand and open it), or drag its edge to resize it; the width is remembered.
 
 ### Pick a project

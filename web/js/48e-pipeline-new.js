@@ -85,17 +85,22 @@ function plEscOwned(){
     || (typeof cpOn !== 'undefined' && cpOn)
     || (typeof railOpen !== 'undefined' && railOpen && typeof railMode === 'function' && railMode(innerWidth, railOpen) === 'overlay');
 }
+// ⚠The menus' own Esc listeners (48b PLRV/PLPSK, 48d PLAPK) run before ours and clear their flag: a capture-phase snapshot keeps one Esc for the menu only.
+let PLESC_MENU = false;
+function plMenuOpen(){ return !!(PLNEWM || PLRV || PLPSK || PLAPK || PLRUN); }   // PLRUN = inline run panel (48b)
+function plEscSnap(e){ if(e.key === 'Escape') PLESC_MENU = plMenuOpen(); }
 // Esc closes the innermost open draft (form first, then the Standard draft); never from a field, never over an open menu (they own Esc).
 function plDraftEsc(e){
   if(e.key !== 'Escape' || e.defaultPrevented || mainView !== 'pipe') return false;
   const t = e.target;
   if(t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName || '')) return false;
-  if(PLNEWM || PLRV || PLPSK || PLAPK) return false;
+  if(PLESC_MENU || plMenuOpen()) return false;
   if(plEscOwned()) return false;
   if(PLNEW) PLNEW = null; else if(PLDRAFT) PLDRAFT = null; else if(PLS.std) PLS.std = ''; else return false;
   plPaint();
   return true;
 }
+document.addEventListener('keydown', plEscSnap, true);   // pure snapshot: never stops the event
 document.addEventListener('keydown', plDraftEsc);
 // Templates + this project's «Suggested» (agent-name guesses from GET suggest[]; the server rebuilds them on create).
 function plTplList(){
