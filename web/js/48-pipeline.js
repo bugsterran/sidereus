@@ -281,7 +281,7 @@ function plBody(ov, hd){
     + esc(p.name) + '.json</i></div><pre>' + diffHtml(PLS.diff.text, agLang('x.json')) + '</pre>' + plRenameWarn(p, lv) + '<div class=plbar>'
     + '<button class="wkrgb" data-plok' + (PLS.saving ? ' disabled' : '') + '>' + esc(T('Confirm')) + '</button>'
     + '<button class="wkrgb" data-plno>' + esc(T('Cancel')) + '</button></div></div>' : '';
-  return list + bar + (PLEVAL_OPEN === p.name ? plEvalPanel(ev) : '') + plDelPrev(p) + cv.html + (ov || '') + plRunTable(lv, p) + plRunPanel(p, models)
+  return list + bar + (PLEVAL_OPEN === p.name ? plEvalPanel(ev) : '') + plDelPrev(p) + cv.html + (ov || '') + plRunPanel(p, models)
     + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '') + diff;
 }
 // Run = the primary filled button in both modes; dirty = disabled until saved.
@@ -293,7 +293,7 @@ function plWatchBody(p, d, row, hd, ov, mb){
   const lv = plViewRun(PLS.proj, p.name), lt = lv ? (lv.lt || plLight(p.stages, lv.run)) : null, dirty = plDirty(p.name), cv = plCanvas(p, d, lt);
   const act = '<span class=plact>' + (dirty ? '<span class=plwdirty>' + esc(T('Unsaved changes — Edit to save')) + '</span>' : '') + (mb || '') + plRunBtn(p, dirty) + '</span>';
   const head = plHeadRow(hd, row + '<span class=plwrun>' + plLiveHead(lv, lt) + '</span>' + act);
-  return head + plNewForm() + cv.html + (ov || '') + plRunTable(lv, p) + plRunPanel(p, d.models || [])
+  return head + plNewForm() + cv.html + plWGrip('r') + plWatchOv(ov) + plRunPanel(p, d.models || [])
     + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
 }
 // Delete preview: what moves where (rule 7: moved to the backup folder, never deleted)

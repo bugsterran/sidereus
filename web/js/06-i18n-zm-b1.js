@@ -227,8 +227,6 @@ Object.assign(I18N.ko, {
   '{n} pipelines running': '파이프라인 {n}개 실행 중',
   '{n} pipelines': '파이프라인 {n}개',
   // 48b-pipeline-run.js
-  'By stage · agents {n}': '단계별 실행 · 에이전트 {n}',
-  'total {n} · pass {m}': '처음부터 {n} · {m}회째',
   'Running {n}': '실행 중 {n}',
   'Agents {n}': '에이전트 {n}',
   // 48d-pipeline-canvas.js
@@ -297,8 +295,6 @@ Object.assign(I18N.ko, {
   'Picks the pipeline that fits the request and runs it · skips unneeded stages': '요청에 맞는 파이프라인을 골라 바로 실행합니다 · 필요 없는 단계는 건너뜁니다',
   'Asks which pipeline to use before a request that fits one · not for questions or one-line fixes': '파이프라인에 맞는 요청이면 시작 전에 어느 것을 쓸지 묻습니다 · 질문·한 줄 수정은 묻지 않습니다',
   'Sends no pipeline brief to sessions': '세션에 파이프라인 안내를 보내지 않습니다',
-  // 48b-pipeline-run.js
-  'State': '상태', 'Latest agent': '최근 에이전트',
   // 48c-pipeline-graph.js · 48d-pipeline-canvas.js
   'Understand': '이해', 'Build|group': '만들기', 'Check|group': '확인', 'Ship': '내보내기',
 });

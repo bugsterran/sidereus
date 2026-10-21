@@ -147,7 +147,7 @@ html[data-ui=next][data-ui] .plact .wkrgb[disabled]{opacity:.45;cursor:default}
 .plnd.pl-back{border-color:var(--pl-back)}   /* loop-back (pl_flow «back»): amber, same as the ↺ glyph */
 .plnd.pl-skip{border-style:dashed}   /* skipped by [pl-skip:] (pl_runs st); ⚠no opacity: .6 put title/pill/↷ at 2.7–4.2:1 */
 .plls{font-size:11px;color:#9aa6b8}
-.plrt{margin:8px 0;font-size:12px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:6px;padding:6px 8px}   /* stage overview under the canvas (48b plRunTable) + 48g agent table: fixed layout, cells ellipsize */
+.plrt{margin:8px 0;font-size:12px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:6px;padding:6px 8px}   /* 48g agent table: fixed layout, cells ellipsize */
 /* Poor contrast in the light theme ⇒ tokens only, both themes. Light contrast: t1 12.8 · t2 7.0 on header, pills 5.4 (active) · 5.5 (ok) · 5.2 (prev) */
 .plrth{display:flex;gap:10px;align-items:center;margin-bottom:6px;color:var(--nx-t1,#cdcedc)}
 .plrtb{width:100%;table-layout:fixed;border-collapse:collapse}
@@ -162,7 +162,7 @@ html[data-ui=next][data-ui] .plact .wkrgb[disabled]{opacity:.45;cursor:default}
 .plrtb td.plrt-run .plrtpl{color:color-mix(in srgb,var(--nx-active,#5b8def) 75%,var(--nx-t1,#cdcedc));background:color-mix(in srgb,var(--nx-active,#5b8def) 14%,transparent)}
 .plrtb td.plrt-done .plrtpl{color:color-mix(in srgb,var(--nx-ok,#71c269) 75%,var(--nx-t1,#cdcedc));background:color-mix(in srgb,var(--nx-ok,#71c269) 14%,transparent)}
 .plrtb td.plrt-back .plrtpl{color:color-mix(in srgb,var(--pl-back) 75%,var(--nx-t1,#cdcedc));background:color-mix(in srgb,var(--pl-back) 14%,transparent)}
-.plrtb tr.plso-w td,.plrtb td.plrt-skip,.plrtb td.plrt-hold{color:var(--nx-t3,#84868c)}.plrtb tbody tr.plso-w{cursor:default}
+.plrtb td.plrt-skip,.plrtb td.plrt-hold{color:var(--nx-t3,#84868c)}
 .plrtdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--nx-active,#5b8def);margin-right:5px;vertical-align:1px;animation:tldot 1.4s ease-in-out infinite;animation-delay:var(--plt,0s)}
 @media (prefers-reduced-motion:reduce){.plrtdot{animation:none}}
 .plrunst{font-size:12px;color:#9aa6b8;margin:0 0 6px}
@@ -201,14 +201,22 @@ html[data-ui=next] .plw .pltop>.plwrun>.plrunst>span{line-height:16px;white-spac
 .plmband{display:flex;align-items:center;gap:6px;margin:0 0 8px;padding:6px 10px;border-radius:4px;background:color-mix(in srgb,var(--nx-info,#5899f3) 14%,transparent);box-shadow:inset 3px 0 0 var(--nx-info,#5899f3);color:var(--nx-t1,#cdcedc);font-size:12.5px}   /* 48k Edit mode band */
 .plmband>b{font-weight:700}
 /* R4 Watch: no resize handle and no reserved 420px pane row; the pane fits its content (min-height keeps polls from jumping it). 48d plGwFit leaves the height auto */
-.plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 0 auto;height:auto}
+.plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 8px var(--plwph,auto);height:auto;margin-bottom:0}
 .plgw.plwt>.plgh{display:none}
 /* Head-row pickers + canvas toolbar read as select controls: neutral t3 border (≥3:1 on bg), raised hover-token fill, t1 text; distinct from [Edit] (info outline) and [Run] (filled) */
 html[data-ui=next][data-ui] .plw :is(.ppcombo,.plcvt .wkrgb){height:28px;padding:0 10px;border:1px solid var(--nx-t3);border-radius:5px;background:var(--nx-hover);color:var(--nx-t1);cursor:pointer}
 html[data-ui=next][data-ui] .plw :is(.ppcombo,.plcvt .wkrgb):hover:not([disabled]){border-color:var(--nx-t2);background:color-mix(in srgb,var(--nx-t1) 8%,var(--nx-hover));color:var(--nx-t1)}
 html[data-ui=next][data-ui] .plw :is(.ppcombo,.plcvt .wkrgb):focus-visible{outline:2px solid var(--nx-info);outline-offset:2px}
 html[data-ui=next] .plw .plcvt .plzv{color:var(--nx-t1)}
-.plgw.plwt>.plwp{min-height:120px;max-height:280px;margin-top:6px}
+.plgw.plwt>.plwp{min-height:0;box-sizing:border-box}.plgw.plwt>.plwgr{grid-area:2/1/3/-1}
+/* 48k Watch drag grips (canvas | pane | Running card): 8px rows with a centred bar, ns-resize; sizes kept as shares (sidereus.plwv) */
+.plwgr{position:relative;height:8px;cursor:ns-resize;touch-action:none}
+.plwgr::after{content:'';position:absolute;left:50%;top:2px;width:44px;height:4px;margin-left:-22px;border-radius:2px;background:var(--nx-t3,#84868c);opacity:.55}
+.plwgr:hover::after,.plwgr.on::after{opacity:1;background:var(--nx-info,#5899f3)}
+.plwov{overflow:auto;min-height:48px;box-sizing:border-box}   /* «Running N» card: fixed height from plWatchFit, rows scroll inside */
+.plwov>.plov{margin:0;min-height:100%;box-sizing:border-box;border:1px solid var(--nx-rule,#252629);border-radius:6px}
+.plwov .hidnote{margin:0}
+.brep.plw:has(.plgw.plwt){padding-bottom:4px}   /* Watch stack ends at the viewport bottom (the panel's 14px bottom padding left a strip) */
 .plgh{cursor:row-resize}.plgh:hover{background:#2b3545}   /* canvas | panes split (48d PL_SPLIT) */
 .plro{display:contents}.plro .plpal,.plro .plpan,.plro .plnt{pointer-events:none;opacity:.55}   /* borrowed pipeline (48h): no editing controls */
 .plpal{min-height:0;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:4px;box-sizing:border-box}

@@ -335,8 +335,8 @@ class Overview(unittest.TestCase):
         self.assertIn('class="plovst plov-done">✓ a', h)
         self.assertEqual(loads, [])                    # no pipeline-list load of the target for a pipeline it does not own
 
-    def test_overview_placed_above_run_table_not_chips(self):
-        # Top placement shifted the chips and canvas on every run start/end: the overview goes after the canvas, before .plrt.
+    def test_overview_placed_under_canvas_not_chips(self):
+        # Top placement shifted the chips and canvas on every run start/end: the overview goes after the canvas (the per-stage table is gone).
         stub = ("globalThis.PLS = {data: {}, proj: '/a'}; globalThis.plChips = () => '<CHIPS/>'; globalThis.plApplySeg = () => '<APPLY/>';"
                 " globalThis.plOverview = () => '<div class=plov>OV</div>';")
         js = "(() => { %s globalThis.plBody = ov => '<CV/>' + (ov || '') + '<div class=plrt></div>'; const a = plMainBody();" \
@@ -347,22 +347,23 @@ class Overview(unittest.TestCase):
         self.assertLess(a.index("<CV/>"), a.index("class=plov>"))
         self.assertLess(a.index("class=plov>"), a.index("class=plrt"))
         self.assertEqual(b, '<div class="pltop"><CHIPS/></div><APPLY/><EMPTY/><div class=plov>OV</div>')   # no canvas: overview at the body end, still under the chips
-        self.assertIn("cv.html + (ov || '') + plRunTable(lv, p)", js_fn("plBody"))
-        self.assertIn("cv.html + (ov || '') + plRunTable(lv, p)", js_fn("plWatchBody"))
-        self.assertIn("cv.html + '</div>' + (ov || '') + plRunTable(lv, p)", js_fn("plBorrowBody"))
+        self.assertIn("cv.html + (ov || '') + plRunPanel(p, models)", js_fn("plBody"))
+        self.assertIn("cv.html + plWGrip('r') + plWatchOv(ov) + plRunPanel(p, d.models || [])", js_fn("plWatchBody"))   # Watch: fixed Running card
+        self.assertIn("cv.html + '</div>' + plWGrip('r') + plWatchOv(ov);", js_fn("plBorrowBody"))
+        self.assertNotIn("plRunTable", js_all())                            # per-stage run table removed (canvas + Watch pane show it)
 
 
 
 class StageOverview(unittest.TestCase):
-    """Under the canvas: one row per stage (48b plStageRows / plRunTable)."""
-    FNS = ("plStageRows", "plRunTable", "plPassTip", "plLabParts", "plgShow", "plgBase") + MODEL
+    """Per-stage rows (48b plStageRows) feeding the Watch result pane."""
+    FNS = ("plStageRows", "plLabParts", "plgShow", "plgBase") + MODEL
     STUB = "globalThis.T = s => s; globalThis.KE = (k, e) => k; globalThis.ago = s => s + 's';"
 
     def _tbl(self, pr):
         oc = (re.search(r"^const PL_OUTCOME = [^\n]*$", js_all(), re.M).group(0).replace("const ", "", 1)
               + " globalThis.plOc = " + js_fn("plOc") + ";")
-        js = "(() => { %s\n%s %s const lv = plPrLv('s<', %s, %s, %d); return [plStageRows(lv.lt, %s), plRunTable(lv, {stages: %s})]; })()" % (
-            oc, ESC, self.STUB, json.dumps(pr), json.dumps(ST4), N * 1000, json.dumps(ST4), json.dumps(ST4))
+        js = "(() => { %s\n%s %s const lv = plPrLv('s<', %s, %s, %d); return [plStageRows(lv.lt, %s), '']; })()" % (
+            oc, ESC, self.STUB, json.dumps(pr), json.dumps(ST4), N * 1000, json.dumps(ST4))
         return _js(js, *self.FNS)
 
     def test_rows(self):
@@ -370,24 +371,11 @@ class StageOverview(unittest.TestCase):
         self.assertEqual([(r["t"], r["st"], r["rb"], r["n"], r["sec"], r["ag"], r["type"]) for r in rows],
                          [("설계", "done", 0, 1, 100, 1, "dz"), ("구현", "run", 1, 2, 500, 2, "impl"), ("검증", "back", 0, 1, 100, 1, "main"),
                           ("리뷰", "wait", 0, 0, 0, 0, "")])
-        self.assertEqual(h.count("<tr data-plst="), 3)                       # wait row: not clickable
-        self.assertIn('<tr data-plst="구현" class=on>', h)
-        self.assertIn("<tr class=plso-w>", h)
-        self.assertIn("<td class=plrt-back><span class=plrtpl>↺ 되돌림</span>", h)
-        self.assertIn("<td>↺ 1</td><td>2</td><td>500s</td>", h)
-        self.assertEqual((h.count("<th>"), h.count("<col")), (6, 7))          # 6 columns (+ colgroup tag)
-        self.assertIn('data-plsid="s&lt;"', h)
 
     def test_elapsed_per_pass(self):
         st = dict(PR["stages"], 구현=dict(PR["stages"]["구현"], p0=N - 100, k=3))
         rows, h = self._tbl(dict(PR, stages=st))
         self.assertEqual((rows[1]["sec"], rows[1]["tot"], rows[1]["k"], rows[0]["sec"]), (100, 500, 3, 100))   # no p0: t0
-        self.assertIn('<td title="처음부터 500s · 3회째">100s</td>', h)
-
-    def test_elapsed_lists_each_pass(self):
-        st = dict(PR["stages"], 구현=dict(PR["stages"]["구현"], p0=N - 100, k=2, ps=[{"a": N - 500, "b": N - 300, "s": "back"}]))
-        _rows, h = self._tbl(dict(PR, stages=st))
-        self.assertIn('<td title="처음부터 500s · 2회째\n1회째 · 되돌림 · 200s\n2회째 · 진행 중 · 100s">100s</td>', h)
 
     def test_bash_only_stage_shows_main(self):
         st = dict(PR["stages"], 리뷰={"o": "done", "n": 0, "t0": N - 100, "t1": N - 50, "from": {}, "ag": [], "main": True})
@@ -399,14 +387,11 @@ class StageOverview(unittest.TestCase):
         pr = dict(PR, stages=dict(PR["stages"], 구현=dict(PR["stages"]["구현"], o="hold", why="ask", ag=[])))
         rows, h = self._tbl(pr)
         self.assertEqual(rows[1]["st"], "hold")
-        self.assertIn('<td class=plrt-hold title="질문 대기"><span class=plrtpl>⏸ 멈춤</span>', h)
+        self.assertTrue(rows[1]["why"])
 
     def test_lab_escaped(self):
         bad = '<img src=x onerror=alert(1)>": [pl:p/설계] x'
         pr = dict(PR, stages={"설계": dict(PR["stages"]["설계"], ag=[_pag("a1111111", False, N - 600, N - 500, bad)])})
-        _rows, h = self._tbl(pr)
-        self.assertNotIn("<img", h)
-        self.assertIn("&lt;img src=x onerror=alert(1)&gt;&quot;", h)
         canvas = LoopBack()._cv("globalThis.esc = %s; return plNodeHtml(E, E.G.nodes[0], false, plPrLt(%s, [{title: '구현'}], 0));"
                                 % (ESC.split("=", 1)[1].strip().rstrip(";"), json.dumps({"stages": {"구현": dict(PR["stages"]["구현"], ag=[_pag("a5", True, 0, 0, bad)])}})),
                                 extra=MODEL + ("plLabTip", "plLabParts", "plLabDesc"))
