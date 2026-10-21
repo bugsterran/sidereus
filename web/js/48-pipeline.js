@@ -39,7 +39,7 @@ async function plLoadProjs(){
   try{ PLS.projs = await getJSON('/api/pipelines'); }
   catch(e){ PLS.projs = { ok: false, msg: String((e && e.message) || e) }; PLS.off = !!(e && e.status === 404); }
   PLS.busy[''] = 0;
-  // Last-picked project if it has pipelines, else the first one that does (★2026-10-01: opened on a project without any).
+  // Last-picked project if it is still listed (even with no pipelines: reopening it is intended), else the first listed one.
   // ⚠A self-only chip (Sidereus clone, no history/session there) is never the default: a fresh clone opened its developer pipelines.
   const has = ((PLS.projs.ok && PLS.projs.projects) || []).filter(x => !x.self_only || x.path === PLS.proj).map(x => x.path);
   if(has.length && !has.includes(PLS.proj) && PLS.pend !== PLS.proj) PLS.proj = has[0];   // a jump made before the list loaded keeps its project
@@ -347,7 +347,7 @@ function plMainBody(){
   const ov = plOverview(), hd = { row: '' }, pb = plBody(ov, hd);   // one head row: project · pipeline · «+ New ▾» (· Workflow chips)
   const wt = typeof plWatchOn === 'function' && plWatchOn();   // 48k Watch: «Apply» is an Edit control
   return (typeof plModeBand === 'function' ? plModeBand() : '') + '<div class="pltop' + (wt ? ' plwtop' : '') + '">' + plChips() + hd.row + (!hd.mb && typeof plModeBtn === 'function' ? plModeBtn() : '') + '</div>'
-    + (wt ? '' : plApplySeg(PLS.data[PLS.proj])) + pb + (ov && pb.indexOf(ov) < 0 ? ov : '');
+    + (wt || !((PLS.data[PLS.proj] || {}).pipelines || []).length ? '' : plApplySeg(PLS.data[PLS.proj])) + pb + (ov && pb.indexOf(ov) < 0 ? ov : '');
 }
 function paintPipe(box, fromPoll){
   if(PLDRAG) return;                   // ⚠a repaint mid-drag would drop the dragged node

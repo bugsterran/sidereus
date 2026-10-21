@@ -346,7 +346,7 @@ class Overview(unittest.TestCase):
 
     def test_overview_placed_under_canvas_not_chips(self):
         # Top placement shifted the chips and canvas on every run start/end: the overview goes after the canvas (the per-stage table is gone).
-        stub = ("globalThis.PLS = {data: {}, proj: '/a'}; globalThis.plChips = () => '<CHIPS/>'; globalThis.plApplySeg = () => '<APPLY/>';"
+        stub = ("globalThis.PLS = {data: {'/a': {pipelines: [{}]}}, proj: '/a'}; globalThis.plChips = () => '<CHIPS/>'; globalThis.plApplySeg = () => '<APPLY/>';"
                 " globalThis.plOverview = () => '<div class=plov>OV</div>';")
         js = "(() => { %s globalThis.plBody = ov => '<CV/>' + (ov || '') + '<div class=plrt></div>'; const a = plMainBody();" \
              " globalThis.plBody = () => '<EMPTY/>'; return [a, plMainBody()]; })()" % stub

@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Pipelines: a project with no pipeline opens on one primary start («Ask AI for a draft»); «Start from a template» is secondary, the quick templates fold behind «Quick templates ▾», and «Apply» appears once the project has a pipeline.
 - Pipelines: clicking a subagent in «Working now» also opens its work log, the same popup as a Timeline agent row.
 - Pipelines: «Cross-review (Codex)» template — one main stage where the session runs a read-only `codex exec` review of `git diff` (billed to the Codex account, one-shot; Sidereus never runs Codex). Copying a template now keeps agent `main` instead of turning it into general-purpose.
 - Pipelines: work outside a pipeline is declared with a Bash described `[pl-none:<category>]` (small-fix · no-fit · explore · other; only the category and time are kept). In a project with pipeline files, the first Edit/Write or git commit with no open run and no declaration is denied once with the project's pipeline names. Each session row shows a chip: the run «<name> · <stage>», «No pipeline · <category>» or «Undeclared».

@@ -16,7 +16,7 @@ const T = s => s;
 const TV = o => o.msg.replace(/\{(\w+)\}/g, (m, k) => o.vars[k]);
 let tlAgDesc = true;
 const CSS = { escape: s => String(s).replace(/(["\\\\/ ])/g, '\\\\$1') };
-let SESS = [], PLNEW = null, PLDRAFT = null, PLSTD = false, GO = [], MV = [], PAINT = 0, FIT = 0, LS = {};
+let SESS = [], PLNEW = null, PLDRAFT = null, PLSTD = false, PLTPLO = false, GO = [], MV = [], PAINT = 0, FIT = 0, LS = {};
 function aiLogo(p){ return '<i class="ailg ailg-' + esc(p || 'cc') + '"></i>'; }
 function lsGet(k, d){ return k in LS ? LS[k] : d; }
 function lsSet(k, v){ LS[k] = String(v); }
@@ -223,12 +223,10 @@ class PlNow(unittest.TestCase):
                 + "\n".join(js_fn(n) for n in ("plNewDis", "plStartBtns", "plTplPick"))
                 + "\nconsole.log(JSON.stringify(plTplPick()));")
         btns = re.findall(r"<button[^>]*>", h)
-        self.assertIn("data-plstd", btns[0])
-        self.assertIn("data-pldnew", btns[1])
-        for b in btns[:2]:
-            self.assertIn('plsv', b)
-        self.assertIn("data-pltpl", btns[2])
-        self.assertLess(h.index("Or start from:"), h.index("data-pltpl"))
+        self.assertIn("data-pldnew", btns[0])
+        self.assertIn("data-plstd", btns[1])
+        self.assertIn('plsv', btns[0])
+        self.assertIn("data-pltplo", btns[2])                                 # quick templates fold behind a toggle
         self.assertNotIn("Standard templates", h)                             # duplicate dropped
         self.assertEqual(h.count("data-plstd"), 1)
 

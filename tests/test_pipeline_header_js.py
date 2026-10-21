@@ -162,7 +162,7 @@ console.log(JSON.stringify([item, esc_, out]));""")
         self.assertEqual(out, [False, 1])                         # outside click: closed without a repaint (click not swallowed)
 
     def test_R4_one_head_row_before_apply(self):
-        r = run("let PLS = {data: {}, proj: '/a'}; function plOverview(){ return ''; } function plChips(){ return '<P/>'; }"
+        r = run("let PLS = {data: {'/a': {pipelines: [{}]}}, proj: '/a'}; function plOverview(){ return ''; } function plChips(){ return '<P/>'; }"
                 "function plApplySeg(){ return '<APPLY/>'; } function plBody(ov, hd){ hd.row = '<SEL/><NEW/>'; return '<BODY/>'; }\n"
                 + js_fn("plMainBody") + "\nconsole.log(JSON.stringify(plMainBody()));")
         self.assertEqual(r, '<div class="pltop"><P/><SEL/><NEW/></div><APPLY/><BODY/>')

@@ -13,7 +13,7 @@ from tests._node import node_e
 PRE = """
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const T = s => s;
-let SESS = [], PLAG = false, ARCH_PL = 'arch-map', PLNEW = null, PLDRAFT = null, PLSTD = false, POSTS = [], PAINT = 0;
+let SESS = [], PLAG = false, ARCH_PL = 'arch-map', PLNEW = null, PLDRAFT = null, PLSTD = false, PLTPLO = false, POSTS = [], PAINT = 0;
 function plLiveProjs(){ return {}; } function plMem(){ return {}; } function plKnown(){ return null; }
 function plPickHtml(){ return ''; } function plNewBtn(p){ return p ? '<NEWBTN pri/>' : '<NEWBTN/>'; } function plNewForm(){ return ''; }
 function wfBtns(){ return ''; } function plBorrowChips(){ return ''; } function plBorrowOf(){ return null; }
@@ -48,7 +48,7 @@ class PipelineEmptyTpl(unittest.TestCase):
     def test_empty_project_shows_template_buttons(self):
         r = run(_tpls() + "\n" + FNS +
                 "let PLS = {proj: '/p', data: {'/p': {ok: true, pipelines: [], suggest: []}}};"
-                "const a = plBody(); PLNEW = {}; const b = plBody(); PLNEW = null;"
+                "PLTPLO = true; const a = plBody(); PLNEW = {}; const b = plBody(); PLNEW = null;"
                 "PLS.data['/p'].suggest = [{name: 's'}]; const c = plBody();"
                 "PLS.data['/p'] = {ok: true, pipelines: [{name: 'x', ok: false}]}; const d = plBody();"
                 "console.log(JSON.stringify([a, b, c, d, PL_TPLS.map(x => x[0])]));")
@@ -71,13 +71,59 @@ class PipelineEmptyTpl(unittest.TestCase):
         dn = lambda h: re.search(r"<button[^>]*data-pldnew[^>]*>", h).group(0)
         sd = lambda h: re.search(r"<button[^>]*data-plstd[^>]*>", h).group(0)
         self.assertIn("Ask AI for a draft", a)
-        self.assertIn("data-plstd>Start from a template<", a)                       # R3: the standard list opens from the primary start
+        self.assertIn("data-plstd>Start from a template<", a)                       # the standard list opens from the outlined start
         self.assertNotIn("disabled", dn(a) + sd(a))
         self.assertNotIn("disabled", dn(b))                                # plNewDis(PLDRAFT): a «+ New» form leaves it on
         self.assertIn("disabled", dn(c))                                   # a draft form is open
         self.assertNotIn("disabled", sd(c))                                # standard list is never disabled
         self.assertNotIn(" on", sd(a))
-        self.assertIn('class="wkrgb plsv on"', sd(d))                           # PLSTD open: .on like the menu item
+        self.assertIn('class="wkrgb on"', sd(d))                                # PLSTD open: .on like the menu item
+
+    def test_r1_one_filled_primary_is_ai_draft(self):
+        h = run(_tpls() + "\n" + FNS + "console.log(JSON.stringify(plTplPick()));")
+        filled = [b for b in re.findall(r"<button[^>]*>", h) if "plsv" in b]
+        self.assertEqual(len(filled), 1)                                   # R1: exactly one filled primary
+        self.assertIn("data-pldnew", filled[0])
+        self.assertNotIn("plsv", re.search(r"<button[^>]*data-plstd[^>]*>", h).group(0))   # R1: template start is outlined
+
+    def test_r2_quick_templates_fold(self):
+        r = run(_tpls() + "\n" + FNS +
+                "const a = plTplPick(); PLTPLO = true; const b = plTplPick(); PLNEW = {}; const c = plTplPick(); PLNEW = null;"
+                "PLDRAFT = {}; const d = plTplPick(); console.log(JSON.stringify([a, b, c, d]));")
+        a, b, c, d = r
+        tg = lambda h: re.search(r"<button[^>]*data-pltplo[^>]*>", h).group(0)
+        self.assertEqual(a.count("data-pltpl="), 0)                        # R2: closed at first
+        self.assertIn('aria-expanded="false"', tg(a))
+        self.assertIn("Quick templates", a)
+        self.assertEqual(b.count("data-pltpl="), 6)                        # R2: opened = the six templates
+        self.assertIn('aria-expanded="true"', tg(b))
+        self.assertIn(" on", tg(b))
+        self.assertEqual(re.findall(r"<button[^>]*data-pltpl=[^>]*>", b)[0].count("disabled"), 0)
+        for h in (c, d):                                                   # same disable rules under PLNEW / PLDRAFT
+            self.assertTrue(all("disabled" in x for x in re.findall(r"<button[^>]*data-pltpl=[^>]*>", h)))
+
+    def test_r2_toggle_handler(self):
+        s = _src("48e-pipeline-new.js")
+        self.assertIn("if(e.target.closest('[data-pltplo]')){ PLTPLO = !PLTPLO; plPaint(); plRefocus('[data-pltplo]'); return; }", s)
+
+    def test_r3_apply_and_orphan_need_a_pipeline(self):
+        mb = js_fn("plMainBody")
+        r = run("let PLS = {proj: '/p', data: {'/p': {ok: true, pipelines: []}}};"
+                "function plOverview(){ return ''; } function plBody(){ return '<B/>'; } function plChips(){ return ''; }"
+                "function plApplySeg(){ return '<APPLY/>'; }\n" + mb +
+                "\nconst a = plMainBody(); PLS.data['/p'].pipelines = [{name: 'x'}]; const b = plMainBody();"
+                "console.log(JSON.stringify([a, b]));")
+        self.assertNotIn("<APPLY/>", r[0])                                 # R3: no «Apply» for []
+        self.assertIn("<APPLY/>", r[1])                                    # R3: shown with one pipeline
+        s = _src("48b-pipeline-run.js")
+        self.assertIn("(pd && (pd.pipelines || []).length ? plOrphHtml(orph) : '')", s)   # R3: orphan note gated the same way
+
+    def test_r4_empty_project_at_most_five_controls(self):
+        r = run(_tpls() + "\n" + FNS +
+                "plNewBtn = () => '<button data-plnewm>+</button>';"
+                "let PLS = {proj: '/p', data: {'/p': {ok: true, pipelines: [], suggest: []}}};"
+                "console.log(JSON.stringify(plBody()));")
+        self.assertLessEqual(len(re.findall(r"<button\b", r)), 5)         # R4: start row + «+ New ▾», chips not in plBody
 
     def test_cross_review_template_listed(self):
         r = run(_tpls() + "\nconsole.log(JSON.stringify(PL_TPLS.map(x => x[0])));")

@@ -522,7 +522,7 @@ def respond(world, path, u):
     if path.startswith("/api/tools"):
         return _demo_tools(w.a, path, _q(u, "id"))
     if path == "/api/pipelines":
-        return _demo_pipelines(_q(u, "proj"), w.by["web"]["cwd"])
+        return _demo_pipelines(_q(u, "proj"), w.by["web"]["cwd"], w.by["bill"]["cwd"])
     if path == "/api/pipelines/eval":
         return _demo_eval(_q(u, "proj"), w.by["web"]["cwd"], _q(u, "name"))
     if path == "/api/harness/evidence":   # same body as harness_plat.harness_evidence_only (pipeline stage result lines)

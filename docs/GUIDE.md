@@ -33,7 +33,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 ### Pick a project and pipeline
 - «Project»: search working, recent and all projects; «+ Add project» at the bottom. «Pipeline»: this project's pipelines (⚠ = file breaks the schema, • = unsaved edits, a dot = running).
 - «+ New ▾»: «+ New pipeline», «Import from another project», «Ask AI for a draft», «Standard templates». «+ New pipeline» appears only in a folder that has had one Claude session (the file lives in its `.claude/`).
-- A project with no pipelines leads with «Start from a template» and «Ask AI for a draft»: pick one, preview, then «Confirm — create» writes `.claude/pipelines/<name>.json`.
+- A project with no pipelines leads with «Ask AI for a draft» and «Start from a template»; the quick templates fold behind «Quick templates ▾», and «Apply» appears once the project has a pipeline. Pick one, preview, then «Confirm — create» writes `.claude/pipelines/<name>.json`.
 - «Cross-review (Codex)» is a one-stage template: the session runs one read-only `codex exec` review of `git diff` with its own permissions, billed to your Codex account. One-shot, no follow-ups; Codex must be installed and logged in. Sidereus never starts Codex.
 - «Apply» (in Edit: «Auto · Ask each time · Off») sets how new sessions in this project use pipelines.
 
