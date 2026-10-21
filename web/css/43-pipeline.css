@@ -203,6 +203,11 @@ html[data-ui=next] .plw .pltop>.plwrun>.plrunst>span{line-height:16px;white-spac
 /* R4 Watch: no resize handle and no reserved 420px pane row; the pane fits its content (min-height keeps polls from jumping it). 48d plGwFit leaves the height auto */
 .plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 0 auto;height:auto}
 .plgw.plwt>.plgh{display:none}
+/* Head-row pickers + canvas toolbar read as select controls: neutral t3 border (≥3:1 on bg), raised hover-token fill, t1 text; distinct from [Edit] (info outline) and [Run] (filled) */
+html[data-ui=next][data-ui] .plw :is(.ppcombo,.plcvt .wkrgb){height:28px;padding:0 10px;border:1px solid var(--nx-t3);border-radius:5px;background:var(--nx-hover);color:var(--nx-t1);cursor:pointer}
+html[data-ui=next][data-ui] .plw :is(.ppcombo,.plcvt .wkrgb):hover:not([disabled]){border-color:var(--nx-t2);background:color-mix(in srgb,var(--nx-t1) 8%,var(--nx-hover));color:var(--nx-t1)}
+html[data-ui=next][data-ui] .plw :is(.ppcombo,.plcvt .wkrgb):focus-visible{outline:2px solid var(--nx-info);outline-offset:2px}
+html[data-ui=next] .plw .plcvt .plzv{color:var(--nx-t1)}
 .plgw.plwt>.plwp{min-height:120px;max-height:280px;margin-top:6px}
 .plgh{cursor:row-resize}.plgh:hover{background:#2b3545}   /* canvas | panes split (48d PL_SPLIT) */
 .plro{display:contents}.plro .plpal,.plro .plpan,.plro .plnt{pointer-events:none;opacity:.55}   /* borrowed pipeline (48h): no editing controls */

@@ -246,7 +246,9 @@ class PlMode(unittest.TestCase):
         self.assertIn(".plgw.plwt>.plgh{display:none}", css)
         self.assertIn(".plgw.plwt>.plwp{min-height:120px;max-height:280px", css)
         fit = js_fn("plGwFit")
-        self.assertIn("if(wt) g.style.height = '';", fit)
+        self.assertIn("g.style.height = '';", fit)
+        self.assertIn("if(wt) row = Math.max(260, Math.min(1100, h - (g.querySelector('.plwp') ? 126 : 0)));", fit)   # canvas fills the free height
+        self.assertIn("nl.style.minHeight", fit)                                # list card reaches canvas + pane bottom
 
     def test_r6_draft_save_primary_in_action_group_with_back(self):
         stubs = ("function plCanvas(){ return {html: '<CV/>'}; } function plNewBtn(){ return ''; } function plNewForm(){ return ''; } function plStartBtns(){ return ''; }"
