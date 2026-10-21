@@ -51,18 +51,18 @@ function plWatchPane(E, d, lv, lt){
 // Watch is three stacked regions: canvas | result pane | «Running N» card, split by two drag grips (p, r).
 // Sizes are kept as shares of the free height (sidereus.plwv = [canvas, pane, card]) so a window resize keeps the proportions.
 // ⚠Mins canvas 260 · pane 80 · card 48; the whole stack ends at the feed bottom (plGwFit passes h) and never scrolls the page.
-const PLW_MIN = [260, 80, 48], PLW_GRIP = 8, PLW_RUN0 = 110, PLW_PANE0 = 120;   // default pane hugs its content up to 120px (header · status · gate · note), longer scrolls
-let PLWPH = { k: '', h: 0 }, PLWDRAG = null;
+const PLW_MIN = [260, 80, 48], PLW_GRIP = 8, PLW_DEF = [0.75, 0.14, 0.11];   // default shares of the free height; a longer pane/card scrolls inside
+let PLWDRAG = null;
 function plWGrip(k){ return '<div class=plwgr data-plwg=' + k + ' role=separator aria-orientation=horizontal title="' + esc(T('Drag to resize · double-click for default')) + '"></div>'; }
 // Always present (an empty state, not nothing): runs starting or ending must not move the layout.
 function plWatchOv(ov){
   return '<div class=plwov>' + (ov || '<div class=plov><b class=plovh>' + esc(TV({msg: 'Running {n}', vars: {n: 0}})) + '</b><span class=hidnote>' + esc(T('No runs running')) + '</span></div>') + '</div>';
 }
 function plWShares(){ const v = lsJson('sidereus.plwv', null); return Array.isArray(v) && v.length === 3 && v.every(x => typeof x === 'number' && x > 0 && x < 1) ? v : null; }
-// Heights [canvas, pane, card] for free height A; F = saved shares, ph0 = the pane's natural height.
+// Heights [canvas, pane, card] for free height A; F = saved shares (else PLW_DEF).
 // Mins win over shares; when the canvas would drop under its min, the card then the pane give way first.
-function plWSizes(A, F, ph0){
-  const s = F ? F.map(f => Math.round(f * A)) : [0, Math.max(PLW_MIN[1], Math.min(PLW_PANE0, ph0)), PLW_RUN0];
+function plWSizes(A, F){
+  const s = (F || PLW_DEF).map(f => Math.round(f * A));
   s[1] = Math.max(PLW_MIN[1], s[1]); s[2] = Math.max(PLW_MIN[2], s[2]);
   let d = PLW_MIN[0] - (A - s[1] - s[2]);
   for(const i of [2, 1]){ if(d <= 0) break; const r = Math.min(d, s[i] - PLW_MIN[i]); s[i] -= r; d -= r; }
@@ -73,19 +73,17 @@ function plWApply(g, oc, s){ g.style.setProperty('--plcvh', s[0] + 'px'); g.styl
 function plWatchFit(g, fd, h){
   if(PLWDRAG) return;
   g.style.height = '';
-  const nl = document.querySelector('.plw .plnl:not(.plnlc)'), oc = document.querySelector('.plw .plwov'), wp = g.querySelector('.plwp');
+  const nl = document.querySelector('.plw .plnl:not(.plnlc)'), oc = document.querySelector('.plw .plwov');
   if(nl) nl.style.minHeight = '';   // ⚠a kept card height from the last fit would count as overflow below
-  // ⚠The pane's natural height is measured once per (window size, project, shown stage): re-measuring each poll made the canvas jump.
-  const wk = wp ? [innerWidth, innerHeight, PLS.proj, (wp.querySelector('.plph b') || {}).textContent || ''].join('|') : '';
-  if(wp && PLWPH.k !== wk){ g.style.removeProperty('--plwph'); PLWPH = { k: wk, h: wp.scrollHeight }; }
-  const F = plWShares(), ph0 = wp ? PLWPH.h : PLW_MIN[1], end = oc || g, pb = parseFloat(getComputedStyle(fd).paddingBottom) || 0;
+  // Sizes come from shares only (never from content), so polls never move the canvas.
+  const F = plWShares(), end = oc || g, pb = parseFloat(getComputedStyle(fd).paddingBottom) || 0;
   let A = h - 2 * PLW_GRIP;
-  plWApply(g, oc, plWSizes(A, F, ph0));
+  plWApply(g, oc, plWSizes(A, F));
   // Close the gap to the feed bottom (h is the shared estimate), then take back anything that overflows (Run panel, a note): no page scroll.
   const slack = Math.floor(fd.getBoundingClientRect().bottom - pb - end.getBoundingClientRect().bottom) - 2;
-  if(slack > 0){ A += slack; plWApply(g, oc, plWSizes(A, F, ph0)); }
+  if(slack > 0){ A += slack; plWApply(g, oc, plWSizes(A, F)); }
   const over = fd.scrollHeight - fd.clientHeight;
-  if(over > 0){ A -= over; plWApply(g, oc, plWSizes(A, F, ph0)); }
+  if(over > 0){ A -= over; plWApply(g, oc, plWSizes(A, F)); }
   if(nl) nl.style.minHeight = Math.max(0, Math.round(end.getBoundingClientRect().bottom - nl.getBoundingClientRect().top)) + 'px';
 }
 document.addEventListener('pointerdown', e => {
