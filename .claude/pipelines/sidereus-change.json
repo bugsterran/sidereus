@@ -58,7 +58,7 @@
       "model": "opus",
       "task": "Try to disprove each 리뷰-찾기 finding against the code, git blame and git log -L. Tag survivors Important / Nit / Pre-existing, drop Nits, report only confirmed findings ranked by severity, plus one line per finding: id, rule, verdict (confirmed|disproved|pre-existing). status FAIL only on a confirmed Important introduced by this diff; Pre-existing never blocks.",
       "onFail": { "goto": "구현", "max": 1, "then": "재검증" },
-      "ui": { "x": 1160, "y": 140 }
+      "ui": { "x": 1284, "y": 24 }
     },
     {
       "title": "재검증",
@@ -67,7 +67,7 @@
       "task": "Run the gate once after the review fix round and report. Do not fix anything.",
       "gate": "scripts/check.sh --full",
       "onlyOnJump": true,
-      "ui": { "x": 1285, "y": 23, "color": "#ff0000" },
+      "ui": { "x": 1532, "y": 24, "color": "#ff0000" },
       "onFail": { "goto": "구현", "max": 1 }
     },
     {
@@ -75,7 +75,7 @@
       "skill": "sidereus-ship",
       "agent": "general-purpose",
       "task": "Report each R line as PASS/FAIL + one piece of evidence (screen crop, test name or file:line).",
-      "ui": { "x": 1532, "y": 23, "color": "#2ec4b6" }
+      "ui": { "x": 1780, "y": 24, "color": "#2ec4b6" }
     }
   ]
 }
