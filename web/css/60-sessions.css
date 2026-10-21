@@ -91,7 +91,7 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .spl.spln{color:#8b95a7;border-color:#2a313d}
 .spl.splr{display:inline-flex;max-width:28ch}
 .splr > .splnm{min-width:0;overflow:hidden;text-overflow:ellipsis}
-.splr > .splst{flex:none}
+.splr > .splst{flex:none;white-space:pre}  /* ⚠inline-flex drops a flex item's leading space; pre keeps « · » apart */
 .spl.splu{color:#f59e0b;border-color:#5a4a24}
 .s-wait .sl.swait{color:#7ad4a0}
 /* Subagent silence indicator — not a verdict, only shows how quiet it has been */
