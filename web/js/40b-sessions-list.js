@@ -137,6 +137,17 @@ function sessBranchHtml(x){
     + ((x.wt && x.wt.main) ? ' <span class=swt data-wtj="'+esc(x.wt.root)+'" data-wtc="'+esc(x.cwd||'')+'" title="'
         + esc(T("Show this worktree's work unit in the Branches tab")+' · '+x.wt.root)+'">worktree: '+esc(x.wt.name)+'</span>' : '');
 }
+// Pipeline chip: open run «name · stage» · declared [pl-none] «No pipeline · cat» · undeclared edit «Undeclared».
+function sessPlChip(x){
+  const runs = (x.plrun || []).filter(r => r && r.name), r = runs.find(r => !r.end), n = x.plNone;
+  if(r) return '<span class="spl" title="'+esc(T('Pipeline run')+': '+r.name+(r.cur ? ' · '+r.cur : ''))+'">'+esc(r.name+(r.cur ? ' · '+r.cur : ''))+'</span>';
+  // ⚠An ended run still outranks plNone: a nudge written before the run must not read «Undeclared» afterwards.
+  if(runs.length) return '<span class="spl spln" title="'+esc(T('Pipeline run')+': '+runs[0].name+' · '+T('done'))+'">'+esc(runs[0].name)+'</span>';
+  // ⚠cat is an English key from an allow-list — shown as-is, never passed through T().
+  if(n && n.cat) return '<span class="spl spln" title="'+esc(T('Declared no pipeline for this work')+': '+n.cat)+'">'+esc(T('No pipeline')+' · '+n.cat)+'</span>';
+  if(n && n.u) return '<span class="spl splu" title="'+esc(T('Edited files without declaring a pipeline or [pl-none]'))+'">'+esc(T('Undeclared'))+'</span>';
+  return '';
+}
 // Identity row: pick box · dot · platform logo · project · branch · badges.
 function sessIdRow(x){
   // ⚠A rollout row (x.rollout) has no hook events behind it — its tooltip must not claim they are the source.
@@ -145,7 +156,7 @@ function sessIdRow(x){
   const nohk = x.rollout ? '<span class="sz snohk" title="'+esc(T("State read from Codex's record file; set up hooks — docs/HOOKS.md"))+'">'
     + esc(T('Hooks not connected'))+'</span>' : '';
   return '<div class=sx>'+sessPickHtml(x)+'<span class=sd></span>'+pl+'<span class=sp title="'+esc(x.project)+'">'+esc(x.project)+'</span>'+sessBranchHtml(x)+acctChip(x, 'sacb')
-    + nohk + sessBadges(x) + '</div>';
+    + nohk + sessBadges(x) + sessPlChip(x) + '</div>';
 }
 // Current-task line under the state row ('' when there is nothing to show).
 function sessTaskHtml(x){

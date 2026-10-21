@@ -123,7 +123,7 @@ const esc = s => String(s).replace(/[&<>"']/g,
 // Display-only: drop a leading pipeline machine tag ([pl:-] · [pl:<name>/<stage>] · [pl-skip:…] · [pl-model:…]) from an agent
 // label, also right after a «type: » prefix. ⚠Never apply to the raw field: plDescStage/plTagNames/wpRunOf match on the tag.
 // Regex kept inline so tests can lift the function alone (tests/_load.py js_fn).
-function plStrip(s){ return s == null ? s : String(s).replace(/^((?:[^\s:]{1,60}: )?)\s*\[pl(?:-skip|-model)?:[^\]\n]{0,160}\]\s*/, '$1'); }
+function plStrip(s){ return s == null ? s : String(s).replace(/^((?:[^\s:]{1,60}: )?)\s*\[pl(?:-skip|-model|-none)?:[^\]\n]{0,160}\]\s*/, '$1'); }
 // 8-char display id for a session — mirrors sidereus/ident.py _sid8. ⚠Plain slice(0,8) of a gemini/codex file-stem id
 // shows «session-»/«rollout-» for every row. Display only: never a lookup key.
 function sid8(s){

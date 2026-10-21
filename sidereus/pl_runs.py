@@ -21,6 +21,8 @@ PLR_MAX = 8               # runs per session row
 PLR_READ_MAX = 262144     # bytes read from one runs file; ⚠a cut file fails to parse and loses every run, and `past` multiplies its size
 PLR_STAGES_MAX = 32       # stages per run
 _PLR_SID = re.compile(r"^[0-9a-zA-Z-]{8,64}$")
+PLR_NONE_MAX = 4096       # bytes of <sid>.none.json; larger -> None
+PLR_NONE_CATS = ("small-fix", "no-fit", "explore", "other")   # = hooks/pl_flow.py [pl-none:<cat>] allow-list
 _PLR_ST = ("run", "done", "skip", "back", "fail")
 PLR_AG_MAX = 24           # stage agents kept per run (oldest first)
 PLR_AG_SLACK_S = 5        # meta mtime may sit this far outside [t0, end|now]
@@ -110,6 +112,27 @@ def _load_doc(sid, now):
     except (OSError, ValueError, TypeError):
         return {}
     return d if isinstance(d, dict) else {}
+
+
+def pl_none(sid):
+    """Row `plNone` from plmark/<sid>.none.json (hooks/pl_flow.py): {"cat"} when declared [pl-none:<cat>] with an
+    allow-listed cat, {"u": 1} when only the undeclared-edit `nudge` is set, else None. ⚠Reads no other field."""
+    if not sid or not _PLR_SID.match(sid):
+        return None
+    try:
+        with open(os.path.join(PLR_DIR, sid + ".none.json"), "rb") as f:
+            b = f.read(PLR_NONE_MAX + 1)
+        d = json.loads(b) if len(b) <= PLR_NONE_MAX else None
+    except (OSError, ValueError, TypeError):
+        return None
+    if not isinstance(d, dict):
+        return None
+    c = d.get("cat")
+    if isinstance(c, str) and c in PLR_NONE_CATS:
+        return {"cat": c}
+    if c is None and isinstance(d.get("nudge"), (int, float)) and not isinstance(d.get("nudge"), bool):
+        return {"u": 1}
+    return None
 
 
 def _load(sid, now):

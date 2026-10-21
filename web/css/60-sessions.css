@@ -86,6 +86,10 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
     /* Leftover badge — no new color, reuses the existing warning color (#f59e0b, same as `.sz.hot`) */
     .swr{font-size:10px;color:#f59e0b;font-weight:600;margin-left:4px;flex:0 0 auto;cursor:pointer}
     .swr:hover{text-decoration:underline}
+/* Pipeline chip (40b sessPlChip): shrinks first so 900px keeps one line */
+.spl{flex:0 9 auto;min-width:3ch;max-width:16ch;font-size:9.5px;color:#8fb3e0;border:1px solid #2c3b52;border-radius:3px;padding:0 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spl.spln{color:#8b95a7;border-color:#2a313d}
+.spl.splu{color:#f59e0b;border-color:#5a4a24}
 .s-wait .sl.swait{color:#7ad4a0}
 /* Subagent silence indicator — not a verdict, only shows how quiet it has been */
 .stq{flex:0 0 auto;font-size:9.5px;color:#7e8896;border:1px solid #262e3b;border-radius:9px;padding:0 5px}

@@ -170,3 +170,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: the tab took run names only from live tags (Workflow row, `[pl:]` subagent label, `plm`); subagent labels come through `agents._agent_meta` (TTL 20 s), so a run showed 10–20 s after the Timeline, which reads `plrun`.
 - ⇒ `plTagNames` also adds open `plrun` runs (`!r.end && plPrLive(r)`); the project is still picked by `plHomes` (`r.proj` first), so one run lands in one project.
 - ⚠Do not add ended runs or bypass `plHomes`: the dot would stay after the run or show in every repo of the session.
+
+## `[pl-none]` state lives in its own file (`hooks/pl_flow.py` `_none_decl`/`_none_gate`)
+
+- Cause: the declaration and the once-per-session edit/commit deny need a per-session flag; `<sid>.json` is read by `agents.plm_of` as the main marker and `.runs.json` by `pl_runs`.
+- ⇒ `plmark/<sid>.none.json` = `{v, cat, t}` or `{v, nudge}` only; `nudge` is saved before the deny prints (same order as `_nudge`).
+- ⚠Never merge it into `<sid>.json` or `.runs.json` · never store the description · a deny printed before a failed save would deny every edit.
+- ⚠The gate resolves the project from the edited file (walk up to its git root) or, for a commit, cwd / its git root — never `session_dirs`: a repo merely `cd`'d into earlier lent its pipelines to edits in a repo without any.

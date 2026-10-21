@@ -285,9 +285,14 @@ def _row_children(fp, p, now, dead, act="run"):
                         p.get("targ") if p.get("tool") in _DESC_TOOLS else "", now)
     except Exception:
         ploff = False
+    try:   # [pl-none] declaration / undeclared-edit nudge; added only when present (demo-mirrored key set)
+        plnone = None if dead else pl_runs.pl_none(p.get("sid") or "")
+    except Exception:
+        plnone = None
     # `wfh` is added only when present, so rows without history keep the demo-mirrored key set.
     return dict({"wf": wf}, **({"wfh": wfh} if wfh else {}), **({"team": team} if team else {}), **({"plm": plm} if plm else {}),
-                **({"plrun": plrun} if plrun else {}), **({"plOff": True} if ploff else {}), **{
+                **({"plrun": plrun} if plrun else {}), **({"plOff": True} if ploff else {}),
+                **({"plNone": plnone} if plnone else {}), **{
         # ★Ended sessions show nothing running — no process, so no tasks either (only old notifications linger).
         "sub": sub,   # subagents — elapsed counted **now** (not frozen in the cache)
         "bgs": _bg_show(p.get("bgs"), now, dead),   # background commands

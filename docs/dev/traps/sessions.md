@@ -4,6 +4,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Sessions: state, subagents, external CLIs
 
+- ⚠**`plmark/<sid>.none.json` is never merged into `<sid>.json`** (2026-10-21; `sidereus/pl_runs.py` `pl_none`). `<sid>.json` is the main-agent stage marker (`plm_of`) and `[pl-]` clears it; a declaration stored there would vanish or light a stage. ⇒ Separate file, read only by `pl_none` (cat allow-list, 4 KB cap). Test: `tests/test_pl_runs_none.py`.
 - ⚠**Fold-all must clear the session list's HTML cache** (2026-10-13). Toggling one `<details>` group changes the DOM but not `box._sh`, the cached HTML string the list compares before redrawing. «Expand all» right after closing one group then renders identical HTML and the redraw is skipped. ⇒ `wfFoldAll` clears `box._sh` before redrawing (40b-sessions-list.js). Test: `test_sess_wf_fold_all_js.py`.
 - **A background shell running over 2 h vanished from the session** (2026-10-15; `sidereus/bgtasks.py` `_bg_expire`).
   - Cause: the RUN_STALE_S (7200 s) age expiry dropped every non-watcher row; a 5 h dev server (pid alive, no notice) showed `bgs: []`.

@@ -34,4 +34,8 @@ Object.assign(I18N.ko, {
   'Guards': '가드', 'The run stops when a required gate fails or loop-backs exceed the limit': '필수 게이트가 실패하거나 되돌림이 한도를 넘으면 실행을 멈춥니다',
   'No stage has a graded gate yet (check.sh --fast|--full, arch_checks.py --verify)': '아직 채점 게이트가 있는 단계가 없습니다 (check.sh --fast|--full, arch_checks.py --verify)',
   'Max loop-backs': '되돌림 한도',
+  // Session-list pipeline chip (40b sessPlChip).
+  'Pipeline run': '파이프라인 실행', 'No pipeline': '파이프라인 없음', 'Undeclared': '미선언',
+  'Declared no pipeline for this work': '이 작업은 파이프라인 없이 하겠다고 선언함',
+  'Edited files without declaring a pipeline or [pl-none]': '파이프라인이나 [pl-none] 선언 없이 파일을 수정함',
 });

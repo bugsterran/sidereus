@@ -57,6 +57,11 @@
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/file_peers_notice.py\"",
             "timeout": 2
+          },
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/pl_flow.py\"",
+            "timeout": 5
           }
         ]
       },
