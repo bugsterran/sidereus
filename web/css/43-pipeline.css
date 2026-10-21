@@ -55,6 +55,7 @@ html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--
 .plw .plnl .plnagr:hover{background:var(--nx-hover,#1b1e23)}
 .plw .plnl .plnagr:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
 .plnagr.quiet{opacity:.55}
+.plw .plnl .plnagr .tlagd~.tlagt{display:none}   /* ⚠the narrow list let the 110px type chip squeeze the description to 0; type stays in the row title. Only beside a description: with descriptions off the type is the label */
 .plnagm{padding:1px 6px 1px 22px;font-size:11px;color:var(--nx-t3,#84868c)}
 /* R5: collapsed = slim rail (fold button + one dot per session); ⚠the global aside box (50/90 css) adds border + 12px padding that overflowed 28px */
 html[data-ui] .plw aside.plnl.plnlc{padding:4px 0;border:0;background:none;overflow:hidden;align-items:center;gap:8px}
@@ -229,7 +230,7 @@ html[data-ui=next] .plw .plcvt .plzv{color:var(--nx-t1)}
 .plwgr{position:relative;height:8px;cursor:ns-resize;touch-action:none}
 .plwgr::after{content:'';position:absolute;left:50%;top:2px;width:44px;height:4px;margin-left:-22px;border-radius:2px;background:var(--nx-t3,#84868c);opacity:.55}
 .plwgr:hover::after,.plwgr.on::after{opacity:1;background:var(--nx-info,#5899f3)}
-.plwov{overflow:auto;min-height:48px;box-sizing:border-box}   /* «Running N» card: fixed height from plWatchFit, rows scroll inside */
+.plwov{overflow:auto;min-height:84px;box-sizing:border-box}   /* «Running N» card: fixed height from plWatchFit, rows scroll inside */
 .plwov>.plov{margin:0;min-height:100%;box-sizing:border-box;border:1px solid var(--nx-rule,#252629);border-radius:6px}
 .plwov .hidnote{margin:0}
 .brep.plw:has(.plgw.plwt){padding-bottom:4px}   /* Watch stack ends at the viewport bottom (the panel's 14px bottom padding left a strip) */

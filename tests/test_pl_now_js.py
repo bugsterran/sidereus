@@ -45,7 +45,7 @@ def _const(name, file):
 NOW = ("\n".join([_const("PL_DESC_RE", "48b-pipeline-run.js"), _const("STR_SPLIT_KEYS", "81i-structure-split.js")]
                 + [js_fn(n) for n in ("sessPlChip", "plStrip", "plTk", "plDescStage", "plSubsOf", "plLabType", "plLabParts", "plLabDesc", "plLabTip",
                                       "strSplitGet", "strSplitCols", "strSplitDecl", "strSplitStyle", "strSplitGrip",
-                                      "tlSessNmB", "tlAgNmB", "tlAgNm", "tlAgLab", "plNowAgents", "plNowPickApply",
+                                      "tlSessNmB", "tlAgNmB", "tlAgNm", "tlAgLab", "subWorkId", "plNowAgents", "plNowPickApply",
                                       "plNowSt", "plNowRun", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj", "plProjGo", "plPickProj")])
        + "\n" + _const("PLNOW_ST", "48j-pipeline-now.js") + "\n" + _const("PLNOW_AGMAX", "48j-pipeline-now.js") + "\n")
 LIVE = """[{state: 'tool', sid: 's1', cwd: '/a', plat: 'cx', project: 'alpha', plrun: [{name: 'chg', cur: 'Implement'}]},
@@ -257,6 +257,21 @@ class PlNow(unittest.TestCase):
         self.assertIn('<i class="tlds"></i>', rows[-1][2])                    # quiet: no running dot
         c = run(NOW + "LS['sidereus.plnowc'] = '1'; console.log(JSON.stringify(plNowList(" + src + ")));")
         self.assertNotIn("plnagr", c)                                         # hidden in the collapsed rail
+
+    def test_r9_type_chip_hidden_beside_description_only(self):
+        with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as f:
+            pl = f.read()
+        with open(os.path.join(ROOT, "web", "css", "20-timeline.css"), encoding="utf-8") as f:
+            tl = f.read()
+        self.assertIn(".plw .plnl .plnagr .tlagd~.tlagt{display:none}", pl)
+        self.assertRegex(tl, r"\n\.tlagt\{[^}]*flex:0 0 auto")                 # Timeline chip untouched
+        src = "{cwd: '/a', sub: [{lab: 'general-purpose: build the thing', aid: 'a1'}]}"
+        on = run(NOW + "console.log(JSON.stringify(plNowAgents(" + src + ")));")
+        self.assertIn("<em class=tlagd", on)
+        self.assertRegex(on, r'title="[^"]*general-purpose')                   # type kept in the row tooltip
+        off = run(NOW + "tlAgDesc = false; console.log(JSON.stringify(plNowAgents(" + src + ")));")
+        self.assertNotIn("tlagt", off)                                         # descriptions off: type is plain text, not hidden
+        self.assertIn("general-purpose", re.sub(r'title="[^"]*"', "", off))
 
     def test_r9_agent_click_selects_stage_no_view_move(self):
         s = _src("48j-pipeline-now.js")
