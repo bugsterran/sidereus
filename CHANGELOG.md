@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- First screen: the viewer opens on Pipelines and the rail lists Pipelines before Timeline; Timeline becomes the evidence view behind a verdict. A saved tab or tab order still wins. The Pipelines tab starts with a one-line «Working now» strip (each live session's logo, project and pipeline/stage chip; click to jump to its Timeline row), and a project with no pipelines leads with «Start from a template» and «Ask AI for a draft».
 - Structure: a framework name joined with « + » or «, » (e.g. a BE and an FE stack) shows as one badge per part, so each wraps instead of being clipped; the full name stays in the tooltip.
 - Chat: the «Participants» panel shows each participant's platform logo when the id matches a live session.
 

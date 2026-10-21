@@ -37,13 +37,17 @@ class Tour(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.R = run(r"""
-const all = () => true, none = () => false, noStrip = s => s !== '#feed .tlpl';
+const all = () => true, none = () => false, noStrip = s => s !== '#feed .plnow';
 R.full = tourPlan({}, all, 3);
 R.off = tourPlan({pipeline: false}, all, 3).map(p => p.id);
-R.demo = tourPlan({}, all, 0)[0];
+R.demoAt = tourPlan({}, all, 0).filter(p => p.demo).map(p => p.id);
+R.demoOffAt = tourPlan({pipeline: false}, all, 0).filter(p => p.demo).map(p => p.id);
+R.demo = tourPlan({}, all, 0).find(p => p.demo);
 R.demoBody = tourBody(R.demo, '');
+R.demoOffBody = tourBody(tourPlan({pipeline: false}, all, 0).find(p => p.demo), '');
 R.nostrip = tourPlan({}, noStrip, 2).find(p => p.id === 'pl-live');
 R.nostripBody = tourBody(R.nostrip, '').h;
+R.liveSpot = tourBody({id: 'pl-live', mode: 'spot'}, '');
 R.missing = tourPlan({}, none, 2).map(p => p.mode);
 R.auto = {first: tourShouldAuto(false, false, ''), done: tourShouldAuto(true, false, ''), wd: tourShouldAuto(false, true, ''),
           q0: tourShouldAuto(false, false, '?tour=0'), q1: tourShouldAuto(true, true, '?tour=1')};
@@ -66,20 +70,31 @@ R.finish = {writes: writes.slice(), tabs: tabs.slice(), hidden: root.hidden};
 """)
 
     def test_full_plan_order_and_spot(self):
-        self.assertEqual([p["id"] for p in self.R["full"]], ["time", "pl-what", "pl-live", "pl-start", "arch", "done"])
-        self.assertEqual([p["mode"] for p in self.R["full"]], ["spot", "centre", "spot", "spot", "spot", "centre"])
+        # R4: Pipelines lead the tour, Timeline (evidence view) comes after Structure.
+        self.assertEqual([p["id"] for p in self.R["full"]], ["pl-what", "pl-live", "pl-start", "arch", "time", "done"])
+        self.assertEqual([p["mode"] for p in self.R["full"]], ["centre", "spot", "spot", "spot", "spot", "centre"])
 
     def test_feature_off_skips_pipeline_steps(self):
-        self.assertEqual(self.R["off"], ["time", "arch", "done"])
+        self.assertEqual(self.R["off"], ["arch", "time", "done"])
 
     def test_no_sessions_demo_variant(self):
-        self.assertTrue(self.R["demo"]["demo"])
+        # R4: the demo hint sits on pl-live; on 'time' only when pl-live dropped out (pipelines off).
+        self.assertEqual(self.R["demoAt"], ["pl-live"])
+        self.assertEqual(self.R["demoOffAt"], ["time"])
         self.assertEqual(self.R["demo"]["mode"], "centre")
-        self.assertEqual(self.R["demoBody"]["cmds"], ["python3 -m sidereus start --demo --open"])
+        for b in (self.R["demoBody"], self.R["demoOffBody"]):
+            self.assertEqual(b["cmds"], ["python3 -m sidereus start --demo --open"])
 
     def test_no_strip_centres_pl_live_with_stepper(self):
         self.assertEqual(self.R["nostrip"]["mode"], "centre")
         self.assertIn("tourms", self.R["nostripBody"])
+
+    def test_pl_live_describes_working_now_strip(self):
+        # R4: pl-live spotlights the always-rendered «Working now» strip; no dead «no pipeline running» line.
+        self.assertEqual(self.R["liveSpot"]["t"], "Working now")
+        self.assertIn("지금 작업 중", self.R["liveSpot"]["h"])
+        self.assertNotIn("tourms", self.R["liveSpot"]["h"])
+        self.assertNotIn("tourdim", self.R["nostripBody"])
 
     def test_missing_targets_all_centred(self):
         self.assertEqual(set(self.R["missing"]), {"centre"})

@@ -67,7 +67,7 @@ class PipelineSidereus(unittest.TestCase):
         self.assertEqual(r["sumh"], "2/3 단계 · 90s")
 
     def test_suggested_view_carries_chip(self):
-        sug = "function plCanvas(){ return {html: '<CV/>'}; } function plNewBtn(){ return '<NEW/>'; } function plNewForm(){ return ''; } let PLNEW = null;"
+        sug = "function plCanvas(){ return {html: '<CV/>'}; } function plNewBtn(){ return '<NEW/>'; } function plNewForm(){ return ''; } function plStartBtns(){ return ''; } let PLNEW = null;"
         r = run(sug + "\n" + js_fn("plSugBody") + "\n" + js_fn("plHeadRow") + "\nconst d = {suggest: [{title: 'S', stages: []}]};"
                 "ARCHRUN = {'/t': " + json.dumps(RUN) + "};"
                 "console.log(JSON.stringify([plSugBody(d, plAgChip(plAgRun('/t'), false)), plSugBody(d, plAgChip(plAgRun('/u'), false))]));")

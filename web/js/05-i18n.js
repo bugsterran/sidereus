@@ -189,7 +189,7 @@ function TN(s){
   // sidereus/burn_scan.py _slug_name placeholders stay Korean on the wire (stored group key); translated only here.
   return (s === '백그라운드 작업' || s === '임시(스크래치패드)' || s === '홈' || /^기타 \d+개$/.test(s)) ? srvEn(s) : s;
 }
-// Timeline-first (2026-09-23): nothing saved / invalid / old 'work' (now a modal) lands on the timeline.
+// Pipelines-first: nothing saved / invalid / old 'work' (now a modal) lands on Pipelines; Timeline only if pipe was feature-off.
 // ⚠mbTabsOff = tabs whose feature was off at the last poll (92 buildMv); without it a remembered tab calls its 404 route.
 let mainView = (() => { try { const off = JSON.parse(UIS.mbTabsOff || '[]'), ok = v => !(Array.isArray(off) && off.includes(v)) && (v === 'chat' || v === 'time'
                                       || v === 'token' || v === 'struct'
@@ -197,9 +197,9 @@ let mainView = (() => { try { const off = JSON.parse(UIS.mbTabsOff || '[]'), ok 
                               // «Preferences» mbStartView: a tab key wins; 'last'/unset reopens mbMainView.
                               // Per tab: a refresh keeps this tab's own view (08 tabOwn); mbStartView only picks a new tab's first view.
                               const o = tabOwn('mbMainView'), s = UIS.mbStartView, v = ok(o) ? o : ok(s) ? s : UIS.mbMainView;
-                              // ⚠'fail' (tab removed 2026-09-23, now alerts) is not listed -> timeline.
-                              return ok(v) ? v : 'time'; }
-                        catch(e){ return 'time'; } })();
+                              // ⚠'fail' (tab removed 2026-09-23, now alerts) is not listed -> default tab.
+                              return ok(v) ? v : ok('pipe') ? 'pipe' : 'time'; }
+                        catch(e){ return 'pipe'; } })();
 if(document.documentElement) document.documentElement.dataset.mv = mainView;   // same hook setMainView keeps current (75-structure.css)
 let place='all';                // 'all' | 'dm' | 'room:<name>'
 let filter='all', q='';

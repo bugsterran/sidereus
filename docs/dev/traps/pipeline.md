@@ -159,6 +159,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ Borrowed pipelines are head-row chips only while `plBorrowLv` reports a live run; the server lists ended runs too.
 - ⚠Refocus/kbHold targets are `[data-ppk="plsel"]`; `data-plsel` no longer exists. `.plhead` is taken by the canvas arrowheads: the row is `.pltop`.
 - ★Demo headless (2026-10-17): row height 30px, one row at 900 / 1100 / 1440 (ko, en).
+- ⚠The «Working now» strip above it (48j `plNowHtml`, `.plnow`) is always rendered at a fixed 26px, one line, «+N» past 4 items: a strip that appeared/disappeared or wrapped with the session count moved the canvas on every poll. Never make it conditional or `flex-wrap`.
 
 ## Canvas row height follows the graph (48d `plCvNeed`/`plGwFit`, 43 `--plcvh`)
 

@@ -27,11 +27,11 @@ python3 -m sidereus start --demo --open      # port 18799, Ctrl-C stops it. Wind
 
 ## What it does
 
-Three connected views of the same sessions:
+Two core views, plus a timeline as the evidence behind them:
 
-- **Pipelines** — declare the stage order once; each stage shows progress and gate evidence.
-- **Timeline** — what each agent actually did, with pipeline stages overlaid.
+- **Pipelines** (the first screen) — declare the stage order once; each stage shows progress and gate evidence.
 - **Structure analysis** — an AI-drawn architecture map, checked against the code (file, line, symbol) at a commit.
+- **Timeline** — what each agent actually did, with pipeline stages overlaid. Open it to check a verdict.
 
 **Evidence for each result.**
 
@@ -149,10 +149,10 @@ repos of sessions on this machine (the same allow list as diffs).
 | Status bar | Will I run out before the reset? 5-hour and 7-day usage and the projected headroom at the reset. Click it for each account's limits, and open sessions, and to switch the main account. |
 | Sessions drawer | Which sessions are live, and is each running, thinking, waiting for me, done or stopped? |
 | Alerts | What finished, what failed and what to do about it. Optional OS notification, off by default. |
-| Timeline | What each session and subagent did, and when. A «Changes» chip counts the files changed against a baseline, named by a badge on the chip («⚠ shared» when two sessions touched one) and opens the diff. |
+| Pipelines | Each project's declared stages with agent and model, the run in progress, and per-stage evidence: gate PASS/FAIL, tests, commit, loop-backs. A run request goes to a session through the mailbox. |
+| Timeline | Evidence: what each session and subagent did, and when. A «Changes» chip counts the files changed against a baseline, named by a badge on the chip («⚠ shared» when two sessions touched one) and opens the diff. |
 | Chat | Mailbox rooms and DMs between sessions. You can post too. |
 | Tokens | Tokens and cost by model, project and platform; the five priciest subagent runs. |
-| Pipelines | Each project's declared stages with agent and model, the run in progress, and per-stage evidence: gate PASS/FAIL, tests, commit, loop-backs. A run request goes to a session through the mailbox. |
 | Structure | An agent-drawn module map where every edge is checked against the code, one flow per entry point, a minimap, and a treemap of how the code grew. Security scans (secrets, dependencies, SAST) per module; «Request fix» sends them to a session and asks for a re-map once the fix is committed. |
 | Branches | Which session made each commit and what it cost; uncommitted edits per worktree; conflict risk. |
 | History | Past sessions by day, split into work units. |

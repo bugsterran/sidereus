@@ -8,15 +8,17 @@ let PLNEW = null;            // open form {name, title, tpl, diff, busy, err}
 // A disabled button says why (one form at a time) — a silent dead click read as a bug.
 function plNewDis(on){ return on ? ' disabled title="' + esc(T('Close the open form first')) + '"' : ''; }
 // Empty project, no suggestions: template buttons in place of a note; a click only opens the preview (create still needs «Confirm — create»).
+// Two primary starts up front; same attributes and disable rules as the «+ New ▾» items, so the existing handlers do the work.
+function plStartBtns(){
+  return '<button type=button class="wkrgb plsv' + (PLSTD ? ' on' : '') + '" data-plstd>' + esc(T('Start from a template')) + '</button>'
+    + '<button type=button class="wkrgb plsv" data-pldnew' + plNewDis(PLDRAFT) + '>' + esc(T('Ask AI for a draft')) + '</button>';
+}
 function plTplPick(){
-  return '<div class=pltpl><span class=pltplh>' + esc(T('Start from a template')) + '</span>' + PL_TPLS.map(([k, lab]) =>
-    '<button type=button class=wkrgb data-pltpl="' + esc(k) + '"' + plNewDis(PLNEW || PLDRAFT) + '>' + esc(T(lab)) + '</button>').join('')
-    // Same attributes and disable rules as the «+ New ▾» items: the existing handlers open the draft form / standard list only.
-    + '<button type=button class=wkrgb data-pldnew' + plNewDis(PLDRAFT) + '>' + esc(T('Ask AI for a draft')) + '</button>'
-    + '<button type=button class="wkrgb' + (PLSTD ? ' on' : '') + '" data-plstd>' + esc(T('Standard templates')) + '</button></div>';
+  return '<div class=pltpl>' + plStartBtns() + '<span class=pltplh>' + esc(T('Or start from:')) + '</span>' + PL_TPLS.map(([k, lab]) =>
+    '<button type=button class=wkrgb data-pltpl="' + esc(k) + '"' + plNewDis(PLNEW || PLDRAFT) + '>' + esc(T(lab)) + '</button>').join('') + '</div>';
 }
 // «+ New ▾» menu: the four ways to start a pipeline behind one button (one head row at 900px). Items keep their own attributes and handlers.
-// pri: the empty state's one action gets the primary fill (four equal outlines gave no starting point)
+// pri: primary fill when the project has no pipelines and no start buttons are shown (the empty state fills 48e plStartBtns instead)
 // ⚠The menu renders inside .plw: every item handler (here and 48e PLDRAFT) returns early for a click outside .plw.
 let PLNEWM = false;          // menu open
 function plNewBtn(pri){
@@ -104,7 +106,7 @@ function plStdBody(d, p, hd){
 function plSugBody(d, ex, hd){   // ex = extra chips (48h Sidereus pipeline) · hd = head row sink (48 plHeadRow)
   const sg = d.suggest, i = Math.min(PLS.sugI || 0, sg.length - 1), p = sg[i], cv = plCanvas(p, d, null);
   const sel = sg.length > 1 ? plComboHtml({ cur: 'sug:' + i, items: sg.map((x, k) => ({ p: 'sug:' + k, name: T('Suggested') + ' · ' + x.title })) }) : '';
-  return plHeadRow(hd, sel + plNewBtn() + (ex || '')) + plNewForm()
+  return plHeadRow(hd, sel + plNewBtn() + (ex || '')) + plNewForm() + '<div class=pltpl>' + plStartBtns() + '</div>'
     + '<div class=plsugb><b>' + esc(T('Suggested · not saved')) + '</b> <span>' + esc(T('Guessed from agent names — edit it after saving')) + '</span>'
     + '<button class="wkrgb" data-plsugsave' + (PLNEW ? ' disabled' : '') + '>' + esc(T('Save this suggestion')) + '</button></div>'
     + '<div class=plbar><b>' + esc(p.title) + '</b></div>' + cv.html;

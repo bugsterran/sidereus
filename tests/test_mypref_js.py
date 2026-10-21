@@ -17,7 +17,7 @@ const fs = require('fs'), vm = require('vm'), path = require('path');
 const R = {}, js = f => fs.readFileSync(path.join(ROOT, 'web', 'js', f), 'utf8');
 const store = init => { const m = Object.assign({}, init);
   return {getItem: k => k in m ? m[k] : null, setItem: (k, v) => { m[k] = String(v); }, removeItem: k => { delete m[k]; }, _m: m,
-          get mbMainView(){ return m.mbMainView; }, get mbStartView(){ return m.mbStartView; }, get mbLang(){ return m.mbLang; }}; };
+          get mbMainView(){ return m.mbMainView; }, get mbStartView(){ return m.mbStartView; }, get mbTabsOff(){ return m.mbTabsOff; }, get mbLang(){ return m.mbLang; }}; };
 function ctx(init, ss){
   const c = {T, softErr: () => {}, UIS: store(init), sessionStorage: ss ? store(ss) : undefined, document: {documentElement: {dataset: {}}, getElementById: () => null}};
   vm.createContext(c); return c;
@@ -26,6 +26,9 @@ function ctx(init, ss){
 const mv = (init, ss) => { const c = ctx(init, ss); vm.runInContext(TABF + '\n' + js('05-i18n.js') + ';this.MV = mainView;', c); return c.MV; };
 R.mv = [mv({}), mv({mbMainView: 'chat'}), mv({mbMainView: 'chat', mbStartView: 'last'}), mv({mbMainView: 'chat', mbStartView: 'token'}),
         mv({mbMainView: 'br', mbStartView: 'bogus'}), mv({mbStartView: 'fail'})];
+// R1: no saved tab -> Pipelines; 'time' only when pipe was feature-off at the last poll; a saved tab still wins
+R.mvOff = [mv({mbTabsOff: '["pipe"]'}), mv({mbMainView: 'work', mbTabsOff: '["pipe"]'}), mv({mbMainView: 'work'}), mv({mbTabsOff: '{bad'}),
+           mv({mbMainView: 'time'}), mv({mbMainView: 'time', mbTabsOff: '["pipe"]'})];
 // per tab: this tab's own view beats mbStartView and the shared last view; a bogus one falls through
 R.mvTab = [mv({mbMainView: 'chat', mbStartView: 'token'}, {mbMainView: 'struct'}), mv({mbMainView: 'chat'}, {mbMainView: 'nope'})];
 // 90b helpers
@@ -38,8 +41,8 @@ R.tabs1 = X.mpTabs();
 c.UIS.setItem('mbTabs', '{broken');
 R.tabs2 = X.mpTabs();
 R.hideTime = X.mpOrderAct(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS, 'time', 'time', 'hide');
-R.up = X.mpOrderAct(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS, 'time', 'pipe', 'up');
-R.upTop = X.mpOrderAct(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS, 'time', 'time', 'up');
+R.up = X.mpOrderAct(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS, 'time', 'time', 'up');
+R.upTop = X.mpOrderAct(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS, 'time', 'pipe', 'up');
 R.allHidden = X.mpOrder({hide: X.MP_TABS}, X.MP_TABS, null);
 R.stock = [X.mpStock(X.mpOrder(null, X.MP_TABS, 'time'), X.MP_TABS), X.mpStock(R.up, X.MP_TABS)];
 R.parse = [X.mpParse('300', 300), X.mpParse('abc', 300)[0], X.mpParse('[["2026-09-01", 5]]', []), X.mpParse('[', [])[0], X.mpParse(' me ', 'x')];
@@ -107,7 +110,7 @@ A.mpma(''); R.maClr = c.UIS.getItem('mbMainAcct'); R.maRd = c.RD;
 R.omRow = vm.runInContext('mpMainAcctRow()', c); R.omAct = 'mpom' in A;
 """
 
-TABS = ['time', 'pipe', 'struct', 'br', 'token', 'hist', 'retro', 'chat']
+TABS = ['pipe', 'time', 'struct', 'br', 'token', 'hist', 'retro', 'chat']
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
@@ -122,13 +125,22 @@ class MyPref(unittest.TestCase):
         cls.R = json.loads(r.stdout)
 
     def test_start_view_last_default(self):
-        self.assertEqual(self.R["mv"], ["time", "chat", "chat", "token", "br", "time"])
+        # R1: an empty / invalid start lands on Pipelines
+        self.assertEqual(self.R["mv"], ["pipe", "chat", "chat", "token", "br", "pipe"])
         self.assertEqual(self.R["start"], ["last", "last", "retro", "last", "last"])
         self.assertEqual(self.R["mvTab"], ["struct", "chat"])
 
+    def test_default_falls_back_to_time_when_pipe_off(self):
+        # R1: pipe feature-off at the last poll -> Timeline; a saved tab still wins over the default.
+        self.assertEqual(self.R["mvOff"], ["time", "time", "pipe", "pipe", "time", "time"])
+
+    def test_stock_order_pipe_first(self):
+        # R4: Timeline sits after Pipelines in the stock tab order.
+        self.assertEqual(TABS[:2], ["pipe", "time"])
+
     def test_tabs_normalise(self):
         self.assertEqual(self.R["tabs0"], {"order": TABS, "hide": []})
-        self.assertEqual(self.R["tabs1"]["order"], ["retro", "chat", "time", "pipe", "struct", "br", "token", "hist"])
+        self.assertEqual(self.R["tabs1"]["order"], ["retro", "chat", "pipe", "time", "struct", "br", "token", "hist"])
         self.assertEqual(self.R["tabs1"]["hide"], ["chat"])     # 'time' dropped, unknown/dupes dropped
         self.assertEqual(self.R["tabs2"], {"order": TABS, "hide": []})
 
@@ -136,7 +148,7 @@ class MyPref(unittest.TestCase):
         self.assertEqual(self.R["hideTime"]["hide"], [])
 
     def test_order_move_and_stock(self):
-        self.assertEqual(self.R["up"]["order"], ["pipe", "time"] + TABS[2:])
+        self.assertEqual(self.R["up"]["order"], ["time", "pipe"] + TABS[2:])
         self.assertEqual(self.R["upTop"]["order"], TABS)
         self.assertEqual(self.R["allHidden"]["hide"], [])
         self.assertEqual(self.R["stock"], [True, False])

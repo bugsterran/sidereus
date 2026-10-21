@@ -48,7 +48,7 @@ function buildMv(){
   // ★«Structure» is a **separate tab** (pick a session, then view its projects' structure).
   // Same slot as tokens — uses the whole middle column.
   // ★Tab labels go through T() so the language pack can rename them without touching markup.
-  // Timeline first; «Activity» is no longer a tab but a modal (wkOpenModal).
+  // Pipelines first, Timeline second (evidence view); «Activity» is no longer a tab but a modal (wkOpenModal).
   // ★The «Failures» tab was removed — failures are bell alerts now.
   // ⚠The rebuild drops focus to <body>; remember it so a keyboard tab switch keeps focus (★ 2026-09-27 interaction audit).
   const hadF = el.contains(document.activeElement);
@@ -148,21 +148,44 @@ const mvScroll = {};
 // ⚠The tab's async load refills #feed after this runs, so the first set clamps to a short page — keep re-applying
 //   for a few seconds until the page is tall enough, and give up as soon as the user scrolls or the tab changes.
 let mvScrollSeq = 0;
+// Any user input (wheel/touch/pointer/key) ends a pending programmatic scroll; call done() to unhook.
+function mvUserStop(){
+  const st = {user: false};
+  const stop = () => { st.user = true; };
+  const evs = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
+  evs.forEach(e => window.addEventListener(e, stop, {passive: true, capture: true}));
+  st.done = () => evs.forEach(e => window.removeEventListener(e, stop, {capture: true}));
+  return st;
+}
 function mvScrollBack(){
   if(mainView === 'chat' || !feed) return;
   const v = mainView, want = mvScroll[v] || 0, seq = ++mvScrollSeq, end = Date.now() + 4000;
   feed.scrollTop = want;
-  let user = false;
-  const stop = () => { user = true; };
-  const evs = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
-  evs.forEach(e => window.addEventListener(e, stop, {passive: true, capture: true}));
-  const done = () => evs.forEach(e => window.removeEventListener(e, stop, {capture: true}));
+  const us = mvUserStop(), done = us.done;
   const tick = () => {
-    if(user || seq !== mvScrollSeq || mainView !== v || Date.now() > end) return done();
+    if(us.user || seq !== mvScrollSeq || mainView !== v || Date.now() > end) return done();
     if(want && feed.scrollTop !== want && feed.scrollHeight - feed.clientHeight >= want) feed.scrollTop = want;
     requestAnimationFrame(tick);
   };
   if(want) requestAnimationFrame(tick); else done();
+}
+// Open tab v and bring its row sel into view once the async load paints it.
+//   ⚠++mvScrollSeq cancels mvScrollBack's restore, else it scrolls the remembered offset back over the target.
+//   ⚠block:'nearest' only — no auto-centring.
+function mvGo(v, sel){
+  setMainView(v);
+  if(!feed || !sel) return;
+  const seq = ++mvScrollSeq, end = Date.now() + 4000, us = mvUserStop();
+  const tick = () => {
+    if(us.user || seq !== mvScrollSeq || mainView !== v) return us.done();
+    let el = null; try{ el = feed.querySelector(sel); }catch(e){ softErr('mvGo', e); return us.done(); }
+    if(!el){ if(Date.now() < end) requestAnimationFrame(tick); else us.done(); return; }
+    us.done();
+    el.scrollIntoView({block: 'nearest'});
+    el.classList.remove('mvgo'); void el.offsetWidth; el.classList.add('mvgo');
+    setTimeout(() => el.classList.remove('mvgo'), 1600);
+  };
+  requestAnimationFrame(tick);
 }
 function setMainView(v){
   const _prev = mainView;

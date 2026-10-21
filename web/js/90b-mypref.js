@@ -1,6 +1,6 @@
 // «Preferences» settings category (90-settings.js cfgPaneMe): screen prefs in UIS, server prefs via /api/prefs.
 // ⚠Empty storage must reproduce the stock screen byte for byte: every normaliser returns the built-in default for missing/bad input.
-const MP_TABS = ['time', 'pipe', 'struct', 'br', 'token', 'hist', 'retro', 'chat'];   // stock tab order (92-mainview-tabs.js buildMv); a saved mbTabs order still wins
+const MP_TABS = ['pipe', 'time', 'struct', 'br', 'token', 'hist', 'retro', 'chat'];   // stock tab order (92-mainview-tabs.js buildMv); a saved mbTabs order still wins
 function mpJson(k){ try{ return JSON.parse(UIS.getItem(k) || 'null'); }catch(e){ return null; } }
 function mpPut(k, v){ try{ if(v == null) UIS.removeItem(k); else UIS.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); return true; }catch(e){ return false; } }
 // mbStartView: 'last' (default = reopen the last tab) or one tab key.
@@ -14,7 +14,7 @@ function mpOrder(raw, all, lock){
   if(hide.length >= all.length) hide = [];   // never an empty strip
   return {order: order, hide: hide};
 }
-function mpTabs(){ return mpOrder(mpJson('mbTabs'), MP_TABS, 'time'); }   // ⚠'time' is the fallback view, so it cannot hide
+function mpTabs(){ return mpOrder(mpJson('mbTabs'), MP_TABS, 'time'); }   // ⚠'time' is the fallback view (pipe can be feature-off), so it cannot hide
 // Move / hide one key; a result equal to the stock layout clears the key so storage stays empty.
 function mpOrderAct(cur, all, lock, k, op){
   const o = {order: cur.order.slice(), hide: cur.hide.slice()}, i = o.order.indexOf(k);

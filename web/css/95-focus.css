@@ -23,3 +23,9 @@ html[data-ui][data-theme=light] :is(input:not([type=checkbox],[type=radio],[type
 .kbhelp dd{margin:0;color:var(--nx-t2,#a8b3c4)}
 .kbhelp kbd{font:11px ui-monospace,Menlo,monospace;padding:1px 6px;border:1px solid var(--nx-rule,#2a3342);border-radius:4px;background:var(--nx-bg,#0a0b0e)}
 .kbhn{margin-top:9px;font-size:10.5px;color:var(--nx-t3,#7e8896)}
+/* mvGo (92-mainview-tabs.js): brief highlight on the row a cross-tab link landed on. Outline only, so layout never shifts. */
+.mvgo{animation:mvgo 1.5s ease-out;outline-offset:-2px}
+@keyframes mvgo{0%,40%{outline:2px solid var(--nx-info,#5899f3);background-color:rgba(88,153,243,.16)}100%{outline:2px solid transparent;background-color:transparent}}
+html[data-theme=light] .mvgo{animation-name:mvgol}
+@keyframes mvgol{0%,40%{outline:2px solid #2f6fd0;background-color:rgba(47,111,208,.12)}100%{outline:2px solid transparent;background-color:transparent}}
+@media (prefers-reduced-motion:reduce){.mvgo{animation:none;outline:2px solid var(--nx-info,#5899f3)}}

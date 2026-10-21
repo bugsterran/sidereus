@@ -2,19 +2,22 @@
 //   ⚠Never scrolls (no scrollIntoView/scrollTo): a target outside the viewport counts as missing and the step is centred.
 //   ⚠Tabs change only on «Next»; the tab open before the tour is restored on finish/skip.
 //   ⚠Commands are copy-only — Sidereus never spawns a process (AGENTS.md rule 7).
+// Pipelines lead (first screen); Timeline comes last as the evidence view.
 const TOUR_STEPS = [
-  {id: 'time',     tab: 'time',   sel: '#feed .tlr.tlrs'},
   {id: 'pl-what',  feat: 'pipeline', pl: 1},
-  {id: 'pl-live',  tab: 'time',   sel: '#feed .tlpl', feat: 'pipeline', pl: 1},   // ⚠strip root only — its inner classes change
+  {id: 'pl-live',  tab: 'pipe',   sel: '#feed .plnow', feat: 'pipeline', pl: 1},   // ⚠block root only — its inner classes change
   {id: 'pl-start', tab: 'pipe',   sel: '[data-plnewm]', feat: 'pipeline', pl: 1},
   {id: 'arch',     tab: 'struct', sel: '.archtab'},   // ⚠never calls setStrMode — the user's structure mode stays
+  {id: 'time',     tab: 'time',   sel: '#feed .tlr.tlrs'},
   {id: 'done'},
 ];
 const TOUR_KEY = 'sidereus.tourDone';   // ⚠must match sidereus/ui_prefs.py KEY_RE or the server drops it
 // Pure: steps whose feature is off drop out; a step spotlights only when its target is on screen (hasSel(sel) -> bool).
+//   No sessions: the demo hint rides on the first live step — 'pl-live', or 'time' when pipelines are off.
 function tourPlan(feats, hasSel, nSes){
-  return TOUR_STEPS.filter(s => !(s.feat && feats && feats[s.feat] === false)).map(s => {
-    const demo = s.id === 'time' && !nSes;
+  const steps = TOUR_STEPS.filter(s => !(s.feat && feats && feats[s.feat] === false)), dk = steps.some(s => s.id === 'pl-live') ? 'pl-live' : 'time';
+  return steps.map(s => {
+    const demo = s.id === dk && !nSes;
     return {id: s.id, mode: s.sel && !demo && hasSel(s.sel) ? 'spot' : 'centre', demo};
   });
 }
@@ -60,16 +63,19 @@ function tourCmdHtml(cmds){
 // Bubble body for one plan entry {id, mode, demo}; dir = Sidereus code folder (state.codeDir) for the plugin line.
 function tourBody(p, dir){
   const P = s => '<p>' + esc(T(s)) + '</p>';
-  if(p.id === 'time' && p.demo) return {t: 'Try the demo', cmds: ['python3 -m sidereus start --demo --open'],
+  const demo = ['python3 -m sidereus start --demo --open'];
+  if(p.id === 'time' && p.demo) return {t: 'Try the demo', cmds: demo,
     h: P('AI coding-agent sessions on this computer gather here automatically') + P('No sessions yet — start the demo from a terminal to look around.')};
-  if(p.id === 'time') return {t: 'Timeline', h: P('AI coding-agent sessions on this computer gather here automatically')};
+  if(p.id === 'time') return {t: 'Timeline', h: P('AI coding-agent sessions on this computer gather here automatically')
+    + P('Each session’s work over time — the evidence behind a pipeline verdict')};
+  if(p.id === 'pl-live' && p.demo) return {t: 'Try the demo', cmds: demo, h: tourStepper()
+    + P('AI coding-agent sessions on this computer gather here automatically') + P('No sessions yet — start the demo from a terminal to look around.')};
   if(p.id === 'pl-what') return {t: 'Pipelines', h: tourStepper()
     + '<p class=tourval>' + esc(T('Set the order once and sessions follow it; every stage leaves its result as evidence')) + '</p>'
     + '<dl class=tourterms>' + [[T('Stage'), 'One stretch of work owned by one agent'], [T('Gate'), 'A check that must pass before the next stage'],
         [T('Sent back'), 'A failed gate sends the work back to an earlier stage']].map(x => '<dt>' + esc(x[0]) + '</dt><dd>' + esc(T(x[1])) + '</dd>').join('') + '</dl>'};
-  if(p.id === 'pl-live') return {t: 'Live progress', h: (p.mode === 'spot' ? '' : tourStepper())
-    + P('See the current stage and whether its gate passed here — the evidence stays in Pipelines › Harness «Results»')
-    + (p.mode === 'spot' ? '' : '<p class=tourdim>' + esc(T('No pipeline is running right now.')) + '</p>')};
+  if(p.id === 'pl-live') return {t: 'Working now', h: (p.mode === 'spot' ? '' : tourStepper())
+    + P('«Working now» lists the sessions at work right now, each with its pipeline and stage chip — click one to see it in the Timeline')};
   if(p.id === 'pl-start') return {t: 'Your first pipeline', h: P('Open «+ New ▾» and start with «Standard templates» › «Review only» (2 stages) · if writing one is hard, pick «Ask AI for a draft» there')};
   if(p.id === 'arch') return {t: 'Structure › Architecture', h: P('Architecture — a module diagram drawn by an agent; only edges that pass the evidence check remain')};
   return {t: 'You are set', cmds: tourPluginLines(dir),
