@@ -138,13 +138,15 @@ def _card_sigs(extra, cards, own, now, read, rid):
         if r is None:
             continue
         at = _card_ts(c)
+        same = not (c.get("sid") and r.get("sid") and c["sid"] != r["sid"])
         # ★failure family = kinds starting with 'f' (flimit·fcut·fcheck·fwreck·legacy fail)
         if k.startswith("f") and now - at <= ATT_FAIL_CARD_S:
-            same = not (c.get("sid") and r.get("sid") and c["sid"] != r["sid"])
             if same and _resumed(r, min(at, evat.get(c.get("tid"), at)), now):
                 continue
             grp.setdefault((id(r), "fail"), []).append((at, _FAIL_TITLE.get(k, "실패 알림")))
         elif k in ("agent", "bgdone") and at and not c.get("old") and not (read and c.get("at", "") <= read):
+            if same and _resumed(r, at, now):   # session carried on after the completion: treat as seen
+                continue
             ck = "%s|%s|%s" % (c.get("at"), k, c.get("project") or "")
             if ck not in rid:
                 grp.setdefault((id(r), "bgdone"), []).append((at, "서브에이전트" if k == "agent" else "백그라운드", ck))
