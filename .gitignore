@@ -24,6 +24,7 @@ rooms.json
 profiles.json
 ext-sessions.json
 ext-runs.json
+plreq.json
 *.cursor
 presence-*
 .wake/
