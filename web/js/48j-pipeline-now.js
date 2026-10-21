@@ -31,7 +31,7 @@ function plNowAgents(x){
   return '<div class=plnag>' + shown.map((a, i) => {
     const p = plLabParts(a.lab), d = plDescStage(a.lab), h = hot(a);
     const g = { sess: false, type: p.type || T('Agent'), plat: a.plat || x.plat || '', br: i === shown.length - 1 && !more ? '└' : '├', items: [{ aid: a.aid || a.tid || 'a', desc: p.desc }] };
-    return '<button type=button class="plnagr tlnm' + (h ? '' : ' quiet') + '" data-pnagc="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '"'
+    return '<button type=button class="plnagr tlnm' + (h ? '' : ' quiet') + '" data-pnagc="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" data-pntid="' + esc(subWorkId(a)) + '"'
       + (d && d.name !== '-' ? ' data-pnname="' + esc(d.name) + '" data-pnst="' + esc(d.title) + '"' : '') + ' title="' + esc(plLabTip(a.lab)) + '"><b>' + tlAgNmB(g, h) + '</b></button>';
   }).join('') + (more > 0 ? '<div class=plnagm>' + esc(TV({msg: '+{n} more', vars: {n: more}})) + '</div>' : '') + '</div>';
 }
@@ -91,9 +91,10 @@ function plNowGoProj(proj){
 document.addEventListener('click', e => {
   const t = e.target.closest && e.target.closest('.plw .plnl [data-pncwd],.plw .plnl [data-pnagc],.plw .plnl [data-pnfold]');
   if(!t) return;
-  if(t.hasAttribute('data-pnagc')){   // subagent row: its session's run, then its stage (untagged: the session only)
+  if(t.hasAttribute('data-pnagc')){   // subagent row: its session's run, then its stage (untagged: the session only), then its work-log popup
     plNowPick(t.dataset.pnagc, t.dataset.pnplat);
     if(t.dataset.pnname){ PLS.sel = t.dataset.pnname; PLS.nowPick = { name: t.dataset.pnname, title: t.dataset.pnst }; plPaint(); }
+    if(t.dataset.pntid) openAgent(t.dataset.pnagc, t.dataset.pntid);   // same popup as a Timeline agent row (rule 1 exception: click only)
     return;
   }
   if(t.hasAttribute('data-pnfold')){ if(plNowFolded()) lsDel('sidereus.plnowc'); else lsSet('sidereus.plnowc', '1'); plPaint(); return; }
