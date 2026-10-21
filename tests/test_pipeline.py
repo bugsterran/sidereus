@@ -450,6 +450,21 @@ class Routes(unittest.TestCase):
             for src in ({"proj": "/etc", "name": "demo"}, {"proj": self.proj, "name": "../x"}, {"proj": self.proj, "name": "nope"}):
                 self.assertEqual(self._create({"proj": other, "name": "c2", "from": src, "dry": True})[0], 400, src)
 
+    def test_import_from_other_keeps_main(self):
+        P = _copy()
+        P["name"], P["stages"][0]["agent"] = "orch", "main"
+        with open(os.path.join(self.proj, ".claude", "pipelines", "orch.json"), "w", encoding="utf-8") as f:
+            f.write(PS.dump(P))
+        other = os.path.join(self.tmp, "other")
+        os.makedirs(other)
+        with mock.patch.object(PP, "known_projects", lambda: [self.proj, other]):
+            code, out, _ = self._create({"proj": other, "name": "copy", "from": {"proj": self.proj, "name": "orch"}, "dry": True})
+            self.assertEqual(code, 200, out)
+            self.assertNotIn("main", out["replaced"])
+            self.assertEqual(self._create({"proj": other, "name": "copy", "from": {"proj": self.proj, "name": "orch"}, "dry": False})[0], 200)
+            with open(os.path.join(other, ".claude", "pipelines", "copy.json"), encoding="utf-8") as f:
+                self.assertEqual(json.load(f)["stages"][0]["agent"], "main")
+
     def test_rule_files_and_workflows_names_only(self):
         open(os.path.join(self.proj, "AGENTS.md"), "w", encoding="utf-8").close()
         os.makedirs(os.path.join(self.proj, ".claude", "workflows"))
