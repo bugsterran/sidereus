@@ -194,13 +194,13 @@ class TestCards(Base):
         a1, a2 = iso(now - 100), iso(now - 50)
         cards = [{"kind": "agent", "cwd": "/w/p", "at": a1, "project": "p"},
                  {"kind": "bgdone", "cwd": "/w/p", "at": a2, "project": "p"}]
-        row = self.one(sess("a"), cards)
+        row = self.one(sess("a", age=200), cards)
         self.assertEqual([s["k"] for s in row["sigs"]], ["bgdone"])
         self.assertEqual(row["why"], "백그라운드·서브에이전트 완료 2건 미확인")
         # read watermark hides both; read_ids hides one
-        rows = att.attention([sess("a")], cards, read=a2, read_ids=[])["rows"]
+        rows = att.attention([sess("a", age=200)], cards, read=a2, read_ids=[])["rows"]
         self.assertEqual(rows, [])
-        rows = att.attention([sess("a")], cards, read="", read_ids=["%s|agent|p" % a1])["rows"]
+        rows = att.attention([sess("a", age=200)], cards, read="", read_ids=["%s|agent|p" % a1])["rows"]
         self.assertIn("1건", rows[0]["why"])
 
     def test_bgdone_keys_round_trip_through_mark_cards_read(self):
@@ -211,7 +211,7 @@ class TestCards(Base):
         a1, a2 = iso(now - 100), iso(now - 50)
         cards = [{"kind": "agent", "cwd": "/w/p", "at": a1, "project": "p"},
                  {"kind": "agent", "cwd": "/w/p", "at": a2, "project": "p"}]
-        row = self.one(sess("a"), cards)
+        row = self.one(sess("a", age=200), cards)
         keys = row["sigs"][0]["keys"]
         self.assertEqual(sorted(keys), ["%s|agent|p" % a1, "%s|agent|p" % a2])
         d = tempfile.mkdtemp()
@@ -219,10 +219,33 @@ class TestCards(Base):
         cards_mod.READ_IDS, cards_mod.READ_MARK = os.path.join(d, "cards-read-ids.txt"), os.path.join(d, "cards-read.txt")
         try:
             cards_mod.mark_cards_read(keys)
-            rows = att.attention([sess("a")], cards, read="", read_ids=cards_mod.cards_read_ids())["rows"]
+            rows = att.attention([sess("a", age=200)], cards, read="", read_ids=cards_mod.cards_read_ids())["rows"]
         finally:
             cards_mod.READ_IDS, cards_mod.READ_MARK = old
         self.assertEqual(rows, [])
+
+
+class TestBgdoneResume(Base):
+    """bgdone cards clear once the owning session carries on past the completion (as the failure family)."""
+
+    def card(self, ago, kind="agent", **kw):
+        c = {"kind": kind, "cwd": "/w/p", "at": iso(time.time() - ago), "project": "p"}
+        c.update(kw)
+        return c
+
+    def test_R1_later_activity_clears(self):
+        self.assertIsNone(self.one(sess("a", age=100), [self.card(600), self.card(500, "bgdone", sid="a")]))
+
+    def test_R1_only_resumed_cards_dropped(self):
+        row = self.one(sess("a", age=300), [self.card(600), self.card(250, "bgdone")])
+        self.assertEqual(row["sigs"][0]["why"], "백그라운드 완료 1건 미확인")
+
+    def test_R2_no_later_activity_stays(self):
+        self.assertEqual(self.kinds(sess("a", age=900), [self.card(600)]), ["bgdone"])
+        self.assertEqual(self.kinds(sess("a", age=100), [self.card(150)]), ["bgdone"])   # within grace
+
+    def test_R3_other_sid_not_cleared(self):
+        self.assertEqual(self.kinds(sess("a", age=5), [self.card(600, sid="zz")]), ["bgdone"])
 
 
 class TestResume(Base):
