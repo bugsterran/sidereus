@@ -110,11 +110,38 @@ class PlNow(unittest.TestCase):
         h = run(NOW + "LS['sidereus.plnowc'] = '1'; console.log(JSON.stringify(plNowList(" + LIVE + ")));")
         self.assertTrue(h.startswith('<aside class="plnl plnlc">'))
         self.assertIn('aria-label="Expand list"', h)
-        self.assertEqual(re.findall(r'class="plnlrd plnld-(\w+)" data-pncwd="([^"]+)"', h), [("work", "/a"), ("idle", "/b"), ("work", "/c")])
-        self.assertIn('title="beta · Idle" aria-label="beta · Idle"', h)
+        self.assertEqual(re.findall(r'class="plnlrd plnld-(\w+)( plnlrp)?" data-pncwd="([^"]+)"', h), [("work", " plnlrp", "/a"), ("idle", "", "/b"), ("work", " plnlrp", "/c")])
+        self.assertIn('data-pnlp="beta" data-pnls="Idle · No pipeline · docs" aria-label="beta · Idle"', h)
+        self.assertNotIn("title=", h.split("plnlrd", 1)[1])                    # floating label replaces the native title
         self.assertNotIn("plnli", h)
         css = open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8").read()
         self.assertIn("html[data-ui] .plw aside.plnl.plnlc{padding:4px 0;border:0;background:none;overflow:hidden", css)
+
+    def test_r5_collapsed_rail_marks_selected(self):
+        h = run(NOW + "LS['sidereus.plnowc'] = '1'; PLS.nowSid = 's2'; console.log(JSON.stringify(plNowList(" + LIVE + ")));")
+        self.assertEqual(re.findall(r'class="plnlrd plnld-\w+ on" data-pncwd="([^"]+)"', h), ["/b"])
+        self.assertEqual(h.count(" on\""), 1)
+        self.assertEqual(h.count("aria-current=true"), 1)
+        self.assertIn('aria-label="beta · Idle" aria-current=true>', h)
+        css = open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8").read()
+        self.assertIn(".plnlrd.on{box-shadow:inset 0 0 0 2px", css)
+
+    def test_r5_rail_label_and_pulse(self):
+        r = run(NOW + js_fn("plNowTip") + "\nconsole.log(JSON.stringify(plNowTip('<x>', 'Working · Implement')));")
+        self.assertEqual(r, '<b>&lt;x></b><span>Working · Implement</span>')
+        h = run(NOW + "LS['sidereus.plnowc'] = '1'; console.log(JSON.stringify(plNowList(" + LIVE + ")));")
+        self.assertIn('data-pnlp="alpha" data-pnls="Working · Implement"', h)
+        s = _src("48j-pipeline-now.js")
+        for frag in ("document.addEventListener('mouseover', plNowTipOn);", "document.addEventListener('focusin', plNowTipOn);",
+                     "document.addEventListener('focusout', plNowTipHide);", "document.addEventListener('scroll', plNowTipHide, true);"):
+            self.assertIn(frag, s)
+        self.assertNotIn("T(b.dataset", s)
+        css = open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8").read()
+        self.assertIn("#plnltip{position:fixed;", css)
+        self.assertIn(".plnlrd.plnlrp::after{", css)
+        self.assertIn("animation:plr ", css.split(".plnlrd.plnlrp::after{", 1)[1].split("}", 1)[0])
+        self.assertIn("@media (prefers-reduced-motion:reduce){.plnlrd.plnlrp::after{animation:none;", css)
+        self.assertIn(".plnlrd.plnld-need::before{background:var(--nx-warn", css)
 
     def test_r5_rail_dot_click_expands_and_picks(self):
         s = _src("48j-pipeline-now.js")
@@ -149,6 +176,25 @@ class PlNow(unittest.TestCase):
     def test_f3_pick_closes_arch_map(self):
         r = run(NOW + "SESS = [{state: 'tool', sid: 's1', cwd: '/a'}]; plNowPick('/a', ''); console.log(JSON.stringify(PLAG));")
         self.assertFalse(r)
+
+    def test_running_row_pick_marks_live_session(self):
+        # «Running N» row click (48b plOvPick) marks the session running it in «Working now»; no live match → ''.
+        ov = js_fn("plOvSid") + "\n" + js_fn("plOvPick") + "\nlet PLVIEW = 'pipe';\n"
+        r = run(NOW + ov + "SESS = " + LIVE + ";"
+                "plOvPick('/a', 'chg', ''); const a = PLS.nowSid; const h = plNowList();"
+                "plOvPick('/b', 'chg', ''); const b = PLS.nowSid;"
+                "plOvPick('/c', 'x', 's3'); const c = PLS.nowSid;"
+                "plOvPick('/z', 'x', 'dead'); const d = PLS.nowSid;"
+                "SESS = [{state: 'tool', sid: 'p1', cwd: '/w', plm: {name: 'rel'}}]; plOvPick('/w', 'rel'); const e = PLS.nowSid;"
+                "console.log(JSON.stringify([a, b, c, d, e, h]));")
+        self.assertEqual(r[:5], ["s1", "", "s3", "", "p1"])
+        self.assertIn('class="plnli tlnm on" data-pncwd="/a"', r[5])
+        self.assertIn("aria-current=true", r[5])
+        src = _src("48b-pipeline-run.js")
+        self.assertIn("plOvPick(r.dataset.plovwp, r.dataset.plovwn, r.dataset.plovw)", src)
+        pk = js_fn("plOvPick")
+        self.assertLess(pk.index("plProjGo(proj)"), pk.index("PLS.nowSid ="))   # set after plProjGo clears it
+        self.assertNotRegex(pk, r"scrollInto|scrollTo|plFit\(|plCentre\(")
 
     def test_f7_picker_clears_session_pick(self):
         pk = js_fn("plPickProj")
@@ -292,7 +338,7 @@ class PlNow(unittest.TestCase):
         self.assertEqual(rows, [("alpha\nWorking", "alpha · Working · Implement"), ("beta\nNeeds you", "beta · Needs you · old done"),
                                 ("gamma\nIdle", "gamma · Idle · Undeclared"), ("delta\nIdle", "delta · Idle")])
         r = run(NOW + "LS['sidereus.plnowc'] = '1'; console.log(JSON.stringify(plNowList(" + ss + ")));")
-        self.assertEqual(re.findall(r'class="plnlrd[^"]*"[^>]*title="([^"]*)"', r), ["alpha · Working", "beta · Needs you", "gamma · Idle", "delta · Idle"])
+        self.assertEqual(re.findall(r'class="plnlrd[^"]*"[^>]*aria-label="([^"]*)"', r), ["alpha · Working", "beta · Needs you", "gamma · Idle", "delta · Idle"])
         self.assertIn("plNowRunTxt(x)", js_fn("plNowList"))                    # project name never goes through T()
         self.assertNotIn("T(x.project", js_fn("plNowList"))
 

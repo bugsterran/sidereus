@@ -28,6 +28,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Viewer: settings stay in sync across open tabs — «Done» and «Later» on an Attention item reach every tab within about a second (a missed tab catches up on its next poll), and a stale tab can no longer erase another tab's «Done» or «Later».
+- Attention: clicking an item in the rail list opens the session drawer at that item's row in «Attention» (unfolding low-priority or overflow rows); the terminal jump stays on the drawer row.
+- Pipelines: the selected session is marked in the collapsed «Working now» rail (ring) and when a «Running N» row is picked; rail dots show a label with project, state and run on hover or focus, and only working sessions pulse.
 - Pipelines: the Watch resize grips have their own 24px row, so a press on the canvas edge (or a «Pass» button there) no longer starts a resize; the collapsed «Working now» rail scrolls instead of clipping dots and pushing the page.
 - Pipelines: the «pipeline file not found» note for a run whose pipeline file is missing shows in a project with no pipelines too.
 - Sessions: the pipeline chip keeps the stage name visible (only the run name ellipsizes) and the space before it.
