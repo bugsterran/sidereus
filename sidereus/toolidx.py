@@ -9,15 +9,18 @@
 Incremental: per-file byte offsets, so a refresh reads only appended tails (same idea as usage_index).
 Offsets + events persist to `toolidx-cache.json` so a restart resumes instead of rescanning.
 """
+import base64
 import glob
 import hashlib
 import json
 import os
 import re
+import sys
 import threading
 import time
-from itertools import repeat
-from sys import intern
+from array import array
+from bisect import bisect_left
+from itertools import chain, islice
 from sidereus.config import DATA_DIR
 from sidereus.bus import _atomic_write
 from sidereus.warn import warn_once
@@ -35,10 +38,11 @@ TI_BG = True                 # tests turn the background warm thread off
 # ★10-03: cold scan of 90 days = 4.64 GB / 3,970 files / 22 s, so «Loading» showed for that long after every restart.
 #   The cache (36.8 MB JSON, 0.23 s to load) brings a restart down to reading only the tails appended since the last save.
 TI_CACHE = os.path.join(DATA_DIR, "toolidx-cache.json")
-# 4: header line + one JSON line per file, "ev" grouped by key ({key: [[ids], [ts]]}), loaded line by line.
+# 5: header line + one JSON line per file `[path, sz, off, [keys], ids, ts, ki, fail, conn]`, the three arrays
+#   base64 little-endian (int64 id hash · float64 ts · uint32 index into that row's keys); loaded line by line.
+#   4: "ev" grouped by key ({key: [[id strings], [ts]]}) · 3: `tool:` events deduped by id · 2: per-file "tools".
 #   ★10-13: v3 (one 80 MB JSON, 894k events, 80% hook runs) peaked at 489 MB in json.load; v4 see `_load_disk`.
-#   3: tool names are `tool:` events in "ev" (deduped by id across files); 2 had per-file "tools"
-TI_CACHE_V = 4
+TI_CACHE_V = 5
 TI_SAVE_S = 120              # at most one save per this many seconds (★10-05: a dump is 0.31 s under the lock)
 _TI_ROOT = CLAUDE_PROJECTS   # ⚠disk cache only for the real projects dir — tests patch CLAUDE_PROJECTS and get no disk I/O
 _TI_HINT = (b"mcp__", b'"Skill"', b'"Task"', b'"Agent"', b"<command-name>", b'"hook_success"', b'"hook_additional_context"', b'"failedMcpServers"')
@@ -50,7 +54,21 @@ _TOOL_RE = re.compile(rb'"type":\s?"tool_use",\s?"id":\s?"([^"]{1,80})",\s?"name
 _TS_RE = re.compile(rb'"timestamp":\s?"([^"]{1,40})"')
 _SRV_RE = re.compile(r"[^A-Za-z0-9_-]")   # config name -> tool-name prefix form (`claude.ai X` -> `claude_ai_X`)
 _HDR_RE = re.compile(rb'\{\s*"v"\s*:\s*(\d{1,4})\s*[,}]')
-_TI_FILES = {}               # path -> {"sz", "off", "ev": {event id: (key, ts)}, "fail": {mcp key: (ts, code)}, "conn": {mcp key: ts}}
+# path -> {"sz", "off", "ids"/"ts"/"ki": parallel arrays (id hash, epoch, key index), "lo"/"hi": ts range,
+#          "mc": {mcp key: newest call ts}, "fail": {mcp key: (ts, code)}, "conn": {mcp key: ts}}
+# ★10-22 (5,335 files / 1.53M events, 1,845 ids in 2+ files): per-event dicts of id strings + tuples -> arrays of
+#   id hashes: index traced 328 -> 55 MB · 4-window recompute peak 454 -> 56 MB, 1.68 -> 0.66 s (no full `_merged`
+#   copy) · maxrss after cache load + recompute 539 -> 166 MB · cold 90-day scan maxrss 711 -> 464 MB · cache 96 -> 47 MB.
+# ⚠Events older than TI_MAX_DAYS are dropped: a copy with no timestamp (ts 0, 31 of 1.53M) no longer hides the
+#   timestamped copy of the same id in another file, which now counts.
+_TI_FILES = {}
+_TI_KEYS = []                # key index -> key (~1k distinct keys over all events)
+_TI_KIDX = {}                # key -> index
+_TI_SEEN = array("q")        # sorted id hashes at the last `_reindex`; with _TI_NEW a superset of every indexed id
+_TI_NEW = set()              # id hashes added since the last `_reindex`
+_TI_DUP = set()              # id hashes that may sit in more than one file (only these go through `_merged`)
+TI_REINDEX_MIN = 1 << 17
+_INF = float("inf")
 _TI_RES = {}                 # days -> (computed at, result); only complete results are cached
 _TI_MCP = {}                 # days -> (computed at, mcp_status result)
 _TI_STATE = {"pending": False, "bg": None, "loaded": False, "dirty": False, "saved": 0.0, "rv": False}
@@ -141,7 +159,73 @@ def _conns_of(d):
     return sorted(out)
 
 
-def _scan_file(fp, ent, limit):
+def _new_ent(sz=-1, off=0):
+    return {"sz": sz, "off": off, "ids": array("q"), "ts": array("d"), "ki": array("I"),
+            "lo": _INF, "hi": -_INF, "mc": {}, "fail": {}, "conn": {}}
+
+
+def _hid(eid):
+    """Event id -> signed 64-bit hash (★1.5M ids: collision odds ~1e-7; a str id cost ~105 B, this 8 B in an array)."""
+    return int.from_bytes(hashlib.blake2b(eid.encode("utf-8", "replace"), digest_size=8).digest(), "little", signed=True)
+
+
+def _kid(key):
+    i = _TI_KIDX.setdefault(key, len(_TI_KEYS))
+    if i == len(_TI_KEYS):
+        _TI_KEYS.append(key)
+    return i
+
+
+def _reindex():
+    """Rebuild `_TI_SEEN`/`_TI_DUP` exactly from the files (drops ids of removed or trimmed files; call under the lock).
+    ⚠The sort makes a transient list of every id (★10-22: load peak 122 MB traced at 1.5M) — runs at load and
+      when _TI_NEW passes a quarter of _TI_SEEN, never per request."""
+    global _TI_SEEN
+    s = sorted(chain.from_iterable(ent["ids"] for ent in _TI_FILES.values()))
+    _TI_DUP.clear()
+    _TI_DUP.update(a for a, b in zip(s, islice(s, 1, None)) if a == b)
+    _TI_SEEN = array("q", s)
+    _TI_NEW.clear()
+
+
+def _add(ent, eid, key, ts, cut, own):
+    """Index one event unless it is older than `cut` or already in this file (first copy in a file wins, as before).
+    Returns the file's id set once a lookup needed it (built lazily: most ids are new everywhere)."""
+    if ts < cut:
+        return own
+    x = _hid(eid)
+    i = bisect_left(_TI_SEEN, x)
+    if x in _TI_NEW or (i < len(_TI_SEEN) and _TI_SEEN[i] == x):
+        if own is None:
+            own = set(ent["ids"])
+        if x in own:
+            return own
+        _TI_DUP.add(x)      # also in another file (or was): `_merged` picks the earliest copy
+    else:
+        _TI_NEW.add(x)
+    if own is not None:
+        own.add(x)
+    ent["ids"].append(x)
+    ent["ts"].append(ts)
+    ent["ki"].append(_kid(key))
+    ent["lo"], ent["hi"] = min(ent["lo"], ts), max(ent["hi"], ts)
+    if key.startswith("mcp:"):
+        ent["mc"][key] = max(ent["mc"].get(key, 0.0), ts)
+    return own
+
+
+def _trim(ent, cut):
+    """Drop events older than `cut` (they count in no window). True when something was dropped."""
+    if ent["lo"] >= cut:
+        return False
+    keep = [i for i, t in enumerate(ent["ts"]) if t >= cut]
+    for f, code in (("ids", "q"), ("ts", "d"), ("ki", "I")):
+        ent[f] = array(code, map(ent[f].__getitem__, keep))
+    ent["lo"], ent["hi"] = (min(ent["ts"]), ent["hi"]) if keep else (_INF, -_INF)
+    return True
+
+
+def _scan_file(fp, ent, limit, cut=-_INF):
     """Read up to `limit` bytes of `fp` from `ent["off"]` (complete lines only). True when EOF was reached."""
     with open(fp, "rb") as f:
         f.seek(ent["off"])
@@ -152,13 +236,14 @@ def _scan_file(fp, ent, limit):
             raw += more
             eof = len(more) < limit
     end = raw.rfind(b"\n") + 1
+    own = None
     for ln in raw[:end].split(b"\n"):
         names = _TOOL_RE.findall(ln) if b'"tool_use"' in ln else ()
         if names:
             m = _TS_RE.search(ln)
             t = iso_epoch(m.group(1).decode("ascii", "replace"), 0.0) if m else 0.0
             for tid, nm in names:   # ⚠"t#" id: resumed/forked transcripts copy the same tool_use lines into another file
-                ent["ev"].setdefault("t#" + tid.decode("ascii", "replace"), (intern("tool:" + nm.decode("ascii")), t))
+                own = _add(ent, "t#" + tid.decode("ascii", "replace"), "tool:" + nm.decode("ascii"), t, cut, own)
         if not any(h in ln for h in _TI_HINT):
             continue
         try:
@@ -169,7 +254,7 @@ def _scan_file(fp, ent, limit):
             continue
         ts = iso_epoch(d.get("timestamp"), 0.0)
         for eid, k in _line_events(d):
-            ent["ev"].setdefault(eid, (intern(k), ts))   # ~900 distinct keys over ~900k events: one str each
+            own = _add(ent, eid, k, ts, cut, own)
         for k, code in _fails_of(d):
             if ts >= ent["fail"].get(k, (0.0, ""))[0]:
                 ent["fail"][k] = (ts, code)
@@ -177,6 +262,8 @@ def _scan_file(fp, ent, limit):
         for k in _conns_of(d):
             conn[k] = max(conn.get(k, 0.0), ts)
     ent["off"] += end
+    if len(_TI_NEW) > max(TI_REINDEX_MIN, len(_TI_SEEN) >> 2):
+        _reindex()          # keeps the unsorted set small; geometric, so a cold scan sorts only a few times
     return eof, end
 
 
@@ -184,7 +271,7 @@ def _disk_ok():
     return bool(TI_CACHE) and CLAUDE_PROJECTS == _TI_ROOT
 
 
-def _load_disk():
+def _load_disk(cut=-_INF):
     """Seed `_TI_FILES` from the last save (once). A missing, foreign or malformed file just means a full scan."""
     _TI_STATE["loaded"] = True
     if not _disk_ok():
@@ -200,7 +287,7 @@ def _load_disk():
                 return                          # older format: full rescan, the next save replaces it
             for ln in f:
                 try:
-                    fp, ent = _ent_from(json.loads(ln))
+                    fp, ent = _ent_from(json.loads(ln), cut)
                 except (ValueError, TypeError):
                     bad += 1
                     continue
@@ -219,39 +306,60 @@ def _num(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool)
 
 
-def _ent_from(row):
-    """One cache line `[path, sz, off, {key: [[ids], [ts]]}, fail, conn]` -> (path, entry); ValueError when malformed.
-    ⚠Full type check — a wrong inner type would crash every count and the warm thread."""
-    if not (isinstance(row, list) and len(row) == 6 and isinstance(row[0], str)):
+def _arr(code, s):
+    """base64 little-endian bytes -> array; ValueError on a bad string or a length that is not whole items."""
+    if type(s) is not str:
+        raise ValueError("arr")
+    a = array(code)
+    a.frombytes(base64.b64decode(s, validate=True))
+    if sys.byteorder == "big":
+        a.byteswap()
+    return a
+
+
+def _b64(a):
+    if sys.byteorder == "big":
+        a = array(a.typecode, a)
+        a.byteswap()
+    return base64.b64encode(a.tobytes()).decode("ascii")
+
+
+def _ent_from(row, cut=-_INF):
+    """One cache line `[path, sz, off, [keys], ids, ts, ki, fail, conn]` -> (path, entry); ValueError when malformed.
+    Events older than `cut` are dropped. ⚠Full type check — a wrong inner type would crash every count and the warm thread."""
+    if not (isinstance(row, list) and len(row) == 9 and isinstance(row[0], str)):
         raise ValueError("row")
-    fp, sz, off, grp, fail, conn = row
-    if not (type(sz) is int and type(off) is int and off >= 0
-            and isinstance(grp, dict) and isinstance(fail, dict) and isinstance(conn, dict)):
+    fp, sz, off, keys, ids, ts, lk, fail, conn = row
+    if not (type(sz) is int and type(off) is int and off >= 0 and isinstance(keys, list)
+            and all(type(k) is str for k in keys) and isinstance(fail, dict) and isinstance(conn, dict)):
         raise ValueError("entry")
-    ev = {}
-    for k, v in grp.items():
-        if not (isinstance(v, list) and len(v) == 2 and isinstance(v[0], list) and isinstance(v[1], list)
-                and len(v[0]) == len(v[1])):
-            raise ValueError("ev")
-        if not (all(type(e) is str for e in v[0]) and all(type(t) is float or type(t) is int for t in v[1])):
-            raise ValueError("ev")
-        ev.update(zip(v[0], zip(repeat(intern(k)), v[1])))
+    ids, ts, lk = _arr("q", ids), _arr("d", ts), _arr("I", lk)
+    if not (len(ids) == len(ts) == len(lk) and (not lk or max(lk) < len(keys))):
+        raise ValueError("ev")
     if not (all(isinstance(v, list) and len(v) == 2 and _num(v[0]) and isinstance(v[1], str) for v in fail.values())
             and all(_num(v) for v in conn.values())):
         raise ValueError("fail/conn")
-    return fp, {"sz": sz, "off": off, "ev": ev, "fail": dict((k, tuple(v)) for k, v in fail.items()), "conn": conn}
+    ent = _new_ent(sz, off)
+    ent["fail"], ent["conn"] = dict((k, tuple(v)) for k, v in fail.items()), conn
+    gk = [_kid(k) for k in keys]
+    ent["ids"], ent["ts"], ent["ki"] = ids, ts, array("I", map(gk.__getitem__, lk))
+    if ts:
+        ent["lo"], ent["hi"] = min(ts), max(ts)
+    _trim(ent, cut)
+    mcp, mc = dict((g, k) for g, k in zip(gk, keys) if k.startswith("mcp:")), ent["mc"]
+    for t, g in zip(ent["ts"], ent["ki"]) if mcp else ():
+        if g in mcp and t > mc.get(mcp[g], 0.0):
+            mc[mcp[g]] = t
+    return fp, ent
 
 
 def _ent_row(fp, ent):
-    """Inverse of `_ent_from`: one compact JSON line (keys written once per file instead of once per event)."""
-    grp = {}
-    for eid, (k, ts) in ent["ev"].items():
-        g = grp.get(k)
-        if g is None:
-            g = grp[k] = ([], [])
-        g[0].append(eid)
-        g[1].append(ts)
-    return json.dumps([fp, ent["sz"], ent["off"], grp, ent["fail"], ent.get("conn", {})], separators=(",", ":"))
+    """Inverse of `_ent_from`: one compact JSON line (keys written once per file, events as packed arrays)."""
+    loc = {}
+    lk = array("I", [loc.setdefault(g, len(loc)) for g in ent["ki"]])
+    keys = [_TI_KEYS[g] for g in sorted(loc, key=loc.get)]
+    return json.dumps([fp, ent["sz"], ent["off"], keys, _b64(ent["ids"]), _b64(ent["ts"]), _b64(lk),
+                       ent["fail"], ent.get("conn", {})], separators=(",", ":"))
 
 
 def _snapshot(now):
@@ -277,9 +385,10 @@ def _save(data):
 
 def _refresh(now, budget):
     """Advance the per-file cache by at most `budget` bytes (newest files first). True when fully caught up."""
-    if not _TI_STATE["loaded"]:
-        _load_disk()
     cut = now - TI_MAX_DAYS * 86400
+    if not _TI_STATE["loaded"]:
+        _load_disk(cut)
+        _reindex()          # rows are loaded without `_add`: dedup sets come from one sort
     todo = []
     for fp in _paths():
         try:
@@ -295,13 +404,15 @@ def _refresh(now, budget):
     for _mt, size, fp in sorted(todo, reverse=True):
         ent = _TI_FILES.get(fp)
         if ent is None or size < ent["off"]:
-            ent = _TI_FILES[fp] = {"sz": -1, "off": 0, "ev": {}, "fail": {}, "conn": {}}
+            ent = _TI_FILES[fp] = _new_ent()
+        if _trim(ent, cut):     # ⚠an active file keeps events past the window; dropped here, not by file mtime
+            _TI_STATE["dirty"] = True
         if size == ent["sz"]:
             continue
         if budget <= 0:
             return False
         try:
-            eof, used = _scan_file(fp, ent, max(TI_CHUNK_MIN, budget))
+            eof, used = _scan_file(fp, ent, max(TI_CHUNK_MIN, budget), cut)
         except OSError as e:
             warn_once("toolidx", "Tool usage: could not read a transcript ({err})", vars={"err": e}, soft=True)
             continue
@@ -351,25 +462,42 @@ def scanning():
 
 
 def _merged():
-    """event id -> (key, ts) across files, earliest copy wins (call under the lock)."""
-    merged = {}
+    """id hash -> (ts, key index) for the ids in `_TI_DUP` only, earliest copy wins (call under the lock).
+    ⚠Not a copy of every event: ids in one file are counted straight from the file arrays by `_count`."""
+    win = {}
+    if not _TI_DUP:
+        return win
     for ent in _TI_FILES.values():
-        for eid, kt in ent["ev"].items():
-            if eid not in merged or kt[1] < merged[eid][1]:
-                merged[eid] = kt
-    return merged
+        if _TI_DUP.isdisjoint(ent["ids"]):
+            continue
+        for x, t, k in zip(ent["ids"], ent["ts"], ent["ki"]):
+            if x in _TI_DUP:
+                w = win.get(x)
+                if w is None or t < w[0]:
+                    win[x] = (t, k)
+    return win
 
 
 def _count(merged, days, now):
+    """{key: {"n", "last"}} for events at/after the window start; ids in `_TI_DUP` come from `merged` only."""
     cut = now - days * 86400
-    out = {}
-    for k, ts in merged.values():
-        if ts < cut:
+    n, hi = {}, {}
+
+    def add(rows):
+        for t, k in rows:
+            if t >= cut:
+                n[k] = n.get(k, 0) + 1
+                if t > hi.get(k, -_INF):
+                    hi[k] = t
+    for ent in _TI_FILES.values():
+        if ent["hi"] < cut:
             continue
-        r = out.setdefault(k, {"n": 0, "last": 0})
-        r["n"] += 1
-        r["last"] = max(r["last"], int(ts))
-    return out
+        if _TI_DUP and not _TI_DUP.isdisjoint(ent["ids"]):
+            add((t, k) for x, t, k in zip(ent["ids"], ent["ts"], ent["ki"]) if x not in _TI_DUP)
+        else:
+            add(zip(ent["ts"], ent["ki"]))
+    add(merged.values())
+    return dict((_TI_KEYS[k], {"n": c, "last": max(0, int(hi[k]))}) for k, c in n.items())
 
 
 def _spawn(target, args):
@@ -455,10 +583,7 @@ def _mcp_compute(cut):
     """mcp_status body (call under the lock)."""
     agg = {}
     for ent in _TI_FILES.values():
-        calls = {}
-        for k, ts in ent["ev"].values():
-            if k.startswith("mcp:") and ts >= cut:
-                calls[k] = max(calls.get(k, 0.0), ts)
+        calls = dict((k, ts) for k, ts in ent["mc"].items() if ts >= cut)   # newest call per file: same max as all calls >= cut
         for k, ts in ent.get("conn", {}).items():
             if ts >= cut:
                 calls[k] = max(calls.get(k, 0.0), ts)
@@ -480,8 +605,14 @@ def _mcp_compute(cut):
 
 def reset():
     """Drop every cache (tests)."""
+    global _TI_SEEN
     with _TI_LOCK:
         _TI_FILES.clear()
+        _TI_KEYS[:] = []
+        _TI_KIDX.clear()
+        _TI_SEEN = array("q")
+        _TI_NEW.clear()
+        _TI_DUP.clear()
         _TI_RES.clear()
         _TI_MCP.clear()
         _TI_STATE.update(pending=False, loaded=False, dirty=False, saved=0.0, rv=False)

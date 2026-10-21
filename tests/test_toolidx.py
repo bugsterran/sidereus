@@ -24,6 +24,12 @@ def _tu(tid, name, inp, ts):
             "message": {"content": [{"type": "tool_use", "id": tid, "name": name, "input": inp}]}}
 
 
+def _ent_text(ent):
+    """Every string an index entry holds (events are numeric arrays; keys live in the shared table)."""
+    from array import array
+    return json.dumps([ti._TI_KEYS, dict((k, v) for k, v in ent.items() if not isinstance(v, array))])
+
+
 class ToolIdxTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="sidereus-ti-")
@@ -108,7 +114,7 @@ class ToolIdxTest(unittest.TestCase):
         blob = json.dumps(ti.tool_uses(90, now=NOW))
         self.assertNotIn(SECRET, blob)
         for ent in ti._TI_FILES.values():
-            self.assertNotIn(SECRET, json.dumps(ent["ev"]))
+            self.assertNotIn(SECRET, _ent_text(ent))
 
     def test_hook_runs(self):
         d = NOW - 86400
@@ -132,7 +138,7 @@ class ToolIdxTest(unittest.TestCase):
         self.assertFalse([k for k in u if k.startswith("hookc:UserPromptSubmit")])    # ctx records: no command key
         self.assertNotIn(SECRET, json.dumps(u))
         for ent in ti._TI_FILES.values():
-            self.assertNotIn(SECRET, json.dumps(ent["ev"]))
+            self.assertNotIn(SECRET, _ent_text(ent))
 
     def test_mcp_status(self):
         d = NOW - 86400
@@ -155,7 +161,7 @@ class ToolIdxTest(unittest.TestCase):
         self.assertNotIn("mcp:none", st)
         self.assertNotIn(SECRET, json.dumps(st))
         for ent in ti._TI_FILES.values():
-            self.assertNotIn(SECRET, json.dumps(ent))
+            self.assertNotIn(SECRET, _ent_text(ent))
 
     def test_mcp_status_latest_session(self):
         d = NOW - 86400
@@ -365,8 +371,8 @@ class ToolIdxDiskTest(unittest.TestCase):
         for i, ln in enumerate(lines[1:], 1):
             row = json.loads(ln)
             if row[0] == p:
-                row[3]["mcp:docs"][1][0] = "not-a-number"
-                row[4]["mcp:x"] = "bad"
+                row[5] = "not base64!"
+                row[7]["mcp:x"] = "bad"
                 lines[i] = json.dumps(row)
         with open(ti.TI_CACHE, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")

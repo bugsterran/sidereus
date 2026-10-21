@@ -59,10 +59,10 @@ class ScanRootsTest(unittest.TestCase):
         self.assertEqual(set(ti._paths()), {self.p1, self.p2, self.a2})
         self._patch(ti, "TI_CACHE", os.path.join(self.tmp, "ti.json"))
         self._patch(ti, "_TI_ROOT", self.prim)
-        ent = {"sz": 1, "off": 1, "ev": {}, "fail": {}, "conn": {}}
+        ent = ti._new_ent(1, 1)
         self._patch(ti, "_TI_FILES", {self.p1: ent, self.p2: ent})
         self._patch(ti, "_TI_STATE", {"dirty": True, "saved": 0.0})
-        # v4 cache: a header line, then one JSON row per file whose first item is the path.
+        # cache: a header line, then one JSON row per file whose first item is the path.
         rows = ti._snapshot(T0).decode("utf-8").splitlines()[1:]
         self.assertEqual([json.loads(r)[0] for r in rows], [self.p1])   # extras are never persisted
 
