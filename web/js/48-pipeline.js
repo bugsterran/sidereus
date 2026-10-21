@@ -178,7 +178,7 @@ function plChips(){
 }
 function plPickProj(p){
   PLS.proj = p; lsSet('sidereus.plproj', PLS.proj); PLNEW = null; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = '';
-  PLS.nowSid = ''; PLS.nowPick = null;   // 48j: a stage row of the previous session must not apply to this project
+  PLS.nowSid = '';   // 48j: the previous project's session pick
   plPaint();
 }
 // «+ Add project»: the person adds a folder explicitly, never automatically; opens the folder browser (48f plBrOpen).
@@ -254,7 +254,10 @@ function plBody(ov, hd){
   if(bp) return plBorrowBody(d, bp, plHeadRow(hd, names(null) + plNewBtn(!ps.length) + wfb) + plNewForm(), ov);
   if(!ps.length && (d.suggest || []).length) return plSugBody(d, agc + plBorrowChips(d), hd);
   if(!ps.length) return plTplPick() + plHeadRow(hd, names(null) + plNewBtn() + wfb) + plNewForm() + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
-  const p = plCur();
+  const p = plCur(), wt = typeof plWatchFor === 'function' && plWatchFor(p);   // wt = 48k Watch: Run only, file operations wait for «Edit»
+  const mb = typeof plModeBtn === 'function' ? plModeBtn() : '';   // «Edit»/«Done» sits right before «Run»
+  if(hd) hd.mb = true;
+  if(wt) return plWatchBody(p, d, names(p) + wfb, hd, ov, mb);
   const list = plHeadRow(hd, names(p) + plNewBtn() + wfb) + plNewForm();
   // ⚠a schema-breaking file has no editor, so «Force delete» is its only way out (same /delete guards: preview + confirm, moved to backup)
   if(!p.ok) return list + '<div class=hidnote>' + esc(T('The file breaks the schema — fix it by hand')) + '</div><ul class=plerrs>'
@@ -263,24 +266,35 @@ function plBody(ov, hd){
     + plDelPrev(p) + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
   const models = d.models || [];
   const lv = plViewRun(PLS.proj, p.name), lt = lv ? (lv.lt || plLight(p.stages, lv.run)) : null;   // a run picked in the head menu, else the live one (48b)
-  const cv = plCanvas(p, d, lt), wt = typeof plWatchFor === 'function' && plWatchFor(p);   // wt = 48k Watch: Run only, file operations wait for «Edit»
+  const cv = plCanvas(p, d, lt);
   const dirty = plDirty(p.name);
   // Live run status sits between the title and the actions: on its own row it pushed the buttons above the progress bar.
   const cov = plGateCov(plEnt(p).G);   // from the editor graph: unsaved gate edits count
   const ev = p.sha && !p.std ? plEvalOf(PLS.proj, p.name) : null; plEvalCov(cov, ev, dirty);   // saved file only (48i)
   const bar = '<div class=plbar><b>' + esc(p.title) + '</b><span class="plcov' + (cov.n < cov.m ? ' plcovlo' : '') + '" title="' + esc(TV({msg: 'Stages machine-checked by a gate command: {n} of {m}', vars: {n: cov.n, m: cov.m}})) + '">' + esc(TV({msg: 'Gates {n}/{m}', vars: {n: cov.n, m: cov.m}})) + '</span>' + plEvalHead(ev, PLEVAL_OPEN === p.name) + plLiveHead(lv, lt) + '<span class=plact>'   // right-aligned, colour-coded action group (43-pipeline.css)
     // Run first (primary; relays a run request to a session), then a divider, then the file operations; Delete last.
-    + '<button class="wkrgb plrn' + (PLRUN && PLRUN.name === p.name ? ' on' : '') + '" data-plrun' + (dirty ? ' disabled title="' + esc(T('Save before running')) + '"' : '') + '>' + esc(T('Run')) + '</button>'
-    + (wt ? (dirty ? '<span class=plwdirty>' + esc(T('Unsaved changes — Edit to save')) + '</span>' : '') : '<span class=plsep aria-hidden=true></span>'   // Save always follows, so the divider never trails
+    + mb + plRunBtn(p, dirty) + '<span class=plsep aria-hidden=true></span>'   // Save always follows, so the divider never trails
     + (dirty ? '<button class="wkrgb" data-plreset>' + esc(T('Undo')) + '</button>' : '')
     + '<button class="wkrgb plsv" data-plsave' + (dirty && cv.ok && !PLS.saving ? '' : ' disabled') + (cv.ok ? '' : ' title="' + esc(T('Fix the red items before saving')) + '"') + '>' + esc(T('Save')) + '</button>'
-    + (p.std || !p.sha ? '' : '<button class="wkrgb pldl" data-pldel' + (PLS.saving ? ' disabled' : '') + '>' + esc(T('Delete')) + '</button>')) + '</span></div>';   // unsaved draft: no file
+    + (p.std || !p.sha ? '' : '<button class="wkrgb pldl" data-pldel' + (PLS.saving ? ' disabled' : '') + '>' + esc(T('Delete')) + '</button>') + '</span></div>';   // unsaved draft: no file
   const diff = PLS.diff && PLS.diff.name === p.name ? '<div class=pldiff><div class=brh2><b>' + esc(T('Changes', 'preview')) + '</b> <i>.claude/pipelines/'
     + esc(p.name) + '.json</i></div><pre>' + diffHtml(PLS.diff.text, agLang('x.json')) + '</pre>' + plRenameWarn(p, lv) + '<div class=plbar>'
     + '<button class="wkrgb" data-plok' + (PLS.saving ? ' disabled' : '') + '>' + esc(T('Confirm')) + '</button>'
     + '<button class="wkrgb" data-plno>' + esc(T('Cancel')) + '</button></div></div>' : '';
-  return list + bar + (PLEVAL_OPEN === p.name ? plEvalPanel(ev) : '') + (wt ? '' : plDelPrev(p)) + cv.html + (ov || '') + plRunTable(lv, p) + plRunPanel(p, models)
-    + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '') + (wt ? '' : diff);   // 48k Watch: no write previews
+  return list + bar + (PLEVAL_OPEN === p.name ? plEvalPanel(ev) : '') + plDelPrev(p) + cv.html + (ov || '') + plRunTable(lv, p) + plRunPanel(p, models)
+    + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '') + diff;
+}
+// Run = the primary filled button in both modes; dirty = disabled until saved.
+function plRunBtn(p, dirty){
+  return '<button class="wkrgb plsv plrn' + (PLRUN && PLRUN.name === p.name ? ' on' : '') + '" data-plrun' + (dirty ? ' disabled title="' + esc(T('Save before running')) + '"' : '') + '><span aria-hidden=true>▶</span> ' + esc(T('Run')) + '</button>';
+}
+// 48k Watch: one head row (project · pipeline · Edit · run progress · Run); no Apply, gate counts, evaluation or write previews.
+function plWatchBody(p, d, row, hd, ov, mb){
+  const lv = plViewRun(PLS.proj, p.name), lt = lv ? (lv.lt || plLight(p.stages, lv.run)) : null, dirty = plDirty(p.name), cv = plCanvas(p, d, lt);
+  const act = '<span class=plact>' + (dirty ? '<span class=plwdirty>' + esc(T('Unsaved changes — Edit to save')) + '</span>' : '') + (mb || '') + plRunBtn(p, dirty) + '</span>';
+  const head = plHeadRow(hd, row + '<span class=plwrun>' + plLiveHead(lv, lt) + '</span>' + act);
+  return head + plNewForm() + cv.html + (ov || '') + plRunTable(lv, p) + plRunPanel(p, d.models || [])
+    + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
 }
 // Delete preview: what moves where (rule 7: moved to the backup folder, never deleted)
 function plDelPrev(p){
@@ -324,7 +338,9 @@ function plPaint(fromPoll){
 // Bodies with no canvas (loading, empty, Workflow/arch panels) get it at their end instead.
 function plMainBody(){
   const ov = plOverview(), hd = { row: '' }, pb = plBody(ov, hd);   // one head row: project · pipeline · «+ New ▾» (· Workflow chips)
-  return '<div class=pltop>' + plChips() + hd.row + (typeof plModeBtn === 'function' ? plModeBtn() : '') + '</div>' + plApplySeg(PLS.data[PLS.proj]) + pb + (ov && pb.indexOf(ov) < 0 ? ov : '');
+  const wt = typeof plWatchOn === 'function' && plWatchOn();   // 48k Watch: «Apply» is an Edit control
+  return (typeof plModeBand === 'function' ? plModeBand() : '') + '<div class="pltop' + (wt ? ' plwtop' : '') + '">' + plChips() + hd.row + (!hd.mb && typeof plModeBtn === 'function' ? plModeBtn() : '') + '</div>'
+    + (wt ? '' : plApplySeg(PLS.data[PLS.proj])) + pb + (ov && pb.indexOf(ov) < 0 ? ov : '');
 }
 function paintPipe(box, fromPoll){
   if(PLDRAG) return;                   // ⚠a repaint mid-drag would drop the dragged node
@@ -338,7 +354,7 @@ function paintPipe(box, fromPoll){
   const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Harness')) + '</b>' : '') + '<span class=plcap>'
     + esc(hv ? T('Hooks · rules · agents · MCP · skills') : T('Agent and model per stage')) + '</span></div>';
   const body = PLS.off ? '<div class=hidnote>' + esc(T('The pipeline feature is off')) + '</div>'
-    : (hv ? plChips() + hnHtml() : (plNowPickApply(), plNowShown() ? plNowWrap(plMainBody()) : plMainBody()));   // 48j list | run view; 48k Edit puts the palette in that column
+    : (hv ? plChips() + hnHtml() : (plNowShown() ? plNowWrap(plMainBody()) : plMainBody()));   // 48j list | run view; 48k Edit puts the palette in that column
   const h = '<div class="brep plw">' + head + body + '</div>';
   if(box._plw === h && box.querySelector('.plw')) return;   // ⚠poll repaints would close an open <select>
   const fe = document.activeElement;   // ⚠a live run changes h every poll: never rebuild under an open select / the caret

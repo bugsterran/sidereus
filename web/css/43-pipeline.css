@@ -25,19 +25,26 @@
 .plnlf{margin-left:auto;flex:none;width:24px;height:22px;padding:0;background:none;border:1px solid var(--nx-rule,#252629);border-radius:4px;color:var(--nx-t2,#8b95a5);font:inherit;cursor:pointer}
 .plnlf:hover{border-color:var(--nx-active,#5b8def)}
 .plnle{color:var(--nx-t3,#6b7280)}
-.plnlr{display:flex;flex-direction:column;gap:2px;padding:3px;border:1px solid transparent;border-radius:5px;min-width:0}
-.plnlr.on{border-color:var(--nx-rule,#252629)}
-.plnli{display:flex;align-items:center;gap:4px;min-width:0;width:100%;height:24px;padding:0 6px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:4px;color:var(--nx-t1,#cdcedc);font:inherit;text-align:left;cursor:pointer;overflow:hidden;white-space:nowrap}
-.plnli:hover,.plnls:hover{border-color:var(--nx-active,#5b8def)}
-.plnli.on{border-color:var(--nx-active,#5b8def)}
-.plnli .ailg{margin-right:0}
-.plnlp{flex:0 1 auto;min-width:2ch;overflow:hidden;text-overflow:ellipsis}
-.plnli .spl{flex:0 2 auto;min-width:2ch}
-.plnlt{align-self:flex-end;padding:0 4px;background:none;border:0;color:var(--nx-t3,#6b7280);font:inherit;font-size:11px;cursor:pointer}
-.plnlt:hover{color:var(--nx-active,#5b8def);text-decoration:underline}
-.plnls{display:flex;align-items:baseline;gap:6px;min-width:0;width:100%;padding:2px 6px 2px 14px;background:none;border:1px solid transparent;border-radius:4px;color:var(--nx-t1,#cdcedc);font:inherit;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden}
-.plnlst{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.plnls>small{flex:0 2 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--nx-t3,#6b7280)}
+.plnlr{display:flex;flex-direction:column;min-width:0}
+/* Row = a card like a stage node (.plnd) holding the Timeline name cell + run summary; selected = node-style strong border, no blue fill */
+.plw .plnl .plnli.tlnm{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;width:100%;min-height:30px;padding:5px 8px;background:var(--nx-panel,#121821);border:1px solid var(--nx-rule,#2b3545);border-radius:6px;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow:hidden}
+.plw .plnl .plnli.tlnm>b{flex:0 1 auto;min-width:0}
+.plw .plnl .plnli:hover{border-color:var(--nx-t3,#6b7280);background:var(--nx-hover,#1b1e23)}
+.plw .plnl .plnli.on{border-color:var(--nx-t1,#cdcedc);box-shadow:inset 0 0 0 1px var(--nx-t1,#cdcedc)}   /* ⚠inset, not outline: the scrolling aside clips an outer ring */
+.plw .plnl .plnli:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
+.plnlrun{display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--nx-t2,#a8b3c4)}   /* run summary, unboxed */
+.plnlrun-work{color:var(--nx-info,#5899f3);font-weight:600}.plnlrun-need{color:var(--nx-warn,#fad83e)}.plnlrun-done{color:var(--nx-t3,#8b95a5)}
+.plw .plnli .spl{flex:0 2 auto;min-width:2ch;padding:0;border:0;background:none;color:var(--nx-t3,#8b95a5);font-size:11px;font-weight:400;overflow:hidden;text-overflow:ellipsis}   /* sessPlChip unboxed in the list */
+.plnld,.plnlrd{flex:none;width:8px;height:8px;border-radius:50%;background:var(--nx-idle,#7d7e85)}
+.plnld-work{background:var(--nx-info,#5899f3)}.plnld-need{background:var(--nx-warn,#fad83e)}
+.plnlpulse{position:relative}.plnlpulse::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--nx-info,#5899f3);animation:plr 1.5s cubic-bezier(.4,0,.6,1) infinite}   /* running run; plr keyframes = 60-sessions.css */
+@media (prefers-reduced-motion:reduce){.plnlpulse::after{animation:none;display:none}}
+.plnlh>small.plnln{min-width:18px;padding:0 6px;border-radius:9px;background:color-mix(in srgb,var(--nx-info,#5899f3) 20%,transparent);color:var(--nx-info,#5899f3);font-weight:600;text-align:center;line-height:16px}
+/* R5: collapsed = slim rail (fold button + one dot per session); ⚠the global aside box (50/90 css) adds border + 12px padding that overflowed 28px */
+html[data-ui] .plw aside.plnl.plnlc{padding:4px 0;border:0;background:none;overflow:hidden;align-items:center;gap:8px}
+.plnlc>.plnlh{justify-content:center}.plnlc .plnlf{margin:0}
+.plnlrd{width:10px;height:10px;padding:0;border:0;cursor:pointer}
+.plnlrd:hover,.plnlrd:focus-visible{outline:2px solid var(--nx-active,#5b8def);outline-offset:2px}
 .plnames .mvdot{margin-left:5px;vertical-align:1px}
 .plagrun{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px}   /* 48h read-only Sidereus pipeline run */
 /* «Running N» overview under the canvas, above the run table (48b plOvHtml): one row per running pipeline, stage strip ✓ done · ● running · · waiting */
@@ -108,9 +115,18 @@ html[data-theme=light] .plbrb.cl{color:#4f49a8;border-color:#c9c6ec}
 .plsep{width:1px;height:16px;margin:0 2px;background:var(--nx-rule,#8884);flex:none}   /* Run | file operations (48 plBody) */
 html[data-ui=next][data-ui] :is(.plact,.plnames,.pltop) .wkrgb.plsv{background:var(--nx-info-bg);border-color:var(--nx-info-bg);color:#fff;font-weight:600}
 html[data-ui=next][data-ui] :is(.plact,.plnames,.pltop) .wkrgb.plsv:hover:not([disabled]){background:color-mix(in srgb,var(--nx-info-bg) 85%,#fff)}
-html[data-ui=next][data-ui] .plact .wkrgb.plrn{background:color-mix(in srgb,var(--nx-ok) 14%,transparent);border-color:color-mix(in srgb,var(--nx-ok) 60%,transparent);color:color-mix(in srgb,var(--nx-ok) 70%,var(--nx-t1));font-weight:600}
-/* ⚠plain --nx-ok text on its own 14%/26% tint was 3.91/3.32:1 in light; 70% ok + 30% t1 = 5.36/4.56 light, 7.28/5.55 dark */
-html[data-ui=next][data-ui] .plact .wkrgb.plrn:hover:not([disabled]),html[data-ui=next][data-ui] .plact .wkrgb.plrn.on{background:color-mix(in srgb,var(--nx-ok) 26%,transparent);border-color:var(--nx-ok)}
+/* Action group buttons (Run · Edit/Done · Save · draft save): rectangular, ≥30px, icon + label; primary = solid --nx-info-bg + white, secondary = 1px accent border + accent text */
+html[data-ui=next][data-ui] .plw .plact .wkrgb{min-height:30px;padding:6px 14px;border-radius:5px;font-weight:600;line-height:16px;cursor:pointer}
+html[data-ui=next][data-ui] .plw .plact .wkrgb:focus-visible{outline:2px solid var(--nx-info);outline-offset:2px}
+html[data-ui=next][data-ui] .plw .wkrgb.plback{min-height:30px;padding:6px 14px;border-radius:5px;font-weight:600;line-height:16px;border:1px solid var(--nx-info);color:var(--nx-info);background:transparent;cursor:pointer}
+html[data-ui=next][data-ui] .plw .wkrgb.plback:hover{background:color-mix(in srgb,var(--nx-info) 10%,transparent)}
+html[data-ui=next][data-ui] .plw .wkrgb.plback:focus-visible{outline:2px solid var(--nx-info);outline-offset:2px}
+html[data-ui=next][data-ui] .plw .plact .wkrgb.plsv:hover:not([disabled]){background:color-mix(in srgb,var(--nx-info-bg) 82%,#000)}
+/* Run = primary filled (plsv); an open run panel adds a ring. Edit = outlined info secondary right before Run (48k plModeBtn) */
+html[data-ui=next][data-ui] .plact .wkrgb.plrn.on{box-shadow:0 0 0 2px color-mix(in srgb,var(--nx-info) 45%,transparent)}
+html[data-ui=next][data-ui] :is(.plact,.pltop) .wkrgb.plmode{border-color:var(--nx-info);color:var(--nx-info);background:color-mix(in srgb,var(--nx-info) 5%,transparent);font-weight:600}
+html[data-ui=next][data-ui] :is(.plact,.pltop) .wkrgb.plmode:hover:not([disabled]){background:color-mix(in srgb,var(--nx-info) 10%,transparent)}   /* ⚠light: info text on a >10% tint drops under 4.5:1 */
+html[data-ui=next][data-ui] :is(.plact,.pltop) .wkrgb.plmode[disabled]{border-color:var(--nx-rule);color:var(--nx-t3);background:none;font-weight:400}
 html[data-ui=next][data-ui] .plact .wkrgb.pldl{background:transparent;border-color:color-mix(in srgb,var(--nx-err) 60%,transparent);color:var(--nx-err)}
 html[data-ui=next][data-ui] .plact .wkrgb.pldl:hover:not([disabled]){background:var(--nx-err);border-color:var(--nx-err);color:#fff}
 html[data-ui=next][data-ui] .plact .wkrgb[disabled]{opacity:.45;cursor:default}
@@ -180,6 +196,14 @@ html[data-mv=pipe] .wrap{max-width:none}
 .plro .plpan.plwp{pointer-events:auto;opacity:1}   /* borrowed + Watch: the result pane stays clickable (work log) */
 .plwdirty{font-size:12px;color:var(--nx-warn,#e0a53d)}
 .pltop>.plmode{margin-left:auto}
+.pltop>.plwrun{flex:1 1 220px;min-width:0}.pltop>.plwrun>.plrunst{margin:0;max-width:none}   /* Watch head row: run progress between pickers and actions */
+html[data-ui=next] .plw .pltop>.plwrun>.plrunst>span{line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plmband{display:flex;align-items:center;gap:6px;margin:0 0 8px;padding:6px 10px;border-radius:4px;background:color-mix(in srgb,var(--nx-info,#5899f3) 14%,transparent);box-shadow:inset 3px 0 0 var(--nx-info,#5899f3);color:var(--nx-t1,#cdcedc);font-size:12.5px}   /* 48k Edit mode band */
+.plmband>b{font-weight:700}
+/* R4 Watch: no resize handle and no reserved 420px pane row; the pane fits its content (min-height keeps polls from jumping it). 48d plGwFit leaves the height auto */
+.plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 0 auto;height:auto}
+.plgw.plwt>.plgh{display:none}
+.plgw.plwt>.plwp{min-height:120px;max-height:280px;margin-top:6px}
 .plgh{cursor:row-resize}.plgh:hover{background:#2b3545}   /* canvas | panes split (48d PL_SPLIT) */
 .plro{display:contents}.plro .plpal,.plro .plpan,.plro .plnt{pointer-events:none;opacity:.55}   /* borrowed pipeline (48h): no editing controls */
 .plpal{min-height:0;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:4px;box-sizing:border-box}
@@ -302,6 +326,8 @@ html[data-ui=next] .plw .plpbk[data-plport]:hover{border-color:#e0a53d}
 html[data-ui=next] .plw .plci[class*=pf-]{border-color:color-mix(in srgb,var(--pf) 45%,var(--nx-rule));border-left:3px solid var(--pf);background:color-mix(in srgb,var(--pf) 8%,transparent)}
 .plsugb{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;border:1.5px dashed var(--nx-warn);border-radius:6px;padding:5px 10px;margin:0 0 6px;font-size:12px}
 .plsugb>span{color:var(--nx-t2)}
+.plsugb.pldraftb{border:0;border-radius:4px;background:color-mix(in srgb,var(--nx-warn) 14%,transparent);box-shadow:inset 3px 0 0 var(--nx-warn)}   /* unsaved draft band (48e plDraftBand) */
+.pldraftb>i{font-style:normal;color:var(--nx-t2)}
 /* «Standard templates» cards (48e plStdList): wrapping grid, no sideways overflow at 900px. */
 .plstd{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px;margin:0 0 8px}
 .plstdc{border:1px solid #2b3545;border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;gap:4px;min-width:0;font-size:12px}

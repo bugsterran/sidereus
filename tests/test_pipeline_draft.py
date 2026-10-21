@@ -69,7 +69,7 @@ class Views(unittest.TestCase):
                  "function plStdList(){ return ''; }\nfunction plDraftForm(){ return ''; }\nfunction plImpPick(){ return ''; }\n"
                  "function plNewNameErr(){ return ''; }\nfunction plTplList(){ return []; }\nfunction diffHtml(){ return ''; }\n"
                  "function agLang(){ return ''; }\nfunction KE(k){ return k; }\nfunction plStartBtns(){ return ''; }\n") % (plnew, json.dumps(DR))
-        src = STUBS + stubs + "\n".join(js_fn(f) for f in ("plDraftSteps", "plDraftStrip", "strShort", "plNewForm", "plSugBody")) \
+        src = STUBS + stubs + "\n".join(js_fn(f) for f in ("plDraftSteps", "plDraftStrip", "strShort", "plNewForm", "plSugBody", "plDraftBand", "plBackBtn")) \
             + "\nconsole.log(JSON.stringify(plSugBody({suggest: [{title: 'x'}]})));"
         return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 

@@ -1,4 +1,4 @@
-"""«Pipelines» «Working now» master-detail list (48j plNowList/plNowWrap/plNowPick/plNowPickApply/plNowGo, R1-R4)
+"""«Pipelines» «Working now» master-detail list (48j plNowList/plNowRun/plNowWrap/plNowPick reusing 74b tlSessNmB, R1-R5)
 and the empty-project start buttons (48e plTplPick). Pure functions under node with stubs; no live files."""
 import json
 import os
@@ -20,6 +20,7 @@ function lsGet(k, d){ return k in LS ? LS[k] : d; }
 function lsSet(k, v){ LS[k] = String(v); }
 function lsDel(k){ delete LS[k]; }
 function plPaint(){ PAINT++; }
+function repoHue(){ return 1; } function tlStateDot(it){ return '<D ' + it.state + (it.blocked ? ' blk' : '') + '>'; }
 let PLAG = true; function plAgSet(on){ PLAG = !!on; }
 function plFit(){ FIT++; }
 function plCentre(){ FIT++; }
@@ -41,8 +42,7 @@ def _const(name, file):
 NOW = "\n".join([_const("PL_DESC_RE", "48b-pipeline-run.js"), _const("STR_SPLIT_KEYS", "81i-structure-split.js")]
                 + [js_fn(n) for n in ("sessPlChip", "plStrip", "plTk", "plDescStage", "plSubsOf", "plLabType", "plLabParts", "plLabDesc", "plLabTip",
                                       "strSplitGet", "strSplitCols", "strSplitDecl", "strSplitStyle", "strSplitGrip",
-                                      "plNowLive", "plNowFolded", "plNowStages", "plNowList", "plNowWrap", "plNowPick", "plNowStage",
-                                      "plNowPickApply", "plNowGo", "plNowGoProj")]) + "\n"
+                                      "tlSessNmB", "plNowSt", "plNowRun", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj")]) + "\n" + _const("PLNOW_ST", "48j-pipeline-now.js") + "\n"
 LIVE = """[{state: 'tool', sid: 's1', cwd: '/a', plat: 'cx', project: 'alpha', plrun: [{name: 'chg', cur: 'Implement'}]},
 {state: 'wait', sid: 's2', cwd: '/b', plat: 'cc', project: 'beta', plNone: {cat: 'docs'}},
 {state: 'think', sid: 's3', cwd: '/c', project: 'gamma', plNone: {u: 1}},
@@ -65,13 +65,52 @@ class PlNow(unittest.TestCase):
         self.assertTrue(h.startswith("<aside class=plnl>"))
         self.assertIn("ailg-cx", h)
         self.assertIn(">alpha<", h)
-        self.assertIn(" · Implement", h)
+        self.assertIn("Working · Implement", h)
         self.assertIn("No pipeline · docs", h)
         self.assertIn("Undeclared", h)
         self.assertIn("Working now", h)
-        self.assertIn("<small>3</small>", h)                                  # count
+        self.assertIn("<small class=plnln>3</small>", h)                       # count badge
         self.assertNotIn("+", re.sub(r"<[^>]+>", "", h).replace(" · ", ""))  # no «+N»: the list scrolls
-        self.assertEqual(h.count("data-pntl="), 3)                            # Timeline link per item (non-goal kept)
+        self.assertNotIn("data-pntl", h)                                      # per-row Timeline link removed (owner decision)
+        self.assertNotIn("data-pnst", h)                                      # no per-agent rows (canvas shows them)
+
+    def test_r1_row_is_timeline_name_cell_plus_run_summary(self):
+        h = run(NOW + "console.log(JSON.stringify(plNowList(" + LIVE + ")));")
+        items = re.findall(r'<button type=button class="plnli tlnm[^"]*"[^>]*>(.*?)</button>', h)
+        self.assertEqual(items[0], '<b><i class="ailg ailg-cx"></i><i class="tlp c1" title="/a">alpha</i><D tool></b>'
+                         '<span class="plnlrun plnlrun-work" title="Pipeline run: chg · Implement"><i class="plnld plnld-work plnlpulse"></i>Working · Implement</span>')
+        self.assertNotIn("<u", "".join(items))                                # bare: no time/token chips
+        tl = js_fn("tlSessRow")
+        self.assertIn("tlSessNmB(g, it, act, nComp) + tlPlStrip(pl)", tl)    # Timeline keeps its chips and stepper
+
+    def test_r1_run_summary_states(self):
+        r = run(NOW + "console.log(JSON.stringify([plNowRun({plrun: [{name: 'chg', cur: 'Verify'}]}, 'need'), plNowRun({plrun: [{name: 'chg'}]}, 'idle'),"
+                " plNowRun({plrun: [{name: 'chg', end: 5}]}, 'work'), plNowRun({}, 'work')]));")
+        self.assertIn('plnlrun-need', r[0]); self.assertIn('plnld-need"></i>Needs you · Verify', r[0])   # same label as the rail dot
+        self.assertNotIn("plnlpulse", r[0])
+        self.assertIn('plnld-idle"></i>Idle · chg', r[1])
+        self.assertIn('plnlrun-done', r[2]); self.assertIn("✓ chg done", r[2])
+        self.assertEqual(r[3], "")
+
+    def test_r1_selected_row_marked(self):
+        h = run(NOW + "PLS.nowSid = 's2'; console.log(JSON.stringify(plNowList(" + LIVE + ")));")
+        self.assertIn('<div class="plnlr on"><button type=button class="plnli tlnm on" data-pncwd="/b" data-pnplat="cc" title="beta" aria-current=true>', h)
+        self.assertEqual(h.count("aria-current"), 1)
+
+    def test_r5_collapsed_rail_dots(self):
+        h = run(NOW + "LS['sidereus.plnowc'] = '1'; console.log(JSON.stringify(plNowList(" + LIVE + ")));")
+        self.assertTrue(h.startswith('<aside class="plnl plnlc">'))
+        self.assertIn('aria-label="Expand list"', h)
+        self.assertEqual(re.findall(r'class="plnlrd plnld-(\w+)" data-pncwd="([^"]+)"', h), [("work", "/a"), ("idle", "/b"), ("work", "/c")])
+        self.assertIn('title="beta" aria-label="beta · Idle"', h)
+        self.assertNotIn("plnli", h)
+        css = open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8").read()
+        self.assertIn("html[data-ui] .plw aside.plnl.plnlc{padding:4px 0;border:0;background:none;overflow:hidden", css)
+
+    def test_r5_rail_dot_click_expands_and_picks(self):
+        s = _src("48j-pipeline-now.js")
+        self.assertIn("if(t.classList.contains('plnlrd')) lsDel('sidereus.plnowc');", s)
+        self.assertLess(s.index("lsDel('sidereus.plnowc');   // rail dot"), s.index("plNowPick(t.dataset.pncwd, t.dataset.pnplat);\n});"))
 
     def test_r1_empty_note(self):
         h = run(NOW + "console.log(JSON.stringify(plNowList([])));")
@@ -83,18 +122,7 @@ class PlNow(unittest.TestCase):
                 " targ: 'SECRET-TASK', tool: 'Bash', prompt: 'SECRET-PROMPT',"
                 " sub: [{lab: 'impl: [pl:chg/Implement] build the DESCX thing'}]}])));")
         self.assertNotIn("SECRET", h)
-        txt = re.sub(r'title="[^"]*"', "", h)
-        self.assertNotIn("DESCX", txt)                                        # description only in title=
-        self.assertIn('title="impl · build the DESCX thing"', h)
-
-    def test_r1_stage_rows_only_under_selected(self):
-        src = ("[{state: 'tool', sid: 's1', cwd: '/a', project: 'a', sub: [{lab: 'impl: [pl:chg/Implement] x'}, {lab: 'Explore: plain'}],"
-               " plm: {name: 'chg', title: 'Verify'}}, {state: 'tool', sid: 's2', cwd: '/b', project: 'b', sub: [{lab: 'rev: [pl:chg/Review] y'}]}]")
-        h = run(NOW + "PLS.nowSid = 's1'; console.log(JSON.stringify(plNowList(" + src + ")));")
-        self.assertEqual(re.findall(r'data-pnst="([^"]+)"', h), ["Implement", "Verify"])
-        self.assertIn('data-pnname="chg"', h)
-        self.assertIn("<small>impl</small>", h)
-        self.assertIn('class="plnli on" data-pncwd="/a"', h)
+        self.assertNotIn("DESCX", h)                                          # no agent rows: the description never reaches the list
 
     def test_r2_pick_open_run_project_beats_cwd(self):
         r = run(NOW + "SESS = [{state: 'tool', sid: 's1', cwd: '/a', plat: 'cx', plrun: [{name: 'old', end: 5, proj: '/z'}, {name: 'chg', proj: '/p'}]}];"
@@ -108,45 +136,19 @@ class PlNow(unittest.TestCase):
                 "console.log(JSON.stringify([a, PLS.proj, PLS.sel, PLS.nowSid]));")
         self.assertEqual(r, [["/a", "tg"], "/b", "keep", "s2"])              # no open run: project only
 
-    def test_r3_stage_click_selects_node_by_title_no_view_move(self):
-        r = run(NOW + "const E = {G: {nodes: [{id: 'n1', title: 'Design'}, {id: 'n2', title: 'Implement'}]}, sel: null, first: true, view: {x: 1, y: 2, z: 1}};"
-                "let CUR = {name: 'other'}; function plCur(){ return CUR; } function plEnt(p){ return E; }"
-                "SESS = [{sid: 's1', cwd: '/p'}]; PLS.nowSid = 's1'; PLS.proj = '/x'; plNowStage('chg', 'Implement'); const pend = [PLS.sel, JSON.stringify(PLS.nowPick)];"
-                "plNowPickApply(); const loading = PLS.nowPick !== null; PLS.data['/p'] = {ok: true}; CUR = {name: 'chg', ok: true};"
-                "plNowPickApply(); console.log(JSON.stringify([pend, loading, E.sel, E.first, E.view, FIT, PLS.nowPick]));")
-        pend, loading, sel, first, view, fit, after = r
-        self.assertEqual(pend[0], "chg")
-        self.assertTrue(loading)                                              # data not loaded yet: pick kept
-        self.assertEqual(sel, {"k": "n", "id": "n2"})
-        self.assertFalse(first)
-        self.assertEqual(view, {"x": 1, "y": 2, "z": 1})                      # view untouched
-        self.assertEqual(fit, 0)
-        self.assertIsNone(after)
+    def test_f3_pick_closes_arch_map(self):
+        r = run(NOW + "SESS = [{state: 'tool', sid: 's1', cwd: '/a'}]; plNowPick('/a', ''); console.log(JSON.stringify(PLAG));")
+        self.assertFalse(r)
 
-    def test_f3_pick_and_stage_close_arch_map(self):
-        r = run(NOW + "SESS = [{state: 'tool', sid: 's1', cwd: '/a'}]; plNowPick('/a', ''); const a = PLAG; PLAG = true;"
-                "plNowStage('chg', 'Verify'); console.log(JSON.stringify([a, PLAG]));")
-        self.assertEqual(r, [False, False])
-
-    def test_f7_stage_uses_session_project_and_picker_clears(self):
-        r = run(NOW + "SESS = [{state: 'tool', sid: 's1', cwd: '/a', plrun: [{name: 'chg', proj: '/home'}]}];"
-                "PLS.nowSid = 's1'; PLS.proj = '/other'; plNowStage('chg', 'Verify'); const a = [PLS.proj, PLS.sel];"
-                "PLS.nowSid = 'gone'; PLS.proj = '/q'; PLS.sel = 'keep'; plNowStage('zzz', 'T');"
-                "console.log(JSON.stringify([a, PLS.proj, PLS.sel]));")
-        self.assertEqual(r, [["/home", "chg"], "/q", "keep"])                # stale session: nothing written
+    def test_f7_picker_clears_session_pick(self):
         pk = js_fn("plPickProj")
-        self.assertIn("PLS.nowSid = ''; PLS.nowPick = null;", pk)
+        self.assertIn("PLS.nowSid = '';", pk)
 
     def test_f4_list_scroll_kept_across_rebuild(self):
         pp = js_fn("paintPipe")
         i = pp.index("box.innerHTML = h;")
         self.assertIn("nl.scrollTop", pp[:i])
         self.assertIn("nl2.scrollTop = nst", pp[i:])
-
-    def test_r3_apply_source_never_fits(self):
-        body = js_fn("plNowPickApply")
-        for bad in ("plFit", "plCentre", "scrollIntoView", "E.view ="):
-            self.assertNotIn(bad, body)
 
     def test_r4_fold_and_wrap(self):
         a, b = run(NOW + "const w = () => plNowWrap('BODY'); const a = w(); LS['sidereus.plnowc'] = '1'; LS['sidereus.plmd'] = '200';"
@@ -155,7 +157,7 @@ class PlNow(unittest.TestCase):
         self.assertIn('data-pnfold aria-expanded="true"', a)
         self.assertIn('data-spk=plmd', a)
         self.assertIn("<div class=plmdr>BODY</div></div>", a)
-        self.assertTrue(b.startswith('<div class="plmd plnc" style="grid-template-columns:min(200px,60%) 1fr">'))
+        self.assertTrue(b.startswith('<div class="plmd plnc" style="grid-template-columns:min(200px,60%) 1fr"><aside class="plnl plnlc">'))
         self.assertIn('aria-expanded="false"', b)
         self.assertNotIn("data-pncwd", b)
 
@@ -166,7 +168,6 @@ class PlNow(unittest.TestCase):
         pp = js_fn("paintPipe")
         self.assertLess(pp.index("classList.contains('dragging')) return"), pp.index("plLoadProjs()"))
         self.assertIn("plNowShown() ? plNowWrap(plMainBody()) : plMainBody()", pp)   # 48k Edit: palette takes the left column
-        self.assertLess(pp.index("plNowPickApply()"), pp.index("plNowWrap("))
 
     def test_r4_css_no_shift(self):
         with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as f:
@@ -174,20 +175,6 @@ class PlNow(unittest.TestCase):
         self.assertIn(".plmdr{min-width:0}", css)
         self.assertIn("grid-template-columns:28px minmax(0,1fr)!important", css)
         self.assertNotIn(".plnow", css)
-
-    def test_click_goes_to_timeline_row(self):
-        a, b = run(NOW + "function mvGo(v, s){ GO.push([v, s]); }"
-                   "plNowGo('/x \"y', 'cx'); console.log(JSON.stringify([GO, MV]));")
-        self.assertEqual(a, [["time", '.tlr.tlrs[data-tlc="\\/x\\ \\"y"][data-tlp="cx"]']])
-        self.assertEqual(b, [])
-
-    def test_claude_maps_to_empty_tlp(self):
-        r = run(NOW + "function mvGo(v, s){ GO.push(s); } plNowGo('/a', 'cc'); plNowGo('/a', ''); console.log(JSON.stringify(GO));")
-        self.assertEqual(r, ['.tlr.tlrs[data-tlc="\\/a"][data-tlp=""]'] * 2)    # Claude timeline rows carry data-tlp=""
-
-    def test_click_fallback_without_mvgo(self):
-        r = run(NOW + "function setMainView(v){ MV.push(v); } plNowGo('/x', ''); console.log(JSON.stringify(MV));")
-        self.assertEqual(r, ["time"])
 
     def test_r3_backspace_in_list_keeps_stage(self):
         s = _src("48d-pipeline-cv-input.js")
@@ -198,12 +185,16 @@ class PlNow(unittest.TestCase):
                 + src + "const ev = (inList) => ({ key: 'Backspace', preventDefault(){}, target: { tagName: inList ? 'BUTTON' : 'DIV',"
                 " closest: q => (inList && q === '.plnl') ? {} : null } });"
                 "H(ev(true)); const a = DEL; H(ev(false)); console.log(JSON.stringify([a, DEL]));")
-        self.assertEqual(r, [0, 1])                                           # .plnls focus: no delete; canvas: delete
+        self.assertEqual(r, [0, 1])                                           # list row focus: no delete; canvas: delete
 
     def test_listener_wired(self):
         s = _src("48j-pipeline-now.js")
-        for a in ("[data-pntl]", "[data-pncwd]", "[data-pnst]", "[data-pnfold]"):
+        for a in ("[data-pncwd]", "[data-pnfold]"):
             self.assertIn(".plw .plnl " + a, s)
+        self.assertNotIn("data-pntl", s)
+        self.assertNotIn("plNowGo(", s)
+        for gone in ("data-pnst", "plNowStage", "plNowPickApply", "nowPick"):
+            self.assertNotIn(gone, s)
 
     def test_r3_start_buttons_first(self):
         h = run(_const("PL_TPLS", "48e-pipeline-new.js") + "\n"
@@ -218,6 +209,8 @@ class PlNow(unittest.TestCase):
         self.assertLess(h.index("Or start from:"), h.index("data-pltpl"))
         self.assertNotIn("Standard templates", h)                             # duplicate dropped
         self.assertEqual(h.count("data-plstd"), 1)
+
+
 
 
 if __name__ == "__main__":

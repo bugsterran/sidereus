@@ -151,18 +151,18 @@ class Palette(unittest.TestCase):
         self.assertNotIn("+ x.title +", src)
 
     def test_run_button_contrast(self):
+        # Run / Save / draft save = primary (.plsv): white on --nx-info-bg; Edit / Back = --nx-info text on bg/panel (+ its 10% tint)
         css = _css("43-pipeline.css")
-        rule = re.search(r"\.plact \.wkrgb\.plrn\{([^}]*)\}", css).group(1)
-        p = int(re.search(r"color:color-mix\(in srgb,var\(--nx-ok\) (\d+)%,var\(--nx-t1\)\)", rule).group(1)) / 100
-        tints = [.14, .26]                                       # base and hover/.on background tints
+        self.assertIn('class="wkrgb plsv plrn', open(os.path.join(ROOT, "web", "js", "48-pipeline.js"), encoding="utf-8").read())
+        self.assertRegex(css, r":is\(\.plact,\.plnames,\.pltop\) \.wkrgb\.plsv\{background:var\(--nx-info-bg\);border-color:var\(--nx-info-bg\);color:#fff")
+        self.assertRegex(css, r":is\(\.plact,\.pltop\) \.wkrgb\.plmode\{border-color:var\(--nx-info\);color:var\(--nx-info\);background:color-mix\(in srgb,var\(--nx-info\) 5%")
         for f, sel in (("91-light.css", r"html\[data-ui=next\]\[data-theme=light\]\{"), ("90-main-ui.css", r"html\[data-ui=next\]\{")):
             blk = _css(f)[re.search(sel, _css(f)).end():]
             tok = lambda k: _hex(re.search(r"--nx-%s:(#[0-9a-f]{6})" % k, blk).group(1))
-            ok, t1 = tok("ok"), tok("t1")
-            fg = _mix(ok, t1, p)
+            self.assertGreaterEqual(_cr(_hex("#ffffff"), tok("info-bg")), 4.5, f)
             for bg in (tok("bg"), tok("panel")):
-                for t in tints:
-                    self.assertGreaterEqual(_cr(fg, _mix(ok, bg, t)), 4.5, (f, t))
+                for t in (0, .05, .10):
+                    self.assertGreaterEqual(_cr(tok("info"), _mix(tok("info"), bg, t)), 4.5, (f, t))
 
 
 if __name__ == "__main__":

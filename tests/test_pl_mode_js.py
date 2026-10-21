@@ -1,4 +1,4 @@
-"""«Pipelines» Watch / Edit mode (48k plModeSet/plWatchFor/plModeBtn/plWatchPane, 48d plCanvas, 48h plRO, R5-R7).
+"""«Pipelines» Watch / Edit mode (48k plModeSet/plWatchFor/plModeBtn/plModeBand/plWatchDef/plWatchPane, 48 plWatchBody, 48d plCanvas, 48h plRO, R1-R7).
 Pure functions under node with stubs; no live files."""
 import hashlib
 import json
@@ -97,7 +97,7 @@ class PlMode(unittest.TestCase):
                 "const lt = {Implement: {st: 'done', n: 2, sec: 30, w0: 7, w1: 37, from: {Verify: 1},"
                 " ag: [{aid: 'a1', tid: 't1', lab: 'impl: [pl:chg/Implement] SECRET-DESC', t0: 1, t1: 31}]}};"
                 "const x = {targ: 'SECRET-TARG', prompt: 'SECRET-PROMPT'};"
-                "const none = plWatchPane({G: E.G, sel: null}, {}, null, lt);"
+                "const none = plWatchPane({G: E.G, sel: null}, {}, null, {Implement: {st: 'wait'}});"
                 "console.log(JSON.stringify([plWatchPane(E, {}, {sid: 's1'}, lt), none]));")
         pane, none = h
         self.assertIn("OC-done", pane)
@@ -136,10 +136,10 @@ class PlMode(unittest.TestCase):
                 "CUR = {name: 'sg', ok: true, suggest: 1}; o.push(plModeBtn());"
                 "console.log(JSON.stringify(o));")
         w, e, b, std, sug = r
-        self.assertIn('data-plmode="edit"', w)
-        self.assertIn(">Edit<", w)
-        self.assertIn('data-plmode="watch"', e)
-        self.assertIn(">Done<", e)
+        self.assertIn("data-plmode=edit", w)
+        self.assertIn("<span aria-hidden=true>✎</span> Edit</button>", w)         # R3 pencil glyph + label
+        self.assertIn("data-plmode=watch", e)
+        self.assertIn(">Done</button>", e)
         self.assertIn("disabled", b)
         self.assertIn("Read-only — edit it in its own project", b)
         self.assertEqual([std, sug], ["", ""])
@@ -156,8 +156,10 @@ class PlMode(unittest.TestCase):
         self.assertIn("if(e.target.closest('[data-plok]')) return plWatchOn() ? undefined : plSave(true);", s)
         self.assertIn("if(e.target.closest('[data-pldelok]')) return plWatchOn() ? undefined : plDelete(true);", s)
         body = js_fn("plBody")
-        self.assertIn("(wt ? '' : plDelPrev(p))", body)
-        self.assertIn("(wt ? '' : diff)", body)
+        self.assertLess(body.index("if(wt) return plWatchBody("), body.index("plDelPrev(p) + cv.html"))   # Watch returns before any preview
+        wb = js_fn("plWatchBody")
+        for bad in ("plDelPrev", "diff", "data-plsave", "data-pldel"):
+            self.assertNotIn(bad, wb)
 
     def test_r6_drafts_force_edit(self):
         r = run(MODE + "console.log(JSON.stringify([" + ",".join("plWatchFor(" + p + ")" for p in (
@@ -188,6 +190,103 @@ class PlMode(unittest.TestCase):
         self.assertIn(".plgw.plwt{grid-template-columns:minmax(0,1fr)}", m.group(0))
         self.assertIn(".plgw.plwt>.plpan{grid-area:3/1/4/-1}", css)
 
+
+    def _watch_head(self, mode):
+        stubs = ("function plViewRun(){ return {sid: 's1', lt: {}}; } function plLight(){ return {}; } function plDirty(){ return false; }"
+                 "function plCanvas(){ return {html: '<CV/>'}; } function plLiveHead(){ return '<RUNBAR/>'; } function plNewForm(){ return ''; }"
+                 "function plRunTable(){ return ''; } function plRunPanel(){ return ''; } let PLRUN = null;")
+        return run(MODE + stubs + "\n" + "\n".join(js_fn(n) for n in ("plHeadRow", "plRunBtn", "plWatchBody"))
+                   + "\nCUR = " + SAVED + "; plModeSet('" + mode + "', true); const hd = {row: ''};"
+                   "plWatchBody(CUR, {}, '<PROJ/><PIPE/>', hd, '', plModeBtn()); console.log(JSON.stringify(hd.row));")
+
+    def test_r2_r3_watch_head_row(self):
+        row = self._watch_head("watch")
+        self.assertTrue(row.startswith("<PROJ/><PIPE/><span class=plwrun><RUNBAR/></span><span class=plact>"))
+        act = row[row.index("<span class=plact>"):]
+        self.assertLess(act.index("data-plmode=edit"), act.index("data-plrun"))   # [✎ Edit][▶ Run] one action group
+        self.assertIn('class="wkrgb plsv plrn" data-plrun><span aria-hidden=true>▶</span> Run', act)   # Run = primary filled
+        for bad in ("data-plap", "Gates", "pleunred", "data-pleval", "data-plsave", "data-pldel"):
+            self.assertNotIn(bad, row)
+
+    def test_r2_edit_keeps_eval_and_apply(self):
+        body = js_fn("plBody")
+        i = body.index("const bar = ")
+        for k in ("Gates {n}/{m}", "plEvalHead(ev", "mb + plRunBtn(p, dirty)", "data-plsave", "data-pldel"):
+            self.assertIn(k, body[i:])
+        mb = js_fn("plMainBody")
+        self.assertIn("(wt ? '' : plApplySeg(PLS.data[PLS.proj]))", mb)
+        self.assertIn("plModeBand()", mb)
+
+    def test_r3_edit_band_and_done(self):
+        r = run(MODE + "CUR = " + SAVED + "; const a = plModeBand(); plModeSet('edit', true);"
+                "const b = plModeBand(); CUR = {name: 'b', ok: true, sha: 's', from: '/o'}; console.log(JSON.stringify([a, b, plModeBand()]));")
+        self.assertEqual(r[0], "")
+        self.assertIn("Editing <b>chg</b>", r[1])
+        self.assertTrue(r[1].startswith("<div class=plmband>"))
+        self.assertEqual(r[2], "")
+
+    def test_r4_watch_default_stage_and_no_run(self):
+        st = "\n".join(js_fn(n) for n in ("plStageRows", "plLabParts", "plLabDesc", "plStrip", "plgNode")) + "\n" + _const("PL_DESC_RE", "web/js/48b-pipeline-run.js") + "\n" + _const("PL_MK", "web/js/48b-pipeline-run.js")
+        r = run(MODE + st + "\nfunction plOc(s){ return s; } function ago(s){ return s; } function plgShow(t){ return t; } function plAgLab(a){ return a.lab; } function plPass(){ return null; }"
+                "function plEvLine(){ return ''; } function plEvRows(){ return []; } function plEvCommits(){ return []; }"
+                "const G = {nodes: [{id: 'a', title: 'A'}, {id: 'b', title: 'B'}, {id: 'c', title: 'C'}]};"
+                "const o = [plWatchDef({G}, {A: {st: 'done'}, B: {st: 'run'}, C: {st: 'wait'}}), plWatchDef({G}, {A: {st: 'done'}, B: {st: 'fail'}, C: {st: 'wait'}}),"
+                " plWatchDef({G}, null)].map(n => n && n.id);"
+                "const E = {G, sel: null}; const pane = plWatchPane(E, {}, null, {A: {st: 'done'}, B: {st: 'run'}});"
+                "console.log(JSON.stringify([o, pane.indexOf('<b>B</b>') > 0, E.sel, plWatchPane(E, {}, null, null)]));")
+        ids, shows_b, sel, none = r
+        self.assertEqual(ids, ["b", "b", None])                                # running stage, else last finished
+        self.assertTrue(shows_b)
+        self.assertIsNone(sel)                                                 # selection untouched (no view move)
+        self.assertEqual(none, "")                                             # no run, nothing picked: no pane
+
+    def test_r4_watch_grid_css_and_fit(self):
+        css = _src("web/css/43-pipeline.css")
+        self.assertIn(".plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 0 auto;height:auto}", css)
+        self.assertIn(".plgw.plwt>.plgh{display:none}", css)
+        self.assertIn(".plgw.plwt>.plwp{min-height:120px;max-height:280px", css)
+        fit = js_fn("plGwFit")
+        self.assertIn("if(wt) g.style.height = '';", fit)
+
+    def test_r6_draft_save_primary_in_action_group_with_back(self):
+        stubs = ("function plCanvas(){ return {html: '<CV/>'}; } function plNewBtn(){ return ''; } function plNewForm(){ return ''; } function plStartBtns(){ return ''; }"
+                 "function plPickHtml(){ return ''; } function plgTplShow(t){ return t; } let PLNEW = null;")
+        r = run(MODE + stubs + "\n" + "\n".join(js_fn(n) for n in ("plHeadRow", "plStdBody", "plSugBody", "plDraftBand", "plBackBtn"))
+                + "\nconsole.log(JSON.stringify([plStdBody({}, {title: 'T'}), plSugBody({suggest: [{title: 'S'}]})]));")
+        std, sug = r
+        for h, attr in ((std, "data-plstdsave"), (sug, "data-plsugsave")):
+            act = h[h.index("<span class=plact>"):]
+            self.assertRegex(act, r'<button class="wkrgb plsv" ' + attr)
+            self.assertIn("Draft — not saved yet", h)
+        self.assertLess(std.index("data-plstdx"), std.index("data-plstdsave"))
+        self.assertIn('aria-label="Close this draft without saving"', std)
+
+    def test_r6_every_draft_form_has_back(self):
+        s = _src("web/js/48e-pipeline-new.js")
+        for attr in ("data-plnx", "data-pldx", "data-plstdx"):
+            self.assertIn("plBackBtn('" + attr + "')", s)
+            self.assertIn("e.target.closest('[" + attr + "]')", s)
+
+    def test_r6_esc_closes_draft(self):
+        r = run("let mainView = 'pipe', PLNEWM = false, PLRV = false, PLPSK = null, PLAPK = null, PLNEW = {}, PLDRAFT = {}; PLS.std = 'x';\n" + js_fn("plEscOwned") + "\n" + js_fn("plDraftEsc")
+                + "\nconst ev = (k, tag, dp) => ({key: k, target: {tagName: tag}, defaultPrevented: !!dp});"
+                "const o = [plDraftEsc(ev('Escape', 'INPUT')), PLNEW !== null, plDraftEsc(ev('Escape', 'BUTTON')), PLNEW, PLDRAFT !== null,"
+                " plDraftEsc(ev('Escape', 'DIV')), plDraftEsc(ev('Escape', 'DIV')), PLS.std, plDraftEsc(ev('Escape', 'DIV')), plDraftEsc(ev('Enter', 'DIV'))];"
+                "PLS.std = 'y'; PLRV = true; o.push(plDraftEsc(ev('Escape', 'DIV')), PAINT); console.log(JSON.stringify(o));")
+        self.assertEqual(r, [False, True, True, None, True, True, True, "", False, False, False, 3])
+
+    def test_r6_esc_left_to_open_layers(self):
+        base = "let mainView = 'pipe', PLNEWM = false, PLRV = false, PLPSK = null, PLAPK = null, PLNEW = null, PLDRAFT = {desc: 'typed'};"
+        fns = js_fn("plEscOwned") + "\n" + js_fn("plDraftEsc")
+        ev = "\nconst ev = {key: 'Escape', target: {tagName: 'DIV'}, defaultPrevented: false};"
+        o = []
+        for g in ("let SDRW_OPEN = true;", "const ISPOP = true;", "let strPop = {ak: 1};", "let cpOn = true;",
+                  "let railOpen = true; function railMode(){ return 'overlay'; } const innerWidth = 900;"):
+            o.append(run(base + g + "\n" + fns + ev + "console.log(JSON.stringify([plDraftEsc(ev), PLDRAFT && PLDRAFT.desc]));"))
+        self.assertEqual(o, [[False, "typed"]] * 5)                          # the layer owns that Esc; the typed draft survives
+        r = run(base + "let railOpen = true; function railMode(){ return 'docked'; } const innerWidth = 1440;\n" + fns + ev
+                + "console.log(JSON.stringify([plDraftEsc(ev), PLDRAFT]));")
+        self.assertEqual(r, [True, None])                                    # docked rail: no layer, Esc closes the draft
 
 if __name__ == "__main__":
     unittest.main()

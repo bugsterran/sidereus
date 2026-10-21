@@ -154,16 +154,18 @@ Chat tab, then «Manage» on the room list. Room cards get a checkbox, «Invite�
 The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`. A stage lights up while its agent runs.
 
 ### Watch and Edit
-- The tab opens in «Watch»: the «Working now» list, the canvas (click a stage to select it), and below it that stage's result and gate evidence.
-- «Edit» in the head row switches to «Edit»: the palette, the editable canvas and the stage editor (no list). «Done» goes back to «Watch». The tab remembers the last mode.
+- The tab opens in «Watch»: the «Working now» list, the canvas (click a stage to select it), and below it that stage's result and gate evidence. With nothing selected the pane shows the running stage, else the last finished one; with no run it is empty.
+- The head row in «Watch» holds the pickers, the run bar, «✎ Edit» and «▶ Run».
+- «✎ Edit» switches to «Edit»: the palette, the editable canvas and the stage editor (no list), under an «Editing <name>» band. «Apply», gate counts and evaluation live here. «Done» goes back to «Watch». The tab remembers the last mode.
 - Unsaved edits stay while you watch: the pipeline keeps its • mark and «Watch» shows «Unsaved changes — Edit to save». A page reload drops them.
 - A new pipeline opens in «Edit». A pipeline borrowed from another project is watch-only.
+- A draft (template, AI draft or «+ New») shows a «Draft — not saved yet» band: «✓ Save this draft» writes it, «← Back» or Esc closes it without writing.
 
 ### Working now
-- The list on the left shows every live session: platform logo, project, and its pipeline/stage chip, with the stage agents under it.
-- Click a session to open its pipeline run on the right. Click a stage agent to highlight that stage on the canvas; the view does not move.
-- «Timeline» on each item jumps to that session's Timeline row.
-- Collapse the list with its toggle, or drag its edge to resize it; the width is remembered.
+- The list on the left shows every live session the way the Timeline names it (logo, project, state), plus a one-line run summary: «● Working · <stage>», «● Needs you · <stage>» (amber), «✓ <name> done».
+- «● Idle · <stage>» (grey) = the run is still open but the session is not working right now (its turn ended).
+- Click a session to open its pipeline run on the right. Each stage's agent is shown on the canvas.
+- Collapse the list to a rail of status dots (click a dot to expand and open it), or drag its edge to resize it; the width is remembered.
 
 ### Pick a project
 - One row: «Project» (full name; click to search working, recent and all projects, «+ Add project» at the bottom), «Pipeline» (same search picker, this project's pipelines only; ⚠ = file breaks the schema, • = unsaved edits, a dot = running) and «+ New ▾».
