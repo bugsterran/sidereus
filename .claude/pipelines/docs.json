@@ -17,13 +17,13 @@
       "title": "대조",
       "agent": "Explore",
       "task": "Check every command, path, file name, option and claim in the draft against the repo (read-only). Report each mismatch as a finding: draft line, what the repo says, file:line. PASS when none remain. Change nothing.",
-      "ui": { "x": 292, "y": 24 }
+      "ui": { "x": 292, "y": 24, "color": "#5899f3" }
     },
     {
       "title": "반영",
       "agent": "general-purpose",
       "task": "Fix every mismatch from 대조 in the draft, move it to its target path, and make one commit containing only that file (stage that one path only; never add other paths). Report the commit hash.",
-      "ui": { "x": 540, "y": 24, "color": "#2ec4b6" }
+      "ui": { "x": 540, "y": 24, "color": "#f472b6" }
     }
   ]
 }
