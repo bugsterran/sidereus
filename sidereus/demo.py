@@ -386,15 +386,8 @@ class World(_WorldPanels, _WorldGit):
             "quota": self._pub(q),
             "accts": [{"label": "personal", "primary": True}, {"label": "work", "primary": False}],
             "quotaWho": self.quota_who(),
-            "saver": {"on": False, "why": "auto", "th": 50, "pct": 55},
-            "saverView": {"at": now, "mode": "auto", "stage": 0, "pct": 55, "leftMin": q["five_hour"]["leftSec"] // 60,
-                          "until": None, "paceMin": None, "need": 0.92, "rec": 3, "rate": 0.31,
-                          "overAt": q["five_hour"]["_reset"] + 1500,
-                          "head": "5시간 한도 55% · 리셋까지 %s — 이 속도면 91%% · 목표 100%% · 동시 3개 권장"
-                                  .replace("%s", self._hm(q["five_hour"]["leftSec"])).replace("%%", "%"),
-                          "lv": -1, "earlyMin": -24, "lvNm": "조금 느림", "goal": 100, "proj": 91,
-                          "projSay": "이 속도면 91%", "goalSay": "조금 뒤처졌습니다", "end": 0},
-            "saverSwitch": {"mode": "auto", "stage": 0, "until": None, "goal": 100, "goalSet": True},
+            # ⚠None: the saver hook is not shipped in plugin/hooks, so a real install never shows that chip.
+            "saver": None, "saverView": None, "saverSwitch": None,
             "health": {"dead": [], "warns": [], "soft": [], "stale": []},
             "cardsRead": _local_iso(a - 3 * H), "cardsReadIds": [],
             "fail1h": {"at": now, "n": 4, "step": 600, "kinds": {"tool": 4}, "bins": [0, 1, 0, 2, 0, 1],
@@ -415,11 +408,6 @@ class World(_WorldPanels, _WorldGit):
     def _pub(q):
         """Quota as the page sees it — without the internal `_reset` helper key."""
         return dict(q, five_hour={k: v for k, v in q["five_hour"].items() if k != "_reset"})
-
-    @staticmethod
-    def _hm(sec):
-        m = sec // 60
-        return "%d시간 %d분" % (m // 60, m % 60) if m >= 60 else "%d분" % m
 
     def attention(self, sessions):
         a, now = self.a, self.now()

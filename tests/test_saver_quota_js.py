@@ -173,5 +173,29 @@ R.moneyEn = creditMoney(1234, 'EUR');
         self.assertEqual(self.R["long"], ["목표보다 많이 씀", "목표보다 덜 씀"])   # drawer badge = status-bar wording
 
 
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class SbarNoSaver(unittest.TestCase):
+    def test_null_sv_leaves_no_saver_span(self):
+        # Demo and installs without the saver hook send saver/saverView = null: #sbar must not draw a pace chip.
+        from tests.test_sbar_pct import STUBS
+        stubs = STUBS.replace("const svParts = () => null, svLive = () => null,", "const svLive = () => null,")
+        fns = ("fmtPct", "buildSbar", "burnEst", "burnEstTip", "burnWkEst", "svJudge", "svRate", "svOver", "svParts")
+        body = """
+let QLAST = {q: {five_hour: {pct: 40}, seven_day: {pct: 20}}}, BURN = null;
+const out = [];
+SV = null; buildSbar(); out.push(OUT);
+SV = {at: Math.floor(Date.now() / 1000), mode: 'auto', stage: 0, pct: 55}; buildSbar(); out.push(OUT);
+process.stdout.write(JSON.stringify(out));
+"""
+        src = (stubs + i18n() + "\n" + "\n".join(jconst(c) for c in ("esc", "SV_STALE", "SV_JLV", "SV_JREC", "SV_JLONG", "svJName"))
+               + "\n" + "\n".join(js_fn(f) for f in fns) + "\n" + body)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
+        if r.returncode != 0:
+            raise AssertionError(r.stderr)
+        none, some = json.loads(r.stdout)
+        self.assertNotIn("<b>5h</b>", some.split("</span>")[0])   # control: a snapshot draws a saver span before the 5h quota
+        self.assertIn("<b>5h</b>", none.split("</span>")[0])       # null: the 5h quota leads, no saver span
+
+
 if __name__ == "__main__":
     unittest.main()

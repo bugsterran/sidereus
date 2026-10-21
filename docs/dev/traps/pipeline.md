@@ -209,6 +209,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 
 - ⚠`allowed_projects()` always adds `CODE_DIR` on a clone, so a fresh clone listed only it and the tab opened its developer pipelines (arch-map) instead of the empty state. ⇒ The list marks it `self_only` unless history, «+ Add project» or a live session's cwd/repos also name it; the default pick skips it and the picker sorts it last.
 - ⚠Never drop it from the allow-list, and never flag it when a session runs there — the developer's default would change.
+- The picker row says «(built-in)» (48 `plChips` note); with no project and no session `plBody` adds the next step (start a session, or `sidereus start --demo`) under «Pick a project».
 
 ## First-open canvas fit went stale when cards grew (48d `plGwFit` · `plSizeKey`)
 

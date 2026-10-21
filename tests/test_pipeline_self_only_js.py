@@ -54,6 +54,17 @@ class SelfOnlyDefault(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr.decode())
         self.assertEqual(json.loads(r.stdout), ["/b", "/c", "/a"])
 
+    def test_self_only_row_says_built_in(self):
+        js = ("const esc = s => String(s); const T = s => s; const TV = o => o.msg; let CFG = null; function ppComboHtml(c){ CFG = c; return ''; }"
+              "let SESS = [], PROJ_GONE = new Set(), PLS = {proj: '', projs: {projects: [{path: '/s', n: 7, self_only: true}, {path: '/w', n: 1}], added: []}};"
+              "function plLiveProjs(){ return {}; } function plMem(){} function plKnown(){} function strShort(p){ return p; }"
+              "function plAddForm(){ return ''; } function plBrOpen(){} function plPickProj(){}\n" + js_fn("plChips") + "\n"
+              "plChips(); console.log(JSON.stringify(CFG.items.map(e => CFG.note(e))));")
+        r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+        self.assertEqual(r.returncode, 0, r.stderr.decode())
+        self.assertEqual(json.loads(r.stdout), [" <small class=strpc>7</small> <small class=hidnote>(built-in)</small>",
+                                                " <small class=strpc>1</small>"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -173,7 +173,7 @@ function plChips(){
   const rm = PLS.proj && added.includes(PLS.proj) ? '<button type=button class="strp plrm" data-plprojrm="' + esc(PLS.proj) + '" title="' + esc(T('Remove from list')) + '" aria-label="' + esc(T('Remove from list')) + '">×</button>' : '';
   return '<div class=plchips>' + ppComboHtml({ k: 'pl', label: T('Project'), items: items, cur: PLS.proj, rkey: 'sidereus.plrecent', badge: badge,
     tip: e => e.p + (e.n ? '\n' + TV({msg: '{n} pipelines', vars: {n: e.n}}) : ''),
-    note: e => (e.n ? ' <small class=strpc>' + e.n + '</small>' : ''),
+    note: e => (e.n ? ' <small class=strpc>' + e.n + '</small>' : '') + (e.last ? ' <small class=hidnote>' + esc(T('(built-in)')) + '</small>' : ''),   // self_only: Sidereus' own sample pipelines
     pick: plPickProj, extra: plAddForm(), onExtra: plBrOpen }) + rm + '</div>';
 }
 // Every person-driven project switch; ⚠a form built for one project (48e PLNEW/PLDRAFT/PLSTD) must not survive into another (typed draft text is dropped, as PLNEW always was).
@@ -241,7 +241,9 @@ function plComboHtml(o){
 function plHeadRow(hd, html){ if(hd){ hd.row = html; return ''; } return '<div class=plnames>' + html + '</div>'; }
 function plBody(ov, hd){
   const d = PLS.data[PLS.proj];
-  if(!PLS.proj) return '<div class=hidnote>' + esc(T('Pick a project')) + '</div>';
+  // First run (no project, no session): say how something appears here instead of a bare «Pick a project».
+  if(!PLS.proj) return '<div class=hidnote>' + esc(T('Pick a project')) + '</div>' + (typeof SESS !== 'undefined' && (SESS || []).length ? ''
+    : '<div class=hidnote>' + esc(T('Start a Claude Code, Codex or Gemini session and it shows up here.')) + '<br>' + esc(T('Or try the demo:')) + ' <code>sidereus start --demo</code></div>');
   if(!d) return '<div class=hidnote>' + esc(T('Loading…')) + '</div>';
   // 400 = outside allowed_projects(): say how to get in (run a Claude session there once), not just «refused». ⚠never a raw «HTTP 400»
   if(!d.ok) return '<div class=hidnote>' + (d.status === 400 ? esc(T('Pipelines are saved in .claude/pipelines/ inside the project, so they open only for folders where a Claude session has run.'))
@@ -357,9 +359,10 @@ function paintPipe(box, fromPoll){
   if(PLS.projs) plLoad(PLS.proj, false);
   const hv = !PLS.off && plHnOn();
   tbSlot('pipe', PLS.off ? '' : plViewSeg());   // sub-view switch lives in the header toolbar slot, like Branches/Insights
+  const now = !hv && !PLS.off && (plNowPickApply(), plNowShown());   // run view (48j) vs Edit; pick applied first so head and body agree
   // Pipelines view: no <b>, the header title (#vtitle) already says «Pipelines».
   const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Harness')) + '</b>' : '') + '<span class=plcap>'
-    + esc(hv ? T('Hooks · rules · agents · MCP · skills') : T('Agent and model per stage')) + '</span></div>';
+    + (hv ? esc(T('Hooks · rules · agents · MCP · skills')) : now ? '' : esc(T('Agent and model per stage'))) + '</span></div>';   // caption describes Edit only
   const body = PLS.off ? '<div class=hidnote>' + esc(T('The pipeline feature is off')) + '</div>'
     : (hv ? plChips() + hnHtml() : (plNowPickApply(), plNowShown() ? plNowWrap(plMainBody()) : plMainBody()));   // 48j list | run view; 48k Edit puts the palette in that column
   const h = '<div class="brep plw">' + head + body + '</div>';

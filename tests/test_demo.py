@@ -68,6 +68,7 @@ class DemoTest(unittest.TestCase):
         st = self.get("/api/state", "since=0")
         self.assertEqual(set(st), STATE_KEYS)
         self.assertEqual(st["build"], "abc123def456")      # same as PAGE_BUILD, or the «new version» toast shows
+        self.assertEqual([st[k] for k in ("saver", "saverView", "saverSwitch")], [None] * 3)   # saver hook is not shipped
         self.assertEqual(len(st["sessions"]), 7)              # 6 Claude + 1 synthetic Gemini
         self.assertEqual([s["plat"] for s in st["sessions"]].count("gm"), 1)
         self.assertEqual(st["extUsage"]["gm"]["tok"], sum(st["extUsage"]["gm"][k] for k in ("in", "out", "cache", "thought")))
