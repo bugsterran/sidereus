@@ -335,6 +335,15 @@ class Overview(unittest.TestCase):
         self.assertIn('class="plovst plov-done">✓ a', h)
         self.assertEqual(loads, [])                    # no pipeline-list load of the target for a pipeline it does not own
 
+    def test_failed_run_row_first(self):
+        # The short Watch card clips later rows: a failed run must not sort below an ok one.
+        stub = (self.STUB + " globalThis.T = s => s; Object.assign(globalThis, {SESS: [], PLS: {data: {}, proj: '/t'}, ARCH_PL: 'x',"
+                " plLiveProjs: () => ({'/a': ['x'], '/b': ['x'], '/c': ['x']}), plMem: () => ({}), plKnown: () => ({}), plCur: () => null, plOrphHtml: () => '',"
+                " plLoad: () => 0, plAgRun: p => ({p}), plAgOvRow: (proj) => ({proj, name: proj.slice(1), sid: 's', n: 0,"
+                " stages: [{t: 's', st: proj === '/b' ? 'fail' : 'done'}], cur: []})});")
+        h = _js("(() => { %s return plOverview(); })()" % stub, "plOverview", "plOvHtml", "plOvRunHtml")
+        self.assertEqual(re.findall(r'data-plovwn="(\w)"', h), ["b", "a", "c"])   # fail first, the rest keep their order
+
     def test_overview_placed_under_canvas_not_chips(self):
         # Top placement shifted the chips and canvas on every run start/end: the overview goes after the canvas (the per-stage table is gone).
         stub = ("globalThis.PLS = {data: {}, proj: '/a'}; globalThis.plChips = () => '<CHIPS/>'; globalThis.plApplySeg = () => '<APPLY/>';"

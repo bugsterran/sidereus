@@ -263,12 +263,20 @@ class PlMode(unittest.TestCase):
                 " plWSizes(2000, null), plWSizes(400, null)]));")
         self.assertEqual(r[0], [750, 140, 110])                                # default shares 0.75 / 0.14 / 0.11
         self.assertEqual(r[1], [600, 250, 150])                                # saved shares win and scale with the window
-        self.assertEqual(r[2], [260, 80, 48])                                  # mins: card then pane give way, canvas keeps 260
+        self.assertEqual(r[2], [260, 80, 84])                                  # mins: card then pane give way, canvas keeps 260
         self.assertEqual(r[3], [1500, 280, 220])                               # no canvas maximum
-        self.assertEqual(r[4], [272, 80, 48])                                  # small window: pane and card at their mins
+        self.assertEqual(r[4], [260, 80, 84])                                  # small window: pane and card at their mins, canvas holds 260
         r = run(MODE + "LS['sidereus.plwv'] = '[0.5,0.3,0.2]'; const a = plWShares(); LS['sidereus.plwv'] = '[1,0,0]';"
                 " console.log(JSON.stringify([a, plWShares()]));")
         self.assertEqual(r, [[0.5, 0.3, 0.2], None])
+
+    def test_running_card_fits_header_and_two_rows(self):
+        # A 48px card showed the header + one row; a second (failed) run sat clipped below the fold.
+        r = run(MODE + "console.log(JSON.stringify([PLW_MIN[2], plWSizes(600, null)[2], plWSizes(400, null)[0]]));")
+        self.assertGreaterEqual(r[0], 84)
+        self.assertGreaterEqual(r[1], r[0])
+        self.assertGreaterEqual(r[2], 260)
+        self.assertIn(".plwov{overflow:auto;min-height:84px;", _src("web/css/43-pipeline.css"))
 
     def test_r8_running_card_always_present(self):
         r = run(MODE + "console.log(JSON.stringify([plWatchOv(''), plWatchOv('<div class=plov>X</div>')]));")

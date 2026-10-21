@@ -67,8 +67,8 @@ function plWatchPane(E, d, lv, lt){
 }
 // Watch is three stacked regions: canvas | result pane | «Running N» card, split by two drag grips (p, r).
 // Sizes are kept as shares of the free height (sidereus.plwv = [canvas, pane, card]) so a window resize keeps the proportions.
-// ⚠Mins canvas 260 · pane 80 · card 48; the whole stack ends at the feed bottom (plGwFit passes h) and never scrolls the page.
-const PLW_MIN = [260, 80, 48], PLW_GRIP = 8, PLW_DEF = [0.75, 0.14, 0.11];   // default shares of the free height; a longer pane/card scrolls inside
+// ⚠Mins canvas 260 · pane 80 · card 84 (header + 2 rows; 48 clipped the 2nd row); the whole stack ends at the feed bottom (plGwFit passes h) and never scrolls the page.
+const PLW_MIN = [260, 80, 84], PLW_GRIP = 8, PLW_DEF = [0.75, 0.14, 0.11];   // default shares of the free height; a longer pane/card scrolls inside
 let PLWDRAG = null;
 function plWGrip(k){ return '<div class=plwgr data-plwg=' + k + ' role=separator aria-orientation=horizontal title="' + esc(T('Drag to resize · double-click for default')) + '"></div>'; }
 // Always present (an empty state, not nothing): runs starting or ending must not move the layout.

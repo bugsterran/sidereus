@@ -452,6 +452,9 @@ function plOverview(){
       stages: wfStages(r).map(t => ({ t, st: lt[t].st })), cur: [], n: (r.agents || []).length, sumh: wfSumHtml(r, now / 1000) });
   }));
   const cp = PLS.wf ? null : plCur();
+  // ⚠Failed/looped-back/held runs first (stable): the Watch card is short, so a later row would sit below its fold.
+  const bad = r => (r.stages || []).some(s => s.st === 'fail' || s.st === 'back' || s.st === 'hold') ? 0 : 1;
+  rows.sort((a, b) => bad(a) - bad(b));
   return plOvHtml(rows, PLS.proj, cp ? cp.name : '') + plOrphHtml(orph);
 }
 // Tagged run whose pipeline file is in no known project (or in two): session id + pipeline name only (rule 1).
