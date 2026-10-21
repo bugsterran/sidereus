@@ -106,7 +106,7 @@ class PipelineEmptyTpl(unittest.TestCase):
         s = _src("48e-pipeline-new.js")
         self.assertIn("if(e.target.closest('[data-pltplo]')){ PLTPLO = !PLTPLO; plPaint(); plRefocus('[data-pltplo]'); return; }", s)
 
-    def test_r3_apply_and_orphan_need_a_pipeline(self):
+    def test_r3_apply_needs_a_pipeline_orphan_note_does_not(self):
         mb = js_fn("plMainBody")
         r = run("let PLS = {proj: '/p', data: {'/p': {ok: true, pipelines: []}}};"
                 "function plOverview(){ return ''; } function plBody(){ return '<B/>'; } function plChips(){ return ''; }"
@@ -116,7 +116,7 @@ class PipelineEmptyTpl(unittest.TestCase):
         self.assertNotIn("<APPLY/>", r[0])                                 # R3: no «Apply» for []
         self.assertIn("<APPLY/>", r[1])                                    # R3: shown with one pipeline
         s = _src("48b-pipeline-run.js")
-        self.assertIn("(pd && (pd.pipelines || []).length ? plOrphHtml(orph) : '')", s)   # R3: orphan note gated the same way
+        self.assertIn("+ plOrphHtml(orph);", s)   # missing-file note is not gated: it matters most in an empty project
 
     def test_r4_empty_project_at_most_five_controls(self):
         r = run(_tpls() + "\n" + FNS +
