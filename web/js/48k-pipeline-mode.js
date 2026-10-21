@@ -70,7 +70,13 @@ function plWatchPane(E, d, lv, lt){
 // ⚠Mins canvas 260 · pane 80 · card 84 (header + 2 rows; 48 clipped the 2nd row); the whole stack ends at the feed bottom (plGwFit passes h) and never scrolls the page.
 const PLW_MIN = [260, 80, 84], PLW_GRIP = 8, PLW_DEF = [0.75, 0.14, 0.11];   // default shares of the free height; a longer pane/card scrolls inside
 let PLWDRAG = null;
-function plWGrip(k){ return '<div class=plwgr data-plwg=' + k + ' role=separator aria-orientation=horizontal title="' + esc(T('Drag to resize · double-click for default')) + '"></div>'; }
+const PLW_STEP = 24;   // keyboard step, same as the session drawer grips (41 SESDR_STEP)
+// aria-valuenow = the boundary position as a percent of the stack (p: under the canvas, r: under the pane); plWApply keeps it live.
+function plWGrip(k){
+  const F = plWShares() || PLW_DEF, now = Math.round(100 * (k === 'p' ? F[0] : F[0] + F[1]));
+  return '<div class=plwgr data-plwg=' + k + ' tabindex=0 role=separator aria-orientation=horizontal aria-valuemin=0 aria-valuemax=100 aria-valuenow=' + now
+    + ' aria-label="' + esc(T(k === 'p' ? 'Resize canvas and result pane' : 'Resize result pane and Running card')) + '" title="' + esc(T('Drag to resize · double-click for default')) + '"></div>';
+}
 // Always present (an empty state, not nothing): runs starting or ending must not move the layout.
 function plWatchOv(ov){
   return '<div class=plwov>' + (ov || '<div class=plov><b class=plovh>' + esc(TV({msg: 'Running {n}', vars: {n: 0}})) + '</b><span class=hidnote>' + esc(T('No runs running')) + '</span></div>') + '</div>';
@@ -86,7 +92,37 @@ function plWSizes(A, F){
   s[0] = Math.max(PLW_MIN[0], A - s[1] - s[2]);
   return s;
 }
-function plWApply(g, oc, s){ g.style.setProperty('--plcvh', s[0] + 'px'); g.style.setProperty('--plwph', s[1] + 'px'); if(oc) oc.style.height = s[2] + 'px'; }
+function plWApply(g, oc, s){
+  g.style.setProperty('--plcvh', s[0] + 'px'); g.style.setProperty('--plwph', s[1] + 'px'); if(oc) oc.style.height = s[2] + 'px';
+  const A = s[0] + s[1] + s[2];
+  if(A > 0) document.querySelectorAll('.plw .plwgr').forEach(x => x.setAttribute('aria-valuenow', Math.round(100 * (x.dataset.plwg === 'p' ? s[0] : s[0] + s[1]) / A)));
+}
+// Move the boundary under region i (0 canvas|pane, 1 pane|card) by dy px; drag and arrow keys share it so the mins match.
+function plWStep(s0, i, dy){
+  const s = s0.slice(), sum = s0[i] + s0[i + 1];
+  const a = Math.max(PLW_MIN[i], Math.min(sum - PLW_MIN[i + 1], s0[i] + dy));
+  s[i] = Math.round(a); s[i + 1] = Math.round(sum - a);
+  return s;
+}
+function plWNow(g, oc){ return [parseFloat(g.style.getPropertyValue('--plcvh')) || 0, parseFloat(g.style.getPropertyValue('--plwph')) || 0, oc.offsetHeight]; }
+function plWSave(s){
+  const A = s[0] + s[1] + s[2];
+  if(A > 0) lsSetJson('sidereus.plwv', s.map(x => +(x / A).toFixed(4)));
+  if(typeof plFitSoon === 'function') plFitSoon();   // re-fit the graph to the new canvas height
+}
+function plWReset(){ lsDel('sidereus.plwv'); if(typeof plFitSoon === 'function') plFitSoon(); }
+// Keyboard twin of the drag: ArrowUp/ArrowDown move the boundary PLW_STEP px, Home = default.
+function plWKey(e){
+  const gr = e.target && e.target.closest && e.target.closest('.plw .plwgr');
+  if(!gr || e.altKey || e.metaKey || e.ctrlKey) return;
+  if(e.key === 'Home'){ e.preventDefault(); plWReset(); return; }
+  const dy = e.key === 'ArrowDown' ? PLW_STEP : e.key === 'ArrowUp' ? -PLW_STEP : 0;
+  const g = document.querySelector('.plw .plgw.plwt'), oc = document.querySelector('.plw .plwov');
+  if(!dy || !g || !oc) return;
+  e.preventDefault();
+  const s = plWStep(plWNow(g, oc), gr.dataset.plwg === 'p' ? 0 : 1, dy);
+  plWApply(g, oc, s); plWSave(s);
+}
 function plWatchFit(g, fd, h){
   if(PLWDRAG) return;
   g.style.height = '';
@@ -109,25 +145,22 @@ document.addEventListener('pointerdown', e => {
   const g = document.querySelector('.plw .plgw.plwt'), oc = document.querySelector('.plw .plwov');
   if(!g || !oc) return;
   e.preventDefault();
-  const k = gr.dataset.plwg, s0 = [parseFloat(g.style.getPropertyValue('--plcvh')) || 0, parseFloat(g.style.getPropertyValue('--plwph')) || 0, oc.offsetHeight];
-  const i = k === 'p' ? 0 : 1, y0 = e.clientY, sum = s0[i] + s0[i + 1];
+  const s0 = plWNow(g, oc), i = gr.dataset.plwg === 'p' ? 0 : 1, y0 = e.clientY;
   PLWDRAG = { s: s0.slice() }; gr.classList.add('on'); document.body.classList.add('dragging');
   dragTrack(e, gr, ev => {
-    const a = Math.max(PLW_MIN[i], Math.min(sum - PLW_MIN[i + 1], s0[i] + ev.clientY - y0));
-    PLWDRAG.s[i] = Math.round(a); PLWDRAG.s[i + 1] = Math.round(sum - a);
+    PLWDRAG.s = plWStep(s0, i, ev.clientY - y0);
     plWApply(g, oc, PLWDRAG.s);
   }, () => {
-    const s = PLWDRAG.s, A = s[0] + s[1] + s[2];
+    const s = PLWDRAG.s;
     PLWDRAG = null; gr.classList.remove('on'); document.body.classList.remove('dragging');
-    if(A > 0) lsSetJson('sidereus.plwv', s.map(x => +(x / A).toFixed(4)));
-    if(typeof plFitSoon === 'function') plFitSoon();   // re-fit the graph to the new canvas height
+    plWSave(s);
   });
 });
 document.addEventListener('dblclick', e => {
   if(!(e.target.closest && e.target.closest('.plw .plwgr'))) return;
-  lsDel('sidereus.plwv');
-  if(typeof plFitSoon === 'function') plFitSoon();
+  plWReset();
 });
+document.addEventListener('keydown', plWKey);
 document.addEventListener('click', e => {
   const t = e.target.closest && e.target.closest('.plw [data-plmode],.plw [data-plcancel],.plw .plwp [data-plwsid]');
   if(!t || t.disabled) return;

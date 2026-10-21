@@ -270,6 +270,30 @@ class PlMode(unittest.TestCase):
                 " console.log(JSON.stringify([a, plWShares()]));")
         self.assertEqual(r, [[0.5, 0.3, 0.2], None])
 
+    def test_watch_grips_keyboard_and_aria(self):
+        # WCAG 4.1.2 / 2.1.1: the grips were mouse-only separators with no name, value or keys.
+        r = run(MODE + "console.log(JSON.stringify([plWGrip('p'), plWGrip('r')]));")
+        for h, lab, now in ((r[0], "Resize canvas and result pane", 75), (r[1], "Resize result pane and Running card", 89)):
+            self.assertIn(" tabindex=0 ", h)
+            self.assertIn('aria-label="' + lab + '"', h)
+            self.assertIn(" aria-valuemin=0 aria-valuemax=100 aria-valuenow=%d " % now, h)
+        dom = ("const SAVED = {}; function lsSetJson(k, v){ SAVED[k] = v; } function lsDel(k){ delete SAVED[k]; }"
+               "const ST = {}, G = {style: {setProperty(k, v){ ST[k] = v; }, getPropertyValue(k){ return ST[k] || ''; }}}, OC = {offsetHeight: 110, style: {}};"
+               "const GR = {p: {dataset: {plwg: 'p'}, attrs: {}, setAttribute(k, v){ this.attrs[k] = v; }}, r: {dataset: {plwg: 'r'}, attrs: {}, setAttribute(k, v){ this.attrs[k] = v; }}};"
+               "var document = {querySelector(q){ return q.includes('plwov') ? OC : G; }, querySelectorAll(){ return [GR.p, GR.r]; }};"
+               "const key = (k, g) => { const e = {key: k, target: {closest: () => g}, prevented: 0, preventDefault(){ this.prevented = 1; }}; plWKey(e); return e.prevented; };")
+        r = run(MODE + dom + "plWApply(G, OC, [750, 140, 110]); const out = [];"
+                "out.push(key('ArrowDown', GR.p), ST['--plcvh'], ST['--plwph'], GR.p.attrs['aria-valuenow'], SAVED['sidereus.plwv']);"
+                "for(let n = 0; n < 5; n++) key('ArrowDown', GR.p); out.push(ST['--plcvh'], ST['--plwph']);"     # pane stops at PLW_MIN[1]
+                "OC.offsetHeight = 110; key('ArrowUp', GR.r); out.push(ST['--plwph'], OC.style.height, key('a', GR.p), key('ArrowDown', null));"
+                "console.log(JSON.stringify(out));")
+        self.assertEqual(r[:5], [1, "774px", "116px", 77, [0.774, 0.116, 0.11]])   # ArrowDown = 24px, same save as a drag
+        self.assertEqual(r[5:7], ["810px", "80px"])                                 # clamped at the pane minimum
+        self.assertEqual(r[7:], ["80px", "110px", 0, 0])                          # pane already at its min; other keys / non-grips ignored
+        self.assertIn("document.addEventListener('keydown', plWKey);", _src("web/js/48k-pipeline-mode.js"))
+        css = _src("web/css/43-pipeline.css")
+        self.assertIn(".plwgr:focus-visible::after{opacity:1;", css)
+
     def test_running_card_fits_header_and_two_rows(self):
         # A 48px card showed the header + one row; a second (failed) run sat clipped below the fold.
         r = run(MODE + "console.log(JSON.stringify([PLW_MIN[2], plWSizes(600, null)[2], plWSizes(400, null)[0]]));")

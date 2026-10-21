@@ -89,6 +89,8 @@ function plRedrawEdges(E, cv){
 // ⚠keyed on `via` (the edge that opened the target's current pass, pl_runs), not the cumulative `from` count:
 //   an earlier loop-back kept pulsing on every later pass of the target, even a forward one
 function plPulseOn(lt, from, to){ const L = (lt || {})[to] || {}; return (+((L.from || {})[from]) || 0) > 0 && L.st === 'run' && L.via === from; }
+// Edge hit path = keyboard stop (Enter/Space selects, 48d-pipeline-cv-input); data-kb lets 98-a11y restore focus after repaints.
+function plHitA(G, f, t){ return ' tabindex=0 role=button data-kb aria-label="' + esc(plgShow((plgNode(G, f) || {}).title || f) + ' → ' + plgShow((plgNode(G, t) || {}).title || t)) + '"'; }
 function plEdgesSvg(E){
   const G = plVG(E), sel = E.sel || {}, pt = id => (plgNode(G, id) || {}).ui, lt = E.lt || {}, st = id => (lt[(plgNode(G, id) || {}).title] || {});
   let h = '';
@@ -101,7 +103,7 @@ function plEdgesSvg(E){
     // ⚠Running edges draw exactly like idle ones — moving dashes on short edges read as a blob; the running node's own border animation marks the state.
     const gr = '<linearGradient id=plgr' + i + ' gradientUnits=userSpaceOnUse x1=' + (a.x + plgW(G, e[0])) + ' y1=' + (a.y + plgH(G, e[0]) / 2) + ' x2=' + b.x + ' y2=' + (b.y + plgH(G, e[1]) / 2) + '>'
       + '<stop offset=0 class="plgs pf-' + fa + '"' + plgPfc(na) + '/><stop offset=1 class="plgs pf-' + fb + '"' + plgPfc(nb) + '/></linearGradient>';
-    h += gr + '<path class=plhit data-pledge="f:' + i + '" d="' + d + '"/><path class="plef' + on + run + '" d="' + d + '"'
+    h += gr + '<path class=plhit' + plHitA(G, e[0], e[1]) + ' data-pledge="f:' + i + '" d="' + d + '"/><path class="plef' + on + run + '" d="' + d + '"'
       + ' style="stroke:url(#plgr' + i + ')"/>';
   });
   const lanes = plgLoopLanes(G);
@@ -113,9 +115,10 @@ function plEdgesSvg(E){
     const fn = +((st(l.to).from || {})[(plgNode(G, l.from) || {}).title]) || 0;   // times this edge fired (plrun `from`, 48b)
     const txt = '↩ ' + T('fails') + ' ' + T('max ') + l.max + (l.then ? ' → ' + l.then : '') + (fn ? ' · ↺ ' + fn : ''), w = Math.round(txt.length * 7.2 + 16);
     const pulse = plPulseOn(lt, (plgNode(G, l.from) || {}).title, (plgNode(G, l.to) || {}).title) ? ' pulse' : '';   // 43 .plel.pulse
-    h += '<path class=plhit data-pledge="l:' + i + '" d="' + g.d + '"/><path class="plel' + on + pulse + '" d="' + g.d + '"/>';
+    h += '<path class=plhit' + plHitA(G, l.from, l.to) + ' data-pledge="l:' + i + '" d="' + g.d + '"/><path class="plel' + on + pulse + '" d="' + g.d + '"/>';
     const lx = Math.max(g.lx, w / 2 + 4);   // ⚠gutter lanes centre near x≈80: a wide pill ran past x=0 and the canvas clipped it
-    labs += '<g class="pllt' + on + '" data-pledge="l:' + i + '"><rect x="' + (lx - w / 2) + '" y="' + (g.ly - 10) + '" width="' + w + '" height=20 rx=10 />'
+    // Mouse-only twin of the loop hit path (which is the keyboard stop); own tabindex keeps 98-a11y from marking it.
+    labs += '<g class="pllt' + on + '" tabindex=-1 aria-hidden=true data-pledge="l:' + i + '"><rect x="' + (lx - w / 2) + '" y="' + (g.ly - 10) + '" width="' + w + '" height=20 rx=10 />'
       + '<text x="' + lx + '" y="' + (g.ly + 4) + '" text-anchor=middle>' + esc(txt) + '</text></g>';
   });
   return h + labs;
@@ -158,7 +161,7 @@ function plNodeHtml(E, n, bad, lt){
   const hl = G.loops.some(l => l.from === n.id) ? ' hasloop' : '';   // its lane leaves 14px*k off-centre: no mark at the centre port
   // Direct-mode subagents behind a lit stage (workflow runs carry no labs: no hover)
   const tip = L && L.nn ? ' title="' + esc(T('Not needed on this run — runs only on a loop-back')) + '"' : L && L.labs && L.labs.length ? ' title="' + esc(L.labs.map(a => plLabTip(a.lab) + ' (' + (a.run ? T('Running') : T('Done')) + ')').join('\n')) + '"' : '';
-  return '<div class="plnd pf-' + plgFam(n.title) + hl + sel + (bad ? ' bad' : '') + (L ? ' pl-' + L.st + fresh : '') + '" data-plnode="' + esc(n.id) + '"' + tip + ' style="left:' + (+n.ui.x) + 'px;top:' + (+n.ui.y) + 'px' + (plgHue(n) ? ';--pfc:' + plgHue(n) : '') + '">'
+  return '<div class="plnd pf-' + plgFam(n.title) + hl + sel + (bad ? ' bad' : '') + (L ? ' pl-' + L.st + fresh : '') + '" data-plnode="' + esc(n.id) + '" tabindex=0 role=button data-kb aria-label="' + esc(plgShow(n.title) + (lsTxt ? ' · ' + lsTxt : '')) + '"' + tip + ' style="left:' + (+n.ui.x) + 'px;top:' + (+n.ui.y) + 'px' + (plgHue(n) ? ';--pfc:' + plgHue(n) : '') + '">'
     + '<i class="plport plpin" title="' + esc(T('Incoming flow')) + '"></i>'
     + '<i class="plport plpout" data-plport=flow title="' + esc(T('Drag to connect the next stage')) + '"></i>'
     + '<i class="plport plpbk" data-plport=loop title="' + esc(T('Drag to an earlier stage to loop back on failure')) + '"></i>'

@@ -42,7 +42,7 @@ html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--
 .plw .plnl .plnli:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
 .plnlrun{display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--nx-t2,#a8b3c4)}   /* run summary, unboxed */
 .plnlrun-work{color:var(--nx-info,#5899f3);font-weight:600}.plnlrun-need{color:var(--nx-warn,#fad83e)}.plnlrun-done{color:var(--nx-t3,#8b95a5)}
-.plw .plnli .spl{flex:0 2 auto;min-width:2ch;padding:0;border:0;background:none;color:var(--nx-t3,#8b95a5);font-size:11px;font-weight:400;overflow:hidden;text-overflow:ellipsis}   /* sessPlChip unboxed in the list */
+.plw .plnli .spl{flex:0 2 auto;min-width:2ch;max-width:none;padding:0;border:0;background:none;color:var(--nx-t3,#8b95a5);font-size:11px;font-weight:400;overflow:hidden;text-overflow:ellipsis}   /* sessPlChip unboxed in the list; ⚠max-width:none lifts the 16ch cap of the drawer .spl (60-sessions) so the text follows the list width */
 .plnld,.plnlrd{flex:none;width:8px;height:8px;border-radius:50%;background:var(--nx-idle,#7d7e85)}
 .plnld-work{background:var(--nx-info,#5899f3)}.plnld-need{background:var(--nx-warn,#fad83e)}
 .plnlpulse{position:relative}.plnlpulse::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--nx-info,#5899f3);animation:plr 1.5s cubic-bezier(.4,0,.6,1) infinite}   /* running run; plr keyframes = 60-sessions.css */
@@ -229,7 +229,8 @@ html[data-ui=next] .plw .plcvt .plzv{color:var(--nx-t1)}
 /* 48k Watch drag grips (canvas | pane | Running card): 8px rows with a centred bar, ns-resize; sizes kept as shares (sidereus.plwv) */
 .plwgr{position:relative;height:8px;cursor:ns-resize;touch-action:none}
 .plwgr::after{content:'';position:absolute;left:50%;top:2px;width:44px;height:4px;margin-left:-22px;border-radius:2px;background:var(--nx-t3,#84868c);opacity:.55}
-.plwgr:hover::after,.plwgr.on::after{opacity:1;background:var(--nx-info,#5899f3)}
+.plwgr:hover::after,.plwgr.on::after,.plwgr:focus-visible::after{opacity:1;background:var(--nx-info,#5899f3)}
+.plwgr:focus{outline:none}   /* focus shows as the lit bar, like the session drawer grips */
 .plwov{overflow:auto;min-height:84px;box-sizing:border-box}   /* «Running N» card: fixed height from plWatchFit, rows scroll inside */
 .plwov>.plov{margin:0;min-height:100%;box-sizing:border-box;border:1px solid var(--nx-rule,#252629);border-radius:6px}
 .plwov .hidnote{margin:0}
@@ -263,6 +264,8 @@ html[data-ui=next] .plw .plgrp{color:var(--nx-t2)}
 .plel{fill:none;stroke:#e0a53d;stroke-width:2;stroke-dasharray:6 4}
 .plef.on,.plel.on{stroke-width:3.5}
 .plhit{fill:none;stroke:transparent;stroke-width:12;cursor:pointer}
+html[data-ui] .plw .plhit:focus-visible{outline:none;stroke:var(--nx-info,#5b8def);stroke-opacity:.45}
+html[data-ui] .plw .plnd:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:2px}
 .plmf{fill:#6d8fd6}.plml{fill:#e0a53d}
 .pllt{cursor:pointer}
 .pllt rect{fill:#1d1a12;stroke:#e0a53d;stroke-width:1}

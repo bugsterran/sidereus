@@ -122,6 +122,26 @@ strNavMove(h, {file: 'c', line: 9}, -1); strNavPush(h, {file: 'b', line: 0}); R.
         # arch map | Edges: right pane px width, below 240 ignored, capped at 60% so the map keeps room
         self.assertEqual(self.R["arb"], ["", "", ' style="--spw:421px"'])
 
+    def test_split_grip_keyboard_and_aria(self):
+        # WCAG 4.1.2 / 2.1.1: the grip was a bare <i> with no role, focus, value or keys.
+        keys = "".join(js_fn(f) for f in ("strSplitTracks", "strSplitAria", "strSplitAt", "strSplitSave", "strSplitReset", "strSplitKey"))
+        r = run(keys + r"""
+const STR_SPLIT_KEYS = ['strsp', 'srt'], STR_SPLIT_STEP = 24; function lsSet(k, v){ LS[k] = v; } function lsDel(k){ delete LS[k]; }
+LS['sidereus.strsp'] = '0.3'; R.g = [strSplitGrip('strsp'), strSplitGrip('srt')];
+const GR = {attrs: {}, getAttribute: () => 'srt', setAttribute(k, v){ this.attrs[k] = v; }};
+const BOX = {style: {}, cols: [200, 790], getBoundingClientRect: () => ({left: 0, right: 1000, width: 1000})};
+const D = {querySelector: () => BOX, querySelectorAll: () => [GR]};
+var getComputedStyle = b => ({columnGap: '10px', gridTemplateColumns: BOX.style.gridTemplateColumns ? BOX.style.gridTemplateColumns.replace(/min\((\d+)px.*/, (a, n) => n + 'px ' + (990 - n) + 'px') : '200px 790px'});
+const ev = k => ({key: k, target: {closest: () => GR}, p: 0, s: 0, preventDefault(){ this.p = 1; }, stopPropagation(){ this.s = 1; }});
+const e1 = ev('ArrowRight'); strSplitKey(D, e1); R.k = [e1.p, e1.s, LS['sidereus.srt'], BOX.style.gridTemplateColumns, GR.attrs['aria-valuenow']];
+for(let n = 0; n < 4; n++) strSplitKey(D, ev('ArrowLeft')); R.k.push(LS['sidereus.srt']);   // clamped at the 140px minimum
+const e2 = ev('x'); strSplitKey(D, e2); R.k.push(e2.p);
+""")
+        self.assertIn("<i class=strspg data-spk=strsp tabindex=0 role=separator aria-orientation=vertical aria-valuemin=0 aria-valuemax=100 aria-valuenow=30"
+                      ' aria-label="Resize panes"', r["g"][0])
+        self.assertIn("tabindex=0 role=separator aria-orientation=vertical aria-valuemin=0 aria-valuemax=100 aria-label=", r["g"][1])   # px key: measured on focus
+        self.assertEqual(r["k"], [1, 1, "224", "min(224px,60%) 1fr", 23, "140", 0])   # 24px step through the drag clamps
+
     def test_table_escaped(self):
         t = self.R["tbl"]
         self.assertNotIn("<b>.ts", t)

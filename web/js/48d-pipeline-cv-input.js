@@ -120,6 +120,17 @@ document.addEventListener('keydown', e => {
   const E = plCurEnt();
   if(E && E.sel && !plRO()){ e.preventDefault(); plDelSel(E); }
 });
+// Keyboard twin of the pointerdown selection above: same E.sel + plPaint, never fits/centres the view.
+// ⚠Must run before 98-a11y's [data-kb] activator (preventDefault stops it): its click() is a no-op here (selection is on pointerdown) and SVG paths have no click().
+document.addEventListener('keydown', e => {
+  if((e.key !== 'Enter' && e.key !== ' ') || e.defaultPrevented || e.isComposing || e.keyCode === 229 || e.repeat) return;
+  const t = e.target, E = plCurEnt();
+  if(!E || !t || !t.matches || !t.matches('.plw [data-plnode], .plw path[data-pledge]')) return;
+  e.preventDefault(); plNoFirst();
+  const id = t.getAttribute('data-plnode'), ed = t.getAttribute('data-pledge');
+  if(id){ E.sel = { k: 'n', id }; plPaint(); plRefocus('[data-plnode="' + CSS.escape(id) + '"]'); return; }
+  const [k, i] = ed.split(':'); E.sel = { k, i: +i }; plPaint(); plRefocus('path[data-pledge="' + CSS.escape(ed) + '"]');
+});
 // ⚠ skip IME composition (isComposing, or keyCode 229 on Safari): the Korean commit Enter would otherwise add the stage twice.
 document.addEventListener('keydown', e => {
   if(e.key !== 'Enter' || e.isComposing || e.keyCode === 229 || mainView !== 'pipe' || !e.target.closest || !e.target.closest('.plw [data-plnt]')) return;
