@@ -239,6 +239,17 @@ class PlModel(unittest.TestCase):
         s = PR.pl_model(SID, self.sd, [], {"name": "other", "title": "구현", "age": 30}, NOW)[0]["stages"]
         self.assertEqual(s["구현"]["ag"], [])
 
+    def test_open_bg_keeps_stage_run(self):
+        # Turn ended (act idle), main marker expired: an open tagged bg task keeps its stage running; without it, done.
+        st = {"구현": {"s": "run", "t0": NOW - 70, "t1": NOW - 60, "n": 1}}
+        self._file({"sidereus-change": self._r(st=st)})
+        bgs = [{"lab": "[pl:sidereus-change/구현] run gates", "min": 3}, {"lab": "plain bg", "min": 1}]
+        s = PR.pl_model(SID, self.sd, [], None, NOW, "idle", (), bgs)[0]["stages"]["구현"]
+        self.assertEqual(s["o"], "run")
+        self.assertEqual([(a["lab"], a["run"], a["t0"]) for a in s["ag"]], [("[pl:sidereus-change/구현] run gates", True, NOW - 180)])
+        s = PR.pl_model(SID, self.sd, [], None, NOW, "idle", (), [])[0]["stages"]["구현"]   # bg ended -> no longer open
+        self.assertEqual(s["o"], "done")
+
     def test_stale_run_closed(self):
         st = {"설계": {"s": "run", "t0": NOW - 90, "t1": NOW - 80, "n": 1}, "구현": {"s": "run", "t0": NOW - 70, "t1": NOW, "n": 2},
               "검증": {"s": "done", "t0": NOW - 60, "t1": NOW - 50, "n": 1}, "라이브 검증": {"s": "run", "t0": NOW - 40, "t1": NOW - 30, "n": 1},

@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Pipelines: a session whose turn ended but whose tagged background task, subagent or run stage is still going shows «Working» in «Working now» (row, its dot and the pulsing rail dot), and the canvas keeps that stage in progress until the task ends instead of closing it after two minutes.
+
 ## [0.6.0] - 2026-10-22
 
 ### Added

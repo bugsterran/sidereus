@@ -272,10 +272,11 @@ def _row_children(fp, p, now, dead, act="run"):
     team = None if dead else _team_row(fp)
     plm = None if dead else plm_of(p.get("sid") or "", now)   # main agent's [pl:] stage (agents.plm_of); added only when live
     sub = _bg_show(p.get("sub"), now, dead)
+    bgs = _bg_show(p.get("bgs"), now, dead)
     plrun = []
     try:   # pipeline run model (pl_runs.pl_model); added only when present
         plrun = pl_runs.pl_model(p.get("sid") or "", fp[:-len(".jsonl")] if fp.endswith(".jsonl") else fp, sub, plm, now, act,
-                         _bg_show(p.get("sub"), now, False) if dead else ())
+                         _bg_show(p.get("sub"), now, False) if dead else (), bgs)
     except Exception as e:
         warn_once("plmodel", "Could not build the pipeline run model ({err})",
                   vars={"err": type(e).__name__}, soft=True)
@@ -295,7 +296,7 @@ def _row_children(fp, p, now, dead, act="run"):
                 **({"plNone": plnone} if plnone else {}), **{
         # ★Ended sessions show nothing running — no process, so no tasks either (only old notifications linger).
         "sub": sub,   # subagents — elapsed counted **now** (not frozen in the cache)
-        "bgs": _bg_show(p.get("bgs"), now, dead),   # background commands
+        "bgs": bgs,   # background commands
         # ★mon in the same shape as sub·bgs — previously `[label, time]` pairs went out as-is and broke on screen
         #   (it only went unnoticed because no session had a running watcher).
         "mon": _mon_rows(fp, p.get("mon"), now, dead),      # persistent watchers — processes are the source of truth for mailbox watchers

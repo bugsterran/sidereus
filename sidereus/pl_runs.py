@@ -253,12 +253,13 @@ def _run_lab(ags, lo, hi):
     return min(xs, key=lambda a: a["t0"])["d"] if xs else ""
 
 
-def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=()):
+def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
     """Row `plrun`: [{name, proj, sid, rid, lab, cur, end, t0, t1, stop, stages: {title: {o, n, t0, t1, from: {src: n}, ag?: [...]}},
     past: [{rid, t0, t1, end, cur, lab, stages}]}] — rid = t0, lab = first tagged agent's bare description, past = earlier
     runs of that name newest first (≤ PLR_PAST_MAX, no `ag`, closed as idle).
     Newest first, ≤ PLR_MODEL_MAX; `ag` [{aid, tid, lab, run, t0, t1}] only on the newest PLR_MODEL_AG_RUNS open runs + the newest ended run.
-    Sources: runs.json st/lb/proj · tagged subagent meta · live `sub` rows ([pl:] in lab) · `plm` main marker.
+    Sources: runs.json st/lb/proj · tagged subagent meta · live `sub` rows ([pl:] in lab) · open `bgs` rows (tagged
+    Bash(run_in_background); label = redacted description) · `plm` main marker.
     ⚠Metadata only (rule 1): ids, titles, times, counts, agentType+description label — never message/prompt text."""
     doc = _load_doc(sid, now)
     raw = doc.get("runs") if isinstance(doc.get("runs"), dict) else {}
@@ -300,7 +301,8 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=()):
         for title, s in r["st"].items():
             for a in [a for a in base if a["aid"] in s.get("ids", ()) and a["_t"] != title]:
                 ags.append(dict(a, _t=title))
-        for x in (sub if isinstance(sub, list) else ()):
+        # ⚠Open tagged bg tasks count too: after the turn ends only they prove the stage still works (the marker expires).
+        for x in list(sub if isinstance(sub, list) else ()) + list(bgs if isinstance(bgs, list) else ()):
             lab = x.get("lab") if isinstance(x, dict) else None
             m = _PLR_TAG.search(lab) if isinstance(lab, str) else None
             # ⚠A live agent belongs to the open run only: an ended run of the same name had its stage re-lit by it.
