@@ -11,8 +11,18 @@ from sidereus.pipeline_projects import _proj_ok
 from sidereus.pipeline_schema import _NAME, _one_line, dump, validate
 
 
-# «+ New pipeline» templates. Agents a project lacks become general-purpose at create time.
-# No `task` text: each title's default instruction comes from the runner (DEFAULT_TASKS).
+# «+ New pipeline» templates. Agents a project lacks become general-purpose at create time; `main` is kept.
+# Recommended titles take their default instruction from the runner (DEFAULT_TASKS); a custom title carries its own `task`.
+_CROSS_TASK = (
+    'Orchestrator stage: run it yourself. If you are a subagent, change nothing and FAIL with cause "unrelated", '
+    'reason "main stage - the orchestrator runs this pipeline itself". '
+    "Run one Bash call described `[pl:<this pipeline>/<this stage title>]` that runs "
+    '`codex exec --sandbox read-only "<prompt>"` (first confirm the flag with `codex exec --help`). '
+    "The prompt asks Codex to run git diff (or the range the request names), review it for bugs, security and "
+    "regressions, list each blocking finding as file:line + fix, and change nothing. "
+    "It is a one-shot run that takes no follow-up; to ask again, run a new exec. "
+    "This stage is billed to the Codex account. "
+    "PASS when Codex reports no blocking finding, otherwise FAIL. Relay the findings as they are and fix nothing.")
 TEMPLATES = {
     "change": ("변경", {"model": "inherit", "retry": 0}, [
         {"title": "설계", "agent": "sidereus-designer", "produces": "slices"},
@@ -29,6 +39,8 @@ TEMPLATES = {
         {"title": "트리아지", "agent": "general-purpose"}]),
     "live": ("라이브 검증", {"model": "inherit", "retry": 0}, [
         {"title": "라이브 검증", "agent": "general-purpose"}]),
+    "cross-review": ("교차 리뷰", {"model": "inherit", "retry": 0}, [
+        {"title": "교차 리뷰", "agent": "main", "task": _CROSS_TASK}]),
     "empty": ("", {"model": "inherit", "retry": 0}, [{"title": "설계", "agent": "general-purpose"}]),
 }
 
@@ -39,7 +51,7 @@ def _from_template(proj, name, title, tpl):
     have = {a["name"] for a in _agents(proj)}
     out = []
     for s in json.loads(json.dumps(stages)):
-        if s["agent"] != "general-purpose" and s["agent"] not in have:
+        if s["agent"] not in ("general-purpose", "main") and s["agent"] not in have:   # ⚠`main` = orchestrator stage, never an agent file
             s["agent"] = "general-purpose"
         out.append(s)
     return {"v": 1, "name": name, "title": title or t_title or name, "defaults": dict(defaults), "stages": out}

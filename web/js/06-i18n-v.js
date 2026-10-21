@@ -43,7 +43,7 @@ Object.assign(I18N.ko, {
   'Change (design→implement→verify→review→re-verify)': '변경 (설계→구현→검증→리뷰→재검증)',
   'Bug fix (reproduce→cause→fix→regression)': '버그 수정 (재현→원인→수정→회귀)', 'Empty pipeline (one stage)': '빈 파이프라인 (단계 하나)',
   'Agents the project lacks become general-purpose · edit them on the canvas afterwards': '프로젝트에 없는 에이전트는 general-purpose 로 둡니다 · 만든 뒤 캔버스에서 고칩니다',
-  'Triage': '트리아지', 'Live check': '라이브 검증',
+  'Triage': '트리아지', 'Live check': '라이브 검증', 'Cross-review (Codex)': '교차 리뷰 (Codex)',
   'Import from another project': '다른 프로젝트에서 가져오기', 'Agents missing here, set to general-purpose': '이 프로젝트에 없어 general-purpose 로 바꾼 에이전트',
   'Write new from a purpose': '설명으로 새로 쓰기', 'Port an existing workflow': '기존 워크플로 옮기기', 'Port from a rule document': '규칙 문서에서 옮기기', 'Suggested': '자동 제안', 'Order': '순서', 'Pick a colour': '직접 고르기', 'Suggested · not saved': '자동 제안 · 저장 안 됨', 'Save this suggestion': '이 제안 저장',
   'Guessed from agent names — edit it after saving': '에이전트 이름으로 짐작한 순서입니다 — 저장한 뒤 고칠 수 있습니다', 'Pipelines are saved in .claude/pipelines/ inside the project, so they open only for folders where a Claude session has run.': '파이프라인은 프로젝트의 .claude/pipelines/ 에 저장돼서, Claude 세션을 연 적 있는 폴더에서만 열 수 있습니다.',

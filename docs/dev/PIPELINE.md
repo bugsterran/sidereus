@@ -17,7 +17,7 @@ and see which stage is running. Sidereus never runs anything itself (AGENTS.md r
 | 3 | other projects · agent «Import» / «New agent» | project `.claude/agents/*.md` |
 | 4 | n8n-style node editor over the same JSON (nodes, edges, loop-back for retry, parallel groups) | same JSON |
 
-Templates: «Change» Design→Implement→Verify→Review · «Bug fix» Reproduce→Root cause→Fix→Regression · «Triage» · «Live verify».
+Templates: «Change» Design→Implement→Verify→Review · «Bug fix» Reproduce→Root cause→Fix→Regression · «Triage» · «Live verify» · «Cross-review (Codex)».
 
 ## Step 1 — runner
 
@@ -28,6 +28,8 @@ Check: `node scripts/pipeline_check.mjs` (in `scripts/check.sh --fast`) runs the
 sidereus-change starts with one: the Requirements stage (skill `requirements`) — R1..Rn checkable criteria + one Non-goal, owner confirms once; Design slices name the R ids, Live verify reports each R PASS/FAIL with evidence, the commit body ends with `Done when:` / `Not doing:`.
 
 Review in sidereus-change is two stages (find/verify split, https://claude.dev/blog/solving-code-review-at-anthropic/): «Review-find» = 2 `sidereus-reviewer` (opus, `parallel: 2`), one lens each (AGENTS.md rules + security · logic/regressions), every finding file:line + rule/scenario + diff excerpt, always PASS · «Review-confirm» = `sidereus-review-verifier` (opus) disproves each against the code and `git blame`/`git log -L`, tags Important/Nit/Pre-existing, drops Nits, FAILs only on a confirmed Important from this diff (→ Implement once, then Re-verify), and ends with a metadata-only ledger (id · rule · verdict). Both read `.claude/review-guide.md`. Small change (< ~100 lines, no security/metadata path): one reviewer covers both lenses, its FAIL is final, and «Review-confirm» is declared `[pl-skip:]`.
+«Cross-review (Codex)» template (`cross-review`, `sidereus/pipeline_new.py` `_CROSS_TASK`): one `main` stage (title = the Korean for «Cross-review»). The orchestrator runs one Bash described `[pl:<pipeline>/<Cross-review stage title>]` with `codex exec --sandbox read-only "<prompt>"` (review git diff or the named range; blocking findings as file:line + fix; change nothing) — the stage lights from the tag and the Codex run folds under the parent session. PASS/FAIL = Codex blocking findings; the orchestrator relays them and fixes nothing.
+  ⚠This stage is billed to the Codex account; every other stage stays on Claude. ⚠`codex exec` is one-shot: it takes no follow-up instructions — to ask again, run a new exec. ⚠The task opens with a subagent guard (a subagent changes nothing and FAILs with cause `unrelated`). ⚠Sidereus never runs or spawns codex; only the orchestrator's own Bash does.
 ⚠`main` stages work only when the orchestrator runs the pipeline itself — the Workflow runner (`.claude/workflows/pipeline.js`) has no `main` branch and would dispatch it as general-purpose with no owner confirm.
 
 ```
@@ -68,7 +70,7 @@ Session ↔ project (`plProjSess`, lighting + run picker): `cwd == project` or `
 «Guards» pane (no selection): `guards {requireGates: [titles], maxLoopBacks: 1..10}` (validated in `pipeline_schema`); only stages whose gate matches GET `gate_modes` (schema `GATE_MODES`) are offered; a stage rename (`_rename`) follows `requireGates`. ⚠The save body must send `guards: plgGuards(E.G, gate_modes)`.
 Canvas toolbar is its own strip (never over nodes) with «+ Stage» (adds the first unused catalog title after the selected stage) · each loop-back has its own lane below the boxes, label pill on the lane · 100% zoom unless the chain does not fit.
 «+ New pipeline» (`web/js/48e-pipeline-new.js`): name + title + template (Change · Bug fix · Triage · Live verify · Empty) → full-file preview → «Confirm» = `POST /api/pipelines/create` (Origin, `known_projects`, validates, creates the dir, ⚠never overwrites). Agents the project lacks become `general-purpose`.
-Default tasks (instructions an AI can follow, plus rules): runner `DEFAULT_TASKS` (pure JSON between markers — the one source; `sidereus/pipeline.py default_tasks()` and `pipeline_check.mjs` parse it) gives every title an instruction; `stage.task` is appended as ADDITIONAL INSTRUCTIONS. Node panel shows the default read-only above «Extra instructions». Templates carry no task text.
+Default tasks (instructions an AI can follow, plus rules): runner `DEFAULT_TASKS` (pure JSON between markers — the one source; `sidereus/pipeline.py default_tasks()` and `pipeline_check.mjs` parse it) gives every title an instruction; `stage.task` is appended as ADDITIONAL INSTRUCTIONS. Node panel shows the default read-only above «Extra instructions». Templates carry no task text, except a custom-title stage («Cross-review (Codex)»), which carries its own `task`.
 «Rules»: `rules` goes to the page and saves through the same diff + Confirm (checkable common rules stored as English lines + free text). «Ask AI for a draft»: DM preview → Confirm → `/api/dm` relay to a logged-in live session, which writes the file itself (Sidereus writes nothing); the list re-reads every 20 s for 10 min.
 
 - Place: own main tab «Pipelines» after Branches (★2026-10-01 moved out of Tokens — pipelines are not token usage); hidden when the feature is off. ⚠An old stored Tokens segment `sidereus.tkview=pipe` falls back to Usage.

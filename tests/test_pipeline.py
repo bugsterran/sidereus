@@ -410,6 +410,20 @@ class Routes(unittest.TestCase):
         # project has no sidereus-* agents -> general-purpose; the designer/impl names here do not match the template's
         self.assertEqual({s["agent"] for s in row["stages"]}, {"general-purpose"})
 
+    def test_create_cross_review_keeps_main_r1(self):
+        # R1: the orchestrator stage stays `main` in a project with no agents, and its task hands the review to codex exec
+        self.assertTrue(len(PN._CROSS_TASK) <= 1000)
+        code, out, _ = self._create({"name": "xr", "template": "cross-review", "dry": False})
+        self.assertEqual(code, 200, out)
+        with open(os.path.join(self.proj, ".claude", "pipelines", "xr.json"), encoding="utf-8") as f:
+            P = json.load(f)
+        self.assertEqual(PS.validate(P, "xr"), [])
+        self.assertEqual([s["agent"] for s in P["stages"]], ["main"])
+        task = P["stages"][0]["task"]
+        self.assertIn("codex exec", task)
+        self.assertIn("[pl:", task)
+        self.assertTrue(task.startswith("Orchestrator stage: run it yourself."))
+
     def test_create_keeps_existing_agents_and_makes_dir(self):
         shutil.rmtree(os.path.join(self.proj, ".claude", "pipelines"))
         open(os.path.join(self.proj, ".claude", "agents", "sidereus-verifier.md"), "w", encoding="utf-8").close()
