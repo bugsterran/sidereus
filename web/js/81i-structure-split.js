@@ -2,10 +2,11 @@
 // Split panes are resizable by default -> `.strsp` (source | test) and
 // `.srmds` (markdown source | preview) get a grip; the left share is kept per viewer in `sidereus.<class>`.
 // `.srt` (file tree | code) stores the tree width in px instead (min STR_SPLIT_PX, max 60% via CSS min()).
+// `.plmd` («Pipelines» «Working now» list | run view, 48j) stores the list width in px the same way.
 // `.archbody` (arch map | Edges list) stores the right pane width in px (STR_SPLIT_RPX; max 60% so the map keeps room).
 // Default (no key) = the CSS 1fr 1fr. ⚠Drag only changes column widths — never scroll or move anything.
 // ⚠The popup may be a child window and 81b stops dblclick bubbling inside .srt -> capture listeners per document.
-const STR_SPLIT_KEYS = ['strsp', 'srmds', 'srt', 'archbody'], STR_SPLIT_MIN = 0.15, STR_SPLIT_PX = { srt: 140 }, STR_SPLIT_RPX = { archbody: 240 };
+const STR_SPLIT_KEYS = ['strsp', 'srmds', 'srt', 'archbody', 'plmd'], STR_SPLIT_MIN = 0.15, STR_SPLIT_PX = { srt: 140, plmd: 150 }, STR_SPLIT_RPX = { archbody: 240 };
 function strSplitGet(k){
   const v = +lsGet('sidereus.' + k, 0) || 0;
   const px = STR_SPLIT_PX[k] || STR_SPLIT_RPX[k];

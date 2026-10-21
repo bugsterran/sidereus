@@ -58,12 +58,15 @@ function plLiveRun(proj, name){
   // ⚠A session whose recorded run of `name` belongs to another project is not tagged here: its tags made a stand-in run
   //   (every untagged stage «wait») on this project's same-named pipeline.
   const away = x => ((x && x.plrun) || []).some(r => r && r.name === name && r.proj && r.proj !== proj);
-  const tg = ss.filter(x => !away(x)).map(x => ({ x, t: plSubsOf(x).map(a => plDescStage(a && a.lab)).filter(d => d && d.name === name).map(d => d.title) })).filter(o => o.t.length);
+  // Ordering only: the session picked in the «Working now» list (48j PLS.nowSid) ranks first at equal liveness.
+  const me = s => !!PLS.nowSid && s === PLS.nowSid;
+  const tg = ss.filter(x => !away(x)).map(x => ({ x, t: plSubsOf(x).map(a => plDescStage(a && a.lab)).filter(d => d && d.name === name).map(d => d.title) })).filter(o => o.t.length)
+    .sort((p, q) => me(q.x.sid) - me(p.x.sid));
   let pr = null, sid = '';
   (tg.length ? tg.map(o => o.x) : (SESS || [])).forEach(x => ((x && x.plrun) || []).forEach(r => {   // no proj recorded: the session must belong to `proj`
     if(!r || r.name !== name || !(r.proj ? r.proj === proj : ss.includes(x))) return;
     const on = plPrLive(r);
-    if(!pr || (on && !plPrLive(pr)) || (on === plPrLive(pr) && (r.t1 || 0) > (pr.t1 || 0))){ pr = r; sid = x.sid; }
+    if(!pr || (on && !plPrLive(pr)) || (on === plPrLive(pr) && (me(x.sid) !== me(sid) ? me(x.sid) : (r.t1 || 0) > (pr.t1 || 0)))){ pr = r; sid = x.sid; }
   }));
   if(!pr && tg.length){
     const t = Date.now() / 1000, S = {};

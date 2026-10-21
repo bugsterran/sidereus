@@ -116,6 +116,7 @@ function plDelSel(E){
 document.addEventListener('keydown', e => {
   if(mainView !== 'pipe' || (e.key !== 'Delete' && e.key !== 'Backspace')) return;
   if(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  if(e.target && e.target.closest && e.target.closest('.plnl')) return;   // ⚠48j stage-row click sets E.sel and keeps focus in the list: Backspace there deleted that stage
   const E = plCurEnt();
   if(E && E.sel && !plRO()){ e.preventDefault(); plDelSel(E); }
 });

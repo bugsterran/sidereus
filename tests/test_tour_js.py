@@ -24,7 +24,7 @@ const R = {};
 
 
 def run(body):
-    fns = "".join(js_fn(n) + "\n" for n in ("tourPlan", "tourShouldAuto", "tourPluginLines", "tourStepper", "tourBody", "tourEnd", "tourClick"))
+    fns = "".join(js_fn(n) + "\n" for n in ("tourPlan", "tourShouldAuto", "tourPluginLines", "tourStepper", "tourBody", "tourEnd", "tourClick", "tourPlEdit", "plNowShown"))
     code = STUB + STEPS + "\n" + KEY + "\n" + fns + body + "\nprocess.stdout.write(JSON.stringify(R));"
     r = subprocess.run(node_e(code), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
@@ -37,9 +37,14 @@ class Tour(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.R = run(r"""
-const all = () => true, none = () => false, noStrip = s => s !== '#feed .plnow';
+const all = () => true, none = () => false, noStrip = s => s !== '#feed .plnl';
 R.full = tourPlan({}, all, 3);
 R.off = tourPlan({pipeline: false}, all, 3).map(p => p.id);
+R.edit = tourPlan({}, all, 3, true).map(p => p.id);
+R.editDemo = tourPlan({}, noStrip, 0, true).filter(p => p.demo).map(p => p.id);
+var PLS = {wf: ''}, PLAG = '', plCur = () => null, plWatchFor = () => false;
+R.firstRun = tourPlan({}, noStrip, 0, tourPlEdit()).map(p => p.id);
+plCur = () => ({ok: true}); R.editLive = tourPlEdit();
 R.demoAt = tourPlan({}, all, 0).filter(p => p.demo).map(p => p.id);
 R.demoOffAt = tourPlan({pipeline: false}, all, 0).filter(p => p.demo).map(p => p.id);
 R.demo = tourPlan({}, all, 0).find(p => p.demo);
@@ -77,6 +82,19 @@ R.finish = {writes: writes.slice(), tabs: tabs.slice(), hidden: root.hidden};
     def test_feature_off_skips_pipeline_steps(self):
         self.assertEqual(self.R["off"], ["arch", "time", "done"])
 
+    def test_edit_mode_drops_pl_live(self):
+        # Edit has no «Working now» list: pl-live drops, pl-start stays, the demo hint moves to 'time'.
+        self.assertEqual(self.R["edit"], ["pl-what", "pl-start", "arch", "time", "done"])
+        self.assertEqual(self.R["editDemo"], ["time"])
+        self.assertTrue(self.R["editLive"])
+
+    def test_first_run_without_pipeline_keeps_pl_live(self):
+        # No pipeline yet: the list is on screen, so pl-live stays (with the demo hint).
+        self.assertIn("pl-live", self.R["firstRun"])
+
+    def test_tour_never_switches_pipeline_mode(self):
+        self.assertNotIn("plModeSet", SRC)
+
     def test_no_sessions_demo_variant(self):
         # R4: the demo hint sits on pl-live; on 'time' only when pl-live dropped out (pipelines off).
         self.assertEqual(self.R["demoAt"], ["pl-live"])
@@ -89,10 +107,11 @@ R.finish = {writes: writes.slice(), tabs: tabs.slice(), hidden: root.hidden};
         self.assertEqual(self.R["nostrip"]["mode"], "centre")
         self.assertIn("tourms", self.R["nostripBody"])
 
-    def test_pl_live_describes_working_now_strip(self):
-        # R4: pl-live spotlights the always-rendered «Working now» strip; no dead «no pipeline running» line.
+    def test_pl_live_describes_working_now_list(self):
+        # pl-live spotlights the always-rendered «Working now» list (.plnl, even collapsed); no dead «no pipeline running» line.
         self.assertEqual(self.R["liveSpot"]["t"], "Working now")
         self.assertIn("지금 작업 중", self.R["liveSpot"]["h"])
+        self.assertIn("파이프라인 실행이 열리고", self.R["liveSpot"]["h"])
         self.assertNotIn("tourms", self.R["liveSpot"]["h"])
         self.assertNotIn("tourdim", self.R["nostripBody"])
 

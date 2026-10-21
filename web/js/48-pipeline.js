@@ -177,7 +177,9 @@ function plChips(){
     pick: plPickProj, extra: plAddForm(), onExtra: plBrOpen }) + rm + '</div>';
 }
 function plPickProj(p){
-  PLS.proj = p; lsSet('sidereus.plproj', PLS.proj); PLNEW = null; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint();
+  PLS.proj = p; lsSet('sidereus.plproj', PLS.proj); PLNEW = null; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = '';
+  PLS.nowSid = ''; PLS.nowPick = null;   // 48j: a stage row of the previous session must not apply to this project
+  plPaint();
 }
 // «+ Add project»: the person adds a folder explicitly, never automatically; opens the folder browser (48f plBrOpen).
 // ⚠own attribute: 48d's «+ Custom stage»/«+ Stage» use data-pladd, so sharing it opened the folder modal on every stage add.
@@ -261,7 +263,7 @@ function plBody(ov, hd){
     + plDelPrev(p) + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
   const models = d.models || [];
   const lv = plViewRun(PLS.proj, p.name), lt = lv ? (lv.lt || plLight(p.stages, lv.run)) : null;   // a run picked in the head menu, else the live one (48b)
-  const cv = plCanvas(p, d, lt);
+  const cv = plCanvas(p, d, lt), wt = typeof plWatchFor === 'function' && plWatchFor(p);   // wt = 48k Watch: Run only, file operations wait for «Edit»
   const dirty = plDirty(p.name);
   // Live run status sits between the title and the actions: on its own row it pushed the buttons above the progress bar.
   const cov = plGateCov(plEnt(p).G);   // from the editor graph: unsaved gate edits count
@@ -269,16 +271,16 @@ function plBody(ov, hd){
   const bar = '<div class=plbar><b>' + esc(p.title) + '</b><span class="plcov' + (cov.n < cov.m ? ' plcovlo' : '') + '" title="' + esc(TV({msg: 'Stages machine-checked by a gate command: {n} of {m}', vars: {n: cov.n, m: cov.m}})) + '">' + esc(TV({msg: 'Gates {n}/{m}', vars: {n: cov.n, m: cov.m}})) + '</span>' + plEvalHead(ev, PLEVAL_OPEN === p.name) + plLiveHead(lv, lt) + '<span class=plact>'   // right-aligned, colour-coded action group (43-pipeline.css)
     // Run first (primary; relays a run request to a session), then a divider, then the file operations; Delete last.
     + '<button class="wkrgb plrn' + (PLRUN && PLRUN.name === p.name ? ' on' : '') + '" data-plrun' + (dirty ? ' disabled title="' + esc(T('Save before running')) + '"' : '') + '>' + esc(T('Run')) + '</button>'
-    + '<span class=plsep aria-hidden=true></span>'   // Save always follows, so the divider never trails
+    + (wt ? (dirty ? '<span class=plwdirty>' + esc(T('Unsaved changes — Edit to save')) + '</span>' : '') : '<span class=plsep aria-hidden=true></span>'   // Save always follows, so the divider never trails
     + (dirty ? '<button class="wkrgb" data-plreset>' + esc(T('Undo')) + '</button>' : '')
     + '<button class="wkrgb plsv" data-plsave' + (dirty && cv.ok && !PLS.saving ? '' : ' disabled') + (cv.ok ? '' : ' title="' + esc(T('Fix the red items before saving')) + '"') + '>' + esc(T('Save')) + '</button>'
-    + (p.std || !p.sha ? '' : '<button class="wkrgb pldl" data-pldel' + (PLS.saving ? ' disabled' : '') + '>' + esc(T('Delete')) + '</button>') + '</span></div>';   // unsaved draft: no file
+    + (p.std || !p.sha ? '' : '<button class="wkrgb pldl" data-pldel' + (PLS.saving ? ' disabled' : '') + '>' + esc(T('Delete')) + '</button>')) + '</span></div>';   // unsaved draft: no file
   const diff = PLS.diff && PLS.diff.name === p.name ? '<div class=pldiff><div class=brh2><b>' + esc(T('Changes', 'preview')) + '</b> <i>.claude/pipelines/'
     + esc(p.name) + '.json</i></div><pre>' + diffHtml(PLS.diff.text, agLang('x.json')) + '</pre>' + plRenameWarn(p, lv) + '<div class=plbar>'
     + '<button class="wkrgb" data-plok' + (PLS.saving ? ' disabled' : '') + '>' + esc(T('Confirm')) + '</button>'
     + '<button class="wkrgb" data-plno>' + esc(T('Cancel')) + '</button></div></div>' : '';
-  return list + bar + (PLEVAL_OPEN === p.name ? plEvalPanel(ev) : '') + plDelPrev(p) + cv.html + (ov || '') + plRunTable(lv, p) + plRunPanel(p, models)
-    + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '') + diff;
+  return list + bar + (PLEVAL_OPEN === p.name ? plEvalPanel(ev) : '') + (wt ? '' : plDelPrev(p)) + cv.html + (ov || '') + plRunTable(lv, p) + plRunPanel(p, models)
+    + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '') + (wt ? '' : diff);   // 48k Watch: no write previews
 }
 // Delete preview: what moves where (rule 7: moved to the backup folder, never deleted)
 function plDelPrev(p){
@@ -322,10 +324,11 @@ function plPaint(fromPoll){
 // Bodies with no canvas (loading, empty, Workflow/arch panels) get it at their end instead.
 function plMainBody(){
   const ov = plOverview(), hd = { row: '' }, pb = plBody(ov, hd);   // one head row: project · pipeline · «+ New ▾» (· Workflow chips)
-  return '<div class=pltop>' + plChips() + hd.row + '</div>' + plApplySeg(PLS.data[PLS.proj]) + pb + (ov && pb.indexOf(ov) < 0 ? ov : '');
+  return '<div class=pltop>' + plChips() + hd.row + (typeof plModeBtn === 'function' ? plModeBtn() : '') + '</div>' + plApplySeg(PLS.data[PLS.proj]) + pb + (ov && pb.indexOf(ov) < 0 ? ov : '');
 }
 function paintPipe(box, fromPoll){
   if(PLDRAG) return;                   // ⚠a repaint mid-drag would drop the dragged node
+  if(document.body.classList.contains('dragging')) return;   // ⚠81i grip drag (list width): a poll repaint resets the dragged width
   plLoadProjs();
   if(PLS.projs && !PLS.proj && typeof strDefProj === 'function') PLS.proj = strDefProj() || '';   // same default as «Structure»; not remembered until clicked
   if(PLS.projs) plLoad(PLS.proj, false);
@@ -335,7 +338,7 @@ function paintPipe(box, fromPoll){
   const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Harness')) + '</b>' : '') + '<span class=plcap>'
     + esc(hv ? T('Hooks · rules · agents · MCP · skills') : T('Agent and model per stage')) + '</span></div>';
   const body = PLS.off ? '<div class=hidnote>' + esc(T('The pipeline feature is off')) + '</div>'
-    : (hv ? plChips() + hnHtml() : plNowHtml() + plMainBody());   // 48j «Working now» strip, fixed height
+    : (hv ? plChips() + hnHtml() : (plNowPickApply(), plNowShown() ? plNowWrap(plMainBody()) : plMainBody()));   // 48j list | run view; 48k Edit puts the palette in that column
   const h = '<div class="brep plw">' + head + body + '</div>';
   if(box._plw === h && box.querySelector('.plw')) return;   // ⚠poll repaints would close an open <select>
   const fe = document.activeElement;   // ⚠a live run changes h every poll: never rebuild under an open select / the caret
@@ -345,7 +348,9 @@ function paintPipe(box, fromPoll){
   // ⚠Harness HTML changes every poll (relative times), and a rebuilt node drops its native title tooltip before the ~1s delay ends: hold while hovering one.
   if(fromPoll && box.querySelector('.hnw [title]:hover')) return;
   box._plw = h;
+  const nl = box.querySelector('.plnl'), nst = nl ? nl.scrollTop : 0;   // ⚠innerHTML resets the list's own scroll on every poll
   box.innerHTML = h;
+  const nl2 = nst && box.querySelector('.plnl'); if(nl2) nl2.scrollTop = nst;
   const pw = box.querySelector('.plw'); if(pw) pw.style.setProperty('--plt', (-performance.now()) + 'ms');   // ⚠rebuild restarts animations: negative delay = document time keeps the phase
   if(!hv) plAfterPaint(box);
 }
@@ -396,10 +401,10 @@ document.addEventListener('click', e => {
   const ap = e.target.closest('[data-plap]');
   if(ap){ const a = (PLS.data[PLS.proj] || {}).apply; if(a && ap.dataset.plap !== a.mode) plApplySet(ap.dataset.plap); return; }
   if(e.target.closest('[data-plsave]')) return plSave(false);
-  if(e.target.closest('[data-plok]')) return plSave(true);
+  if(e.target.closest('[data-plok]')) return plWatchOn() ? undefined : plSave(true);   // 48k Watch never confirms a write
   if(e.target.closest('[data-plno]')){ PLS.diff = null; plPaint(); return; }
   if(e.target.closest('[data-pldel]')) return plDelete(false);
-  if(e.target.closest('[data-pldelok]')) return plDelete(true);
+  if(e.target.closest('[data-pldelok]')) return plWatchOn() ? undefined : plDelete(true);
   if(e.target.closest('[data-pldelno]')){ PLS.del = null; plPaint(); return; }
   if(e.target.closest('[data-plreset]')){ plResetEnt(plCur()); PLS.diff = null; PLS.msg = ''; plPaint(); }
 });

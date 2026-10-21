@@ -186,8 +186,11 @@ function plCanvas(p, d, lt){
     + VG.nodes.map(n => plNodeHtml(E, n, bad[n.id], lt)).join('')
     + '<svg class="plsvg plheads" width="' + mx + '" height="' + my + '"><defs>' + plMarkers(G) + '</defs><g class=plhd>' + plHeadsSvg(E) + '</g></svg></div></div>';
   const errs = chk.errs.length ? '<ul class=plerrs>' + chk.errs.map(x => '<li' + (x.id ? ' data-plpick="' + esc(x.id) + '"' : '') + '>' + esc(x.msg) + '</li>').join('') + '</ul>' : '';
+  const gh = '<div class=plgh data-plgh title="' + esc(T('Drag to resize · double-click to reset', 'height')) + '"></div>';
+  // 48k Watch: no palette, no editor; the selected stage's result sits in the panel slot. ⚠Edit output must stay byte-identical.
+  if(typeof plWatchFor === 'function' && plWatchFor(p)) return { html: '<div class="plgw plwt">' + cv + errs + '</div>' + gh + plWatchPane(E, d, plViewRun(PLS.proj, p.name), lt) + '</div>', ok: !chk.errs.length };
   return { html: '<div class=plgw>' + plPalette(E, d.catalog)
-    + cv + errs + '</div><div class=plgh data-plgh title="' + esc(T('Drag to resize · double-click to reset', 'height')) + '"></div>' + plPanel(E, d) + '</div>', ok: !chk.errs.length };
+    + cv + errs + '</div>' + gh + plPanel(E, d) + '</div>', ok: !chk.errs.length };
 }
 const PL_SWATCH = ['#c297ff', '#5899f3', '#71c269', '#fad83e', '#2ec4b6', '#f472b6', '#fb923c', '#94a3b8'];   // 5 families + pink, orange, slate
 function plSetColor(E, c){

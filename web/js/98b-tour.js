@@ -5,7 +5,7 @@
 // Pipelines lead (first screen); Timeline comes last as the evidence view.
 const TOUR_STEPS = [
   {id: 'pl-what',  feat: 'pipeline', pl: 1},
-  {id: 'pl-live',  tab: 'pipe',   sel: '#feed .plnow', feat: 'pipeline', pl: 1},   // ⚠block root only — its inner classes change
+  {id: 'pl-live',  tab: 'pipe',   sel: '#feed .plnl', feat: 'pipeline', pl: 1},   // ⚠block root only — its inner classes change
   {id: 'pl-start', tab: 'pipe',   sel: '[data-plnewm]', feat: 'pipeline', pl: 1},
   {id: 'arch',     tab: 'struct', sel: '.archtab'},   // ⚠never calls setStrMode — the user's structure mode stays
   {id: 'time',     tab: 'time',   sel: '#feed .tlr.tlrs'},
@@ -14,8 +14,9 @@ const TOUR_STEPS = [
 const TOUR_KEY = 'sidereus.tourDone';   // ⚠must match sidereus/ui_prefs.py KEY_RE or the server drops it
 // Pure: steps whose feature is off drop out; a step spotlights only when its target is on screen (hasSel(sel) -> bool).
 //   No sessions: the demo hint rides on the first live step — 'pl-live', or 'time' when pipelines are off.
-function tourPlan(feats, hasSel, nSes){
-  const steps = TOUR_STEPS.filter(s => !(s.feat && feats && feats[s.feat] === false)), dk = steps.some(s => s.id === 'pl-live') ? 'pl-live' : 'time';
+//   plEdit: the «Working now» list is not shown (Pipelines in Edit) ⇒ 'pl-live' drops. ⚠The tour never switches the Pipelines mode.
+function tourPlan(feats, hasSel, nSes, plEdit){
+  const steps = TOUR_STEPS.filter(s => !(s.feat && feats && feats[s.feat] === false) && !(plEdit && s.id === 'pl-live')), dk = steps.some(s => s.id === 'pl-live') ? 'pl-live' : 'time';
   return steps.map(s => {
     const demo = s.id === dk && !nSes;
     return {id: s.id, mode: s.sel && !demo && hasSel(s.sel) ? 'spot' : 'centre', demo};
@@ -75,13 +76,15 @@ function tourBody(p, dir){
     + '<dl class=tourterms>' + [[T('Stage'), 'One stretch of work owned by one agent'], [T('Gate'), 'A check that must pass before the next stage'],
         [T('Sent back'), 'A failed gate sends the work back to an earlier stage']].map(x => '<dt>' + esc(x[0]) + '</dt><dd>' + esc(T(x[1])) + '</dd>').join('') + '</dl>'};
   if(p.id === 'pl-live') return {t: 'Working now', h: (p.mode === 'spot' ? '' : tourStepper())
-    + P('«Working now» lists the sessions at work right now, each with its pipeline and stage chip — click one to see it in the Timeline')};
+    + P('«Working now» on the left lists the sessions at work right now — click a session to open its pipeline run, or a stage agent under it to mark that stage')};
   if(p.id === 'pl-start') return {t: 'Your first pipeline', h: P('Open «+ New ▾» and start with «Standard templates» › «Review only» (2 stages) · if writing one is hard, pick «Ask AI for a draft» there')};
   if(p.id === 'arch') return {t: 'Structure › Architecture', h: P('Architecture — a module diagram drawn by an agent; only edges that pass the evidence check remain')};
   return {t: 'You are set', cmds: tourPluginLines(dir),
     h: P('If you use Claude Code, these two lines install the Sidereus plugin (mailbox relay · pipeline stage marks · read-only MCP).')};
 }
 function tourHas(sel){ return !!tourRect(sel); }
+// ⚠48k plNowShown, not !plWatchOn: no pipeline yet (first run) or the workflow view still shows the list.
+function tourPlEdit(){ try{ return typeof plNowShown === 'function' && !plNowShown(); }catch(e){ softErr('tourPlMode', e); return false; } }
 function tourCur(){
   const p = tourList[tourI], st = TOUR_STEPS.find(s => s.id === (p && p.id));
   if(!p || !st) return null;
@@ -148,7 +151,7 @@ function tourOpen(i){
     document.body.appendChild(root);
   }
   if(!tourIsOpen() || tourI < 0){ tourFrom = mainView; tourBack = document.activeElement; }
-  tourList = tourPlan(FEATS, tourHas, (SESS || []).length);
+  tourList = tourPlan(FEATS, tourHas, (SESS || []).length, tourPlEdit());
   root.hidden = false;
   clearInterval(tourTimer); tourTimer = setInterval(tourPlace, 400);   // polls re-render targets every 2.5s
   tourGo(Math.max(0, Math.min(i || 0, tourList.length - 1)), false);
