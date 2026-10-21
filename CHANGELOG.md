@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: switching project (picker, «Working now», overview, workflow row, «+ Add project») closes an open «Ask AI for a draft» form and «Standard templates» panel instead of leaving them above the new project's canvas.
 - Pipelines: a project with no pipelines shows its start row as a panel with full-size controls (30px «Start from a template» / «Ask AI for a draft», 26px filled template buttons) instead of 22px chips.
 - Pipelines: the «Working now» run summary names the stage as the canvas does (English display name in English, not the raw stage title).
 - Attention: a «done · waiting» row appears about 15 s after a session ends its turn (was 120–150 s); a hidden tab now polls every 10 s instead of 30 s.

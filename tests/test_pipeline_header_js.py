@@ -30,7 +30,7 @@ def _src(name):
 
 
 CHIPS = """
-let SESS = [], PROJ_GONE = new Set(), PLS = {proj: '/w/b', projs: null}, PAINT = 0, LS = {}, PLNEW = 1;
+let SESS = [], PROJ_GONE = new Set(), PLS = {proj: '/w/b', projs: null}, PAINT = 0, LS = {}, PLNEW = 1, PLDRAFT = 1, PLSTD = true;
 function plLiveProjs(){ return {'/w/b': ['x']}; } function plMem(){ return {}; } function plKnown(){ return null; }
 function strShort(p){ return p.split('/').pop(); } function strProjList(){ return []; }
 function plLiveDot(){ return '<i class=mvdot></i>'; } function plAddForm(){ return ''; } function plBrOpen(){}
@@ -73,7 +73,7 @@ class PipelineHeader(unittest.TestCase):
         self.assertIn('<select class=plrsel data-plrm="', _src("48b-pipeline-run.js"))
 
     def test_R1_pick_loads_project(self):
-        r = run(CHIPS + "let CFG = null; function ppComboHtml(cfg){ CFG = cfg; return ''; }\n" + js_fn("plChips") + "\n" + js_fn("plPickProj") + "\n"
+        r = run(CHIPS + "let CFG = null; function ppComboHtml(cfg){ CFG = cfg; return ''; }\n" + js_fn("plChips") + "\n" + js_fn("plProjGo") + "\n" + js_fn("plPickProj") + "\n"
                 "PLS.projs = {ok: true, projects: [{path: '/w/a', n: 1}, {path: '/w/b', n: 1}], added: []}; plChips();"
                 "CFG.pick('/w/a'); console.log(JSON.stringify([PLS.proj, LS['sidereus.plproj'], PAINT, PLNEW, CFG.rkey]));")
         self.assertEqual(r, ["/w/a", "/w/a", 1, None, "sidereus.plrecent"])

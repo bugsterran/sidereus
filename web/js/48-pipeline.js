@@ -176,9 +176,15 @@ function plChips(){
     note: e => (e.n ? ' <small class=strpc>' + e.n + '</small>' : ''),
     pick: plPickProj, extra: plAddForm(), onExtra: plBrOpen }) + rm + '</div>';
 }
-function plPickProj(p){
-  PLS.proj = p; lsSet('sidereus.plproj', PLS.proj); PLNEW = null; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = '';
+// Every person-driven project switch; ⚠a form built for one project (48e PLNEW/PLDRAFT/PLSTD) must not survive into another (typed draft text is dropped, as PLNEW always was).
+function plProjGo(p){
+  if(p === PLS.proj) return false;
+  PLS.proj = p; lsSet('sidereus.plproj', PLS.proj); PLNEW = null; PLDRAFT = null; PLSTD = false; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = '';
   PLS.nowSid = ''; PLS.nowPick = null;   // 48j: the previous project's session / stage pick
+  return true;
+}
+function plPickProj(p){
+  plProjGo(p);
   plPaint();
 }
 // «+ Add project»: the person adds a folder explicitly, never automatically; opens the folder browser (48f plBrOpen).
@@ -196,7 +202,7 @@ async function plProjPost(url, path){
 // Returns the server reply; the caller (48f modal) shows r.err.
 async function plAddGo(path){
   const r = await plProjPost('/api/pipelines/projects/add', path);
-  if(r.ok){ PLS.proj = r.path; lsSet('sidereus.plproj', PLS.proj); PLS.data[r.path] = null; plPaint(); }
+  if(r.ok){ plProjGo(r.path); PLS.data[r.path] = null; plPaint(); }
   return r;
 }
 async function plRemove(path){

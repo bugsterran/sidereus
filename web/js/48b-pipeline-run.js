@@ -461,14 +461,14 @@ function plOrphHtml(orph){
 }
 function plOvPick(proj, name){   // same as a chip click + pipeline pick; ⚠never scroll or centre
   if(PLVIEW !== 'pipe'){ PLVIEW = 'pipe'; lsSet('sidereus.plview', PLVIEW); }   // ⚠a remembered Harness sub-view would hide the picked pipeline
-  PLS.proj = proj; PLS.sel = name; PLS.wf = null; lsSet('sidereus.plproj', PLS.proj);
+  plProjGo(proj); PLS.sel = name; PLS.wf = null;
   if(!PLS.projs) PLS.pend = proj;   // ⚠plLoadProjs would reset a project not in its list (borrowed-only) to the first one
   PLAG = false;   // an open arch-map panel (48h) would hide the picked pipeline
   PLNEW = null; PLS.std = ''; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint();
 }
 document.addEventListener('click', e => {
   const r = e.target.closest && e.target.closest('[data-plovw]');
-  if(r && r.dataset.plovwf){ PLS.proj = r.dataset.plovwp; lsSet('sidereus.plproj', PLS.proj); PLS.wf = { sid: r.dataset.plovw, id: r.dataset.plovwf };
+  if(r && r.dataset.plovwf){ plProjGo(r.dataset.plovwp); PLS.wf = { sid: r.dataset.plovw, id: r.dataset.plovwf };   // ⚠wf after plProjGo, which clears it
     PLNEW = null; PLS.std = ''; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint(); }
   else if(r) plOvPick(r.dataset.plovwp, r.dataset.plovwn);
 });
