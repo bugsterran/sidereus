@@ -51,7 +51,7 @@ function plWatchPane(E, d, lv, lt){
 // Watch is three stacked regions: canvas | result pane | «Running N» card, split by two drag grips (p, r).
 // Sizes are kept as shares of the free height (sidereus.plwv = [canvas, pane, card]) so a window resize keeps the proportions.
 // ⚠Mins canvas 260 · pane 80 · card 48; the whole stack ends at the feed bottom (plGwFit passes h) and never scrolls the page.
-const PLW_MIN = [260, 80, 48], PLW_GRIP = 8, PLW_RUN0 = 110;
+const PLW_MIN = [260, 80, 48], PLW_GRIP = 8, PLW_RUN0 = 110, PLW_PANE0 = 120;   // default pane hugs its content up to 120px (header · status · gate · note), longer scrolls
 let PLWPH = { k: '', h: 0 }, PLWDRAG = null;
 function plWGrip(k){ return '<div class=plwgr data-plwg=' + k + ' role=separator aria-orientation=horizontal title="' + esc(T('Drag to resize · double-click for default')) + '"></div>'; }
 // Always present (an empty state, not nothing): runs starting or ending must not move the layout.
@@ -62,7 +62,7 @@ function plWShares(){ const v = lsJson('sidereus.plwv', null); return Array.isAr
 // Heights [canvas, pane, card] for free height A; F = saved shares, ph0 = the pane's natural height.
 // Mins win over shares; when the canvas would drop under its min, the card then the pane give way first.
 function plWSizes(A, F, ph0){
-  const s = F ? F.map(f => Math.round(f * A)) : [0, Math.max(PLW_MIN[1], Math.min(280, ph0)), PLW_RUN0];
+  const s = F ? F.map(f => Math.round(f * A)) : [0, Math.max(PLW_MIN[1], Math.min(PLW_PANE0, ph0)), PLW_RUN0];
   s[1] = Math.max(PLW_MIN[1], s[1]); s[2] = Math.max(PLW_MIN[2], s[2]);
   let d = PLW_MIN[0] - (A - s[1] - s[2]);
   for(const i of [2, 1]){ if(d <= 0) break; const r = Math.min(d, s[i] - PLW_MIN[i]); s[i] -= r; d -= r; }
