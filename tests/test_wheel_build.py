@@ -51,6 +51,7 @@ print(json.dumps({"code": os.path.realpath(config.CODE_DIR), "asset": os.path.re
 
 
 @unittest.skipUnless(_has_build_tools(), "/usr/bin/python3 lacks setuptools/wheel")
+@unittest.skipUnless(importlib.util.find_spec("setuptools"), "test interpreter lacks setuptools (_stage imports setup.py)")
 class WheelBuild(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

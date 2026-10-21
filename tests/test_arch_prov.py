@@ -101,7 +101,8 @@ class ProvTest(unittest.TestCase):
                                          {"t": VER, "model": "opus-4-1"}])
         self.assertNotIn("secret body", json.dumps(got))
         fp = os.path.join(AP.PROV_DIR, AV.repo_key(self.repo), C1 + ".json")
-        self.assertEqual(os.stat(fp).st_mode & 0o777, 0o600)
+        if os.name != "nt":   # ⚠Windows st_mode only reflects the read-only bit (0o666/0o444)
+            self.assertEqual(os.stat(fp).st_mode & 0o777, 0o600)
 
     def test_r1_claude_same_model_collapses(self):
         self.cc_session(SID, [("a1", MODS, T + 20, "claude-sonnet-4-5"), ("a2", FLOWS, T + 120, "claude-sonnet-4-5")])

@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import shutil
 import tempfile
 import unittest
@@ -73,7 +74,9 @@ class Doctor(unittest.TestCase):
 
     def test_hooks_elsewhere_count_by_basename(self):
         hooks = cli.setup_hooks(PY)["hooks"]
-        moved = {ev: [dict(g, hooks=[dict(h, command="python3 ~/.claude/hooks/" + h["command"].rsplit("/", 1)[-1])
+        # ⚠Script name by regex, not rsplit("/"): on Windows the command is `"py" "D:\...\hooks\x.py"`.
+        moved = {ev: [dict(g, hooks=[dict(h, command="python3 ~/.claude/hooks/" +
+                                          re.search(r"([\w.-]+\.py)['\"]?$", h["command"]).group(1))
                                      for h in g["hooks"]]) for g in gs] for ev, gs in hooks.items()}
         self.assertIn("python3 ~/.claude/hooks/pl_mark.py", [h["command"] for gs in moved.values()
                                                               for g in gs for h in g["hooks"]])
