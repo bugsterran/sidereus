@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Timeline: a connected session that sat idle longer than the window keeps its row (no bars) instead of disappearing.
 - Rail: the chat unread count on the left rail is readable in the light theme (white bold on blue instead of dark text on mid blue).
 - Attention: «... done N unread» no longer waits for «Seen» once the session has carried on past the completion (more than 60 s of later activity in the same session), like failure cards.
 - Pipelines: a Codex (or other non-Claude CLI) stage no longer stays «running» for 45 minutes after its turn ends without an end marker; it closes like a Claude stage when main stops.

@@ -48,7 +48,7 @@ def _tl_pick(cut, rows=None):
     copy of the rules drifting away. ⚠The picking rules below are unchanged."""
     if rows is None:
         rows = _tl_snap_rows()[0]
-    dirs, seen_dirs, dinfo = [], set(), {}
+    dirs, seen_dirs, dinfo, dlive = [], set(), {}, {}
     proots = claude_roots.projects_dirs(CLAUDE_PROJECTS)   # every Claude root
     for r in rows:
         cwd = r.get("cwd") or ""
@@ -56,6 +56,8 @@ def _tl_pick(cut, rows=None):
             continue
         for pr in proots:
             d = os.path.join(pr, _slug(cwd))
+            if r.get("sid"):
+                dlive.setdefault(d, set()).add(r["sid"] + ".jsonl")
             if d in seen_dirs:
                 continue
             seen_dirs.add(d)
@@ -87,6 +89,8 @@ def _tl_pick(cut, rows=None):
         #     using it would dig through `subagents` of 26 quiet projects every time (measured 31 folders).
         known = d in dinfo
         pick = list(fs[:3]) if known else []
+        # A connected session stays on the timeline even when its transcript is older than the newest 3.
+        pick += [p for p in fs if os.path.basename(p) in dlive.get(d, ()) and p not in pick]
         for p in fs:
             try:
                 if p not in pick and os.path.getmtime(p) >= cut:
@@ -329,7 +333,7 @@ def _tl_sess_row(fp, sid, srow, cut, cwd, proj):
         stt = os.stat(fp)
     except OSError:
         return None
-    if stt.st_mtime < cut:
+    if stt.st_mtime < cut and not srow:       # a connected session stays even when quiet past the window
         return None
     born = getattr(stt, "st_birthtime", stt.st_ctime)
     _tk = []
@@ -344,7 +348,7 @@ def _tl_sess_row(fp, sid, srow, cut, cwd, proj):
             "desc": ("Session" if srow else "Session — past session " + _sid8(sid)),
             "segs": [[int(a), int(b)] for a, b in segs], "comp": comp,
             "seen": int(seen0),               # oldest time the tail window reached
-            "start": int(max(born, cut)), "end": int(stt.st_mtime),
+            "start": int(max(born, cut)), "end": int(max(stt.st_mtime, born, cut)),
             # a session is running **only when actually working** — old sessions not in the list are not running
             "run": bool(srow) and srow.get("state") in ("tool", "think"),
             "state": (srow.get("state") or "") if srow else "",

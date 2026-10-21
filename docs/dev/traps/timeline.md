@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Timeline
 
+- ★**Connected sessions idle past the window vanished from the Timeline** (2026-10-21, 1-hour window: Codex 01a15274 idle ~4 h had no row).
+  - Cause: the keep rule for connected sessions lived only in the browser (`sessShown`), which can only keep groups the server sent; the server dropped live sessions idle past the window by mtime / in-window activity.
+  - ⇒ the server emits an empty-segs row for every live sid (`timeline.py` `_tl_pick`/`_tl_sess_row`, `timeline_ext.py` `_ext_sess`/`_ext_tl`; test `tests/test_timeline_idle_live.py`).
+  - ⚠Do not reintroduce an mtime cut that drops live sids.
 - ★**The right «Changes» rail is gone; a toolbar chip replaces it** (2026-10-17). Cause: at 1100 the 400px rail left the Gantt ~386px and hid most bar labels; the rail entries below are history.
   - ⇒ `tlgChipHtml` (77, on the head line since b6be62f8) «[baseline badge] N files +a −d» (the word «Changes» is in aria-label/tooltip only), untracked excluded; «· ⚠ n shared» = rail files with `conflict` (tooltip lists paths only). Click = `loadDiff(cwd, '', b:<base>|work, '', sid)`; tree, baselines, untracked and repo tabs live in the diff window.
   - ⚠`tlgPaint` rewrites only `#tlgb` and clears the toolbar slot's `_sh`; without that, the next `tbSet` would compare against stale markup and skip a needed rewrite.

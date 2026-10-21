@@ -73,7 +73,12 @@ def _ext_tl(cut, now, pcwd, plat, key, label, name, scan):
             if run.get("sub"):                # `aid` + `desc` = the Claude-kid label path (`tlAgLab`): model, «subagent» chip
                 out[-1].update(aid=c["sid"], desc=(model or "")[:60])
             continue
+        seen.add(c["sid"])
         _ext_sess(c, cut, now, live, out, key, name)
+    # Connected but quiet past the window: the scan's mtime cut skipped its file, yet it stays on the timeline.
+    for sid, v in live.items():
+        if sid not in seen and sid not in runs and not v.get("parent"):
+            _ext_sess({"sid": sid, "cwd": v.get("cwd") or ""}, cut, now, live, out, key, name)
     for sid, run in runs.items():            # no chat file in the window — draw from the stored metadata
         if sid in seen or run.get("sub"):
             continue
@@ -93,29 +98,32 @@ def _ext_tl(cut, now, pcwd, plat, key, label, name, scan):
 def _ext_sess(c, cut, now, live, out, key, name):
     """Top-level row for an ext CLI session without a Claude parent (interactive use)."""
     ts = sorted(t for t in (c.get("acts") or {}).values() if t >= cut)
-    if not ts:
-        return
     sid = c["sid"]
     lv = live.get(sid) or {}
+    if not ts and (not lv or lv.get("state") == "gone"):
+        return
     cwd = lv.get("cwd") or c.get("cwd") or c.get("project") or "?"
     proj = _proj_name(cwd) or c.get("project") or "?"
     msgs = c.get("msgs") or {}
     segs = []
-    a = b = ts[0]
-    for t in ts[1:]:
-        if t - b > SEG_GAP:                  # same gap rule as Claude segments
-            segs.append((a, b)); a = t
-        b = t
-    segs.append((a, b))
-    segs = segs[-SEG_MAX:]
+    if ts:
+        a = b = ts[0]
+        for t in ts[1:]:
+            if t - b > SEG_GAP:              # same gap rule as Claude segments
+                segs.append((a, b)); a = t
+            b = t
+        segs.append((a, b))
+        segs = segs[-SEG_MAX:]
+    t0 = int(segs[0][0]) if segs else int(cut)           # idle live row: empty segs, span = window start
+    t1 = int(ts[-1]) if ts else int(float(lv.get("lastSeen") or cut))
     tk = sorted((v[4], v[0] + v[1] + v[2] + v[3]) for v in msgs.values() if v[4] >= cut)
     last = max(msgs.values(), key=lambda v: v[4], default=None)
     st = lv.get("state") or ""
     out.append({"tid": "ext:" + key + "|" + sid, "sid": sid, "type": proj, "desc": name + " — " + _sid8(sid),
                 "segs": [[int(x), int(y)] for x, y in segs], "comp": [],
-                "seen": int(segs[0][0]), "start": int(segs[0][0]), "end": int(ts[-1]),
+                "seen": t0, "start": t0, "end": max(t0, t1),
                 "run": st in ("tool", "think"), "state": st,
-                "idle": int(max(0, now - ts[-1])), "blocked": "",
+                "idle": int(max(0, now - t1)), "blocked": "",
                 "proj": proj, "cwd": cwd, "depth": 0, "kind": "sess",
                 "plat": key, "model": (lv.get("model") or (last[5] if last else ""))[:40],
                 "tk": sum(n for _t, n in tk), "_tk": tk, "last": ""})
