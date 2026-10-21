@@ -251,21 +251,20 @@ class PlMode(unittest.TestCase):
         self.assertIn("if(wt) plWatchFit(g, fd, h);", js_fn("plGwFit"))
         fit = js_fn("plWatchFit")
         self.assertIn("if(PLWDRAG) return;", fit)
-        self.assertIn("if(wp && PLWPH.k !== wk)", fit)                             # pane height pinned per size/stage, not per poll
+        self.assertNotIn("scrollHeight }", fit)                                    # sizes from shares only, never from content
         self.assertIn("let A = h - 2 * PLW_GRIP;", fit)                             # canvas + pane + card = the free height
         self.assertIn("if(slack > 0){ A += slack;", fit)                             # reaches the feed bottom
         self.assertIn("if(over > 0){ A -= over;", fit)                               # no page scroll
         self.assertIn("nl.style.minHeight", fit)                                    # list card reaches the stack bottom
 
     def test_r8_watch_sizes_shares_and_mins(self):
-        r = run(MODE + "console.log(JSON.stringify([plWSizes(700, null, 150), plWSizes(700, null, 900), plWSizes(1000, [0.6, 0.25, 0.15], 0),"
-                " plWSizes(300, [0.6, 0.3, 0.1], 0), plWSizes(2000, null, 50), plWSizes(700, null, 95)]));")
-        self.assertEqual(r[0], [470, 120, 110])                                # default: pane hugs content up to 120, card 110, canvas the rest
-        self.assertEqual(r[1], [470, 120, 110])                                # long result: pane capped at 120 (scrolls inside)
-        self.assertEqual(r[2], [600, 250, 150])                                # saved shares scale with the window
-        self.assertEqual(r[3], [260, 80, 48])                                  # mins: card then pane give way, canvas keeps 260
-        self.assertEqual(r[4], [1810, 80, 110])                                # no canvas maximum; pane min 80
-        self.assertEqual(r[5], [495, 95, 110])                                 # short result: pane hugs it
+        r = run(MODE + "console.log(JSON.stringify([plWSizes(1000, null), plWSizes(1000, [0.6, 0.25, 0.15]), plWSizes(300, [0.6, 0.3, 0.1]),"
+                " plWSizes(2000, null), plWSizes(400, null)]));")
+        self.assertEqual(r[0], [750, 140, 110])                                # default shares 0.75 / 0.14 / 0.11
+        self.assertEqual(r[1], [600, 250, 150])                                # saved shares win and scale with the window
+        self.assertEqual(r[2], [260, 80, 48])                                  # mins: card then pane give way, canvas keeps 260
+        self.assertEqual(r[3], [1500, 280, 220])                               # no canvas maximum
+        self.assertEqual(r[4], [272, 80, 48])                                  # small window: pane and card at their mins
         r = run(MODE + "LS['sidereus.plwv'] = '[0.5,0.3,0.2]'; const a = plWShares(); LS['sidereus.plwv'] = '[1,0,0]';"
                 " console.log(JSON.stringify([a, plWShares()]));")
         self.assertEqual(r, [[0.5, 0.3, 0.2], None])
