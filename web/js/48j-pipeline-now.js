@@ -15,8 +15,8 @@ function plNowFolded(){ return lsGet('sidereus.plnowc', '') === '1'; }
 // «● Idle · stage»; ended «✓ name done»; no run = sessPlChip's «No pipeline» / «Undeclared» (unboxed by CSS).
 function plNowRun(x, k){
   const runs = (x.plrun || []).filter(r => r && r.name), r = runs.find(q => !q.end);
-  if(r) return '<span class="plnlrun plnlrun-' + k + '" title="' + esc(T('Pipeline run') + ': ' + r.name + (r.cur ? ' · ' + r.cur : '')) + '"><i class="plnld plnld-' + k + (k === 'work' ? ' plnlpulse' : '') + '"></i>'
-    + esc(T(PLNOW_ST[k]) + ' · ' + (r.cur || r.name)) + '</span>';
+  if(r) return '<span class="plnlrun plnlrun-' + k + '" title="' + esc(T('Pipeline run') + ': ' + r.name + (r.cur ? ' · ' + plgShow(r.cur) : '')) + '"><i class="plnld plnld-' + k + (k === 'work' ? ' plnlpulse' : '') + '"></i>'
+    + esc(T(PLNOW_ST[k]) + ' · ' + (r.cur ? plgShow(r.cur) : r.name)) + '</span>';   // display name, as the canvas
   if(runs.length) return '<span class="plnlrun plnlrun-done" title="' + esc(T('Pipeline run') + ': ' + runs[0].name + ' · ' + T('done')) + '">' + esc('✓ ' + runs[0].name + ' ' + T('done')) + '</span>';
   return sessPlChip(x);
 }

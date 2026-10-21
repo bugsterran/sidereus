@@ -25,6 +25,7 @@ function plPaint(){ PAINT++; }
 function repoHue(){ return 1; } function tlStateDot(it){ return '<D ' + it.state + (it.blocked ? ' blk' : '') + '>'; }
 let PLAG = true; function plAgSet(on){ PLAG = !!on; }
 function plFit(){ FIT++; }
+function plgShow(t){ return t === 'Design' ? 'D-shown' : t; }
 function plCentre(){ FIT++; }
 const PLS = { proj: '/old', sel: 'old', data: {}, std: 'x', wf: {}, diff: {}, del: {}, msg: 'm', runSel: {}, nowSid: '', nowPick: null };
 """
@@ -95,6 +96,10 @@ class PlNow(unittest.TestCase):
         self.assertIn('plnld-idle"></i>Idle · chg', r[1])
         self.assertIn('plnlrun-done', r[2]); self.assertIn("✓ chg done", r[2])
         self.assertEqual(r[3], "")
+
+    def test_r1_run_summary_uses_stage_display_name(self):
+        out = run(NOW + """console.log(JSON.stringify(plNowRun({ plrun: [{ name: 'p', cur: 'Design' }] }, 'work')));""")
+        self.assertIn('Working · D-shown', out); self.assertNotIn('· Design', out)
 
     def test_r1_selected_row_marked(self):
         h = run(NOW + "PLS.nowSid = 's2'; console.log(JSON.stringify(plNowList(" + LIVE + ")));")
