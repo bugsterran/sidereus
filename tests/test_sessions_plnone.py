@@ -64,7 +64,7 @@ class Chip(unittest.TestCase):
             {"plNone": {"cat": "explore"}},
             {"plNone": {"u": 1}},
         ])
-        self.assertIn(">sidereus-change · Verify</span>", run)
+        self.assertIn('<span class="splnm">sidereus-change</span><span class="splst"> · Verify</span>', run)
         self.assertIn('class="spl spln"', decl)
         self.assertIn(">No pipeline · explore</span>", decl)
         self.assertIn('class="spl splu"', und)
@@ -82,7 +82,13 @@ class Chip(unittest.TestCase):
         none, x = self._chips([{}, {"plrun": [{"name": "<b>", "cur": "\"q"}]}])
         self.assertEqual(none, "")
         self.assertNotIn("<b>", x)
-        self.assertIn("&lt;b> · &quot;q", x)
+        self.assertIn('&lt;b></span><span class="splst"> · &quot;q</span>', x)
+
+    def test_open_run_without_stage(self):
+        # The stage span is omitted when no stage is known yet.
+        x, = self._chips([{"plrun": [{"name": "docs"}]}])
+        self.assertIn('<span class="splnm">docs</span></span>', x)
+        self.assertNotIn("splst", x)
 
 
 if __name__ == "__main__":
