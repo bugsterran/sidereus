@@ -221,7 +221,7 @@ Token widget placement:
 | `05-controls.css` | One set of segments·titles — `--seg-*` (height 24/22·radius 4·selected = info 15% tint)·`--ttl-*` (tab 14/600·section 13/600·label 12/500) |  | ⚠do not put colour·height back into component rules — unscoped rules get twins and the `.x.on` twin ties on specificity, hence everything is `[data-ui=next][data-ui]` |
 | `07-file-icons.css` | `.ftic-<key>` colours · light/dark lightness |  |  |
 | `10-worklog-split.css` |  |  |  |
-| `20-timeline.css` | Name column width `var(--tlnm-w, clamp(260px,24vw,340px))` (`.tlnm`·`.tlaxr .tlnm`) · grip `.tlnmg` · while dragging `html.tlnmdrag` |  |  |
+| `20-timeline.css` | Name column width `var(--tlnm-w, clamp(260px,24vw,340px))` (`.tlnm`·`.tlaxr .tlnm`) · grip `.tlnmg` · while dragging `html.tlnmdrag` · light only: `--tl-sat` (.55) desaturates bars, token histogram, stage bands and stepper/key segments; name-cell chips get t1 text + t3 ring | `--tl-sat` | ⚠saturate() keeps luminance, so tlInk ink and the 3:1 track floor still hold |
 | `21-timeline-plrun.css` | Pipeline run on a session row (74c-timeline-plrun.js): `.tlpl` stepper, `.plev` gate line, `.tlrs .tlt` bands/ticks, `.tlrpl` row accent · head wrapper `.tlhr` («Changes» group + key, holds the 80px slot of the absolute «Runs N» chip) · key popover `.tlplgp` (inline when expanded; `.tlplgf` = `:hover`/`:focus-within`, absolute) | `.tlpl`, `.plev`, `.tlrpl` | ⚠colours via var() only and state rules set custom properties only (next-UI twins) · ⚠markup uses i/strong, not b/span (20-timeline.css rules) |
 | `22-timeline-git.css` | Timeline toolbar «Changes» chip (77) |  |  |
 | `40-tokens.css` |  |  |  |
