@@ -342,12 +342,13 @@ class Overview(unittest.TestCase):
         js = "(() => { %s globalThis.plBody = ov => '<CV/>' + (ov || '') + '<div class=plrt></div>'; const a = plMainBody();" \
              " globalThis.plBody = () => '<EMPTY/>'; return [a, plMainBody()]; })()" % stub
         a, b = _js(js, "plMainBody")
-        self.assertTrue(a.startswith("<div class=pltop><CHIPS/></div><APPLY/>"), a)
+        self.assertTrue(a.startswith('<div class="pltop"><CHIPS/></div><APPLY/>'), a)
         self.assertEqual(a.count("class=plov>"), 1)
         self.assertLess(a.index("<CV/>"), a.index("class=plov>"))
         self.assertLess(a.index("class=plov>"), a.index("class=plrt"))
-        self.assertEqual(b, "<div class=pltop><CHIPS/></div><APPLY/><EMPTY/><div class=plov>OV</div>")   # no canvas: overview at the body end, still under the chips
+        self.assertEqual(b, '<div class="pltop"><CHIPS/></div><APPLY/><EMPTY/><div class=plov>OV</div>')   # no canvas: overview at the body end, still under the chips
         self.assertIn("cv.html + (ov || '') + plRunTable(lv, p)", js_fn("plBody"))
+        self.assertIn("cv.html + (ov || '') + plRunTable(lv, p)", js_fn("plWatchBody"))
         self.assertIn("cv.html + '</div>' + (ov || '') + plRunTable(lv, p)", js_fn("plBorrowBody"))
 
 
@@ -568,7 +569,7 @@ class CanvasFit(unittest.TestCase):
     DOM = ("mainView = 'pipe'; innerHeight = 1000; lsGet = () => 0; PL_SPLIT = {key: 'k', min: 200, cv: 200}; plCurEnt = () => E; plgKey = G => JSON.stringify(G.nodes);"
            " plApplyView = () => 0; plPaintEdgesNodes = () => 0; plZoomLabel = () => 0;"
            " fd = {clientTop: 0, scrollTop: 0, clientHeight: 900, scrollHeight: 900, getBoundingClientRect: () => ({top: 0})};"
-           " g = {style: {height: ''}, getBoundingClientRect: () => ({top: 100})};"
+           " g = {style: {height: ''}, classList: {contains: () => false}, getBoundingClientRect: () => ({top: 100})};"
            " cv = {clientWidth: 1000, get clientHeight(){ return parseFloat(g.style.height) - 40; }};"
            " g.querySelector = () => cv; document = {querySelector: () => g, getElementById: () => fd};"
            " getComputedStyle = () => ({paddingBottom: '0'});"

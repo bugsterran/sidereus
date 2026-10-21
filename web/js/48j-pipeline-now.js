@@ -1,6 +1,6 @@
-// «Working now» list left of «Pipelines» (master-detail): each live session · platform logo · project · pipeline chip (40b sessPlChip).
-// Click a session → its run on the right (plNowPick); click a stage agent under it → that stage selected on the canvas (plNowPickApply).
-// ⚠Metadata only: never targ, prompts or tool input; the Agent description goes only into title= (plLabTip).
+// «Working now» list left of «Pipelines» (master-detail): each live session as the Timeline's name cell + its run summary.
+// Click a session → its run on the right (plNowPick); the canvas nodes show each stage's agent, so no per-agent rows here.
+// ⚠Metadata only: never targ, prompts, tool input or Agent descriptions.
 // ⚠'gone' = dead-pid ext session kept up to 600s (ext_store); one button per timeline row (cwd + plat).
 function plNowLive(ss){
   const seen = {};
@@ -11,24 +11,35 @@ function plNowLive(ss){
   });
 }
 function plNowFolded(){ return lsGet('sidereus.plnowc', '') === '1'; }
-// Stage agents of a session: its [pl:name/title] subs (plSubsOf adds the main agent's own stage).
-function plNowStages(x){
-  return plSubsOf(x).map(a => { const d = plDescStage(a && a.lab); return d ? { name: d.name, title: d.title, lab: a.lab } : null; }).filter(Boolean);
+// Run summary where the timeline cell shows its stepper (74b tlPlStrip): open run «● Working · stage» (pulse) / «● Needs you · stage» (amber, same label as the rail dot) /
+// «● Idle · stage»; ended «✓ name done»; no run = sessPlChip's «No pipeline» / «Undeclared» (unboxed by CSS).
+function plNowRun(x, k){
+  const runs = (x.plrun || []).filter(r => r && r.name), r = runs.find(q => !q.end);
+  if(r) return '<span class="plnlrun plnlrun-' + k + '" title="' + esc(T('Pipeline run') + ': ' + r.name + (r.cur ? ' · ' + r.cur : '')) + '"><i class="plnld plnld-' + k + (k === 'work' ? ' plnlpulse' : '') + '"></i>'
+    + esc(T(PLNOW_ST[k]) + ' · ' + (r.cur || r.name)) + '</span>';
+  if(runs.length) return '<span class="plnlrun plnlrun-done" title="' + esc(T('Pipeline run') + ': ' + runs[0].name + ' · ' + T('done')) + '">' + esc('✓ ' + runs[0].name + ' ' + T('done')) + '</span>';
+  return sessPlChip(x);
 }
+// Status dot: work = a turn is running (info) · need = blocked on the person (warn) · idle = anything else, incl. 'wait' (turn ended).
+function plNowSt(x){
+  if(x.blocked || x.state === 'ask') return 'need';
+  return ['tool', 'think', 'run', 'sent', 'stopping'].includes(x.state) ? 'work' : 'idle';
+}
+const PLNOW_ST = { work: 'Working', need: 'Needs you', idle: 'Idle' };
 function plNowList(ss){
   const live = plNowLive(ss === undefined ? SESS : ss), c = plNowFolded();
   const fold = '<button type=button class=plnlf data-pnfold aria-expanded="' + (c ? 'false' : 'true') + '" title="' + esc(T(c ? 'Expand list' : 'Collapse list'))
     + '" aria-label="' + esc(T(c ? 'Expand list' : 'Collapse list')) + '">' + (c ? '›' : '‹') + '</button>';
-  const head = '<div class=plnlh>' + (c ? '' : '<b>' + esc(T('Working now')) + '</b><small>' + live.length + '</small>') + fold + '</div>';
-  if(c) return '<aside class=plnl>' + head + '</aside>';
+  const head = '<div class=plnlh>' + (c ? '' : '<b>' + esc(T('Working now')) + '</b><small class=plnln>' + live.length + '</small>') + fold + '</div>';
+  // Collapsed rail: one dot per live session (title = project only); a dot click expands and picks it.
+  if(c) return '<aside class="plnl plnlc">' + head + live.map(x => { const k = plNowSt(x); return '<button type=button class="plnlrd plnld-' + k + '" data-pncwd="' + esc(x.cwd || '')
+    + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc(x.project || '') + '" aria-label="' + esc((x.project || '') + ' · ' + T(PLNOW_ST[k])) + '"></button>'; }).join('') + '</aside>';
   if(!live.length) return '<aside class=plnl>' + head + '<div class=plnle>' + esc(T('No sessions working now')) + '</div></aside>';
+  // Row = the Timeline's session name cell (74b tlSessNmB, bare: no time/token chips) + the run summary; one button per (cwd, plat).
   return '<aside class=plnl>' + head + live.map(x => {
-    const on = !!PLS.nowSid && x.sid === PLS.nowSid, cw = esc(x.cwd || ''), pt = esc(x.plat || '');
-    const st = on ? plNowStages(x).map(s => '<button type=button class=plnls data-pnname="' + esc(s.name) + '" data-pnst="' + esc(s.title) + '" title="' + esc(plLabTip(s.lab))
-      + '"><span class=plnlst>' + esc(s.title) + '</span><small>' + esc(plLabType(s.lab)) + '</small></button>').join('') : '';
-    return '<div class="plnlr' + (on ? ' on' : '') + '"><button type=button class="plnli' + (on ? ' on' : '') + '" data-pncwd="' + cw + '" data-pnplat="' + pt + '" title="' + esc(x.project || '') + '">'
-      + aiLogo(x.plat) + '<span class=plnlp>' + esc(x.project || '') + '</span>' + sessPlChip(x) + '</button>'
-      + '<button type=button class=plnlt data-pntl="' + cw + '" data-pnplat="' + pt + '" title="' + esc(T('Show in Timeline')) + '">' + esc(T('Timeline')) + '</button>' + st + '</div>';
+    const on = !!PLS.nowSid && x.sid === PLS.nowSid, k = plNowSt(x), it = { cwd: x.cwd || '', plat: x.plat || '', state: x.state, blocked: x.blocked, idle: x.ageSec };
+    return '<div class="plnlr' + (on ? ' on' : '') + '"><button type=button class="plnli tlnm' + (on ? ' on' : '') + '" data-pncwd="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc(x.project || '') + '"'
+      + (on ? ' aria-current=true' : '') + '>' + tlSessNmB({ sess: true, cwd: x.cwd || '', plat: x.plat || '', proj: x.project || '', items: [it] }, it, 0, 0, true) + plNowRun(x, k) + '</button></div>';
   }).join('') + '</aside>';
 }
 // List | run view; the list width uses the 81i grip (key sidereus.plmd, px).
@@ -43,7 +54,6 @@ function plNowPick(cwd, plat){
   const r = (x.plrun || []).find(q => q && q.name && !q.end) || (x.plm && x.plm.name ? { name: x.plm.name } : null);
   plNowGoProj((r && r.proj) || x.cwd || PLS.proj);
   if(r) PLS.sel = r.name;
-  PLS.nowPick = null;
   plPaint();
 }
 // Same reset as plPickProj, without its paint; an open arch-map panel (48h PLAG) would hide the picked pipeline.
@@ -51,37 +61,10 @@ function plNowGoProj(proj){
   PLS.proj = proj; lsSet('sidereus.plproj', proj); PLNEW = null; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = '';
   PLS.runSel = null; plAgSet(false);
 }
-// ⚠The project comes from the row's session, never the current PLS.proj: a stale pick would write `name` into another project's sidereus.plselp.
-function plNowStage(name, title){
-  const x = PLS.nowSid && (SESS || []).find(s => s && s.sid === PLS.nowSid);
-  if(!x) return;
-  const r = (x.plrun || []).find(q => q && q.name === name && !q.end);
-  plNowGoProj((r && r.proj) || x.cwd || PLS.proj);
-  PLS.sel = name; PLS.nowPick = { name, title };
-  plPaint();
-}
-// ⚠Selection only (same as a data-plpick click): never plFit / centre — a click must not move the view.
-function plNowPickApply(){
-  const k = PLS.nowPick, d = PLS.data[PLS.proj];
-  if(!k || !d) return;   // project still loading: keep the pick
-  PLS.nowPick = null;
-  const p = plCur();
-  if(!p || p.name !== k.name) return;
-  const E = plEnt(p), n = E && E.G.nodes.find(q => q.title === k.title);
-  if(!n) return;
-  E.first = false; E.sel = { k: 'n', id: n.id };
-}
-function plNowGo(cwd, plat){
-  // ⚠Timeline rows carry no plat for Claude (74b data-tlp = g.plat || ''; 74 compares plat || 'cc'): 'cc' maps to ''.
-  const tp = plat && plat !== 'cc' ? plat : '';
-  const sel = '.tlr.tlrs[data-tlc="' + CSS.escape(cwd || '') + '"][data-tlp="' + CSS.escape(tp) + '"]';
-  if(typeof mvGo === 'function') mvGo('time', sel); else setMainView('time');
-}
 document.addEventListener('click', e => {
-  const t = e.target.closest && e.target.closest('.plw .plnl [data-pntl],.plw .plnl [data-pncwd],.plw .plnl [data-pnst],.plw .plnl [data-pnfold]');
+  const t = e.target.closest && e.target.closest('.plw .plnl [data-pncwd],.plw .plnl [data-pnfold]');
   if(!t) return;
   if(t.hasAttribute('data-pnfold')){ if(plNowFolded()) lsDel('sidereus.plnowc'); else lsSet('sidereus.plnowc', '1'); plPaint(); return; }
-  if(t.hasAttribute('data-pntl')) return plNowGo(t.dataset.pntl, t.dataset.pnplat);
-  if(t.hasAttribute('data-pnst')) return plNowStage(t.dataset.pnname, t.dataset.pnst);
+  if(t.classList.contains('plnlrd')) lsDel('sidereus.plnowc');   // rail dot: expand, then pick
   plNowPick(t.dataset.pncwd, t.dataset.pnplat);
 });

@@ -68,7 +68,7 @@ class PipelineSidereus(unittest.TestCase):
 
     def test_suggested_view_carries_chip(self):
         sug = "function plCanvas(){ return {html: '<CV/>'}; } function plNewBtn(){ return '<NEW/>'; } function plNewForm(){ return ''; } function plStartBtns(){ return ''; } let PLNEW = null;"
-        r = run(sug + "\n" + js_fn("plSugBody") + "\n" + js_fn("plHeadRow") + "\nconst d = {suggest: [{title: 'S', stages: []}]};"
+        r = run(sug + "\n" + js_fn("plSugBody") + "\n" + js_fn("plDraftBand") + "\n" + js_fn("plHeadRow") + "\nconst d = {suggest: [{title: 'S', stages: []}]};"
                 "ARCHRUN = {'/t': " + json.dumps(RUN) + "};"
                 "console.log(JSON.stringify([plSugBody(d, plAgChip(plAgRun('/t'), false)), plSugBody(d, plAgChip(plAgRun('/u'), false))]));")
         self.assertIn("data-plag", r[0].split("</div>")[0])   # inside the chip row

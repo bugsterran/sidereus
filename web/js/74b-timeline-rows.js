@@ -82,15 +82,19 @@ function tlSessRow(g, gi, nmOpen, L){
       const pl = tlPlRun(g, L);            // pipeline strip + bands (74c); '' without a run keeps the row unchanged
       return '<div class="tlr tlrs'+tlPlRowCls(pl)+'" data-tlc="'+esc(g.cwd)+'" data-tlp="'+esc(g.plat || '')+'">'
         + '<div class=tlnm'+nmOpen+'>'
-        + '<b>'+aiLogo(g.plat)+'<i class="tlp c'+repoHue(g.cwd)+'" title="'+esc(g.cwd)+'">'+esc(g.proj || g.cwd.split('/').pop())+'</i>'
+        + tlSessNmB(g, it, act, nComp) + tlPlStrip(pl) + tlPlOffNote(g) + '</div>'
+        + '<div class=tlt>'+idleb+ticks+napb+unk+bars2+comps+tlPlBands(pl, L, its)+'</div></div>';
+}
+// Session name cell «logo · project · state dot · chips»; also the «Pipelines» «Working now» row (48j; bare = no time/token chips).
+function tlSessNmB(g, it, act, nComp, bare){
+  return '<b>'+aiLogo(g.plat)+'<i class="tlp c'+repoHue(g.cwd)+'" title="'+esc(g.cwd)+'">'+esc(g.proj || g.cwd.split('/').pop())+'</i>'
         + tlStateDot(it)
         // ⚠the chip is ellipsis-truncated (20-timeline.css .tlnm u) — title carries the full value
-        + (g.plat ? (tv => '<u title="'+esc(tv)+'">'+esc(tv)+'</u>')(T('Tokens')+' '+fmtTok(its.reduce((a2, x) => a2 + (x.tk || 0), 0)))
+        + (bare ? '' : g.plat ? (tv => '<u title="'+esc(tv)+'">'+esc(tv)+'</u>')(T('Tokens')+' '+fmtTok(g.items.reduce((a2, x) => a2 + (x.tk || 0), 0)))
                   : '<u title="'+esc(U(act,'m'))+'">'+U(act,'m')+'</u>')
         // «N compactions» = compaction count.
         + (nComp ? '<u class=tlcpn title="'+TV({msg: 'compacted {n}×', vars: {n: nComp}})+'">'
-            + TV({msg: 'compacted {n}×', vars: {n: nComp}})+'</u>' : '') + '</b>' + tlPlStrip(pl) + tlPlOffNote(g) + '</div>'
-        + '<div class=tlt>'+idleb+ticks+napb+unk+bars2+comps+tlPlBands(pl, L, its)+'</div></div>';
+            + TV({msg: 'compacted {n}×', vars: {n: nComp}})+'</u>' : '') + '</b>';
 }
 // /clear spots (`x.clr = [{at, old8, new8}]`); absent/empty renders nothing so rows without a record keep their bytes.
 function tlClrMarks(its, pct){

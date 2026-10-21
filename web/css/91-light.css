@@ -42,9 +42,8 @@ html[data-ui=next][data-theme=light] :is(.plw,.tlwrap){--plf-plan:#8250df;--plf-
 html[data-ui=next][data-theme=light] .plw .plpal,html[data-ui=next][data-theme=light] .plw .plpan{box-shadow:0 1px 3px rgba(0,0,0,.12)}
 html[data-ui=next][data-theme=light] .plw .plcv{background:var(--nx-hover) radial-gradient(circle,color-mix(in srgb,var(--nx-t3) 35%,transparent) 1px,transparent 1.3px) 0 0/18px 18px}
 html[data-ui=next][data-theme=light] .plw .plnd.bad{background:#fbe9ea}
-html[data-ui=next][data-theme=light] .plw .plnli{background:var(--nx-panel);box-shadow:0 1px 2px rgba(0,0,0,.08)}   /* 48j «Working now» list items on the white page */
-html[data-ui=next][data-theme=light] .plw .plnli .spl{color:#2f5f9e;border-color:#b9cbe4}
-html[data-ui=next][data-theme=light] .plw .plnli .spl.splu{color:#8b6401;border-color:#e3cf94}
+html[data-ui=next][data-theme=light] .plw .plnli .spl{color:var(--nx-t2)}   /* 48j list: unboxed run text, muted */
+html[data-ui=next][data-theme=light] .plw .plnli .spl.splu{color:#8b6401}
 html[data-ui=next][data-theme=light] .plw .plwp .plwa{background:var(--nx-panel);border-color:#c9d3e0}   /* 48k Watch result pane: agent buttons on the white page */
 html[data-ui=next]:where([data-theme=light]) .plw .plnd:where([class*=pf-]){background:color-mix(in srgb,var(--pf) 14%,var(--nx-panel));border-color:color-mix(in srgb,var(--pf) 70%,transparent);box-shadow:0 2px 6px rgba(0,0,0,.16)}
 html[data-ui=next][data-theme=light] .plw .plport{background:var(--nx-hover);border-color:color-mix(in srgb,var(--pf,var(--nx-t3)) 70%,var(--nx-t2))}

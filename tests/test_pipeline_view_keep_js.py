@@ -25,7 +25,7 @@ function getComputedStyle(){ return { paddingBottom: '0' }; }
 const ST = () => ({ setProperty(){}, removeProperty(){}, height: '' });
 const cv = { clientWidth: 1100, clientHeight: 400, querySelector(){ return null; }, closest(){ return null; } };
 cv.parentNode = { clientHeight: 440 };
-const g = { style: ST(), getBoundingClientRect(){ return { top: 100 }; }, querySelector(s){ return s === '.plcv' ? cv : null; } };
+const g = { style: ST(), classList: { contains: () => false }, getBoundingClientRect(){ return { top: 100 }; }, querySelector(s){ return s === '.plcv' ? cv : null; } };
 const fd = { clientTop: 0, scrollTop: 0, clientHeight: 900, scrollHeight: 900, getBoundingClientRect(){ return { top: 0, bottom: 900 }; } };
 const document = { querySelector(s){ return s === '.plw .plgw' ? g : null; }, getElementById(id){ return id === 'feed' ? fd : null; } };
 const box = { querySelector(s){ return s === '.plcv' ? cv : null; } };

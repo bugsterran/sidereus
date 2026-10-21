@@ -165,7 +165,7 @@ console.log(JSON.stringify([item, esc_, out]));""")
         r = run("let PLS = {data: {}, proj: '/a'}; function plOverview(){ return ''; } function plChips(){ return '<P/>'; }"
                 "function plApplySeg(){ return '<APPLY/>'; } function plBody(ov, hd){ hd.row = '<SEL/><NEW/>'; return '<BODY/>'; }\n"
                 + js_fn("plMainBody") + "\nconsole.log(JSON.stringify(plMainBody()));")
-        self.assertEqual(r, "<div class=pltop><P/><SEL/><NEW/></div><APPLY/><BODY/>")
+        self.assertEqual(r, '<div class="pltop"><P/><SEL/><NEW/></div><APPLY/><BODY/>')
         # real plBody: with a head sink the row leaves the body (no .plnames), without one it stays a standalone row
         stubs = ("let PLS = {proj: '/p', sel: 'a', data: {'/p': {ok: true, pipelines: [{name: 'a', ok: false, errs: ['x']}]}}, std: '', wf: null, msg: '', saving: false, del: null};"
                  "const SESS = []; function plCur(){ return PLS.data['/p'].pipelines[0]; } function plLiveProjs(){ return {}; } function plMem(){} function plKnown(){}"
@@ -185,10 +185,10 @@ console.log(JSON.stringify([item, esc_, out]));""")
         s = js_fn("plBody")
         g = s[s.index("'<span class=plact>'"):]
         g = g[:g.index("'</span></div>'")]
-        idx = [g.index(k) for k in ("data-plrun", "class=plsep", "data-plreset", "data-plsave", "data-pldel")]
+        idx = [g.index(k) for k in ("mb + plRunBtn(p, dirty)", "class=plsep", "data-plreset", "data-plsave", "data-pldel")]   # [Edit/Done][Run] | file ops
         self.assertEqual(idx, sorted(idx))
         self.assertIn("(dirty ? '<button class=\"wkrgb\" data-plreset>'", g)
-        self.assertIn("(dirty ? ' disabled title=\"' + esc(T('Save before running'))", g)
+        self.assertIn("(dirty ? ' disabled title=\"' + esc(T('Save before running'))", js_fn("plRunBtn"))
         with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as f:
             css = f.read()
         self.assertRegex(css, r"\.plsep\{width:1px;height:16px;[^}]*var\(--nx-rule")

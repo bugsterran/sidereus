@@ -16,14 +16,26 @@ function plModeBtn(){
   const p = plCur();
   if(!p || !p.ok || !p.sha || p.std || p.suggest || PLS.wf || (typeof PLAG !== 'undefined' && PLAG)) return '';
   if(p.from) return '<button class="wkrgb plmode" data-plmode=edit disabled title="' + esc(T('Read-only — edit it in its own project')) + '">' + esc(T('Edit')) + '</button>';
-  const w = PLMODE === 'watch';
-  return '<button class="wkrgb plmode' + (w ? '' : ' on') + '" data-plmode="' + (w ? 'edit' : 'watch') + '" aria-pressed="' + (w ? 'false' : 'true') + '" title="'
-    + esc(T(w ? 'Edit stages, agents and gates' : 'Back to watching runs')) + '">' + esc(T(w ? 'Edit' : 'Done')) + '</button>';
+  // Sits right before «Run» in the action group (48 plBody/plWatchBody); Edit shows «Done» in the same spot.
+  if(PLMODE !== 'watch') return '<button class="wkrgb plmode on" data-plmode=watch aria-pressed=true title="' + esc(T('Back to watching runs')) + '">' + esc(T('Done')) + '</button>';
+  return '<button class="wkrgb plmode" data-plmode=edit aria-pressed=false title="' + esc(T('Edit stages, agents and gates')) + '"><span aria-hidden=true>✎</span> ' + esc(T('Edit')) + '</button>';
+}
+// Edit mode band above the head row: says which file is being edited («Done» is in the action group).
+function plModeBand(){
+  const p = plCur();
+  if(PLMODE !== 'edit' || !p || !p.ok || !p.sha || p.std || p.suggest || p.from || PLS.wf || (typeof PLAG !== 'undefined' && PLAG)) return '';
+  return '<div class=plmband><span aria-hidden=true>✎</span> ' + esc(T('Editing')) + ' <b>' + esc(p.name) + '</b></div>';
+}
+// Watch with nothing selected: the run's running stage, else its last non-waiting one (canvas order). Read-only: E.sel untouched.
+function plWatchDef(E, lt){
+  if(!E || !lt) return null;
+  const ns = E.G.nodes, st = n => (lt[n.title] || {}).st;
+  return ns.find(n => st(n) === 'run') || ns.filter(n => st(n) && st(n) !== 'wait').pop() || null;
 }
 // Result of the selected stage from data already on the page: run row (48b plStageRows), gate evidence (48f plEvLine), agents → work log.
 function plWatchPane(E, d, lv, lt){
-  const n = E && E.sel && E.sel.k === 'n' ? plgNode(E.G, E.sel.id) : null;
-  if(!n) return '<div class="plpan plwp"><div class=hidnote>' + esc(T('Click a stage to see its result')) + '</div></div>';
+  const n = E && E.sel && E.sel.k === 'n' ? plgNode(E.G, E.sel.id) : plWatchDef(E, lt);
+  if(!n) return lt ? '<div class="plpan plwp"><div class=hidnote>' + esc(T('Click a stage to see its result')) + '</div></div>' : '';   // no run, nothing picked: no pane
   const L = (lt || {})[n.title] || null, r = plStageRows(lt, [{ title: n.title }])[0];
   const st = '<div class="plwst plrt-' + r.st + '"' + (r.why ? ' title="' + esc(r.why) + '"' : '') + '><span class=plrtpl>' + esc(PL_MK[r.st] + ' ' + (r.st === 'wait' ? T('Waiting') : plOc(r.st))) + '</span>'
     + (r.rb ? '<span>' + esc('↺ ' + r.rb) + '</span>' : '') + (r.n ? '<span>' + esc(T('Agents') + ' ' + r.n) + '</span>' : '') + (r.sec ? '<span>' + esc(ago(r.sec)) + '</span>' : '')

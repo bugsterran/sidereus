@@ -405,20 +405,23 @@ function plGwFit(){
   const top = g.getBoundingClientRect().top - fd.getBoundingClientRect().top - fd.clientTop + fd.scrollTop;
   const pb = parseFloat(getComputedStyle(fd).paddingBottom) || 0;
   let h = Math.floor(fd.clientHeight - top - pb - 8);
-  const E = plCurEnt(), cv = g.querySelector('.plcv'), cvw = cv && cv.parentNode;
+  const E = plCurEnt(), cv = g.querySelector('.plcv'), cvw = cv && cv.parentNode, wt = g.classList.contains('plwt');
   // Canvas row = plCvNeed + the strip above the canvas (toolbar, errors); ⚠re-measured every pass: cards grow on a later paint.
   // A dragged split keeps the flexible CSS row (--plpanh sizes the panes instead).
   let row = Math.max(260, Math.min(700, 0.34 * innerHeight));   // no canvas yet: the CSS pre-paint row
   if(E && cv && cvw){
     row = plCvNeed(E.G, cv.clientWidth, innerHeight) + (cvw.clientHeight - cv.clientHeight);
-    if(+lsGet(PL_SPLIT.key, 0) || (PLDRAG && PLDRAG.k === 'split')) g.style.removeProperty('--plcvh'); else g.style.setProperty('--plcvh', Math.round(row) + 'px');
+    if(!wt && (+lsGet(PL_SPLIT.key, 0) || (PLDRAG && PLDRAG.k === 'split'))) g.style.removeProperty('--plcvh'); else g.style.setProperty('--plcvh', Math.round(row) + 'px');
   }
-  const floor = Math.round(row) + 426;   // canvas row + 6px handle + 420px pane row (43-pipeline.css)
-  g.style.height = Math.max(floor, h) + 'px';
-  const over = fd.scrollHeight - fd.clientHeight;   // whatever else still overflows (margins, a note line) comes off the editor
-  if(over > 0){ h -= over; g.style.height = Math.max(floor, h) + 'px'; }
-  const ph = plPanH(+lsGet(PL_SPLIT.key, 0), parseFloat(g.style.height));
-  if(ph && !(PLDRAG && PLDRAG.k === 'split')) g.style.setProperty(PL_SPLIT.v, ph + 'px');   // ⚠mid-drag the stored value is stale
+  if(wt) g.style.height = '';   // 48k Watch: canvas row + content-sized pane (43 .plgw.plwt), no 420px floor or split
+  else {
+    const floor = Math.round(row) + 426;   // canvas row + 6px handle + 420px pane row (43-pipeline.css)
+    g.style.height = Math.max(floor, h) + 'px';
+    const over = fd.scrollHeight - fd.clientHeight;   // whatever else still overflows (margins, a note line) comes off the editor
+    if(over > 0){ h -= over; g.style.height = Math.max(floor, h) + 'px'; }
+    const ph = plPanH(+lsGet(PL_SPLIT.key, 0), parseFloat(g.style.height));
+    if(ph && !(PLDRAG && PLDRAG.k === 'split')) g.style.setProperty(PL_SPLIT.v, ph + 'px');   // ⚠mid-drag the stored value is stale
+  }
   // ⚠Re-fit only when the canvas size changed: plGwFit runs on every paint (node click, poll) and must not move the zoom.
   if(E && cv && E.view && !E.touched && cv.clientWidth && E.fitK !== plFitKey(E, cv)){
     const clean = plgKey(E.G) === E.base;

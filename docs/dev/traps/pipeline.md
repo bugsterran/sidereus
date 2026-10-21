@@ -160,13 +160,14 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠Refocus/kbHold targets are `[data-ppk="plsel"]`; `data-plsel` no longer exists. `.plhead` is taken by the canvas arrowheads: the row is `.pltop`.
 - ★Demo headless (2026-10-17): row height 30px, one row at 900 / 1100 / 1440 (ko, en).
 
-## «Working now» list beside the canvas (48j `plNowList`/`plNowWrap`/`plNowPick`, 81i split `plmd`)
+## «Working now» list beside the canvas (48j `plNowList`/`plNowWrap`/`plNowPick`, 74b `tlSessNmB`, 81i split `plmd`)
 
 - Cause: a block whose size follows the live session count shifts the canvas on every poll (the earlier top strip did this until pinned to 26px).
 - ⇒ `aside.plnl` is always rendered with a fixed width (the saved split, or the collapsed rail); only its contents change with the sessions.
 - ⇒ `paintPipe` skips while the split is being dragged, so a poll never rebuilds the handle under the pointer.
-- ⇒ A stage pick is stored and applied after the picked project's pipelines load; applied earlier it hits the old canvas and is lost.
-- ⚠Never size the list by its content or render it only when sessions exist. A stage pick highlights only — never scroll or centre the canvas.
+- ⇒ Collapsed, it is a rail of status dots, not hidden; a dot click expands and picks that session.
+- ⇒ The Watch pane under the canvas sizes to its content (120–280px, no handle) and shows nothing without a run.
+- ⚠Never size the list by its content or render it only when sessions exist. No per-row Timeline link or stage-agent rows: the canvas already shows each stage's agent.
 
 ## Watch/Edit split (48k `PLMODE`/`plModeSet`/`plWatchOn`, 48h `plRO`)
 

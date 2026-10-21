@@ -169,24 +169,6 @@ function mvScrollBack(){
   };
   if(want) requestAnimationFrame(tick); else done();
 }
-// Open tab v and bring its row sel into view once the async load paints it.
-//   ⚠++mvScrollSeq cancels mvScrollBack's restore, else it scrolls the remembered offset back over the target.
-//   ⚠block:'nearest' only — no auto-centring.
-function mvGo(v, sel){
-  setMainView(v);
-  if(!feed || !sel) return;
-  const seq = ++mvScrollSeq, end = Date.now() + 4000, us = mvUserStop();
-  const tick = () => {
-    if(us.user || seq !== mvScrollSeq || mainView !== v) return us.done();
-    let el = null; try{ el = feed.querySelector(sel); }catch(e){ softErr('mvGo', e); return us.done(); }
-    if(!el){ if(Date.now() < end) requestAnimationFrame(tick); else us.done(); return; }
-    us.done();
-    el.scrollIntoView({block: 'nearest'});
-    el.classList.remove('mvgo'); void el.offsetWidth; el.classList.add('mvgo');
-    setTimeout(() => el.classList.remove('mvgo'), 1600);
-  };
-  requestAnimationFrame(tick);
-}
 function setMainView(v){
   const _prev = mainView;
   if(feed) mvScroll[_prev] = feed.scrollTop;

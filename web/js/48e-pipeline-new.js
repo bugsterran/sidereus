@@ -72,8 +72,31 @@ function plNewForm(){
     + '<div class=plbar>' + (PLNEW.diff
       ? '<button class="wkrgb" data-plnok' + (PLNEW.busy ? ' disabled' : '') + '>' + esc(T('Confirm — create')) + '</button>'
       : '<button class="wkrgb" data-plnprev' + (PLNEW.busy || !PLNEW.name || nerr || (PLNEW.src === 'other' && !PLNEW.fname) ? ' disabled' : '') + '>' + esc(T('Preview')) + '</button>')
-    + '<button class="wkrgb" data-plnx>' + esc(T('Cancel')) + '</button></div></div>';
+    + plBackBtn('data-plnx') + '</div></div>';
 }
+// «← Back» on every unsaved draft / new form (Standard draft · «+ New» form incl. quick templates · AI draft): closes it, writes nothing. Esc does the same (plDraftEsc).
+function plBackBtn(attr){
+  const t = esc(T('Close this draft without saving'));
+  return '<button type=button class="wkrgb plback" ' + attr + ' title="' + t + '" aria-label="' + t + '"><span aria-hidden=true>←</span> ' + esc(T('Back')) + '</button>';
+}
+// ⚠These layers close on Esc without preventDefault (60 drawer · 35c popup · 80 code popup · 40 Cmd+K) or after us (92d overlay rail): one Esc must close only them.
+function plEscOwned(){
+  return (typeof SDRW_OPEN !== 'undefined' && SDRW_OPEN) || (typeof ISPOP !== 'undefined' && ISPOP) || (typeof strPop !== 'undefined' && !!strPop)
+    || (typeof cpOn !== 'undefined' && cpOn)
+    || (typeof railOpen !== 'undefined' && railOpen && typeof railMode === 'function' && railMode(innerWidth, railOpen) === 'overlay');
+}
+// Esc closes the innermost open draft (form first, then the Standard draft); never from a field, never over an open menu (they own Esc).
+function plDraftEsc(e){
+  if(e.key !== 'Escape' || e.defaultPrevented || mainView !== 'pipe') return false;
+  const t = e.target;
+  if(t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName || '')) return false;
+  if(PLNEWM || PLRV || PLPSK || PLAPK) return false;
+  if(plEscOwned()) return false;
+  if(PLNEW) PLNEW = null; else if(PLDRAFT) PLDRAFT = null; else if(PLS.std) PLS.std = ''; else return false;
+  plPaint();
+  return true;
+}
+document.addEventListener('keydown', plDraftEsc);
 // Templates + this project's «Suggested» (agent-name guesses from GET suggest[]; the server rebuilds them on create).
 function plTplList(){
   return PL_TPLS.map(([k, lab]) => [k, T(lab)]).concat(((PLS.data[PLS.proj] || {}).suggest || []).map(x =>
@@ -97,9 +120,13 @@ function plStdList(){
 function plStdBody(d, p, hd){
   const ps = d.pipelines || [], cv = plCanvas(p, d, null);
   return plHeadRow(hd, plPickHtml(ps, null, []) + plNewBtn()) + plNewForm()
-    + '<div class=plsugb><b>' + esc(T('Standard template · not saved')) + '</b> <span>' + esc(T("A published standard process mapped to this project's agents — edit it after saving")) + '</span>'
-    + '<button class="wkrgb" data-plstdsave' + (PLNEW ? ' disabled' : '') + '>' + esc(T('Save this draft')) + '</button></div>'
-    + '<div class=plbar><b>' + esc(plgTplShow(p.title)) + '</b></div>' + cv.html;
+    + plDraftBand(T('Standard templates'), T("A published standard process mapped to this project's agents — edit it after saving"))
+    + '<div class=plbar><b>' + esc(plgTplShow(p.title)) + '</b><span class=plact>' + plBackBtn('data-plstdx')
+    + '<button class="wkrgb plsv" data-plstdsave' + (PLNEW ? ' disabled' : '') + '><span aria-hidden=true>✓</span> ' + esc(T('Save this draft')) + '</button></span></div>' + cv.html;
+}
+// Unsaved draft band (std / suggestion): says it is not saved; the save button is the primary in the bar's action group.
+function plDraftBand(kind, why){
+  return '<div class="plsugb plmband pldraftb"><span aria-hidden=true>✎</span> <b>' + esc(T('Draft — not saved yet')) + '</b> <i>' + esc(kind) + '</i> <span>' + esc(why) + '</span></div>';
 }
 // A project without pipelines opens on its first
 // suggestion, unsaved. ⚠Never auto-saved or sent; «Save this suggestion» = the normal create preview + «Confirm».
@@ -107,9 +134,8 @@ function plSugBody(d, ex, hd){   // ex = extra chips (48h Sidereus pipeline) · 
   const sg = d.suggest, i = Math.min(PLS.sugI || 0, sg.length - 1), p = sg[i], cv = plCanvas(p, d, null);
   const sel = sg.length > 1 ? plComboHtml({ cur: 'sug:' + i, items: sg.map((x, k) => ({ p: 'sug:' + k, name: T('Suggested') + ' · ' + x.title })) }) : '';
   return plHeadRow(hd, sel + plNewBtn() + (ex || '')) + plNewForm() + '<div class=pltpl>' + plStartBtns() + '</div>'
-    + '<div class=plsugb><b>' + esc(T('Suggested · not saved')) + '</b> <span>' + esc(T('Guessed from agent names — edit it after saving')) + '</span>'
-    + '<button class="wkrgb" data-plsugsave' + (PLNEW ? ' disabled' : '') + '>' + esc(T('Save this suggestion')) + '</button></div>'
-    + '<div class=plbar><b>' + esc(p.title) + '</b></div>' + cv.html;
+    + plDraftBand(T('Suggested'), T('Guessed from agent names — edit it after saving'))
+    + '<div class=plbar><b>' + esc(p.title) + '</b><span class=plact><button class="wkrgb plsv" data-plsugsave' + (PLNEW ? ' disabled' : '') + '><span aria-hidden=true>✓</span> ' + esc(T('Save this suggestion')) + '</button></span></div>' + cv.html;
 }
 // «Import from another project»: known project with pipelines -> one of its valid pipelines.
 function plImpPick(){
@@ -141,6 +167,7 @@ document.addEventListener('click', e => {
   if(e.target.closest('[data-plstd]')){ PLSTD = !PLSTD; plPaint(); plRefocus(PLSTD ? '.plstd [data-plstdopen]' : '', '[data-plnewm]'); return; }
   const so = e.target.closest('[data-plstdopen]');
   if(so){ PLS.std = so.dataset.plstdopen; PLS.diff = null; PLS.msg = ''; plPaint(); plRefocus('[data-plstdsave]:not([disabled])', '[data-plnewm]'); return; }   // list stays open: nothing is saved yet, the card shows .on for the opened draft
+  if(e.target.closest('[data-plstdx]')){ PLS.std = ''; PLS.msg = ''; plPaint(); return; }   // close the unsaved draft; nothing was written
   if(e.target.closest('[data-plstdsave]')){ const p = plCur(); if(p && p.std){ PLNEW = { name: p.key, title: p.title, tpl: 'std:' + p.key, diff: '', busy: false, err: '' }; PLDRAFT = null; plPaint(); } return; }
   if(e.target.closest('[data-plsugsave]')){ const p = plCur(); if(p && p.suggest){ PLNEW = { name: p.name, title: '', tpl: 'suggest:' + p.name, diff: '', busy: false, err: '' }; PLDRAFT = null; plPaint(); } return; }
   const tp = e.target.closest('[data-pltpl]');
@@ -234,7 +261,7 @@ function plDraftForm(){
     + '<div class=brh2><b>' + esc(T('Message to send')) + '</b>' + (cur && cur.id ? ' <i>→ ' + esc(cur.id) + '</i>' : '') + '</div><pre class=plprev>' + esc(text) + '</pre>'
     + (PLDRAFT.err ? '<div class="plfd plnerr">' + esc(PLDRAFT.err) + '</div>' : '')
     + '<div class=plbar><button class="wkrgb" data-pldgo' + (ok ? '' : ' disabled') + '>' + esc(T('Confirm — send')) + '</button>'
-    + '<button class="wkrgb" data-pldx>' + esc(T('Cancel')) + '</button></div></div>';
+    + plBackBtn('data-pldx') + '</div></div>';
 }
 function plDraftOk(cur, nerr){ return !!(cur && cur.login && (PLDRAFT.wf || PLDRAFT.desc.trim()) && PLDRAFT.name && !nerr && !PLDRAFT.busy); }
 async function plDraftSend(){

@@ -111,7 +111,7 @@ R.finish = {writes: writes.slice(), tabs: tabs.slice(), hidden: root.hidden};
         # pl-live spotlights the always-rendered «Working now» list (.plnl, even collapsed); no dead «no pipeline running» line.
         self.assertEqual(self.R["liveSpot"]["t"], "Working now")
         self.assertIn("지금 작업 중", self.R["liveSpot"]["h"])
-        self.assertIn("파이프라인 실행이 열리고", self.R["liveSpot"]["h"])
+        self.assertIn("파이프라인 실행이 열립니다", self.R["liveSpot"]["h"])
         self.assertNotIn("tourms", self.R["liveSpot"]["h"])
         self.assertNotIn("tourdim", self.R["nostripBody"])
 
