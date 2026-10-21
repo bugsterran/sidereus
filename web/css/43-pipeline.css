@@ -13,16 +13,31 @@
 .pltplh{font-size:12px;color:var(--nx-t2,#8b95a5);margin-right:4px}
 .pltpl .wkrgb.plsv{background:var(--nx-info-bg,#2f6fd6);border-color:var(--nx-info-bg,#2f6fd6);color:#fff;font-weight:600}   /* 48e plStartBtns: the two primary starts */
 .pltpl .wkrgb.plsv:hover:not([disabled]){background:color-mix(in srgb,var(--nx-info-bg,#2f6fd6) 85%,#fff)}
-/* 48j «Working now» strip: ⚠fixed height, one line, items shrink — its size must not change across polls or the canvas below jumps */
-.plnow{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;height:26px;margin:0 0 8px;overflow:hidden;font-size:12px}
-.plnowh{flex:none;color:var(--nx-t2,#8b95a5);margin-right:2px}
-.plnowe{flex:0 1 auto;min-width:0;color:var(--nx-t3,#6b7280);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.plnowi{flex:0 1 auto;min-width:0;max-width:300px;display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 6px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:4px;color:var(--nx-t1,#cdcedc);font:inherit;cursor:pointer;overflow:hidden;white-space:nowrap}
-.plnowi:hover{border-color:var(--nx-active,#5b8def)}
-.plnowi .ailg{margin-right:0}
-.plnowp{flex:0 1 auto;min-width:2ch;overflow:hidden;text-overflow:ellipsis}
-.plnowi .spl{flex:0 2 auto;min-width:2ch}
-.plnowm{flex:none;color:var(--nx-t2,#8b95a5)}
+/* 48j «Working now» list | run view; list width = 81i grip (sidereus.plmd). ⚠.plmdr min-width:0 keeps a wide canvas from pushing the page sideways */
+.plmd{display:grid;grid-template-columns:clamp(150px,20%,240px) minmax(0,1fr);gap:12px;position:relative}
+.plmd.plnc{grid-template-columns:28px minmax(0,1fr)!important}
+.plmd.plnc>.strspg{display:none}
+.plmdr{min-width:0}
+.plnl{align-self:start;position:sticky;top:0;max-height:calc(100vh - 110px);overflow:auto;display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:0}
+.plnlh{display:flex;align-items:center;gap:6px;min-height:24px;color:var(--nx-t2,#8b95a5)}
+.plnlh>b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plnlh>small{color:var(--nx-t3,#6b7280)}
+.plnlf{margin-left:auto;flex:none;width:24px;height:22px;padding:0;background:none;border:1px solid var(--nx-rule,#252629);border-radius:4px;color:var(--nx-t2,#8b95a5);font:inherit;cursor:pointer}
+.plnlf:hover{border-color:var(--nx-active,#5b8def)}
+.plnle{color:var(--nx-t3,#6b7280)}
+.plnlr{display:flex;flex-direction:column;gap:2px;padding:3px;border:1px solid transparent;border-radius:5px;min-width:0}
+.plnlr.on{border-color:var(--nx-rule,#252629)}
+.plnli{display:flex;align-items:center;gap:4px;min-width:0;width:100%;height:24px;padding:0 6px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:4px;color:var(--nx-t1,#cdcedc);font:inherit;text-align:left;cursor:pointer;overflow:hidden;white-space:nowrap}
+.plnli:hover,.plnls:hover{border-color:var(--nx-active,#5b8def)}
+.plnli.on{border-color:var(--nx-active,#5b8def)}
+.plnli .ailg{margin-right:0}
+.plnlp{flex:0 1 auto;min-width:2ch;overflow:hidden;text-overflow:ellipsis}
+.plnli .spl{flex:0 2 auto;min-width:2ch}
+.plnlt{align-self:flex-end;padding:0 4px;background:none;border:0;color:var(--nx-t3,#6b7280);font:inherit;font-size:11px;cursor:pointer}
+.plnlt:hover{color:var(--nx-active,#5b8def);text-decoration:underline}
+.plnls{display:flex;align-items:baseline;gap:6px;min-width:0;width:100%;padding:2px 6px 2px 14px;background:none;border:1px solid transparent;border-radius:4px;color:var(--nx-t1,#cdcedc);font:inherit;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden}
+.plnlst{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.plnls>small{flex:0 2 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--nx-t3,#6b7280)}
 .plnames .mvdot{margin-left:5px;vertical-align:1px}
 .plagrun{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px}   /* 48h read-only Sidereus pipeline run */
 /* «Running N» overview under the canvas, above the run table (48b plOvHtml): one row per running pipeline, stage strip ✓ done · ● running · · waiting */
@@ -151,7 +166,20 @@ html[data-mv=pipe] .wrap{max-width:none}
 .plw .wvh>.plcap,html[data-ui=next][data-ui] .plw .wvh>span.plcap{font-size:11px;font-weight:400;color:var(--nx-t3,#8b95a5)}   /* caption, not part of the header title */
 .plgw>.plcvw{grid-area:1/1/2/3}.plgw>.plgh{grid-area:2/1/3/3}.plgw>.plpan{grid-area:3/2/4/3}.plgw>.plpal{grid-area:3/1/4/2}   /* palette left, editor right: keeps the left-to-right order of the former side layout */
 /* ≥1600px the canvas is wide enough beside a 280px palette column: palette spans all rows, canvas/handle/editor stack right (48d refits on canvas clientWidth) */
-@media (min-width:1600px){.plgw{grid-template-columns:280px minmax(0,1fr)}.plgw>.plpal{grid-area:1/1/4/2}.plgw>.plcvw{grid-area:1/2/2/3}.plgw>.plgh{grid-area:2/2/3/3}.plgw>.plpan{grid-area:3/2/4/3}}
+@media (min-width:1600px){.plgw{grid-template-columns:280px minmax(0,1fr)}.plgw>.plpal{grid-area:1/1/4/2}.plgw>.plcvw{grid-area:1/2/2/3}.plgw>.plgh{grid-area:2/2/3/3}.plgw>.plpan{grid-area:3/2/4/3}
+  .plgw.plwt{grid-template-columns:minmax(0,1fr)}.plgw.plwt>.plcvw{grid-area:1/1/2/-1}.plgw.plwt>.plgh{grid-area:2/1/3/-1}.plgw.plwt>.plpan{grid-area:3/1/4/-1}}
+/* 48k Watch: one column (the «Working now» list is the page's left column); rows keep --plcvh/--plpanh */
+.plgw.plwt{grid-template-columns:minmax(0,1fr)}.plgw.plwt>.plcvw{grid-area:1/1/2/-1}.plgw.plwt>.plgh{grid-area:2/1/3/-1}.plgw.plwt>.plpan{grid-area:3/1/4/-1}
+.plgw.plwt .plnt,.plgw.plwt [data-plfit]{display:none}   /* Watch: no stage add, no re-flow (Fit to view and zoom stay) */
+.plwp{display:flex;flex-direction:column;gap:6px;overflow:auto;font-size:12px}
+.plwp .plph small{color:var(--nx-t3,#8b95a5);font-weight:400}
+.plwst{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.plwg{display:flex;gap:8px;align-items:baseline;min-width:0}.plwg>span{flex:none;color:var(--nx-t2,#8b95a5)}.plwg>code{min-width:0;overflow-wrap:anywhere}.plwg>i{color:var(--nx-t3,#8b95a5)}
+.plwas{display:flex;flex-wrap:wrap;gap:4px}
+.plwa{font:inherit;font-size:12px;padding:1px 8px;border:1px solid var(--nx-rule,#2b3545);border-radius:4px;background:none;color:inherit;cursor:pointer}.plwa:hover{border-color:var(--nx-active,#5b8def)}
+.plro .plpan.plwp{pointer-events:auto;opacity:1}   /* borrowed + Watch: the result pane stays clickable (work log) */
+.plwdirty{font-size:12px;color:var(--nx-warn,#e0a53d)}
+.pltop>.plmode{margin-left:auto}
 .plgh{cursor:row-resize}.plgh:hover{background:#2b3545}   /* canvas | panes split (48d PL_SPLIT) */
 .plro{display:contents}.plro .plpal,.plro .plpan,.plro .plnt{pointer-events:none;opacity:.55}   /* borrowed pipeline (48h): no editing controls */
 .plpal{min-height:0;overflow:auto;border:1px solid #2b3545;border-radius:6px;padding:4px;box-sizing:border-box}

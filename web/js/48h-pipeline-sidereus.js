@@ -44,7 +44,7 @@ function plAgBody(r, now){
 // Any other head-row button (New menu, Workflow chips) leaves the arch-map view; the project picker and × do not.
 document.addEventListener('click', e => {
   const b = e.target && e.target.closest ? e.target.closest('.plw :is(.pltop, .plnames) button') : null;
-  if(!b || b.matches('[data-ppk], [data-plprojrm], [data-plnewm]')) return;
+  if(!b || b.matches('[data-ppk], [data-plprojrm], [data-plnewm], [data-plmode]')) return;
   const on = b.hasAttribute('data-plag');
   if(on === PLAG) return;
   PLAG = on; plPaint();
@@ -53,7 +53,7 @@ document.addEventListener('click', e => {
 // ⚠Kept out of `pipelines`: plKnown/archHome/«copy from» read that list as «this project owns it».
 function plBorrows(d){ return (d && d.ok && d.borrowed) || []; }
 function plBorrowOf(d, name){ return plBorrows(d).find(b => b && b.name === name) || null; }
-function plRO(){ const p = plCur(); return !!(p && p.from); }   // canvas handlers (48d): borrowed view is read-only
+function plRO(){ const p = plCur(); return !!(p && p.from) || (typeof plWatchFor === 'function' && plWatchFor(p)); }   // canvas handlers (48d): borrowed view and 48k Watch are read-only
 function plBorrowLab(b){
   return b.builtin ? b.name + ' · ' + T('Sidereus built-in') : TV({msg: '{name} · from {proj}', vars: {name: b.name, proj: strShort(b.from || '')}});
 }

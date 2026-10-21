@@ -153,6 +153,18 @@ Chat tab, then «Manage» on the room list. Room cards get a checkbox, «Invite�
 
 The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`. A stage lights up while its agent runs.
 
+### Watch and Edit
+- The tab opens in «Watch»: the «Working now» list, the canvas (click a stage to select it), and below it that stage's result and gate evidence.
+- «Edit» in the head row switches to «Edit»: the palette, the editable canvas and the stage editor (no list). «Done» goes back to «Watch». The tab remembers the last mode.
+- Unsaved edits stay while you watch: the pipeline keeps its • mark and «Watch» shows «Unsaved changes — Edit to save». A page reload drops them.
+- A new pipeline opens in «Edit». A pipeline borrowed from another project is watch-only.
+
+### Working now
+- The list on the left shows every live session: platform logo, project, and its pipeline/stage chip, with the stage agents under it.
+- Click a session to open its pipeline run on the right. Click a stage agent to highlight that stage on the canvas; the view does not move.
+- «Timeline» on each item jumps to that session's Timeline row.
+- Collapse the list with its toggle, or drag its edge to resize it; the width is remembered.
+
 ### Pick a project
 - One row: «Project» (full name; click to search working, recent and all projects, «+ Add project» at the bottom), «Pipeline» (same search picker, this project's pipelines only; ⚠ = file breaks the schema, • = unsaved edits, a dot = running) and «+ New ▾».
 - «+ New ▾» holds «+ New pipeline», «Import from another project», «Ask AI for a draft» and «Standard templates».

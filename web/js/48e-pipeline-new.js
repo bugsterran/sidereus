@@ -132,7 +132,7 @@ async function plNewSend(write){
   PLNEW.busy = false;
   if(!r || !r.ok){ PLNEW.err = T('Could not create') + ' — ' + ((r && r.err) || '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLNEW.diff = ''; }
   else if(!write){ PLNEW.diff = r.diff || ''; PLNEW.replaced = r.replaced || []; }
-  else { PLS.sel = r.name; PLS.std = ''; PLS.msg = T('Created') + ' · .claude/pipelines/' + r.name + '.json'; PLNEW = null; PLS.projs = null; await Promise.all([plLoadProjs(), plLoad(PLS.proj, true)]); }
+  else { plModeSet('edit', true); PLS.sel = r.name; PLS.std = ''; PLS.msg = T('Created') + ' · .claude/pipelines/' + r.name + '.json'; PLNEW = null; PLS.projs = null; await Promise.all([plLoadProjs(), plLoad(PLS.proj, true)]); }
   plPaint(); plRefocus('[data-plnok]:not([disabled])', '[data-plnprev]:not([disabled])', '[data-plnf=name]', '[data-ppk="plsel"]');
 }
 document.addEventListener('click', e => {

@@ -139,7 +139,9 @@ function plEvalCands(){
 function plEvalFixSelf(s){
   const E = plCurEnt(), cat = plCat(), tp = s.tpl ? plgTpl(cat, s.tpl) : null;
   if(s.code === 'redcheck'){ copyText(s.cmd || ''); note(T('Copied')); return; }
-  if(!E || plRO()) return;
+  const p = plCur();
+  if(!E || (p && p.from)) return;
+  if(plWatchOn()) plModeSet('edit', true);   // the fix needs the palette / stage editor (48k)
   PLEVAL_OPEN = ''; E.first = false;
   if(s.code === 'add-review'){ PLPQ = tp && tp.title ? plgShow(tp.title.ko) : ''; plPaint();
     // At narrow widths the palette stacks below the canvas: bring the filtered list into view or the click looks like a no-op
