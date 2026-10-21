@@ -330,9 +330,26 @@ class PlNow(unittest.TestCase):
         rv = rule(".plrv")
         self.assertEqual(px(rv, "line-height") + 2, 16)                          # visible row stays 16px
         self.assertIn("inset:-5px 0", rule(".plrv::before"))                    # 14 + 2*5 = 24 from the padding box
-        self.assertEqual(px(rule(".plwgr"), "height"), 8)
-        self.assertIn("inset:-8px 0", rule(".plwgr::before"))                   # 8 + 2*8 = 24
-        self.assertIn("z-index", rule(".plwgr::before"))
+        for sel in ("html[data-ui=next] .plw .pltop>.plwrun>.plrunst>span", "html[data-ui=next] .plw .plbar>.plrunst>span"):
+            sp = rule(sel)                                                       # overflow:hidden clip grown 4px each side = 16 + 8 = 24
+            self.assertIn("overflow:hidden", sp)
+            self.assertEqual((px(sp, "line-height"), sp.count("padding:4px 0;margin:-4px 0;")), (16, 1))
+        self.assertEqual(px(rule(".plwgr"), "height"), 24)                       # the hit area is the grip's own row
+        self.assertNotIn(".plwgr::before", css)                                  # no overhang over the canvas / card edges
+        bar = rule(".plwgr::after")
+        self.assertEqual(2 * px(bar, "top") + px(bar, "height"), 24)            # visible 4px bar centred
+        self.assertIn(".plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 24px var(--plwph", css)                # grid row matches PLW_GRIP
+        self.assertIn("PLW_GRIP = 24,", _src("48k-pipeline-mode.js"))
+
+    def test_collapsed_rail_scrolls_not_clips(self):
+        with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as f:
+            css = f.read()
+        m = re.search(r"\.plw aside\.plnl\.plnlc\{([^}]*)\}", css)
+        self.assertIsNotNone(m)
+        self.assertRegex(m.group(1), r"(?:^|;)overflow:hidden auto(?:;|$)")      # many live sessions stay reachable
+        self.assertRegex(m.group(1), r"(?:^|;)gap:[1-9]\d*px")                   # dot hit areas never touch
+        self.assertIn("contain:size", m.group(1))                                # sized by the stack, not by its dots
+        self.assertRegex(css, r"\.plnlc>\.plnlh\{[^}]*flex:none")               # fold button never shrinks in the scroller
 
 
 if __name__ == "__main__":

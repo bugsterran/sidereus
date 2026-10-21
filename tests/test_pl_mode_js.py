@@ -246,8 +246,8 @@ class PlMode(unittest.TestCase):
 
     def test_r4_watch_grid_css_and_fit(self):
         css = _src("web/css/43-pipeline.css")
-        self.assertIn(".plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 8px var(--plwph,auto);height:auto", css)
-        self.assertIn(".plwgr{position:relative;height:8px;cursor:ns-resize", css)
+        self.assertIn(".plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 24px var(--plwph,auto);height:auto", css)
+        self.assertIn(".plwgr{position:relative;height:24px;cursor:ns-resize", css)
         self.assertIn(".plwov{overflow:auto;", css)
         self.assertIn("if(wt) plWatchFit(g, fd, h);", js_fn("plGwFit"))
         fit = js_fn("plWatchFit")
