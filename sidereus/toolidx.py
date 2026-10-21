@@ -59,8 +59,9 @@ _HDR_RE = re.compile(rb'\{\s*"v"\s*:\s*(\d{1,4})\s*[,}]')
 # ★10-22 (5,335 files / 1.53M events, 1,845 ids in 2+ files): per-event dicts of id strings + tuples -> arrays of
 #   id hashes: index traced 328 -> 55 MB · 4-window recompute peak 454 -> 56 MB, 1.68 -> 0.66 s (no full `_merged`
 #   copy) · maxrss after cache load + recompute 539 -> 166 MB · cold 90-day scan maxrss 711 -> 464 MB · cache 96 -> 47 MB.
-# ⚠Events older than TI_MAX_DAYS are dropped: a copy with no timestamp (ts 0, 31 of 1.53M) no longer hides the
-#   timestamped copy of the same id in another file, which now counts.
+# ⚠Events older than TI_MAX_DAYS are dropped: a copy with no timestamp (ts 0) no longer hides the timestamped copy
+#   of the same id, which now counts. ★10-22, 47 of 1.53M: 31 in another file, 16 in the same file (an
+#   `api-request-blob` line carries the tool_use with no timestamp a few lines before the real assistant line).
 _TI_FILES = {}
 _TI_KEYS = []                # key index -> key (~1k distinct keys over all events)
 _TI_KIDX = {}                # key -> index
