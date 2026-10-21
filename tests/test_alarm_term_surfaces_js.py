@@ -1,4 +1,4 @@
-"""Waiting-for-me surfaces -> terminal: toast (toastAct), attention row (attnRowGo), activity pill (actGo) and
+"""Waiting-for-me surfaces -> terminal: toast (toastAct), attention row (attnRowGo) and
 OS notification (ntfClick) call termGo(sid) for a blocked/ask session whose tab can be raised; otherwise each
 keeps its old behaviour (mark read / cpGo / window focus)."""
 import json
@@ -10,7 +10,7 @@ from tests._load import js_fn
 from tests._node import node_e
 
 FNS = ("termLive", "termCanFocus", "termJumpSid", "alarmTermSid", "toastAct", "attnTermSid", "attnRowGo",
-       "actKey", "actPill", "actTermSid", "actGo", "ntfClick")
+       "ntfClick")
 
 
 def run(sess, body, term_app="auto"):
@@ -81,22 +81,6 @@ class AttentionRow(unittest.TestCase):
         for sess, ks, app in ((LIVE, ["ctx95"], "auto"), (DONE, ["ask"], "auto"), (LIVE, ["ask"], "off")):
             o = self.go(sess, ks, app)
             self.assertEqual((o["term"], o["cp"]), ([], ["s1"]), (ks, app))
-
-
-@unittest.skipUnless(shutil.which("node"), "node not installed")
-class ActivityPill(unittest.TestCase):
-    def go(self, sess, need):
-        return run(sess, "actData = {pills: [{x: SESS[0] || {sid: 's1'}, need: " + json.dumps(need) + "}]}; actGo('s1');")
-
-    def test_need_pill_jumps(self):
-        for need in ("ask", "blocked"):
-            o = self.go(LIVE, need)
-            self.assertEqual((o["term"], o["cp"]), (["s1"], []), need)
-
-    def test_fallback_reveals_row(self):
-        self.assertEqual(self.go(LIVE, "ctx85")["cp"], ["s1"])
-        self.assertEqual(self.go(LIVE, "")["term"], [])
-        self.assertEqual(self.go(NOFOCUS, "ask")["cp"], ["s1"])
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")

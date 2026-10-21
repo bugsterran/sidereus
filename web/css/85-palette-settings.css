@@ -23,7 +23,7 @@ html[data-ui=next][data-ui] .cmdkb{border:var(--pop-bd);border-radius:var(--pop-
 html[data-ui=next][data-ui] .cmdkc{color:var(--nx-t3)}
 .cmdkf{border-top:1px solid #1e232c;padding:5px 12px;font-size:10.5px;color:#6b7688}
 .cmdke{padding:9px 13px;font-size:12px;color:#6b7688}
-.sxw.cphit{outline:1px solid #8ab4ff;outline-offset:2px;border-radius:5px}
+:is(.sxw,.atr).cphit{outline:1px solid #8ab4ff;outline-offset:2px;border-radius:5px}
 @media(max-width:640px){.col{max-width:90%}}
 /* Settings modal behind the header gear (#gear). ⚠[hidden] must win over display:flex, hence the explicit rule. */
 .bell.on{border-color:#3f6ea8;background:#1d2b42;color:#dce8f8}

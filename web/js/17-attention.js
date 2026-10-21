@@ -124,12 +124,19 @@ function attnLife(g, now){
     + (left ? ' · ' + T('≤{n} min left').replace('{n}', left) : '');
 }
 function attnSnzLoad(){ const v = lsJson('mbAttnSnooze', {}); return (v && typeof v === 'object') ? v : {}; }
-function attnSnzSave(v){ lsSetJson('mbAttnSnooze', v); }
+// Per-entry writes (v null = remove): another tab's acks/snoozes survive. ⚠Never write the whole map back; no UIS.patch (harness) = whole-map fallback.
+function attnSnzSave(key, v){
+  if(typeof UIS !== 'undefined' && UIS && typeof UIS.patch === 'function') return UIS.patch('mbAttnSnooze', key, v);
+  const o = attnSnzLoad(); if(v === null) delete o[key]; else o[key] = v; lsSetJson('mbAttnSnooze', o);
+}
 // Click-to-dismiss: {rowId: {s: sorted sig kinds, t: top since}}. A new signal set or a new episode (since moved > 2 s) brings the row back.
 // ⚠Server `since` jitters ±1 s per poll (now - age, int-truncated), so since is matched with tolerance, never by string equality.
 const ATTN_ACK_TOL = 2;
 function attnAckLoad(){ const v = lsJson('mbAttnAck', {}); return (v && typeof v === 'object') ? v : {}; }
-function attnAckSave(v){ lsSetJson('mbAttnAck', v); }
+function attnAckSave(id, v){   // same per-entry rule as attnSnzSave
+  if(typeof UIS !== 'undefined' && UIS && typeof UIS.patch === 'function') return UIS.patch('mbAttnAck', id, v);
+  const o = attnAckLoad(); if(v === null) delete o[id]; else o[id] = v; lsSetJson('mbAttnAck', o);
+}
 // Row identity: sid, else cwd — rows with an empty sid must not share one ack/snooze slot.
 function attnRowId(r){ return r.sid || ('cwd:' + (r.cwd || '')); }
 function attnAckKey(vis, top){ return vis.map(s => s.k).sort().join(',') + '|' + ((top && top.since) || 0); }
@@ -147,7 +154,7 @@ function attnAckHit(stored, key){
 // «Done» / row click: ack this one request (row id + its signal key). ⚠Never ack by session alone — a new request must show again.
 function attnDone(id, key){
   const a = attnAckParse(key); if(!id || !key || !a) return false;
-  const ack = attnAckLoad(); ack[id] = a; attnAckSave(ack); return true;
+  attnAckSave(id, a); return true;
 }
 // Card read keys behind a row's «agent completions unread» signal (server attention.py, at|kind|project).
 function attnSeenKeys(r){ return [].concat(...((r && r.sigs) || []).filter(g => g.k === 'bgdone' && Array.isArray(g.keys)).map(g => g.keys)).filter(k => typeof k === 'string' && k); }
@@ -164,8 +171,7 @@ function attnSeen(r){
 // -> {shown:[row], snoozed:n}. Each row gets vis (policy-visible sigs), score, why, since, badge.
 function attnRows(){
   const rows = (ATTN && ATTN.rows) || [], now = Date.now(), snz = attnSnzLoad(), ack = attnAckLoad();
-  let dirty = false, ackDirty = false;
-  const ackKeep = {};
+  const ackKeep = {}, snzGone = [];
   const live = new Set();
   const out = [], low = []; let snoozed = 0, quiet = 0;
   for(const r of rows){
@@ -178,7 +184,7 @@ function attnRows(){
     if(sz.length){
       const hi = s => Math.max(...s.map(x => x.pts || 0));
       if(!un.length || hi(un) <= hi(sz)){ snoozed++; continue; }
-      for(const s of vis) if(snz[id + '|' + s.k] !== undefined){ delete snz[id + '|' + s.k]; dirty = true; }   // woken by a higher signal
+      for(const s of vis) if(snz[id + '|' + s.k] !== undefined){ delete snz[id + '|' + s.k]; snzGone.push(id + '|' + s.k); }   // woken by a higher signal
     }
     const top = vis[0];
     // A row needs the user if ANY visible signal is a badge kind, not only the top-scored one.
@@ -193,10 +199,10 @@ function attnRows(){
   }
   // housekeeping: expired timers, and 'clear' entries whose signal disappeared
   if(ATTN) for(const key in snz){ const e = snz[key];
-    if((typeof e === 'number' && e <= now) || (e === 'clear' && !live.has(key)) || (e !== 'clear' && typeof e !== 'number')){ delete snz[key]; dirty = true; } }
-  if(dirty) attnSnzSave(snz);
-  // prune acks whose session is gone or whose signal changed
-  if(ATTN){ for(const k in ack) if(ackKeep[k] !== ack[k]){ ackDirty = true; break; } if(ackDirty) attnAckSave(ackKeep); }
+    if((typeof e === 'number' && e <= now) || (e === 'clear' && !live.has(key)) || (e !== 'clear' && typeof e !== 'number')){ delete snz[key]; snzGone.push(key); } }
+  for(const k of snzGone) attnSnzSave(k, null);
+  // prune acks whose session is gone or whose signal changed (legacy string acks are rewritten as objects)
+  if(ATTN) for(const k in ack){ if(!(k in ackKeep)) attnAckSave(k, null); else if(ackKeep[k] !== ack[k]) attnAckSave(k, ackKeep[k]); }
   const cmp = (a, b) => (b.score - a.score) || (a.since - b.since);
   out.sort(cmp); low.sort(cmp);
   return { shown: out, snoozed, quiet, low };
@@ -288,6 +294,23 @@ function buildAttn(){
   if(rp){ rp.value = attnRp.draft; rp.disabled = attnRp.busy;
     if(rpFoc || !rpOld){ rp.focus({preventScroll: true}); const p = rpPos >= 0 ? rpPos : rp.value.length; rp.setSelectionRange(p, p); } }
 }
+// Unfold «+N more» / «N low-priority» for a jump to a folded row (rail pill); same pref write as the «low» toggle. -> true if redrawn.
+function attnUnfold(more, low){
+  let ch = false;
+  if(more && !attnMore){ attnMore = true; ch = true; }
+  if(low && !attnLow){ attnLow = true; try{ UIS.setItem('mbAttnLow', '1'); }catch(e){ softErr('attnUnfold', e); } ch = true; }
+  if(ch) buildAttn();
+  return ch;
+}
+// Another tab changed attention prefs (UIS pull): repaint from the store. ⚠Not while the reply box has focus (next poll repaints); never scrolls.
+function attnPrefSync(ks){
+  if(!(ks || []).some(k => String(k).indexOf('mbAttn') === 0)) return;
+  attnLow = UIS.getItem('mbAttnLow') === '1';
+  const a = document.activeElement;
+  if(a && a.matches && a.matches('.atrpi')) return;
+  buildAlarm();
+}
+try{ UIS.onChange(attnPrefSync); }catch(e){ softErr('attnPrefSync', e); }
 function attnTitle(){ if(!ISPOP && !ISWP && !ISBP) document.title = titleOf(attnBadgeN(), alarmBadgeN(), PAGE_NAME); }
 (function(){
   const el = document.getElementById('attn');
@@ -301,7 +324,7 @@ function attnTitle(){ if(!ISPOP && !ISWP && !ISBP) document.title = titleOf(attn
     const act = t ? t.getAttribute('data-aa') : '';
     const redraw = () => { attnHtml = ''; buildAttn(); buildTodo(); attnTitle(); };
     if(act === 'more'){ attnMore = !attnMore; return redraw(); }
-    if(act === 'wake'){ attnSnzSave({}); return redraw(); }
+    if(act === 'wake'){ for(const k of Object.keys(attnSnzLoad())) attnSnzSave(k, null); return redraw(); }
     if(act === 'low'){ attnLow = !attnLow; try{ UIS.setItem('mbAttnLow', attnLow ? '1' : ''); }catch(err){} return redraw(); }
     if(!row) return;
     e.stopPropagation();
@@ -339,10 +362,10 @@ function attnTitle(){ if(!ISPOP && !ISWP && !ISBP) document.title = titleOf(attn
     if(act === 'rps') return attnRpSend(redraw);
     if(act === 'snz'){ attnMenu = attnMenu === id ? '' : id; return redraw(); }
     if(act === 'snz30' || act === 'snzclr' || act === 'later'){
-      const r = rowOf(), snz = attnSnzLoad();
+      const r = rowOf();
       const v = act === 'snzclr' ? 'clear' : Date.now() + ATTN_SNZ_MS;
-      for(const g of (r && r.sigs) || []) snz[id + '|' + g.k] = v;
-      attnSnzSave(snz); attnMenu = ''; return redraw();
+      for(const g of (r && r.sigs) || []) attnSnzSave(id + '|' + g.k, v);
+      attnMenu = ''; return redraw();
     }
     attnRowGo(rowOf(), sid, cwd);
     if(attnSeen(rowOf()) && !row.getAttribute('data-akey')) redraw();

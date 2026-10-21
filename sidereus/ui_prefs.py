@@ -20,6 +20,8 @@ PATH = os.path.join(DATA_DIR, "ui-prefs.json")   # None = memory-only (demo); �
 BAK_DIR = None               # None = DATA_DIR/ui-prefs-bak; ⚠tests set a tmp dir
 _LOCK = threading.Lock()
 _MEM = {}                    # memory-only store while PATH is None
+# Write counter for cross-tab sync (state().uiRev); seeded from the clock so a restart never repeats an old value
+_REV = int(time.time() * 1000)
 
 # ⚠The one key allow-list (page localStorage names): `mb*` / `sidereus.*` prefixes and four exact keys.
 KEY_RE = re.compile(r"^(?:mb|sidereus\.|agPH$|dfW$|relPaView$|_v$)")
@@ -68,18 +70,69 @@ def load():
     return _read()[0]
 
 
+def rev():
+    """Current write counter (int only — never prefs content, state() carries it)."""
+    return _REV
+
+
+def _bump():
+    """Caller holds _LOCK -> (prev, new)."""
+    global _REV
+    prev = _REV
+    _REV += 1
+    return prev, _REV
+
+
+def snapshot():
+    """Body of GET /api/ui-prefs: {rev, prefs} read under the lock so the pair is consistent."""
+    with _LOCK:
+        return {"rev": _REV, "prefs": load()}
+
+
 def script():
     """Body of GET /api/ui-prefs.js."""
     # `<` only occurs inside JSON strings, so < keeps the literal safe even if it is ever inlined
-    return "window.__UIP=%s;" % json.dumps(load(), ensure_ascii=False).replace("<", "\\u003c")
+    with _LOCK:
+        r, d = _REV, load()
+    return "window.__UIP=%s;window.__UIPREV=%d;" % (json.dumps(d, ensure_ascii=False).replace("<", "\\u003c"), r)
+
+
+def _sub_dict(v):
+    """Stored per-entry value (a JSON string) -> dict; anything else -> {}."""
+    if not isinstance(v, str):
+        return {}
+    try:
+        d = json.loads(v)
+    except ValueError:
+        return {}
+    return d if isinstance(d, dict) else {}
+
+
+def _apply_patch(cur, patch, skipped):
+    """{key: {sub: value|null}} merged into cur's JSON-string entries; ⚠per entry so another tab's subs survive."""
+    for k, subs in patch.items():
+        if not _key_ok(k) or not isinstance(subs, dict):
+            skipped.append(str(k)[:KEY_MAX])
+            continue
+        d = _sub_dict(cur.get(k))
+        for sk, sv in subs.items():
+            if sv is None:
+                d.pop(sk, None)
+            else:
+                d[sk] = sv
+        v = json.dumps(d, ensure_ascii=False, separators=(",", ":"))
+        if len(_enc(v)) > VALUE_MAX:
+            skipped.append(k)
+            continue
+        cur[k] = v
 
 
 def update(req):
-    """{set: {k: v}, del: [k]} merged under the lock -> (code, out)."""
+    """{set: {k: v}, del: [k], patch: {k: {sub: v|null}}} merged under the lock -> (code, out)."""
     if not isinstance(req, dict):
         return 400, {"ok": False, "error": "bad request"}
-    sets, dels = req.get("set", {}), req.get("del", [])
-    if not isinstance(sets, dict) or not isinstance(dels, list):
+    sets, dels, patch = req.get("set", {}), req.get("del", []), req.get("patch", {})
+    if not isinstance(sets, dict) or not isinstance(dels, list) or not isinstance(patch, dict):
         return 400, {"ok": False, "error": "bad request"}
     # Per key: a bad key or oversize value is skipped and reported, so it never blocks the rest of the delta
     skipped = [str(k)[:KEY_MAX] for k in list(sets) + dels if not _key_ok(k)]
@@ -94,6 +147,7 @@ def update(req):
         for k in dels:
             if _key_ok(k):
                 cur.pop(k, None)
+        _apply_patch(cur, patch, skipped)
         data = _enc(cur)
         if len(data) > FILE_MAX:
             return 400, {"ok": False, "error": "store too large"}
@@ -104,7 +158,11 @@ def update(req):
             if corrupt:
                 _to_bak()            # ⚠an unreadable file is kept in the backup folder, never overwritten
             _bus._atomic_write(PATH, data + b"\n", mkdir=True)
-    return 200, {"ok": True, "skipped": skipped} if skipped else {"ok": True}
+        prev, now = _bump()
+    out = {"ok": True, "rev": now, "prev": prev}
+    if skipped:
+        out["skipped"] = skipped
+    return 200, out
 
 
 def _strftime(fmt):
@@ -126,9 +184,12 @@ def _to_bak():
 
 def reset():
     """Move the file into the backup folder (never deletes), then write {"_v": 1} -> (code, out)."""
-    if PATH is None:
-        return 200, {"ok": True}
     with _LOCK:
+        if PATH is None:
+            prev, now = _bump()
+            return 200, {"ok": True, "rev": now, "prev": prev}
         moved = _to_bak() if os.path.exists(PATH) else None
         _bus._atomic_write(PATH, _enc(RESET_BODY) + b"\n", mkdir=True)
-    return 200, {"ok": True, "backup": os.path.basename(os.path.dirname(moved)) if moved else None}
+        prev, now = _bump()
+    return 200, {"ok": True, "backup": os.path.basename(os.path.dirname(moved)) if moved else None,
+                 "rev": now, "prev": prev}
