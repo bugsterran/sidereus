@@ -74,10 +74,11 @@ function plNewForm(){
       : '<button class="wkrgb" data-plnprev' + (PLNEW.busy || !PLNEW.name || nerr || (PLNEW.src === 'other' && !PLNEW.fname) ? ' disabled' : '') + '>' + esc(T('Preview')) + '</button>')
     + plBackBtn('data-plnx') + '</div></div>';
 }
-// «← Back» on every unsaved draft / new form (Standard draft · «+ New» form incl. quick templates · AI draft): closes it, writes nothing. Esc does the same (plDraftEsc).
+// «Cancel» on every unsaved draft / new form (Standard draft · «+ New» form incl. quick templates · AI draft): closes it, writes nothing. Esc does the same (plDraftEsc).
+// Not «Back»: a form opened straight from the empty-state buttons has no previous step, and «Edit» uses «Cancel» for the same discard.
 function plBackBtn(attr){
   const t = esc(T('Close this draft without saving'));
-  return '<button type=button class="wkrgb plback" ' + attr + ' title="' + t + '" aria-label="' + t + '"><span aria-hidden=true>←</span> ' + esc(T('Back')) + '</button>';
+  return '<button type=button class="wkrgb plback" ' + attr + ' title="' + t + '" aria-label="' + t + '">' + esc(T('Cancel')) + '</button>';
 }
 // ⚠These layers close on Esc without preventDefault (60 drawer · 35c popup · 80 code popup · 40 Cmd+K) or after us (92d overlay rail): one Esc must close only them.
 function plEscOwned(){
