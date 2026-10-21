@@ -76,7 +76,7 @@ A pipeline is the order of stages; a skill is the procedure inside one stage (a 
 3. Enforcement: the session runs the stages itself with the Agent tool, tagged `[pl:<pipeline>/<stage>]`. `pl_mark.py`
    denies untagged agents; `pl_flow.py` denies a wrong order, agent or model ([HOOKS](HOOKS.md#pl_markpy),
    [pl_flow](HOOKS.md#pl_flowpy)); `guards` make listed gates required before commit ([Guards](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
-4. View: «Pipelines» tab ([GUIDE](GUIDE.md#watch-a-pipeline-run)) and timeline ([GUIDE](GUIDE.md#trace-what-a-session-did)).
+4. View: «Pipelines» tab ([GUIDE](GUIDE.md#watch-a-pipeline-run)) and timeline ([GUIDE](GUIDE.md#check-the-evidence-in-the-timeline)).
 
 Internals: [dev/PIPELINE.md](dev/PIPELINE.md). Review pipelines per CLI, with templates: [REVIEW-PIPELINES.md](REVIEW-PIPELINES.md).
 

@@ -4,7 +4,7 @@
 
 ![Architecture diagram](images/structure-arch-en.png)
 
-The Structure tab shows a project in two modes: «Architecture» (the default) and «Size». How to use the screen: [GUIDE](GUIDE.md#look-at-code-structure).
+The Structure tab shows a project in two modes: «Architecture» (the default) and «Size». How to use the screen: [GUIDE](GUIDE.md#read-the-code-structure).
 Sidereus uses metadata only (names, paths, lines, counts) and never edits or writes into the project. Code opens only when you click.
 
 ## How the diagram is made

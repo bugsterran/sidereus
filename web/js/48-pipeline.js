@@ -335,7 +335,7 @@ function plPaint(fromPoll){
   const box = document.getElementById('feed');
   if(box) paintPipe(box, fromPoll === true);
 }
-// «Running N» overview sits under the canvas, above the run table: at the top its come-and-go moved the chips and canvas on every run start/end.
+// «Running N» overview sits under the canvas as a fixed card: at the top its come-and-go moved the chips and canvas on every run start/end.
 // Bodies with no canvas (loading, empty, Workflow/arch panels) get it at their end instead.
 function plMainBody(){
   const ov = plOverview(), hd = { row: '' }, pb = plBody(ov, hd);   // one head row: project · pipeline · «+ New ▾» (· Workflow chips)

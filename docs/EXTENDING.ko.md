@@ -74,7 +74,7 @@ lang_register("rust", {"exts": (".rs",), "scan": rs_scan,
 3. 강제: 세션이 Agent 도구로 단계를 직접 돌리고 `[pl:<pipeline>/<단계>]` 태그를 붙인다. `pl_mark.py` 는 태그 없는
    에이전트를, `pl_flow.py` 는 잘못된 순서·에이전트·모델을 막는다([HOOKS](HOOKS.ko.md#pl_markpy),
    [pl_flow](HOOKS.ko.md#pl_flowpy)). `guards` 는 지정한 게이트를 커밋 전 필수로 만든다([가드](HOOKS.ko.md#가드-hookspl_guardpy-claude-code-만)).
-4. 보기: «파이프라인» 탭([GUIDE](GUIDE.ko.md#파이프라인-진행-보기))과 타임라인([GUIDE](GUIDE.ko.md#세션이-한-일-되짚기)).
+4. 보기: «파이프라인» 탭([GUIDE](GUIDE.ko.md#파이프라인-실행-지켜보기))과 타임라인([GUIDE](GUIDE.ko.md#타임라인에서-증거-보기)).
 
 내부 구조: [dev/PIPELINE.md](dev/PIPELINE.md). CLI 별 리뷰 파이프라인과 템플릿: [REVIEW-PIPELINES.ko.md](REVIEW-PIPELINES.ko.md).
 
