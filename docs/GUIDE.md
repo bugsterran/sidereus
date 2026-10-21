@@ -54,7 +54,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - Nothing changed: «Close» or Esc returns to Watch. Something changed: «Cancel» drops the edits (nothing written), «Save» (preview + confirm) writes and returns.
 - Unsaved edits survive switching to Watch (• mark, «Unsaved changes — Edit to save»); a page reload drops them. The tab remembers the last mode.
 - A new pipeline opens in Edit. A pipeline borrowed from another project is watch-only.
-- A draft (template, AI draft or «+ New») shows «Draft — not saved yet»: «✓ Save this draft» writes it, «← Back» or Esc closes it unwritten.
+- A draft (template, AI draft or «+ New») shows «Draft — not saved yet»: «✓ Save this draft» writes it, «Cancel» or Esc closes it unwritten.
 
 ⚠ With unsaved changes Esc does nothing, and Esc never closes a draft while a menu or the run panel is open — a key never discards work.
 
