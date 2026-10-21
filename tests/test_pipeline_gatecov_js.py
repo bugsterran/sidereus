@@ -58,6 +58,7 @@ class GateCoverage(unittest.TestCase):
         self.assertIn("class=plunv", r[0])
         self.assertIn("Unverified", r[0])
         self.assertIn("No gate command", r[0])
+        self.assertIn('aria-label="Unverified — No gate command — nothing machine-checks this stage"', r[0])   # screen readers hear why
         self.assertIn("class=plnc", r[0])   # row shows even with no other chips
         self.assertNotIn("plunv", r[1])
         self.assertNotIn("plunv", r[2])

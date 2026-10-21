@@ -28,7 +28,7 @@ html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--
 .plnlh{display:flex;align-items:center;gap:6px;min-height:24px;color:var(--nx-t2,#8b95a5)}
 .plnlh>b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plnlh>small{color:var(--nx-t3,#6b7280)}
-.plnlf{margin-left:auto;flex:none;width:24px;height:22px;padding:0;background:none;border:1px solid var(--nx-rule,#252629);border-radius:4px;color:var(--nx-t2,#8b95a5);font:inherit;cursor:pointer}
+.plnlf{margin-left:auto;flex:none;width:24px;height:24px;padding:0;background:none;border:1px solid var(--nx-rule,#252629);border-radius:4px;color:var(--nx-t2,#8b95a5);font:inherit;cursor:pointer}
 .plnlf:hover{border-color:var(--nx-active,#5b8def)}
 .plnle{color:var(--nx-t3,#6b7280)}
 .plnlr{display:flex;flex-direction:column;min-width:0}
@@ -41,14 +41,14 @@ html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--
 .plnlrun{display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--nx-t2,#a8b3c4)}   /* run summary, unboxed */
 .plnlrun-work{color:var(--nx-info,#5899f3);font-weight:600}.plnlrun-need{color:var(--nx-warn,#fad83e)}.plnlrun-done{color:var(--nx-t3,#8b95a5)}
 .plw .plnli .spl{flex:0 2 auto;min-width:2ch;max-width:none;padding:0;border:0;background:none;color:var(--nx-t3,#8b95a5);font-size:11px;font-weight:400;overflow:hidden;text-overflow:ellipsis}   /* sessPlChip unboxed in the list; ⚠max-width:none lifts the 16ch cap of the drawer .spl (60-sessions) so the text follows the list width */
-.plnld,.plnlrd{flex:none;width:8px;height:8px;border-radius:50%;background:var(--nx-idle,#7d7e85)}
+.plnld{flex:none;width:8px;height:8px;border-radius:50%;background:var(--nx-idle,#7d7e85)}
 .plnld-work{background:var(--nx-info,#5899f3)}.plnld-need{background:var(--nx-warn,#fad83e)}
 .plnlpulse{position:relative}.plnlpulse::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--nx-info,#5899f3);animation:plr 1.5s cubic-bezier(.4,0,.6,1) infinite}   /* running run; plr keyframes = 60-sessions.css */
 @media (prefers-reduced-motion:reduce){.plnlpulse::after{animation:none;display:none}}
 .plnlh>small.plnln{min-width:18px;padding:0 6px;border-radius:9px;background:color-mix(in srgb,var(--nx-info,#5899f3) 20%,transparent);color:var(--nx-info,#5899f3);font-weight:600;text-align:center;line-height:16px}
 /* Subagent tree under a card: the Timeline agent name cell (74b tlAgNmB) as flat buttons; quiet = no log write for 2 min */
 .plnag{display:flex;flex-direction:column;gap:1px;margin:2px 0 2px 8px;min-width:0}
-.plw .plnl .plnagr.tlnm{flex:none;display:flex;width:100%;min-height:22px;padding:1px 6px;background:none;border:0;border-radius:4px;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow:hidden}
+.plw .plnl .plnagr.tlnm{flex:none;display:flex;width:100%;min-height:24px;padding:2px 6px;background:none;border:0;border-radius:4px;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow:hidden}
 .plw .plnl .plnagr.tlnm>b{flex:0 1 auto;min-width:0;font-size:11.5px;font-weight:500}
 .plw .plnl .plnagr:hover{background:var(--nx-hover,#1b1e23)}
 .plw .plnl .plnagr:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
@@ -56,16 +56,18 @@ html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--
 .plw .plnl .plnagr .tlagd~.tlagt{display:none}   /* ⚠the narrow list let the 110px type chip squeeze the description to 0; type stays in the row title. Only beside a description: with descriptions off the type is the label */
 .plnagm{padding:1px 6px 1px 22px;font-size:11px;color:var(--nx-t3,#84868c)}
 /* R5: collapsed = slim rail (fold button + one dot per session); ⚠the global aside box (50/90 css) adds border + 12px padding that overflowed 28px */
-html[data-ui] .plw aside.plnl.plnlc{padding:4px 0;border:0;background:none;overflow:hidden;align-items:center;gap:8px}
+html[data-ui] .plw aside.plnl.plnlc{padding:4px 0;border:0;background:none;overflow:hidden;align-items:center;gap:2px}
 .plnlc>.plnlh{justify-content:center}.plnlc .plnlf{margin:0}
-.plnlrd{width:10px;height:10px;padding:0;border:0;cursor:pointer}
-.plnlrd:hover,.plnlrd:focus-visible{outline:2px solid var(--nx-active,#5b8def);outline-offset:2px}
+.plnlrd{position:relative;flex:none;width:24px;height:24px;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;outline:none}   /* 24px target (WCAG 2.5.8); the 10px dot is ::before */
+.plnlrd::before{content:'';position:absolute;left:7px;top:7px;width:10px;height:10px;border-radius:50%;background:var(--nx-idle,#7d7e85)}
+.plnlrd.plnld-work::before{background:var(--nx-info,#5899f3)}.plnlrd.plnld-need::before{background:var(--nx-warn,#fad83e)}
+.plnlrd:hover::before,.plnlrd:focus-visible::before{outline:2px solid var(--nx-active,#5b8def);outline-offset:2px}
 .plnames .mvdot{margin-left:5px;vertical-align:1px}
 .plagrun{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px}   /* 48h read-only Sidereus pipeline run */
 /* «Running N» overview under the canvas (48b plOvHtml): one row per running pipeline, stage strip ✓ done · ● running · · waiting */
 .plov{display:flex;flex-direction:column;gap:2px;margin:0 0 10px;padding:6px 8px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-left:3px solid var(--nx-active,#5b8def);border-radius:6px;font-size:12px}
 .plovh{color:var(--nx-t1,#cdcedc);margin-bottom:2px}
-.plovr{display:grid;grid-template-columns:minmax(80px,160px) minmax(80px,160px) 1fr auto;gap:10px;align-items:center;width:100%;padding:3px 6px;background:none;border:1px solid transparent;border-radius:4px;color:var(--nx-t2,#909298);font:inherit;text-align:left;cursor:pointer}
+.plovr{display:grid;grid-template-columns:minmax(80px,160px) minmax(80px,160px) 1fr auto;gap:10px;align-items:center;width:100%;padding:3px 6px;background:none;border:1px solid transparent;border-radius:4px;color:var(--nx-t2,#909298);font:inherit;text-align:left;cursor:pointer;min-height:24px}
 html[data-ui] .plovr:hover{background:var(--nx-hover,#1b1d20)}
 /* ⚠html[data-ui] lifts this over the 00-core next-UI twin «html[data-ui=next] .plovr{border-color:transparent}» (0,2,1) and keeps the rewriter from twinning it */
 .plovr.on,html[data-ui] .plovr.on{border-color:color-mix(in srgb,var(--nx-active,#5b8def) 60%,transparent);background:color-mix(in srgb,var(--nx-active,#5b8def) 10%,transparent)}
@@ -97,12 +99,15 @@ html[data-ui] .plapki:hover{background:var(--nx-hover,#1b1d20);color:var(--nx-t1
 .plapki i{font-style:normal;white-space:nowrap;color:var(--nx-active,#5b8def)}
 .plpsk{width:180px}
 .plrvm{width:300px}
-.plrv{font:inherit;font-size:11px;line-height:14px;padding:0 5px;margin-right:6px;background:none;border:1px solid var(--nx-rule,#252629);border-radius:4px;color:inherit;cursor:pointer}   /* ⚠14px line inside the 16px head line: the picker never grows the bar */
+.plrv{position:relative;font:inherit;font-size:11px;line-height:14px;padding:0 5px;margin-right:6px;background:none;border:1px solid var(--nx-rule,#252629);border-radius:4px;color:inherit;cursor:pointer}   /* ⚠14px line inside the 16px head line: the picker never grows the bar */
+.plrv::before{content:'';position:absolute;inset:-5px 0}   /* 24px hit area around the 16px row (WCAG 2.5.8) */
 .plrv.old{border-color:var(--nx-warn,#d6a04a);color:var(--nx-warn,#d6a04a)}
 html[data-ui] .plapki[aria-checked=true]{color:var(--nx-t1,#cdcedc);font-weight:600}
 /* Card pass picker: on the bottom edge, right of the loop-back port, so it never takes width from the title row */
-.plnd .plpass{position:absolute;right:10px;bottom:-9px;z-index:2;height:18px;padding:0 6px;font-family:inherit;font-size:11px;font-weight:600;line-height:16px;border-radius:9px;border:1px solid var(--nx-rule,#252629);background:var(--nx-panel,#121417);color:var(--nx-t2,#909298);cursor:pointer}
-html[data-ui] .plnd .plpass:hover,html[data-ui] .plnd .plpass.on{color:var(--nx-t1,#cdcedc);border-color:var(--pl-back,#e0a53d)}
+.plnd .plpass{position:absolute;right:10px;bottom:-12px;z-index:2;height:24px;padding:0 7px;font-family:inherit;font-size:11px;font-weight:600;line-height:24px;border:0;background:none;color:var(--nx-t2,#909298);cursor:pointer}   /* 24px hit area, 18px pill drawn by ::before; same centre on the edge */
+.plnd .plpass::before{content:'';position:absolute;inset:3px 0;z-index:-1;border-radius:9px;border:1px solid var(--nx-rule,#252629);background:var(--nx-panel,#121417)}
+html[data-ui] .plnd .plpass:hover,html[data-ui] .plnd .plpass.on{color:var(--nx-t1,#cdcedc)}
+html[data-ui] .plnd .plpass:hover::before,html[data-ui] .plnd .plpass.on::before{border-color:var(--pl-back,#e0a53d)}
 .plrm{margin-left:2px;padding:0 3px;border-radius:3px;color:#8b95a5;cursor:pointer}.plrm:hover{color:#f07178;background:#f0717822}
 .pladd{border-style:dashed}.pladdmsg{color:#f07178;font-size:12px;margin-top:6px}
 /* Folder browser modal (48f-pipeline-browse.js) on the settings-modal shell (.cfgm/.cfgbox). */
@@ -207,7 +212,7 @@ html[data-mv=pipe] .wrap{max-width:none}
 .plwst{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
 .plwg{display:flex;gap:8px;align-items:baseline;min-width:0}.plwg>span{flex:none;color:var(--nx-t2,#8b95a5)}.plwg>code{min-width:0;overflow-wrap:anywhere}.plwg>i{color:var(--nx-t3,#8b95a5)}
 .plwas{display:flex;flex-wrap:wrap;gap:4px}
-.plwa{font:inherit;font-size:12px;padding:1px 8px;border:1px solid var(--nx-rule,#2b3545);border-radius:4px;background:none;color:inherit;cursor:pointer}.plwa:hover{border-color:var(--nx-active,#5b8def)}
+.plwa{font:inherit;font-size:12px;min-height:24px;padding:1px 8px;border:1px solid var(--nx-rule,#2b3545);border-radius:4px;background:none;color:inherit;cursor:pointer}.plwa:hover{border-color:var(--nx-active,#5b8def)}
 .plro .plpan.plwp{pointer-events:auto;opacity:1}   /* borrowed + Watch: the result pane stays clickable (work log) */
 .plwdirty{font-size:12px;color:var(--nx-warn,#e0a53d)}
 .pltop>.plmode{margin-left:auto}
@@ -226,6 +231,7 @@ html[data-ui=next] .plw .plcvt .plzv{color:var(--nx-t1)}
 .plgw.plwt>.plwp{min-height:0;box-sizing:border-box}.plgw.plwt>.plwgr{grid-area:2/1/3/-1}
 /* 48k Watch drag grips (canvas | pane | Running card): 8px rows with a centred bar, ns-resize; sizes kept as shares (sidereus.plwv) */
 .plwgr{position:relative;height:8px;cursor:ns-resize;touch-action:none}
+.plwgr::before{content:'';position:absolute;inset:-8px 0;z-index:3}   /* 24px hit area over the 8px grip (WCAG 2.5.8) */
 .plwgr::after{content:'';position:absolute;left:50%;top:2px;width:44px;height:4px;margin-left:-22px;border-radius:2px;background:var(--nx-t3,#84868c);opacity:.55}
 .plwgr:hover::after,.plwgr.on::after,.plwgr:focus-visible::after{opacity:1;background:var(--nx-info,#5899f3)}
 .plwgr:focus{outline:none}   /* focus shows as the lit bar, like the session drawer grips */

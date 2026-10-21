@@ -417,7 +417,9 @@ function plOvRow(proj, name, p, lv, tags, now){
   return { proj, name, sid: lv ? lv.sid : '', stages, cur: stages.filter(s => s.st === 'run').map(s => s.t), n };
 }
 // Running stage: the dot gets its own box so the pulse ring (43-pipeline.css .plovdot) centres on it without moving text.
-function plOvRunHtml(t){ return '<span class="plovst plov-run plov-pulse"><i class=plovdot aria-hidden=true>●</i> ' + esc(t) + '</span>'; }
+// rb > 0: the bare ↺n gets words in title/aria-label (sent back into this stage n times); txt = the visible chip text.
+function plRbAttr(rb, txt){ const t = rb ? TV({msg: 'Sent back here {n} times', vars: {n: rb}}) : ''; return t ? ' title="' + esc(t) + '" aria-label="' + esc(txt + ' — ' + t) + '"' : ''; }
+function plOvRunHtml(t, rb){ return '<span class="plovst plov-run plov-pulse"' + plRbAttr(rb, t) + '><i class=plovdot aria-hidden=true>●</i> ' + esc(t) + '</span>'; }
 function plOvHtml(rows, proj, sel){
   if(!rows.length) return '';
   const mk = PL_MK;   // same marks as the canvas (skip = ↷)
@@ -427,8 +429,8 @@ function plOvHtml(rows, proj, sel){
     + (r.wf ? ' data-plovwf="' + esc(r.wf) + '"' : '') + ' title="'   // Workflow run row (48g): opens that run read-only
     + esc(r.proj + '\n' + (r.wf ? T('Click to open this Workflow') : T('Click to open this pipeline'))) + '"><span class=plovp>'
     + esc(strShort(r.proj)) + '</span><b class=plovn>' + esc(r.name) + '</b><span class=plovs>'
-    + (r.stages ? r.stages.map(s => s.st === 'run' ? plOvRunHtml(plgShow(s.t) + (s.rb ? ' ↺' + s.rb : ''))   // display name, as the canvas
-        : '<span class="plovst plov-' + s.st + '">' + esc(mk[s.st] + ' ' + plgShow(s.t) + (s.rb ? ' ↺' + s.rb : '')) + '</span>').join('')
+    + (r.stages ? r.stages.map(s => s.st === 'run' ? plOvRunHtml(plgShow(s.t) + (s.rb ? ' ↺' + s.rb : ''), s.rb)   // display name, as the canvas
+        : '<span class="plovst plov-' + s.st + '"' + plRbAttr(s.rb, mk[s.st] + ' ' + plgShow(s.t) + ' ↺' + s.rb) + '>' + esc(mk[s.st] + ' ' + plgShow(s.t) + (s.rb ? ' ↺' + s.rb : '')) + '</span>').join('')
       : r.cur.map(t => plOvRunHtml(plgShow(t))).join(''))
     + '</span><span class=plova>' + (r.sumh || esc(TV({msg: 'Agents {n}', vars: {n: r.n}}))) + '</span></div>').join('') + '</div>';   // sumh = 48g wfSumHtml (escaped there)
 }

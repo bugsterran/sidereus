@@ -29,10 +29,10 @@ function plNowAgents(x){
   const ord = subs.filter(hot).concat(subs.filter(a => !hot(a))), shown = ord.slice(0, PLNOW_AGMAX), more = ord.length - shown.length;
   if(!shown.length) return '';
   return '<div class=plnag>' + shown.map((a, i) => {
-    const p = plLabParts(a.lab), d = plDescStage(a.lab), h = hot(a);
+    const p = plLabParts(a.lab), d = plDescStage(a.lab), h = hot(a), tip = plLabTip(a.lab) + ' · ' + T(h ? 'Running' : 'Idle');   // state in words, not only the dot/dimming
     const g = { sess: false, type: p.type || T('Agent'), plat: a.plat || x.plat || '', br: i === shown.length - 1 && !more ? '└' : '├', items: [{ aid: a.aid || a.tid || 'a', desc: p.desc }] };
     return '<button type=button class="plnagr tlnm' + (h ? '' : ' quiet') + '" data-pnagc="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" data-pntid="' + esc(subWorkId(a)) + '"'
-      + (d && d.name !== '-' ? ' data-pnname="' + esc(d.name) + '" data-pnst="' + esc(d.title) + '"' : '') + ' title="' + esc(plLabTip(a.lab)) + '"><b>' + tlAgNmB(g, h) + '</b></button>';
+      + (d && d.name !== '-' ? ' data-pnname="' + esc(d.name) + '" data-pnst="' + esc(d.title) + '"' : '') + ' title="' + esc(tip) + '" aria-label="' + esc(tip) + '"><b>' + tlAgNmB(g, h) + '</b></button>';
   }).join('') + (more > 0 ? '<div class=plnagm>' + esc(TV({msg: '+{n} more', vars: {n: more}})) + '</div>' : '') + '</div>';
 }
 // Status dot: work = a turn is running (info) · need = blocked on the person (warn) · idle = anything else, incl. 'wait' (turn ended).
@@ -41,19 +41,28 @@ function plNowSt(x){
   return ['tool', 'think', 'run', 'sent', 'stopping'].includes(x.state) ? 'work' : 'idle';
 }
 const PLNOW_ST = { work: 'Working', need: 'Needs you', idle: 'Idle' };
+// Plain-text run summary for the row's aria-label (the visible summary carries its state by colour/dot too).
+function plNowRunTxt(x){
+  const runs = (x.plrun || []).filter(r => r && r.name), r = runs.find(q => !q.end), n = x.plNone;
+  if(r) return r.cur ? plgShow(r.cur) : r.name;
+  if(runs.length) return runs[0].name + ' ' + T('done');
+  if(n && n.cat) return T('No pipeline') + ' · ' + n.cat;
+  return n && n.u ? T('Undeclared') : '';
+}
 function plNowList(ss){
   const live = plNowLive(ss === undefined ? SESS : ss), c = plNowFolded();
   const fold = '<button type=button class=plnlf data-pnfold aria-expanded="' + (c ? 'false' : 'true') + '" title="' + esc(T(c ? 'Expand list' : 'Collapse list'))
     + '" aria-label="' + esc(T(c ? 'Expand list' : 'Collapse list')) + '">' + (c ? '›' : '‹') + '</button>';
   const head = '<div class=plnlh>' + (c ? '' : '<b>' + esc(T('Working now')) + '</b><small class=plnln>' + live.length + '</small>') + fold + '</div>';
-  // Collapsed rail: one dot per live session (title = project only); a dot click expands and picks it.
+  // Collapsed rail: one dot per live session (title = project · state); a dot click expands and picks it.
   if(c) return '<aside class="plnl plnlc">' + head + live.map(x => { const k = plNowSt(x); return '<button type=button class="plnlrd plnld-' + k + '" data-pncwd="' + esc(x.cwd || '')
-    + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc(x.project || '') + '" aria-label="' + esc((x.project || '') + ' · ' + T(PLNOW_ST[k])) + '"></button>'; }).join('') + '</aside>';
+    + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc((x.project || '') + ' · ' + T(PLNOW_ST[k])) + '" aria-label="' + esc((x.project || '') + ' · ' + T(PLNOW_ST[k])) + '"></button>'; }).join('') + '</aside>';
   if(!live.length) return '<aside class=plnl>' + head + '<div class=plnle>' + esc(T('No sessions working now')) + '</div></aside>';
   // Row = the Timeline's session name cell (74b tlSessNmB, bare: no time/token chips) + the run summary; one button per (cwd, plat).
   return '<aside class=plnl>' + head + live.map(x => {
     const on = !!PLS.nowSid && x.sid === PLS.nowSid, k = plNowSt(x), it = { cwd: x.cwd || '', plat: x.plat || '', state: x.state, blocked: x.blocked, idle: x.ageSec };
-    return '<div class="plnlr' + (on ? ' on' : '') + '"><button type=button class="plnli tlnm' + (on ? ' on' : '') + '" data-pncwd="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc(x.project || '') + '"'
+    const st = T(PLNOW_ST[k]), al = [x.project || '', st, plNowRunTxt(x)].filter(Boolean).join(' · ');   // ⚠project is user data: never through T()
+    return '<div class="plnlr' + (on ? ' on' : '') + '"><button type=button class="plnli tlnm' + (on ? ' on' : '') + '" data-pncwd="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc((x.project || '') + '\n' + st) + '" aria-label="' + esc(al) + '"'
       + (on ? ' aria-current=true' : '') + '>' + tlSessNmB({ sess: true, cwd: x.cwd || '', plat: x.plat || '', proj: x.project || '', items: [it] }, it, 0, 0, true) + plNowRun(x, k) + '</button>' + plNowAgents(x) + '</div>';
   }).join('') + '</aside>';
 }

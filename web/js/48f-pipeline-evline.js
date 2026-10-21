@@ -45,6 +45,9 @@ function plEvLine(rows, L, commits){
     if(sc.length) tip.push(T('screen ') + sc.map(x => scTag(x) + (x.ok ? ' ok' : ' FAIL')).join(', '));
     if(r.head) tip.push('head ' + r.head + (r.dirty ? ' +dirty' : ''));
   }
-  if(h7){ body = (body ? body + ' · ' : '') + T('commit ') + h7; tip.push(T('commit ') + cm.h); }
-  return '<div class="plev' + (!r || r.rc === 0 ? '' : ' plevng') + '" title="' + esc(tip.join('\n') || body) + '">' + esc(body) + '</div>';
+  if(h7) tip.push(T('commit ') + cm.h);
+  // The short hash alone is unexplained: its own span says which commit and where it came from.
+  const ct = h7 ? esc(TV({msg: 'Commit made in this stage: {h}', vars: {h: cm.h}})) : '';
+  const cmh = h7 ? (body ? ' · ' : '') + '<span class=plevc title="' + ct + '" aria-label="' + ct + '">' + esc(T('commit ') + h7) + '</span>' : '';
+  return '<div class="plev' + (!r || r.rc === 0 ? '' : ' plevng') + '" title="' + esc(tip.join('\n') || body) + '">' + esc(body) + cmh + '</div>';
 }

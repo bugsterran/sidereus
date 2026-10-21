@@ -46,7 +46,7 @@ NOW = ("\n".join([_const("PL_DESC_RE", "48b-pipeline-run.js"), _const("STR_SPLIT
                 + [js_fn(n) for n in ("sessPlChip", "plStrip", "plTk", "plDescStage", "plSubsOf", "plLabType", "plLabParts", "plLabDesc", "plLabTip",
                                       "strSplitGet", "strSplitCols", "strSplitDecl", "strSplitStyle", "strSplitGrip",
                                       "tlSessNmB", "tlAgNmB", "tlAgNm", "tlAgLab", "subWorkId", "plNowAgents", "plNowPickApply",
-                                      "plNowSt", "plNowRun", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj", "plProjGo", "plPickProj")])
+                                      "plNowSt", "plNowRun", "plNowRunTxt", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj", "plProjGo", "plPickProj")])
        + "\n" + _const("PLNOW_ST", "48j-pipeline-now.js") + "\n" + _const("PLNOW_AGMAX", "48j-pipeline-now.js") + "\n")
 LIVE = """[{state: 'tool', sid: 's1', cwd: '/a', plat: 'cx', project: 'alpha', plrun: [{name: 'chg', cur: 'Implement'}]},
 {state: 'wait', sid: 's2', cwd: '/b', plat: 'cc', project: 'beta', plNone: {cat: 'docs'}},
@@ -103,7 +103,7 @@ class PlNow(unittest.TestCase):
 
     def test_r1_selected_row_marked(self):
         h = run(NOW + "PLS.nowSid = 's2'; console.log(JSON.stringify(plNowList(" + LIVE + ")));")
-        self.assertIn('<div class="plnlr on"><button type=button class="plnli tlnm on" data-pncwd="/b" data-pnplat="cc" title="beta" aria-current=true>', h)
+        self.assertIn('<div class="plnlr on"><button type=button class="plnli tlnm on" data-pncwd="/b" data-pnplat="cc" title="beta\nIdle" aria-label="beta · Idle · No pipeline · docs" aria-current=true>', h)
         self.assertEqual(h.count("aria-current"), 1)
 
     def test_r5_collapsed_rail_dots(self):
@@ -111,7 +111,7 @@ class PlNow(unittest.TestCase):
         self.assertTrue(h.startswith('<aside class="plnl plnlc">'))
         self.assertIn('aria-label="Expand list"', h)
         self.assertEqual(re.findall(r'class="plnlrd plnld-(\w+)" data-pncwd="([^"]+)"', h), [("work", "/a"), ("idle", "/b"), ("work", "/c")])
-        self.assertIn('title="beta" aria-label="beta · Idle"', h)
+        self.assertIn('title="beta · Idle" aria-label="beta · Idle"', h)
         self.assertNotIn("plnli", h)
         css = open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8").read()
         self.assertIn("html[data-ui] .plw aside.plnl.plnlc{padding:4px 0;border:0;background:none;overflow:hidden", css)
@@ -283,6 +283,57 @@ class PlNow(unittest.TestCase):
         for bad in ("plFit", "plCentre", "scrollIntoView", "E.view ="):
             self.assertNotIn(bad, js_fn("plNowPickApply"))
         self.assertIn("plNowPickApply(), plNowShown()", js_fn("paintPipe"))
+    def test_a11y_state_in_words_per_state(self):
+        ss = ("[{state: 'tool', sid: 's1', cwd: '/a', project: 'alpha', plrun: [{name: 'chg', cur: 'Implement'}]},"
+              " {state: 'ask', sid: 's2', cwd: '/b', project: 'beta', plrun: [{name: 'old', end: 3}]},"
+              " {state: 'wait', sid: 's3', cwd: '/c', project: 'gamma', plNone: {u: 1}}, {state: 'wait', sid: 's4', cwd: '/d', project: 'delta'}]")
+        h = run(NOW + "console.log(JSON.stringify(plNowList(" + ss + ")));")
+        rows = re.findall(r'class="plnli tlnm[^"]*" data-pncwd="[^"]*" data-pnplat="[^"]*" title="([^"]*)" aria-label="([^"]*)"', h)
+        self.assertEqual(rows, [("alpha\nWorking", "alpha · Working · Implement"), ("beta\nNeeds you", "beta · Needs you · old done"),
+                                ("gamma\nIdle", "gamma · Idle · Undeclared"), ("delta\nIdle", "delta · Idle")])
+        r = run(NOW + "LS['sidereus.plnowc'] = '1'; console.log(JSON.stringify(plNowList(" + ss + ")));")
+        self.assertEqual(re.findall(r'class="plnlrd[^"]*"[^>]*title="([^"]*)"', r), ["alpha · Working", "beta · Needs you", "gamma · Idle", "delta · Idle"])
+        self.assertIn("plNowRunTxt(x)", js_fn("plNowList"))                    # project name never goes through T()
+        self.assertNotIn("T(x.project", js_fn("plNowList"))
+
+    def test_a11y_subagent_running_idle(self):
+        h = run(NOW + "console.log(JSON.stringify(plNowAgents({cwd: '/a', sub: [{lab: 'impl: build', aid: 'a1', idle: 5}, {lab: 'rev: look', aid: 'a2', idle: 600}]})));")
+        rows = re.findall(r'class="plnagr tlnm( quiet)?"[^>]*title="([^"]*)" aria-label="([^"]*)"', h)
+        self.assertEqual([(q, t.endswith(" · Running"), a == t) for q, t, a in rows][0], ("", True, True))
+        self.assertTrue(rows[1][1].endswith(" · Idle") and rows[1][0] == " quiet")
+        self.assertIn("'Idle':", _src("05a-i18n-en.js"))                       # ko entry lives in 05a; a second one fails i18n_check
+
+    def test_a11y_css_targets_at_least_24px(self):
+        with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as f:
+            css = f.read()
+
+        def rule(sel):
+            m = re.search(r"(?:^|\n|\})" + re.escape(sel) + r"\{([^}]*)\}", css)
+            self.assertIsNotNone(m, sel)
+            return m.group(1)
+
+        def px(body, prop):
+            m = re.search(r"(?:^|;)" + prop + r":(-?\d+)px", body)
+            self.assertIsNotNone(m, prop + " in " + body)
+            return int(m.group(1))
+        self.assertGreaterEqual(px(rule(".plnlf"), "height"), 24)
+        self.assertGreaterEqual(px(rule(".plw .plnl .plnagr.tlnm"), "min-height"), 24)
+        self.assertGreaterEqual(px(rule(".plovr"), "min-height"), 24)
+        self.assertGreaterEqual(px(rule(".plwa"), "min-height"), 24)
+        rd = rule(".plnlrd")
+        self.assertGreaterEqual(min(px(rd, "width"), px(rd, "height")), 24)
+        self.assertEqual(px(rule(".plnlrd::before"), "width"), 10)               # visible dot unchanged
+        ps = rule(".plnd .plpass")
+        self.assertGreaterEqual(px(ps, "height"), 24)
+        self.assertEqual(px(ps, "bottom"), -px(ps, "height") // 2)              # centred on the card edge, as the 18px pill was
+        self.assertIn("inset:3px 0", rule(".plnd .plpass::before"))             # 24 - 2*3 = 18px pill
+        rv = rule(".plrv")
+        self.assertEqual(px(rv, "line-height") + 2, 16)                          # visible row stays 16px
+        self.assertIn("inset:-5px 0", rule(".plrv::before"))                    # 14 + 2*5 = 24 from the padding box
+        self.assertEqual(px(rule(".plwgr"), "height"), 8)
+        self.assertIn("inset:-8px 0", rule(".plwgr::before"))                   # 8 + 2*8 = 24
+        self.assertIn("z-index", rule(".plwgr::before"))
+
 
 if __name__ == "__main__":
     unittest.main()
