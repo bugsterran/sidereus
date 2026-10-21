@@ -351,3 +351,22 @@ html[data-ui] em.tlq{cursor:pointer}   /* beats 90-main-ui `.tlq{cursor:help}` (
 html[data-ui=next] .thpop.tlqp{gap:4px;padding:8px 10px;max-width:min(380px,calc(100vw - 16px));font-size:12px;line-height:1.5;color:var(--nx-t1);white-space:normal}
 /* Timeline head summary (74b tlHeadHtml): wraps by the 200px basis, then grows and ellipsizes, so its text length never changes the head's line count. */
 #feed .wvh.wvht > .tlsum{flex:1 1 200px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+/* ── Light theme: quieter bars, firmer name-cell chips ─────────────────────────────────────────────
+   ★Bars at full HUE7_LT chroma made the light track busy (green/blue/ochre/brown/red side by side). ⇒ one knob, --tl-sat,
+   desaturates every coloured mark in the bar cell plus the stepper key/segments so the key still matches what it names.
+   ⚠saturate() keeps relative luminance (Rec.709 weights), so the >=3:1 graphic floor against the track and the tlInk ink
+   choice (74b, picked from luminance) both still hold; only chroma drops. Hues stay distinct, stripes/hatches keep their shapes.
+   ⚠The hover/cursor brightness filters are restated because a later `filter` replaces the whole list. */
+html[data-ui=next][data-theme=light]{--tl-sat:.55}
+html[data-ui=next][data-theme=light] .tlb,html[data-ui=next][data-theme=light] .tlkb,
+html[data-ui=next][data-theme=light] .tlrs .tlt :is(.tlplb,.tlplk),
+html[data-ui=next][data-theme=light] :is(.tlwrap,.tlplg) .tlpst .tlpd{filter:saturate(var(--tl-sat))}
+html[data-ui=next][data-theme=light] .tlb:hover{filter:saturate(var(--tl-sat)) brightness(1.25)}
+html[data-ui=next][data-theme=light] .tlb.tlbon{filter:saturate(var(--tl-sat)) brightness(1.4)}
+/* ★Neutral chips (session age, «N×», token total) were t2 on --nx-hover: text 6.67:1 but the chip itself 1.06:1 on the row, so
+   it read as loose grey text. ⇒ t1 text, a t3 tint and a t3 ring. ⚠.tlcpn keeps its own !important err tint (91-light.css). */
+html[data-ui=next][data-theme=light] .tlnm u:not(.tlcpn){color:var(--nx-t1);background:color-mix(in srgb,var(--nx-t3) 12%,var(--nx-panel));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--nx-t3) 28%,transparent)}
+/* Counter / type chips (i/n, agent type): same ring in their own text colour; workflow/fail chips already set light borders (60-sessions.css). */
+html[data-ui=next][data-theme=light] .tlnm .tlpar:not(.tlwfk):not(.tlwff){border-color:color-mix(in srgb,currentColor 45%,transparent);font-weight:500}
+html[data-ui=next][data-theme=light] .tlnm .tlpar.tlagt{color:var(--nx-t1)}
