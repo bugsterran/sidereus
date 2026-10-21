@@ -32,7 +32,7 @@ _TF_TOOL = (("Exit code", "Bash"), ("Blocked: sleep", "Bash"), ("File does not e
             ("File content (", "Read"), ("EISDIR", "Read"), ("String to replace", "Edit"),
             ("Found N matches", "Edit"), ("File has not been read", "Edit"), ("### Error", "MCP"))
 _TF_NAME = re.compile(r"^(?:InputValidationError: )?([\w.-]{2,60}) (?:was called|failed due)")
-ATT_DONE_S = (120, 7200)    # done & waiting: 2..120 min old
+ATT_DONE_S = (15, 7200)     # done & waiting: state "wait" already needs a turn-end marker; the floor only debounces a quick reply-then-type
 _FAIL_TITLE = {"flimit": "한도로 멈춤", "fcut": "바깥 원인으로 끊김",
                "fcheck": "원인 확인 필요", "fwreck": "반쯤 고친 파일"}
 _TF = {"at": 0.0, "idx": {}}
@@ -260,7 +260,7 @@ def _row_sigs(r, now):
     wf_run = any(isinstance(w, dict) and w.get("run") for w in (r.get("wf") or []))
     if st == "wait" and not r.get("sub") and not r.get("bgs") and not wf_run \
             and ATT_DONE_S[0] <= age <= ATT_DONE_S[1]:
-        sg.append(_sig("done", "작업 끝 · 입력 대기 %d분" % (age // 60), t0))
+        sg.append(_sig("done", ("작업 끝 · 입력 대기 %d분" % (age // 60)) if age >= 60 else ("작업 끝 · 입력 대기 %d초" % age), t0))
     return sg
 
 
