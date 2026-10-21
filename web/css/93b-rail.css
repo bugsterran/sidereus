@@ -70,6 +70,9 @@ html[data-ui=next][data-ui] #rail.open .mvb{justify-content:flex-start;width:100
 html[data-ui=next] #rail.open .mvb .mvic{width:17px;height:17px}
 html[data-ui=next] #rail.open .mvb > i{position:static;margin-left:auto;box-shadow:none}
 html[data-ui=next] #rail.open .mvb > i.mvnum{height:16px;line-height:16px;min-width:18px;font-size:10px;text-align:center}
+/* ★Light: the chat count kept the dark twin (#0b1220 on #5b8def, 5.8:1 on paper) but 9px dark-on-mid-blue read as a smudge.
+   ⇒ white bold on --nx-info-bg (#1f63da, 5.4:1). The #rail id outranks the generated light twin of `.mvnum.mvmsg` (00-core lite()). */
+html[data-ui=next][data-theme=light] #rail .mvb > i.mvnum.mvmsg{background:var(--nx-info-bg);color:#fff;font-size:10px;font-weight:700}
 html[data-ui=next] #rail .mvl{overflow:hidden;text-overflow:ellipsis}
 /* bottom: alerts + settings (#bell / #gear, moved unchanged) */
 html[data-ui=next] #rail .rsp{flex:1 1 auto;min-height:8px}
