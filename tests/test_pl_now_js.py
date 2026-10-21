@@ -386,10 +386,17 @@ class PlNow(unittest.TestCase):
         rd = rule(".plnlrd")
         self.assertGreaterEqual(min(px(rd, "width"), px(rd, "height")), 24)
         self.assertEqual(px(rule(".plnlrd::before"), "width"), 10)               # visible dot unchanged
-        ps = rule(".plnd .plpass")
-        self.assertGreaterEqual(px(ps, "height"), 24)
-        self.assertEqual(px(ps, "bottom"), -px(ps, "height") // 2)              # centred on the card edge, as the 18px pill was
-        self.assertIn("inset:3px 0", rule(".plnd .plpass::before"))             # 24 - 2*3 = 18px pill
+        ps = rule(".plnd .plpass")                                               # canvas scale(z): 24px/z keeps 24 on screen (19.2 at 0.8 before)
+        self.assertIn("--plph:clamp(24px,calc(24px / var(--plz,1)),60px)", ps)  # 60 = 24/PL_ZFIT
+        for d in ("height:var(--plph)", "line-height:var(--plph)", "bottom:calc(var(--plph) / -2)"):
+            self.assertIn(d, ps)                                                 # centred on the card edge at any zoom
+        pb = rule(".plnd .plpass::before")
+        for d in ("top:50%", "height:18px", "box-sizing:border-box", "translate:0 -50%"):
+            self.assertIn(d, pb)                                                 # visible pill fixed at 18px
+        with open(os.path.join(ROOT, "web", "js", "48d-pipeline-canvas.js"), encoding="utf-8") as f:
+            cvjs = f.read()
+        self.assertIn("scale(' + v.z + ');--plz:' + v.z + '\">'", cvjs)         # first paint carries the zoom
+        self.assertIn("i.style.setProperty('--plz', E.view.z)", cvjs)            # and every pan/zoom update
         rv = rule(".plrv")
         self.assertEqual(px(rv, "line-height") + 2, 16)                          # visible row stays 16px
         self.assertIn("inset:-5px 0", rule(".plrv::before"))                    # 14 + 2*5 = 24 from the padding box

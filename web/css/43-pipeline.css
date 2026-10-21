@@ -109,8 +109,8 @@ html[data-ui] .plapki:hover{background:var(--nx-hover,#1b1d20);color:var(--nx-t1
 .plrv.old{border-color:var(--nx-warn,#d6a04a);color:var(--nx-warn,#d6a04a)}
 html[data-ui] .plapki[aria-checked=true]{color:var(--nx-t1,#cdcedc);font-weight:600}
 /* Card pass picker: on the bottom edge, right of the loop-back port, so it never takes width from the title row */
-.plnd .plpass{position:absolute;right:10px;bottom:-12px;z-index:2;height:24px;padding:0 7px;font-family:inherit;font-size:11px;font-weight:600;line-height:24px;border:0;background:none;color:var(--nx-t2,#909298);cursor:pointer}   /* 24px hit area, 18px pill drawn by ::before; same centre on the edge */
-.plnd .plpass::before{content:'';position:absolute;inset:3px 0;z-index:-1;border-radius:9px;border:1px solid var(--nx-rule,#252629);background:var(--nx-panel,#121417)}
+.plnd .plpass{--plph:clamp(24px,calc(24px / var(--plz,1)),60px);position:absolute;right:10px;bottom:calc(var(--plph) / -2);z-index:2;height:var(--plph);padding:0 7px;font-family:inherit;font-size:11px;font-weight:600;line-height:var(--plph);border:0;background:none;color:var(--nx-t2,#909298);cursor:pointer}   /* .plcvi scale(z) shrinks the target: 24px/z keeps 24 on screen, centred on the edge; ⚠60px cap (z=0.4) stays clear of the first loop lane (34px) */
+.plnd .plpass::before{content:'';position:absolute;left:0;right:0;top:50%;height:18px;box-sizing:border-box;translate:0 -50%;z-index:-1;border-radius:9px;border:1px solid var(--nx-rule,#252629);background:var(--nx-panel,#121417)}
 html[data-ui] .plnd .plpass:hover,html[data-ui] .plnd .plpass.on{color:var(--nx-t1,#cdcedc)}
 html[data-ui] .plnd .plpass:hover::before,html[data-ui] .plnd .plpass.on::before{border-color:var(--pl-back,#e0a53d)}
 .plrm{margin-left:2px;padding:0 3px;border-radius:3px;color:#8b95a5;cursor:pointer}.plrm:hover{color:#f07178;background:#f0717822}

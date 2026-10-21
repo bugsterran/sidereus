@@ -35,7 +35,7 @@ function plWatchPane(E, d, lv, lt){ return '<WP ' + (lv ? lv.sid : '') + '>'; } 
 const D = {catalog: {items: [{title: {ko: 'A'}}, {title: {ko: 'C "q"'}}]}};
 """
 # sha256 of plCanvas(...).html for CANVAS_STUB before the Watch mode existed (Edit output must be byte-identical, R7).
-EDIT_SHA = "e7436b7d66a2c39039d3114c7cf16d4b29ebc827412af70e82f4774e202c1831"
+EDIT_SHA = "fac62b35114d2146218746ff496fe5f7ab3e358f3a25b7883372d0bcd4365106"   # re-pinned: .plcvi style gained the --plz zoom variable (only diff)
 
 
 def _src(path):

@@ -186,7 +186,7 @@ function plCanvas(p, d, lt){
     + '<button class=wkrgb data-plfitv title="' + esc(T('Zoom so every stage is visible')) + '">' + esc(T('Fit to view')) + '</button><button class=wkrgb data-plz="-1" title="' + esc(T('Zoom out')) + '" aria-label="' + esc(T('Zoom out')) + '">−</button>'
     + '<span class=plzv>' + Math.round(v.z * 100) + '%</span><button class=wkrgb data-plz="1" title="' + esc(T('Zoom in')) + '" aria-label="' + esc(T('Zoom in')) + '">+</button>'
     + '<span class=plhint>' + esc(T('Drag background = pan · Ctrl+wheel = zoom')) + '</span></div>';
-  const cv = '<div class=plcvw>' + tb + '<div class=plcv data-plcv><div class=plcvi style="transform:translate(' + v.x + 'px,' + v.y + 'px) scale(' + v.z + ')">'
+  const cv = '<div class=plcvw>' + tb + '<div class=plcv data-plcv><div class=plcvi style="transform:translate(' + v.x + 'px,' + v.y + 'px) scale(' + v.z + ');--plz:' + v.z + '">'
     + '<svg class=plsvg width="' + mx + '" height="' + my + '"><g class=pledges>' + plEdgesSvg(E) + '</g><path class=pltmp d=""/></svg>'
     + VG.nodes.map(n => plNodeHtml(E, n, bad[n.id], lt)).join('')
     + '<svg class="plsvg plheads" width="' + mx + '" height="' + my + '"><defs>' + plMarkers(G) + '</defs><g class=plhd>' + plHeadsSvg(E) + '</g></svg></div></div>';
@@ -400,6 +400,7 @@ function plZoomLabel(cv, z){ const w = cv && cv.closest('.plcvw'), s = w && w.qu
 function plApplyView(E, cv){
   const i = cv && cv.querySelector('.plcvi');
   if(i) i.style.transform = 'translate(' + E.view.x + 'px,' + E.view.y + 'px) scale(' + E.view.z + ')';
+  if(i) i.style.setProperty('--plz', E.view.z);   // .plpass hit area divides by it (scale shrinks the target)
 }
 // The editor fills from its top to the feed's bottom (like brPanFit);
 // columns scroll inside. Until the user pans/zooms (E.touched), a resize re-fits the chain to the new canvas width.

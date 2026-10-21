@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Server: the tool usage index no longer holds every event id as a string; it keeps compact arrays, drops events older than 90 days and stops copying the whole index on each recompute. Measured on 1.5M events: index 328 → 55 MB, process peak 539 → 166 MB, cache file 96 → 47 MB. The first start after updating rebuilds the cache once (about a minute of «Loading» in Tools/Harness) (#17).
 - Pipelines: a first run with no session and no project picked now says what to do next (start a Claude Code, Codex or Gemini session, or try `sidereus start --demo`) instead of only «Pick a project»; the Sidereus clone's own row in the project picker is marked «(built-in)»; the «Agent and model per stage» caption shows only in Edit.
+- Pipelines: the stage pass pill («↻n») stays a 24px click target at any canvas zoom; the canvas scale (down to 0.4) had shrunk it to as little as 9.6px on screen. The visible pill is unchanged.
 - Demo: no saver chip in the status bar — the saver hook is not shipped, so a real install never shows it.
 - Pipelines: a session whose turn ended but whose tagged background task, subagent or run stage is still going shows «Working» in «Working now» (row, its dot and the pulsing rail dot), and the canvas keeps that stage in progress until the task ends instead of closing it after two minutes.
 
