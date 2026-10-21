@@ -46,7 +46,7 @@ NOW = ("\n".join([_const("PL_DESC_RE", "48b-pipeline-run.js"), _const("STR_SPLIT
                 + [js_fn(n) for n in ("sessPlChip", "plStrip", "plTk", "plDescStage", "plSubsOf", "plLabType", "plLabParts", "plLabDesc", "plLabTip",
                                       "strSplitGet", "strSplitCols", "strSplitDecl", "strSplitStyle", "strSplitGrip",
                                       "tlSessNmB", "tlAgNmB", "tlAgNm", "tlAgLab", "subWorkId", "plNowAgents", "plNowPickApply",
-                                      "plNowSt", "plNowRun", "plNowRunTxt", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj", "plProjGo", "plPickProj")])
+                                      "plPrLive", "plNowSt", "plNowRun", "plNowRunTxt", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj", "plProjGo", "plPickProj")])
        + "\n" + _const("PLNOW_ST", "48j-pipeline-now.js") + "\n" + _const("PLNOW_AGMAX", "48j-pipeline-now.js") + "\n")
 LIVE = """[{state: 'tool', sid: 's1', cwd: '/a', plat: 'cx', project: 'alpha', plrun: [{name: 'chg', cur: 'Implement'}]},
 {state: 'wait', sid: 's2', cwd: '/b', plat: 'cc', project: 'beta', plNone: {cat: 'docs'}},
@@ -263,6 +263,23 @@ class PlNow(unittest.TestCase):
         self.assertNotIn("plNowGo(", s)
         for gone in ("plNowStage",):
             self.assertNotIn(gone, s)
+
+    def test_wait_with_live_work_is_working(self):
+        # Turn ended ('wait') but tagged work still runs: row, rail dot and canvas share one predicate.
+        xs = """[{state: 'wait', plrun: [{name: 'c', stages: {A: {o: 'run'}}}]}, {state: 'wait', sub: [{lab: 'a', idle: 5}]},
+        {state: 'wait', bgs: [{lab: '[pl:c/A] gates', min: 2}]}, {state: 'wait', blocked: true, bgs: [{lab: 'x'}]},
+        {state: 'wait', sub: [{lab: 'a', idle: 999}], plrun: [{name: 'c', end: 9, stages: {A: {o: 'run'}}}, {name: 'd', stages: {A: {o: 'done'}}}]},
+        {state: 'wait'}, {state: 'tool'}]"""
+        r = run(NOW + "console.log(JSON.stringify(" + xs + ".map(plNowSt)));")
+        self.assertEqual(r, ["work", "work", "work", "need", "idle", "idle", "work"])
+        h = run(NOW + "SESS = [{state: 'wait', sid: 's2', cwd: '/b', project: 'beta', bgs: [{lab: 'g', min: 1}]}];"
+                + "lsSet('sidereus.plnowc', '1'); console.log(JSON.stringify(plNowList()));")
+        self.assertIn("plnld-work plnlrp", h)                                  # collapsed rail dot pulses
+        h = run(NOW + "const S = [{state: 'wait', sid: 's2', cwd: '/b', project: 'beta', bgs: [{lab: 'g', min: 1}]}, {state: 'wait', sid: 's3', cwd: '/c', project: 'g'}];"
+                + "const o = plNowList(S); console.log(JSON.stringify([o, S[0].state]));")
+        self.assertIn("<D run>", h[0])                                         # expanded row dot: working
+        self.assertIn("<D wait>", h[0])                                        # idle row unchanged
+        self.assertEqual(h[1], "wait")                                         # session object not mutated
 
     def test_r3_start_buttons_first(self):
         h = run(_const("PL_TPLS", "48e-pipeline-new.js") + "\n"
