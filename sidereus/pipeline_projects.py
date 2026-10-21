@@ -28,10 +28,24 @@ def _proj_ok(proj):
 def allowed_projects():
     """Exact-match allow-list = the pipeline tab's chips: known_projects() ∪ live sessions' repos ∪ Sidereus itself.
     ★2026-10-01 a chip from a session's `repos` was refused (not a cwd). Real dirs only."""
-    out = set(known_projects()) | ({CODE_DIR} if config.IS_CLONE else set()) | set(_remembered())   # installed package: not a project
-    for r in _allowed_cwds().values():   # never raises: falls back to its last good value
+    return project_list()[0]
+
+
+def project_list():
+    """(allowed_projects() list, self_only) — self_only = CODE_DIR when it is listed only because this is a clone.
+    ⚠A fresh clone with no history listed only the Sidereus repo, so the tab opened its developer pipelines instead of the
+    first-run template picker; the page skips a self-only chip for the default pick. Known via history/session = normal project."""
+    out = set(known_projects()) | set(_remembered())
+    seen = set()
+    for k, r in _allowed_cwds().items():   # never raises: falls back to its last good value
         out |= set(x for x in (r.get("repos") or []) if isinstance(x, str))
-    return sorted(p for p in out if os.path.isabs(p) and os.path.isdir(p))
+        seen |= set(x for x in [k, r.get("cwd"), r.get("root")] if isinstance(x, str))
+    self_only = ""
+    if config.IS_CLONE:   # installed package: not a project
+        if os.path.realpath(CODE_DIR) not in set(os.path.realpath(p) for p in out | seen):
+            self_only = CODE_DIR
+        out.add(CODE_DIR)
+    return sorted(p for p in out if os.path.isabs(p) and os.path.isdir(p)), self_only
 
 
 def _store_path():

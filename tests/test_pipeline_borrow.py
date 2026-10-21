@@ -1,7 +1,7 @@
 """Borrowed pipelines (sidereus/pipeline.py runs_here/borrowed): a run on a project of a pipeline defined in another one
 shows there read-only, resolved from the owning project; gone when the run is gone.
 
-⚠Projects live in a tmp dir: `allowed_projects`/`_proj_ok`/`CODE_DIR` are patched on pipeline — never live files.
+⚠Projects live in a tmp dir: `allowed_projects`/`project_list`/`_proj_ok`/`CODE_DIR` are patched on pipeline — never live files.
 """
 import json
 import os
@@ -39,7 +39,7 @@ class Borrow(unittest.TestCase):
         _mk(self.here, "bugfix")
         _mk(self.sidereus, "arch-map")
         projs = [self.sidereus, self.here, self.other]
-        for k, v in (("allowed_projects", lambda: projs), ("_proj_ok", lambda p: p in projs), ("CODE_DIR", self.sidereus),
+        for k, v in (("allowed_projects", lambda: projs), ("project_list", lambda: (projs, "")), ("_proj_ok", lambda p: p in projs), ("CODE_DIR", self.sidereus),
                      ("default_tasks", lambda: {}), ("suggest", lambda *a, **k: []), ("apply_get", lambda p: {}),
                      ("skill_names", lambda p: [])):
             m = mock.patch.object(PL, k, v)

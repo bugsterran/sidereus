@@ -184,3 +184,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ `plmark/<sid>.none.json` = `{v, cat, t}` or `{v, nudge}` only; `nudge` is saved before the deny prints (same order as `_nudge`).
 - ⚠Never merge it into `<sid>.json` or `.runs.json` · never store the description · a deny printed before a failed save would deny every edit.
 - ⚠The gate resolves the project from the edited file (walk up to its git root) or, for a commit, cwd / its git root — never `session_dirs`: a repo merely `cd`'d into earlier lent its pipelines to edits in a repo without any.
+
+## A clone's own repo is a «self-only» project (`pipeline_projects.project_list` · 48 `plLoadProjs`)
+
+- ⚠`allowed_projects()` always adds `CODE_DIR` on a clone, so a fresh clone listed only it and the tab opened its developer pipelines (arch-map) instead of the empty state. ⇒ The list marks it `self_only` unless history, «+ Add project» or a live session's cwd/repos also name it; the default pick skips it and the picker sorts it last.
+- ⚠Never drop it from the allow-list, and never flag it when a session runs there — the developer's default would change.

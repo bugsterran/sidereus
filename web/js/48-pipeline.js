@@ -40,7 +40,8 @@ async function plLoadProjs(){
   catch(e){ PLS.projs = { ok: false, msg: String((e && e.message) || e) }; PLS.off = !!(e && e.status === 404); }
   PLS.busy[''] = 0;
   // Last-picked project if it has pipelines, else the first one that does (★2026-10-01: opened on a project without any).
-  const has = ((PLS.projs.ok && PLS.projs.projects) || []).map(x => x.path);
+  // ⚠A self-only chip (Sidereus clone, no history/session there) is never the default: a fresh clone opened its developer pipelines.
+  const has = ((PLS.projs.ok && PLS.projs.projects) || []).filter(x => !x.self_only || x.path === PLS.proj).map(x => x.path);
   if(has.length && !has.includes(PLS.proj) && PLS.pend !== PLS.proj) PLS.proj = has[0];   // a jump made before the list loaded keeps its project
   PLS.pend = '';
   plPaint();
@@ -161,7 +162,7 @@ function plLiveDot(n){ return '<i class=mvdot title="' + esc(TV({msg: '{n} pipel
 // ⚠Not data-plrm: 48b's run-model select (select.plrsel) carries data-plrm, so a click on it removed a project.
 function plChips(){
   const m = new Map(), live = plLiveProjs(SESS, plMem(), plKnown());
-  ((PLS.projs && PLS.projs.projects) || []).forEach(x => { if(!PROJ_GONE.has(x.path)) m.set(x.path, { p: x.path, n: x.n }); });   // ⚠the list is fetched once; a folder deleted later is still in it
+  ((PLS.projs && PLS.projs.projects) || []).forEach(x => { if(!PROJ_GONE.has(x.path)) m.set(x.path, { p: x.path, n: x.n, last: !!x.self_only }); });   // ⚠the list is fetched once; a folder deleted later is still in it
   (typeof strProjList === 'function' ? strProjList() : []).forEach(e => { const o = m.get(e.p) || { p: e.p, n: 0 }; o.live = e.open > 0; m.set(e.p, o); });
   if(PLS.proj && PROJ_GONE.has(PLS.proj)) PLS.proj = m.size ? m.keys().next().value : '';   // selected folder deleted -> first listed project
   if(PLS.proj && !m.has(PLS.proj)) m.set(PLS.proj, { p: PLS.proj, n: 0 });

@@ -15,7 +15,7 @@ function ppGroups(items, recent, cur, q){
   const w = work.filter(hit), wk = new Set(w.map(e => e.p));
   const rec = recent.slice(0, PP_RECENT_N).map(p => by.get(p)).filter(e => e && hit(e) && !wk.has(e.p));
   const rk = new Set(rec.map(e => e.p));
-  const all = items.filter(e => hit(e) && !wk.has(e.p) && !rk.has(e.p)).sort(ppByName);
+  const all = items.filter(e => hit(e) && !wk.has(e.p) && !rk.has(e.p)).sort((a, b) => (a.last ? 1 : 0) - (b.last ? 1 : 0) || ppByName(a, b));   // e.last = after the rest (48 self-only chip)
   return { work: w, rec: rec, all: all };
 }
 // Pure: ↑↓ step through n rows, wrapping at both ends; -1 when the list is empty.
