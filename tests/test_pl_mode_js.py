@@ -14,9 +14,11 @@ from tests._node import node_e
 PRE = """
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const T = s => s;
+const TV = j => j.msg.replace(/\{(\w+)\}/g, (a, k) => j.vars[k]);
 let LS = {}, PAINT = 0, CUR = null, PLAG = false;
 function lsGet(k, d){ return k in LS ? LS[k] : d; }
 function lsSet(k, v){ LS[k] = String(v); }
+function lsJson(k, d){ try{ return k in LS ? JSON.parse(LS[k]) : d; }catch(e){ return d; } }
 function plPaint(){ PAINT++; }
 function plCur(){ return CUR; }
 const PLS = { proj: '/p', wf: null, g: {} };
@@ -67,7 +69,8 @@ class PlMode(unittest.TestCase):
         self.assertNotIn("<PAL", h)
         self.assertNotIn("<PAN>", h)
         self.assertIn("<WP s1>", h)
-        self.assertIn("data-plgh", h)                                         # split handle kept
+        self.assertIn('<div class=plwgr data-plwg=p', h)                       # Watch canvas | pane drag grip
+        self.assertNotIn("data-plgh", h)
 
     def test_r7_edit_canvas_byte_identical(self):
         h = run(MODE + CANVAS_STUB + js_fn("plCanvas") + "\nplModeSet('edit', true);"
@@ -242,13 +245,37 @@ class PlMode(unittest.TestCase):
 
     def test_r4_watch_grid_css_and_fit(self):
         css = _src("web/css/43-pipeline.css")
-        self.assertIn(".plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 0 auto;height:auto}", css)
-        self.assertIn(".plgw.plwt>.plgh{display:none}", css)
-        self.assertIn(".plgw.plwt>.plwp{min-height:120px;max-height:280px", css)
-        fit = js_fn("plGwFit")
-        self.assertIn("g.style.height = '';", fit)
-        self.assertIn("if(wt) row = Math.max(260, Math.min(1100, h - (g.querySelector('.plwp') ? 126 : 0)));", fit)   # canvas fills the free height
-        self.assertIn("nl.style.minHeight", fit)                                # list card reaches canvas + pane bottom
+        self.assertIn(".plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 8px var(--plwph,auto);height:auto", css)
+        self.assertIn(".plwgr{position:relative;height:8px;cursor:ns-resize", css)
+        self.assertIn(".plwov{overflow:auto;", css)
+        self.assertIn("if(wt) plWatchFit(g, fd, h);", js_fn("plGwFit"))
+        fit = js_fn("plWatchFit")
+        self.assertIn("if(PLWDRAG) return;", fit)
+        self.assertIn("if(wp && PLWPH.k !== wk)", fit)                             # pane height pinned per size/stage, not per poll
+        self.assertIn("let A = h - 2 * PLW_GRIP;", fit)                             # canvas + pane + card = the free height
+        self.assertIn("if(slack > 0){ A += slack;", fit)                             # reaches the feed bottom
+        self.assertIn("if(over > 0){ A -= over;", fit)                               # no page scroll
+        self.assertIn("nl.style.minHeight", fit)                                    # list card reaches the stack bottom
+
+    def test_r8_watch_sizes_shares_and_mins(self):
+        r = run(MODE + "console.log(JSON.stringify([plWSizes(700, null, 150), plWSizes(700, null, 900), plWSizes(1000, [0.6, 0.25, 0.15], 0),"
+                " plWSizes(300, [0.6, 0.3, 0.1], 0), plWSizes(2000, null, 50)]));")
+        self.assertEqual(r[0], [440, 150, 110])                                # default: pane natural, card 110, canvas the rest
+        self.assertEqual(r[1], [310, 280, 110])                                # pane natural capped at 280
+        self.assertEqual(r[2], [600, 250, 150])                                # saved shares scale with the window
+        self.assertEqual(r[3], [260, 80, 48])                                  # mins: card then pane give way, canvas keeps 260
+        self.assertEqual(r[4], [1810, 80, 110])                                # no canvas maximum
+        r = run(MODE + "LS['sidereus.plwv'] = '[0.5,0.3,0.2]'; const a = plWShares(); LS['sidereus.plwv'] = '[1,0,0]';"
+                " console.log(JSON.stringify([a, plWShares()]));")
+        self.assertEqual(r, [[0.5, 0.3, 0.2], None])
+
+    def test_r8_running_card_always_present(self):
+        r = run(MODE + "console.log(JSON.stringify([plWatchOv(''), plWatchOv('<div class=plov>X</div>')]));")
+        self.assertEqual(r[0], "<div class=plwov><div class=plov><b class=plovh>Running 0</b><span class=hidnote>No runs running</span></div></div>")
+        self.assertEqual(r[1], "<div class=plwov><div class=plov>X</div></div>")
+        s = _src("web/js/48k-pipeline-mode.js")
+        self.assertIn("lsSetJson('sidereus.plwv'", s)                          # drag end stores shares
+        self.assertIn("lsDel('sidereus.plwv')", s)                              # double-click resets
 
     def test_r6_draft_save_primary_in_action_group_with_back(self):
         stubs = ("function plCanvas(){ return {html: '<CV/>'}; } function plNewBtn(){ return ''; } function plNewForm(){ return ''; } function plStartBtns(){ return ''; }"

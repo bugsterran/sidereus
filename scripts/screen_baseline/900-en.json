@@ -89,13 +89,7 @@
    "· Review",
    "Agents #",
    "· #t · ↓#t tokens",
-   "Pipeline running from another folder: hotfix · session #t#bea — pipeline file not found",
-   "By stage · agents #",
-   "Stage State ↺ Agents Elapsed Latest agent",
-   "Design ✓ Done # #t Plan",
-   "Implement ✓ Done ↺ # # #t general-purpose",
-   "Verify ● Running # #t general-purpose",
-   "Review · Waiting"
+   "Pipeline running from another folder: hotfix · session #t#bea — pipeline file not found"
   ],
   "tab:time": [
    "Replay",

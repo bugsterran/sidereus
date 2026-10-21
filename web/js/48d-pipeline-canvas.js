@@ -188,7 +188,7 @@ function plCanvas(p, d, lt){
   const errs = chk.errs.length ? '<ul class=plerrs>' + chk.errs.map(x => '<li' + (x.id ? ' data-plpick="' + esc(x.id) + '"' : '') + '>' + esc(x.msg) + '</li>').join('') + '</ul>' : '';
   const gh = '<div class=plgh data-plgh title="' + esc(T('Drag to resize · double-click to reset', 'height')) + '"></div>';
   // 48k Watch: no palette, no editor; the selected stage's result sits in the panel slot. ⚠Edit output must stay byte-identical.
-  if(typeof plWatchFor === 'function' && plWatchFor(p)) return { html: '<div class="plgw plwt">' + cv + errs + '</div>' + gh + plWatchPane(E, d, plViewRun(PLS.proj, p.name), lt) + '</div>', ok: !chk.errs.length };
+  if(typeof plWatchFor === 'function' && plWatchFor(p)) return { html: '<div class="plgw plwt">' + cv + errs + '</div>' + plWGrip('p') + plWatchPane(E, d, plViewRun(PLS.proj, p.name), lt) + '</div>', ok: !chk.errs.length };
   return { html: '<div class=plgw>' + plPalette(E, d.catalog)
     + cv + errs + '</div>' + gh + plPanel(E, d) + '</div>', ok: !chk.errs.length };
 }
@@ -411,15 +411,9 @@ function plGwFit(){
   let row = Math.max(260, Math.min(700, 0.34 * innerHeight));   // no canvas yet: the CSS pre-paint row
   if(E && cv && cvw){
     row = plCvNeed(E.G, cv.clientWidth, innerHeight) + (cvw.clientHeight - cv.clientHeight);
-    // 48k Watch: the canvas fills the feed height left after a fixed pane allowance (min-height 120 + 6 margin), so polls never move it; no handle in Watch.
-    if(wt) row = Math.max(260, Math.min(1100, h - (g.querySelector('.plwp') ? 126 : 0)));
-    if(!wt && (+lsGet(PL_SPLIT.key, 0) || (PLDRAG && PLDRAG.k === 'split'))) g.style.removeProperty('--plcvh'); else g.style.setProperty('--plcvh', Math.round(row) + 'px');
+    if(!wt && (+lsGet(PL_SPLIT.key, 0) || (PLDRAG && PLDRAG.k === 'split'))) g.style.removeProperty('--plcvh'); else if(!wt) g.style.setProperty('--plcvh', Math.round(row) + 'px');
   }
-  if(wt){
-    g.style.height = '';   // 48k Watch: canvas row + content-sized pane (43 .plgw.plwt), no 420px floor or split
-    const nl = document.querySelector('.plw .plnl:not(.plnlc)');   // the «Working now» card reaches the bottom of canvas + pane
-    if(nl) nl.style.minHeight = Math.max(0, Math.round(g.getBoundingClientRect().bottom - nl.getBoundingClientRect().top)) + 'px';
-  }
+  if(wt) plWatchFit(g, fd, h);   // 48k: canvas · pane · Running card heights, proportional, no page scroll
   else {
     const floor = Math.round(row) + 426;   // canvas row + 6px handle + 420px pane row (43-pipeline.css)
     g.style.height = Math.max(floor, h) + 'px';

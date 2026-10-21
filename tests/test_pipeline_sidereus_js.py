@@ -94,7 +94,7 @@ BFNS = ("plBorrows", "plBorrowOf", "plRO", "plBorrowLab", "plBorrowChip", "plBor
 BPRE = "\n".join([
     "function strShort(p){ return p.slice(p.lastIndexOf('/') + 1); } let DIRTY = false; function plDirty(){ return DIRTY; } const LS = {}; function lsSet(k, v){ LS[k] = v; }",
     "let PLNEW = null, PAINTS = 0, SESS = [], PLVIEW = 'pipe'; function plPaint(){ PAINTS++; } function plLiveHead(lv){ return lv ? '<HEAD ' + lv.sid + '>' : ''; }",
-    "function plRunTable(lv){ return lv ? '<TABLE/>' : ''; } let CVLT = null; function plCanvas(p, d, lt){ CVLT = lt; return {html: '<CV ' + p.name + '/>', ok: true}; }",
+    "function plWGrip(k){ return '<GRIP ' + k + '/>'; } function plWatchOv(){ return '<RUNCARD/>'; } let CVLT = null; function plCanvas(p, d, lt){ CVLT = lt; return {html: '<CV ' + p.name + '/>', ok: true}; }",
     "function plPrLive(r){ return Object.values(r.stages || {}).some(s => s.o === 'run'); }",
     "function plPrLv(sid, pr, st){ return {sid, pr, lt: {x: pr.name}, run: {run: plPrLive(pr)}}; }",
 ])
@@ -117,7 +117,7 @@ class PipelineBorrow(unittest.TestCase):
         self.assertEqual(r[:2], ["arch-map", "/sidereus"])
         self.assertIn("<CV arch-map/>", r[2])
         self.assertIn("<HEAD abcdef1234>", r[2])
-        self.assertIn("<TABLE/>", r[2])
+        self.assertIn("<GRIP r/><RUNCARD/>", r[2])                        # same Watch regions as an owned pipeline
         self.assertIn("/sidereus에 정의됨 — 여기서는 보기 전용", r[2])
         for k in ("data-plsave", "data-plrun", "data-pldel"):
             self.assertNotIn(k, r[2])

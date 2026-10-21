@@ -87,12 +87,12 @@ function plBorrowLv(proj, p){
   }); });
   return pr ? plPrLv(sid, pr, p.stages || [], Date.now()) : null;
 }
-// Same canvas + run table as an owned pipeline; no Save/Run/Delete (edit and run stay in the owning project).
+// Same canvas as an owned pipeline; no Save/Run/Delete (edit and run stay in the owning project).
 function plBorrowBody(d, p, list, ov){
   if(!p.ok) return list + '<div class=hidnote>' + esc(TV({msg: 'Defined in {proj} — read-only here', vars: {proj: p.from || ''}})) + '</div><ul class=plerrs>'
     + (p.errs || []).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>';
   const lv = plBorrowLv(PLS.proj, p), lt = lv ? lv.lt : null, cv = plCanvas(p, d, lt);
   return list + '<div class=plbar><b>' + esc(p.title) + '</b>' + plLiveHead(lv, lt) + '<span class=hidnote>'
     + esc(TV({msg: 'Defined in {proj} — read-only here', vars: {proj: p.from || ''}})) + '</span></div>'
-    + '<div class=plro>' + cv.html + '</div>' + (ov || '') + plRunTable(lv, p);
+    + '<div class=plro>' + cv.html + '</div>' + plWGrip('r') + plWatchOv(ov);   // borrowed = always Watch (48k): same three regions
 }

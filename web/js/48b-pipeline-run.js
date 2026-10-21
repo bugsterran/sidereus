@@ -367,18 +367,6 @@ function plStageRows(lt, stages){
       ag: ag.length, type: nw ? plLabParts(plAgLab(nw)).type : L.main ? 'main' : '' };   // server `main`: no dispatch, only main's tagged Bash
   });
 }
-// Under the canvas: compact per-stage overview of the plrun run. Workflow runs: nothing (48g has its own table).
-function plRunTable(lv, p){
-  if(!lv || !lv.pr) return '';
-  const th = ['Stage', 'State', '↺', 'Agents', 'Elapsed', 'Latest agent'];
-  return '<div class=plrt data-plsid="' + esc(lv.sid) + '"><div class=plrth><b>' + esc(TV({msg: 'By stage · agents {n}', vars: {n: lv.run.total}})) + '</b></div>'
-    + '<table class="plrtb plso"><colgroup><col class=c1><col class=c4><col class=c5><col class=c5><col class=c5><col></colgroup><thead><tr>'
-    + th.map(e => '<th>' + esc(T(e)) + '</th>').join('') + '</tr></thead><tbody>'
-    + plStageRows(lv.lt, p.stages).map(r => '<tr' + (r.st === 'wait' ? ' class=plso-w' : ' data-plst="' + esc(r.t) + '"' + (r.st === 'run' ? ' class=on' : '')) + '>'
-      + '<td title="' + esc(r.t) + '">' + esc(plgShow(r.t)) + '</td><td class=plrt-' + r.st + (r.why ? ' title="' + esc(r.why) + '"' : '') + '><span class=plrtpl>' + esc(PL_MK[r.st] + ' ' + (r.st === 'wait' ? T('Waiting') : plOc(r.st)))
-      + '</span></td><td>' + (r.rb ? esc('↺ ' + r.rb) : '') + '</td><td>' + (r.n ? esc(String(r.n)) : '') + '</td><td' + (r.k > 1 ? ' title="' + esc(plPassTip(r)) + '"' : '') + '>' + (r.sec ? esc(ago(r.sec)) : '')
-      + '</td><td title="' + esc(r.type) + '">' + esc(r.type) + '</td></tr>').join('') + '</tbody></table></div>';
-}
 // Pass picked on a card (E.pass[nodeId] = {k, i}, memory only); dropped once the stage starts another pass. -1 = latest.
 function plPassSel(E, id, L){
   const c = E.pass && E.pass[id];
@@ -417,16 +405,6 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if(PLPSK && e.key === 'Escape') plPskClose(); });
 // Elapsed-cell tooltip: total + pass count, then one «Pass n · outcome · elapsed» line per recorded pass and the latest.
-function plPassTip(r){
-  const pl = (k, st, sec) => TV({msg: 'Pass {n}', vars: {n: k}}) + ' · ' + plOc(st) + ' · ' + ago(sec);
-  const ls = (r.ps || []).filter(Boolean).map(p => pl(p.k, p.st, p.sec));
-  return [TV({msg: 'total {n} · pass {m}', vars: {n: ago(r.tot), m: r.k}})].concat(ls.length ? ls.concat(pl(r.k, r.st, r.sec)) : []).join('\n');
-}
-// Row click = the newest agent's work log, or the chooser for 2+ (48d plNodeWork, same as a running node click).
-document.addEventListener('click', e => {
-  const tr = e.target.closest && e.target.closest('.plrt tr[data-plst]');
-  if(tr && typeof plNodeWork === 'function') plNodeWork(tr.dataset.plst, tr.getBoundingClientRect());
-});
 // Header strip: gradient progress (done / stages) + elapsed; green «Done» once every stage is done and nothing runs.
 // Running-runs overview: every running (project, pipeline) above the chips. Metadata only: stage titles + agent counts.
 // p = that project's pipeline (null = not loaded: no strip, running titles from the [pl:] tags), lv = plLiveRun, tags = [{aid, title}].
