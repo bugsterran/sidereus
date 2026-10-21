@@ -119,6 +119,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: `_from_template` replaced every agent missing from the project with general-purpose, so the «Cross-review (Codex)» orchestrator stage became a subagent stage.
 - ⇒ `main` is kept like `general-purpose` (same as `pl_flow.NO_AGENT`). Test: `test_create_cross_review_keeps_main_r1`.
 - ⚠Do not drop `main` from the keep list: a subagent would get a `codex exec` task meant for the orchestrator (its guard makes it FAIL `unrelated`).
+- ⚠`_from_other` (copy from another project) needs the same keep list — it had its own loop and turned `main` into general-purpose. Test: `test_import_from_other_keeps_main`.
 
 ## Runs folded into one slot (`hooks/pl_flow.py` `_boundary`, `_run_of`)
 

@@ -67,7 +67,7 @@ def _from_other(proj, name, title, src):
         return None, "source pipeline is not valid"
     have, gone = {a["name"] for a in _agents(proj)}, []
     for s in P["stages"]:
-        if s["agent"] != "general-purpose" and s["agent"] not in have:
+        if s["agent"] not in ("general-purpose", "main") and s["agent"] not in have:   # ⚠`main` = orchestrator stage, never an agent file
             gone.append(s["agent"])
             s["agent"] = "general-purpose"
     P["name"] = name

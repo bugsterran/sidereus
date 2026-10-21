@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: copying a pipeline from another project keeps an orchestrator stage (agent `main`) instead of turning it into general-purpose and listing `main` as a replaced agent.
 - Structure: «Request fix» in the security window now asks the session to re-run the security check (it asked for an architecture re-analysis, which never refreshed the Security badge). A scan older than HEAD shows ⚠ and a dashed border on the badge, with «Scanned commit … · HEAD now …» in the tooltip.
 - Timeline: a connected session that sat idle longer than the window keeps its row (no bars) instead of disappearing.
 - Rail: the chat unread count on the left rail is readable in the light theme (white bold on blue instead of dark text on mid blue).
