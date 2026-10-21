@@ -55,7 +55,7 @@ html[data-ui] .plw aside.plnl.plnlc{padding:4px 0;border:0;background:none;overf
 .plnlrd:hover,.plnlrd:focus-visible{outline:2px solid var(--nx-active,#5b8def);outline-offset:2px}
 .plnames .mvdot{margin-left:5px;vertical-align:1px}
 .plagrun{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px}   /* 48h read-only Sidereus pipeline run */
-/* «Running N» overview under the canvas, above the run table (48b plOvHtml): one row per running pipeline, stage strip ✓ done · ● running · · waiting */
+/* «Running N» overview under the canvas (48b plOvHtml): one row per running pipeline, stage strip ✓ done · ● running · · waiting */
 .plov{display:flex;flex-direction:column;gap:2px;margin:0 0 10px;padding:6px 8px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-left:3px solid var(--nx-active,#5b8def);border-radius:6px;font-size:12px}
 .plovh{color:var(--nx-t1,#cdcedc);margin-bottom:2px}
 .plovr{display:grid;grid-template-columns:minmax(80px,160px) minmax(80px,160px) 1fr auto;gap:10px;align-items:center;width:100%;padding:3px 6px;background:none;border:1px solid transparent;border-radius:4px;color:var(--nx-t2,#909298);font:inherit;text-align:left;cursor:pointer}

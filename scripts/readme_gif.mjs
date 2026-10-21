@@ -253,12 +253,9 @@ function composite(bd, app) {
 async function record(cdp, base, lang) {
   const P = await openApp(cdp, base, { name: 'hero', lang, w: VW, h: VH, dsf: APP_DSF, boot: BOOT });
   await P.ev(`(() => { const b = document.querySelector('#mvw .mvb[data-mv="pipe"]'); if (!b) throw new Error('no tab pipe'); b.click(); return 1; })()`);
-  await P.wait(`document.querySelectorAll('.plw .plcv .plnd').length >= 3 && !!document.querySelector('.plrtb')`, 'pipeline canvas');
-  // Focus CSS: run overview + run bar + lit canvas + «By stage» table; editor side panels and palette hidden.
-  await P.css('.plchips,.plapply,.plnames,.plpal,.plpan,.plcvt,.plw>.tkvs{display:none!important}'
-    + '.plw .plgw{height:260px!important;min-height:0!important}'
-    + '.plgw>.plcvw{height:260px!important;max-height:260px!important;min-height:0!important}'
-    + '.plw .plcv{flex:1 1 0!important;min-height:0!important;height:auto!important}');
+  await P.wait(`document.querySelectorAll('.plw .plcv .plnd').length >= 3`, 'pipeline canvas');
+  // The Watch view as shipped («Working now» list, canvas, result pane, «Running N» card); only the canvas toolbar is hidden.
+  await P.css('.plcvt{display:none!important}');
   const apply = i => P.ev(`(() => { window.__gifStep = ${JSON.stringify(STEPS[i])}; window.__gifMut(SESS);
     const f = document.getElementById('feed'); if (f) f._plw = ''; plPaint(); return 1; })()`);
   await apply(0);

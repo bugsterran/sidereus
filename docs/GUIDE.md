@@ -2,271 +2,203 @@
 
 **English** · [Korean](GUIDE.ko.md)
 
-Install first: [GETTING-STARTED.md](GETTING-STARTED.md). Screenshots come from `python3 -m sidereus start --demo` (synthetic data); both the demo and the real viewer open on Pipelines (Timeline if the pipeline feature is off).
-The UI language follows the browser (English for `en*`, Korean otherwise); Settings › «Display language» overrides it.
+Install first: [GETTING-STARTED.md](GETTING-STARTED.md). Screenshots come from `python3 -m sidereus start --demo` (synthetic data).
+The viewer opens on Pipelines (Timeline if the pipeline feature is off; a saved tab or tab order wins). The UI language follows the browser (English for `en*`, Korean otherwise); Settings › «Display language» overrides it.
 
-Screen layout: a sidebar on the left (logo, «Attention» list, the views, «Alerts» and settings at the bottom). It is an icon strip by default (hover or focus an icon for its name and shortcut digit); the toggle or Cmd/Ctrl+B widens it, and the choice is remembered. On wide windows (1200px and up) the open sidebar pushes the page; on narrower ones it slides over it.
-On the right, top to bottom: one bar (view title, running sessions, «needs me» chips, session drawer), then the view body. The status bar sits at the bottom of the window.
+Layout: a sidebar on the left (logo, «Attention» list, views, «Alerts» and settings). It is an icon strip by default; the toggle or Cmd/Ctrl+B widens it (remembered). From 1200px it pushes the page, below that it slides over it.
+On the right: one top bar (view title, running sessions, «needs me» chips, session drawer), the view body, and the status bar at the bottom.
 
-## Find the session waiting for you
-
-1. Read the «Attention» list in the sidebar (a count badge when it is folded). It is ordered by how much each session needs you. A pending question or approval stays there however long it waits; it leaves only when answered or when its session is known to have ended.
-   Each row acts in one click: «Terminal» raises its tab, «Reply» opens a one-line box under the row (the recipient is shown; Enter sends to that session's mailbox, Esc closes), «Done» hides that one request (a new request from the session shows again), «Later» snoozes it for 30 min, «Seen» on an «agent completions unread» row marks those completion cards read (opening that session does too). Clicking the row itself still opens the session as before.
-2. Open the session drawer in the top bar for the full list. Each session is running a tool, thinking, waiting for you, done, or stalled.
-3. Click a row to open its work log. If a terminal app is set, it also switches to that session's tab.
-   Supported: iTerm2, Terminal.app, Orca (the exact Orca tab needs the CLI from Orca › Settings › General; without it only the app comes forward).
-4. Clicking a waiting-for-you alert (blocked or awaiting an answer) — panel card, toast, «Attention» row or pill, or OS notification — brings that session's terminal tab forward. If the tab cannot be reached, the click does what it did before.
-
-- A «Awaiting input» session with live monitors gets a muted «· N monitors» beside the label. The state stays your turn.
-- Sessions that are only done, or only finished background work, fold into «N low-priority» at the end.
-- A Codex session without hooks is read from its record file: it carries «Hooks not connected» and shows only «Last activity N m ago» (set up hooks: [HOOKS.md](HOOKS.md)).
-- The «Idle filter off» and «Git filter off» chips cycle on each click and show the current step. Idle: off, 10, 30, 60 min. Git: off, unpushed ↑, unpushed or dirty ↑~.
-- The branch chip shows git state (`~N`) and opens that session's diff.
-- Subagent rows show the task description. Only agents other than general-purpose get a type chip.
-- Rows under «Recently ended sessions» show the first 8 characters of the session id and the last subagent task.
-
-![Session drawer](images/sessions-drawer-en.png)
-
-## Check whether quota lasts until the reset
-
-1. The status bar at the bottom shows the 5-hour and 7-day usage.
-   Click it (or press Enter) for a layer: each signed-in account's 5h/7d left and reset time (main account marked), and open sessions (working / idle). «Quota details» there opens the full quota window; Esc or a click outside closes the layer. The main row carries a «Main» badge; hovering another account's row shows «Make main», and clicking it makes that account the main account (same value as Preferences › Main account).
-   ![Status-bar layer](images/status-layer-en.png)
-2. «left at reset» is the projected headroom at the reset; «100% at» is when the 5-hour limit runs out at this pace.
-3. With two or more Claude accounts, rows carry an account-colour band and name chip, and account pickers narrow single views; see [CONFIG](CONFIG.md#several-claude-accounts). The Sessions pick also applies to «Sessions needing you» and «Recently ended sessions».
-
-`≈` and `±N%` mark estimates; they narrow as the window goes on.
-The saver verdict in the status bar changes only when the projection is more than 3 minutes past a boundary.
-
-## Trace what a session did
-
-1. Open the Timeline tab. Each session and subagent has a row; hover for the task description. Set «Rows» in the toolbar to «Running only» to hide finished subagent rows; session rows stay (remembered per browser). Drag the right edge of the name column in the time-axis row to widen it (double-click resets). On a session row a red line marks a compaction and a dashed blue line marks a /clear (hover for the time and the new and previous session ids).
-2. The «Changes» chip (reads «[baseline] N files +a −d»; the word «Changes» is in its tooltip) on the right of the Timeline head line counts files changed in the followed session against «Changes baseline» (default «Uncommitted»: working tree and index vs the last commit; the tooltip names the baseline; a small badge at the start of the chip shows the baseline actually used, in the warning colour when the chosen one is unavailable) (with 2+ sessions the «Session» search combobox beside it picks one, or «Auto (latest active)»); «⚠ n shared» means two sessions touched the same file. Click it to open the diff window at the same base. Its base buttons are «Uncommitted» (last commit), «Since session start», «vs main / master» and «All» (upstream); untracked files are hidden unless «Include untracked files» is ticked. When the session spans several repos, a tab per repo picks one.
-   The summary in the bottom drawer shows «Results» (commits, pipeline runs ✓/✕/↺) and «Evidence» (gate PASS/FAIL, first failing step); «More» adds time waited on you, outliers and cost (tokens, tokens per commit), and stays open once chosen.
-3. Click a commit row for its diff, or a session for its work log.
-4. For older work, open the History tab and expand a session. With 2+ accounts its toolbar has an account picker («All accounts» / one account): other accounts' Claude rows fold into «In other accounts: N», external CLI rows stay, and day headers count the shown rows only.
-
-A session running a pipeline gets a stage-by-stage progress bar under its name (green done, striped blue current, amber sent back, red failed); click it to open the run in the Pipeline view.
-
-The «Runs N» chip in the timeline header lists open and just-ended runs from every session, outlined in the worst run's colour (yellow «Stuck» when a stage looks stuck).
-
-⚠ The screen shows metadata only. Another session's conversation appears only in the work log, after a click.
-
-While a work log window is open, clicking another session or agent adds it there as a tab; Shift+click opens a separate window. A log opened at a past moment (a failure row in Insights) always gets its own window.
-
-![Timeline](images/timeline-en.png)
-
-## Stop two agents editing the same file
-
-1. When «Alerts» shows «Conflict risk», click it. It names the file and the two sessions.
-2. In the Branches tab, pick the repository with the same search combobox as Pipelines and Structure. Each worktree card lists uncommitted files and their session. Commit-row chips show the session that made the commit and its cost.
-3. To ask one session to stop, write in the work log's message box. It shows a preview; after you confirm it goes through the mailbox.
-
-Sessions can check this themselves with the MCP tool `sidereus_file_peers`; see [MCP.md](MCP.md).
-
-![Branches](images/branches-en.png)
-
-## See where tokens went
-
-1. The Tokens tab shows usage by model and project, and running subagents.
-   - Under the trend chart, «Daily» lists each day of the picked range (newest first) with tokens, cost and the top 2 projects. Today's tokens include the live share; its cost does not.
-   - With 2+ accounts an account picker scopes only the «Period totals» block (daily table, trend, mix, models, projects). Today's bar, donut, burn, agent cost and live figures stay all accounts — their sources (OTel, burn) carry no per-file account.
-2. «Top 5 costly runs» lists today's or this week's most expensive subagent runs with task, type and duration.
-3. The «Insights» tab covers longer periods.
-   - With 2+ accounts an account picker above «Tool ranking» scopes only the OTel cards (tool ranking, time spent, cache rewrites, activity by hour, models, hook cost); failures, weekly summary and tokens per commit stay all accounts. OTel records from before per-account collection began count under «All accounts» only.
-   - «Time spent» ranks tools by total time (calls × average) with the share spent on failed calls, for the same period as «Tool ranking».
-   - «Cache rewrites» shows the daily share of cache tokens that were written rather than read, and the sessions with the highest share.
-   - «Activity by hour» is a weekday × hour grid of OTel API requests (local time); hover a cell for its requests and tokens. It covers at most the last 8 days.
-   - «Models» lists tokens, share and requests per model (e.g. Opus 5.5; hover for the full id), the bar split into main, subagent and side calls. Same 8-day limit.
-   - «Hook cost» ranks hook event types (e.g. PreToolUse) by total time, with runs, average time per firing and failures. Individual hook scripts are not named.
-
-![Tokens](images/tokens-en.png)
-
-## Look at code structure
-
-![Architecture diagram with a flow lit](images/structure-arch-en.png)
-
-The Structure tab opens on «Architecture», a diagram of the project's modules.
-
-- «Project» in the header is the same search picker as in Pipelines: the button shows the name, a dot while a pipeline runs there and «…» while loading; hover for the path and sessions.
-
-### Read the diagram
-- Only edges with checked evidence are drawn («Verified N/M»); «All edges» also shows implied ones.
-- Bands run top to bottom: layered styles show their layers; feature or app layouts show where code runs (Entry · Client · Server · Stores). Hover a band for its meaning.
-- Click an edge for its evidence, then the evidence for the code. Click a module to see only it and its neighbours.
-- A ⚠ amber «Generated …» badge means the diagram predates the current commit; its tooltip says how far HEAD moved.
-- The badge after «Generated» shows which AI drew the map: platform logo and model (when stages used different models, each model; the tooltip names the stage), recorded by Sidereus from the running session. Older maps show «Drawn by: unknown».
-
-### Make or refresh the diagram
-- The request button → preview → «Confirm — send» asks an open session to run the `arch-map` pipeline (read-only). The diagram draws itself when it arrives.
-- The button reads «Generate diagram» (none yet), «Update diagram» (older than the code) or «Redraw» (at HEAD); same run, same confirm.
-- After a diagram request a row shows who received it — project · session · mailbox id — and its state: «Sent», «Running · <stage>», «Stopping», then «Stopped» / «Done» / «No session». It survives a reload. While running, «Stop» → preview → «Confirm — send» asks that session to finish the current stage and start no more.
-
-### View a flow
-
-![Flow sequence diagram](images/structure-flow-en.png)
-
-- «Flows» lists one flow per entry point; ✓ means every step is proven. A red dashed arrow is an unproven step.
-- Click an arrow for the code at that call.
-
-### Minimap
-- Bottom right; click or drag it to move the diagram. Its corner button hides or shows it.
-
-### Top issues
-- «Top issues N» opens the security findings (gitleaks, npm audit, osv-scanner, semgrep, bandit — `security-checks` pipeline). Secrets are never shown.
-- «Run security check» in that window sends a `security-checks` run request to a logged-in session of the project (preview + confirm); with none, it shows the terminal command to copy. While it runs, the window shows the current stage and elapsed time (as the diagram request does); a session that dies or stalls drops the line and the request row says «No session». Dependency findings list their CVE ids next to the GHSA rule.
-- «Request fix» sends the selected findings to a session, asking it to re-run `arch-map` once the fix is committed.
-- Findings carry a level — critical, high, medium or low; the header counts each. Filters narrow the list: «All severities / High and above / Critical only» and a tool filter (gitleaks, semgrep, bandit, osv-scanner, npm-audit). «Hide rule» on an item hides that rule for this repo, across new scans, until «N rules hidden · Show». The tab badge counts only rules not hidden (its tooltip says how many are hidden). This changes the view only — `checks-security.json`, `security-log.jsonl` and the report stay as they are; marking a false positive is still `scripts/arch_checks.py --mark … false-positive`.
-- The window ends with the check history (read-only): «Last security check» age, then open, resolved (date · commit) and false-positive findings. Rows from an AI review are marked «model-generated, unverified».
-- «Last report» (shown once a security run has written a report) opens the newest `security-report-*.md` as plain text in its own window.
-- Scanner findings resolve when a later scan by the same tool no longer reports them. AI review findings stay open until marked: `scripts/arch_checks.py --repo <repo> --mark <slug>@<file> resolved|false-positive`.
-
-### Size
-- A line-count treemap. «Code» switches Source / All / Tests; «Color» changes the colouring.
-
-### Markdown preview
-- In the source viewer, a Markdown image with a relative path inside the project (png, jpg, gif, webp, svg, up to 5 MB) shows inline; remote, secret or missing images stay as their alt text.
-
-How the diagram is built and verified, and the treemap languages: [STRUCTURE.md](STRUCTURE.md).
-
-## Manage chat rooms
-
-The red number next to a room card's name counts other people's posts you have not opened yet. Opening the room clears it (remembered in this browser only).
-
-Chat tab, then «Manage» on the room list. Room cards get a checkbox, «Invite» and «Hide». DM cards get none.
-
-1. Hide: tick rooms («Select all» ticks all), then «Hide selected (N)», then «Confirm». For one room, use its «Hide».
-2. Unhide: «Hidden rooms N», then «Undo». A dot means a post arrived after hiding.
-3. Create: «New room», enter a name, pick sessions, check the preview line, then «Confirm». A room with no sessions shows as an empty card until someone joins.
-4. Invite: «Invite» on a card, pick sessions, then «Confirm».
-
-- Hiding only changes the view. Posts stay in the mailbox; the hidden list is `room-admin.json`.
-- Only logged-in sessions can be picked (a confirmed identity, or a Codex launcher id that has a reader). Invites are sent as mailbox DMs.
-- The «To» line above the input shows where Enter posts: `# room`, or `DM → peer` when replying to a DM.
-  In «Outside rooms», a new post that is not a reply goes to the default room (`# room (default room)`, config `default_room`).
-- The dashed chip in a post header is its thread name.
-- Searching the room list shows matching posts from all rooms. «← Rooms» clears the search. «+ Save» appears only when something is selected.
+⚠ The screen shows metadata only (path, session id, model, one-line task). Conversation content appears only in a work log, after a click.
 
 ## Watch a pipeline run
 
-![Pipeline run with the active stage lit](images/pipeline-run-en.png)
+![Pipelines tab in Watch: «Working now» list, canvas with the running stage lit, result pane and «Running N» card](images/pipeline-run-en.png)
 
-The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`. A stage lights up while its agent runs.
+The Pipelines tab shows a project's stages from `.claude/pipelines/*.json` and lights each stage while its agent runs.
 
-### Watch and Edit
-- The tab opens in «Watch»: the «Working now» list, the canvas (click a stage to select it), and below it that stage's result and gate evidence. With nothing selected the pane shows the running stage, else the last finished one; with no run it is empty.
-- The head row in «Watch» holds the pickers, the run bar, «✎ Edit» and «▶ Run».
-- «✎ Edit» switches to «Edit»: the palette, the editable canvas and the stage editor (no list), under an «Editing <name>» band. «Apply», gate counts and evaluation live here. With no unsaved changes «Close» (or Esc) goes back to «Watch». With changes, «Cancel» drops them (nothing is written) and goes back, and «Save» (preview + confirm) saves and goes back; Esc does nothing then. The tab remembers the last mode.
-- Unsaved edits stay while you watch: the pipeline keeps its • mark and «Watch» shows «Unsaved changes — Edit to save». A page reload drops them.
-- A new pipeline opens in «Edit». A pipeline borrowed from another project is watch-only.
-- A draft (template, AI draft or «+ New») shows a «Draft — not saved yet» band: «✓ Save this draft» writes it, «← Back» or Esc closes it without writing.
+### Working now (left list)
+- Every live session, named as in the Timeline (logo, project, state), plus a one-line run summary: «● Working · <stage>», «● Needs you · <stage>» (amber), «● Idle · <stage>» (grey: run open, turn ended), «✓ <name> done». Without a run the row shows «No pipeline · <category>» or «Undeclared».
+- Click a session to open its run on the right.
+- Under each session: its subagents as in the Timeline (logo, type, one-line task, running dot). Running first, quiet ones dimmed, up to 6 then «+N more». Click one to open that run with its stage selected (when the agent is tagged).
+- «‹» collapses the list to a rail of status dots (a dot click expands and opens it). Drag the edge to resize; the width is remembered.
 
-### Working now
-- The list on the left shows every live session the way the Timeline names it (logo, project, state), plus a one-line run summary: «● Working · <stage>», «● Needs you · <stage>» (amber), «✓ <name> done».
-- «● Idle · <stage>» (grey) = the run is still open but the session is not working right now (its turn ended).
-- Click a session to open its pipeline run on the right. Each stage's agent is shown on the canvas.
-- Under each session its subagents are listed as in the Timeline (logo, type, one-line task, running dot): running ones first, quiet ones dimmed, up to 6 then «+N more». Click one to open that run and select its stage (if the agent is tagged with one).
-- Collapse the list to a rail of status dots (click a dot to expand and open it), or drag its edge to resize it; the width is remembered.
+### Watch view
+Three stacked parts: canvas | selected stage's result | «Running N» card.
+- Click a stage to select it. With nothing selected the pane shows the running stage, else the last finished one; with no run it is empty.
+- The pane shows the stage's outcome, loop-backs (↺), agent count and age, its gate evidence («No gate evidence for this stage yet» when none) and gate command («No gate command — nothing machine-checks this stage» when none). Agent buttons open that agent's work log.
+- «Running N» lists every open run (project, pipeline, stage chips, agent count); click a row to open it. It stays in place with «No runs running», so runs starting or ending do not move the layout.
+- Drag the grips between the parts to resize; double-click a grip for the defaults (canvas 75%, pane 14%, card 11% of the free height). Sizes are kept as shares, so a window resize keeps the proportions.
+- The head row holds the pickers, the run bar, «✎ Edit» and «▶ Run».
 
-### Pick a project
-- One row: «Project» (full name; click to search working, recent and all projects, «+ Add project» at the bottom), «Pipeline» (same search picker, this project's pipelines only; ⚠ = file breaks the schema, • = unsaved edits, a dot = running) and «+ New ▾».
-- «+ New ▾» holds «+ New pipeline», «Import from another project», «Ask AI for a draft» and «Standard templates».
-- A folder needs one Claude session before «+ New pipeline» appears there (pipelines live in its `.claude/`).
-- A project with no pipelines shows «Start from a template»: click one for the preview, then «Confirm — create» writes `.claude/pipelines/<name>.json`. «Ask AI for a draft» and «Standard templates» sit in the same row.
-- «Cross-review (Codex)» is a one-stage template: the session runs one read-only `codex exec` review of `git diff` with its own permissions (Sidereus never starts Codex). That stage is billed to your Codex account; the other stages stay on Claude. It is a one-shot run and takes no follow-up instructions. Codex must be installed and logged in.
-- «Apply» («Auto · Ask each time · Off») sets how new sessions use pipelines in this project.
+### Pick a project and pipeline
+- «Project»: search working, recent and all projects; «+ Add project» at the bottom. «Pipeline»: this project's pipelines (⚠ = file breaks the schema, • = unsaved edits, a dot = running).
+- «+ New ▾»: «+ New pipeline», «Import from another project», «Ask AI for a draft», «Standard templates». «+ New pipeline» appears only in a folder that has had one Claude session (the file lives in its `.claude/`).
+- A project with no pipelines leads with «Start from a template» and «Ask AI for a draft»: pick one, preview, then «Confirm — create» writes `.claude/pipelines/<name>.json`.
+- «Cross-review (Codex)» is a one-stage template: the session runs one read-only `codex exec` review of `git diff` with its own permissions, billed to your Codex account. One-shot, no follow-ups; Codex must be installed and logged in. Sidereus never starts Codex.
+- «Apply» (in Edit: «Auto · Ask each time · Off») sets how new sessions in this project use pipelines.
 
 ### How stages light up
-- A run is tagged when the Agent description starts with `[pl:<pipeline>/<stage title>]`. Sessions are reminded to tag on their own.
-- A stage with no tagged run stays waiting.
+- A stage lights when an Agent description starts with `[pl:<pipeline>/<stage title>]`; a stage with no tagged run stays waiting. Sessions are reminded to tag.
+- Work outside a pipeline is declared with `[pl-none:<category>]`. In a project with pipeline files, the first edit or commit with no open run and no declaration is denied once with the pipeline names.
+- Tags and the file format: [EXTENDING.md](EXTENDING.md).
+
+### Request a run
+1. «▶ Run» (disabled with unsaved edits: save first).
+2. In «Send a run request» pick the mode («Session runs it directly (default)» or «Workflow»; Workflow is not offered for Codex), the session (only sessions logged in to the mailbox), a one-line request, and optionally «Change models for this run only».
+3. Check «Message to send», then «Confirm — send». A greyed button names what is missing in its tooltip.
+- The session runs the pipeline with its own permissions; Sidereus runs nothing. A Codex session picks the request up when its current or next turn ends.
 
 ### Edit
-- Rename a stage at the top of the stage panel under the canvas; «Save» → preview → «Confirm» writes it. «Arrange» and «Fit to view» tidy the canvas.
-- «Ask AI for a draft» asks an open session to write the pipeline file.
+- «✎ Edit» shows the palette («Stage catalog»), the editable canvas and the stage editor under an «Editing <name>» band. Gate counts, «Evaluation» and «Apply» live here.
+- Rename a stage at the top of the stage panel. «Arrange» and «Fit to view» tidy the canvas. «Stage catalog»: «+ Add» or drag an item onto the canvas; ✓ items bring a gate command.
+- Nothing changed: «Close» or Esc returns to Watch. Something changed: «Cancel» drops the edits (nothing written), «Save» (preview + confirm) writes and returns.
+- Unsaved edits survive switching to Watch (• mark, «Unsaved changes — Edit to save»); a page reload drops them. The tab remembers the last mode.
+- A new pipeline opens in Edit. A pipeline borrowed from another project is watch-only.
+- A draft (template, AI draft or «+ New») shows «Draft — not saved yet»: «✓ Save this draft» writes it, «← Back» or Esc closes it unwritten.
+
+⚠ With unsaved changes Esc does nothing, and Esc never closes a draft while a menu or the run panel is open — a key never discards work.
 
 ### Other runs
 - Workflow-tool runs appear as a read-only «Workflow» group.
-- A pipeline defined in another project appears only while it runs here: a chip «<name> · from <project>» («Sidereus built-in» for `arch-map`) at the end of the header row. Click it for the read-only canvas and run.
+- A pipeline defined in another project appears only while it runs here: a chip «<name> · from <project>» («Sidereus built-in» for `arch-map`) at the end of the head row opens its read-only canvas.
 
-Tags and the pipeline file: [EXTENDING.md](EXTENDING.md).
+### Harness: did the work come out right?
+«Harness» in the same tab.
 
-### Reading the harness view
+![Harness «Flow» strip: Request → Guard → Edit → Gate → Review → Commit → Kept](images/harness-flow-en.png)
 
-«Harness» in the same tab answers «did the work come out right?».
+- «Flow» shows one run as seven boxes: Request → Guard → Edit → Gate → Review → Commit → Kept. Chips pick a recent run; click a box for its records.
+- Gate: PASS/FAIL per step, Red→Green when a FAIL turned into a PASS. Kept: whether the last commit's PASS held. Guard: «Blocked n» (moves the pipeline hook refused).
+- A lit stage card names its newest gate run: «gate PASS · N tests · screen a/b» or a red «gate FAIL». A stage with no gate gets an amber «Unverified» pill; «Gates n/m» counts machine-checked stages. Design and review are expected to stay unverified.
+- «Guards» (stage panel, nothing selected): gates required before `git commit` and «Max loop-backs» ([HOOKS.md](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
+- «Evaluation»: per-stage seeded-defect catch rate, red check and stability ([dev/PIPELINE.md](dev/PIPELINE.md#evaluation-seeds-red-check-flaky-gates)). «Suggestions»: «Fix it myself» fills the editor, «Ask AI» previews a request.
+- «Details» › «Results»: recorded check runs, newest first (with [`ev_hook.py`](HOOKS.md#ev_hookpy), test/build/lint commands from any project).
+- «Config map» (folded): hooks, rule files, agents, MCP servers, skills; click a «problems» / «to check» count to step through.
 
-![Harness flow strip](images/harness-flow-en.png)
+⚠ Hooks that print nothing leave no record: «no record» does not mean «never ran».
 
-- «Flow» shows one pipeline run as seven boxes: Request → Guard → Edit → Gate → Review → Commit → Kept. Chips above pick a recent run; click a box for its records.
-- Gate shows PASS/FAIL per step, and Red→Green when a FAIL turned into a PASS. Kept says whether the last commit's PASS held.
-- Guard shows «Blocked n» (moves the pipeline hook refused); runs from before this was recorded show «not recorded».
+## Read the code structure
 
-- «Details» › «Results» lists recorded check runs, newest first; with the [`ev_hook.py`](HOOKS.md#ev_hookpy) hook, test/build/lint commands from any project too.
-- A lit stage card names its newest gate run: «gate PASS · N tests · screen a/b» or a red «gate FAIL».
-- A stage with no gate command gets an amber «Unverified» pill; «Gates n/m» in the title counts machine-checked stages. Design and review are expected to stay unverified.
-- «Stage catalog» (left of the canvas on windows 1600px and wider, under it on the left below that): «+ Add» or drag an item onto the canvas; ✓ items bring a gate command.
-- «Guards» (stage panel, nothing selected): gates a run must pass before `git commit`, and «Max loop-backs» ([HOOKS.md](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
-- «Evaluation» in the pipeline title: per-stage seeded-defect catch rate, red check and stability ([dev/PIPELINE.md](dev/PIPELINE.md#evaluation-seeds-red-check-flaky-gates)).
-- «Suggestions» under it: «Fix it myself» fills the editor; «Ask AI» previews a request to a session.
-- «Config map» (folded): hooks, rule files, agents, MCP servers and skills; the «Check» line counts «problems» and «to check» — click a count to step through.
-- Hooks that print nothing leave no record, so «no record» does not mean «never ran».
+![Structure tab: architecture diagram with one flow lit](images/structure-arch-en.png)
+
+The Structure tab opens on «Architecture», a diagram of the project's modules. «Project» is the same picker as in Pipelines.
+
+### Read the diagram
+- Only edges with checked evidence are drawn («Verified N/M»); «All edges» adds implied ones.
+- Bands run top to bottom: layers for layered code, or where code runs (Entry · Client · Server · Stores). Hover a band for its meaning.
+- Click an edge for its evidence, then the evidence for the code. Click a module to see it and its neighbours only.
+- After «Generated»: the AI that drew the map (platform logo and model; each model when stages differed, stage names in the tooltip). Older maps show «Drawn by: unknown». An amber ⚠ «Generated …» badge means the map predates HEAD (tooltip: how far HEAD moved).
+- Minimap bottom right: click or drag to move; its corner button hides it.
+
+### Make or refresh it
+- «Generate diagram» (none yet) / «Update diagram» (older than the code) / «Redraw» (at HEAD) → preview → «Confirm — send» asks an open session to run the read-only `arch-map` pipeline. The diagram draws itself when it arrives.
+- A row shows who received it (project · session · mailbox id) and its state: «Sent», «Running · <stage>», «Stopping», then «Stopped» / «Done» / «No session». It survives a reload. «Stop» (preview + confirm) asks the session to finish the current stage and start no more.
+
+### Flows
+
+![Flow sequence diagram](images/structure-flow-en.png)
+
+- «Flows» lists one flow per entry point; ✓ = every step proven, a red dashed arrow = unproven step. Click an arrow for the code at that call.
+
+### Top issues (security)
+- «Top issues N» opens the findings (gitleaks, npm audit, osv-scanner, semgrep, bandit — `security-checks` pipeline). Secrets are never shown.
+- «Run security check» sends a `security-checks` run request to a logged-in session (preview + confirm), or shows the command to copy when there is none; progress shows as for the diagram.
+- «Request fix» sends the selected findings and asks the session to re-run the security check once the fix is committed. A scan older than HEAD marks the Security badge with ⚠ and a dashed border.
+- Filters: severity («All severities / High and above / Critical only») and tool. «Hide rule» hides a rule for this repo until «N rules hidden · Show»; the view changes only, files stay as they are.
+- The window ends with the check history and «Last report» (newest `security-report-*.md` as plain text). AI review rows are marked «model-generated, unverified».
+- Scanner findings resolve when the same tool stops reporting them. AI findings stay open until `scripts/arch_checks.py --repo <repo> --mark <slug>@<file> resolved|false-positive`.
+
+### Size and Markdown
+- «Size»: a line-count treemap; «Code» switches Source / All / Tests, «Color» the colouring.
+- The source viewer shows relative in-project Markdown images (png, jpg, gif, webp, svg, up to 5 MB); remote, secret or missing images stay as alt text.
+
+How the diagram is built and verified: [STRUCTURE.md](STRUCTURE.md).
+
+## Check the evidence in the Timeline
+
+![Timeline with session and subagent rows](images/timeline-en.png)
+
+The Timeline is the evidence behind a verdict: what each agent actually did, and when.
+
+1. Each session and subagent has a row; hover for the task. «Rows» › «Running only» hides finished subagents (remembered). Drag the name column edge to widen it (double-click resets). On a session row a red line marks a compaction, a dashed blue line a /clear.
+2. A session running a pipeline gets a stage progress bar under its name (green done, striped blue current, amber sent back, red failed); click it to open the run in Pipelines. «Runs N» in the header lists open and just-ended runs, outlined in the worst run's colour (yellow «Stuck»).
+3. The «Changes» chip counts files changed in the followed session against «Changes baseline» (default «Uncommitted»); «⚠ n shared» = two sessions touched one file. Click it for the diff; base buttons «Uncommitted», «Since session start», «vs main / master», «All»; «Include untracked files»; one tab per repo.
+4. The bottom summary shows «Results» (commits, runs ✓/✕/↺) and «Evidence» (gate PASS/FAIL, first failing step); «More» adds waiting time, outliers and cost.
+5. Click a commit for its diff, a session or agent for its work log. With a log open, clicks add tabs; Shift+click opens a new window.
+6. Older work: the History tab (with 2+ accounts, an account picker; other accounts' Claude rows fold into «In other accounts: N»).
+
+## Find the session waiting for you
+
+![Session drawer](images/sessions-drawer-en.png)
+
+1. Read the «Attention» list in the sidebar (a count badge when folded). Blocked and «Awaiting answer» sessions come first; a pending question stays until answered or its session is known to have ended.
+2. Each row acts in one click: «Terminal» raises its tab, «Reply» opens a one-line box (Enter sends to that session's mailbox, Esc closes), «Done» hides that request, «Later» snoozes 30 min, «Seen» marks agent completions read. Clicking the row opens the session.
+3. A session that ended its turn shows a «Done · waiting for input» row about 15 s later, under «N low-priority» with other done and background-done rows.
+4. The session drawer in the top bar has the full list (running a tool, thinking, waiting, done, stalled). Click a row for its work log; with a terminal app set (iTerm2, Terminal.app, Orca), its tab comes forward too.
+
+- Clicking a blocked or awaiting-answer alert anywhere (card, toast, row, OS notification) raises that session's terminal tab.
+- The idle and git filter chips cycle on click (idle: off, 10, 30, 60 min; git: off, ↑ unpushed, ↑~ unpushed or dirty). The branch chip opens the session's diff.
+- A Codex session without hooks shows «Hooks not connected» and only «Last activity N m ago» ([HOOKS.md](HOOKS.md)).
+
+⚠ Orca opens the exact tab only with its CLI installed (Orca › Settings › General); otherwise only the app comes forward.
+
+## Check whether quota lasts until the reset
+
+![Status-bar layer with per-account quota](images/status-layer-en.png)
+
+1. The status bar shows 5-hour and 7-day usage. Click it (or Enter) for each account's 5h/7d left and reset time, and open sessions. «Quota details» opens the full window; Esc closes.
+2. «left at reset» = projected headroom at the reset; «100% at» = when the 5-hour limit runs out at this pace. `≈` and `±N%` mark estimates that narrow as the window goes on.
+3. With 2+ Claude accounts: colour bands, name chips, account pickers, and «Make main» on hover ([CONFIG](CONFIG.md#several-claude-accounts)).
+
+The saver verdict changes only when the projection is more than 3 minutes past a boundary.
+
+## Stop two agents editing the same file
+
+![Branches tab with worktree cards](images/branches-en.png)
+
+1. When «Alerts» shows «Conflict risk», click it: it names the file and both sessions.
+2. In Branches, pick the repository; each worktree card lists uncommitted files and their session.
+3. To ask one session to stop, write in its work log's message box (preview, then the mailbox).
+
+Sessions can check this themselves with the MCP tool `sidereus_file_peers` ([MCP.md](MCP.md)).
+
+## See where tokens went
+
+![Tokens tab](images/tokens-en.png)
+
+- Tokens: usage by model and project, running subagents, «Daily» (tokens, cost, top 2 projects per day; today's cost excludes the live share) and «Top 5 costly runs».
+- Insights, for longer periods: «Tool ranking», «Time spent», «Cache rewrites», «Activity by hour» and «Models» (last 8 days), «Hook cost» (per event type, scripts are not named).
+- With 2+ accounts the picker scopes only the period totals (Tokens) and the OTel cards (Insights); live figures stay all accounts.
+
+## Manage chat rooms
+
+Chat tab › «Manage» on the room list.
+
+1. Hide: tick rooms, «Hide selected (N)», «Confirm». Unhide: «Hidden rooms N» › «Undo».
+2. Create: «New room», name, pick sessions, check the preview, «Confirm». Invite: «Invite» on a card.
+
+- Hiding changes the view only; posts stay in the mailbox (`room-admin.json` holds the list).
+- Only logged-in sessions can be picked; invites go as mailbox DMs. «Participants» shows a platform logo for live sessions.
+- The «To» line shows where Enter posts (`# room` or `DM → peer`). Red numbers count unopened posts (this browser only).
 
 ## First-visit tour
 
-On the first visit a short tour points at the screen in order. Pipelines are the centrepiece: per-stage agent and model, run requests, live stages. Steps for switched-off features are skipped. The last step shows the command that adds this clone as a plugin (`/plugin marketplace add <path>`).
-
-- Re-open it from the «?» shortcut panel or Settings › «Replay the tour».
-- `?tour=1` in the URL forces it open; `?tour=0` suppresses it.
-- A window driven by an agent (playwright, headless checks) shows a small «Automated test window» strip at the top; your own tab never does. `?autobar=0` hides it.
+A short tour points at the screen, Pipelines first; steps for switched-off features are skipped. The last step shows `/plugin marketplace add <path>`.
+Replay it from the «?» panel or Settings › «Replay the tour». `?tour=1` forces it, `?tour=0` suppresses it. A window driven by an agent shows an «Automated test window» strip (`?autobar=0` hides it).
 
 ## Change settings
 
-Settings (gear) has one tab per group, in this order. «Replay the tour» in the header restarts the first-visit tour.
+Settings (gear), one tab per group. Screen values are stored on the viewer server and apply at once; server values (`config.local.json`) apply after a restart. A dimmed row has no effect right now (hover for why).
 
-- Screen values are saved on the viewer server and shared by every browser; they apply at once. Server values (`config.local.json`) apply after a viewer restart.
-- A row with no effect right now is dimmed and disabled; hover it for the reason, for example «Used only when the mode is «Auto».».
+- «Display»: language, background tone (default «System»), text size, session list («Drawer» / «Pinned right»), token widgets, burndown curve, «Terminal integration» (Auto · iTerm2 · Terminal.app · Orca · Off).
+- «Alerts»: «Alert level», «Group repeats per session (30 min)», «Cards in the alerts list», «Notify when a session waits for me» (OS notification, off by default).
+- «Saver mode» (same file as `/saver`, every session): «Mode», «Target burn», «At the target limit» («Notify only» · «Warn, then allow» · «Block»), «What each level does».
+- «Timeline»: replay speed, refresh, range, «Changes baseline», task description on subagent rows.
+- «Preferences»: «Start view», «Moon mark», «Tab order and visibility» (Timeline cannot be hidden), «Main account», «Reset display settings», server values («My name», «Default room», «Advanced»: saver hook folder, «Port»), «Auto-compact» and «Compact threshold (tokens)», «Features», «Mailbox watch».
+- «Diagnostics» (read-only): hooks on the same events, a CLAUDE.md shadowing AGENTS.md, hooks that look silently off, installed plugins, «Security tools».
+- «Saved views» (when one exists): «Apply» switches to it.
 
-«Display»
-- «Display language»: Korean or English, no reload.
-- «Background tone»: Black · Grey · Blue · White · «System» (default, follows the OS light/dark setting live).
-- «Text size»: 90 / 100 / 110 / 125 %, text only; layout and widths stay the same.
-- «Session list»: «Drawer» (opens from «Sessions» at the top) or «Pinned right».
-- «Token widgets on the right»: weekly donut, daily, today-by-project and live charts under the session list. Off moves them to the Tokens tab.
-- «Burndown curve»: «Show curve» or «Collapse».
-- «Terminal integration»: Auto · iTerm2 · Terminal.app · Orca · Off. Picks what the «Terminal» button brings to the front.
-
-«Alerts»
-- «Alert level»: «Important only» (questions, aborts, failures) · «Everything» · «Custom» (per kind: «Badge» · «List only» · «hidden»).
-- «Group repeats per session (30 min)»: same path and kind within 30 min count once.
-- «Cards in the alerts list»: «Full history» or «Unread only».
-- «Notify when a session waits for me»: OS notification, off by default. «Also when this tab is visible» adds the visible-tab case.
-
-«Saver mode» (same file as `/saver`, applies to every session)
-- «Mode»: «Auto · Target time · On 1-4 · Off». «Target time» shows an HH:MM box and «Apply».
-- «Target burn»: share of the 5-hour limit auto mode aims to use by the reset — «No target» · 50 · 80 · 100 % or a typed value. Auto mode only.
-- «At the target limit»: «Notify only» · «Warn, then allow» (blocks the first prompt; the same prompt again within 10 min goes through) · «Block» (prompts and tool runs).
-- «What each level does» (folded): each level's concurrency cap and added rules, current level highlighted; shown only when the saver hook sends the table.
-
-«Timeline»
-- «Replay speed», «Refresh interval», «Range».
-- «Changes baseline»: what the «Changes» chip counts against — «Uncommitted» (default) · «Unpushed» · «Since session start» · «Since the default branch» · «Auto» (the default branch when the repo has a remote).
-- «Show task description on subagent rows»: label by the one-line task description, type as a chip. Off shows the type only.
-
-«Preferences»
-- «Start view»: «Last tab viewed» (default) or one tab.
-- «Moon mark»: «Hourly cycle» (default) runs the sidebar mark through a full lunation every hour; «Real phase» shows today's moon. The tooltip always shows the real moon.
-- «Tab order and visibility»: reorder or hide the top tabs; the timeline cannot be hidden.
-- «Main account»: only with two or more Claude accounts.
-- «Reset display settings»: moves the screen settings to the backup folder and reloads. Note drafts and notification permission stay.
-- Server: «My name», «Default room». «Saver hook folder», «Auto-compact history» (read-only) and «Port» are in the «Advanced» fold. «default» restores an item.
-- «Auto-compact» and «Compact threshold (tokens)»: written to each account's Claude Code `settings.json`, from new sessions. «Per account» sets them per account; «Apply to changed accounts» writes only those.
-- «Features»: switch a feature off (its tab, requests and background work stop). «Save», then restart.
-- «Mailbox watch»: «New sessions turn on mailbox watch automatically», with a per-project override. Applies to sessions started after the change.
-
-«Diagnostics» (read-only, only «Refresh»; hidden when the `diag` feature is off)
-- Other hooks on the same events as Sidereus, a CLAUDE.md that shadows AGENTS.md, hooks that look silently off (static estimate) and installed plugins with versions and accounts.
-- «Security tools»: the scanners the security checks use — installed + version, or the install command with «Copy». Nothing is run.
-
-«Saved views» (only when one exists): «Apply» switches to that view and closes settings.
+⚠ «Auto-compact» and «Compact threshold» are written to each account's Claude Code `settings.json` (preview + backup) and apply to new sessions. «Features» changes need «Save» and a restart.
 
 Keys: [README «Customising»](../README.md#customising), [CONFIG.md](CONFIG.md).
 

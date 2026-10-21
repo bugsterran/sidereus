@@ -420,14 +420,14 @@ function plOvRow(proj, name, p, lv, tags, now){
 function plOvRunHtml(t){ return '<span class="plovst plov-run plov-pulse"><i class=plovdot aria-hidden=true>●</i> ' + esc(t) + '</span>'; }
 function plOvHtml(rows, proj, sel){
   if(!rows.length) return '';
-  const mk = PL_MK;   // same marks as the run table (skip = ↷)
-  // Row click = open that pipeline (project + name); agent work logs are in the run table under the canvas.
+  const mk = PL_MK;   // same marks as the canvas (skip = ↷)
+  // Row click = open that pipeline (project + name); agent work logs open from the Timeline.
   return '<div class=plov><b class=plovh>' + esc(TV({msg: 'Running {n}', vars: {n: rows.length}})) + '</b>' + rows.map(r => '<div role=button tabindex=0 class="plovr'
     + ((r.wf ? r.on : r.proj === proj && r.name === sel) ? ' on' : '') + '" data-plovw="' + esc(r.sid || '') + '" data-plovwp="' + esc(r.proj) + '" data-plovwn="' + esc(r.name) + '"'
     + (r.wf ? ' data-plovwf="' + esc(r.wf) + '"' : '') + ' title="'   // Workflow run row (48g): opens that run read-only
     + esc(r.proj + '\n' + (r.wf ? T('Click to open this Workflow') : T('Click to open this pipeline'))) + '"><span class=plovp>'
     + esc(strShort(r.proj)) + '</span><b class=plovn>' + esc(r.name) + '</b><span class=plovs>'
-    + (r.stages ? r.stages.map(s => s.st === 'run' ? plOvRunHtml(plgShow(s.t) + (s.rb ? ' ↺' + s.rb : ''))   // display name, as the canvas and run table
+    + (r.stages ? r.stages.map(s => s.st === 'run' ? plOvRunHtml(plgShow(s.t) + (s.rb ? ' ↺' + s.rb : ''))   // display name, as the canvas
         : '<span class="plovst plov-' + s.st + '">' + esc(mk[s.st] + ' ' + plgShow(s.t) + (s.rb ? ' ↺' + s.rb : '')) + '</span>').join('')
       : r.cur.map(t => plOvRunHtml(plgShow(t))).join(''))
     + '</span><span class=plova>' + (r.sumh || esc(TV({msg: 'Agents {n}', vars: {n: r.n}}))) + '</span></div>').join('') + '</div>';   // sumh = 48g wfSumHtml (escaped there)
