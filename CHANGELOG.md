@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- Pipelines: a project with no pipelines shows its start row as a panel with full-size controls (34px «Start from a template» / «Ask AI for a draft», 30px filled template buttons at 13px) instead of 22px chips.
+- Pipelines: a project with no pipelines shows its start row as a panel with full-size controls (30px «Start from a template» / «Ask AI for a draft», 26px filled template buttons) instead of 22px chips.
 - Pipelines: the «Working now» run summary names the stage as the canvas does (English display name in English, not the raw stage title).
 - Attention: a «done · waiting» row appears about 15 s after a session ends its turn (was 120–150 s); a hidden tab now polls every 10 s instead of 30 s.
 - Pipelines: the «Cross-review (Codex)» template now runs `codex exec` with `< /dev/null` (it hung with an open non-TTY stdin) and closes the run with `[pl-end:…]` after the review.
