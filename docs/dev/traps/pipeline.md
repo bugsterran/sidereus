@@ -114,6 +114,12 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ `main` is a built-in agent name there, as in `pl_flow.NO_AGENT`.
 - ⚠Every sidereus-change run does the Requirements stage (Bash `[pl:sidereus-change/<Requirements stage title>]`) or declares `[pl-skip:sidereus-change/<Requirements stage title>] <reason>` first — `pl_flow` denies an undeclared jump to the Design stage.
 
+## Template copy turned `main` into general-purpose (`sidereus/pipeline_new.py` `_from_template`)
+
+- Cause: `_from_template` replaced every agent missing from the project with general-purpose, so the «Cross-review (Codex)» orchestrator stage became a subagent stage.
+- ⇒ `main` is kept like `general-purpose` (same as `pl_flow.NO_AGENT`). Test: `test_create_cross_review_keeps_main_r1`.
+- ⚠Do not drop `main` from the keep list: a subagent would get a `codex exec` task meant for the orchestrator (its guard makes it FAIL `unrelated`).
+
 ## Runs folded into one slot (`hooks/pl_flow.py` `_boundary`, `_run_of`)
 
 - Cause: a run was replaced only when ended or idle 6 h, so a new change tagged at the first stage folded into the previous run and carried its stage marks and passes.

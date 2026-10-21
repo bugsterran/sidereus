@@ -2,7 +2,8 @@
 // Server: POST /api/pipelines/create (sidereus/pipeline.py create — Origin, known_projects, never overwrites).
 // «empty» first and default: «+ New pipeline» starting from a full change flow read as a copy of an existing pipeline.
 const PL_TPLS = [['empty', 'Empty pipeline (one stage)'], ['change', 'Change (design→implement→verify→review→re-verify)'],
-  ['bugfix', 'Bug fix (reproduce→cause→fix→regression)'], ['triage', 'Triage'], ['live', 'Live check']];
+  ['bugfix', 'Bug fix (reproduce→cause→fix→regression)'], ['triage', 'Triage'], ['live', 'Live check'],
+  ['cross-review', 'Cross-review (Codex)']];
 let PLNEW = null;            // open form {name, title, tpl, diff, busy, err}
 // A disabled button says why (one form at a time) — a silent dead click read as a bug.
 function plNewDis(on){ return on ? ' disabled title="' + esc(T('Close the open form first')) + '"' : ''; }

@@ -158,6 +158,7 @@ The «Pipelines» tab shows the project's stages from `.claude/pipelines/*.json`
 - «+ New ▾» holds «+ New pipeline», «Import from another project», «Ask AI for a draft» and «Standard templates».
 - A folder needs one Claude session before «+ New pipeline» appears there (pipelines live in its `.claude/`).
 - A project with no pipelines shows «Start from a template»: click one for the preview, then «Confirm — create» writes `.claude/pipelines/<name>.json`. «Ask AI for a draft» and «Standard templates» sit in the same row.
+- «Cross-review (Codex)» is a one-stage template: the session runs one read-only `codex exec` review of `git diff` with its own permissions (Sidereus never starts Codex). That stage is billed to your Codex account; the other stages stay on Claude. It is a one-shot run and takes no follow-up instructions. Codex must be installed and logged in.
 - «Apply» («Auto · Ask each time · Off») sets how new sessions use pipelines in this project.
 
 ### How stages light up

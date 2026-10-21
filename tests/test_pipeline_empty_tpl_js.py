@@ -79,6 +79,10 @@ class PipelineEmptyTpl(unittest.TestCase):
         self.assertNotIn(" on", sd(a))
         self.assertIn('class="wkrgb on"', sd(d))                           # PLSTD open: .on like the menu item
 
+    def test_cross_review_template_listed(self):
+        r = run(_tpls() + "\nconsole.log(JSON.stringify(PL_TPLS.map(x => x[0])));")
+        self.assertIn("cross-review", r)                                   # R1: «Cross-review (Codex)» in the list
+
     def test_reuses_menu_handlers(self):
         s = _src("48e-pipeline-new.js")
         self.assertEqual(s.count("e.target.closest('[data-pldnew]')"), 1)  # no second handler
