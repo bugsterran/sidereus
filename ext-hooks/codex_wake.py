@@ -116,7 +116,7 @@ class WS(object):
         lines = head.decode("latin-1").split("\r\n")
         if " 101 " not in lines[0] + " ":
             raise ValueError("handshake")
-        want = base64.b64encode(hashlib.sha1((key + _GUID).encode("ascii")).digest()).decode("ascii")
+        want = base64.b64encode(hashlib.sha1((key + _GUID).encode("ascii"), usedforsecurity=False).digest()).decode("ascii")
         acc = [ln.split(":", 1)[1].strip() for ln in lines[1:] if ln.lower().startswith("sec-websocket-accept:")]
         if acc != [want]:
             raise ValueError("accept")
