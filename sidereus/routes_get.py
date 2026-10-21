@@ -44,7 +44,7 @@ from sidereus.state import _state_body
 from sidereus.state_v1 import build as state_v1
 from sidereus.quota import quota
 from sidereus.cc_settings import prefs_get_all
-from sidereus.ui_prefs import script as ui_prefs_script
+from sidereus.ui_prefs import script as ui_prefs_script, snapshot as ui_prefs_snapshot
 
 
 def hook_state():
@@ -582,6 +582,7 @@ class _GetRoutes(_StructRoutes):
         # lets a missing Sec-Fetch-Site through, so require same-origin; without it __UIP stays undefined ⇒ defaults, no POST.
         if self.headers.get("Sec-Fetch-Site") != "same-origin":
             return self._send(403, "forbidden", "text/plain; charset=utf-8")
+        if u.path == "/api/ui-prefs": return self._raw_json(200, ui_prefs_snapshot())   # {rev, prefs}: resync on uiRev
         try:
             body = ui_prefs_script()
         except Exception as e:
@@ -607,7 +608,7 @@ class _GetRoutes(_StructRoutes):
         "/api/structure/tree": _StructRoutes._g_structure_tree,
         "/api/structure/file": _StructRoutes._g_structure_file, "/api/structure/img": _StructRoutes._g_structure_img, "/api/arch": _StructRoutes._g_arch, "/api/arch/files": _StructRoutes._g_arch_files, "/api/arch/secreport": _StructRoutes._g_arch_secreport, "/api/wkuse": _g_wkuse,
         "/api/retro": _g_retro, "/api/review": _g_review, "/api/history": _g_history, "/api/history/units": _g_history_units,
-        "/api/sessions/recent": _g_sessions_recent, "/api/prefs": _g_prefs, "/api/ui-prefs.js": _g_ui_prefs,
+        "/api/sessions/recent": _g_sessions_recent, "/api/prefs": _g_prefs, "/api/ui-prefs.js": _g_ui_prefs, "/api/ui-prefs": _g_ui_prefs,
         "/api/session/context": _g_session_context,
         "/api/tools": _g_tools, "/api/tools/file": _g_tools_file,
         "/api/pipelines": _g_pipelines, "/api/pipelines/projects/dirs": _g_pipeline_dirs, "/api/pipelines/eval": _g_pipeline_eval, "/api/harness": _g_harness, "/api/harness/file": _g_harness_file, "/api/harness/evidence": _g_harness_evidence, "/api/diag": _g_diag, "/api/sec-tools": _g_sec_tools,

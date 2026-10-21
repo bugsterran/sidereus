@@ -73,6 +73,7 @@ Object.assign(I18N.ko, {
   '{n} subagents running': '서브에이전트 {n} 실행 중',
   'State since': '상태 시작',
   'Click to show it in the session list': '눌러서 세션 목록에서 보기',
+  'Click to show it in the Attention list': '눌러서 주의 목록에서 보기',
   'More': '더 보기',
   // 43-notify.js
   'Notify when a session waits for me': '세션이 나를 기다리면 알림',

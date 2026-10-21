@@ -222,9 +222,11 @@ async function runCombo(cdp, base, width, lang, pop, inject) {
   await S('Emulation.setDeviceMetricsOverride', { width, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
   // ⚠The tone default follows the OS and headless Chrome reports light — pin the dark tone the baselines were taken in.
   // ⚠UI prefs are server-backed (UIS): pin them through window.__UIP and swallow pref POSTs, so concurrent pages on one server never share state.
+  // ⚠The cross-tab pull (GET /api/ui-prefs, on a uiRev change) answers with the pinned map too, or a pref saved live mid-run would replace mbLang/mbTone.
   await S('Page.addScriptToEvaluateOnNewDocument', { source: `try{const P={mbLang:${JSON.stringify(lang)},mbTone:'black'};let u=Object.assign({},P);`
     + `Object.defineProperty(window,'__UIP',{configurable:true,get(){return u;},set(v){u=Object.assign({},v||{},P);}});const f=window.fetch;`
-    + `window.fetch=function(a,o){if(o&&o.method==='POST'&&String(a).indexOf('/api/ui-prefs')>=0)return Promise.resolve(new Response('{"ok":true}',{headers:{'Content-Type':'application/json'}}));return f.apply(this,arguments);};}catch(e){}` });
+    + `window.fetch=function(a,o){if(o&&o.method==='POST'&&String(a).indexOf('/api/ui-prefs')>=0)return Promise.resolve(new Response('{"ok":true}',{headers:{'Content-Type':'application/json'}}));`
+    + `if(/\\/api\\/ui-prefs(\\?|$)/.test(String(a))&&!(o&&o.method==='POST'))return Promise.resolve(new Response(JSON.stringify({rev:window.__UIPREV==null?null:window.__UIPREV,prefs:u}),{headers:{'Content-Type':'application/json'}}));return f.apply(this,arguments);};}catch(e){}` });
   const ev = async expr => {
     const r = await S('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
     if (r.exceptionDetails) throw new Error('evaluate: ' + (r.exceptionDetails.exception?.description || r.exceptionDetails.text));

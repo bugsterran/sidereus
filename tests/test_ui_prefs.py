@@ -20,12 +20,12 @@ B = sidereus("bus")
 ORIGIN = "http://127.0.0.1:%d" % PORT
 
 
-def get_js(extra="Sec-Fetch-Site: same-origin\r\n"):
+def get_js(extra="Sec-Fetch-Site: same-origin\r\n", path="/api/ui-prefs.js"):
     h = cs.Handler.__new__(cs.Handler)
     h.headers = http.client.parse_headers(io.BytesIO(("Host: %s\r\n%s\r\n" % (HOST, extra)).encode("latin-1")))
     h.rfile, h.wfile = io.BytesIO(b""), io.BytesIO()
-    h.path, h.command, h.request_version = "/api/ui-prefs.js", "GET", "HTTP/1.1"
-    h.requestline = "GET /api/ui-prefs.js HTTP/1.1"
+    h.path, h.command, h.request_version = path, "GET", "HTTP/1.1"
+    h.requestline = "GET %s HTTP/1.1" % path
     h.close_connection = False
     h.client_address = ("127.0.0.1", 0)
     h.do_GET()
@@ -39,7 +39,8 @@ class UiPrefs(unittest.TestCase):
         self.path = os.path.join(self.tmp, "ui-prefs.json")
         self.bak = os.path.join(self.tmp, "bak")
         for p in (mock.patch.object(U, "PATH", self.path), mock.patch.object(U, "BAK_DIR", self.bak),
-                  mock.patch.object(U, "_MEM", {}), mock.patch.object(U, "_strftime", lambda f: "20260101-000000")):
+                  mock.patch.object(U, "_MEM", {}), mock.patch.object(U, "_strftime", lambda f: "20260101-000000"),
+                  mock.patch.object(U, "_REV", 1000)):
             p.start()
             self.addCleanup(p.stop)
         self.addCleanup(shutil.rmtree, self.tmp, True)
@@ -53,13 +54,14 @@ class UiPrefs(unittest.TestCase):
         self.assertIn("200", head.split("\r\n", 1)[0])
         self.assertIn("Content-Type: application/javascript", head)
         self.assertIn("Cache-Control: no-store", head)
-        self.assertEqual(body, "window.__UIP=null;")
+        self.assertEqual(body, "window.__UIP=null;window.__UIPREV=1000;")
         code, out, _ = post("/api/ui-prefs", {"set": {"mbRoom": "a</script>", "dfW": 300}}, origin=ORIGIN)
-        self.assertEqual((code, out), (200, {"ok": True}))
+        self.assertEqual((code, out), (200, {"ok": True, "rev": 1001, "prev": 1000}))
         _, body = get_js()
-        self.assertTrue(body.startswith("window.__UIP=") and body.endswith(";"))
+        tail = ";window.__UIPREV=1001;"
+        self.assertTrue(body.startswith("window.__UIP=") and body.endswith(tail))
         self.assertNotIn("</", body)
-        self.assertEqual(json.loads(body[len("window.__UIP="):-1]), {"mbRoom": "a</script>", "dfW": 300})
+        self.assertEqual(json.loads(body[len("window.__UIP="):-len(tail)]), {"mbRoom": "a</script>", "dfW": 300})
 
     def test_get_requires_same_origin(self):
         post("/api/ui-prefs", {"set": {"mbRoom": "secret-path"}}, origin=ORIGIN)
@@ -141,6 +143,85 @@ class UiPrefs(unittest.TestCase):
         self.assertEqual(self._file(), {"_v": 1})
         post("/api/ui-prefs/reset", {}, origin=ORIGIN)     # same second: a -2 folder, nothing overwritten
         self.assertTrue(os.path.exists(os.path.join(self.bak, "20260101-000000-2", "ui-prefs.json")))
+
+
+    def test_patch_merges_per_entry(self):
+        post("/api/ui-prefs", {"set": {"mbCol": json.dumps({"a": 1, "b": 2})}}, origin=ORIGIN)
+        code, out, _ = post("/api/ui-prefs", {"patch": {"mbCol": {"c": 3}}}, origin=ORIGIN)   # another tab adds c
+        self.assertEqual(code, 200)
+        self.assertNotIn("skipped", out)
+        stored = self._file()["mbCol"]
+        self.assertIsInstance(stored, str)
+        self.assertNotIn(" ", stored)                      # compact JSON string
+        self.assertEqual(json.loads(stored), {"a": 1, "b": 2, "c": 3})
+
+    def test_patch_null_deletes_one_entry(self):
+        post("/api/ui-prefs", {"set": {"mbCol": json.dumps({"a": 1, "b": 2})}}, origin=ORIGIN)
+        post("/api/ui-prefs", {"patch": {"mbCol": {"a": None}}}, origin=ORIGIN)
+        self.assertEqual(json.loads(self._file()["mbCol"]), {"b": 2})
+
+    def test_patch_bad_stored_string_starts_empty(self):
+        for bad in ("not json", json.dumps([1, 2]), 7):
+            post("/api/ui-prefs", {"set": {"mbCol": bad}}, origin=ORIGIN)
+            post("/api/ui-prefs", {"patch": {"mbCol": {"x": 1}}}, origin=ORIGIN)
+            self.assertEqual(json.loads(self._file()["mbCol"]), {"x": 1}, bad)
+
+    def test_patch_key_checks(self):
+        code, out, _ = post("/api/ui-prefs", {"patch": {"evil": {"a": 1}, "mbBig": {"a": "x" * (U.VALUE_MAX + 1)},
+                                                          "mbNot": [1], "mbOk": {"a": 1}}}, origin=ORIGIN)
+        self.assertEqual(code, 200)
+        self.assertEqual(sorted(out["skipped"]), ["evil", "mbBig", "mbNot"])
+        self.assertEqual(self._file(), {"mbOk": '{"a":1}'})
+        self.assertEqual(post("/api/ui-prefs", {"patch": [1]}, origin=ORIGIN)[0], 400)
+
+    def test_rev_increments_on_update_and_reset(self):
+        self.assertEqual(U.rev(), 1000)
+        _, out, _ = post("/api/ui-prefs", {"set": {"mbA": 1}}, origin=ORIGIN)
+        self.assertEqual((out["rev"], out["prev"]), (1001, 1000))
+        _, out, _ = post("/api/ui-prefs/reset", {}, origin=ORIGIN)
+        self.assertEqual((out["rev"], out["prev"]), (1002, 1001))
+        self.assertEqual(U.rev(), 1002)
+
+    def test_rev_increments_memory_only(self):
+        with mock.patch.object(U, "PATH", None):
+            self.assertEqual(U.update({"patch": {"mbA": {"k": 1}}})[1]["rev"], 1001)
+            self.assertEqual(U.reset()[1], {"ok": True, "rev": 1002, "prev": 1001})
+            self.assertEqual(U._MEM, {"mbA": '{"k":1}'})
+        self.assertFalse(os.path.exists(self.path))
+
+    def test_get_json_snapshot(self):
+        post("/api/ui-prefs", {"set": {"mbRoom": "r"}}, origin=ORIGIN)
+        head, body = get_js(path="/api/ui-prefs")
+        self.assertIn("200", head.split("\r\n", 1)[0])
+        self.assertEqual(json.loads(body), {"rev": 1001, "prefs": {"mbRoom": "r"}})
+
+    def test_get_json_requires_same_origin(self):
+        post("/api/ui-prefs", {"set": {"mbRoom": "secret-path"}}, origin=ORIGIN)
+        for extra in ("", "Sec-Fetch-Site: cross-site\r\n", "Sec-Fetch-Site: same-site\r\n"):
+            head, body = get_js(extra, path="/api/ui-prefs")
+            self.assertIn("403", head.split("\r\n", 1)[0], extra)
+            self.assertNotIn("secret-path", body)
+
+
+class StateUiRev(unittest.TestCase):
+    def setUp(self):
+        from tests.test_state_guard import _READERS
+        st = sidereus("state")
+        saved = {k: getattr(st, k) for k in list(_READERS) + ["warn_once", "state_off", "ui_prefs_rev"]}
+        self.addCleanup(lambda: [setattr(st, k, v) for k, v in saved.items()])
+        for k, v in _READERS.items():
+            setattr(st, k, v)
+        st.warn_once = lambda *a, **k: None
+        st.state_off = lambda: set()
+        st.ui_prefs_rev = lambda: 4242
+        self.st = st
+
+    def test_state_has_int_rev_only(self):
+        s = self.st.state()
+        self.assertEqual(s["uiRev"], 4242)
+        self.assertIsInstance(s["uiRev"], int)
+        for k in ("prefs", "uiPrefs", "__UIP"):
+            self.assertNotIn(k, s)
 
 
 if __name__ == "__main__":

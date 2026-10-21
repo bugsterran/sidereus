@@ -44,7 +44,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★**The bottom bar was clipped** (2026-09-24, 2 external · 1440px). ⇒ `sbFit` hides whole items in `SB_STEPS` order (100% forecast → forecast at reset → `.sbtight` padding 10→6px, no text lost → duplicate «left ≈» token value → ext «today» → ext limit % → reset times → saver extras). Ellipsis is the last resort.
   - ★2026-10-08: after the 12px floor, 1100px was 4px short and dropped ext «today» (the label that gives the number its meaning); the padding step now absorbs that.
   - ⚠Never re-add fixed-width media rules to `.sbar` (e.g. hiding `.sb2` at `max-width:1400px`) — they hide even with room and break the priority.
-- **The header activity strip `#actv` is removed** (42-activity · 94-activity.css). 42-activity renders only the needs-me pills of the rail «Attention» list `#rattnl` (red, same set as `attnRows().shown` badge rows); click → `cpGo`, hover = `#acthc`.
+- **The header activity strip `#actv` is removed** (42-activity · 94-activity.css). 42-activity renders only the needs-me pills of the rail «Attention» list `#rattnl` (red, same set as `attnRows().shown` badge rows); click → `actGo` → `sesdrReveal` + scroll/flash that session's drawer row `#attn .atr[data-aid]` (unfolds «+N more»/«N low-priority»), no row → `cpGo`; terminal jump stays on the drawer row's button. Hover = `#acthc`.
   - ⚠Metadata only: tools by **name** (`x.tool`) only — never put `x.targ` (command · file · pattern), task or reply on the pills or cards.
   - ⚠Do not bring the strip back into `.hrow`; `tests/test_header_no_activity_strip.py` fails on leftover strip code.
 - ★**Left rail + one-row top bar** (2026-10-11). `<nav id=rail>` (56px icons · 208px open, pushes content at ≥1200px, overlays below · Cmd/Ctrl+B · `sidereus.rail`) holds brand + `#dot`, «Attention» `#rattnl`, the `#mvw` views, bell · gear. Top bar `.hrow` (48px, nowrap) = `#vtitle` · `#todo` · `#sesb`.
@@ -237,3 +237,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★Demo 10-21: draft + pass menu open, one Esc → both closed.
 - ⇒ `plEscSnap` (capture phase, never stops the event) records `plMenuOpen()`; plDraftEsc/plEditEsc read that snapshot.
 - ⚠Do not move plDraftEsc itself to capture: it would run before layers that preventDefault in bubble (48e new-menu, 48f browser).
+
+## Map prefs from several tabs: patch one entry (`app-head.js` UIS.patch)
+- Cause: each tab wrote the whole `mbAttnAck`/`mbAttnSnooze` map back, so the last tab's save dropped the other tab's acks; tabs never re-read prefs.
+- ⇒ Per-entry `UIS.patch(key, sub, v|null)`; another tab's POST pings `BroadcastChannel('sidereus-prefs')` and a changed `/api/state.uiRev` pulls; keys with a pending local write are not overwritten.
+- ⚠Never `lsSetJson` a map that two tabs edit, and never prune by rewriting it — patch `null` per removed entry.

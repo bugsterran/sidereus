@@ -104,15 +104,37 @@ function actTick(){
   });
   if(actHovK) actHovShow(actHovK);
 }
-// A «Blocked»/«Awaiting answer» pill whose tab can be raised -> its sid, else ''.
-function actTermSid(k){ const p = actPill(k); return p && ALARM_TERM_KINDS.has(p.need) ? termJumpSid(p.x.sid) : ''; }
+// Pill -> candidate #attn row ids (attnRowId: sid, else 'cwd:'+cwd); a sid session may match a cwd-only row.
+function actAttnIds(x){ return [x.sid || '', x.cwd ? 'cwd:' + x.cwd : ''].filter(Boolean); }
+function actAttnRow(ids){
+  for(const id of ids){ const r = document.querySelector('#attn .atr[data-aid="' + CSS.escape(id) + '"]'); if(r) return r; }
+  return null;
+}
+// Opens the drawer at this session's «Attention» row; unfolds «+N more»/«N low-priority» when the row sits there.
+// ⚠Scroll only that row ('nearest'), nothing else is centred. -> false when no row renders (acked/snoozed/other account).
+function actAttnGo(x){
+  const ids = actAttnIds(x);
+  try{ sesdrReveal(); }catch(e){ softErr('sesdrReveal', e); }
+  buildAttn();
+  let row = actAttnRow(ids);
+  if(!row){
+    const a = attnRows(), has = l => (l || []).some(r => ids.indexOf(r.id) >= 0);
+    if(attnUnfold((a.shown || []).length > ATTN_MAX && has(a.shown), has(a.low))) row = actAttnRow(ids);   // 17-attention owns attnMore/attnLow
+  }
+  if(!row) return false;
+  row.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  row.classList.add('cphit'); setTimeout(() => row.classList.remove('cphit'), 1400);   // same flash as cpGo's session row
+  return true;
+}
+// ⚠Terminal jump is not on the pill: the drawer row keeps its own terminal button (termBtnHtml) and attnRowGo.
 function actGo(k){
   const x = (SESS || []).find(s => actKey(s) === k);
   actHovHide();
   if(typeof railPeekEnd === 'function') railPeekEnd();   // a badge-opened rail closes after the jump (92d)
-  const js = actTermSid(k);
-  if(js) return termGo(js);
-  if(x) try{ cpGo(x); }catch(e){ softErr('cpGo', e); }           // cpGo = the Cmd+K jump: sesdrReveal() + scroll + highlight the row
+  if(!x) return;
+  let ok = false;
+  try{ ok = actAttnGo(x); }catch(e){ softErr('actAttnGo', e); }
+  if(!ok) try{ cpGo(x); }catch(e){ softErr('cpGo', e); }           // no attention row -> the Cmd+K jump to the session row
 }
 // Hover card — same look as the timeline card (.tlhc); metadata rows only.
 function actHovHtml(k){
@@ -127,7 +149,7 @@ function actHovHtml(k){
   if(x.win && x.ctx) add('Context', esc(Math.round(x.ctx / x.win * 100) + '%'));
   add('Path', esc(x.cwd || ''));
   return '<div class=tlhch>' + esc(actProj(x)) + '</div><dl>' + rows.join('') + '</dl>'
-    + '<div class=tlhcf>' + esc(T(actTermSid(k) ? 'Click to open its terminal' : 'Click to show it in the session list')) + '</div>';
+    + '<div class=tlhcf>' + esc(T('Click to show it in the Attention list')) + '</div>';
 }
 function actHovShow(k){
   const el = document.querySelector('#rattnl > .acp[data-k="' + CSS.escape(k) + '"]');

@@ -100,7 +100,7 @@ class RailJs(unittest.TestCase):
         src = ("let railOpen = false; const saved = [];\n"
                "function lsSet(k, v){ saved.push(v); } function railTip(){} function railApply(){}\n"
                "const mk = inside => ({closest: () => inside ? {} : null});\n"
-               "let SESS = [], hid = 0; function actHovHide(){ hid++; } function actTermSid(){ return ''; } function actKey(){ return ''; }\n"
+               "let SESS = [], hid = 0; function actHovHide(){ hid++; } function actKey(){ return ''; }\n"
                + "\n".join(js_fn(n) for n in ("railShow", "railSet", "railPeekEnd", "railPeekOut", "actGo"))
                + "\nlet railPeek = false; const r = [];\n"
                "railPeek = true; railShow(true); r.push(railOpen, railPeekOut(mk(true)), railPeekOut(mk(false)));\n"

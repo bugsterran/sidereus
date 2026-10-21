@@ -48,6 +48,7 @@ async function poll(first){
     if(s.build && MY_BUILD && s.build!==MY_BUILD) document.getElementById('stale').classList.add('on');
     // ⚠Keep in-flight read keys — a poll snapshotted before the POST landed would flip them back to unread.
     CARDS=s.cards||[]; CREAD=s.cardsRead||''; CRIDS=new Set((s.cardsReadIds||[]).concat([...CRPEND]));
+    try{ if(s.uiRev != null && s.uiRev !== UIS.rev()) UIS.pull(); }catch(e){ softErr('uiPull', e); }   // another tab changed UI prefs (app-head.js)
     ATTN = s.attention || null;     // drawn by the buildAlarm wrapper (17-attention.js)
     REVIEW = s.review || null; try{ brBoardTick(); }catch(e){ softErr('brBoardTick', e); }   // review queue (88c) + branch-tab board (88b)
     try{ ntfTick(ATTN, REVIEW && REVIEW.rows); }catch(e){ softErr('ntfTick', e); }   // optional OS notification on new attention / review items (43-notify.js)
