@@ -422,6 +422,8 @@ class Routes(unittest.TestCase):
         task = P["stages"][0]["task"]
         self.assertIn("codex exec", task)
         self.assertIn("[pl:", task)
+        self.assertIn("< /dev/null", task)                                 # codex exec hangs on an open non-TTY stdin
+        self.assertIn("[pl-end:", task)                                    # last main stage: the run stays open otherwise
         self.assertTrue(task.startswith("Orchestrator stage: run it yourself."))
 
     def test_create_keeps_existing_agents_and_makes_dir(self):

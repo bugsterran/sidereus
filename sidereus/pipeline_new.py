@@ -17,12 +17,15 @@ _CROSS_TASK = (
     'Orchestrator stage: run it yourself. If you are a subagent, change nothing and FAIL with cause "unrelated", '
     'reason "main stage - the orchestrator runs this pipeline itself". '
     "Run one Bash call described `[pl:<this pipeline>/<this stage title>]` that runs "
-    '`codex exec --sandbox read-only "<prompt>"` (first confirm the flag with `codex exec --help`). '
+    '`codex exec --sandbox read-only "<prompt>" < /dev/null` (first confirm the flag with `codex exec --help`; '
+    "keep `< /dev/null`: an open non-TTY stdin makes it hang). "
     "The prompt asks Codex to run git diff (or the range the request names), review it for bugs, security and "
     "regressions, list each blocking finding as file:line + fix, and change nothing. "
-    "It is a one-shot run that takes no follow-up; to ask again, run a new exec. "
+    "It is one-shot; to ask again, run a new exec. "
     "This stage is billed to the Codex account. "
-    "PASS when Codex reports no blocking finding, otherwise FAIL. Relay the findings as they are and fix nothing.")
+    "PASS when Codex reports no blocking finding, otherwise FAIL. Relay the findings as they are and fix nothing. "
+    "Then close the run with a Bash described `[pl-end:<this pipeline>/<this stage title>]` (PASS) "
+    "or `[pl-end:<this pipeline>/<this stage title>|fail]` (FAIL).")
 TEMPLATES = {
     "change": ("변경", {"model": "inherit", "retry": 0}, [
         {"title": "설계", "agent": "sidereus-designer", "produces": "slices"},
