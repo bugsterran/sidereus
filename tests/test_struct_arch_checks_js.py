@@ -146,11 +146,10 @@ class StructArchChecks(unittest.TestCase):
                                "Target repository: /r — work there (cd), not in your own cwd.\n"
                                "- high · E<1>\" · a/<x>.py:7 — Bad thing\n- medium · W2 · b.py:1\n"
                                "Fix the cause, keep behaviour, run the project's tests.\n"
-                               "Once the fix is committed, request a re-analysis of /r so the architecture diagram reflects it — run:\n"
-                               "파이프라인 arch-map 실행 — 요청: «/r 아키텍처 구조도 생성»\n대상 저장소: /r\n"
-                               "읽기 전용, 저장소에 쓰지 않음 — 쓰기는 ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ 아래만 (key: 파이프라인 rules)\n"
-                               "파이프라인: .claude/pipelines/arch-map.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n"
-                               "게이트: python3 scripts/arch_verify.py --last (Windows: py scripts/arch_verify.py --last)")
+                               "Once the fix is committed, re-run the security check on /r so the Security badge reflects it — run:\n"
+                               "파이프라인 security-checks 실행 — 요청: «/r 보안 점검»\nTarget repository: /r\n"
+                               "Pipeline: .claude/pipelines/security-checks.json (scanners → threat-model review); run it from the Sidereus repository with --repo /r\n"
+                               "Gate: python3 scripts/arch_checks.py --verify --last --category security (Windows: py scripts/arch_checks.py --verify --last --category security)")
         self.assertIn('class="archckst archsent"', r[5])   # success style, not the grey scanner status line
         self.assertIn("요청함 → r · s-new · b · idle · 14:05", r[5])
         self.assertIn('data-ckall checked', r[5])
@@ -202,14 +201,31 @@ class StructArchChecks(unittest.TestCase):
         self.assertEqual(r.splitlines()[:2], ["Please fix these ruff findings in /x/shop-api:",
                                               "Target repository: /x/shop-api — work there (cd), not in your own cwd."])
 
-    def test_fix_body_requests_remap(self):
+    def test_fix_body_requests_security_rerun(self):
         r = run("const it = [{tool: 'ruff', file: 'a.py', line: 3, rule: 'F1', sev: 'error'}], d = {sidereus: '/sid', checks: {security: {commit: '', top: [{tool: 'ruff', file: 'a.py', line: 3, rule: 'F1', sev: 'error', mod: 'a'}]}}};"
                 "const S = {sel: {}, req: {sid: 's1', busy: false}}; S.sel[archChkKey(d.checks.security.top[0])] = 1;"
                 "console.log(JSON.stringify([archChkFixBody('/x/shop-api', {commit: ''}, it, '/sid'), archChkWinHtml('/x/shop-api', d, S, [{sid: 's1', g: 0, login: 1}])]));")
-        for s in ("Once the fix is committed, request a re-analysis of /x/shop-api", "/sid/.claude/pipelines/arch-map.json",
-                  "python3 /sid/scripts/arch_verify.py --last (Windows: py /sid/scripts/arch_verify.py --last)"):
+        for s in ("Once the fix is committed, re-run the security check on /x/shop-api so the Security badge reflects it", "/sid/.claude/pipelines/security-checks.json",
+                  "Gate: python3 /sid/scripts/arch_checks.py --verify --last --category security"):
             self.assertIn(s, r[0])
-        self.assertIn("게이트: python3 /sid/scripts/arch_verify.py --last (Windows: py /sid/scripts/arch_verify.py --last)</pre>", r[1])   # full text in the preview (rule 7)
+        self.assertNotIn("arch-map", r[0])                    # a remap does not move the Security badge
+        self.assertNotIn("arch_verify", r[0])
+        self.assertNotIn("(no subagents)", r[0])              # fix recipients are Claude sessions
+        self.assertIn("security-checks.json", r[1])           # full text in the preview (rule 7)
+        self.assertNotIn("arch-map.json", r[1])
+
+    def test_badge_marks_stale_scan(self):
+        sec = {"commit": "abc1234ffff", "stale": True, "tools": [{"id": "ruff", "status": "ok", "n": {"high": 1}}], "top": [{"tool": "ruff", "file": "a.py", "line": 1, "sev": "high"}]}
+        fresh = dict(sec, stale=False)
+        r = run("console.log(JSON.stringify([archChkTopBtn({head: 'def5678eeee', checks: {security: " + json.dumps(sec) + "}}, '/r'),"
+                "archChkTopBtn({head: 'abc1234ffff', checks: {security: " + json.dumps(fresh) + "}}, '/r')]));")
+        self.assertIn("strbg-cut", r[0])
+        self.assertIn(">⚠ 보안 1</button>", r[0])
+        self.assertIn("점검 커밋 abc1234 · 현재 HEAD def5678", r[0])
+        self.assertIn("보안 점검을 다시 실행하세요", r[0])
+        self.assertNotIn("strbg-cut", r[1])
+        self.assertNotIn("⚠", r[1])
+        self.assertIn(">보안 1</button>", r[1])
 
     def test_fix_last_pick_preselect(self):
         sess = [{"sid": "a1", "cwd": "/r", "mbox": "a", "mboxSrc": "identity", "state": "idle", "ageSec": 1},

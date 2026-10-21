@@ -213,6 +213,8 @@ html[data-ui] .archsent .wkrgb.archstop:hover{background:color-mix(in srgb,var(-
 /* Security issues (84l): header badge, request strip, issues window */
 .strh button.strbg-archcki{--bgc:var(--nx-err,#f45460);font-family:inherit;cursor:pointer}
 .strh button.strbg-archckiw{--bgc:var(--nx-warn,#e3b341)}
+/* stale scan: dashed outline only, so the red/amber severity colour stays readable */
+.strh button.strbg-archcki.strbg-cut{border-style:dashed}
 .strh button.strbg-archcki:hover{background:color-mix(in srgb,var(--bgc) 26%,var(--nx-panel,#141a23))}
 .archck{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:8px;min-width:0}
 .archck>.archreq{flex:1 1 100%}

@@ -4,6 +4,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Structure tab (Architecture · Size)
 
+- **Security «Request fix» re-ran arch-map, so the badge never refreshed** (84l `archChkFixBody`, `archChkTopBtn`).
+  - Cause: the fix DM told the session to re-run arch-map, which never writes `checks-security.json`; the badge also ignored `security.stale`.
+  - ★2026-10-21: live `.mailbox-mcp` scan 2480dd2 vs HEAD 9cef6ba → «⚠ Security 50», border-style dashed; fix preview ends with the security-checks command.
+  - ⇒ The DM tail is `archChkRunBody` (security-checks); a stale scan gets ⚠, a dashed border (`strbg-cut`) and «Scanned commit … · HEAD now …».
+  - ⚠The fix-request tail must name security-checks, not arch-map. Keep the severity colour on a stale badge.
+
 - **Focus-view edge label pill cut at the SVG's right edge** (84j4 `archFocusPills`).
   - Cause: the pill (`mmdTw(t) + 8` wide) was centred on the narrow badge rect `mmdFlPlace` placed; near the right side it ran past `L.w`.
   - ⇒ Clamp the pill centre into `[w/2 + 2, L.w - w/2 - 2]`; a pill wider than the SVG is left-aligned at 2.

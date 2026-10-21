@@ -1,6 +1,8 @@
 // Korean for the Architecture security issues (84l-structure-arch-checks.js).
 Object.assign(I18N.ko, {
   'Security {n}': '보안 {n}',
+  'Scanned commit {n} · HEAD now {m}': '점검 커밋 {n} · 현재 HEAD {m}',
+  'The security results are older than the code — run the security check again.': '보안 결과가 코드보다 오래됨 — 보안 점검을 다시 실행하세요.',
   'Last security check {t}': '마지막 보안 점검 {t}',
   'Never checked': '점검한 적 없음',
   'Last AI review {t}': '마지막 AI 리뷰 {t}',
