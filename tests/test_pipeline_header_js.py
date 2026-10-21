@@ -194,6 +194,17 @@ console.log(JSON.stringify([item, esc_, out]));""")
         self.assertRegex(css, r"\.plsep\{width:1px;height:16px;[^}]*var\(--nx-rule")
         self.assertNotRegex(css, r"\.wkrgb\.pldl\{margin-left")   # divider replaces the old extra gap
 
+    def test_caption_only_in_edit(self):
+        # «Agent and model per stage» describes the Edit canvas; the run view (plNowShown) drops it, Harness keeps its own.
+        r = run("let PLDRAG = false, PLS = {off: false, projs: null, proj: ''}, HV = false, NOW = false;"
+                "const document = {body: {classList: {contains: () => false}}, activeElement: null};"
+                "function plLoadProjs(){} function plLoad(){} function plHnOn(){ return HV; } function tbSlot(){} function plViewSeg(){ return ''; }"
+                "function plNowPickApply(){} function plNowShown(){ return NOW; } function plNowWrap(h){ return h; } function plMainBody(){ return ''; }"
+                "function plChips(){ return ''; } function hnHtml(){ return ''; } function plAfterPaint(){}\n" + js_fn("paintPipe") + "\n"
+                "const cap = () => { const box = {querySelector: () => null}; paintPipe(box); return box.innerHTML.match(/<span class=plcap>(.*?)<\\/span>/)[1]; };"
+                "const a = cap(); NOW = true; const b = cap(); HV = true; const c = cap(); console.log(JSON.stringify([a, b, c]));")
+        self.assertEqual(r, ["Agent and model per stage", "", "Hooks · rules · agents · MCP · skills"])
+
 
 if __name__ == "__main__":
     unittest.main()

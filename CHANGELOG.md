@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: a first run with no session and no project picked now says what to do next (start a Claude Code, Codex or Gemini session, or try `sidereus start --demo`) instead of only «Pick a project»; the Sidereus clone's own row in the project picker is marked «(built-in)»; the «Agent and model per stage» caption shows only in Edit.
+- Demo: no saver chip in the status bar — the saver hook is not shipped, so a real install never shows it.
 - Pipelines: a session whose turn ended but whose tagged background task, subagent or run stage is still going shows «Working» in «Working now» (row, its dot and the pulsing rail dot), and the canvas keeps that stage in progress until the task ends instead of closing it after two minutes.
 
 ## [0.6.0] - 2026-10-22

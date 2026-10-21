@@ -11,4 +11,7 @@ Object.assign(I18N.ko, {
   'Collapse list': '목록 접기',
   'Expand list': '목록 펼치기',
   'Quick templates ▾': '빠른 템플릿 ▾',
+  'Start a Claude Code, Codex or Gemini session and it shows up here.': 'Claude Code · Codex · Gemini 세션을 시작하면 여기에 나타납니다.',
+  'Or try the demo:': '또는 데모로 둘러보기:',
+  '(built-in)': '(내장)',
 });
