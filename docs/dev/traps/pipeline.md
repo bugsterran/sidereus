@@ -209,3 +209,14 @@ Moved from «Platform, config, launcher, tests and tooling».
 
 - ⚠`allowed_projects()` always adds `CODE_DIR` on a clone, so a fresh clone listed only it and the tab opened its developer pipelines (arch-map) instead of the empty state. ⇒ The list marks it `self_only` unless history, «+ Add project» or a live session's cwd/repos also name it; the default pick skips it and the picker sorts it last.
 - ⚠Never drop it from the allow-list, and never flag it when a session runs there — the developer's default would change.
+
+## First-open canvas fit went stale when cards grew (48d `plGwFit` · `plSizeKey`)
+
+- Cause: the first paint fits 184px cards; the live run (status pill, gate/commit line) lands on a later paint and widens them (★2026-10-22, 1100 demo: 184 -> 252px, drawn width 814 > canvas 799 at 88%). `fitK` holds only canvas size + stage count, so no refit ran.
+- ⇒ `E.szK` (measured `wd`/`ht`) also triggers the untouched refit, but only while `E.first`.
+- ⚠Never let card size refit after `E.first` is cleared (node click, «Working now» pick): a poll would move a view the person acted on. No fit/centre call from click, select or expand handlers.
+
+## Marks need words; targets need 24px
+
+- ⚠A bare mark (`↺n`, `↺k ▾`, «Unverified», short hash) carries `title` + `aria-label` in words (`Sent back here {n} times`, `Pass {k} of this stage — …`, `Commit made in this stage: <hash>`); the visible text stays as is.
+- ⚠Clickable marks are at least 24x24px (WCAG 2.5.8), and a state is named by its word, never by colour or mark alone.

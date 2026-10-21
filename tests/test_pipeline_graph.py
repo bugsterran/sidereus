@@ -541,7 +541,7 @@ class Fit(unittest.TestCase):
 
     def _fit(self, body):
         zc = re.search(r"^const PL_ZMIN[^\n]*$", js_all(), re.M).group(0)
-        return run(zc + "\n" + js_fn("plFit") + "\n" + js_fn("plFitKey") + "\nconst E = {G: G}; const vis = cw => { const z = E.view.z;"
+        return run(zc + "\n" + js_fn("plFit") + "\n" + js_fn("plFitKey") + "\n" + js_fn("plSizeKey") + "\nconst E = {G: G}; const vis = cw => { const z = E.view.z;"
                    " return G.nodes.filter(n => (n.ui.x + plgW(G, n.id)) * z + E.view.x <= cw).length; };\n" + body)
 
     def test_saved_positions_fit_all(self):

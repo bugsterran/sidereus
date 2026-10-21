@@ -281,7 +281,7 @@ class Overview(unittest.TestCase):
     def test_marks_and_count(self):
         lv = {"sid": "s", "lt": {"재현": {"st": "done"}, "수정": {"st": "run"}, "검증": {"st": "wait"}}, "run": {"total": 3}}
         js = "(() => { %s const r = plOvRow('/a', 'bugfix', %s, %s, null, 0); return [r, plOvHtml([r], '/a', 'bugfix')]; })()" % (self.STUB, json.dumps(self.P), json.dumps(lv))
-        r, h = _js(js, "plOvRow", "plOvHtml", "plLight", "plOvRunHtml")
+        r, h = _js(js, "plOvRow", "plOvHtml", "plLight", "plOvRunHtml", "plRbAttr")
         self.assertEqual([s["st"] for s in r["stages"]], ["done", "run", "wait"])
         self.assertEqual((r["n"], r["cur"]), (3, ["수정"]))
         self.assertIn("실행 중 1", h)
@@ -297,7 +297,7 @@ class Overview(unittest.TestCase):
     def test_skip_mark(self):
         lv = {"sid": "s", "lt": {"재현": {"st": "skip"}, "수정": {"st": "run"}}, "run": {"total": 1}}
         js = "(() => { %s const r = plOvRow('/a', 'bugfix', %s, %s, null, 0); return [r, plOvHtml([r], '/a', 'bugfix')]; })()" % (self.STUB, json.dumps(self.P), json.dumps(lv))
-        r, h = _js(js, "plOvRow", "plOvHtml", "plLight", "plOvRunHtml")
+        r, h = _js(js, "plOvRow", "plOvHtml", "plLight", "plOvRunHtml", "plRbAttr")
         self.assertEqual([s["st"] for s in r["stages"]], ["skip", "run", "wait"])
         self.assertIn('class="plovst plov-skip">↷ 재현', h)               # same mark as the canvas node / run table
 
@@ -306,7 +306,7 @@ class Overview(unittest.TestCase):
         P = {"name": "change-flow", "stages": [{"title": t} for t in ("설계", "구현")]}
         lv = {"sid": "s", "lt": {"설계": {"st": "done"}, "구현": {"st": "run"}}, "run": {"total": 2}}
         js = "(() => { %s LANG = 'en'; const r = plOvRow('/a', 'change-flow', %s, %s, null, 0); return plOvHtml([r], '/a', ''); })()" % (self.STUB, json.dumps(P), json.dumps(lv))
-        h = _js(js, "plOvRow", "plOvHtml", "plLight", "plOvRunHtml")
+        h = _js(js, "plOvRow", "plOvHtml", "plLight", "plOvRunHtml", "plRbAttr")
         self.assertIn('class="plovst plov-done">✓ Design', h)
         self.assertIn('</i> Implement', h)
         self.assertNotIn('설계', h)
@@ -317,7 +317,7 @@ class Overview(unittest.TestCase):
     def test_unloaded_project(self):
         tags = [{"aid": "a1", "title": "수정"}, {"aid": "a2", "title": "수정"}]
         js = "(() => { %s const r = plOvRow('/b', 'bugfix', null, null, %s, 0); return [r, plOvHtml([r], '/a', '')]; })()" % (self.STUB, json.dumps(tags))
-        r, h = _js(js, "plOvRow", "plOvHtml", "plOvRunHtml")
+        r, h = _js(js, "plOvRow", "plOvHtml", "plOvRunHtml", "plRbAttr")
         self.assertEqual((r["stages"], r["cur"], r["n"]), (None, ["수정"], 2))
         self.assertIn('class="plovst plov-run plov-pulse"><i class=plovdot aria-hidden=true>●</i> 수정', h)
         self.assertNotIn("plov-wait", h)
@@ -329,7 +329,7 @@ class Overview(unittest.TestCase):
                 " plLiveProjs: () => ({'/t': ['arch-map']}), plMem: () => ({}), plKnown: () => ({}), plCur: () => null, plOrphHtml: () => '',"
                 " plLoad: p => LOADS.push(p), plAgRun: p => p === '/t' ? {stage: 'b', n: 2, of: 3} : null,"
                 " plAgOvRow: (proj, r) => ({proj, name: 'arch-map', sid: 's', stages: [{t: 'a', st: 'done'}, {t: r.stage, st: 'run'}], cur: [r.stage], n: 0, sumh: 'N2OF3'})});")
-        h, loads = _js("(() => { %s return [plOverview(), LOADS]; })()" % stub, "plOverview", "plOvHtml", "plOvRunHtml")
+        h, loads = _js("(() => { %s return [plOverview(), LOADS]; })()" % stub, "plOverview", "plOvHtml", "plOvRunHtml", "plRbAttr")
         self.assertIn("N2OF3", h)
         self.assertNotIn("에이전트 0", h)
         self.assertIn('class="plovst plov-done">✓ a', h)
@@ -341,7 +341,7 @@ class Overview(unittest.TestCase):
                 " plLiveProjs: () => ({'/a': ['x'], '/b': ['x'], '/c': ['x']}), plMem: () => ({}), plKnown: () => ({}), plCur: () => null, plOrphHtml: () => '',"
                 " plLoad: () => 0, plAgRun: p => ({p}), plAgOvRow: (proj) => ({proj, name: proj.slice(1), sid: 's', n: 0,"
                 " stages: [{t: 's', st: proj === '/b' ? 'fail' : 'done'}], cur: []})});")
-        h = _js("(() => { %s return plOverview(); })()" % stub, "plOverview", "plOvHtml", "plOvRunHtml")
+        h = _js("(() => { %s return plOverview(); })()" % stub, "plOverview", "plOvHtml", "plOvRunHtml", "plRbAttr")
         self.assertEqual(re.findall(r'data-plovwn="(\w)"', h), ["b", "a", "c"])   # fail first, the rest keep their order
 
     def test_overview_placed_under_canvas_not_chips(self):
@@ -428,7 +428,7 @@ class LoopBack(unittest.TestCase):
         r = self._cv("const L = {구현: {st: 'run', retry: 3, from: {'검증': 1, '재검증': 1}}}, n = E.G.nodes[0];"
                      " const ko = plNodeHtml(E, n, false, L); LANG = 'en'; const en = plNodeHtml(E, n, false, L); LANG = 'ko';"
                      " return [ko, en, plNodeHtml(E, n, false, {구현: {st: 'run', retry: 3}})];")
-        self.assertIn('<span class=plrb title="↺ 검증에서 1 · 재검증에서 1">↺ 검증에서 1 · 재검증에서 1</span>', r[0])
+        self.assertIn('<span class=plrb title="이 단계로 2번 되돌아옴 — 검증에서 1 · 재검증에서 1" aria-label="이 단계로 2번 되돌아옴 — 검증에서 1 · 재검증에서 1">↺ 검증에서 1 · 재검증에서 1</span>', r[0])
         self.assertIn(">↺ 1 from Verify · 1 from Re-verify</span>", r[1])
         self.assertIn(">재시도 3</span>", r[2])                         # no from: the old retry badge
 
@@ -437,7 +437,7 @@ class LoopBack(unittest.TestCase):
         ps = "[{a: 10, b: 20, s: 'back'}]"
         r = self._cv("return [plNodeHtml(E, E.G.nodes[0], false, {구현: %s}), plNodeHtml(E, E.G.nodes[0], false, {구현: %s}), plNodeHtml(E, E.G.nodes[0], false, {구현: %s})];"
                      % (L % (2, ps), L % (2, "[]"), L % (1, ps)))
-        self.assertIn('<button type=button class="plpass" data-plpass="a" aria-haspopup=menu title="이전 회차 보기">↺2 ▾</button>', r[0])
+        self.assertIn('<button type=button class="plpass" data-plpass="a" aria-haspopup=menu title="이 단계의 2번째 회차 — 이전 회차 보기" aria-label="이 단계의 2번째 회차 — 이전 회차 보기">↺2 ▾</button>', r[0])
         self.assertNotIn("plpass", r[1])                                   # legacy row: k>=2 but no ps
         self.assertNotIn("plpass", r[2])
 
@@ -564,7 +564,7 @@ class CanvasFit(unittest.TestCase):
         G = {"flow": [[c, d] for c, d in zip(ids, ids[1:])], "loops": [{"from": f, "to": t, "max": 1} for f, t in loops],
              "nodes": [{"id": c, "title": c, "ui": {"x": 44 + 248 * i, "y": 24}} for i, c in enumerate(ids)]}
         return _js("(() => { %s\n%s\n const E = {G: %s}; %s })()" % (geo, zm, json.dumps(G), body),
-                   "plWrapBest", "plWrapCols", "plFitRaw", "plFit", "plFitKey", "plVG", "plgW", "plgH", "plgOrder", "plgLayout", "plgPush", "plgRows", "plgAlign", "plgNode", "plgRowH",
+                   "plWrapBest", "plWrapCols", "plFitRaw", "plFit", "plFitKey", "plSizeKey", "plVG", "plgW", "plgH", "plgOrder", "plgLayout", "plgPush", "plgRows", "plgAlign", "plgNode", "plgRowH",
                    "plDrawBox", "plCentre", "plVisY", "plgLoopLanes", *extra)
 
     # Stub editor (globals: the extracted functions are top-level): feed 900 tall, editor top at 100, canvas column = toolbar 40 + canvas.

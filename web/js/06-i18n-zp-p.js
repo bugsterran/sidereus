@@ -4,5 +4,4 @@ Object.assign(I18N.ko, {
   // Pipelines tab: per-pass picker on a looped-back stage card (48d plPskOpen).
   'Pass {n}': '{n}회째',
   'Latest pass': '최근 회차',
-  'Show an earlier pass': '이전 회차 보기',
 });

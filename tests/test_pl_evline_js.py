@@ -76,8 +76,11 @@ class EvLine(unittest.TestCase):
     def test_commit_appended_and_commit_only(self):
         cms = [{"h": "0123456789ab", "ct": 1100}, {"h": "fedcba9", "ct": 500}]
         h = _ev([PASS], {"w0": 950, "w1": 990, "cm": [980.5]}, cms)
-        self.assertIn("화면 2/2 · 커밋 0123456<", h)
+        self.assertIn("화면 2/2 · <span class=plevc ", h)
+        self.assertIn(">커밋 0123456</span>", h)
         self.assertIn("커밋 0123456789ab", h)   # full hash in the tooltip
+        # the commit segment explains itself: title + aria-label with the full hash
+        self.assertIn('title="이 단계에서 만든 커밋: 0123456789ab" aria-label="이 단계에서 만든 커밋: 0123456789ab"', h)
         only = _ev([], {"w0": 400, "w1": 600, "cm": [499.0]}, cms)
         self.assertIn(">커밋 fedcba9<", only)
         self.assertNotIn("plevng", only)

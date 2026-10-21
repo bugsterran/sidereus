@@ -23,7 +23,7 @@ function plEnt(p){
 function plViewCarry(E, O){
   if(!E || !O || !O.view || E.auto) return E;
   E.view = Object.assign({}, O.view);
-  ['touched', 'first', 'ctrd', 'laid', 'fitK', 'visY'].forEach(f => { if(O[f] !== undefined) E[f] = O[f]; });
+  ['touched', 'first', 'ctrd', 'laid', 'fitK', 'szK', 'visY'].forEach(f => { if(O[f] !== undefined) E[f] = O[f]; });
   return E;
 }
 function plCurEnt(){ return plEnt(plCur()); }
@@ -145,7 +145,7 @@ function plNodeHtml(E, n, bad, lt){
   const G = E.G, L0 = lt && lt[n.title], pi = L0 ? plPassSel(E, n.id, L0) : -1, L = pi >= 0 ? Object.assign({}, L0, plPass(L0, pi)) : L0, eff = n.model || G.defaults.model;
   const warn = PL_JUDGED.includes(n.title) && PL_LOW.includes(eff) ? ' <span class=plwarn title="' + esc(T('Judgment stages should keep a strong model')) + '">⚠</span>' : '';
   const chips = plFlagChips(n);
-  const unv = String(n.gate || '').trim() ? '' : '<span class=plunv title="' + esc(T('No gate command — nothing machine-checks this stage')) + '">' + esc(T('Unverified')) + '</span>';   // judgment stages are expected here
+  const unv = String(n.gate || '').trim() ? '' : '<span class=plunv title="' + esc(T('No gate command — nothing machine-checks this stage')) + '" aria-label="' + esc(T('Unverified') + ' — ' + T('No gate command — nothing machine-checks this stage')) + '">' + esc(T('Unverified')) + '</span>';   // judgment stages are expected here
   const oc = L && PL_OUTCOME[L.st] ? plOc(L.st) + (L.why ? ' (' + L.why + ')' : '') : '', lsTxt = L ? [oc, L.n ? T('Agent') + ' ' + L.n + ' · ' + ago(L.sec) : oc ? '' : T('Waiting')].filter(Boolean).join(' · ') : '';
   const live = L ? '<div class=plls title="' + esc(lsTxt) + '">' + esc(lsTxt) + '</div>' : '';   // title: the pill ellipsizes at 150px
   const sel = E.sel && E.sel.k === 'n' && E.sel.id === n.id ? ' on' : '';
@@ -154,10 +154,12 @@ function plNodeHtml(E, n, bad, lt){
   const icon = !L ? '' : L.st === 'run' ? '<i class=plspin></i>' : L.st === 'done' ? '<b class=plok>✓</b>' : L.st === 'fail' ? '<b class=plx>✕</b>' : L.st === 'skip' ? '<b class=plsk>↷</b>' : L.st === 'back' ? '<b class="plsk plbk">↺</b>' : L.st === 'hold' ? '<b class=plsk>⏸</b>' : '';
   const fr = L && L.from ? Object.keys(L.from).filter(f => L.from[f] > 0) : [];   // loop-backs into this stage, per source
   const rbt = fr.length ? '↺ ' + fr.map(f => TV({msg: '{m} from {n}', vars: {n: plgShow(f), m: L.from[f]}})).join(' · ') : L && L.retry ? T('Retry', 'stage') + ' ' + L.retry : '';
-  const rb = rbt ? '<span class=plrb title="' + esc(rbt) + '">' + esc(rbt) + '</span>' : '';
+  const rbn = fr.reduce((a, f) => a + (+L.from[f] || 0), 0), rbTip = fr.length ? TV({msg: 'Sent back here {n} times', vars: {n: rbn}}) + ' — ' + rbt.slice(2) : rbt;   // the bare ↺ needs words
+  const rb = rbt ? '<span class=plrb title="' + esc(rbTip) + '" aria-label="' + esc(rbTip) + '">' + esc(rbt) + '</span>' : '';
   // Pass picker: only with recorded earlier passes (older plrun rows carry no ps). Sits on the bottom edge so the title keeps its width.
+  const ptip = L0 ? esc(TV({msg: 'Pass {k} of this stage — show an earlier pass', vars: {k: L.k}})) : '';
   const pb = L0 && L0.k >= 2 && L0.ps && L0.ps.length ? '<button type=button class="plpass' + (pi >= 0 ? ' on' : '') + '" data-plpass="' + esc(n.id) + '" aria-haspopup=menu title="'
-    + esc(T('Show an earlier pass')) + '">' + esc('↺' + L.k + ' ▾') + '</button>' : '';
+    + ptip + '" aria-label="' + ptip + '">' + esc('↺' + L.k + ' ▾') + '</button>' : '';
   const hl = G.loops.some(l => l.from === n.id) ? ' hasloop' : '';   // its lane leaves 14px*k off-centre: no mark at the centre port
   // Direct-mode subagents behind a lit stage (workflow runs carry no labs: no hover)
   const tip = L && L.nn ? ' title="' + esc(T('Not needed on this run — runs only on a loop-back')) + '"' : L && L.labs && L.labs.length ? ' title="' + esc(L.labs.map(a => plLabTip(a.lab) + ' (' + (a.run ? T('Running') : T('Done')) + ')').join('\n')) + '"' : '';
@@ -341,10 +343,12 @@ function plFit(E, cv, relayout, keepZ, ctr){
   E.view = { x: 0, y: Math.max(Math.round(Math.max(0, 30 - top) * z), Math.round(Math.min(ch / 6 - (top + PLG_H / 2) * z, (ch - (bot - top) * z) / 2 - top * z))), z };
   if(ctr) E.ctrd = true;
   if(ctr || E.first || E.ctrd) plCentre(E, cv, true);
-  E.fitK = plFitKey(E, cv);
+  E.fitK = plFitKey(E, cv); E.szK = plSizeKey(E);
 }
 // What an untouched view was last fitted for: plGwFit re-fits only when this changes (canvas size, stage count).
 function plFitKey(E, cv){ return cv.clientWidth + 'x' + cv.clientHeight + '/' + E.G.nodes.length; }
+// ⚠Measured card sizes: the live run arrives on a later paint and widens cards (184 -> 252px), leaving the first-open fit clipped.
+function plSizeKey(E){ return JSON.stringify([E.G.wd || {}, E.G.ht || {}]); }
 // First paint of saved positions that only fit below PL_ZMIN (★6 stages: 40% floor showed 3 of 6 at 900px, 5 at 1100px):
 // wrap into the row count that shows the whole chain at the largest zoom — ties keep fewer rows. Display re-flow only:
 // E.laid marks the positions ours, so the draft stays clean.
@@ -426,7 +430,8 @@ function plGwFit(){
     if(ph && !(PLDRAG && PLDRAG.k === 'split')) g.style.setProperty(PL_SPLIT.v, ph + 'px');   // ⚠mid-drag the stored value is stale
   }
   // ⚠Re-fit only when the canvas size changed: plGwFit runs on every paint (node click, poll) and must not move the zoom.
-  if(E && cv && E.view && !E.touched && cv.clientWidth && E.fitK !== plFitKey(E, cv)){
+  // Card sizes count only while E.first: any click/pick clears it, so a later poll never moves a view the user acted on.
+  if(E && cv && E.view && !E.touched && cv.clientWidth && (E.fitK !== plFitKey(E, cv) || (E.first && E.szK !== plSizeKey(E)))){
     const clean = plgKey(E.G) === E.base;
     if(E.laid) plWrapBest(E, cv, false); else plFit(E, cv, false);
     if(E.laid && clean) E.base = plgKey(E.G);   // our own layout never makes the draft dirty
