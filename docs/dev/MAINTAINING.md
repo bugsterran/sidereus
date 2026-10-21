@@ -41,10 +41,12 @@ A bug report needs: OS, Claude Code version (`claude --version`), and the output
 - SemVer, 0.x. The first public release is `0.1.0`.
 - [CHANGELOG.md](../../CHANGELOG.md) (Keep a Changelog) is the single source. Every feature or fix commit adds one line under `[Unreleased]`.
 - Before a release: pipelines `deps-audit` and `security-checks`, then `bash scripts/check.sh --full`.
-- Release:
-  1. Rename `[Unreleased]` to `[x.y.z] - YYYY-MM-DD`, open a new empty `[Unreleased]`.
-  2. Tag `vx.y.z`.
-  3. Release notes = that CHANGELOG section plus 3–5 highlights at the top.
+- Release = pipeline `release` (`.claude/pipelines/release.json`): audit → full check → CI → CHANGELOG → notes → confirm → tag → publish.
+  1. Push `dev`; its CI run must be green on every job and step (all OSes, Python 3.9 and 3.12). ⚠A local `--full` runs on one OS only (★2026-10-22: CI had been red since 0.5.0 while local checks passed).
+  2. Rename `[Unreleased]` to `[x.y.z] - YYYY-MM-DD`, open a new empty `[Unreleased]`.
+  3. Tag `vx.y.z` locally; a commit after it means re-tagging before publish. A pushed tag never moves.
+  4. Release notes = that CHANGELOG section plus 3–5 highlights at the top.
+  5. After the owner confirms: fast-forward `main` to `dev`, push both and the tag, check `main` CI and the GitHub release.
 - ⚠Screenshots only from `python3 -m sidereus start --demo` — never the real viewer.
 
 ## Milestones
