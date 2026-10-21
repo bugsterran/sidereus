@@ -19,7 +19,7 @@ import time
 from sidereus import ctxsrc
 from sidereus.config import ASSET_DIR, CODE_DIR, DATA_DIR
 from sidereus.bus import _atomic_write
-from sidereus.pipeline_projects import _proj_ok, _remembered, allowed_projects, apply_get
+from sidereus.pipeline_projects import _proj_ok, _remembered, allowed_projects, apply_get, project_list
 from sidereus.pipeline_schema import _AGENT, _COLOR, _NAME, GATE_MODES, MODELS, dump, validate
 from sidereus.pipeline_std import std_drafts
 from sidereus.stage_catalog import catalog
@@ -244,7 +244,8 @@ def pipelines(proj, runs=None):
     `runs` = runs_here(...) for the read-only `borrowed` rows (none when omitted)."""
     if not proj:
         added = _remembered()
-        projs = [{"path": p, "n": len(_listed(p))} for p in allowed_projects() if _listed(p) or p in added]
+        allowed, selfp = project_list()
+        projs = [dict({"path": p, "n": len(_listed(p))}, **({"self_only": True} if p == selfp else {})) for p in allowed if _listed(p) or p in added]
         return 200, {"ok": True, "projects": projs, "added": added}
     if not _proj_ok(proj):
         return 400, {"ok": False, "msg": "unknown project"}     # ⚠not 404: the page reads 404 as «feature off»
