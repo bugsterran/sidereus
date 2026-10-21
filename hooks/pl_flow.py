@@ -31,6 +31,9 @@ MARK_DIR = os.path.join(DATA_DIR, "plmark")
 CONFIG_PATH = None   # None = same rule as pipelines_brief.py; patched in tests
 TAG = re.compile(r"\[pl:([a-z0-9-]{1,40})/([^\]\n]{1,40})\]")
 SKIP_TAG = re.compile(r"\[pl-skip:([a-z0-9-]{1,40})/([^\]\n]{1,40})\]")
+NONE_TAG = re.compile(r"\[pl-none:([a-z-]{1,20})\]")   # session-wide «no pipeline for this work» declaration
+NONE_CATS = ("small-fix", "no-fit", "explore", "other")
+EDITS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 END_TAG = re.compile(r"\[pl-end:([a-z0-9-]{1,40})/([^\]\n|]{1,40})\]")
 MODEL_TAG = re.compile(r"\[pl-model:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=([A-Za-z0-9._-]{1,40})\]")
 # Renamed recommended stage titles (old -> new): old tags and legacy files map to the new title. ⚠Same map in sidereus/pipeline_schema.py RENAMED.
@@ -1080,6 +1083,128 @@ def _declare(ev, cwd, path, desc, now):
     return None
 
 
+def _none_load(p):
+    try:
+        with open(p, encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def _none_save(p, d):
+    os.makedirs(MARK_DIR, exist_ok=True)
+    tmp = p + ".tmp.%d" % os.getpid()
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(d, f)
+    os.replace(tmp, p)
+
+
+def _none_decl(sid, desc, now):
+    """Bash `[pl-none:<category>]`: store {v, cat, t} in plmark/<sid>.none.json; deny reason for an unknown category.
+    ⚠Category and time only, never the description; ⚠never <sid>.json (agents.plm_of) or .runs.json."""
+    if "[pl-none:" not in desc:
+        return None
+    m = NONE_TAG.search(desc)
+    if not m or m.group(1) not in NONE_CATS:
+        return "Unknown [pl-none:] category; use one of: %s" % ", ".join(NONE_CATS)
+    _none_save(os.path.join(MARK_DIR, sid + ".none.json"), {"v": 1, "cat": m.group(1), "t": now})
+    return None
+
+
+def _none_proj(ev, tool):
+    """Pipeline project of this edit (walk up from the edited file to its git root) or commit (cwd / its git root).
+    ⚠Not session_dirs: any repo seen in the transcript would lend its pipelines to an edit in a repo without them."""
+    if tool == "Bash":
+        cwd = ev.get("cwd")
+        return next((x for x in (cwd, _git_root(cwd)) if x and _has_pl(x)), None)
+    ti = ev.get("tool_input") if isinstance(ev.get("tool_input"), dict) else {}
+    fp = ti.get("notebook_path" if tool == "NotebookEdit" else "file_path")
+    if not (isinstance(fp, str) and os.path.isabs(fp)):
+        return None
+    cur, top = os.path.dirname(os.path.abspath(fp)), _git_root(os.path.dirname(os.path.abspath(fp)))
+    while True:
+        if _has_pl(cur):
+            return cur
+        up = os.path.dirname(cur)
+        if cur == top or up == cur:
+            return None
+        cur = up
+
+
+def _none_gate(ev, sid, tool, desc, now):
+    """First file edit / main `git commit` of a session in a pipeline project with no open run and no [pl-none]:
+    deny once with the pipeline names. True when denied; fail-open."""
+    try:
+        if ev.get("agent_id"):
+            return False
+        if tool == "Bash":
+            cmd = _shell_cmd(ev.get("tool_input")) or ""
+            # a tagged command already follows the pipeline protocol
+            if not _COMMIT_RE.search(cmd) or "--dry-run" in cmd or "[pl" in desc:
+                return False
+        elif tool not in EDITS:
+            return False
+        p = os.path.join(MARK_DIR, sid + ".none.json")
+        d = _none_load(p)
+        if d.get("cat") or d.get("nudge"):
+            return False
+        proj = _none_proj(ev, tool)
+        if not proj or _apply_off(proj):
+            return False
+        for r in _load(os.path.join(MARK_DIR, sid + ".runs.json"))["runs"].values():
+            if isinstance(r, dict) and not r.get("end") and now - float(r.get("t1") or 0) <= IDLE_S:
+                return False
+        names = sorted(n[:-5] for n in os.listdir(os.path.join(proj, ".claude", "pipelines"))
+                       if n.endswith(".json") and _PLNAME.fullmatch(n[:-5]))
+        _none_save(p, {"v": 1, "nudge": now})   # ⚠before the deny: an unsaved nudge would deny every edit
+        return _deny("This project has pipelines (%s) and no run is open in this session. Run the work through one "
+                     "with [pl:<name>/<stage>] tags, or declare it outside them once with a Bash description "
+                     "[pl-none:<category>] (category: %s). Shown once per session; retrying proceeds."
+                     % (", ".join(names), " | ".join(NONE_CATS)))
+    except Exception:
+        return False
+
+
+def _none_clear(ev, now):
+    """A tagged Pre that left a run open drops `nudge` from <sid>.none.json (keeps `cat`; no keys left = file removed).
+    ⚠Ended runs leave the session row after PLR_KEEP_S, so a stale nudge would read as undeclared work. Fail-silent."""
+    try:
+        sid, ti = ev.get("session_id"), ev.get("tool_input")
+        desc = ti.get(FIELD.get(ev.get("tool_name"), "description")) if isinstance(ti, dict) else None
+        cmd = _shell_cmd(ti) or ""
+        if ev.get("hook_event_name") not in ("PreToolUse", "BeforeTool") or not (isinstance(sid, str) and SID.match(sid)) \
+                or not (TAG.search(desc if isinstance(desc, str) else "") or MARK.match(cmd)):
+            return
+        p = os.path.join(MARK_DIR, sid + ".none.json")
+        d = _none_load(p)
+        if "nudge" not in d or not any(isinstance(r, dict) and not r.get("end") and now - float(r.get("t1") or 0) <= IDLE_S
+                                       for r in _load(os.path.join(MARK_DIR, sid + ".runs.json"))["runs"].values()):
+            return
+        d.pop("nudge", None)
+        if d.get("cat"):
+            _none_save(p, d)
+        else:
+            os.remove(p)
+    except Exception:
+        pass
+
+
+def _none_pre(plat, ev):
+    """cc main-session Pre: `[pl-none:]` declaration, then the first-edit / commit gate. True when denied; fail-open."""
+    try:
+        sid, tool, ti = ev.get("session_id"), ev.get("tool_name"), ev.get("tool_input")
+        if plat != "cc" or ev.get("hook_event_name") != "PreToolUse" or not (isinstance(sid, str) and SID.match(sid)) \
+                or not (isinstance(ev.get("cwd"), str) and os.path.isabs(ev["cwd"])):
+            return False
+        desc = ti.get("description") if tool == "Bash" and isinstance(ti, dict) else None
+        desc = desc if isinstance(desc, str) else ""
+        why = _none_decl(sid, desc, _now())
+        return _deny(why) if why else _none_gate(ev, sid, tool, desc, _now())
+    except Exception:
+        return False
+
+
 def main(argv=None):
     plat = _platform(sys.argv[1:] if argv is None else argv)
     if plat not in PLATFORMS:
@@ -1098,12 +1223,13 @@ def main(argv=None):
             _me = _ty.SimpleNamespace(**globals())   # this module's current (test-patched) names
         except Exception:
             _g = None
-        denied = _g.run(plat, ev, _me, _flow) if _g else _flow(plat, ev)
+        denied = _none_pre(plat, ev) or (_g.run(plat, ev, _me, _flow) if _g else _flow(plat, ev))
     except Exception as e:   # __main__ swallows it; leave the type name only
         _why(ev, "exc:" + type(e).__name__)
         raise
     finally:
         if not denied:   # ⚠a denied `git commit` never ran: closing the run anyway made every skip open a new run
+            _none_clear(ev, _now())
             _commit_close(ev, _now())
         _autoscore()
 

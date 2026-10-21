@@ -21,7 +21,7 @@
 | `pipelines_brief.py` | `SessionStart`, `UserPromptSubmit`, 5초 | 프로젝트의 파이프라인 목록 |
 | `file_peers_notice.py` | `PreToolUse`(`Edit\|Write\|MultiEdit\|NotebookEdit`), 2초 | 다른 실행 중 세션이 이 파일을 고쳤음 |
 | `pl_mark.py` | `PreToolUse`(`Task\|Agent\|SendMessage`, `Bash`), 5초 | 메인 에이전트의 파이프라인 단계 기록 |
-| `pl_flow.py` | `PreToolUse`(`Task\|Agent\|SendMessage`, `Bash`), `PostToolUse`(`Task\|Agent\|SendMessage`), 5초 | 태그 붙은 실행을 단계 순서대로 묶고 다음 단계를 넘겨준다 |
+| `pl_flow.py` | `PreToolUse`(`Task\|Agent\|SendMessage`, `Bash`, `Edit\|Write\|MultiEdit\|NotebookEdit`), `PostToolUse`(`Task\|Agent\|SendMessage`), 5초 | 태그 붙은 실행을 단계 순서대로 묶고 다음 단계를 넘겨준다 |
 | `ev_hook.py` | `PreToolUse`, `PostToolUse`, `PostToolUseFailure`(모두 `Bash`), 3초 | 테스트·빌드·체크·린트 실행을 하네스 증거로 기록한다 |
 | `perm_mark.py` | `PermissionRequest` + `Notification`(`permission_prompt`), 5초 | 세션이 권한 확인 창에서 기다리는 중임을 표시한다 |
 | `room_auto.py` | `SessionStart` | `room-map.json` 의 경로별 방에 들어간다(선택. 플러그인에는 없다) |
@@ -120,6 +120,10 @@ Agent/Task/SendMessage 는 지운다. 파이프라인, 단계, 시각, cwd 만 �
   하나 줄인다(단계를 끝냄으로 표시하지는 않는다). 마지막 단계 뒤엔 실행을 닫고 `after` 를 알린다.
 - 실행이 열려 있는데 메인 세션의 Bash 에 태그가 없으면, 단계 작업엔 `[pl:<name>/<stage>]`, 그 밖의 일엔 `[pl:-]` 를
   붙이라는 알림(실행 이름·단계만)을 문맥에 더한다. 거부하지 않으며 실행마다 10분에 한 번.
+- Bash 설명의 `[pl-none:<category>]`(`small-fix` · `no-fit` · `explore` · `other`)는 이 세션의 일이 파이프라인 밖이라고
+  선언한다. `plmark/<session_id>.none.json` 에는 분류와 시각만 남고 이유 글은 남지 않는다. 모르는 분류는 목록과 함께 거부한다.
+  선언도 열린 실행도 없으면, 파이프라인이 있는 프로젝트에서 메인 세션의 첫 Edit/Write 나 태그 없는 `git commit` 을 목록과 함께
+  한 번 거부하고 다시 하면 통과한다. ⚠수동 등록이면 `pl_flow.py` 에 `Edit|Write|MultiEdit|NotebookEdit` 매처가 필요하다(`setup-claude` 다시 실행).
 - 실행이 끝나면(마지막 단계 · `[pl-end:]` · 메인의 `git commit`) `<data dir>/eval/<repo key>/seeds.json` 이 있을 때만
   `scripts/pl_eval.py score --auto` 를 떼어 띄운다(기다리지 않고 출력 없음). 오류는 삼키고 호출을 막지 않는다.
 - «적용» 이 꺼져 있거나, 파이프라인 파일이 없거나 깨졌거나, 단계 제목이 맞지 않으면 조용하다.

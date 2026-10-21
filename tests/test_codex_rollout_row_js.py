@@ -20,7 +20,7 @@ function aiLogo(p, extra){ return '<i class=ailg title="' + esc(p + (extra || ''
 function sessPickHtml(){ return ''; } function sessBranchHtml(){ return ''; } function acctChip(){ return ''; }
 function sessBadges(){ return '<BADGES/>'; }
 """
-FNS = "\n".join(js_fn(n) for n in ("sessIdRow", "sessLabel")) + "\n"
+FNS = "\n".join(js_fn(n) for n in ("sessIdRow", "sessLabel", "sessPlChip")) + "\n"
 
 
 def run(body):

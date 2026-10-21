@@ -95,6 +95,8 @@ lang_register("rust", {"exts": (".rs",), "scan": rs_scan,
 - 표준 초안 «훅 변경» · «스킬 작성·변경» · «도구·MCP 추가» 가 이 두 단계로 AI 설정 작업을 점검한다.
 - 단계마다 Agent 설명에 `[pl:<pipeline>/<단계>]` 를 붙인다(40자). 태그 붙은 메인 에이전트 Bash 는 2분 동안 «main» 을
   켜고 `[pl:-]` 가 끈다([HOOKS](HOOKS.ko.md#pl_markpy)).
+- 어느 파이프라인에도 맞지 않는 작업: Bash 설명에 `[pl-none:<category>]`(`small-fix` · `no-fit` · `explore` · `other`).
+  없으면 열린 실행이 없을 때 첫 편집·커밋을 한 번 거부한다([HOOKS](HOOKS.ko.md#pl_flowpy)).
 - `onFail`, `onlyOnJump`, `onError`, `after` 는 `pl_flow.py` 의 다음 단계 안내에도 쓰인다([HOOKS](HOOKS.ko.md#pl_flowpy)).
 
 테스트: `tests/test_pipeline*.py`. `check.sh --fast` 도 `scripts/pipeline_check.mjs` 를 돌린다.

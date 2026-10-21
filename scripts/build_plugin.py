@@ -49,6 +49,7 @@ HOOKS = (("SessionStart", None, "invite_notice.py", 10),
          ("PreToolUse", "Bash", "pl_mark.py", 5),
          ("PreToolUse", "Task|Agent|SendMessage", "pl_flow.py", 5),
          ("PreToolUse", "Bash", "pl_flow.py", 5),
+         ("PreToolUse", "Edit|Write|MultiEdit|NotebookEdit", "pl_flow.py", 5),   # first-edit [pl-none] reminder
          ("PostToolUse", "Task|Agent|SendMessage", "pl_flow.py", 5),
          ("Notification", "permission_prompt|elicitation_dialog", "perm_mark.py", 5),
          # Harness evidence: test/build/check/lint Bash runs -> evidence.jsonl rows (metadata only).

@@ -21,7 +21,7 @@ Every hook is standalone stdlib Python 3.9 and follows two rules:
 | `pipelines_brief.py` | `SessionStart`, `UserPromptSubmit`, 5 s | lists the project's pipelines |
 | `file_peers_notice.py` | `PreToolUse` (`Edit\|Write\|MultiEdit\|NotebookEdit`), 2 s | another live session edited this file |
 | `pl_mark.py` | `PreToolUse` (`Task\|Agent\|SendMessage`, `Bash`), 5 s | records the main agent's pipeline stage |
-| `pl_flow.py` | `PreToolUse` (`Task\|Agent\|SendMessage`, `Bash`), `PostToolUse` (`Task\|Agent\|SendMessage`), 5 s | keeps a tagged run in stage order, hands off the next stage |
+| `pl_flow.py` | `PreToolUse` (`Task\|Agent\|SendMessage`, `Bash`, `Edit\|Write\|MultiEdit\|NotebookEdit`), `PostToolUse` (`Task\|Agent\|SendMessage`), 5 s | keeps a tagged run in stage order, hands off the next stage |
 | `ev_hook.py` | `PreToolUse`, `PostToolUse`, `PostToolUseFailure` (all `Bash`), 3 s | records test/build/check/lint runs as harness evidence |
 | `perm_mark.py` | `PermissionRequest` + `Notification` (`permission_prompt`), 5 s | marks the session as waiting on a permission prompt |
 | `room_auto.py` | `SessionStart` | joins rooms by path from `room-map.json` (optional, not in the plugin) |
@@ -127,6 +127,11 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
   lists `after`.
 - Untagged Bash Pre of the main session while a run is open: adds a reminder (run name and stage only) to tag
   stage work `[pl:<name>/<stage>]` or other work `[pl:-]`. Context only, never a deny; once per 10 min per run.
+- `[pl-none:<category>]` in a Bash description (`small-fix` · `no-fit` · `explore` · `other`) declares the session's
+  work outside every pipeline: `plmark/<session_id>.none.json` keeps only the category and time, never the reason.
+  An unknown category is denied with the list. Without it and with no open run, the main session's first Edit/Write
+  or untagged `git commit` in a project with pipelines is denied once, listing them; the retry passes. ⚠Manual
+  setups need the `Edit|Write|MultiEdit|NotebookEdit` matcher for `pl_flow.py` (re-run `setup-claude`).
 - Main's `git commit` closes this session's open runs of that project; a commit described `[pl:-]` closes none, one
   tagged `[pl:<name>/<stage>]` closes only `<name>`.
 - Run end (last stage, `[pl-end:]`, main's `git commit`): if `<data dir>/eval/<repo key>/seeds.json` exists it starts

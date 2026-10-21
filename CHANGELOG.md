@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Pipelines: work outside a pipeline is declared with a Bash described `[pl-none:<category>]` (small-fix · no-fit · explore · other; only the category and time are kept). In a project with pipeline files, the first Edit/Write or git commit with no open run and no declaration is denied once with the project's pipeline names. Each session row shows a chip: the run «<name> · <stage>», «No pipeline · <category>» or «Undeclared».
 - Mailbox: Codex mail wake — the example Stop hook now runs `gemini_mail_stop.py --platform codex --wake`, which spawns a detached waiter that starts one turn on the session's own thread through the local Codex app-server socket when mail arrives (ids and a count only; exits if you type first; experimental API checked on 0.163.0; macOS/Linux only). `ext-hooks/codex-config-example.toml` auto-approves only the mailbox tools. `--wait` stays for unattended sessions.
 - Structure: the architecture header shows which AI drew the map — platform logo and model after «Generated», each model when stages used different ones (stage names in the tooltip). Sidereus records it from the running session's own metadata in its own store, not from the map files; older maps show «Drawn by: unknown».
 

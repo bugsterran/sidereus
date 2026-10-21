@@ -98,6 +98,8 @@ Internals: [dev/PIPELINE.md](dev/PIPELINE.md). Review pipelines per CLI, with te
 - Standard drafts «Hook change» · «Skill write · change» · «Add tool · MCP» use these two stages for AI-configuration work.
 - Tag each stage's Agent description `[pl:<pipeline>/<stage>]` (40 chars). A tagged main-agent Bash lights «main» for
   2 min; `[pl:-]` clears it ([HOOKS](HOOKS.md#pl_markpy)).
+- Work that fits no pipeline: a Bash description `[pl-none:<category>]` (`small-fix` · `no-fit` · `explore` · `other`).
+  Otherwise the first edit or commit with no open run is denied once ([HOOKS](HOOKS.md#pl_flowpy)).
 - `onFail`, `onlyOnJump`, `onError` and `after` also drive the hand-off text of `pl_flow.py` ([HOOKS](HOOKS.md#pl_flowpy)).
 
 Tests: `tests/test_pipeline*.py`; `check.sh --fast` also runs `scripts/pipeline_check.mjs`.
