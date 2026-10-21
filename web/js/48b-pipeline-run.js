@@ -455,8 +455,8 @@ function plOverview(){
   // ⚠Failed/looped-back/held runs first (stable): the Watch card is short, so a later row would sit below its fold.
   const bad = r => (r.stages || []).some(s => s.st === 'fail' || s.st === 'back' || s.st === 'hold') ? 0 : 1;
   rows.sort((a, b) => bad(a) - bad(b));
-  const pd = PLS.data[PLS.proj];   // orphan note only once this project has a pipeline (an empty project shows start controls only)
-  return plOvHtml(rows, PLS.proj, cp ? cp.name : '') + (pd && (pd.pipelines || []).length ? plOrphHtml(orph) : '');
+  // ⚠Orphan note shows even in an empty project: a run whose file is missing is exactly the case it explains.
+  return plOvHtml(rows, PLS.proj, cp ? cp.name : '') + plOrphHtml(orph);
 }
 // Tagged run whose pipeline file is in no known project (or in two): session id + pipeline name only (rule 1).
 function plOrphHtml(orph){
