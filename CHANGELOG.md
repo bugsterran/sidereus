@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Pipelines: clicking a subagent in «Working now» also opens its work log, the same popup as a Timeline agent row.
 - Pipelines: «Cross-review (Codex)» template — one main stage where the session runs a read-only `codex exec` review of `git diff` (billed to the Codex account, one-shot; Sidereus never runs Codex). Copying a template now keeps agent `main` instead of turning it into general-purpose.
 - Pipelines: work outside a pipeline is declared with a Bash described `[pl-none:<category>]` (small-fix · no-fit · explore · other; only the category and time are kept). In a project with pipeline files, the first Edit/Write or git commit with no open run and no declaration is denied once with the project's pipeline names. Each session row shows a chip: the run «<name> · <stage>», «No pipeline · <category>» or «Undeclared».
 - Mailbox: Codex mail wake — the example Stop hook now runs `gemini_mail_stop.py --platform codex --wake`, which spawns a detached waiter that starts one turn on the session's own thread through the local Codex app-server socket when mail arrives (ids and a count only; exits if you type first; experimental API checked on 0.163.0; macOS/Linux only). `ext-hooks/codex-config-example.toml` auto-approves only the mailbox tools. `--wait` stays for unattended sessions.
