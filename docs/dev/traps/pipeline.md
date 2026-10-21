@@ -4,6 +4,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Runs, stage hooks and evaluation
 
+- ⚠**`codex exec` hangs on an open non-TTY stdin** (★2026-10-21, codex-cli 0.163.0). From a Claude Bash call it waited 10+ min with no output and no rollout file; with `< /dev/null` it finished in about a minute. ⇒ The «Cross-review (Codex)» template task (`sidereus/pipeline_new.py` `_CROSS_TASK`) runs it with `< /dev/null` and ends with `[pl-end:<name>/<stage>]` (a last `main` stage otherwise leaves the run open). ⚠Never drop `< /dev/null` from the command. Test: `test_create_cross_review_keeps_main_r1`.
+
 - **`_touched` lowercases the whole tool-input blob on Windows** (hooks/pl_flow.py `_pkey`).
   - Cause: inputs mix `\` and `/` (`~/x` expands onto a `C:\` home) and Windows paths ignore case, so `C:\u\agent` never matched `c:/u/agent/docs`.
   - ⇒ Both the blob and each owner path go through `_pkey` (`\`→`/`, lower) on Windows only; POSIX is unchanged.
