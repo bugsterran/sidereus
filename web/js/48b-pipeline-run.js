@@ -465,9 +465,18 @@ function plOrphHtml(orph){
   return (orph || []).map(o => '<div class=hidnote>' + esc(T('Pipeline running from another folder') + ': ' + o.name + ' · ' + T('session') + ' '
     + sid8(o.sid) + ' — ' + T('pipeline file not found')) + '</div>').join('');
 }
-function plOvPick(proj, name){   // same as a chip click + pipeline pick; ⚠never scroll or centre
+// Live session running (proj, name): the row's own sid if live, else one whose open run / [pl:] tag matches; '' = none.
+function plOvSid(proj, name, sid){
+  const live = plNowLive(SESS);
+  if(sid && live.some(x => x.sid === sid)) return sid;
+  const x = live.find(s => (s.plrun || []).some(r => r && !r.end && r.name === name && (r.proj || s.cwd || '') === proj)
+    || (s.plm && s.plm.name === name && (s.cwd || '') === proj));
+  return (x && x.sid) || '';
+}
+function plOvPick(proj, name, sid){   // same as a chip click + pipeline pick; ⚠never scroll or centre
   if(PLVIEW !== 'pipe'){ PLVIEW = 'pipe'; lsSet('sidereus.plview', PLVIEW); }   // ⚠a remembered Harness sub-view would hide the picked pipeline
   plProjGo(proj); PLS.sel = name; PLS.wf = null;
+  PLS.nowSid = plOvSid(proj, name, sid);   // ⚠after plProjGo, which clears it; marks the «Working now» row
   if(!PLS.projs) PLS.pend = proj;   // ⚠plLoadProjs would reset a project not in its list (borrowed-only) to the first one
   PLAG = false;   // an open arch-map panel (48h) would hide the picked pipeline
   PLNEW = null; PLS.std = ''; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint();
@@ -475,8 +484,9 @@ function plOvPick(proj, name){   // same as a chip click + pipeline pick; ⚠nev
 document.addEventListener('click', e => {
   const r = e.target.closest && e.target.closest('[data-plovw]');
   if(r && r.dataset.plovwf){ plProjGo(r.dataset.plovwp); PLS.wf = { sid: r.dataset.plovw, id: r.dataset.plovwf };   // ⚠wf after plProjGo, which clears it
+    PLS.nowSid = plOvSid(r.dataset.plovwp, '', r.dataset.plovw);
     PLNEW = null; PLS.std = ''; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint(); }
-  else if(r) plOvPick(r.dataset.plovwp, r.dataset.plovwn);
+  else if(r) plOvPick(r.dataset.plovwp, r.dataset.plovwn, r.dataset.plovw);
 });
 document.addEventListener('keydown', e => {
   if(e.key === 'Enter' && e.target && e.target.matches && e.target.matches('[data-plovw]')){ e.preventDefault(); e.target.click(); }

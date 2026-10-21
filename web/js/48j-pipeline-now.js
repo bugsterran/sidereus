@@ -54,9 +54,9 @@ function plNowList(ss){
   const fold = '<button type=button class=plnlf data-pnfold aria-expanded="' + (c ? 'false' : 'true') + '" title="' + esc(T(c ? 'Expand list' : 'Collapse list'))
     + '" aria-label="' + esc(T(c ? 'Expand list' : 'Collapse list')) + '">' + (c ? '›' : '‹') + '</button>';
   const head = '<div class=plnlh>' + (c ? '' : '<b>' + esc(T('Working now')) + '</b><small class=plnln>' + live.length + '</small>') + fold + '</div>';
-  // Collapsed rail: one dot per live session (title = project · state); a dot click expands and picks it.
-  if(c) return '<aside class="plnl plnlc">' + head + live.map(x => { const k = plNowSt(x); return '<button type=button class="plnlrd plnld-' + k + '" data-pncwd="' + esc(x.cwd || '')
-    + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc((x.project || '') + ' · ' + T(PLNOW_ST[k])) + '" aria-label="' + esc((x.project || '') + ' · ' + T(PLNOW_ST[k])) + '"></button>'; }).join('') + '</aside>';
+  // Collapsed rail: one dot per live session; hover/focus shows the floating label (plNowTip, data-pnlp/pnls); a dot click expands and picks it.
+  if(c) return '<aside class="plnl plnlc">' + head + live.map(x => { const k = plNowSt(x), on = !!PLS.nowSid && x.sid === PLS.nowSid, st = T(PLNOW_ST[k]); return '<button type=button class="plnlrd plnld-' + k + (k === 'work' ? ' plnlrp' : '') + (on ? ' on' : '') + '" data-pncwd="' + esc(x.cwd || '')
+    + '" data-pnplat="' + esc(x.plat || '') + '" data-pnlp="' + esc(x.project || '') + '" data-pnls="' + esc([st, plNowRunTxt(x)].filter(Boolean).join(' · ')) + '" aria-label="' + esc((x.project || '') + ' · ' + st) + '"' + (on ? ' aria-current=true' : '') + '></button>'; }).join('') + '</aside>';
   if(!live.length) return '<aside class=plnl>' + head + '<div class=plnle>' + esc(T('No sessions working now')) + '</div></aside>';
   // Row = the Timeline's session name cell (74b tlSessNmB, bare: no time/token chips) + the run summary; one button per (cwd, plat).
   return '<aside class=plnl>' + head + live.map(x => {
@@ -97,6 +97,21 @@ function plNowGoProj(proj){
   plProjGo(proj);
   PLS.runSel = null; plAgSet(false);
 }
+// Rail dot label: one shared fixed element on <body>, because the rail scrolls (overflow:auto) and would clip a ::after.
+function plNowTip(p, s){ return '<b>' + esc(p || '') + '</b><span>' + esc(s || '') + '</span>'; }   // ⚠project is user data: esc only, never T()
+function plNowTipHide(){ const d = document.getElementById('plnltip'); if(d) d.remove(); }
+function plNowTipShow(b){
+  let d = document.getElementById('plnltip');
+  if(!d){ d = document.createElement('div'); d.id = 'plnltip'; d.setAttribute('aria-hidden', 'true'); document.body.appendChild(d); }
+  d.innerHTML = plNowTip(b.dataset.pnlp, b.dataset.pnls);
+  const r = b.getBoundingClientRect();
+  d.style.left = (r.right + 6) + 'px'; d.style.top = (r.top + r.height / 2) + 'px';
+}
+function plNowTipOn(e){ const b = e.target.closest && e.target.closest('.plw .plnlrd'); if(b) plNowTipShow(b); else plNowTipHide(); }
+document.addEventListener('mouseover', plNowTipOn);
+document.addEventListener('focusin', plNowTipOn);
+document.addEventListener('focusout', plNowTipHide);
+document.addEventListener('scroll', plNowTipHide, true);   // ⚠the label is fixed: a scrolling rail would leave it beside the wrong dot
 document.addEventListener('click', e => {
   const t = e.target.closest && e.target.closest('.plw .plnl [data-pncwd],.plw .plnl [data-pnagc],.plw .plnl [data-pnfold]');
   if(!t) return;
