@@ -17,7 +17,8 @@ The user's install keeps every feature on; a fresh public install starts core-on
 ★2026-10-01 requirement: three headline features up front; everything else is secondary.
 - On by default (`default_on_public: true`): **session control** (core · attention) · **quota pace + limit block** (core · saver) · **structure** (`struct`, AI-written code map) · **pipeline** (per-stage agent/model, run, live stage).
 - ★2026-10-01 requirement: pipeline is a headline feature, not secondary.
-- Timeline (first screen) carries open pipeline runs: per-session stage strip + gate result line + stage bands from `SESS[].plrun` (`web/js/74c-timeline-plrun.js`, `web/css/21-timeline-plrun.css`); click opens the Pipeline view.
+- First screen = Pipelines in Watch (no saved tab; Timeline only when `pipeline` is off): «Working now» list of live sessions + subagents (48j) beside the canvas | result pane | «Running N» card (48k). See FILEMAP.
+- Timeline is the evidence view; it carries open pipeline runs: per-session stage strip + gate result line + stage bands from `SESS[].plrun` (`web/js/74c-timeline-plrun.js`, `web/css/21-timeline-plrun.css`); click opens the Pipeline view.
   - Up to 3 live runs stack one line each (newest first, «+N» for more); ended runs in the window fold behind a «+N ended» chip (in-memory toggle). Row accent fail > run > fin; bands and the gate pill follow the top run. The work log stacks every run an agent appears in (session tab ≤ 3).
 - Everything else ships off (`default_on_public: false`) and is switched on in Settings › Features: branch · timeline · retro · history · tools · tokens · failures · awake.
 - ⚠The `struct` manifest (migration step) must set `default_on_public: true`.

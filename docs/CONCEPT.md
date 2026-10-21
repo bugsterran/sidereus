@@ -34,8 +34,9 @@ Where it aims:
 - A control view that doesn't miss what needs you. «Attention» ranks sessions from several vendors in one list by how much they block you (approval pending, then an open question, then the rest); tests in the full check keep blocked and asking sessions in the list and at the top. A click brings that session's terminal tab forward, and instructions go through the mailbox.
 - One view over terminal CLIs. Claude Code reads from its transcripts; Codex CLI and Gemini CLI report through hooks. Cursor and other CLIs can use the same hook, not yet verified.
 
+Shipped: the viewer opens on Pipelines (live sessions and subagents beside the run canvas, stage result with gate evidence); Timeline is the evidence view behind it.
+
 Next (planned):
-- Pipeline evidence and gate evaluation at the centre of the first screen.
 - Cursor and other hook-reporting CLIs verified on a real install.
 - Evidence export in the OpenTelemetry GenAI format, so existing observability tools can read it. Sidereus feeds those tools; it does not replace them.
 

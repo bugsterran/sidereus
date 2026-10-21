@@ -166,8 +166,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ `aside.plnl` is always rendered with a fixed width (the saved split, or the collapsed rail); only its contents change with the sessions.
 - ⇒ `paintPipe` skips while the split is being dragged, so a poll never rebuilds the handle under the pointer.
 - ⇒ Collapsed, it is a rail of status dots, not hidden; a dot click expands and picks that session.
-- ⇒ The Watch pane under the canvas sizes to its content (120–280px, no handle) and shows nothing without a run.
-- ⚠Never size the list by its content or render it only when sessions exist. No per-row Timeline link or stage-agent rows: the canvas already shows each stage's agent.
+- ⇒ Watch canvas | result pane | «Running N» card take shares of the free height (48k `plWatchFit`, ls `sidereus.plwv`, two grips), never their content; the card is always present.
+- ⇒ Subagents appear only as the session's live subagent tree (48j `plNowAgents`, max 6 + «+N more»); no per-row Timeline link.
+- ⚠Never size the list by its content or render it only when sessions exist.
 
 ## Watch/Edit split (48k `PLMODE`/`plModeSet`/`plWatchOn`, 48h `plRO`)
 
