@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Attention: a «done · waiting» row appears about 15 s after a session ends its turn (was 120–150 s); a hidden tab now polls every 10 s instead of 30 s.
 - Pipelines: the «Cross-review (Codex)» template now runs `codex exec` with `< /dev/null` (it hung with an open non-TTY stdin) and closes the run with `[pl-end:…]` after the review.
 - Pipelines: a fresh git clone with no session history no longer opens the Sidereus repo's own pipelines by default; that project is listed last and opens only when picked.
 - Pipelines: copying a pipeline from another project keeps an orchestrator stage (agent `main`) instead of turning it into general-purpose and listing `main` as a replaced agent.

@@ -68,7 +68,7 @@ class TestPoints(Base):
     def test_thresholds(self):
         self.assertEqual((att.ATT_FAIL_CARD_S, att.ATT_STALL_S, att.ATT_LOOP_N, att.ATT_TOOLFAIL_N,
                           att.ATT_TOOLFAIL_S, att.ATT_TOOLFAIL_RECENT_S, att.ATT_DONE_S),
-                         (1800, 1800, 8, 4, 600, 180, (120, 7200)))
+                         (1800, 1800, 8, 4, 600, 180, (15, 7200)))
 
     def test_ranking_across_sessions(self):
         rows = [
@@ -123,10 +123,22 @@ class TestCtx(Base):
 
 class TestDone(Base):
     def test_window_bounds(self):
-        self.assertEqual(self.kinds(sess("a", state="wait", age=119)), [])
-        self.assertEqual(self.kinds(sess("a", state="wait", age=120)), ["done"])
+        self.assertEqual(self.kinds(sess("a", state="wait", age=10)), [])
+        self.assertEqual(self.kinds(sess("a", state="wait", age=14)), [])
+        self.assertEqual(self.kinds(sess("a", state="wait", age=15)), ["done"])
+        self.assertEqual(self.kinds(sess("a", state="wait", age=20)), ["done"])
         self.assertEqual(self.kinds(sess("a", state="wait", age=7200)), ["done"])
         self.assertEqual(self.kinds(sess("a", state="wait", age=7201)), [])
+
+    def test_not_while_working(self):
+        for st in ("think", "tool"):
+            self.assertNotIn("done", self.kinds(sess("a", state=st, age=600)))
+
+    def test_label_under_a_minute(self):
+        why = self.one(sess("a", state="wait", age=20))["sigs"][0]["why"]
+        self.assertNotIn("0분", why)
+        self.assertIn("20초", why)
+        self.assertIn("2분", self.one(sess("a", state="wait", age=150))["sigs"][0]["why"])
 
     def test_not_with_sub_or_bgs(self):
         self.assertNotIn("done", self.kinds(sess("a", state="wait", age=600, sub=[{"idle": 1}])))
@@ -135,7 +147,7 @@ class TestDone(Base):
 
 class TestMailIdle(Base):
     def test_R3_mailidle_sig_pts(self):
-        row = self.one(sess("a", state="wait", age=30, mailIdle={"n": 3, "age": 720}))
+        row = self.one(sess("a", state="wait", age=10, mailIdle={"n": 3, "age": 720}))  # under the done floor: mailidle alone
         sg = [s for s in row["sigs"] if s["k"] == "mailidle"][0]
         self.assertEqual((sg["pts"], row["score"]), (75, 75))
         self.assertEqual(sg["why"], "메일 3통 대기 · 세션 쉼 12분")

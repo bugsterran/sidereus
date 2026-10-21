@@ -33,10 +33,10 @@ if(ISPOP){
   document.body.classList.add('wpop');      // branch file diff: static, fetched once
   brPopBoot();
 } else {
-  // ⚠A hidden tab still polls, but every 30s instead of 2.5s — 43-notify.js fires OS notifications from poll
+  // ⚠A hidden tab still polls, but every 10s instead of 2.5s — 43-notify.js fires OS notifications from poll
   // exactly when the tab is not visible, so stopping would silence them. Back to visible = poll at once.
   let pollLast = Date.now();
-  const pollTick = () => { if(document.hidden && Date.now() - pollLast < 30000) return; pollLast = Date.now(); poll(); };
+  const pollTick = () => { if(document.hidden && Date.now() - pollLast < 10000) return; pollLast = Date.now(); poll(); };
   poll(true); setInterval(pollTick, 2500); setInterval(loadLive, LIVE_EVERY);
   document.addEventListener('visibilitychange', () => { if(!document.hidden){ pollLast = Date.now(); poll(); } });
 }
