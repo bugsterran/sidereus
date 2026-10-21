@@ -90,10 +90,10 @@ class PipelineSidereus(unittest.TestCase):
         self.assertEqual(r[0], {"/t": ["arch-map"]})
         self.assertEqual(r[1], {"/sidereus": ["arch-map"]})   # no target run known: the home keeps the tag
 
-BFNS = ("plBorrows", "plBorrowOf", "plRO", "plBorrowLab", "plBorrowChip", "plBorrowChips", "plBorrowLv", "plBorrowBody", "plCur", "plOvPick")
+BFNS = ("plBorrows", "plBorrowOf", "plRO", "plBorrowLab", "plBorrowChip", "plBorrowChips", "plBorrowLv", "plBorrowBody", "plCur", "plProjGo", "plOvPick")
 BPRE = "\n".join([
     "function strShort(p){ return p.slice(p.lastIndexOf('/') + 1); } let DIRTY = false; function plDirty(){ return DIRTY; } const LS = {}; function lsSet(k, v){ LS[k] = v; }",
-    "let PLNEW = null, PAINTS = 0, SESS = [], PLVIEW = 'pipe'; function plPaint(){ PAINTS++; } function plLiveHead(lv){ return lv ? '<HEAD ' + lv.sid + '>' : ''; }",
+    "let PLNEW = null, PLDRAFT = null, PLSTD = false, PAINTS = 0, SESS = [], PLVIEW = 'pipe'; function plPaint(){ PAINTS++; } function plLiveHead(lv){ return lv ? '<HEAD ' + lv.sid + '>' : ''; }",
     "function plWGrip(k){ return '<GRIP ' + k + '/>'; } function plWatchOv(){ return '<RUNCARD/>'; } let CVLT = null; function plCanvas(p, d, lt){ CVLT = lt; return {html: '<CV ' + p.name + '/>', ok: true}; }",
     "function plPrLive(r){ return Object.values(r.stages || {}).some(s => s.o === 'run'); }",
     "function plPrLv(sid, pr, st){ return {sid, pr, lt: {x: pr.name}, run: {run: plPrLive(pr)}}; }",

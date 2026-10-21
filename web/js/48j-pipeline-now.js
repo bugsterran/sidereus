@@ -65,9 +65,9 @@ function plNowWrap(body){
 function plNowPick(cwd, plat){
   const x = plNowLive(SESS).find(s => (s.cwd || '') === (cwd || '') && (s.plat || '') === (plat || ''));
   if(!x) return;
-  PLS.nowSid = x.sid || '';
   const r = (x.plrun || []).find(q => q && q.name && !q.end) || (x.plm && x.plm.name ? { name: x.plm.name } : null);
   plNowGoProj((r && r.proj) || x.cwd || PLS.proj);
+  PLS.nowSid = x.sid || '';   // ⚠after plNowGoProj: a project change clears nowSid
   if(r) PLS.sel = r.name;
   plPaint();
 }
@@ -83,9 +83,9 @@ function plNowPickApply(){
   if(!n) return;
   E.first = false; E.sel = { k: 'n', id: n.id };
 }
-// Same reset as plPickProj, without its paint; an open arch-map panel (48h PLAG) would hide the picked pipeline.
+// Same reset as plPickProj (48 plProjGo), without its paint; an open arch-map panel (48h PLAG) would hide the picked pipeline.
 function plNowGoProj(proj){
-  PLS.proj = proj; lsSet('sidereus.plproj', proj); PLNEW = null; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = '';
+  plProjGo(proj);
   PLS.runSel = null; plAgSet(false);
 }
 document.addEventListener('click', e => {

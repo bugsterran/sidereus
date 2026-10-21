@@ -46,7 +46,7 @@ NOW = ("\n".join([_const("PL_DESC_RE", "48b-pipeline-run.js"), _const("STR_SPLIT
                 + [js_fn(n) for n in ("sessPlChip", "plStrip", "plTk", "plDescStage", "plSubsOf", "plLabType", "plLabParts", "plLabDesc", "plLabTip",
                                       "strSplitGet", "strSplitCols", "strSplitDecl", "strSplitStyle", "strSplitGrip",
                                       "tlSessNmB", "tlAgNmB", "tlAgNm", "tlAgLab", "plNowAgents", "plNowPickApply",
-                                      "plNowSt", "plNowRun", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj")])
+                                      "plNowSt", "plNowRun", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj", "plProjGo", "plPickProj")])
        + "\n" + _const("PLNOW_ST", "48j-pipeline-now.js") + "\n" + _const("PLNOW_AGMAX", "48j-pipeline-now.js") + "\n")
 LIVE = """[{state: 'tool', sid: 's1', cwd: '/a', plat: 'cx', project: 'alpha', plrun: [{name: 'chg', cur: 'Implement'}]},
 {state: 'wait', sid: 's2', cwd: '/b', plat: 'cc', project: 'beta', plNone: {cat: 'docs'}},
@@ -152,7 +152,19 @@ class PlNow(unittest.TestCase):
 
     def test_f7_picker_clears_session_pick(self):
         pk = js_fn("plPickProj")
-        self.assertIn("PLS.nowSid = '';", pk)
+        self.assertIn("plProjGo(p)", pk)
+
+    def test_switch_closes_draft_and_template_forms(self):
+        # A form built for one project must not stay open on another; same project keeps it.
+        st = "const S = () => [PLDRAFT, PLSTD, PLNEW, PLS.proj]; const set = () => { PLDRAFT = {desc: 'x'}; PLSTD = true; PLNEW = {}; };"
+        r = run(NOW + st + "SESS = [{state: 'tool', sid: 's1', cwd: '/c'}];"
+                "set(); plPickProj('/b'); const a = S(); set(); plNowPick('/c', ''); const b = S();"
+                "set(); plPickProj('/c'); const c = S(); set(); plNowPick('/c', ''); console.log(JSON.stringify([a, b, c, S(), PLS.nowSid]));")
+        self.assertEqual(r[0], [None, False, None, "/b"])
+        self.assertEqual(r[1], [None, False, None, "/c"])
+        self.assertEqual(r[2], [{"desc": "x"}, True, {}, "/c"])
+        self.assertEqual(r[3], [{"desc": "x"}, True, {}, "/c"])
+        self.assertEqual(r[4], "s1")
 
     def test_f4_list_scroll_kept_across_rebuild(self):
         pp = js_fn("paintPipe")
