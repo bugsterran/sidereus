@@ -59,7 +59,7 @@ class PickIdleLive(unittest.TestCase):
         os.makedirs(self.dir)
         for i, sid in enumerate(["old-live", "old-dead", "n1", "n2", "n3"]):   # mtime rises with i
             fp = os.path.join(self.dir, sid + ".jsonl")
-            open(fp, "w").close()
+            open(fp, "w", encoding="utf-8").close()
             os.utime(fp, (CUT - 9000 + i, CUT - 9000 + i))
         self.saved = tl.claude_roots
         tl.claude_roots = _Roots(self.root)

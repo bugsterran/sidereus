@@ -46,9 +46,12 @@ function archChkTopBtn(d, p){   // p = repo of the hidden-rule pref, default the
   // red only with critical/high, amber otherwise; ⚠tool totals exceed the 50-item list, so only listed hidden critical/high items are subtracted
   const sm = archChkSum(sec), e = Math.max(0, sm.c + sm.h - top.filter(x => ['critical', 'high'].indexOf(archChkLv(x.sev)) >= 0 && H[archChkRk(x)]).length);
   // shown even at 0 so missing scanners stay visible; scanner states in the tooltip
-  const tip = archChkTools(sec).map(t => String(t.id) + ' · ' + archChkStat(t)).join('\n') + (hid.length ? '\n' + T('{n} rules hidden').replace('{n}', hid.length) : '');
-  return '<button type=button class="strbg strbg-archcki' + (e ? '' : ' strbg-archckiw') + '" data-arck aria-haspopup=dialog title="' + esc(tip) + '">'
-    + esc(T('Security {n}').replace('{n}', vis.length)) + '</button>';
+  // stale = scanned commit is not HEAD: same «cut» + ⚠ marking as the diagram stamp (archHeadNote, 84j)
+  const old = !!sec.stale, cm = String(sec.commit || '').slice(0, 7), hd = String((d && d.head) || '').slice(0, 7);
+  const tip = (old ? T('Scanned commit {n} · HEAD now {m}').replace('{n}', cm).replace('{m}', hd) + '\n' + T('The security results are older than the code — run the security check again.') + '\n' : '')
+    + archChkTools(sec).map(t => String(t.id) + ' · ' + archChkStat(t)).join('\n') + (hid.length ? '\n' + T('{n} rules hidden').replace('{n}', hid.length) : '');
+  return '<button type=button class="strbg strbg-archcki' + (e ? '' : ' strbg-archckiw') + (old ? ' strbg-cut' : '') + '" data-arck aria-haspopup=dialog title="' + esc(tip) + '">'
+    + esc((old ? '⚠ ' : '') + T('Security {n}').replace('{n}', vis.length)) + '</button>';
 }
 // Pure: one-line rule help — checks.security.rules[item.rk | "tool:rule"]; url kept only when https.
 function archChkHelp(c, x){
@@ -119,7 +122,8 @@ function archChkFixBody(p, c, items, home){
       return '- ' + archChkLv(x.sev) + ' · ' + (archChkRule(x) || '?') + ' · ' + x.file + ':' + (parseInt(x.line, 10) || 1)
         + (h.desc ? ' — ' + h.desc : '') + (h.url ? ' (' + h.url + ')' : ''); }).join('\n')
     + "\nFix the cause, keep behaviour, run the project's tests."
-    + "\nOnce the fix is committed, request a re-analysis of " + p + " so the architecture diagram reflects it — run:\n" + archDmBody(ARCH_PL, p, home);   // map is per commit; a stale one hides the fix
+    // ⚠Re-run the security check, not arch-map: only a new scan moves the Security badge. Recipients are Claude-only (archChkFixCands without cx).
+    + "\nOnce the fix is committed, re-run the security check on " + p + " so the Security badge reflects it — run:\n" + archChkRunBody(p, home, false);
 }
 // ── «Run security check»: relays a security-checks run request (preview + confirm), or shows the terminal command ──
 // ⚠Sidereus never runs the scanners itself (AGENTS.md rule 7): a session of the project runs the pipeline.
