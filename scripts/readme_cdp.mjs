@@ -134,11 +134,7 @@ export async function openApp(cdp, base, { name, lang, prefs, w, h, dsf, boot = 
   await S('Page.addScriptToEvaluateOnNewDocument', { source: `try{const P=${JSON.stringify(all)};let u=Object.assign({},P);`
     + `Object.defineProperty(window,'__UIP',{configurable:true,get(){return u;},set(v){u=Object.assign({},v||{},P);}});const f=window.fetch;`
     + `window.fetch=function(a,o){if(o&&o.method==='POST'&&String(a).indexOf('/api/ui-prefs')>=0)return Promise.resolve(new Response('{"ok":true}',{headers:{'Content-Type':'application/json'}}));`
-    // ⚠The demo world carries a saver-hook snapshot (`saverView`) so screen_check covers the saver chip, but that hook
-    // is not shipped: a public install has no snapshot file and never shows the chip. Blank it here so README images
-    // show what users get (the demo keeps it — tests/test_demo.py and the screen baselines rely on it).
-    + `const p=f.apply(this,arguments);if(String(a).indexOf('/api/state')<0)return p;`
-    + `return p.then(r=>r.clone().json().then(j=>{j.saverView=null;j.saverViews={};return new Response(JSON.stringify(j),{status:r.status,headers:r.headers});},()=>r));};}catch(e){}` });
+    + `return f.apply(this,arguments);};}catch(e){}` });
   if (boot) await S('Page.addScriptToEvaluateOnNewDocument', { source: boot });
   // tour=0: no first-run tour · autobar=0: no automation banner.
   await S('Page.navigate', { url: base + '/?autobar=0&tour=0&nosave=1' });
