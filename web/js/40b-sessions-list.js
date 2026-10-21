@@ -140,7 +140,9 @@ function sessBranchHtml(x){
 // Pipeline chip: open run «name · stage» · declared [pl-none] «No pipeline · cat» · undeclared edit «Undeclared».
 function sessPlChip(x){
   const runs = (x.plrun || []).filter(r => r && r.name), r = runs.find(r => !r.end), n = x.plNone;
-  if(r) return '<span class="spl" title="'+esc(T('Pipeline run')+': '+r.name+(r.cur ? ' · '+r.cur : ''))+'">'+esc(r.name+(r.cur ? ' · '+r.cur : ''))+'</span>';
+  // ⚠Only the name ellipsizes: the stage is the part worth reading, so it sits in its own non-shrinking span.
+  if(r) return '<span class="spl splr" title="'+esc(T('Pipeline run')+': '+r.name+(r.cur ? ' · '+r.cur : ''))+'"><span class="splnm">'+esc(r.name)+'</span>'
+    + (r.cur ? '<span class="splst"> · '+esc(r.cur)+'</span>' : '')+'</span>';
   // ⚠An ended run still outranks plNone: a nudge written before the run must not read «Undeclared» afterwards.
   if(runs.length) return '<span class="spl spln" title="'+esc(T('Pipeline run')+': '+runs[0].name+' · '+T('done'))+'">'+esc(runs[0].name)+'</span>';
   // ⚠cat is an English key from an allow-list — shown as-is, never passed through T().
