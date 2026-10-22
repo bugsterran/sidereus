@@ -59,5 +59,52 @@ class Untracked(unittest.TestCase):
         self.assertEqual(g.wt_files(self.td.name), (504, {"ok": False, "err": "timeout"}))
 
 
+class SecretUntracked(unittest.TestCase):
+    """An untracked `.env` shows its name but never its body, in both the diff window and the full-file view."""
+    def setUp(self):
+        self.gv = gv = sidereus("git_view")
+        self.td = tempfile.TemporaryDirectory()
+        self.root = os.path.realpath(self.td.name)
+        os.mkdir(os.path.join(self.root, ".git"))
+        for n, b in ((".env", "API_KEY=xyz-secret\n"), (".env.example", "API_KEY=placeholder\n")):
+            with open(os.path.join(self.root, n), "w", encoding="utf-8") as fh:
+                fh.write(b)
+
+        def fake(cwd, args, timeout, wait=None, **kw):
+            if args[0] == "ls-files" and "--others" in args:
+                return _R(".env\0.env.example\0")
+            if args[0] == "ls-files":
+                return _R("", 1)                               # --error-unmatch: not tracked
+            if args[0] == "status":
+                return _R("? .env\0? .env.example\0")
+            return _R("")
+        self._saved = (gv._git_run, gv._git_run_capped, gv.sessions_rows)
+        gv._git_run = fake
+        gv._git_run_capped = lambda cwd, args, timeout, cap: ("", 0)
+        gv.sessions_rows = lambda **k: [{"cwd": self.root, "repos": []}]
+
+    def tearDown(self):
+        self.gv._git_run, self.gv._git_run_capped, self.gv.sessions_rows = self._saved
+        self.td.cleanup()
+
+    def test_env_hidden(self):
+        d = self.gv.git_diff(self.root, scope="work", untr="1")
+        self.assertIn("b/.env\n", d["diff"])
+        self.assertNotIn("xyz-secret", d["diff"])
+        self.assertIn("+API_KEY=placeholder", d["diff"])     # shared template still readable
+        f = self.gv.git_file_diff(self.root, ".env", "work")
+        self.assertIn(".env", f["diff"])
+        self.assertNotIn("xyz-secret", f["diff"])
+        self.assertIn("+++ b/.env\n@@ -0,0 +1,1 @@\n+(contents hidden: secret file)\n", f["diff"])
+        self.assertIn("placeholder", self.gv.git_file_diff(self.root, ".env.example", "work")["diff"])
+
+    def test_names(self):
+        s = self.gv._secret_name
+        for n in (".env", "a/.env.local", "k.pem", "x.KEY", "id_ed25519", ".netrc", "credentials.json"):
+            self.assertTrue(s(n), n)
+        for n in (".env.example", ".env.sample", ".env.template", "id_rsa.pub", "env.py", "a.txt"):
+            self.assertFalse(s(n), n)
+
+
 if __name__ == "__main__":
     unittest.main()
