@@ -36,6 +36,7 @@ PLR_LAB_MAX = 120
 PLR_PAST_MAX = 5          # earlier runs per name in row `past` (= hooks/pl_flow.py past cap)
 PLR_IDS_MAX = 8           # = hooks/pl_flow.py AG_IDS_MAX
 PLR_PS_MAX = 6            # = hooks/pl_flow.py PS_MAX
+PLR_OPEN_S = 1800         # open run with no evidence this long and nothing live -> shown ended at its last evidence
 PLR_STALE_S = 600         # cur «run» with no tagged evidence this long -> «hold» idle (busy signal alone cannot keep it lit)
 PLR_TITLE_MAX = 80       # stage title cap = `_PLR_TAG` group 2; ⚠every cut must use it or one stage splits in two
 RENAMED = {"최종 검증": "재검증"}   # = sidereus/pipeline_schema.RENAMED (feature modules stay uncoupled; a test keeps them equal)
@@ -339,6 +340,15 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
             age = plm.get("age")
             t0 = now - age if isinstance(age, int) and not isinstance(age, bool) and age >= 0 else now
             stages[plm["title"]]["ag"].append({"aid": "main", "tid": "", "lab": "main", "run": True, "t0": t0, "t1": now})
+    lasts = [max([row["t1"]] + [st["t1"] for st in row["stages"].values()]
+                 + [g["t1"] for st in row["stages"].values() for g in st.get("ag") or () if not g.get("run")]) for row in out]
+    pmn = plm.get("name") if isinstance(plm, dict) else None
+    for j, row in enumerate(out):
+        # ⚠View-side close only (runs.json untouched): some last stages (main's push, bg dispatch) never write `end`.
+        #   A live agent / main marker keeps it open at any age (a bg arch-map stage runs > 30 min).
+        if (not row["end"] and now - lasts[j] > PLR_OPEN_S and pmn != row["name"]
+                and not any(a.get("run") for s in row["stages"].values() for a in s.get("ag") or ())):
+            row["end"] = lasts[j]
     # ⚠The busy signal is session-wide: with several open runs, credit it only to runs that hold a live agent / main
     # marker (the work is visibly theirs); with none live, the newest open run takes it. Otherwise another run's live
     # agent kept a finished stage of the newest run at «run».
@@ -347,10 +357,8 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
     # ⚠Newest *open* run, not out[0]: an ended newer run at index 0 left no run busy and an open stage read «done».
     first = next((j for j, row in enumerate(out) if not row["end"]), -1)
     for j, row in enumerate(out):
-        mine = j in live if live else j == first
-        last = max([row["t1"]] + [st["t1"] for st in row["stages"].values()]
-                   + [g["t1"] for st in row["stages"].values() for g in st.get("ag") or () if not g.get("run")])
-        _close_stale(row, act if mine else "idle", pend, last, now)
+        mine = (j in live if live else j == first) and not row["end"]
+        _close_stale(row, act if mine else "idle", pend, lasts[j], now)
     return out
 
 

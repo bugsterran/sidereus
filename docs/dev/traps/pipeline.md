@@ -221,3 +221,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 
 - ⚠A bare mark (`↺n`, `↺k ▾`, «Unverified», short hash) carries `title` + `aria-label` in words (`Sent back here {n} times`, `Pass {k} of this stage — …`, `Commit made in this stage: <hash>`); the visible text stays as is.
 - ⚠Clickable marks are at least 24x24px (WCAG 2.5.8), and a state is named by its word, never by colour or mark alone.
+
+## An open run with no closer stayed «running» 6 h (`pl_runs.pl_model` · `hooks/pl_flow.py` `_skip_ends`)
+
+- Cause: `end` is written only by a foreground last-stage Post, `[pl-end:]`, a commit or `_boundary`; main's push-only tail, a background last stage and skipped tails never close, and `PLR_KEEP_S` kept them listed for 6 h.
+- ⇒ The viewer shows an `end`-0 run ended at its last evidence after `PLR_OPEN_S` (30 min) with no live agent / bg task / main marker of that run; the hook ends a run when a skip leaves only skipped stages after a finished cur.
+- ⚠Never close by age alone: a background arch-map stage agent runs > 30 min. Never write `runs.json` from the viewer.

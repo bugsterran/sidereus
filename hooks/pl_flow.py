@@ -1063,6 +1063,20 @@ def _run_of(d, name, cwd, now, fresh=True):
     return r
 
 
+def _skip_ends(st, r):
+    """True when cur is finished (done/skipped, nothing in flight, no pending return) and every plain stage after it is skipped."""
+    c, cur = _idx(st, r.get("cur") or ""), r.get("cur") or ""
+    e = r["st"].get(cur) if isinstance(r.get("st"), dict) else None
+    if c < 0 or r.get("ret") or int(r["inflight"].get(cur) or 0) or not (cur in r["skipok"] or (isinstance(e, dict) and e.get("s") in ("done", "skip"))):
+        return False
+    j = _plain_next(st, c)
+    while j >= 0:
+        if st[j]["title"] not in r["skipok"]:
+            return False
+        j = _plain_next(st, j)
+    return True
+
+
 def _declare(ev, cwd, path, desc, now):
     """Bash `[pl-skip:name/stage]` / `[pl-model:name/stage=model]` / `[pl-agent:name/stage=agent]`: record on the run;
     deny reason for an unknown stage, else None. Only the stage title and model/agent name are stored, never the reason text."""
@@ -1106,6 +1120,10 @@ def _declare(ev, cwd, path, desc, now):
                 if title not in r["skipok"]:
                     r["skipok"].append(title)
                 _mark(r, title, "skip", now)
+                if _skip_ends(pl[0], r):   # ⚠no Post follows a skip: without this the run stayed open until idle
+                    r["end"] = now
+                    _ledger_add(r, name, now)
+                    _closed(proj, name)
             elif agent is not None:
                 r["agents"][title] = agent
             else:

@@ -650,6 +650,20 @@ class Flow(unittest.TestCase):
         self.assertEqual((r["t0"], r["cur"], r["skipok"]), (self.t, "", ["설계"]))
         self.assertIn("You skipped 구현;", self.pre("검증")["permissionDecisionReason"])
 
+    def test_skip_to_end_closes_run(self):
+        self.to_review()
+        self.pre("리뷰"), self.post("리뷰")
+        self.t += 7
+        self.assertIsNone(self.bash("[pl-skip:%s/라이브 검증] r" % N))
+        r = self.run_()
+        self.assertEqual((r["end"], r["st"]["라이브 검증"]["s"]), (1007.0, "skip"))
+
+    def test_skip_with_stage_still_running_keeps_run(self):
+        self.to_review()
+        self.pre("리뷰")   # 리뷰 dispatched, not returned
+        self.assertIsNone(self.bash("[pl-skip:%s/라이브 검증] r" % N))
+        self.assertEqual(self.run_()["end"], 0)
+
     def test_skip_after_commit_opens_fresh_run(self):
         self.pre("설계"), self.post("설계"), self.pre("구현")
         self._cmd("git commit -m x")
