@@ -169,6 +169,25 @@ function mvScrollBack(){
   };
   if(want) requestAnimationFrame(tick); else done();
 }
+// URL hash <-> tab id (/#pipelines opens Pipelines). ⚠Declarations with the map inside: 05-i18n calls mvHashKey before this file runs.
+function mvHashKey(h){
+  const m = {pipelines: 'pipe', structure: 'struct', timeline: 'time', chat: 'chat', branches: 'br', tokens: 'token', history: 'hist', insights: 'retro'};
+  const k = String(h || '').replace(/^#/, '').toLowerCase();
+  if(Object.prototype.hasOwnProperty.call(m, k)) return m[k];
+  for(const n in m){ if(m[n] === k) return k; }
+  return null;
+}
+function mvHashOf(k){
+  const m = {pipe: 'pipelines', struct: 'structure', time: 'timeline', chat: 'chat', br: 'branches', token: 'tokens', hist: 'history', retro: 'insights'};
+  return Object.prototype.hasOwnProperty.call(m, k) ? m[k] : '';
+}
+// ⚠replaceState, not location.hash: no history entry per tab switch; popups (diff/work/brdiff) own their URL and skip it.
+function mvHashSync(){
+  if(ISPOP || ISWP || ISBP) return;
+  const h = mvHashOf(mainView);
+  if(!h || location.hash === '#' + h) return;
+  try{ history.replaceState(history.state, '', location.pathname + location.search + '#' + h); }catch(e){ softErr('hash', e); }
+}
 function setMainView(v){
   const _prev = mainView;
   if(feed) mvScroll[_prev] = feed.scrollTop;
@@ -181,6 +200,7 @@ function setMainView(v){
   // ★Switching views **does not close open diff windows** (2026-09-04). As a modal it blocked what was behind and
   // had to be closed, but a floating window's purpose is to stay open while viewing other screens.
   tabSet('mbMainView', mainView);
+  mvHashSync();
   applyMainView();
   if(mainView === 'time'){
     agView = 'modal';
@@ -227,6 +247,15 @@ function setMainView(v){
   if(place === 'all' && !q) feed.scrollTop = 0; else toBottom(false);
   buildMv();
 }
+// Boot: write the opened tab into the URL; a typed/pasted hash switches tab. Unknown or feature-off keys are ignored.
+mvHashSync();
+if(!(ISPOP || ISWP || ISBP)) window.addEventListener('hashchange', () => {
+  const k = mvHashKey(location.hash);
+  let off = [];
+  try{ off = JSON.parse(lsGet('mbTabsOff', '[]')) || []; }catch(e){ softErr('hash', e); }
+  if(k && k !== mainView && !(Array.isArray(off) && off.includes(k))) setMainView(k);
+  else if(k) mvHashSync();
+});
 // Toolbar slot contract: a tab paints its controls via tbSet('<mainView>', html) and wires them on the returned element.
 function tbSet(k, html){
   const s = document.querySelector('#tbar > .tbs[data-tb="' + k + '"]');
