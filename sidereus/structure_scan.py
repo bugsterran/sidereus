@@ -167,8 +167,20 @@ _struct_lock = threading.Lock()
 _struct_blob_cache = {}                  # (kind, key) -> extraction result. git sha·tar are immutable
 _struct_file_cache = {}                  # (path, content hash) -> (line count, function list) — parse reuse
 STRUCT_FCACHE_N = 20000
-STRUCT_BCACHE_N = 200
+# ★One decoded snapshot is ~5 MB (111 blobs = 573 MB measured); 200 allowed ~1 GB and the viewer grew 235 -> 715 MB.
+#   The disk copy is the durable cache, so memory only covers one cell's points (STRUCT_SNAPS_LOCAL 20 / STRUCT_SNAPS 10 + slack).
+STRUCT_BCACHE_N = 32
 _struct_out_cache = {}                   # realpath -> (key, result, last used time)
+
+
+def _struct_blob_put(key, got):
+    """Store one extraction result, evicting the oldest past STRUCT_BCACHE_N.
+    ⚠Every write goes through here — disk hits too; only fresh builds were capped and warm-up filled it unbounded."""
+    with _struct_lock:
+        _struct_blob_cache.pop(key, None)
+        while len(_struct_blob_cache) >= STRUCT_BCACHE_N:
+            _struct_blob_cache.pop(next(iter(_struct_blob_cache)))
+        _struct_blob_cache[key] = got
 
 
 def _struct_area(name):

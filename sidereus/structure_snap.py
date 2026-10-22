@@ -12,7 +12,7 @@ from sidereus.warn import warn_once
 from sidereus.gitinfo import _git_slot, git_argv, git_env
 from sidereus.structure_scan import (STRUCT_EXTS, STRUCT_RULES_VER, STRUCT_SKIP, STRUCT_MAX_FILES,
     STRUCT_MAX_BYTES, STRUCT_SNAPS, STRUCT_SNAPS_LOCAL, STRUCT_GIT_TIMEOUT, _struct_lock, _struct_blob_cache,
-    STRUCT_BCACHE_N, _struct_wanted, _struct_build, _struct_tmode)
+    _struct_blob_put, _struct_wanted, _struct_build, _struct_tmode)
 from sidereus.structure_cache import (_struct_disk_read, _struct_disk_write, _struct_enc_build, _struct_dec_build,
     _struct_fcache_load, _struct_fcache_save)
 
@@ -58,8 +58,7 @@ def _struct_git_tree(root, sha, tests=False):
     dk = "git|%s|%s|%d" % (root, sha, _struct_tmode(tests))
     got = _struct_dec_build(_struct_disk_read("blob", dk))
     if got is not None:
-        with _struct_lock:
-            _struct_blob_cache[key] = got
+        _struct_blob_put(key, got)
         return got
     try:
         with _git_slot():
@@ -133,10 +132,7 @@ def _struct_git_tree(root, sha, tests=False):
         return None                        # ⚠failure (slot wait, deadline) is not cached — the next call retries
     if got:
         _struct_disk_write("blob", dk, _struct_enc_build(got))
-    with _struct_lock:
-        if len(_struct_blob_cache) > STRUCT_BCACHE_N:   # ⚠do not create a dict without expiry
-            _struct_blob_cache.clear()
-        _struct_blob_cache[key] = got
+    _struct_blob_put(key, got)
     return got
 
 
@@ -223,8 +219,7 @@ def _struct_plain(path, orig, tests=False):
     dk = "bak|%s|%s|%s|%d" % (path, st.st_mtime, st.st_size, _struct_tmode(tests))
     got = _struct_dec_build(_struct_disk_read("blob", dk))
     if got is not None:
-        with _struct_lock:
-            _struct_blob_cache[key] = got
+        _struct_blob_put(key, got)
         return got
     try:
         if st.st_size <= STRUCT_MAX_BYTES:
@@ -238,10 +233,7 @@ def _struct_plain(path, orig, tests=False):
         return None
     if got:
         _struct_disk_write("blob", dk, _struct_enc_build(got))
-    with _struct_lock:
-        if len(_struct_blob_cache) > STRUCT_BCACHE_N:
-            _struct_blob_cache.clear()
-        _struct_blob_cache[key] = got
+    _struct_blob_put(key, got)
     return got
 
 
@@ -260,8 +252,7 @@ def _struct_tar(path, tests=False):
     dk = "tar|%s|%s|%s|%d" % (path, st.st_mtime, st.st_size, _struct_tmode(tests))
     got = _struct_dec_build(_struct_disk_read("blob", dk))
     if got is not None:
-        with _struct_lock:
-            _struct_blob_cache[key] = got
+        _struct_blob_put(key, got)
         return got
     try:
         items = []
@@ -283,8 +274,7 @@ def _struct_tar(path, tests=False):
         return None
     if got:
         _struct_disk_write("blob", dk, _struct_enc_build(got))
-    with _struct_lock:
-        _struct_blob_cache[key] = got
+    _struct_blob_put(key, got)
     return got
 
 

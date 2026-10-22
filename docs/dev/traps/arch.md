@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Structure tab (Architecture · Size)
 
+- ★**Structure blob cache grew the viewer 235 -> 715 MB in ~35 min** (issue #17 · 111 decoded blobs = 573 MB, ~5 MB each).
+  - Cause: disk hits in `_struct_git_tree`/`_struct_plain`/`_struct_tar` stored into `_struct_blob_cache` uncapped; warm-up loads every cell from disk. Cap was 200 (~1 GB).
+  - ⇒ Every write goes through `structure_scan._struct_blob_put` (oldest evicted past `STRUCT_BCACHE_N` = 32, one cell's points + slack); the disk copy stays the durable cache.
+  - ⚠Never write `_struct_blob_cache[...]` directly — `tests/test_structure_blob_cap.py`.
 - **Security «Request fix» re-ran arch-map, so the badge never refreshed** (84l `archChkFixBody`, `archChkTopBtn`).
   - Cause: the fix DM told the session to re-run arch-map, which never writes `checks-security.json`; the badge also ignored `security.stale`.
   - ★2026-10-21: live `.mailbox-mcp` scan 2480dd2 vs HEAD 9cef6ba → «⚠ Security 50», border-style dashed; fix preview ends with the security-checks command.
