@@ -127,7 +127,7 @@ class WinStatic(unittest.TestCase):
                 if not (isinstance(n, ast.Constant) and isinstance(n.value, str)):
                     continue
                 v = n.value
-                if not (v == "/usr/bin/python3" or v == "/tmp" or v.startswith("/tmp/")):
+                if not (v == "/usr/bin/python3" or v == "/tmp" or v.startswith("/tmp/")):  # nosec B108 -- fake path, never touched
                     continue
                 if (rel, _func(n, par)) in LITERAL_OK:
                     continue

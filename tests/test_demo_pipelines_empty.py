@@ -39,7 +39,7 @@ class DemoPipelinesEmpty(unittest.TestCase):
         self.assertEqual(len(b["pipelines"]), 1)
 
     def test_unknown_still_400(self):
-        for p in ("/tmp/x", self.bill + "/sub", self.w.by["inv"]["cwd"]):
+        for p in ("/tmp/x", self.bill + "/sub", self.w.by["inv"]["cwd"]):  # nosec B108 -- fake path, never touched
             self.assertEqual(self.get("proj=" + p)[0], 400, p)
 
     def test_eval_unknown_for_empty(self):

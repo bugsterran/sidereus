@@ -13,7 +13,7 @@ PQ = sidereus("pl_reqs")
 AM = sidereus("arch_map")
 SID = "0a1b2c3d-0000"
 NOW = 1_000_000.0
-REPO = "/tmp/repo"
+REPO = "/tmp/repo"  # nosec B108 -- fake path, never touched
 
 
 class _Base(unittest.TestCase):

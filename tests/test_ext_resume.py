@@ -62,7 +62,7 @@ class Resume(unittest.TestCase):
         shutil.rmtree(self.tmp)
 
     def feed(self, ev, t, sid, pid=4242, pstart="Thu Sep 24 20:30:27 2026", **kw):
-        req = {"platform": "gemini", "session_id": sid, "event": ev, "cwd": "/tmp/scratch", "ts": t,
+        req = {"platform": "gemini", "session_id": sid, "event": ev, "cwd": "/tmp/scratch", "ts": t,  # nosec B108 -- fake path, never touched
                "pid": pid, "pstart": pstart, "host": st._HOST}
         req.update(kw)
         return ext.ext_ingest(req)
@@ -80,7 +80,7 @@ class Resume(unittest.TestCase):
         self.assertEqual(v["firstSeen"], NOW - 20)          # run time counts from the process start
 
     def test_saved_duplicates_collapse_to_latest(self):
-        base = {"pid": 4242, "pstart": "Thu Sep 24 20:30:27 2026", "cwd": "/tmp/scratch"}
+        base = {"pid": 4242, "pstart": "Thu Sep 24 20:30:27 2026", "cwd": "/tmp/scratch"}  # nosec B108 -- fake path, never touched
         ext._ext[("gemini", "a")] = dict(base, state="wait", firstSeen=NOW - 30, lastSeen=NOW - 30)
         ext._ext[("gemini", "b")] = dict(base, state="tool", firstSeen=NOW - 20, lastSeen=NOW - 2)
         self.assertEqual(self.sids(), ["b"])

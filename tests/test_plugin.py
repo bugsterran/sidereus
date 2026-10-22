@@ -235,7 +235,7 @@ class PyrunTest(unittest.TestCase):
         with open(p, "w", encoding="utf-8") as f:
             f.write('#!/bin/sh\ncase " $* " in *" -c "*) echo %s >>"%s"; [ %d = 0 ] && printf %%s "$0"; exit %d;; esac\n'
                     'echo "%s $*"; cat; exit 7\n' % (name, log, 0 if ok else 9, 0 if ok else 9, name))
-        os.chmod(p, 0o755)
+        os.chmod(p, 0o700)
 
     def probes(self):
         log = os.path.join(self.tmp, "probes.log")
