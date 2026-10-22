@@ -115,6 +115,10 @@ Agent/Task/SendMessage 는 지운다. 파이프라인, 단계, 시각, cwd 만 �
 - Pre: 태그가 실행을 연다(열린 실행이 없거나, 끝났거나, 6시간 넘게 멈춘 경우). 아직 안 돈 단계를 건너뛰는 앞쪽 점프는
   건너뛴 단계마다 한 번 거절된다(`onlyOnJump` 단계는 제외). 다시 보내면 통과한다. 앞 단계는 늘 통과하고, 현재 단계의
   `onFail.goto` 로 돌아가면 반복 한 번으로 세고 끝나면 그 단계(또는 `onFail.then`)로 돌아온다.
+- Pre: 태그 붙은 Agent/Task 는 단계 에이전트를 `subagent_type` 으로, 단계 모델을 `model` 로 넘겨야 하고 아니면 거절된다
+  (모델을 빼도 불일치로 본다. `inherit`, `main` 단계, 단계 에이전트가 설치되지 않아 `general-purpose` 를 받는 경우는 예외).
+  Bash 설명 `[pl-model:<name>/<stage>=<model>]` · `[pl-agent:<name>/<stage>=<agent>]` 로 그 실행의 그 단계에만 다른
+  모델·에이전트를 선언한다.
 - Post: 단계의 마지막 조각이 돌아오면 `PASS → next: [pl:…] · agent · model · skill · gate` 를, `onFail` 이 있는 단계면
   FAIL 반복 줄을 붙인다. 백그라운드 호출은 «끝나면» 으로 말하고, 그 호출이 받는 유일한 Post 에서 진행 중 조각 수를
   하나 줄인다(단계를 끝냄으로 표시하지는 않는다). 마지막 단계 뒤엔 실행을 닫고 `after` 를 알린다.
@@ -122,10 +126,14 @@ Agent/Task/SendMessage 는 지운다. 파이프라인, 단계, 시각, cwd 만 �
   붙이라는 알림(실행 이름·단계만)을 문맥에 더한다. 거부하지 않으며 실행마다 10분에 한 번.
 - Bash 설명의 `[pl-none:<category>]`(`small-fix` · `no-fit` · `explore` · `other`)는 이 세션의 일이 파이프라인 밖이라고
   선언한다. `plmark/<session_id>.none.json` 에는 분류와 시각만 남고 이유 글은 남지 않는다. 모르는 분류는 목록과 함께 거부한다.
+  선언마다 `plmark/none-log.jsonl` 에도 한 줄 붙는다(프로젝트 경로·분류·시각만). 90일 지난 줄은 지우고, 256 KB 를 넘으면
+  최근 절반만 남긴다.
   선언도 열린 실행도 없으면, 파이프라인이 있는 프로젝트에서 메인 세션의 첫 Edit/Write 나 태그 없는 `git commit` 을 목록과 함께
   한 번 거부하고 다시 하면 통과한다. ⚠수동 등록이면 `pl_flow.py` 에 `Edit|Write|MultiEdit|NotebookEdit` 매처가 필요하다(`setup-claude` 다시 실행).
 - 한 프로젝트에서 7일 안에 `[pl-none:no-fit]` 이 세 번째로 선언되면, 사용자에게 이 일에 맞는 파이프라인 초안을 제안하고 동의한 뒤에만
   `.claude/pipelines/<name>.json` 을 쓰라는 문맥을 더한다(횟수·프로젝트 경로만, 거부하지 않음). 프로젝트마다 7일에 한 번.
+- 메인의 `git commit` 은 이 세션에서 그 프로젝트의 열린 실행을 닫는다. 설명이 `[pl:-]` 인 커밋은 아무것도 닫지 않고,
+  `[pl:<name>/<stage>]` 태그가 붙은 커밋은 `<name>` 만 닫는다.
 - 실행이 끝나면(마지막 단계 · `[pl-end:]` · 메인의 `git commit`) `<data dir>/eval/<repo key>/seeds.json` 이 있을 때만
   `scripts/pl_eval.py score --auto` 를 떼어 띄운다(기다리지 않고 출력 없음). 오류는 삼키고 호출을 막지 않는다.
 - «적용» 이 꺼져 있거나, 파이프라인 파일이 없거나 깨졌거나, 단계 제목이 맞지 않으면 조용하다.
@@ -256,6 +264,7 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 8799), `--dry-run`(본문을 stderr 로), `MAILBOX_DIR`(로그 위치). `session_id`, `cwd`, `transcript_path`, `model`,
 `tool_name`, `turn_id` 는 비어 있지 않은 문자열일 때만 넘기고, `SIDEREUS_PARENT_SID` 나 `CLAUDE_CODE_SESSION_ID` 가 있으면
 `parent` 로 넘긴다. 서버는 `session_id` 를 요구하고 본문을 1 MB 로 제한한다.
+`--url`/`SIDEREUS_HOOK_URL` 의 스킴이 `http`·`https` 가 아니면 거절한다(로그만 남기고 보내지 않음).
 
 ⚠stdout 은 비워 둔다(CLI 가 제어 JSON 으로 읽는다). 종료 코드는 늘 0 이고 뷰어가 꺼져 있어도 최대 2초만 기다린다.
 실패는 `ext-hooks/.ext-hook.log`(200 KB 상한)에 남긴다. `bash ext-hooks/demo.sh` 는 가짜 행 세 개를 만든다. 끝나면

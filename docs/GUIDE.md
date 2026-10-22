@@ -32,7 +32,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - The head row holds the pickers, the run bar, «✎ Edit» and «▶ Run».
 
 ### Pick a project and pipeline
-- «Project»: search working, recent and all projects; «+ Add project» at the bottom. «Pipeline»: this project's pipelines (⚠ = file breaks the schema, • = unsaved edits, a dot = running).
+- «Project»: search working, recent and all projects; «+ Add project» at the bottom. «Pipeline»: this project's pipelines (⚠ = file breaks the schema, • = unsaved edits, a dot = running). The file's `use` line («When to use») shows under the head row in Watch and Edit and in the picker tooltip.
 - «+ New ▾»: «+ New pipeline», «Import from another project», «Ask AI for a draft», «Standard templates». «+ New pipeline» appears only in a folder that has had one Claude session (the file lives in its `.claude/`).
 - A project with no pipelines leads with «Ask AI for a draft» and «Start from a template»; the quick templates fold behind «Quick templates ▾», and «Apply» appears once the project has a pipeline. Pick one, preview, then «Confirm — create» writes `.claude/pipelines/<name>.json`.
 - «Cross-review (Codex)» is a one-stage template: the session runs one read-only `codex exec` review of `git diff` with its own permissions, billed to your Codex account. One-shot, no follow-ups; Codex must be installed and logged in. Sidereus never starts Codex.
@@ -125,6 +125,7 @@ The Timeline is the evidence behind a verdict: what each agent actually did, and
 1. Each session and subagent has a row; hover for the task. «Rows» › «Running only» hides finished subagents (remembered). Drag the name column edge to widen it (double-click resets). On a session row a red line marks a compaction, a dashed blue line a /clear.
 2. A session running a pipeline gets a stage progress bar under its name (green done, striped blue current, amber sent back, red failed); click it to open the run in Pipelines. «Runs N» in the header lists open and just-ended runs, outlined in the worst run's colour (yellow «Stuck»).
 3. The «Changes» chip counts files changed in the followed session against «Changes baseline» (default «Uncommitted»); «⚠ n shared» = two sessions touched one file. Click it for the diff; base buttons «Uncommitted», «Since session start», «vs main / master», «All»; «Include untracked files»; one tab per repo.
+   Untracked secret files (`.env`, `.env.*` except `.example`/`.sample`/`.template`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, private SSH keys, `.netrc`, `.npmrc`, `.pypirc`, `credentials`) are listed by name only: their contents are never read or sent, and the diff shows «(contents hidden: secret file)».
 4. The bottom summary shows «Results» (commits, runs ✓/✕/↺) and «Evidence» (gate PASS/FAIL, first failing step); «More» adds waiting time, outliers and cost.
 5. Click a commit for its diff, a session or agent for its work log. With a log open, clicks add tabs; Shift+click opens a new window.
 6. Older work: the History tab (with 2+ accounts, an account picker; other accounts' Claude rows fold into «In other accounts: N»).

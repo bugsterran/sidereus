@@ -34,6 +34,7 @@ sidereus doctor
 (`start --install-service`, 3장 — 설치 경로가 다시 설치할 때마다 바뀐다)과 `scripts/` 도구를 쓸 수 없다.
 Claude Code 는 GitHub 플러그인으로 연결한다(5장).
 파이프라인 채점(`scripts/pl_eval.py`)은 클론에서만 돌아간다.
+0.7.0 으로 올린 뒤 처음 시작하면 도구 사용 캐시를 한 번 다시 만든다(도구·하네스에 1분쯤 «불러오는 중…»).
 
 Python 3.9 이상만 있으면 된다. macOS 기본 `/usr/bin/python3` 로 된다.
 데이터(로그·캐시·메일박스·설정)는 `$MAILBOX_DIR` 에 쌓이고, 기본값은 `~/.mailbox-mcp` 다

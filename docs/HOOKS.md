@@ -121,6 +121,10 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
 - Pre: a tag opens a run (none open, last one ended, or idle over 6 h). A jump forward past unrun stages
   (`onlyOnJump` stages excepted) is denied once per skipped stage; dispatching again passes. Earlier stages always pass;
   tagging the current stage's `onFail.goto` counts a loop round and returns to it (or `onFail.then`).
+- Pre: a tagged Agent/Task must pass the stage's agent as `subagent_type` and its model as `model`, or it is denied
+  (an omitted model counts as a mismatch; `inherit`, a `main` stage and a stage agent that is not installed, where
+  `general-purpose` is accepted, are exempt). A Bash description `[pl-model:<name>/<stage>=<model>]` or
+  `[pl-agent:<name>/<stage>=<agent>]` declares another model or agent for that stage of the run.
 - Post: when the stage's last slice returns, adds `PASS → next: [pl:…] · agent · model · skill · gate` and, for a stage
   with `onFail`, the FAIL round line. A background dispatch says «when it finishes»; its Post (the only one it gets)
   takes its slice off the in-flight count but does not mark the stage done. After the last stage it ends the run and
@@ -129,6 +133,8 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
   stage work `[pl:<name>/<stage>]` or other work `[pl:-]`. Context only, never a deny; once per 10 min per run.
 - `[pl-none:<category>]` in a Bash description (`small-fix` · `no-fit` · `explore` · `other`) declares the session's
   work outside every pipeline: `plmark/<session_id>.none.json` keeps only the category and time, never the reason.
+  Each declaration is also appended to `plmark/none-log.jsonl` (project path, category and time only); lines older than
+  90 days are dropped and the file is trimmed to its newest half past 256 KB.
   An unknown category is denied with the list. Without it and with no open run, the main session's first Edit/Write
   or untagged `git commit` in a project with pipelines is denied once, listing them; the retry passes. ⚠Manual
   setups need the `Edit|Write|MultiEdit|NotebookEdit` matcher for `pl_flow.py` (re-run `setup-claude`).
@@ -270,6 +276,7 @@ The CLI runs `ext-hooks/ext_hook.py --platform <key>`, which maps the stdin even
 config `port` > 8799), `--dry-run` (body to stderr), `MAILBOX_DIR` (log location). It forwards `session_id`, `cwd`,
 `transcript_path`, `model`, `tool_name`, `turn_id` when they are non-empty strings, and `parent` from
 `SIDEREUS_PARENT_SID` or `CLAUDE_CODE_SESSION_ID`. The server requires `session_id` and caps the body at 1 MB.
+A `--url`/`SIDEREUS_HOOK_URL` whose scheme is not `http` or `https` is refused (logged, nothing sent).
 
 ⚠stdout stays empty (CLIs read it as control JSON), exit is always 0, a dead viewer costs at most 2 s. Failures go to
 `ext-hooks/.ext-hook.log` (200 KB cap). `bash ext-hooks/demo.sh` adds three fake rows; always run `demo.sh clean` after.

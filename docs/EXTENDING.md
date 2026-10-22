@@ -88,7 +88,7 @@ Internals: [dev/PIPELINE.md](dev/PIPELINE.md). Review pipelines per CLI, with te
               {"title": "Implement", "agent": "my-implementer", "fanout": "slices", "gate": "scripts/check.sh --fast"} ] }
 ```
 
-- Top keys: `v`, `name`, `title`, `use` (read by `pipelines_brief.py`), `rules`, `after`, `defaults`, `guards` (`requireGates`, `maxLoopBacks`), `stages`.
+- Top keys: `v`, `name`, `title`, `use` (one line, up to 120 characters; read by `pipelines_brief.py` and shown on the Pipelines screen), `rules`, `after`, `defaults`, `guards` (`requireGates`, `maxLoopBacks`), `stages`.
 - Stage keys: `title`, `agent`, `model` (`inherit|opus|sonnet|haiku`), `skill`, `task`, `gate`, `produces`/`fanout`,
   `parallel`, `retry`, `onError` (`stop|continue`), `onFail {goto, max 1..5, then?, stopOn?}`, `onlyOnJump`, `ui`.
 - Titles outside `pipeline_schema.STAGE_TITLES` are custom stages (1–40 chars, need `task`).

@@ -34,6 +34,7 @@ Upgrade: `pipx upgrade sidereus` (`uv tool upgrade sidereus`). Not available thi
 (`start --install-service`, §3 — the install path changes on every reinstall) and `scripts/` tools; connect Claude Code
 with the plugin from GitHub (§5).
 Pipeline scoring (`scripts/pl_eval.py`) runs only from a clone.
+The first start after updating to 0.7.0 rebuilds the tool usage cache once (about a minute of «Loading…» in Tools and Harness).
 
 Needs Python 3.9 or later, nothing else; the macOS `/usr/bin/python3` works.
 Data (logs, caches, mailbox, config) goes to `$MAILBOX_DIR`, default `~/.mailbox-mcp`
