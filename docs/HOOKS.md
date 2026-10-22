@@ -122,7 +122,7 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
   (`onlyOnJump` stages excepted) is denied once per skipped stage; dispatching again passes. Earlier stages always pass;
   tagging the current stage's `onFail.goto` counts a loop round and returns to it (or `onFail.then`).
 - Pre: a tagged Agent/Task must pass the stage's agent as `subagent_type` and its model as `model`, or it is denied
-  (an omitted model counts as a mismatch; `inherit`, a `main` stage and a stage agent that is not installed, where
+  (when the stage names a model, omitting `model` is a mismatch; `inherit`, a `main` stage and a stage agent that is not installed, where
   `general-purpose` is accepted, are exempt). A Bash description `[pl-model:<name>/<stage>=<model>]` or
   `[pl-agent:<name>/<stage>=<agent>]` declares another model or agent for that stage of the run.
 - Post: when the stage's last slice returns, adds `PASS → next: [pl:…] · agent · model · skill · gate` and, for a stage
