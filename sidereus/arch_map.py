@@ -32,6 +32,7 @@ FILES_MAX = 200            # file names per module in /api/arch/files; total sti
 _TREE_CACHE = {}           # (realpath, commit) -> (sorted names, cut); a commit's tree never changes, 4 entries kept
 _RUN_SEEN = {}             # project path -> {stage, sid, t0, at}: last tagged sign per project (bridges stage gaps)
 _SEC_SEEN = {}             # same for security-checks runs
+_REQ_SRC = None            # fn(sid, pl, now) -> repo the page last asked that session to run pl on, ""; set by pl_reqs
 
 
 def _cut(s, mx):
@@ -362,7 +363,7 @@ def _tnum(v):
 
 def _closed_by_result(r, root, pl=ARCH_PL):
     """True when an open plrun r of pl has a gate result for root newer than every sign of the run
-    (run/stage t0 · t1 · p0, agent t1; a live agent or main marker carries t1 = now, so it stays open).
+    (run/stage t0 · t1 · p0, t1 of a running agent only; a live agent or main marker carries t1 = now, so it stays open).
     ⚠Codex may re-emit a stage marker and never send the last stage or [pl-end:]: the record stays end 0 for hours."""
     if not isinstance(r, dict) or r.get("name") != pl or _tnum(r.get("end")) or _tnum(r.get("stop")):
         return False
@@ -371,7 +372,8 @@ def _closed_by_result(r, root, pl=ARCH_PL):
     for s in st.values():
         if isinstance(s, dict):
             signs += [_tnum(s.get(k)) for k in ("t0", "t1", "p0")]
-            signs += [_tnum(a.get("t1")) for a in s.get("ag") or () if isinstance(a, dict)]
+            # ⚠A finished agent's t0 and t1 are both stamped when its end is seen (12 s after verify.json): skip it, stage t0 covers dispatch.
+            signs += [_tnum(a.get("t1")) for a in s.get("ag") or () if isinstance(a, dict) and a.get("run") is True]
     v = result_at(pl, root)
     return bool(v) and v > max(signs)
 
@@ -453,10 +455,12 @@ def _store_repo(c):
 
 
 def _target(s, now, pl=ARCH_PL):
-    """Project a run of pl works on: the candidate (cwd + repos) with a pending arch-map store dir, else the first candidate
+    """Project a run of pl works on: the candidate (requested repo + cwd + repos) with a pending arch-map store dir, else the first candidate
     that is not the Sidereus repo (the pipeline's home, not the target), else ""."""
     cands = []
-    for c in [s.get("cwd")] + list(s.get("repos") or ()):
+    # ★A requested target only subagents touched is missing from repos (main-thread inputs): the run stuck on cwd, 15+ min.
+    req = _REQ_SRC(str(s.get("sid") or ""), pl, now) if _REQ_SRC else ""
+    for c in [req, s.get("cwd")] + list(s.get("repos") or ()):
         if isinstance(c, str) and c and os.path.isabs(c):
             c = _store_repo(c)
             if c and c not in cands:
@@ -469,6 +473,12 @@ def _target(s, now, pl=ARCH_PL):
     if not other and pl != ARCH_PL and cands:   # a security check of the Sidereus repo itself: home is the target
         return cands[0], 0.0
     return (other[0], 0.0) if other else ("", 0.0)
+
+
+def set_req_source(fn):
+    """pl_reqs registers its request reader here (it imports arch_map, so arch_map cannot import it)."""
+    global _REQ_SRC
+    _REQ_SRC = fn
 
 
 def _record_prov(p, old, row):
