@@ -1,5 +1,7 @@
 """Structure treemap time-series sources: git history, backup tars, .bak files and the current tree."""
 import glob
+import gzip
+import json
 import os
 import re
 import subprocess
@@ -11,10 +13,31 @@ from sidereus.config import CODE_DIR, DATA_DIR
 from sidereus.warn import warn_once
 from sidereus.gitinfo import _git_slot, git_argv, git_env
 from sidereus.structure_scan import (STRUCT_EXTS, STRUCT_RULES_VER, STRUCT_SKIP, STRUCT_MAX_FILES,
-    STRUCT_MAX_BYTES, STRUCT_SNAPS, STRUCT_SNAPS_LOCAL, STRUCT_GIT_TIMEOUT, _struct_lock, _struct_blob_cache,
+    STRUCT_MAX_BYTES, STRUCT_SNAPS, STRUCT_SNAPS_LOCAL, STRUCT_GIT_TIMEOUT, _struct_blob_cache,
     _struct_blob_put, _struct_wanted, _struct_build, _struct_tmode)
 from sidereus.structure_cache import (_struct_disk_read, _struct_disk_write, _struct_enc_build, _struct_dec_build,
     _struct_fcache_load, _struct_fcache_save)
+
+
+_MISS = object()
+
+
+def _struct_mem_put(key, got):
+    """Keep the gzip'd disk encoding in memory, not the decoded tuple (None = cached size-cap miss stays None)."""
+    _struct_blob_put(key, None if got is None else
+                     gzip.compress(json.dumps(_struct_enc_build(got), ensure_ascii=False).encode("utf-8"), 6))
+
+
+def _struct_mem_get(key):
+    """Decoded hit, or `_MISS`. ⚠A hit is a fresh object per call — callers may not rely on identity."""
+    raw = _struct_blob_cache.get(key, _MISS)
+    if raw is _MISS or raw is None:
+        return raw
+    try:
+        got = _struct_dec_build(json.loads(gzip.decompress(raw).decode("utf-8")))
+    except (OSError, EOFError, ValueError):
+        got = None
+    return _MISS if got is None else got
 
 
 # ── time-series sources ───────────────────────────────────────────────────────
@@ -51,14 +74,14 @@ def _struct_git_tree(root, sha, tests=False):
     ⚠Read-only commands only — `checkout`·`stash`·`reset` break the user's working tree."""
     # ⚠Extraction results depend on the classification rules and `tests` — without them in the key old results come back as-is.
     key = ("git", root, sha, STRUCT_RULES_VER, _struct_tmode(tests))
-    with _struct_lock:
-        if key in _struct_blob_cache:
-            return _struct_blob_cache[key]
+    hit = _struct_mem_get(key)
+    if hit is not _MISS:
+        return hit
     # ★Commits are immutable — kept on disk they stay valid forever, even across restarts (2026-09-22).
     dk = "git|%s|%s|%d" % (root, sha, _struct_tmode(tests))
     got = _struct_dec_build(_struct_disk_read("blob", dk))
     if got is not None:
-        _struct_blob_put(key, got)
+        _struct_mem_put(key, got)
         return got
     try:
         with _git_slot():
@@ -132,7 +155,7 @@ def _struct_git_tree(root, sha, tests=False):
         return None                        # ⚠failure (slot wait, deadline) is not cached — the next call retries
     if got:
         _struct_disk_write("blob", dk, _struct_enc_build(got))
-    _struct_blob_put(key, got)
+    _struct_mem_put(key, got)
     return got
 
 
@@ -213,13 +236,13 @@ def _struct_plain(path, orig, tests=False):
     except OSError:
         return None
     key = ("bak", path, st.st_mtime, st.st_size, STRUCT_RULES_VER, _struct_tmode(tests))
-    with _struct_lock:
-        if key in _struct_blob_cache:
-            return _struct_blob_cache[key]
+    hit = _struct_mem_get(key)
+    if hit is not _MISS:
+        return hit
     dk = "bak|%s|%s|%s|%d" % (path, st.st_mtime, st.st_size, _struct_tmode(tests))
     got = _struct_dec_build(_struct_disk_read("blob", dk))
     if got is not None:
-        _struct_blob_put(key, got)
+        _struct_mem_put(key, got)
         return got
     try:
         if st.st_size <= STRUCT_MAX_BYTES:
@@ -233,7 +256,7 @@ def _struct_plain(path, orig, tests=False):
         return None
     if got:
         _struct_disk_write("blob", dk, _struct_enc_build(got))
-    _struct_blob_put(key, got)
+    _struct_mem_put(key, got)
     return got
 
 
@@ -246,13 +269,13 @@ def _struct_tar(path, tests=False):
     except OSError:
         return None
     key = ("tar", path, st.st_mtime, st.st_size, STRUCT_RULES_VER, _struct_tmode(tests))
-    with _struct_lock:
-        if key in _struct_blob_cache:
-            return _struct_blob_cache[key]
+    hit = _struct_mem_get(key)
+    if hit is not _MISS:
+        return hit
     dk = "tar|%s|%s|%s|%d" % (path, st.st_mtime, st.st_size, _struct_tmode(tests))
     got = _struct_dec_build(_struct_disk_read("blob", dk))
     if got is not None:
-        _struct_blob_put(key, got)
+        _struct_mem_put(key, got)
         return got
     try:
         items = []
@@ -274,7 +297,7 @@ def _struct_tar(path, tests=False):
         return None
     if got:
         _struct_disk_write("blob", dk, _struct_enc_build(got))
-    _struct_blob_put(key, got)
+    _struct_mem_put(key, got)
     return got
 
 

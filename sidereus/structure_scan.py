@@ -169,6 +169,8 @@ _struct_file_cache = {}                  # (path, content hash) -> (line count, 
 STRUCT_FCACHE_N = 20000
 # ★One decoded snapshot is ~5 MB (111 blobs = 573 MB measured); 200 allowed ~1 GB and the viewer grew 235 -> 715 MB.
 #   The disk copy is the durable cache, so memory only covers one cell's points (STRUCT_SNAPS_LOCAL 20 / STRUCT_SNAPS 10 + slack).
+# ★Entries are the gzip'd disk encoding (structure_snap._struct_mem_put): ~450 KB vs ~5.1 MB decoded (repo-A), so 32 bound
+#   ~163 MB -> ~15 MB; a decode costs ~20-24 ms and hits are rare. ⚠Do not store the decoded tuple again.
 STRUCT_BCACHE_N = 32
 _struct_out_cache = {}                   # realpath -> (key, result, last used time)
 

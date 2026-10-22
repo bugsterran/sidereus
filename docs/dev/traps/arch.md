@@ -8,6 +8,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: disk hits in `_struct_git_tree`/`_struct_plain`/`_struct_tar` stored into `_struct_blob_cache` uncapped; warm-up loads every cell from disk. Cap was 200 (~1 GB).
   - ⇒ Every write goes through `structure_scan._struct_blob_put` (oldest evicted past `STRUCT_BCACHE_N` = 32, one cell's points + slack); the disk copy stays the durable cache.
   - ⚠Never write `_struct_blob_cache[...]` directly — `tests/test_structure_blob_cap.py`.
+  - ★Entries are gzip'd disk-encoded bytes (~450 KB vs ~5.1 MB decoded, bound ~163 -> ~15 MB); read/write only via `structure_snap._struct_mem_get`/`_struct_mem_put`.
 - **Security «Request fix» re-ran arch-map, so the badge never refreshed** (84l `archChkFixBody`, `archChkTopBtn`).
   - Cause: the fix DM told the session to re-run arch-map, which never writes `checks-security.json`; the badge also ignored `security.stale`.
   - ★2026-10-21: live `.mailbox-mcp` scan 2480dd2 vs HEAD 9cef6ba → «⚠ Security 50», border-style dashed; fix preview ends with the security-checks command.
@@ -322,3 +323,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Fallback after a restart: exactly one plmark arch-map run whose session `cwd` is the repo (or its store dir) covering verify.json mtime, within `PROV_LATE_S` (6 h). ⚠Not runs.json `proj` — that is the pipeline owner (the Sidereus repo).
   - Capture also runs from the `runs()` gap loop: a run usually ends with no live sign left, so `_finished` alone missed it.
   - ⚠Unknown is never guessed: zero/several candidates, a sid in two accounts, or a vt mismatch -> `prov: null`. ⚠Never read map.json or files under the store dir for it.
+- ★**Warm-up filled the structure result memory cache** (issue #17 · `_struct_out_cache` ~55 MB live, bound ~126 MB; one repo pair 25.0 + 20.8 MB).
+  - Cause: `_struct_warm_loop` called `structure()` like a screen request, so warm-loop order decided which of the `STRUCT_CACHE_N` cells stayed in memory.
+  - ⇒ Warm-up calls `structure(..., mem=False)`: disk write only, memory neither filled nor touched; the next screen request is a disk hit (no rebuild).
+  - ⚠Do not drop `mem=False` from the warm call — `tests/test_structure_warm_cache.py`.

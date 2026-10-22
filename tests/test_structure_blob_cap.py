@@ -9,6 +9,9 @@ from tests._load import sidereus
 
 SC = sidereus("structure_scan")
 SN = sidereus("structure_snap")
+_DEC = SN._struct_dec_build
+_FAKE = (3, [{"file": "a.py", "name": "f", "lang": "py", "line": 1, "lines": 3, "h": "x"}],
+         False, 1, 0, {"vendor": 0, "vendorLines": 0, "test": 0, "testLines": 0}, {"t.py"})
 
 
 class BlobCacheCap(unittest.TestCase):
@@ -25,7 +28,7 @@ class BlobCacheCap(unittest.TestCase):
             self.paths.append(p)
         # disk copy always hits: no git, no tar, no parse
         self.p = [mock.patch.object(SN, "_struct_disk_read", lambda *a: b"blob"),
-                  mock.patch.object(SN, "_struct_dec_build", lambda raw: {"files": 1})]
+                  mock.patch.object(SN, "_struct_dec_build", lambda raw: _FAKE if raw == b"blob" else _DEC(raw))]
         for x in self.p:
             x.start()
 
@@ -50,6 +53,21 @@ class BlobCacheCap(unittest.TestCase):
         for p in self.paths:
             self.assertIsNotNone(SN._struct_tar(p))
         self.assertLessEqual(len(SC._struct_blob_cache), SC.STRUCT_BCACHE_N)
+
+    def test_memory_holds_bytes_and_hit_equals_build(self):
+        sha = "%040x" % 1
+        first = SN._struct_git_tree("/nonexistent-root", sha)
+        self.assertEqual(first, _FAKE)
+        vals = list(SC._struct_blob_cache.values())
+        self.assertEqual(len(vals), 1)
+        self.assertIsInstance(vals[0], bytes)
+        with mock.patch.object(SN, "_struct_disk_read", lambda *a: self.fail("memory hit expected")):
+            self.assertEqual(SN._struct_git_tree("/nonexistent-root", sha), _FAKE)
+
+    def test_size_cap_none_stays_cached(self):
+        SN._struct_mem_put(("bak", "p"), None)
+        self.assertIsNone(SN._struct_mem_get(("bak", "p")))
+        self.assertIs(SN._struct_mem_get(("bak", "q")), SN._MISS)
 
     def test_put_evicts_oldest_keeps_newest(self):
         for i in range(self.n):
