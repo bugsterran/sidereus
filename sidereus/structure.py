@@ -22,12 +22,13 @@ from sidereus.structure_pairing import (STRUCT_PAIR_REF_MAX, _struct_pair_ls,  #
     _struct_pair_match, _struct_pair_files)
 
 
-def structure(path=None, tests=False, full=False):
+def structure(path=None, tests=False, full=False, mem=True):
     """Body of `GET /api/structure?path=…&tests=0|1|only&full=0|1` — past points (git first) + current,
     oldest → newest.
     ★`tests` defaults to 0 (tests excluded) — 2026-09-22, tests showing up first was unwanted.
     ★`full` = lifts the per-area cap to `STRUCT_FULL_FNS`. Called only when the screen drills down by clicking a «Show N more»
-      bundle cell — lifting it on the full screen means thousands of cells and playback lags."""
+      bundle cell — lifting it on the full screen means thousands of cells and playback lags.
+    `mem=False` = disk cache only (idle warm-up), the memory cache is neither filled nor touched."""
     tests = _struct_tmode(tests)       # 0 core · 1 all · 2 tests only
     full = bool(full)
     maxf = STRUCT_FULL_FNS if full else STRUCT_MAX_FNS
@@ -43,7 +44,7 @@ def structure(path=None, tests=False, full=False):
     key, newest = _struct_key(root, gits, baks, tests, maxf)
     ck = (root, tests, maxf)
     now = time.time()
-    hit, dkey = _struct_cache_get(root, ck, key, now)
+    hit, dkey = _struct_cache_get(root, ck, key, now, mem)
     if hit is not None:
         return hit
 
@@ -71,7 +72,7 @@ def structure(path=None, tests=False, full=False):
         #   incomplete history would stick even across restarts.
         out["incomplete"] = True
         return out
-    _struct_cache_put(ck, key, dkey, out, now)
+    _struct_cache_put(ck, key, dkey, out, now, mem)
     return out
 
 
@@ -103,28 +104,35 @@ def _struct_key(root, gits, baks, tests, maxf):
     return (tuple(sig), nfile, int(newest), STRUCT_RULES_VER, tests if tests == 2 else bool(tests), maxf), newest
 
 
-def _struct_cache_get(root, ck, key, now):
+def _struct_cache_get(root, ck, key, now, mem=True):
     """Memory then disk cache lookup -> (warm copy or None, disk key)."""
     # ⚠`warm` is put **only on the returned copy** — mutating the dict frozen in the cache makes the next cold call
     #   claim to be warm. A shallow copy is fine (read-only).
     with _struct_lock:
         hit = _struct_out_cache.get(ck)
         if hit and hit[0] == key:
-            _struct_out_cache[ck] = (key, hit[1], now)
+            if mem:
+                _struct_out_cache[ck] = (key, hit[1], now)
             return dict(hit[1], warm=True), None
     # disk — same key reuses it even after restart. The key must be **identical** to the memory cache for results to match.
     dkey = "out|%s|%s" % (root, hashlib.sha1(repr(key).encode("utf-8", "replace"), usedforsecurity=False).hexdigest())
     dout = _struct_disk_read("out", dkey)
     if isinstance(dout, dict) and dout.get("ok"):
-        with _struct_lock:
-            _struct_out_cache[ck] = (key, dout, now)
+        if mem:
+            _struct_out_put(ck, key, dout, now)
         return dict(dout, warm=True), dkey
     return None, dkey
 
 
-def _struct_cache_put(ck, key, dkey, out, now):
-    """Persist a complete result to disk and the bounded memory cache."""
+def _struct_cache_put(ck, key, dkey, out, now, mem=True):
+    """Persist a complete result to disk and (unless `mem` is False) the bounded memory cache."""
     _struct_disk_write("out", dkey, out)
+    if mem:
+        _struct_out_put(ck, key, out, now)
+
+
+def _struct_out_put(ck, key, out, now):
+    """Only insert path into `_struct_out_cache` (oldest evicted past STRUCT_CACHE_N) — disk hits too."""
     with _struct_lock:
         _struct_out_cache[ck] = (key, out, now)
         if len(_struct_out_cache) > STRUCT_CACHE_N:   # ⚠do not create a dict without expiry
@@ -541,6 +549,8 @@ def _struct_warm_loop():
                     _struct_disk_prune()
                 continue
             _struct_warm_seen[tgt] = now
-            structure(*tgt)                # ⚠one cell only — idle is rechecked on the next tick
+            # ★Disk only: warm results in the memory cache held ~55 MB live (bound ~126 MB, one repo pair 25.0 + 20.8 MB)
+            #   and warm-loop order, not the screen, decided which cells stayed. A later screen request is a disk hit.
+            structure(*tgt, mem=False)     # ⚠one cell only — idle is rechecked on the next tick
         except Exception as e:
             warn_once("struct-warm", "Structure warm-up failed ({err})", vars={"err": type(e).__name__}, soft=True)
