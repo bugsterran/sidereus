@@ -439,26 +439,51 @@ def _known_owner(rel, ev=None):
     owners this session touched. ⚠A session launched in another folder found no pipelines and recorded nothing, so
     Sidereus drew another session's stale run. Any error = []."""
     try:
-        c = os.environ.get("CLAUDE_CONFIG_DIR")
-        # ⚠guard before expanduser: expanduser(None) raised when CLAUDE_CONFIG_DIR is unset (every Codex process) -> []
-        cjs = [CLAUDE_JSON] if CLAUDE_JSON else ([os.path.join(os.path.expanduser(c), ".claude.json")] if c else []) + [
-            os.path.join(HOME_DIR, ".claude.json")]
-        st = PROJ_STORE or os.path.join(DATA_DIR, "pipeline-projects.json")
-        h = HOME_DIR.rstrip(os.sep) + os.sep   # ⚠default files only under HOME_DIR: tests patch it, so they never read live ones
-        ks = []
-        for p in [x for x in cjs if CLAUDE_JSON or x.startswith(h)] + [st] * bool(PROJ_STORE or st.startswith(h)):
-            try:
-                with open(p, encoding="utf-8") as f:
-                    v = json.load(f)
-            except Exception:
-                continue
-            v = v.get("projects") if isinstance(v, dict) else v
-            ks += list(v) if isinstance(v, (dict, list)) else []
-        own = []
-        for k in ks:
-            if isinstance(k, str) and os.path.isabs(k) and k not in own and os.path.isfile(os.path.join(k, rel)):
-                own.append(k)
+        own = [k for k in _known_keys() if os.path.isfile(os.path.join(k, rel))]
         return own if len(own) <= 1 else _touched(own, (ev or {}).get("transcript_path"))
+    except Exception:
+        return []
+
+
+def _known_keys():
+    """Absolute project dirs from ~/.claude.json `projects` keys + Sidereus's added projects (deduped, file order)."""
+    c = os.environ.get("CLAUDE_CONFIG_DIR")
+    # ⚠guard before expanduser: expanduser(None) raised when CLAUDE_CONFIG_DIR is unset (every Codex process) -> []
+    cjs = [CLAUDE_JSON] if CLAUDE_JSON else ([os.path.join(os.path.expanduser(c), ".claude.json")] if c else []) + [
+        os.path.join(HOME_DIR, ".claude.json")]
+    st = PROJ_STORE or os.path.join(DATA_DIR, "pipeline-projects.json")
+    h = HOME_DIR.rstrip(os.sep) + os.sep   # ⚠default files only under HOME_DIR: tests patch it, so they never read live ones
+    ks = []
+    for p in [x for x in cjs if CLAUDE_JSON or x.startswith(h)] + [st] * bool(PROJ_STORE or st.startswith(h)):
+        try:
+            with open(p, encoding="utf-8") as f:
+                v = json.load(f)
+        except Exception:
+            continue
+        v = v.get("projects") if isinstance(v, dict) else v
+        ks += list(v) if isinstance(v, (dict, list)) else []
+    out = []
+    for k in ks:
+        if isinstance(k, str) and os.path.isabs(k) and k not in out:
+            out.append(k)
+    return out
+
+
+def known_pipelines(ev, skip=()):
+    """(name, project) pairs _known_owner resolves for this session, projects in `skip` left out (pl_mark nudge).
+    ⚠A session in another repo was told only its own pipelines and tagged a relayed run `[pl:-]`. Any error = []."""
+    try:
+        out = []
+        for k in _known_keys():
+            if k in skip:
+                continue
+            try:
+                ns = sorted(n[:-5] for n in os.listdir(os.path.join(k, ".claude", "pipelines"))
+                            if n.endswith(".json") and _PLNAME.fullmatch(n[:-5]))
+            except OSError:
+                continue
+            out += [(n, k) for n in ns if k in _known_owner(os.path.join(".claude", "pipelines", n + ".json"), ev)]
+        return out
     except Exception:
         return []
 

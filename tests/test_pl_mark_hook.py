@@ -24,7 +24,7 @@ class Nudge(unittest.TestCase):
             f.write("{}")
         self.cfg = os.path.join(self.tmp, "config.local.json")
         for k, v in (("MARK_DIR", os.path.join(self.tmp, "plmark")),
-                     ("CONFIG_PATH", self.cfg)):
+                     ("CONFIG_PATH", self.cfg), ("HOME_DIR", self.tmp), ("DATA_DIR", self.tmp)):
             p = mock.patch.object(H, k, v)
             p.start()
             self.addCleanup(p.stop)
@@ -59,6 +59,21 @@ class Nudge(unittest.TestCase):
         with open(self.cfg, "w", encoding="utf-8") as f:
             json.dump({"pipeline_apply": {"mode": "off"}}, f)
         self.assertIsNone(self._run("x"))                                   # «적용» off: no nudge
+
+    def test_lists_known_project_pipelines(self):
+        sid = os.path.join(self.tmp, "sidereus")
+        os.makedirs(os.path.join(sid, ".claude", "pipelines"))
+        with open(os.path.join(sid, ".claude", "pipelines", "arch-map.json"), "w", encoding="utf-8") as f:
+            f.write("{}")
+        cj = os.path.join(self.tmp, "known.json")
+        with open(cj, "w", encoding="utf-8") as f:
+            json.dump({"projects": {self.proj: {}, sid: {}}}, f)
+        with mock.patch.object(H._flow(), "CLAUDE_JSON", cj):
+            r = self._run("x")["permissionDecisionReason"]
+        self.assertIn("db-migration", r)
+        self.assertIn("arch-map (sidereus)", r)                              # cross-repo run name reads as valid
+        self.assertEqual(r.count("db-migration"), 1)                         # own project not listed twice
+        self.assertNotIn("arch-map", self._run("x")["permissionDecisionReason"])   # unknown project: not listed
 
     def test_no_platform_bytes_identical(self):
         ev = json.dumps({"tool_name": "Agent", "session_id": "sess-0001", "cwd": self.proj,

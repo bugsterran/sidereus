@@ -147,7 +147,7 @@ def load(path):
 def _prov(root, commit, d):
     """Provenance of the shown map (arch_prov), None = unknown; ⚠never read from the store dir the agent writes."""
     try:
-        return arch_prov.load_prov(root, commit, os.path.getmtime(os.path.join(d, "verify.json")))
+        return arch_prov.load_prov(root, commit, os.path.getmtime(os.path.join(d, "verify.json")), req=_REQ_SRC)
     except (OSError, ValueError, TypeError, KeyError):
         return None
 
