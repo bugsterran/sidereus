@@ -93,6 +93,6 @@ function plBorrowBody(d, p, list, ov){
     + (p.errs || []).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>';
   const lv = plBorrowLv(PLS.proj, p), lt = lv ? lv.lt : null, cv = plCanvas(p, d, lt);
   return list + '<div class=plbar><b>' + esc(p.title) + '</b>' + plLiveHead(lv, lt) + '<span class=hidnote>'
-    + esc(TV({msg: 'Defined in {proj} — read-only here', vars: {proj: p.from || ''}})) + '</span></div>'
+    + esc(TV({msg: 'Defined in {proj} — read-only here', vars: {proj: p.from || ''}})) + '</span></div>' + plUseLine(p)
     + '<div class=plro>' + cv.html + '</div>' + plWGrip('r') + plWatchOv(ov);   // borrowed = always Watch (48k): same three regions
 }

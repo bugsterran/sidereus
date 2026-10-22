@@ -2,6 +2,7 @@
   "v": 1,
   "name": "refactor",
   "title": "리팩토링",
+  "use": "Behaviour-preserving restructure of code that grew too big: baseline, plan, refactor, verify, review; no feature change.",
   "rules": "Follow AGENTS.md in the repo.\nNever commit or push.",
   "defaults": { "model": "inherit", "retry": 0 },
   "stages": [

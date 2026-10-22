@@ -2,6 +2,7 @@
   "v": 1,
   "name": "review",
   "title": "리뷰만",
+  "use": "Review only, no edits: read the context of a diff or branch, then report findings ranked by severity.",
   "rules": "Follow AGENTS.md in the repo.\nNever commit or push.",
   "defaults": { "model": "inherit", "retry": 0 },
   "stages": [

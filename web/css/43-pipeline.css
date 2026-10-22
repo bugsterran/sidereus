@@ -135,6 +135,7 @@ html[data-theme=light] .plbrl{border-color:var(--nx-rule,#d8dbe1)}
 html[data-theme=light] .plbrb.git{color:#9a5a1e;border-color:#e3c7a8}
 html[data-theme=light] .plbrb.cl{color:#4f49a8;border-color:#c9c6ec}
 .plbar>b{margin-right:6px}
+.pluse{margin:-4px 0 8px;font-size:12px;line-height:16px;color:var(--nx-t2,#909298);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* one line, ellipsis at the bar width; full text in title */
 /* Save/run/delete: right end of the bar, colour-coded. ⚠Scoped like 05-controls.css so it outranks the shared .wkrgb look. */
 .plact{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none}
 .plsep{width:1px;height:16px;margin:0 2px;background:var(--nx-rule,#8884);flex:none}   /* Run | file operations (48 plBody) */
