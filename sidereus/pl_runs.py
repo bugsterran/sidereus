@@ -9,6 +9,7 @@ hooks/pl_flow.py writes DATA_DIR/plmark/<sid>.runs.json {"v": 1, "runs": {<name>
 import json
 import os
 import re
+import time
 
 from sidereus.config import DATA_DIR
 from sidereus.memo import BoundedMemo
@@ -23,6 +24,8 @@ PLR_STAGES_MAX = 32       # stages per run
 _PLR_SID = re.compile(r"^[0-9a-zA-Z-]{8,64}$")
 PLR_NONE_MAX = 4096       # bytes of <sid>.none.json; larger -> None
 PLR_NONE_CATS = ("small-fix", "no-fit", "explore", "other")   # = hooks/pl_flow.py [pl-none:<cat>] allow-list
+PLR_NONE_LOG = "none-log.jsonl"   # = hooks/pl_flow.py NONE_LOG
+PLR_NONE_LOG_MAX = 262144         # bytes read from its tail; = hooks/pl_flow.py NONE_LOG_MAX
 _PLR_ST = ("run", "done", "skip", "back", "fail")
 PLR_AG_MAX = 24           # stage agents kept per run (oldest first)
 PLR_AG_SLACK_S = 5        # meta mtime may sit this far outside [t0, end|now]
@@ -134,6 +137,38 @@ def pl_none(sid):
     if c is None and isinstance(d.get("nudge"), (int, float)) and not isinstance(d.get("nudge"), bool):
         return {"u": 1}
     return None
+
+
+def pl_none_counts(days=7, now=None):
+    """R3: {proj: {cat: n}} of [pl-none:<cat>] declarations in the last `days` from plmark/none-log.jsonl
+    (hooks/pl_flow.py _none_log). Reads at most the newest PLR_NONE_LOG_MAX bytes; bad lines and unknown cats are skipped."""
+    now = time.time() if now is None else now
+    try:
+        with open(os.path.join(PLR_DIR, PLR_NONE_LOG), "rb") as f:
+            f.seek(0, 2)
+            size = f.tell()
+            f.seek(max(0, size - PLR_NONE_LOG_MAX))
+            b = f.read(PLR_NONE_LOG_MAX)
+    except OSError:
+        return {}
+    lines = b.split(b"\n")
+    if size > PLR_NONE_LOG_MAX:
+        lines = lines[1:]   # the first line may be cut mid-record
+    out = {}
+    for ln in lines:
+        try:
+            d = json.loads(ln)
+        except ValueError:
+            continue
+        if not isinstance(d, dict):
+            continue
+        p, c, t = d.get("proj"), d.get("cat"), d.get("t")
+        if not (isinstance(p, str) and os.path.isabs(p) and isinstance(c, str) and c in PLR_NONE_CATS
+                and isinstance(t, (int, float)) and not isinstance(t, bool) and 0 <= now - t <= days * 86400):
+            continue
+        row = out.setdefault(p, {})
+        row[c] = row.get(c, 0) + 1
+    return out
 
 
 def _load(sid, now):

@@ -204,6 +204,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ `plmark/<sid>.none.json` = `{v, cat, t}` or `{v, nudge}` only; `nudge` is saved before the deny prints (same order as `_nudge`).
 - ⚠Never merge it into `<sid>.json` or `.runs.json` · never store the description · a deny printed before a failed save would deny every edit.
 - ⚠The gate resolves the project from the edited file (walk up to its git root) or, for a commit, cwd / its git root — never `session_dirs`: a repo merely `cd`'d into earlier lent its pipelines to edits in a repo without any.
+- Each declaration also appends `{v, proj, cat, t}` to `plmark/none-log.jsonl` (`_none_log`; project = `_none_proj`, none resolved = no line); `pl_runs.pl_none_counts(days)` reads its tail as `{proj: {cat: n}}`.
+- ⚠Category, time and project path only — never the description. The append is fail-silent (a log error must not block the tool); over 256 KB or with a first line past 90 days it is rewritten to recent lines.
 
 ## A clone's own repo is a «self-only» project (`pipeline_projects.project_list` · 48 `plLoadProjs`)
 

@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: each pipeline shows its «When to use» line under the header in Watch and Edit (one muted line, full text on hover) and in the picker tooltip; refactor, review and sidereus-change got one.
 - Structure: the security issues window has a drag grip between the findings list and the history list (arrow keys step 24px, double-click or Home resets); each list keeps at least about three rows and the height is remembered.
 - Pipelines: a Bash description `[pl-agent:<name>/<stage>=<agent>]` lets a run use another subagent_type for one stage; the `security-checks` review stage uses a project's own security agent when the session has one, and reviews with a default lens when there is no threat model.
+- Pipelines: `[pl-none]` declarations are now logged per project (category and time only, kept 90 days) so the categories can be counted later; nothing is shown on screen yet (#16).
 
 ### Fixed
 
