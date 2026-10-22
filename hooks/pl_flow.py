@@ -4,7 +4,8 @@
 PreToolUse (Task|Agent|SendMessage, Bash): a `[pl:<name>/<stage>]` tag opens/advances a run in
 <data dir>/plmark/<session_id>.runs.json and denies: a jump past unrun, undeclared stages · an unknown stage title ·
 an Agent/Task whose subagent_type or model is not the stage's · an untagged SendMessage while a run is open.
-Bash descriptions `[pl-skip:<name>/<stage>]` and `[pl-model:<name>/<stage>=<model>]` declare a skip / model override.
+Bash descriptions `[pl-skip:<name>/<stage>]`, `[pl-model:<name>/<stage>=<model>]` and `[pl-agent:<name>/<stage>=<agent>]`
+declare a skip / model override / subagent_type override.
 Per-stage outcome `st` = {title: {s: run|done|skip|back|fail, t0, t1, n}} (n = dispatches).
 Denies on a run: `deny` = count, `dl` = last DL_MAX {t, title, c} with c in DENY_CODES.
 PostToolUse (Task|Agent|SendMessage): when the stage's dispatches are back, adds «PASS → next … / FAIL → …» context.
@@ -36,6 +37,7 @@ NONE_CATS = ("small-fix", "no-fit", "explore", "other")
 EDITS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 END_TAG = re.compile(r"\[pl-end:([a-z0-9-]{1,40})/([^\]\n|]{1,40})\]")
 MODEL_TAG = re.compile(r"\[pl-model:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=([A-Za-z0-9._-]{1,40})\]")
+AGENT_TAG = re.compile(r"\[pl-agent:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=([A-Za-z0-9._:-]{1,64})\]")
 # Renamed recommended stage titles (old -> new): old tags and legacy files map to the new title. ⚠Same map in sidereus/pipeline_schema.py RENAMED.
 RENAMED = {"최종 검증": "재검증"}
 CLAUDE_DIR = None    # None = $CLAUDE_CONFIG_DIR or HOME_DIR/.claude (user agents); patched in tests
@@ -357,7 +359,8 @@ def _fit(ev, tool, name, s, r, dirs):
     if tool not in ("Agent", "Task"):
         return None
     ti = ev.get("tool_input") or {}
-    want = s.get("agent") if isinstance(s.get("agent"), str) else ""
+    want = (r.get("agents") or {}).get(s["title"]) or s.get("agent")
+    want = want if isinstance(want, str) else ""
     sub = ti.get("subagent_type") if isinstance(ti.get("subagent_type"), str) and ti.get("subagent_type") else "general-purpose"
     ok_ag = want in NO_AGENT or sub == want or (sub == "general-purpose" and not _installed(want, dirs))
     m = r["models"].get(s["title"]) or s.get("model")
@@ -372,8 +375,8 @@ def _fit(ev, tool, name, s, r, dirs):
         exp += " and model %s" % m
     return ("model" if ok_ag else "agent",
             "[pl:%s/%s] expects %s; this call has subagent_type %s, model %s. Dispatch again with those, or declare "
-            "another model first with a Bash description [pl-model:%s/%s=<model>]."
-            % (name, s["title"], exp, sub[:64], got[:40] or "(none)", name, s["title"]))
+            "another model or agent first with a Bash description [pl-model:%s/%s=<model>] or [pl-agent:%s/%s=<agent>]."
+            % (name, s["title"], exp, sub[:64], got[:40] or "(none)", name, s["title"], name, s["title"]))
 
 
 def _open_run(path, now):
@@ -597,7 +600,7 @@ def _plain_next(st, i):
 
 def _new_run(cwd, now):
     return {"cwd": cwd, "t0": now, "t1": now, "cur": "", "done": [], "inflight": {}, "ret": "",
-            "loops": {}, "skipok": [], "end": 0, "st": {}, "models": {}, "lb": [], "deny": 0, "dl": []}
+            "loops": {}, "skipok": [], "end": 0, "st": {}, "models": {}, "agents": {}, "lb": [], "deny": 0, "dl": []}
 
 
 DENY_CODES = ("jump", "agent", "model", "tag", "stage", "stop")   # same set as sidereus/harness_flow.py HF_DENY_CODES
@@ -1025,7 +1028,7 @@ def _run_of(d, name, cwd, now, fresh=True):
         if isinstance(old, dict):
             _archive(d, name, old)
         r = _new_run(cwd, now)
-    for k in ("st", "models", "loops", "inflight"):
+    for k in ("st", "models", "agents", "loops", "inflight"):
         if not isinstance(r.get(k), dict):
             r[k] = {}
     for k in ("skipok", "lb"):
@@ -1036,12 +1039,13 @@ def _run_of(d, name, cwd, now, fresh=True):
 
 
 def _declare(ev, cwd, path, desc, now):
-    """Bash `[pl-skip:name/stage]` / `[pl-model:name/stage=model]`: record on the run; deny reason for an unknown
-    stage, else None. Only the stage title and model name are stored, never the reason text."""
-    decl = [(m.group(1), _ren(m.group(2).strip()), None) for m in SKIP_TAG.finditer(desc)]
-    decl += [(m.group(1), _ren(m.group(2).strip()), m.group(3)) for m in MODEL_TAG.finditer(desc)]
-    decl += [(m.group(1), _ren(m.group(2).strip()), "") for m in END_TAG.finditer(desc)]   # "" = close the run
-    for name, title, model in decl:
+    """Bash `[pl-skip:name/stage]` / `[pl-model:name/stage=model]` / `[pl-agent:name/stage=agent]`: record on the run;
+    deny reason for an unknown stage, else None. Only the stage title and model/agent name are stored, never the reason text."""
+    decl = [(m.group(1), _ren(m.group(2).strip()), None, None) for m in SKIP_TAG.finditer(desc)]
+    decl += [(m.group(1), _ren(m.group(2).strip()), m.group(3), None) for m in MODEL_TAG.finditer(desc)]
+    decl += [(m.group(1), _ren(m.group(2).strip()), "*", m.group(3)) for m in AGENT_TAG.finditer(desc)]   # "*" = agent only
+    decl += [(m.group(1), _ren(m.group(2).strip()), "", None) for m in END_TAG.finditer(desc)]   # "" = close the run
+    for name, title, model, agent in decl:
         old = _load(path)["runs"].get(name)
         keep = old.get("proj") if isinstance(old, dict) and not old.get("end") else None
         proj = _project(ev, "Bash", name, title, keep)
@@ -1077,6 +1081,8 @@ def _declare(ev, cwd, path, desc, now):
                 if title not in r["skipok"]:
                     r["skipok"].append(title)
                 _mark(r, title, "skip", now)
+            elif agent is not None:
+                r["agents"][title] = agent
             else:
                 r["models"][title] = model.lower()
             _save(path, d)
