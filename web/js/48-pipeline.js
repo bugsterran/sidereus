@@ -225,18 +225,20 @@ function plCur(){
 // ⚠Badges carry only what changes on a click or a run start/end (⚠ invalid, • dirty, live dot): the poll repaints this HTML.
 function plPickHtml(ps, sel, runs){
   if(!ps.length) return '';
-  const items = ps.map(x => ({ p: x.name, name: x.name, title: x.title || x.name, ok: x.ok, dirty: plDirty(x.name), run: runs.includes(x.name) }));
+  const items = ps.map(x => ({ p: x.name, name: x.name, title: x.title || x.name, use: x.use || '', ok: x.ok, dirty: plDirty(x.name), run: runs.includes(x.name) }));
   const mark = e => (e.ok ? '' : ' ⚠') + (e.dirty ? ' •' : '');
   return plComboHtml({ items: items, cur: sel ? sel.name : '', mark: mark, badge: e => esc(mark(e)) + (e.run ? plLiveDot(1) : '') });
 }
 // Shared by plPickHtml and the suggestion picker (48e plSugBody): key 'plsel', flat list, no recent, pick = plSelPick.
 function plComboHtml(o){
   const mark = o.mark || (() => '');
-  const row = (e, i) => '<div class="cmdki' + (PPS && i === PPS.i ? ' on' : '') + (e.p === o.cur ? ' ppcur' : '') + '" role=option data-ppi="' + i + '" title="' + esc(e.title || e.name) + '">'
+  const row = (e, i) => '<div class="cmdki' + (PPS && i === PPS.i ? ' on' : '') + (e.p === o.cur ? ' ppcur' : '') + '" role=option data-ppi="' + i + '" title="' + esc((e.title || e.name) + (e.use ? ' — ' + e.use : '')) + '">'
     + '<span class=cmdkp>' + esc(e.name + mark(e)) + '</span>' + (e.run ? '<i class=mvdot></i>' : '') + '</div>';
   return '<div class=plchips>' + ppComboHtml({ k: 'plsel', label: T('Pipeline'), none: '—', items: o.items, cur: o.cur, badge: o.badge,
     ph: T('Find a pipeline'), empty: T('No matching pipelines'), flat: q => ppFilter(o.items, q), rowHtml: row, pick: plSelPick }) + '</div>';
 }
+// «When to use» on its own thin row below the head/bar so the bar never wraps; file data: esc, never T().
+function plUseLine(p){ const u = String((p && p.use) || '').trim(); return u ? '<div class=pluse title="' + esc(u) + '">' + esc(u) + '</div>' : ''; }
 // Head row items: in a .pltop (hd given, plMainBody) or as a standalone .plnames row (tests, callers without a head).
 function plHeadRow(hd, html){ if(hd){ hd.row = html; return ''; } return '<div class=plnames>' + html + '</div>'; }
 function plBody(ov, hd){
@@ -290,7 +292,7 @@ function plBody(ov, hd){
     + esc(p.name) + '.json</i></div><pre>' + diffHtml(PLS.diff.text, agLang('x.json')) + '</pre>' + plRenameWarn(p, lv) + '<div class=plbar>'
     + '<button class="wkrgb" data-plok' + (PLS.saving ? ' disabled' : '') + '>' + esc(T('Confirm')) + '</button>'
     + '<button class="wkrgb" data-plno>' + esc(T('Cancel')) + '</button></div></div>' : '';
-  return list + bar + (PLEVAL_OPEN === p.name ? plEvalPanel(ev) : '') + plDelPrev(p) + cv.html + (ov || '') + plRunPanel(p, models)
+  return list + bar + plUseLine(p) + (PLEVAL_OPEN === p.name ? plEvalPanel(ev) : '') + plDelPrev(p) + cv.html + (ov || '') + plRunPanel(p, models)
     + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '') + diff;
 }
 // Run = the primary filled button in both modes; dirty = disabled until saved.
@@ -302,7 +304,7 @@ function plWatchBody(p, d, row, hd, ov, mb){
   const lv = plViewRun(PLS.proj, p.name), lt = lv ? (lv.lt || plLight(p.stages, lv.run)) : null, dirty = plDirty(p.name), cv = plCanvas(p, d, lt);
   const act = '<span class=plact>' + (dirty ? '<span class=plwdirty>' + esc(T('Unsaved changes — Edit to save')) + '</span>' : '') + (mb || '') + plRunBtn(p, dirty) + '</span>';
   const head = plHeadRow(hd, row + '<span class=plwrun>' + plLiveHead(lv, lt) + '</span>' + act);
-  return head + plNewForm() + cv.html + plWGrip('r') + plWatchOv(ov) + plRunPanel(p, d.models || [])
+  return head + plUseLine(p) + plNewForm() + cv.html + plWGrip('r') + plWatchOv(ov) + plRunPanel(p, d.models || [])
     + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
 }
 // Delete preview: what moves where (rule 7: moved to the backup folder, never deleted)

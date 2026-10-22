@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Pipelines: each pipeline shows its «When to use» line under the header in Watch and Edit (one muted line, full text on hover) and in the picker tooltip; refactor, review and sidereus-change got one.
 - Structure: the security issues window has a drag grip between the findings list and the history list (arrow keys step 24px, double-click or Home resets); each list keeps at least about three rows and the height is remembered.
 
 ### Fixed

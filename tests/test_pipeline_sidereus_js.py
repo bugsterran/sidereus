@@ -90,7 +90,7 @@ class PipelineSidereus(unittest.TestCase):
         self.assertEqual(r[0], {"/t": ["arch-map"]})
         self.assertEqual(r[1], {"/sidereus": ["arch-map"]})   # no target run known: the home keeps the tag
 
-BFNS = ("plBorrows", "plBorrowOf", "plRO", "plBorrowLab", "plBorrowChip", "plBorrowChips", "plBorrowLv", "plBorrowBody", "plCur", "plProjGo", "plOvPick", "plOvSid", "plNowLive")
+BFNS = ("plBorrows", "plBorrowOf", "plRO", "plBorrowLab", "plBorrowChip", "plBorrowChips", "plBorrowLv", "plBorrowBody", "plCur", "plProjGo", "plOvPick", "plOvSid", "plNowLive", "plUseLine")
 BPRE = "\n".join([
     "function strShort(p){ return p.slice(p.lastIndexOf('/') + 1); } let DIRTY = false; function plDirty(){ return DIRTY; } const LS = {}; function lsSet(k, v){ LS[k] = v; }",
     "let PLNEW = null, PLDRAFT = null, PLSTD = false, PAINTS = 0, SESS = [], PLVIEW = 'pipe'; function plPaint(){ PAINTS++; } function plLiveHead(lv){ return lv ? '<HEAD ' + lv.sid + '>' : ''; }",

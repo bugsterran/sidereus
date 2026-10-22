@@ -199,7 +199,7 @@ class PlMode(unittest.TestCase):
         stubs = ("function plViewRun(){ return {sid: 's1', lt: {}}; } function plLight(){ return {}; } function plDirty(){ return false; }"
                  "function plCanvas(){ return {html: '<CV/>'}; } function plLiveHead(){ return '<RUNBAR/>'; } function plNewForm(){ return ''; }"
                  "function plRunTable(){ return ''; } function plRunPanel(){ return ''; } let PLRUN = null;")
-        return run(MODE + stubs + "\n" + "\n".join(js_fn(n) for n in ("plHeadRow", "plRunBtn", "plWatchBody"))
+        return run(MODE + stubs + "\n" + "\n".join(js_fn(n) for n in ("plHeadRow", "plRunBtn", "plUseLine", "plWatchBody"))
                    + "\nCUR = " + SAVED + "; plModeSet('" + mode + "', true); const hd = {row: ''};"
                    "plWatchBody(CUR, {}, '<PROJ/><PIPE/>', hd, '', plModeBtn()); console.log(JSON.stringify(hd.row));")
 
@@ -211,6 +211,24 @@ class PlMode(unittest.TestCase):
         self.assertIn('class="wkrgb plsv plrn" data-plrun><span aria-hidden=true>▶</span> Run', act)   # Run = primary filled
         for bad in ("data-plap", "Gates", "pleunred", "data-pleval", "data-plsave", "data-pldel"):
             self.assertNotIn(bad, row)
+
+    def test_use_line_in_watch_and_picker_tooltip(self):
+        # «When to use» is file data: escaped, never T(); empty = no line; picker row tooltip = «title — use».
+        stubs = ("function plViewRun(){ return null; } function plDirty(){ return false; } function plCanvas(){ return {html: '<CV/>'}; }"
+                 "function plLiveHead(){ return ''; } function plNewForm(){ return ''; } function plRunPanel(){ return ''; } function plWGrip(){ return ''; } function plWatchOv(){ return ''; } let PLRUN = null;"
+                 "let PPS = null; function plSelPick(){} function plLiveDot(){ return ''; } function ppFilter(a){ return a; }"
+                 "function ppComboHtml(o){ return o.items.map((e, i) => o.rowHtml(e, i)).join(''); }")
+        r = run(MODE + stubs + "\n" + "\n".join(js_fn(n) for n in ("plHeadRow", "plRunBtn", "plUseLine", "plWatchBody", "plPickHtml", "plComboHtml"))
+                + "\nconst P = {name: 'chg', title: 'Change', use: 'Fix <b> & \"q\"'};"
+                "const w = plWatchBody(P, {}, '', {row: ''}, '', ''), e = plWatchBody({name: 'x', title: 'X', use: ' '}, {}, '', {row: ''}, '', '');"
+                "console.log(JSON.stringify([w, e, plPickHtml([P, {name: 'x', title: 'X'}], P, [])]));")
+        u = "Fix &lt;b> &amp; &quot;q&quot;"
+        self.assertTrue(r[0].startswith('<div class=pluse title="' + u + '">' + u + "</div><CV/>"))
+        self.assertNotIn("pluse", r[1])
+        self.assertIn('title="Change — ' + u + '"', r[2])
+        self.assertIn('title="X">', r[2])                                        # no use: tooltip is the title alone
+        self.assertIn("+ plUseLine(p) + (PLEVAL_OPEN", js_fn("plBody"))          # Edit: below the bar
+        self.assertIn("+ plUseLine(p)\n", js_fn("plBorrowBody"))                 # borrowed / built-in view
 
     def test_r2_edit_keeps_eval_and_apply(self):
         body = js_fn("plBody")
