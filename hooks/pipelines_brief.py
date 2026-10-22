@@ -26,7 +26,7 @@ _RUN = ("follow .claude/pipelines/<name>.json yourself with the Agent tool "
         "(stage order, agent, model, skill, gate, onFail; a stage skill means its prompt says Follow the <skill> skill.); start each stage's Agent description with "
         "[pl:<name>/<stage title>] and pass its agent/model as subagent_type/model. "
         "Skip a stage only after a Bash described [pl-skip:<name>/<stage title>] <reason>; another model: "
-        "[pl-model:<name>/<stage title>=<model>]. In a run, SendMessage summaries start with the stage tag or [pl:-]. "
+        "[pl-model:<name>/<stage title>=<model>]; another agent: [pl-agent:<name>/<stage title>=<agent>]. In a run, SendMessage summaries start with the stage tag or [pl:-]. "
         "A stage whose agent is not installed runs as general-purpose with the same task.")
 HOW = "Default = run the pipeline directly: " + _RUN
 HOW_ASK = ("Before starting work on a request that fits one of these pipelines, ask the user which to use "

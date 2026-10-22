@@ -40,6 +40,14 @@ class SecurityPipelineTest(unittest.TestCase):
         self.assertLess(t.index("--log-show"), t.index("--mark"))
         self.assertLess(t.index("--mark"), t.index("--log-review"))
 
+    def test_review_without_threat_model_and_project_agent(self):
+        t = self.st[1]["task"]
+        self.assertIn("[pl-agent:security-checks/%s=<agent>]" % self.st[1]["title"], t)
+        self.assertLess(t.index("no threat model"), t.index("default lens"))   # hint, then review anyway
+        for w in ("IDOR", "MyBatis `${}`", "SSRF", "deserialize"):
+            self.assertIn(w, t)
+        self.assertNotIn("log nothing", t)
+
     def test_never_marks_false_positive(self):
         t = self.st[1]["task"]
         self.assertIn("NEVER mark false-positive", t)

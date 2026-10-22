@@ -748,6 +748,23 @@ class Flow(unittest.TestCase):
         self.assertIsNone(self.pre("검증", model="opus"))
         self.assertIsNone(self.pre("구현", tool="SendMessage"))   # SendMessage: no agent/model check
 
+    def test_agent_override(self):
+        ag = os.path.join(self.proj, ".claude", "agents")
+        os.makedirs(ag)
+        for a in ("sidereus-designer", "proj-sec-auditor"):
+            open(os.path.join(ag, a + ".md"), "w", encoding="utf-8").close()
+        self.assertIsNotNone(self.pre("설계", sub="proj-sec-auditor"))   # undeclared: denied
+        self.assertIsNone(self.bash("[pl-agent:%s/설계=proj-sec-auditor] secret" % N))
+        self.assertEqual(self.run_()["agents"], {"설계": "proj-sec-auditor"})
+        self.assertIsNone(self.pre("설계", sub="proj-sec-auditor"))
+        o = self.pre("설계", sub="Explore")                      # another undeclared agent: still denied
+        self.assertIn("expects subagent_type proj-sec-auditor;", o["permissionDecisionReason"])
+        self.assertIn("[pl-agent:%s/설계=<agent>]" % N, o["permissionDecisionReason"])
+        o = self.bash("[pl-agent:%s/없는 단계=proj-sec-auditor] x" % N)
+        self.assertEqual(o["permissionDecision"], "deny")
+        self.assertIn("has no stage 없는 단계", o["permissionDecisionReason"])
+        self.assertNotIn("없는 단계", self.run_()["agents"])
+
     def test_denies_counted_on_open_run(self):
         self.assertEqual(self.pre("설계", sub="Explore", text=" secret-a")["permissionDecision"], "deny")   # no open run: nothing written
         self.assertFalse(os.path.exists(os.path.join(self.marks, SID + ".runs.json")))

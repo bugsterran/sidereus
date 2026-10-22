@@ -30,7 +30,7 @@ HOW_CC = ("Default = run the pipeline directly: follow .claude/pipelines/<name>.
           "(stage order, agent, model, skill, gate, onFail; a stage skill means its prompt says Follow the <skill> skill.); "
           "start each stage's Agent description with [pl:<name>/<stage title>] and pass its agent/model as "
           "subagent_type/model. Skip a stage only after a Bash described [pl-skip:<name>/<stage title>] <reason>; "
-          "another model: [pl-model:<name>/<stage title>=<model>]. In a run, SendMessage summaries start with the "
+          "another model: [pl-model:<name>/<stage title>=<model>]; another agent: [pl-agent:<name>/<stage title>=<agent>]. In a run, SendMessage summaries start with the "
           "stage tag or [pl:-]. A stage whose agent is not installed runs as general-purpose with the same task.")
 CLAUDE_ONLY = ("mailbox_wake", "Monitor", "Agent tool", "subagent_type", "SendMessage", "AskUserQuestion")
 

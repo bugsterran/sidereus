@@ -22,4 +22,6 @@ Sidereus's own filled copy is in [`.oss-scanner/`](../../.oss-scanner/).
 ## Inside Sidereus
 
 The `security-checks` pipeline stage «threat-model review» reads `.oss-scanner/threat_model.md` from the project it
-runs on, so the same file guides both the upstream scanner and the local review.
+runs on, so the same file guides both the upstream scanner and the local review. Without that file the review still runs with a default
+lens (authz bypass, injection, secrets, SSRF, unsafe file handling, state skips), and a project's own security
+agent is used when the session has one.
