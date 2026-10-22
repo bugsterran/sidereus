@@ -13,7 +13,7 @@ Do not step on these again. One file per area under [traps/](traps/); read the a
 | [traps/attention.md](traps/attention.md) | Alarms, cards, health strip, attention ranking | 21 |
 | [traps/mailbox.md](traps/mailbox.md) | Mailbox, chat rooms, mail watch (`mailbox_wake`) | 25 |
 | [traps/ui.md](traps/ui.md) | UI kit, CSS, layout, header, i18n (`T()`), animations, drag-resize | 68 |
-| [traps/server.md](traps/server.md) | Server, `/api/state` payload, caching, performance | 20 |
+| [traps/server.md](traps/server.md) | Server, `/api/state` payload, caching, performance | 21 |
 | [traps/security.md](traps/security.md) | Security and privacy (CSP, guards, metadata-only) | 32 |
 | [traps/platform.md](traps/platform.md) | Platform, config, launcher, Windows, plugin, tests and tooling | 49 |
 | [traps/general.md](traps/general.md) | General lessons that span areas | 30 |

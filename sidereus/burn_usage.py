@@ -9,6 +9,7 @@ import subprocess
 import threading
 import time
 from sidereus.warn import _LOOP_ERR, warn_once
+from sidereus import boot_queue
 from sidereus.ident import _sid8, _slug, bin_path, rich_env
 from sidereus.usage import (LIVE_SEC, LIVE_STEP, USAGE_LOCAL, _ccusage_lock, _sid_proj,
     _uidx_projects, _usage, _usage_lock)
@@ -349,21 +350,22 @@ def _wkuse_loop():
     while True:
         try:
             now = time.time()
-            for d in _WK_RANGES:
-                sl = _wk_slot(d)
-                at = sl.get("at") or 0
-                if not at:
-                    if d == WK_DAYS:
-                        _wkuse_fetch(d)  # the default period used by the sidebar is measured even if nobody opens it
-                    elif sl.get("err") and now - (sl.get("tryAt") or 0) >= WK_RETRY_S:
-                        # ⚠Knocking tightly keeps burning ccusage (30~60s per period) → enforce a minimum interval.
-                        #   Record the attempt time first — even if it fails again, the next retry is pushed 10 min out.
-                        with _wkuse_lock:
-                            sl["tryAt"] = now
+            with boot_queue.gate("wkuse_loop"):   # ⚠first pass waits its boot turn; no-op after drain (traps/server.md)
+                for d in _WK_RANGES:
+                    sl = _wk_slot(d)
+                    at = sl.get("at") or 0
+                    if not at:
+                        if d == WK_DAYS:
+                            _wkuse_fetch(d)  # the default period used by the sidebar is measured even if nobody opens it
+                        elif sl.get("err") and now - (sl.get("tryAt") or 0) >= WK_RETRY_S:
+                            # ⚠Knocking tightly keeps burning ccusage (30~60s per period) → enforce a minimum interval.
+                            #   Record the attempt time first — even if it fails again, the next retry is pushed 10 min out.
+                            with _wkuse_lock:
+                                sl["tryAt"] = now
+                            _wkuse_fetch(d)
+                        continue
+                    if now - at >= WK_EVERY.get(d, 900):
                         _wkuse_fetch(d)
-                    continue
-                if now - at >= WK_EVERY.get(d, 900):
-                    _wkuse_fetch(d)
             _LOOP_ERR.pop("wkuse", None)
             time.sleep(60)
         except Exception as e:

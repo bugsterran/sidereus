@@ -12,7 +12,7 @@ from sidereus.timeline import _tok_events
 from sidereus.usage_index import acct_tokens
 from sidereus.quota import QUOTA_LOG, _cc_account, quota, quota_calibrating
 from sidereus.quota_roots import _conf_path, quota_accounts, ring_last
-from sidereus import claude_roots, ui_prefs
+from sidereus import boot_queue, claude_roots, ui_prefs
 # Pure math owned by burn_calc; the ones only tests read are re-exported too.
 from sidereus.burn_calc import (  # noqa: F401
     QB_UNC_N, QBURN_BAND_N, QBURN_TOL, QBURN_WIN, _qb_baseline, _qb_forecast, _qb_interp, _qb_q, _qb_slope,
@@ -150,11 +150,12 @@ def _qburn_warm():
     try:
         while not _qb_live() and time.time() - t0 < QBURN_WARM_MAX:
             time.sleep(0.2)
-        if _qb_live():
-            _qb_full(time.time())
-            _qb_warm["done"] = True
-        else:
-            _qb_body(time.time())     # ⚠warms the token caches only — a pre-sample body is never cached as final
+        with boot_queue.gate("qburn_warm"):   # ⚠after the live-sample wait: never hold the boot gate across it
+            if _qb_live():
+                _qb_full(time.time())
+                _qb_warm["done"] = True
+            else:
+                _qb_body(time.time())     # ⚠warms the token caches only — a pre-sample body is never cached as final
     except Exception as e:
         warn_once("qburn-warm", "quota burn warm-up failed ({err})",
                   vars={"err": f"{type(e).__name__}: {e}"}, soft=True)

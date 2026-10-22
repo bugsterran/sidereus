@@ -12,6 +12,7 @@ from sidereus.redact import redact
 from sidereus.config import DATA_DIR, claude_home
 from sidereus.ctxsrc import read_text
 from sidereus.warn import _LOOP_ERR, warn_once
+from sidereus import boot_queue
 from sidereus.bus import _atomic_write
 from sidereus.transcript import CLAUDE_PROJECTS, _line_ts
 from sidereus.agents import sub_globs, sub_sess_dir
@@ -422,8 +423,9 @@ def _burn_fetch_locked(now):
 def _today_loop():
     while True:
         try:
-            _today_fetch()
-            _burn_fetch()
+            with boot_queue.gate("today_loop"):   # ⚠first pass waits its boot turn; no-op after drain (traps/server.md)
+                _today_fetch()
+                _burn_fetch()
             # ★Piggyback the spark snapshot save here (2026-09-09) — `_usage_loop` runs every 900s, so
             #   dying in between loses the whole 10-min window (LIVE_SEC). Instead of a new thread/timer,
             #   ride on this loop that already runs every 30s (disk write is one small JSON, not a new cycle).

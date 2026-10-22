@@ -2,6 +2,7 @@
 import os
 import time
 from sidereus.warn import warn_once
+from sidereus import boot_queue
 from sidereus.bus import _load, _save_json
 from sidereus.memo import BoundedMemo
 from sidereus.transcript import _iso_ts
@@ -65,16 +66,17 @@ def _fail_loop():
         try:
             # ★Pre-scan subagent logs too (2026-09-07) — otherwise opening the tab triggers a cold scan on the spot.
             #   Measured: the subagent share is 38 files in 24 h, 0.04 s — nearly free.
-            files = _fail_transcripts(time.time(), 48)
-            # ★Called without the lock (2026-09-07) — `_fail_read` takes its own lock briefly.
-            #   This loop used to hold the lock across all 40 files (cold 2.81 s), during which request threads'
-            #   failure tab could read **not one file**. Now they alternate per file.
-            for _mt, fp in files:
-                _fail_read(fp)
-            _fail_1h_build()       # header «Failures (1h)» card — built here so state() only reads the cache
-            _wreck_snapshot()      # ★outside the lock — _fail_events takes the same lock (calling inside would hang)
-            _wreck_cards(_wreck_by_cwd())   # session row "leftover" badge + wreckage alerts — computed only here
-            _fail_cards()          # put new failures on the bell
+            with boot_queue.gate("fail_loop"):   # ⚠first pass waits its boot turn; no-op after drain (traps/server.md)
+                files = _fail_transcripts(time.time(), 48)
+                # ★Called without the lock (2026-09-07) — `_fail_read` takes its own lock briefly.
+                #   This loop used to hold the lock across all 40 files (cold 2.81 s), during which request threads'
+                #   failure tab could read **not one file**. Now they alternate per file.
+                for _mt, fp in files:
+                    _fail_read(fp)
+                _fail_1h_build()       # header «Failures (1h)» card — built here so state() only reads the cache
+                _wreck_snapshot()      # ★outside the lock — _fail_events takes the same lock (calling inside would hang)
+                _wreck_cards(_wreck_by_cwd())   # session row "leftover" badge + wreckage alerts — computed only here
+                _fail_cards()          # put new failures on the bell
         except Exception as e:
             warn_once("loop:fail", "Failure tab refresh failed ({err}) — the failure list may be stale",
                       vars={"err": type(e).__name__})

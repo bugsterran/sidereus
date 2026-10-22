@@ -3,6 +3,7 @@ import json
 import random
 import time
 from sidereus.warn import _LOOP_ERR, warn_once
+from sidereus import boot_queue
 from sidereus.bus import _atomic_write
 from sidereus.transcript import _iso_ts
 from sidereus.usage import (ANCHOR_FILE, USAGE_BACKFILL_S, _anchors, _usage_backfill, _usage_load,
@@ -24,8 +25,9 @@ def _usage_loop():
     _usage_load()               # show the last result first (the backfill refreshes after)
     while True:                 # ⚠`_usage_load()` above is outside the loop — keep it out of the try
         try:
-            _usage_backfill()
-            _usage_save()
+            with boot_queue.gate("usage_loop"):   # ⚠first pass waits its boot turn; no-op after drain (traps/server.md)
+                _usage_backfill()
+                _usage_save()
             # ★Denominator calibration runs **here** (2026-09-02; the weekly figure did not match).
             #   It used to sit right after `_quota_loop`'s success, but once the 429 backoff went to 900 s that spot
             #   rarely ran and calibration effectively stopped (measured: anchor stuck at 8/20).
