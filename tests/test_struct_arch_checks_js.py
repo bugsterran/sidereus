@@ -17,6 +17,7 @@ FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
 FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqWho",
         "archReqRowHtml", "archChkProgHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
+FNS += ["archChkSplitGet", "archChkSplitGrip", "archChkSplitClamp", "archChkSplitEls", "archChkSplitAria", "archChkSplitSet", "archChkSplitMove", "archChkSplitReset", "archChkSplitKey"]   # issues | history grip
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
 with open(_SRC_P, encoding="utf-8") as fh:
     _SRC = fh.read()
@@ -30,6 +31,7 @@ PRE = "\n".join([
     "let SESS = [], POSTS = []; function lsSetJson(){}",
     "let ARCHRUN = {}, SECRUN = {}, PLREQ = {};",
     re.search(r"^const ARCH_REQ_KEEP_MS = .*$", _REQ_SRC, re.M).group(0), re.search(r"^const ARCH_REQ_LBL = .*$", _REQ_SRC, re.M).group(0),
+    re.search(r"^const CK_SPLIT_MIN = .*$", _SRC, re.M).group(0),
     "async function postJSON(u, b){ POSTS.push([u, b]); return { ok: true }; }",
 ])
 
@@ -510,6 +512,44 @@ class StructArchCheckFilters(unittest.TestCase):
 
     def test_run_request_records_receiver(self):   # R3: the run request carries plreq so pl_reqs tracks no session / done
         self.assertIn("plreq: { kind: 'req', pipeline: ARCH_SEC_PL, repo: S.p }", _SRC)
+
+    def test_issues_history_split_grip(self):   # vertical grip between findings and history: markup, clamp, keys, saved px, reset
+        log = {"at_scan": 1, "open": [{"file": "a.py", "line": 3, "sev": "high", "key": "semgrep:r1"}]}
+        sec = dict(CHECKS, log=log)
+        r = run("const MEM = {}, DEL = []; globalThis.lsJson = (k, d) => k in MEM ? MEM[k] : d; lsSetJson = (k, v) => { MEM[k] = v; };"
+                "globalThis.lsDel = k => { DEL.push(k); delete MEM[k]; };"
+                "const box = h => ({h, getBoundingClientRect(){ return {height: this.h}; }});"
+                "const T0 = box(150), L0 = box(250), G = {attrs: {}, setAttribute(k, v){ this.attrs[k] = v; }};"
+                "const root = {cls: new Set(), vars: {}, classList: {add(c){ root.cls.add(c); }, remove(c){ root.cls.delete(c); }},"
+                " style: {setProperty(k, v){ root.vars[k] = v; T0.h = parseFloat(v); }, removeProperty(k){ delete root.vars[k]; }},"
+                " querySelector(s){ return s.indexOf(':not(.ckwlog)') >= 0 ? T0 : s.indexOf('ckwlog') >= 0 ? L0 : s === '[data-ckgr]' ? G : null; }};"
+                "const key = k => { const e = {key: k, prevented: 0, preventDefault(){ this.prevented = 1; }}; const ok = archChkSplitKey(e, root); return [ok, e.prevented]; };"
+                "const win = archChkWinHtml('/r', {checks: {security: " + json.dumps(sec) + "}}, {sel: {}}, []);"
+                "const bare = archChkWinHtml('/r', {checks: CKS}, {sel: {}}, []);"
+                "const down = key('ArrowDown'), saved = MEM['sidereus.ckwh'], v1 = root.vars['--ckth'], now = G.attrs['aria-valuenow'];"
+                "T0.h = 380; L0.h = 100; key('ArrowDown'); const capped = MEM['sidereus.ckwh'];"
+                "const other = key('x'); key('Home');"
+                "console.log(JSON.stringify([win, bare, [archChkSplitClamp(10, 400), archChkSplitClamp(390, 400), archChkSplitClamp(200, 400)],"
+                " down, saved, v1, now, capped, other, DEL, root.cls.has('cksz'), '--ckth' in root.vars]));"
+                .replace("CKS", json.dumps(CK)))
+        win, bare = r[0], r[1]
+        self.assertIn('<div class="plwgr ckwgr" data-ckgr tabindex=0 role=separator aria-orientation=horizontal', win)
+        self.assertIn('aria-label="이슈 목록과 기록 목록 크기 조절"', win)
+        self.assertLess(win.index("data-ckgr"), win.index('<ol class="archckl ckwlog">'))   # grip sits between the two lists
+        self.assertGreater(win.index("data-ckgr"), win.index("<ol class=archckl>"))
+        self.assertNotIn("data-ckgr", bare)                                   # no history rows: no grip
+        self.assertEqual(r[2], [96, 304, 200])                                # ~3 rows minimum for each list
+        self.assertEqual(r[3], [True, 1])
+        self.assertEqual((r[4], r[5], r[6]), (174, "174px", 41))              # 150 + 24, saved in px; aria = share of the two lists
+        self.assertEqual(r[7], 384)                                           # the history list keeps its minimum
+        self.assertEqual(r[8], [False, 0])                                    # other keys pass through
+        self.assertEqual(r[9], ["sidereus.ckwh"])                             # Home = default: pref dropped
+        self.assertEqual((r[10], r[11]), (False, False))
+        with open(os.path.join(os.path.dirname(_SRC_P), "..", "css", "79-structure-arch.css"), encoding="utf-8") as fh:
+            css = fh.read()
+        self.assertIn("#ckroot>.ckwgr{flex:0 0 auto;margin:-8px 0;cursor:row-resize}", css)
+        self.assertIn("#ckroot.cksz>.archckl{box-sizing:border-box;min-height:96px}", css)
+        self.assertIn("'pointerdown','dblclick'", _SRC)                     # the window forwards the drag and reset events
 
 
 if __name__ == "__main__":
