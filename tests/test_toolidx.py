@@ -105,6 +105,35 @@ class ToolIdxTest(unittest.TestCase):
         import threading
         self.assertEqual(seen, [threading.current_thread()])
 
+    def test_kick_while_warm_queued_scans_once(self):
+        import contextlib
+        import threading
+        ti.TI_BG = True
+        go, runs, kicked = threading.Event(), [], []
+        saved = (ti._bg_warm, ti.tool_uses, ti.mcp_status, ti.boot_queue.gate)
+
+        def fake_bg(at=None):
+            go.wait(1)
+            runs.append(threading.current_thread().name)
+
+        @contextlib.contextmanager
+        def queued(name):                               # a request kicks while warm still waits for its turn
+            ti._kick()
+            k = ti._TI_STATE["bg"]
+            kicked.append(k)
+            orig_join = k.join
+            k.join = lambda *a: (go.set(), orig_join(*a))   # release the kicked scan only once warm waits on it
+            yield
+        ti._bg_warm, ti.tool_uses, ti.mcp_status, ti.boot_queue.gate = fake_bg, lambda *a: {}, lambda *a: {}, queued
+        try:
+            ti.warm(now=NOW)
+        finally:
+            go.set()
+            for k in kicked:
+                k.__dict__.pop("join", None)            # ⚠before the fix this is the main thread: never leave it patched
+            ti._bg_warm, ti.tool_uses, ti.mcp_status, ti.boot_queue.gate = saved
+        self.assertEqual(runs, ["toolidx-warm"])
+
     def test_day_window(self):
         self.assertEqual(ti.tool_uses(7, now=NOW)["mcp:docs"]["n"], 2)
         self.assertNotIn("mcp:old", ti.tool_uses(30, now=NOW))

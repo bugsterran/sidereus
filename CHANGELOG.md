@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: a `[pl-none]` declaration written while the log was being trimmed (over 256 KB or 90 days) is no longer lost.
+- Harness: opening Harness during start-up starts the tool usage scan at once instead of waiting for the earlier warm-ups to finish.
 - Diff: an untracked secret file (`.env`, `.env.*` except example/sample/template, `*.pem`, `*.key`, private SSH keys, `.netrc`, `credentials`, …) is listed by name but its contents are never read or sent; the diff shows one line «(contents hidden: secret file)».
 - Docs: the README says Gemini CLI sessions show token counts only; their plan limits live only on Google's server (check with `/stats` in Gemini CLI) (#8).
 - Pipelines: a run whose last stage never closes it (main's push with no commit, a background last stage, or the remaining stages skipped) no longer shows as running for up to 6 hours; with no live agent or main marker for 30 minutes it shows ended at its last activity, and skipping every remaining stage after a finished stage ends the run.

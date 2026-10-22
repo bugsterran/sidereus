@@ -26,7 +26,7 @@ from sidereus import boot_queue
 from sidereus.transcript import CLAUDE_PROJECTS, iso_epoch
 from sidereus.agents import sub_globs
 from sidereus.claude_roots import projects_dirs
-from sidereus.toolidx_fmt import _arr, _b64, _canon, _num
+from sidereus.toolidx_fmt import _arr, _b64, _canon, _num, hook_hash   # hook_hash re-exported for harness
 
 TI_MAX_DAYS = 90             # widest window the screen can ask for; older files are not read
 TI_TTL_S = 30                # result cache per `days`
@@ -99,11 +99,6 @@ def _key_of(block):
         st = inp.get("subagent_type")
         return "agent:" + (st if isinstance(st, str) and st.strip() else "general-purpose")
     return ""
-
-
-def hook_hash(cmd):
-    """12-hex digest of a hook command — matches config to `hook_success.command` without keeping the text."""
-    return hashlib.sha1(cmd.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]  # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1
 
 
 def _line_events(d):
@@ -444,18 +439,21 @@ def warm(now=None):
     ⚠Without it the first Harness/Tools request paid the cold load + merge under `_TI_LOCK` (see traps/server.md «showed «Loading…» for seconds after a restart»)."""
     if not TI_BG:
         return boot_queue.done("toolidx_warm")    # nothing to warm: do not hold up the boot drain
-    _TI_STATE["bg"] = threading.current_thread()   # ⚠registered so a request's _kick() does not start a second scan; ends with this thread
     with boot_queue.gate("toolidx_warm"):          # ⚠boot warms run one at a time (traps/server.md)
-        _bg_warm(now)
+        with _TI_LOCK:   # ⚠register "bg" only inside the gate: set while queued, _kick() saw a live thread and no scan ran
+            t = _TI_STATE.get("bg")
+            t = _TI_STATE["bg"] = t if t and t.is_alive() else threading.current_thread()
+        _bg_warm(now) if t is threading.current_thread() else t.join()   # a kicked scan runs: wait for it, never a second one
         tool_uses(30, now)
         mcp_status(30, now)
 
 
 def _kick():
-    t = _TI_STATE.get("bg")
-    if TI_BG and not (t and t.is_alive()):
-        t = _TI_STATE["bg"] = threading.Thread(target=_bg_warm, name="toolidx-warm", daemon=True)
-        t.start()
+    with _TI_LOCK:                                 # same lock as warm()'s check-and-register: one scan thread at a time
+        t = _TI_STATE.get("bg")
+        if TI_BG and not (t and t.is_alive()):
+            t = _TI_STATE["bg"] = threading.Thread(target=_bg_warm, name="toolidx-warm", daemon=True)
+            t.start()
 
 
 def scanning():

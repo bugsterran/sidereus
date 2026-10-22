@@ -1189,11 +1189,14 @@ def _none_log(proj, cat, now):
         os.makedirs(MARK_DIR, exist_ok=True)
         p = os.path.join(MARK_DIR, NONE_LOG)
         line = (json.dumps({"v": 1, "proj": proj, "cat": cat, "t": now}) + "\n").encode("utf-8")
-        fd = os.open(p, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
-        try:
-            os.write(fd, line)
-        finally:
-            os.close(fd)
+        # ⚠same lock as _none_trim: an append between its read and os.replace lands in the old inode and is lost;
+        # on lock timeout (LOCK_WAIT_S) append anyway: a rare lost line beats blocking the tool
+        with _Lock(p):
+            fd = os.open(p, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+            try:
+                os.write(fd, line)
+            finally:
+                os.close(fd)
         with open(p, "rb") as f:
             first = f.readline(4096)
         try:

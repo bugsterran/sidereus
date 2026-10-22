@@ -1,5 +1,6 @@
-"""Pure helpers for the toolidx disk cache (no toolidx globals): packed-array codec and cache path spelling."""
+"""Pure helpers for the toolidx disk cache (no toolidx globals): packed-array codec, cache path spelling, hook digest."""
 import base64
+import hashlib
 import os
 import sys
 from array import array
@@ -34,3 +35,8 @@ def _canon(fp, pre, rpre):
         return fp
     rp = os.path.realpath(fp)
     return pre + rp[len(rpre):] if rp.startswith(rpre) else fp
+
+
+def hook_hash(cmd):
+    """12-hex digest of a hook command — matches config to `hook_success.command` without keeping the text."""
+    return hashlib.sha1(cmd.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:12]  # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1

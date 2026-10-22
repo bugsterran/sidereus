@@ -6,6 +6,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 - ★**Boot warm-up threads ran in parallel and spiked memory** (2026-10-22, #20, `sidereus/boot_queue.py`): ★peak ~478 MB parallel vs ~301 MB serial.
   - ⇒ Each one-shot warm wraps its heavy pass in `boot_queue.gate(name)`: one holder at a time, `ORDER` decides who goes next, drained after all finish or `BQ_DRAIN_MAX` 600 s. Switched-off warms are pre-marked done.
+  - ⚠Register a warm's «busy» state inside its gate, not before: `toolidx.warm()` set `_TI_STATE["bg"]` while still queued, so `_kick()` from Harness saw a live scan and started none until the earlier warms released.
   - ⚠Never hold the gate across a wait for an outside event (e.g. the first quota sample) — every later warm stalls until the 600 s cap.
 - ★**A stalled server left the bar «● Connected»** (2026-10-13 sandbox, SIGSTOP 20 s: CONN.fails stayed 0; 7 pending `/api/live` used up Chrome's 6 connections per host). Cause: `getJSON` had no timeout, so one `/api/state` hung and `pollBusy` skipped every later tick.
   - ⇒ `getJSON(url, {timeout})` aborts (default 120 s, `e.timeout`); the poll passes 15 s warm / 75 s cold or after an outage (STATE_COLD_S 60 s) → `pollDown`; `loadLive` has a `liveBusy` guard + 10 s.
