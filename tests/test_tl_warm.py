@@ -1,21 +1,24 @@
 """Timeline warm-up: default window then 72h, errors swallowed per pass, no thread at import."""
+import contextlib
 import threading
 import unittest
 
 from tests._load import sidereus
 
 tl = sidereus("timeline")
+bq = sidereus("boot_queue")
 
 
 class TlWarm(unittest.TestCase):
     def setUp(self):
-        self._saved = (tl.agents_timeline, tl.time.sleep, tl.warn_once)
+        self._saved = (tl.agents_timeline, tl.time.sleep, tl.warn_once, bq.gate)
+        bq.gate = lambda name: contextlib.nullcontext()   # ⚠never touch the process-wide boot queue
         self.calls, self.warns, self.slept = [], [], []
         tl.time.sleep = lambda s: self.slept.append(s)
         tl.warn_once = lambda key, msg, **kw: self.warns.append(key)
 
     def tearDown(self):
-        tl.agents_timeline, tl.time.sleep, tl.warn_once = self._saved
+        tl.agents_timeline, tl.time.sleep, tl.warn_once, bq.gate = self._saved
 
     def test_default_then_72h_after_delay(self):
         tl.agents_timeline = lambda h: self.calls.append(h)

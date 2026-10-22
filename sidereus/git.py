@@ -6,6 +6,7 @@ import re
 import subprocess
 import threading
 import time
+from sidereus import boot_queue
 from sidereus.bus import _atomic_write
 from sidereus.config import DATA_DIR
 from sidereus.gitinfo import _git_run, _worktrees, git_slot_free
@@ -30,6 +31,7 @@ BR_WARM_TICK_S = 5
 BR_WARM_LEAD_S = 6              # rebuild when the entry is this close to expiry (> one tick)
 BR_WARM_WANT_S = 300            # "recently requested" window; a warm rebuild never extends it
 BR_WARM_WAIT_S = 0.2            # ⚠warm-up never queues behind users for the git slot: skip the tick instead
+BR_WARM_PROBES = 2              # ⚠boot warm gives up a busy key after ~10 s: it holds the boot gate meanwhile
 _br_want = {}                  # (cwd, n) -> last user request time
 _BR_WARM_THR = []
 # ★2026-09-25: _br_want starts empty after a restart, so the first tab open was cold (0.57 s).
@@ -191,18 +193,26 @@ def br_boot_warm(now=None):
     with _BR_SEEN_LOCK:
         for k, at in got.items():
             _br_seen.setdefault(k, at)
+    if not got:
+        boot_queue.done("br_boot_warm")     # nothing to warm: do not hold up the boot drain
+        return []
     done = []
-    for key in got:
-        if not os.path.isdir(key[0]) or not _branch_ok(key[0]):
-            continue
-        while not git_slot_free(BR_WARM_WAIT_S):
-            time.sleep(BR_WARM_TICK_S)
-        try:
-            branch_graph(key[0], key[1], _warm=True)
-        except Exception:
-            continue
-        _br_want.setdefault(key, now)
-        done.append(key)
+    with boot_queue.gate("br_boot_warm"):   # ⚠boot warms run one at a time (traps/server.md)
+        for key in got:
+            if not os.path.isdir(key[0]) or not _branch_ok(key[0]):
+                continue
+            for _ in range(BR_WARM_PROBES):
+                if git_slot_free(BR_WARM_WAIT_S):
+                    break
+                time.sleep(BR_WARM_TICK_S)
+            else:
+                continue                    # slot stayed busy: this key warms on its first request
+            try:
+                branch_graph(key[0], key[1], _warm=True)
+            except Exception:
+                continue
+            _br_want.setdefault(key, now)
+            done.append(key)
     if done:
         _br_warm_start()
     return done

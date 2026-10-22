@@ -5,7 +5,7 @@ import re
 import subprocess
 import tarfile
 import time
-from sidereus import config
+from sidereus import boot_queue, config
 from sidereus.config import CODE_DIR
 from sidereus.warn import warn_once
 from sidereus.gitinfo import SHA_HEX_RE, _git_slot, git_argv, git_env
@@ -532,6 +532,8 @@ def _struct_warm_loop():
             if now - t0 < STRUCT_WARM_BOOT_S:
                 continue
             if now - _struct_act[0] < STRUCT_WARM_IDLE_S:
+                if boot_queue.others_done("struct_warm"):
+                    boot_queue.done("struct_warm")   # ⚠user active and last in line: let the boot queue drain
                 continue
             tgt = None
             # ★2026-09-25: the «Include tests» toggle (tests=True) was never warmed — its first request cost 2.0 s vs 0.03 s.
@@ -544,6 +546,7 @@ def _struct_warm_loop():
                 if tgt:
                     break
             if tgt is None:                # finished a full round — cleanup happens only here
+                boot_queue.done("struct_warm")     # no target: nothing to queue for
                 if now - _struct_prune_at[0] >= STRUCT_PRUNE_EVERY_S:
                     _struct_prune_at[0] = now
                     _struct_disk_prune()
@@ -551,6 +554,7 @@ def _struct_warm_loop():
             _struct_warm_seen[tgt] = now
             # ★Disk only: warm results in the memory cache held ~55 MB live (bound ~126 MB, one repo pair 25.0 + 20.8 MB)
             #   and warm-loop order, not the screen, decided which cells stayed. A later screen request is a disk hit.
-            structure(*tgt, mem=False)     # ⚠one cell only — idle is rechecked on the next tick
+            with boot_queue.gate("struct_warm"):   # ⚠first cell waits its boot turn (traps/server.md)
+                structure(*tgt, mem=False)     # ⚠one cell only — idle is rechecked on the next tick
         except Exception as e:
             warn_once("struct-warm", "Structure warm-up failed ({err})", vars={"err": type(e).__name__}, soft=True)

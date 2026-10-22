@@ -6,6 +6,7 @@ import threading
 import time
 from sidereus.warn import warn_once
 from sidereus.memo import BoundedMemo
+from sidereus import boot_queue
 from sidereus import claude_roots
 from sidereus.transcript import CLAUDE_PROJECTS, _tail_bytes
 from sidereus.ident import _proj_name, _sid8, _slug
@@ -466,12 +467,13 @@ TL_WARM_HOURS = (TL_HOURS, 72)
 
 def _tl_warm():
     time.sleep(TL_WARM_DELAY_S)
-    for h in TL_WARM_HOURS:            # each pass on its own: a failed default must not skip the 72h warm
-        try:
-            agents_timeline(h)
-        except Exception as e:
-            warn_once(f"tl-warm-{h}", "Timeline warm-up failed — {err}",
-                      vars={"err": f"{type(e).__name__}: {e}"[:134]})
+    with boot_queue.gate("tl_warm"):   # ⚠boot warms run one at a time: parallel peak RSS (traps/server.md)
+        for h in TL_WARM_HOURS:            # each pass on its own: a failed default must not skip the 72h warm
+            try:
+                agents_timeline(h)
+            except Exception as e:
+                warn_once(f"tl-warm-{h}", "Timeline warm-up failed — {err}",
+                          vars={"err": f"{type(e).__name__}: {e}"[:134]})
 
 
 _tx_cwd_memo = BoundedMemo(400)            # path -> (mtime, cwd)

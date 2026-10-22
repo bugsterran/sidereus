@@ -22,6 +22,7 @@ from itertools import chain, islice
 from sidereus.config import DATA_DIR
 from sidereus.bus import _atomic_write
 from sidereus.warn import warn_once
+from sidereus import boot_queue
 from sidereus.transcript import CLAUDE_PROJECTS, iso_epoch
 from sidereus.agents import sub_globs
 from sidereus.claude_roots import projects_dirs
@@ -442,11 +443,12 @@ def warm(now=None):
     """Startup pre-warm (viewer thread): finish the scan, then fill the 30-day `tool_uses`/`mcp_status` caches.
     ⚠Without it the first Harness/Tools request paid the cold load + merge under `_TI_LOCK` (see traps/server.md «showed «Loading…» for seconds after a restart»)."""
     if not TI_BG:
-        return
+        return boot_queue.done("toolidx_warm")    # nothing to warm: do not hold up the boot drain
     _TI_STATE["bg"] = threading.current_thread()   # ⚠registered so a request's _kick() does not start a second scan; ends with this thread
-    _bg_warm(now)
-    tool_uses(30, now)
-    mcp_status(30, now)
+    with boot_queue.gate("toolidx_warm"):          # ⚠boot warms run one at a time (traps/server.md)
+        _bg_warm(now)
+        tool_uses(30, now)
+        mcp_status(30, now)
 
 
 def _kick():

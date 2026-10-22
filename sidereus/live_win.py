@@ -7,7 +7,7 @@ import threading
 import time
 from datetime import datetime
 from sidereus.config import DATA_DIR
-from sidereus import claude_roots
+from sidereus import boot_queue, claude_roots
 from sidereus.warn import _LOOP_ERR, warn_once
 from sidereus.prefs import compact_hist
 from sidereus.bus import _atomic_write
@@ -260,7 +260,8 @@ def _win_loop():
     #   (measured: `_wkuse_loop` died silently of a TypeError and froze the screen).
     while True:
         try:
-            _scan_windows()
+            with boot_queue.gate("win_loop"):   # ⚠first pass waits its boot turn; no-op after drain (traps/server.md)
+                _scan_windows()
             _LOOP_ERR.pop("win", None)
             time.sleep(3600)
         except Exception as e:
