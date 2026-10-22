@@ -132,6 +132,9 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
   An unknown category is denied with the list. Without it and with no open run, the main session's first Edit/Write
   or untagged `git commit` in a project with pipelines is denied once, listing them; the retry passes. ⚠Manual
   setups need the `Edit|Write|MultiEdit|NotebookEdit` matcher for `pl_flow.py` (re-run `setup-claude`).
+- The 3rd `[pl-none:no-fit]` of a project in 7 days adds context (count and project path only, never a deny) asking
+  the model to offer a draft pipeline and write `.claude/pipelines/<name>.json` only after the user agrees; once per
+  project per 7 days.
 - Main's `git commit` closes this session's open runs of that project; a commit described `[pl:-]` closes none, one
   tagged `[pl:<name>/<stage>]` closes only `<name>`.
 - Run end (last stage, `[pl-end:]`, main's `git commit`): if `<data dir>/eval/<repo key>/seeds.json` exists it starts

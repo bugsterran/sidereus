@@ -17,7 +17,9 @@ Run end (last stage done · `[pl-end:]` · main's `git commit`): when the projec
 Stores stage titles, counts and times only -- never descriptions, commands, task text or tool output.
 Fail-open: any problem means no output and exit 0. Stdlib only, Python 3.9, no fcntl (Windows target).
 """
+import contextlib
 import hashlib
+import io
 import json
 import os
 import re
@@ -1218,7 +1220,78 @@ def _none_decl(sid, desc, now, ev=None):
         proj = None
     if proj:
         _none_log(proj, m.group(1), now)
+        if m.group(1) == "no-fit" and not ev.get("agent_id"):
+            txt = _none_nudge(proj, now)
+            _NONE_NOTE[:] = [txt, proj, now] if txt else []
     return None
+
+
+NONE_NUDGE = "none-nudge.json"   # MARK_DIR {proj: t of the last no-fit nudge}
+NONE_NUDGE_N = 3                 # no-fit declarations in the window (this one included) that trigger the nudge
+NONE_NUDGE_S = 7 * 86400         # count window and per-project quiet period
+_NONE_NOTE = []                  # [text, proj, t] of this Pre call's nudge; main() merges it into the flow's output
+
+
+def _none_nudge(proj, now):
+    """R1-R3 (#16): text for the Nth no-fit declaration of `proj` in NONE_NUDGE_S unless stamped in the window, else None.
+    ⚠Count, window and project path only (the log holds no description). Stamping is _none_stamp's. Fail-silent."""
+    try:
+        p = os.path.join(MARK_DIR, NONE_LOG)
+        with open(p, "rb") as f:
+            f.seek(max(0, os.path.getsize(p) - NONE_LOG_MAX))
+            lines = f.read(NONE_LOG_MAX).splitlines()
+        n = 0
+        for b in lines:
+            try:
+                x = json.loads(b)
+                t = x.get("t")
+                if x.get("proj") == proj and x.get("cat") == "no-fit" and not isinstance(t, bool) \
+                        and 0 <= now - float(t) <= NONE_NUDGE_S:
+                    n += 1
+            except Exception:
+                pass   # a cut first line or a bad row is skipped
+        if n < NONE_NUDGE_N:
+            return None
+        sp = os.path.join(MARK_DIR, NONE_NUDGE)
+        d = _none_load(sp)
+        last = d.get(proj)
+        if isinstance(last, (int, float)) and not isinstance(last, bool) and now - last < NONE_NUDGE_S:
+            return None
+        return ("Project %s had %d [pl-none:no-fit] declarations in the last 7 days. Offer the user a draft pipeline "
+                "for this kind of work, and write .claude/pipelines/<name>.json only after the user agrees."
+                % (proj, n))
+    except Exception:
+        return None
+
+
+def _none_stamp(proj, now):
+    """Record the nudge for `proj` in NONE_NUDGE (stale entries dropped). Raises on failure."""
+    sp = os.path.join(MARK_DIR, NONE_NUDGE)
+    d = {k: v for k, v in _none_load(sp).items() if isinstance(v, (int, float)) and not isinstance(v, bool)
+         and now - v < NONE_NUDGE_S}
+    d[proj] = now
+    _none_save(sp, d)
+
+
+def _none_emit(flow_out):
+    """stdout text for this Pre: the flow's output with the pending nudge merged in, or the flow's output unchanged.
+    ⚠Stamped only when the nudge goes out: a deny / unparseable flow output keeps it for the next no-fit."""
+    try:
+        txt, proj, now = _NONE_NOTE
+        if flow_out:
+            o = json.loads(flow_out)
+            h = o.get("hookSpecificOutput") if isinstance(o, dict) else None
+            if not (isinstance(h, dict) and set(o) == {"hookSpecificOutput"} and h.get("hookEventName") == "PreToolUse"
+                    and set(h) == {"hookEventName", "additionalContext"} and isinstance(h["additionalContext"], str)):
+                return flow_out
+            out = {"hookSpecificOutput": {"hookEventName": "PreToolUse",
+                                          "additionalContext": h["additionalContext"] + "\n\n" + txt}}
+        else:
+            out = {"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": txt}}
+        _none_stamp(proj, now)   # ⚠before printing: an unsaved stamp would nudge on every no-fit declaration
+        return json.dumps(out, ensure_ascii=False)
+    except Exception:
+        return flow_out
 
 
 def _none_proj(ev, tool):
@@ -1322,6 +1395,7 @@ def main(argv=None):
     if not isinstance(ev, dict):
         return
     denied = False
+    del _NONE_NOTE[:]
     try:
         try:   # pipeline `guards` (hooks/pl_guard.py); ⚠fail-open: a missing or broken guard module runs the flow unguarded
             import importlib.util as _iu
@@ -1332,7 +1406,18 @@ def main(argv=None):
             _me = _ty.SimpleNamespace(**globals())   # this module's current (test-patched) names
         except Exception:
             _g = None
-        denied = _none_pre(plat, ev) or (_g.run(plat, ev, _me, _flow) if _g else _flow(plat, ev))
+        denied = _none_pre(plat, ev)
+        if not denied:
+            # ⚠one JSON object per Pre: with a nudge pending the flow's output is buffered and wins if non-empty
+            if _NONE_NOTE:
+                buf = io.StringIO()
+                try:
+                    with contextlib.redirect_stdout(buf):
+                        denied = _g.run(plat, ev, _me, _flow) if _g else _flow(plat, ev)
+                finally:
+                    sys.stdout.write(_none_emit(buf.getvalue()))
+            else:
+                denied = _g.run(plat, ev, _me, _flow) if _g else _flow(plat, ev)
     except Exception as e:   # __main__ swallows it; leave the type name only
         _why(ev, "exc:" + type(e).__name__)
         raise
