@@ -13,6 +13,7 @@ from tests._node import node_e
 
 FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "archChkTools", "archChkLv", "archChkLvLbl", "archChkSevF", "archChkSum", "archChkStat", "archChkSec",
        "archChkTop", "archChkTopBtn", "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkEntry", "archChkHdBtn", "archChkRunCands", "archChkRunBody", "archChkRunCmds", "archChkScanAt", "archChkRunHtml", "archChkWinHtml"]
+FNS += ["archChkLast", "archChkLastHtml"]   # last-check line (window header, badge tooltip)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
 FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqWho",
@@ -25,7 +26,7 @@ with open(os.path.join(os.path.dirname(_SRC_P), "84l2-structure-arch-req.js"), e
     _REQ_SRC = fh.read()
 FIXSEND = re.search(r"^async function archChkFixSend\(.*?^}", _SRC, re.S | re.M).group(0)
 PRE = "\n".join([
-    "let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }",
+    "let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV", "AGO")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }",
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
     "const ARCH_PL = 'arch-map', ARCH_SEC_PL = 'security-checks'; const ARCH = { cache: {}, msg: '' };",
     "let SESS = [], POSTS = []; function lsSetJson(){}",
@@ -151,7 +152,8 @@ class StructArchChecks(unittest.TestCase):
                                "Once the fix is committed, re-run the security check on /r so the Security badge reflects it — run:\n"
                                "파이프라인 security-checks 실행 — 요청: «/r 보안 점검»\nTarget repository: /r\n"
                                "Pipeline: .claude/pipelines/security-checks.json (scanners → threat-model review); run it from the Sidereus repository with --repo /r\n"
-                               "Gate: python3 scripts/arch_checks.py --verify --last --category security (Windows: py scripts/arch_checks.py --verify --last --category security)")
+                               "Gate: python3 scripts/arch_checks.py --verify --last --category security (Windows: py scripts/arch_checks.py --verify --last --category security)\n"
+                               "Tag each stage dispatch description with [pl:security-checks/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.")
         self.assertIn('class="archckst archsent"', r[5])   # success style, not the grey scanner status line
         self.assertIn("요청함 → r · s-new · b · idle · 14:05", r[5])
         self.assertIn('data-ckall checked', r[5])
@@ -311,13 +313,17 @@ class StructArchChecks(unittest.TestCase):
                 "archChkRunBody('/x/shop', '/sid/', false), archChkRunHtml('/x/shop', {sidereus: '/sid'}, S, rc)]));")
         self.assertEqual(r[0], 0)
         self.assertEqual(r[1], [["x1", 0, True]])
-        self.assertTrue(r[2].startswith(r[3] + "\n"))
+        tag = "\nTag each stage dispatch description with [pl:security-checks/<stage title>] (not [pl:-])"
+        self.assertTrue(r[3].endswith("; a stage you run yourself: Bash description with the same tag."))
+        self.assertIn(tag, r[3])                    # Claude recipient: stage-tag line (cross-repo sessions tagged [pl:-])
+        self.assertTrue(r[2].startswith(r[3][:r[3].index(tag)] + "\n"))
+        self.assertNotIn("Tag each stage dispatch", r[2])
         self.assertIn('echo "[pl:security-checks/<stage title>]"', r[2])
         self.assertIn("report once after the last stage", r[2])
         for w in ("Agent tool", "SendMessage", "Workflow"):
             self.assertNotIn(w, r[2])
         self.assertEqual(r[3], r[4])
-        self.assertNotIn("[pl:", r[3])
+        self.assertNotIn('echo "[pl:', r[3])
         self.assertIn("data-cxhint", r[5])
         self.assertIn("[pl:security-checks/", r[5])
 
@@ -564,3 +570,18 @@ class StructArchCheckFilters(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_last_check_line(self):   # «Last check MM-DD HH:MM · Nd ago», overdue past 30 days, «Never checked» without a scan
+        at = CHECKS["at"]
+        d = "{checks: " + json.dumps(CK) + "}"
+        r = run("const d = " + d + ", lg = {checks: {security: {tools: [], top: [], at: 1, log: {at_scan: %d}}}};"
+                "console.log(JSON.stringify([archChkLastHtml(d, %d), archChkLastHtml(d, %d), archChkLastHtml({checks: {security: {tools: []}}}, %d),"
+                "archChkLast(lg, %d).txt, archChkTopBtn(d), archChkEntry({ok: false})]));" % (at + 7200, at + 3 * 86400, at + 31 * 86400, at, at + 7200 + 7200))
+        self.assertEqual(r[0], '<span class="ckwlast">마지막 점검 11-14 22:13 · 3일 전</span>')
+        self.assertEqual(r[1], '<span class="ckwlast ckwold">마지막 점검 11-14 22:13 · 31일 전</span>')   # past the monthly cadence
+        self.assertEqual(r[2], '<span class="ckwlast">점검한 적 없음</span>')
+        self.assertEqual(r[3], "마지막 점검 11-15 00:13 · 2시간 전")   # newer log scan wins
+        self.assertIn('title="마지막 점검 11-14 22:13 · ', r[4])
+        self.assertIn('title="점검한 적 없음"', r[5])
+        e = run("console.log(JSON.stringify(archChkLastHtml({checks: " + json.dumps(CK) + "}, %d)));" % (at + 3 * 86400), lang="en")
+        self.assertEqual(e, '<span class="ckwlast">Last check 11-14 22:13 · 3d ago</span>')

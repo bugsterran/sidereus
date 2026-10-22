@@ -5,6 +5,7 @@ Object.assign(I18N.ko, {
   'The security results are older than the code — run the security check again.': '보안 결과가 코드보다 오래됨 — 보안 점검을 다시 실행하세요.',
   'Last security check {t}': '마지막 보안 점검 {t}',
   'Never checked': '점검한 적 없음',
+  'Last check {t} · {r}': '마지막 점검 {t} · {r}',
   'Last AI review {t}': '마지막 AI 리뷰 {t}',
   'Open {o} · resolved {r} · false positives {f}': '열림 {o} · 해결 {r} · 오탐 {f}',
   'open|finding': '열림',

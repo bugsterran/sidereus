@@ -48,7 +48,7 @@ function archChkTopBtn(d, p){   // p = repo of the hidden-rule pref, default the
   // shown even at 0 so missing scanners stay visible; scanner states in the tooltip
   // stale = scanned commit is not HEAD: same «cut» + ⚠ marking as the diagram stamp (archHeadNote, 84j)
   const old = !!sec.stale, cm = String(sec.commit || '').slice(0, 7), hd = String((d && d.head) || '').slice(0, 7);
-  const tip = (old ? T('Scanned commit {n} · HEAD now {m}').replace('{n}', cm).replace('{m}', hd) + '\n' + T('The security results are older than the code — run the security check again.') + '\n' : '')
+  const tip = archChkLast(d).txt + '\n' + (old ? T('Scanned commit {n} · HEAD now {m}').replace('{n}', cm).replace('{m}', hd) + '\n' + T('The security results are older than the code — run the security check again.') + '\n' : '')
     + archChkTools(sec).map(t => String(t.id) + ' · ' + archChkStat(t)).join('\n') + (hid.length ? '\n' + T('{n} rules hidden').replace('{n}', hid.length) : '');
   return '<button type=button class="strbg strbg-archcki' + (e ? '' : ' strbg-archckiw') + (old ? ' strbg-cut' : '') + '" data-arck aria-haspopup=dialog title="' + esc(tip) + '">'
     + esc((old ? '⚠ ' : '') + T('Security {n}').replace('{n}', vis.length)) + '</button>';
@@ -130,7 +130,7 @@ function archChkFixBody(p, c, items, home){
 const ARCH_SEC_PL = 'security-checks';
 // Pure: issues badge, or a «Security check» button that opens the window with no results yet (also on the no-map states).
 function archChkEntry(d){
-  return archChkTopBtn(d) || (d ? '<button type=button class="strbg strbg-archcki strbg-archckiw" data-arck aria-haspopup=dialog>' + esc(T('Security check')) + '</button>' : '');
+  return archChkTopBtn(d) || (d ? '<button type=button class="strbg strbg-archcki strbg-archckiw" data-arck aria-haspopup=dialog title="' + esc(archChkLast(d).txt) + '">' + esc(T('Security check')) + '</button>' : '');
 }
 // Pure: map header entry ('' unless the map payload is ok).
 function archChkHdBtn(d){ return d && d.ok ? archChkEntry(d) : ''; }
@@ -147,7 +147,8 @@ function archChkRunBody(p, home, cx){   // cx = Codex recipient
     // ⚠No Agent tool in Codex: same stage-marker tail as archDmBody (84j).
     + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + ARCH_SEC_PL + '/<stage title>]" and end it with echo "[pl-end:' + ARCH_SEC_PL + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
       + ' At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.'
-      + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.' : '');
+      + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.'
+      : '\nTag each stage dispatch description with [pl:' + ARCH_SEC_PL + '/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.');   // same Claude tail as archDmBody (84j)
 }
 // Pure: terminal commands {sh, win} for the no-session fallback; null when home is unknown or a path could break the quoting (⚠cmd expands %VAR% / !VAR! even inside quotes).
 function archChkRunCmds(p, home){
@@ -161,6 +162,14 @@ function archChkScanAt(d){
   const s = archChkSec(d), n = v => typeof v === 'number' && isFinite(v) ? v : 0;
   return s ? Math.max(n(s.at), n(s.log && s.log.at_scan)) : 0;
 }
+// Pure: «Last check MM-DD HH:MM · 3d ago» | «Never checked»; old = past 30 days (security-checks runs monthly). now = unix s, default the clock.
+function archChkLast(d, now){
+  const at = archChkScanAt(d);
+  if(!at) return { txt: T('Never checked'), old: false };
+  const s = Math.max(0, Math.floor((now === undefined ? Date.now() / 1000 : now) - at));
+  return { txt: T('Last check {t} · {r}').replace('{t}', () => hhmm(at, { date: true, dsep: '-' })).replace('{r}', () => AGO(ago(s))), old: s > 30 * 86400 };
+}
+function archChkLastHtml(d, now){ const l = archChkLast(d, now); return '<span class="ckwlast' + (l.old ? ' ckwold' : '') + '">' + esc(l.txt) + '</span>'; }
 // Pure: run panel — preview + confirm to a session of the project, or the copyable command when none is logged in.
 // Pure: progress line of the run — server run (stage · elapsed, as arch-map) › request record (sent / no session / done) › waiting.
 function archChkProgHtml(p, S, now){
@@ -200,7 +209,7 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
   const why = !cands.length ? T('No live session') : !n ? T('Select at least one issue') : '';
   let h = '<div class=ckwh><b>' + esc(T('Top issues {n}').replace('{n}', top.length)) + '</b><span>' + esc(T('critical {c} · high {h} · medium {m} · low {l}').replace('{c}', nl('critical')).replace('{h}', nl('high')).replace('{m}', nl('medium')).replace('{l}', nl('low')))
     + (flt ? ' · ' + esc(T('shown {n} of {m}').replace('{n}', top.length).replace('{m}', all.length)) : '')
-    + '</span><span class=ckwp title="' + esc(p) + '">' + esc(archBase(p) + (cm ? ' · ' + cm : '')) + '</span>'
+    + '</span>' + archChkLastHtml(d) + '<span class=ckwp title="' + esc(p) + '">' + esc(archBase(p) + (cm ? ' · ' + cm : '')) + '</span>'
     + '<label class=ckwa><input type=checkbox data-ckall' + (top.length && top.every(x => S.sel && S.sel[archChkKey(x)]) ? ' checked' : '') + '>' + esc(T('Select all')) + '</label>'
     + '<button type=button class="archgo' + (S.req ? ' on' : '') + '" data-ckfix' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Request fix') + (n ? ' (' + n + ')' : '')) + '</button>'
     + (why ? '<span class=archwhy>' + esc(why) + '</span>' : '')

@@ -374,10 +374,11 @@ FNS = ["strHdBadge", "hhmm", "archBase", "archChkLv", "archChkLvLbl", "archChkSe
        "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archChkRunBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkRunHtml", "archChkWinHtml",
        "archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkView"]   # hidden-rule view helpers (archChkTopBtn / archChkWinHtml call them)
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archChkProgHtml"]   # run progress line (archChkRunHtml calls it)
+FNS += ["archChkScanAt", "archChkLast", "archChkLastHtml"]   # last-check line (badge tooltip, window header)
 
 
 def run_js(body):
-    pre = "\n".join(["let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }", "const ARCH_PL = 'arch-map', ARCH_SEC_PL = 'security-checks'; let ARCHRUN = {}, SECRUN = {};",
+    pre = "\n".join(["let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV", "AGO")), "function sid8(s){ return String(s).slice(0, 8); }", "function agoAt(s){ return '@' + s; }", "const ARCH_PL = 'arch-map', ARCH_SEC_PL = 'security-checks'; let ARCHRUN = {}, SECRUN = {};",
                      "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));"])
     js = pre + "\n" + "\n".join(js_fn(n) for n in FNS) + "\n" + body
     r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
@@ -409,7 +410,8 @@ class Ui(unittest.TestCase):
                          "Fix the cause, keep behaviour, run the project's tests."])
         self.assertIn("<div class=archckst>점검한 적 없음", win)   # window ends with the (empty) history section
         self.assertNotIn("a.py", plain)                        # no security results -> nothing listed
-        self.assertNotIn("점검한 적 없음", plain)
+        self.assertNotIn("<div class=archckst>점검한 적 없음", plain)   # no history section
+        self.assertIn('<span class="ckwlast">점검한 적 없음</span>', plain)   # header last-check line
         r2 = run_js("console.log(JSON.stringify([archChkRule({rule: 'GHSA-1', cve: ['CVE-2020-8203', '<b>'], pkg: 'lodash'}), archChkRule({rule: 'B105'})]));")
         self.assertEqual(r2, ["GHSA-1 · CVE-2020-8203 · lodash", "B105"])
         self.assertTrue(only.startswith("<button") and only.endswith("</button>") and "보안 1" in only)
