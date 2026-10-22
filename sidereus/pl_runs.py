@@ -328,6 +328,10 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
             row["past"].append(ps)
         out.append(row)
         if i not in agi:
+            # ⚠Outside the agent-row window a live tagged sub/bg row still proves the run alive (idle-end check below).
+            row["_live"] = not r["end"] and any(
+                isinstance(x, dict) and isinstance(x.get("lab"), str) and (_PLR_TAG.search(x["lab"]) or [0, ""])[1] == r["name"]
+                for x in list(sub if isinstance(sub, list) else ()) + list(bgs if isinstance(bgs, list) else ()))
             continue
         ags = [{"aid": a["aid"], "tid": a["tid"], "lab": a["lab"][:PLR_LAB_MAX], "run": False, "t0": a["t0"], "t1": a["t1"],
                 "_t": a["t"]}
@@ -379,9 +383,10 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
                  + [g["t1"] for st in row["stages"].values() for g in st.get("ag") or () if not g.get("run")]) for row in out]
     pmn = plm.get("name") if isinstance(plm, dict) else None
     for j, row in enumerate(out):
+        tagged = row.pop("_live", False)
         # ⚠View-side close only (runs.json untouched): some last stages (main's push, bg dispatch) never write `end`.
         #   A live agent / main marker keeps it open at any age (a bg arch-map stage runs > 30 min).
-        if (not row["end"] and now - lasts[j] > PLR_OPEN_S and pmn != row["name"]
+        if (not row["end"] and now - lasts[j] > PLR_OPEN_S and pmn != row["name"] and not tagged
                 and not any(a.get("run") for s in row["stages"].values() for a in s.get("ag") or ())):
             row["end"] = lasts[j]
     # ⚠The busy signal is session-wide: with several open runs, credit it only to runs that hold a live agent / main

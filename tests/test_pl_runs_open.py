@@ -61,6 +61,32 @@ class OpenRun(unittest.TestCase):
         self.assertEqual((r["end"], r["stages"]["라이브 검증"]["o"]), (0, "run"))
         self.assertEqual(self._model(bgs=sub)["end"], 0)   # a tagged bg task counts the same
 
+    def _four_open(self, age):
+        # three newer open runs fill the PLR_MODEL_AG_RUNS slots; the oldest (N) is outside the agent-row window
+        st = {"검증": {"s": "run", "t0": NOW - age - 60, "t1": NOW - age, "n": 1}}
+        runs = {("r%d" % k): {"t0": NOW - 900, "t1": NOW - 60 * k, "cur": "검증", "end": 0, "st": st} for k in (1, 2, 3)}
+        runs[N] = {"t0": NOW - age - 600, "t1": NOW - age, "cur": "검증", "end": 0, "st": st}
+        fp = os.path.join(self.tmp, SID + ".runs.json")
+        with open(fp, "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "runs": runs}, f)
+        os.utime(fp, (NOW, NOW))
+        self.assertGreaterEqual(len(runs), PR.PLR_MODEL_AG_RUNS + 1)
+
+    def _row(self, bgs=(), sub=()):
+        out = PR.pl_model(SID, self.sd, list(sub), None, NOW, "run", (), list(bgs))
+        return next(r for r in out if r["name"] == N)
+
+    def test_live_tag_keeps_run_outside_window_open(self):
+        self._four_open(45 * 60)
+        bg = [{"lab": "Bash: [pl:%s/검증] arch-map" % N, "min": 45, "tid": "bg1"}]
+        self.assertEqual(self._row(bgs=bg)["end"], 0)
+        self.assertEqual(self._row(sub=bg)["end"], 0)   # a live subagent counts the same
+
+    def test_run_outside_window_without_live_tag_still_ends(self):
+        self._four_open(45 * 60)
+        other = [{"lab": "Bash: [pl:r1/검증] x", "min": 1, "tid": "bg2"}]
+        self.assertEqual(self._row(bgs=other)["end"], NOW - 45 * 60)   # f26ae3a9: no 6-hour «still running»
+
     def test_main_marker_keeps_run_open(self):
         self._main_tail(45 * 60)
         self.assertEqual(self._model(plm={"name": N, "title": "라이브 검증", "age": 5})["end"], 0)
