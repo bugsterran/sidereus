@@ -236,6 +236,8 @@ body.ckwin{margin:0;padding:0;height:100vh;overflow:hidden}
 .ckwh b{font-size:15px;color:var(--nx-t1,#dfe5ee)}
 .ckwh span{font-size:12.5px;color:var(--nx-t2,#aab4c3)}
 .ckwh .ckwp{flex:1 1 auto;color:var(--nx-t3,#8b95a7)}
+.ckwh .ckwlast{color:var(--nx-t3,#8b95a7)}
+.ckwh .ckwlast.ckwold{color:var(--nx-warn,#e3b341)}   /* past the monthly check cadence */
 .ckwa{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--nx-t2,#aab4c3);cursor:pointer}
 .ckwh .archgo:disabled{opacity:.5;cursor:default}
 .ckwh .archgo.on{background:color-mix(in srgb,var(--nx-info,#5899f3) 30%,var(--nx-panel,#141a23))}

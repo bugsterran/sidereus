@@ -397,9 +397,10 @@ class StructArch(unittest.TestCase):
     def test_dm_body_codex_markers(self):
         r = run("console.log(JSON.stringify([archDmBody('arch-map', '/r', '/sidereus/', '업데이트', false), archDmBody('arch-map', '/r', '/sidereus/', '업데이트'),"
                 " archDmBody('arch-map', '/r', '/sidereus/', '업데이트', true)]));")
-        self.assertEqual(r[0], ARCH_DM_CC)          # Claude recipient: bytes unchanged
-        self.assertEqual(r[1], ARCH_DM_CC)
+        self.assertEqual(r[0], ARCH_DM_CC + ARCH_DM_TAG)   # Claude recipient: frozen bytes + the stage-tag line
+        self.assertEqual(r[1], ARCH_DM_CC + ARCH_DM_TAG)
         self.assertTrue(r[2].startswith(ARCH_DM_CC + "\n"))
+        self.assertNotIn(ARCH_DM_TAG, r[2])
         self.assertIn('echo "[pl:arch-map/<stage title>]"', r[2])
         self.assertIn('echo "[pl-end:arch-map/<stage title>]"', r[2])
         for w in CLAUDE_ONLY:
@@ -446,6 +447,9 @@ ARCH_DM_CC = ("파이프라인 arch-map 실행 — 요청: «/r 아키텍처 구
               "읽기 전용, 저장소에 쓰지 않음 — 쓰기는 ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ 아래만 (key: 파이프라인 rules)\n"
               "파이프라인: /sidereus/.claude/pipelines/arch-map.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n"
               "게이트: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last)")
+# ⚠a Claude recipient in another repo tagged every dispatch [pl:-] without it, so no run was recorded
+ARCH_DM_TAG = ("\nTag each stage dispatch description with [pl:arch-map/<stage title>] (not [pl:-]); "
+               "a stage you run yourself: Bash description with the same tag.")
 CLAUDE_ONLY = ("Agent tool", "subagent_type", "SendMessage", "Workflow", "pl-model", "AskUserQuestion")
 
 MAP = {"modules": MODS + [{"id": "gates", "name": "Check scripts + tests", "kind": "module"},

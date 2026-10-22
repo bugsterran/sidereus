@@ -124,7 +124,9 @@ function archDmBody(name, repo, home, verb, cx){   // verb = archReqOf(d).vb (wi
     // ⚠No Agent tool there: stages are lit by a leading shell marker (hooks/pl_mark.py --platform codex MARK).
     + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + name + '/<stage title>]" and end it with echo "[pl-end:' + name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
       + ' At each stage start re-read only the files the previous stage wrote (for arch-map: plan.json, then map.json, then flows.json); do not rely on earlier stage context.'   // ⚠one Codex context holds every stage: stale earlier reads leak into later stages
-      + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.' : '');   // ⚠Codex ended its turn after each stage and waited for a new prompt
+      + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.'
+      // ⚠A Claude recipient in another repo tagged every dispatch [pl:-] and no run was recorded: name the tag.
+      : '\nTag each stage dispatch description with [pl:' + name + '/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.');   // ⚠Codex ended its turn after each stage and waited for a new prompt
 }
 // Sidereus repo: the server's `sidereus` field, else the project whose pipeline list holds arch-map (48 PLS, if loaded).
 function archHome(d){
