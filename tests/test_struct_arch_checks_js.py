@@ -321,6 +321,16 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("data-cxhint", r[5])
         self.assertIn("[pl:security-checks/", r[5])
 
+    def test_run_cands_include_home_sessions(self):   # the run body names <home>/.claude/pipelines, so Sidereus-repo sessions can run it
+        li = {"mboxSrc": "identity", "state": "idle"}
+        sess = [dict(li, sid="h1", cwd="/sid", mbox="sid-a", ageSec=1), dict(li, sid="o1", cwd="/other", mbox="oth", ageSec=1),
+                dict(li, sid="s1", cwd="/x/shop", mbox="shop", ageSec=9), {"sid": "h2", "cwd": "/sid", "state": "idle", "ageSec": 0}]
+        r = run("const fc = archChkFixCands(" + json.dumps(sess) + ", '/x/shop', true);"
+                "console.log(JSON.stringify([archChkRunCands(fc, '/sid').map(x => x.sid), archChkRunCands(fc, '').map(x => x.sid), archChkFixCands(" + json.dumps(sess) + ", '/x/shop').length]));")
+        self.assertEqual(r[0], ["s1", "h1"])        # target repo first, then home; /other and the logged-out h2 excluded
+        self.assertEqual(r[1], ["s1"])              # home unknown: no home tier
+        self.assertEqual(r[2], 4)                   # fix-request picker unchanged (every live session)
+
     def test_last_report_button(self):
         rep = {"name": 'security-report-"<x>".md', "at": 1700000000}
         r = run("console.log(JSON.stringify([archChkLogHtml({}, null), archChkLogHtml({}, " + json.dumps(rep) + "),"

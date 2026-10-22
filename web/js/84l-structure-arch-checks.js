@@ -102,7 +102,7 @@ function archChkFixCands(sess, p, cx){   // cx: also Codex rows (run picker only
   const inRepo = x => !!p && (x.cwd === p || String(x.cwd || '').startsWith(p + '/') || !!(x.wt && x.wt.main && x.wt.main === p));
   const tier = x => inRepo(x) ? 0 : p && Array.isArray(x.repos) && x.repos.indexOf(p) >= 0 ? 1 : 2;
   return (sess || []).filter(x => x && x.sid && x.state !== 'done' && (!x.plat || x.plat === 'cc' || (cx && x.plat === 'cx')))
-    .map(x => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', id: x.mbox || '', login: mboxIn(x), proj: x.project || archBase(x.cwd), age: +x.ageSec || 0,
+    .map(x => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', id: x.mbox || '', login: mboxIn(x), proj: x.project || archBase(x.cwd), age: +x.ageSec || 0, cwd: x.cwd || '',
       g: tier(x), st: typeof sessLabel === 'function' ? sessLabel(x) : String(x.state || '') }))
     .sort((a, b) => a.g - b.g || (b.login ? 1 : 0) - (a.login ? 1 : 0) || a.age - b.age);
 }
@@ -134,8 +134,9 @@ function archChkEntry(d){
 }
 // Pure: map header entry ('' unless the map payload is ok).
 function archChkHdBtn(d){ return d && d.ok ? archChkEntry(d) : ''; }
-// Pure: recipients = logged-in live sessions whose cwd or repos is the project (fix-request tiers 0-1 only).
-function archChkRunCands(cands){ return (cands || []).filter(c => c && c.g <= 1 && c.login); }
+// Pure: recipients = logged-in live sessions whose cwd or repos is the project (tiers 0-1), then sessions in the Sidereus repo (home).
+// The home tier exists because the run body points at <home>/.claude/pipelines, so a session there can run it with --repo (same as 84j archCands).
+function archChkRunCands(cands, home){ return (cands || []).filter(c => c && c.login && (c.g <= 1 || (!!home && c.cwd === home))); }
 // Pure: DM body (mailbox wire text in the archDmBody format, not UI); absolute paths under the Sidereus repo (home).
 function archChkRunBody(p, home, cx){   // cx = Codex recipient
   const h = home ? String(home).replace(/\/+$/, '') + '/' : '';
@@ -173,7 +174,7 @@ function archChkRunHtml(p, d, S, cands){
   const sent = (S.runSent && S.runSent.to ? archChkSentHtml({ sent: S.runSent }) : '') + archChkProgHtml(p, S);
   const err = S.runMsg ? '<div class="archmsg archerr" role=alert>' + esc(S.runMsg) + '</div>' : '';   // run send failure, beside its own button
   if(!S.run) return sent + err;
-  const home = archHome(d), rc = archChkRunCands(cands), head = '<div class=archrqh><b>' + esc(T('Run security check')) + '</b>';
+  const home = archHome(d), rc = archChkRunCands(cands, home), head = '<div class=archrqh><b>' + esc(T('Run security check')) + '</b>';
   if(!rc.length){
     const cm = archChkRunCmds(p, home), row = (k, lb) => '<div class=archckst><small>' + esc(lb) + '</small> <code>' + esc(cm[k]) + '</code> <button type=button class=wkrgb data-ckcp="' + k + '">'
       + esc(S.cp && S.cp.k === k ? T(S.cp.ok ? 'Copied' : 'Copy failed — select and copy') : T('Copy')) + '</button></div>';
@@ -401,7 +402,7 @@ function archChkWinEv(e, w){
     archChkWinPaint(); return;
   }
   if(t.closest('[data-ckrun]')){
-    if(!S.run){ S.run = { sid: (archChkRunCands(archChkFixCands(SESS, S.p, true))[0] || {}).sid || '', busy: false }; S.runMsg = ''; S.cp = null; }
+    if(!S.run){ S.run = { sid: (archChkRunCands(archChkFixCands(SESS, S.p, true), archHome(ARCH.cache[S.p]))[0] || {}).sid || '', busy: false }; S.runMsg = ''; S.cp = null; }
     else if(!S.run.busy) S.run = null;
     archChkWinPaint(); return;
   }
@@ -462,7 +463,7 @@ function archChkCopy(S, w, b){
 async function archChkRunSend(){
   const S = ARCH_CW, q = S && S.run;
   if(!q || q.busy) return false;
-  const d = ARCH.cache[S.p], home = archHome(d), cur = archChkRunCands(archChkFixCands(SESS, S.p, true)).find(c => c.sid === q.sid);
+  const d = ARCH.cache[S.p], home = archHome(d), cur = archChkRunCands(archChkFixCands(SESS, S.p, true), home).find(c => c.sid === q.sid);
   if(!home || !cur) return false;
   const body = archChkRunBody(S.p, home, !!cur.cx), key = archChkReqKey(cur.sid, body);
   if(S.runSent && S.runSent.key === key && !q.again){ q.again = true; archChkWinPaint(); return false; }   // first click on «Sent · send again» only arms
