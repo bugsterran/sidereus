@@ -152,6 +152,26 @@ def _apply_off(cwd):
         return False
 
 
+_FLOW = None   # sibling pl_flow.py, loaded on the first nudge
+
+
+def _flow():
+    """pl_flow module (same folder), or None; HOME_DIR/DATA_DIR follow this module's so tests stay off live files."""
+    global _FLOW
+    try:
+        if _FLOW is None:
+            import importlib.util
+            sp = importlib.util.spec_from_file_location(
+                "pl_flow_nudge", os.path.join(os.path.dirname(os.path.abspath(__file__)), "pl_flow.py"))
+            m = importlib.util.module_from_spec(sp)
+            sp.loader.exec_module(m)
+            _FLOW = m
+        _FLOW.HOME_DIR, _FLOW.DATA_DIR = HOME_DIR, DATA_DIR
+        return _FLOW
+    except Exception:
+        return None
+
+
 def nudge(ev, sid, desc):
     """Deny reason for an untagged Agent/Task in a project with pipelines, else None.
 
@@ -178,8 +198,15 @@ def nudge(ev, sid, desc):
     names = [n if count[n] == 1 else "%s (%s)" % (n, os.path.basename(d)) for n, d in found]
     shown = ", ".join(names[:8]) + (" …" if len(names) > 8 else "")
     where = "This project has" if all(d == cwd for _, d in found) else "This session's projects have"
-    return ("%s pipelines: %s. If this work is a pipeline stage, prefix the description with "
-            "[pl:<name>/<stage title>]; otherwise prefix [pl:-]." % (where, shown))
+    # ⚠pipelines pl_flow resolves outside the session's dirs: a session in another repo tagged a relayed run [pl:-]
+    fl = _flow()
+    ext = [x for x in (fl.known_pipelines(ev, {d for _, d in found}) if fl else []) if not _apply_off(x[1])]
+    more = ""
+    if ext:
+        en = ["%s (%s)" % (n, os.path.basename(d)) for n, d in ext]
+        more = " Also valid (known projects): %s." % (", ".join(en[:8]) + (" …" if len(en) > 8 else ""))
+    return ("%s pipelines: %s.%s If this work is a pipeline stage, prefix the description with "
+            "[pl:<name>/<stage title>]; otherwise prefix [pl:-]." % (where, shown, more))
 
 
 def _platform(argv):

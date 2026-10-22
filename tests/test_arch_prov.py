@@ -219,6 +219,45 @@ class ProvTest(unittest.TestCase):
             self.assertEqual(AM.runs([row], now=T + 250), {})
         self.assertEqual(AP.get(self.repo, C1, T + 200)["sid"], SID)
 
+    def cross(self, sid, agents, run):
+        """Session in another repo: tagged agents [(aid, stage, t0, t1, model)], runs.json arch-map run or none."""
+        other = os.path.join(self.tmp, "other-" + sid[:4])
+        os.makedirs(other, exist_ok=True)
+        fp = self.cc_session(sid, [(a, s, t0, m) for a, s, t0, _t1, m in agents])
+        for a, _s, _t0, t1, _m in agents:
+            os.utime(os.path.join(fp[:-6], "subagents", "agent-%s.jsonl" % a), (t1, t1))
+        runs = {"arch-map": dict(run, cwd=other, proj=self.sidereus)} if run else {}
+        rj = os.path.join(self.plr, sid + ".runs.json")
+        with open(rj, "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "runs": runs}, f)
+        os.utime(rj, (T + 250, T + 250))
+
+    def req(self, asked):
+        return lambda sid, pl, at: self.repo if sid in asked and pl == "arch-map" else ""
+
+    def test_r3_cross_repo_open_run_late(self):
+        # Case A: cwd is the requesting repo, run still open (end 0, t1 = verify stage start), verify.json a minute later.
+        st = {MODS: {"s": "done", "t0": T + 20, "t1": T + 190, "n": 1}, VER: {"s": "run", "t0": T + 190, "t1": T + 190, "n": 1}}
+        self.cross(SID, [("a1", MODS, T + 20, T + 180, "claude-opus-4-1"), ("a3", VER, T + 190, T + 262, "claude-sonnet-4-5")],
+                   {"cur": VER, "t0": T, "t1": T + 190, "end": 0, "st": st})
+        self.assertIsNone(AP.load_prov(self.repo, C1, T + 250))   # no request source: cwd alone never matches
+        AP._MISS.clear()
+        got = AP.load_prov(self.repo, C1, T + 250, req=self.req({SID}))
+        self.assertEqual((got["sid"], got["stages"]), (SID, [{"t": MODS, "model": "opus-4-1"}, {"t": VER, "model": "sonnet-4-5"}]))
+
+    def test_r3_cross_repo_no_run_uses_tagged_agents(self):
+        # Case B: the session's own pipelines kept no arch-map run; an older run's agent past the gap is not counted.
+        self.cross(SID, [("a0", MODS, T - 5000, T - 4900, "claude-haiku-4-5"), ("a1", MODS, T + 20, T + 180, "claude-opus-4-1"),
+                         ("a3", VER, T + 190, T + 262, "claude-sonnet-4-5")], None)
+        self.cross(SID2, [("b1", VER, T + 190, T + 262, "claude-haiku-4-5")], None)   # same time, never asked
+        got = AP.load_prov(self.repo, C1, T + 250, req=self.req({SID}))
+        self.assertEqual((got["sid"], got["stages"]), (SID, [{"t": MODS, "model": "opus-4-1"}, {"t": VER, "model": "sonnet-4-5"}]))
+
+    def test_r3_unrequested_other_repo_not_credited(self):
+        st = {VER: {"s": "run", "t0": T + 190, "t1": T + 190, "n": 1}}
+        self.cross(SID2, [("b1", VER, T + 190, T + 262, "claude-haiku-4-5")], {"cur": VER, "t0": T, "t1": T + 190, "end": 0, "st": st})
+        self.assertIsNone(AP.load_prov(self.repo, C1, T + 250, req=self.req({SID})))
+
 
 if __name__ == "__main__":
     unittest.main()

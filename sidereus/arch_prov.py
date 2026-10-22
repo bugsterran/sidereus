@@ -23,6 +23,7 @@ PROV_LATE_S = 6 * 3600       # = pl_runs.PLR_KEEP_S: a map verified longer ago n
 PROV_READ_MAX = 4 << 20      # bytes of one transcript / rollout scanned for model fields
 PROV_SLACK_S = 5             # run window slack around [t0, end|t1]
 PROV_MISS_S = 60             # a failed late match is not retried for this long
+PROV_GAP_S = 1800            # tagged agents of one run follow each other within this (run start when runs.json has no run)
 PROV_FILE_MAX = 65536
 _PL = "arch-map"
 _PLATS = frozenset(["cc"]) | frozenset(EXT_PLAT.values())
@@ -152,9 +153,27 @@ def _rollout(sid):
     return hits[-1] if hits else ""
 
 
-def _targets(r, root):
-    """True when a runs.json run worked on root: its session `cwd` is root, inside root, or inside root's arch store dir.
-    ⚠Not `proj`: that is the pipeline owner (the Sidereus repo for every arch-map run). No cwd -> False (fail closed)."""
+def _asked(sid, root, vt, req):
+    """True when the page's newest arch-map request to sid as of vt names root (req = pl_reqs.req_repo, via arch_map)."""
+    try:
+        rq = req(sid, _PL, vt) if req and sid else ""
+    except (OSError, ValueError, TypeError):
+        return False
+    return isinstance(rq, str) and bool(rq) and os.path.realpath(rq) == os.path.realpath(root)
+
+
+def _ags(sid, now):
+    """Tagged arch-map subagents [{t, aid, t0, t1}] of sid's Claude session (metadata only), [] without a transcript."""
+    fp = _cc_path("", sid)
+    return list((pl_runs._ag_by_name(fp[:-len(".jsonl")], now) or {}).get(_PL) or ()) if fp else []
+
+
+def _targets(r, root, sid="", vt=0.0, req=None):
+    """True when a runs.json run worked on root: its session `cwd` is root, inside root, or inside root's arch store dir,
+    or the page asked sid to map root (a cross-repo run: cwd is the requesting session's own repo).
+    ⚠Not `proj`: that is the pipeline owner (the Sidereus repo for every arch-map run). No cwd, no request -> False."""
+    if _asked(sid, root, vt, req):
+        return True
     c = pl_runs._proj(r.get("cwd"))
     if not c:
         return False
@@ -163,8 +182,9 @@ def _targets(r, root):
     return rc == rr or rc.startswith(rr + os.sep) or rc == store or rc.startswith(store + os.sep)
 
 
-def _run_of(sid, vt, now, root=None):
-    """(t0, end|t1, validated st) of sid's arch-map runs (current + past) whose window covers vt; root = proj must match."""
+def _run_of(sid, vt, now, root=None, req=None):
+    """(t0, end|t1, validated st) of sid's arch-map runs (current + past) whose window covers vt; root = target must match.
+    ⚠An open run's t1 is the current stage's start: its window runs to the newest tagged agent end instead."""
     doc = pl_runs._load_doc(sid, now)
     raws = []
     cur = (doc.get("runs") or {}).get(_PL) if isinstance(doc.get("runs"), dict) else None
@@ -172,11 +192,14 @@ def _run_of(sid, vt, now, root=None):
         raws.append(cur)
     past = (doc.get("past") or {}).get(_PL) if isinstance(doc.get("past"), dict) else None
     raws += [r for r in (past if isinstance(past, list) else ()) if isinstance(r, dict)]
-    out = []
+    out, ags = [], None
     for r in raws:
-        if root is not None and not _targets(r, root):
+        if root is not None and not _targets(r, root, sid, vt, req):
             continue
-        t0, t1 = _num(r.get("t0")), _num(r.get("end")) or _num(r.get("stop")) or _num(r.get("t1"))
+        t0, t1 = _num(r.get("t0")), _num(r.get("end")) or _num(r.get("stop"))
+        if not t1:
+            ags = _ags(sid, now) if ags is None else ags
+            t1 = max([_num(r.get("t1"))] + [a["t1"] for a in ags if a["t0"] >= t0 - PROV_SLACK_S])
         if t0 and t0 - PROV_SLACK_S <= vt <= t1 + PROV_SLACK_S:
             out.append((t0, t1, pl_runs._stages(r.get("st"))))
     return out
@@ -263,10 +286,27 @@ def record(root, commit, vt, row, t0, now=None):
     return prov
 
 
-def _late(root, commit, vt, now):
+def _tagged(sid, root, vt, now, req):
+    """(sid, t0, t1, {}) from sid's tagged arch-map agents when the page asked sid to map root and one agent spans vt,
+    else None. ⚠A session whose cwd has its own pipelines gets no runs.json arch-map run: agents are the only record."""
+    if not _asked(sid, root, vt, req):
+        return None
+    ags = _ags(sid, now)
+    hit = [a for a in ags if a["t0"] - PROV_SLACK_S <= vt <= a["t1"] + PROV_SLACK_S]
+    if not hit:
+        return None
+    t0 = min(a["t0"] for a in hit)
+    for a in sorted(ags, key=lambda a: -a["t0"]):   # walk back over the run's earlier stages, stop at a long gap
+        if a["t0"] < t0 and a["t1"] >= t0 - PROV_GAP_S:
+            t0 = a["t0"]
+    return sid, t0, max(a["t1"] for a in hit), {}
+
+
+def _late(root, commit, vt, now, req=None):
     """Fallback after a restart mid-run: exactly one plmark arch-map run for root whose window covers vt records;
-    several are narrowed to those with a stage covering vt (the verify stage's session wins); else unknown."""
-    cands = []
+    several are narrowed to those with a stage covering vt (the verify stage's session wins); with no run at all, one
+    requested session whose tagged agents span vt; else unknown."""
+    cands, sids = [], []
     try:
         names = os.listdir(pl_runs.PLR_DIR)
     except OSError:
@@ -274,7 +314,10 @@ def _late(root, commit, vt, now):
     for fn in names:
         sid = fn[:-len(".runs.json")] if fn.endswith(".runs.json") else ""
         if _SID_RE.match(sid):
-            cands += [(sid,) + r for r in _run_of(sid, vt, now, root)]
+            sids.append(sid)
+            cands += [(sid,) + r for r in _run_of(sid, vt, now, root, req)]
+    if not cands:
+        cands = [c for c in (_tagged(sid, root, vt, now, req) for sid in sids) if c]
     if len(cands) > 1:
         cands = [c for c in cands if any(s["t0"] - PROV_SLACK_S <= vt <= (s["t1"] or s["t0"]) + PROV_SLACK_S
                                          for s in c[3].values())]
@@ -293,8 +336,9 @@ def _late(root, commit, vt, now):
     return prov
 
 
-def load_prov(root, commit, vt, now=None):
-    """`/api/arch` `prov`: stored prov, else a late match for a map verified within PROV_LATE_S, else None («unknown»)."""
+def load_prov(root, commit, vt, now=None, req=None):
+    """`/api/arch` `prov`: stored prov, else a late match for a map verified within PROV_LATE_S, else None («unknown»).
+    req = the page's request source (fn(sid, pl, at) -> repo), so a cross-repo run still matches its target."""
     now = _now() if now is None else now
     p = get(root, commit, vt)
     if p or not vt or now - vt > PROV_LATE_S or not COMMIT_RE.fullmatch(commit or ""):
@@ -303,7 +347,7 @@ def load_prov(root, commit, vt, now=None):
     if now - _MISS.get(k, -1e18) < PROV_MISS_S:
         return None
     try:
-        p = _late(root, commit, vt, now) and get(root, commit, vt)
+        p = _late(root, commit, vt, now, req) and get(root, commit, vt)
     except (OSError, ValueError, TypeError, KeyError):
         p = None   # unreadable run/transcript: «unknown», retried after PROV_MISS_S
     if p is None:

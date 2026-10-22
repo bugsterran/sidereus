@@ -7,12 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Structure: the security issues window header and the Security badge tooltip show when the project was last checked («Last check MM-DD HH:MM · 3d ago», or «Never checked»); past 30 days, the monthly cadence of `security-checks`, the line turns amber.
 - Pipelines: each pipeline shows its «When to use» line under the header in Watch and Edit (one muted line, full text on hover) and in the picker tooltip; refactor, review and sidereus-change got one.
 - Structure: the security issues window has a drag grip between the findings list and the history list (arrow keys step 24px, double-click or Home resets); each list keeps at least about three rows and the height is remembered.
 - Pipelines: a Bash description `[pl-agent:<name>/<stage>=<agent>]` lets a run use another subagent_type for one stage; the `security-checks` review stage uses a project's own security agent when the session has one, and reviews with a default lens when there is no threat model.
 
 ### Fixed
 
+- Structure: an arch-map or security-check run request sent to a Claude session in another repo is now recorded as a run (a «Running» row and provenance); the request names the stage tag for Claude recipients too, and the untagged-dispatch reminder also lists the pipelines of known projects, so the session no longer tags every stage `[pl:-]`.
+- Structure: an arch map drawn by a session working in another repo (a cross-repo request, still-open run, or a folder with its own pipelines) no longer shows «Drawn by: unknown» after a restart; the page's request names the target and the run's tagged stage agents give the models.
 - Server: a viewer started with CLAUDE_CONFIG_DIR pointing at another spelling of the same projects folder (e.g. via `sidereus start`) no longer rescans every record and counts each event as a duplicate (tool index 719 → 288 MB peak) (#17).
 - Pipelines: an arch-map run on a repo only its subagents touched no longer stays «running» after the map is verified; the run's target is the requested repo, and a finished agent's end no longer counts as activity after the result.
 - Pipelines: a «Running» row of a pipeline the session's folder does not own (e.g. arch-map run against another repo) opens that pipeline from its own repo, like the «Working now» tree, instead of silently showing the folder's first pipeline.

@@ -323,6 +323,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Fallback after a restart: exactly one plmark arch-map run whose session `cwd` is the repo (or its store dir) covering verify.json mtime, within `PROV_LATE_S` (6 h). ⚠Not runs.json `proj` — that is the pipeline owner (the Sidereus repo).
   - Capture also runs from the `runs()` gap loop: a run usually ends with no live sign left, so `_finished` alone missed it.
   - ⚠Unknown is never guessed: zero/several candidates, a sid in two accounts, or a vt mismatch -> `prov: null`. ⚠Never read map.json or files under the store dir for it.
+- **Cross-repo arch-map runs showed «Drawn by: unknown»** (`arch_prov._targets` · `_run_of` · `_tagged`).
+  - Cause: the late match compared only the run's `cwd` (the requesting repo, not the target); an open run's `t1` is the verify stage start, so verify.json a minute later fell outside `t1 + 5 s`; a session whose cwd owns pipelines keeps no arch-map run in runs.json at all.
+  - ⇒ The sid's page request (`pl_reqs.req_repo`, passed in as `req` by `arch_map._prov`) also names the target; an open run's window ends at its newest tagged agent end; with no run, one requested session's `[pl:arch-map/…]` agents spanning vt (earlier stages joined back within `PROV_GAP_S`).
+  - ⚠No request for the repo -> never credited, even when a session's agents span vt at the same time.
 - ★**Warm-up filled the structure result memory cache** (issue #17 · `_struct_out_cache` ~55 MB live, bound ~126 MB; one repo pair 25.0 + 20.8 MB).
   - Cause: `_struct_warm_loop` called `structure()` like a screen request, so warm-loop order decided which of the `STRUCT_CACHE_N` cells stayed in memory.
   - ⇒ Warm-up calls `structure(..., mem=False)`: disk write only, memory neither filled nor touched; the next screen request is a disk hit (no rebuild).
