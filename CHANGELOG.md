@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Diff: an untracked secret file (`.env`, `.env.*` except example/sample/template, `*.pem`, `*.key`, private SSH keys, `.netrc`, `credentials`, …) is listed by name but its contents are never read or sent; the diff shows one line «(contents hidden: secret file)».
 - Docs: the README says Gemini CLI sessions show token counts only; their plan limits live only on Google's server (check with `/stats` in Gemini CLI) (#8).
 - Pipelines: a run whose last stage never closes it (main's push with no commit, a background last stage, or the remaining stages skipped) no longer shows as running for up to 6 hours; with no live agent or main marker for 30 minutes it shows ended at its last activity, and skipping every remaining stage after a finished stage ends the run.
 - Structure: an arch-map or security-check run request sent to a Claude session in another repo is now recorded as a run (a «Running» row and provenance); the request names the stage tag for Claude recipients too, and the untagged-dispatch reminder also lists the pipelines of known projects, so the session no longer tags every stage `[pl:-]`.

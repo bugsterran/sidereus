@@ -230,6 +230,20 @@ def _read_small(p):
         os.close(fd)
 
 
+_SECRET_NAMES = {".netrc", ".npmrc", ".pypirc", "credentials", "credentials.json",
+                 "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"}
+_SECRET_EXT = (".pem", ".key", ".p12", ".pfx")
+_ENV_SHARED = {".env.example", ".env.sample", ".env.template"}   # committed templates, meant to be read
+
+
+def _secret_name(path):
+    """True when the basename is a credential file whose body must not leave the server."""
+    n = os.path.basename(path).lower()
+    if n in _ENV_SHARED:
+        return False
+    return n == ".env" or n.startswith(".env.") or n in _SECRET_NAMES or n.endswith(_SECRET_EXT)
+
+
 def _untracked_patch(cwd, path):
     """One untracked-not-ignored file as an all-added patch (like `diff --no-index /dev/null f`), or "" if refused.
     ⚠Guard: realpath must stay inside the repo root (no ../ or symlink escape) and git must list it as
@@ -243,6 +257,9 @@ def _untracked_patch(cwd, path):
     if path not in ls.split("\0"):
         return ""
     head = f"diff --git a/{path} b/{path}\nnew file mode 100644\n"
+    if _secret_name(path):
+        # ⚠never read: untracked secrets are often not ignored yet; one-line hunk so it renders as a new file
+        return head + f"--- /dev/null\n+++ b/{path}\n@@ -0,0 +1,1 @@\n+(contents hidden: secret file)\n"
     b = _read_small(full)
     if b is None:
         return head
