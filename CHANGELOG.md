@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Server: a viewer started with CLAUDE_CONFIG_DIR pointing at another spelling of the same projects folder (e.g. via `sidereus start`) no longer rescans every record and counts each event as a duplicate (tool index 719 → 288 MB peak) (#17).
 - Pipelines: an arch-map run on a repo only its subagents touched no longer stays «running» after the map is verified; the run's target is the requested repo, and a finished agent's end no longer counts as activity after the result.
 - Pipelines: a «Running» row of a pipeline the session's folder does not own (e.g. arch-map run against another repo) opens that pipeline from its own repo, like the «Working now» tree, instead of silently showing the folder's first pipeline.
 - Structure: «Run security check» also offers sessions working in the Sidereus repo (where the pipeline file lives) as recipients, after sessions in the target repo; before, only sessions that had touched the target repo were listed.

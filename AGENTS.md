@@ -2,7 +2,7 @@
 
 Session control screen. `http://127.0.0.1:8799` · started by launchd `io.sidereus.viewer` (label = `<launchd_label_prefix>.viewer`; `python3 mailbox_config.py --label viewer` prints it).
 **`chat_server.py` = entry point** (~250 lines: `Handler` core (send · guards · dispatch) · `main()` — route bodies are `sidereus/routes_get.py`·`routes_post.py`, `state()` is `sidereus/state.py`, PAGE assembly is `sidereus/page.py`) · **Python body is `sidereus/<domain>.py`**
-(141 modules · order and ownership rules in `refactor/STAGE3.md`) · ⚠each global is owned by **one module only** — don't reassign another module's name, fix it in the owning module · **the screen is `web/`** — `index.html` (skeleton, `@@INCLUDE file@@` placeholders) +
+(142 modules · order and ownership rules in `refactor/STAGE3.md`) · ⚠each global is owned by **one module only** — don't reassign another module's name, fix it in the owning module · **the screen is `web/`** — `index.html` (skeleton, `@@INCLUDE file@@` placeholders) +
 `app-head.js` · `css/NN-*.css` · `js/NN-*.js` (per feature, `@@INCLUDE js/*.js@@` = concatenated in name order · NN is the order).
 The server reads them at import and assembles an **inline PAGE with the same bytes** as before (`_load_page`). Feature ↔ file map: `docs/dev/FILEMAP.md` (was the web/ file map section of `VIEWER-HANDOVER.md`).
 ⚠Split JS files **only at top-level statement boundaries** (each file passes `node --check` on its own) · removing/adding a trailing newline changes the PAGE bytes.

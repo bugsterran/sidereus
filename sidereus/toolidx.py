@@ -9,13 +9,11 @@
 Incremental: per-file byte offsets, so a refresh reads only appended tails (same idea as usage_index).
 Offsets + events persist to `toolidx-cache.json` so a restart resumes instead of rescanning.
 """
-import base64
 import glob
 import hashlib
 import json
 import os
 import re
-import sys
 import threading
 import time
 from array import array
@@ -27,6 +25,7 @@ from sidereus.warn import warn_once
 from sidereus.transcript import CLAUDE_PROJECTS, iso_epoch
 from sidereus.agents import sub_globs
 from sidereus.claude_roots import projects_dirs
+from sidereus.toolidx_fmt import _arr, _b64, _canon, _num
 
 TI_MAX_DAYS = 90             # widest window the screen can ask for; older files are not read
 TI_TTL_S = 30                # result cache per `days`
@@ -189,6 +188,22 @@ def _reindex():
     _TI_NEW.clear()
 
 
+def _forget(gone):
+    """Remove the ids of dropped entries (`gone` = their id arrays) from `_TI_SEEN`/`_TI_NEW` (call under the lock).
+    ⚠Without it a rescan of a dropped file finds its own ids «seen» and marks every one a duplicate
+      (★#17: 1,545,890 dups vs 1,845, maxrss 719 vs 288 MB). Ids already in `_TI_DUP` stay: another file may hold them."""
+    global _TI_SEEN
+    n = sum(map(len, gone))
+    if n and n > (len(_TI_SEEN) + len(_TI_NEW)) >> 2:
+        _reindex()          # bulk drop: one exact rebuild from the remaining files beats a huge filter set
+        return
+    rm = set(chain.from_iterable(gone))
+    rm -= _TI_DUP           # not a dup => exactly one copy indexed, so it is safe to drop
+    if rm:
+        _TI_NEW.difference_update(rm)
+        _TI_SEEN = array("q", (x for x in _TI_SEEN if x not in rm))
+
+
 def _add(ent, eid, key, ts, cut, own):
     """Index one event unless it is older than `cut` or already in this file (first copy in a file wins, as before).
     Returns the file's id set once a lookup needed it (built lazily: most ids are new everywhere)."""
@@ -279,6 +294,8 @@ def _load_disk(cut=-_INF):
         return
     # ⚠Line by line, never json.load: the peak stays near the in-memory index, not text + whole tree.
     bad = 0
+    pre = CLAUDE_PROJECTS.rstrip(os.sep) + os.sep
+    rpre = os.path.realpath(CLAUDE_PROJECTS).rstrip(os.sep) + os.sep
     try:
         with open(TI_CACHE, "rb") as f:
             m = _HDR_RE.match(f.readline(64))   # ⚠bounded: a v3 file is one 80 MB line
@@ -292,7 +309,7 @@ def _load_disk(cut=-_INF):
                 except (ValueError, TypeError):
                     bad += 1
                     continue
-                _TI_FILES.setdefault(fp, ent)
+                _TI_FILES.setdefault(_canon(fp, pre, rpre), ent)   # ⚠a save under the other spelling must still match the scan
     except FileNotFoundError:
         return
     except (OSError, ValueError) as e:
@@ -301,28 +318,6 @@ def _load_disk(cut=-_INF):
     if bad:
         warn_once("toolidx-cache-ent", "Dropped {n} malformed tool usage cache entries; rescanning those files",
                   vars={"n": bad}, soft=True)
-
-
-def _num(x):
-    return isinstance(x, (int, float)) and not isinstance(x, bool)
-
-
-def _arr(code, s):
-    """base64 little-endian bytes -> array; ValueError on a bad string or a length that is not whole items."""
-    if type(s) is not str:
-        raise ValueError("arr")
-    a = array(code)
-    a.frombytes(base64.b64decode(s, validate=True))
-    if sys.byteorder == "big":
-        a.byteswap()
-    return a
-
-
-def _b64(a):
-    if sys.byteorder == "big":
-        a = array(a.typecode, a)
-        a.byteswap()
-    return base64.b64encode(a.tobytes()).decode("ascii")
 
 
 def _ent_from(row, cut=-_INF):
@@ -399,12 +394,16 @@ def _refresh(now, budget):
         if st.st_mtime >= cut:
             todo.append((st.st_mtime, st.st_size, fp))
     seen = set(t[2] for t in todo)
-    for fp in [p for p in _TI_FILES if p not in seen]:
-        del _TI_FILES[fp]
+    gone = [_TI_FILES.pop(p)["ids"] for p in [p for p in _TI_FILES if p not in seen]]
+    if gone:
         _TI_STATE["dirty"] = True
+        _forget(gone)
     for _mt, size, fp in sorted(todo, reverse=True):
         ent = _TI_FILES.get(fp)
         if ent is None or size < ent["off"]:
+            if ent is not None:
+                del _TI_FILES[fp]
+                _forget([ent["ids"]])     # truncated file: rescanned from 0, its old ids must not count as seen
             ent = _TI_FILES[fp] = _new_ent()
         if _trim(ent, cut):     # ⚠an active file keeps events past the window; dropped here, not by file mtime
             _TI_STATE["dirty"] = True
