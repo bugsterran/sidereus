@@ -72,7 +72,7 @@ class Gone(unittest.TestCase):
         shutil.rmtree(self.tmp)
 
     def feed(self, ev, t, sid="g1", **kw):
-        req = {"platform": "gemini", "session_id": sid, "event": ev, "cwd": "/tmp/scratch", "ts": t}
+        req = {"platform": "gemini", "session_id": sid, "event": ev, "cwd": "/tmp/scratch", "ts": t}  # nosec B108 -- fake path, never touched
         req.update(kw)
         return ext.ext_ingest(req)
 

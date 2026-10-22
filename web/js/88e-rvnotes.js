@@ -91,9 +91,9 @@ function rvnPaint(){
     // insertAdjacentHTML('afterend') stacks upward, so walk newest-last lists in reverse to keep order.
     ns.filter(mine).reverse().forEach(n => {
       const tr = rows.get(n.ln2 > n.ln ? n.ln2 : n.ln); if(!tr) return;
-      tr.insertAdjacentHTML('afterend', ed && ed.id === n.id ? rvnEditor(ed, cols) : rvnView(n, cols));
+      tr.insertAdjacentHTML('afterend', ed && ed.id === n.id ? rvnEditor(ed, cols) : rvnView(n, cols));  // nosemgrep -- values escaped with esc()
     });
-    if(ed && !ed.id){ const tr = rows.get(ed.ln2 > ed.ln ? ed.ln2 : ed.ln); if(tr) tr.insertAdjacentHTML('afterend', rvnEditor(ed, cols)); }
+    if(ed && !ed.id){ const tr = rows.get(ed.ln2 > ed.ln ? ed.ln2 : ed.ln); if(tr) tr.insertAdjacentHTML('afterend', rvnEditor(ed, cols)); }  // nosemgrep -- values escaped with esc()
   });
   const ta = box.querySelector('tr.rvnr.ed textarea');
   if(ta && RVN_ED){

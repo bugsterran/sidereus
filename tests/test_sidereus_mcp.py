@@ -109,9 +109,9 @@ class TestTools(Base):
                         else os.environ.pop("CLAUDE_CONFIG_DIR", None))
 
     def test_quota_extra_account_sends_dir(self):
-        self._env("/tmp/acct b/.claude-work")
+        self._env("/tmp/acct b/.claude-work")  # nosec B108 -- fake path, never touched
         self.call("sidereus_quota")
-        self.assertEqual(self.calls[-1], ("/api/agent/quota", {"dir": "/tmp/acct b/.claude-work"}))
+        self.assertEqual(self.calls[-1], ("/api/agent/quota", {"dir": "/tmp/acct b/.claude-work"}))  # nosec B108 -- fake path, never touched
 
     def test_quota_default_account_sends_no_param(self):
         base = self.call("sidereus_quota")["content"][0]["text"]
@@ -140,7 +140,7 @@ class TestTools(Base):
         REPLIES_OLD = REPLIES["/api/agent/quota"]
         REPLIES["/api/agent/quota"] = {"ok": False, "err": "unknown account"}
         self.addCleanup(REPLIES.__setitem__, "/api/agent/quota", REPLIES_OLD)
-        self._env("/tmp/nope")
+        self._env("/tmp/nope")  # nosec B108 -- fake path, never touched
         res = self.call("sidereus_quota")
         t = res["content"][0]["text"]
         self.assertTrue(res["isError"])

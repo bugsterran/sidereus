@@ -483,7 +483,7 @@ function brLinksPaint(){
   document.querySelectorAll('#feed .brr[data-bs]').forEach(el => {
     const old = el.querySelector('.brlk'); if(old) old.remove();
     const h = brLkChip(el.dataset.bs), u = el.querySelector('em');
-    if(h && u) u.insertAdjacentHTML('beforebegin', h);
+    if(h && u) u.insertAdjacentHTML('beforebegin', h);  // nosemgrep -- values escaped with esc()
   });
   if(brDet && brDet.st === 'ok') brPanPaint();
 }

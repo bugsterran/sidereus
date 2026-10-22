@@ -66,7 +66,7 @@ class Runs(unittest.TestCase):
         shutil.rmtree(self.tmp)
 
     def feed(self, ev, t, **kw):
-        req = {"platform": "gemini", "session_id": "g1", "event": ev, "cwd": "/tmp/scratch",
+        req = {"platform": "gemini", "session_id": "g1", "event": ev, "cwd": "/tmp/scratch",  # nosec B108 -- fake path, never touched
                "ts": t, "parent": PAR, "prompt": SECRET}
         req.update(kw)
         return ext.ext_ingest(req)
