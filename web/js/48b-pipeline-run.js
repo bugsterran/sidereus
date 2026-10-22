@@ -475,8 +475,15 @@ function plOvSid(proj, name, sid){
 }
 function plOvPick(proj, name, sid){   // same as a chip click + pipeline pick; ⚠never scroll or centre
   if(PLVIEW !== 'pipe'){ PLVIEW = 'pipe'; lsSet('sidereus.plview', PLVIEW); }   // ⚠a remembered Harness sub-view would hide the picked pipeline
+  const ns = plOvSid(proj, name, sid), d = PLS.data[proj];
+  // ⚠proj is the session folder: a pipeline it does not own (arch-map) would fall back to ps[0] in plCur; go to the run's repo like plNowPick
+  if(!(d && d.ok && (d.pipelines || []).some(x => x.name === name))){
+    const s = plNowLive(SESS).find(x => x.sid === ns || (!ns && (x.cwd || '') === proj)), r = s && (s.plrun || []).find(q => q && !q.end && q.name === name && q.proj);
+    if(r) proj = r.proj;
+    else if(d && d.ok && !(d.borrowed || []).some(b => b && b.name === name)) PLS.data[proj] = null;   // stale borrowed list: paintPipe reloads it
+  }
   plProjGo(proj); PLS.sel = name; PLS.wf = null;
-  PLS.nowSid = plOvSid(proj, name, sid);   // ⚠after plProjGo, which clears it; marks the «Working now» row
+  PLS.nowSid = ns;   // ⚠after plProjGo, which clears it; marks the «Working now» row
   if(!PLS.projs) PLS.pend = proj;   // ⚠plLoadProjs would reset a project not in its list (borrowed-only) to the first one
   PLAG = false;   // an open arch-map panel (48h) would hide the picked pipeline
   PLNEW = null; PLS.std = ''; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint();
