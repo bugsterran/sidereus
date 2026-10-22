@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: a run whose last stage never closes it (main's push with no commit, a background last stage, or the remaining stages skipped) no longer shows as running for up to 6 hours; with no live agent or main marker for 30 minutes it shows ended at its last activity, and skipping every remaining stage after a finished stage ends the run.
 - Structure: an arch-map or security-check run request sent to a Claude session in another repo is now recorded as a run (a «Running» row and provenance); the request names the stage tag for Claude recipients too, and the untagged-dispatch reminder also lists the pipelines of known projects, so the session no longer tags every stage `[pl:-]`.
 - Structure: an arch map drawn by a session working in another repo (a cross-repo request, still-open run, or a folder with its own pipelines) no longer shows «Drawn by: unknown» after a restart; the page's request names the target and the run's tagged stage agents give the models.
 - Server: a viewer started with CLAUDE_CONFIG_DIR pointing at another spelling of the same projects folder (e.g. via `sidereus start`) no longer rescans every record and counts each event as a duplicate (tool index 719 → 288 MB peak) (#17).
