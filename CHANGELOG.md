@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Structure: the security issues window has a drag grip between the findings list and the history list (arrow keys step 24px, double-click or Home resets); each list keeps at least about three rows and the height is remembered.
+
 ### Fixed
 
 - Server: the tool usage index no longer holds every event id as a string; it keeps compact arrays, drops events older than 90 days and stops copying the whole index on each recompute. Measured on 1.5M events: index 328 → 55 MB, process peak 539 → 166 MB, cache file 96 → 47 MB. The first start after updating rebuilds the cache once (about a minute of «Loading» in Tools/Harness) (#17).

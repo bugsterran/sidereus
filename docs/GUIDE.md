@@ -105,7 +105,7 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 - «Run security check» sends a `security-checks` run request to a logged-in session (preview + confirm), or shows the command to copy when there is none; progress shows as for the diagram.
 - «Request fix» sends the selected findings and asks the session to re-run the security check once the fix is committed. A scan older than HEAD marks the Security badge with ⚠ and a dashed border.
 - Filters: severity («All severities / High and above / Critical only») and tool. «Hide rule» hides a rule for this repo until «N rules hidden · Show»; the view changes only, files stay as they are.
-- The window ends with the check history and «Last report» (newest `security-report-*.md` as plain text). AI review rows are marked «model-generated, unverified».
+- The window ends with the check history and «Last report» (newest `security-report-*.md` as plain text). AI review rows are marked «model-generated, unverified». The grip between the findings and the history list resizes them (drag or arrow keys; double-click / Home resets; the size is remembered).
 - Scanner findings resolve when the same tool stops reporting them. AI findings stay open until `scripts/arch_checks.py --repo <repo> --mark <slug>@<file> resolved|false-positive`.
 
 ### Size and Markdown

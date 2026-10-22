@@ -31,4 +31,5 @@ Object.assign(I18N.ko, {
   'No session|pl request': '세션 없음',
   'Stop request preview': '중단 요청 미리보기',
   'Stop|pl request': '중단',
+  'Resize issues and history lists': '이슈 목록과 기록 목록 크기 조절',
 });

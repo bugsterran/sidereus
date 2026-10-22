@@ -244,6 +244,11 @@ body.ckwin{margin:0;padding:0;height:100vh;overflow:hidden}
 .ckwhid{display:inline-flex;align-items:center;gap:4px;color:var(--nx-t3,#8b95a7)}
 .archckl .ckhide{flex:0 0 auto;width:auto;margin:5px 4px 0 0;padding:1px 8px;font-size:11px;white-space:nowrap;border:1px solid var(--nx-rule,#2a3442);color:var(--nx-t3,#8b95a7)}   /* ⚠overrides the full-width .archckl button */
 #ckroot>.archreq,#ckroot>.archckst,#ckroot>.archmsg{flex:0 0 auto}
+/* Issues | history grip (84l archChkSplit*, look of 43 .plwgr); ⚠negative margin cancels the #ckroot gap so the 24px target sits between the lists */
+#ckroot>.ckwgr{flex:0 0 auto;margin:-8px 0;cursor:row-resize}
+#ckroot.cksz>.archckl{box-sizing:border-box;min-height:96px}
+#ckroot.cksz>.archckl:not(.ckwlog){flex:0 1 var(--ckth)}
+#ckroot.cksz>.ckwlog{flex:1 1 0}
 #ckroot .archdm{max-height:28vh;overflow:auto}
 .archckl li{display:flex;align-items:flex-start;gap:4px}
 .archckl li>input{flex:0 0 auto;margin:9px 2px 0 4px}

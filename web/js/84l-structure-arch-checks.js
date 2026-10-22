@@ -222,6 +222,7 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
       + '<button type=button class=wkrgb data-ckx>' + esc(T('Cancel')) + '</button>' + (off ? '<span class=archwhy>' + esc(off) + '</span>' : '') + '</div></div>';
   }
   h += archChkSentHtml(S);
+  const lg = sec ? archChkLogHtml(sec.log, sec.report) : '<div class=archckst>' + esc(T('No security check yet')) + '</div>';
   return h + '<ol class=archckl>' + top.map(x => { const k = archChkKey(x), ln = parseInt(x.line, 10) || 1, sv = archChkLv(x.sev), hp = archChkHelp(c, x);
     return '<li class="' + sv + '"><input type=checkbox data-ckk="' + esc(k) + '"' + (S.sel && S.sel[k] ? ' checked' : '') + ' aria-label="' + esc(x.file + ':' + ln) + '"><div class=ckwr>'
       + '<button type=button data-ckv data-af="' + esc(x.file) + '" data-al="' + esc(ln) + '" title="' + esc(T('View code')) + '">'
@@ -231,7 +232,68 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
       + (hp.desc || hp.url ? '<div class=archckh>' + (hp.desc ? '<span>' + esc(hp.desc) + '</span>' : '')
         + (hp.url ? '<a href="' + esc(hp.url) + '" target=_blank rel="noopener noreferrer">' + esc(T('docs ↗')) + '</a>' : '') + '</div>' : '') + '</div>'
       + '<button type=button class="wkrgb ckhide" data-ckhide="' + esc(archChkRk(x)) + '" title="' + esc(T('Hide every item of this rule (this view only)')) + '">' + esc(T('Hide rule')) + '</button></li>'; }).join('') + '</ol>'
-    + (sec ? archChkLogHtml(sec.log, sec.report) : '<div class=archckst>' + esc(T('No security check yet')) + '</div>');
+    + (lg.indexOf('<ol class="archckl ckwlog">') >= 0 ? archChkSplitGrip() : '') + lg;   // grip only when there is a history list to share with
+}
+// Issues | history split (same pattern as the 48k Watch grips): the findings list height in px is kept in sidereus.ckwh,
+// the history list takes the rest. Default (no key) = both lists flex as before.
+// ⚠Mins keep ~3 rows per list; #ckroot.cksz lets the findings list shrink to its min so the window never scrolls.
+const CK_SPLIT_MIN = 96, CK_SPLIT_STEP = 24;
+function archChkSplitGet(){ const v = lsJson('sidereus.ckwh', 0); return typeof v === 'number' && v >= CK_SPLIT_MIN && v <= 4000 ? Math.round(v) : 0; }
+function archChkSplitGrip(){
+  return '<div class="plwgr ckwgr" data-ckgr tabindex=0 role=separator aria-orientation=horizontal aria-valuemin=0 aria-valuemax=100'
+    + ' aria-label="' + esc(T('Resize issues and history lists')) + '" title="' + esc(T('Drag to resize · double-click for default')) + '"></div>';
+}
+// Pure: findings height for a wanted h when both lists share room px; drag and keys share it so the mins match.
+function archChkSplitClamp(h, room){ return Math.round(Math.max(CK_SPLIT_MIN, Math.min(room - CK_SPLIT_MIN, h))); }
+function archChkSplitEls(root){ const t = root && root.querySelector('#ckroot>.archckl:not(.ckwlog)'), l = root && root.querySelector('#ckroot>.ckwlog'); return t && l ? [t, l] : null; }
+function archChkSplitAria(root){
+  const e = archChkSplitEls(root), g = root && root.querySelector('[data-ckgr]');
+  if(!e || !g) return;
+  const a = e[0].getBoundingClientRect().height, b = e[1].getBoundingClientRect().height;
+  if(a + b > 0) g.setAttribute('aria-valuenow', Math.round(100 * a / (a + b)));
+}
+function archChkSplitSet(root, h){
+  if(h){ root.classList.add('cksz'); root.style.setProperty('--ckth', h + 'px'); }
+  else { root.classList.remove('cksz'); root.style.removeProperty('--ckth'); }
+}
+// Paint hook: restore the saved height (only while both lists exist); skipped mid-drag so a repaint keeps the live size.
+function archChkSplitPaint(root){
+  if(ARCH_CW && ARCH_CW.drag) return;
+  archChkSplitSet(root, archChkSplitEls(root) ? archChkSplitGet() : 0);
+  archChkSplitAria(root);
+}
+function archChkSplitMove(root, dy, e0){
+  const e = archChkSplitEls(root);
+  if(!e) return 0;
+  const a = e0 ? e0[0] : e[0].getBoundingClientRect().height, room = e0 ? e0[1] : a + e[1].getBoundingClientRect().height;
+  const h = archChkSplitClamp(a + dy, room);
+  archChkSplitSet(root, h); archChkSplitAria(root);
+  return h;
+}
+function archChkSplitReset(root){ lsDel('sidereus.ckwh'); archChkSplitSet(root, 0); archChkSplitAria(root); }
+// Keyboard twin of the drag: ArrowUp/ArrowDown move the boundary CK_SPLIT_STEP px, Home = default.
+function archChkSplitKey(e, root){
+  if(e.altKey || e.metaKey || e.ctrlKey) return false;
+  if(e.key === 'Home'){ e.preventDefault(); archChkSplitReset(root); return true; }
+  const dy = e.key === 'ArrowDown' ? CK_SPLIT_STEP : e.key === 'ArrowUp' ? -CK_SPLIT_STEP : 0;
+  if(!dy) return false;
+  e.preventDefault();
+  const h = archChkSplitMove(root, dy);
+  if(h) lsSetJson('sidereus.ckwh', h);
+  return true;
+}
+// Pointer drag inside the issues window: listeners on its own document (dragTrack root).
+function archChkSplitDrag(e, w, g){
+  const root = w.document.getElementById('ckroot'), el = archChkSplitEls(root);
+  if(!el || e.button !== 0) return;
+  e.preventDefault();
+  const a = el[0].getBoundingClientRect().height, e0 = [a, a + el[1].getBoundingClientRect().height], y0 = e.clientY;
+  let h = 0;
+  ARCH_CW.drag = 1; g.classList.add('on'); w.document.body.classList.add('dragging');
+  dragTrack(e, g, ev => { h = archChkSplitMove(root, ev.clientY - y0, e0) || h; }, () => {
+    ARCH_CW.drag = 0; g.classList.remove('on'); w.document.body.classList.remove('dragging');
+    if(h) lsSetJson('sidereus.ckwh', h);
+  }, w.document);
 }
 // Pure: read-only security history (sidereus/sec_checks.log_view) — last check age, then open / resolved / false-positive rows.
 //   Metadata only (sev · file:line · key · one-line desc); AI review rows are labelled as unverified model output.
@@ -255,7 +317,7 @@ function archChkLogHtml(L, rep){
       + '<span class=archckf title="' + esc(x.file + ':' + ln) + '">' + esc(x.file).replace(/\//g, '/<wbr>') + '<span class=archevl>:' + esc(ln) + '</span></span>'
       + '<em>' + esc(ST[a[1]] + when) + '</em></button>' + (x.ai && x.desc ? '<div class=archckh><span>' + esc(x.desc) + '</span></div>' : '') + '</div></li>';
   }).join('')).join('');
-  return h + (rows ? '<ol class=archckl>' + rows + '</ol>' : '');
+  return h + (rows ? '<ol class="archckl ckwlog">' + rows + '</ol>' : '');
 }
 // Pure: one request = recipient + exact body; a repeat of the last sent one needs a second deliberate click (archChkGoLabel).
 function archChkReqKey(sid, body){ return String(sid || '') + '\n' + String(body || ''); }
@@ -269,7 +331,7 @@ function archChkSentHtml(S){
 // Issues window: one named window (about:blank written like 81 strPopWrite, no route); ARCH_CW = {p, w, sel, req, sent, msg}.
 let ARCH_CW = null;
 // ⚠Events are forwarded by a script in the window's own realm: window.open (code popup) needs that window's user activation.
-const ARCH_CW_JS = "['click','change','keydown'].forEach(function(t){document.addEventListener(t,function(e){try{if(opener&&opener.archChkWinEv)opener.archChkWinEv(e,window);}catch(x){}});});";
+const ARCH_CW_JS = "['click','change','keydown','pointerdown','dblclick'].forEach(function(t){document.addEventListener(t,function(e){try{if(opener&&opener.archChkWinEv)opener.archChkWinEv(e,window);}catch(x){}});});";
 function archChkWinOpen(p){
   if(!ARCH.cache[p]) return;   // opens without results too: «Run security check» starts the first one
   let w = ARCH_CW && ARCH_CW.w;
@@ -295,6 +357,7 @@ function archChkWinPaint(){
   const cands = archChkFixCands(SESS, S.p), l = root.querySelector('.archckl'), st = l ? l.scrollTop : 0;   // ⚠innerHTML resets the list scroll
   if(S.req && cands.length && !cands.some(c => c.sid === S.req.sid)) S.req.sid = archChkPick(cands, S.p);
   root.innerHTML = archChkWinHtml(S.p, ARCH.cache[S.p], S, cands, archChkFixCands(SESS, S.p, true));
+  archChkSplitPaint(root);
   const l2 = root.querySelector('.archckl'); if(l2) l2.scrollTop = st;
   w.document.title = T('Top issues {n}').replace('{n}', archChkView(ARCH.cache[S.p], S, archChkHidden(S.p)).length) + ' — ' + archBase(S.p);
   return true;
@@ -303,7 +366,14 @@ function archChkWinPaint(){
 function archChkWinEv(e, w){
   const S = ARCH_CW, t = e && e.target && e.target.closest ? e.target : null;
   if(!S || S.w !== w || !t) return;
+  const gr = t.closest('[data-ckgr]'), root = gr && w.document.getElementById('ckroot');
+  if(e.type === 'pointerdown' || e.type === 'dblclick'){
+    if(!root) return;
+    if(e.type === 'pointerdown') archChkSplitDrag(e, w, gr); else archChkSplitReset(root);
+    return;
+  }
   if(e.type === 'keydown'){
+    if(root && archChkSplitKey(e, root)) return;
     if(e.key !== 'Escape') return;
     e.preventDefault();
     if(S.req && !S.req.busy){ S.req = null; archChkWinPaint(); } else w.close();
