@@ -68,7 +68,8 @@ def sock_dir():
     if SOCK_DIR:
         return SOCK_DIR
     uid = getattr(os, "getuid", None)
-    return "/tmp/codex-daemon-%d" % uid() if uid else ""
+    # ⚠ Codex's own fixed socket dir; not $TMPDIR (macOS points that elsewhere), and sockets() checks owner + mode.
+    return "/tmp/codex-daemon-%d" % uid() if uid else ""  # nosec B108
 
 
 def sockets():
@@ -116,7 +117,8 @@ class WS(object):
         lines = head.decode("latin-1").split("\r\n")
         if " 101 " not in lines[0] + " ":
             raise ValueError("handshake")
-        want = base64.b64encode(hashlib.sha1((key + _GUID).encode("ascii"), usedforsecurity=False).digest()).decode("ascii")
+        # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- RFC 6455 mandates SHA-1 here
+        want = base64.b64encode(hashlib.sha1((key + _GUID).encode("ascii"), usedforsecurity=False).digest()).decode("ascii")  # nosec B324
         acc = [ln.split(":", 1)[1].strip() for ln in lines[1:] if ln.lower().startswith("sec-websocket-accept:")]
         if acc != [want]:
             raise ValueError("accept")

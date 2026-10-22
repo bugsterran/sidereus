@@ -43,7 +43,7 @@ class TestPeers(Patch):
 
     def test_not_git(self):
         self.patch(ab, "_wt_of", lambda c: None)
-        out = ab.brief_peers("/tmp/x", rows=[{"state": "run", "wt": {}}])
+        out = ab.brief_peers("/tmp/x", rows=[{"state": "run", "wt": {}}])  # nosec B108 -- fake cwd, _wt_of is patched
         self.assertTrue(out["ok"])                     # neutral, not an MCP error
         self.assertEqual((out["peers"], out["n"]), ([], 0))
         self.assertIn("not a git repo", out["note"])

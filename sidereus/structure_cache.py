@@ -35,6 +35,7 @@ def _struct_disk_file(kind, key):
     """⚠Mix the versions (`STRUCT_DISK_VER`·`STRUCT_RULES_VER`) **into the file name**. With only the `rv` check in the body,
     two copies of different versions alternately overwrite the same file and neither side's cache hits
     (measured 2026-09-22: changing the rules version and running once invalidated repo-B's blob cache entirely)."""
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- persisted cache key, not security
     h = hashlib.sha1(("%d|%d|%s" % (STRUCT_DISK_VER, STRUCT_RULES_VER, key))
                      .encode("utf-8", "replace"), usedforsecurity=False).hexdigest()
     return os.path.join(STRUCT_DISK_DIR, "%s-%s.json.gz" % (kind, h))

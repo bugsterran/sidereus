@@ -52,6 +52,7 @@ def _abbrev(p):
 def make_id(kind, path, key=None):
     """Opaque id: kind + ":" + sha1(realpath) or sha1(file#keypath) — resolved only server-side."""
     src = os.path.realpath(path) + ("#" + json.dumps(list(key), ensure_ascii=False) if key else "")
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- opaque id, not security
     return kind + ":" + hashlib.sha1(src.encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
 
 

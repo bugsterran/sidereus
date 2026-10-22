@@ -99,7 +99,8 @@ class AccountsTest(unittest.TestCase):
         self.write_reg("account $(x) ~/.claude-work\naccount bad ~/tab\tdir\naccount work ~/.claude-work\ndefault work\n")
         self.assertEqual(self.resolve(self.home), ("work", work))
         self.assertEqual([n for n, _ in acc.Registry.load().accounts()], ["default", "work"])
-        os.chmod(p, 0o664)                                                  # group-writable: ignored, never rewritten
+        # nosemgrep: python.lang.security.audit.insecure-file-permissions.insecure-file-permissions -- mode under test
+        os.chmod(p, 0o664)  # nosec B103 -- group-writable on purpose: ignored, never rewritten
         self.assertEqual(self.resolve(self.home), ("default", "-"))
         self.assertEqual(self.run_cli("default", "default")[0], 1)
         self.assertIn("is ignored", self.run_cli("list")[1])

@@ -50,6 +50,7 @@ STYLE_FLOW = {
 
 
 def repo_key(repo):
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- persisted path key, not security
     return hashlib.sha1(os.path.realpath(repo).encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()[:16]
 
 

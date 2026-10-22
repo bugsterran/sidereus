@@ -41,7 +41,7 @@ PAGE_NORMALISE = [
 def _get(path, timeout=180):
     req = urllib.request.Request(BASE_URL + path)   # no Accept-Encoding -> plain body
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with urllib.request.urlopen(req, timeout=timeout) as r:  # nosec B310 -- constant loopback http base
             return r.status, r.headers.get("Content-Type", ""), r.read()
     except urllib.error.HTTPError as e:
         return e.code, e.headers.get("Content-Type", ""), e.read()

@@ -42,7 +42,7 @@ def v2_map(repo, commit):
 
 
 class SchemaV2Test(unittest.TestCase):
-    R = "/tmp/sidereus-v2-repo"
+    R = "/tmp/sidereus-v2-repo"  # nosec B108 -- path value in an in-memory map, never touched on disk
 
     def errs(self, m):
         return AV.schema_errors(m, None, None)

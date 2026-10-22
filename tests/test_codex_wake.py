@@ -47,7 +47,8 @@ class FakeDaemon(object):
                 buf += c.recv(4096)
             head, buf = buf.split(b"\r\n\r\n", 1)
             key = [ln.split(b":", 1)[1].strip() for ln in head.split(b"\r\n") if ln.lower().startswith(b"sec-websocket-key")][0]
-            acc = base64.b64encode(hashlib.sha1(key + b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11", usedforsecurity=False).digest())
+            # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- RFC 6455 mandates SHA-1 here
+            acc = base64.b64encode(hashlib.sha1(key + b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11", usedforsecurity=False).digest())  # nosec B324
             c.sendall(b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
                       b"Sec-WebSocket-Accept: " + acc + b"\r\n\r\n")
             self.handshakes += 1
@@ -103,7 +104,7 @@ class CodexWake(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
         self.cwd = os.path.realpath(tempfile.mkdtemp())
-        self.sd = tempfile.mkdtemp(dir="/tmp")           # ⚠short path: AF_UNIX is limited to 104 bytes on macOS
+        self.sd = tempfile.mkdtemp(dir="/tmp")  # nosec B108 -- ⚠short path: AF_UNIX is limited to 104 bytes on macOS
         self.me = os.path.basename(self.cwd) + "-codex"
         with open(os.path.join(self.d, "identity.json"), "w", encoding="utf-8") as f:
             json.dump({self.cwd: "claude-a"}, f)
@@ -240,8 +241,10 @@ class CodexWake(unittest.TestCase):
 
     def test_R3_untrusted_socket_dir_is_ignored(self):
         d = self.serve()
-        os.chmod(self.sd, 0o777)
+        # nosemgrep: python.lang.security.audit.insecure-file-permissions.insecure-file-permissions -- mode under test
+        os.chmod(self.sd, 0o777)  # nosec B103 -- deliberately world-writable to test rejection
         self.assertEqual(self.run_cw(on_sleep=lambda n: self.dm()), "not-loaded")
+        # nosemgrep: python.lang.security.audit.insecure-file-permissions.insecure-file-permissions -- restores owner-only
         os.chmod(self.sd, 0o700)
         link = self.sd + "-link"
         os.symlink(self.sd, link)

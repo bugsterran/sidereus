@@ -46,7 +46,8 @@ class LauncherTest(unittest.TestCase):
         fake = os.path.join(self.bin, "claude")
         with open(fake, "w", encoding="utf-8") as f:
             f.write(FAKE_CLAUDE)
-        os.chmod(fake, 0o755)
+        # nosemgrep: python.lang.security.audit.insecure-file-permissions.insecure-file-permissions -- owner-only executable stub
+        os.chmod(fake, 0o700)
         self.stub = os.path.join(self.tmp, "accounts.py")
         with open(self.stub, "w", encoding="utf-8") as f:
             f.write(STUB_PY)
