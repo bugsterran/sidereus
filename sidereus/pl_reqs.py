@@ -161,6 +161,22 @@ def stop(p, sid, to, mid):
         _marker(sid, p["pipeline"], {"at": now, "mid": mid, "of": p["of"]})
 
 
+REQ_TARGET_S = 6 * 3600   # = arch_map.ARCH_PEND_S: an older request no longer names a session's run target
+
+
+def req_repo(sid, pipeline, now):
+    """Repo of the newest unstopped request of pipeline sent to sid within REQ_TARGET_S, "" if none (arch_map._target)."""
+    with _LOCK:
+        recs = _read(now)
+    for r in recs:
+        if r["sid"] == sid and r["pipeline"] == pipeline:
+            return r["repo"] if not r.get("stop") and now - r["at"] <= REQ_TARGET_S else ""
+    return ""
+
+
+arch_map.set_req_source(req_repo)
+
+
 def _state(r, row, arch):
     """(state, stage title) of one record against its session row and the server-tracked run (archRun/secRun) of its repo."""
     alive = isinstance(row, dict) and row.get("state") not in ("done", "gone")
