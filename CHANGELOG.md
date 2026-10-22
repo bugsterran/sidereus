@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: with four or more open runs in one session, an older run whose stage still runs as a tagged background agent no longer shows as ended after 30 minutes.
 - Pipelines: a `[pl-none]` declaration written while the log was being trimmed (over 256 KB or 90 days) is no longer lost.
 - Harness: opening Harness during start-up starts the tool usage scan at once instead of waiting for the earlier warm-ups to finish.
 - Diff: an untracked secret file (`.env`, `.env.*` except example/sample/template, `*.pem`, `*.key`, private SSH keys, `.netrc`, `credentials`, …) is listed by name but its contents are never read or sent; the diff shows one line «(contents hidden: secret file)».
