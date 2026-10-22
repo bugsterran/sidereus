@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-23
+
 ### Added
 
 - Structure: the security issues window header and the Security badge tooltip show when the project was last checked («Last check MM-DD HH:MM · 3d ago», or «Never checked»); past 30 days, the monthly cadence of `security-checks`, the line turns amber.
@@ -15,8 +17,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: the 3rd `[pl-none:no-fit]` of a project within 7 days tells the session to offer the user a draft pipeline for that kind of work (written only after the user agrees); at most once per project per 7 days, count and project path only (#16).
 - Viewer: installable as an app (web app manifest + icon) and each window opens/keeps its tab from the URL hash (/#pipelines, /#structure, …) (#18).
 
+### Changed
+
+- Plugin: version 0.4.0, so installed copies pick up the hook changes of this release (`[pl-none]` log, run fixes).
+- Server: the heavy first pass of each boot warm-up (usage, timeline, tool index, branches, structure, …) runs one at a time in a fixed order instead of all at once; startup RSS peak 358 → 279 MB, first screen 4.65 → 3.45 s (#20).
+
 ### Fixed
 
+- Hooks: `ext_hook.py` refuses a `--url` / `SIDEREUS_HOOK_URL` whose scheme is not http or https.
 - Pipelines: with four or more open runs in one session, an older run whose stage still runs as a tagged background agent no longer shows as ended after 30 minutes.
 - Pipelines: a `[pl-none]` declaration written while the log was being trimmed (over 256 KB or 90 days) is no longer lost.
 - Harness: opening Harness during start-up starts the tool usage scan at once instead of waiting for the earlier warm-ups to finish.
@@ -420,7 +428,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/bugsterran/sidereus/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/bugsterran/sidereus/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bugsterran/sidereus/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/bugsterran/sidereus/compare/v0.3.0...v0.4.0
