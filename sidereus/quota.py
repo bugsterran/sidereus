@@ -172,7 +172,7 @@ def _quota_probe_hdr():
         "anthropic-version": "2023-06-01", "Content-Type": "application/json",
         "User-Agent": "claude-cli/2.1.232 (external, cli)"})
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=20) as resp:  # nosec B310 -- constant https URL
             h, _ = resp.headers, resp.read()
     except Exception as e:
         h = getattr(e, "headers", None)      # headers come even on a 429 response — that is enough

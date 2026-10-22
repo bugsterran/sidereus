@@ -196,7 +196,7 @@ def _fetch(url, body=None):
     import urllib.request
     data = None if body is None else json.dumps(body).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers={"User-Agent": "deps-audit", "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=15) as r:
+    with urllib.request.urlopen(req, timeout=15) as r:  # nosec B310 -- callers pass constant https URLs only
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -208,7 +208,7 @@ def _probe():
     import urllib.error
     import urllib.request
     try:
-        urllib.request.urlopen(urllib.request.Request("https://api.osv.dev/", method="HEAD"), timeout=3).close()
+        urllib.request.urlopen(urllib.request.Request("https://api.osv.dev/", method="HEAD"), timeout=3).close()  # nosec B310 -- constant https URL
     except urllib.error.HTTPError:
         return True
     except Exception:

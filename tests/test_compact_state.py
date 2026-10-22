@@ -14,7 +14,7 @@ def _rows(*recs):
         r = dict(r)
         r.setdefault("timestamp", "2026-10-13T10:00:%02dZ" % i)
         r.setdefault("sessionId", "s1")
-        r.setdefault("cwd", "/tmp/proj")
+        r.setdefault("cwd", "/tmp/proj")  # nosec B108 -- fixture value, not a disk path
         out.append(json.dumps(r))
     return out
 
@@ -46,7 +46,7 @@ class CompactStateTest(unittest.TestCase):
 
     def state(self, r):
         s = r["shp"]
-        return self.n._sess_state("/tmp/proj", s["shape"], {"/tmp/proj"}, s["ask"], s["abort"], s["err"])
+        return self.n._sess_state("/tmp/proj", s["shape"], {"/tmp/proj"}, s["ask"], s["abort"], s["err"])  # nosec B108 -- fixture value
 
     def test_ended_turn_then_compact_is_wait(self):
         r = self.scan(TEXT, {"type": "system", "subtype": "stop_hook_summary"},

@@ -54,7 +54,7 @@ def _probe():
     import urllib.error
     import urllib.request
     try:
-        urllib.request.urlopen(urllib.request.Request(PROBE_URL, method="HEAD"), timeout=3).close()
+        urllib.request.urlopen(urllib.request.Request(PROBE_URL, method="HEAD"), timeout=3).close()  # nosec B310 -- constant https URL
     except urllib.error.HTTPError:
         return True
     except Exception:   # DNS, connect, TLS, timeout: offline
@@ -355,6 +355,7 @@ def _record(rc, repo, commit):
                         f.write("%s\t%d\t%d\t%d\t%d\n" % (t["id"], 0 if t.get("status") == "ok" else 1, int(t.get("files") or 0),
                                                           sum(int(n.get(k) or 0) for k in AC.SEVS),
                                                           int(t.get("ms") or 0) // 1000))
+            # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args -- list argv, no shell; env only names the evidence file
             subprocess.run([_EV_PY, _EV_REC, ev, "checks-security", str(rc), root, commit or "",
                             "1" if j.get("dirty") is True else "0", tsv], stdin=subprocess.DEVNULL,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)

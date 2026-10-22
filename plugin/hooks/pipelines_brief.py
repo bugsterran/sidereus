@@ -288,6 +288,7 @@ def _stat_key(dirs):
                 parts.append("%s:%d:%d" % (n, st.st_mtime_ns, st.st_size))
             except OSError:
                 pass
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- change-detection key, not security
     return hashlib.sha1("\n".join(parts).encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
@@ -307,6 +308,7 @@ def _content_key(dirs):
             except Exception:
                 S = []
             parts.append(name + "=" + "\x1f".join(S))
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- change-detection key, not security
     return hashlib.sha1("\n".join(parts).encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
@@ -325,6 +327,7 @@ def _changed(sid, dirs, first):
         return False
     ck = _content_key(dirs)
     # No record yet on a prompt (session predates this hook): brief only if there is something to say.
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- change-detection key, not security
     hit = first or (old.get("c") != ck if old else ck != hashlib.sha1("\n".join(dirs).encode("utf-8"), usedforsecurity=False).hexdigest())
     try:
         os.makedirs(BRIEF_DIR, exist_ok=True)

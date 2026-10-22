@@ -266,6 +266,7 @@ def red_row(repo, head, mode, verdict, ts):
 # ── red check store ──
 
 def gate_key(gate):
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- persisted ledger key, not a security use
     return hashlib.sha1(gate.encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()[:16]
 
 

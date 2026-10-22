@@ -343,6 +343,7 @@ def _saver_levels_clean(d):
 
 def _saver_view_tag(d):
     """File tag for an account's snapshot. ⚠The hook computes the same formula — change both or neither."""
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- persisted file tag, not security
     return hashlib.sha1(os.path.realpath(d).encode(), usedforsecurity=False).hexdigest()[:10]
 
 

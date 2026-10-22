@@ -99,7 +99,7 @@ class AdapterContract(unittest.TestCase):
                 for r in rows:
                     for k in ad.AD_ROW_KEYS:
                         self.assertIn(k, r)
-                    self.assertEqual(r["cwd"], "/tmp/demo-proj")
+                    self.assertEqual(r["cwd"], "/tmp/demo-proj")  # nosec B108 -- fixture value, not a disk path
                     self.assertTrue(r["msgs"])
                     for v in r["msgs"].values():
                         self.assertEqual(len(v), 7)

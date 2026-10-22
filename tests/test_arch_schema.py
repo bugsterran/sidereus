@@ -12,7 +12,7 @@ from tests.test_archmap_v2 import C1, v1_map, v2_map
 AS = sidereus("arch_schema")
 AV = sidereus("arch_verify")
 AM = sidereus("arch_map")
-R = "/tmp/sidereus-schema-repo"
+R = "/tmp/sidereus-schema-repo"  # nosec B108 -- path value in an in-memory map, never touched on disk
 
 
 def mods(m):

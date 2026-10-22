@@ -39,7 +39,7 @@ def _qf_request(tok):
         "Authorization": "Bearer " + tok, "anthropic-beta": "oauth-2025-04-20",
         "User-Agent": "claude-cli/2.1.232 (external, cli)", "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=20) as resp:  # nosec B310 -- constant https URL
             body = json.loads(resp.read().decode("utf-8"))
     except Exception as e:
         code = getattr(e, "code", None)

@@ -51,7 +51,7 @@ def fetch(path, cwd):
     """GET /api/agent/file -> dict, or None on any failure."""
     url = BASE + "/api/agent/file?" + urllib.parse.urlencode({"path": path, "cwd": cwd or ""})
     try:
-        with urllib.request.urlopen(url, timeout=TIMEOUT_S) as r:
+        with urllib.request.urlopen(url, timeout=TIMEOUT_S) as r:  # nosec B310 -- constant loopback http base
             d = json.loads(r.read().decode("utf-8"))
         return d if isinstance(d, dict) and d.get("ok") else None
     except Exception:

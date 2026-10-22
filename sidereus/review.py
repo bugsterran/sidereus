@@ -125,6 +125,7 @@ def _fsig(root, rel, st, add, dl):
         size, mt = s.st_size, s.st_mtime_ns
     except OSError:
         size, mt = -1, 0                      # deleted in the worktree
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- change signature, not security
     return hashlib.sha1(("%d\t%d\t%d\t%d" % (add, dl, size, mt)).encode(), usedforsecurity=False).hexdigest()[:16]
 
 
@@ -145,6 +146,7 @@ def _files(root, rels, now):
 
 def _ssig(head, fs):
     body = head + "\n" + "\n".join("%s\t%s" % (rel, fs[rel]["fsig"]) for rel in sorted(fs))
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- change signature, not security
     return hashlib.sha1(body.encode("utf-8", "replace"), usedforsecurity=False).hexdigest()[:16]
 
 

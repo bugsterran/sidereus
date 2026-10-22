@@ -151,7 +151,7 @@ def _request(tok):
         "Authorization": "Bearer " + tok, "anthropic-beta": "oauth-2025-04-20",
         "User-Agent": "claude-cli/2.1.232 (external, cli)", "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=20) as resp:  # nosec B310 -- constant https URL
             return json.loads(resp.read().decode("utf-8")), None, 0
     except Exception as e:
         code = getattr(e, "code", None)
@@ -270,6 +270,7 @@ def _pts_add(label, uid, out, now):
     pct = fh.get("pct")
     if not isinstance(pct, (int, float)) or isinstance(pct, bool):
         return
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- persisted account tag, not security
     ah, r5 = hashlib.sha1(uid.encode("utf-8"), usedforsecurity=False).hexdigest()[:12], _reset_ep(fh)
     with _acc_lock:
         g = _pts.get(label)

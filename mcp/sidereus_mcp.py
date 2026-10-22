@@ -111,7 +111,7 @@ def _get(path, params=None):
     """GET {BASE}{path}?params -> dict. Raises SidereusDown on any transport/JSON failure (never crashes the server)."""
     url = BASE + path + ("?" + urllib.parse.urlencode(params) if params else "")
     try:
-        with urllib.request.urlopen(url, timeout=TIMEOUT_S) as r:
+        with urllib.request.urlopen(url, timeout=TIMEOUT_S) as r:  # nosec B310 -- constant loopback http base
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:     # ⚠subclass of URLError — up but an older build without /api/agent/*
         raise SidereusDown("Sidereus answered HTTP %d for %s — restart it to load the /api/agent routes" % (e.code, path))

@@ -462,6 +462,7 @@ def cmd_add(args, out):
     existed = os.path.isdir(dst)
     if not existed:
         os.makedirs(dst, 0o700)
+        # nosemgrep: python.lang.security.audit.insecure-file-permissions.insecure-file-permissions -- owner-only dir, x is needed
         os.chmod(dst, 0o700)
     do_copy(plan)
     if not have:

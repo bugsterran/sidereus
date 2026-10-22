@@ -268,6 +268,7 @@ def _report_script():
 
 def _key(proj):
     """= sidereus/arch_verify.repo_key (sha1 of realpath, 16 hex)."""
+    # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- persisted path key, not security
     return hashlib.sha1(os.path.realpath(proj).encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()[:16]
 
 

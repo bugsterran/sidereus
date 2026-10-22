@@ -15,6 +15,7 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.parse
 import urllib.request
 
 
@@ -205,10 +206,14 @@ def main():
     if dry:
         sys.stderr.write(body.decode("utf-8") + "\n")  # ⚠stderr, not stdout
         return
+    # --url/env may name another host (a CLI in a VM), so only the scheme is restricted.
+    if urllib.parse.urlsplit(url).scheme not in ("http", "https"):
+        log("bad url scheme: %.200s" % url)
+        return
     try:
         req = urllib.request.Request(url, data=body, method="POST",
                                      headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=TIMEOUT).read()
+        urllib.request.urlopen(req, timeout=TIMEOUT).read()  # nosec B310 -- scheme checked above
     except Exception as e:
         log("post %s %s/%s failed: %s" % (url, platform, raw, e))
 
