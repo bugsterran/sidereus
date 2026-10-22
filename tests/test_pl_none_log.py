@@ -3,6 +3,7 @@ Tmp dirs only, fixed clock."""
 import json
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -68,6 +69,88 @@ class NoneLog(unittest.TestCase):
                 H._none_log(self.proj, "explore", now + i)
             self.assertLessEqual(os.path.getsize(p), 400)
         self.assertEqual(self.lines()[-1]["t"], now + 19)   # newest kept
+
+
+class NoneNudge(unittest.TestCase):
+    setUp = N.PlNone.setUp
+    _ev = N.PlNone._ev
+    bash = N.PlNone.bash
+    denied = N.PlNone.denied
+
+    def nofit(self, n, step=DAY):
+        o = None
+        for _ in range(n):
+            o = self.bash("ls", "[pl-none:no-fit] secret reason text")
+            self.t += step
+        return o
+
+    def test_r1_third_no_fit_in_7_days_adds_context_not_deny(self):
+        self.assertIsNone(self.nofit(2))
+        o = self.nofit(1)
+        self.assertFalse(self.denied(o))
+        txt = o["additionalContext"]
+        self.assertIn("%s had 3 [pl-none:no-fit] declarations in the last 7 days" % self.proj, txt)
+        self.assertIn("only after the user agrees", txt)
+
+    def test_r2_once_per_project_per_7_days(self):
+        self.assertIsNotNone(self.nofit(3))
+        self.assertIsNone(self.nofit(1))   # same window: quiet
+        with open(os.path.join(self.marks, H.NONE_NUDGE), encoding="utf-8") as f:
+            self.assertEqual(json.load(f), {self.proj: 1000.0 + 2 * DAY})
+        self.t = 1000.0 + 2 * DAY + 7 * DAY
+        self.assertIn("had 3 ", self.nofit(1)["additionalContext"])   # quiet period over; rows at day 2, 3 + this one
+
+    def test_r2_other_categories_old_rows_and_subagents_never_fire(self):
+        for c in ("small-fix", "explore", "other"):
+            for _ in range(3):
+                self.assertIsNone(self.bash("ls", "[pl-none:%s] x" % c))
+        self.assertIsNone(self.nofit(2, step=8 * DAY))   # earlier ones fall out of the window
+        self.assertIsNone(self.nofit(1))
+        self.assertIsNone(self.bash("ls", "[pl-none:no-fit] x", agent="a1"))
+        self.assertFalse(os.path.exists(os.path.join(self.marks, H.NONE_NUDGE)))
+
+    def test_r3_text_has_no_description_and_failure_is_silent(self):
+        o = self.nofit(3)
+        self.assertNotIn("secret", json.dumps(o))
+        with mock.patch.object(H, "_none_save", side_effect=OSError("disk")), \
+                mock.patch.object(H, "_NONE_NOTE", ["nudge", "/p2", self.t]):
+            self.assertEqual(H._none_emit(""), "")   # stamp failed: nothing printed
+        self.t += 8 * DAY
+        self.nofit(2, step=1)
+        with mock.patch.object(H, "_none_nudge", side_effect=RuntimeError("x")):
+            self.assertFalse(self.denied(self.bash("ls", "[pl-none:no-fit] x")))   # tool still runs
+
+    def stamp(self):
+        return os.path.exists(os.path.join(self.marks, H.NONE_NUDGE))
+
+    def test_r3_deny_from_flow_unchanged_and_not_stamped(self):
+        self.nofit(2)
+        with mock.patch.object(H, "_flow", lambda plat, ev: H._deny("other") or True):
+            o = self.nofit(1)   # json.loads in _ev fails on two objects
+        self.assertEqual(o, {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+                             "permissionDecisionReason": "other"})
+        self.assertFalse(self.stamp())
+        self.assertIn("had 4 ", self.nofit(1)["additionalContext"])   # not lost: next no-fit nudges
+
+    def test_r3_flow_context_merged_into_one_object_and_stamped(self):
+        self.nofit(2)
+
+        def flow(plat, ev):
+            sys.stdout.write(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
+                                                                "additionalContext": "Pipeline run x is open"}}))
+        with mock.patch.object(H, "_flow", flow):
+            o = self.nofit(1)
+        self.assertEqual(set(o), {"hookEventName", "additionalContext"})
+        self.assertTrue(o["additionalContext"].startswith("Pipeline run x is open\n\n"))
+        self.assertIn("had 3 [pl-none:no-fit]", o["additionalContext"])
+        self.assertTrue(self.stamp())
+
+    def test_r3_unparseable_flow_output_unchanged_and_not_stamped(self):
+        with mock.patch.object(H, "_NONE_NOTE", ["nudge", self.proj, self.t]):
+            for raw in ("not json", "{}", '{"hookSpecificOutput": {"hookEventName": "PreToolUse", '
+                        '"additionalContext": "a", "permissionDecision": "deny"}}'):
+                self.assertEqual(H._none_emit(raw), raw)
+        self.assertFalse(self.stamp())
 
 
 class NoneCounts(unittest.TestCase):

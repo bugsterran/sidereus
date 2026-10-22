@@ -124,6 +124,8 @@ Agent/Task/SendMessage 는 지운다. 파이프라인, 단계, 시각, cwd 만 �
   선언한다. `plmark/<session_id>.none.json` 에는 분류와 시각만 남고 이유 글은 남지 않는다. 모르는 분류는 목록과 함께 거부한다.
   선언도 열린 실행도 없으면, 파이프라인이 있는 프로젝트에서 메인 세션의 첫 Edit/Write 나 태그 없는 `git commit` 을 목록과 함께
   한 번 거부하고 다시 하면 통과한다. ⚠수동 등록이면 `pl_flow.py` 에 `Edit|Write|MultiEdit|NotebookEdit` 매처가 필요하다(`setup-claude` 다시 실행).
+- 한 프로젝트에서 7일 안에 `[pl-none:no-fit]` 이 세 번째로 선언되면, 사용자에게 이 일에 맞는 파이프라인 초안을 제안하고 동의한 뒤에만
+  `.claude/pipelines/<name>.json` 을 쓰라는 문맥을 더한다(횟수·프로젝트 경로만, 거부하지 않음). 프로젝트마다 7일에 한 번.
 - 실행이 끝나면(마지막 단계 · `[pl-end:]` · 메인의 `git commit`) `<data dir>/eval/<repo key>/seeds.json` 이 있을 때만
   `scripts/pl_eval.py score --auto` 를 떼어 띄운다(기다리지 않고 출력 없음). 오류는 삼키고 호출을 막지 않는다.
 - «적용» 이 꺼져 있거나, 파이프라인 파일이 없거나 깨졌거나, 단계 제목이 맞지 않으면 조용하다.
