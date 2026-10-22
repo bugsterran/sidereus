@@ -70,6 +70,25 @@ class NoneLog(unittest.TestCase):
             self.assertLessEqual(os.path.getsize(p), 400)
         self.assertEqual(self.lines()[-1]["t"], now + 19)   # newest kept
 
+    def test_r1_append_during_trim_is_not_lost(self):
+        import threading
+        os.makedirs(self.marks, exist_ok=True)
+        p = os.path.join(self.marks, H.NONE_LOG)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"v": 1, "proj": self.proj, "cat": "other", "t": 1000.0}) + "\n")
+        real, th = os.replace, []
+
+        def replace(a, b):   # trim has read the log; another hook appends before the swap
+            if not th:
+                th.append(threading.Thread(target=H._none_log, args=(self.proj, "explore", 1001.0)))
+                th[0].start()
+                th[0].join(0.3)
+            real(a, b)
+        with mock.patch.object(H.os, "replace", replace):
+            H._none_trim(p, 1001.0)
+        th[0].join(5)
+        self.assertEqual([x["t"] for x in self.lines()], [1000.0, 1001.0])
+
 
 class NoneNudge(unittest.TestCase):
     setUp = N.PlNone.setUp

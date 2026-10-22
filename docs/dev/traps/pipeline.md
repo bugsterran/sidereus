@@ -205,6 +205,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠Never merge it into `<sid>.json` or `.runs.json` · never store the description · a deny printed before a failed save would deny every edit.
 - ⚠The gate resolves the project from the edited file (walk up to its git root) or, for a commit, cwd / its git root — never `session_dirs`: a repo merely `cd`'d into earlier lent its pipelines to edits in a repo without any.
 - Each declaration also appends `{v, proj, cat, t}` to `plmark/none-log.jsonl` (`_none_log`; project = `_none_proj`, none resolved = no line); `pl_runs.pl_none_counts(days)` reads its tail as `{proj: {cat: n}}`.
+  - ⚠The append takes the same `_Lock` as `_none_trim` (read → tmp → replace); without it an append between read and replace lands in the old file and is lost. Lock wait ≤ `LOCK_WAIT_S`, then append anyway (fail-open).
 - ⚠Category, time and project path only — never the description. The append is fail-silent (a log error must not block the tool); over 256 KB or with a first line past 90 days it is rewritten to recent lines.
 - The 3rd `no-fit` of a project in 7 days (main session, this one counted from the log tail) adds Pre additionalContext offering a draft pipeline (`_none_nudge`); `plmark/none-nudge.json` `{proj: t}` keeps it to once per project per 7 days. ⚠One JSON object per Pre: `main` buffers the flow's stdout while a nudge is pending; `_none_emit` merges into a context-only PreToolUse object, passes a deny or unparseable output through unchanged, and stamps only when the nudge is printed.
 
