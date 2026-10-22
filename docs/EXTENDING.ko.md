@@ -86,7 +86,7 @@ lang_register("rust", {"exts": (".rs",), "scan": rs_scan,
               {"title": "구현", "agent": "my-implementer", "fanout": "slices", "gate": "scripts/check.sh --fast"} ] }
 ```
 
-- 최상위 키: `v`, `name`, `title`, `use`(`pipelines_brief.py` 가 읽는다), `rules`, `after`, `defaults`, `guards`(`requireGates`, `maxLoopBacks`), `stages`.
+- 최상위 키: `v`, `name`, `title`, `use`(한 줄 120자까지, `pipelines_brief.py` 가 읽고 파이프라인 화면에도 뜬다), `rules`, `after`, `defaults`, `guards`(`requireGates`, `maxLoopBacks`), `stages`.
 - 단계 키: `title`, `agent`, `model`(`inherit|opus|sonnet|haiku`), `skill`, `task`, `gate`, `produces`/`fanout`, `parallel`,
   `retry`, `onError`(`stop|continue`), `onFail {goto, max 1..5, then?, stopOn?}`, `onlyOnJump`, `ui`.
 - `pipeline_schema.STAGE_TITLES` 밖의 제목은 사용자 단계다(1–40자, `task` 필요).
