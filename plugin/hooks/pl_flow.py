@@ -1149,15 +1149,75 @@ def _none_save(p, d):
     os.replace(tmp, p)
 
 
-def _none_decl(sid, desc, now):
-    """Bash `[pl-none:<category>]`: store {v, cat, t} in plmark/<sid>.none.json; deny reason for an unknown category.
-    ⚠Category and time only, never the description; ⚠never <sid>.json (agents.plm_of) or .runs.json."""
+NONE_LOG = "none-log.jsonl"   # per-project declaration log in MARK_DIR (pl_runs.pl_none_counts reads it)
+NONE_LOG_MAX = 262144         # bytes; over it the log is trimmed to its newest half
+NONE_LOG_KEEP_S = 90 * 86400  # lines older than this are dropped at trim time
+
+
+def _none_trim(p, now):
+    """Rewrite the log keeping lines newer than NONE_LOG_KEEP_S, then at most the newest NONE_LOG_MAX // 2 bytes."""
+    with _Lock(p) as lk:
+        if not lk.ok:
+            return
+        with open(p, "rb") as f:
+            lines = f.read().splitlines(True)
+        keep = []
+        for b in lines:
+            try:
+                if now - float(json.loads(b).get("t")) <= NONE_LOG_KEEP_S:
+                    keep.append(b)
+            except Exception:
+                pass
+        n, out = 0, []
+        for b in reversed(keep):
+            n += len(b)
+            if n > NONE_LOG_MAX // 2:
+                break
+            out.append(b)
+        tmp = p + ".tmp.%d" % os.getpid()
+        with open(tmp, "wb") as f:
+            f.write(b"".join(reversed(out)))
+        os.replace(tmp, p)
+
+
+def _none_log(proj, cat, now):
+    """R1: append {v, proj, cat, t} to MARK_DIR/NONE_LOG. ⚠R2: category, time and project path only. Fail-silent."""
+    try:
+        os.makedirs(MARK_DIR, exist_ok=True)
+        p = os.path.join(MARK_DIR, NONE_LOG)
+        line = (json.dumps({"v": 1, "proj": proj, "cat": cat, "t": now}) + "\n").encode("utf-8")
+        fd = os.open(p, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+        try:
+            os.write(fd, line)
+        finally:
+            os.close(fd)
+        with open(p, "rb") as f:
+            first = f.readline(4096)
+        try:
+            old = now - float(json.loads(first).get("t")) > NONE_LOG_KEEP_S
+        except Exception:
+            old = True   # a bad first line is dropped by the trim
+        if old or os.path.getsize(p) > NONE_LOG_MAX:
+            _none_trim(p, now)
+    except Exception:
+        pass   # ⚠a log failure must never block the tool
+
+
+def _none_decl(sid, desc, now, ev=None):
+    """Bash `[pl-none:<category>]`: store {v, cat, t} in plmark/<sid>.none.json and log it for the project; deny reason
+    for an unknown category. ⚠Category and time only, never the description; ⚠never <sid>.json (agents.plm_of) or .runs.json."""
     if "[pl-none:" not in desc:
         return None
     m = NONE_TAG.search(desc)
     if not m or m.group(1) not in NONE_CATS:
         return "Unknown [pl-none:] category; use one of: %s" % ", ".join(NONE_CATS)
     _none_save(os.path.join(MARK_DIR, sid + ".none.json"), {"v": 1, "cat": m.group(1), "t": now})
+    try:
+        proj = _none_proj(ev, "Bash") if isinstance(ev, dict) else None
+    except Exception:
+        proj = None
+    if proj:
+        _none_log(proj, m.group(1), now)
     return None
 
 
@@ -1248,7 +1308,7 @@ def _none_pre(plat, ev):
             return False
         desc = ti.get("description") if tool == "Bash" and isinstance(ti, dict) else None
         desc = desc if isinstance(desc, str) else ""
-        why = _none_decl(sid, desc, _now())
+        why = _none_decl(sid, desc, _now(), ev)
         return _deny(why) if why else _none_gate(ev, sid, tool, desc, _now())
     except Exception:
         return False
