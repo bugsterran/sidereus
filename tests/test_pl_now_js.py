@@ -196,6 +196,17 @@ class PlNow(unittest.TestCase):
         self.assertLess(pk.index("plProjGo(proj)"), pk.index("PLS.nowSid ="))   # set after plProjGo clears it
         self.assertNotRegex(pk, r"scrollInto|scrollTo|plFit\(|plCentre\(")
 
+    def test_running_row_pick_borrowed_goes_to_owning_repo(self):
+        # Session folder /app owns only bugfix; its open arch-map run lives in /sid: the pick must not fall back to bugfix.
+        ov = js_fn("plOvSid") + "\n" + js_fn("plOvPick") + "\nlet PLVIEW = 'pipe';\n"
+        r = run(NOW + ov + "PLS.projs = {ok: true}; PLS.data['/app'] = {ok: true, pipelines: [{name: 'bugfix'}], borrowed: []};"
+                "SESS = [{state: 'tool', sid: 'd1', cwd: '/app', plrun: [{name: 'arch-map', proj: '/sid'}]}];"
+                "plOvPick('/app', 'arch-map', 'd1'); const a = [PLS.proj, PLS.sel, PLS.nowSid];"
+                "SESS = []; PLS.proj = '/old'; plOvPick('/app', 'arch-map', ''); const b = [PLS.proj, PLS.data['/app']];"
+                "console.log(JSON.stringify([a, b]));")
+        self.assertEqual(r[0], ["/sid", "arch-map", "d1"])
+        self.assertEqual(r[1], ["/app", None])                                 # no owner known: stale list dropped, paintPipe reloads
+
     def test_f7_picker_clears_session_pick(self):
         pk = js_fn("plPickProj")
         self.assertIn("plProjGo(p)", pk)

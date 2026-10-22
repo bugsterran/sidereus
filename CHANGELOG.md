@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: a «Running» row of a pipeline the session's folder does not own (e.g. arch-map run against another repo) opens that pipeline from its own repo, like the «Working now» tree, instead of silently showing the folder's first pipeline.
 - Structure: «Run security check» also offers sessions working in the Sidereus repo (where the pipeline file lives) as recipients, after sessions in the target repo; before, only sessions that had touched the target repo were listed.
 - Server: the tool usage index no longer holds every event id as a string; it keeps compact arrays, drops events older than 90 days and stops copying the whole index on each recompute. Measured on 1.5M events: index 328 → 55 MB, process peak 539 → 166 MB, cache file 96 → 47 MB. The first start after updating rebuilds the cache once (about a minute of «Loading» in Tools/Harness) (#17).
 - Pipelines: a first run with no session and no project picked now says what to do next (start a Claude Code, Codex or Gemini session, or try `sidereus start --demo`) instead of only «Pick a project»; the Sidereus clone's own row in the project picker is marked «(built-in)»; the «Agent and model per stage» caption shows only in Edit.
