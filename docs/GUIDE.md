@@ -4,6 +4,7 @@
 
 Install first: [GETTING-STARTED.md](GETTING-STARTED.md). Screenshots come from `python3 -m sidereus start --demo` (synthetic data).
 The viewer opens on Pipelines (Timeline if the pipeline feature is off; a saved tab or tab order wins). The UI language follows the browser (English for `en*`, Korean otherwise); Settings › «Display language» overrides it.
+The open tab is in the address (`/#pipelines`, `/#structure`, `/#timeline`, `/#chat`, …): a link opens that tab, and each window keeps its own tab; a new window without one opens the last chosen tab. Chrome «Install app» (address bar) runs the viewer in its own window.
 
 Layout: a sidebar on the left (logo, «Attention» list, views, «Alerts» and settings). It is an icon strip by default; the toggle or Cmd/Ctrl+B widens it (remembered). From 1200px it pushes the page, below that it slides over it.
 On the right: one top bar (view title, running sessions, «needs me» chips, session drawer), the view body, and the status bar at the bottom.

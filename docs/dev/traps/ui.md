@@ -242,3 +242,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: each tab wrote the whole `mbAttnAck`/`mbAttnSnooze` map back, so the last tab's save dropped the other tab's acks; tabs never re-read prefs.
 - ⇒ Per-entry `UIS.patch(key, sub, v|null)`; another tab's POST pings `BroadcastChannel('sidereus-prefs')` and a changed `/api/state.uiRev` pulls; keys with a pending local write are not overwritten.
 - ⚠Never `lsSetJson` a map that two tabs edit, and never prune by rewriting it — patch `null` per removed entry.
+
+## Tab in the URL hash (`92-mainview-tabs.js` mvHashKey/mvHashSync)
+- Cause: the open tab lived only in storage, so `/#structure` links and per-window tabs had no address.
+- ⇒ Boot order is hash → this window's `tabOwn` → `mbStartView` → `mbMainView` → default; `setMainView` writes `#<name>` with `history.replaceState`; `hashchange` switches tab.
+- ⚠`mvHashKey`/`mvHashOf` stay function declarations with the map inside — 05-i18n calls them before 92 runs (a top-level `const` is in TDZ).
+- ⚠Popups (`/diff` `/work` `/brdiff`) never read or write the hash; a tab in `mbTabsOff` is refused even from the hash. Use `replaceState`, not `location.hash =` (one history entry per tab switch).

@@ -39,7 +39,7 @@ from sidereus.retro import retro
 from sidereus.review import review_files
 from sidereus.commit_link import commit_links
 from sidereus.agent_brief import brief_attention, brief_file, brief_peers, brief_quota
-from sidereus.page import BUILD_TIME, PAGE, PAGE_BUILD
+from sidereus.page import BUILD_TIME, PAGE, PAGE_BUILD, PWA_FILES, pwa_reply
 from sidereus.state import _state_body
 from sidereus.state_v1 import build as state_v1
 from sidereus.quota import quota
@@ -116,9 +116,9 @@ def _agent_quota(d):
 
 class _GetRoutes(_StructRoutes):
     def _g_page(self, u):
-        # ★`/diff` serves **the same document** (to open the diff in a separate browser window).
-        #   The page looks at its own path and boots in popup mode (ISPOP) — no second copy of CSS/JS.
-        code, hdr, body = _page_reply(self.headers.get("If-None-Match"), self.headers.get("Accept-Encoding"))
+        # ★`/diff` serves **the same document** (a separate window that boots in popup mode, ISPOP); manifest/icon paths get fixed bytes.
+        code, hdr, body = pwa_reply(u.path) if u.path in PWA_FILES else \
+            _page_reply(self.headers.get("If-None-Match"), self.headers.get("Accept-Encoding"))
         try:
             self.send_response(code)
             for k, v in hdr:
@@ -599,7 +599,7 @@ class _GetRoutes(_StructRoutes):
         self._raw_json(200, out)
     # ⚠Exact paths only (no prefixes). A path missing here is a 404 (GET: text, POST: JSON) — same as the old if-chain.
     _GET_ROUTES = {
-        "/": _g_page, "/diff": _g_page, "/work": _g_page, "/brdiff": _g_page,   # /work, /brdiff: work-log and branch file-diff popups
+        "/": _g_page, "/diff": _g_page, "/work": _g_page, "/brdiff": _g_page, **dict.fromkeys(PWA_FILES, _g_page),   # /work, /brdiff: work-log and branch file-diff popups; PWA_FILES: app manifest + icons
         "/api/branches": _g_branches, "/api/git/wtfiles": _g_wtfiles, "/api/git/owners": _g_owners,
         "/api/git/commit": _g_commit, "/api/git/links": _g_git_links,
         "/api/otel": _g_otel, "/api/agent/work": _g_agent_work, "/api/live": _g_live,

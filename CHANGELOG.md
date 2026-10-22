@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: a Bash description `[pl-agent:<name>/<stage>=<agent>]` lets a run use another subagent_type for one stage; the `security-checks` review stage uses a project's own security agent when the session has one, and reviews with a default lens when there is no threat model.
 - Pipelines: `[pl-none]` declarations are now logged per project (category and time only, kept 90 days) so the categories can be counted later; nothing is shown on screen yet (#16).
 - Pipelines: the 3rd `[pl-none:no-fit]` of a project within 7 days tells the session to offer the user a draft pipeline for that kind of work (written only after the user agrees); at most once per project per 7 days, count and project path only (#16).
+- Viewer: installable as an app (web app manifest + icon) and each window opens/keeps its tab from the URL hash (/#pipelines, /#structure, …) (#18).
 
 ### Fixed
 

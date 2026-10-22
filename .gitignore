@@ -67,6 +67,7 @@ backup/
 __pycache__/
 *.png
 !docs/images/*.png
+!web/icon-*.png
 .playwright-mcp/
 .claude/*
 !.claude/agents/

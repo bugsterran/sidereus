@@ -196,7 +196,10 @@ let mainView = (() => { try { const off = JSON.parse(UIS.mbTabsOff || '[]'), ok 
                                       || v === 'br' || v === 'hist' || v === 'retro' || v === 'pipe');
                               // «Preferences» mbStartView: a tab key wins; 'last'/unset reopens mbMainView.
                               // Per tab: a refresh keeps this tab's own view (08 tabOwn); mbStartView only picks a new tab's first view.
-                              const o = tabOwn('mbMainView'), s = UIS.mbStartView, v = ok(o) ? o : ok(s) ? s : UIS.mbMainView;
+                              // URL hash (/#structure) wins over both; popups never read it (92 mvHashKey).
+                              // ⚠typeof guards: tests run this file alone, without 00-core/92.
+                              const h = (typeof mvHashKey !== 'function' || typeof ISPOP === 'undefined' || ISPOP || ISWP || ISBP) ? null : mvHashKey(location.hash);
+                              const o = tabOwn('mbMainView'), s = UIS.mbStartView, v = ok(h) ? h : ok(o) ? o : ok(s) ? s : UIS.mbMainView;
                               // ⚠'fail' (tab removed 2026-09-23, now alerts) is not listed -> default tab.
                               return ok(v) ? v : ok('pipe') ? 'pipe' : 'time'; }
                         catch(e){ return 'pipe'; } })();
