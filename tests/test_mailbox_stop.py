@@ -57,7 +57,8 @@ class MailboxStop(unittest.TestCase):
 
     def run_hook(self, cwd=CWD, sid="s1", active=False):
         """active=None omits the stop_hook_active key (the commit-at-once path)."""
-        env = dict(os.environ, MAILBOX_DIR=self.d)
+        # ⚠Wall-clock budget lifted: a descheduled child on a loaded runner printed nothing; CPU is measured instead.
+        env = dict(os.environ, MAILBOX_DIR=self.d, MAILBOX_STOP_BUDGET_S="inf")
         inp = {"session_id": sid, "cwd": cwd, "transcript_path": "/x", "hook_event_name": "Stop"}
         if active is not None:
             inp["stop_hook_active"] = active
@@ -266,6 +267,30 @@ class MailboxStop(unittest.TestCase):
         self.assertTrue(f"id {b}" in r and "B" * 15000 in r)
         self.assertIsNone(self.run_hook(active=True))
         self.assertIsNone(self.run_hook())
+
+    def _load(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mailbox_stop_b", HOOK)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_over_budget_prints_nothing(self):
+        self.post("bob", to=ME)
+        mod = self._load()
+        inp = {"session_id": "s1", "cwd": CWD}
+        mod.BUDGET_S = 0.25
+        self.assertIsNone(mod.plan(inp, store=self.d, now_ns=self.now + 10 ** 9, t0=time.monotonic() - 1))
+        mod.BUDGET_S = float("inf")
+        self.assertIsNotNone(mod.plan(inp, store=self.d, now_ns=self.now + 10 ** 9, t0=time.monotonic() - 1))
+
+    def test_budget_env_parse(self):
+        mod = self._load()
+        self.assertEqual(mod._budget_s(None), 0.25)
+        for bad in ("", "x", "0", "-1", "nan"):
+            self.assertEqual(mod._budget_s(bad), 0.25, bad)
+        self.assertEqual(mod._budget_s("2.5"), 2.5)
+        self.assertEqual(mod._budget_s("inf"), float("inf"))
 
     def _inproc(self, fail):
         """Run main() in-process with save_state or the receipt append failing; returns stdout."""
