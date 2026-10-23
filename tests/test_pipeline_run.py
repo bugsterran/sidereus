@@ -149,9 +149,15 @@ class Model(unittest.TestCase):
             json.dumps(dict(PR, stages=dict(PR["stages"], 구현=dict(PR["stages"]["구현"], ag=PR["stages"]["구현"]["ag"] + [_pag("a4444444", True, N - 50, N)])))),
             json.dumps(ST4), N * 1000, N * 1000, N * 1000)
         run, done, main, none = _js(js, *fns)
-        self.assertEqual([(a["id"], a["tid"], a["run"]) for a in run], [("a4444444", "a4444444", True), ("a3333333", "a3333333", True)])   # running only, newest first
+        self.assertEqual([(a["id"], a["tid"], a["run"]) for a in run],
+                         [("a4444444", "a4444444", True), ("a3333333", "a3333333", True), ("a2222222", "a2222222", False)])   # running first, finished sibling kept
         self.assertEqual([(a["id"], a["run"], a["sec"]) for a in done], [("a1111111", False, 100)])   # nothing running: every agent
         self.assertEqual((main[0]["tid"], none), ("", []))                 # main mark: the session's work popup
+
+    def test_stage_agents_keep_finished_siblings(self):
+        pick = lambda ag: [(a["id"], a["run"]) for a in _js("plStageAgents(%s, 'x', %d)" % (json.dumps({"x": {"ag": ag}}), N * 1000), "plStageAgents", "subWorkId", *MODEL)]
+        self.assertEqual(pick([_pag("a1", False, N - 50, N - 10), _pag("a2", True, N - 100, N)]), [("a2", True), ("a1", False)])   # running first even if older
+        self.assertEqual(pick([_pag("a1", False, N - 300, N - 200), _pag("a2", False, N - 100, N - 50)]), [("a2", False), ("a1", False)])   # all done: newest first
 
     def test_pass_window_filter(self):
         # 구현 pass 3 now; ps = passes 1 and 2 (oldest first). Agents match a pass by t0 inside [a-5, b+5].

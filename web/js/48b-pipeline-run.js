@@ -344,11 +344,12 @@ function plLabParts(lab){
 }
 function plLabDesc(p){ return p.desc || (p.type === 'main' ? T('orchestrator') : ''); }
 function plLabTip(lab){ const p = plLabParts(lab); return p.type + ' · ' + plLabDesc(p); }
-// Agents of stage `title` (lt[title].ag from plrun), newest first: running ones if any, else all. Canvas node / overview row click (48d).
+// Agents of stage `title` (lt[title].ag from plrun): every agent, running first, then newest first. Canvas node / overview row click (48d).
+// ⚠Do not drop finished siblings while another runs: their work logs must stay openable mid-stage.
 function plStageAgents(lt, title, now){
-  const ag = (((lt || {})[title] || {}).ag) || [], live = ag.filter(a => a && a.run), use = live.length ? live : ag.filter(Boolean);
-  return use.map(a => ({ id: a.aid || a.tid || '', run: !!a.run, lab: plAgLab(a), tid: a.aid === 'main' ? '' : subWorkId(a), t0: a.t0 || 0,
-    sec: Math.max(0, Math.round((a.run ? now / 1000 : a.t1 || a.t0 || 0) - (a.t0 || 0))) })).sort((p, q) => q.t0 - p.t0);
+  const ag = ((((lt || {})[title] || {}).ag) || []).filter(Boolean);
+  return ag.map(a => ({ id: a.aid || a.tid || '', run: !!a.run, lab: plAgLab(a), tid: a.aid === 'main' ? '' : subWorkId(a), t0: a.t0 || 0,
+    sec: Math.max(0, Math.round((a.run ? now / 1000 : a.t1 || a.t0 || 0) - (a.t0 || 0))) })).sort((p, q) => (q.run - p.run) || (q.t0 - p.t0));
 }
 // Work log (sidereus/work.py, click only): an agent with a tid → its own log, else (main mark, workflow) the session's.
 function plOpenWork(sid, tid){
