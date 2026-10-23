@@ -36,14 +36,53 @@ def _note_bg_done(fp, info):
     # ★The first 60s after startup are **discarded** (safety net). In that window 'just finished' and 'old completion
     #   already inside the window' cannot be told apart — the lock above prevents the race, but the seeding boundary is inherently ambiguous.
     #   The cost of missing is a few cards; the opposite cost is the bell buried in old completions (measured 48).
-    if time.time() - START_AT < CARD_GRACE_S:
-        return
+    #   Catch-up items (after the saved alive time, bgtasks_parse `_catchup_ok`) pass, capped and deduped by the card file.
+    grace = time.time() - START_AT < CARD_GRACE_S
+    seen = None
     for it in got:
-        kind, label = it[0], it[1]
-        if kind == "sub":
-            _note_agent_done(fp, info, label, it[2] if len(it) > 2 else "")
+        catchup = len(it) > 5 and it[5]
+        if grace and not catchup:
             continue
-        _card_add("bgdone", info.get("project", ""), "Background done", label, info.get("cwd", ""))
+        kind, label = it[0], it[1]
+        aid = it[2] if len(it) > 2 else ""
+        extra = None
+        if catchup:
+            tid, done_at = it[3], it[4]
+            if seen is None:
+                seen = _catchup_seen()
+            if _catchup_n[0] >= CATCHUP_MAX or tid in seen[0] or (aid and seen[1].get(aid, -1.0) >= int(done_at)):
+                continue
+            _catchup_n[0] += 1
+            seen[0].add(tid)
+            extra = {"tid": tid, "done_at": datetime.fromtimestamp(done_at).isoformat(timespec="seconds")}
+            if aid:
+                extra["aid"] = aid
+        if kind == "sub":
+            _note_agent_done(fp, info, label, aid, extra)
+            continue
+        _card_add("bgdone", info.get("project", ""), "Background done", label, info.get("cwd", ""), extra)
+
+
+CATCHUP_MAX = 20           # catch-up cards per process — a long downtime must not bury the bell
+_catchup_n = [0]           # catch-up cards written so far (mutated in place)
+
+
+def _catchup_seen():
+    """(tids, {aid: newest card epoch}) from the last 24 h of cards — a catch-up already shown must not repeat."""
+    cut, tids, aids = time.time() - 86400, set(), {}
+    for line in _tail_lines(CARDS, nbytes=400000, limit=2000):
+        try:
+            c = json.loads(line)
+        except ValueError:
+            continue
+        t = iso_epoch(c.get("at"), None)
+        if t is None or t < cut or c.get("kind") not in ("bgdone", "agent"):
+            continue
+        if c.get("tid"):
+            tids.add(c["tid"])
+        if c.get("kind") == "agent" and c.get("aid"):
+            aids[c["aid"]] = max(t, aids.get(c["aid"], -1.0))
+    return tids, aids
 
 
 def _agent_of(fp, label):
@@ -65,7 +104,7 @@ def _agent_of(fp, label):
     return (best.get("_id") or "", best.get("agentType") or "") if best else ("", "")
 
 
-def _note_agent_done(fp, info, label, aid=""):
+def _note_agent_done(fp, info, label, aid="", extra=None):
     """One card per agent: a resumed agent's completion bumps its earlier card (time, `resumes` +1) instead of adding one.
     `aid` comes from bgtasks `_sub_identity`; the description lookup is only a fallback when it could not be resolved."""
     desc = label.split(": ", 1)[1] if ": " in label else label
@@ -82,10 +121,11 @@ def _note_agent_done(fp, info, label, aid=""):
         t = c.get("text") or ""
         return not c.get("aid") and (t.split(": ", 1)[1] if ": " in t else t) == desc   # cards written before `aid` existed
 
+    more = dict(extra or {}, **({"aid": aid} if aid else {}))
     bumped = _card_bump("agent", cwd, same, lambda c: {"resumes": int(c.get("resumes") or 0) + 1,
-                                                       "text": label, **({"aid": aid} if aid else {})})
+                                                       "text": label, **more})
     if bumped is None:
-        _card_add("agent", info.get("project", ""), "Subagent done", label, cwd, {"aid": aid} if aid else None)
+        _card_add("agent", info.get("project", ""), "Subagent done", label, cwd, more or None)
 
 
 def _recent_card(kind, cwd, within_s):

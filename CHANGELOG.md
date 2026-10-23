@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Bell: subagent and background-task completions that happen while the viewer is down are announced after it restarts (only those after its last scan, at most 20 and 24 h, never twice).
 - Pipelines: a stage's «Agents N» counts the agents it lists, so a stage with no agent records no longer shows a number with nothing to click.
 - Quota details: switching the «Main account» repaints the burndown and saver panels at once instead of showing the previous account until the next poll.
 - Work log: when the machine is too busy to confirm the request comes from your own user, the popup says «Viewer is busy — retrying…» and retries (2/4/8/16 s) instead of failing with HTTP 403; a real refusal is unchanged.

@@ -13,7 +13,8 @@ from sidereus.perm_marks import note_sub_log
 # ⚠Re-exported for importers (chat_server, sessions, notes, tests). Patch BG_DROP/warn_once/_atomic_write/_agent_meta
 #   for the drop list and line handlers on bgtasks_parse — their functions read that module's globals.
 from sidereus.bgtasks_parse import (_bg_open, _bg_open_at, _bg_seeded, _bg_finished, _bg_dropped, _bg_drop_save,
-                                 _bg_popped, _bg_resume, _bg_sent, _sub_label, _bg_pop, _bg_on_notice, _bg_on_line)
+                                 _bg_popped, _bg_resume, _bg_sent, _sub_label, _bg_pop, _bg_on_notice, _bg_on_line,
+                                 _alive_beat)
 
 RUN_STALE_S = 7200        # agents launched over 2 hours ago are not counted (a completion notice may have been missed)
 SUB_LIVE_S = 120           # if the subagent log was updated within this, **treat it as running** (comment below)
@@ -212,6 +213,10 @@ def _running_bg_locked(fp, rows=None):
         else:
             _bg_on_line(line, open_now, fp, seeding, now)
     _bg_gap_flush(open_now, fp, seeding)
+    # ⚠Stamp after the scan so the saved alive time covers every line read; force it when a card is due,
+    #   else a restart within 30 s re-announces that completion.
+    _bg_open_at[fp] = time.time()
+    _alive_beat(force=bool(_bg_finished.get(fp)))
     _bg_evict()
     _bg_expire(open_now, now)
     _bg_revive(fp, open_now, now)

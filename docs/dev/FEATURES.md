@@ -27,6 +27,8 @@ The user's install keeps every feature on; a fresh public install starts core-on
 
 sessions · live · attention · cards · bus/chat · dm · otel · hook · term · work log · prefs · quota/usage/saver/burn · first-visit tour (`98b-tour.js`, no toggle; steps for off features are skipped; `/api/state` `codeDir` is core).
 
+- cards (bell): agent/background completions while the viewer was down ring after restart — only after the saved alive time (`bg-alive.json`, `bgtasks_parse._alive_beat`), ≤ `notes.CATCHUP_MAX` (20) per process, deduped by card `tid`/`aid`, cards carry `done_at`.
+
 ## Features and couplings (measured 2026-10-01)
 
 | Feature | Routes | Threads | Coupling to fix or baseline |

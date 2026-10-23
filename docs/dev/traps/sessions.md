@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Sessions: state, subagents, external CLIs
 
+- ⚠**Seeding dropped every completion, so an agent/bg task that finished while the viewer was down never rang the bell** (2026-10-23; `bgtasks_parse._catchup_ok` · `notes._note_bg_done`).
+  - Cause: the first scan cannot tell «finished while down» from «old completion in the 20MB window» — ★announcing all of them flooded 48 stale cards, so all were dropped.
+  - ⇒ The per-fp scan clock is saved to `bg-alive.json` (≤ every 30 s, forced when a card is due); seeding announces only line times after it (unknown fp: newest saved time), within 24 h, ≤ 20 per process, skipped if the card tail has that `tid` or an `agent` card of that `aid` at/after `done_at`.
+  - ⚠Never decide with `at=0` (no line time) and never when the file is missing/corrupt/future-stamped — that is the old 60 s grace, silent.
 - ⚠**`plmark/<sid>.none.json` is never merged into `<sid>.json`** (2026-10-21; `sidereus/pl_runs.py` `pl_none`). `<sid>.json` is the main-agent stage marker (`plm_of`) and `[pl-]` clears it; a declaration stored there would vanish or light a stage. ⇒ Separate file, read only by `pl_none` (cat allow-list, 4 KB cap). Test: `tests/test_pl_runs_none.py`.
 - ⚠**Fold-all must clear the session list's HTML cache** (2026-10-13). Toggling one `<details>` group changes the DOM but not `box._sh`, the cached HTML string the list compares before redrawing. «Expand all» right after closing one group then renders identical HTML and the redraw is skipped. ⇒ `wfFoldAll` clears `box._sh` before redrawing (40b-sessions-list.js). Test: `test_sess_wf_fold_all_js.py`.
 - **A background shell running over 2 h vanished from the session** (2026-10-15; `sidereus/bgtasks.py` `_bg_expire`).
