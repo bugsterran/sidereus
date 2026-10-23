@@ -344,6 +344,7 @@ function mpMainAcctRow(){
 function mpMainAcctRedraw(){
   [typeof buildSessions === 'function' && buildSessions,
    typeof srecPaint === 'function' && srecPaint, typeof buildAttn === 'function' && buildAttn,
+   typeof pollMainRedraw === 'function' && pollMainRedraw,   // 95: SV + burndown + saver badge before the bar reads them
    typeof buildSbar === 'function' && (() => buildSbar()), sesdrBadge].forEach(f => {   // 41 sesdrBadge: header count follows sesCount at once
     if(f) try{ f(); }catch(e){ softErr('mpMainAcct', e); }
   });

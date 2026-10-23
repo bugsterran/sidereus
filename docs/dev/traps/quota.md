@@ -520,3 +520,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: `test_golden_wkuse_fetch` stubs `_wk_slot` and `_uidx_projects` with exactly one argument.
   - ⇒ With `acct=""` call `_wk_slot(nd)` and `_uidx_projects(nd)`; pass the account only on the per-account path.
   - ⚠Per-account slots `_wkuse_acct[(nd, label)]` refresh on request only (`wk_stale`), never from `_wkuse_loop`.
+- **Main-account switch repaints the quota modal at once** (`95-poll.js` `pollMainRedraw`, called from `mpMainAcctRedraw`).
+  - Cause: the switch repainted sessions and the bar only; #burn and #saver changed on the next poll (about 7 s live, much longer under load).
+  - ⇒ The poll keeps the saver fields of the last state (`LASTS`); the switch re-derives SV (`svViewSet`) and runs `burnTick`/`buildBurn`/`buildSaver`.
+  - ⚠A non-primary curve stays empty until its own `?dir=` fetch lands — never draw the previous account's body meanwhile.

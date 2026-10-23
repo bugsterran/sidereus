@@ -6,13 +6,13 @@ Do not step on these again. One file per area under [traps/](traps/); read the a
 |---|---|---|
 | [traps/arch.md](traps/arch.md) | Structure tab: architecture map, flows, arch_verify, Size treemap, language plug-ins | 74 |
 | [traps/timeline.md](traps/timeline.md) | Timeline rows, bars, sleep/idle bands, replay, «Changes» rail | 44 |
-| [traps/quota.md](traps/quota.md) | Quota, burndown, saver mode, token and usage accounting | 90 |
+| [traps/quota.md](traps/quota.md) | Quota, burndown, saver mode, token and usage accounting | 91 |
 | [traps/sessions.md](traps/sessions.md) | Session state, subagents, external CLIs, permission badges, work-log popup and diff window | 50 |
 | [traps/pipeline.md](traps/pipeline.md) | Pipeline runs, `pl_flow` stage hooks, stage lighting, gates, evaluation | 48 |
 | [traps/git.md](traps/git.md) | Branch tab, board, git, worktrees, History and retro tabs | 20 |
 | [traps/attention.md](traps/attention.md) | Alarms, cards, health strip, attention ranking | 21 |
 | [traps/mailbox.md](traps/mailbox.md) | Mailbox, chat rooms, mail watch (`mailbox_wake`) | 25 |
-| [traps/ui.md](traps/ui.md) | UI kit, CSS, layout, header, i18n (`T()`), animations, drag-resize | 69 |
+| [traps/ui.md](traps/ui.md) | UI kit, CSS, layout, header, i18n (`T()`), animations, drag-resize | 70 |
 | [traps/server.md](traps/server.md) | Server, `/api/state` payload, caching, performance | 22 |
 | [traps/security.md](traps/security.md) | Security and privacy (CSP, guards, metadata-only) | 33 |
 | [traps/platform.md](traps/platform.md) | Platform, config, launcher, Windows, plugin, tests and tooling | 49 |

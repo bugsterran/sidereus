@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Quota details: switching the «Main account» repaints the burndown and saver panels at once instead of showing the previous account until the next poll.
 - Work log: when the machine is too busy to confirm the request comes from your own user, the popup says «Viewer is busy — retrying…» and retries (2/4/8/16 s) instead of failing with HTTP 403; a real refusal is unchanged.
 - Timeline: the removed-lines count in the «Changes» chip is easier to read in the dark theme.
 - Settings: the saver level table's rules and notes show in Korean in the Korean UI (known hook lines are matched to fixed templates; an unknown line stays as sent).
