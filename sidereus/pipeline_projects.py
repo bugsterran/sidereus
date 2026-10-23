@@ -11,6 +11,7 @@ import threading
 from sidereus import config, prefs
 from sidereus.bus import _atomic_write
 from sidereus.config import CODE_DIR, DATA_DIR, IS_MAC, IS_WIN
+from sidereus.history import history
 from sidereus.toolinv import known_projects
 from sidereus.work import _allowed_cwds
 from sidereus.warn import warn_once
@@ -233,6 +234,42 @@ def browse_dirs(raw, hidden=False):
         out.append({"name": n, "git": g, "claude": c})
     return 200, {"ok": True, "path": p, "home": h, "parent": "" if p == h else os.path.dirname(p), "dirs": out, "more": more,
                  "pick": pick_supported()}
+
+
+RECENT_DIRS_DAYS = 14
+RECENT_DIRS_MAX = 8
+
+
+def recent_dirs(days=RECENT_DIRS_DAYS, cap=RECENT_DIRS_MAX):
+    """«Recent session folders» for the «+ Add project» picker: [{name, path, at, plat}] newest first.
+    From the memoised `history()` rows (Claude + every PLAT_MODS block) — no sessions() scan on the request path.
+    ⚠Metadata only: never copy title/model/sid. Already-listed projects, Sidereus itself and non-addable paths are dropped."""
+    try:
+        h = history(days)
+        now = h.get("at") or 0
+        rows = []
+        for d in h.get("list") or []:
+            rows += d.get("rows") or []
+            for v in d.values():
+                if isinstance(v, dict) and isinstance(v.get("rows"), list):   # per-platform blocks (gm, cx, ...)
+                    rows += v["rows"]
+        skip = set(os.path.realpath(p) for p in project_list()[0])
+        skip.add(os.path.realpath(CODE_DIR))
+        best = {}
+        for r in rows:
+            c = r.get("cwd") if isinstance(r, dict) else None
+            if not isinstance(c, str) or not c or "\0" in c:
+                continue
+            p = os.path.realpath(c)
+            if p in skip or not _addable(p):
+                continue
+            at = r.get("to") or 0
+            at = min(at, now) if now else at   # `to` is the end of the last hour bucket
+            if p not in best or at > best[p]["at"]:
+                best[p] = {"name": os.path.basename(p), "path": p, "at": at, "plat": str(r.get("plat") or "cc")}
+        return sorted(best.values(), key=lambda x: (-x["at"], x["path"]))[:cap]
+    except Exception:
+        return []
 
 
 def apply_get(proj):

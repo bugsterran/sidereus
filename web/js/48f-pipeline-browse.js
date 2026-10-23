@@ -1,6 +1,26 @@
 // «+ Add project» folder browser modal (GET /api/pipelines/projects/dirs: folder names + git/Claude flags only, home only).
 // «Add this folder» goes through plAddGo (48-pipeline.js) = the same POST /api/pipelines/projects/add with its Origin guard.
-let PLBR = null;   // {path, home, parent, dirs, more, msg, busy, pick, picking, hidden} while the modal is open
+let PLBR = null;   // {path, home, parent, dirs, more, msg, busy, pick, picking, hidden, recent} while the modal is open
+// «Recent session folders» (?recent=1): suggestions only; a click is the same plBrLoad as typing the path.
+function plBrAt(at){ const n = typeof at === 'number' ? at : (isNaN(+at) ? Date.parse(at) / 1000 : +at); return isFinite(n) && n > 0 ? n : 0; }   // epoch seconds or ISO
+function plBrRecent(B){
+  const r = Array.isArray(B.recent) ? B.recent.filter(x => x && x.path) : [];
+  if(!r.length) return '';
+  return '<div class=plbrrec><div class=plbrrt>' + esc(T('Recent session folders')) + '</div>' + r.slice(0, 8).map(x => {
+    const t = plBrAt(x.at);
+    return '<button class=plbrd data-plbrgo="' + esc(x.path) + '" title="' + esc(x.path) + '"><span class=plbrrn>' + esc(x.name || x.path) + '</span>'
+      + '<em class=plbrrp>' + esc(x.path) + '</em>' + (t ? '<i class=plbrra>' + esc(agoAt(t)) + '</i>' : '') + '</button>';
+  }).join('') + '</div>';
+}
+async function plBrRecentLoad(){
+  let j = null;
+  try{ const r = await fetch('/api/pipelines/projects/dirs?recent=1', { cache: 'no-store' }); j = await r.json(); }
+  catch(x){ j = null; }   // no row on failure, no error
+  if(!PLBR || !j || !j.ok || !Array.isArray(j.recent) || !j.recent.length) return;
+  const i = document.querySelector('[data-plbrin]'), v = i && i.value, f = i && document.activeElement === i;
+  PLBR.recent = j.recent; plBrPaint();
+  const n = document.querySelector('[data-plbrin]'); if(n && i){ n.value = v; if(f) n.focus(); }   // ⚠async repaint: keep a half-typed path and its focus
+}
 function plBrCrumbs(B){
   if(!B.home || !B.path) return '';
   // Windows paths split on \ too; the drive prefix stays inside home (the «~» crumb).
@@ -19,8 +39,8 @@ function plBrList(B){
     + (B.more ? '<div class=plbre>' + esc(T('Only the first 500 folders are shown — type the path instead')) + '</div>' : '');
 }
 function plBrHtml(B){
-  return '<div class="cfgbox plbrbox" tabindex=-1><div class=cfgh><b>' + esc(T('Add project')) + '</b><span>' + esc(T('Pick a folder to add to the list'))
-    + '</span><button class=cfgx data-plbrx title="' + esc(T('Close')) + '">✕</button></div>' + plBrCrumbs(B)
+  return '<div class="cfgbox plbrbox' + (plBrRecent(B) ? ' rec' : '') + '" tabindex=-1><div class=cfgh><b>' + esc(T('Add project')) + '</b><span>' + esc(T('Pick a folder to add to the list'))
+    + '</span><button class=cfgx data-plbrx title="' + esc(T('Close')) + '">✕</button></div>' + plBrRecent(B) + plBrCrumbs(B)
     + '<div class=plbrr><button class=strp data-plbrup' + (B.parent ? '' : ' disabled') + '>' + esc(T('Parent folder')) + '</button>'
     + '<input class=plbrin data-plbrin value="' + esc(B.path || '') + '" placeholder="' + esc(T('Folder path (e.g. ~/projects/my-app)')) + '">'
     + (B.pick ? '<button class=strp data-plbrpick' + (B.picking ? ' disabled' : '') + '>' + esc(T('Choose folder…')) + '</button>' : '')
@@ -53,8 +73,8 @@ async function plBrLoad(path, fallback){
   const i = document.querySelector('[data-plbrin]'); if(i) i.focus();
 }
 function plBrOpen(){
-  PLBR = { path: '', home: '', parent: '', dirs: null, more: false, msg: '', busy: true };
-  plBrPaint(); plBrLoad(lsGet('sidereus.plbrdir', ''), true);
+  PLBR = { path: '', home: '', parent: '', dirs: null, more: false, msg: '', busy: true, recent: [] };
+  plBrPaint(); plBrLoad(lsGet('sidereus.plbrdir', ''), true); plBrRecentLoad();   // parallel: the folder list never waits on it
 }
 function plBrClose(){
   PLBR = null; plBrPaint();

@@ -128,10 +128,13 @@ html[data-ui] .plnd .plpass:hover::before,html[data-ui] .plnd .plpass.on::before
 .plbrb.git{color:#e3a36b;border-color:#5a4029}.plbrb.cl{color:#a8a3f0;border-color:#3d3a6b}
 .plbre{color:#7e8896;font-size:12px;padding:8px}
 .plbrf{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
+.plbrrec{border:1px solid #1e232c;border-radius:6px;max-height:150px;overflow:auto;padding:3px;margin:2px 0 6px}.plbrbox.rec .plbrl{height:min(38vh,320px)}   /* keeps «Add this folder» on screen */
+.plbrrt{font-size:11px;color:#7e8896;padding:2px 8px}.plbrrec .plbrd .plbrrn{flex:0 1 auto;max-width:35%}
+.plbrrp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal;font-size:11.5px;color:#7e8896}.plbrra{font-style:normal;font-size:11px;color:#7e8896;white-space:nowrap}
 html[data-theme=light] .plbrd{color:var(--nx-t1,#1f2430)}
 html[data-theme=light] .plbrd:hover,html[data-theme=light] .plbrd:focus-visible,html[data-theme=light] .plbrs:hover{background:var(--nx-hover,#eceef2)}
 html[data-theme=light] .plbrs{color:#2f5fa8}
-html[data-theme=light] .plbrl{border-color:var(--nx-rule,#d8dbe1)}
+html[data-theme=light] .plbrl,html[data-theme=light] .plbrrec{border-color:var(--nx-rule,#d8dbe1)}
 html[data-theme=light] .plbrb.git{color:#9a5a1e;border-color:#e3c7a8}
 html[data-theme=light] .plbrb.cl{color:#4f49a8;border-color:#c9c6ec}
 .plbar>b{margin-right:6px}
