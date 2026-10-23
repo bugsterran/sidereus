@@ -463,7 +463,8 @@ class PlModel(unittest.TestCase):
         self.assertEqual([a["aid"] for a in out["o1"]], ["xo1"])   # older open run keeps its agents
         self.assertEqual([a["aid"] for a in out["e1"]], ["xe1"])   # newest ended run too
         self.assertEqual((out["o2"], out["o3"]), ([], []))         # open runs 2-3: `ag` present
-        self.assertEqual((out["e2"], out["o4"]), (None, None))     # 2nd ended / 4th open: stages only
+        self.assertEqual([a["aid"] for a in out["e2"]], ["xe2"])   # older ended run: meta-only agents
+        self.assertIsNone(out["o4"])                               # 4th open: stages only
 
     def _file_past(self, runs, past):
         fp = os.path.join(self.tmp, SID + ".runs.json")
@@ -489,7 +490,14 @@ class PlModel(unittest.TestCase):
         self.assertEqual(set(r["past"][0]), {"rid", "t0", "t1", "end", "cur", "lab", "stages"})
         self.assertEqual({k: v["o"] for k, v in r["past"][1]["stages"].items()}, {"설계": "done", "구현": "done"})   # closed idle
         self.assertEqual(r["past"][0]["stages"]["설계"]["o"], "fail")
-        self.assertTrue(all("ag" not in s for p in r["past"] for s in p["stages"].values()))
+        # Past stages list their window's tagged agents (meta only, never running); a3 is outside every past window.
+        ids = lambda p, t: [(a["aid"], a["tid"], a["run"]) for a in p["stages"][t]["ag"]]
+        self.assertEqual(ids(r["past"][1], "설계"), [("a0", "tu_a0", False)])
+        self.assertEqual(ids(r["past"][1], "구현"), [("a1", "tu_a1", False)])
+        self.assertEqual(ids(r["past"][0], "설계"), [("a2", "tu_a2", False)])
+        a = r["past"][1]["stages"]["설계"]["ag"][0]
+        self.assertEqual((a["t0"], a["t1"], a["lab"]), (NOW - 995, NOW - 992, "sidereus-implementer: [pl:sc/설계] first request"))
+        self.assertNotIn("a3", json.dumps(r["past"]))
         dump = json.dumps(r, ensure_ascii=False)
         for bad in ("/secret", "msg", "inflight", "junk"):
             self.assertNotIn(bad, dump)
