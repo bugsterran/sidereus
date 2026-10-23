@@ -4,6 +4,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Structure tab (Architecture · Size)
 
+- **Idle warm-up cells run in a child process** (issue #19 · `structure._struct_warm_spawn`, `sidereus/structure_warm.py`).
+  - Cause: a warm scan's peak memory stayed in the viewer heap; the child returns it to the OS on exit and the screen reads its disk cache entry.
+  - ⇒ One `python -m sidereus.structure_warm <root> <tests>` per cell, `STRUCT_WARM_CHILD_TIMEOUT_S` = 180; fail/timeout = one `struct-warm-child` soft warning, retried after `STRUCT_WARM_CYCLE_S`; the screen still computes in-process.
+  - ⚠Child stderr is DEVNULL: its own `warn_once` lines are lost — debug by running the module by hand. `_git_slot` is per process, so a child's git calls do not share the viewer's slots.
+  - ⚠Tests must patch `_struct_warm_spawn` (or `subprocess.run`) before running `_struct_warm_loop`, or they spawn a real process (`tests/test_structure_warm_child.py`).
+
 - ★**Structure blob cache grew the viewer 235 -> 715 MB in ~35 min** (issue #17 · 111 decoded blobs = 573 MB, ~5 MB each).
   - Cause: disk hits in `_struct_git_tree`/`_struct_plain`/`_struct_tar` stored into `_struct_blob_cache` uncapped; warm-up loads every cell from disk. Cap was 200 (~1 GB).
   - ⇒ Every write goes through `structure_scan._struct_blob_put` (oldest evicted past `STRUCT_BCACHE_N` = 32, one cell's points + slack); the disk copy stays the durable cache.

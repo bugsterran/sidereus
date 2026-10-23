@@ -170,20 +170,20 @@ class EarlyReturns(Recorder):
             ticks.append(s)
             clock[0] += 100
         saved = (st.time, st._struct_act[0], st._struct_warm_targets, dict(st._struct_warm_seen),
-                 st._struct_prune_at[0], st._struct_disk_prune, st.structure)
+                 st._struct_prune_at[0], st._struct_disk_prune, st._struct_warm_spawn)
         try:
             st.time = type("T", (), {"time": staticmethod(lambda: clock[0]), "sleep": staticmethod(sleep)})
             st._struct_act[0] = act(clock)
             st._struct_warm_targets = lambda: targets
             st._struct_disk_prune = lambda: None
-            st.structure = self.mark("struct")
+            st._struct_warm_spawn = self.mark("struct")
             with self.assertRaises(_Stop):
                 st._struct_warm_loop()
         finally:
             st.time, st._struct_act[0], st._struct_warm_targets = saved[:3]
             st._struct_warm_seen.clear()
             st._struct_warm_seen.update(saved[3])
-            st._struct_prune_at[0], st._struct_disk_prune, st.structure = saved[4:]
+            st._struct_prune_at[0], st._struct_disk_prune, st._struct_warm_spawn = saved[4:]
 
     def test_struct_no_target_calls_done(self):
         self._struct_ticks(1, lambda c: 0.0, [])
