@@ -300,6 +300,19 @@ class Overview(unittest.TestCase):
         self.assertIn('data-plovwp="/a" data-plovwn="bugfix"', h)          # row click = open that pipeline
         self.assertNotIn('plovsel', h)                                    # no separate open button
 
+    def test_main_run_stage_not_agents_0(self):
+        lv = {"sid": "s", "lt": {"재현": {"st": "done"}, "수정": {"st": "run", "main": True, "ag": []}}, "run": {"total": 0}}
+        js = "(() => { %s const r = plOvRow('/a', 'bugfix', %s, %s, null, 0); return [r, plOvHtml([r], '/a', 'bugfix')]; })()" % (self.STUB, json.dumps(self.P), json.dumps(lv))
+        r, h = _js(js, "plOvRow", "plOvHtml", "plLight", "plOvRunHtml", "plRbAttr")
+        self.assertTrue(r["main"])
+        self.assertIn("직접 진행", h)
+        self.assertNotIn("에이전트 0", h)
+        lv["run"]["total"] = 2                                            # agents present: count as before
+        js = "(() => { %s const r = plOvRow('/a', 'bugfix', %s, %s, null, 0); return plOvHtml([r], '/a', 'bugfix'); })()" % (self.STUB, json.dumps(self.P), json.dumps(lv))
+        h = _js(js, "plOvRow", "plOvHtml", "plLight", "plOvRunHtml", "plRbAttr")
+        self.assertIn("에이전트 2", h)
+        self.assertNotIn("직접 진행", h)
+
     def test_skip_mark(self):
         lv = {"sid": "s", "lt": {"재현": {"st": "skip"}, "수정": {"st": "run"}}, "run": {"total": 1}}
         js = "(() => { %s const r = plOvRow('/a', 'bugfix', %s, %s, null, 0); return [r, plOvHtml([r], '/a', 'bugfix')]; })()" % (self.STUB, json.dumps(self.P), json.dumps(lv))

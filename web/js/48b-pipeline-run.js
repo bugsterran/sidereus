@@ -414,8 +414,9 @@ function plOvRow(proj, name, p, lv, tags, now){
   const lt = lv ? (lv.lt || plLight(p.stages, lv.run)) : {};
   const stages = (p.stages || []).map(s => { const L = lt[s.title] || {}, st = L.st; return { t: s.title, st: st === 'run' || st === 'done' || st === 'fail' || st === 'back' || st === 'skip' || st === 'hold' ? st : 'wait',
     rb: Object.values(L.from || {}).reduce((a, v) => a + v, 0) }; });
-  const n = lv ? (lv.run && lv.run.total) || 0 : 0;
-  return { proj, name, sid: lv ? lv.sid : '', stages, cur: stages.filter(s => s.st === 'run').map(s => s.t), n };
+  const n = lv ? (lv.run && lv.run.total) || 0 : 0, cur = stages.filter(s => s.st === 'run').map(s => s.t);
+  // main-run stage (tagged Bash, ag empty): total counts dispatched agents only, so «Agents 0» would hide that main is working.
+  return { proj, name, sid: lv ? lv.sid : '', stages, cur, n, main: !n && cur.some(t => !!(lt[t] || {}).main) };
 }
 // Running stage: the dot gets its own box so the pulse ring (43-pipeline.css .plovdot) centres on it without moving text.
 // rb > 0: the bare ↺n gets words in title/aria-label (sent back into this stage n times); txt = the visible chip text.
@@ -433,7 +434,7 @@ function plOvHtml(rows, proj, sel){
     + (r.stages ? r.stages.map(s => s.st === 'run' ? plOvRunHtml(plgShow(s.t) + (s.rb ? ' ↺' + s.rb : ''), s.rb)   // display name, as the canvas
         : '<span class="plovst plov-' + s.st + '"' + plRbAttr(s.rb, mk[s.st] + ' ' + plgShow(s.t) + ' ↺' + s.rb) + '>' + esc(mk[s.st] + ' ' + plgShow(s.t) + (s.rb ? ' ↺' + s.rb : '')) + '</span>').join('')
       : r.cur.map(t => plOvRunHtml(plgShow(t))).join(''))
-    + '</span><span class=plova>' + (r.sumh || esc(TV({msg: 'Agents {n}', vars: {n: r.n}}))) + '</span></div>').join('') + '</div>';   // sumh = 48g wfSumHtml (escaped there)
+    + '</span><span class=plova>' + (r.sumh || esc(r.main ? T('orchestrator') : TV({msg: 'Agents {n}', vars: {n: r.n}}))) + '</span></div>').join('') + '</div>';   // sumh = 48g wfSumHtml (escaped there)
 }
 // Live data → rows; a project whose pipeline list isn't loaded gets the tag-only row and a load kick (plLoad guards repeats).
 function plOverview(){
