@@ -10,7 +10,7 @@ from sidereus.ext import ext_work
 from sidereus.timeline import TL_HOURS, agents_timeline
 from sidereus.failures import FAIL_HOURS, failures, wreckage
 from sidereus.work import agent_work, session_work
-from sidereus.peer import peer_ok
+from sidereus.peer import peer_state
 from sidereus.history import history, history_units
 from sidereus.recent import recent_sessions
 from sidereus.ctxsrc import session_context
@@ -89,6 +89,26 @@ def _page_reply(if_none_match, accept_encoding):
 
 
 class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
+    def _peer_refused(self):
+        """Answer the work routes' peer gate; True when a reply was sent. False -> 403 · undetermined -> 503 (page retries)."""
+        st = peer_state(self.client_address)
+        if st is True:
+            return False
+        if st is False:
+            self._send(403, "forbidden", "text/plain; charset=utf-8")
+            return True
+        body = b'{"ok": false, "busy": true}'
+        try:
+            self.send_response(503)
+            for k, v in (("Content-Type", "application/json; charset=utf-8"), ("Retry-After", "2"),
+                         ("Cache-Control", "no-store"), ("Content-Length", str(len(body)))):
+                self.send_header(k, v)
+            self.end_headers()
+            self.wfile.write(body)
+        except (ConnectionResetError, BrokenPipeError):
+            return True   # client left mid-reply, same quiet disconnect as `_send`
+        return True
+
     def _g_page(self, u):
         # ★`/diff` serves **the same document** (a separate window that boots in popup mode, ISPOP); manifest/icon paths get fixed bytes.
         code, hdr, body = pwa_reply(u.path) if u.path in PWA_FILES else \
@@ -105,8 +125,8 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
             pass                        # same quiet disconnect as `_send`
 
     def _g_agent_work(self, u):
-        if not peer_ok(self.client_address):   # work logs carry transcript text: same-UID client only (macOS)
-            return self._send(403, "forbidden", "text/plain; charset=utf-8")
+        if self._peer_refused():   # work logs carry transcript text: same-UID client only (macOS)
+            return
         q = parse_qs(u.query)
         try:
             out = agent_work(_q1(q, "cwd"), _q1(q, "tid"),
@@ -274,8 +294,8 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
         self._raw_json(200, out)
 
     def _g_session_work(self, u):
-        if not peer_ok(self.client_address):
-            return self._send(403, "forbidden", "text/plain; charset=utf-8")
+        if self._peer_refused():
+            return
         q = parse_qs(u.query)
         try:
             # `sid` is optional — if absent, the latest transcript of cwd as before (backward compatible)
@@ -307,8 +327,8 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
         self._raw_json(code, out)
 
     def _g_ext_work(self, u):
-        if not peer_ok(self.client_address):
-            return self._send(403, "forbidden", "text/plain; charset=utf-8")
+        if self._peer_refused():
+            return
         q = parse_qs(u.query)
         try:
             out = ext_work(_q1(q, "plat"), _q1(q, "sid"))

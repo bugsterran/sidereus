@@ -27,6 +27,7 @@ Object.assign(I18N.ko, {
   "claude executable not found — re-resolving its path": "claude 실행 파일을 찾지 못했습니다 — 경로를 다시 찾습니다",
   "argv session label parse failed ({err})": "argv 세션 라벨 해석이 실패했습니다({err})",
   "Process lookup is slow ({err}) — using the last value for up to {n}s": "프로세스 조회가 느립니다({err}) — 직전 값을 {n}초까지 씁니다",
+  "Work-log peer check is slow ({err}) — answering 503, the page retries": "작업 기록 접속자 확인이 느립니다({err}) — 503 으로 답하고 화면이 다시 시도합니다",
   "Could not read process state ({err}) — activity falls back to 'unknown'": "프로세스 상태를 읽지 못했습니다({err}) — 활성 표시가 '모름' 으로 떨어집니다",
   "Watch process lookup is slow ({err}) — using the last value for up to {n}s": "감시 프로세스 조회가 느립니다({err}) — 직전 값을 {n}초까지 씁니다",
   "Could not read watch processes ({err}) — watch rows fall back to old heartbeats": "감시 프로세스를 읽지 못했습니다({err}) — 감시 줄이 옛 하트비트 기준으로 떨어집니다",

@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Work log: when the machine is too busy to confirm the request comes from your own user, the popup says «Viewer is busy — retrying…» and retries (2/4/8/16 s) instead of failing with HTTP 403; a real refusal is unchanged.
+- Timeline: the removed-lines count in the «Changes» chip is easier to read in the dark theme.
 - Settings: the saver level table's rules and notes show in Korean in the Korean UI (known hook lines are matched to fixed templates; an unknown line stays as sent).
 - Pipelines: a finished or earlier run's stage lists its agents (from tagged subagent records) instead of only «Agents N» with no buttons.
 - Pipelines: with no logged-in session in the project, «Start from a template» is the primary button instead of «Ask AI for a draft», which could not be sent.
