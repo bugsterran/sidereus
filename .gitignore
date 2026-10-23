@@ -11,6 +11,7 @@ bus.jsonl
 bus.jsonl.*
 acks.jsonl
 cards.jsonl
+bg-alive.json
 cards-read.txt
 cards-read-ids.txt
 quota-log.jsonl
