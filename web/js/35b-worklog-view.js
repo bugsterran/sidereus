@@ -166,6 +166,15 @@ function wtPickBind(el, p){
 }
 // ★Split render — each pane has **its own scroll** (#feed doesn't move).
 //   ⚠Each pane's scroll position is restored on redraw. Polling is 2.5s, so without this it keeps jumping up.
+// ⚠The grid height is px, not flex-derived, so a window resize must refit it (no repaint: that resets pane scroll).
+function wtFitSplit(box){
+  const sp = box && box.querySelector('.wsp'), st = box && box.querySelector('.wtb');
+  if(!sp) return;
+  sp.style.height = Math.max(280, box.clientHeight - ((st && st.offsetHeight) || 0) - 10) + 'px';
+  // ⚠the guessed 10px margin can still overflow the box (measured 785 vs 775) — take the leftover back off
+  const over = box.scrollHeight - box.clientHeight;
+  if(over > 0) sp.style.height = Math.max(280, parseFloat(sp.style.height) - over) + 'px';
+}
 function workPaintSplit(box){
   if(wtDragging) return;      // dragging the splitter — redrawing removes the handle and breaks the drag
   // scroll is kept **per tab key**, so it survives pane swaps and layout changes
@@ -201,13 +210,7 @@ function workPaintSplit(box){
     + ';grid-template-rows:'+wtGridTpl(tr.r)+'">' + panes + bars + '</div>';
   // ★Height is **measured and set**. CSS `100vh - constant` can't match this column's top/bottom margins, so
   //   #feed itself scrolled too — with two scroll layers you can't tell which one you're rolling (measured 1169px).
-  const sp = box.querySelector('.wsp'), st = box.querySelector('.wtb');
-  if(sp){
-    sp.style.height = Math.max(280, box.clientHeight - ((st && st.offsetHeight) || 0) - 10) + 'px';
-    // ⚠the guessed 10px margin can still overflow the box (measured 785 vs 775) — take the leftover back off
-    const over = box.scrollHeight - box.clientHeight;
-    if(over > 0) sp.style.height = Math.max(280, parseFloat(sp.style.height) - over) + 'px';
-  }
+  wtFitSplit(box);
   wtBind(box);
   box.querySelectorAll('.wpn[data-wpn]').forEach(el => {
     const p = +el.getAttribute('data-wpn');
@@ -431,6 +434,7 @@ function wkPinInit(){
   const b = wkBox();
   if(!b || typeof ResizeObserver === 'undefined' || typeof MutationObserver === 'undefined') return;
   const pin = () => { if(wkAtEnd && !wtSplit && b.scrollTop === wkTop){ b.scrollTop = b.scrollHeight; wkTop = b.scrollTop; } };
+  new ResizeObserver(() => { if(wtSplit) wtFitSplit(b); }).observe(b);
   b.addEventListener('scroll', () => { wkTop = b.scrollTop; wkAtEnd = b.scrollHeight - b.scrollTop - b.clientHeight < 40; }, {passive: true});
   new ResizeObserver(pin).observe(b);
   new MutationObserver(pin).observe(b, {childList: true, subtree: true});
