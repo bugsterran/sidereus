@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Structure: a module's «Files» section is folded by default and sits last in the detail panel (after Neighbours and Flows); opened, it is a folder tree (first level, «name/ count», Expand all / Collapse all) and a file click opens it in the Source popup.
 - Server: the idle structure warm-up runs each cell in a short-lived child process that writes only the structure cache, so its memory peak no longer stays in the viewer process (#19).
 
 ### Fixed
