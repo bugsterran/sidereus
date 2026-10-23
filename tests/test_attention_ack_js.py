@@ -60,6 +60,22 @@ class AckJitter(unittest.TestCase):
         self.assertTrue(all(p["shown"] == [] for p in run(polls, {"s1": {"s": "ask", "t": 1000}})))
 
 
+class BlockedSinceMoves(unittest.TestCase):
+    def test_older_or_same_stays_newer_returns(self):
+        ack = {"s1": {"s": "blocked", "t": 470}}
+        for t, shown in ((354, []), (470, []), (472, []), (600, ["s1"])):
+            self.assertEqual(run([row("s1", ("blocked", 90, t))], ack)[0]["shown"], shown, t)
+
+    def test_ack_survives_sibling_churn(self):
+        polls = [[row("s1", ("blocked", 90, t))] for t in (354, 470, 354)]
+        out = run(polls, {"s1": {"s": "blocked", "t": 470}})
+        self.assertTrue(all(p["shown"] == [] for p in out))
+        self.assertEqual(out[-1]["ack"], {"s1": {"s": "blocked", "t": 470}})
+
+    def test_other_kind_still_exact(self):
+        self.assertEqual(run([row("s1", ("ask", 80, 354))], {"s1": {"s": "ask", "t": 470}})[0]["shown"], ["s1"])
+
+
 class BadgeAny(unittest.TestCase):
     def test_stall_plus_toolfail_counts(self):
         out = run([row("s1", ("stall", 55, 1000), ("toolfail", 45, 1000))], {})[0]

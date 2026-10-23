@@ -149,7 +149,10 @@ function attnAckParse(v){
 }
 function attnAckHit(stored, key){
   const a = attnAckParse(stored), b = attnAckParse(key);
-  return !!(a && b && a.s === b.s && Math.abs(a.t - b.t) <= ATTN_ACK_TOL);
+  if(!(a && b && a.s === b.s)) return false;
+  // ⚠blocked since = newest open subagent mark, so it moves back as siblings leave; only a NEWER wait re-shows the row.
+  if(a.s.split(',').includes('blocked')) return b.t <= a.t + ATTN_ACK_TOL;
+  return Math.abs(a.t - b.t) <= ATTN_ACK_TOL;
 }
 // «Done» / row click: ack this one request (row id + its signal key). ⚠Never ack by session alone — a new request must show again.
 function attnDone(id, key){

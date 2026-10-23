@@ -139,7 +139,8 @@ function sbPrimNote(){
 // Colour class keyed on used % (>=70 / >=90 used = <=30 / <=10 left); shared with the status-bar layer (60b).
 function sbPctCls(p){ return p >= 90 ? 'sberr' : p >= 70 ? 'sbwarn' : 'sbok'; }
 let SB_RZ = 0;
-addEventListener('resize', () => { clearTimeout(SB_RZ); SB_RZ = setTimeout(() => buildSbar(), 150); });
+// ⚠One rebuild per frame, not a timeout debounce: buildSbar is ~0.3 ms, and a 150 ms debounce froze the bar's old layout for the whole drag.
+addEventListener('resize', () => { cancelAnimationFrame(SB_RZ); SB_RZ = requestAnimationFrame(() => { SB_RZ = 0; buildSbar(); }); });
 function buildSbar(sv){
   if(sv !== undefined) SBAR_SV = sv;
   const el = document.getElementById('sbar');
