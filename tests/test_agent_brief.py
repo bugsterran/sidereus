@@ -179,6 +179,7 @@ class TestQuotaAcct(Patch):
 
 class TestAttention(Patch):
     def test_labels_only(self):
+        self.patch(ab, "perm_rows", lambda r, n: r)
         self.patch(ab, "cards", lambda n: [])
         self.patch(ab, "quota", lambda: {})
         self.patch(ab, "attention", lambda r, c, q: {"rows": [{"sid": "aaaaaaaa-1", "project": "repo", "branch": "m",
@@ -188,6 +189,40 @@ class TestAttention(Patch):
         # MCP output is English: why is rebuilt from the signal kinds, not the Korean screen label.
         self.assertEqual(out["rows"], [{"sid8": "aaaaaaaa", "project": "repo", "branch": "m", "why": "Asked a question",
                                         "score": 90}])
+
+
+class TestAttentionPermMarks(Patch):
+    def test_perm_marker_blocked_reaches_mcp_attention(self):
+        """brief_attention ranked the raw snapshot without perm_rows, so a marker-only «blocked» (subagent waiting
+        for approval, score 100 on /api/state) never appeared in sidereus_attention. Rows must pass perm_rows first."""
+        import shutil
+        import tempfile
+        from sidereus import perm_marks as LP
+        sid, aid, now = "0123abcd-0000-4000-8000-0123456789ab", "a1b2c3d4e5f6", 1_800_000_000.0
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        with open(os.path.join(tmp, sid + "." + aid + ".json"), "w", encoding="utf-8") as f:
+            json.dump({"sid": sid, "t": now - 10, "k": "req", "aid": aid, "tool": "Bash"}, f)
+        for k, v in (("PERM_DIR", tmp), ("tool_busy", lambda: None), ("_DEC_AT", {}), ("_SUB_LOG", {})):
+            self.patch(LP, k, v)
+        self.patch(ab, "_now", lambda: now)
+        self.patch(ab, "cards", lambda n: [])
+        self.patch(ab, "quota", lambda: {})
+        seen = []
+
+        def fake_attention(rows, c, q):
+            # Stand-in for attention(): one blocked signal per row that carries `blocked` (real ranking reads the clock).
+            seen.extend(rows)
+            return {"rows": [{"sid": r["sid"], "project": r.get("project"), "branch": "", "score": 100,
+                              "sigs": [{"k": "blocked", "why": r["blocked"]}]} for r in rows if r.get("blocked")]}
+        self.patch(ab, "attention", fake_attention)
+        row = {"sid": sid, "project": "proj", "state": "wait", "ageSec": 1, "blocked": "", "tool": "Edit",
+               "task": SECRET, "sub": [{"lab": "x", "min": 3, "idle": 60, "aid": aid, "now": "Read"}]}
+        out = ab.brief_attention(rows=[row])
+        self.assertEqual(seen[0]["blocked"], "subagent waiting for approval")
+        self.assertEqual([(r["sid8"], r["project"], r["score"]) for r in out["rows"]], [("0123abcd", "proj", 100)])
+        self.assertEqual(out["rows"][0]["why"], "Waiting for permission")
+        self.assertNotIn(SECRET, json.dumps(out))
 
 
 class TestRoutes(unittest.TestCase):

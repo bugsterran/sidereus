@@ -54,7 +54,7 @@ class _BQ:
 class _Base(unittest.TestCase):
     def setUp(self):
         self.root = os.path.realpath(tempfile.mkdtemp())
-        with open(os.path.join(self.root, "a.py"), "w") as f:
+        with open(os.path.join(self.root, "a.py"), "w", encoding="utf-8") as f:
             f.write("def f():\n    return 1\n")
         S._struct_out_cache.clear()
         S._struct_warm_seen.clear()
