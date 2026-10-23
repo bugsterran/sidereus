@@ -54,6 +54,8 @@ class WarmDiskOnly(unittest.TestCase):
                 mock.patch.object(S, "_struct_disk_write", lambda k, key, d: self.disk.__setitem__((k, key), d)),
                 mock.patch.object(S, "_struct_warm_targets", lambda: [self.root]),
                 mock.patch.object(S, "_struct_disk_prune", lambda: None),
+                # R1: the warm loop spawns a child; run its body in-process here so nothing real is spawned.
+                mock.patch.object(S, "_struct_warm_spawn", lambda r, t: S._structure_at(r, t, mem=False)),
                 mock.patch.object(S, "STRUCT_WARM_BOOT_S", 0),
                 mock.patch.object(S, "_struct_act", [0.0]),
                 mock.patch.object(S, "time", clock)]

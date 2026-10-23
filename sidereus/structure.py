@@ -3,6 +3,7 @@ import hashlib
 import os
 import re
 import subprocess
+import sys
 import tarfile
 import time
 from sidereus import boot_queue, config
@@ -29,16 +30,20 @@ def structure(path=None, tests=False, full=False, mem=True):
     ★`full` = lifts the per-area cap to `STRUCT_FULL_FNS`. Called only when the screen drills down by clicking a «Show N more»
       bundle cell — lifting it on the full screen means thousands of cells and playback lags.
     `mem=False` = disk cache only (idle warm-up), the memory cache is neither filled nor touched."""
-    tests = _struct_tmode(tests)       # 0 core · 1 all · 2 tests only
-    full = bool(full)
-    maxf = STRUCT_FULL_FNS if full else STRUCT_MAX_FNS
     # ⚠Allow list first, before any walk — a raw realpath let `?path=/` list any dir and scan the whole disk (cross-site <img> too).
     root = _struct_src_root(path)
     if not root:
         return {"ok": False, "msg": "Only projects shown on screen can be opened."}
     if not os.path.isdir(root):
         return {"ok": False, "msg": "Not a directory: {path}", "vars": {"path": path or CODE_DIR}}
+    return _structure_at(root, tests, full, mem)
 
+
+def _structure_at(root, tests, full=False, mem=True):
+    """structure() past the allow-list guard; `root` must already be a vetted realpath directory."""
+    tests = _struct_tmode(tests)       # 0 core · 1 all · 2 tests only
+    full = bool(full)
+    maxf = STRUCT_FULL_FNS if full else STRUCT_MAX_FNS
     gits = _struct_git(root)
     baks = [] if gits else _struct_backups(root)
     key, newest = _struct_key(root, gits, baks, tests, maxf)
@@ -496,6 +501,28 @@ _STRUCT_POLL = ("/api/state", "/api/live", "/api/hookstate", "/api/quota/burn") 
 _struct_act = [0.0]            # last «human» request time
 _struct_warm_seen = {}         # (realpath, tests) -> last warm-up time
 _struct_prune_at = [0.0]
+# Warm cells run in a child so the scan's peak memory is returned to the OS on exit; the parent only reads the disk cache.
+STRUCT_WARM_CHILD_TIMEOUT_S = 180
+_PKG_PARENT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _struct_warm_spawn(root, tests):
+    """Warm one (root, tests) cell in `python -m sidereus.structure_warm` -> True on exit 0. Never raises."""
+    kw = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL,
+          "cwd": _PKG_PARENT, "timeout": STRUCT_WARM_CHILD_TIMEOUT_S}
+    if config.IS_WIN:
+        kw["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+    try:
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit -- list argv, no shell
+        r = subprocess.run([sys.executable, "-m", "sidereus.structure_warm", root, str(tests)], **kw)
+        err = "" if r.returncode == 0 else "exit %s" % r.returncode
+    except subprocess.TimeoutExpired:
+        err = "timeout %ss" % STRUCT_WARM_CHILD_TIMEOUT_S
+    except OSError as e:
+        err = type(e).__name__
+    if err:
+        warn_once("struct-warm-child", "Structure warm-up failed ({err})", soft=True, vars={"err": err})
+    return not err
 
 
 def _struct_warm_targets():
@@ -556,6 +583,6 @@ def _struct_warm_loop():
             # ★Disk only: warm results in the memory cache held ~55 MB live (bound ~126 MB, one repo pair 25.0 + 20.8 MB)
             #   and warm-loop order, not the screen, decided which cells stayed. A later screen request is a disk hit.
             with boot_queue.gate("struct_warm"):   # ⚠first cell waits its boot turn (traps/server.md)
-                structure(*tgt, mem=False)     # ⚠one cell only — idle is rechecked on the next tick
+                _struct_warm_spawn(*tgt)       # ⚠one cell only — idle is rechecked on the next tick
         except Exception as e:
             warn_once("struct-warm", "Structure warm-up failed ({err})", vars={"err": type(e).__name__}, soft=True)
