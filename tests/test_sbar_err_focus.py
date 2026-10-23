@@ -39,6 +39,20 @@ class SbarErrRow(unittest.TestCase):
         self.assertFalse(ok["err"])
         self.assertEqual((ok["l5"], ok["l7"]), ("90%", "80%"))
 
+    def test_err_row_kept_numbers_within_cap(self):
+        js = ("const out = {};\nfor(const age of [40, 1801]){ QLAST.q.accounts[0].age = age;"
+              " out[age] = [sblAccRows(QLAST.q, acctList(), mainAcct()).find(r => r.label === 'bad'), sblHtml(N)]; }\n"
+              "process.stdout.write(JSON.stringify(out));")
+        out = run_js(QUOTA + js)
+        kept, h = out["40"]
+        self.assertFalse(kept["err"])                  # failed refetch, fresh kept data: shown, not «Failed»
+        self.assertEqual((kept["l5"], kept["l7"]), ("78%", "39%"))
+        self.assertIn('data-acct="bad"', h)
+        old, h = out["1801"]
+        self.assertTrue(old["err"])                    # past quota_roots.ROW_KEEP_S: failed again
+        self.assertEqual((old["l5"], old["u5"]), ("—", None))
+        self.assertNotIn('data-acct="bad"', h)
+
     def test_err_row_marked_and_not_switchable(self):
         h = run_js(QUOTA + "process.stdout.write(JSON.stringify(sblHtml(N)));")
         row = [r for r in h.split('<div class="sbl-acc') if ">bad" in r][0]

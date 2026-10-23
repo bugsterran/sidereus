@@ -52,6 +52,7 @@ STORE.mbMainAcct = 'me'; R.prim = snap();
 STORE.mbMainAcct = 'work'; R.work = snap(); R.workMain = mainAcct(); R.side = acctCls('side');
 R.plan = [mainAcctOk('junk'), mainAcctOk('me'), mainAcctOk('side')];
 QLAST.q.accounts[0].err = 'http'; R.err = kq('5h');
+QLAST.q.accounts[0].age = 40; R.errKept = kq('5h'); QLAST.q.accounts[0].age = 1801; R.errOld = kq('5h'); delete QLAST.q.accounts[0].age;
 delete QLAST.q.accounts[0].err; QLAST.q.accounts[0].five_hour = {pct: null}; R.nopct = [kq('5h'), kq('7d')];
 QLAST.q.accounts = [QLAST.q.accounts[1]]; R.norow = kq('5h');
 ACCTS = [{label: 'me', primary: true}]; R.one = [mainAcct(), kq('5h')];
@@ -75,6 +76,8 @@ ACCTS = [{label: 'me', primary: true}]; R.one = [mainAcct(), kq('5h')];
 
     def test_fallback_flag(self):
         self.assertEqual(self.R["err"], [10, "work", True])
+        self.assertEqual(self.R["errKept"], [33, "work", False])   # failed refetch: kept fresh numbers still show
+        self.assertEqual(self.R["errOld"], [10, "work", True])     # kept past quota_roots.ROW_KEEP_S = unmeasured
         self.assertEqual(self.R["nopct"], [[10, "work", True], [44, "work", False]])
         self.assertEqual(self.R["norow"], [10, "work", True])
 
@@ -131,6 +134,7 @@ BURNM_DIR = '/w'; BURNM = {ok: true, at: 1, cur: {now_pct: 33, rate_pph: 10}, pr
 BURNM = {ok: true, at: 1, est: {low: true}, cur: {now_pct: 33, used_acct: 777}, wk: {now_pct: 44, used_acct: 8888}, proj: {pct: 60}};
 R.b4 = bar(); R.t4 = HTML; BURNM = null;
 QLAST.q.accounts[0].err = 'http'; R.b2 = bar();
+QLAST.q.accounts[0].age = 40; R.b2k = bar(); QLAST.q.accounts[0].age = 1801; R.b2o = bar();
 """
 
 
@@ -172,6 +176,9 @@ class StatusBarFollowsMain(unittest.TestCase):
         b = self.R["b2"]
         self.assertIn(">90%</b>", b[0])
         self.assertIn("Main account quota unknown", b[0])
+        k = self.R["b2k"]   # failed refetch with fresh kept data: main's own window, no fallback note
+        self.assertIn(">67%</b>", k[0]); self.assertNotIn("Main account quota unknown", k[0])
+        self.assertEqual(self.R["b2o"][0], b[0])   # kept past quota_roots.ROW_KEEP_S: same fallback as no data
 
 
 

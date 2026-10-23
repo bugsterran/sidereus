@@ -11,7 +11,7 @@ from sidereus.usage import _anchors
 from sidereus.timeline import _tok_events
 from sidereus.usage_index import acct_tokens
 from sidereus.quota import QUOTA_LOG, _cc_account, quota, quota_calibrating
-from sidereus.quota_roots import _conf_path, quota_accounts, ring_last
+from sidereus.quota_roots import _conf_path, quota_accounts, ring_last, row_usable
 from sidereus import boot_queue, claude_roots, ui_prefs
 # Pure math owned by burn_calc; the ones only tests read are re-exported too.
 from sidereus.burn_calc import (  # noqa: F401
@@ -207,7 +207,7 @@ def _qb_acct_body(label, now):
     row = next((r for r in quota_accounts() if r.get("label") == label), None)
     fh = (row or {}).get("five_hour") or {}
     pct, left = fh.get("pct"), fh.get("leftSec")
-    if not row or row.get("err") or not _qb_num(pct) or not _qb_num(left) or left <= 0:
+    if not row_usable(row) or not _qb_num(pct) or not _qb_num(left) or left <= 0:
         return {"ok": False, "why": "not measured"}
     pct = float(pct)
     pts = [(float(p[0]), float(p[1])) for p in fh.get("pts") or []]

@@ -121,11 +121,21 @@ class BurnAcct(unittest.TestCase):
             self.assertIsNone(c["cur"]["rate_pph"])
 
     def test_errored_or_missing_row(self):
-        self.rows([row(err="HTTPError 429")])
+        old = dict(row(err="HTTPError 429"), age=sidereus("quota_roots").ROW_KEEP_S + 1)     # kept data past the cap = unmeasured
+        self.rows([old])
+        self.assertEqual(bu.quota_burn_acct("work"), {"ok": False, "why": "not measured"})
+        bu._qb_acct.clear()
+        self.rows([{"label": "work", "age": None, "err": "HTTPError 429"}])   # error and no data
         self.assertEqual(bu.quota_burn_acct("work"), {"ok": False, "why": "not measured"})
         bu._qb_acct.clear()
         self.rows([])
         self.assertEqual(bu.quota_burn_acct("work"), {"ok": False, "why": "not measured"})
+
+    def test_failed_refetch_keeps_fresh_data(self):
+        self.rows([row(err="HTTPError 429")])                               # age 5: the kept numbers still show
+        c = bu.quota_burn_acct("work")
+        self.assertTrue(c["ok"])
+        self.assertEqual((c["cur"]["now_pct"], c["cur"]["age"]), (30.0, 5))
 
     def test_est_from_own_plan_row(self):
         bh = sidereus("burn_hist")
