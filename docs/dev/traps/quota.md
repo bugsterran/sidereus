@@ -19,11 +19,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Per-account snapshot: `.saver-view-<tag>.json` next to `SAVER_VIEW`, `tag = hashlib.sha1(os.path.realpath(dir).encode()).hexdigest()[:10]`; `/api/state.saverViews` = {label: view}, only with 2+ accounts.
   - ⚠The hook must compute the same tag formula (realpath, sha1, first 10 hex) — change both or neither.
   - ⚠Bodies carry the label only, never dir/email/uuid.
-- **Modal burndown and saver cap follow the account in use** (`burn.burn_use` · `routes_get._g_quota_burn` `use`/`cap` · `55b burnUse`).
+- **Modal burndown and saver cap follow the account in use** (`burn.burn_use` · `routes_usage._g_quota_burn` `use`/`cap` · `55b burnUse`).
   - Cause: both read the primary only, so after the primary's reset the modal showed the idle note and `cap.avail_tpm` was None while work ran on another account.
   - Fix: one helper picks the account — explicit non-primary «Main account» (ui-prefs `mbMainAcct`) > newest 5h step inside a live window (`quota-log` vs `quota_roots.ring_last`) > primary (tie/none). Every body gets `use`; `cap` is computed from that account's body whichever `?dir=` was asked. A non-primary body has no back-solve, so `cap` uses min(`est.h5_left`, `est.wk_left`) and stays `conf: low`.
   - ⚠Do not add `start`/`reset`/`elapsed` to the `?dir=` body: `svLive` would start deriving rates from it. The page derives them in `burnAcctCur`.
-- **MCP quota for a non-primary account** (`GET /api/agent/quota?dir=` · `routes_get._acct_of_dir` · `agent_brief.brief_quota(acct=)`).
+- **MCP quota for a non-primary account** (`GET /api/agent/quota?dir=` · `routes_usage._acct_of_dir` · `agent_brief.brief_quota(acct=)`).
   - Cause: `brief_quota()` read only the primary's `quota()`/`quota_burn()`/`_saver_view()`, so `sidereus_quota` reported the primary account to every session.
   - Fix: `?dir=` (the session's config dir) is realpath-matched like `/api/quota/burn`; non-primary reads its `quota_accounts()` row + `quota_burn_acct` + `_saver_views()[label]`. Output names the account in `acct` (label).
   - ⚠Unknown dir = `{ok:false, err:"unknown account"}`, an unmeasured extra = `ok:false, err:"not measured"` — never the primary's numbers. `used5Tok` is None for non-primary.

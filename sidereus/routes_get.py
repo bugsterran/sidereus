@@ -2,12 +2,8 @@
 Methods use `self._send`/`self._raw_json` from Handler."""
 import gzip
 import json
-import os
-import time
 from urllib.parse import parse_qs
 
-from sidereus.usage import LIVE_SEC, LIVE_STEP
-from sidereus.otel import _otel, _otel_lock, _otel_sample, _otel_stat, _otel_src_cmp, _otel_src_win
 from sidereus.cards import cards
 from sidereus.bus import MSG_RANGE_DEFAULT, messages_range
 from sidereus.ext import ext_work
@@ -15,7 +11,6 @@ from sidereus.timeline import TL_HOURS, agents_timeline
 from sidereus.failures import FAIL_HOURS, failures, wreckage
 from sidereus.work import agent_work, session_work
 from sidereus.peer import peer_ok
-from sidereus.git import BRANCH_N_DEF, _branch_ok, branch_graph, git_commit, git_diff, git_file_diff, wt_files
 from sidereus.history import history, history_units
 from sidereus.recent import recent_sessions
 from sidereus.ctxsrc import session_context
@@ -29,16 +24,14 @@ from sidereus.pl_eval_view import pl_eval as pipeline_eval
 from sidereus.harness_plat import harness_evidence_only, harness_plat, harness_plat_file
 from sidereus.hook_diag import diag as hook_diag
 from sidereus.sec_tools import tools as sec_tools
-from sidereus.burn import WK_DAYS, _WK_RANGES, _live_buckets, _wk_slot, _wkuse_busy, burn_use, quota_burn, quota_burn_acct, quota_burn_peek, wk_stale, wkuse, wkuse_refresh
 from sidereus.claude_roots import accounts as claude_accounts
-from sidereus.saver_cap import cap as saver_cap
 from sidereus.warn import warn_once
 from sidereus.routes_struct import _StructRoutes, _q1, _exc_err, _exc_msg
-from sidereus.file_owner import wt_owners
+from sidereus.routes_git import _GitRoutes
+from sidereus.routes_usage import _UsageRoutes, _agent_quota
 from sidereus.retro import retro
 from sidereus.review import review_files
-from sidereus.commit_link import commit_links
-from sidereus.agent_brief import brief_attention, brief_file, brief_peers, brief_quota
+from sidereus.agent_brief import brief_attention, brief_file, brief_peers
 from sidereus.page import BUILD_TIME, PAGE, PAGE_BUILD, PWA_FILES, pwa_reply
 from sidereus.state import _state_body
 from sidereus.state_v1 import build as state_v1
@@ -95,26 +88,7 @@ def _page_reply(if_none_match, accept_encoding):
     return 200, hdr, body
 
 
-def _acct_of_dir(d):
-    """Account row whose config dir realpath-matches `d`, else None. The path itself is never opened."""
-    try:   # ⚠a NUL byte makes realpath raise ValueError on 3.9
-        rp = os.path.realpath(os.path.expanduser(d))
-        return next((r for r in claude_accounts() if r.get("dir") and os.path.realpath(r["dir"]) == rp), None)
-    except ValueError:
-        return None
-
-
-def _agent_quota(d):
-    """`/api/agent/quota[?dir=]` — the calling session's account; an unknown dir never gets the primary's numbers."""
-    if not d:
-        return brief_quota()
-    hit = _acct_of_dir(d)
-    if not hit:
-        return {"ok": False, "err": "unknown account"}
-    return brief_quota(acct=hit.get("label"))
-
-
-class _GetRoutes(_StructRoutes):
+class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
     def _g_page(self, u):
         # ★`/diff` serves **the same document** (a separate window that boots in popup mode, ISPOP); manifest/icon paths get fixed bytes.
         code, hdr, body = pwa_reply(u.path) if u.path in PWA_FILES else \
@@ -130,86 +104,6 @@ class _GetRoutes(_StructRoutes):
         except (ConnectionResetError, BrokenPipeError):
             pass                        # same quiet disconnect as `_send`
 
-    def _g_branches(self, u):
-        # ★Branch graph raw data (2026-09-23). ⚠Do not attach to polling — called only when the screen clicks.
-        #   Path confinement is `_branch_ok()` — only repos the screen knows (session cwd + touched repos) open.
-        q = parse_qs(u.query)
-        cwd = _q1(q, "cwd")
-        code = 200
-        if not cwd or not os.path.isdir(cwd):
-            code, out = 400, {"ok": False, "err": "cwd required"}
-        elif not _branch_ok(cwd):
-            code, out = 403, {"ok": False, "err": "not allowed"}
-        else:
-            try:
-                out = branch_graph(cwd, (q.get("n") or [str(BRANCH_N_DEF)])[0])
-            except Exception as e:
-                out = {"ok": False, "err": _exc_err(e)}
-        self._raw_json(code, out)
-
-    def _g_wtfiles(self, u):
-        # Branches tab work unit: one worktree's uncommitted files (click-only). Validation lives in wt_files().
-        q = parse_qs(u.query)
-        try:
-            code, out = wt_files(_q1(q, "cwd"))
-        except Exception as e:
-            code, out = 500, {"ok": False, "err": _exc_err(e)}
-        self._raw_json(code, out)
-
-    def _g_owners(self, u):
-        # Branches tab work unit: which sessions edited each uncommitted file (metadata only). Validation lives in wt_files().
-        q = parse_qs(u.query)
-        try:
-            code, out = wt_owners(_q1(q, "cwd"))
-        except Exception as e:
-            code, out = 500, {"ok": False, "err": _exc_err(e)}
-        self._raw_json(code, out)
-
-    def _g_commit(self, u):
-        # Branches tab commit details (read-only, click-only). Validation lives in git_commit().
-        q = parse_qs(u.query)
-        try:
-            code, out = git_commit(_q1(q, "repo"), _q1(q, "sha"),
-                                   _q1(q, "path"))
-        except Exception as e:
-            code, out = 500, {"ok": False, "err": _exc_err(e)}
-        self._raw_json(code, out)
-
-    def _g_git_links(self, u):
-        # Branch tab, after the graph paints: commit -> session/agent/cost (metadata only, sidereus/commit_link.py).
-        q = parse_qs(u.query)
-        try:
-            code, out = commit_links(_q1(q, "repo"), _q1(q, "shas"))
-        except Exception as e:
-            code, out = 500, {"ok": False, "err": _exc_err(e)}
-        self._raw_json(code, out)
-
-    def _g_otel(self, u):
-        # Diagnostic — which sessions are sending telemetry (if absent, that session started without the env)
-        q = parse_qs(u.query)
-        try:
-            h = min(192, max(1, int((q.get("h") or ["5"])[0])))
-        except ValueError:
-            h = 5
-        if _q1(q, "cmp") == "1":
-            return self._send(200, json.dumps(_otel_src_cmp(h), ensure_ascii=False, indent=1),
-                              "application/json; charset=utf-8")
-        with _otel_lock:
-            snap = {k: {"ev": v.get("ev"), "tool": v.get("tool"), "tokens": v.get("tokens"),
-                        "ago": int(time.time() - (v.get("at") or 0)), "seq": v.get("seq")}
-                    for k, v in _otel.items()}
-        snap["_sample_api_request"] = dict(_otel_sample)
-        with _otel_lock:
-            # ⚠Copy nested dicts under the lock — ingest mutates bySrc/names while json.dumps runs outside it.
-            st = {k: (dict(v) if isinstance(v, dict) else v) for k, v in _otel_stat.items()}
-        now2 = time.time()
-        st["postAgo"] = int(now2 - st["lastPost"]) if st["lastPost"] else None
-        st["keptAgo"] = int(now2 - st["lastKept"]) if st["lastKept"] else None
-        st["bySrcWin"] = _otel_src_win(h)     # persisted 5-min buckets — survives restarts (bySrc does not)
-        snap["_stat"] = st
-        return self._send(200, json.dumps(snap, ensure_ascii=False, indent=1),
-                          "application/json; charset=utf-8")
-
     def _g_agent_work(self, u):
         if not peer_ok(self.client_address):   # work logs carry transcript text: same-UID client only (macOS)
             return self._send(403, "forbidden", "text/plain; charset=utf-8")
@@ -219,77 +113,6 @@ class _GetRoutes(_StructRoutes):
                              _q1(q, "sid"))   # sid: parent session, for finished sessions (history tab)
         except Exception as e:
             out = {"ok": False, "msg": "Failed ({err})", "vars": {"err": f"{type(e).__name__}: {e}"}}
-        self._raw_json(200, out)
-
-    def _g_live(self, u):
-        # ★Live-only lightweight endpoint (2026-09-04: live must move in real time).
-        #   `/api/wkuse` carries today's per-project totals, donut and burn, tied to a 30s cycle.
-        #   This is served separately so only the live sparkline can be fetched every 3s — the computation is a single bucket fold.
-        body = json.dumps({"live": _live_buckets(), "liveSec": LIVE_SEC,
-                           "liveStep": LIVE_STEP, "at": int(time.time())},
-                          ensure_ascii=False).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def _g_quota_burn(self, u):
-        # ★Limit burndown — current 5h cycle consumption curve + extrapolation to reset + past-cycle baseline.
-        #   Light (TTL 30s cache + incremental tail read) — the screen calls it piggybacked on token-area polling.
-        # `?dir=` picks the account by config dir (realpath match only); the path itself is never opened.
-        _d = (parse_qs(u.query).get("dir") or [""])[0]
-        lab = None
-        if _d:
-            hit = _acct_of_dir(_d)
-            if not hit:
-                self._raw_json(400, {"ok": False})
-                return
-            lab = None if hit.get("primary") else hit["label"]
-        try:
-            out = quota_burn() if lab is None else quota_burn_acct(lab)
-        except Exception as e:
-            out = {"ok": False, "why": f"{type(e).__name__}: {e}"}
-        try:   # `use` = account in use (burn_use); the cap reads that account's body whichever was asked
-            use = burn_use()
-            out = dict(out, use=use)   # ⚠copy — `out` may be the cached body
-            ub = out if lab == (None if use["primary"] else use["label"]) else None
-        except Exception as e:
-            use, ub = None, out
-            warn_once("burn-use", "account-in-use pick failed ({err}) — cap from the asked account", soft=True,
-                      vars={"err": type(e).__name__})
-        try:   # concurrency cap for the saver hook
-            if ub is None:
-                # ⚠cache only for the primary: a cold quota_burn() scan (636 ms warm disk, 6-20 s after reboot) vs the hook's 3 s timeout
-                ub = (quota_burn_peek() or out) if use["primary"] else quota_burn_acct(use["label"])
-            out = dict(out, cap=saver_cap(time.time(), ub))
-        except Exception as e:
-            warn_once("saver-cap", "concurrency cap failed ({err}) — responding without cap", soft=True,
-                      vars={"err": type(e).__name__})
-        self._raw_json(200, out)
-
-    def _g_wkuse(self, u):
-        _q = parse_qs(u.query)
-        # ★Period (days). Unknown values fall back to default — accepting arbitrary large values makes ccusage run for minutes.
-        try:
-            _rg = int((_q.get("range") or [WK_DAYS])[0])
-        except ValueError:
-            _rg = WK_DAYS
-        if _rg not in _WK_RANGES:
-            _rg = WK_DAYS
-        # Account pick: only a known label (it keys a slot); anything else = all accounts.
-        _ac = _q1(_q, "acct") or ""
-        if _ac not in {a.get("label") for a in claude_accounts()}:
-            _ac = ""
-        # If that period was never measured, fire now (do not await — ccusage takes over 30s)
-        if _ac:
-            if _q1(_q, "force") == "1" or wk_stale(_rg, _ac):   # ⚠per-account slots are not in _wkuse_loop
-                wkuse_refresh(_rg, _ac)
-        elif _q1(_q, "force") == "1" or not (_wk_slot(_rg).get("at") or 0):
-            wkuse_refresh(_rg)                    # Fire in background and return the current value right away
-        out = wkuse(_rg, _ac) if _ac else wkuse(_rg)
-        out["busy"] = _wkuse_busy[0]
         self._raw_json(200, out)
 
     def _g_retro(self, u):
@@ -493,28 +316,6 @@ class _GetRoutes(_StructRoutes):
             out = {"ok": False, "msg": "Failed ({err})", "vars": {"err": f"{type(e).__name__}: {e}"}}
         self._raw_json(200, out)
 
-    def _g_git_file(self, u):
-        q = parse_qs(u.query)
-        try:
-            out = git_file_diff(_q1(q, "cwd"), _q1(q, "path"),
-                                (q.get("scope") or ["all"])[0])
-        except Exception as e:
-            out = {"ok": False, "msg": "Failed ({err})", "vars": {"err": f"{type(e).__name__}: {e}"}}
-        self._raw_json(200, out)
-
-    def _g_git_diff(self, u):
-        # ★Do not import inside the function — the name becomes a local for the whole function,
-        #   and parse_qs in /api/state died with UnboundLocalError (measured 2026-08-25).
-        q = parse_qs(u.query)
-        cwd = _q1(q, "cwd")
-        try:
-            out = git_diff(cwd, (q.get("scope") or ["all"])[0],
-                           (q.get("pw") or ["today"])[0], _q1(q, "view") or "", _q1(q, "new") or "",
-                           _q1(q, "sid") or "", _q1(q, "base") or "", "1" if _q1(q, "untr") == "1" else "")
-        except Exception as e:
-            out = {"ok": False, "msg": "Failed ({err})", "vars": {"err": f"{type(e).__name__}: {e}"}}
-        self._raw_json(200, out)
-
     def _g_agent_brief(self, u):
         # Read-only briefs for the `sidereus` MCP server (mcp/sidereus_mcp.py). Metadata only — built in sidereus/agent_brief.py.
         q = parse_qs(u.query)
@@ -600,20 +401,20 @@ class _GetRoutes(_StructRoutes):
     # ⚠Exact paths only (no prefixes). A path missing here is a 404 (GET: text, POST: JSON) — same as the old if-chain.
     _GET_ROUTES = {
         "/": _g_page, "/diff": _g_page, "/work": _g_page, "/brdiff": _g_page, **dict.fromkeys(PWA_FILES, _g_page),   # /work, /brdiff: work-log and branch file-diff popups; PWA_FILES: app manifest + icons
-        "/api/branches": _g_branches, "/api/git/wtfiles": _g_wtfiles, "/api/git/owners": _g_owners,
-        "/api/git/commit": _g_commit, "/api/git/links": _g_git_links,
-        "/api/otel": _g_otel, "/api/agent/work": _g_agent_work, "/api/live": _g_live,
-        "/api/quota/burn": _g_quota_burn, "/api/structure/src": _StructRoutes._g_structure_src,
+        "/api/branches": _GitRoutes._g_branches, "/api/git/wtfiles": _GitRoutes._g_wtfiles, "/api/git/owners": _GitRoutes._g_owners,
+        "/api/git/commit": _GitRoutes._g_commit, "/api/git/links": _GitRoutes._g_git_links,
+        "/api/otel": _UsageRoutes._g_otel, "/api/agent/work": _g_agent_work, "/api/live": _UsageRoutes._g_live,
+        "/api/quota/burn": _UsageRoutes._g_quota_burn, "/api/structure/src": _StructRoutes._g_structure_src,
         "/api/structure/pair": _StructRoutes._g_structure_pair, "/api/structure": _StructRoutes._g_structure,
         "/api/structure/tree": _StructRoutes._g_structure_tree,
-        "/api/structure/file": _StructRoutes._g_structure_file, "/api/structure/img": _StructRoutes._g_structure_img, "/api/arch": _StructRoutes._g_arch, "/api/arch/files": _StructRoutes._g_arch_files, "/api/arch/secreport": _StructRoutes._g_arch_secreport, "/api/wkuse": _g_wkuse,
+        "/api/structure/file": _StructRoutes._g_structure_file, "/api/structure/img": _StructRoutes._g_structure_img, "/api/arch": _StructRoutes._g_arch, "/api/arch/files": _StructRoutes._g_arch_files, "/api/arch/secreport": _StructRoutes._g_arch_secreport, "/api/wkuse": _UsageRoutes._g_wkuse,
         "/api/retro": _g_retro, "/api/review": _g_review, "/api/history": _g_history, "/api/history/units": _g_history_units,
         "/api/sessions/recent": _g_sessions_recent, "/api/prefs": _g_prefs, "/api/ui-prefs.js": _g_ui_prefs, "/api/ui-prefs": _g_ui_prefs,
         "/api/session/context": _g_session_context,
         "/api/tools": _g_tools, "/api/tools/file": _g_tools_file,
         "/api/pipelines": _g_pipelines, "/api/pipelines/projects/dirs": _g_pipeline_dirs, "/api/pipelines/eval": _g_pipeline_eval, "/api/harness": _g_harness, "/api/harness/file": _g_harness_file, "/api/harness/evidence": _g_harness_evidence, "/api/diag": _g_diag, "/api/sec-tools": _g_sec_tools,
         "/api/agents/timeline": _g_timeline, "/api/failures": _g_failures, "/api/wreckage": _g_failures,
-        "/api/session/work": _g_session_work, "/api/ext/work": _g_ext_work, "/api/git/file": _g_git_file, "/api/git/diff": _g_git_diff,
+        "/api/session/work": _g_session_work, "/api/ext/work": _g_ext_work, "/api/git/file": _GitRoutes._g_git_file, "/api/git/diff": _GitRoutes._g_git_diff,
         "/api/cards": _g_cards, "/api/messages": _g_messages, "/api/state": _g_state, "/api/v1/state": _g_state_v1, "/api/hookstate": _g_hookstate,
         "/api/agent/quota": _g_agent_brief, "/api/agent/peers": _g_agent_brief,
         "/api/agent/file": _g_agent_brief, "/api/agent/attention": _g_agent_brief,

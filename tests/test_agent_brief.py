@@ -233,18 +233,18 @@ class TestRoutes(unittest.TestCase):
             self.assertIn(p, r)
 
     def test_quota_dir_resolves_account(self):
-        rg = sidereus("routes_get")
+        ru = sidereus("routes_usage")
         seen = []
         for name, val in (("claude_accounts", lambda: [{"label": "main", "dir": "/c/main", "primary": True},
                                                        {"label": "work", "dir": "/c/work", "primary": False}]),
                           ("brief_quota", lambda acct=None: seen.append(acct) or {"ok": True, "acct": acct})):
-            old = getattr(rg, name)
-            setattr(rg, name, val)
-            self.addCleanup(setattr, rg, name, old)
-        self.assertEqual(rg._agent_quota("/c/work")["acct"], "work")
-        self.assertEqual(rg._agent_quota(""), {"ok": True, "acct": None})
+            old = getattr(ru, name)
+            setattr(ru, name, val)
+            self.addCleanup(setattr, ru, name, old)
+        self.assertEqual(ru._agent_quota("/c/work")["acct"], "work")
+        self.assertEqual(ru._agent_quota(""), {"ok": True, "acct": None})
         for bad in ("/c/nope", "/c/\x00work"):
-            self.assertEqual(rg._agent_quota(bad), {"ok": False, "err": "unknown account"})
+            self.assertEqual(ru._agent_quota(bad), {"ok": False, "err": "unknown account"})
         self.assertEqual(seen, ["work", None])
 
 

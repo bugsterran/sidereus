@@ -43,7 +43,7 @@ flowchart LR
 ## 서버
 
 `chat_server.py` 에는 `Handler` 핵심부(gzip 을 하는 `_send`, 가드, 경로 일치 분기)와 `main()` 만 있다.
-라우트는 `sidereus/routes_get.py`(`_GET_ROUTES`, 경로 55개쯤, 그중 페이지 4개), `routes_struct.py`,
+라우트는 `sidereus/routes_get.py`(`_GET_ROUTES`, 경로 55개쯤, 그중 페이지 4개), `routes_struct.py`, `routes_git.py`, `routes_usage.py`,
 `routes_post.py`(`_POST_ROUTES`, 30개쯤)에 있다. 모르는 경로는 404 다.
 
 가드: `_host_ok`(DNS 리바인딩), `_origin_ok`(다른 출처 POST. OTel 과 `/api/hook` 은 건너뜀),
