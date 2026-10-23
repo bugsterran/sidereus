@@ -143,6 +143,14 @@ class Model(unittest.TestCase):
         done = dict(PR, end=N - 5, stages={"설계": PR["stages"]["설계"]})
         self.assertEqual(_js("plPrLv('s', %s, %s, 0).run" % (json.dumps(done), json.dumps(ST4)), *MODEL)["end"], N - 5)
 
+    def test_empty_agent_list_beats_dispatch_count(self):
+        st = {"o": "done", "n": 4, "t0": N - 100, "t1": N - 50, "from": {}}
+        self.assertEqual(self._lt({"stages": {"설계": dict(st, ag=[])}})["설계"]["n"], 0)   # [] sent: no agents, not «Agents 4»
+        self.assertEqual(self._lt({"stages": {"설계": st}})["설계"]["n"], 4)                # no ag key: dispatch count is the fallback
+        pr = {"t0": N - 100, "stages": {"설계": dict(st, ag=[]), "구현": dict(st, ag=[_pag("a1", False, N - 90, N - 60)])}}
+        self.assertEqual(_js("plPrLv('s', %s, %s, 0).run.total" % (json.dumps(pr), json.dumps(ST4)), *MODEL), 1)
+        self.assertEqual(_js("plPrLv('s', %s, %s, 0).run.total" % (json.dumps({"stages": {"설계": st, "구현": st}}), json.dumps(ST4)), *MODEL), 8)
+
     def test_node_pick_with_several_agents(self):
         fns = ("plStageAgents", "subWorkId") + MODEL
         js = "(() => { const lt = plPrLt(%s, %s, %d); return [plStageAgents(lt, '구현', %d), plStageAgents(lt, '설계', %d), plStageAgents(lt, '검증', 0), plStageAgents(lt, '리뷰', 0)]; })()" % (

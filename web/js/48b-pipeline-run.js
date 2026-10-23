@@ -151,7 +151,8 @@ function plPrLt(pr, stages, now){
     }
     const ag = Array.isArray(v.ag) ? v.ag : [], run = v.o === 'run';
     const end = run ? now / 1000 : v.t1 || v.t0 || 0;   // ⚠sec = latest pass (p0); tot = since the first start (t0)
-    out[s.title] = { st: v.o, why: plWhy(v), main: !!v.main, n: ag.length || v.n || 0, sec: Math.max(0, Math.round(end - (v.p0 || v.t0 || 0))),
+    // ⚠An ag key (even []) is the agent list; v.n counts dispatches incl. resumes and is only a fallback when no list was sent.
+    out[s.title] = { st: v.o, why: plWhy(v), main: !!v.main, n: Array.isArray(v.ag) ? ag.length : (v.n || 0), sec: Math.max(0, Math.round(end - (v.p0 || v.t0 || 0))),
       tot: Math.max(0, Math.round(end - (v.t0 || 0))), k: v.k || 1, p0: v.p0 || 0, retry: 0, w0: v.t0 || 0, w1: end,   // w0..w1 = stage window (s) for matching gate evidence
       from: v.from || {}, via: typeof v.via === 'string' ? v.via : '', ag, labs: plAgLabs(ag), ps: plPsOk(v.ps),
       cm: Array.isArray(v.cm) ? v.cm.filter(c => typeof c === 'number').slice(-4) : [] };   // commit times (s) in this stage
@@ -176,8 +177,9 @@ function plPass(L, i){
 function plPrLv(sid, pr, stages, now){
   const S = pr.stages || {}, ts = Object.keys(S), runT = ts.filter(t => S[t] && S[t].o === 'run'), ids = new Set();
   ts.forEach(t => ((S[t] && S[t].ag) || []).forEach(a => ids.add(a.aid || a.tid)));
+  const hasAg = ts.some(t => S[t] && Array.isArray(S[t].ag));   // agent lists sent: count them, not the dispatch counts
   return { sid, pr, lt: plPrLt(pr, stages, now), run: { run: runT.length > 0, phase: runT.join(', '), fail: ts.filter(t => S[t].o === 'fail').length,
-    total: ids.size || ts.reduce((a, t) => a + ((S[t] && S[t].n) || 0), 0), start: pr.t0 || 0, end: runT.length ? 0 : (pr.end || pr.t1 || 0) } };
+    total: hasAg ? ids.size : ts.reduce((a, t) => a + ((S[t] && S[t].n) || 0), 0), start: pr.t0 || 0, end: runT.length ? 0 : (pr.end || pr.t1 || 0) } };
 }
 // Direct-mode tag. ⚠The label is "<agentType>: <description ≤40 chars>" — keep pipeline names short so the prefix survives.
 const PL_DESC_RE = /\[pl:([a-z0-9-]{1,40})\/([^\]\n]{1,80})\]/;
