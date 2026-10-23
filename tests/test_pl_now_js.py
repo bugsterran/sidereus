@@ -295,6 +295,7 @@ class PlNow(unittest.TestCase):
     def test_r3_start_buttons_first(self):
         h = run(_const("PL_TPLS", "48e-pipeline-new.js") + "\n"
                 + "\n".join(js_fn(n) for n in ("plNewDis", "plStartBtns", "plTplPick"))
+                + "\nPLS.proj = '/p'; function plSessions(){ return [{login: true}]; }"
                 + "\nconsole.log(JSON.stringify(plTplPick()));")
         btns = re.findall(r"<button[^>]*>", h)
         self.assertIn("data-pldnew", btns[0])

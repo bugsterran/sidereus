@@ -1,4 +1,4 @@
-"""«AI 에게 초안 요청» progress strip (web/js/48e-pipeline-new.js): pure step logic + HTML, run under node."""
+"""«Ask AI for a draft» progress strip (web/js/48e-pipeline-new.js): pure step logic + HTML, run under node."""
 import json
 import subprocess
 import unittest

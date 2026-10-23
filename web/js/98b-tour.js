@@ -64,7 +64,7 @@ function tourCmdHtml(cmds){
 // Bubble body for one plan entry {id, mode, demo}; dir = Sidereus code folder (state.codeDir) for the plugin line.
 function tourBody(p, dir){
   const P = s => '<p>' + esc(T(s)) + '</p>';
-  const demo = ['python3 -m sidereus start --demo --open'];
+  const demo = [demoCmd(dir) + ' --open'];
   if(p.id === 'time' && p.demo) return {t: 'Try the demo', cmds: demo,
     h: P('AI coding-agent sessions on this computer gather here automatically') + P('No sessions yet — start the demo from a terminal to look around.')};
   if(p.id === 'time') return {t: 'Timeline', h: P('AI coding-agent sessions on this computer gather here automatically')
