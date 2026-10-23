@@ -110,7 +110,11 @@ class AgentFrontmatter(_Base):
         self.w(os.path.join(self.proj, ".claude", "agents", "good-name.md"), "")
         got = pl._agents(self.proj)
         # project wins on the same name; the user file is keyed by its frontmatter name; odd file names skipped
-        self.assertEqual(got, [{"name": "good-name", "scope": "project"}, {"name": "reviewer", "scope": "user"}])
+        self.assertEqual([{"name": r["name"], "scope": r["scope"]} for r in got],
+                         [{"name": "good-name", "scope": "project"}, {"name": "reviewer", "scope": "user"}])
+        # desc only when the frontmatter has one (the empty project file has none)
+        self.assertNotIn("desc", got[0])
+        self.assertTrue(got[1].get("desc"))
 
 
 class SkillFrontmatter(_Base):

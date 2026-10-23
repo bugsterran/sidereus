@@ -30,7 +30,7 @@ def _listener():
 
 
 def run(body):
-    fns = "\n".join(js_fn(f) for f in ("plFlagChips", "plNodeHtml", "plHitA"))
+    fns = "\n".join(js_fn(f) for f in ("plFlagChips", "plAgDesc", "plNodeHtml", "plHitA"))
     code = STUBS + fns + "\n" + body
     out = subprocess.run(node_e(code), capture_output=True, text=True, check=True, encoding="utf-8").stdout
     return json.loads(out)

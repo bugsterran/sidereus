@@ -91,7 +91,7 @@ class PlMode(unittest.TestCase):
         self.assertEqual(r, [True, 2, False, 1])
 
     def test_r5_watch_pane_evidence_agents_metadata_only(self):
-        fns = ["plWatchPane", "plStageRows", "plStageAgents", "plLabParts", "plLabDesc", "plLabTip", "plStrip", "plgNode"]
+        fns = ["plWatchPane", "plAgDesc", "plStageRows", "plStageAgents", "plLabParts", "plLabDesc", "plLabTip", "plStrip", "plgNode"]
         h = run(MODE + _const("PL_DESC_RE", "web/js/48b-pipeline-run.js") + "\n" + _const("PL_MK", "web/js/48b-pipeline-run.js") + "\n"
                 + "\n".join(js_fn(n) for n in fns)
                 + "\nfunction plOc(s){ return 'OC-' + s; } function ago(s){ return s + 's'; } function plgShow(t){ return t; } function plAgLab(a){ return a.lab; }"
@@ -112,7 +112,7 @@ class PlMode(unittest.TestCase):
         self.assertIn('data-plwsid="s1" data-plwtid="t1"', pane)
         self.assertNotIn("SECRET-TARG", pane)
         self.assertNotIn("SECRET-PROMPT", pane)
-        self.assertNotIn("SECRET-DESC", re.sub(r'title="[^"]*"', "", pane))  # description only in title=
+        self.assertIn("impl<span class=plwad>SECRET-DESC</span>", pane)     # one-line task label beside the type (metadata)
         self.assertIn("Click a stage to see its result", none)
         s = _src("web/js/48k-pipeline-mode.js")
         self.assertIn("plOpenWork(t.dataset.plwsid, t.dataset.plwtid)", s)

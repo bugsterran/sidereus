@@ -61,9 +61,11 @@ function plWatchPane(E, d, lv, lt){
   const ev = L ? plEvLine(plEvRows(PLS.proj), L, plEvCommits(PLS.proj)) : '';
   const gate = '<div class=plwg><span>' + esc(T('Gate')) + '</span>' + (n.gate ? '<code>' + esc(n.gate) + '</code>' : '<i>' + esc(T('No gate command — nothing machine-checks this stage')) + '</i>') + '</div>';
   const ags = lv && lv.sid && lt ? plStageAgents(lt, n.title, Date.now()) : [];
-  const ab = ags.map(a => '<button type=button class=plwa data-plwsid="' + esc(lv.sid) + '" data-plwtid="' + esc(a.tid) + '" title="' + esc(plLabTip(a.lab)) + '">'
-    + (a.run ? '<i class=plrtdot></i>' : '') + esc(plLabParts(a.lab).type || T('Agent')) + (a.sec ? ' · ' + esc(ago(a.sec)) : '') + '</button>').join('');
-  return '<div class="plpan plwp"><div class=plph><b>' + esc(plgShow(n.title)) + '</b><small>' + esc((n.agent || '') + (n.model ? ' · ' + n.model : '')) + '</small></div>' + st
+  const ab = ags.map(a => { const p = plLabParts(a.lab), ds = plLabDesc(p);   // task line beside the type; data, so esc only
+    return '<button type=button class=plwa data-plwsid="' + esc(lv.sid) + '" data-plwtid="' + esc(a.tid) + '" title="' + esc(plLabTip(a.lab)) + '">'
+    + (a.run ? '<i class=plrtdot></i>' : '') + esc(p.type || T('Agent')) + (ds ? '<span class=plwad>' + esc(ds) + '</span>' : '') + (a.sec ? ' · ' + esc(ago(a.sec)) : '') + '</button>'; }).join('');
+  const ad = n.agent ? plAgDesc(n.agent) : '';
+  return '<div class="plpan plwp"><div class=plph><b>' + esc(plgShow(n.title)) + '</b><small>' + esc((n.agent || '') + (n.model ? ' · ' + n.model : '')) + '</small>' + (ad ? '<small class=plphd title="' + esc(ad) + '">' + esc(ad) + '</small>' : '') + '</div>' + st
     + (ev || '<div class=hidnote>' + esc(T('No gate evidence for this stage yet')) + '</div>') + gate + (ab ? '<div class=plwas>' + ab + '</div>' : '') + '</div>';
 }
 // Watch is three stacked regions: canvas | result pane | «Running N» card, split by two drag grips (p, r).

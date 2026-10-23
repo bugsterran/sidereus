@@ -232,3 +232,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ The viewer shows an `end`-0 run ended at its last evidence after `PLR_OPEN_S` (30 min) with no live agent / bg task / main marker of that run; the hook ends a run when a skip leaves only skipped stages after a finished cur.
 - ⚠Never close by age alone: a background arch-map stage agent runs > 30 min. Never write `runs.json` from the viewer.
 - ⚠Agent rows are collected only for the newest `PLR_MODEL_AG_RUNS` (3) open runs; older open runs still get a cheap `_PLR_TAG` match against live sub/bgs rows (`row["_live"]`, popped before output) — without it a 4th run with a live tagged bg stage auto-ended at 30 min.
+
+## Agent description line must not size the card (48d `.plnad` · 48k `.plwad`/`.plphd`)
+
+- ⚠The card is `width:max-content` (184..320); a plain nowrap description would push every card with a description to 320 and move edges and «Arrange». `.plnad` is `width:0;min-width:100%` + ellipsis so it takes the width the other lines set. Descriptions are agent-file data: `esc()` in text and `title`, never `T()`.

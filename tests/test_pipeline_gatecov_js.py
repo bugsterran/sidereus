@@ -25,7 +25,7 @@ def _run(body, lang="en"):
     consts = re.search(r"^const PLG_FAM = [\s\S]*?\};$", src, re.M).group(0)
     consts += "\n" + re.search(r"^const PLG_GFAM[^\n]*$", src, re.M).group(0)
     consts += "\n" + re.search(r"^const PLG_NAMES = [\s\S]*?^PLG_NAMES\.ko = \{\};", src, re.M).group(0)
-    fns = "\n".join(js_fn(f) for f in ("T", "TV", "plgShow", "plgBase", "plgFam", "plgColor", "plgHue", "plFlagChips", "plGateCov", "plNodeHtml"))
+    fns = "\n".join(js_fn(f) for f in ("T", "TV", "plgShow", "plgBase", "plgFam", "plgColor", "plgHue", "plFlagChips", "plGateCov", "plAgDesc", "plNodeHtml"))
     code = "let LANG = %s;\n" % json.dumps(lang) + STUBS + ko + "\n" + consts + "\n" + fns + "\n" + body
     r = subprocess.run(node_e(code), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     if r.returncode != 0:
