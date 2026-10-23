@@ -124,6 +124,7 @@ function svCapTip(head){
 // so it freezes between prompts while only the 5h bar moves, and they diverge (measured 2026-09-22: label 55% vs bar 59%).
 // ⚠Stage and recommended count still use the snapshot. Do not replicate the verdict formula here — saver.py is the source of truth.
 let SV = null;
+function svViewSet(v){ SV = v; }   // other modules set SV through this (owner rule)
 // Settings-modal saver switch: raw /saver files (`saverSwitch`) and the effective verdict (`saver`).
 let SVSW = null, SVST = null, SVERR = '';
 const SV_STALE = 120;   // Verdict older than this = hook has not run for a while (session idle)

@@ -248,3 +248,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ Boot order is hash → this window's `tabOwn` → `mbStartView` → `mbMainView` → default; `setMainView` writes `#<name>` with `history.replaceState`; `hashchange` switches tab.
 - ⚠`mvHashKey`/`mvHashOf` stay function declarations with the map inside — 05-i18n calls them before 92 runs (a top-level `const` is in TDZ).
 - ⚠Popups (`/diff` `/work` `/brdiff`) never read or write the hash; a tab in `mbTabsOff` is refused even from the hash. Use `replaceState`, not `location.hash =` (one history entry per tab switch).
+
+## One page, one namespace: a top-level function name must be unique across `web/js`
+- Cause: a new `svSet` helper in 55 shadowed `async function svSet(body)` in 90-settings — the PAGE is one script, so the later declaration wins and every page threw on load.
+- ⇒ Pick a new name after `grep -n "function <name>" web/js`; `tests/test_main_acct_redraw_js.py` fails on any duplicate top-level function name.
+- ⚠`check.sh --fast` does not load the page — only `--full` (screen_check) shows the load-time exception.
