@@ -23,7 +23,6 @@ bt = sidereus("bgtasks")
 bp = sidereus("bgtasks_parse")
 live = sidereus("live")
 wm = sidereus("warn")
-st = sidereus("structure")
 PORT = cs.PORT
 HOST = "127.0.0.1:%d" % PORT
 EVIL = "http://evil.example"
@@ -71,8 +70,6 @@ class _Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="sidereus-rp-")
         self.addCleanup(shutil.rmtree, self.tmp, True)
-        act = st._struct_act[0]
-        self.addCleanup(st._struct_act.__setitem__, 0, act)
         self.warns = []
         self.patch(RP, "warn_once", lambda *a, **k: self.warns.append(a[0]))
 

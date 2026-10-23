@@ -487,8 +487,9 @@ def structure_pair(path=None, file=""):
 # ★With only the disk cache, «a project opened for the first time» is still cold. The server already knows sessions' `cwd`·`repos`
 #   (`sessions[].repos` in `/api/state`) — their union is the warm-up target.
 # ⚠Do not run in parallel — **one at a time**. Eating CPU while the user works is worse.
-# ⚠From «requests» in "only when there were no recent requests", **exclude automatic polling** (`_STRUCT_POLL`). The screen hits
-#   `/api/state` every 2.5s, so including it means idle **never comes** while a tab is open.
+# ⚠Idle = no human input, marked only by a positive signal: the page's `POST /api/act` (pointer/key/wheel, throttled) and page loads
+#   (`STRUCT_PAGE_PATHS`). A request-path deny-list missed timer pollers (work log 2.5 s, timeline drawer, arch, diff rail) and MCP
+#   `/api/agent/*`, and cannot split paths that serve both clicks and timers — with a tab open idle never came.
 # ⚠Follow the existing background thread convention — one daemon thread from `main()`, swallow exceptions and sleep.
 STRUCT_WARM_BOOT_S = 10        # hands off for this long after startup (the page's first load comes first; the idle check below still yields to it)
 # ★2026-09-25: 60 s left the full post-restart rescan (~2.7 s per project when struct-cache/ is invalidated) to the user's first click.
@@ -496,16 +497,18 @@ STRUCT_WARM_IDLE_S = 30        # skip if there was a «human-initiated» request
 STRUCT_WARM_TICK_S = 10        # attempt period per cell
 STRUCT_WARM_CYCLE_S = 900      # until the same target is looked at again — if unchanged the cache returns immediately
 STRUCT_PRUNE_EVERY_S = 3600    # disk cleanup period (only inside the warm-up thread)
-# ⚠`/api/quota/burn`: saver.py hits it on every prompt, and the page only fetches it from the poll (`burnTick`, 30s throttle).
-# ⚠Timeline (30 s refetch from poll), wkuse (5 min), agent/work (open work-log popup, 2.5 s) and branches (60 s, structure view) are timer-driven too; any one of them kept idle from ever arriving.
-_STRUCT_POLL = ("/api/state", "/api/live", "/api/hookstate", "/api/quota/burn",
-                "/api/agents/timeline", "/api/wkuse", "/api/agent/work", "/api/branches")    # timer/hook polls = do not break idle
-_struct_act = [0.0]            # last «human» request time
+STRUCT_PAGE_PATHS = ("/", "/diff", "/work", "/brdiff")    # page loads = a human (PWA icons/manifest are not)
+_struct_act = [0.0]            # last human input time (struct_mark_act)
 _struct_warm_seen = {}         # (realpath, tests) -> last warm-up time
 _struct_prune_at = [0.0]
 # Warm cells run in a child so the scan's peak memory is returned to the OS on exit; the parent only reads the disk cache.
 STRUCT_WARM_CHILD_TIMEOUT_S = 180
 _PKG_PARENT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def struct_mark_act():
+    """Record human input now — the warm-up loop yields for STRUCT_WARM_IDLE_S after it."""
+    _struct_act[0] = time.time()
 
 
 def _struct_warm_spawn(root, tests):

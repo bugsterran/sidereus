@@ -19,15 +19,12 @@ RP = sidereus("routes_post")
 RA = sidereus("room_admin")
 bus = sidereus("bus")
 wm = sidereus("warn")
-st = sidereus("structure")
 
 
 class _Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="sidereus-say-")
         self.addCleanup(shutil.rmtree, self.tmp, True)
-        act = st._struct_act[0]
-        self.addCleanup(st._struct_act.__setitem__, 0, act)
 
     def patch(self, obj, name, val):
         p = mock.patch.object(obj, name, val)

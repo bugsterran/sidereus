@@ -179,6 +179,16 @@ async function postJSON(url, body){
   if(!r.ok){ const e = new Error((j && (j.error || j.err || j.msg)) || ('HTTP ' + r.status)); e.status = r.status; e.body = j; throw e; }
   return j;
 }
+// Human-input heartbeat for the structure warm-up idle check; ⚠throttle must stay well under STRUCT_WARM_IDLE_S (30 s).
+var ACT_SENT = 0;
+function actPing(){
+  const now = Date.now();
+  if(now - ACT_SENT < 10000) return;
+  ACT_SENT = now;
+  postJSON('/api/act').catch(e => softErr('act', e));
+}
+if(typeof window !== 'undefined' && window.addEventListener)
+  ['pointerdown', 'keydown', 'wheel'].forEach(t => window.addEventListener(t, actPing, { capture: true, passive: true }));
 // Non-fatal render/poll failure: count per tag, console.warn once per tag, keep the UI running.
 // ⚠var + function declaration on purpose — 00-core.js calls this at load, before this file's let/const exist.
 var SOFT_ERRS = {};

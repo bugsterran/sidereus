@@ -17,6 +17,7 @@ from sidereus.ext import _ext_lock, _ext_stat, ext_dismiss, ext_ingest
 from sidereus.sessions import sessions_rows
 from sidereus.saver import saver_set
 from sidereus.state import state_cache_clear
+from sidereus.structure import struct_mark_act
 from sidereus.review import RV_BODY_MAX, review_mark
 from sidereus.work import _SID_SAFE
 from sidereus.term import term_focus, term_set
@@ -259,6 +260,14 @@ class _PostRoutes:
         self._body_unread()
         self._send(403, json.dumps({"ok": False, "error": "viewer origin required"}), "application/json; charset=utf-8")
         return True
+
+    def _p_act(self, u):
+        # Page input heartbeat (web/js/08-ui-kit.js); ⚠viewer Origin required so curl/MCP/hooks cannot hold the warm-up off
+        if self._refuse_origin():
+            return
+        self._body_json(256, None)    # drain the body off the keep-alive socket
+        struct_mark_act()
+        return self._send(200, json.dumps({"ok": True}), "application/json; charset=utf-8")
 
     def _p_room_invite(self, u):
         if self._refuse_origin():
@@ -560,5 +569,5 @@ class _PostRoutes:
         "/api/pipelines/delete": _p_pipelines_save,
         "/api/pipelines/projects/add": _p_pipelines_save, "/api/pipelines/projects/remove": _p_pipelines_save,
         "/api/pipelines/apply": _p_pipelines_save, "/api/pick-folder": _p_pick_folder,
-        "/api/ui-prefs": _p_ui_prefs, "/api/ui-prefs/reset": _p_ui_prefs,
+        "/api/ui-prefs": _p_ui_prefs, "/api/ui-prefs/reset": _p_ui_prefs, "/api/act": _p_act,
     }
