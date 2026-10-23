@@ -16,6 +16,7 @@ Object.assign(I18N.ko, {
   "Background check skips {mb}MB — scanning notices only": "백그라운드 판정에서 {mb}MB 를 건너뜁니다 — 통지만 따로 훑습니다",
   "Agent revive scan failed ({err}) — some agent rows may be missing": "서브에이전트 복원 검사가 실패했습니다({err}) — 일부 에이전트 행이 빠질 수 있습니다",
   "Could not save the dismissed list ({err}) — items come back after a restart": "치운 목록을 저장하지 못했습니다({err}) — 재시작하면 다시 나타납니다",
+  "Could not save the alive time ({err}) — completions while the viewer is down are not announced": "생존 시각을 저장하지 못했습니다({err}) — 뷰어가 꺼진 동안 끝난 작업은 알리지 않습니다",
   "agent type lookup failed ({err}) — launch label kept": "에이전트 종류 조회 실패({err}) — 실행 때 이름으로 표시합니다",
   "limit estimate cache save failed ({err}) — re-estimated on restart": "한도 추정 캐시 저장 실패({err}) — 재시작하면 다시 추정합니다",
   "5h used-token sum failed ({err})": "5h 사용 토큰 합계 실패({err})",

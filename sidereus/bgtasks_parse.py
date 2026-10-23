@@ -44,6 +44,57 @@ _bg_open = {}          # transcript path → {tool_use_id: (kind, label)}
 #   ⚠An empty dict is also «seen» information — so the time is stamped on every scan of fp regardless of whether `_bg_open[fp]` exists.
 _bg_open_at = {}       # transcript path → last scan time (eviction key. LRU)
 
+# ⚠Seeding drops every completion, so one that finished while the viewer was down never rang the bell.
+#   The per-fp scan clock is saved as «last alive time»; seeding announces only completions after it.
+ALIVE_FILE = os.path.join(DATA_DIR, "bg-alive.json")
+ALIVE_EVERY_S = 30
+CATCHUP_MAX_AGE_S = 86400
+_alive_last = [0.0]    # time of the last `_alive_beat` write (mutated in place)
+
+
+def _alive_load(path):
+    """{fp: epoch} from the alive file, or None when it is missing, unreadable, empty or holds future/non-number values."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        return None                              # unknown alive time: seeding stays silent (startup grace only)
+    if not isinstance(d, dict) or not d:
+        return None
+    lim, out = time.time() + 60, {}
+    for k, v in d.items():
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or v > lim:
+            return None                          # a future stamp would hide real completions; trust none of it
+        out[k] = float(v)
+    return out
+
+
+_alive_prev = _alive_load(ALIVE_FILE)
+
+
+def _alive_beat(now=None, force=False):
+    """Persist `_bg_open_at` (merged over the previous run's entries, 24 h kept) at most every ALIVE_EVERY_S."""
+    now = time.time() if now is None else now
+    if not force and now - _alive_last[0] < ALIVE_EVERY_S:
+        return
+    _alive_last[0] = now
+    cut = now - CATCHUP_MAX_AGE_S
+    d = {k: v for k, v in (_alive_prev or {}).items() if v >= cut}   # fps not rescanned yet keep their old time
+    d.update(_bg_open_at)
+    try:
+        _atomic_write(ALIVE_FILE, json.dumps({k: round(v, 3) for k, v in d.items()}).encode("utf-8"))
+    except OSError as e:
+        warn_once("bgalive", "Could not save the alive time ({err}) — completions while the viewer is down are not announced",
+                  vars={"err": str(e)}, soft=True)
+
+
+def _catchup_ok(fp, at, now):
+    """Seeding: did this completion happen after the last alive time (and within 24 h)? ⚠Never true for at=0."""
+    prev = _alive_prev
+    if not at or prev is None:
+        return False
+    return at > prev.get(fp, max(prev.values())) and at > now - CATCHUP_MAX_AGE_S
+
 
 _bg_seeded = set()      # marks that the **first-time** deep scan per session is done
 _bg_finished = {}       # what **finished** in this scan (fp → [(kind, label)]) — announced via bell cards
@@ -128,9 +179,10 @@ _RESUME_OK_RE = re.compile(r"Resuming agent|resumed from transcript|\"resumedAge
 #   (measured: in the same session a1b2c3d4 the SendMessage at 08:08:33 was (2) — row A was already shown then).
 
 
-def _bg_pop(open_now, key, fp, seeding, done=True, at=0):
+def _bg_pop(open_now, key, fp, seeding, done=True, at=0, line_at=0):
     """Remove from the open list. If what was removed is **an agent·command, record it as completed** (watchers come and go constantly, so excluded).
-    ⚠Not recorded during seeding — old completions would flood out as cards right after server start.
+    ⚠Not recorded during seeding (old completions would flood out as cards right after server start) — except
+      completions after the saved alive time (`_catchup_ok`).
     ★Record the removal time (measured 2026-08-28): a completion notice passes **only once**, and if revival below re-adds
       the same item afterwards there is no chance to ever remove it, so it stays until the 2-hour backstop. Three actually finished
       agents stuck on screen that way ("really 2 but 4 on screen")."""
@@ -147,11 +199,17 @@ def _bg_pop(open_now, key, fp, seeding, done=True, at=0):
     # ★`done=False` means «removed **because it never ran**» (2026-09-08). The `_bg_popped` record
     #   that blocks revival is still made, but it is **not counted as completed** — turning a hook-blocked command into
     #   a "task complete" card would claim an execution that never happened.
-    if v and done and not seeding and v[0] in ("sub", "bg"):
+    if v and done and v[0] in ("sub", "bg"):
+        # `line_at` = line time for the catch-up check only; `_bg_popped` keeps its read-clock stamp on those paths
+        at = at or line_at
+        catchup = seeding and _catchup_ok(fp, at, _t)
+        if seeding and not catchup:
+            return
         label, aid = v[1], ""
         if v[0] == "sub":
             label, aid = _sub_identity(fp, key, label)
-        _bg_finished.setdefault(fp, []).append((v[0], label, aid))
+        # catch-up items carry (tid, completion time, True) so notes can dedup against the card file
+        _bg_finished.setdefault(fp, []).append((v[0], label, aid, key, at, True) if catchup else (v[0], label, aid))
 
 
 def _sub_identity(fp, key, label):
@@ -286,6 +344,15 @@ def _bg_on_notice(line, open_now, fp, seeding, now):
                     _bg_pop(open_now, _k3, fp, seeding, at=_nts)
 
 
+def _json_ts(line):
+    """Line time of a raw transcript line, 0 when unparsable."""
+    try:
+        d = json.loads(line)
+    except ValueError:
+        return 0
+    return _line_ts(d, 0) if isinstance(d, dict) else 0
+
+
 def _is_replay(line):
     """⚠`api-request-blob` lines replay earlier tool_use/notice blocks after their result, with no timestamp — not a turn."""
     return '"api-request-blob"' in line[:80]
@@ -296,8 +363,9 @@ def _bg_on_line(line, open_now, fp, seeding, now):
     if _is_replay(line):
         return
     if "tool-use-id" in line:
+        _ats = _json_ts(line)
         for tid in _TUID_RE.findall(line):
-            _bg_pop(open_now, tid, fp, seeding)         # completion notice — ended regardless of kind
+            _bg_pop(open_now, tid, fp, seeding, line_at=_ats)   # completion notice — ended regardless of kind
     if '"tool_result"' not in line and '"tool_use"' not in line:
         return
     try:
@@ -311,12 +379,12 @@ def _bg_on_line(line, open_now, fp, seeding, now):
         if not isinstance(x, dict):
             continue
         if x.get("type") == "tool_result":
-            _bg_on_result(x, open_now, fp, seeding)
+            _bg_on_result(x, open_now, fp, seeding, _line_ts(d, 0))
         elif x.get("type") == "tool_use" and x.get("id"):
             _bg_on_launch(x, d, open_now, fp, now)
 
 
-def _bg_on_result(x, open_now, fp, seeding):
+def _bg_on_result(x, open_now, fp, seeding, line_at=0):
     """A `tool_result` block: receipt (keep) vs synchronous end / failed launch (pop)."""
     tid = x.get("tool_use_id")
     if tid and tid in _mon_lab:
@@ -352,7 +420,8 @@ def _bg_on_result(x, open_now, fp, seeding):
             # ⚠A SendMessage row that did not resume ((2) queued to a running agent · (3) refused) is not a
             #   completion: the agent is still running under its own row, or never restarted. done=True here
             #   put running agents into the bell's «N done» card.
-            _bg_pop(open_now, tid, fp, seeding, done=not _bg_resume.get(tid))
+            # ⚠line time passed: without it a foreground Agent that finished while the viewer was down got no card
+            _bg_pop(open_now, tid, fp, seeding, done=not _bg_resume.get(tid), line_at=line_at)
         elif _bg_resume.get(tid):
             # resume confirmed ⇒ **push out the same agent's old row** (one agent = one row).
             # a row revival added under the old Agent tool_use id is cleaned up here.
