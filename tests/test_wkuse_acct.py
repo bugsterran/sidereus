@@ -16,7 +16,7 @@ from tests._load import sidereus
 
 ui = sidereus("usage_index")
 bu = sidereus("burn_usage")
-rg = sidereus("routes_get")
+ru = sidereus("routes_usage")
 
 NOW = 1_790_000_000.0
 H0 = str(int(NOW // 3600) * 3600)
@@ -149,12 +149,12 @@ class RouteAcct(unittest.TestCase):
     def get(self, q):
         calls = []
         h = _H()
-        with mock.patch.object(rg, "claude_accounts", lambda: [dict(a) for a in ACCTS]), \
-                mock.patch.object(rg, "wkuse", lambda d, acct="": {"range": d, "acct": acct}), \
-                mock.patch.object(rg, "wkuse_refresh", lambda d, acct="": calls.append((d, acct))), \
-                mock.patch.object(rg, "wk_stale", lambda d, acct="": True), \
-                mock.patch.object(rg, "_wk_slot", lambda d: {"at": 1.0}):
-            rg._GetRoutes._g_wkuse(h, urlparse("/api/wkuse?" + q))
+        with mock.patch.object(ru, "claude_accounts", lambda: [dict(a) for a in ACCTS]), \
+                mock.patch.object(ru, "wkuse", lambda d, acct="": {"range": d, "acct": acct}), \
+                mock.patch.object(ru, "wkuse_refresh", lambda d, acct="": calls.append((d, acct))), \
+                mock.patch.object(ru, "wk_stale", lambda d, acct="": True), \
+                mock.patch.object(ru, "_wk_slot", lambda d: {"at": 1.0}):
+            ru._UsageRoutes._g_wkuse(h, urlparse("/api/wkuse?" + q))
         return h.out["acct"], calls
 
     def test_unknown_maps_to_all(self):

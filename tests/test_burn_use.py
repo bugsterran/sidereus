@@ -14,7 +14,7 @@ from tests.test_saver_quota_js import i18n, jconst
 
 load()
 bu = sidereus("burn")
-rg = sidereus("routes_get")
+ru = sidereus("routes_usage")
 sc = sidereus("saver_cap")
 cr = sidereus("claude_roots")
 up = sidereus("ui_prefs")
@@ -71,15 +71,15 @@ class Route(unittest.TestCase):
         seen, calls = [], []
         prim, work = {"ok": False, "why": "stale"}, {"ok": True, "acct": "work", "cur": {"now_pct": 12.0}}
         self.calls = calls
-        with mock.patch.object(rg, "burn_use", lambda: dict(use)), \
-             mock.patch.object(rg, "quota_burn", lambda: calls.append(1) or prim), \
-             mock.patch.object(rg, "quota_burn_peek", lambda: prim if peek else None), \
-             mock.patch.object(rg, "quota_burn_acct", lambda lab: work), \
-             mock.patch.object(rg, "claude_accounts", lambda: [dict(a) for a in TWO]), \
-             mock.patch.object(rg, "_acct_of_dir", lambda d: next((a for a in TWO if a["dir"] == d), None)), \
-             mock.patch.object(rg, "saver_cap", lambda now, b: seen.append(b) or {"n": 0}):
+        with mock.patch.object(ru, "burn_use", lambda: dict(use)), \
+             mock.patch.object(ru, "quota_burn", lambda: calls.append(1) or prim), \
+             mock.patch.object(ru, "quota_burn_peek", lambda: prim if peek else None), \
+             mock.patch.object(ru, "quota_burn_acct", lambda lab: work), \
+             mock.patch.object(ru, "claude_accounts", lambda: [dict(a) for a in TWO]), \
+             mock.patch.object(ru, "_acct_of_dir", lambda d: next((a for a in TWO if a["dir"] == d), None)), \
+             mock.patch.object(ru, "saver_cap", lambda now, b: seen.append(b) or {"n": 0}):
             h = _H()
-            rg._GetRoutes._g_quota_burn(h, urlparse("/api/quota/burn" + q))
+            ru._UsageRoutes._g_quota_burn(h, urlparse("/api/quota/burn" + q))
         return h.out, seen[0]
 
     def test_r1_r3_cap_and_use_follow_live_account(self):

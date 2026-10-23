@@ -10,7 +10,7 @@ from tests._load import sidereus, load
 
 load()
 bu = sidereus("burn")
-rg = sidereus("routes_get")
+ru = sidereus("routes_usage")
 
 NOW = 1_000_000.0
 TMP = tempfile.mkdtemp(prefix="sidereus-burnacct-")
@@ -41,9 +41,9 @@ class BurnAcct(unittest.TestCase):
         os.makedirs(WORK, exist_ok=True)
         bu._qb_acct.clear()
         self.addCleanup(bu._qb_acct.clear)
-        for obj, name, val in ((bu.time, "time", lambda: NOW), (rg, "claude_accounts", lambda: [dict(a) for a in ACCTS]),
-                               (rg, "saver_cap", lambda now, out: {"n": 1}),
-                               (rg, "burn_use", lambda: dict(USE_P)),
+        for obj, name, val in ((bu.time, "time", lambda: NOW), (ru, "claude_accounts", lambda: [dict(a) for a in ACCTS]),
+                               (ru, "saver_cap", lambda now, out: {"n": 1}),
+                               (ru, "burn_use", lambda: dict(USE_P)),
                                (bu, "acct_tokens", lambda a, t0, t1: 0)):   # ⚠never the live usage index
             p = mock.patch.object(obj, name, val)
             p.start()
@@ -56,8 +56,8 @@ class BurnAcct(unittest.TestCase):
 
     def get(self, q=""):
         h = _H()
-        with mock.patch.object(rg, "quota_burn", lambda: {"ok": True, "primary": 1}):
-            rg._GetRoutes._g_quota_burn(h, urlparse("/api/quota/burn" + ("?" + q if q else "")))
+        with mock.patch.object(ru, "quota_burn", lambda: {"ok": True, "primary": 1}):
+            ru._UsageRoutes._g_quota_burn(h, urlparse("/api/quota/burn" + ("?" + q if q else "")))
         return h
 
     def test_no_dir_is_primary(self):

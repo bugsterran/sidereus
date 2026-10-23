@@ -43,7 +43,7 @@ home. `CODE_DIR` is the repo root. Both are in `sidereus/config.py`. The mailbox
 ## Server
 
 `chat_server.py` holds the `Handler` core (`_send` with gzip, guards, exact-path dispatch) and `main()`.
-Routes are in `sidereus/routes_get.py` (`_GET_ROUTES`, about 55 paths, 4 of them pages), `routes_struct.py` and
+Routes are in `sidereus/routes_get.py` (`_GET_ROUTES`, about 55 paths, 4 of them pages), `routes_struct.py`, `routes_git.py`, `routes_usage.py` and
 `routes_post.py` (`_POST_ROUTES`, about 30). Unknown paths get 404.
 
 Guards: `_host_ok` (DNS rebinding), `_origin_ok` (cross-origin POST; skipped for OTel and `/api/hook`),
