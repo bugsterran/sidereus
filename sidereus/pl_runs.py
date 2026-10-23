@@ -259,7 +259,7 @@ def _cap_ag(ags):
 
 
 def _stage_map(r):
-    """{title: {o, n, t0, t1, from, main?, p0?, k?, ps?, cm?, via?}} of one validated run (no `ag`)."""
+    """{title: {o, n, t0, t1, from, main?, p0?, k?, ps?, cm?, via?}} of one validated run (`ag` is added by the caller)."""
     stages = {}
     for title, s in r["st"].items():
         stages[title] = {"o": s["s"], "n": s["n"], "t0": s["t0"], "t1": s["t1"], "from": {}}
@@ -283,6 +283,27 @@ def _stage_map(r):
     return stages
 
 
+def _meta_ags(byname, r, stages, lo, hi):
+    """Finished agents of run `r` from tagged meta with t0 in [lo, hi] (+ SendMessage `ids` continuations), each with `_t`."""
+    ags = [{"aid": a["aid"], "tid": a["tid"], "lab": a["lab"][:PLR_LAB_MAX], "run": False, "t0": a["t0"], "t1": a["t1"],
+            "_t": a["t"]}
+           for a in byname.get(r["name"], ()) if a["t"] in stages and lo <= a["t0"] <= hi]
+    # An agent continued (SendMessage) into another stage is listed there too, besides its own tagged stage.
+    base = list(ags)
+    for title, s in r["st"].items():
+        for a in [a for a in base if a["aid"] in s.get("ids", ()) and a["_t"] != title]:
+            ags.append(dict(a, _t=title))
+    return ags
+
+
+def _put_ag(stages, ags):
+    """Capped `ags` into stages[title]["ag"] (every stage gets a list)."""
+    for st in stages.values():
+        st["ag"] = []
+    for a in _cap_ag(ags):
+        stages[a.pop("_t")]["ag"].append(a)
+
+
 def _run_lab(ags, lo, hi):
     """Run label = bare description of the earliest tagged agent with meta time in [lo, hi], or "" (Agent description only)."""
     xs = [a for a in ags or () if lo <= a["t0"] <= hi and a.get("d")]
@@ -292,8 +313,9 @@ def _run_lab(ags, lo, hi):
 def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
     """Row `plrun`: [{name, proj, sid, rid, lab, cur, end, t0, t1, stop, stages: {title: {o, n, t0, t1, from: {src: n}, ag?: [...]}},
     past: [{rid, t0, t1, end, cur, lab, stages}]}] — rid = t0, lab = first tagged agent's bare description, past = earlier
-    runs of that name newest first (≤ PLR_PAST_MAX, no `ag`, closed as idle).
-    Newest first, ≤ PLR_MODEL_MAX; `ag` [{aid, tid, lab, run, t0, t1}] only on the newest PLR_MODEL_AG_RUNS open runs + the newest ended run.
+    runs of that name newest first (≤ PLR_PAST_MAX, meta-only `ag`, closed as idle).
+    Newest first, ≤ PLR_MODEL_MAX; `ag` [{aid, tid, lab, run, t0, t1}] on every ended run and past entry (meta only) and on
+    the newest PLR_MODEL_AG_RUNS open runs (+ live sub/bg rows and the main marker); other open runs carry no `ag`.
     Sources: runs.json st/lb/proj · tagged subagent meta · live `sub` rows ([pl:] in lab) · open `bgs` rows (tagged
     Bash(run_in_background); label = redacted description) · `plm` main marker.
     ⚠Metadata only (rule 1): ids, titles, times, counts, agentType+description label — never message/prompt text."""
@@ -321,26 +343,23 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
         for p in past.get(r["name"], ()):
             if p["t0"] >= r["t0"]:
                 continue   # ⚠a past entry is never the current run itself (hook archives on a new open)
+            plo, phi = p["t0"] - PLR_AG_SLACK_S, (p["end"] or p["t1"]) + PLR_AG_SLACK_S
             ps = {"rid": p["t0"], "t0": p["t0"], "t1": p["t1"], "end": p["end"], "cur": p["cur"],
-                  "lab": _run_lab(byname.get(r["name"]), p["t0"] - PLR_AG_SLACK_S, (p["end"] or p["t1"]) + PLR_AG_SLACK_S),
-                  "stages": _stage_map(p)}
+                  "lab": _run_lab(byname.get(r["name"]), plo, phi), "stages": _stage_map(p)}
+            _put_ag(ps["stages"], _meta_ags(byname, p, ps["stages"], plo, phi))   # ⚠without it a stage showed «Agents n» and no buttons
             _close_stale(ps, "idle", ())   # an archived run is over: nothing in it is live
             row["past"].append(ps)
         out.append(row)
+        if i not in agi and r["end"]:
+            _put_ag(stages, _meta_ags(byname, r, stages, lo, hi))   # an older ended run: finished agents from meta only
+            continue
         if i not in agi:
             # ⚠Outside the agent-row window a live tagged sub/bg row still proves the run alive (idle-end check below).
             row["_live"] = not r["end"] and any(
                 isinstance(x, dict) and isinstance(x.get("lab"), str) and (_PLR_TAG.search(x["lab"]) or [0, ""])[1] == r["name"]
                 for x in list(sub if isinstance(sub, list) else ()) + list(bgs if isinstance(bgs, list) else ()))
             continue
-        ags = [{"aid": a["aid"], "tid": a["tid"], "lab": a["lab"][:PLR_LAB_MAX], "run": False, "t0": a["t0"], "t1": a["t1"],
-                "_t": a["t"]}
-               for a in byname.get(r["name"], ()) if a["t"] in stages and lo <= a["t0"] <= hi]
-        # An agent continued (SendMessage) into another stage is listed there too, besides its own tagged stage.
-        base = list(ags)
-        for title, s in r["st"].items():
-            for a in [a for a in base if a["aid"] in s.get("ids", ()) and a["_t"] != title]:
-                ags.append(dict(a, _t=title))
+        ags = _meta_ags(byname, r, stages, lo, hi)
         # ⚠Open tagged bg tasks count too: after the turn ends only they prove the stage still works (the marker expires).
         for x in list(sub if isinstance(sub, list) else ()) + list(bgs if isinstance(bgs, list) else ()):
             lab = x.get("lab") if isinstance(x, dict) else None
@@ -367,10 +386,7 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
             for a in [a for a in ags if a is hit or (hit["aid"] and a["aid"] == hit["aid"])]:
                 a["run"] = True   # ⚠every copy: a continued agent's live row still carries its original stage tag
                 stages[a["_t"]]["o"] = "run"
-        for st in stages.values():
-            st["ag"] = []
-        for a in _cap_ag(ags):
-            stages[a.pop("_t")]["ag"].append(a)
+        _put_ag(stages, ags)
         # ⚠A closed run (end set, e.g. by `git commit`) never takes the main marker: the marker outlives the close by
         #   its 2-min window, and attaching it re-lit a stage of a run that is already over.
         if isinstance(plm, dict) and isinstance(plm.get("title"), str):
