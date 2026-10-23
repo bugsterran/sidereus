@@ -7,7 +7,7 @@
 let pollBusy = false;
 const POLL_TIMEOUT_MS = 15000, POLL_COLD_MS = 75000;   // a timeout counts as «Disconnected» (pollDown)
 var CFG = null;   // last state().cfg (dmMax for the relay comment cap in 88c)
-let LASTS = null;   // saver fields of the last poll, for an instant «Main account» redraw (pollMainRedraw)
+let LASTS = null;   // saver + quota fields of the last poll, for an instant «Main account» redraw (pollMainRedraw)
 var ACCTS = [];   // state accts [{label, primary}], only with >=2 Claude accounts (40b acctCls)
 const MSEEN = new Set();          // Ids of posts already received — never counted twice whichever path they came in by
 async function poll(first){
@@ -64,7 +64,7 @@ async function poll(first){
     // ★Burndown **piggybacks here** — no new timer (throttled to 30s inside).
     // `buildBurn()` re-measures remaining time against the current clock, so redrawing every poll is fine.
     // ⚠Refresh `SV` **before** `buildBurn`/`buildSaver` — both read the same snapshot.
-    LASTS = {saverView: s.saverView, saverViews: s.saverViews, saver: s.saver};
+    LASTS = {saverView: s.saverView, saverViews: s.saverViews, saver: s.saver, usage: s.usage || null, quota: s.quota};
     svViewSet(saverViewFor(s));
     burnTick(); buildBurn();
     buildSaver(s.saver);
@@ -136,7 +136,11 @@ async function poll(first){
 // Saver verdict of the «Main account»: primary (no main) -> s.saverView; other -> s.saverViews[label].
 // ⚠Never fall back to the primary's view for a non-primary main — null hides the chip.
 // «Main account» switch: repaint the quota modal (#burn, #saver) from the last poll instead of waiting for the next one.
-function pollMainRedraw(){ if(!LASTS) return; svViewSet(saverViewFor(LASTS)); burnTick(); buildBurn(); buildSaver(LASTS.saver); }
+function pollMainRedraw(){
+  if(!LASTS) return;
+  if(typeof buildQuota === 'function') buildQuota(LASTS.usage, LASTS.quota);   // #quota carries the primary-account note (sbPrimNote)
+  svViewSet(saverViewFor(LASTS)); burnTick(); buildBurn(); buildSaver(LASTS.saver);
+}
 function saverViewFor(s){ const m = mainAcct(); return m ? ((s.saverViews || {})[m] || null) : (s.saverView || null); }
 // Mark the screen as stale (html.agstale dims held numbers) and schedule the next try with backoff.
 function pollDown(bad, t0){
