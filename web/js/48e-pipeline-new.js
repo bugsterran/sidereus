@@ -8,10 +8,13 @@ let PLNEW = null;            // open form {name, title, tpl, diff, busy, err}
 // A disabled button says why (one form at a time) — a silent dead click read as a bug.
 function plNewDis(on){ return on ? ' disabled title="' + esc(T('Close the open form first')) + '"' : ''; }
 // Empty project, no suggestions: template buttons in place of a note; a click only opens the preview (create still needs «Confirm — create»).
-// One filled primary (AI draft) then the outlined standard list; same attributes and disable rules as the «+ New ▾» items, so the existing handlers do the work.
+// One filled primary (AI draft, or the template start when no session can receive it) then the outlined other; same attributes and disable rules as the «+ New ▾» items, so the existing handlers do the work.
+// ⚠No session that can receive the DM (live + mailbox login): the template start is the primary, else the AI draft is a dead end.
 function plStartBtns(){
-  return '<button type=button class="wkrgb plsv" data-pldnew' + plNewDis(PLDRAFT) + '>' + esc(T('Ask AI for a draft')) + '</button>'
-    + '<button type=button class="wkrgb' + (PLSTD ? ' on' : '') + '" data-plstd>' + esc(T('Start from a template')) + '</button>';
+  const live = plSessions(PLS.proj).some(x => x.login);
+  const ai = '<button type=button class="wkrgb' + (live ? ' plsv' : '') + '" data-pldnew' + plNewDis(PLDRAFT) + '>' + esc(T('Ask AI for a draft')) + '</button>';
+  const st = '<button type=button class="wkrgb' + (live ? '' : ' plsv') + (PLSTD ? ' on' : '') + '" data-plstd>' + esc(T('Start from a template')) + '</button>';
+  return live ? ai + st : st + ai;
 }
 let PLTPLO = false;          // quick-template row open (folded at first, not persisted)
 function plTplPick(){
@@ -208,7 +211,7 @@ document.addEventListener('change', e => {
 // project to write the file itself. ⚠Sidereus writes nothing on this path; preview + «Confirm» only (AGENTS.md rule 7).
 let PLDRAFT = null;          // open form {desc, name, sid, busy, err}
 // `wf` = «Port an existing workflow»: a .claude/workflows/*.js file name, or 'doc:<rule file>' = «Port from a rule document»
-// ⚠Sidereus lists names only; the session reads the file. The Korean head line is mailbox wire text, not UI.
+// ⚠Sidereus lists names only; the session reads the file. The head line is mailbox wire text (AI-read, English), not UI.
 // `proj` = project repo path; the head line names it so the receiver knows which project the file is for.
 // `ctx` = {tasks: GET default_tasks (runner DEFAULT_TASKS), skills: names}; tasks give one line per title, skills are capped.
 function plDraftText(name, desc, agents, titles, wf, proj, ctx){
@@ -217,14 +220,14 @@ function plDraftText(name, desc, agents, titles, wf, proj, ctx){
   const tl = titles.filter(t => tk[t]).map(t => '  ' + t + ' — ' + one(t) + '\n').join('');
   const doc = /^doc:/.test(wf || '') ? wf.slice(4) : '';
   const pp = String(proj || '').replace(/[\\/]+$/, ''), pn = pp.split(/[\\/]/).pop();
-  return (pp ? 'Project: ' + (pn || pp) + ' (' + pp + ')\n' : '') + (doc ? '파이프라인 초안 요청 — ' + doc + ' 에서 옮기기\n'
+  return (pp ? 'Project: ' + (pn || pp) + ' (' + pp + ')\n' : '') + (doc ? 'Pipeline draft request — port from ' + doc + '\n'
       + 'Read ' + doc + ' in this repo, find the work/delegation flow it describes (which agents do what, in what order, retry and loop-back rules)'
       + ' and write .claude/pipelines/' + name + '.json for it with this project\'s agents (recommended titles where they fit, custom stages otherwise).'
       + ' Do not run it and do not commit.\n'
-    : wf ? '파이프라인 초안 요청 — .claude/workflows/' + wf + ' 옮기기\n'
+    : wf ? 'Pipeline draft request — port .claude/workflows/' + wf + '\n'
       + 'Read .claude/workflows/' + wf + ' and write .claude/pipelines/' + name + '.json in this project that runs the same steps'
       + ' (recommended titles where a step matches, custom stages otherwise). Do not run either and do not commit.\n'
-    : '파이프라인 초안 요청 — \'' + desc + '\'\n'
+    : 'Pipeline draft request — \'' + desc + '\'\n'
       + 'Write .claude/pipelines/' + name + '.json in this project for that purpose. Do not run it and do not commit.\n')
     + 'Schema v1: {"v":1,"name":"' + name + '","title":"<one line>","rules"?:"<lines>","defaults":{"model":"inherit|opus|sonnet|haiku","retry":0-3},'
     + '"stages":[{"title","agent","task"?,"model"?,"retry"?,"gate"?:"<one-line command the stage runs>","parallel"?:1-16,"produces"?:"slices","fanout"?:"slices",'

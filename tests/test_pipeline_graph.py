@@ -133,20 +133,20 @@ class Graph(unittest.TestCase):
 
     def test_draft_from_workflow(self):
         t = _js("console.log(JSON.stringify(plDraftText('mig', '…', [], PLG_TITLES, 'sidereus-change.js')));")
-        self.assertTrue(t.startswith("파이프라인 초안 요청 — .claude/workflows/sidereus-change.js 옮기기\nRead .claude/workflows/sidereus-change.js"))
+        self.assertTrue(t.startswith("Pipeline draft request — port .claude/workflows/sidereus-change.js\nRead .claude/workflows/sidereus-change.js"))
         self.assertIn("Do not run either and do not commit.", t)
         self.assertIn("custom stage", t)
 
     def test_draft_from_rule_doc(self):
         t = _js("console.log(JSON.stringify(plDraftText('flow', '…', ['impl'], PLG_TITLES, 'doc:AGENTS.md')));")
-        self.assertTrue(t.startswith("파이프라인 초안 요청 — AGENTS.md 에서 옮기기\nRead AGENTS.md in this repo, find the work/delegation flow"))
+        self.assertTrue(t.startswith("Pipeline draft request — port from AGENTS.md\nRead AGENTS.md in this repo, find the work/delegation flow"))
         self.assertIn("write .claude/pipelines/flow.json", t)
         self.assertIn("Do not run it and do not commit.", t)
         self.assertIn("Agents here: impl", t)
 
     def test_draft_dm_text(self):
         t = _js("console.log(JSON.stringify(plDraftText('bugfix', '버그 고치는 절차', ['a-b'], PLG_TITLES)));")
-        self.assertTrue(t.startswith("파이프라인 초안 요청 — '버그 고치는 절차'\nWrite .claude/pipelines/bugfix.json"))
+        self.assertTrue(t.startswith("Pipeline draft request — '버그 고치는 절차'\nWrite .claude/pipelines/bugfix.json"))
         self.assertIn("Do not run it and do not commit.", t)
         self.assertIn('"name":"bugfix"', t)
         self.assertIn("Agents here: a-b", t)
@@ -154,7 +154,7 @@ class Graph(unittest.TestCase):
 
     def test_draft_names_project(self):
         t = _js("console.log(JSON.stringify(plDraftText('bugfix', 'x', [], PLG_TITLES, '', '/Users/me/work/my-app/')));")
-        self.assertTrue(t.startswith("Project: my-app (/Users/me/work/my-app)\n파이프라인 초안 요청 — 'x'\n"))
+        self.assertTrue(t.startswith("Project: my-app (/Users/me/work/my-app)\nPipeline draft request — 'x'\n"))
         w = _js("console.log(JSON.stringify(plDraftText('b', 'x', [], PLG_TITLES, 'doc:AGENTS.md', 'C:\\\\src\\\\proj')));")
         self.assertTrue(w.startswith("Project: proj (C:\\src\\proj)\n"))
 

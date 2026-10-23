@@ -19,6 +19,7 @@ function plPickHtml(){ return ''; } function plNewBtn(p){ return p ? '<NEWBTN pr
 function wfBtns(){ return ''; } function plBorrowChips(){ return ''; } function plBorrowOf(){ return null; }
 function plSugBody(){ return '<SUG/>'; } function plDelPrev(){ return ''; } function plCur(){ return {ok: false, errs: []}; }
 function plPaint(){ PAINT++; } function plRefocus(){}
+let LIVE = [{login: true}]; function plSessions(){ return LIVE; }   // default: a session can take the AI draft
 async function postJSON(u, b){ POSTS.push([u, b]); return {ok: true, diff: '+x'}; }
 """
 
@@ -64,7 +65,7 @@ class PipelineEmptyTpl(unittest.TestCase):
 
     def test_draft_and_std_buttons_follow_menu_rules(self):
         r = run(_tpls() + "\n" + FNS +
-                "const p = () => plTplPick(); const a = p(); PLNEW = {}; const b = p(); PLNEW = null;"
+                "let PLS = {proj: '/p'}; const p = () => plTplPick(); const a = p(); PLNEW = {}; const b = p(); PLNEW = null;"
                 "PLDRAFT = {}; const c = p(); PLDRAFT = null; PLSTD = true; const d = p();"
                 "console.log(JSON.stringify([a, b, c, d]));")
         a, b, c, d = r
@@ -80,15 +81,27 @@ class PipelineEmptyTpl(unittest.TestCase):
         self.assertIn('class="wkrgb on"', sd(d))                                # PLSTD open: .on like the menu item
 
     def test_r1_one_filled_primary_is_ai_draft(self):
-        h = run(_tpls() + "\n" + FNS + "console.log(JSON.stringify(plTplPick()));")
+        h = run(_tpls() + "\n" + FNS + "let PLS = {proj: '/p'}; console.log(JSON.stringify(plTplPick()));")
         filled = [b for b in re.findall(r"<button[^>]*>", h) if "plsv" in b]
         self.assertEqual(len(filled), 1)                                   # R1: exactly one filled primary
         self.assertIn("data-pldnew", filled[0])
         self.assertNotIn("plsv", re.search(r"<button[^>]*data-plstd[^>]*>", h).group(0))   # R1: template start is outlined
 
+    def test_no_receiving_session_makes_template_primary(self):
+        r = run(_tpls() + "\n" + FNS + "let PLS = {proj: '/p'}; const out = [];"
+                "for(const l of [[], [{login: false}], [{login: true}]]){ LIVE = l; out.push(plTplPick()); }"
+                "console.log(JSON.stringify(out));")
+        for h, live in zip(r, (False, False, True)):
+            btns = re.findall(r"<button[^>]*>", h)
+            filled = [b for b in btns if "plsv" in b]
+            self.assertEqual(len(filled), 1)                               # still exactly one filled primary
+            self.assertIn("data-pldnew" if live else "data-plstd", filled[0])
+            self.assertIn("data-pldnew" if live else "data-plstd", btns[0])   # primary comes first
+            self.assertIn("Ask AI for a draft", h)                         # AI draft stays visible when secondary
+
     def test_r2_quick_templates_fold(self):
         r = run(_tpls() + "\n" + FNS +
-                "const a = plTplPick(); PLTPLO = true; const b = plTplPick(); PLNEW = {}; const c = plTplPick(); PLNEW = null;"
+                "let PLS = {proj: '/p'}; const a = plTplPick(); PLTPLO = true; const b = plTplPick(); PLNEW = {}; const c = plTplPick(); PLNEW = null;"
                 "PLDRAFT = {}; const d = plTplPick(); console.log(JSON.stringify([a, b, c, d]));")
         a, b, c, d = r
         tg = lambda h: re.search(r"<button[^>]*data-pltplo[^>]*>", h).group(0)

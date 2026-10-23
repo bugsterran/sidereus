@@ -24,7 +24,7 @@ const R = {};
 
 
 def run(body):
-    fns = "".join(js_fn(n) + "\n" for n in ("tourPlan", "tourShouldAuto", "tourPluginLines", "tourStepper", "tourBody", "tourEnd", "tourClick", "tourPlEdit", "plNowShown"))
+    fns = "".join(js_fn(n) + "\n" for n in ("tourPlan", "tourShouldAuto", "tourPluginLines", "tourStepper", "tourBody", "tourEnd", "tourClick", "tourPlEdit", "plNowShown", "demoCmd"))
     code = STUB + STEPS + "\n" + KEY + "\n" + fns + body + "\nprocess.stdout.write(JSON.stringify(R));"
     r = subprocess.run(node_e(code), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
@@ -49,6 +49,7 @@ R.demoAt = tourPlan({}, all, 0).filter(p => p.demo).map(p => p.id);
 R.demoOffAt = tourPlan({pipeline: false}, all, 0).filter(p => p.demo).map(p => p.id);
 R.demo = tourPlan({}, all, 0).find(p => p.demo);
 R.demoBody = tourBody(R.demo, '');
+R.demoClone = tourBody(R.demo, '/opt/sidereus').cmds;
 R.demoOffBody = tourBody(tourPlan({pipeline: false}, all, 0).find(p => p.demo), '');
 R.nostrip = tourPlan({}, noStrip, 2).find(p => p.id === 'pl-live');
 R.nostripBody = tourBody(R.nostrip, '').h;
@@ -101,7 +102,10 @@ R.finish = {writes: writes.slice(), tabs: tabs.slice(), hidden: root.hidden};
         self.assertEqual(self.R["demoOffAt"], ["time"])
         self.assertEqual(self.R["demo"]["mode"], "centre")
         for b in (self.R["demoBody"], self.R["demoOffBody"]):
-            self.assertEqual(b["cmds"], ["python3 -m sidereus start --demo --open"])
+            self.assertEqual(b["cmds"], ["sidereus start --demo --open"])   # '' = pip install
+
+    def test_demo_cmd_follows_install(self):
+        self.assertEqual(self.R["demoClone"], ["python3 -m sidereus start --demo --open"])
 
     def test_no_strip_centres_pl_live_with_stepper(self):
         self.assertEqual(self.R["nostrip"]["mode"], "centre")

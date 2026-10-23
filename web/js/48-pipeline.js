@@ -241,11 +241,13 @@ function plComboHtml(o){
 function plUseLine(p){ const u = String((p && p.use) || '').trim(); return u ? '<div class=pluse title="' + esc(u) + '">' + esc(u) + '</div>' : ''; }
 // Head row items: in a .pltop (hd given, plMainBody) or as a standalone .plnames row (tests, callers without a head).
 function plHeadRow(hd, html){ if(hd){ hd.row = html; return ''; } return '<div class=plnames>' + html + '</div>'; }
+// Demo command for this install: a clone (dir = state codeDir) has no `sidereus` script on PATH, pip/pipx/uv installs do. Shared with the tour (98b).
+function demoCmd(dir){ return (dir ? 'python3 -m sidereus' : 'sidereus') + ' start --demo'; }
 function plBody(ov, hd){
   const d = PLS.data[PLS.proj];
   // First run (no project, no session): say how something appears here instead of a bare «Pick a project».
   if(!PLS.proj) return '<div class=hidnote>' + esc(T('Pick a project')) + '</div>' + (typeof SESS !== 'undefined' && (SESS || []).length ? ''
-    : '<div class=hidnote>' + esc(T('Start a Claude Code, Codex or Gemini session and it shows up here.')) + '<br>' + esc(T('Or try the demo:')) + ' <code>sidereus start --demo</code></div>');
+    : '<div class=hidnote>' + esc(T('Start a Claude Code, Codex or Gemini session and it shows up here.')) + '<br>' + esc(T('Or try the demo:')) + ' <code>' + esc(demoCmd(SIDEREUS_DIR)) + '</code></div>');
   if(!d) return '<div class=hidnote>' + esc(T('Loading…')) + '</div>';
   // 400 = outside allowed_projects(): say how to get in (run a Claude session there once), not just «refused». ⚠never a raw «HTTP 400»
   if(!d.ok) return '<div class=hidnote>' + (d.status === 400 ? esc(T('Pipelines are saved in .claude/pipelines/ inside the project, so they open only for folders where a Claude session has run.'))
