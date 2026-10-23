@@ -51,9 +51,11 @@ function tlToEnd(){
 function tlClose(){ tlSel = null; tlSelShown = ''; tlSelTop = 0; tlSelEnd = true; tlDrawer(); }
 function tlFetch(cwd, tid){
   const k = tlKey(cwd, tid);
+  if(tlSelD[k] && tlSelD[k].busy) return;   // a 503 backoff chain is already running (poll refetches every 5 s)
   const url = workUrl(cwd, tid);
-  getJSON(url)
-    .then(j => { const had = !!tlSelD[k]; tlSelD[k] = j;
+  workGetJSON(url, () => { if(!tlSelD[k] || tlSelD[k].ok === false){ tlSelD[k] = {ok:false, busy:true, msg:T('Viewer is busy — retrying…')};
+                           if(tlSel && tlKey(tlSel.cwd,tlSel.tid) === k) tlDrawer(); } })
+    .then(j => { const had = !!tlSelD[k] && !tlSelD[k].busy; tlSelD[k] = j;
                  if(tlSel && tlKey(tlSel.cwd,tlSel.tid) === k){
                    tlDrawer();
                    // On the render where values arrive **for the first time**, scroll the inside to the bottom too (recent activity is at the bottom)

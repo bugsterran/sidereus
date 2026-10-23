@@ -216,4 +216,5 @@ Object.assign(I18N.ko, {
   'resets {t}': '{t} 리셋',
   'plan {p}': '요금제 {p}',
   'window': '구간',
+  'Viewer is busy — retrying…': '뷰어가 바쁩니다 — 다시 시도하는 중…',
 });
