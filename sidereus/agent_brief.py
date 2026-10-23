@@ -19,12 +19,14 @@ from sidereus.claude_roots import accounts as claude_accounts
 from sidereus.saver import SAVER_CAP, SAVER_VIEW_STALE, _saver_state, _saver_view, _saver_views
 from sidereus.steps import _edit_target
 from sidereus.attention import attention
+from sidereus.perm_marks import perm_rows
 from sidereus import file_owner as _fo
 
 AB_SNAP_S = 60       # reuse the last state() poll's rows if this fresh; else short wait on a background refresh
 AB_PEERS_MAX = 20
 AB_FILE_MAX = 10
 _exists = os.path.exists   # tests replace this
+_now = time.time            # tests replace this
 PACE_EN = {2: "way too fast", 1: "fast", 0: "on pace", -1: "slow", -2: "way too slow"}
 
 
@@ -229,6 +231,8 @@ def _why_en(s):
 def brief_attention(rows=None):
     """Sessions currently needing the user — labels only (project, branch, why, score). `why` is English (MCP output)."""
     rows = _rows() if rows is None else rows
+    # ⚠The snapshot lacks permission-marker «blocked» rows; apply them as state() does, or approvals never reach MCP attention.
+    rows = perm_rows(rows, _now())   # unguarded: a failure must surface, not silently drop blocked rows
     a = attention(rows, cards(50), quota()) or {}
     out = []
     for x in a.get("rows") or []:
