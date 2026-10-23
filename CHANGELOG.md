@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Settings: the saver level table's rules and notes show in Korean in the Korean UI (known hook lines are matched to fixed templates; an unknown line stays as sent).
 - Pipelines: a finished or earlier run's stage lists its agents (from tagged subagent records) instead of only «Agents N» with no buttons.
 - Pipelines: with no logged-in session in the project, «Start from a template» is the primary button instead of «Ask AI for a draft», which could not be sent.
 - Pipelines: the «Ask AI for a draft» message was partly Korean; it is now English.

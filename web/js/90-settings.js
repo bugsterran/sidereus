@@ -192,14 +192,42 @@ function cfgPaneSv(){
     + svLevelsFold();
 }
 // «What each level does»: table copied from the hook snapshot (`levels` / `how`, saver.py RULES); hidden when absent.
-// ⚠Rule text is snapshot data, so it is escaped and never passed through T().
+// ⚠Rule text is received data: svTr matches it against fixed hook templates and only the code literal goes to T(); escaped after.
+function svTr(s){
+  const tr = [
+    [/^No cap; a recommended concurrency is suggested$/, () => T('No cap; a recommended concurrency is suggested')],
+    [/^At most (\d+) subagents? at once$/, () => T('At most {1} subagents at once')],
+    [/^No new subagents$/, () => T('No new subagents')],
+    [/^Read only the needed ranges of a file; no re-reads$/, () => T('Read only the needed ranges of a file; no re-reads')],
+    [/^Batch independent tool calls$/, () => T('Batch independent tool calls')],
+    [/^Keep output short$/, () => T('Keep output short')],
+    [/^Suggest \/clear when the next task does not need this context$/, () => T('Suggest /clear when the next task does not need this context')],
+    [/^Mailbox: check only, defer replies until released$/, () => T('Mailbox: check only, defer replies until released')],
+    [/^Wrap up open work; start nothing new \(credits zone\)$/, () => T('Wrap up open work; start nothing new (credits zone)')],
+    [/^Auto brakes only when the 5h quota is projected to run out more than (\d+) min before the reset \(or the target time\)\.$/,
+      () => T('Auto brakes only when the 5h quota is projected to run out more than {1} min before the reset (or the target time).')],
+    [/^While braking, the level follows room = remaining % \/ evenly-spent %: ((?:room < \d+(?:\.\d+)? -> \d+)(?: · room < \d+(?:\.\d+)? -> \d+)*)\.$/,
+      () => T('While braking, the level follows room = remaining % / evenly-spent %: {1}.'), m => m.replace(/room/g, T('room'))],
+    [/^Pace badge: within \+-(\d+) min of the target is on pace, beyond \+-(\d+) min is 'much'; the previous badge holds within (\d+) min outside its band\.$/,
+      () => T("Pace badge: within +-{1} min of the target is on pace, beyond +-{2} min is 'much'; the previous badge holds within {3} min outside its band.")],
+    [/^Burning (\d+(?:\.\d+)?)x faster than needed at (\d+)%\+ escalates to level 3\.$/, () => T('Burning {1}x faster than needed at {2}%+ escalates to level 3.')],
+    [/^At (\d+)%\+ no new subagents; at 100% level 4 \(credits\)\.$/, () => T('At {1}%+ no new subagents; at 100% level 4 (credits).')],
+    [/^With live burn data the concurrency limit is computed and may differ from this table\.$/, () => T('With live burn data the concurrency limit is computed and may differ from this table.')],
+  ];
+  s = String(s);
+  for (const [re, tpl, fix] of tr){
+    const m = re.exec(s);
+    if (m) return tpl().replace(/\{(\d)\}/g, (_, i) => fix ? fix(m[i]) : m[i]);   // captures hold only digits and fixed tokens
+  }
+  return s;
+}
 function svLevelsFold(){
   const L = typeof SV !== 'undefined' && SV && Array.isArray(SV.levels) ? SV.levels : null;   // typeof: JS tests load a subset of files
   if(!L || !L.length) return '';
   const cur = SV.mode === 'off' ? -1 : (Number(SV.stage) || 0);
   const rows = L.map(e => '<tr' + (e.lv === cur ? ' class=on aria-current=true' : '') + '><td>' + esc(String(e.lv)) + '</td><td>'
-    + esc(e.cap == null ? T('No cap') : String(e.cap)) + '</td><td>' + (e.rules || []).map(esc).join('<br>') + '</td></tr>').join('');
-  const how = Array.isArray(SV.how) ? '<ul class=svlvh>' + SV.how.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '';
+    + esc(e.cap == null ? T('No cap') : String(e.cap)) + '</td><td>' + (e.rules || []).map(r => esc(svTr(r))).join('<br>') + '</td></tr>').join('');
+  const how = Array.isArray(SV.how) ? '<ul class=svlvh>' + SV.how.map(x => '<li>' + esc(svTr(x)) + '</li>').join('') + '</ul>' : '';
   return '<details class=svlv' + (lsGet('sidereus.svlv', '') === '1' ? ' open' : '') + '><summary>' + esc(T('What each level does')) + '</summary>'
     + '<table class=svlvt><thead><tr><th>' + esc(T('Level')) + '</th><th>' + esc(T('Max concurrent agents')) + '</th><th>' + esc(T('Rules added')) + '</th></tr></thead><tbody>'
     + rows + '</tbody></table>' + how + '</details>';

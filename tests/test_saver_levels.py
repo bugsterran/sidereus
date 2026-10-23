@@ -52,9 +52,10 @@ class Clean(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class Fold(unittest.TestCase):
-    def run_js(self, sv_obj):
+    def run_js(self, sv_obj, ko=None):
         esc = js_all().split("const esc = ", 1)[1].split(";\n", 1)[0]
-        src = ("const T = s => s; const lsGet = () => ''; const esc = " + esc + ";\nlet SV = " + json.dumps(sv_obj) + ";\n"
+        src = ("const KO = " + json.dumps(ko or {}) + "; const T = s => KO[s] || s; const lsGet = () => ''; const esc = " + esc
+               + ";\nlet SV = " + json.dumps(sv_obj) + ";\n" + js_fn("svTr") + "\n"
                + js_fn("svLevelsFold") + "\nprocess.stdout.write(JSON.stringify(svLevelsFold()));")
         r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
@@ -74,6 +75,30 @@ class Fold(unittest.TestCase):
         self.assertIn("<td>No cap</td>", h)
         self.assertNotIn("<img", h)
         self.assertIn("a&lt;b", h)
+
+    def test_hook_strings_translated_numbers_kept(self):
+        ko = {"At most {1} subagents at once": "KO-cap {1}", "Keep output short": "KO-short", "room": "KO-room",
+              "Auto brakes only when the 5h quota is projected to run out more than {1} min before the reset "
+              "(or the target time).": "KO-brake {1}",
+              "While braking, the level follows room = remaining % / evenly-spent %: {1}.": "KO-follow {1}.",
+              "Burning {1}x faster than needed at {2}%+ escalates to level 3.": "KO-hot {1} {2}"}
+        lv = [{"lv": 1, "cap": 2, "rules": ["At most 2 subagents at once", "Keep output short", "Unknown <rule>"]},
+              {"lv": 2, "cap": 1, "rules": ["At most 1 subagent at once"]}]
+        how = ["Auto brakes only when the 5h quota is projected to run out more than 10 min before the reset (or the target time).",
+               "While braking, the level follows room = remaining % / evenly-spent %: room < 0.3 -> 3 · room < 0.5 -> 2 · room < 1 -> 1.",
+               "Burning 2x faster than needed at 70%+ escalates to level 3.", "Brand new note"]
+        h = self.run_js({"stage": 1, "mode": "auto", "levels": lv, "how": how}, ko)
+        self.assertIn("<td>KO-cap 2<br>KO-short<br>Unknown &lt;rule&gt;</td>", h)
+        self.assertIn("<td>KO-cap 1</td>", h)
+        self.assertIn("<li>KO-brake 10</li>", h)
+        self.assertIn("<li>KO-follow KO-room &lt; 0.3 -&gt; 3 · KO-room &lt; 0.5 -&gt; 2 · KO-room &lt; 1 -&gt; 1.</li>", h)
+        self.assertIn("<li>KO-hot 2 70</li>", h)
+        self.assertIn("<li>Brand new note</li>", h)
+
+    def test_template_text_is_not_a_capture(self):
+        h = self.run_js({"stage": 1, "levels": [{"lv": 1, "cap": 2, "rules": ["At most <b> subagents at once"]}]},
+                        {"At most {1} subagents at once": "KO {1}"})
+        self.assertIn("At most &lt;b&gt; subagents at once", h)
 
     def test_off_highlights_nothing(self):
         h = self.run_js({"stage": 0, "mode": "off", "levels": LV})
