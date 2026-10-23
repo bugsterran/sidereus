@@ -7,7 +7,7 @@
    ⚠Body text keeps >=4.5 contrast on --nx-panel and --nx-bg (t3 5.4 · ok 4.7 · warn 4.9 · err 5.5 · info 5.2 · white on info-bg 5.4). */
 html[data-ui=next][data-theme=light]{--nx-bg:#f4f5f7;--nx-panel:#fdfefe;--nx-hover:#eceef2;--nx-rule:#d8dbe1;--nx-field:#80858e;
   --nx-t1:#252b31;--nx-t2:#4e535a;--nx-t3:#61656c;
-  --nx-ok:#2a7d43;--nx-warn:#8b6401;--nx-err:#c11e32;--nx-info:#1961d4;--nx-info-bg:#1f63da;--nx-idle:#6e7278;--nx-active:#2f63c8;color-scheme:light}
+  --nx-ok:#2a7d43;--nx-warn:#8b6401;--nx-err:#c11e32;--nx-info:#1961d4;--nx-info-bg:#1f63da;--nx-idle:#6e7278;--nx-active:#2f63c8;--nx-diff-del:var(--nx-err);color-scheme:light}
 html[data-ui=next][data-theme=light] #cfgbox .cfgsel,html[data-ui=next][data-theme=light] #cfgbox .svin,html[data-ui=next][data-theme=light] .svin{color-scheme:light}
 /* Scoped rules the twin generator skips (their selectors contain data-ui) but that carry literal dark colors. */
 html[data-ui=next][data-theme=light] .cfab{background:#e8eef8;border-color:#b7c6de;color:var(--nx-t1)}
