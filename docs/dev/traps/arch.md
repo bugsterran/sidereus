@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Structure tab (Architecture · Size)
 
+- **Warm-up idle never came with a tab open** (`structure.struct_mark_act`).
+  - Cause: idle was «no GET/POST outside a path deny-list»; the work log (2.5 s), timeline drawer (5 s), diff rail and `/api/arch` (30 s) timers and MCP `/api/agent/*` were not listed, and shared paths cannot be split by path.
+  - ⇒ Positive signal only: the page posts `/api/act` on pointerdown/keydown/wheel (≤ 1 per 10 s, `web/js/08-ui-kit.js` `actPing`) and page loads (`STRUCT_PAGE_PATHS`) mark; no other request does.
+  - ⚠Do not mark from request paths again. `/api/act` needs the viewer Origin. Throttle stays well under `STRUCT_WARM_IDLE_S` (30). Test: `tests/test_struct_act.py`.
+
 - **Idle warm-up cells run in a child process** (issue #19 · `structure._struct_warm_spawn`, `sidereus/structure_warm.py`).
   - Cause: a warm scan's peak memory stayed in the viewer heap; the child returns it to the OS on exit and the screen reads its disk cache entry.
   - ⇒ One `python -m sidereus.structure_warm <root> <tests>` per cell, `STRUCT_WARM_CHILD_TIMEOUT_S` = 180; fail/timeout = one `struct-warm-child` soft warning, retried after `STRUCT_WARM_CYCLE_S`; the screen still computes in-process.
@@ -258,7 +263,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⚠**Never put source bodies in the panel** (rule 1: metadata only). ⚠Area drill-down was kept and only function cells moved to the panel — merging them removes the way to see a large area large.
 - ★**The structure cache was memory-only, so every restart was fully cold — disk cache + idle warm-up** (2026-09-22).
   ⇒ `~/.mailbox-mcp/struct-cache/*.json.gz` (temp file + `os.replace`). Three kinds: immutable snapshots (`blob` = git sha·tar·bak) · per-file parse of the current tree (`fcache`) · final response (`out`). Cap 200MB/30 days; cleanup only in the warm-up thread. `_struct_warm_loop()` warms the union of session `cwd`+`repos` **one at a time** and adds `warm` to the response.
-  ⚠Mix the versions (`STRUCT_DISK_VER`·`STRUCT_RULES_VER`) **into the filename hash** — with only an in-body `rv` check, two versions overwrite the same file in turn and neither hits. ⚠Exclude `/api/state`·`/api/live` from warm-up «idle» (they poll every 2.5 s, so idle would never come). ⚠Read failures are silently ignored and recomputed.
+  ⚠Mix the versions (`STRUCT_DISK_VER`·`STRUCT_RULES_VER`) **into the filename hash** — with only an in-body `rv` check, two versions overwrite the same file in turn and neither hits. ⚠Warm-up «idle» counts human input only (see the `/api/act` entry above). ⚠Read failures are silently ignored and recomputed.
   ★Measured cold → new process: Sidereus 2.49→0.01s · repo-B 4.50→0.05s · repo-A 4.14→0.05s. `total`, top areas and churn distribution all identical. Editing one file re-parses **only that 1 file** (0.12s). Cache for 6 projects 4.4MB.
 - ★**Vendor name lists and tests swamped the structure — split by content and added `?tests=`** (2026-09-22).
   Cause: the name/version rule caught only `ace-builds-1.2.6`, so repo-A's `template/js` 18,434 lines (jindo·FusionCharts·dhtmlX) rose to the top areas; in repo-B `src/test` 111,052 lines beat `src/main` 96,315 for 1st and 2nd.

@@ -28,7 +28,6 @@ import json
 import os
 import sys
 import threading
-import time
 import traceback
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -84,7 +83,7 @@ from sidereus.awake import _awake_loop
 import sidereus.saver  # noqa: F401  (nothing used here; kept for import order)
 import sidereus.structure_scan  # noqa: F401  (nothing used here; kept for import order)
 import sidereus.structure_snap  # noqa: F401  (nothing used here; kept for import order)
-from sidereus.structure import _STRUCT_POLL, _struct_act, _struct_warm_loop
+from sidereus.structure import STRUCT_PAGE_PATHS, _struct_warm_loop, struct_mark_act
 import sidereus.file_owner  # noqa: F401  (nothing used here; kept for import order)
 from sidereus.pl_reqs import memory_only as pl_reqs_memory_only
 import sidereus.attention  # noqa: F401  (nothing used here; kept for import order)
@@ -229,9 +228,6 @@ class Handler(_GetRoutes, _PostRoutes, BaseHTTPRequestHandler):
         if not self._host_ok():
             return
         u = urlparse(self.path)
-        # ⚠`/api/hook` (external CLI hooks) is not a human either — including it freezes the idle verdict as permanently awake
-        if u.path not in ("/v1/logs", "/v1/metrics", "/api/hook"):    # Telemetry is not a human
-            _struct_act[0] = time.time()
         if not self._origin_ok():
             return self._refuse("cross-origin POST refused\n")
         if self.headers.get("Transfer-Encoding"):
@@ -259,9 +255,9 @@ class Handler(_GetRoutes, _PostRoutes, BaseHTTPRequestHandler):
         if u.path.startswith("/api/") and \
            (self.headers.get("Sec-Fetch-Site") or "").strip().lower() in ("cross-site", "same-site"):
             return self._refuse("cross-site GET refused\n")
-        # «Human activity» marker that structure pre-warming yields to — timer polling is not counted (⚠ at `_STRUCT_POLL` above)
-        if u.path not in _STRUCT_POLL:
-            _struct_act[0] = time.time()
+        # ⚠Only page loads mark human activity here; API GETs are timers/MCP too (input arrives via POST /api/act, structure.py)
+        if u.path in STRUCT_PAGE_PATHS:
+            struct_mark_act()
         if self._feature_off(u.path):
             return
         fn = self._GET_ROUTES.get(u.path)
