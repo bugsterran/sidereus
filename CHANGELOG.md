@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Pipelines: the «+ Add project» folder picker suggests «Recent session folders» — up to 8 folders where a Claude Code, Codex or Gemini session worked in the last 14 days and that are not in the project list yet (name, path and last session time only); a click opens that folder like typing its path.
+
+### Changed
+
+- Server: the idle structure warm-up runs each cell in a short-lived child process that writes only the structure cache, so its memory peak no longer stays in the viewer process (#19).
+
+### Fixed
+
+- Pipelines: with no logged-in session in the project, «Start from a template» is the primary button instead of «Ask AI for a draft», which could not be sent.
+- Pipelines: the «Ask AI for a draft» message was partly Korean; it is now English.
+- Pipelines: the empty-screen demo hint and the first-visit tour show the demo command that matches the install (`python3 -m sidereus start --demo` for a clone, `sidereus start --demo` for pip/pipx/uv).
+
 ## [0.7.0] - 2026-10-23
 
 ### Added

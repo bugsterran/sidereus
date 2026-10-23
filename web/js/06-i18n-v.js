@@ -14,7 +14,7 @@ Object.assign(I18N.ko, {
   'Use an absolute path or one starting with ~': '절대 경로나 ~ 로 시작하는 경로만 됩니다', 'No such folder': '폴더가 없습니다',
   'Only project folders inside your home folder can be added': '홈 폴더 안의 프로젝트 폴더만 추가할 수 있습니다',
   'Add project': '프로젝트 불러오기', 'Pick a folder to add to the list': '폴더를 골라 목록에 추가합니다', 'Parent folder': '상위 폴더',
-  'Add this folder': '이 폴더 추가', 'Choose folder…': '폴더 선택…', 'Show hidden folders': '숨김 폴더 보기', 'A folder dialog is open…': '선택 창이 열렸습니다…', 'A folder dialog is already open': '선택 창이 이미 열려 있습니다', 'Timed out — the folder dialog was not closed within 5 minutes': '시간 초과 — 선택 창이 5분 안에 닫히지 않았습니다', 'The chosen path cannot be used': '선택한 경로를 쓸 수 없습니다', 'Could not open the folder dialog': '선택 창을 열지 못했습니다','No subfolders': '하위 폴더가 없습니다', 'Claude config': 'Claude 설정', 'Could not read the folder': '폴더를 읽지 못했습니다',
+  'Add this folder': '이 폴더 추가', 'Recent session folders': '최근 세션 폴더', 'Choose folder…': '폴더 선택…', 'Show hidden folders': '숨김 폴더 보기', 'A folder dialog is open…': '선택 창이 열렸습니다…', 'A folder dialog is already open': '선택 창이 이미 열려 있습니다', 'Timed out — the folder dialog was not closed within 5 minutes': '시간 초과 — 선택 창이 5분 안에 닫히지 않았습니다', 'The chosen path cannot be used': '선택한 경로를 쓸 수 없습니다', 'Could not open the folder dialog': '선택 창을 열지 못했습니다','No subfolders': '하위 폴더가 없습니다', 'Claude config': 'Claude 설정', 'Could not read the folder': '폴더를 읽지 못했습니다',
   'Only the first 500 folders are shown — type the path instead': '폴더가 많아 앞쪽 500개만 보입니다 — 경로를 직접 입력하세요',
   'Not in the list': '목록에 없는 프로젝트입니다','Up to 50 projects can be added': '최대 50개까지 추가할 수 있습니다',
   'Retry|stage': '재시도', 'Waiting': '대기', 'Save before running': '저장한 뒤 실행할 수 있습니다',

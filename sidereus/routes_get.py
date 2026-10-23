@@ -24,7 +24,7 @@ from sidereus.toolinv import scan_items, tool_file
 from sidereus.pipeline import pipelines, runs_here as pipeline_runs_here
 from sidereus.sessions import sessions_snapshot
 from sidereus.arch_map import ARCH_PL, seen_runs as arch_seen_runs
-from sidereus.pipeline_projects import browse_dirs as pipeline_dirs
+from sidereus.pipeline_projects import browse_dirs as pipeline_dirs, recent_dirs as pipeline_recent_dirs
 from sidereus.pl_eval_view import pl_eval as pipeline_eval
 from sidereus.harness_plat import harness_evidence_only, harness_plat, harness_plat_file
 from sidereus.hook_diag import diag as hook_diag
@@ -365,10 +365,10 @@ class _GetRoutes(_StructRoutes):
         self._raw_json(code, out)
 
     def _g_pipeline_dirs(self, u):
-        # «+ Add project» folder browser: folder names + git/claude flags inside the user's home only
+        # «+ Add project» folder browser: folder names + git/claude flags inside home only; recent=1 = «Recent session folders»
         try:
             q = parse_qs(u.query)
-            code, out = pipeline_dirs(_q1(q, "path"), _q1(q, "hidden") == "1")
+            code, out = (200, {"ok": True, "recent": pipeline_recent_dirs()}) if _q1(q, "recent") == "1" else pipeline_dirs(_q1(q, "path"), _q1(q, "hidden") == "1")
         except Exception as e:
             code, out = 500, {"ok": False, **_exc_msg(e)}
         self._raw_json(code, out)
