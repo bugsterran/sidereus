@@ -91,6 +91,24 @@ class Doctor(unittest.TestCase):
         line = self.run_doctor()[1][3]
         self.assertTrue(line.startswith("FAIL") and "(pl_mark.py)" in line, line)
 
+    def test_windows_quoted_hook_commands_match(self):
+        import ntpath
+        import types
+        with open(os.path.join(ROOT, "plugin", "hooks", "hooks.json"), encoding="utf-8") as f:
+            src = f.read()
+        # ⚠ntpath + fake open: on macOS os.path.join would emit `/`, never the `\` a real Windows build writes.
+        for code in (r"D:\src\sidereus", r"C:\My Repos\side reus"):
+            with mock.patch.object(cli, "IS_WIN", True), \
+                    mock.patch.object(cli, "os", types.SimpleNamespace(path=ntpath)), \
+                    mock.patch.object(cli, "open", mock.mock_open(read_data=src), create=True):
+                h = cli.setup_hooks(r"C:\Py 3\python.exe", code=code)["hooks"]
+            cmds = [x["command"] for gs in h.values() for g in gs for x in g["hooks"]]
+            self.assertIn('"C:\\Py 3\\python.exe" "%s\\hooks\\pl_mark.py"' % code, cmds)
+            self.assertEqual(cli.missing_hook_scripts({"hooks": h}, h), [])
+            drop = {ev: [dict(g, hooks=[x for x in g["hooks"] if "pl_mark.py" not in x["command"]])
+                         for g in gs] for ev, gs in h.items()}
+            self.assertEqual(cli.missing_hook_scripts({"hooks": drop}, h), ["pl_mark.py"])
+
     def test_foreign_server_fails_busy_passes(self):
         self.assertTrue(self.run_doctor(plugin=True, code=404)[1][4].startswith("FAIL"))
         self.assertTrue(self.run_doctor(plugin=True, code=cli.BUSY)[1][4].startswith("OK"))
