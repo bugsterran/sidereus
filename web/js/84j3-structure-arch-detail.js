@@ -129,22 +129,51 @@ function archNbrTree(d, sel, names, nx, ro){
     }).join('') + '</ul>') + '</li>';
   }).join('') + '</ul>';
 }
-// Files under the focused module's path at the map commit (/api/arch/files): c[p\tid] = {commit, r}, load[p\tid] = in flight, fold = list folded.
-const ARCH_FL = { c: {}, load: {}, fold: false };
+// Files under the focused module's path at the map commit (/api/arch/files): c[p\tid] = {commit, r}, load[p\tid] = in flight,
+// fold = section folded (starts folded, memory only), op[p\tid] = open folder keys (repo paths, null-proto).
+const ARCH_FL = { c: {}, load: {}, fold: true, op: {} };
 const ARCH_FL_WHY = { nopath: 'This module has no path', ext: 'External module — no files in this repository', gone: 'Path not found at the diagram commit',
   nomap: 'No diagram for this project', bad: 'Request refused', git: 'Could not list files' };
-// Pure: «Files <n>» fold header + flat path list (no row handler) + «+N more» / «N+ more» when cut; r null = loading; why = one-line reason.
-function archFilesHtml(r, fold){
+// Pure: repo paths → folder tree relative to the module path pre: {k: folder repo path, d: name → child, f: [[name, path]], n: files below}.
+// A path outside pre keeps its full path. ⚠null-proto maps: folder names are repo data («__proto__» stays a plain key).
+function archFlTree(files, pre){
+  const b = String(pre || '').replace(/\/+$/, ''), node = k => ({ k, d: Object.create(null), f: [], n: 0 }), root = node(b);
+  (files || []).forEach(x => { const s = String(x), inb = !!b && s.indexOf(b + '/') === 0;
+    const seg = (inb ? s.slice(b.length + 1) : s).split('/').filter(Boolean);
+    let at = root, k = inb ? b : '';
+    root.n++;
+    seg.slice(0, -1).forEach(nm => { k = k ? k + '/' + nm : nm; at = at.d[nm] = at.d[nm] || node(k); at.n++; });
+    at.f.push([seg.length ? seg[seg.length - 1] : s, s]); });
+  return root;
+}
+// Pure: every folder key of a tree (for «Expand all»).
+function archFlDirs(t){ const out = []; Object.keys(t.d).forEach(nm => { out.push(t.d[nm].k); out.push(...archFlDirs(t.d[nm])); }); return out; }
+// Pure: one tree level — folders («name/ <count>», data-arfdir toggles) then files (data-arfopen → Source popup); open = folder keys shown open.
+function archFlRows(t, open){
+  const by = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+  return Object.keys(t.d).sort(by).map(nm => { const c = t.d[nm], on = archOwn(open, c.k) && !!open[c.k];
+    return '<li role=treeitem><button type=button class="archnxb archfld" data-arfdir="' + esc(c.k) + '" aria-expanded=' + (on ? 'true' : 'false') + '>'
+      + '<i aria-hidden=true>' + (on ? '▾' : '▸') + '</i>' + esc(nm + '/') + '<small>' + c.n + '</small></button>'
+      + (on ? '<ul role=group>' + archFlRows(c, open) + '</ul>' : '') + '</li>'; }).join('')
+    + t.f.slice().sort((a, b) => by(a[0], b[0])).map(f => '<li role=treeitem><button type=button class=archflf data-arfopen="' + esc(f[1])
+      + '" title="' + esc(f[1]) + '">' + esc(f[0]) + '</button></li>').join('');
+}
+// Pure: «Files <n>» fold header (+ Expand / Collapse all when there are folders) + first-level tree + «+N more» / «N+ more» when cut;
+// r null = loading; why = one-line reason; pre = module path (default r.path).
+function archFilesHtml(r, fold, open, pre){
   const why = r && (r.why || (r.ok === false ? 'git' : '')), fs = r && !why ? (Array.isArray(r.files) ? r.files : []) : null;   // ⚠ok reply without files = empty, not loading
   const tot = fs ? Math.max(typeof r.total === 'number' ? r.total : 0, fs.length) : 0, cut = !!(fs && r.cut);
+  const tr = fs && fs.length && !fold ? archFlTree(fs, pre != null ? pre : r.path) : null;
   const hd = '<div class=archdh><button type=button class="archnxb archflb" data-arfiles aria-expanded=' + (fold ? 'false' : 'true') + '>'
-    + '<i aria-hidden=true>' + (fold ? '▸' : '▾') + '</i>' + esc(T('Files')) + (fs ? '<small>' + tot + (cut ? '+' : '') + '</small>' : '') + '</button></div>';
+    + '<i aria-hidden=true>' + (fold ? '▸' : '▾') + '</i>' + esc(T('Files')) + (fs ? '<small>' + tot + (cut ? '+' : '') + '</small>' : '') + '</button>'
+    + (tr && Object.keys(tr.d).length ? '<button type=button class=archnxa data-arfexp=1>' + esc(T('Expand all')) + '</button>'
+      + '<button type=button class=archnxa data-arfexp=0>' + esc(T('Collapse all')) + '</button>' : '') + '</div>';
   if(fold) return hd;
   if(!r) return hd + '<div class=archevn>' + esc(T('Loading files…')) + '</div>';
   if(why) return hd + '<div class=archevn>' + esc(T(archOwn(ARCH_FL_WHY, why) ? ARCH_FL_WHY[why] : ARCH_FL_WHY.git)) + '</div>';
   if(!fs.length) return hd + '<div class=archevn>' + esc(T('No files at the diagram commit')) + '</div>';
   const more = tot - fs.length;
-  return hd + '<ul class=archfiles>' + fs.map(f => '<li title="' + esc(f) + '">' + esc(f) + '</li>').join('') + '</ul>'
+  return hd + '<ul class=archfiles role=tree>' + archFlRows(tr, open || {}) + '</ul>'
     + (cut ? '<div class=archevn>' + esc(T('{n}+ more').replace('{n}', more > 0 ? more : 0)) + '</div>'
       : more > 0 ? '<div class=archevn>' + esc(T('+{n} more').replace('{n}', more)) + '</div>' : '');
 }
@@ -171,10 +200,20 @@ function archFilesKick(p, commit, id){
 function archFilesSec(d, m){
   if(typeof ARCH_FL === 'undefined' || !ARCH.sel) return '';
   if(!m.path || m.ext) return archFilesHtml({ ok: false, why: m.ext ? 'ext' : 'nopath' }, ARCH_FL.fold);
-  const p = ARCH.sel.p, cm = String((d && d.commit) || ''), c = ARCH_FL.c[p + '\t' + m.id];
+  const p = ARCH.sel.p, cm = String((d && d.commit) || ''), k = p + '\t' + m.id, c = ARCH_FL.c[k];
   const r = c && c.commit === cm ? c.r : null;
   if(!r) archFilesKick(p, cm, m.id);
-  return archFilesHtml(r, ARCH_FL.fold);
+  return archFilesHtml(r, ARCH_FL.fold, ARCH_FL.op[k], m.path);
+}
+// Folder toggle (dir = key) or Expand / Collapse all (all = true / false) of the focused module's file tree; memory only.
+function archFlOpen(p, dir, all){
+  const id = ARCH.sel && ARCH.sel.p === p ? ARCH.sel.id : null, k = p + '\t' + id;
+  if(id == null) return;
+  const o = Object.assign(Object.create(null), all === false ? null : ARCH_FL.op[k]);
+  if(all){ const c = ARCH_FL.c[k], m = (((ARCH.cache[p] || {}).modules) || []).find(x => x && x.id === id);
+    archFlDirs(archFlTree(c && c.r && Array.isArray(c.r.files) ? c.r.files : [], m && m.path)).forEach(x => { o[x] = true; }); }
+  else if(all == null){ if(archOwn(o, dir) && o[dir]) delete o[dir]; else o[dir] = true; }
+  ARCH_FL.op[k] = o;
 }
 // Pure: side panel for the focused module. ro = {op(i), dv(i), sn, drawn: Set, lit: flow id | null}.
 function archDetHtml(d, sel, names, nx, ro){
@@ -188,7 +227,7 @@ function archDetHtml(d, sel, names, nx, ro){
     + '<button type=button class=archrf data-arf title="' + esc(T('Reload now')) + '">↻</button></div><div class=archdet>'
     + (m.summary ? '<p class=archsum>' + esc(m.summary) + '</p>' : '')
     + '<dl class=archmeta>' + (ly ? row('Layer', archOwn(ARCH_LAYER_LBL, ly) ? T(ARCH_LAYER_LBL[ly], 'arch layer') : ly) : '')
-    + (m.group != null ? row('Group', archGroupName(d.groups, m.group)) : '') + (ow.length ? row('Owns', ow.join(', ')) : '') + '</dl>' + archFilesSec(d, m)
+    + (m.group != null ? row('Group', archGroupName(d.groups, m.group)) : '') + (ow.length ? row('Owns', ow.join(', ')) : '') + '</dl>'
     + '<div class=archdh><b>' + esc(T('Neighbours')) + '</b><button type=button class=archnxa data-arnall=1>' + esc(T('Expand all')) + '</button>'
     + '<button type=button class=archnxa data-arnall=0>' + esc(T('Collapse all')) + '</button></div>' + archNbrTree(d, sel, names, nx, o)
     + '<div class=archdh><b>' + esc(T('Flows through here')) + '</b></div>'
@@ -197,7 +236,7 @@ function archDetHtml(d, sel, names, nx, ro){
         + '<b>' + esc((x.f.ok ? '✓ ' : '✗ ') + (x.f.name || x.f.id)) + '</b>'
         + (x.on < x.n ? '<small>' + esc(T('{a}/{b} steps on this view').replace('{a}', x.on).replace('{b}', x.n)) + '</small>' : '') + '</button></li>'; }).join('') + '</ul>'
       : '<div class=archevn>' + esc(T('No flow passes through this module')) + '</div>')
-    + '</div></aside>';
+    + archFilesSec(d, m) + '</div></aside>';   // relations first, the file list last
 }
 // Path level / up: overview stays (cached svg, no re-layout), members light up; scroll is kept by archPaint.
 function archGoUp(p, r){ ARCH.sel = null; ARCH.op = ''; ARCH.scope = r && r.scope ? { p, layer: r.scope.layer, group: r.scope.group } : null; paintStruct(); }
@@ -211,7 +250,7 @@ function archPathClick(p, lv){
 document.addEventListener('click', ev => {
   const t = ev.target && ev.target.closest ? ev.target : null;
   if(!t || !t.closest('.archtab') || strMode !== 'arch') return;
-  const p = strOn[0] || '', b = t.closest('[data-arpath],[data-arfx],[data-arnx],[data-arnall],[data-arfiles]');
+  const p = strOn[0] || '', b = t.closest('[data-arpath],[data-arfx],[data-arnx],[data-arnall],[data-arfiles],[data-arfdir],[data-arfexp],[data-arfopen]');
   if(!b) return;
   const hadF = document.activeElement === b, hold = s => { if(hadF && typeof kbHold === 'function') kbHold(s); };   // ⚠the repaint drops focus to <body>
   if(b.dataset.arpath){ const lv = b.dataset.arpath; archPathClick(p, lv); hold('.archpath [data-arpath=' + lv + ']'); return; }
@@ -220,6 +259,10 @@ document.addEventListener('click', ev => {
   if(b.dataset.arnx != null){ const k = b.dataset.arnx; ARCH.nx = Object.assign({}, ARCH.nx); ARCH.nx[k] = !(archOwn(ARCH.nx, k) && ARCH.nx[k]);
     paintStruct(); hold('.archdet [data-arnx="' + k + '"]'); return; }
   if(b.dataset.arfiles != null){ ARCH_FL.fold = !ARCH_FL.fold; archFlRepaint(); hold('.archdet [data-arfiles]'); return; }
+  if(b.dataset.arfdir != null){ const k = b.dataset.arfdir; archFlOpen(p, k); archFlRepaint();
+    hold('.archdet [data-arfdir="' + k.replace(/["\\]/g, '\\$&') + '"]'); return; }   // ⚠folder names may hold quotes
+  if(b.dataset.arfexp != null){ archFlOpen(p, null, b.dataset.arfexp === '1'); archFlRepaint(); hold('.archdet [data-arfexp="' + b.dataset.arfexp + '"]'); return; }
+  if(b.dataset.arfopen != null){ strPopOpenTree(p, b.dataset.arfopen, 1); return; }   // line 1: an extension-less file is not taken for a folder
   if(b.dataset.arnall != null){ const nx = {};
     if(b.dataset.arnall === '0'){ const d = ARCH.cache[p] || {}, sel = ARCH.sel && ARCH.sel.id;
       ((d.edges) || []).forEach(e => { if(!e || (e.from !== sel && e.to !== sel)) return;

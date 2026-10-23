@@ -41,16 +41,18 @@ def ok(n, total, cut=False):
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class ArchFiles(unittest.TestCase):
     def test_r1_list_in_panel_after_owns(self):
-        r = run("ARCH.cache['/r'] = D; ARCH.sel = {p: '/r', id: 'web'}; const a = archDetHtml(D, 'web', NAMES, {}, {});"
+        r = run("ARCH.cache['/r'] = D; ARCH.sel = {p: '/r', id: 'web'}; ARCH_FL.fold = false; const a = archDetHtml(D, 'web', NAMES, {}, {});"
                 "await flush(" + json.dumps(ok(3, 3)) + "); const b = archDetHtml(D, 'web', NAMES, {}, {});"
                 "console.log(JSON.stringify([a, b, CALLS, PAINTS]));")
         a, b, calls, paints = r
         self.assertIn("Loading files…", a)
         self.assertEqual(calls, ["/api/arch/files?path=%2Fr&id=web"])   # client sends project + module id only
         self.assertEqual(paints, 1)                             # still the selected module -> repaint
-        self.assertEqual(re.findall(r"<li title=\"([^\"]+)\">", b), ["web/f0.js", "web/f1.js", "web/f2.js"])
-        self.assertLess(b.index("Owns"), b.index("data-arfiles"))
-        self.assertLess(b.index("data-arfiles"), b.index("Neighbours"))
+        self.assertEqual(re.findall(r"data-arfopen=\"([^\"]+)\"", b), ["web/f0.js", "web/f1.js", "web/f2.js"])
+        # R5: summary/meta -> Neighbours -> Flows through here -> Files last
+        self.assertLess(b.index("Owns"), b.index("Neighbours"))
+        self.assertLess(b.index("Neighbours"), b.index("Flows through here"))
+        self.assertLess(b.index("Flows through here"), b.index("data-arfiles"))
         self.assertIn("<small>3</small>", b)
 
     def test_r2_cap_and_more(self):
@@ -81,7 +83,7 @@ class ArchFiles(unittest.TestCase):
 
     def test_r3_local_reasons_no_fetch(self):
         r = run("const m = [{id: 'np', name: 'NP', path: ''}, {id: 'x', name: 'X', path: 'x/', ext: 'pg'}], d = {commit: 'c1', modules: m, edges: []};"
-                "ARCH.cache['/r'] = d; ARCH.sel = {p: '/r', id: 'np'};"
+                "ARCH.cache['/r'] = d; ARCH.sel = {p: '/r', id: 'np'}; ARCH_FL.fold = false;"
                 "console.log(JSON.stringify([archDetHtml(d, 'np', {}, {}, {}), archDetHtml(d, 'x', {}, {}, {}), CALLS]));")
         self.assertIn("This module has no path", r[0])
         self.assertIn("External module", r[1])
@@ -107,10 +109,8 @@ class ArchFiles(unittest.TestCase):
         self.assertIn("aria-expanded=false", r[2])
         self.assertNotIn("archevn", r[2])                       # folded: header only
 
-    def test_r4_rows_inert_no_view_movement(self):
+    def test_r4_no_view_movement(self):
         h = run("console.log(JSON.stringify(archFilesHtml(" + json.dumps(ok(5, 5)) + ", false)));")
-        for li in re.findall(r"<li[^>]*>", h):
-            self.assertNotRegex(li, r"data-ar")
         for bad in ("scrollIntoView", "scrollTo(", "scrollBy(", ".focus("):
             self.assertNotIn(bad, DET)
         self.assertIn("[data-arfiles]", re.search(r"t\.closest\('\[data-arpath\][^']*'\)", DET).group(0))
@@ -122,11 +122,12 @@ class ArchFiles(unittest.TestCase):
     def test_new_literals_have_ko(self):
         with open(os.path.join(WEB, "js", "06-i18n-zt-arch-detail.js"), encoding="utf-8") as fh:
             ko = fh.read()
-        with open(os.path.join(WEB, "js", "06-i18n-zz.js"), encoding="utf-8") as fh:
-            ko += fh.read()
+        for f in ("06-i18n-zz.js", "06-i18n-h.js"):
+            with open(os.path.join(WEB, "js", f), encoding="utf-8") as fh:
+                ko += fh.read()
         lits = set(re.findall(r"T\('([^']+)'\)", DET[DET.index("const ARCH_FL"):DET.index("// Pure: side panel")]))
         lits |= set(re.findall(r"'([^']+)'", re.search(r"const ARCH_FL_WHY = \{[\s\S]*?\};", DET).group(0))) - {"nopath", "ext", "gone", "nomap", "bad", "git"}
-        self.assertTrue({"Files", "+{n} more", "{n}+ more"} <= lits)
+        self.assertTrue({"Files", "+{n} more", "{n}+ more", "Expand all", "Collapse all"} <= lits)
         for s in lits:
             self.assertIn("'" + s + "':", ko, s)
 
@@ -136,6 +137,69 @@ class ArchFiles(unittest.TestCase):
         self.assertIn("text-overflow:ellipsis", css)
         self.assertIn("overflow-x:hidden", css)
         self.assertNotRegex(css, r"min-width:\s*[1-9]")
+
+
+TREE = ["web/a.js", "web/js/x.js", "web/js/y.js", "web/js/deep/z.js", "web/css/s.css", 'web/q"d/<b>.js']
+SEL = "ARCH.cache['/r'] = D; ARCH.sel = {p: '/r', id: 'web'}; ARCH_FL.c['/r\\tweb'] = {commit: 'c1', r: %s};" % json.dumps(
+    dict(ok(0, 6), files=TREE, total=6))
+OPENED = lambda h: re.findall(r"data-arfdir=\"([^\"]+)\" aria-expanded=true", h)
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class ArchFilesTree(unittest.TestCase):
+    def test_r6_folded_by_default_not_persisted(self):
+        h = run("ARCH.cache['/r'] = D; ARCH.sel = {p: '/r', id: 'web'}; archDetHtml(D, 'web', NAMES, {}, {});"
+                "await flush(" + json.dumps(ok(3, 3)) + "); console.log(JSON.stringify([ARCH_FL.fold, archDetHtml(D, 'web', NAMES, {}, {})]));")
+        self.assertIs(h[0], True)
+        self.assertIn("data-arfiles aria-expanded=false", h[1])
+        self.assertIn("<small>3</small>", h[1])                # count still in the folded header
+        self.assertNotIn("archfiles", h[1])
+        self.assertNotIn("localStorage", DET[DET.index("const ARCH_FL"):DET.index("// Pure: side panel")])
+
+    def test_r1_first_level_with_counts(self):
+        h = run(SEL + "ARCH_FL.fold = false; console.log(JSON.stringify(archDetHtml(D, 'web', NAMES, {}, {})));")
+        self.assertEqual(re.findall(r"data-arfdir=\"([^\"]+)\"", h), ["web/css", "web/js", "web/q&quot;d"])
+        self.assertIn("js/<small>3</small>", h)                 # folder = name + files below it
+        self.assertIn("css/<small>1</small>", h)
+        self.assertEqual(re.findall(r"data-arfopen=\"([^\"]+)\"", h), ["web/a.js"])   # only the first level
+        self.assertNotIn("x.js", h)
+        self.assertNotIn("<b>", h[h.index("archfiles"):])
+
+    def test_r1_folder_click_opens_one_level(self):
+        h = run(SEL + "ARCH_FL.fold = false; archFlOpen('/r', 'web/js'); const a = archDetHtml(D, 'web', NAMES, {}, {});"
+                "archFlOpen('/r', 'web/js'); console.log(JSON.stringify([a, archDetHtml(D, 'web', NAMES, {}, {})]));")
+        self.assertEqual(OPENED(h[0]), ["web/js"])
+        self.assertIn('data-arfopen="web/js/x.js"', h[0])
+        self.assertIn('data-arfdir="web/js/deep" aria-expanded=false', h[0])   # next level only
+        self.assertNotIn("z.js", h[0])
+        self.assertEqual(OPENED(h[1]), [])                       # second click folds it again
+        self.assertNotIn("x.js", h[1])
+
+    def test_r2_expand_collapse_all(self):
+        h = run(SEL + "ARCH_FL.fold = false; archFlOpen('/r', null, true); const a = archDetHtml(D, 'web', NAMES, {}, {});"
+                "archFlOpen('/r', null, false); console.log(JSON.stringify([a, archDetHtml(D, 'web', NAMES, {}, {})]));")
+        self.assertIn("data-arfexp=1", h[0])
+        self.assertIn("data-arfexp=0", h[0])
+        self.assertIn('class=archnxa data-arfexp', h[0])        # same style as the Neighbours buttons
+        self.assertEqual(sorted(OPENED(h[0])), ["web/css", "web/js", "web/js/deep", "web/q&quot;d"])
+        self.assertIn('data-arfopen="web/js/deep/z.js"', h[0])
+        self.assertEqual(OPENED(h[1]), [])
+
+    def test_r3_file_click_opens_source_popup(self):
+        self.assertIn("strPopOpenTree(p, b.dataset.arfopen, 1)", DET)
+        sel = re.search(r"t\.closest\('(\[data-arpath\][^']*)'\)", DET).group(1)
+        for a in ("[data-arfdir]", "[data-arfexp]", "[data-arfopen]"):
+            self.assertIn(a, sel)
+        # delegated handler: a file row button calls strPopOpenTree(repo root, repo-relative path, 1)
+        h = run("""
+          const H = []; globalThis.document = { activeElement: null, addEventListener(t, f){ H.push([t, f]); } };
+          globalThis.strPopOpenTree = (...a) => CALLS.push(['open', ...a]); globalThis.strOn = ['/r']; globalThis.strMode = 'arch';
+          eval(%s);
+          const btn = { dataset: { arfopen: 'web/js/x.js' } };
+          const tgt = { closest: s => s === '.archtab' ? {} : btn };
+          H.filter(h => h[0] === 'click').forEach(h => h[1]({ target: tgt }));
+          console.log(JSON.stringify(CALLS));""" % json.dumps(DET[DET.index("document.addEventListener('click'"):DET.index("// Pure guard for Esc")]))
+        self.assertEqual(h, [["open", "/r", "web/js/x.js", 1]])
 
 
 if __name__ == "__main__":
