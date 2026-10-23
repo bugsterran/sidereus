@@ -78,7 +78,7 @@ class GeminiMailStop(unittest.TestCase):
 
     def test_process_contract(self):
         self.post("gem-a")
-        env = dict(os.environ, MAILBOX_DIR=self.d)
+        env = dict(os.environ, MAILBOX_DIR=self.d, MAILBOX_STOP_BUDGET_S="inf")   # ⚠wall-clock budget flakes on loaded runners
         out = subprocess.run([sys.executable, HOOK], input=json.dumps({"session_id": "g2", "cwd": self.cwd}),
                              capture_output=True, text=True, env=env, timeout=10, encoding="utf-8")
         self.assertEqual(out.returncode, 0)
@@ -124,7 +124,7 @@ class GeminiMailWorker(GeminiMailStop):
         return out
 
     def run_hook(self, active=True):
-        env = dict(os.environ, MAILBOX_DIR=self.d)
+        env = dict(os.environ, MAILBOX_DIR=self.d, MAILBOX_STOP_BUDGET_S="inf")   # ⚠wall-clock budget flakes on loaded runners
         env.pop("SIDEREUS_MAIL_WORKER", None)
         out = subprocess.run([sys.executable, HOOK], capture_output=True, text=True, env=env, timeout=10,
                              input=json.dumps({"session_id": "g9", "cwd": self.cwd, "stop_hook_active": active}), encoding="utf-8")
@@ -238,7 +238,7 @@ class OtherPlatformMailStop(unittest.TestCase):
         shutil.rmtree(self.cwd, ignore_errors=True)
 
     def hook(self, *args):
-        env = dict(os.environ, MAILBOX_DIR=self.d, SIDEREUS_MAIL_WORKER="1")
+        env = dict(os.environ, MAILBOX_DIR=self.d, SIDEREUS_MAIL_WORKER="1", MAILBOX_STOP_BUDGET_S="inf")
         out = subprocess.run([sys.executable, HOOK] + list(args), capture_output=True, text=True, env=env,
                              timeout=10, input=json.dumps({"session_id": "c1", "cwd": self.cwd}), encoding="utf-8")
         self.assertEqual(out.returncode, 0)

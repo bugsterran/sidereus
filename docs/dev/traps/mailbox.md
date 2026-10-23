@@ -88,6 +88,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ With `stop_hook_active` in the input, a block stages `pending`; the next Stop promotes it on `true`, drops it on `false` (re-block). `mailbox_wake` fires only above max(confirmed, pending) and clears it.
   - ⚠Do not write `hooked` receipts or move `last_t`/`relay_t` at block time. ⚠Without the key keep commit-at-once (Gemini and other CLIs never send a second phase).
   - Tests: `test_mailbox_stop.test_overridden_block_blocks_same_set_again` · `test_mailbox_wake.test_pending_only_does_not_wake`.
+- **Stop hook wall-clock budget makes subprocess tests flaky** (`hooks/mailbox_stop.py` `BUDGET_S` 0.25 s from process start). ★CI 39867579325 (ubuntu 3.9): a loaded runner descheduled the hook > 0.25 s on a 1-line bus, it printed nothing, `test_time_budget_on_large_bus` failed.
+  - ⇒ `MAILBOX_STOP_BUDGET_S` overrides the budget (invalid → 0.25); every test that runs the hook as a subprocess and expects output sets it to `inf`. The over-budget path is tested in-process with `plan(t0=...)` (`test_over_budget_prints_nothing`).
+  - ⚠Do not raise the 0.25 default to calm a test. Gemini/Codex mail stop reads the same value through the module (`tests/test_gemini_mail_stop.py`).
 
 ## Mail watch: waking without Monitor (`hooks/mailbox_wake.py`)
 

@@ -32,7 +32,18 @@ import tempfile
 import time
 
 T0 = time.monotonic()
-BUDGET_S = 0.25            # hard stop before printing; Claude Code's own timeout is the outer guard
+
+
+def _budget_s(raw, default=0.25):
+    try:
+        v = float(raw)
+    except (TypeError, ValueError):
+        return default
+    return v if v > 0 else default
+
+
+# ⚠Env override exists for tests only: they run the hook as a subprocess, and a wall-clock budget makes them flaky on loaded runners.
+BUDGET_S = _budget_s(os.environ.get("MAILBOX_STOP_BUDGET_S"))   # hard stop before printing; Claude Code's own timeout is the outer guard
 BUS_TAIL = 512 * 1024      # only the bus tail is read (live bus is ~3 MB)
 ACK_TAIL = 256 * 1024
 LOOKBACK_S = 6 * 3600      # ★a stale cursor (weeks old) must not dump hundreds of old posts on first run
