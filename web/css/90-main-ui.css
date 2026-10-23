@@ -16,6 +16,7 @@ html[data-ui=next]{--nx-bg:#0a0b0e;--nx-panel:#121417;--nx-hover:#1b1d20;--nx-ru
   --nx-t1:#cdcedc;--nx-t2:#909298;--nx-t3:#84868c;
   --nx-ok:#71c269;--nx-warn:#fad83e;--nx-err:#f45460;--nx-info:#5899f3;--nx-info-bg:#2e6bca;--nx-idle:#7d7e85;
   --nx-active:#5b8def;   /* One running/active colour (.mvdot · run table) */
+  --nx-diff-del:#ff7d87;   /* Removed-line count: err hue, lighter so a thin «−1» stays legible (8.0 on --nx-bg; --nx-err is 5.9) */
   --nx-sans:Inter,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',"Segoe UI",Roboto,sans-serif}
 html[data-ui=next][data-tone=grey]{--nx-bg:#1a1c20;--nx-panel:#23262a;--nx-hover:#2d2f34;--nx-rule:#373a3e;--nx-field:#767980;--nx-t2:#a3a4ab;--nx-t3:#96989f}
 html[data-ui=next][data-tone=blue]{--nx-bg:#0e1320;--nx-panel:#151c2d;--nx-hover:#1d263a;--nx-rule:#253048;--nx-field:#6b748c;--nx-t2:#999ba2;--nx-t3:#8d8f95}
