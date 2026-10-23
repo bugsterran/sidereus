@@ -434,5 +434,103 @@ class PlNow(unittest.TestCase):
         self.assertRegex(css, r"\.plnlc>\.plnlh\{[^}]*flex:none")               # fold button never shrinks in the scroller
 
 
+# plNowFollow harness: plCur = the selected name; plLiveRun reads LV[proj|name]; plWatchOn reads WATCH.
+FOL = (NOW + _const("PLNOW_GRACE", "48j-pipeline-now.js") + js_fn("plNowWorking") + js_fn("plNowFollow") + """
+let PLNOW_SEEN = null, PLNOW_VKEY = '', WATCH = true, LV = {};
+let CURX = { ok: true, sha: 'h' };
+function plCur(){ return PLS.sel && CURX ? Object.assign({ name: PLS.sel }, CURX) : null; }
+function plLiveRun(proj, name){ return LV[proj + '|' + name] || null; }
+function plWatchFor(p){ return WATCH; }
+Object.assign(PLS, { proj: '/a', sel: 'idle', std: '', wf: null, diff: null, del: null, msg: '', runSel: null }); PLAG = false;
+const S = () => [PLS.proj, PLS.sel, PLS.nowSid];
+Date.now = () => 1e9;   // frozen clock (s = 1e6)
+const RUN = { S: { o: 'run', t1: 1e6 } }, ses = (sid, cwd, runs) => ({ state: 'tool', sid, cwd, plat: sid, plrun: runs.map(r => r.stages ? r : Object.assign({ stages: RUN }, r)) });
+""")
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class PlNowFollow(unittest.TestCase):
+    def test_a_first_call_opens_newest_unless_live_viewed(self):
+        r = run(FOL + "const N = [ses('s1', '/b', [{name: 'p1', rid: 5, t0: 5}]), ses('s2', '/c', [{name: 'p2', rid: 9, t0: 9}])];"
+                "plNowFollow(N); const a = [S(), PAINT, FIT]; plNowFollow(N); const b = S();"
+                "PLNOW_SEEN = null; Object.assign(PLS, { proj: '/a', sel: 'p0', nowSid: '' }); LV['/a|p0'] = { sid: 's0', pr: { rid: 3 } };"
+                "plNowFollow(N.concat([ses('s0', '/a', [{name: 'p0', rid: 3, t0: 3}])])); console.log(JSON.stringify([a, b, S()]));")
+        self.assertEqual(r, [[["/c", "p2", "s2"], 0, 0], ["/c", "p2", "s2"], ["/a", "p0", ""]])   # reload: newest live; a viewed live run is kept
+
+    def test_b_r1_new_run_in_other_project_selected(self):
+        r = run(FOL + "plNowFollow([]); plNowFollow([ses('s1', '/b', [{name: 'chg', rid: 5, t0: 5}])]);"
+                "console.log(JSON.stringify([S(), LS['sidereus.plproj'], PAINT, FIT]));")
+        self.assertEqual(r, [["/b", "chg", "s1"], "/b", 0, 0])                 # moved, pref written, no paint / fit
+
+    def test_c_two_new_runs_newest_wins(self):
+        r = run(FOL + "plNowFollow([]); plNowFollow([ses('s1', '/b', [{name: 'p1', rid: 5, t0: 5}]), ses('s2', '/c', [{name: 'p2', rid: 9, t0: 9}])]);"
+                "console.log(JSON.stringify(S()));")
+        self.assertEqual(r, ["/c", "p2", "s2"])
+
+    def test_d_r2_viewed_live_run_kept(self):
+        r = run(FOL + "PLS.sel = 'p1'; const A = ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5}]); LV['/a|p1'] = { sid: 's1', pr: { rid: 5 } };"
+                "plNowFollow([A]); plNowFollow([A, ses('s2', '/c', [{name: 'p2', rid: 9, t0: 9}])]); console.log(JSON.stringify(S()));")
+        self.assertEqual(r, ["/a", "p1", ""])
+
+    def test_e_r3_viewed_ends_moves_to_newest_left(self):
+        r = run(FOL + "PLS.sel = 'p1'; LV['/a|p1'] = { sid: 's1', pr: { rid: 5 } };"
+                "const B = ses('s2', '/b', [{name: 'p2', rid: 3, t0: 3}]), C = ses('s3', '/c', [{name: 'p3', rid: 4, t0: 4}]);"
+                "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5}]), B, C]); LV['/a|p1'].pr.end = 7;"
+                "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, end: 7}]), B, C]); console.log(JSON.stringify(S()));")
+        self.assertEqual(r, ["/c", "p3", "s3"])
+
+    def test_f_r3_none_left_unchanged(self):
+        r = run(FOL + "PLS.sel = 'p1'; LV['/a|p1'] = { sid: 's1', pr: { rid: 5 } };"
+                "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5}])]); LV['/a|p1'].pr.end = 7;"
+                "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, end: 7}])]); console.log(JSON.stringify([S(), PAINT]));")
+        self.assertEqual(r, [["/a", "p1", ""], 0])
+
+    def test_g_past_run_never_switched(self):
+        r = run(FOL + "PLS.runSel = { sid: 's0', name: 'idle', rid: 1 }; plNowFollow([]);"
+                "plNowFollow([ses('s1', '/b', [{name: 'chg', rid: 5, t0: 5}])]); console.log(JSON.stringify([S(), PLS.runSel.rid]));")
+        self.assertEqual(r, [["/a", "idle", ""], 1])
+
+    def test_h_edit_or_diff_tracks_without_switch(self):
+        r = run(FOL + "const N = [ses('s1', '/b', [{name: 'chg', rid: 5, t0: 5}])]; plNowFollow([]); WATCH = false; plNowFollow(N); const a = S();"
+                "WATCH = true; plNowFollow(N); const b = S(); PLS.diff = {}; plNowFollow(N.concat([ses('s2', '/c', [{name: 'p2', rid: 9, t0: 9}])])); const c = S();"
+                "PLS.diff = null; plNowFollow(N.concat([ses('s2', '/c', [{name: 'p2', rid: 9, t0: 9}])])); console.log(JSON.stringify([a, b, c, S()]));")
+        self.assertEqual(r, [["/a", "idle", ""]] * 4)                          # seen while editing: back in Watch, no jump
+
+    def test_f1_same_cwd_plat_order_flip_keeps_view(self):
+        r = run(FOL + "PLS.sel = 'p1'; LV['/a|p1'] = { sid: 's2', pr: { rid: 5 } };"
+                "const A = { state: 'tool', sid: 's1', cwd: '/a', plat: 'cc', plrun: [] }, B = { state: 'tool', sid: 's2', cwd: '/a', plat: 'cc', plrun: [{name: 'p1', rid: 5, t0: 5, stages: RUN}] };"
+                "plNowFollow([A, B]); plNowFollow([B, A]); plNowFollow([A, B]); const a = S();"
+                "plNowFollow([A, B, ses('s3', '/c', [{name: 'p3', rid: 9, t0: 9}])]); console.log(JSON.stringify([a, S()]));")
+        self.assertEqual(r, [["/a", "p1", ""], ["/a", "p1", ""]])
+
+    def test_f3_workflow_run_counts_as_viewed(self):
+        r = run(FOL + "PLS.sel = 'p1'; LV['/a|p1'] = { sid: 's1', run: { run: true } }; plNowFollow([]);"
+                "plNowFollow([ses('s3', '/c', [{name: 'p3', rid: 9, t0: 9}])]); console.log(JSON.stringify(S()));")
+        self.assertEqual(r, ["/a", "p1", ""])
+
+    def test_f4_no_saved_or_loading_project_still_follows(self):
+        r = run(FOL + "const N = [ses('s1', '/b', [{name: 'chg', rid: 5, t0: 5}])]; WATCH = false; CURX = { ok: true, suggest: 1 }; plNowFollow([]); plNowFollow(N); const a = S();"
+                "Object.assign(PLS, { proj: '/a', sel: 'idle' }); CURX = null; PLNOW_SEEN = null; plNowFollow([]); plNowFollow(N); console.log(JSON.stringify([a, S()]));")
+        self.assertEqual(r, [["/b", "chg", "s1"], ["/b", "chg", "s1"]])
+
+    def test_j_idle_open_run_viewed_yields_to_working_run(self):
+        r = run(FOL + "PLS.sel = 'p1'; LV['/a|p1'] = { sid: 's1', pr: { rid: 5 } }; const I = ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, stages: { S: { o: 'wait' } }}]);"
+                "plNowFollow([I]); plNowFollow([I, ses('s2', '/a', [{name: 'lv', rid: 9, t0: 9}])]); console.log(JSON.stringify(S()));")
+        self.assertEqual(r, ["/a", "lv", "s2"])
+
+    def test_k_pause_between_stages_within_grace_holds(self):
+        r = run(FOL + "PLS.sel = 'p1'; LV['/a|p1'] = { sid: 's1', pr: { rid: 5 } }; const C = ses('s3', '/c', [{name: 'p3', rid: 9, t0: 9}]);"
+                "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5}]), C]);"
+                "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, stages: { S: { o: 'done', t1: 1e6 - 60 } }}]), C]); const a = S();"
+                "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, stages: { S: { o: 'done', t1: 1e6 - 600 } }}]), C]); console.log(JSON.stringify([a, S()]));")
+        self.assertEqual(r, [["/a", "p1", ""], ["/c", "p3", "s3"]])            # 60 s pause holds; past the grace -> newest working
+
+    def test_i_paint_pipe_follows_before_view_read(self):
+        pp = js_fn("paintPipe")
+        self.assertIn("if(!hv && !PLS.off && typeof plNowFollow === 'function') plNowFollow(SESS);", pp)
+        self.assertLess(pp.index("classList.contains('dragging')) return"), pp.index("plNowFollow(SESS)"))
+        self.assertLess(pp.index("plNowFollow(SESS)"), pp.index("plNowShown()"))
+
+
 if __name__ == "__main__":
     unittest.main()

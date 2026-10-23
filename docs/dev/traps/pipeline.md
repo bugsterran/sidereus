@@ -233,6 +233,13 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠Never close by age alone: a background arch-map stage agent runs > 30 min. Never write `runs.json` from the viewer.
 - ⚠Agent rows are collected only for the newest `PLR_MODEL_AG_RUNS` (3) open runs; older open runs still get a cheap `_PLR_TAG` match against live sub/bgs rows (`row["_live"]`, popped before output) — without it a 4th run with a live tagged bg stage auto-ended at 30 min.
 
+## Following live runs: reload opens the newest working run only when no working run is shown (48j `plNowFollow`)
+
+- Cause: every run is «new» to an empty seen set on the first poll; seeding only left a reload on an idle pipeline while a run was working.
+- ⇒ First call: a viewed working run is kept; otherwise the newest working run is picked, then `PLNOW_SEEN` is filled. Edit / diff / past-run views keep updating it, so returning to Watch does not jump.
+- ⚠Never jump away from a viewed working run, on reload or later. Working = a stage `o === 'run'` (plPrLive) or a stage `t1` within `PLNOW_GRACE` 120 s; an open run whose stages all wait is not working (it held the selection while another run ran).
+- ⚠Never plPaint / plFit from the follow step: the poll paint shows the pick, and the view must not move on its own.
+
 ## Agent description line must not size the card (48d `.plnad` · 48k `.plwad`/`.plphd`)
 
 - ⚠The card is `width:max-content` (184..320); a plain nowrap description would push every card with a description to 320 and move edges and «Arrange». `.plnad` is `width:0;min-width:100%` + ellipsis so it takes the width the other lines set. Descriptions are agent-file data: `esc()` in text and `title`, never `T()`.

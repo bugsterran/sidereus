@@ -363,6 +363,7 @@ function paintPipe(box, fromPoll){
   if(PLS.projs) plLoad(PLS.proj, false);
   const hv = !PLS.off && plHnOn();
   tbSlot('pipe', PLS.off ? '' : plViewSeg());   // sub-view switch lives in the header toolbar slot, like Branches/Insights
+  if(!hv && !PLS.off && typeof plNowFollow === 'function') plNowFollow(SESS);   // 48j: select a newly started live run before head and body read the selection
   const now = !hv && !PLS.off && (plNowPickApply(), plNowShown());   // run view (48j) vs Edit; pick applied first so head and body agree
   // Pipelines view: no <b>, the header title (#vtitle) already says «Pipelines».
   const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Harness')) + '</b>' : '') + '<span class=plcap>'
