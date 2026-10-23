@@ -19,7 +19,7 @@ The Pipelines tab shows a project's stages from `.claude/pipelines/*.json` and l
 
 ### Working now (left list)
 - Every live session, named as in the Timeline (logo, project, state), plus a one-line run summary: «● Working · <stage>», «● Needs you · <stage>» (amber), «● Idle · <stage>» (grey: run open, turn ended), «✓ <name> done». Without a run the row shows «No pipeline · <category>» or «Undeclared».
-- Click a session to open its run on the right.
+- Click a session to open its run on the right. A run that starts working (after a reload, the newest working one) opens by itself while no working run is shown; when the shown run ends or goes idle, the newest working one opens.
 - Under each session: its subagents as in the Timeline (logo, type, one-line task, running dot). Running first, quiet ones dimmed, up to 6 then «+N more». Click one to open that run with its stage selected (when the agent is tagged).
 - «‹» collapses the list to a rail of status dots (a dot click expands and opens it). Drag the edge to resize; the width is remembered.
 

@@ -95,6 +95,38 @@ function plNowPickApply(){
   if(!n) return;
   E.first = false; E.sel = { k: 'n', id: n.id };
 }
+// Follow live runs (from paintPipe): a new run is picked when no live run is viewed; the viewed one ending moves to the newest left.
+// ⚠First call (reload): every run counts as new, so the newest live run opens only when nothing live is shown; a live view never jumps. Memory only (no prefs of its own); never plPaint / plFit — the view must not move.
+let PLNOW_SEEN = null, PLNOW_VKEY = '';
+// Working = a stage running (plPrLive, as the row status) or one that ran within PLNOW_GRACE s.
+// ⚠An open run whose stages all wait is not working: counting it held the selection on an idle run. The grace keeps a run between two stages from flip-flopping.
+const PLNOW_GRACE = 120;
+function plNowWorking(r, now){
+  if(plPrLive(r)) return true;
+  const S = r.stages || {};
+  return Object.keys(S).some(t => S[t] && (S[t].t1 || 0) >= now - PLNOW_GRACE);
+}
+function plNowFollow(ss){
+  const cur = {}, now = Date.now() / 1000;
+  // ⚠not plNowLive: its cwd+plat dedup keeps whichever session comes first in this poll
+  (ss || []).filter(x => x && !['done', 'abort', 'gone'].includes(x.state)).forEach(x => (x.plrun || []).forEach(r => { if(r && r.name && !r.end && plNowWorking(r, now)) cur[x.sid + '\n' + r.name + '\n' + (r.rid != null ? r.rid : r.t0)] = { sid: x.sid, proj: r.proj || x.cwd, name: r.name, t0: r.t0 || 0 }; }));
+  const viewed = () => {
+    const p = plCur(), lv = p && plLiveRun(PLS.proj, p.name);
+    if(lv && !lv.pr) return lv.run && lv.run.run ? 'wf\n' + lv.sid + '\n' + p.name : '';   // ⚠Workflow run (x.wf): no pr, still a viewed live run
+    const k = lv && !lv.pr.end ? lv.sid + '\n' + p.name + '\n' + lv.pr.rid : '';
+    return k && cur[k] ? k : '';
+  };
+  const seen = PLNOW_SEEN || {};
+  PLNOW_SEEN = cur;
+  const p = plCur(), edit = !!(p && p.ok && p.sha && !plWatchFor(p));   // ⚠only a real Edit view blocks: no saved pipeline / loading still shows the run view
+  if(PLS.runSel || edit || PLS.wf || PLAG || PLS.std || PLS.diff || PLS.del || PLNEW || PLDRAFT){ PLNOW_VKEY = viewed(); return; }   // Edit / past run: track only
+  const v = viewed();
+  if(v){ PLNOW_VKEY = v; return; }   // a live run is viewed: later runs only show as running
+  const ks = Object.keys(cur), newest = a => a.reduce((b, k) => (!b || cur[k].t0 > cur[b].t0 ? k : b), '');
+  const k = PLNOW_VKEY && !cur[PLNOW_VKEY] ? newest(ks) : newest(ks.filter(q => !seen[q]));
+  if(k){ const e = cur[k]; plNowGoProj(e.proj); PLS.nowSid = e.sid; PLS.sel = e.name; }   // same steps as plNowPick, without its paint
+  PLNOW_VKEY = viewed() || k;
+}
 // Same reset as plPickProj (48 plProjGo), without its paint; an open arch-map panel (48h PLAG) would hide the picked pipeline.
 function plNowGoProj(proj){
   plProjGo(proj);
