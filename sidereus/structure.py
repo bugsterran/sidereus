@@ -497,7 +497,9 @@ STRUCT_WARM_TICK_S = 10        # attempt period per cell
 STRUCT_WARM_CYCLE_S = 900      # until the same target is looked at again — if unchanged the cache returns immediately
 STRUCT_PRUNE_EVERY_S = 3600    # disk cleanup period (only inside the warm-up thread)
 # ⚠`/api/quota/burn`: saver.py hits it on every prompt, and the page only fetches it from the poll (`burnTick`, 30s throttle).
-_STRUCT_POLL = ("/api/state", "/api/live", "/api/hookstate", "/api/quota/burn")    # timer/hook polls = do not break idle
+# ⚠Timeline (30 s refetch from poll), wkuse (5 min), agent/work (open work-log popup, 2.5 s) and branches (60 s, structure view) are timer-driven too; any one of them kept idle from ever arriving.
+_STRUCT_POLL = ("/api/state", "/api/live", "/api/hookstate", "/api/quota/burn",
+                "/api/agents/timeline", "/api/wkuse", "/api/agent/work", "/api/branches")    # timer/hook polls = do not break idle
 _struct_act = [0.0]            # last «human» request time
 _struct_warm_seen = {}         # (realpath, tests) -> last warm-up time
 _struct_prune_at = [0.0]

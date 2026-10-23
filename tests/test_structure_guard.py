@@ -133,6 +133,11 @@ class AllowList(_Tree):
     def test_quota_burn_is_poll(self):
         self.assertIn("/api/quota/burn", S._STRUCT_POLL)
 
+    def test_timer_driven_gets_are_poll(self):
+        # These refetch on a timer while a tab is open; counting them as human activity starves the warm-up.
+        for p in ("/api/agents/timeline", "/api/wkuse", "/api/agent/work", "/api/branches"):
+            self.assertIn(p, S._STRUCT_POLL)
+
     def test_allowed_path_works(self):
         with mock.patch.object(S, "_struct_src_root", lambda p: self.d if p == self.d else ""), \
                 mock.patch.object(S, "_struct_git", lambda r: []), \
