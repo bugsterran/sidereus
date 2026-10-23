@@ -14,7 +14,7 @@ from sidereus.sessions import sessions_rows
 from sidereus.cards import cards
 from sidereus.quota import quota
 from sidereus.burn import quota_burn, quota_burn_acct
-from sidereus.quota_roots import quota_accounts
+from sidereus.quota_roots import quota_accounts, row_usable
 from sidereus.claude_roots import accounts as claude_accounts
 from sidereus.saver import SAVER_CAP, SAVER_VIEW_STALE, _saver_state, _saver_view, _saver_views
 from sidereus.steps import _edit_target
@@ -53,7 +53,7 @@ def brief_quota(now=None, acct=None):
     extra = bool(acct) and acct != prim
     if extra:
         # ⚠Never fall back to the primary's numbers: a missing row is "not measured", not someone else's quota.
-        q = next((r for r in quota_accounts() if r.get("label") == acct and not r.get("err")), None) or {}
+        q = next((r for r in quota_accounts() if r.get("label") == acct and row_usable(r)), None) or {}
     else:
         q = quota() or {}
     q5, q7 = q.get("five_hour") or {}, q.get("seven_day") or {}

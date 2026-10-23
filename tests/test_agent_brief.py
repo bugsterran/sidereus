@@ -167,6 +167,22 @@ class TestQuotaAcct(Patch):
         self.patch(ab, "_saver_views", lambda: {})      # missing view -> the derived rule
         self.assertEqual(ab.brief_quota(now=1001, acct="work")["saver"]["why"], "auto")
 
+    def test_extra_failed_refetch_keeps_fresh_data(self):
+        self._base({"at": 1000, "lv": 0}, {"on": False, "why": "auto"})
+        self.patch(ab, "quota_burn_acct", lambda lab: {})
+        self.patch(ab, "_saver_views", lambda: {})
+        fh = {"pct": 12.0, "resets_at": "w", "leftSec": 5000}
+        self.patch(ab, "quota_accounts", lambda: [{"label": "work", "age": 40, "err": "HTTPError 429", "five_hour": fh}])
+        out = ab.brief_quota(now=1001, acct="work")
+        self.assertEqual((out["ok"], out["fiveHour"]["pct"], out["age"]), (True, 12.0, 40))
+        self.assertNotIn("err", out)
+        cap = sidereus("quota_roots").ROW_KEEP_S
+        for r in ({"label": "work", "age": cap + 1, "err": "HTTPError 429", "five_hour": fh},
+                  {"label": "work", "age": None, "err": "HTTPError 429"}):
+            self.patch(ab, "quota_accounts", lambda r=r: [r])
+            out = ab.brief_quota(now=1001, acct="work")
+            self.assertEqual((out["ok"], out["err"], out["fiveHour"]["pct"]), (False, "not measured", None))
+
     def test_extra_unmeasured_is_not_primary(self):
         self._base({"at": 1000, "lv": 0}, {"on": False, "why": "auto"})
         self.patch(ab, "quota_accounts", lambda: [])

@@ -33,6 +33,9 @@ _uuid_cache = {}        # .claude.json path -> (mtime, accountUuid)
 PTS_FILE = os.path.join(DATA_DIR, "quota-roots-pts.json")   # ⚠never quota-log: that log is the primary's alone
 PTS_CAP = 300
 RESET_TOL = 120         # s — resets_at jitter within this is the same 5h window (burn_calc.QBURN_TOL)
+# ⚠A failed refetch (429) keeps the last data with `err` set; readers must still use it, or the account's numbers vanish
+#   while the backoff runs. Past this age (the screen's own «very old» mark, 55a qhot) kept data counts as unmeasured.
+ROW_KEEP_S = 1800
 _pts = {}               # label -> {acct: sha1(uid)[:12], reset5: epoch, pts: [[t, pct]]}, under _acc_lock
 _pts_loaded = False
 
@@ -344,6 +347,14 @@ def tick():
             e.update(err=type(x).__name__, next=now + _quota_interval())
         with _acc_lock:
             _acc[r["label"]] = e
+
+
+def row_usable(row):
+    """True when an account row's numbers may be shown: no fetch error, or an error with kept data younger than ROW_KEEP_S."""
+    if not row:
+        return False
+    age = row.get("age")
+    return not row.get("err") or (isinstance(age, (int, float)) and not isinstance(age, bool) and age <= ROW_KEEP_S)
 
 
 def _slot(v, now):

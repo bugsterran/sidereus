@@ -9,8 +9,9 @@ function sblAccRows(q, list, main){
   const left = w => used(w) == null ? '—' : fmtPct(Math.max(0, 100 - w.pct));
   // resets_at arrives as an ISO string or epoch seconds.
   const rs = w => { const d = w && w.resets_at ? new Date(typeof w.resets_at === 'number' ? w.resets_at * 1000 : w.resets_at) : null; return d && !isNaN(d) ? CLK(d) : ''; };
-  // ⚠An errored account row still carries its last pct (sidereus/quota_roots.py): show it as failed, never the stale %.
-  const row = (a, prim) => { const e = !prim && !!a.err, w5 = e ? null : a.five_hour, w7 = e ? null : a.seven_day;
+  // ⚠A failed refetch keeps the last pct next to err (sidereus/quota_roots.py): show it while age <= ROW_KEEP_S (1800 s, same cap
+  //   as knQ) so the numbers survive the 429 backoff; no age or older = failed, never an unbounded stale %.
+  const row = (a, prim) => { const e = !prim && !!a.err && !(typeof a.age === 'number' && a.age <= 1800), w5 = e ? null : a.five_hour, w7 = e ? null : a.seven_day;
     return {label: prim ? (pl || '—') : String(a.label || '—'), c: prim ? '' : String(a.label || ''),
       l5: left(w5), l7: left(w7), u5: used(w5), u7: used(w7), rs5: rs(w5), main: false, primary: prim, err: e}; };
   const rows = [row(q, true)];

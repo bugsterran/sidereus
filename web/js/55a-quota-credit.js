@@ -171,14 +171,14 @@ function buildCredit(q){
   if(el.title !== ct) el.title = ct;
 }
 // Quota window of the «Main account» (UIS mbMainAcct) -> {w, main, miss}; no main = the primary's QLAST window as before.
-// miss = main's row absent, errored or without a numeric pct: the primary window is shown and the card title says so.
+// miss = main's row absent, errored without kept data younger than quota_roots.ROW_KEEP_S (1800 s), or without a numeric pct: the primary window is shown and the card title says so.
 // m = any label (knQFor); '' or the primary's label = the primary window (matches the sblAccRows primary row).
 function knQ(k, m){
   if(m === undefined) m = mainAcct();
   const q = typeof QLAST !== 'undefined' && QLAST && QLAST.q, pw = (q && (k === '5h' ? q.five_hour : q.seven_day)) || null;
   const p = (acctList() || []).find(a => a && a.primary);
   if(!m || m === String((p && p.label) || '')) return {w: pw, main: '', miss: false};
-  const a = q && Array.isArray(q.accounts) ? q.accounts.find(r => r && r.label === m) : null, w = a && !a.err ? (k === '5h' ? a.five_hour : a.seven_day) : null;
+  const a = q && Array.isArray(q.accounts) ? q.accounts.find(r => r && r.label === m) : null, w = a && (!a.err || (typeof a.age === 'number' && a.age <= 1800)) ? (k === '5h' ? a.five_hour : a.seven_day) : null;
   return w && typeof w.pct === 'number' ? {w, main: m, miss: false} : {w: pw, main: m, miss: true};
 }
 function knQFor(k, label){ return knQ(k, String(label || '')); }
