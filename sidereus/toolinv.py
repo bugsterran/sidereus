@@ -101,19 +101,36 @@ def _front(p):
         return {}
     if not head.startswith("---"):
         return {}
-    out = {}
+    out, blk = {}, None
     for ln in head.split("\n")[1:]:
         if ln.strip() == "---":
             break
+        if blk and ln[:1] in (" ", "\t"):   # YAML block scalar body (`description: |`): fold the indented lines into one
+            out[blk] = (out[blk] + " " + ln.strip()).strip()
+            continue
+        blk = None
         k, sep, v = ln.partition(":")
         if sep and k.rstrip() in ("name", "description"):   # ⚠column-0 keys only: a nested `  name:` is not the agent's
-            out[k.rstrip()] = v.strip().strip("\"'")
+            v = v.strip()
+            if v in ("|", ">", "|-", ">-", "|+", ">+"):
+                blk, v = k.rstrip(), ""
+            out[k.rstrip()] = v.strip("\"'")
     return out
 
 
 def agent_name(p):
     """Agent id the Agent tool's subagent_type uses: frontmatter `name`, else the file name."""
     return _front(p).get("name") or os.path.splitext(os.path.basename(p))[0]
+
+
+AGENT_DESC_MAX = 120
+
+
+def agent_desc(p):
+    """One-line frontmatter `description` (<= AGENT_DESC_MAX chars + «…»), or "".
+    ⚠Most agent files use a block scalar (`description: |`); _front folds its indented body into one line."""
+    d = " ".join((_front(p).get("description") or "").split())
+    return d if len(d) <= AGENT_DESC_MAX else d[:AGENT_DESC_MAX].rstrip() + "…"
 
 
 def known_projects():

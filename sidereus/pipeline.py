@@ -23,7 +23,7 @@ from sidereus.pipeline_projects import _proj_ok, _remembered, allowed_projects, 
 from sidereus.pipeline_schema import _AGENT, _COLOR, _NAME, GATE_MODES, MODELS, dump, validate
 from sidereus.pipeline_std import std_drafts
 from sidereus.stage_catalog import catalog
-from sidereus.toolinv import agent_name, skill_names
+from sidereus.toolinv import agent_desc, agent_name, skill_names
 
 PIPE_FILE_MAX = 64 * 1024
 SAVE_BODY_MAX = 16 * 1024
@@ -145,8 +145,15 @@ def _agent_files(proj):
 
 
 def _agents(proj):
-    """[{name, scope}] — names only (the path stays server-side, see _agent_files)."""
-    return [{"name": n, "scope": scope} for n, scope, _p in _agent_files(proj)]
+    """[{name, scope, desc?}] — name plus the one-line frontmatter description (the path stays server-side, see _agent_files)."""
+    out = []
+    for n, scope, p in _agent_files(proj):
+        row = {"name": n, "scope": scope}
+        d = agent_desc(p)
+        if d:
+            row["desc"] = d
+        out.append(row)
+    return out
 
 
 def _names(proj):
@@ -251,7 +258,7 @@ def pipelines(proj, runs=None):
         return 400, {"ok": False, "msg": "unknown project"}     # ⚠not 404: the page reads 404 as «feature off»
     rows = [_row(proj, n) for n in _listed(proj)]
     agents = _agents(proj)
-    return 200, {"ok": True, "proj": proj, "pipelines": rows, "borrowed": borrowed(proj, runs), "agents": agents, "models": list(MODELS), "roles": _role_agents(proj, agents),   # names only (48c plgAddPreset)
+    return 200, {"ok": True, "proj": proj, "pipelines": rows, "borrowed": borrowed(proj, runs), "agents": agents, "models": list(MODELS), "roles": _role_agents(proj, agents),   # names + one-line descriptions only, no paths (48c plgAddPreset)
                  "default_tasks": default_tasks(), "catalog": catalog(), "gate_modes": [rx for rx, _m in GATE_MODES], "skills": skill_names(proj), "rule_files": _rule_files(proj), "workflows": _workflows(proj),
                  "suggest": [_draft_row(P, suggest=True) for P in suggest(proj)], "apply": apply_get(proj),
                  "std": [_draft_row(d["P"], std=True, src=d["src"], chain=d["chain"], gp=d["gp"]) for d in suggest(proj, std=True)]}

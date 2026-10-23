@@ -23,7 +23,7 @@ def _js(body, lang="ko"):
     consts = "\n".join(re.search(r"^const %s[^\n]*$" % c, src, re.M).group(0) for c in ("PLG_GFAM", "PLG_W"))
     consts += "\n" + re.search(r"^const PLG_FAM = [\s\S]*?\};$", src, re.M).group(0)
     consts += "\n" + re.search(r"^const PLG_NAMES = [\s\S]*?^PLG_NAMES\.ko = \{\};", src, re.M).group(0)
-    fns = "\n".join(js_fn(f) for f in ("plgShow", "plgBase", "plPalHit", "plgFam", "plgColor", "plgHue", "plgPfc", "plgTpl", "plPalette", "plFlagChips", "plNodeHtml",
+    fns = "\n".join(js_fn(f) for f in ("plgShow", "plgBase", "plPalHit", "plgFam", "plgColor", "plgHue", "plgPfc", "plgTpl", "plPalette", "plFlagChips", "plAgDesc", "plNodeHtml",
                                         "plgGraded", "plgGuards", "plRow", "plGuardsPane"))
     code = "let LANG = %s;\n" % json.dumps(lang) + STUBS + consts + "\n" + fns + "\n" + body
     return subprocess.run(node_e(code), capture_output=True, text=True, check=True, encoding="utf-8").stdout

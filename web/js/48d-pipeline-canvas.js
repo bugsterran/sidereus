@@ -141,6 +141,12 @@ function plFlagChips(n){
 }
 // Gate coverage: n = stages with a check command, m = all stages (unsaved edits count).
 function plGateCov(G){ const ns = (G && G.nodes) || []; return { n: ns.filter(x => String(x.gate || '').trim()).length, m: ns.length }; }
+// Agent file description (server `agents[].desc`, data: esc only, never T()); same source as the stage panel's agent picker.
+function plAgDesc(name){
+  if(typeof PLS !== 'object' || !PLS) return '';   // node tests render cards without PLS
+  const a = (((PLS.data || {})[PLS.proj] || {}).agents || []).find(x => x && x.name === name);
+  return (a && a.desc) || '';
+}
 function plNodeHtml(E, n, bad, lt){
   const G = E.G, L0 = lt && lt[n.title], pi = L0 ? plPassSel(E, n.id, L0) : -1, L = pi >= 0 ? Object.assign({}, L0, plPass(L0, pi)) : L0, eff = n.model || G.defaults.model;
   const warn = PL_JUDGED.includes(n.title) && PL_LOW.includes(eff) ? ' <span class=plwarn title="' + esc(T('Judgment stages should keep a strong model')) + '">⚠</span>' : '';
@@ -162,12 +168,13 @@ function plNodeHtml(E, n, bad, lt){
     + ptip + '" aria-label="' + ptip + '">' + esc('↺' + L.k + ' ▾') + '</button>' : '';
   const hl = G.loops.some(l => l.from === n.id) ? ' hasloop' : '';   // its lane leaves 14px*k off-centre: no mark at the centre port
   // Direct-mode subagents behind a lit stage (workflow runs carry no labs: no hover)
+  const ad = n.agent ? plAgDesc(n.agent) : '', adh = ad ? '<div class=plnad title="' + esc(ad) + '">' + esc(ad) + '</div>' : '';
   const tip = L && L.nn ? ' title="' + esc(T('Not needed on this run — runs only on a loop-back')) + '"' : L && L.labs && L.labs.length ? ' title="' + esc(L.labs.map(a => plLabTip(a.lab) + ' (' + (a.run ? T('Running') : T('Done')) + ')').join('\n')) + '"' : '';
   return '<div class="plnd pf-' + plgFam(n.title) + hl + sel + (bad ? ' bad' : '') + (L ? ' pl-' + L.st + fresh : '') + '" data-plnode="' + esc(n.id) + '" tabindex=0 role=button data-kb aria-label="' + esc(plgShow(n.title) + (lsTxt ? ' · ' + lsTxt : '')) + '"' + tip + ' style="left:' + (+n.ui.x) + 'px;top:' + (+n.ui.y) + 'px' + (plgHue(n) ? ';--pfc:' + plgHue(n) : '') + '">'
     + '<i class="plport plpin" title="' + esc(T('Incoming flow')) + '"></i>'
     + '<i class="plport plpout" data-plport=flow title="' + esc(T('Drag to connect the next stage')) + '"></i>'
     + '<i class="plport plpbk" data-plport=loop title="' + esc(T('Drag to an earlier stage to loop back on failure')) + '"></i>'
-    + '<div class=plt>' + icon + esc(plgShow(n.title)) + rb + '</div><div class=plna>' + esc(n.agent || '') + '</div>'
+    + '<div class=plt>' + icon + esc(plgShow(n.title)) + rb + '</div><div class=plna>' + esc(n.agent || '') + '</div>' + adh
     + '<div class=plnm>' + esc(n.model || T('default', 'short') + ' (' + G.defaults.model + ')') + warn + '</div>' + (chips.length || unv ? '<div class=plnc title="' + esc(chips.map(c => c[0] + ' — ' + c[1]).join('\n')) + '">' + unv + esc(chips.map(c => c[0]).join(' · ')) + '</div>' : '')
     + (L && typeof PLS === 'object' ? plEvLine(plEvRows(PLS.proj), L, plEvCommits(PLS.proj)) : '') + live + pb + '</div>';
 }
