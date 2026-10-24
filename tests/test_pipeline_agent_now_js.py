@@ -62,6 +62,10 @@ class AgentNow(unittest.TestCase):
         h = pane([{"aid": AID, "now": "Bash", "idle": 300}], [AG])
         self.assertIn("<span class=plwan>Idle · 300s</span>", h)
 
+    def test_R3_busy_tool_is_not_idle(self):
+        h = pane([{"aid": AID, "now": "Bash", "idle": 300, "busy": 1}], [AG])
+        self.assertIn("<span class=plwan>Bash · 300s</span>", h)
+
     def test_R3_no_line_when_done_missing_or_main(self):
         sub = [{"aid": AID, "now": "Bash", "idle": 1}]
         self.assertNotIn("plwan", pane(sub, [dict(AG, run=False)]))

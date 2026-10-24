@@ -25,7 +25,7 @@ function plNowRun(x, k){
 // ⚠Metadata only: the Agent description label (rule 1); a [pl:name/stage] tag makes the row select that stage on the canvas.
 const PLNOW_AGMAX = 6, PLNOW_QUIET = 120;
 function plNowAgents(x){
-  const subs = (x.sub || []).filter(a => a && a.lab), hot = a => !(a.idle > PLNOW_QUIET);
+  const subs = (x.sub || []).filter(a => a && a.lab), hot = a => a.busy || !(a.idle > PLNOW_QUIET);   // busy: pending tool call, log silent but working
   const ord = subs.filter(hot).concat(subs.filter(a => !hot(a))), shown = ord.slice(0, PLNOW_AGMAX), more = ord.length - shown.length;
   if(!shown.length) return '';
   return '<div class=plnag>' + shown.map((a, i) => {
@@ -40,7 +40,7 @@ function plNowAgents(x){
 function plNowSt(x){
   if(x.blocked || x.state === 'ask') return 'need';
   if(['tool', 'think', 'run', 'sent', 'stopping'].includes(x.state)) return 'work';
-  const run = (x.plrun || []).some(r => r && !r.end && plPrLive(r)), sub = (x.sub || []).some(a => a && !(a.idle > PLNOW_QUIET));
+  const run = (x.plrun || []).some(r => r && !r.end && plPrLive(r)), sub = (x.sub || []).some(a => a && (a.busy || !(a.idle > PLNOW_QUIET)));
   return run || sub || (x.bgs || []).length ? 'work' : 'idle';
 }
 const PLNOW_ST = { work: 'Working', need: 'Needs you', idle: 'Idle' };
