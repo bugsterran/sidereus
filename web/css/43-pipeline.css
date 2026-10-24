@@ -221,6 +221,7 @@ html[data-mv=pipe] .wrap{max-width:none}
 .plwst{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
 .plwg{display:flex;gap:8px;align-items:baseline;min-width:0}.plwg>span{flex:none;color:var(--nx-t2,#8b95a5)}.plwg>code{min-width:0;overflow-wrap:anywhere}.plwg>i{color:var(--nx-t3,#8b95a5)}
 .plwas{display:flex;flex-wrap:wrap;gap:4px}
+.plwdn{align-items:center}.plwdn .plwa{color:var(--nx-t2,#8b95a5)}.plwal{font-size:11px;color:var(--nx-t3);margin-right:2px}
 .plwan{display:block;font-size:11px;color:var(--nx-t3);max-width:26em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .plwad{display:inline-block;max-width:26em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;margin-left:4px;color:var(--nx-t3)}
 .plwp .plph .plphd{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
