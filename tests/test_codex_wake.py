@@ -307,6 +307,34 @@ class CodexWake(unittest.TestCase):
             rows = [ln.split(" ")[1:] for ln in f.read().splitlines()]
         self.assertEqual(rows, [["list", "RuntimeError", "-"], ["recheck", "RuntimeError", "codex-tui/0.164.0"]])
 
+    def stale_socket(self):
+        """A socket that accepts and hangs up at once, like one left by an earlier daemon."""
+        srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        p = os.path.join(self.sd, "a")                      # sorts before the live daemon "d"
+        srv.bind(p)
+        os.chmod(p, 0o600)
+        srv.listen(8)
+
+        def loop():
+            while True:
+                try:
+                    srv.accept()[0].close()
+                except OSError:
+                    return
+        threading.Thread(target=loop, daemon=True).start()
+        self.addCleanup(srv.close)
+
+    def test_stale_socket_not_logged_when_a_daemon_has_the_thread(self):
+        self.stale_socket()
+        d = self.serve()
+        self.assertEqual(cw.find_daemon(SID), os.path.join(self.sd, "d"))
+        self.assertFalse(os.path.exists(cw.LOG))
+        d.loaded = []
+        self.assertIsNone(cw.find_daemon(SID))
+        with open(cw.LOG, encoding="utf-8") as f:
+            # EOFError or BrokenPipeError, depending on when the hang-up lands
+            self.assertEqual([ln.split(" ")[1] for ln in f.read().splitlines()], ["list"])
+
     def test_bad_args_and_errors_never_raise(self):
         self.assertEqual(cw.run("../x", self.cwd, self.tp, self.me, store=self.d), "bad-args")
         self.assertEqual(cw.run("", "", "", ""), "bad-args")
