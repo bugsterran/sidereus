@@ -400,7 +400,7 @@ function tlWireRows(box){
     wrap.onmouseleave = () => { if(tlCurPin || tlRpOn) return; tlCurAt = 0; tlCurApply(); };
     wrap.onclick = (e) => {
       // Bars are owned by the **drawer** (it does stopPropagation, but once more in case layers overlap)
-      if(e.target.closest && e.target.closest('.tlb, .tlnm, .tlpl')) return;
+      if(e.target.closest && e.target.closest('.tlb, .tlnm, .tlpl, .tlnmg')) return;   // .tlnmg: a grip drag release is not a pin toggle
       // ★Clicking during replay is **jump to that spot** (does not stop) — not a pin toggle.
       // This one gesture covers rewind and fast-forward without building them separately.
       if(!tlRpOn) tlCurPin = !tlCurPin;
