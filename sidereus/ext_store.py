@@ -1,8 +1,8 @@
 """External CLI session store: platform registry, hook-event ingest, persistence (ext-sessions.json,
-ext-runs.json), child runs, liveness (pid/silence) and the per-session token store.
+ext-runs.json, ext-hooktok.json), child runs, liveness (pid/silence) and the per-session token store.
 Views over it (rows, work panel, children, today usage, hook check) live in sidereus/ext.py, which re-exports
 the names other modules import from `sidereus.ext`.
-⚠Owns EXT_FILE/EXT_RUNS_FILE and every writer of them - tests/_load.py redirects them on this module."""
+⚠Owns EXT_FILE/EXT_RUNS_FILE/EXT_HOOKTOK_FILE and every writer of them - tests/_load.py redirects them on this module."""
 import json
 import os
 import socket
@@ -178,6 +178,113 @@ def _runs_load():
 _runs_load()
 
 
+# ── per-generation token counts sent by hooks (Cursor `stop`; no record file to read) ──
+# ★Must outlive SessionEnd and restarts, like `_runs`. ⚠Metadata only: ints, generation id, cwd, model.
+EXT_HOOKTOK_FILE = os.path.join(DATA_DIR, "ext-hooktok.json")
+EXT_HOOKTOK_TTL_S = 7 * 24 * 3600
+EXT_HOOKTOK_MAX = 5000              # generations kept across all sessions
+_hooktok = {}                       # "plat|sid" → {"cwd", "gens": {gen_id: [in, out, cr, cw, ts, model]}}
+
+
+def _hooktok_save_locked():
+    try:
+        _atomic_write(EXT_HOOKTOK_FILE, json.dumps(_hooktok, ensure_ascii=False).encode("utf-8"),
+                      tmp=EXT_HOOKTOK_FILE + ".tmp")
+    except OSError as e:
+        # Reuses the ext-save template so no new I18N.ko entry is needed.
+        warn_once("ext-hooktok-save", "Could not save the external session list ({err}) — it is lost on restart",
+                  vars={"err": str(e)})
+
+
+def _hooktok_prune_locked(now):
+    allg = []
+    for k, e in list(_hooktok.items()):
+        gens = e.get("gens") or {}
+        for g in [g for g, v in gens.items() if now - float(v[4]) > EXT_HOOKTOK_TTL_S]:
+            gens.pop(g, None)
+        if not gens:
+            _hooktok.pop(k, None)
+            continue
+        allg += [(float(v[4]), k, g) for g, v in gens.items()]
+    if len(allg) > EXT_HOOKTOK_MAX:
+        for _t, k, g in sorted(allg)[:len(allg) - EXT_HOOKTOK_MAX]:
+            _hooktok[k]["gens"].pop(g, None)
+            if not _hooktok[k]["gens"]:
+                _hooktok.pop(k, None)
+
+
+def _usage_ok(n):
+    return isinstance(n, int) and not isinstance(n, bool) and 0 <= n < 10 ** 9
+
+
+def _hooktok_load():
+    try:
+        with open(EXT_HOOKTOK_FILE, encoding="utf-8") as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        return
+    if not isinstance(d, dict):
+        return
+    with _ext_lock:
+        for k, e in d.items():
+            plat, _s, sid = str(k).partition("|")
+            if plat not in EXT_PLAT or not _sid_ok(sid) or not isinstance(e, dict) \
+                    or not isinstance(e.get("gens"), dict):
+                continue
+            gens = {}
+            for g, v in e["gens"].items():
+                if _sid_ok(str(g)) and isinstance(v, list) and len(v) == 6 and all(_usage_ok(x) for x in v[:4]) \
+                        and isinstance(v[4], (int, float)) and isinstance(v[5], str):
+                    gens[str(g)] = [v[0], v[1], v[2], v[3], float(v[4]), v[5][:40]]
+            if gens:
+                _hooktok[plat + "|" + sid] = {"cwd": str(e.get("cwd") or ""), "gens": gens}
+        _hooktok_prune_locked(time.time())
+
+
+_hooktok_load()
+
+
+def _hooktok_note_locked(plat, sid, req, cwd, ts):
+    """Record one Stop's usage under its generation id. Returns True when stored (caller saves).
+    ⚠Keyed by generation id: a repeated Stop for the same turn overwrites, so it counts once."""
+    u = req.get("usage")
+    gen = str(req.get("gen_id") or "")
+    if not isinstance(u, dict) or not _sid_ok(gen):
+        return False
+    vals = [u.get(k) for k in ("in", "out", "cr", "cw")]
+    vals = [v if _usage_ok(v) else 0 for v in vals]
+    model = str(req.get("model") or "")[:40]
+    e = _hooktok.setdefault(plat + "|" + sid, {"cwd": "", "gens": {}})
+    if cwd:
+        e["cwd"] = cwd
+    now = time.time()
+    # ⚠Prune by receive time and clamp ts: a far-future `ts` would otherwise expire every stored generation.
+    e["gens"][gen] = vals + [min(ts, now), "" if model == "default" else model]
+    _hooktok_prune_locked(now)
+    return True
+
+
+def ext_hook_msgs(since=0.0):
+    """{(plat, sid): {gen_id: (in, out, cache, 0, ts, model, None)}} for generations at or after `since` —
+    the `_tok_sum` message shape (cache = read + write; cost unknown)."""
+    out = {}
+    with _ext_lock:
+        items = [(k, dict(e.get("gens") or {})) for k, e in _hooktok.items()]
+    for k, gens in items:
+        plat, _s, sid = k.partition("|")
+        ms = {g: (v[0], v[1], v[2] + v[3], 0, float(v[4]), v[5], None) for g, v in gens.items()
+              if float(v[4]) >= since}
+        if ms:
+            out[(plat, sid)] = ms
+    return out
+
+
+def ext_hook_cwds():
+    """{(plat, sid): cwd} for every session with stored hook tokens."""
+    with _ext_lock:
+        return {tuple(k.partition("|")[::2]): str(e.get("cwd") or "") for k, e in _hooktok.items()}
+
+
 def _run_note_locked(plat, sid, v, ev, ts):
     """Mirror one parented session's metadata into `_runs`. Returns True when the file should be written."""
     par = v.get("parent") or ""
@@ -281,6 +388,9 @@ def ext_ingest(req):
         _ext[key] = v
         if _run_note_locked(plat, sid, v, ev, ts):
             _runs_save_locked()
+        # Adapter platforms read tokens from their record files; hook usage would double them.
+        if ev == "Stop" and plat not in PLAT_MODS and _hooktok_note_locked(plat, sid, req, v.get("cwd") or "", ts):
+            _hooktok_save_locked()
         _ext_dedupe_locked()
         _ext_save_locked()
     return True, "ok"

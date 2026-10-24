@@ -140,6 +140,19 @@ def build(platform, data, event_override=None):
             if isinstance(r, str) and os.path.isabs(r):
                 out["cwd"] = r
                 break
+    # Cursor writes no record file, so its stop hook is the only token source: counts and generation id only.
+    if platform == "cursor" and raw == "stop":
+        usage = {}
+        for src, dst in (("input_tokens", "in"), ("output_tokens", "out"),
+                         ("cache_read_tokens", "cr"), ("cache_write_tokens", "cw")):
+            n = data.get(src)
+            if isinstance(n, int) and not isinstance(n, bool) and 0 <= n < 10 ** 9:
+                usage[dst] = n
+        if usage:
+            out["usage"] = usage
+        gen = data.get("generation_id")
+        if isinstance(gen, str) and 0 < len(gen) <= 64 and all(c.isalnum() or c in "-_" for c in gen):
+            out["gen_id"] = gen
     par = parent_sid()
     if par:
         out["parent"] = par

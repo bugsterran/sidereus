@@ -23,6 +23,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Never map `afterAgentThought`/`afterAgentResponse` (model text) and never forward `user_email` (rule 1).
   - ⚠A `-p` row stays in its last state until `sessionEnd`; do not invent a Stop for it.
   - ⚠Cursor has no record-file adapter (not in `PLAT_MODS`): its timeline row comes from `_ext` alone (`timeline_ext._hook_scan`, bars = hook event times). Without it the session reached the list but never the timeline.
+- **Cursor tokens come only from the `stop` hook** (`ext_hook.build` → `ext_store._hooktok`, `ext-hooktok.json`).
+  - ★Measured 2026-10-24: turn1 in 14645 out 28 cacheR 3968, turn2 in 14727 out 17 cacheR 3968 — per turn, not cumulative; new `generation_id` each turn; `-p` fires no hooks.
+  - ⇒ Store keyed by `generation_id` (a repeated stop overwrites); kept 7 days across `sessionEnd`.
+  - ⚠Cursor `input_tokens` assumed to exclude cache (unverified) — `tok` = in + out + cacheR + cacheW may double-count if it does not.
 - **Codex mail wake rides an experimental API** (`ext-hooks/codex_wake.py`, 2026-10-21).
   - Cause: the app-server daemon socket (`/private/tmp/codex-daemon-$UID/<hash>`, WebSocket over a unix socket) is an experimental API; ★checked on 0.163.0 only (injected turn ran in 17 s, all hooks fired, shown in the TUI).
   - ⇒ Pin the doc claims to 0.163.0; any failure (no daemon, thread not loaded, `codex exec`, Windows) = do nothing, «Mail waiting» is the fallback.

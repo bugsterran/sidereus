@@ -341,7 +341,10 @@ Copy `ext-hooks/cursor-hooks-example.json` to `~/.cursor/hooks.json` or `<projec
 
 - Events are camelCase. `afterAgentThought` and `afterAgentResponse` carry model text and are never sent.
 - Cursor sends no base `cwd` (tool events send `""`), so the folder is the first `workspace_roots` entry. `session_id`
-  equals `conversation_id`. `user_email`, `generation_id` and `tool_input` are dropped.
+  equals `conversation_id`. `user_email` and `tool_input` are dropped.
+- `stop` forwards token counts only (`input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_write_tokens` as
+  `usage`) plus `generation_id` (as `gen_id`), so «Today» and the Timeline count each turn once. They are kept for 7 days
+  in `ext-hooktok.json` (data dir) and survive `sessionEnd`. ⚠`agent -p` fires no hooks, so headless runs carry no tokens.
 - ⚠Cursor reads stdout of `before*`/`preToolUse` hooks as a decision; `ext_hook.py` prints nothing.
 - ⚠`cursor-agent -p` sends no `beforeSubmitPrompt`/`stop`: a headless row keeps its last state until `sessionEnd`.
 - Interactive order: `sessionStart`, `beforeSubmitPrompt`, tool events, `stop`; `/quit` sends `sessionEnd`.
