@@ -282,6 +282,24 @@ A `--url`/`SIDEREUS_HOOK_URL` whose scheme is not `http` or `https` is refused (
 ⚠stdout stays empty (CLIs read it as control JSON), exit is always 0, a dead viewer costs at most 2 s. Failures go to
 `ext-hooks/.ext-hook.log` (200 KB cap). `bash ext-hooks/demo.sh` adds three fake rows; always run `demo.sh clean` after.
 
+### Automatic connect
+
+Settings › «Diagnostics» › «CLI hooks» and the first screen show one line per installed CLI that lacks the Sidereus
+hooks; nothing shows when every entry is present. «Later» hides it per CLI.
+
+- Detected: Cursor (`cursor-agent`, or `agent` when `~/.cursor` exists) → `~/.cursor/hooks.json` · Codex (`codex`) →
+  `$CODEX_HOME/hooks.json` · Gemini (`gemini`) → its `settings.json`. Installed = on `PATH` or the config folder exists.
+- «Connect» shows a diff, writes only after confirm, and adds only the missing entries of the example file
+  (`<PYTHON>` and `<MAILBOX_CODE_DIR>` filled in). Your hook entries are kept in order (the `hooks` value is re-serialised, so its formatting may change); every other
+  top-level key stays byte for byte. Codex and
+  Gemini get one new group per event; existing groups are never edited. Gemini also gets `hooksConfig.enabled: true`.
+- The original is copied to `<DATA_DIR>/tool-trash/<ts>/<plat>-<file>` first; any failure leaves it unchanged. A
+  second «Connect» changes nothing.
+- ⚠A symlinked hook file is refused; edit it by hand.
+- ⚠Codex: run `/hooks` in Codex afterwards and approve the new entries, or Codex ignores them.
+- ⚠A pipx/uv install has no `ext-hooks/` in its bundle, so «Connect» is unavailable there; set up by hand below.
+- Manual setup below stays valid; a hand-edited file is detected the same way.
+
 ### Gemini CLI
 
 Merge `ext-hooks/gemini-settings-example.json` into `~/.gemini/settings.json` (or `$GEMINI_CLI_HOME/.gemini`),

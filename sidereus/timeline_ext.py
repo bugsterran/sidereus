@@ -2,7 +2,7 @@
 Assembled into the Gantt by `sidereus/timeline.py` (`_plat_tl_rows`)."""
 from sidereus.ident import _proj_name, _sid8
 from sidereus.adapter import adapter_scan
-from sidereus.ext import _ext, _ext_lock, ext_runs, PLAT_MODS
+from sidereus.ext import _ext, _ext_lock, ext_runs, PLAT_MODS, EXT_PLAT
 from sidereus.timeline_scan import SEG_GAP, SEG_MAX
 
 
@@ -38,7 +38,24 @@ def _plat_tl_rows(cut, now, pcwd=None):
     out = []
     for m in PLAT_MODS.values():
         out += _plat_rows(m, cut, now, pcwd)
+    with _ext_lock:
+        hook_only = {p for p, _sid in _ext if p not in PLAT_MODS}
+    for p in sorted(hook_only):
+        out += _ext_tl(cut, now, pcwd, p, EXT_PLAT[p], "CLI", p.title(), _hook_scan(p))
     return out
+
+
+def _hook_scan(plat):
+    """Scan for a platform without a record-file adapter (Cursor): activity = hook event times kept in `_ext`.
+    ⚠Without this such sessions reached the session list but never the timeline."""
+    def scan(_cut):
+        with _ext_lock:
+            items = [(sid, v.get("cwd") or "", list(v.get("ev") or [])) for (p, sid), v in _ext.items() if p == plat]
+        return [{"sid": sid, "cwd": cwd,
+                 "acts": {i: float(e.get("t") or 0) for i, e in enumerate(ev)
+                          if isinstance(e, dict) and e.get("e") not in ("SessionStart", "SessionEnd")}}
+                for sid, cwd, ev in items]
+    return scan
 
 
 def _ext_tl(cut, now, pcwd, plat, key, label, name, scan):

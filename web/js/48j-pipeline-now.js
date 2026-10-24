@@ -60,14 +60,15 @@ function plNowList(ss){
   // Collapsed rail: one dot per live session; hover/focus shows the floating label (plNowTip, data-pnlp/pnls); a dot click expands and picks it.
   if(c) return '<aside class="plnl plnlc">' + head + live.map(x => { const k = plNowSt(x), on = !!PLS.nowSid && x.sid === PLS.nowSid, st = T(PLNOW_ST[k]); return '<button type=button class="plnlrd plnld-' + k + (k === 'work' ? ' plnlrp' : '') + (on ? ' on' : '') + '" data-pncwd="' + esc(x.cwd || '')
     + '" data-pnplat="' + esc(x.plat || '') + '" data-pnlp="' + esc(x.project || '') + '" data-pnls="' + esc([st, plNowRunTxt(x)].filter(Boolean).join(' · ')) + '" aria-label="' + esc((x.project || '') + ' · ' + st) + '"' + (on ? ' aria-current=true' : '') + '></button>'; }).join('') + '</aside>';
-  if(!live.length) return '<aside class=plnl>' + head + '<div class=plnle>' + esc(T('No sessions working now')) + '</div></aside>';
+  const hc = typeof hcRow === 'function' ? hcRow('pl') : '';   // «Connect» notice for CLIs without Sidereus hooks (90f); expanded list only
+  if(!live.length) return '<aside class=plnl>' + head + '<div class=plnle>' + esc(T('No sessions working now')) + '</div>' + hc + '</aside>';
   // Row = the Timeline's session name cell (74b tlSessNmB, bare: no time/token chips) + the run summary; one button per (cwd, plat).
   return '<aside class=plnl>' + head + live.map(x => {
     const on = !!PLS.nowSid && x.sid === PLS.nowSid, k = plNowSt(x), it = { cwd: x.cwd || '', plat: x.plat || '', state: k === 'work' && x.state === 'wait' ? 'run' : x.state, blocked: x.blocked, idle: x.ageSec };   // dot agrees with plNowSt (list item only, x untouched)
     const st = T(PLNOW_ST[k]), al = [x.project || '', st, plNowRunTxt(x)].filter(Boolean).join(' · ');   // ⚠project is user data: never through T()
     return '<div class="plnlr' + (on ? ' on' : '') + '"><button type=button class="plnli tlnm' + (on ? ' on' : '') + '" data-pncwd="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc((x.project || '') + '\n' + st) + '" aria-label="' + esc(al) + '"'
       + (on ? ' aria-current=true' : '') + '>' + tlSessNmB({ sess: true, cwd: x.cwd || '', plat: x.plat || '', proj: x.project || '', items: [it] }, it, 0, 0, true) + plNowRun(x, k) + '</button>' + plNowAgents(x) + '</div>';
-  }).join('') + '</aside>';
+  }).join('') + hc + '</aside>';
 }
 // List | run view; the list width uses the 81i grip (key sidereus.plmd, px).
 function plNowWrap(body){

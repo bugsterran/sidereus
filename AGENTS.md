@@ -2,7 +2,7 @@
 
 Session control screen. `http://127.0.0.1:8799` · started by launchd `io.sidereus.viewer` (label = `<launchd_label_prefix>.viewer`; `python3 mailbox_config.py --label viewer` prints it).
 **`chat_server.py` = entry point** (~250 lines: `Handler` core (send · guards · dispatch) · `main()` — route bodies are `sidereus/routes_get.py`·`routes_post.py`, `state()` is `sidereus/state.py`, PAGE assembly is `sidereus/page.py`) · **Python body is `sidereus/<domain>.py`**
-(146 modules · order and ownership rules in `refactor/STAGE3.md`) · ⚠each global is owned by **one module only** — don't reassign another module's name, fix it in the owning module · **the screen is `web/`** — `index.html` (skeleton, `@@INCLUDE file@@` placeholders) +
+(147 modules · order and ownership rules in `refactor/STAGE3.md`) · ⚠each global is owned by **one module only** — don't reassign another module's name, fix it in the owning module · **the screen is `web/`** — `index.html` (skeleton, `@@INCLUDE file@@` placeholders) +
 `app-head.js` · `css/NN-*.css` · `js/NN-*.js` (per feature, `@@INCLUDE js/*.js@@` = concatenated in name order · NN is the order).
 The server reads them at import and assembles an **inline PAGE with the same bytes** as before (`_load_page`). Feature ↔ file map: `docs/dev/FILEMAP.md` (was the web/ file map section of `VIEWER-HANDOVER.md`).
 ⚠Split JS files **only at top-level statement boundaries** (each file passes `node --check` on its own) · removing/adding a trailing newline changes the PAGE bytes.
@@ -60,11 +60,13 @@ stderr    viewer.err                # ★append-only — old lines are fossils
    - **Writing tool config is allowed** (owner decision — the feature set outgrew a read-only limit).
      Targets are only skill · agent · command files · MCP servers · hook settings (`~/.claude/` · project `.claude/` · `.mcp.json`).
      Also project `.claude/pipelines/*.json` (stage agent/model, and stage title with every in-file reference renamed in the same write; `sidereus/pipeline.py`; same guards). Owner-approved.
-     ⚠Implemented today: only the pipeline files above and the `settings.json` keys below (`sidereus/cc_settings.py`). Skill · agent · command · MCP · hook writes are not built — the «Tools» view is read-only.
+     ⚠Implemented today: only the pipeline files above, the `settings.json` keys below (`sidereus/cc_settings.py`) and the external CLI hook files below (`sidereus/hook_connect.py`). Skill · agent · command · MCP writes and Claude Code hook writes are not built — the «Tools» view is read-only.
      ⚠Every write: preview (diff) + confirm · automatic backup before writing · viewer Origin required · paths outside the allow-list are refused · MCP `env` values are masked on screen.
      ⚠Delete never deletes — it moves the file to the backup folder (can be undone).
    - **Each account's `settings.json` (`claude_roots.accounts()`, primary `~/.claude/settings.json` first): three keys only** — `autoCompactEnabled`·`autoCompactWindow` (`sidereus/cc_settings.py`, Settings › «Preferences»; one save writes every account, or with «Per account» only the accounts whose values changed — an unchanged account is not written; an extra that is missing/invalid/symlinked is skipped, never created). Same guards per file (confirm · backup · Origin) + no other key changes by a single character. Owner-approved, exposed as a settings option.
      + `env.OTEL_EXPORTER_OTLP_ENDPOINT` (primary file only) — only its port, only in the same confirm as a «Port» save, only while it is the local `http://127.0.0.1|localhost:<port>` form (raw-byte replace). Owner-approved.
+   - **External CLI hook files: three targets only** — `~/.cursor/hooks.json` · `~/.codex/hooks.json` · the Gemini settings file's `hooks` and `hooksConfig.enabled` keys (`sidereus/hook_connect.py`, written only by «Connect» in Settings › «Diagnostics» or on the first screen). Same guards (diff preview + confirm · backup to `tool-trash/` first · Origin) + merge: only missing Sidereus entries are appended; the user's hook entries are kept in order (`hooks` is re-serialised); every top-level key other than `hooks`/`hooksConfig` stays byte-identical; a symlinked file is refused (edit by hand). Nothing is written or sent automatically. Owner-approved.
+     ⚠Codex: append a new group, never edit an existing one (approval is per `event:group:entry`; the user re-approves with `/hooks`).
 
 ## Concurrent-edit protocol (put this in the brief when delegating to an agent)
 

@@ -1,0 +1,16 @@
+/* «Connect» notice for CLIs without Sidereus hooks (90f-hookconn.js): in the «Working now» list (48j) and Settings «Diagnostics» (90e). */
+.hcwr:empty{display:none}
+.hcwr{display:flex;flex-direction:column;gap:4px;min-width:0}
+.plnl .hcwr{margin-top:6px;padding-top:6px;border-top:1px solid var(--nx-rule,#2b3545)}
+.hcr{display:flex;flex-direction:column;gap:3px;min-width:0;padding:5px 8px;border:1px solid var(--nx-rule,#2b3545);border-left:2px solid var(--nx-warn,#e0a53d);border-radius:6px;font-size:12px}
+.hcr.off{border-left-color:var(--nx-rule,#2b3545);color:var(--nx-t3,#6b7280)}
+.hch{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;min-width:0}
+.hch .ailg svg{width:13px;height:13px}
+.hcl{flex:1 1 auto;min-width:0}
+.hcf,.hcw0,.hcm{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--nx-t3,#6b7280)}
+.hcw0{white-space:normal}
+.hcm{white-space:normal;color:var(--nx-t2,#9aa3b2)}
+.hcm.err{color:var(--nx-warn,#e0a53d)}
+.hcd{display:flex;flex-direction:column;gap:4px;min-width:0}
+.hcd pre{margin:0;max-height:40vh;overflow:auto;font-size:11px}   /* ⚠bounded and scrolled in the row: the preview must not push the run view */
+.hcb{display:flex;gap:6px}

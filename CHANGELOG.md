@@ -7,7 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Hooks: Cursor CLI sessions show up through `ext_hook.py --platform cursor` — its camelCase events are mapped, the folder comes from `workspace_roots`, and `ext-hooks/cursor-hooks-example.json` is the hook file (macOS, Cursor CLI 2026.10.22).
+- Hooks: Cursor, Codex and Gemini CLIs installed without Sidereus hooks get a «Connect» line on the first screen and in Settings › «Diagnostics»; it previews the diff, backs up the file and merges the Sidereus entries next to your own hooks (Codex then needs `/hooks` approval) (#21).
+- Hooks: Cursor CLI sessions show up through `ext_hook.py --platform cursor` — its camelCase events are mapped, the folder comes from `workspace_roots`, and `ext-hooks/cursor-hooks-example.json` is the hook file (macOS, Cursor CLI 2026.10.22). They also get a Timeline row, drawn from hook event times.
 - Pipelines: the «+ Add project» folder picker suggests «Recent session folders» — up to 8 folders where a Claude Code, Codex or Gemini session worked in the last 14 days and that are not in the project list yet (name, path and last session time only); a click opens that folder like typing its path.
 
 ### Changed

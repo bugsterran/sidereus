@@ -4,12 +4,25 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Platform, config, launcher, tests and tooling
 
+- **Hook connect: never edit an existing Codex group** (`sidereus/hook_connect.py`, #21).
+  - Cause: Codex stores approval per `event:group:entry`; changing a group re-hashes it and silently disables the user's approved hooks.
+  - ⇒ Missing entries go into one new group appended per event; the reply carries `approve:"/hooks"`.
+  - ⚠Do not "tidy" by merging into the user's group or reordering — every original entry must stay in place.
+- **`~/.cursor/hooks.json` is shared by Cursor CLI and the Cursor IDE** (`sidereus/hook_connect.py`).
+  - Cause: both read the same user file, so a connected CLI also sends IDE agent events.
+  - ⇒ Append only the Sidereus `command` entries; the user's IDE hooks stay untouched.
+  - ⚠Never replace the file or drop unknown keys to "own" it.
+- **A pipx/uv install cannot connect hooks** (`sidereus/hook_connect.py`, `setup.py` `BUNDLE`).
+  - Cause: the bundle has no `ext-hooks/`, so there is no template or script path to write.
+  - ⇒ `can:false, why:"no ext-hooks"`; manual setup in `docs/HOOKS.md` stays the route.
+  - ⚠Do not write a path into the hook file that the install does not have — the CLI would run a missing script every event.
 - **Cursor CLI hooks differ from the standard names** (`ext-hooks/ext_hook.py`, ★Cursor CLI 2026.10.22, macOS, 2026-10-24).
   - Cause: events are camelCase (`preToolUse`, `stop`, …); no base `cwd` (tool events send `""`); `cursor-agent -p` sends no `beforeSubmitPrompt`/`stop`.
   - ⇒ `EVENTS["cursor"]` = the codex map plus the camelCase keys (⚠keep the standard names: `--event <standard name>` configs use the same lookup); empty `cwd` = first absolute `workspace_roots` entry; no `session_id` = `conversation_id`.
   - ⚠Cursor reads stdout of `before*`/`preToolUse` hooks as a decision — never print there.
   - ⚠Never map `afterAgentThought`/`afterAgentResponse` (model text) and never forward `user_email` (rule 1).
   - ⚠A `-p` row stays in its last state until `sessionEnd`; do not invent a Stop for it.
+  - ⚠Cursor has no record-file adapter (not in `PLAT_MODS`): its timeline row comes from `_ext` alone (`timeline_ext._hook_scan`, bars = hook event times). Without it the session reached the list but never the timeline.
 - **Codex mail wake rides an experimental API** (`ext-hooks/codex_wake.py`, 2026-10-21).
   - Cause: the app-server daemon socket (`/private/tmp/codex-daemon-$UID/<hash>`, WebSocket over a unix socket) is an experimental API; ★checked on 0.163.0 only (injected turn ran in 17 s, all hooks fired, shown in the TUI).
   - ⇒ Pin the doc claims to 0.163.0; any failure (no daemon, thread not loaded, `codex exec`, Windows) = do nothing, «Mail waiting» is the fallback.

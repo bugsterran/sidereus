@@ -7,6 +7,7 @@ const dxGet = async u => { try{ const r = await getJSON(u); return r && r.ok ? r
 async function dxLoad(force){
   if(DX_LD || (DX && !force)) return;
   DX_LD = true; DXCP = null;
+  if(force && typeof hcLoad === 'function') hcLoad(true);   // «Refresh» also re-reads the CLI hooks notice (90f)
   const rs = await Promise.all([dxGet('/api/diag'), dxGet('/api/sec-tools')]);
   DX = rs[0]; DXT = rs[1];
   DX_LD = false;
@@ -89,7 +90,7 @@ function cfgPaneDx(){
   const top = '<div class="cfgrc dxtop">' + cfgOpt('dxr', '1', T('Refresh'), DX_LD) + '</div>';
   if(!DX) return top + dxEmpty(T('Loading…'));
   if(DX.err) return top + '<div class="cfgpd err">' + esc(T('Could not load')) + ': ' + esc(DX.err) + '</div>';
-  return top + dxSec(T('Hooks on the same event'), '', dxOverlaps(DX)) + dxSec(T('Rule files'), '', dxShadow(DX))
+  return top + (typeof hcRow === 'function' ? hcRow('dx') : '') + dxSec(T('Hooks on the same event'), '', dxOverlaps(DX)) + dxSec(T('Rule files'), '', dxShadow(DX))
     + dxSec(T('Silently off'), T('static estimate'), dxSilent(DX)) + dxSec(T('Plugins'), '', dxPlugins(DX))
     + dxSec(T('Security tools'), T('found on PATH; nothing is run'), DXT && DXT.err
       ? '<div class="cfgpd err">' + esc(T('Could not load')) + ': ' + esc(DXT.err) + '</div>' : dxSecTools(DXT && DXT.tools));
