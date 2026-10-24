@@ -270,6 +270,9 @@ def still_loaded(path, sid):
 
 def find_daemon(sid):
     """Socket path whose daemon has the thread loaded, else None."""
+    # ⚠Errors are logged only when no daemon has the thread: a stale socket left by an earlier daemon fails every
+    # scan (★0.164.0, 2026-10-25: EOFError on each run), which read as a failure next to a successful wake.
+    errs = []
     for p in sockets():
         ws = None
         try:
@@ -277,10 +280,12 @@ def find_daemon(sid):
             if is_loaded(ws, sid):
                 return p
         except Exception as e:
-            log("list", e)
+            errs.append(e)
         finally:
             if ws:
                 ws.close()
+    for e in errs:
+        log("list", e)
     return None
 
 
