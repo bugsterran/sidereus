@@ -16,9 +16,11 @@ function tlNmApply(){
 let tlNmRO2 = null;
 // Called after every paint (tlPlWire): re-adds the grip (paintTl rewrites the axis row) and applies the width.
 function tlNmColWire(box){
-  const c = box.querySelector('.tlaxr > .tlnm');
-  if(c && !c.querySelector('.tlnmg')) c.insertAdjacentHTML('beforeend', '<div class=tlnmg id=tlnmg role=separator aria-orientation=vertical title="'
-    + esc(T('Drag to resize the name column · double-click for default')) + '"></div>');
+  const c = box.querySelector('.tlaxr > .tlnm'), wr = box.querySelector('.tlwrap');
+  const tip = esc(T('Drag to resize the name column · double-click for default'));
+  if(c && !c.querySelector('.tlnmg')) c.insertAdjacentHTML('beforeend', '<div class=tlnmg id=tlnmg role=separator aria-orientation=vertical title="' + tip + '"></div>');
+  // Full-height twin on .tlwrap so the boundary drags from any row (same handlers via the .tlnmg class).
+  if(wr && !wr.querySelector('.tlnmgl')) wr.insertAdjacentHTML('beforeend', '<div class="tlnmg tlnmgl" id=tlnmgl role=separator aria-orientation=vertical title="' + tip + '"></div>');
   tlNmApply();
   if(tlNmRO2){ tlNmRO2.disconnect(); tlNmRO2 = null; }
   // Axis row = viewport / git-rail resize (re-clamp the saved width). Converges: same width, no new callback.
@@ -26,7 +28,7 @@ function tlNmColWire(box){
 }
 // ⚠preventDefault on pointerdown: no text selection and no scroll; the grip resolves the axis cell per move, so a paintTl mid-drag is harmless.
 document.addEventListener('pointerdown', e => {
-  const g = e.target.closest && e.target.closest('#tlnmg');
+  const g = e.target.closest && e.target.closest('.tlnmg');
   if(!g || e.button !== 0) return;
   e.preventDefault(); e.stopPropagation();
   document.documentElement.classList.add('tlnmdrag');
@@ -41,7 +43,7 @@ document.addEventListener('pointerdown', e => {
   });
 });
 document.addEventListener('dblclick', e => {
-  if(!(e.target.closest && e.target.closest('#tlnmg'))) return;
+  if(!(e.target.closest && e.target.closest('.tlnmg'))) return;
   e.stopPropagation();
   tlNmW = 0;
   lsDel('sidereus.tlnmW');

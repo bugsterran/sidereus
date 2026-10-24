@@ -149,6 +149,11 @@ html[data-ui=next][data-theme=light] .tlkb:hover{background:#1961d4}
 .tlnmg::after{content:"";position:absolute;right:3px;top:1px;bottom:1px;width:2px;border-radius:1px;background:var(--nx-rule,#2b3545)}
 .tlnmg:hover::after,html.tlnmdrag .tlnmg::after{background:var(--nx-t3,#84868c)}
 html.tlnmdrag,html.tlnmdrag *{cursor:col-resize !important;user-select:none}
+/* Full-height grip on .tlwrap (positioned): covers the name cell's 4px padding-right + the 12px row gap, never a bar. ⚠Keep the clamp fallback identical to .tlnm. */
+.tlnmgl{position:absolute;top:0;bottom:0;left:calc(var(--tlnm-w,clamp(260px,24vw,340px)) - 4px);right:auto;width:12px;z-index:7;cursor:col-resize;touch-action:none}
+/* ⚠Hide with opacity, not background: the next-UI twin (00-core.js #nxcss) copies background-color at higher specificity, so a transparent one beats :hover. */
+.tlnmgl::after{left:-1px;right:auto;top:0;bottom:0;opacity:0}
+.tlnmgl:hover::after,html.tlnmdrag .tlnmgl::after{opacity:1}
 /* ⚠Track height follows the label size (same declared px as `.tlax i`, so the 12px floor and --fs scale both alike): 1em text at top 2px + 2px. */
 .tlaxr .tlt{position:relative;flex:1 1 auto;font-size:10.5px;height:calc(1em + 4px);background:none;border:none}
 /* ★The axis gets **hierarchy** (2026-09-21: axis looked flat, text small and faint). The flatness
