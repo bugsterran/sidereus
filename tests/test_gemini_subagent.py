@@ -91,6 +91,16 @@ class GeminiSubagent(unittest.TestCase):
         gm = u[ext.EXT_PLAT["gemini"]]
         self.assertEqual((gm["tok"], gm["n_sessions"]), (140, 1))
 
+    def test_usage_today_zero_for_session_without_tokens(self):
+        live = {("cursor", "c1"): {"cwd": "/w/p", "lastSeen": T0 + 30},
+                ("codex", "old"): {"cwd": "/w/p", "lastSeen": T0 - 3 * 86400}}
+        with mock.patch.object(ext, "PLAT_MODS", {"gemini": pg}), mock.patch.dict(ext._tok, {}, clear=True), \
+                mock.patch.dict(ext._ext, live, clear=True):
+            u = ext.ext_usage_today(now=T0 + 60)
+        self.assertEqual((u["cu"]["tok"], u["cu"]["n_sessions"]), (0, 1))
+        self.assertNotIn("cx", u)                                   # last seen before today: no entry
+        self.assertEqual(u["gm"]["tok"], 140)
+
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class JsBucket(unittest.TestCase):

@@ -174,7 +174,7 @@ class HookConnect(unittest.TestCase):
 
     def test_symlink_refused(self):
         real = os.path.join(self.tmp, "dotfiles-hooks.json")
-        with open(real, "w") as f:
+        with open(real, "w", encoding="utf-8") as f:
             f.write('{"version": 1, "hooks": {}}\n')
         os.symlink(real, self.files["cursor"])
         with mock.patch.object(HC, "_read", side_effect=AssertionError("read for the diff")):

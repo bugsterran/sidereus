@@ -302,7 +302,7 @@ function extCostTip(c, miss, k){
 // «By platform» today — Claude from ccusage (WKU), others from their own chat files (state().extUsage).
 // ⚠Only Claude has a 5h/7d limit; other rows' cost is an estimate and never enters the quota figures.
 function tkPlat(d){
-  const ex = EXTU || {}, ks = Object.keys(ex).filter(k => ex[k] && ex[k].tok > 0);
+  const ex = EXTU || {}, ks = Object.keys(ex).filter(k => ex[k]);
   if(!ks.length) return '';
   const t = d && (d.daily || []).find(x => x.d === d.today);
   const nc = (SESS || []).filter(x => (!x.plat || x.plat === 'cc') && x.state !== 'done').length;

@@ -44,7 +44,7 @@ class Rate10(unittest.TestCase):
     def test_no_rate_when_quiet(self):
         u = self.usage({"old": (1000, 0, 0, 0, NOW - 3600, "gemini-2.5-flash", 0.1)})
         self.assertNotIn("rate10", u["gm"])
-        self.assertEqual(self.usage({}), {})
+        self.assertEqual(self.usage({})["gm"]["tok"], 0)       # session today without tokens: «Today 0»
 
     def test_unpriced_window(self):
         g = self.usage({"a": (100, 0, 0, 0, NOW - 30, "gemini-x", None)})["gm"]["rate10"]
@@ -55,7 +55,7 @@ class Rate10(unittest.TestCase):
                "rate": (NOW - 60, {"primary": {"pct": 42.0, "win": 300, "reset": int(NOW + 3600)},
                                    "secondary": {"pct": 18.0, "win": 10080, "reset": int(NOW - 5)}})}]
         u = self.usage({}, cx)
-        self.assertEqual(list(u), ["cx"])
+        self.assertEqual(sorted(u), ["cx", "gm"])
         self.assertEqual(u["cx"]["rate10"]["tok"], 330)
         self.assertEqual(list(u["cx"]["rate"]), ["primary"])      # the reset window is dropped
 

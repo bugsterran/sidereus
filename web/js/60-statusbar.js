@@ -62,10 +62,10 @@ function sdrwTabTarget(list, a, shift){
   if(shift && i === 0) return list[list.length - 1];
   return null;
 }
-// One segment per external platform with usage today (state().extUsage), each led by its logo; '' when none.
+// One segment per external platform with a session today (state().extUsage, «Today 0» included), each led by its logo; '' when none.
 // ⚠Separate from Claude figures — never summed into 5h/7d/cost.
 function sbExt(ex){
-  return Object.keys(ex || {}).filter(k => ex[k] && ex[k].tok > 0).sort().map(k => sbExtSeg(k, ex[k])).join('');
+  return Object.keys(ex || {}).filter(k => ex[k]).sort().map(k => sbExtSeg(k, ex[k])).join('');
 }
 function sbExtSeg(k, e){
   const name = platName(k);
@@ -74,8 +74,8 @@ function sbExtSeg(k, e){
     + ' · ' + T('Output') + ' ' + fmtTok(e.out || 0) + ' · ' + T('Thinking') + ' ' + fmtTok(e.thought || 0)
     + ((e.models || []).length ? '\n' + T('Model') + ': ' + e.models.join(', ') : '')
     + (e.n_sessions ? '\n' + T('Sessions') + ': ' + e.n_sessions : '')
-    + '\n' + (e.cost == null ? T('Model not in the price table') : extCostStr(e.cost) + ' — ' + T('Cost is an estimate from the bundled price table'))
-    + (e.costMiss ? ' (' + e.costMiss + ' ' + T('requests left out (model not in the price table)') + ')' : '')
+    + (!e.tok ? '' : '\n' + (e.cost == null ? T('Model not in the price table') : extCostStr(e.cost) + ' — ' + T('Cost is an estimate from the bundled price table'))
+    + (e.costMiss ? ' (' + e.costMiss + ' ' + T('requests left out (model not in the price table)') + ')' : ''))
     + (k === 'cx' ? '\n' + extRateDetail(e.rate, k, true) : '');
   // The logo's own title would shadow the segment tooltip, so it is dropped. ⚠Logo only — the name lives in the tooltip.
   return '<span class=sbext title="' + esc(tip) + '">' + aiLogo(k).replace(/ title="[^"]*"/, '')

@@ -77,6 +77,20 @@ def ext_usage_today(now=None):
         r["perMin"] = r["tok"] / (EXT_RATE_WIN / 60.0)
         if w["cost"] is not None:
             r["cost"] = (r["cost"] or 0.0) + w["cost"]
+    # A CLI with a session today but no tokens yet (no reply, or hook-only like Cursor) still gets a «Today 0» entry,
+    # so a connected CLI does not look missing. ⚠Entries come only from sessions seen today, never from installs alone.
+    with _ext_lock:
+        seen = {(p, sid) for (p, sid), v in _ext.items() if float(v.get("lastSeen") or 0) >= mid}
+    seen |= {k for k, msgs in sess.items() if k not in subs}
+    for plat, _sid in seen:
+        k = EXT_PLAT.get(plat)
+        if k and k not in out:
+            out[k] = {"tok": 0, "in": 0, "out": 0, "cache": 0, "thought": 0, "n_sessions": 0,
+                      "cost": None, "costMiss": 0, "models": []}
+    for plat, _sid in seen:
+        k = EXT_PLAT.get(plat)
+        if k and not out[k]["tok"]:
+            out[k]["n_sessions"] += 1
     # ★The platform's own limit windows (Codex 5h/weekly %), only when its record carried them and not yet reset.
     for plat, (_t, rt) in rate.items():
         p = out.get(EXT_PLAT.get(plat, plat))
