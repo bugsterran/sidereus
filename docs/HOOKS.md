@@ -362,7 +362,8 @@ Copy `ext-hooks/codex-hooks-example.json` to `~/.codex/hooks.json`. Checked with
   waiter exit. No daemon, a thread not loaded in it, or `codex exec` = nothing happens; «Mail waiting» is the fallback.
   Set `default_tools_approval_mode = "approve"` on `[mcp_servers.mailbox]` (`ext-hooks/codex-config-example.toml`):
   only the mailbox tools are auto-approved, shell and other approvals are unchanged; restart the session after editing.
-  ⚠Experimental app-server API (★checked on 0.163.0, 2026-10-21: turn ran in 17 s, all hooks fired, shown in the TUI).
+  Uses the app-server socket without the experimental API capability (★0.163.0, 2026-10-21: turn ran in 17 s, all
+  hooks fired, shown in the TUI; ★0.164.0, 2026-10-24: the same calls work without the experimental flag).
   ⚠macOS/Linux only; on Windows nothing is spawned.
 - Idle wake by blocking (**opt-in, unattended sessions only**): replacing `--wake` with `--wait` (set timeout 3600) waits on `bus.jsonl` for up to 59 min
   (`SIDEREUS_MAIL_WAIT_S`, 60-3540) and blocks with the mail line when mail arrives; no mail = exit 0, no output, no

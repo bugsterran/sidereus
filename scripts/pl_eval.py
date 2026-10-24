@@ -242,6 +242,14 @@ def _append(fp, text):
     return start
 
 
+def _commit_in(clone, rel):
+    """Commit `rel` in the temp clone (fixed identity, no signing, hooks off via GIT_SAFE_OPTS). True on success."""
+    if _git(clone, ["add", "--", rel]) is None:
+        return False
+    return _git(clone, ["-c", "user.name=sidereus-redcheck", "-c", "user.email=redcheck@sidereus.invalid",
+                        "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "-m", "redcheck"]) is not None
+
+
 def inject(mode, clone):
     """(expected findings, why). Expected = pseudo-seeds for checks-* modes ([] for rc-judged modes); None = nothing
     to break. ⚠Writes inside the clone only (symlinked files are never chosen)."""
@@ -251,6 +259,9 @@ def inject(mode, clone):
         tok = base64.urlsafe_b64encode(hashlib.sha256(("sidereus-red:" + clone).encode()).digest()).decode().rstrip("=")
         with open(os.path.join(clone, rel), "w", encoding="utf-8") as f:
             f.write('api_key = "%s"\n' % tok)
+        # ⚠The security producer scans a `git archive HEAD` export, so an untracked injection is never seen: commit it.
+        if not _commit_in(clone, rel):
+            return None, "commit in clone failed"
         return [{"kind": "secret", "file": rel, "line": 1}], "fake api key in " + rel
     if mode in ("fast", "full"):
         py = _files(clone, (".py",), prefer="sidereus")
@@ -403,8 +414,8 @@ def _red_gate(pfile, argv, mode, repo, clone, store, tmp, head, t_end):
     rc, late = _run(argv, cwd, env, t_end - _now())
     if late:
         return "skip", "gate timeout"
-    if mode in PE.CHECKS_FILES:
-        return _judge_checks(store, clone, head, mode, expect)
+    if mode in PE.CHECKS_FILES:   # the producer keys its file by the clone's HEAD, which inject() moved
+        return _judge_checks(store, clone, (_snap(clone) or (head,))[0], mode, expect)
     return ("pass", "gate rc %d on a broken repo" % rc) if rc != 0 else ("fail", "gate passed on a broken repo")
 
 

@@ -176,7 +176,7 @@ class CodexWake(unittest.TestCase):
                                        "turn/start"])
         self.assertEqual(d.unmasked, 0)
         self.assertEqual(d.handshakes, 2)
-        self.assertTrue(d.calls[0][1]["capabilities"]["experimentalApi"])
+        self.assertNotIn("experimentalApi", d.calls[0][1].get("capabilities", {}))
         p = d.calls[-1][1]
         self.assertEqual(p["threadId"], SID)
         text = p["input"][0]["text"]
