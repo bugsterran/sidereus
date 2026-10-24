@@ -14,7 +14,7 @@ from tests._node import node_e
 FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archProvNote", "archEvHtml", "archEdgeRow", "archDmBody", "archHome", "archCands",
        "archWhyOff", "archReqOf", "archReqBtn", "archReqHtml", "archPaint", "archIsTest", "archMq", "archPairs", "archReduce", "archRanks", "archSrc", "archBarHtml", "archKey", "archWaitHtml", "archDiagram", "archHov", "archHovPaint",
        "archSentRun", "archSentPh", "archEl", "archSentDone", "archSentHtml", "archSentFin", "archTick", "archBase", "archRunOf", "archRunEl", "archRunHtml", "archStatusHtml", "archLegHtml", "hhmm",
-       "archStyleName", "archRoleName", "archFwParts", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",
+       "archStyleName", "archRoleName", "archFwParts", "archStyleParts", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",
        "archHasLayers", "archEntPair", "archBandSrc", "archBandFix", "archBandHint", "archFront", "archKindMap", "archKindLegHtml"]   # 84j2 (archPaint calls them)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archReqHtml calls it)
 def _read(p):
@@ -162,13 +162,29 @@ class StructArch(unittest.TestCase):
         self.assertIn("단위: a&quot;b", ko[0])
         self.assertIn('class="strbg strbg-cut strbg-asty"', ko[1])
         self.assertIn(">계층형 · 추정됨</em>", ko[1])
-        self.assertTrue(ko[0].endswith(ko[2]))            # badge only prepended
+        self.assertTrue(ko[0].startswith('<em class="strbg strbg-asty">'))   # purple style group leads
         self.assertEqual(ko[2], ko[3])                    # style null == no key: header unchanged
         self.assertNotIn("asty", ko[2])
         self.assertIn(">기타</em>", ko[4])
         self.assertIn(">근거 파일 0개</em>", ko[4])
         self.assertNotIn("strbg-dat", ko[4])            # no framework -> no framework badge  # unknown id -> 'Other', never the raw id
         self.assertNotIn("zz", ko[4])
+
+    def test_badge_colour_groups(self):
+        # order = purple (style, framework) -> blue (verified) -> grey (evidence, modules, fresh stamp, drawn-by) -> warning
+        st = {"style": "layered", "framework": "A + B", "ok": True, "evidence": [{"file": "pom.xml", "ok": True}]}
+        d = {"edges": [], "modules": [], "style": st, "dev": [{"i": 0, "a": "web", "b": "data"}], "at": 1791469200,
+             "commit": "abc1234ffff", "head": "abc1234ffff", "stale": False}
+        js = ("const d = " + json.dumps(d) + ", s = Object.assign({}, d, {stale: true, head: '999888777'}),"
+              " e = Object.assign({}, s, {style: Object.assign({}, d.style, {ok: false})});"
+              "console.log(JSON.stringify([archHeadNote(d), archHeadNote(s), archHeadNote(e)]));")
+        fresh, stale, est = run(js, "en")
+        def order(h, keys):
+            ix = [h.index(k) for k in keys]
+            self.assertEqual(ix, sorted(ix), keys)
+        order(fresh, ["strbg-asty", "strbg-dat", "strbg-n", ">Evidence 1 files<", ">0 modules<", "Generated", "Drawn by", "strbg-cy"])
+        order(stale, ["strbg-asty", "strbg-dat", "strbg-n", ">Evidence 1 files<", ">0 modules<", "Drawn by", "strbg-cy", "strbg-cut"])
+        order(est, ["strbg-dat", "strbg-n", ">Evidence 1 files<", "Drawn by", "strbg-cut strbg-asty", "strbg-cy", "⚠ Generated"])
 
     def test_framework_split_badges(self):
         def note(fw):
