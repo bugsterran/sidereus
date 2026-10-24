@@ -112,6 +112,11 @@ class SameKeysAsRealBuilders(_Patch):
         mine = w.agent_work(w.subs[0]["tid"])
         self.assertEqual(set(mine), set(real))
 
+    def test_running_agent_popup_keeps_target_now_is_name_only(self):
+        w = self.world()
+        x = next(s for s in w.subs if s["now"] == "Edit")
+        self.assertEqual(w.agent_work(x["tid"])["steps"][-1]["targ"], "src/checkout/Form.tsx")
+        self.assertTrue(all(" · " not in s["now"] for s in w.subs))
 
     def test_plrun_stack_keys(self):
         # Stacked demo runs (2 open + 1 ended) keep pl_model's row/stage/agent key sets.

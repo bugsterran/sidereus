@@ -243,3 +243,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 ## Agent description line must not size the card (48d `.plnad` · 48k `.plwad`/`.plphd`)
 
 - ⚠The card is `width:max-content` (184..320); a plain nowrap description would push every card with a description to 320 and move edges and «Arrange». `.plnad` is `width:0;min-width:100%` + ellipsis so it takes the width the other lines set. Descriptions are agent-file data: `esc()` in text and `title`, never `T()`.
+
+## Stage agent «now» line is the tool name only (48k `plAgNowLine`)
+
+- Cause: `sub.now` is `_agent_last` — the tool name, plus « · description» for Agent/Task.
+- ⇒ The result pane cuts it at the first « · » client-side and shows `name · elapsed`, or `Idle · <ago>` past `PLNOW_QUIET`; no `title` on the line.
+- ⚠Never show the suffix or any tool input there (rule 1); the tool name is data: `esc()`, never `T()`.

@@ -16,11 +16,11 @@ let PLS = {proj: '/w/a', data: {'/w/a': {agents: [{name: 'impl', desc: 'Writes <
 function plgShow(t){ return t; } function plgFam(){ return 'x'; } function plgHue(){ return ''; } function plFlagChips(){ return []; }
 function plOc(s){ return s; } function plEvLine(){ return ''; } function plEvRows(){ return []; } function plEvCommits(){ return []; }
 function plStageRows(){ return [{st: 'run', n: 2}]; } function plWatchDef(){ return null; }
-const NODES = {};
+const NODES = {}, SESS = [];
 function plgNode(G, id){ return NODES[id]; }
 function plStageAgents(){ return [{tid: 't1', lab: 'sidereus-implementer: [pl:x/y] fix <b>x', run: 1, sec: 5}, {tid: 't2', lab: 'main: [pl:x/y]'}]; }
 """
-FNS = ("plLabParts", "plLabDesc", "plLabTip", "plAgDesc", "plWatchPane", "plNodeHtml")
+FNS = ("plLabParts", "plLabDesc", "plLabTip", "plAgDesc", "plAgNowLine", "plWatchPane", "plNodeHtml")
 
 
 def run(body):

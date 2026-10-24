@@ -91,12 +91,13 @@ class PlMode(unittest.TestCase):
         self.assertEqual(r, [True, 2, False, 1])
 
     def test_r5_watch_pane_evidence_agents_metadata_only(self):
-        fns = ["plWatchPane", "plAgDesc", "plStageRows", "plStageAgents", "plLabParts", "plLabDesc", "plLabTip", "plStrip", "plgNode"]
+        fns = ["plWatchPane", "plAgDesc", "plStageRows", "plStageAgents", "plLabParts", "plLabDesc", "plLabTip", "plStrip", "plgNode", "plAgNowLine"]
         h = run(MODE + _const("PL_DESC_RE", "web/js/48b-pipeline-run.js") + "\n" + _const("PL_MK", "web/js/48b-pipeline-run.js") + "\n"
                 + "\n".join(js_fn(n) for n in fns)
                 + "\nfunction plOc(s){ return 'OC-' + s; } function ago(s){ return s + 's'; } function plgShow(t){ return t; } function plAgLab(a){ return a.lab; }"
                 "function subWorkId(a){ return a.tid; } function plPass(){ return null; } function plEvRows(){ return []; } function plEvCommits(){ return []; }"
                 "function plEvLine(rows, L){ return '<span class=plev>EV ' + L.w0 + '</span>'; }"
+                "const SESS = [], PLNOW_QUIET = 120;"
                 "const E = {G: {nodes: [{id: 'n1', title: 'Implement', agent: 'impl', model: 'opus', gate: 'scripts/check.sh --fast'}]}, sel: {k: 'n', id: 'n1'}};"
                 "const lt = {Implement: {st: 'done', n: 2, sec: 30, w0: 7, w1: 37, from: {Verify: 1},"
                 " ag: [{aid: 'a1', tid: 't1', lab: 'impl: [pl:chg/Implement] SECRET-DESC', t0: 1, t1: 31}]}};"
