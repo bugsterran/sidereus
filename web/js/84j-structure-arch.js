@@ -34,18 +34,19 @@ function archRoleName(r){ r = String(r || ''); return Object.prototype.hasOwnPro
 function archFwParts(fw){ return String(fw || '').split(/\s+\+\s+|,\s+/).map(x => x.trim()).filter(Boolean); }
 // Pure: style badges «Layered» (+ «estimated» when an evidence file is not in the commit) · framework · «Evidence N files»,
 // then the deviation count; '' when the server sent no style. Evidence tooltip = files + units (strHdBadge escapes both).
-function archStyleNote(d){
+function archStyleParts(d){   // {sty, est (sty is the warn-coloured «estimated» form), fw, ev, dev}; null without a style
   const st = d && d.style && typeof d.style === 'object' ? d.style : null;
-  if(!st || !st.style) return '';
+  if(!st || !st.style) return null;
   const fw = String(st.framework || ''), ev = (Array.isArray(st.evidence) ? st.evidence : []).filter(x => x && x.file);
   const tip = ev.map(x => x.file + (x.ok === false ? ' ✕' : '')).join('\n') + (st.units ? (ev.length ? '\n' : '') + T('Units: {u}').replace('{u}', String(st.units)) : '');
   const dv = Array.isArray(d.dev) ? d.dev.length : 0;
   // Separate badges: a long framework inside one combined badge got truncated along with the evidence count.
-  return strHdBadge(st.ok === false ? 'cut strbg-asty' : 'asty', archStyleName(st) + (st.ok === false ? ' · ' + T('estimated') : ''))
-    + archFwParts(fw).map(x => strHdBadge('dat', x, fw)).join('')
-    + strHdBadge('', T('Evidence {n} files').replace('{n}', ev.length), tip)
-    + (dv ? strHdBadge('cy', T('{n} outside {s} flow').replace('{n}', dv).replace('{s}', archStyleName(st)), T('Edges whose module roles go against this style')) : '');
+  return { est: st.ok === false, sty: strHdBadge(st.ok === false ? 'cut strbg-asty' : 'asty', archStyleName(st) + (st.ok === false ? ' · ' + T('estimated') : '')),
+    fw: archFwParts(fw).map(x => strHdBadge('dat', x, fw)).join(''),
+    ev: strHdBadge('', T('Evidence {n} files').replace('{n}', ev.length), tip),
+    dev: dv ? strHdBadge('cy', T('{n} outside {s} flow').replace('{n}', dv).replace('{s}', archStyleName(st)), T('Edges whose module roles go against this style')) : '' };
 }
+function archStyleNote(d){ const s = archStyleParts(d); return s ? s.sty + s.fw + s.ev + s.dev : ''; }
 // Pure: header badges — pass rate, modules, and a document-style version stamp «Generated MM-DD HH:MM · commit» (server `at`).
 // A stale map keeps the stamp in the «cut» style with a ⚠ marker; how far HEAD moved goes to its tooltip.
 function archHeadNote(d){
@@ -54,12 +55,14 @@ function archHeadNote(d){
   const tip = T('Diagram commit {n} · HEAD now {m}').replace('{n}', c).replace('{m}', h);
   const ahead = d && d.stale ? (typeof d.behind === 'number' ? TV({msg: 'HEAD is {n} commits ahead', vars: {n: d.behind}}) : T('stale')) + ' · ' : '';
   const why = d && d.stale ? '\n' + T('The diagram is older than the code — a new one is built from the latest commit.') : '';
-  return archStyleNote(d) + strHdBadge('n', T('Verified {n}/{m} ({k}%)').replace('{n}', r.n).replace('{m}', r.m).replace('{k}', r.pct),
-      T('Edges with checked evidence / all edges'))
-    + strHdBadge('', T('{n} modules').replace('{n}', ((d && d.modules) || []).length))
-    + (c ? strHdBadge(d.stale ? 'cut' : '', (d.stale ? '⚠ ' : '') + (at ? T('Generated {t} · {c}').replace('{c}', c).replace('{t}', hhmm(at, { date: true, dsep: '-' })) : c), ahead + tip + why) : '')
-    + archProvNote(d && d.prov)
-    + (typeof archChkHdBtn === 'function' ? archChkHdBtn(d) : '');   // 84l: issues badge, or «Security check» when the project has no results yet
+  const s = archStyleParts(d) || { est: false, sty: '', fw: '', ev: '', dev: '' };
+  const gen = c ? strHdBadge(d.stale ? 'cut' : '', (d.stale ? '⚠ ' : '') + (at ? T('Generated {t} · {c}').replace('{c}', c).replace('{t}', hhmm(at, { date: true, dsep: '-' })) : c), ahead + tip + why) : '';
+  // Badges are ordered by colour group (purple · blue · grey · warning) so the row reads as groups; state-coloured ones follow their current colour.
+  return (s.est ? '' : s.sty) + s.fw
+    + strHdBadge('n', T('Verified {n}/{m} ({k}%)').replace('{n}', r.n).replace('{m}', r.m).replace('{k}', r.pct), T('Edges with checked evidence / all edges'))
+    + s.ev + strHdBadge('', T('{n} modules').replace('{n}', ((d && d.modules) || []).length)) + (d && d.stale ? '' : gen) + archProvNote(d && d.prov)
+    + (s.est ? s.sty : '') + s.dev + (d && d.stale ? gen : '')
+    + (typeof archChkHdBtn === 'function' ? archChkHdBtn(d) : '');   // 84l: issues badge (red/amber), or «Security check» when the project has no results yet
 }
 // Pure: «drawn by» badge from server `prov` (platform logo + model; per-stage models when they differ).
 // ⚠aiLogo falls back to the Claude mark for unknown codes — only call it when AILG has the code. Stage titles are stored data: esc, never T().
