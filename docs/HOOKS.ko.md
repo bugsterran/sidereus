@@ -333,7 +333,10 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 
 - 이벤트 이름은 camelCase 다. `afterAgentThought`·`afterAgentResponse` 는 모델 글을 담고 있어 보내지 않는다.
 - Cursor 는 기본 `cwd` 를 보내지 않는다(도구 이벤트는 `""`). 그래서 폴더는 `workspace_roots` 의 첫 항목이다.
-  `session_id` 는 `conversation_id` 와 같다. `user_email`, `generation_id`, `tool_input` 은 버린다.
+  `session_id` 는 `conversation_id` 와 같다. `user_email`, `tool_input` 은 버린다.
+- `stop` 은 토큰 수만 보낸다(`input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_write_tokens` → `usage`)
+  와 `generation_id`(→ `gen_id`). 그래서 «오늘»과 타임라인이 턴마다 한 번씩 센다. 데이터 폴더의 `ext-hooktok.json` 에
+  7일 동안 남고 `sessionEnd` 뒤에도 유지된다. ⚠`agent -p` 는 훅을 보내지 않으니 헤드리스 실행에는 토큰이 없다.
 - ⚠Cursor 는 `before*`/`preToolUse` 훅의 stdout 을 결정으로 읽는다. `ext_hook.py` 는 아무것도 출력하지 않는다.
 - ⚠`cursor-agent -p` 는 `beforeSubmitPrompt`/`stop` 을 보내지 않는다. 헤드리스 행은 `sessionEnd` 까지 마지막 상태로 남는다.
 - 대화형 순서: `sessionStart`, `beforeSubmitPrompt`, 도구 이벤트, `stop`. `/quit` 은 `sessionEnd` 를 보낸다.

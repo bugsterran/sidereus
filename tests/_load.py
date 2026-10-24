@@ -40,6 +40,7 @@ def load():
         tmp = tempfile.mkdtemp(prefix="sidereus-test-")
         ext.EXT_FILE = os.path.join(tmp, "ext-sessions.json")
         ext.EXT_RUNS_FILE = os.path.join(tmp, "ext-runs.json")
+        ext.EXT_HOOKTOK_FILE = os.path.join(tmp, "ext-hooktok.json")
         # ⚠The rail joins file owners (git_rail._rail_owners -> file_owner.index): without this it scans live transcripts.
         importlib.import_module("sidereus.file_owner").CLAUDE_PROJECTS = os.path.join(tmp, "no-projects")
         # ⚠Quota/burn writers: an unstubbed path once wrote a fake plan cut into the live burn-hist-cache.json.

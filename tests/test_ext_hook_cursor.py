@@ -93,6 +93,40 @@ class CursorHook(unittest.TestCase):
                 self.assertNotIn(secret, body, raw)
             self.assertNotIn("transcript_path", out)   # null until the first tool
 
+    def test_stop_usage(self):
+        tok = dict(input_tokens=14645, output_tokens=28, cache_read_tokens=3968, cache_write_tokens=0)
+        out, _ = hook.build("cursor", _payload("stop", generation_id="gen-1_a", text=TEXT, status="completed",
+                                               transcript_path="/x/SECRET.jsonl", **tok))
+        self.assertEqual(out["usage"], {"in": 14645, "out": 28, "cr": 3968, "cw": 0})
+        self.assertEqual(out["gen_id"], "gen-1_a")
+        self.assertEqual(set(out) - {"platform", "event", "ts", "session_id", "cwd", "model", "transcript_path"},
+                         {"usage", "gen_id"})
+        body = json.dumps(out)
+        for secret in (EMAIL, TEXT, "completed"):
+            self.assertNotIn(secret, body)
+        for key in ("user_email", "text", "input_tokens", "generation_id", "status"):
+            self.assertNotIn(key, out)
+        # bad values dropped one by one; a bad generation id is dropped too
+        out, _ = hook.build("cursor", _payload("stop", generation_id="bad id!", input_tokens=True,
+                                               output_tokens=-1, cache_read_tokens="5", cache_write_tokens=7))
+        self.assertEqual(out["usage"], {"cw": 7})
+        self.assertNotIn("gen_id", out)
+        out, _ = hook.build("cursor", _payload("stop", input_tokens=10 ** 9, generation_id="x" * 65))
+        self.assertNotIn("usage", out)
+        self.assertNotIn("gen_id", out)
+
+    def test_usage_only_on_cursor_stop(self):
+        for raw in ("preToolUse", "beforeSubmitPrompt", "sessionEnd"):
+            out, _ = hook.build("cursor", _payload(raw, input_tokens=5, output_tokens=5))
+            self.assertNotIn("usage", out, raw)
+            self.assertNotIn("gen_id", out, raw)
+        out, _ = hook.build("cursor", _payload("afterAgentResponse", input_tokens=5))
+        self.assertIsNone(out)
+        for plat, ev in (("codex", "Stop"), ("gemini", "AfterAgent"), ("copilot", "Stop")):
+            out, _ = hook.build(plat, _payload(ev, input_tokens=5, output_tokens=5))
+            self.assertNotIn("usage", out, plat)
+            self.assertNotIn("gen_id", out, plat)
+
     def test_other_maps_unchanged(self):
         self.assertEqual(hook.EVENTS["gemini"]["AfterAgent"], "Stop")
         self.assertEqual(hook.EVENTS["codex"]["PermissionRequest"], "Notification")

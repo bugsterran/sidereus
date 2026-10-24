@@ -25,6 +25,7 @@ rooms.json
 profiles.json
 ext-sessions.json
 ext-runs.json
+ext-hooktok.json
 plreq.json
 *.cursor
 presence-*

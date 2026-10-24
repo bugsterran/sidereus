@@ -2,7 +2,7 @@
 Assembled into the Gantt by `sidereus/timeline.py` (`_plat_tl_rows`)."""
 from sidereus.ident import _proj_name, _sid8
 from sidereus.adapter import adapter_scan
-from sidereus.ext import _ext, _ext_lock, ext_runs, PLAT_MODS, EXT_PLAT
+from sidereus.ext import _ext, _ext_lock, ext_runs, PLAT_MODS, EXT_PLAT, ext_hook_msgs, ext_hook_cwds
 from sidereus.timeline_scan import SEG_GAP, SEG_MAX
 
 
@@ -40,6 +40,7 @@ def _plat_tl_rows(cut, now, pcwd=None):
         out += _plat_rows(m, cut, now, pcwd)
     with _ext_lock:
         hook_only = {p for p, _sid in _ext if p not in PLAT_MODS}
+    hook_only |= {p for p, _sid in ext_hook_cwds() if p not in PLAT_MODS and p in EXT_PLAT}
     for p in sorted(hook_only):
         out += _ext_tl(cut, now, pcwd, p, EXT_PLAT[p], "CLI", p.title(), _hook_scan(p))
     return out
@@ -48,13 +49,22 @@ def _plat_tl_rows(cut, now, pcwd=None):
 def _hook_scan(plat):
     """Scan for a platform without a record-file adapter (Cursor): activity = hook event times kept in `_ext`.
     ⚠Without this such sessions reached the session list but never the timeline."""
-    def scan(_cut):
+    def scan(cut):
         with _ext_lock:
             items = [(sid, v.get("cwd") or "", list(v.get("ev") or [])) for (p, sid), v in _ext.items() if p == plat]
-        return [{"sid": sid, "cwd": cwd,
-                 "acts": {i: float(e.get("t") or 0) for i, e in enumerate(ev)
-                          if isinstance(e, dict) and e.get("e") not in ("SessionStart", "SessionEnd")}}
-                for sid, cwd, ev in items]
+        msgs = {sid: ms for (p, sid), ms in ext_hook_msgs(cut).items() if p == plat}
+        out = [{"sid": sid, "cwd": cwd, "msgs": msgs.get(sid) or {},
+                "acts": {i: float(e.get("t") or 0) for i, e in enumerate(ev)
+                         if isinstance(e, dict) and e.get("e") not in ("SessionStart", "SessionEnd")}}
+               for sid, cwd, ev in items]
+        # Ended sessions (gone from `_ext`) keep their row from the stored generations.
+        live = {sid for sid, _c, _e in items}
+        cwds = ext_hook_cwds()
+        for sid, ms in msgs.items():
+            if sid not in live:
+                out.append({"sid": sid, "cwd": cwds.get((plat, sid)) or "", "msgs": ms,
+                            "acts": {g: v[4] for g, v in ms.items()}})
+        return out
     return scan
 
 
