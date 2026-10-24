@@ -177,7 +177,7 @@ Settings (gear icon) hold the language, background tone and «Preferences». Ser
 
 ## Other CLIs
 
-Codex CLI and Gemini CLI report through hooks and appear next to Claude Code sessions with their own token counts. ⚠ Their tokens never count toward Claude's 5h/7d limits or cost. Cursor, Copilot and other CLIs can use the same hook, not yet verified. Setup: [HOOKS.md](docs/HOOKS.md).
+Codex CLI and Gemini CLI report through hooks and appear next to Claude Code sessions with their own token counts. ⚠ Their tokens never count toward Claude's 5h/7d limits or cost. Cursor CLI: macOS verified (2026.10.22). Copilot and other CLIs can use the same hook, not yet verified. Setup: [HOOKS.md](docs/HOOKS.md).
 
 ⚠ Codex ignores `hooks.json` until you approve it once with `/hooks` in its TUI, and again after every edit (the entries read `ext_hook.py`, not «Sidereus»). Until then a Codex session that wrote in the last 10 minutes shows marked «Hooks not connected», with folder and model only and no state.
 

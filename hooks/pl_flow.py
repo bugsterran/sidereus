@@ -53,8 +53,9 @@ PLATFORMS = ("cc", "gemini", "codex", "copilot", "cursor", "cline", "windsurf", 
              "deepseek", "qwen", "kimi", "mistral", "ollama", "perplexity", "huggingface", "meta", "openrouter")
 EMIT = ("cc", "codex", "gemini")   # platforms that read PostToolUse additionalContext; others get no stdout
 EVENT = {"BeforeTool": "PreToolUse", "AfterTool": "PostToolUse"}   # Gemini names
+CAMEL = {"preToolUse": "PreToolUse", "postToolUse": "PostToolUse", "postToolUseFailure": "PostToolUse"}   # Cursor names
 SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash",
-         "PowerShell")   # Bash/PowerShell only off cc; PowerShell = Claude Code's Windows shell tool
+         "PowerShell", "Shell")   # Bash/PowerShell only off cc; PowerShell = Claude Code's Windows shell tool; Shell = Cursor
 # ⚠Same as pl_mark.py MARK; anchored at the command start so `grep "[pl:"` never counts.
 MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl(-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n|]{1,40})(\|fail)?)\]""")
 IDLE_S = 6 * 3600     # a run untouched this long is over; the next tag opens a new one
@@ -1391,6 +1392,20 @@ def _none_pre(plat, ev):
         return False
 
 
+def _norm_ev(ev):
+    """Off cc: Cursor camelCase event -> PascalCase; an empty cwd (Cursor tool events) -> first absolute workspace root.
+    ⚠Without it `_flow` returns early (cwd must be absolute) and no Cursor run ever opens."""
+    e = ev.get("hook_event_name")
+    if isinstance(e, str) and e in CAMEL:
+        ev["hook_event_name"] = CAMEL[e]
+    cwd, roots = ev.get("cwd"), ev.get("workspace_roots")
+    if not (isinstance(cwd, str) and os.path.isabs(cwd)) and isinstance(roots, list):
+        r = [x for x in roots if isinstance(x, str) and os.path.isabs(x)]
+        if r:
+            ev["cwd"] = r[0]
+    return ev
+
+
 def main(argv=None):
     plat = _platform(sys.argv[1:] if argv is None else argv)
     if plat not in PLATFORMS:
@@ -1398,6 +1413,8 @@ def main(argv=None):
     ev = json.loads(sys.stdin.read() or "{}")
     if not isinstance(ev, dict):
         return
+    if plat != "cc":
+        ev = _norm_ev(ev)
     denied = False
     del _NONE_NOTE[:]
     try:

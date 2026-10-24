@@ -27,7 +27,8 @@ FIELD = {"Bash": "description", "Agent": "description", "Task": "description",
 PLATFORMS = ("cc", "gemini", "codex", "copilot", "cursor", "cline", "windsurf", "warp", "trae", "zed", "grok",
              "deepseek", "qwen", "kimi", "mistral", "ollama", "perplexity", "huggingface", "meta", "openrouter")
 EVENT = {"BeforeTool": "PreToolUse", "AfterTool": "PostToolUse"}   # Gemini names
-SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash")   # Bash only off cc
+CAMEL = {"preToolUse": "PreToolUse", "postToolUse": "PostToolUse", "postToolUseFailure": "PostToolUse"}   # Cursor names
+SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash", "Shell")   # Bash only off cc; Shell = Cursor
 # ⚠Anchored at the command start: `grep "[pl:"` or a marker inside a script must never count.
 MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl(-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n|]{1,40})(\|fail)?)\]""")
 
@@ -265,12 +266,28 @@ def shell_mark(ev, sid):
                   "cwd": cwd if isinstance(cwd, str) else "", "hold": 1})
 
 
+def norm_ev(ev):
+    """Off cc: Cursor camelCase event -> PascalCase; an empty cwd (Cursor tool events) -> first absolute workspace root."""
+    if not isinstance(ev, dict):
+        return ev
+    e = ev.get("hook_event_name")
+    if isinstance(e, str) and e in CAMEL:
+        ev["hook_event_name"] = CAMEL[e]
+    cwd, roots = ev.get("cwd"), ev.get("workspace_roots")
+    if not (isinstance(cwd, str) and os.path.isabs(cwd)) and isinstance(roots, list):
+        r = [x for x in roots if isinstance(x, str) and os.path.isabs(x)]
+        if r:
+            ev["cwd"] = r[0]
+    return ev
+
+
 def main(argv=None):
     plat = _platform(sys.argv[1:] if argv is None else argv)
     if plat not in PLATFORMS:
         return
     ev = json.loads(sys.stdin.read() or "{}")
     if plat != "cc":
+        ev = norm_ev(ev)
         sid = ev.get("session_id") if isinstance(ev, dict) else None
         if isinstance(sid, str) and SID.match(sid) and ev.get("tool_name") in SHELL:
             shell_mark(ev, sid)

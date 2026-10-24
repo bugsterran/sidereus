@@ -11,7 +11,11 @@ Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`):
   - Append the entries as a new group per event (keep existing groups first): Codex stores approval per `event:group:entry`, so other tools' approvals stay valid. Then approve them once in the Codex TUI with `/hooks` — the lines read `ext_hook.py` / `gemini_mail_stop.py`, not «Sidereus». ★Verified on 0.163.0 (2026-10-19): list, state, turn-end mail, `[pl:]` marks.
   - Without hooks a Codex session whose rollout changed in the last 10 minutes gets a coarse row marked «Hooks not connected» (folder, model, state unknown); the hook row replaces it once events arrive.
   - Optional `SessionStart` notices (room invites + turn-end mail line, the project's pipelines): add `<PYTHON> <MAILBOX_CODE_DIR>/hooks/invite_notice.py --platform codex` (timeout 10) and `<PYTHON> <MAILBOX_CODE_DIR>/hooks/pipelines_brief.py --platform codex` (timeout 5). ⚠Without `--platform codex` they print the Claude wording (mailbox_wake, Agent tool). On 0.163 `SessionStart` fires with the first turn, not at launch.
-- The other 18: in `generic-hooks-example.json`, **replace every** `<PLATFORM>` with a value from the list above and use it as that CLI's hook config file (JSON allows no comments, so only the placeholder is left)
+- Cursor CLI: copy `cursor-hooks-example.json` to `~/.cursor/hooks.json` (or `<project>/.cursor/hooks.json`; merge into an existing `hooks` object). ★Verified on macOS, Cursor CLI 2026.10.22 (2026-10-24): list, state, `[pl:]` marks.
+  - Events are camelCase (`sessionStart` `beforeSubmitPrompt` `preToolUse` `postToolUse` `postToolUseFailure` `stop` `sessionEnd`); `afterAgentThought`/`afterAgentResponse` carry model text and are never sent.
+  - The folder comes from the first `workspace_roots` entry (Cursor sends no base `cwd`); `user_email` and tool input are dropped.
+  - ⚠`cursor-agent -p` sends no `beforeSubmitPrompt`/`stop`, so a headless row keeps its last state until `sessionEnd`.
+- The other 17: in `generic-hooks-example.json`, **replace every** `<PLATFORM>` with a value from the list above and use it as that CLI's hook config file (JSON allows no comments, so only the placeholder is left)
 
 ## Receiving mail — in code (no Monitor or watch.sh needed)
 The turn-end hook `gemini_mail_stop.py --platform <key>` (default gemini) blocks once when there is new mail so the agent reads it. The id is the `<key>:<cwd>` key or `<folder>-<key>` — ⚠never Claude's `identity.json[cwd]` (it would take the Claude mail of the same folder).
@@ -46,7 +50,7 @@ A shell command counts **only when it starts with the marker** — `echo "[pl:<n
 - The command text is never stored (name · stage · time · cwd · hold only). Called without `--platform`, it behaves as for Claude Code.
 - ⚠Payload shape unverified: Gemini `BeforeTool`/`AfterTool` + `run_shell_command` `tool_input.command`, Codex `Bash`/`shell` (last item when argv is a list) — never run against the real CLIs.
 
-⚠**Except for Gemini·Codex, the CLIs' hook event names were not verified** — the 7 standard events (`SessionStart` `SessionEnd` `UserPromptSubmit` `PreToolUse` `PostToolUse` `Stop` `Notification`) are accepted by name as-is (Codex never sends `Notification`, but there is a slot for it). If the names differ, pass `--event <standard name>`.
+⚠**Except for Gemini·Codex·Cursor, the CLIs' hook event names were not verified** — the 7 standard events (`SessionStart` `SessionEnd` `UserPromptSubmit` `PreToolUse` `PostToolUse` `Stop` `Notification`) are accepted by name as-is (Codex never sends `Notification`, but there is a slot for it). If the names differ, pass `--event <standard name>`.
 ⚠**The hook never blocks the CLI** — exit 0 and empty stdout no matter what (the CLI reads stdout as control instructions).
 ⚠**Passes silently when Sidereus is down** — a connection failure is only logged to `.ext-hook.log` after a 2 s timeout (200KB cap).
 ⚠An event outside the contract or a `--platform` not in the list is **not sent**; it is only logged and exits 0. Missing fields are not guessed — **the key is dropped**.

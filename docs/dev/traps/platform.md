@@ -4,6 +4,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Platform, config, launcher, tests and tooling
 
+- **Cursor CLI hooks differ from the standard names** (`ext-hooks/ext_hook.py`, ★Cursor CLI 2026.10.22, macOS, 2026-10-24).
+  - Cause: events are camelCase (`preToolUse`, `stop`, …); no base `cwd` (tool events send `""`); `cursor-agent -p` sends no `beforeSubmitPrompt`/`stop`.
+  - ⇒ `EVENTS["cursor"]` = the codex map plus the camelCase keys (⚠keep the standard names: `--event <standard name>` configs use the same lookup); empty `cwd` = first absolute `workspace_roots` entry; no `session_id` = `conversation_id`.
+  - ⚠Cursor reads stdout of `before*`/`preToolUse` hooks as a decision — never print there.
+  - ⚠Never map `afterAgentThought`/`afterAgentResponse` (model text) and never forward `user_email` (rule 1).
+  - ⚠A `-p` row stays in its last state until `sessionEnd`; do not invent a Stop for it.
 - **Codex mail wake rides an experimental API** (`ext-hooks/codex_wake.py`, 2026-10-21).
   - Cause: the app-server daemon socket (`/private/tmp/codex-daemon-$UID/<hash>`, WebSocket over a unix socket) is an experimental API; ★checked on 0.163.0 only (injected turn ran in 17 s, all hooks fired, shown in the TUI).
   - ⇒ Pin the doc claims to 0.163.0; any failure (no daemon, thread not loaded, `codex exec`, Windows) = do nothing, «Mail waiting» is the fallback.
