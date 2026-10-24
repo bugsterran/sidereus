@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 
 ROOT = "/home/demo/src"
 SEED = 20260924
+_DEMO_TARG = {"Edit": "src/checkout/Form.tsx", "Grep": "AddressInput", "Bash": "npm run build:index"}   # work-popup targets per tool
 H = 3600
 DEMO_TITLES = {"web": "Checkout redesign with inline validation", "cart": "Fix cart total rounding drift",
                "bill": "Webhook retry backoff for billing", "inv": "Invoice PDF layout and tax lines",
@@ -538,6 +539,8 @@ class _WorldPanels:
         if not x:
             return {"ok": False, "msg": "Could not find that subagent's record (it may not be written yet)."}
         tool, targ = (x["now"].split(" · ", 1) + [""])[:2] if x["now"] else ("Read", "README.md")
+        # sub `now` is the tool name only (rule 1); the work popup may show a target, so it lives here
+        targ = targ or _DEMO_TARG.get(tool, "")
         end = self.now() if x["run"] else x["end"]
         return {"ok": True, "type": x["type"], "desc": x["desc"], "depth": x["depth"],
                 "first": _iso(x["start"]), "last": _iso(end), "prompt": "(demo)",

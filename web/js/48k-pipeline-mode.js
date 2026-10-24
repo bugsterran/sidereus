@@ -49,6 +49,16 @@ function plWatchDef(E, lt){
   const ns = E.G.nodes, st = n => (lt[n.title] || {}).st;
   return ns.find(n => st(n) === 'run') || ns.filter(n => st(n) && st(n) !== 'wait').pop() || null;
 }
+// Running stage agent's «tool · elapsed» from its live SESS sub row. ⚠Tool name only: sub.now may carry « · description» (Agent/Task) — cut here, rule 1.
+function plAgNowLine(x, a){
+  if(!x || !a || !a.run || a.id === 'main') return '';
+  const subs = x.sub || [];
+  const s = (a.id && subs.find(v => v && v.aid === a.id)) || (a.tid && subs.find(v => v && subWorkId(v) === a.tid));
+  if(!s) return '';
+  const tool = String(s.now || '').split(' · ')[0];
+  if(s.idle > PLNOW_QUIET) return T('Idle') + ' · ' + ago(s.idle);
+  return tool ? tool + ' · ' + ago(s.idle || 0) : '';
+}
 // Result of the selected stage from data already on the page: run row (48b plStageRows), gate evidence (48f plEvLine), agents → work log.
 function plWatchPane(E, d, lv, lt){
   const n = E && E.sel && E.sel.k === 'n' ? plgNode(E.G, E.sel.id) : plWatchDef(E, lt);
@@ -61,9 +71,10 @@ function plWatchPane(E, d, lv, lt){
   const ev = L ? plEvLine(plEvRows(PLS.proj), L, plEvCommits(PLS.proj)) : '';
   const gate = '<div class=plwg><span>' + esc(T('Gate')) + '</span>' + (n.gate ? '<code>' + esc(n.gate) + '</code>' : '<i>' + esc(T('No gate command — nothing machine-checks this stage')) + '</i>') + '</div>';
   const ags = lv && lv.sid && lt ? plStageAgents(lt, n.title, Date.now()) : [];
-  const ab = ags.map(a => { const p = plLabParts(a.lab), ds = plLabDesc(p);   // task line beside the type; data, so esc only
+  const lx = ags.length ? (SESS || []).find(r => r.sid === lv.sid) : null;
+  const ab = ags.map(a => { const p = plLabParts(a.lab), ds = plLabDesc(p), nl = plAgNowLine(lx, a);   // task line beside the type; data, so esc only
     return '<button type=button class=plwa data-plwsid="' + esc(lv.sid) + '" data-plwtid="' + esc(a.tid) + '" title="' + esc(plLabTip(a.lab)) + '">'
-    + (a.run ? '<i class=plrtdot></i>' : '') + esc(p.type || T('Agent')) + (ds ? '<span class=plwad>' + esc(ds) + '</span>' : '') + (a.sec ? ' · ' + esc(ago(a.sec)) : '') + '</button>'; }).join('');
+    + (a.run ? '<i class=plrtdot></i>' : '') + esc(p.type || T('Agent')) + (ds ? '<span class=plwad>' + esc(ds) + '</span>' : '') + (a.sec ? ' · ' + esc(ago(a.sec)) : '') + (nl ? '<span class=plwan>' + esc(nl) + '</span>' : '') + '</button>'; }).join('');
   const ad = n.agent ? plAgDesc(n.agent) : '';
   return '<div class="plpan plwp"><div class=plph><b>' + esc(plgShow(n.title)) + '</b><small>' + esc((n.agent || '') + (n.model ? ' · ' + n.model : '')) + '</small>' + (ad ? '<small class=plphd title="' + esc(ad) + '">' + esc(ad) + '</small>' : '') + '</div>' + st
     + (ev || '<div class=hidnote>' + esc(T('No gate evidence for this stage yet')) + '</div>') + gate + (ab ? '<div class=plwas>' + ab + '</div>' : '') + '</div>';

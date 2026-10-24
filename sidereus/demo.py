@@ -74,11 +74,12 @@ class World(_WorldPanels, _WorldGit):
                                   proj=repo if cwd == R[repo][0] else cwd.rsplit("/", 1)[-1]))
         self.by = {s["k"]: s for s in self.sess}
         # ── subagents: (session key, type, desc, start_min_ago, dur_min (None = running), depth, parent idx, now)
+        # ⚠now = tool name only, like agents._agent_last (rule 1: no Bash command, path or pattern)
         subs = [
             ("web", "Explore", "Map payment button call sites", 290, 9, 1, None, ""),
             ("web", "general-purpose", "Price formatter unit tests", 250, 22, 1, None, ""),
-            ("web", "general-purpose", "Checkout form validation", 38, None, 1, None, "Edit · src/checkout/Form.tsx"),
-            ("web", "Explore", "Find address field usages", 12, None, 2, 2, "Grep · AddressInput"),
+            ("web", "general-purpose", "Checkout form validation", 38, None, 1, None, "Edit"),
+            ("web", "Explore", "Find address field usages", 12, None, 2, 2, "Grep"),
             ("web", "code-reviewer", "Review coupon edge cases", 95, 17, 1, None, ""),
             ("cart", "general-purpose", "Reproduce rounding drift", 70, 25, 1, None, ""),
             ("bill", "general-purpose", "Webhook retry backoff", 210, 41, 1, None, ""),
@@ -86,7 +87,7 @@ class World(_WorldPanels, _WorldGit):
             ("inv", "general-purpose", "Invoice PDF layout", 120, 64, 1, None, ""),
             ("inv", "general-purpose", "Tax line snapshot tests", 50, 19, 2, 8, ""),
             ("docs", "general-purpose", "Rewrite quickstart page", 170, 55, 1, None, ""),
-            ("search", "general-purpose", "Index builder for API pages", 26, None, 1, None, "Bash · npm run build:index"),
+            ("search", "general-purpose", "Index builder for API pages", 26, None, 1, None, "Bash"),
         ]
         self.subs = []
         for (k, typ, desc, st_min, dur, depth, par, now_txt) in subs:
@@ -299,7 +300,7 @@ class World(_WorldPanels, _WorldGit):
         for w in self.wf_runs("search"):
             kids = [{"tid": "wfa:%s|%s" % (x["aid"], s["sid"]), "type": x["phase"], "aid": x["aid"],
                      "par": "wf:" + w["id"], "desc": x["lab"],
-                     "last": "Bash · scripts/check.sh" if x["st"] == "run" else "SubagentHandback",
+                     "last": "Bash" if x["st"] == "run" else "SubagentHandback",
                      "segs": [[max(t0, x["start"]), x["end"]]], "tk": x["tok"], "tks": [x["tok"]],
                      "tc": 8 + len(x["lab"]) % 23, "fin": 1 if x["st"] == "done" else 0, "start": x["start"],
                      "end": x["end"], "run": x["st"] == "run", "proj": s["proj"], "cwd": s["cwd"], "depth": 2}

@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Pipelines: each running stage agent in the run view shows what it is doing now — the current tool name and how long ago it last wrote («Bash · 12s», «Idle · 3m»); tool input never appears.
 - Hooks: Cursor, Codex and Gemini CLIs installed without Sidereus hooks get a «Connect» line on the first screen and in Settings › «Diagnostics»; it previews the diff, backs up the file and merges the Sidereus entries next to your own hooks (Codex then needs `/hooks` approval) (#21).
 - Hooks: Cursor CLI sessions show up through `ext_hook.py --platform cursor` — its camelCase events are mapped, the folder comes from `workspace_roots`, and `ext-hooks/cursor-hooks-example.json` is the hook file (macOS, Cursor CLI 2026.10.22). They also get a Timeline row, drawn from hook event times.
 - Tokens: Cursor CLI token counts from its `stop` hook (counts and generation id only) now reach «Today», Tokens › «By platform» and the Timeline row, counted once per turn and kept after the session ends or the viewer restarts.

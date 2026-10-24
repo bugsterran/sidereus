@@ -221,6 +221,7 @@ html[data-mv=pipe] .wrap{max-width:none}
 .plwst{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
 .plwg{display:flex;gap:8px;align-items:baseline;min-width:0}.plwg>span{flex:none;color:var(--nx-t2,#8b95a5)}.plwg>code{min-width:0;overflow-wrap:anywhere}.plwg>i{color:var(--nx-t3,#8b95a5)}
 .plwas{display:flex;flex-wrap:wrap;gap:4px}
+.plwan{display:block;font-size:11px;color:var(--nx-t3);max-width:26em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .plwad{display:inline-block;max-width:26em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;margin-left:4px;color:var(--nx-t3)}
 .plwp .plph .plphd{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .plwp .plph>b,.plwp .plph>small:not(.plphd){flex-shrink:0;white-space:nowrap}   /* ⚠the role line shrinks first; without this it squeezed the stage title to one char per line at 900 */
