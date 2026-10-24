@@ -356,16 +356,21 @@ Copy `ext-hooks/codex-hooks-example.json` to `~/.codex/hooks.json`. Checked with
 - ⚠Codex ignores the entries until approved with `/hooks`, and again after every edit (it stores a hash). Do not
   default to `--dangerously-bypass-hook-trust`.
 - `PermissionRequest` marks the row blocked; the script prints nothing, so Codex still asks you.
-- Mail wake (`--wake`, the example's default, timeout 5): `Stop` spawns a detached waiter (`ext-hooks/codex_wake.py`)
+- Default: the example's `Stop` runs `gemini_mail_stop.py --platform codex` — mail is delivered at the next turn end.
+- Mail wake (`--wake`, **opt-in**, timeout 5): append `--wake` to that `Stop` command in `~/.codex/hooks.json` and
+  re-approve with `/hooks`. `Stop` spawns a detached waiter (`ext-hooks/codex_wake.py`)
   and returns at once. When mail arrives it starts one turn on the session's own thread through the local Codex
   app-server socket; the turn text is the «[mailbox] N new mail …» line (ids and a count only). Typing first makes the
   waiter exit. No daemon, a thread not loaded in it, or `codex exec` = nothing happens; «Mail waiting» is the fallback.
   Set `default_tools_approval_mode = "approve"` on `[mcp_servers.mailbox]` (`ext-hooks/codex-config-example.toml`):
   only the mailbox tools are auto-approved, shell and other approvals are unchanged; restart the session after editing.
-  Uses the app-server socket without the experimental API capability (★0.163.0, 2026-10-21: turn ran in 17 s, all
-  hooks fired, shown in the TUI; ★0.164.0, 2026-10-24: the same calls work without the experimental flag).
+  The methods (`thread/loaded/list`, `thread/resume`, `turn/start`) are documented app-server methods not marked
+  experimental and are called without the experimental API capability; ⚠the daemon socket path is undocumented and the
+  WebSocket transport is experimental (stdio is the default), so a Codex update can break the wake — it then exits
+  quietly and «Mail waiting» stays the fallback. ★0.163.0, 2026-10-21: turn ran in 17 s, all hooks fired, shown in
+  the TUI; ★0.164.0, 2026-10-24: the same calls work without the experimental flag.
   ⚠macOS/Linux only; on Windows nothing is spawned.
-- Idle wake by blocking (**opt-in, unattended sessions only**): replacing `--wake` with `--wait` (set timeout 3600) waits on `bus.jsonl` for up to 59 min
+- Idle wake by blocking (**opt-in, unattended sessions only**): appending `--wait` instead (set timeout 3600) waits on `bus.jsonl` for up to 59 min
   (`SIDEREUS_MAIL_WAIT_S`, 60-3540) and blocks with the mail line when mail arrives; no mail = exit 0, no output, no
   model call. Re-approve with `/hooks` after the edit.
   ★0.163.0 (2026-10-20): no cap on a sync Stop wait (default 600 s, 3600 accepted); a timeout ends the turn cleanly;

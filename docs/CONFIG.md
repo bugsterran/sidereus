@@ -210,14 +210,15 @@ They are install-specific or hold private conversation data.
 
 ## Codex mail wake
 
-`ext-hooks/codex-hooks-example.json` runs `gemini_mail_stop.py --platform codex --wake` on `Stop`: a detached waiter
-starts one turn on the session's own thread through the local Codex app-server socket when mail arrives, and exits
-if you type first. `--wait` (timeout 3600) blocks inside `Stop` instead — unattended sessions only.
+`ext-hooks/codex-hooks-example.json` runs `gemini_mail_stop.py --platform codex` on `Stop`: mail is delivered at the
+next turn end. Opt-in: append `--wake` and a detached waiter starts one turn on the session's own thread through the
+local Codex app-server daemon socket when mail arrives, and exits if you type first. `--wait` (timeout 3600) blocks
+inside `Stop` instead — unattended sessions only.
 
 - Merge `ext-hooks/codex-config-example.toml` into `~/.codex/config.toml`. Its `default_tools_approval_mode = "approve"`
   auto-approves only the mailbox tools; shell and other approvals are unchanged. Restart the session after editing.
 - Editing `hooks.json` changes its hash: approve again with `/hooks`.
-- ⚠Experimental app-server API, checked on Codex 0.163.0 only. macOS/Linux only; on Windows nothing is spawned.
+- ⚠`--wake` calls documented app-server methods, but the daemon socket path is undocumented and the WebSocket transport is experimental: a Codex update can break it (then «Mail waiting» is the fallback). ★Checked on Codex 0.163.0 and 0.164.0. macOS/Linux only; on Windows nothing is spawned.
 - Details: [HOOKS › Codex CLI](HOOKS.md#codex-cli).
 
 ## Using with oh-my-claudecode

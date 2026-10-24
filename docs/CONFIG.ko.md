@@ -209,14 +209,14 @@ Windows(확인 못 함): `--install-service` 가 로그온 작업 `Sidereus` 를
 
 ## Codex 메일 깨우기
 
-`ext-hooks/codex-hooks-example.json` 은 `Stop` 에서 `gemini_mail_stop.py --platform codex --wake` 를 돌린다. 분리된 대기
-프로세스가 메일이 오면 로컬 Codex app-server 소켓으로 그 세션의 스레드에 턴 하나를 시작하고, 사람이 먼저 입력하면
-끝난다. `--wait`(timeout 3600)는 `Stop` 안에서 막고 기다린다 — 사람 없이 도는 세션 전용이다.
+`ext-hooks/codex-hooks-example.json` 은 `Stop` 에서 `gemini_mail_stop.py --platform codex` 를 돌린다. 메일은 다음 턴이
+끝날 때 전달된다. 선택 사항: `--wake` 를 붙이면 분리된 대기 프로세스가 메일이 오면 로컬 Codex app-server 데몬 소켓으로
+그 세션의 스레드에 턴 하나를 시작하고, 사람이 먼저 입력하면 끝난다. `--wait`(timeout 3600)는 `Stop` 안에서 막고 기다린다 — 사람 없이 도는 세션 전용이다.
 
 - `ext-hooks/codex-config-example.toml` 을 `~/.codex/config.toml` 에 합친다. `default_tools_approval_mode = "approve"` 는
   메일박스 도구만 자동 승인한다. 셸과 다른 승인은 그대로다. 고친 뒤 세션을 다시 시작한다.
 - `hooks.json` 을 고치면 해시가 바뀐다. `/hooks` 로 다시 승인한다.
-- ⚠실험 단계 app-server API, Codex 0.163.0 에서만 확인했다. macOS/Linux 만. Windows 에서는 아무것도 띄우지 않는다.
+- ⚠`--wake` 는 문서화된 app-server 메서드를 쓰지만 데몬 소켓 경로는 문서에 없고 WebSocket 전송은 실험 기능이다. Codex 업데이트로 깨질 수 있다(그때는 «메일 대기» 표시가 대신한다). ★Codex 0.163.0·0.164.0 에서 확인. macOS/Linux 만. Windows 에서는 아무것도 띄우지 않는다.
 - 자세히: [훅 › Codex CLI](HOOKS.ko.md#codex-cli).
 
 ## oh-my-claudecode 와 함께 쓰기

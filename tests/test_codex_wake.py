@@ -23,7 +23,8 @@ SID = "01a15274-e17e-7170-8917-f810882056d1"
 class FakeDaemon(object):
     """Accepts any number of connections; records (method, params) and whether each client frame was masked."""
 
-    def __init__(self, path, loaded, status="idle"):
+    def __init__(self, path, loaded, status="idle", ua=None):
+        self.ua = ua
         self.loaded, self.status, self.calls, self.unmasked, self.handshakes = loaded, status, [], 0, 0
         self.srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.srv.bind(path)
@@ -83,6 +84,8 @@ class FakeDaemon(object):
             return {"data": self.loaded, "nextCursor": None}
         if method == "thread/resume":
             return {"thread": {"id": SID, "status": {"type": self.status}, "canAcceptDirectInput": True}}
+        if method == "initialize" and self.ua is not None:
+            return {"userAgent": self.ua}
         return {}
 
     @staticmethod
@@ -111,13 +114,13 @@ class CodexWake(unittest.TestCase):
         open(os.path.join(self.d, "bus.jsonl"), "w", encoding="utf-8").close()
         self.tp = os.path.join(self.d, "rollout.jsonl")
         self.meta("codex-tui", "cli")
-        self.old = (cw.SOCK_DIR, cw.LOG, cw.FIRST_S)
-        cw.SOCK_DIR, cw.LOG = self.sd, os.path.join(self.d, "wake.log")
+        self.old = (cw.SOCK_DIR, cw.LOG, cw.FIRST_S, cw.CODEX_VER)
+        cw.SOCK_DIR, cw.LOG, cw.CODEX_VER = self.sd, os.path.join(self.d, "wake.log"), None
         self._env = os.environ.pop("SIDEREUS_MAIL_WAIT_MAX", None)
         self.daemon = None
 
     def tearDown(self):
-        cw.SOCK_DIR, cw.LOG, cw.FIRST_S = self.old
+        cw.SOCK_DIR, cw.LOG, cw.FIRST_S, cw.CODEX_VER = self.old
         cw.gms.set_platform("gemini")
         os.environ.pop("SIDEREUS_MAIL_WAIT_MAX", None)
         if self._env is not None:
@@ -132,8 +135,8 @@ class CodexWake(unittest.TestCase):
             f.write(json.dumps({"type": "session_meta", "payload": {"id": SID, "originator": originator,
                                                                     "source": source}}) + "\n")
 
-    def serve(self, loaded=(SID,), status="idle"):
-        self.daemon = FakeDaemon(os.path.join(self.sd, "d"), list(loaded), status)
+    def serve(self, loaded=(SID,), status="idle", ua=None):
+        self.daemon = FakeDaemon(os.path.join(self.sd, "d"), list(loaded), status, ua)
         return self.daemon
 
     def dm(self):
@@ -291,6 +294,18 @@ class CodexWake(unittest.TestCase):
         self.assertEqual(self.wake_n(), 1)
         self.assertEqual(self.run_cw(on_sleep=lambda n: self.dm() if n == 2 else None), "cap")
         self.assertEqual(d.methods().count("turn/start"), 1)
+
+    def test_failure_log_records_codex_version_token_only(self):
+        self.assertEqual(cw.agent_ver("codex-tui/0.164.0 (Mac OS 15.6; arm64) xterm"), "codex-tui/0.164.0")
+        self.assertIsNone(cw.agent_ver("no version here"))
+        self.assertIsNone(cw.agent_ver(None))
+        cw.log("list", RuntimeError("x"))     # unknown before any initialize
+        self.serve(ua="codex-tui/0.164.0 (Mac OS 15.6; arm64) SECRET-UA")
+        cw.connect(os.path.join(self.sd, "d")).close()
+        cw.log("recheck", RuntimeError("x"))
+        with open(cw.LOG, encoding="utf-8") as f:
+            rows = [ln.split(" ")[1:] for ln in f.read().splitlines()]
+        self.assertEqual(rows, [["list", "RuntimeError", "-"], ["recheck", "RuntimeError", "codex-tui/0.164.0"]])
 
     def test_bad_args_and_errors_never_raise(self):
         self.assertEqual(cw.run("../x", self.cwd, self.tp, self.me, store=self.d), "bad-args")
