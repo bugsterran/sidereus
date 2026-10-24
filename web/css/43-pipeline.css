@@ -221,6 +221,9 @@ html[data-mv=pipe] .wrap{max-width:none}
 .plwst{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
 .plwg{display:flex;gap:8px;align-items:baseline;min-width:0}.plwg>span{flex:none;color:var(--nx-t2,#8b95a5)}.plwg>code{min-width:0;overflow-wrap:anywhere}.plwg>i{color:var(--nx-t3,#8b95a5)}
 .plwas{display:flex;flex-wrap:wrap;gap:4px}
+.plwcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:6px}   /* several running stages: cards fill the wide pane instead of hugging the left edge */
+.plwc{display:flex;flex-direction:column;gap:4px;min-width:0;padding:6px 8px;border:1px solid var(--nx-rule,#2b3545);border-radius:4px;cursor:pointer}.plwc:hover{border-color:var(--nx-active,#5b8def)}
+.plwch{display:flex;align-items:baseline;gap:6px;min-width:0;color:var(--nx-t2,#8b95a5)}.plwch>b{color:var(--nx-t1,#e6e6e6);white-space:nowrap}.plwch>small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--nx-t3,#8b95a5)}
 .plwdn{align-items:center}.plwdn .plwa{color:var(--nx-t2,#8b95a5)}.plwal{font-size:11px;color:var(--nx-t3);margin-right:2px}
 .plwan{display:block;font-size:11px;color:var(--nx-t3);max-width:26em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .plwad{display:inline-block;max-width:26em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;margin-left:4px;color:var(--nx-t3)}

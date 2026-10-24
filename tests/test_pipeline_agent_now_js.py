@@ -20,7 +20,7 @@ function plgNode(){ return {title: 'S', agent: ''}; } function plAgDesc(){ retur
 function plStageAgents(){ return AGS; }
 const pane = () => plWatchPane({sel: {k: 'n', id: 'a'}}, {}, {sid: 's1'}, {S: {}});
 """
-FNS = ("plLabParts", "plLabDesc", "plLabTip", "subWorkId", "plAgNowLine", "plWatchPane")
+FNS = ("plLabParts", "plLabDesc", "plLabTip", "subWorkId", "plAgNowLine", "plWBtn", "plWatchCards", "plWatchPane")
 AID = "a0123456789abcdef"
 
 
@@ -76,6 +76,50 @@ class AgentNow(unittest.TestCase):
         h = pane([{"aid": AID, "now": "Bash", "idle": 12}], [AG])
         m = re.search(r'<button type=button class=plwa data-plwsid="s1" data-plwtid="%s" title="[^"]*">' % AID, h)
         self.assertTrue(m, h)
+
+
+# Real plWatchDef for the no-selection cases; stages A, B, C on the canvas, lt states per title.
+CARDS = """
+const plWatchDef2 = %s;
+const G = {nodes: [{id: 'a', title: 'A', agent: 'dev', model: 'opus'}, {id: 'b', title: 'B', agent: 'qa'}, {id: 'c', title: 'C'}]};
+plgNode = (g, id) => g.nodes.find(n => n.id === id);
+plWatchDef = plWatchDef2;
+const cpane = (lt, sel) => plWatchPane({G, sel}, {}, {sid: 's1'}, lt);
+"""
+
+
+def cards(body):
+    return run(CARDS % js_fn("plWatchDef").replace("function plWatchDef", "function") + body)
+
+
+@unittest.skipUnless(shutil.which("node"), "node missing")
+class RunningCards(unittest.TestCase):
+    def test_two_running_stages_two_cards(self):
+        r = cards("AGS = [%s, %s]; SESS = [{sid: 's1', sub: [{aid: '%s', now: 'Bash', idle: 4}]}];"
+                  "R.h = cpane({A: {st: 'run'}, B: {st: 'done'}, C: {st: 'run'}}, null);"
+                  % (json.dumps(AG), json.dumps(dict(AG, run=False, id="x", tid="x")), AID))
+        h = r["h"]
+        self.assertEqual(h.count("class=plwc "), 2, h)
+        self.assertLess(h.index('data-plwn="a"'), h.index('data-plwn="c"'))   # canvas order
+        self.assertNotIn('data-plwn="b"', h)
+        self.assertIn("<b>A</b><small>dev · opus</small>", h)
+        self.assertIn("<b>C</b>", h)
+        self.assertIn('role=button tabindex=0', h)
+        self.assertIn("<span class=plwan>Bash · 4s</span>", h)
+        self.assertNotIn('data-plwtid="x"', h)   # finished agents are not listed
+        self.assertNotIn("plwst", h)
+
+    def test_one_running_stage_single_detail(self):
+        h = cards("AGS = []; R.h = cpane({A: {st: 'done'}, B: {st: 'run'}}, null);")["h"]
+        self.assertNotIn("plwc", h)
+        self.assertIn("<b>B</b>", h)
+        self.assertIn("plwst", h)
+
+    def test_selected_stage_single_detail(self):
+        h = cards("AGS = []; R.h = cpane({A: {st: 'run'}, C: {st: 'run'}}, {k: 'n', id: 'c'});")["h"]
+        self.assertNotIn("plwc", h)
+        self.assertIn("<b>C</b>", h)
+        self.assertIn("plwst", h)
 
 
 if __name__ == "__main__":
