@@ -3,6 +3,7 @@
 
   python3 ext_hook.py --platform gemini   < hook.json
   python3 ext_hook.py --platform codex    < hook.json
+  python3 ext_hook.py --platform cursor   < hook.json
 
 # Must hold
 #  - stdout always stays empty. Both CLIs read hook stdout as «control directives (JSON)».
@@ -72,6 +73,18 @@ EVENTS = {
 }
 # ⚠The codex map mirrors sidereus/plat_codex.EVENTS (tests/test_codex.py checks they match).
 #   The other platforms below copy it, so their standard names are unaffected by the two Codex-only keys.
+# ★Cursor CLI 2026.10.22 (macOS, 2026-10-24): camelCase names; afterAgentThought/afterAgentResponse carry text, so unmapped.
+#   ⚠`cursor-agent -p` sends no beforeSubmitPrompt/stop - a headless row stays in its last state until sessionEnd.
+#   ⚠Built on the codex map: older configs pass `--event <standard name>`, which goes through this same lookup.
+EVENTS["cursor"] = dict(EVENTS["codex"], **{
+    "sessionStart": "SessionStart",
+    "sessionEnd": "SessionEnd",
+    "beforeSubmitPrompt": "UserPromptSubmit",
+    "stop": "Stop",
+    "preToolUse": "PreToolUse",
+    "postToolUse": "PostToolUse",
+    "postToolUseFailure": "PostToolUse",
+})
 
 # ★Accept every platform Sidereus knows (2026-09-22: commonly used AI platforms must be supported).
 #   ⚠CLIs with different event names must pass the standard name via `--event` - the default mapping is the standard 7, same as Codex.
@@ -118,6 +131,15 @@ def build(platform, data, event_override=None):
         val = data.get(key)
         if isinstance(val, str) and val:
             out[key] = val
+    # Cursor: no base cwd (tool events send ""), session id lives in conversation_id too.
+    if "session_id" not in out and isinstance(data.get("conversation_id"), str) and data["conversation_id"]:
+        out["session_id"] = data["conversation_id"]
+    if "cwd" not in out:
+        roots = data.get("workspace_roots")
+        for r in roots if isinstance(roots, list) else ():
+            if isinstance(r, str) and os.path.isabs(r):
+                out["cwd"] = r
+                break
     par = parent_sid()
     if par:
         out["parent"] = par

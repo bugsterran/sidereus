@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Hooks: Cursor CLI sessions show up through `ext_hook.py --platform cursor` — its camelCase events are mapped, the folder comes from `workspace_roots`, and `ext-hooks/cursor-hooks-example.json` is the hook file (macOS, Cursor CLI 2026.10.22).
 - Pipelines: the «+ Add project» folder picker suggests «Recent session folders» — up to 8 folders where a Claude Code, Codex or Gemini session worked in the last 14 days and that are not in the project list yet (name, path and last session time only); a click opens that folder like typing its path.
 
 ### Changed

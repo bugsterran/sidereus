@@ -257,24 +257,25 @@ The CLI runs `ext-hooks/ext_hook.py --platform <key>`, which maps the stdin even
 `windsurf`, `warp`, `trae`, `zed`, `openrouter`, `grok`, `deepseek`, `qwen`, `kimi`, `mistral`, `ollama`,
 `perplexity`, `huggingface`, `meta`. ⚠`claude` is not one; Claude sessions come from transcripts.
 
-| Event | State | Gemini name | Codex name |
-|---|---|---|---|
-| `SessionStart` | `wait` | same | same |
-| `UserPromptSubmit` | `think` | `BeforeAgent` | same |
-| `PreToolUse` | `tool` | `BeforeTool` | same |
-| `PostToolUse` | `think` | `AfterTool` | same |
-| `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` |
-| `Notification` | `ask` (blocked) | same | `PermissionRequest` |
-| `SessionEnd` | row removed | same | same |
+| Event | State | Gemini name | Codex name | Cursor name |
+|---|---|---|---|---|
+| `SessionStart` | `wait` | same | same | `sessionStart` |
+| `UserPromptSubmit` | `think` | `BeforeAgent` | same | `beforeSubmitPrompt` |
+| `PreToolUse` | `tool` | `BeforeTool` | same | `preToolUse` |
+| `PostToolUse` | `think` | `AfterTool` | same | `postToolUse`, `postToolUseFailure` |
+| `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` | `stop` |
+| `Notification` | `ask` (blocked) | same | `PermissionRequest` | none |
+| `SessionEnd` | row removed | same | same | `sessionEnd` |
 
-- Other platforms use the Codex mapping. ⚠Only Gemini and Codex were checked; otherwise pass `--event <name>`.
+- Other platforms use the Codex mapping. ⚠Only Gemini, Codex and Cursor were checked; otherwise pass `--event <name>`.
 - The blocked mark and «needs me» badge stay until the CLI's next event, `SessionEnd` or a dead pid — never by age.
   Any other row silent for 24 h (`EXT_TTL_S`) is deleted. Rows survive restarts (`ext-sessions.json`).
 - A hook row has no transcript, cost, context or git data and no resume chip. The model name is cut to 20 characters.
 
 `ext_hook.py` options: `--platform` (required), `--event`, `--url` or `SIDEREUS_HOOK_URL` (default port: `SIDEREUS_PORT` >
 config `port` > 8799), `--dry-run` (body to stderr), `MAILBOX_DIR` (log location). It forwards `session_id`, `cwd`,
-`transcript_path`, `model`, `tool_name`, `turn_id` when they are non-empty strings, and `parent` from
+`transcript_path`, `model`, `tool_name`, `turn_id` when they are non-empty strings (no `session_id` = `conversation_id`;
+no `cwd` = the first absolute `workspace_roots` entry), and `parent` from
 `SIDEREUS_PARENT_SID` or `CLAUDE_CODE_SESSION_ID`. The server requires `session_id` and caps the body at 1 MB.
 A `--url`/`SIDEREUS_HOOK_URL` whose scheme is not `http` or `https` is refused (logged, nothing sent).
 
@@ -314,6 +315,18 @@ at turn end with nothing pending it blocks with «`mailbox_wait`, do the task, r
 Claude Bash call. It is killed after `ASK_GEMINI_TIMEOUT` (600 s, exit 124) or `ASK_GEMINI_STALL` (180 s without
 chat-file growth, exit 125). It shows as a child row of the calling session (`ext-runs.json`: 200 runs, 7 days).
 ⚠Plan mode denies `web_fetch` unless a `--policy` allows it. ⚠A run from a subagent shows under the main session.
+
+### Cursor CLI
+
+Copy `ext-hooks/cursor-hooks-example.json` to `~/.cursor/hooks.json` or `<project>/.cursor/hooks.json` (form
+`{"version":1,"hooks":{"<event>":[{"command":"..."}]}}`). ★Checked on macOS with Cursor CLI 2026.10.22 (2026-10-24).
+
+- Events are camelCase. `afterAgentThought` and `afterAgentResponse` carry model text and are never sent.
+- Cursor sends no base `cwd` (tool events send `""`), so the folder is the first `workspace_roots` entry. `session_id`
+  equals `conversation_id`. `user_email`, `generation_id` and `tool_input` are dropped.
+- ⚠Cursor reads stdout of `before*`/`preToolUse` hooks as a decision; `ext_hook.py` prints nothing.
+- ⚠`cursor-agent -p` sends no `beforeSubmitPrompt`/`stop`: a headless row keeps its last state until `sessionEnd`.
+- Interactive order: `sessionStart`, `beforeSubmitPrompt`, tool events, `stop`; `/quit` sends `sessionEnd`.
 
 ### Codex CLI
 

@@ -245,24 +245,25 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 `windsurf`, `warp`, `trae`, `zed`, `openrouter`, `grok`, `deepseek`, `qwen`, `kimi`, `mistral`, `ollama`, `perplexity`,
 `huggingface`, `meta`. ⚠`claude` 는 없다. Claude 세션은 대화 기록에서 읽는다.
 
-| 이벤트 | 상태 | Gemini 이름 | Codex 이름 |
-|---|---|---|---|
-| `SessionStart` | `wait` | 같음 | 같음 |
-| `UserPromptSubmit` | `think` | `BeforeAgent` | 같음 |
-| `PreToolUse` | `tool` | `BeforeTool` | 같음 |
-| `PostToolUse` | `think` | `AfterTool` | 같음 |
-| `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` |
-| `Notification` | `ask`(막힘) | 같음 | `PermissionRequest` |
-| `SessionEnd` | 행 삭제 | 같음 | 같음 |
+| 이벤트 | 상태 | Gemini 이름 | Codex 이름 | Cursor 이름 |
+|---|---|---|---|---|
+| `SessionStart` | `wait` | 같음 | 같음 | `sessionStart` |
+| `UserPromptSubmit` | `think` | `BeforeAgent` | 같음 | `beforeSubmitPrompt` |
+| `PreToolUse` | `tool` | `BeforeTool` | 같음 | `preToolUse` |
+| `PostToolUse` | `think` | `AfterTool` | 같음 | `postToolUse`, `postToolUseFailure` |
+| `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` | `stop` |
+| `Notification` | `ask`(막힘) | 같음 | `PermissionRequest` | 없음 |
+| `SessionEnd` | 행 삭제 | 같음 | 같음 | `sessionEnd` |
 
-- 나머지 플랫폼은 Codex 변환을 쓴다. ⚠Gemini 와 Codex 만 확인했다. 이름이 다르면 `--event <이름>` 을 넘긴다.
+- 나머지 플랫폼은 Codex 변환을 쓴다. ⚠Gemini, Codex, Cursor 만 확인했다. 이름이 다르면 `--event <이름>` 을 넘긴다.
 - 막힘 표시와 «나를 기다림» 배지는 CLI 의 다음 이벤트, `SessionEnd`, 프로세스 종료(pid)로만 사라진다. 시간으로는 지우지 않는다. 그 밖에 24시간(`EXT_TTL_S`) 조용한 행은 지운다.
   행은 재시작해도 남는다(`ext-sessions.json`).
 - 훅 행에는 대화 기록, 비용, 컨텍스트, git 정보와 이어 하기 칩이 없다. 모델 이름은 20자에서 자른다.
 
 `ext_hook.py` 옵션: `--platform`(필수), `--event`, `--url` 또는 `SIDEREUS_HOOK_URL`(기본 포트 `SIDEREUS_PORT` > 설정 `port` >
 8799), `--dry-run`(본문을 stderr 로), `MAILBOX_DIR`(로그 위치). `session_id`, `cwd`, `transcript_path`, `model`,
-`tool_name`, `turn_id` 는 비어 있지 않은 문자열일 때만 넘기고, `SIDEREUS_PARENT_SID` 나 `CLAUDE_CODE_SESSION_ID` 가 있으면
+`tool_name`, `turn_id` 는 비어 있지 않은 문자열일 때만 넘기고(`session_id` 가 없으면 `conversation_id`, `cwd` 가 없으면
+`workspace_roots` 의 첫 절대 경로), `SIDEREUS_PARENT_SID` 나 `CLAUDE_CODE_SESSION_ID` 가 있으면
 `parent` 로 넘긴다. 서버는 `session_id` 를 요구하고 본문을 1 MB 로 제한한다.
 `--url`/`SIDEREUS_HOOK_URL` 의 스킴이 `http`·`https` 가 아니면 거절한다(로그만 남기고 보내지 않음).
 
@@ -306,6 +307,18 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 에이전트로 돌린다. `ASK_GEMINI_TIMEOUT`(600초, 종료 124)이나 `ASK_GEMINI_STALL`(대화 파일이 180초 안 자람, 종료 125)
 뒤 끝낸다. 부른 세션의 하위 행으로 보인다(`ext-runs.json`: 200개, 7일).
 ⚠plan 모드는 `--policy` 로 허용하지 않으면 `web_fetch` 를 막는다. ⚠서브에이전트에서 띄운 실행은 메인 세션 아래에 보인다.
+
+### Cursor CLI
+
+`ext-hooks/cursor-hooks-example.json` 을 `~/.cursor/hooks.json` 또는 `<프로젝트>/.cursor/hooks.json` 으로 복사한다(형식
+`{"version":1,"hooks":{"<event>":[{"command":"..."}]}}`). ★macOS, Cursor CLI 2026.10.22 로 확인했다(2026-10-24).
+
+- 이벤트 이름은 camelCase 다. `afterAgentThought`·`afterAgentResponse` 는 모델 글을 담고 있어 보내지 않는다.
+- Cursor 는 기본 `cwd` 를 보내지 않는다(도구 이벤트는 `""`). 그래서 폴더는 `workspace_roots` 의 첫 항목이다.
+  `session_id` 는 `conversation_id` 와 같다. `user_email`, `generation_id`, `tool_input` 은 버린다.
+- ⚠Cursor 는 `before*`/`preToolUse` 훅의 stdout 을 결정으로 읽는다. `ext_hook.py` 는 아무것도 출력하지 않는다.
+- ⚠`cursor-agent -p` 는 `beforeSubmitPrompt`/`stop` 을 보내지 않는다. 헤드리스 행은 `sessionEnd` 까지 마지막 상태로 남는다.
+- 대화형 순서: `sessionStart`, `beforeSubmitPrompt`, 도구 이벤트, `stop`. `/quit` 은 `sessionEnd` 를 보낸다.
 
 ### Codex CLI
 

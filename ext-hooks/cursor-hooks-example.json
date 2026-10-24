@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform cursor" }
+    ],
+    "sessionEnd": [
+      { "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform cursor" }
+    ],
+    "beforeSubmitPrompt": [
+      { "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform cursor" }
+    ],
+    "stop": [
+      { "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform cursor" }
+    ],
+    "preToolUse": [
+      { "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform cursor" },
+      { "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_mark.py --platform cursor" },
+      { "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_flow.py --platform cursor" }
+    ],
+    "postToolUse": [
+      { "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform cursor" },
+      { "command": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_flow.py --platform cursor" }
+    ],
+    "postToolUseFailure": [
+      { "command": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform cursor" }
+    ]
+  }
+}
