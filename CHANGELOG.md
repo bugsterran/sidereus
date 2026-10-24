@@ -22,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Security checks: tracked files marked `export-ignore` in `.gitattributes` are scanned too; the scan used to see only the export set (1156 of 1209 files in this repo).
+- Pipelines: the security gate's red check commits its fake key inside the temp clone, so it no longer reports «injected break not reported» against a scanner that reads only committed files.
 - Bell: subagent and background-task completions that happen while the viewer is down are announced after it restarts (only those after its last scan, at most 20 and 24 h, never twice).
 - Pipelines: a stage's «Agents N» counts the agents it lists, so a stage with no agent records no longer shows a number with nothing to click.
 - Quota details: switching the «Main account» repaints the burndown and saver panels at once instead of showing the previous account until the next poll.

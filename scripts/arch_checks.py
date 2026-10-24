@@ -94,14 +94,38 @@ def _safe_members(tf, dest):
     return out
 
 
+def _scratch_gitdir(repo, head, tmp):
+    """Throwaway git dir in tmp that borrows the repo's objects (alternates) and ignores export-ignore; None on failure.
+    ⚠git archive reads attributes from the archived tree, and core.attributesFile / --worktree-attributes /
+    --attr-source rank below it; only $GIT_DIR/info/attributes outranks it, so set it here, never in the real .git."""
+    common = (_git(repo, ["rev-parse", "--git-common-dir"]) or "").strip()
+    if not common:
+        return None
+    objs = os.path.abspath(os.path.join(repo, common, "objects"))
+    gd = os.path.join(tmp, "scan.git")
+    try:
+        for d in ("objects/info", "refs", "info"):
+            os.makedirs(os.path.join(gd, *d.split("/")), exist_ok=True)
+        for rel, text in (("HEAD", head + "\n"), ("objects/info/alternates", objs + "\n"),
+                          ("info/attributes", "* -export-ignore -export-subst\n")):
+            with open(os.path.join(gd, *rel.split("/")), "w", encoding="utf-8", newline="\n") as f:
+                f.write(text)
+    except OSError:
+        return None
+    return gd
+
+
 def _export(repo, head, dest, tmp):
     """Unpack the tracked files of commit head into dest (`git archive`, read-only on the repo); False on failure.
-    ⚠export-ignore / export-subst gitattributes change what is scanned. Never `git worktree add`: it writes .git."""
+    Runs in a scratch git dir so export-ignore files are scanned too. Never `git worktree add`: it writes .git."""
+    gd = _scratch_gitdir(repo, head, tmp)
+    if not gd:
+        return False   # ⚠no fallback to a plain archive: it would silently skip export-ignore files again
     tar = os.path.join(tmp, "src.tar")
     try:
         with open(tar, "wb") as f:
-            r = subprocess.run(git_argv(repo, ["archive", "--format=tar", head]), stdout=f, stderr=subprocess.DEVNULL,
-                               stdin=subprocess.DEVNULL, timeout=300, env=git_env())
+            r = subprocess.run(git_argv(gd, ["--git-dir=" + gd, "archive", "--format=tar", head]), stdout=f,
+                               stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, timeout=300, env=git_env())
         if r.returncode != 0:
             return False
         with tarfile.open(tar) as tf:
@@ -111,6 +135,7 @@ def _export(repo, head, dest, tmp):
         return False
     finally:
         _rm_quiet(tar)
+        _rmtree(gd)
     return True
 
 

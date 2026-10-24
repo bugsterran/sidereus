@@ -276,6 +276,36 @@ class Runner(Tmp):
         self.assertTrue(os.path.isfile(os.path.join(self.repo, j["items"][0]["file"])))
         self.assertEqual(g("status", "--porcelain"), por)   # repo untouched
 
+    @unittest.skipUnless(shutil.which("git"), "needs git")
+    def test_export_includes_export_ignore(self):   # export-ignore must not hide tracked files from the scan
+        g = lambda *a: subprocess.run(["git", "-C", self.repo, "-c", "user.name=t", "-c", "user.email=t@t", "-c",
+                                       "commit.gpgsign=false"] + list(a), capture_output=True, text=True, encoding="utf-8",
+                                      check=True).stdout
+        self.w(".gitattributes", "secret/** export-ignore\n")
+        self.w("secret/key.txt", "k = 1\n")
+        g("init", "-q")
+        g("add", "-A")
+        g("commit", "-qm", "c")
+        head = g("rev-parse", "HEAD").strip()
+        self.w("conf.py", "edited = 1\n")   # uncommitted edit
+        self.w("secret/new.txt", "u\n")     # untracked
+        gitdir = os.path.join(self.repo, ".git")
+        snap = lambda: sorted(os.path.join(dp, f) for dp, _, fs in os.walk(gitdir) for f in fs)
+        before = snap()
+        spec = importlib.util.spec_from_file_location("arch_checks_cli_export2", os.path.join(ROOT, "scripts", "arch_checks.py"))
+        c = importlib.util.module_from_spec(spec)   # fresh module: real _git (cli() stubs it)
+        spec.loader.exec_module(c)
+        dest, tmp = os.path.join(self.tmp, "dest"), os.path.join(self.tmp, "work")
+        os.makedirs(dest)
+        os.makedirs(tmp)
+        self.assertTrue(c._export(self.repo, head, dest, tmp))
+        got = sorted(os.path.relpath(os.path.join(dp, f), dest).replace(os.sep, "/") for dp, _, fs in os.walk(dest) for f in fs)
+        self.assertEqual(got, [".gitattributes", "conf.py", "secret/key.txt"])
+        with open(os.path.join(dest, "conf.py"), encoding="utf-8") as f:
+            self.assertEqual(f.read(), "x = 1\n")
+        self.assertEqual(os.listdir(tmp), [])   # scratch git dir and tar removed
+        self.assertEqual(snap(), before)        # real .git gained no files
+
     def test_export_drops_unsafe_members(self):
         import tarfile
         buf = io.BytesIO()
