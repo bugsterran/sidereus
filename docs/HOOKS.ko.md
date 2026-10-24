@@ -271,6 +271,24 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 실패는 `ext-hooks/.ext-hook.log`(200 KB 상한)에 남긴다. `bash ext-hooks/demo.sh` 는 가짜 행 세 개를 만든다. 끝나면
 반드시 `demo.sh clean` 을 돌린다.
 
+### 자동 연결
+
+설정 › «진단» › «CLI 훅» 과 첫 화면에, 설치돼 있지만 시데레우스 훅이 없는 CLI 마다 한 줄이 뜬다. 항목이 모두 있으면
+아무것도 뜨지 않는다. «나중에» 는 CLI 마다 숨긴다.
+
+- 찾는 것: Cursor(`cursor-agent`, 또는 `~/.cursor` 가 있을 때 `agent`) → `~/.cursor/hooks.json` · Codex(`codex`) →
+  `$CODEX_HOME/hooks.json` · Gemini(`gemini`) → 그 `settings.json`. 설치됨 = `PATH` 에 있거나 설정 폴더가 있다.
+- «연결» 은 diff 를 보여 주고 확인한 뒤에만 쓴다. 예시 파일의 항목 중 없는 것만 더한다(`<PYTHON>`, `<MAILBOX_CODE_DIR>`
+  는 채워 넣는다). 사용자 훅 항목은 순서 그대로 남는다(`hooks` 값은 다시 직렬화되므로 서식은 바뀔 수 있다).
+  그 밖의 최상위 키는 한 바이트도 바뀌지 않는다. Codex·Gemini 는 이벤트마다 새 그룹 하나를 붙이고
+  기존 그룹은 고치지 않는다. Gemini 는 `hooksConfig.enabled: true` 도 켠다.
+- 쓰기 전에 원본을 `<DATA_DIR>/tool-trash/<ts>/<plat>-<file>` 로 복사한다. 실패하면 원본은 그대로다. 다시 «연결» 해도
+  바뀌는 것이 없다.
+- ⚠심볼릭 링크인 훅 파일은 거부한다. 손으로 고친다.
+- ⚠Codex: 연결한 뒤 Codex 에서 `/hooks` 로 새 항목을 승인해야 한다. 승인 전에는 Codex 가 무시한다.
+- ⚠pipx/uv 설치본은 번들에 `ext-hooks/` 가 없어 «연결» 을 쓸 수 없다. 아래처럼 직접 설정한다.
+- 아래의 직접 설정도 그대로 쓸 수 있다. 손으로 고친 파일도 같은 방식으로 판정한다.
+
 ### Gemini CLI
 
 `ext-hooks/gemini-settings-example.json` 을 `~/.gemini/settings.json`(또는 `$GEMINI_CLI_HOME/.gemini`)에 합치고

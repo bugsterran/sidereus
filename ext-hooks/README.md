@@ -2,6 +2,7 @@
 `ext_hook.py` reads hook JSON on stdin and sends it to `POST http://127.0.0.1:8799/api/hook`.
 Change the endpoint with `SIDEREUS_HOOK_URL` or `--url`; `--dry-run` prints the body to stderr only.
 Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`): `gemini codex copilot cursor cline windsurf warp trae zed grok deepseek qwen kimi mistral ollama perplexity huggingface meta openrouter` (19 · ⚠Claude is not in the list - Sidereus already reads its transcripts)
+- Automatic: Settings › «Diagnostics» › «CLI hooks» › «Connect» merges the example below into Cursor, Codex or Gemini after a diff preview and confirm (`docs/HOOKS.md` «Automatic connect»).
 - Preview: `bash ext-hooks/demo.sh` starts 3 fake external sessions (thinking · running a tool · waiting for a person) and `bash ext-hooks/demo.sh clean` removes them — for seeing the screen without installing a CLI.
 - In the example JSON, replace `<MAILBOX_CODE_DIR>` with the absolute path of this repository and `<PYTHON>` with macOS `/usr/bin/python3` · Windows `py -3` (or the full `python.exe` path).
 - Gemini: merge `hooksConfig`·`mcpServers`·`hooks` from `gemini-settings-example.json` into `~/.gemini/settings.json` (`timeout` = ms)

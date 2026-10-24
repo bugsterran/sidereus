@@ -104,5 +104,30 @@ class ExtIdleLive(unittest.TestCase):
         self.assertEqual(self.rows({("codex", "s1"): {"cwd": CWD, "state": "gone"}}, [c]), [])
 
 
+class HookOnlyPlat(unittest.TestCase):
+    """Cursor has no record-file adapter: its row comes from `_ext` alone, bars from hook event times."""
+    def setUp(self):
+        self.saved = {k: getattr(te, k) for k in ("_ext", "ext_runs", "PLAT_MODS")}
+        te.ext_runs = lambda: []
+        te.PLAT_MODS = {}
+
+    def tearDown(self):
+        for k, v in self.saved.items():
+            setattr(te, k, v)
+
+    def test_cursor_row_from_hook_events(self):
+        ev = [{"e": "SessionStart", "t": CUT + 10}, {"e": "UserPromptSubmit", "t": CUT + 100},
+              {"e": "Stop", "t": CUT + 160}]
+        te._ext = {("cursor", "c1"): {"cwd": CWD, "state": "wait", "ev": ev, "lastSeen": CUT + 160}}
+        out = te._plat_tl_rows(CUT, NOW)
+        self.assertEqual([(r["tid"], r["kind"], r["plat"], r["segs"]) for r in out],
+                         [("ext:cu|c1", "sess", "cu", [[CUT + 100, CUT + 160]])])
+
+    def test_cursor_started_only_is_idle_row(self):
+        te._ext = {("cursor", "c1"): {"cwd": CWD, "state": "wait", "ev": [{"e": "SessionStart", "t": CUT + 10}],
+                                       "lastSeen": CUT + 10}}
+        self.assertEqual([(r["tid"], r["segs"]) for r in te._plat_tl_rows(CUT, NOW)], [("ext:cu|c1", [])])
+
+
 if __name__ == "__main__":
     unittest.main()

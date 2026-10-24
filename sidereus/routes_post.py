@@ -28,6 +28,7 @@ from sidereus.pipeline_new import create as pipeline_create
 from sidereus.pipeline_del import delete as pipeline_delete
 from sidereus.pipeline_projects import add_project as pipeline_add, apply_set as pipeline_apply, pick_folder, remove_project as pipeline_remove
 from sidereus.cc_settings import prefs_set_all
+from sidereus.hook_connect import connect as hook_connect
 from sidereus.room_tags import BODY_MAX as TAGS_BODY_MAX, set_tags as room_tags_set
 from sidereus import bus as _busmod
 from sidereus import room_admin
@@ -478,6 +479,19 @@ class _PostRoutes:
             code, out = 500, {"ok": False, "err": type(e).__name__}
         return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
 
+    def _p_hooks_connect(self, u):
+        # «Connect» {plat, dry} preview / {plat, dry:false, base} write of another CLI's hook file; ⚠viewer Origin required (the diff shows file text)
+        if not _cfg.viewer_origin(self.headers.get("Origin")):
+            self._body_unread()
+            return self._send(403, json.dumps({"ok": False, "err": "viewer origin required"}),
+                              "application/json; charset=utf-8")
+        req = self._body_json(4096, None)
+        try:
+            code, out = hook_connect(req)
+        except Exception as e:
+            code, out = 500, {"ok": False, "err": type(e).__name__}
+        return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
+
     def _p_pick_folder(self, u):
         # «Choose folder…»: the OS folder dialog runs on this server (browsers never expose absolute paths); ⚠viewer Origin required
         self._body_unread()
@@ -568,6 +582,6 @@ class _PostRoutes:
         "/api/prefs/set": _p_prefs_set, "/api/pipelines/save": _p_pipelines_save, "/api/pipelines/create": _p_pipelines_save,
         "/api/pipelines/delete": _p_pipelines_save,
         "/api/pipelines/projects/add": _p_pipelines_save, "/api/pipelines/projects/remove": _p_pipelines_save,
-        "/api/pipelines/apply": _p_pipelines_save, "/api/pick-folder": _p_pick_folder,
+        "/api/pipelines/apply": _p_pipelines_save, "/api/pick-folder": _p_pick_folder, "/api/hooks/connect": _p_hooks_connect,
         "/api/ui-prefs": _p_ui_prefs, "/api/ui-prefs/reset": _p_ui_prefs, "/api/act": _p_act,
     }
