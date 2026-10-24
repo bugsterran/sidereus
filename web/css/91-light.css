@@ -45,6 +45,7 @@ html[data-ui=next][data-theme=light] .plw .plnd.bad{background:#fbe9ea}
 html[data-ui=next][data-theme=light] .plw .plnli .spl{color:var(--nx-t2)}   /* 48j list: unboxed run text, muted */
 html[data-ui=next][data-theme=light] .plw .plnli .spl.splu{color:#8b6401}
 html[data-ui=next][data-theme=light] .plw .plwp .plwa{background:var(--nx-panel);border-color:#c9d3e0}   /* 48k Watch result pane: agent buttons on the white page */
+html[data-ui=next][data-theme=light] .plw .plwp .plwc:not(:hover){border-color:#c9d3e0}   /* running-stage cards: same edge as the agent buttons */
 html[data-ui=next]:where([data-theme=light]) .plw .plnd:where([class*=pf-]){background:color-mix(in srgb,var(--pf) 14%,var(--nx-panel));border-color:color-mix(in srgb,var(--pf) 70%,transparent);box-shadow:0 2px 6px rgba(0,0,0,.16)}
 html[data-ui=next][data-theme=light] .plw .plport{background:var(--nx-hover);border-color:color-mix(in srgb,var(--pf,var(--nx-t3)) 70%,var(--nx-t2))}
 html[data-ui=next][data-theme=light] .plw .plpbk{border-color:color-mix(in srgb,#d97706 70%,var(--nx-t2))}

@@ -91,7 +91,7 @@ class PlMode(unittest.TestCase):
         self.assertEqual(r, [True, 2, False, 1])
 
     def test_r5_watch_pane_evidence_agents_metadata_only(self):
-        fns = ["plWatchPane", "plAgDesc", "plStageRows", "plStageAgents", "plLabParts", "plLabDesc", "plLabTip", "plStrip", "plgNode", "plAgNowLine"]
+        fns = ["plWatchPane", "plWatchCards", "plWBtn", "plAgDesc", "plStageRows", "plStageAgents", "plLabParts", "plLabDesc", "plLabTip", "plStrip", "plgNode", "plAgNowLine"]
         h = run(MODE + _const("PL_DESC_RE", "web/js/48b-pipeline-run.js") + "\n" + _const("PL_MK", "web/js/48b-pipeline-run.js") + "\n"
                 + "\n".join(js_fn(n) for n in fns)
                 + "\nfunction plOc(s){ return 'OC-' + s; } function ago(s){ return s + 's'; } function plgShow(t){ return t; } function plAgLab(a){ return a.lab; }"
@@ -249,7 +249,7 @@ class PlMode(unittest.TestCase):
         self.assertEqual(r[2], "")
 
     def test_r4_watch_default_stage_and_no_run(self):
-        st = "\n".join(js_fn(n) for n in ("plStageRows", "plLabParts", "plLabDesc", "plStrip", "plgNode")) + "\n" + _const("PL_DESC_RE", "web/js/48b-pipeline-run.js") + "\n" + _const("PL_MK", "web/js/48b-pipeline-run.js")
+        st = "\n".join(js_fn(n) for n in ("plWatchCards", "plStageRows", "plLabParts", "plLabDesc", "plStrip", "plgNode")) + "\n" + _const("PL_DESC_RE", "web/js/48b-pipeline-run.js") + "\n" + _const("PL_MK", "web/js/48b-pipeline-run.js")
         r = run(MODE + st + "\nfunction plOc(s){ return s; } function ago(s){ return s; } function plgShow(t){ return t; } function plAgLab(a){ return a.lab; } function plPass(){ return null; }"
                 "function plEvLine(){ return ''; } function plEvRows(){ return []; } function plEvCommits(){ return []; }"
                 "const G = {nodes: [{id: 'a', title: 'A'}, {id: 'b', title: 'B'}, {id: 'c', title: 'C'}]};"

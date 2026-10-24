@@ -59,8 +59,27 @@ function plAgNowLine(x, a){
   if(s.idle > PLNOW_QUIET && !s.busy) return T('Idle') + ' · ' + ago(s.idle);   // busy = a tool still running: its log is silent, not idle
   return tool ? tool + ' · ' + ago(s.idle || 0) : '';
 }
+// One stage agent → work-log button (shared by the single-stage detail and the running-stage cards).
+function plWBtn(sid, lx, a){
+  const p = plLabParts(a.lab), ds = plLabDesc(p), nl = plAgNowLine(lx, a);   // task line beside the type; data, so esc only
+  return '<button type=button class=plwa data-plwsid="' + esc(sid) + '" data-plwtid="' + esc(a.tid) + '" title="' + esc(plLabTip(a.lab)) + '">'
+    + (a.run ? '<i class=plrtdot></i>' : '') + esc(p.type || T('Agent')) + (ds ? '<span class=plwad>' + esc(ds) + '</span>' : '') + (a.sec ? ' · ' + esc(ago(a.sec)) : '') + (nl ? '<span class=plwan>' + esc(nl) + '</span>' : '') + '</button>';
+}
+// Two or more stages running at once (loop-backs, fan-out): one card each in canvas order, else plWatchDef would show only the first.
+function plWatchCards(E, lv, lt){
+  const ns = E && E.G && lt ? E.G.nodes.filter(n => (lt[n.title] || {}).st === 'run') : [];
+  if(ns.length < 2) return '';
+  const sid = lv && lv.sid, lx = sid ? (SESS || []).find(r => r.sid === sid) : null, now = Date.now();
+  return '<div class="plpan plwp"><div class=plwcs>' + ns.map(n => {
+    const ar = sid ? plStageAgents(lt, n.title, now).filter(a => a.run).map(a => plWBtn(sid, lx, a)).join('') : '';
+    return '<div class=plwc role=button tabindex=0 data-plwn="' + esc(n.id) + '" title="' + esc(T('Show the result of this stage')) + '"><div class=plwch><i class=plrtdot></i><b>' + esc(plgShow(n.title)) + '</b>'
+      + (n.agent || n.model ? '<small>' + esc((n.agent || '') + (n.model ? ' · ' + n.model : '')) + '</small>' : '') + '</div>' + (ar ? '<div class=plwas>' + ar + '</div>' : '') + '</div>';
+  }).join('') + '</div></div>';
+}
 // Result of the selected stage from data already on the page: run row (48b plStageRows), gate evidence (48f plEvLine), agents → work log.
 function plWatchPane(E, d, lv, lt){
+  const cs = E && E.sel && E.sel.k === 'n' ? '' : plWatchCards(E, lv, lt);
+  if(cs) return cs;
   const n = E && E.sel && E.sel.k === 'n' ? plgNode(E.G, E.sel.id) : plWatchDef(E, lt);
   if(!n) return lt ? '<div class="plpan plwp"><div class=hidnote>' + esc(T('Click a stage to see its result')) + '</div></div>' : '';   // no run, nothing picked: no pane
   const L = (lt || {})[n.title] || null, r = plStageRows(lt, [{ title: n.title }])[0];
@@ -72,9 +91,7 @@ function plWatchPane(E, d, lv, lt){
   const gate = '<div class=plwg><span>' + esc(T('Gate')) + '</span>' + (n.gate ? '<code>' + esc(n.gate) + '</code>' : '<i>' + esc(T('No gate command — nothing machine-checks this stage')) + '</i>') + '</div>';
   const ags = lv && lv.sid && lt ? plStageAgents(lt, n.title, Date.now()) : [];
   const lx = ags.length ? (SESS || []).find(r => r.sid === lv.sid) : null;
-  const plwBtn = a => { const p = plLabParts(a.lab), ds = plLabDesc(p), nl = plAgNowLine(lx, a);   // task line beside the type; data, so esc only
-    return '<button type=button class=plwa data-plwsid="' + esc(lv.sid) + '" data-plwtid="' + esc(a.tid) + '" title="' + esc(plLabTip(a.lab)) + '">'
-    + (a.run ? '<i class=plrtdot></i>' : '') + esc(p.type || T('Agent')) + (ds ? '<span class=plwad>' + esc(ds) + '</span>' : '') + (a.sec ? ' · ' + esc(ago(a.sec)) : '') + (nl ? '<span class=plwan>' + esc(nl) + '</span>' : '') + '</button>'; };
+  const plwBtn = a => plWBtn(lv.sid, lx, a);
   // Running and finished agents on separate rows: a two-line running button beside a one-line finished one read as misaligned.
   const ar = ags.filter(a => a.run).map(plwBtn).join(''), af = ags.filter(a => !a.run).map(plwBtn).join('');
   const ab = (ar ? '<div class=plwas>' + ar + '</div>' : '') + (af ? '<div class="plwas plwdn"><span class=plwal>' + esc(T('Done')) + '</span>' + af + '</div>' : '');
@@ -184,5 +201,20 @@ document.addEventListener('click', e => {
   if(t.hasAttribute('data-plcancel')) return plCancelEdit();
   if(t.hasAttribute('data-plmode')) return plModeSet(t.dataset.plmode);
   plOpenWork(t.dataset.plwsid, t.dataset.plwtid);   // work popup: the click-only exception (sidereus/work.py)
+});
+// Running-stage card → same selection as a canvas node click (48d: E.sel + plPaint); its agent buttons keep the work-log path above.
+function plWCardSel(e){
+  const c = e.target.closest && e.target.closest('.plw .plwp [data-plwn]'), E = plCurEnt();
+  if(!c || !E || e.target.closest('[data-plwsid]')) return false;
+  plNoFirst(); E.sel = { k: 'n', id: c.dataset.plwn }; plPaint();
+  return true;
+}
+document.addEventListener('click', plWCardSel);
+// ⚠Only the card itself: Enter/Space on an inner agent button must stay that button's own click.
+document.addEventListener('keydown', e => {
+  if((e.key !== 'Enter' && e.key !== ' ') || e.defaultPrevented || e.isComposing || e.keyCode === 229 || e.repeat || !e.target.matches || !e.target.matches('.plw .plwp [data-plwn]')) return;
+  const id = e.target.dataset.plwn;
+  e.preventDefault();
+  if(plWCardSel(e)) plRefocus('[data-plnode="' + CSS.escape(id) + '"]');
 });
 document.addEventListener('keydown', plEditEsc);

@@ -20,7 +20,7 @@ const NODES = {}, SESS = [];
 function plgNode(G, id){ return NODES[id]; }
 function plStageAgents(){ return [{tid: 't1', lab: 'sidereus-implementer: [pl:x/y] fix <b>x', run: 1, sec: 5}, {tid: 't2', lab: 'main: [pl:x/y]'}]; }
 """
-FNS = ("plLabParts", "plLabDesc", "plLabTip", "plAgDesc", "plAgNowLine", "plWatchPane", "plNodeHtml")
+FNS = ("plLabParts", "plLabDesc", "plLabTip", "plAgDesc", "plAgNowLine", "plWBtn", "plWatchCards", "plWatchPane", "plNodeHtml")
 
 
 def run(body):
