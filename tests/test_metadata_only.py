@@ -134,6 +134,10 @@ class FailuresPayload(_Patch):
                 {"type": "tool_result", "tool_use_id": "toolu_Z9", "is_error": True,
                  "content": "String to replace not found"}]}}, separators=(",", ":")) + "\n")
         self.addCleanup(lambda: [m.pop(fp, None) for m in (S._FAIL_EV, S._FAIL_OFF, S._FAIL_TNAME)])
+        # ⚠T0 is fixed and the scan drops events older than FAIL_SEEN_H, so widen the window or the test expires.
+        seen_h = S.FAIL_SEEN_H
+        S.FAIL_SEEN_H = 10 ** 7
+        self.addCleanup(setattr, S, "FAIL_SEEN_H", seen_h)
         (ev,) = S._fail_read(fp)
         self.assertEqual(ev["tool"], "Edit")
 
