@@ -226,6 +226,9 @@ class Red(Base):
         exp, why = self.cli.inject("checks-security", self.repo)
         self.assertEqual(exp, [{"kind": "secret", "file": "sidereus-redcheck.cfg", "line": 1}])
         self.assertTrue(rd(self.repo, "sidereus-redcheck.cfg").startswith('api_key = "'))
+        # the producer scans a HEAD export: the injection must be committed, not left untracked
+        self.assertIn("sidereus-redcheck.cfg", git(self.repo, "ls-tree", "--name-only", "HEAD").split())
+        self.assertEqual(git(self.repo, "status", "--porcelain"), "")
         self.assertEqual(self.cli.inject("fast", self.repo), (None, "no .py file to break"))
         self.assertEqual(self.main("redcheck", "--pipeline", self.pfile(), "--stage", "s", "--repo", self.repo)[0], 2)
 

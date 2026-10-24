@@ -5,7 +5,7 @@ Spawned by `gemini_mail_stop.py --platform codex --wake` at turn end (argv: sess
 hooks/mail_wait.py WAKE["codex"] == "app-server-turn".
 Flow:
 - Pre-check (before the waiter slot): find the daemon sockets in /tmp/codex-daemon-<uid>/ (owner uid, no group/other
-  bits), connect, initialize{experimentalApi} → initialized → thread/loaded/list. The session must be loaded on one.
+  bits), connect, initialize (no capabilities) → initialized → thread/loaded/list. The session must be loaded on one.
   No daemon, not loaded (e.g. a TUI not attached to the daemon) or any error = silent exit 0.
 - Wait: hooks/mail_wait.wait (bus.jsonl stat, LIFE_S). check() first compares the rollout's (size, mtime) with the
   snapshot from the first check; a change means the person typed (or a turn ran) and the waiter exits. Every
@@ -218,7 +218,8 @@ class WS(object):
 def connect(path):
     ws = WS(path)
     try:
-        ws.call("initialize", {"clientInfo": CLIENT, "capabilities": {"experimentalApi": True}})
+        # ⚠No experimentalApi: ★0.164.0 (2026-10-24) thread/loaded/list, thread/resume, turn/start behave the same without it.
+        ws.call("initialize", {"clientInfo": CLIENT, "capabilities": {}})
         ws.notify("initialized")
     except Exception:
         ws.close()

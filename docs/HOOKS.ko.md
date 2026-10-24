@@ -354,7 +354,8 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
   스레드가 데몬에 없거나, `codex exec` 면 아무 일도 없고 «메일 대기» 표시가 대신한다.
   `[mcp_servers.mailbox]` 에 `default_tools_approval_mode = "approve"` 를 둔다(`ext-hooks/codex-config-example.toml`).
   메일박스 도구만 자동 승인되고 셸과 다른 승인은 그대로다. 고친 뒤 세션을 다시 시작한다.
-  ⚠실험 단계 API 다(★0.163.0 에서만 확인, 2026-10-21: 17초 만에 턴 실행, 훅 전부 실행, TUI 에 표시).
+  app-server 소켓을 실험 API 권한 없이 쓴다(★0.163.0, 2026-10-21: 17초 만에 턴 실행, 훅 전부 실행, TUI 에 표시;
+  ★0.164.0, 2026-10-24: 실험 플래그 없이도 같은 호출이 동작).
   ⚠macOS/Linux 만. Windows 에서는 아무것도 띄우지 않는다.
 - 막고 기다리기(`--wait`, timeout 3600)는 사람 없이 도는 세션 전용이다. 입력이 메일·시간 초과·Esc 까지 대기열에 쌓인다.
 - 훅이 없어도(승인 전) 최근 10분 안에 rollout 이 바뀐 Codex 세션은 «훅 미연결» 표시가 붙은 행으로 나온다. 폴더와
