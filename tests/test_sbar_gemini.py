@@ -45,7 +45,11 @@ class SbarGemini(unittest.TestCase):
     def test_hidden_without_usage(self):
         self.assertEqual(self.run_js({}), "")
         self.assertEqual(self.run_js(None), "")
-        self.assertEqual(self.run_js({"gm": {"tok": 0}}), "")
+
+    def test_session_without_tokens_shows_today_zero(self):
+        h = self.run_js({"gm": {"tok": 0, "cost": None}})
+        self.assertIn("<b>0</b>", h)
+        self.assertNotIn("price table", h)              # nothing was priced, so no «not in the price table»
 
     def test_segment_and_tooltip(self):
         h = self.run_js({"gm": {"tok": 1200000, "in": 300000, "cache": 800000, "out": 90000, "thought": 10000,
@@ -63,10 +67,10 @@ class SbarGemini(unittest.TestCase):
 
     def test_one_segment_per_platform_with_own_logo(self):
         h = self.run_js({"gm": {"tok": 2000, "cost": 0.01}, "cx": {"tok": 3000, "cost": None}, "cu": {"tok": 0}})
-        self.assertEqual(h.count("class=sbext"), 2)
+        self.assertEqual(h.count("class=sbext"), 3)
         self.assertLess(h.index("ailg-cx"), h.index("ailg-gm"))
         self.assertNotIn("<b>Codex</b>", h)
-        self.assertNotIn("ailg-cu", h)
+        self.assertIn("ailg-cu", h)                     # «Today 0» entry is shown too
 
     def test_unpriced_has_no_cost(self):
         h = self.run_js({"gm": {"tok": 5000, "in": 5000, "cost": None, "costMiss": 3}})

@@ -58,7 +58,7 @@ class ExtTok(unittest.TestCase):
         self.header()
         ext.ext_tok_refresh("gemini", "abc", self.path)
         self.assertIsNone(ext.ext_tok("gemini", "abc"))
-        self.assertEqual(ext.ext_usage_today(), {})
+        self.assertEqual({k: v["tok"] for k, v in ext.ext_usage_today().items()}, {"gm": 0})
 
     def test_set_rewrite_dedupes_by_id(self):
         self.header()
