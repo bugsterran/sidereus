@@ -8,7 +8,7 @@ import time
 from sidereus.warn import warn_once
 from sidereus.memo import MISS, BoundedMemo
 from sidereus.transcript import _tail_bytes
-from sidereus.agents import _agent_ended, _agent_last, _agent_meta, boot_time
+from sidereus.agents import _agent_busy, _agent_ended, _agent_last, _agent_meta, boot_time
 from sidereus.perm_marks import note_sub_log
 # ⚠Re-exported for importers (chat_server, sessions, notes, tests). Patch BG_DROP/warn_once/_atomic_write/_agent_meta
 #   for the drop list and line handlers on bgtasks_parse — their functions read that module's globals.
@@ -398,7 +398,7 @@ def _bg_result(fp, open_now):
             # ★Also pass lineage (own id · parent id) — a depth number alone is not enough for the screen
             #   to build a tree (with several at the same depth it cannot tell whose child it is).
             return [v[1], v[2], now_doing, int(m.get("spawnDepth") or 1), key, idle,
-                    m.get("_id") or "", m.get("parentAgentId") or ""]
+                    m.get("_id") or "", m.get("parentAgentId") or "", _agent_busy(f)]
         return [v[1], v[2]]
 
     def _notice_consumed(key, aid):

@@ -56,7 +56,7 @@ function plAgNowLine(x, a){
   const s = (a.id && subs.find(v => v && v.aid === a.id)) || (a.tid && subs.find(v => v && subWorkId(v) === a.tid));
   if(!s) return '';
   const tool = String(s.now || '').split(' · ')[0];
-  if(s.idle > PLNOW_QUIET) return T('Idle') + ' · ' + ago(s.idle);
+  if(s.idle > PLNOW_QUIET && !s.busy) return T('Idle') + ' · ' + ago(s.idle);   // busy = a tool still running: its log is silent, not idle
   return tool ? tool + ' · ' + ago(s.idle || 0) : '';
 }
 // Result of the selected stage from data already on the page: run row (48b plStageRows), gate evidence (48f plEvLine), agents → work log.

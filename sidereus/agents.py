@@ -29,7 +29,7 @@ _DESC_TOOLS = ("Agent", "Task")   # tools whose `description` is the allowed one
 #   insertion-order eviction then threw out the stable finished-agent entries → next poll paid the cold 1-7s.
 #   ⇒ A new mtime/size replaces the entry in place; hits move to the end so eviction is LRU.
 AGENT_CACHE_MAX = 4000
-_AGENT_LAST = BoundedMemo(AGENT_CACHE_MAX)   # file → ((mtime, size), "tool" or "Agent · description")
+_AGENT_LAST = BoundedMemo(AGENT_CACHE_MAX)   # file → ((mtime, size), ("tool" or "Agent · description", tool pending?))
 
 
 def _stat_sig(fp):
@@ -170,14 +170,23 @@ def _agent_ended(fp):
 
 def _agent_last(fp):
     """One line of that subagent's **last tool call**. Empty string if none."""
+    return _agent_last_busy(fp)[0]
+
+
+def _agent_busy(fp):
+    """True while that last tool call has no tool_result yet — the log is silent during a long tool, not idle."""
+    return _agent_last_busy(fp)[1]
+
+
+def _agent_last_busy(fp):
     try:
         mt, sz = _stat_sig(fp)
     except OSError:
-        return ""
+        return "", False
     hit = _AGENT_LAST.get(fp, stamp=(mt, sz))
     if hit is not None:
         return hit
-    val = ""
+    val, busy, res_ids, any_res = "", False, set(), False
     try:
         for line in reversed(_tail_lines(fp, nbytes=400_000, limit=400)):
             try:
@@ -187,6 +196,10 @@ def _agent_last(fp):
             c = (e.get("message") or {}).get("content")
             if not isinstance(c, list):
                 continue
+            for b in c:
+                if isinstance(b, dict) and b.get("type") == "tool_result":
+                    any_res = True
+                    res_ids.add(b.get("tool_use_id"))
             for b in reversed(c):
                 if not isinstance(b, dict) or b.get("type") != "tool_use":
                     continue
@@ -195,15 +208,17 @@ def _agent_last(fp):
                 #   path, pattern): AGENTS.md rule 1, enforced 2026-09-25. Shown in the sessions drawer and timeline.
                 tgt = inp.get("description") if b.get("name") in _DESC_TOOLS else ""
                 val = (b.get("name") or "?") + (" · " + redact(str(tgt))[:60] if tgt else "")
+                # Pending = no later tool_result answers it (by id; id-less logs: no later result at all).
+                busy = b.get("id") not in res_ids if b.get("id") else not any_res
                 break
             if val:
                 break
     except OSError:
-        val = ""
+        val, busy = "", False
     except Exception as e:
         warn_once("aglast", "Could not read an agent's current step ({err})", vars={"err": type(e).__name__}, soft=True)
-        val = ""
-    return _AGENT_LAST.put(fp, val, stamp=(mt, sz))
+        val, busy = "", False
+    return _AGENT_LAST.put(fp, (val, busy), stamp=(mt, sz))
 
 
 _AGENT_TOOLS = BoundedMemo(AGENT_CACHE_MAX)  # agent file → (start offset, end offset, cumulative tool call count)
@@ -282,6 +297,8 @@ def _bg_show(items, now, dead):
             row["aid"] = it[6]          # that agent's own id
         if len(it) > 7 and it[7]:
             row["par"] = it[7]          # id of the agent that launched it (absent if the session launched it)
+        if len(it) > 8 and it[8]:
+            row["busy"] = 1             # last tool call still has no result — a quiet log is a long tool, not idle
         out.append(row)
     return out
 
