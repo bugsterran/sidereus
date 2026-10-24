@@ -30,6 +30,8 @@ sidereus status
 sidereus doctor
 ```
 
+pipx 가 없으면 `py -m pip install --user pipx`, `py -m pipx ensurepath` 를 실행하고 터미널을 다시 연다(macOS/Linux 는 `python3 -m pip …`).
+
 업그레이드: `pipx upgrade sidereus`(`uv tool upgrade sidereus`). 이 방식으로는 로그인 시 자동 실행
 (`start --install-service`, 3장 — 설치 경로가 다시 설치할 때마다 바뀐다)과 `scripts/` 도구를 쓸 수 없다.
 Claude Code 는 GitHub 플러그인으로 연결한다(5장).

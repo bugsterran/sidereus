@@ -29,7 +29,8 @@ class Doctor(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.home, ignore_errors=True)
 
-    def run_doctor(self, tools=("git", "claude"), code=200, plugin=False, win=False, env=None, lang=EN, py3=None):
+    def run_doctor(self, tools=("git", "claude"), code=200, plugin=False, win=False, env=None, lang=EN, py3=None,
+                   argv0="/repo/sidereus_cli.py"):
         def which(n):
             if n == "python3":
                 return py3
@@ -42,6 +43,7 @@ class Doctor(unittest.TestCase):
                 mock.patch.object(cli, "configured_port", lambda: 8799), \
                 mock.patch.object(cli, "setup_python", lambda: PY), \
                 mock.patch.object(cli, "IS_WIN", win), \
+                mock.patch.object(cli.sys, "argv", [argv0]), \
                 mock.patch.dict(os.environ, dict(lang, **(env or {})), clear=True), \
                 contextlib.redirect_stdout(out):
             rc = cli.main(["doctor"])
@@ -145,6 +147,22 @@ class Doctor(unittest.TestCase):
     def test_writes_nothing(self):
         self.run_doctor(tools=(), code=0)
         self.assertEqual(sorted(os.listdir(self.home)), ["python.exe"])
+
+    def test_cli_cmd_console_script(self):
+        self.assertEqual(cli.cli_cmd("/home/u/.local/bin/sidereus", False), "sidereus")
+        self.assertEqual(cli.cli_cmd("C:\\Users\\u\\.local\\bin\\sidereus.exe", True), "sidereus")
+
+    def test_cli_cmd_windows_module(self):
+        self.assertEqual(cli.cli_cmd("C:\\src\\sidereus\\__main__.py", True), "py -m sidereus")
+
+    def test_cli_cmd_posix_module(self):
+        self.assertEqual(cli.cli_cmd("/src/sidereus/__main__.py", False), "python3 -m sidereus")
+
+    def test_viewer_fix_names_install_command(self):
+        _, lines = self.run_doctor(code=0, argv0="/home/u/.local/bin/sidereus")
+        self.assertIn("fix: sidereus start", lines[4])
+        _, lines = self.run_doctor(code=0, win=True, argv0="C:\\src\\sidereus\\__main__.py")
+        self.assertIn("fix: py -m sidereus start", "\n".join(lines))
 
     def test_usage_lists_doctor(self):
         self.assertIn("doctor", cli.MSG["usage"][1])

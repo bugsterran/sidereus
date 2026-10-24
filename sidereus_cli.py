@@ -91,15 +91,15 @@ _home = os.path.expanduser
 
 # key -> (Korean, English); Korean only when the locale says ko (see lang()).
 MSG = {
-    "running_on": ("이미 %d 포트에서 실행 중입니다 — 먼저 `python3 -m sidereus stop` 후 다시 설치하세요.",
-                   "Already running on port %d — run `python3 -m sidereus stop` first, then install again."),
+    "running_on": ("이미 %d 포트에서 실행 중입니다 — 먼저 `{cmd} stop` 후 다시 설치하세요.",
+                   "Already running on port %d — run `{cmd} stop` first, then install again."),
     "svc_exists": ("서비스가 이미 설치되어 있습니다: %s", "Service already installed: %s"),
     "svc_mac": ("launchd 서비스 설치: %s (bootstrap %s)", "launchd service installed: %s (bootstrap %s)"),
     "failed_rc": ("실패 rc=%s", "failed rc=%s"),
     "schtasks_fail": ("schtasks 작업 생성 실패 (rc=%s)", "schtasks task creation failed (rc=%s)"),
     "svc_win": ("로그온 작업 '%s' 을 만들었습니다.", "Created logon task '%s'."),
-    "svc_none": ("이 플랫폼은 서비스 설치를 지원하지 않습니다 — `python3 -m sidereus start` 로 실행하세요.",
-                 "Service install is not supported on this platform — use `python3 -m sidereus start`."),
+    "svc_none": ("이 플랫폼은 서비스 설치를 지원하지 않습니다 — `{cmd} start` 로 실행하세요.",
+                 "Service install is not supported on this platform — use `{cmd} start`."),
     "answer": ("응답 %d", "answered %d"),
     "port_unsaved": ("설정 파일을 읽지 못해 포트를 저장하지 않았습니다 — %s", "Config file unreadable, port not saved — %s"),
     "no_answer_yet": ("아직 응답 없음", "no answer yet"),
@@ -140,9 +140,9 @@ MSG = {
     "bad_port": ("--port 에는 1024–65535 사이의 숫자가 필요합니다.", "--port needs a number in 1024–65535."),
     "st_dead": (" (실행 중 아님)", " (not running)"),
     "st_unowned": ("%d 포트에 무언가 응답합니다 (실행 기록 없음)", "something answers on %d (no run record)"),
-    "usage": ("사용법: python3 -m sidereus start [--port N] [--open] [--demo] [--install-service] | stop [--port N] | status [--port N]"
+    "usage": ("사용법: {cmd} start [--port N] [--open] [--demo] [--install-service] | stop [--port N] | status [--port N]"
               " | setup-claude [--mailbox-mcp DIR] [--write [--yes]] | doctor [--port N]",
-              "usage: python3 -m sidereus start [--port N] [--open] [--demo] [--install-service] | stop [--port N] | status [--port N]"
+              "usage: {cmd} start [--port N] [--open] [--demo] [--install-service] | stop [--port N] | status [--port N]"
               " | setup-claude [--mailbox-mcp DIR] [--write [--yes]] | doctor [--port N]"),
     "dr_line": ("%-4s  %s — %s", "%-4s  %s — %s"),
     "dr_fix": (" — 해결: %s", " — fix: %s"),
@@ -157,11 +157,11 @@ MSG = {
     "dr_hooks_plugin": ("플러그인 설치됨", "plugin installed"),
     "dr_hooks_manual": ("%s 에 모두 있음", "all present in %s"),
     "dr_hooks_none": ("플러그인 없음, %s 에 빠진 훅 있음", "no plugin, hooks missing from %s"),
-    "dr_hooks_fix": ("Claude Code 에서 /plugin install sidereus@sidereus 또는 python3 -m sidereus setup-claude --write",
-                     "/plugin install sidereus@sidereus in Claude Code, or python3 -m sidereus setup-claude --write"),
+    "dr_hooks_fix": ("Claude Code 에서 /plugin install sidereus@sidereus 또는 {cmd} setup-claude --write",
+                     "/plugin install sidereus@sidereus in Claude Code, or {cmd} setup-claude --write"),
     "dr_viewer": ("뷰어 응답", "viewer answering"),
     "dr_viewer_other": ("Sidereus 가 아닌 응답 %d", "non-Sidereus answer %d"),
-    "dr_viewer_fix": ("python3 -m sidereus start", "python3 -m sidereus start"),
+    "dr_viewer_fix": ("{cmd} start", "{cmd} start"),
     "dr_winpy": ("SIDEREUS_PYTHON", "SIDEREUS_PYTHON"),
     "dr_unset": ("설정 안 됨", "not set"),
     "dr_nofile": ("%s (파일도 PATH 의 명령도 아님)", "%s (not a file or a command on PATH)"),
@@ -214,8 +214,18 @@ def lang():
     return "en"
 
 
+def cli_cmd(argv0=None, win=None):
+    """Command prefix the user typed: console script (pipx/uv) -> `sidereus`, else `py -m sidereus` on Windows."""
+    argv0 = sys.argv[0] if argv0 is None else argv0
+    win = IS_WIN if win is None else win
+    if re.split(r"[\\/]", argv0 or "")[-1].lower().split(".")[0] == "sidereus":
+        return "sidereus"
+    # ⚠ Windows `python3` is usually the Store alias (exit 49, does nothing)
+    return "py -m sidereus" if win else "python3 -m sidereus"
+
+
 def t(key, *args):
-    s = MSG[key][0 if lang() == "ko" else 1]
+    s = MSG[key][0 if lang() == "ko" else 1].replace("{cmd}", cli_cmd())
     return s % args if args else s
 
 
