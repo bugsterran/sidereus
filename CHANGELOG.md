@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Mailbox: Codex mail wake (`--wake`) is now opt-in; the example and «Connect» install turn-end delivery, because the daemon socket path it relies on is undocumented. Failures in `.codex-wake.log` now record the Codex version.
 - Mailbox: Codex mail wake no longer requests the experimental app-server API (the calls it uses work without it on Codex CLI 0.164.0).
 - Pipelines: the view follows working runs — with no working run on screen, a run that starts working (or the newest working run after a reload) is selected; while a working run is viewed, later ones only show as running; when the viewed run stops working, the newest other working run is selected. A past run picked from «Run k/N» and the Edit view are never switched.
 - Structure: a module's «Files» section is folded by default and sits last in the detail panel (after Neighbours and Flows); opened, it is a folder tree (first level, «name/ count», Expand all / Collapse all) and a file click opens it in the Source popup.

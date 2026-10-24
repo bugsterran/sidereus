@@ -54,7 +54,7 @@ stderr    viewer.err                # ★append-only — old lines are fossils
    - ⚠Send only what a person pressed — preview + confirm, no automatic sending. What was sent stays in the mailbox.
      Typed messages (chat box, work-popup composer) send on Enter with no extra confirm — the person wrote the text and the visible recipient is the preview (owner decision). Confirm stays for anything Sidereus composes for the person (pipeline run requests, invites, room admin).
    - ⛔No direct CLI connection (pty · tmux send-keys · process spawn/kill · stdin injection) · Sidereus itself never runs git write commands.
-     - A session's own hook (`ext-hooks/codex_wake.py`) may start one turn on its own thread via the official Codex app-server socket after mail arrives; the Sidereus server never connects to app-server, spawns, or injects.
+     - A session's own hook (`ext-hooks/codex_wake.py`) may start one turn on its own thread via the Codex app-server daemon socket (documented methods; the socket path is undocumented) after mail arrives; the Sidereus server never connects to app-server, spawns, or injects.
      - The viewer's own structure warm-up worker (`python -m sidereus.structure_warm`, same interpreter, reads repos and writes only the structure cache, timeout-killed) is allowed; spawning or attaching to agent CLIs stays forbidden.
    - Rule 1 (metadata only) still holds — relaying goes outward; bringing conversation onto the page is still not allowed.
    - **Writing tool config is allowed** (owner decision — the feature set outgrew a read-only limit).

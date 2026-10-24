@@ -29,6 +29,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Cursor `input_tokens` assumed to exclude cache (unverified) — `tok` = in + out + cacheR + cacheW may double-count if it does not.
 - **Codex mail wake uses the app-server socket without the experimental capability** (`ext-hooks/codex_wake.py`, 2026-10-21).
   - Cause: the wake talks to the app-server daemon socket (`/private/tmp/codex-daemon-$UID/<hash>`, WebSocket over a unix socket); ★0.163.0: injected turn ran in 17 s, all hooks fired, shown in the TUI. ★0.164.0 (2026-10-24): `initialize` with `capabilities: {}` — `thread/loaded/list`, `thread/resume`, `turn/start` respond identically with and without `experimentalApi`.
+  - ⚠The methods are documented and not marked experimental, but the daemon socket path is undocumented and the WebSocket transport is experimental (stdio is the default): a Codex update can break the wake — `.codex-wake.log` rows carry the Codex `name/version` (from `initialize` `userAgent`) to trace it.
   - ⇒ Do not re-add `experimentalApi`; any failure (no daemon, thread not loaded, `codex exec`, Windows) = do nothing, «Mail waiting» is the fallback.
   - ⚠macOS `AF_UNIX` paths are capped at 104 bytes — do not build the socket path under a longer temp root.
   - ⚠Changing `~/.codex/hooks.json` (e.g. adding `--wake`) changes its hash: Codex skips the entry until re-approved with `/hooks`.

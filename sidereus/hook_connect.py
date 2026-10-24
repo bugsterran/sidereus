@@ -91,7 +91,7 @@ def _key(cmd):
     if not m:
         return None
     args = m.group(2).split()
-    if m.group(1) == "gemini_mail_stop.py":     # ⚠--wake / --wait (opt-in) are one entry: adding the other would run both
+    if m.group(1) == "gemini_mail_stop.py":     # ⚠--wake / --wait (opt-in) and the plain entry are one: adding the other would run both
         args = [" ".join(args[i:i + 2]) for i, a in enumerate(args) if a == "--platform"]
     return m.group(1), " ".join(args)
 

@@ -19,7 +19,7 @@ import time
 # stop-wait: the sync Stop hook itself waits; a block reason continues the turn (Codex `--wait`).
 #   ⚠Opt-in (`--wait`): it also holds every interactive turn, so typed input queues; the example ships it off.
 # app-server-turn: the Stop hook spawns a detached waiter that starts a turn through the Codex app-server daemon
-#   (ext-hooks/codex_wake.py, `--wake`); typed input never queues behind it. `--wait` still works on these CLIs.
+#   (ext-hooks/codex_wake.py, opt-in `--wake`; the example ships turn-end delivery); typed input never queues behind it.
 # turn-end: mail only at the next turn end (Gemini AfterAgent; worker mode is the opt-in idle wait).
 # none: not measured; turn-end hook from generic-hooks-example.json at best.
 WAKE = {"claude": "async-rewake", "codex": "app-server-turn", "gemini": "turn-end",

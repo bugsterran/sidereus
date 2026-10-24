@@ -277,7 +277,7 @@ class OtherPlatformMailStop(unittest.TestCase):
 
     def test_example_configs_wire_the_mail_hook(self):
         want = {"gemini-settings-example.json": ("AfterAgent", "gemini_mail_stop.py"),
-                "codex-hooks-example.json": ("Stop", "gemini_mail_stop.py --platform codex --wake"),
+                "codex-hooks-example.json": ("Stop", "gemini_mail_stop.py --platform codex"),
                 "generic-hooks-example.json": ("Stop", "gemini_mail_stop.py --platform <PLATFORM>")}
         for name, (event, cmd) in want.items():
             with open(os.path.join(ROOT, "ext-hooks", name), encoding="utf-8") as f:

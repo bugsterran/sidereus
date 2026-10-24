@@ -188,13 +188,15 @@ class HookConnect(unittest.TestCase):
         self.assertEqual((row["can"], row["why"]), (False, HC.SYMLINK))
 
     def test_wait_variant_counts(self):
-        ex = _example("codex")
-        for e in ex["Stop"][0]["hooks"]:
-            e["command"] = e["command"].replace("--wake", "--wait")
-        self._put("codex", {"hooks": ex})
-        self.assertEqual(HC._state("codex", self.files["codex"]), ("connected", ""))
-        code, dry = HC.connect({"plat": "codex", "dry": True})
-        self.assertEqual(dry["adds"], 0)
+        for flag in ("--wait", "--wake"):    # opt-in variants of the shipped turn-end entry: no churn on «Connect»
+            ex = _example("codex")
+            for e in ex["Stop"][0]["hooks"]:
+                if "gemini_mail_stop.py" in e["command"]:
+                    e["command"] += " " + flag
+            self._put("codex", {"hooks": ex})
+            self.assertEqual(HC._state("codex", self.files["codex"]), ("connected", ""), flag)
+            code, dry = HC.connect({"plat": "codex", "dry": True})
+            self.assertEqual(dry["adds"], 0, flag)
         self.assertNotEqual(HC._key("py /a/gemini_mail_stop.py --platform codex --wait"),
                             HC._key("py /a/gemini_mail_stop.py --wake"))
 

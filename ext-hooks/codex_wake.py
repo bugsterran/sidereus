@@ -16,7 +16,10 @@ Flow:
 Rules:
 - ⚠The prompt is decide()'s reason only (ids, room names, a count): never a subject or body. It starts with
   "[mailbox]" so gemini_mail_stop.human_key() does not count it as a human prompt; SIDEREUS_MAIL_WAIT_MAX caps loops.
-- ⚠Never prints, never raises: errors go (type and step only) to ext-hooks/.codex-wake.log, capped at LOG_MAX.
+- ⚠Never prints, never raises: errors go (step, type and the Codex `name/version` token only) to
+  ext-hooks/.codex-wake.log, capped at LOG_MAX.
+- ⚠The socket path and WebSocket transport are undocumented/experimental (the methods are documented): a Codex
+  update can break the wake; the logged version makes that traceable.
 - ⚠The snapshot is taken at the first check (after FIRST_S), not at spawn: Codex still appends turn-end rows
   after the Stop hook returns, which would read as typing.
 - ⚠AF_UNIX paths are limited to 104 bytes on macOS; a longer socket path fails to connect and is skipped.
@@ -26,6 +29,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import socket
 import stat
 import struct
@@ -49,6 +53,14 @@ LOG = os.path.join(_HERE, ".codex-wake.log")
 LOG_MAX = 64 * 1024
 CLIENT = {"name": "sidereus_mail_wake", "version": "1"}
 _GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+CODEX_VER = None           # "name/version" from the last initialize userAgent; logged on failures
+_VER_RE = re.compile(r"^[\w.-]+/[\w.+-]+")
+
+
+def agent_ver(ua):
+    """Only the leading «name/version» token of a userAgent (nothing else is kept), else None."""
+    m = _VER_RE.match(ua) if isinstance(ua, str) else None
+    return m.group(0)[:80] if m else None
 
 
 def log(step, err=None):
@@ -59,7 +71,8 @@ def log(step, err=None):
         pass
     try:
         with open(LOG, "a", encoding="utf-8") as f:
-            f.write("%d %s %s\n" % (int(time.time()), step, type(err).__name__ if err is not None else ""))
+            f.write("%d %s %s %s\n" % (int(time.time()), step, type(err).__name__ if err is not None else "-",
+                                        CODEX_VER or "-"))
     except OSError:
         pass
 
@@ -216,10 +229,12 @@ class WS(object):
 
 
 def connect(path):
+    global CODEX_VER
     ws = WS(path)
     try:
         # ⚠No experimentalApi: ★0.164.0 (2026-10-24) thread/loaded/list, thread/resume, turn/start behave the same without it.
-        ws.call("initialize", {"clientInfo": CLIENT, "capabilities": {}})
+        ua = agent_ver(ws.call("initialize", {"clientInfo": CLIENT, "capabilities": {}}).get("userAgent"))
+        CODEX_VER = ua or CODEX_VER
         ws.notify("initialized")
     except Exception:
         ws.close()
