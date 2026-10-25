@@ -1,0 +1,8 @@
+{
+ "ages": {
+  "44444444-0000-4000-8000-000000000004.jsonl": 100
+ },
+ "busy": null,
+ "guards": "Mac falls back to the ps cwd when claude agents is missing",
+ "os": "mac"
+}

@@ -1,0 +1,2 @@
+{"cwd": "/nonexistent-sidereus/demo", "message": {"content": "", "role": "user"}, "permissionMode": "default", "sessionId": "11111111-0000-4000-8000-000000000001", "timestamp": "2025-12-31T23:49:40.000Z", "type": "user"}
+{"cwd": "/nonexistent-sidereus/demo", "message": {"content": [{"id": "toolu_a1", "input": {}, "name": "Agent", "type": "tool_use"}], "id": "msg_01", "role": "assistant", "stop_reason": "tool_use"}, "sessionId": "11111111-0000-4000-8000-000000000001", "timestamp": "2025-12-31T23:50:00.000Z", "type": "assistant"}

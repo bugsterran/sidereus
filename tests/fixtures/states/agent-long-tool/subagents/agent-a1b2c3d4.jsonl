@@ -1,0 +1,2 @@
+{"cwd": "/nonexistent-sidereus/demo", "isSidechain": true, "message": {"content": "", "role": "user"}, "sessionId": "11111111-0000-4000-8000-000000000001", "timestamp": "2025-12-31T23:50:10.000Z", "type": "user"}
+{"cwd": "/nonexistent-sidereus/demo", "isSidechain": true, "message": {"content": [{"id": "toolu_b1", "input": {}, "name": "Bash", "type": "tool_use"}], "id": "msg_s1", "role": "assistant", "stop_reason": "tool_use"}, "sessionId": "11111111-0000-4000-8000-000000000001", "timestamp": "2025-12-31T23:57:00.000Z", "type": "assistant"}

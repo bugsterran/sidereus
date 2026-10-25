@@ -4,6 +4,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Sessions: state, subagents, external CLIs
 
+- ⚠**State fixes regressed because each had only a unit test of one helper** (2026-10-25; #23). ★Non-Mac open sessions listed as Ended, a long-tool subagent showed Idle — each passed its own test while the full path (`live_cwds` → `_parse_transcript` → `_row_state` → `_row_status`/`_bg_show`/`_row_acct`) broke.
+  - ⇒ `tests/test_state_replay.py` replays every `tests/fixtures/states/<case>/` folder through that path; a new state fix adds a folder (schema: its README).
+  - ⚠Fixtures stay metadata-only (text "", tool input {} — the test fails otherwise); fake `_ps_snap` on both `live` and `live_probe` (separate names).
 - ⚠**Seeding dropped every completion, so an agent/bg task that finished while the viewer was down never rang the bell** (2026-10-23; `bgtasks_parse._catchup_ok` · `notes._note_bg_done`).
   - Cause: the first scan cannot tell «finished while down» from «old completion in the 20MB window» — ★announcing all of them flooded 48 stale cards, so all were dropped.
   - ⇒ The per-fp scan clock is saved to `bg-alive.json` (≤ every 30 s, forced when a card is due); seeding announces only line times after it (unknown fp: newest saved time), within 24 h, ≤ 20 per process, skipped if the card tail has that `tid` or an `agent` card of that `aid` at/after `done_at`.
@@ -270,3 +273,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - A human prompt = `"type":"user"` line without `"type":"tool_result"` or `"isMeta":true`, ≥ `WAIT_MIN_S` (30 s) after the previous timestamped line; the wait is clipped to `cut`.
   - ⚠Matched by markers only — message text is never parsed or kept (rule 1). The key is omitted at 0 so goldens stay byte-equal.
   - ⚠The previous line includes `queue-operation` (a prompt queued while the model ran did not keep it waiting); `_SEG_RAW` carries `hp_all` + `last` so an appended chunk still sees its predecessor.
+- ★**Off macOS a failed account's open sessions listed as Ended** — `agent_view()` merges only the accounts that answered, so `live` was a partial dict, not None.
+  ⇒ `sessions._sessions` builds rows of accounts in `agent_view_unknown()` with `live=None` (Unknown, or Ask with a pending question); test `tests/test_live_blind_account.py`.
+  ⚠Do not apply it on macOS — ps+lsof path slots still prove liveness there; an empty `blind` keeps single-account and all-answered polls unchanged.

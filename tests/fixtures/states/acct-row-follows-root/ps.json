@@ -1,0 +1,12 @@
+{
+ "cwd": {
+  "505": "/nonexistent-sidereus/demo"
+ },
+ "procs": [
+  [
+   "505",
+   "1",
+   "claude"
+  ]
+ ]
+}
