@@ -516,7 +516,8 @@ class ToolIdxStreamSaveTest(unittest.TestCase):
         ti._save(rows)
         with open(ti.TI_CACHE, "rb") as f:
             self.assertEqual(f.read(), ("\n".join(rows) + "\n").encode("utf-8"))
-        self.assertEqual(os.stat(ti.TI_CACHE).st_mode & 0o777, 0o600)
+        if os.name != "nt":                  # Windows has no POSIX mode bits (st_mode reads 0o666)
+            self.assertEqual(os.stat(ti.TI_CACHE).st_mode & 0o777, 0o600)
 
     def test_failed_write_keeps_previous_cache(self):
         with open(ti.TI_CACHE, "rb") as f:
