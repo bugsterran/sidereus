@@ -1,6 +1,8 @@
-"""Per-day hook cost from OTel hook_execution_complete (count, time, failures per hook event type) for the retro «Hook cost» card."""
+"""Per-day hook cost from OTel hook_execution_complete (count, time, failures per hook event type) for the retro «Hook cost» card,
+plus per-day firings by `<Event>:<subject>` (`_ohn`) so the Harness view can count runs of hooks that print nothing."""
 import json
 import os
+import re
 import threading
 import time
 from sidereus.config import DATA_DIR
@@ -9,7 +11,10 @@ from sidereus.timefmt import ymd as _ymd
 
 
 # Shape {ymd: {hook_event: [runs, durMsSum, fails]}} — hook event type only (R1, metadata).
-# ⚠Never store hook_name, hook_definitions, *_chars or session.id: those name user scripts or size their output.
+# `_ohn` shape {ymd: {"<Event>" | "<Event>:<subject>": runs}}; subject = the tool name or source the matchers were tried on
+# (hook_name is built as `${event}:${matchQuery}`, MCP tools arrive as «mcp_tool» unless OTEL_LOG_TOOL_DETAILS=1).
+# ⚠Never store hook_definitions, *_chars or session.id, and keep hook_name only when it parses as event + tool-like subject:
+# definitions name user scripts and *_chars size their output.
 # ⚠Fed from otel._otel_ingest while `_otel_lock` is held: this module has its own lock and never takes `_otel_lock`.
 OH_FILE = os.path.join(DATA_DIR, "otel-hooks.json")
 OH_KEEP_D = 31
@@ -17,7 +22,12 @@ OH_CAP = 40                 # event types per day; beyond it merge into «Other�
 OH_EV_MAX = 40              # hook_event string length cap
 OH_SAVE_S = 60
 OH_OTHER = "Other"
+OHN_CAP = 300               # event:subject keys per day; beyond it the firing is dropped (counts become a lower bound)
+OHN_SUB_RE = re.compile(r"[A-Za-z0-9_.\-]{1,80}")
+OHN_AMBIG = ("mcp_tool", "mcp_server")   # sanitised subjects: a specific matcher cannot be tested against them
+OHN_NOSUB = ("SubagentStart", "SubagentStop")   # matchers apply, but hook_name carries no subject
 _oh = {}
+_ohn = {}
 _oh_meta = {"loaded": False, "savedAt": 0.0, "dirty": False}
 _oh_lock = threading.Lock()
 
@@ -34,14 +44,31 @@ def _oh_key(day, ev):
     return k if (k in day or len(day) < OH_CAP) else OH_OTHER
 
 
-def _oh_add(ts, ev, dur, fail):
+def _ohn_key(ev, name):
+    """`<Event>` or `<Event>:<subject>` from hook_event + hook_name; None when hook_name does not parse that way."""
+    ev = str(ev or "")
+    if not ev or len(ev) > OH_EV_MAX or not ev.isalpha():
+        return None
+    nm = str(name or "")
+    if nm in ("", ev):
+        return ev
+    e, sep, sub = nm.partition(":")
+    return ev + ":" + sub if sep and e == ev and OHN_SUB_RE.fullmatch(sub) else None
+
+
+def _oh_add(ts, ev, dur, fail, name=None):
     """Add one hook firing (total_duration_ms covers all matching hooks of that firing) to its day and event type."""
     with _oh_lock:
-        day = _oh.setdefault(_ymd(ts), {})
+        dk = _ymd(ts)
+        day = _oh.setdefault(dk, {})
         v = day.setdefault(_oh_key(day, ev), [0, 0, 0])
         v[0] += 1
         v[1] += _oh_int(dur)
         v[2] += _oh_int(fail)
+        k = _ohn_key(ev, name)
+        nd = _ohn.setdefault(dk, {})
+        if k and (k in nd or len(nd) < OHN_CAP):
+            nd[k] = nd.get(k, 0) + 1
         _oh_meta["dirty"] = True
 
 
@@ -67,6 +94,14 @@ def _oh_load():
                 c = dst.setdefault(_oh_key(dst, k), [0, 0, 0])
                 for i in range(3):
                     c[i] += _oh_int(v[i])
+        nsrc = d.get("n") if isinstance(d, dict) and isinstance(d.get("n"), dict) else {}
+        for dk, row in nsrc.items():
+            if not (isinstance(dk, str) and isinstance(row, dict)):
+                continue
+            dst = _ohn.setdefault(dk, {})
+            for k, v in row.items():
+                if isinstance(k, str) and (k in dst or len(dst) < OHN_CAP):
+                    dst[k] = dst.get(k, 0) + _oh_int(v)
 
 
 def _oh_save(now=None, force=False):
@@ -78,12 +113,13 @@ def _oh_save(now=None, force=False):
         return False
     cut = _ymd(now - OH_KEEP_D * 86400)
     with _oh_lock:
-        old = [k for k in _oh if k < cut]
+        old = [k for k in _oh if k < cut] + [k for k in _ohn if k < cut]
         for k in old:
             _oh.pop(k, None)
+            _ohn.pop(k, None)
         if not (old or _oh_meta["dirty"] or force):
             return False
-        blob = json.dumps({"v": 1, "d": _oh}, separators=(",", ":"), ensure_ascii=False)
+        blob = json.dumps({"v": 1, "d": _oh, "n": _ohn}, separators=(",", ":"), ensure_ascii=False)
         _oh_meta["dirty"] = False
     _oh_meta["savedAt"] = now
     try:
@@ -115,3 +151,37 @@ def _oh_view(since_ymd, top=6, src=None):
             for k, v in acc.items()]
     rows.sort(key=lambda x: (-x["ms"], -x["count"], x["ev"]))
     return {"rows": rows[:top], "n": sum(v[0] for v in acc.values()), "from": first}
+
+
+def _ohn_fits(matcher, sub):
+    try:
+        return bool(re.fullmatch(matcher, sub))
+    except re.error:
+        return matcher == sub
+
+
+def hook_fires(ev, matcher, since_ymd):
+    """(runs, from_ymd, ambiguous) of one hook entry from `_ohn` over days >= since_ymd; None when no firing was recorded since then.
+    Every hook whose matcher fits the firing's subject runs in that firing, so a silent hook is counted too.
+    ambiguous = some firings could not be attributed (sanitised MCP subject, or a subagent event with a specific matcher)."""
+    if not _oh_meta["loaded"]:
+        _oh_load()
+    m = matcher if isinstance(matcher, str) else ""
+    allm = not m or m == "*"
+    n, first, amb = 0, "", False
+    with _oh_lock:
+        for dk in sorted(_ohn):
+            if dk < since_ymd or not _ohn[dk]:
+                continue
+            first = first or dk
+            for k, c in _ohn[dk].items():
+                e, _, sub = k.partition(":")
+                if e != ev:
+                    continue
+                if allm or (not sub and ev not in OHN_NOSUB):
+                    n += c
+                elif not sub or sub in OHN_AMBIG:
+                    amb = amb or not sub or "mcp" in m.lower()
+                elif _ohn_fits(m, sub):
+                    n += c
+    return (n, first, amb) if first else None

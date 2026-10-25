@@ -3,7 +3,8 @@
 `verdict(body, days)` is pure — it reads only the rows already built by harness / harness_plat and attaches
 `vd: {lvl, why, vp, id}` to flagged rows, plus `body["verdict"] = {bad, check, ok}`.
   bad   = hook_missing (script path gone) · mcp_fail · ref_missing (pipeline stage names an agent/skill that is not there)
-  check = idle (tool-event matcher that matched no tool used in the window, harness `nomatch`) · dup (same command twice on one event+matcher)
+  check = never_ran (OTel firing counts cover >= VD_FIRE_MIN_D days and the hook ran 0 times) ·
+          idle (tool-event matcher that matched no tool used in the window, harness `nomatch`) · dup (same command twice on one event+matcher)
           · slow_block (long timeout on an event the session waits for) · rule_big (rule file over VD_RULE_BYTES)
 ⚠Metadata only: `vp` (verdict params) carries names, matcher, numbers, scope labels — never script text, env or paths.
 """
@@ -11,6 +12,7 @@ VD_BLOCK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "Stop", "Su
 VD_BLOCK_TIMEOUT = 30        # seconds
 VD_RULE_BYTES = 40000        # ★Claude Code warns on instruction files over 40k chars
 VD_BUILTIN_AGENTS = ("general-purpose", "Explore", "Plan")
+VD_FIRE_MIN_D = 3           # fewer covered days than this cannot tell an unused hook from a quiet stretch
 
 
 def _hook_vd(ev, h, seen, days, partial, lane=""):
@@ -23,6 +25,9 @@ def _hook_vd(ev, h, seen, days, partial, lane=""):
     to = h.get("timeout")
     if (lane or ev) in VD_BLOCK_EVENTS and isinstance(to, (int, float)) and to > VD_BLOCK_TIMEOUT:
         return "check", "slow_block", {"ev": ev, "timeout": to}
+    # ⚠Transcript records miss silent hooks, so only OTel counts (`nsrc` otel, every firing) can prove 0 runs.
+    if h.get("nsrc") == "otel" and h.get("n") == 0 and (h.get("ndays") or 0) >= VD_FIRE_MIN_D and not partial:
+        return "check", "never_ran", {"days": h.get("ndays"), "matcher": m}
     # ⚠A silent hook leaves no run record, so run counts never prove idle — only a matcher no used tool name fits.
     if h.get("nomatch") and not partial:
         return "check", "idle", {"days": days, "matcher": m}

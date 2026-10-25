@@ -249,3 +249,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: `sub.now` is `_agent_last` — the tool name, plus « · description» for Agent/Task.
 - ⇒ The result pane cuts it at the first « · » client-side and shows `name · elapsed`, or `Idle · <ago>` past `PLNOW_QUIET`; no `title` on the line.
 - ⚠Never show the suffix or any tool input there (rule 1); the tool name is data: `esc()`, never `T()`.
+
+## Hook run counts: transcripts miss silent hooks, OTel does not (`otel_hooks.hook_fires` · `harness_verdict` `never_ran`)
+- Cause: `hook_success` is written only for runs that printed, so a transcript count of 0 cannot prove a hook unused.
+- Fix: OTel `hook_execution_complete` fires once per firing with `hook_name` = `Event:<tool or source>`; every hook whose matcher fits that subject ran, so per-hook counts come from matching stored `Event:subject` keys.
+- ⚠MCP tools arrive as `mcp_tool` (unless OTEL_LOG_TOOL_DETAILS=1) and SubagentStart/Stop carry no subject: a specific matcher there is ambiguous → keep the transcript count, never claim 0.
+- ⚠Counts are global across projects (session id is never stored); a project-scope hook's 0 is still a real 0.
+- ⚠A 0 (and `never_ran`) needs ≥ 3 covered days (`HN_FIRE_MIN_D` · `VD_FIRE_MIN_D`) — coverage starts the day the store first saw a firing; before that a silent hook stays «?».

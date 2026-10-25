@@ -77,7 +77,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - «Details» › «Results»: recorded check runs, newest first (with [`ev_hook.py`](HOOKS.md#ev_hookpy), test/build/lint commands from any project).
 - «Config map» (folded): hooks, rule files, agents, MCP servers, skills; click a «problems» / «to check» count to step through.
 
-⚠ Hooks that print nothing leave no record: «no record» does not mean «never ran».
+⚠ Without Claude Code telemetry, hooks that print nothing leave no record: «no record» does not mean «never ran». With telemetry on ([CONFIG.md](CONFIG.md)), every Claude Code hook gets a full run count, and one that ran 0 times over 3+ covered days is flagged «did not run in N days».
 
 ## Read the code structure
 

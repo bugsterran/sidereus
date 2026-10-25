@@ -61,6 +61,7 @@ function hnVdTxt(v){
     case 'mcp_fail': return T('last record is a connection failure');
     case 'ref_missing': return TV({msg: 'pipeline {n} · {m} uses it, but it is not defined', vars: {n: n(a.pipe), m: n(a.stage)}});
     case 'idle': return TV({msg: 'no tool call matched «{m}» in {n} days', vars: {n: n(a.days), m: n(a.matcher)}});
+    case 'never_ran': return TV({msg: 'did not run in {n} days', vars: {n: n(a.days)}});
     case 'dup': return TV({msg: 'same command registered again ({s})', vars: {s: hnSrcs(a.srcs)}});
     case 'slow_block': return TV({msg: 'can hold {n} for up to {m} s', vars: {n: n(a.ev), m: n(a.timeout)}});
     case 'rule_big': return TV({msg: 'large rule file ({n}B) — loaded into every session', vars: {n: fmtTok(Number(a.bytes) || 0)}});
@@ -101,9 +102,11 @@ function hnChip(h, showEv){
     + '<span class=hncm>' + ((showEv || h.nat) && h.ev ? esc(h.ev) + ' · ' : '') + (h.matcher ? esc(h.matcher) : '*') + (h.timeout ? ' · ' + esc(h.timeout) + 's' : '') + '</span>'
     + '<span class=hncb><em class="hnef hne-' + ef + '" title="' + esc(tip) + '">' + esc(T(HN_EFF[ef], 'hook')) + '</em>'
     + '<em class=hnsc' + (h.plug ? ' title="' + esc(sc) + '"' : '') + '>' + esc(h.plug ? cmdNm : sc) + '</em>'
-    // ⚠Only runs that printed something are recorded: quiet = no record, so the count is unknown («?»), not 0.
+    // ⚠Transcripts record only runs that printed something: quiet = no record, so the count is unknown («?»), not 0.
+    // nsrc otel = every firing from Claude Code telemetry since nfrom, so 0 is a real 0.
     + '<i class="hncr' + (h.quiet ? ' hncrg' : '') + '"' + (h.n == null && !h.quiet ? '' : ' title="' + esc(h.quiet ? T('Runs without output are not recorded, so the count is unknown')
-      : T('Counts only runs that printed output') + (h.last ? ' · ' + stamp(h.last) : '')) + '"') + '>' + (h.quiet ? '?' : hnCnt(h.n)) + '</i></span>' + hnVdRow(h) + '</div>';
+      : (h.nsrc === 'otel' ? TV({msg: 'All runs since {d} (Claude Code telemetry)', vars: {d: String(h.nfrom || '')}}) : T('Counts only runs that printed output')) + (h.last ? ' · ' + stamp(h.last) : '')) + '"') + '>'
+      + (h.quiet ? '?' : h.nsrc === 'otel' && !h.n ? '0' + T('×') : hnCnt(h.n)) + '</i></span>' + hnVdRow(h) + '</div>';
 }
 function hnLaneHtml(events){
   return '<div class=hnl>' + hnLanes(events).map((c, i) => (i ? '<span class=hna aria-hidden=true>→</span>' : '')
@@ -113,7 +116,7 @@ function hnLaneHtml(events){
     + (c.extra ? '' : '<div class=hnev title="' + esc(c.tool ? T('Tool runs') : c.evs.join(' / ')) + '">' + (c.tool ? esc(T('Tool runs')) : c.evs.map(esc).join(' / ')) + '</div>'
     + (c.tool ? '' : c.hooks.length ? c.hooks.map(h => hnChip(h)).join('') : '<div class=hnnone>' + esc(T('no hooks')) + '</div>') + '</div>')).join('') + '</div>';
 }
-// Summary over the lane hooks; ⚠Σn counts only runs that printed output (quiet/null hooks are left out) — not total runs.
+// Summary over the lane hooks; ⚠Σn = telemetry runs where covered, else only runs that printed output (quiet/null hooks are left out).
 function hnSum(events){
   const hs = [].concat(...hnLanes(events).map(c => c.hooks));
   let sum = 0, quiet = 0, block = 0, top = null;
@@ -122,8 +125,9 @@ function hnSum(events){
     if(h.eff === 'block') block++;
     if(h.n != null && !h.quiet){ const n = Number(h.n) || 0; sum += n; if(n && (!top || n > top.n)) top = { h: h, n: n }; }
   });
-  return '<div class=hnsum><span>' + esc(TV({msg: '{n} hooks', vars: {n: hs.length}})) + '</span> · <span title="' + esc(T('Counts only runs that printed output')) + '">'
-    + esc(TV({msg: '{n} runs with output', vars: {n: sum}})) + '</span> · <span>' + esc(TV({msg: 'no record {n}', vars: {n: quiet}})) + '</span> · '
+  const ot = hs.some(h => h.nsrc === 'otel');   // telemetry rows count every run, so the total is no longer «with output» only
+  return '<div class=hnsum><span>' + esc(TV({msg: '{n} hooks', vars: {n: hs.length}})) + '</span> · <span title="' + esc(ot ? T('All runs where Claude Code telemetry covers the hook; otherwise only runs that printed output') : T('Counts only runs that printed output')) + '">'
+    + esc(TV({msg: ot ? '{n} runs' : '{n} runs with output', vars: {n: sum}})) + '</span> · <span>' + esc(TV({msg: 'no record {n}', vars: {n: quiet}})) + '</span> · '
     + '<b' + (block ? ' class=warn' : '') + '>' + esc(TV({msg: 'can block {n}', vars: {n: block}})) + '</b>'
     + (top ? ' · <span>' + esc(T('most output runs: ') + (top.h.plug || hnBase(top.h.cmd || top.h.src)) + ' ' + (top.h.ev || '') + ' ' + top.n + T('×')) + '</span>' : '')
     + '</div>';

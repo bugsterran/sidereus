@@ -65,6 +65,16 @@ class VerdictTest(unittest.TestCase):
         # PostToolUse is not an event the session waits on
         self.assertIsNone(self._why(self.post[1]))
 
+    def test_never_ran_only_from_telemetry_with_enough_days(self):
+        def one(**kw):
+            b = {"events": [{"ev": "PreToolUse", "hooks": [_hook(matcher="Bash", **kw)]}], "scanning": False}
+            h = V.verdict(b, 14)["events"][0]["hooks"][0]
+            return (h["vd"]["why"], h["vd"]["vp"]) if "vd" in h else None
+        self.assertEqual(one(n=0, nsrc="otel", ndays=5), ("never_ran", {"days": 5, "matcher": "Bash"}))
+        self.assertIsNone(one(n=0, nsrc="otel", ndays=2))       # too short to tell unused from quiet
+        self.assertIsNone(one(n=3, nsrc="otel", ndays=9))
+        self.assertIsNone(one(n=None, ndays=9))                  # transcript-only: no record proves nothing
+
     def test_rows_and_counts(self):
         b = self.b
         self.assertEqual(self._why(b["rules"][0]), ("check", "rule_big"))
@@ -125,6 +135,22 @@ class HookRowFieldsTest(unittest.TestCase):
         hs = next(r["hooks"] for r in b["events"] if r["ev"] == "UserPromptSubmit")
         self.assertEqual([(h.get("vd") or {}).get("why") for h in hs], [None, None, "dup"])
         self.assertNotIn("check A", repr(rows))   # hash only
+
+    def test_otel_counts_fill_silent_hooks(self):
+        from unittest import mock
+        it = {"key": ["hooks", "PreToolUse"], "scope": "user", "file": "/nonexistent/settings.json",
+              "entry": {"matcher": "Bash", "hooks": [{"type": "command", "command": "python3 /nonexistent/g.py"}]}}
+        with mock.patch.object(H, "hook_fires", return_value=(0, "2026-10-20", False)), \
+                mock.patch.object(H, "_days_since", return_value=7):
+            h = next(r["hooks"] for r in H._hook_rows([it], "/nonexistent", {}, since="2026-10-12") if r["ev"] == "PreToolUse")[0]
+        self.assertEqual((h["n"], h["quiet"], h["nsrc"], h["nfrom"], h["ndays"]), (0, 0, "otel", "2026-10-20", 7))
+        with mock.patch.object(H, "hook_fires", return_value=(0, "2026-10-26", False)), \
+                mock.patch.object(H, "_days_since", return_value=1):   # coverage too short: 0 stays unknown
+            h = next(r["hooks"] for r in H._hook_rows([it], "/nonexistent", {}, since="2026-10-12") if r["ev"] == "PreToolUse")[0]
+        self.assertEqual((h["n"], h["quiet"], h["nsrc"]), (None, 1, ""))
+        with mock.patch.object(H, "hook_fires", return_value=(4, "2026-10-20", True)):   # ambiguous: keep transcript count
+            h = next(r["hooks"] for r in H._hook_rows([it], "/nonexistent", {}, since="2026-10-12") if r["ev"] == "PreToolUse")[0]
+        self.assertEqual((h["n"], h["quiet"], h["nsrc"]), (None, 1, ""))
 
     def test_plat_same_basename_not_dup(self):
         P = sidereus("harness_plat")
