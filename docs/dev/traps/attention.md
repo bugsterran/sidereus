@@ -139,6 +139,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - **Open**: newly caught subagent failures are mostly graded `noise` (tool error) · `mine` (hook block), but
     **default grade chips are only `check`/`cut`**, so they are hidden by default (16 of 745 visible in the 7-day window).
     Whether to show them by default is **pending an owner decision.**
+  - ★**Scan chunk is 1 MB, markers searched in the chunk, no line split** (2026-10-26, #26; macOS py 3.9, 166 files / 239 MB):
+    8 MB chunks + `split(b"\n")` left RSS **+118 MB** after one pass (retained objects only 1.7 MB — freed 8 MB blocks stay resident;
+    bare reads: 8 MB +96 · 4 MB +39 · 2 MB +5 · 1 MB +1). Now +6 MB, tracemalloc peak 33.6 → 4.7 MB, events identical.
+    ⚠Do not raise `FAIL_CHUNK` for speed (0.49 → 0.35 s already).
 - ★**Warning strip split into two layers — non-actionable warnings stayed up** (measured 2026-09-07~08).
   The code already had two layers by cause — `*-slow` keys
   (`live-slow` · `mon-slow` · `busy-slow`) are **covered by the previous value (fallback)**, so the screen was right and there is
