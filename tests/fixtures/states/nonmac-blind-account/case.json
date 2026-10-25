@@ -1,0 +1,22 @@
+{
+ "accounts": [
+  {
+   "label": "main",
+   "primary": true
+  },
+  {
+   "label": "work",
+   "primary": false
+  }
+ ],
+ "ages": {
+  "88888888-0000-4000-8000-00000000000a.jsonl": 100,
+  "88888888-0000-4000-8000-00000000000b.jsonl": 200
+ },
+ "busy": null,
+ "guards": "off macOS a failed account lookup reads its rows Unknown, not Ended (sessions._live_slot blind)",
+ "os": "win",
+ "roots": {
+  "88888888-0000-4000-8000-00000000000b.jsonl": "work"
+ }
+}
