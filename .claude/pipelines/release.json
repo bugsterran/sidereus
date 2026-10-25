@@ -30,7 +30,7 @@
     {
       "title": "CHANGELOG 정리",
       "agent": "general-purpose",
-      "task": "Backfill CHANGELOG.md [Unreleased] from `git log` since the last tag (or the last versioned section): one line per user-visible feature or fix under Added/Changed/Fixed; skip refactors, tests and docs-only commits. Rename [Unreleased] to [x.y.z] - YYYY-MM-DD and add a new empty [Unreleased] above it. Edit CHANGELOG.md only; do not commit.",
+      "task": "Backfill CHANGELOG.md [Unreleased] from `git log` since the last tag (or the last versioned section): one line per user-visible feature or fix under Added/Changed/Fixed; skip refactors, tests and docs-only commits. When Fixed runs past about 10 lines, open the version section with a `**Highlights**` list of the 3 changes a user most needs to know. Rename [Unreleased] to [x.y.z] - YYYY-MM-DD and add a new empty [Unreleased] above it. Edit CHANGELOG.md only; do not commit.",
       "ui": { "x": 788, "y": 24 }
     },
     {
