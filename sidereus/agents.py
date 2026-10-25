@@ -182,7 +182,7 @@ def _agent_last_busy(fp):
     try:
         mt, sz = _stat_sig(fp)
     except OSError:
-        return "", False
+        return "", None                # ⚠busy None = log unreadable: neither working nor idle is claimed
     hit = _AGENT_LAST.get(fp, stamp=(mt, sz))
     if hit is not None:
         return hit
@@ -214,10 +214,10 @@ def _agent_last_busy(fp):
             if val:
                 break
     except OSError:
-        val, busy = "", False
+        val, busy = "", None
     except Exception as e:
         warn_once("aglast", "Could not read an agent's current step ({err})", vars={"err": type(e).__name__}, soft=True)
-        val, busy = "", False
+        val, busy = "", None
     return _AGENT_LAST.put(fp, (val, busy), stamp=(mt, sz))
 
 
@@ -299,6 +299,8 @@ def _bg_show(items, now, dead):
             row["par"] = it[7]          # id of the agent that launched it (absent if the session launched it)
         if len(it) > 8 and it[8]:
             row["busy"] = 1             # last tool call still has no result — a quiet log is a long tool, not idle
+        elif len(it) > 8 and it[8] is None:
+            row.pop("idle", None)       # ⚠log unreadable: without idle the screen shows no «Idle»/«quiet» claim
         out.append(row)
     return out
 
