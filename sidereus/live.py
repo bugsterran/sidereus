@@ -48,6 +48,8 @@ def live_cwds(ttl=2):
     prev_at, prev = _live_cache
     out = {}
     try:
+        if not IS_MAC:
+            return _live_official_only()
         snap = _ps_snap()
         pids = _live_claude_pids(snap)
         if not pids:
@@ -63,6 +65,24 @@ def live_cwds(ttl=2):
         _live_count_paths(pmap, claimed, out)
     except Exception as e:
         return _live_fail(e, prev_at, prev)
+    _live_cache = (time.time(), out)
+    _stale_clear("live")
+    return out
+
+
+def _live_official_only():
+    """Non-Mac: no process snapshot, so liveness comes from `claude agents` alone; None when it could not be asked."""
+    # ⚠An empty snapshot read as «no claude process» returned {} and listed every open session as ended.
+    global _live_cache
+    sids, claimed = set(), set()
+    av = _live_official(sids, claimed)
+    if av is None:
+        _live_cache = (time.time(), None)
+        return None
+    pmap = {p: it["cwd"] for p, it in av.items() if isinstance(it, dict) and it.get("cwd")}
+    out = {}
+    _live_sids[0], _live_sids[1] = time.time(), sids
+    _live_count_paths(pmap, claimed, out)
     _live_cache = (time.time(), out)
     _stale_clear("live")
     return out
