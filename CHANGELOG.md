@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Sessions: on Windows and Linux with several Claude Code accounts, when one account's session list cannot be read its open sessions show as unknown instead of ended.
+- Sessions: a Cursor or Gemini CLI session left idle for more than 24 hours no longer disappears while its process is still running.
 
 ## [0.8.0] - 2026-10-25
 

@@ -20,7 +20,7 @@ from sidereus.adapter import adapter_register
 # ★Their hooks push events into `/api/hook` — we cannot read those sessions' transcripts or processes,
 #   so **the last event is the only evidence**. States use the same vocabulary as the Claude side (`rank` sorts them together).
 EXT_FILE = os.path.join(DATA_DIR, "ext-sessions.json")   # ⚠`HOME` here is the data dir (`DATA_DIR`, default `~/.mailbox-mcp`, :42), not the user's home
-EXT_TTL_S = 24 * 3600        # delete if no news for this long — the only exit for sessions that never sent `SessionEnd`
+EXT_TTL_S = 24 * 3600        # delete if no news for this long — the only exit for pid-less sessions that never sent `SessionEnd`
 # ★Killed CLIs (Ctrl-C twice, closed terminal, watchdog) send no SessionEnd. Evidence, in order:
 #   the CLI pid from the hook (`os.kill(pid, 0)` + start time against pid reuse), else silence while busy.
 # ★EXT_SILENT_S from data (2026-09-24): Gemini busy gaps n=93 p99 152s max 152s; Claude tool calls as a
@@ -88,13 +88,21 @@ def _pending(v):
     return v.get("state") == "ask" or bool(v.get("blocked"))
 
 
+def _ext_aged_out(v, now):
+    """Row is past EXT_TTL_S and may be dropped by age.
+    ⚠A row with a pid is never aged out: ext_gone_check is its exit (live idle CLIs vanished after 24 h; gone rows keep the grace)."""
+    if _pending(v) or v.get("pid"):
+        return False
+    try:
+        last = float(v.get("lastSeen") or 0)
+    except (TypeError, ValueError):
+        last = 0
+    return now - last > EXT_TTL_S
+
+
 def _ext_prune_locked(now):
     for k, v in list(_ext.items()):
-        try:
-            last = float(v.get("lastSeen") or 0)
-        except (TypeError, ValueError):
-            last = 0
-        if now - last > EXT_TTL_S and not _pending(v):
+        if _ext_aged_out(v, now):
             _ext.pop(k, None)
 
 
@@ -116,10 +124,7 @@ def _ext_load():
             sid = str(r.get("session_id") or "")
             if not sid or plat not in EXT_PLAT:
                 continue
-            try:
-                if now - float(r.get("lastSeen") or 0) > EXT_TTL_S and not _pending(r):
-                    continue
-            except (TypeError, ValueError):
+            if _ext_aged_out(r, now):
                 continue
             r.pop("platform", None)
             r.pop("session_id", None)
