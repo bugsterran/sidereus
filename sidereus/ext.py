@@ -80,9 +80,11 @@ def ext_usage_today(now=None):
         if w["cost"] is not None:
             r["cost"] = (r["cost"] or 0.0) + w["cost"]
     # A CLI with a session today but no tokens yet (no reply, or hook-only like Cursor) still gets a «Today 0» entry,
-    # so a connected CLI does not look missing. ⚠Entries come only from sessions seen today, never from installs alone.
+    # so a connected CLI does not look missing. ⚠Entries come only from sessions seen today or still open (live pid,
+    # not gone — an idle CLI left open overnight is still in use), never from installs alone.
     with _ext_lock:
-        seen = {(p, sid) for (p, sid), v in _ext.items() if float(v.get("lastSeen") or 0) >= mid}
+        seen = {(p, sid) for (p, sid), v in _ext.items()
+                if float(v.get("lastSeen") or 0) >= mid or (v.get("pid") and not v.get("gone"))}
     seen |= {k for k, msgs in sess.items() if k not in subs}
     for plat, _sid in seen:
         k = EXT_PLAT.get(plat)

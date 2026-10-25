@@ -84,5 +84,32 @@ class TtlPid(unittest.TestCase):
         self.assertNotIn(("cursor", "f"), st._ext)
 
 
+
+class TodayEntryForOpenSession(unittest.TestCase):
+    """Status bar «Today 0»: an open CLI idle since yesterday still gets an entry; a gone or pid-less old row does not."""
+
+    def setUp(self):
+        self.ext = sidereus("ext")
+        self.saved = (dict(st._ext), self.ext.PLAT_MODS, self.ext.ext_hook_msgs)
+        st._ext.clear()
+        self.ext.PLAT_MODS = {}
+        self.ext.ext_hook_msgs = lambda since: {}
+
+    def tearDown(self):
+        ext, self.ext.PLAT_MODS, self.ext.ext_hook_msgs = self.saved
+        st._ext.clear()
+        st._ext.update(ext)
+
+    def test_open_idle_cli_listed(self):
+        st._ext[("cursor", "a")] = _row(pid=12089)
+        st._ext[("gemini", "b")] = _row(pid=99698, gone=NOW - 60, state="gone")
+        st._ext[("codex", "c")] = _row()
+        with frozen(self.ext):
+            u = self.ext.ext_usage_today(now=NOW)
+        self.assertEqual(u.get("cu", {}).get("n_sessions"), 1)
+        self.assertNotIn("gm", u)
+        self.assertNotIn("cx", u)
+
+
 if __name__ == "__main__":
     unittest.main()
