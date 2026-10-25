@@ -52,6 +52,21 @@ class AgentBusy(unittest.TestCase):
         rows = ag._bg_show([base + [True], base + [False], base], 0, False)
         self.assertEqual([r.get("busy") for r in rows], [1, None, None])
 
+    def test_unreadable_log_claims_nothing(self):
+        # Gone or unreadable log: busy is unknown (None), not False — the row drops `idle` so no «Idle» is shown.
+        self.assertIsNone(ag._agent_busy(os.path.join(self.d, "missing.jsonl")))
+        fp = self.log(USE)
+        orig = ag._tail_lines
+
+        def boom(*a, **k):
+            raise OSError("unreadable")
+        ag._tail_lines = boom
+        self.addCleanup(setattr, ag, "_tail_lines", orig)
+        self.assertIsNone(ag._agent_busy(fp))
+        row = ag._bg_show([["lab", 0, "", 1, "toolu_p", 900, "a1", "", None]], 0, False)[0]
+        self.assertNotIn("idle", row)
+        self.assertNotIn("busy", row)
+
 
 if __name__ == "__main__":
     unittest.main()

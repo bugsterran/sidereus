@@ -1,0 +1,8 @@
+{
+ "ages": {
+  "22222222-0000-4000-8000-000000000002.jsonl": 100
+ },
+ "busy": null,
+ "guards": "a live session with no assistant/user record in the tail shows unknown, not Idle (notes._sess_state)",
+ "os": "win"
+}

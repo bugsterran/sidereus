@@ -551,6 +551,7 @@ _FAST_TOOLS = {"Edit", "Write", "NotebookEdit", "Read", "Glob", "Grep", "TodoWri
 # The «Attention» check follows the permission mode: transcripts carry `permissionMode` on user entries (measured: 67 in one live transcript; latest wins).
 #   These modes never show a human prompt (auto/dontAsk may deny, but never wait) ⇒ no «Awaiting approval».
 _NO_PROMPT_MODES = {"bypassPermissions", "auto", "dontAsk"}
+# ⚠A missing `permissionMode` ("") is read as prompting on purpose: an unproven mode keeps a possible approval request visible.
 _EDIT_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit"}     # acceptEdits auto-approves these only
 
 

@@ -276,3 +276,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★**Off macOS a failed account's open sessions listed as Ended** — `agent_view()` merges only the accounts that answered, so `live` was a partial dict, not None.
   ⇒ `sessions._sessions` builds rows of accounts in `agent_view_unknown()` with `live=None` (Unknown, or Ask with a pending question); test `tests/test_live_blind_account.py`.
   ⚠Do not apply it on macOS — ps+lsof path slots still prove liveness there; an empty `blind` keeps single-account and all-answered polls unchanged.
+- **A live session with no readable last turn record showed Idle; an unreadable subagent log read as not busy** — both were guesses.
+  ⇒ `parse._turn_shape` returns shape `None` for empty/non-list content, `notes._sess_state` maps `None` on a live session to `unknown` (`ask` still wins); `agents._agent_last_busy` returns busy `None` and `_bg_show` then drops `idle`. Fixtures `live-no-turn-record` · `live-unreadable-last-record`.
+  ⚠Do not default these back to `wait`/`False` — the screen then claims «Idle»/«quiet» with no evidence.

@@ -249,4 +249,6 @@ def _sess_state(cwd, last_shape, live, asking=False, aborted=False, errored=Fals
         return "ask" if ask_tool else "tool"   # a tool is running (its name is shown alongside)
     if last_shape == "result":
         return "think"                 # model is processing a received tool result
+    if last_shape is None:
+        return "ask" if pend else "unknown"   # ⚠alive but no readable turn record: whose turn it is is not known
     return "ask" if asking else "wait"

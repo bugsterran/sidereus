@@ -158,7 +158,7 @@ def _turn_shape(d, msg, turn_end):
                 or msg.get("stop_reason") in ("end_turn", "stop_sequence")
             shape = "text" if closed else "result"   # has the turn closed · still speaking?
         else:
-            shape = "text"                    # content is not a list or is empty = unknown, keep previous behavior
+            shape = None                      # ⚠content not a list or empty: turn owner unknown, not «Idle»
     else:
         shape = "result"      # a tool result just arrived = the model received it and is thinking
         # ★Interrupted·error are states entirely different from "running" — a person must act for it to move.
