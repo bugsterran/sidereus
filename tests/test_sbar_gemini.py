@@ -4,9 +4,9 @@ import os
 import re
 import shutil
 import subprocess
-import time
 import unittest
 
+from tests import _clock
 from tests._load import sidereus, js_fn
 from tests._node import node_e
 
@@ -83,6 +83,9 @@ class UsageModels(unittest.TestCase):
         self._tok = dict(ext._tok)
         ext._tok.clear()
         self._gc, pg.scan = pg.scan, (lambda since=0.0: [])     # never the live ~/.gemini
+        fz = _clock.frozen(ext, pg)
+        fz.__enter__()
+        self.addCleanup(fz.__exit__, None, None, None)
 
     def tearDown(self):
         pg.scan = self._gc
@@ -90,7 +93,7 @@ class UsageModels(unittest.TestCase):
         ext._tok.update(self._tok)
 
     def test_models_listed_for_today_only(self):
-        now = time.time()
+        now = _clock.NOW
         ext._tok[("gemini", "a")] = {"msgs": {
             "1": (10, 1, 0, 0, now, "gemini-2.5-pro", None),
             "2": (10, 1, 0, 0, now - 3 * 86400, "gemini-old", None)}}
@@ -98,7 +101,7 @@ class UsageModels(unittest.TestCase):
         self.assertEqual(ext.ext_usage_today(now)["gm"]["models"], ["gemini-2.5-flash", "gemini-2.5-pro"])
 
     def test_disk_scan_is_base_and_live_adds_only_new_ids(self):
-        now = time.time()
+        now = _clock.NOW
         disk = [{"sid": "a", "msgs": {"1": (100, 10, 50, 5, now, "gemini-2.5-pro", 0.5)}},
                 {"sid": "ended", "msgs": {"9": (200, 20, 0, 0, now, "gemini-2.5-flash", 0.25)}}]
         saved, pg.scan = pg.scan, (lambda since=0.0: disk)

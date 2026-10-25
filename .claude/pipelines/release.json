@@ -24,7 +24,7 @@
     {
       "title": "CI 확인",
       "agent": "main",
-      "task": "The orchestrator pushes dev (the owner approved pushing for this release), then waits for the CI run of that exact commit (`gh run list --branch dev --limit 1`, `gh run watch <id> --exit-status`). Pass only when the run and every job conclude success; read step conclusions too (a Windows job has hidden a failed step before). On failure: list each failing job, step and test with its error line (`gh run view <id> --log-failed`), say how long the branch has been red (`gh run list --branch main --limit 5`), and stop; fix through sidereus-bugfix, then rerun this stage. ⚠A local check --full on one OS is not a substitute: Windows and other Python versions only run in CI.",
+      "task": "The orchestrator pushes dev (the owner approved pushing for this release), then waits for the CI run of that exact commit (`gh run list --branch dev --limit 1`, `gh run watch <id> --exit-status`). Pass only when the run and every job conclude success; read step conclusions too (a Windows job has hidden a failed step before). A run whose attempt > 1 or that has a re-run job is reported as FAIL with its attempt count (`gh run view <id> --json attempt`): a green re-run hides a flaky test. On failure: list each failing job, step and test with its error line (`gh run view <id> --log-failed`), say how long the branch has been red (`gh run list --branch main --limit 5`), and stop; fix through sidereus-bugfix, then rerun this stage. ⚠A local check --full on one OS is not a substitute: Windows and other Python versions only run in CI.",
       "ui": { "x": 540, "y": 24, "color": "#ff9f1c" }
     },
     {

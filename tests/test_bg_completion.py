@@ -6,13 +6,21 @@ import tempfile
 import time
 import unittest
 
+from tests import _clock
 from tests._load import sidereus
 
 bt = sidereus("bgtasks")
 
 
+def _freeze(case):
+    """Freeze every module the completion path reads `now` from; files get NOW-relative mtimes."""
+    fz = _clock.frozen(bt, sidereus("bgtasks_parse"), sidereus("agents"), sidereus("file_owner"))
+    fz.__enter__()
+    case.addCleanup(fz.__exit__, None, None, None)
+
+
 def _ts(off=0):
-    return time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(time.time() + off))
+    return time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime(_clock.NOW + off))
 
 
 def _notice(aid, tuid):
@@ -28,6 +36,7 @@ class BgCompletion(unittest.TestCase):
         self._boot = bt.boot_time
         bt.boot_time = lambda: 0
         self.lines = []
+        _freeze(self)
         sidereus("bgtasks_parse")._bg_said.clear()
         bt._bg_sent.clear()
 
@@ -47,7 +56,7 @@ class BgCompletion(unittest.TestCase):
             f.write(json.dumps({"type": "user", "message": {"role": "user", "content": "go"}}) + "\n")
             f.write(json.dumps(last) + "\n")
             f.write(json.dumps({"type": "attachment", "attachment": {"type": "hook_success"}}) + "\n")
-        t = time.time() - quiet_s
+        t = _clock.NOW - quiet_s
         os.utime(base + ".jsonl", (t, t))
         sidereus("agents")._AGENT_META.pop(os.path.join(self.dir, "sess"), None)
 
@@ -182,7 +191,7 @@ class BgCompletion(unittest.TestCase):
         f = os.path.join(self.dir, "sess", "subagents", "agent-%s.jsonl" % aid)
         with open(f, "a", encoding="utf-8") as fh:
             fh.write(json.dumps(rec) + "\n")
-        t = time.time() - quiet_s
+        t = _clock.NOW - quiet_s
         os.utime(f, (t, t))
 
     def test_resumed_after_notice_is_live_again(self):
@@ -220,7 +229,7 @@ class BgCompletion(unittest.TestCase):
         self.launch("T9")
         self.notice_att("a9", "T9")
         self.open_ids()
-        bt._bg_popped["T9"] = time.time() - bt.SUB_DONE_QUIET_S + 20   # notice seen long ago
+        bt._bg_popped["T9"] = _clock.NOW - bt.SUB_DONE_QUIET_S + 20   # notice seen long ago
         self.grow("a9", self.RUNNING_TOOL, quiet_s=bt.SUB_LIVE_S + 60)   # quiet past SUB_LIVE_S inside a tool
         self.assertEqual(self.open_ids(), ["T9"])
 
@@ -232,7 +241,7 @@ class BgCompletion(unittest.TestCase):
         self.assertEqual(self.open_ids(), [])
         self.grow("c1", self.RUNNING_TOOL, quiet_s=-5)
         self.assertEqual(self.open_ids(), [])
-        bt._bg_popped["V1"] = time.time() - 100          # notice long ago; a write now is past the grace
+        bt._bg_popped["V1"] = _clock.NOW - 100          # notice long ago; a write now is past the grace
         self.grow("c1", self.RUNNING_TOOL)
         self.assertEqual(self.open_ids(), ["V1"])
 
@@ -310,16 +319,16 @@ class BgCompletion(unittest.TestCase):
         ag = sidereus("agents")
         self.agent("b2", "U2", self.ENDED, quiet_s=100)
         sd = os.path.join(self.dir, "sess")
-        self.assertFalse(ag._subs_newer(sd, time.time() - 50))
+        self.assertFalse(ag._subs_newer(sd, _clock.NOW - 50))
         self.grow("b2", {"type": "user", "message": {"role": "user", "content": "more"}})
-        self.assertTrue(ag._subs_newer(sd, time.time() - 50))
+        self.assertTrue(ag._subs_newer(sd, _clock.NOW - 50))
 
     def test_resumed_then_done_and_quiet_is_not_live(self):
         self.agent("b1", "U1", self.ENDED, quiet_s=5)
         self.launch("U1")
         self.notice_att("b1", "U1")
         self.open_ids()
-        bt._bg_popped["U1"] = time.time() - 2 * bt.SUB_DONE_QUIET_S
+        bt._bg_popped["U1"] = _clock.NOW - 2 * bt.SUB_DONE_QUIET_S
         self.grow("b1", self.ENDED, quiet_s=bt.SUB_DONE_QUIET_S + 30)
         self.assertEqual(self.open_ids(), [])
 
@@ -331,13 +340,13 @@ class BgCompletion(unittest.TestCase):
         self.launch(tuid)
         self.notice_att(aid, tuid)
         self.assertEqual(self.open_ids(), [])
-        bt._bg_popped[tuid] = time.time() - 100           # a write now is past the revive grace
+        bt._bg_popped[tuid] = _clock.NOW - 100           # a write now is past the revive grace
         self.grow(aid, self.USER_LAST)
         self.assertEqual(self.open_ids(), [tuid])
 
     def test_notice_consumed_and_quiet_retires_any_last_record(self):
         self._revived_user_last("g1", "G1")
-        bt._bg_popped["G1"] = time.time() - 2 * bt.SUB_DONE_QUIET_S
+        bt._bg_popped["G1"] = _clock.NOW - 2 * bt.SUB_DONE_QUIET_S
         self.grow("g1", self.USER_LAST, quiet_s=bt.SUB_DONE_QUIET_S + 30)
         self.assertEqual(self.open_ids(), [])
 
@@ -379,6 +388,7 @@ class LiveSiblingsConflict(unittest.TestCase):
         bt.boot_time = lambda: 0
         self.fo._FO.update(at=0.0, off={}, per={}, who={})
         self.fo._FO_GIT.clear()
+        _freeze(self)
 
     def tearDown(self):
         self.fo.CLAUDE_PROJECTS, self.fo.wt_files, bt.boot_time = self._saved
@@ -390,7 +400,7 @@ class LiveSiblingsConflict(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_two_live_siblings_conflict(self):
-        now = time.time()
+        now = _clock.NOW
         pa = os.path.join(self.repo, "a.py")
         with open(self.fp, "w", encoding="utf-8") as f:
             for tu in ("V1", "V2"):

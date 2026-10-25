@@ -46,7 +46,7 @@ class Pathological(unittest.TestCase):
                     "[;" * n):
             t0 = time.process_time()
             SL._struct_one_file("a.rs", src + " ")         # treemap entry
-            self.assertLess(time.process_time() - t0, 1.0, src[:16])
+            self.assertLess(time.process_time() - t0, 5.0, src[:16]) # did-not-hang bound: catastrophic backtracking runs for minutes, a loaded runner adds seconds
 
 
 

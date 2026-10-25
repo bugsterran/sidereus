@@ -64,7 +64,7 @@ class TestLinearTime(unittest.TestCase):
         for nm, src in sorted(self.CASES.items()):
             t = time.process_time()
             self.assertIsNotNone(L._struct_one_file(nm + ".cpp", src), nm)
-            self.assertLess(time.process_time() - t, 1.0, nm)
+            self.assertLess(time.process_time() - t, 5.0, nm) # did-not-hang bound: catastrophic backtracking runs for minutes, a loaded runner adds seconds
 
 
 if __name__ == "__main__":

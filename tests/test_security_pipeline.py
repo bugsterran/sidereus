@@ -70,6 +70,12 @@ class SecurityPipelineTest(unittest.TestCase):
             self.assertEqual("--dev" in t, dev, name)
             self.assertIn("· report", t)
 
+    def test_ci_stage_fails_reruns(self):
+        st = [x for x in _load("release.json")["stages"] if x["title"] == "CI 확인"]
+        self.assertEqual(len(st), 1)
+        self.assertIn("attempt > 1 or that has a re-run job is reported as FAIL", st[0]["task"])
+        self.assertIn("gh run view <id> --json attempt", st[0]["task"])
+
 
 AV = sidereus("arch_verify")
 SR = sidereus("sec_report")

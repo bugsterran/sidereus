@@ -8,20 +8,30 @@ import os
 import tempfile
 import time
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from unittest import mock
 
+from tests import _clock
 from tests._load import sidereus
 
 F = sidereus("failures")
 S = sidereus("failures_scan")   # grading/signature/line parsing moved there 2026-09-24
 C = sidereus("cards")
 Q = sidereus("quota")
+_FROZEN = _clock.frozen(F, S)
+
+
+def setUpModule():
+    _FROZEN.__enter__()
+
+
+def tearDownModule():
+    _FROZEN.__exit__(None, None, None)
 
 
 def _ts(offset_s=0):
-    """Transcript-style timestamp string (local wall clock as the harness writes it)."""
-    return (datetime.now() - timedelta(seconds=offset_s)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    """Transcript-style timestamp: UTC wall clock with a "Z", as the harness writes it."""
+    return datetime.fromtimestamp(_clock.NOW - offset_s, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def _notif(summary, status="failed", tid="toolu_X1"):

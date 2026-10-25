@@ -16,13 +16,15 @@ class NapsCold(unittest.TestCase):
         self.saved = (tl._naps_fetch, tl._naps_refresh, dict(tl._naps_cache))
         tl._naps_cache.clear(); tl._naps_cache.update({"at": 0.0, "v": []})
         self.calls = 0
+        self.fetch_threads = []
         self.refreshed = threading.Event()
         now = time.time()
         self.val = [(now - 600, now - 60)]
 
         def fetch():
             self.calls += 1
-            time.sleep(1.5)             # above the 1.0s bound below — an inline fetch would fail it
+            self.fetch_threads.append(threading.get_ident())
+            time.sleep(1.5)             # slow like pmset; keeps the refresh busy while concurrent calls arrive
             return self.val
         tl._naps_fetch = fetch
         real = self.saved[1]
@@ -40,9 +42,11 @@ class NapsCold(unittest.TestCase):
         tl._naps_cache.clear(); tl._naps_cache.update(self.saved[2])
 
     def test_first_call_returns_empty_at_once(self):
-        t = time.perf_counter()
         self.assertEqual(tl.naps(1), [])
-        self.assertLess(time.perf_counter() - t, 1.0)   # catches an inline 1.5s fetch, not a benchmark; 0.05 flaked under load
+        self.assertTrue(self.refreshed.wait(3))
+        # Inline fetch = fetch ran on the caller's thread (no elapsed-time bound: that flaked under load).
+        self.assertEqual(len(self.fetch_threads), 1)
+        self.assertNotIn(threading.get_ident(), self.fetch_threads)
 
     def test_next_call_after_refresh_has_naps(self):
         tl.naps(1)

@@ -93,3 +93,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
     - ⚠Without a commit the hook never sets `end` until IDLE_S (6 h): a new request tagging the first stage within that window reuses the old run as a backward loop. Ship (commit) before starting the next request, or let the commit-free tail time out.
     - ⚠A fresh Agent dispatch to an earlier stage while a run sits on its last stage opens a new run (unless that stage's onFail goto names it); continue the same agent with SendMessage to stay in the run.
   - ⚠Main's `Bash(run_in_background)` leaves no sub row — an idle-looking session with one shows the stage as done. Do not "fix" it by trusting the stored «run» again.
+- ★**Tests built on the real clock drift with the date and the time zone** (#22). Fixtures from `time.time()` against a module that also reads the clock, fixed ISO stamps against a moving `now`, and the live boot time each let a test pass today and fail later or under another `TZ`.
+  - ⇒ `tests/_clock.py`: `frozen(*mods)` swaps each module's `time`/`datetime` for `NOW`; fixtures derive from `NOW`; temp files get `os.utime(p, (NOW, NOW))`; `agents.boot_time` is stubbed.
+  - ⚠`from time import time` is not covered by `frozen` — patch that name. Run touched tests under `TZ=Asia/Seoul` and `TZ=UTC`.
+  - ⚠A module whose wait loop computes a `time.time()` deadline never times out under `frozen` (the test waits for the stub instead) — give it a ticking clock that starts at `NOW` and advances by `time.monotonic()` (`tests/test_sessions_cached.py` `_TickingTime`).

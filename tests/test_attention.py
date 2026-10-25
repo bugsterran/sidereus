@@ -5,15 +5,17 @@ failures._FAIL_EV/_FAIL_LOCK are swapped for private objects per test.
 """
 import json
 import threading
-import time
 import unittest
 from datetime import datetime
 
+from tests import _clock
+from tests._clock import NOW
 from tests._load import sidereus
 
 att = sidereus("attention")
 fl = sidereus("failures")
 parse = sidereus("parse")
+cards = sidereus("cards")
 
 ROW_KEYS = {"sid", "cwd", "project", "branch", "score", "why", "since", "sigs"}
 SIG_KEYS = {"k", "why", "pts", "since"}
@@ -36,8 +38,11 @@ class Base(unittest.TestCase):
         fl._FAIL_EV, fl._FAIL_LOCK, fl._WRECK_AT = {}, threading.Lock(), {}
         att._TF.update(at=0.0, idx={})
         self._cf, att._conflicts = att._conflicts, (lambda rows, now: [])   # no live transcript scan
+        self._clk = _clock.frozen(att, fl, cards)   # card windows and ages are computed against _clock.NOW
+        self._clk.__enter__()
 
     def tearDown(self):
+        self._clk.__exit__(None, None, None)
         fl._FAIL_EV, fl._FAIL_LOCK, fl._WRECK_AT = self._ev, self._lk, self._wa
         att._conflicts = self._cf
         att._TF.update(at=0.0, idx={})
@@ -83,7 +88,7 @@ class TestPoints(Base):
             sess("ask", cwd="/w/ask", state="ask"),
             sess("blocked", cwd="/w/bl", blocked="권한 대기"),
         ]
-        cards = [{"kind": "bgdone", "cwd": "/w/p", "at": iso(time.time() - 60), "project": "p"}]
+        cards = [{"kind": "bgdone", "cwd": "/w/p", "at": iso(NOW - 60), "project": "p"}]
         out = self.run_att(rows, cards)
         self.assertEqual([r["sid"] for r in out],
                          ["blocked", "ask", "abort", "ctx95", "wreck", "stall", "loop", "ctx85", "done", "bg"])
@@ -172,27 +177,27 @@ class TestStall(Base):
 
 class TestCards(Base):
     def test_fail_card_by_cwd_prefix(self):
-        now = time.time()
+        now = NOW
         c = {"kind": "fcheck", "cwd": "/w/p/sub/dir", "at": iso(now - 60)}
         row = self.one(sess("a", cwd="/w/p"), [c])
         self.assertEqual(row["sigs"][0]["k"], "fail")
         self.assertEqual(row["why"], "원인 확인 필요")
 
     def test_prefix_is_path_boundary(self):
-        c = {"kind": "fcheck", "cwd": "/w/pother", "at": iso(time.time() - 60)}
+        c = {"kind": "fcheck", "cwd": "/w/pother", "at": iso(NOW - 60)}
         self.assertIsNone(self.one(sess("a", cwd="/w/p"), [c]))
 
     def test_fail_card_expires_after_30min(self):
-        c = {"kind": "flimit", "cwd": "/w/p", "at": iso(time.time() - 1900)}
+        c = {"kind": "flimit", "cwd": "/w/p", "at": iso(NOW - 1900)}
         self.assertIsNone(self.one(sess("a", cwd="/w/p"), [c]))
 
     def test_fail_attached_to_most_recent_session(self):
-        c = {"kind": "fcut", "cwd": "/w/p", "at": iso(time.time() - 60)}
+        c = {"kind": "fcut", "cwd": "/w/p", "at": iso(NOW - 60)}
         out = self.run_att([sess("old", cwd="/w/p", age=500), sess("new", cwd="/w/p", age=20)], [c])
         self.assertEqual([r["sid"] for r in out], ["new"])
 
     def test_same_kind_cards_fold(self):
-        now = time.time()
+        now = NOW
         cards = [{"kind": k, "cwd": "/w/p", "at": iso(now - s)} for k, s in
                  (("fcheck", 300), ("fcut", 200), ("fwreck", 100))]
         row = self.one(sess("a", age=400), cards)     # last activity before every card
@@ -202,7 +207,7 @@ class TestCards(Base):
         self.assertEqual(row["since"], int(datetime.fromisoformat(iso(now - 300)).timestamp()))
 
     def test_bgdone_fold_and_read_filter(self):
-        now = time.time()
+        now = NOW
         a1, a2 = iso(now - 100), iso(now - 50)
         cards = [{"kind": "agent", "cwd": "/w/p", "at": a1, "project": "p"},
                  {"kind": "bgdone", "cwd": "/w/p", "at": a2, "project": "p"}]
@@ -219,7 +224,7 @@ class TestCards(Base):
         # The row's «Seen» posts sig.keys to /api/cards/read -> mark_cards_read; the next attention() has no bgdone.
         import os, tempfile
         cards_mod = sidereus("cards")
-        now = time.time()
+        now = NOW
         a1, a2 = iso(now - 100), iso(now - 50)
         cards = [{"kind": "agent", "cwd": "/w/p", "at": a1, "project": "p"},
                  {"kind": "agent", "cwd": "/w/p", "at": a2, "project": "p"}]
@@ -241,7 +246,7 @@ class TestBgdoneResume(Base):
     """bgdone cards clear once the owning session carries on past the completion (as the failure family)."""
 
     def card(self, ago, kind="agent", **kw):
-        c = {"kind": kind, "cwd": "/w/p", "at": iso(time.time() - ago), "project": "p"}
+        c = {"kind": kind, "cwd": "/w/p", "at": iso(NOW - ago), "project": "p"}
         c.update(kw)
         return c
 
@@ -264,7 +269,7 @@ class TestResume(Base):
     """★2026-09-28: failure-card signals clear once the same session carries on past the failure."""
 
     def card(self, ago, **kw):
-        c = {"kind": "fcut", "cwd": "/w/p", "at": iso(time.time() - ago)}
+        c = {"kind": "fcut", "cwd": "/w/p", "at": iso(NOW - ago)}
         c.update(kw)
         return c
 
@@ -283,13 +288,13 @@ class TestResume(Base):
 
     def test_sleep_gap_then_resume_clears(self):
         # failure 3000s ago, Mac asleep, card stamped on wake 300s ago; session worked 1000s ago (pre-sleep) and again now
-        now = time.time()
+        now = NOW
         fl._FAIL_EV["/t/p.jsonl"] = [{"at": now - 3000, "kind": "agent", "tid": "t1", "cwd": "/w/p"}]
         self.assertEqual(self.kinds(sess("a", age=1000), [self.card(300, tid="t1")]), [])
         self.assertIsNone(self.one(sess("a", age=5), [self.card(300, tid="t1")]))
 
     def test_sleep_gap_no_resume_stays(self):
-        now = time.time()
+        now = NOW
         fl._FAIL_EV["/t/p.jsonl"] = [{"at": now - 3000, "kind": "agent", "tid": "t1", "cwd": "/w/p"}]
         self.assertEqual(self.kinds(sess("a", age=4000), [self.card(300, tid="t1")]), ["fail"])
 
@@ -297,7 +302,7 @@ class TestResume(Base):
         self.assertEqual(self.kinds(sess("a", age=5), [self.card(600, sid="zz")]), ["fail"])
 
     def test_wreck_clears_after_activity(self):
-        now = time.time()
+        now = NOW
         fl._WRECK_AT["/w/p"] = now - 600
         self.assertEqual(self.kinds(sess("a", age=900, wreck=2)), ["wreck"])
         self.assertEqual(self.kinds(sess("a", age=100, wreck=2)), [])
@@ -316,18 +321,18 @@ class TestToolfail(Base):
             self.assertIn(p, att._TF_BENIGN)
 
     def test_five_distinct_benign_none(self):
-        now = time.time()
+        now = NOW
         for i, sg in enumerate(("Exit code 1", "File does not exist.", "EISDIR: x", "Cancelled", "Blocked: sleep")):
             self.tool_ev("/w/p", sg, [now - 10 - i])
         self.assertEqual(att._toolfail_idx(now), {})
 
     def test_many_identical_benign_none(self):
-        now = time.time()
+        now = NOW
         self.tool_ev("/w/p", "Exit code 1", [now - i for i in range(10)])
         self.assertEqual(att._toolfail_idx(now), {})
 
     def test_four_identical_signal(self):
-        now = time.time()
+        now = NOW
         self.tool_ev("/w/p", "InputValidationError: Grep failed due to x", [now - 500, now - 300, now - 100, now - 30])
         idx = att._toolfail_idx(now)
         self.assertEqual(idx["/w/p"][0][:2], (4, "Grep"))
@@ -337,22 +342,22 @@ class TestToolfail(Base):
         self.assertEqual(row["score"], 45)
 
     def test_three_identical_none(self):
-        now = time.time()
+        now = NOW
         self.tool_ev("/w/p", "### Error: boom", [now - 100, now - 50, now - 10])
         self.assertEqual(att._toolfail_idx(now), {})
 
     def test_last_older_than_3min_none(self):
-        now = time.time()
+        now = NOW
         self.tool_ev("/w/p", "### Error: boom", [now - 500, now - 400, now - 300, now - 200])
         self.assertEqual(att._toolfail_idx(now), {})
 
     def test_outside_10min_not_counted(self):
-        now = time.time()
+        now = NOW
         self.tool_ev("/w/p", "### Error: boom", [now - 700, now - 100, now - 50, now - 10])
         self.assertEqual(att._toolfail_idx(now), {})
 
     def test_mcp_tool_name_and_done_session_skipped(self):
-        now = time.time()
+        now = NOW
         self.tool_ev("/w/p", "### Error: boom", [now - 40, now - 30, now - 20, now - 10])
         self.assertEqual(att._toolfail_idx(now)["/w/p"][0][1], "MCP")
         self.assertIsNone(self.one(sess("a", state="done")))
@@ -420,7 +425,7 @@ class TestMetadataOnly(Base):
     SECRET = "ZZSECRET_42"
 
     def test_no_text_leaks_and_allowed_keys(self):
-        now = time.time()
+        now = NOW
         s = sess("a", state="ask", ctx=96, win=100, wreck=1, rep={"n": 9, "tool": "Bash"},
                  task="task " + self.SECRET, reply="reply " + self.SECRET, last=self.SECRET,
                  title=self.SECRET, targ=self.SECRET)
@@ -443,22 +448,23 @@ class TestMetadataOnly(Base):
 
 class TestExtAskCap(Base):
     """A pending external-CLI request never ages out of attention; only a dead pid (gone) removes it."""
-    NOW = 1_800_000_000.0
+    NOW = NOW
 
     def setUp(self):
         super().setUp()
         ext = self.ext = sidereus("ext")
-        names = ("_ext", "time", "ext_gone_check", "_ext_prune_locked", "ext_tok_refresh", "ext_tok")
+        names = ("_ext", "ext_gone_check", "_ext_prune_locked", "ext_tok_refresh", "ext_tok")
         self._saved = {n: getattr(ext, n) for n in names}
-        now = self.NOW
+        self._eclk = _clock.frozen(ext)
+        self._eclk.__enter__()
         ext._ext = {}
-        ext.time = type("T", (), {"time": staticmethod(lambda: now)})
         ext.ext_gone_check = lambda now: None
         ext._ext_prune_locked = lambda now: None
         ext.ext_tok_refresh = lambda plat, sid, tp: None
         ext.ext_tok = lambda plat, sid: {}
 
     def tearDown(self):
+        self._eclk.__exit__(None, None, None)
         for n, v in self._saved.items():
             setattr(self.ext, n, v)
         super().tearDown()
@@ -504,7 +510,7 @@ class TestClaudePendingAge(Base):
 
     def test_blocked_any_age(self):
         for ago in self.AGES:
-            r = sess("b", state="tool", age=ago, blocked="Edit waiting for approval", blockedAt=int(time.time() - ago))
+            r = sess("b", state="tool", age=ago, blocked="Edit waiting for approval", blockedAt=int(NOW - ago))
             rows = self.run_att([sess("c", state="ask", age=5), r])
             self.assertEqual((rows[0]["sid"], rows[0]["sigs"][0]["k"]), ("b", "blocked"), ago)
 
@@ -543,6 +549,14 @@ class TestBlockedAt(Base):
     def test_transcript_blocked_has_no_ep(self):
         row = self.one(sess("a", state="tool", age=40, blocked="Edit waiting for approval"))
         self.assertNotIn("ep", next(s for s in row["sigs"] if s["k"] == "blocked"))
+
+
+class TestFrozenRestores(unittest.TestCase):
+    def test_time_restored_on_exit(self):
+        import time as real
+        with _clock.frozen(att):
+            self.assertEqual(att.time.time(), NOW)
+        self.assertIs(att.time, real)
 
 
 if __name__ == "__main__":

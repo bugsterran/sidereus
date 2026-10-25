@@ -29,3 +29,16 @@ bash tests/run.sh                                     # all
 - Loader: `load()` in `tests/_load.py` · `sidereus("burn")` — runs the importlib recipe above only once.
 - ⚠Tests never use live files, the clock or the network — monkeypatch the module attributes of any function that reads or writes.
 - Always `/usr/bin/python3` (3.9.6, what launchd runs).
+
+## Frozen clock
+
+```python
+from tests import _clock
+from tests._clock import NOW                      # 2026-01-01T00:00:00Z
+with _clock.frozen(att, fl, cards):               # or @_clock.frozen(att) on a test method
+    ...                                           # att.time.time() == NOW, att.datetime.now() == local time of NOW
+```
+
+- Freeze **every module that reads the clock** on the path under test (check its `import time` / `from datetime import datetime`) and build fixtures from `NOW`, never `time.time()`.
+- ⚠`from time import time` holds the function itself — `frozen` cannot reach it; patch that name directly.
+- ⚠Temp-file fixtures compared by mtime: `os.utime(p, (NOW, NOW))`, and stub live system reads such as `agents.boot_time`.

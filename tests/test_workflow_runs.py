@@ -8,6 +8,8 @@ import time
 import unittest
 from unittest import mock
 
+from tests import _clock
+from tests._clock import NOW
 from tests._load import load, sidereus
 
 load()
@@ -42,7 +44,7 @@ class WorkflowRuns(unittest.TestCase):
         self.sd = os.path.join(self.proj, SID)
         self.rd = os.path.join(self.sd, "subagents", "workflows", "wf_abc123-d10")
         os.makedirs(self.rd)
-        now = time.time()
+        now = NOW
         with open(self.sd + ".jsonl", "w", encoding="utf-8") as f:        # parent transcript: the launch result names the script
             f.write(json.dumps({"type": "user", "message": {"content": [{"type": "tool_result", "content":
                     "Transcript dir: %s\nScript file: /repo/.claude/workflows/sidereus-change.js\nRun ID: wf_abc123-d10"
@@ -67,6 +69,15 @@ class WorkflowRuns(unittest.TestCase):
         ag._WF_NAME.clear()
         ag._WF_JOURNAL.clear()
         self.files = {aid: os.path.join(self.rd, "agent-%s.jsonl" % aid) for aid in ("a1", "a2", "a3")}
+        for dp, _, fs in os.walk(self.root):        # liveness is mtime vs now: stamp the fixture at _clock.NOW
+            for n in fs:
+                os.utime(os.path.join(dp, n), (NOW, NOW))
+        clk = _clock.frozen(ag, S, T, UI, CL, FS, WM, sidereus("attention"))
+        clk.__enter__()
+        self.addCleanup(clk.__exit__, None, None, None)
+        # ⚠boot_time() reads the live kern.boottime; a fixture stamped at _clock.NOW predates it and reads as orphaned
+        boot, ag.boot_time = ag.boot_time, (lambda: 0.0)
+        self.addCleanup(setattr, ag, "boot_time", boot)
 
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)
@@ -113,19 +124,19 @@ class WorkflowRuns(unittest.TestCase):
     def test_session_payload_is_metadata_only(self):
         idx = {"files": {self.files["a1"]: {"h": {"1": {"m": [1, 2, 3, 4]}}}}}
         with mock.patch.object(S, "_uidx", idx):
-            rows = S._wf_sets(self.sd + ".jsonl", time.time(), False)[0]
+            rows = S._wf_sets(self.sd + ".jsonl", NOW, False)[0]
         blob = json.dumps(rows)
         self.assertNotIn(SECRET, blob)
         self.assertNotIn("_file", blob)
         self.assertNotIn(self.rd, blob)
         self.assertEqual(rows[0]["tok"], 10)
-        self.assertEqual(S._wf_sets(self.sd + ".jsonl", time.time(), True)[0], [])   # dead session: nothing running
+        self.assertEqual(S._wf_sets(self.sd + ".jsonl", NOW, True)[0], [])   # dead session: nothing running
 
     def test_finished_run_leaves_the_tree(self):
-        old = time.time() - 3600
+        old = NOW - 3600
         for p in list(self.files.values()) + [os.path.join(self.rd, "journal.jsonl")]:
             os.utime(p, (old, old))
-        self.assertEqual(S._wf_sets(self.sd + ".jsonl", time.time(), False)[0], [])
+        self.assertEqual(S._wf_sets(self.sd + ".jsonl", NOW, False)[0], [])
 
     def _age_all(self, t):
         for dp, _, fs in os.walk(os.path.join(self.sd, "subagents", "workflows")):
@@ -171,7 +182,7 @@ class WorkflowRuns(unittest.TestCase):
     def test_running_workflow_is_not_the_humans_turn(self):
         # Parent ended its turn (`wait`) right after the Workflow launch; the run is still live -> no "done" signal.
         att = sidereus("attention")
-        now = time.time()
+        now = NOW
         row = {"sid": SID, "cwd": "/Users/demo/repo", "state": "wait", "ageSec": 600, "sub": [], "bgs": [],
                "wf": S._wf_sets(self.sd + ".jsonl", now, False)[0]}
         self.assertTrue(row["wf"] and row["wf"][0]["run"])
@@ -184,7 +195,7 @@ class WorkflowRuns(unittest.TestCase):
         self.assertIn("done", [s["k"] for s in att._row_sigs(row, now)])
 
     def test_timeline_rows(self):
-        rows = T._tl_wf_rows(self.sd, SID[:8], time.time() - 3600, "repo", "/Users/demo/repo")
+        rows = T._tl_wf_rows(self.sd, SID[:8], NOW - 3600, "repo", "/Users/demo/repo")
         run, kids = rows[0], rows[1:]
         self.assertEqual(run["kind"], "wf")
         self.assertNotIn("_tk", run)                                    # children carry the token list

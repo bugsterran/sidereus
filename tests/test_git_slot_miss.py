@@ -33,11 +33,18 @@ class GitStateSlotMiss(unittest.TestCase):
     def test_saturated_returns_previous_immediately_uncached(self):
         cwd = self.td.name
         gi._git_cache[cwd] = (time.time() - 100, "↑2 ~1", 20)     # expired entry with a real answer
-        for _ in range(gi.GIT_MAX_PROCS):
-            gi._GIT_SEM.acquire()
-        t0 = time.time()
+        waits = []
+
+        class FullSem:                                            # saturated slots; records every acquire timeout
+            def acquire(self, blocking=True, timeout=None):
+                waits.append(timeout)
+                return False
+
+            def release(self):
+                raise AssertionError("release without acquire")
+        gi._GIT_SEM = FullSem()
         self.assertEqual(gi._git_state(cwd), "↑2 ~1")
-        self.assertLess(time.time() - t0, 1.0)                    # no slot wait (GIT_WAIT_S=10), not a benchmark; 0.2 flaked under load
+        self.assertEqual(waits, [0])                              # one non-blocking probe, never a GIT_WAIT_S slot wait
         self.assertEqual(gi._git_cache[cwd][1], "↑2 ~1")
         self.assertLess(gi._git_cache[cwd][0], time.time() - 50)  # entry not refreshed -> next poll retries
 

@@ -6,14 +6,20 @@ import json
 import os
 import shutil
 import tempfile
-import time
 import unittest
 from datetime import datetime, timezone
 
+from tests import _clock
 from tests._load import sidereus
 
 fo = sidereus("file_owner")
 att = sidereus("attention")
+
+
+def _freeze(case):
+    fz = _clock.frozen(fo, att)
+    fz.__enter__()
+    case.addCleanup(fz.__exit__, None, None, None)
 
 
 def utc(ts):
@@ -40,7 +46,8 @@ class Base(unittest.TestCase):
                                          "files": [{"st": "M", "path": p} for p in self.dirty]})
         fo._FO.update(at=0.0, off={}, per={}, who={})
         fo._FO_GIT.clear()
-        self.now = time.time()
+        self.now = _clock.NOW
+        _freeze(self)
 
     def tearDown(self):
         fo.CLAUDE_PROJECTS, fo.wt_files = self._saved
@@ -207,7 +214,8 @@ class TestConflict(Base):
 class TestAttentionSignal(unittest.TestCase):
     def setUp(self):
         self._cf = att._conflicts
-        self.now = time.time()
+        self.now = _clock.NOW
+        _freeze(self)
 
     def tearDown(self):
         att._conflicts = self._cf
