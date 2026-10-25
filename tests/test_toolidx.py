@@ -493,3 +493,57 @@ class ToolIdxReindexTest(unittest.TestCase):
         sidereus("toolidx_fmt").sorted = guard
         ti._reindex()
         self.assertEqual(len(ti._TI_SEEN), 60 * 300 + 25)
+
+
+class ToolIdxStreamSaveTest(unittest.TestCase):
+    """`_save` streams the snapshot row by row (#26): same bytes as one joined string, no partial file on failure."""
+    _write = staticmethod(ToolIdxTest._write)
+    setUp, tearDown = ToolIdxDiskTest.setUp, ToolIdxDiskTest.tearDown
+
+    def _fill(self, n):
+        from array import array
+        k = [ti._kid("tool:T%d" % i) for i in range(20)]
+        for i in range(n):
+            e = ti._new_ent(100 + i, 100 + i)
+            e["ids"], e["ts"] = array("q", range(i * 4, i * 4 + 4)), array("d", [NOW - i] * 4)
+            e["ki"], e["fail"] = array("I", [k[(i + j) % 20] for j in range(4)]), {"k%d" % i: (1.0, "E")} if i % 5 == 0 else {}
+            ti._TI_FILES[os.path.join(self.tmp, "-p", "s%d.jsonl" % i)] = e
+        ti._TI_STATE["dirty"], ti._TI_STATE["saved"] = True, -1e9
+
+    def test_bytes_identical_to_joined(self):
+        self._fill(300)
+        rows = ti._snapshot(NOW)
+        ti._save(rows)
+        with open(ti.TI_CACHE, "rb") as f:
+            self.assertEqual(f.read(), ("\n".join(rows) + "\n").encode("utf-8"))
+        self.assertEqual(os.stat(ti.TI_CACHE).st_mode & 0o777, 0o600)
+
+    def test_failed_write_keeps_previous_cache(self):
+        with open(ti.TI_CACHE, "rb") as f:
+            before = f.read()
+
+        def rows():
+            yield '{"v":%d}' % ti.TI_CACHE_V
+            raise OSError("disk full")
+        warned, real = [], ti.warn_once
+        ti.warn_once = lambda k, *a, **kw: warned.append(k)
+        try:
+            ti._save(rows())
+        finally:
+            ti.warn_once = real
+        with open(ti.TI_CACHE, "rb") as f:
+            self.assertEqual(f.read(), before)
+        self.assertEqual((warned, [n for n in os.listdir(self.tmp) if n.startswith(".toolidx-")]), (["toolidx-save"], []))
+
+    def test_save_peak_is_not_the_whole_file(self):
+        import tracemalloc
+        self._fill(3000)
+        rows = ti._snapshot(NOW)
+        size = sum(len(r) + 1 for r in rows)
+        tracemalloc.start()
+        try:
+            ti._save(rows)
+            peak = tracemalloc.get_traced_memory()[1]
+        finally:
+            tracemalloc.stop()
+        self.assertLess(peak, size // 4)          # joined str + encoded bytes was ~2x size

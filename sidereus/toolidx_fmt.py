@@ -1,10 +1,14 @@
 """Pure helpers for the toolidx disk cache (no toolidx globals): packed-array codec, cache path spelling, hook digest, id sort."""
 import base64
+import contextlib
 import hashlib
 import heapq
 import os
 import sys
+import tempfile
+import time
 from array import array
+from sidereus import bus
 
 
 def _num(x):
@@ -57,6 +61,30 @@ def _merge_sorted(arrays, chunk):
         out.append(x)
         prev = x
     return out, dup
+
+
+def _write_rows(path, rows, prefix):
+    """Stream `rows` (str, one per line) to a 0600 tmp in `path`'s folder and swap it in like `bus._atomic_write`.
+    ⚠Never join/encode the whole snapshot (★2026-10-25 #26: join 50.3 MB + encode ~50 MB on a ~50 MB cache,
+    save peak 265 MB traced vs ~110 MB before it; boot RSS peak 317-442 MB at t~3.6 s). On failure tmp is removed, error re-raised."""
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path) or ".", prefix=prefix)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            for ln in rows:
+                f.write(ln.encode("utf-8"))
+                f.write(b"\n")
+        for i in range(bus._ATOMIC_TRIES):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:     # ⚠Windows: target open elsewhere
+                if i == bus._ATOMIC_TRIES - 1:
+                    raise
+                time.sleep(bus._ATOMIC_WAIT)
+    except BaseException:
+        with contextlib.suppress(OSError):     # tmp already gone; the original error is re-raised
+            os.unlink(tmp)
+        raise
 
 
 def hook_hash(cmd):
