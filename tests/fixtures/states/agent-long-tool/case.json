@@ -1,0 +1,10 @@
+{
+ "ages": {
+  "11111111-0000-4000-8000-000000000001.jsonl": 600,
+  "subagents/agent-a1b2c3d4.jsonl": 180,
+  "subagents/agent-a1b2c3d4.meta.json": 590
+ },
+ "busy": null,
+ "guards": "a subagent quiet on a long tool keeps busy=1 (agents._agent_busy)",
+ "os": "mac"
+}

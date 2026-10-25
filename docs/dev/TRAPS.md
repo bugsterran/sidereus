@@ -7,7 +7,7 @@ Do not step on these again. One file per area under [traps/](traps/); read the a
 | [traps/arch.md](traps/arch.md) | Structure tab: architecture map, flows, arch_verify, Size treemap, language plug-ins | 74 |
 | [traps/timeline.md](traps/timeline.md) | Timeline rows, bars, sleep/idle bands, replay, «Changes» rail | 44 |
 | [traps/quota.md](traps/quota.md) | Quota, burndown, saver mode, token and usage accounting | 91 |
-| [traps/sessions.md](traps/sessions.md) | Session state, subagents, external CLIs, permission badges, work-log popup and diff window | 51 |
+| [traps/sessions.md](traps/sessions.md) | Session state, subagents, external CLIs, permission badges, work-log popup and diff window | 52 |
 | [traps/pipeline.md](traps/pipeline.md) | Pipeline runs, `pl_flow` stage hooks, stage lighting, gates, evaluation | 48 |
 | [traps/git.md](traps/git.md) | Branch tab, board, git, worktrees, History and retro tabs | 20 |
 | [traps/attention.md](traps/attention.md) | Alarms, cards, health strip, attention ranking | 21 |

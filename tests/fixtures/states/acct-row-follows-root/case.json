@@ -1,0 +1,19 @@
+{
+ "accounts": [
+  {
+   "label": "main",
+   "primary": true
+  },
+  {
+   "label": "work",
+   "primary": false
+  }
+ ],
+ "ages": {
+  "55555555-0000-4000-8000-000000000005.jsonl": 100
+ },
+ "busy": null,
+ "guards": "a transcript under a non-primary root carries that account (claude_roots.root_of)",
+ "os": "mac",
+ "root": "work"
+}

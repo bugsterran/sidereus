@@ -1,0 +1,12 @@
+{
+ "cwd": {
+  "404": "/nonexistent-sidereus/demo"
+ },
+ "procs": [
+  [
+   "404",
+   "1",
+   "claude"
+  ]
+ ]
+}
