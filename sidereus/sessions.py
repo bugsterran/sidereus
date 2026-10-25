@@ -4,7 +4,8 @@ import os
 import re
 import threading
 import time
-from sidereus.config import DATA_DIR
+from sidereus.config import DATA_DIR, IS_MAC
+from sidereus.live_probe import agent_view_unknown
 from sidereus import claude_roots
 from sidereus.warn import warn_once
 from sidereus.transcript import _model_label, _tail_lines
@@ -411,6 +412,8 @@ def _sessions(max_age_h, cap):
     try:
         now = time.time()
         live = live_cwds()
+        # ⚠Off macOS `live` is only the accounts whose `claude agents` answered — a failed account's rows are not provably ended.
+        blind = agent_view_unknown() if not IS_MAC else set()
         # ★Transcripts dropped by age are revived if their path is alive (see _recent_transcripts comment below)
         # ★Assign per-path live slots starting from the newest transcript (_recent_transcripts is newest first).
         #   With 2 processes only the newest 2 count as alive; the rest are frozen as ended.
@@ -442,6 +445,12 @@ def _sessions(max_age_h, cap):
                     _parse_cache.put(fp, (key, p, time.time()))
             cwd = p.get("cwd") or ""
             stale = False
+            if blind and (_row_acct(p.get("sid") or os.path.basename(fp)[:-6], fp).get("acct") or "") in blind:
+                row = _session_row(fp, mt, now, None, p, False)   # live None -> Unknown (or ask), never done
+                _note_bg_done(fp, row)
+                out.append(row)
+                said.append({"task": p.get("task") or ""})
+                continue
             if sid_alive(p.get("sid")):
                 pass                     # confirmed by id — neither uses nor loses a path slot
             elif p.get("contd") and isinstance(live, dict) and cwd in live:
