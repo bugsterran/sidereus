@@ -452,3 +452,44 @@ class ToolIdxDiskTest(unittest.TestCase):
         ti.reset()
         ti.tool_uses(30, now=NOW)
         self.assertFalse(os.path.exists(ti.TI_CACHE))
+
+
+class ToolIdxReindexTest(unittest.TestCase):
+    """`_reindex` builds `_TI_SEEN`/`_TI_DUP` from sorted runs, never one list of every id (#26)."""
+    def setUp(self):
+        import random
+        from array import array
+        self.saved_chunk = ti.TI_SORT_CHUNK
+        ti.reset()
+        rnd = random.Random(7)
+        for i in range(60):
+            ti._TI_FILES["f%d" % i] = {"ids": array("q", (rnd.getrandbits(63) - (1 << 62) for _ in range(300)))}
+        ti._TI_FILES["dup"] = {"ids": array("q", list(ti._TI_FILES["f0"]["ids"][:20]) + list(ti._TI_FILES["f9"]["ids"][:5]))}
+
+    def tearDown(self):
+        ti.TI_SORT_CHUNK = self.saved_chunk
+        vars(sidereus("toolidx_fmt")).pop("sorted", None)
+        ti.reset()
+
+    def test_same_as_full_sort(self):
+        from itertools import chain, islice
+        s = sorted(chain.from_iterable(e["ids"] for e in ti._TI_FILES.values()))
+        dup = set(a for a, b in zip(s, islice(s, 1, None)) if a == b)
+        ti.TI_SORT_CHUNK = 512
+        ti._TI_NEW.add(1)
+        ti._reindex()
+        self.assertEqual((list(ti._TI_SEEN), ti._TI_DUP, ti._TI_NEW, len(dup)), (s, dup, set(), 25))
+
+    def test_never_sorts_every_id_at_once(self):
+        ti.TI_SORT_CHUNK = 512
+        lim = 512 + 300                         # one run may overshoot by at most one file
+
+        import builtins
+
+        def guard(it):
+            out = builtins.sorted(it)
+            assert len(out) <= lim, len(out)
+            return out
+        sidereus("toolidx_fmt").sorted = guard
+        ti._reindex()
+        self.assertEqual(len(ti._TI_SEEN), 60 * 300 + 25)

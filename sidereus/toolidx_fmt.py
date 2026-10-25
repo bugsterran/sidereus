@@ -1,6 +1,7 @@
-"""Pure helpers for the toolidx disk cache (no toolidx globals): packed-array codec, cache path spelling, hook digest."""
+"""Pure helpers for the toolidx disk cache (no toolidx globals): packed-array codec, cache path spelling, hook digest, id sort."""
 import base64
 import hashlib
+import heapq
 import os
 import sys
 from array import array
@@ -35,6 +36,27 @@ def _canon(fp, pre, rpre):
         return fp
     rp = os.path.realpath(fp)
     return pre + rp[len(rpre):] if rp.startswith(rpre) else fp
+
+
+def _merge_sorted(arrays, chunk):
+    """Id arrays -> (one sorted array("q"), set of ids seen twice+), via sorted runs of ~`chunk` ids + heapq.merge.
+    ⚠Never `sorted()` every id at once (★#26, 1.5M ids: peak 77 -> 25 MB traced, 1.19 -> 1.30 s)."""
+    runs, buf = [], array("q")
+    for a in arrays:
+        buf.extend(a)
+        if len(buf) >= chunk:
+            runs.append(array("q", sorted(buf)))
+            buf = array("q")
+    if buf:
+        runs.append(array("q", sorted(buf)))
+    del buf
+    out, dup, prev = array("q"), set(), None
+    for x in heapq.merge(*runs):
+        if x == prev:
+            dup.add(x)
+        out.append(x)
+        prev = x
+    return out, dup
 
 
 def hook_hash(cmd):
