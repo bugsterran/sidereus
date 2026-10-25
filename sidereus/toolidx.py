@@ -20,13 +20,12 @@ from array import array
 from bisect import bisect_left
 from itertools import chain
 from sidereus.config import DATA_DIR
-from sidereus.bus import _atomic_write
 from sidereus.warn import warn_once
 from sidereus import boot_queue
 from sidereus.transcript import CLAUDE_PROJECTS, iso_epoch
 from sidereus.agents import sub_globs
 from sidereus.claude_roots import projects_dirs
-from sidereus.toolidx_fmt import _arr, _b64, _canon, _merge_sorted, _num, hook_hash   # hook_hash re-exported for harness
+from sidereus.toolidx_fmt import _arr, _b64, _canon, _merge_sorted, _num, _write_rows, hook_hash   # hook_hash re-exported for harness
 
 TI_MAX_DAYS = 90             # widest window the screen can ask for; older files are not read
 TI_TTL_S = 30                # result cache per `days`
@@ -355,14 +354,13 @@ def _ent_row(fp, ent):
 
 
 def _snapshot(now):
-    """Bytes to persist (call under the lock, only when caught up), or None when unchanged / saved recently."""
+    """Lines to persist (call under the lock, only when caught up), or None when unchanged / saved recently."""
     if not (_disk_ok() and _TI_STATE["dirty"]) or 0 <= now - _TI_STATE["saved"] < TI_SAVE_S:
         return None
     _TI_STATE["dirty"], _TI_STATE["saved"] = False, now
     # ⚠Only the primary root is persisted: extra account roots are rescanned cold after every restart.
     pre = CLAUDE_PROJECTS.rstrip(os.sep) + os.sep
-    lines = ['{"v":%d}' % TI_CACHE_V] + [_ent_row(k, v) for k, v in _TI_FILES.items() if k.startswith(pre)]
-    return ("\n".join(lines) + "\n").encode("utf-8")
+    return ['{"v":%d}' % TI_CACHE_V] + [_ent_row(k, v) for k, v in _TI_FILES.items() if k.startswith(pre)]
 
 
 def _save(data):
@@ -370,7 +368,7 @@ def _save(data):
     if data is None:
         return
     try:
-        _atomic_write(TI_CACHE, data, prefix=".toolidx-")
+        _write_rows(TI_CACHE, data, ".toolidx-")   # streamed: no whole-file string/bytes copy (#26)
     except OSError as e:
         warn_once("toolidx-save", "Could not save the tool usage cache ({err})", vars={"err": e}, soft=True)
 
