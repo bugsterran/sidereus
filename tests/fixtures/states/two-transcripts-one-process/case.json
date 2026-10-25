@@ -1,0 +1,9 @@
+{
+ "ages": {
+  "77777777-0000-4000-8000-00000000000a.jsonl": 100,
+  "77777777-0000-4000-8000-00000000000b.jsonl": 600
+ },
+ "busy": null,
+ "guards": "one claude process in a path keeps only the newest transcript live; the older one ends (sessions._live_slot slots)",
+ "os": "mac"
+}

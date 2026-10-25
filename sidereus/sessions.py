@@ -391,6 +391,22 @@ def _row_acct(sid, fp):
     return {"acct": lab, "acctDir": d} if lab else {}
 
 
+def _live_slot(cwd, acct, contd, alive, live, slots, blind):
+    """(live for the row, stale) — pure; takes one of `slots[cwd]` in place. Replayed by tests/test_state_replay.py."""
+    if blind and acct in blind:
+        return None, False       # account lookup failed: live None -> Unknown (or ask), never done
+    if alive:
+        return live, False       # confirmed by id — neither uses nor loses a path slot
+    if not isinstance(live, dict) or cwd not in live:
+        return live, False
+    if contd:
+        return live, True        # continued elsewhere (`_continued`) — leave the slot to the successor
+    if slots.get(cwd, 0) > 0:
+        slots[cwd] -= 1          # this transcript takes that process's slot
+        return live, False
+    return live, True            # slots are full — an old session of the same path
+
+
 def sessions(max_age_h=12, cap=40):
     """Work state of recently active Claude sessions. Failure does not kill the page (empty list)."""
     dflt = max_age_h == 12 and cap == 40
@@ -443,24 +459,10 @@ def _sessions(max_age_h, cap):
                 p["contd"] = _continued(fp)  # 16 KB tail, only on cache miss (file changed)
                 with _parse_lock:
                     _parse_cache.put(fp, (key, p, time.time()))
-            cwd = p.get("cwd") or ""
-            stale = False
-            if blind and (_row_acct(p.get("sid") or os.path.basename(fp)[:-6], fp).get("acct") or "") in blind:
-                row = _session_row(fp, mt, now, None, p, False)   # live None -> Unknown (or ask), never done
-                _note_bg_done(fp, row)
-                out.append(row)
-                said.append({"task": p.get("task") or ""})
-                continue
-            if sid_alive(p.get("sid")):
-                pass                     # confirmed by id — neither uses nor loses a path slot
-            elif p.get("contd") and isinstance(live, dict) and cwd in live:
-                stale = True             # continued elsewhere (`_continued`) — leave the slot to the successor
-            elif isinstance(live, dict) and cwd in live:
-                if slots.get(cwd, 0) > 0:
-                    slots[cwd] -= 1          # this transcript takes that process's slot
-                else:
-                    stale = True             # slots are full — an old session of the same path
-            row = _session_row(fp, mt, now, live, p, stale)
+            acct = (_row_acct(p.get("sid") or os.path.basename(fp)[:-6], fp).get("acct") or "") if blind else ""
+            lv, stale = _live_slot(p.get("cwd") or "", acct, p.get("contd"), sid_alive(p.get("sid")),
+                                   live, slots, blind)
+            row = _session_row(fp, mt, now, lv, p, stale)
             _note_bg_done(fp, row)          # finished ones become cards here (after the row is built, so project·cwd are known)
             out.append(row)
             said.append({"task": p.get("task") or ""})   # server-side only: end-command check in _note_transition

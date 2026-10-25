@@ -1,0 +1,9 @@
+{
+ "ages": {
+  "99999999-0000-4000-8000-00000000000a.jsonl": 100,
+  "99999999-0000-4000-8000-00000000000b.jsonl": 600
+ },
+ "busy": null,
+ "guards": "a continued transcript leaves the path slot to its successor even when written later (sessions._live_slot contd)",
+ "os": "mac"
+}
