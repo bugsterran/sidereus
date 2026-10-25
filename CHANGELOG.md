@@ -5,8 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-25
+
 ### Added
 
+- Pipelines: with two or more stages running at once (loop-backs, fan-out) and none picked, the result pane shows one card per running stage (stage, agent, running agents with «tool · ago»); a card click selects the stage like a canvas node click.
+- Pipelines: stages show what each agent does — result pane agent buttons carry the task line next to the type, and the stage header and canvas node show the agent file's one-line description.
 - Pipelines: each running stage agent in the run view shows what it is doing now — the current tool name and how long ago it last wrote («Bash · 12s», «Idle · 3m»); tool input never appears.
 - Hooks: Cursor, Codex and Gemini CLIs installed without Sidereus hooks get a «Connect» line on the first screen and in Settings › «Diagnostics»; it previews the diff, backs up the file and merges the Sidereus entries next to your own hooks (Codex then needs `/hooks` approval) (#21).
 - Hooks: Cursor CLI sessions show up through `ext_hook.py --platform cursor` — its camelCase events are mapped, the folder comes from `workspace_roots`, and `ext-hooks/cursor-hooks-example.json` is the hook file (macOS, Cursor CLI 2026.10.22). They also get a Timeline row, drawn from hook event times.
@@ -21,14 +25,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: the view follows working runs — with no working run on screen, a run that starts working (or the newest working run after a reload) is selected; while a working run is viewed, later ones only show as running; when the viewed run stops working, the newest other working run is selected. A past run picked from «Run k/N» and the Edit view are never switched.
 - Structure: a module's «Files» section is folded by default and sits last in the detail panel (after Neighbours and Flows); opened, it is a folder tree (first level, «name/ count», Expand all / Collapse all) and a file click opens it in the Source popup.
 - Server: the idle structure warm-up runs each cell in a short-lived child process that writes only the structure cache, so its memory peak no longer stays in the viewer process (#19).
+- Pipelines: finished stage agents move to a muted «Done» row below the running ones, so a two-line running button no longer sits beside a one-line finished one.
+- Structure: the architecture header badges are grouped by colour (purple, blue, grey, then amber/red); colours, text and tooltips are unchanged.
+- Timeline: the name column can be resized from any row, not only the axis row; limits and the remembered width are unchanged.
 
 ### Fixed
 
+- Sessions: on Windows and Linux an open Claude Code session no longer lists as ended — liveness comes from `claude agents` when no process list is available.
+- CLI: `doctor` and the CLI hints name the command for how Sidereus was installed — `sidereus` for a pipx/uv install, `py -m sidereus` on Windows, else `python3 -m sidereus`.
 - Security checks: tracked files marked `export-ignore` in `.gitattributes` are scanned too; the scan used to see only the export set (1156 of 1209 files in this repo).
 - Pipelines: the security gate's red check commits its fake key inside the temp clone, so it no longer reports «injected break not reported» against a scanner that reads only committed files.
 - Bell: subagent and background-task completions that happen while the viewer is down are announced after it restarts (only those after its last scan, at most 20 and 24 h, never twice).
 - Pipelines: a stage's «Agents N» counts the agents it lists, so a stage with no agent records no longer shows a number with nothing to click.
-- Quota details: switching the «Main account» repaints the burndown and saver panels at once instead of showing the previous account until the next poll.
+- Quota details: switching the «Main account» repaints the burndown, saver and quota panels (with the default-account note) at once instead of showing the previous account until the next poll.
+- Quota: an account whose usage refetch is rate-limited (HTTP 429) keeps its last numbers for up to 30 minutes instead of dropping to «not measured».
+- Pipelines: a stage agent waiting on a long tool call (e.g. a test run over 2 min) shows that tool instead of «Idle».
+- Pipelines: the «tool · ago» line under a running stage agent starts at the button's left edge instead of being centred.
+- Pipelines: a stage lists every agent, running first, so a finished sibling's work log can be opened while another agent still runs.
+- Pipelines: a run whose current stage is done by the orchestrator itself shows «orchestrator» in the running list instead of «Agents 0».
+- Server: the idle structure warm-up starts while a tab is open — only page loads and real input (pointer, keys, wheel; sent at most once per 10 s, viewer Origin only) count as activity, not timer polls (#19).
+- Attention: acknowledging a «blocked» row holds while sibling subagents come and go; a newer approval wait still shows it again.
+- Status bar: it follows a window resize as it happens instead of freezing until the drag stops.
+- MCP: `sidereus_attention` reports «blocked» sessions from permission marks (e.g. a subagent waiting for approval) like the screen does.
+- Work log: the split view refits its height on window resize instead of keeping the old height until a click.
+- Mailbox: a successful Codex mail wake no longer writes a stale daemon socket error to `.codex-wake.log`; scan errors are logged only when no daemon has the thread.
 - Work log: when the machine is too busy to confirm the request comes from your own user, the popup says «Viewer is busy — retrying…» and retries (2/4/8/16 s) instead of failing with HTTP 403; a real refusal is unchanged.
 - Timeline: the removed-lines count in the «Changes» chip is easier to read in the dark theme.
 - Settings: the saver level table's rules and notes show in Korean in the Korean UI (known hook lines are matched to fixed templates; an unknown line stays as sent).
@@ -460,7 +480,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/bugsterran/sidereus/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/bugsterran/sidereus/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/bugsterran/sidereus/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/bugsterran/sidereus/compare/v0.4.0...v0.5.0
