@@ -8,6 +8,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: screen_check needs the hard-coded Chrome path (`CHROME` env overrides it) and is not in CI; CI only curls `/` (demo smoke test).
   - ⇒ A slow first screen is caught by `check.sh --full` on a Mac, not by CI on Linux/Windows.
   - ⚠Do not read a green CI run as «first screen within 2000 ms».
+- **EXT_TTL_S must not drop a row that has a pid** (`sidereus/ext_store.py` `_ext_aged_out`).
+  - Cause: idle Cursor/Gemini CLIs still running vanished after 24 h without events. ⇒ pid rows leave only via `ext_gone_check` (dead pid -> gone -> grace).
+  - ⚠The 24 h TTL is the exit for pid-less rows only; do not re-apply it to pid rows in prune or load.
 - **Hook connect: never edit an existing Codex group** (`sidereus/hook_connect.py`, #21).
   - Cause: Codex stores approval per `event:group:entry`; changing a group re-hashes it and silently disables the user's approved hooks.
   - ⇒ Missing entries go into one new group appended per event; the reply carries `approve:"/hooks"`.
