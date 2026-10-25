@@ -18,7 +18,7 @@ import threading
 import time
 from array import array
 from bisect import bisect_left
-from itertools import chain, islice
+from itertools import chain
 from sidereus.config import DATA_DIR
 from sidereus.bus import _atomic_write
 from sidereus.warn import warn_once
@@ -26,7 +26,7 @@ from sidereus import boot_queue
 from sidereus.transcript import CLAUDE_PROJECTS, iso_epoch
 from sidereus.agents import sub_globs
 from sidereus.claude_roots import projects_dirs
-from sidereus.toolidx_fmt import _arr, _b64, _canon, _num, hook_hash   # hook_hash re-exported for harness
+from sidereus.toolidx_fmt import _arr, _b64, _canon, _merge_sorted, _num, hook_hash   # hook_hash re-exported for harness
 
 TI_MAX_DAYS = 90             # widest window the screen can ask for; older files are not read
 TI_TTL_S = 30                # result cache per `days`
@@ -69,6 +69,7 @@ _TI_SEEN = array("q")        # sorted id hashes at the last `_reindex`; with _TI
 _TI_NEW = set()              # id hashes added since the last `_reindex`
 _TI_DUP = set()              # id hashes that may sit in more than one file (only these go through `_merged`)
 TI_REINDEX_MIN = 1 << 17
+TI_SORT_CHUNK = 1 << 17      # ids per sorted run in `_reindex` (bounds its transient list)
 _INF = float("inf")
 _TI_RES = {}                 # days -> (computed at, result); only complete results are cached
 _TI_MCP = {}                 # days -> (computed at, mcp_status result)
@@ -174,13 +175,12 @@ def _kid(key):
 
 def _reindex():
     """Rebuild `_TI_SEEN`/`_TI_DUP` exactly from the files (drops ids of removed or trimmed files; call under the lock).
-    ⚠The sort makes a transient list of every id (★10-22: load peak 122 MB traced at 1.5M) — runs at load and
-      when _TI_NEW passes a quarter of _TI_SEEN, never per request."""
+    Runs at load and when _TI_NEW passes a quarter of _TI_SEEN, never per request.
+    ⚠Never `sorted()` every id at once — `_merge_sorted` (★#26: the full list was the post-boot RSS spike)."""
     global _TI_SEEN
-    s = sorted(chain.from_iterable(ent["ids"] for ent in _TI_FILES.values()))
+    _TI_SEEN, dup = _merge_sorted((ent["ids"] for ent in _TI_FILES.values()), TI_SORT_CHUNK)
     _TI_DUP.clear()
-    _TI_DUP.update(a for a, b in zip(s, islice(s, 1, None)) if a == b)
-    _TI_SEEN = array("q", s)
+    _TI_DUP.update(dup)
     _TI_NEW.clear()
 
 
