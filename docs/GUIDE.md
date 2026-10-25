@@ -73,6 +73,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - A lit stage card names its newest gate run: «gate PASS · N tests · screen a/b» or a red «gate FAIL». A stage with no gate gets an amber «Unverified» pill; «Gates n/m» counts machine-checked stages. Design and review are expected to stay unverified.
 - «Guards» (stage panel, nothing selected): gates required before `git commit` and «Max loop-backs» ([HOOKS.md](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
 - «Evaluation»: per-stage seeded-defect catch rate, red check and stability ([dev/PIPELINE.md](dev/PIPELINE.md#evaluation-seeds-red-check-flaky-gates)). «Suggestions»: «Fix it myself» fills the editor, «Ask AI» previews a request.
+  - Terms: «Catch» = share of deliberately planted defects (seeds) the stage gate caught · «Red check» = the gate was run once on a deliberately broken copy and failed, proof it can catch a defect · «Holdout» = planted defects kept out of tuning, used only to check the score is not overfit. Hover a header for the same text.
 - «Details» › «Results»: recorded check runs, newest first (with [`ev_hook.py`](HOOKS.md#ev_hookpy), test/build/lint commands from any project).
 - «Config map» (folded): hooks, rule files, agents, MCP servers, skills; click a «problems» / «to check» count to step through.
 

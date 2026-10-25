@@ -19,11 +19,13 @@ function plEvalCov(cov, ev, dirty){
   if(g && !dirty){ cov.n = g.n | 0; cov.m = g.m | 0; }
   return cov;
 }
+// Plain-language help for the panel terms (title= only: no visible text, screen baseline unchanged).
+function plEvalRedHelp(){ return T('Red check: the gate was run once on a deliberately broken copy and failed — proof it can catch a defect, not just pass'); }
 function plEvalHead(ev, open){
   if(!ev) return '';
   const k = (ev.graded && ev.graded.unred) | 0;
   const cmds = plEvalSgList(ev).filter(s => s.code === 'redcheck').map(s => s.cmd);   // tooltip: the exact red-check commands
-  return (k > 0 ? '<span class="plcov plcovlo pleunred"' + (cmds.length ? ' title="' + esc(T('red check needed') + ':\n' + cmds.join('\n')) + '"' : '') + '>' + esc(TV({msg: 'gate not red-checked {k}', vars: {k: k}})) + '</span>' : '')
+  return (k > 0 ? '<span class="plcov plcovlo pleunred" title="' + esc(plEvalRedHelp() + (cmds.length ? '\n' + T('red check needed') + ':\n' + cmds.join('\n') : '')) + '">' + esc(TV({msg: 'gate not red-checked {k}', vars: {k: k}})) + '</span>' : '')
     + '<button class="wkrgb plevb' + (open ? ' on' : '') + '" data-pleval>' + esc(T('Evaluation')) + '</button>';
 }
 const PLE_RED = { pass: 'pass', fail: 'fail', skip: 'skip' };
@@ -94,15 +96,15 @@ function plEvalPanel(ev){
   const rows = st.map(s => {
     const c = s.catch, r = PLE_RED[s.red], cmd = need[s.title];
     const cc = !c || !c.n ? '' : c.caught >= c.n ? ' class=plec-all' : c.caught > 0 ? ' class=plec-part' : ' class=plec-none';   // catch colour: all / some / none
-    return '<tr><td>' + esc(s.title) + '</td><td' + cc + '>' + (c ? esc(c.caught + '/' + c.n) + plEvalCi(s.ci) : '–') + '</td><td class="pler' + (r ? ' pler-' + r : '') + '">' + (cmd != null ? '<button type=button class=plerneed data-plecp="' + esc(cmd) + '" title="' + esc(cmd) + '">' + esc(T('red check needed')) + '</button>' : r ? '<span class=plerv>' + esc(T(r, 'redcheck')) + '</span>' : '–') + '</td><td>'
+    return '<tr><td>' + esc(s.title) + '</td><td' + cc + '>' + (c ? esc(c.caught + '/' + c.n) + plEvalCi(s.ci) : '–') + '</td><td class="pler' + (r ? ' pler-' + r : '') + '">' + (cmd != null ? '<button type=button class=plerneed data-plecp="' + esc(cmd) + '" title="' + esc(plEvalRedHelp() + '\n' + cmd) + '">' + esc(T('red check needed')) + '</button>' : r ? '<span class=plerv>' + esc(T(r, 'redcheck')) + '</span>' : '–') + '</td><td>'
       + plEvalAgree(s.agree) + (s.unstable ? '<span class=pleun>' + esc(T('unstable')) + '</span>' : '') + '</td></tr>';
   }).join('');
   const h = ev.holdout;
-  const ho = h ? '<tr class=pleho><td>' + esc(T('Holdout')) + '</td><td>' + esc(h.caught + '/' + h.n) + plEvalCi(h.ci) + '</td><td></td><td></td></tr>' : '';
+  const ho = h ? '<tr class=pleho><td title="' + esc(T('Holdout: planted defects kept out of tuning, used only to check the score is not overfit')) + '">' + esc(T('Holdout')) + '</td><td>' + esc(h.caught + '/' + h.n) + plEvalCi(h.ci) + '</td><td></td><td></td></tr>' : '';
   const empty = !st.some(s => s.catch || PLE_RED[s.red]) && !h;
   if(typeof requestAnimationFrame === 'function') requestAnimationFrame(plEvalPlace);   // placed after paintPipe writes it
   const S = typeof PLS === 'object' ? plEvalPre(plEvalState(plCur()), plEvalSgList(ev)) : { sel: {} }, sg = plEvalSgList(ev).length ? plEvalSgHtml(ev, S, plEvalCands(), typeof plCat === 'function' ? plCat() : null) : '';
-  return '<div id=plevp class="thpop plevp">' + (typeof plEvalSec === 'function' ? plEvalSec(ev.security, PLE_SEC_OPEN) : '') + '<table><tr><th>' + esc(T('Stage')) + '</th><th>' + esc(T('Catch')) + '</th><th>' + esc(T('Red check')) + '</th><th>' + esc(T('Agreement')) + '</th></tr>' + rows + ho + '</table>' + (typeof plEvalOutcome === 'function' ? plEvalOutcome(ev) : '')
+  return '<div id=plevp class="thpop plevp">' + (typeof plEvalSec === 'function' ? plEvalSec(ev.security, PLE_SEC_OPEN) : '') + '<table><tr><th>' + esc(T('Stage')) + '</th><th title="' + esc(T('Catch: share of deliberately planted defects (seeds) that this stage gate caught')) + '">' + esc(T('Catch')) + '</th><th title="' + esc(plEvalRedHelp()) + '">' + esc(T('Red check')) + '</th><th>' + esc(T('Agreement')) + '</th></tr>' + rows + ho + '</table>' + (typeof plEvalOutcome === 'function' ? plEvalOutcome(ev) : '')
     + (empty && !sg ? '<div class=hidnote>' + esc(T('No evaluation yet')) + '</div>' : '') + sg + '</div>';
 }
 // Floating under the button (popAnchor, fixed): an inline panel pushed the canvas down. ⚠Rebuilt by every repaint ⇒ re-anchored each time.

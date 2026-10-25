@@ -168,7 +168,7 @@ EV = {"ok": True, "graded": {"n": 1, "m": 4, "unred": 2, "unstable": ["<b>"]},
 def _node(body, lang="en"):
     with open(os.path.join(ROOT, "web", "js", "06-i18n-zx-eval.js"), encoding="utf-8") as fh:
         ko = fh.read()
-    fns = "\n".join(js_fn(f) for f in ("T", "TV", "plEvalCov", "plEvalHead", "plEvalCi", "plEvalAgree", "plEvalPanel", "plEvalSgList", "plEvalSgMsg",
+    fns = "\n".join(js_fn(f) for f in ("T", "TV", "plEvalCov", "plEvalRedHelp", "plEvalHead", "plEvalCi", "plEvalAgree", "plEvalPanel", "plEvalSgList", "plEvalSgMsg",
                                          "plEvalSgEn", "plEvalSgHtml", "plEvalFixBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml"))
     with open(os.path.join(ROOT, "web", "js", "48i-pipeline-eval.js"), encoding="utf-8") as fh:
         src = fh.read()
@@ -214,6 +214,25 @@ class EvalUi(unittest.TestCase):
         self.assertIn("불안정", ko)
         self.assertIn("통과", ko)
         self.assertIn("2/3 일치", ko)
+
+    def test_term_help_titles(self):   # #25: plain-language title= on «Catch»/«Red check» headers and the holdout row, ko for each
+        import re
+        q = "console.log(JSON.stringify([plEvalPanel(%s), plEvalHead(%s, false)]));" % (json.dumps(SG_EV), json.dumps(SG_EV))
+        for lang in ("en", "ko"):
+            p, h = _node(q, lang=lang)
+            for tag in (r"<th title=\"([^\"]+)\">(?:Catch|잡음)</th>", r"<th title=\"([^\"]+)\">(?:Red check|red 확인)</th>",
+                        r"<tr class=pleho><td title=\"([^\"]+)\">"):
+                m = re.search(tag, p)
+                self.assertTrue(m and m.group(1).strip(), (lang, tag))
+            red = re.search(r"<th title=\"([^\"]+)\">(?:Red check|red 확인)</th>", p).group(1)
+            self.assertIn('\'" title="' + red + "\npython3 x", p)   # «red check needed» button: meaning first, then the command
+            self.assertIn('pleunred" title="' + red + "\n", h)
+        with open(os.path.join(ROOT, "web", "js", "48i-pipeline-eval.js"), encoding="utf-8") as fh:
+            src = fh.read()
+        lits = re.findall(r"T\('((?:Red check|Catch|Holdout): [^']+)'\)", src)
+        self.assertEqual(len(lits), 3)
+        miss = _node("console.log(JSON.stringify(%s.filter(k => !I18N.ko[k])));" % json.dumps(lits), lang="ko")
+        self.assertEqual(miss, [])
 
     def test_panel_empty(self):
         e = {"stages": [{"title": "x", "catch": None, "red": "none", "unstable": False}], "holdout": None}

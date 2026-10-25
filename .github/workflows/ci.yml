@@ -47,6 +47,36 @@ jobs:
           PYTHON: ${{ steps.py.outputs.python-path }}
         run: bash tests/run.sh
 
+      - name: demo smoke test
+        # Runs even when unit tests failed: it checks a different thing (the server starts and serves the page).
+        if: success() || failure()
+        env:
+          PYTHON: ${{ steps.py.outputs.python-path }}
+        run: |
+          port=18799
+          # ⚠ Output goes to a file: an orphan holding the step's stdout keeps the step from finishing.
+          # set -m puts the job in its own process group (pgid = pid; setsid is missing on macOS) so one kill reaches the chat_server child.
+          set -m
+          "$PYTHON" -m sidereus start --demo --port "$port" > demo.log 2>&1 &
+          pid=$!
+          set +m
+          code=000
+          for i in $(seq 1 30); do
+            code=$(curl -s --max-time 5 -o page.html -w '%{http_code}' "http://127.0.0.1:$port/" || true)
+            [ "$code" = "200" ] && break
+            sleep 1
+          done
+          ok=0
+          [ "$code" = "200" ] && grep -q '<title>Sidereus' page.html && ok=1
+          kill -TERM -- "-$pid" 2>/dev/null || true
+          sleep 1
+          kill -KILL -- "-$pid" 2>/dev/null || true
+          if [ "$ok" != 1 ]; then
+            echo "demo did not serve the page (last status $code)"
+            cat demo.log
+            exit 1
+          fi
+
   windows:
     runs-on: windows-latest
     timeout-minutes: 20

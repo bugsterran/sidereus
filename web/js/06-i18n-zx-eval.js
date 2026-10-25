@@ -12,6 +12,9 @@ Object.assign(I18N.ko, {
   'No evaluation yet': '아직 평가 없음',
   'Pipeline evaluation could not be read: {e}': '파이프라인 평가를 읽지 못했습니다: {e}',   // warn_once in sidereus/pl_eval_view.py
   'red check needed': 'red 확인 필요',
+  'Red check: the gate was run once on a deliberately broken copy and failed — proof it can catch a defect, not just pass': 'red 확인: 일부러 망가뜨린 사본에 게이트를 한 번 돌려 실패한 기록 — 통과만 하는 게 아니라 결함을 잡을 수 있다는 증거',
+  'Catch: share of deliberately planted defects (seeds) that this stage gate caught': '잡음: 일부러 심은 결함(시드) 중 이 단계 게이트가 잡은 비율',
+  'Holdout: planted defects kept out of tuning, used only to check the score is not overfit': '홀드아웃: 조정에 쓰지 않고 남겨 둔 심은 결함 — 점수가 과적합되지 않았는지 확인하는 데만 쓴다',
   'Suggestions': '개선 제안',
   'Ask AI': 'AI 에게 요청',
   'Fix it myself': '직접 고치기',
