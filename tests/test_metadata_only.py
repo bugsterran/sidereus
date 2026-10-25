@@ -7,9 +7,10 @@ import json
 import os
 import shutil
 import tempfile
-import time
 import unittest
 
+from tests import _clock
+from tests._clock import NOW
 from tests._load import sidereus
 
 parse = sidereus("parse")
@@ -17,6 +18,7 @@ sessions = sidereus("sessions")
 agents = sidereus("agents")
 F = sidereus("failures")
 S = sidereus("failures_scan")
+_FROZEN = (parse, sessions, agents, F, S, sidereus("notes"), sidereus("cards"), sidereus("retro"))
 
 SECRET = "SECRET-7f3a rm -rf /w/private-notes"
 CWD = "/w/repo-m"
@@ -34,6 +36,11 @@ def _user(content):
 
 
 class _Patch(unittest.TestCase):
+    def setUp(self):
+        clk = _clock.frozen(*_FROZEN)   # payload builders read NOW; pin them to _clock.NOW
+        clk.__enter__()
+        self.addCleanup(clk.__exit__, None, None, None)
+
     def patch(self, mod, name, val):
         old = getattr(mod, name)
         setattr(mod, name, val)
@@ -52,7 +59,7 @@ class SessionRowKeys(_Patch):
                      "_projcost_of": lambda *a: 0.0, "_git_state": lambda *a: "", "_model_win": lambda *a: (0, 0),
                      "_dead": lambda *a: False}.items():
             self.patch(sessions, n, v)
-        now = time.time()
+        now = NOW
         return p, sessions._session_row("/nonexistent/s1.jsonl", now - 30, now, {CWD: 1}, p)
 
     def test_no_reply_task_or_bash_command(self):
@@ -96,7 +103,7 @@ class AgentLastIsToolName(unittest.TestCase):
 
 class FailuresPayload(_Patch):
     def evs(self):
-        base = {"at": int(time.time()) - 60, "tid": "", "cwd": CWD, "proj": "repo-m", "sid": "s1", "text": SECRET}
+        base = {"at": int(NOW) - 60, "tid": "", "cwd": CWD, "proj": "repo-m", "sid": "s1", "text": SECRET}
         return [dict(base, kind="tool", tool="Bash", sig="Exit code N " + SECRET, grade="noise", why="x"),
                 dict(base, kind="tool", tool="Bash", sig="other " + SECRET, grade="noise", why="x"),
                 dict(base, kind="hook", tool="Edit", sig="훅이 막음 — " + SECRET, grade="mine", why="y"),
@@ -158,10 +165,10 @@ class WreckageSteps(_Patch):
         self.assertNotIn("SECRET-7f3a", json.dumps(tr, ensure_ascii=False))
 
 
-class RetroSigs(unittest.TestCase):
+class RetroSigs(_Patch):
     def test_tool_sigs_are_fixed_label_plus_tool(self):
         R = sidereus("retro")
-        now = time.time()
+        now = NOW
         evs = [{"at": now - 60, "kind": "tool", "tool": "Bash", "sig": "Exit code N " + SECRET, "grade": "noise",
                 "proj": "p", "text": SECRET},
                {"at": now - 50, "kind": "hook", "tool": "", "sig": "훅이 막음 — " + SECRET, "grade": "mine",
@@ -207,7 +214,7 @@ class TransitionCardsNoText(_Patch):
 class OldStoredCards(_Patch):
     def test_old_transition_card_body_is_sent_empty(self):
         C = sidereus("cards")
-        now = time.time()
+        now = NOW
         stored = [json.dumps({"at": "2026-09-25T10:00:00", "kind": k, "project": "p", "title": "t",
                               "text": "지시: " + SECRET, "cwd": CWD}) for k in ("ask", "abort", "wait")]
         stored.append(json.dumps({"at": "2026-09-25T10:01:00", "kind": "agent", "project": "p", "title": "t",

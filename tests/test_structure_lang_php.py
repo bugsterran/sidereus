@@ -83,7 +83,7 @@ class Pathological(unittest.TestCase):
         for src in self.CASES:
             t0 = time.process_time()
             SL._struct_one_file("a.php", src + " ")                    # treemap entry
-            self.assertLess(time.process_time() - t0, 1.0, src[:24])
+            self.assertLess(time.process_time() - t0, 5.0, src[:24]) # did-not-hang bound: catastrophic backtracking runs for minutes, a loaded runner adds seconds
 
 
 

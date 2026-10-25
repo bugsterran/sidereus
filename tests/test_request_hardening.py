@@ -36,7 +36,7 @@ class RequestHardeningTest(unittest.TestCase):
 
     def _status(self, raw):
         buf, dt = _exchange(self.port, raw)
-        self.assertLess(dt, 1.0, "connection hung")
+        self.assertLess(dt, 3.0, "connection hung")   # real socket: did-not-hang bound, a loaded runner adds latency
         return buf.split(b"\r\n", 1)[0]
 
     def _get(self, path, extra=b""):

@@ -1,8 +1,8 @@
 """Rail owner join (git_rail._rail_owners): file_owner index -> per-file `own` chips + cross-session `conflict` flag."""
 import os
-import time
 import unittest
 
+from tests import _clock
 from tests._load import sidereus
 
 gv = sidereus("git_rail")   # rail owner join moved from git_view (2026-09-25)
@@ -15,7 +15,10 @@ def live(*sids, subs=()):
 
 class TestRailOwners(unittest.TestCase):
     def setUp(self):
-        self.now = time.time()
+        self.now = _clock.NOW
+        fz = _clock.frozen(gv, fo)
+        fz.__enter__()
+        self.addCleanup(fz.__exit__, None, None, None)
         self._idx = fo.index
         self.fake = {}
         # keys as the rail builds them (normpath: `\` on Windows), so the POSIX literals below match on any OS
@@ -143,8 +146,11 @@ class TestRailOwners(unittest.TestCase):
 class TestIndexCount(unittest.TestCase):
     def test_count_in_index(self):
         saved = dict(fo._FO), dict(fo._FO_N)
+        fz = _clock.frozen(fo)      # index() with no `now` reads the module clock
+        fz.__enter__()
+        self.addCleanup(fz.__exit__, None, None, None)
         try:
-            fo._FO.update(at=time.time() + 1e6, off={"t": (0, 1)}, per={"t": {"/r/a.py": time.time() - 5}},
+            fo._FO.update(at=_clock.NOW + 1e6, off={"t": (0, 1)}, per={"t": {"/r/a.py": _clock.NOW - 5}},
                           who={"t": ("s1", fo.FO_MAIN, "", "", "/r")})
             fo._FO_N.clear()
             fo._FO_N["t"] = {"/r/a.py": 3}

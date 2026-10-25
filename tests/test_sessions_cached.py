@@ -4,9 +4,24 @@ import threading
 import time
 import unittest
 
+from tests import _clock
 from tests._load import sidereus
 
 S = sidereus("sessions")
+
+
+class _TickingTime(object):
+    """`time` stand-in: wall clock starts at _clock.NOW and advances with the monotonic clock.
+    ⚠A fully frozen time() would stall sessions_snapshot_wait's deadline loop (left never shrinks)."""
+
+    def __init__(self):
+        self._t0 = time.monotonic()
+
+    def time(self):
+        return _clock.NOW + (time.monotonic() - self._t0)
+
+    def __getattr__(self, name):
+        return getattr(time, name)
 ROWS = [{"sid": "s1", "cwd": "/w/p", "project": "p", "state": "wait", "plat": "cc"}]
 # modules whose request-path callers moved to the snapshot helper — none may hold a sessions() binding again
 REQUEST_MODULES = ("state", "timeline", "git", "git_view", "recent", "agent_brief", "routes_post", "burn_scan", "work")
@@ -16,11 +31,12 @@ class _Base(unittest.TestCase):
     def setUp(self):
         self.snap0, self.sess0, self.calls = dict(S._SNAP), S.sessions, []
         self.gate = threading.Event()
+        self.time0, S.time = S.time, _TickingTime()
 
         def slow():                          # stands in for a 5-40 s cold sessions(): blocks until released
             self.calls.append(threading.current_thread().name)
             self.gate.wait(5)
-            S._SNAP.update({"at": time.time(), "rows": [{"sid": "new"}]})
+            S._SNAP.update({"at": S.time.time(), "rows": [{"sid": "new"}]})
             return []
         S.sessions = slow
 
@@ -30,24 +46,24 @@ class _Base(unittest.TestCase):
             if t.name == "sessions_refresh":
                 t.join(5)
         S.sessions = self.sess0
+        S.time = self.time0
         S._SNAP.update(self.snap0)
 
     def stale(self, age=300):
-        S._SNAP.update({"at": time.time() - age, "rows": ROWS})
+        S._SNAP.update({"at": S.time.time() - age, "rows": ROWS})
 
 
 class Helper(_Base):
     def test_fresh_snapshot_no_refresh(self):
-        S._SNAP.update({"at": time.time(), "rows": ROWS})
+        S._SNAP.update({"at": S.time.time(), "rows": ROWS})
         self.assertEqual(S.sessions_cached(), (ROWS, True))
         self.assertEqual(self.calls, [])
 
     def test_stale_serves_last_rows_and_refreshes_once_in_background(self):
         self.stale()
-        t = time.time()
         self.assertEqual(S.sessions_cached(wait=0.05), (ROWS, False))
         self.assertEqual(S.sessions_rows(wait=0.05), ROWS)          # joins the running refresh, no second one
-        self.assertLess(time.time() - t, 1.0)
+        # one call, on the refresh thread: an inline sessions() would be recorded as MainThread
         self.assertEqual(self.calls, ["sessions_refresh"])
 
     def test_fast_refresh_is_waited_for(self):
@@ -74,9 +90,8 @@ class Callers(_Base):
         for k, v in readers.items():
             setattr(st, k, v)
         self.stale(3)                          # previous 2.5 s poll's rows
-        t = time.time()
         self.assertEqual(st.state()["sessions"], ROWS)
-        self.assertLess(time.time() - t, 1.5)  # was >= the full sessions() time (5.29 s with a 5 s stub)
+        # the stub blocks until the gate opens, so ROWS above came from the snapshot, not an inline call
         self.assertEqual(self.calls, ["sessions_refresh"])
 
     def test_allow_list_uses_snapshot(self):

@@ -2,19 +2,28 @@
 import json
 import os
 import tempfile
-import time
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
+from tests import _clock
 from tests._load import sidereus
 
 S = sidereus("failures_scan")
+_FROZEN = _clock.frozen(S)
+
+
+def setUpModule():
+    _FROZEN.__enter__()
+
+
+def tearDownModule():
+    _FROZEN.__exit__(None, None, None)
 
 
 def _line(i):
     body = ("<task-notification><tool-use-id>toolu_%d</tool-use-id><status>failed</status>"
             "<summary>boom %d</summary></task-notification>" % (i, i))
-    return json.dumps({"type": "user", "timestamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+    return json.dumps({"type": "user", "timestamp": datetime.fromtimestamp(_clock.NOW, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
                        "cwd": "/w/repo", "message": {"role": "user", "content": body}}) + "\n"
 
 
@@ -63,7 +72,7 @@ class IncrementalReadTests(unittest.TestCase):
         saved = S._FAIL_PRUNED[0]
         try:
             S._FAIL_PRUNED[0] = 0.0
-            S._fail_prune(time.time())
+            S._fail_prune(_clock.NOW)
         finally:
             S._FAIL_PRUNED[0] = saved
         self.assertNotIn("/nope/x.jsonl", S._FAIL_EV)

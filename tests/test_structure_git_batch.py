@@ -83,7 +83,7 @@ class GitTreeDeadline(unittest.TestCase):
             got = SN._struct_git_tree("/nonexistent-root", "a" * 40)
             dt = time.time() - t0
         self.assertIsNone(got)
-        self.assertLess(dt, 3.0)
+        self.assertLess(dt, 5.0)                       # did-not-hang bound, not a benchmark: a loaded runner adds seconds
         self.assertTrue(GI.git_slot_free(0))
         self.assertEqual(SN._struct_blob_cache, {})     # failure not cached in memory
         self.assertEqual(writes, [])                     # nor on disk

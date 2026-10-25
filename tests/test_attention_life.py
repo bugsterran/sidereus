@@ -6,6 +6,7 @@ import subprocess
 import time
 import unittest
 
+from tests._clock import NOW
 from tests._i18n_js import i18n_switch
 from tests._load import js_all, js_fn
 from tests.test_attention import Base, iso, sess
@@ -32,7 +33,7 @@ def clock12(ts):
 
 class ServerUntil(Base):
     def test_until_only_on_card_signal(self):
-        now = time.time()
+        now = NOW   # Base freezes attention's clock at the same instant
         cards = [{"kind": "fcut", "cwd": "/w/p", "at": iso(now - 900)}, {"kind": "fcheck", "cwd": "/w/p", "at": iso(now - 300)}]
         row = self.one(sess("a", state="ask", age=1000, ctx=96, win=100), cards)
         by = {s["k"]: s for s in row["sigs"]}
@@ -51,7 +52,7 @@ class ServerUntil(Base):
 
 
 class JsLife(unittest.TestCase):
-    NOW = 1790000000
+    NOW = int(NOW)
 
     def test_live_kinds(self):
         for k in ("blocked", "ask", "ctx95", "ctx85", "stall", "loop", "done", "bgdone"):

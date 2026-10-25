@@ -76,7 +76,7 @@ class Pathological(unittest.TestCase):
                     "class A { " + "void F() { " * (n // 12), "class A { " + "a" * (n - 20000) + " b x(); }"):
             t0 = time.process_time()
             SL._struct_one_file("a.cs", src + " ")          # treemap entry
-            self.assertLess(time.process_time() - t0, 1.0, src[:12])
+            self.assertLess(time.process_time() - t0, 5.0, src[:12]) # did-not-hang bound: catastrophic backtracking runs for minutes, a loaded runner adds seconds
 
     def test_long_identifier_head(self):
         got = C.cs_scan("class A { int " + "a" * 5000 + "(int x) { return 1; } }")

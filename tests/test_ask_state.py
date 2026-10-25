@@ -4,9 +4,10 @@ Synthetic transcript tails only — parse._tail_lines/_running_bg/_cwd_from_slug
 file/git/otel reader of sessions._session_row are monkeypatched. No live file is read.
 """
 import json
-import time
 import unittest
 
+from tests import _clock
+from tests._clock import NOW
 from tests._load import sidereus
 
 parse = sidereus("parse")
@@ -42,6 +43,11 @@ def tr(i):
 
 
 class Patch(unittest.TestCase):
+    def setUp(self):
+        clk = _clock.frozen(parse, notes, sessions, att)   # row ages and otel freshness use _clock.NOW
+        clk.__enter__()
+        self.addCleanup(clk.__exit__, None, None, None)
+
     def patch(self, mod, name, val):
         old = getattr(mod, name)
         setattr(mod, name, val)
@@ -105,22 +111,22 @@ class RowOtelOverride(Patch):
                      "_projcost_of": lambda *a: 0.0, "_git_state": lambda *a: "", "_model_win": lambda *a: (0, 0),
                      "_dead": lambda *a: False}.items():
             self.patch(sessions, n, v)
-        now = time.time()
+        now = NOW
         return sessions._session_row("/nonexistent/s1.jsonl", now - 30, now, {CWD: 1}, p)
 
     def test_otel_think_does_not_override_ask(self):
         p = self.parse([asst(tu("AskUserQuestion", "a1"))])
-        r = self.row(p, {"state": "think", "ev": "api_request", "at": time.time()})
+        r = self.row(p, {"state": "think", "ev": "api_request", "at": NOW})
         self.assertEqual(r["state"], "ask")
         self.assertEqual(r["blocked"], "")
 
     def test_otel_still_applies_to_running_tool(self):
         p = self.parse([asst(tu("Bash", "b1")), user(tr("b1"))])
-        r = self.row(p, {"state": "tool", "ev": "tool_decision", "at": time.time(), "tool": "Bash"})
+        r = self.row(p, {"state": "tool", "ev": "tool_decision", "at": NOW, "tool": "Bash"})
         self.assertEqual(r["state"], "tool")
 
 
-class AttentionRank(unittest.TestCase):
+class AttentionRank(Patch):
     def test_ask_ranks_above_bgdone_and_is_red(self):
         rows = [{"sid": "a", "cwd": "/w/a", "project": "a", "state": "ask", "ageSec": 30},
                 {"sid": "b", "cwd": "/w/b", "project": "b", "state": "wait", "ageSec": 200}]

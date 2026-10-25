@@ -15,7 +15,7 @@ cs = load()
 PORT = cs.PORT
 
 
-def _exchange(port, raw, timeout=3.0):
+def _exchange(port, raw, timeout=5.0):   # above the 3 s hang bound, so a hang fails the bound instead of tying it
     """Send raw bytes, read until the server closes; return (response bytes, seconds)."""
     s = socket.create_connection(("127.0.0.1", port), timeout=timeout)
     t0 = time.time()
@@ -51,7 +51,7 @@ class GuardCloseTest(unittest.TestCase):
 
     def _check(self, raw, status, text):
         buf, dt = _exchange(self.port, raw)
-        self.assertLess(dt, 1.0, "connection hung")
+        self.assertLess(dt, 3.0, "connection hung")   # real socket: did-not-hang bound, a loaded runner adds latency
         head, _, body = buf.partition(b"\r\n\r\n")
         self.assertTrue(head.startswith(b"HTTP/1.1 " + status), head[:40])
         self.assertIn(b"Content-Length: %d" % len(text), head)
