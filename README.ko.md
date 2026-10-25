@@ -177,7 +177,7 @@ Sidereus는 세션을 시작하거나 멈추지 않습니다. 파이프라인 �
 
 ## 다른 CLI
 
-Codex CLI와 Gemini CLI는 훅으로 상태를 보내 Claude Code 세션 옆에 함께 나오고, 토큰도 따로 집계됩니다. ⚠ 이 토큰은 Claude의 5시간·7일 한도나 비용에 절대 합산하지 않습니다. Cursor CLI: macOS 확인(2026.10.22). Copilot 등 다른 CLI도 같은 훅을 쓸 수 있지만 아직 확인하지 않았습니다. 설정: [HOOKS.ko.md](docs/HOOKS.ko.md).
+Codex CLI와 Gemini CLI는 훅으로 상태를 보내 Claude Code 세션 옆에 함께 나오고, 토큰도 따로 집계됩니다. ⚠ 이 토큰은 Claude의 5시간·7일 한도나 비용에 절대 합산하지 않습니다. Cursor CLI: macOS 확인(2026.10.22). Cursor IDE는 아직 지원하지 않습니다(#9). Copilot 등 다른 CLI도 같은 훅을 쓸 수 있지만 아직 확인하지 않았습니다. 설정: [HOOKS.ko.md](docs/HOOKS.ko.md).
 
 ⚠ Codex는 TUI에서 `/hooks`로 한 번 승인하기 전까지 `hooks.json`을 무시하며, 파일을 고칠 때마다 다시 승인해야 합니다(항목 이름은 «Sidereus»가 아니라 `ext_hook.py`로 보입니다). 승인 전에는 최근 10분 안에 기록이 있는 Codex 세션이 «훅 미연결» 표시와 함께 폴더와 모델만 보이고 상태는 나오지 않습니다.
 
