@@ -10,6 +10,7 @@
 //
 // FAIL on: JS exception, console error, HTTP >= 400, horizontal overflow, a SOFT_ERRS tag not in the baseline,
 // or a masked-text snapshot diff beyond tolerance. Digits and time units are masked so demo clock drift is ignored.
+// Also FAIL (compare runs) if one cold load of `/` at 1100 en takes > FIRST_SCREEN_MS to the first-render marker.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -26,6 +27,7 @@ const LANGS = ['ko', 'en'];
 const HEIGHT = 900;
 const DEADLINE_MS = 85000;
 const CONCURRENCY = 3;
+const FIRST_SCREEN_MS = 2000;   // budget: cold navigation to `/` until the first-render marker (1100 en)
 const args = new Set(process.argv.slice(2));
 const UPDATE = args.has('--update');
 const SELFTEST = args.has('--selftest');
@@ -81,6 +83,7 @@ async function until(fn, ms, what) {
 }
 
 // ---- processes -------------------------------------------------------------
+let bootMs = 0;
 async function startDemo() {
   const port = await freePort();
   const home = path.join(TMP, 'home');
@@ -97,7 +100,9 @@ async function startDemo() {
   let err = '';
   p.stderr.on('data', d => { err += d; });
   const base = 'http://127.0.0.1:' + port;
+  const t = Date.now();
   await until(async () => (await fetch(base + '/api/state')).ok, 15000, 'demo server (' + err.trim().slice(-300) + ')');
+  bootMs = Date.now() - t;   // spawn -> first /api/state 200; reported only (machine-dependent)
   return base;
 }
 async function startChrome() {
@@ -193,6 +198,36 @@ const JS_SNAP = `(() => {
     soft: se, sw, iw: innerWidth });
 })()`;
 
+const pinPrefs = lang => `try{const P={mbLang:${JSON.stringify(lang)},mbTone:'black'};let u=Object.assign({},P);`
+    + `Object.defineProperty(window,'__UIP',{configurable:true,get(){return u;},set(v){u=Object.assign({},v||{},P);}});const f=window.fetch;`
+    + `window.fetch=function(a,o){if(o&&o.method==='POST'&&String(a).indexOf('/api/ui-prefs')>=0)return Promise.resolve(new Response('{"ok":true}',{headers:{'Content-Type':'application/json'}}));`
+    + `if(/\\/api\\/ui-prefs(\\?|$)/.test(String(a))&&!(o&&o.method==='POST'))return Promise.resolve(new Response(JSON.stringify({rev:window.__UIPREV==null?null:window.__UIPREV,prefs:u}),{headers:{'Content-Type':'application/json'}}));return f.apply(this,arguments);};}catch(e){}`;
+const FIRST_RENDER = `document.readyState==='complete' && document.querySelectorAll('#mvw .mvb').length>0 && !!document.querySelector('#sbar') && document.querySelector('#sbar').innerText.trim().length>0`;
+
+// One cold navigation (fresh context, no cache) at 1100 en, timed until the first-render marker; runs before the pool so nothing competes.
+async function firstScreen(cdp, base) {
+  const { browserContextId } = await cdp.send('Target.createBrowserContext', { disposeOnDetach: true });
+  const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank', browserContextId });
+  const { sessionId: sid } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
+  const S = (m, p) => cdp.send(m, p, sid);
+  try {
+    await S('Page.enable');
+    await S('Emulation.setDeviceMetricsOverride', { width: 1100, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
+    await S('Page.addScriptToEvaluateOnNewDocument', { source: pinPrefs('en') });
+    const t = Date.now();
+    await S('Page.navigate', { url: base + noBar('/') });
+    for (;;) {
+      const r = await S('Runtime.evaluate', { expression: FIRST_RENDER, returnByValue: true }).catch(() => null);
+      if (r && r.result && r.result.value === true) return Date.now() - t;
+      if (Date.now() - t > 10000) throw new Error('timeout waiting for first screen (1100-en)');
+      await sleep(20);
+    }
+  } finally {
+    await cdp.send('Target.closeTarget', { targetId }).catch(() => {});
+    await cdp.send('Target.disposeBrowserContext', { browserContextId }).catch(() => {});
+  }
+}
+
 async function runCombo(cdp, base, width, lang, pop, inject) {
   const tag = width + '-' + lang;
   const issues = [];   // hard failures
@@ -223,10 +258,7 @@ async function runCombo(cdp, base, width, lang, pop, inject) {
   // ⚠The tone default follows the OS and headless Chrome reports light — pin the dark tone the baselines were taken in.
   // ⚠UI prefs are server-backed (UIS): pin them through window.__UIP and swallow pref POSTs, so concurrent pages on one server never share state.
   // ⚠The cross-tab pull (GET /api/ui-prefs, on a uiRev change) answers with the pinned map too, or a pref saved live mid-run would replace mbLang/mbTone.
-  await S('Page.addScriptToEvaluateOnNewDocument', { source: `try{const P={mbLang:${JSON.stringify(lang)},mbTone:'black'};let u=Object.assign({},P);`
-    + `Object.defineProperty(window,'__UIP',{configurable:true,get(){return u;},set(v){u=Object.assign({},v||{},P);}});const f=window.fetch;`
-    + `window.fetch=function(a,o){if(o&&o.method==='POST'&&String(a).indexOf('/api/ui-prefs')>=0)return Promise.resolve(new Response('{"ok":true}',{headers:{'Content-Type':'application/json'}}));`
-    + `if(/\\/api\\/ui-prefs(\\?|$)/.test(String(a))&&!(o&&o.method==='POST'))return Promise.resolve(new Response(JSON.stringify({rev:window.__UIPREV==null?null:window.__UIPREV,prefs:u}),{headers:{'Content-Type':'application/json'}}));return f.apply(this,arguments);};}catch(e){}` });
+  await S('Page.addScriptToEvaluateOnNewDocument', { source: pinPrefs(lang) });
   const ev = async expr => {
     const r = await S('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
     if (r.exceptionDetails) throw new Error('evaluate: ' + (r.exceptionDetails.exception?.description || r.exceptionDetails.text));
@@ -254,7 +286,7 @@ async function runCombo(cdp, base, width, lang, pop, inject) {
 
   const regions = {}; const soft = new Set();
   await S('Page.navigate', { url: base + noBar('/') });
-  await until(async () => await ev(`document.readyState==='complete' && document.querySelectorAll('#mvw .mvb').length>0 && !!document.querySelector('#sbar') && document.querySelector('#sbar').innerText.trim().length>0`), 10000, tag + ' first render');
+  await until(async () => await ev(FIRST_RENDER), 10000, tag + ' first render');
   let s = await settle();
   regions.tabs = norm(s.tabs);
   // The header KPI strip was removed; its return is a regression.
@@ -330,6 +362,10 @@ async function main() {
   const pop = { diff: '/diff?cwd=' + encodeURIComponent(ses.cwd), work: '/work?cwd=' + encodeURIComponent(ses.cwd) + '&tid=' + encodeURIComponent(tid),
     sess: '/work?cwd=' + encodeURIComponent(ses.cwd) + '&tid=' + encodeURIComponent('sess:' + ses.cwd + '|' + ses.sid) };
   const cdp = new CDP(wsUrl); await cdp.open();
+  const firstMs = await firstScreen(cdp, base);
+  const slow = firstMs > FIRST_SCREEN_MS;
+  console.log((slow ? 'FAIL ' : 'PASS ') + 'first screen ' + firstMs + ' ms (budget ' + FIRST_SCREEN_MS + ' ms, 1100-en cold)');
+  console.log('server boot ' + bootMs + ' ms (reported, not budgeted)');
   const combos = SELFTEST ? [[1100, 'ko']] : WIDTHS.flatMap(w => LANGS.map(l => [w, l]));
   const timer = setTimeout(() => { console.error('FAIL screen_check: exceeded ' + DEADLINE_MS / 1000 + 's'); cleanup(); process.exit(1); }, DEADLINE_MS);
   const results = await pool(combos, CONCURRENCY, ([w, l]) => runCombo(cdp, base, w, l, pop, SELFTEST));
@@ -374,7 +410,7 @@ async function main() {
     console.log(miss.length ? 'SELFTEST FAILED: not detected -> ' + miss.join(', ') : 'SELFTEST OK: injected ' + Object.keys(want).join(', ') + ' all detected as FAIL');
     return miss.length ? 1 : 0;
   }
-  return failed ? 1 : 0;
+  return (failed || slow) ? 1 : 0;
 }
 
 main().then(code => { cleanup(); process.exit(code); }, e => { console.error('FAIL screen_check: ' + (e && e.stack || e)); cleanup(); process.exit(1); });

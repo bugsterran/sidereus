@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Platform, config, launcher, tests and tooling
 
+- **The first-screen budget runs only on macOS** (`scripts/screen_check.mjs` `FIRST_SCREEN_MS`, #25).
+  - Cause: screen_check needs the hard-coded Chrome path (`CHROME` env overrides it) and is not in CI; CI only curls `/` (demo smoke test).
+  - ⇒ A slow first screen is caught by `check.sh --full` on a Mac, not by CI on Linux/Windows.
+  - ⚠Do not read a green CI run as «first screen within 2000 ms».
 - **Hook connect: never edit an existing Codex group** (`sidereus/hook_connect.py`, #21).
   - Cause: Codex stores approval per `event:group:entry`; changing a group re-hashes it and silently disables the user's approved hooks.
   - ⇒ Missing entries go into one new group appended per event; the reply carries `approve:"/hooks"`.
