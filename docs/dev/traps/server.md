@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Server, /api/state payload, caching, performance
 
+- ★**The `claude agents` budget (≤ 2/min) holds only in registry-signature mode** (2026-10-25, #24, `scripts/perf_budget.py`). ★sessions/ present: 1 spawn per simulated minute.
+  - ⚠No `<config dir>/sessions/` dir ⇒ `_av_registry_sig` returns None ⇒ plain `AGENTS_TTL` 8 s ≈ 7.5 spawns/min (sidereus/live_probe.py `_av_one`).
+  - ⇒ The budget run writes a `sessions/<pid>.json` first; never call `agent_view(ttl=…)` from a poll path.
+  - ⚠`--live` warm p90 is a plain GET served from cache (★2 ms) — labelled `warm p90 (cached)`, informational, not a state() cost.
 - ★**Boot warm-up threads ran in parallel and spiked memory** (2026-10-22, #20, `sidereus/boot_queue.py`): ★peak ~478 MB parallel vs ~301 MB serial.
   - ⇒ Each one-shot warm wraps its heavy pass in `boot_queue.gate(name)`: one holder at a time, `ORDER` decides who goes next, drained after all finish or `BQ_DRAIN_MAX` 600 s. Switched-off warms are pre-marked done.
   - ⚠Register a warm's «busy» state inside its gate, not before: `toolidx.warm()` set `_TI_STATE["bg"]` while still queued, so `_kick()` from Harness saw a live scan and started none until the earlier warms released.
