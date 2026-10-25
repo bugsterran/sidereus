@@ -41,17 +41,18 @@ def _payload(*recs):
 
 class _Base(unittest.TestCase):
     def setUp(self):
-        self.saved = (h._oh, h._oh_meta, h.OH_FILE, h.OH_CAP)
+        self.saved = (h._oh, h._ohn, h._oh_meta, h.OH_FILE, h.OH_CAP)
         self.tmp = tempfile.mkdtemp()
         h.OH_FILE = os.path.join(self.tmp, "otel-hooks.json")
         self._reset()
 
     def tearDown(self):
-        (h._oh, h._oh_meta, h.OH_FILE, h.OH_CAP) = self.saved
+        (h._oh, h._ohn, h._oh_meta, h.OH_FILE, h.OH_CAP) = self.saved
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _reset(self):
         h._oh = {}
+        h._ohn = {}
         h._oh_meta = {"loaded": False, "savedAt": 0.0, "dirty": False}
 
 
@@ -149,3 +150,43 @@ class HookIngestCase(_Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HookFiresCase(_Base):
+    """Per-firing counts by event:subject (`_ohn`) and their attribution to one matcher (`hook_fires`)."""
+
+    def _fire(self, d, ev, name):
+        h._oh_add(_ts(d), ev, 5, 0, name)
+
+    def test_key_parsing_keeps_only_event_and_tool_like_subject(self):
+        self.assertEqual(h._ohn_key("PreToolUse", "PreToolUse:Bash"), "PreToolUse:Bash")
+        self.assertEqual(h._ohn_key("Stop", "Stop"), "Stop")
+        self.assertEqual(h._ohn_key("Stop", None), "Stop")
+        for bad in ("secret-hook-name", "Stop:x", "PreToolUse:a b", "PreToolUse:/tmp/x.sh"):
+            self.assertIsNone(h._ohn_key("PreToolUse", bad), bad)
+
+    def test_matcher_attribution_counts_silent_runs(self):
+        for name in ("PreToolUse:Bash", "PreToolUse:Bash", "PreToolUse:Edit", "PreToolUse:Write"):
+            self._fire("2026-10-01", "PreToolUse", name)
+        self._fire("2026-10-02", "Stop", "Stop")
+        self.assertEqual(h.hook_fires("PreToolUse", "Bash", "2026-09-30"), (2, "2026-10-01", False))
+        self.assertEqual(h.hook_fires("PreToolUse", "Edit|Write", "2026-09-30")[0], 2)
+        self.assertEqual(h.hook_fires("PreToolUse", "", "2026-09-30")[0], 4)
+        self.assertEqual(h.hook_fires("PreToolUse", "Read", "2026-09-30")[0], 0)
+        self.assertEqual(h.hook_fires("Stop", "", "2026-09-30")[0], 1)
+        self.assertIsNone(h.hook_fires("Stop", "", "2026-10-03"))   # no firing recorded since then
+
+    def test_sanitised_or_missing_subject_is_ambiguous_for_specific_matchers(self):
+        self._fire("2026-10-01", "PreToolUse", "PreToolUse:mcp_tool")
+        self._fire("2026-10-01", "SubagentStop", "SubagentStop")
+        self.assertTrue(h.hook_fires("PreToolUse", "mcp__x__.*", "2026-10-01")[2])
+        self.assertFalse(h.hook_fires("PreToolUse", "Bash", "2026-10-01")[2])   # Bash can never be an MCP tool
+        self.assertTrue(h.hook_fires("SubagentStop", "Explore", "2026-10-01")[2])
+        self.assertEqual(h.hook_fires("SubagentStop", "", "2026-10-01"), (1, "2026-10-01", False))
+
+    def test_round_trip_and_prune(self):
+        self._fire("2026-08-01", "PreToolUse", "PreToolUse:Bash")
+        self._fire("2026-10-01", "PreToolUse", "PreToolUse:Bash")
+        self.assertTrue(h._oh_save(now=NOW, force=True))
+        self._reset()
+        self.assertEqual(h.hook_fires("PreToolUse", "Bash", "2026-01-01"), (1, "2026-10-01", False))

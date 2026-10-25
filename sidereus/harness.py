@@ -13,9 +13,12 @@ import os
 import re
 import shlex
 import shutil
+import time
 
 from sidereus import ctxsrc, toolinv
 from sidereus.config import DATA_DIR
+from sidereus.otel_hooks import hook_fires
+from sidereus.timefmt import ymd as _ymd
 from sidereus.pipeline import _agent_files, _agents, pipelines
 from sidereus.pipeline_projects import _proj_ok
 from sidereus.redact import redact
@@ -221,6 +224,20 @@ def _runs(uses, ev, matcher, cmd=None):
     return n, last
 
 
+HN_FIRE_MIN_D = 3   # same floor as harness_verdict.VD_FIRE_MIN_D
+
+
+def _days_since(ymd_s):
+    """Calendar days from ymd_s to today, both counted (0 when empty)."""
+    if not ymd_s:
+        return 0
+    try:
+        t0 = time.mktime(time.strptime(ymd_s, "%Y-%m-%d"))
+    except ValueError:
+        return 0
+    return max(1, int(round((time.mktime(time.strptime(_ymd(time.time()), "%Y-%m-%d")) - t0) / 86400.0)) + 1)
+
+
 def _nomatch(ev, matcher, tools):
     """1 when a tool-event matcher accepts none of the tool names used in the window (provable idle); 0 otherwise."""
     if ev not in HN_TOOL_EVENTS or not matcher or matcher == "*" or not tools:
@@ -235,8 +252,9 @@ def _nomatch(ev, matcher, tools):
     return 1
 
 
-def _hook_rows(items, proj, uses, paths=None):
-    """Rows per event; `paths` (when given) collects ref -> resolved script for /api/harness/file."""
+def _hook_rows(items, proj, uses, paths=None, since=""):
+    """Rows per event; `paths` (when given) collects ref -> resolved script for /api/harness/file.
+    `since` (ymd) enables OTel firing counts (`nsrc` "otel", `nfrom` = first day covered)."""
     by = {}
     tools = [k[5:] for k in uses if k.startswith("tool:")]   # toolidx `tool:<Name>` keys
     for it in items:
@@ -254,8 +272,15 @@ def _hook_rows(items, proj, uses, paths=None):
             # the plain `hook:<Event>` key mixes every group's records. So count per command hash; 0 = unknown
             # (n None, `quiet`), never the group/event total.
             n, last = _runs(uses, ev, m, c) if isinstance(c, str) else (0, 0)
-            quiet = int(not n)
-            n = n or None
+            # OTel hook_execution_complete is sent per firing whether or not a hook printed, so when it covers the
+            # window it gives every run (0 included); transcript records stay as the floor and the fallback.
+            f = hook_fires(ev, m, since) if since else None
+            nsrc, nfrom = "", ""
+            # ⚠A 0 only counts once coverage is long enough: right after the store starts, «not fired yet» is not «unused».
+            if f and not f[2] and (f[0] or _days_since(f[1]) >= HN_FIRE_MIN_D):
+                n, nsrc, nfrom = max(n, f[0]), "otel", f[1]
+            quiet = int(not n and not nsrc)
+            n = n if nsrc else (n or None)
             sp = ""
             if isinstance(c, str):
                 tok = _script_tok(c)
@@ -272,7 +297,7 @@ def _hook_rows(items, proj, uses, paths=None):
                 paths[ref] = sp
             by.setdefault(ev, []).append({"open": ref if eff in _OPEN_EFF else "", "scope": it["scope"], "src": _src(it), "matcher": m[:HN_CMD_MAX], "cmd": name,
                                           "timeout": to if isinstance(to, (int, float)) and not isinstance(to, bool) else None,
-                                          "eff": eff, "desc": desc, "n": n, "last": last, "quiet": quiet, "plug": pn[:HN_CMD_MAX],
+                                          "eff": eff, "desc": desc, "n": n, "last": last, "quiet": quiet, "nsrc": nsrc, "nfrom": nfrom, "ndays": _days_since(nfrom), "plug": pn[:HN_CMD_MAX],
                                           "miss": int(bool(sp) and os.path.isabs(sp) and not os.path.exists(sp)),
                                           "ch": _dup_key(h, c),
                                           "nomatch": _nomatch(ev, m, tools)})
@@ -417,7 +442,7 @@ def harness(proj, days=30):
     code, body = pipelines(proj)
     body = body if code == 200 else {}
     return 200, {"ok": True, "proj": proj, "days": days,
-                 "events": _hook_rows([it for it in items if it["kind"] == "hook"], proj, uses),
+                 "events": _hook_rows([it for it in items if it["kind"] == "hook"], proj, uses, since=_ymd(time.time() - days * 86400)),
                  "rules": _rule_rows(proj), "agents": _agent_rows(proj, uses, _stage_refs(body, "agent", "general-purpose")), "counts": counts,
                  "mcps": _mcp_rows([it for it in items if it["kind"] == "mcp"], uses, mcp_status(days)),
                  "skills": _skill_rows([it for it in items if it["kind"] == "skill"], proj, uses, _stage_refs(body, "skill")), "scanning": scanning()}
