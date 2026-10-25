@@ -109,6 +109,17 @@ if [ $MODE = full ] && [ -f scripts/screen_check.mjs ]; then
   ok screen "$(tail -1 "$TMP/screen.log")"
 fi
 
+# 6b. performance budgets on an own --demo server (scripts/perf_budget.py; RSS · warm/cold /api/state · agents spawns)
+if [ $MODE = full ] && [ -f scripts/perf_budget.py ]; then
+  PYTHONPYCACHEPREFIX="$TMP/pyc" "$PY" scripts/perf_budget.py >"$TMP/perf.log" 2>&1
+  rc=$?
+  n=$(tail -1 "$TMP/perf.log" | grep -oE '^perf_budget: [0-9]+ budgets' | grep -oE '[0-9]+')
+  nf=$(tail -1 "$TMP/perf.log" | grep -oE '[0-9]+ over' | grep -oE '^[0-9]+')
+  [ $rc -eq 0 ] || fail perf "$(tail -1 "$TMP/perf.log")"
+  need perf "perf budgets measured" "$n"
+  ok perf "$(tail -1 "$TMP/perf.log" | sed 's/^perf_budget: //')"
+fi
+
 # 6. unit tests
 if [ $MODE = full ]; then
   PYTHONPYCACHEPREFIX="$TMP/pyc" bash tests/run.sh >"$TMP/tests.log" 2>&1
