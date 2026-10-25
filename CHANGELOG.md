@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Sessions: on Windows and Linux with several Claude Code accounts, when one account's session list cannot be read its open sessions show as unknown instead of ended.
 - Sessions: a Cursor or Gemini CLI session left idle for more than 24 hours no longer disappears while its process is still running.
+- Status bar: a CLI whose session is still open but idle since before midnight (Cursor, Gemini, Codex) keeps its «Today 0» entry.
 - Sessions: a running session whose last record cannot be read shows as unknown instead of idle, and a subagent whose log cannot be read no longer shows «Idle» or «quiet».
 
 ## [0.8.0] - 2026-10-25
