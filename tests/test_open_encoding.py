@@ -68,7 +68,8 @@ def is_test(rel):
 
 def py_files():
     try:
-        out = subprocess.run(["git", "ls-files", "-z", "--", "*.py"], cwd=ROOT,
+        # -co --exclude-standard: new files not yet added must fail here, not first in CI.
+        out = subprocess.run(["git", "ls-files", "-z", "-co", "--exclude-standard", "--", "*.py"], cwd=ROOT,
                              capture_output=True, check=True).stdout.decode("utf-8")
     except (OSError, subprocess.CalledProcessError):
         raise unittest.SkipTest("not a git checkout")

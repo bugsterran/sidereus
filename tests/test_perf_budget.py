@@ -66,7 +66,7 @@ class AgentsMinute(unittest.TestCase):
 
     def _put(self, sid, pid=None):
         pid = pid or os.getpid()
-        with open(os.path.join(self.d, "sessions", "%d.json" % pid), "w") as f:
+        with open(os.path.join(self.d, "sessions", "%d.json" % pid), "w", encoding="utf-8") as f:
             json.dump({"pid": pid, "sessionId": sid, "cwd": self.d}, f)
 
     def test_unchanged_registry_one_spawn(self):
