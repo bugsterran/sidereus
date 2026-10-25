@@ -97,3 +97,5 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ `tests/_clock.py`: `frozen(*mods)` swaps each module's `time`/`datetime` for `NOW`; fixtures derive from `NOW`; temp files get `os.utime(p, (NOW, NOW))`; `agents.boot_time` is stubbed.
   - ⚠`from time import time` is not covered by `frozen` — patch that name. Run touched tests under `TZ=Asia/Seoul` and `TZ=UTC`.
   - ⚠A module whose wait loop computes a `time.time()` deadline never times out under `frozen` (the test waits for the stub instead) — give it a ticking clock that starts at `NOW` and advances by `time.monotonic()` (`tests/test_sessions_cached.py` `_TickingTime`).
+- ⚠**A test module importing `sidereus` before `tests._load` read the live data dir** — `sidereus.config.DATA_DIR` froze on `~/.mailbox-mcp` for the process and `ext_store`/`bgtasks_parse` loaded the real `ext-sessions.json`, `bg-alive.json` at import.
+  - ⇒ The isolation env (`MAILBOX_DIR` temp, `CODEX_HOME`, `SIDEREUS_HOOK_NO_PID`) lives in `tests/__init__.py`, which runs before any `tests.*` module; guard `tests/test_import_isolation.py`. ⚠Do not move it back into `_load.py` only.
