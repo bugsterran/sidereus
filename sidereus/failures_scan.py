@@ -24,7 +24,9 @@ from sidereus.claude_roots import projects_dirs
 #     A 6MB tail sees 0.6% of the file, making "last 24 hours" itself false.
 #     So the first look scans everything but **filters at the byte level** (json parsing only for hits).
 FAIL_HOURS = 24
-FAIL_CHUNK = 8_000_000
+# ★1 MB, not 8 MB (macOS, py 3.9, 166 files / 239 MB): bare 8 MB reads left RSS +96 MB after the pass (freed large
+#   blocks stay resident), 4 MB +39, 2 MB +5, 1 MB +1. ⚠Do not raise it for speed — the scan is 0.36 s either way.
+FAIL_CHUNK = 1_000_000
 FAIL_KEEP = 4000            # cap on events kept per file
 FAIL_MAX_FILES = 60         # cap on **main-session** transcripts scanned (newest first)
 # ★Subagent files are counted **separately** (2026-09-07). In one bucket cut at 60, subagents push out
@@ -60,7 +62,8 @@ _FAIL_MARK_B = (b"<status>failed</status>", b"<status>killed</status>",
                 b'"subtype":"api_error"', b'"is_error":true')
 # tool_use id -> name, so a tool error can be reported by tool name instead of its raw output (byte regex, no json parse).
 _TU_MARK_B = b'"type":"tool_use"'
-_TU_NAME_RE = re.compile(rb'"type":"tool_use","id":"(toolu_[A-Za-z0-9_]{1,64})","name":"([^"\\]{1,80})"')
+# ⚠`\n` excluded: the regex runs over a whole chunk (not one line), so a match must never span two lines.
+_TU_NAME_RE = re.compile(rb'"type":"tool_use","id":"(toolu_[A-Za-z0-9_]{1,64})","name":"([^"\\\n]{1,80})"')
 _FAIL_TNAME = {}            # transcript -> {tool_use id: name} (recent ids only, FAIL_TNAME_KEEP)
 FAIL_TNAME_KEEP = 400
 
@@ -271,6 +274,33 @@ def _fail_line(ln, names=None):
     return tuple(out)
 
 
+def _scan_buf(buf, start, end, names, got):
+    """Lines of buf[start:end] (`end` = a `\\n`): tool names and failure lines, in file order.
+    ★Searches markers in the chunk instead of splitting it into lines — a split made one bytes object per line
+      (peak 33.6 MB over 166 files / 238 MB) and the freed small blocks stayed in RSS (+75 MB never released)."""
+    ev = []
+    for m in _TU_NAME_RE.finditer(buf, start, end):
+        ls = buf.rfind(b"\n", start, m.start()) + 1 or start
+        if buf.startswith(b"{", ls):
+            ev.append((ls, 0, m.start(), m))
+    hits = {}
+    for k in _FAIL_MARK_B:
+        p = buf.find(k, start, end)
+        while p >= 0:
+            le = buf.find(b"\n", p, end + 1)
+            ls = buf.rfind(b"\n", start, p) + 1 or start
+            if ls not in hits and buf.startswith(b"{", ls):
+                hits[ls] = le
+            p = buf.find(k, le, end)
+    ev.extend((ls, 1, 0, le) for ls, le in hits.items())
+    ev.sort(key=lambda x: x[:3])          # names of a line come before that line's failures (same as per-line order)
+    for ls, typ, _p, x in ev:
+        if typ == 0:
+            names[x.group(1).decode("ascii", "replace")] = x.group(2).decode("utf-8", "replace")
+        else:
+            got.extend(_fail_line(buf[ls:x].decode("utf-8", "replace"), names))
+
+
 def _fail_read(fp):
     """Scan from after the last read to the end and **accumulate** events. A first-seen file is read whole.
 
@@ -318,6 +348,7 @@ def _fail_read(fp):
     # ⓑ this is **outside** the lock — the slow part. Collected items go only into local variables.
     got = []
     rem = b""
+    long_ = []
     # ★The stored offset is the byte right after the last consumed `\n` (2026-09-25). Storing `size` and then
     #   always dropping the first line after `off > 0` lost one complete new line per incremental read
     #   (repro: 1 line -> 1, +1 -> still 1, +2 -> 2), and a line cut mid-write was dropped on both sides.
@@ -335,28 +366,26 @@ def _fail_read(fp):
                     chunk = f.read(FAIL_CHUNK)
                     if not chunk:
                         break
-                    parts = (rem + chunk).split(b"\n")
-                    rem = parts.pop()             # trailing partial line: left for the next read
                     new_off += len(chunk)
-                    if skip_first and parts:
-                        parts.pop(0)              # drop the truncated first line
+                    if chunk.find(b"\n") < 0:
+                        long_.append(chunk)       # line longer than a chunk: join once, not rem+chunk per chunk
+                        continue
+                    if long_:
+                        rem += b"".join(long_)
+                        long_ = []
+                    buf = rem + chunk if rem else chunk
+                    del chunk
+                    end = buf.rfind(b"\n")
+                    start = 0
+                    if skip_first:
+                        start = buf.find(b"\n") + 1   # drop the truncated first line
                         skip_first = False
-                    for raw in parts:
-                        if not raw.startswith(b"{"):
-                            continue
-                        if _TU_MARK_B in raw:
-                            for tid_b, nm_b in _TU_NAME_RE.findall(raw):
-                                names[tid_b.decode("ascii", "replace")] = nm_b.decode("utf-8", "replace")
-                        hit = False
-                        for k in _FAIL_MARK_B:
-                            if k in raw:
-                                hit = True
-                                break
-                        if hit:
-                            got.extend(_fail_line(raw.decode("utf-8", "replace"), names))
+                    _scan_buf(buf, start, end, names, got)
+                    rem = buf[end + 1:]           # trailing partial line: left for the next read
+                    del buf
         except OSError:
             pass
-        new_off -= len(rem)                       # resume at the start of the unfinished line
+        new_off -= len(rem) + sum(len(x) for x in long_)   # resume at the start of the unfinished line
         # ⓒ swap in — hold the lock briefly again only while inserting the finished values
         with _FAIL_SCAN:
             evs = _FAIL_EV.setdefault(fp, [])
