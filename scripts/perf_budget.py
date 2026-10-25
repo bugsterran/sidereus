@@ -101,7 +101,7 @@ def rss_mb(pid):
     except (OSError, ValueError, subprocess.SubprocessError):
         pass
     try:
-        with open("/proc/%d/status" % pid) as f:
+        with open("/proc/%d/status" % pid, encoding="utf-8") as f:
             for ln in f:
                 if ln.startswith("VmRSS:"):
                     return int(ln.split()[1]) / 1024.0
@@ -212,7 +212,7 @@ def _agents_child(cfg_dir):
     sys.path.insert(0, ROOT)
     from sidereus import live_probe
     os.makedirs(os.path.join(cfg_dir, "sessions"), exist_ok=True)
-    with open(os.path.join(cfg_dir, "sessions", "%d.json" % os.getpid()), "w") as f:
+    with open(os.path.join(cfg_dir, "sessions", "%d.json" % os.getpid()), "w", encoding="utf-8") as f:
         json.dump({"pid": os.getpid(), "sessionId": "perf-budget", "cwd": cfg_dir}, f)
     print(simulate_agents(live_probe, cfg_dir))
 
