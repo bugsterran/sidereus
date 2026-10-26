@@ -26,6 +26,7 @@ The Pipelines tab shows a project's stages from `.claude/pipelines/*.json` and l
 ### Watch view
 Three stacked parts: canvas | selected stage's result | «Running N» card.
 - Click a stage to select it. With nothing selected the pane shows the running stage, else the last finished one; with no run it is empty.
+- If the selected stage was running, the selection moves to the next running stage while only one run is live.
 - The pane shows the stage's outcome, loop-backs (↺), agent count and age, its gate evidence («No gate evidence for this stage yet» when none) and gate command («No gate command — nothing machine-checks this stage» when none). Agent buttons open that agent's work log.
 - «Running N» lists every open run (project, pipeline, stage chips, agent count); click a row to open it. It stays in place with «No runs running», so runs starting or ending do not move the layout.
 - Drag the grips between the parts to resize; double-click a grip for the defaults (canvas 75%, pane 14%, card 11% of the free height). Sizes are kept as shares, so a window resize keeps the proportions.

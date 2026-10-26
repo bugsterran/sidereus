@@ -181,6 +181,7 @@ function plNodeHtml(E, n, bad, lt){
 function plCanvas(p, d, lt){
   const E = plEnt(p), G = E.G, chk = plgCheck(G), bad = {};
   E.lt = lt || null;
+  if(typeof plWatchFor === 'function' && plWatchFor(p) && typeof plWatchFollow === 'function') plWatchFollow(E, lt, plWRunKey(plViewRun(PLS.proj, p.name)));   // before node HTML reads E.sel; same run the pane shows
   chk.errs.forEach(x => { if(x.id) bad[x.id] = 1; });
   const v = E.view || { x: 0, y: 0, z: 1 }, VG = plVG(E);
   const mx = Math.max(1200, ...VG.nodes.map(n => n.ui.x + plgW(G, n.id) + 240)), my = Math.max(600, ...VG.nodes.map(n => n.ui.y + plgH(G, n.id) + 240 + PLG_LANE * G.loops.length));

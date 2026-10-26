@@ -49,6 +49,24 @@ function plWatchDef(E, lt){
   const ns = E.G.nodes, st = n => (lt[n.title] || {}).st;
   return ns.find(n => st(n) === 'run') || ns.filter(n => st(n) && st(n) !== 'wait').pop() || null;
 }
+// Watch: a selected stage that was running at pick time follows the run to the single next running stage (E.wsel, memory only).
+// ⚠Armed only at pick time and only when it can be judged (lt, live run, one live run); a gap with nothing running keeps it armed; fan-out (2+ running) disarms.
+// ⚠rk = viewed run key (plWRunKey): a new run, or a run with no stage running/waiting, disarms — never follow into another run. PLNOW_SEEN is 48j's: read only. Never moves the view.
+function plWRunKey(lv){ return lv ? lv.sid + '\n' + (lv.pr ? (lv.pr.rid != null ? lv.pr.rid : lv.pr.t0) : 'wf') : ''; }
+function plWatchFollow(E, lt, rk){
+  if(!E) return;
+  const s = E.sel;
+  if(!s || s.k !== 'n'){ E.wsel = null; return; }
+  const ns = E.G.nodes, st = n => ((lt || {})[n.title] || { st: 'wait' }).st, cur = ns.find(n => n.id === s.id);
+  const ok = !!lt && Object.keys(lt).length > 0 && !(typeof PLS === 'object' && PLS.runSel) && !(typeof PLNOW_SEEN !== 'undefined' && Object.keys(PLNOW_SEEN || {}).length >= 2);
+  if(!E.wsel || E.wsel.id !== s.id){ E.wsel = { id: s.id, rk: rk || '', arm: ok && !!cur && st(cur) === 'run' }; return; }
+  if(!E.wsel.arm || !ok) return;
+  if((rk || '') !== E.wsel.rk || !ns.some(n => st(n) === 'run' || st(n) === 'wait')){ E.wsel.arm = false; return; }
+  if(cur && st(cur) === 'run') return;
+  const on = ns.filter(n => n.id !== s.id && st(n) === 'run');
+  if(on.length === 1){ E.sel = { k: 'n', id: on[0].id }; E.wsel = { id: on[0].id, rk: rk || '', arm: true }; }
+  else if(on.length > 1) E.wsel.arm = false;
+}
 // Running stage agent's «tool · elapsed» from its live SESS sub row. ⚠Tool name only: sub.now may carry « · description» (Agent/Task) — cut here, rule 1.
 function plAgNowLine(x, a){
   if(!x || !a || !a.run || a.id === 'main') return '';
