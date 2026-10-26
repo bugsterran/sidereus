@@ -78,13 +78,17 @@ html[data-ui=next][data-theme=light] #rail .mvb > i.mvnum.mvmsg{background:var(-
 html[data-ui=next] #rail .mvl{overflow:hidden;text-overflow:ellipsis}
 /* bottom: alerts + settings (#bell / #gear, moved unchanged) */
 html[data-ui=next] #rail .rsp{flex:1 1 auto;min-height:8px}
-html[data-ui=next] #rail .rbot{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;width:36px;padding-top:8px;border-top:1px solid var(--nx-rule)}
-html[data-ui=next][data-ui] #rail .rbot > .bell{display:flex;align-items:center;justify-content:center;gap:11px;width:34px;height:34px;margin:0;padding:0}
-html[data-ui=next] #rail .rbot > .bell .ic{width:15px;height:15px}
+html[data-ui=next] #rail .rbot{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;width:40px;padding-top:8px;border-top:1px solid var(--nx-rule)}
+html[data-ui=next][data-ui] #rail .rbot > .bell{display:flex;align-items:center;justify-content:center;gap:11px;width:40px;height:40px;margin:0;padding:0}
+/* same 40px box / 19px icon as the view tabs (.mvb) — at 15px the alerts and settings icons were the smallest targets on the rail */
+html[data-ui=next] #rail .rbot > .bell .ic{width:19px;height:19px}
+html[data-ui=next] #rail.open .rbot > .bell .ic{width:17px;height:17px}
 html[data-ui=next] #rail.open .rbot{width:100%;align-items:stretch;gap:2px}
 html[data-ui=next][data-ui] #rail.open .rbot > .bell{justify-content:flex-start;width:100%;height:36px;padding:0 10px;border:0;border-radius:8px;background:none;color:var(--nx-t2);font-size:13px}
 html[data-ui=next][data-ui] #rail.open .rbot > .bell:hover{background:var(--nx-hover);color:var(--nx-t1)}
 html[data-ui=next][data-ui] #rail.open .rbot > .bell .bdg{position:static;margin-left:auto}
+/* settings stays at full text colour while the view tabs dim to .75 — it is the one rail entry people look for, not scan past */
+html[data-ui=next][data-ui] #rail .rbot > #gear{color:var(--nx-t1)}
 /* collapsed-rail tooltip (#railtip, 92d-rail.js railTip): right of the rail, centred on the icon; ⚠z 41 = above rail/header, below the scrim 42 and modals */
 html[data-ui=next] #railtip{position:fixed;z-index:41;transform:translateY(-50%);padding:4px 8px;border-radius:6px;pointer-events:none;white-space:nowrap;
   font-size:12px;font-weight:500;line-height:1.4;background:var(--nx-t1);color:var(--nx-bg);box-shadow:var(--nx-shadow)}
