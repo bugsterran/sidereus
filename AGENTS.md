@@ -11,6 +11,7 @@ The server reads them at import and assembles an **inline PAGE with the same byt
 `sidereus/arch_checks.py` = security check results (loader); runner `scripts/arch_checks.py --category security` (tools never run in Sidereus).
 No external libraries (must run offline). **Git: GitHub remote `origin`; the orchestrator commits, and pushes only when the owner asks · agents never push.**
 **Branches: work is committed on `dev`; `main` is the published default branch and only moves by merging `dev` when the owner says so · releases are SemVer tags `vX.Y.Z` on `main` (CHANGELOG in Keep a Changelog form).**
+**Hotfix: branch `hotfix/X.Y.Z` from the last tag, commit each fix there once, merge into `main`, tag, then merge `main` into `dev`.** ⚠Never commit the same fix on `dev` as well — v0.8.1 left 5 fixes twice under different hashes, which confuses history and can double-count «commit after pass» in the result counts.
 
 ## Direction
 

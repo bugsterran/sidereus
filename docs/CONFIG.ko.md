@@ -40,8 +40,8 @@ Windows 에서는 `py mailbox_config.py ...` 로 실행한다. 데이터 폴더 
 | `hook_session_patterns` | 문자열 목록 | `[]` | 훅이 띄운 세션의 작업 폴더 정규식. 맞으면 숨긴다. |
 | `launchd_label_prefix` | 문자열 | `"io.sidereus"` | `--label viewer` 가 `<접두어>.viewer` 를 낸다. `ext-hooks/demo.sh` 와 MCP 의 다운 안내가 쓴다. 동봉 plist 는 이 값을 읽지 않는다. |
 | `launchd_labels` | 객체 | `{"viewer": "", "watch": "", "databackup": ""}` | 작업별 전체 라벨. 비어 있지 않으면 `<접두어>.<이름>` 대신 쓴다. |
-| `quota_probe` | bool | `false` | 할당량 조회가 429 인 동안 120초마다 유료 Haiku 호출 1회(`max_tokens 1`, 약 $0.00002, 한 달 내내 429 여도 ~$0.02)로 응답 헤더의 크레딧 비율을 읽는다. |
-| `quota_lookup` | bool | `true` | `false` 면 키체인의 OAuth 토큰을 읽지 않고 `api.anthropic.com` 도 부르지 않는다. 상태 표시줄의 5h/7d 수치가 빈다. [SECURITY.md](../SECURITY.md) 참고. |
+| `quota_probe` | bool | `false` | 할당량 조회가 429 인 동안 120초마다 유료 Haiku 호출 1회(`max_tokens 1`, 약 $0.00002, 한 달 내내 429 여도 ~$0.02)로 응답 헤더의 크레딧 비율을 읽는다. ⚠ Claude Code 로그인 토큰으로 Claude Code 밖에서 추론 요청을 보낸다. Anthropic 약관이 서드파티 도구의 구독 자격 증명 사용을 제한할 수 있으니, 그 위험을 받아들이지 않으면 꺼 둔다. |
+| `quota_lookup` | bool | `true` | `false` 면 키체인의 OAuth 토큰을 읽지 않고 `api.anthropic.com` 도 부르지 않는다. 상태 표시줄의 5h/7d 수치가 빈다. ⚠ 조회는 Claude Code 로그인 토큰을 Claude Code 밖에서 쓴다(사용량 읽기만). Anthropic 약관이 서드파티 도구의 구독 자격 증명 사용을 제한할 수 있다. [SECURITY.md](../SECURITY.md) 참고. |
 | `keep_awake` | bool | `true` | `false` 면 세션이 일하는 동안에도 `caffeinate` 를 잡지 않는다. |
 | `compact_history` | `["YYYY-MM-DD", int\|null]` 목록 | `[]` | 자동 압축 기준 이력: 적용 날짜, 토큰 수(`null` = 끔). 날짜는 엄격히 오름차순, 최대 50행, 값은 1000~10000000. `[]` 면 현재 설정만. |
 | `port` | int | `8799` | 뷰어 포트, 1024~65535. 범위 밖은 맞추지 않고 거부한다. [포트](#포트) 참고. |

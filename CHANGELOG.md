@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings › «Features»: a toggle applies on «Save» — no restart; the open page shows or hides the tab and the Pipelines «Harness» switch at once.
 - Pipelines: «Red check», «Catch» (seeds) and «Holdout» in the evaluation panel explain themselves on hover.
 - Harness: with Claude Code telemetry on, every Claude Code hook shows its full run count (hooks that print nothing included), and a hook that ran 0 times over 3+ days is flagged «did not run in N days».
+- Docs: `SECURITY.md` and `docs/CONFIG.md` note that the quota lookup and the paid quota probe reuse the Claude Code sign-in token outside Claude Code, which Anthropic's terms may restrict.
 
 ### Fixed
 

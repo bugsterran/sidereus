@@ -18,6 +18,7 @@ Sidereus is a local monitor plus a control relay. Everything it does, and how to
 - The only outbound request is the optional quota lookup to `api.anthropic.com`, using the Claude Code OAuth token (macOS keychain; Windows and Linux: `<config dir>/.credentials.json`).
 - **Dev scripts, not the viewer:** `scripts/arch_checks.py --category security` and `scripts/deps_audit.py` query free advisory sources (OSV.dev, npm, semgrep registry, endoflife.date) when you run them — package names and versions only; `--offline` skips them, and an unreachable network is reported as skipped, never as clean.
 - **Paid quota probe — off by default.** With `quota_probe: true` (or `SIDEREUS_QUOTA_PROBE=1`), while the lookup returns 429 the viewer sends one Haiku request to `api.anthropic.com/v1/messages` every 120 s with the same token (`max_tokens 1`, about $0.00002 each, billed to that account) and reads only the rate-limit headers; the body is discarded.
+- ⚠ **Terms of use.** The quota lookup and the paid probe reuse the Claude Code sign-in token outside Claude Code. Anthropic's terms may restrict use of subscription credentials by third-party tools. The lookup only reads usage; the probe sends inference requests with that token — leave it off unless you accept that risk. Both can be turned off (`quota_lookup: false`, `quota_probe: false`).
 
 ## What it never does
 
