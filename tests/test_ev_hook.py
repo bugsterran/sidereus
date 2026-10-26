@@ -25,20 +25,69 @@ rec = _load("evidence_rec_t", "scripts/evidence_rec.py")
 SHA = "0123456789abcdef0123456789abcdef01234567"
 
 
-class NoFlock(unittest.TestCase):
-    """Windows has no fcntl: both modules still import, and no evidence row is written (documented degrade)."""
+class _FakeMsvcrt(object):
+    LK_UNLCK, LK_NBLCK = 0, 2
 
-    def test_no_row_without_flock(self):
+    def __init__(self, fail=False):
+        self.calls, self.fail = [], fail
+
+    def locking(self, fd, mode, n):
+        self.calls.append((mode, n, os.lseek(fd, 0, os.SEEK_CUR)))
+        if self.fail and mode == self.LK_NBLCK:
+            raise OSError(36, "lock violation")
+
+
+class WinLock(unittest.TestCase):
+    """Windows (simulated: fcntl None + fake msvcrt): rows are appended under a `.lock` sidecar byte-0 lock."""
+
+    def setUp(self):
         d = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, d, True)
-        p = os.path.join(d, "evidence.jsonl")
+        self.p = os.path.join(d, "sub", "evidence.jsonl")
+
+    def _with(self, m, ms):
+        st = contextlib.ExitStack()
+        st.enter_context(mock.patch.object(m, "fcntl", None))
+        st.enter_context(mock.patch.object(m, "msvcrt", ms))
+        st.enter_context(mock.patch.object(m.time, "sleep", lambda s: None))
+        return st
+
+    def test_row_written_and_lock_released(self):
         for m in (ev, rec):
-            with mock.patch.object(m, "fcntl", None):
-                self.assertFalse(m.append(p, "{}\n"))
-        self.assertFalse(os.path.exists(p))
+            ms = _FakeMsvcrt()
+            with self._with(m, ms):
+                self.assertTrue(m.append(self.p, '{"a":1}\n'))
+            self.assertEqual(ms.calls, [(ms.LK_NBLCK, 1, 0), (ms.LK_UNLCK, 1, 0)], m.__name__)
+        with open(self.p, "rb") as f:
+            self.assertEqual(f.read(), b'{"a":1}\n{"a":1}\n')
+        self.assertTrue(os.path.exists(self.p + ".lock"))
+
+    def test_lock_miss_writes_nothing(self):
+        for m in (ev, rec):
+            ms = _FakeMsvcrt(fail=True)
+            with self._with(m, ms):
+                self.assertFalse(m.append(self.p, "{}\n"))
+            self.assertEqual(len(ms.calls), m.WIN_LOCK_TRIES)
+            self.assertNotIn(ms.LK_UNLCK, [c[0] for c in ms.calls])
+        self.assertFalse(os.path.exists(self.p))
+
+    def test_rotation_keeps_lf(self):
+        ms = _FakeMsvcrt()
+        with self._with(rec, ms):
+            for i in range(rec.EV_CAP + 1):
+                rec.append(self.p, '{"i":%d}\n' % i)
+        with open(self.p, "rb") as f:
+            lines = f.read().splitlines(True)
+        self.assertEqual(len(lines), rec.EV_KEEP)
+        self.assertEqual((lines[-1], b"\r" in b"".join(lines)), (b'{"i":%d}\n' % rec.EV_CAP, False))
+
+    def test_no_lock_at_all_writes_nothing(self):
+        for m in (ev, rec):
+            with mock.patch.object(m, "fcntl", None), mock.patch.object(m, "msvcrt", None):
+                self.assertFalse(m.append(self.p, "{}\n"))
+        self.assertFalse(os.path.exists(self.p))
 
 
-@unittest.skipIf(ev.fcntl is None, "no flock (Windows): evidence rows are off")
 class EvHook(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
@@ -176,6 +225,8 @@ class EvHook(unittest.TestCase):
     def test_append_matches_evidence_rec(self):
         # The plugin ships hooks/ only, so the flock/rotate append is duplicated: keep it identical.
         self.assertEqual(inspect.getsource(ev.append), inspect.getsource(rec.append))
+        self.assertEqual(inspect.getsource(ev._win_append), inspect.getsource(rec._win_append))
+        self.assertEqual((ev.WIN_LOCK_TRIES, ev.WIN_LOCK_STEP), (rec.WIN_LOCK_TRIES, rec.WIN_LOCK_STEP))
         self.assertEqual((ev.EV_CAP, ev.EV_KEEP), (rec.EV_CAP, rec.EV_KEEP))
 
 

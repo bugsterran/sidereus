@@ -16,8 +16,13 @@ import time
 
 try:
     import fcntl
-except ImportError:   # Windows: no flock, so no row (never a partial write)
+except ImportError:   # Windows: msvcrt sidecar lock instead (_win_append); same code as scripts/evidence_rec.py
     fcntl = None
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None
+WIN_LOCK_TRIES, WIN_LOCK_STEP = 10, 0.1   # msvcrt lock wait: 1 s at most, then no row (ev_hook timeout is 3 s)
 
 # Same derivation as sidereus/config.py DATA_DIR; EV_FILE honours SIDEREUS_EVIDENCE like scripts/check.sh.
 DATA_DIR = os.path.expanduser(os.environ.get("MAILBOX_DIR") or "~/.mailbox-mcp")
@@ -231,7 +236,7 @@ def _take_secs(tuid, now):
 def append(path, line):
     """Append under flock; past EV_CAP lines, rewrite the last EV_KEEP via tmp + rename."""
     if fcntl is None:
-        return False
+        return _win_append(path, line) if msvcrt is not None else False
     d = os.path.dirname(path)
     if d:
         os.makedirs(d, exist_ok=True)
@@ -258,6 +263,48 @@ def append(path, line):
         finally:
             os.close(fd)
     return False
+
+
+def _win_append(path, line):
+    """Windows append: msvcrt byte-0 lock on a `<path>.lock` sidecar (bounded wait), binary write, same rotation.
+    ⚠Not a lock on the evidence file itself: msvcrt locks are mandatory, so readers of byte 0 would fail, and
+    os.replace cannot rename onto a file a handle of ours still holds. A lock miss writes nothing (never unlocked)."""
+    d = os.path.dirname(path)
+    if d:
+        os.makedirs(d, exist_ok=True)
+    lk = os.open(path + '.lock', os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        for i in range(WIN_LOCK_TRIES):
+            try:
+                msvcrt.locking(lk, msvcrt.LK_NBLCK, 1)
+                break
+            except OSError:
+                if i == WIN_LOCK_TRIES - 1:
+                    return False
+                time.sleep(WIN_LOCK_STEP)
+        try:
+            # ⚠O_BINARY: CRT text mode would turn \n into \r\n
+            fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, 'O_BINARY', 0), 0o600)
+            try:
+                os.write(fd, line.encode('utf-8'))
+            finally:
+                os.close(fd)
+            with open(path, 'rb') as f:
+                lines = f.read().splitlines(True)
+            if len(lines) > EV_CAP:
+                tmp = path + '.tmp'
+                with open(tmp, 'wb') as f:
+                    f.writelines(lines[-EV_KEEP:])
+                try:
+                    os.replace(tmp, path)
+                except OSError:
+                    pass   # a reader holds the file open: the row is in, rotation waits for the next write
+            return True
+        finally:
+            os.lseek(lk, 0, os.SEEK_SET)
+            msvcrt.locking(lk, msvcrt.LK_UNLCK, 1)
+    finally:
+        os.close(lk)
 
 
 def handle(ev):
@@ -297,7 +344,7 @@ def handle(ev):
         m = _EXIT.match(err) if isinstance(err, str) else None   # ⚠match only; the text is never stored
         rc = min(int(m.group(1)), 255) if m else 1
     mode, step, repo = hit
-    if not repo or fcntl is None:
+    if not repo or (fcntl is None and msvcrt is None):
         return None
     out = git_status(repo)
     row = {"v": 1, "kind": "check", "ts": int(now), "mode": mode, "repo": repo, "head": head_of(repo),
