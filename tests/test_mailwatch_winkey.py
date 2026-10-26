@@ -6,6 +6,7 @@ Windows is simulated: the server swaps prefs.os for ntpath rules (as test_win_co
 """
 import json
 import os
+import posixpath
 import shutil
 import subprocess
 import tempfile
@@ -18,6 +19,14 @@ from tests.test_prefs import _ENV_CLEAR
 from tests.test_win_compat import _NtOs
 
 P = sidereus("prefs")
+
+
+class _PosixOs:
+    """`os` with POSIX path rules whatever the host is; everything else is the real os."""
+    sep, altsep, name, path = "/", None, "posix", posixpath
+
+    def __getattr__(self, name):
+        return getattr(os, name)
 
 
 class ServerWinKeys(unittest.TestCase):
@@ -47,7 +56,7 @@ class ServerWinKeys(unittest.TestCase):
             self.assertEqual(json.load(f)["mailbox_watch"]["projects"], {"D:\\x": "on", "c:/work/app": "on"})
 
     def test_posix_keys_unchanged(self):
-        with mock.patch.object(P, "os", os):
+        with mock.patch.object(P, "os", _PosixOs()):     # ⚠not the real os: on a Windows runner that is nt and collapses /A and /a
             v = {"mode": "on", "projects": {"/A": "off", "/a": "on"}}
             self.assertEqual(P._watch_collapse(v), v)
             self.assertFalse(P.watch_on("/A", v))
