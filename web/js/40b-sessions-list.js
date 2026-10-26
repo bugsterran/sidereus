@@ -681,7 +681,7 @@ function acctShort(l){
 // Band tooltip ('' with <2 accounts or an external CLI row); raw text, caller escapes.
 function acctTip(x){
   const list = acctList(); if(!list || !x || (x.plat && x.plat !== 'cc')) return '';
-  if(x && x.acct) return TV({msg: 'Claude account {n} — config dir {d}', vars: {n: x.acct, d: x.acctDir || ''}});
+  if(x && x.acct) return x.acctDir ? TV({msg: 'Claude account {n} — config dir {d}', vars: {n: x.acct, d: x.acctDir}}) : TV({msg: 'Claude account {n}', vars: {n: x.acct}});
   const p = list.find(a => a && a.primary);
   if(p && p.dir) return TV({msg: 'Claude account {n} — config dir {d}', vars: {n: p.label || '—', d: p.dir}});
   return TV({msg: 'Claude account {n}', vars: {n: (p && p.label) || '—'}});

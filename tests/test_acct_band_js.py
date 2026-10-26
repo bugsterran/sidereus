@@ -64,11 +64,11 @@ R.b = ['work', 'side', 'z<b>', ''].map(acctCls); R.again = acctCls('work');
 
     def test_label_chip(self):
         self.assertEqual(self.R["chip"], ['<span class="c" title="Claude account me">me</span>',
-                                          '<span class="c" title="Claude account z&lt;b&gt; — config dir ">z&lt;b&gt;</span>', "", "work"])
+                                          '<span class="c" title="Claude account z&lt;b&gt;">z&lt;b&gt;</span>', "", "work"])
 
     def test_chip_shared_prefix(self):
         self.assertEqual(self.R["short1"], ['<span class="c" title="Claude account default">defa</span>',
-                                            '<span class="c" title="Claude account myaccount — config dir ">myac</span>'])
+                                            '<span class="c" title="Claude account myaccount">myac</span>'])
         a, b, c = self.R["short2"]
         self.assertIn(">myacco<", a); self.assertIn('title="Claude account myaccount"', a)
         self.assertIn(">myacc2<", b); self.assertIn(">myacc<", c)     # a label that prefixes another stays whole
