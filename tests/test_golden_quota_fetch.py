@@ -183,7 +183,8 @@ def _run_case(case):
 
     slot = _Slot(log, _snap(dict(BASE, **extra)))
     cell = _Cell(log, [0])
-    patches = {"time": T, "_oauth_token": fake_tok, "warn_once": fake_warn,
+    # ⚠IS_MAC pinned: the no-token message differs off macOS (keychain vs .credentials.json) and the golden holds the macOS one.
+    patches = {"IS_MAC": True, "time": T, "_oauth_token": fake_tok, "warn_once": fake_warn,
                "_cc_account": fake_acct, "_iso_ts": fake_iso,
                "_quota": slot, "_quota_lock": _Lock(log), "_quota_retry_after": cell}
     saved = {k: getattr(q, k) for k in patches}
