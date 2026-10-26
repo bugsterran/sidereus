@@ -148,12 +148,15 @@ def watch_mode(cwd):
     best, val = -1, mw.get("mode")
     here = os.path.normcase(os.path.normpath(cwd)) if cwd else ""   # ⚠normcase: Windows ignores case, `/` = `\`
     projects = mw.get("projects")
-    for p, v in (projects.items() if isinstance(projects, dict) else []):
-        if not isinstance(p, str) or not p:
-            continue
+    # ⚠Same tie-break as sidereus/prefs.watch_on: keys equal after normcase (Windows case/slash) rank by exact spelling,
+    # then sorted order — never dict order, or the result flips with the order keys were saved in.
+    exact = -1
+    for p in sorted(k for k in (projects if isinstance(projects, dict) else {}) if isinstance(k, str) and k):
+        v = projects[p]
         root = os.path.normcase(os.path.normpath(os.path.expanduser(p)))
-        if (here == root or here.startswith(root.rstrip(os.sep) + os.sep)) and len(root) > best:
-            best, val = len(root), v
+        rank = (len(root), int(p == cwd))
+        if (here == root or here.startswith(root.rstrip(os.sep) + os.sep)) and rank > (best, exact):
+            (best, exact), val = rank, v
     return "off" if val == "off" else "on"
 
 

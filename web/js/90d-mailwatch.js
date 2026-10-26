@@ -12,19 +12,28 @@ async function mwLoadProjs(){
   mwRepaint();
 }
 // Same project source as the pipeline tab chips (48-pipeline.js plChips): known pipeline projects ∪ live session projects ∪ saved overrides.
+// ⚠Same path as prefs.py _path_key on Windows: drive/UNC paths ignore case and `/` = `\`; POSIX paths unchanged.
+function mwKey(p){
+  if(!/^(?:[A-Za-z]:[\\/]|\\\\)/.test(p)) return p;
+  const k = p.replace(/\//g, '\\').toLowerCase(), u = k.slice(0, 2) === '\\\\';
+  return (u ? '\\' : '') + k.replace(/\\+/g, '\\').replace(/(.)\\$/, (m, c) => c === ':' ? m : c);
+}
+// {normalised key: [spelling, value]} — last key wins, as the server's save does.
+function mwNorm(projs){ const m = {}; Object.keys(projs || {}).forEach(p => { m[mwKey(p)] = [p, projs[p]]; }); return m; }
 function mwProjList(w){
-  const s = new Set();
-  (MW_PROJS || []).forEach(x => { if(x && x.path) s.add(x.path); });
-  (typeof strProjList === 'function' ? strProjList() : []).forEach(e => { if(e && e.p) s.add(e.p); });
-  Object.keys((w && w.projects) || {}).forEach(p => s.add(p));
-  return [...s].sort();
+  const m = new Map();
+  Object.keys((w && w.projects) || {}).forEach(p => m.set(mwKey(p), p));   // saved spelling first
+  const add = p => { if(p && !m.has(mwKey(p))) m.set(mwKey(p), p); };
+  (MW_PROJS || []).forEach(x => add(x && x.path));
+  (typeof strProjList === 'function' ? strProjList() : []).forEach(e => add(e && e.p));
+  return [...new Set(m.values())].sort();
 }
 function mwDiff(a, b){
-  const out = [];
+  const out = [], na = mwNorm(a.projects), nb = mwNorm(b.projects);
   if(a.mode !== b.mode) out.push(T('Default', 'short') + ' ' + mwOO(a.mode) + ' → ' + mwOO(b.mode));
-  new Set(Object.keys(a.projects).concat(Object.keys(b.projects))).forEach(p => {
-    const x = a.projects[p], y = b.projects[p];
-    if(x !== y) out.push(p + ' ' + (x ? mwOO(x) : T('default')) + ' → ' + (y ? mwOO(y) : T('default')));
+  new Set(Object.keys(na).concat(Object.keys(nb))).forEach(k => {
+    const x = na[k] && na[k][1], y = nb[k] && nb[k][1];
+    if(x !== y) out.push((nb[k] || na[k])[0] + ' ' + (x ? mwOO(x) : T('default')) + ' → ' + (y ? mwOO(y) : T('default')));
   });
   return out;
 }
@@ -95,6 +104,7 @@ document.addEventListener('click', e => {
     const w = mwWant(); if(!w) return;
     const p = b.dataset.mwpath, k = b.dataset.mwp;
     MW_PEND = { mode: w.mode, projects: Object.assign({}, w.projects) };
+    Object.keys(MW_PEND.projects).forEach(o => { if(o !== p && mwKey(o) === mwKey(p)) delete MW_PEND.projects[o]; });
     if(k === 'on' || k === 'off') MW_PEND.projects[p] = k; else delete MW_PEND.projects[p];
     MW_NOTE = null; mwRepaint();
   }
