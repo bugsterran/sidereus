@@ -47,7 +47,7 @@ class FeaturePrefs(unittest.TestCase):
         rows = F.listing()
         self.assertEqual([r["id"] for r in rows], ["hist", "retro"])
         self.assertEqual(sorted(rows[0]), ["default_on_public", "deps", "id", "on", "set", "title"])   # ⚠allow-list, metadata only
-        self.assertEqual((rows[0]["on"], rows[0]["set"]), (True, False))     # running = import-time; saved = file now
+        self.assertEqual((rows[0]["on"], rows[0]["set"]), (True, False))     # running = cache; saved = file now
         self.assertEqual((rows[1]["title"], rows[1]["deps"], rows[1]["set"]), ("돌아보기", ["hist", "failures"], True))
 
     def test_get_prefs_has_features(self):
@@ -64,10 +64,12 @@ class FeaturePrefs(unittest.TestCase):
 
     def test_post_known_ids_saved(self):
         code, out, _h = post("/api/prefs/set", {"key": "features", "value": {"retro": False}}, origin=ORIGIN)
-        self.assertEqual((code, out["ok"], out["restart"]), (200, True, True))
+        self.assertEqual((code, out["ok"], out["restart"]), (200, True, False))
+        self.assertEqual(out["features"], {"hist": True, "retro": False})     # applied on Save, no restart
+        self.assertEqual(F._TOGGLES, {"retro": False})
         self.assertEqual(self._file()["features"], {"retro": False})
         code, out, _h = post("/api/prefs/set", {"key": "features", "reset": True}, origin=ORIGIN)
-        self.assertEqual(code, 200)
+        self.assertEqual((code, out["features"], F._TOGGLES), (200, {"hist": True, "retro": True}, {}))
         self.assertNotIn("features", self._file())
 
     def test_post_rejects(self):

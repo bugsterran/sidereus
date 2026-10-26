@@ -27,7 +27,6 @@ import gzip
 import json
 import os
 import sys
-import threading
 import traceback
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -46,7 +45,7 @@ import sidereus.memo  # noqa: F401  (nothing used here; kept for import order)
 from sidereus.config import GZIP_MIN, INSTANCE_ID, PORT, argv, viewer_origin
 from sidereus.warn import log_ts
 from sidereus.bus import ensure_bus, messages
-from sidereus.features import on as feature_on, route_feature, thread_on
+from sidereus.features import on as feature_on, register_threads, route_feature, start_threads
 from sidereus.ui_prefs import memory_only as ui_prefs_memory_only
 import sidereus.claude_roots  # noqa: F401  (nothing used here; kept for import order)
 import sidereus.transcript  # noqa: F401  (nothing used here; kept for import order)
@@ -284,25 +283,23 @@ def main():
     _win_load()
     _wsnap_load()                 # Snapshots at failure time (persist across restarts)
     _wdrop_load()                 # Debris the human marked as handled
-    # Each start is gated by thread_on(name): a thread claimed by a switched-off feature manifest is not started.
-    for target, name in (
-            (_win_loop, "win_loop"),
-            (_usage_loop, "usage_loop"),         # ccusage is slow, so background only
-            (_quota_loop, "quota_loop"),         # Official quota (frequent 429s, so it backs off)
-            (_projcost_loop, "projcost_loop"),   # Per-project totals (local index)
-            (_wkuse_loop, "wkuse_loop"),         # Weekly per-project tokens (measured 26s — separate thread)
-            (_today_loop, "today_loop"),         # Today by hour (measured 0.75s — every minute)
-            (_fail_loop, "fail_loop"),           # Failure event accumulation (first full scan 1.3GB=2.4s — done ahead)
-            (_awake_loop, "awake_loop"),         # Keep-awake while sessions are running
-            (_struct_warm_loop, "struct_warm"),  # Structure treemap idle pre-warm (one at a time)
-            (_tl_warm, "tl_warm"),               # Timeline cache pre-warm (one shot, see TL_WARM_DELAY_S)
-            (sidereus.toolidx.warm, "toolidx_warm")):   # Tool usage index + 30-day caches before the first Harness/Tools click
-        if thread_on(name):
-            threading.Thread(target=target, name=name, daemon=True).start()
-    if thread_on("qburn_warm_start"):
-        qburn_warm_start()        # /api/quota/burn: full body after the first live quota sample; light until then
-    if thread_on("br_boot_warm_start"):
-        br_boot_warm_start()      # Branch tab: rebuild keys requested before the restart (sidereus/git.py BR_WARM_FILE)
+    # Each start is gated by thread_on(name); a thread of a feature switched on later starts on Save (features.save).
+    register_threads((
+        ("win_loop", _win_loop, "loop"),
+        ("usage_loop", _usage_loop, "loop"),         # ccusage is slow, so background only
+        ("quota_loop", _quota_loop, "loop"),         # Official quota (frequent 429s, so it backs off)
+        ("projcost_loop", _projcost_loop, "loop"),   # Per-project totals (local index)
+        ("wkuse_loop", _wkuse_loop, "loop"),         # Weekly per-project tokens (measured 26s — separate thread)
+        ("today_loop", _today_loop, "loop"),         # Today by hour (measured 0.75s — every minute)
+        ("fail_loop", _fail_loop, "loop"),           # Failure event accumulation (first full scan 1.3GB=2.4s — done ahead)
+        ("awake_loop", _awake_loop, "loop"),         # Keep-awake while sessions are running
+        ("struct_warm", _struct_warm_loop, "loop"),  # Structure treemap idle pre-warm (one at a time)
+        ("tl_warm", _tl_warm, "loop"),               # Timeline cache pre-warm (one shot, see TL_WARM_DELAY_S)
+        ("toolidx_warm", sidereus.toolidx.warm, "loop"),   # Tool usage index + 30-day caches before the first Harness/Tools click
+        ("qburn_warm_start", qburn_warm_start, "once"),       # /api/quota/burn: full body after the first live quota sample; light until then
+        ("br_boot_warm_start", br_boot_warm_start, "once"),   # Branch tab: rebuild keys requested before the restart (sidereus/git.py BR_WARM_FILE)
+    ))
+    start_threads()
     wm = ", ".join(f"{k.replace('claude-','')}={_model_win(k)[0]//1000}k({_model_win(k)[1]} sessions)" for k in sorted(_win_ev))
     print(f"Sidereus (viewer) started — {url}  ({n} messages · 2.5s incremental refresh · no reload)", flush=True)
     print(f"  Learned context windows: {wm or '(none yet — scanning)'}", flush=True)

@@ -235,7 +235,7 @@ async function hnLoad(proj, force){
   // A remembered platform this server no longer knows: fall back to Claude Code instead of a dead end.
   if(v && v.msg === 'unknown platform' && HN.plat === plat && plat !== 'cc'){ hnSetPlat('cc'); return; }
   if(mainView === 'pipe' && PLVIEW === 'harness') plPaint(true);   // poll-style: skipped while focus is inside .hnw
-  if(v && v.scanning) setTimeout(() => { if(mainView === 'pipe' && PLVIEW === 'harness' && PLS.proj === proj && HN.plat === plat) hnLoad(proj, true); }, 5000);
+  if(v && v.scanning) setTimeout(() => { if(FEATS.harness !== false && mainView === 'pipe' && PLVIEW === 'harness' && PLS.proj === proj && HN.plat === plat) hnLoad(proj, true); }, 5000);
 }
 function hnSetPlat(p){
   HN.plat = String(p || 'cc'); lsSet('sidereus.hnplat', HN.plat);

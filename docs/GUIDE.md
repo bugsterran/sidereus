@@ -202,7 +202,7 @@ Settings (gear), one tab per group. Screen values are stored on the viewer serve
 - «Diagnostics» (read-only): hooks on the same events, a CLAUDE.md shadowing AGENTS.md, hooks that look silently off, installed plugins, «Security tools».
 - «Saved views» (when one exists): «Apply» switches to it.
 
-⚠ «Auto-compact» and «Compact threshold» are written to each account's Claude Code `settings.json` (preview + backup) and apply to new sessions. «Features» changes need «Save» and a restart.
+⚠ «Auto-compact» and «Compact threshold» are written to each account's Claude Code `settings.json` (preview + backup) and apply to new sessions. «Features» changes apply on «Save», no restart.
 
 Keys: [README «Customising»](../README.md#customising), [CONFIG.md](CONFIG.md).
 

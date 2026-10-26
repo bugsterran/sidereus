@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Platform, config, launcher, tests and tooling
 
+- **Feature toggles change at runtime** (`sidereus/features.py` `save` · `start_threads`).
+  - Cause: Save swaps `_TOGGLES` while request threads and loops read it; mutating the dict in place lets one `on()` call see half old, half new.
+  - ⇒ `save()` replaces the dict whole under `_SWAP` (rolled back if the write fails); each reader takes one local ref per call.
+  - ⚠Swap the dict, never mutate it. A claimed loop idles while off and never exits — exiting would start a second copy on the next on.
+
 - **The first-screen budget runs only on macOS** (`scripts/screen_check.mjs` `FIRST_SCREEN_MS`, #25).
   - Cause: screen_check needs the hard-coded Chrome path (`CHROME` env overrides it) and is not in CI; CI only curls `/` (demo smoke test).
   - ⇒ A slow first screen is caught by `check.sh --full` on a Mac, not by CI on Linux/Windows.

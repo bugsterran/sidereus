@@ -67,7 +67,7 @@ class I18nBridge(unittest.TestCase):
                   "}"
                   "out({bad: bad.slice(0, 20), n: Object.keys(OLD).length, ctx: Object.values(map).filter(f => f.ctx).length});")
         self.assertEqual(r["bad"], [])
-        self.assertEqual(r["n"], 1545)   # -2: the old bell tooltip/aria texts are gone (now «Alerts — done · failed»)
+        self.assertEqual(r["n"], 1543)   # -2: Features restart description and «off now» hint gone (applies on Save)
         self.assertGreaterEqual(r["ctx"], 33)   # one English text with two Korean readings -> a context key (slices add more)
 
     def test_server_text_corpus(self):
