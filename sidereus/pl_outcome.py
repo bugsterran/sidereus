@@ -27,7 +27,7 @@ OC_GIT_TIMEOUT = 3
 OC_GIT_WAIT = 0.5
 OC_CACHE_MAX = 32
 OC_EVAL_DIR = os.path.join(config.DATA_DIR, "eval")   # same folder as pl_eval.EVAL_DIR; tests patch it here
-OC_DENY_CODES = ("jump", "agent", "model", "tag", "stage", "stop")   # = hooks/pl_flow.py DENY_CODES
+OC_DENY_CODES = ("jump", "agent", "model", "tag", "stage", "stop", "gate", "skipgate")   # = hooks/pl_flow.py DENY_CODES
 OC_NAME = re.compile(r"[a-z0-9-]{1,40}")
 OC_HEX = re.compile(r"[0-9a-f]{4,40}")
 OC_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})\.md")

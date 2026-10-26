@@ -5,7 +5,8 @@ const HN_FST = { ok: 'ok', ng: 'ng', run: 'run', none: 'none' };
 const HN_FK = { req: 'Request', guard: 'Guard', edit: 'Edit', gate: 'Gate', review: 'Review', commit: 'Commit', keep: 'Kept' };
 const HN_FO = { done: 'done', run: 'running', skip: 'skipped', back: 'sent back', fail: 'failed' };
 // pl_flow.py deny codes (harness_flow.HF_DENY_CODES)
-const HN_FD = { jump: 'Stage jump', agent: 'Wrong agent', model: 'Wrong model', tag: 'Missing tag', stage: 'Unknown stage', stop: 'Stopped' };
+const HN_FD = { jump: 'Stage jump', agent: 'Wrong agent', model: 'Wrong model', tag: 'Missing tag', stage: 'Unknown stage', stop: 'Stopped',
+  gate: 'Commit before gate', skipgate: 'Required gate skipped' };
 function hnFN(s, n){ return esc(T(s).replace('{n}', n)); }
 // Why a node has no value (harness_flow `why`); ⚠class and text come only from these maps, never the raw value. Missing/unknown → dash.
 const HN_FW = { norec: 'not recorded', pending: 'not yet', window: 'outside read window', na: 'n/a' };

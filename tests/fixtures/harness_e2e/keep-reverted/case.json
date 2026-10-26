@@ -1,0 +1,36 @@
+{
+ "v": 1,
+ "guard": "keep",
+ "situation": "PASS at commit A, then a later commit restores A's parent tree",
+ "expect": "reverted",
+ "pair": "keep-held",
+ "steps": [
+  {
+   "commit": {
+    "a.txt": "1\n"
+   }
+  },
+  {
+   "commit": {
+    "a.txt": "2\n"
+   }
+  },
+  {
+   "check": {
+    "mode": "fast",
+    "rc": 0
+   }
+  },
+  {
+   "commit": {
+    "a.txt": "1\n"
+   }
+  }
+ ],
+ "node": {
+  "keep": {
+   "st": "ng",
+   "state": "reverted"
+  }
+ }
+}

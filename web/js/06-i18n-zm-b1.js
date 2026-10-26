@@ -292,6 +292,7 @@ Object.assign(I18N.ko, {
   // 47c-harness-flow.js
   'Guard': '가드', 'Edit|flow': '수정', 'Commit': '커밋', 'Kept': '유지', 'running|flow': '진행 중', 'sent back': '되돌림',
   'Stage jump': '단계 건너뛰기', 'Wrong agent': '에이전트 불일치', 'Wrong model': '모델 불일치', 'Missing tag': '태그 누락', 'Unknown stage': '없는 단계', 'Stopped|flow': '중단됨',
+  'Commit before gate': '게이트 전 커밋', 'Required gate skipped': '필수 게이트 건너뛰기',
   // 48-pipeline.js
   'Ask each time': '매번 묻기',
   'Picks the pipeline that fits the request and runs it · skips unneeded stages': '요청에 맞는 파이프라인을 골라 바로 실행합니다 · 필요 없는 단계는 건너뜁니다',

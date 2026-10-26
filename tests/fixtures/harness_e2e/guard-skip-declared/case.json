@@ -1,0 +1,60 @@
+{
+ "v": 1,
+ "guard": "guard",
+ "situation": "[pl-skip:] of Build, which requireGates does not list",
+ "expect": "allowed",
+ "pair": "guard-skip-required",
+ "pipe": {
+  "v": 1,
+  "name": "e2e-flow",
+  "guards": {
+   "requireGates": [
+    "Verify"
+   ]
+  },
+  "stages": [
+   {
+    "title": "Design",
+    "agent": "sidereus-designer"
+   },
+   {
+    "title": "Build",
+    "agent": "sidereus-implementer",
+    "gate": "scripts/check.sh --fast"
+   },
+   {
+    "title": "Verify",
+    "agent": "sidereus-verifier",
+    "gate": "scripts/check.sh --full"
+   }
+  ]
+ },
+ "ev": [
+  {
+   "e": "pre",
+   "tool": "Agent",
+   "stage": "Design",
+   "denied": 0
+  },
+  {
+   "e": "post",
+   "tool": "Agent",
+   "stage": "Design"
+  },
+  {
+   "e": "pre",
+   "tool": "Bash",
+   "cmd": "true",
+   "desc": "[pl-skip:e2e-flow/Build] x",
+   "denied": 0
+  }
+ ],
+ "node": {
+  "guard": {
+   "st": "ok",
+   "deny": 0,
+   "codes": [],
+   "text": "Blocked 0 · 1 declared skip(s)"
+  }
+ }
+}
