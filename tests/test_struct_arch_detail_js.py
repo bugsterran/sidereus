@@ -219,6 +219,18 @@ class ArchDetail(unittest.TestCase):
             self.assertNotIn("opacity", ln)                     # always-on state: colour only
             self.assertNotIn(".arn", ln)
 
+    def test_floating_panel_reserves_scroll_room(self):
+        with open(os.path.join(WEB, "css", "79-structure-arch.css"), encoding="utf-8") as fh:
+            css = fh.read()
+        narrow = css.split("@media (max-width:1060px){", 1)[1].split("\n}\n", 1)[0]
+        rule = re.search(r"\.archbody>\.archdetp\{[^}]*\}", narrow).group(0)
+        mh = (re.search(r"max-height:min\((\d+)px", rule), re.search(r"margin:0 0 (\d+)px", rule))
+        sp = re.search(r"\.archbody:has\(>\.archdetp\)>\.archmap::after\{[^}]*height:(\d+)px", narrow)
+        self.assertTrue(all(mh) and sp)
+        self.assertGreaterEqual(int(sp.group(1)), int(mh[0].group(1)) + int(mh[1].group(1)))   # spacer >= panel + its margin
+        self.assertNotIn("archmap::after", css.replace(narrow, ""))                       # 1100/1440 unchanged
+        self.assertNotIn("archdg", sp.group(0))                                           # not on .archdg: inline pad would override
+
     def test_det_file_rules(self):
         self.assertNotRegex(DET, r"[가-힣]")
         self.assertIsNone(re.search(r"^ARCH\.", DET, re.M))      # ARCH fields only inside functions

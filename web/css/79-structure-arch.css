@@ -92,6 +92,8 @@ html[data-ui][data-ui][data-ui] .archtab .archok[disabled]{opacity:1;color:var(-
   .archbody>.strspg{display:none}
   /* ⚠module detail floats over the map's bottom-left (minimap keeps bottom-right): below the map it opened at y 872 of 900, off screen */
   .archbody>.archdetp{grid-column:1;grid-row:1;align-self:end;justify-self:start;z-index:4;margin:0 0 18px 18px;width:min(340px,calc(100% - 240px));max-height:min(360px,calc(100% - 140px));box-shadow:0 4px 16px rgba(0,0,0,.35)}
+  /* ⚠scroll room under the diagram = panel max 360 + margin 18, so bottom-left nodes can clear the panel; a spacer after .archdg because 84j7 archMmPadCss writes inline padding on it */
+  .archbody:has(>.archdetp)>.archmap::after{content:'';display:block;height:378px}
 }
 @media (min-width:1061px){.archbody[style*="--spw"]{grid-template-columns:minmax(0,1fr) min(var(--spw),60%)}}   /* dragged Edges width (81i); one column below */
 /* Diagram toolbar: overview hint + «Include tests», or «← All» + focused module + in/out legend (in = --nx-ok, out = --nx-info everywhere) */
