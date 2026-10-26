@@ -14,6 +14,7 @@
 .hnfn:focus-visible,.hnfb:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px}
 .hnft{font-size:12px;font-weight:600}
 .hnfl{font-size:11px;color:var(--nx-t2,#909298);display:flex;flex-wrap:wrap;gap:3px;align-items:baseline;min-width:0;overflow-wrap:anywhere}
+.hnfi1{white-space:nowrap}   /* ⚠one guard count per item: .hnfl's overflow-wrap:anywhere split «1 / declared skip(s)» */
 /* why-a-node-is-empty badges (47c HN_FW keys only) */
 .hnfw0 .hnf-w-norec{font-style:normal;padding:0 4px;border:1px dashed var(--nx-t2,#909298);border-radius:3px}
 .hnfw0 .hnf-w-pending{font-style:normal;color:var(--nx-info,#5899f3)}

@@ -66,7 +66,7 @@ const dxOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 // ⚠Copy only for a real command (brew/winget/pip/go/scoop); a URL hint stays plain text. Server values: esc(), never T().
 function dxSecTools(rows){
   const L = dxArr(rows);
-  if(!L.length) return dxEmpty(T('Could not load'));
+  if(!L.length) return dxEmpty(T('Not installed'));   // empty list = none found; a failed request shows «Could not load» in cfgPaneDx
   const net = {'yes': T('needs network'), 'registry': T('network for registry rules')};
   return '<ul class=dxt>' + L.map(x => {
     const id = String(x.id || ''), cmd = x.cmd ? String(x.cmd) : '', ok = x.installed === true;

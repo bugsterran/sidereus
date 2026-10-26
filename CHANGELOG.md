@@ -14,6 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Structure: clicking a module keeps it under the pointer instead of re-centring the view; at 900 px the detail panel floats over the map instead of opening below the fold.
+- Pipelines: the «Running» row no longer overlaps its agents summary at 900–1100 px; «Working now» names end in an ellipsis with the status icon kept; the evaluation panel shows English stage names in English; tour step 3 points at «Edit» in Watch mode; the template menu item reads «Start from a template» like the empty-state button.
+- Settings: «Connect» from the Pipelines list opens the preview in «Diagnostics», where the diff is readable; Features «Save» is the primary button; an empty «Security tools» list reads «Not installed», not «Could not load».
+- Harness: the Guard node no longer says «no record» next to skip counts, and a count never breaks from its word.
+- Status bar and timeline: reset times and the saver label drop before «Today» on a narrow bar; the dark rail badge meets 4.5:1 contrast; the compaction chip shows «N×» instead of a cut word; the timeline «?» has a 24 px hit area.
 - Pipelines: a commit at a middle stage (for example the release pipeline's tag stage) no longer ends the run, so the next stage is not refused as a skipped jump.
 - Harness: a commit the pipeline guard blocks because a required gate has not passed (or a declared skip of a required gate) now counts as «Blocked» in the flow and result counts, labelled «Commit before gate» / «Required gate skipped»; before it showed «Blocked 0».
 - Sessions: on Windows and Linux with several Claude Code accounts, when one account's session list cannot be read its open sessions show as unknown instead of ended.

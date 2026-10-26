@@ -25,10 +25,11 @@ function hnFLine(nd){
   if(nd.k === 'req') return v && v.name ? esc(v.name) + ' <i class=hntm>' + esc(hnWhen(v.t0)) + '</i>' : dash;
   if(nd.k === 'guard'){
     if(!v) return dash;
-    const bits = [typeof v.deny === 'number' ? hnFN('Blocked {n}', v.deny) : esc(T('no record'))];
+    const bits = typeof v.deny === 'number' ? [hnFN('Blocked {n}', v.deny)] : [];
     if(v.skip > 0) bits.push(hnFN('{n} declared skip(s)', v.skip));
     if(v.loop > 0) bits.push(hnFN('{n} loop-back(s)', v.loop));
-    return bits.join(' · ');
+    if(!bits.length) bits.push(esc(T('no record')));   // only when nothing at all was counted
+    return bits.map(b => '<span class=hnfi1>' + b + '</span>').join(' · ');
   }
   if(nd.k === 'edit'){
     if(!v) return dash;

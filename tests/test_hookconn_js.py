@@ -40,10 +40,11 @@ const tick = () => new Promise(r => setTimeout(r, 0));
   R.gets = c.GETS.slice();
   R.pl = vm.runInContext("hcInner('pl')", c);
   R.dx = vm.runInContext("hcInner('dx')", c);
-  W.push({dataset: {hcw: 'pl'}, contains: () => false, querySelector: () => null});
+  W.push({dataset: {hcw: 'dx'}, contains: () => false, querySelector: () => null});
   c.REPLY = {ok: true, diff: '+  "hooks": <x>', base: 'abc', adds: 2};
   await vm.runInContext("hcAct('go', 'cursor')", c);
-  R.prev = vm.runInContext("hcInner('pl')", c);
+  R.prev = vm.runInContext("hcInner('dx')", c);
+  R.plPrev = vm.runInContext("hcInner('pl')", c);               // the list never shows the diff
   R.painted = W[0].html === R.prev;
   c.REPLY = {ok: true, changed: true};
   const g0 = c.GETS.length, conn = p => ({ok: true, plats: c.DATA.plats.map(x => x.plat === p ? Object.assign({}, x, {state: 'connected', can: false, why: ''}) : x)});
@@ -89,6 +90,12 @@ const tick = () => new Promise(r => setTimeout(r, 0));
   await vm.runInContext("hcLoad(true)", c);
   R.nocanPl = vm.runInContext("hcInner('pl')", c);
   R.nocanDx = vm.runInContext("hcInner('dx')", c);
+  vm.runInContext("CFGCAT = 'disp'; OPENED = 0; TABS = {}; tabSet = (k, v) => { TABS[k] = v; }; cfgOpen = () => { OPENED++; }; delete HCS.cursor", c);
+  c.DATA = DATA; await vm.runInContext("hcLoad(true)", c);
+  c.REPLY = {ok: true, diff: '+o', base: 'b4'}; const p0 = c.POSTS.length;
+  await vm.runInContext("hcAct('open', 'cursor')", c);
+  R.open = vm.runInContext("[CFGCAT, OPENED, TABS['sidereus.cfgcat'], HCS.cursor.st]", c);
+  R.openPosts = c.POSTS.slice(p0);
   c.GETS.length = 0;
   R.off = vm.runInContext("FEATS = {diag: false}; [hcRow('pl'), hcRow('dx'), hcInner('dx')]", c);
   await tick();
@@ -159,6 +166,15 @@ class HookConnNotice(unittest.TestCase):
         self.assertEqual(self.r["raceRefetch"], 1)
         self.assertEqual(self.r["raceState"], "connected")
         self.assertIn("/hooks", self.r["approve"])
+
+    def test_pl_connect_opens_diagnostics(self):
+        self.assertIn("data-hca=open", self.r["pl"])
+        self.assertNotIn("data-hca=go", self.r["pl"])
+        self.assertIn("data-hca=go", self.r["dx"])
+        self.assertNotIn("<pre>", self.r["plPrev"])
+        self.assertNotIn("data-hca=apply", self.r["plPrev"])
+        self.assertEqual(self.r["open"], ["dx", 1, "dx", "prev"])
+        self.assertEqual(self.r["openPosts"], [["/api/hooks/connect", {"plat": "cursor", "dry": True}]])   # dry only
 
     def test_conflict_message(self):
         self.assertIn("다시 미리보기", self.r["conflict"])

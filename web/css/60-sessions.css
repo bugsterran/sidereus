@@ -47,7 +47,7 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .se{font-size:10px;color:#e0725f;font-weight:700;flex:0 0 auto}
 .sm{font-size:9.5px;color:#6b7688;flex:0 0 auto}
 /* Account label chip (40b acctChip, >=2 accounts): colour from the row's .accN; long labels ellipsise at 10ch. */
-:is(.sx > .sacb,.srec .srecac){font-size:9.5px;color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 60%,transparent);background:color-mix(in srgb,var(--acc) 16%,transparent);border-radius:3px;padding:0 3px;flex:0 9 auto;min-width:3ch;max-width:10ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+:is(.sx > .sacb,.srec .srecac){font-size:10px;color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 60%,transparent);background:color-mix(in srgb,var(--acc) 16%,transparent);border-radius:3px;padding:0 3px;flex:0 9 auto;min-width:3ch;max-width:10ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* ⚠Main (.acc0) owns teal; the pool keeps six hues apart from it (acc5 lime), so main never shares a colour with another account. */
 .acc0{--acc:#3cc6c0}.acc1{--acc:#4fa3ff}.acc2{--acc:#e0a03a}.acc3{--acc:#3fbf7f}.acc4{--acc:#d070d0}.acc5{--acc:#a8c94a}.acc6{--acc:#b48cff}
 /* Account band (>=2 accounts, 40b acctCls): inset shadow, no layout shift. ⚠A blocked row's red .sxw:has(.sl.sblk) wins (higher specificity). */

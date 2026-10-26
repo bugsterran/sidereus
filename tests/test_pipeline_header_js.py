@@ -144,7 +144,7 @@ const document = { addEventListener(t, f, c){ L.push([t, f, !!c]); }, querySelec
         self.assertIn('data-plnew disabled', c)                   # same plNewDis as the old buttons
         self.assertIn('data-plimp disabled', c)
         self.assertIn('class="wkrgb on" data-plstd', c)
-        for lab in ("+ New pipeline", "Import from another project", "Ask AI for a draft", "Standard templates"):
+        for lab in ("+ New pipeline", "Import from another project", "Ask AI for a draft", "Start from a template"):
             self.assertIn(lab, b)
 
     def test_R3_menu_closes_on_item_and_esc(self):

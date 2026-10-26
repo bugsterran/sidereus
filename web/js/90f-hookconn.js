@@ -30,12 +30,13 @@ function hcInner(where){
     const lab = x.state === 'connected' ? '' : T(x.state === 'partial' ? 'Partly connected' : 'Sidereus hooks not connected');
     let h = '<div class="hcr' + (x.can ? '' : ' off') + '" data-hcp="' + esc(p) + '" aria-label="' + esc(nm + ' · ' + lab) + '">'
       + '<div class=hch>' + aiLogo(HC_LOGO[p] || p) + '<span class=hcl>' + esc(lab) + '</span>';
-    if(x.can && s.st !== 'prev' && s.st !== 'done') h += '<button type=button class=strp data-hca=go data-hcv="' + esc(p) + '"' + (busy ? ' disabled' : '') + '>' + esc(T('Connect')) + '</button>'
+    // ⚠'pl' never previews in place: the diff was unreadable in the short «Working now» list, so «Connect» opens «Diagnostics».
+    if(x.can && (dx ? s.st !== 'prev' : true) && s.st !== 'done') h += '<button type=button class=strp data-hca=' + (dx ? 'go' : 'open') + ' data-hcv="' + esc(p) + '"' + (busy ? ' disabled' : '') + '>' + esc(T('Connect')) + '</button>'
       + (dx ? '' : '<button type=button class=strp data-hca=later data-hcv="' + esc(p) + '">' + esc(T('Later')) + '</button>');
     if(s.st === 'done') h += '<button type=button class=strp data-hca=cancel data-hcv="' + esc(p) + '">' + esc(T('Close')) + '</button>';   // dismiss the result (and a pinned hint)
     h += '</div><small class=hcf title="' + esc(x.file || '') + '">' + esc(x.file || '') + '</small>';
     if(!x.can && x.why) h += '<small class=hcw0>' + esc(x.why) + '</small>';   // server reason is data: esc, never T()
-    if(s.st === 'prev') h += '<div class=hcd><small>' + esc(T('Nothing is written until Apply.')) + '</small><pre>' + diffHtml(s.diff || '', agLang('x.json')) + '</pre>'
+    if(dx && s.st === 'prev') h += '<div class=hcd><small>' + esc(T('Nothing is written until Apply.')) + '</small><pre>' + diffHtml(s.diff || '', agLang('x.json')) + '</pre>'
       + '<div class=hcb><button type=button class="strp on" data-hca=apply data-hcv="' + esc(p) + '">' + esc(T('Apply')) + '</button>'
       + '<button type=button class=strp data-hca=cancel data-hcv="' + esc(p) + '">' + esc(T('Cancel')) + '</button></div></div>';
     if(s.msg) h += '<small class="hcm' + (s.st === 'err' ? ' err' : '') + '" role=status>' + esc(s.msg) + '</small>';
@@ -66,6 +67,13 @@ const hcErr = e => e && e.status === 409 ? T('The file changed since the preview
 async function hcAct(a, p){
   if(a === 'later'){ lsSet('sidereus.hclater.' + p, '1'); hcPaint(); return; }
   if(a === 'cancel'){ delete HCS[p]; hcPaint(); return; }
+  if(a === 'open'){   // Settings › «Diagnostics» (CFGCAT · cfgOpen, 90-settings.js), then the same dry preview there
+    if(typeof cfgOpen !== 'function') return;
+    CFGCAT = 'dx'; if(typeof tabSet === 'function') tabSet('sidereus.cfgcat', 'dx');
+    cfgOpen();
+    if(!(HCS[p] && HCS[p].st === 'prev')) return hcAct('go', p);
+    return;
+  }
   const s = HCS[p] || {};
   if(a === 'go'){
     HCS[p] = { st: 'busy' }; hcPaint();

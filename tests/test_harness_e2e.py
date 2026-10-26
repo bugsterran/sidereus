@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -42,7 +43,8 @@ def case(name):
 def screen_line(node):
     """English text the Harness strip draws for `node` (web/js/47c-harness-flow.js hnFLine)."""
     from tests.test_harness_flow_js import _js
-    return _js("LANG = 'en'; console.log(JSON.stringify(hnFLine(%s)))" % json.dumps(node))
+    html = _js("LANG = 'en'; console.log(JSON.stringify(hnFLine(%s)))" % json.dumps(node))
+    return re.sub(r"<[^>]*>", "", html)   # visible text only: wrapper spans are layout, the counts are the claim
 
 
 class _Base(unittest.TestCase):

@@ -129,8 +129,9 @@ class FeaturePaneJs(unittest.TestCase):
         r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         R = json.loads(r.stdout)
-        self.assertNotIn("data-v=save", R["none"])
-        save, row = R["pend"].find("data-v=save"), R["pend"].find("class=row")
+        self.assertNotIn("data-mpf=save", R["none"])
+        save, row = R["pend"].find("data-mpf=save"), R["pend"].find("class=row")
+        self.assertIn('class="strp on" data-mpf=save', R["pend"])   # primary style, unlike «Undo»
         self.assertTrue(0 <= save < row, R["pend"])                       # Save precedes the first feature row
         self.assertTrue(0 <= R["pend"].find("data-v=undo") < row)
         self.assertTrue(0 <= R["note"].find("boom") < R["note"].find("class=row"))

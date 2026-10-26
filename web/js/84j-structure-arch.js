@@ -87,10 +87,10 @@ function archLegHtml(v2, uses){   // v2: + Call · Read · Write · Event (84j2)
     + it(sw(20, ln('e-solid')), 'Direct reference') + it(sw(20, ln('e-dot')), 'Estimated')
     + it(sw(22, '<g class="mmdn s-stadium"><rect x=1 y=1 width=20 height=10 rx=5 ry=5 /></g>'), 'External')
     + it('<b class=archlgx>×N</b>', 'N edges merged') + (v2 ? archKindLegHtml(uses) : '')
-    + '<span class=archlgh>' + esc(T('Hover:')) + '</span>'
+    + '<span class=archlgg><span class=archlgh>' + esc(T('Hover:')) + '</span>'   // one nowrap group: the label never wraps away from its items
     + it(sw(20, '<g class="mmdfe arn arin">' + ln('e-solid') + '</g>', 'archdim'), 'incoming')
     + it(sw(20, '<g class="mmdfe arn arout">' + ln('e-solid') + '</g>', 'archdim'), 'calls, 2 steps down')
-    + it(sw(22, '<g class=mmdn><rect x=1 y=1 width=20 height=10 rx=2 ry=2 /></g>', 'archdim'), 'unrelated, dimmed') + '</div>';
+    + it(sw(22, '<g class=mmdn><rect x=1 y=1 width=20 height=10 rx=2 ry=2 /></g>', 'archdim'), 'unrelated, dimmed') + '</span></div>';
 }
 // Pure: evidence list of one edge; every field escaped, file/line carried as data-* for the popup.
 function archEvHtml(ev, i){
@@ -531,7 +531,7 @@ function archPaint(box, head){
   box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d), '', hst + pre) + (rq ? '<div class=archck>' + rq + '</div>' : '') + msg
     + '<div class=archbody' + strSplitStyle('archbody') + '><div class=archmap><div class=archtop>' + (typeof archPathHtml === 'function' ? archPathHtml(mods, d.groups, sel, ARCH.scope && ARCH.scope.p === p ? ARCH.scope : null) : '') + archBarHtml(mods, edges, sel, tests, ARCH.full, fa ? archFlowPick(fa.fls, ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : '') : '', fo)
     + (lay ? '' : '<div class="archmsg archnol" role=status>' + esc(T('No layers — redraw the diagram')) + '</div>')
-    + (any ? archLegHtml(lay, !!kinds && Object.keys(kinds).some(x => kinds[x] === 'uses')) : '') + '</div>' + (any ? '<div class=archdg data-k="' + esc(k) + '"' + (fv ? ' data-fv' : '') + (si >= 0 ? ' data-hub="m' + si + '"' : '') + (sel && fz ? ' data-fit="' + esc(fzk) + '"' : '') + '>' + archDiagram(box, k, src, mods, si >= 0 ? si : '', kinds, sel ? fz : null, bp) + '</div>' : '<div class=strload>' + esc(T('No edge passed the check.')) + '</div>') + '</div>'
+    + (any ? archLegHtml(lay, !!kinds && Object.keys(kinds).some(x => kinds[x] === 'uses')) : '') + '</div>' + (any ? '<div class=archdg data-k="' + esc(k) + '"' + (sel && typeof archMmPadCss === 'function' ? archMmPadCss(k) : '') + (fv ? ' data-fv' : '') + (si >= 0 ? ' data-hub="m' + si + '"' : '') + (sel && fz ? ' data-fit="' + esc(fzk) + '"' : '') + '>' + archDiagram(box, k, src, mods, si >= 0 ? si : '', kinds, sel ? fz : null, bp) + '</div>' : '<div class=strload>' + esc(T('No edge passed the check.')) + '</div>') + '</div>'
     + (any && lay && typeof archMmHtml === 'function' ? archMmHtml(archMmOn()) : '')   // minimap overlay (84j7), outside .archmap
     + (sel && typeof archDetHtml === 'function' ? archDetHtml(d, sel, names, ARCH.nx, { op: i => ARCH.op === p + '\t' + i, dv: i => devAt[i], sn: devSn, drawn: archDrawn(mods, edges, tests, sel, ARCH.full), lit: ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : null })   // module detail (84j3)
       : '<aside class=archside><div class=archsh><b>' + esc(T('Edges')) + '</b><span>' + esc(T('Click for evidence · click evidence for code')) + '</span>'
@@ -568,7 +568,7 @@ async function archSend(){
 }
 // Diagram click (true = handled). Module: focus one level; the focused one again opens its folder in the code tree (no path: no-op).
 // Edge line/label: toggle the evidence of its first passed edge (only ok edges are drawn, archPairs; a ×N pair opens the first).
-// ⚠No scroll or centring: archPaint restores the map/list scroll like the [data-ae] list rows.
+// ⚠No centring: a new focus keeps the clicked node at its screen position (84j7 archMmAt / archMmFirst).
 function archDgClick(p, t){
   const d = ARCH.cache[p] || {}, mods = d.modules || [], at = s => mods[parseInt(String(s || '').slice(1), 10)];
   let b;
@@ -576,7 +576,7 @@ function archDgClick(p, t){
     if(!m){ if(typeof archFocusClick === 'function') archFocusClick(p, d, String(b.dataset.p || '')); return true; }   // ifx chip / entry node (focus view only)
     if(typeof archFocusHx === 'function' && b.closest('.archdg[data-fv]') && archFocusHx(b.dataset.p)){ archFocusClick(p, d, b.dataset.p); return true; }   // paired entry hexagon: lights its flows
     if(ARCH.sel && ARCH.sel.p === p && ARCH.sel.id === m.id){ if(m.path) strPopOpenTree(p, String(m.path)); }
-    else { ARCH.sel = { p, id: m.id }; ARCH.op = ''; paintStruct(); }
+    else { if(typeof archMmAt === 'function') archMmAt(b); ARCH.sel = { p, id: m.id }; ARCH.op = ''; paintStruct(); }
     return true; }
   if((b = t.closest('.archdg .mmdfe'))){ const f = at(b.dataset.f), to = at(b.dataset.t);
     const i = f && to ? (d.edges || []).findIndex(e => e && e.ok && e.from === f.id && e.to === to.id) : -1;
