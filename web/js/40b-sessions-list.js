@@ -241,8 +241,9 @@ function sessPickHtml(x){
   //   Logged-in rule is mboxIn (17): identity.json or a cx launcher id; the server re-checks it in _room_invite.
   const pickable = x.state !== 'done' && mboxIn(x);
   return pickable
-    ? '<input type=checkbox class=spick data-mb="'+esc(x.mbox)+'"'+(picked.has(x.mbox)?' checked':'')
-      + ' title="'+esc(TV({msg: 'Pick {n} to invite to a room', vars: {n: x.mbox}}))+'">'
+    // ⚠label pads the 13px box to a ~21x27 hit area (right/vertical only: .sx clips overflow); a miss used to fall through to the row's open-log click
+    ? '<label class=spickw><input type=checkbox class=spick data-mb="'+esc(x.mbox)+'"'+(picked.has(x.mbox)?' checked':'')
+      + ' title="'+esc(TV({msg: 'Pick {n} to invite to a room', vars: {n: x.mbox}}))+'"></label>'
     : (x.state !== 'done' ? '<span class=spick title="'+esc(T('Cannot invite — identity not confirmed')
         + (x.mbox ? TV({msg: ' (guess: {n} · source {m})', vars: {n: x.mbox, m: x.mboxSrc}}) : '')
         + T(' — run `/room as <id>` in that session to register it'))+'" style="opacity:.3">·</span>' : '');
@@ -556,7 +557,7 @@ function sessClick(e){
   // A click on the card's header area opens its work log (replaces the removed «Log» badge).
   //   Skipped while text is selected, and inside the agent list / details, which have their own targets.
   const hd = e.target.closest && e.target.closest('.sxw > .sx, .sxw > .sx2, .sxw > .sq');
-  if(hd && !(e.target.closest('a,input,button,summary,details'))){
+  if(hd && !(e.target.closest('a,input,label,button,summary,details'))){   // label: pick box padding (forwards its click to the input)
     const sel = window.getSelection && String(window.getSelection());
     const cwd = hd.closest('.sxw').getAttribute('data-scwd'), ssid = hd.closest('.sxw').getAttribute('data-ssid');
     const et = extTid((SESS||[]).find(x => ssid && x.sid === ssid));

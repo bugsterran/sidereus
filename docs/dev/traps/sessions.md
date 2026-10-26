@@ -280,3 +280,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **A live session with no readable last turn record showed Idle; an unreadable subagent log read as not busy** — both were guesses.
   ⇒ `parse._turn_shape` returns shape `None` for empty/non-list content, `notes._sess_state` maps `None` on a live session to `unknown` (`ask` still wins); `agents._agent_last_busy` returns busy `None` and `_bg_show` then drops `idle`. Fixtures `live-no-turn-record` · `live-unreadable-last-record`.
   ⚠Do not default these back to `wait`/`False` — the screen then claims «Idle»/«quiet» with no evidence.
+- ★**Invite pick box `.spick` was a 13x13 hit target; a 1 px miss opened the work log** (the `.sxw > .sx` click handler skips only `a,input,label,…`).
+  ⇒ `sessPickHtml` wraps it in `label.spickw` (padding + equal negative margin, row unchanged); measured hit 22x26 at 900/1100/1440. Test `tests/test_sess_pick_hit_js.py`.
+  ⚠`.sx` has `overflow:hidden` — a left extension is clipped (measured 19x26); grow right into the flex gap and vertically only.
