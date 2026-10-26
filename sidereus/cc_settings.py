@@ -15,7 +15,7 @@ import time
 from sidereus import claude_roots, ctxsrc
 from sidereus.config import DATA_DIR
 from sidereus.prefs import compact_hist_append, prefs_get, prefs_set
-from sidereus.features import check_toggles, listing as features_listing
+from sidereus.features import listing as features_listing, save as features_save
 
 SETTINGS_PATH = None        # None = ctxsrc.CLAUDE_DIR/settings.json at call time; ⚠tests set a tmp path (never the live file)
 TRASH_DIR = None            # None = DATA_DIR/tool-trash; ⚠tests set a tmp dir
@@ -523,11 +523,8 @@ def prefs_set_all(req):
         if req.get("reset") is True or "value" not in req:
             return 400, {"ok": False, "err": "value missing (reset is not supported for Claude Code keys)"}
         return cc_set(req["key"], req["value"])
-    if isinstance(req, dict) and req.get("key") == "features" and req.get("reset") is not True:
-        try:
-            check_toggles(req.get("value"))     # ⚠only ids with a manifest; prefs._v_features checks shape only
-        except ValueError as e:
-            return 400, {"ok": False, "err": str(e)}
+    if isinstance(req, dict) and req.get("key") == "features":
+        return features_save(req)       # swaps the toggle cache, then writes (check_toggles: manifest ids only)
     code, out = prefs_set(req)
     # «Port» save with otel:true also moves the OTEL endpoint's port (the page asked in the same confirm).
     if code == 200 and isinstance(req, dict) and req.get("key") == "port" and req.get("otel") is True and isinstance(out.get("value"), int):

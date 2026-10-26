@@ -10,6 +10,19 @@ var CFG = null;   // last state().cfg (dmMax for the relay comment cap in 88c)
 let LASTS = null;   // saver + quota fields of the last poll, for an instant «Main account» redraw (pollMainRedraw)
 var ACCTS = [];   // state accts [{label, primary}], only with >=2 Claude accounts (40b acctCls)
 const MSEEN = new Set();          // Ids of posts already received — never counted twice whichever path they came in by
+// Running feature map (state().features or a Features Save reply); a change repaints tabs, Pipelines and Settings without a reload.
+let FEATS_SIG = null;   // ⚠null = first apply: the first poll paints everything itself, so only set FEATS then
+function featsApply(f){
+  const sig = JSON.stringify(f || {});
+  if(sig === FEATS_SIG) return;
+  const init = FEATS_SIG !== null, plWas = FEATS.pipeline !== false;
+  FEATS_SIG = sig; FEATS = f || {};
+  if(!init) return;
+  if(!plWas && FEATS.pipeline !== false && typeof plFeatReset === 'function') plFeatReset();   // drop the cached 404 from while it was off
+  try{ buildMv(); }catch(e){ softErr('featsMv', e); }   // an off current tab falls back to Timeline there
+  if(mainView === 'pipe') try{ plPaint(); }catch(e){ softErr('featsPipe', e); }
+  try{ paintCfg(); }catch(e){ softErr('featsCfg', e); }   // no-op while Settings is closed
+}
 async function poll(first){
   if(pollBusy && !first) return;  // Previous request not finished — skip this tick
   // Backing off while down (connBackoffMs, 60-statusbar.js): a skipped tick only refreshes the «as of N s ago» age.
@@ -44,7 +57,7 @@ async function poll(first){
     if(!STATE_IN){ STATE_IN = true; try{ tourMaybe(s.codeDir); }catch(e){ softErr('tourMaybe', e); }   // first-visit tour (98b)
       if(mainView === 'br') try{ if(!brRepo) loadBr(false); else paintBr(); }catch(e){ softErr('pollBr', e); } }
     if(mainView === 'struct' && !ISPOP && !ISWP) try{ if(strSessKey() !== strSessSig){ paintStruct(); if(strMode === 'size' || !strOn.length) loadStruct(false); } else strBrSync(); }catch(e){ softErr('pollStruct', e); }
-    FEATS = s.features || {};       // feature-off tabs hide on the buildMv below (92-mainview-tabs.js TAB_FEAT)
+    featsApply(s.features);         // feature-off tabs hide on the buildMv below (92-mainview-tabs.js TAB_FEAT)
     if(!ISPOP && !ISWP) try{ plPoll(); }catch(e){ softErr('pollPipe', e); }   // «Pipelines» live lighting (48b-pipeline-run.js)
     if(s.build && MY_BUILD && s.build!==MY_BUILD) document.getElementById('stale').classList.add('on');
     // ⚠Keep in-flight read keys — a poll snapshotted before the POST landed would flip them back to unread.

@@ -19,6 +19,8 @@ plSelBind(PLS);
 // «Pipelines | Harness» view toggle (harness body = 47b-harness.js hnHtml, same project chips); hidden when feature `harness` is off.
 let PLVIEW = lsGet('sidereus.plview', 'pipe') === 'harness' ? 'harness' : 'pipe';
 function plHnOn(){ return PLVIEW === 'harness' && FEATS.harness !== false && typeof hnHtml === 'function'; }
+// Pipeline feature turned back on at run time: the project list cached the 404 (PLS.off) while it was off.
+function plFeatReset(){ if(PLS.off){ PLS.off = false; PLS.projs = null; PLS.data = {}; } }
 function plViewSeg(){
   if(FEATS.harness === false) return '';
   return '<div class=tkvs>' + [['pipe', 'Pipelines'], ['harness', 'Harness']].map(([k, en]) => '<button class="wkrgb'

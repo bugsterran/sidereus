@@ -8,7 +8,8 @@ The user's install keeps every feature on; a fresh public install starts core-on
 - `features/<id>.json` manifest: `id, title, default_on_public, deps, modules, routes, threads, state_keys, web, settings`.
 - `sidereus/features.py` (STAGE3: `… prefs · features · bus …`): `on(id)` · `route_feature(path)` · `thread_on(name)` · `state_off()` · `snapshot()`.
 - Toggles live in `prefs.PREFS["features"] = {id: bool}`; **missing key = all on** (no write at import). `config.example.json` ships core-only defaults.
-- Off = routes 404 `{"error":"feature off"}` · threads not started · state keys omitted · tab hidden. Takes effect **after restart**.
+- Off = routes 404 `{"error":"feature off"}` · threads not started · state keys omitted · tab hidden. Takes effect **on Save**, no restart: `features.save()` swaps the `_TOGGLES` cache (whole dict, never mutated), then writes `config.local.json` (rolled back if the write fails); readers only read the cache. The reply carries `features` (`snapshot()`, {id: bool}).
+- Threads: `chat_server.main` registers `(name, start_fn, "loop"|"once")` via `register_threads`; `start_threads()` (boot and after each Save) starts each on, not-yet-started name. ⚠A claimed loop checks `thread_on(name)` each cycle and idles while off — it never exits, so on→off→on never runs two copies. A "once" warm runs at most once per process.
 - ⚠Modules of an off feature are still imported (core couplings below) and its web files still ship — PAGE stays byte-identical for any toggle state. Top-level JS of a feature must not fetch on load.
 - ⚠A dep that is off forces its dependents off.
 

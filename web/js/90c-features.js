@@ -1,4 +1,4 @@
-// Settings «Preferences» › «Features» (docs/dev/FEATURES.md): feature toggles from GET /api/prefs `features`; saved to config, applies after a restart.
+// Settings «Preferences» › «Features» (docs/dev/FEATURES.md): feature toggles from GET /api/prefs `features`; saved to config and applied at once (featsApply, 95-poll.js).
 let MPF_PEND = null, MPF_NOTE = null;   // {id: bool} toggles not saved yet (null = untouched) · {err|ok} after a save
 // Names for deps that are still core (no manifest, so no title in the listing) — ids are not for the screen.
 const MPF_CORE = {hist: 'History', failures: 'Failures', tokens: 'Tokens', tools: 'Tool', struct: 'Structure', br: 'Branches', timeline: 'Timeline'};
@@ -26,17 +26,17 @@ function mpfPane(){
   const w = mpfWant(rows), deps = {}, tl = {};
   rows.forEach(r => { deps[r.id] = r.deps || []; tl[r.id] = T(r.title || r.id); });
   const nm = id => tl[id] || (MPF_CORE[id] ? T(MPF_CORE[id]) : id), oo = b => b ? T('On', 'state') : T('Off', 'state');
-  let h = '<div class=cfgs>' + esc(T('Features') + ' · ' + T('Applies after restart')) + '</div>'
-    + '<div class=cfgpd>' + esc(T('A feature that is off stops its tab, requests and background work. Save, then restart to apply.')) + '</div>';
+  let h = '<div class=cfgs>' + esc(T('Features')) + '</div>'
+    + '<div class=cfgpd>' + esc(T('A feature that is off stops its tab, requests and background work. Changes apply on Save.')) + '</div>';
   // ⚠Save/Undo sit above the rows: below the last row they fell off-screen and read as «no Save button».
   const sh = mpfShown(rows, w), ch = rows.filter(r => sh[r.id] !== (r.set !== false));
   if(ch.length) h += '<div class=cfgpd>' + esc(T('Changes') + ': ' + ch.map(r => nm(r.id) + ' ' + oo(r.set !== false) + ' → ' + oo(sh[r.id])).join(' · ')) + '</div>'
     + cfgOpt('mpf', 'save', T('Save'), false) + cfgOpt('mpf', 'undo', T('Undo'), false);
-  if(MPF_NOTE) h += MPF_NOTE.err ? '<span class="mpnote err">' + esc(MPF_NOTE.err) + '</span>' : '<span class=mpnote>' + esc(T('Applies after restart')) + '</span>';
+  if(MPF_NOTE) h += MPF_NOTE.err ? '<span class="mpnote err">' + esc(MPF_NOTE.err) + '</span>' : '<span class=mpnote>' + esc(T('Saved and applied')) + '</span>';
   h += rows.map(r => {
     const blk = deps[r.id].filter(d => d in w && !mpfEff(w, deps, d));
     const hint = (blk.length ? T('Turn on first') + ': ' + blk.map(nm).join(', ')
-      : deps[r.id].length ? T('Needed') + ': ' + deps[r.id].map(nm).join(', ') : '') + (r.on ? '' : (deps[r.id].length ? ' · ' : '') + T('off now'));
+      : deps[r.id].length ? T('Needed') + ': ' + deps[r.id].map(nm).join(', ') : '');
     return cfgSet(nm(r.id), hint, '<label class="mpfl' + (blk.length ? ' off' : '') + '"><input type=checkbox class=cfgck data-k=mpf value="' + esc(r.id) + '"'
       + (sh[r.id] ? ' checked' : '') + (blk.length ? ' disabled' : '') + '> ' + esc(oo(sh[r.id])) + '</label>');
   }).join('');
@@ -56,7 +56,12 @@ async function mpfSave(rows){
   const body = all ? {key: 'features', reset: true} : {key: 'features', value: w};   // all on = drop the key (missing = all on)
   let r = null;
   try{ r = await postJSON('/api/prefs/set', body); }catch(e){ r = e.body || {ok: false, err: String((e && e.message) || e)}; }
-  if(r && r.ok){ rows.forEach(x => { x.set = w[x.id]; }); MPF_PEND = null; MPF_NOTE = {ok: 1}; }
+  if(r && r.ok){
+    const f = r.features && typeof r.features === 'object' ? r.features : null;   // running state after the save (server)
+    rows.forEach(x => { x.set = w[x.id]; x.on = f ? f[x.id] !== false : w[x.id]; });
+    MPF_PEND = null; MPF_NOTE = {ok: 1};
+    if(f && typeof featsApply === 'function') featsApply(f);
+  }
   else MPF_NOTE = {err: T('Could not save') + ': ' + ((r && r.err) || '?')};
   paintCfg();
 }
