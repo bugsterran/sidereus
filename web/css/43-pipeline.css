@@ -34,7 +34,8 @@ html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--
 .plnlr{display:flex;flex-direction:column;min-width:0}
 /* Row = a card like a stage node (.plnd) holding the Timeline name cell + run summary; selected = node-style strong border, no blue fill */
 .plw .plnl .plnli.tlnm{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;width:100%;min-height:30px;padding:5px 8px;background:var(--nx-panel,#121821);border:1px solid var(--nx-rule,#2b3545);border-radius:6px;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow:hidden}
-.plw .plnl .plnli.tlnm>b{flex:0 1 auto;min-width:0}
+.plw .plnl .plnli.tlnm>b{flex:0 1 auto;min-width:0;max-width:100%}
+.plw .plnl .plnli.tlnm>b>.tlp{flex:0 1 auto;min-width:3ch}.plw .plnl .plnli.tlnm>b>:not(.tlp){flex:none}   /* ⚠.tlp is flex:0 0 auto (20-timeline): the name never shrank, so the b clipped it with no ellipsis and cut the status ring */
 .plw .plnl .plnli:hover{border-color:var(--nx-t3,#6b7280);background:var(--nx-hover,#1b1e23)}
 .plw .plnl .plnli.on{border-color:var(--nx-t1,#cdcedc);box-shadow:inset 0 0 0 1px var(--nx-t1,#cdcedc)}   /* ⚠inset, not outline: the scrolling aside clips an outer ring */
 .plw .plnl .plnli:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
@@ -93,7 +94,9 @@ html[data-ui] .plovr:hover{background:var(--nx-hover,#1b1d20)}
 .plovst.plov-back{color:var(--pl-back)}
 html[data-ui] .plovst.plov-skip,html[data-ui] .plovst.plov-hold,html[data-ui] .plovr.on .plovst.plov-wait{color:var(--nx-t2,#909298)}   /* t3 drops to 4.48:1 on the selected row tint */
 .plova{color:var(--nx-t2,#909298);white-space:nowrap}
-.plovr{grid-template-columns:minmax(80px,160px) minmax(80px,160px) 1fr auto auto}
+.plovr{grid-template-columns:minmax(80px,160px) minmax(80px,160px) minmax(0,1fr) auto auto}
+.plovr>*{min-width:0}
+@media (max-width:1199px){.plovr{grid-template-columns:minmax(64px,140px) minmax(64px,140px) minmax(0,1fr)}.plovr>.plova{grid-column:3/-1;overflow:hidden;text-overflow:ellipsis}}   /* ⚠the nowrap summary (bar + «Agents n/m» + time + tokens) sat beside the stage chain and overlapped it at 900/1100: own row under the stages */
 .plrtb tbody tr{cursor:pointer}
 .plrtb tbody tr:hover td{background:var(--nx-hover,#1b1d20)}
 .plapk{position:fixed;z-index:60;display:flex;flex-direction:column;width:340px;max-height:50vh;overflow:auto;padding:4px;background:var(--nx-panel,#121417);border:1px solid var(--nx-rule,#252629);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:12px}
@@ -248,7 +251,7 @@ html[data-ui=next] .plw .plcvt .plzv{color:var(--nx-t1)}
 .plgw.plwt>.plwp{min-height:0;box-sizing:border-box}.plgw.plwt>.plwgr{grid-area:2/1/3/-1}
 /* 48k Watch drag grips (canvas | pane | Running card): 24px rows with a centred bar, ns-resize; sizes kept as shares (sidereus.plwv) */
 .plwgr{position:relative;height:24px;cursor:ns-resize;touch-action:none}   /* 24px target in its own row (WCAG 2.5.8); ⚠a ::before overhang covered the canvas bottom and stole pans and .plpass clicks */
-.plwgr::after{content:'';position:absolute;left:50%;top:10px;width:44px;height:4px;margin-left:-22px;border-radius:2px;background:var(--nx-t3,#84868c);opacity:.55}
+.plwgr::after{content:'';position:absolute;left:50%;top:10px;width:44px;height:4px;margin-left:-22px;border-radius:2px;background:var(--nx-t2,#909298)}   /* full t2, no opacity: .55 of t3 was 2.3:1, under the 3:1 non-text minimum (WCAG 1.4.11) */
 .plwgr:hover::after,.plwgr.on::after,.plwgr:focus-visible::after{opacity:1;background:var(--nx-info,#5899f3)}
 .plwgr:focus{outline:none}   /* focus shows as the lit bar, like the session drawer grips */
 .plwov{overflow:auto;min-height:84px;box-sizing:border-box}   /* «Running N» card: fixed height from plWatchFit, rows scroll inside */

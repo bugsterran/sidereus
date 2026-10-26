@@ -342,3 +342,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: `_struct_warm_loop` called `structure()` like a screen request, so warm-loop order decided which of the `STRUCT_CACHE_N` cells stayed in memory.
   - ⇒ Warm-up calls `structure(..., mem=False)`: disk write only, memory neither filled nor touched; the next screen request is a disk hit (no rebuild).
   - ⚠Do not drop `mem=False` from the warm call — `tests/test_structure_warm_cache.py`.
+- ⚠**A drill-down click must not move the clicked node** (UX sweep 2026-10-26: first-sight hub centring moved it up to 195 px).
+  - ⇒ `archDgClick` records the node's spot (`archMmAt`); `archMmFirst` scrolls so the new hub keeps it (`archMmStay`); short focus content gets a top/bottom pad (`ARCH_MM.pad`, re-applied on repaint). Centring is only the fallback when no click anchor exists.
+  - ⚠Do not re-centre on first sight — `tests/test_struct_arch_minimap_js.py` `DrillDownKeepsClickedNode`.

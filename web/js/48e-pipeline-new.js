@@ -31,7 +31,7 @@ function plNewBtn(pri){
   return '<span class=plnewmw><button type=button class="wkrgb' + (pri ? ' plsv' : '') + (PLNEWM ? ' on' : '') + '" data-plnewm aria-haspopup=menu aria-expanded="' + (PLNEWM ? 'true' : 'false') + '">'
     + esc(T('+ New ▾')) + '</button>' + (PLNEWM ? '<div class=plnewm role=menu aria-label="' + esc(T('New pipeline')) + '">'
     + it('', 'data-plnew', plNewDis(PLNEW), T('+ New pipeline')) + it('', 'data-plimp', plNewDis(PLNEW), T('Import from another project'))
-    + it('', 'data-pldnew', plNewDis(PLDRAFT), T('Ask AI for a draft')) + it(PLSTD ? ' on' : '', 'data-plstd', '', T('Standard templates')) + '</div>' : '') + '</span>';
+    + it('', 'data-pldnew', plNewDis(PLDRAFT), T('Ask AI for a draft')) + it(PLSTD ? ' on' : '', 'data-plstd', '', T('Start from a template')) + '</div>' : '') + '</span>';
 }
 function plNewMenu(on){ PLNEWM = !!on; plPaint(); plRefocus(on ? '.plnewm button:not([disabled])' : '[data-plnewm]'); }
 document.addEventListener('click', e => {

@@ -1,8 +1,8 @@
 // ── Structure «Architecture» minimap: text-free clone of the cached diagram SVG + viewport rect; click / drag scrolls .archmap ──
 // ⚠Cloned once per diagram key and re-attached after each innerHTML repaint: never rebuilt per poll, scroll or hover.
 // ⚠.archmm sits outside .archmap (sibling in .archbody): archPanFrom never starts a pan here.
-// ⚠Only auto-scroll: first sight of a map identity (overview at 0,0) or of a focus identity (hub centred) in archMmFirst; clicks / expands / lit / polls never centre.
-const ARCH_MM = { k: '', svg: null, raf: 0, seen: {}, pos: {} };   // pos: view key -> last .archmap [scrollTop, scrollLeft]
+// ⚠Only auto-scroll: first sight of a map identity (overview at 0,0) in archMmFirst; a drill-down click keeps the clicked node where it was (archMmAt), never centres.
+const ARCH_MM = { k: '', svg: null, raf: 0, seen: {}, pos: {}, at: null, pad: {} };   // pos: view key -> last .archmap [scrollTop, scrollLeft] · at: clicked node anchor · pad: view key -> .archdg [top, bottom] spacer
 // Pref: on unless stored '0' (missing key or a throwing store = on).
 function archMmOn(){ try{ return lsGet('sidereus.archmm', '1') !== '0'; }catch(e){ return true; } }
 // Pure: slot + icon chip (label in title/aria-label); the clone is attached by archMmSync.
@@ -67,20 +67,51 @@ function archMmVM(am, svg){
   return { view: { sl: am.scrollLeft, st: am.scrollTop, cw: am.clientWidth, ch: am.clientHeight, sw: am.scrollWidth, sh: am.scrollHeight, top: tp ? tp.offsetHeight : 0 },
     map: { x: r.left - b.left - (am.clientLeft || 0) + am.scrollLeft, y: r.top - b.top - (am.clientTop || 0) + am.scrollTop, w: r.width, h: r.height } };
 }
+// Record where a clicked diagram node sits inside its .archmap (84j archDgClick, before the repaint) for archMmFirst.
+function archMmAt(el){
+  const am = el && el.closest ? el.closest('.archmap') : null, p = el && el.dataset ? String(el.dataset.p || '') : '';
+  if(!am || !/^m\d+$/.test(p) || !el.getBoundingClientRect) { ARCH_MM.at = null; return; }
+  const r = el.getBoundingClientRect(), b = am.getBoundingClientRect();
+  ARCH_MM.at = { p, x: r.left - b.left, y: r.top - b.top };
+}
+// Pure: .archmap scroll that puts a node now at (now.x, now.y) back at (was.x, was.y), both relative to the scroller box; left clamped to [0, max].
+// Vertically pt / pb = .archdg top / bottom spacer px the scroll needs (a short focus view has no scroll room: the clamp moved the node ★-195px at 900).
+function archMmStay(view, now, was){
+  const cl = (a, hi) => Math.round(Math.max(0, Math.min(Math.max(0, hi), a))), t = Math.round(view.st + now.y - was.y), my = Math.max(0, view.sh - view.ch);
+  return { left: cl(view.sl + now.x - was.x, view.sw - view.cw), top: Math.max(0, t), pt: Math.max(0, -t), pb: Math.max(0, t - my) };
+}
+// Inline style of the .archdg slot for archKey k (84j archPaint): the spacer archMmFirst set for that view, '' when none.
+function archMmPadCss(k){
+  const v = ARCH_MM.pad[archMmVk(k)];
+  return v ? ' style="padding-top:' + v[0] + 'px;padding-bottom:' + v[1] + 'px"' : '';
+}
 // First sight of a map identity: anchor it once (archMmAnchor), only on the overview and only if the user has not scrolled (0,0).
-// First sight of a focus identity (map + focused module): centre the hub (data-p = hub, 84j data-hub) whatever the scroll,
-//   which is the previous view's. ⚠Marks the overview seen too: returning to it never centres. A zero-size (hidden) layout is not marked.
+// Focus view opened by a diagram click (ARCH_MM.at): the hub goes back to the clicked node's screen position, consumed once.
+// ⚠Never centre the hub on a click: centring moved the clicked node from under the pointer (★1100: y 750→491).
+// First sight of a focus identity without a click anchor: centre the hub (data-p = hub, 84j data-hub).
+// ⚠Marks the overview seen too: returning to it never centres. A zero-size (hidden) layout is not marked and keeps the anchor.
 function archMmFirst(am, svg, k, hub){
   const m = archMmId(k);
   if(!am || !svg || !m) return;
-  const fk = m.all ? '' : 'f\t' + m.id + '\t' + m.sel;
-  if(fk ? ARCH_MM.seen[fk] : ARCH_MM.seen[m.id]) return;
+  const fk = m.all ? '' : 'f\t' + m.id + '\t' + m.sel, c = fk ? ARCH_MM.at : null;
+  if(!c && (fk ? ARCH_MM.seen[fk] : ARCH_MM.seen[m.id])) return;
   const vm = archMmVM(am, svg);
   if(!(vm.map.w > 0) || !(vm.view.cw > 0)) return;
   ARCH_MM.seen[m.id] = 1;
-  if(fk){ ARCH_MM.seen[fk] = 1;
+  if(fk){ ARCH_MM.seen[fk] = 1; ARCH_MM.at = null;
     const h = /^m\d+$/.test(hub || '') && svg.querySelector ? svg.querySelector('[data-p="' + hub + '"]') : null, r = h && h.getBoundingClientRect ? h.getBoundingClientRect() : null;
-    const b = am.getBoundingClientRect(), to = archMmHub(vm.view, vm.map, r ? { x: r.left - b.left - (am.clientLeft || 0) + am.scrollLeft, w: r.width } : null);
+    const b = am.getBoundingClientRect();
+    if(c){ if(!h || c.p !== hub) return;
+      const dg = svg.closest ? svg.closest('.archdg') : null, vk = archMmVk(k);
+      if(dg && dg.style){ dg.style.paddingTop = ''; dg.style.paddingBottom = ''; }   // re-opened view: measure without its old spacer
+      delete ARCH_MM.pad[vk];
+      const r2 = h.getBoundingClientRect(), b2 = am.getBoundingClientRect(), v2 = archMmVM(am, svg).view;
+      const to = archMmStay(v2, { x: r2.left - b2.left, y: r2.top - b2.top }, c);
+      if(dg && dg.style && (to.pt || to.pb)){ dg.style.paddingTop = to.pt + 'px'; dg.style.paddingBottom = to.pb + 'px';
+        if(Object.keys(ARCH_MM.pad).length >= 100) ARCH_MM.pad = {};
+        ARCH_MM.pad[vk] = [to.pt, to.pb]; }   // ⚠kept per view: archPaint re-emits it, else the next repaint drops it and the map jumps
+      am.scrollLeft = to.left; am.scrollTop = to.pb && !ARCH_MM.pad[vk] ? to.top - to.pb : to.top; return; }
+    const to = archMmHub(vm.view, vm.map, r ? { x: r.left - b.left - (am.clientLeft || 0) + am.scrollLeft, w: r.width } : null);
     am.scrollLeft = to.left; am.scrollTop = to.top; return; }
   if(am.scrollLeft || am.scrollTop) return;
   const to = archMmAnchor(vm.view, vm.map);

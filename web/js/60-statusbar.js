@@ -85,9 +85,10 @@ function sbExtSeg(k, e){
 }
 // ★Short bar: hide whole low-priority parts rather than ellipsize key numbers (key numbers stay visible).
 // Drop order (SB_STEPS): 1 «100% at» · 2 «left at reset» · 't' tighter padding (no text lost) · 3 «left ≈» (same
-//   quantity as «left %», in tokens) · 4 ext «Today» · 5 ext limit % (Codex card has it) · 6 reset times · 7 saver secondary.
-// ⚠«Today» is what makes the ext number mean «today» — keep cheaper drops ahead of it. Ellipsis stays only as the last resort.
-const SB_STEPS = [1, 2, 't', 3, 4, 5, 6, 7];
+//   quantity as «left %», in tokens) · 5 ext limit % (Codex card has it) · 6 reset times · 7 saver secondary (also in its
+//   tooltip) · 4 ext «Today».
+// ⚠«Today» is what makes the ext number mean «today» — keep cheaper drops (5, 6, 7) ahead of it. Ellipsis stays only as the last resort.
+const SB_STEPS = [1, 2, 't', 3, 5, 6, 7, 4];
 // ★UX audit 2026-09-28: «slower than goal» named no subject — the verdict is 5h usage pace vs the saver goal, so the label says «use», same width.
 const SB_JNAME = {'Way too fast': 'Burning far above target', 'Fast': 'Above target', 'On pace': 'On target',
                   'Slow': 'Below target', 'Way too slow': 'Far below target',
@@ -161,7 +162,8 @@ function buildSbar(sv){
               : r.cls.indexOf('svfree') === 0 ? T('No throttle') : '';
     // Tooltip leads with the hook's own sentence (goalSay/head) so «Pending» says why, in the same words as the badge.
     const why = (LANG === 'en' && svWhyEn(SV)) || [SV && SV.goalSay, SV && SV.head].filter(Boolean).map(String).join('\n');
-    const ptip = (why ? why + '\n\n' : '') + T(SV_JTIP).replace(/\*\*/g, '')
+    // sec (.sbd7) is dropped before «Today» on a short bar, so the tooltip carries it too.
+    const ptip = (j && sec ? sec + '\n\n' : '') + (why ? why + '\n\n' : '') + T(SV_JTIP).replace(/\*\*/g, '')
       + (sec === T('No throttle') ? '\n' + T('No throttle = no saver stage is set (subagent concurrency not capped)') : '')
       + (sbPrimNote() ? '\n\n' + sbPrimNote() : '');
     // In goal mode the target time was the grey fallback text — now a pill, always shown.

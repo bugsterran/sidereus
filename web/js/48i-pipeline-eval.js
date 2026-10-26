@@ -47,7 +47,7 @@ function plEvalSgHtml(ev, S, cands, cat){
   if(!L.length) return '';
   const n = L.filter((s, i) => S.sel[i]).length, why = !cands.length ? T('No running session in this project') : !n ? T('Select at least one suggestion') : '';
   let h = '<div class=plesg><div class=plesgh><b>' + esc(T('Suggestions')) + '</b><button type=button class="wkrgb' + (S.req ? ' on' : '') + '" data-plsask' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Ask AI') + (n ? ' (' + n + ')' : '')) + '</button></div><ul>'
-    + L.map((s, i) => { const t = TV(plEvalSgMsg(s, cat));
+    + L.map((s, i) => { const m = plEvalSgMsg(s, cat); if(typeof plgShow === 'function') m.vars.stage = plgShow(m.vars.stage); const t = TV(m);   // display name as the canvas; plEvalSgEn (wire text) and need[] keep the saved title
       return '<li><label><input type=checkbox data-plsg="' + i + '"' + (S.sel[i] ? ' checked' : '') + '> <span' + (s.cmd ? ' title="' + esc(s.cmd) + '"' : '') + '>' + esc(t) + '</span></label>'
         + '<button type=button class=wkrgb data-plsfix="' + i + '">' + esc(T(s.code === 'redcheck' ? 'Copy command' : 'Fix it myself')) + '</button></li>'; }).join('') + '</ul>';
   if(S.req){
@@ -96,7 +96,7 @@ function plEvalPanel(ev){
   const rows = st.map(s => {
     const c = s.catch, r = PLE_RED[s.red], cmd = need[s.title];
     const cc = !c || !c.n ? '' : c.caught >= c.n ? ' class=plec-all' : c.caught > 0 ? ' class=plec-part' : ' class=plec-none';   // catch colour: all / some / none
-    return '<tr><td>' + esc(s.title) + '</td><td' + cc + '>' + (c ? esc(c.caught + '/' + c.n) + plEvalCi(s.ci) : '–') + '</td><td class="pler' + (r ? ' pler-' + r : '') + '">' + (cmd != null ? '<button type=button class=plerneed data-plecp="' + esc(cmd) + '" title="' + esc(plEvalRedHelp() + '\n' + cmd) + '">' + esc(T('red check needed')) + '</button>' : r ? '<span class=plerv>' + esc(T(r, 'redcheck')) + '</span>' : '–') + '</td><td>'
+    return '<tr><td>' + esc(typeof plgShow === 'function' ? plgShow(s.title) : s.title) + '</td><td' + cc + '>' + (c ? esc(c.caught + '/' + c.n) + plEvalCi(s.ci) : '–') + '</td><td class="pler' + (r ? ' pler-' + r : '') + '">' + (cmd != null ? '<button type=button class=plerneed data-plecp="' + esc(cmd) + '" title="' + esc(plEvalRedHelp() + '\n' + cmd) + '">' + esc(T('red check needed')) + '</button>' : r ? '<span class=plerv>' + esc(T(r, 'redcheck')) + '</span>' : '–') + '</td><td>'
       + plEvalAgree(s.agree) + (s.unstable ? '<span class=pleun>' + esc(T('unstable')) + '</span>' : '') + '</td></tr>';
   }).join('');
   const h = ev.holdout;

@@ -31,7 +31,7 @@ function mpfPane(){
   // ⚠Save/Undo sit above the rows: below the last row they fell off-screen and read as «no Save button».
   const sh = mpfShown(rows, w), ch = rows.filter(r => sh[r.id] !== (r.set !== false));
   if(ch.length) h += '<div class=cfgpd>' + esc(T('Changes') + ': ' + ch.map(r => nm(r.id) + ' ' + oo(r.set !== false) + ' → ' + oo(sh[r.id])).join(' · ')) + '</div>'
-    + cfgOpt('mpf', 'save', T('Save'), false) + cfgOpt('mpf', 'undo', T('Undo'), false);
+    + '<button class="strp on" data-mpf=save>' + esc(T('Save')) + '</button>' + cfgOpt('mpf', 'undo', T('Undo'), false);   // primary like hook «Apply»; not cfgOpt(on): no aria-pressed on an action
   if(MPF_NOTE) h += MPF_NOTE.err ? '<span class="mpnote err">' + esc(MPF_NOTE.err) + '</span>' : '<span class=mpnote>' + esc(T('Saved and applied')) + '</span>';
   h += rows.map(r => {
     const blk = deps[r.id].filter(d => d in w && !mpfEff(w, deps, d));

@@ -7,7 +7,7 @@ import unittest
 from tests._load import js_fn
 from tests._node import node_e
 
-FNS = ["archMmOn", "archMmHtml", "archMmGeom", "archMmLit", "archMmId", "archMmAnchor", "archMmHub", "archMmVM", "archMmFirst", "archMmVk", "archMmKeep", "archMmPos", "archMmPick"]
+FNS = ["archMmOn", "archMmHtml", "archMmAt", "archMmStay", "archMmPadCss", "archMmGeom", "archMmLit", "archMmId", "archMmAnchor", "archMmHub", "archMmVM", "archMmFirst", "archMmVk", "archMmKeep", "archMmPos", "archMmPick"]
 PRE = """
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const T = s => 'T[' + s + ']';
@@ -168,3 +168,61 @@ class AnchorShortMap(unittest.TestCase):
         r = run("const v = {cw: 1000, ch: 700, sw: 3000, sh: 2000, top: 100}, m = {x: 1000, y: 500, w: 400, h: 300};"
                 "console.log(JSON.stringify(archMmAnchor(v, m)));")
         self.assertEqual(r, {"left": 1000 + 200 - 500, "top": 500 + 150 - 100 - 300})
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class DrillDownKeepsClickedNode(unittest.TestCase):
+    """A drill-down click opens the focus view with the clicked node where it was on screen (no auto-centre)."""
+
+    def test_clicked_node_stays_under_pointer(self):
+        # 1000x700 scroller at client (50, 100), 6000x3000 content; node m5 clicked at client (450, 650);
+        # the focus view draws hub m5 at content (4000, 900).
+        r = run("const ARCH_MM = {seen: {}, pos: {}, at: null, pad: {}};"
+                "const am = {scrollLeft: 300, scrollTop: 200, clientWidth: 1000, clientHeight: 700, scrollWidth: 6000, scrollHeight: 3000,"
+                " getBoundingClientRect: () => ({left: 50, top: 100}), querySelector: q => q === '.archtop' ? {offsetHeight: 100} : null};"
+                "const old = {dataset: {p: 'm5'}, closest: q => q === '.archmap' ? am : null, getBoundingClientRect: () => ({left: 450, top: 650, width: 120, height: 40})};"
+                "const hub = {getBoundingClientRect: () => ({left: 50 + 4000 - am.scrollLeft, top: 100 + 900 - am.scrollTop, width: 120, height: 40})};"
+                "const sv = {getBoundingClientRect: () => ({left: 50 + 10 - am.scrollLeft, top: 100 + 300 - am.scrollTop, width: 5980, height: 2000}),"
+                " querySelector: q => q === '[data-p=\"m5\"]' ? hub : null};"
+                "const F = id => ['fv0|', 'c1', 'focus', id, 0, 0, 'en', 40, 90].join('\\t');"
+                "archMmAt(old); archMmFirst(am, sv, F('a'), 'm5'); const h = hub.getBoundingClientRect(), o = [[h.left, h.top], ARCH_MM.at];"
+                "am.scrollLeft = 10; am.scrollTop = 20; archMmFirst(am, sv, F('a'), 'm5'); o.push([am.scrollLeft, am.scrollTop]);"   # repaint: not moved
+                "archMmAt(old); am.scrollLeft = 0; am.scrollTop = 0; archMmFirst(am, sv, F('a'), 'm5'); const h2 = hub.getBoundingClientRect(); o.push([h2.left, h2.top]);"   # seen focus re-opened by a click
+                "archMmAt({dataset: {p: 'm7'}, closest: () => am, getBoundingClientRect: () => ({left: 60, top: 110})}); am.scrollLeft = 5; am.scrollTop = 6;"
+                "archMmFirst(am, sv, F('b'), 'm5'); o.push([am.scrollLeft, am.scrollTop], ARCH_MM.at);"   # anchor for another node: not moved, dropped
+                "archMmAt({dataset: {p: 'm5'}, closest: () => am, getBoundingClientRect: () => ({left: 5000, top: 5000})}); archMmFirst(am, sv, F('c'), 'm5'); o.push([am.scrollLeft, am.scrollTop]);"   # clamped
+                "console.log(JSON.stringify(o));")
+        self.assertEqual(r[0], [450, 650])            # the clicked node did not move on screen
+        self.assertIsNone(r[1])                       # anchor consumed once
+        self.assertEqual(r[2], [10, 20])              # later repaints of the same focus never move the view
+        self.assertEqual(r[3], [450, 650])
+        self.assertEqual(r[4], [5, 6])
+        self.assertIsNone(r[5])
+        self.assertEqual(r[6], [0, 0])                # scroll clamped to [0, max]
+
+    def test_click_records_anchor_before_paint(self):
+        src = js_fn("archDgClick")
+        i = src.find("archMmAt(b)")
+        self.assertGreater(i, 0)
+        self.assertLess(i, src.find("paintStruct()", i))
+
+    def test_short_focus_content_gets_spacer(self):
+        # Focus content shorter than the viewport (scrollHeight == clientHeight): clamping scrollTop to 0 moved the node up.
+        # The .archdg slot grows a top / bottom spacer so the clicked node keeps its screen y; the spacer is kept for repaints of that view.
+        r = run("const ARCH_MM = {seen: {}, pos: {}, at: null, pad: {}};"
+                "const dg = {style: {}}, px = v => parseFloat(v) || 0;"
+                "const am = {scrollLeft: 0, scrollTop: 0, clientWidth: 1000, clientHeight: 700, scrollWidth: 1000,"
+                " get scrollHeight(){ return 700 + px(dg.style.paddingTop) + px(dg.style.paddingBottom); },"
+                " getBoundingClientRect: () => ({left: 0, top: 100}), querySelector: q => q === '.archtop' ? {offsetHeight: 100} : null};"
+                "let HY = 300; const hub = {getBoundingClientRect: () => ({left: 400, top: 100 + HY + px(dg.style.paddingTop) - am.scrollTop, width: 120, height: 40})};"
+                "const sv = {closest: q => q === '.archdg' ? dg : null, getBoundingClientRect: () => ({left: 0, top: 100 + px(dg.style.paddingTop) - am.scrollTop, width: 1000, height: 600}),"
+                " querySelector: q => q === '[data-p=\"m5\"]' ? hub : null};"
+                "const F = id => ['fv0|', 'c1', 'focus', id, 0, 0, 'en', 40, 90].join('\\t'), at = y => archMmAt({dataset: {p: 'm5'}, closest: () => am, getBoundingClientRect: () => ({left: 400, top: y})});"
+                "at(650); archMmFirst(am, sv, F('a'), 'm5'); const o = [hub.getBoundingClientRect().top, archMmPadCss(F('a')), archMmPadCss(F('z'))];"
+                "dg.style = {}; HY = 650; am.scrollTop = 0; at(200); archMmFirst(am, sv, F('b'), 'm5'); o.push(hub.getBoundingClientRect().top, am.scrollTop);"   # node lower than it was: bottom spacer
+                "console.log(JSON.stringify(o));")
+        self.assertEqual(r[0], 650)                                   # top spacer: the node did not move up
+        self.assertIn("padding-top:250px", r[1])                      # kept for repaints of the same view
+        self.assertEqual(r[2], "")                                    # other views: no spacer
+        self.assertEqual(r[3], 200)                                   # bottom spacer lets scrollTop reach it
+        self.assertEqual(r[4], 550)

@@ -61,7 +61,7 @@
   color:color-mix(in srgb,var(--nx-info,#5899f3) 55%,var(--nx-t1,#dfe5ee))}
 .archevn{font-size:12px;color:var(--nx-t3,#8b95a7);padding:2px 8px 6px 28px}
 /* Empty / stale states and the request preview */
-.archempty{max-width:620px;margin:48px auto 0;padding:22px 24px;text-align:center;border:1px dashed var(--nx-rule,#2a3442);border-radius:10px;
+.archempty{max-width:620px;margin:48px auto 0;padding:22px 24px;text-align:center;word-break:keep-all;border:1px dashed var(--nx-rule,#2a3442);border-radius:10px;
   background:var(--nx-panel,#141a23);color:var(--nx-t2,#aab4c3)}
 .archempty>b{display:block;font-size:15px;color:var(--nx-t1,#dfe5ee);margin-bottom:6px}
 .archempty>p{margin:0 0 14px;font-size:13px;line-height:1.6}
@@ -90,6 +90,8 @@ html[data-ui][data-ui][data-ui] .archtab .archok[disabled]{opacity:1;color:var(-
   .archbody{grid-template-columns:minmax(0,1fr);grid-template-rows:100% auto}   /* ⚠map row = whole body, panel below in #feed's scroll: sharing the height left archFitOf too little room (null) */
   .archside{max-height:360px;order:0}   /* ⚠60-sessions.css `aside{order:-1}` (≤1000) would lift the panel above the map */
   .archbody>.strspg{display:none}
+  /* ⚠module detail floats over the map's bottom-left (minimap keeps bottom-right): below the map it opened at y 872 of 900, off screen */
+  .archbody>.archdetp{grid-column:1;grid-row:1;align-self:end;justify-self:start;z-index:4;margin:0 0 18px 18px;width:min(340px,calc(100% - 240px));max-height:min(360px,calc(100% - 140px));box-shadow:0 4px 16px rgba(0,0,0,.35)}
 }
 @media (min-width:1061px){.archbody[style*="--spw"]{grid-template-columns:minmax(0,1fr) min(var(--spw),60%)}}   /* dragged Edges width (81i); one column below */
 /* Diagram toolbar: overview hint + «Include tests», or «← All» + focused module + in/out legend (in = --nx-ok, out = --nx-info everywhere) */
@@ -175,6 +177,8 @@ html[data-ui] .archsent .wkrgb.archstop:hover{background:color-mix(in srgb,var(-
 .archleg.mmd{display:flex;flex-wrap:wrap;align-items:center;gap:3px 12px;margin:0;padding:0 6px 6px;border:0;background:none;font-size:11.5px;color:var(--nx-t3,#8b95a7)}
 .archleg>span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .archleg .archlgh{margin-left:6px}
+.archleg .archlgg{gap:3px 12px}
+.archlgg>span{display:inline-flex;align-items:center;gap:5px}
 .archsw{flex:0 0 auto;overflow:visible}
 .archlgx{font-weight:400;color:var(--mmd-ln)}
 /* Process flows (84k): picker in the toolbar, sequence diagram in .archfdg, failed steps (.archfx) in --nx-err; the dash comes from -->> */
@@ -244,7 +248,7 @@ body.ckwin{margin:0;padding:0;height:100vh;overflow:hidden}
 .ckwf{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:12.5px;color:var(--nx-t2,#aab4c3)}   /* issue filters (84l): view only */
 .ckwf select{max-width:100%}
 .ckwhid{display:inline-flex;align-items:center;gap:4px;color:var(--nx-t3,#8b95a7)}
-.archckl .ckhide{flex:0 0 auto;width:auto;margin:5px 4px 0 0;padding:1px 8px;font-size:11px;white-space:nowrap;border:1px solid var(--nx-rule,#2a3442);color:var(--nx-t3,#8b95a7)}   /* ⚠overrides the full-width .archckl button */
+.archckl .ckhide{flex:0 0 auto;align-items:center;width:auto;margin:5px 4px 0 0;padding:1px 8px;font-size:11px;white-space:nowrap;border:1px solid var(--nx-rule,#2a3442);color:var(--nx-t3,#8b95a7)}   /* ⚠overrides the full-width .archckl button */
 #ckroot>.archreq,#ckroot>.archckst,#ckroot>.archmsg{flex:0 0 auto}
 /* Issues | history grip (84l archChkSplit*, look of 43 .plwgr); ⚠negative margin cancels the #ckroot gap so the 24px target sits between the lists */
 #ckroot>.ckwgr{flex:0 0 auto;margin:-8px 0;cursor:row-resize}

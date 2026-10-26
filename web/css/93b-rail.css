@@ -42,6 +42,8 @@ html[data-ui=next] #rail .rattnb:hover{background:var(--nx-hover)}
 html[data-ui=next] #rail .rattnb .ic{width:19px;height:19px;margin:0}
 html[data-ui=next] #rail .rattnb > b{position:absolute;top:2px;right:0;min-width:16px;height:16px;line-height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;
   font-size:10px;font-weight:700;background:var(--nx-err);color:#fff;box-shadow:0 0 0 2px var(--nx-panel)}
+/* ⚠Dark only: #fff on dark --nx-err is 3.34:1; 80% err + black gives 4.96:1. Light keeps --nx-err (6.0:1). */
+html[data-ui=next]:not([data-theme=light]) #rail :is(.rattn h4 b,.rattnb > b){background:color-mix(in srgb,var(--nx-err) 80%,black)}
 html[data-ui=next] #rail .rattnb > b:empty,html[data-ui=next] #rail.open .rattnb,html[data-ui=next] #rail .rattnb:has(> b:empty){display:none}
 html[data-ui=next] #rattnl{display:flex;flex-direction:column;gap:1px}
 html[data-ui=next] #rattnl > .acp{display:grid;grid-template-columns:8px minmax(0,1fr) auto;column-gap:8px;align-items:center;width:100%;max-width:none;box-sizing:border-box;

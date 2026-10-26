@@ -253,8 +253,8 @@ html[data-ui=next][data-theme=light] .tlsi i{filter:brightness(.7)}
 .tlclr{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed var(--nx-info,#5899f3);opacity:.9;cursor:help}
 .tlclr::after{content:'';position:absolute;top:-2px;left:-4px;width:6px;height:6px;background:var(--nx-info,#5899f3);transform:rotate(45deg)}
 .tlclri{background:var(--nx-info,#5899f3)}
-/* In a tight name cell the compaction chip gives way first (full text in its title) so the project pill (.tlp) stays readable at 900 */
-.tlnm u.tlcpn{flex:0 4 auto;min-width:24px;overflow:hidden;text-overflow:ellipsis}
+/* Compaction chip is the short «N×» form (full text in its title), so it never ellipsises and the project pill keeps the room */
+.tlnm u.tlcpn{flex:0 0 auto;overflow:visible;text-overflow:clip}
 /* Below 1100 session rows drop the age/compaction chips (both stay in the row hover card) so the project pill is whole */
 @media (max-width:1099px){ .tlrs .tlnm > b > u{display:none} }
 .tlunk{position:absolute;top:0;bottom:0;cursor:help;background:repeating-linear-gradient(

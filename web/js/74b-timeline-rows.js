@@ -92,9 +92,9 @@ function tlSessNmB(g, it, act, nComp, bare){
         // ⚠the chip is ellipsis-truncated (20-timeline.css .tlnm u) — title carries the full value
         + (bare ? '' : g.plat ? (tv => '<u title="'+esc(tv)+'">'+esc(tv)+'</u>')(T('Tokens')+' '+fmtTok(g.items.reduce((a2, x) => a2 + (x.tk || 0), 0)))
                   : '<u title="'+esc(U(act,'m'))+'">'+U(act,'m')+'</u>')
-        // «N compactions» = compaction count.
+        // Compaction chip shows the count only («N×», red like the .tlcp mark); the ellipsised word lost the meaning, title keeps it.
         + (nComp ? '<u class=tlcpn title="'+TV({msg: 'compacted {n}×', vars: {n: nComp}})+'">'
-            + TV({msg: 'compacted {n}×', vars: {n: nComp}})+'</u>' : '') + '</b>';
+            + esc(nComp+'×')+'</u>' : '') + '</b>';
 }
 // /clear spots (`x.clr = [{at, old8, new8}]`); absent/empty renders nothing so rows without a record keep their bytes.
 function tlClrMarks(its, pct){

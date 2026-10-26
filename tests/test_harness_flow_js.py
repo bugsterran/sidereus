@@ -50,7 +50,9 @@ class HarnessFlowJs(unittest.TestCase):
         self.assertEqual(h.count("hnfa"), 6)
         self.assertLess(h.index('data-hnfr="r2"'), h.index('data-hnfr="r1"'))
         self.assertIn('class="hnfb on" data-hnfr="r2"', h)
-        for t in ("기록 없음", "건너뜀 선언 2", "되돌림 1", "파일 3개", "Red→Green", "해당 없음", ">bbbb2222<", "Stable"):
+        self.assertNotIn("기록 없음", h)   # counts present: no «no record» beside them
+        self.assertIn("<span class=hnfi1>건너뜀 선언 2</span>", h)   # one unbreakable item
+        for t in ("건너뜀 선언 2", "되돌림 1", "파일 3개", "Red→Green", "해당 없음", ">bbbb2222<", "Stable"):
             self.assertIn(t, h)
         self.assertNotIn("hnfrec", h)   # nothing open until a node is chosen
 
