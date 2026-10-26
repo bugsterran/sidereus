@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: a commit at a middle stage (for example the release pipeline's tag stage) no longer ends the run, so the next stage is not refused as a skipped jump.
 - Harness: a commit the pipeline guard blocks because a required gate has not passed (or a declared skip of a required gate) now counts as «Blocked» in the flow and result counts, labelled «Commit before gate» / «Required gate skipped»; before it showed «Blocked 0».
 - Sessions: on Windows and Linux with several Claude Code accounts, when one account's session list cannot be read its open sessions show as unknown instead of ended.
 - Sessions: a Cursor or Gemini CLI session left idle for more than 24 hours no longer disappears while its process is still running.

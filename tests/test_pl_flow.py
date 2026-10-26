@@ -284,7 +284,24 @@ class Flow(unittest.TestCase):
         r = self.run_()
         self.assertEqual((r["end"], r["st"].get("cm")), (0, None))
         self.assertIsNone(self.pre("검증"))
-        self.assertEqual(self._cmd("git commit -m x", desc="[pl:%s/검증] commit" % N), "")   # its own tag closes it
+        self.assertEqual(self._cmd("git commit -m x", desc="[pl:%s/검증] commit" % N), "")   # own tag, not last: stays open
+        r = self.run_()
+        self.assertEqual((r["end"], len(r["st"]["검증"]["cm"])), (0, 1))
+        self.assertEqual(self._cmd("git commit -m x"), "")   # untagged main commit closes it
+        self.assertNotEqual(self.run_()["end"], 0)
+
+    def test_tagged_commit_mid_pipeline_keeps_next_stage(self):
+        """Main's commit tagged at a non-last stage (release: tag, then deploy) must not end the run, or the next stage
+        is denied as a jump."""
+        self._pipe({"v": 1, "name": N, "stages": [{"title": "태그", "agent": "main"}, {"title": "배포", "agent": "main"}]})
+        self.assertIsNone(self.pre("태그", tool="Bash"))
+        t0 = self.run_()["t0"]
+        self._cmd("git commit -m x && git tag -a v1", desc="[pl:%s/태그] commit" % N)
+        r = self.run_()
+        self.assertEqual((r["end"], len(r["st"]["태그"]["cm"])), (0, 1))
+        self.assertIsNone(self.pre("배포", tool="Bash"))
+        self.assertEqual(self.run_()["t0"], t0)
+        self._cmd("git commit -m y")
         self.assertNotEqual(self.run_()["end"], 0)
 
     def test_main_stage_bash_after_closed_run_counts(self):
