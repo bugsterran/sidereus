@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-26
+
 ### Fixed
 
 - Windows and Linux: the 5h/7d quota fills in — the token is read from Claude Code's `.credentials.json` (it was macOS keychain only), and when quota cannot be fetched the status bar says why ("Quota lookup is turned off", "No Claude Code login found", "Could not reach the usage API").
@@ -488,7 +490,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/bugsterran/sidereus/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/bugsterran/sidereus/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/bugsterran/sidereus/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/bugsterran/sidereus/compare/v0.5.0...v0.6.0
