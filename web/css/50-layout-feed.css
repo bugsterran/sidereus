@@ -399,6 +399,7 @@ aside{align-self:start;max-height:100%;min-height:0;overflow-y:auto;overscroll-b
     @media (max-width:900px){ .dsplit{grid-template-columns:1fr !important} .dgrip{display:none}
       .dfl{position:static;max-height:180px} }
     .spick{margin:0 5px 0 0;flex:0 0 auto;cursor:pointer;accent-color:#8ab4f8}
+    .spickw{display:inline-flex;align-items:center;flex:0 0 auto;padding:7px 3px 7px 0;margin:-7px -3px -7px 0;cursor:pointer}
     .sinv{margin:2px 0 9px;padding:8px;border:1px solid #26303d;border-radius:8px;background:#141a23;display:none}
     .sinv.on{display:block}
     .sinv .t{font-size:11px;color:#8b95a7;margin-bottom:6px;line-height:1.5}
