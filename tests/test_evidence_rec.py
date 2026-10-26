@@ -15,7 +15,6 @@ ev = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ev)
 
 
-@unittest.skipIf(ev.fcntl is None, "no flock (Windows): evidence rows are off, see test_ev_hook.NoFlock")
 class EvidenceRec(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
