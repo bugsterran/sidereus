@@ -125,9 +125,24 @@ def watch_on(cwd, v=None):
             v = _v_watch(v)
         except ValueError:
             return True
-    c = _path_key(cwd)
-    hit = [k for k in v["projects"] if c == _path_key(k) or c.startswith(_path_key(k).rstrip(os.sep) + os.sep)]
-    return (v["projects"][max(hit, key=len)] if hit else v["mode"]) == "on"
+    c, hit = _path_key(cwd), []
+    for k in sorted(v["projects"]):
+        pk = _path_key(k).rstrip(os.sep)
+        if c == _path_key(k) or c.startswith(pk + os.sep):
+            hit.append((len(pk), k == cwd, k))
+    # ⚠Keys equal after _path_key (Windows case/slash) tie on length: exact spelling, then sorted order — never dict order.
+    return (v["projects"][max(hit, key=lambda h: h[:2])[2]] if hit else v["mode"]) == "on"
+
+
+def _watch_collapse(v):
+    """Saved mailbox_watch with keys equal under _path_key merged (last write wins, its spelling kept)."""
+    out = {}
+    for k, m in v["projects"].items():
+        pk = _path_key(k)
+        for o in [o for o in out if _path_key(o) == pk]:
+            del out[o]
+        out[k] = m
+    return dict(v, projects=out)
 
 
 def _path_key(p):
@@ -304,6 +319,8 @@ def prefs_set(req):
             return 400, {"ok": False, "err": "value missing"}
         try:
             val = check(req["value"])
+            if key == "mailbox_watch":
+                val = _watch_collapse(val)
         except ValueError as e:
             return 400, {"ok": False, "err": str(e)}
     with _LOCK:

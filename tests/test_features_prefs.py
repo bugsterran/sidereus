@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from tests._load import load, sidereus, js_fn
+from tests._load import load, sidereus, js_fn, js_all
 from tests.test_prefs import get, ORIGIN, _ENV_CLEAR
 from tests.test_routes_post import post, EVIL
 from tests.test_features import _m
@@ -81,6 +81,12 @@ class FeaturePrefs(unittest.TestCase):
         self.assertFalse(os.path.exists(self.path))
 
 
+def _async_fn(name):
+    """Top-level `async function name(...)` source (js_fn matches plain `function` only)."""
+    import re
+    return re.compile(r"^async function " + name + r"\(.*?^}", re.S | re.M).search(js_all()).group(0)
+
+
 JS = r"""
 const R = {}, deps = {retro: ['hist', 'failures'], hist: [], a: ['b'], b: ['a']};
 R.on = mpfEff({retro: true, hist: true}, deps, 'retro');
@@ -109,6 +115,40 @@ class FeaturePaneJs(unittest.TestCase):
         self.assertEqual(R["want0"], {"hist": True, "retro": False})
         self.assertEqual(R["want1"], {"hist": True, "retro": True})      # unknown id ignored
         self.assertEqual(R["want2"], R["want0"])
+
+    def test_save_above_rows(self):
+        stub = ("let MPSRV = {features: [{id: 'hist', set: true, on: true}, {id: 'retro', set: true, on: true}]}, MPF_PEND = null, MPF_NOTE = null;\n"
+                "const MPF_CORE = {}, T = s => s, esc = s => String(s);\n"
+                "const cfgSet = (n, h, c) => '<div class=row data-n=\"' + n + '\">' + c + '</div>';\n"
+                "const cfgOpt = (k, v, l) => '<button data-k=' + k + ' data-v=' + v + '>' + l + '</button>';\n")
+        js = ("const R = {}; R.none = mpfPane(); mpfAct('retro:0'); R.pend = mpfPane();"
+              " MPF_PEND = null; MPF_NOTE = {err: 'boom'}; R.note = mpfPane(); process.stdout.write(JSON.stringify(R));")
+        src = stub + "\n".join(js_fn(f) for f in ("mpfRows", "mpfWant", "mpfEff", "mpfShown", "mpfAct", "mpfPane")) + "\n" + js
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        R = json.loads(r.stdout)
+        self.assertNotIn("data-v=save", R["none"])
+        save, row = R["pend"].find("data-v=save"), R["pend"].find("class=row")
+        self.assertTrue(0 <= save < row, R["pend"])                       # Save precedes the first feature row
+        self.assertTrue(0 <= R["pend"].find("data-v=undo") < row)
+        self.assertTrue(0 <= R["note"].find("boom") < R["note"].find("class=row"))
+
+    def test_blocked_row_counts_as_off(self):
+        stub = ("let MPSRV = {features: [{id: 'pipeline', set: true, on: true}, {id: 'harness', set: false, on: false, deps: ['pipeline']}]},"
+                " MPF_PEND = null, MPF_NOTE = null, SENT = null;\n"
+                "const MPF_CORE = {}, T = s => s, esc = s => String(s), paintCfg = () => {};\n"
+                "const postJSON = async (u, b) => { SENT = b; return {ok: true}; };\n"
+                "const cfgSet = (n, h, c) => '<div class=row>' + c + '</div>';\n"
+                "const cfgOpt = (k, v, l) => '<button data-v=' + v + '>' + l + '</button>';\n")
+        js = ("(async () => { const R = {}; mpfAct('harness:1'); mpfAct('pipeline:0'); R.pane = mpfPane();"
+              " await mpfAct('save'); R.sent = SENT; process.stdout.write(JSON.stringify(R)); })();")
+        src = stub + "\n".join(js_fn(f) for f in ("mpfRows", "mpfWant", "mpfEff", "mpfShown", "mpfPane", "mpfAct")) + "\n" + _async_fn("mpfSave") + "\n" + js
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        R = json.loads(r.stdout)
+        self.assertIn("Changes: pipeline On → Off</div>", R["pane"])          # blocked harness is not listed as Off → On
+        self.assertNotIn("harness Off → On", R["pane"])
+        self.assertEqual(R["sent"], {"key": "features", "value": {"pipeline": False, "harness": False}})
 
 
 if __name__ == "__main__":

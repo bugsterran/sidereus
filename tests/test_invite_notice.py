@@ -118,6 +118,12 @@ class InviteNoticeWatch(unittest.TestCase):
         self.assertEqual(inv.watch_mode(PROJ), "on")
         self.assertEqual(inv.watch_mode("/w/other"), "off")
 
+    def test_equal_keys_ignore_saved_order(self):
+        # Two spellings of one folder (trailing slash here; case/slash on Windows) tie on length: never dict order.
+        for items in ([("/w/app", "off"), ("/w/app/", "on")], [("/w/app/", "on"), ("/w/app", "off")]):
+            self.write("config.local.json", {"mailbox_watch": {"mode": "on", "projects": dict(items)}})
+            self.assertEqual(inv.watch_mode("/w/app/x"), "off")
+
     def test_off_keeps_login_notice_without_watch_line(self):
         self.write("config.local.json", {"mailbox_watch": {"mode": "off"}})
         out = self.run_hook(cwd="/w/unregistered")
