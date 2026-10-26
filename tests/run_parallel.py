@@ -109,7 +109,7 @@ def main():
         m = re.search(r"^Ran (\d+) tests?", text, re.M)
         ran += int(m.group(1)) if m else 0
         tail = text[m.end():] if m else ""
-        fs = re.search(r"failures=(\d+)", tail)
+        fs = re.search(r"(?<!expected )failures=(\d+)", tail)   # ⚠not «expected failures=N» (expectedFailure)
         es = re.search(r"errors=(\d+)", tail)
         ss = re.search(r"skipped=(\d+)", tail)
         fails += int(fs.group(1)) if fs else 0

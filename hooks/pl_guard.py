@@ -4,7 +4,7 @@
 guards.requireGates = [stage title]: a `git commit` (main or subagent, Claude Code) while this session's open run of
   that project is unfinished on them is denied, and so is a `[pl-skip:<name>/<stage>]` of one of them. A stage counts
   when it is done (not skipped) and evidence.jsonl has an rc=0 row of its gate's mode at or after the stage's last
-  pass start, with no later rc!=0 row of that mode.
+  pass start, with no later rc!=0 row of that mode. Both denies are counted on the run (deny/dl codes gate · skipgate).
 guards.maxLoopBacks = n: once the run took n loop-backs, the next loop-back dispatch is denied and the FAIL hand-off
   says «loop budget n reached: stop and report».
 Stop marker <data dir>/plstop/<sid>.json (Sidereus «Stop»): a tagged dispatch of that run is denied (code stop) and the
@@ -117,8 +117,9 @@ def _missing(flow, r, proj, req, stages):
     return out
 
 
-def _commit(flow, ev, now):
-    """Deny reason for a `git commit` while an open run of this project lacks its required gates, else None."""
+def _commit(flow, ev, now, hit=None):
+    """Deny reason for a `git commit` while an open run of this project lacks its required gates, else None.
+    `hit` collects (run name, first missing stage, "gate") for run() to count."""
     cmd = flow._shell_cmd(ev.get("tool_input"))
     m = flow._COMMIT_RE.search(cmd or "")
     sid, cwd = ev.get("session_id"), ev.get("cwd")
@@ -144,6 +145,8 @@ def _commit(flow, ev, now):
             continue
         miss = _missing(flow, r, proj, g[0]["req"], g[1])
         if miss:
+            if hit is not None:
+                hit.append((name, miss[0][0], "gate"))
             gates = {s["title"]: s.get("gate") or "" for s in g[1]}
             msgs.append("%s: %s" % (name, "; ".join("%s (gate %s): %s" % (t, gates.get(t) or "-", w) for t, w in miss)))
     if not msgs:
@@ -152,8 +155,8 @@ def _commit(flow, ev, now):
             "and its gate until it records rc=0, then commit." % " | ".join(msgs))
 
 
-def _skip(flow, ev, path, desc):
-    """Deny reason for a `[pl-skip:]` naming a requireGates stage, else None."""
+def _skip(flow, ev, path, desc, hit=None):
+    """Deny reason for a `[pl-skip:]` naming a requireGates stage, else None; `hit` as in _commit (code "skipgate")."""
     for m in flow.SKIP_TAG.finditer(desc):
         name, title = m.group(1), flow._ren(m.group(2).strip())
         old = flow._load(path)["runs"].get(name)
@@ -163,6 +166,8 @@ def _skip(flow, ev, path, desc):
             continue
         g = guards_of(proj, name)
         if g and title in g[0]["req"]:
+            if hit is not None:
+                hit.append((name, title, "skipgate"))
             return ("%s is a required gate of %s (guards.requireGates): it cannot be skipped. Run it tagged "
                     "[pl:%s/%s] and pass its gate." % (title, name, name, title))
     return None
@@ -261,8 +266,9 @@ def _stop(flow, path, sid, name, title, now):
     return _stop_line(name, a[1])
 
 
-def check(plat, ev, flow):
-    """Deny reason for this Pre event, or None. Claude Code only (other CLIs have no verified deny contract)."""
+def check(plat, ev, flow, hit=None):
+    """Deny reason for this Pre event, or None. Claude Code only (other CLIs have no verified deny contract).
+    `hit` (list) receives (run name, stage title, code) of each requireGates deny; nothing is written here."""
     if plat != "cc" or ev.get("hook_event_name") != "PreToolUse":
         return None
     sid, cwd, tool = ev.get("session_id"), ev.get("cwd"), ev.get("tool_name")
@@ -273,7 +279,7 @@ def check(plat, ev, flow):
     now = flow._now()
     if tool in ("Bash", "PowerShell"):
         desc = ti.get("description") if isinstance(ti.get("description"), str) else ""
-        return (_skip(flow, ev, path, desc) if "[pl-skip:" in desc else None) or _commit(flow, ev, now)
+        return (_skip(flow, ev, path, desc, hit) if "[pl-skip:" in desc else None) or _commit(flow, ev, now, hit)
     if tool in flow.DISPATCH:
         desc = ti.get(flow.FIELD[tool])
         m = flow.TAG.search(desc) if isinstance(desc, str) else None
@@ -336,11 +342,18 @@ def _rewrite_stop(txt, line):
 def run(plat, ev, flow, inner):
     """pl_flow main()'s entry: guard deny, else `inner(plat, ev)` (with the loop-budget text on Post).
     ⚠Guard errors never block or change the flow; `inner` runs exactly once and its own errors propagate."""
+    hit = []
     try:
-        why = check(plat, ev, flow)
+        why = check(plat, ev, flow, hit)
     except Exception:
         why = None
     if why:
+        # count requireGates denies on the run like pl_flow's own (deny/dl); _stop already counted its own
+        try:
+            for name, title, code in hit:
+                flow._deny_save(os.path.join(flow.MARK_DIR, ev["session_id"] + ".runs.json"), name, title, code, flow._now())
+        except Exception:
+            pass   # ⚠the deny stands even when the count cannot be saved
         return flow._deny(why)
     try:
         sl = _post_stop(plat, ev, flow)

@@ -1,0 +1,44 @@
+{
+ "v": 1,
+ "guard": "gate",
+ "situation": "check.sh --fast FAIL then PASS on the same repo and head",
+ "expect": "r2g",
+ "pair": "gate-pass-only",
+ "rows": [
+  {
+   "dt": 0,
+   "mode": "fast",
+   "rc": 1,
+   "steps": [
+    [
+     "tests",
+     1,
+     120,
+     2,
+     9
+    ]
+   ]
+  },
+  {
+   "dt": 90,
+   "mode": "fast",
+   "rc": 0,
+   "steps": [
+    [
+     "tests",
+     0,
+     120,
+     0,
+     9
+    ]
+   ]
+  }
+ ],
+ "node": {
+  "gate": {
+   "st": "ok",
+   "r2g": true,
+   "rows": 2
+  }
+ }
+}

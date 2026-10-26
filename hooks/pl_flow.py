@@ -632,7 +632,7 @@ def _new_run(cwd, now):
             "loops": {}, "skipok": [], "end": 0, "st": {}, "models": {}, "agents": {}, "lb": [], "deny": 0, "dl": []}
 
 
-DENY_CODES = ("jump", "agent", "model", "tag", "stage", "stop")   # same set as sidereus/harness_flow.py HF_DENY_CODES
+DENY_CODES = ("jump", "agent", "model", "tag", "stage", "stop", "gate", "skipgate")   # gate/skipgate: pl_guard requireGates; same set as sidereus/harness_flow.py HF_DENY_CODES
 DL_MAX = 20   # deny log entries kept per run
 
 

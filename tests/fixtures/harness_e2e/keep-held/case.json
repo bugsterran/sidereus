@@ -1,0 +1,31 @@
+{
+ "v": 1,
+ "guard": "keep",
+ "situation": "PASS recorded at commit A and HEAD is still A",
+ "expect": "held",
+ "pair": "keep-reverted",
+ "steps": [
+  {
+   "commit": {
+    "a.txt": "1\n"
+   }
+  },
+  {
+   "commit": {
+    "a.txt": "2\n"
+   }
+  },
+  {
+   "check": {
+    "mode": "fast",
+    "rc": 0
+   }
+  }
+ ],
+ "node": {
+  "keep": {
+   "st": "ok",
+   "state": "held"
+  }
+ }
+}

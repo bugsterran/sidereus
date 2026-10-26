@@ -256,3 +256,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠MCP tools arrive as `mcp_tool` (unless OTEL_LOG_TOOL_DETAILS=1) and SubagentStart/Stop carry no subject: a specific matcher there is ambiguous → keep the transcript count, never claim 0.
 - ⚠Counts are global across projects (session id is never stored); a project-scope hook's 0 is still a real 0.
 - ⚠A 0 (and `never_ran`) needs ≥ 3 covered days (`HN_FIRE_MIN_D` · `VD_FIRE_MIN_D`) — coverage starts the day the store first saw a firing; before that a silent hook stays «?».
+
+## A guard deny that is not saved shows «Blocked 0» (`hooks/pl_guard.py` `_commit`/`_skip` · `pl_flow._deny_save`)
+- Cause: pl_guard denied a commit before a required gate (and a `[pl-skip:]` of a required gate) but never wrote it to runs.json, so the Harness guard node read 0.
+- Fix: both go through `flow._deny_save` with codes `gate` / `skipgate`; a failed save never lifts the deny.
+- ⚠A new deny code goes in three allow-lists: `pl_flow.DENY_CODES`, `harness_flow.HF_DENY_CODES`, `pl_outcome.OC_DENY_CODES` (else dropped from result-layer counts), plus an `HN_FD` label.
+- ★Caught by the end-to-end replay set `tests/test_harness_e2e.py` (2026-10-26).

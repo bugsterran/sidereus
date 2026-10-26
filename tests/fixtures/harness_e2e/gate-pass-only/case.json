@@ -1,0 +1,30 @@
+{
+ "v": 1,
+ "guard": "gate",
+ "situation": "check.sh --fast PASS only",
+ "expect": "no r2g",
+ "pair": "gate-red-green",
+ "rows": [
+  {
+   "dt": 0,
+   "mode": "fast",
+   "rc": 0,
+   "steps": [
+    [
+     "tests",
+     0,
+     120,
+     0,
+     9
+    ]
+   ]
+  }
+ ],
+ "node": {
+  "gate": {
+   "st": "ok",
+   "r2g": false,
+   "rows": 1
+  }
+ }
+}
