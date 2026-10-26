@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Windows and Linux: the 5h/7d quota fills in — the token is read from Claude Code's `.credentials.json` (it was macOS keychain only), and when quota cannot be fetched the status bar says why ("Quota lookup is turned off", "No Claude Code login found", "Could not reach the usage API").
+- Settings: in «Features», «Save» and «Undo» appear right under the heading instead of below the last row (often off-screen), and a feature switched off by an off dependency is saved as off, matching its checkbox.
+- Settings (Windows): «Mailbox watch» treats `C:\x` and `c:/x` as one folder — no duplicate rows, no false change, and the saved setting no longer flips with key order.
 - Timeline: the axis always spans the chosen window (e.g. 6 h); with only one short session (a fresh install) it shrank to that session's few seconds, with no time labels and one token block across the whole width.
 - Windows: gate results are now recorded (they were silently skipped for lack of a file lock), so a pipeline with required gates can commit after the gate passes and the «Harness» Gate and Kept steps fill in.
 
