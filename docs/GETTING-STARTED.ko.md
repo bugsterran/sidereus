@@ -71,7 +71,7 @@ python3 -m sidereus stop
 
 Windows 실제 PC 에서 뷰어·경로·플러그인 훅과 MCP·세션 목록·타임라인·작업 내역·diff·«Changes» 칩을 확인했다(2026-10-17).
 아직 확인 못 한 것: 로그온 서비스(3장), 메일박스 감시 감지, 하네스 증거 기록. 꺼지는 것: 실시간 프로세스 확인, 터미널 이동, 할당량
-조회, 잠자기 방지, 하네스 증거 기록(`hooks/ev_hook.py` 가 `fcntl` 을 쓴다).
+조회, 잠자기 방지. 하네스 증거 기록은 Windows 에서 `msvcrt` 잠금을 쓴다(CI 로 확인, 실제 PC 는 아직).
 셸 스크립트(`watch.sh`, `backup.sh`, `backup-data.sh`)는 Git Bash 나 WSL 이 있어야 돈다.
 
 ## 3. 계속 띄워 두기

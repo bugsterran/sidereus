@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Windows: gate results are now recorded (they were silently skipped for lack of a file lock), so a pipeline with required gates can commit after the gate passes and the «Harness» Gate and Kept steps fill in.
+
 ## [0.8.0] - 2026-10-25
 
 ### Added
