@@ -242,6 +242,13 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠Never jump away from a viewed working run, on reload or later. Working = a stage `o === 'run'` (plPrLive) or a stage `t1` within `PLNOW_GRACE` 120 s; an open run whose stages all wait is not working (it held the selection while another run ran).
 - ⚠Never plPaint / plFit from the follow step: the poll paint shows the pick, and the view must not move on its own.
 
+## Watch selection follows the running stage only if it was running at pick time (48k `plWatchFollow`)
+
+- ⇒ `E.wsel {id, arm}` is set when `E.sel` changes: armed only if that stage was `run` then. Armed + the stage left `run` + exactly one other stage `run` → select it (loop-back included).
+- ⚠A gap with nothing running keeps it armed (between two stages); 2+ running (fan-out) disarms; 2+ live runs (`PLNOW_SEEN` keys) or a past run (`PLS.runSel`) never move it.
+- ⚠`wsel.rk` = viewed run key (48k `plWRunKey`): a new run, or no stage `run`/`wait` left, disarms — never follow into another run. A pick that cannot be judged (no lt, past run, 2+ live runs) is never armed later.
+- ⚠`PLNOW_SEEN` belongs to 48j: read only. Selection only — never plPaint / plFit / pan; never in Edit (48d calls it only when `plWatchFor(p)`).
+
 ## Agent description line must not size the card (48d `.plnad` · 48k `.plwad`/`.plphd`)
 
 - ⚠The card is `width:max-content` (184..320); a plain nowrap description would push every card with a description to 320 and move edges and «Arrange». `.plnad` is `width:0;min-width:100%` + ellipsis so it takes the width the other lines set. Descriptions are agent-file data: `esc()` in text and `title`, never `T()`.
