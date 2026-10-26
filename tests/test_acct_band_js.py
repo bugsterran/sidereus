@@ -10,7 +10,7 @@ from tests._load import js_fn
 from tests.test_saver_quota_js import i18n, jconst
 from tests._node import node_e
 
-FNS = ("acctList", "mainAcct", "mainAcctOk", "acctHash", "acctCls", "acctRowCls", "acctTip", "acctLabel", "acctChip")
+FNS = ("acctList", "mainAcct", "mainAcctOk", "acctHash", "acctCls", "acctRowCls", "acctTip", "acctLabel", "acctChip", "acctShort")
 
 
 def run(body):
@@ -36,6 +36,10 @@ ACCTS = [{label: 'me', primary: true}, {label: 'work'}, {label: 'side'}, {label:
 R.a = ['work', 'side', 'z<b>', ''].map(acctCls);
 R.tipP = acctTip({}); R.tipW = acctTip({acct: 'work', acctDir: '/x'}); R.ext = [acctRowCls({plat: 'codex'}), acctTip({plat: 'codex'})];
 R.chip = [acctChip({}, 'c'), acctChip({acct: 'z<b>'}, 'c'), acctChip({plat: 'codex', acct: 'work'}, 'c'), acctLabel({plat: 'cc', acct: 'work'})];
+ACCTS = [{label: 'default', primary: true}, {label: 'myaccount'}];
+R.short1 = [acctChip({}, 'c'), acctChip({acct: 'myaccount'}, 'c')];
+ACCTS = [{label: 'myaccount', primary: true}, {label: 'myacc2'}, {label: 'myacc'}];
+R.short2 = [acctChip({}, 'c'), acctChip({acct: 'myacc2'}, 'c'), acctChip({acct: 'myacc'}, 'c')];
 ACCTS = [{label: 'z<b>'}, {label: 'side'}, {label: 'work'}, {label: 'me', primary: true}];
 R.b = ['work', 'side', 'z<b>', ''].map(acctCls); R.again = acctCls('work');
 """)
@@ -59,7 +63,15 @@ R.b = ['work', 'side', 'z<b>', ''].map(acctCls); R.again = acctCls('work');
         self.assertEqual(self.R["ext"], ["", ""])
 
     def test_label_chip(self):
-        self.assertEqual(self.R["chip"], ['<span class="c">me</span>', '<span class="c">z&lt;b&gt;</span>', "", "work"])
+        self.assertEqual(self.R["chip"], ['<span class="c" title="Claude account me">me</span>',
+                                          '<span class="c" title="Claude account z&lt;b&gt; — config dir ">z&lt;b&gt;</span>', "", "work"])
+
+    def test_chip_shared_prefix(self):
+        self.assertEqual(self.R["short1"], ['<span class="c" title="Claude account default">defa</span>',
+                                            '<span class="c" title="Claude account myaccount — config dir ">myac</span>'])
+        a, b, c = self.R["short2"]
+        self.assertIn(">myacco<", a); self.assertIn('title="Claude account myaccount"', a)
+        self.assertIn(">myacc2<", b); self.assertIn(">myacc<", c)     # a label that prefixes another stays whole
 
 
 class AcctChipCss(unittest.TestCase):
@@ -69,6 +81,8 @@ class AcctChipCss(unittest.TestCase):
             css = f.read()
         base = next(l for l in css.splitlines() if l.startswith(":is(.sx > .sacb,.srec .srecac){"))
         self.assertIn("background:color-mix(in srgb,var(--acc)", base)
+        shrink = int(base.split("flex:")[1].split()[1])
+        self.assertLess(shrink, 9)          # a 9x shrink cut labels to a shared prefix
         # Main (.acc0) has its own hue, so its chip follows --acc like every account (no ink override).
         self.assertIn(".acc0{--acc:#3cc6c0}", css)
         self.assertNotIn(".acc0 :is(", css)

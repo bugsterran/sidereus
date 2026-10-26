@@ -670,7 +670,14 @@ function acctLabel(x){
   const p = list.find(a => a && a.primary); return String((p && p.label) || '');
 }
 // Label chip in the band colour (inherits --acc from the row's .accN); cls = list-specific chip class.
-function acctChip(x, cls){ const l = acctLabel(x); return l ? '<span class="' + cls + '">' + esc(l) + '</span>' : ''; }
+// ⚠Shows acctShort (labels can share a prefix, so an ellipsised cut could not tell accounts apart); full text in title.
+function acctChip(x, cls){ const l = acctLabel(x); return l ? '<span class="' + cls + '" title="' + esc(acctTip(x)) + '">' + esc(acctShort(l)) + '</span>' : ''; }
+// Shortest prefix (>=4 chars) of label l that no other account label starts with; whole l if none.
+function acctShort(l){
+  const o = (acctList() || []).map(a => String((a && a.label) || '')).filter(v => v && v !== l);
+  for(let n = 4; n < l.length; n++){ const p = l.slice(0, n); if(!o.some(v => v.startsWith(p))) return p; }
+  return l;
+}
 // Band tooltip ('' with <2 accounts or an external CLI row); raw text, caller escapes.
 function acctTip(x){
   const list = acctList(); if(!list || !x || (x.plat && x.plat !== 'cc')) return '';
