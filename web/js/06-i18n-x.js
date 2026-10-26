@@ -29,6 +29,8 @@ Object.assign(I18N.ko, {
   "Invited {n} to '{room}' · {m} already there": "'{room}' {n}건 초대 · {m}건은 이미 있음",
   'Quota lookup is turned off in settings (quota_lookup)': '할당량 조회를 설정에서 껐습니다(quota_lookup)',
   'Could not read the token from the keychain (access may need to be allowed)': '키체인에서 토큰을 못 읽었습니다(권한 허용이 필요할 수 있습니다)',
+  'No Claude Code login found': 'Claude Code 로그인 정보를 찾지 못했습니다',
+  'Could not reach the usage API': '사용량 API 에 연결하지 못했습니다',
 });
 // Room admin server errors (sidereus/room_admin.py, sidereus/routes_post.py) — raw `error`/`msg` go through T().
 Object.assign(I18N.ko, {

@@ -27,3 +27,14 @@ Prerequisites (Python 3.9+, Git, Claude Code) are not counted.
 
 1. Same steps as macOS 1–9; `python3 -m pip install --user pipx` if pipx is missing.
 2. ⚠Not measured on a real machine yet; CI runs only the demo smoke test (`.github/workflows/ci.yml`).
+
+## Headline features visible — per OS
+
+⚠Tick each on a real run; a feature that is off on one OS must show here, not hide in a doc line.
+
+| Feature | macOS | Windows | Linux |
+|---|---|---|---|
+| Sessions (list, timeline) | yes | yes (2026-10-17) | not measured |
+| Pipelines (stages light) | yes | not measured | not measured |
+| Structure (map, sizes) | yes | not measured | not measured |
+| Quota (5h/7d in the status bar, or its reason) | yes (keychain) | `.credentials.json`, not measured | `.credentials.json`, not measured |

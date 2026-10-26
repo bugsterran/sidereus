@@ -169,7 +169,7 @@ function buildQuotaLocal(u, q){
     // Never leave it blank — cannot tell aggregating from broken
     const cr0 = creditRow(q);   // ⚠Show credits even while aggregating — it is a money value and must not be hidden
     setHtml(el, '<span class=qold>'+T('Counting usage…')
-      + ((q && q.err) ? TV({msg: ' (official fetch failed: {e})', vars: {e: esc(T(q.err))}}) : '') + '</span>'
+      + ((q && q.err) ? TV({msg: ' (official fetch failed: {e})', vars: {e: esc(qErrText(q.err))}}) : '') + '</span>'
       + (cr0 ? '<div class=qrow>'+cr0+'</div>' : ''));
     const t0 = T('ccusage is counting past usage (cold start 40-100s). 5h and weekly appear when it finishes.');
     if(el.title !== t0) el.title = t0;
@@ -179,7 +179,7 @@ function buildQuotaLocal(u, q){
   // ★Write **on screen** that the official value is missing and why — without %, people read "broken".
   out.push('<span class=qnone title="'
     + esc(T('Quota % comes only from the official fetch (GET /api/oauth/usage). It is never computed from the local count — a wrong denominator would print a wrong number.\nBelow is the amount actually used, from the local count (transcripts). It is a sum, not a calculation.'))
-    + '">' + T('No quota %') + (q && q.err ? ' · ' + esc(T(String(q.err))) : '') + '</span>');
+    + '">' + T('No quota %') + (q && q.err ? ' · ' + esc(qErrText(q.err)) : '') + '</span>');
   const R = u.reset || {};
   const fmtLeft = ms => HM(Math.max(0,Math.round(ms/60000)));
   if(b){
