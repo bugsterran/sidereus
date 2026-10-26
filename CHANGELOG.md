@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Windows and Linux: the 5h/7d quota fills in — the token is read from Claude Code's `.credentials.json` (it was macOS keychain only), and when quota cannot be fetched the status bar says why ("Quota lookup is turned off", "No Claude Code login found", "Could not reach the usage API").
+- Timeline: the axis always spans the chosen window (e.g. 6 h); with only one short session (a fresh install) it shrank to that session's few seconds, with no time labels and one token block across the whole width.
 - Windows: gate results are now recorded (they were silently skipped for lack of a file lock), so a pipeline with required gates can commit after the gate passes and the «Harness» Gate and Kept steps fill in.
 
 ## [0.8.0] - 2026-10-25

@@ -196,8 +196,10 @@ function tlHh(sec){ return LANG === 'en' ? CLK(new Date(sec * 1000)) : hhmm(sec)
 function tlRange(d, rows){
   // ★Horizontal range is fixed to **the requested window** (2026-09-02: shrinking to 1 hour changed nothing).
   // Before, it started at the oldest bar's start, so one agent started before the window stretched the whole axis.
+  // ⚠Never clamp t0 to the oldest row: with one fresh session (first run) the axis shrank to its few seconds — no ticks,
+  // one token block across the whole width, and a seconds-long session drawn as a tenth of the track.
   const t1 = Math.max(d.at, ...rows.map(r=>r.end));
-  const t0 = Math.max(t1 - (d.hours || 12) * 3600, Math.min(...rows.map(r=>r.start)));
+  const t0 = t1 - (d.hours || 12) * 3600;
   const span = Math.max(60, t1 - t0);
   const pct = v => ((v - t0) / span * 100);
   tlCurT0 = t0; tlCurT1 = t1;          // Used by the time cursor for mouse x → time conversion

@@ -10,6 +10,7 @@ function ageU(sec, sUnder, hrs){
 // ★Hold on to the last official value — dropping to an estimate on one empty poll makes numbers jump
 // (2026-09-04: value went 30 > 25 back down). Held values recompute their age and say they are stale.
 let QLAST = null;
+let QERR = null;      // primary's last fetch error (q.err) while it has no 5h/7d — the status bar names the reason
 // ★Saver mode badge (2026-09-04).
 // The **server** decides — it must use the same inputs as the hook so screen and model say the same thing.
 function buildSaver(sv){

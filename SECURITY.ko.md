@@ -15,7 +15,7 @@
   ⚠ 다른 OS 에서는 이 엔드포인트를 여전히 로컬 프로세스 누구나(다른 사용자의 `curl` 포함) 읽을 수 있다. 모든 OS 에서 나머지 `/api` 는 인증이 없고, `/work` HTML 껍데기는 로컬 누구에게나 나간다.
 - **프로세스를 띄우는 엔드포인트 없음.** 페이지의 어떤 요청도 셸·git checkout/merge·세션을 돌리지 않는다.
 - **메일박스 DM 은 등록된 id 에만**(`identity.json`) 보낸다. 추측한 이름으로는 보내지 않는다.
-- 밖으로 나가는 요청은 선택 사항인 `api.anthropic.com` 할당량 조회 하나뿐이고, macOS 키체인의 OAuth 토큰을 쓴다.
+- 밖으로 나가는 요청은 선택 사항인 `api.anthropic.com` 할당량 조회 하나뿐이고, Claude Code OAuth 토큰을 쓴다(macOS 는 키체인, Windows·Linux 는 `<설정 폴더>/.credentials.json`).
 - **뷰어가 아닌 개발 스크립트:** `scripts/arch_checks.py --category security` 와 `scripts/deps_audit.py` 는 실행할 때 무료 취약점 소스(OSV.dev·npm·semgrep 레지스트리·endoflife.date)를 조회한다 — 패키지 이름과 버전만 보낸다. `--offline` 이면 건너뛰고, 네트워크가 안 닿으면 «문제 없음» 이 아니라 건너뜀으로 적는다.
 - **유료 할당량 프로브 — 기본 꺼짐.** `quota_probe: true`(또는 `SIDEREUS_QUOTA_PROBE=1`)면, 조회가 429 를 받는 동안 같은 토큰으로 120초마다 `api.anthropic.com/v1/messages` 에 Haiku 요청 1회를 보낸다(`max_tokens 1`, 회당 약 $0.00002, 그 계정에 청구). 레이트 리밋 헤더만 읽고 본문은 버린다.
 
@@ -30,7 +30,7 @@
 
 | # | 동작 | 위치 | 이유 | 끄기 |
 |---|---|---|---|---|
-| 1 | macOS 키체인에서 Claude Code OAuth 토큰을 읽어(`security find-generic-password`) `api.anthropic.com/api/oauth/usage` 에 Bearer 헤더로 보낸다. 토큰은 기록하지도, 저장하지도, 화면에 보이지도 않는다. 로그인된 추가 설정 폴더(계정 여러 개)도 같은 방식으로 조회한다: 폴더마다 자기 키체인 서비스(`Claude Code-credentials-<폴더 sha256>[:8]`, `-w` 로 읽기 전에 종료 코드로 존재만 확인), 없으면 `<폴더>/.credentials.json`. | `sidereus/quota.py`, `sidereus/quota_fetch.py`, `sidereus/quota_roots.py` | 5h/7d 한도 카드, «다른 계정» 줄, 절약 모드 페이스 | `"quota_lookup": false` 또는 `SIDEREUS_QUOTA_LOOKUP=0` (한도 카드가 빈다) |
+| 1 | macOS 키체인에서 Claude Code OAuth 토큰을 읽어(`security find-generic-password`) `api.anthropic.com/api/oauth/usage` 에 Bearer 헤더로 보낸다. 토큰은 기록하지도, 저장하지도, 화면에 보이지도 않는다. 로그인된 추가 설정 폴더(계정 여러 개)도 같은 방식으로 조회한다: 폴더마다 자기 키체인 서비스(`Claude Code-credentials-<폴더 sha256>[:8]`, `-w` 로 읽기 전에 종료 코드로 존재만 확인), 없으면 `<폴더>/.credentials.json`. Windows·Linux 에서는 기본 계정 토큰도 `<설정 폴더>/.credentials.json`(`~/.claude/` 또는 `CLAUDE_CONFIG_DIR`)에서 읽는다 — 64 KB 이하 일반 파일만, 심볼릭 링크는 거부, 쓰지 않음, `api.anthropic.com` 에만 쓴다. | `sidereus/quota.py`, `sidereus/quota_fetch.py`, `sidereus/quota_roots.py` | 5h/7d 한도 카드, «다른 계정» 줄, 절약 모드 페이스 | `"quota_lookup": false` 또는 `SIDEREUS_QUOTA_LOOKUP=0` (한도 카드가 빈다) |
 | 2 | 유료 프로브: 사용량 API 가 429 를 주는 동안 120초마다 Haiku 호출 1회(`max_tokens 1`)로 응답 헤더의 크레딧 비율을 읽는다. | `sidereus/quota.py` | 크레딧 줄 | 기본으로 꺼져 있다(`quota_probe`) |
 | 3 | 고정된 AppleScript(tty 를 인자로 넘김)로 iTerm2 나 터미널 탭을 앞으로 가져온다. 탭에 입력하지는 않는다. | `sidereus/term.py` | «터미널로» 버튼 | 설정 > 터미널 > `off` |
 | 4 | 세션이 일하는 동안 `caffeinate` 를 잡아 맥이 유휴 절전에 들어가지 않게 한다. | `sidereus/awake.py` | 맥이 잠들면 세션도 멈춘다 | `"keep_awake": false` |

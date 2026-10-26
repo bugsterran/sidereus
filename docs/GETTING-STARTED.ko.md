@@ -65,13 +65,14 @@ python3 -m sidereus stop
 두 번째 클론이나 다른 데이터 폴더는 `--port N` 으로 다른 포트를 써야 한다. 8799 에서는 `start` 가 «다른 Sidereus(다른 데이터 폴더)» 라며 멈춘다.
 `stop --port N` 은 이 데이터 폴더에서 띄운 것만 멈춘다. `--demo` 나 다른 데이터 폴더의 뷰어는 띄운 터미널에서 Ctrl-C 로, 또는 그 데이터 폴더에서 `stop` 한다.
 
-기본 설정에서는 할당량 조회를 위해 macOS 키체인에서 Claude Code OAuth 토큰을 읽고, 세션이 일하는 동안
+기본 설정에서는 할당량 조회를 위해 Claude Code OAuth 토큰을 읽고(macOS 는 키체인, Windows·Linux 는
+`<설정 폴더>/.credentials.json` — `~/.claude/` 또는 `CLAUDE_CONFIG_DIR`), macOS 에서는 세션이 일하는 동안
 `caffeinate` 를 잡는다. 끄려면 `config.local.json` 에 `"quota_lookup": false`, `"keep_awake": false`.
 [SECURITY.md](../SECURITY.md) 참고.
 
 Windows 실제 PC 에서 뷰어·경로·플러그인 훅과 MCP·세션 목록·타임라인·작업 내역·diff·«Changes» 칩을 확인했다(2026-10-17).
-아직 확인 못 한 것: 로그온 서비스(3장), 메일박스 감시 감지, 하네스 증거 기록. 꺼지는 것: 실시간 프로세스 확인, 터미널 이동, 할당량
-조회, 잠자기 방지. 하네스 증거 기록은 Windows 에서 `msvcrt` 잠금을 쓴다(CI 로 확인, 실제 PC 는 아직).
+아직 확인 못 한 것: 로그온 서비스(3장), 메일박스 감시 감지, 하네스 증거 기록. 꺼지는 것: 실시간 프로세스 확인, 터미널 이동,
+잠자기 방지. 할당량 조회는 `.credentials.json` 을 읽는다(실제 PC 는 아직). 못 읽으면 상태 표시줄에 이유가 나온다. 하네스 증거 기록은 Windows 에서 `msvcrt` 잠금을 쓴다(CI 로 확인, 실제 PC 는 아직).
 셸 스크립트(`watch.sh`, `backup.sh`, `backup-data.sh`)는 Git Bash 나 WSL 이 있어야 돈다.
 
 ## 3. 계속 띄워 두기

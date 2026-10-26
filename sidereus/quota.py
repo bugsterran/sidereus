@@ -1,6 +1,7 @@
 """Official quota (OAuth usage API, OMC cache), quota persistence and quota()."""
 import json
 import os
+import stat
 import subprocess
 import threading
 import time
@@ -17,7 +18,7 @@ from sidereus.transcript import _iso_ts, _tail_lines
 #     Measured 2026-08-20: the response's 5h 88% · reset 11:10 KST exactly matched what the user read on screen.
 #   ⇒ The user need not hand-enter % and reset (no calibration needed either).
 #   ⚠**429s are common** (that endpoint's own limit · measured 200 on the 3rd try). So call rarely and back off.
-#   ⚠The token is read from **the user's own keychain** and used **only for api.anthropic.com**. Never logged or written to files.
+#   ⚠The token is read from **the user's own keychain** (off macOS: `.credentials.json`) and used **only for api.anthropic.com**. Never logged or written to files.
 QUOTA_URL = "https://api.anthropic.com/api/oauth/usage"
 # ★★**The only real-time path during 429** (measured 2026-09-11; the screen lagged the Claude settings page, 19% vs 21%).
 #   The CLI **almost never calls** this endpoint — it reads the `anthropic-ratelimit-unified-*` headers attached to
@@ -125,17 +126,37 @@ QUOTA_LOOKUP_ENV = "SIDEREUS_QUOTA_LOOKUP"
 
 
 def _quota_lookup_on():
-    """Reading the Claude Code OAuth token from the keychain is opt-out: env SIDEREUS_QUOTA_LOOKUP (1/0) beats config
-    `quota_lookup` (default true). Off = no keychain read, no call to api.anthropic.com (SECURITY.md)."""
+    """Reading the Claude Code OAuth token (keychain; `.credentials.json` off macOS) is opt-out: env SIDEREUS_QUOTA_LOOKUP (1/0) beats config
+    `quota_lookup` (default true). Off = no token read, no call to api.anthropic.com (SECURITY.md)."""
     v = os.environ.get(QUOTA_LOOKUP_ENV)
     if v is not None and v.strip() != "":
         return v.strip().lower() in ("1", "true", "yes", "on")
     return bool(CFG.get("quota_lookup", True))
 
 
+CREDS_MAX_BYTES = 64 * 1024
+
+
+def _creds_file_token(d):
+    """Off macOS Claude Code keeps the login in `<config dir>/.credentials.json`; None on any doubt (never logged)."""
+    p = os.path.join(d, ".credentials.json")
+    try:
+        st = os.lstat(p)
+        if not stat.S_ISREG(st.st_mode) or st.st_size > CREDS_MAX_BYTES:
+            return None     # ⚠symlink / dir / oversize refused: only the CLI's own regular file is trusted
+        with open(p, "rb") as f:
+            j = json.loads(f.read(CREDS_MAX_BYTES + 1).decode("utf-8"))
+        tok = (j.get("claudeAiOauth") or {}).get("accessToken") or j.get("accessToken")
+        return tok if isinstance(tok, str) and tok else None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
 def _oauth_token():
-    if not IS_MAC or not _quota_lookup_on():
-        return None     # ⚠non-Mac — no keychain (`security`). Same value as failure, so callers are unchanged
+    if not _quota_lookup_on():
+        return None
+    if not IS_MAC:
+        return _creds_file_token(claude_home())     # primary root = the account this viewer follows (CLAUDE_CONFIG_DIR)
     try:
         r = subprocess.run(["security", "find-generic-password", "-s", "Claude Code-credentials", "-w"],
                            capture_output=True, text=True, encoding="utf-8", errors="replace",
