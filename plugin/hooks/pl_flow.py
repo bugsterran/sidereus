@@ -1506,6 +1506,13 @@ def _commit_close(ev, now):
                     st[c]["cm"] = (cm + [now])[-CM_MAX:]
                 if sub:
                     continue
+                # ⚠A commit tagged for this run at a stage with a next stage (release: tag commits, deploy follows) is
+                #   mid-run: closing it archived the run and denied the next stage as a jump. Untagged/last-stage closes.
+                sd = _stages(proj, rn) if only else None
+                ci = _idx(sd[0], cur) if sd else -1
+                if ci >= 0 and _plain_next(sd[0], ci) >= 0:
+                    r["t1"] = now
+                    continue
                 if isinstance(st.get(cur), dict) and st[cur].get("s") == "run":
                     _mark(r, cur, "done", now)
                 r["end"], r["t1"] = now, now
