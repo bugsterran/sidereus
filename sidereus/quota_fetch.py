@@ -2,13 +2,15 @@
 State stays owned by `quota` (`_quota`/`_quota_lock`/`_quota_retry_after`, mutated in place here). ⚠Tests patch these names on this module."""
 import json
 import time
+from sidereus.config import IS_MAC
 from sidereus.warn import exc_name, warn_once
 from sidereus.transcript import _iso_ts
 from sidereus.quota import QUOTA_URL, _cc_account, _oauth_token, _quota, _quota_lock, _quota_lookup_on, _quota_retry_after
 
 
 QF_ERR_KEYS = ("Quota lookup is turned off in settings (quota_lookup)",
-               "Could not read the token from the keychain (access may need to be allowed)")   # ⚠fixed I18N keys (page does T(q.err)); keep in sync with 06-i18n-x.js
+               "Could not read the token from the keychain (access may need to be allowed)",
+               "No Claude Code login found")   # ⚠fixed I18N keys (page does T(q.err)); keep in sync with 06-i18n-x.js
 
 
 def _qf_err(msg):
@@ -154,7 +156,7 @@ def _quota_fetch():
         return False
     tok = _oauth_token()
     if not tok:
-        _qf_err(QF_ERR_KEYS[1])
+        _qf_err(QF_ERR_KEYS[1] if IS_MAC else QF_ERR_KEYS[2])     # off macOS: no .credentials.json (not signed in)
         return False
     ok, body = _qf_request(tok)
     if not ok:

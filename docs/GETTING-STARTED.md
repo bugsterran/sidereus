@@ -65,14 +65,15 @@ no warnings. Without the launcher: `/usr/bin/python3 chat_server.py [--no-open] 
 A second clone or data dir needs its own `--port N`; on 8799 `start` stops with "another Sidereus (different data dir)".
 `stop --port N` stops only what this data dir started; a `--demo` or another data dir's viewer stops with Ctrl-C in its own terminal or `stop` from that data dir.
 
-By default Sidereus reads the Claude Code OAuth token from the macOS keychain for the quota lookup and holds
+By default Sidereus reads the Claude Code OAuth token for the quota lookup (macOS keychain; Windows and Linux:
+`<config dir>/.credentials.json`, i.e. `~/.claude/` or `CLAUDE_CONFIG_DIR`) and on macOS holds
 `caffeinate` while sessions work. Off: `"quota_lookup": false`, `"keep_awake": false` in
 `config.local.json`. See [SECURITY.md](../SECURITY.md).
 
 On Windows the viewer, paths, plugin hooks and MCP, session list, timeline, work-log popup, diff and the «Changes» chip
 were checked on a real PC (2026-10-17). Not yet checked there: the logon service (§3), mailbox watch detection and
-harness evidence rows. Off there: live process probes, terminal jump, the
-quota lookup and idle-sleep prevention. Harness evidence rows use an `msvcrt` lock on Windows (CI-tested; not yet checked on a real PC).
+harness evidence rows. Off there: live process probes, terminal jump and idle-sleep prevention. The quota lookup
+reads `.credentials.json` (not yet checked on a real PC); without it the status bar names the reason. Harness evidence rows use an `msvcrt` lock on Windows (CI-tested; not yet checked on a real PC).
 The shell scripts (`watch.sh`, `backup.sh`, `backup-data.sh`) need Git Bash or WSL.
 
 ## 3. Keep it running

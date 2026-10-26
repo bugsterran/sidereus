@@ -4,6 +4,12 @@
 // dropped the whole quota block to local display and **credits vanished too** — although credits are a separate field.
 // ★Measured 09-10: `err:"HTTPError 429"` left five_hour empty, yet extra arrived intact (4.8% · $9.69/$200).
 // Credit amounts arrive in cents; non-USD keeps the fmtMoney digits with the currency code instead of '$'.
+// Server err -> short reason: network-level failures (no HTTP code) read as one sentence; fixed keys go through T().
+function qErrText(e){
+  if(!e) return '';
+  e = String(e);
+  return /^(timeout|URLError|RemoteDisconnected|Connection\w*Error|SSL\w*Error|gaierror|OSError|IncompleteRead)$/.test(e) ? T('Could not reach the usage API') : T(e);
+}
 function creditMoney(c, cur){
   if(c == null) return '?';
   const s = fmtMoney(c/100);
@@ -50,6 +56,7 @@ function curWinTok(){
 }
 function buildQuota(u, q){
   const el0 = document.getElementById('quota');
+  QERR = q && !(q.five_hour || q.seven_day) && q.err ? q.err : null;
   if(q && (q.five_hour || q.seven_day)) QLAST = {q: q, got: Date.now()};
   else if(QLAST) q = Object.assign({}, QLAST.q,
     {age: (QLAST.q.age || 0) + Math.round((Date.now() - QLAST.got) / 1000)});
@@ -99,7 +106,7 @@ function buildQuota(u, q){
       // the status bar shows the left share; this drawer shows used, so name it
       return label+' '+esc(T('used'))+' '+gauge(p)+'<b class="'+qcls(p)+(old?' qstale':'')+'">'+esc(fmtPct(o.pct))+'</b> '
         + amt(loc, win, gauged)
-        + (old ? '<span class="qold'+(vold?' qstale2':'')+'" title="'+esc(T(String(q.err||'The lookup is running late'))
+        + (old ? '<span class="qold'+(vold?' qstale2':'')+'" title="'+esc((q.err ? qErrText(q.err) : T('The lookup is running late'))
               + T(' — actual usage has risen further since then'))+'">'+TV({msg: 'as of {t}', vars: {t: ago}})+'</span> ' : '')
         // The status bar already shows the 5h countdown, so the 5h row keeps the clock; 7d uses the shared RST7 text.
         + '<span class="'+(hot?'qhot':'')+'">'+(label === '5h' ? when+' '+esc(T('reset'))
@@ -133,7 +140,7 @@ function buildQuota(u, q){
     // ⚠If it cannot be measured, use the block value but **label it as the local block**. Do not revert to unlabeled.
     const cwt = curWinTok();
     const qt = TV({msg: 'Official quota (GET /api/oauth/usage · same value as /usage) · fetched {n}s ago', vars: {n: q.age||0}})
-      + (q.err ? '\n' + TV({msg: '⚠Last fetch failed: {e} (showing older values)', vars: {e: T(q.err)}}) : '')
+      + (q.err ? '\n' + TV({msg: '⚠Last fetch failed: {e} (showing older values)', vars: {e: qErrText(q.err)}}) : '')
       + '\n\n' + T('[Reference · local count]')
       // ★2026-09-27 cross-tab audit: curWinTok counts from the 5h cycle start (clipped to the loaded timeline).
       + (cwt != null ? '\n' + TV({msg: 'Tokens since this 5h reset cycle began {n} (only the timeline range, if that is shorter)', vars: {n: cwt.toLocaleString()}})

@@ -246,6 +246,11 @@ function buildSbar(sv){
     out.push('<span title="' + esc(t7) + '"><b>7d</b> <small class=sbd6>' + esc(T('account')) + '</small> ' + use(sd.pct, wkU, '7d', au7)
       + (d && !isNaN(d) ? ' <small class="sbd6' + (d - now < 6*3600e3 ? ' sbwarn' : '') + '">· ' + esc(T('reset')) + ' ' + esc(RST7(d).rel) + '</small>' : '') + '</span>');   // rel piece only: abs+rel pushed other segments out at 1100 (full text in the title)
   }
+  // No 5h/7d at all: say why (lookup off · no login · API unreachable) instead of leaving the Claude group blank.
+  if(!fh && !sd && typeof QERR !== 'undefined' && QERR){
+    const why = qErrText(QERR);
+    out.push('<span title="' + esc(why) + '">' + aiLogo('cc').replace(/ title="[^"]*"/, '') + '<b>5h</b> <small class=sbwarn>' + esc(why) + '</small></span>');
+  }
   const gx = sbExt(typeof EXTU === 'undefined' ? null : EXTU);
   if(gx) out.push(gx);
   const st = snap ? r.stage : (SBAR_SV && SBAR_SV.on ? (+SBAR_SV.stage || 0) : 0);
