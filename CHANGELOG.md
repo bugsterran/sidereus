@@ -13,16 +13,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- Windows and Linux: the 5h/7d quota fills in — the token is read from Claude Code's `.credentials.json` (it was macOS keychain only), and when quota cannot be fetched the status bar says why ("Quota lookup is turned off", "No Claude Code login found", "Could not reach the usage API").
-- Settings: in «Features», «Save» and «Undo» appear right under the heading instead of below the last row (often off-screen), and a feature switched off by an off dependency is saved as off, matching its checkbox.
-- Settings (Windows): «Mailbox watch» treats `C:\x` and `c:/x` as one folder — no duplicate rows, no false change, and the saved setting no longer flips with key order.
-- Timeline: the axis always spans the chosen window (e.g. 6 h); with only one short session (a fresh install) it shrank to that session's few seconds, with no time labels and one token block across the whole width.
-- Windows: gate results are now recorded (they were silently skipped for lack of a file lock), so a pipeline with required gates can commit after the gate passes and the «Harness» Gate and Kept steps fill in.
 - Harness: a commit the pipeline guard blocks because a required gate has not passed (or a declared skip of a required gate) now counts as «Blocked» in the flow and result counts, labelled «Commit before gate» / «Required gate skipped»; before it showed «Blocked 0».
 - Sessions: on Windows and Linux with several Claude Code accounts, when one account's session list cannot be read its open sessions show as unknown instead of ended.
 - Sessions: a Cursor or Gemini CLI session left idle for more than 24 hours no longer disappears while its process is still running.
 - Status bar: a CLI whose session is still open but idle since before midnight (Cursor, Gemini, Codex) keeps its «Today 0» entry.
 - Sessions: a running session whose last record cannot be read shows as unknown instead of idle, and a subagent whose log cannot be read no longer shows «Idle» or «quiet».
+
+## [0.8.1] - 2026-10-26
+
+### Fixed
+
+- Windows and Linux: the 5h/7d quota fills in — the token is read from Claude Code's `.credentials.json` (it was macOS keychain only), and when quota cannot be fetched the status bar says why ("Quota lookup is turned off", "No Claude Code login found", "Could not reach the usage API").
+- Settings: in «Features», «Save» and «Undo» appear right under the heading instead of below the last row (often off-screen), and a feature switched off by an off dependency is saved as off, matching its checkbox.
+- Settings (Windows): «Mailbox watch» treats `C:\x` and `c:/x` as one folder — no duplicate rows, no false change, and the saved setting no longer flips with key order.
+- Timeline: the axis always spans the chosen window (e.g. 6 h); with only one short session (a fresh install) it shrank to that session's few seconds, with no time labels and one token block across the whole width.
+- Windows: gate results are now recorded (they were silently skipped for lack of a file lock), so a pipeline with required gates can commit after the gate passes and the «Harness» Gate and Kept steps fill in.
 
 ## [0.8.0] - 2026-10-25
 
@@ -499,7 +504,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/bugsterran/sidereus/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/bugsterran/sidereus/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/bugsterran/sidereus/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/bugsterran/sidereus/compare/v0.5.0...v0.6.0
