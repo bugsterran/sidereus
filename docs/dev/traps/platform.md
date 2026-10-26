@@ -185,6 +185,11 @@ Cause: Claude Code caches an installed plugin per `version` in `plugin.json`; `p
 Fix: bump `VERSION` in `scripts/build_plugin.py` (then rebuild) in every commit that changes `plugin/`.
 ⚠ ★2026-10-17: version stayed 0.1.0 through three releases; the Windows hook fix did not arrive on a real PC after update.
 
+### Evidence rows need a lock on Windows too (`scripts/evidence_rec.py` · `hooks/ev_hook.py` `_win_append`)
+Cause: both recorders appended only under `fcntl.flock`; on Windows they wrote no row, so `requireGates` (`hooks/pl_guard.py`) denied every commit in an open run and the Harness gate/keep nodes stayed empty.
+Fix: without fcntl, a byte-0 `msvcrt` lock on a `<file>.lock` sidecar (1 s bounded wait), `O_BINARY` append, binary rotation; a lock miss writes nothing.
+⚠Never lock the evidence file itself: msvcrt locks are mandatory (readers of byte 0 fail) and `os.replace` onto a file we hold open fails. Tests: `tests/test_ev_hook.py` `WinLock`.
+
 ### Parent-directory walks never end on Windows
 Cause: `while p != "/": p = os.path.dirname(p)` — `dirname("C:\\")` returns `C:\\`, so the loop spins until the hook timeout.
 Fix: stop when `dirname(p) == p` (`tests/test_hook_drive_root.py`).

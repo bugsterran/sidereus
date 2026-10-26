@@ -72,7 +72,7 @@ By default Sidereus reads the Claude Code OAuth token from the macOS keychain fo
 On Windows the viewer, paths, plugin hooks and MCP, session list, timeline, work-log popup, diff and the «Changes» chip
 were checked on a real PC (2026-10-17). Not yet checked there: the logon service (§3), mailbox watch detection and
 harness evidence rows. Off there: live process probes, terminal jump, the
-quota lookup, idle-sleep prevention, and harness evidence rows (`hooks/ev_hook.py` needs `fcntl`).
+quota lookup and idle-sleep prevention. Harness evidence rows use an `msvcrt` lock on Windows (CI-tested; not yet checked on a real PC).
 The shell scripts (`watch.sh`, `backup.sh`, `backup-data.sh`) need Git Bash or WSL.
 
 ## 3. Keep it running
