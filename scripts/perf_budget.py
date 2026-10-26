@@ -112,7 +112,7 @@ def rss_mb(pid):
 
 def _get_ms(url, timeout=60):
     t0 = time.perf_counter()
-    with urllib.request.urlopen(url, timeout=timeout) as r:
+    with urllib.request.urlopen(url, timeout=timeout) as r:  # nosec B310 -- constant loopback http base
         r.read()
     return (time.perf_counter() - t0) * 1000.0
 
