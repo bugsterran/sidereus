@@ -40,8 +40,8 @@ Copy `config.example.json`. Keys starting with `_` are comments. An unknown key 
 | `hook_session_patterns` | string list | `[]` | Regexes for the working dirs of hook-spawned sessions; matches are hidden. |
 | `launchd_label_prefix` | string | `"io.sidereus"` | `--label viewer` prints `<prefix>.viewer`. Used by `ext-hooks/demo.sh` and the MCP down hint. The shipped plists do not read it. |
 | `launchd_labels` | object | `{"viewer": "", "watch": "", "databackup": ""}` | Full label per job. Non-empty overrides `<prefix>.<name>`. |
-| `quota_probe` | bool | `false` | While the quota lookup returns 429, send one paid Haiku call (`max_tokens 1`, about $0.00002; ~$0.02/month if 429 all month) every 120 s to read the credit ratio from headers. |
-| `quota_lookup` | bool | `true` | `false`: never read the OAuth token from the keychain or call `api.anthropic.com`. The 5h/7d figures in the status bar go blank. See [SECURITY.md](../SECURITY.md). |
+| `quota_probe` | bool | `false` | While the quota lookup returns 429, send one paid Haiku call (`max_tokens 1`, about $0.00002; ~$0.02/month if 429 all month) every 120 s to read the credit ratio from headers. ⚠ Sends inference requests with the Claude Code sign-in token outside Claude Code; Anthropic's terms may restrict that for third-party tools — leave it off unless you accept the risk. |
+| `quota_lookup` | bool | `true` | `false`: never read the OAuth token from the keychain or call `api.anthropic.com`. The 5h/7d figures in the status bar go blank. ⚠ The lookup reuses the Claude Code sign-in token outside Claude Code (read-only usage call); Anthropic's terms may restrict use of subscription credentials by third-party tools. See [SECURITY.md](../SECURITY.md). |
 | `keep_awake` | bool | `true` | `false`: never hold `caffeinate` while sessions work. |
 | `compact_history` | list of `["YYYY-MM-DD", int\|null]` | `[]` | Auto-compact threshold history: date it took effect, tokens (`null` = off). Dates strictly ascending, at most 50 rows, values 1000..10000000. `[]` = only the current setting. |
 | `port` | int | `8799` | Viewer port, 1024..65535. Out of range is rejected, not clamped. See [Port](#port). |
