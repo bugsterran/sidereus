@@ -73,7 +73,7 @@ process.stdout.write(JSON.stringify(OUT));
         # «남은 ≈» from the account's history per-1% (`est`, >= 3 windows); 7d unmeasured gets «사용 ≈ · 남은 ≈».
         h = self._est(6, "med")
         self.assertIn("남은 ≈</small> <b>37M</b>", h)                # history, not the window average (4M)
-        self.assertIn("사용 ≈</small> <b>106M</b><span class=sbd3> <small>· 남은 ≈</small> <b>214M</b></span>", h)
+        self.assertIn("<span class=sbd8> <small>· 사용 ≈</small> <b>106M</b></span><span class=sbd3> <small>· 남은 ≈</small> <b>214M</b></span>", h)
         self.assertIn("1%당 토큰 중앙값", h)                          # tooltip names the source
 
     def test_thin_history_uses_window_average(self):
@@ -81,7 +81,7 @@ process.stdout.write(JSON.stringify(OUT));
         h = self._est(2, "pool")
         self.assertIn("남은 ≈</small> <b>4M</b>", h)
         self.assertIn("남은 ≈ 4M — 기록 2창 — 이번 창 평균으로 추정", h)
-        self.assertIn("사용 ≈</small> <b>106M</b><span class=sbd3> <small>· 남은 ≈</small> <b>214M</b></span>", h)   # 7d unchanged
+        self.assertIn("<span class=sbd8> <small>· 사용 ≈</small> <b>106M</b></span><span class=sbd3> <small>· 남은 ≈</small> <b>214M</b></span>", h)   # 7d unchanged
 
     def _est(self, n, src_kind):
         body = """

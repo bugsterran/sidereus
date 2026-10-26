@@ -80,15 +80,16 @@ function sbExtSeg(k, e){
   // The logo's own title would shadow the segment tooltip, so it is dropped. ⚠Logo only — the name lives in the tooltip.
   return '<span class=sbext title="' + esc(tip) + '">' + aiLogo(k).replace(/ title="[^"]*"/, '')
     + '<small class="sbxd sbd4">' + esc(T('Today')) + '</small> <b>' + esc(fmtTok(e.tok)) + '</b>'
-    + (e.cost != null ? ' <small>· ' + esc(extCostStr(e.cost)) + '</small>' : '')
+    + (e.cost != null ? ' <small class=sbd8>· ' + esc(extCostStr(e.cost)) + '</small>' : '')
     + (e.rate && extRateStr(e.rate) ? ' <small class=sbd5>· ' + esc(extRateStr(e.rate)) + '</small>' : '') + '</span>';
 }
 // ★Short bar: hide whole low-priority parts rather than ellipsize key numbers (key numbers stay visible).
 // Drop order (SB_STEPS): 1 «100% at» · 2 «left at reset» · 't' tighter padding (no text lost) · 3 «left ≈» (same
 //   quantity as «left %», in tokens) · 5 ext limit % (Codex card has it) · 6 reset times · 7 saver secondary (also in its
-//   tooltip) · 4 ext «Today».
-// ⚠«Today» is what makes the ext number mean «today» — keep cheaper drops (5, 6, 7) ahead of it. Ellipsis stays only as the last resort.
-const SB_STEPS = [1, 2, 't', 3, 5, 6, 7, 4];
+//   tooltip) · 8 ext «≈ $cost» and 7d «used» (both in their tooltips) · 4 ext «Today».
+// ⚠«Today» is what makes the ext number mean «today» — keep cheaper drops (5, 6, 7, 8) ahead of it; the goal pill and ext
+//   token+cost segments are never dropped and overflowed 900 by 63-255 px after step 7. Ellipsis stays only as the last resort.
+const SB_STEPS = [1, 2, 't', 3, 5, 6, 7, 8, 4];
 // ★UX audit 2026-09-28: «slower than goal» named no subject — the verdict is 5h usage pace vs the saver goal, so the label says «use», same width.
 const SB_JNAME = {'Way too fast': 'Burning far above target', 'Fast': 'Above target', 'On pace': 'On target',
                   'Slow': 'Below target', 'Way too slow': 'Far below target',
@@ -195,7 +196,9 @@ function buildSbar(sv){
     // ⚠A low (own-window) est stays in the layer (sblEst) only — the bar keeps its length.
     const e = ma ? (bm && !(bm.est && bm.est.low) && (k === '7d' ? burnWkEst(bm) : burnEst(bm, k, null, p))) : w || burnEst(BURN, k, n, p);
     // Remaining %; colour still keyed on used (≥70/≥90 used = ≤30/≤10 left). Tooltip keeps used %.
-    return (p == null ? '' : '<small>' + esc(T('left')) + '</small> <b class=' + pc(p) + '>' + esc(fmtPct(Math.max(0, 100 - p))) + '</b>') + (n != null ? sbt(T('used'), n) : w ? sbt(T('used ≈'), w.used) : a != null ? sbt(T('used ≈'), a) : '')
+    const u = n != null ? sbt(T('used'), n) : w ? sbt(T('used ≈'), w.used) : a != null ? sbt(T('used ≈'), a) : '';
+    // 7d used (.sbd8) goes before ext «Today»; 5h used stays (it is the live cycle).
+    return (p == null ? '' : '<small>' + esc(T('left')) + '</small> <b class=' + pc(p) + '>' + esc(fmtPct(Math.max(0, 100 - p))) + '</b>') + (u && k === '7d' ? '<span class=sbd8>' + u + '</span>' : u)
       + (e ? '<span class=sbd3>' + sbt(T('left ≈'), e.left) + '</span>' : '');
   };
   if(fh){
@@ -239,10 +242,12 @@ function buildSbar(sv){
   }
   if(sd){
     const d = sd.resets_at ? new Date(sd.resets_at) : null;
+    const w7 = wkU == null && est0.wk_used != null ? burnWkEst(BURN) : null;
     const t7 = T('7-day limit — official usage') + ' ' + (sd.pct == null ? '?' : fmtPct(sd.pct)) + mtip(k7)
       + '\n' + T('Account limit window: from the reset · includes other devices and claude.ai (the Tokens tab «last 7 days» is this PC · calendar days)')
       + (wkU != null ? '\n' + T('Tokens used') + ' ' + fmtTok(wkU) + ' — ' + burnUsedTip() : '')
       + (au7 != null ? '\n' + T('used ≈') + ' ' + fmtTok(au7) : '')
+      + (wkU == null && au7 == null && w7 ? '\n' + T('used ≈') + ' ' + fmtTok(w7.used) : '')   // bar's estimate case, so dropping .sbd8 loses nothing
       + (est0.wk_left != null ? '\n' + T('left ≈') + ' ' + fmtTok(est0.wk_left) + ' — ' + burnEstTip('7d', est0) : '')
       + (d && !isNaN(d) ? '\n' + T('Resets', 'card') + ' ' + RST7(d).abs + ' · ' + RST7(d).rel : '');
     out.push('<span title="' + esc(t7) + '"><b>7d</b> <small class=sbd6>' + esc(T('account')) + '</small> ' + use(sd.pct, wkU, '7d', au7)

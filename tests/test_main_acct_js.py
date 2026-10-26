@@ -124,7 +124,8 @@ function connAge(){ return ''; } function setHtml(el, h){ HTML = h; return true;
 function popIsOpen(){ return false; }
 function LATER(s){ return s; } function HM(m){ return m + 'm'; } function burnEstTip(){ return 'e'; }
 BURN.proj = {pct: 70, over_at: 1}; BURN.cur.rate_pph = 10; BURN.at = 1;
-const seg = k => HTML.split('<span').find(x => x.indexOf('<b>' + k + '</b>') >= 0) || '';
+// .sbd8 (7d used) stays inside its segment's piece.
+const seg = k => HTML.split(/<span(?! class=sbd8)/).find(x => x.indexOf('<b>' + k + '</b>') >= 0) || '';
 const bar = () => { buildSbar(); return [seg('5h'), seg('7d'), HTML.indexOf('sbd2') >= 0, HTML.indexOf('sbd1') >= 0]; };
 ACCTS = [{label: 'me', primary: true}, {label: 'work', dir: '/w'}];
 QLAST = {q: {five_hour: {pct: 10}, seven_day: {pct: 20}, accounts: [{label: 'work', five_hour: {pct: 33}, seven_day: {pct: 44}}]}};
@@ -167,7 +168,8 @@ class StatusBarFollowsMain(unittest.TestCase):
 
     def test_main_own_used_is_approx(self):
         b = self.R["b4"]   # main's own hour-bucket sums: «used ≈», never «used», low est keeps «left ≈» out
-        self.assertIn("used ≈</small> <b>777</b>", b[0]); self.assertIn("used ≈</small> <b>8888</b>", b[1])
+        self.assertIn("used ≈</small> <b>777</b>", b[0]); self.assertIn("<span class=sbd8> <small>· used ≈</small> <b>8888</b></span>", b[1])
+        self.assertNotIn("sbd8", b[0])   # 5h used is never dropped
         self.assertNotIn("<small>· used</small>", self.R["t4"]); self.assertNotIn("left ≈</small>", self.R["t4"])
         self.assertNotIn("5000", self.R["t4"])   # ⚠never the primary's used_local
         self.assertNotIn("left ≈", self.R["b1"][0]); self.assertNotIn("used", self.R["b1"][0])
