@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Harness: a gate report replaces the «Flow» strip — «Caught (red→green)» · «Held» · «Reverted» at the top, «What is guarding» (before edit · right after · before commit, each with its catch count) and one card per catch: red run → fix commits → green run → held or reverted.
+
 ## [0.9.0] - 2026-10-28
 
 **Highlights**

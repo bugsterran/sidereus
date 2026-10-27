@@ -67,10 +67,12 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 ### Harness: did the work come out right?
 «Harness» in the same tab.
 
-![Harness «Flow» strip: Request → Guard → Edit → Gate → Review → Commit → Kept](images/harness-flow-en.png)
+![Harness gate report: caught · held · reverted, «What is guarding», incident cards](images/harness-report-en.png)
 
-- «Flow» shows one run as seven boxes: Request → Guard → Edit → Gate → Review → Commit → Kept. Chips pick a recent run; click a box for its records.
-- Gate: PASS/FAIL per step, Red→Green when a FAIL turned into a PASS. Kept: whether the last commit's PASS held. Guard: «Blocked n» (moves the pipeline hook refused).
+- The top shows three numbers from the gate records: «Caught (red→green)» (a gate failed, a later run of the same gate passed), «Held» and «Reverted».
+- «What is guarding» lists the local checkpoints — «Before edit» (hooks, «blocked n») · «Right after» (`check --fast`) · «Before commit» (`check --full`) — with their catch counts. Click one to show only its cards.
+- One card per catch, newest first: red run (time · hash · exit code · failures) → fix commits → green run → held/reverted. A checkpoint that ran but caught nothing is one quiet card «ran n times, caught 0».
+- «Gate runs» (folded) holds the raw run rows; «Config map» (folded) holds hooks, rule files, agents, MCP and skills.
 - A lit stage card names its newest gate run: «gate PASS · N tests · screen a/b» or a red «gate FAIL». A stage with no gate gets an amber «Unverified» pill; «Gates n/m» counts machine-checked stages. Design and review are expected to stay unverified.
 - «Guards» (stage panel, nothing selected): gates required before `git commit` and «Max loop-backs» ([HOOKS.md](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
 - «Evaluation»: per-stage seeded-defect catch rate, red check and stability ([dev/PIPELINE.md](dev/PIPELINE.md#evaluation-seeds-red-check-flaky-gates)). «Suggestions»: «Fix it myself» fills the editor, «Ask AI» previews a request.

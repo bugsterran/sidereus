@@ -113,7 +113,6 @@
 "test_harness": 0.26,
 "test_harness_evidence": 0.13,
 "test_harness_flow": 0.14,
-"test_harness_flow_js": 0.22,
 "test_harness_js": 0.95,
 "test_harness_plat": 0.19,
 "test_harness_trail": 0.13,

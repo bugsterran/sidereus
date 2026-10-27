@@ -1,6 +1,6 @@
-// «Harness» view of the pipeline tab (48-pipeline.js PLVIEW, project = PLS.proj): hook lifecycle lane + rule files + agent ↔ pipeline map.
+// «Harness» view of the pipeline tab (48-pipeline.js PLVIEW, project = PLS.proj): gate report + hook lifecycle lane + rule files + agent ↔ pipeline map.
 // ⚠Metadata only (GET /api/harness): names, paths, sizes, counts. File text only on a card click (/api/harness/file by opaque ref) into 81's code window.
-const HN = { data: {}, at: {}, busy: {}, vdAt: {}, days: 30, opening: '', exOpen: false, flowRun: '', flowNode: '', fold: {}, plat: lsGet('sidereus.hnplat', 'cc') || 'cc', flowOpen: lsGet('sidereus.hnflow', '1') !== '0', cfgOpen: lsGet('sidereus.hncfg', '0') === '1' };   // opening = ref being fetched (double-click guard); exOpen survives repaints; plat = global choice
+const HN = { data: {}, at: {}, busy: {}, vdAt: {}, days: 30, opening: '', exOpen: false, cp: '', fold: {}, plat: lsGet('sidereus.hnplat', 'cc') || 'cc', flowOpen: lsGet('sidereus.hnflow', '1') !== '0', cfgOpen: lsGet('sidereus.hncfg', '0') === '1' };   // opening = ref being fetched (double-click guard); exOpen survives repaints; plat = global choice
 // Cache key per platform + project (the same project looks different per CLI).
 function hnKey(proj){ return HN.plat + '\n' + proj; }
 // Server msgs that are English or Korean literals -> one Korean key, translated by T().
@@ -274,8 +274,8 @@ function hnShot(x){
   return '<span class="hnstp' + (x.ok ? '' : ' hnng') + '">' + esc(x.w == null ? '?' : x.w) + ' ' + esc(x.lang || '') + ' ' + hnPF(!!x.ok)
     + (x.diff != null ? ' (diff ' + esc(x.diff) + ')' : '') + '</span>';
 }
-function hnRes(list){
-  const head = '<div class=brh2><b>' + esc(T('Results')) + '</b></div>';
+function hnRes(list, bare){
+  const head = bare ? '' : '<div class=brh2><b>' + esc(T('Results')) + '</b></div>';   // bare: the «Gate runs» fold already titles it
   if(!Array.isArray(list) || !list.length) return '<div class=hnres>' + head + '<div class=hidnote>' + esc(T('No records yet — running scripts/check.sh adds them')) + '</div></div>';
   const rows = list.map(r => {
     r = r || {};
@@ -287,7 +287,7 @@ function hnRes(list){
   });
   return '<div class=hnres>' + head + hnFold(rows, 5, 'ev') + '</div>';
 }
-// «Red→Green» / «Pass stability» (/api/harness trail): FAIL→PASS pairs and whether each PASS held. ⚠state reaches a class only via this map.
+// Incident states (report incidents, harness_trail). ⚠state reaches a class only via this map.
 const HN_TRS = { held: ['Stable', 'ok'], broke: ['Regressed', 'ng'], refixed: ['Re-fixed', 're'], reverted: ['Reverted', 'rv'], gone: ['Dropped', 'gn'],
   unchecked: ['Unverified (uncommitted)', 'uc'] };
 function hnTrHead(x){
@@ -297,30 +297,89 @@ function hnTrHead(x){
     + (x.dirty ? ' <em class="hnsc hndirty">' + esc(T('uncommitted changes')) + '</em>' : '');
 }
 function hnTrStep(s, ng, tail){ return '<span class="hnstp' + (ng ? ' hnng' : '') + '">' + esc(s == null ? '?' : s) + (tail ? ' ' + esc(tail) : '') + '</span>'; }
-function hnTrFix(f){
-  f = f || {};
-  const fl = Array.isArray(f.flipped) ? f.flipped : [], st = Array.isArray(f.still) ? f.still : [];
-  return '<div class=hnrun><span class=hnrh>' + (f.mode ? '<em class=hnsc>' + esc(f.mode) + '</em> ' : '') + hnTrHead(f.fail) + ' ' + hnPF(false) + ' <span class=hntra>→</span> '
-    + hnTrHead(f.pass) + ' ' + hnPF(true) + (typeof f.commits === 'number' ? ' <i class=hntm>· ' + esc(TV({msg: '{n} commits', vars: {n: f.commits}})) + '</i>' : '') + '</span>'
-    + (fl.length || st.length ? '<span class=hnsteps>' + fl.map(s => hnTrStep(s, false, 'FAIL→PASS')).join('') + st.map(s => hnTrStep(s, true, T('unchanged'))).join('') + '</span>' : '') + '</div>';
+// Gate report (#27 R1-R4): /api/harness `report` + `guards`. ⚠Metadata only: hashes, ts, mode, rc, counts, step names, deny codes.
+// ⚠Checkpoint keys reach a class/attr only via HN_CP; the filter lives in HN.cp (memory only, no fetch, no scroll).
+const HN_CP = { hooks: ['Before edit', 'hooks'], fast: ['Right after', 'check --fast'], full: ['Before commit', 'check --full'], other: ['Other gates', ''] };
+const HN_CPK = ['hooks', 'fast', 'full', 'other'];
+// hooks/pl_flow.py deny codes, shown as T(x, 'flow'); unknown codes are never shown raw.
+const HN_GD = { jump: 'Stage jump', agent: 'Wrong agent', model: 'Wrong model', tag: 'Missing tag', stage: 'Unknown stage', stop: 'Stopped',
+  gate: 'Commit before gate', skipgate: 'Required gate skipped' };
+function hnN(x){ const n = Number(x); return isFinite(n) && n > 0 ? Math.floor(n) : 0; }
+function hnMs(ts){ let t = Number(ts); if(!isFinite(t)) t = Date.parse(ts); return isFinite(t) && t ? (t < 1e12 ? t * 1000 : t) : 0; }
+function hnRep(d){
+  const o = x => x && typeof x === 'object' && !Array.isArray(x) ? x : {};
+  const r = o(d && d.report), g = o(d && d.guards), cps = o(r.checkpoints);
+  return { c: o(r.counts), g: g, since: r.since, inc: (Array.isArray(r.incidents) ? r.incidents : []).filter(x => x && typeof x === 'object'),
+    cp: k => { const c = o(cps[k]), n = hnN(c.caught);   // listed = this cp's incidents among the shown newest ones; missing (older server) = caught
+      return k === 'hooks' ? { runs: hnN(g.runs), caught: hnN(g.deny), listed: hnN(g.deny) } : { runs: hnN(c.runs), caught: n, listed: c.listed == null ? n : hnN(c.listed) }; } };
 }
-function hnTrHeld(x){
-  x = x || {};
-  const s = HN_TRS[x.state], ng = x.state === 'broke', steps = Array.isArray(x.steps) ? x.steps : [];
-  return '<div class="hnrun' + (ng ? ' hnng' : '') + '"><span class=hnrh>' + (x.mode ? '<em class=hnsc>' + esc(x.mode) + '</em> ' : '') + hnTrHead(x) + ' '
+// Strip keys for this report; «Other gates» only when it ran.
+function hnCpKeys(R){ return HN_CPK.filter(k => k !== 'other' || R.cp(k).runs || R.cp(k).caught); }
+function hnIncCp(x){ return x.cp !== 'hooks' && HN_CP[x.cp] ? x.cp : 'other'; }
+// R1: three numbers straight from report.counts.
+// One-vs-many message key (English source); ko entries may share one text.
+function hnPl(n, one, many){ return Number(n) === 1 ? one : many; }
+function hnTiles(R){
+  const k = x => hnN(R.c[x]);   // missing key (older server) = 0
+  const t = [['caught', 'Caught (red→green)', 'A gate failed, then a later run of the same gate passed'],
+    ['held', 'Held', 'The fixed gate still passes'],
+    ['again', 'Failed again later', 'The same check step failed again in a later run. Coarse: a different cause on the same step also counts.', 1],
+    ['reverted', 'Reverted', 'The fix commit was reverted']];
+  const note = [];
+  if(R.c.checked != null && k('checked') !== k('caught')) note.push(TV({msg: 'checked {n} of {m}', vars: {n: k('checked'), m: k('caught')}}));
+  if(k('gone')) note.push(TV({msg: '{n} no longer in branch history', vars: {n: k('gone')}}));
+  return '<div class=hnrept>' + t.map(([key, en, tip, q]) => '<div class="hnrepn hnrepn-' + key + '"' + (q ? '' : ' title="' + esc(T(tip)) + '"') + '><b>' + k(key) + '</b><span>' + esc(T(en))
+      + (q ? ' <span class=hntip tabindex=0 role=img title="' + esc(T(tip)) + '" aria-label="' + esc(T(tip)) + '">?</span>' : '') + '</span></div>').join('')
+    + (note.length ? '<i class="hntm hnrepk">' + esc(note.join(' · ')) + '</i>' : '') + '</div>';
+}
+// R4: «What is guarding» — one button per checkpoint; «Other gates» only when it ran.
+function hnStrip(R){
+  const ks = hnCpKeys(R);
+  return '<div class=hnrepg role=group aria-label="' + esc(T('What is guarding')) + '"><b class=hnrepgh>' + esc(T('What is guarding')) + '</b>' + ks.map(k => {
+    const v = R.cp(k), on = HN.cp === k;
+    const n = !v.runs && !v.caught ? TV({msg: 'ran {n}', vars: {n: 0}}) : TV({msg: k === 'hooks' ? 'blocked {n}' : 'caught {n}', vars: {n: v.caught}});
+    return '<button class="hncpb' + (on ? ' on' : '') + '" data-hncp=' + k + ' aria-pressed=' + on + ' title="' + esc(TV({msg: hnPl(v.runs, 'ran {n} time', 'ran {n} times'), vars: {n: v.runs}})) + '"><b>' + esc(T(HN_CP[k][0])) + '</b>'
+      + (HN_CP[k][1] ? ' <code class=hnrc>' + esc(HN_CP[k][1]) + '</code>' : '') + ' <i>' + esc(n) + '</i></button>';
+  }).join('') + '</div>';
+}
+// R2: red → fix commits → green → held/reverted.
+function hnInc(x){
+  const o = v => v && typeof v === 'object' ? v : {}, f = o(x.fail), p = o(x.pass), s = HN_TRS[x.state];
+  const fl = Array.isArray(x.flipped) ? x.flipped : [], st = Array.isArray(x.still) ? x.still : [];
+  const rc = f.rc == null || f.rc === '' ? '?' : String(f.rc), fd = f.failed == null || f.failed === '' ? null : String(f.failed);
+  const ev = TV(fd == null ? {msg: 'exit {n}', vars: {n: rc}} : {msg: 'exit {n} · failed {m}', vars: {n: rc, m: fd}}), ar = ' <span class=hntra>→</span> ';
+  return '<div class="hnrun hninc' + (x.state === 'broke' ? ' hnng' : '') + '" data-hncpc=' + hnIncCp(x) + '><span class=hnrh>'
+    + (x.mode ? '<em class=hnsc>' + esc(x.mode) + '</em> ' : '') + hnTrHead(f) + ' ' + hnPF(false) + ' <i class=hnrepe>' + esc(ev) + '</i>' + ar
+    + (typeof x.commits === 'number' ? '<i class=hntm>' + esc(TV({msg: hnPl(x.commits, '{n} commit', '{n} commits'), vars: {n: x.commits}})) + '</i>' + ar : '')
+    + hnTrHead(p) + ' ' + hnPF(true) + ar
     + (s ? '<b class="hntrs hntrs-' + s[1] + '">' + esc(T(s[0])) + '</b>' : '<b class=hntrs>' + esc(x.state == null ? '?' : x.state) + '</b>')
-    + (ng && x.at ? ' <i class=hntm>' + esc(hnWhen(x.at)) + '</i>' : '') + '</span>'
-    + (ng && steps.length ? '<span class=hnsteps>' + steps.map(t => hnTrStep(t, true)).join('') + '</span>' : '') + '</div>';
+    + (x.at && (x.state === 'broke' || x.state === 'reverted') ? ' <i class=hntm>' + esc(hnWhen(x.at)) + '</i>' : '') + '</span>'
+    + (fl.length || st.length ? '<span class=hnsteps>' + fl.map(v => hnTrStep(v, false, 'FAIL→PASS')).join('') + st.map(v => hnTrStep(v, true, T('unchanged'))).join('') + '</span>' : '') + '</div>';
 }
-function hnTip(s){ const t = esc(T(s)); return ' <span class=hntip tabindex=0 role=img title="' + t + '" aria-label="' + t + '">?</span>'; }
-function hnTrail(tr){
-  tr = tr && typeof tr === 'object' ? tr : {};
-  const fx = Array.isArray(tr.fixes) ? tr.fixes : [], hd = Array.isArray(tr.held) ? tr.held : [];
-  const k = st => hd.filter(x => x && x.state === st).length;
-  return '<div class=hntr><div class="hnres hntrc"><div class=brh2><b>' + esc('Red→Green') + '</b>' + hnTip('A check that went from FAIL to PASS. Shows the commits in between and the steps that flipped FAIL→PASS.') + '</div>'
-    + (fx.length ? fx.map(hnTrFix).join('') : '<div class=hidnote>' + esc(T('No FAIL→PASS transition yet')) + '</div>') + '</div>'
-    + '<div class="hnres hntrc"><div class=brh2><b>' + esc('Pass stability') + '</b>' + hnTip('Whether the latest PASS stayed green. Regressed = same step FAIL again · Re-fixed = PASS again after a regression · Reverted = that commit was reverted · Dropped = not in the current branch history · Unverified = PASS taken with uncommitted changes.') + ' <i>' + esc('Stable ' + k('held') + ' · Regressed ' + k('broke')) + '</i></div>'
-    + (hd.length ? hd.map(hnTrHeld).join('') : '<div class=hidnote>' + esc(T('No PASS records yet')) + '</div>') + '</div></div>';
+// R3: a checkpoint that ran but caught nothing = one quiet card; hooks show their deny codes.
+function hnQuiet(R, k){
+  const v = R.cp(k), hk = k === 'hooks';
+  if(!v.runs || (!hk && v.caught)) return '';
+  const cs = hk && R.g.codes && typeof R.g.codes === 'object' ? R.g.codes : {}, unk = hk ? hnN(R.g.unknown) : 0;
+  const codes = Object.keys(HN_GD).filter(c => hnN(cs[c])).map(c => '<span class=hnstp>' + esc(T(HN_GD[c], 'flow')) + ' ×' + hnN(cs[c]) + '</span>');
+  if(unk) codes.push('<span class=hnstp>' + esc(TV({msg: 'unknown {n}', vars: {n: unk}})) + '</span>');
+  return '<div class="hnrun' + (v.caught ? '' : ' hnquiet') + '" data-hncpc=' + k + '><span class=hnrh><b>' + esc(T(HN_CP[k][0])) + '</b>'
+    + (HN_CP[k][1] ? ' <code class=hnrc>' + esc(HN_CP[k][1]) + '</code>' : '') + ' <i class=hntm>'
+    + esc(TV({msg: hk ? hnPl(v.runs, 'ran {n} time, blocked {m}', 'ran {n} times, blocked {m}') : hnPl(v.runs, 'ran {n} time, caught 0', 'ran {n} times, caught 0'), vars: {n: v.runs, m: v.caught}})) + '</i></span>'
+    + (codes.length ? '<span class=hnsteps>' + codes.join('') + '</span>' : '') + '</div>';
+}
+function hnReport(d){
+  const R = hnRep(d), cp = hnCpKeys(R).indexOf(HN.cp) >= 0 ? HN.cp : '';   // ⚠a filter whose button is not shown (project/platform switch) is ignored
+  const inc = R.inc.map((x, i) => [x, i, hnMs((x.pass && x.pass.ts) || (x.fail && x.fail.ts))]).sort((a, b) => b[2] - a[2] || a[1] - b[1]).map(a => a[0]);   // newest first
+  const any = inc.length || HN_CPK.some(k => R.cp(k).runs);
+  let cards = inc.filter(x => !cp || hnIncCp(x) === cp).map(hnInc).join('') + HN_CPK.filter(k => !cp || k === cp).map(k => hnQuiet(R, k)).join('');
+  const old = cp ? R.cp(cp).caught - R.cp(cp).listed : 0;
+  if(old > 0) cards += '<div class=hidnote>' + esc(TV({msg: hnPl(old, '{n} older catch, not listed', '{n} older catches, not listed'), vars: {n: old}})) + '</div>';
+  if(!any) cards = '<div class=hidnote>' + esc(T('No gate records yet — running scripts/check.sh adds them')) + '</div>';
+  else if(!cards) cards = '<div class=hidnote>' + esc(T('Nothing recorded at this checkpoint')) + '</div>';
+  const since = hnWhen(R.since);
+  return '<div class=hnrep><div class=brh2><b>' + esc(T('What the gates caught')) + '</b>' + (since ? ' <i>' + esc(TV({msg: 'since {d}', vars: {d: since}})) + '</i>' : '') + '</div>'
+    + hnTiles(R) + hnStrip(R) + '<div class=hnrepc>' + cards + '</div></div>';
 }
 // Verdict counts as plain text for the «Config map» summary (buttons inside <summary> would toggle the fold).
 function hnVdSum(c){
@@ -328,11 +387,6 @@ function hnVdSum(c){
   const k = x => Number(c[x]) || 0;
   return ' <i>' + ['bad', 'check'].map(l => '<span class="hnvdq' + (k(l) ? ' hnvd-' + l : '') + '">' + esc(T(HN_VDL[l], 'verdict')) + ' ' + k(l) + '</span>').join(' · ')
     + ' · <span class=hnvdq>' + esc(T('ok')) + ' ' + k('ok') + '</span></i>';
-}
-// ⚠typeof guard: 47c is a separate file, and the 47b-only unit stub loads this file alone.
-function hnFlowDet(d){
-  const fl = typeof hnFlow === 'function' ? hnFlow(d.flow) : '', open = HN.fold.det != null ? HN.fold.det : true;   // open by default; folding is the person's choice for this page view
-  return fl + '<details class=hnmore data-hnmore=det' + (open ? ' open' : '') + '><summary class=hndet>' + esc(T('Details')) + '</summary>' + hnRes(d.evidence) + hnTrail(d.trail) + '</details>';
 }
 // Body only: the pipeline tab owns the header, the view toggle and the project chips.
 function hnHtml(){
@@ -342,8 +396,9 @@ function hnHtml(){
   if(!proj) body = '<div class=hidnote>' + esc(T('Pick a project')) + '</div>';
   else if(!d) body = '<div class=hidnote>' + esc(T('Loading…')) + '</div>';
   else if(d.ok === false) body = '<div class=hidnote>' + esc(T('Could not read the harness')) + (d.msg ? ' — ' + esc(hnMsg(d.msg)) : '') + '</div>';
-  // Flow first (47c), results + trail fold under «Details» (open when there is no flow), then the config map (closed by default, HN.cfgOpen).
-  else return '<div class=hnw>' + hnFlowDet(d) + '<details class=hncfg' + (HN.cfgOpen ? ' open' : '') + '><summary class=hncfgs><div class=brh2><b>' + esc(T('Config map')) + '</b>'
+  // Report first, then two closed folds: raw «Gate runs» (HN.fold.runs) and the config map (HN.cfgOpen).
+  else return '<div class=hnw>' + hnReport(d) + '<details class="hnmore hnruns" data-hnmore=runs' + (HN.fold.runs ? ' open' : '') + '><summary><div class=brh2><b>' + esc(T('Gate runs')) + '</b></div></summary>'
+    + hnRes(d.evidence, true) + '</details><details class=hncfg' + (HN.cfgOpen ? ' open' : '') + '><summary class=hncfgs><div class=brh2><b>' + esc(T('Config map')) + '</b>'
     + hnVdSum(d.verdict) + '</div></summary>' + hnPlatSwitch(HN.plats) + hnVdLine(d.verdict) + (d.scanning ? '<div class=hidnote>' + esc(T('Counting runs…')) + '</div>' : '')
     + '<details class=hnflow data-hnflow' + (HN.flowOpen ? ' open' : '') + '><summary>'
     + '<div class=brh2><b>' + esc(T('Hook flow')) + '</b> <i>' + esc(TV({msg: 'effects are estimates · counts = last {n} days', vars: {n: HN.days}})) + '</i></div>'
@@ -379,12 +434,12 @@ document.addEventListener('click', e => {
   if(vg){ hnVdGo(vg.dataset.hnvdgo === 'bad' ? 'bad' : 'check'); return; }
   const r = e.target.closest('.hnw [data-hnref]');
   if(r){ hnOpen(r.dataset.hnref, hnCardName(r)); return; }
-  const fr = e.target.closest('.hnw [data-hnfr]'), fn = !fr && e.target.closest('.hnw [data-hnfn]');   // 47c flow: in-memory choice + repaint, no fetch
-  if(fr || fn){
-    const sel = fr ? '[data-hnfr="' + CSS.escape(fr.dataset.hnfr) + '"]' : '[data-hnfn="' + CSS.escape(fn.dataset.hnfn) + '"]';
-    if(fr) HN.flowRun = fr.dataset.hnfr; else HN.flowNode = HN.flowNode === fn.dataset.hnfn ? '' : fn.dataset.hnfn;
+  const cb = e.target.closest('.hnw [data-hncp]');   // checkpoint filter: in-memory choice + repaint, no fetch
+  if(cb){
+    const k = HN_CP[cb.dataset.hncp] ? cb.dataset.hncp : '';
+    HN.cp = HN.cp === k ? '' : k;
     plPaint();
-    const b = document.querySelector('.hnw ' + sel);   // repaint replaced the button: keep keyboard focus, never scroll
+    const b = k && document.querySelector('.hnw [data-hncp="' + k + '"]');   // repaint replaced the button: keep keyboard focus, never scroll
     if(b) b.focus({ preventScroll: true });
     return;
   }

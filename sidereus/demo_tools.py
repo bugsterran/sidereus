@@ -91,26 +91,19 @@ def _demo_harness(a, path):
             "skills": [{"name": "release-notes", "scope": "user", "plug": "", "on": True, "n": 14, "last": t, "open": "",
                         "pipes": [{"pipe": "release", "stage": "노트"}]}],
             "counts": {"skill": 2, "cmd": 1, "mcp": 2}, "evidence": _demo_evidence(a)}
-    body["trail"] = harness_trail.trail(body["evidence"], "", git=False)
-    body["flow"] = harness_flow.flow("", body["evidence"], body["trail"], runs=_demo_flow_runs(a), diff=_demo_diff, floor=0)
+    body["report"] = harness_trail.report(body["evidence"], "", git=False)
+    body["guards"] = harness_flow.guards("", runs=_demo_flow_runs(a))
     return 200, harness_verdict.verdict(body, 30)
 
 
 def _demo_flow_runs(a):
-    """Invented plmark run: window covers the FAIL then PASS --full rows (gate Red→Green), one skip + one loop-back."""
+    """Invented plmark run for the «What is guarding» strip: one skip, one loop-back and one denied stage jump."""
     st = lambda s, t0, t1, n=1: {"s": s, "t0": a - t0 * H, "t1": a - t1 * H, "n": n}
     return [{"sid": "d3m0f10w0000", "name": "change-flow", "t0": a - 2.0 * H, "t1": a - 0.41 * H, "end": a - 0.41 * H,
-             "h0": "b71e04d", "h1": "3f9c2ab",
+             "h0": "b71e04d", "h1": "3f9c2ab", "deny": 1, "dl": [{"c": "jump", "t": a - 1.8 * H, "title": "검증"}],
              "st": {"설계": st("skip", 2.0, 2.0, 0), "구현": st("done", 1.9, 1.0, 2), "검증": st("done", 1.3, 0.5, 2),
                     "리뷰": st("done", 0.5, 0.42)},
              "lb": [{"f": "검증", "g": "구현", "n": 1, "t": a - 1.2 * H}]}]
-
-
-def _demo_diff(repo, a, b):
-    """Stub for harness_flow._diff: invented numstat, no git."""
-    rec = [{"path": "src/cart/checkout.ts", "add": 42, "del": 7}, {"path": "src/cart/checkout.test.ts", "add": 18, "del": 0},
-           {"path": "docs/CHANGELOG.md", "add": 3, "del": 1}]
-    return rec, len(rec), 2
 
 
 def _ev_steps(*rows):

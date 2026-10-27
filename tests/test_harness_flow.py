@@ -208,5 +208,35 @@ class FlowTest(unittest.TestCase):
         self.assertEqual((w["guard"], w["review"], w["req"]), ("na", "na", "na"))
 
 
+class GuardsTest(unittest.TestCase):
+    """guards(): R4 «before edit» checkpoint — deny sums, unknown runs, whitelisted codes, project and 7 d window."""
+
+    setUp, tearDown, _write, _fake_diff = FlowTest.setUp, FlowTest.tearDown, FlowTest._write, FlowTest._fake_diff
+
+    def test_r4_sums_unknown_codes(self):
+        a = _run(self.repo, NOW - 500, NOW - 10)
+        a["deny"], a["dl"] = 3, [{"t": NOW - 300, "c": "jump", "title": "secret title"}, {"t": NOW - 200, "c": "evil<code>"},
+                                 {"t": NOW - 100, "c": "agent"}]
+        b = _run(self.repo, NOW - 600, NOW - 20)
+        b["deny"], b["dl"] = 2, [{"t": NOW - 400, "c": "jump"}]
+        z = _run(self.repo, NOW - 700, NOW - 30)
+        z["deny"], z["dl"] = 0, []
+        other = _run(os.path.join(self.tmp, "elsewhere"), NOW - 500, NOW - 10)
+        other["deny"], other["dl"] = 9, [{"t": NOW - 300, "c": "gate"}]
+        stale = _run(self.repo, NOW - HF.HF_KEEP_S - 900, NOW - HF.HF_KEEP_S - 1)
+        stale["deny"] = 5
+        self._write("aaaaaaaa1111", {"a": a, "b": b, "zero": z, "old": _run(self.repo, NOW - 800, NOW - 40)})
+        self._write("bbbbbbbb2222", {"other": other, "stale": stale})
+        g = HF.guards(os.path.join(self.repo, "sub"))
+        self.assertEqual(g, {"runs": 4, "deny": 5, "unknown": 1, "codes": {"jump": 2, "agent": 1}})
+        self.assertNotIn("secret", json.dumps(g))
+        self.assertEqual(self.calls, [])   # no git
+
+    def test_empty_and_demo_runs(self):
+        self.assertEqual(HF.guards(self.repo), {"runs": 0, "deny": 0, "unknown": 0, "codes": {}})
+        r = dict(_run("", NOW - 500, NOW - 10), sid="d3m0f10w0000", name="demo", deny=1, dl=[{"t": NOW - 300, "c": "stop"}])
+        self.assertEqual(HF.guards("", runs=[r]), {"runs": 1, "deny": 1, "unknown": 0, "codes": {"stop": 1}})
+
+
 if __name__ == "__main__":
     unittest.main()

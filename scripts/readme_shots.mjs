@@ -8,7 +8,7 @@
 //
 // Each shot: app viewport 1200x750 (16:10) at deviceScaleFactor 2, then laid into a padded backdrop frame
 // (rounded corners, soft shadow) on a second blank page and captured at 1600x1000 — all images share size and framing.
-// Exception: `crop` shots (pipeline-run, harness-flow) are one unframed panel cut from a 1440-wide page at 1x.
+// Exception: `crop` shots (pipeline-run, harness-report) are one unframed panel cut from a 1440-wide page at 1x.
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, sleep, sandbox, CDP, openApp, frameHtml } from './readme_cdp.mjs';
@@ -85,12 +85,12 @@ const SHOTS = [
     await P.ev(tab('pipe'));
     await P.wait(`!!document.querySelector('.plw .plcv .plcvi') && !!document.querySelector('.plw .plrunst.on') && !!document.querySelector('.plw .plov')`, 'lit run');
   } },
-  // GUIDE.md only: «Harness» › «Flow» strip (crop from the header to the seven boxes).
-  { name: 'harness-flow', crop: { from: '.plw', to: '.plw .hnfrow' }, async run(P) {
+  // GUIDE.md only: «Harness» gate report (crop = the report panel: count tiles, «What is guarding» strip, cards).
+  { name: 'harness-report', crop: { from: '.plw .hnrep', to: '.plw .hnrep' }, async run(P) {
     await P.ev(tab('pipe'));
     await P.wait(`!!document.querySelector('.wkrgb[data-plv="harness"]')`, 'Harness toggle');
     await P.ev(`(document.querySelector('.wkrgb[data-plv="harness"]').click(), 1)`);
-    await P.wait(`document.querySelectorAll('.plw .hnfrow .hnfn').length === 7`, 'flow strip');
+    await P.wait(`document.querySelectorAll('.plw .hnrep .hncpb').length >= 3`, 'gate report');
   } },
   // GUIDE.md only: the status-bar layer (per-account quota + open sessions) opened from the bottom bar.
   { name: 'status-layer', async run(P) {

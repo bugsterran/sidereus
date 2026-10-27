@@ -1,4 +1,4 @@
-"""«Security tools» empty list vs failed request (web/js/90e-diag.js) and the harness Guard node label (web/js/47c-harness-flow.js)."""
+"""«Security tools» empty list vs failed request (web/js/90e-diag.js)."""
 import json
 import os
 import shutil
@@ -34,18 +34,6 @@ def run():
     return json.loads(r.stdout)
 
 
-def guard(v):
-    src = ("const fs = require('fs'), path = require('path'); const ROOT = " + json.dumps(ROOT) + ";\n"
-           + i18n_prelude("'ko'", ("T",))
-           + "\nconst esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'), HN = {};\n"
-           + "eval(fs.readFileSync(path.join(ROOT, 'web', 'js', '47c-harness-flow.js'), 'utf8'));\n"
-           + "console.log(JSON.stringify(hnFLine({k: 'guard', v: " + json.dumps(v) + "})));")
-    r = subprocess.run(node_e(src), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
-    if r.returncode != 0:
-        raise AssertionError(r.stderr.decode())
-    return json.loads(r.stdout)
-
-
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class SecToolsEmptyVsFailed(unittest.TestCase):
     @classmethod
@@ -60,22 +48,6 @@ class SecToolsEmptyVsFailed(unittest.TestCase):
         tail = self.r["failed"].split("보안 도구")[-1]
         self.assertIn('class="cfgpd err"', tail)
         self.assertIn("boom", tail)
-
-
-@unittest.skipUnless(shutil.which("node"), "node not installed")
-class GuardNodeLabel(unittest.TestCase):
-    def test_counts_without_deny_record_drop_no_record(self):
-        h = guard({"deny": None, "skip": 1, "loop": 0})
-        self.assertNotIn("기록 없음", h)
-        self.assertEqual(h, "<span class=hnfi1>건너뜀 선언 1</span>")   # number and words in one unbreakable item
-
-    def test_nothing_counted_says_no_record(self):
-        self.assertIn("기록 없음", guard({"deny": None, "skip": 0, "loop": 0}))
-
-    def test_deny_and_loop_are_separate_items(self):
-        h = guard({"deny": 2, "skip": 0, "loop": 1})
-        self.assertEqual(h.count("<span class=hnfi1>"), 2)
-        self.assertNotIn("기록 없음", h)
 
 
 if __name__ == "__main__":

@@ -159,23 +159,26 @@ class HarnessPlatTest(unittest.TestCase):
         self.assertEqual((code, b["plat"], b["plats"][0]), (200, "cc", "cc"))
 
     def test_trail_rides_body_one_evidence_read(self):
-        calls, trails, flows = [], [], []
-        saved = (H.harness, HP.harness_evidence.scan, HP.harness_evidence.commits, HP.harness_trail.trail, HP.harness_flow.flow)
+        """One scan feeds evidence (30) + report (every row) + guards; the 7-node flow is gone (R5)."""
+        calls, reports, guards = [], [], []
+        saved = (H.harness, HP.harness_evidence.scan, HP.harness_trail.trail, HP.harness_trail.report, HP.harness_flow.guards)
         H.harness = lambda proj, days: (200, {"ok": True, "events": []})
         HP.harness_evidence.scan = lambda proj: calls.append(proj) or ([{"ts": i} for i in range(500)], 77.0)
-        HP.harness_evidence.commits = lambda proj: [{"h": "abcdef1", "ct": 5}]
-        HP.harness_trail.trail = lambda rows, repo, git=True: trails.append(len(rows)) or {"fixes": [], "held": []}
-        HP.harness_flow.flow = lambda proj, rows, tr, floor=0, commits=None: flows.append((len(rows), floor, commits)) or []
+        HP.harness_trail.trail = lambda *a, **k: self.fail("trail() has no page reader; it spawns git")
+        HP.harness_trail.report = lambda rows, repo, git=True: reports.append((len(rows), repo)) or {"counts": {}}
+        HP.harness_flow.guards = lambda proj, runs=None: guards.append(proj) or {"runs": 0}
         try:
             for plat in ("cc", "cx"):
                 del calls[:]
                 code, b = HP.harness_plat(plat, self.proj)
                 self.assertEqual(code, 200, b)
-                self.assertEqual(b["trail"], {"fixes": [], "held": []})
-                self.assertEqual((len(calls), len(b["evidence"]), trails[-1]), (1, 30, 120))
-                self.assertEqual(flows[-1], (500, 77.0, [{"h": "abcdef1", "ct": 5}]))
+                self.assertEqual((b["report"], b["guards"]), ({"counts": {}}, {"runs": 0}))
+                self.assertEqual((len(calls), len(b["evidence"])), (1, 30))
+                self.assertEqual((reports[-1], guards[-1]), ((500, self.proj), self.proj))
+                self.assertNotIn("flow", b)
+                self.assertNotIn("trail", b)
         finally:
-            H.harness, HP.harness_evidence.scan, HP.harness_evidence.commits, HP.harness_trail.trail, HP.harness_flow.flow = saved
+            H.harness, HP.harness_evidence.scan, HP.harness_trail.trail, HP.harness_trail.report, HP.harness_flow.guards = saved
 
     def test_evidence_only_commits_limit_60(self):
         calls = []
