@@ -94,7 +94,7 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 - Minimap bottom right: click or drag to move; its corner button hides it.
 
 ### Make or refresh it
-- «Generate diagram» (none yet) / «Update diagram» (older than the code) / «Redraw» (at HEAD) → preview → «Confirm — send» asks an open session to run the read-only `arch-map` pipeline. The diagram draws itself when it arrives.
+- «Generate diagram» (none yet) / «Update diagram» (older than the code) / «Redraw» (at HEAD) → preview → «Confirm — send» asks an open session to run the read-only `arch-map` pipeline. The diagram draws itself when it arrives. It needs Sidereus run from a git clone; an installed package (pipx/uv) has no repository to run the pipeline from, and the disabled send says so.
 - A row shows who received it (project · session · mailbox id) and its state: «Sent», «Running · <stage>», «Stopping», then «Stopped» / «Done» / «No session». It survives a reload. «Stop» (preview + confirm) asks the session to finish the current stage and start no more.
 
 ### Flows

@@ -147,9 +147,11 @@ function archCands(home, sess, p){
     .map((x, i) => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', id: x.mbox || '', login: mboxIn(x), dir: archBase(x.cwd), g: g(x), i }))
     .sort((a, b) => a.g - b.g || (b.login ? 1 : 0) - (a.login ? 1 : 0) || a.i - b.i);
 }
+// Pure: no-home reason plus what to do; ⚠a pipx/uv install has no repo holding the pipeline and its scripts (arch_map.SIDEREUS_ROOT = '').
+function archNoHome(){ return T('The Sidereus repository location is unknown') + ' — ' + T('this needs Sidereus run from a git clone; the installed package cannot run this pipeline'); }
 // Why «Confirm — send» is disabled ('' = enabled).
 function archWhyOff(home, cands, cur){
-  if(!home) return T('The Sidereus repository location is unknown');
+  if(!home) return archNoHome();
   if(!cands.length) return T('No live session');
   if(!cur || !cur.login) return T('That session is not logged in to the mailbox');
   return '';
@@ -163,7 +165,7 @@ function archReqOf(d){
 function archReqBtn(p, home, cands, d){
   const live = !!(archRunOf(p) || archSentPh(p) || (typeof archReqBusy === 'function' && archReqBusy(p, ARCH_PL))), open = !!(ARCH.req && ARCH.req.p === p), why = live ? '' : archWhyOff(home, cands, cands[0]);
   return '<button type=button class="archgo archckgo' + (open ? ' on' : '') + '" data-arq aria-expanded=' + (open ? 'true' : 'false') + (live ? ' disabled' : '')
-    + (why ? ' title="' + esc(why) + '"' : '') + '>' + esc(T(archReqOf(d).lb)) + '</button>';
+    + ' title="' + esc(why || T('Asks a live session to draw the map; you see the message before it is sent')) + '">' + esc(T(archReqOf(d).lb)) + '</button>';
 }
 // Pure: the preview panel once the request button is pressed (titled with its label); '' otherwise.
 function archReqHtml(req, repo, home, cands, busy, d){
