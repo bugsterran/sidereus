@@ -30,7 +30,7 @@ def run(body):
     auto = "\n".join(re.search(p, js_all(), re.M).group(0) for p in (r"^const TLG_AUTO = .*$", r"^const TLG_MAX_REPOS = .*$"))
     fns = "\n".join(js_fn(n) for n in ("ppComboHtml", "tlgAge", "tlgName", "tlgSessions", "tlgSid", "tlgRepos", "tlgTarget", "tlgFollow",
                                         "tlgShownN", "tlgNum", "tlgCnt", "tlgNoGit", "tlgRepoName", "tlgProj", "tlgNote", "tlgSelHtml",
-                                        "tlgDirty", "tlgDetBtn", "tlgOpen", "tlgChipClick", "tlgOpenRepo",
+                                        "tlgDirty", "tlgOpen", "tlgChipClick", "tlgOpenRepo",
                                         "tlgFocusId", "tlgPaint"))
     src = (PRE + auto + "\n" + fns + "\nSESS = " + json.dumps(SESS) + ";\n" + body
            + "\nprocess.stdout.write(JSON.stringify(R));")
@@ -115,17 +115,24 @@ class TlgSessPick(unittest.TestCase):
         self.assertNotIn("tlgnb", r["h0"])
         self.assertIn('aria-label="Repository: a"', r["h0"])
 
-    def test_details_opens_diff_on_followed_repo(self):
+    def test_list_foot_views_all_changes_of_followed_repo(self):
         r = run("SESS = [{sid: 's1aaaaaaaa', cwd: '/r/a', project: 'a', ageSec: 5, repos: ['/r/<x>']}];"
-                "R.none = tlgDetBtn(null); tlgC['/r/<x>'] = {d: {ok: true, n: 5, base: 'abc'}};"
-                "tlgSel = 'r:/r/<x>'; const tg = tlgTarget(); R.btn = tlgDetBtn(tg); tlgOpen();")
-        self.assertEqual(r["none"], "")
-        self.assertIn('id=tlgdt aria-label="Details" title="Open the changes in the diff window (git · view only)\n/r/&lt;x>"', r["btn"])
-        self.assertNotIn("aria-haspopup", r["btn"])
+                "tlgC['/r/<x>'] = {d: {ok: true, n: 5, base: 'abc'}}; tlgSel = 'r:/r/<x>';"
+                "R.h = tlgSelHtml(tlgTarget()); R.foot = PPC.tlgs.foot.html; PPC.tlgs.foot.act();")
+        self.assertEqual(r["foot"], "View all changes <span class=ppfootn>&lt;x></span>")
         self.assertEqual(r["opened"], [["/r/<x>", "", "b:abc", "", "s1aaaaaaaa"]])
         src = js_all()
-        for gone in ("tlgdp", "tlgDetHtml", "TLGD"):
-            self.assertNotIn(gone, src)   # the repo list is the combobox, not a second popover
+        for gone in ("tlgdt", "tlgDetBtn", "tlgdp", "TLGD", "'Details|repos'"):
+            self.assertNotIn(gone, src)   # no «Details» toolbar button and no second popover: the list is the combobox
+
+    def test_foot_is_opt_in_in_ppopen(self):
+        body = js_fn("ppOpen")
+        self.assertIn("(cfg.foot ? '<button type=button class=ppfoot data-ppfoot>' + cfg.foot.html + '</button>' : '')", body)
+        import glob, os
+        from tests._load import ROOT
+        users = [os.path.basename(f) for f in sorted(glob.glob(os.path.join(ROOT, "web", "js", "*.js")))
+                 if "foot: {" in open(f, encoding="utf-8").read()]
+        self.assertEqual(users, ["77-timeline-git.js"])   # other pickers (Pipelines, Structure, History, Branches) unchanged
 
     def test_chip_click_opens_combo_under_chip(self):
         r = run("const b = {attrs: {'data-ppo': 1}, hasAttribute(k){ return k in this.attrs; }};"
