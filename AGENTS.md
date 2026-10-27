@@ -18,7 +18,7 @@ No external libraries (must run offline). **Git: GitHub remote `origin`; the orc
 Refuse work that does not fit this; long form in `docs/CONCEPT.md`.
 
 - **Identity**: a local observatory where one person verifies and judges the results and process of several AI coding sessions on one screen, and directs them by relaying instructions.
-- **Core features = pipelines · structure analysis**; the timeline is the evidence view behind them (what each agent actually did). All three show the same sessions, linked; the viewer opens on Pipelines. Gate evidence is what makes a verdict trustworthy — show it, not just the headline.
+- **Three core features**: (1) **monitoring** — every AI session on one screen, the ones waiting on a person first (sessions · attention · timeline as the evidence of what each agent did); (2) **pipelines + Harness report** — stage order, gates and whether the results held; (3) **structure + security** — module/flow map and security checks of the repo. All three show the same sessions, linked; the viewer opens on Pipelines. Gate evidence is what makes a verdict trustworthy — show it, not just the headline.
 - **Goal**: a foundation to fork and extend, not a finished product. Extension PRs (language plug-ins, CLI adapters, pipeline templates) accepted · core PRs closed · bug reports welcome (`CONTRIBUTING.md`).
 - **Never**: runs agents or attaches to terminals · shows conversation content · remote/enterprise monitoring · tied to one vendor (Claude Code, Codex CLI, Gemini CLI, …).
 - **Filter for new work, in order**: fits the identity? → helps others extend it? → fixes a real defect? A «no» stops it.
