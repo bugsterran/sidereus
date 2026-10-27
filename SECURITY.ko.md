@@ -53,6 +53,14 @@
 | `bandit` | Python 코드의 흔한 보안 문제 | `brew install bandit` · `pip install bandit` | 아니오 |
 | `osv-scanner` | 락파일로 읽은 의존성의 알려진 취약점 | `brew install osv-scanner` · `winget install Google.OSVScanner` | 예 |
 | `npm` | npm 패키지의 알려진 취약점 (npm audit) | `brew install node` · `winget install OpenJS.NodeJS.LTS` | 예 |
+| `trivy` | Dockerfile 설정 오류 · --images 를 주면 베이스 이미지의 알려진 취약점 | `brew install trivy` · `winget install AquaSecurity.Trivy` | `--images` 일 때만 (취약점 DB·레지스트리) |
+
+### 컨테이너 이미지 (trivy)
+
+- 기본으로는 Dockerfile 만 검사한다(`trivy config`). 베이스 이미지는 `--images` 를 주거나 실행 요청 미리보기에서 «이미지 포함» 을 켰을 때만 검사한다.
+- `--images` 는 Dockerfile 의 `FROM` 이미지와 compose 의 `image:` 를 하나씩 검사한다. 로컬 Docker 데몬을 먼저 보고, 없으면 레지스트리에서 읽는다. 결과는 베이스 이미지별로 묶인다: 고칠 수 있는 high/critical CVE(⇒ 베이스 이미지 교체)와 아직 수정판이 없는 «대기». 여러 이미지에 같은 CVE 가 있으면 한 번만 적고 이미지 수를 붙인다.
+- 비공개 레지스트리는 사용자의 `docker login` 을 trivy 가 그대로 읽는다. Sidereus 는 자격 증명을 묻거나 읽거나 저장하지 않고, 이미지를 빌드하거나 컨테이너를 띄우지 않는다. 로그인 실패나 없는 이미지는 이유가 적힌 «실패» 줄이 되고, 깨끗한 결과로 치지 않는다.
+- 방화벽 안에서는 `TRIVY_DB_REPOSITORY` / `TRIVY_CHECKS_BUNDLE_REPOSITORY` 로 미러를 지정한다. 실행기는 환경 변수를 그대로 넘긴다.
 
 ## 문제 알리기
 

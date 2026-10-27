@@ -60,6 +60,7 @@ const SEC_CATCH = {
   'bandit': 'Common security issues in Python code',
   'osv-scanner': 'Known vulnerabilities in dependencies, read from lockfiles',
   'npm': 'Known vulnerabilities in npm packages (npm audit)',
+  'trivy': 'Dockerfile misconfigurations; with --images, known vulnerabilities in base images',
 };
 const dxOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 // Pure: «Security tools» — installed + version, or this OS's install command with «Copy». Nothing is run or sent.
@@ -67,7 +68,7 @@ const dxOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 function dxSecTools(rows){
   const L = dxArr(rows);
   if(!L.length) return dxEmpty(T('Not installed'));   // empty list = none found; a failed request shows «Could not load» in cfgPaneDx
-  const net = {'yes': T('needs network'), 'registry': T('network for registry rules')};
+  const net = {'yes': T('needs network'), 'registry': T('network for registry rules'), 'images': T('network for image scan')};
   return '<ul class=dxt>' + L.map(x => {
     const id = String(x.id || ''), cmd = x.cmd ? String(x.cmd) : '', ok = x.installed === true;
     const st = ok ? '<span class=dxok>' + esc(T('Installed')) + (x.version ? ' · ' + esc(x.version) : '') + '</span>' : '<span class=dxmiss>' + esc(T('Not installed')) + '</span>';

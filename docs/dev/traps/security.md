@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Security and privacy
 
+- **A trivy run that cannot reach its vuln DB or registry is `fail`, never clean** (`sidereus/sec_trivy.py` `fail_why`, called before `net_fail` in `arch_checks._judge`). DB download errors ⇒ «vuln DB download failed: set TRIVY_DB_REPOSITORY»; UNAUTHORIZED / denied / 401 / 403 ⇒ «docker login <registry> needed»; MANIFEST_UNKNOWN / not found ⇒ «image not found».
+  - ⚠DB is checked first: a rate-limited DB pull says «denied» too and must not read as a login problem.
+  - ⚠An id with any failed row (one image of several) is left out of the scan record's ran-ok tools, so its old findings are not resolved by absence.
+  - ⚠Several rows share one id (`trivy-image` per image, `npm-audit` per folder): `build` puts the id's count on its first row only — per-image numbers are `fixable` / `waiting`.
+
 - **A security-checks run must not end on stage 1's output** (`sidereus/arch_map.py` `_sec_final_at`, state `secRun`). Stage 1 writes `checks-security.json` and appends a `src: "scan"` record to `security-log.jsonl`; ending on either (or on the log mtime) dropped the progress line during the threat-model review. ⇒ the run ends on a `src` `review` / `mark` record newer than the run start (log tail, cached by mtime+size) or on its run record closing; `pl_reqs` «Done» uses the same time.
   - ⚠The review may log nothing (no threat model): the end then comes from the record or the 180 s gap, never from the scan.
 - **Hidden security rules persist across scans and lower the tab badge** (`web/js/84l-structure-arch-checks.js`, ui-pref `sidereus.ckhide`, per repo). Hiding is view-only, so a new scan that still finds a hidden error keeps it out of the count; with only hidden errors left the badge turns amber, not red. ⇒ the badge tooltip states how many rules are hidden and the window shows «N rules hidden · Show».

@@ -26,7 +26,8 @@ TOOLS = {"ok": True, "tools": [
     {"id": "semgrep", "installed": True, "version": None, "cmd": None, "net": "registry"},
     {"id": "bandit", "installed": False, "version": None, "cmd": "pip install <bandit>", "net": "no"},
     {"id": "osv-scanner", "installed": False, "version": None, "cmd": "brew install osv-scanner", "net": "yes"},
-    {"id": "npm", "installed": False, "version": None, "cmd": "nodejs.org", "net": "yes"}]}
+    {"id": "npm", "installed": False, "version": None, "cmd": "nodejs.org", "net": "yes"},
+    {"id": "trivy", "installed": True, "version": "0.57.1", "cmd": None, "net": "images"}]}
 
 SRC = i18n_prelude("'ko'", ("T",)) + r"""
 const fs = require('fs'), vm = require('vm'), path = require('path');
@@ -121,6 +122,8 @@ class DiagPane(unittest.TestCase):
         self.assertIn("<code>nodejs.org</code>", rows[4])            # URL hint: plain text, no Copy
         self.assertNotIn("data-dxcp", rows[0] + rows[1] + rows[4])
         self.assertIn("Python 코드의 흔한 보안 문제", rows[2])
+        self.assertIn("이미지 검사에 네트워크 필요", rows[5])
+        self.assertIn("베이스 이미지의 알려진 취약점", rows[5])
         self.assertIn("&lt;t&gt;", self.r["secErr"])
 
     def test_inline_cmd_allow_list(self):

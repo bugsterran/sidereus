@@ -32,4 +32,12 @@ Object.assign(I18N.ko, {
   'Stop request preview': '중단 요청 미리보기',
   'Stop|pl request': '중단',
   'Resize issues and history lists': '이슈 목록과 기록 목록 크기 조절',
+  'Include images': '이미지 포함',
+  'Base images': '베이스 이미지',
+  'fixable high/critical {n}': '고칠 수 있는 높음/치명 {n}건',
+  'Replace base image': '베이스 이미지 교체',
+  'No fixable high/critical': '고칠 수 있는 높음/치명 없음',
+  'No fixed version released yet': '아직 수정 버전이 나오지 않음',
+  'waiting {n}': '대기 {n}건',
+  '{n} images': '이미지 {n}개',
 });
