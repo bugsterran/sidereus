@@ -18,7 +18,12 @@ function agentRepaint(){
   //   cut it structurally instead of checking conditions: this function never opens a modal.
   //   ⚠In chat mode drawing into #feed **overwrites the chat** — so it does nothing then.
   if(!wkOn || !wtShown().length) return;
-  return workPaint();
+  // ⚠Late repaints (git diff, context line) grow the log; a reader at the end stays at the end — every repaint passes here.
+  const b = wtSplit ? null : wkBox();
+  const atEnd = !!b && b.scrollHeight - b.scrollTop - b.clientHeight < 4;
+  const r = workPaint();
+  if(atEnd && !wtSplit){ b.scrollTop = b.scrollHeight; wkAtEnd = true; wkTop = b.scrollTop; }
+  return r;
 }
 // One-line summary for the modal header, from the already-fetched work data (no extra API).
 function wkSum(d){
