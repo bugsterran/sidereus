@@ -46,7 +46,7 @@ class World(_WorldPanels, _WorldGit):
         self.a = int(anchor if anchor is not None else time.time())
         self.build = page_build
         self._now = now     # pin (tests): two Worlds with same anchor+now are byte-identical
-        rng = random.Random(SEED)
+        rng = random.Random(SEED)  # nosec B311 -- seeded demo data / retry jitter, not a secret
         self.rng = rng
         a = self.a
         R = REPOS
@@ -123,7 +123,7 @@ class World(_WorldPanels, _WorldGit):
         ]
         self.graph = {}
         for repo, (main, wts) in REPOS.items():
-            r = random.Random(SEED + len(repo))
+            r = random.Random(SEED + len(repo))  # nosec B311 -- seeded demo data / retry jitter, not a secret
             cm, t = [], a - 9 * 24 * H
             prev = None
             n_main = 14 if repo == "acme-web" else 10
@@ -252,7 +252,7 @@ class World(_WorldPanels, _WorldGit):
         """wf_public-shaped runs of session `k` (only the search session has one)."""
         if k != "search":
             return []
-        now, a, r = self.now(), self.a, random.Random(SEED + 29)   # own rng: keeps self.rng's sequence unchanged
+        now, a, r = self.now(), self.a, random.Random(SEED + 29)   # own rng: keeps self.rng's sequence unchanged  # nosec B311 -- seeded demo data / retry jitter, not a secret
         ags = [{"aid": "a" + _hex(r, 16), "lab": lab, "phase": ph, "st": st, "start": a - s0 * 60,
                 "end": now if e is None else a - e * 60, "tok": tok} for ph, lab, st, s0, e, tok in WF_AGENTS]
         return [{"id": "wf_" + _hex(r, 12), "name": "feature-change", "phase": "Verify",
@@ -266,7 +266,7 @@ class World(_WorldPanels, _WorldGit):
         plus open `hotfix` («Implement» run) and ended `release-check`."""
         if k != "web":
             return []
-        s, now, a, r = self.by["web"], self.now(), self.a, random.Random(SEED + 31)   # own rng: keeps self.rng unchanged
+        s, now, a, r = self.by["web"], self.now(), self.a, random.Random(SEED + 31)   # own rng: keeps self.rng unchanged  # nosec B311 -- seeded demo data / retry jitter, not a secret
 
         def ag(lab, t0, t1, run=False):
             return {"aid": "a" + _hex(r, 16), "tid": "toolu_" + _hex(r, 24), "lab": lab, "run": run, "t0": t0, "t1": t1}

@@ -129,7 +129,7 @@ def _live_pid_cwds(pids):
         missing = want                                 # safety re-check of every pid
     elif len(missing) < len(want) and time.time() - _live_pid_cwd[0] >= PID_CWD_TTL:
         missing = want
-    r = subprocess.run(["lsof", "-a", "-d", "cwd", "-Fpn", "-p", ",".join(missing)],
+    r = subprocess.run(["lsof", "-a", "-d", "cwd", "-Fpn", "-p", ",".join(missing)],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                        capture_output=True, text=True, encoding="utf-8", errors="replace",
                        timeout=4).stdout if IS_MAC else ""   # ⚠non-Mac — cwd unavailable (empty result)
     pmap, cur = {}, None
@@ -392,7 +392,7 @@ def mailbox_watches():
         # ⚠Only for the watcher processes (measured 3). The whole environment comes along, so never use it for the full list.
         who = {}
         try:
-            env = subprocess.run(["ps", "-Ewwo", "pid=,etime=,command=", "-p", ",".join(watch[:32])],
+            env = subprocess.run(["ps", "-Ewwo", "pid=,etime=,command=", "-p", ",".join(watch[:32])],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                                  capture_output=True, text=True, encoding="utf-8", errors="replace",
                                  timeout=4).stdout if IS_MAC else ""   # ⚠non-Mac — identity/uptime left empty
             cur, buf = None, []

@@ -25,7 +25,7 @@ from sidereus.quota import (OMC_FRESH_S, QUOTA_MAX_BACKOFF, QUOTA_URL, _cc_accou
 USER_HOME = os.path.expanduser("~")    # ⚠tests patch this to a tmp dir
 SVC = "Claude Code-credentials"
 OMC_REL = os.path.join("plugins", "oh-my-claudecode", ".usage-cache-anthropic.json")
-ERR_NO_TOKEN = "no token"
+ERR_NO_TOKEN = "no token"  # nosec B105 -- error message text, not a password
 
 _acc = {}               # label -> {data, at, err, next, fail, acct}
 _acc_lock = threading.Lock()

@@ -138,7 +138,7 @@ class _WorldPanels:
 
     # ───────────────────────────── tokens tab
     def _live(self):
-        r = random.Random(SEED + 7 + (self.now() // 10) % 6)
+        r = random.Random(SEED + 7 + (self.now() // 10) % 6)  # nosec B311 -- seeded demo data / retry jitter, not a secret
         return [r.randint(180, 900) * 1000 if i % 7 else 0 for i in range(60)]
 
     def live(self):
@@ -161,7 +161,7 @@ class _WorldPanels:
     def wkuse(self, rng_days=7, acct=""):
         a, now = self.a, self.now()
         acct = acct if acct in ("personal", "work") else ""
-        r = random.Random(SEED + 3)
+        r = random.Random(SEED + 3)  # nosec B311 -- seeded demo data / retry jitter, not a secret
         days = [datetime.fromtimestamp(a - (6 - i) * 24 * H).strftime("%Y-%m-%d") for i in range(7)]
         per = {"acme-web": [r.randint(40, 260) * 10 ** 6 for _ in days],
                "billing-api": [r.randint(30, 200) * 10 ** 6 for _ in days],
@@ -222,7 +222,7 @@ class _WorldPanels:
         t0 = now - int(hours * H)
         step = 180
         n = int(hours * H) // step + 1
-        r = random.Random(SEED + 11)
+        r = random.Random(SEED + 11)  # nosec B311 -- seeded demo data / retry jitter, not a secret
         rows = []
         v = [0] * n
         for s in self.sess:
@@ -296,7 +296,7 @@ class _WorldPanels:
     # ⚠Rows come from hour buckets split per local day like sidereus/history.py; offsets from `a` put a row's
     #   from/to on the previous date («prev. day 21:55~prev. day 23:55»). "docs" runs 22:00-01:00 across one midnight.
     def history(self, days=7):
-        a, r, nd, lt = self.a, random.Random(SEED + 5), min(days, 14), time.localtime(self.a)
+        a, r, nd, lt = self.a, random.Random(SEED + 5), min(days, 14), time.localtime(self.a)  # nosec B311 -- seeded demo data / retry jitter, not a secret
         mid = [int(time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday - d, 0, 0, 0, 0, 0, -1))) for d in range(15)]
         # ⚠Today's rows start at fixed local hours (oldest session 07:00, +1h each): born-derived hours shared a bucket
         #   or clamped at midnight depending on the wall clock, reordering the tab (screen_check baseline drift).

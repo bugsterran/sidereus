@@ -296,7 +296,7 @@ def _quota_backoff(st):
     #     API is us — and that is what lets the 429 clear.
     #   ⚠Cost: the OMC statusline shows a stale value as current. The Sidereus screen states the real age.
     _wait = _wait_hint(fail)
-    _until = time.time() + _wait * (1.0 + random.random() * 0.2)
+    _until = time.time() + _wait * (1.0 + random.random() * 0.2)  # nosec B311 -- seeded demo data / retry jitter, not a secret
     while True:
         _rest = _until - time.time()
         if _rest <= 0:

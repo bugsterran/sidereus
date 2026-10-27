@@ -48,7 +48,7 @@ AUTO_STALE_S = 600
 _SKIP = {".git", "node_modules", "build", "target", "dist", "out", ".venv", "venv", "__pycache__", ".gradle"}
 _SHELL = ("&&", "||", ";", "|", ">", "<", "&")
 RED_TOOLS = {"checks-security": ("gitleaks",)}
-RED_RC = {"pass": 0, "fail": 1, "skip": 2}
+RED_RC = {"pass": 0, "fail": 1, "skip": 2}  # nosec B105 -- verdict-to-exit-code map, not a password
 
 
 def _git(repo, args, timeout=60):
@@ -88,7 +88,7 @@ def _kill_tree(p):
     """Kill p and its children. ⚠Windows has no killpg/SIGKILL: taskkill /T walks the tree."""
     try:
         if os.name == "nt":
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], stdin=subprocess.DEVNULL,
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], stdin=subprocess.DEVNULL,  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
         else:
             os.killpg(p.pid, signal.SIGKILL)

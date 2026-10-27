@@ -268,7 +268,8 @@ def _claude_pid():
     if sys.platform == "win32":
         return p          # ⚠no `ps` on Windows (Git Bash's MSYS ps has no -o); a spawn attempt only adds hook latency
     try:
-        r = subprocess.run(["ps", "-o", "ppid=,comm=", "-p", str(p)], capture_output=True, text=True, timeout=2)
+        # absolute path: this branch is POSIX-only and /bin/ps exists on macOS and Linux
+        r = subprocess.run(["/bin/ps", "-o", "ppid=,comm=", "-p", str(p)], capture_output=True, text=True, timeout=2)
         parts = r.stdout.strip().split(None, 1)
         if len(parts) == 2 and os.path.basename(parts[1]).lstrip("-") in _SHELLS and int(parts[0]) > 1:
             return int(parts[0])

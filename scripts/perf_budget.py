@@ -95,7 +95,7 @@ def rss_mb(pid):
     if os.name == "nt":
         return None
     try:
-        out = subprocess.run(["ps", "-o", "rss=", "-p", str(pid)], capture_output=True, text=True, timeout=5).stdout
+        out = subprocess.run(["ps", "-o", "rss=", "-p", str(pid)], capture_output=True, text=True, timeout=5).stdout  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
         if out.strip():
             return int(out.split()[0]) / 1024.0
     except (OSError, ValueError, subprocess.SubprocessError):
@@ -272,7 +272,7 @@ def run_demo():
 
 def _listen_pid(port):
     try:
-        out = subprocess.run(["lsof", "-nP", "-iTCP:%d" % port, "-sTCP:LISTEN", "-t"],
+        out = subprocess.run(["lsof", "-nP", "-iTCP:%d" % port, "-sTCP:LISTEN", "-t"],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                              capture_output=True, text=True, timeout=10).stdout.split()
         return int(out[0]) if out else None
     except (OSError, ValueError, subprocess.SubprocessError):

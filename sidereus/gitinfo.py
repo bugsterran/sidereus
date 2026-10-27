@@ -80,7 +80,7 @@ def _attr_opts(version_text):
 def _git_version():
     """`git --version` text, "" when git is missing or fails. Probed once at import (before tests fake subprocess)."""
     try:
-        return subprocess.run(["git", "--version"], capture_output=True, text=True, timeout=5).stdout
+        return subprocess.run(["git", "--version"], capture_output=True, text=True, timeout=5).stdout  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
     except (OSError, subprocess.SubprocessError):
         return ""
 

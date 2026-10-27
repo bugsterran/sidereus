@@ -158,7 +158,7 @@ def _oauth_token():
     if not IS_MAC:
         return _creds_file_token(claude_home())     # primary root = the account this viewer follows (CLAUDE_CONFIG_DIR)
     try:
-        r = subprocess.run(["security", "find-generic-password", "-s", "Claude Code-credentials", "-w"],
+        r = subprocess.run(["security", "find-generic-password", "-s", "Claude Code-credentials", "-w"],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                            capture_output=True, text=True, encoding="utf-8", errors="replace",
                            timeout=10)
         if r.returncode != 0:
