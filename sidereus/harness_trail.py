@@ -18,6 +18,7 @@ TR_HEAD_TTL = 20           # seconds the resolved HEAD is reused, so a repaint s
 TR_CACHE_MAX = 64
 TR_STATES_MAX = 30         # PASS rows states() returns
 TR_STATES_GIT = 4          # git processes budgeted per PASS in states() (merge-base · rev-parse · log, + slack)
+TR_INC_MAX = 20            # newest incident cards report() returns
 TR_HEX = re.compile(r"[0-9a-f]{4,40}")
 TR_MODE = re.compile(r"[a-z0-9_-]{0,20}")
 TR_STEP = re.compile(r"[a-z0-9_-]{1,20}")
@@ -43,13 +44,16 @@ def _norm(r):
         return None
     if isinstance(rc, bool) or not isinstance(rc, int) or not isinstance(mode, str) or not TR_MODE.fullmatch(mode):
         return None
-    steps = []
+    steps, failed = [], 0
     for s in r.get("steps") if isinstance(r.get("steps"), list) else []:
         if isinstance(s, dict) and isinstance(s.get("name"), str) and TR_STEP.fullmatch(s["name"]) \
                 and isinstance(s.get("rc"), int) and not isinstance(s.get("rc"), bool):
             steps.append((s["name"], s["rc"]))
+            f = s.get("failed")
+            failed += f if isinstance(f, int) and not isinstance(f, bool) and f > 0 else 0
     head = r.get("head") if isinstance(r.get("head"), str) and TR_HEX.fullmatch(r["head"]) else ""
-    return {"ts": float(ts), "mode": mode, "rc": rc, "head": head, "dirty": r.get("dirty") is True, "steps": steps}
+    return {"ts": float(ts), "mode": mode, "rc": rc, "head": head, "dirty": r.get("dirty") is True, "steps": steps,
+            "failed": failed}
 
 
 class _Ctx(object):
@@ -177,6 +181,58 @@ def trail(rows, repo, git=True):
     held = [_held(p, rows, ctx, head) for p in reversed([r for r in rows if r["rc"] == 0][-TR_MAX:])]
     fixes = [_fix(f, p, ctx) for f, p in reversed(_pairs(rows)[-TR_MAX:])]
     out = {"fixes": fixes, "held": held}
+    if head and ctx.ok:
+        if len(_TR_CACHE) >= TR_CACHE_MAX:
+            _TR_CACHE.clear()
+        _TR_CACHE[key] = out
+    return out
+
+
+def _cp(mode):
+    return mode if mode in ("fast", "full") else "other"
+
+
+def report(rows, repo, git=True):
+    """{counts: {caught, held, again, reverted, gone, unchecked, checked}, incidents, checkpoints: {fast|full|other: {runs, caught, listed}}, since} from
+    newest-first evidence rows of `repo`. caught = every FAIL→PASS pair; incidents = the newest TR_INC_MAX pairs, each with
+    its PASS state (states() rules) — the state counts tally those incidents only and sum to len(incidents)
+    (again = broke | refixed: a later same-mode FAIL of an overlapping step, step-level only). since = oldest row ts read.
+    ⚠A git miss or exhausted budget turns a clean «held» into «unchecked» (never «held») and the result is not cached;
+    git=False (demo) keeps the evidence-only state."""
+    rows = sorted((r for r in (_norm(x) for x in (rows if isinstance(rows, list) else [])) if r), key=lambda r: r["ts"])
+    cps = dict((k, {"runs": 0, "caught": 0, "listed": 0}) for k in ("fast", "full", "other"))
+    if not rows:
+        return {"counts": dict((k, 0) for k in ("caught", "held", "again", "reverted", "gone", "unchecked", "checked")), "incidents": [], "checkpoints": cps, "since": 0}
+    pairs = _pairs(rows)
+    inc = list(reversed(pairs[-TR_INC_MAX:]))
+    on = bool(git and isinstance(repo, str) and repo)
+    # own budget: per incident one rev-list (_fix) + the states() share, plus the HEAD lookup
+    ctx = _Ctx(repo, on, 1 + (TR_STATES_GIT + 1) * max(1, len(inc)))
+    head = _head(ctx) if ctx.on else ""
+    ctx.on = bool(head)
+    key = ("report", repo, head, rows[-1]["ts"])
+    if head and key in _TR_CACHE:
+        return _TR_CACHE[key]
+    incidents = []
+    for f, p in inc:
+        fx, h = _fix(f, p, ctx), _held(p, rows, ctx, head)
+        st = h["state"]
+        if on and st == "held" and h["head"] and not h["dirty"] and not h["git"]:
+            st = "unchecked"   # head known but git never answered: not evidence that it held
+        fx["fail"].update(rc=f["rc"], failed=f["failed"] or None)   # 0 = no failure count recorded (ev_hook rows), not «0 failed»
+        incidents.append(dict(fx, cp=_cp(p["mode"]), state=st, at=h["at"]))
+    for r in rows:
+        cps[_cp(r["mode"])]["runs"] += 1
+    for f, p in pairs:
+        cps[_cp(p["mode"])]["caught"] += 1
+    for x in incidents:
+        cps[x["cp"]]["listed"] += 1   # caught > listed = older pairs past TR_INC_MAX
+    tally = lambda s: sum(1 for x in incidents if x["state"] == s)
+    # ⚠every state lands in exactly one count — a state with no count vanished from the tiles (refixed did)
+    out = {"counts": {"caught": len(pairs), "held": tally("held"), "again": tally("broke") + tally("refixed"),
+                      "reverted": tally("reverted"), "gone": tally("gone"), "unchecked": tally("unchecked"),
+                      "checked": sum(1 for x in incidents if x["state"] != "unchecked")},
+           "incidents": incidents, "checkpoints": cps, "since": rows[0]["ts"]}
     if head and ctx.ok:
         if len(_TR_CACHE) >= TR_CACHE_MAX:
             _TR_CACHE.clear()

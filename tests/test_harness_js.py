@@ -1,6 +1,7 @@
-"""Pipeline tab «하네스» view (web/js/47b-harness.js): node --check, lane order, escaping, no /api/tools/file fetch on paint."""
+"""Pipeline tab «Harness» view (web/js/47b-harness.js): node --check, lane order, escaping, gate report (#27 R1-R5), no /api/tools/file fetch on paint."""
 import json
 import os
+import re
 import subprocess
 import unittest
 
@@ -28,6 +29,15 @@ function platName(k){ return AILG[k][0]; }
 def _js(body):
     with open(_F, encoding="utf-8") as f:   # the whole file: it is self-contained apart from the stubs above
         src = _STUB + i18n_switch() + "const document = {addEventListener(){}};\n" + f.read() + "\n" + body
+    return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
+
+
+def _js_doc(body):
+    """Like _js, but `document` records listeners (LST), querySelector calls (QS) and focus options (FOC)."""
+    doc = ("const LST = {}, QS = [], FOC = []; const CSS = {escape: s => s};"
+           " const document = {addEventListener(t, f){ (LST[t] = LST[t] || []).push(f); }, querySelector(s){ QS.push(s); return {focus(o){ FOC.push(o); }}; }};\n")
+    with open(_F, encoding="utf-8") as f:
+        src = _STUB + i18n_switch() + doc + f.read() + "\n" + body
     return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
 
@@ -288,7 +298,7 @@ class Harness(unittest.TestCase):
         a, b = _js(pre + " const a = hnHtml(); HN.flowOpen = false; console.log(JSON.stringify([a, hnHtml()]))")
         self.assertIn("<details class=hnflow data-hnflow open><summary>", a)
         self.assertIn("<details class=hnflow data-hnflow><summary>", b)
-        summ = a.split("<summary>", 1)[1].split("</summary>", 1)[0]
+        summ = a.split("data-hnflow open><summary>", 1)[1].split("</summary>", 1)[0]
         self.assertIn("훅 흐름", summ)
         self.assertIn("class=hnsum", summ)
         self.assertNotIn("class=hnl>", summ)
@@ -366,61 +376,163 @@ class Harness(unittest.TestCase):
         a, b = _js(pre + " const a = hnHtml(); HN.cfgOpen = true; console.log(JSON.stringify([a, hnHtml()]))")
         self.assertIn("<details class=hncfg><summary", a)
         self.assertIn("<details class=hncfg open><summary", b)
-        self.assertLess(a.index("결과"), a.index("hncfg"))   # results first
+        self.assertLess(a.index("hnruns"), a.index("hncfg"))   # gate runs first
         self.assertLess(a.index("hncfg"), a.index("data-hnplat"))   # switch folds with the map
         summ = a.split("<summary class=hncfgs>", 1)[1].split("</summary>", 1)[0]
         self.assertIn("구성 지도", summ)
         self.assertIn("문제 2", summ)
         self.assertNotIn("<button", summ)
 
-    # Pinned trail shape (same keys as tests/test_harness_trail.py).
-    _TRAIL = {"fixes": [{"mode": "fast", "fail": {"ts": 1790000000, "head": "abcd1234ffff", "dirty": False},
-                         "pass": {"ts": 1790000600, "head": "ef567890aaaa", "dirty": True}, "commits": 2,
-                         "flipped": ["tests"], "still": ["<img onerror=1>"]}],
-              "held": [{"mode": "fast", "ts": 1790000600, "head": "ef567890aaaa", "dirty": False, "state": "held", "steps": [], "at": 0, "git": True},
-                       {"mode": "full", "ts": 1790000700, "head": "\"><x>", "dirty": False, "state": "broke", "steps": ["<b>s</b>"], "at": 1790000900, "git": True},
-                       {"mode": "full", "ts": 1790000800, "head": "1", "dirty": False, "state": "evil\" onclick=1", "steps": [], "at": 0, "git": False}]}
+    # Pinned report shape (#27 server contract: /api/harness `report` + `guards`).
+    _REPORT = {"counts": {"caught": 5, "held": 3, "again": 2, "reverted": 1, "checked": 4, "gone": 1},
+               "incidents": [{"cp": "fast", "mode": "fast", "fail": {"ts": 1790000000, "head": "aaaa1111ffff", "dirty": False, "rc": 1, "failed": 3},
+                              "pass": {"ts": 1790000600, "head": "bbbb2222eeee", "dirty": True}, "commits": 2,
+                              "flipped": ["tests"], "still": ["<img onerror=1>"], "state": "held", "at": 0},
+                             {"cp": "full", "mode": "full", "fail": {"ts": 1790001000, "head": "cccc3333dddd", "dirty": False, "rc": 2, "failed": None},
+                              "pass": {"ts": 1790001600, "head": "\"><x>", "dirty": False}, "commits": 1,
+                              "flipped": [], "still": [], "state": "evil\" onclick=1", "at": 0}],
+               "checkpoints": {"fast": {"runs": 7, "caught": 1}, "full": {"runs": 4, "caught": 0}, "other": {"runs": 0, "caught": 0}},
+               "since": 1789990000}
+    _GUARDS = {"runs": 9, "deny": 2, "unknown": 1, "codes": {"jump": 2, "<x>": 1}}
 
-    def test_trail_escapes_and_whitelist(self):
-        h = _js("console.log(JSON.stringify(hnTrail(%s)))" % json.dumps(self._TRAIL))
-        for bad in ("<img", "<x>", "<b>s", "onclick=1\""):
+    def _rep(self, pre=""):
+        d = json.dumps({"report": self._REPORT, "guards": self._GUARDS})
+        return _js(pre + " console.log(JSON.stringify(hnReport(%s)))" % d)
+
+    def test_r1_tiles_equal_counts(self):
+        h = self._rep()
+        tiles = h.split("class=hnrept>", 1)[1].split("class=hnrepg", 1)[0]
+        self.assertEqual(re.findall(r'class="hnrepn hnrepn-(\w+)"[^>]*><b>(\d+)</b>', tiles), [("caught", "5"), ("held", "3"), ("again", "2"), ("reverted", "1")])
+        self.assertIn("5건 중 4건 확인 · 1건은 브랜치 이력에서 빠짐", tiles)   # checked != caught said out loud; gone folds into the note
+        self.assertIn('class=hntip tabindex=0 role=img title="같은 점검 단계가 이후 실행에서 다시 실패함.', tiles)
+        old = _js("console.log(JSON.stringify(hnReport({report: {counts: {caught: 1, held: 1, reverted: 0}}})))")
+        self.assertIn('hnrepn-again"><b>0</b>', old)   # older server without counts.again
+        same = _js("console.log(JSON.stringify(hnReport({report: {counts: {caught: 2, held: 2, reverted: 0, checked: 2}}})))")
+        self.assertNotIn("hnrepk", same)
+
+    def test_r2_incident_card_order_and_evidence(self):
+        h = self._rep()
+        cards = h.split("class=hnrepc>", 1)[1]
+        self.assertLess(cards.index(">cccc3333<"), cards.index(">aaaa1111<"))   # newest first
+        a = cards[cards.index('data-hncpc=fast'):]
+        a = a[:a.index("</div>")]
+        seq = [">aaaa1111<", "FAIL", "종료 코드 1 · 실패 3", "커밋 2개", ">bbbb2222<", "PASS", 'class="hntrs hntrs-ok">유지<']
+        idx = [a.index(t) for t in seq]
+        self.assertEqual(idx, sorted(idx))
+        self.assertIn("변경 있음", a)
+        self.assertIn("tests FAIL→PASS", a)
+        self.assertIn("종료 코드 2<", h)   # no failure count -> exit code only
+        for bad in ("<img", "<x>", "onclick=1\""):
             self.assertNotIn(bad, h)
-        self.assertIn("tests FAIL→PASS", h)
-        self.assertIn("커밋 2개", h)
-        self.assertIn(">abcd1234<", h)
-        self.assertIn("변경 있음", h)
-        self.assertIn("Stable 1 · Regressed 1", h)
-        self.assertEqual(h.count("class=hntip tabindex=0"), 2)
-        self.assertIn("같은 점검이 FAIL 뒤 PASS", h)
-        self.assertIn("Unverified = 미커밋 변경 상태의 PASS.", h)
-        self.assertIn('class="hntrs hntrs-ok"', h)
-        self.assertIn('class="hntrs hntrs-ng"', h)
         self.assertIn("<b class=hntrs>evil&quot; onclick=1</b>", h)   # unknown state: text only, no state class
-        self.assertEqual(h.count("hntrs-"), 2)
+        self.assertEqual(h.count("hntrs-"), 1)
 
-    def test_trail_empty_and_in_body(self):
-        r = _js("console.log(JSON.stringify([hnTrail(undefined), hnTrail({fixes: [], held: []})]))")
-        for h in r:
-            self.assertIn("FAIL→PASS 전환 기록이 없습니다", h)
-            self.assertIn("PASS 기록이 없습니다", h)
-            self.assertNotIn("hnrun", h)
-        data = {"ok": True, "events": [], "rules": [], "agents": [], "evidence": [], "trail": self._TRAIL}
+    def test_r3_quiet_cards(self):
+        h = self._rep()
+        self.assertIn('class="hnrun hnquiet" data-hncpc=full', h)
+        self.assertIn("4회 실행, 잡은 것 0", h)
+        self.assertNotIn("data-hncpc=fast><span class=hnrh><b>", h)   # fast caught something: no quiet card
+        self.assertNotIn("data-hncpc=other", h)                         # never ran: no card
+        hk = h[h.index("data-hncpc=hooks"):]
+        self.assertIn("9회 실행, 2회 차단", hk)
+        self.assertIn("단계 건너뛰기 ×2", hk)
+        self.assertIn("알 수 없음 1", hk)
+        self.assertNotIn("&lt;x&gt;", hk)   # unknown deny code is never shown raw
+
+    def test_r4_strip_and_click_filter(self):
+        h = self._rep()
+        strip = h.split("class=hnrepg", 1)[1].split("class=hnrepc>", 1)[0]
+        self.assertEqual(re.findall(r"data-hncp=(\w+)", strip), ["hooks", "fast", "full"])
+        for t in ("수정 전", "수정 직후", "커밋 전", "check --fast", "check --full", "차단 2", "잡음 1", "잡음 0", "aria-pressed=false"):
+            self.assertIn(t, strip)
+        d = json.dumps({"report": self._REPORT, "guards": self._GUARDS})
+        click = ("LST.click.forEach(f => f({target: {closest: s => s === '.hnw [data-hncp]' ? {dataset: {hncp: %s}} : null}}));")
+        r = _js_doc(click % "'full'" + " const a = [HN.cp, PAINTS, hnReport(%s)];" % d + click % "'full'" + " const b = HN.cp;"
+                    + click % "'x\"'" + " console.log(JSON.stringify({a: a, b: b, c: HN.cp, foc: FOC, qs: QS, u: URLS}))")
+        self.assertEqual(r["a"][:2], ["full", 1])
+        f = r["a"][2]
+        self.assertIn("data-hncp=full aria-pressed=true", f)
+        self.assertEqual(re.findall(r"data-hncpc=(\w+)", f), ["full", "full"])   # incident + quiet card of that checkpoint only
+        self.assertEqual(r["b"], "")   # same button again clears the filter
+        self.assertEqual(r["c"], "")   # unknown key never becomes a filter
+        self.assertEqual(r["foc"][0], {"preventScroll": True})
+        self.assertEqual(r["qs"][0], '.hnw [data-hncp="full"]')
+        self.assertEqual(r["u"], [])   # no fetch
+
+    def test_r5_no_flow_strip_and_folds_closed(self):
+        data = {"ok": True, "events": [], "rules": [], "agents": [], "evidence": [], "report": self._REPORT, "guards": self._GUARDS,
+                "flow": [{"id": "r", "nodes": [{"k": "req"}]}]}
         pre = "HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; HN.plats = ['cc'];" % json.dumps(data)
-        a, urls = _js(pre + " const a = hnHtml(); console.log(JSON.stringify([a, URLS]))")
-        self.assertLess(a.index("hnres"), a.index("class=hntr>"))
-        self.assertLess(a.index("class=hntr>"), a.index("hncfg"))
-        self.assertEqual(urls, [])   # trail rides the cached /api/harness body: no extra fetch on paint
-        with open(os.path.join(ROOT, "web", "js", "06-i18n-x.js"), encoding="utf-8") as f:
-            x = f.read()
-        for k in ("FAIL→PASS 전환 기록이 없습니다", "PASS 기록이 없습니다", "그대로"):
-            self.assertIn(": '%s'" % k, x)   # I18N.ko value
+        a, fl, urls = _js(pre + " console.log(JSON.stringify([hnHtml(), typeof hnFlow, URLS]))")
+        for gone in ("hnfrow", "data-hnfn", "data-hnfr", "hntr>"):
+            self.assertNotIn(gone, a)
+        self.assertEqual(fl, "undefined")
+        self.assertIn("<details class=hncfg><summary", a)
+        self.assertIn('<details class="hnmore hnruns" data-hnmore=runs><summary><div class=brh2><b>게이트 실행 기록</b>', a)
+        self.assertLess(a.index("class=hnrep>"), a.index("hnruns"))
+        self.assertLess(a.index("hnruns"), a.index("hncfg"))
+        self.assertEqual(urls, [])   # report rides the cached /api/harness body
+        for p in (("web", "js", "47c-harness-flow.js"), ("web", "css", "41c-harness-flow.css")):
+            self.assertFalse(os.path.exists(os.path.join(ROOT, *p)))
 
-    def test_trail_one_column_narrow(self):
+    def test_empty_state(self):
+        for d in ("{}", "{report: null, guards: 'x'}", "{report: {counts: {}, incidents: [], checkpoints: {}}, guards: {runs: 0}}"):
+            h = _js("console.log(JSON.stringify(hnReport(%s)))" % d)
+            self.assertEqual(re.findall(r"<b>(\d+)</b>", h.split("class=hnrepg", 1)[0]), ["0", "0", "0", "0"])
+            self.assertIn("아직 게이트 기록이 없습니다 — scripts/check.sh 를 실행하면 쌓입니다", h)
+            self.assertEqual(h.count("실행 0"), 3)
+            self.assertNotIn("data-hncp=other", h)
+            self.assertNotIn("hnrun", h)
+
+    def test_mode_and_hash_not_translated(self):
+        inc = {"cp": "fast", "mode": "Run", "fail": {"ts": 1, "head": "Delete", "rc": 1}, "pass": {"ts": 2, "head": "Run"}, "state": "held"}
+        h = _js("console.log(JSON.stringify(hnReport({report: {incidents: [%s]}})))" % json.dumps(inc))
+        self.assertIn("<em class=hnsc>Run</em>", h)
+        self.assertIn(">Delete</code>", h)
+        self.assertIn(">Run</code>", h)
+        e = _js("LANG = 'en'; console.log(JSON.stringify(hnReport(%s)))" % json.dumps({"report": self._REPORT, "guards": self._GUARDS}))
+        self.assertFalse(any("가" <= c <= "힣" for c in e))
+
+    def test_stale_filter_ignored(self):
+        # C1: «Other gates» picked in project A; project B has no other-gate runs -> button hidden, cards unfiltered.
+        h = self._rep("HN.cp = 'other';")
+        self.assertNotIn("data-hncp=other", h)
+        self.assertNotIn("이 지점의 기록이 없습니다", h)
+        self.assertEqual(sorted(set(re.findall(r"data-hncpc=(\w+)", h))), ["fast", "full", "hooks"])
+        self.assertNotIn("aria-pressed=true", h)
+
+    def test_older_catches_line(self):
+        # C2: caught counts every pair, listed only the shown newest ones; a missing `listed` means caught (older server).
+        rep = json.loads(json.dumps(self._REPORT))
+        rep["checkpoints"]["full"] = {"runs": 9, "caught": 4, "listed": 1}
+        rep["checkpoints"]["fast"] = {"runs": 7, "caught": 1}
+        rep["incidents"][0]["fail"]["failed"] = None
+        d = json.dumps({"report": rep, "guards": self._GUARDS})
+        full, fast = _js("HN.cp = 'full'; const a = hnReport(%s); HN.cp = 'fast'; console.log(JSON.stringify([a, hnReport(%s)]))" % (d, d))
+        self.assertIn("이전에 잡은 3건은 목록에 없음", full)
+        self.assertNotIn("이 지점의 기록이 없습니다", full)
+        self.assertNotIn("목록에 없음", fast)
+        self.assertIn("종료 코드 1<", fast)   # failed null -> exit code only
+        self.assertNotIn("실패 None", fast)
+
+    def test_singular_counts(self):
+        rep = {"incidents": [{"cp": "full", "mode": "full", "fail": {"ts": 1, "head": "a", "rc": 1}, "pass": {"ts": 2, "head": "b"}, "commits": 1, "state": "held"}],
+               "checkpoints": {"full": {"runs": 1, "caught": 2, "listed": 1}, "fast": {"runs": 1, "caught": 0}}}
+        d = json.dumps({"report": rep, "guards": {"runs": 1, "deny": 0}})
+        h = _js("LANG = 'en'; HN.cp = 'full'; const a = hnReport(%s); HN.cp = ''; console.log(JSON.stringify(a + hnReport(%s)))" % (d, d))
+        for t in ("ran 1 time, caught 0", "ran 1 time, blocked 0", 'title="ran 1 time"', "1 commit<", "1 older catch, not listed"):
+            self.assertIn(t, h)
+        self.assertNotIn("1 times", h)
+        self.assertNotIn("1 commits", h)
+
+    def test_strip_wraps_at_900(self):
         with open(os.path.join(ROOT, "web", "css", "41b-harness.css"), encoding="utf-8") as f:
             css = f.read()
-        self.assertIn(".hntr{display:grid;grid-template-columns:1fr 1fr", css)
-        self.assertIn("@media (max-width:1060px){.hntr{grid-template-columns:1fr}}", css)
-        self.assertNotIn("opacity:", css.split("«Red→Green»", 1)[1])
+        self.assertIn(".hnrepg{display:flex;flex-wrap:wrap", css)
+        self.assertIn(".hnrept{display:flex;flex-wrap:wrap", css)
+        rep = css.split("/* Gate report (#27)", 1)[1].split(".hnruns>summary{", 1)[0]
+        self.assertNotIn("overflow-x", rep)
+        self.assertNotIn("opacity:", rep)
 
     def test_lives_in_pipeline_tab(self):
         with open(os.path.join(ROOT, "web", "js", "46-tokens-tab.js"), encoding="utf-8") as f:

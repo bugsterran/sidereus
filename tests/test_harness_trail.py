@@ -144,5 +144,130 @@ class TrailTest(unittest.TestCase):
         self.assertEqual(len(self.git.calls), n)
 
 
+INC_KEYS = ["at", "commits", "cp", "fail", "flipped", "mode", "pass", "state", "still"]
+
+
+class ReportTest(unittest.TestCase):
+    """report(): the Harness tab's numbers (R1), incident cards (R2) and per-checkpoint split (R4)."""
+
+    setUp, tearDown = TrailTest.setUp, TrailTest.tearDown
+
+    def _fixture(self):
+        # three FAIL->PASS pairs: fast kept at HEAD, full reverted later, hook-test kept (other cp); one quiet fast PASS
+        return _newest_first(
+            _row(1, "fast", 1, head="aaaa111", steps=[("tests", 1), ("lint", 0)]),
+            _row(2, "fast", 0, head="bbbb222", steps=[("tests", 0), ("lint", 0)]),
+            _row(3, "full", 1, head="cccc333", steps=[("tests", 1), ("leak", 1)]),
+            _row(4, "full", 0, head="dddd444", steps=[("tests", 0), ("leak", 1)]),
+            _row(5, "hook-test", 1, head="eeee555", steps=[("test", 1)]),
+            _row(6, "hook-test", 0, head=HEAD[:7], steps=[("test", 0)]),
+            _row(7, "fast", 0, head=HEAD[:7]))
+
+    def test_r1_counts_match_pairs_and_states(self):
+        self.git.reverted = {"dddd444"}
+        rows = self._fixture()
+        rep = TR.report(rows, "/r")
+        pairs = TR._pairs(sorted((TR._norm(r) for r in rows), key=lambda r: r["ts"]))
+        self.assertEqual(rep["counts"]["caught"], len(pairs))
+        self.assertEqual(rep["counts"], {"caught": 3, "held": 2, "again": 0, "reverted": 1, "gone": 0, "unchecked": 0, "checked": 3})
+        self.assertEqual(rep["counts"]["held"], sum(1 for x in rep["incidents"] if x["state"] == "held"))
+        self.assertEqual(rep["since"], 1)
+
+    def test_r2_newest_first_with_rc_and_failed(self):
+        rep = TR.report(self._fixture(), "/r")
+        inc = rep["incidents"]
+        self.assertEqual([(x["fail"]["ts"], x["pass"]["ts"]) for x in inc], [(5, 6), (3, 4), (1, 2)])
+        self.assertEqual(sorted(inc[0]), INC_KEYS)
+        self.assertEqual(sorted(inc[1]["fail"]), ["dirty", "failed", "head", "rc", "ts"])
+        self.assertEqual(sorted(inc[1]["pass"]), ["dirty", "head", "ts"])
+        self.assertEqual((inc[1]["fail"]["rc"], inc[1]["fail"]["failed"], inc[1]["commits"]), (1, 2, 3))
+        self.assertEqual((inc[1]["flipped"], inc[1]["still"]), (["tests"], ["leak"]))
+
+    def test_r2_cap_20_and_checked(self):
+        rows = []
+        for i in range(25):
+            rows += [_row(10 * i + 1, "m%d" % i, 1, head="%04x" % (i + 1)), _row(10 * i + 2, "m%d" % i, 0, head="%04x" % (i + 100))]
+        TR._git = FakeGit(fail=True)   # git down: nothing resolved, nothing called «held», not cached
+        rep = TR.report(_newest_first(*rows), "/r")
+        self.assertEqual((rep["counts"]["caught"], len(rep["incidents"])), (25, TR.TR_INC_MAX))
+        self.assertEqual(rep["incidents"][0]["pass"]["ts"], 242)
+        self.assertEqual((rep["counts"]["held"], rep["counts"]["checked"]), (0, 0))
+        self.assertEqual(set(x["state"] for x in rep["incidents"]), {"unchecked"})
+        self.assertEqual([k for k in TR._TR_CACHE if k[0] == "report"], [])
+
+    def test_r2_budget_and_cache(self):
+        rows = []
+        for i in range(25):
+            rows += [_row(10 * i + 1, "m%d" % i, 1, head="%04x" % (i + 1)), _row(10 * i + 2, "m%d" % i, 0, head="%04x" % (i + 100))]
+        rows = _newest_first(*rows)
+        first = TR.report(rows, "/r")
+        n = len(self.git.calls)
+        self.assertLessEqual(n, 1 + (TR.TR_STATES_GIT + 1) * TR.TR_INC_MAX)
+        self.assertEqual(first["counts"]["checked"], TR.TR_INC_MAX)   # the budget resolves every incident
+        self.assertEqual(TR.report(rows, "/r"), first)
+        self.assertEqual(len(self.git.calls), n)
+
+    def test_r4_checkpoint_split(self):
+        rep = TR.report(self._fixture(), "/r", git=False)
+        self.assertEqual(rep["checkpoints"], {"fast": {"runs": 3, "caught": 1, "listed": 1}, "full": {"runs": 2, "caught": 1, "listed": 1},
+                                              "other": {"runs": 2, "caught": 1, "listed": 1}})
+        self.assertEqual([x["cp"] for x in rep["incidents"]], ["other", "full", "fast"])
+        self.assertEqual(self.git.calls, [])
+
+    def test_r4_listed_vs_caught_past_cap(self):
+        rows = []
+        for i in range(5):   # five older full pairs, then 20 newer fast pairs fill every incident slot
+            rows += [_row(i * 10 + 1, "full", 1, head="%04x" % (i + 1)), _row(i * 10 + 2, "full", 0, head="%04x" % (i + 50))]
+        for i in range(20):
+            rows += [_row(1000 + i * 10 + 1, "m%d" % i, 1, head="%04x" % (i + 100)),
+                     _row(1000 + i * 10 + 2, "m%d" % i, 0, head="%04x" % (i + 200))]
+        rep = TR.report(_newest_first(*rows), "/r", git=False)
+        self.assertEqual(rep["counts"]["caught"], 25)
+        self.assertEqual(rep["checkpoints"]["full"], {"runs": 10, "caught": 5, "listed": 0})
+        self.assertEqual(rep["checkpoints"]["other"], {"runs": 40, "caught": 20, "listed": 20})
+        self.assertEqual(sum(c["listed"] for c in rep["checkpoints"].values()), len(rep["incidents"]))
+
+    def test_r2_no_failure_count_is_none(self):
+        f = _row(1, "hook-test", 1, steps=[("test", 1)])
+        f["steps"][0]["failed"] = 0   # ev_hook rows: rc only, failed always 0
+        inc = TR.report(_newest_first(f, _row(2, "hook-test", 0, steps=[("test", 0)])), "/r", git=False)["incidents"][0]
+        self.assertEqual((inc["fail"]["rc"], inc["fail"]["failed"]), (1, None))
+
+    def test_r1_every_state_counted_once(self):
+        self.git.gone, self.git.reverted = {"bbbb222"}, {"dddd444"}
+        rows = [_row(1, "a", 1, head="aaaa111"), _row(2, "a", 0, head="bbbb222"),                          # gone
+                _row(3, "b", 1, head="cccc333"), _row(4, "b", 0, head="dddd444"),                          # reverted
+                _row(5, "c", 1), _row(6, "c", 0), _row(7, "c", 1),                                         # broke
+                _row(8, "d", 1), _row(9, "d", 0), _row(10, "d", 1), _row(11, "d", 0, head=HEAD[:7]),       # refixed + held
+                _row(12, "e", 1), _row(13, "e", 0, dirty=True)]                                            # unchecked
+        rep = TR.report(_newest_first(*rows), "/r")
+        c = rep["counts"]
+        self.assertEqual((c["held"], c["again"], c["reverted"], c["gone"], c["unchecked"]), (1, 2, 1, 1, 1))
+        self.assertEqual(c["held"] + c["again"] + c["reverted"] + c["gone"] + c["unchecked"], len(rep["incidents"]))
+        self.assertEqual(c["checked"], len(rep["incidents"]) - c["unchecked"])
+
+    def test_r3_quiet_checkpoint_has_runs_not_catches(self):
+        rep = TR.report(_newest_first(_row(1, "full", 0), _row(2, "full", 0)), "/r", git=False)
+        self.assertEqual((rep["checkpoints"]["full"], rep["incidents"]), ({"runs": 2, "caught": 0, "listed": 0}, []))
+
+    def test_empty_and_junk(self):
+        rep = TR.report("nope", "/r")
+        self.assertEqual(rep["counts"], {"caught": 0, "held": 0, "again": 0, "reverted": 0, "gone": 0, "unchecked": 0, "checked": 0})
+        self.assertEqual((rep["incidents"], rep["since"]), ([], 0))
+
+    def test_rule1_key_whitelist(self):
+        rows = self._fixture()
+        for r in rows:
+            r.update(subject="secret subject", files=["/secret/path.py"], cwd="/secret")
+            r["steps"][0]["out"] = "secret output"
+        rep = TR.report(rows, "/r")
+        self.assertNotIn("secret", repr(rep))
+        self.assertEqual(sorted(rep), ["checkpoints", "counts", "incidents", "since"])
+        for x in rep["incidents"]:
+            self.assertEqual(sorted(x), INC_KEYS)
+        for c in self.git.calls:   # hash-only formats
+            self.assertFalse(any("%s" in a or a == "--stat" for a in c), c)
+
+
 if __name__ == "__main__":
     unittest.main()

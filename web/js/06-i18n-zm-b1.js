@@ -111,9 +111,23 @@ Object.assign(I18N.ko, {
   'failed|connect': '연결 실패',
   'failed ': '실패 ',
   'Skills': '스킬',
-  // 47c-harness-flow.js
-  'Recent runs': '최근 실행',
-  'Recent records': '최근 기록',
+  // 47b-harness.js gate report
+  'What the gates caught': '게이트가 잡아낸 것', 'since {d}': '{d} 이후', 'Gate runs': '게이트 실행 기록',
+  'Caught (red→green)': '잡아냄 (빨강→초록)', 'Held': '유지됨',
+  'A gate failed, then a later run of the same gate passed': '게이트가 실패한 뒤 같은 게이트의 다음 실행이 통과함',
+  'The fixed gate still passes': '고친 뒤에도 게이트가 계속 통과함', 'The fix commit was reverted': '고친 커밋이 되돌려짐',
+  'checked {n} of {m}': '{m}건 중 {n}건 확인',
+  'What is guarding': '지키는 곳', 'Before edit': '수정 전', 'Right after': '수정 직후', 'Before commit': '커밋 전', 'Other gates': '기타 게이트',
+  'ran {n}': '실행 {n}', 'blocked {n}': '차단 {n}', 'caught {n}': '잡음 {n}', 'ran {n} times': '{n}회 실행',
+  'exit {n}': '종료 코드 {n}', 'exit {n} · failed {m}': '종료 코드 {n} · 실패 {m}', 'unknown {n}': '알 수 없음 {n}',
+  'ran {n} times, blocked {m}': '{n}회 실행, {m}회 차단', 'ran {n} times, caught 0': '{n}회 실행, 잡은 것 0',
+  'ran {n} time': '{n}회 실행', 'ran {n} time, blocked {m}': '{n}회 실행, {m}회 차단', 'ran {n} time, caught 0': '{n}회 실행, 잡은 것 0',
+  '{n} older catch, not listed': '이전에 잡은 {n}건은 목록에 없음', 'Failed again later': '나중에 다시 실패',
+  'The same check step failed again in a later run. Coarse: a different cause on the same step also counts.': '같은 점검 단계가 이후 실행에서 다시 실패함. 대략적인 수: 같은 단계의 다른 원인도 셉니다.',
+  '{n} no longer in branch history': '{n}건은 브랜치 이력에서 빠짐',
+  'No gate records yet — running scripts/check.sh adds them': '아직 게이트 기록이 없습니다 — scripts/check.sh 를 실행하면 쌓입니다',
+  'Nothing recorded at this checkpoint': '이 지점의 기록이 없습니다', '{n} older catches, not listed': '이전에 잡은 {n}건은 목록에 없음',
+  'Stable': '유지', 'Regressed': '회귀', 'Re-fixed': '다시 고침', 'Reverted': '되돌려짐', 'Dropped': '이력에서 빠짐', 'Unverified (uncommitted)': '미검증 (미커밋)',
   // 48-pipeline.js
   'Start from a template': '템플릿으로 시작',
   'Run': '실행',
@@ -289,8 +303,7 @@ Object.assign(I18N.ko, {
   'outside ~/.claude, the data dir and the project — not read': '~/.claude · 데이터 폴더 · 프로젝트 밖의 파일 — 읽지 않음',
   'script path not found': '스크립트 경로를 찾지 못함', 'problems': '문제', 'to check|verdict': '확인 필요', ' local': ' 로컬',
   'same command registered again ({s})': '같은 명령이 한 번 더 등록됨 ({s})', 'MCP servers|full': 'MCP 서버', 'MCP': 'MCP',
-  // 47c-harness-flow.js
-  'Guard': '가드', 'Edit|flow': '수정', 'Commit': '커밋', 'Kept': '유지', 'running|flow': '진행 중', 'sent back': '되돌림',
+  // 47b-harness.js hook deny codes (HN_GD)
   'Stage jump': '단계 건너뛰기', 'Wrong agent': '에이전트 불일치', 'Wrong model': '모델 불일치', 'Missing tag': '태그 누락', 'Unknown stage': '없는 단계', 'Stopped|flow': '중단됨',
   'Commit before gate': '게이트 전 커밋', 'Required gate skipped': '필수 게이트 건너뛰기',
   // 48-pipeline.js

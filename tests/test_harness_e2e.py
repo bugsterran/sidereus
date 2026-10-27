@@ -1,4 +1,4 @@
-"""Harness end-to-end replays (tests/fixtures/harness_e2e/<case>/case.json): real recorder → harness_plat._results → flow node.
+"""Harness end-to-end replays (tests/fixtures/harness_e2e/<case>/case.json): real recorder → harness_flow.flow node / harness_plat._results.
 
 Guard: hooks/pl_flow.py main() (which loads hooks/pl_guard.py) writes plmark/<sid>.runs.json. Gate/Kept: scripts/evidence_rec.py
 writes evidence.jsonl rows as check.sh does. Tmp dirs only, fixed clock; git only in a temp repo with fixed dates.
@@ -7,7 +7,6 @@ import importlib.util
 import io
 import json
 import os
-import re
 import shutil
 import subprocess
 import tempfile
@@ -40,13 +39,6 @@ def case(name):
         return json.load(f)
 
 
-def screen_line(node):
-    """English text the Harness strip draws for `node` (web/js/47c-harness-flow.js hnFLine)."""
-    from tests.test_harness_flow_js import _js
-    html = _js("LANG = 'en'; console.log(JSON.stringify(hnFLine(%s)))" % json.dumps(node))
-    return re.sub(r"<[^>]*>", "", html)   # visible text only: wrapper spans are layout, the counts are the claim
-
-
 class _Base(unittest.TestCase):
     def setUp(self):
         self.tmp = os.path.realpath(tempfile.mkdtemp(prefix="hfe2e-"))
@@ -74,7 +66,8 @@ class _Base(unittest.TestCase):
             self.addCleanup(c.clear)
 
     def nodes(self):
-        fl = HP._results(self.proj)["flow"]
+        ev, floor = HE.scan(self.proj)
+        fl = HF.flow(self.proj, ev, HT.trail(ev[:120], self.proj), floor=floor, commits=HE.commits(self.proj))
         self.assertEqual(len(fl), 1)
         return dict((n["k"], n) for n in fl[0]["nodes"])
 
@@ -146,7 +139,8 @@ class Guard(_Base):
         want = fx["node"]["guard"]
         self.assertEqual((g["st"], g["v"]["deny"]), (want["st"], want["deny"]))
         self.assertEqual([r["code"] for r in g["rec"] if r["k"] == "deny"], want["codes"])
-        self.assertEqual(screen_line(g), want["text"])
+        gd = HP._results(self.proj)["guards"]   # the «before edit» checkpoint counts the same denials
+        self.assertEqual((gd["runs"], gd["deny"], sum(gd["codes"].values())), (1, want["deny"], len(want["codes"])))
 
     def test_jump(self):
         self.run_case("guard-jump")
@@ -229,6 +223,28 @@ class Kept(_Base):
 
     def test_reverted(self):
         self.run_case("keep-reverted")
+
+    def test_report_kept_vs_reverted(self):
+        """R1/R2: a FAIL->PASS incident at commit B reads «held» while B stays, «reverted» once a commit restores A's tree."""
+        self.git("init", "-q")
+        for i, body in enumerate(("1\n", "2\n")):
+            with open(os.path.join(self.proj, "a.txt"), "w", encoding="utf-8") as f:
+                f.write(body)
+            self.git("add", "-A")
+            self.git("commit", "-q", "-m", "c%d" % i)
+            if i == 0:
+                self.record("fast", 1, [["tests", 1, 10, 2, 1]], head=self.git("rev-parse", "--short", "HEAD"), ts=NOW - 500)
+        self.record("fast", 0, [["tests", 0, 10, 0, 1]], head=self.git("rev-parse", "--short", "HEAD"), ts=NOW - 400)
+        rep = HP._results(self.proj)["report"]
+        self.assertEqual(rep["counts"], {"caught": 1, "held": 1, "again": 0, "reverted": 0, "gone": 0, "unchecked": 0, "checked": 1})
+        inc = rep["incidents"][0]
+        self.assertEqual((inc["cp"], inc["commits"], inc["fail"]["rc"], inc["fail"]["failed"]), ("fast", 1, 1, 2))
+        with open(os.path.join(self.proj, "a.txt"), "w", encoding="utf-8") as f:
+            f.write("1\n")
+        self.git("commit", "-q", "-am", "revert")
+        HT._TR_CACHE.clear()   # HEAD is reused for TR_HEAD_TTL; a new commit needs a fresh lookup
+        rep = HP._results(self.proj)["report"]
+        self.assertEqual(rep["counts"], {"caught": 1, "held": 0, "again": 0, "reverted": 1, "gone": 0, "unchecked": 0, "checked": 1})
 
 
 if __name__ == "__main__":

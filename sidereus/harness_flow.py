@@ -135,6 +135,20 @@ def _given_runs(runs, now):
     return out
 
 
+def guards(proj, runs=None):
+    """«Before edit» checkpoint: {runs, deny, unknown, codes: {code: n}} over the pipeline runs of `proj` in the last HF_KEEP_S
+    (plmark runs files; `runs` (demo) as in flow()). No git. ⚠A run without a `deny` count adds to `unknown`, never 0 —
+    an unrecorded guard is not a guard that blocked nothing. Codes outside HF_DENY_CODES are dropped (_deny_log)."""
+    now = _now()
+    got = _given_runs(runs, now) if runs is not None else _disk_runs(_repos(proj), now)
+    codes = {}
+    for r in got:
+        for e in r["dl"]:
+            codes[e["code"]] = codes.get(e["code"], 0) + 1
+    return {"runs": len(got), "deny": sum(r["deny"] for r in got if r["deny"] is not None),
+            "unknown": sum(1 for r in got if r["deny"] is None), "codes": codes}
+
+
 def _row(r):
     """Whitelisted evidence row (same shape as harness_evidence rows), or None."""
     if not isinstance(r, dict) or r.get("kind") != "check":

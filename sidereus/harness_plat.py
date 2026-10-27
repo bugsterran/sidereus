@@ -105,11 +105,9 @@ def harness_evidence_only(proj):
 
 
 def _results(proj):
-    """«Results» keys: one evidence read feeds the list (newest 30), the trail (newest 120) and the flow (every row read)."""
-    ev, floor = harness_evidence.scan(proj)
-    tr = harness_trail.trail(ev[:120], proj)
-    return {"evidence": ev[:30], "trail": tr,
-            "flow": harness_flow.flow(proj, ev, tr, floor=floor, commits=harness_evidence.commits(proj))}
+    """«Results» keys: one evidence read feeds the list (newest 30) and the report (every row read)."""
+    ev, _floor = harness_evidence.scan(proj)
+    return {"evidence": ev[:30], "report": harness_trail.report(ev, proj), "guards": harness_flow.guards(proj)}
 
 
 def harness_plat(plat, proj, days=30):

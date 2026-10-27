@@ -133,19 +133,39 @@ html[data-theme=light] .hnvdr.hnvd-check,html[data-theme=light] .hnvdc.hnvd-chec
 .hnsteps{display:flex;flex-wrap:wrap;gap:3px 6px;min-width:0;flex:1 1 300px}
 .hnstp{font-family:var(--mono,monospace);font-size:10px;padding:0 5px;border-radius:3px;border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#909298);overflow-wrap:anywhere;min-width:0}
 .hnstp.hnng{color:var(--nx-err,#f45460);border-color:var(--nx-err,#f45460)}
-/* «Red→Green» / «Pass stability» cards: side by side, one column under 1060px; text colours are >=4.5 tokens, no opacity */
-.hntr{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}
-.hntrc{min-width:0}
+/* Gate report (#27): count tiles, «What is guarding» strip (wraps at 900, no sideways scroll), incident/quiet cards; text colours are >=4.5 tokens, no opacity */
+.hnrep{margin:0 0 12px;min-width:0}
+.hnrept{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 10px;margin:0 0 10px}
+.hnrepn{display:flex;flex-direction:column;min-width:110px;padding:6px 12px;border:1px solid var(--nx-rule,#232c38);border-top:3px solid var(--nx-idle,#7d7e85);border-radius:6px}
+.hnrepn b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--nx-t1,#c9d2df)}
+.hnrepn span{font-size:11px;color:var(--nx-t2,#909298)}
+.hnrepn-caught{border-top-color:var(--nx-warn,#fad83e)}
+.hnrepn-held{border-top-color:var(--nx-ok,#71c269)}
+.hnrepn-reverted{border-top-color:var(--nx-info,#5899f3)}
+.hnrepn-again{border-top-color:var(--nx-err,#f45460)}
+.hntip{display:inline-block;width:14px;height:14px;line-height:12px;text-align:center;font-size:10px;font-weight:700;border-radius:50%;border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#909298);cursor:help}
+.hntip:focus-visible{outline:1px solid var(--nx-info,#5899f3)}
+.hnrepk{font-size:11px}
+.hnrepg{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px;min-width:0}
+.hnrepgh{font-size:12px;margin-right:2px}
+.hncpb{font:inherit;font-size:11px;display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:4px;padding:3px 9px;border-radius:12px;border:1px solid var(--nx-rule,#232c38);background:transparent;color:var(--nx-t1,#c9d2df);cursor:pointer;min-width:0}
+.hncpb i{font-style:normal;color:var(--nx-t2,#909298)}
+.hncpb.on{background:var(--seg-on-bg,rgba(88,153,243,.15));border-color:var(--seg-on-bd,rgba(88,153,243,.67))}
+.hncpb:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px}
+.hnrepc{min-width:0}
+.hnrepe{font-style:normal;font-family:var(--mono,monospace);color:var(--nx-err,#f45460)}
+.hnrun.hnquiet{border-left-color:var(--nx-idle,#7d7e85)}
+.hnruns>summary{display:block;cursor:pointer;list-style:none;margin-bottom:6px}
+.hnruns>summary::-webkit-details-marker{display:none}
+.hnruns>summary .brh2::before{content:'▸';color:#5d6878}
+.hnruns[open]>summary .brh2::before{content:'▾'}
 .hntra{color:var(--nx-t2,#909298)}
 .hntrs{font-size:10px;font-weight:700;padding:0 5px;border-radius:3px;border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#909298)}
 .hntrs-ok{color:var(--nx-ok,#71c269);border-color:var(--nx-ok,#71c269)}
 .hntrs-ng{color:var(--nx-err,#f45460);border-color:var(--nx-err,#f45460)}
 .hntrs-re,.hntrs-rv{color:var(--nx-info,#5899f3);border-color:var(--nx-info,#5899f3)}
 .hntrs-gn{color:var(--nx-warn,#fad83e);border-color:var(--nx-warn,#fad83e)}
-.hntip{display:inline-block;width:14px;height:14px;line-height:12px;text-align:center;font-size:10px;font-weight:700;border-radius:50%;border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#909298);cursor:help}
-.hntip:focus-visible{outline:1px solid var(--nx-info,#5899f3)}
 .hntrs-uc{color:var(--nx-t2,#909298)}
-@media (max-width:1060px){.hntr{grid-template-columns:1fr}}
 .hncfg>summary{display:block;cursor:pointer;list-style:none;margin-bottom:6px}
 .hncfg>summary::-webkit-details-marker{display:none}
 .hncfg>summary .brh2::before{content:'▸';color:#5d6878}
