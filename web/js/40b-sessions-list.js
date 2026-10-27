@@ -370,7 +370,8 @@ function sessWfHtml(list){
     const now = Date.now() / 1000, sec = (r.run ? now : r.end) - r.start;
     const kids = (r.agents || []).map((a, i, arr) => {
       const m = Math.max(0, Math.round(((a.st === 'run' ? now : a.end) - a.start) / 60));
-      return '<div class="sti wfa' + (a.st === 'run' ? ' on' : '') + '"><i class=stbr>' + (i === arr.length - 1 ? '└' : '├') + '─</i>'
+      const hit = /^a[0-9a-f]{6,40}$/.test(String(a.aid || '')) ? ' agh" data-tid="' + esc(a.aid) + '" title="' + esc(T('Click to see what this subagent did')) : '';   // no toolUseId: the agent id opens its log (server matches wf_* files)
+      return '<div class="sti wfa' + (a.st === 'run' ? ' on' : '') + hit + '"><i class=stbr>' + (i === arr.length - 1 ? '└' : '├') + '─</i>'
         + '<span class=v title="' + esc(plStrip(a.lab) + (a.phase ? ' · ' + a.phase : '')) + '">' + esc(plStrip(a.lab) || a.aid) + '</span>'
         + (typeof wfBadge === 'function' ? wfBadge(r.name, a.phase) : '')   // type badge (48g)
         + (a.phase ? '<span class=e>' + esc(a.phase) + '</span>' : '')
@@ -506,11 +507,8 @@ function sessClick(e){
   if(ag){
     e.stopPropagation();
     const rowEl = ag.closest('.sxw');
-    // ⚠The session is found by **the id fragment** embedded in the row text — if not found, cwd is empty and the server rejects it.
-    //   Then openAgent below draws the failure so the screen states the reason (not silently skipped).
-    const cwd = (SESS.find(x => rowEl && rowEl.textContent.indexOf(x.id) >= 0) || {}).cwd
-      || (SESS.find(x => x.sub && x.sub.some(s => subWorkId(s) === ag.getAttribute('data-tid'))) || {}).cwd || '';
-    openAgent(cwd, ag.getAttribute('data-tid'));
+    const o = agRowOpen(rowEl, ag.getAttribute('data-tid'));   // (35b) empty cwd: openAgent draws the server's refusal, not a silent skip
+    openAgent(o.cwd, o.tid);
     return;
   }
   // dismiss just one agent from the list (recorded in the server's _bg_dropped — it won't come back)

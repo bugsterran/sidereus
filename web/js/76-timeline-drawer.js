@@ -10,7 +10,9 @@ const tlSelD = {};         // key → fetched work history (shows instantly on r
 function tlKey(cwd, tid){ return (tid||'')+'@'+(cwd||''); }
 function tlOpen(cwd, tid){
   if(!cwd || !tid) return;
-  if(/^wfa?:/.test(String(tid))) return;   // workflow run/agent rows have no Agent tool_use id, so no work log
+  if(/^wf:/.test(String(tid))) return;   // a workflow run row is not one agent, so no work log
+  // Workflow agent rows have no Agent tool_use id; `wfa:<aid>|<sid>` opens by the agent id (server matches wf_* files).
+  if(/^wfa:/.test(String(tid))) return openAgent(cwd, String(tid).slice(4));
   // Timeline bar/name clicks open the work-log modal (user-confirmed 2026-09-23), not the bottom drawer below.
   if(String(tid).indexOf('sess:') === 0 || String(tid).indexOf('ext:') === 0) return openSession(cwd, tid);
   return openAgent(cwd, tid);

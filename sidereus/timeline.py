@@ -295,7 +295,7 @@ def _tl_wf_rows(sd, sid, cut, proj, cwd):
     """Workflow-tool runs of one session: a run row (kind "wf") + one row per agent hanging under it (par = run aid).
     ★2026-09-26: these agents live in subagents/workflows/wf_<id>/ and were missing from the timeline.
     ⚠The run row carries no `_tk` — its children do; the token strip and peak would count it twice otherwise.
-    ⚠tids "wf:"/"wfa:" have no work log (no Agent tool_use id) — tlOpen ignores them."""
+    ⚠"wf:" run rows have no work log; "wfa:" rows open by the agent id (tlOpen, work.agent_work wf_* lookup)."""
     out = []
     for r in wf_runs(sd, since=cut):
         kids = []

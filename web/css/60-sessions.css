@@ -312,6 +312,8 @@ span.open{background:#3b2f10;color:#f0c674;border:1px solid #5a4718;border-radiu
 .wfn{font-weight:600;color:#aab4c3}
 .sti.wfa{padding-left:12px}
 .sti.wfa.on .v{color:#8ab4f8}
+.sti.wfa.agh{cursor:pointer;border-radius:5px}
+.sti.wfa.agh:hover{background:#1a2130}
 .tlpar.tlwfk{color:#c98fd8;background:#c98fd81a;border-color:#4b2e55}
 /* ★border #4b2e55 = 1.71/1.75:1 (dark/light twin) -> 3.32-3.67 dark · 4.39-4.71 light on the tinted chip; scoped so twins skip it */
 html[data-ui=next][data-ui] .tlpar.tlwfk{border-color:#9a5aab}

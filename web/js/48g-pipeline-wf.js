@@ -69,7 +69,7 @@ function wfBody(sid, id){
     + esc(L.n ? T('Agent') + ' ' + L.n + ' · ' + ago(L.sec) : T('Waiting')) + '</div></div>'; }).join('<i class=wfarr>→</i>');
   const ags = (r.agents || []).slice().sort((a, b) => ((b.st === 'run') - (a.st === 'run')) || ((b.start || 0) - (a.start || 0)));
   const rows = ags.map(a => { const s = WF_ST[a.st] || WF_ST.done, live = a.st === 'run' && r.run;
-    return '<tr data-wfw="' + esc(sid) + '"' + (live ? ' class=on' : '') + '><td title="' + esc(a.lab || '') + '">' + esc(a.lab || '') + '</td><td title="' + esc(a.phase || '') + '">'
+    return '<tr data-wfw="' + esc(sid) + '"' + (/^a[0-9a-f]{6,40}$/.test(String(a.aid || '')) ? ' data-tid="' + esc(a.aid) + '"' : '') + (live ? ' class=on' : '') + '><td title="' + esc(a.lab || '') + '">' + esc(a.lab || '') + '</td><td title="' + esc(a.phase || '') + '">'
       + esc(a.phase || '') + '</td><td class=' + s[1] + '><span class=plrtpl>' + (live ? '<i class=plrtdot></i>' : '') + esc(T(s[0], 'stage')) + '</span></td><td>'
       + esc(ago(Math.max(0, Math.round((live ? now : (a.end || 0)) - (a.start || 0))))) + '</td></tr>'; }).join('');
   return head + '<div class=wfph>' + (ph || '<span class=hidnote>' + esc(T('No phases')) + '</span>') + '</div>'
@@ -81,5 +81,5 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-wfi]');
   if(b){ PLS.wf = { sid: b.dataset.wfs, id: b.dataset.wfi }; PLNEW = null; PLS.std = ''; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint(); return; }
   const tr = e.target.closest('tr[data-wfw]');
-  if(tr) plOpenWork(tr.dataset.wfw);   // the session's work log (workflow agents carry no tid)
+  if(tr) plOpenWork(tr.dataset.wfw, tr.dataset.tid || '');   // workflow agents have no toolUseId: the agent id opens its own log
 });
