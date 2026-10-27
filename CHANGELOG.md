@@ -5,8 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-28
+
+**Highlights**
+
+- «Request fix» from the security checks and the evaluation window survives a page reload and shows its delivery status.
+- A run ends as soon as its background agents finish — no more «Running» left stale for up to 30 minutes.
+- Structure: keyboard focus never hides under the sticky map header.
+
 ### Changed
 
+- Sessions: the account chip shows the shortest unique label (for example «myac») instead of a prefix cut by the layout; the full account stays in its tooltip.
+- Rail: the alerts and settings buttons use the same 40 px size as the view tabs, and the settings icon keeps full colour so it is easy to find.
+- Performance: lower memory at startup — the failure scan reads 1 MB chunks and the tool index saves and re-sorts without holding whole copies in memory.
 - Pipelines «Watch»: a stage selected while it was running follows the run to the next running stage, as long as only one run is live.
 - Settings › «Features»: a toggle applies on «Save» — no restart; the open page shows or hides the tab and the Pipelines «Harness» switch at once.
 - Pipelines: «Red check», «Catch» (seeds) and «Holdout» in the evaluation panel explain themselves on hover.
@@ -22,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: a sent «Request fix» from the security checks window survives a page reload and shows who got it, when, and whether the session acknowledged it.
 - Pipelines: a sent «Request fix» from the evaluation window survives a page reload and shows who got it, when, and the session's acknowledgement, for the open pipeline only.
 - Work log: opened for the first time on a session with file changes, it ends at the bottom even when the git diff arrives late; a reader who scrolled up stays put.
-- Timeline: the «Uncommitted» chip follows the row you click; its combo lists every repository the live sessions touch (worktrees included) with its own count and a badge of how many have changes; clicking the chip opens that list, whose pinned «View all changes» row opens the diff.
+- Timeline: the «Uncommitted» chip follows the row you click or the session picked in «Session»; clicking it lists the repositories that session touched (worktrees included) with their own counts and a badge of how many have changes, and the pinned «View all changes» row opens the diff.
 - Structure: a control reached with Tab no longer hides under the sticky map header, and diagram nodes and edges show a focus ring; the screen check now walks 30 Tab stops per tab and fails on a focus the user cannot see.
 - Structure: clicking a module keeps it under the pointer instead of re-centring the view; at 900 px the detail panel floats over the map instead of opening below the fold.
 - Pipelines: the «Running» row no longer overlaps its agents summary at 900–1100 px; «Working now» names end in an ellipsis with the status icon kept; the evaluation panel shows English stage names in English; tour step 3 points at «Edit» in Watch mode; the template menu item reads «Start from a template» like the empty-state button.
@@ -35,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sessions: a Cursor or Gemini CLI session left idle for more than 24 hours no longer disappears while its process is still running.
 - Status bar: a CLI whose session is still open but idle since before midnight (Cursor, Gemini, Codex) keeps its «Today 0» entry.
 - Sessions: a running session whose last record cannot be read shows as unknown instead of idle, and a subagent whose log cannot be read no longer shows «Idle» or «quiet».
+- Sessions: the invite pick box has a larger hit area, so a near miss no longer opens the work log instead of picking the session.
 - Sessions: the account tooltip no longer ends in an empty «config dir» when the directory is unknown.
 - Structure: at 900 px the map scrolls far enough that bottom-left modules can be brought out from under the floating detail panel.
 - Sessions, Timeline and Pipelines: clicking an agent started by a Claude Code workflow opens that agent's work log (it opened nothing, an empty log, or the whole session's log).
@@ -528,7 +540,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/bugsterran/sidereus/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/bugsterran/sidereus/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/bugsterran/sidereus/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/bugsterran/sidereus/compare/v0.6.0...v0.7.0
