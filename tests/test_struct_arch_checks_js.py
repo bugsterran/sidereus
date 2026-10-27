@@ -11,7 +11,7 @@ from tests._i18n_js import i18n_prelude
 from tests._load import js_fn
 from tests._node import node_e
 
-FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archChkN", "archChkTools", "archChkLv", "archChkLvLbl", "archChkSevF", "archChkSum", "archChkStat", "archChkSec",
+FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archNoHome", "archChkN", "archChkTools", "archChkLv", "archChkLvLbl", "archChkSevF", "archChkSum", "archChkStat", "archChkSec",
        "archChkTop", "archChkTopBtn", "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkEntry", "archChkHdBtn", "archChkRunCands", "archChkRunBody", "archChkRunCmds", "archChkScanAt", "archChkRunHtml", "archChkWinHtml"]
 FNS += ["archChkLast", "archChkLastHtml"]   # last-check line (window header, badge tooltip)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)

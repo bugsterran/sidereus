@@ -12,7 +12,7 @@ from tests._load import js_fn
 from tests._node import node_e
 
 FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archProvNote", "archEvHtml", "archEdgeRow", "archDmBody", "archHome", "archCands",
-       "archWhyOff", "archReqOf", "archReqBtn", "archReqHtml", "archPaint", "archIsTest", "archMq", "archPairs", "archReduce", "archRanks", "archSrc", "archBarHtml", "archKey", "archWaitHtml", "archDiagram", "archHov", "archHovPaint",
+       "archNoHome", "archWhyOff", "archReqOf", "archReqBtn", "archReqHtml", "archPaint", "archIsTest", "archMq", "archPairs", "archReduce", "archRanks", "archSrc", "archBarHtml", "archKey", "archWaitHtml", "archDiagram", "archHov", "archHovPaint",
        "archSentRun", "archSentPh", "archEl", "archSentDone", "archSentHtml", "archSentFin", "archTick", "archBase", "archRunOf", "archRunEl", "archRunHtml", "archStatusHtml", "archLegHtml", "hhmm",
        "archStyleName", "archRoleName", "archFwParts", "archStyleParts", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",
        "archHasLayers", "archEntPair", "archBandSrc", "archBandFix", "archBandHint", "archFront", "archKindMap", "archKindLegHtml"]   # 84j2 (archPaint calls them)
@@ -310,6 +310,14 @@ class StructArch(unittest.TestCase):
         self.assertIsNone(r[4])
         self.assertEqual(r[5], ["r 아키텍처 구조도 완성"])
         self.assertEqual(r[6], 1)               # exactly one alarm per request
+
+    def test_request_button_says_it_sends_and_no_home_says_what_to_do(self):
+        # The header button relays to a session (not a local redraw); an installed package has no repo to run the pipeline from.
+        r = run("const c = [{sid: 's1', login: true}];"
+                "console.log(JSON.stringify([archReqBtn('/r', '/h', c, null), archReqBtn('/r', '', c, null), archWhyOff('', c, c[0])]));")
+        self.assertIn('title="열린 세션에 지도를 그려 달라고 요청합니다', r[0])
+        self.assertIn("git clone 으로 받은 Sidereus 에서 실행해야 합니다", r[1])
+        self.assertTrue(r[2].startswith("시데레우스 저장소 위치를 모릅니다 — git clone"))
 
     def test_server_run_after_fresh_load(self):
         # No ARCH.sent (page reloaded): state `archRun` alone shows the run and hides the request; a stale map too.

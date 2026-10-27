@@ -9,6 +9,8 @@ Object.assign(I18N.ko, {
   'No edge passed the check.': '검증을 통과한 연결이 없습니다.', 'Click for evidence · click evidence for code': '누르면 근거 · 근거를 누르면 코드',
   'Evidence is inferred, not a direct reference': '근거가 직접 호출이 아니라 추정입니다',
   'The Sidereus repository location is unknown': '시데레우스 저장소 위치를 모릅니다',
+  'this needs Sidereus run from a git clone; the installed package cannot run this pipeline': 'git clone 으로 받은 Sidereus 에서 실행해야 합니다. 설치 패키지로는 이 파이프라인을 돌릴 수 없습니다',
+  'Asks a live session to draw the map; you see the message before it is sent': '열린 세션에 지도를 그려 달라고 요청합니다. 보내기 전에 보낼 내용을 먼저 보여 줍니다',
   'No live session': '열린 세션이 없습니다',
   'That session is not logged in to the mailbox': '메일박스에 로그인하지 않은 세션입니다',
   'In': '들어옴', 'Out': '나감', 'External': '외부', 'Include tests': '테스트 포함',

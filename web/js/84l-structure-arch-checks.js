@@ -190,10 +190,10 @@ function archChkRunHtml(p, d, S, cands){
       + esc(S.cp && S.cp.k === k ? T(S.cp.ok ? 'Copied' : 'Copy failed — select and copy') : T('Copy')) + '</button></div>';
     return '<div class=archreq role=group aria-label="' + esc(T('Run security check')) + '">' + head + '</div>'
       + '<div class=archckst>' + esc(T('No session of this project is logged in to the mailbox — run this in a terminal:')) + '</div>'
-      + (cm ? row('sh', 'macOS / Linux') + row('win', 'Windows') : '<div class=archwhy>' + esc(T('The Sidereus repository location is unknown')) + '</div>')
+      + (cm ? row('sh', 'macOS / Linux') + row('win', 'Windows') : '<div class=archwhy>' + esc(archNoHome()) + '</div>')
       + '<div class=archrqb><button type=button class=wkrgb data-ckrx>' + esc(T('Cancel')) + '</button></div></div>' + sent;
   }
-  const cur = rc.find(c => c.sid === S.run.sid) || null, body = archChkRunBody(p, home, !!(cur && cur.cx)), off = !home ? T('The Sidereus repository location is unknown') : !cur ? T('No live session') : '';
+  const cur = rc.find(c => c.sid === S.run.sid) || null, body = archChkRunBody(p, home, !!(cur && cur.cx)), off = !home ? archNoHome() : !cur ? T('No live session') : '';
   return '<div class=archreq role=group aria-label="' + esc(T('Run security check')) + '">' + head
     + '<label>' + esc(T('To session')) + ' <select data-ckrs>' + rc.map(x => '<option value="' + esc(x.sid) + '"' + (cur && x.sid === cur.sid ? ' selected' : '') + '>' + esc(archChkCandLabel(x)) + '</option>').join('')
     + '</select></label></div><pre class=archdm>' + esc(body) + '</pre>' + plCxHint(cur) + '<div class=archrqb>'
