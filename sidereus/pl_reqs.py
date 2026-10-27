@@ -17,7 +17,9 @@ from sidereus import arch_map
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
-PIPELINES = ("arch-map", "security-checks")
+PIPELINES = ("arch-map", "security-checks", "checks-fix")
+PLAIN = ("checks-fix",)   # a plain fix DM: sent/gone only, no run tracking, no stop marker (exclude-list: _state also gets other pipeline names)
+RUNS = tuple(p for p in PIPELINES if p not in PLAIN)
 REQ_MAX = 50              # records kept, newest
 REQ_KEEP_S = 7 * 86400    # older records dropped
 REPO_MAX = 300
@@ -103,7 +105,7 @@ def _marker(sid, pipeline, entry):
             d = json.loads(f.read(READ_MAX).decode("utf-8"))
     except (OSError, ValueError):
         d = {}
-    d = {k: v for k, v in d.items() if k in PIPELINES and isinstance(v, dict)} if isinstance(d, dict) else {}
+    d = {k: v for k, v in d.items() if k in RUNS and isinstance(v, dict)} if isinstance(d, dict) else {}
     if entry is None:
         if pipeline not in d:
             return
@@ -123,7 +125,7 @@ def check(plreq, req):
         return None, "A pipeline request must be a relay"
     kind, pipeline, repo = plreq.get("kind"), plreq.get("pipeline"), plreq.get("repo")
     sid, to = req.get("sid"), str(req.get("to") or "").strip()
-    if kind not in ("req", "stop") or pipeline not in PIPELINES or not _repo_ok(repo):
+    if kind not in ("req", "stop") or pipeline not in PIPELINES or not _repo_ok(repo) or (kind == "stop" and pipeline in PLAIN):
         return None, "Invalid pipeline request"
     if not (isinstance(sid, str) and RELAY_SID.match(sid)) or not _to_ok(to):
         return None, "Invalid session id"
@@ -146,7 +148,8 @@ def record(p, sid, to, mid):
         recs = _read(now)
         recs.insert(0, {"id": mid, "repo": p["repo"], "pipeline": p["pipeline"], "sid": sid, "to": to, "mid": mid, "at": now})
         _write(recs)
-        _marker(sid, p["pipeline"], None)
+        if p["pipeline"] not in PLAIN:
+            _marker(sid, p["pipeline"], None)
 
 
 def stop(p, sid, to, mid):
@@ -181,6 +184,8 @@ def _state(r, row, arch, until=0.0):
     """(state, stage title) of one record against its session row and the server-tracked run (archRun/secRun) of its repo.
     until = `at` of a newer request of the same pipeline to the same session (0 = none): runs from then on answer that one."""
     alive = isinstance(row, dict) and row.get("state") not in ("done", "gone")
+    if r["pipeline"] in PLAIN:   # a fix request has no run to track: delivery/ack is read from ACK on the page
+        return ("sent" if alive else "gone"), ""
     run = None
     if isinstance(row, dict):
         for x in row.get("plrun") or ():
@@ -225,7 +230,7 @@ def view(sessions, arch_run, sec_run=None, now=None):
         k = (r["sid"], r["pipeline"])
         until = newer.get(k, 0.0)
         newer[k] = r["at"]
-        if len(out.get(r["repo"], ())) >= VIEW_PER_REPO:
+        if sum(1 for x in out.get(r["repo"], ()) if x["pipeline"] == r["pipeline"]) >= VIEW_PER_REPO:   # per pipeline: fix DMs never crowd out runs
             continue
         row = rows.get(r["sid"])
         st, stage = _state(r, row, runs.get(r["pipeline"], {}).get(r["repo"]), until)
