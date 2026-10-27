@@ -14,6 +14,17 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "clear|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pyrun.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/mailbox_wake.py\"",
+            "timeout": 21720,
+            "asyncRewake": true
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [

@@ -44,6 +44,8 @@ HOOKS = (("SessionStart", None, "invite_notice.py", 10),
          ("Stop", None, "mailbox_stop.py", 5),
          # asyncRewake: runs in the background after each turn; exit 2 wakes the idle session (no Monitor needed).
          ("Stop", None, "mailbox_wake.py", 6 * 3600 + 120, {"asyncRewake": True}),
+         # /clear and resume kill the previous waiter; without this the session is deaf to mail until its first turn ends.
+         ("SessionStart", "clear|resume", "mailbox_wake.py", 6 * 3600 + 120, {"asyncRewake": True}),
          ("PreToolUse", "Edit|Write|MultiEdit|NotebookEdit", "file_peers_notice.py", 2),
          ("PreToolUse", "Task|Agent|SendMessage", "pl_mark.py", 5),
          ("PreToolUse", "Bash", "pl_mark.py", 5),

@@ -191,7 +191,7 @@ python3 -m sidereus setup-claude [--mailbox-mcp DIR]
 메일박스는 이 저장소에 들어 있다(`bus.jsonl`, `watch.sh`, `monitor_stream.py`, `mailbox_core.py`, Stop 훅).
 채팅 탭과 작업 내역 DM 은 이미 이걸 쓴다. 세션은 둘 중 한 방법으로 메일을 본문까지 받는다.
 
-- 즉시: Stop 비동기 훅 `hooks/mailbox_wake.py`(asyncRewake)가 쉬고 있는 세션을 깨운다. `mailbox_inbox` 로 읽는다.
+- 즉시: 비동기 훅 `hooks/mailbox_wake.py`(asyncRewake; Stop, 그리고 `/clear`·재개 직후 SessionStart)가 쉬고 있는 세션을 깨운다. `mailbox_inbox` 로 읽는다.
   - 플러그인이나 `setup-claude` 훅 JSON(5장)을 넣으면 켜진다. 따로 띄울 것은 없다.
   - `watch.sh` 는 일반 터미널용 선택 사항이다.
   - 세션 시작 안내는 설정 `mailbox_watch` 로 전체 또는 프로젝트별로 끌 수 있다.

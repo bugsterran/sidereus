@@ -16,7 +16,7 @@
 | 스크립트 | 이벤트(matcher), 시간 제한 | 하는 일 |
 |---|---|---|
 | `mailbox_stop.py` | `Stop`, 5초 | 턴이 끝날 때 새 메일과 전달을 건넨다 |
-| `mailbox_wake.py` | `Stop`, `asyncRewake`, 6시간 | 턴이 끝나면 뒤에서 기다리다 새 메일이 오면 쉬고 있는 세션을 깨운다 (Monitor·watch.sh 불필요) |
+| `mailbox_wake.py` | `Stop`, `SessionStart` (`clear\|resume`), `asyncRewake`, 6시간 | 턴이 끝나면(그리고 `/clear`·재개 직후) 뒤에서 기다리다 새 메일이 오면 쉬고 있는 세션을 깨운다 (Monitor·watch.sh 불필요) |
 | `invite_notice.py` | `SessionStart`, `UserPromptSubmit`, 10초 | 방 초대, 미등록 아이디, 깨우기 안내 |
 | `pipelines_brief.py` | `SessionStart`, `UserPromptSubmit`, 5초 | 프로젝트의 파이프라인 목록 |
 | `file_peers_notice.py` | `PreToolUse`(`Edit\|Write\|MultiEdit\|NotebookEdit`), 2초 | 다른 실행 중 세션이 이 파일을 고쳤음 |

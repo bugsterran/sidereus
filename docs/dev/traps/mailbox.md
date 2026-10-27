@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Mailbox and chat
 
+- ★**After `/clear` the session had no mail waiter until its first turn ended** (clears.jsonl `b465d72d`->`0baef0e4` at 07:43:13, new `.wake` waiter only at 07:43:54 after the first turn; the member dropped out of the room list meanwhile). Cause: `mailbox_wake.py` was started only by the Stop hook, and `/clear` kills the old waiter.
+  - ⇒ Also run it from `SessionStart` matcher `clear|resume` (asyncRewake); `startup` is left out so a new session's first turn still gets the 6 h lookback at turn end. A Stop waiter for the same sid while the lock is fresh exits 0 (`busy`).
+  - ⇒ On `source: clear` with no state, `seed_clear` starts the new sid's cursor at now.
+  - ⚠Do not drop the seed: a fresh sid floors at now - `LOOKBACK_S`/`RELAY_LOOKBACK_S` and would wake at once on mail and relays the pre-/clear sid already surfaced.
 - **Room hashtags live in `room-tags.json`, owned by Sidereus** (`sidereus/room_tags.py`, `POST /api/rooms/tags`). Cause: `rooms.json` belongs to the MCP server, which rewrites it whole (read-modify-write) and would drop or clash with keys it does not know.
   - ⇒ Tags go in their own file (tmp + `os.replace`, previous copy in `.bak`); `rooms.json` is only read to check the room exists.
   - ⚠Do not add a `tags` field to `rooms.json`.
