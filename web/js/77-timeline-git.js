@@ -150,8 +150,10 @@ function tlgChipInner(tg){
     }
   } else body += esc(CH);
   const bt = tlgBaseTip(d);
-  const tip = CH + '\n' + T('Open the changes in the diff window (git · view only)') + (bt ? '\n' + bt : '') + (tg ? '\n' + tg.cwd : '');
-  return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + ' aria-label="' + esc(aria.join(' · ')) + '" title="' + esc(tip) + '">' + body + '</button>' + tlgDetBtn(tg);
+  const tip = CH + '\n' + T('Show every repository with its changes') + (bt ? '\n' + bt : '') + (tg ? '\n' + tg.cwd : '');
+  // Chip opens the repo combobox (data-ppo keeps 08b's outside-click from closing it before the toggle); 1 repo = no list, so the diff.
+  const ls = !!(tg && tg.repos.length >= 2), ex = !!(ls && PPS && PPS.cfg.k === 'tlgs');
+  return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + (ls ? ' data-ppo aria-haspopup=listbox aria-controls=ppop aria-expanded="' + ex + '"' : '') + ' aria-label="' + esc(aria.join(' · ')) + '" title="' + esc(tip) + '">' + body + '</button>' + tlgDetBtn(tg);
 }
 // Every listed repo (followed one included) with ≥1 tracked changed file, most files first; untracked never count (tlgCnt).
 function tlgDirty(tg){
@@ -159,42 +161,14 @@ function tlgDirty(tg){
   const rs = tg.repos.some(e => e.ck === tg.ck) ? tg.repos : [{ck: tg.ck, cwd: tg.cwd, sid: tg.sid}].concat(tg.repos);
   return rs.map(e => ({e, c: tlgCnt((tlgC[e.ck] || {}).d)})).filter(x => x.c && x.c.n > 0).sort((p, q) => q.c.n - p.c.n);
 }
-// «Details» after the chip: hidden until some repo has an ok reply; .tlgdti = icon form when the head is tight (tlgFit).
+// «Details» after the chip: the diff window on the followed repo at the chip's baseline (tlgOpen).
+// .tlgdti = icon form when the head is tight (tlgFit).
 function tlgDetBtn(tg){
-  if(!tg || !tg.repos.concat([{ck: tg.ck}]).some(e => tlgCnt((tlgC[e.ck] || {}).d))) return '';
-  const L = T('Details', 'repos');
-  return '<button type=button class="tlrf tlgdt" id=tlgdt aria-haspopup=dialog aria-expanded="' + (popIsOpen('tlgdp') ? 'true' : 'false') + '" aria-label="' + esc(L) + '" title="' + esc(L) + '">'
+  if(!tg) return '';
+  const L = T('Details', 'repos'), tip = T('Open the changes in the diff window (git · view only)') + '\n' + tg.cwd;
+  return '<button type=button class="tlrf tlgdt" id=tlgdt aria-label="' + esc(L) + '" title="' + esc(tip) + '">'
     + '<span class=tlgdtl>' + esc(L) + '</span><span class=tlgdti aria-hidden=true>☰</span></button>';
 }
-let TLGD = [];   // rows of the open «Details» popup (click index -> repo entry)
-function tlgDetHtml(tg){
-  const rows = tlgDirty(tg), d = (tlgC[tg.ck] || {}).d;
-  TLGD = rows.map(x => x.e);
-  const hd = '<div class=tlgdh>' + esc(TV({msg: 'Repositories with uncommitted changes: {n}', vars: {n: rows.length}})) + ' ' + tlgBaseLabel(d) + '</div>';
-  if(!rows.length) return hd + '<div class=tlgde>' + esc(T('No uncommitted changes')) + '</div>';
-  return hd + rows.map((x, i) => '<button type=button class=tlgdr data-tlgi="' + i + '" title="' + esc(x.e.ck) + '"><span class=tlgdn>' + esc(tlgRepoName(x.e.ck)) + '</span>'
-    + '<span class=tlgdf>' + esc(TV({msg: x.c.n === 1 ? '{n} file' : '{n} files', vars: {n: x.c.n}})) + '</span>' + tlgNum(x.c.a, x.c.dl) + '<span class=tlgdc aria-hidden=true>›</span></button>').join('');
-}
-function tlgDetClose(back){ popHide('tlgdp', document.getElementById('tlgdt'), back); }
-popReg('tlgdp', '#tlgdp, #tlgdt', tlgDetClose);
-function tlgDetToggle(b){
-  if(popIsOpen('tlgdp')) return tlgDetClose(false);
-  const tg = tlgTarget();
-  if(!tg) return;
-  const p = popGet('tlgdp', 'thpop tlgdp');
-  p.setAttribute('role', 'dialog');
-  p.setAttribute('aria-label', T('Details', 'repos'));
-  p.innerHTML = tlgDetHtml(tg);
-  popAnchor(p, b, {align: 'right', flipY: true});
-}
-document.addEventListener('click', e => {
-  const t = e.target.closest && e.target.closest('#tlgdt, #tlgdp [data-tlgi]');
-  if(!t) return;
-  if(t.id === 'tlgdt') return tlgDetToggle(t);
-  const r = TLGD[+t.dataset.tlgi];
-  tlgDetClose(false);
-  if(r) tlgOpenRepo(r);
-});
 function tlgChipHtml(){ return '<span class=tlgb id=tlgb>' + tlgChipInner(tlgTarget()) + '</span>'; }
 // Id of the focused chip control, or ''. paintTl and tlgPaint refocus it after a rebuild.
 function tlgFocusId(){
@@ -246,9 +220,14 @@ function tlgTick(){
   tlgNext();
   tlgPaint();
 }
-// Chip click -> the existing diff window at the chip's baseline; &sid lets that window offer «Since session start».
+// «Details» -> the existing diff window at the chip's baseline; &sid lets that window offer «Since session start».
 function tlgOpen(){ tlgOpenRepo(tlgTarget()); }
-// Diff window on one repo (followed target or a «Details» row) at the baseline its rail reply used.
+// Chip click: the repo combobox under the chip (same list and pick as the combo button), else the diff window.
+function tlgChipClick(b){
+  const c = PPC.tlgs;
+  if(c && b.hasAttribute('data-ppo')) ppOpen(c, b); else tlgOpen();
+}
+// Diff window on one repo at the baseline its rail reply used.
 function tlgOpenRepo(r){
   if(!r) return;
   const d = (tlgC[r.ck] || {}).d;
@@ -256,7 +235,9 @@ function tlgOpenRepo(r){
 }
 function tlgWire(){
   const b = document.getElementById('tlgcp');
-  if(b) b.onclick = tlgOpen;
+  if(b) b.onclick = () => tlgChipClick(b);   // Enter/Space on a <button> fire click
+  const dt = document.getElementById('tlgdt');
+  if(dt) dt.onclick = tlgOpen;
   tlgFit();
 }
 // ⚠One-line head: when the toolbar row overflows, «Details» becomes its icon (class on #tlgb, re-measured each paint).

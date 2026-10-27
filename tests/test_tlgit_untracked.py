@@ -43,7 +43,7 @@ def chip(reply, sess=SESS):
 
 
 def text(h):
-    return re.sub(r"<[^>]*>", "", h.split("id=tlgcp", 1)[1].split(">", 1)[1])
+    return re.sub(r"<[^>]*>", "", h.split("id=tlgcp", 1)[1].split(">", 1)[1].split("</button>", 1)[0])
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
@@ -76,6 +76,12 @@ class Chip(unittest.TestCase):
     def test_picker_only_with_two_sessions(self):
         self.assertIn('data-ppk="tlgs"', chip(None))
         self.assertNotIn("data-ppk", chip(None, SESS[:1]))
+
+    def test_chip_is_combo_opener_with_two_repos(self):
+        h = chip(None)
+        self.assertIn('id=tlgcp data-ppo aria-haspopup=listbox aria-controls=ppop aria-expanded="false"', h)
+        self.assertNotIn("data-ppo", chip(None, SESS[:1]))
+        self.assertIn("Show every repository with its changes", h)
 
     def test_tick_gating_and_ttl(self):
         # getJSON never settles here, so a finished fetch is simulated: busy off, at = now. One repo: /r/b is idle here.

@@ -18,6 +18,6 @@ Object.assign(I18N.ko, {
   'Compared with: {r} (merge-base {s}), {n} commits': '비교 기준: {r} (merge-base {s}), 커밋 {n}개',
   'No such baseline here — showing uncommitted changes': '이 저장소엔 그 기준이 없음 — 미커밋 변경을 보여 줌',
   'No remote branch — compared with the session start': '원격 브랜치 없음 — 세션 시작과 비교',
-  'No git|repo': 'git 아님', '{n}|repo count': '{n}곳', 'Details|repos': '자세히 보기',
+  'No git|repo': 'git 아님', '{n}|repo count': '{n}곳', 'Details|repos': '자세히 보기', 'Show every repository with its changes': '저장소별 변경 보기',
   'Repositories with uncommitted changes: {n}': '커밋하지 않은 변경이 있는 저장소: {n}곳', 'Find a repository': '저장소 찾기', 'No matching repositories': '맞는 저장소가 없습니다',
 });
