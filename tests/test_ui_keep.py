@@ -32,7 +32,7 @@ class UiKeepJs(unittest.TestCase):
 
 class TlgKeepJs(unittest.TestCase):
     """Timeline chip session pick: restored shape-checked; a pick that is gone falls back to auto once sessions load."""
-    PRE = ("let tlgSel = '';\n"
+    PRE = ("let tlgSel = '', tlgSelS = '';\n"
            "const cpKey = x => x.sid ? 's:' + x.sid : 'c:' + x.cwd;\n")
 
     def run_js(self, saved, sess, tail="console.log(JSON.stringify(tlgKeepSnap()));"):

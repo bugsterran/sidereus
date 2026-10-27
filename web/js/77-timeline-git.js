@@ -73,6 +73,8 @@ function tlgRepos(){
   return out.slice(0, TLG_MAX_REPOS);
 }
 // Followed repo: the picked repo or session, else (auto, or the pick disappeared) the most recently active session's repo.
+// `mine` = repos of the followed session only (its own + its `repos`): the chip list, its badge and the fetch queue.
+let tlgSelS = '';   // cpKey of the session a chip repo pick was made from (not kept across reload: falls back to the repo's latest session)
 function tlgTarget(){
   const all = tlgSessions(), repos = tlgRepos();
   let row = null, rp = null;
@@ -80,11 +82,13 @@ function tlgTarget(){
   else if(tlgSel) row = all.find(x => cpKey(x) === tlgSel) || null;
   if(tlgSel && !row && !rp && all.length) tlgSel = '';   // ⚠not before the first /api/state (SESS = []) — a restored pick would be wiped
   const how = row || rp ? 'pick' : 'auto';
-  if(rp) return {cwd: rp.cwd, row: rp.ss[0], how, all, repos, key: 'r:' + rp.ck, ck: rp.ck, sid: rp.sid};
+  if(rp) row = rp.ss.find(x => cpKey(x) === tlgSelS) || rp.ss[0];
   row = row || all[0];
   if(!row) return null;
+  const mine = repos.filter(e => e.ss.indexOf(row) >= 0);
+  if(rp) return {cwd: rp.cwd, row, how, all, repos, mine, key: 'r:' + rp.ck, ck: rp.ck, sid: rp.sid};
   const ck = row.root || row.cwd;
-  return {cwd: row.cwd, row, how, all, repos, key: 'r:' + ck, ck, sid: tlgSid(row)};
+  return {cwd: row.cwd, row, how, all, repos, mine, key: 'r:' + ck, ck, sid: tlgSid(row)};
 }
 // Timeline row/bar/name click: the chip follows that session (by the row's sid, else its cwd+platform); a past session
 // with no SESS entry follows only when its cwd is one of the listed repos, otherwise the chip stays where it was.
@@ -96,37 +100,54 @@ function tlgFollow(cwd, plat, tid){
   if(!k || k === tlgSel) return;
   tlgSel = k; tlgKeepSave(); tlgTick();
 }
-// Repo combobox (08b ppComboHtml, same as Pipelines/Structure/Branches), only when there is a choice (2+ repos).
-// Rows are repo name · count · first session (project · sid · state), tooltip path + sessions (metadata only);
-// repos with changes first, not yet fetched next, clean (0 files) last and greyed. The first row 'auto' = tlgSel ''.
+// Session combobox (08b ppComboHtml, same as Pipelines/Structure/Branches), only when there is a choice (2+ sessions).
+// Rows are project · sid · state, tooltip cwd · sid (metadata only); the first row 'auto' = tlgSel '' (follow the latest active).
+// ⚠Two combos: this session button ('tlgs') and the chip's repo list ('tlgr', tlgRepoCfg) — never point the chip at 'tlgs'.
 const TLG_AUTO = 'auto';   // ⚠never a cpKey ('s:'/'c:' prefix), so 97b cannot restore it as a pick
 function tlgProj(x){ return x.project || x.cwd.split('/').pop() || x.cwd; }
 function tlgNote(x){ return [x.sid ? sid8(x.sid) : '', x.state ? (stateLbl(x.state) || T(x.state)) : ''].filter(Boolean).join(' · '); }
 function tlgRepoName(p){ return String(p).split('/').filter(Boolean).pop() || String(p); }
 function tlgSelHtml(tg){
-  if(!tg || tg.repos.length < 2) return '';
-  const AL = T('Auto (latest active)', 'chip'), a0 = tg.all[0];
+  if(!tg || tg.all.length < 2) return '';
+  const AL = T('Auto (latest active)', 'chip');
+  const it = x => ({ p: cpKey(x), name: tlgProj(x), note: tlgNote(x), tip: x.cwd + (x.sid ? ' · ' + x.sid : '') });
+  const items = [Object.assign(it(tg.all[0]), { p: TLG_AUTO, auto: true })].concat(tg.all.map(it));
+  const cur = tg.how === 'auto' ? TLG_AUTO : cpKey(tg.row);
+  const row = (e, i) => '<div class="cmdki' + (PPS && i === PPS.i ? ' on' : '') + (e.p === cur ? ' ppcur' : '') + '" role=option data-ppi="' + i + '" title="' + esc(e.tip) + '">'
+    + '<span class=cmdkp>' + esc(e.auto ? AL : e.name) + '</span><span class=cmdkc>' + esc(e.auto ? [e.name, e.note].filter(Boolean).join(' · ') : e.note) + '</span></div>';
+  const flat = q => {
+    const s = String(q || '').trim().toLowerCase();
+    return items.filter(e => !s || [e.name, e.tip, e.auto ? AL : ''].some(v => String(v).toLowerCase().includes(s)));
+  };
+  return ppComboHtml({ k: 'tlgs', label: T('Session'), bare: true, items: items, cur: cur, ph: T('Find a session'), empty: T('No matching sessions'), flat: flat, rowHtml: row,
+    tip: e => (e.auto ? AL + '\n' : '') + e.tip, badge: e => e.auto ? '<span class=tlgau>' + esc(T('auto', 'mark')) + '</span>' : '',
+    pick: p => { tlgSel = p === TLG_AUTO ? '' : p; tlgKeepSave(); tlgTick(); } });
+}
+// Chip repo list (no button of its own; the chip opens it): the followed session's repos only (tg.mine), with counts;
+// repos with changes first, not yet fetched next, clean (0 files) last and greyed. Registered in PPC so ppOpen/ppPick work.
+function tlgRepoCfg(tg){
+  if(!tg || tg.mine.length < 2) return null;
   const it = e => {
     const x = e.ss[0], own = (x.root || x.cwd) === e.ck, c = tlgCnt((tlgC[e.ck] || {}).d);
     return { p: 'r:' + e.ck, name: tlgRepoName(e.ck), c, ng: tlgNoGit((tlgC[e.ck] || {}).d), note: [own ? '' : tlgProj(x), tlgNote(x), e.ss.length > 1 ? '+' + (e.ss.length - 1) : ''].filter(Boolean).join(' · '),
       tip: e.ck + '\n' + e.ss.map(s => tlgProj(s) + (s.sid ? ' · ' + s.sid : '')).join('\n') };
   };
   const rank = e => e.c ? (e.c.n ? 0 : 2) : e.ng ? 3 : 1;
-  const reps = tg.repos.map(it).map((e, i) => [e, i]).sort((p, q) => (rank(p[0]) - rank(q[0])) || (p[1] - q[1])).map(v => v[0]);
-  const items = [{ p: TLG_AUTO, auto: true, name: tlgRepoName(a0.root || a0.cwd), note: tlgNote(a0), tip: a0.cwd + (a0.sid ? ' · ' + a0.sid : '') }].concat(reps);
-  const cur = tg.how === 'auto' ? TLG_AUTO : tg.key, nd = tlgDirty(tg).length;
+  const items = tg.mine.map(it).map((e, i) => [e, i]).sort((p, q) => (rank(p[0]) - rank(q[0])) || (p[1] - q[1])).map(v => v[0]);
+  const cur = tg.key, rk = cpKey(tg.row), own = 'r:' + (tg.row.root || tg.row.cwd), wasAuto = tg.how === 'auto';
   const cnt = c => c ? '<span class=tlgcn>' + esc(TV({msg: c.n === 1 ? '{n} file' : '{n} files', vars: {n: c.n}}) + ' ') + tlgNum(c.a, c.dl) + '</span>' : '';
   const row = (e, i) => '<div class="cmdki' + (PPS && i === PPS.i ? ' on' : '') + (e.p === cur ? ' ppcur' : '') + ((e.c && !e.c.n) || e.ng ? ' tlg0' : '') + '" role=option data-ppi="' + i + '" title="' + esc(e.tip) + '">'
-    + '<span class=cmdkp>' + esc(e.auto ? AL : e.name) + '</span>' + (e.ng ? '<span class=tlgcn>' + esc(T('No git', 'repo')) + '</span>' : cnt(e.c)) + '<span class=cmdkc>' + esc(e.auto ? [e.name, e.note].filter(Boolean).join(' · ') : e.note) + '</span></div>';
+    + '<span class=cmdkp>' + esc(e.name) + '</span>' + (e.ng ? '<span class=tlgcn>' + esc(T('No git', 'repo')) + '</span>' : cnt(e.c)) + '<span class=cmdkc>' + esc(e.note) + '</span></div>';
   const flat = q => {
     const s = String(q || '').trim().toLowerCase();
-    return items.filter(e => !s || [e.name, e.tip, e.auto ? AL : ''].some(v => String(v).toLowerCase().includes(s)));
+    return items.filter(e => !s || [e.name, e.tip].some(v => String(v).toLowerCase().includes(s)));
   };
-  return ppComboHtml({ k: 'tlgs', label: T('Repository'), bare: true, items: items, cur: cur, ph: T('Find a repository'), empty: T('No matching repositories'), flat: flat, rowHtml: row,
-    tip: e => (e.auto ? AL + '\n' : '') + e.tip, aria: nd ? TV({msg: 'Repositories with uncommitted changes: {n}', vars: {n: nd}}) : '',
-    badge: e => (e.auto ? '<span class=tlgau>' + esc(T('auto', 'mark')) + '</span>' : '') + (nd ? '<span class=tlgnb>' + esc(T('{n}', 'repo count').replace('{n}', nd)) + '</span>' : ''),
-    pick: p => { tlgSel = p === TLG_AUTO ? '' : p; tlgKeepSave(); tlgTick(); },
-    foot: { html: esc(T('View all changes')) + ' <span class=ppfootn>' + esc(tlgRepoName(tg.ck)) + '</span>', act: tlgOpen } });
+  // Picking the session's own repo returns to following the session (auto stays auto); another repo pins it.
+  const cfg = { k: 'tlgr', label: T('Repository'), items: items, cur: cur, ph: T('Find a repository'), empty: T('No matching repositories'), flat: flat, rowHtml: row,
+    pick: p => { tlgSelS = rk; tlgSel = p === own ? (wasAuto ? '' : rk) : p; tlgKeepSave(); tlgTick(); },
+    foot: { html: esc(T('View all changes')) + ' <span class=ppfootn>' + esc(tlgRepoName(tg.ck)) + '</span>', act: tlgOpen } };
+  PPC.tlgr = cfg;
+  return cfg;
 }
 // «[baseline] N files +a −d» (+ «· ⚠ n shared»); no target or no reply yet = «[baseline] Changes».
 // ⚠The word «Changes» is dropped beside counts so the head holds one line at 1100; it stays the aria name and first tooltip line.
@@ -150,16 +171,17 @@ function tlgChipInner(tg){
       aria.push('⚠ ' + st);
     }
   } else body += esc(CH);
+  // Chip opens the session's repo list (data-ppo keeps 08b's outside-click from closing it before the toggle); 1 repo = no list, so the diff.
+  const ls = !!tlgRepoCfg(tg), ex = !!(ls && PPS && PPS.cfg.k === 'tlgr'), nd = ls ? tlgDirty(tg).length : 0;
+  if(nd){ body += '<span class=tlgnb>' + esc(T('{n}', 'repo count').replace('{n}', nd)) + '</span>'; aria.push(TV({msg: 'Repositories with uncommitted changes: {n}', vars: {n: nd}})); }
   const bt = tlgBaseTip(d);
-  const tip = CH + '\n' + T('Show every repository with its changes') + (bt ? '\n' + bt : '') + (tg ? '\n' + tg.cwd : '');
-  // Chip opens the repo combobox (data-ppo keeps 08b's outside-click from closing it before the toggle); 1 repo = no list, so the diff.
-  const ls = !!(tg && tg.repos.length >= 2), ex = !!(ls && PPS && PPS.cfg.k === 'tlgs');
+  const tip = CH + '\n' + (ls ? T("Show this session's repositories with their changes") : T('Open the changes in the diff window (git · view only)')) + (bt ? '\n' + bt : '') + (tg ? '\n' + tg.cwd : '');
   return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + (ls ? ' data-ppo aria-haspopup=listbox aria-controls=ppop aria-expanded="' + ex + '"' : '') + ' aria-label="' + esc(aria.join(' · ')) + '" title="' + esc(tip) + '">' + body + '</button>';
 }
-// Every listed repo (followed one included) with ≥1 tracked changed file, most files first; untracked never count (tlgCnt).
+// Every repo of the followed session (followed one included) with ≥1 tracked changed file, most files first; untracked never count (tlgCnt).
 function tlgDirty(tg){
   if(!tg) return [];
-  const rs = tg.repos.some(e => e.ck === tg.ck) ? tg.repos : [{ck: tg.ck, cwd: tg.cwd, sid: tg.sid}].concat(tg.repos);
+  const rs = tg.mine.some(e => e.ck === tg.ck) ? tg.mine : [{ck: tg.ck, cwd: tg.cwd, sid: tg.sid}].concat(tg.mine);
   return rs.map(e => ({e, c: tlgCnt((tlgC[e.ck] || {}).d)})).filter(x => x.c && x.c.n > 0).sort((p, q) => q.c.n - p.c.n);
 }
 function tlgChipHtml(){ return '<span class=tlgb id=tlgb>' + tlgChipInner(tlgTarget()) + '</span>'; }
@@ -198,13 +220,13 @@ function tlgFetch(tg, force){
     .then(j => { c.d = j; }, () => { if(!c.d) c.d = {ok: false}; })
     .then(() => { c.at = Date.now(); c.busy = false; tlgPaint(); tlgNext(); });
 }
-// One rail fetch in flight at a time: the followed repo first, then every listed repo older than TLG_TTL_S.
+// One rail fetch in flight at a time: the followed repo first, then the followed session's other repos older than TLG_TTL_S.
 function tlgNext(){
   if(mainView !== 'time' || document.hidden) return;
   if(Object.keys(tlgC).some(k => tlgC[k].busy)) return;
   const tg = tlgTarget();
   if(!tg) return;
-  const now = Date.now(), e = [tg].concat(tg.repos).find(r => { const c = tlgC[r.ck]; return !c || now - c.at >= (tlgNoGit(c.d) ? TLG_NOGIT_TTL_S : TLG_TTL_S) * 1000; });
+  const now = Date.now(), e = [tg].concat(tg.mine).find(r => { const c = tlgC[r.ck]; return !c || now - c.at >= (tlgNoGit(c.d) ? TLG_NOGIT_TTL_S : TLG_TTL_S) * 1000; });
   if(e) tlgFetch(e);
 }
 // Called from poll() (2.5 s) and the tab switch; fetches at most once per TLG_TTL_S per repo, only while the Timeline is shown and visible.
@@ -215,9 +237,9 @@ function tlgTick(){
 }
 // List foot «View all changes» -> the existing diff window (repo tabs) at the chip's baseline; &sid lets that window offer «Since session start».
 function tlgOpen(){ tlgOpenRepo(tlgTarget()); }
-// Chip click: the repo combobox under the chip (same list and pick as the combo button), else the diff window.
+// Chip click: the session's repo list under the chip, else (one repo) the diff window.
 function tlgChipClick(b){
-  const c = PPC.tlgs;
+  const c = PPC.tlgr;
   if(c && b.hasAttribute('data-ppo')) ppOpen(c, b); else tlgOpen();
 }
 // Diff window on one repo at the baseline its rail reply used.
