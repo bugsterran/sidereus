@@ -223,6 +223,33 @@ class Guard(unittest.TestCase):
         self.stop({N: {"at": 950.0, "of": "<b>"}})
         self.assertIn("(request -)", self.check(self.agent("리뷰")))
 
+    def _main(self, e):
+        with mock.patch("sys.stdin", io.StringIO(json.dumps(e))), mock.patch("sys.stdout", io.StringIO()):
+            H.main([])
+
+    def _main_stage_skips(self, stopped):
+        # main ran stage 1 itself (Bash marker, no agent), then skips the rest one Bash at a time
+        self.pipe({k: v for k, v in PIPE.items() if k != "guards"})
+        self.runs({"설계": {"s": "run", "t0": 950.0, "t1": 950.0, "n": 0, "m": True}}, cur="설계")
+        if stopped:
+            self.stop({N: {"at": 995.0, "of": "req-7"}})
+        for s in ("구현", "검증", "리뷰"):
+            self._main(self.bash("true", "[pl-skip:%s/%s] stopped" % (N, s)))
+        return self.saved()
+
+    def test_stop_then_skips_end_main_stage_run(self):
+        r = self._main_stage_skips(True)
+        self.assertEqual((r["stop"], r["end"], r["st"]["설계"]["s"], r["t0"]), (995.0, 1000.0, "done", 900.0))
+        PR, PQ = sidereus("pl_runs"), sidereus("pl_reqs")
+        row = PR.pl_runs_of("", 1000.0, _raw={N: r})[0]
+        rec = {"pipeline": N, "at": 900.0, "sid": SID, "repo": "/repo", "stop": {"mid": "m", "at": 995.0}}
+        with mock.patch.object(PQ.arch_map, "_closed_by_result", return_value=False):
+            self.assertEqual(PQ._state(rec, {"state": "idle", "plrun": [row]}, None)[0], "stopped")
+
+    def test_skips_without_stop_keep_main_stage_open(self):
+        r = self._main_stage_skips(False)
+        self.assertEqual((r["end"], r["st"]["설계"]["s"]), (0, "run"))   # skips declared up front: main still works stage 1
+
     def test_flow_main_denies_commit_and_keeps_run_open(self):
         self.runs(self.DONE)
         with mock.patch("sys.stdin", io.StringIO(json.dumps(self.bash()))), mock.patch("sys.stdout", io.StringIO()) as out:

@@ -8,7 +8,7 @@ guards.requireGates = [stage title]: a `git commit` (main or subagent, Claude Co
 guards.maxLoopBacks = n: once the run took n loop-backs, the next loop-back dispatch is denied and the FAIL hand-off
   says «loop budget n reached: stop and report».
 Stop marker <data dir>/plstop/<sid>.json (Sidereus «Stop»): a tagged dispatch of that run is denied (code stop) and the
-  run is ended; its Post hand-off becomes the stop line. Bash markers and [pl-skip:] are not affected.
+  run is ended; its Post hand-off becomes the stop line. Bash markers are not affected; a [pl-skip:] of the stopped run ends it.
 Reads stage titles, gates, run times and evidence rc/mode/ts only -- never commands, descriptions or task text.
 Fail-open: any problem = no guard (the flow hook runs as before). Stdlib only, Python 3.9, no sidereus imports.
 """
@@ -247,23 +247,49 @@ def _stop(flow, path, sid, name, title, now):
     a = _stop_active(flow, path, sid, name, now)
     if not a:
         return None
-    if a[2] is not None and os.path.isfile(path):
-        try:
-            with flow._Lock(path) as lk:
-                if lk.ok:
-                    d = flow._load(path)
-                    r = d["runs"].get(name)
-                    if flow._is_open(r, now):
-                        cur = r.get("cur") or ""
-                        e = (r.get("st") or {}).get(cur)
-                        if cur and isinstance(e, dict) and e.get("s") == "run":
-                            flow._mark(r, cur, "done", now)
-                        flow._deny_note(r, title, "stop", now)
-                        r["stop"], r["end"] = a[0], now
-                        flow._save(path, d)
-        except Exception:
-            pass   # ⚠the deny stands even when the runs file cannot be updated
+    if a[2] is not None:
+        _end_stopped(flow, path, name, a[0], now, title)
     return _stop_line(name, a[1])
+
+
+def _end_stopped(flow, path, name, at, now, title=None):
+    """End the open run `name` as stopped at `at` (cur «run» stage done); `title` = the denied dispatch to note. Fail-silent."""
+    if not os.path.isfile(path):
+        return
+    try:
+        with flow._Lock(path) as lk:
+            if lk.ok:
+                d = flow._load(path)
+                r = d["runs"].get(name)
+                if flow._is_open(r, now):
+                    cur = r.get("cur") or ""
+                    e = (r.get("st") or {}).get(cur)
+                    if cur and isinstance(e, dict) and e.get("s") == "run":
+                        flow._mark(r, cur, "done", now)
+                    if title is not None:
+                        flow._deny_note(r, title, "stop", now)
+                    r["stop"], r["end"] = at, now
+                    flow._save(path, d)
+    except Exception:
+        pass   # ⚠the deny stands even when the runs file cannot be updated
+
+
+def _skip_stops(plat, ev, flow):
+    """(path, [(name, stop at)]) for a cc Bash Pre `[pl-skip:]` of an open run stopped from Sidereus, else None.
+    ⚠A stage main runs itself (Bash marker) is never denied, so no dispatch ends the run: main's skip of the rest is its
+    answer to the stop and the only hook event left. Without a stop marker skips keep their normal meaning."""
+    if plat != "cc" or ev.get("hook_event_name") != "PreToolUse" or ev.get("tool_name") not in ("Bash", "PowerShell"):
+        return None
+    sid, ti = ev.get("session_id"), ev.get("tool_input") if isinstance(ev.get("tool_input"), dict) else {}
+    desc = ti.get("description") if isinstance(ti.get("description"), str) else ""
+    if "[pl-skip:" not in desc or not (isinstance(sid, str) and flow.SID.match(sid)):
+        return None
+    path, now, out = os.path.join(flow.MARK_DIR, sid + ".runs.json"), flow._now(), []
+    for name in dict.fromkeys(m.group(1) for m in flow.SKIP_TAG.finditer(desc)):
+        a = _stop_active(flow, path, sid, name, now)
+        if a and a[2] is not None:
+            out.append((name, a[0]))
+    return (path, out) if out else None
 
 
 def check(plat, ev, flow, hit=None):
@@ -363,8 +389,16 @@ def run(plat, ev, flow, inner):
         mx = None if sl else _post_budget(plat, ev, flow)
     except Exception:
         mx = None
+    try:
+        ss = None if sl or mx else _skip_stops(plat, ev, flow)
+    except Exception:
+        ss = None
     if not (sl or mx):
-        return inner(plat, ev)
+        try:
+            return inner(plat, ev)
+        finally:
+            for name, at in (ss[1] if ss else ()):   # after inner: its skip marks land on the run being ended
+                _end_stopped(flow, ss[0], name, at, flow._now())
     buf = io.StringIO()
     try:
         with contextlib.redirect_stdout(buf):

@@ -43,7 +43,7 @@ class PlRuns(unittest.TestCase):
         out = PR.pl_runs_of(SID, NOW)
         self.assertEqual(len(out), 1)
         r = out[0]
-        self.assertEqual(set(r), {"name", "cur", "end", "t0", "t1", "st", "lb", "stop"})
+        self.assertEqual(set(r), {"name", "cur", "end", "t0", "t1", "st", "lb", "stop", "fin"})
         self.assertEqual(r["lb"], [])   # missing lb -> []; loops/ret never reach a row
         self.assertEqual(r["name"], "sidereus-change")
         self.assertEqual(r["cur"], "구현")

@@ -94,6 +94,7 @@ pipeline-projects.json
 
 # pipeline stage marks from ~/.claude/hooks/pl-mark.py (runtime state)
 plmark/
+plstop/
 plbrief/
 # permission-prompt marks from hooks/perm_mark.py (runtime state)
 permwait/

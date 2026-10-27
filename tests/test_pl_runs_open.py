@@ -3,10 +3,13 @@ import json
 import os
 import unittest
 
+from unittest import mock
+
 from tests._load import sidereus
 from tests import test_pl_runs as T   # module import: importing the class would re-run its tests here
 
 PR = sidereus("pl_runs")
+PQ = sidereus("pl_reqs")
 NOW, SID = T.NOW, T.SID
 N = "sidereus-change"
 
@@ -14,10 +17,10 @@ N = "sidereus-change"
 class OpenRun(unittest.TestCase):
     setUp, _ag = T.AgByName.setUp, T.AgByName._ag
 
-    def _file(self, st, cur, t1):
+    def _file(self, st, cur, t1, **kw):
         fp = os.path.join(self.tmp, SID + ".runs.json")
         with open(fp, "w", encoding="utf-8") as f:
-            json.dump({"v": 1, "runs": {N: {"t0": t1 - 600, "t1": t1, "cur": cur, "end": 0, "st": st}}}, f)
+            json.dump({"v": 1, "runs": {N: dict({"t0": t1 - 600, "t1": t1, "cur": cur, "end": 0, "st": st}, **kw)}}, f)
         os.utime(fp, (NOW, NOW))
 
     def _main_tail(self, age):
@@ -91,6 +94,45 @@ class OpenRun(unittest.TestCase):
         self._main_tail(45 * 60)
         self.assertEqual(self._model(plm={"name": N, "title": "라이브 검증", "age": 5})["end"], 0)
         self.assertEqual(self._model(plm={"name": N, "title": "elsewhere", "age": 5})["end"], 0)
+
+    def _bg_tail(self, fin=True):
+        # bg last stage: the hook stamped `fin` on its Post; the agent finished a minute ago
+        kw = {"fin": "검증"} if fin else {}
+        self._file({"검증": {"s": "run", "t0": NOW - 300, "t1": NOW - 290, "n": 1}}, "검증", NOW - 290, **kw)
+        self._ag("f1", "[pl:%s/검증] verify" % N, NOW - 63)   # jsonl mtime = NOW - 60
+
+    def _req_state(self, r):
+        rec = {"pipeline": N, "at": NOW - 890, "sid": SID, "repo": "/repo"}
+        with mock.patch.object(PQ.arch_map, "_closed_by_result", return_value=False):
+            return PQ._state(rec, {"state": "idle", "plrun": [r]}, None)[0]
+
+    def test_fin_closes_when_agents_finished(self):
+        self._bg_tail()
+        r = self._model()
+        self.assertEqual((r["end"], r["stages"]["검증"]["o"]), (NOW - 60, "done"))
+        self.assertEqual(self._req_state(r), "done")
+
+    def test_fin_with_running_agent_stays_open(self):
+        self._bg_tail()
+        sub = [{"lab": "general-purpose: [pl:%s/검증] verify" % N, "min": 5, "aid": "f1", "tid": "tu_f1"}]
+        r = self._model(sub=sub)
+        self.assertEqual(r["end"], 0)
+        self.assertEqual(self._req_state(r), "run")
+
+    def test_fin_with_main_marker_stays_open(self):
+        self._bg_tail()
+        self.assertEqual(self._model(plm={"name": N, "title": "검증", "age": 5})["end"], 0)
+
+    def test_no_fin_waits_for_open_window(self):
+        self._bg_tail(fin=False)
+        r = self._model()
+        self.assertEqual(r["end"], 0)
+        self.assertEqual(self._req_state(r), "run")
+
+    def test_fin_of_other_stage_ignored(self):
+        self._file({"검증": {"s": "run", "t0": NOW - 300, "t1": NOW - 290, "n": 1}}, "검증", NOW - 290, fin="구현")
+        self._ag("f1", "[pl:%s/검증] verify" % N, NOW - 63)
+        self.assertEqual(self._model()["end"], 0)
 
     def test_runs_file_untouched(self):
         self._main_tail(PR.PLR_OPEN_S + 1)
