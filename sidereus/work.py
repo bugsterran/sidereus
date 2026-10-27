@@ -8,7 +8,7 @@ from sidereus.ident import _proj_name, _sid8, _slug
 from sidereus.live import _sid_transcript
 from sidereus.steps import (AGENT_SAYS_MAX, AGENT_STEPS_MAX, SESS_TAIL, _cap_edit_bodies, _open_or_tail,
     _res_is_code, _work_scan)
-from sidereus.agents import _agent_meta
+from sidereus.agents import _agent_meta, _wf_meta, wf_agent_files
 from sidereus.sessions import sessions_rows
 from sidereus.redact import redact_work
 
@@ -200,6 +200,14 @@ def agent_work(cwd, tid, sid=""):
         if _mm:
             m = _mm
             break
+        # ⚠Workflow agents live under subagents/workflows/wf_*/ and their meta has no toolUseId, so _agent_meta skips them.
+        #   Match the aid against scanned file names only; the id never becomes a path.
+        if _AID_RE.match(tid or ""):
+            _wp = next((p for p in wf_agent_files(_f[:-len(".jsonl")])
+                        if os.path.basename(p) == "agent-" + tid + ".jsonl"), None)
+            if _wp:
+                m = dict(_wf_meta(_wp), _file=_wp, _id=tid)
+                break
     if not m:
         return {"ok": False, "msg": "Could not find that subagent's record (it may not be written yet)."}
 

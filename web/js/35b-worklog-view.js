@@ -125,6 +125,14 @@ function subWorkId(v){
   const a = String((v && v.aid) || '');
   return /^a[0-9a-f]{6,40}$/.test(a) ? a : String((v && v.tid) || '');
 }
+// Session-tree agent click -> {cwd, tid}. ⚠The card's text holds no session id; its data-scwd/data-ssid do, and workflow
+// agents are listed under x.wf[].agents, not x.sub. The sid rides on the tid so the server reads the clicked session first.
+function agRowOpen(rowEl, tid){
+  const has = x => (x.sub || []).some(s => subWorkId(s) === tid) || (x.wf || []).some(r => (r.agents || []).some(a => a.aid === tid));
+  const x = (rowEl && SESS.find(s => s.sid && s.sid === rowEl.getAttribute('data-ssid'))) || SESS.find(has) || {};
+  const cwd = (rowEl && rowEl.getAttribute('data-scwd')) || x.cwd || '';
+  return {cwd: cwd, tid: tid + (x.sid && tid.indexOf('|') < 0 ? '|' + x.sid : '')};
+}
 // Background commands (bgs) have no tid, so there is no work log to open for them.
 function wtPickHtml(){
   const st = x => ['tool','think'].includes(x.state) ? T('running') : (x.state === 'wait' ? T('Awaiting input') : T('Quiet'));

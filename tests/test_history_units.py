@@ -103,6 +103,18 @@ class HistoryUnitsTest(unittest.TestCase):
         for bad in ("toolu_SENDMSG", "", "aaa1", "../a0123456789abcdef", "a0123456789abcdef/x", "/etc/passwd", "a0123456789abcdee"):  # gitleaks:allow
             self.assertFalse(W.agent_work(CWD, bad, SID)["ok"], bad)   # unknown, off-pattern or path-like ids are refused
 
+    def test_work_workflow_agent(self):   # workflow agents: subagents/workflows/wf_*/, meta without toolUseId
+        wd = os.path.join(os.path.dirname(self.agent), "workflows", "wf_x")
+        os.makedirs(wd)
+        shutil.copy(self.agent, os.path.join(wd, "agent-a1234567.jsonl"))
+        with open(os.path.join(wd, "agent-a1234567.meta.json"), "w", encoding="utf-8") as f:
+            json.dump({"agentType": "workflow-subagent", "workflowPhase": "build"}, f)
+        a = W.agent_work(CWD, "a1234567", SID)
+        self.assertTrue(a["ok"])
+        self.assertEqual(a["type"], "workflow-subagent")
+        for bad in ("a7654321", "../wf_x/agent-a1234567", "wf_x/a1234567", "a1234567.jsonl"):
+            self.assertFalse(W.agent_work(CWD, bad, SID)["ok"], bad)
+
     def test_work_rejects_mismatched_cwd(self):
         self.assertFalse(W.session_work("/other", SID)["ok"])
         self.assertFalse(W.agent_work("/other", "toolu_X", SID)["ok"])
