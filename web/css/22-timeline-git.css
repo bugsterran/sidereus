@@ -21,6 +21,8 @@
 .tlgbk.tlgbkw{color:var(--nx-warn,var(--nx-err));border-color:var(--nx-warn,var(--nx-err))}
 .tlgb>b{color:var(--nx-t3);font-size:10.5px;font-weight:400;flex:0 0 auto}   /* combobox label, as .strps>b */
 .tlgau{color:var(--nx-t3);font-size:10px}
+.tlgcn{flex:none;display:inline-flex;gap:4px;margin:0 6px;font-size:10.5px;color:var(--nx-t2)}   /* repo combobox row count */
+.cmdki.tlg0{opacity:.55}   /* clean repo (0 files) */
 /* «Expand all / Collapse all»: shared .relfx button look (branch tree .brtall, sessions list .swfa). */
 .relfx{background:var(--nx-panel,#141a23);border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#bcd4f5);
   border-radius:6px;padding:2px 9px;font:inherit;font-size:11px;cursor:pointer}

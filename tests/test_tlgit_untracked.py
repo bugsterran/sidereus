@@ -18,7 +18,7 @@ SESS = [{"sid": "s1", "cwd": "/r/a", "project": "a", "ageSec": 5}, {"sid": "s2",
 
 
 def run(body, sess=SESS):
-    ttl = re.search(r"^const TLG_TTL_S = .*$", js_all(), re.M).group(0)
+    ttl = "\n".join(re.search(p, js_all(), re.M).group(0) for p in (r"^const TLG_TTL_S = .*$", r"^const TLG_MAX_REPOS = .*$", r"^const TLG_NOGIT_TTL_S = .*$"))
     pre = ("let tlgSel = '', tlgBase = 'head', mainView = 'time', NOW = 1e9, SESS = %s; const tlgC = {}, urls = [], opened = [];\n"
            "const document = {hidden: false}; Date.now = () => NOW;\n"
            "function T(s){ return s; } function TV(o){ return T(o.msg).replace(/\\{(\\w+)\\}/g, (m, k) => String(o.vars[k])); }\n"
@@ -28,8 +28,9 @@ def run(body, sess=SESS):
            "const PPC = {}; let PPS = null;\n"
            "function getJSON(u){ urls.push(u); return new Promise(() => {}); }\n"
            "function loadDiff(...a){ opened.push(a); }\n" % json.dumps(sess))
-    fns = re.search(r"^const TLG_AUTO = .*$", js_all(), re.M).group(0) + "\n" + "\n".join(js_fn(n) for n in ("tlgShownN", "tlgNum", "tlgShared", "tlgAge", "tlgName", "tlgSessions", "tlgTarget",
-                                        "ppComboHtml", "tlgProj", "tlgNote", "tlgSelHtml", "tlgBaseTip", "tlgChipInner", "tlgFetch", "tlgTick", "tlgOpen"))
+    fns = re.search(r"^const TLG_AUTO = .*$", js_all(), re.M).group(0) + "\n" + "\n".join(js_fn(n) for n in ("tlgShownN", "tlgNum", "tlgShared", "tlgAge", "tlgName", "tlgSessions", "tlgSid", "tlgRepos", "tlgTarget",
+                                        "ppComboHtml", "tlgRepoName", "tlgCnt", "tlgProj", "tlgNote", "tlgSelHtml", "tlgBaseTip", "tlgChipInner",
+                                        "tlgNoGit", "tlgFetch", "tlgNext", "tlgTick", "tlgOpen"))
     r = subprocess.run(node_e(ttl + "\n" + pre + fns + "\n" + body), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:
         raise AssertionError(r.stderr)
@@ -77,12 +78,27 @@ class Chip(unittest.TestCase):
         self.assertNotIn("data-ppk", chip(None, SESS[:1]))
 
     def test_tick_gating_and_ttl(self):
-        # getJSON never settles here, so a finished fetch is simulated: busy off, at = now.
-        o = run("tlgTick(); const a = urls.length; Object.assign(tlgC['/r/a'], {busy: false, at: NOW}); NOW += 29e3; tlgTick(); const b = urls.length;"
+        # getJSON never settles here, so a finished fetch is simulated: busy off, at = now. One repo: /r/b is idle here.
+        o = run("SESS = SESS.slice(0, 1); tlgTick(); const a = urls.length; Object.assign(tlgC['/r/a'], {busy: false, at: NOW}); NOW += 29e3; tlgTick(); const b = urls.length;"
                 " NOW += 2e3; tlgTick(); const c = urls.length; mainView = 'chat'; NOW += 60e3; tlgC['/r/a'].busy = false;"
                 " tlgTick(); process.stdout.write(JSON.stringify({a, b, c, d: urls.length, u: urls[0]}));")
         self.assertEqual((o["a"], o["b"], o["c"], o["d"]), (1, 1, 2, 2))
         self.assertEqual(o["u"], "/api/git/diff?view=rail&cwd=%2Fr%2Fa&base=head&sid=s1")
+
+    def test_repos_fetched_one_at_a_time_followed_first(self):
+        # getJSON settles on demand: each reply chains the next stale repo; never two in flight, all within the TTL after.
+        o = run("let rs = []; getJSON = u => { urls.push(u); return new Promise(r => rs.push(r)); };"
+                "SESS = [{sid: 's1', cwd: '/r/a', ageSec: 5, repos: ['/r/a', '/r/wt']}, {sid: 's2', cwd: '/r/b', ageSec: 9, repos: ['/r/wt']}];"
+                "tlgSel = 's:s2'; const flight = []; tlgTick(); tlgTick(); flight.push(urls.length);"
+                "(async () => { for(let i = 0; i < 4; i++){ const r = rs.shift(); if(r) r({ok: true}); await new Promise(z => setTimeout(z, 0)); flight.push(urls.length); }"
+                " tlgTick(); process.stdout.write(JSON.stringify({flight, u: urls.map(u => decodeURIComponent(u.split('cwd=')[1].split('&')[0]))})); })();")
+        self.assertEqual(o["flight"], [1, 2, 3, 3, 3])
+        self.assertEqual(o["u"], ["/r/b", "/r/a", "/r/wt"])
+
+    def test_not_a_repo_not_refetched_each_ttl(self):
+        o = run("SESS = SESS.slice(0, 1); tlgTick(); Object.assign(tlgC['/r/a'], {busy: false, at: NOW, d: {ok: false, msg: 'Not a git repository.'}});"
+                " NOW += 31e3; tlgTick(); const a = urls.length; NOW += 600e3; tlgTick(); process.stdout.write(JSON.stringify([a, urls.length]));")
+        self.assertEqual(o, [1, 2])
 
     def test_click_opens_at_baseline_with_sid(self):
         o = run("const tg = tlgTarget(); tlgOpen(); tlgC[tg.ck] = {d: {ok: true, base: 'abc1234'}}; tlgOpen();"

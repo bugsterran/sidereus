@@ -3,8 +3,13 @@
 // Click opens the diff window at the same baseline; file tree, other baselines, untracked files and repo tabs live there (35c diffShow).
 // ★The right rail was removed: at 1100 it left the Gantt ~386px and hid most bar labels; one chip keeps the count at every width.
 const TLG_TTL_S = 30;
-let tlgSel = '';   // chosen cpKey ('' = auto, latest active); kept across refresh by 97b (sidereus.tlgsel)
-const tlgC = {};   // cwd -> {at, d, busy}
+let tlgSel = '';   // 's:'/'c:' cpKey (row click) or 'r:<repo>' (combo pick); '' = auto, latest active; kept across refresh by 97b (sidereus.tlgsel)
+const tlgC = {};   // repo (session root, else cwd, or a `repos` path) -> {at, d, busy}
+// ⚠★24 live repos measured, 0.07–0.13 s per rail fetch: every repo is fetched one at a time (tlgNext), so cap the list.
+const TLG_MAX_REPOS = 30;
+const TLG_NOGIT_TTL_S = 600;   // a folder that is not a repo rarely becomes one: recheck every 10 min, not every TTL
+// Server reply for a folder outside git (git_view.git_diff «Not a git repository.»).
+function tlgNoGit(d){ return !!(d && d.ok === false && /^Not a git repository/.test(String(d.msg || ''))); }
 // Baseline = git_rail mode (Settings › Timeline «Changes baseline»). ⚠auto on a feature branch = since the default branch (hundreds of files).
 const TLG_BASES = [['head', 'Uncommitted'], ['upstream', 'Unpushed'], ['start', 'Since session start'], ['remote', 'Since the default branch'], ['auto', 'Auto']];
 let tlgBase = (v => TLG_BASES.some(x => x[0] === v) ? v : 'head')(lsGet('sidereus.tlgbase', 'head'));
@@ -52,45 +57,88 @@ function tlgName(x){ return String(x.project || x.cwd || ''); }
 function tlgSessions(){
   return (SESS || []).filter(x => x && x.cwd).sort((p, q) => (tlgAge(p) - tlgAge(q)) || tlgName(p).localeCompare(tlgName(q)));
 }
-// Followed session: the chosen one, else (auto, or the chosen one disappeared) the most recently active session.
+function tlgSid(x){ return (x.plat || 'cc') === 'cc' ? (x.sid || '') : ''; }
+// Repos to count: each live session's own repo (fetched via its cwd, which the server allow-list holds) then its `repos`
+// (gitinfo.session_repos: worktrees and other repos it edited), deduped by path, most recently active session first.
+function tlgRepos(){
+  const out = [], by = {};
+  for(const x of tlgSessions()){
+    [[x.root || x.cwd, x.cwd]].concat((x.repos || []).map(p => [p, p])).forEach(([ck, cwd]) => {
+      if(!ck || typeof ck !== 'string') return;
+      let e = by[ck];
+      if(!e){ e = by[ck] = {ck, cwd, sid: tlgSid(x), ss: []}; out.push(e); }
+      if(e.ss.indexOf(x) < 0) e.ss.push(x);
+    });
+  }
+  return out.slice(0, TLG_MAX_REPOS);
+}
+// Followed repo: the picked repo or session, else (auto, or the pick disappeared) the most recently active session's repo.
 function tlgTarget(){
-  const all = tlgSessions();
-  let row = tlgSel ? all.find(x => cpKey(x) === tlgSel) : null;
-  if(tlgSel && !row && all.length) tlgSel = '';   // ⚠not before the first /api/state (SESS = []) — a restored pick would be wiped
-  const how = row ? 'pick' : 'auto';
+  const all = tlgSessions(), repos = tlgRepos();
+  let row = null, rp = null;
+  if(tlgSel.indexOf('r:') === 0) rp = repos.find(e => 'r:' + e.ck === tlgSel) || null;
+  else if(tlgSel) row = all.find(x => cpKey(x) === tlgSel) || null;
+  if(tlgSel && !row && !rp && all.length) tlgSel = '';   // ⚠not before the first /api/state (SESS = []) — a restored pick would be wiped
+  const how = row || rp ? 'pick' : 'auto';
+  if(rp) return {cwd: rp.cwd, row: rp.ss[0], how, all, repos, key: 'r:' + rp.ck, ck: rp.ck, sid: rp.sid};
   row = row || all[0];
   if(!row) return null;
-  return {cwd: row.cwd, row, how, all, key: cpKey(row), ck: row.cwd, sid: (row.plat || 'cc') === 'cc' ? (row.sid || '') : ''};
+  const ck = row.root || row.cwd;
+  return {cwd: row.cwd, row, how, all, repos, key: 'r:' + ck, ck, sid: tlgSid(row)};
 }
-// Session combobox (08b ppComboHtml, same as Pipelines/Structure/Branches), only when there is a choice (2+ sessions).
-// Rows are project · sid · state, tooltip cwd · sid (metadata only); the first row 'auto' = tlgSel '' (follow the latest active).
+// Timeline row/bar/name click: the chip follows that session (by the row's sid, else its cwd+platform); a past session
+// with no SESS entry follows only when its cwd is one of the listed repos, otherwise the chip stays where it was.
+function tlgFollow(cwd, plat, tid){
+  const all = tlgSessions(), m = /^(?:sess|ext):.*\|([^|]+)$/.exec(String(tid || ''));
+  const row = (m && all.find(x => x.sid === m[1])) || all.find(x => x.cwd === cwd && (x.plat || 'cc') === (plat || 'cc'));
+  const rp = row ? null : tlgRepos().find(e => e.ck === cwd || e.cwd === cwd);
+  const k = row ? cpKey(row) : rp ? 'r:' + rp.ck : '';
+  if(!k || k === tlgSel) return;
+  tlgSel = k; tlgKeepSave(); tlgTick();
+}
+// Repo combobox (08b ppComboHtml, same as Pipelines/Structure/Branches), only when there is a choice (2+ repos).
+// Rows are repo name · count · first session (project · sid · state), tooltip path + sessions (metadata only);
+// repos with changes first, not yet fetched next, clean (0 files) last and greyed. The first row 'auto' = tlgSel ''.
 const TLG_AUTO = 'auto';   // ⚠never a cpKey ('s:'/'c:' prefix), so 97b cannot restore it as a pick
 function tlgProj(x){ return x.project || x.cwd.split('/').pop() || x.cwd; }
 function tlgNote(x){ return [x.sid ? sid8(x.sid) : '', x.state ? (stateLbl(x.state) || T(x.state)) : ''].filter(Boolean).join(' · '); }
+function tlgRepoName(p){ return String(p).split('/').filter(Boolean).pop() || String(p); }
 function tlgSelHtml(tg){
-  if(!tg || tg.all.length < 2) return '';
-  const AL = T('Auto (latest active)', 'chip');
-  const it = x => ({ p: cpKey(x), name: tlgProj(x), note: tlgNote(x), tip: x.cwd + (x.sid ? ' · ' + x.sid : '') });
-  const items = [Object.assign(it(tg.all[0]), { p: TLG_AUTO, auto: true })].concat(tg.all.map(it));
+  if(!tg || tg.repos.length < 2) return '';
+  const AL = T('Auto (latest active)', 'chip'), a0 = tg.all[0];
+  const it = e => {
+    const x = e.ss[0], own = (x.root || x.cwd) === e.ck, c = tlgCnt((tlgC[e.ck] || {}).d);
+    return { p: 'r:' + e.ck, name: tlgRepoName(e.ck), c, ng: tlgNoGit((tlgC[e.ck] || {}).d), note: [own ? '' : tlgProj(x), tlgNote(x), e.ss.length > 1 ? '+' + (e.ss.length - 1) : ''].filter(Boolean).join(' · '),
+      tip: e.ck + '\n' + e.ss.map(s => tlgProj(s) + (s.sid ? ' · ' + s.sid : '')).join('\n') };
+  };
+  const rank = e => e.c ? (e.c.n ? 0 : 2) : e.ng ? 3 : 1;
+  const reps = tg.repos.map(it).map((e, i) => [e, i]).sort((p, q) => (rank(p[0]) - rank(q[0])) || (p[1] - q[1])).map(v => v[0]);
+  const items = [{ p: TLG_AUTO, auto: true, name: tlgRepoName(a0.root || a0.cwd), note: tlgNote(a0), tip: a0.cwd + (a0.sid ? ' · ' + a0.sid : '') }].concat(reps);
   const cur = tg.how === 'auto' ? TLG_AUTO : tg.key;
-  const row = (e, i) => '<div class="cmdki' + (PPS && i === PPS.i ? ' on' : '') + (e.p === cur ? ' ppcur' : '') + '" role=option data-ppi="' + i + '" title="' + esc(e.tip) + '">'
-    + '<span class=cmdkp>' + esc(e.auto ? AL : e.name) + '</span><span class=cmdkc>' + esc(e.auto ? [e.name, e.note].filter(Boolean).join(' · ') : e.note) + '</span></div>';
+  const cnt = c => c ? '<span class=tlgcn>' + esc(TV({msg: c.n === 1 ? '{n} file' : '{n} files', vars: {n: c.n}}) + ' ') + tlgNum(c.a, c.dl) + '</span>' : '';
+  const row = (e, i) => '<div class="cmdki' + (PPS && i === PPS.i ? ' on' : '') + (e.p === cur ? ' ppcur' : '') + ((e.c && !e.c.n) || e.ng ? ' tlg0' : '') + '" role=option data-ppi="' + i + '" title="' + esc(e.tip) + '">'
+    + '<span class=cmdkp>' + esc(e.auto ? AL : e.name) + '</span>' + (e.ng ? '<span class=tlgcn>' + esc(T('No git', 'repo')) + '</span>' : cnt(e.c)) + '<span class=cmdkc>' + esc(e.auto ? [e.name, e.note].filter(Boolean).join(' · ') : e.note) + '</span></div>';
   const flat = q => {
     const s = String(q || '').trim().toLowerCase();
     return items.filter(e => !s || [e.name, e.tip, e.auto ? AL : ''].some(v => String(v).toLowerCase().includes(s)));
   };
-  return ppComboHtml({ k: 'tlgs', label: T('Session'), bare: true, items: items, cur: cur, ph: T('Find a session'), empty: T('No matching sessions'), flat: flat, rowHtml: row,
+  return ppComboHtml({ k: 'tlgs', label: T('Repository'), bare: true, items: items, cur: cur, ph: T('Find a repository'), empty: T('No matching repositories'), flat: flat, rowHtml: row,
     tip: e => (e.auto ? AL + '\n' : '') + e.tip, badge: e => e.auto ? '<span class=tlgau>' + esc(T('auto', 'mark')) + '</span>' : '',
     pick: p => { tlgSel = p === TLG_AUTO ? '' : p; tlgKeepSave(); tlgTick(); } });
 }
 // «[baseline] N files +a −d» (+ «· ⚠ n shared»); no target or no reply yet = «[baseline] Changes».
 // ⚠The word «Changes» is dropped beside counts so the head holds one line at 1100; it stays the aria name and first tooltip line.
+// Shown counts of one rail reply (untracked left out), or null before an ok reply.
+function tlgCnt(d){
+  if(!d || !d.ok) return null;
+  const hid = (d.files || []).filter(f => f.new), sum = k => hid.reduce((s, f) => s + (f[k] || 0), 0);
+  return {n: tlgShownN(d), a: Math.max(0, (d.add || 0) - sum('add')), dl: Math.max(0, (d.del || 0) - sum('del'))};
+}
 function tlgChipInner(tg){
   const d = tg && (tlgC[tg.ck] || {}).d, CH = T('Changes', 'chip');
   let body = tlgBaseLabel(d), aria = [CH, tlgBaseText(d)];
   if(d && d.ok){
-    const hid = (d.files || []).filter(f => f.new), sum = k => hid.reduce((s, f) => s + (f[k] || 0), 0);
-    const nf = TV({msg: tlgShownN(d) === 1 ? '{n} file' : '{n} files', vars: {n: tlgShownN(d)}}), a = Math.max(0, (d.add || 0) - sum('add')), dl = Math.max(0, (d.del || 0) - sum('del'));
+    const c = tlgCnt(d), a = c.a, dl = c.dl, nf = TV({msg: c.n === 1 ? '{n} file' : '{n} files', vars: {n: c.n}});
     body += esc(nf + ' ') + tlgNum(a, dl);
     aria.push(nf + ' +' + a + ' −' + dl);
     const sh = tlgShared(d);
@@ -138,13 +186,21 @@ function tlgFetch(tg, force){
   c.busy = true;
   getJSON('/api/git/diff?view=rail&cwd=' + encodeURIComponent(tg.cwd) + '&base=' + encodeURIComponent(tlgBase) + (tg.sid ? '&sid=' + encodeURIComponent(tg.sid) : ''))
     .then(j => { c.d = j; }, () => { if(!c.d) c.d = {ok: false}; })
-    .then(() => { c.at = Date.now(); c.busy = false; tlgPaint(); });
+    .then(() => { c.at = Date.now(); c.busy = false; tlgPaint(); tlgNext(); });
 }
-// Called from poll() (2.5 s) and the tab switch; fetches at most once per TLG_TTL_S, only while the Timeline is shown and visible.
+// One rail fetch in flight at a time: the followed repo first, then every listed repo older than TLG_TTL_S.
+function tlgNext(){
+  if(mainView !== 'time' || document.hidden) return;
+  if(Object.keys(tlgC).some(k => tlgC[k].busy)) return;
+  const tg = tlgTarget();
+  if(!tg) return;
+  const now = Date.now(), e = [tg].concat(tg.repos).find(r => { const c = tlgC[r.ck]; return !c || now - c.at >= (tlgNoGit(c.d) ? TLG_NOGIT_TTL_S : TLG_TTL_S) * 1000; });
+  if(e) tlgFetch(e);
+}
+// Called from poll() (2.5 s) and the tab switch; fetches at most once per TLG_TTL_S per repo, only while the Timeline is shown and visible.
 function tlgTick(){
   if(mainView !== 'time' || document.hidden) return;
-  const tg = tlgTarget();
-  if(tg) tlgFetch(tg);
+  tlgNext();
   tlgPaint();
 }
 // Chip click -> the existing diff window at the chip's baseline; &sid lets that window offer «Since session start».
