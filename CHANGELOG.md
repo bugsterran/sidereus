@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Docs: `SECURITY.md` and `docs/CONFIG.md` note that the quota lookup and the paid quota probe reuse the Claude Code sign-in token outside Claude Code, which Anthropic's terms may restrict.
 
 ### Fixed
+- Header: the second number on «Sessions» reads «need you n» instead of a bare count next to the open-session count.
 - Structure: «Redraw» / «Generate diagram» say in their tooltip that they ask a live session (preview first), and the «repository location is unknown» reason now says it needs Sidereus run from a git clone.
 - Structure: the security badge reads «Security issues n», and its tooltip shows «ran · n found» per scanner instead of «ok», which read as «no findings» next to a non-zero count.
 - Structure: a sent «Request fix» from the security checks window survives a page reload and shows who got it, when, and whether the session acknowledged it.
