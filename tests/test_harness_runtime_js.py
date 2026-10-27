@@ -1,0 +1,126 @@
+"""Harness «Runtime behind latest patch» card (47d hnRuntime): R1 two lines per runtime · R2 stale · R3 no record · R4 next step + limit note."""
+import json
+import os
+import shutil
+import subprocess
+import unittest
+
+from tests._load import js_fn
+from tests.test_saver_quota_js import BASE, i18n, jconst
+from tests._node import node_e
+
+FNS = ("hnN", "hnPl", "hnWhen", "hnRtGet", "hnRtCls", "hnRtBrew", "hnRtCmd", "hnRtItem", "hnRuntime")
+CONSTS = ("esc", "HN_RTL", "HN_RTP", "HN_RTN", "HN_RTF")
+
+SCEN = r"""
+const it = (o) => Object.assign({rt: 'nodejs', path: '/opt/homebrew/bin/node', cls: 'homebrew', viewer: true, cur: '20.1.0', cycle: '20', level: 'fail',
+  patch: {level: 'fail', target: '20.18.1', security: true, eol: '2026-04-30', eol_past: true},
+  newest: {level: 'info', target: '24.2.0', behind_n: 2}, fix: 'brew-node'}, o);
+const py = it({rt: 'python', path: '/usr/bin/python3', cls: 'system', viewer: false, cur: '3.9.6', cycle: '3.9', level: 'warn',
+  patch: {level: 'warn', target: '3.9.23', security: false, eol: '2025-10-31', eol_past: true}, newest: {level: 'info', target: '3.14.0', behind_n: 5}, fix: 'system-python'});
+const base = {state: 'behind', at: 1761600000, age_d: 1, stale: false, report: 'sec-2026.json', dev: false, offline: false, cmd: 'scripts/arch_checks.py --category security'};
+R.none = hnRuntime({});
+const keg = (o) => hnRtItem(it(o), false);
+R.cmds = [keg({path: '/opt/homebrew/opt/node@20/bin/node'}), keg({path: '/opt/homebrew/opt/node/bin/node'}),
+  keg({rt: 'python', fix: 'brew-python', cycle: '3.12', path: '/opt/homebrew/opt/python@3.12/bin/python3.12', viewer: true}),
+  keg({rt: 'python', fix: 'brew-python', cycle: '3.13', path: '/opt/homebrew/bin/python3', viewer: false}),
+  keg({level: 'ok', patch: {level: 'ok', target: '20.1.0'}})];
+R.behind = hnRuntime({runtime: Object.assign({}, base, {items: [it({}), py]})});
+R.stale = hnRuntime({runtime: Object.assign({}, base, {state: 'ok', stale: true, age_d: 12,
+  items: [it({level: 'ok', patch: {level: 'ok', target: '20.1.0'}, newest: {level: 'ok', target: '20.1.0', behind_n: 0}})]})});
+R.fresh = hnRuntime({runtime: Object.assign({}, base, {state: 'ok', items: [it({level: 'ok', patch: {level: 'ok', target: '20.1.0'}, newest: {level: 'ok', target: '20.1.0'}})]})});
+R.rec = hnRuntime({runtime: {state: 'none', items: [], cmd: 'scripts/arch_checks.py --category security'}});
+R.proto = hnRuntime({runtime: Object.assign({}, base, {items: [it({level: 'constructor', patch: {level: 'toString'}, fix: '__proto__', rt: 'constructor'})]})});
+R.bad = hnRuntime({runtime: Object.assign({}, base, {state: 'unknown', items: [it({level: 'zz', patch: {level: 'x"y', target: '<b>1</b>'}, newest: {level: 'evil'}, fix: 'rm -rf', cur: '<i>2</i>', cycle: '<s>'})]})});
+"""
+
+
+def run():
+    src = (BASE + i18n() + "\n" + "\n".join(jconst(c) for c in CONSTS) + "\n" + "\n".join(js_fn(f) for f in FNS)
+           + "\nconst R = {};\nLANG = 'en';\n" + SCEN + "\nprocess.stdout.write(JSON.stringify(R));")
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
+    if r.returncode != 0:
+        raise AssertionError(r.stderr)
+    return json.loads(r.stdout)
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class HarnessRuntimeJs(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.R = run()
+
+    def test_missing_runtime_renders_nothing(self):
+        self.assertEqual(self.R["none"], "")
+
+    def test_r1_two_lines_current_to_target(self):
+        h = self.R["behind"]
+        self.assertIn("Runtime behind latest patch", h)
+        self.assertIn("from sec-2026.json", h)
+        self.assertEqual(h.count("class=hnrtr>"), 4)
+        self.assertRegex(h, r"20\.1\.0</code> <span class=hntra>→</span> <code class=hnrc>20\.18\.1")
+        self.assertIn("security fix", h)
+        self.assertIn("end of life 2026-04-30", h)
+        self.assertRegex(h, r"2 cycles behind</b> <span class=hntra>→</span> <code class=hnrc>24\.2\.0")
+        self.assertIn("hnrun hnrt hnrtl-fail", h)
+        self.assertIn("hnrun hnrt hnrtl-warn", h)
+
+    def test_r2_stale_no_current_claim(self):
+        h = self.R["stale"]
+        self.assertIn("checked 12 days ago — rerun to know it is current", h)
+        self.assertNotIn("Runtimes on latest patch", h)
+        self.assertNotIn(">latest patch<", h)
+        self.assertNotIn(">newest cycle<", h)
+        self.assertIn("latest patch when checked", h)
+
+    def test_fresh_ok_is_one_quiet_line(self):
+        h = self.R["fresh"]
+        self.assertIn("Runtimes on latest patch", h)
+        self.assertNotIn("hnrtr", h)
+
+    def test_r3_no_record_shows_cmd(self):
+        h = self.R["rec"]
+        self.assertIn("No check on record", h)
+        self.assertIn("<code class=hnrtc>scripts/arch_checks.py --category security</code>", h)
+
+    def test_r4_next_step_per_item_and_limit(self):
+        h = self.R["behind"]
+        self.assertEqual(h.count("class=hnrtn>"), 2)
+        self.assertIn("<code class=hnrtc>brew upgrade node</code>", h)
+        self.assertNotIn("node@20", h)
+        self.assertNotIn("restart the viewer", h)
+        self.assertIn("System Python updates with macOS", h)
+        self.assertIn("python.org publishes no security flag", h)
+
+    def test_brew_command_follows_keg_path_and_restart_target(self):
+        vk, plain, pyv, pyb, ok = self.R["cmds"]
+        self.assertIn("<code class=hnrtc>brew upgrade node@20</code>", vk)
+        self.assertIn("then restart the sessions or tools that use it", vk)
+        self.assertNotIn("restart the viewer", vk)
+        self.assertIn("<code class=hnrtc>brew upgrade node</code>", plain)
+        self.assertIn("<code class=hnrtc>brew upgrade python@3.12</code>", pyv)
+        self.assertIn("then restart the viewer", pyv)
+        self.assertIn("<code class=hnrtc>brew upgrade python@3.13</code>", pyb)
+        self.assertNotIn("restart the viewer", pyb)
+        self.assertNotIn("hnrtn", ok)
+
+    def test_unknown_keys_no_class_and_escaped(self):
+        h = self.R["bad"]
+        self.assertIn('class="hnrun hnrt">', h)
+        self.assertIn('class="hnrtb">', h)
+        self.assertNotIn("zz", h.replace("hnrtw", ""))
+        self.assertNotIn("evil", h)
+        self.assertNotIn("<b>1</b>", h)
+        self.assertNotIn("<i>2</i>", h)
+        self.assertIn("&lt;i&gt;2&lt;/i&gt;", h)
+        self.assertIn("Update it with the tool that installed it", h)
+        self.assertNotIn("rm -rf", h)
+        p = self.R["proto"]
+        self.assertIn('class="hnrun hnrt">', p)
+        self.assertIn("latest unknown", p)
+        self.assertIn("Update it with the tool that installed it", p)
+        self.assertNotIn("function", p)
+
+
+if __name__ == "__main__":
+    unittest.main()

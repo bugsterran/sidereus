@@ -379,7 +379,7 @@ function hnReport(d){
   else if(!cards) cards = '<div class=hidnote>' + esc(T('Nothing recorded at this checkpoint')) + '</div>';
   const since = hnWhen(R.since);
   return '<div class=hnrep><div class=brh2><b>' + esc(T('What the gates caught')) + '</b>' + (since ? ' <i>' + esc(TV({msg: 'since {d}', vars: {d: since}})) + '</i>' : '') + '</div>'
-    + hnTiles(R) + hnStrip(R) + '<div class=hnrepc>' + cards + '</div></div>';
+    + (typeof hnRuntime === 'function' ? hnRuntime(d) : '') + hnTiles(R) + hnStrip(R) + '<div class=hnrepc>' + cards + '</div></div>';
 }
 // Verdict counts as plain text for the «Config map» summary (buttons inside <summary> would toggle the fold).
 function hnVdSum(c){

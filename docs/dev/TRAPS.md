@@ -14,7 +14,7 @@ Do not step on these again. One file per area under [traps/](traps/); read the a
 | [traps/mailbox.md](traps/mailbox.md) | Mailbox, chat rooms, mail watch (`mailbox_wake`) | 25 |
 | [traps/ui.md](traps/ui.md) | UI kit, CSS, layout, header, i18n (`T()`), animations, drag-resize | 70 |
 | [traps/server.md](traps/server.md) | Server, `/api/state` payload, caching, performance | 22 |
-| [traps/security.md](traps/security.md) | Security and privacy (CSP, guards, metadata-only) | 34 |
+| [traps/security.md](traps/security.md) | Security and privacy (CSP, guards, metadata-only) | 35 |
 | [traps/platform.md](traps/platform.md) | Platform, config, launcher, Windows, plugin, tests and tooling | 52 |
 | [traps/general.md](traps/general.md) | General lessons that span areas | 32 |
 | [traps/archive.md](traps/archive.md) | Removed features — evidence only, not current rules | 4 |

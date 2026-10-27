@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Harness: «Runtime behind latest patch» card from the newest security report — per runtime, current → latest patch in its cycle (security fix, end of life) and cycles behind the newest release, one next step each; a stale report asks for a rerun, no report shows «No check on record» with the command.
 - Security checks: trivy scans Dockerfiles for misconfigurations by default; `--images` also scans each base image (Dockerfile `FROM`, compose `image:`) for CVEs, deduplicated across images, with a «Base images» report section (fixable high/critical → replace base image, unfixed → waiting). A registry login or DB download failure is a failed row with its reason, never a clean result.
 
 ### Changed

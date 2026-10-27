@@ -68,7 +68,7 @@ def _demo_harness(a, path):
     """Pipeline tab «Harness»: invented rows that trip every harness_verdict code; file views are off in demo."""
     if path != "/api/harness":
         return 404, {"ok": False, "msg": "File not found."}
-    from sidereus import harness_flow, harness_trail, harness_verdict
+    from sidereus import harness_flow, harness_trail, harness_verdict, sec_runtime
     t = int(a - 3 * H)
     ev = [{"ev": "SessionStart", "hooks": [_hk("user", "load-context.py", "inject", 41), _hk("user", "warm-cache.sh", "log", None, miss=1)]},
           {"ev": "UserPromptSubmit", "hooks": [_hk("user", "prompt-tag.py", "inject", 88)]},
@@ -93,7 +93,21 @@ def _demo_harness(a, path):
             "counts": {"skill": 2, "cmd": 1, "mcp": 2}, "evidence": _demo_evidence(a)}
     body["report"] = harness_trail.report(body["evidence"], "", git=False)
     body["guards"] = harness_flow.guards("", runs=_demo_flow_runs(a))
+    body["runtime"] = sec_runtime.shape(_demo_runtime(a), a, root="/Users/demo/src/sidereus")   # fake checkout: the real install path stays off demo screens
     return 200, harness_verdict.verdict(body, 30)
+
+
+def _demo_runtime(a):
+    """Invented deps-last.json, 9 days old (stale): brew node one patch behind (2 lines behind 26.x), system Python 3.9 EOL."""
+    node = {"rt": "nodejs", "path": "/opt/homebrew/opt/node@22/bin/node", "cls": "homebrew", "viewer": False,
+            "cur": "22.23.3", "cycle": "22", "level": "warn",
+            "patch": {"level": "warn", "target": "22.23.4", "security": False, "eol": "2027-04-30", "eol_past": False},
+            "newest": {"level": "info", "target": "26.2.0", "behind_n": 2}}
+    py = {"rt": "python", "path": "/usr/bin/python3", "cls": "system", "viewer": True, "cur": "3.9.6", "cycle": "3.9",
+          "level": "fail", "patch": {"level": "fail", "target": "3.9.25", "security": False, "eol": "2025-10-31", "eol_past": True},
+          "newest": {"level": "info", "target": "3.14.2", "behind_n": 5}}
+    return {"at": a - 9 * 86400, "report": "security-report-20261019-0930.md", "dev": True, "offline": False,
+            "items": [py, node]}
 
 
 def _demo_flow_runs(a):

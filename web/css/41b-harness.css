@@ -175,3 +175,23 @@ html[data-theme=light] .hnvdr.hnvd-check,html[data-theme=light] .hnvdc.hnvd-chec
 .hnvdq.hnvd-check{color:#d8b07a}
 html[data-theme=light] .hnvdq.hnvd-bad{color:#b0473a}
 html[data-theme=light] .hnvdq.hnvd-check{color:#8a5a12}
+/* «Runtime behind latest patch» card (47d): left accent per level via HN_RTL only; rows wrap at 900, no sideways scroll */
+.hnrtw{margin:0 0 10px;min-width:0}
+.hnrt{flex-direction:column;align-items:stretch;gap:3px}
+.hnrt .hnrh,.hnrtr,.hnrtn{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 8px;min-width:0}
+.hnrt .hnrc,.hnrtc{overflow-wrap:anywhere;min-width:0}
+.hnrtk{font-style:normal;color:var(--nx-t2,#909298);min-width:150px}
+.hnrtn{color:var(--nx-t1,#c9d2df)}
+.hnrtc{font-family:var(--mono,monospace);padding:0 5px;border-radius:3px;border:1px solid var(--nx-rule,#232c38);user-select:all}
+.hnrtb{font-size:10px;font-weight:700;padding:0 5px;border-radius:3px;border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#909298)}
+.hnrtq{font-size:11px;padding:3px 8px;margin:0 0 10px;border-left:3px solid var(--nx-ok,#71c269)}
+.hnrtlim{font-size:11px}
+.hnrun.hnrtl-fail{border-left-color:var(--nx-err,#f45460)}
+.hnrun.hnrtl-warn{border-left-color:var(--nx-warn,#fad83e)}
+.hnrun.hnrtl-info{border-left-color:var(--nx-info,#5899f3)}
+.hnrun.hnrtl-unk{border-left-color:var(--nx-idle,#7d7e85)}
+.hnrtb.hnrtl-fail{color:var(--nx-err,#f45460);border-color:var(--nx-err,#f45460)}
+.hnrtb.hnrtl-warn{color:var(--nx-warn,#fad83e);border-color:var(--nx-warn,#fad83e)}
+.hnrtb.hnrtl-info{color:var(--nx-info,#5899f3);border-color:var(--nx-info,#5899f3)}
+.hnrtb.hnrtl-ok{color:var(--nx-ok,#71c269);border-color:var(--nx-ok,#71c269)}
+html[data-theme=light] .hnrtb.hnrtl-warn{color:#8a5a12;border-color:#8a5a12}

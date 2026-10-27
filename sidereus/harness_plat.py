@@ -7,8 +7,9 @@ the platform module's `harness_items()` and `LANE`.
 """
 import os
 import re
+import time
 
-from sidereus import ctxsrc, harness, harness_evidence, harness_flow, harness_trail, harness_verdict, toolinv
+from sidereus import arch_verify, ctxsrc, harness, harness_evidence, harness_flow, harness_trail, harness_verdict, sec_runtime, toolinv
 from sidereus.config import DATA_DIR
 from sidereus.ext_store import PLAT_MODS
 from sidereus.ident import _real_home
@@ -105,9 +106,11 @@ def harness_evidence_only(proj):
 
 
 def _results(proj):
-    """«Results» keys: one evidence read feeds the list (newest 30) and the report (every row read)."""
+    """«Results» keys: one evidence read feeds the list (newest 30) and the report (every row read); runtime = the
+    stored patch card (sec_runtime, file read only — the viewer never looks versions up)."""
     ev, _floor = harness_evidence.scan(proj)
-    return {"evidence": ev[:30], "report": harness_trail.report(ev, proj), "guards": harness_flow.guards(proj)}
+    return {"evidence": ev[:30], "report": harness_trail.report(ev, proj), "guards": harness_flow.guards(proj),
+            "runtime": sec_runtime.view(arch_verify.ARCH_DIR, time.time())}
 
 
 def harness_plat(plat, proj, days=30):
