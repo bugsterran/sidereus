@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Docs: `SECURITY.md` and `docs/CONFIG.md` note that the quota lookup and the paid quota probe reuse the Claude Code sign-in token outside Claude Code, which Anthropic's terms may restrict.
 
 ### Fixed
+- Structure: the security badge reads «Security issues n», and its tooltip shows «ran · n found» per scanner instead of «ok», which read as «no findings» next to a non-zero count.
 - Structure: a sent «Request fix» from the security checks window survives a page reload and shows who got it, when, and whether the session acknowledged it.
 - Pipelines: a sent «Request fix» from the evaluation window survives a page reload and shows who got it, when, and the session's acknowledgement, for the open pipeline only.
 - Work log: opened for the first time on a session with file changes, it ends at the bottom even when the git diff arrives late; a reader who scrolled up stays put.

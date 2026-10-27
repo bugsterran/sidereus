@@ -64,6 +64,7 @@ class StructArchChecks(unittest.TestCase):
         self.assertEqual(r[3], "건너뜀: time budget used")
         self.assertEqual(r[4], "건너뜀")
         self.assertEqual(r[1], "실패: exit 2")
+        self.assertEqual(r[0], "실행됨 · 발견 5")             # «ok» means the scanner ran, not «no findings»
 
     def test_badge_is_security_button_only(self):
         q = {"commit": "abc", "tools": [{"id": "ruff", "status": "ok", "n": {"error": 1}}], "top": [{"tool": "ruff", "file": "a.py", "line": 1, "sev": "error"}]}
@@ -72,11 +73,11 @@ class StructArchChecks(unittest.TestCase):
         self.assertTrue(r[0].startswith("<button") and r[0].endswith("</button>"))
         self.assertEqual(r[0].count("<button"), 1)           # nothing besides the issues button
         self.assertIn("data-arck", r[0])
-        self.assertIn(">보안 2</button>", r[0])
+        self.assertIn(">보안 문제 2</button>", r[0])
         self.assertNotIn("<em", r[0])                         # no quality badges / chips
         self.assertNotIn("archckiw", r[0])                    # errors > 0 -> red
         self.assertEqual(r[1:4], ["", "", ""])                # a quality-only payload shows nothing
-        self.assertIn(">보안 0</button>", r[4])               # shown at 0 so missing scanners stay visible
+        self.assertIn(">보안 문제 0</button>", r[4])               # shown at 0 so missing scanners stay visible
         w = run("const c = " + json.dumps(CHECKS) + "; c.tools.forEach(t => { t.n = {warning: 1}; }); console.log(JSON.stringify(archChkTopBtn({checks: {security: c}})));")
         self.assertIn("strbg-archckiw", w)                   # warnings only -> amber
 
@@ -84,7 +85,7 @@ class StructArchChecks(unittest.TestCase):
         r = run("const d = {checks: " + json.dumps(CK) + "}; console.log(JSON.stringify(archChkWinHtml('/r', d, {sel: {}, req: null}, [])));")
         self.assertNotIn("tablist", r)
         self.assertNotIn("data-ckcat", r)
-        self.assertIn("<div class=archckst>gitleaks · 정상", r)   # scanner states line
+        self.assertIn("<div class=archckst>gitleaks · 실행됨 · 발견 5", r)   # scanner states line
         self.assertIn("점검한 적 없음", r)                        # security history section
 
     def test_header_buttons_wrap_together(self):
@@ -235,12 +236,12 @@ class StructArchChecks(unittest.TestCase):
         r = run("console.log(JSON.stringify([archChkTopBtn({head: 'def5678eeee', checks: {security: " + json.dumps(sec) + "}}, '/r'),"
                 "archChkTopBtn({head: 'abc1234ffff', checks: {security: " + json.dumps(fresh) + "}}, '/r')]));")
         self.assertIn("strbg-cut", r[0])
-        self.assertIn(">⚠ 보안 1</button>", r[0])
+        self.assertIn(">⚠ 보안 문제 1</button>", r[0])
         self.assertIn("점검 커밋 abc1234 · 현재 HEAD def5678", r[0])
         self.assertIn("보안 점검을 다시 실행하세요", r[0])
         self.assertNotIn("strbg-cut", r[1])
         self.assertNotIn("⚠", r[1])
-        self.assertIn(">보안 1</button>", r[1])
+        self.assertIn(">보안 문제 1</button>", r[1])
 
     def test_fix_last_pick_preselect(self):
         sess = [{"sid": "a1", "cwd": "/r", "mbox": "a", "mboxSrc": "identity", "state": "idle", "ageSec": 1},
@@ -426,10 +427,10 @@ class StructArchCheckFilters(unittest.TestCase):
         self.assertIn("strbg-archckiw", r[2])                  # low only -> amber
         self.assertNotIn("archckiw", r[3])                     # critical -> red
         self.assertNotIn("archckiw", r[4])                     # legacy error -> high -> red
-        self.assertIn(">Security 1</button>", r[0])
+        self.assertIn(">Security issues 1</button>", r[0])
         self.assertIn("strbg-archckiw", r[5])                  # that rule hidden -> amber
         self.assertIn("strbg-archckiw", r[6])
-        self.assertIn(">Security 0</button>", r[5])
+        self.assertIn(">Security issues 0</button>", r[5])
 
     def test_r2_tool_filter_only_that_tool(self):
         r = run(MEMJS + "const T5 = ['gitleaks', 'semgrep', 'bandit', 'osv-scanner', 'npm-audit'];"
@@ -485,13 +486,13 @@ class StructArchCheckFilters(unittest.TestCase):
                 "const b1 = archChkTopBtn(d, '/r'), b2 = archChkTopBtn(d, '/other');"
                 "const q = {checks: {security: {tools: [{id: 'bandit', status: 'ok', n: {error: 1}}], top: [{tool: 'bandit', file: 'a.py', line: 1, rule: 'B110', sev: 'error'}]}}};"
                 "console.log(JSON.stringify([b0, b1, b2, archChkTopBtn(q, '/r')]));", lang="en")
-        self.assertIn(">Security 7</button>", r[0])
-        self.assertIn(">Security 3</button>", r[1])
+        self.assertIn(">Security issues 7</button>", r[0])
+        self.assertIn(">Security issues 3</button>", r[1])
         self.assertIn("3 rules hidden", r[1])                      # tooltip
         self.assertNotIn("archckiw", r[1])                        # tool totals still hold unlisted errors
-        self.assertIn(">Security 7</button>", r[2])               # other repo unaffected
+        self.assertIn(">Security issues 7</button>", r[2])               # other repo unaffected
         self.assertIn("strbg-archckiw", r[3])                     # only error hidden -> amber
-        self.assertIn(">Security 0</button>", r[3])
+        self.assertIn(">Security issues 0</button>", r[3])
 
     def test_select_all_visible_only(self):
         r = run(MEMJS + EVJS + "ARCH.cache['/r'] = d; ARCH_CW = {p: '/r', w: W, sel: {}, sev: 'all', tool: 'bandit'}; archChkSetHidden('/r', ['bandit:B602']);"

@@ -426,7 +426,7 @@ class Ui(unittest.TestCase):
                    "console.log(JSON.stringify([archChkTopBtn(d), archChkWinHtml('/r', d, S, []), archChkFixBody('/r', d.checks, archChkSel(d, S.sel)),"
                    "archChkWinHtml('/r', {checks: " + json.dumps(QJ) + "}, {sel: {}, req: null}, []), archChkTopBtn({checks: {commit: '', tools: [], top: [], security: d.checks.security}})]));")
         btn, win, body, plain, only = r
-        self.assertIn(">보안 1</button>", btn)
+        self.assertIn(">보안 문제 1</button>", btn)
         self.assertNotIn("품질", btn)
         self.assertNotIn("archckiw", btn)                     # security error -> red
         self.assertIn("install: &lt;b&gt;", btn)              # tool why escaped in the tooltip
@@ -444,7 +444,7 @@ class Ui(unittest.TestCase):
         self.assertIn('<span class="ckwlast">점검한 적 없음</span>', plain)   # header last-check line
         r2 = run_js("console.log(JSON.stringify([archChkRule({rule: 'GHSA-1', cve: ['CVE-2020-8203', '<b>'], pkg: 'lodash'}), archChkRule({rule: 'B105'})]));")
         self.assertEqual(r2, ["GHSA-1 · CVE-2020-8203 · lodash", "B105"])
-        self.assertTrue(only.startswith("<button") and only.endswith("</button>") and "보안 1" in only)
+        self.assertTrue(only.startswith("<button") and only.endswith("</button>") and "보안 문제 1" in only)
 
 if __name__ == "__main__":
     unittest.main()
