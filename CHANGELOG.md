@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: a diagram run requested for the Sidereus repository itself no longer shows as running (with a Stop button) on another project the same session drew earlier, and an older request from that session no longer reads «Running» once a newer one starts.
 - Pipelines and Structure: a run whose last stage ran as a background agent reads done as soon as that agent finishes (it showed «Running» with a Stop button for up to 30 minutes), and «Stop» on a stage the main session runs itself now ends as «Stopped» instead of staying «Stopping».
 - Security: bandit reports nothing on shipped code — intentional patterns (silent hook error handling, subprocess with a fixed argument list) are declared once in `pyproject.toml` with the reason, the rest are checked one by one; the invite hook calls `/bin/ps` by full path.
+- Structure › security checks: the header stays on one line — «Run security check» no longer drops alone onto a second line; the two buttons stay together on the right and the folder·commit text shortens first.
 
 ## [0.8.1] - 2026-10-26
 

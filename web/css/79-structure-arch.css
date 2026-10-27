@@ -241,7 +241,8 @@ body.ckwin{margin:0;padding:0;height:100vh;overflow:hidden}
 .ckwh{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding-bottom:10px;border-bottom:1px solid var(--nx-rule,#2a3442)}
 .ckwh b{font-size:15px;color:var(--nx-t1,#dfe5ee)}
 .ckwh span{font-size:12.5px;color:var(--nx-t2,#aab4c3)}
-.ckwh .ckwp{flex:1 1 auto;color:var(--nx-t3,#8b95a7)}
+.ckwh .ckwp{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--nx-t3,#8b95a7)}   /* shrinks first; title holds the full path */
+.ckwbtn{display:flex;gap:6px;margin-left:auto;flex:0 0 auto}   /* both buttons wrap together, right-aligned */
 .ckwh .ckwlast{color:var(--nx-t3,#8b95a7)}
 .ckwh .ckwlast.ckwold{color:var(--nx-warn,#e3b341)}   /* past the monthly check cadence */
 .ckwa{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--nx-t2,#aab4c3);cursor:pointer}

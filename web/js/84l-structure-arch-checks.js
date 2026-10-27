@@ -211,9 +211,9 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
     + (flt ? ' · ' + esc(T('shown {n} of {m}').replace('{n}', top.length).replace('{m}', all.length)) : '')
     + '</span>' + archChkLastHtml(d) + '<span class=ckwp title="' + esc(p) + '">' + esc(archBase(p) + (cm ? ' · ' + cm : '')) + '</span>'
     + '<label class=ckwa><input type=checkbox data-ckall' + (top.length && top.every(x => S.sel && S.sel[archChkKey(x)]) ? ' checked' : '') + '>' + esc(T('Select all')) + '</label>'
-    + '<button type=button class="archgo' + (S.req ? ' on' : '') + '" data-ckfix' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Request fix') + (n ? ' (' + n + ')' : '')) + '</button>'
-    + (why ? '<span class=archwhy>' + esc(why) + '</span>' : '')
-    + '<button type=button class="archgo' + (S.run ? ' on' : '') + '" data-ckrun aria-expanded=' + (S.run ? 'true' : 'false') + (S.run && S.run.busy ? ' disabled' : '') + '>' + esc(T('Run security check')) + '</button></div>';
+    // ⚠ no inline reason span here: it pushed «Run security check» alone onto a second line; the reason is the button title
+    + '<span class=ckwbtn><button type=button class="archgo' + (S.req ? ' on' : '') + '" data-ckfix' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Request fix') + (n ? ' (' + n + ')' : '')) + '</button>'
+    + '<button type=button class="archgo' + (S.run ? ' on' : '') + '" data-ckrun aria-expanded=' + (S.run ? 'true' : 'false') + (S.run && S.run.busy ? ' disabled' : '') + '>' + esc(T('Run security check')) + '</button></span></div>';
   // filter row: view only (R5) — tool ids are tool output, esc'd and never through T()
   h += '<div class=ckwf><select data-cksev aria-label="' + esc(T('Severity')) + '">' + [['all', 'All severities'], ['high', 'High and above'], ['critical', 'Critical only']].map(o => '<option value=' + o[0] + (sf === o[0] ? ' selected' : '') + '>' + esc(T(o[1])) + '</option>').join('')
     + '</select><select data-cktool aria-label="' + esc(T('Tool')) + '"><option value=""' + (S.tool ? '' : ' selected') + '>' + esc(T('All tools')) + '</option>'

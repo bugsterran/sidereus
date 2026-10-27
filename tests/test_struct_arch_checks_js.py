@@ -87,6 +87,17 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("<div class=archckst>gitleaks · 정상", r)   # scanner states line
         self.assertIn("점검한 적 없음", r)                        # security history section
 
+    def test_header_buttons_wrap_together(self):
+        # ⚠ an inline reason span in the header pushed «Run security check» alone onto line 2
+        r = run("const d = {checks: " + json.dumps(CK) + "}; console.log(JSON.stringify(archChkWinHtml('/r', d, {sel: {}, req: null}, [])));")
+        hd = r[r.index("<div class=ckwh>"):r.index("<div class=ckwf>")]
+        self.assertNotIn("archwhy", hd)
+        self.assertIn("data-ckfix disabled title=", hd)   # the reason stays on the disabled button
+        m = re.search(r"<span class=ckwbtn>(.*?)</span></div>$", hd)
+        self.assertIsNotNone(m)
+        self.assertIn("data-ckfix", m.group(1))
+        self.assertIn("data-ckrun", m.group(1))
+
     def test_popup_rows_escape_and_order(self):
         r = run("const d = {checks: " + json.dumps(CK) + "}; console.log(JSON.stringify([archChkWinHtml('/r', d, {sel: {}, req: null}, []), archChkTop({checks: {}})]));")
         h = r[0]
