@@ -150,6 +150,46 @@ class Wake(unittest.TestCase):
             sys.stdin = orig_stdin
         self.assertFalse(os.path.exists(os.path.join(self.store, ".wake")))
 
+    def test_session_start_clear_arms_waiter_without_backlog(self):
+        self.post(**{"from": "peer", "to": "me"})           # surfaced by the pre-/clear sid already
+        self.inp = {"session_id": "sess-new", "cwd": "/proj", "hook_event_name": "SessionStart", "source": "clear"}
+        held = []
+        real = W.MW.wait
+
+        def wait(*a, **k):
+            held.append(os.path.exists(W.lock_path(self.store, "sess-new")))
+            return real(*a, **k)
+        with mock.patch.object(W.MW, "wait", wait), mock.patch.object(W.MW, "take_lock", wraps=W.MW.take_lock) as tl:
+            rc, out = self.run_w(life=0.01)
+        self.assertEqual(tl.call_args[0][0], W.lock_path(self.store, "sess-new"))
+        self.assertEqual(held, [False])
+        self.assertEqual((rc, out), (2, W.RENEW + "\n"))  # waited (renewal), no wake on the old post
+        self.assertTrue(os.path.exists(os.path.join(self.store, "presence-me.watch")))
+        self.post(**{"from": "peer", "to": "me"})
+        rc, out = self.run_w(life=5)
+        self.assertEqual(rc, 2)
+        self.assertIn("1 new mail", out)
+
+    def test_stop_while_session_start_waiter_holds_lock_is_quiet(self):
+        lp = W.lock_path(self.store, "sess-0001")
+        os.makedirs(os.path.dirname(lp))
+        with open(lp, "w", encoding="utf-8") as f:
+            f.write("999999")                              # SessionStart waiter's fresh heartbeat
+        self.post(**{"from": "peer", "to": "me"})
+        self.inp = dict(self.inp, hook_event_name="Stop", stop_hook_active=False, last_assistant_message="x")
+        self.assertEqual(self.run_w(life=5), (0, ""))
+        with open(lp, encoding="utf-8") as f:
+            self.assertEqual(f.read(), "999999")           # holder untouched
+
+    def test_plugin_session_start_runs_waiter(self):
+        with open(os.path.join(os.path.dirname(_H), "plugin", "hooks", "hooks.json"), encoding="utf-8") as f:
+            groups = json.load(f)["hooks"]["SessionStart"]
+        hs = [(g.get("matcher"), h) for g in groups for h in g["hooks"]
+              if h["command"].rstrip('"').endswith("/mailbox_wake.py")]
+        self.assertEqual(len(hs), 1)
+        self.assertIn("clear", hs[0][0].split("|"))
+        self.assertIs(hs[0][1].get("asyncRewake"), True)
+
 
 if __name__ == "__main__":
     unittest.main()

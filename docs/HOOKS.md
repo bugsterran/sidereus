@@ -16,7 +16,7 @@ Every hook is standalone stdlib Python 3.9 and follows two rules:
 | Script | Event (matcher), timeout | Does |
 |---|---|---|
 | `mailbox_stop.py` | `Stop`, 5 s | hands new mail and relays over at turn end |
-| `mailbox_wake.py` | `Stop`, `asyncRewake`, 6 h | waits in the background after each turn and wakes the idle session on new mail (no Monitor or watch.sh needed) |
+| `mailbox_wake.py` | `Stop`, `SessionStart` (`clear\|resume`), `asyncRewake`, 6 h | waits in the background after each turn (and right after `/clear` or resume) and wakes the idle session on new mail (no Monitor or watch.sh needed) |
 | `invite_notice.py` | `SessionStart`, `UserPromptSubmit`, 10 s | room invites, unregistered id, wake notice |
 | `pipelines_brief.py` | `SessionStart`, `UserPromptSubmit`, 5 s | lists the project's pipelines |
 | `file_peers_notice.py` | `PreToolUse` (`Edit\|Write\|MultiEdit\|NotebookEdit`), 2 s | another live session edited this file |

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Async Stop hook: waits in the background for new mail and wakes the idle session when it arrives.
+"""Async Stop + SessionStart (clear|resume) hook: waits in the background for new mail and wakes the idle session when it arrives.
 
 Why: the sync Stop hook (mailbox_stop.py) only runs while the session is ending a turn; an idle session
 saw new mail only through a watcher process (Monitor + watch.sh). This waiter needs neither: Claude Code
@@ -48,6 +48,18 @@ def deliver(p, err):
     MS.append_receipts(p["acks"], p["receipts"])
 
 
+def seed_clear(inp, store, me, now_ns=None):
+    """SessionStart after /clear: start the new session id's cursor at now when it has none.
+    ⚠Without it the fresh sid floors at now - LOOKBACK_S and wakes at once on mail (and relays) the pre-/clear sid already surfaced."""
+    if inp.get("hook_event_name") != "SessionStart" or inp.get("source") != "clear":
+        return
+    sp = MS.state_path(store, str(inp.get("session_id") or ""))
+    if os.path.exists(sp):
+        return
+    now_ns = now_ns or time.time_ns()
+    MS.save_state(sp, {"last_t": now_ns, "relay_t": now_ns, "me": me, "at": now_ns})
+
+
 def run(inp, store=None, life_s=LIFE_S, poll_s=POLL_S, first_s=FIRST_DELAY_S, err=None, sleep=time.sleep):
     """Returns the exit code: 2 = wake (stderr written), 0 = nothing to do."""
     err = err or sys.stderr
@@ -57,6 +69,7 @@ def run(inp, store=None, life_s=LIFE_S, poll_s=POLL_S, first_s=FIRST_DELAY_S, er
     ident = MS.load(os.path.join(store, "identity.json"), {})
     if not sid or not cwd or not isinstance(ident, dict) or not isinstance(ident.get(cwd), str):
         return 0
+    seed_clear(inp, store, ident[cwd])
     # The bus check runs when bus.jsonl changes, and every RETRY_S since plan() can miss for non-bus reasons (budget).
     st, p = MW.wait(store, sid, ident[cwd], lambda: MS.plan(inp, store=store, t0=time.monotonic(), over_pending=True),
                     life_s, poll_s=poll_s, first_s=first_s, sleep=sleep, retry_s=MW.RETRY_S)

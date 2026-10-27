@@ -193,7 +193,7 @@ The mailbox ships here (`bus.jsonl`, `watch.sh`, `monitor_stream.py`, `mailbox_c
 The Chat tab and the work-log DM already use it. A session receives mail, full body included, in one of
 two ways:
 
-- Instantly: the Stop async hook `hooks/mailbox_wake.py` (asyncRewake) wakes an idle session on new mail;
+- Instantly: the async hook `hooks/mailbox_wake.py` (asyncRewake; Stop, plus SessionStart after `/clear` or resume) wakes an idle session on new mail;
   read it with `mailbox_inbox`.
   - It is active once the plugin or the `setup-claude` hooks JSON (§5) is in place; nothing else needs to run.
   - `watch.sh` is optional, for a plain terminal.
