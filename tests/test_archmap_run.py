@@ -171,6 +171,28 @@ class RunTest(unittest.TestCase):
         self.put("plan.json", NOW - 300)
         self.assertEqual(AM._target(self.row(cwd=other, repos=[other, self.repo]), NOW), (self.repo, NOW - 300))   # pending wins
 
+    def test_requested_sidereus_repo_is_the_target(self):
+        # the home exclusion applies to cwd/repos guesses, never to the repo the page asked for
+        s = self.row(cwd=self.home, repos=[self.home, self.repo], sub=[{"lab": "[pl:arch-map/흐름 그리기] x", "min": 1}])
+        with mock.patch.object(AM, "_REQ_SRC", lambda sid, pl, now: self.home):
+            self.assertEqual(AM._target(s, NOW), (self.home, 0.0))
+            self.assertEqual(list(AM.runs([s], NOW)), [self.home])
+
+    def test_newer_request_takes_the_run_from_the_older(self):
+        PL, sid = sidereus("pl_reqs"), "5024a7e1-0000-4000-8000-000000000001"
+        mem = [{"id": "m2", "repo": self.home, "pipeline": "arch-map", "sid": sid, "to": "o", "mid": "m2", "at": NOW - 300},
+               {"id": "m1", "repo": self.repo, "pipeline": "arch-map", "sid": sid, "to": "o", "mid": "m1", "at": NOW - 600}]
+        pr = [{"name": "arch-map", "end": 0, "cur": "흐름 그리기", "t0": NOW - 200, "t1": NOW - 10}]
+        s = self.row(sid=sid, cwd=self.home, repos=[self.home, self.repo], plrun=pr)
+        with mock.patch.object(PL, "PLREQ_PATH", None), mock.patch.object(PL, "PLSTOP_DIR", None), \
+                mock.patch.object(PL, "_MEM", mem), mock.patch.object(PL, "_now", lambda: NOW), \
+                mock.patch.object(AM, "_REQ_SRC", PL.req_repo):
+            arch = AM.runs([s], NOW)
+            v = PL.view([s], arch, {}, NOW)
+        self.assertEqual(list(arch), [self.home])
+        self.assertEqual(v[self.home][0]["state"], "run")
+        self.assertNotEqual(v[self.repo][0]["state"], "run")
+
 
 SEC_TITLES = ["보안 검사", "위협 모델 리뷰"]
 

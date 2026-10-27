@@ -44,6 +44,8 @@ class StoreTest(_Base):
         self.req()
         spec = importlib.util.spec_from_file_location("pl_reqs_fresh", PQ.__file__)
         fresh = importlib.util.module_from_spec(spec)
+        # ⚠exec re-registers arch_map._REQ_SRC to the fresh module: later tests patching PQ would read the wrong store.
+        self.addCleanup(setattr, AM, "_REQ_SRC", AM._REQ_SRC)
         spec.loader.exec_module(fresh)
         fresh.PLREQ_PATH, fresh._now = self.path, lambda: NOW
         rows = fresh.view([{"sid": SID, "project": "repo", "state": "wait"}], {})

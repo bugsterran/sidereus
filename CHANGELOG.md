@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sessions: the account tooltip no longer ends in an empty «config dir» when the directory is unknown.
 - Structure: at 900 px the map scrolls far enough that bottom-left modules can be brought out from under the floating detail panel.
 - Sessions, Timeline and Pipelines: clicking an agent started by a Claude Code workflow opens that agent's work log (it opened nothing, an empty log, or the whole session's log).
+- Structure: a diagram run requested for the Sidereus repository itself no longer shows as running (with a Stop button) on another project the same session drew earlier, and an older request from that session no longer reads «Running» once a newer one starts.
 
 ## [0.8.1] - 2026-10-26
 
