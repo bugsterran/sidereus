@@ -18,6 +18,7 @@ KILL0_OK = {
 LITERAL_OK = {
     ("sidereus_cli.py", "build_plist"),          # launchd plist default python (macOS only)
     ("sidereus_cli.py", "setup_python"),         # documented macOS python, used only behind IS_MAC
+    ("sidereus/demo_tools.py", "_demo_runtime"),  # demo display string, never opened
 }
 
 

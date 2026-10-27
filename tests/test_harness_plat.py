@@ -180,6 +180,24 @@ class HarnessPlatTest(unittest.TestCase):
         finally:
             H.harness, HP.harness_evidence.scan, HP.harness_trail.trail, HP.harness_trail.report, HP.harness_flow.guards = saved
 
+    def test_runtime_card_every_platform(self):
+        """runtime = sec_runtime.view of arch/deps-last.json, read from the patched ARCH_DIR only (none + cmd when absent)."""
+        saved = (H.harness, HP.arch_verify.ARCH_DIR)
+        H.harness = lambda proj, days: (200, {"ok": True, "events": []})
+        HP.arch_verify.ARCH_DIR = os.path.join(self.tmp, "arch")
+        try:
+            for plat in ("cc", "cx"):
+                rt = self._body(plat)["runtime"]
+                self.assertEqual((rt["state"], rt["items"]), ("none", []), plat)
+                self.assertIn("--category security --dev", rt["cmd"])
+            sidereus("sec_runtime").write(HP.arch_verify.ARCH_DIR, {"at": 1.0, "report": "", "dev": False, "offline": True,
+                                                                     "items": []})
+            for plat in ("cc", "cx"):
+                rt = self._body(plat)["runtime"]
+                self.assertEqual((rt["state"], rt["offline"], rt["stale"]), ("unknown", True, True), plat)
+        finally:
+            H.harness, HP.arch_verify.ARCH_DIR = saved
+
     def test_evidence_only_commits_limit_60(self):
         calls = []
         saved = (HP.harness_evidence.recent, HP.harness_evidence.commits)

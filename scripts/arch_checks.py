@@ -7,7 +7,8 @@ usage: arch_checks.py (--repo <path> | --last | --verify --last) --category secu
                     arch/<key>/<HEAD>/checks-security.json + its last pointer, and one Markdown report
                     arch/<key>/security-report-YYYYMMDD-HHMM.md (scanners, triage, delta, deps; newest 10 kept).
                     Deps = scripts/deps_audit.py lines, only when the repo is this Sidereus checkout;
-                    --dev adds its dev tooling lines (node, Chrome, browser drivers).
+                    --dev adds its dev tooling lines (node, Chrome, browser drivers) and writes
+                    arch/deps-last.json (local Python/Node vs latest patch, read by the Harness runtime card).
                     --last = the repo of the last security checks (else of the last map run).
   --category        security (required): gitleaks, npm audit, osv-scanner, semgrep, bandit, trivy (Dockerfile
                     misconfig; --images adds trivy image on each Dockerfile FROM / compose image:, never built or run).
@@ -40,6 +41,7 @@ from sidereus import arch_checks as AC  # noqa: E402  (path set just above)
 from sidereus import arch_verify as AV  # noqa: E402
 from sidereus import sec_checks as SC  # noqa: E402
 from sidereus import sec_report as SR  # noqa: E402
+from sidereus import sec_runtime as SRT  # noqa: E402
 from sidereus import sec_trivy as ST  # noqa: E402
 from sidereus.bus import _atomic_write  # noqa: E402
 from sidereus.gitinfo import git_argv, git_env  # noqa: E402
@@ -226,14 +228,29 @@ def _load_deps():
     return mod
 
 
-def _deps(repo, dev, offline):
-    """deps_audit lines for this Sidereus checkout, None for any other repo (its dependencies are not ours to judge)."""
+def _deps(repo, dev, offline, rich=None):
+    """deps_audit lines for this Sidereus checkout, None for any other repo (its dependencies are not ours to judge).
+    rich: a list ⇒ deps_audit appends its runtime dict there."""
     if os.path.realpath(repo) != SIDEREUS_ROOT:
         return None
     try:
-        return _load_deps().collect((["--dev"] if dev else []) + (["--offline"] if offline else []))
+        return _load_deps().collect((["--dev"] if dev else []) + (["--offline"] if offline else []), rich=rich)
     except Exception as e:   # noqa: BLE001 — a deps failure is a report line, never a lost scan
         return [("WARN", "deps audit", "failed: %s" % type(e).__name__)]
+
+
+def _rt_write(at, name, dev, rich):
+    """Store the runtime card input (arch/deps-last.json); False when there is nothing to store or the write failed.
+    ⚠--dev runs only: a run without --dev lists no Node, and storing it would drop the Node rows silently."""
+    r = rich[0] if dev and rich and isinstance(rich[0], dict) else None
+    if r is None:
+        return False
+    try:
+        SRT.write(AV.ARCH_DIR, {"at": at, "report": name or "", "dev": bool(dev), "offline": bool(r.get("offline", True)),
+                                "items": list(r.get("items") or [])})
+    except OSError:   # the scan and its report stand; the card shows the older file or «none»
+        return False
+    return True
 
 
 def _report(kdir, j, ok, deps):
@@ -312,8 +329,11 @@ def run(repo, only=None, offline=False, dev=False, images=False):
     ok = [t["id"] for t in j["tools"] if t["status"] == "ok" and t["id"] not in bad]
     if ok:   # ⚠a run where no tool ran ok must not resolve anything; log failure keeps rc
         SC.log_append(os.path.dirname(d), SC.scan_record(head, j["at"], ok, j["items"]))
-    deps = _deps(repo, dev, offline)
+    rich = [] if dev else None   # runtime lookups only for the --dev card
+    deps = _deps(repo, dev, offline, rich)
     name = _report(os.path.dirname(d), j, ok, deps)   # ⚠after log_append: the delta reads this run's scan record
+    if deps is not None:
+        _rt_write(j["at"], name, dev, rich)
     extra = " · report %s" % (name or "not written")
     if deps is None:
         extra += " · deps n/a"

@@ -11,14 +11,17 @@ detail» lines; exit 1 on any FAIL. `collect(argv)` returns the same lines for s
 ⚠Online lookups run after one reachability probe; unreachable or --offline = a «skipped» line, never «no advisories».
 OSV.dev covers npm packages only (browser drivers) — not the CPython / Node / Chrome runtimes, which keep the EOL
 lines. Reads metadata only: plist ProgramArguments and app Info.plist versions — never credentials or session files.
-Writes nothing.
+Writes nothing. With `collect(argv, rich=[])` it also lists local Python/Node runtimes vs python.org / nodejs.org
+release lists (scripts/arch_checks.py stores that as deps-last.json).
 """
 import ast
 import datetime
+import glob
 import json
 import os
 import plistlib
 import re
+import shutil
 import subprocess
 import sys
 
@@ -276,9 +279,147 @@ def _online_eol(prod, cur, key, today):
                 cur, key, row.get("latest"), row.get("eol"), newest.get("cycle"), newest.get("latest"), newest.get("eol")))
 
 
-def collect(argv):
+RT_PREFIXES = ("/opt/homebrew", "/usr/local")
+SYS_PY = "/usr/bin/python3"
+PY_RELEASES = "https://www.python.org/api/v2/downloads/release/?is_published=true"
+NODE_RELEASES = "https://nodejs.org/dist/index.json"
+_VER_RE = re.compile(r"\d+(\.\d+){1,2}")
+_which = shutil.which   # tests patch this, never PATH
+
+
+def _rt_cls(path):
+    """homebrew | system | other, from the path layout only."""
+    rp = os.path.realpath(path)
+    if any(path.startswith(p + "/opt/") for p in RT_PREFIXES) or "/Cellar/" in rp:
+        return "homebrew"
+    return "system" if path == SYS_PY else "other"
+
+
+def _rt_version(rt, path):
+    v = _run([path, "-c", "import platform;print(platform.python_version())"] if rt == "python" else [path, "--version"])
+    v = v.strip().lstrip("v")
+    return v if _VER_RE.fullmatch(v) else ""
+
+
+def runtimes(dev=True):
+    """[{rt, path, cls, viewer, cur}] of local Python (and with dev Node) runtimes, deduped by realpath.
+    The launchd interpreter is marked viewer: true. A runtime whose version cannot be read is left out."""
+    cand = []
+    for pre in RT_PREFIXES:
+        cand += [("python", p) for p in sorted(glob.glob(os.path.join(pre, "opt", "python@3.*", "bin", "python3.*")))
+                 if re.search(r"/python3\.\d+$", p)]
+    cand.append(("python", SYS_PY))
+    lpy = _launchd_python()
+    if os.path.isabs(lpy):
+        cand.append(("python", lpy))
+    if dev:
+        for pre in RT_PREFIXES:
+            cand += [("nodejs", p) for p in sorted(glob.glob(os.path.join(pre, "opt", "node@*", "bin", "node")))]
+            cand.append(("nodejs", os.path.join(pre, "opt", "node", "bin", "node")))
+        w = _which("node")
+        if w:
+            cand.append(("nodejs", w))
+    out, seen = [], set()
+    viewer_rp = os.path.realpath(lpy) if os.path.isabs(lpy) else None
+    for rt, p in cand:
+        if not os.path.isfile(p):
+            continue
+        rp = os.path.realpath(p)
+        if rp in seen:
+            continue
+        cur = _rt_version(rt, p)
+        if not cur:
+            continue
+        seen.add(rp)
+        out.append({"rt": rt, "path": p, "cls": _rt_cls(p), "viewer": rp == viewer_rp, "cur": cur})
+    return out
+
+
+def py_releases():
+    """[{v, security: False}] of published final CPython releases. ⚠python.org carries no security flag."""
+    rows = _fetch(PY_RELEASES)
+    out = []
+    for r in rows if isinstance(rows, list) else ():
+        m = re.fullmatch(r"Python (\d+\.\d+\.\d+)", str(r.get("name") or "")) if isinstance(r, dict) else None
+        if m and not r.get("pre_release"):
+            out.append({"v": m.group(1), "security": False})
+    if not out:
+        raise ValueError("python.org: no releases")
+    return out
+
+
+def node_releases():
+    """[{v, security}] from nodejs.org/dist/index.json (security = that release fixed a vulnerability)."""
+    rows = _fetch(NODE_RELEASES)
+    out = [{"v": str(r["version"]).lstrip("v"), "security": r.get("security") is True}
+           for r in rows if isinstance(r, dict) and _VER_RE.fullmatch(str(r.get("version") or "").lstrip("v"))] \
+        if isinstance(rows, list) else []
+    if not out:
+        raise ValueError("nodejs.org: no releases")
+    return out
+
+
+_RANK = ("ok", "info", "unknown", "warn", "fail")   # = sidereus/sec_runtime.RT_LV (that module also owns the fix keys)
+
+
+def _cycle(rt, v):
+    p = v.split(".")
+    return p[0] if rt == "nodejs" else ".".join(p[:2])
+
+
+def _lines(rt, releases):
+    """Release lines that count for «newest»: every CPython minor; Node even majors only (odd ones never reach LTS)."""
+    return [r for r in releases if rt != "nodejs" or int(r["v"].split(".")[0]) % 2 == 0]
+
+
+def rt_verdict(rt, cur, releases, eol_table, today):
+    """Item dict for one runtime. Pure. releases None = no data (offline / fetch failed) ⇒ unknown, never ok.
+    patch: fail = cycle EOL or a newer same-cycle security release missed · warn = patch behind · ok (unknown when the
+    cycle is not in eol_table).
+    newest: info = a newer release line exists (behind_n lines) · ok."""
+    rtn = rt["rt"]
+    cyc = _cycle(rtn, cur)
+    eol = eol_table.get(cyc, "")
+    eol_past = bool(eol) and datetime.date.fromisoformat(eol) <= today
+    patch = {"level": "fail" if eol_past else "unknown", "target": "", "security": False, "eol": eol, "eol_past": eol_past}
+    newest = {"level": "unknown", "target": "", "behind_n": 0}
+    if releases is not None:
+        same = [r for r in releases if _cycle(rtn, r["v"]) == cyc]
+        if same:
+            top = max(same, key=lambda r: _ver_tuple(r["v"]))
+            missed = [r for r in same if _ver_tuple(r["v"]) > _ver_tuple(cur)]
+            sec = any(r["security"] for r in missed)
+            patch["target"], patch["security"] = top["v"], sec
+            # ⚠a cycle missing from the EOL table (odd Node majors) is never ok: its end date is unknown here
+            patch["level"] = "fail" if eol_past or sec else "warn" if missed else "ok" if eol else "unknown"
+        lines = _lines(rtn, releases)
+        if lines:
+            top = max(lines, key=lambda r: _ver_tuple(r["v"]))
+            mine = _ver_tuple(cyc)
+            ahead = {_cycle(rtn, r["v"]) for r in lines if _ver_tuple(_cycle(rtn, r["v"])) > mine}
+            newest = {"level": "info" if ahead else "ok", "target": top["v"], "behind_n": len(ahead)}
+    level = max(patch["level"], newest["level"], key=_RANK.index)
+    return {"rt": rtn, "path": rt["path"], "cls": rt["cls"], "viewer": bool(rt.get("viewer")), "cur": cur, "cycle": cyc,
+            "level": level, "patch": patch, "newest": newest}
+
+
+def _rich(dev, online, today):
+    """{offline, items} for scripts/arch_checks.py's runtime card. Release lists are fetched only when online."""
+    rel = {}
+    for rtn, fn in (("python", py_releases), ("nodejs", node_releases)):
+        try:
+            rel[rtn] = fn() if online else None
+        except Exception:   # noqa: BLE001 — a lookup error is «unknown», never «ok»
+            rel[rtn] = None
+    items = [rt_verdict(r, r["cur"], rel[r["rt"]], PY_EOL if r["rt"] == "python" else NODE_EOL, today)
+             for r in runtimes(dev)]
+    return {"offline": not online or any(v is None for v in rel.values()), "items": items}
+
+
+def collect(argv, rich=None):
     """[(level, item, detail)]. Default = the viewer's own runtime (python); --dev adds the dev tooling (node, Chrome,
-    browser drivers). ⚠Prints and writes nothing: scripts/arch_checks.py calls this in-process for its report."""
+    browser drivers). ⚠Prints and writes nothing: scripts/arch_checks.py calls this in-process for its report.
+    rich: a list ⇒ one {offline, items} runtime dict is appended (extra lookups run only then); lines are unchanged."""
     dev = "--dev" in argv
     today = datetime.date.today()
     out = []
@@ -315,6 +456,11 @@ def collect(argv):
             emit("WARN", "browser (screen_check)", "Chrome not found at %s (set CHROME)" % CHROME_APP)
 
     why = offline_reason(argv)   # --online is a no-op: online is the default
+    if isinstance(rich, list):
+        try:
+            rich.append(_rich(dev, not why, today))
+        except Exception:   # noqa: BLE001 — the runtime card is extra; its failure never changes the lines
+            pass
     if why:
         emit("WARN", "online lookups", "skipped — %s (no advisory data, not «clean»)" % why)
         return out

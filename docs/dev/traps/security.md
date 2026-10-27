@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Security and privacy
 
+- **python.org has no security flag, so a Python runtime fails only on EOL** (`scripts/deps_audit.py` `rt_verdict`, Harness runtime card). nodejs.org `dist/index.json` marks security releases (`security: true`); python.org `/api/v2/downloads/release` does not. ⇒ Node: a missed same-line security release = `fail`; Python: patch behind = `warn`, `fail` only when the cycle is EOL (`PY_EOL`).
+  - ⚠No release list (offline, fetch error, own line not listed) = `unknown`, never `ok`; the viewer never fetches — only the runner writes `arch/deps-last.json`.
+  - ⚠«Newest» counts Node even majors only (odd ones never reach LTS); every CPython minor counts.
+
 - **A trivy run that cannot reach its vuln DB or registry is `fail`, never clean** (`sidereus/sec_trivy.py` `fail_why`, called before `net_fail` in `arch_checks._judge`). DB download errors ⇒ «vuln DB download failed: set TRIVY_DB_REPOSITORY»; UNAUTHORIZED / denied / 401 / 403 ⇒ «docker login <registry> needed»; MANIFEST_UNKNOWN / not found ⇒ «image not found».
   - ⚠DB is checked first: a rate-limited DB pull says «denied» too and must not read as a login problem.
   - ⚠An id with any failed row (one image of several) is left out of the scan record's ran-ok tools, so its old findings are not resolved by absence.

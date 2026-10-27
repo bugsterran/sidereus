@@ -105,7 +105,7 @@ class ReportRun(unittest.TestCase):
 
         class Deps:
             @staticmethod
-            def collect(argv):
+            def collect(argv, rich=None):
                 self.deps_argv.append(argv)
                 return [("OK", "python imports", "stdlib only"), ("FAIL", "python (launchd: /x)", "EOL past"),
                         ("WARN", "online lookups", "skipped")]

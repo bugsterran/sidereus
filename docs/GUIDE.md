@@ -69,6 +69,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 
 ![Harness gate report: caught · held · reverted, «What is guarding», incident cards](images/harness-report-en.png)
 
+- «Runtime behind latest patch» (top, from the newest security report): per runtime, current → latest patch in its cycle (security fix · end of life) and how many cycles behind the newest release, plus one next step (e.g. `brew upgrade node@<cycle>`, then restart the viewer). «latest unknown» is never a clean result; a report older than 7 days says «rerun to know it is current»; no report shows «No check on record» and the command. All on latest patch = one quiet line. python.org has no security flag, so Python is judged by end of life and patch only.
 - The top shows three numbers from the gate records: «Caught (red→green)» (a gate failed, a later run of the same gate passed), «Held» and «Reverted».
 - «What is guarding» lists the local checkpoints — «Before edit» (hooks, «blocked n») · «Right after» (`check --fast`) · «Before commit» (`check --full`) — with their catch counts. Click one to show only its cards.
 - One card per catch, newest first: red run (time · hash · exit code · failures) → fix commits → green run → held/reverted. A checkpoint that ran but caught nothing is one quiet card «ran n times, caught 0».
