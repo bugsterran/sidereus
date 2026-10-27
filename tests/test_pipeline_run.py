@@ -724,14 +724,13 @@ if __name__ == "__main__":
 
 class OrphanNoteNextStep(unittest.TestCase):
     def test_orphan_note_names_folder_and_next_step(self):
-        import json, re, subprocess
         here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         src = open(os.path.join(here, "web", "js", "48b-pipeline-run.js"), encoding="utf-8").read()
         fn = re.search(r"^function plOrphHtml\(.*?^}", src, re.S | re.M).group(0)
         js = ("const T = s => s, esc = s => String(s), sid8 = s => String(s).slice(0, 8);"
               "const SESS = [{sid: 'abcdef1234', cwd: '/w/hotfix-wt'}];" + fn +
               "console.log(JSON.stringify(plOrphHtml([{name: 'hotfix', sid: 'abcdef1234'}, {name: 'x', sid: 'zz'}])));")
-        out = json.loads(subprocess.run(["node", "-e", js], capture_output=True, text=True, check=True).stdout)
+        out = json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
         self.assertIn("session hotfix-wt · abcdef12", out)
         self.assertIn("«Add project»", out)
         self.assertIn("session zz — ", out)   # unknown session: id only, no empty folder
