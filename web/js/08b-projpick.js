@@ -84,7 +84,9 @@ function ppOpen(cfg, btn){
   p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', ph);
   PPS = { cfg: cfg, q: '', i: -1, rows: [], btn: btn };   // btn: opener may be another control (77 Timeline chip)
   p.innerHTML = '<input type=text data-ppq placeholder="' + esc(ph) + '" aria-label="' + esc(ph) + '">'
-    + '<div class=cmdkl role=listbox></div><div class="cmdkf ppf">' + (cfg.extra || '') + '<span>' + esc(T('↑↓ move')) + ' · '
+    + '<div class=cmdkl role=listbox></div>'
+    // cfg.foot = {html (caller-escaped), act}: one pinned action under the list, outside the filtered rows; reached with Tab.
+    + (cfg.foot ? '<button type=button class=ppfoot data-ppfoot>' + cfg.foot.html + '</button>' : '') + '<div class="cmdkf ppf">' + (cfg.extra || '') + '<span>' + esc(T('↑↓ move')) + ' · '
     + esc(T('Enter pick')) + ' · ' + esc(T('Esc close')) + '</span></div>';
   PPS.i = 0;
   ppListPaint();
@@ -108,6 +110,7 @@ document.addEventListener('click', e => {
   if(!PPS || !e.target.closest || !e.target.closest('#ppop')) return;
   const r = e.target.closest('[data-ppi]');
   if(r) return ppPick(+r.dataset.ppi);
+  if(e.target.closest('[data-ppfoot]')){ const cfg = PPS.cfg; ppClose(false); if(cfg.foot && cfg.foot.act) cfg.foot.act(); return; }
   if(e.target.closest('.ppf button')){ const cfg = PPS.cfg; ppClose(false); if(cfg.onExtra) cfg.onExtra(); }
 });
 document.addEventListener('input', e => {

@@ -29,7 +29,7 @@ def run(body, sess=SESS):
            "function getJSON(u){ urls.push(u); return new Promise(() => {}); }\n"
            "function loadDiff(...a){ opened.push(a); }\n" % json.dumps(sess))
     fns = re.search(r"^const TLG_AUTO = .*$", js_all(), re.M).group(0) + "\n" + "\n".join(js_fn(n) for n in ("tlgShownN", "tlgNum", "tlgShared", "tlgAge", "tlgName", "tlgSessions", "tlgSid", "tlgRepos", "tlgTarget",
-                                        "ppComboHtml", "tlgRepoName", "tlgCnt", "tlgProj", "tlgNote", "tlgSelHtml", "tlgDirty", "tlgDetBtn", "tlgBaseTip", "tlgChipInner", "tlgOpenRepo",
+                                        "ppComboHtml", "tlgRepoName", "tlgCnt", "tlgProj", "tlgNote", "tlgSelHtml", "tlgDirty", "tlgBaseTip", "tlgChipInner", "tlgOpenRepo",
                                         "tlgNoGit", "tlgFetch", "tlgNext", "tlgTick", "tlgOpen"))
     r = subprocess.run(node_e(ttl + "\n" + pre + fns + "\n" + body), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:

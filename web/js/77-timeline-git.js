@@ -125,7 +125,8 @@ function tlgSelHtml(tg){
   return ppComboHtml({ k: 'tlgs', label: T('Repository'), bare: true, items: items, cur: cur, ph: T('Find a repository'), empty: T('No matching repositories'), flat: flat, rowHtml: row,
     tip: e => (e.auto ? AL + '\n' : '') + e.tip, aria: nd ? TV({msg: 'Repositories with uncommitted changes: {n}', vars: {n: nd}}) : '',
     badge: e => (e.auto ? '<span class=tlgau>' + esc(T('auto', 'mark')) + '</span>' : '') + (nd ? '<span class=tlgnb>' + esc(T('{n}', 'repo count').replace('{n}', nd)) + '</span>' : ''),
-    pick: p => { tlgSel = p === TLG_AUTO ? '' : p; tlgKeepSave(); tlgTick(); } });
+    pick: p => { tlgSel = p === TLG_AUTO ? '' : p; tlgKeepSave(); tlgTick(); },
+    foot: { html: esc(T('View all changes')) + ' <span class=ppfootn>' + esc(tlgRepoName(tg.ck)) + '</span>', act: tlgOpen } });
 }
 // «[baseline] N files +a −d» (+ «· ⚠ n shared»); no target or no reply yet = «[baseline] Changes».
 // ⚠The word «Changes» is dropped beside counts so the head holds one line at 1100; it stays the aria name and first tooltip line.
@@ -153,7 +154,7 @@ function tlgChipInner(tg){
   const tip = CH + '\n' + T('Show every repository with its changes') + (bt ? '\n' + bt : '') + (tg ? '\n' + tg.cwd : '');
   // Chip opens the repo combobox (data-ppo keeps 08b's outside-click from closing it before the toggle); 1 repo = no list, so the diff.
   const ls = !!(tg && tg.repos.length >= 2), ex = !!(ls && PPS && PPS.cfg.k === 'tlgs');
-  return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + (ls ? ' data-ppo aria-haspopup=listbox aria-controls=ppop aria-expanded="' + ex + '"' : '') + ' aria-label="' + esc(aria.join(' · ')) + '" title="' + esc(tip) + '">' + body + '</button>' + tlgDetBtn(tg);
+  return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + (ls ? ' data-ppo aria-haspopup=listbox aria-controls=ppop aria-expanded="' + ex + '"' : '') + ' aria-label="' + esc(aria.join(' · ')) + '" title="' + esc(tip) + '">' + body + '</button>';
 }
 // Every listed repo (followed one included) with ≥1 tracked changed file, most files first; untracked never count (tlgCnt).
 function tlgDirty(tg){
@@ -161,19 +162,11 @@ function tlgDirty(tg){
   const rs = tg.repos.some(e => e.ck === tg.ck) ? tg.repos : [{ck: tg.ck, cwd: tg.cwd, sid: tg.sid}].concat(tg.repos);
   return rs.map(e => ({e, c: tlgCnt((tlgC[e.ck] || {}).d)})).filter(x => x.c && x.c.n > 0).sort((p, q) => q.c.n - p.c.n);
 }
-// «Details» after the chip: the diff window on the followed repo at the chip's baseline (tlgOpen).
-// .tlgdti = icon form when the head is tight (tlgFit).
-function tlgDetBtn(tg){
-  if(!tg) return '';
-  const L = T('Details', 'repos'), tip = T('Open the changes in the diff window (git · view only)') + '\n' + tg.cwd;
-  return '<button type=button class="tlrf tlgdt" id=tlgdt aria-label="' + esc(L) + '" title="' + esc(tip) + '">'
-    + '<span class=tlgdtl>' + esc(L) + '</span><span class=tlgdti aria-hidden=true>☰</span></button>';
-}
 function tlgChipHtml(){ return '<span class=tlgb id=tlgb>' + tlgChipInner(tlgTarget()) + '</span>'; }
 // Id of the focused chip control, or ''. paintTl and tlgPaint refocus it after a rebuild.
 function tlgFocusId(){
   const ae = document.activeElement;
-  return ae && (ae.id === 'tlgcp' || ae.id === 'tlgdt') ? ae.id : '';
+  return ae && ae.id === 'tlgcp' ? ae.id : '';
 }
 // paintTl rebuilds #feed (head included): keep the old group while the session picker is open (its opener) or holds focus.
 function tlgKeep(box){
@@ -220,7 +213,7 @@ function tlgTick(){
   tlgNext();
   tlgPaint();
 }
-// «Details» -> the existing diff window at the chip's baseline; &sid lets that window offer «Since session start».
+// List foot «View all changes» -> the existing diff window (repo tabs) at the chip's baseline; &sid lets that window offer «Since session start».
 function tlgOpen(){ tlgOpenRepo(tlgTarget()); }
 // Chip click: the repo combobox under the chip (same list and pick as the combo button), else the diff window.
 function tlgChipClick(b){
@@ -236,14 +229,4 @@ function tlgOpenRepo(r){
 function tlgWire(){
   const b = document.getElementById('tlgcp');
   if(b) b.onclick = () => tlgChipClick(b);   // Enter/Space on a <button> fire click
-  const dt = document.getElementById('tlgdt');
-  if(dt) dt.onclick = tlgOpen;
-  tlgFit();
-}
-// ⚠One-line head: when the toolbar row overflows, «Details» becomes its icon (class on #tlgb, re-measured each paint).
-function tlgFit(){
-  const g = document.getElementById('tlgb'), h = g && g.parentElement;
-  if(!h || !document.getElementById('tlgdt')) return;
-  g.classList.remove('tlgtight');
-  if(h.scrollWidth > h.clientWidth + 1) g.classList.add('tlgtight');
 }
