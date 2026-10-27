@@ -465,9 +465,13 @@ function plOverview(){
   return plOvHtml(rows, PLS.proj, cp ? cp.name : '') + plOrphHtml(orph);
 }
 // Tagged run whose pipeline file is in no known project (or in two): session id + pipeline name only (rule 1).
+// ⚠Session folder before the id and a next step: a bare id repeated from the running row read as the same run failing.
 function plOrphHtml(orph){
-  return (orph || []).map(o => '<div class=hidnote>' + esc(T('Pipeline running from another folder') + ': ' + o.name + ' · ' + T('session') + ' '
-    + sid8(o.sid) + ' — ' + T('pipeline file not found')) + '</div>').join('');
+  return (orph || []).map(o => {
+    const x = (typeof SESS !== 'undefined' && SESS || []).find(s => s && s.sid === o.sid), dir = x && x.cwd ? String(x.cwd).replace(/[\\/]+$/, '').split(/[\\/]/).pop() : '';
+    return '<div class=hidnote>' + esc(T('Pipeline running from another folder') + ': ' + o.name + ' · ' + T('session') + ' ' + (dir ? dir + ' · ' : '')
+      + sid8(o.sid) + ' — ' + T('pipeline file not found') + '. ' + T('Use «Add project» on the folder that holds its pipeline file to see its stages.')) + '</div>';
+  }).join('');
 }
 // Live session running (proj, name): the row's own sid if live, else one whose open run / [pl:] tag matches; '' = none.
 function plOvSid(proj, name, sid){

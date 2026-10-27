@@ -47,7 +47,7 @@ Object.assign(I18N.ko, {
 });
 // Pipeline tab hint for a run launched outside its project (48b plOrphHtml).
 Object.assign(I18N.ko, {
-  'Pipeline running from another folder': '다른 폴더에서 실행 중인 파이프라인', 'pipeline file not found': '파이프라인 파일을 찾지 못했습니다',
+  'Pipeline running from another folder': '다른 폴더에서 실행 중인 파이프라인', 'pipeline file not found': '파이프라인 파일을 찾지 못했습니다', 'Use «Add project» on the folder that holds its pipeline file to see its stages.': '단계를 보려면 «프로젝트 불러오기»로 이 파이프라인 파일이 있는 폴더를 추가하세요.',
 });
 // Korean for the diff window scope labels (sidereus/git_view.py DIFF_SCOPES).
 Object.assign(I18N.ko, {
