@@ -460,6 +460,7 @@ def _target(s, now, pl=ARCH_PL):
     cands = []
     # ★A requested target only subagents touched is missing from repos (main-thread inputs): the run stuck on cwd, 15+ min.
     req = _REQ_SRC(str(s.get("sid") or ""), pl, now) if _REQ_SRC else ""
+    req = _store_repo(req) if isinstance(req, str) and req and os.path.isabs(req) else ""
     for c in [req, s.get("cwd")] + list(s.get("repos") or ()):
         if isinstance(c, str) and c and os.path.isabs(c):
             c = _store_repo(c)
@@ -468,6 +469,9 @@ def _target(s, now, pl=ARCH_PL):
     pend = [(t, c) for c, t in ((c, _pending_at(c) if pl == ARCH_PL else 0.0) for c in cands) if t and now - t <= ARCH_PEND_S]
     if pend:
         return max(pend)[1], max(pend)[0]
+    # ⚠The home exclusion below is for cwd/repos guesses only: applied to an explicit request for the Sidereus repo, it moved the run onto another repo.
+    if req:
+        return req, 0.0
     # Stage 1 writes no plan.json yet: a Sidereus-cwd session still names its target in repos (reload keeps «Analysing»).
     other = [c for c in cands if os.path.realpath(c) != SIDEREUS_ROOT]
     if not other and pl != ARCH_PL and cands:   # a security check of the Sidereus repo itself: home is the target

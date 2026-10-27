@@ -177,15 +177,19 @@ def req_repo(sid, pipeline, now):
 arch_map.set_req_source(req_repo)
 
 
-def _state(r, row, arch):
-    """(state, stage title) of one record against its session row and the server-tracked run (archRun/secRun) of its repo."""
+def _state(r, row, arch, until=0.0):
+    """(state, stage title) of one record against its session row and the server-tracked run (archRun/secRun) of its repo.
+    until = `at` of a newer request of the same pipeline to the same session (0 = none): runs from then on answer that one."""
     alive = isinstance(row, dict) and row.get("state") not in ("done", "gone")
     run = None
     if isinstance(row, dict):
         for x in row.get("plrun") or ():
             if isinstance(x, dict) and x.get("name") == r["pipeline"] and _num(x.get("t0")) >= r["at"] - RUN_SLACK_S \
+                    and not (until and _num(x.get("t0")) >= until - RUN_SLACK_S) \
                     and (run is None or _num(x.get("t0")) > _num(run.get("t0"))):
                 run = x
+    if until and isinstance(arch, dict) and _num(arch.get("t0")) >= until - RUN_SLACK_S:
+        arch = None   # ⚠plrun has no repo: without this the newer request's run also lit the older one as «run»
     ended = run is not None and bool(_num(run.get("end")) or _num(run.get("stop")))
     # ⚠Codex leaves a record at end 0: a result newer than its last sign ends it unless the tracked run still runs it.
     mine = isinstance(arch, dict) and arch.get("sid") == r["sid"]
@@ -198,7 +202,7 @@ def _state(r, row, arch):
         return ("stopping" if is_open else "stopped"), stage if is_open else ""
     if is_open:
         return "run", stage
-    if ended:
+    if ended or until:   # superseded: the session took the newer request, so the older one no longer waits
         return "done", ""
     # ⚠Codex / hookless runs leave no plrun: the repo's gate result written after the request is the only end signal.
     if run is None and arch_map.result_at(r["pipeline"], r["repo"]) > r["at"]:
@@ -216,12 +220,15 @@ def view(sessions, arch_run, sec_run=None, now=None):
         if isinstance(s, dict) and isinstance(s.get("sid"), str) and s["sid"]:
             rows.setdefault(s["sid"], s)
     runs = {"arch-map": arch_run if isinstance(arch_run, dict) else {}, "security-checks": sec_run if isinstance(sec_run, dict) else {}}
-    out = {}
-    for r in recs:
+    out, newer = {}, {}
+    for r in recs:   # newest first: newer[(sid, pipeline)] = `at` of the request after this one
+        k = (r["sid"], r["pipeline"])
+        until = newer.get(k, 0.0)
+        newer[k] = r["at"]
         if len(out.get(r["repo"], ())) >= VIEW_PER_REPO:
             continue
         row = rows.get(r["sid"])
-        st, stage = _state(r, row, runs.get(r["pipeline"], {}).get(r["repo"]))
+        st, stage = _state(r, row, runs.get(r["pipeline"], {}).get(r["repo"]), until)
         v = {"id": r["id"], "pipeline": r["pipeline"], "sid": r["sid"], "to": r["to"],
              "project": (row.get("project") if isinstance(row, dict) and isinstance(row.get("project"), str) else ""),
              "state": st, "stage": stage[:80], "at": r["at"]}
