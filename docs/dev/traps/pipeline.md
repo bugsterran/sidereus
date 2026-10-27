@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Runs, stage hooks and evaluation
 
+- **Evaluation «Ask AI» left no trace after a page reload** (48i `plEvalFixSend` · `plEvalFixRec`, `pl_reqs`).
+  - Cause: the sent line lived only in `PLEVAL_S.sent`.
+  - ⇒ The DM carries `plreq` pipeline `eval-fix` + `name`; `pl_reqs` records it (PLAIN: sent/gone, no run, no stop marker) and the panel shows it with the ACK receipt when `S.sent` is empty, also after the suggestions are gone.
+  - ⚠One project holds several pipelines: match the row by `name`, never take the newest `eval-fix` of the repo (`archReqLast`). The view cap counts per (pipeline, name).
+
 - ⚠**`codex exec` hangs on an open non-TTY stdin** (★2026-10-21, codex-cli 0.163.0). From a Claude Bash call it waited 10+ min with no output and no rollout file; with `< /dev/null` it finished in about a minute. ⇒ The «Cross-review (Codex)» template task (`sidereus/pipeline_new.py` `_CROSS_TASK`) runs it with `< /dev/null` and ends with `[pl-end:<name>/<stage>]` (a last `main` stage otherwise leaves the run open). ⚠Never drop `< /dev/null` from the command. Test: `test_create_cross_review_keeps_main_r1`.
 
 - **`_touched` lowercases the whole tool-input blob on Windows** (hooks/pl_flow.py `_pkey`).

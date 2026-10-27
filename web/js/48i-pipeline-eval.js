@@ -59,7 +59,15 @@ function plEvalSgHtml(ev, S, cands, cat){
       + '</label></div><pre class=archdm>' + esc(S.req.body || '') + '</pre><div class=archrqb><button type=button class="wkrgb archok" data-plsgo' + (off || S.req.busy ? ' disabled' : '') + (off ? ' title="' + esc(off) + '"' : '') + '>'
       + esc(T(archChkGoLabel(S, archChkReqKey(S.req.sid, S.req.body)))) + '</button><button type=button class=wkrgb data-plsx>' + esc(T('Cancel')) + '</button>' + (off ? '<span class=archwhy>' + esc(off) + '</span>' : '') + '</div></div>';
   }
-  return h + archChkSentHtml(S) + '</div>';   // same success/error lines and repeat guard as the 84l issues window
+  return h + plEvalFixRec(S) + archChkSentHtml(S) + '</div>';   // same success/error lines and repeat guard as the 84l issues window
+}
+// Pure: after a reload S.sent is gone, so the server record (plReq `eval-fix` of this project + pipeline, S.k) and its ACK stand in.
+function plEvalFixRec(S, now){
+  if(!S || S.sent || !S.k || typeof archReqRows !== 'function') return '';
+  const i = S.k.indexOf('\n'), proj = S.k.slice(0, i), name = S.k.slice(i + 1);
+  const r = archReqRows(proj).find(x => x.pipeline === 'eval-fix' && x.name === name);   // ⚠one project holds several pipelines: match the open one
+  if(!r || (!archReqLive(r) && (now || Date.now()) - archReqMs(r) > ARCH_REQ_KEEP_MS)) return '';
+  return archChkFixRecHtml(proj, r);
 }
 // Pure: DM body (mailbox wire text, not UI): pipeline file + suggestion lines only (codes, titles, commands — no tool output).
 function plEvalFixBody(proj, name, list){
@@ -103,7 +111,8 @@ function plEvalPanel(ev){
   const ho = h ? '<tr class=pleho><td title="' + esc(T('Holdout: planted defects kept out of tuning, used only to check the score is not overfit')) + '">' + esc(T('Holdout')) + '</td><td>' + esc(h.caught + '/' + h.n) + plEvalCi(h.ci) + '</td><td></td><td></td></tr>' : '';
   const empty = !st.some(s => s.catch || PLE_RED[s.red]) && !h;
   if(typeof requestAnimationFrame === 'function') requestAnimationFrame(plEvalPlace);   // placed after paintPipe writes it
-  const S = typeof PLS === 'object' ? plEvalPre(plEvalState(plCur()), plEvalSgList(ev)) : { sel: {} }, sg = plEvalSgList(ev).length ? plEvalSgHtml(ev, S, plEvalCands(), typeof plCat === 'function' ? plCat() : null) : '';
+  const S = typeof PLS === 'object' ? plEvalPre(plEvalState(plCur()), plEvalSgList(ev)) : { sel: {} }, fx = plEvalSgList(ev).length ? '' : plEvalFixRec(S),
+    sg = fx ? '<div class=plesg>' + fx + '</div>' : plEvalSgList(ev).length ? plEvalSgHtml(ev, S, plEvalCands(), typeof plCat === 'function' ? plCat() : null) : '';   // fixed: no suggestions left, the request line stays
   return '<div id=plevp class="thpop plevp">' + (typeof plEvalSec === 'function' ? plEvalSec(ev.security, PLE_SEC_OPEN) : '') + '<table><tr><th>' + esc(T('Stage')) + '</th><th title="' + esc(T('Catch: share of deliberately planted defects (seeds) that this stage gate caught')) + '">' + esc(T('Catch')) + '</th><th title="' + esc(plEvalRedHelp()) + '">' + esc(T('Red check')) + '</th><th>' + esc(T('Agreement')) + '</th></tr>' + rows + ho + '</table>' + (typeof plEvalOutcome === 'function' ? plEvalOutcome(ev) : '')
     + (empty && !sg ? '<div class=hidnote>' + esc(T('No evaluation yet')) + '</div>' : '') + sg + '</div>';
 }
@@ -169,7 +178,8 @@ async function plEvalFixSend(){
   if(S.sent && S.sent.key === key && !q.again){ q.again = true; plPaint(); return false; }   // first click on «Sent · send again» only arms
   q.busy = true; plPaint();
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, body: q.body, relay: true, sid: cur.sid, thread: 'eval-fix' });
+    const j = await postJSON('/api/dm', { to: cur.id, body: q.body, relay: true, sid: cur.sid, thread: 'eval-fix',
+      plreq: { kind: 'req', pipeline: 'eval-fix', repo: PLS.proj, name: p.name } });   // server keeps who got it (plReq) so the line survives a reload; repaint = plPoll's diff
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');
     S.req = null; S.msg = ''; S.sent = { to: archChkCandLabel(cur), at: hhmm(new Date()), key };
     note(T('Requested → {s} · {t}').replace('{s}', () => S.sent.to).replace('{t}', () => S.sent.at));

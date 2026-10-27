@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Structure: a sent «Request fix» from the security checks window survives a page reload and shows who got it, when, and whether the session acknowledged it.
+- Pipelines: a sent «Request fix» from the evaluation window survives a page reload and shows who got it, when, and the session's acknowledgement, for the open pipeline only.
 - Structure: clicking a module keeps it under the pointer instead of re-centring the view; at 900 px the detail panel floats over the map instead of opening below the fold.
 - Pipelines: the «Running» row no longer overlaps its agents summary at 900–1100 px; «Working now» names end in an ellipsis with the status icon kept; the evaluation panel shows English stage names in English; tour step 3 points at «Edit» in Watch mode; the template menu item reads «Start from a template» like the empty-state button.
 - Settings: «Connect» from the Pipelines list opens the preview in «Diagnostics», where the diff is readable; Features «Save» is the primary button; an empty «Security tools» list reads «Not installed», not «Could not load».

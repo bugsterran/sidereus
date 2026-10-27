@@ -169,12 +169,16 @@ def _node(body, lang="en"):
     with open(os.path.join(ROOT, "web", "js", "06-i18n-zx-eval.js"), encoding="utf-8") as fh:
         ko = fh.read()
     fns = "\n".join(js_fn(f) for f in ("T", "TV", "plEvalCov", "plEvalRedHelp", "plEvalHead", "plEvalCi", "plEvalAgree", "plEvalPanel", "plEvalSgList", "plEvalSgMsg",
-                                         "plEvalSgEn", "plEvalSgHtml", "plEvalFixBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml"))
+                                         "plEvalSgEn", "plEvalSgHtml", "plEvalFixBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml",
+                                         "plEvalFixRec", "archChkFixRecHtml", "archReqRows", "archReqLive", "archReqMs", "archReqWho", "sid8", "hhmm"))
     with open(os.path.join(ROOT, "web", "js", "48i-pipeline-eval.js"), encoding="utf-8") as fh:
         src = fh.read()
     sg = src[src.index("const PLE_SG = "):src.index("function plEvalSgList")]
     red = "const PLE_RED = { pass: 'pass', fail: 'fail', skip: 'skip' };\n" + sg + \
         "\nconst archChkCandLabel = c => c.sid; const plEvalCands = () => [{sid: 's<1>', login: true, id: 'm'}];"
+    with open(os.path.join(ROOT, "web", "js", "84l2-structure-arch-req.js"), encoding="utf-8") as fh:
+        rq = fh.read()
+    red += "\n" + rq[rq.index("const ARCH_REQ_KEEP_MS"):rq.index("function archReqMs")] + "let PLREQ = {}; let ACK = {};"   # plReq rows (84l2)
     code = "let LANG = %s;\n" % json.dumps(lang) + STUBS + ko + "\nI18N.ko['Stage'] = '단계';\n" + red + "\n" + fns + "\n" + body
     r = subprocess.run(node_e(code), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     if r.returncode != 0:
@@ -341,6 +345,32 @@ class SuggestUi(unittest.TestCase):
         self.assertIn("data-plss", r[1])
         self.assertIn("data-plsgo", r[0])
 
+    def test_fix_request_line_survives_reload(self):   # S.sent is lost on reload: the plReq `eval-fix` row of the open pipeline + ACK stand in
+        with open(os.path.join(ROOT, "web", "js", "48i-pipeline-eval.js"), encoding="utf-8") as fh:
+            src = fh.read()
+        self.assertIn("plreq: { kind: 'req', pipeline: 'eval-fix', repo: PLS.proj, name: p.name }", src)
+        now = 1700000000
+        recs = [{"id": "o1", "pipeline": "eval-fix", "name": "other", "sid": "s1abcdef99", "to": "x", "state": "sent", "at": now + 5},
+                {"id": "f1", "pipeline": "eval-fix", "name": "flow", "sid": "s1abcdef99", "to": "<me>", "state": "sent", "at": now},
+                {"id": "c1", "pipeline": "checks-fix", "sid": "s1abcdef99", "to": "y", "state": "sent", "at": now + 9}]
+        r = _node("PLREQ = {'/p': %s}; const S = {k: '/p\\nflow', sel: {}, req: null, sent: '', msg: ''}; const ev = %s; const N = %d;"
+                  "const h0 = plEvalSgHtml(ev, S, plEvalCands(), null);"
+                  "ACK.f1 = {delivered: ['me']}; const h1 = plEvalFixRec(S, N);"
+                  "ACK.f1 = {ack: [{who: 'me', note: '<b>done</b>'}]}; const h2 = plEvalFixRec(S, N);"
+                  "const h3 = plEvalSgHtml(ev, Object.assign({}, S, {sent: {to: 'z', at: '1:00', key: 'k'}}), plEvalCands(), null);"
+                  "const h4 = plEvalFixRec(Object.assign({}, S, {k: '/p\\nnone'}), N);"
+                  "ACK.f1 = {}; PLREQ['/p'][1].state = 'gone'; const h5 = [plEvalFixRec(S, N + 60000), plEvalFixRec(S, N + 7200000)];"
+                  "console.log(JSON.stringify([h0, h1, h2, h3, h4, h5]));" % (json.dumps(recs), json.dumps(SG_EV), now * 1000))
+        self.assertIn('data-ckfx="f1"', r[0])                  # the open pipeline's row, not «other» or checks-fix
+        self.assertIn("Requested → s1abcdef · &lt;me>", r[0])
+        self.assertIn("Delivered", r[1])
+        self.assertIn("me — &lt;b>done&lt;/b>", r[2])           # ack note escaped
+        self.assertNotIn("<b>done", r[2])
+        self.assertNotIn("data-ckfx", r[3])                    # this tab's own send line wins
+        self.assertEqual(r[4], "")
+        self.assertIn("No session", r[5][0])                   # finished row: one hour, then gone
+        self.assertEqual(r[5][1], "")
+
 
 RECIP = """
 const archBase = p => String(p || '').split('/').pop();
@@ -420,7 +450,7 @@ class AskAiRecipient(unittest.TestCase):
                 " PLEVAL_S.req = q(); plPaint(); const again = HTML[HTML.length - 1]; const r1 = await plEvalFixSend(), n1 = POSTS;"
                 " const p2 = plEvalFixSend(); PEND({ok: false, error: 'boom'}); await p2;"
                 " console.log(JSON.stringify([busy, dup, n0, ok, again, r1, n1, HTML[HTML.length - 1], NOTES])); })();") % json.dumps(SG_EV)
-        r = _node("const hhmm = () => '14:05';" + body.replace("const plEvalOf = () => ({});", "const plEvalOf = () => (%s);" % json.dumps(SG_EV)))
+        r = _node("hhmm = () => '14:05';" + body.replace("const plEvalOf = () => ({});", "const plEvalOf = () => (%s);" % json.dumps(SG_EV)))
         self.assertIn("data-plsgo disabled", r[0])   # confirm disabled while the POST is in flight
         self.assertEqual([r[1], r[2]], [False, 1])
         self.assertIn('class="archckst archsent"', r[3])
