@@ -5,6 +5,8 @@ build-backend = "setuptools.build_meta"
 
 # Read by sidereus/sec_checks.py (bandit -c pyproject.toml). Only families that are intentional project-wide are skipped.
 [tool.bandit]
+# tests/ is not shipped: asserts, fake tokens and bare `git`/`node` argv are the fixtures, not defects
+exclude_dirs = ["tests"]
 skips = [
     "B110",  # try/except/pass: hooks must never break the user's session; best-effort cleanup on purpose
     "B112",  # try/except/continue: same reason, one bad file or row must not stop a scan
