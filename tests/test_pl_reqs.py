@@ -130,6 +130,44 @@ class ChecksFixTest(_Base):
         self.assertEqual(sum(r["pipeline"] == "checks-fix" for r in v), PQ.VIEW_PER_REPO)
         self.assertIn("a1", [r["id"] for r in v])
 
+    def test_eval_fix_recorded_with_name_no_marker(self):   # Pipelines «Evaluation» «Ask AI»: plain, names the pipeline it fixes
+        ok = {"relay": True, "sid": SID, "to": "alice"}
+        self.assertIsNotNone(PQ.check({"kind": "req", "pipeline": "eval-fix", "repo": REPO}, ok)[1])   # name required
+        for bad in ("Flow", "a/b", "x\n", "a" * 41, 3):
+            self.assertIsNotNone(PQ.check({"kind": "req", "pipeline": "eval-fix", "repo": REPO, "name": bad}, ok)[1])
+        p, why = PQ.check({"kind": "req", "pipeline": "eval-fix", "repo": REPO, "name": "flow", "body": "x"}, ok)
+        self.assertIsNone(why)
+        self.assertEqual(p, {"kind": "req", "pipeline": "eval-fix", "repo": REPO, "name": "flow"})
+        os.makedirs(self.stop_dir)
+        mk = os.path.join(self.stop_dir, SID + ".json")
+        with open(mk, "w", encoding="utf-8") as f:
+            json.dump({"arch-map": {"at": 1, "mid": "z", "of": "y"}}, f)
+        PQ.record(p, SID, "alice", "e1")
+        self.assertEqual(self.marker(), {"arch-map": {"at": 1, "mid": "z", "of": "y"}})
+        PQ.record(dict(p, name="other"), SID, "alice", "e2")
+        row = {"sid": SID, "project": "repo", "state": "think", "plrun": [{"name": "eval-fix", "t0": NOW, "end": 0, "cur": "X"}]}
+        v = PQ.view([row], {})[REPO]
+        self.assertEqual(sorted((r["id"], r["name"], r["state"], r["stage"]) for r in v), [("e1", "flow", "sent", ""), ("e2", "other", "sent", "")])
+        self.assertEqual(PQ.view([dict(row, state="gone")], {})[REPO][0]["state"], "gone")
+        with open(self.path, encoding="utf-8") as f:
+            self.assertEqual(set(json.load(f)["reqs"][0]), {"id", "repo", "pipeline", "sid", "to", "mid", "at", "name"})   # no body
+        self.assertIsNotNone(PQ.check({"kind": "stop", "pipeline": "eval-fix", "repo": REPO, "name": "flow", "of": "e1"}, ok)[1])
+
+    def test_eval_fix_cap_per_name_and_bad_stored_name(self):
+        for i in range(PQ.VIEW_PER_REPO + 2):
+            PQ.record({"kind": "req", "pipeline": "eval-fix", "repo": REPO, "name": "a"}, SID, "alice", "a%d" % i)
+        PQ.record({"kind": "req", "pipeline": "eval-fix", "repo": REPO, "name": "b"}, SID, "alice", "b0")
+        v = PQ.view([], {})[REPO]
+        self.assertEqual(sum(r["name"] == "a" for r in v), PQ.VIEW_PER_REPO)
+        self.assertIn("b0", [r["id"] for r in v])   # another pipeline's request is not crowded out
+        with open(self.path, encoding="utf-8") as f:
+            d = json.load(f)
+        for r in d["reqs"]:
+            r["name"] = "../x"
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump(d, f)
+        self.assertEqual(PQ.view([], {}), {})       # a stored record with a bad name is dropped
+
 
 class ViewStateTest(_Base):
     """R2: precedence stopped > stopping > run > done > gone > sent."""

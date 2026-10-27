@@ -1,6 +1,6 @@
-"""Pipeline run requests the page sent (arch-map diagram, security-checks) and their «Stop» instructions.
+"""Pipeline run requests the page sent (arch-map diagram, security-checks), plain fix DMs (checks-fix, eval-fix) and «Stop» instructions.
 
-DATA_DIR/plreq.json {"v": 1, "reqs": [{id, repo, pipeline, sid, to, mid, at, stop?: {mid, at}}]} keeps who received a
+DATA_DIR/plreq.json {"v": 1, "reqs": [{id, repo, pipeline, sid, to, mid, at, name? (eval-fix), stop?: {mid, at}}]} keeps who received a
 request so the row survives a reload (`id` = `mid` = the request DM's mailbox id).
 DATA_DIR/plstop/<sid>.json {pipeline: {at, mid, of}} = the stop marker hooks/pl_guard.py reads before a stage dispatch.
 ⚠Metadata only (AGENTS.md rule 1): ids, paths, times — the DM body is never stored or read back.
@@ -17,8 +17,8 @@ from sidereus import arch_map
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
-PIPELINES = ("arch-map", "security-checks", "checks-fix")
-PLAIN = ("checks-fix",)   # a plain fix DM: sent/gone only, no run tracking, no stop marker (exclude-list: _state also gets other pipeline names)
+PIPELINES = ("arch-map", "security-checks", "checks-fix", "eval-fix")
+PLAIN = ("checks-fix", "eval-fix")   # a plain fix DM: sent/gone only, no run tracking, no stop marker (exclude-list: _state also gets other pipeline names)
 RUNS = tuple(p for p in PIPELINES if p not in PLAIN)
 REQ_MAX = 50              # records kept, newest
 REQ_KEEP_S = 7 * 86400    # older records dropped
@@ -29,6 +29,7 @@ VIEW_PER_REPO = 5
 RUN_SLACK_S = 60          # a run whose t0 is this far before the request still answers it (clock / tag order)
 _ID = re.compile(r"^[0-9A-Za-z]{1,32}$")
 _CTRL = re.compile(r"[\x00-\x1f\x7f]")
+_NAME = re.compile(r"[a-z0-9-]{1,40}")   # = pipeline_schema._NAME (no cross-feature import); ⚠fullmatch only
 _LOCK = threading.Lock()
 _MEM = []                 # records while PLREQ_PATH is None
 _now = time.time          # tests patch
@@ -64,6 +65,10 @@ def _clean(r, now):
         return None
     out = {k: r[k] for k in ("id", "repo", "pipeline", "sid", "to", "mid")}
     out["at"] = at
+    if r["pipeline"] == "eval-fix":   # names the pipeline file the fix is for: one project holds several
+        if not (isinstance(r.get("name"), str) and _NAME.fullmatch(r["name"])):
+            return None
+        out["name"] = r["name"]
     s = r.get("stop")
     if isinstance(s, dict) and isinstance(s.get("mid"), str) and _ID.match(s["mid"]) and _num(s.get("at")):
         out["stop"] = {"mid": s["mid"], "at": _num(s["at"])}
@@ -130,6 +135,11 @@ def check(plreq, req):
     if not (isinstance(sid, str) and RELAY_SID.match(sid)) or not _to_ok(to):
         return None, "Invalid session id"
     out = {"kind": kind, "pipeline": pipeline, "repo": repo}
+    if pipeline == "eval-fix":
+        name = plreq.get("name")
+        if not (isinstance(name, str) and _NAME.fullmatch(name)):
+            return None, "Invalid pipeline request"
+        out["name"] = name
     if kind == "stop":
         of = plreq.get("of")
         with _LOCK:
@@ -146,7 +156,10 @@ def record(p, sid, to, mid):
     now = _now()
     with _LOCK:
         recs = _read(now)
-        recs.insert(0, {"id": mid, "repo": p["repo"], "pipeline": p["pipeline"], "sid": sid, "to": to, "mid": mid, "at": now})
+        r = {"id": mid, "repo": p["repo"], "pipeline": p["pipeline"], "sid": sid, "to": to, "mid": mid, "at": now}
+        if p.get("name"):
+            r["name"] = p["name"]
+        recs.insert(0, r)
         _write(recs)
         if p["pipeline"] not in PLAIN:
             _marker(sid, p["pipeline"], None)
@@ -216,7 +229,7 @@ def _state(r, row, arch, until=0.0):
 
 
 def view(sessions, arch_run, sec_run=None, now=None):
-    """`/api/state` `plReq`: {repo: [{id, pipeline, sid, to, project, state, stage, at, stopAt?}]} newest first."""
+    """`/api/state` `plReq`: {repo: [{id, pipeline, sid, to, project, state, stage, at, stopAt?, name?}]} newest first."""
     now = _now() if now is None else now
     with _LOCK:
         recs = _read(now)
@@ -230,7 +243,7 @@ def view(sessions, arch_run, sec_run=None, now=None):
         k = (r["sid"], r["pipeline"])
         until = newer.get(k, 0.0)
         newer[k] = r["at"]
-        if sum(1 for x in out.get(r["repo"], ()) if x["pipeline"] == r["pipeline"]) >= VIEW_PER_REPO:   # per pipeline: fix DMs never crowd out runs
+        if sum(1 for x in out.get(r["repo"], ()) if x["pipeline"] == r["pipeline"] and x.get("name") == r.get("name")) >= VIEW_PER_REPO:   # per pipeline (+ eval-fix name): fix DMs never crowd out runs
             continue
         row = rows.get(r["sid"])
         st, stage = _state(r, row, runs.get(r["pipeline"], {}).get(r["repo"]), until)
@@ -239,5 +252,7 @@ def view(sessions, arch_run, sec_run=None, now=None):
              "state": st, "stage": stage[:80], "at": r["at"]}
         if r.get("stop"):
             v["stopAt"] = r["stop"]["at"]
+        if r.get("name"):
+            v["name"] = r["name"]
         out.setdefault(r["repo"], []).append(v)
     return out
