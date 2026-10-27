@@ -9,6 +9,10 @@
 **A local observatory for verifying AI coding sessions.**
 It runs beside the Claude Code, Codex CLI and Gemini CLI sessions in your terminals and shows, on one screen, whether each run followed its pipeline and what evidence backs each verdict. It never runs your agents or touches your terminal.
 
+- **Monitoring**: every session on one screen, the ones waiting on you first, with a timeline of what each agent did.
+- **Pipelines and Harness report**: stage order, gates, and whether the results held afterwards.
+- **Structure and security**: a module and flow map of the repo, plus security checks.
+
 ![Animated: a change-flow run lighting its stages in turn — Design, Implement, Verify, Review sends it back once, Implement and Verify again, then Review done](docs/images/hero-en.gif)
 
 ## Try the demo
