@@ -17,6 +17,7 @@ Object.assign(I18N.ko, {
   'Done|work': '작업 끝',
   'Conflict risk': '충돌 위험',
   'Need you': '봐야 할 세션',
+  'need you {n}': '봐야 할 {n}',
   '30 min': '30분',
   '{n} low-priority': '기준 아래 {n}',
   'Sessions with only low signals (done, background finished) — click to expand': '작업 끝·백그라운드 완료처럼 표시 기준 아래 신호만 있는 세션 — 누르면 펼칩니다',
