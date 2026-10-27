@@ -12,13 +12,13 @@ function uiKeepApply(s){
   if(uiKeepOk(s.filter)) setFilter(s.filter);
   if(Object.prototype.hasOwnProperty.call(WKR_LABEL, s.wkr)) WKRANGE = +s.wkr;
 }
-// Timeline «Changes» chip: followed session only (old saved rkey/repo/mode values are ignored).
+// Timeline «Changes» chip: followed session or repo only (old saved rkey/repo/mode values are ignored).
 // ⚠A session that is gone falls back silently: tlgTarget drops a missing tlgSel once SESS is loaded.
 const TLGK_KEY = 'sidereus.tlgsel';
 function tlgKeepSnap(){ return { sel: tlgSel }; }
 function tlgKeepApply(s){
   if(!s || typeof s !== 'object') return;
-  if(uiKeepOk(s.sel) && /^[sc]:/.test(s.sel)) tlgSel = s.sel;
+  if(uiKeepOk(s.sel) && /^[scr]:/.test(s.sel)) tlgSel = s.sel;   // r: = combo repo pick (77 tlgTarget)
 }
 function tlgKeepSave(){ if(!ISPOP && !ISWP && !ISBP) tabSetJson(TLGK_KEY, tlgKeepSnap()); }
 if(!ISPOP && !ISWP && !ISBP){

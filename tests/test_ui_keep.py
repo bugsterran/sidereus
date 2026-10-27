@@ -36,8 +36,8 @@ class TlgKeepJs(unittest.TestCase):
            "const cpKey = x => x.sid ? 's:' + x.sid : 'c:' + x.cwd;\n")
 
     def run_js(self, saved, sess, tail="console.log(JSON.stringify(tlgKeepSnap()));"):
-        fns = ("uiKeepOk", "tlgKeepApply", "tlgKeepSnap", "tlgAge", "tlgName", "tlgSessions", "tlgTarget")
-        src = self.PRE + "let SESS = " + json.dumps(sess) + ";\n" + "\n".join(js_fn(f) for f in fns) \
+        fns = ("uiKeepOk", "tlgKeepApply", "tlgKeepSnap", "tlgAge", "tlgName", "tlgSessions", "tlgSid", "tlgRepos", "tlgTarget")
+        src = self.PRE + "const TLG_MAX_REPOS = 30;\nlet SESS = " + json.dumps(sess) + ";\n" + "\n".join(js_fn(f) for f in fns) \
             + "\ntlgKeepApply(" + json.dumps(saved) + ");\ntlgTarget();\n" + tail
         return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 
@@ -52,6 +52,10 @@ class TlgKeepJs(unittest.TestCase):
         # rkey/repo/mode came from the removed rail; the snapshot is the session pick only.
         got = self.run_js({"sel": "s:a", "rkey": "s:a", "repo": "/r/a", "mode": "start"}, self.S)
         self.assertEqual(got, {"sel": "s:a"})
+
+    def test_repo_pick_round_trip(self):
+        self.assertEqual(self.run_js({"sel": "r:/r/b"}, self.S), {"sel": "r:/r/b"})
+        self.assertEqual(self.run_js({"sel": "r:/r/gone"}, self.S), {"sel": ""})
 
     def test_missing_pick_falls_back(self):
         self.assertEqual(self.run_js({"sel": "s:gone"}, self.S), {"sel": ""})

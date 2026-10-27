@@ -372,7 +372,9 @@ function tlWireRows(box){
   box.querySelectorAll('.tlb[data-tlt]').forEach(bb => bb.onclick = (e) => {
     e.stopPropagation();
     if(e.target.closest && e.target.closest('.tlpl')) return;
-    tlOpen(bb.closest('.tlr').dataset.tlc, bb.dataset.tlt);
+    const tr = bb.closest('.tlr');
+    tlgFollow(tr.dataset.tlc, tr.dataset.tlp, bb.dataset.tlt);   // the «Changes» chip follows the clicked session (77)
+    tlOpen(tr.dataset.tlc, bb.dataset.tlt);
   });
   // The name cell opens the same drawer (empty tids are not bound — do not create yet another spot where clicking does nothing)
   box.querySelectorAll('.tlnm[data-tlt]').forEach(nn => {
@@ -381,7 +383,9 @@ function tlWireRows(box){
     nn.onclick = (e) => {
       e.stopPropagation();                 // ⚠Must not leak into the time cursor's pin toggle
       if(e.target.closest && e.target.closest('.tlpl, .tlplx')) return;   // strips open the pipeline view, the chip folds runs (tlPlWire)
-      tlOpen(nn.closest('.tlr').dataset.tlc, nn.dataset.tlt);
+      const tr = nn.closest('.tlr');
+      tlgFollow(tr.dataset.tlc, tr.dataset.tlp, nn.dataset.tlt);
+      tlOpen(tr.dataset.tlc, nn.dataset.tlt);
     };
   });
   // ★The cursor is bound **to one container only** (not per bar) — there are hundreds of bars, so as many
