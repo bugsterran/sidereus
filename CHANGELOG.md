@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Docs: `SECURITY.md` and `docs/CONFIG.md` note that the quota lookup and the paid quota probe reuse the Claude Code sign-in token outside Claude Code, which Anthropic's terms may restrict.
 
 ### Fixed
+
 - Pipelines: the «pipeline file not found» note for a run from another folder names the session's folder and says to use «Add project» on the folder holding the pipeline file.
 - Header: the second number on «Sessions» reads «need you n» instead of a bare count next to the open-session count.
 - Structure: «Redraw» / «Generate diagram» say in their tooltip that they ask a live session (preview first), and the «repository location is unknown» reason now says it needs Sidereus run from a git clone.
