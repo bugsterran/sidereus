@@ -21,7 +21,8 @@ function archChkSum(c){
 // Pure: one tool's status text; fixed parts through T(), `why` appended raw.
 function archChkStat(t){
   const why = String((t && t.why) || '').trim(), s = String((t && t.status) || '');
-  if(s === 'ok') return T('ok');
+  // «ok» alone read as «no findings» next to a non-zero badge; it only means the scanner ran
+  if(s === 'ok'){ const n = (t && t.n) || {}; return T('ran · {n} found').replace('{n}', ['critical', 'high', 'medium', 'low', 'error', 'warning'].reduce((a, k) => a + archChkN(n[k]), 0)); }
   // ⚠Raw text: every caller escapes (button tip); the runner's why already reads «install: …» / the skip reason.
   if(s === 'missing') return T('not available') + (why ? ': ' + why : '');
   if(s === 'skipped') return T('skipped') + (why ? ': ' + why : '');
@@ -51,7 +52,7 @@ function archChkTopBtn(d, p){   // p = repo of the hidden-rule pref, default the
   const tip = archChkLast(d).txt + '\n' + (old ? T('Scanned commit {n} · HEAD now {m}').replace('{n}', cm).replace('{m}', hd) + '\n' + T('The security results are older than the code — run the security check again.') + '\n' : '')
     + archChkTools(sec).map(t => String(t.id) + ' · ' + archChkStat(t)).join('\n') + (hid.length ? '\n' + T('{n} rules hidden').replace('{n}', hid.length) : '');
   return '<button type=button class="strbg strbg-archcki' + (e ? '' : ' strbg-archckiw') + (old ? ' strbg-cut' : '') + '" data-arck aria-haspopup=dialog title="' + esc(tip) + '">'
-    + esc((old ? '⚠ ' : '') + T('Security {n}').replace('{n}', vis.length)) + '</button>';
+    + esc((old ? '⚠ ' : '') + T('Security issues {n}').replace('{n}', vis.length)) + '</button>';
 }
 // Pure: one-line rule help — checks.security.rules[item.rk | "tool:rule"]; url kept only when https.
 function archChkHelp(c, x){

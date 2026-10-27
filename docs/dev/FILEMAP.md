@@ -116,7 +116,7 @@ Sidereus is both the shown name and the code name (package, MCP, launchd label, 
 | `06-i18n-zt-diag.js` | ko entries for Settings «Diagnostics» (90e): section titles, «Refresh», «static estimate», «checked», empty states. | | |
 | `06-i18n-zt-hookconn.js` | ko entries for the CLI hook «Connect» notice (90f): row text, «Connect», «Apply», `/hooks` hint. | | |
 | `06-i18n-zv-sectools.js` | ko entries for Settings «Diagnostics» › «Security tools» (90e): title, «Installed», network notes, the five «what it catches» lines (`SEC_CATCH`). | | |
-| `06-i18n-zt-sec.js` | ko entries for security checks in 84l: «Quality {q} · Security {s}» badge, «Quality {n}» / «Security {n}» window tabs, security history («Last security check {t}», «Never checked», status words, review severities). | | |
+| `06-i18n-zt-sec.js` | ko entries for security checks in 84l: «Quality {q} · Security {s}» badge, «Quality {n}» / «Security issues {n}» badge, «Security {n}» window tabs, security history («Last security check {t}», «Never checked», status words, review severities). | | |
 | `06-i18n-zu-arch-minimap.js` | ko entries for the «Architecture» minimap (84j7): «Minimap», «Hide minimap», «Show minimap». | | |
 | `06-i18n-zu-rail.js` | ko entries for the left rail («Attention», «Collapse sidebar», «Expand sidebar», «Main navigation», «Expand/collapse the sidebar»); «Alerts»/«Settings» ko live in `05-i18n.js`. | | |
 | `06-i18n-zv-acct.js` | ko entries for the «Main account» view setting (40b `mainAcct` · 90b Preferences) and the per-view account picker (40b `acctPickHtml`). | | |
