@@ -20,6 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - «Request fix» from the security checks and the evaluation window survives a page reload and shows its delivery status.
 - A run ends as soon as its background agents finish — no more «Running» left stale for up to 30 minutes.
 - Structure: keyboard focus never hides under the sticky map header.
+- Harness: a commit the pipeline guard blocks before a required gate passes now counts as «Blocked» (it showed «Blocked 0»).
+- Settings › «Features»: a toggle applies on «Save» — no restart needed.
 
 ### Changed
 
