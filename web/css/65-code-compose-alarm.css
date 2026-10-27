@@ -90,7 +90,7 @@ html[data-ui=next] .wkm .wkmh{display:flex;align-items:baseline;gap:10px;padding
 html[data-ui=next] .wkm .wkmh b{font-size:14px;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-ui=next] .wkm .wkmh span{flex:1;min-width:0;color:var(--nx-t2);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-ui=next] .wkm .wkmh button{margin-left:auto;background:none;border:0;color:inherit;font-size:16px;cursor:pointer}
-html[data-ui=next] .wkm .wkmb{flex:1 1 auto;min-height:0;overflow:auto;padding:0 14px 14px}   /* ⚠no top padding: the sticky tab strip (top:0) would let text show above it */
+html[data-ui=next] .wkm .wkmb{flex:1 1 auto;min-height:0;overflow:auto;padding:0 14px 14px;overflow-anchor:none}   /* ⚠no top padding: the sticky tab strip (top:0) would let text show above it · ⚠anchor:none — anchoring moved scrollTop on repaint, so the wkPinInit pin skipped and wkAtEnd flipped off */
 /* N-pane work-log grid (2026-09-23): fr tracks are set inline by workPaintSplit; 9px gutter tracks hold the .wsd dividers */
 html[data-ui=next] .wsp.wsg{display:grid;gap:0;align-items:stretch;min-height:280px}
 html[data-ui=next] .wsg > .wpn{min-width:0;min-height:0}

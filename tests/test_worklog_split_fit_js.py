@@ -57,5 +57,39 @@ class SplitFit(unittest.TestCase):
         self.assertEqual((R["h"], R["over"]), ("743px", 0))
 
 
+PIN_PRE = """
+let wkOn = true, wtSplit = false, wkAtEnd = true, wkTop = 0, H = 2000;
+const wtShown = () => ['k'];
+const BOX = {clientHeight: 500, scrollTop: 0, get scrollHeight(){ return H; }};
+function wkBox(){ return BOX; }
+function workPaint(){ H += 1781; }   // late git diff grows the log (measured 13913 -> 15694)
+"""
+
+
+def run_pin(body):
+    src = PIN_PRE + js_fn("agentRepaint") + "\nconst R = {};\n" + body + "\nprocess.stdout.write(JSON.stringify(R));"
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
+    if r.returncode:
+        raise AssertionError(r.stderr)
+    return json.loads(r.stdout)
+
+
+@unittest.skipUnless(shutil.which("node"), "node missing")
+class RepaintStaysAtEnd(unittest.TestCase):
+    def test_reader_at_end_stays_at_end(self):
+        R = run_pin("BOX.scrollTop = H - BOX.clientHeight; agentRepaint();"
+                    "R.gap = H - BOX.scrollTop - BOX.clientHeight; R.end = wkAtEnd;")
+        self.assertLessEqual(R["gap"], 0)
+        self.assertTrue(R["end"])
+
+    def test_reader_scrolled_up_keeps_position(self):
+        R = run_pin("BOX.scrollTop = 300; agentRepaint(); R.top = BOX.scrollTop;")
+        self.assertEqual(R["top"], 300)
+
+    def test_split_view_left_to_panes(self):
+        R = run_pin("wtSplit = true; BOX.scrollTop = H - BOX.clientHeight; const t = BOX.scrollTop; agentRepaint(); R.same = BOX.scrollTop === t;")
+        self.assertTrue(R["same"])
+
+
 if __name__ == "__main__":
     unittest.main()
