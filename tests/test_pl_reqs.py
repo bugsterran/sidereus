@@ -101,6 +101,36 @@ class StoreTest(_Base):
         self.assertEqual(os.listdir(self.tmp), [])
 
 
+class ChecksFixTest(_Base):
+    """«Request fix» (security issues window): recorded so its line survives a reload; plain sent/gone, no stop."""
+
+    def test_checks_fix_recorded_sent_no_marker(self):
+        ok = {"relay": True, "sid": SID, "to": "alice"}
+        p, why = PQ.check({"kind": "req", "pipeline": "checks-fix", "repo": REPO}, ok)
+        self.assertIsNone(why)
+        os.makedirs(self.stop_dir)
+        mk = os.path.join(self.stop_dir, SID + ".json")
+        with open(mk, "w", encoding="utf-8") as f:
+            json.dump({"arch-map": {"at": 1, "mid": "z", "of": "y"}}, f)
+        PQ.record(p, SID, "alice", "f1")
+        self.assertEqual(self.marker(), {"arch-map": {"at": 1, "mid": "z", "of": "y"}})   # a fix DM never lifts a run stop
+        row = {"sid": SID, "project": "repo", "state": "think", "plrun": [{"name": "checks-fix", "t0": NOW, "end": 0, "cur": "X"}]}
+        v = PQ.view([row], {})[REPO]
+        self.assertEqual([(r["id"], r["pipeline"], r["state"], r["stage"]) for r in v], [("f1", "checks-fix", "sent", "")])
+        self.assertEqual(PQ.view([dict(row, state="gone")], {})[REPO][0]["state"], "gone")
+        with open(self.path, encoding="utf-8") as f:
+            self.assertEqual(set(json.load(f)["reqs"][0]), {"id", "repo", "pipeline", "sid", "to", "mid", "at"})   # no body
+        self.assertIsNotNone(PQ.check({"kind": "stop", "pipeline": "checks-fix", "repo": REPO, "of": "f1"}, ok)[1])
+
+    def test_fix_rows_do_not_crowd_out_runs(self):
+        self.req(mid="a1")
+        for i in range(PQ.VIEW_PER_REPO + 2):
+            self.req(pipeline="checks-fix", mid="f%d" % i)
+        v = PQ.view([], {})[REPO]
+        self.assertEqual(sum(r["pipeline"] == "checks-fix" for r in v), PQ.VIEW_PER_REPO)
+        self.assertIn("a1", [r["id"] for r in v])
+
+
 class ViewStateTest(_Base):
     """R2: precedence stopped > stopping > run > done > gone > sent."""
 

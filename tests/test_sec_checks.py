@@ -404,7 +404,7 @@ FNS = ["strHdBadge", "hhmm", "archBase", "archChkLv", "archChkLvLbl", "archChkSe
        "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkCandLabel", "archChkFixBody", "archChkRunBody", "archHome", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkRunHtml", "archChkWinHtml",
        "archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkView"]   # hidden-rule view helpers (archChkTopBtn / archChkWinHtml call them)
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archChkProgHtml"]   # run progress line (archChkRunHtml calls it)
-FNS += ["archChkScanAt", "archChkLast", "archChkLastHtml"]   # last-check line (badge tooltip, window header)
+FNS += ["archChkScanAt", "archChkLast", "archChkLastHtml", "archChkFixRecHtml"]   # last-check line (badge tooltip, window header)
 
 
 def run_js(body):

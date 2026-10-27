@@ -231,7 +231,7 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
       + '<button type=button class="wkrgb archok" data-ckgo' + (off || S.req.busy ? ' disabled' : '') + (off ? ' title="' + esc(off) + '"' : '') + '>' + esc(T(archChkGoLabel(S, archChkReqKey(S.req.sid, archChkFixBody(p, c, sel, archHome(d)))))) + '</button>'
       + '<button type=button class=wkrgb data-ckx>' + esc(T('Cancel')) + '</button>' + (off ? '<span class=archwhy>' + esc(off) + '</span>' : '') + '</div></div>';
   }
-  h += archChkSentHtml(S);
+  h += (S.sent ? '' : archChkFixRecHtml(p)) + archChkSentHtml(S);   // after a reload S.sent is gone: the server record (plReq) stands in
   const lg = sec ? archChkLogHtml(sec.log, sec.report) : '<div class=archckst>' + esc(T('No security check yet')) + '</div>';
   return h + '<ol class=archckl>' + top.map(x => { const k = archChkKey(x), ln = parseInt(x.line, 10) || 1, sv = archChkLv(x.sev), hp = archChkHelp(c, x);
     return '<li class="' + sv + '"><input type=checkbox data-ckk="' + esc(k) + '"' + (S.sel && S.sel[k] ? ' checked' : '') + ' aria-label="' + esc(x.file + ':' + ln) + '"><div class=ckwr>'
@@ -337,6 +337,16 @@ function archChkGoLabel(S, key){ return S.req.busy ? 'Sending…' : S.sent && S.
 function archChkSentHtml(S){
   return (S.sent && S.sent.to ? '<div class="archckst archsent" role=status><span aria-hidden=true>✓</span> ' + esc(T('Requested → {s} · {t}').replace('{s}', () => S.sent.to).replace('{t}', () => S.sent.at || '')) + '</div>' : '')
     + (S.msg ? '<div class="archmsg archerr" role=alert>' + esc(S.msg) + '</div>' : '');
+}
+// Pure: last «Request fix» from the server record (plReq `checks-fix`) + its mailbox receipt (ACK); ⚠typeof: some tests load without 84l2.
+function archChkFixRecHtml(p){
+  const r = typeof archReqLast === 'function' ? archReqLast(p, 'checks-fix') : null;
+  if(!r) return '';
+  const a = (typeof ACK !== 'undefined' && ACK && ACK[r.id]) || {}, ak = (Array.isArray(a.ack) ? a.ack : []).filter(x => x && x.who);
+  const rc = ak.length ? T('acked') + ' · ' + ak.map(x => String(x.who) + (x.note ? ' — ' + String(x.note).slice(0, 60) : '')).join(' · ')
+    : (Array.isArray(a.delivered) && a.delivered.length ? T('Delivered') : r.state === 'gone' ? T('No session', 'pl request') : '');
+  return '<div class="archckst archsent" role=status data-ckfx="' + esc(r.id) + '"><span aria-hidden=true>✓</span> '
+    + esc(T('Requested → {s} · {t}').replace('{s}', () => archReqWho(r)).replace('{t}', () => hhmm(new Date(archReqMs(r))))) + (rc ? ' · ' + esc(rc) : '') + '</div>';
 }
 // Issues window: one named window (about:blank written like 81 strPopWrite, no route); ARCH_CW = {p, w, sel, req, sent, msg}.
 let ARCH_CW = null;
@@ -451,7 +461,8 @@ async function archChkFixSend(){
   if(S.sent && S.sent.key === key && !q.again){ q.again = true; archChkWinPaint(); return false; }   // first click on «Sent · send again» only arms
   q.busy = true; archChkWinPaint();
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, body, relay: true, sid: cur.sid, thread: 'checks-fix' });
+    const j = await postJSON('/api/dm', { to: cur.id, body, relay: true, sid: cur.sid, thread: 'checks-fix',
+      plreq: { kind: 'req', pipeline: 'checks-fix', repo: S.p } });   // server keeps who got it (plReq) so the line survives a reload
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');
     S.req = null; S.msg = ''; S.sent = { to: archChkCandLabel(cur), at: hhmm(new Date()), key };
     note(T('Requested → {s} · {t}').replace('{s}', () => S.sent.to).replace('{t}', () => S.sent.at));
@@ -494,7 +505,8 @@ function archChkTick(now){
   if(!S || document.hidden) return false;
   try{ if(!S.w || S.w.closed) return false; }catch(e){ return false; }
   const d = ARCH.cache[S.p], sr = archRunOf(S.p, ARCH_SEC_PL), pr = typeof archReqLast === 'function' ? archReqLast(S.p, ARCH_SEC_PL, now) : null;
-  const sig = JSON.stringify([sr && [sr.stage, sr.n, sr.sid], pr && [pr.id, pr.state, pr.stage]]), was = S.rsig || '';
+  const fx = typeof archReqLast === 'function' ? archReqLast(S.p, 'checks-fix', now) : null;
+  const sig = JSON.stringify([sr && [sr.stage, sr.n, sr.sid], pr && [pr.id, pr.state, pr.stage], fx && [fx.id, fx.state, typeof ACK !== 'undefined' && ACK ? ACK[fx.id] || null : null]]), was = S.rsig || '';
   if(d !== S.seen || sig !== was){ S.seen = d; S.rsig = sig; archChkWinPaint();
     if(was && JSON.parse(was)[0] && !sr && !ARCH.load[S.p]){ archFetch(S.p, true); return true; } }   // run ended: pull the new results at once
   else if(sr){ try{ const el = S.w.document.querySelector('.archrun [data-arel]'); if(el) el.textContent = archRunEl(sr, now); }catch(e){ softErr('archck-el', e); } }

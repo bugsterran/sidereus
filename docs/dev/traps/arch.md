@@ -25,6 +25,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ★2026-10-21: live `.mailbox-mcp` scan 2480dd2 vs HEAD 9cef6ba → «⚠ Security 50», border-style dashed; fix preview ends with the security-checks command.
   - ⇒ The DM tail is `archChkRunBody` (security-checks); a stale scan gets ⚠, a dashed border (`strbg-cut`) and «Scanned commit … · HEAD now …».
   - ⚠The fix-request tail must name security-checks, not arch-map. Keep the severity colour on a stale badge.
+- **«Request fix» left no trace after a page reload** (84l `archChkFixSend` · `archChkFixRecHtml`, `pl_reqs`).
+  - Cause: the sent line lived only in the window state `S.sent`.
+  - ⇒ The DM carries `plreq` pipeline `checks-fix`; `pl_reqs` records it (sent/gone only, no run, no stop marker) and the window shows it with the ACK receipt when `S.sent` is empty.
+  - ⚠`checks-fix` is in `pl_reqs.PLAIN` (an exclude-list: `_state` also sees other pipeline names): it must never write or lift a `plstop` marker. Rows are capped per pipeline so fix DMs do not hide run rows.
 
 - **Focus-view edge label pill cut at the SVG's right edge** (84j4 `archFocusPills`).
   - Cause: the pill (`mmdTw(t) + 8` wide) was centred on the narrow badge rect `mmdFlPlace` placed; near the right side it ran past `L.w`.

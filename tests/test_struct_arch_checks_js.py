@@ -17,7 +17,7 @@ FNS += ["archChkLast", "archChkLastHtml"]   # last-check line (window header, ba
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
 FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqWho",
-        "archReqRowHtml", "archChkProgHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
+        "archReqRowHtml", "archChkProgHtml", "archChkFixRecHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
 FNS += ["archChkSplitGet", "archChkSplitGrip", "archChkSplitClamp", "archChkSplitEls", "archChkSplitAria", "archChkSplitSet", "archChkSplitMove", "archChkSplitReset", "archChkSplitKey"]   # issues | history grip
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
 with open(_SRC_P, encoding="utf-8") as fh:
@@ -539,6 +539,24 @@ class StructArchCheckFilters(unittest.TestCase):
 
     def test_run_request_records_receiver(self):   # R3: the run request carries plreq so pl_reqs tracks no session / done
         self.assertIn("plreq: { kind: 'req', pipeline: ARCH_SEC_PL, repo: S.p }", _SRC)
+
+    def test_fix_request_line_survives_reload(self):   # S.sent is lost on reload: the plReq `checks-fix` record + ACK stand in
+        self.assertIn("plreq: { kind: 'req', pipeline: 'checks-fix', repo: S.p }", FIXSEND)
+        rec = {"id": "f1", "pipeline": "checks-fix", "sid": "s1abcdef99", "to": "me", "project": "r", "state": "sent", "at": 1700000000}
+        r = run("const d = {checks: " + json.dumps(CK) + "}; PLREQ = {'/r': [" + json.dumps(rec) + "]}; const ACK = globalThis.ACK = {};"
+                "const h0 = archChkWinHtml('/r', d, {sel: {}, req: null}, []);"
+                "ACK.f1 = {delivered: ['me']}; const h1 = archChkWinHtml('/r', d, {sel: {}, req: null}, []);"
+                "ACK.f1 = {ack: [{who: 'me', note: '<b>done</b>'}]}; const h2 = archChkWinHtml('/r', d, {sel: {}, req: null}, []);"
+                "const h3 = archChkWinHtml('/r', d, {sel: {}, req: null, sent: {to: 'x', at: '1:00', key: 'k'}}, []);"
+                "PLREQ = {}; const h4 = archChkWinHtml('/r', d, {sel: {}, req: null}, []);"
+                "console.log(JSON.stringify([h0, h1, h2, h3, h4]));")
+        self.assertIn('data-ckfx="f1"', r[0])
+        self.assertIn("요청함 → r · s1abcdef · me · 22:13", r[0])
+        self.assertIn("전달됨", r[1])
+        self.assertIn("me — &lt;b&gt;done&lt;/b&gt;", r[2])                   # ack note escaped
+        self.assertNotIn("<b>done", r[2])
+        self.assertNotIn("data-ckfx", r[3])                                    # this tab's own send line wins
+        self.assertNotIn("data-ckfx", r[4])
 
     def test_issues_history_split_grip(self):   # vertical grip between findings and history: markup, clamp, keys, saved px, reset
         log = {"at_scan": 1, "open": [{"file": "a.py", "line": 3, "sev": "high", "key": "semgrep:r1"}]}
