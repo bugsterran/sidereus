@@ -1001,6 +1001,15 @@ class Flow(unittest.TestCase):
         self.assertEqual(r["inflight"], {"설계": 0, "other": 3})
         self.assertNotIn("설계", r["done"])   # a bg Post never marks done
 
+    def test_bg_last_stage_sets_fin(self):
+        for s in ("설계", "구현", "검증", "리뷰"):
+            self.pre(s), self.post(s)
+        self.pre("라이브 검증", bg=True)
+        self.assertNotIn("fin", self.run_())
+        self.assertIn("run complete", self.post("라이브 검증", bg=True))
+        r = self.run_()
+        self.assertEqual((r["fin"], r["end"]), ("라이브 검증", 0))   # Sidereus closes it once the agent finishes
+
     def test_dispatch_on_other_stage_counts_only_it(self):
         self.pre("설계"), self.post("설계"), self.pre("구현")
         self._poke(inflight={"구현": 1, "설계": 4})

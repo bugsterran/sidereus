@@ -899,6 +899,7 @@ def post(name, title, st, after, r, bg, now):
         _mark(r, title, "done", now)
     if j < 0:
         if bg:
+            r["fin"] = title   # ⚠no later event ends a bg last stage; Sidereus closes the run once its agents finish
             return "[pl:%s] when it finishes: last stage — run complete." % name
         r["end"] = now
         _ledger_add(r, name, now)
@@ -1118,6 +1119,9 @@ def _declare(ev, cwd, path, desc, now):
                 _ledger_add(o, name, now)
             if model is None and _is_open(o, now) and 0 <= _idx(pl[0], title) <= _idx(pl[0], o.get("cur") or ""):
                 continue   # ⚠the open run already passed this stage: a no-op, never a second run
+            if model is None and isinstance(o, dict) and o.get("stop") and o.get("end") \
+                    and _idx(pl[0], title) > _idx(pl[0], o.get("cur") or ""):
+                continue   # ⚠skipping the rest of a stopped run acknowledges the stop; a fresh run here stayed open forever
             r = _run_of(d, name, cwd, now)
             r["proj"] = proj
             if model is None:

@@ -191,7 +191,7 @@ def _load_past(past, now):
 
 
 def pl_runs_of(sid, now, _raw=None):
-    """[{name, cur, end, t0, t1, st, lb, stop}] newest first (≤ PLR_MAX) for `sid`; [] when missing/stale/bad."""
+    """[{name, cur, end, t0, t1, st, lb, stop, fin}] newest first (≤ PLR_MAX) for `sid`; [] when missing/stale/bad."""
     runs = _load(sid, now) if _raw is None else _raw
     out = []
     for name, r in runs.items():
@@ -204,7 +204,9 @@ def pl_runs_of(sid, now, _raw=None):
         stop = _num(r.get("stop"))
         out.append({"name": name, "cur": _title(r.get("cur")) if isinstance(r.get("cur"), str) else "",
                     "end": _num(r.get("end")) or stop, "t0": _num(r.get("t0")), "t1": t1, "st": _stages(r.get("st")),
-                    "lb": _loopbacks(r.get("lb")), "stop": stop})
+                    "lb": _loopbacks(r.get("lb")), "stop": stop,
+                    # `fin` = last stage whose bg dispatch returned (hook); pl_model closes the run once its agents finish
+                    "fin": _title(r["fin"]) if isinstance(r.get("fin"), str) and r["fin"] else ""})
     out.sort(key=lambda r: -r["t1"])
     return out[:PLR_MAX]
 
@@ -405,6 +407,13 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
         if (not row["end"] and now - lasts[j] > PLR_OPEN_S and pmn != row["name"] and not tagged
                 and not any(a.get("run") for s in row["stages"].values() for a in s.get("ag") or ())):
             row["end"] = lasts[j]
+        fin = runs[j]["fin"] if j < len(runs) else ""
+        cag = [a for a in (row["stages"].get(row["cur"]) or {}).get("ag") or () if a.get("aid") != "main"]
+        # ⚠A bg last stage never gets `end` from the hook (its finish fires no event): close once its own agents finished,
+        #   at their latest finish; without `fin`/agents it waits for PLR_OPEN_S like before.
+        if (not row["end"] and fin and fin == row["cur"] and cag and pmn != row["name"] and not tagged
+                and not any(a.get("run") for s in row["stages"].values() for a in s.get("ag") or ())):
+            row["end"] = min(now, max(a["t1"] for a in cag)) or now
     # ⚠The busy signal is session-wide: with several open runs, credit it only to runs that hold a live agent / main
     # marker (the work is visibly theirs); with none live, the newest open run takes it. Otherwise another run's live
     # agent kept a finished stage of the newest run at «run».

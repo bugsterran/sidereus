@@ -271,3 +271,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: both go through `flow._deny_save` with codes `gate` / `skipgate`; a failed save never lifts the deny.
 - ⚠A new deny code goes in three allow-lists: `pl_flow.DENY_CODES`, `harness_flow.HF_DENY_CODES`, `pl_outcome.OC_DENY_CODES` (else dropped from result-layer counts), plus an `HN_FD` label.
 - ★Caught by the end-to-end replay set `tests/test_harness_e2e.py` (2026-10-26).
+
+## A run that no hook event ends stays «Running» (`pl_flow.post` `fin` · `pl_runs.pl_model` · `pl_guard._skip_stops`)
+- Cause: a bg last stage returns before its agent finishes, and main's own Bash-marked stage is never denied by a Stop. In both cases `end` stayed 0 until PLR_OPEN_S (30 min), and plReq read «Running»/«Stopping».
+- Fix: the bg Post on the last stage stamps `fin`. pl_model ends that run at its agents' latest finish once none of them still runs. A `[pl-skip:]` of a run with an active Stop marker ends it (cur done, `stop`/`end`). Later skips of the remaining stages are a no-op.
+- ⚠Without a Stop, skips never end a run whose cur is still `run`: main may declare skips up front and then do the stage.
+- ⚠A skip after a stopped end must not open a fresh run. That run has no cur, so it stayed open for 6 h.
