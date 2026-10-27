@@ -2,3 +2,12 @@
 [build-system]
 requires = ["setuptools>=40.8", "wheel"]
 build-backend = "setuptools.build_meta"
+
+# Read by sidereus/sec_checks.py (bandit -c pyproject.toml). Only families that are intentional project-wide are skipped.
+[tool.bandit]
+skips = [
+    "B110",  # try/except/pass: hooks must never break the user's session; best-effort cleanup on purpose
+    "B112",  # try/except/continue: same reason, one bad file or row must not stop a scan
+    "B404",  # import subprocess: needed for git and process listing; partial-path calls stay visible under B607
+    "B603",  # subprocess without shell: fixed argv lists, never shell=True (tests/test_arch.py enforces it)
+]

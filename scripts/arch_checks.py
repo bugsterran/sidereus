@@ -130,7 +130,7 @@ def _export(repo, head, dest, tmp):
             return False
         with tarfile.open(tar) as tf:
             kw = {"filter": "data"} if hasattr(tarfile, "data_filter") else {}
-            tf.extractall(dest, members=_safe_members(tf, dest), **kw)
+            tf.extractall(dest, members=_safe_members(tf, dest), **kw)  # nosec B202 -- members checked by _safe_members (+ 'data' filter where available)
     except (subprocess.SubprocessError, OSError, tarfile.TarError):
         return False
     finally:
@@ -164,7 +164,7 @@ def _kill_tree(p):
     """Kill p and its children. ⚠Windows has no killpg/SIGKILL and ignores start_new_session: taskkill /T."""
     try:
         if os.name == "nt":
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], stdin=subprocess.DEVNULL,
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], stdin=subprocess.DEVNULL,  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
         else:
             os.killpg(p.pid, signal.SIGKILL)

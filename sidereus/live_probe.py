@@ -451,7 +451,7 @@ def _ps_snap(ttl=PS_SNAP_TTL):
             raise _ps_snap_fail[1].with_traceback(None)   # another thread just failed — don't run again
         try:
             # ⚠`errors="replace"` is required — encoding alone means strict, and one bad byte kills session detection entirely.
-            txt = subprocess.run(["ps", "-Ao", "pid=,ppid=,command="],
+            txt = subprocess.run(["ps", "-Ao", "pid=,ppid=,command="],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                                  capture_output=True, text=True, encoding="utf-8", errors="replace",
                                  timeout=4).stdout
         except Exception as e:
@@ -512,7 +512,7 @@ def tool_busy(ttl=2):
             _busy_cache = (time.time(), {})
             _stale_clear("busy")
             return {}
-        r = subprocess.run(["lsof", "-a", "-d", "cwd", "-Fpn", "-p", ",".join(busy[:64])],
+        r = subprocess.run(["lsof", "-a", "-d", "cwd", "-Fpn", "-p", ",".join(busy[:64])],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                            capture_output=True, text=True, encoding="utf-8", errors="replace",
                            timeout=4).stdout
         cur = None

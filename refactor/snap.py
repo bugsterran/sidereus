@@ -66,7 +66,7 @@ def discover_params():
             break
     sid = next((s.get("sid") for s in sess if s.get("cwd") == cwd and s.get("sid")), "")
     try:
-        sha = subprocess.run(["git", "-C", sidereus, "rev-parse", "HEAD"], capture_output=True,
+        sha = subprocess.run(["git", "-C", sidereus, "rev-parse", "HEAD"], capture_output=True,  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                              text=True, timeout=10).stdout.strip()
     except Exception:
         sha = ""

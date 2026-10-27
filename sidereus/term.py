@@ -147,7 +147,7 @@ def _probe(pids, force=False):
         if not want or not IS_MAC or (not force and now - _TTY_FAIL[0] < TTY_FAIL_TTL):
             return
         try:
-            txt = subprocess.run(["ps", "-Ewwo", "pid=,tty=,command=", "-p", ",".join(sorted(want, key=int))],
+            txt = subprocess.run(["ps", "-Ewwo", "pid=,tty=,command=", "-p", ",".join(sorted(want, key=int))],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                                  capture_output=True, text=True, encoding="utf-8", errors="replace",
                                  timeout=TTY_TIMEOUT).stdout
         except Exception as e:
@@ -219,7 +219,7 @@ def _probe_cwd(pids, force=False):
         if not want or not IS_MAC or (not force and now - _CWD_FAIL[0] < TTY_FAIL_TTL):
             return
         try:
-            txt = subprocess.run(["lsof", "-a", "-d", "cwd", "-Fpn", "-p", ",".join(sorted(want, key=int))],
+            txt = subprocess.run(["lsof", "-a", "-d", "cwd", "-Fpn", "-p", ",".join(sorted(want, key=int))],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                                  capture_output=True, text=True, encoding="utf-8", errors="replace",
                                  timeout=TTY_TIMEOUT).stdout
         except Exception:
@@ -326,7 +326,7 @@ def _focus_orca(cmd, handle):
     if not IS_MAC:
         return 200, {"ok": False, "how": "unsupported", "cmd": cmd}
     try:
-        r = subprocess.run(["open", "-b", ORCA_BUNDLE], capture_output=True, text=True,
+        r = subprocess.run(["open", "-b", ORCA_BUNDLE], capture_output=True, text=True,  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                            encoding="utf-8", errors="replace", timeout=FOCUS_TIMEOUT)
     except Exception as e:
         return 200, {"ok": False, "how": "error", "cmd": cmd, "err": type(e).__name__}
@@ -387,7 +387,7 @@ def _focus(sid, rows, cfg):
     if app not in _SCRIPTS or not IS_MAC:
         return 200, {"ok": False, "how": "unsupported", "cmd": cmd}
     try:
-        r = subprocess.run(["osascript", "-e", _SCRIPTS[app], "/dev/" + tty],
+        r = subprocess.run(["osascript", "-e", _SCRIPTS[app], "/dev/" + tty],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                            capture_output=True, text=True, encoding="utf-8", errors="replace",
                            timeout=FOCUS_TIMEOUT)
     except subprocess.TimeoutExpired:

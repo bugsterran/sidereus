@@ -275,7 +275,7 @@ class _WorldGit:
         while has_up and sha in by and up not in by[sha]["refs"]:
             ahead += 1
             sha = (by[sha]["parents"] or [None])[0]
-        r = random.Random(SEED + len(cwd))
+        r = random.Random(SEED + len(cwd))  # nosec B311 -- seeded demo data / retry jitter, not a secret
         files = []
         key = repo if is_main else repo + ".wt"
         dirty = {rec[1] for rec in self._RAIL_FILES[key]}

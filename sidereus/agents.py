@@ -112,7 +112,7 @@ def boot_time():
     if not IS_MAC:
         return 0.0      # ⚠non-Mac — no `kern.boottime`. At 0 the orphan check is not used at all
     try:
-        out = subprocess.run(["sysctl", "-n", "kern.boottime"],
+        out = subprocess.run(["sysctl", "-n", "kern.boottime"],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                              capture_output=True, text=True, encoding="utf-8", errors="replace",
                              timeout=3).stdout
         m = re.search(r"sec\s*=\s*(\d+)", out)

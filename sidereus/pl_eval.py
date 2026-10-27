@@ -258,7 +258,7 @@ def eval_row(repo, head, stages, ts):
 
 
 def red_row(repo, head, mode, verdict, ts):
-    rc = {"pass": 0, "fail": 1}.get(verdict, 2)   # skip = 2: never reads as a pass
+    rc = {"pass": 0, "fail": 1}.get(verdict, 2)   # skip = 2: never reads as a pass  # nosec B105 -- verdict-to-exit-code map, not a password
     return {"v": 1, "kind": "red", "ts": int(ts), "mode": "redcheck", "repo": os.path.realpath(repo), "head": head,
             "dirty": False, "rc": rc, "steps": [{"name": mode, "rc": rc, "n": 1, "failed": int(rc != 0), "secs": 0}]}
 
