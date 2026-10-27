@@ -28,8 +28,8 @@ def run(body, sess=SESS):
            "const PPC = {}; let PPS = null; function popIsOpen(){ return false; }\n"
            "function getJSON(u){ urls.push(u); return new Promise(() => {}); }\n"
            "function loadDiff(...a){ opened.push(a); }\n" % json.dumps(sess))
-    fns = re.search(r"^const TLG_AUTO = .*$", js_all(), re.M).group(0) + "\n" + "\n".join(js_fn(n) for n in ("tlgShownN", "tlgNum", "tlgShared", "tlgAge", "tlgName", "tlgSessions", "tlgSid", "tlgRepos", "tlgTarget",
-                                        "ppComboHtml", "tlgRepoName", "tlgCnt", "tlgProj", "tlgNote", "tlgSelHtml", "tlgDirty", "tlgBaseTip", "tlgChipInner", "tlgOpenRepo",
+    fns = "\n".join(re.search(p, js_all(), re.M).group(0) for p in (r"^const TLG_AUTO = .*$", r"^let tlgSelS = .*$")) + "\n" + "\n".join(js_fn(n) for n in ("tlgShownN", "tlgNum", "tlgShared", "tlgAge", "tlgName", "tlgSessions", "tlgSid", "tlgRepos", "tlgTarget",
+                                        "ppComboHtml", "tlgRepoName", "tlgCnt", "tlgProj", "tlgNote", "tlgSelHtml", "tlgRepoCfg", "tlgDirty", "tlgBaseTip", "tlgChipInner", "tlgOpenRepo",
                                         "tlgNoGit", "tlgFetch", "tlgNext", "tlgTick", "tlgOpen"))
     r = subprocess.run(node_e(ttl + "\n" + pre + fns + "\n" + body), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:
@@ -78,10 +78,12 @@ class Chip(unittest.TestCase):
         self.assertNotIn("data-ppk", chip(None, SESS[:1]))
 
     def test_chip_is_combo_opener_with_two_repos(self):
-        h = chip(None)
+        # Opener only when the followed session itself has 2+ repos; other sessions' repos do not count.
+        h = chip(None, [dict(SESS[0], repos=["/r/w"]), SESS[1]])
         self.assertIn('id=tlgcp data-ppo aria-haspopup=listbox aria-controls=ppop aria-expanded="false"', h)
+        self.assertIn("Show this session's repositories with their changes", h)
+        self.assertNotIn("data-ppo", chip(None))
         self.assertNotIn("data-ppo", chip(None, SESS[:1]))
-        self.assertIn("Show every repository with its changes", h)
 
     def test_tick_gating_and_ttl(self):
         # getJSON never settles here, so a finished fetch is simulated: busy off, at = now. One repo: /r/b is idle here.
@@ -98,8 +100,8 @@ class Chip(unittest.TestCase):
                 "tlgSel = 's:s2'; const flight = []; tlgTick(); tlgTick(); flight.push(urls.length);"
                 "(async () => { for(let i = 0; i < 4; i++){ const r = rs.shift(); if(r) r({ok: true}); await new Promise(z => setTimeout(z, 0)); flight.push(urls.length); }"
                 " tlgTick(); process.stdout.write(JSON.stringify({flight, u: urls.map(u => decodeURIComponent(u.split('cwd=')[1].split('&')[0]))})); })();")
-        self.assertEqual(o["flight"], [1, 2, 3, 3, 3])
-        self.assertEqual(o["u"], ["/r/b", "/r/a", "/r/wt"])
+        self.assertEqual(o["flight"], [1, 2, 2, 2, 2])
+        self.assertEqual(o["u"], ["/r/b", "/r/wt"])   # the followed session's repos only; s1's /r/a waits until s1 is followed
 
     def test_not_a_repo_not_refetched_each_ttl(self):
         o = run("SESS = SESS.slice(0, 1); tlgTick(); Object.assign(tlgC['/r/a'], {busy: false, at: NOW, d: {ok: false, msg: 'Not a git repository.'}});"
