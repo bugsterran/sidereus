@@ -9,6 +9,7 @@
 /* ⚠.archmap is the scroller and .mmdv does not clip, so the bordered .mmd must grow with a wide SVG or nodes sit past its border */
 /* ⚠bar, notice and legend stay in view on a wide map: sticky at the scroller's top-left, opaque over the diagram */
 .archtop{position:sticky;top:-6px;left:-4px;z-index:2;background:var(--nx-bg,#0d1014)}
+.archmap{--archtop-h:96px;scroll-padding-top:var(--archtop-h)}   /* ⚠focus scroll ignores sticky .archtop (one row = 87px at 900/1100/1440): without this, Tab lands on «Source text» hidden under it */
 .archdg .mmd{width:max-content;min-width:100%;box-sizing:border-box}
 .archdg .mmdtg{position:sticky;right:10px}   /* «Source text» stays at the visible right edge of the wider box */
 /* ⚠Focus view: the «Source text» row floats over the band's top-right corner — a row of its own (25px) cut the hub off the first screen at 900 */
@@ -124,6 +125,7 @@ html[data-ui=next][data-ui] .archall{color:#fff}
 .archmap svg [data-p]:hover rect{stroke:var(--nx-info,#5899f3)}
 .archmap svg [data-on] rect{stroke:var(--nx-t1,#dfe5ee);stroke-width:2.2}
 .archmap svg [data-on] text{font-weight:700}
+.archmap .mmdn:focus-visible,.archmap .mmdfe:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:2px}   /* explicit keyboard ring on SVG nodes/edges */
 .archmap .mmde{stroke-width:1.1}
 /* v2 edge kinds (84j2, 81e data-k): call = default solid. ⚠Before the data-c / .archdim rules so focus and hover colours still win */
 .archmap .mmdfe[data-k=read] .mmde{stroke:var(--st-dat,#b07cf0)}
