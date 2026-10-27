@@ -42,7 +42,7 @@ function ppComboHtml(cfg){
   const p = cfg.cur || '', e = (cfg.items || []).find(x => x.p === p) || { p: p, name: p.slice(p.lastIndexOf('/') + 1) || p };
   const nm = p ? e.name || p : cfg.none || T('Pick a project'), tt = cfg.tip && p ? cfg.tip(e) : p;
   return (cfg.bare ? '' : '<b>' + esc(cfg.label) + '</b>') + '<button type=button class="strp ppbtn ppcombo" data-ppk="' + esc(cfg.k) + '" aria-haspopup=listbox aria-controls=ppop aria-expanded="'
-    + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '"' + (cfg.bare ? ' aria-label="' + esc(cfg.label + ': ' + nm) + '"' : '')
+    + (PPS && PPS.cfg.k === cfg.k ? 'true' : 'false') + '"' + (cfg.bare ? ' aria-label="' + esc(cfg.label + ': ' + nm + (cfg.aria ? ' · ' + cfg.aria : '')) + '"' : '')
     + ' title="' + esc(cfg.bare ? cfg.label + (tt ? '\n' + tt : '') : tt) + '"><span class=ppcn>' + esc(nm) + '</span>'
     + (p && cfg.badge ? cfg.badge(e) : '') + ' ▾</button>';
 }
