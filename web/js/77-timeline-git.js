@@ -114,7 +114,7 @@ function tlgSelHtml(tg){
   const rank = e => e.c ? (e.c.n ? 0 : 2) : e.ng ? 3 : 1;
   const reps = tg.repos.map(it).map((e, i) => [e, i]).sort((p, q) => (rank(p[0]) - rank(q[0])) || (p[1] - q[1])).map(v => v[0]);
   const items = [{ p: TLG_AUTO, auto: true, name: tlgRepoName(a0.root || a0.cwd), note: tlgNote(a0), tip: a0.cwd + (a0.sid ? ' · ' + a0.sid : '') }].concat(reps);
-  const cur = tg.how === 'auto' ? TLG_AUTO : tg.key;
+  const cur = tg.how === 'auto' ? TLG_AUTO : tg.key, nd = tlgDirty(tg).length;
   const cnt = c => c ? '<span class=tlgcn>' + esc(TV({msg: c.n === 1 ? '{n} file' : '{n} files', vars: {n: c.n}}) + ' ') + tlgNum(c.a, c.dl) + '</span>' : '';
   const row = (e, i) => '<div class="cmdki' + (PPS && i === PPS.i ? ' on' : '') + (e.p === cur ? ' ppcur' : '') + ((e.c && !e.c.n) || e.ng ? ' tlg0' : '') + '" role=option data-ppi="' + i + '" title="' + esc(e.tip) + '">'
     + '<span class=cmdkp>' + esc(e.auto ? AL : e.name) + '</span>' + (e.ng ? '<span class=tlgcn>' + esc(T('No git', 'repo')) + '</span>' : cnt(e.c)) + '<span class=cmdkc>' + esc(e.auto ? [e.name, e.note].filter(Boolean).join(' · ') : e.note) + '</span></div>';
@@ -123,7 +123,8 @@ function tlgSelHtml(tg){
     return items.filter(e => !s || [e.name, e.tip, e.auto ? AL : ''].some(v => String(v).toLowerCase().includes(s)));
   };
   return ppComboHtml({ k: 'tlgs', label: T('Repository'), bare: true, items: items, cur: cur, ph: T('Find a repository'), empty: T('No matching repositories'), flat: flat, rowHtml: row,
-    tip: e => (e.auto ? AL + '\n' : '') + e.tip, badge: e => e.auto ? '<span class=tlgau>' + esc(T('auto', 'mark')) + '</span>' : '',
+    tip: e => (e.auto ? AL + '\n' : '') + e.tip, aria: nd ? TV({msg: 'Repositories with uncommitted changes: {n}', vars: {n: nd}}) : '',
+    badge: e => (e.auto ? '<span class=tlgau>' + esc(T('auto', 'mark')) + '</span>' : '') + (nd ? '<span class=tlgnb>' + esc(T('{n}', 'repo count').replace('{n}', nd)) + '</span>' : ''),
     pick: p => { tlgSel = p === TLG_AUTO ? '' : p; tlgKeepSave(); tlgTick(); } });
 }
 // «[baseline] N files +a −d» (+ «· ⚠ n shared»); no target or no reply yet = «[baseline] Changes».
@@ -150,13 +151,55 @@ function tlgChipInner(tg){
   } else body += esc(CH);
   const bt = tlgBaseTip(d);
   const tip = CH + '\n' + T('Open the changes in the diff window (git · view only)') + (bt ? '\n' + bt : '') + (tg ? '\n' + tg.cwd : '');
-  return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + ' aria-label="' + esc(aria.join(' · ')) + '" title="' + esc(tip) + '">' + body + '</button>';
+  return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + ' aria-label="' + esc(aria.join(' · ')) + '" title="' + esc(tip) + '">' + body + '</button>' + tlgDetBtn(tg);
 }
+// Every listed repo (followed one included) with ≥1 tracked changed file, most files first; untracked never count (tlgCnt).
+function tlgDirty(tg){
+  if(!tg) return [];
+  const rs = tg.repos.some(e => e.ck === tg.ck) ? tg.repos : [{ck: tg.ck, cwd: tg.cwd, sid: tg.sid}].concat(tg.repos);
+  return rs.map(e => ({e, c: tlgCnt((tlgC[e.ck] || {}).d)})).filter(x => x.c && x.c.n > 0).sort((p, q) => q.c.n - p.c.n);
+}
+// «Details» after the chip: hidden until some repo has an ok reply; .tlgdti = icon form when the head is tight (tlgFit).
+function tlgDetBtn(tg){
+  if(!tg || !tg.repos.concat([{ck: tg.ck}]).some(e => tlgCnt((tlgC[e.ck] || {}).d))) return '';
+  const L = T('Details', 'repos');
+  return '<button type=button class="tlrf tlgdt" id=tlgdt aria-haspopup=dialog aria-expanded="' + (popIsOpen('tlgdp') ? 'true' : 'false') + '" aria-label="' + esc(L) + '" title="' + esc(L) + '">'
+    + '<span class=tlgdtl>' + esc(L) + '</span><span class=tlgdti aria-hidden=true>☰</span></button>';
+}
+let TLGD = [];   // rows of the open «Details» popup (click index -> repo entry)
+function tlgDetHtml(tg){
+  const rows = tlgDirty(tg), d = (tlgC[tg.ck] || {}).d;
+  TLGD = rows.map(x => x.e);
+  const hd = '<div class=tlgdh>' + esc(TV({msg: 'Repositories with uncommitted changes: {n}', vars: {n: rows.length}})) + ' ' + tlgBaseLabel(d) + '</div>';
+  if(!rows.length) return hd + '<div class=tlgde>' + esc(T('No uncommitted changes')) + '</div>';
+  return hd + rows.map((x, i) => '<button type=button class=tlgdr data-tlgi="' + i + '" title="' + esc(x.e.ck) + '"><span class=tlgdn>' + esc(tlgRepoName(x.e.ck)) + '</span>'
+    + '<span class=tlgdf>' + esc(TV({msg: x.c.n === 1 ? '{n} file' : '{n} files', vars: {n: x.c.n}})) + '</span>' + tlgNum(x.c.a, x.c.dl) + '<span class=tlgdc aria-hidden=true>›</span></button>').join('');
+}
+function tlgDetClose(back){ popHide('tlgdp', document.getElementById('tlgdt'), back); }
+popReg('tlgdp', '#tlgdp, #tlgdt', tlgDetClose);
+function tlgDetToggle(b){
+  if(popIsOpen('tlgdp')) return tlgDetClose(false);
+  const tg = tlgTarget();
+  if(!tg) return;
+  const p = popGet('tlgdp', 'thpop tlgdp');
+  p.setAttribute('role', 'dialog');
+  p.setAttribute('aria-label', T('Details', 'repos'));
+  p.innerHTML = tlgDetHtml(tg);
+  popAnchor(p, b, {align: 'right', flipY: true});
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest && e.target.closest('#tlgdt, #tlgdp [data-tlgi]');
+  if(!t) return;
+  if(t.id === 'tlgdt') return tlgDetToggle(t);
+  const r = TLGD[+t.dataset.tlgi];
+  tlgDetClose(false);
+  if(r) tlgOpenRepo(r);
+});
 function tlgChipHtml(){ return '<span class=tlgb id=tlgb>' + tlgChipInner(tlgTarget()) + '</span>'; }
 // Id of the focused chip control, or ''. paintTl and tlgPaint refocus it after a rebuild.
 function tlgFocusId(){
   const ae = document.activeElement;
-  return ae && ae.id === 'tlgcp' ? ae.id : '';
+  return ae && (ae.id === 'tlgcp' || ae.id === 'tlgdt') ? ae.id : '';
 }
 // paintTl rebuilds #feed (head included): keep the old group while the session picker is open (its opener) or holds focus.
 function tlgKeep(box){
@@ -204,13 +247,22 @@ function tlgTick(){
   tlgPaint();
 }
 // Chip click -> the existing diff window at the chip's baseline; &sid lets that window offer «Since session start».
-function tlgOpen(){
-  const tg = tlgTarget();
-  if(!tg) return;
-  const d = (tlgC[tg.ck] || {}).d;
-  loadDiff(tg.cwd, '', d && d.ok && d.base ? 'b:' + d.base : 'work', '', tg.sid);
+function tlgOpen(){ tlgOpenRepo(tlgTarget()); }
+// Diff window on one repo (followed target or a «Details» row) at the baseline its rail reply used.
+function tlgOpenRepo(r){
+  if(!r) return;
+  const d = (tlgC[r.ck] || {}).d;
+  loadDiff(r.cwd, '', d && d.ok && d.base ? 'b:' + d.base : 'work', '', r.sid);
 }
 function tlgWire(){
   const b = document.getElementById('tlgcp');
   if(b) b.onclick = tlgOpen;
+  tlgFit();
+}
+// ⚠One-line head: when the toolbar row overflows, «Details» becomes its icon (class on #tlgb, re-measured each paint).
+function tlgFit(){
+  const g = document.getElementById('tlgb'), h = g && g.parentElement;
+  if(!h || !document.getElementById('tlgdt')) return;
+  g.classList.remove('tlgtight');
+  if(h.scrollWidth > h.clientWidth + 1) g.classList.add('tlgtight');
 }

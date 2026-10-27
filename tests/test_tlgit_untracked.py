@@ -25,11 +25,11 @@ def run(body, sess=SESS):
            "function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }\n"
            "const cpKey = x => 's:' + x.sid, sid8 = s => s.slice(0, 8), stateLbl = s => s; function tlgPaint(){}\n"
            "function tlgBaseLabel(){ return ''; } function tlgBaseText(){ return 'Base'; }\n"   # baseline badge: tests/test_tlg_base_badge_js.py
-           "const PPC = {}; let PPS = null;\n"
+           "const PPC = {}; let PPS = null; function popIsOpen(){ return false; }\n"
            "function getJSON(u){ urls.push(u); return new Promise(() => {}); }\n"
            "function loadDiff(...a){ opened.push(a); }\n" % json.dumps(sess))
     fns = re.search(r"^const TLG_AUTO = .*$", js_all(), re.M).group(0) + "\n" + "\n".join(js_fn(n) for n in ("tlgShownN", "tlgNum", "tlgShared", "tlgAge", "tlgName", "tlgSessions", "tlgSid", "tlgRepos", "tlgTarget",
-                                        "ppComboHtml", "tlgRepoName", "tlgCnt", "tlgProj", "tlgNote", "tlgSelHtml", "tlgBaseTip", "tlgChipInner",
+                                        "ppComboHtml", "tlgRepoName", "tlgCnt", "tlgProj", "tlgNote", "tlgSelHtml", "tlgDirty", "tlgDetBtn", "tlgBaseTip", "tlgChipInner", "tlgOpenRepo",
                                         "tlgNoGit", "tlgFetch", "tlgNext", "tlgTick", "tlgOpen"))
     r = subprocess.run(node_e(ttl + "\n" + pre + fns + "\n" + body), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode:

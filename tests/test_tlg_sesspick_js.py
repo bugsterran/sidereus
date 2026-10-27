@@ -12,12 +12,14 @@ from tests._node import node_e
 
 PRE = r"""
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+let TLGD = [];
 const T = s => s, TV = o => o.msg.replace(/\{(\w+)\}/g, (m, k) => String(o.vars[k])), PPC = {}, tlgC = {};
 let PPS = null, POP = false, SESS = [], tlgSel = '';
 const R = {saved: 0, ticks: 0, paints: 0};
 const cpKey = x => 's:' + x.sid, sid8 = s => s.slice(0, 8), stateLbl = s => s === 'busy' ? 'Busy' : '';
 function popIsOpen(id){ return POP && id === 'ppop'; } function tlgKeepSave(){ R.saved++; } function tlgTick(){ R.ticks++; }
 function tlgChipInner(){ R.paints++; return 'x'; } function setHtml(){ return false; }
+function tlgBaseLabel(){ return '<span class=tlgbk>Uncommitted</span>'; } function loadDiff(...a){ (R.opened = R.opened || []).push(a); }
 var document = {activeElement: null, getElementById: id => id === 'tlgb' ? {} : null};
 """
 SESS = [{"sid": "s1aaaaaaaa", "cwd": "/r/a", "project": "a", "ageSec": 5, "state": "busy", "msg": "SECRET"},
@@ -28,6 +30,7 @@ def run(body):
     auto = "\n".join(re.search(p, js_all(), re.M).group(0) for p in (r"^const TLG_AUTO = .*$", r"^const TLG_MAX_REPOS = .*$"))
     fns = "\n".join(js_fn(n) for n in ("ppComboHtml", "tlgAge", "tlgName", "tlgSessions", "tlgSid", "tlgRepos", "tlgTarget", "tlgFollow",
                                         "tlgShownN", "tlgNum", "tlgCnt", "tlgNoGit", "tlgRepoName", "tlgProj", "tlgNote", "tlgSelHtml",
+                                        "tlgDirty", "tlgDetBtn", "tlgDetHtml", "tlgOpenRepo",
                                         "tlgFocusId", "tlgPaint"))
     src = (PRE + auto + "\n" + fns + "\nSESS = " + json.dumps(SESS) + ";\n" + body
            + "\nprocess.stdout.write(JSON.stringify(R));")
@@ -99,6 +102,38 @@ class TlgSessPick(unittest.TestCase):
         self.assertEqual(r["p"], ["auto", "r:/r/a", "r:/r/u", "r:/r/c", "r:/r/n"])
         self.assertIn(" tlg0", r["row"])
         self.assertIn("<span class=tlgcn>No git</span>", r["row"])
+
+    def test_badge_counts_dirty_repos_untracked_excluded(self):
+        # /r/a: 1 tracked + 1 untracked; /r/b: untracked only (n 1, untracked 1) => not dirty; /r/c clean.
+        r = run("SESS = [{sid: 's1aaaaaaaa', cwd: '/r/a', project: 'a', ageSec: 5, repos: ['/r/b', '/r/c']}];"
+                "tlgC['/r/a'] = {d: {ok: true, n: 2, untracked: 1, add: 3, del: 1, files: [{path: 'n', new: true, add: 2}]}};"
+                "tlgC['/r/b'] = {d: {ok: true, n: 1, untracked: 1, files: [{path: 'x', new: true}]}};"
+                "tlgC['/r/c'] = {d: {ok: true, n: 0, files: []}};"
+                "R.h = tlgSelHtml(tlgTarget()); tlgC['/r/a'].d = {ok: true, n: 0, files: []}; R.h0 = tlgSelHtml(tlgTarget());")
+        self.assertIn("<span class=tlgnb>1</span> ▾</button>", r["h"])
+        self.assertIn('aria-label="Repository: a · Repositories with uncommitted changes: 1"', r["h"])
+        self.assertNotIn("tlgnb", r["h0"])
+        self.assertIn('aria-label="Repository: a"', r["h0"])
+
+    def test_details_popup_sorted_escaped_opens_diff(self):
+        r = run("SESS = [{sid: 's1aaaaaaaa', cwd: '/r/a', project: 'a', ageSec: 5, repos: ['/r/<x>', '/r/b']}];"
+                "R.none = tlgDetBtn(tlgTarget());"
+                "tlgC['/r/a'] = {d: {ok: true, n: 1, add: 1, del: 0, files: [], base: 'abc'}};"
+                "tlgC['/r/<x>'] = {d: {ok: true, n: 5, add: 9, del: 2, files: []}};"
+                "tlgC['/r/b'] = {d: {ok: true, n: 0, files: []}};"
+                "const tg = tlgTarget(); R.btn = tlgDetBtn(tg); R.pop = tlgDetHtml(tg); R.keys = TLGD.map(e => e.ck);"
+                "tlgOpenRepo(TLGD[1]); tlgOpenRepo(TLGD[0]);"
+                "tlgC['/r/a'].d.n = 0; tlgC['/r/<x>'].d.n = 0; R.empty = tlgDetHtml(tlgTarget());")
+        self.assertEqual(r["none"], "")                     # nothing fetched yet: no «Details»
+        self.assertIn('id=tlgdt', r["btn"])
+        self.assertIn('aria-label="Details"', r["btn"])
+        self.assertEqual(r["keys"], ["/r/<x>", "/r/a"])      # most files first, clean /r/b left out
+        self.assertIn("Repositories with uncommitted changes: 2 <span class=tlgbk>", r["pop"])
+        self.assertIn('data-tlgi="0" title="/r/&lt;x>"><span class=tlgdn>&lt;x></span><span class=tlgdf>5 files</span>', r["pop"])
+        self.assertNotIn("<x>", r["pop"])
+        self.assertEqual(r["opened"], [["/r/a", "", "b:abc", "", "s1aaaaaaaa"], ["/r/<x>", "", "work", "", "s1aaaaaaaa"]])
+        self.assertIn("Repositories with uncommitted changes: 0", r["empty"])
+        self.assertIn("<div class=tlgde>No uncommitted changes</div>", r["empty"])
 
     def test_row_click_follows_session(self):
         r = run("tlgFollow('/r/b', '', 'agent-tool-id'); R.a = tlgSel; tlgFollow('/r/x', '', 'sess:/r/x|s1aaaaaaaa'); R.b = tlgSel;"
