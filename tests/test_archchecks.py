@@ -249,6 +249,37 @@ class LoadTest(Tmp):
         self.assertIsNone(AC.load_checks(self.repo, self.mdir, self.m, C1))
 
 
+class TrivySchema(unittest.TestCase):
+    """trivy-image row keys target / fixable / waiting and item keys imgs / fix: accepted when well-typed, else refused."""
+    def j(self, row=None, item=None):
+        z = {"critical": 0, "high": 1, "medium": 0, "low": 0}
+        t = dict({"id": "trivy-image", "rules": "default", "status": "ok", "ms": 1, "files": 1, "n": z,
+                  "target": "alpine:3.19", "fixable": 1, "waiting": 0}, **(row or {}))
+        it = dict({"tool": "trivy-image", "file": "Dockerfile", "line": 1, "rule": "CVE-2024-0001", "sev": "high",
+                   "pkg": "openssl", "imgs": 2, "fix": True}, **(item or {}))
+        return {"v": 2, "repo": "/r", "commit": C1, "dirty": False, "src_changed": False, "at": 1.0, "tools": [t],
+                "files": {"Dockerfile": z}, "items": [it]}
+
+    def test_accepts_new_keys(self):
+        self.assertEqual(AC.checks_errors(self.j(), ids=SC.SEC_IDS), [])
+
+    def test_refuses_bad(self):
+        for row in ({"target": "-x"}, {"target": 3}, {"fixable": -1}, {"waiting": True}, {"extra": 1}):
+            self.assertEqual(AC.checks_errors(self.j(row=row), ids=SC.SEC_IDS), ["tools[0]"], row)
+        for item in ({"imgs": 0}, {"imgs": True}, {"fix": 1}, {"msg": "x"}):
+            self.assertEqual(AC.checks_errors(self.j(item=item), ids=SC.SEC_IDS), ["items"], item)
+
+    def test_build_keeps_first_row_count(self):
+        rows = [{"id": "trivy-image", "rules": "default", "status": "ok", "target": "a:1", "fixable": 1, "waiting": 0},
+                {"id": "trivy-image", "rules": "default", "status": "ok", "target": "b:1", "fixable": 0, "waiting": 0}]
+        it = {"tool": "trivy-image", "file": "Dockerfile", "line": 1, "rule": "CVE-2024-0001", "sev": "high", "imgs": 2,
+              "fix": True, "img": "a:1"}
+        j = AC.build("/r", C1, False, False, 1.0, rows, [it])
+        self.assertEqual([t["n"]["high"] for t in j["tools"]], [1, 0])
+        self.assertEqual(j["items"][0], {k: v for k, v in it.items() if k != "img"})
+        self.assertEqual(AC.checks_errors(j, ids=SC.SEC_IDS), [])
+
+
 class NoLintPipeline(unittest.TestCase):
     """The removed lint pipeline is named in no tracked text file (CHANGELOG keeps history). Reads `git ls-files` only."""
     OLD = "project" + "-checks"   # ⚠built from two halves so this file does not match itself

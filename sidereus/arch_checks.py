@@ -12,6 +12,7 @@ import re
 from sidereus.arch_verify import COMMIT_RE, owns, plan_globs, read_json, safe_rel
 from sidereus.arch_checks_parse import SEV_RANK, SEVS, clean_help, level, zero
 from sidereus import sec_checks as SC
+from sidereus import sec_trivy as ST
 from sidereus import sec_report as SR
 
 STATUSES = ("ok", "fail", "timeout", "missing", "skipped")
@@ -39,7 +40,7 @@ def judge(plan, res, repo):
     if st != "ok":
         return st, why, items, 0
     try:
-        return st, why, items, SC.files(plan, res, repo)
+        return st, why, items, (ST if plan["id"] in ST.IDS else SC).files(plan, res, repo)
     except ValueError:
         return st, why, items, 0
 
@@ -49,10 +50,14 @@ def _judge(plan, res, repo):
         return "timeout", "over %d s" % TOOL_TIMEOUT_S, []
     if res.get("rc") == 127 and res.get("nostart"):
         return "fail", "cannot start", []
+    trivy = plan["id"] in ST.IDS
+    fw = ST.fail_why(plan, res) if trivy else None
+    if fw:   # ⚠auth / not found / DB failures are a per-image reason row, never clean
+        return "fail", fw, []
     if SC.net_fail(plan, res):
         return "skipped", SC.WHY_NET_FAIL, []
     rc, blob = res.get("rc"), (res.get("out") or "") + (res.get("err") or "")
-    parse = SC.PARSERS[plan["id"]]
+    parse = (ST.PARSERS if trivy else SC.PARSERS)[plan["id"]]
     try:
         if plan["src"] == "report":
             raw = parse(SC.take_report(plan))
@@ -63,26 +68,39 @@ def _judge(plan, res, repo):
     ok_rc = plan.get("ok_rc", (0,))
     if ok_rc is not None and rc not in ok_rc and not raw:
         return "fail", WHY_OFFLINE if OFFLINE_RE.search(blob) else "exit %s" % rc, []
-    items = []
+    items, at = [], plan.get("at")
     for x in raw:
+        if not x["file"] and at:   # image findings sit on their FROM / image: line
+            x = dict(x, file=at[0], line=at[1])
         f = rel_path(x["file"], repo, plan.get("cwd"))
         if f and RULE_RE.fullmatch(x["rule"]) and os.path.isfile(os.path.join(repo, f)):
-            items.append(dict(x, file=f, tool=plan["id"]))
+            items.append(dict(x, file=f, tool=plan["id"], **({"img": plan["target"]} if plan.get("target") else {})))
     return "ok", None, items
 
 
 def build(repo, commit, dirty, src_changed, at, tools, items):
-    """checks.json v2 dict. tools = [{id, rules, status, why?, ms, files}] (n added here); items most severe first, capped."""
+    """checks.json v2 dict. tools = [{id, rules, status, why?, ms, files, target?, fixable?, waiting?}] (n added here);
+    items most severe first, capped."""
     files, n = {}, {}
     for x in items:
         files.setdefault(x["file"], zero())[x["sev"]] += 1
         n.setdefault(x["tool"], zero())[x["sev"]] += 1
-    out_t = []
+    out_t, counted = [], set()
     for t in tools:
+        # ⚠one id may have several rows (npm-audit per folder, trivy-image per image): its count goes on the first ok
+        # row only — a skipped/failed first row must not swallow it
+        first = t["status"] == "ok" and t["id"] not in counted
         e = {"id": t["id"], "rules": t["rules"], "status": t["status"], "ms": int(t.get("ms") or 0),
-             "files": int(t.get("files") or 0), "n": n.get(t["id"], zero())}
+             "files": int(t.get("files") or 0), "n": n.get(t["id"], zero()) if first else zero()}
+        if first:
+            counted.add(t["id"])
         if t.get("why"):
             e["why"] = t["why"][:WHY_MAX]
+        if isinstance(t.get("target"), str) and ST.REF_RE.fullmatch(t["target"]):
+            e["target"] = t["target"]
+        for k in ("fixable", "waiting"):
+            if _nat(t.get(k)):
+                e[k] = t[k]
         out_t.append(e)
     its = sorted(items, key=lambda x: (SEV_RANK[x["sev"]], x["file"], x["line"], x["tool"]))[:ITEMS_MAX]
     rules = {}
@@ -93,7 +111,9 @@ def build(repo, commit, dirty, src_changed, at, tools, items):
     return {"v": 2, "repo": repo, "commit": commit, "dirty": bool(dirty), "src_changed": bool(src_changed), "at": at,
             "tools": out_t, "files": dict(sorted(files.items())[:FILES_MAX]),
             "items": [dict({"tool": x["tool"], "file": x["file"], "line": x["line"], "rule": x["rule"], "sev": x["sev"]},
-                           **({"pkg": x["pkg"]} if x.get("pkg") else {}), **({"cve": x["cve"]} if x.get("cve") else {}))
+                           **({"pkg": x["pkg"]} if x.get("pkg") else {}), **({"cve": x["cve"]} if x.get("cve") else {}),
+                           **({"imgs": x["imgs"]} if _nat(x.get("imgs")) and x["imgs"] >= 1 else {}),
+                           **({"fix": x["fix"]} if isinstance(x.get("fix"), bool) else {}))
                       for x in its], "rules": rules}
 
 
@@ -138,7 +158,8 @@ def checks_errors(j, repo=None, commit=None, ids=()):
     if not isinstance(j.get("at"), (int, float)) or isinstance(j.get("at"), bool):
         errs.append("at")
     for i, t in enumerate(j.get("tools") if isinstance(j.get("tools"), list) else [None]):
-        if not (isinstance(t, dict) and set(t) - {"why"} == {"id", "rules", "status", "ms", "files", "n"}
+        if not (isinstance(t, dict) and set(t) - {"why", "target", "fixable", "waiting"} == {"id", "rules", "status", "ms", "files", "n"}
+                and _row_extra(t) is not None
                 and t["id"] in ids and _nat(t["files"])
                 and t["rules"] in ("project", "default") and t["status"] in STATUSES and _cnt(t["n"])
                 and isinstance(t["ms"], int) and not isinstance(t["ms"], bool) and (not isinstance(t.get("why"), str) or len(t["why"]) <= WHY_MAX)
@@ -151,6 +172,21 @@ def checks_errors(j, repo=None, commit=None, ids=()):
     if not isinstance(its, list) or len(its) > ITEMS_MAX or any(_clean_item(x, ids) != x for x in its):
         errs.append("items")
     return errs
+
+
+def _row_extra(t):
+    """Optional tool-row keys (trivy-image: target ref, fixable / waiting counts) validated, or None if any is bad."""
+    e = {}
+    if "target" in t:
+        if not (isinstance(t["target"], str) and ST.REF_RE.fullmatch(t["target"])):
+            return None
+        e["target"] = t["target"]
+    for k in ("fixable", "waiting"):
+        if k in t:
+            if not _nat(t[k]):
+                return None
+            e[k] = t[k]
+    return e
 
 
 def _rule_key(k, ids=()):
@@ -171,8 +207,12 @@ def _clean_item(x, ids=()):
     cv = x.get("cve")   # optional CVE aliases of a dependency finding; display only, not part of the key
     if "cve" in x and not (isinstance(cv, list) and cv and SC.cves(cv) == cv):
         return None
+    im, fx = x.get("imgs"), x.get("fix")   # image findings: distinct image count, whether a fixed version exists
+    if ("imgs" in x and not (_nat(im) and im >= 1)) or ("fix" in x and not isinstance(fx, bool)):
+        return None
     return dict({"tool": x["tool"], "file": f, "line": ln, "rule": r, "sev": sv}, **({"pkg": pk} if "pkg" in x else {}),
-                **({"cve": cv} if "cve" in x else {}))
+                **({"cve": cv} if "cve" in x else {}), **({"imgs": im} if "imgs" in x else {}),
+                **({"fix": fx} if "fix" in x else {}))
 
 
 def aggregate(files, mods, globs):
@@ -260,6 +300,7 @@ def _load_one(root, map_dir, m, head, name, ids):
             why = t.get("why")
             if isinstance(why, str) and why:
                 e["why"] = "".join(ch for ch in why[:WHY_MAX] if ord(ch) >= 32)
+            e.update(_row_extra({k: t[k] for k in ("target", "fixable", "waiting") if k in t}) or {})
             tools.append(e)
     fs = j.get("files") if isinstance(j.get("files"), dict) else {}
     files = {k: _counts(v, j["v"]) for k, v in list(fs.items())[:FILES_MAX] if safe_rel(k) == k and _counts(v, j["v"])}

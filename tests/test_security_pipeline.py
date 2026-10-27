@@ -1,11 +1,13 @@
 """security-checks pipeline file: threat-model review stage contract (repo file, not live data); one Markdown report
 per runner run with deps lines for this checkout only (git, tools and deps_audit stubbed)."""
 import importlib.util
+import io
 import json
 import os
 import shutil
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from unittest import mock
 
 from tests._load import sidereus, ROOT
@@ -53,6 +55,11 @@ class SecurityPipelineTest(unittest.TestCase):
         self.assertIn("NEVER mark false-positive", t)
         self.assertNotIn("false-positive [", t)
         self.assertNotIn("--mark <slug>@<file> false-positive", t)
+
+    def test_images_flag_only_on_request(self):
+        t = self.st[0]["task"]
+        self.assertIn("Add `--images` only when the request asks to include images.", t)
+        self.assertNotIn("--images", self.st[0]["gate"])
 
     def test_rules_name_log(self):
         self.assertIn("security-log.jsonl", self.d["rules"])
@@ -129,6 +136,20 @@ class ReportRun(unittest.TestCase):
         self.assertIn("n/a — no earlier scan record", md)
         self.assertNotIn("PLANTED-MESSAGE", md)
         self.assertEqual(self.deps_argv, [])
+
+    def test_images_reaches_trivy_argv(self):
+        with open(os.path.join(self.repo, "Dockerfile"), "w", encoding="utf-8") as f:
+            f.write("FROM alpine:3.19\n")
+        seen = []
+        ex = lambda p, t, tmp: seen.append(p["argv"]) or {"rc": 0, "out": '{"Results": []}', "err": "", "t0": 0, "ms": 1}
+        with mock.patch.object(self.cli, "_which", lambda n: "/bin/" + n if n == "trivy" else None), \
+                mock.patch.object(self.cli, "_exec", ex), mock.patch.object(self.cli, "_probe", lambda: True), \
+                redirect_stdout(io.StringIO()):
+            self.cli.main(["--repo", self.repo, "--category", "security"])
+            self.assertFalse(any(a[1] == "image" for a in seen))
+            self.cli.main(["--repo", self.repo, "--category", "security", "--images"])
+        self.assertIn(["/bin/trivy", "image", "--scanners", "vuln", "--image-src", "docker,remote", "--format", "json",
+                       "--quiet", "--", "alpine:3.19"], seen)
 
     def test_self_repo_deps_lines_and_delta(self):
         with mock.patch.object(self.cli, "SIDEREUS_ROOT", self.repo):

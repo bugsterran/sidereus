@@ -49,7 +49,7 @@ flowchart LR
 
 ## 보안 검사
 
-`security-checks` 파이프라인이 gitleaks·npm audit·osv-scanner·semgrep·bandit 결과를 «주요 문제» 창에 보여 준다. ⚠비밀값은 저장하지 않는다.
+`security-checks` 파이프라인이 gitleaks·npm audit·osv-scanner·semgrep·bandit·trivy 결과를 «주요 문제» 창에 보여 준다. trivy 는 기본으로 Dockerfile 만, `--images`(«이미지 포함»)일 때 베이스 이미지까지 검사한다. ⚠비밀값은 저장하지 않는다.
 
 두 번째 단계 «위협 모델 리뷰» 는 저장소의 위협 모델(`.oss-scanner/threat_model.md` 또는 `threat_model.md`)을 기준으로 모델이 코드를 검토하고 결과를 `security-log.jsonl` 에 남긴다. 이 결과는 모델이 만든 것이라 검증되지 않았다. 위협 모델이 없으면 `templates/oss-scanner/` 를 가리키는 한 줄만 출력하고 통과한다.
 

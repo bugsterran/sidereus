@@ -15,6 +15,7 @@ FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archNoHome", "ar
        "archChkTop", "archChkTopBtn", "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkEntry", "archChkHdBtn", "archChkRunCands", "archChkRunBody", "archChkRunCmds", "archChkScanAt", "archChkRunHtml", "archChkWinHtml"]
 FNS += ["archChkLast", "archChkLastHtml"]   # last-check line (window header, badge tooltip)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
+FNS += ["archChkTid", "archChkImgBox", "archChkImgHtml"]   # 84l3: trivy scanner label, «Include images» box, base-image groups
 FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqWho",
         "archReqRowHtml", "archChkProgHtml", "archChkFixRecHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
@@ -615,3 +616,23 @@ if __name__ == "__main__":
         self.assertIn('title="점검한 적 없음"', r[5])
         e = run("console.log(JSON.stringify(archChkLastHtml({checks: " + json.dumps(CK) + "}, %d)));" % (at + 3 * 86400), lang="en")
         self.assertEqual(e, '<span class="ckwlast">Last check 11-14 22:13 · 3d ago</span>')
+
+    def test_include_images_option(self):   # «Include images» adds --images to the relay body and the terminal command only when checked
+        sess = [{"sid": "a1", "cwd": "/x/shop", "mbox": "a", "mboxSrc": "identity", "state": "idle", "ageSec": 1}]
+        r = run("const d = {ok: true, sidereus: '/sid', checks: null}, c = archChkFixCands(" + json.dumps(sess) + ", '/x/shop');"
+                "const on = {sel: {}, req: null, run: {sid: 'a1', busy: false, img: true}, runSent: null}, off = {sel: {}, req: null, run: {sid: 'a1', busy: false}, runSent: null};"
+                "const non = {sel: {}, req: null, run: {sid: '', busy: false, img: true}, runSent: null};"
+                "console.log(JSON.stringify([archChkRunBody('/x/shop', '/sid/', false, true), archChkRunBody('/x/shop', '/sid/'), archChkRunCmds('/x/shop', '/sid', true), archChkRunCmds('/x/shop', '/sid'),"
+                "archChkRunHtml('/x/shop', d, on, c), archChkRunHtml('/x/shop', d, off, c), archChkRunHtml('/x/shop', d, non, []), archChkFixBody('/x/shop', null, [{tool: 'trivy-image', file: 'Dockerfile', line: 1, rule: 'CVE-2024-1', sev: 'high', imgs: 2}], '/sid')]));")
+        self.assertIn("pass --images", r[0])
+        self.assertNotIn("--images", r[1])
+        self.assertTrue(r[2]["sh"].endswith("--category security --images") and r[2]["win"].endswith("--category security --images"))
+        self.assertNotIn("--images", r[3]["sh"] + r[3]["win"])
+        self.assertIn("<input type=checkbox data-ckimg checked> 이미지 포함", r[4])
+        self.assertIn("pass --images", r[4])                 # preview shows what will be sent
+        self.assertIn("<input type=checkbox data-ckimg> 이미지 포함", r[5])
+        self.assertNotIn("--images", r[5])
+        self.assertIn("data-ckimg checked", r[6])            # terminal branch has the box too
+        self.assertIn("--category security --images</code>", r[6])
+        self.assertIn("CVE-2024-1 · 2 images", r[7])         # mailbox text stays English
+        self.assertNotIn("이미지", r[7])

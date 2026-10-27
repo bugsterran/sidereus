@@ -10,4 +10,6 @@ Object.assign(I18N.ko, {
   'Common security issues in Python code': 'Python 코드의 흔한 보안 문제',
   'Known vulnerabilities in dependencies, read from lockfiles': '락파일로 읽은 의존성의 알려진 취약점',
   'Known vulnerabilities in npm packages (npm audit)': 'npm 패키지의 알려진 취약점 (npm audit)',
+  'network for image scan': '이미지 검사에 네트워크 필요',
+  'Dockerfile misconfigurations; with --images, known vulnerabilities in base images': 'Dockerfile 설정 오류 · --images 를 주면 베이스 이미지의 알려진 취약점',
 });

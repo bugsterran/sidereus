@@ -54,6 +54,14 @@ Each run writes one Markdown report, `arch/<key>/security-report-YYYYMMDD-HHMM.m
 | `bandit` | Common security issues in Python code | `brew install bandit` · `pip install bandit` | no |
 | `osv-scanner` | Known vulnerabilities in dependencies, read from lockfiles | `brew install osv-scanner` · `winget install Google.OSVScanner` | yes |
 | `npm` | Known vulnerabilities in npm packages (npm audit) | `brew install node` · `winget install OpenJS.NodeJS.LTS` | yes |
+| `trivy` | Dockerfile misconfigurations; with --images, known vulnerabilities in base images | `brew install trivy` · `winget install AquaSecurity.Trivy` | only for `--images` (vulnerability DB and registry) |
+
+### Container images (trivy)
+
+- By default trivy only checks Dockerfiles (`trivy config`). Base images are scanned only with `--images`, or with «Include images» ticked in the run-request preview.
+- `--images` scans each Dockerfile `FROM` image and each compose `image:` — the local Docker daemon first, then the registry. Results are grouped per base image: fixable high/critical CVEs (⇒ replace the base image) and «waiting» ones with no fix yet. A CVE shared by several images is listed once with its image count.
+- Private registries use your own `docker login`; trivy reads it. Sidereus never asks for, reads or stores credentials, never builds images and never starts containers. A failed login or a missing image is a «failed» row with the reason, never a clean result.
+- Behind a firewall, point trivy at a mirror with `TRIVY_DB_REPOSITORY` / `TRIVY_CHECKS_BUNDLE_REPOSITORY`; the runner passes your environment through.
 
 ## Reporting a problem
 

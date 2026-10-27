@@ -49,7 +49,7 @@ flowchart LR
 
 ## Security checks
 
-The `security-checks` pipeline shows gitleaks, npm audit, osv-scanner, semgrep and bandit findings in the issues window («Top issues N»). ⚠Secret values are never stored.
+The `security-checks` pipeline shows gitleaks, npm audit, osv-scanner, semgrep, bandit and trivy findings in the issues window («Top issues N»). trivy checks Dockerfiles by default; base images only with `--images` («Include images»). ⚠Secret values are never stored.
 
 Its second stage, «Threat model review», has a model review the code against the repo's threat model (`.oss-scanner/threat_model.md` or `threat_model.md`) and logs findings to `security-log.jsonl`. These findings are model-generated and unverified. Without a threat model the stage prints one line pointing to `templates/oss-scanner/` and passes.
 

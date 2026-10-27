@@ -81,6 +81,20 @@ class Render(unittest.TestCase):
         self.assertIn("Showing the first 1", md)
         self.assertIn("the log keeps %d findings per scan" % SR.LOG_ITEMS_MAX, md)
 
+    def test_base_images(self):   # one line per image: fixable -> replace, unfixed -> waiting, failure -> its reason
+        z = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+        img = lambda **kw: dict({"id": "trivy-image", "rules": "default", "status": "ok", "ms": 1, "files": 1, "n": z}, **kw)
+        t = [img(target="alpine:3.19", fixable=2, waiting=1), img(target="debian:12", fixable=0, waiting=3),
+             img(target="ghcr.io/o/p:1", status="fail", why="docker login ghcr.io needed", files=0)]
+        md = SR.render(_j(T_ALL[:1] + t, []), {}, None, None, None)
+        for w in ("## Base images", "- `alpine:3.19`: fixable high/critical 2 — replace base image · waiting 1 (no fix yet)",
+                  "- `debian:12`: fixable high/critical 0 · waiting 3 (no fix yet)",
+                  "- `ghcr.io/o/p:1`: failed — docker login ghcr.io needed"):
+            self.assertIn(w, md)
+        self.assertIn("- (no image): skipped — add --images",
+                      SR.render(_j([img(status="skipped", why="add --images")], []), {}, None, None, None))
+        self.assertNotIn("## Base images", SR.render(_j(T_ALL, []), {}, None, None, None))
+
     def test_pipes_escaped(self):
         md = SR.render(_j(T_ALL[:1], [dict(ITEMS[0], file="a|b`c.py")]), {}, None, None, None)
         self.assertIn("a\\|b'c.py:3", md)

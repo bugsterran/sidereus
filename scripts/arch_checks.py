@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Runner + gate of the security-checks pipeline: run the repo's security scanners, write checks-security.json.
 
-usage: arch_checks.py (--repo <path> | --last | --verify --last) --category security [--only <ids>] [--offline] [--dev]
+usage: arch_checks.py (--repo <path> | --last | --verify --last) --category security [--only <ids>] [--offline] [--dev] [--images]
   --repo / --last   export HEAD's tracked files (git archive) to a temp dir, so results match the commit they are
                     stored under; detect scanners there (sidereus/sec_checks.py), run each (300 s each, 900 s total), write
                     arch/<key>/<HEAD>/checks-security.json + its last pointer, and one Markdown report
@@ -9,7 +9,8 @@ usage: arch_checks.py (--repo <path> | --last | --verify --last) --category secu
                     Deps = scripts/deps_audit.py lines, only when the repo is this Sidereus checkout;
                     --dev adds its dev tooling lines (node, Chrome, browser drivers).
                     --last = the repo of the last security checks (else of the last map run).
-  --category        security (required): gitleaks, npm audit, osv-scanner, semgrep, bandit.
+  --category        security (required): gitleaks, npm audit, osv-scanner, semgrep, bandit, trivy (Dockerfile
+                    misconfig; --images adds trivy image on each Dockerfile FROM / compose image:, never built or run).
                     --only = comma-separated tool ids. Online lookups (npm audit, osv-scanner, semgrep registry
                     packs) run by default after one reachability probe; unreachable or --offline = skipped.
                     --net is accepted as a no-op (older callers).
@@ -39,6 +40,7 @@ from sidereus import arch_checks as AC  # noqa: E402  (path set just above)
 from sidereus import arch_verify as AV  # noqa: E402
 from sidereus import sec_checks as SC  # noqa: E402
 from sidereus import sec_report as SR  # noqa: E402
+from sidereus import sec_trivy as ST  # noqa: E402
 from sidereus.bus import _atomic_write  # noqa: E402
 from sidereus.gitinfo import git_argv, git_env  # noqa: E402
 
@@ -241,7 +243,11 @@ def _report(kdir, j, ok, deps):
     return SR.write(kdir, j["at"], SR.render(j, SC.log_view(kdir), prev, cur, deps))
 
 
-def run(repo, only=None, offline=False, dev=False):
+def _plans(src, net, only, images):
+    return [p for p in SC.detect(src, _which, net) + ST.detect(src, _which, net, images) if not only or p["id"] in only]
+
+
+def run(repo, only=None, offline=False, dev=False, images=False):
     """(exit code, summary line). Writes checks-security.json for the repo's HEAD and one Markdown report."""
     head = (_git(repo, ["rev-parse", "HEAD"]) or "").strip()
     if not AV.COMMIT_RE.fullmatch(head):
@@ -254,15 +260,15 @@ def run(repo, only=None, offline=False, dev=False):
     try:
         if not _export(repo, head, src, tmp):
             return 1, "arch_checks: git archive of HEAD failed"
-        plans = [p for p in SC.detect(src, _which, not offline) if not only or p["id"] in only]
+        plans = _plans(src, not offline, only, images)
         # ⚠probe only when an online tool would actually run; unreachable re-plans them as skipped, never «0 issues»
         if any(p.get("net") and not p.get("status") for p in plans) and not _probe():
-            plans = [p for p in SC.detect(src, _which, False) if not only or p["id"] in only]
+            plans = _plans(src, False, only, images)
         sig = _tree_sig(src)
         for p in plans:
             if p.get("status"):
                 tools.append({"id": p["id"], "rules": p["rules"], "status": p["status"], "why": p.get("why"), "ms": 0,
-                              "files": 0})
+                              "files": 0, "target": p.get("target")})
                 continue
             if p.get("src") == "report":
                 p = SC.bind(p, tmp)   # ⚠report lands in tmp only; judge deletes it after reading
@@ -282,8 +288,13 @@ def run(repo, only=None, offline=False, dev=False):
                 r2 = _exec(p2, min(AC.TOOL_TIMEOUT_S, left), tmp)
                 st, why, its, nf = AC.judge(p2, r2, src)
                 res = dict(r2, ms=res.get("ms", 0) + r2.get("ms", 0))
-            tools.append({"id": p["id"], "rules": p["rules"], "status": st, "why": why, "ms": res.get("ms", 0), "files": nf})
+            row = {"id": p["id"], "rules": p["rules"], "status": st, "why": why, "ms": res.get("ms", 0), "files": nf,
+                   "target": p.get("target")}
+            if p.get("target") and st == "ok":
+                row["fixable"], row["waiting"] = ST.counts(its)
+            tools.append(row)
             items += its
+        items = ST.merge(items)   # one finding per (CVE, package) across images
         changed = _tree_sig(src) != sig   # a tool wrote into the scanned tree
     finally:
         _rmtree(tmp)
@@ -295,7 +306,10 @@ def run(repo, only=None, offline=False, dev=False):
                   prefix=".arch-", mode=0o644)
     _atomic_write(os.path.join(AV.ARCH_DIR, SC.SEC_LAST), json.dumps({"repo": repo, "commit": head}).encode("utf-8"),
                   prefix=".arch-", mode=0o644)
-    ok = [t["id"] for t in j["tools"] if t["status"] == "ok"]
+    # ⚠an id with a failed row (one image of several) did not fully run: it must not resolve its old findings
+    # a not-found image is a per-image reason row, not a failed scan; auth / DB failures still count
+    bad = {t["id"] for t in j["tools"] if t["status"] in ("fail", "timeout") and t.get("why") != ST.WHY_NOT_FOUND}
+    ok = [t["id"] for t in j["tools"] if t["status"] == "ok" and t["id"] not in bad]
     if ok:   # ⚠a run where no tool ran ok must not resolve anything; log failure keeps rc
         SC.log_append(os.path.dirname(d), SC.scan_record(head, j["at"], ok, j["items"]))
     deps = _deps(repo, dev, offline)
@@ -440,13 +454,14 @@ def log_cmd(a):
 
 
 def _args(argv):
-    """{verify, last, net, offline, dev, repo, category, only, log-review, log-show, mark, commit} or None on a usage error."""
-    a = {"verify": False, "last": False, "net": False, "offline": False, "dev": False, "repo": None, "category": None,
+    """{verify, last, net, offline, dev, images, repo, category, only, log-review, log-show, mark, commit} or None on a usage error."""
+    a = {"verify": False, "last": False, "net": False, "offline": False, "dev": False, "images": False, "repo": None,
+         "category": None,
          "only": None,
          "log-review": False, "log-show": False, "mark": None, "commit": None}
     it = iter(argv)
     for x in it:
-        if x in ("--verify", "--last", "--net", "--offline", "--dev", "--log-review", "--log-show"):
+        if x in ("--verify", "--last", "--net", "--offline", "--dev", "--images", "--log-review", "--log-show"):
             a[x[2:]] = True
         elif x in ("--repo", "--category", "--only", "--commit"):
             a[x[2:]] = next(it, None)
@@ -461,13 +476,13 @@ def _args(argv):
             return None
     logm = a["log-review"] + a["log-show"] + bool(a["mark"])
     if logm:   # log commands: one at a time, security only, --commit only with --mark (full hex id)
-        if logm > 1 or a["verify"] or a["only"] or a["net"] or a["offline"] or a["dev"] or \
+        if logm > 1 or a["verify"] or a["only"] or a["net"] or a["offline"] or a["dev"] or a["images"] or \
                 a["category"] not in (None, "security") or \
                 a["last"] == bool(a["repo"]) or (a["commit"] and not (a["mark"] and AV.COMMIT_RE.fullmatch(a["commit"]))):
             return None
         return a
     if a["commit"] or a["category"] not in SC.CATEGORIES + (None,) or a["last"] == bool(a["repo"]) or \
-            (a["verify"] and (a["repo"] or a["only"] or a["net"] or a["offline"] or a["dev"])):
+            (a["verify"] and (a["repo"] or a["only"] or a["net"] or a["offline"] or a["dev"] or a["images"])):
         return None
     if a["only"] is not None:
         a["only"] = set(a["only"].split(","))
@@ -494,12 +509,12 @@ def main(argv):
             rc, line = verify(repo, commit)
             _record(rc, repo, commit)
         elif a["last"]:
-            rc, line = run(_last(False)[0], a["only"], a["offline"], a["dev"])
+            rc, line = run(_last(False)[0], a["only"], a["offline"], a["dev"], a["images"])
         else:
             if not os.path.isdir(a["repo"]):
                 print("arch_checks: repo is not a directory")
                 return 1
-            rc, line = run(os.path.realpath(a["repo"]), a["only"], a["offline"], a["dev"])
+            rc, line = run(os.path.realpath(a["repo"]), a["only"], a["offline"], a["dev"], a["images"])
     except ValueError as e:
         print("arch_checks: %s" % e)
         return 1

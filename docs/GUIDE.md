@@ -106,8 +106,8 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 - «Flows» lists one flow per entry point; ✓ = every step proven, a red dashed arrow = unproven step. Click an arrow for the code at that call.
 
 ### Top issues (security)
-- «Top issues N» opens the findings (gitleaks, npm audit, osv-scanner, semgrep, bandit — `security-checks` pipeline). Secrets are never shown.
-- «Run security check» sends a `security-checks` run request to a logged-in session (preview + confirm), or shows the command to copy when there is none; progress shows as for the diagram.
+- «Top issues N» opens the findings (gitleaks, npm audit, osv-scanner, semgrep, bandit, trivy — `security-checks` pipeline). Secrets are never shown.
+- «Run security check» sends a `security-checks` run request to a logged-in session (preview + confirm), or shows the command to copy when there is none; progress shows as for the diagram. Tick «Include images» to also scan the base images (`--images`, uses your `docker login`; see [SECURITY.md](../SECURITY.md#container-images-trivy)).
 - «Request fix» sends the selected findings and asks the session to re-run the security check once the fix is committed. A scan older than HEAD marks the Security badge with ⚠ and a dashed border.
 - The window header and the badge tooltip show the last check time («Last check MM-DD HH:MM · 3d ago»); it turns amber after 30 days.
 - Filters: severity («All severities / High and above / Critical only») and tool. «Hide rule» hides a rule for this repo until «N rules hidden · Show»; the view changes only, files stay as they are.

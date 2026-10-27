@@ -50,7 +50,8 @@ class SecTools(unittest.TestCase):
 
     def test_versions_from_layout(self):
         r = self.rows()
-        self.assertEqual([x for x in r], ["gitleaks", "semgrep", "bandit", "osv-scanner", "npm"])
+        self.assertEqual([x for x in r], ["gitleaks", "semgrep", "bandit", "osv-scanner", "npm", "trivy"])
+        self.assertEqual(r["trivy"]["net"], "images")
         self.assertEqual(r["gitleaks"], {"id": "gitleaks", "installed": True, "version": "8.18.0", "cmd": None, "net": "no"})
         self.assertEqual(r["npm"]["version"], "10.8.2")
         self.assertEqual(r["semgrep"]["version"], "1.90.0")
@@ -61,12 +62,14 @@ class SecTools(unittest.TestCase):
         mac = self.rows(where={})
         self.assertEqual(mac["gitleaks"]["cmd"], "brew install gitleaks")
         self.assertEqual(mac["npm"]["cmd"], "brew install node")
+        self.assertEqual(mac["trivy"]["cmd"], "brew install trivy")
         self.assertFalse(mac["osv-scanner"]["installed"])
         win = self.rows(where={}, nt=True)
         self.assertEqual(win["gitleaks"]["cmd"], "winget install Gitleaks.Gitleaks")   # «(or scoop)» stripped
         self.assertEqual(win["osv-scanner"]["cmd"], "winget install Google.OSVScanner")
         self.assertEqual(win["semgrep"]["cmd"], "pip install semgrep")
         self.assertEqual(win["npm"]["cmd"], "winget install OpenJS.NodeJS.LTS")
+        self.assertEqual(win["trivy"]["cmd"], "winget install AquaSecurity.Trivy")
         self.assertEqual(self.rows(where={}, mac=False)["npm"]["cmd"], "nodejs.org")
 
     def test_install_hint_unchanged(self):
@@ -96,7 +99,7 @@ class SecTools(unittest.TestCase):
             md = f.read()
         sec = md.split("## Security tools", 1)[1].split("\n## ", 1)[0]
         rows = [ln for ln in sec.splitlines() if ln.startswith("| `")]
-        self.assertEqual(len(rows), 5)
+        self.assertEqual(len(rows), len(ST.TOOLS))
         for tid, text in catch.items():
             self.assertTrue(any(ln.startswith("| `%s` | %s |" % (tid, text)) for ln in rows), tid)
 

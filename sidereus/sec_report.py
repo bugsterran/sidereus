@@ -69,6 +69,23 @@ def _rule(x):
     return " · ".join([str(x.get("rule") or "")] + cv)
 
 
+def _images(tools):
+    """«Base images» lines: per image ref, fixable high/critical -> replace the base image; unfixed ones are «waiting»."""
+    rows = [t for t in tools if t.get("id") == "trivy-image"]
+    if not rows:
+        return []
+    out = ["", "## Base images", ""]
+    for t in rows[:ROWS_MAX]:
+        ref = "`%s`" % _cell(t["target"], 200) if isinstance(t.get("target"), str) and t["target"] else "(no image)"
+        if t.get("status") != "ok":
+            out.append("- %s: %s" % (ref, status_label(t)))
+            continue
+        fx, wt = int(t.get("fixable") or 0), int(t.get("waiting") or 0)
+        out.append("- %s: fixable high/critical %d%s · waiting %d (no fix yet)" % (
+            ref, fx, " — replace base image" if fx else "", wt))
+    return out
+
+
 def render(j, view, prev_items, cur_items, deps):
     """Markdown text. j = checks-security dict; view = sec_checks.log_view(); prev/cur = scan_pair();
     deps = [(level, item, detail)] or None when not applicable."""
@@ -105,6 +122,7 @@ def render(j, view, prev_items, cur_items, deps):
         for x in items[:ROWS_MAX]:
             out.append("| %s | %s | %s | %s | %s |" % (_cell(x.get("sev")), _cell(x.get("tool")), _cell(_rule(x), 100),
                                                      _loc(x), _cell(x.get("pkg") or "", 100)))
+    out += _images(tools)
     v = view or {}
     op, rs, fp = v.get("open") or [], v.get("resolved") or [], v.get("fp") or []
     ai = sum(1 for x in op if x.get("ai"))

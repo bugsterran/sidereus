@@ -103,6 +103,12 @@ def _demo_checks(now):
              {"id": "bandit", "rules": "default", "status": "ok", "ms": 700, "files": 4, "n": n["bandit"]},
              {"id": "semgrep", "rules": "project", "status": "missing", "why": "install: brew install semgrep", "ms": 0,
               "files": 0, "n": z}]
+    # trivy rows carry counts only: no items in `top`, so the Security badge count stays the same
+    tools += [{"id": "trivy-config", "rules": "default", "status": "ok", "ms": 1300, "files": 1, "n": dict(z)},
+              {"id": "trivy-image", "rules": "default", "status": "ok", "ms": 8200, "files": 0, "target": "python:3.9-slim",
+               "fixable": 3, "waiting": 2, "n": dict(z, high=2, critical=1, medium=2)},
+              {"id": "trivy-image", "rules": "default", "status": "fail", "why": "docker login ghcr.io needed", "ms": 600,
+               "files": 0, "target": "ghcr.io/acme/shop-worker:1.4", "fixable": 0, "waiting": 0, "n": dict(z)}]
     rules = {"bandit:B105": {"desc": "hardcoded password string", "url": "https://bandit.readthedocs.io/en/latest/plugins/b105_hardcoded_password_string.html"},
              "osv-scanner:GHSA-qppj-fm5r-hxr3": {"desc": "", "url": "https://github.com/advisories/GHSA-qppj-fm5r-hxr3"}}
     top = [dict({"tool": t, "file": f, "line": ln, "rule": r, "sev": sev, "mod": f.split("/", 1)[0],

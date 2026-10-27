@@ -254,7 +254,16 @@ body.ckwin{margin:0;padding:0;height:100vh;overflow:hidden}
 .ckwf select{max-width:100%}
 .ckwhid{display:inline-flex;align-items:center;gap:4px;color:var(--nx-t3,#8b95a7)}
 .archckl .ckhide{flex:0 0 auto;align-items:center;width:auto;margin:5px 4px 0 0;padding:1px 8px;font-size:11px;white-space:nowrap;border:1px solid var(--nx-rule,#2a3442);color:var(--nx-t3,#8b95a7)}   /* ⚠overrides the full-width .archckl button */
-#ckroot>.archreq,#ckroot>.archckst,#ckroot>.archmsg{flex:0 0 auto}
+#ckroot>.archreq,#ckroot>.archckst,#ckroot>.archmsg,#ckroot>.ckimgs{flex:0 0 auto}
+/* trivy base images (84l3 archChkImgHtml) + «Include images» box of the run preview */
+.ckimgs{font-size:12.5px;color:var(--nx-t2,#aab4c3)}
+.ckimgs ul{margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.ckimgs li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0}
+.ckimgs code{max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ckimgs .archwhy{margin-left:0;color:var(--nx-warn,#e3b341)}
+.ckimgfx{color:var(--nx-err,#f45460);font-weight:600}
+.ckimgw{color:var(--nx-t3,#8b95a7)}
+.ckimgb{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--nx-t2,#aab4c3);cursor:pointer}
 /* Issues | history grip (84l archChkSplit*, look of 43 .plwgr); ⚠negative margin cancels the #ckroot gap so the 24px target sits between the lists */
 #ckroot>.ckwgr{flex:0 0 auto;margin:-8px 0;cursor:row-resize}
 #ckroot.cksz>.archckl{box-sizing:border-box;min-height:96px}
