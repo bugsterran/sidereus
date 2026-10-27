@@ -349,3 +349,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠**A drill-down click must not move the clicked node** (UX sweep 2026-10-26: first-sight hub centring moved it up to 195 px).
   - ⇒ `archDgClick` records the node's spot (`archMmAt`); `archMmFirst` scrolls so the new hub keeps it (`archMmStay`); short focus content gets a top/bottom pad (`ARCH_MM.pad`, re-applied on repaint). Centring is only the fallback when no click anchor exists.
   - ⚠Do not re-centre on first sight — `tests/test_struct_arch_minimap_js.py` `DrillDownKeepsClickedNode`.
+- ⚠**A focused control can land under the sticky `.archtop` header** — browsers ignore sticky headers when scrolling a focused element into view.
+  - ⇒ `.archmap{scroll-padding-top:var(--archtop-h)}` (`web/css/79-structure-arch.css`; header measured 87 px at 900/1100/1440)
+  - ⚠Keep it — `scripts/screen_check.mjs` keyboard walk (Tab ×30 per tab) fails with `focus hidden: tab struct … (covered by div.archleg)` without it.

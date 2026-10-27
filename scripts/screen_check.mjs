@@ -9,6 +9,7 @@
 //   node scripts/screen_check.mjs --strict    tolerance 0: any changed text line fails (wording/translation migrations)
 //
 // FAIL on: JS exception, console error, HTTP >= 400, horizontal overflow, a SOFT_ERRS tag not in the baseline,
+// a hidden/clipped/covered focus stop in the first TAB_STOPS Tab presses of each tab,
 // or a masked-text snapshot diff beyond tolerance. Digits and time units are masked so demo clock drift is ignored.
 // Also FAIL (compare runs) if one cold load of `/` at 1100 en takes > FIRST_SCREEN_MS to the first-render marker.
 import { spawn } from 'node:child_process';
@@ -198,6 +199,53 @@ const JS_SNAP = `(() => {
     soft: se, sw, iw: innerWidth });
 })()`;
 
+// Keyboard walk: is document.activeElement really visible? null = nothing focused; else {d: tag.class, r: reason or ''}.
+// ⚠Browsers ignore sticky headers when scrolling a focused element into view, so "focused" never implies "visible".
+const JS_FOCUS = `(() => {
+  const el = document.activeElement;
+  if (!el || el === document.body || el === document.documentElement) return null;
+  const cls = typeof el.className === 'string' ? el.className : (el.className && el.className.baseVal) || '';
+  const d = el.tagName.toLowerCase() + (cls ? '.' + cls.trim().split(/\\s+/).join('.') : '');
+  const res = r => ({ d, r });
+  const svg = el instanceof SVGElement && !(el instanceof SVGSVGElement);
+  const b = el.getBoundingClientRect();
+  // a straight SVG line has a zero-height (or zero-width) box but still paints its stroke
+  if (!(svg ? b.width > 0 || b.height > 0 : b.width > 0 && b.height > 0)) return res('zero box');
+  for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+    const cs = getComputedStyle(n);
+    if (n.hidden || n.inert || cs.display === 'none' || cs.visibility === 'hidden') return res('hidden ancestor ' + n.tagName.toLowerCase() + (n.id ? '#' + n.id : ''));
+  }
+  let c = { l: Math.max(0, b.left), t: Math.max(0, b.top), r: Math.min(innerWidth, b.right), b: Math.min(innerHeight, b.bottom) };
+  for (let n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
+    const cs = getComputedStyle(n);
+    if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+    const q = n.getBoundingClientRect(), l = q.left + n.clientLeft, t = q.top + n.clientTop;
+    c = { l: Math.max(c.l, l), t: Math.max(c.t, t), r: Math.min(c.r, l + n.clientWidth), b: Math.min(c.b, t + n.clientHeight) };
+  }
+  if (!(svg ? c.r >= c.l && c.b >= c.t : c.r > c.l && c.b > c.t)) return res('clipped out of view');
+  const inC = p => p.x >= c.l - 1 && p.x <= c.r + 1 && p.y >= c.t - 1 && p.y <= c.b + 1;   // path points lie on the box edge
+  let pts;
+  const geo = !svg ? null : el instanceof SVGGeometryElement ? el : (el instanceof SVGGElement ? el.querySelector('path,rect,polygon,circle,ellipse,line,polyline') : null);
+  if (geo && geo.getTotalLength && geo.getScreenCTM()) {
+    const L = geo.getTotalLength(), m = geo.getScreenCTM();
+    pts = [.1, .3, .5, .7, .9].map(f => { const p = geo.getPointAtLength(L * f); return { x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f }; });
+  } else {
+    const w = c.r - c.l, h = c.b - c.t, ix = w * .15, iy = h * .15;
+    pts = [{ x: c.l + w / 2, y: c.t + h / 2 }, { x: c.l + ix, y: c.t + iy }, { x: c.r - ix, y: c.t + iy }, { x: c.l + ix, y: c.b - iy }, { x: c.r - ix, y: c.b - iy }];
+  }
+  pts = pts.filter(inC);
+  if (!pts.length) return res('clipped out of view');
+  let top = null;
+  for (const p of pts) {
+    const h = document.elementFromPoint(p.x, p.y);
+    // ⚠SVG: a sibling drawn over the same line (hit path under its visible copy) is not an occluder; HTML on top is
+    if (h && (h === el || el.contains(h) || (svg && el.ownerSVGElement && el.ownerSVGElement.contains(h)))) return res('');
+    if (h && !top) top = h;
+  }
+  return res('covered by ' + (top ? top.tagName.toLowerCase() + (top.id ? '#' + top.id : '') + (typeof top.className === 'string' && top.className ? '.' + top.className.trim().split(/\\s+/)[0] : '') : 'nothing'));
+})()`;
+const TAB_STOPS = 30;
+
 const pinPrefs = lang => `try{const P={mbLang:${JSON.stringify(lang)},mbTone:'black'};let u=Object.assign({},P);`
     + `Object.defineProperty(window,'__UIP',{configurable:true,get(){return u;},set(v){u=Object.assign({},v||{},P);}});const f=window.fetch;`
     + `window.fetch=function(a,o){if(o&&o.method==='POST'&&String(a).indexOf('/api/ui-prefs')>=0)return Promise.resolve(new Response('{"ok":true}',{headers:{'Content-Type':'application/json'}}));`
@@ -283,9 +331,21 @@ async function runCombo(cdp, base, width, lang, pop, inject) {
     fs.writeFileSync(path.join(SHOTS, tag + '-' + name + '.jpg'), Buffer.from(r.data, 'base64'));
   };
   const overflow = (s, where) => { if (s.sw > s.iw) issues.push('overflow ' + where + ': scrollWidth ' + s.sw + ' > innerWidth ' + s.iw); };
+  // Tab TAB_STOPS times from the tab's own button; every focus stop must be visible and on top (JS_FOCUS).
+  const key = type => S('Input.dispatchKeyEvent', { type, key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 });
+  const tabWalk = async k => {
+    await ev(`(document.querySelector('#mvw .mvb[data-mv="${k}"]').focus(), 1)`);
+    for (let i = 1; i <= TAB_STOPS; i++) {
+      const kp = [key('rawKeyDown'), key('keyUp')];   // CDP runs commands in order: the evaluate sees both keys; focus scroll is synchronous
+      const f = await ev(JS_FOCUS); await Promise.all(kp);
+      if (VERBOSE && f) console.log('  ' + tag + ' ' + k + ' #' + i + ' ' + f.d + (f.r ? ' !' + f.r : ''));
+      if (f && f.r) issues.push('focus hidden: tab ' + k + ' stop ' + i + ' ' + f.d.slice(0, 80) + ' (' + f.r + ')');
+    }
+  };
 
   const regions = {}; const soft = new Set();
-  await S('Page.navigate', { url: base + noBar('/') });
+  await S('Emulation.setFocusEmulationEnabled', { enabled: true });   // ⚠3 pages share one headless browser; without it only one owns focus
+  await S('Page.navigate', { url: base + noBar('/?tour=0') });
   await until(async () => await ev(FIRST_RENDER), 10000, tag + ' first render');
   let s = await settle();
   regions.tabs = norm(s.tabs);
@@ -302,6 +362,7 @@ async function runCombo(cdp, base, width, lang, pop, inject) {
     s.soft.forEach(x => soft.add(x));
     overflow(s, 'tab ' + k);
     await shot('tab-' + k);
+    await tabWalk(k);
   }
   // Popups: same document on /diff and /work with query params (see web/js/00-core.js ISPOP/ISWP).
   for (const [name, url] of [['diff', pop.diff], ['work', pop.work], ['sess', pop.sess]]) {
