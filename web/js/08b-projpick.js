@@ -74,15 +74,15 @@ function ppListPaint(){
 function ppBtn(k){ return document.querySelector('[data-ppk="' + k + '"]'); }
 function ppClose(focusBack){
   if(!PPS) return;
-  const k = PPS.cfg.k; PPS = null;
-  popHide('ppop', ppBtn(k), focusBack);   // queried by key: a pipeline repaint may have replaced the opener
+  const k = PPS.cfg.k, o = PPS.btn; PPS = null;
+  popHide('ppop', o && o.isConnected ? o : ppBtn(k), focusBack);   // by key when a pipeline repaint replaced the opener
 }
 function ppOpen(cfg, btn){
   if(PPS){ const same = PPS.cfg.k === cfg.k; ppClose(false); if(same) return; }
   const p = popGet('ppop', 'cmdkb ppop');
   const ph = cfg.ph || T('Find a project');
   p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', ph);
-  PPS = { cfg: cfg, q: '', i: -1, rows: [] };
+  PPS = { cfg: cfg, q: '', i: -1, rows: [], btn: btn };   // btn: opener may be another control (77 Timeline chip)
   p.innerHTML = '<input type=text data-ppq placeholder="' + esc(ph) + '" aria-label="' + esc(ph) + '">'
     + '<div class=cmdkl role=listbox></div><div class="cmdkf ppf">' + (cfg.extra || '') + '<span>' + esc(T('↑↓ move')) + ' · '
     + esc(T('Enter pick')) + ' · ' + esc(T('Esc close')) + '</span></div>';
@@ -101,7 +101,7 @@ function ppPick(i){
   const b = ppBtn(cfg.k);   // a full repaint (pipeline tab) replaces the opener: focus its successor
   if(b && document.activeElement !== b) b.focus({ preventScroll: true });
 }
-popReg('ppop', '#ppop,[data-ppk]', ppClose);
+popReg('ppop', '#ppop,[data-ppk],[data-ppo]', ppClose);   // data-ppo = extra opener that toggles itself
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('[data-ppk]');
   if(b){ const c = PPC[b.dataset.ppk]; if(c) ppOpen(c, b); return; }
