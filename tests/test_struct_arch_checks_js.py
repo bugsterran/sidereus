@@ -551,7 +551,10 @@ class StructArchCheckFilters(unittest.TestCase):
                 "ACK.f1 = {ack: [{who: 'me', note: '<b>done</b>'}]}; const h2 = archChkWinHtml('/r', d, {sel: {}, req: null}, []);"
                 "const h3 = archChkWinHtml('/r', d, {sel: {}, req: null, sent: {to: 'x', at: '1:00', key: 'k'}}, []);"
                 "PLREQ = {}; const h4 = archChkWinHtml('/r', d, {sel: {}, req: null}, []);"
-                "console.log(JSON.stringify([h0, h1, h2, h3, h4]));")
+                "ACK.f1 = {delivered: ['me']}; const h5 = archChkFixRecHtml('/r', " + json.dumps(dict(rec, state="done")) + ");"
+                "console.log(JSON.stringify([h0, h1, h2, h3, h4, h5]));")
+        self.assertIn(" · 완료</div>", r[5])                                   # re-scan after the fix: done, not «Delivered»
+        self.assertNotIn("전달됨", r[5])
         self.assertIn('data-ckfx="f1"', r[0])
         self.assertIn("요청함 → r · s1abcdef · me · 22:13", r[0])
         self.assertIn("전달됨", r[1])
