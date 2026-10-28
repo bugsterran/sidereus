@@ -44,4 +44,6 @@ Object.assign(I18N.ko, {
   'Base images not scanned — tick «Include images» when requesting the check': '베이스 이미지 검사 안 됨 — 점검 요청 때 «이미지 포함»을 체크하세요',
   'No scanner findings': '도구가 찾은 문제 없음',
   'No issues match the filters': '필터에 맞는 문제 없음',
+  're-scan done — {n} issues left': '재점검 완료 — 남은 이슈 {n}',
+  'fix commit seen {h}': '수정 커밋 확인 {h}',
 });

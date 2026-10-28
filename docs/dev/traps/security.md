@@ -90,3 +90,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **Issues window: empty list and stale CSS** (`web/js/84l-structure-arch-checks.js` `archChkWinHtml` · `archChkWinCss`): 0 findings still emitted `<ol>` + grip, so the saved `sidereus.ckwh` (423 px) painted a tall empty box; the window's `<style>` was copied only when written, so a repaint after a viewer reload kept old CSS (right side clipped).
   - ⇒ empty top = one `.archckst` status line, no grip (split off); every paint resyncs the window `<style>` when the opener CSS differs; `#ckroot` has `overflow-x:auto`.
   - ⚠Never emit an empty findings `<ol>` — `archChkSplitEls` keys the split on both lists existing.
+- **«Request fix» line closes on evidence only** (`sidereus/pl_reqs.py` `_fix_commit` · `web/js/84l-structure-arch-checks.js` `archChkFixRecHtml`): an ack note («fixed») is the session's word, not proof.
+  - ⇒ «fix commit seen <hash>» = oldest `git log --since` commit with ct > request `at`; «re-scan done — n issues left» = newer security-checks result, n = window title count.
+  - ⚠Only a `[0-9a-f]{7,12}` hash reaches the page (fullmatch on server and page) — never commit subject/body. Hit cached for good, miss 30 s, 64 entries.

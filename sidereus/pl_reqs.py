@@ -8,12 +8,13 @@ DATA_DIR/plstop/<sid>.json {pipeline: {at, mid, of}} = the stop marker hooks/pl_
 import json
 import os
 import re
+import subprocess
 import threading
 import time
 
 from sidereus.config import DATA_DIR
 from sidereus.bus import RELAY_SID, _atomic_write
-from sidereus import arch_map
+from sidereus import arch_map, gitinfo
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
@@ -33,6 +34,11 @@ _NAME = re.compile(r"[a-z0-9-]{1,40}")   # = pipeline_schema._NAME (no cross-fea
 _LOCK = threading.Lock()
 _MEM = []                 # records while PLREQ_PATH is None
 _now = time.time          # tests patch
+FIX_HASH = re.compile(r"[0-9a-f]{7,12}")   # ⚠fullmatch only: the page gets a short hash, never commit text
+FIX_LOG_N = 50
+FIX_MISS_S = 30           # no commit yet: asked again after this; a found hash is final
+FIX_CACHE_MAX = 64
+_FIX_CACHE = {}           # (repo, at) -> (checked at, hash or "")
 
 
 def memory_only():
@@ -231,8 +237,38 @@ def _state(r, row, arch, until=0.0):
     return ("sent" if alive else "gone"), ""
 
 
+def _git_log(repo, at):
+    """Raw `git log` (hash TAB commit time) of commits since `at`, or None on any git miss. ⚠Slot wait 0.5 s: never stall the poll."""
+    try:
+        r = gitinfo._git_run(repo, ["log", "-n", str(FIX_LOG_N), "--since=@%d" % (int(at) - 1), "--format=%h%x09%ct", "HEAD"], 3, wait=0.5)
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def _fix_commit(repo, at, now):
+    """Short hash of the first commit in repo after a checks-fix request at `at`, "" if none yet (hash + time only)."""
+    k = (repo, at)
+    hit = _FIX_CACHE.get(k)
+    if hit and (hit[1] or now - hit[0] < FIX_MISS_S):
+        return hit[1]
+    text = _git_log(repo, at)
+    h = ""
+    for ln in (text or "").splitlines()[:FIX_LOG_N]:   # newest first: the last match is the oldest after the request
+        f = ln.strip().split("\t")
+        if len(f) >= 2 and FIX_HASH.fullmatch(f[0]) and f[1].isdigit() and int(f[1]) > at:
+            h = f[0]
+    if text is None and hit:
+        return hit[1]   # slot miss keeps the previous answer, uncached
+    _FIX_CACHE.pop(k, None)
+    _FIX_CACHE[k] = (now, h)
+    while len(_FIX_CACHE) > FIX_CACHE_MAX:
+        _FIX_CACHE.pop(next(iter(_FIX_CACHE)))
+    return h
+
+
 def view(sessions, arch_run, sec_run=None, now=None):
-    """`/api/state` `plReq`: {repo: [{id, pipeline, sid, to, project, state, stage, at, stopAt?, name?}]} newest first."""
+    """`/api/state` `plReq`: {repo: [{id, pipeline, sid, to, project, state, stage, at, stopAt?, name?, fix?}]} newest first."""
     now = _now() if now is None else now
     with _LOCK:
         recs = _read(now)
@@ -257,5 +293,9 @@ def view(sessions, arch_run, sec_run=None, now=None):
             v["stopAt"] = r["stop"]["at"]
         if r.get("name"):
             v["name"] = r["name"]
+        if r["pipeline"] == "checks-fix" and st != "done":   # a re-scan already closes the line: no git call
+            fx = _fix_commit(r["repo"], r["at"], now)
+            if fx:
+                v["fix"] = fx
         out.setdefault(r["repo"], []).append(v)
     return out
