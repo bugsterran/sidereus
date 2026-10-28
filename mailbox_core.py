@@ -336,10 +336,17 @@ def advance_cursor(who, t):
         cur = 0
     if t <= cur:
         return cur
+    # ⚠tmp + os.replace: an in-place "w" truncates first, so a concurrent reader saw "" -> 0 and every message turned unread.
+    tmp = "%s.%d.tmp" % (f, os.getpid())
     try:
-        with open(f, "w", encoding="utf-8") as fh:
+        with open(tmp, "w", encoding="utf-8") as fh:
             fh.write(str(t))
+        os.replace(tmp, f)
     except Exception:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
         return cur
     return t
 
