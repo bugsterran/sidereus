@@ -35,7 +35,8 @@ fail() { [ "${nf:-0}" -gt 0 ] || nf=1; rec "$1" 1; printf '  FAIL  %-10s %s\n' "
 need() { case "$3" in ''|*[!0-9]*) fail "$1" "EMPTY: $2 — nothing was checked" ;; esac; [ "$3" -gt 0 ] || fail "$1" "EMPTY: $2 — nothing was checked"; }
 
 # 1. py_compile — one interpreter for all files (one process per file cost ~6s); temp cache keeps repo __pycache__ untouched
-pyf=(); for f in chat_server.py sidereus/*.py mcp/*.py hooks/*.py mailbox_config.py sidereus_cli.py plugins/*/scripts/*.py; do [ -f "$f" ] && pyf+=("$f"); done
+# ⚠Root files, scripts/ and ext-hooks/ ship too: syntax that 3.9 lacks there escaped this gate when only named files were listed.
+pyf=(); for f in *.py sidereus/*.py mcp/*.py hooks/*.py scripts/*.py ext-hooks/*.py plugin/hooks/*.py plugins/*/scripts/*.py; do [ -f "$f" ] && pyf+=("$f"); done
 n=${#pyf[@]}; need py_compile py_compile "$n"
 PYTHONPYCACHEPREFIX="$TMP/pyc" "$PY" - "${pyf[@]}" >"$TMP/py.log" 2>&1 <<'EOF' || fail py_compile "$(tail -1 "$TMP/py.log")"
 import sys, py_compile
