@@ -153,7 +153,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 
 ## Background Bash from an earlier run lit a later stage (`pl_runs.pl_model`)
 
-- ★2026-10-28: run at «검증» (qa, 3 min) while «라이브 검증» showed «running · 5 h» — a tagged dev-server Bash from the previous run, started 315 min earlier.
+- ★2026-10-28: run at the verify stage (qa, 3 min) while the live-check stage showed «running · 5 h» — a tagged dev-server Bash from the previous run, started 315 min earlier.
 - Cause: `bgs` rows stay open until a completion notice (`parse.py` `_running_bg`), which a server Bash never sends; the earlier-run guard looks up meta by aid/tid, which bg rows lack.
 - ⇒ skip an aid-less row whose start (now - 60*min) is before `r["t0"] - PLR_AG_SLACK_S`. `tests/test_pl_runs_open.py` (`test_bg_row_from_earlier_run_ignored` + control).
 - ⚠Do not apply the start check to rows with an aid: a continued subagent keeps its first start time and would drop out (3 tests in `test_pl_runs.py`).
