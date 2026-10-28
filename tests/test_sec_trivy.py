@@ -84,6 +84,12 @@ class Detect(Tmp):
         self.assertIsNone(ST.REF_RE.fullmatch("-x"))
 
 
+    def test_from_arg_defaults(self):   # global ARG defaults resolve; stage ARGs and no-default ARGs do not
+        self.w("Dockerfile", "ARG BASE_IMAGE=\"python:3.12-slim\"\nARG TAG=3.19\nARG NONE\nFROM ${BASE_IMAGE} AS b\n"
+                             "ARG LATE=x:1\nFROM alpine:$TAG\nFROM ${NONE:-debian:12}\nFROM ${LATE}\nFROM $NONE\n")
+        self.assertEqual([r["ref"] for r in ST.refs(self.repo)],
+                         ["python:3.12-slim", "alpine:3.19", "debian:12", "${LATE}", "$NONE"])
+
     def test_compose_build_service_skipped(self):   # C1: a locally built tag is not a registry image
         self.w("compose.yml", "services:\n  app:\n    build: .\n    image: myapp:latest\n  db:\n    image: postgres:16\n"
                               "  web:\n    image: nginx:1\n    build:\n      context: web\n")
