@@ -513,7 +513,9 @@ function paintStruct(){
   // pre = html placed immediately left of the switch (84j: the diagram request button).
   const head = (note, ex, pre) => '<div class="wvh wvht strh"><span>' + note + '</span>'
     + '<div class=strctl>' + ctl + (pre || '') + seg + '</div></div>' + (ex || '');
-  if(strMode === 'arch'){ archPaint(box, head); return strWire(); }
+  // Security run banner under the header in every arch state (84l2); archReqSig keeps it in archPaint's sig.
+  if(strMode === 'arch'){ const sb = typeof archSecRunHtml === 'function' ? archSecRunHtml(strOn[0] || '') : '';
+    archPaint(box, (n, ex, pre) => head(n, sb + (ex || ''), pre)); return strWire(); }
   if(strErr && !STR){ box.innerHTML = head('') + '<div class="tlhd cwerr">' + esc(strErr) + '</div>';
                       return strWire(); }
   if(!STR && strOn.length) loadStruct(false);   // the poll skips this fetch in «Architecture» (95-poll), so «Size» asks on its first paint

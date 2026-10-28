@@ -46,8 +46,31 @@ function archReqSlot(p, pl, s, open, now){
 }
 // Paint signature part (84j archPaint): ⚠without it a state change of the record never repaints the cached view.
 function archReqSig(p){
-  return JSON.stringify([archReqLast(p, ARCH_PL), ARCH.pstop || null]);
+  return JSON.stringify([archReqLast(p, ARCH_PL), ARCH.pstop || null, archSecRunSig(p)]);
 }
+// Pure: Structure tab banner for a live security-checks run of p — request record (receiver + «Stop») › server run line (no receiver, no «Stop»).
+// ⚠the stage is the record's, else the server run's, else «Security check»; agent stage titles are esc only, never T().
+function archSecRunHtml(p, now){
+  const r = archReqLast(p, ARCH_SEC_PL, now), run = typeof archRunOf === 'function' ? archRunOf(p, ARCH_SEC_PL) : null;
+  let h = '';
+  if(archReqLive(r)){ const q = ARCH.pstop && ARCH.pstop.p === p && ARCH.pstop.id === r.id ? ARCH.pstop : null;
+    h = archReqRowHtml(Object.assign({}, r, { stage: r.stage || (run && run.stage) || T('Security check') }), !!q) + (q && archReqStopOk(r) ? archReqStopHtml(r, p, q.busy) : ''); }
+  else if(run) h = archRunHtml(run, now, ARCH_SEC_PL);
+  return h ? '<div class="archck archsecrun">' + h + '</div>' : '';
+}
+function archSecRunSig(p){
+  const r = archReqLast(p, ARCH_SEC_PL), run = typeof archRunOf === 'function' ? archRunOf(p, ARCH_SEC_PL) : null;
+  return [r && [r.id, r.state, r.stage], run && [run.stage, run.n, run.sid]];
+}
+// ⚠archTick watches arch-map runs only: without this a security run's start/stage/end never repaints the Structure tab.
+let ARCH_SEC_SIG = '';
+setInterval(() => {
+  if(typeof mainView === 'undefined' || mainView !== 'struct' || strMode !== 'arch' || document.hidden) return;
+  const p = strOn[0] || '', s = JSON.stringify([p, archSecRunSig(p)]);
+  if(s !== ARCH_SEC_SIG){ ARCH_SEC_SIG = s; paintStruct(); return; }
+  const run = archRunOf(p, ARCH_SEC_PL), el = run && document.querySelector('.archsecrun [data-arel]');
+  if(el) el.textContent = archRunEl(run, Date.now());
+}, 5000);
 // Guard + send: only the stop preview's confirm calls this (no auto-send).
 async function archStopSend(){
   const q = ARCH.pstop;

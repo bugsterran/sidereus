@@ -10,6 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Harness: «Runtime behind latest patch» card from the newest security report — per runtime, current → latest patch in its cycle (security fix, end of life) and cycles behind the newest release, one next step each; a stale report asks for a rerun, no report shows «No check on record» with the command.
 - Security checks: trivy scans Dockerfiles for misconfigurations by default; `--images` also scans each base image (Dockerfile `FROM`, compose `image:`) for CVEs, deduplicated across images, with a «Base images» report section (fixable high/critical → replace base image, unfixed → waiting). A registry login or DB download failure is a failed row with its reason, never a clean result.
 
+- Structure: a running security check shows a run banner under the header, like the architecture-map run (stage, project · session, «Stop» when the request came from Sidereus).
+
+### Fixed
+
+- Structure: going back to a map you had already viewed in another project opens it where you left it, instead of the corner.
+- Pipelines: a background Bash from an earlier run (a dev server that never reports completion) no longer lights a stage of the current run.
+- Harness: the runtime card no longer suggests `brew upgrade` for a runtime already on its latest patch, and suggests moving to a supported cycle for an end-of-life one.
+
 ### Changed
 
 - Harness: a gate report replaces the «Flow» strip — «Caught (red→green)» · «Held» · «Reverted» at the top, «What is guarding» (before edit · right after · before commit, each with its catch count) and one card per catch: red run → fix commits → green run → held or reverted.

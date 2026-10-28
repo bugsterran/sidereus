@@ -12,7 +12,7 @@ from tests._load import js_fn
 from tests._node import node_e
 
 FNS = ["archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqBusy", "archStopBody", "archReqWho",
-       "archReqRowHtml", "archReqStopHtml", "archReqSlot", "archReqSig"]
+       "archReqRowHtml", "archReqStopHtml", "archReqSlot", "archReqSig", "archSecRunHtml", "archSecRunSig"]
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l2-structure-arch-req.js")
 with open(_SRC_P, encoding="utf-8") as fh:
     _SRC = fh.read()
@@ -21,7 +21,9 @@ CONSTS = "\n".join(re.findall(r"^const ARCH_REQ_(?:KEEP_MS|LBL) = .*$", _SRC, re
 PRE = "\n".join([
     "let LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }",
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
-    "const ARCH_PL = 'arch-map'; const ARCH = { msg: '', pstop: null };",
+    "const ARCH_PL = 'arch-map', ARCH_SEC_PL = 'security-checks'; const ARCH = { msg: '', pstop: null };",
+    "let SECRUN = {}; function archRunOf(p, pl){ const r = pl === ARCH_SEC_PL && SECRUN[p]; return r && r.stage ? r : null; }",
+    "function archRunHtml(r, now, pl){ return '<RUN ' + pl + ' ' + esc(r.stage) + '>'; }",
     "let PLREQ = {}, POSTS = [], PAINTS = 0; function paintStruct(){ PAINTS++; }",
     "async function postJSON(u, b){ POSTS.push([u, b]); return { ok: true }; }",
     CONSTS,
@@ -108,6 +110,38 @@ class StructArchReq(unittest.TestCase):
         r = run("PLREQ = {'/r': [Object.assign(" + json.dumps(ROW) + ", {state: 'sent'})]}; ARCH.pstop = {p: '/r', id: 'm-1', busy: false};"
                 "console.log(JSON.stringify([await archStopSend(), POSTS.length]));")
         self.assertEqual(r, [False, 0])
+
+    def test_security_run_banner(self):   # live security record: row + «Stop»; stage falls back to the server run, then «Security check»
+        SR = rows(id="s-1", pipeline="security-checks", stage="")
+        r = run("const now = " + str(NOW * 1000) + "; const out = [archSecRunHtml('/r', now)];"
+                "PLREQ = {'/r': [" + json.dumps(SR) + "]}; out.push(archSecRunHtml('/r', now));"
+                "SECRUN = {'/r': {stage: '<i>scan</i>', sid: 'x', t0: 1}}; out.push(archSecRunHtml('/r', now));"
+                "PLREQ = {'/r': [Object.assign(" + json.dumps(SR) + ", {state: 'done'})]}; out.push(archSecRunHtml('/r', now));"
+                "SECRUN = {}; out.push(archSecRunHtml('/r', now));"
+                "PLREQ = {'/r': [" + json.dumps(ROW) + "]}; out.push(archSecRunHtml('/r', now));"
+                "console.log(JSON.stringify(out));", lang="en")
+        self.assertEqual(r[0], "")
+        self.assertIn('class="archck archsecrun"', r[1])
+        self.assertIn("Running · Security check", r[1])
+        self.assertIn('data-arstop="s-1"', r[1])
+        self.assertIn("repo · abcdef12 · box-a", r[1])
+        self.assertIn("Running · &lt;i&gt;scan&lt;/i&gt;", r[2])   # server run stage, escaped, not translated
+        self.assertIn("<RUN security-checks &lt;i&gt;scan&lt;/i&gt;>", r[3])   # finished record: server run line, no «Stop»
+        self.assertNotIn("data-arstop", r[3])
+        self.assertEqual(r[4:], ["", ""])   # finished record only / arch-map record: no banner
+
+    def test_security_banner_stop_preview_and_sig(self):   # same stop preview + payload path as arch-map
+        SR = rows(id="s-1", pipeline="security-checks")
+        r = run("PLREQ = {'/r': [" + json.dumps(SR) + "]}; const s0 = archReqSig('/r'); ARCH.pstop = {p: '/r', id: 's-1', busy: false};"
+                "const h = archSecRunHtml('/r', 0); await archStopSend();"
+                "const s1 = archReqSig('/r'); PLREQ = {'/r': [Object.assign(" + json.dumps(SR) + ", {stage: 'review'})]};"
+                "console.log(JSON.stringify([h, POSTS, s0 === s1, s1 === archReqSig('/r')]));", lang="en")
+        self.assertIn("Stop pipeline security-checks for /r (request s-1)", r[0])
+        self.assertNotIn("data-arstop=", r[0])
+        self.assertEqual(r[1][0][1]["plreq"], {"kind": "stop", "pipeline": "security-checks", "repo": "/r", "of": "s-1"})
+        self.assertEqual(r[1][0][1]["thread"], "pipeline:security-checks")
+        self.assertTrue(r[2])     # stop sent: pstop cleared again, same record
+        self.assertFalse(r[3])    # a security stage change changes the arch paint sig (repaint)
 
 
 if __name__ == "__main__":
