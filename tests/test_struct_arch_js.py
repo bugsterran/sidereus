@@ -17,6 +17,7 @@ FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archProvNote", "arch
        "archStyleName", "archRoleName", "archFwParts", "archStyleParts", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",
        "archHasLayers", "archEntPair", "archBandSrc", "archBandFix", "archBandHint", "archFront", "archKindMap", "archKindLegHtml"]   # 84j2 (archPaint calls them)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archReqHtml calls it)
+FNS.append("archDevListHtml")   # deviation filter list (archPaint calls it)
 def _read(p):
     with open(p, encoding="utf-8") as fh:
         return fh.read()
@@ -209,8 +210,8 @@ class StructArch(unittest.TestCase):
         r = run("const d = " + json.dumps(d) + ", N = {a: 'A', b: 'B', c: 'C'}, E = " + json.dumps(EDGES) + ";"
                 "console.log(JSON.stringify([archHeadNote(d), archEdgeRow(E[0], N, 0, false, '', d.dev[0], archStyleName(d.style)),"
                 " archEdgeRow(E[2], N, 2, false, '', d.dev[1], archStyleName(d.style)), archEdgeRow(E[1], N, 1, false)]));", "en")
-        self.assertIn('class="strbg strbg-cy"', r[0])
-        self.assertIn(">2 outside Hexagonal flow</em>", r[0])
+        self.assertIn('class="strbg strbg-cy strbg-dvf" data-ardv aria-pressed=false', r[0])
+        self.assertIn(">2 outside Hexagonal flow</button>", r[0])
         self.assertIn('<em class="archbg archdev">Adapter → Web is outside the Hexagonal flow</em>', r[1])
         self.assertIn("x&lt;y → Data", r[2])
         self.assertNotIn("archdev", r[3])

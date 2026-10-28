@@ -358,3 +358,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: the saved per-view scroll (`ARCH_MM.pos`) was picked only when `same` (same project); `archMmFirst` skips maps already seen, so a seen map reached from another project kept no scroll at all.
 - ⇒ run `archMmPick` without `same`; only the carried old-scroll key (`od`) still needs `same`.
 - ⚠Live checks: the page reloads itself after a restart (new build), which resets `ARCH_MM` mid-test and reads like the bug — compare `performance.timeOrigin` before and after.
+
+## Deviation filter bypasses the flow tree (`84j archDevListHtml`)
+
+- Cause: inside the flow tree's steps (84j6) a deviating edge never showed its `.archdev` reason badge.
+- ⇒ the «N outside {s} flow» filter renders its own flat list (`archDevListHtml`), not `archEdTreeHtml`.
+- ⚠Do not route the filtered list back through the tree — `tests/test_struct_arch_devfilter_js.py` `test_R2_R3_filtered_list`.

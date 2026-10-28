@@ -224,6 +224,11 @@ html[data-ui] .archsent .wkrgb.archstop:hover{background:color-mix(in srgb,var(-
 /* stale scan: dashed outline only, so the red/amber severity colour stays readable */
 .strh button.strbg-archcki.strbg-cut{border-style:dashed}
 .strh button.strbg-archcki:hover{background:color-mix(in srgb,var(--bgc) 26%,var(--nx-panel,#141a23))}
+/* Deviation filter (84j archStyleParts): header badge as a toggle; pressed = filled */
+.strh button.strbg-dvf{font-family:inherit;cursor:pointer}
+.strh button.strbg-dvf:hover{background:color-mix(in srgb,var(--bgc) 26%,var(--nx-panel,#141a23))}
+.strh button.strbg-dvf[aria-pressed=true]{background:color-mix(in srgb,var(--bgc) 40%,var(--nx-panel,#141a23))}
+.archdvn{padding:6px 10px;font-size:12px;color:var(--nx-t3,#8b95a7);border-bottom:1px solid var(--nx-rule,#2a3442)}
 .archck{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:8px;min-width:0}
 .archck>.archreq{flex:1 1 100%}
 .strctl .archckgo{box-sizing:border-box;height:30px;padding:0 14px;white-space:nowrap;flex:0 0 auto}   /* header row: same height as #strmd */
