@@ -230,6 +230,7 @@ html[data-ui] .archsent .wkrgb.archstop:hover{background:color-mix(in srgb,var(-
 .strctl .archckgo.on{background:color-mix(in srgb,var(--nx-info,#5899f3) 30%,var(--nx-panel,#141a23))}
 .strctl .archckgo:disabled{opacity:.5;cursor:default}
 .archckst{font-size:12.5px;color:var(--nx-t2,#aab4c3)}
+.archckst.archckgap{color:var(--nx-warn,#e0a84a);font-weight:600}   /* image-scan gap: must read as a gap, not as one more scanner status */
 /* Request record row (84l2 archReqRowHtml): state · receiving session · «Stop»; finished rows muted */
 .archpr{flex-wrap:wrap;margin:0}
 .archpr .archprw{color:var(--nx-t2,#aab4c3)}

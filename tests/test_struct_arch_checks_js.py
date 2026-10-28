@@ -15,7 +15,7 @@ FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archNoHome", "ar
        "archChkTop", "archChkTopBtn", "archChkHelp", "archChkRule", "archChkKey", "archChkSel", "archChkFixCands", "archChkCandLabel", "archChkPick", "archChkFixBody", "archDmBody", "archChkReqKey", "archChkGoLabel", "archChkSentHtml", "archChkLogHtml", "archChkEntry", "archChkHdBtn", "archChkRunCands", "archChkRunBody", "archChkRunCmds", "archChkScanAt", "archChkRunHtml", "archChkWinHtml"]
 FNS += ["archChkLast", "archChkLastHtml"]   # last-check line (window header, badge tooltip)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
-FNS += ["archChkTid", "archChkImgBox", "archChkImgHtml"]   # 84l3: trivy scanner label, «Include images» box, base-image groups
+FNS += ["archChkTid", "archChkImgGap", "archChkImgBox", "archChkImgHtml"]   # 84l3: trivy scanner label, image-scan gap line, «Include images» box, base-image groups
 FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqWho",
         "archReqRowHtml", "archChkProgHtml", "archChkFixRecHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
