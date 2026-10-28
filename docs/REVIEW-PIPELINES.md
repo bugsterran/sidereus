@@ -65,6 +65,8 @@ Sources were read 2026-10-17. Numbers are the ones the sources give.
 
 `use` is the one line each session sees in the pipeline list, so keep the purpose there.
 
+This repo's `review` pipeline ends with a review-confirm stage (`sidereus-review-verifier`) that tries to disprove each finding and reports only the confirmed ones.
+
 This repo's `security-checks` pipeline follows the same idea: its threat-model review stage runs on the project's own security-review agent when the session has one (declared with `[pl-agent:]`), and falls back to a default lens (authz bypass, injection, secrets, SSRF, unsafe files) when the target repo has no threat model.
 
 ## Per CLI

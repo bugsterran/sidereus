@@ -1222,11 +1222,14 @@ def _none_decl(sid, desc, now, ev=None):
     m = NONE_TAG.search(desc)
     if not m or m.group(1) not in NONE_CATS:
         return "Unknown [pl-none:] category; use one of: %s" % ", ".join(NONE_CATS)
-    _none_save(os.path.join(MARK_DIR, sid + ".none.json"), {"v": 1, "cat": m.group(1), "t": now})
     try:
         proj = _none_proj(ev, "Bash") if isinstance(ev, dict) else None
     except Exception:
         proj = None
+    if proj and m.group(1) != "explore" and _strict(proj) and not _apply_off(proj):
+        return ("Strict mode (.claude/pipelines/_policy.json): [pl-none:%s] is not accepted here. "
+                "Run small changes through [pl:quick-fix/수정]; [pl-none:explore] allows exploring only." % m.group(1))
+    _none_save(os.path.join(MARK_DIR, sid + ".none.json"), {"v": 1, "cat": m.group(1), "t": now})
     if proj:
         _none_log(proj, m.group(1), now)
         if m.group(1) == "no-fit" and not ev.get("agent_id"):
@@ -1323,31 +1326,73 @@ def _none_proj(ev, tool):
         cur = up
 
 
+STRICT_GRACE_S = 15 * 60   # strict mode: edits/commits still allowed this long after a run of this session ended
+
+
+def _strict(proj):
+    """True only for <proj>/.claude/pipelines/_policy.json == {"enforce": "writes"}; anything else (missing,
+    unreadable, unknown value) = False, i.e. the deny-once behaviour."""
+    try:
+        with open(os.path.join(proj, ".claude", "pipelines", "_policy.json"), encoding="utf-8") as f:
+            d = json.load(f)
+        return isinstance(d, dict) and d.get("enforce") == "writes"
+    except Exception:
+        return False
+
+
+def _strict_why(proj, names):
+    """Deny reason for strict mode: each pipeline name with its `use` line (clipped, metadata only)."""
+    rows = []
+    for n in names:
+        try:
+            with open(os.path.join(proj, ".claude", "pipelines", n + ".json"), encoding="utf-8") as f:
+                u = json.load(f).get("use")
+        except Exception:
+            u = None
+        u = " ".join(u.split())[:80] if isinstance(u, str) else ""
+        rows.append("- %s%s" % (n, ": " + u if u else ""))
+    return ("Strict mode (.claude/pipelines/_policy.json): no pipeline run is open in this session, so file edits "
+            "and git commit are denied. Run the work through one with [pl:<name>/<stage>] tags:\n%s\n"
+            "Small changes: [pl:quick-fix/수정]. [pl-none:explore] allows exploring only." % "\n".join(rows))
+
+
 def _none_gate(ev, sid, tool, desc, now):
     """First file edit / main `git commit` of a session in a pipeline project with no open run and no [pl-none]:
-    deny once with the pipeline names. True when denied; fail-open."""
+    deny once with the pipeline names; in strict mode (_strict) deny every time. True when denied; fail-open."""
     try:
-        if ev.get("agent_id"):
-            return False
+        sub = bool(ev.get("agent_id"))
         if tool == "Bash":
             cmd = _shell_cmd(ev.get("tool_input")) or ""
             # a tagged command already follows the pipeline protocol
-            if not _COMMIT_RE.search(cmd) or "--dry-run" in cmd or "[pl" in desc:
+            # ⚠no tag short-circuit here: in strict mode a bare/unknown tag must not pass (checked below off strict)
+            if not _COMMIT_RE.search(cmd) or "--dry-run" in cmd:
                 return False
         elif tool not in EDITS:
-            return False
-        p = os.path.join(MARK_DIR, sid + ".none.json")
-        d = _none_load(p)
-        if d.get("cat") or d.get("nudge"):
             return False
         proj = _none_proj(ev, tool)
         if not proj or _apply_off(proj):
             return False
-        for r in _load(os.path.join(MARK_DIR, sid + ".runs.json"))["runs"].values():
-            if isinstance(r, dict) and not r.get("end") and now - float(r.get("t1") or 0) <= IDLE_S:
+        strict = _strict(proj)
+        if sub and not strict:
+            return False
+        p = os.path.join(MARK_DIR, sid + ".none.json")
+        if not strict:
+            d = _none_load(p)
+            if d.get("cat") or d.get("nudge") or "[pl" in desc:
+                return False
+        runs = _load(os.path.join(MARK_DIR, sid + ".runs.json"))["runs"].values()
+        for r in runs:
+            # ⚠subagent: any un-ended run counts (no IDLE_S), so a long stage is never cut off mid-way
+            if isinstance(r, dict) and not r.get("end") and (sub or now - float(r.get("t1") or 0) <= IDLE_S):
+                return False
+            # ⚠strict: a foreground last stage sets `end`, so the orchestrator's final commit comes just after it
+            if strict and isinstance(r, dict) and r.get("end") and 0 <= now - float(r.get("end") or 0) <= STRICT_GRACE_S:
                 return False
         names = sorted(n[:-5] for n in os.listdir(os.path.join(proj, ".claude", "pipelines"))
                        if n.endswith(".json") and _PLNAME.fullmatch(n[:-5]))
+        if strict:
+            # ⚠deny every time, no nudge stamp: a once-only deny let retries edit with no run at all
+            return _deny(_strict_why(proj, names))
         _none_save(p, {"v": 1, "nudge": now})   # ⚠before the deny: an unsaved nudge would deny every edit
         return _deny("This project has pipelines (%s) and no run is open in this session. Run the work through one "
                      "with [pl:<name>/<stage>] tags, or declare it outside them once with a Bash description "

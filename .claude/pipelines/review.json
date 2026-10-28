@@ -2,7 +2,7 @@
   "v": 1,
   "name": "review",
   "title": "리뷰만",
-  "use": "Review only, no edits: read the context of a diff or branch, then report findings ranked by severity.",
+  "use": "Review only, no edits: read the context of a diff or branch, report findings, keep only those that survive disproof.",
   "rules": "Follow AGENTS.md in the repo.\nNever commit or push.",
   "defaults": { "model": "inherit", "retry": 0 },
   "stages": [
@@ -14,6 +14,11 @@
     {
       "title": "리뷰",
       "agent": "sidereus-reviewer"
+    },
+    {
+      "title": "리뷰-확인",
+      "agent": "sidereus-review-verifier",
+      "task": "Try to disprove each 리뷰 finding against the code, git blame and git log -L. Report only confirmed findings ranked by severity, plus one line per finding: id, rule, verdict (confirmed|disproved|pre-existing). Change nothing."
     }
   ]
 }

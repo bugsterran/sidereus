@@ -1,0 +1,23 @@
+{
+  "v": 1,
+  "name": "quick-fix",
+  "title": "빠른 수정",
+  "use": "Small fix whose cause is already known: fix, gate, then restart and one screen shot. Cause unknown: sidereus-bugfix.",
+  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER commit/stash/checkout/reset/add, NEVER run screen_check --update. The orchestrator commits.\nOne fix per run: anything else you find goes in findings, not in the fix.",
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "수정",
+      "agent": "main",
+      "task": "Apply the minimal fix at the known cause and add or update a regression test. Report changed files; anything outside the fix goes in findings.",
+      "gate": "scripts/check.sh --fast",
+      "ui": { "x": 44, "y": 24 }
+    },
+    {
+      "title": "확인",
+      "agent": "main",
+      "task": "No edits. Restart the viewer (launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer), wait until /api/state answers 200, take one screenshot of the fixed spot at 1100 px width, then close the browser. ⚠Never press a real send/confirm button.",
+      "ui": { "x": 292, "y": 24, "color": "#2ec4b6" }
+    }
+  ]
+}

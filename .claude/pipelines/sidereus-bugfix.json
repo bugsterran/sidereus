@@ -2,7 +2,7 @@
   "v": 1,
   "name": "sidereus-bugfix",
   "title": "버그 수정 — Sidereus viewer",
-  "use": "One owner-reported screen or behaviour defect in the Sidereus viewer: diagnose, minimal fix, verify, ship.",
+  "use": "Viewer defect whose cause is unknown: diagnose, minimal fix, verify, ship. Cause already known: quick-fix.",
   "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER restart the viewer, NEVER commit/stash/checkout/reset/add, NEVER run screen_check --update. The orchestrator does those.\nOne defect per run: anything else you find goes in findings, not in the fix.\nNEVER press a real send/confirm button on the live viewer (8799); stub fetch for any write path.",
   "after": [
     "launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer",

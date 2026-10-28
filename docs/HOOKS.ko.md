@@ -130,6 +130,10 @@ Agent/Task/SendMessage 는 지운다. 파이프라인, 단계, 시각, cwd 만 �
   최근 절반만 남긴다.
   선언도 열린 실행도 없으면, 파이프라인이 있는 프로젝트에서 메인 세션의 첫 Edit/Write 나 태그 없는 `git commit` 을 목록과 함께
   한 번 거부하고 다시 하면 통과한다. ⚠수동 등록이면 `pl_flow.py` 에 `Edit|Write|MultiEdit|NotebookEdit` 매처가 필요하다(`setup-claude` 다시 실행).
+- 엄격 모드(프로젝트별 선택): `.claude/pipelines/_policy.json` 이 `{"enforce": "writes"}` 이면, 열린 실행이 없을 때
+  Edit/Write/MultiEdit/NotebookEdit 와 태그 없는 `git commit` 을 매번 거부하고 파이프라인마다 이름과 `use` 한 줄을 보여 준다.
+  서브에이전트는 세션에 끝나지 않은 실행이 하나도 없을 때만 거부한다. `[pl-none:explore]` 는 받지만 수정은 풀지 않고, 다른 분류는
+  `[pl:quick-fix/수정]` 안내와 함께 거부한다. 파일이 없거나 다른 값이면 지금처럼 한 번만 거부하고, «Apply» 를 끄면 건너뛴다.
 - 한 프로젝트에서 7일 안에 `[pl-none:no-fit]` 이 세 번째로 선언되면, 사용자에게 이 일에 맞는 파이프라인 초안을 제안하고 동의한 뒤에만
   `.claude/pipelines/<name>.json` 을 쓰라는 문맥을 더한다(횟수·프로젝트 경로만, 거부하지 않음). 프로젝트마다 7일에 한 번.
 - 메인의 `git commit` 은 이 세션에서 그 프로젝트의 열린 실행을 닫는다. 설명이 `[pl:-]` 인 커밋은 아무것도 닫지 않고,
