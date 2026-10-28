@@ -98,7 +98,8 @@ def _demo_harness(a, path):
 
 
 def _demo_runtime(a):
-    """Invented deps-last.json, 9 days old (stale): brew node one patch behind (2 lines behind 26.x), system Python 3.9 EOL."""
+    """Invented deps-last.json, 9 days old (stale): brew node one patch behind (2 lines behind 26.x), system Python 3.9 EOL,
+    brew node@24 on its latest patch, brew python@3.10 EOL."""
     node = {"rt": "nodejs", "path": "/opt/homebrew/opt/node@22/bin/node", "cls": "homebrew", "viewer": False,
             "cur": "22.23.3", "cycle": "22", "level": "warn",
             "patch": {"level": "warn", "target": "22.23.4", "security": False, "eol": "2027-04-30", "eol_past": False},
@@ -106,8 +107,17 @@ def _demo_runtime(a):
     py = {"rt": "python", "path": "/usr/bin/python3", "cls": "system", "viewer": True, "cur": "3.9.6", "cycle": "3.9",
           "level": "fail", "patch": {"level": "fail", "target": "3.9.25", "security": False, "eol": "2025-10-31", "eol_past": True},
           "newest": {"level": "info", "target": "3.14.2", "behind_n": 5}}
+    # patch-ok on an older cycle (no step) and an EOL Homebrew cycle (install step) show both next-step branches
+    node24 = {"rt": "nodejs", "path": "/opt/homebrew/opt/node@24/bin/node", "cls": "homebrew", "viewer": False,
+              "cur": "24.22.1", "cycle": "24", "level": "info",
+              "patch": {"level": "ok", "target": "24.22.1", "security": False, "eol": "2028-04-30", "eol_past": False},
+              "newest": {"level": "info", "target": "26.2.0", "behind_n": 1}}
+    py310 = {"rt": "python", "path": "/opt/homebrew/opt/python@3.10/bin/python3.10", "cls": "homebrew", "viewer": False,
+             "cur": "3.10.19", "cycle": "3.10", "level": "fail",
+             "patch": {"level": "fail", "target": "3.10.19", "security": False, "eol": "2026-10-04", "eol_past": True},
+             "newest": {"level": "info", "target": "3.14.2", "behind_n": 4}}
     return {"at": a - 9 * 86400, "report": "security-report-20261019-0930.md", "dev": True, "offline": False,
-            "items": [py, node]}
+            "items": [py, py310, node, node24]}
 
 
 def _demo_flow_runs(a):

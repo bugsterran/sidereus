@@ -25,6 +25,7 @@ Object.assign(I18N.ko, {
   'Newest release': '최신 릴리스',
   'security fix': '보안 수정',
   'Upgrade with Homebrew:': 'Homebrew 로 올리기:',
+  'Move to a supported cycle:': '지원되는 버전대로 옮기기:',
   'then restart the viewer': '그다음 뷰어 다시 시작',
   'then restart the sessions or tools that use it': '그다음 이것을 쓰는 세션·도구 다시 시작',
   'System Python updates with macOS — or switch to a Homebrew Python': '시스템 Python 은 macOS 업데이트로 올라갑니다 — 또는 Homebrew Python 으로 바꾸기',

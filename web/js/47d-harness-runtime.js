@@ -9,8 +9,11 @@ const HN_RTF = { 'brew-node': ['Upgrade with Homebrew:', 'node'], 'brew-python':
 function hnRtGet(map, k){ return Object.prototype.hasOwnProperty.call(map, String(k)) ? map[k] : ''; }   // ⚠own keys only (no 'constructor')
 function hnRtCls(map, k){ const v = hnRtGet(map, k); return v ? ' ' + v : ''; }
 // ⚠node@<cycle> only for a versioned keg path; plain `node` is the unversioned formula. Python formulae are always python@3.x (`python` is only an alias to the newest).
-function hnRtBrew(f, it){
+function hnRtBrew(f, it, mv){
   const c = it.cycle == null || it.cycle === '' ? '' : String(it.cycle), keg = c && String(it.path || '').indexOf('/' + f + '@') >= 0;
+  // ⚠An EOL cycle stays EOL after `brew upgrade`; it has to move to the newest cycle (Python major.minor, Node major).
+  const nt = String(((it.newest && typeof it.newest === 'object') ? it.newest.target : '') || ''), nc = mv && /^\d+(\.\d+)*$/.test(nt) ? nt.split('.').slice(0, f === 'python' ? 2 : 1).join('.') : '';
+  if(mv) return nc ? 'brew install ' + f + (keg || f === 'python' ? '@' + nc : '') : '';
   return 'brew upgrade ' + f + (keg || (f === 'python' && c) ? '@' + c : '');
 }
 function hnRtCmd(c){ return c ? '<code class=hnrtc>' + esc(c) + '</code>' : ''; }
@@ -23,10 +26,10 @@ function hnRtItem(it, stale){
   else if(nw.level === 'ok') nLab = T(stale ? 'newest cycle when checked' : 'newest cycle');
   else nLab = T('latest unknown');   // unrecognised level never reads as safe
   const eol = p.eol ? '<span class="hnstp' + (p.eol_past ? ' hnng' : '') + '">' + esc(TV({msg: p.eol_past ? 'end of life {d}' : 'supported until {d}', vars: {d: s(p.eol)}})) + '</span>' : '';
-  const cmd = f[1] ? hnRtBrew(f[1], it) : '';
-  // Only the viewer's own interpreter needs a viewer restart (it runs on Python); an ok item gets no step.
+  const mv = !!(f[1] && p.eol_past), cmd = f[1] ? hnRtBrew(f[1], it, mv) : '', msg = mv ? 'Move to a supported cycle:' : f[0];
+  // Only the viewer's own interpreter needs a viewer restart (it runs on Python); a patch-ok item gets no step (a newer cycle alone is the label's hint).
   const re = f[1] ? (it.viewer && it.rt === 'python' ? 'then restart the viewer' : 'then restart the sessions or tools that use it') : '';
-  const step = it.level === 'ok' ? '' : '<span class=hnrtn>' + esc(T(f[0])) + (cmd ? ' ' + hnRtCmd(cmd) : '') + (re ? ' ' + esc(T(re)) : '') + '</span>';
+  const step = p.level === 'ok' && !p.eol_past ? '' : '<span class=hnrtn>' + esc(T(msg)) + (cmd ? ' ' + hnRtCmd(cmd) : '') + (re ? ' ' + esc(T(re)) : '') + '</span>';
   return '<div class="hnrun hnrt' + hnRtCls(HN_RTL, it.level) + '"><span class=hnrh><b>' + esc(hnRtGet(HN_RTN, it.rt) || s(it.rt)) + '</b>'
     + (it.path ? ' <code class=hnrc>' + esc(it.path) + '</code>' : '') + (it.viewer ? ' <span class=hnstp>' + esc(T('runs the viewer')) + '</span>' : '') + '</span>'
     + '<span class=hnrtr><i class=hnrtk>' + esc(T('Latest patch in its cycle')) + '</i> <code class=hnrc>' + esc(s(it.cur)) + '</code>' + ar + '<code class=hnrc>' + esc(s(p.target)) + '</code>'
