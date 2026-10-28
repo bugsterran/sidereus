@@ -43,6 +43,28 @@ class ArchImages(unittest.TestCase):
         self.assertIn("trivy-image ghcr.io/a/b:1 · failed: docker login ghcr.io needed", r)
         self.assertIn("<div class=ckimgs", r)
 
+    def test_image_gap_line(self):
+        # Gap line: missing trivy and untick «Include images» are named in the window and the badge tip; no trivy rows = no line.
+        miss = {"tools": [{"id": "gitleaks", "status": "ok", "n": {}},
+                          {"id": "trivy-config", "status": "missing", "why": "install: brew install trivy", "n": {}},
+                          {"id": "trivy-image", "status": "missing", "why": "install: brew install trivy", "n": {}}], "top": []}
+        skip = {"tools": [{"id": "trivy-config", "status": "ok", "n": {}}, SEC["tools"][4]], "top": []}
+        none = {"tools": [{"id": "gitleaks", "status": "ok", "n": {}}], "top": []}
+        arg = {"tools": [{"id": "trivy-config", "status": "ok", "n": {}},
+                         {"id": "trivy-image", "status": "skipped", "why": "FROM uses a build ARG", "n": {}}], "top": []}
+        r = run("const W = s => archChkWinHtml('/r', {checks: {security: s}}, {sel: {}, sev: 'all', tool: ''}, []);"
+                "console.log(JSON.stringify([archChkImgGap(" + json.dumps(miss) + "), archChkImgGap(" + json.dumps(skip) + "), archChkImgGap(" + json.dumps(none) + "),"
+                " archChkImgGap(" + json.dumps(SEC) + "), W(" + json.dumps(miss) + "), W(" + json.dumps(none) + "), archChkTopBtn({checks: {security: " + json.dumps(miss) + "}}, '/r'),"
+                " archChkImgGap(" + json.dumps(arg) + ")]));", lang="en")
+        self.assertEqual(r[0], "Container images not scanned — trivy is not installed")
+        self.assertIn("tick «Include images»", r[1])
+        self.assertEqual(r[2], "")                                         # no Dockerfile in the repo: no trivy rows, no nag
+        self.assertEqual(r[3], "")                                         # images scanned (one untargeted skip row is not a gap)
+        self.assertIn("archckgap", r[4])
+        self.assertNotIn("archckgap", r[5])
+        self.assertIn("⚠ Container images not scanned", r[6])             # badge tooltip
+        self.assertEqual(r[7], "")                                         # ticked, but FROM is an ARG: not the «tick the box» gap
+
     def test_checkbox_toggles_run_img(self):
         r = run(EVJS + "ARCH_CW = {p: '/r', w: W, sel: {}, run: {sid: 'a', busy: false, again: true}};"
                 "const e = ev('change', {ckimg: ''}); e.target.checked = true; archChkWinEv(e, W); const a = ARCH_CW.run.img, g = ARCH_CW.run.again;"

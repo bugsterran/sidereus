@@ -49,7 +49,8 @@ function archChkTopBtn(d, p){   // p = repo of the hidden-rule pref, default the
   // shown even at 0 so missing scanners stay visible; scanner states in the tooltip
   // stale = scanned commit is not HEAD: same «cut» + ⚠ marking as the diagram stamp (archHeadNote, 84j)
   const old = !!sec.stale, cm = String(sec.commit || '').slice(0, 7), hd = String((d && d.head) || '').slice(0, 7);
-  const tip = archChkLast(d).txt + '\n' + (old ? T('Scanned commit {n} · HEAD now {m}').replace('{n}', cm).replace('{m}', hd) + '\n' + T('The security results are older than the code — run the security check again.') + '\n' : '')
+  const gap = typeof archChkImgGap === 'function' ? archChkImgGap(sec) : '';
+  const tip = archChkLast(d).txt + '\n' + (gap ? '⚠ ' + gap + '\n' : '') + (old ? T('Scanned commit {n} · HEAD now {m}').replace('{n}', cm).replace('{m}', hd) + '\n' + T('The security results are older than the code — run the security check again.') + '\n' : '')
     + archChkTools(sec).map(t => (typeof archChkTid === 'function' ? archChkTid(t) : String(t.id)) + ' · ' + archChkStat(t)).join('\n') + (hid.length ? '\n' + T('{n} rules hidden').replace('{n}', hid.length) : '');
   return '<button type=button class="strbg strbg-archcki' + (e ? '' : ' strbg-archckiw') + (old ? ' strbg-cut' : '') + '" data-arck aria-haspopup=dialog title="' + esc(tip) + '">'
     + esc((old ? '⚠ ' : '') + T('Security issues {n}').replace('{n}', vis.length)) + '</button>';
@@ -227,6 +228,8 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
   h += archChkRunHtml(p, d, S, rcands || cands);
   // scanner states (why is tool text: esc)
   // 84l3 helpers (trivy targets, base images); typeof keeps partial loaders of this file working
+  const gap = sec && typeof archChkImgGap === 'function' ? archChkImgGap(sec) : '';
+  if(gap) h += '<div class="archckst archckgap" role=status>⚠ ' + esc(gap) + '</div>';
   if(sec) h += '<div class=archckst>' + esc(archChkTools(sec).map(t => (typeof archChkTid === 'function' ? archChkTid(t) : String(t.id)) + ' · ' + archChkStat(t)).join(' | ')) + '</div>' + (typeof archChkImgHtml === 'function' ? archChkImgHtml(sec) : '');
   if(S.req){
     const cur = cands.find(x => x.sid === S.req.sid) || null, off = !n ? T('Select at least one issue') : !cur ? T('No live session') : !cur.login ? T('That session is not logged in to the mailbox') : '';

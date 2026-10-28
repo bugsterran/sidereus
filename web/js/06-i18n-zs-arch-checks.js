@@ -40,4 +40,6 @@ Object.assign(I18N.ko, {
   'No fixed version released yet': '아직 수정 버전이 나오지 않음',
   'waiting {n}': '대기 {n}건',
   '{n} images': '이미지 {n}개',
+  'Container images not scanned — trivy is not installed': '컨테이너 이미지 검사 안 됨 — trivy 가 설치되지 않음',
+  'Base images not scanned — tick «Include images» when requesting the check': '베이스 이미지 검사 안 됨 — 점검 요청 때 «이미지 포함»을 체크하세요',
 });
