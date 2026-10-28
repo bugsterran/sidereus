@@ -45,7 +45,7 @@ def _const(name, file):
 NOW = ("\n".join([_const("PL_DESC_RE", "48b-pipeline-run.js"), _const("STR_SPLIT_KEYS", "81i-structure-split.js")]
                 + [js_fn(n) for n in ("sessPlChip", "plStrip", "plTk", "plDescStage", "plSubsOf", "plLabType", "plLabParts", "plLabDesc", "plLabTip",
                                       "strSplitGet", "strSplitCols", "strSplitDecl", "strSplitStyle", "strSplitGrip",
-                                      "tlSessNmB", "tlAgNmB", "tlAgNm", "tlAgLab", "subWorkId", "plNowAgents", "plNowPickApply",
+                                      "tlSessNmB", "tlAgNmB", "tlAgNm", "tlAgLab", "subWorkId", "plNowAgents", "plNowAgentRows", "plNowPickApply",
                                       "plPrLive", "plNowSt", "plNowRun", "plNowRunTxt", "plNowLive", "plNowFolded", "plNowList", "plNowWrap", "plNowPick", "plNowGoProj", "plProjGo", "plPickProj")])
        + "\n" + _const("PLNOW_ST", "48j-pipeline-now.js") + "\n" + _const("PLNOW_AGMAX", "48j-pipeline-now.js") + "\n")
 LIVE = """[{state: 'tool', sid: 's1', cwd: '/a', plat: 'cx', project: 'alpha', plrun: [{name: 'chg', cur: 'Implement'}]},
@@ -330,6 +330,18 @@ class PlNow(unittest.TestCase):
         self.assertIn('<i class="tlds"></i>', rows[-1][2])                    # quiet: no running dot
         c = run(NOW + "LS['sidereus.plnowc'] = '1'; console.log(JSON.stringify(plNowList(" + src + ")));")
         self.assertNotIn("plnagr", c)                                         # hidden in the collapsed rail
+
+    def test_untagged_sub_not_under_open_run(self):
+        src = ("[{state: 'wait', sid: 's1', cwd: '/a', plat: 'cc', project: 'a', plrun: [{name: 'arch-map', cur: 'Draw modules'}], sub: ["
+               "{lab: 'general-purpose: \uBCF4\uC548: GCM', aid: 'u1', idle: 5}, {lab: 'arch-map: [pl:arch-map/Draw modules] draw', aid: 't1', idle: 5}]}]")
+        h = run(NOW + "console.log(JSON.stringify(plNowList(" + src + ")));")
+        grp = re.findall(r'<div class=("plnag plnagrn"|plnag)>(.*?)</div>', h)
+        self.assertEqual([g[0] for g in grp], ['"plnag plnagrn"', 'plnag'])
+        self.assertIn('data-pnname="arch-map"', grp[0][1])                        # tagged with the run's name: under the run
+        self.assertNotIn('GCM', grp[0][1])                                   # untagged: never under the run
+        self.assertIn('GCM', grp[1][1])
+        none = run(NOW + "console.log(JSON.stringify(plNowAgentRows({cwd: '/a', sub: [{lab: 'b: x', aid: 'u1'}]})));")
+        self.assertTrue(none.startswith("<div class=plnag>"))               # no run: same plain group
 
     def test_r9_type_chip_hidden_beside_description_only(self):
         with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as f:

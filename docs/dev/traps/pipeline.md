@@ -28,6 +28,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 Moved from «Sessions: state, subagents, external CLIs».
 
+- ⚠**«Working now» put an untagged subagent under the open run** (48j `plNowAgents` listed every live sub). ⇒ `plNowAgentRows`: only a sub whose `[pl:]` tag names the open run goes in the run group (`plnagrn`); never use liveness or a time window as evidence. Test: `test_untagged_sub_not_under_open_run`.
 - **A running pipeline row drew another session's abandoned run** (`48b` `plLiveRun`, `hooks/pl_flow.py` `_known_owner`/`_touched`).
   - Cause: `plLiveRun` took any project session's `plrun`; a tagged session with no run record (cwd without pipelines, so `pl_flow` recorded nothing) showed a 2 h old run (done, end=0).
   - ⇒ While a session carries a live `[pl:name/]` tag only its own `plrun` counts; with none, the tag alone lights its stage. `pl_flow` finds the home among known projects owning the file, narrowed by paths in the transcript tail.

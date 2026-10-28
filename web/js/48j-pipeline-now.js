@@ -24,16 +24,23 @@ function plNowRun(x, k){
 // Live x.sub rows only; running first, quiet ones (no log write for PLNOW_QUIET s) dimmed; at most PLNOW_AGMAX, then «+N more».
 // ⚠Metadata only: the Agent description label (rule 1); a [pl:name/stage] tag makes the row select that stage on the canvas.
 const PLNOW_AGMAX = 6, PLNOW_QUIET = 120;
-function plNowAgents(x){
-  const subs = (x.sub || []).filter(a => a && a.lab), hot = a => a.busy || !(a.idle > PLNOW_QUIET);   // busy: pending tool call, log silent but working
+function plNowAgents(x, only, cls){
+  const subs = (x.sub || []).filter(a => a && a.lab && (!only || only(a))), hot = a => a.busy || !(a.idle > PLNOW_QUIET);   // busy: pending tool call, log silent but working
   const ord = subs.filter(hot).concat(subs.filter(a => !hot(a))), shown = ord.slice(0, PLNOW_AGMAX), more = ord.length - shown.length;
   if(!shown.length) return '';
-  return '<div class=plnag>' + shown.map((a, i) => {
+  return '<div class=' + (cls ? '"plnag ' + cls + '"' : 'plnag') + '>' + shown.map((a, i) => {
     const p = plLabParts(a.lab), d = plDescStage(a.lab), h = hot(a), tip = plLabTip(a.lab) + ' · ' + T(h ? 'Running' : 'Idle');   // state in words, not only the dot/dimming
     const g = { sess: false, type: p.type || T('Agent'), plat: a.plat || x.plat || '', br: i === shown.length - 1 && !more ? '└' : '├', items: [{ aid: a.aid || a.tid || 'a', desc: p.desc }] };
     return '<button type=button class="plnagr tlnm' + (h ? '' : ' quiet') + '" data-pnagc="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" data-pntid="' + esc(subWorkId(a)) + '"'
       + (d && d.name !== '-' ? ' data-pnname="' + esc(d.name) + '" data-pnst="' + esc(d.title) + '"' : '') + ' title="' + esc(tip) + '" aria-label="' + esc(tip) + '"><b>' + tlAgNmB(g, h) + '</b></button>';
   }).join('') + (more > 0 ? '<div class=plnagm>' + esc(TV({msg: '+{n} more', vars: {n: more}})) + '</div>' : '') + '</div>';
+}
+// ⚠Only a sub whose [pl:] tag names the open run sits under it (plnagrn); untagged ones stay a plain group — liveness alone is no evidence, no time window.
+function plNowAgentRows(x){
+  const r = (x.plrun || []).find(q => q && q.name && !q.end);
+  if(!r) return plNowAgents(x);
+  const inRun = a => { const d = plDescStage(a.lab); return !!d && d.name === r.name; };
+  return plNowAgents(x, inRun, 'plnagrn') + plNowAgents(x, a => !inRun(a));
 }
 // Status: need = blocked on the person · work = a turn is running, or (turn ended, 'wait') its open run / a live subagent / an open bg task still works · idle = else.
 // ⚠One predicate for the row, the rail dot and the canvas (plPrLive): state alone read «Idle» while tagged background work ran.
@@ -67,7 +74,7 @@ function plNowList(ss){
     const on = !!PLS.nowSid && x.sid === PLS.nowSid, k = plNowSt(x), it = { cwd: x.cwd || '', plat: x.plat || '', state: k === 'work' && x.state === 'wait' ? 'run' : x.state, blocked: x.blocked, idle: x.ageSec };   // dot agrees with plNowSt (list item only, x untouched)
     const st = T(PLNOW_ST[k]), al = [x.project || '', st, plNowRunTxt(x)].filter(Boolean).join(' · ');   // ⚠project is user data: never through T()
     return '<div class="plnlr' + (on ? ' on' : '') + '"><button type=button class="plnli tlnm' + (on ? ' on' : '') + '" data-pncwd="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc((x.project || '') + '\n' + st) + '" aria-label="' + esc(al) + '"'
-      + (on ? ' aria-current=true' : '') + '>' + tlSessNmB({ sess: true, cwd: x.cwd || '', plat: x.plat || '', proj: x.project || '', items: [it] }, it, 0, 0, true) + plNowRun(x, k) + '</button>' + plNowAgents(x) + '</div>';
+      + (on ? ' aria-current=true' : '') + '>' + tlSessNmB({ sess: true, cwd: x.cwd || '', plat: x.plat || '', proj: x.project || '', items: [it] }, it, 0, 0, true) + plNowRun(x, k) + '</button>' + plNowAgentRows(x) + '</div>';
   }).join('') + hc + '</aside>';
 }
 // List | run view; the list width uses the 81i grip (key sidereus.plmd, px).

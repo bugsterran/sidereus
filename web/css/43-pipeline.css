@@ -49,6 +49,7 @@ html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--
 .plnlh>small.plnln{min-width:18px;padding:0 6px;border-radius:9px;background:color-mix(in srgb,var(--nx-info,#5899f3) 20%,transparent);color:var(--nx-info,#5899f3);font-weight:600;text-align:center;line-height:16px}
 /* Subagent tree under a card: the Timeline agent name cell (74b tlAgNmB) as flat buttons; quiet = no log write for 2 min */
 .plnag{display:flex;flex-direction:column;gap:1px;margin:2px 0 2px 8px;min-width:0}
+.plnag.plnagrn{border-left:2px solid var(--nx-info,#5899f3);padding-left:4px}   /* tagged subs of the open run; untagged ones keep the plain group */
 .plw .plnl .plnagr.tlnm{flex:none;display:flex;width:100%;min-height:24px;padding:2px 6px;background:none;border:0;border-radius:4px;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow:hidden}
 .plw .plnl .plnagr.tlnm>b{flex:0 1 auto;min-width:0;font-size:11.5px;font-weight:500}
 .plw .plnl .plnagr:hover{background:var(--nx-hover,#1b1e23)}
