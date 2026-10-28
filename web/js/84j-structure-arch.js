@@ -3,7 +3,7 @@
 // ⚠Evidence is file:line:symbol only (metadata); code opens on click through the existing popup (81 strPopOpenRel).
 // ⚠The request button never sends by itself: preview → a person presses confirm → /api/dm relay (AGENTS.md rule 7).
 const ARCH_PL = 'arch-map';
-const ARCH = { cache: {}, load: {}, op: '', req: null, msg: '', sel: null, tests: false, full: false, svg: {}, sent: null, flow: null, pstop: null, scope: null, lit: null, nx: {}, ifx: null, et: {} };   // et = «Connections» tree folds, key p\tn | p\tother, true = open (84j6) · ifx = {p, id} focus view with infrastructure unfolded (84j4) · scope = {p, layer, group} lit path level · lit = {p, flow, fs?} lit flow(s) · nx = folded neighbour branches (84j3)   // svg = archKey → rendered diagram; flow = {p, id} picked flow (84k)   // op = «path\tedge index» of the open evidence list; sel = {p, id} focused module
+const ARCH = { cache: {}, load: {}, op: '', req: null, msg: '', sel: null, tests: false, full: false, svg: {}, sent: null, flow: null, pstop: null, scope: null, lit: null, nx: {}, ifx: null, et: {}, dvf: '' };   // dvf = project path while the deviation filter is on, '' off · et = «Connections» tree folds, key p\tn | p\tother, true = open (84j6) · ifx = {p, id} focus view with infrastructure unfolded (84j4) · scope = {p, layer, group} lit path level · lit = {p, flow, fs?} lit flow(s) · nx = folded neighbour branches (84j3)   // svg = archKey → rendered diagram; flow = {p, id} picked flow (84k)   // op = «path\tedge index» of the open evidence list; sel = {p, id} focused module
 const ARCH_DIR = 'TB';   // ★live map, 17 modules · 46 pairs: TB 917x1146px, 85 crossings · LR 2870x328px, 88 crossings
 
 // Fetch through fetch(), not getJSON: an allow-list refusal is a non-2xx whose JSON message must reach the screen.
@@ -34,7 +34,7 @@ function archRoleName(r){ r = String(r || ''); return Object.prototype.hasOwnPro
 function archFwParts(fw){ return String(fw || '').split(/\s+\+\s+|,\s+/).map(x => x.trim()).filter(Boolean); }
 // Pure: style badges «Layered» (+ «estimated» when an evidence file is not in the commit) · framework · «Evidence N files»,
 // then the deviation count; '' when the server sent no style. Evidence tooltip = files + units (strHdBadge escapes both).
-function archStyleParts(d){   // {sty, est (sty is the warn-coloured «estimated» form), fw, ev, dev}; null without a style
+function archStyleParts(d, on){   // {sty, est (sty is the warn-coloured «estimated» form), fw, ev, dev}; null without a style; on = deviation filter pressed
   const st = d && d.style && typeof d.style === 'object' ? d.style : null;
   if(!st || !st.style) return null;
   const fw = String(st.framework || ''), ev = (Array.isArray(st.evidence) ? st.evidence : []).filter(x => x && x.file);
@@ -44,18 +44,20 @@ function archStyleParts(d){   // {sty, est (sty is the warn-coloured «estimated
   return { est: st.ok === false, sty: strHdBadge(st.ok === false ? 'cut strbg-asty' : 'asty', archStyleName(st) + (st.ok === false ? ' · ' + T('estimated') : '')),
     fw: archFwParts(fw).map(x => strHdBadge('dat', x, fw)).join(''),
     ev: strHdBadge('', T('Evidence {n} files').replace('{n}', ev.length), tip),
-    dev: dv ? strHdBadge('cy', T('{n} outside {s} flow').replace('{n}', dv).replace('{s}', archStyleName(st)), T('Edges whose module roles go against this style')) : '' };
+    dev: dv ? '<button type=button class="strbg strbg-cy strbg-dvf" data-ardv aria-pressed=' + (on ? 'true' : 'false') + ' title="'
+      + esc(T('Review hint, not an error: these edges go against the {s} flow. Keep an edge if it is intended; otherwise reverse the dependency. Click to list only these edges.').replace('{s}', archStyleName(st)))
+      + '">' + esc(T('{n} outside {s} flow').replace('{n}', dv).replace('{s}', archStyleName(st))) + '</button>' : '' };
 }
 function archStyleNote(d){ const s = archStyleParts(d); return s ? s.sty + s.fw + s.ev + s.dev : ''; }
 // Pure: header badges — pass rate, modules, and a document-style version stamp «Generated MM-DD HH:MM · commit» (server `at`).
 // A stale map keeps the stamp in the «cut» style with a ⚠ marker; how far HEAD moved goes to its tooltip.
-function archHeadNote(d){
+function archHeadNote(d, on){
   const r = archRate(d), c = String((d && d.commit) || '').slice(0, 7), h = String((d && d.head) || '').slice(0, 7);
   const at = d && typeof d.at === 'number' && isFinite(d.at) && d.at > 0 ? d.at : 0;
   const tip = T('Diagram commit {n} · HEAD now {m}').replace('{n}', c).replace('{m}', h);
   const ahead = d && d.stale ? (typeof d.behind === 'number' ? TV({msg: 'HEAD is {n} commits ahead', vars: {n: d.behind}}) : T('stale')) + ' · ' : '';
   const why = d && d.stale ? '\n' + T('The diagram is older than the code — a new one is built from the latest commit.') : '';
-  const s = archStyleParts(d) || { est: false, sty: '', fw: '', ev: '', dev: '' };
+  const s = archStyleParts(d, on) || { est: false, sty: '', fw: '', ev: '', dev: '' };
   const gen = c ? strHdBadge(d.stale ? 'cut' : '', (d.stale ? '⚠ ' : '') + (at ? T('Generated {t} · {c}').replace('{c}', c).replace('{t}', hhmm(at, { date: true, dsep: '-' })) : c), ahead + tip + why) : '';
   // Badges are ordered by colour group (purple · blue · grey · warning) so the row reads as groups; state-coloured ones follow their current colour.
   return (s.est ? '' : s.sty) + s.fw
@@ -113,6 +115,12 @@ function archEdgeRow(e, names, i, open, io, dv, sn){
     + '<small>' + esc(T('{n} refs').replace('{n}', ((e.evidence || []).length))) + '</small></span>'
     + (e.label ? '<span class=archel>' + esc(e.label) + '</span>' : '') + '</button>'
     + (open ? archEvHtml(e.evidence, i) : '') + '</li>';
+}
+// Pure: deviation filter list — one row per flagged edge index, ascending. ⚠Bypasses the flow tree: flow steps never show the reason badge.
+function archDevListHtml(edges, names, p, devAt, sn, op){
+  const ix = Object.keys(devAt || {}).map(Number).filter(i => i >= 0 && edges && edges[i]).sort((a, b) => a - b);
+  return '<div class=archdvn role=status>' + esc(T('Not an error · {n} edges to review').replace('{n}', ix.length)) + '</div><ul class="archel-list archdvl">'
+    + ix.map(i => archEdgeRow(edges[i], names, i, op === p + '\t' + i, '', devAt[i], sn)).join('') + '</ul>';
 }
 // Pure: DM body the person previews; names the pipeline and the target repo, read-only by contract.
 // Mailbox wire text in the same format as 48b pipeline run requests, not UI.
@@ -469,7 +477,7 @@ function archPaint(box, head){
   if(ARCH.req && !cands.some(c => c.sid === ARCH.req.sid) && cands.length) ARCH.req.sid = cands[0].sid;
   const fz = ARCH.sel && ARCH.sel.p === p ? archFitOf(box) : null, fzk = fz ? fz.w + 'x' + fz.h : '';   // focus room (resize repaints on change)
   // Poll repaints on every session change: same response + same view state keeps the drawing (no flicker, select keeps focus).
-  const sig = [p, LANG, ARCH.op, JSON.stringify(ARCH.req), ARCH.msg, archSentPh(p), run ? [run.stage, run.n, run.sid].join('/') : '', JSON.stringify(ARCH.sel), JSON.stringify(ARCH.flow || null), JSON.stringify([ARCH.scope, ARCH.lit, ARCH.nx, ARCH.ifx, ARCH.et]), ARCH.tests, ARCH.full, fzk, typeof archReqSig === 'function' ? archReqSig(p) : '', cands.map(c => c.sid + (c.login ? '+' : '')).join(',')].join('\t');
+  const sig = [p, LANG, ARCH.op, JSON.stringify(ARCH.req), ARCH.msg, archSentPh(p), run ? [run.stage, run.n, run.sid].join('/') : '', JSON.stringify(ARCH.sel), JSON.stringify(ARCH.flow || null), JSON.stringify([ARCH.scope, ARCH.lit, ARCH.nx, ARCH.ifx, ARCH.et, ARCH.dvf]), ARCH.tests, ARCH.full, fzk, typeof archReqSig === 'function' ? archReqSig(p) : '', cands.map(c => c.sid + (c.login ? '+' : '')).join(',')].join('\t');
   if(d && box._arj === d && box._arsig === sig && box.querySelector('.archtab')) return;
   box._arj = d; box._arsig = sig;
   const msg = ARCH.msg ? '<div class=archmsg role=status>' + esc(ARCH.msg) + '</div>' : '';
@@ -527,11 +535,14 @@ function archPaint(box, head){
   if(!hold && typeof archMmPick === 'function'){ const od = same && box.querySelector && box.querySelector('.archdg');
     const pv = archMmPick(sm, od && od.dataset ? od.dataset.k : null, k); if(pv !== sm){ sm = pv; box._arsm = [sm, sl, sd]; } }
   const fa = Array.isArray(d.flows) && d.flows.length ? archFlowAt(d, p) : null, fl = fa && fa.fi >= 0 ? fa.fls[fa.fi] : null;   // ⚠no flows: no 84k call, same page as before
+  // ⚠A module/flow pick or a rebuilt map without deviations turns the filter off, so the badge never stays pressed over another aside.
+  const dvOn = ARCH.dvf === p && !!devSn && Object.keys(devAt).length > 0 && !sel && !fl;
+  if(ARCH.dvf === p && !dvOn) ARCH.dvf = '';
   // Flow view has no header buttons: a stale map puts its request button in the controls; an open preview sits under the header.
   const fhd = d.stale ? archStatusHtml(p, archReqBtn(p, home, cands, d)) : hst;
-  if(fl){ box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d), '', fhd) + (d.stale && req ? '<div class=archck>' + req + '</div>' : '') + msg + archFlowBody(fa.fls, fa.fi, names) + '</div>';
+  if(fl){ box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d, dvOn), '', fhd) + (d.stale && req ? '<div class=archck>' + req + '</div>' : '') + msg + archFlowBody(fa.fls, fa.fi, names) + '</div>';
     archScrollPut(box, sm, sl); archFlowMark(box.querySelector && box.querySelector('.archfdg svg'), fl); return; }
-  box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d), '', hst + pre) + (rq ? '<div class=archck>' + rq + '</div>' : '') + msg
+  box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d, dvOn), '', hst + pre) + (rq ? '<div class=archck>' + rq + '</div>' : '') + msg
     + '<div class=archbody' + strSplitStyle('archbody') + '><div class=archmap><div class=archtop>' + (typeof archPathHtml === 'function' ? archPathHtml(mods, d.groups, sel, ARCH.scope && ARCH.scope.p === p ? ARCH.scope : null) : '') + archBarHtml(mods, edges, sel, tests, ARCH.full, fa ? archFlowPick(fa.fls, ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : '') : '', fo)
     + (lay ? '' : '<div class="archmsg archnol" role=status>' + esc(T('No layers — redraw the diagram')) + '</div>')
     + (any ? archLegHtml(lay, !!kinds && Object.keys(kinds).some(x => kinds[x] === 'uses')) : '') + '</div>' + (any ? '<div class=archdg data-k="' + esc(k) + '"' + (sel && typeof archMmPadCss === 'function' ? archMmPadCss(k) : '') + (fv ? ' data-fv' : '') + (si >= 0 ? ' data-hub="m' + si + '"' : '') + (sel && fz ? ' data-fit="' + esc(fzk) + '"' : '') + '>' + archDiagram(box, k, src, mods, si >= 0 ? si : '', kinds, sel ? fz : null, bp) + '</div>' : '<div class=strload>' + esc(T('No edge passed the check.')) + '</div>') + '</div>'
@@ -539,7 +550,8 @@ function archPaint(box, head){
     + (sel && typeof archDetHtml === 'function' ? archDetHtml(d, sel, names, ARCH.nx, { op: i => ARCH.op === p + '\t' + i, dv: i => devAt[i], sn: devSn, drawn: archDrawn(mods, edges, tests, sel, ARCH.full), lit: ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : null })   // module detail (84j3)
       : '<aside class=archside><div class=archsh><b>' + esc(T('Edges')) + '</b><span>' + esc(T('Click for evidence · click evidence for code')) + '</span>'
     + '<button type=button class=archrf data-arf title="' + esc(T('Reload now')) + '">↻</button></div>'
-    + (typeof archEdTreeHtml === 'function' ? archEdTreeHtml(d, names, p, { op: ARCH.op, et: ARCH.et, dv: devAt, sn: devSn })   // flow tree (84j6)
+    + (dvOn ? archDevListHtml(edges, names, p, devAt, devSn, ARCH.op)
+      : typeof archEdTreeHtml === 'function' ? archEdTreeHtml(d, names, p, { op: ARCH.op, et: ARCH.et, dv: devAt, sn: devSn })   // flow tree (84j6)
       : '<ul class=archel-list>' + ord.map(o => archEdgeRow(o.e, names, o.i, ARCH.op === p + '\t' + o.i, o.io, devAt[o.i], devSn)).join('') + '</ul>') + '</aside>') + strSplitGrip('archbody') + '</div></div>';
   archScrollPut(box, sm, sl, sd);
   // ⚠the room was measured on the previous paint (overview bar or none): re-measure once on the new frame and redraw if it moved
@@ -605,6 +617,12 @@ document.addEventListener('click', ev => {
   // ⚠.archdg only: flow lifelines (84k .archfdg) carry data-p too
   if(archDgClick(p, t)) return;
   if(t.closest('[data-arall]')){ ARCH.sel = null; ARCH.scope = null; ARCH.lit = null; ARCH.op = ''; paintStruct(); return; }
+  if(t.closest('[data-ardv]')){ const on = ARCH.dvf !== p; ARCH.dvf = on ? p : '';
+    if(on){ ARCH.sel = null; ARCH.flow = null; ARCH.op = ''; }
+    const hadF = document.activeElement === t.closest('[data-ardv]');   // ⚠the repaint drops focus to <body>
+    paintStruct();
+    if(hadF) kbHold('.archtab [data-ardv]');
+    return; }
   if((b = t.closest('[data-ae]'))){ const k = p + '\t' + b.dataset.ae; ARCH.op = ARCH.op === k ? '' : k; paintStruct(); return; }
   if(t.closest('[data-arq]')){ const c = archCands(archHome(ARCH.cache[p]), SESS, p); ARCH.msg = '';
     if(archRunOf(p) || archSentPh(p) || (typeof archReqBusy === 'function' && archReqBusy(p, ARCH_PL))) return;
