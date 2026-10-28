@@ -119,6 +119,22 @@ class Brief(unittest.TestCase):
             self.assertIn("- pipe-%d — " % i, t)
         self.assertNotIn("SECRET", t)
 
+    def test_pick_line_once_and_strict_only_with_policy(self):
+        self._w("ok", _pipe("ok"))
+        t = H.brief(self.tmp)
+        self.assertEqual(t.count(H.PICK), 1)
+        self.assertNotIn(H.STRICT, t)
+        for bad in ("{bad", json.dumps({"enforce": "off"}), "[1]"):
+            self._w("_policy", bad)
+            self.assertNotIn(H.STRICT, H.brief(self.tmp), bad)
+        self._w("_policy", {"enforce": "writes"})
+        t = H.brief(self.tmp)
+        self.assertEqual(t.count(H.STRICT), 1)
+        self.assertEqual(t.count(H.PICK), 1)
+        self.assertNotIn("_policy", t)   # not listed as a pipeline
+        self._mode({"mode": "ask"})
+        self.assertIn(H.STRICT, H.brief(self.tmp))
+
     def test_no_pipelines_prints_nothing(self):
         self.assertEqual(H.brief(self.tmp), "")
         self.assertEqual(H.brief(os.path.join(self.tmp, "nope")), "")

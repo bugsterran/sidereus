@@ -17,7 +17,7 @@ import re
 import sys
 import time
 
-MAX_BYTES = 2560   # ⚠the how-to grew by the skip/model/SendMessage tag rules; six pipeline lines must still fit
+MAX_BYTES = 4096   # ⚠at 2560 a 10-pipeline project lost its last lines to «+N more», hiding the «when» the pick depends on
 CLAUDE_DIR = os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR") or "~/.claude")   # user agents root (sidereus.config.claude_home rule); patched in tests
 BUILTIN = {"general-purpose", "Explore", "Plan", "main", "claude"}   # main/claude = orchestrator stage (pl_flow.NO_AGENT, JS PL_BUILTIN_AG)
 _NAME = re.compile(r"[a-z0-9-]{1,40}")   # same file-stem rule as sidereus/pipeline_schema.py; `_defaults.json` etc. are skipped
@@ -41,6 +41,9 @@ HOW_CODEX = "Default = run the pipeline directly: " + _RUN_CODEX
 HOW_ASK_CODEX = ("Before starting work on a request that fits one of these pipelines, ask the user which to use "
                  "(the fitting pipelines + «파이프라인 없이 진행»), then run the choice; "
                  "questions and one-line fixes do not ask. To run one: " + _RUN_CODEX)
+PICK = ("Pick by «when»: file-changing work opens a run of the pipeline whose «when» fits; "
+        "when starting a run, state the pick and the reason in one line.")
+STRICT = "Strict mode is on: file edits need an open run."   # <project>/.claude/pipelines/_policy.json {"enforce": "writes"}
 # Sidereus's «Apply» setting (sidereus/prefs.py `pipeline_apply`): auto = HOW, ask = HOW_ASK, off = no output.
 BRIEF_DIR = os.path.join(os.path.expanduser(os.environ.get("MAILBOX_DIR") or "~/.mailbox-mcp"), "plbrief")   # patched in tests
 SID = re.compile(r"^[0-9a-zA-Z-]{8,64}$")
@@ -223,12 +226,22 @@ def _short(d):
     return "~/" + d[len(h):] if d.startswith(h) else d
 
 
+def _strict(d):
+    """True when project `d` opts into strict mode (`_policy.json` enforce=writes); ⚠any problem = off."""
+    try:
+        with open(os.path.join(d, ".claude", "pipelines", "_policy.json"), encoding="utf-8") as f:
+            P = json.load(f)
+        return isinstance(P, dict) and P.get("enforce") == "writes"
+    except Exception:
+        return False
+
+
 def brief(cwd, extra=(), plat="cc"):
     """additionalContext text for project `cwd` plus the session's other projects `extra`, or "" when none has
     readable pipelines. Another project's pipeline is named «name (path)». plat "codex" = shell-marker how-to."""
     if not (isinstance(cwd, str) and os.path.isabs(cwd)):
         return ""
-    lines, mode, other = [], None, False
+    lines, mode, other, strict = [], None, False, False
     for d in [cwd] + [x for x in extra if x != cwd]:
         m = _mode(d)
         if m == "off":
@@ -250,6 +263,7 @@ def brief(cwd, extra=(), plat="cc"):
                 lines.append(ln)
                 got = True
         mode = mode or (m if got else None)
+        strict = strict or (got and _strict(d))
         other = other or (got and d != cwd)
     if not lines:
         return ""
@@ -259,6 +273,7 @@ def brief(cwd, extra=(), plat="cc"):
         how = HOW_ASK if mode == "ask" else HOW
     head = ("Pipelines (.claude/pipelines/ of this project, or of the project in parentheses):" if other
             else "Pipelines in this project (.claude/pipelines/):")
+    how = "\n".join([PICK] + ([STRICT] if strict else []) + [how])
     size = lambda xs: len("\n".join([head] + xs + [how]).encode("utf-8"))
     kept = []
     for i, ln in enumerate(lines):

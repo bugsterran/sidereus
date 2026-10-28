@@ -289,3 +289,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: the bg Post on the last stage stamps `fin`. pl_model ends that run at its agents' latest finish once none of them still runs. A `[pl-skip:]` of a run with an active Stop marker ends it (cur done, `stop`/`end`). Later skips of the remaining stages are a no-op.
 - ⚠Without a Stop, skips never end a run whose cur is still `run`: main may declare skips up front and then do the stage.
 - ⚠A skip after a stopped end must not open a fresh run. That run has no cur, so it stayed open for 6 h.
+
+## Strict mode can lock its own switch (`pl_flow._strict` · `_none_gate`)
+- Cause: with `_policy.json` `{"enforce": "writes"}` every edit and main commit with no open run is denied, including edits to `_policy.json` and the pipeline files themselves.
+- Fix: open a run first (`[pl:quick-fix/<stage>]` or any pipeline), or escape: turn «Apply» off for the project, or edit `_policy.json` by hand outside Claude.
+- ⚠Deny every time on purpose: the deny-once nudge let a plain retry edit with no run. Never stamp `.none.json` in strict mode.
+- ⚠Subagents check only for an un-ended run (no IDLE_S): a long stage must not be cut off mid-way.
+- ⚠`STRICT_GRACE_S` (15 min) after a run of the session ended still passes: a foreground last stage sets `end`, so the ship commit comes after it. Tags alone never pass in strict mode.

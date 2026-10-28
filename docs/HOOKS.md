@@ -138,6 +138,11 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
   An unknown category is denied with the list. Without it and with no open run, the main session's first Edit/Write
   or untagged `git commit` in a project with pipelines is denied once, listing them; the retry passes. ⚠Manual
   setups need the `Edit|Write|MultiEdit|NotebookEdit` matcher for `pl_flow.py` (re-run `setup-claude`).
+- Strict mode (per-project opt-in): `.claude/pipelines/_policy.json` = `{"enforce": "writes"}`. With no open run, every
+  Edit/Write/MultiEdit/NotebookEdit and untagged `git commit` is denied (not once), listing each pipeline with its `use`
+  line; a subagent is denied only when the session has no un-ended run. `[pl-none:explore]` is accepted but unlocks no
+  edits; the other categories are refused with a pointer to the `quick-fix` pipeline. A missing or other value keeps the
+  deny-once behaviour; «Apply» off bypasses it.
 - The 3rd `[pl-none:no-fit]` of a project in 7 days adds context (count and project path only, never a deny) asking
   the model to offer a draft pipeline and write `.claude/pipelines/<name>.json` only after the user agrees; once per
   project per 7 days.

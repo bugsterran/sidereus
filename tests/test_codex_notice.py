@@ -117,7 +117,7 @@ class BriefCodex(unittest.TestCase):
     def test_no_flag_unchanged(self):
         t = self.run_hook([])
         self.assertEqual(pb.HOW, HOW_CC)
-        self.assertEqual(t, "Pipelines in this project (.claude/pipelines/):\n- change — Change · stages: Build\n" + HOW_CC)
+        self.assertEqual(t, "Pipelines in this project (.claude/pipelines/):\n- change — Change · stages: Build\n" + pb.PICK + "\n" + HOW_CC)
 
     def test_codex_wording(self):
         t = self.run_hook(["--platform", "codex"])
