@@ -91,7 +91,7 @@ Requirements:
 - Claude Code. Transcripts are read from `~/.claude/projects/` (`$CLAUDE_CONFIG_DIR/projects/` when set).
 - `git` for the Branches, Structure and diff views.
 - macOS is tested. Windows 11 was checked on a real PC (2026-10-17); gaps are listed in [GETTING-STARTED](docs/GETTING-STARTED.md#2-start-the-viewer). Linux is untested.
-- Footprint: the `--demo` server uses about 30 MB RSS; the shipped code is about 10 MB (macOS, Python 3.9, 2026-10-16).
+- Footprint: the `--demo` server uses about 50–60 MB RSS just after start and a few page loads (51 and 61 MB measured; the real viewer with many sessions uses more); the shipped code is about 11 MB, 18 MB with the screenshots (macOS, Python 3.9.6, 2026-10-28).
 
 ```sh
 git clone https://github.com/bugsterran/sidereus.git ~/sidereus && cd ~/sidereus
