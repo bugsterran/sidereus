@@ -1372,6 +1372,9 @@ def _readonly(proj, name):
 
 _SHELL_PUNCT = "();<>|&\n"   # ⚠an unquoted newline separates commands like `;`
 _SHELL_SEP = set(";|&()\n")   # punctuation that ends one shell command
+# ⚠words that come before the real command: `if x; then sed -i …`, `FOO=1 tee f`, `env -u X tee f`
+_SHELL_KW = {"then", "do", "else", "elif", "if", "while", "until", "!", "{", "time"}
+_ASSIGN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
 # POSIX scratch roots (built from os.sep for tests/test_win_static.py); on Windows they resolve to \dev, \tmp on the
 # current drive, which only widens the pass list there; tempfile.gettempdir() covers the Windows temp dir
 _HEREDOC = re.compile(r"(?<!<)<<(?!<)-?\s*(['\"]?)([A-Za-z0-9_]+)\1")
@@ -1397,7 +1400,7 @@ def _drop_heredocs(cmd):
 
 def _bash_writes(cmd, cwd, proj):
     """Heuristic: True when the shell command writes a file inside `proj` via > >> &> >| (>& to a file), tee or
-    sed -i. ⚠python -c, cp, mv are not caught. Unparseable text (ValueError) = False (fail-open)."""
+    sed -i, also after then/do/VAR=/env prefixes. ⚠python -c, cp, mv are not caught. Unparseable text (ValueError) = False (fail-open)."""
     try:
         lx = shlex.shlex(_drop_heredocs(cmd or ""), posix=True, punctuation_chars=_SHELL_PUNCT)
         lx.whitespace, lx.whitespace_split = " \t\r", True
@@ -1406,8 +1409,17 @@ def _bash_writes(cmd, cwd, proj):
         return False
     base_dir = cwd if isinstance(cwd, str) else proj
     targets, i, n, cur = [], 0, len(toks), base_dir   # cur: directory after a literal `cd`; None = unknown
+    pre = env = False   # pre: previous word was a command prefix; env: inside `env`'s own options
     while i < n:
         t, prev = toks[i], toks[i - 1] if i else None
+        head = not _punct(t) and (pre or prev is None or _punct(prev) and any(c in _SHELL_SEP for c in prev))
+        pre = False
+        if head and (t in _SHELL_KW or _ASSIGN.match(t) or os.path.basename(t) == "env"
+                     or env and t.startswith("-")):
+            env, pre = env or os.path.basename(t) == "env", True
+            i += 2 if env and t in ("-u", "-C") else 1   # env -u NAME / -C DIR take a value
+            continue
+        env = False
         if _punct(t) and ">" in t:
             op = t[t.find(">"):]
             if i + 1 < n and not _punct(toks[i + 1]):
@@ -1416,7 +1428,7 @@ def _bash_writes(cmd, cwd, proj):
                 if not (tg.isdigit() or (op.startswith(">&") and tg == "-")):
                     targets.append((tg, cur))
                 i += 1
-        elif not _punct(t) and (prev is None or _punct(prev) and any(c in _SHELL_SEP for c in prev)):
+        elif head:
             base = os.path.basename(t)
             j, args = i + 1, []
             while j < n and not _punct(toks[j]):
