@@ -20,11 +20,17 @@ const py = it({rt: 'python', path: '/usr/bin/python3', cls: 'system', viewer: fa
   patch: {level: 'warn', target: '3.9.23', security: false, eol: '2025-10-31', eol_past: true}, newest: {level: 'info', target: '3.14.0', behind_n: 5}, fix: 'system-python'});
 const base = {state: 'behind', at: 1761600000, age_d: 1, stale: false, report: 'sec-2026.json', dev: false, offline: false, cmd: 'scripts/arch_checks.py --category security'};
 R.none = hnRuntime({});
-const keg = (o) => hnRtItem(it(o), false);
+const keg = (o) => hnRtItem(it(Object.assign({patch: {level: 'warn', target: '20.18.1', security: false, eol: '2027-04-30', eol_past: false}}, o)), false);   // supported cycle: upgrade in place
 R.cmds = [keg({path: '/opt/homebrew/opt/node@20/bin/node'}), keg({path: '/opt/homebrew/opt/node/bin/node'}),
   keg({rt: 'python', fix: 'brew-python', cycle: '3.12', path: '/opt/homebrew/opt/python@3.12/bin/python3.12', viewer: true}),
   keg({rt: 'python', fix: 'brew-python', cycle: '3.13', path: '/opt/homebrew/bin/python3', viewer: false}),
   keg({level: 'ok', patch: {level: 'ok', target: '20.1.0'}})];
+// patch-ok + newer cycle: no command; EOL brew-python: install the newest cycle; system-python keeps its own line.
+R.newer = keg({rt: 'python', fix: 'brew-python', cycle: '3.14', path: '/opt/homebrew/opt/python@3.14/bin/python3.14', level: 'info',
+  patch: {level: 'ok', target: '3.14.10', eol: '2030-10-31', eol_past: false}, newest: {level: 'info', target: '3.15.1', behind_n: 1}});
+R.eolpy = keg({rt: 'python', fix: 'brew-python', cycle: '3.10', path: '/opt/homebrew/opt/python@3.10/bin/python3.10', viewer: false,
+  patch: {level: 'fail', target: '3.10.19', eol: '2026-10-31', eol_past: true}, newest: {level: 'info', target: '3.15.1', behind_n: 5}});
+R.syspy = hnRtItem(py, false);
 R.behind = hnRuntime({runtime: Object.assign({}, base, {items: [it({}), py]})});
 R.stale = hnRuntime({runtime: Object.assign({}, base, {state: 'ok', stale: true, age_d: 12,
   items: [it({level: 'ok', patch: {level: 'ok', target: '20.1.0'}, newest: {level: 'ok', target: '20.1.0', behind_n: 0}})]})});
@@ -86,11 +92,30 @@ class HarnessRuntimeJs(unittest.TestCase):
     def test_r4_next_step_per_item_and_limit(self):
         h = self.R["behind"]
         self.assertEqual(h.count("class=hnrtn>"), 2)
-        self.assertIn("<code class=hnrtc>brew upgrade node</code>", h)
+        self.assertIn("Move to a supported cycle: <code class=hnrtc>brew install node</code>", h)
+        self.assertNotIn("brew upgrade", h)
         self.assertNotIn("node@20", h)
         self.assertNotIn("restart the viewer", h)
         self.assertIn("System Python updates with macOS", h)
         self.assertIn("python.org publishes no security flag", h)
+
+    def test_patch_ok_newer_cycle_has_no_step(self):
+        h = self.R["newer"]
+        self.assertIn("1 cycle behind", h)
+        self.assertNotIn("hnrtn", h)
+        self.assertNotIn("brew ", h)
+
+    def test_eol_brew_moves_to_supported_cycle(self):
+        h = self.R["eolpy"]
+        self.assertIn("Move to a supported cycle: <code class=hnrtc>brew install python@3.15</code> then restart the sessions or tools that use it", h)
+        self.assertNotIn("brew upgrade", h)
+        self.assertNotIn("Upgrade with Homebrew", h)
+
+    def test_system_python_line_unchanged(self):
+        h = self.R["syspy"]
+        self.assertIn("<span class=hnrtn>System Python updates with macOS — or switch to a Homebrew Python</span>", h)
+        self.assertNotIn("Move to a supported cycle", h)
+        self.assertNotIn("<code class=hnrtc>", h)
 
     def test_brew_command_follows_keg_path_and_restart_target(self):
         vk, plain, pyv, pyb, ok = self.R["cmds"]

@@ -164,8 +164,11 @@ class Demo(unittest.TestCase):
         a = NOW
         b = SRT.shape(DT._demo_runtime(a), a, root="/Users/demo/src/sidereus")
         self.assertEqual((b["state"], b["age_d"], b["stale"]), ("behind", 9, True))
-        lv = {x["rt"]: (x["level"], x["patch"]["level"], x["newest"]["behind_n"], x["fix"]) for x in b["items"]}
-        self.assertEqual(lv, {"nodejs": ("warn", "warn", 2, "brew-node"), "python": ("fail", "fail", 5, "system-python")})
+        lv = {x["path"]: (x["level"], x["patch"]["level"], x["newest"]["behind_n"], x["fix"]) for x in b["items"]}
+        self.assertEqual(lv, {"/opt/homebrew/opt/node@22/bin/node": ("warn", "warn", 2, "brew-node"),
+                              "/usr/bin/python3": ("fail", "fail", 5, "system-python"),
+                              "/opt/homebrew/opt/node@24/bin/node": ("info", "ok", 1, "brew-node"),
+                              "/opt/homebrew/opt/python@3.10/bin/python3.10": ("fail", "fail", 4, "brew-python")})
         self.assertNotIn(ROOT, b["cmd"])
         self.assertEqual(copy.deepcopy(b), json.loads(json.dumps(b)))
 
