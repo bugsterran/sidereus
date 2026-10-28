@@ -184,7 +184,8 @@ const inline = s => esc(s).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*
 function digest(src){
   const raw=String(src||'').split('\n');
   const out=[], seen=new Set();
-  const clean=t=>t.replace(/^[#>\-*\s★⚠✅❌⛔🔶]+/,'').replace(/\*\*/g,'').replace(/`/g,'').trim();
+  // ⚠Escaped, not a literal emoji: one char above U+FFFF makes the whole inline PAGE str 4 bytes/char (tests/test_page_bmp.py)
+  const clean=t=>t.replace(/^[#>\-*\s★⚠✅❌⛔\ud83d\udd36]+/,'').replace(/\*\*/g,'').replace(/`/g,'').trim();
   let inCode=false, code=0, table=0;
   for(const ln of raw){
     if(/^```/.test(ln)){ inCode=!inCode; if(inCode) code++; continue; }

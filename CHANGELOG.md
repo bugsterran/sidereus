@@ -15,6 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - `backup.sh`: with no mailbox MCP checkout it backs up the code and says the MCP part was skipped, instead of writing an empty archive and reporting success; a failed archive is removed so the keep-10 cleanup never drops a real backup.
 - Structure: going back to a map you had already viewed in another project opens it where you left it, instead of the corner.
 - Pipelines: a background Bash from an earlier run (a dev server that never reports completion) no longer lights a stage of the current run.
@@ -47,6 +50,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Pipelines: the «pipeline file not found» note for a run from another folder names the session's folder and says to use «Add project» on the folder holding the pipeline file.
 - Header: the second number on «Sessions» reads «need you n» instead of a bare count next to the open-session count.
 - Structure: «Redraw» / «Generate diagram» say in their tooltip that they ask a live session (preview first), and the «repository location is unknown» reason now says it needs Sidereus run from a git clone.
@@ -80,6 +86,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Windows and Linux: the 5h/7d quota fills in — the token is read from Claude Code's `.credentials.json` (it was macOS keychain only), and when quota cannot be fetched the status bar says why ("Quota lookup is turned off", "No Claude Code login found", "Could not reach the usage API").
 - Settings: in «Features», «Save» and «Undo» appear right under the heading instead of below the last row (often off-screen), and a feature switched off by an off dependency is saved as off, matching its checkbox.
 - Settings (Windows): «Mailbox watch» treats `C:\x` and `c:/x` as one folder — no duplicate rows, no false change, and the saved setting no longer flips with key order.
@@ -112,6 +121,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Sessions: on Windows and Linux an open Claude Code session no longer lists as ended — liveness comes from `claude agents` when no process list is available.
 - CLI: `doctor` and the CLI hints name the command for how Sidereus was installed — `sidereus` for a pipx/uv install, `py -m sidereus` on Windows, else `python3 -m sidereus`.
 - Security checks: tracked files marked `export-ignore` in `.gitattributes` are scanned too; the scan used to see only the export set (1156 of 1209 files in this repo).
@@ -157,6 +169,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Hooks: `ext_hook.py` refuses a `--url` / `SIDEREUS_HOOK_URL` whose scheme is not http or https.
 - Pipelines: with four or more open runs in one session, an older run whose stage still runs as a tagged background agent no longer shows as ended after 30 minutes.
 - Pipelines: a `[pl-none]` declaration written while the log was being trimmed (over 256 KB or 90 days) is no longer lost.
@@ -201,6 +216,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Viewer: settings stay in sync across open tabs — «Done» and «Later» on an Attention item reach every tab within about a second (a missed tab catches up on its next poll), and a stale tab can no longer erase another tab's «Done» or «Later».
 - Attention: clicking an item in the rail list opens the session drawer at that item's row in «Attention» (unfolding low-priority or overflow rows); the terminal jump stays on the drawer row.
 - Pipelines: the selected session is marked in the collapsed «Working now» rail (ring) and when a «Running N» row is picked; rail dots show a label with project, state and run on hover or focus, and only working sessions pulse.
@@ -254,6 +272,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Sessions: a short branch name (such as «dev») no longer spills over the account chip.
 - Sessions: a session with one watcher shows the watcher's label (e.g. «Mailbox watch») instead of «watch 1» followed by a stale last tool.
 - Timeline: the English toolbar fits on one line at 900px (the «?» help wrapped to a second line).
@@ -306,6 +327,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Structure: the first view centres the map horizontally again (0.3.0 anchored it at the top-left); a tall map still keeps the Entry band visible under the toolbar.
 - Structure: coming back from another tab puts the architecture map (overview or focus view) back at the scroll it was left at instead of the top-left.
 - Structure: relayed arch-map and security-check requests name both the `python3` and the Windows `py` gate commands (was `/usr/bin/python3` only, which does not exist on Windows).
@@ -345,6 +369,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Structure: on first open the map anchors at its top-left so the Entry band is not clipped; clicking a node never moves the scroll.
 - Pipelines: the canvas height is fitted so the stage edit panel is visible without scrolling at 1440x900.
 - Pipelines: the stage-name placeholder is no longer clipped, and the «Agent and model per stage» caption is separated from the title.
@@ -361,6 +388,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Wide screens wrapped a pipeline into several rows even when it fit in one row at the minimum zoom.
 - Demo Architecture map now draws layer bands and the minimap instead of «No layers — redraw the diagram».
 - An external module with no type goes straight into the «External» band, with no nested «External» box.
@@ -394,6 +424,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Attention: a permission prompt opened mid-message (several tool calls in one turn, or followed by a question) now shows as blocked; it was dropped as stale.
 - Pipelines: a stage with a live tagged agent now lights as running even when the run record has no entry for it yet (it showed every stage waiting).
 - Security checks: gitleaks findings in gitignored paths are dropped; ignored local state filled the item cap and hid real findings.
@@ -480,6 +513,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Pipeline: the «Workflow» group label and the workflow head note are translated.
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Config: a `claude_roots` list in `config.local.json` is kept on load (it was dropped as an unknown key, so extra account roots never applied).
 - Chat: the room «← Rooms» back button uses the shared 28px nav height and 13px label (was 24px / 12px, too small a target).
 - Sessions: a running background shell (e.g. a dev server) stays listed under its session past 2 hours; it closes on its completion notice, an error, session end or ✕.
@@ -527,6 +563,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Branches: a repository listed in the picker is no longer refused («This repository is not in the list», 403) when a later session in the same folder did not carry it — the server gate now reads every session row, like the picker.
+- Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
+- Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.
+- Security checks: the issues window «Request fix» line turns «Done» once a newer security check result exists for the repo, instead of staying «Delivered» forever.
 - Structure: folding a flow or «Other» (caret or «Collapse all») unpins a pinned step or Other row that the fold hides, so the map no longer stays lit with no visible row; a pinned flow node stays lit.
 - Pipeline guard: a loop-back clears skip declarations from the loop-back stage on, so a stage skipped in round 1 must be run or declared skipped again in later rounds; «skip» marks on screen are unchanged.
 - Pipeline guard: declaring a skip of a loop-back's return stage no longer reports stages that already ran (e.g. verify, review) as skipped; the jump check starts at the declared return stage.
