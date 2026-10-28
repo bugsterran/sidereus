@@ -64,6 +64,22 @@ class OpenRun(unittest.TestCase):
         self.assertEqual((r["end"], r["stages"]["라이브 검증"]["o"]), (0, "run"))
         self.assertEqual(self._model(bgs=sub)["end"], 0)   # a tagged bg task counts the same
 
+    def _run_18m(self):
+        self._file({"검증": {"s": "run", "t0": NOW - 300, "t1": NOW - 60, "n": 1}}, "검증", NOW - 60, t0=NOW - 18 * 60)
+
+    def test_bg_row_from_earlier_run_ignored(self):
+        self._run_18m()
+        bg = [{"lab": "Bash: [pl:%s/라이브 검증] Start local dev server" % N, "min": 315, "tid": "bg9"}]
+        st = self._model(bgs=bg)["stages"]
+        self.assertFalse(st.get("라이브 검증", {}).get("o") == "run")
+        self.assertFalse(st.get("라이브 검증", {}).get("ag"))
+
+    def test_bg_row_after_run_start_lights_stage(self):
+        self._run_18m()
+        bg = [{"lab": "Bash: [pl:%s/라이브 검증] Start local dev server" % N, "min": 5, "tid": "bg9"}]
+        st = self._model(bgs=bg)["stages"]["라이브 검증"]
+        self.assertEqual((st["o"], len(st["ag"])), ("run", 1))
+
     def _four_open(self, age):
         # three newer open runs fill the PLR_MODEL_AG_RUNS slots; the oldest (N) is outside the agent-row window
         st = {"검증": {"s": "run", "t0": NOW - age - 60, "t1": NOW - age, "n": 1}}

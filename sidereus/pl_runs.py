@@ -378,6 +378,8 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
             if hit is None:
                 mn = x.get("min")
                 t0 = now - 60 * mn if isinstance(mn, int) and not isinstance(mn, bool) and mn >= 0 else now
+                if not aid and t0 < lo:
+                    continue   # ⚠id-less row started before this run = an earlier run's (e.g. a dev-server Bash that never reports completion); agents keep the meta guard above (a continued agent keeps its first start)
                 if title not in stages:
                     if len(stages) >= PLR_STAGES_MAX:
                         continue
