@@ -523,7 +523,8 @@ function archPaint(box, head){
   const src = fv ? archFocusSrc(mods, edges, tests, sel, d.groups, ents, fo, flit, fz, bp) : lay && !sel ? archBandSrc(mods, edges, tests, ARCH.full, d.groups, ents, bp) : archSrc(mods, edges, tests, sel, ARCH.full), any = edges.some(e => e && e.ok), k = archKey(d, sel, tests, ARCH.full, ents, fx) + (sel && fz ? '\t' + fzk : '');
   // ⚠no .archmap in the DOM (back from another main tab / «Size» / a flow) or a view-key change (focus -> overview): put back that view's last scroll (84j7)
   //   instead of the carried one; before archDiagram reads box._arsm. No saved entry = carried scroll (archMmFirst rules apply).
-  if(same && !hold && typeof archMmPick === 'function'){ const od = box.querySelector && box.querySelector('.archdg');
+  // ⚠Also after a project switch (no carried scroll): a map seen earlier is never re-anchored by archMmFirst, so without its saved entry it opened at 0,0.
+  if(!hold && typeof archMmPick === 'function'){ const od = same && box.querySelector && box.querySelector('.archdg');
     const pv = archMmPick(sm, od && od.dataset ? od.dataset.k : null, k); if(pv !== sm){ sm = pv; box._arsm = [sm, sl, sd]; } }
   const fa = Array.isArray(d.flows) && d.flows.length ? archFlowAt(d, p) : null, fl = fa && fa.fi >= 0 ? fa.fls[fa.fi] : null;   // ⚠no flows: no 84k call, same page as before
   // Flow view has no header buttons: a stale map puts its request button in the controls; an open preview sits under the header.

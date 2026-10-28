@@ -129,6 +129,14 @@ class ArchMinimap(unittest.TestCase):
         self.assertLess(i, src.find("archDiagram(box"))   # archDiagram copies box._arsm for a cache-miss fill
         self.assertIn("box._arsm = [sm, sl, sd]", src[i:i + 120])
 
+    def test_paint_restores_saved_scroll_after_project_switch(self):
+        # Back to a map seen earlier from another project: archMmFirst skips seen maps, so the pick must run without `same`.
+        src = js_fn("archPaint")
+        i = src.find("archMmPick(sm, ")
+        head = src[src.rfind("if(", 0, i):i]
+        self.assertNotIn("same && !hold", head)
+        self.assertIn("const od = same &&", head)
+
     def test_pick_on_view_key_change(self):
         # Back to the overview from a focus view: the overview's own saved scroll, not the focus view's carried one.
         r = run("const ARCH_MM = {seen: {}, pos: {}};"
