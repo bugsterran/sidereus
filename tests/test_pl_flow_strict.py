@@ -196,6 +196,13 @@ class Strict(unittest.TestCase):
             self.assertFalse(self.denied(self.bash(c, "x")), c)   # unknown dir: fail-open
         self.assertTrue(self.denied(self.bash("cd $X && echo x > %s" % os.path.join(self.proj, "f.py"), "x")))
 
+    def test_r6_l4_prefixed_commands(self):   # keywords, assignments and env come before the real command
+        for c in ("if true; then sed -i s/a/b/ f.py; fi", "for x in a; do tee f.py; done", "X=1 tee f.py",
+                  "env tee f.py", "env -i A=1 -u B sed -i s/a/b/ f.py", "true && ! tee f.py", "{ tee f.py; }"):
+            self.assertTrue(self.denied(self.bash(c, "x")), c)
+        for c in ("if true; then echo then > /dev/null; fi", "X=1 sed s/a/b/ f.py", "echo env tee f.py"):
+            self.assertFalse(self.denied(self.bash(c, "x")), c)
+
     def test_r6_bash_write_passes_with_open_run(self):
         self.open_run()
         self.assertFalse(self.denied(self.bash("echo x > f.py", "x")))
