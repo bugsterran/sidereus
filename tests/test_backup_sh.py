@@ -21,7 +21,7 @@ class BackupSh(unittest.TestCase):
 
     def run_backup(self):
         env = dict(os.environ, MAILBOX_DIR=self.data, MAILBOX_MCP_SRC=os.path.join(self.tmp, "no-such-mcp"))
-        return subprocess.run(["bash", os.path.join(self.code, "backup.sh")], env=env, capture_output=True, text=True, timeout=30)
+        return subprocess.run(["bash", os.path.join(self.code, "backup.sh")], env=env, capture_output=True, text=True, encoding="utf-8", timeout=30)
 
     def archives(self):
         d = os.path.join(self.data, "backup")
@@ -29,7 +29,7 @@ class BackupSh(unittest.TestCase):
 
     def test_missing_mcp_source_still_backs_up_code(self):
         for p in ("a.py", "web/index.html", "web/js/00-x.js"):
-            with open(os.path.join(self.code, p), "w") as f:
+            with open(os.path.join(self.code, p), "w", encoding="utf-8") as f:
                 f.write("x\n")
         r = self.run_backup()
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)

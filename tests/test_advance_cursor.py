@@ -23,14 +23,14 @@ class AdvanceCursor(unittest.TestCase):
     def test_forward_only(self):
         self.assertEqual(mailbox_core.advance_cursor("me", 10), 10)
         self.assertEqual(mailbox_core.advance_cursor("me", 7), 10)
-        with open(self.f) as fh:
+        with open(self.f, encoding="utf-8") as fh:
             self.assertEqual(fh.read(), "10")
 
     def test_replace_not_truncate(self):
         seen = []
         real = os.replace
         def spy(a, b):
-            with open(b) as fh:
+            with open(b, encoding="utf-8") as fh:
                 seen.append(fh.read())                       # target still holds the old value until the swap
             real(a, b)
         mailbox_core.advance_cursor("me", 5)
