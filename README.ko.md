@@ -91,7 +91,7 @@ python3 -m sidereus start --demo --open      # 18799 포트, Ctrl-C로 끕니다
 - Claude Code. 트랜스크립트는 `~/.claude/projects/`에서 읽습니다(`CLAUDE_CONFIG_DIR`가 있으면 `$CLAUDE_CONFIG_DIR/projects/`).
 - 브랜치·구조·diff 화면에는 `git`이 필요합니다.
 - macOS에서 테스트했습니다. Windows 11은 실제 PC에서 확인했고(2026-10-17), 빠진 기능은 [시작하기](docs/GETTING-STARTED.ko.md#2-뷰어-띄우기)에 있습니다. Linux는 테스트하지 않았습니다.
-- 사용량: `--demo` 서버 RSS 약 45MB — 시작 직후 화면 몇 번 연 상태 (macOS 44MB · Linux 46MB, 세션이 많은 실제 뷰어는 더 씀), 배포 코드 약 11MB, 스크린샷 포함 18MB (macOS, Python 3.9.6, 2026-10-28 측정).
+- 사용량: `--demo` 서버 RSS 44–50MB — 시작 직후 화면 몇 번 연 상태 (macOS·Linux, 세션이 많은 실제 뷰어는 더 씀), 배포 코드 약 11MB, 스크린샷 포함 18MB (macOS, Python 3.9.6, 2026-10-28 측정).
 
 ```sh
 git clone https://github.com/bugsterran/sidereus.git ~/sidereus && cd ~/sidereus
