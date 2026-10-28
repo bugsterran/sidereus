@@ -500,13 +500,13 @@ class ToolIdxStreamSaveTest(unittest.TestCase):
     _write = staticmethod(ToolIdxTest._write)
     setUp, tearDown = ToolIdxDiskTest.setUp, ToolIdxDiskTest.tearDown
 
-    def _fill(self, n):
+    def _fill(self, n, ev=4):
         from array import array
         k = [ti._kid("tool:T%d" % i) for i in range(20)]
         for i in range(n):
             e = ti._new_ent(100 + i, 100 + i)
-            e["ids"], e["ts"] = array("q", range(i * 4, i * 4 + 4)), array("d", [NOW - i] * 4)
-            e["ki"], e["fail"] = array("I", [k[(i + j) % 20] for j in range(4)]), {"k%d" % i: (1.0, "E")} if i % 5 == 0 else {}
+            e["ids"], e["ts"] = array("q", range(i * ev, i * ev + ev)), array("d", [NOW - i] * ev)
+            e["ki"], e["fail"] = array("I", [k[(i + j) % 20] for j in range(ev)]), {"k%d" % i: (1.0, "E")} if i % 5 == 0 else {}
             ti._TI_FILES[os.path.join(self.tmp, "-p", "s%d.jsonl" % i)] = e
         ti._TI_STATE["dirty"], ti._TI_STATE["saved"] = True, -1e9
 
@@ -548,3 +548,26 @@ class ToolIdxStreamSaveTest(unittest.TestCase):
         finally:
             tracemalloc.stop()
         self.assertLess(peak, size // 4)          # joined str + encoded bytes was ~2x size
+
+    def test_snapshot_and_save_peak_is_not_the_whole_file(self):
+        import tracemalloc
+        self._fill(300, 400)                      # ~9 KB rows, as on disk (50 MB over 5,518 files)
+        tracemalloc.start()
+        try:
+            ti._save(ti._snapshot(NOW))
+            peak = tracemalloc.get_traced_memory()[1]
+        finally:
+            tracemalloc.stop()
+        size = os.path.getsize(ti.TI_CACHE)
+        self.assertLess(peak, size // 4)          # every row rendered under the lock was ~1x size
+
+    def test_snapshot_ignores_writes_after_the_lock(self):
+        self._fill(3)
+        want = list(ti._snapshot(NOW))
+        ti._TI_STATE["dirty"], ti._TI_STATE["saved"] = True, -1e9
+        data = ti._snapshot(NOW)
+        for e in ti._TI_FILES.values():           # a scan after release: appends in place, bumps off, adds a fail
+            e["ids"].append(999), e["ts"].append(NOW), e["ki"].append(e["ki"][0])
+            e["off"] += 7
+            e["fail"]["new"] = (2.0, "E")
+        self.assertEqual(list(data), want)

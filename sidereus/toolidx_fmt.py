@@ -1,8 +1,9 @@
-"""Pure helpers for the toolidx disk cache (no toolidx globals): packed-array codec, cache path spelling, hook digest, id sort."""
+"""Pure helpers for the toolidx disk cache (no toolidx globals): packed-array codec, cache path spelling, hook digest, id sort, streamed save rows."""
 import base64
 import contextlib
 import hashlib
 import heapq
+import json
 import os
 import sys
 import tempfile
@@ -85,6 +86,45 @@ def _write_rows(path, rows, prefix):
         with contextlib.suppress(OSError):     # tmp already gone; the original error is re-raised
             os.unlink(tmp)
         raise
+
+
+def _ent_row(fp, ent, names):
+    """Inverse of toolidx `_ent_from`: one compact JSON line (keys written once per file, events as packed arrays)."""
+    loc = {}
+    lk = array("I", [loc.setdefault(g, len(loc)) for g in ent["ki"]])
+    keys = [names[g] for g in sorted(loc, key=loc.get)]
+    return json.dumps([fp, ent["sz"], ent["off"], keys, _b64(ent["ids"]), _b64(ent["ts"]), _b64(lk),
+                       ent["fail"], ent.get("conn", {})], separators=(",", ":"))
+
+
+def _ent_ref(ent):
+    """Lock-time view of `ent`: arrays by reference + their length (scans only append in place; `_trim` swaps in new arrays)."""
+    ids, ts, ki, conn = ent["ids"], ent["ts"], ent["ki"], ent.get("conn")
+    return (ent["sz"], ent["off"], ids, ts, ki, len(ids), len(ts), len(ki),
+            dict(ent["fail"]) if ent["fail"] else None, dict(conn) if conn else None)
+
+
+class _Rows(object):
+    """Cache lines (`head`, then one per `_ent_ref`) rendered one at a time while `_write_rows` streams them.
+    ⚠Rendering every row under the lock held the whole file as strings until the write ended (boot RSS peak, #30)."""
+    __slots__ = ("refs", "head", "names")
+
+    def __init__(self, refs, head, names):
+        self.refs, self.head, self.names = refs, head, names
+
+    def __iter__(self):
+        yield self.head
+        for fp, (sz, off, ids, ts, ki, ni, nt, nk, fail, conn) in self.refs:
+            # grown after the lock was released: cut back to the locked state
+            yield _ent_row(fp, {"sz": sz, "off": off, "ids": ids if len(ids) == ni else ids[:ni],
+                                "ts": ts if len(ts) == nt else ts[:nt], "ki": ki if len(ki) == nk else ki[:nk],
+                                "fail": fail or {}, "conn": conn or {}}, self.names)
+
+    def __len__(self):
+        return len(self.refs) + 1
+
+    def __getitem__(self, i):
+        return list(self)[i]
 
 
 def hook_hash(cmd):
