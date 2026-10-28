@@ -1365,7 +1365,7 @@ def _none_gate(ev, sid, tool, desc, now):
             cmd = _shell_cmd(ev.get("tool_input")) or ""
             # a tagged command already follows the pipeline protocol
             # ⚠no tag short-circuit here: in strict mode a bare/unknown tag must not pass (checked below off strict)
-            if not _COMMIT_RE.search(cmd) or "--dry-run" in cmd:
+            if not _commit_m(cmd):
                 return False
         elif tool not in EDITS:
             return False
@@ -1499,7 +1499,16 @@ def main(argv=None):
 
 
 # `git commit` / `git -C <dir> commit` as a word; the command text itself is never stored.
-_COMMIT_RE = re.compile(r"(?:^|[\s;&|(])git(?:\s+-C\s+(\"[^\"]*\"|'[^']*'|\S+))?\s+commit(?![\w-])")
+# ⚠Global options and a path prefix (/usr/bin/git, git -c k=v, git --no-pager) must still match: strict mode gates commits on it.
+_COMMIT_RE = re.compile(r"(?:^|[\s;&|(])(?:\S*/)?git(?:\s+(?:-C\s+(\"[^\"]*\"|'[^']*'|\S+)|-c\s+\S+|--[\w-]+(?:=\S+)?))*\s+commit(?![\w-])")
+# ⚠--dry-run counts only as an option of that same commit command; a bare substring test let a message text carry it.
+_DRY_RE = re.compile(r"\scommit(?![\w-])[^;&|\n]*?\s--dry-run(?![\w-])")
+
+
+def _commit_m(cmd):
+    """Match of a real (not --dry-run) `git commit` in a shell command, else None."""
+    m = _COMMIT_RE.search(cmd or "")
+    return None if not m or _DRY_RE.search(re.sub(r"\"[^\"]*\"|'[^']*'", "", cmd[m.start():])) else m
 
 
 def _commit_close(ev, now):
@@ -1513,8 +1522,8 @@ def _commit_close(ev, now):
         #   So a subagent commit only stamps cm; main's commit stamps and closes.
         sub = bool(ev.get("agent_id"))
         sid, cwd, cmd = ev.get("session_id"), ev.get("cwd"), _shell_cmd(ev.get("tool_input"))
-        m = _COMMIT_RE.search(cmd or "")
-        if not m or "--dry-run" in cmd or not (isinstance(sid, str) and SID.match(sid) and isinstance(cwd, str) and os.path.isabs(cwd)):
+        m = _commit_m(cmd)
+        if not m or not (isinstance(sid, str) and SID.match(sid) and isinstance(cwd, str) and os.path.isabs(cwd)):
             return
         # ⚠The commit's own tag picks the runs it may close: `[pl:-]` = work outside every run, `[pl:<name>/...]` = that
         #   run only. A pipeline whose file lives in this repo but drives another one (arch-map) was closed mid-run by an

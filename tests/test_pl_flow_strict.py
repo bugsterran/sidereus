@@ -75,6 +75,12 @@ class Strict(unittest.TestCase):
         self.assertFalse(self.denied(self.bash("git commit --dry-run -m x", "dry")))
         self.assertFalse(self.denied(self._ev("Agent", {"description": "look around", "subagent_type": "Explore"})))
 
+    def test_commit_forms_are_gated(self):
+        # Path prefix, global options and a «--dry-run» inside the message are still real commits under strict mode.
+        for cmd in ("/usr/bin/git commit -m x", "git -c user.name=a commit -m x", "git --no-pager commit -m x",
+                    'git commit -m "skip --dry-run next time"'):
+            self.assertTrue(self.denied(self.bash(cmd, "commit")), cmd)
+
     def test_r1_open_run_passes(self):
         self.open_run()
         self.assertFalse(self.denied(self.edit()))
