@@ -232,7 +232,8 @@ def ack_map():
       `at` is never used ⇒ drop `at` + cut note at 60 chars.
     ⚠If the UI starts using `at` (or text past 60 chars), restore it here."""
     try:
-        sys.path.insert(0, CODE_DIR)
+        if CODE_DIR not in sys.path:    # ⚠called per poll: an unconditional insert grew sys.path forever
+            sys.path.insert(0, CODE_DIR)
         import mailbox_core
         # ⚠mailbox_core.acks() swallows read errors, so a partial parse stays cached until the file changes
         parsed, _ = _cached(mailbox_core.ACKS, lambda: (mailbox_core.acks() or {}, None))
@@ -260,7 +261,8 @@ def ack_map():
 def presence():
     """Id -> presence. mailbox_core is the source of truth (same rule as watcher and MCP)."""
     try:
-        sys.path.insert(0, CODE_DIR)
+        if CODE_DIR not in sys.path:    # ⚠called per poll: an unconditional insert grew sys.path forever
+            sys.path.insert(0, CODE_DIR)
         from mailbox_core import presence as core_presence
         return core_presence()
     except Exception as e:
@@ -365,7 +367,8 @@ def thread_close(req, me):
     if not isinstance(th, str) or not th.strip() or len(th) > THREAD_MAX or any(ord(c) < 32 or ord(c) == 127 for c in th):
         return {"ok": False, "error": "Invalid thread name"}
     th = th.strip()
-    sys.path.insert(0, CODE_DIR)
+    if CODE_DIR not in sys.path:    # ⚠called per poll: an unconditional insert grew sys.path forever
+        sys.path.insert(0, CODE_DIR)
     import mailbox_core
     rows = [m for m in messages() if (m.get("thread") or "").strip() == th]
     if not rows:
