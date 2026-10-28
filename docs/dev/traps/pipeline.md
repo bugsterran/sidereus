@@ -297,3 +297,5 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠Deny every time on purpose: the deny-once nudge let a plain retry edit with no run. Never stamp `.none.json` in strict mode.
 - ⚠Subagents check only for an un-ended run (no IDLE_S): a long stage must not be cut off mid-way.
 - ⚠`STRICT_GRACE_S` (15 min) after a run of the session ended still passes: a foreground last stage sets `end`, so the ship commit comes after it. Tags alone never pass in strict mode.
+- ⚠A `"readonly": true` run (review) is skipped in both loops: without it an open review licensed main's edits. A missing/unreadable file counts as not readonly.
+- ⚠Shell writes (`>` `>>` `tee` `sed -i` into the repo) are denied with no run; the check is a heuristic, `python -c`/`cp`/`mv` pass.

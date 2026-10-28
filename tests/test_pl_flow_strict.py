@@ -133,6 +133,98 @@ class Strict(unittest.TestCase):
         self.assertTrue(H._strict(self.proj))
         self.assertFalse(H._strict(self.bare))
 
+    def _review(self, readonly=True, end=0, t1=990.0):
+        with open(os.path.join(self.proj, ".claude", "pipelines", "review.json"), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "name": "review", "readonly": readonly,
+                       "stages": [{"title": "r1", "agent": "general-purpose"}]}, f)
+        os.makedirs(self.marks, exist_ok=True)
+        with open(os.path.join(self.marks, SID + ".runs.json"), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "runs": {"review": {"cur": "r1", "end": end, "t1": t1, "cwd": self.proj}}}, f)
+
+    def test_r5_readonly_run_does_not_license_edits(self):
+        self._review()
+        self.assertTrue(self.denied(self.edit()))
+        self.assertTrue(self.denied(self.bash("git commit -m x", "[pl:review/r1] commit")))
+        self.assertTrue(self.denied(self.edit(agent="agent-1")))
+
+    def test_r5_readonly_run_denied_within_grace(self):
+        self._review(end=900.0, t1=900.0)   # ended 100 s ago, inside STRICT_GRACE_S
+        self.assertTrue(self.denied(self.edit()))
+        self.assertTrue(self.denied(self.bash("git commit -m x", "commit")))
+
+    def test_r5_non_readonly_run_passes(self):
+        self._review(readonly=False)
+        self.assertFalse(self.denied(self.edit()))
+        self.assertFalse(self.denied(self.bash("git commit -m x", "commit")))
+
+    def _tmpdir(self):
+        td = os.path.join(self.tmp, "tmpdir")
+        os.makedirs(td, exist_ok=True)
+        old = os.environ.get("TMPDIR")
+        os.environ["TMPDIR"] = td
+        self.addCleanup(lambda: os.environ.__setitem__("TMPDIR", old) if old is not None else os.environ.pop("TMPDIR", None))
+
+    WRITES = ("sed -i s/a/b/ f.py", "sed -i '' s/a/b/ src/a.py", "echo x > f.py", "echo x >> f.py", "cat a | tee f.py",
+              "cat a | tee -a f.py", "echo x &> f.py", "true;>f.py")
+    PASSES = ("ls >/dev/null 2>&1", "echo x > /tmp/x", "echo x > $TMPDIR/x", "ls 2>&1", "sed s/a/b/ f.py",
+              "cat f.py | grep tee", "echo 'unclosed > f.py")
+
+    def test_r6_bash_writes_denied_without_run(self):
+        self._tmpdir()
+        for c in self.WRITES:
+            self.assertTrue(self.denied(self.bash(c, "x")), c)
+        for c in self.PASSES:
+            self.assertFalse(self.denied(self.bash(c, "x")), c)
+
+    def test_r6_l1_newline_separates_commands(self):
+        self.assertTrue(self.denied(self.bash("echo hi\nsed -i s/a/b/ f.py", "x")))
+        self.assertFalse(self.denied(self.bash("echo 'a\nsed -i s/a/b/ f.py'", "x")))   # quoted newline is data
+
+    def test_r6_l2_heredoc_body_is_data(self):
+        out = os.path.join(self.tmp, "outside", "x.py")
+        self.assertFalse(self.denied(self.bash("cat > %s <<'EOF'\nif n > 0:\n    pass\nEOF" % out, "x")))
+        self.assertFalse(self.denied(self.bash("cat > %s <<-EOF\nx > f.py\n\tEOF\nls" % out, "x")))
+        self.assertTrue(self.denied(self.bash("cat > f.py <<EOF\nhi\nEOF", "x")))
+        self.assertTrue(self.denied(self.bash("cat <<EOF\nhi\nEOF\necho x > f.py", "x")))
+
+    def test_r6_l3_cd_moves_relative_targets(self):
+        out = os.path.join(self.tmp, "outside")
+        os.makedirs(out, exist_ok=True)
+        self.assertFalse(self.denied(self.bash("cd %s && echo x > out" % out, "x")))
+        self.assertTrue(self.denied(self.bash("cd src && echo x > out", "x")))
+        for c in ("cd $X && echo x > out", "cd ~ && echo x > out", "cd - && echo x > out", "cd && echo x > out"):
+            self.assertFalse(self.denied(self.bash(c, "x")), c)   # unknown dir: fail-open
+        self.assertTrue(self.denied(self.bash("cd $X && echo x > %s" % os.path.join(self.proj, "f.py"), "x")))
+
+    def test_r6_bash_write_passes_with_open_run(self):
+        self.open_run()
+        self.assertFalse(self.denied(self.bash("echo x > f.py", "x")))
+
+    def test_r7_non_strict_bash_writes_untouched(self):
+        self._tmpdir()
+        os.remove(os.path.join(self.proj, ".claude", "pipelines", "_policy.json"))
+        for c in self.WRITES + self.PASSES:
+            self.assertFalse(self.denied(self.bash(c, "x")), c)
+        self.assertFalse(os.path.exists(self.nf))   # no nudge stamp: Bash writes are not gated off strict
+
+    def test_r7_non_strict_review_run_still_licenses(self):
+        os.remove(os.path.join(self.proj, ".claude", "pipelines", "_policy.json"))
+        self._review()
+        self.assertFalse(self.denied(self.edit()))
+
+    def test_plugin_copy_identical(self):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, "hooks", "pl_flow.py"), "rb") as a, \
+                open(os.path.join(root, "plugin", "hooks", "pl_flow.py"), "rb") as b:
+            self.assertEqual(a.read(), b.read())
+
+    def test_schema_readonly_must_be_bool(self):
+        from sidereus import pipeline_schema as PS
+        P = {"v": 1, "name": "x", "title": "X", "defaults": {"model": "inherit", "retry": 0},
+             "stages": [{"title": "s", "agent": "general-purpose"}]}
+        self.assertNotIn("readonly: true|false", PS.validate(dict(P, readonly=True), "x"))
+        self.assertIn("readonly: true|false", PS.validate(dict(P, readonly="yes"), "x"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,6 +3,7 @@
   "name": "review",
   "title": "리뷰만",
   "use": "Review only, no edits: read the context of a diff or branch, report findings, keep only those that survive disproof.",
+  "readonly": true,
   "rules": "Follow AGENTS.md in the repo.\nNever commit or push.",
   "defaults": { "model": "inherit", "retry": 0 },
   "stages": [

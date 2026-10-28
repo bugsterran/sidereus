@@ -143,6 +143,9 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
   line; a subagent is denied only when the session has no un-ended run. `[pl-none:explore]` is accepted but unlocks no
   edits; the other categories are refused with a pointer to the `quick-fix` pipeline. A missing or other value keeps the
   deny-once behaviour; «Apply» off bypasses it.
+  A run of a pipeline marked `"readonly": true` (review) licenses no edit or commit, during the run or its grace window.
+  With no run, a Bash command writing a file inside the repo (`>` `>>` `&>` `>|`, `tee`, `sed -i`) is denied too;
+  `/dev/*`, `/tmp` and `$TMPDIR` targets pass. ⚠Heuristic: `python -c`, `cp`, `mv` are not caught.
 - The 3rd `[pl-none:no-fit]` of a project in 7 days adds context (count and project path only, never a deny) asking
   the model to offer a draft pipeline and write `.claude/pipelines/<name>.json` only after the user agrees; once per
   project per 7 days.
