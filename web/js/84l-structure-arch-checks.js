@@ -242,6 +242,8 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
   }
   h += (S.sent ? '' : archChkFixRecHtml(p)) + archChkSentHtml(S);   // after a reload S.sent is gone: the server record (plReq) stands in
   const lg = sec ? archChkLogHtml(sec.log, sec.report) : '<div class=archckst>' + esc(T('No security check yet')) + '</div>';
+  // ⚠empty top: a status line, not an empty <ol> + grip, else the saved split height paints a tall empty box
+  if(!top.length) return h + (sec ? '<div class="archckst ckwnone" role=status>' + esc(T(flt && all.length ? 'No issues match the filters' : 'No scanner findings')) + '</div>' : '') + lg;
   return h + '<ol class=archckl>' + top.map(x => { const k = archChkKey(x), ln = parseInt(x.line, 10) || 1, sv = archChkLv(x.sev), hp = archChkHelp(c, x);
     return '<li class="' + sv + '"><input type=checkbox data-ckk="' + esc(k) + '"' + (S.sel && S.sel[k] ? ' checked' : '') + ' aria-label="' + esc(x.file + ':' + ln) + '"><div class=ckwr>'
       + '<button type=button data-ckv data-af="' + esc(x.file) + '" data-al="' + esc(ln) + '" title="' + esc(T('View code')) + '">'
@@ -368,7 +370,7 @@ function archChkWinOpen(p){
   if(w && ARCH_CW.p === p){ try{ w.focus(); }catch(e){ softErr('archck-focus', e); } archChkWinPaint(); return; }
   if(!w){ try{ w = window.open('', 'sidereus_checks', popFeat(1100, 760, 0) + ',scrollbars=yes,resizable=yes'); }catch(e){ w = null; softErr('archck-open', e); } }
   if(!w){ note(T('Popup blocked — allow popups for this site.')); return; }
-  const css = Array.prototype.map.call(document.querySelectorAll('style'), z => z.textContent).join('\n'), dc = w.document;
+  const css = archChkCssText(document), dc = w.document;
   dc.open();
   dc.write('<!doctype html><meta charset=utf-8><title>' + esc(T('Top issues {n}').replace('{n}', archChkView(ARCH.cache[p], {}, archChkHidden(p)).length)) + '</title><style>' + css + '</style>'
     + '<body class=ckwin><div id=ckroot></div><script>' + ARCH_CW_JS + '</' + 'script>');
@@ -378,11 +380,20 @@ function archChkWinOpen(p){
   try{ w.focus(); }catch(e){ softErr('archck-focus', e); }
   archChkWinPaint();
 }
+function archChkCssText(doc){ return Array.prototype.map.call(doc.querySelectorAll('style'), z => z.textContent).join('\n'); }
+// ⚠The window copies the opener CSS only when written; a repaint after a viewer reload kept the old rules, so resync when they differ.
+function archChkWinCss(doc, wdoc){
+  const s = wdoc && wdoc.querySelector('style'), css = archChkCssText(doc);
+  if(!s || s.textContent === css) return false;
+  s.textContent = css;
+  return true;
+}
 function archChkWinPaint(){
   const S = ARCH_CW, w = S && S.w;
   try{ if(!w || w.closed) return false; }catch(e){ return false; }
   const root = w.document.getElementById('ckroot');
   if(!root) return false;
+  archChkWinCss(document, w.document);
   const cands = archChkFixCands(SESS, S.p), l = root.querySelector('.archckl'), st = l ? l.scrollTop : 0;   // ⚠innerHTML resets the list scroll
   if(S.req && cands.length && !cands.some(c => c.sid === S.req.sid)) S.req.sid = archChkPick(cands, S.p);
   root.innerHTML = archChkWinHtml(S.p, ARCH.cache[S.p], S, cands, archChkFixCands(SESS, S.p, true));
