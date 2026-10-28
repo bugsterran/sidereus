@@ -30,6 +30,8 @@ _COMPOSE = re.compile(r"(?:docker-)?compose[^/]*\.ya?ml")
 _FROM = re.compile(r"\s*FROM\s+(?:--platform=\S+\s+)?(\S+)(?:\s+AS\s+(\S+))?", re.I)
 _IMAGE = re.compile(r"\s*-?\s*image:\s*[\"']?([^\"'\s#]+)")
 _BUILD = re.compile(r"\s*-?\s*build:")
+_ARG = re.compile(r"\s*ARG\s+([A-Za-z_][A-Za-z0-9_]*)=[\"']?([^\"'\s]*)", re.I)
+_VAR = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}|\$([A-Za-z_][A-Za-z0-9_]*)")
 _HEREDOC = re.compile(r"<<-?\s*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?")
 _DB = re.compile(r"vulnerability DB|DB error|trivy-db", re.I)
 _CHECKS = re.compile(r"checks bundle|trivy-checks|policy bundle", re.I)
@@ -57,13 +59,24 @@ def _walk(src):
     return dfs, cps
 
 
+def _sub(ref, args):
+    """Substitute build ARG defaults into a FROM ref; an unknown ARG stays `$...` (detect skips it as WHY_ARG)."""
+    def one(m):
+        name, dflt = m.group(1) or m.group(3), m.group(2)
+        if dflt is not None:
+            return args.get(name) or dflt
+        return args.get(name, m.group(0))
+    return _VAR.sub(one, ref)
+
+
 def refs(src):
     """[{ref, file, line}] base images in walk order: Dockerfile FROM (minus `scratch` and earlier stage aliases) and
     compose `image:`. Refs are raw here; detect() validates them."""
     dfs, cps = _walk(src)
     out = []
     for f in dfs:
-        alias, cont, doc = set(), False, None
+        # ⚠only ARGs declared before the first FROM are in FROM scope (Docker rule); a stage ARG never is
+        alias, cont, doc, args, staged = set(), False, None, {}, False
         for i, ln in enumerate(SC._read(os.path.join(src, f)).splitlines(), 1):
             # ⚠a continuation line or heredoc body (`RUN <<EOF … EOF`) may hold `from x import y`: never a FROM
             if doc is not None:
@@ -73,10 +86,13 @@ def refs(src):
             hd = _HEREDOC.search(ln)
             if hd:
                 doc = hd.group(1)
+            a = None if prev or staged else _ARG.match(ln)
+            if a:
+                args[a.group(1)] = a.group(2)
             m = None if prev else _FROM.match(ln)
             if not m:
                 continue
-            ref = m.group(1)
+            staged, ref = True, _sub(m.group(1), args)
             if ref.lower() != "scratch" and ref.lower() not in alias:
                 out.append({"ref": ref, "file": f, "line": i})
             if m.group(2):
