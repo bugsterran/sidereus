@@ -352,3 +352,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠**A focused control can land under the sticky `.archtop` header** — browsers ignore sticky headers when scrolling a focused element into view.
   - ⇒ `.archmap{scroll-padding-top:var(--archtop-h)}` (`web/css/79-structure-arch.css`; header measured 87 px at 900/1100/1440)
   - ⚠Keep it — `scripts/screen_check.mjs` keyboard walk (Tab ×30 per tab) fails with `focus hidden: tab struct … (covered by div.archleg)` without it.
+
+## Map opened at 0,0 after a project switch (`84j archPaint`, `84j7 archMmPick`)
+
+- Cause: the saved per-view scroll (`ARCH_MM.pos`) was picked only when `same` (same project); `archMmFirst` skips maps already seen, so a seen map reached from another project kept no scroll at all.
+- ⇒ run `archMmPick` without `same`; only the carried old-scroll key (`od`) still needs `same`.
+- ⚠Live checks: the page reloads itself after a restart (new build), which resets `ARCH_MM` mid-test and reads like the bug — compare `performance.timeOrigin` before and after.
