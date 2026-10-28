@@ -354,7 +354,11 @@ function archChkFixRecHtml(p, rec){
   const r = rec !== undefined ? rec : typeof archReqLast === 'function' ? archReqLast(p, 'checks-fix') : null;
   if(!r) return '';
   const a = (typeof ACK !== 'undefined' && ACK && ACK[r.id]) || {}, ak = (Array.isArray(a.ack) ? a.ack : []).filter(x => x && x.who);
-  const rc = r.state === 'done' ? T('Done', 'pl request') : ak.length ? T('acked') + ' · ' + ak.map(x => String(x.who) + (x.note ? ' — ' + String(x.note).slice(0, 60) : '')).join(' · ')
+  // ⚠checks-fix closes only on evidence (a commit, then a re-scan); what the session says (ack note) is not shown.
+  const fx = typeof r.fix === 'string' && /^[0-9a-f]{7,12}$/.test(r.fix) ? r.fix : '', dl = ak.length || (Array.isArray(a.delivered) && a.delivered.length);
+  const rc = r.pipeline === 'checks-fix' ? (r.state === 'done' ? T('re-scan done — {n} issues left').replace('{n}', () => (ARCH.cache[p] ? archChkView(ARCH.cache[p], {}, archChkHidden(p)).length : 0))
+    : fx ? T('fix commit seen {h}').replace('{h}', () => fx) : dl ? T('Delivered') : r.state === 'gone' ? T('No session', 'pl request') : '')
+    : r.state === 'done' ? T('Done', 'pl request') : ak.length ? T('acked') + ' · ' + ak.map(x => String(x.who) + (x.note ? ' — ' + String(x.note).slice(0, 60) : '')).join(' · ')
     : (Array.isArray(a.delivered) && a.delivered.length ? T('Delivered') : r.state === 'gone' ? T('No session', 'pl request') : '');
   return '<div class="archckst archsent" role=status data-ckfx="' + esc(r.id) + '"><span aria-hidden=true>✓</span> '
     + esc(T('Requested → {s} · {t}').replace('{s}', () => archReqWho(r)).replace('{t}', () => hhmm(new Date(archReqMs(r))))) + (rc ? ' · ' + esc(rc) : '') + '</div>';

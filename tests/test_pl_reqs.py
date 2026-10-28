@@ -26,6 +26,11 @@ class _Base(unittest.TestCase):
             p = mock.patch.object(PQ, k, v)
             p.start()
             self.addCleanup(p.stop)
+        self.git = []   # git log text per call; [] = git miss (never the live repo)
+        for k, v in (("_git_log", lambda repo, at: self.git.pop(0) if self.git else None), ("_FIX_CACHE", {})):
+            p = mock.patch.object(PQ, k, v)
+            p.start()
+            self.addCleanup(p.stop)
         self.store = os.path.join(self.tmp, "arch")
         p = mock.patch.object(AM, "ARCH_DIR", self.store)   # gate results: tmp store, never the live one
         p.start()
@@ -139,6 +144,65 @@ class ChecksFixTest(_Base):
         self.assertEqual(st([row]), "done")
         self.assertEqual(st([]), "done")
         self.assertEqual(st([row], "eval-fix"), "sent")                   # eval-fix is not closed by a security result
+
+    def fix_rows(self, rows=None):
+        return {v["pipeline"]: v for v in PQ.view([{"sid": SID, "project": "repo", "state": "think"}] if rows is None else rows, {})[REPO]}
+
+    def test_r1_first_commit_after_request_is_fix(self):
+        self.req(pipeline="checks-fix", mid="f1")
+        self.git = ["c3c3c3c\t%d\nb2b2b2b\t%d\na1a1a1a\t%d\n" % (NOW + 90, NOW + 5, NOW)]   # newest first; a1 = at, not after
+        v = self.fix_rows()["checks-fix"]
+        self.assertEqual((v["state"], v["fix"]), ("sent", "b2b2b2b"))
+
+    def test_r1_commit_at_or_before_request_is_no_fix(self):
+        self.req(pipeline="checks-fix", mid="f1")
+        self.git = ["a1a1a1a\t%d\n0f0f0f0\t%d\n" % (NOW, NOW - 50)]
+        self.assertNotIn("fix", self.fix_rows()["checks-fix"])
+
+    def test_r2_newer_result_is_done(self):
+        self.req(pipeline="checks-fix", mid="f1")
+        self.git = ["b2b2b2b\t%d\n" % (NOW + 5)]
+        with mock.patch.object(AM, "result_at", lambda pl, repo: NOW + 100 if pl == "security-checks" else 0.0):
+            v = self.fix_rows()["checks-fix"]
+        self.assertEqual(v["state"], "done")
+
+    def test_r3_no_commit_no_rescan_stays_sent(self):
+        self.req(pipeline="checks-fix", mid="f1")
+        v = self.fix_rows()["checks-fix"]
+        self.assertEqual(v["state"], "sent")
+        self.assertNotIn("fix", v)
+
+    def test_r4_only_hex_hash_reaches_the_row(self):
+        self.req(pipeline="checks-fix", mid="f1")
+        self.git = ["ZZZ<b>xx\t%d\tsecret subject\nb2b2b2b secret\t%d\n" % (NOW + 9, NOW + 8)]
+        v = self.fix_rows()["checks-fix"]
+        self.assertNotIn("fix", v)
+        self.assertNotIn("secret", json.dumps(v))
+        self.assertNotIn("<b>", json.dumps(v))
+        self.git = ["b2b2b2b\t%d\tsecret subject\n" % (NOW + 8)]
+        PQ._FIX_CACHE.clear()
+        v = self.fix_rows()["checks-fix"]
+        self.assertEqual(v["fix"], "b2b2b2b")
+        self.assertNotIn("secret", json.dumps(v))
+
+    def test_fix_cache_hit_and_miss_ttl(self):
+        self.req(pipeline="checks-fix", mid="f1")
+        self.assertNotIn("fix", self.fix_rows()["checks-fix"])
+        self.git = ["b2b2b2b\t%d\n" % (NOW + 5)]
+        self.assertNotIn("fix", self.fix_rows()["checks-fix"])                  # miss cached for FIX_MISS_S
+        with mock.patch.object(PQ, "_now", lambda: NOW + PQ.FIX_MISS_S):
+            self.assertEqual(self.fix_rows()["checks-fix"]["fix"], "b2b2b2b")
+        self.assertEqual(self.fix_rows()["checks-fix"]["fix"], "b2b2b2b")        # hit is permanent: no git call left
+        self.assertEqual(self.git, [])
+        for i in range(PQ.FIX_CACHE_MAX + 5):
+            PQ._fix_commit(REPO, NOW - i, NOW)
+        self.assertEqual(len(PQ._FIX_CACHE), PQ.FIX_CACHE_MAX)
+
+    def test_eval_fix_gets_no_fix(self):
+        PQ.record({"kind": "req", "pipeline": "eval-fix", "repo": REPO, "name": "x"}, SID, "alice", "e1")
+        self.git = ["b2b2b2b\t%d\n" % (NOW + 5)]
+        self.assertNotIn("fix", self.fix_rows()["eval-fix"])
+        self.assertEqual(len(self.git), 1)                                      # no git call for eval-fix
 
     def test_fix_rows_do_not_crowd_out_runs(self):
         self.req(mid="a1")

@@ -552,17 +552,32 @@ class StructArchCheckFilters(unittest.TestCase):
                 "ACK.f1 = {ack: [{who: 'me', note: '<b>done</b>'}]}; const h2 = archChkWinHtml('/r', d, {sel: {}, req: null}, []);"
                 "const h3 = archChkWinHtml('/r', d, {sel: {}, req: null, sent: {to: 'x', at: '1:00', key: 'k'}}, []);"
                 "PLREQ = {}; const h4 = archChkWinHtml('/r', d, {sel: {}, req: null}, []);"
-                "ACK.f1 = {delivered: ['me']}; const h5 = archChkFixRecHtml('/r', " + json.dumps(dict(rec, state="done")) + ");"
+                "ACK.f1 = {delivered: ['me']}; ARCH.cache['/r'] = d; const h5 = archChkFixRecHtml('/r', " + json.dumps(dict(rec, state="done")) + ");"
                 "console.log(JSON.stringify([h0, h1, h2, h3, h4, h5]));")
-        self.assertIn(" · 완료</div>", r[5])                                   # re-scan after the fix: done, not «Delivered»
+        self.assertIn(" · 재점검 완료 — 남은 이슈 2</div>", r[5])              # R2: re-scan after the fix closes the line, n = window title count
         self.assertNotIn("전달됨", r[5])
         self.assertIn('data-ckfx="f1"', r[0])
         self.assertIn("요청함 → r · s1abcdef · me · 22:13", r[0])
         self.assertIn("전달됨", r[1])
-        self.assertIn("me — &lt;b&gt;done&lt;/b&gt;", r[2])                   # ack note escaped
-        self.assertNotIn("<b>done", r[2])
+        self.assertIn(" · 전달됨</div>", r[2])                                  # R3: an ack note is not evidence: still «Delivered»
+        self.assertNotIn("done", r[2])
         self.assertNotIn("data-ckfx", r[3])                                    # this tab's own send line wins
         self.assertNotIn("data-ckfx", r[4])
+
+    def test_fix_request_line_follows_commit_then_rescan(self):   # R1-R4: commit hash, then re-scan count; eval-fix unchanged
+        rec = {"id": "f1", "pipeline": "checks-fix", "sid": "s1abcdef99", "to": "me", "project": "r", "state": "sent", "at": 1700000000}
+        ev = {"id": "e1", "pipeline": "eval-fix", "name": "p", "sid": "s1abcdef99", "to": "me", "project": "r", "state": "sent", "at": 1700000000}
+        r = run("ARCH.cache['/r'] = {checks: " + json.dumps(CK) + "}; const ACK = globalThis.ACK = {f1: {ack: [{who: 'me', note: 'fixed it'}]}, e1: {ack: [{who: 'me', note: 'ok'}]}};"
+                "const R = x => archChkFixRecHtml('/r', x);"
+                "console.log(JSON.stringify([R(" + json.dumps(dict(rec, fix="abc1234")) + "), R(" + json.dumps(dict(rec, state="done", fix="abc1234")) + "),"
+                " R(" + json.dumps(rec) + "), R(" + json.dumps(dict(rec, fix="<b>msg</b>")) + "), R(" + json.dumps(ev) + ")]));", lang="en")
+        self.assertIn(" · fix commit seen abc1234</div>", r[0])           # R1
+        self.assertIn(" · re-scan done — 2 issues left</div>", r[1])      # R2
+        self.assertIn(" · Delivered</div>", r[2])                         # R3: ack note not shown
+        self.assertNotIn("fixed it", r[2])
+        self.assertIn(" · Delivered</div>", r[3])                         # R4: a non-hash value never reaches the page
+        self.assertNotIn("msg", r[3])
+        self.assertIn("acked · me — ok", r[4])                            # eval-fix line unchanged
 
     def test_issues_history_split_grip(self):   # vertical grip between findings and history: markup, clamp, keys, saved px, reset
         log = {"at_scan": 1, "open": [{"file": "a.py", "line": 3, "sev": "high", "key": "semgrep:r1"}]}
