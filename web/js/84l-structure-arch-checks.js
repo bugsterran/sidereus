@@ -352,7 +352,7 @@ function archChkFixRecHtml(p, rec){
   const r = rec !== undefined ? rec : typeof archReqLast === 'function' ? archReqLast(p, 'checks-fix') : null;
   if(!r) return '';
   const a = (typeof ACK !== 'undefined' && ACK && ACK[r.id]) || {}, ak = (Array.isArray(a.ack) ? a.ack : []).filter(x => x && x.who);
-  const rc = ak.length ? T('acked') + ' · ' + ak.map(x => String(x.who) + (x.note ? ' — ' + String(x.note).slice(0, 60) : '')).join(' · ')
+  const rc = r.state === 'done' ? T('Done', 'pl request') : ak.length ? T('acked') + ' · ' + ak.map(x => String(x.who) + (x.note ? ' — ' + String(x.note).slice(0, 60) : '')).join(' · ')
     : (Array.isArray(a.delivered) && a.delivered.length ? T('Delivered') : r.state === 'gone' ? T('No session', 'pl request') : '');
   return '<div class="archckst archsent" role=status data-ckfx="' + esc(r.id) + '"><span aria-hidden=true>✓</span> '
     + esc(T('Requested → {s} · {t}').replace('{s}', () => archReqWho(r)).replace('{t}', () => hhmm(new Date(archReqMs(r))))) + (rc ? ' · ' + esc(rc) : '') + '</div>';

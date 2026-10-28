@@ -122,6 +122,24 @@ class ChecksFixTest(_Base):
             self.assertEqual(set(json.load(f)["reqs"][0]), {"id", "repo", "pipeline", "sid", "to", "mid", "at"})   # no body
         self.assertIsNotNone(PQ.check({"kind": "stop", "pipeline": "checks-fix", "repo": REPO, "of": "f1"}, ok)[1])
 
+    def test_checks_fix_done_after_newer_security_result(self):   # the re-scan after the fix closes the line
+        PQ.record({"kind": "req", "pipeline": "checks-fix", "repo": REPO}, SID, "alice", "f1")
+        PQ.record({"kind": "req", "pipeline": "eval-fix", "repo": REPO, "name": "x"}, SID, "alice", "e1")
+        row = {"sid": SID, "project": "repo", "state": "think"}
+        st = lambda rows, pl="checks-fix": [v["state"] for v in PQ.view(rows, {})[REPO] if v["pipeline"] == pl][0]
+        self.assertEqual(st([row]), "sent")
+        self.assertEqual(st([]), "gone")
+        d = os.path.join(self.store, AM.repo_key(REPO))
+        os.makedirs(d)
+        with open(os.path.join(d, AM.SEC_LOG_FILE), "w", encoding="utf-8") as f:
+            f.write(json.dumps({"v": 1, "at": NOW - 10, "src": "review"}) + "\n")
+        self.assertEqual(st([row]), "sent")                               # older result: not the re-scan
+        with open(os.path.join(d, AM.SEC_LOG_FILE), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"v": 1, "at": NOW + 400, "src": "review"}) + "\n")
+        self.assertEqual(st([row]), "done")
+        self.assertEqual(st([]), "done")
+        self.assertEqual(st([row], "eval-fix"), "sent")                   # eval-fix is not closed by a security result
+
     def test_fix_rows_do_not_crowd_out_runs(self):
         self.req(mid="a1")
         for i in range(PQ.VIEW_PER_REPO + 2):
