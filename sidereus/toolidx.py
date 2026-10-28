@@ -25,7 +25,7 @@ from sidereus import boot_queue
 from sidereus.transcript import CLAUDE_PROJECTS, iso_epoch
 from sidereus.agents import sub_globs
 from sidereus.claude_roots import projects_dirs
-from sidereus.toolidx_fmt import _arr, _b64, _canon, _merge_sorted, _num, _write_rows, hook_hash   # hook_hash re-exported for harness
+from sidereus.toolidx_fmt import _Rows, _arr, _canon, _ent_ref, _merge_sorted, _num, _write_rows, hook_hash   # hook_hash re-exported for harness
 
 TI_MAX_DAYS = 90             # widest window the screen can ask for; older files are not read
 TI_TTL_S = 30                # result cache per `days`
@@ -344,15 +344,6 @@ def _ent_from(row, cut=-_INF):
     return fp, ent
 
 
-def _ent_row(fp, ent):
-    """Inverse of `_ent_from`: one compact JSON line (keys written once per file, events as packed arrays)."""
-    loc = {}
-    lk = array("I", [loc.setdefault(g, len(loc)) for g in ent["ki"]])
-    keys = [_TI_KEYS[g] for g in sorted(loc, key=loc.get)]
-    return json.dumps([fp, ent["sz"], ent["off"], keys, _b64(ent["ids"]), _b64(ent["ts"]), _b64(lk),
-                       ent["fail"], ent.get("conn", {})], separators=(",", ":"))
-
-
 def _snapshot(now):
     """Lines to persist (call under the lock, only when caught up), or None when unchanged / saved recently."""
     if not (_disk_ok() and _TI_STATE["dirty"]) or 0 <= now - _TI_STATE["saved"] < TI_SAVE_S:
@@ -360,7 +351,7 @@ def _snapshot(now):
     _TI_STATE["dirty"], _TI_STATE["saved"] = False, now
     # ⚠Only the primary root is persisted: extra account roots are rescanned cold after every restart.
     pre = CLAUDE_PROJECTS.rstrip(os.sep) + os.sep
-    return ['{"v":%d}' % TI_CACHE_V] + [_ent_row(k, v) for k, v in _TI_FILES.items() if k.startswith(pre)]
+    return _Rows([(k, _ent_ref(v)) for k, v in _TI_FILES.items() if k.startswith(pre)], '{"v":%d}' % TI_CACHE_V, _TI_KEYS)
 
 
 def _save(data):
