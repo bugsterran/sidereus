@@ -23,6 +23,7 @@ import io
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -1356,6 +1357,109 @@ def _strict_why(proj, names):
             "Small changes: [pl:quick-fix/수정]. [pl-none:explore] allows exploring only." % "\n".join(rows))
 
 
+def _readonly(proj, name):
+    """True only when <proj>/.claude/pipelines/<name>.json has "readonly": true; missing/unreadable = False, so the
+    run still licenses edits as before (the readonly skip never applies on doubt)."""
+    try:
+        if not (isinstance(name, str) and _PLNAME.fullmatch(name) and isinstance(proj, str)):
+            return False
+        with open(os.path.join(proj, ".claude", "pipelines", name + ".json"), encoding="utf-8") as f:
+            d = json.load(f)
+        return isinstance(d, dict) and d.get("readonly") is True
+    except Exception:
+        return False
+
+
+_SHELL_PUNCT = "();<>|&\n"   # ⚠an unquoted newline separates commands like `;`
+_SHELL_SEP = set(";|&()\n")   # punctuation that ends one shell command
+# POSIX scratch roots (built from os.sep for tests/test_win_static.py); on Windows they resolve to \dev, \tmp on the
+# current drive, which only widens the pass list there; tempfile.gettempdir() covers the Windows temp dir
+_HEREDOC = re.compile(r"(?<!<)<<(?!<)-?\s*(['\"]?)([A-Za-z0-9_]+)\1")
+_WRITE_PASS = tuple(os.path.join(os.sep, *x) for x in (("dev",), ("tmp",), ("private", "tmp")))
+
+
+def _punct(t):
+    return bool(t) and all(c in _SHELL_PUNCT for c in t)
+
+
+def _drop_heredocs(cmd):
+    """Shell text without heredoc bodies (the `<<WORD` line itself stays): a body is data, not commands."""
+    out, pend = [], []
+    for line in cmd.split("\n"):
+        if pend:
+            if line.strip() == pend[0]:
+                pend.pop(0)
+            continue
+        out.append(line)
+        pend = [m.group(2) for m in _HEREDOC.finditer(line)]
+    return "\n".join(out)
+
+
+def _bash_writes(cmd, cwd, proj):
+    """Heuristic: True when the shell command writes a file inside `proj` via > >> &> >| (>& to a file), tee or
+    sed -i. ⚠python -c, cp, mv are not caught. Unparseable text (ValueError) = False (fail-open)."""
+    try:
+        lx = shlex.shlex(_drop_heredocs(cmd or ""), posix=True, punctuation_chars=_SHELL_PUNCT)
+        lx.whitespace, lx.whitespace_split = " \t\r", True
+        toks = list(lx)
+    except ValueError:
+        return False
+    base_dir = cwd if isinstance(cwd, str) else proj
+    targets, i, n, cur = [], 0, len(toks), base_dir   # cur: directory after a literal `cd`; None = unknown
+    while i < n:
+        t, prev = toks[i], toks[i - 1] if i else None
+        if _punct(t) and ">" in t:
+            op = t[t.find(">"):]
+            if i + 1 < n and not _punct(toks[i + 1]):
+                tg = toks[i + 1]
+                # ⚠>& N / >&- duplicate a descriptor; only a word target is a file
+                if not (tg.isdigit() or (op.startswith(">&") and tg == "-")):
+                    targets.append((tg, cur))
+                i += 1
+        elif not _punct(t) and (prev is None or _punct(prev) and any(c in _SHELL_SEP for c in prev)):
+            base = os.path.basename(t)
+            j, args = i + 1, []
+            while j < n and not _punct(toks[j]):
+                args.append(toks[j])
+                j += 1
+            if base == "cd":
+                # ⚠a later relative target resolves against a literal cd; any other form = unknown dir (fail-open)
+                a = args[0] if args else ""
+                lit = bool(a) and cur is not None and not (a[0] in "~-" or "$" in a or "`" in a)
+                cur = os.path.normpath(os.path.join(cur, a)) if lit else None
+            elif base == "tee":
+                targets += [(a, cur) for a in args if a and not a.startswith("-")]
+            elif base in ("sed", "gsed") and any(a == "--in-place" or a.startswith("--in-place=")
+                                                 or re.match(r"-[A-Za-z]*i", a) for a in args):
+                words, script = [], any(a in ("-e", "-f") or a.startswith("--expression") for a in args)
+                k = 0
+                while k < len(args):
+                    a = args[k]
+                    if a in ("-e", "-f"):
+                        k += 2
+                        continue
+                    if a and not a.startswith("-"):
+                        words.append(a)
+                    k += 1
+                targets += [(w, cur) for w in (words if script else words[1:])]
+            i = j - 1
+        i += 1
+    root = os.path.realpath(proj)
+    tmpd = os.environ.get("TMPDIR")
+    passes = [os.path.realpath(p) for p in _WRITE_PASS + (tempfile.gettempdir(),) + ((tmpd,) if tmpd else ())]
+    for tg, d in targets:
+        tg = os.path.expanduser(os.path.expandvars(tg))
+        if "$" in tg or "`" in tg or (d is None and not os.path.isabs(tg)):
+            continue   # unresolved expansion or unknown cd: unknown target, fail-open
+        p = os.path.realpath(os.path.join(d or base_dir, tg))
+        # ⚠a tmp root passes only when the repo itself is not under it (test repos live in /tmp on Linux)
+        if any((p == q or p.startswith(q + os.sep)) and not (root == q or root.startswith(q + os.sep)) for q in passes):
+            continue
+        if p == root or p.startswith(root + os.sep):
+            return True
+    return False
+
+
 def _none_gate(ev, sid, tool, desc, now):
     """First file edit / main `git commit` of a session in a pipeline project with no open run and no [pl-none]:
     deny once with the pipeline names; in strict mode (_strict) deny every time. True when denied; fail-open."""
@@ -1366,7 +1470,9 @@ def _none_gate(ev, sid, tool, desc, now):
             # a tagged command already follows the pipeline protocol
             # ⚠no tag short-circuit here: in strict mode a bare/unknown tag must not pass (checked below off strict)
             if not _commit_m(cmd):
-                return False
+                bp = _none_proj(ev, tool)   # strict only: a shell write into the repo is gated like an edit
+                if not (bp and _strict(bp) and _bash_writes(cmd, ev.get("cwd"), bp)):
+                    return False
         elif tool not in EDITS:
             return False
         proj = _none_proj(ev, tool)
@@ -1380,8 +1486,11 @@ def _none_gate(ev, sid, tool, desc, now):
             d = _none_load(p)
             if d.get("cat") or d.get("nudge") or "[pl" in desc:
                 return False
-        runs = _load(os.path.join(MARK_DIR, sid + ".runs.json"))["runs"].values()
-        for r in runs:
+        runs = _load(os.path.join(MARK_DIR, sid + ".runs.json"))["runs"].items()
+        for rn, r in runs:
+            # ⚠strict: a read-only pipeline run (review) never licenses edits or commits
+            if strict and isinstance(r, dict) and _readonly(r.get("proj") or r.get("cwd") or proj, rn):
+                continue
             # ⚠subagent: any un-ended run counts (no IDLE_S), so a long stage is never cut off mid-way
             if isinstance(r, dict) and not r.get("end") and (sub or now - float(r.get("t1") or 0) <= IDLE_S):
                 return False

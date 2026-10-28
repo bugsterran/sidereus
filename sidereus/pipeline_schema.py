@@ -86,7 +86,9 @@ def validate(P, name):
         errs.append("rules: string <= 2000")
     if "after" in P and not (isinstance(P["after"], list) and all(_one_line(x, 200) for x in P["after"])):
         errs.append("after: array of one-line strings")
-    D = P.get("defaults") if isinstance(P.get("defaults"), dict) else {}
+    if "readonly" in P and not isinstance(P["readonly"], bool):   # strict mode: a readonly run allows no edits (hooks/pl_flow.py)
+        errs.append("readonly: true|false")
+    D =P.get("defaults") if isinstance(P.get("defaults"), dict) else {}
     if D.get("model") not in MODELS:
         errs.append("defaults.model: inherit|opus|sonnet|haiku")
     if not _is_int(D.get("retry"), 0, 3):

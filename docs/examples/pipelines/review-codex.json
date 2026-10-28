@@ -3,6 +3,7 @@
   "name": "review-codex",
   "title": "Review (Codex CLI, untested)",
   "use": "Untested template: one-pass Codex review, a separate verify pass, block only on confirmed P0/P1 findings.",
+  "readonly": true,
   "rules": "Read the nearest AGENTS.md section «Code Review Rules» (older repos: «Review guidelines»); it defines what counts as a defect.\nRead-only: never edit, commit or push.\nStart each stage with a shell command `echo \"[pl:review-codex/<stage>]\"` and end it with `echo \"[pl-end:review-codex/<stage>]\"` (append `|fail` inside the brackets on FAIL) so Sidereus can light it.\nEvery finding = file:line + the rule or failure scenario. Style and formatting are not findings (CI owns them).",
   "after": ["Before pushing, a person can also run /review in Codex CLI on the same branch."],
   "defaults": { "model": "inherit", "retry": 0 },

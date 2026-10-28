@@ -3,6 +3,7 @@
   "name": "review-gemini",
   "title": "Review (Gemini CLI, untested)",
   "use": "Untested template: one-pass Gemini review, a separate verify pass, block only on confirmed HIGH/CRITICAL findings.",
+  "readonly": true,
   "rules": "Read .gemini/styleguide.md and .gemini/config.yaml first: skip files matching code_review.ignore_patterns and report nothing below code_review.comment_severity_threshold (MEDIUM when unset).\nRead-only: never edit, commit or push.\nStart each stage with a shell command `echo \"[pl:review-gemini/<stage>]\"` and end it with `echo \"[pl-end:review-gemini/<stage>]\"` (append `|fail` inside the brackets on FAIL) so Sidereus can light it.\nEvery finding = file:line + the rule or failure scenario. Style and formatting are not findings (CI owns them).",
   "defaults": { "model": "inherit", "retry": 0 },
   "stages": [

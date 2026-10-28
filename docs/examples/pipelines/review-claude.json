@@ -3,6 +3,7 @@
   "name": "review-claude",
   "title": "Review (Claude Code)",
   "use": "Review a diff before merge: parallel finders, a separate verifier, block only on confirmed Important findings.",
+  "readonly": true,
   "rules": "Read REVIEW.md (or .claude/review-guide.md) and AGENTS.md/CLAUDE.md first; they define what counts as a defect.\nRead-only: never edit, commit or push.\nEvery finding = file:line + the rule or failure scenario. Style, naming, formatting and cleanup are not findings (CI and linters own them).",
   "after": ["Keep the verify ledger (id, rule, verdict) to measure how many findings the author acted on."],
   "defaults": { "model": "inherit", "retry": 0 },
