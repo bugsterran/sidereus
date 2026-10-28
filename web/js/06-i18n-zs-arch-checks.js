@@ -42,4 +42,6 @@ Object.assign(I18N.ko, {
   '{n} images': '이미지 {n}개',
   'Container images not scanned — trivy is not installed': '컨테이너 이미지 검사 안 됨 — trivy 가 설치되지 않음',
   'Base images not scanned — tick «Include images» when requesting the check': '베이스 이미지 검사 안 됨 — 점검 요청 때 «이미지 포함»을 체크하세요',
+  'No scanner findings': '도구가 찾은 문제 없음',
+  'No issues match the filters': '필터에 맞는 문제 없음',
 });

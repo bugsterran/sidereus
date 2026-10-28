@@ -20,6 +20,7 @@ FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archCh
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqWho",
         "archReqRowHtml", "archChkProgHtml", "archChkFixRecHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
 FNS += ["archChkSplitGet", "archChkSplitGrip", "archChkSplitClamp", "archChkSplitEls", "archChkSplitAria", "archChkSplitSet", "archChkSplitMove", "archChkSplitReset", "archChkSplitKey"]   # issues | history grip
+FNS += ["archChkSplitPaint", "archChkCssText", "archChkWinCss"]   # split restore on paint, window CSS resync
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
 with open(_SRC_P, encoding="utf-8") as fh:
     _SRC = fh.read()
@@ -601,9 +602,37 @@ class StructArchCheckFilters(unittest.TestCase):
         self.assertIn("#ckroot.cksz>.archckl{box-sizing:border-box;min-height:96px}", css)
         self.assertIn("'pointerdown','dblclick'", _SRC)                     # the window forwards the drag and reset events
 
+    def test_empty_top_has_no_list_and_split_off(self):   # 0 findings: status line, no empty <ol>/grip, saved split height not applied
+        log = {"at_scan": 1, "open": [{"file": "a.py", "line": 3, "sev": "high", "key": "semgrep:r1"}]}
+        sec = dict(CHECKS, top=[], log=log)
+        r = run("globalThis.lsJson = () => 423; globalThis.ARCH_CW = null; const D = {checks: {security: SEC}};"
+                "const h = archChkWinHtml('/r', D, {sel: {}}, []);"
+                "const f = archChkWinHtml('/r', {checks: {security: Object.assign({}, SEC, {top: [{tool: 't', file: 'a.py', line: 1, sev: 'low'}]})}}, {sel: {}, sev: 'critical'}, []);"
+                "const hl = h.indexOf('<ol class=\"archckl ckwlog\">') >= 0;"
+                "const root = {cls: new Set(), classList: {add(c){ root.cls.add(c); }, remove(c){ root.cls.delete(c); }}, style: {setProperty(){}, removeProperty(){}},"
+                " querySelector(s){ return s.indexOf(':not(.ckwlog)') >= 0 ? (h.indexOf('<ol class=archckl>') >= 0 ? {} : null) : s.indexOf('ckwlog') >= 0 ? (hl ? {} : null) : null; }};"
+                "archChkSplitPaint(root);"
+                "console.log(JSON.stringify([h, f, root.cls.has('cksz'), hl]));".replace("SEC", json.dumps(sec)), lang="en")
+        h, f = r[0], r[1]
+        self.assertNotIn("<ol class=archckl>", h)
+        self.assertNotIn("data-ckgr", h)
+        self.assertIn('<div class="archckst ckwnone" role=status>No scanner findings</div>', h)
+        self.assertTrue(r[3])                                                 # the history list stays
+        self.assertFalse(r[2])                                                # split off: no saved height on an empty box
+        self.assertIn(">No issues match the filters</div>", f)                # filters hid every finding
+        self.assertNotIn("<ol class=archckl>", f)
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_repaint_resyncs_window_css(self):   # a window written before a viewer reload gets the opener's current CSS on repaint
+        r = run("const doc = css => ({querySelectorAll(){ return css.map(t => ({textContent: t})); }});"
+                "const st = {textContent: 'old'}, wd = {querySelector(s){ return s === 'style' ? st : null; }};"
+                "const a = archChkWinCss(doc(['a{}', 'b{}']), wd), t1 = st.textContent, b = archChkWinCss(doc(['a{}', 'b{}']), wd);"
+                "const c = archChkWinCss(doc(['x{}']), {querySelector(){ return null; }});"
+                "console.log(JSON.stringify([a, t1, b, c]));")
+        self.assertEqual(r, [True, "a{}\nb{}", False, False])
+        self.assertIn("archChkWinCss(document, w.document);", _SRC)          # wired into archChkWinPaint
+        with open(os.path.join(os.path.dirname(_SRC_P), "..", "css", "79-structure-arch.css"), encoding="utf-8") as fh:
+            self.assertIn("padding:12px 16px;overflow-x:auto}", fh.read())
+
 
     def test_last_check_line(self):   # «Last check MM-DD HH:MM · Nd ago», overdue past 30 days, «Never checked» without a scan
         at = CHECKS["at"]
@@ -639,3 +668,7 @@ if __name__ == "__main__":
         self.assertIn("--category security --images</code>", r[6])
         self.assertIn("CVE-2024-1 · 2 images", r[7])         # mailbox text stays English
         self.assertNotIn("이미지", r[7])
+
+
+if __name__ == "__main__":
+    unittest.main()

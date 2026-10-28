@@ -87,3 +87,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **Work log cut before redact** (`sidereus/steps.py` `_cut`, all caps in `_scan_blocks` / `_work_scan`): ★a fake DSN straddling the 4000 say cap showed `postgresql://u:FakePw123` — `_USERINFO` needs `@`, `_JSONKV` the closing quote.
   - ⇒ `_cut` redacts `s[:n + 2048]` then cuts; `redact_work` stays as the second pass; `cut` flags compare raw lengths.
   - ⚠Never cut raw text before redacting it.
+- **Issues window: empty list and stale CSS** (`web/js/84l-structure-arch-checks.js` `archChkWinHtml` · `archChkWinCss`): 0 findings still emitted `<ol>` + grip, so the saved `sidereus.ckwh` (423 px) painted a tall empty box; the window's `<style>` was copied only when written, so a repaint after a viewer reload kept old CSS (right side clipped).
+  - ⇒ empty top = one `.archckst` status line, no grip (split off); every paint resyncs the window `<style>` when the opener CSS differs; `#ckroot` has `overflow-x:auto`.
+  - ⚠Never emit an empty findings `<ol>` — `archChkSplitEls` keys the split on both lists existing.
