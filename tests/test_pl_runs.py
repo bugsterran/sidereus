@@ -242,7 +242,7 @@ class PlModel(unittest.TestCase):
     def test_open_bg_keeps_stage_run(self):
         # Turn ended (act idle), main marker expired: an open tagged bg task keeps its stage running; without it, done.
         st = {"구현": {"s": "run", "t0": NOW - 70, "t1": NOW - 60, "n": 1}}
-        self._file({"sidereus-change": self._r(st=st)})
+        self._file({"sidereus-change": self._r(st=st, t0=NOW - 300)})   # the bg task started inside the run
         bgs = [{"lab": "[pl:sidereus-change/구현] run gates", "min": 3}, {"lab": "plain bg", "min": 1}]
         s = PR.pl_model(SID, self.sd, [], None, NOW, "idle", (), bgs)[0]["stages"]["구현"]
         self.assertEqual(s["o"], "run")
