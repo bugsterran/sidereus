@@ -79,6 +79,19 @@ class CcSettings(unittest.TestCase):
         self.assertFalse([f for f in os.listdir(self.tmp) if ".sidereus-tmp." in f])
         self.assertFalse(os.path.exists(self.cp))                         # enabled toggle does not touch compact_history
 
+    @unittest.skipIf(os.name == "nt", "symlinks need admin on Windows")
+    def test_symlinked_primary_stays_a_link(self):
+        real = os.path.join(self.tmp, "dotfiles-settings.json")
+        with open(real, "w", encoding="utf-8") as f:
+            json.dump(SETTINGS, f, indent=2)
+        os.symlink(real, self.sp)
+        code, out, _ = post("/api/prefs/set", {"key": "cc_auto_compact", "value": False}, origin=ORIGIN)
+        self.assertEqual((code, out["ok"]), (200, True))
+        self.assertTrue(os.path.islink(self.sp))                          # link kept, target rewritten
+        with open(real, encoding="utf-8") as f:
+            self.assertIs(json.load(f)["autoCompactEnabled"], False)
+        self.assertFalse([f for f in os.listdir(self.tmp) if ".sidereus-tmp." in f])
+
     def test_indent2_file_changes_one_line(self):
         self._put()
         old = self._bytes().decode("utf-8").splitlines()

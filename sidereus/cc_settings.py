@@ -169,6 +169,8 @@ def _write_raw(p, raw, new_raw, label=None, into=None):
     """Backup, then atomically replace p with new_raw -> (200, backup path) or (code, error body). Caller holds _LOCK."""
     try:
         bak = _backup(p) if label is None else _backup(p, label, into)
+        # ⚠Write through a symlinked primary (dotfile-managed setups): os.replace on the link itself would swap it for a plain file.
+        p = os.path.realpath(p)
         tmp = "%s.sidereus-tmp.%d" % (p, os.getpid())
         with open(tmp, "wb") as f:
             f.write(new_raw)
