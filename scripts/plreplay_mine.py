@@ -21,8 +21,9 @@ import sys
 TAG = re.compile(r"\[pl(-skip|-model|-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n]{1,80}))\]")
 # Shell marks at the command start (copy of pl_flow MARK, the only place «|fail» is read).
 MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?(\[pl(-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n|]{1,40})(\|fail)?)\])""")
-# ⚠Copies of hooks/pl_flow.py _COMMIT_RE and BG_RE; keep them identical or replays drift from the hook.
-COMMIT_RE = re.compile(r"(?:^|[\s;&|(])git(?:\s+-C\s+(\"[^\"]*\"|'[^']*'|\S+))?\s+commit(?![\w-])")
+# ⚠Copies of hooks/pl_flow.py _COMMIT_RE, _DRY_RE and BG_RE; keep them identical or replays drift from the hook.
+COMMIT_RE = re.compile(r"(?:^|[\s;&|(])(?:\S*/)?git(?:\s+(?:-C\s+(\"[^\"]*\"|'[^']*'|\S+)|-c\s+\S+|--[\w-]+(?:=\S+)?))*\s+commit(?![\w-])")
+DRY_RE = re.compile(r"\scommit(?![\w-])[^;&|\n]*?\s--dry-run(?![\w-])")
 BG_RE = re.compile(r"async_launched|Async agent launched|Resuming agent|resumed from transcript|resumedAgentId|"
                    r"Message queued")
 DENY_RE = re.compile(r"^(?:Error:\s*)?(?:PreToolUse:\S*\s+hook\s+(?:error|denied)|Hook PreToolUse\S*\s+denied)")
@@ -192,7 +193,8 @@ class Miner(object):
             m = MARK.match(cmd)
             if m:
                 ev["mark"] = self._retag(TAG.match(m.group(1))) if TAG.match(m.group(1)) else ""
-            ev["commit"] = 1 if COMMIT_RE.search(cmd) and "--dry-run" not in cmd else 0
+            cm = COMMIT_RE.search(cmd)   # same test as the hook's _commit_m
+            ev["commit"] = 1 if cm and not DRY_RE.search(re.sub(r"\"[^\"]*\"|'[^']*'", "", cmd[cm.start():])) else 0
             if not (tag or ev["commit"] or ev.get("mark")):
                 return None   # an ordinary shell call means nothing to pl_flow
         return ev
