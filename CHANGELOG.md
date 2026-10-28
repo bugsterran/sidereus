@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `backup.sh`: with no mailbox MCP checkout it backs up the code and says the MCP part was skipped, instead of writing an empty archive and reporting success; a failed archive is removed so the keep-10 cleanup never drops a real backup.
 - Structure: going back to a map you had already viewed in another project opens it where you left it, instead of the corner.
 - Pipelines: a background Bash from an earlier run (a dev server that never reports completion) no longer lights a stage of the current run.
 - Harness: the runtime card no longer suggests `brew upgrade` for a runtime already on its latest patch, and suggests moving to a supported cycle for an end-of-life one.

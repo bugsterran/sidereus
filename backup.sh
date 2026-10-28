@@ -11,15 +11,19 @@ OUT="$DATA_DIR/backup"
 STAMP=$(date +%Y%m%d-%H%M%S)
 mkdir -p "$OUT"
 
-tar -czf "$OUT/mailbox-$STAMP.tar.gz" \
-  -C "$CODE_DIR" $(cd "$CODE_DIR" && ls *.py sidereus/*.py *.sh config.example.json features/*.json web/* hooks/*.py ext-hooks/*.py ext-hooks/*.sh ext-hooks/*.json ext-hooks/*.md 2>/dev/null | grep -v '^backup.sh$' | tr '\n' ' ') \
-  -C "$DATA_DIR" $(cd "$DATA_DIR" && ls config.local.json 2>/dev/null) \
-  -C "$MCP_SRC" src pyproject.toml 2>/dev/null
+# ⚠ls -d: plain `ls web/*` expands web/js and web/css into «web/js:» headers plus bare names, which tar cannot find.
+ARC="$OUT/mailbox-$STAMP.tar.gz"
+ARGS=(-C "$CODE_DIR" $(cd "$CODE_DIR" && ls -d *.py sidereus/*.py *.sh config.example.json features/*.json web/* hooks/*.py ext-hooks/*.py ext-hooks/*.sh ext-hooks/*.json ext-hooks/*.md 2>/dev/null | grep -v '^backup.sh$'))
+[ -f "$DATA_DIR/config.local.json" ] && ARGS+=(-C "$DATA_DIR" config.local.json)
+# ⚠The MCP checkout is optional: a missing one made tar fail into a 0-byte archive reported as success, and the keep-10 prune then deleted real backups.
+if [ -d "$MCP_SRC/src" ]; then ARGS+=(-C "$MCP_SRC" src); [ -f "$MCP_SRC/pyproject.toml" ] && ARGS+=(pyproject.toml)
+else echo "   (skip) MCP source not found: $MCP_SRC — set MAILBOX_MCP_SRC"; fi
 
-if [ -f "$OUT/mailbox-$STAMP.tar.gz" ]; then
+if tar -czf "$ARC" "${ARGS[@]}" && [ -s "$ARC" ]; then
   SZ=$(du -h "$OUT/mailbox-$STAMP.tar.gz" | cut -f1)
   echo "✅ 백업: $OUT/mailbox-$STAMP.tar.gz ($SZ)"
 else
+  rm -f "$ARC"    # never leave a partial archive for the prune to count
   echo "⛔ 백업 실패 — 대상 파일을 확인하세요"; exit 1
 fi
 
