@@ -299,3 +299,11 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠`STRICT_GRACE_S` (15 min) after a run of the session ended still passes: a foreground last stage sets `end`, so the ship commit comes after it. Tags alone never pass in strict mode.
 - ⚠A `"readonly": true` run (review) is skipped in both loops: without it an open review licensed main's edits. A missing/unreadable file counts as not readonly.
 - ⚠Shell writes (`>` `>>` `tee` `sed -i` into the repo) are denied with no run; the check is a heuristic, `python -c`/`cp`/`mv` pass.
+
+## A security-fix request locks a repo with no pipelines (`pl_flow._fix_gate` · `_fix_req`)
+- Cause: the request's repo usually has no `.claude/pipelines`, so `_none_gate` returned before any check and edits ran with no run.
+- Fix: `_fix_gate` runs first in `_none_gate`; an open `security-fix` request in `plreq.json` (< 24 h, no `stop`/`closed`) denies edits, commits and shell writes in that git root until a `security-fix` run of the session is open (or ended < `STRICT_GRACE_S`).
+- ⚠The run matches by name only: the pipeline file lives in the Sidereus home and runs with `--repo`, so its `proj` is the home.
+- ⚠`[pl-none]`, the nudge stamp and «Apply» off never lift it; only «Stop», `closed`, 24 h, or the recipient's run (t0 >= `at`) with its review stage done do.
+- ⚠`closed` is stamped only while a viewer tab polls `/api/state`, so the hook reads the recipient's runs.json itself.
+- ⚠Fail open on any read/parse error: this hook runs for every Claude Code session on the machine.

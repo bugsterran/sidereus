@@ -435,9 +435,10 @@ class Ui(unittest.TestCase):
         self.assertIn("GHSA-p6mc-m468-83gw · &lt;lodash&gt;", win)
         self.assertNotIn("<lodash>", win)
         self.assertNotIn("F401", win)                          # quality rows are not listed
-        self.assertEqual(body.splitlines()[2:4], [   # line 2 = target repository; quality item dropped
-                         "- high · GHSA-p6mc-m468-83gw · <lodash> · package-lock.json:1 (https://github.com/advisories/GHSA-p6mc-m468-83gw)",
-                         "Fix the cause, keep behaviour, run the project's tests."])
+        ln = body.splitlines()
+        it = [x for x in ln if x.startswith("- ")]   # finding lines by content: header lines may change
+        self.assertEqual(it, ["- high · GHSA-p6mc-m468-83gw · <lodash> · package-lock.json:1 (https://github.com/advisories/GHSA-p6mc-m468-83gw)"])   # quality item dropped
+        self.assertEqual(ln[ln.index(it[0]) + 1], "Fix the cause, keep behaviour, run the project's tests.")
         self.assertIn("<div class=archckst>점검한 적 없음", win)   # window ends with the (empty) history section
         self.assertNotIn("a.py", plain)                        # no security results -> nothing listed
         self.assertNotIn("<div class=archckst>점검한 적 없음", plain)   # no history section

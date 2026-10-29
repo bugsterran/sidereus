@@ -233,5 +233,120 @@ class Strict(unittest.TestCase):
         self.assertIn("readonly: true|false", PS.validate(dict(P, readonly="yes"), "x"))
 
 
+# R3: an open security-fix request gates its repo (self.bare: a git repo with no pipelines and no _policy.json).
+class FixReq(unittest.TestCase):
+    _ev = N.PlNone._ev
+    edit = N.PlNone.edit
+    bash = N.PlNone.bash
+    denied = N.PlNone.denied
+
+    def setUp(self):
+        N.PlNone.setUp(self)
+        self.req()
+
+    def req(self, **kw):
+        r = dict({"id": "m1", "repo": self.bare, "pipeline": "security-fix", "sid": "relay", "to": "x", "mid": "m1",
+                  "at": 900.0}, **kw)
+        with open(os.path.join(self.tmp, "plreq.json"), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "reqs": [r]}, f)
+
+    def run_(self, **r):
+        os.makedirs(self.marks, exist_ok=True)
+        with open(os.path.join(self.marks, SID + ".runs.json"), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "runs": {"security-fix": dict({"cur": "수정", "end": 0, "t1": 990.0}, **r)}}, f)
+
+    def x_edit(self, **kw):
+        return self.edit(root=self.bare, cwd=self.bare, **kw)
+
+    def test_r3_denied_with_open_request(self):
+        o = self.x_edit()
+        self.assertTrue(self.denied(o))
+        why = o["permissionDecisionReason"]
+        for s in (self.bare, "[pl:security-fix/수정]", "security-fix.json", "Stop"):
+            self.assertIn(s, why)
+        self.assertTrue(self.denied(self.x_edit()))   # every time, no nudge stamp
+        self.assertTrue(self.denied(self.bash("git commit -m x", "c", cwd=self.bare)))
+        self.assertTrue(self.denied(self.bash("echo x > f.py", "w", cwd=self.bare)))
+        self.assertFalse(self.denied(self.bash("ls", "[pl-none:small-fix] x", cwd=self.bare)))
+        self.assertTrue(self.denied(self.x_edit()))   # [pl-none] does not lift it
+        self.assertTrue(self.denied(self.x_edit(agent="agent-1")))
+
+    def test_r3_allowed_with_open_security_fix_run(self):
+        self.run_()
+        self.assertFalse(self.denied(self.x_edit()))
+        self.assertFalse(self.denied(self.bash("git commit -m x", "c", cwd=self.bare)))
+        self.run_(t1=1.0)   # main: idle past IDLE_S; a subagent still passes
+        self.t = 1.0 + H.IDLE_S + 1
+        self.req(at=self.t - 10)
+        self.assertTrue(self.denied(self.x_edit()))
+        self.assertFalse(self.denied(self.x_edit(agent="agent-1")))
+
+    def test_r3_grace_after_run_ended_and_other_name_does_not_count(self):
+        self.run_(end=950.0)
+        self.assertFalse(self.denied(self.x_edit()))
+        self.t = 950.0 + H.STRICT_GRACE_S + 1
+        self.req(at=self.t - 10)
+        self.assertTrue(self.denied(self.x_edit()))
+        with open(os.path.join(self.marks, SID + ".runs.json"), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "runs": {"quick-fix": {"cur": "s", "end": 0, "t1": self.t}}}, f)
+        self.assertTrue(self.denied(self.x_edit()))
+
+    def test_r3_allowed_after_closed_stop_or_24h(self):
+        self.req(closed={"at": 950.0})
+        self.assertFalse(self.denied(self.x_edit()))
+        self.req(stop={"mid": "m2", "at": 950.0})
+        self.assertFalse(self.denied(self.x_edit()))
+        self.req(at=self.t - 86400)
+        self.assertFalse(self.denied(self.x_edit()))
+        self.req(pipeline="security-checks")
+        self.assertFalse(self.denied(self.x_edit()))
+
+    def recip_run(self, t0, s, past=False):
+        os.makedirs(self.marks, exist_ok=True)
+        r = {"cur": "리뷰", "end": 0, "t0": t0, "t1": t0, "st": {"수정": {"s": "done"}, "리뷰": {"s": s}}}
+        d = {"v": 1, "runs": {}, "past": {"security-fix": [r]}} if past else {"v": 1, "runs": {"security-fix": r}}
+        with open(os.path.join(self.marks, "recip-0002.runs.json"), "w", encoding="utf-8") as f:
+            json.dump(d, f)
+
+    def test_r3_review_done_lifts_without_closed(self):
+        self.req(sid="recip-0002")
+        self.recip_run(950.0, "done")
+        self.assertFalse(self.denied(self.x_edit()))
+        self.assertFalse(self.denied(self.bash("git commit -m x", "c", cwd=self.bare)))
+        self.recip_run(950.0, "done", past=True)   # replaced run kept in "past" still counts
+        self.assertFalse(self.denied(self.x_edit()))
+
+    def test_r3_review_not_done_still_denied(self):
+        self.req(sid="recip-0002")
+        self.recip_run(950.0, "run")
+        o = self.x_edit()
+        self.assertTrue(self.denied(o))
+        self.assertIn("review stage finishes", o["permissionDecisionReason"])
+
+    def test_r3_review_done_before_request_does_not_count(self):
+        self.req(sid="recip-0002")
+        self.recip_run(899.0, "done")
+        self.assertTrue(self.denied(self.x_edit()))
+
+    def test_r3_other_repo_request_does_not_gate(self):
+        self.req(repo=os.path.join(self.tmp, "elsewhere"))
+        self.assertFalse(self.denied(self.x_edit()))
+        self.assertFalse(self.denied(self.bash("git commit -m x", "c", cwd=self.bare)))
+
+    def test_r3_fail_open_on_corrupt_plreq(self):
+        for raw in ("{not json", "[]", '{"reqs": {"a": 1}}', '{"reqs": [{"pipeline": "security-fix", "repo": 5}]}'):
+            with open(os.path.join(self.tmp, "plreq.json"), "w", encoding="utf-8") as f:
+                f.write(raw)
+            self.assertFalse(self.denied(self.x_edit()), raw)
+
+    def test_r3_read_only_tools_never_denied(self):
+        fp = os.path.join(self.bare, "a.py")
+        for tool, ti in (("Read", {"file_path": fp}), ("Grep", {"pattern": "x", "path": self.bare}),
+                         ("Glob", {"pattern": "*", "path": self.bare})):
+            self.assertFalse(self.denied(self._ev(tool, ti, cwd=self.bare)), tool)
+        self.assertFalse(self.denied(self.bash("ls", "list", cwd=self.bare)))
+        self.assertFalse(self.denied(self.bash("git commit --dry-run -m x", "dry", cwd=self.bare)))
+
+
 if __name__ == "__main__":
     unittest.main()

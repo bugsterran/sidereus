@@ -358,5 +358,95 @@ class ViewStateTest(_Base):
         self.assertEqual(v["state"], "sent")
 
 
+
+class SecurityFixTest(_Base):
+    """«Request fix» as a security-fix run request: finding keys stored, «done» needs the review stage, `closed` stamped once."""
+    OK = {"relay": True, "sid": SID, "to": "alice"}
+    KEY = "semgrep\ta.py\t7\tpy.sqli"
+
+    def send(self, keys=None, mid="s1"):
+        p, why = PQ.check({"kind": "req", "pipeline": "security-fix", "repo": REPO, "keys": keys or [self.KEY]}, self.OK)
+        self.assertIsNone(why)
+        PQ.record(p, SID, "alice", mid)
+
+    def row(self, *runs, state="think"):
+        return {"sid": SID, "project": "repo", "state": state, "plrun": list(runs)}
+
+    def stored(self):
+        with open(self.path, encoding="utf-8") as f:
+            return json.load(f)["reqs"]
+
+    def test_r1_keys_validated_and_stored(self):
+        bad = [None, [], "k", [1], ["a\nb"], ["a\x00"], ["x" * (PQ.KEY_MAX + 1)], ["k%d" % i for i in range(PQ.KEYS_MAX + 1)],
+               ["x" * PQ.KEY_MAX] * (PQ.KEYS_CHARS_MAX // PQ.KEY_MAX + 1)]
+        for k in bad:
+            self.assertIsNotNone(PQ.check({"kind": "req", "pipeline": "security-fix", "repo": REPO, "keys": k}, self.OK)[1], k)
+        self.send([self.KEY, "gitleaks\t.env\t1\tgeneric-api-key"])
+        r = self.stored()[0]
+        self.assertEqual((r["pipeline"], r["keys"]), ("security-fix", [self.KEY, "gitleaks\t.env\t1\tgeneric-api-key"]))   # tab-joined key allowed
+        self.assertNotIn("body", r)
+        v = PQ.view([self.row()], {})[REPO][0]
+        self.assertEqual((v["state"], v["keys"], v["reviewOk"]), ("sent", r["keys"], False))
+        self.assertIn("security-fix", PQ.PIPELINES)
+        self.assertNotIn("security-fix", PQ.PLAIN)                        # a tracked run: stages light, stop marker allowed
+        self.assertIn("checks-fix", PQ.PIPELINES)                         # old records stay readable
+
+    def test_r1_run_lights_stage(self):
+        self.send()
+        v = PQ.view([self.row({"name": "security-fix", "t0": NOW + 5, "end": 0, "cur": "재검사", "stages": {"수정": {"o": "done"}, "재검사": {"o": "run"}}})], {})[REPO][0]
+        self.assertEqual((v["state"], v["stage"], v["reviewOk"]), ("run", "재검사", False))
+
+    def test_r2_pipeline_file(self):
+        fp = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".claude", "pipelines", "security-fix.json")
+        with open(fp, encoding="utf-8") as f:
+            P = json.load(f)
+        st = {s["title"]: s for s in P["stages"]}
+        self.assertEqual([s["title"] for s in P["stages"]], ["수정", "재검사", PQ.REVIEW_STAGE])
+        self.assertEqual(st["재검사"]["gate"], "/usr/bin/python3 scripts/arch_checks.py --verify --last --category security")
+        self.assertIn("--category security", st["재검사"]["task"])
+        self.assertEqual(st["재검사"]["onFail"]["goto"], "수정")
+        self.assertEqual(st[PQ.REVIEW_STAGE]["agent"], "Explore")         # read-only built-in: no Edit/Write tools
+        self.assertNotEqual(st[PQ.REVIEW_STAGE]["agent"], st["수정"]["agent"])
+        self.assertTrue(P.get("builtin"))
+
+    def test_r4_done_needs_review_stage(self):
+        self.send()
+        run = {"name": "security-fix", "t0": NOW + 5, "end": NOW + 900, "cur": "재검사", "stages": {"수정": {"o": "done"}, "재검사": {"o": "fail"}}}
+        with mock.patch.object(AM, "result_at", lambda pl, repo: NOW + 100):   # a newer scan alone is no reviewed fix
+            v = PQ.view([self.row(run)], {})[REPO][0]
+            self.assertEqual((v["state"], v["reviewOk"]), ("sent", False))
+            self.assertNotIn("closed", self.stored()[0])
+            run["stages"][PQ.REVIEW_STAGE] = {"o": "done"}
+            v = PQ.view([self.row(run)], {})[REPO][0]
+        self.assertEqual((v["state"], v["reviewOk"]), ("done", True))
+
+    def test_r4_closed_written_once(self):
+        self.send()
+        run = {"name": "security-fix", "t0": NOW + 5, "end": NOW + 900, "cur": PQ.REVIEW_STAGE, "stages": {PQ.REVIEW_STAGE: {"o": "done"}}}
+        PQ.view([self.row(run)], {})
+        self.assertEqual(self.stored()[0]["closed"], NOW)
+        with mock.patch.object(PQ, "_now", lambda: NOW + 50):
+            v = PQ.view([], {})[REPO][0]                                  # run gone from the session: `closed` keeps it done
+        self.assertEqual((v["state"], v["reviewOk"]), ("done", True))
+        self.assertEqual(self.stored()[0]["closed"], NOW)                 # not re-stamped
+
+    def test_r4_fix_hash_only_without_run(self):
+        self.send()
+        self.git = ["b2b2b2b\t%d\n" % (NOW + 5)]
+        self.assertEqual(PQ.view([self.row()], {})[REPO][0].get("fix"), "b2b2b2b")   # no run: «handled without the pipeline»
+        PQ._FIX_CACHE.clear()
+        self.git = ["b2b2b2b\t%d\n" % (NOW + 5)]
+        run = {"name": "security-fix", "t0": NOW + 5, "end": NOW + 60, "cur": "수정", "stages": {"수정": {"o": "done"}}}
+        self.assertNotIn("fix", PQ.view([self.row(run)], {})[REPO][0])
+        self.assertEqual(len(self.git), 1)                                # no git call while a run is attached
+
+    def test_large_store_sheds_oldest_not_all(self):   # ⚠past READ_MAX _read would drop the whole file
+        keys = ["k%02d" % i + "x" * 110 for i in range(PQ.KEYS_MAX)]
+        for i in range(PQ.REQ_MAX):
+            self.send(keys, mid="s%d" % i)
+        self.assertLessEqual(os.path.getsize(self.path), PQ.READ_MAX)
+        self.assertEqual(self.stored()[0]["id"], "s%d" % (PQ.REQ_MAX - 1))
+
+
 if __name__ == "__main__":
     unittest.main()

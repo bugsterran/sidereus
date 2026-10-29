@@ -1,0 +1,31 @@
+{
+  "v": 1,
+  "name": "security-fix",
+  "title": "보안 수정 — 수정·재검사·리뷰",
+  "builtin": true,
+  "use": "Fix the security-check findings listed in a «Request fix» DM on a target repo, re-scan, then a read-only review.",
+  "rules": "The target repo path and the findings (severity · rule · file:line) are given in the request text. Fix only the listed findings, in the target repo; do not touch other code, do not install tools, never push. The re-scan writes only ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<HEAD>/checks-security.json (same as security-checks). Metadata only: never copy tool messages, secret values, matched text or source lines into a report or the mailbox.",
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "수정",
+      "agent": "general-purpose",
+      "model": "inherit",
+      "task": "cd to the target repo (--repo in the request). Fix only the listed findings: remove the cause, never hide it (no suppression comments, no ignore-file entries, no rule disabling). Keep behaviour. Run the project's tests. Commit the fix in the target repo (one commit, message names the rules fixed). Report the commit hash and one line per finding: fixed or why not."
+    },
+    {
+      "title": "재검사",
+      "agent": "general-purpose",
+      "model": "sonnet",
+      "task": "Run `/usr/bin/python3 scripts/arch_checks.py --repo <repo> --category security` once from the Sidereus repository (this pipeline's repo). Report its printed line only. Do not fix findings, do not run any tool yourself.",
+      "gate": "/usr/bin/python3 scripts/arch_checks.py --verify --last --category security",
+      "onFail": { "goto": "수정", "max": 2 }
+    },
+    {
+      "title": "리뷰",
+      "agent": "Explore",
+      "model": "opus",
+      "task": "Read-only: review the fix commit diff in the target repo against each requested finding. For each: is the cause fixed, not hidden (suppression, ignore entry, disabled rule, moved code)? Did behaviour change beyond the fix? Make no edits. Report one line per finding: fixed · hidden · not fixed, plus any regression risk."
+    }
+  ]
+}

@@ -18,7 +18,7 @@ FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
 FNS += ["archChkTid", "archChkImgGap", "archChkImgBox", "archChkImgHtml"]   # 84l3: trivy scanner label, image-scan gap line, «Include images» box, base-image groups
 FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqWho",
-        "archReqRowHtml", "archChkProgHtml", "archChkFixRecHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
+        "archReqRowHtml", "archChkProgHtml", "archChkFixLast", "archChkFixProg", "archChkFixKeys", "archChkFixRecHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
 FNS += ["archChkSplitGet", "archChkSplitGrip", "archChkSplitClamp", "archChkSplitEls", "archChkSplitAria", "archChkSplitSet", "archChkSplitMove", "archChkSplitReset", "archChkSplitKey"]   # issues | history grip
 FNS += ["archChkSplitPaint", "archChkCssText", "archChkWinCss"]   # split restore on paint, window CSS resync
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84l-structure-arch-checks.js")
@@ -34,7 +34,7 @@ PRE = "\n".join([
     "let SESS = [], POSTS = []; function lsSetJson(){}",
     "let ARCHRUN = {}, SECRUN = {}, PLREQ = {};",
     re.search(r"^const ARCH_REQ_KEEP_MS = .*$", _REQ_SRC, re.M).group(0), re.search(r"^const ARCH_REQ_LBL = .*$", _REQ_SRC, re.M).group(0),
-    re.search(r"^const CK_SPLIT_MIN = .*$", _SRC, re.M).group(0),
+    re.search(r"^const CK_SPLIT_MIN = .*$", _SRC, re.M).group(0), re.search(r"^const ARCH_FIX_PL = .*$", _SRC, re.M).group(0),
     "async function postJSON(u, b){ POSTS.push([u, b]); return { ok: true }; }",
 ])
 
@@ -158,16 +158,15 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("개선 요청 (1)", r[2])
         self.assertIn("data-ckgo", r[3])
         self.assertNotIn("data-ckgo disabled", r[3])
-        self.assertIn("Please fix these ru&lt;f&gt;f findings in /r (commit abcdef12):", r[3])   # escaped in the preview
-        self.assertEqual(r[4], "Please fix these ru<f>f, ruff findings in /r (commit abcdef12):\n"
+        self.assertIn("Fix these ru&lt;f&gt;f findings (commit abcdef12):", r[3])   # escaped in the preview
+        self.assertEqual(r[4], "파이프라인 security-fix 실행 — 요청: «/r 보안 수정 2건»\n"
                                "Target repository: /r — work there (cd), not in your own cwd.\n"
+                               "Pipeline: .claude/pipelines/security-fix.json (fix → re-scan → review); run it from the Sidereus repository with --repo /r\n"
+                               "Gate: python3 scripts/arch_checks.py --verify --last --category security (Windows: py scripts/arch_checks.py --verify --last --category security)\n"
+                               "Fix these ru<f>f, ruff findings (commit abcdef12):\n"
                                "- high · E<1>\" · a/<x>.py:7 — Bad thing\n- medium · W2 · b.py:1\n"
                                "Fix the cause, keep behaviour, run the project's tests.\n"
-                               "Once the fix is committed, re-run the security check on /r so the Security badge reflects it — run:\n"
-                               "파이프라인 security-checks 실행 — 요청: «/r 보안 점검»\nTarget repository: /r\n"
-                               "Pipeline: .claude/pipelines/security-checks.json (scanners → threat-model review); run it from the Sidereus repository with --repo /r\n"
-                               "Gate: python3 scripts/arch_checks.py --verify --last --category security (Windows: py scripts/arch_checks.py --verify --last --category security)\n"
-                               "Tag each stage dispatch description with [pl:security-checks/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.")
+                               "Tag each stage dispatch description with [pl:security-fix/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.")
         self.assertIn('class="archckst archsent"', r[5])   # success style, not the grey scanner status line
         self.assertIn("요청함 → r · s-new · b · idle · 14:05", r[5])
         self.assertIn('data-ckall checked', r[5])
@@ -216,20 +215,21 @@ class StructArchChecks(unittest.TestCase):
 
     def test_fix_body_target_repo(self):
         r = run("console.log(JSON.stringify(archChkFixBody('/x/shop-api', {commit: ''}, [{tool: 'ruff', file: 'a.py', line: 3, rule: 'F1', sev: 'error'}])));")
-        self.assertEqual(r.splitlines()[:2], ["Please fix these ruff findings in /x/shop-api:",
+        self.assertEqual(r.splitlines()[:2], ["파이프라인 security-fix 실행 — 요청: «/x/shop-api 보안 수정 1건»",
                                               "Target repository: /x/shop-api — work there (cd), not in your own cwd."])
 
-    def test_fix_body_requests_security_rerun(self):
+    def test_r1_fix_body_is_security_fix_run_request(self):   # header as the run body: pipeline file + gate, then the findings
         r = run("const it = [{tool: 'ruff', file: 'a.py', line: 3, rule: 'F1', sev: 'error'}], d = {sidereus: '/sid', checks: {security: {commit: '', top: [{tool: 'ruff', file: 'a.py', line: 3, rule: 'F1', sev: 'error', mod: 'a'}]}}};"
                 "const S = {sel: {}, req: {sid: 's1', busy: false}}; S.sel[archChkKey(d.checks.security.top[0])] = 1;"
                 "console.log(JSON.stringify([archChkFixBody('/x/shop-api', {commit: ''}, it, '/sid'), archChkWinHtml('/x/shop-api', d, S, [{sid: 's1', g: 0, login: 1}])]));")
-        for s in ("Once the fix is committed, re-run the security check on /x/shop-api so the Security badge reflects it", "/sid/.claude/pipelines/security-checks.json",
-                  "Gate: python3 /sid/scripts/arch_checks.py --verify --last --category security"):
+        for s in ("Pipeline: /sid/.claude/pipelines/security-fix.json (fix → re-scan → review); run it from /sid/ with --repo /x/shop-api",
+                  "Gate: python3 /sid/scripts/arch_checks.py --verify --last --category security", "[pl:security-fix/<stage title>]"):
             self.assertIn(s, r[0])
+        self.assertNotIn("security-checks", r[0])
         self.assertNotIn("arch-map", r[0])                    # a remap does not move the Security badge
         self.assertNotIn("arch_verify", r[0])
         self.assertNotIn("(no subagents)", r[0])              # fix recipients are Claude sessions
-        self.assertIn("security-checks.json", r[1])           # full text in the preview (rule 7)
+        self.assertIn("security-fix.json", r[1])              # full text in the preview (rule 7)
         self.assertNotIn("arch-map.json", r[1])
 
     def test_badge_marks_stale_scan(self):
@@ -544,7 +544,6 @@ class StructArchCheckFilters(unittest.TestCase):
         self.assertIn("plreq: { kind: 'req', pipeline: ARCH_SEC_PL, repo: S.p }", _SRC)
 
     def test_fix_request_line_survives_reload(self):   # S.sent is lost on reload: the plReq `checks-fix` record + ACK stand in
-        self.assertIn("plreq: { kind: 'req', pipeline: 'checks-fix', repo: S.p }", FIXSEND)
         rec = {"id": "f1", "pipeline": "checks-fix", "sid": "s1abcdef99", "to": "me", "project": "r", "state": "sent", "at": 1700000000}
         r = run("const d = {checks: " + json.dumps(CK) + "}; PLREQ = {'/r': [" + json.dumps(rec) + "]}; const ACK = globalThis.ACK = {};"
                 "const h0 = archChkWinHtml('/r', d, {sel: {}, req: null}, []);"
@@ -578,6 +577,51 @@ class StructArchCheckFilters(unittest.TestCase):
         self.assertIn(" · Delivered</div>", r[3])                         # R4: a non-hash value never reaches the page
         self.assertNotIn("msg", r[3])
         self.assertIn("acked · me — ok", r[4])                            # eval-fix line unchanged
+
+    def test_r1_fix_send_posts_security_fix_plreq_with_keys(self):   # the DM is a security-fix run request carrying the finding keys
+        sess = [{"sid": "s1", "cwd": "/r", "mbox": "me", "mboxSrc": "identity", "state": "idle", "ageSec": 1}]
+        r = run("SESS = " + json.dumps(sess) + "; const d = {checks: " + json.dumps(CK) + "}; ARCH.cache['/r'] = d;"
+                "function lsJson(){ return {}; } function note(){} function archChkWinPaint(){}"
+                "const S = {p: '/r', sel: {}, req: null, sent: '', msg: ''}; let ARCH_CW = S; const top = archChkTop(d); S.sel[archChkKey(top[0])] = 1;\n" + FIXSEND + "\n"
+                "S.req = {sid: 's1', busy: false}; await archChkFixSend();"
+                "const many = Array.from({length: 51}, (_, i) => ({tool: 't', file: 'f' + i, line: 1, rule: 'r'})), long = [{tool: 't', file: 'x'.repeat(300), line: 1, rule: 'r'}];"
+                "const wide = Array.from({length: 50}, (_, i) => ({tool: 't', file: 'f' + i + 'x'.repeat(120), line: 1, rule: 'r'}));"
+                "console.log(JSON.stringify([POSTS[0][1], archChkKey(top[0]), archChkFixKeys(many), archChkFixKeys(long), archChkFixKeys(many.slice(0, 50)).length, archChkFixKeys(wide)]));")
+        b = r[0]
+        self.assertEqual(b["thread"], "pipeline:security-fix")
+        self.assertEqual(b["plreq"], {"kind": "req", "pipeline": "security-fix", "repo": "/r", "keys": [r[1]]})
+        self.assertTrue(b["body"].startswith("파이프라인 security-fix 실행 — 요청: «/r 보안 수정 1건»\n"))
+        self.assertEqual(r[2:], [None, None, 50, None])                  # = pl_reqs KEYS_MAX / KEY_MAX / KEYS_CHARS_MAX: past them nothing is sent
+
+    def test_r4_fix_line_counts_requested_findings(self):   # j = requested keys missing from the newer scan; «Done» needs j = k and reviewOk
+        rec = {"id": "f1", "pipeline": "security-fix", "sid": "s1abcdef99", "to": "me", "project": "r", "state": "sent", "at": 1699990000}
+        r = run("const d = {checks: " + json.dumps(CK) + "}; ARCH.cache['/r'] = d; const ACK = globalThis.ACK = {}; const k0 = archChkKey(archChkTop(d)[0]), gone = 'semgrep\\tz.py\\t3\\tR9';"
+                "const R = x => archChkFixRecHtml('/r', Object.assign(" + json.dumps(rec) + ", x));"
+                "PLREQ = {'/r': [Object.assign(" + json.dumps(rec) + ", {id: 'f2', at: 1699990500}), {id: 'c1', pipeline: 'checks-fix', sid: 's1', to: 'me', state: 'sent', at: 1699990100}]};"
+                "console.log(JSON.stringify([R({keys: [k0, gone]}), R({keys: [gone, gone + 'x'], state: 'done', reviewOk: true}), R({keys: [gone], state: 'done', reviewOk: false}),"
+                " R({keys: [gone], fix: 'abc1234'}), R({keys: [gone], at: 1700000100, state: 'run', stage: '수정<b>'}), R({keys: [gone], at: 1700000100, fix: 'abc1234'}),"
+                " archChkFixLast('/r', 1700000000 * 1000).id]));", lang="en")
+        self.assertIn(" · requested 2: fixed 1 · left 1</div>", r[0])
+        self.assertNotIn("Done", r[0])
+        self.assertIn(" · Done · requested 2: fixed 2 · left 0</div>", r[1])
+        self.assertNotIn("Done", r[2])                                    # all fixed but the review stage did not pass
+        self.assertIn("requested 1: fixed 1 · left 0", r[2])
+        self.assertIn("handled without the pipeline abc1234 · requested 1: fixed 1 · left 0", r[3])
+        self.assertIn(" · Running · 수정&lt;b&gt;</div>", r[4])           # no newer scan yet: stage title escaped, never T()
+        self.assertIn(" · handled without the pipeline abc1234</div>", r[5])
+        self.assertEqual(r[6], "f2")                                      # newest of security-fix / old checks-fix records
+
+    def test_r4_line_shift_is_not_a_fix(self):   # counted on tool+file+rule with multiplicity; the line number is ignored
+        rec = {"id": "f1", "pipeline": "security-fix", "sid": "s1abcdef99", "to": "me", "project": "r", "state": "done", "reviewOk": True, "at": 1699990000}
+        top = [{"tool": "semgrep", "file": "a.py", "line": 12, "rule": "sqli", "sev": "high"}, {"tool": "semgrep", "file": "a.py", "line": 30, "rule": "sqli", "sev": "high"}]
+        r = run("const d = {checks: {security: {commit: 'c', at: 1700000000, tools: [], top: " + json.dumps(top) + "}}}; ARCH.cache['/r'] = d; const ACK = globalThis.ACK = {};"
+                "const R = keys => archChkFixRecHtml('/r', Object.assign(" + json.dumps(rec) + ", {keys}));"
+                "console.log(JSON.stringify([R(['semgrep\\ta.py\\t10\\tsqli', 'semgrep\\ta.py\\t20\\tsqli']), R(['semgrep\\ta.py\\t10\\tsqli', 'semgrep\\ta.py\\t20\\tsqli', 'semgrep\\ta.py\\t40\\tsqli']),"
+                " R(['semgrep\\tb.py\\t5\\tsqli'])]));".replace("\\\\t", "\\t"), lang="en")
+        self.assertIn(" · requested 2: fixed 0 · left 2</div>", r[0])    # both still found at shifted lines
+        self.assertNotIn("Done", r[0])
+        self.assertIn(" · requested 3: fixed 1 · left 2</div>", r[1])    # one fewer of that tool+file+rule = one fixed
+        self.assertIn(" · Done · requested 1: fixed 1 · left 0</div>", r[2])
 
     def test_issues_history_split_grip(self):   # vertical grip between findings and history: markup, clamp, keys, saved px, reset
         log = {"at_scan": 1, "open": [{"file": "a.py", "line": 3, "sev": "high", "key": "semgrep:r1"}]}
