@@ -322,7 +322,11 @@ def perm_rows(rows, now=None):
             # ⚠Activity after the marker: OTel decisions are session-wide, so only a decision for the marker's own tool clears it.
             if mtool:
                 _note_dec(r, now)
-                gone = ((_DEC_AT.get(sid) or {}).get("tools") or {}).get(mtool, 0) > t \
+                # ⚠A sub that wrote after the marker (or has unknown activity) may own the newer decision (auto-approved
+                #   calls emit one too): the decision is unattributable, so only a running shell clears a Bash marker.
+                sacts = [_sub_act(s, now) for s in (r.get("sub") or []) if isinstance(s, dict)]
+                own = all(a is not None and a <= t for a in sacts)
+                gone = (own and ((_DEC_AT.get(sid) or {}).get("tools") or {}).get(mtool, 0) > t) \
                     or (mtool == "Bash" and _bash_running(dict(r, tool="Bash")))
             else:
                 gone = bool(t) and (_answered(r, t, now) or _bash_running(r))
