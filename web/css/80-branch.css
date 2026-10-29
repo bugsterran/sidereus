@@ -47,6 +47,8 @@ html[data-ui=next] .brsvg.dim path.hl{stroke-width:2.6}
 .brf.brl{background:#1d2b42;border-color:#3f6ea8;color:#bcd4f5}
 .brf.brm{background:none;border-color:#3a4a63;color:#8b95a7}
 .brf.brh{background:#3a2e14;border-color:#e0b45f;color:#e6c887;font-weight:600}
+/* ★«feature/checkout-redesign» chip was 162/148px clipped in the side pane: wrap there, never ellipsise. */
+#brpan .brf{flex-shrink:1;min-width:0;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;max-width:100%}
 .brlg{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:6px 0 8px;
   font-size:10.5px;color:#6b7688}
 .brlg span{margin-right:5px;color:#8b95a7}
@@ -120,7 +122,8 @@ html[data-ui=next] .brwt{display:flex;gap:5px;align-items:center;width:100%;text
   border:0;border-top:1px solid var(--nx-rule);color:var(--nx-t1);font:inherit;font-size:11px;padding:5px 3px 3px}
 html[data-ui=next] .brwt:hover{background:var(--nx-hover)}
 html[data-ui=next] .brwt.on{box-shadow:inset 3px 0 0 var(--nx-info)}
-html[data-ui=next] .brwt b{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+/* ★Worktree title was 61/57px clipped: wrap at / or - instead of ellipsis. */
+html[data-ui=next] .brwt b{flex:0 1 auto;min-width:0;overflow-wrap:anywhere;font-weight:600}
 html[data-ui=next] .brwt em{margin-left:auto;font-style:normal;color:var(--nx-t3);font-size:10px;flex:0 0 auto}
 html[data-ui=next] .brws,html[data-ui=next] .brwa{display:flex;gap:5px;align-items:center;cursor:pointer;
   padding:2px 3px 2px 12px;font-size:10.5px;color:var(--nx-t2);min-width:0}
@@ -131,7 +134,8 @@ html[data-ui=next] .brws.st-think .sd{background:var(--nx-info)}
 html[data-ui=next] .brws.st-wait .sd,html[data-ui=next] .brws.st-ask .sd{background:var(--nx-warn)}
 html[data-ui=next] .brws b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--nx-t1)}
 html[data-ui=next] .brws s,html[data-ui=next] .brws u{text-decoration:none;flex:0 0 auto;color:var(--nx-info)}
-html[data-ui=next] .brws .brwb{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--nx-t3)}
+/* ★Session branch label was 150/141px clipped: wrap instead of ellipsis. */
+html[data-ui=next] .brws .brwb{min-width:0;overflow-wrap:anywhere;color:var(--nx-t3)}
 html[data-ui=next] .brws em,html[data-ui=next] .brwa em{margin-left:auto;font-style:normal;color:var(--nx-t3);flex:0 0 auto}
 html[data-ui=next] .brwa{padding-left:22px}
 html[data-ui=next] .brwa i{font-style:normal;color:var(--nx-t3)}

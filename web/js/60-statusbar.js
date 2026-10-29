@@ -84,12 +84,13 @@ function sbExtSeg(k, e){
     + (e.rate && extRateStr(e.rate) ? ' <small class=sbd5>· ' + esc(extRateStr(e.rate)) + '</small>' : '') + '</span>';
 }
 // ★Short bar: hide whole low-priority parts rather than ellipsize key numbers (key numbers stay visible).
-// Drop order (SB_STEPS): 1 «100% at» · 2 «left at reset» · 't' tighter padding (no text lost) · 3 «left ≈» (same
+// ⚠No padding-squeeze step: gaps are never squeezed, whole cells drop instead.
+// Drop order (SB_STEPS): 1 «100% at» · 2 «left at reset» · 3 «left ≈» (same
 //   quantity as «left %», in tokens) · 5 ext limit % (Codex card has it) · 6 reset times · 7 saver secondary (also in its
 //   tooltip) · 8 ext «≈ $cost» and 7d «used» (both in their tooltips) · 4 ext «Today».
 // ⚠«Today» is what makes the ext number mean «today» — keep cheaper drops (5, 6, 7, 8) ahead of it; the goal pill and ext
 //   token+cost segments are never dropped and overflowed 900 by 63-255 px after step 7. Ellipsis stays only as the last resort.
-const SB_STEPS = [1, 2, 't', 3, 5, 6, 7, 8, 4];
+const SB_STEPS = [1, 2, 3, 5, 6, 7, 8, 4];
 // ★UX audit 2026-09-28: «slower than goal» named no subject — the verdict is 5h usage pace vs the saver goal, so the label says «use», same width.
 const SB_JNAME = {'Way too fast': 'Burning far above target', 'Fast': 'Above target', 'On pace': 'On target',
                   'Slow': 'Below target', 'Way too slow': 'Far below target',
@@ -97,12 +98,9 @@ const SB_JNAME = {'Way too fast': 'Burning far above target', 'Fast': 'Above tar
                   'Weekly near cap': 'Weekly ≈ used up'};
 function sbFit(el){
   if(!el.clientWidth) return;
-  el.classList.remove('sbtight');
   el.classList.add('sbfit');
   for(let i = 0; i < SB_STEPS.length && el.scrollWidth > el.clientWidth + 1; i++){
-    const k = SB_STEPS[i];
-    if(k === 't') el.classList.add('sbtight');
-    else el.querySelectorAll('.sbd' + k).forEach(n => n.classList.add('sbh'));
+    el.querySelectorAll('.sbd' + SB_STEPS[i]).forEach(n => n.classList.add('sbh'));
   }
   el.classList.remove('sbfit');
 }

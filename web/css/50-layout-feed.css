@@ -432,7 +432,8 @@ aside h2{margin:0 0 8px;font-size:11.5px;color:#8b95a7;font-weight:650;letter-sp
 /* ⚠No all:unset: 00-core turns its outline-color:unset into a [data-ui=next] rule that beats :focus-visible below */
 .rcnm{appearance:none;background:none;border:0;padding:0;margin:0;font:inherit;text-align:inherit;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--nx-t1,#cdcedc);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rcnm:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:2px;border-radius:3px}
-.rcwho{font-size:11.5px;color:var(--nx-t2,#909298);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ★Member list needs 389px (ko) / 423px (en) in a 227px card: wrap to 2 lines, no ellipsis (count + title hold the rest). */
+.rcwho{font-size:11.5px;line-height:1.35;color:var(--nx-t2,#909298);overflow:hidden;max-height:2.7em;overflow-wrap:anywhere}
 .rcwho b{font-weight:600;color:var(--nx-t1,#cdcedc)}
 .rcmeta{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--nx-t3,#84868c)}
 .rctags{display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:22px}

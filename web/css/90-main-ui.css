@@ -45,7 +45,8 @@ html[data-ui=next][data-ui] .tlds{background:var(--nx-ok)}
 /* Account dot (35b-worklog-view.js account chip). */
 html[data-ui=next] .knad{color:var(--acc,var(--nx-t3));margin-right:4px;font-size:9px}
 /* Datadog-style list rows: status dot · name · right-aligned metric columns · hover highlight · 1px separators. */
-html[data-ui=next] .nxr{display:grid;grid-template-columns:10px minmax(0,1fr) 30px 58px 50px;gap:8px;align-items:center;
+/* ★«Messages» header is 57px at 11px; a 30px column spilled it and misaligned the headers — one fixed width keeps rows aligned. */
+html[data-ui=next] .nxr{display:grid;grid-template-columns:10px minmax(0,1fr) 60px 58px 50px;gap:8px;align-items:center;
   margin:0 -12px;padding:5px 12px;border-top:1px solid var(--nx-rule);font-size:12.5px;line-height:1.35}
 html[data-ui=next] .nxr:hover{background:var(--nx-hover)}
 html[data-ui=next] .nxr.nxh{border-top:0;padding-top:0;font-size:11px;color:var(--nx-t3)}
@@ -55,7 +56,8 @@ html[data-ui=next] .nxr.nxrm.on{box-shadow:inset 2px 0 0 var(--nx-info)}
 html[data-ui=next] .nxn{min-width:0}
 html[data-ui=next] .nxn :is(b,small){display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-ui=next] .nxn b{font-weight:500;color:var(--nx-t1)}
-html[data-ui=next] .nxn small{font-size:11px;color:var(--nx-t2)}
+/* ★«Heartbeat only · active 1d ago» needs 171px in a 154px cell: wrap instead of an ellipsis. */
+html[data-ui=next] .nxn small{font-size:11px;color:var(--nx-t2);white-space:normal;overflow-wrap:anywhere}
 html[data-ui=next] .nxm{text-align:right;white-space:nowrap;color:var(--nx-t2)}
 html[data-ui=next] .nxm.nxo{color:var(--nx-warn)}
 html[data-ui=next] .nxd{width:8px;height:8px;border-radius:50%;box-sizing:border-box;border:1.5px solid var(--nx-idle)}
@@ -92,8 +94,7 @@ html[data-ui=next] .sbar > .sbgap{min-width:0}
 /* sbFit (60-statusbar.js) measures with nothing shrinking, then hides .sbdN parts in order (.sbh). */
 html[data-ui=next] .sbar.sbfit > span{flex-shrink:0 !important}
 html[data-ui=next] .sbar .sbh{display:none !important}
-/* sbFit step 't': tighter cells before any text is dropped (10px -> 6px each side). */
-html[data-ui=next] .sbar.sbtight > span:not(.sbgap){padding:0 6px}
+/* ⚠No cell-padding squeeze step (★5h cell 216->208px at 900 crammed it): sbFit drops .sbdN parts instead. */
 html[data-ui=next] .sbar b{font-weight:600}
 /* Status-bar layer popover (60b-sbar-layer.js): account grid label / 5h / 7d / reset, then sessions · failures · kinds rows.
    ⚠.thpop.sblpop: a bare .sblpop ties with .thpop (93 loads later) and loses its padding/gap. */

@@ -10,7 +10,8 @@ function plNowLive(ss){
     return seen[k] ? false : (seen[k] = true);
   });
 }
-function plNowFolded(){ return lsGet('sidereus.plnowc', '') === '1'; }
+// Stored '1' folded / '0' open wins; unset = folded under 1000px (★the list squeezed to 163px at 900).
+function plNowFolded(){ const v = lsGet('sidereus.plnowc', ''); return v ? v === '1' : typeof innerWidth === 'number' && innerWidth < 1000; }
 // Run summary where the timeline cell shows its stepper (74b tlPlStrip): open run «● Working · stage» (pulse) / «● Needs you · stage» (amber, same label as the rail dot) /
 // «● Idle · stage»; ended «✓ name done»; no run = sessPlChip's «No pipeline» / «Undeclared» (unboxed by CSS).
 function plNowRun(x, k){
@@ -164,7 +165,7 @@ document.addEventListener('click', e => {
     if(t.dataset.pntid) openAgent(t.dataset.pnagc, t.dataset.pntid);   // same popup as a Timeline agent row (rule 1 exception: click only)
     return;
   }
-  if(t.hasAttribute('data-pnfold')){ if(plNowFolded()) lsDel('sidereus.plnowc'); else lsSet('sidereus.plnowc', '1'); plPaint(); return; }
-  if(t.classList.contains('plnlrd')) lsDel('sidereus.plnowc');   // rail dot: expand, then pick
+  if(t.hasAttribute('data-pnfold')){ lsSet('sidereus.plnowc', plNowFolded() ? '0' : '1'); plPaint(); return; }
+  if(t.classList.contains('plnlrd')) lsSet('sidereus.plnowc', '0');   // rail dot: expand, then pick
   plNowPick(t.dataset.pncwd, t.dataset.pnplat);
 });

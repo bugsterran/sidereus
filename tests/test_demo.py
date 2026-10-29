@@ -153,6 +153,14 @@ class DemoTest(unittest.TestCase):
         self.assertEqual((len(t["members"]), t["done"], t["total"]), (3, 3, sum(t["tasks"].values())))
         self.assertEqual({m["st"] for m in t["members"]}, {"run", "idle", "done"})
 
+    def test_screen_evidence_covers_qa_widths(self):
+        dt = sidereus("demo_tools")
+        rows = dt._demo_pl_evidence(self.anchor)["evidence"]
+        for r in (x for x in rows if x.get("screen")):
+            self.assertEqual(sorted({s["w"] for s in r["screen"]}), [900, 1100, 1440, 1920])
+            st = [s for s in r["steps"] if s["name"] == "screen"][0]
+            self.assertEqual((st["n"], st["failed"]), (len(r["screen"]), sum(not s["ok"] for s in r["screen"])))
+
     def test_plrun_shape(self):
         rows = self.get("/api/state", "since=0")["sessions"]
         (r,) = [p for x in rows for p in x.get("plrun", []) if p["name"] == "change-flow"]

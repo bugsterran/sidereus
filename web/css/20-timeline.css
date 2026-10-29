@@ -64,7 +64,7 @@ html[data-mv=time] #feed > .tlscr{flex:1 1 0;min-height:0;overflow-y:auto;oversc
 /* ⚠Light: the derived twin of c6 is #767223 (4.28:1 on the old tint). `[data-ui]` keeps 00-core from re-deriving this rule. */
 html[data-ui][data-theme=light] .tlp.c6{color:#5c5a12}
 /* ⚠The name cell is fixed-width: with a long project pill the trailing «N compactions» chip was clipped to one glyph.
-   ⇒ chips shrink (ellipsis, .tlcpn first) and never wrap; the pill keeps its natural width up to max-width. */
+   ⇒ session rows wrap the chips to a second line instead (see .tlrs rule below). */
 /* Project label: plain text with a colour square (currentColor, so the light twin's darker text colours it too). */
 .tlp{font-style:normal;font-size:13px;font-weight:600;padding:0;
   flex:0 0 auto;min-width:40px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -72,8 +72,10 @@ html[data-ui][data-theme=light] .tlp.c6{color:#5c5a12}
 .tlnm span{font-size:10.5px;color:#7e8896;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tlnm u{text-decoration:none;font-size:10.5px;color:#7e8896;background:#1b2431;border-radius:8px;
   padding:1px 7px;flex:0 0 auto;white-space:nowrap}
-/* Session rows only: chips beside the project pill give way (ellipsis) so the non-shrinking pill keeps its name. */
-.tlnm :has(> .tlp) > u{flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* ★Shrinking chips cut «218m active» 87→14px at 1100 ⇒ session name cell wraps: chips keep their text and drop to a second line; name caps at the cell, not 200px.
+   ⚠Scoped to .tlrs: the Pipelines «Working now» list (.plnli.tlnm, bare, no chips) has its own layout in 43-pipeline.css. */
+.tlrs .tlnm > b:has(> .tlp){flex-wrap:wrap;row-gap:2px}
+.tlrs .tlnm > b > .tlp{flex-shrink:1;max-width:100%}
 .tlb:hover{filter:brightness(1.25)}
 .tlt{position:relative;flex:1 1 auto;height:24px;background:#11161d;border-radius:5px;
   border:1px solid #1a212b;overflow:hidden}
@@ -144,7 +146,7 @@ html[data-ui=next][data-theme=light] .tlkb:hover{background:#1961d4}
 .tlaxr{display:flex;gap:12px;align-items:center;min-height:18px;margin-bottom:3px;
   position:sticky;top:34px;z-index:7;background:#0d1014}
 .tlaxr .tlnm{flex:0 0 var(--tlnm-w,clamp(260px,24vw,340px));position:relative}
-/* Name-column grip on the axis cell's right edge (inside it: .tllg clips overflow). */
+/* Name-column grip on the axis cell's right edge (inside it, so it spans the wrapped legend height). */
 .tlnmg{position:absolute;top:0;bottom:0;right:0;width:8px;cursor:col-resize;touch-action:none}
 .tlnmg::after{content:"";position:absolute;right:3px;top:1px;bottom:1px;width:2px;border-radius:1px;background:var(--nx-rule,#2b3545)}
 .tlnmg:hover::after,html.tlnmdrag .tlnmg::after{background:var(--nx-t3,#84868c)}
@@ -277,7 +279,9 @@ html[data-ui=next][data-theme=light] .tlsi i{filter:brightness(.7)}
 .tlidle{position:absolute;top:0;bottom:0;cursor:help;background:rgba(126,146,180,.10)}
 .tlnap i{display:none}
 /* Axis-row legend chips — same fills as .tlnap / .tlunk so the swatch is the band itself. */
-.tlaxr .tllg{gap:4px;font-size:10px;color:var(--nx-t2,#7e8896);white-space:nowrap;overflow:hidden}
+/* ★nowrap+overflow:hidden cut «Colour = project · type» 145→106px at 1920 en and «압축» to «압» at 900 ko ⇒ items wrap (each stays whole); the row grows, the track sits at the bottom. */
+.tlaxr .tllg{flex-wrap:wrap;gap:2px 4px;padding:2px 10px 2px 0;font-size:10px;color:var(--nx-t2,#7e8896);white-space:nowrap}
+.tlaxr > .tlt{align-self:flex-end}
 .tllg > span{display:inline-flex;align-items:center;gap:4px;margin-left:6px;cursor:help}
 .tllg i{flex:0 0 auto;width:14px;height:9px;border-radius:2px}
 .tllg i:not(:first-child){margin-left:6px}
