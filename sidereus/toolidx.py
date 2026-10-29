@@ -240,7 +240,7 @@ def _scan_file(fp, ent, limit, cut=-_INF):
     """Read up to `limit` bytes of `fp` from `ent["off"]` (complete lines only). True when EOF was reached."""
     with open(fp, "rb") as f:
         f.seek(ent["off"])
-        raw = f.read(limit)
+        raw = f.read(min(limit, max(os.fstat(f.fileno()).st_size - ent["off"], 0)))   # ⚠f.read(n) reserves n bytes up front (+32 MB per tail scan)
         eof = len(raw) < limit
         while not eof and b"\n" not in raw:          # one line longer than the chunk: finish that line
             more = f.read(limit)

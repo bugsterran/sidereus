@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- Memory: the tool-index cache is written row by row instead of building every row first; the boot peak drops by about 65 MB (291 → 226 MB, same machine and data).
+- Memory: the tool-index cache is written row by row instead of building every row first; the boot peak drops by about 65 MB (291 → 226 MB, same machine and data); a transcript tail scan reads only the bytes left in the file instead of reserving its whole 32 MB read limit.
 - Security checks: with no scanner findings the issues window shows «No scanner findings» (or «No issues match the filters») instead of a tall empty box, and an open window picks up the viewer's current styles on the next repaint after a reload instead of keeping the old ones.
 - Memory: the inline page is held at 2 bytes per character instead of 4 (about 5 MB less RSS): one literal emoji in a regex had widened the whole string; it is now an escape, and a test keeps every page character at or below U+FFFF.
 - Pipelines: the «Working now» card puts a subagent under a run only when its description carries that run's tag; an untagged agent is listed apart instead of looking like part of whatever run is open.

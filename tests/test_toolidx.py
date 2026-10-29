@@ -561,6 +561,23 @@ class ToolIdxStreamSaveTest(unittest.TestCase):
         size = os.path.getsize(ti.TI_CACHE)
         self.assertLess(peak, size // 4)          # every row rendered under the lock was ~1x size
 
+    def test_scan_tail_peak_is_not_the_read_limit(self):
+        import tracemalloc
+        fp = os.path.join(self.tmp, "p", "s.jsonl")
+        os.makedirs(os.path.dirname(fp))
+        with open(fp, "w", encoding="utf-8") as f:
+            for i in range(4):
+                f.write(json.dumps(_tu("toolu_%d" % i, "Read", {"x": "y" * 100}, NOW - i)) + "\n")
+        ent = ti._new_ent()
+        tracemalloc.start()
+        try:
+            ti._scan_file(fp, ent, 32 << 20)
+            peak = tracemalloc.get_traced_memory()[1]
+        finally:
+            tracemalloc.stop()
+        self.assertEqual(ent["off"], os.path.getsize(fp))
+        self.assertLess(peak, 1 << 20)            # f.read(limit) reserves the whole limit up front
+
     def test_snapshot_ignores_writes_after_the_lock(self):
         self._fill(3)
         want = list(ti._snapshot(NOW))
