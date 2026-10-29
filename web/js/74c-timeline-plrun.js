@@ -209,7 +209,7 @@ function tlPlStrip(pl){
   let h = pl.runs.map((r, i) => line(r, i === pl.runs.length - 1 ? pl.more : 0, i ? '' : ev, many)).join('');
   if(exp) h += pl.ended.map(r => line(r, 0, '', many)).join('');
   if(pl.ended.length){
-    const lab = exp ? T('Collapse') : T('+{n} done').replace('{n}', pl.ended.length);
+    const lab = exp ? T('Collapse') : T('+{n} finished runs').replace('{n}', pl.ended.length);
     h += '<button type=button class=tlplx id="' + esc('tlplx-' + sid8(pl.key)) + '" data-tlplx="' + esc(pl.key) + '" aria-expanded=' + exp + '>' + esc(lab) + '</button>';
   }
   return h;

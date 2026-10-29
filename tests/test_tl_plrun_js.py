@@ -200,7 +200,7 @@ console.log(JSON.stringify({ order: tlPlDrop(sts), nn: segs.filter(s => s.c.has(
         h = r[3]
         self.assertEqual(h.count('<div class="tlpl '), 3)
         self.assertEqual(h.count(">+1</i>"), 1)
-        self.assertIn('data-tlplx="s1" aria-expanded=false>+1 완료</button>', h)
+        self.assertIn('data-tlplx="s1" aria-expanded=false>+1 끝난 실행</button>', h)
         self.assertNotIn('data-tlpln="ended"', h)
         e = _run(sess, "(tlPlExp('s1'), [TLPL_EXP.has('s1'), PAINTS, tlPlStrip(pl)])")
         self.assertEqual(e[:2], [True, 1])
@@ -588,3 +588,20 @@ class TlPlHeadChip(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class SessChips(unittest.TestCase):
+    """74b tlSessNmB: the time and compaction chips name what they count (a bare «202분 · 1×» did not)."""
+
+    def test_chips_carry_nouns(self):
+        src = "\n".join([HEAD_KO,
+                         "const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\"/g, '&quot;');",
+                         "const aiLogo = p => ''; const repoHue = () => 1; const tlStateDot = it => ''; const fmtTok = n => String(n);",
+                         js_fn("tlSessNmB"),
+                         "console.log(JSON.stringify(tlSessNmB({cwd: '/a', proj: 'alpha', items: []}, {}, 202, 1)));"])
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        h = json.loads(r.stdout)
+        self.assertIn('>활동 202분</u>', h)
+        self.assertIn('<u class=tlcpn title="압축 1회">압축 1회</u>', h)

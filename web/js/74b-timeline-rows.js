@@ -91,10 +91,10 @@ function tlSessNmB(g, it, act, nComp, bare){
         + tlStateDot(it)
         // ⚠the chip is ellipsis-truncated (20-timeline.css .tlnm u) — title carries the full value
         + (bare ? '' : g.plat ? (tv => '<u title="'+esc(tv)+'">'+esc(tv)+'</u>')(T('Tokens')+' '+fmtTok(g.items.reduce((a2, x) => a2 + (x.tk || 0), 0)))
-                  : '<u title="'+esc(U(act,'m'))+'">'+U(act,'m')+'</u>')
-        // Compaction chip shows the count only («N×», red like the .tlcp mark); the ellipsised word lost the meaning, title keeps it.
-        + (nComp ? '<u class=tlcpn title="'+TV({msg: 'compacted {n}×', vars: {n: nComp}})+'">'
-            + esc(nComp+'×')+'</u>' : '') + '</b>';
+                  : (tv => '<u title="'+esc(tv)+'">'+esc(tv)+'</u>')(TV({msg: '{n} active', vars: {n: U(act,'m')}})))
+        // ⚠Both chips name what they count: a bare «202m · 1×» did not say active time / compactions.
+        // .tlcpn never shrinks (20-timeline.css), so the compaction word is not ellipsised away.
+        + (nComp ? (tv => '<u class=tlcpn title="'+esc(tv)+'">'+esc(tv)+'</u>')(TV({msg: 'compacted {n}×', vars: {n: nComp}})) : '') + '</b>';
 }
 // /clear spots (`x.clr = [{at, old8, new8}]`); absent/empty renders nothing so rows without a record keep their bytes.
 function tlClrMarks(its, pct){
