@@ -464,7 +464,8 @@ class LoopBack(unittest.TestCase):
         ps = "[{a: 10, b: 20, s: 'back'}]"
         r = self._cv("return [plNodeHtml(E, E.G.nodes[0], false, {구현: %s}), plNodeHtml(E, E.G.nodes[0], false, {구현: %s}), plNodeHtml(E, E.G.nodes[0], false, {구현: %s})];"
                      % (L % (2, ps), L % (2, "[]"), L % (1, ps)))
-        self.assertIn('<button type=button class="plpass" data-plpass="a" aria-haspopup=menu title="이 단계의 2번째 회차 — 이전 회차 보기" aria-label="이 단계의 2번째 회차 — 이전 회차 보기">↺2 ▾</button>', r[0])
+        self.assertIn('<button type=button class="plpass" data-plpass="a" aria-haspopup=menu title="이 단계의 2번째 회차 — 이전 회차 보기" aria-label="이 단계의 2번째 회차 — 이전 회차 보기">2번째 ▾</button>', r[0])
+        self.assertNotIn("↺2", r[0])                                       # ↺ is reserved for «sent back»
         self.assertNotIn("plpass", r[1])                                   # legacy row: k>=2 but no ps
         self.assertNotIn("plpass", r[2])
 
@@ -475,7 +476,7 @@ class LoopBack(unittest.TestCase):
         self.assertIn("pl-fail", r[0])
         self.assertIn("plx", r[0])
         self.assertIn('class="plpass on"', r[0])
-        self.assertIn(">↺1 ▾</button>", r[0])
+        self.assertIn(">1번째 ▾</button>", r[0])
         self.assertIn("pl-done", r[1])                                     # k changed: back to the latest pass
         self.assertEqual(r[2], {})
 
