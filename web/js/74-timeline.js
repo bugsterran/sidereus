@@ -169,7 +169,11 @@ function paintTl(){
     // the screen. ⚠The axis row label («asleep N min») was removed at the same time — the bar-row band tooltip carries the explanation
     // Inline legend in the axis row's empty name cell — hatching meaning was only in band tooltips (UX audit 09-24).
     + ('<div class=tlaxr><div class="tlnm tllg"><i class=tllgn></i>'+esc(T('Asleep'))
-      + '<span title="'+esc(T("The earlier part of this session's log was not read, so this span is unknown"))+'"><i class=tllgu></i>'+esc(T('Earlier log not read'))+'</span>'+'</div><div class=tlt>'+axis+'</div></div>'
+      + '<span title="'+esc(T("The earlier part of this session's log was not read, so this span is unknown"))+'"><i class=tllgu></i>'+esc(T('Earlier log not read'))+'</span>'
+      // Bar colours had no key: session = project colour, subagent = agent type, ringed = running, red tick = compaction.
+      + '<span title="'+esc(T('Session bars take the project colour (the square next to the name). Subagent bars are coloured by agent type; a ringed bar is running.'))+'"><i class=tllgc></i>'+esc(T('Colour = project · type'))+'</span>'
+      + '<span title="'+esc(T('Red tick: the context was compacted here'))+'"><i class=tllgk></i>'+esc(T('Compacted'))+'</span>'
+      +'</div><div class=tlt>'+axis+'</div></div>'
       // .tlscr = the only scroller on this tab (20-timeline.css): rows scroll, the summary below stays pinned
       + '<div class=tlscr><div class=tlwrap>'+tkRow+bars
         + '<div class=tlfut id=tlfut hidden></div>'

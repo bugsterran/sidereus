@@ -605,3 +605,9 @@ class SessChips(unittest.TestCase):
         h = json.loads(r.stdout)
         self.assertIn('>활동 202분</u>', h)
         self.assertIn('<u class=tlcpn title="압축 1회">압축 1회</u>', h)
+
+    def test_axis_legend_keys_bar_colours(self):
+        s = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "74-timeline.js"), encoding="utf-8").read()
+        lg = s[s.index("<div class=tlaxr>"):s.index("<div class=tlt>'+axis")]
+        for k in ("tllgn", "tllgu", "tllgc", "tllgk"):                      # asleep · unread · colour key · compaction tick
+            self.assertIn("class=" + k, lg)
