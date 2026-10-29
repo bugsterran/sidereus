@@ -212,8 +212,8 @@ class Graph(unittest.TestCase):
         self.assertEqual(out["c"], [4, 4])
 
     def test_wrap_cols_one_row_at_min_zoom(self):
-        # plWrapCols: one row readable at >= PL_ZMIN stays one row (4 stages, 832px canvas went 3+1); a long chain still wraps
-        fns = "const PL_ZMIN = 0.8;\n" + "\n".join(js_fn(f) for f in ("plFitRaw", "plWrapCols"))
+        # plWrapCols: one row readable at >= the floor stays one row (4 stages, 832px canvas went 3+1); a long chain still wraps
+        fns = "var innerWidth = 1000;\n" + "\n".join(js_fn(f) for f in ("plZFloor", "plFitRaw", "plWrapCols"))   # < 1100: 90% floor
         out = _js(fns + "\nconst mk = k => plgFrom({name: 'x', defaults: {model: 'inherit', retry: 0}, stages: Array.from({length: k}, (_, i) => ({title: 's' + i, agent: 'a'}))});"
                   "console.log(JSON.stringify([plWrapCols(mk(4), 832, 700), plWrapCols(mk(7), 785, 700), plWrapCols(mk(7), 1016, 700)]));")
         self.assertEqual(out[0], 4)
@@ -540,22 +540,25 @@ class Fit(unittest.TestCase):
     """plFit (48d): saved positions fit the whole chain; «정렬» (keepZ) keeps the zoom and re-flows to fit it."""
 
     def _fit(self, body):
-        zc = re.search(r"^const PL_ZMIN[^\n]*$", js_all(), re.M).group(0)
-        return run(zc + "\n" + js_fn("plFit") + "\n" + js_fn("plFitKey") + "\n" + js_fn("plSizeKey") + "\nconst E = {G: G}; const vis = cw => { const z = E.view.z;"
+        zc = re.search(r"^const PL_ZFIT[^\n]*$", js_all(), re.M).group(0)
+        return run(zc + "\nvar innerWidth = 1920;\n" + js_fn("plZFloor") + "\n" + js_fn("plFit") + "\n" + js_fn("plFitKey") + "\n" + js_fn("plSizeKey") + "\nconst E = {G: G}; const vis = cw => { const z = E.view.z;"
                    " return G.nodes.filter(n => (n.ui.x + plgW(G, n.id)) * z + E.view.x <= cw).length; };\n" + body)
 
-    def test_saved_positions_fit_all(self):
-        out = self._fit("plgLayout(G, 64, 9); plFit(E, {clientWidth: 600, clientHeight: 400}, false);"   # one row, 1264px wide
-                        "console.log(JSON.stringify([E.view.z, vis(600)]));")
-        self.assertLess(out[0], 0.8)                 # below the old 80% floor
-        self.assertEqual(out[1], 5)                  # every stage on canvas
+    def test_saved_positions_keep_floor(self):
+        # ⚠fitting a 1264px row into 600px shrank card text to ~11px: auto-fit stops at 100% (90% below a 1100px window) and the canvas pans
+        out = self._fit("plgLayout(G, 64, 9); const cv = {clientWidth: 600, clientHeight: 400}; plFit(E, cv, false); const a = [E.view.z, vis(600)];"
+                        "innerWidth = 1099; plFit(E, cv, false); console.log(JSON.stringify([a, E.view.z]));")
+        self.assertEqual(out[0][0], 1)
+        self.assertLess(out[0][1], 5)                # the rest is reached by panning
+        self.assertEqual(out[1], 0.9)
 
     def test_first_paint_wraps_when_unreadable(self):
-        # narrow canvas: one saved row fits only at the 40% floor -> wrapped rows show every stage at a larger zoom
-        out = self._fit(WRAP + "plgLayout(G, 64, 9); const cv = {clientWidth: 350, clientHeight: 426}; plFit(E, cv, false); const z0 = E.view.z;"
+        # narrow canvas: one saved row does not fit at the floor -> wrapped rows show every stage at the same zoom
+        out = self._fit(WRAP + "plgLayout(G, 64, 9); const cv = {clientWidth: 350, clientHeight: 426}; plFit(E, cv, false); const z0 = [E.view.z, vis(350)];"
                         "plWrapFirst(E, cv); console.log(JSON.stringify([z0, E.view.z, vis(350), E.laid, E.touched]));")
-        self.assertEqual(out[0], 0.4)
-        self.assertGreater(out[1], out[0])
+        self.assertEqual(out[0][0], 1)
+        self.assertLess(out[0][1], 5)
+        self.assertEqual(out[1], 1)
         self.assertEqual(out[2:4], [5, True])
         self.assertFalse(out[4])                     # an auto wrap is not a user action: later resizes may re-fit
 

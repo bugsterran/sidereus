@@ -151,7 +151,11 @@ function plNodeHtml(E, n, bad, lt){
   const G = E.G, L0 = lt && lt[n.title], pi = L0 ? plPassSel(E, n.id, L0) : -1, L = pi >= 0 ? Object.assign({}, L0, plPass(L0, pi)) : L0, eff = n.model || G.defaults.model;
   const warn = PL_JUDGED.includes(n.title) && PL_LOW.includes(eff) ? ' <span class=plwarn title="' + esc(T('Judgment stages should keep a strong model')) + '">⚠</span>' : '';
   const chips = plFlagChips(n);
-  const unv = String(n.gate || '').trim() ? '' : '<span class=plunv title="' + esc(T('No gate command — nothing machine-checks this stage')) + '" aria-label="' + esc(T('Unverified') + ' — ' + T('No gate command — nothing machine-checks this stage')) + '">' + esc(T('Unverified')) + '</span>';   // judgment stages are expected here
+  // Model line: «inherit» (on the stage or via defaults) reads as the session's model, not a raw config word.
+  const inh = !eff || eff === 'inherit', mtx = inh ? T('Session model') : n.model || T('default', 'short') + ' (' + G.defaults.model + ')';
+  const mln = '<div class=plnm' + (inh ? ' title="' + esc(T("No model set; the stage uses the session's model")) + '"' : '') + '>' + esc(mtx) + warn + '</div>';
+  const ngt = T('No check command runs after this stage — nothing machine-checks it');
+  const unv = String(n.gate || '').trim() ? '' : '<span class=plunv title="' + esc(ngt) + '" aria-label="' + esc(T('No gate') + ' — ' + ngt) + '">' + esc(T('No gate')) + '</span>';   // pairs with the «Gate» chip; judgment stages are expected here
   const oc = L && PL_OUTCOME[L.st] ? plOc(L.st) + (L.why ? ' (' + L.why + ')' : '') : '', lsTxt = L ? [oc, L.n ? T('Agent') + ' ' + L.n + ' · ' + ago(L.sec) : oc ? '' : T('Waiting')].filter(Boolean).join(' · ') : '';
   const live = L ? '<div class=plls title="' + esc(lsTxt) + '">' + esc(lsTxt) + '</div>' : '';   // title: the pill ellipsizes at 150px
   const sel = E.sel && E.sel.k === 'n' && E.sel.id === n.id ? ' on' : '';
@@ -175,7 +179,7 @@ function plNodeHtml(E, n, bad, lt){
     + '<i class="plport plpout" data-plport=flow title="' + esc(T('Drag to connect the next stage')) + '"></i>'
     + '<i class="plport plpbk" data-plport=loop title="' + esc(T('Drag to an earlier stage to loop back on failure')) + '"></i>'
     + '<div class=plt>' + icon + esc(plgShow(n.title)) + rb + '</div><div class=plna>' + esc(n.agent || '') + '</div>' + adh
-    + '<div class=plnm>' + esc(n.model || T('default', 'short') + ' (' + G.defaults.model + ')') + warn + '</div>' + (chips.length || unv ? '<div class=plnc title="' + esc(chips.map(c => c[0] + ' — ' + c[1]).join('\n')) + '">' + unv + esc(chips.map(c => c[0]).join(' · ')) + '</div>' : '')
+    + mln + (chips.length || unv ? '<div class=plnc title="' + esc(chips.map(c => c[0] + ' — ' + c[1]).join('\n')) + '">' + unv + esc(chips.map(c => c[0]).join(' · ')) + '</div>' : '')
     + (L && typeof PLS === 'object' ? plEvLine(plEvRows(PLS.proj), L, plEvCommits(PLS.proj)) : '') + live + pb + '</div>';
 }
 function plCanvas(p, d, lt){
@@ -301,10 +305,12 @@ function plGuardsRead(pan){
 function plRulesRead(pan){
   return plgRulesJoin([...pan.querySelectorAll('[data-plr]')].filter(x => x.checked).map(x => +x.dataset.plr), (pan.querySelector('[data-plrf]') || {}).value || '', plRuleList());
 }
-// First open / «Arrange» / resize (until the user pans, zooms or drags): zoom ≤ 100% and never below PL_ZMIN — a chain that
-// does not fit at PL_ZMIN wraps into rows instead (★2026-10-01 live check: 7 stages fitted to 54% were unreadable).
+// First open / «Arrange» / resize (until the user pans, zooms or drags): zoom ≤ 100% and never below plZFloor() — a chain that
+// does not fit at the floor wraps into rows, and what still does not fit pans (★2026-10-01 live check: 7 stages fitted to 54% were unreadable).
 // `relayout` = positions are ours (file had none, or «Arrange»): re-flow the chain for this canvas width first.
-const PL_ZMIN = 0.8, PL_ZFIT = 0.4;   // PL_ZFIT = the zoom buttons' floor
+const PL_ZFIT = 0.4;   // PL_ZFIT = the zoom buttons' floor (manual − only)
+// ⚠Auto-fit floor: 100% at a >= 1100px window, 90% below — fitting further shrank card text to ~11px.
+function plZFloor(){ return typeof innerWidth === 'number' && innerWidth > 0 && innerWidth < 1100 ? 0.9 : 1; }
 // keepZ («Arrange»): re-flow for the width visible at the current zoom and keep it — snapping to 100% pushed stages off-canvas.
 // No relayout (saved positions): fit the whole graph (≥ PL_ZFIT) — at the 80% floor 6 stages showed 1 at 900px, 4 at 1440px.
 // Drawn extent in graph units: nodes + the status pill above them + loop lanes (and their label pills) below / in the left gutter.
@@ -341,13 +347,12 @@ function plFit(E, cv, relayout, keepZ, ctr){
   const G = E.G, cw = cv.clientWidth, ch = cv.clientHeight || 400, z0 = keepZ && E.view ? E.view.z : 0;
   if(relayout){
     const W = z0 ? cw / z0 : cw;
-    const ws = plgOrder(G).order.map(id => plgW(G, id)), n = ws.length, c = plgCols(n, W, z0 ? 1 : PL_ZMIN, ws);
+    const ws = plgOrder(G).order.map(id => plgW(G, id)), n = ws.length, c = plgCols(n, W, z0 ? 1 : plZFloor(), ws);
     plgLayout(G, plgGap(c, W, c === n ? ws : Array(c).fill(Math.max(PLG_W, ...ws))), c);
   }
   const V = plVG(E), w = Math.max(...V.nodes.map(n => n.ui.x + plgW(G, n.id)), PLG_W) + PLG_X0, top = Math.min(...G.nodes.map(n => n.ui.y), PLG_Y0);
   const bot = Math.max(...G.nodes.map(n => n.ui.y + plgH(G, n.id))) + PLG_LANE * (G.loops.length + 1);
-  const z = z0 || (relayout ? Math.max(PL_ZMIN, Math.min(1, cw / w))
-                            : Math.max(PL_ZFIT, Math.min(1, cw / w, ch / (bot - top + 2 * PLG_Y0))));
+  const z = z0 || Math.max(plZFloor(), Math.min(1, relayout ? cw / w : Math.min(cw / w, ch / (bot - top + 2 * PLG_Y0))));
   E.view = { x: 0, y: Math.max(Math.round(Math.max(0, 30 - top) * z), Math.round(Math.min(ch / 6 - (top + PLG_H / 2) * z, (ch - (bot - top) * z) / 2 - top * z))), z };
   if(ctr) E.ctrd = true;
   if(ctr || E.first || E.ctrd) plCentre(E, cv, true);
@@ -357,7 +362,7 @@ function plFit(E, cv, relayout, keepZ, ctr){
 function plFitKey(E, cv){ return cv.clientWidth + 'x' + cv.clientHeight + '/' + E.G.nodes.length; }
 // ⚠Measured card sizes: the live run arrives on a later paint and widens cards (184 -> 252px), leaving the first-open fit clipped.
 function plSizeKey(E){ return JSON.stringify([E.G.wd || {}, E.G.ht || {}]); }
-// First paint of saved positions that only fit below PL_ZMIN (★6 stages: 40% floor showed 3 of 6 at 900px, 5 at 1100px):
+// First paint of saved positions that only fit below the floor (★6 stages: 40% floor showed 3 of 6 at 900px, 5 at 1100px):
 // wrap into the row count that shows the whole chain at the largest zoom — ties keep fewer rows. Display re-flow only:
 // E.laid marks the positions ours, so the draft stays clean.
 // Largest zoom at which the whole graph fits the canvas (uncapped; same box as plFit).
@@ -373,22 +378,24 @@ function plCvNeed(G, cw, vh){
   if(!G || !G.nodes.length) return 200;
   if(!(cw > 0)) return cap;
   const top = Math.min(...G.nodes.map(m => m.ui.y), PLG_Y0), bot = Math.max(...G.nodes.map(m => m.ui.y + plgH(G, m.id))) + PLG_LANE * (G.loops.length + 1);
-  const hh = bot - top + 2 * PLG_Y0, z = Math.min(1, plFitRaw(G, cw, Infinity));
+  const hh = bot - top + 2 * PLG_Y0, z = Math.max(plZFloor(), Math.min(1, plFitRaw(G, cw, Infinity)));
   return Math.max(200, Math.min(cap, Math.ceil(hh * z + 8)));
 }
 function plWrapCols(G, cw, ch){
   const n = plgOrder(G).order.length;
-  let best = n, bz = -1;
-  // One row readable at >= PL_ZMIN wins (same rule as plgCols); max-zoom search alone wrapped 4 stages into 3+1 at 1440.
-  const T1 = JSON.parse(JSON.stringify(G)); plgLayout(T1, 28, n);
-  if(Math.min(1, plFitRaw(T1, cw, ch)) >= PL_ZMIN) return n;
+  let best = n, bz = -1, wide = 0;
+  // One row readable at >= the floor wins (same rule as plgCols); max-zoom search alone wrapped 4 stages into 3+1 at 1440.
+  const zf = plZFloor(), T1 = JSON.parse(JSON.stringify(G)); plgLayout(T1, 28, n);
+  if(Math.min(1, plFitRaw(T1, cw, ch)) >= zf) return n;
   for(let c = n; c >= 1; c--){
     const T = JSON.parse(JSON.stringify(G));
     plgLayout(T, 28, c);
     const z = Math.min(1, plFitRaw(T, cw, ch));
     if(z > bz + 1e-6){ bz = z; best = c; }
+    if(!wide && plFitRaw(T, cw, Infinity) >= zf) wide = c;
   }
-  return best;
+  // Nothing fits at the floor: the view stays floored, so keep every column on screen and let it pan vertically.
+  return bz >= zf ? best : wide || 1;
 }
 // Best-wrap re-flow shared by first paint, «Arrange» and «Fit to view», so all three show every stage at the same best zoom.
 // keepZ («Arrange»): keep the current zoom when the re-flowed chain still fits at it, else fit.
@@ -401,7 +408,7 @@ function plWrapBest(E, cv, keepZ, ctr){
   plFit(E, cv, false, !!(keepZ && z0 && z0 <= plFitRaw(E.G, cw, ch) + 1e-6), ctr);
 }
 function plWrapFirst(E, cv){
-  if(E.laid || !E.view || E.view.z >= PL_ZMIN) return;
+  if(E.laid || !E.view || !cv || plFitRaw(E.G, cv.clientWidth, cv.clientHeight || 400) >= plZFloor()) return;   // the view is floored: test the raw fit
   E.view = null; plWrapBest(E, cv, false);
 }
 function plZoomLabel(cv, z){ const w = cv && cv.closest('.plcvw'), s = w && w.querySelector('.plzv'); if(s) s.textContent = Math.round(z * 100) + '%'; }

@@ -8,7 +8,7 @@ import unittest
 from tests._load import ROOT, js_fn
 from tests.test_pipeline_graph import P, _js
 
-FNS = "\n".join(js_fn(f) for f in ("plFitRaw", "plCvNeed"))
+FNS = "\n".join(js_fn(f) for f in ("plZFloor", "plFitRaw", "plCvNeed"))
 
 
 def src(rel):
