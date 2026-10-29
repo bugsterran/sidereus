@@ -520,7 +520,7 @@ class Harness(unittest.TestCase):
                "checkpoints": {"full": {"runs": 1, "caught": 2, "listed": 1}, "fast": {"runs": 1, "caught": 0}}}
         d = json.dumps({"report": rep, "guards": {"runs": 1, "deny": 0}})
         h = _js("LANG = 'en'; HN.cp = 'full'; const a = hnReport(%s); HN.cp = ''; console.log(JSON.stringify(a + hnReport(%s)))" % (d, d))
-        for t in ("ran 1 time, caught 0", "ran 1 time, blocked 0", 'title="ran 1 time"', "1 commit<", "1 older catch, not listed"):
+        for t in ("ran 1 time, caught 0", "ran 1 time, blocked 0", '\nran 1 time"', "the full gate (tests, screen check)", '<em class=hnsc title="scripts/check.sh --full:', "1 commit<", "1 older catch, not listed"):
             self.assertIn(t, h)
         self.assertNotIn("1 times", h)
         self.assertNotIn("1 commits", h)
