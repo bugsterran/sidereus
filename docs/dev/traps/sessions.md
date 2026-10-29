@@ -51,6 +51,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ `wait` rows with a non-empty `sub`: activity = newest of main `ageSec` and min sub `idle`; marker newer than that ⇒ `blocked = "subagent waiting for approval"` (fixed label; client special-cases it before the `<Tool> waiting for approval` split). `tests/test_perm_mark.py`.
   - ⚠Never set it for idle rows without a running sub — stale markers ⇒ false «blocked».
   - ⚠With 2+ subs, a sibling's newer log write hides a real prompt (accepted false negative); a sub without an int `idle` skips the row.
+- **A main-turn Bash prompt showed no badge** (`perm_marks.perm_rows`, `mtool` branch). Cause: background subs' auto-approved Bash decisions (session-wide OTel) were newer than the main marker and cleared it.
+  - ⇒ the per-tool decision counts only when no sub wrote after the marker (`_sub_act` ≤ t, unknown = unattributable); otherwise only a running shell clears a Bash marker. `tests/test_perm_mark.py`.
+  - ⚠Do not drop the sub check: a resolved main prompt is cleared by its tool_result (`_pend_mark`), so keeping the marker fails toward the wait.
 - ★**Turn end without a marker read as «thinking» forever** (live: 7h). Cause: a resumed/ended session can end on a text-only assistant line with no `turn_duration`/`stop_hook_summary` after it.
   - ⇒ `parse._turn_shape` also closes the turn when the line has `stop_reason` `end_turn`/`stop_sequence` or model `"<synthetic>"`.
   - ⚠A text line with `stop_reason` null is mid-turn and stays `"result"`.

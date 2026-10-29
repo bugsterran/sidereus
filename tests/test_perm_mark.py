@@ -228,6 +228,25 @@ class PermMark(unittest.TestCase):
         LP._DEC_AT[SID]["tools"]["Write"] = int(NOW)
         self.assertEqual(LP.perm_rows([row], now=NOW)[0]["blocked"], "")
 
+    def test_main_bash_decision_unattributable_when_sub_wrote_after(self):
+        # Main Bash prompt at T; a sub's auto-approved Bash decision lands later and must not clear the main wait.
+        T = NOW - 60
+        self._transcript([self._use(T - 0.3, "a", "Bash")])
+        self._hook({"hook_event_name": "PermissionRequest", "session_id": SID, "tool_name": "Bash"}, t=T)
+        LP._DEC_AT[SID] = {"t": int(NOW - 15), "tools": {"Bash": int(NOW - 15)}}
+        row = dict(self._row(age=10), tool="Bash", cwd="/w/p")
+        with mock.patch.object(LP, "_SUB_LOG", {}):
+            busy = dict(row, sub=[{"aid": "s1", "lab": "x", "idle": 20}])        # sub active after the marker
+            self.assertEqual(LP.perm_rows([busy], now=NOW)[0]["blocked"], "Bash waiting for approval")
+            unknown = dict(row, sub=[{"aid": "s1", "lab": "x"}])                 # unknown activity: unattributable
+            self.assertEqual(LP.perm_rows([unknown], now=NOW)[0]["blocked"], "Bash waiting for approval")
+            self.busy = {"/w/p": True}                                           # a running shell still clears it
+            self.assertEqual(LP.perm_rows([busy], now=NOW)[0]["blocked"], "")
+            self.busy = None
+            quiet = dict(row, sub=[{"aid": "s1", "lab": "x", "idle": 100}])      # control: sub quiet since before T
+            self.assertEqual(LP.perm_rows([quiet], now=NOW)[0]["blocked"], "")
+            self.assertEqual(LP.perm_rows([row], now=NOW)[0]["blocked"], "")
+
     def test_stale_or_answered_marker_gives_no_badge(self):
         T = NOW - 60
         self._hook({"hook_event_name": "PermissionRequest", "session_id": SID, "tool_name": "Write"}, t=T)
