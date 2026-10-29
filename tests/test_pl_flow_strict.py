@@ -181,7 +181,7 @@ class Strict(unittest.TestCase):
         self.assertFalse(self.denied(self.bash("echo 'a\nsed -i s/a/b/ f.py'", "x")))   # quoted newline is data
 
     def test_r6_l2_heredoc_body_is_data(self):
-        out = os.path.join(self.tmp, "outside", "x.py")
+        out = os.path.join(self.tmp, "outside", "x.py").replace(os.sep, "/")   # ⚠ posix shlex eats unquoted backslashes
         self.assertFalse(self.denied(self.bash("cat > %s <<'EOF'\nif n > 0:\n    pass\nEOF" % out, "x")))
         self.assertFalse(self.denied(self.bash("cat > %s <<-EOF\nx > f.py\n\tEOF\nls" % out, "x")))
         self.assertTrue(self.denied(self.bash("cat > f.py <<EOF\nhi\nEOF", "x")))
@@ -190,11 +190,11 @@ class Strict(unittest.TestCase):
     def test_r6_l3_cd_moves_relative_targets(self):
         out = os.path.join(self.tmp, "outside")
         os.makedirs(out, exist_ok=True)
-        self.assertFalse(self.denied(self.bash("cd %s && echo x > out" % out, "x")))
+        self.assertFalse(self.denied(self.bash("cd %s && echo x > out" % out.replace(os.sep, "/"), "x")))
         self.assertTrue(self.denied(self.bash("cd src && echo x > out", "x")))
         for c in ("cd $X && echo x > out", "cd ~ && echo x > out", "cd - && echo x > out", "cd && echo x > out"):
             self.assertFalse(self.denied(self.bash(c, "x")), c)   # unknown dir: fail-open
-        self.assertTrue(self.denied(self.bash("cd $X && echo x > %s" % os.path.join(self.proj, "f.py"), "x")))
+        self.assertTrue(self.denied(self.bash("cd $X && echo x > %s" % os.path.join(self.proj, "f.py").replace(os.sep, "/"), "x")))
 
     def test_r6_l4_prefixed_commands(self):   # keywords, assignments and env come before the real command
         for c in ("if true; then sed -i s/a/b/ f.py; fi", "for x in a; do tee f.py; done", "X=1 tee f.py",
