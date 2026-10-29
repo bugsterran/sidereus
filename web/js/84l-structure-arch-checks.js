@@ -118,17 +118,27 @@ function archChkPick(cands, p){
   const m = typeof lsJson === 'function' ? lsJson('sidereus.ckfix', {}) : {}, sid = m && typeof m === 'object' && Object.prototype.hasOwnProperty.call(m, p) ? m[p] : '';
   return (cands.find(c => c.sid === sid) || cands[0] || {}).sid || '';
 }
-// Pure: DM body (mailbox wire text, not UI): rule · file:line · help only — no code text (rule 1).
+// Pure: DM body (mailbox wire text, not UI) = a security-fix run request (header as archChkRunBody) + rule · file:line · help only — no code text (rule 1).
+// ⚠The pipeline's re-scan stage moves the Security badge, not arch-map. Recipients are Claude-only (archChkFixCands without cx).
+const ARCH_FIX_PL = 'security-fix', ARCH_FIX_KEYS = 50, ARCH_FIX_KEY_MAX = 300, ARCH_FIX_CHARS = 6000;   // = sidereus/pl_reqs.py KEYS_MAX / KEY_MAX / KEYS_CHARS_MAX
 function archChkFixBody(p, c, items, home){
   const tools = items.map(x => String(x.tool || '?')).filter((t, i, a) => a.indexOf(t) === i).join(', '), cm = String((c && ((c.security && c.security.commit) || c.commit)) || '').slice(0, 8);
-  return 'Please fix these ' + tools + ' findings in ' + p + (cm ? ' (commit ' + cm + ')' : '') + ':\n'
+  const h = home ? String(home).replace(/\/+$/, '') + '/' : '', pl = 'security-fix';   // = ARCH_FIX_PL; literal: other tests extract this function alone
+  return '파이프라인 ' + pl + ' 실행 — 요청: «' + p + ' 보안 수정 ' + items.length + '건»\n'
     + 'Target repository: ' + p + ' — work there (cd), not in your own cwd.\n'   // recipient may be a session of another repo (tier 1/2)
-    + items.map(x => { const h = archChkHelp(c, x);
+    + 'Pipeline: ' + h + '.claude/pipelines/' + pl + '.json (fix → re-scan → review); run it from ' + (h || 'the Sidereus repository') + ' with --repo ' + p + '\n'
+    + 'Gate: python3 ' + h + 'scripts/arch_checks.py --verify --last --category security (Windows: py ' + h + 'scripts/arch_checks.py --verify --last --category security)\n'
+    + 'Fix these ' + tools + ' findings' + (cm ? ' (commit ' + cm + ')' : '') + ':\n'
+    + items.map(x => { const hp = archChkHelp(c, x);
       return '- ' + archChkLv(x.sev) + ' · ' + (archChkRule(x, true) || '?') + ' · ' + x.file + ':' + (parseInt(x.line, 10) || 1)
-        + (h.desc ? ' — ' + h.desc : '') + (h.url ? ' (' + h.url + ')' : ''); }).join('\n')
+        + (hp.desc ? ' — ' + hp.desc : '') + (hp.url ? ' (' + hp.url + ')' : ''); }).join('\n')
     + "\nFix the cause, keep behaviour, run the project's tests."
-    // ⚠Re-run the security check, not arch-map: only a new scan moves the Security badge. Recipients are Claude-only (archChkFixCands without cx).
-    + "\nOnce the fix is committed, re-run the security check on " + p + " so the Security badge reflects it — run:\n" + archChkRunBody(p, home, false);
+    + '\nTag each stage dispatch description with [pl:' + pl + '/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.';
+}
+// Pure: plreq keys of the requested findings (the line counts j/k on these); null past the server caps.
+function archChkFixKeys(items){
+  const k = items.map(archChkKey).filter((x, i, a) => a.indexOf(x) === i);
+  return k.length && k.length <= ARCH_FIX_KEYS && k.every(x => x.length <= ARCH_FIX_KEY_MAX) && k.reduce((n, x) => n + x.length, 0) <= ARCH_FIX_CHARS ? k : null;
 }
 // ── «Run security check»: relays a security-checks run request (preview + confirm), or shows the terminal command ──
 // ⚠Sidereus never runs the scanners itself (AGENTS.md rule 7): a session of the project runs the pipeline.
@@ -349,14 +359,38 @@ function archChkSentHtml(S){
   return (S.sent && S.sent.to ? '<div class="archckst archsent" role=status><span aria-hidden=true>✓</span> ' + esc(T('Requested → {s} · {t}').replace('{s}', () => S.sent.to).replace('{t}', () => S.sent.at || '')) + '</div>' : '')
     + (S.msg ? '<div class="archmsg archerr" role=alert>' + esc(S.msg) + '</div>' : '');
 }
-// Pure: last «Request fix» from the server record (plReq `checks-fix`; 48i passes its `eval-fix` row as rec) + its mailbox receipt (ACK); ⚠typeof: some tests load without 84l2.
+// Pure: newest «Request fix» record of repo p — `security-fix` run request, or an old plain `checks-fix` DM.
+function archChkFixLast(p, now){
+  if(typeof archReqLast !== 'function') return null;   // ⚠typeof: some tests load without 84l2
+  const a = archReqLast(p, ARCH_FIX_PL, now), b = archReqLast(p, 'checks-fix', now);
+  return a && b ? (archReqMs(b) > archReqMs(a) ? b : a) : a || b;
+}
+// Pure: security-fix progress on the requested findings only: after a newer scan «requested k: fixed j · left k−j»
+//   (j per tool+file+rule = requested − found in the scan, hidden rules included), «Done» only when j = k and the review stage passed.
+//   ⚠Line is ignored: a fix that shifts lines must not make an untouched finding read fixed.
+//   ⚠Absent from `top` counts as fixed: past TOP_MAX (50) a finding pushed out by newer, higher ones also reads fixed.
+function archChkFixProg(p, r){
+  const keys = (Array.isArray(r.keys) ? r.keys : []).filter(k => typeof k === 'string'), d = ARCH.cache[p], k = keys.length;
+  const fx = typeof r.fix === 'string' && /^[0-9a-f]{7,12}$/.test(r.fix) ? r.fix : '';
+  const no = fx ? T('handled without the pipeline') + ' ' + fx : '';   // server sends `fix` only with no run attached
+  if(!k || !d || !(archChkScanAt(d) > (+r.at || 0))) return no || (r.state === 'run' ? T('Running', 'pl request') + (r.stage ? ' · ' + String(r.stage) : '') : '');
+  const g = x => { const a = String(x).split('\t'); return a[0] + '\t' + a.slice(1, -2).join('\t') + '\t' + a[a.length - 1]; };   // key = tool TAB file TAB line TAB rule
+  const have = Object.create(null), want = Object.create(null);
+  archChkTop(d).forEach(x => { const q = g(archChkKey(x)); have[q] = (have[q] || 0) + 1; });
+  keys.forEach(x => { const q = g(x); want[q] = (want[q] || 0) + 1; });
+  const j = Object.keys(want).reduce((n, q) => n + Math.max(0, want[q] - (have[q] || 0)), 0), c = T('requested {k}: fixed {j} · left {l}').replace('{k}', () => k).replace('{j}', () => j).replace('{l}', () => k - j);
+  return (j === k && r.reviewOk === true ? T('Done', 'pl request') + ' · ' : '') + (no ? no + ' · ' : '') + c;
+}
+// Pure: last «Request fix» from the server record (plReq `security-fix` / old `checks-fix`; 48i passes its `eval-fix` row as rec) + its mailbox receipt (ACK).
 function archChkFixRecHtml(p, rec){
-  const r = rec !== undefined ? rec : typeof archReqLast === 'function' ? archReqLast(p, 'checks-fix') : null;
+  const r = rec !== undefined ? rec : typeof archChkFixLast === 'function' ? archChkFixLast(p) : null;   // ⚠typeof: other tests extract this function alone
   if(!r) return '';
   const a = (typeof ACK !== 'undefined' && ACK && ACK[r.id]) || {}, ak = (Array.isArray(a.ack) ? a.ack : []).filter(x => x && x.who);
   // ⚠checks-fix closes only on evidence (a commit, then a re-scan); what the session says (ack note) is not shown.
   const fx = typeof r.fix === 'string' && /^[0-9a-f]{7,12}$/.test(r.fix) ? r.fix : '', dl = ak.length || (Array.isArray(a.delivered) && a.delivered.length);
-  const rc = r.pipeline === 'checks-fix' ? (r.state === 'done' ? T('re-scan done — {n} issues left').replace('{n}', () => (ARCH.cache[p] ? archChkView(ARCH.cache[p], {}, archChkHidden(p)).length : 0))
+  const sf = r.pipeline === 'security-fix' ? archChkFixProg(p, r) : '';   // literal, not ARCH_FIX_PL: 48i tests extract this function alone
+  const rc = sf ? sf : r.pipeline === 'security-fix' ? (dl ? T('Delivered') : r.state === 'gone' ? T('No session', 'pl request') : '')
+    : r.pipeline === 'checks-fix' ? (r.state === 'done' ? T('re-scan done — {n} issues left').replace('{n}', () => (ARCH.cache[p] ? archChkView(ARCH.cache[p], {}, archChkHidden(p)).length : 0))
     : fx ? T('fix commit seen {h}').replace('{h}', () => fx) : dl ? T('Delivered') : r.state === 'gone' ? T('No session', 'pl request') : '')
     : r.state === 'done' ? T('Done', 'pl request') : ak.length ? T('acked') + ' · ' + ak.map(x => String(x.who) + (x.note ? ' — ' + String(x.note).slice(0, 60) : '')).join(' · ')
     : (Array.isArray(a.delivered) && a.delivered.length ? T('Delivered') : r.state === 'gone' ? T('No session', 'pl request') : '');
@@ -482,12 +516,13 @@ async function archChkFixSend(){
   if(!q || q.busy) return false;
   const d = ARCH.cache[S.p], items = archChkSel(d, S.sel, S, archChkHidden(S.p)), cur = archChkFixCands(SESS, S.p).find(c => c.sid === q.sid);
   if(!items.length || !cur || !cur.login) return false;
-  const body = archChkFixBody(S.p, d && d.checks, items, archHome(d)), key = archChkReqKey(cur.sid, body);
+  const body = archChkFixBody(S.p, d && d.checks, items, archHome(d)), key = archChkReqKey(cur.sid, body), keys = archChkFixKeys(items);
+  if(!keys){ S.msg = T('Too many findings — select at most {n}').replace('{n}', () => ARCH_FIX_KEYS); archChkWinPaint(); return false; }
   if(S.sent && S.sent.key === key && !q.again){ q.again = true; archChkWinPaint(); return false; }   // first click on «Sent · send again» only arms
   q.busy = true; archChkWinPaint();
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, body, relay: true, sid: cur.sid, thread: 'checks-fix',
-      plreq: { kind: 'req', pipeline: 'checks-fix', repo: S.p } });   // server keeps who got it (plReq) so the line survives a reload
+    const j = await postJSON('/api/dm', { to: cur.id, body, relay: true, sid: cur.sid, thread: 'pipeline:' + ARCH_FIX_PL,
+      plreq: { kind: 'req', pipeline: ARCH_FIX_PL, repo: S.p, keys } });   // server keeps who got it + what (plReq) so the line survives a reload
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');
     S.req = null; S.msg = ''; S.sent = { to: archChkCandLabel(cur), at: hhmm(new Date()), key };
     note(T('Requested → {s} · {t}').replace('{s}', () => S.sent.to).replace('{t}', () => S.sent.at));
@@ -530,8 +565,8 @@ function archChkTick(now){
   if(!S || document.hidden) return false;
   try{ if(!S.w || S.w.closed) return false; }catch(e){ return false; }
   const d = ARCH.cache[S.p], sr = archRunOf(S.p, ARCH_SEC_PL), pr = typeof archReqLast === 'function' ? archReqLast(S.p, ARCH_SEC_PL, now) : null;
-  const fx = typeof archReqLast === 'function' ? archReqLast(S.p, 'checks-fix', now) : null;
-  const sig = JSON.stringify([sr && [sr.stage, sr.n, sr.sid], pr && [pr.id, pr.state, pr.stage], fx && [fx.id, fx.state, typeof ACK !== 'undefined' && ACK ? ACK[fx.id] || null : null]]), was = S.rsig || '';
+  const fx = archChkFixLast(S.p, now);
+  const sig = JSON.stringify([sr && [sr.stage, sr.n, sr.sid], pr && [pr.id, pr.state, pr.stage], fx && [fx.id, fx.state, fx.stage, fx.fix, typeof ACK !== 'undefined' && ACK ? ACK[fx.id] || null : null]]), was = S.rsig || '';
   if(d !== S.seen || sig !== was){ S.seen = d; S.rsig = sig; archChkWinPaint();
     if(was && JSON.parse(was)[0] && !sr && !ARCH.load[S.p]){ archFetch(S.p, true); return true; } }   // run ended: pull the new results at once
   else if(sr){ try{ const el = S.w.document.querySelector('.archrun [data-arel]'); if(el) el.textContent = archRunEl(sr, now); }catch(e){ softErr('archck-el', e); } }

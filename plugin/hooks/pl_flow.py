@@ -1472,11 +1472,96 @@ def _bash_writes(cmd, cwd, proj):
     return False
 
 
+FIX_PL = "security-fix"
+FIX_REQ_S = 86400   # an open security-fix request gates its repo this long after it was sent
+FIX_REVIEW = "리뷰"   # stage title whose «done» ends the request (= .claude/pipelines/security-fix.json)
+
+
+def _fix_reviewed(sid, at):
+    """True when recipient session `sid` has a security-fix run (current or in "past") started at/after `at` whose
+    review stage is done. ⚠pl_reqs stamps `closed` only while a viewer tab polls, so the hook cannot wait for it."""
+    try:
+        if not (isinstance(sid, str) and SID.match(sid)):
+            return False
+        d = _load(os.path.join(MARK_DIR, sid + ".runs.json"))
+        past = d.get("past") if isinstance(d.get("past"), dict) else {}
+        runs = [d["runs"].get(FIX_PL)] + list(past.get(FIX_PL) or [])[-PAST_MAX:]
+        for r in runs:
+            if isinstance(r, dict) and isinstance(r.get("st"), dict) and float(r.get("t0") or 0) >= at \
+                    and (r["st"].get(FIX_REVIEW) or {}).get("s") == "done":
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def _fix_req(repo, now):
+    """Newest open security-fix request (DATA_DIR/plreq.json, written only by sidereus/pl_reqs.py) for `repo`, else
+    None. ⚠Read-only, metadata only; any read/parse error = None (fail-open: this hook runs for every session)."""
+    try:
+        with open(os.path.join(DATA_DIR, "plreq.json"), encoding="utf-8") as f:
+            reqs = json.load(f).get("reqs")
+        root, best = os.path.realpath(repo), None
+        for r in reqs if isinstance(reqs, list) else ():
+            if not (isinstance(r, dict) and r.get("pipeline") == FIX_PL and not r.get("stop") and not r.get("closed")
+                    and isinstance(r.get("repo"), str) and os.path.isabs(r["repo"])):
+                continue
+            at = r.get("at")
+            if isinstance(at, bool) or not isinstance(at, (int, float)) or not at or now - at >= FIX_REQ_S:
+                continue
+            if os.path.realpath(r["repo"]) == root and (best is None or at > best["at"]) \
+                    and not _fix_reviewed(r.get("sid"), float(at)):
+                best = {"repo": r["repo"], "at": float(at)}
+        return best
+    except Exception:
+        return None
+
+
+def _fix_gate(ev, sid, tool, sub, now):
+    """R3: an open security-fix request for the repo of this edit / commit / shell write denies it unless this session
+    has a security-fix run open (or ended < STRICT_GRACE_S ago); applies with no _policy.json. True when denied; fail-open.
+    ⚠[pl-none], the nudge stamp and «Apply» off never lift it; the run matches by name only (it runs from the home with --repo)."""
+    try:
+        cwd = ev.get("cwd")
+        if tool == "Bash":
+            repo = _git_root(cwd) or cwd
+        elif tool in EDITS:
+            ti = ev.get("tool_input") if isinstance(ev.get("tool_input"), dict) else {}
+            fp = ti.get("notebook_path" if tool == "NotebookEdit" else "file_path")
+            if not (isinstance(fp, str) and os.path.isabs(fp)):
+                return False
+            repo = _git_root(os.path.dirname(os.path.abspath(fp)))
+        else:
+            return False
+        req = _fix_req(repo, now) if repo else None   # plreq.json first: no request = no shell parsing
+        if not req:
+            return False
+        if tool == "Bash":
+            cmd = _shell_cmd(ev.get("tool_input")) or ""
+            if not _commit_m(cmd) and not _bash_writes(cmd, cwd, repo):
+                return False
+        r = _load(os.path.join(MARK_DIR, sid + ".runs.json"))["runs"].get(FIX_PL)
+        if isinstance(r, dict):
+            if not r.get("end") and (sub or now - float(r.get("t1") or 0) <= IDLE_S):
+                return False
+            if r.get("end") and 0 <= now - float(r.get("end") or 0) <= STRICT_GRACE_S:
+                return False
+        return _deny("An open security-fix request for %s (sent %s) gates edits and git commit in that repo. It lifts "
+                     "when the run's review stage finishes, on «Stop», or after 24 h. Open the run with an Agent/Bash description tagged [pl:security-fix/수정], "
+                     "following %s, or the owner can press «Stop» on the request line."
+                     % (req["repo"], time.strftime("%Y-%m-%d %H:%M", time.localtime(req["at"])),
+                        os.path.join(DATA_DIR, ".claude", "pipelines", FIX_PL + ".json")))
+    except Exception:
+        return False
+
+
 def _none_gate(ev, sid, tool, desc, now):
     """First file edit / main `git commit` of a session in a pipeline project with no open run and no [pl-none]:
     deny once with the pipeline names; in strict mode (_strict) deny every time. True when denied; fail-open."""
     try:
         sub = bool(ev.get("agent_id"))
+        if _fix_gate(ev, sid, tool, sub, now):   # ⚠before the no-pipelines return: the request's repo may have none
+            return True
         if tool == "Bash":
             cmd = _shell_cmd(ev.get("tool_input")) or ""
             # a tagged command already follows the pipeline protocol

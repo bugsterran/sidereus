@@ -109,8 +109,8 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 ### Top issues (security)
 - «Top issues N» opens the findings (gitleaks, npm audit, osv-scanner, semgrep, bandit, trivy — `security-checks` pipeline). Secrets are never shown.
 - «Run security check» sends a `security-checks` run request to a logged-in session (preview + confirm), or shows the command to copy when there is none; progress shows as for the diagram. Tick «Include images» to also scan the base images (`--images`, uses your `docker login`; see [SECURITY.md](../SECURITY.md#container-images-trivy)).
-- «Request fix» sends the selected findings and asks the session to re-run the security check once the fix is committed. A scan older than HEAD marks the Security badge with ⚠ and a dashed border.
-- The request line then reads «Delivered» → «fix commit seen <hash>» (first commit after the request) → «re-scan done — n issues left» (a newer check result). What the session replies does not move it.
+- «Request fix» sends the selected findings as a `security-fix` pipeline run request (fix → re-scan → read-only review); its stages light like any other run. A scan older than HEAD marks the Security badge with ⚠ and a dashed border.
+- After a newer scan the request line reads «requested k: fixed j · left k−j», counted on the requested findings only. «Done» needs every requested finding gone and the review stage passed; a fix commit with no run reads «handled without the pipeline». What the session replies does not move it.
 - The window header and the badge tooltip show the last check time («Last check MM-DD HH:MM · 3d ago»); it turns amber after 30 days.
 - Filters: severity («All severities / High and above / Critical only») and tool. «Hide rule» hides a rule for this repo until «N rules hidden · Show»; the view changes only, files stay as they are.
 - The window ends with the check history and «Last report» (newest `security-report-*.md` as plain text). AI review rows are marked «model-generated, unverified». The grip between the findings and the history list resizes them (drag or arrow keys; double-click / Home resets; the size is remembered).

@@ -46,4 +46,7 @@ Object.assign(I18N.ko, {
   'No issues match the filters': '필터에 맞는 문제 없음',
   're-scan done — {n} issues left': '재점검 완료 — 남은 이슈 {n}',
   'fix commit seen {h}': '수정 커밋 확인 {h}',
+  'handled without the pipeline': '파이프라인 없이 처리됨',
+  'requested {k}: fixed {j} · left {l}': '요청 {k}건: 수정 {j} · 남음 {l}',
+  'Too many findings — select at most {n}': '문제가 너무 많음 — 최대 {n}건까지 고르세요',
 });

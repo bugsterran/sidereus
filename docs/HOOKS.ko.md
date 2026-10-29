@@ -134,6 +134,10 @@ Agent/Task/SendMessage 는 지운다. 파이프라인, 단계, 시각, cwd 만 �
   Edit/Write/MultiEdit/NotebookEdit 와 태그 없는 `git commit` 을 매번 거부하고 파이프라인마다 이름과 `use` 한 줄을 보여 준다.
   서브에이전트는 세션에 끝나지 않은 실행이 하나도 없을 때만 거부한다. `[pl-none:explore]` 는 받지만 수정은 풀지 않고, 다른 분류는
   `[pl:quick-fix/수정]` 안내와 함께 거부한다. 파일이 없거나 다른 값이면 지금처럼 한 번만 거부하고, «Apply» 를 끄면 건너뛴다.
+- 보안 수정 잠금(`_policy.json` 불필요): `<data dir>/plreq.json` 에 저장소 X 의 `security-fix` 요청이 24시간 안에 보내졌고
+  `stop`/`closed` 도, 요청 뒤 시작해 리뷰 단계가 끝난 받는 세션의 실행도 없으면, X(파일 또는 cwd 의 git 루트) 안의 수정·`git commit`·셸 쓰기를 거부한다. 이 세션에 `security-fix`
+  실행이 열려 있거나 끝난 지 15분이 안 됐으면 통과한다. 거부 문구에 저장소·요청 시각과 `[pl:security-fix/수정]` 안내가 있고,
+  주인은 요청 줄의 «Stop» 으로 풀 수 있다. `[pl-none]`·«Apply» 끄기로는 풀리지 않는다. 읽기 도구는 통과, 읽기 오류는 통과(fail-open).
 - 한 프로젝트에서 7일 안에 `[pl-none:no-fit]` 이 세 번째로 선언되면, 사용자에게 이 일에 맞는 파이프라인 초안을 제안하고 동의한 뒤에만
   `.claude/pipelines/<name>.json` 을 쓰라는 문맥을 더한다(횟수·프로젝트 경로만, 거부하지 않음). 프로젝트마다 7일에 한 번.
 - 메인의 `git commit` 은 이 세션에서 그 프로젝트의 열린 실행을 닫는다. 설명이 `[pl:-]` 인 커밋은 아무것도 닫지 않고,

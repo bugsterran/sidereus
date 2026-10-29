@@ -146,6 +146,11 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
   A run of a pipeline marked `"readonly": true` (review) licenses no edit or commit, during the run or its grace window.
   With no run, a Bash command writing a file inside the repo (`>` `>>` `&>` `>|`, `tee`, `sed -i`) is denied too;
   `/dev/*`, `/tmp` and `$TMPDIR` targets pass. ⚠Heuristic: `python -c`, `cp`, `mv` are not caught.
+- Security-fix lock (no `_policy.json` needed): while `<data dir>/plreq.json` holds a `security-fix` request for repo X
+  sent under 24 h ago with no `stop`/`closed` and no later recipient run whose review stage is done, every edit, `git commit` and shell write in X (git root of the file or
+  cwd) is denied unless this session has a `security-fix` run open or ended under 15 min ago. The deny names the repo
+  and request time and points to the run's fix-stage tag `[pl:security-fix/<stage>]`; the owner can press «Stop» on the request line.
+  `[pl-none]` and «Apply» off do not lift it. Read-only tools pass; any read error fails open.
 - The 3rd `[pl-none:no-fit]` of a project in 7 days adds context (count and project path only, never a deny) asking
   the model to offer a draft pipeline and write `.claude/pipelines/<name>.json` only after the user agrees; once per
   project per 7 days.
