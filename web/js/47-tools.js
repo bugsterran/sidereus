@@ -60,7 +60,8 @@ function paintTools(box){
       }).join('')
       + (items.length ? '' : '<div class=hidnote>' + esc(T('No tools found')) + '</div>');
   }
-  const h = '<div class="brep tvw">' + head + body + '</div>';
+  // «Config map» (47b) for the pipeline tab's project sits above the lists; the _tvw cache below covers it too.
+  const h = '<div class="brep tvw">' + head + (typeof hnCfgHtml === 'function' && typeof PLS !== 'undefined' ? hnCfgHtml(PLS.proj) : '') + body + '</div>';
   if(box._tvw === h && box.querySelector('.tvw')) return;   // ⚠30s repaints would reset the <pre> scroll
   box._tvw = h;
   box.innerHTML = h;

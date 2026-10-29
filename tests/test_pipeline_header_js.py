@@ -203,7 +203,7 @@ console.log(JSON.stringify([item, esc_, out]));""")
                 "function plChips(){ return ''; } function hnHtml(){ return ''; } function plAfterPaint(){}\n" + js_fn("paintPipe") + "\n"
                 "const cap = () => { const box = {querySelector: () => null}; paintPipe(box); return box.innerHTML.match(/<span class=plcap>(.*?)<\\/span>/)[1]; };"
                 "const a = cap(); NOW = true; const b = cap(); HV = true; const c = cap(); console.log(JSON.stringify([a, b, c]));")
-        self.assertEqual(r, ["Agent and model per stage", "", "Hooks · rules · agents · MCP · skills"])
+        self.assertEqual(r, ["Agent and model per stage", "", "What the checks caught"])
 
 
 if __name__ == "__main__":

@@ -141,7 +141,7 @@ class Harness(unittest.TestCase):
 
     def test_legend(self):
         data = {"ok": True, "events": [], "rules": [], "agents": [], "counts": {}}
-        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnHtml()))" % json.dumps(data))
+        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnCfgHtml(PLS.proj)))" % json.dumps(data))
         self.assertIn("class=hnlg", h)
         for k in ("inject", "block", "log", "ext", "bin"):
             self.assertIn('class="hnef hne-%s"' % k, h)
@@ -154,7 +154,7 @@ class Harness(unittest.TestCase):
                 "rules": [{"path": "/w/a/AGENTS.md", "size": 900, "order": 1}],
                 "agents": [{"name": "impl", "scope": "project", "pipes": [{"pipe": "change", "stage": "구현"}], "n": 2}],
                 "counts": {"skill": 1, "cmd": 2, "mcp": 3}, "scanning": False}
-        body = ("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; const h1 = hnHtml(); HN.data = {}; const h2 = hnHtml();"
+        body = ("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; const h1 = hnHtml() + hnCfgHtml(PLS.proj); HN.data = {}; const h2 = hnHtml();"
                 "console.log(JSON.stringify({urls: URLS, html: h1.includes('guard.py'), wait: h2.includes('불러오는 중'),"
                 " chips: h1.includes('data-hnp') || h1.includes('토큰 리포트')}))") % json.dumps(data)
         r = _js(body)
@@ -276,10 +276,10 @@ class Harness(unittest.TestCase):
 
     def test_mcp_skill_missing_fields(self):
         data = {"ok": True, "events": [], "rules": [], "agents": [], "counts": {}}
-        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnHtml()))" % json.dumps(data))
+        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnCfgHtml(PLS.proj)))" % json.dumps(data))
         self.assertNotIn("MCP 서버", h)
         data.update(mcps=[], skills=[{"name": "sk", "scope": "user"}])
-        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnHtml()))" % json.dumps(data))
+        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnCfgHtml(PLS.proj)))" % json.dumps(data))
         self.assertIn("MCP 서버", h)
         self.assertIn(">sk<", h)
 
@@ -295,7 +295,7 @@ class Harness(unittest.TestCase):
     def test_flow_fold(self):
         data = {"ok": True, "events": [{"ev": "Stop", "hooks": [{"cmd": "c.sh", "n": 3}]}], "rules": [], "agents": []}
         pre = "HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW;" % json.dumps(data)
-        a, b = _js(pre + " const a = hnHtml(); HN.flowOpen = false; console.log(JSON.stringify([a, hnHtml()]))")
+        a, b = _js(pre + " const a = hnCfgHtml(PLS.proj); HN.flowOpen = false; console.log(JSON.stringify([a, hnCfgHtml(PLS.proj)]))")
         self.assertIn("<details class=hnflow data-hnflow open><summary>", a)
         self.assertIn("<details class=hnflow data-hnflow><summary>", b)
         summ = a.split("data-hnflow open><summary>", 1)[1].split("</summary>", 1)[0]
@@ -314,7 +314,7 @@ class Harness(unittest.TestCase):
         self.assertEqual(demo._demo_harness(1e9, "/api/harness/file")[0], 404)
         d["agents"][1]["vd"]["vp"]["pipe"] = "<x>"
         d["mcps"][0]["vd"] = {"lvl": "<bad>", "why": "mcp_fail", "id": "v9"}   # unknown lvl is ignored, never reaches a class
-        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnHtml()))" % json.dumps(d))
+        h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnCfgHtml(PLS.proj)))" % json.dumps(d))
         self.assertLess(h.index("점검 결과"), h.index("훅 흐름"))
         self.assertIn('data-hnvdgo=bad title="다음 항목으로 이동">문제 <b>3</b>', h)
         self.assertIn('data-hnvdgo=check', h)
@@ -369,35 +369,6 @@ class Harness(unittest.TestCase):
         h = _js("console.log(JSON.stringify([hnStep({name:'page',rc:0,n:0,failed:0,secs:1}), hnStep({name:'bash-n',rc:1,n:0,failed:1,secs:0})]))")
         self.assertNotIn("실패", h[0])
         self.assertIn("실패 1/0", h[1])
-
-    def test_config_fold(self):
-        data = {"ok": True, "events": [], "rules": [], "agents": [], "verdict": {"bad": 2, "check": 0, "ok": 5}, "evidence": []}
-        pre = "HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; HN.plats = ['cc', 'cx'];" % json.dumps(data)
-        a, b = _js(pre + " const a = hnHtml(); HN.cfgOpen = false; console.log(JSON.stringify([a, hnHtml()]))")
-        self.assertIn("<details class=hncfg open><summary", a)   # no stored choice + problems: open, the list sits under the count
-        self.assertIn("<details class=hncfg><summary", b)   # a stored «closed» wins
-        self.assertLess(a.index("hnruns"), a.index("hncfg"))   # gate runs first
-        self.assertLess(a.index("hncfg"), a.index("data-hnplat"))   # switch folds with the map
-        summ = a.split("<summary class=hncfgs>", 1)[1].split("</summary>", 1)[0]
-        self.assertIn("구성 지도", summ)
-        self.assertIn("<i>점검 결과 <span class=\"hnvdq hnvd-bad\">문제 2</span>", summ)
-        self.assertNotIn("<button", summ)
-        line = a.split("<div class=hnvdl>", 1)[1].split("</div>", 1)[0]
-        self.assertIn("<b>점검 결과</b>", line)   # one name for the same verdict counts at both sites
-
-    def test_config_fold_default_closed_without_problems(self):
-        data = {"ok": True, "events": [], "rules": [], "agents": [], "verdict": {"bad": 0, "check": 3, "ok": 5}, "evidence": []}
-        pre = "HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; HN.plats = ['cc'];" % json.dumps(data)
-        a, b = _js(pre + " const a = hnHtml(); HN.cfgOpen = true; console.log(JSON.stringify([a, hnHtml()]))")
-        self.assertIn("<details class=hncfg><summary", a)
-        self.assertIn("<details class=hncfg open><summary", b)
-
-    def test_config_fold_paint_toggle_is_not_a_choice(self):
-        data = {"ok": True, "events": [], "rules": [], "agents": [], "verdict": {"bad": 1}, "evidence": []}
-        pre = "HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; HN.plats = ['cc'];" % json.dumps(data)
-        r = _js_doc(pre + " hnHtml(); const t = e => LST.toggle.forEach(f => f({target: {classList: {contains: k => k === 'hncfg'}, open: e}}));"
-                    " t(true); const a = HN.cfgOpen; t(false); console.log(JSON.stringify([a, HN.cfgOpen, HN.cfgShown]))")
-        self.assertEqual(r, [None, False, False])   # the auto-open paint is not stored; the user's close is
 
     # Pinned report shape (#27 server contract: /api/harness `report` + `guards`).
     _REPORT = {"counts": {"caught": 5, "held": 3, "again": 2, "reverted": 1, "checked": 4, "gone": 1},
@@ -483,10 +454,8 @@ class Harness(unittest.TestCase):
         for gone in ("hnfrow", "data-hnfn", "data-hnfr", "hntr>"):
             self.assertNotIn(gone, a)
         self.assertEqual(fl, "undefined")
-        self.assertIn("<details class=hncfg><summary", a)
         self.assertIn('<details class="hnmore hnruns" data-hnmore=runs><summary><div class=brh2><b>게이트 실행 기록</b>', a)
         self.assertLess(a.index("class=hnrep>"), a.index("hnruns"))
-        self.assertLess(a.index("hnruns"), a.index("hncfg"))
         self.assertEqual(urls, [])   # report rides the cached /api/harness body
         for p in (("web", "js", "47c-harness-flow.js"), ("web", "css", "41c-harness-flow.css")):
             self.assertFalse(os.path.exists(os.path.join(ROOT, *p)))
@@ -559,6 +528,48 @@ class Harness(unittest.TestCase):
         self.assertNotIn("paintHarness", tk)
         self.assertIn("data-plv", pl)
         self.assertIn("FEATS.harness === false", pl)   # toggle hidden when the feature is off
+
+    _VIEW = {"ok": True, "events": [{"ev": "Stop", "hooks": [{"cmd": "c.sh", "n": 3}]}], "rules": [], "agents": [], "mcps": [], "skills": [],
+             "counts": {"skill": 1}, "evidence": [], "verdict": {"bad": 2, "check": 1, "ok": 5}}
+
+    def _view(self, js):
+        pre = "HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; HN.plats = ['cc', 'cx'];" % json.dumps(dict(self._VIEW, report=self._REPORT, guards=self._GUARDS))
+        return _js(pre + js)
+
+    def test_r2_no_config_map_in_harness(self):
+        h = self._view(" console.log(JSON.stringify(hnHtml()))")
+        for gone in ("hncfg", "구성 지도", "hnflow", "규칙 파일", "에이전트 ↔ 파이프라인", "data-hntools"):
+            self.assertNotIn(gone, h)
+        self.assertLess(h.index("class=hnrep>"), h.index("hnread"))   # report → «How to read this» → «Gate runs»
+        self.assertLess(h.index("hnread"), h.index("hnruns"))
+        self.assertLess(h.index("data-hnplat"), h.index("class=hnrep>"))   # platform switch stays on top
+
+    def test_r4_verdict_line_stays_in_report(self):
+        h = self._view(" console.log(JSON.stringify(hnHtml()))")
+        self.assertIn("data-hnvdgo=bad", h)
+        self.assertIn("data-hnvdgo=check", h)
+        self.assertLess(h.index("class=hnrep>"), h.index("class=hnvdl>"))
+        self.assertLess(h.index("class=hnvdl>"), h.index("hnread"))
+        none = self._view(" HN.data[hnKey('/w/a')].verdict = {bad: 0, check: 0, ok: 3}; console.log(JSON.stringify(hnHtml()))")
+        self.assertNotIn("data-hnvdgo", none)
+
+    def test_r1_how_to_read_fold(self):
+        ko, ko2, en = self._view(" const a = hnHtml(); HN.fold.read = true; const b = hnHtml(); LANG = 'en'; HN.fold.read = false;"
+                                 " console.log(JSON.stringify([a, b, hnHtml()]))")
+        self.assertIn('<details class="hnmore hnread" data-hnmore=read><summary><div class=brh2><b>읽는 법</b>', ko)   # closed by default
+        self.assertIn("data-hnmore=read open>", ko2)   # HN.fold keeps the choice across repaints
+        rd = ko.split("data-hnmore=read>", 1)[1].split("</details>", 1)[0]
+        self.assertEqual(rd.count("<li>"), 6)
+        for t in ("잡아냄 (빨강→초록)", "유지됨", "나중에 다시 실패", "되돌려짐", "지키는 곳", "사건 카드", "출고 전에 결함을 찾아 고친 것"):
+            self.assertIn(t, rd)
+        self.assertFalse(re.search(r"[A-Za-z]{4,}", re.sub(r"<[^>]*>|check --(fast|full)", "", rd)), rd)   # every line translated
+        e = en.split("data-hnmore=read>", 1)[1].split("</details>", 1)[0]
+        self.assertIn("How to read this", e)
+        self.assertFalse(any("가" <= c <= "힣" for c in e))
+        with open(os.path.join(ROOT, "web", "js", "06-i18n-x.js"), encoding="utf-8") as f:
+            x = f.read()
+        for k in ("How to read this", "Incident cards", "Pick a project in Pipelines"):
+            self.assertIn("'%s':" % k, x)   # I18N.ko key
 
 
 if __name__ == "__main__":
