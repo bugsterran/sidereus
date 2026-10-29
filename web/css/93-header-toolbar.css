@@ -8,12 +8,12 @@ html[data-ui=next] .hrow > #todo{margin:0 0 0 auto;flex-wrap:nowrap;gap:5px;flex
 html[data-ui=next] .hrow > #sesb{flex-shrink:0}
 html[data-ui=next] .hrow > #todo:not(:empty) ~ #sesb{margin-left:0}
 html[data-ui=next] .hrow > #todo .td{white-space:nowrap}
-/* ≤1000px: short chip labels, «Sessions» word hidden (count stays) so the one-row bar keeps room for the title. */
+/* ≤1000px: short chip labels; ⚠the «Sessions» word stays (hiding it left a bare icon) — the row wraps instead of squeezing. */
 .td .tds{display:none}
 @media (max-width:1000px){
   html[data-ui=next] .hrow > #todo .td .tdl{display:none}
   html[data-ui=next] .hrow > #todo .td .tds{display:inline}
-  html[data-ui=next] .hrow > #sesb .sesbl{display:none}
+  html[data-ui=next][data-ui] .hrow{flex-wrap:wrap;row-gap:6px}
 }
 /* brand mark = live moon phase (92e-moon.js paints the paths) + live indicator (#dot; poll() toggles .off: lit part dimmed, error outline); .es = new and thin-crescent days (earthshine: lighter night side with faint maria, cream rim) */
 /* ⚠Colours are variables so the light theme overrides values only: a html[data-theme=light] .bmol rule would outrank .off's error stroke */

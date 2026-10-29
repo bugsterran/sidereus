@@ -128,6 +128,14 @@ class HeaderRow(unittest.TestCase):
         self.assertIn("flex-wrap:nowrap", m.group(1))
         self.assertRegex(css, r"\.brandmk\{")
 
+    def test_sessions_word_kept_narrow(self):
+        # 900px: the «Sessions» word stays; the row wraps instead of hiding it.
+        css = _read("web/css/93-header-toolbar.css")
+        self.assertNotRegex(css, r"#sesb \.sesbl\{display:none")
+        m = re.search(r"@media \(max-width:1000px\)\{(.*?)\n\}", css, re.S)
+        self.assertIsNotNone(m)
+        self.assertIn("html[data-ui=next][data-ui] .hrow{flex-wrap:wrap", m.group(1))
+
     def test_no_activity_strip_css(self):
         css = _read("web/css/94-activity.css")
         self.assertNotRegex(css, r"\.actv\b|\.acc\b|\.actpop\b")

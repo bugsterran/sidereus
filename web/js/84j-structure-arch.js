@@ -61,7 +61,7 @@ function archHeadNote(d, on){
   const gen = c ? strHdBadge(d.stale ? 'cut' : '', (d.stale ? '⚠ ' : '') + (at ? T('Generated {t} · {c}').replace('{c}', c).replace('{t}', hhmm(at, { date: true, dsep: '-' })) : c), ahead + tip + why) : '';
   // Badges are ordered by colour group (purple · blue · grey · warning) so the row reads as groups; state-coloured ones follow their current colour.
   return (s.est ? '' : s.sty) + s.fw
-    + strHdBadge('n', T('Verified {n}/{m} ({k}%)').replace('{n}', r.n).replace('{m}', r.m).replace('{k}', r.pct), T('Edges with checked evidence / all edges'))
+    + strHdBadge('n', T('Edges verified {n}/{m} ({k}%)').replace('{n}', r.n).replace('{m}', r.m).replace('{k}', r.pct), T('Module connections whose evidence was checked in the code / all connections drawn'))
     + s.ev + strHdBadge('', T('{n} modules').replace('{n}', ((d && d.modules) || []).length)) + (d && d.stale ? '' : gen) + archProvNote(d && d.prov)
     + (s.est ? s.sty : '') + s.dev + (d && d.stale ? gen : '')
     + (typeof archChkHdBtn === 'function' ? archChkHdBtn(d) : '');   // 84l: issues badge (red/amber), or «Security check» when the project has no results yet
