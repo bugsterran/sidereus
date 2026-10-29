@@ -99,7 +99,8 @@ class ViewWrite(unittest.TestCase):
 
     def test_write_atomic_0644_roundtrip(self):
         SRT.write(self.d, _doc())
-        self.assertEqual(stat.S_IMODE(os.stat(self.fp).st_mode), 0o644)
+        if os.name != "nt":   # Windows st_mode only reflects the read-only bit
+            self.assertEqual(stat.S_IMODE(os.stat(self.fp).st_mode), 0o644)
         self.assertEqual([n for n in os.listdir(self.d) if n.startswith(".arch-")], [])
         self.assertEqual(SRT.view(self.d, NOW)["state"], "ok")
 

@@ -290,7 +290,8 @@ _which = shutil.which   # tests patch this, never PATH
 def _rt_cls(path):
     """homebrew | system | other, from the path layout only."""
     rp = os.path.realpath(path)
-    if any(path.startswith(p + "/opt/") for p in RT_PREFIXES) or "/Cellar/" in rp:
+    # os.sep, not "/": Windows paths use backslashes
+    if any(path.startswith(os.path.join(p, "opt", "")) for p in RT_PREFIXES) or os.sep + "Cellar" + os.sep in rp:
         return "homebrew"
     return "system" if path == SYS_PY else "other"
 
@@ -307,7 +308,7 @@ def runtimes(dev=True):
     cand = []
     for pre in RT_PREFIXES:
         cand += [("python", p) for p in sorted(glob.glob(os.path.join(pre, "opt", "python@3.*", "bin", "python3.*")))
-                 if re.search(r"/python3\.\d+$", p)]
+                 if re.fullmatch(r"python3\.\d+", os.path.basename(p))]
     cand.append(("python", SYS_PY))
     lpy = _launchd_python()
     if os.path.isabs(lpy):
