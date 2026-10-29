@@ -9,7 +9,7 @@ Object.assign(I18N.ko, {
   'writes a file or updates state only': '파일에 기록하거나 상태만 갱신', 'not read, so the effect is unknown': '내용을 읽지 않아 효과를 모름',
   'Hooks run left to right: session start → prompt submit → before the tool → tool run → after the tool → response end': '왼쪽부터 세션 시작 → 요청 입력 → 도구 실행 전 → 도구 실행 → 실행 후 → 응답 종료 순서로 훅이 돈다',
   'No file to open.': '열 수 있는 파일이 없습니다.', 'The file is too large.': '파일이 너무 큽니다.', 'Not a text file.': '텍스트 파일이 아닙니다.',
-  'Check': '점검 결과', 'Go to the next one': '다음 항목으로 이동',
+  'Check results': '점검 결과', 'Go to the next one': '다음 항목으로 이동',
   'Results': '결과', 'Config map': '구성 지도', 'uncommitted changes': '변경 있음',
   'No records yet — running scripts/check.sh adds them': '아직 기록이 없습니다 — scripts/check.sh 를 실행하면 쌓입니다',
   'unchanged': '그대로',

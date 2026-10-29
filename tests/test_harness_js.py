@@ -373,15 +373,31 @@ class Harness(unittest.TestCase):
     def test_config_fold(self):
         data = {"ok": True, "events": [], "rules": [], "agents": [], "verdict": {"bad": 2, "check": 0, "ok": 5}, "evidence": []}
         pre = "HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; HN.plats = ['cc', 'cx'];" % json.dumps(data)
-        a, b = _js(pre + " const a = hnHtml(); HN.cfgOpen = true; console.log(JSON.stringify([a, hnHtml()]))")
-        self.assertIn("<details class=hncfg><summary", a)
-        self.assertIn("<details class=hncfg open><summary", b)
+        a, b = _js(pre + " const a = hnHtml(); HN.cfgOpen = false; console.log(JSON.stringify([a, hnHtml()]))")
+        self.assertIn("<details class=hncfg open><summary", a)   # no stored choice + problems: open, the list sits under the count
+        self.assertIn("<details class=hncfg><summary", b)   # a stored «closed» wins
         self.assertLess(a.index("hnruns"), a.index("hncfg"))   # gate runs first
         self.assertLess(a.index("hncfg"), a.index("data-hnplat"))   # switch folds with the map
         summ = a.split("<summary class=hncfgs>", 1)[1].split("</summary>", 1)[0]
         self.assertIn("구성 지도", summ)
-        self.assertIn("문제 2", summ)
+        self.assertIn("<i>점검 결과 <span class=\"hnvdq hnvd-bad\">문제 2</span>", summ)
         self.assertNotIn("<button", summ)
+        line = a.split("<div class=hnvdl>", 1)[1].split("</div>", 1)[0]
+        self.assertIn("<b>점검 결과</b>", line)   # one name for the same verdict counts at both sites
+
+    def test_config_fold_default_closed_without_problems(self):
+        data = {"ok": True, "events": [], "rules": [], "agents": [], "verdict": {"bad": 0, "check": 3, "ok": 5}, "evidence": []}
+        pre = "HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; HN.plats = ['cc'];" % json.dumps(data)
+        a, b = _js(pre + " const a = hnHtml(); HN.cfgOpen = true; console.log(JSON.stringify([a, hnHtml()]))")
+        self.assertIn("<details class=hncfg><summary", a)
+        self.assertIn("<details class=hncfg open><summary", b)
+
+    def test_config_fold_paint_toggle_is_not_a_choice(self):
+        data = {"ok": True, "events": [], "rules": [], "agents": [], "verdict": {"bad": 1}, "evidence": []}
+        pre = "HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; HN.plats = ['cc'];" % json.dumps(data)
+        r = _js_doc(pre + " hnHtml(); const t = e => LST.toggle.forEach(f => f({target: {classList: {contains: k => k === 'hncfg'}, open: e}}));"
+                    " t(true); const a = HN.cfgOpen; t(false); console.log(JSON.stringify([a, HN.cfgOpen, HN.cfgShown]))")
+        self.assertEqual(r, [None, False, False])   # the auto-open paint is not stored; the user's close is
 
     # Pinned report shape (#27 server contract: /api/harness `report` + `guards`).
     _REPORT = {"counts": {"caught": 5, "held": 3, "again": 2, "reverted": 1, "checked": 4, "gone": 1},
