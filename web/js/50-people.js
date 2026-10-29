@@ -53,7 +53,7 @@ function buildPeople(){
   setHtml(document.getElementById('people'),
       `<div class=pwhere>${esc(whereLbl)}</div>`
     + (hidden
-      ? `<div class=hidnote>${esc(T('Shown'))} ${U(onlineNow.length,'#people')}${esc(T('(online · active in last 15 min)'))} · ${esc(T('hidden'))} ${U(hidden,'#people')}</div>` : '')
+      ? `<div class=hidnote>${esc(T('Shown'))} ${U(onlineNow.length,'#people')} ${esc(T('(online · active in last 15 min)'))} · ${esc(T('hidden'))} ${U(hidden,'#people')}</div>` : '')
     + (peopleShown.length ? '' : '<div class=hidnote>'+esc(T('No one is online right now.'))+'</div>')
     + (peopleShown.length ? '<div class="nxr nxh"><i></i><span>' + esc(T('Participants')) + '</span><span class=nxm>' + esc(T('Messages'))
         + '</span><span class=nxm>' + esc(T('Last')) + '</span><span class=nxm>' + esc(T('Unread')) + '</span></div>' : '')

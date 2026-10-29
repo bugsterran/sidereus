@@ -117,6 +117,12 @@ class PlNow(unittest.TestCase):
         css = open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8").read()
         self.assertIn("html[data-ui] .plw aside.plnl.plnlc{padding:4px 0;border:0;background:none;overflow:hidden", css)
 
+    def test_r5_fold_default_by_width(self):
+        r = run(NOW + "const o = []; globalThis.innerWidth = 900; o.push(plNowFolded()); LS['sidereus.plnowc'] = '0'; o.push(plNowFolded());"
+                + " delete LS['sidereus.plnowc']; globalThis.innerWidth = 1920; o.push(plNowFolded()); LS['sidereus.plnowc'] = '1'; o.push(plNowFolded());"
+                + " console.log(JSON.stringify(o));")
+        self.assertEqual(r, [True, False, False, True])                         # unset: folded under 1000px; a stored choice wins
+
     def test_r5_collapsed_rail_marks_selected(self):
         h = run(NOW + "LS['sidereus.plnowc'] = '1'; PLS.nowSid = 's2'; console.log(JSON.stringify(plNowList(" + LIVE + ")));")
         self.assertEqual(re.findall(r'class="plnlrd plnld-\w+ on" data-pncwd="([^"]+)"', h), ["/b"])
@@ -145,8 +151,8 @@ class PlNow(unittest.TestCase):
 
     def test_r5_rail_dot_click_expands_and_picks(self):
         s = _src("48j-pipeline-now.js")
-        self.assertIn("if(t.classList.contains('plnlrd')) lsDel('sidereus.plnowc');", s)
-        self.assertLess(s.index("lsDel('sidereus.plnowc');   // rail dot"), s.index("plNowPick(t.dataset.pncwd, t.dataset.pnplat);\n});"))
+        self.assertIn("if(t.classList.contains('plnlrd')) lsSet('sidereus.plnowc', '0');", s)
+        self.assertLess(s.index("lsSet('sidereus.plnowc', '0');   // rail dot"), s.index("plNowPick(t.dataset.pncwd, t.dataset.pnplat);\n});"))
 
     def test_r1_empty_note(self):
         h = run(NOW + "console.log(JSON.stringify(plNowList([])));")

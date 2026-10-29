@@ -134,12 +134,16 @@ def _ev_steps(*rows):
     return [{"name": n, "rc": rc, "n": k, "failed": f, "secs": sec} for n, rc, k, f, sec in rows]
 
 
+# QA widths (design at 1920; 1440/1100/900 must wrap or collapse) — the demo screen evidence covers all four.
+DEMO_QA_WIDTHS = (900, 1100, 1440, 1920)
+
+
 def _demo_evidence(a):
     """Invented «Results» rows (same shape as harness_evidence.recent): PASS --full, FAIL at tests, PASS --fast, hook PASS."""
     ok_gates = ("py_compile", 0, 142, 0, 3.1), ("node_check", 0, 96, 0, 2.4)
     return [{"kind": "check", "ts": a - 0.4 * H, "mode": "full", "head": "3f9c2ab", "dirty": False, "rc": 0,
-             "steps": _ev_steps(*(ok_gates + (("tests", 0, 1284, 0, 41.7), ("leak", 0, 1, 0, 0.8), ("screen", 0, 6, 0, 22.5)))),
-             "screen": [{"w": w, "lang": l, "ok": True, "diff": 0.0} for w in (900, 1100, 1440) for l in ("ko", "en")]},
+             "steps": _ev_steps(*(ok_gates + (("tests", 0, 1284, 0, 41.7), ("leak", 0, 1, 0, 0.8), ("screen", 0, 8, 0, 22.5)))),
+             "screen": [{"w": w, "lang": l, "ok": True, "diff": 0.0} for w in DEMO_QA_WIDTHS for l in ("ko", "en")]},
             {"kind": "check", "ts": a - 1.2 * H, "mode": "full", "head": "3f9c2ab", "dirty": True, "rc": 1,
              "steps": _ev_steps(*(ok_gates + (("tests", 1, 1284, 2, 39.9),)))},
             {"kind": "check", "ts": a - 2.5 * H, "mode": "fast", "head": "b71e04d", "dirty": True, "rc": 0,
@@ -154,9 +158,9 @@ def _demo_pl_evidence(a):
     and a PASS in the latest pass (a-52m..a-31m) with the commit stamped there (demo.World.pl_runs `cm`).
     ⚠The extra rows stay out of _demo_evidence so the harness view keeps its own story."""
     ok_gates = ("py_compile", 0, 142, 0, 3.1), ("node_check", 0, 96, 0, 2.4)
-    shots = [{"w": w, "lang": l, "ok": not (w == 1100 or (w == 1440 and l == "en")), "diff": 0.0} for w in (900, 1100, 1440) for l in ("ko", "en")]
+    shots = [{"w": w, "lang": l, "ok": not (w == 1100 or (w == 1440 and l == "en")), "diff": 0.0} for w in DEMO_QA_WIDTHS for l in ("ko", "en")]
     fail = {"kind": "check", "ts": a - 60 * 60, "mode": "full", "head": "b71e04d", "dirty": True, "rc": 1,
-            "steps": _ev_steps(*(ok_gates + (("screen", 1, 6, 3, 23.0),))), "screen": shots}
+            "steps": _ev_steps(*(ok_gates + (("screen", 1, 8, 3, 23.0),))), "screen": shots}
     ok = {"kind": "check", "ts": a - 40 * 60, "mode": "fast", "head": "b71e04d", "dirty": True, "rc": 0,
           "steps": _ev_steps(*(ok_gates + (("tests", 0, 1284, 0, 40.8),)))}
     rows = sorted(_demo_evidence(a) + [fail, ok], key=lambda r: -r["ts"])

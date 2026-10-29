@@ -18,7 +18,8 @@ html[data-ui=next] .attn .atd{flex:none;width:8px;height:8px;border-radius:50%;a
 html[data-ui=next] .attn .atd.err{background:var(--nx-err)}
 html[data-ui=next] .attn .atd.warn{background:var(--nx-warn)}
 html[data-ui=next] .attn .at1 b{flex:none;color:var(--nx-t1);font-weight:600;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-html[data-ui=next] .attn .atbr{flex:none;max-width:22%;color:var(--nx-t3);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ★max-width:22% cut the branch 150→131px. ⇒ Full branch; it shrinks by wrapping (the reason text gives way first). */
+html[data-ui=next] .attn .atbr{flex:0 1 auto;min-width:0;color:var(--nx-t3);font-size:11px;overflow-wrap:anywhere}
 html[data-ui=next] .attn .atw{flex:1 1 auto;min-width:0;color:var(--nx-t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-ui=next] .attn .ata{flex:none;color:var(--nx-t3);font-size:11px}
 html[data-ui=next] .attn .at2{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;position:relative}

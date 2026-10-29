@@ -85,3 +85,8 @@ html[data-ui=next] body.sesopen:not(.sespin) #sesrz{display:block;position:fixed
 .srec .srcp input{flex:1 1 auto;min-width:0;font:11px ui-monospace,Menlo,monospace;padding:2px 5px;border:1px solid var(--nx-rule,#333);border-radius:4px;background:var(--nx-bg,#111);color:var(--nx-t1,#ddd)}
 html[data-ui=next][data-ui] .srec .srcp input:not(:hover):not(:focus){border-color:var(--nx-field)}   /* ★--nx-rule 1.22-1.30 -> --nx-field >=3:1 */
 .srec .srecm{color:var(--nx-t2,#aaa);padding:4px 2px}
+/* ★640px drawer: the 150px cap cut branch 166→117px and worktree 145→90px. ⇒ In the drawer the row wraps and branch/worktree show in full (break inside only when longer than the row). */
+html[data-ui=next][data-ui] body:not(.sespin) .wrap > .lside .sx{flex-wrap:wrap;height:auto;min-height:calc(1.45em + 8px);overflow:visible;row-gap:2px}
+html[data-ui=next][data-ui] body:not(.sespin) .wrap > .lside .sx > :is(.sb,.swt){max-width:100%;overflow:visible;text-overflow:clip}
+html[data-ui=next][data-ui] body:not(.sespin) .wrap > .lside .sx > .swt,
+html[data-ui=next][data-ui] body:not(.sespin) .wrap > .lside .sx .sb .sbt{white-space:normal;overflow-wrap:anywhere;overflow:visible;text-overflow:clip}

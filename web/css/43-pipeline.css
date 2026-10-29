@@ -36,6 +36,7 @@ html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--
 .plw .plnl .plnli.tlnm{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;width:100%;min-height:30px;padding:5px 8px;background:var(--nx-panel,#121821);border:1px solid var(--nx-rule,#2b3545);border-radius:6px;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow:hidden}
 .plw .plnl .plnli.tlnm>b{flex:0 1 auto;min-width:0;max-width:100%}
 .plw .plnl .plnli.tlnm>b>.tlp{flex:0 1 auto;min-width:3ch}.plw .plnl .plnli.tlnm>b>:not(.tlp){flex:none}   /* ⚠.tlp is flex:0 0 auto (20-timeline): the name never shrank, so the b clipped it with no ellipsis and cut the status ring */
+.plw .plnl .tlnm>b{white-space:normal}.plw .plnl .tlnm :is(.tlp,.tlagd){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;max-width:100%;white-space:normal;overflow-wrap:anywhere}   /* ★names were cut to 130/150-161px at 1920 and 76/85 at 900: wrap to 2 lines instead of one-line ellipsis */
 .plw .plnl .plnli:hover{border-color:var(--nx-t3,#6b7280);background:var(--nx-hover,#1b1e23)}
 .plw .plnl .plnli.on{border-color:var(--nx-t1,#cdcedc);box-shadow:inset 0 0 0 1px var(--nx-t1,#cdcedc)}   /* ⚠inset, not outline: the scrolling aside clips an outer ring */
 .plw .plnl .plnli:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
@@ -113,7 +114,7 @@ html[data-ui] .plapki:hover{background:var(--nx-hover,#1b1d20);color:var(--nx-t1
 .plrv.old{border-color:var(--nx-warn,#d6a04a);color:var(--nx-warn,#d6a04a)}
 html[data-ui] .plapki[aria-checked=true]{color:var(--nx-t1,#cdcedc);font-weight:600}
 /* Card pass picker: on the bottom edge, right of the loop-back port, so it never takes width from the title row */
-.plnd .plpass{--plph:clamp(24px,calc(24px / var(--plz,1)),60px);position:absolute;right:10px;bottom:calc(var(--plph) / -2);z-index:2;height:var(--plph);padding:0 7px;font-family:inherit;font-size:11px;font-weight:600;line-height:var(--plph);border:0;background:none;color:var(--nx-t2,#909298);cursor:pointer}   /* .plcvi scale(z) shrinks the target: 24px/z keeps 24 on screen, centred on the edge; ⚠60px cap (z=0.4) stays clear of the first loop lane (34px) */
+.plnd .plpass{--plph:clamp(24px,calc(24px / var(--plz,1)),60px);position:absolute;right:10px;bottom:calc(var(--plph) / -2);z-index:2;height:var(--plph);padding:0 7px;width:max-content;white-space:nowrap;font-family:inherit;font-size:11px;font-weight:600;line-height:var(--plph);border:0;background:none;color:var(--nx-t2,#909298);cursor:pointer}   /* .plcvi scale(z) shrinks the target: 24px/z keeps 24 on screen, centred on the edge; ⚠60px cap (z=0.4) stays clear of the first loop lane (34px); ★max-content: shrink-to-fit cut «pass k ▾» to 52/61px (en) 44/51 (ko) at 900 */
 .plnd .plpass::before{content:'';position:absolute;left:0;right:0;top:50%;height:18px;box-sizing:border-box;translate:0 -50%;z-index:-1;border-radius:9px;border:1px solid var(--nx-rule,#252629);background:var(--nx-panel,#121417)}
 html[data-ui] .plnd .plpass:hover,html[data-ui] .plnd .plpass.on{color:var(--nx-t1,#cdcedc)}
 html[data-ui] .plnd .plpass:hover::before,html[data-ui] .plnd .plpass.on::before{border-color:var(--pl-back,#e0a53d)}
@@ -249,7 +250,7 @@ html[data-ui=next][data-ui] .plw :is(.ppcombo,.plcvt .wkrgb){height:28px;padding
 html[data-ui=next][data-ui] .plw :is(.ppcombo,.plcvt .wkrgb):hover:not([disabled]){border-color:var(--nx-t2);background:color-mix(in srgb,var(--nx-t1) 8%,var(--nx-hover));color:var(--nx-t1)}
 html[data-ui=next][data-ui] .plw :is(.ppcombo,.plcvt .wkrgb):focus-visible{outline:2px solid var(--nx-info);outline-offset:2px}
 html[data-ui=next] .plw .plcvt .plzv{color:var(--nx-t1)}
-.plgw.plwt>.plwp{min-height:0;box-sizing:border-box}.plgw.plwt>.plwgr{grid-area:2/1/3/-1}
+.plgw.plwt>.plwp{min-height:0;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain}.plgw.plwt>.plwgr{grid-area:2/1/3/-1}
 /* 48k Watch drag grips (canvas | pane | Running card): 24px rows with a centred bar, ns-resize; sizes kept as shares (sidereus.plwv) */
 .plwgr{position:relative;height:24px;cursor:ns-resize;touch-action:none}   /* 24px target in its own row (WCAG 2.5.8); ⚠a ::before overhang covered the canvas bottom and stole pans and .plpass clicks */
 .plwgr::after{content:'';position:absolute;left:50%;top:10px;width:44px;height:4px;margin-left:-22px;border-radius:2px;background:var(--nx-t2,#909298)}   /* full t2, no opacity: .55 of t3 was 2.3:1, under the 3:1 non-text minimum (WCAG 1.4.11) */
@@ -358,6 +359,7 @@ html[data-ui][data-theme=light] .pllt text{fill:#7a4a00}
 html[data-ui=next][data-theme=light] :is(.plw,.tlwrap){--plf-rsch:#b8336a;--plf-und:#4b57c8;--plf-test:#0b7896;--plf-sec:#c0292f;--plf-cons:#5c760e;--plf-rel:#a2309a;--plf-ops:#b0560a;--plf-qual:#4a5a6e}
 /* ⚠Scoped with html[data-ui=next]: the #nxcss twins (00-core.js) re-emit `.plnd`/`.plcv` hex colours at that weight and would win. */
 html[data-ui=next] .plw .plpal,html[data-ui=next] .plw .plpan{background:var(--nx-panel);border-color:var(--nx-rule);box-shadow:0 1px 3px rgba(0,0,0,.35)}
+html[data-ui=next] .plw .plgw.plwt>.plwp{background:linear-gradient(var(--nx-panel),var(--nx-panel)) top/100% 16px no-repeat local,linear-gradient(var(--nx-panel),var(--nx-panel)) bottom/100% 16px no-repeat local,linear-gradient(rgba(0,0,0,.45),transparent) top/100% 8px no-repeat scroll,linear-gradient(transparent,rgba(0,0,0,.45)) bottom/100% 8px no-repeat scroll,var(--nx-panel)}   /* ★102px pane, 152px content: «Gate · …» sat under an invisible overlay scrollbar; edge shades show more content (⚠sizes stay share-based, 48k plWatchFit, so polls never move the canvas) */
 .plpal>.plph:first-child,.plpan>.plph:first-child{background:var(--nx-hover);margin:-4px -4px 4px;padding:5px 8px;border-bottom:1px solid var(--nx-rule);color:var(--nx-t2)}
 .plpan>.plph:first-child{margin:-6px -8px 2px}
 html[data-ui=next] .plw .plcv{background:var(--nx-bg) radial-gradient(circle,color-mix(in srgb,var(--nx-t3) 28%,transparent) 1px,transparent 1.3px) 0 0/18px 18px;border-color:var(--nx-rule)}
@@ -427,6 +429,7 @@ html[data-ui=next] .plw .plrunst{display:flex;flex-direction:column;gap:4px;max-
 html[data-ui=next] .plw .plbar>.plrunst{gap:2px}
 html[data-ui=next] .plw .plbar>.plrunst>span{line-height:16px;padding:4px 0;margin:-4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* ⚠padding moves the clip 4px out so the .plrv 24px ::before survives; the -4px margin keeps the 16px row */
 html[data-ui=next] .plw .plbar>.plrunst .plprog{height:4px}
+@media (max-width:1439px){html[data-ui=next] .plw .plbar>.plrunst>span,html[data-ui=next] .plw .pltop>.plwrun>.plrunst>span{white-space:normal;overflow-wrap:anywhere}}   /* ★en 282/319, ko 272/311px cut at 1100/900: wrap below 1440 (the bar may grow a line there); 640px cap unchanged */
 html[data-ui=next] .plw .plprog{display:block;height:6px;border-radius:3px;background:var(--nx-hover);overflow:hidden}
 html[data-ui=next] .plw .plprog>i{display:block;position:relative;overflow:hidden;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--plf-plan),var(--plf-build),var(--plf-cust),var(--plf-plan));background-size:200% 100%;transition:width .6s}
 /* Flowing gradient = a 4x-wide layer of two pattern periods translated by one period (transform only; was background-position). */
