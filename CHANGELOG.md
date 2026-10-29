@@ -5,13 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+**Highlights**
+
+- Security checks: «Request fix» sends a security-fix pipeline run request (fix → re-scan → review) and keeps the repo gated until the review, instead of a plain message a session could mark done without a re-scan.
+- Pipelines: per-project strict mode (`.claude/pipelines/_policy.json` `{"enforce":"writes"}`) makes every file edit, Bash write into the repo and commit go through an open run.
+- Harness: a gate report replaces the «Flow» strip — what was caught (red→green), what held, what was reverted, and which gate caught it.
+
 ### Added
 
 - Harness: «Runtime behind latest patch» card from the newest security report — per runtime, current → latest patch in its cycle (security fix, end of life) and cycles behind the newest release, one next step each; a stale report asks for a rerun, no report shows «No check on record» with the command.
 - Security checks: trivy scans Dockerfiles for misconfigurations by default; `--images` also scans each base image (Dockerfile `FROM`, compose `image:`) for CVEs, deduplicated across images, (a `FROM ${ARG}` uses the ARG's default declared before the first `FROM`) with a «Base images» report section (fixable high/critical → replace base image, unfixed → waiting). A registry login or DB download failure is a failed row with its reason, never a clean result.
-
 - Structure: a running security check shows a run banner under the header, like the architecture-map run (stage, project · session, «Stop» when the request came from Sidereus).
 - Structure: the «N outside {style} flow» badge is a toggle: its tooltip says it is a review hint, not an error, and pressing it lists only those edges (each with its reason) under a «Not an error · N edges to review» line; pressing again, or picking a module or flow, restores the full list.
+- Pipelines: per-project strict mode — with `.claude/pipelines/_policy.json` `{"enforce":"writes"}`, Edit/Write and `git commit` are refused while no run of the session is open (15 minutes after a run ends still count, so the ship commit lands); Bash writes into the repo (redirects, `tee`, `sed -i`, also after `then`/`do`, `VAR=` and `env`) are gated too; a pipeline marked `"readonly": true` (review) does not unlock writes; a light `quick-fix` pipeline ships for known small fixes.
+- Hooks: opt-in `"onFailure": "block"` for `pl_flow.py`, so a guard that cannot start or times out blocks the call instead of letting it through (off by default).
 
 ### Fixed
 
@@ -24,10 +31,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: going back to a map you had already viewed in another project opens it where you left it, instead of the corner.
 - Pipelines: a background Bash from an earlier run (a dev server that never reports completion) no longer lights a stage of the current run.
 - Harness: the runtime card no longer suggests `brew upgrade` for a runtime already on its latest patch, and suggests moving to a supported cycle for an end-of-life one.
+- Harness: a run whose last stage never reported back reads as ended after 30 minutes idle, as Pipelines already does, instead of running forever.
+- Attention: a subagent waiting on a permission prompt keeps its badge when its log line is written late (measured 1.2 s lag against a 1.0 s allowance).
+- Attention: a main-session Bash permission prompt is no longer cleared by auto-approved Bash calls from background subagents, so «Bash waiting for approval» shows.
+- Mailbox wake: after `/clear` or resume the session hears new mail at once instead of only after its first turn ends; mail already seen before `/clear` does not wake it again.
+- Mailbox: a concurrent read no longer shows every message as unread for a moment (the read cursor is written atomically).
+- Settings: saving keeps a symlinked `~/.claude/settings.json` a symlink and writes its target, instead of replacing the link with a plain file.
+- Pipelines: strict mode also catches `/usr/bin/git commit`, `git -c k=v commit` and `--no-pager`, and a commit message containing `--dry-run` no longer passes as a dry run.
+- Memory: the mailbox bus no longer grows `sys.path` on every poll.
 
 ### Changed
 
 - Harness: a gate report replaces the «Flow» strip — «Caught (red→green)» · «Held» · «Reverted» at the top, «What is guarding» (before edit · right after · before commit, each with its catch count) and one card per catch: red run → fix commits → green run → held or reverted.
+- Harness: each «What is guarding» chip and the fast/full mode mark say which hook or gate it is, who runs it and when; the config map summary and its fold both read «Check results», and the fold opens when the check found problems.
+- Security checks: «Request fix» sends a security-fix pipeline run request (fix → re-scan → review) with the requested findings, and the target repo stays strict while it is open; its line shows «fix commit seen <hash>» and, after a re-scan, how many issues are left.
+- Security checks: the issues window and badge tooltip warn when base images went unscanned (trivy missing, or `--images` not ticked) instead of showing only the total.
+- Timeline: row chips name what they count («202m active», «compacted 1×», «+N finished runs», «N repos»), the axis legend keys bar colours and the «Compacted» tick, and the session picker tooltip shows the 8-character id.
+- Pipelines: the pass picker reads «pass k» (the loop-back glyph is kept for «sent back here» only); auto-fit never shrinks the canvas below 1.0 (0.9 under 1100 px) — it pans instead — and cards wrap to 2 lines, with «Session model» and «No gate» labels.
+- Layout: 1440/1100/900 widths wrap or fold instead of cutting text with an ellipsis («Working now» names wrap and the list starts folded below 1000 px, the run strip and timeline legend wrap); the header keeps «Sessions» at 900; above 1440, history rows cap at 1200 px, branch details at 700 px and prose at 90ch.
+- Structure: the edge badge reads «Edges verified n/m».
+- Docs: an installed package (pipx/uv) needs a git clone for structure map and security check requests; README and GETTING-STARTED say so next to the install path.
 
 ## [0.9.0] - 2026-10-28
 
