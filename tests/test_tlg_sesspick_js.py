@@ -51,7 +51,7 @@ class TlgSessPick(unittest.TestCase):
         self.assertNotIn('<b>Session</b>', h)   # bare: the label is the aria name and first title line, not visible
         self.assertIn('aria-label="Session: a"', h)
         self.assertIn("<span class=ppcn>a</span><span class=tlgau>auto</span> ▾</button>", h)
-        self.assertIn('title="Session\nAuto (latest active)\n/r/a · s1aaaaaaaa"', h)
+        self.assertIn('title="Session\nAuto (latest active)\n/r/a · s1aaaaaa"', h)
         self.assertNotIn("tlgnb", h)   # the repo-count badge sits on the chip, not the session button
         self.assertNotIn("<select", h)
 
@@ -62,7 +62,7 @@ class TlgSessPick(unittest.TestCase):
         self.assertEqual(len(r["rows"]), 3)
         self.assertIn("ppcur", r["rows"][0])
         self.assertIn("<span class=cmdkp>Auto (latest active)</span><span class=cmdkc>a · s1aaaaaa · Busy</span>", r["rows"][0])
-        self.assertIn('title="/r/b · s2bbbbbbbb"><span class=cmdkp>b</span><span class=cmdkc>s2bbbbbb</span>', r["rows"][2])
+        self.assertIn('title="/r/b · s2bbbbbb"><span class=cmdkp>b</span><span class=cmdkc>s2bbbbbb</span>', r["rows"][2])
         self.assertNotIn("SECRET", "".join(r["rows"]))
         self.assertEqual(r["q"], ["s:s2bbbbbbbb"])
         self.assertEqual(r["ph"], ["Find a session", "No matching sessions", None])
@@ -134,7 +134,7 @@ class TlgSessPick(unittest.TestCase):
                 "tlgC['/r/b'] = {d: {ok: true, n: 1, untracked: 1, files: [{path: 'x', new: true}]}};"
                 "tlgC['/r/c'] = {d: {ok: true, n: 0, files: []}};"
                 "R.h = tlgChipInner(tlgTarget()); tlgC['/r/a'].d = {ok: true, n: 0, files: []}; R.h0 = tlgChipInner(tlgTarget());")
-        self.assertIn("<span class=tlgnb>1</span></button>", r["h"])   # on the chip (only one session: no session button)
+        self.assertIn('<span class=tlgnb title="Repositories with uncommitted changes: 1">1 repos</span></button>', r["h"])   # on the chip, noun + title
         self.assertIn(" · Repositories with uncommitted changes: 1\"", r["h"])
         self.assertNotIn("tlgnb", r["h0"])
         self.assertNotIn("Repositories with uncommitted", r["h0"])
