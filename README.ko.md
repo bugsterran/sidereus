@@ -105,7 +105,7 @@ pipx install git+https://github.com/bugsterran/sidereus    # 또는: uv tool ins
 sidereus start --demo --open                               # 그 밖에: sidereus start --open · status · doctor · stop
 ```
 
-업그레이드는 `pipx upgrade sidereus`(`uv tool upgrade sidereus`). 로그인 시 자동 실행(`start --install-service`)과 파이프라인 채점(`scripts/pl_eval.py`)은 클론에서만 됩니다. pipx/uv 설치 경로는 다시 설치할 때마다 바뀌기 때문입니다. 0.7.0 으로 올린 뒤 처음 시작할 때 도구 사용 캐시를 한 번 다시 만듭니다(도구·하네스에 1분쯤 «불러오는 중…»).
+업그레이드는 `pipx upgrade sidereus`(`uv tool upgrade sidereus`). 로그인 시 자동 실행(`start --install-service`)과 파이프라인 채점(`scripts/pl_eval.py`)은 클론에서만 됩니다. pipx/uv 설치 경로는 다시 설치할 때마다 바뀌기 때문입니다. 구조 «구조도 생성 요청» / «다시 그리기» 와 «보안 점검 실행» 도 클론에서만 됩니다. 설치 패키지에는 `arch-map`·`security-checks` 파이프라인을 담은 저장소가 없습니다. 그래서 화면에 보낼 수 없는 이유가 나옵니다. 0.7.0 으로 올린 뒤 처음 시작할 때 도구 사용 캐시를 한 번 다시 만듭니다(도구·하네스에 1분쯤 «불러오는 중…»).
 
 Windows에서는 문서의 `python3`를 `py`로 바꿔 쓰거나 클론 폴더에서 `sidereus.cmd`를 실행하세요. Python·Git for Windows·Claude Code를 먼저 설치합니다: [시작하기 0장](docs/GETTING-STARTED.ko.md#0-준비).
 

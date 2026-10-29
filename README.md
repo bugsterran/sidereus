@@ -105,7 +105,7 @@ pipx install git+https://github.com/bugsterran/sidereus    # or: uv tool install
 sidereus start --demo --open                               # also: sidereus start --open · status · doctor · stop
 ```
 
-Upgrade with `pipx upgrade sidereus` (`uv tool upgrade sidereus`). Start at login (`start --install-service`) and pipeline scoring (`scripts/pl_eval.py`) need a clone: the pipx/uv path changes on every reinstall. The first start after updating to 0.7.0 rebuilds the tool usage cache once (about a minute of «Loading…» in Tools and Harness).
+Upgrade with `pipx upgrade sidereus` (`uv tool upgrade sidereus`). Start at login (`start --install-service`) and pipeline scoring (`scripts/pl_eval.py`) need a clone: the pipx/uv path changes on every reinstall. Structure «Generate diagram» / «Redraw» and «Run security check» also need a clone: an installed package has no repository holding the `arch-map` and `security-checks` pipelines, so the screen shows why the request cannot be sent. The first start after updating to 0.7.0 rebuilds the tool usage cache once (about a minute of «Loading…» in Tools and Harness).
 
 On Windows write `py` wherever these docs say `python3`, or run `sidereus.cmd` from the clone. Install Python, Git for Windows and Claude Code first: [Getting started §0](docs/GETTING-STARTED.md#0-prerequisites).
 
