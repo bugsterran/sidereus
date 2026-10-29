@@ -90,7 +90,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 The Structure tab opens on «Architecture», a diagram of the project's modules. «Project» is the same picker as in Pipelines.
 
 ### Read the diagram
-- Only edges with checked evidence are drawn («Verified N/M»); «All edges» adds implied ones.
+- Only edges with checked evidence are drawn («Edges verified N/M»); «All edges» adds implied ones.
 - Bands run top to bottom: layers for layered code, or where code runs (Entry · Client · Server · Stores). Hover a band for its meaning.
 - Click an edge for its evidence, then the evidence for the code. Click a module to see it and its neighbours only.
 - After «Generated»: the AI that drew the map (platform logo and model; each model when stages differed, stage names in the tooltip). Older maps show «Drawn by: unknown». An amber ⚠ «Generated …» badge means the map predates HEAD (tooltip: how far HEAD moved).

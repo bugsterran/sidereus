@@ -121,5 +121,19 @@ class ProvBadge(unittest.TestCase):
         self.assertIn("'Drawn by: unknown':", js_all())
 
 
+
+class VerifiedBadge(unittest.TestCase):
+    def test_label_names_edges(self):
+        """The verified-rate badge names what it counts (edges) and has a ko entry for label and tooltip."""
+        import os
+        from tests._load import ROOT, js_all
+        with open(os.path.join(ROOT, "web", "js", "84j-structure-arch.js"), encoding="utf-8") as f:
+            src = f.read()
+        self.assertIn("T('Edges verified {n}/{m} ({k}%)')", src)
+        self.assertNotIn("T('Verified {n}/{m}", src)
+        allj = js_all()
+        self.assertIn("'Edges verified {n}/{m} ({k}%)': '연결 검증 통과 {n}/{m} ({k}%)'", allj)
+        self.assertIn("'Module connections whose evidence was checked in the code / all connections drawn':", allj)
+
 if __name__ == "__main__":
     unittest.main()
