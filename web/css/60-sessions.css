@@ -158,6 +158,7 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .hsr > b{flex:0 0 auto;max-width:180px}
 .hslv{flex:none;font-size:10px;color:var(--nx-ok,#71c269);border:1px solid currentColor;border-radius:8px;padding:0 5px;white-space:nowrap}
 .hub{margin:2px 0 8px 18px;border-left:2px solid #243044;padding:4px 0 4px 6px}
+@media (min-width:1441px){ .hsd,.hsr{max-width:1200px} .hub{max-width:1182px} }   /* ★1920: rows ran 1828px with the time/tokens 1300px from the title */
 .huh{display:flex;align-items:center;gap:8px;font-size:11px;color:#8b95a7;margin:0 0 4px}
 .huh .wkrgb{margin-left:auto}
 .hun{display:flex;gap:8px;align-items:center;padding:3px 8px;font-size:11px;color:#a8b3c4;
