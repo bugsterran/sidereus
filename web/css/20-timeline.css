@@ -285,6 +285,8 @@ html[data-ui=next][data-theme=light] .tlsi i{filter:brightness(.7)}
   border:1px solid rgba(126,146,180,.6)}
 .tllg .tllgu{background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--nx-t3,#84868c) 70%,transparent) 0 1.5px,transparent 1.5px 4px);
   border:1px solid color-mix(in srgb,var(--nx-t3,#84868c) 70%,transparent)}
+.tllg .tllgc{background:linear-gradient(90deg,#8ab4f8 0 33%,#5fd3ba 33% 66%,#f0b357 66%)}   /* first three HUE7 project colours */
+.tllg .tllgk{width:2px;height:11px;border-radius:0;background:#e0725f}                     /* = .tlcp */
 .tlrs .tlb span{display:none}
 /* ★The `>` is required — the rule meant to hide only the session row's **description cell**, but as a descendant selector
    it also hid the state glyph (span.tlsi) inside the name cell (measured 2026-09-03: glyph 0x0 · display:none).
