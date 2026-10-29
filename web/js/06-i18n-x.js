@@ -54,5 +54,5 @@ Object.assign(I18N.ko, {
 Object.assign(I18N.ko, {
   'Finished run': '끝난 실행', 'Click to open it in the pipeline view': '누르면 파이프라인 화면에서 엽니다',
   'Other pipelines running in the same session': '같은 세션에서 진행 중인 다른 파이프라인',
-  '+{n} done': '+{n} 완료',   // ended-runs chip; «Collapse» reuses the shared entry
+  '+{n} finished runs': '+{n} 끝난 실행',   // ended-runs chip; «Collapse» reuses the shared entry
 });

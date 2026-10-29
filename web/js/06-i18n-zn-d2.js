@@ -95,6 +95,7 @@ Object.assign(I18N.ko, {
   'Tokens used in this window — one cell is {n}s.\nThe tallest cell is {m}; heights are proportional.': '창 안에서 쓴 토큰 — 칸 하나가 {n}초입니다.\n제일 높은 칸이 {m} 이고 높이는 그 비례입니다.',
   ' compaction ({t})': ' 압축({t})',
   'compacted {n}×': '압축 {n}회',
+  '{n} active': '활동 {n}',
   '{n} parallel': '동시 {n}',
   'Last {t} · {n} subagents · peak {p} at once': '최근 {t} · 서브에이전트 {n}건 · 동시 최대 {p}개',
   'Tokens used by every transcript with records in this window (input + output + cache read + cache write — same definition as "Today by project" and "Daily").\nOnly the window differs — here the last N hours, the today card from midnight.': '이 창 안에 기록이 있는 트랜스크립트 전부가 쓴 토큰입니다(input + 출력 + 캐시읽기 + 캐시쓰기 — 「당일 프로젝트별」·「일별」과 같은 정의).\n창이 달라서 생기는 차이만 남습니다 — 여긴 최근 N시간, 당일 카드는 자정부터입니다.',
