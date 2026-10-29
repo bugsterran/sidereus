@@ -246,6 +246,13 @@ class ReportTest(unittest.TestCase):
         self.assertEqual(c["held"] + c["again"] + c["reverted"] + c["gone"] + c["unchecked"], len(rep["incidents"]))
         self.assertEqual(c["checked"], len(rep["incidents"]) - c["unchecked"])
 
+    def test_r1_incident_fail_ts_is_row_ts(self):
+        # the stage card link joins on the evidence row «mode|ts»: an int row ts must compare equal to the incident's fail ts
+        rows = _newest_first(_row(1700000000, "fast", 1), _row(1700000005, "fast", 1), _row(1700000009.5, "fast", 0))
+        inc = TR.report(rows, "/r", git=False)["incidents"][0]
+        self.assertEqual((inc["mode"], inc["fail"]["ts"], inc["pass"]["ts"]), ("fast", 1700000005, 1700000009.5))
+        self.assertIsInstance(inc["fail"]["ts"], float)   # ⚠float in JSON: the JS side compares with Number(), not strings
+
     def test_r3_quiet_checkpoint_has_runs_not_catches(self):
         rep = TR.report(_newest_first(_row(1, "full", 0), _row(2, "full", 0)), "/r", git=False)
         self.assertEqual((rep["checkpoints"]["full"], rep["incidents"]), ({"runs": 2, "caught": 0, "listed": 0}, []))

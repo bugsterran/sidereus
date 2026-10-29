@@ -1,6 +1,6 @@
 // «Harness» view of the pipeline tab (48-pipeline.js PLVIEW, project = PLS.proj): gate report + hook lifecycle lane + rule files + agent ↔ pipeline map.
 // ⚠Metadata only (GET /api/harness): names, paths, sizes, counts. File text only on a card click (/api/harness/file by opaque ref) into 81's code window.
-const HN = { data: {}, at: {}, busy: {}, vdAt: {}, days: 30, opening: '', exOpen: false, cp: '', fold: {}, plat: lsGet('sidereus.hnplat', 'cc') || 'cc', flowOpen: lsGet('sidereus.hnflow', '1') !== '0', cfgOpen: (v => v === '1' ? true : v === '0' ? false : null)(lsGet('sidereus.hncfg', '')), cfgShown: false };   // opening = ref being fetched (double-click guard); exOpen survives repaints; plat = global choice
+const HN = { data: {}, at: {}, busy: {}, vdAt: {}, days: 30, opening: '', exOpen: false, cp: '', fold: {}, plat: lsGet('sidereus.hnplat', 'cc') || 'cc', flowOpen: lsGet('sidereus.hnflow', '1') !== '0', cfgOpen: (v => v === '1' ? true : v === '0' ? false : null)(lsGet('sidereus.hncfg', '')), cfgShown: false, go: null };   // go = incident target from a stage card's FAIL line (hnGo); opening = ref being fetched (double-click guard); exOpen survives repaints; plat = global choice
 // Cache key per platform + project (the same project looks different per CLI).
 function hnKey(proj){ return HN.plat + '\n' + proj; }
 // Server msgs that are English or Korean literals -> one Korean key, translated by T().
@@ -238,7 +238,7 @@ async function hnLoad(proj, force){
   if(v && v.scanning) setTimeout(() => { if(FEATS.harness !== false && mainView === 'pipe' && PLVIEW === 'harness' && PLS.proj === proj && HN.plat === plat) hnLoad(proj, true); }, 5000);
 }
 function hnSetPlat(p){
-  HN.plat = String(p || 'cc'); lsSet('sidereus.hnplat', HN.plat);
+  HN.plat = String(p || 'cc'); lsSet('sidereus.hnplat', HN.plat); HN.go = null;
   if(mainView === 'pipe' && PLVIEW === 'harness') plPaint();
 }
 // Logo-only platform switch: the name lives in title/aria-label only (logos, never platform names, as visible text).
@@ -347,12 +347,12 @@ function hnStrip(R){
   }).join('') + '</div>';
 }
 // R2: red → fix commits → green → held/reverted.
-function hnInc(x){
+function hnInc(x, go){
   const o = v => v && typeof v === 'object' ? v : {}, f = o(x.fail), p = o(x.pass), s = HN_TRS[x.state];
   const fl = Array.isArray(x.flipped) ? x.flipped : [], st = Array.isArray(x.still) ? x.still : [];
   const rc = f.rc == null || f.rc === '' ? '?' : String(f.rc), fd = f.failed == null || f.failed === '' ? null : String(f.failed);
   const ev = TV(fd == null ? {msg: 'exit {n}', vars: {n: rc}} : {msg: 'exit {n} · failed {m}', vars: {n: rc, m: fd}}), ar = ' <span class=hntra>→</span> ';
-  return '<div class="hnrun hninc' + (x.state === 'broke' ? ' hnng' : '') + '" data-hncpc=' + hnIncCp(x) + '><span class=hnrh>'
+  return '<div class="hnrun hninc' + (x.state === 'broke' ? ' hnng' : '') + (go === true ? ' hngo" tabindex=-1' : '"') + ' data-hncpc=' + hnIncCp(x) + '><span class=hnrh>'
     + (x.mode ? '<em class=hnsc' + ((x.mode === 'fast' || x.mode === 'full') ? ' title="' + esc(T(HN_CP[x.mode][2])) + '"' : '') + '>' + esc(x.mode) + '</em> ' : '') + hnTrHead(f) + ' ' + hnPF(false) + ' <i class=hnrepe>' + esc(ev) + '</i>' + ar
     + (typeof x.commits === 'number' ? '<i class=hntm>' + esc(TV({msg: hnPl(x.commits, '{n} commit', '{n} commits'), vars: {n: x.commits}})) + '</i>' + ar : '')
     + hnTrHead(p) + ' ' + hnPF(true) + ar
@@ -372,15 +372,48 @@ function hnQuiet(R, k){
     + esc(TV({msg: hk ? hnPl(v.runs, 'ran {n} time, blocked {m}', 'ran {n} times, blocked {m}') : hnPl(v.runs, 'ran {n} time, caught 0', 'ran {n} times, caught 0'), vars: {n: v.runs, m: v.caught}})) + '</i></span>'
     + (codes.length ? '<span class=hnsteps>' + codes.join('') + '</span>' : '') + '</div>';
 }
+// Stage card FAIL line (48 plGoHarness) → target incident by evidence row key «mode|ts». Bad keys are ignored.
+function hnGo(key){
+  const m = String(key == null ? '' : key).match(/^([a-z0-9_-]{0,20})\|(\d+(?:\.\d+)?)$/), ts = m ? Number(m[2]) : NaN;
+  if(!m || !isFinite(ts) || ts <= 0) return;
+  HN.go = { mode: m[1], ts: ts, proj: PLS.proj, done: false }; HN.cp = '';   // ⚠a checkpoint filter could hide the target card
+}
+// Target incident for HN.go, or {note} when there is none. ⚠Number compare: report ts is float, the row key may be an int.
+function hnGoFind(R){
+  const g = HN.go, n = v => Number(v && v.ts), same = R.inc.filter(x => x.mode === g.mode);
+  const hit = same.find(x => n(x.fail) === g.ts);
+  if(hit) return { x: hit };
+  // A superseded FAIL pairs through the latest FAIL before the next PASS: the earliest same-mode pair whose FAIL is at or after it.
+  const cov = same.filter(x => n(x.fail) >= g.ts && n(x.pass) > g.ts).sort((a, b) => n(a.pass) - n(b.pass))[0];
+  if(!cov) return { note: 'Not fixed yet — an incident card appears with the next PASS' };
+  // ⚠Unlisted pairs (caught > listed) are older than every listed PASS of the mode: below that, cov may not be the real pair.
+  const passes = same.map(x => n(x.pass)).filter(isFinite), minP = Math.min.apply(null, passes);
+  return hnN(R.c.caught) <= R.inc.length || g.ts >= minP ? { x: cov } : { note: 'Older than the incidents listed here' };
+}
+// Drop the incident target (48 calls it when the view toggle leaves Harness).
+function hnGoClear(){ if(HN.go) HN.go = null; }
+// Once per hnGo: bring the target into view (nearest edge only) and focus it without scrolling again.
+function hnGoScroll(){
+  const g = HN.go;
+  if(!g || g.done || typeof document === 'undefined' || !document.querySelector) return;
+  const el = document.querySelector('.hnw .hngo') || document.querySelector('.hnw .hngonote');
+  if(!el) return;
+  g.done = true;
+  if(el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+  if(el.classList && el.classList.contains('hngo') && el.focus) el.focus({ preventScroll: true });
+}
 function hnReport(d){
+  if(HN.go && HN.go.proj !== PLS.proj) HN.go = null;   // target belongs to the project it was opened from
   const R = hnRep(d), cp = hnCpKeys(R).indexOf(HN.cp) >= 0 ? HN.cp : '';   // ⚠a filter whose button is not shown (project/platform switch) is ignored
   const inc = R.inc.map((x, i) => [x, i, hnMs((x.pass && x.pass.ts) || (x.fail && x.fail.ts))]).sort((a, b) => b[2] - a[2] || a[1] - b[1]).map(a => a[0]);   // newest first
-  const any = inc.length || HN_CPK.some(k => R.cp(k).runs);
-  let cards = inc.filter(x => !cp || hnIncCp(x) === cp).map(hnInc).join('') + HN_CPK.filter(k => !cp || k === cp).map(k => hnQuiet(R, k)).join('');
+  const any = inc.length || HN_CPK.some(k => R.cp(k).runs), go = HN.go ? hnGoFind(R) : null;
+  let cards = inc.filter(x => !cp || hnIncCp(x) === cp).map(x => hnInc(x, !!go && go.x === x)).join('') + HN_CPK.filter(k => !cp || k === cp).map(k => hnQuiet(R, k)).join('');
   const old = cp ? R.cp(cp).caught - R.cp(cp).listed : 0;
   if(old > 0) cards += '<div class=hidnote>' + esc(TV({msg: hnPl(old, '{n} older catch, not listed', '{n} older catches, not listed'), vars: {n: old}})) + '</div>';
   if(!any) cards = '<div class=hidnote>' + esc(T('No gate records yet — running scripts/check.sh adds them')) + '</div>';
   else if(!cards) cards = '<div class=hidnote>' + esc(T('Nothing recorded at this checkpoint')) + '</div>';
+  if(go && go.note) cards = '<div class="hidnote hngonote">' + esc(T(go.note)) + '</div>' + cards;
+  if(go && !HN.go.done) (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : setTimeout)(hnGoScroll);   // after plPaint has put the HTML in place
   const since = hnWhen(R.since);
   return '<div class=hnrep><div class=brh2><b>' + esc(T('What the gates caught')) + '</b>' + (since ? ' <i>' + esc(TV({msg: 'since {d}', vars: {d: since}})) + '</i>' : '') + '</div>'
     + (typeof hnRuntime === 'function' ? hnRuntime(d) : '') + hnTiles(R) + hnStrip(R) + '<div class=hnrepc>' + cards + '</div></div>';
@@ -436,6 +469,11 @@ function hnCardName(el){ const n = el.querySelector('.hncn, .hnan, .hnp'); retur
 // Count buttons jump to the token tab's «Tools» list; cards with a ref open their file.
 document.addEventListener('click', e => {
   if(!e.target.closest) return;
+  if(HN.go && e.target.closest('.hnw')){   // the highlight lasts until the next click in the view
+    HN.go = null;
+    const a = document.activeElement;   // ⚠focus inside .hnw pauses poll repaints: let go of the focused target card
+    if(a && a.classList && a.classList.contains('hngo') && a.blur) a.blur();
+  }
   const pb = e.target.closest('.hnw [data-hnplat]');
   if(pb){ if(pb.dataset.hnplat !== HN.plat) hnSetPlat(pb.dataset.hnplat); return; }
   const vg = e.target.closest('.hnw [data-hnvdgo]');

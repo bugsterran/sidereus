@@ -16,7 +16,8 @@ function plEvRows(proj){
 function plEvCommits(proj){ return (proj && PLEV[proj] && PLEV[proj].cms) || []; }
 // The newest gate run recorded inside a stage's window (+60s slack: the record lands as the gate exits) — the card says what was checked, not who ran it.
 // commits ({h, ct}, optional) adds the commit whose time sits within [cm-2, cm+300] of a plrun commit stamp (L.cm).
-function plEvLine(rows, L, commits){
+// link (48d only) makes a FAIL line open its Harness incident via data-plevf «mode|ts»; ⚠74c/48k pass none, so their output stays byte-identical.
+function plEvLine(rows, L, commits, link){
   if(!L || !L.w0 || !Array.isArray(rows)) return '';
   const w0 = L.k >= 2 && L.p0 ? L.p0 : L.w0;   // ⚠latest pass only: a looped-back stage's first-pass FAIL showed under a later ✓
   const r = rows.find(x => x && x.ts >= w0 - 5 && x.ts <= L.w1 + 60 && !(L.cap && x.ts >= L.cap - 5));   // ⚠earlier pass: the 60s slack must not reach the next pass's gate
@@ -49,5 +50,23 @@ function plEvLine(rows, L, commits){
   // The short hash alone is unexplained: its own span says which commit and where it came from.
   const ct = h7 ? esc(TV({msg: 'Commit made in this stage: {h}', vars: {h: cm.h}})) : '';
   const cmh = h7 ? (body ? ' · ' : '') + '<span class=plevc title="' + ct + '" aria-label="' + ct + '">' + esc(T('commit ') + h7) + '</span>' : '';
-  return '<div class="plev' + (!r || r.rc === 0 ? '' : ' plevng') + '" title="' + esc(tip.join('\n') || body) + '">' + esc(body) + cmh + '</div>';
+  const lk = link && r && r.rc !== 0 ? ' data-plevf="' + esc(String(r.mode || '') + '|' + r.ts) + '" tabindex=0 role=link aria-label="' + esc(T('Open this failure in Harness')) + '"' : '';
+  const ttl = lk ? T('Open this failure in Harness') + '\n' + (tip.join('\n') || body) : tip.join('\n') || body;
+  return '<div class="plev' + (!r || r.rc === 0 ? '' : ' plevng') + '"' + lk + ' title="' + esc(ttl) + '">' + esc(body) + cmh + '</div>';
 }
+// ⚠Capture phase + stopPropagation: the line sits inside a draggable .plnd, whose pointerdown/click would start a drag or select the stage.
+function plEvfKey(e){ const t = e.target && e.target.closest ? e.target.closest('.plnd [data-plevf]') : null; return t ? t.dataset.plevf : null; }
+document.addEventListener('pointerdown', e => { if(plEvfKey(e) !== null) e.stopPropagation(); }, true);
+document.addEventListener('click', e => {
+  const k = plEvfKey(e);
+  if(k === null) return;
+  e.stopPropagation(); e.preventDefault();
+  if(typeof plGoHarness === 'function') plGoHarness(k);
+}, true);
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  const k = plEvfKey(e);
+  if(k === null) return;
+  e.stopPropagation(); e.preventDefault();
+  if(typeof plGoHarness === 'function') plGoHarness(k);
+}, true);

@@ -132,6 +132,8 @@ Object.assign(I18N.ko, {
   'No gate records yet — running scripts/check.sh adds them': '아직 게이트 기록이 없습니다 — scripts/check.sh 를 실행하면 쌓입니다',
   'Nothing recorded at this checkpoint': '이 지점의 기록이 없습니다', '{n} older catches, not listed': '이전에 잡은 {n}건은 목록에 없음',
   'Stable': '유지', 'Regressed': '회귀', 'Re-fixed': '다시 고침', 'Reverted': '되돌려짐', 'Dropped': '이력에서 빠짐', 'Unverified (uncommitted)': '미검증 (미커밋)',
+  'Not fixed yet — an incident card appears with the next PASS': '아직 고쳐지지 않음 — 다음 PASS 가 나오면 사건 카드가 생깁니다',
+  'Older than the incidents listed here': '여기 나온 사건보다 오래된 기록입니다',
   // 48-pipeline.js
   'Start from a template': '템플릿으로 시작',
   'Run': '실행',

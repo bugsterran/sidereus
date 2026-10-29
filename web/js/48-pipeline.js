@@ -30,11 +30,29 @@ document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('.wkrgb[data-plv]');
   if(!b || b.dataset.plv === PLVIEW) return;
   const hadF = document.activeElement === b;   // ⚠the repaint drops focus to <body> (46 kbHold)
+  if(PLVIEW === 'pipe') plPipeTopSave();
+  else if(typeof hnGoClear === 'function') hnGoClear();   // leaving Harness: a later plain visit shows no stale incident highlight/note
   PLVIEW = b.dataset.plv === 'harness' ? 'harness' : 'pipe';
   lsSet('sidereus.plview', PLVIEW);
   plPaint();
+  if(PLVIEW === 'pipe') plPipeTopRestore();
   if(hadF) kbHold('.wkrgb[data-plv].on');
 });
+// Pipelines view scroll kept across a Harness visit; restored after the canvas fit (plAfterPaint → plGwFit) settles the height.
+function plPipeTopSave(){ const fd = document.getElementById('feed'); PLS.pipeTop = fd ? fd.scrollTop || 0 : 0; }
+function plPipeTopRestore(){
+  const t = +PLS.pipeTop || 0;
+  if(t > 0) requestAnimationFrame(() => { const fd = document.getElementById('feed'); if(fd && PLVIEW === 'pipe') fd.scrollTop = t; });
+}
+// Stage card «gate FAIL» line (48f data-plevf «mode|ts») → Harness incident for that gate row (47b hnGo).
+function plGoHarness(key){
+  if(FEATS.harness === false) return;
+  if(PLVIEW === 'pipe') plPipeTopSave();
+  PLVIEW = 'harness';
+  lsSet('sidereus.plview', PLVIEW);
+  if(typeof hnGo === 'function') hnGo(String(key || ''));
+  plPaint();
+}
 async function plLoadProjs(){
   if(PLS.projs || PLS.busy['']) return;
   PLS.busy[''] = 1;
@@ -183,6 +201,7 @@ function plProjGo(p){
   if(p === PLS.proj) return false;
   PLS.proj = p; lsSet('sidereus.plproj', PLS.proj); PLNEW = null; PLDRAFT = null; PLSTD = false; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = '';
   PLS.nowSid = ''; PLS.nowPick = null;   // 48j: the previous project's session / stage pick
+  PLS.pipeTop = 0;   // one saved scroll: never restore another project's
   return true;
 }
 function plPickProj(p){

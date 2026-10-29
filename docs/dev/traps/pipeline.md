@@ -307,3 +307,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠`[pl-none]`, the nudge stamp and «Apply» off never lift it; only «Stop», `closed`, 24 h, or the recipient's run (t0 >= `at`) with its review stage done do.
 - ⚠`closed` is stamped only while a viewer tab polls `/api/state`, so the hook reads the recipient's runs.json itself.
 - ⚠Fail open on any read/parse error: this hook runs for every Claude Code session on the machine.
+
+## Stage card «gate FAIL» line opens its Harness incident (48f `data-plevf` · 48 `plGoHarness`)
+- Cause: the line sits inside a draggable, selectable `.plnd`; a bubbling handler let the click also start a drag or select the stage.
+- Fix: pointerdown/click/keydown listeners in capture phase on `.plnd [data-plevf]` call `stopPropagation` (same as 48b `.plpass`), then `plGoHarness("mode|ts")`.
+- ⚠Only 48d passes `link`; 74c timeline and 48k mode panel pass none, so their HTML stays byte-identical. Harness off → no link attributes.
+- ⚠Leaving «Pipelines» saves `#feed` scrollTop in `PLS.pipeTop`; returning restores it in `requestAnimationFrame` after the repaint (the rebuild resets it to 0).

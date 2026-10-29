@@ -154,6 +154,7 @@ html[data-theme=light] .hnvdr.hnvd-check,html[data-theme=light] .hnvdc.hnvd-chec
 .hncpb.on{background:var(--seg-on-bg,rgba(88,153,243,.15));border-color:var(--seg-on-bd,rgba(88,153,243,.67))}
 .hncpb:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px}
 .hnrepc{min-width:0}
+.hninc.hngo{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px;box-shadow:0 0 0 4px rgba(88,153,243,.18)}
 .hnrepe{font-style:normal;font-family:var(--mono,monospace);color:var(--nx-err,#f45460)}
 .hnrun.hnquiet{border-left-color:var(--nx-idle,#7d7e85)}
 .hnruns>summary{display:block;cursor:pointer;list-style:none;margin-bottom:6px}
