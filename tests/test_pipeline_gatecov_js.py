@@ -1,4 +1,4 @@
-"""Gate coverage: plGateCov counts, «Unverified» pill on gateless stage cards, «Gates n/m» in the pipeline bar.
+"""Gate coverage: plGateCov counts, «No gate» pill on gateless stage cards, «Gates n/m» in the pipeline bar.
 Pure functions under node; no live files."""
 import json
 import os
@@ -56,9 +56,9 @@ class GateCoverage(unittest.TestCase):
     def test_unverified_pill_only_without_gate(self):
         r = _run("const E = { G: %s }; console.log(JSON.stringify(E.G.nodes.map(n => plNodeHtml(E, n, false, null))));" % G)
         self.assertIn("class=plunv", r[0])
-        self.assertIn("Unverified", r[0])
-        self.assertIn("No gate command", r[0])
-        self.assertIn('aria-label="Unverified — No gate command — nothing machine-checks this stage"', r[0])   # screen readers hear why
+        self.assertIn(">No gate</span>", r[0])   # same word as the «Gate» chip
+        self.assertIn('title="No check command runs after this stage — nothing machine-checks it"', r[0])
+        self.assertIn('aria-label="No gate — No check command runs after this stage — nothing machine-checks it"', r[0])   # screen readers hear why
         self.assertIn("class=plnc", r[0])   # row shows even with no other chips
         self.assertNotIn("plunv", r[1])
         self.assertNotIn("plunv", r[2])
@@ -66,7 +66,7 @@ class GateCoverage(unittest.TestCase):
 
     def test_unverified_korean(self):
         r = _run("const E = { G: %s }; console.log(JSON.stringify(plNodeHtml(E, E.G.nodes[0], false, null)));" % G, lang="ko")
-        self.assertIn("검증 없음", r)
+        self.assertIn(">게이트 없음</span>", r)
 
     def test_bar_text(self):
         cov, span = _bar_expr()
@@ -77,6 +77,26 @@ class GateCoverage(unittest.TestCase):
         self.assertIn("machine-checked by a gate command: 2 of 4", en)   # meaning kept in the tooltip
         self.assertIn("plcovlo", en)   # amber while n < m
         self.assertIn("게이트 2/4", _run(js, lang="ko"))
+
+
+    def test_model_line_inherit_reads_session_model(self):
+        js = ("const E = { G: { defaults: { model: 'inherit' }, loops: [], nodes: [{ id: 'a', title: 's', agent: 'x', ui: { x: 0, y: 0 } },"
+              " { id: 'b', title: 't', agent: 'x', model: 'haiku', ui: { x: 0, y: 0 } }] } };"
+              " console.log(JSON.stringify(E.G.nodes.map(n => plNodeHtml(E, n, false, null).match(/<div class=plnm[^>]*>[^<]*/)[0])));")
+        en, ko = _run(js), _run(js, lang="ko")
+        self.assertEqual(en[0], "<div class=plnm title=\"No model set; the stage uses the session's model\">Session model")
+        self.assertEqual(en[1], "<div class=plnm>haiku")                  # an explicit model shows as-is, no tooltip
+        self.assertIn(">세션 모델 따름", ko[0])
+        self.assertNotIn("inherit", en[0] + ko[0])
+
+    def test_card_desc_wraps_two_lines(self):
+        with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as fh:
+            css = fh.read()
+        rule = re.search(r"^\.plnad\{[^}]*\}", css, re.M).group(0)
+        self.assertIn("-webkit-line-clamp:2", rule)
+        self.assertIn("white-space:normal", rule)
+        self.assertNotIn("nowrap", rule)
+        self.assertIn("adh = ad ? '<div class=plnad title=\"' + esc(ad) + '\">'", js_fn("plNodeHtml"))   # full text on hover
 
 
 if __name__ == "__main__":

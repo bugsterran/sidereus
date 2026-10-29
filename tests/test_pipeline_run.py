@@ -580,7 +580,8 @@ class CssRules(unittest.TestCase):
         self.assertIn("floor = Math.round(row) + 426;", js_all())   # floor = plCvNeed canvas row + handle + default pane row
         self.assertIn("PLRO.observe(pw)", js_all())                      # in-place size changes re-fit too
         self.assertNotIn("@media (max-width:1000px){.plgw", self.CSS)
-        self.assertIn("const PL_ZMIN = 0.8, PL_ZFIT = 0.4;", js_all())       # never raise the zoom floor instead
+        self.assertIn("const PL_ZFIT = 0.4;", js_all())                      # manual zoom-out floor
+        self.assertIn("innerWidth < 1100 ? 0.9 : 1;", js_fn("plZFloor"))      # auto-fit floor: 100% / 90% below 1100px
 
 
 class CanvasFit(unittest.TestCase):
@@ -588,12 +589,12 @@ class CanvasFit(unittest.TestCase):
 
     def _run(self, body, ids="abcdef", extra=(), loops=()):
         geo = re.search(r"^const PLG_W = [^\n]*$", js_all(), re.M).group(0).replace("const ", "", 1)
-        zm = re.search(r"^const PL_ZMIN = [^\n]*$", js_all(), re.M).group(0).replace("const ", "", 1)
+        zm = re.search(r"^const PL_ZFIT = [^\n]*$", js_all(), re.M).group(0).replace("const ", "", 1)
         G = {"flow": [[c, d] for c, d in zip(ids, ids[1:])], "loops": [{"from": f, "to": t, "max": 1} for f, t in loops],
              "nodes": [{"id": c, "title": c, "ui": {"x": 44 + 248 * i, "y": 24}} for i, c in enumerate(ids)]}
         return _js("(() => { %s\n%s\n const E = {G: %s}; %s })()" % (geo, zm, json.dumps(G), body),
                    "plWrapBest", "plWrapCols", "plFitRaw", "plFit", "plFitKey", "plSizeKey", "plVG", "plgW", "plgH", "plgOrder", "plgLayout", "plgPush", "plgRows", "plgAlign", "plgNode", "plgRowH",
-                   "plDrawBox", "plCentre", "plVisY", "plgLoopLanes", *extra)
+                   "plDrawBox", "plCentre", "plVisY", "plgLoopLanes", "plZFloor", *extra)
 
     # Stub editor (globals: the extracted functions are top-level): feed 900 tall, editor top at 100, canvas column = toolbar 40 + canvas.
     DOM = ("mainView = 'pipe'; innerHeight = 1000; lsGet = () => 0; PL_SPLIT = {key: 'k', min: 200, cv: 200}; plCurEnt = () => E; plgKey = G => JSON.stringify(G.nodes);"
@@ -660,16 +661,16 @@ class CanvasFit(unittest.TestCase):
         self.assertTrue(r)
 
     def test_wider_than_canvas_keeps_left_anchor(self):
-        r = self._run("const cv = {clientWidth: 300, clientHeight: 200}; E.first = true; plFit(E, cv, false); return [E.view.x, E.view.z];")
-        self.assertEqual(r, [0, 0.4])                                    # does not fit at the zoom floor: start of the chain stays in view
+        r = self._run("const cv = {clientWidth: 300, clientHeight: 200}; E.first = true; plFit(E, cv, false); const a = [E.view.x, E.view.z];"
+                      " innerWidth = 900; E.view = null; plFit(E, cv, false); const b = E.view.z; innerWidth = 1100; E.view = null; plFit(E, cv, false); return [a, b, E.view.z];")
+        self.assertEqual(r, [[0, 1], 0.9, 1])                            # auto-fit floor (text stays readable): the canvas pans, start of the chain in view
 
     def test_wrap_leaves_untouched(self):
         r = self._run("const cv = {clientWidth: 888, clientHeight: 282}; plWrapBest(E, cv, false); const z1 = E.view.z, k1 = E.fitK;"
                       " cv.clientHeight = 520; const stale = E.fitK !== plFitKey(E, cv); plWrapBest(E, cv, false);"
                       " return [!!E.touched, E.laid, k1, stale, z1, E.view.z];")
         self.assertEqual(r[:4], [False, True, "888x282/6", True])
-        self.assertLess(r[4], 0.8)                                          # the short canvas forced a small fit
-        self.assertGreaterEqual(r[5], 0.9)                                  # the settled height re-wraps to a readable zoom
+        self.assertEqual([r[4], r[5]], [1, 1])                              # a short canvas never shrinks below the auto-fit floor
 
     def test_fail_glyph_matches_strip(self):
         src = js_fn("plNodeHtml")

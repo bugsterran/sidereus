@@ -11,7 +11,7 @@ from tests.test_pipeline_graph import P, _js
 
 FNS = ("plEntKey", "plEnt", "plCurEnt", "plViewCarry", "plResetEnt", "plFit", "plFitKey", "plSizeKey", "plFitRaw", "plCvNeed", "plWrapCols",
        "plWrapBest", "plWrapFirst", "plCentre", "plDrawBox", "plVisY", "plApplyView", "plZoomLabel", "plPanH", "plGwFit", "plAfterPaint",
-       "plNowPickApply")
+       "plNowPickApply", "plZFloor")
 
 STUBS = r"""
 const PL_ZMIN = 0.8, PL_ZFIT = 0.4, PL_SPLIT = { v: '--plpanh', key: 'sidereus.plpanh', min: 200, cv: 200 };
@@ -83,17 +83,17 @@ class ViewKeep(unittest.TestCase):
     def test_first_open_fits_drawn_box(self):
         out = run(self.SIX + self.FITS + """
           plAfterPaint(box); const E = plCurEnt();
-          console.log(JSON.stringify([E.G.nodes.length, E.G.loops.length > 1, fit(E)]));""")
-        self.assertEqual(out, [6, True, [True, True, True]])
+          console.log(JSON.stringify([E.G.nodes.length, E.G.loops.length > 1, fit(E)[0], E.view.z]));""")
+        self.assertEqual(out, [6, True, True, 1])   # wraps to the canvas width at the 100% floor; the rows pan vertically
 
     def test_cards_grow_on_later_paint_refit_while_first(self):
         # ⚠the live run arrives on a later paint and widens cards; fitK (canvas size, count) alone kept the stale zoom clipped
         out = run(self.SIX + self.FITS + """
           plAfterPaint(box); const E = plCurEnt(), z0 = E.view.z;
           E.G.wd = {}; E.G.ht = {}; E.G.nodes.forEach(n => { E.G.wd[n.id] = 320; E.G.ht[n.id] = 150; });
-          plGwFit();
-          console.log(JSON.stringify([E.view.z < z0, fit(E)]));""")
-        self.assertEqual(out, [True, [True, True, True]])
+          const x0 = E.G.nodes.map(n => n.ui.x).join(); plGwFit();
+          console.log(JSON.stringify([E.view.z === z0, E.G.nodes.map(n => n.ui.x).join() !== x0, fit(E)[0]]));""")
+        self.assertEqual(out, [True, True, True])   # floored zoom kept; re-wrapped for the wider cards
 
     def test_select_and_now_pick_never_move_view(self):
         out = run(self.SIX + """
