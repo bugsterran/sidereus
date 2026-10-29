@@ -103,6 +103,16 @@ class FlowTest(unittest.TestCase):
         self.assertFalse(n["gate"]["v"]["r2g"])
         self.assertIsNone(n["edit"]["v"]["files"])   # no base head before the window
 
+    def test_idle_open_run_closes_on_view(self):
+        old_t1 = NOW - HF.pl_runs.PLR_OPEN_S - 60
+        self._write("aaaaaaaa1111", {"idle": _run(self.repo, old_t1 - 500, old_t1), "fresh": _run(self.repo, NOW - 500, NOW - 10)})
+        out = dict((f["name"], f) for f in HF.flow(self.repo, [_row(old_t1 - 100, "full", 0)], {}))
+        n = self._nodes(out["idle"])
+        self.assertEqual((out["idle"]["end"], n["req"]["st"], n["gate"]["why"], n["commit"]["why"]), (old_t1, "ok", "", ""))
+        self.assertEqual((out["fresh"]["end"], self._nodes(out["fresh"])["req"]["st"]), (0, "run"))
+        with open(os.path.join(self.plm, "aaaaaaaa1111.runs.json"), encoding="utf-8") as f:
+            self.assertEqual(json.load(f)["runs"]["idle"]["end"], 0.0)   # display only
+
     def test_guard_deny_count_and_log(self):
         r = _run(self.repo, NOW - 500, NOW - 10)
         r["deny"], r["dl"] = 3, [{"t": NOW - 300, "title": "검증", "c": "jump", "x": "secret"},

@@ -74,8 +74,13 @@ def _parse(sid, name, r, now):
     if not t1 or now - t1 > HF_KEEP_S:
         return None
     t0 = pl_runs._num(r.get("t0")) or t1
+    st, end = pl_runs._stages(r.get("st")), pl_runs._num(r.get("end"))
+    last = max([t1] + [s["t1"] for s in st.values()])
+    # ⚠View-side close as pl_runs (runs.json untouched): a last stage that never posts `end` stayed run/pending forever.
+    if not end and now - last > pl_runs.PLR_OPEN_S:
+        end = last
     return {"id": "%s:%s:%d" % (sid[:8], name, int(t0)), "name": name, "sid8": sid[:8], "t0": t0, "t1": t1,
-            "end": pl_runs._num(r.get("end")), "st": pl_runs._stages(r.get("st")), "lb": pl_runs._loopbacks(r.get("lb")),
+            "end": end, "st": st, "lb": pl_runs._loopbacks(r.get("lb")),
             "deny": _deny_n(r.get("deny")), "dl": _deny_log(r.get("dl")), "h0": _hex(r.get("h0")), "h1": _hex(r.get("h1"))}
 
 
