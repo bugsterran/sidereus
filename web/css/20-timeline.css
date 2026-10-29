@@ -279,7 +279,7 @@ html[data-ui=next][data-theme=light] .tlsi i{filter:brightness(.7)}
 .tlidle{position:absolute;top:0;bottom:0;cursor:help;background:rgba(126,146,180,.10)}
 .tlnap i{display:none}
 /* Axis-row legend chips — same fills as .tlnap / .tlunk so the swatch is the band itself. */
-/* ★nowrap+overflow:hidden cut «Colour = project · type» 145→106px at 1920 en and «압축» to «압» at 900 ko ⇒ items wrap (each stays whole); the row grows, the track sits at the bottom. */
+/* ★nowrap+overflow:hidden cut «Colour = project · type» 145→106px at 1920 en and «Compacted» to its first letter at 900 ko ⇒ items wrap (each stays whole); the row grows, the track sits at the bottom. */
 .tlaxr .tllg{flex-wrap:wrap;gap:2px 4px;padding:2px 10px 2px 0;font-size:10px;color:var(--nx-t2,#7e8896);white-space:nowrap}
 .tlaxr > .tlt{align-self:flex-end}
 .tllg > span{display:inline-flex;align-items:center;gap:4px;margin-left:6px;cursor:help}
