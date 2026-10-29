@@ -299,7 +299,11 @@ function hnTrHead(x){
 function hnTrStep(s, ng, tail){ return '<span class="hnstp' + (ng ? ' hnng' : '') + '">' + esc(s == null ? '?' : s) + (tail ? ' ' + esc(tail) : '') + '</span>'; }
 // Gate report (#27 R1-R4): /api/harness `report` + `guards`. ⚠Metadata only: hashes, ts, mode, rc, counts, step names, deny codes.
 // ⚠Checkpoint keys reach a class/attr only via HN_CP; the filter lives in HN.cp (memory only, no fetch, no scroll).
-const HN_CP = { hooks: ['Before edit', 'hooks'], fast: ['Right after', 'check --fast'], full: ['Before commit', 'check --full'], other: ['Other gates', ''] };
+// [label, command chip, tooltip] — the chip alone named a script, not what it guards.
+const HN_CP = { hooks: ['Before edit', 'hooks', 'Pipeline hook (hooks/pl_flow.py): refuses a step or edit that breaks the run order'],
+  fast: ['Right after', 'check --fast', 'scripts/check.sh --fast: the quick gate an implementer runs right after editing'],
+  full: ['Before commit', 'check --full', 'scripts/check.sh --full: the full gate (tests, screen check) the verifier runs before a commit'],
+  other: ['Other gates', '', 'Any other gate command recorded by a run'] };
 const HN_CPK = ['hooks', 'fast', 'full', 'other'];
 // hooks/pl_flow.py deny codes, shown as T(x, 'flow'); unknown codes are never shown raw.
 const HN_GD = { jump: 'Stage jump', agent: 'Wrong agent', model: 'Wrong model', tag: 'Missing tag', stage: 'Unknown stage', stop: 'Stopped',
@@ -338,7 +342,7 @@ function hnStrip(R){
   return '<div class=hnrepg role=group aria-label="' + esc(T('What is guarding')) + '"><b class=hnrepgh>' + esc(T('What is guarding')) + '</b>' + ks.map(k => {
     const v = R.cp(k), on = HN.cp === k;
     const n = !v.runs && !v.caught ? TV({msg: 'ran {n}', vars: {n: 0}}) : TV({msg: k === 'hooks' ? 'blocked {n}' : 'caught {n}', vars: {n: v.caught}});
-    return '<button class="hncpb' + (on ? ' on' : '') + '" data-hncp=' + k + ' aria-pressed=' + on + ' title="' + esc(TV({msg: hnPl(v.runs, 'ran {n} time', 'ran {n} times'), vars: {n: v.runs}})) + '"><b>' + esc(T(HN_CP[k][0])) + '</b>'
+    return '<button class="hncpb' + (on ? ' on' : '') + '" data-hncp=' + k + ' aria-pressed=' + on + ' title="' + esc(T(HN_CP[k][2]) + '\n' + TV({msg: hnPl(v.runs, 'ran {n} time', 'ran {n} times'), vars: {n: v.runs}})) + '"><b>' + esc(T(HN_CP[k][0])) + '</b>'
       + (HN_CP[k][1] ? ' <code class=hnrc>' + esc(HN_CP[k][1]) + '</code>' : '') + ' <i>' + esc(n) + '</i></button>';
   }).join('') + '</div>';
 }
@@ -349,7 +353,7 @@ function hnInc(x){
   const rc = f.rc == null || f.rc === '' ? '?' : String(f.rc), fd = f.failed == null || f.failed === '' ? null : String(f.failed);
   const ev = TV(fd == null ? {msg: 'exit {n}', vars: {n: rc}} : {msg: 'exit {n} · failed {m}', vars: {n: rc, m: fd}}), ar = ' <span class=hntra>→</span> ';
   return '<div class="hnrun hninc' + (x.state === 'broke' ? ' hnng' : '') + '" data-hncpc=' + hnIncCp(x) + '><span class=hnrh>'
-    + (x.mode ? '<em class=hnsc>' + esc(x.mode) + '</em> ' : '') + hnTrHead(f) + ' ' + hnPF(false) + ' <i class=hnrepe>' + esc(ev) + '</i>' + ar
+    + (x.mode ? '<em class=hnsc' + ((x.mode === 'fast' || x.mode === 'full') ? ' title="' + esc(T(HN_CP[x.mode][2])) + '"' : '') + '>' + esc(x.mode) + '</em> ' : '') + hnTrHead(f) + ' ' + hnPF(false) + ' <i class=hnrepe>' + esc(ev) + '</i>' + ar
     + (typeof x.commits === 'number' ? '<i class=hntm>' + esc(TV({msg: hnPl(x.commits, '{n} commit', '{n} commits'), vars: {n: x.commits}})) + '</i>' + ar : '')
     + hnTrHead(p) + ' ' + hnPF(true) + ar
     + (s ? '<b class="hntrs hntrs-' + s[1] + '">' + esc(T(s[0])) + '</b>' : '<b class=hntrs>' + esc(x.state == null ? '?' : x.state) + '</b>')
