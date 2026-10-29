@@ -1,6 +1,6 @@
 // «Harness» view of the pipeline tab (48-pipeline.js PLVIEW, project = PLS.proj): gate report + hook lifecycle lane + rule files + agent ↔ pipeline map.
 // ⚠Metadata only (GET /api/harness): names, paths, sizes, counts. File text only on a card click (/api/harness/file by opaque ref) into 81's code window.
-const HN = { data: {}, at: {}, busy: {}, vdAt: {}, days: 30, opening: '', exOpen: false, cp: '', fold: {}, plat: lsGet('sidereus.hnplat', 'cc') || 'cc', flowOpen: lsGet('sidereus.hnflow', '1') !== '0', cfgOpen: lsGet('sidereus.hncfg', '0') === '1' };   // opening = ref being fetched (double-click guard); exOpen survives repaints; plat = global choice
+const HN = { data: {}, at: {}, busy: {}, vdAt: {}, days: 30, opening: '', exOpen: false, cp: '', fold: {}, plat: lsGet('sidereus.hnplat', 'cc') || 'cc', flowOpen: lsGet('sidereus.hnflow', '1') !== '0', cfgOpen: (v => v === '1' ? true : v === '0' ? false : null)(lsGet('sidereus.hncfg', '')), cfgShown: false };   // opening = ref being fetched (double-click guard); exOpen survives repaints; plat = global choice
 // Cache key per platform + project (the same project looks different per CLI).
 function hnKey(proj){ return HN.plat + '\n' + proj; }
 // Server msgs that are English or Korean literals -> one Korean key, translated by T().
@@ -76,7 +76,7 @@ function hnVdRow(x){ const v = hnVd(x); return v ? '<span class="hnvdr hnvd-' + 
 function hnVdLine(c){
   if(!c || typeof c !== 'object') return '';
   const k = x => Number(c[x]) || 0;
-  return '<div class=hnvdl><b>' + esc(T('Check')) + '</b>' + ['bad', 'check'].map(l => k(l)
+  return '<div class=hnvdl><b>' + esc(T('Check results')) + '</b>' + ['bad', 'check'].map(l => k(l)
       ? '<button class="hnvdc hnvd-' + l + '" data-hnvdgo=' + l + ' title="' + esc(T('Go to the next one')) + '">' + esc(T(HN_VDL[l], 'verdict')) + ' <b>' + k(l) + '</b></button>'
       : '<span class="hnvdc hnvdz">' + esc(T(HN_VDL[l], 'verdict')) + ' 0</span>').join('')
     + '<span class="hnvdc hnvdz">' + esc(T('ok')) + ' ' + k('ok') + '</span></div>';
@@ -389,9 +389,11 @@ function hnReport(d){
 function hnVdSum(c){
   if(!c || typeof c !== 'object') return '';
   const k = x => Number(c[x]) || 0;
-  return ' <i>' + ['bad', 'check'].map(l => '<span class="hnvdq' + (k(l) ? ' hnvd-' + l : '') + '">' + esc(T(HN_VDL[l], 'verdict')) + ' ' + k(l) + '</span>').join(' · ')
+  return ' <i>' + esc(T('Check results')) + ' ' + ['bad', 'check'].map(l => '<span class="hnvdq' + (k(l) ? ' hnvd-' + l : '') + '">' + esc(T(HN_VDL[l], 'verdict')) + ' ' + k(l) + '</span>').join(' · ')
     + ' · <span class=hnvdq>' + esc(T('ok')) + ' ' + k('ok') + '</span></i>';
 }
+// No stored choice (null): open while the check found problems, so the count has its list under it.
+function hnCfgOpen(d){ return HN.cfgOpen == null ? (Number(d && d.verdict && d.verdict.bad) || 0) > 0 : HN.cfgOpen; }
 // Body only: the pipeline tab owns the header, the view toggle and the project chips.
 function hnHtml(){
   const proj = PLS.proj, d = HN.data[hnKey(proj)];
@@ -400,9 +402,10 @@ function hnHtml(){
   if(!proj) body = '<div class=hidnote>' + esc(T('Pick a project')) + '</div>';
   else if(!d) body = '<div class=hidnote>' + esc(T('Loading…')) + '</div>';
   else if(d.ok === false) body = '<div class=hidnote>' + esc(T('Could not read the harness')) + (d.msg ? ' — ' + esc(hnMsg(d.msg)) : '') + '</div>';
-  // Report first, then two closed folds: raw «Gate runs» (HN.fold.runs) and the config map (HN.cfgOpen).
-  else return '<div class=hnw>' + hnReport(d) + '<details class="hnmore hnruns" data-hnmore=runs' + (HN.fold.runs ? ' open' : '') + '><summary><div class=brh2><b>' + esc(T('Gate runs')) + '</b></div></summary>'
-    + hnRes(d.evidence, true) + '</details><details class=hncfg' + (HN.cfgOpen ? ' open' : '') + '><summary class=hncfgs><div class=brh2><b>' + esc(T('Config map')) + '</b>'
+  // Report first, then two folds: raw «Gate runs» (HN.fold.runs) and the config map (hnCfgOpen).
+  else{ HN.cfgShown = hnCfgOpen(d);
+  return '<div class=hnw>' + hnReport(d) + '<details class="hnmore hnruns" data-hnmore=runs' + (HN.fold.runs ? ' open' : '') + '><summary><div class=brh2><b>' + esc(T('Gate runs')) + '</b></div></summary>'
+    + hnRes(d.evidence, true) + '</details><details class=hncfg' + (HN.cfgShown ? ' open' : '') + '><summary class=hncfgs><div class=brh2><b>' + esc(T('Config map')) + '</b>'
     + hnVdSum(d.verdict) + '</div></summary>' + hnPlatSwitch(HN.plats) + hnVdLine(d.verdict) + (d.scanning ? '<div class=hidnote>' + esc(T('Counting runs…')) + '</div>' : '')
     + '<details class=hnflow data-hnflow' + (HN.flowOpen ? ' open' : '') + '><summary>'
     + '<div class=brh2><b>' + esc(T('Hook flow')) + '</b> <i>' + esc(TV({msg: 'effects are estimates · counts = last {n} days', vars: {n: HN.days}})) + '</i></div>'
@@ -411,6 +414,7 @@ function hnHtml(){
     + '<div class=hnbx><div class=brh2><b>' + esc(T('Agents ↔ pipelines')) + '</b></div>' + hnAgents(d.agents) + '</div>'
     + hnToolBox(d.mcps, 'MCP servers', 'full') + (Array.isArray(d.skills) ? '<div class=hnbx><div class=brh2><b>' + esc(T('Skills')) + '</b></div>' + hnSkills(d.skills) + '</div>' : '') + '</div>'
     + (HN.plat === 'cc' ? hnCounts(d.counts) : '') + '</details></div>';   // the «Tools» list they jump to is Claude Code's
+  }
   return '<div class=hnw>' + (proj ? hnPlatSwitch(HN.plats) : '') + body + '</div>';
 }
 // File viewer = the structure tab's code window (81 strPopOpenText: one window per file, theme, highlight, blocked-popup overlay).
@@ -459,7 +463,8 @@ document.addEventListener('keydown', e => {
 document.addEventListener('toggle', e => {
   if(!e.target.classList) return;
   if(e.target.classList.contains('hnex')) HN.exOpen = e.target.open;
-  else if(e.target.classList.contains('hncfg')){ HN.cfgOpen = e.target.open; lsSet('sidereus.hncfg', e.target.open ? '1' : '0'); }
+  else if(e.target.classList.contains('hncfg')){ if(e.target.open === HN.cfgShown) return;   // ⚠the paint's own open fires toggle too: only a change is a choice
+    HN.cfgOpen = HN.cfgShown = e.target.open; lsSet('sidereus.hncfg', e.target.open ? '1' : '0'); }
   else if(e.target.classList.contains('hnflow')){ HN.flowOpen = e.target.open; lsSet('sidereus.hnflow', e.target.open ? '1' : '0'); }
   else if(e.target.classList.contains('hnmore') && e.target.dataset) HN.fold[e.target.dataset.hnmore] = e.target.open;
 }, true);
