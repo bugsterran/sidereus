@@ -3,10 +3,10 @@
   "name": "sidereus-verify",
   "title": "라이브 점검 — Sidereus viewer",
   "use": "Live verification sweep: find real defects on the running/demo screens, fix only evidence-backed ones, ship once.",
-  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER restart the live viewer (8799), NEVER POST to it, NEVER open a visible browser (headless CDP only), NEVER commit/stash/checkout/reset/add, NEVER run screen_check --update.\nWrites (settings, mailbox, files) only in a sandbox viewer on a spare port with a temp HOME and temp CLAUDE_CONFIG_DIR; kill it when done and confirm the real files are unchanged.\nMetadata only in reports (rule 1): no message bodies or source text.\nA defect needs evidence: element/endpoint, measured value, width/theme/lang. Taste is not a defect. Desktop only: 900/1100/1440.",
+  "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER restart the live viewer (8799), NEVER POST to it, NEVER open a visible browser (headless CDP only), NEVER commit/stash/checkout/reset/add, NEVER run screen_check --update.\nWrites (settings, mailbox, files) only in a sandbox viewer on a spare port with a temp HOME and temp CLAUDE_CONFIG_DIR; kill it when done and confirm the real files are unchanged.\nMetadata only in reports (rule 1): no message bodies or source text.\nA defect needs evidence: element/endpoint, measured value, width/theme/lang. Taste is not a defect. Desktop only: 1920/1440/1100/900 (design at 1920; narrower must wrap or collapse, never cram).",
   "after": [
     "launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer",
-    "screen-check the live page (900/1100/1440)",
+    "screen-check the live page at 1920/1440/1100/900 (design at 1920; narrower must wrap or collapse, never cram)",
     "bash backup.sh",
     "commit"
   ],

@@ -19,7 +19,7 @@ model: opus
 - Each global has one owner module (`refactor/STAGE3.md` import order); change it in the owner. New modules go into that order.
 - UI lives in `web/` (`index.html`, `css/NN-*.css`, `js/NN-*.js`); JS files split only at top-level statement boundaries.
 - UI text is Korean with an `I18N.en` entry (`web/js/05-i18n.js`, `06-i18n-*.js`); comments are English.
-- Desktop only (900/1100/1440). No mobile work.
+- Desktop only: 1920/1440/1100/900 (design at 1920; narrower must wrap or collapse, never cram). No mobile work.
 - Python must run on `/usr/bin/python3` 3.9 (no `match`, no `X | Y` types).
 - Tests never touch live files, clock or network — monkeypatch the owning module.
 - Doc duty: new traps go in `docs/dev/traps/<domain>.md` (index: `docs/dev/TRAPS.md`; `docnote` shape).
