@@ -145,15 +145,39 @@ def note_sub_log(aid, path):
     _SUB_LOG[str(aid)] = path
 
 
+_sub_ts_cache = {}    # sub log path -> ((mtime, size), activity time)
+
+
+def _log_act(path):
+    """Timestamp of the newest timestamped line in the log tail, else its mtime. Raises OSError when the log is gone.
+    ★The mtime lagged the last line by 1.21 s (vs 0.559 s assumed), past _SUB_FLUSH_S, so a waiting sub lost its badge."""
+    st = os.stat(path)
+    key = (st.st_mtime, st.st_size)
+    hit = _sub_ts_cache.get(path)
+    if hit and hit[0] == key:
+        return hit[1]
+    out = st.st_mtime
+    for line in reversed(_tail_lines(path, nbytes=64_000, limit=20)):
+        m = re.search(r'"timestamp":\s*"([^"]+)"', line)
+        t = _iso_s(m.group(1)) if m else 0
+        if t:
+            out = t
+            break
+    if len(_sub_ts_cache) > 256:
+        _sub_ts_cache.clear()
+    _sub_ts_cache[path] = (key, out)
+    return out
+
+
 def _sub_act(s, now):
-    """Absolute last-activity time of sub row s (its log mtime), else None.
+    """Absolute last-activity time of sub row s (its log's last line time), else None.
     ⚠`idle` is relative to the parse-cache refresh, so `now - idle` drifts forward until the next refresh and
-    passed a waiting sub's marker (badge missing 44/120 polls); stat the log itself, `now - idle` only as a fallback."""
+    passed a waiting sub's marker (badge missing 44/120 polls); read the log itself, `now - idle` only as a fallback."""
     if not isinstance(s, dict) or not isinstance(s.get("idle"), int):
         return None
     path = _SUB_LOG.get(str(s.get("aid") or ""))
     try:
-        return os.path.getmtime(path) if path else now - s["idle"]
+        return _log_act(path) if path else now - s["idle"]
     except OSError:
         return now - s["idle"]          # log gone (rotated/removed): the snapshot value is the only evidence left
 

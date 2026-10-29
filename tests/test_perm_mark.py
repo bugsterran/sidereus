@@ -247,6 +247,28 @@ class PermMark(unittest.TestCase):
             self.assertEqual(LP.perm_rows([quiet], now=NOW)[0]["blocked"], "")
             self.assertEqual(LP.perm_rows([row], now=NOW)[0]["blocked"], "")
 
+    def test_sub_badge_uses_last_log_line_not_mtime(self):
+        # Sub Bash prompt at T; its log's last line (Bash tool_use) is T-0.4 but the mtime lags to T+1.2.
+        T, aid = NOW - 100, "a1b2c3d4"
+        with open(os.path.join(self.tmp, SID + "." + aid + ".json"), "w", encoding="utf-8") as f:
+            json.dump({"sid": SID, "t": T, "k": "PermissionRequest", "aid": aid, "tool": "Bash"}, f)
+        with open(os.path.join(self.tmp, SID + ".json"), "w", encoding="utf-8") as f:
+            json.dump({"sid": SID, "t": T + 11}, f)                  # tool-less Notification copy of the sub prompt
+        LP._DEC_AT[SID] = {"t": int(T + 60), "tools": {"Bash": int(T + 60)}}
+        log = os.path.join(self.tmp, "agent-" + aid + ".jsonl")
+        row = dict(self._row(age=95), tool="Bash", bgs=[{"x": 1}], sub=[{"aid": aid, "lab": "x", "idle": 5}])
+        with mock.patch.object(LP, "_SUB_LOG", {}), mock.patch.object(LP, "_sub_ts_cache", {}):
+            LP.note_sub_log(aid, log)
+            with open(log, "w", encoding="utf-8") as f:
+                f.write(json.dumps(self._use(T - 0.4, "u1", "Bash")) + "\n")
+            os.utime(log, (T + 1.2, T + 1.2))
+            out = LP.perm_rows([row], now=NOW)[0]
+            self.assertEqual((out["blocked"], out.get("blockedAt")), ("subagent waiting for approval", int(T)))
+            with open(log, "a", encoding="utf-8") as f:              # the sub really moved on after the prompt
+                f.write(json.dumps(self._use(T + 3, "u2", "Read", mid="m2")) + "\n")
+            os.utime(log, (T + 3.5, T + 3.5))
+            self.assertEqual(LP.perm_rows([row], now=NOW)[0]["blocked"], "")
+
     def test_stale_or_answered_marker_gives_no_badge(self):
         T = NOW - 60
         self._hook({"hook_event_name": "PermissionRequest", "session_id": SID, "tool_name": "Write"}, t=T)
