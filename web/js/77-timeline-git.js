@@ -110,7 +110,7 @@ function tlgRepoName(p){ return String(p).split('/').filter(Boolean).pop() || St
 function tlgSelHtml(tg){
   if(!tg || tg.all.length < 2) return '';
   const AL = T('Auto (latest active)', 'chip');
-  const it = x => ({ p: cpKey(x), name: tlgProj(x), note: tlgNote(x), tip: x.cwd + (x.sid ? ' · ' + x.sid : '') });
+  const it = x => ({ p: cpKey(x), name: tlgProj(x), note: tlgNote(x), tip: x.cwd + (x.sid ? ' · ' + sid8(x.sid) : '') });   // short id like every other view; a 36-char uuid read as noise
   const items = [Object.assign(it(tg.all[0]), { p: TLG_AUTO, auto: true })].concat(tg.all.map(it));
   const cur = tg.how === 'auto' ? TLG_AUTO : cpKey(tg.row);
   const row = (e, i) => '<div class="cmdki' + (PPS && i === PPS.i ? ' on' : '') + (e.p === cur ? ' ppcur' : '') + '" role=option data-ppi="' + i + '" title="' + esc(e.tip) + '">'
@@ -173,7 +173,9 @@ function tlgChipInner(tg){
   } else body += esc(CH);
   // Chip opens the session's repo list (data-ppo keeps 08b's outside-click from closing it before the toggle); 1 repo = no list, so the diff.
   const ls = !!tlgRepoCfg(tg), ex = !!(ls && PPS && PPS.cfg.k === 'tlgr'), nd = ls ? tlgDirty(tg).length : 0;
-  if(nd){ body += '<span class=tlgnb>' + esc(T('{n}', 'repo count').replace('{n}', nd)) + '</span>'; aria.push(TV({msg: 'Repositories with uncommitted changes: {n}', vars: {n: nd}})); }
+  // ⚠The badge names its noun («3 repos»): a bare «3곳» next to the baseline read as a count of the baseline itself.
+  if(nd){ const rt = TV({msg: 'Repositories with uncommitted changes: {n}', vars: {n: nd}});
+    body += '<span class=tlgnb title="' + esc(rt) + '">' + esc(TV({msg: '{n} repos', vars: {n: nd}})) + '</span>'; aria.push(rt); }
   const bt = tlgBaseTip(d);
   const tip = CH + '\n' + (ls ? T("Show this session's repositories with their changes") : T('Open the changes in the diff window (git · view only)')) + (bt ? '\n' + bt : '') + (tg ? '\n' + tg.cwd : '');
   return tlgSelHtml(tg) + '<button type=button class="tlrf tlgcp" id=tlgcp' + (tg ? '' : ' disabled') + (ls ? ' data-ppo aria-haspopup=listbox aria-controls=ppop aria-expanded="' + ex + '"' : '') + ' aria-label="' + esc(aria.join(' · ')) + '" title="' + esc(tip) + '">' + body + '</button>';
