@@ -9,7 +9,8 @@ import unittest
 SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backup.sh")
 
 
-@unittest.skipUnless(shutil.which("bash") and shutil.which("tar"), "bash/tar not installed")
+# ⚠Windows "bash" on PATH can resolve to WSL; backup.sh is POSIX-shell only.
+@unittest.skipUnless(os.name == "posix" and shutil.which("bash") and shutil.which("tar"), "POSIX shell script; bash/tar installed")
 class BackupSh(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
