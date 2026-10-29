@@ -27,6 +27,7 @@ html[data-ui=next][data-theme=light] .bd strong{color:var(--nx-t1)}
 .bd hr{border:0;border-top:1px solid #232a35;margin:9px 0}
 .hid{display:none}
 .bd{overflow-wrap:break-word}   /* long unbroken tokens (inline code, paths) break only when they would overflow the bubble */
+div.bd > :is(p,ul,ol,blockquote,h1,h2,h3,h4,h5,h6){max-width:90ch}   /* readable line length; tables and code blocks keep the full width */
 /* ★Long text is shown **as markdown** too — only the height is folded. Markdown reads cleaner than prose.
    Showing only a summary dropped tables, code and emphasis entirely and was harder to read (86% of long text took this path). */
 .bd.clamp{max-height:300px;overflow:hidden;

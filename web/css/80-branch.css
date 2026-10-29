@@ -92,6 +92,7 @@ html[data-ui=next] .brtw{flex:0 0 auto;font-size:10px;color:#7fbf9f;border:1px s
 /* Commit details pane — replaces .brpan's branch list while a commit is selected. A side pane, not an inline
    expansion: list rows must stay BR_RH tall or they drift off the SVG graph lanes. Sticky so it stays in view. */
 .brpan.brdt{flex:1 1 420px;max-width:56%;position:sticky;top:70px;max-height:calc(100vh - 90px)}
+@media (min-width:1441px){.brpan.brdt{max-width:min(56%,700px)}}   /* ★1920: ~930px of details; 700 ≈ its width at 1440, so it never shrinks as the window grows */
 /* Dragged width (88g-branch-resize.js) — both pane modes share it; max-width keeps the graph >= 400px (412 = 400 + 12px gap). */
 @media(min-width:821px){html.brpsz .brpan,html.brpsz .brpan.brdt{flex:0 0 var(--brpw);max-width:calc(100% - 412px)}}
 html.brpgr .brbody{cursor:col-resize}
