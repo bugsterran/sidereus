@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: a running security check shows a run banner under the header, like the architecture-map run (stage, project · session, «Stop» when the request came from Sidereus).
 - Structure: the «N outside {style} flow» badge is a toggle: its tooltip says it is a review hint, not an error, and pressing it lists only those edges (each with its reason) under a «Not an error · N edges to review» line; pressing again, or picking a module or flow, restores the full list.
 - Pipelines: per-project strict mode — with `.claude/pipelines/_policy.json` `{"enforce":"writes"}`, Edit/Write and `git commit` are refused while no run of the session is open (15 minutes after a run ends still count, so the ship commit lands); Bash writes into the repo (redirects, `tee`, `sed -i`, also after `then`/`do`, `VAR=` and `env`) are gated too; a pipeline marked `"readonly": true` (review) does not unlock writes; a light `quick-fix` pipeline ships for known small fixes.
+- Pipelines: a stage card's «gate FAIL» line opens the Harness incident card that started from that failure (or says it is not fixed yet); «Pipelines» returns to the same pipeline and scroll.
 - Hooks: opt-in `"onFailure": "block"` for `pl_flow.py`, so a guard that cannot start or times out blocks the call instead of letting it through (off by default).
 
 ### Fixed

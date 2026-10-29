@@ -318,6 +318,10 @@ html[data-ui][data-theme=light] .pllt text{fill:#7a4a00}
 /* Stage card result line: the newest gate run inside the stage window (48d plEvLine) */
 .plnd .plev{font-size:11px;font-weight:600;color:var(--nx-ok,#71c269);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .plnd .plev.plevng{color:color-mix(in srgb,var(--nx-err,#f45460) 60%,var(--nx-t1,#cdcedc))}   /* plain err was 3.7–4.3:1 on the dark family tints; ≥4.7 */
+/* FAIL line linked to its Harness incident (48f data-plevf): cursor/underline/outline only, ⚠no box change (card height). */
+.plnd .plev[data-plevf]{cursor:pointer}
+.plnd .plev[data-plevf]:hover{text-decoration:underline}
+.plnd .plev[data-plevf]:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px}
 .plport{position:absolute;width:10px;height:10px;border-radius:50%;background:#1b2330;border:2px solid #6d8fd6;box-sizing:border-box}
 .plpin{left:-6px;top:calc(50% - 5px);pointer-events:none}
 .plpout{right:-6px;top:calc(50% - 5px);cursor:crosshair}

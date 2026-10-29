@@ -180,7 +180,7 @@ function plNodeHtml(E, n, bad, lt){
     + '<i class="plport plpbk" data-plport=loop title="' + esc(T('Drag to an earlier stage to loop back on failure')) + '"></i>'
     + '<div class=plt>' + icon + esc(plgShow(n.title)) + rb + '</div><div class=plna>' + esc(n.agent || '') + '</div>' + adh
     + mln + (chips.length || unv ? '<div class=plnc title="' + esc(chips.map(c => c[0] + ' — ' + c[1]).join('\n')) + '">' + unv + esc(chips.map(c => c[0]).join(' · ')) + '</div>' : '')
-    + (L && typeof PLS === 'object' ? plEvLine(plEvRows(PLS.proj), L, plEvCommits(PLS.proj)) : '') + live + pb + '</div>';
+    + (L && typeof PLS === 'object' ? plEvLine(plEvRows(PLS.proj), L, plEvCommits(PLS.proj), typeof FEATS === 'object' && FEATS.harness !== false) : '') + live + pb + '</div>';
 }
 function plCanvas(p, d, lt){
   const E = plEnt(p), G = E.G, chk = plgCheck(G), bad = {};
