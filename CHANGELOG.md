@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-30
+
 **Highlights**
 
 - Security checks: «Request fix» sends a security-fix pipeline run request (fix → re-scan → review) and keeps the repo gated until the review, instead of a plain message a session could mark done without a re-scan.
@@ -590,7 +592,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/bugsterran/sidereus/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/bugsterran/sidereus/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/bugsterran/sidereus/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/bugsterran/sidereus/compare/v0.7.0...v0.8.0
