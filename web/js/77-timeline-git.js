@@ -173,7 +173,7 @@ function tlgChipInner(tg){
   } else body += esc(CH);
   // Chip opens the session's repo list (data-ppo keeps 08b's outside-click from closing it before the toggle); 1 repo = no list, so the diff.
   const ls = !!tlgRepoCfg(tg), ex = !!(ls && PPS && PPS.cfg.k === 'tlgr'), nd = ls ? tlgDirty(tg).length : 0;
-  // ⚠The badge names its noun («3 repos»): a bare «3곳» next to the baseline read as a count of the baseline itself.
+  // ⚠The badge names its noun («3 repos»): a bare count next to the baseline read as a count of the baseline itself.
   if(nd){ const rt = TV({msg: 'Repositories with uncommitted changes: {n}', vars: {n: nd}});
     body += '<span class=tlgnb title="' + esc(rt) + '">' + esc(TV({msg: '{n} repos', vars: {n: nd}})) + '</span>'; aria.push(rt); }
   const bt = tlgBaseTip(d);

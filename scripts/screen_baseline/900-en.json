@@ -58,7 +58,7 @@
    "Gate · Parallel slices",
    "gate PASS · # tests · commit #f#c#ab",
    "Done · Agent # · #t",
-   "↺# ▾",
+   "pass # ▾",
    "Verify",
    "verifier",
    "Runs the full gate and reports pass or fail; fixes nothing.",
@@ -99,7 +99,7 @@
    "● Verify",
    "· Review",
    "Agents #",
-   "Pipeline running from another folder: hotfix · session #t#bea — pipeline file not found"
+   "Pipeline running from another folder: hotfix · session acme-web · #t#bea — pipeline file not found. Use «Add project» on the folder that holds its pipeline file to see its stages."
   ],
   "tab:time": [
    "Replay",
@@ -145,6 +145,9 @@
    "Runs #",
    "Asleep",
    "Earlier log not read",
+   "Colour = project · type",
+   "Compacted",
+   "# <ap>",
    "# <ap>",
    "# <ap>",
    "# <ap>",
@@ -164,7 +167,7 @@
    "Design",
    "Implement",
    "Implement · #t",
-   "+# done",
+   "+# finished runs",
    "↺",
    "├─",
    "Checkout form validation",
@@ -244,7 +247,7 @@
    "feature/search-index",
    "↻",
    "LayeredSpring BootVerified # (#%)Evidence # files# modulesGenerated # # · #f#c#a#",
-   "opus-# · sonnet-#Security #",
+   "opus-# · sonnet-#Security issues #",
    "Redraw",
    "Architecture",
    "Size",
@@ -1111,8 +1114,8 @@
    "No uncommitted changes",
    "#t left #% · reset in #t",
    "#t account left #% · reset in #t",
-   "#t · ≈ $# · limit #t #% · #t #%",
-   "#t · ≈ $#",
+   "Today #t · ≈ $#",
+   "Today #t · ≈ $#",
    "● Connected",
    "▴"
   ],
@@ -1150,8 +1153,8 @@
    "Send",
    "#t left #% · reset in #t",
    "#t account left #% · reset in #t",
-   "#t · ≈ $# · limit #t #% · #t #%",
-   "#t · ≈ $#",
+   "Today #t · ≈ $#",
+   "Today #t · ≈ $#",
    "● Connected",
    "▴"
   ],
@@ -1205,8 +1208,8 @@
    "Send",
    "#t left #% · reset in #t",
    "#t account left #% · reset in #t",
-   "#t · ≈ $# · limit #t #% · #t #%",
-   "#t · ≈ $#",
+   "Today #t · ≈ $#",
+   "Today #t · ≈ $#",
    "● Connected",
    "▴"
   ]
