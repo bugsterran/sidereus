@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Harness: «Config map» moved to the top of Tokens › «Tools» (same content, open state remembered); the Harness report gains a folded «How to read this» explaining the four numbers, «What is guarding» and the incident cards. Its «problems» / «to check» counts open the map in Tools.
+
 ## [0.10.0] - 2026-10-30
 
 **Highlights**

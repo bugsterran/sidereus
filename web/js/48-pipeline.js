@@ -388,7 +388,7 @@ function paintPipe(box, fromPoll){
   const now = !hv && !PLS.off && (plNowPickApply(), plNowShown());   // run view (48j) vs Edit; pick applied first so head and body agree
   // Pipelines view: no <b>, the header title (#vtitle) already says «Pipelines».
   const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Harness')) + '</b>' : '') + '<span class=plcap>'
-    + (hv ? esc(T('Hooks · rules · agents · MCP · skills')) : now ? '' : esc(T('Agent and model per stage'))) + '</span></div>';   // caption describes Edit only
+    + (hv ? esc(T('What the checks caught')) : now ? '' : esc(T('Agent and model per stage'))) + '</span></div>';   // caption describes Edit only
   const body = PLS.off ? '<div class=hidnote>' + esc(T('The pipeline feature is off')) + '</div>'
     : (hv ? plChips() + hnHtml() : (plNowPickApply(), plNowShown() ? plNowWrap(plMainBody()) : plMainBody()));   // 48j list | run view; 48k Edit puts the palette in that column
   const h = '<div class="brep plw">' + head + body + '</div>';

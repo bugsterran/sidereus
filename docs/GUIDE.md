@@ -73,13 +73,13 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - The top shows three numbers from the gate records: «Caught (red→green)» (a gate failed, a later run of the same gate passed), «Held» and «Reverted».
 - «What is guarding» lists the local checkpoints — «Before edit» (hooks, «blocked n») · «Right after» (`check --fast`) · «Before commit» (`check --full`) — with their catch counts. Click one to show only its cards.
 - One card per catch, newest first: red run (time · hash · exit code · failures) → fix commits → green run → held/reverted. A checkpoint that ran but caught nothing is one quiet card «ran n times, caught 0».
-- «Gate runs» (folded) holds the raw run rows; «Config map» (folded) holds hooks, rule files, agents, MCP and skills.
+- «Check results» under the cards counts flagged config rows; click «problems» / «to check» to step through them in Tools › «Config map».
+- «How to read this» (folded) explains the four numbers, «What is guarding» and the cards in one line each; «Gate runs» (folded) holds the raw run rows.
 - A lit stage card names its newest gate run: «gate PASS · N tests · screen a/b» or a red «gate FAIL»; click «gate FAIL» to open Harness on the incident card for that run (not fixed yet = one line saying so; «Pipelines» brings back the same pipeline and scroll). A stage with no gate gets an amber «Unverified» pill; «Gates n/m» counts machine-checked stages. Design and review are expected to stay unverified.
 - «Guards» (stage panel, nothing selected): gates required before `git commit` and «Max loop-backs» ([HOOKS.md](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
 - «Evaluation»: per-stage seeded-defect catch rate, red check and stability ([dev/PIPELINE.md](dev/PIPELINE.md#evaluation-seeds-red-check-flaky-gates)). «Suggestions»: «Fix it myself» fills the editor, «Ask AI» previews a request.
   - Terms: «Catch» = share of deliberately planted defects (seeds) the stage gate caught · «Red check» = the gate was run once on a deliberately broken copy and failed, proof it can catch a defect · «Holdout» = planted defects kept out of tuning, used only to check the score is not overfit. Hover a header for the same text.
 - «Details» › «Results»: recorded check runs, newest first (with [`ev_hook.py`](HOOKS.md#ev_hookpy), test/build/lint commands from any project).
-- «Config map» (folded): hooks, rule files, agents, MCP servers, skills; click a «problems» / «to check» count to step through.
 
 ⚠ Without Claude Code telemetry, hooks that print nothing leave no record: «no record» does not mean «never ran». With telemetry on ([CONFIG.md](CONFIG.md)), every Claude Code hook gets a full run count, and one that ran 0 times over 3+ covered days is flagged «did not run in N days».
 
@@ -176,6 +176,7 @@ Sessions can check this themselves with the MCP tool `sidereus_file_peers` ([MCP
 ![Tokens tab](images/tokens-en.png)
 
 - Tokens: usage by model and project, running subagents, «Daily» (tokens, cost, top 2 projects per day; today's cost excludes the live share) and «Top 5 costly runs».
+- Tools: skills, agents, commands, MCP servers and hooks with 30-day use; «Config map» (folded, open state remembered) on top shows the pipeline project's hook flow, rule files, agents ↔ pipelines, MCP servers and skills; click a «problems» / «to check» count to step through.
 - Insights, for longer periods: «Tool ranking», «Time spent», «Cache rewrites», «Activity by hour» and «Models» (last 8 days), «Hook cost» (per event type, scripts are not named).
 - With 2+ accounts the picker scopes only the period totals (Tokens) and the OTel cards (Insights); live figures stay all accounts.
 
