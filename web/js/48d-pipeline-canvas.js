@@ -165,7 +165,7 @@ function plNodeHtml(E, n, bad, lt){
   // Pass picker: only with recorded earlier passes (older plrun rows carry no ps). Sits on the bottom edge so the title keeps its width.
   const ptip = L0 ? esc(TV({msg: 'Pass {k} of this stage — show an earlier pass', vars: {k: L.k}})) : '';
   const pb = L0 && L0.k >= 2 && L0.ps && L0.ps.length ? '<button type=button class="plpass' + (pi >= 0 ? ' on' : '') + '" data-plpass="' + esc(n.id) + '" aria-haspopup=menu title="'
-    + ptip + '" aria-label="' + ptip + '">' + esc('↺' + L.k + ' ▾') + '</button>' : '';
+    + ptip + '" aria-label="' + ptip + '">' + esc(TV({msg: 'pass {n}', vars: {n: L.k}}) + ' ▾') + '</button>' : '';   // ⚠words, not ↺: ↺ means «sent back» on the same node
   const hl = G.loops.some(l => l.from === n.id) ? ' hasloop' : '';   // its lane leaves 14px*k off-centre: no mark at the centre port
   // Direct-mode subagents behind a lit stage (workflow runs carry no labs: no hover)
   const ad = n.agent ? plAgDesc(n.agent) : '', adh = ad ? '<div class=plnad title="' + esc(ad) + '">' + esc(ad) + '</div>' : '';

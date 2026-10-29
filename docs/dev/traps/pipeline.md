@@ -238,7 +238,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 
 ## Marks need words; targets need 24px
 
-- ⚠A bare mark (`↺n`, `↺k ▾`, «Unverified», short hash) carries `title` + `aria-label` in words (`Sent back here {n} times`, `Pass {k} of this stage — …`, `Commit made in this stage: <hash>`); the visible text stays as is.
+- ⚠A bare mark (`↺n`, «Unverified», short hash) carries `title` + `aria-label` in words (`Sent back here {n} times`, `Pass {k} of this stage — …`, `Commit made in this stage: <hash>`); the visible text stays as is. The pass picker reads «pass k ▾» in words: `↺` on the same node already means «sent back», one glyph for two meanings read as a loop count.
 - ⚠Clickable marks are at least 24x24px (WCAG 2.5.8), and a state is named by its word, never by colour or mark alone.
 
 ## An open run with no closer stayed «running» 6 h (`pl_runs.pl_model` · `hooks/pl_flow.py` `_skip_ends`)
