@@ -10,14 +10,14 @@ from tests._node import node_e
 from tests.test_saver_quota_js import jconst
 from tests.test_sbar_fit import FAKE
 
-# Reuse the fake bar; widths: without 1,2,3 = 1148, without 5 = 968, without 6 = 878, without 4 = 836.
+# Reuse the fake bar; widths: without 1,2,3 = 1148, without 5 = 968, without 6 = 878, without 4 = 836 (no padding-squeeze step, the bar padding stays, so «Today» stays only from ~950).
 CASES = """
 const res = {};
-for(const [name, cw] of [['keepToday', 900], ['dropToday', 850]]){
+for(const [name, cw] of [['keepToday', 950], ['dropToday', 850]]){
   const el = bar(cw, P, 8); sbFit(el); res[name] = [...new Set(el.hidden())];
 }
-// With a saver secondary (.sbd7, 30px): without 6 = 908, still 7px over ⇒ 7 goes, «Today» (4) stays.
-const el7 = bar(900, P.concat([[7, 30]]), 8); sbFit(el7); res.saverFirst = [...new Set(el7.hidden())];
+// With a saver secondary (.sbd7, 30px): at 960 still over after 6 ⇒ 7 goes, «Today» (4) stays.
+const el7 = bar(960, P.concat([[7, 30]]), 8); sbFit(el7); res.saverFirst = [...new Set(el7.hidden())];
 // 900 with goal pill + 3 ext token+cost segments: 907 after step 7 (63 px over 844) ⇒ 8 (3 costs + 7d used, 145) clears it.
 const P8 = [[0, 699], [1, 100], [5, 50], [6, 40], [7, 30], [4, 21], [4, 21], [4, 21], [8, 35], [8, 35], [8, 35], [8, 40]];
 const el8 = bar(844, P8, 0); sbFit(el8); res.costFirst = [...new Set(el8.hidden())];
