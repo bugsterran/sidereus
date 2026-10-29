@@ -6,7 +6,7 @@
   "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER restart the viewer, NEVER commit/stash/checkout/reset/add, NEVER run screen_check --update. The orchestrator does those.\nOther implementers edit other files in the same tree at the same time: touch only your own files, Edit only on existing files, re-read before each edit.",
   "after": [
     "launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer",
-    "screen-check the live page (900/1100/1440)",
+    "screen-check the live page at 1920/1440/1100/900 (design at 1920; narrower must wrap or collapse, never cram)",
     "bash backup.sh",
     "commit"
   ],

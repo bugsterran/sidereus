@@ -209,5 +209,5 @@ return {
   verify_retries: retries,
   review: rv ? { verdict: rv.verdict, confirmed: rv.confirmed, ledger: rv.ledger } : null,
   failures: ok ? [] : (final ? final.failures : []),
-  orchestrator_todo: ['launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer', 'screen-check the live page (900/1100/1440)', 'bash backup.sh', 'commit'],
+  orchestrator_todo: ['launchctl kickstart -k gui/$(id -u)/io.sidereus.viewer', 'screen-check the live page (1920/1440/1100/900)', 'bash backup.sh', 'commit'],
 }

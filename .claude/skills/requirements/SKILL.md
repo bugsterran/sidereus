@@ -22,7 +22,7 @@ Assumption: <optional, one line each>
 - Each R line is an acceptance criterion; a behaviour with a trigger is written Given/When/Then (BDD, Gherkin).
 - Each line must be testable — someone can say PASS or FAIL without asking you (INVEST «Testable»).
 - Exactly one `Non-goal:` to fence scope (design-doc practice: Goals / Non-goals).
-- Definition of Done (Scrum) is the fixed, project-wide part — `scripts/check.sh` gates, docs updated, live screen at 900/1100/1440, i18n entries. It is stated here once; never repeat it in a request's R lines.
+- Definition of Done (Scrum) is the fixed, project-wide part — `scripts/check.sh` gates, docs updated, live screen at 1920/1440/1100/900 (design at 1920; narrower wraps or collapses, never crams), i18n entries. It is stated here once; never repeat it in a request's R lines.
 - Ambiguity: ask at most one question, and only if the answer changes a criterion. Otherwise write an `Assumption:` line and go on.
 - Traceability: R ids are reused verbatim in design slices, test names/comments, and the live check report.
 

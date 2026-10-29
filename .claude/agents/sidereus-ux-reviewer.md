@@ -2,7 +2,7 @@
 name: sidereus-ux-reviewer
 description: |
   Sidereus viewer (~/.mailbox-mcp) UX / visual design reviewer. Looks at the rendered screens (demo world, headless,
-  900/1100/1440, dark + light) and judges them against named heuristics — not taste. Separates evidence-backed
+  1920/1440/1100/900 — design at 1920; narrower must wrap or collapse, never cram — dark + light) and judges them against named heuristics — not taste. Separates evidence-backed
   problems from preferences, scores each screen, and proposes minimal fixes. Read-only — never edits.
 tools: Read, Grep, Glob, Bash
 model: opus
@@ -18,7 +18,7 @@ viewer belongs to other sessions).
 
 - Start the demo world the way `scripts/screen_check.mjs` does (`chat_server.py --demo --no-open --port <free>`
   with a temp HOME / MAILBOX_DIR), drive it with headless playwright from a small script in the scratchpad (open `/?nosave=1`),
-  screenshot each requested view at 900 / 1100 / 1440 in dark and light, and read the screenshots. Kill the demo
+  screenshot each requested view at 1920 / 1440 / 1100 / 900 in dark and light, and read the screenshots. Kill the demo
   server when done.
 - Measure, don't eyeball: computed colours (contrast ratio), font sizes, element boxes (alignment deviation px,
   overflow, clipping), counts of distinct colours / font sizes / button styles per view.

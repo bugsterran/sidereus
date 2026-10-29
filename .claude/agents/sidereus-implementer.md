@@ -21,7 +21,7 @@ model: opus
 - Globals: change them in the owning module (`refactor/STAGE3.md`), never reassign another module's name.
 - UI changes in `web/`; JS files split only at top-level statements; keep file-final newlines as they are.
 - UI text stays Korean; add the English string to `I18N.en`. New comments in English, minimal (one line per change, `⚠` for traps).
-- Desktop widths only (900/1100/1440). No mobile/390px work.
+- Desktop widths only: 1920/1440/1100/900 (design at 1920; narrower must wrap or collapse, never cram). No mobile/390px work.
 - Tests never read live files, the clock or the network — monkeypatch the owning module's attributes.
 - Security: `esc()` anything interpolated into innerHTML; validate paths/args from requests; git calls go through `git_argv`.
 - New trap found → one entry in `docs/dev/traps/<domain>.md` (index: `docs/dev/TRAPS.md`) (if that file is in your slice; otherwise report it).
