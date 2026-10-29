@@ -171,6 +171,31 @@ validators refuse an unknown stage, a listed stage whose `gate` is not graded, o
 - ⚠Fail-open: a missing guard module, bad pipeline or unreadable evidence never blocks; it reads gate, title, rc, mode
   and times only.
 
+#### Fail closed (opt-in, Claude Code 2.1.295+)
+
+The guards fail open, like every hook here: if `pl_flow.py` cannot start or times out (5 s), a `git commit` in an open
+run passes unguarded. Claude Code 2.1.295+ accepts `"onFailure": "block"` on a command or HTTP hook entry: a hook that
+cannot start, times out or exits with an unexpected code then blocks the tool call instead.
+
+Off in the plugin. `pl_flow.py` runs before `Task|Agent|SendMessage`, `Bash` and `Edit|Write|MultiEdit|NotebookEdit`
+calls (`PreToolUse`) and again after `Task|Agent|SendMessage` (`PostToolUse`). To turn it on, add the key to every
+`pl_flow.py` entry in your settings, both events (plugin users: copy the manual block from
+`python3 -m sidereus setup-claude` into your own settings; ⚠run the plugin or the manual block, not both).
+
+```json
+{ "type": "command", "command": "python3 /path/to/sidereus/hooks/pl_flow.py", "timeout": 5, "onFailure": "block" }
+```
+
+- ⚠Trade-off: `pl_flow.py` runs before every Task, Agent, SendMessage, Bash and Edit-family call (and after
+  Task/Agent/SendMessage), so a broken interpreter or a hook timeout blocks every such call, not only commits.
+- Errors inside `pl_flow.py` are still caught and exit 0; `onFailure` covers only start failure, timeout and an
+  unexpected exit code.
+- ★Measured 2026-10-29 (`claude -p`, `PreToolUse` Bash test hook, timeout 1 s), 2.1.312: timeout → blocked,
+  `PreToolUse:Bash hook error: [<command>]: timed out; blocking because onFailure is "block"`; exit 1 → blocked,
+  `... failed; blocking because onFailure is "block"`; exit 2 (normal deny) → blocked with the hook's stderr reason as
+  before; same timeout without the key → tool ran. A guard failure therefore reads differently from a gate deny.
+- ★2.1.294 (before the option): the key is ignored with no settings error; timeout and exit 1 both let the tool run.
+
 ### ev_hook.py
 
 Appends one `evidence.jsonl` row per matched Bash run, so the harness «Results» list fills in any project, not only where

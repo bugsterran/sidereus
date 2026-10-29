@@ -158,6 +158,30 @@ Agent/Task/SendMessage 는 지운다. 파이프라인, 단계, 시각, cwd 만 �
 - ⚠실패 시 통과: 가드 모듈이 없거나, 파이프라인이 깨졌거나, 증거를 못 읽으면 막지 않는다. 읽는 것은 게이트·제목·rc·
   모드·시각뿐이다.
 
+#### 실패 시 막기 (선택, Claude Code 2.1.295+)
+
+가드도 다른 훅처럼 실패 시 통과한다. `pl_flow.py` 가 뜨지 못하거나 시간 초과(5초)되면 열린 실행의 `git commit` 이 가드
+없이 통과한다. Claude Code 2.1.295+ 는 command·HTTP 훅 항목에 `"onFailure": "block"` 을 받는다. 그러면 훅이 뜨지 못하거나,
+시간 초과되거나, 예상 밖 코드로 끝날 때 도구 호출을 통과시키지 않고 막는다.
+
+플러그인에서는 꺼져 있다. `pl_flow.py` 는 `Task|Agent|SendMessage`·`Bash`·`Edit|Write|MultiEdit|NotebookEdit`
+호출 앞(`PreToolUse`)에서 돌고, `Task|Agent|SendMessage` 뒤(`PostToolUse`)에서도 돈다. 켜려면 설정의 `pl_flow.py`
+항목마다, 두 이벤트 모두에 이 키를 넣는다(플러그인 사용자는 `python3 -m sidereus setup-claude` 의 수동 블록을 자기
+설정에 넣는다. ⚠플러그인과 수동 블록 중 하나만 쓴다).
+
+```json
+{ "type": "command", "command": "python3 /path/to/sidereus/hooks/pl_flow.py", "timeout": 5, "onFailure": "block" }
+```
+
+- ⚠대가: `pl_flow.py` 는 Task·Agent·SendMessage·Bash·Edit 계열 호출마다 앞에서 돈다(Task·Agent·SendMessage 는 뒤에서도).
+  인터프리터가 깨지거나 훅이 시간 초과되면 커밋만이 아니라 그런 호출이 모두 막힌다.
+- `pl_flow.py` 안의 오류는 지금처럼 잡아서 0 종료한다. `onFailure` 는 뜨지 못함·시간 초과·예상 밖 종료 코드만 다룬다.
+- ★2026-10-29 실측(`claude -p`, `PreToolUse` Bash 시험 훅, 시간 제한 1초), 2.1.312: 시간 초과 → 막힘,
+  `PreToolUse:Bash hook error: [<command>]: timed out; blocking because onFailure is "block"`. exit 1 → 막힘,
+  `... failed; blocking because onFailure is "block"`. exit 2(정상 거부) → 전처럼 훅의 stderr 이유로 막힘. 키 없이 같은
+  시간 초과 → 도구가 돌았다. 그래서 가드 실패는 게이트 거부와 다른 문구로 보인다.
+- ★2.1.294(옵션 이전): 키를 무시하고 설정 오류도 없다. 시간 초과·exit 1 모두 도구가 돈다.
+
 ### ev_hook.py
 
 걸린 Bash 실행마다 `evidence.jsonl` 에 한 줄을 붙인다. `scripts/check.sh` 가 없는 프로젝트에서도 하네스 «결과» 가 찬다.
