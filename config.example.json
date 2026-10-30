@@ -26,5 +26,5 @@
   "_port_comment": "Viewer port (1024..65535; also 설정 > 내 방식 «포트»). Env SIDEREUS_PORT overrides; `sidereus_cli.py start --port N` writes it here. Hooks, MCP and saver read the same value. Applies after a restart.",
   "port": 8799,
   "_features_comment": "Optional features (features/<id>.json manifests, docs/dev/FEATURES.md): {id: true|false}. A missing id is on; a feature whose dep is off is off too. Public default = core only. Applied after a restart.",
-  "features": {"pipeline": true, "retro": false, "harness": false, "diag": true}
+  "features": {"pipeline": true, "retro": false, "harness": true, "diag": true}
 }

@@ -23,7 +23,7 @@ function plHnOn(){ return PLVIEW === 'harness' && FEATS.harness !== false && typ
 function plFeatReset(){ if(PLS.off){ PLS.off = false; PLS.projs = null; PLS.data = {}; } }
 function plViewSeg(){
   if(FEATS.harness === false) return '';
-  return '<div class=tkvs>' + [['pipe', 'Pipelines'], ['harness', 'Harness']].map(([k, en]) => '<button class="wkrgb'
+  return '<div class=tkvs>' + [['pipe', 'Pipelines'], ['harness', 'Harness report']].map(([k, en]) => '<button class="wkrgb'
     + (k === (plHnOn() ? 'harness' : 'pipe') ? ' on" aria-pressed="true' : '" aria-pressed="false') + '" data-plv="' + k + '">' + esc(T(en)) + '</button>').join('') + '</div>';
 }
 document.addEventListener('click', e => {
@@ -387,7 +387,7 @@ function paintPipe(box, fromPoll){
   if(!hv && !PLS.off && typeof plNowFollow === 'function') plNowFollow(SESS);   // 48j: select a newly started live run before head and body read the selection
   const now = !hv && !PLS.off && (plNowPickApply(), plNowShown());   // run view (48j) vs Edit; pick applied first so head and body agree
   // Pipelines view: no <b>, the header title (#vtitle) already says «Pipelines».
-  const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Harness')) + '</b>' : '') + '<span class=plcap>'
+  const head = '<div class="wvh wvht">' + (hv ? '<b>' + esc(T('Harness report')) + '</b>' : '') + '<span class=plcap>'
     + (hv ? esc(T('What the checks caught')) : now ? '' : esc(T('Agent and model per stage'))) + '</span></div>';   // caption describes Edit only
   const body = PLS.off ? '<div class=hidnote>' + esc(T('The pipeline feature is off')) + '</div>'
     : (hv ? plChips() + hnHtml() : (plNowPickApply(), plNowShown() ? plNowWrap(plMainBody()) : plMainBody()));   // 48j list | run view; 48k Edit puts the palette in that column
