@@ -101,6 +101,38 @@ lang_register("rust", {"exts": (".rs",), "scan": rs_scan,
 
 테스트: `tests/test_pipeline*.py`. `check.sh --fast` 도 `scripts/pipeline_check.mjs` 를 돌린다.
 
+## 판정 안내
+
+하네스 판정 id 마다 «다음 할 일» 안내 파일이 있다: `docs/verdicts/<id>.md`(영어)와 `<id>.ko.md`(한국어, 제목은 영어 그대로).
+새 판정 id 를 설명하려면 파일을 더한다. `sidereus/verdict_guide.py` 가 읽고 GET `/api/verdict-guide?lang=` 가 내준다.
+
+```md
+# my_verdict
+
+## Meaning
+한 줄: 무엇이 발견됐나.
+
+## Why it matters
+한 줄.
+
+## Who acts
+self
+
+## Next step
+한 줄. `self` 면 명령 하나나 설정 위치(`/hooks`).
+
+## Safe to ignore when
+Who acts 가 `owner` 면 필수.
+
+## Pipeline
+선택: 맡길 파이프라인(`sidereus-bugfix`).
+```
+
+- id 는 `[a-z][a-z0-9_-]{0,40}`, `Who acts` 는 `self`·`ai`·`owner`, 칸마다 300자까지.
+- 칸이 빠진 파일은 건너뛴다. `.ko.md` 가 없으면 영어를 보여 준다.
+
+테스트: `tests/test_verdict_guide.py`(서버가 내는 id 마다 파일이 있어야 한다).
+
 ## 다른 프로그램에서 상태 읽기
 
 - `GET /api/v1/state` 를 쓴다(«sidereus-state v1», `sidereus/state_v1.py`, 스키마 `docs/schema/sidereus-state.v1.json`).

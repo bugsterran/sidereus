@@ -22,6 +22,7 @@ from sidereus.arch_map import ARCH_PL, seen_runs as arch_seen_runs
 from sidereus.pipeline_projects import browse_dirs as pipeline_dirs, recent_dirs as pipeline_recent_dirs
 from sidereus.pl_eval_view import pl_eval as pipeline_eval
 from sidereus.harness_plat import harness_evidence_only, harness_plat, harness_plat_file
+from sidereus.verdict_guide import load as verdict_guide
 from sidereus.hook_diag import diag as hook_diag
 from sidereus.sec_tools import tools as sec_tools
 from sidereus.hook_connect import listing as hook_connect_list
@@ -234,6 +235,14 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
             code, out = 500, {"ok": False, **_exc_msg(e)}
         self._raw_json(code, out)
 
+    def _g_verdict_guide(self, u):
+        # Harness «Next step» guides from docs/verdicts (repo docs, no user data); lang outside ko|en reads as en
+        try:
+            code, out = 200, verdict_guide(_q1(parse_qs(u.query), "lang", "en"))
+        except Exception as e:
+            code, out = 500, {"ok": False, **_exc_msg(e)}
+        self._raw_json(code, out)
+
     def _g_diag(self, u):
         # Settings › «Diagnostics» (feature `diag`): hook overlaps / silent plugin hooks, metadata only (sidereus/hook_diag.py)
         try:
@@ -441,7 +450,7 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
         "/api/sessions/recent": _g_sessions_recent, "/api/prefs": _g_prefs, "/api/ui-prefs.js": _g_ui_prefs, "/api/ui-prefs": _g_ui_prefs,
         "/api/session/context": _g_session_context,
         "/api/tools": _g_tools, "/api/tools/file": _g_tools_file,
-        "/api/pipelines": _g_pipelines, "/api/pipelines/projects/dirs": _g_pipeline_dirs, "/api/pipelines/eval": _g_pipeline_eval, "/api/harness": _g_harness, "/api/harness/file": _g_harness_file, "/api/harness/evidence": _g_harness_evidence, "/api/diag": _g_diag, "/api/sec-tools": _g_sec_tools, "/api/hooks/connect": _g_hooks_connect,
+        "/api/pipelines": _g_pipelines, "/api/pipelines/projects/dirs": _g_pipeline_dirs, "/api/pipelines/eval": _g_pipeline_eval, "/api/harness": _g_harness, "/api/harness/file": _g_harness_file, "/api/harness/evidence": _g_harness_evidence, "/api/verdict-guide": _g_verdict_guide, "/api/diag": _g_diag, "/api/sec-tools": _g_sec_tools, "/api/hooks/connect": _g_hooks_connect,
         "/api/agents/timeline": _g_timeline, "/api/failures": _g_failures, "/api/wreckage": _g_failures,
         "/api/session/work": _g_session_work, "/api/ext/work": _g_ext_work, "/api/git/file": _GitRoutes._g_git_file, "/api/git/diff": _GitRoutes._g_git_diff,
         "/api/cards": _g_cards, "/api/messages": _g_messages, "/api/state": _g_state, "/api/v1/state": _g_state_v1, "/api/hookstate": _g_hookstate,

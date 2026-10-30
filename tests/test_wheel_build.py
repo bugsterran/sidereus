@@ -83,7 +83,7 @@ class WheelBuild(unittest.TestCase):
         self.assertFalse([n for n in names if "__pycache__" in n or ".bak" in n])
         for want in ("chat_server.py", "sidereus_cli.py", "sidereus/stage_catalog.json",
                      "sidereus/_bundle/web/index.html", "sidereus/_bundle/config.example.json",
-                     "sidereus/_bundle/mcp/sidereus_mcp.py", "sidereus/_bundle/plugin/hooks/hooks.json"):
+                     "sidereus/_bundle/mcp/sidereus_mcp.py", "sidereus/_bundle/docs/verdicts/dup.md", "sidereus/_bundle/plugin/hooks/hooks.json"):
             self.assertIn(want, names)
 
     def test_installed_layout_resolves_bundle(self):

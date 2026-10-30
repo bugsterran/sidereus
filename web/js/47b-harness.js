@@ -71,7 +71,7 @@ function hnVdTxt(v){
 function hnVd(x){ const v = x && x.vd; return v && HN_VDL[v.lvl] ? v : null; }   // ⚠lvl is whitelisted: it lands in class/attr names
 function hnVdCls(x){ const v = hnVd(x); return v ? ' hnvd hnvd-' + v.lvl : ''; }
 function hnVdAttr(x){ const v = hnVd(x); return v ? ' data-hnvd="' + esc(v.id || '') + '" data-hnvdl=' + v.lvl : ''; }
-function hnVdRow(x){ const v = hnVd(x); return v ? '<span class="hnvdr hnvd-' + v.lvl + '">' + esc(hnVdTxt(v)) + '</span>' : ''; }
+function hnVdRow(x){ const v = hnVd(x); return v ? '<span class="hnvdr hnvd-' + v.lvl + '">' + esc(hnVdTxt(v)) + '</span>' + (typeof hnNxFold === 'function' ? hnNxFold(v.why, x) : '') : ''; }   // 47g «Next step»
 // Check-results line; a count chip jumps to the next flagged row of that level.
 function hnVdLine(c){
   if(!c || typeof c !== 'object') return '';
@@ -384,7 +384,8 @@ function hnInc(x, go){
     + hnTrHead(p) + ' ' + hnPF(true) + ar
     + (s ? '<b class="hntrs hntrs-' + s[1] + '">' + esc(T(s[0])) + '</b>' : '<b class=hntrs>' + esc(x.state == null ? '?' : x.state) + '</b>')
     + (x.at && (x.state === 'broke' || x.state === 'reverted') ? ' <i class=hntm>' + esc(hnWhen(x.at)) + '</i>' : '') + '</span>'
-    + (fl.length || st.length ? '<span class=hnsteps>' + fl.map(v => hnTrStep(v, false, 'FAIL→PASS')).join('') + st.map(v => hnTrStep(v, true, T('unchanged'))).join('') + '</span>' : '') + '</div>';
+    + (fl.length || st.length ? '<span class=hnsteps>' + fl.map(v => hnTrStep(v, false, 'FAIL→PASS')).join('') + st.map(v => hnTrStep(v, true, T('unchanged'))).join('') + '</span>' : '')
+    + (typeof hnNxFold === 'function' && HN_NX_INC.indexOf(x.state) >= 0 ? hnNxFold(x.state, x) : '') + '</div>';
 }
 // R3: a checkpoint that ran but caught nothing = one quiet card; hooks show their deny codes.
 function hnQuiet(R, k){
@@ -396,7 +397,8 @@ function hnQuiet(R, k){
   return '<div class="hnrun' + (v.caught ? '' : ' hnquiet') + '" data-hncpc=' + k + '><span class=hnrh><b>' + esc(T(HN_CP[k][0])) + '</b>'
     + (HN_CP[k][1] ? ' <code class=hnrc>' + esc(HN_CP[k][1]) + '</code>' : '') + ' <i class=hntm>'
     + esc(TV({msg: hk ? hnPl(v.runs, 'ran {n} time, blocked {m}', 'ran {n} times, blocked {m}') : hnPl(v.runs, 'ran {n} time, caught 0', 'ran {n} times, caught 0'), vars: {n: v.runs, m: v.caught}})) + '</i></span>'
-    + (codes.length ? '<span class=hnsteps>' + codes.join('') + '</span>' : '') + '</div>';
+    + (codes.length ? '<span class=hnsteps>' + codes.join('') + '</span>' : '')
+    + (hk && hnN(cs.skipgate) && typeof hnNxFold === 'function' ? hnNxFold('skipgate', { key: 'skipgate', count: hnN(cs.skipgate) }) : '') + '</div>';
 }
 // Stage card FAIL line (48 plGoHarness) → target incident by evidence row key «mode|ts». Bad keys are ignored.
 function hnGo(key){

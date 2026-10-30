@@ -18,6 +18,7 @@ from sidereus.demo_data import (CX, GEM_ROW, H, REPOS, SEED, _WorldPanels,  # no
                              _hex, _iso, _local_iso, _uuid)
 from sidereus.demo_git import _WorldGit   # branch tab + rail payloads (split out of demo_data)
 from sidereus.demo_rel import _ARCH_COMMIT, _ARCH_MODS, demo_arch, demo_file, demo_src, demo_tree   # structure arch/tree payloads
+from sidereus.verdict_guide import load as verdict_guide
 from sidereus.demo_tools import _demo_eval, _demo_evidence, _demo_harness, _demo_pl_evidence, _demo_pipelines, _demo_prefs, _demo_tools   # noqa: F401  tools/harness/prefs payloads
 
 MSG_FIRST, MSG_RANGE_MAX = 200, 1000   # ⚠mirror sidereus.bus (demo stays stdlib-only, never imports live-data modules)
@@ -514,6 +515,8 @@ def respond(world, path, u):
         return _demo_pipelines(_q(u, "proj"), w.by["web"]["cwd"], w.by["bill"]["cwd"])
     if path == "/api/pipelines/eval":
         return _demo_eval(_q(u, "proj"), w.by["web"]["cwd"], _q(u, "name"))
+    if path == "/api/verdict-guide":   # static repo docs (docs/verdicts), no user data
+        return 200, verdict_guide(_q(u, "lang", "en"))
     if path == "/api/harness/evidence":   # same body as harness_plat.harness_evidence_only (pipeline stage result lines)
         return 200, _demo_pl_evidence(w.a)
     if path.startswith("/api/harness"):
