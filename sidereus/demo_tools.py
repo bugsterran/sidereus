@@ -61,7 +61,7 @@ def _demo_tools(a, path, tid):
 
 
 def _hk(scope, cmd, eff, n, matcher="", timeout=None, miss=0, ch="", src="settings.json", open_="", nomatch=0, cost=None, plug=""):
-    rm = "" if plug else "r" + hashlib.sha1(("%s\0%s\0%s" % (scope, cmd, matcher)).encode("utf-8")).hexdigest()[:16]
+    rm = "" if plug else "r" + hashlib.sha256(("%s\0%s\0%s" % (scope, cmd, matcher)).encode("utf-8")).hexdigest()[:16]
     return {"open": open_, "scope": scope, "src": src, "matcher": matcher, "cmd": cmd, "timeout": timeout, "eff": eff,
             "desc": "", "n": n, "last": 0, "quiet": int(not n), "plug": plug, "miss": miss, "ch": ch or cmd[:8], "nomatch": nomatch,
             "cost": cost, "rm": rm}   # hook-run counts {runs, avg, blk, out, k} or None (= not measured yet)
