@@ -209,3 +209,23 @@ html[data-theme=light] .hnvdq.hnvd-check{color:#8a5a12}
 .hnrtb.hnrtl-info{color:var(--nx-info,#5899f3);border-color:var(--nx-info,#5899f3)}
 .hnrtb.hnrtl-ok{color:var(--nx-ok,#71c269);border-color:var(--nx-ok,#71c269)}
 html[data-theme=light] .hnrtb.hnrtl-warn{color:#8a5a12;border-color:#8a5a12}
+/* «Guard self-check» fold (47f): rows = situation / expected / actual / PASS; the real-run side cell drops under the rows below 1440 instead of squeezing */
+.hnskw>summary{display:block;cursor:pointer;list-style:none;margin-bottom:6px}
+.hnskw>summary::-webkit-details-marker{display:none}
+.hnskw>summary .brh2::before{content:'▸';color:#5d6878}
+.hnskw[open]>summary .brh2::before{content:'▾'}
+.hnskw{margin:0 0 10px;min-width:0}
+.hnskcap{display:block;font-size:11px;margin:0 0 6px}
+.hnskr{display:grid;grid-template-columns:minmax(0,1fr) 120px 120px 44px;gap:2px 10px;align-items:baseline;font-size:12px;padding:2px 0;min-width:0}
+.hnskr>span{min-width:0;overflow-wrap:anywhere}
+.hnskr.hnng .hnsks{color:var(--nx-err,#f45460)}
+.hnskh{font-size:11px;color:var(--nx-t2,#909298);border-bottom:1px solid var(--nx-rule,#232c38);max-width:calc(100% - 240px)}
+.hnskg{display:flex;flex-wrap:wrap;gap:4px 16px;padding:6px 0;border-bottom:1px solid var(--nx-rule,#232c38);min-width:0}
+.hnskb{flex:1 1 600px;min-width:0}
+.hnskt{display:block;font-size:11px;color:var(--nx-t1,#c9d2df);margin-bottom:2px}
+.hnske{flex:0 0 224px;font-size:11px;color:var(--nx-t2,#909298);align-self:center;overflow-wrap:anywhere}
+.hnskst{color:var(--nx-warn,#fad83e);border-color:var(--nx-warn,#fad83e)}
+html[data-theme=light] .hnskst{color:#8a5a12;border-color:#8a5a12}
+@media (max-width:1439px){.hnske{flex-basis:100%;align-self:auto}.hnskh{max-width:none}}
+@media (max-width:1100px){.hnskr{grid-template-columns:minmax(0,1fr) 96px 96px 44px}}
+@media (max-width:960px){.hnskr{grid-template-columns:1fr 1fr 44px}.hnskr>.hnsks{grid-column:1/-1}.hnskh>span:first-child{grid-column:1/-1}}

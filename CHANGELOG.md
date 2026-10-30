@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Harness: «Config map» moved to the top of Tokens › «Tools» (same content, open state remembered); the Harness report gains a folded «How to read this» explaining the four numbers, «What is guarding» and the incident cards. Its «problems» / «to check» counts open the map in Tools.
 - Harness report: fourth tile and checkpoint «Found by a person first» — ended runs of pipelines marked `"catch": "person"` (bug-fix pipelines), each card listing the commits in the run window and the `tests/` files they touched, or «no guarding test». «Failed again later» and «Reverted» merge into one «Broke again» tile; reverted cards stay as they were.
 - Harness report: «After push (CI)» checkpoint from `gh run watch --exit-status` results recorded by the evidence hook — run and caught counts, CI cards on click, red→green CI incidents, and «Holding: CI streak n/5» (newest greens in a row, reset by a red). Hidden with no CI records; Sidereus never calls GitHub. Refs #27
+- Harness: folded «Guard self-check» table from `scripts/harness_selfcheck.py` results — per guard the case it must catch and the control it must let through (situation fed · expected · actual · PASS/FAIL), beside the real «Blocked n» / «caught n» counts; «Not run yet» with the command when there are no results, «different commit» when they come from another HEAD. The viewer only reads the results file. Refs #27
 
 ## [0.10.0] - 2026-10-30
 

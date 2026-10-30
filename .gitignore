@@ -100,6 +100,9 @@ plbrief/
 permwait/
 .DS_Store
 review-state.json
+# guard self-check results from scripts/harness_selfcheck.py (+ its atomic-write tmp)
+harness-selfcheck.json
+.harness-selfcheck.*
 # gate-run evidence from scripts/check.sh (scripts/evidence_rec.py)
 evidence.jsonl
 evidence.jsonl.tmp

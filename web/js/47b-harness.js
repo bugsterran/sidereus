@@ -463,7 +463,7 @@ function hnHtml(){
   else if(!d) body = '<div class=hidnote>' + esc(T('Loading…')) + '</div>';
   else if(d.ok === false) body = '<div class=hidnote>' + esc(T('Could not read the harness')) + (d.msg ? ' — ' + esc(hnMsg(d.msg)) : '') + '</div>';
   // Report (+ check-results line, its counts jump to the Tools «Config map»), then «How to read this» and raw «Gate runs», both closed by default.
-  else body = hnReport(d) + hnVdLine(d.verdict) + hnReadHtml()
+  else body = hnReport(d) + hnVdLine(d.verdict) + hnReadHtml() + (typeof hnSelfcheck === 'function' ? hnSelfcheck(d) : '')   // 47f «Guard self-check»
     + '<details class="hnmore hnruns" data-hnmore=runs' + (HN.fold.runs ? ' open' : '') + '><summary><div class=brh2><b>' + esc(T('Gate runs')) + '</b></div></summary>'
     + hnRes(d.evidence, true) + '</details>';
   return '<div class=hnw>' + (proj ? hnPlatSwitch(HN.plats) : '') + body + '</div>';

@@ -9,8 +9,8 @@ import os
 import re
 import time
 
-from sidereus import arch_verify, ctxsrc, harness, harness_evidence, harness_flow, harness_person, harness_trail, harness_verdict, sec_runtime, toolinv
-from sidereus.config import DATA_DIR
+from sidereus import arch_verify, ctxsrc, harness, harness_evidence, harness_flow, harness_person, harness_selfcheck, harness_trail, harness_verdict, sec_runtime, toolinv
+from sidereus.config import CODE_DIR, DATA_DIR
 from sidereus.ext_store import PLAT_MODS
 from sidereus.ident import _real_home
 from sidereus.pipeline_projects import _proj_ok
@@ -112,7 +112,8 @@ def _results(proj):
     rep, p = harness_trail.report(ev, proj), harness_person.person(proj)
     rep = dict(rep, counts=dict(rep["counts"], person=p["runs"]), person=p)   # ⚠copy: report() returns its cached dict
     return {"evidence": ev[:30], "report": rep, "guards": harness_flow.guards(proj),
-            "runtime": sec_runtime.view(arch_verify.ARCH_DIR, time.time())}
+            "runtime": sec_runtime.view(arch_verify.ARCH_DIR, time.time()),
+            "selfcheck": harness_selfcheck.load(CODE_DIR, time.time())}   # file read only; the replay runs from the CLI
 
 
 def harness_plat(plat, proj, days=30):
