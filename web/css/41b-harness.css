@@ -132,7 +132,7 @@ html[data-theme=light] .hnvdr.hnvd-check,html[data-theme=light] .hnvdc.hnvd-chec
 .hnnxb{font:inherit;font-size:11px;padding:1px 8px;border-radius:10px;border:1px solid #2a3442;background:transparent;color:#9aa6b8;cursor:pointer}
 .hnnxdr{margin:4px 0 2px 10px;display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:0;max-width:calc(100% - 10px)}
 .hnnxdr>label{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;width:100%;min-width:0}   /* ⚠an inline label shrank to the select, so max-width:100% never capped it */
-.hnnxdr select{flex:1 1 0;width:100%;max-width:100%;min-width:0;text-overflow:ellipsis}
+.hnnxdr select{flex:0 1 32em;width:auto;max-width:100%;min-width:0;text-overflow:ellipsis}   /* ⚠flex-grow/width:100% stretched it across a 1920 card; capped at 32em, still shrinks at 900 */
 .hnnxpre{margin:0;padding:4px 6px;max-width:100%;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono,monospace);font-size:10.5px;border:1px solid var(--nx-rule,#232c38);border-radius:4px}
 /* «Results» rows (gate evidence) + «Config map» fold; rows wrap, never scroll sideways */
 .hnres{margin:0 0 12px;min-width:0}

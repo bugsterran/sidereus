@@ -67,7 +67,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 ### Harness report: did the work come out right?
 «Harness report» in the same tab (on by default; turn it off in «Preferences» › «Features»).
 
-![Harness gate report: caught · held · reverted, «What is guarding», incident cards](images/harness-report-en.png)
+![Harness report: caught · held · reverted, «What is guarding», incident cards](images/harness-report-en.png)
 
 - «Runtime behind latest patch» (top, from the newest security report): per runtime, current → latest patch in its cycle (security fix · end of life) and how many cycles behind the newest release, plus one next step (e.g. `brew upgrade node@<cycle>`, then restart the viewer). «latest unknown» is never a clean result; a report older than 7 days says «rerun to know it is current»; no report shows «No check on record» and the command. All on latest patch = one quiet line. python.org has no security flag, so Python is judged by end of life and patch only.
 - The top shows four numbers: «Caught (red→green)» (a gate failed, a later run of the same gate passed), «Held», «Broke again» (failed again later, or the fix was reverted — the card says which) and «Found by a person first» (ended runs of a bug-fix pipeline, one whose file has `"catch": "person"`).
