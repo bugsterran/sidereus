@@ -120,6 +120,20 @@ button.hnvdc{cursor:pointer}
 .hnvdon{outline:2px solid #7f9cc6;outline-offset:1px}
 html[data-theme=light] .hnvdr.hnvd-bad,html[data-theme=light] .hnvdc.hnvd-bad{color:#b0473a}
 html[data-theme=light] .hnvdr.hnvd-check,html[data-theme=light] .hnvdc.hnvd-check{color:#8a5a12}
+/* «Next step» fold (47g): its own full-width line below the row/card text at every width, never inline beside chip badges */
+.hnnx{display:block;flex-basis:100%;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:2px 0 0;font-size:11px;line-height:1.45;white-space:normal;overflow-wrap:anywhere;overflow:hidden;font-family:var(--nx-sans,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif)}   /* ⚠the rule path cell (.hnp) is mono: reset it here */
+.hnrt tr:has(.hnnx[open])>td{vertical-align:top}   /* only while open: closed rows keep their look */
+.hnnx>summary{cursor:pointer;color:#7f9cc6;list-style:none}
+.hnnx>summary::-webkit-details-marker{display:none}
+.hnnx>summary::before{content:'▸ '}
+.hnnx[open]>summary::before{content:'▾ '}
+.hnnxl{padding:1px 0 1px 10px}
+.hnnxl>b{font-weight:600;color:var(--nx-t2,#909298);margin-right:4px}
+.hnnxb{font:inherit;font-size:11px;padding:1px 8px;border-radius:10px;border:1px solid #2a3442;background:transparent;color:#9aa6b8;cursor:pointer}
+.hnnxdr{margin:4px 0 2px 10px;display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:0;max-width:calc(100% - 10px)}
+.hnnxdr>label{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;width:100%;min-width:0}   /* ⚠an inline label shrank to the select, so max-width:100% never capped it */
+.hnnxdr select{flex:1 1 0;width:100%;max-width:100%;min-width:0;text-overflow:ellipsis}
+.hnnxpre{margin:0;padding:4px 6px;max-width:100%;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono,monospace);font-size:10.5px;border:1px solid var(--nx-rule,#232c38);border-radius:4px}
 /* «Results» rows (gate evidence) + «Config map» fold; rows wrap, never scroll sideways */
 .hnres{margin:0 0 12px;min-width:0}
 .hnrun{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 10px;padding:4px 8px;margin:0 0 4px;border:1px solid var(--nx-rule,#232c38);border-left:3px solid var(--nx-ok,#71c269);border-radius:5px;font-size:11px;min-width:0}

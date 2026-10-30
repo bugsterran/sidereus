@@ -91,14 +91,36 @@ def _demo_harness(a, path):
             "skills": [{"name": "release-notes", "scope": "user", "plug": "", "on": True, "n": 14, "last": t, "open": "",
                         "pipes": [{"pipe": "release", "stage": "노트"}]}],
             "counts": {"skill": 2, "cmd": 1, "mcp": 2},
-            "evidence": sorted(_demo_evidence(a) + _demo_ci(a), key=lambda r: -r["ts"])}
-    rep = harness_trail.report(body["evidence"], "", git=False)
+            "evidence": sorted(_demo_evidence(a) + _demo_ci(a) + _demo_incident_rows(a), key=lambda r: -r["ts"])}
+    rep = _demo_report(harness_trail.report(body["evidence"], "", git=False))
     p = _demo_person(a)
     body["report"] = dict(rep, counts=dict(rep["counts"], person=p["runs"]), person=p)
     body["guards"] = harness_flow.guards("", runs=_demo_flow_runs(a))
     body["runtime"] = sec_runtime.shape(_demo_runtime(a), a, root="/Users/demo/src/sidereus")   # fake checkout: the real install path stays off demo screens
     body["selfcheck"] = _demo_selfcheck(a)
     return 200, harness_verdict.verdict(body, 30)
+
+
+def _demo_incident_rows(a):
+    """Older harness «Results» rows: fast FAIL→PASS then FAIL again (the 2.5h PASS refixes it → «refixed»; that later pair is dirty → «unchecked»),
+    and a clean hook-test pair _demo_report marks «reverted».
+    ⚠Listed in body["evidence"] too so checkpoint run counts match the «Results» rows; kept out of _demo_evidence (pipeline view)."""
+    ok_gates = ("py_compile", 0, 142, 0, 3.1), ("node_check", 0, 96, 0, 2.4)
+    row = lambda t, m, h, d, rc, st: {"kind": "check", "ts": a - t * H, "mode": m, "head": h, "dirty": d, "rc": rc, "steps": _ev_steps(*st)}
+    return [row(6.2, "fast", "a0c4e19", True, 1, ok_gates + (("tests", 1, 1279, 1, 39.5),)),
+            row(5.9, "fast", "a0c4e19", True, 0, ok_gates + (("tests", 0, 1279, 0, 40.1),)),
+            row(5.0, "fast", "b71e04d", True, 1, ok_gates + (("tests", 1, 1281, 1, 40.6),)),
+            row(8.4, "hook-test", "6e2d0b7", False, 1, (("test", 1, 0, 0, 17.9),)),
+            row(8.1, "hook-test", "7f13c5a", False, 0, (("test", 0, 0, 0, 18.2),))]
+
+
+def _demo_report(rep):
+    """git=False never yields «reverted», so the clean hook-test PASS of _demo_incident_rows is marked by hand and the counts redone."""
+    inc = [dict(x, state="reverted") if x["pass"]["head"] == "7f13c5a" and x["state"] == "held" else x for x in rep["incidents"]]
+    tally = lambda s: sum(1 for x in inc if x["state"] == s)
+    cnt = dict(rep["counts"], held=tally("held"), reverted=tally("reverted"), unchecked=tally("unchecked"),
+               checked=sum(1 for x in inc if x["state"] != "unchecked"))
+    return dict(rep, incidents=inc, counts=cnt)
 
 
 def _demo_selfcheck(a):
@@ -154,10 +176,11 @@ def _demo_runtime(a):
 
 
 def _demo_flow_runs(a):
-    """Invented plmark run for the «What is guarding» strip: one skip, one loop-back and one denied stage jump."""
+    """Invented plmark run for the «What is guarding» strip: one skip, one loop-back, one denied stage jump and one denied gate skip."""
     st = lambda s, t0, t1, n=1: {"s": s, "t0": a - t0 * H, "t1": a - t1 * H, "n": n}
     return [{"sid": "d3m0f10w0000", "name": "change-flow", "t0": a - 2.0 * H, "t1": a - 0.41 * H, "end": a - 0.41 * H,
-             "h0": "b71e04d", "h1": "3f9c2ab", "deny": 1, "dl": [{"c": "jump", "t": a - 1.8 * H, "title": "검증"}],
+             "h0": "b71e04d", "h1": "3f9c2ab", "deny": 2, "dl": [{"c": "jump", "t": a - 1.8 * H, "title": "검증"},
+                                                                 {"c": "skipgate", "t": a - 0.6 * H, "title": "리뷰"}],
              "st": {"설계": st("skip", 2.0, 2.0, 0), "구현": st("done", 1.9, 1.0, 2), "검증": st("done", 1.3, 0.5, 2),
                     "리뷰": st("done", 0.5, 0.42)},
              "lb": [{"f": "검증", "g": "구현", "n": 1, "t": a - 1.2 * H}]}]

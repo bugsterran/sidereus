@@ -24,6 +24,7 @@ BUNDLE = (
     ("scripts/pl_report.py", False),
     ("scripts/evidence_rec.py", False),   # imported by scripts/pl_eval.py
     ("docs/schema", True),
+    ("docs/verdicts", True),          # Harness «Next step» guides (sidereus/verdict_guide.py)
     ("docs/HOOKS.md", False),
     (".claude/workflows/pipeline.js", False),
     ("config.example.json", False),

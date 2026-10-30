@@ -104,6 +104,38 @@ Internals: [dev/PIPELINE.md](dev/PIPELINE.md). Review pipelines per CLI, with te
 
 Tests: `tests/test_pipeline*.py`; `check.sh --fast` also runs `scripts/pipeline_check.mjs`.
 
+## Verdict guide
+
+Each Harness verdict id has a «Next step» guide: `docs/verdicts/<id>.md` (English) and `<id>.ko.md` (Korean, same headings).
+Add a file to explain a new verdict id; `sidereus/verdict_guide.py` reads it, GET `/api/verdict-guide?lang=` serves it.
+
+```md
+# my_verdict
+
+## Meaning
+One line: what was found.
+
+## Why it matters
+One line.
+
+## Who acts
+self
+
+## Next step
+One line; for `self`, one command or setting location (`/hooks`).
+
+## Safe to ignore when
+Required when Who acts is `owner`.
+
+## Pipeline
+Optional: the pipeline to hand it to (`sidereus-bugfix`).
+```
+
+- Id `[a-z][a-z0-9_-]{0,40}`; `Who acts` is `self`, `ai` or `owner`; each field up to 300 characters.
+- A file missing a field is skipped; a missing `.ko.md` falls back to English.
+
+Tests: `tests/test_verdict_guide.py` (every id the server emits needs a file).
+
 ## Reading state from another program
 
 - Use `GET /api/v1/state` («sidereus-state v1», `sidereus/state_v1.py`; schema `docs/schema/sidereus-state.v1.json`).
