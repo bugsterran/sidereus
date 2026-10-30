@@ -389,9 +389,10 @@ class Harness(unittest.TestCase):
     def test_r1_tiles_equal_counts(self):
         h = self._rep()
         tiles = h.split("class=hnrept>", 1)[1].split("class=hnrepg", 1)[0]
-        self.assertEqual(re.findall(r'class="hnrepn hnrepn-(\w+)"[^>]*><b>(\d+)</b>', tiles), [("caught", "5"), ("held", "3"), ("again", "2"), ("reverted", "1")])
+        # R2: four tiles; «Broke again» = again + reverted, no Reverted tile
+        self.assertEqual(re.findall(r'class="hnrepn hnrepn-(\w+)"[^>]*><b>(\d+)</b>', tiles), [("caught", "5"), ("held", "3"), ("again", "3"), ("person", "0")])
         self.assertIn("5건 중 4건 확인 · 1건은 브랜치 이력에서 빠짐", tiles)   # checked != caught said out loud; gone folds into the note
-        self.assertIn('class=hntip tabindex=0 role=img title="같은 점검 단계가 이후 실행에서 다시 실패함.', tiles)
+        self.assertIn('class=hntip tabindex=0 role=img title="이후 다시 실패했거나 고친 커밋이 되돌려짐"', tiles)
         old = _js("console.log(JSON.stringify(hnReport({report: {counts: {caught: 1, held: 1, reverted: 0}}})))")
         self.assertIn('hnrepn-again"><b>0</b>', old)   # older server without counts.again
         same = _js("console.log(JSON.stringify(hnReport({report: {counts: {caught: 2, held: 2, reverted: 0, checked: 2}}})))")
@@ -560,7 +561,7 @@ class Harness(unittest.TestCase):
         self.assertIn("data-hnmore=read open>", ko2)   # HN.fold keeps the choice across repaints
         rd = ko.split("data-hnmore=read>", 1)[1].split("</details>", 1)[0]
         self.assertEqual(rd.count("<li>"), 6)
-        for t in ("잡아냄 (빨강→초록)", "유지됨", "나중에 다시 실패", "되돌려짐", "지키는 곳", "사건 카드", "출고 전에 결함을 찾아 고친 것"):
+        for t in ("잡아냄 (빨강→초록)", "유지됨", "다시 깨짐", "사람이 먼저 찾음", "지키는 곳", "사건 카드", "출고 전에 결함을 찾아 고친 것"):
             self.assertIn(t, rd)
         self.assertFalse(re.search(r"[A-Za-z]{4,}", re.sub(r"<[^>]*>|check --(fast|full)", "", rd)), rd)   # every line translated
         e = en.split("data-hnmore=read>", 1)[1].split("</details>", 1)[0]

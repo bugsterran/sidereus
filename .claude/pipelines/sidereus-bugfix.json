@@ -10,6 +10,7 @@
     "bash backup.sh",
     "commit"
   ],
+  "catch": "person",
   "defaults": { "model": "inherit", "retry": 0 },
   "stages": [
     {

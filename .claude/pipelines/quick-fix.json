@@ -4,6 +4,7 @@
   "title": "빠른 수정",
   "use": "Small fix whose cause is already known: fix, gate, then restart and one screen shot. Cause unknown: sidereus-bugfix.",
   "rules": "Repo: this repository (the folder holding AGENTS.md). AGENTS.md rules override this prompt.\nNEVER commit/stash/checkout/reset/add, NEVER run screen_check --update. The orchestrator commits.\nOne fix per run: anything else you find goes in findings, not in the fix.",
+  "catch": "person",
   "defaults": { "model": "inherit", "retry": 0 },
   "stages": [
     {
