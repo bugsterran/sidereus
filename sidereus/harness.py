@@ -69,7 +69,7 @@ def _src(it):
 def rm_key(path, ev, matcher, hook, k):
     """R1: opaque id of one hook entry (k = earlier identical entries in the file); hook_remove recomputes it, no index or path goes out."""
     s = "\0".join((os.path.realpath(path), ev, matcher, json.dumps(hook, sort_keys=True), str(k)))
-    return "r" + hashlib.sha1(s.encode("utf-8")).hexdigest()[:16]
+    return "r" + hashlib.sha256(s.encode("utf-8")).hexdigest()[:16]
 
 
 def _rm_ok(it, src):
