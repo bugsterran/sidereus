@@ -320,3 +320,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠Only `"catch": "person"` files count (validate rejects any other value); every ledger row is an ended run.
 - ⚠Commit window = [t0, min(end + 900 s, next ledger row t0)]: without the next-run cap a following run's commits land on this card.
 - ⚠Git is hash + commit time + `--name-only`; names outside `tests/` are dropped while parsing, so they never reach the page.
+
+## CI evidence from `gh run watch|view` (`hooks/ev_hook.py` `_CI` · `harness_trail.report` checkpoint `ci`)
+- Cause: without `--exit-status` gh exits 0 on a red run, so the rc says nothing.
+- Fix: only `gh run watch|view ... --exit-status` writes a kind `ci` row (`rc` · repo · head); `-R`/`--repo` is refused because the row's head comes from the cwd repo.
+- ⚠`head` is the local HEAD at watch time: watching a run of an older push labels it with the wrong commit.
+- ⚠`gh run view --exit-status` on an in-progress run may exit 0 — a «green» that has not finished.
+- ⚠`recent()` drops ci rows (stage labels, gate-FAIL line); `trail()`/`states()` ignore them; only `report()` reads them.

@@ -131,6 +131,7 @@ class EvHook(unittest.TestCase):
                 "python -m pytest": "test", "python3 -m pytest -x": "test", "go test ./...": "test",
                 "cargo test": "test", "cargo build --release": "build", "cd sub && npm test": "test",
                 "npm test 2>&1": "test"}
+        self.assertIsNone(ev.classify("npm test\nls", self.repo))   # multi-line: rc would be the last line's
         for cmd, kind in hits.items():
             got = ev.classify(cmd, self.repo)
             self.assertEqual(got and got[:2], ("hook-" + kind, kind), cmd)
@@ -140,6 +141,41 @@ class EvHook(unittest.TestCase):
                  "git status", "npm install", "cargo run", "go build", "mvn package")
         for cmd in skips:
             self.assertIsNone(ev.classify(cmd, self.repo), cmd)
+
+    def test_ci_classify(self):
+        for cmd in ("gh run watch 123 --exit-status", "gh run view 123 --exit-status", "gh run view --exit-status 123",
+                    "gh run watch --exit-status 9 -i 5"):
+            self.assertEqual(ev.classify(cmd, self.repo), ("ci", None, os.path.realpath(self.repo)), cmd)
+        for cmd in ("gh run watch 123", "gh run view 123", "gh run watch 1 --exit-status=1", "gh run watch 1 --exit-status -R o/r",
+                    "gh run watch 1 --exit-status --repo o/r", "gh run watch 1 --exit-status --repo=o/r",
+                    "gh run watch 1 --exit-status | tail", "gh run watch 1 --exit-status && git push",
+                    "gh run watch 1 --exit-status &", "gh run list --exit-status", "echo gh run watch 1 --exit-status",
+                    "gh run watch --exit-status", "gh run watch --exit-status -i 5", "gh run watch --exit-status --interval=5",
+                    "gh run watch 1 --exit-status\nnpm test"):
+            self.assertIsNone(ev.classify(cmd, self.repo), cmd)
+        other = os.path.join(self.d, "other")
+        os.makedirs(os.path.join(other, ".git", "x"))
+        got = ev.classify("cd %s && gh run watch 7 --exit-status" % os.path.join(other, ".git", "x"), self.repo)
+        self.assertEqual(got, ("ci", None, os.path.realpath(other)))
+
+    def test_ci_row(self):
+        self.assertIsNone(self.evt("PreToolUse", "gh run watch 1 --exit-status"))
+        self.assertFalse(os.path.exists(ev.START_DIR))   # no duration for CI
+        self.clock[0] = 1050.7
+        row = self.evt("PostToolUse", "gh run watch 1 --exit-status", tool_response={"stdout": "SECRET_LOG"})
+        self.assertEqual(row, {"v": 1, "kind": "ci", "ts": 1050, "repo": os.path.realpath(self.repo), "head": SHA[:7], "rc": 0})
+        row = self.evt("PostToolUseFailure", "gh run view 1 --exit-status", error="Exit code 1\nX build failed")
+        self.assertEqual(sorted(row), ["head", "kind", "rc", "repo", "ts", "v"])
+        self.assertEqual(row["rc"], 1)
+        self.assertEqual(self.rows(), [{"v": 1, "kind": "ci", "ts": 1050, "repo": os.path.realpath(self.repo), "head": SHA[:7], "rc": 0}, row])
+        self.git.assert_not_called()
+        self.assertIsNone(self.evt("PostToolUse", "gh run watch 1"))
+        self.assertIsNone(self.evt("PostToolUseFailure", "gh run watch 1 --exit-status", error="Command timed out after 2m"))
+        self.assertEqual(len(self.rows()), 2)   # unknown result: no false red
+
+    def test_plugin_copy_identical(self):
+        with open(os.path.join(ROOT, "hooks", "ev_hook.py"), "rb") as a, open(os.path.join(ROOT, "plugin", "hooks", "ev_hook.py"), "rb") as b:
+            self.assertEqual(a.read(), b.read())
 
     def test_cd_target_sets_repo(self):
         other = os.path.join(self.d, "other")

@@ -210,7 +210,8 @@ class ReportTest(unittest.TestCase):
     def test_r4_checkpoint_split(self):
         rep = TR.report(self._fixture(), "/r", git=False)
         self.assertEqual(rep["checkpoints"], {"fast": {"runs": 3, "caught": 1, "listed": 1}, "full": {"runs": 2, "caught": 1, "listed": 1},
-                                              "other": {"runs": 2, "caught": 1, "listed": 1}})
+                                              "other": {"runs": 2, "caught": 1, "listed": 1},
+                                              "ci": {"runs": 0, "caught": 0, "listed": 0, "streak": 0}})
         self.assertEqual([x["cp"] for x in rep["incidents"]], ["other", "full", "fast"])
         self.assertEqual(self.git.calls, [])
 
@@ -274,6 +275,51 @@ class ReportTest(unittest.TestCase):
             self.assertEqual(sorted(x), INC_KEYS)
         for c in self.git.calls:   # hash-only formats
             self.assertFalse(any("%s" in a or a == "--stat" for a in c), c)
+
+
+
+def _ci(ts, rc, head="aaaa111"):
+    return {"kind": "ci", "ts": ts, "mode": "ci", "head": head, "dirty": False, "rc": rc, "steps": []}
+
+
+class CiTest(unittest.TestCase):
+    """CI rows (ev_hook `gh run watch --exit-status`): checkpoint counts, red->green incident, streak."""
+
+    setUp, tearDown = TrailTest.setUp, TrailTest.tearDown
+
+    def test_runs_caught_and_one_incident(self):
+        rows = _newest_first(_ci(1, 1, "aaaa111"), _ci(2, 1, "bbbb222"), _ci(3, 0, "cccc333"), _ci(4, 0, "dddd444"))
+        rep = TR.report(rows, "/r", git=False)
+        self.assertEqual(rep["checkpoints"]["ci"], {"runs": 4, "caught": 2, "listed": 2, "streak": 2})
+        self.assertEqual(len(rep["incidents"]), 1)
+        inc = rep["incidents"][0]
+        self.assertEqual((inc["cp"], inc["mode"], inc["fail"]["head"], inc["pass"]["head"]), ("ci", "ci", "bbbb222", "cccc333"))
+        self.assertEqual(inc["flipped"], ["ci"])
+
+    def test_no_false_older_catch(self):
+        for rows, caught in (((_ci(1, 1), _ci(2, 1), _ci(3, 0)), 2), ((_ci(1, 1),), 1)):
+            cp = TR.report(_newest_first(*rows), "/r", git=False)["checkpoints"]["ci"]
+            self.assertEqual((cp["caught"], cp["caught"] - cp["listed"]), (caught, 0))
+
+    def test_streak(self):
+        st = lambda *rs: TR.report(_newest_first(*rs), "/r", git=False)["checkpoints"]["ci"]["streak"]
+        self.assertEqual(st(_ci(1, 1), _ci(2, 0), _ci(3, 0), _ci(4, 0)), 3)
+        self.assertEqual(st(_ci(1, 0), _ci(2, 0), _ci(3, 1)), 0)   # newest red resets
+        self.assertEqual(st(*[_ci(i, 0) for i in range(1, 9)]), TR.TR_CI_STREAK)
+        self.assertEqual(st(_ci(1, 0), _row(2, "fast", 1)), 1)     # check rows do not cut the CI streak
+
+    def test_zeros_without_ci_and_check_split_unchanged(self):
+        rep = TR.report(_newest_first(_row(1, "fast", 1), _row(2, "fast", 0), _row(3, "full", 0)), "/r", git=False)
+        self.assertEqual(rep["checkpoints"]["ci"], {"runs": 0, "caught": 0, "listed": 0, "streak": 0})
+        self.assertEqual(TR.report([], "/r")["checkpoints"]["ci"], {"runs": 0, "caught": 0, "listed": 0, "streak": 0})
+        mixed = TR.report(_newest_first(_row(1, "fast", 1), _row(2, "fast", 0), _row(3, "full", 0), _ci(4, 1), _ci(5, 0)), "/r", git=False)
+        for k in ("fast", "full", "other"):
+            self.assertEqual(mixed["checkpoints"][k], rep["checkpoints"][k], k)
+
+    def test_trail_and_states_ignore_ci(self):
+        rows = _newest_first(_ci(1, 1), _ci(2, 0))
+        self.assertEqual(TR.trail(rows, "/r", git=False), {"fixes": [], "held": []})
+        self.assertEqual(TR.states(rows, "/r", 0, git=False), [])
 
 
 if __name__ == "__main__":

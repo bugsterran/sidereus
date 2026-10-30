@@ -325,9 +325,10 @@ function hnTrStep(s, ng, tail){ return '<span class="hnstp' + (ng ? ' hnng' : ''
 const HN_CP = { hooks: ['Before edit', 'hooks', 'Pipeline hook (hooks/pl_flow.py): refuses a step or edit that breaks the run order'],
   fast: ['Right after', 'check --fast', 'scripts/check.sh --fast: the quick gate an implementer runs right after editing'],
   full: ['Before commit', 'check --full', 'scripts/check.sh --full: the full gate (tests, screen check) the verifier runs before a commit'],
+  ci: ['After push (CI)', 'gh run watch', 'The evidence hook records the result of gh run watch --exit-status; Sidereus never calls GitHub'],
   other: ['Other gates', '', 'Any other gate command recorded by a run'],
   person: ['A person', '', 'A bug-fix pipeline run (marked "catch": "person"): a person found the defect before any gate did'] };
-const HN_CPK = ['hooks', 'fast', 'full', 'other', 'person'];
+const HN_CPK = ['hooks', 'fast', 'full', 'ci', 'other', 'person'];
 // hooks/pl_flow.py deny codes, shown as T(x, 'flow'); unknown codes are never shown raw.
 const HN_GD = { jump: 'Stage jump', agent: 'Wrong agent', model: 'Wrong model', tag: 'Missing tag', stage: 'Unknown stage', stop: 'Stopped',
   gate: 'Commit before gate', skipgate: 'Required gate skipped' };
@@ -339,10 +340,10 @@ function hnRep(d){
   return { c: o(r.counts), g: g, p: o(r.person), since: r.since, inc: (Array.isArray(r.incidents) ? r.incidents : []).filter(x => x && typeof x === 'object'),
     cp: k => { const c = o(cps[k]), n = hnN(c.caught);   // listed = this cp's incidents among the shown newest ones; missing (older server) = caught
       if(k === 'person'){ const p = o(r.person); return { runs: hnN(p.runs), caught: hnN(p.runs), listed: Array.isArray(p.cards) ? p.cards.length : 0 }; }   // every ended bug-fix run = one find
-      return k === 'hooks' ? { runs: hnN(g.runs), caught: hnN(g.deny), listed: hnN(g.deny) } : { runs: hnN(c.runs), caught: n, listed: c.listed == null ? n : hnN(c.listed) }; } };
+      return k === 'hooks' ? { runs: hnN(g.runs), caught: hnN(g.deny), listed: hnN(g.deny) } : { runs: hnN(c.runs), caught: n, listed: c.listed == null ? n : hnN(c.listed), streak: hnN(c.streak) }; } };
 }
-// Strip keys for this report; «Other gates» only when it ran, «A person» only when a bug-fix pipeline exists.
-function hnCpKeys(R){ return HN_CPK.filter(k => k === 'person' ? Array.isArray(R.p.pipes) && R.p.pipes.length > 0 : k !== 'other' || R.cp(k).runs || R.cp(k).caught); }
+// Strip keys for this report; «Other gates» only when it ran, «A person» only when a bug-fix pipeline exists, CI only with recorded runs.
+function hnCpKeys(R){ return HN_CPK.filter(k => k === 'person' ? Array.isArray(R.p.pipes) && R.p.pipes.length > 0 : k === 'ci' ? R.cp(k).runs > 0 : k !== 'other' || R.cp(k).runs || R.cp(k).caught); }
 function hnIncCp(x){ return x.cp !== 'hooks' && x.cp !== 'person' && HN_CP[x.cp] ? x.cp : 'other'; }
 // R1: three numbers straight from report.counts.
 // One-vs-many message key (English source); ko entries may share one text.
@@ -369,7 +370,7 @@ function hnStrip(R){
     const n = !v.runs && !v.caught ? TV({msg: 'ran {n}', vars: {n: 0}}) : TV({msg: k === 'hooks' ? 'blocked {n}' : k === 'person' ? 'found {n}' : 'caught {n}', vars: {n: v.caught}});
     return '<button class="hncpb' + (on ? ' on' : '') + '" data-hncp=' + k + ' aria-pressed=' + on + ' title="' + esc(T(HN_CP[k][2]) + '\n' + TV({msg: hnPl(v.runs, 'ran {n} time', 'ran {n} times'), vars: {n: v.runs}})) + '"><b>' + esc(T(HN_CP[k][0])) + '</b>'
       + (HN_CP[k][1] ? ' <code class=hnrc>' + esc(HN_CP[k][1]) + '</code>' : '') + ' <i>' + esc(n) + '</i></button>';
-  }).join('') + '</div>';
+  }).join('') + (ks.indexOf('ci') >= 0 ? '<i class=hntm>' + esc(TV({msg: 'Holding: CI streak {n}/5', vars: {n: Math.min(R.cp('ci').streak, 5)}})) + '</i>' : '') + '</div>';
 }
 // R2: red → fix commits → green → held/reverted.
 function hnInc(x, go){
@@ -378,7 +379,7 @@ function hnInc(x, go){
   const rc = f.rc == null || f.rc === '' ? '?' : String(f.rc), fd = f.failed == null || f.failed === '' ? null : String(f.failed);
   const ev = TV(fd == null ? {msg: 'exit {n}', vars: {n: rc}} : {msg: 'exit {n} · failed {m}', vars: {n: rc, m: fd}}), ar = ' <span class=hntra>→</span> ';
   return '<div class="hnrun hninc' + (x.state === 'broke' ? ' hnng' : '') + (go === true ? ' hngo" tabindex=-1' : '"') + ' data-hncpc=' + hnIncCp(x) + '><span class=hnrh>'
-    + (x.mode ? '<em class=hnsc' + ((x.mode === 'fast' || x.mode === 'full') ? ' title="' + esc(T(HN_CP[x.mode][2])) + '"' : '') + '>' + esc(x.mode) + '</em> ' : '') + hnTrHead(f) + ' ' + hnPF(false) + ' <i class=hnrepe>' + esc(ev) + '</i>' + ar
+    + (x.mode ? '<em class=hnsc' + ((x.mode === 'fast' || x.mode === 'full' || x.mode === 'ci') ? ' title="' + esc(T(HN_CP[x.mode][2])) + '"' : '') + '>' + esc(x.mode) + '</em> ' : '') + hnTrHead(f) + ' ' + hnPF(false) + ' <i class=hnrepe>' + esc(ev) + '</i>' + ar
     + (typeof x.commits === 'number' ? '<i class=hntm>' + esc(TV({msg: hnPl(x.commits, '{n} commit', '{n} commits'), vars: {n: x.commits}})) + '</i>' + ar : '')
     + hnTrHead(p) + ' ' + hnPF(true) + ar
     + (s ? '<b class="hntrs hntrs-' + s[1] + '">' + esc(T(s[0])) + '</b>' : '<b class=hntrs>' + esc(x.state == null ? '?' : x.state) + '</b>')

@@ -19,6 +19,7 @@ TR_CACHE_MAX = 64
 TR_STATES_MAX = 30         # PASS rows states() returns
 TR_STATES_GIT = 4          # git processes budgeted per PASS in states() (merge-base · rev-parse · log, + slack)
 TR_INC_MAX = 20            # newest incident cards report() returns
+TR_CI_STREAK = 5           # «CI streak n/5»: consecutive green CI rows counted up to this
 TR_HEX = re.compile(r"[0-9a-f]{4,40}")
 TR_MODE = re.compile(r"[a-z0-9_-]{0,20}")
 TR_STEP = re.compile(r"[a-z0-9_-]{1,20}")
@@ -35,11 +36,16 @@ def _git(repo, args):
     return r.returncode, r.stdout or ""
 
 
-def _norm(r):
-    """Whitelisted copy of one evidence row, or None for junk."""
-    if not isinstance(r, dict) or r.get("kind") != "check":
+def _norm(r, ci=False):
+    """Whitelisted copy of one evidence row, or None for junk. ci=True also takes kind "ci" rows (report() only)."""
+    if not isinstance(r, dict) or r.get("kind") not in (("check", "ci") if ci else ("check",)):
         return None
     ts, rc, mode = r.get("ts"), r.get("rc"), r.get("mode")
+    if r.get("kind") == "ci":
+        if isinstance(ts, bool) or not isinstance(ts, (int, float)) or ts <= 0 or isinstance(rc, bool) or not isinstance(rc, int):
+            return None
+        head = r.get("head") if isinstance(r.get("head"), str) and TR_HEX.fullmatch(r["head"]) else ""
+        return {"ts": float(ts), "mode": "ci", "rc": rc, "head": head, "dirty": False, "steps": [("ci", rc)], "failed": 0}
     if isinstance(ts, bool) or not isinstance(ts, (int, float)) or ts <= 0:
         return None
     if isinstance(rc, bool) or not isinstance(rc, int) or not isinstance(mode, str) or not TR_MODE.fullmatch(mode):
@@ -189,18 +195,29 @@ def trail(rows, repo, git=True):
 
 
 def _cp(mode):
-    return mode if mode in ("fast", "full") else "other"
+    return mode if mode in ("fast", "full", "ci") else "other"
+
+
+def _ci_streak(rows):
+    """Consecutive green CI rows from the newest (oldest-first `rows`), cut at the first red, capped at TR_CI_STREAK."""
+    n = 0
+    for r in reversed([x for x in rows if x["mode"] == "ci"]):
+        if r["rc"] != 0 or n >= TR_CI_STREAK:
+            break
+        n += 1
+    return n
 
 
 def report(rows, repo, git=True):
-    """{counts: {caught, held, again, reverted, gone, unchecked, checked}, incidents, checkpoints: {fast|full|other: {runs, caught, listed}}, since} from
+    """{counts: {caught, held, again, reverted, gone, unchecked, checked}, incidents, checkpoints: {fast|full|other|ci: {runs, caught, listed}}, since} from
     newest-first evidence rows of `repo`. caught = every FAIL→PASS pair; incidents = the newest TR_INC_MAX pairs, each with
     its PASS state (states() rules) — the state counts tally those incidents only and sum to len(incidents)
     (again = broke | refixed: a later same-mode FAIL of an overlapping step, step-level only). since = oldest row ts read.
     ⚠A git miss or exhausted budget turns a clean «held» into «unchecked» (never «held») and the result is not cached;
     git=False (demo) keeps the evidence-only state."""
-    rows = sorted((r for r in (_norm(x) for x in (rows if isinstance(rows, list) else [])) if r), key=lambda r: r["ts"])
-    cps = dict((k, {"runs": 0, "caught": 0, "listed": 0}) for k in ("fast", "full", "other"))
+    rows = sorted((r for r in (_norm(x, ci=True) for x in (rows if isinstance(rows, list) else [])) if r), key=lambda r: r["ts"])
+    cps = dict((k, {"runs": 0, "caught": 0, "listed": 0}) for k in ("fast", "full", "other", "ci"))
+    cps["ci"]["streak"] = _ci_streak(rows)
     if not rows:
         return {"counts": dict((k, 0) for k in ("caught", "held", "again", "reverted", "gone", "unchecked", "checked")), "incidents": [], "checkpoints": cps, "since": 0}
     pairs = _pairs(rows)
@@ -225,8 +242,10 @@ def report(rows, repo, git=True):
         cps[_cp(r["mode"])]["runs"] += 1
     for f, p in pairs:
         cps[_cp(p["mode"])]["caught"] += 1
+    cps["ci"]["caught"] = sum(1 for r in rows if r["mode"] == "ci" and r["rc"] != 0)   # CI: every red run, paired or not
     for x in incidents:
         cps[x["cp"]]["listed"] += 1   # caught > listed = older pairs past TR_INC_MAX
+    cps["ci"]["listed"] = cps["ci"]["caught"]   # ⚠caught - listed reads as «older catch, not listed»; unpaired reds are not older
     tally = lambda s: sum(1 for x in incidents if x["state"] == s)
     # ⚠every state lands in exactly one count — a state with no count vanished from the tiles (refixed did)
     out = {"counts": {"caught": len(pairs), "held": tally("held"), "again": tally("broke") + tally("refixed"),

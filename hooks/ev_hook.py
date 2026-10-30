@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 """Claude Code Bash hook: records test/build/check/lint runs as harness evidence (one `evidence.jsonl` row each).
+`gh run watch|view <id> --exit-status` writes a kind "ci" row (rc · repo · head only).
 
 Events: PreToolUse (start time) · PostToolUse (rc 0) · PostToolUseFailure (rc from «Exit code N»), matcher "Bash".
 Matched commands only (anchored allow-list, or a pipeline `gate` string of the repo); everything else exits at once.
@@ -50,6 +51,13 @@ _SKIP_ARG = re.compile(r"(?:^|\s)(?:--watch\S*|--continuous|-t)(?=\s|$)")
 _EXIT = re.compile(r"^Exit code (\d+)")
 _TUID = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
 _PLNAME = re.compile(r"^[a-z0-9-]{1,40}\.json$")
+# ⚠Without --exit-status gh exits 0 on a red run; -R/--repo names another repo than the cwd's, so its head is meaningless.
+_CI = re.compile(r"^gh\s+run\s+(?:watch|view)\b" + _ARGS)
+_CI_REPO = re.compile(r"(?:^|\s)(?:-R\S*|--repo(?:=\S*)?)(?=\s|$)")
+_CI_EXIT = re.compile(r"(?:^|\s)--exit-status(?=\s|$)")
+# ⚠No run id = gh prompts for one, and without a TTY exits 1: a false red. The -i/--interval value is not an id.
+_CI_ID = re.compile(r"(?:^|\s)\d+(?=\s|$)")
+_CI_IVL = re.compile(r"(?:^|\s)(?:-i|--interval)(?:\s+|=)\S+")
 
 
 def _norm(s):
@@ -66,7 +74,7 @@ def split_cd(cmd):
 
 def skipped(rest):
     """Shapes whose rc is not the tool's own: pipes, sequences, background, watch modes, check.sh."""
-    if "|" in rest or ";" in rest or "&&" in rest or rest.endswith("&"):
+    if "|" in rest or ";" in rest or "&&" in rest or "\n" in rest or rest.endswith("&"):   # newline: rc is the last line's
         return True
     return bool(_SKIP_ARG.search(rest)) or "check.sh" in rest
 
@@ -134,6 +142,10 @@ def classify(cmd, cwd):
     target, rest = split_cd(cmd)
     if not rest or skipped(rest):
         return None
+    if _CI.match(rest):
+        if not _CI_EXIT.search(rest) or _CI_REPO.search(rest) or not _CI_ID.search(_CI_IVL.sub(" ", rest)):
+            return None
+        return "ci", None, repo_of(cwd, target)
     kind = allow_kind(rest)
     if kind:
         return "hook-" + kind, kind, repo_of(cwd, target)
@@ -324,6 +336,8 @@ def handle(ev):
     now = NOW()
     tuid = ev.get("tool_use_id")
     if name == "PreToolUse":
+        if hit[0] == "ci":
+            return None   # no duration for CI: the watch time is queue + run time on GitHub, not local work
         p = _start_path(tuid)
         if p:
             os.makedirs(START_DIR, exist_ok=True)
@@ -331,7 +345,7 @@ def handle(ev):
                 f.write("%.3f" % now)
         _sweep(now)
         return None
-    secs = _take_secs(tuid, now)
+    secs = 0 if hit[0] == "ci" else _take_secs(tuid, now)
     if name == "PostToolUse":
         resp = ev.get("tool_response")
         if isinstance(resp, dict) and resp.get("interrupted") is True:
@@ -342,10 +356,16 @@ def handle(ev):
             return None
         err = ev.get("error")
         m = _EXIT.match(err) if isinstance(err, str) else None   # ⚠match only; the text is never stored
+        if not m and hit[0] == "ci":
+            return None   # timeout etc.: an unknown CI result is not a red
         rc = min(int(m.group(1)), 255) if m else 1
     mode, step, repo = hit
     if not repo or (fcntl is None and msvcrt is None):
         return None
+    if mode == "ci":
+        row = {"v": 1, "kind": "ci", "ts": int(now), "repo": repo, "head": head_of(repo), "rc": rc}
+        append(EV_FILE, json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+        return row
     out = git_status(repo)
     row = {"v": 1, "kind": "check", "ts": int(now), "mode": mode, "repo": repo, "head": head_of(repo),
            "dirty": bool(out and out.strip()), "rc": rc,
