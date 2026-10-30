@@ -200,13 +200,15 @@ def _ind(text, ks):
     return seg if nl >= 0 and not seg.strip() else ""
 
 
-def _enc(val, ind):
+def _enc(val, ind, nl="\n"):
     unit = "\t" if "\t" in ind else ("  " if not ind else (" " * len(ind) if len(ind) <= 4 else "  "))
-    return json.dumps(val, indent=unit, ensure_ascii=False).replace("\n", "\n" + ind)
+    return json.dumps(val, indent=unit, ensure_ascii=False).replace("\n", nl + ind)
 
 
 def _splice(text, sets):
     """text with each top-level key in `sets` replaced (or appended) -> (new text, [(key start, value end)] in new) or None."""
+    # ⚠Windows editors write CRLF; a hard-coded "\n" here left mixed line endings after a write.
+    nl = "\r\n" if "\r\n" in text else "\n"
     for k, v in sets:
         m = _members(text)
         if m is None:
@@ -217,16 +219,16 @@ def _splice(text, sets):
             return None
         if hits:
             _k, ks, _ke, vs, ve = hits[0]
-            text = text[:vs] + _enc(v, _ind(text, ks)) + text[ve:]
+            text = text[:vs] + _enc(v, _ind(text, ks), nl) + text[ve:]
         elif not mem:
             close = text.rfind("}")
-            text = text[:brace + 1] + "\n  " + json.dumps(k) + ": " + _enc(v, "  ") + "\n" + text[close:].lstrip(" \t\r\n")
+            text = text[:brace + 1] + nl + "  " + json.dumps(k) + ": " + _enc(v, "  ", nl) + nl + text[close:].lstrip(" \t\r\n")
         else:
             _k, ks, ke, vs, ve = mem[-1]
             seg = text[(mem[-2][4] if len(mem) > 1 else brace):ks]
             lead = seg[max(seg.rfind(","), seg.rfind("{")) + 1:]
             ind = lead[lead.rfind("\n") + 1:] if "\n" in lead else ""
-            text = text[:ve] + "," + lead + json.dumps(k) + text[ke:vs] + _enc(v, ind) + text[ve:]
+            text = text[:ve] + "," + lead + json.dumps(k) + text[ke:vs] + _enc(v, ind, nl) + text[ve:]
     m = _members(text)
     if m is None:
         return None

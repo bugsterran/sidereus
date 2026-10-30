@@ -136,6 +136,18 @@ class HookRemove(unittest.TestCase):
         self.assertEqual([k for k in d], ["model", "env", "hooks", "statusLine"])
         self.assertEqual(d["hooks"]["PreToolUse"][0]["hooks"], [{"type": "command", "command": "python3 /x/guard.py"}])
 
+    def test_r1_crlf_file_keeps_crlf(self):
+        for bom in (b"", b"\xef\xbb\xbf"):
+            raw = bom + USER_TEXT.replace("\n", "\r\n").encode("utf-8")
+            with open(self.us, "wb") as f:
+                f.write(raw)
+            self._remove(self._rm("audit.py"))
+            after = _b(self.us)
+            self.assertTrue(after.startswith(bom + b"{\r\n"))
+            self.assertEqual(after.count(b"\n"), after.count(b"\r\n"))
+            self.assertEqual(json.loads(after[len(bom):])["hooks"]["PreToolUse"][0]["hooks"],
+                             [{"type": "command", "command": "python3 /x/guard.py"}])
+
     def test_r1_backup_taken_before_write(self):
         before = _b(self.us)
         seen = {}

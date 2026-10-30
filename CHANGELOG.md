@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Harness report: «After push (CI)» checkpoint from `gh run watch --exit-status` results recorded by the evidence hook — run and caught counts, CI cards on click, red→green CI incidents, and «Holding: CI streak n/5» (newest greens in a row, reset by a red). Hidden with no CI records; Sidereus never calls GitHub. Refs #27
 - Harness: folded «Guard self-check» table from `scripts/harness_selfcheck.py` results — per guard the case it must catch and the control it must let through (situation fed · expected · actual · PASS/FAIL), beside the real «Blocked n» / «caught n» counts; «Not run yet» with the command when there are no results, «different commit» when they come from another HEAD. The viewer only reads the results file. Refs #27
 
+### Fixed
+
+- Hook writes («Connect» in Diagnostics, «Remove» in Config map) keep a CRLF settings file CRLF; the rewritten `hooks` block used to come out with LF, leaving mixed line endings on Windows. Refs #28
+
 ## [0.10.0] - 2026-10-30
 
 **Highlights**
