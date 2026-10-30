@@ -213,6 +213,7 @@ Appends one `evidence.jsonl` row per matched Bash run, so the harness «Results�
 | `npm`/`pnpm`/`yarn` (`run`) `test`·`build`·`lint` | test · build · lint |
 | `pytest`, `python -m pytest`, `go test`, `cargo test`·`build` | test · build |
 | a `gate` string of `<repo>/.claude/pipelines/*.json` (whitespace-normalised) | `gate-*`, step `gate` if no kind word |
+| `gh run watch`/`view` `<id> --exit-status` (no `-R`/`--repo`) | kind `ci` row: `rc`, repo, short commit only |
 
 - Skipped: `|`, `;`, `&&` after the command, a trailing `&`, `--watch*`, `--continuous`, `-t`, any `check.sh`
   (it writes its own row), `run_in_background`, interrupted runs.

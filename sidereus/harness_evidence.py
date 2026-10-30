@@ -16,7 +16,7 @@ EV_READ_MAX = 512 * 1024
 EV_LIMIT_MAX = 200
 EV_SCAN_MAX = 4000    # rows per scan(); the flow windows each run over all of them
 EV_TS_MAX = 4102444800   # 2100-01-01 UTC
-EV_KINDS = ("check",)   # later kinds ("red", "held") join here with their own row builder
+EV_KINDS = ("check", "ci")   # ci = ev_hook `gh run watch|view --exit-status` row (rc · head only)
 EV_STEP = re.compile(r"[a-z0-9_-]{1,20}")
 EV_MODE = re.compile(r"[a-z0-9_-]{1,20}")
 EV_HEAD = re.compile(r"[0-9a-f]{4,40}")
@@ -69,6 +69,8 @@ def _row(d, repos):
     row = {"kind": d["kind"], "ts": _ts(d.get("ts")), "mode": mode if isinstance(mode, str) and EV_MODE.fullmatch(mode) else "",
            "head": head if isinstance(head, str) and EV_HEAD.fullmatch(head) else "", "dirty": d.get("dirty") is True,
            "rc": _int(d.get("rc"), -255, 255), "steps": steps}
+    if d["kind"] == "ci":
+        row.update(mode="ci", steps=[], dirty=False)   # a CI row has no local steps or worktree state
     if isinstance(d.get("screen"), list):
         row["screen"] = [x for x in (_shot(s) for s in d["screen"][:20]) if x]
     return row
@@ -122,12 +124,13 @@ def scan(proj):
 
 
 def recent(proj, limit=30):
-    """Newest-first evidence rows recorded for realpath(proj) or its git root; [] when none or unreadable."""
+    """Newest-first check rows recorded for realpath(proj) or its git root; [] when none or unreadable.
+    ⚠ci rows are left out: pipeline stage labels and the gate-FAIL line read local gate runs only."""
     try:
         limit = max(1, min(EV_LIMIT_MAX, int(limit)))
     except (TypeError, ValueError):
         limit = 30
-    return scan(proj)[0][:limit]
+    return [r for r in scan(proj)[0] if r["kind"] == "check"][:limit]
 
 
 def _git_log(repo):

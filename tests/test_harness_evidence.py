@@ -84,6 +84,16 @@ class EvidenceTest(unittest.TestCase):
         self.assertEqual(rows[0]["ts"], 199)
         self.assertGreater(rows[-1]["ts"], 150)
 
+    def test_ci_rows_in_scan_not_recent(self):
+        ci = json.dumps({"v": 1, "kind": "ci", "ts": 3, "repo": self.repo, "head": "abc1234", "rc": 1,
+                         "mode": "x", "dirty": True, "steps": [{"name": "s", "rc": 1}], "out": "SENTINEL"})
+        self._write([_rec(self.repo, 1), ci, _rec(self.repo, 5)])
+        rows, _floor = EV.scan(self.repo)
+        self.assertEqual([(r["kind"], r["ts"]) for r in rows], [("check", 5), ("ci", 3), ("check", 1)])
+        self.assertEqual(rows[1], {"kind": "ci", "ts": 3, "mode": "ci", "head": "abc1234", "dirty": False, "rc": 1, "steps": []})
+        self.assertEqual([r["ts"] for r in EV.recent(self.repo)], [5, 1])
+        self.assertNotIn("SENTINEL", json.dumps(rows))
+
     def test_scan_all_rows_and_floor(self):
         self._write([_rec(self.repo, 1000 + i) for i in range(300)] + [_rec(self.other, 2000)])
         rows, floor = EV.scan(self.repo)

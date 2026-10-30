@@ -197,6 +197,7 @@ Agent/Task/SendMessage 는 지운다. 파이프라인, 단계, 시각, cwd 만 �
 | `npm`/`pnpm`/`yarn` (`run`) `test`·`build`·`lint` | test · build · lint |
 | `pytest`, `python -m pytest`, `go test`, `cargo test`·`build` | test · build |
 | `<repo>/.claude/pipelines/*.json` 의 `gate` 문자열(공백 정규화) | `gate-*`, 종류 단어가 없으면 단계 `gate` |
+| `gh run watch`/`view` `<id> --exit-status`(`-R`/`--repo` 없이) | 종류 `ci` 줄: `rc`, 저장소, 짧은 커밋만 |
 
 - 건너뜀: `|`, `;`, 명령 뒤의 `&&`, 끝의 `&`, `--watch*`, `--continuous`, `-t`, 모든 `check.sh`(자기 줄을 직접 쓴다),
   `run_in_background`, 중단된 실행.

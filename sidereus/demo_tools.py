@@ -90,7 +90,8 @@ def _demo_harness(a, path):
                       "status": "fail", "err": "connection refused", "fail_at": t}],
             "skills": [{"name": "release-notes", "scope": "user", "plug": "", "on": True, "n": 14, "last": t, "open": "",
                         "pipes": [{"pipe": "release", "stage": "노트"}]}],
-            "counts": {"skill": 2, "cmd": 1, "mcp": 2}, "evidence": _demo_evidence(a)}
+            "counts": {"skill": 2, "cmd": 1, "mcp": 2},
+            "evidence": sorted(_demo_evidence(a) + _demo_ci(a), key=lambda r: -r["ts"])}
     rep = harness_trail.report(body["evidence"], "", git=False)
     p = _demo_person(a)
     body["report"] = dict(rep, counts=dict(rep["counts"], person=p["runs"]), person=p)
@@ -163,6 +164,13 @@ def _demo_evidence(a):
             # Row written by the Bash evidence hook (hooks/ev_hook.py): rc and duration only, n/failed stay 0.
             {"kind": "check", "ts": a - 3.1 * H, "mode": "hook-test", "head": "b71e04d", "dirty": True, "rc": 0,
              "steps": _ev_steps(("test", 0, 0, 0, 18.6))}]
+
+
+def _demo_ci(a):
+    """Invented ev_hook CI rows (`gh run watch --exit-status`): one red, then 3 greens on later heads — 1 CI incident, streak 3.
+    ⚠Kept out of _demo_evidence: the pipeline view reads check rows only, like harness_evidence.recent."""
+    ci = lambda t, h, rc: {"kind": "ci", "ts": a - t * H, "mode": "ci", "head": h, "dirty": False, "rc": rc, "steps": []}
+    return [ci(0.3, "3f9c2ab", 0), ci(2.2, "c58a3e1", 0), ci(4.2, "b71e04d", 0), ci(4.8, "9d1e7a0", 1)]
 
 
 def _demo_pl_evidence(a):
