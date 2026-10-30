@@ -236,7 +236,7 @@ class Kept(_Base):
                 self.record("fast", 1, [["tests", 1, 10, 2, 1]], head=self.git("rev-parse", "--short", "HEAD"), ts=NOW - 500)
         self.record("fast", 0, [["tests", 0, 10, 0, 1]], head=self.git("rev-parse", "--short", "HEAD"), ts=NOW - 400)
         rep = HP._results(self.proj)["report"]
-        self.assertEqual(rep["counts"], {"caught": 1, "held": 1, "again": 0, "reverted": 0, "gone": 0, "unchecked": 0, "checked": 1})
+        self.assertEqual(rep["counts"], {"caught": 1, "held": 1, "again": 0, "reverted": 0, "gone": 0, "unchecked": 0, "checked": 1, "person": 0})
         inc = rep["incidents"][0]
         self.assertEqual((inc["cp"], inc["commits"], inc["fail"]["rc"], inc["fail"]["failed"]), ("fast", 1, 1, 2))
         with open(os.path.join(self.proj, "a.txt"), "w", encoding="utf-8") as f:
@@ -244,7 +244,7 @@ class Kept(_Base):
         self.git("commit", "-q", "-am", "revert")
         HT._TR_CACHE.clear()   # HEAD is reused for TR_HEAD_TTL; a new commit needs a fresh lookup
         rep = HP._results(self.proj)["report"]
-        self.assertEqual(rep["counts"], {"caught": 1, "held": 0, "again": 0, "reverted": 1, "gone": 0, "unchecked": 0, "checked": 1})
+        self.assertEqual(rep["counts"], {"caught": 1, "held": 0, "again": 0, "reverted": 1, "gone": 0, "unchecked": 0, "checked": 1, "person": 0})
 
 
 if __name__ == "__main__":

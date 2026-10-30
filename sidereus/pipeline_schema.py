@@ -88,6 +88,8 @@ def validate(P, name):
         errs.append("after: array of one-line strings")
     if "readonly" in P and not isinstance(P["readonly"], bool):   # strict mode: a readonly run allows no edits (hooks/pl_flow.py)
         errs.append("readonly: true|false")
+    if "catch" in P and P["catch"] != "person":   # bug-fix pipeline: its runs count as «Found by a person first» (harness_person)
+        errs.append('catch: "person"')
     D =P.get("defaults") if isinstance(P.get("defaults"), dict) else {}
     if D.get("model") not in MODELS:
         errs.append("defaults.model: inherit|opus|sonnet|haiku")

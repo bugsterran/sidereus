@@ -325,8 +325,9 @@ function hnTrStep(s, ng, tail){ return '<span class="hnstp' + (ng ? ' hnng' : ''
 const HN_CP = { hooks: ['Before edit', 'hooks', 'Pipeline hook (hooks/pl_flow.py): refuses a step or edit that breaks the run order'],
   fast: ['Right after', 'check --fast', 'scripts/check.sh --fast: the quick gate an implementer runs right after editing'],
   full: ['Before commit', 'check --full', 'scripts/check.sh --full: the full gate (tests, screen check) the verifier runs before a commit'],
-  other: ['Other gates', '', 'Any other gate command recorded by a run'] };
-const HN_CPK = ['hooks', 'fast', 'full', 'other'];
+  other: ['Other gates', '', 'Any other gate command recorded by a run'],
+  person: ['A person', '', 'A bug-fix pipeline run (marked "catch": "person"): a person found the defect before any gate did'] };
+const HN_CPK = ['hooks', 'fast', 'full', 'other', 'person'];
 // hooks/pl_flow.py deny codes, shown as T(x, 'flow'); unknown codes are never shown raw.
 const HN_GD = { jump: 'Stage jump', agent: 'Wrong agent', model: 'Wrong model', tag: 'Missing tag', stage: 'Unknown stage', stop: 'Stopped',
   gate: 'Commit before gate', skipgate: 'Required gate skipped' };
@@ -335,13 +336,14 @@ function hnMs(ts){ let t = Number(ts); if(!isFinite(t)) t = Date.parse(ts); retu
 function hnRep(d){
   const o = x => x && typeof x === 'object' && !Array.isArray(x) ? x : {};
   const r = o(d && d.report), g = o(d && d.guards), cps = o(r.checkpoints);
-  return { c: o(r.counts), g: g, since: r.since, inc: (Array.isArray(r.incidents) ? r.incidents : []).filter(x => x && typeof x === 'object'),
+  return { c: o(r.counts), g: g, p: o(r.person), since: r.since, inc: (Array.isArray(r.incidents) ? r.incidents : []).filter(x => x && typeof x === 'object'),
     cp: k => { const c = o(cps[k]), n = hnN(c.caught);   // listed = this cp's incidents among the shown newest ones; missing (older server) = caught
+      if(k === 'person'){ const p = o(r.person); return { runs: hnN(p.runs), caught: hnN(p.runs), listed: Array.isArray(p.cards) ? p.cards.length : 0 }; }   // every ended bug-fix run = one find
       return k === 'hooks' ? { runs: hnN(g.runs), caught: hnN(g.deny), listed: hnN(g.deny) } : { runs: hnN(c.runs), caught: n, listed: c.listed == null ? n : hnN(c.listed) }; } };
 }
-// Strip keys for this report; «Other gates» only when it ran.
-function hnCpKeys(R){ return HN_CPK.filter(k => k !== 'other' || R.cp(k).runs || R.cp(k).caught); }
-function hnIncCp(x){ return x.cp !== 'hooks' && HN_CP[x.cp] ? x.cp : 'other'; }
+// Strip keys for this report; «Other gates» only when it ran, «A person» only when a bug-fix pipeline exists.
+function hnCpKeys(R){ return HN_CPK.filter(k => k === 'person' ? Array.isArray(R.p.pipes) && R.p.pipes.length > 0 : k !== 'other' || R.cp(k).runs || R.cp(k).caught); }
+function hnIncCp(x){ return x.cp !== 'hooks' && x.cp !== 'person' && HN_CP[x.cp] ? x.cp : 'other'; }
 // R1: three numbers straight from report.counts.
 // One-vs-many message key (English source); ko entries may share one text.
 function hnPl(n, one, many){ return Number(n) === 1 ? one : many; }
@@ -349,12 +351,13 @@ function hnTiles(R){
   const k = x => hnN(R.c[x]);   // missing key (older server) = 0
   const t = [['caught', 'Caught (red→green)', 'A gate failed, then a later run of the same gate passed'],
     ['held', 'Held', 'The fixed gate still passes'],
-    ['again', 'Failed again later', 'The same check step failed again in a later run. Coarse: a different cause on the same step also counts.', 1],
-    ['reverted', 'Reverted', 'The fix commit was reverted']];
+    ['again', 'Broke again', 'Failed again later or the fix was reverted', 1],   // again + reverted; Reverted stays an incident card state
+    ['person', 'Found by a person first', 'Ended bug-fix pipeline runs: a person found the defect before any gate did']];
+  const val = key => key === 'again' ? k('again') + k('reverted') : k(key);
   const note = [];
   if(R.c.checked != null && k('checked') !== k('caught')) note.push(TV({msg: 'checked {n} of {m}', vars: {n: k('checked'), m: k('caught')}}));
   if(k('gone')) note.push(TV({msg: '{n} no longer in branch history', vars: {n: k('gone')}}));
-  return '<div class=hnrept>' + t.map(([key, en, tip, q]) => '<div class="hnrepn hnrepn-' + key + '"' + (q ? '' : ' title="' + esc(T(tip)) + '"') + '><b>' + k(key) + '</b><span>' + esc(T(en))
+  return '<div class=hnrept>' + t.map(([key, en, tip, q]) => '<div class="hnrepn hnrepn-' + key + '"' + (q ? '' : ' title="' + esc(T(tip)) + '"') + '><b>' + val(key) + '</b><span>' + esc(T(en))
       + (q ? ' <span class=hntip tabindex=0 role=img title="' + esc(T(tip)) + '" aria-label="' + esc(T(tip)) + '">?</span>' : '') + '</span></div>').join('')
     + (note.length ? '<i class="hntm hnrepk">' + esc(note.join(' · ')) + '</i>' : '') + '</div>';
 }
@@ -363,7 +366,7 @@ function hnStrip(R){
   const ks = hnCpKeys(R);
   return '<div class=hnrepg role=group aria-label="' + esc(T('What is guarding')) + '"><b class=hnrepgh>' + esc(T('What is guarding')) + '</b>' + ks.map(k => {
     const v = R.cp(k), on = HN.cp === k;
-    const n = !v.runs && !v.caught ? TV({msg: 'ran {n}', vars: {n: 0}}) : TV({msg: k === 'hooks' ? 'blocked {n}' : 'caught {n}', vars: {n: v.caught}});
+    const n = !v.runs && !v.caught ? TV({msg: 'ran {n}', vars: {n: 0}}) : TV({msg: k === 'hooks' ? 'blocked {n}' : k === 'person' ? 'found {n}' : 'caught {n}', vars: {n: v.caught}});
     return '<button class="hncpb' + (on ? ' on' : '') + '" data-hncp=' + k + ' aria-pressed=' + on + ' title="' + esc(T(HN_CP[k][2]) + '\n' + TV({msg: hnPl(v.runs, 'ran {n} time', 'ran {n} times'), vars: {n: v.runs}})) + '"><b>' + esc(T(HN_CP[k][0])) + '</b>'
       + (HN_CP[k][1] ? ' <code class=hnrc>' + esc(HN_CP[k][1]) + '</code>' : '') + ' <i>' + esc(n) + '</i></button>';
   }).join('') + '</div>';
@@ -385,7 +388,7 @@ function hnInc(x, go){
 // R3: a checkpoint that ran but caught nothing = one quiet card; hooks show their deny codes.
 function hnQuiet(R, k){
   const v = R.cp(k), hk = k === 'hooks';
-  if(!v.runs || (!hk && v.caught)) return '';
+  if(k === 'person' || !v.runs || (!hk && v.caught)) return '';   // person cards come from 47e hnPerson
   const cs = hk && R.g.codes && typeof R.g.codes === 'object' ? R.g.codes : {}, unk = hk ? hnN(R.g.unknown) : 0;
   const codes = Object.keys(HN_GD).filter(c => hnN(cs[c])).map(c => '<span class=hnstp>' + esc(T(HN_GD[c], 'flow')) + ' ×' + hnN(cs[c]) + '</span>');
   if(unk) codes.push('<span class=hnstp>' + esc(TV({msg: 'unknown {n}', vars: {n: unk}})) + '</span>');
@@ -430,7 +433,8 @@ function hnReport(d){
   const inc = R.inc.map((x, i) => [x, i, hnMs((x.pass && x.pass.ts) || (x.fail && x.fail.ts))]).sort((a, b) => b[2] - a[2] || a[1] - b[1]).map(a => a[0]);   // newest first
   const any = inc.length || HN_CPK.some(k => R.cp(k).runs), go = HN.go ? hnGoFind(R) : null;
   let cards = inc.filter(x => !cp || hnIncCp(x) === cp).map(x => hnInc(x, !!go && go.x === x)).join('') + HN_CPK.filter(k => !cp || k === cp).map(k => hnQuiet(R, k)).join('');
-  const old = cp ? R.cp(cp).caught - R.cp(cp).listed : 0;
+  if((!cp || cp === 'person') && typeof hnPerson === 'function') cards += hnPerson(R, cp);
+  const old = cp && cp !== 'person' ? R.cp(cp).caught - R.cp(cp).listed : 0;   // person writes its own note
   if(old > 0) cards += '<div class=hidnote>' + esc(TV({msg: hnPl(old, '{n} older catch, not listed', '{n} older catches, not listed'), vars: {n: old}})) + '</div>';
   if(!any) cards = '<div class=hidnote>' + esc(T('No gate records yet — running scripts/check.sh adds them')) + '</div>';
   else if(!cards) cards = '<div class=hidnote>' + esc(T('Nothing recorded at this checkpoint')) + '</div>';
@@ -465,9 +469,9 @@ function hnHtml(){
 }
 const HN_READ = [['Caught (red→green)', 'a gate failed and a later run of the same gate passed: a defect found and fixed before it shipped'],
   ['Held', 'of those fixes, the ones whose gate still passes in later runs'],
-  ['Failed again later', 'the same check step failed again in a later run; a different cause on the same step also counts'],
-  ['Reverted', 'the fix commit was reverted later, so the catch did not stick'],
-  ['What is guarding', 'where each catch happened: hooks before an edit, check --fast right after, check --full before a commit; click one to show only its cards'],
+  ['Broke again', 'the same check step failed again in a later run, or the fix commit was reverted; the card says which'],
+  ['Found by a person first', 'ended runs of a bug-fix pipeline: a person reported the defect before any gate caught it'],
+  ['What is guarding', 'where each catch happened: hooks before an edit, check --fast right after, check --full before a commit, or a person; click one to show only its cards'],
   ['Incident cards', 'one card per catch, newest first: red run → fix commits → green run → held or reverted']];
 function hnReadHtml(){
   return '<details class="hnmore hnread" data-hnmore=read' + (HN.fold.read ? ' open' : '') + '><summary><div class=brh2><b>' + esc(T('How to read this')) + '</b></div></summary><ul class=hnrdl>'

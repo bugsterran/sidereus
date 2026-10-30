@@ -91,10 +91,22 @@ def _demo_harness(a, path):
             "skills": [{"name": "release-notes", "scope": "user", "plug": "", "on": True, "n": 14, "last": t, "open": "",
                         "pipes": [{"pipe": "release", "stage": "노트"}]}],
             "counts": {"skill": 2, "cmd": 1, "mcp": 2}, "evidence": _demo_evidence(a)}
-    body["report"] = harness_trail.report(body["evidence"], "", git=False)
+    rep = harness_trail.report(body["evidence"], "", git=False)
+    p = _demo_person(a)
+    body["report"] = dict(rep, counts=dict(rep["counts"], person=p["runs"]), person=p)
     body["guards"] = harness_flow.guards("", runs=_demo_flow_runs(a))
     body["runtime"] = sec_runtime.shape(_demo_runtime(a), a, root="/Users/demo/src/sidereus")   # fake checkout: the real install path stays off demo screens
     return 200, harness_verdict.verdict(body, 30)
+
+
+def _demo_person(a):
+    """Invented harness_person.person() result (built here: demo may not import a feature module): two sidereus-bugfix
+    runs and one quick-fix run — newest with 2 commits and a test, quick-fix without a test, the oldest with one."""
+    card = lambda n, t0, end, cm, ts: {"name": n, "t0": a - t0 * H, "end": a - end * H, "commits": cm, "tests": ts}
+    return {"pipes": ["quick-fix", "sidereus-bugfix"], "runs": 3, "git": True,
+            "cards": [card("sidereus-bugfix", 6, 5, ["9f3c2a1b7d4e", "5e8d0c4a2b19"], ["tests/test_timeline_gap.py"]),
+                      card("quick-fix", 26, 25.5, ["c71b9e2f0a63"], []),
+                      card("sidereus-bugfix", 50, 49, ["2a4f6e8b1c03"], ["tests/test_quota_reset.py"])]}
 
 
 def _demo_runtime(a):

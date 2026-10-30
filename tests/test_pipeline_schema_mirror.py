@@ -128,5 +128,28 @@ class SchemaMirror(unittest.TestCase):
             self.assertEqual(je, [], n)
 
 
+class CatchKey(unittest.TestCase):
+    """`catch` is Python-only (like `readonly`): the runner ignores it; only "person" is valid (R1)."""
+    def test_catch_values(self):
+        for v, ok in (("person", True), ("gate", False), (True, False), (None, False)):
+            P = copy.deepcopy(BASE)
+            P["catch"] = v
+            self.assertEqual('catch: "person"' not in PS.validate(P, "x"), ok, v)
+        self.assertNotIn('catch: "person"', PS.validate(copy.deepcopy(BASE), "x"))
+
+    def test_repo_bugfix_pipelines_marked(self):
+        for n in ("sidereus-bugfix", "quick-fix"):
+            with open(os.path.join(ROOT, ".claude", "pipelines", n + ".json"), encoding="utf-8") as f:
+                self.assertEqual(json.load(f).get("catch"), "person", n)
+        std = sidereus("pipeline_std").std_drafts({}, [])
+        self.assertEqual([d["name"] for d in std if d["P"].get("catch") == "person"], ["bugfix"])
+
+    def test_canvas_save_keeps_catch(self):
+        PL = sidereus("pipeline")
+        P = copy.deepcopy(BASE)
+        P["catch"] = "person"
+        new = PL._replace(P, {"stages": [{"title": "설계", "agent": "Explore"}]})
+        self.assertEqual(new.get("catch"), "person")
+
 if __name__ == "__main__":
     unittest.main()

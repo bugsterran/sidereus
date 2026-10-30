@@ -122,6 +122,9 @@ def std_drafts(R, rules, tasks=None):
             if fail:
                 s["onFail"] = {"goto": fail[0], "max": fail[1]}
             st.append(s)
-        P = {"v": 1, "name": key, "title": title, "rules": "\n".join(rules), "defaults": {"model": "inherit", "retry": 0}, "stages": st}
+        P = {"v": 1, "name": key, "title": title, "rules": "\n".join(rules)}
+        if key == "bugfix":
+            P["catch"] = "person"   # a person found the defect: Harness «Found by a person first» counts its runs
+        P.update(defaults={"model": "inherit", "retry": 0}, stages=st)
         out.append({"name": key, "title": title, "src": src, "chain": chain, "gp": gp, "P": P})
     return out

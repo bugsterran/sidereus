@@ -3,7 +3,7 @@
   "title": "Harness map",
   "default_on_public": false,
   "deps": ["pipeline"],
-  "modules": ["harness", "harness_plat"],
+  "modules": ["harness", "harness_person", "harness_plat"],
   "routes": ["/api/harness", "/api/harness/file"],
   "threads": [],
   "state_keys": [],

@@ -313,3 +313,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: pointerdown/click/keydown listeners in capture phase on `.plnd [data-plevf]` call `stopPropagation` (same as 48b `.plpass`), then `plGoHarness("mode|ts")`.
 - ⚠Only 48d passes `link`; 74c timeline and 48k mode panel pass none, so their HTML stays byte-identical. Harness off → no link attributes.
 - ⚠Leaving «Pipelines» saves `#feed` scrollTop in `PLS.pipeTop`; returning restores it in `requestAnimationFrame` after the repaint (the rebuild resets it to 0).
+
+## Harness report «Found by a person first» joins a cached report (`harness_plat._results` · `harness_person`)
+- Cause: `harness_trail.report()` returns the dict it keeps in `_TR_CACHE`; writing `counts.person` into it changes every later cache hit.
+- Fix: `_results` (and the demo) build `dict(rep, counts=dict(rep["counts"], person=n), person=p)` — a copy, never an in-place update.
+- ⚠Only `"catch": "person"` files count (validate rejects any other value); every ledger row is an ended run.
+- ⚠Commit window = [t0, min(end + 900 s, next ledger row t0)]: without the next-run cap a following run's commits land on this card.
+- ⚠Git is hash + commit time + `--name-only`; names outside `tests/` are dropped while parsing, so they never reach the page.

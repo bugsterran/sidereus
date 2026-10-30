@@ -9,7 +9,7 @@ import os
 import re
 import time
 
-from sidereus import arch_verify, ctxsrc, harness, harness_evidence, harness_flow, harness_trail, harness_verdict, sec_runtime, toolinv
+from sidereus import arch_verify, ctxsrc, harness, harness_evidence, harness_flow, harness_person, harness_trail, harness_verdict, sec_runtime, toolinv
 from sidereus.config import DATA_DIR
 from sidereus.ext_store import PLAT_MODS
 from sidereus.ident import _real_home
@@ -109,7 +109,9 @@ def _results(proj):
     """«Results» keys: one evidence read feeds the list (newest 30) and the report (every row read); runtime = the
     stored patch card (sec_runtime, file read only — the viewer never looks versions up)."""
     ev, _floor = harness_evidence.scan(proj)
-    return {"evidence": ev[:30], "report": harness_trail.report(ev, proj), "guards": harness_flow.guards(proj),
+    rep, p = harness_trail.report(ev, proj), harness_person.person(proj)
+    rep = dict(rep, counts=dict(rep["counts"], person=p["runs"]), person=p)   # ⚠copy: report() returns its cached dict
+    return {"evidence": ev[:30], "report": rep, "guards": harness_flow.guards(proj),
             "runtime": sec_runtime.view(arch_verify.ARCH_DIR, time.time())}
 
 

@@ -172,13 +172,39 @@ class HarnessPlatTest(unittest.TestCase):
                 del calls[:]
                 code, b = HP.harness_plat(plat, self.proj)
                 self.assertEqual(code, 200, b)
-                self.assertEqual((b["report"], b["guards"]), ({"counts": {}}, {"runs": 0}))
+                self.assertEqual((b["report"]["counts"], b["guards"]), ({"person": 0}, {"runs": 0}))   # R1: no catch=person file
+                self.assertEqual(b["report"]["person"], {"pipes": [], "runs": 0, "cards": [], "git": False})
                 self.assertEqual((len(calls), len(b["evidence"])), (1, 30))
                 self.assertEqual((reports[-1], guards[-1]), ((500, self.proj), self.proj))
                 self.assertNotIn("flow", b)
                 self.assertNotIn("trail", b)
         finally:
             H.harness, HP.harness_evidence.scan, HP.harness_trail.trail, HP.harness_trail.report, HP.harness_flow.guards = saved
+
+    def test_person_joins_report_copy(self):
+        """R1: counts.person + person ride the report; the cached report dict is never mutated."""
+        saved = (H.harness, HP.harness_trail.report, HP.harness_person.person)
+        cached = {"counts": {"caught": 2}, "incidents": []}
+        H.harness = lambda proj, days: (200, {"ok": True, "events": []})
+        HP.harness_trail.report = lambda rows, repo, git=True: cached
+        HP.harness_person.person = lambda proj, git=True: {"pipes": ["quick-fix"], "runs": 3, "cards": [], "git": True}
+        try:
+            for plat in ("cc", "cx"):
+                rep = self._body(plat)["report"]
+                self.assertEqual(rep["counts"], {"caught": 2, "person": 3})
+                self.assertEqual(rep["person"]["runs"], 3)
+            self.assertEqual(cached, {"counts": {"caught": 2}, "incidents": []})
+        finally:
+            H.harness, HP.harness_trail.report, HP.harness_person.person = saved
+
+    def test_demo_carries_person_cards(self):
+        """R1/R4: the demo report has counts.person and cards with and without tests."""
+        from sidereus import demo
+        rep = demo._demo_harness(1e9, "/api/harness")[1]["report"]
+        p = rep["person"]
+        self.assertEqual((rep["counts"]["person"], p["runs"], len(p["cards"])), (3, 3, 3))
+        self.assertEqual([len(c["commits"]) for c in p["cards"]], [2, 1, 1])
+        self.assertEqual([c["tests"] for c in p["cards"]], [["tests/test_timeline_gap.py"], [], ["tests/test_quota_reset.py"]])
 
     def test_runtime_card_every_platform(self):
         """runtime = sec_runtime.view of arch/deps-last.json, read from the patched ARCH_DIR only (none + cmd when absent)."""

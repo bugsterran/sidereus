@@ -144,6 +144,10 @@ html[data-theme=light] .hnvdr.hnvd-check,html[data-theme=light] .hnvdc.hnvd-chec
 .hnrepn-held{border-top-color:var(--nx-ok,#71c269)}
 .hnrepn-reverted{border-top-color:var(--nx-info,#5899f3)}
 .hnrepn-again{border-top-color:var(--nx-err,#f45460)}
+.hnrepn-person{border-top-color:#b58cf0}
+.hnrun.hnperson{border-left-color:#b58cf0}
+.hnpss{flex-wrap:wrap;min-width:0}
+.hnpss .hnrc{overflow-wrap:anywhere;min-width:0}
 .hntip{display:inline-block;width:14px;height:14px;line-height:12px;text-align:center;font-size:10px;font-weight:700;border-radius:50%;border:1px solid var(--nx-rule,#232c38);color:var(--nx-t2,#909298);cursor:help}
 .hntip:focus-visible{outline:1px solid var(--nx-info,#5899f3)}
 .hnrepk{font-size:11px}
