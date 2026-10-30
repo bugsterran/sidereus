@@ -141,7 +141,7 @@ Object.assign(I18N.ko, {
   'Applies to sessions started after the change': '새로 시작하는 세션부터 적용됩니다',
   'Change how sessions apply pipelines? Applies to sessions started after the change.': '파이프라인 적용 방식을 바꿀까요? 새로 시작하는 세션부터 적용됩니다.',
   'Could not change it': '바꾸지 못했습니다',
-  'Harness': '하네스',
+  'Harness': '하네스', 'Harness report': '하네스 리포트',   // view title (48 plViewSeg / plHtml); old key kept for the legacy i18n fixture
   'What the checks caught': '검사가 잡아낸 것',
   // 48b-pipeline-run.js
   'Mode|how': '방식',

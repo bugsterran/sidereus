@@ -1,7 +1,7 @@
 {
   "id": "harness",
-  "title": "Harness map",
-  "default_on_public": false,
+  "title": "Harness report",
+  "default_on_public": true,
   "deps": ["pipeline"],
   "modules": ["harness", "harness_person", "harness_plat"],
   "routes": ["/api/harness", "/api/harness/file"],

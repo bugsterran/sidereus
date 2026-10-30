@@ -48,7 +48,7 @@ class EvLineLink(unittest.TestCase):
         self.assertEqual(body(plain), body(linked))
         self.assertEqual(cls(plain), cls(linked))
         self.assertEqual(cls(linked), "plev plevng")
-        self.assertIn(' data-plevf="fast|900" tabindex=0 role=link aria-label="Open this failure in Harness"', linked)
+        self.assertIn(' data-plevf="fast|900" tabindex=0 role=link aria-label="Open this failure in Harness report"', linked)
 
     def test_r3_timeline_unlinked(self):
         # 74c timeline and 48k mode panel never pass a link: three-argument calls only

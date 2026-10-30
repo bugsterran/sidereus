@@ -16,7 +16,7 @@ The user's install keeps every feature on; a fresh public install starts core-on
 ## Public first run: headline features
 
 ★2026-10-01 requirement: three headline features up front; everything else is secondary.
-- On by default (`default_on_public: true`): **session control** (core · attention) · **quota pace + limit block** (core · saver) · **structure** (`struct`, AI-written code map) · **pipeline** (per-stage agent/model, run, live stage).
+- On by default (`default_on_public: true`): **session control** (core · attention) · **quota pace + limit block** (core · saver) · **structure** (`struct`, AI-written code map) · **pipeline** (per-stage agent/model, run, live stage) · **harness** («Harness report» view beside Pipelines; a saved `"harness": false` keeps it off).
 - ★2026-10-01 requirement: pipeline is a headline feature, not secondary.
 - First screen = Pipelines in Watch (no saved tab; Timeline only when `pipeline` is off): «Working now» list of live sessions + subagents (48j) beside the canvas | result pane | «Running N» card (48k). See FILEMAP.
 - Timeline is the evidence view; it carries open pipeline runs: per-session stage strip + gate result line + stage bands from `SESS[].plrun` (`web/js/74c-timeline-plrun.js`, `web/css/21-timeline-plrun.css`); click opens the Pipeline view.

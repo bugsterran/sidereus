@@ -50,8 +50,8 @@ function plEvLine(rows, L, commits, link){
   // The short hash alone is unexplained: its own span says which commit and where it came from.
   const ct = h7 ? esc(TV({msg: 'Commit made in this stage: {h}', vars: {h: cm.h}})) : '';
   const cmh = h7 ? (body ? ' · ' : '') + '<span class=plevc title="' + ct + '" aria-label="' + ct + '">' + esc(T('commit ') + h7) + '</span>' : '';
-  const lk = link && r && r.rc !== 0 ? ' data-plevf="' + esc(String(r.mode || '') + '|' + r.ts) + '" tabindex=0 role=link aria-label="' + esc(T('Open this failure in Harness')) + '"' : '';
-  const ttl = lk ? T('Open this failure in Harness') + '\n' + (tip.join('\n') || body) : tip.join('\n') || body;
+  const lk = link && r && r.rc !== 0 ? ' data-plevf="' + esc(String(r.mode || '') + '|' + r.ts) + '" tabindex=0 role=link aria-label="' + esc(T('Open this failure in Harness report')) + '"' : '';
+  const ttl = lk ? T('Open this failure in Harness report') + '\n' + (tip.join('\n') || body) : tip.join('\n') || body;
   return '<div class="plev' + (!r || r.rc === 0 ? '' : ' plevng') + '"' + lk + ' title="' + esc(ttl) + '">' + esc(body) + cmh + '</div>';
 }
 // ⚠Capture phase + stopPropagation: the line sits inside a draggable .plnd, whose pointerdown/click would start a drag or select the stage.

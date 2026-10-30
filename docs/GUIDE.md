@@ -64,8 +64,8 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - Workflow-tool runs appear as a read-only «Workflow» group.
 - A pipeline defined in another project appears only while it runs here: a chip «<name> · from <project>» («Sidereus built-in» for `arch-map`) at the end of the head row opens its read-only canvas.
 
-### Harness: did the work come out right?
-«Harness» in the same tab.
+### Harness report: did the work come out right?
+«Harness report» in the same tab (on by default; turn it off in «Preferences» › «Features»).
 
 ![Harness gate report: caught · held · reverted, «What is guarding», incident cards](images/harness-report-en.png)
 
@@ -79,7 +79,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - «Next step» (folded, under a flagged config row, a «Re-fixed» / «Reverted» / «Unverified (uncommitted)» card or a «Required gate skipped» chip): «Meaning», «Why it matters», «Who acts» (yourself · hand to an AI session · owner decision) and «Next step», one line each, from `docs/verdicts/<id>.md`. «Yourself» names one command or setting (e.g. `/hooks`); «Owner decision» adds «Safe to ignore when»; «Hand to an AI session» has «Draft instruction»: preview the text (verdict id, file, counts — no conversation content; names a matching pipeline such as `sidereus-bugfix` when the project has it), pick a session, «Confirm — send» relays it through the mailbox. Sidereus fixes nothing itself.
 - «How to read this» (folded) explains the four numbers, «What is guarding» and the cards in one line each; «Gate runs» (folded) holds the raw run rows.
 - «Guard self-check» (folded) replays the Sidereus repo's fixed replay set: per guard the case it must catch and the control it must let through, each row «situation fed · expected · actual · PASS/FAIL», with the real counts of the picked project beside it («Blocked n» · «caught n» · «held n · reverted n»). Sidereus never runs it — run `python3 scripts/harness_selfcheck.py`; until then it says «Not run yet», and results from another commit carry «different commit».
-- A lit stage card names its newest gate run: «gate PASS · N tests · screen a/b» or a red «gate FAIL»; click «gate FAIL» to open Harness on the incident card for that run (not fixed yet = one line saying so; «Pipelines» brings back the same pipeline and scroll). A stage with no gate gets an amber «Unverified» pill; «Gates n/m» counts machine-checked stages. Design and review are expected to stay unverified.
+- A lit stage card names its newest gate run: «gate PASS · N tests · screen a/b» or a red «gate FAIL»; click «gate FAIL» to open the Harness report on the incident card for that run (not fixed yet = one line saying so; «Pipelines» brings back the same pipeline and scroll). A stage with no gate gets an amber «Unverified» pill; «Gates n/m» counts machine-checked stages. Design and review are expected to stay unverified.
 - «Guards» (stage panel, nothing selected): gates required before `git commit` and «Max loop-backs» ([HOOKS.md](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
 - «Evaluation»: per-stage seeded-defect catch rate, red check and stability ([dev/PIPELINE.md](dev/PIPELINE.md#evaluation-seeds-red-check-flaky-gates)). «Suggestions»: «Fix it myself» fills the editor, «Ask AI» previews a request.
   - Terms: «Catch» = share of deliberately planted defects (seeds) the stage gate caught · «Red check» = the gate was run once on a deliberately broken copy and failed, proof it can catch a defect · «Holdout» = planted defects kept out of tuning, used only to check the score is not overfit. Hover a header for the same text.

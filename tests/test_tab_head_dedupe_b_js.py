@@ -24,7 +24,7 @@ class TabHeadDedupeB(unittest.TestCase):
 
     def test_pipeline_keeps_tooling_and_caption(self):
         s = src("web/js/48-pipeline.js")
-        self.assertIn("'<b>' + esc(T('Harness')) + '</b>'", s)
+        self.assertIn("'<b>' + esc(T('Harness report')) + '</b>'", s)
         self.assertIn("T('Agent and model per stage')", s)
 
     def test_structure_head_keeps_controls(self):

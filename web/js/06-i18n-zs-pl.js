@@ -22,7 +22,7 @@ Object.assign(I18N.ko, {
   'Defined in {proj} — read-only here': '{proj}에 정의됨 — 여기서는 보기 전용',
   'Sent back here {n} times': '이 단계로 {n}번 되돌아옴', 'Pass {k} of this stage — show an earlier pass': '이 단계의 {k}번째 회차 — 이전 회차 보기',   // ↺ marks (48d · 48b · 48k)
   'Commit made in this stage: {h}': '이 단계에서 만든 커밋: {h}',   // 48f plEvLine
-  'Open this failure in Harness': '이 실패를 하네스에서 열기',   // 48f plEvLine link
+  'Open this failure in Harness report': '이 실패를 하네스 리포트에서 열기',   // 48f plEvLine link
   'No gate': '게이트 없음', 'No check command runs after this stage — nothing machine-checks it': '이 단계 뒤에 실행되는 검증 명령이 없습니다 — 기계가 채점하지 않습니다',   // 48d plNodeHtml, pairs with «Gate»
   'Session model': '세션 모델 따름', "No model set; the stage uses the session's model": '모델을 지정하지 않음 — 이 단계는 세션의 모델을 씁니다',   // 48d plModelLine
   'No gate command — nothing machine-checks this stage': '게이트 명령 없음 — 이 단계는 기계가 채점하지 않습니다',
