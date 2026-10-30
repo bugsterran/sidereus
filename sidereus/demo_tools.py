@@ -1,4 +1,5 @@
 """Demo «Tools» / «Harness» / «Preferences» payloads (split out of demo.py) — invented rows, ⚠never the real ~/.claude."""
+import hashlib
 import json
 import os
 import shlex
@@ -59,10 +60,11 @@ def _demo_tools(a, path, tid):
     return 200, {"ok": True, "id": r["id"], "kind": r["kind"], "text": text, "sha": r["sha"], "mtime": a - 86400}
 
 
-def _hk(scope, cmd, eff, n, matcher="", timeout=None, miss=0, ch="", src="settings.json", open_="", nomatch=0, cost=None):
+def _hk(scope, cmd, eff, n, matcher="", timeout=None, miss=0, ch="", src="settings.json", open_="", nomatch=0, cost=None, plug=""):
+    rm = "" if plug else "r" + hashlib.sha1(("%s\0%s\0%s" % (scope, cmd, matcher)).encode("utf-8")).hexdigest()[:16]
     return {"open": open_, "scope": scope, "src": src, "matcher": matcher, "cmd": cmd, "timeout": timeout, "eff": eff,
-            "desc": "", "n": n, "last": 0, "quiet": int(not n), "plug": "", "miss": miss, "ch": ch or cmd[:8], "nomatch": nomatch,
-            "cost": cost}   # hook-run counts {runs, avg, blk, out, k} or None (= not measured yet)
+            "desc": "", "n": n, "last": 0, "quiet": int(not n), "plug": plug, "miss": miss, "ch": ch or cmd[:8], "nomatch": nomatch,
+            "cost": cost, "rm": rm}   # hook-run counts {runs, avg, blk, out, k} or None (= not measured yet)
 
 
 def _demo_harness(a, path):
@@ -75,7 +77,8 @@ def _demo_harness(a, path):
                                            _hk("user", "warm-cache.sh", "log", None, miss=1)]},
           {"ev": "UserPromptSubmit", "hooks": [_hk("user", "prompt-tag.py", "inject", 88)]},
           {"ev": "PreToolUse", "hooks": [_hk("user", "guard.py", "block", 120, "Bash"), _hk("project", "lint-gate.sh", "block", None, "Edit|Write", nomatch=1),
-                                         _hk("project", "guard.py", "block", None, "Bash", src=".claude/settings.json")]},
+                                         _hk("project", "guard.py", "block", None, "Bash", src=".claude/settings.json"),
+                                         _hk("plugin", "browser-guard.mjs", "log", 7, "mcp__browser__.*", src="hooks.json", plug="browser")]},
           {"ev": "PostToolUse", "hooks": [_hk("user", "audit-log.py", "log", 300, cost={"runs": 60, "avg": 30, "blk": 0, "out": 0, "k": 1})]},
           {"ev": "Stop", "hooks": [_hk("user", "summarize.py", "inject", 12, timeout=90)]}]
     for e in ev:

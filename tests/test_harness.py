@@ -332,6 +332,21 @@ class HarnessTest(unittest.TestCase):
         self.assertEqual(H.harness("/elsewhere", 30)[0], 400)
         self.assertEqual(H.harness(self.proj, "x")[0], 400)
 
+    def test_rm_ids_stable_unique_and_only_on_allowed_sources(self):
+        dup = {"type": "command", "command": "x.sh"}
+        cd = os.path.join(self.tmp, "claude")
+        _w(os.path.join(self.proj, ".claude", "settings.local.json"),
+           {"hooks": {"Stop": [{"hooks": [dup]}, {"hooks": [dup]}]}})
+        _w(os.path.join(cd, "settings.local.json"), {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "y.sh"}]}]}})
+        rows = [h for e in self._body()["events"] for h in e["hooks"]]
+        loc = [h["rm"] for h in rows if h["src"] == "project-local"]
+        self.assertEqual(len(loc), 2)
+        self.assertNotEqual(loc[0], loc[1])                       # k-th duplicate gets its own id
+        self.assertTrue(all(h["rm"].startswith("r") and len(h["rm"]) == 17 for h in rows if h["src"] in ("user", "project-local")))
+        self.assertEqual([h["rm"] for h in rows if h["src"] == "user-local"], [""])
+        self.assertEqual([h["rm"] for e in self._body()["events"] for h in e["hooks"]], [h["rm"] for h in rows])   # stable across calls
+        self.assertFalse(any(cd in h["rm"] or "x.sh" in h["rm"] for h in rows))
+
 
 class WindowsArgv(unittest.TestCase):
     """POSIX shlex eats `\\`; on Windows hook commands keep their drive paths (simulated via os.name)."""

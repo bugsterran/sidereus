@@ -96,3 +96,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **«Request fix» line closes on evidence only** (`sidereus/pl_reqs.py` `_fix_commit` · `web/js/84l-structure-arch-checks.js` `archChkFixRecHtml`): an ack note («fixed») is the session's word, not proof.
   - ⇒ «fix commit seen <hash>» = oldest `git log --since` commit with ct > request `at`; «re-scan done — n issues left» = newer security-checks result, n = window title count.
   - ⚠Only a `[0-9a-f]{7,12}` hash reaches the page (fullmatch on server and page) — never commit subject/body. Hit cached for good, miss 30 s, 64 entries.
+- **Hook remove re-serialises `hooks`** (`sidereus/hook_remove.py`, `web/js/47i-harness-hookrm.js`): removing one entry rewrites the whole `hooks` value, so its indentation can change beyond the removed lines.
+  - ⇒ the diff preview shows the real bytes that will be written, reformatting included; every other top-level key stays byte-identical.
+  - ⇒ `rm` is opaque and re-located by content (event · matcher · command) on apply, and the base sha from the preview must match (409 → preview again).
+  - ⚠Never locate the entry by index alone: an edit between preview and apply would remove a different hook. Plugin hook files are never written.
