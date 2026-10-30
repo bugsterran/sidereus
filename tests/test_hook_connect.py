@@ -249,6 +249,15 @@ class HookConnect(unittest.TestCase):
         self.assertTrue(new.startswith('{\n    "version": 1,\n    "x": "\u00e9",  "hooks": {'))
         self.assertTrue(new.endswith(', "z": [1,2]\n}\n'))
 
+    def test_crlf_file_keeps_crlf(self):
+        self._put("cursor", '{\r\n  "version": 1,\r\n  "hooks": {"stop": [{"command": "say done"}]}\r\n}\r\n')
+        self._apply("cursor")
+        new = self._raw("cursor")
+        self.assertEqual(new.count(b"\n"), new.count(b"\r\n"))
+        self.assertEqual(json.loads(new)["hooks"]["stop"][0], {"command": "say done"})
+        empty = HC._splice('{\r\n}\r\n', [("hooks", {"a": [1]})])[0]
+        self.assertEqual(empty.count("\n"), empty.count("\r\n"))
+
     def test_base_is_sha(self):
         raw = self._put("cursor", {"version": 1, "hooks": {}})
         code, dry = HC.connect({"plat": "cursor", "dry": True})
