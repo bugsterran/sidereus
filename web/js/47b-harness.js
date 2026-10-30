@@ -118,7 +118,7 @@ function hnChip(h, showEv){
     // nsrc otel = every firing from Claude Code telemetry since nfrom, so 0 is a real 0.
     + '<i class="hncr' + (h.quiet ? ' hncrg' : '') + '"' + (h.n == null && !h.quiet ? '' : ' title="' + esc(h.quiet ? T('Runs without output are not recorded, so the count is unknown')
       : (h.nsrc === 'otel' ? TV({msg: 'All runs since {d} (Claude Code telemetry)', vars: {d: String(h.nfrom || '')}}) : T('Counts only runs that printed output')) + (h.last ? ' · ' + stamp(h.last) : '')) + '"') + '>'
-      + (h.quiet ? '?' : h.nsrc === 'otel' && !h.n ? '0' + T('×') : hnCnt(h.n)) + '</i></span>' + hnVdRow(h) + (typeof hnHookHint === 'function' ? hnHookHint(h) : '') + '</div>';
+      + (h.quiet ? '?' : h.nsrc === 'otel' && !h.n ? '0' + T('×') : hnCnt(h.n)) + '</i>' + (typeof hnRmBtn === 'function' ? hnRmBtn(h) : '') + '</span>' + hnVdRow(h) + (typeof hnHookHint === 'function' ? hnHookHint(h) : '') + '</div>';
 }
 function hnLaneHtml(events){
   return '<div class=hnl>' + hnLanes(events).map((c, i) => (i ? '<span class=hna aria-hidden=true>→</span>' : '')

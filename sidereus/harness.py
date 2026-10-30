@@ -8,6 +8,7 @@ skills with their call counts.
   Outside those roots the file is only stat'ed (exists → «ext»), never opened.
 GET /api/harness/file opens one card's file on click by an opaque `open` ref, re-derived from config server-side.
 """
+import hashlib
 import json
 import os
 import re
@@ -63,6 +64,19 @@ def _src(it):
     if it["scope"] == "plugin":
         return "plugin"
     return it["scope"] + ("-local" if os.path.basename(it["file"]) == "settings.local.json" else "")
+
+
+def rm_key(path, ev, matcher, hook, k):
+    """R1: opaque id of one hook entry (k = earlier identical entries in the file); hook_remove recomputes it, no index or path goes out."""
+    s = "\0".join((os.path.realpath(path), ev, matcher, json.dumps(hook, sort_keys=True), str(k)))
+    return "r" + hashlib.sha1(s.encode("utf-8")).hexdigest()[:16]
+
+
+def _rm_ok(it, src):
+    """Sources «Remove» may edit: the primary user settings.json and project settings (plugin / user-local never)."""
+    if src == "user":
+        return os.path.realpath(it["file"]) == os.path.realpath(os.path.join(ctxsrc.CLAUDE_DIR, "settings.json"))
+    return src in ("project", "project-local")
 
 
 def _argv(cmd):
@@ -282,9 +296,11 @@ def _hook_rows(items, proj, uses, paths=None, since=""):
         ev = str(it["key"][1]) if len(it["key"]) > 1 else ""
         m = g.get("matcher") if isinstance(g.get("matcher"), str) else ""
         mats.setdefault(ev, []).extend(m for h in (g.get("hooks") if isinstance(g.get("hooks"), list) else []) if isinstance(h, dict))
+    dup = {}   # (file, ev, matcher, canonical hook) -> entries seen, the k of rm_key
     for it in items:
         g = it.get("entry") if isinstance(it.get("entry"), dict) else {}
         ev = str(it["key"][1]) if len(it["key"]) > 1 else ""
+        can_rm = _rm_ok(it, _src(it))
         plug = os.path.dirname(os.path.dirname(it["file"])) if it["scope"] == "plugin" else ""
         pn = os.path.basename(plug)
         if re.match(r"^\d", pn):   # cache/<market>/<plugin>/<version>/
@@ -293,6 +309,9 @@ def _hook_rows(items, proj, uses, paths=None, since=""):
         hs = [h for h in (g.get("hooks") if isinstance(g.get("hooks"), list) else []) if isinstance(h, dict)]
         cs = [h.get("command") if h.get("type", "command") == "command" else None for h in hs]
         for h, c in zip(hs, cs):
+            dk = (os.path.realpath(it["file"]), ev, m, json.dumps(h, sort_keys=True))
+            k, dup[dk] = dup.get(dk, 0), dup.get(dk, 0) + 1
+            rm = rm_key(it["file"], ev, m, h, k) if can_rm else ""
             # ⚠hook_success is written only for runs that printed something: a silent hook has no record at all, and
             # the plain `hook:<Event>` key mixes every group's records. So count per command hash; 0 = unknown
             # (n None, `quiet`), never the group/event total.
@@ -325,7 +344,7 @@ def _hook_rows(items, proj, uses, paths=None, since=""):
                                           "timeout": to if isinstance(to, (int, float)) and not isinstance(to, bool) else None,
                                           "eff": eff, "desc": desc, "n": n, "last": last, "quiet": quiet, "nsrc": nsrc, "nfrom": nfrom, "ndays": _days_since(nfrom), "plug": pn[:HN_CMD_MAX], "cost": cost,
                                           "miss": int(bool(sp) and os.path.isabs(sp) and not os.path.exists(sp)),
-                                          "ch": _dup_key(h, c),
+                                          "ch": _dup_key(h, c), "rm": rm,
                                           "nomatch": _nomatch(ev, m, tools)})
     order = list(EVENTS) + sorted(e for e in by if e not in EVENTS)
     return [{"ev": e, "hooks": by.get(e, [])} for e in order if e in EVENTS or by.get(e)]

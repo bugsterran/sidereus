@@ -243,3 +243,16 @@ html[data-theme=light] .hnskst{color:#8a5a12;border-color:#8a5a12}
 @media (max-width:1439px){.hnske{flex-basis:100%;align-self:auto}.hnskh{max-width:none}}
 @media (max-width:1100px){.hnskr{grid-template-columns:minmax(0,1fr) 96px 96px 44px}}
 @media (max-width:960px){.hnskr{grid-template-columns:1fr 1fr 44px}.hnskr>.hnsks{grid-column:1/-1}.hnskh>span:first-child{grid-column:1/-1}}
+/* 47i «Remove» / «How to turn off» on hook chips + its fixed panel (never in the lane flow, so nothing shifts) */
+.hnrmb{font-size:10px;line-height:1.4;padding:0 5px;border-radius:3px;border:1px solid #3a4556;background:transparent;color:#9aa6b8;cursor:pointer;white-space:nowrap;flex:0 0 auto}
+.hnrmb:hover,.hnrmb:focus-visible{color:#c9d2df;border-color:#5b6b82}
+.hnrmdlg{position:fixed;z-index:240;top:12vh;left:50%;transform:translateX(-50%);width:min(760px,calc(100vw - 32px));max-height:76vh;overflow:auto;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid #2a3442;border-radius:8px;background:#11161e;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:12px}
+.hnrmh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hnrmw{display:flex;gap:8px;min-width:0}
+.hnrmw>span{flex:0 0 72px;color:var(--nx-t2,#909298)}
+.hnrmw>code,.hnrmc{min-width:0;overflow-wrap:anywhere;font-family:var(--mono,monospace)}
+.hnrmd2{min-width:0;overflow:auto;max-height:44vh}
+.hnrmb2{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.hnrmm{color:var(--nx-t2,#9aa3b2);overflow-wrap:anywhere}
+.hnrmm.err{color:var(--nx-warn,#e0a53d)}
+html[data-theme=light] .hnrmdlg{background:var(--nx-panel,#fff);border-color:var(--nx-rule)}

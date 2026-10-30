@@ -10,6 +10,7 @@
   "commit_link -> git",
   "file_owner -> git",
   "hook_diag -> harness",
+  "hook_remove -> hook_connect",
   "state -> failures",
   "state -> git",
   "state -> review",
