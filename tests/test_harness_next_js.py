@@ -149,6 +149,7 @@ console.log(JSON.stringify(HN.go));
         self.assertIn("min-width:0", rule(".hnnx"))
         self.assertIn("display:flex", rule(".hnnxdr>label"))              # an inline label let the select overflow
         self.assertIn("max-width:100%", rule(".hnnxdr select"))
+        self.assertIn("flex:0 1 32em", rule(".hnnxdr select"))            # no grow: wide cards kept a full-width select
         self.assertIn("vertical-align:top", rule(".hnrt tr:has(.hnnx[open])>td"))
 
     def test_47b_hooks(self):
