@@ -6,6 +6,7 @@
   check = never_ran (OTel firing counts cover >= VD_FIRE_MIN_D days and the hook ran 0 times) ·
           idle (tool-event matcher that matched no tool used in the window, harness `nomatch`) · dup (same command twice on one event+matcher)
           · slow_block (long timeout on an event the session waits for) · rule_big (rule file over VD_RULE_BYTES)
+          · slow (OTel avg per firing >= VD_SLOW_MS) · no_effect (>= VD_QUIET_RUNS firings, none blocked or printed)
 ⚠Metadata only: `vp` (verdict params) carries names, matcher, numbers, scope labels — never script text, env or paths.
 """
 VD_BLOCK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "Stop", "SubagentStop", "PreCompact")
@@ -13,6 +14,10 @@ VD_BLOCK_TIMEOUT = 30        # seconds
 VD_RULE_BYTES = 40000        # ★Claude Code warns on instruction files over 40k chars
 VD_BUILTIN_AGENTS = ("general-purpose", "Explore", "Plan")
 VD_FIRE_MIN_D = 3           # fewer covered days than this cannot tell an unused hook from a quiet stretch
+# ⚠Starting values, to be calibrated against real hook-run data: avg ms per firing (all matching hooks combined)
+# and firings with no block and no output before a hook is called «no visible effect».
+VD_SLOW_MS = 1000
+VD_QUIET_RUNS = 50
 
 
 def _hook_vd(ev, h, seen, days, partial, lane=""):
@@ -25,6 +30,14 @@ def _hook_vd(ev, h, seen, days, partial, lane=""):
     to = h.get("timeout")
     if (lane or ev) in VD_BLOCK_EVENTS and isinstance(to, (int, float)) and to > VD_BLOCK_TIMEOUT:
         return "check", "slow_block", {"ev": ev, "timeout": to}
+    c = h.get("cost") if isinstance(h.get("cost"), dict) else None
+    if c and not partial:
+        # R1/R2: time is per firing, shared by the k hooks that ran in it.
+        if isinstance(c.get("avg"), int) and c["avg"] >= VD_SLOW_MS:
+            return "check", "slow", {"avg": c["avg"], "runs": c.get("runs"), "k": c.get("k"), "min": VD_SLOW_MS}
+        # R3: None blk/out (some firings unmeasured) never reads as clean.
+        if (c.get("runs") or 0) >= VD_QUIET_RUNS and c.get("blk") == 0 and c.get("out") == 0:
+            return "check", "no_effect", {"runs": c["runs"], "min": VD_QUIET_RUNS}
     # ⚠Transcript records miss silent hooks, so only OTel counts (`nsrc` otel, every firing) can prove 0 runs.
     if h.get("nsrc") == "otel" and h.get("n") == 0 and (h.get("ndays") or 0) >= VD_FIRE_MIN_D and not partial:
         return "check", "never_ran", {"days": h.get("ndays"), "matcher": m}

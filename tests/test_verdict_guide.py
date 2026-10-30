@@ -69,7 +69,7 @@ class TestShippedGuides(unittest.TestCase):
 
     def test_r1_emitted_ids_are_known(self):
         ids = _emitted()
-        for v in ("hook_missing", "mcp_fail", "ref_missing", "never_ran", "idle", "dup", "slow_block", "rule_big"):
+        for v in ("hook_missing", "mcp_fail", "ref_missing", "never_ran", "idle", "dup", "slow_block", "rule_big", "slow", "no_effect"):
             self.assertIn(v, ids)
         trail = _src("harness_trail")
         for st in INCIDENT:
@@ -98,7 +98,7 @@ class TestShippedGuides(unittest.TestCase):
     def test_r4_owner_guides_say_when_to_ignore(self):
         en = VG.load("en")
         owners = [k for k, g in en.items() if g["who"] == "owner"]
-        self.assertEqual(sorted(owners), ["idle", "never_ran", "reverted", "skipgate", "slow_block"])
+        self.assertEqual(sorted(owners), ["idle", "never_ran", "no_effect", "reverted", "skipgate", "slow", "slow_block"])
         for k in owners:
             self.assertTrue(en[k]["ignore"], k)
 

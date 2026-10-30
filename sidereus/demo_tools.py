@@ -59,9 +59,10 @@ def _demo_tools(a, path, tid):
     return 200, {"ok": True, "id": r["id"], "kind": r["kind"], "text": text, "sha": r["sha"], "mtime": a - 86400}
 
 
-def _hk(scope, cmd, eff, n, matcher="", timeout=None, miss=0, ch="", src="settings.json", open_="", nomatch=0):
+def _hk(scope, cmd, eff, n, matcher="", timeout=None, miss=0, ch="", src="settings.json", open_="", nomatch=0, cost=None):
     return {"open": open_, "scope": scope, "src": src, "matcher": matcher, "cmd": cmd, "timeout": timeout, "eff": eff,
-            "desc": "", "n": n, "last": 0, "quiet": int(not n), "plug": "", "miss": miss, "ch": ch or cmd[:8], "nomatch": nomatch}
+            "desc": "", "n": n, "last": 0, "quiet": int(not n), "plug": "", "miss": miss, "ch": ch or cmd[:8], "nomatch": nomatch,
+            "cost": cost}   # hook-run counts {runs, avg, blk, out, k} or None (= not measured yet)
 
 
 def _demo_harness(a, path):
@@ -70,11 +71,12 @@ def _demo_harness(a, path):
         return 404, {"ok": False, "msg": "File not found."}
     from sidereus import harness_flow, harness_trail, harness_verdict, sec_runtime
     t = int(a - 3 * H)
-    ev = [{"ev": "SessionStart", "hooks": [_hk("user", "load-context.py", "inject", 41), _hk("user", "warm-cache.sh", "log", None, miss=1)]},
+    ev = [{"ev": "SessionStart", "hooks": [_hk("user", "load-context.py", "inject", 41, cost={"runs": 220, "avg": 1450, "blk": 0, "out": 220, "k": 2}),
+                                           _hk("user", "warm-cache.sh", "log", None, miss=1)]},
           {"ev": "UserPromptSubmit", "hooks": [_hk("user", "prompt-tag.py", "inject", 88)]},
           {"ev": "PreToolUse", "hooks": [_hk("user", "guard.py", "block", 120, "Bash"), _hk("project", "lint-gate.sh", "block", None, "Edit|Write", nomatch=1),
                                          _hk("project", "guard.py", "block", None, "Bash", src=".claude/settings.json")]},
-          {"ev": "PostToolUse", "hooks": [_hk("user", "audit-log.py", "log", 300)]},
+          {"ev": "PostToolUse", "hooks": [_hk("user", "audit-log.py", "log", 300, cost={"runs": 60, "avg": 30, "blk": 0, "out": 0, "k": 1})]},
           {"ev": "Stop", "hooks": [_hk("user", "summarize.py", "inject", 12, timeout=90)]}]
     for e in ev:
         for h in e["hooks"]:

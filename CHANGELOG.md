@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Harness report: every verdict has a «Next step» (meaning, why, who acts, next step; AI-session verdicts draft a mailbox instruction with preview + confirm); guides live in docs/verdicts/<id>.md. Refs #27
+- Hook flow: hooks flagged «Slow» (average time per run from OTel, «n hooks combined» when several share a firing) and «No visible effect» (many runs, never blocked, never printed); rows without measurements say «time and effect not measured yet». Thresholds start at 1000 ms and 50 runs. Refs #28
 
 ### Changed
 

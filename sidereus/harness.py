@@ -17,7 +17,7 @@ import time
 
 from sidereus import ctxsrc, toolinv
 from sidereus.config import DATA_DIR
-from sidereus.otel_hooks import hook_fires
+from sidereus.otel_hooks import OHN_AMBIG, _ohn_fits, hook_cost, hook_fires
 from sidereus.timefmt import ymd as _ymd
 from sidereus.pipeline import _agent_files, _agents, pipelines
 from sidereus.pipeline_projects import _proj_ok
@@ -252,11 +252,36 @@ def _nomatch(ev, matcher, tools):
     return 1
 
 
+def _hook_k(mats, sub):
+    """R2: configured hooks on one event that run in a firing on `sub` ("" / sanitised MCP = any could, so all count)."""
+    if not sub or sub in OHN_AMBIG:
+        return len(mats)
+    return sum(1 for m in mats if not m or m == "*" or _ohn_fits(m, sub))
+
+
+def _hook_cost(ev, m, since, mats, runs):
+    """Row `cost` {runs, avg, blk, out, k} from OTel cost counts; None when unmeasured or ambiguous.
+    blk / out turn None when some counted firings were not measured, so «never printed» is never claimed from part."""
+    c = hook_cost(ev, m, since) if since else None
+    if not c or c["amb"]:
+        return None
+    full = c["mruns"] >= (runs or 0)
+    return {"runs": c["mruns"], "avg": int(round(float(c["ms"]) / c["mruns"])),
+            "blk": c["blk"] if full else None, "out": c["out"] if full else None,
+            "k": max(_hook_k(mats, s) for s in c["subs"])}
+
+
 def _hook_rows(items, proj, uses, paths=None, since=""):
     """Rows per event; `paths` (when given) collects ref -> resolved script for /api/harness/file.
     `since` (ymd) enables OTel firing counts (`nsrc` "otel", `nfrom` = first day covered)."""
     by = {}
     tools = [k[5:] for k in uses if k.startswith("tool:")]   # toolidx `tool:<Name>` keys
+    mats = {}   # event -> matcher of every configured hook (all scopes), for the R2 «k hooks combined» count
+    for it in items:
+        g = it.get("entry") if isinstance(it.get("entry"), dict) else {}
+        ev = str(it["key"][1]) if len(it["key"]) > 1 else ""
+        m = g.get("matcher") if isinstance(g.get("matcher"), str) else ""
+        mats.setdefault(ev, []).extend(m for h in (g.get("hooks") if isinstance(g.get("hooks"), list) else []) if isinstance(h, dict))
     for it in items:
         g = it.get("entry") if isinstance(it.get("entry"), dict) else {}
         ev = str(it["key"][1]) if len(it["key"]) > 1 else ""
@@ -279,6 +304,7 @@ def _hook_rows(items, proj, uses, paths=None, since=""):
             # ⚠A 0 only counts once coverage is long enough: right after the store starts, «not fired yet» is not «unused».
             if f and not f[2] and (f[0] or _days_since(f[1]) >= HN_FIRE_MIN_D):
                 n, nsrc, nfrom = max(n, f[0]), "otel", f[1]
+            cost = _hook_cost(ev, m, since, mats.get(ev, []), f[0] if f else 0) if f and not f[2] else None
             quiet = int(not n and not nsrc)
             n = n if nsrc else (n or None)
             sp = ""
@@ -297,7 +323,7 @@ def _hook_rows(items, proj, uses, paths=None, since=""):
                 paths[ref] = sp
             by.setdefault(ev, []).append({"open": ref if eff in _OPEN_EFF else "", "scope": it["scope"], "src": _src(it), "matcher": m[:HN_CMD_MAX], "cmd": name,
                                           "timeout": to if isinstance(to, (int, float)) and not isinstance(to, bool) else None,
-                                          "eff": eff, "desc": desc, "n": n, "last": last, "quiet": quiet, "nsrc": nsrc, "nfrom": nfrom, "ndays": _days_since(nfrom), "plug": pn[:HN_CMD_MAX],
+                                          "eff": eff, "desc": desc, "n": n, "last": last, "quiet": quiet, "nsrc": nsrc, "nfrom": nfrom, "ndays": _days_since(nfrom), "plug": pn[:HN_CMD_MAX], "cost": cost,
                                           "miss": int(bool(sp) and os.path.isabs(sp) and not os.path.exists(sp)),
                                           "ch": _dup_key(h, c),
                                           "nomatch": _nomatch(ev, m, tools)})
