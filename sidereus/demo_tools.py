@@ -97,7 +97,27 @@ def _demo_harness(a, path):
     body["report"] = dict(rep, counts=dict(rep["counts"], person=p["runs"]), person=p)
     body["guards"] = harness_flow.guards("", runs=_demo_flow_runs(a))
     body["runtime"] = sec_runtime.shape(_demo_runtime(a), a, root="/Users/demo/src/sidereus")   # fake checkout: the real install path stays off demo screens
+    body["selfcheck"] = _demo_selfcheck(a)
     return 200, harness_verdict.verdict(body, 30)
+
+
+def _demo_selfcheck(a):
+    """Invented harness_selfcheck.load() result: the 11 replay cases, one FAIL (keep-reverted read «held»), same commit."""
+    rows = (("gate-pass-only", "gate", "check.sh --fast PASS only", "no r2g", "no r2g", "gate-red-green", []),
+            ("gate-red-green", "gate", "check.sh --fast FAIL then PASS on the same repo and head", "r2g", "r2g", "gate-pass-only", []),
+            ("guard-commit", "guard", "git commit while the required Verify gate has no rc=0 evidence", "blocked", "blocked", "guard-commit-after-pass", ["gate"]),
+            ("guard-commit-after-fail", "guard", "git commit after Verify ran but its --full gate recorded rc=1", "blocked", "blocked", "guard-commit-after-pass", ["gate"]),
+            ("guard-commit-after-pass", "guard", "git commit after Verify passed and its --full gate recorded rc=0", "allowed", "allowed", "guard-commit-after-fail", []),
+            ("guard-jump", "guard", "Verify dispatched while Build never ran", "blocked", "blocked", "guard-jump-declared", ["jump"]),
+            ("guard-jump-declared", "guard", "Build declared skipped with [pl-skip:], then Verify dispatched", "allowed", "allowed", "guard-jump", []),
+            ("guard-skip-declared", "guard", "[pl-skip:] of Build, which requireGates does not list", "allowed", "allowed", "guard-skip-required", []),
+            ("guard-skip-required", "guard", "[pl-skip:] of the required Verify gate", "blocked", "blocked", "guard-skip-declared", ["skipgate"]),
+            ("keep-held", "keep", "PASS recorded at commit A and HEAD is still A", "held", "held", "keep-reverted", []),
+            ("keep-reverted", "keep", "PASS at commit A, then a later commit restores A's parent tree", "reverted", "held", "keep-held", []))
+    cases = [{"name": n, "guard": g, "situation": s, "expect": e, "actual": x, "pass": e == x, "pair": p, "codes": c}
+             for n, g, s, e, x, p, c in rows]
+    return {"state": "ok", "ts": int(a - 2 * H), "head": "3f9c2ab71e04d5b8c6a90f1e2d3c4b5a69788776", "stale": False,
+            "cmd": "python3 scripts/harness_selfcheck.py", "cases": cases}
 
 
 def _demo_person(a):

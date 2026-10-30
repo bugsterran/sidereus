@@ -327,3 +327,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠`head` is the local HEAD at watch time: watching a run of an older push labels it with the wrong commit.
 - ⚠`gh run view --exit-status` on an in-progress run may exit 0 — a «green» that has not finished.
 - ⚠`recent()` drops ci rows (stage labels, gate-FAIL line); `trail()`/`states()` ignore them; only `report()` reads them.
+
+## Guard self-check: whose commit, and a build without the replay set (`scripts/harness_selfcheck.py` · `harness_selfcheck`)
+- Cause: the table reads one file for every project, and `tests/` may be stripped from a shipped build.
+- Fix: `head` is the Sidereus checkout the guards ran from; `stale` compares it with that checkout's HEAD, never the picked project. No fixtures → the runner prints «replay set not found», exits 2 and writes nothing.
+- ⚠Do not label the table with the Harness project's commit, and do not let the viewer run the replay to refresh it.
+- ⚠`stale` compares the HEAD sha only: a dirty worktree is not flagged, and a new commit shows up to 30 s late (`HSC_HEAD_TTL` memo).

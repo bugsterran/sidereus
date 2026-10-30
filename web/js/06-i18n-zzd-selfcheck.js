@@ -1,0 +1,22 @@
+// Korean for the Harness «Guard self-check» fold (47f-harness-selfcheck.js).
+Object.assign(I18N.ko, {
+  'Guard self-check': '가드 자가 점검',
+  'Not run yet': '아직 실행 안 함',
+  'different commit': '다른 커밋',
+  'results from commit {h}, not the current HEAD': '결과는 커밋 {h} 기준이며 지금 HEAD 가 아닙니다',
+  'Replays the fixed replay set of the Sidereus repo (not the picked project): each guard must catch its case and let its control through.': 'Sidereus 저장소의 고정 재현 세트를 다시 돌립니다(고른 프로젝트가 아님): 가드마다 잡아야 할 경우는 잡고, 대조 경우는 통과시켜야 합니다.',
+  'Situation fed': '넣은 상황',
+  'Expected': '기대',
+  'Actual': '실제',
+  'Pipeline guard': '파이프라인 가드',
+  'Gate red → green': '게이트 실패 → 통과',
+  'Fix kept or reverted': '수정 유지 또는 되돌림',
+  'Seen in real runs of this project': '이 프로젝트 실제 실행에서 본 수',
+  'held {n} · reverted {m}': '유지 {n} · 되돌림 {m}',
+  'blocked|selfcheck': '차단',
+  'let through|selfcheck': '통과시킴',
+  'red → green|selfcheck': '실패 → 통과',
+  'no red → green|selfcheck': '실패 → 통과 없음',
+  'held|selfcheck': '유지',
+  'reverted|selfcheck': '되돌림',
+});

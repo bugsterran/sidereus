@@ -1,6 +1,6 @@
 # harness_e2e fixtures
 
-End-to-end replays for `tests/test_harness_e2e.py`: real recorder input → `sidereus/harness_plat._results` → the flow node the Harness screen draws.
+End-to-end replays for `tests/test_harness_e2e.py` and the guard self-check `scripts/harness_selfcheck.py` (which holds the replay code): real recorder input → `sidereus/harness_plat._results` → the flow node the Harness screen draws.
 Metadata only: stage titles, tool names, agent types, modes, rc, counts, relative seconds. No descriptions, prompts or command output.
 Every catch case has a control (`pair`) under the same guard with the opposite `expect`; a guard that blocks or passes everything fails one of the two.
 Pairs are mutual, except that one control may serve several catch cases (`guard-commit` → `guard-commit-after-pass`, whose own partner is `guard-commit-after-fail`).
