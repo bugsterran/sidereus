@@ -310,18 +310,20 @@ class Harness(unittest.TestCase):
         whys = set()
         for rows in [h for e in d["events"] for h in e["hooks"]], d["rules"], d["agents"], d["mcps"], d["skills"]:
             whys.update(r["vd"]["why"] for r in rows if r.get("vd"))
-        self.assertEqual(whys, {"hook_missing", "mcp_fail", "ref_missing", "idle", "dup", "slow_block", "rule_big"})   # demo shows every code
+        self.assertEqual(whys, {"hook_missing", "mcp_fail", "ref_missing", "idle", "dup", "slow_block", "rule_big",
+                                "slow", "no_effect"})   # demo shows every code (#28 R1 slow · R3 no_effect)
+        vc = d["verdict"]   # level counts come from the server, so new codes do not re-pin them here
         self.assertEqual(demo._demo_harness(1e9, "/api/harness/file")[0], 404)
         d["agents"][1]["vd"]["vp"]["pipe"] = "<x>"
         d["mcps"][0]["vd"] = {"lvl": "<bad>", "why": "mcp_fail", "id": "v9"}   # unknown lvl is ignored, never reaches a class
         h = _js("HN.data[hnKey('/w/a')] = %s; HN.at[hnKey('/w/a')] = NOW; console.log(JSON.stringify(hnCfgHtml(PLS.proj)))" % json.dumps(d))
         self.assertLess(h.index("점검 결과"), h.index("훅 흐름"))
-        self.assertIn('data-hnvdgo=bad title="다음 항목으로 이동">문제 <b>3</b>', h)
+        self.assertIn('data-hnvdgo=bad title="다음 항목으로 이동">문제 <b>%d</b>' % vc["bad"], h)
         self.assertIn('data-hnvdgo=check', h)
-        self.assertIn("정상 8", h)
-        self.assertEqual(h.count('data-hnvdl=bad'), 3)
-        self.assertEqual(h.count('data-hnvdl=check'), 4)
-        self.assertEqual(h.count("class=\"hnvdr"), 7)
+        self.assertIn("정상 %d" % vc["ok"], h)
+        self.assertEqual(h.count('data-hnvdl=bad'), vc["bad"])
+        self.assertEqual(h.count('data-hnvdl=check'), vc["check"])
+        self.assertEqual(h.count("class=\"hnvdr"), vc["bad"] + vc["check"])
         for t in ("스크립트 파일이 없음", "matcher «Edit|Write»", "settings.json, .claude/settings.json", "Stop 에서 최대 90초",
                   "큰 규칙 파일 (52000B)", "파이프라인 &lt;x&gt; · 배포", "연결 실패 기록이 마지막"):
             self.assertIn(t, h)
@@ -330,8 +332,9 @@ class Harness(unittest.TestCase):
         self.assertNotIn("connection refused</span>", h)   # err stays in the status tooltip, not the reason line
         e = _js("LANG = 'en'; console.log(JSON.stringify(%s.map(v => hnVdTxt(v))))"
                 % json.dumps([{"lvl": "check", "why": w, "vp": {"days": 3, "matcher": "m", "srcs": ["a"], "ev": "Stop", "timeout": 60,
-                                                                  "bytes": 9, "pipe": "p", "stage": "s"}}
-                              for w in ("hook_missing", "mcp_fail", "ref_missing", "idle", "dup", "slow_block", "rule_big", "zz")]))
+                                                                  "bytes": 9, "pipe": "p", "stage": "s", "avg": 1, "runs": 2, "k": 2}}
+                              for w in ("hook_missing", "mcp_fail", "ref_missing", "idle", "dup", "slow_block", "rule_big",
+                                        "slow", "no_effect", "zz")]))
         for t in e:
             self.assertFalse(any("가" <= c <= "힣" for c in t), t)   # every reason has English
         with open(os.path.join(ROOT, "web", "js", "06-i18n-x.js"), encoding="utf-8") as f:

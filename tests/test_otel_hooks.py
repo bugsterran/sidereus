@@ -41,18 +41,19 @@ def _payload(*recs):
 
 class _Base(unittest.TestCase):
     def setUp(self):
-        self.saved = (h._oh, h._ohn, h._oh_meta, h.OH_FILE, h.OH_CAP)
+        self.saved = (h._oh, h._ohn, h._ohx, h._oh_meta, h.OH_FILE, h.OH_CAP)
         self.tmp = tempfile.mkdtemp()
         h.OH_FILE = os.path.join(self.tmp, "otel-hooks.json")
         self._reset()
 
     def tearDown(self):
-        (h._oh, h._ohn, h._oh_meta, h.OH_FILE, h.OH_CAP) = self.saved
+        (h._oh, h._ohn, h._ohx, h._oh_meta, h.OH_FILE, h.OH_CAP) = self.saved
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _reset(self):
         h._oh = {}
         h._ohn = {}
+        h._ohx = {}
         h._oh_meta = {"loaded": False, "savedAt": 0.0, "dirty": False}
 
 
@@ -148,10 +149,6 @@ class HookIngestCase(_Base):
         self.assertNotIn("hook_execution_complete", o._OTEL_STATE)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class HookFiresCase(_Base):
     """Per-firing counts by event:subject (`_ohn`) and their attribution to one matcher (`hook_fires`)."""
 
@@ -190,3 +187,89 @@ class HookFiresCase(_Base):
         self.assertTrue(h._oh_save(now=NOW, force=True))
         self._reset()
         self.assertEqual(h.hook_fires("PreToolUse", "Bash", "2026-01-01"), (1, "2026-10-01", False))
+
+
+class HookCostIngestCase(_Base):
+    """#28 R4: `_ohx` cost counts from hook_execution_complete — counts only, old files load, missing = not measured."""
+
+    def setUp(self):
+        super(HookCostIngestCase, self).setUp()
+        self.osaved = (o._otel, o._otel_stat, o._otel_tools)
+        o._otel, o._otel_stat, o._otel_tools = {}, _fresh_stat(), {}
+        self.tp = mock.patch.object(o.time, "time", return_value=NOW)
+        self.tp.start()
+
+    def tearDown(self):
+        self.tp.stop()
+        (o._otel, o._otel_stat, o._otel_tools) = self.osaved
+        super(HookCostIngestCase, self).tearDown()
+
+    def _rec(self, **kw):
+        at = {"hook_name": "PreToolUse:Bash", "num_blocking": 0, "stdout_chars": 0, "stderr_chars": 0}
+        at.update(kw)
+        return _hook("PreToolUse", at.pop("dur", 40), **at)
+
+    def test_r4_only_counts_saved(self):
+        o._otel_ingest(_payload(self._rec(stdout_chars=12, hook_definitions="python3 /x/def.py",
+                                          **{"session.id": "sid-cost-77"}),
+                                self._rec(num_blocking=2, dur=60)))
+        self.assertTrue(h._oh_save(now=NOW, force=True))
+        with open(h.OH_FILE, encoding="utf-8") as f:
+            raw = f.read()
+        for bad in ("chars", "hook_definitions", "def.py", "sid-cost-77"):
+            self.assertNotIn(bad, raw)
+        x = json.loads(raw)["x"]["2026-10-01"]
+        self.assertEqual(x, {"PreToolUse:Bash": [2, 100, 1, 1]})
+        for row in x.values():
+            self.assertTrue(len(row) == 4 and all(type(v) is int for v in row))
+
+    def test_r4_missing_attr_is_unmeasured(self):
+        no_blk = _hook("PreToolUse", 40, hook_name="PreToolUse:Bash", stdout_chars=0, stderr_chars=0)
+        no_blk["attributes"] = [a for a in no_blk["attributes"] if a["key"] != "num_blocking"]
+        o._otel_ingest(_payload(no_blk))
+        o._otel_ingest(_payload(_hook("PreToolUse", 40, hook_name="PreToolUse:Bash", num_blocking=0, stderr_chars=0)))
+        self.assertEqual(h.hook_fires("PreToolUse", "Bash", "2026-09-30")[0], 2)   # runs still counted
+        self.assertIsNone(h.hook_cost("PreToolUse", "Bash", "2026-09-30"))
+
+
+class HookCostCase(_Base):
+    def _fire(self, name, dur, blk=False, out=False, d="2026-10-01"):
+        h._oh_add(_ts(d), name.partition(":")[0], dur, 0, name, blk=blk, out=out)
+
+    def test_r1_rollup_and_matching(self):
+        self._fire("PreToolUse:Bash", 1500)
+        self._fire("PreToolUse:Bash", 500, out=True)
+        self._fire("PreToolUse:Edit", 100, blk=True)
+        self._fire("PreToolUse:Bash", 9999, d="2026-09-01")    # before since
+        c = h.hook_cost("PreToolUse", "Bash", "2026-09-30")
+        self.assertEqual(c, {"mruns": 2, "ms": 2000, "blk": 0, "out": 1, "subs": ["Bash"], "amb": False})
+        c = h.hook_cost("PreToolUse", "*", "2026-09-30")
+        self.assertEqual((c["mruns"], c["blk"], sorted(c["subs"])), (3, 1, ["Bash", "Edit"]))
+        self.assertIsNone(h.hook_cost("PreToolUse", "Read", "2026-09-30"))
+
+    def test_r4_ambiguous_subject(self):
+        self._fire("PreToolUse:mcp_tool", 10)
+        self.assertTrue(h.hook_cost("PreToolUse", "mcp__x__.*", "2026-09-30") is None)
+        self.assertFalse(h.hook_cost("PreToolUse", "", "2026-09-30")["amb"])
+
+    def test_r4_v1_file_without_x_loads(self):
+        with open(h.OH_FILE, "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "d": {}, "n": {"2026-10-01": {"PreToolUse:Bash": 7}}}, f)
+        h._oh_load()
+        self.assertEqual(h._ohn, {"2026-10-01": {"PreToolUse:Bash": 7}})
+        self.assertEqual(h._ohx, {})
+        self.assertIsNone(h.hook_cost("PreToolUse", "Bash", "2026-09-30"))   # not measured yet, never clean
+
+    def test_r4_bad_x_rows_skipped_and_round_trip(self):
+        with open(h.OH_FILE, "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "d": {}, "n": {}, "x": {"2026-10-01": {"A:b": [1, 2, 3], "Stop": [2, 30, 0, 1]}}}, f)
+        h._oh_load()
+        self.assertEqual(h._ohx, {"2026-10-01": {"Stop": [2, 30, 0, 1]}})
+        self.assertTrue(h._oh_save(now=NOW, force=True))
+        self._reset()
+        h._oh_load()
+        self.assertEqual(h._ohx, {"2026-10-01": {"Stop": [2, 30, 0, 1]}})
+
+
+if __name__ == "__main__":
+    unittest.main()

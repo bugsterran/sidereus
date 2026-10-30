@@ -65,6 +65,7 @@ function hnVdTxt(v){
     case 'dup': return TV({msg: 'same command registered again ({s})', vars: {s: hnSrcs(a.srcs)}});
     case 'slow_block': return TV({msg: 'can hold {n} for up to {m} s', vars: {n: n(a.ev), m: n(a.timeout)}});
     case 'rule_big': return TV({msg: 'large rule file ({n}B) — loaded into every session', vars: {n: fmtTok(Number(a.bytes) || 0)}});
+    default: { const h = typeof hnVdTxtHook === 'function' ? hnVdTxtHook(v) : null; if(h) return h; }   // 47h hook-cost reasons (slow · no_effect)
   }
   return T(HN_VDL[v.lvl], 'verdict');
 }
@@ -117,7 +118,7 @@ function hnChip(h, showEv){
     // nsrc otel = every firing from Claude Code telemetry since nfrom, so 0 is a real 0.
     + '<i class="hncr' + (h.quiet ? ' hncrg' : '') + '"' + (h.n == null && !h.quiet ? '' : ' title="' + esc(h.quiet ? T('Runs without output are not recorded, so the count is unknown')
       : (h.nsrc === 'otel' ? TV({msg: 'All runs since {d} (Claude Code telemetry)', vars: {d: String(h.nfrom || '')}}) : T('Counts only runs that printed output')) + (h.last ? ' · ' + stamp(h.last) : '')) + '"') + '>'
-      + (h.quiet ? '?' : h.nsrc === 'otel' && !h.n ? '0' + T('×') : hnCnt(h.n)) + '</i></span>' + hnVdRow(h) + '</div>';
+      + (h.quiet ? '?' : h.nsrc === 'otel' && !h.n ? '0' + T('×') : hnCnt(h.n)) + '</i></span>' + hnVdRow(h) + (typeof hnHookHint === 'function' ? hnHookHint(h) : '') + '</div>';
 }
 function hnLaneHtml(events){
   return '<div class=hnl>' + hnLanes(events).map((c, i) => (i ? '<span class=hna aria-hidden=true>→</span>' : '')

@@ -141,10 +141,12 @@ class HookRowFieldsTest(unittest.TestCase):
         it = {"key": ["hooks", "PreToolUse"], "scope": "user", "file": "/nonexistent/settings.json",
               "entry": {"matcher": "Bash", "hooks": [{"type": "command", "command": "python3 /nonexistent/g.py"}]}}
         with mock.patch.object(H, "hook_fires", return_value=(0, "2026-10-20", False)), \
+                mock.patch.object(H, "hook_cost", return_value=None), \
                 mock.patch.object(H, "_days_since", return_value=7):
             h = next(r["hooks"] for r in H._hook_rows([it], "/nonexistent", {}, since="2026-10-12") if r["ev"] == "PreToolUse")[0]
-        self.assertEqual((h["n"], h["quiet"], h["nsrc"], h["nfrom"], h["ndays"]), (0, 0, "otel", "2026-10-20", 7))
+        self.assertEqual((h["n"], h["quiet"], h["nsrc"], h["nfrom"], h["ndays"], h["cost"]), (0, 0, "otel", "2026-10-20", 7, None))
         with mock.patch.object(H, "hook_fires", return_value=(0, "2026-10-26", False)), \
+                mock.patch.object(H, "hook_cost", return_value=None), \
                 mock.patch.object(H, "_days_since", return_value=1):   # coverage too short: 0 stays unknown
             h = next(r["hooks"] for r in H._hook_rows([it], "/nonexistent", {}, since="2026-10-12") if r["ev"] == "PreToolUse")[0]
         self.assertEqual((h["n"], h["quiet"], h["nsrc"]), (None, 1, ""))
@@ -175,6 +177,59 @@ class HookRowFieldsTest(unittest.TestCase):
             P.ctxsrc._git_root = orig
         b = V.verdict({"events": rows, "scanning": False}, 30)
         self.assertEqual([(h.get("vd") or {}).get("why") for h in b["events"][0]["hooks"]], [None, None, "dup"])
+
+    def _cost_rows(self, groups, cost, runs):
+        from unittest import mock
+        items = [{"key": ["hooks", "PreToolUse"], "scope": sc, "file": "/nonexistent/settings.json",
+                  "entry": {"matcher": m, "hooks": [{"type": "command", "command": "python3 /nonexistent/%s.py" % i}]}}
+                 for i, (sc, m) in enumerate(groups)]
+        with mock.patch.object(H, "hook_fires", return_value=(runs, "2026-10-20", False)), \
+                mock.patch.object(H, "hook_cost", return_value=cost), \
+                mock.patch.object(H, "_days_since", return_value=7):
+            hs = next(r["hooks"] for r in H._hook_rows(items, "/nonexistent", {}, since="2026-10-12") if r["ev"] == "PreToolUse")
+        for h in hs:
+            h["miss"] = 0   # the fake script paths do not exist; only cost verdicts are under test
+        return hs
+
+    def test_r1_r2_cost_rollup_and_k(self):
+        c = {"mruns": 4, "ms": 4002, "blk": 0, "out": 1, "subs": ["Bash"], "amb": False}
+        hs = self._cost_rows([("user", "Bash"), ("project", "Bash|Edit")], c, 4)
+        # R1 avg = ms / mruns; R2 two hooks fit Bash, both rows carry the same combined time
+        self.assertEqual([h["cost"] for h in hs], [{"runs": 4, "avg": 1000, "blk": 0, "out": 1, "k": 2}] * 2)
+        hs = self._cost_rows([("user", "Bash"), ("user", "Read")], c, 4)
+        self.assertEqual([h["cost"]["k"] for h in hs], [1, 1])   # R2: a non-fitting matcher is not combined
+        b = V.verdict({"events": [{"ev": "PreToolUse", "hooks": hs}], "scanning": False}, 30)
+        self.assertEqual(b["events"][0]["hooks"][0]["vd"]["vp"], {"avg": 1000, "runs": 4, "k": 1, "min": V.VD_SLOW_MS})
+
+    def test_r4_cost_none_or_partial(self):
+        self.assertIsNone(self._cost_rows([("user", "Bash")], None, 3)[0]["cost"])
+        amb = {"mruns": 4, "ms": 40, "blk": 0, "out": 0, "subs": ["Bash"], "amb": True}
+        self.assertIsNone(self._cost_rows([("user", "Bash")], amb, 4)[0]["cost"])
+        # some firings unmeasured: blk/out unknown, never read as clean (R3 cannot fire)
+        part = {"mruns": 60, "ms": 600, "blk": 0, "out": 0, "subs": ["Bash"], "amb": False}
+        hs = self._cost_rows([("user", "Bash")], part, 80)
+        self.assertEqual(hs[0]["cost"], {"runs": 60, "avg": 10, "blk": None, "out": None, "k": 1})
+        self.assertNotIn("vd", V.verdict({"events": [{"ev": "PreToolUse", "hooks": hs}], "scanning": False}, 30)["events"][0]["hooks"][0])
+
+    def test_r1_r3_slow_and_no_effect_verdicts(self):
+        def one(cost, scanning=False):
+            b = {"events": [{"ev": "PostToolUse", "hooks": [_hook(matcher="Bash", cost=cost)]}], "scanning": scanning}
+            r = V.verdict(b, 30)["events"][0]["hooks"][0]
+            return (r["vd"]["lvl"], r["vd"]["why"], r["vd"]["vp"]) if "vd" in r else None
+        c = {"runs": 3, "avg": 1000, "blk": 1, "out": 1, "k": 2}
+        self.assertEqual(one(c), ("check", "slow", {"avg": 1000, "runs": 3, "k": 2, "min": 1000}))   # R1 + R2
+        self.assertIsNone(one(dict(c, avg=999)))
+        self.assertIsNone(one(c, scanning=True))                                     # partial body
+        q = {"runs": 50, "avg": 10, "blk": 0, "out": 0, "k": 1}
+        self.assertEqual(one(q), ("check", "no_effect", {"runs": 50, "min": 50}))                 # R3
+        self.assertIsNone(one(dict(q, runs=49)))
+        self.assertIsNone(one(dict(q, out=1)))
+        self.assertIsNone(one(dict(q, blk=1)))
+        self.assertIsNone(one(dict(q, out=None)))                                    # R4 not measured is not clean
+        self.assertIsNone(one(None))
+        # order: slow_block before slow, slow before never_ran
+        b = {"events": [{"ev": "Stop", "hooks": [_hook(timeout=60, cost=c)]}], "scanning": False}
+        self.assertEqual(V.verdict(b, 30)["events"][0]["hooks"][0]["vd"]["why"], "slow_block")
 
     def test_gemini_lane_slow_block(self):
         b = V.verdict({"events": [{"ev": "BeforeTool", "lane": "PreToolUse", "hooks": [_hook(timeout=60)]},

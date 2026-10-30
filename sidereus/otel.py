@@ -439,7 +439,11 @@ def _otel_ingest(payload):
                         _otel_stat["hooks"] = (_otel_stat.get("hooks") or 0) + 1
                         # fails exclude num_blocking: a block is the hook's decision, not a failure.
                         _hf = _oh_int(at.get("num_non_blocking_error")) + _oh_int(at.get("num_cancelled"))
-                        _oh_add(time.time(), at.get("hook_event"), at.get("total_duration_ms"), _hf, at.get("hook_name"))
+                        # R4: only two booleans leave here — the *_chars sizes and hook_definitions are never kept; None = not sent.
+                        _nb, _so, _se = at.get("num_blocking"), at.get("stdout_chars"), at.get("stderr_chars")
+                        _blk = None if _nb is None else _oh_int(_nb) > 0
+                        _out = None if _so is None or _se is None else (_oh_int(_so) + _oh_int(_se)) > 0
+                        _oh_add(time.time(), at.get("hook_event"), at.get("total_duration_ms"), _hf, at.get("hook_name"), blk=_blk, out=_out)
                         _otel_acct_add(lab, _oa_hook, at.get("hook_event"), at.get("total_duration_ms"), _hf)
                         continue
                     if not ev or ev not in OTEL_KEEP:

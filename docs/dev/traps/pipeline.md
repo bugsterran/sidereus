@@ -272,6 +272,13 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ The result pane cuts it at the first « · » client-side and shows `name · elapsed`, or `Idle · <ago>` past `PLNOW_QUIET`; no `title` on the line.
 - ⚠Never show the suffix or any tool input there (rule 1); the tool name is data: `esc()`, never `T()`.
 
+## Hook cost counts are per firing, not per hook (`otel_hooks._ohx` · `harness_verdict` `slow` / `no_effect`)
+- Cause: OTel `num_blocking`, `stdout_chars`, `stderr_chars` and `total_duration_ms` cover every hook that ran in one firing, combined.
+- ⇒ `slow` shows the time with «k hooks combined»; `no_effect` needs every counted firing measured with 0 blocks and 0 output.
+- ⚠A silent hook that shares its firings with a printing hook is never flagged `no_effect` — do not «fix» this by splitting the output.
+- ⚠`_ohx` shares `OHN_CAP` with `_ohn`, so its counts are lower bounds; a firing missing any of the attributes raises only `_ohn` (cost stays «not measured», never clean).
+- ⚠Only the two booleans leave `otel._otel_ingest`; never store the `*_chars` sizes.
+
 ## Hook run counts: transcripts miss silent hooks, OTel does not (`otel_hooks.hook_fires` · `harness_verdict` `never_ran`)
 - Cause: `hook_success` is written only for runs that printed, so a transcript count of 0 cannot prove a hook unused.
 - Fix: OTel `hook_execution_complete` fires once per firing with `hook_name` = `Event:<tool or source>`; every hook whose matcher fits that subject ran, so per-hook counts come from matching stored `Event:subject` keys.

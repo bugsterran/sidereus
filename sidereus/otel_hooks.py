@@ -1,5 +1,6 @@
 """Per-day hook cost from OTel hook_execution_complete (count, time, failures per hook event type) for the retro «Hook cost» card,
-plus per-day firings by `<Event>:<subject>` (`_ohn`) so the Harness view can count runs of hooks that print nothing."""
+plus per-day firings by `<Event>:<subject>` (`_ohn`) so the Harness view can count runs of hooks that print nothing,
+and per-firing cost counts (`_ohx`) for the «slow» / «no_effect» Harness verdicts."""
 import json
 import os
 import re
@@ -28,6 +29,10 @@ OHN_AMBIG = ("mcp_tool", "mcp_server")   # sanitised subjects: a specific matche
 OHN_NOSUB = ("SubagentStart", "SubagentStop")   # matchers apply, but hook_name carries no subject
 _oh = {}
 _ohn = {}
+# `_ohx` shape {ymd: {same key as `_ohn`: [mruns, msSum, blocked, withOutput]}}; mruns = firings that carried duration,
+# num_blocking and both *_chars (others raise only `_ohn`). Only counts and booleans-turned-counts are stored.
+# ⚠Shares OHN_CAP with `_ohn`: past the cap a firing is dropped, so every count is a lower bound.
+_ohx = {}
 _oh_meta = {"loaded": False, "savedAt": 0.0, "dirty": False}
 _oh_lock = threading.Lock()
 
@@ -56,8 +61,9 @@ def _ohn_key(ev, name):
     return ev + ":" + sub if sep and e == ev and OHN_SUB_RE.fullmatch(sub) else None
 
 
-def _oh_add(ts, ev, dur, fail, name=None):
-    """Add one hook firing (total_duration_ms covers all matching hooks of that firing) to its day and event type."""
+def _oh_add(ts, ev, dur, fail, name=None, blk=None, out=None):
+    """Add one hook firing (total_duration_ms covers all matching hooks of that firing) to its day and event type.
+    blk / out = the firing blocked / printed anything (booleans); None = attribute missing, so `_ohx` is not raised."""
     with _oh_lock:
         dk = _ymd(ts)
         day = _oh.setdefault(dk, {})
@@ -69,6 +75,14 @@ def _oh_add(ts, ev, dur, fail, name=None):
         nd = _ohn.setdefault(dk, {})
         if k and (k in nd or len(nd) < OHN_CAP):
             nd[k] = nd.get(k, 0) + 1
+            if dur is not None and blk is not None and out is not None:
+                xd = _ohx.setdefault(dk, {})
+                if k in xd or len(xd) < OHN_CAP:
+                    x = xd.setdefault(k, [0, 0, 0, 0])
+                    x[0] += 1
+                    x[1] += _oh_int(dur)
+                    x[2] += int(bool(blk))
+                    x[3] += int(bool(out))
         _oh_meta["dirty"] = True
 
 
@@ -102,6 +116,19 @@ def _oh_load():
             for k, v in row.items():
                 if isinstance(k, str) and (k in dst or len(dst) < OHN_CAP):
                     dst[k] = dst.get(k, 0) + _oh_int(v)
+        # R4: a file without "x" predates cost counts and loads as «not measured yet».
+        xsrc = d.get("x") if isinstance(d, dict) and isinstance(d.get("x"), dict) else {}
+        for dk, row in xsrc.items():
+            if not (isinstance(dk, str) and isinstance(row, dict)):
+                continue
+            dst = _ohx.setdefault(dk, {})
+            for k, v in row.items():
+                if not (isinstance(k, str) and isinstance(v, list) and len(v) == 4):
+                    continue
+                if k in dst or len(dst) < OHN_CAP:
+                    c = dst.setdefault(k, [0, 0, 0, 0])
+                    for i in range(4):
+                        c[i] += _oh_int(v[i])
 
 
 def _oh_save(now=None, force=False):
@@ -113,13 +140,14 @@ def _oh_save(now=None, force=False):
         return False
     cut = _ymd(now - OH_KEEP_D * 86400)
     with _oh_lock:
-        old = [k for k in _oh if k < cut] + [k for k in _ohn if k < cut]
+        old = [k for k in _oh if k < cut] + [k for k in _ohn if k < cut] + [k for k in _ohx if k < cut]
         for k in old:
             _oh.pop(k, None)
             _ohn.pop(k, None)
+            _ohx.pop(k, None)
         if not (old or _oh_meta["dirty"] or force):
             return False
-        blob = json.dumps({"v": 1, "d": _oh, "n": _ohn}, separators=(",", ":"), ensure_ascii=False)
+        blob = json.dumps({"v": 1, "d": _oh, "n": _ohn, "x": _ohx}, separators=(",", ":"), ensure_ascii=False)
         _oh_meta["dirty"] = False
     _oh_meta["savedAt"] = now
     try:
@@ -158,6 +186,43 @@ def _ohn_fits(matcher, sub):
         return bool(re.fullmatch(matcher, sub))
     except re.error:
         return matcher == sub
+
+
+def _oh_match(ev, m, k):
+    """(subject, counted, ambiguous) of one `_ohn` / `_ohx` key for hook event `ev` and matcher `m` — hook_fires' rules."""
+    e, _, sub = k.partition(":")
+    if e != ev:
+        return sub, False, False
+    if not m or m == "*" or (not sub and ev not in OHN_NOSUB):
+        return sub, True, False
+    if not sub or sub in OHN_AMBIG:
+        return sub, False, not sub or "mcp" in m.lower()
+    return sub, _ohn_fits(m, sub), False
+
+
+def hook_cost(ev, matcher, since_ymd):
+    """{mruns, ms, blk, out, subs, amb} of one hook entry from `_ohx` over days >= since_ymd (same matching as hook_fires);
+    None when no measured firing was recorded. subs = subjects that contributed ("" = event-level key)."""
+    if not _oh_meta["loaded"]:
+        _oh_load()
+    m = matcher if isinstance(matcher, str) else ""
+    r = {"mruns": 0, "ms": 0, "blk": 0, "out": 0, "subs": [], "amb": False}
+    with _oh_lock:
+        for dk in sorted(_ohx):
+            if dk < since_ymd:
+                continue
+            for k, v in _ohx[dk].items():
+                sub, ok, amb = _oh_match(ev, m, k)
+                r["amb"] = r["amb"] or amb
+                if not ok:
+                    continue
+                r["mruns"] += v[0]
+                r["ms"] += v[1]
+                r["blk"] += v[2]
+                r["out"] += v[3]
+                if sub not in r["subs"]:
+                    r["subs"].append(sub)
+    return r if r["mruns"] else None
 
 
 def hook_fires(ev, matcher, since_ymd):
