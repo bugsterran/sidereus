@@ -12,7 +12,7 @@ import time
 from sidereus.config import DATA_DIR, pid_alive
 from sidereus.warn import warn_once
 from sidereus.bus import _atomic_write
-from sidereus import plat_codex, plat_gemini
+from sidereus import plat_codex, plat_gemini, plat_copilot
 from sidereus.adapter import adapter_register
 
 
@@ -288,6 +288,36 @@ def ext_hook_cwds():
     """{(plat, sid): cwd} for every session with stored hook tokens."""
     with _ext_lock:
         return {tuple(k.partition("|")[::2]): str(e.get("cwd") or "") for k, e in _hooktok.items()}
+
+
+def ext_side_msgs(since=0.0):
+    """`ext_hook_msgs` plus Copilot usage records (plat_copilot) — tokens of platforms outside `PLAT_MODS`.
+    ⚠A record replaces a hook entry with the same key, never adds to it."""
+    out = ext_hook_msgs(since)
+    for sid, ms in plat_copilot.msgs_since(since).items():
+        out.setdefault((plat_copilot.PLAT, sid), {}).update(ms)
+    return out
+
+
+def ext_side_sess(plat, sid):
+    """One session's side messages (same merge as `ext_side_msgs`); {} for anything but Copilot."""
+    if plat != plat_copilot.PLAT:
+        return {}
+    with _ext_lock:
+        e = _hooktok.get(plat + "|" + str(sid))
+        ms = {g: (v[0], v[1], v[2] + v[3], 0, float(v[4]), v[5], None) for g, v in ((e or {}).get("gens") or {}).items()}
+    ms.update(plat_copilot.usage_msgs(sid))
+    return ms
+
+
+def ext_side_tok(plat, sid):
+    """`ext_tok` shape (total + latest model) from `ext_side_sess`, or None when empty."""
+    ms = ext_side_sess(plat, sid)
+    if not ms:
+        return None
+    s = _tok_sum(ms)
+    s["model"] = max(ms.values(), key=lambda v: v[4])[5]
+    return s
 
 
 def _run_note_locked(plat, sid, v, ev, ts):

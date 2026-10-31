@@ -409,6 +409,12 @@ Copy `ext-hooks/copilot-hooks-example.json` to `~/.copilot/hooks/sidereus.json` 
   `description` lights the stage.
   - ⚠An undeclared jump is recorded as a skip, never denied. There is no `[pl-end:]` hand-off text after the tool runs.
   - Already connected before this: press «Connect» again; only the three missing entries are appended.
+- Tokens and quota (with or without hooks): `sidereus/plat_copilot.py` reads `session.usage_record` lines of
+  `session-state/<id>/events.jsonl` (input, output, cache read + write, model) and the request quota
+  (`quotaSnapshots`: used, entitlement, remaining %, reset date) from `model.model_call_success` lines.
+  ⚠Never read: prompts, replies, request messages, tool calls or any other line; quota numbers are cut out by key, the
+  line itself is never parsed. ⚠Lines whose `type` is not the first key are skipped (nothing shown, never a guess).
+  The quota is only what the last Copilot run reported; past its reset date it is hidden.
 - Not done yet: a Windows check.
 
 ### Codex CLI
@@ -453,7 +459,7 @@ Copy `ext-hooks/codex-hooks-example.json` to `~/.codex/hooks.json`. Checked with
   marked «Hooks not connected»: folder and model only, state unknown. Once hook events arrive the hook row replaces it.
 - Cursor CLI and Copilot CLI get the same hook-less row from their own folders: a Cursor chat whose
   `~/.cursor/chats/*/<id>/` files changed in the last 10 minutes, a Copilot session whose
-  `~/.copilot/session-state/<id>/inuse.<pid>.lock` names a running process. Folder, start and last activity only.
+  `~/.copilot/session-state/<id>/inuse.<pid>.lock` names a running process. Folder, start and last activity only (Copilot also its token counts).
   The hook row wins (same id, or a hook row of that CLI in the same folder).
 - `sidereus/plat_codex.py` reads tokens, model, cost and rate limits from `$CODEX_HOME/sessions/**/rollout-*.jsonl` and
   `archived_sessions/`, never message text.

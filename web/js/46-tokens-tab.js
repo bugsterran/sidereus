@@ -293,6 +293,16 @@ function extRateDetail(rt, k, raw){
     : ws.join(' · ') + (rt.plan ? ' · ' + TV({msg: 'plan {p}', vars: {p: rt.plan}}) : '');
   return raw ? s : esc(s);
 }
+// Copilot quota (extUsage.cp.quota) as plain text, '' when absent; ⚠only what the last Copilot run reported (stale between runs).
+function extQuotaStr(q){
+  if(!q || typeof q !== 'object') return '';
+  const n = v => (typeof v === 'number' && isFinite(v)) ? String(v) : '?';
+  return (q.unl ? T('unlimited') : n(q.used) + ' / ' + n(q.ent))
+    // ⚠Floor, not fmtPct's round: 99.5 must not read as an untouched «100% left».
+    + (!q.unl && typeof q.pct === 'number' && isFinite(q.pct) ? ' · ' + TV({msg: '{p} left', vars: {p: Math.max(0, Math.floor(q.pct)) + '%'}}) : '')
+    + (q.reset ? ' · ' + TV({msg: 'resets {t}', vars: {t: hhmm(q.reset, {date: true})}}) : '')
+    + (q.at ? ' · ' + TV({msg: 'seen {t}', vars: {t: agoAt(q.at)}}) : '');
+}
 function extCostTip(c, miss, k){
   if(c == null) return T('Model not in the price table');
   return T('Estimated cost') + ' ' + extCostStr(c) + ' — '
@@ -311,7 +321,8 @@ function tkPlat(d){
     + '<td class=brv>' + fmtTok(tok) + '</td>' + cell + '<td class=brd>' + sub + '</td><td class=brv>' + n + '</td></tr>';
   const rows = (t ? row('cc', t.tok + (d.liveAdd || 0), '<td class=brv>' + fmtMoney(t.cost || 0) + '</td>',
                         esc(T('this PC · incl. subagents')) + ' · ' + esc(T('Counts toward the 5h/7d limits')), nc) : '')
-    + ks.map(k => { const e = ex[k], rd = extRateDetail(e.rate, k);
+    + ks.map(k => { const e = ex[k], q = k === 'cp' ? extQuotaStr(e.quota) : '';
+        const rd = k === 'cp' ? (q ? esc(T('Quota') + ' ' + q) : '') : extRateDetail(e.rate, k);
         return row(k, e.tok, '<td class=brv title="' + esc(extCostTip(e.cost, e.costMiss, k)) + '">' + extCostStr(e.cost) + '</td>',
           esc(T('Input')) + ' ' + fmtTok(e.in) + ' · ' + esc(T('Cache')) + ' ' + fmtTok(e.cache)
           + ' · ' + esc(T('Output')) + ' ' + fmtTok(e.out) + ' · ' + esc(T('Thinking')) + ' ' + fmtTok(e.thought)

@@ -224,3 +224,8 @@ Fix: `config.pid_alive` (OpenProcess on Windows); only `True` counts as live.
 Cause: store.db writes inside `chats/<hash>/<sid>/` do not touch the parent folders' mtime.
 Fix: stat meta.json, store.db and store.db-wal per sid, capped at `ext_presence.PRES_MAX_N` per scan (5 s memo).
 ⚠Do not filter by the `chats` or workspace-hash folder mtime — open chats drop out.
+
+### Copilot events.jsonl carries prompt and reply text (`sidereus/plat_copilot.py` `_refresh`)
+Cause: `model.model_call_success` lines hold `requestMessages`/`response` next to `quotaSnapshots`, and `user.message` text can contain the string `"type":"session.usage_record"`.
+Fix: `json.loads` only lines starting with the bytes `{"type":"session.usage_record"`; quota = `rfind('"quotaSnapshots":')` + `raw_decode`, numbers/bools/resetDate only. A partial last line waits for its newline (Windows flushes lag; a half line is never parsed).
+⚠Never `json.loads` a whole events.jsonl line or loosen the prefix to a substring test. ★Copilot CLI 1.0.105, 13/13 files: `type` is the first key, compact separators.

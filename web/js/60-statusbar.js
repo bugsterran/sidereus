@@ -68,7 +68,7 @@ function sbExt(ex){
   return Object.keys(ex || {}).filter(k => ex[k]).sort().map(k => sbExtSeg(k, ex[k])).join('');
 }
 function sbExtSeg(k, e){
-  const name = platName(k);
+  const name = platName(k), qs = k === 'cp' ? extQuotaStr(e.quota) : '';
   const tip = name + ' ' + T('usage today — separate from Claude limits and cost') + '\n'
     + T('Input') + ' ' + fmtTok(e.in || 0) + ' · ' + T('Cache') + ' ' + fmtTok(e.cache || 0)
     + ' · ' + T('Output') + ' ' + fmtTok(e.out || 0) + ' · ' + T('Thinking') + ' ' + fmtTok(e.thought || 0)
@@ -76,21 +76,24 @@ function sbExtSeg(k, e){
     + (e.n_sessions ? '\n' + T('Sessions') + ': ' + e.n_sessions : '')
     + (!e.tok ? '' : '\n' + (e.cost == null ? T('Model not in the price table') : extCostStr(e.cost) + ' — ' + T('Cost is an estimate from the bundled price table'))
     + (e.costMiss ? ' (' + e.costMiss + ' ' + T('requests left out (model not in the price table)') + ')' : ''))
-    + (k === 'cx' ? '\n' + extRateDetail(e.rate, k, true) : '');
+    + (k === 'cx' ? '\n' + extRateDetail(e.rate, k, true) : '')
+    + (k === 'cp' ? '\n' + (qs ? T('Quota') + ': ' + qs : T('No limit data'))
+       + '\n' + T('Quota values refresh only when Copilot runs') : '');
   // The logo's own title would shadow the segment tooltip, so it is dropped. ⚠Logo only — the name lives in the tooltip.
   return '<span class=sbext title="' + esc(tip) + '">' + aiLogo(k).replace(/ title="[^"]*"/, '')
     + '<small class="sbxd sbd4">' + esc(T('Today')) + '</small> <b>' + esc(fmtTok(e.tok)) + '</b>'
     + (e.cost != null ? ' <small class=sbd8>· ' + esc(extCostStr(e.cost)) + '</small>' : '')
-    + (e.rate && extRateStr(e.rate) ? ' <small class=sbd5>· ' + esc(extRateStr(e.rate)) + '</small>' : '') + '</span>';
+    + (e.rate && extRateStr(e.rate) ? ' <small class=sbd5>· ' + esc(extRateStr(e.rate)) + '</small>' : '')
+    + (qs ? ' <small class=sbd9>· ' + esc(qs) + '</small>' : '') + '</span>';
 }
 // ★Short bar: hide whole low-priority parts rather than ellipsize key numbers (key numbers stay visible).
 // ⚠No padding-squeeze step: gaps are never squeezed, whole cells drop instead.
-// Drop order (SB_STEPS): 1 «100% at» · 2 «left at reset» · 3 «left ≈» (same
+// Drop order (SB_STEPS): 9 Copilot quota (⚠first: it must never cost a Claude piece) · 1 «100% at» · 2 «left at reset» · 3 «left ≈» (same
 //   quantity as «left %», in tokens) · 5 ext limit % (Codex card has it) · 6 reset times · 7 saver secondary (also in its
 //   tooltip) · 8 ext «≈ $cost» and 7d «used» (both in their tooltips) · 4 ext «Today».
 // ⚠«Today» is what makes the ext number mean «today» — keep cheaper drops (5, 6, 7, 8) ahead of it; the goal pill and ext
 //   token+cost segments are never dropped and overflowed 900 by 63-255 px after step 7. Ellipsis stays only as the last resort.
-const SB_STEPS = [1, 2, 3, 5, 6, 7, 8, 4];
+const SB_STEPS = [9, 1, 2, 3, 5, 6, 7, 8, 4];
 // ★UX audit 2026-09-28: «slower than goal» named no subject — the verdict is 5h usage pace vs the saver goal, so the label says «use», same width.
 const SB_JNAME = {'Way too fast': 'Burning far above target', 'Fast': 'Above target', 'On pace': 'On target',
                   'Slow': 'Below target', 'Way too slow': 'Far below target',

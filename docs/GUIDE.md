@@ -167,6 +167,7 @@ The Timeline is the evidence behind a verdict: what each agent actually did, and
 1. The status bar shows 5-hour and 7-day usage. Click it (or Enter) for each account's 5h/7d left and reset time, and open sessions. «Quota details» opens the full window; Esc closes.
 2. «left at reset» = projected headroom at the reset; «100% at» = when the 5-hour limit runs out at this pace. `≈` and `±N%` mark estimates that narrow as the window goes on.
 3. With 2+ Claude accounts: colour bands, name chips, account pickers, and «Make main» on hover ([CONFIG](CONFIG.md#several-claude-accounts)).
+4. A Copilot segment adds its quota when Copilot reported one: «used / limit · N% left · resets date · seen N ago» («unlimited» on unlimited plans); the Tokens tab «By platform» row shows the same. The values refresh only when Copilot runs, so check «seen». No quota reported = no piece. It is the first piece dropped on a narrow bar.
 
 The saver verdict changes only when the projection is more than 3 minutes past a boundary.
 
