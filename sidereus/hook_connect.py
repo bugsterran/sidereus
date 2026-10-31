@@ -1,4 +1,5 @@
-"""«Connect» Sidereus hooks into other CLIs: Cursor ~/.cursor/hooks.json, Codex <CODEX_HOME>/hooks.json, Gemini settings.json.
+"""«Connect» Sidereus hooks into other CLIs: Cursor ~/.cursor/hooks.json, Codex <CODEX_HOME>/hooks.json, Gemini settings.json,
+Copilot <COPILOT_HOME>/hooks/sidereus.json (a Sidereus-owned file; Copilot loads every *.json in that folder).
 
 GET lists installed CLIs and whether every template entry is present (names, states, paths only).
 POST previews a diff (dry) or writes after confirm: only the `hooks` / `hooksConfig` members are spliced,
@@ -25,9 +26,11 @@ SYMLINK = "symlink — edit it by hand"
 _LOCK = threading.Lock()
 _MEMO = {}
 
-PLATS = (("cursor", "Cursor"), ("codex", "Codex"), ("gemini", "Gemini"))
+PLATS = (("cursor", "Cursor"), ("codex", "Codex"), ("gemini", "Gemini"), ("copilot", "Copilot"))
+FLAT = ("cursor", "copilot")    # hooks.<event> is a list of entries, not of matcher groups
 OURS = ("ext_hook.py", "pl_mark.py", "pl_flow.py", "gemini_mail_stop.py", "invite_notice.py", "pipelines_brief.py")
-_TPL = {"cursor": "cursor-hooks-example.json", "codex": "codex-hooks-example.json", "gemini": "gemini-settings-example.json"}
+_TPL = {"cursor": "cursor-hooks-example.json", "codex": "codex-hooks-example.json", "gemini": "gemini-settings-example.json",
+        "copilot": "copilot-hooks-example.json"}
 _KEY_RE = re.compile(r"""(?:^|[/\s"'])(%s)["']?(?=\s|$)(.*)$""" % "|".join(re.escape(x) for x in OURS))
 _STR_RE = re.compile(r'"(?:[^"\\]|\\.)*"(\s*:)?')
 
@@ -68,13 +71,26 @@ def _files():
         return HC_FILES
     return {"cursor": os.path.join(_home(), ".cursor", "hooks.json"),
             "codex": os.path.join(plat_codex.root(), "hooks.json"),
-            "gemini": plat_gemini.hook_settings()}
+            "gemini": plat_gemini.hook_settings(),
+            "copilot": os.path.join(_copilot_home(), "hooks", "sidereus.json")}
+
+
+def _copilot_home():
+    v = os.environ.get("COPILOT_HOME") or ""
+    return v if os.path.isabs(v) else os.path.join(_home(), ".copilot")     # ⚠a relative value would resolve against the viewer's cwd
+
+
+def _linked(p):
+    # ⚠a symlinked parent (e.g. a created ~/.copilot/hooks pointing elsewhere) would be followed by the write too
+    return os.path.islink(p) or os.path.islink(os.path.dirname(p))
 
 
 def _installed(plat, path):
     d = os.path.dirname(path)
     if plat == "cursor":    # ⚠a bare `agent` is too generic a name: count it only next to ~/.cursor
         return bool(_which("cursor-agent") or (_which("agent") and os.path.isdir(d)))
+    if plat == "copilot":   # ⚠the hooks/ folder does not exist by default: look at the Copilot home above it
+        return bool(_which("copilot") or os.path.isdir(os.path.dirname(d)))
     return bool(_which(plat) or os.path.isdir(d))
 
 
@@ -94,6 +110,11 @@ def _key(cmd):
     if m.group(1) == "gemini_mail_stop.py":     # ⚠--wake / --wait (opt-in) and the plain entry are one: adding the other would run both
         args = [" ".join(args[i:i + 2]) for i, a in enumerate(args) if a == "--platform"]
     return m.group(1), " ".join(args)
+
+
+def _cmd(e):
+    """Command string of one hook entry: Copilot entries carry `bash` / `powershell` instead of `command`."""
+    return e.get("command") or e.get("bash") or e.get("powershell")
 
 
 def _q(s):
@@ -126,12 +147,13 @@ def _template(plat):
 
     def fix(e):
         e = dict(e)
-        if isinstance(e.get("command"), str):
-            e["command"] = _subst(e["command"])
+        for k in ("command", "bash", "powershell"):
+            if isinstance(e.get(k), str):
+                e[k] = _subst(e[k])
         return e
     out = {}
     for ev, lst in hooks.items():
-        if plat == "cursor":
+        if plat in FLAT:
             out[ev] = [fix(e) for e in lst]
         else:
             out[ev] = [dict(g, hooks=[fix(e) for e in g.get("hooks", [])]) for g in lst]
@@ -166,10 +188,10 @@ def _merge(plat, cur, tpl):
         if not isinstance(have, list):
             raise ValueError("hooks.%s is not a list — fix it by hand" % ev)
         lst = list(have)
-        if plat == "cursor":
-            keys = {_key(e.get("command")) for e in have if isinstance(e, dict)}
+        if plat in FLAT:
+            keys = {_key(_cmd(e)) for e in have if isinstance(e, dict)}
             for e in tl:
-                if _key(e["command"]) not in keys:
+                if _key(_cmd(e)) not in keys:
                     lst.append(e)
                     adds += 1
         else:
@@ -182,8 +204,8 @@ def _merge(plat, cur, tpl):
                         continue
                     for e in hg.get("hooks") or []:
                         if isinstance(e, dict):
-                            keys.add(_key(e.get("command")))
-                miss = [e for e in g["hooks"] if _key(e.get("command")) not in keys]
+                            keys.add(_key(_cmd(e)))
+                miss = [e for e in g["hooks"] if _key(_cmd(e)) not in keys]
                 if miss:
                     ng = {"matcher": m} if "matcher" in g else {}
                     ng["hooks"] = miss
@@ -272,7 +294,7 @@ def _sha(raw):
 
 def _plan(plat, p):
     """-> dict(raw, new_raw, adds, diff, err); err = (code, message) or None. Writes nothing."""
-    if os.path.islink(p):
+    if _linked(p):
         return {"err": (400, SYMLINK)}      # ⚠os.replace would turn a dotfiles link into a regular file
     tpl = _template(plat)
     if tpl is None:
@@ -283,7 +305,7 @@ def _plan(plat, p):
     if raw is None:
         if plat == "gemini":     # ⚠settings.json is Gemini CLI's own file: never created here
             return {"raw": None, "err": (400, "settings.json not found — run gemini once")}
-        d = {"version": 1} if plat == "cursor" else {}
+        d = {"version": 1} if plat in FLAT else {}
         bom, text = b"", "{}\n"
     else:
         bom = b"\xef\xbb\xbf" if raw.startswith(b"\xef\xbb\xbf") else b""
@@ -293,7 +315,7 @@ def _plan(plat, p):
     except ValueError as e:
         return {"raw": raw, "err": (400, str(e))}
     sets = []
-    if raw is None and plat == "cursor":
+    if raw is None and plat in FLAT:
         sets.append(("version", 1))
     want = dict(d)
     if plat == "gemini":
@@ -388,7 +410,7 @@ def listing():
             continue
         state, why = _state(plat, p)
         can = state in ("missing", "partial")
-        if can and os.path.islink(p):
+        if can and _linked(p):
             can, why = False, SYMLINK
         elif can and _template(plat) is None:
             can, why = False, "no ext-hooks"
@@ -418,7 +440,7 @@ def _write(plat, p, raw, new_raw):
     try:
         bak = _backup(p, plat) if raw is not None else None
         os.makedirs(os.path.dirname(p), exist_ok=True)
-        if os.path.islink(p):
+        if _linked(p):
             return 400, {"ok": False, "err": SYMLINK}
         with open(tmp, "wb") as f:
             f.write(new_raw)

@@ -5,7 +5,7 @@
 let HC = null, HC_LD = false, HC_AT = 0, HC_AGAIN = false;   // last GET reply · in flight · fetch time (ms) · forced while in flight
 const HCS = {};                             // per plat: {st: 'prev'|'busy'|'done'|'err', diff, base, msg}
 const HC_TTL = 300000;                      // refetch at most every 5 min from repaints; «Refresh» and «Apply» force it
-const HC_LOGO = { cursor: 'cu', codex: 'cx', gemini: 'gm' };
+const HC_LOGO = { cursor: 'cu', codex: 'cx', gemini: 'gm', copilot: 'cp' };
 const hcOn = () => !(typeof FEATS === 'object' && FEATS && FEATS.diag === false);   // ⚠the route 404s with the feature off
 const hcLater = p => lsGet('sidereus.hclater.' + p, '') === '1';
 async function hcLoad(force){

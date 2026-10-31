@@ -131,7 +131,7 @@ class CursorHook(unittest.TestCase):
         self.assertEqual(hook.EVENTS["gemini"]["AfterAgent"], "Stop")
         self.assertEqual(hook.EVENTS["codex"]["PermissionRequest"], "Notification")
         self.assertNotIn("sessionStart", hook.EVENTS["codex"])
-        self.assertEqual(hook.EVENTS["copilot"], hook.EVENTS["codex"])
+        self.assertEqual(hook.EVENTS["copilot"], dict(hook.EVENTS["codex"], permissionRequest="Notification"))
 
     def test_main_dry_run_stdout_empty(self):
         stdin = io.StringIO(json.dumps(_payload("preToolUse", tool_name="Shell", tool_input={"command": CMD})))

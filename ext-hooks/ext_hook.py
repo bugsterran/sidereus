@@ -85,6 +85,9 @@ EVENTS["cursor"] = dict(EVENTS["codex"], **{
     "postToolUse": "PostToolUse",
     "postToolUseFailure": "PostToolUse",
 })
+# ★Copilot CLI 1.0.105 (macOS, 2026-10-31): PermissionRequest arrives camelCase (hookName, sessionId, toolName)
+#   even when registered PascalCase. ⚠Register PascalCase names only - camelCase too makes every event fire twice.
+EVENTS["copilot"] = dict(EVENTS["codex"], permissionRequest="Notification")
 
 # ★Accept every platform Sidereus knows (2026-09-22: commonly used AI platforms must be supported).
 #   ⚠CLIs with different event names must pass the standard name via `--event` - the default mapping is the standard 7, same as Codex.
@@ -120,7 +123,8 @@ def arg(name):
 
 
 def build(platform, data, event_override=None):
-    raw = event_override or data.get("hook_event_name") or data.get("hookEventName") or data.get("event")
+    raw = (event_override or data.get("hook_event_name") or data.get("hookEventName") or data.get("hookName")
+           or data.get("event"))
     event = EVENTS.get(platform, {}).get(raw)
     if not event:
         return None, raw
@@ -131,6 +135,11 @@ def build(platform, data, event_override=None):
         val = data.get(key)
         if isinstance(val, str) and val:
             out[key] = val
+    # Copilot camelCase payloads: ids only (toolInput, permissionSuggestions, timestamp are never copied).
+    for src, dst in (("sessionId", "session_id"), ("toolName", "tool_name")):
+        val = data.get(src)
+        if dst not in out and isinstance(val, str) and val:
+            out[dst] = val
     # Cursor: no base cwd (tool events send ""), session id lives in conversation_id too.
     if "session_id" not in out and isinstance(data.get("conversation_id"), str) and data["conversation_id"]:
         out["session_id"] = data["conversation_id"]

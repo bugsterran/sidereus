@@ -60,7 +60,7 @@ python3 -m sidereus start --demo --open      # 18799 포트, Ctrl-C로 끕니다
 
 ## 누구에게 맞나
 
-터미널에서 여러 CLI 에이전트 세션을 도구·계정·프로젝트를 넘나들며 돌리고, 대화 내용을 외부 서비스로 보낼 수 없고, 파이프라인에서 품질 게이트를 돌리는 사람을 위해 만들었습니다. Claude Code를 가장 먼저 지원합니다. Codex, Gemini, Cursor CLI는 훅으로 연결하며([HOOKS.ko.md](docs/HOOKS.ko.md)), 이들의 토큰은 Claude 한도와 따로 셉니다. Gemini 요금제 한도는 Google 서버에만 있으니 `/stats`로 확인하세요. Cursor IDE는 아직 지원하지 않고(#9), Copilot 등 다른 CLI는 확인하지 않았습니다.
+터미널에서 여러 CLI 에이전트 세션을 도구·계정·프로젝트를 넘나들며 돌리고, 대화 내용을 외부 서비스로 보낼 수 없고, 파이프라인에서 품질 게이트를 돌리는 사람을 위해 만들었습니다. Claude Code를 가장 먼저 지원합니다. Codex, Gemini, Cursor CLI, Copilot CLI는 훅으로 연결하며([HOOKS.ko.md](docs/HOOKS.ko.md)), 이들의 토큰은 Claude 한도와 따로 셉니다. Gemini 요금제 한도는 Google 서버에만 있으니 `/stats`로 확인하세요. Cursor IDE는 아직 지원하지 않고(#9), 다른 CLI는 확인하지 않았습니다.
 
 IDE 안에서 에이전트 한두 개만 쓰거나, Claude Code만 쓰면서 기다리는 세션만 먼저 보면 되거나(Claude Code의 agent view로 됩니다), 클라우드 실행이나 조직 단위 거버넌스가 필요한 팀이라면 맞지 않을 가능성이 큽니다.
 
@@ -119,7 +119,7 @@ Sidereus는 세션을 시작하거나 멈추거나 세션에 입력하지 않습
 | [시작하기](docs/GETTING-STARTED.ko.md) | 단계별 설치와 설정 |
 | [사용법](docs/GUIDE.ko.md) | 자주 하는 작업, 스크린샷 포함 |
 | [설정](docs/CONFIG.ko.md) | 경로, 설정 키, 환경 변수, launchd, 백업 |
-| [훅](docs/HOOKS.ko.md) | 훅, Codex·Gemini·Cursor CLI 연결, 메일박스 Stop 훅 |
+| [훅](docs/HOOKS.ko.md) | 훅, Codex·Gemini·Cursor CLI·Copilot CLI 연결, 메일박스 Stop 훅 |
 | [MCP](docs/MCP.ko.md) | `sidereus` MCP 서버 |
 | [병렬 작업](docs/PARALLEL-WORK.ko.md) | 병렬 worktree (`claude -w <이름> --tmux`) |
 | [구조](docs/STRUCTURE.ko.md) | 구조 탭: 아키텍처 구조도와 흐름, 크기 트리맵, 지원 언어 |
