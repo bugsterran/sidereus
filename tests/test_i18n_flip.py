@@ -82,7 +82,7 @@ class I18nBridge(unittest.TestCase):
                 "감시 스크립트 exit 1": "Watch script exit 1", "시간 초과": "Timed out", "서브에이전트 killed": "Subagent killed",
                 "감시 failed": "Watch failed", "백그라운드 failed": "Background failed", "중단 — 내가 멈춤": "Stopped — by me",
                 "도구 오류": "Tool error", "도구 오류 — Bash <경로>/a.py": "Tool error — Bash <path>/a.py", "API 오류": "API error",
-                "백그라운드 작업": "Background task", "알림 대기": "Waiting on notification", "(이름 없음)": "(unnamed)", "기타": "Other",
+                "백그라운드 작업": "Background task", "승인 대기": "Waiting for approval", "(이름 없음)": "(unnamed)", "기타": "Other",
                 "훅이 막음": "Blocked by hook", "임시(스크래치패드)": "Temporary (scratchpad)", "홈": "Home",
                 "처음 보는 서버 문장": "처음 보는 서버 문장", "plain english": "plain english", "": "",
                 "constructor": "constructor", "toString": "toString", "__proto__": "__proto__", "hasOwnProperty": "hasOwnProperty"}

@@ -282,7 +282,7 @@ def ext_rows():
                 "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
                 "kind": plat,
                 # ⚠The screen prints `blocked` as **a reason string** (`'Blocked · ' + x.blocked`) - a bool would become `Blocked · true`.
-                "blocked": ("알림 대기" if v.get("blocked") else ""),
+                "blocked": ("승인 대기" if v.get("blocked") else ""),
                 "otel": True,             # this row's state is **event-based** (not inferred)
                 "otelEv": v.get("state") or "",
                 "goneWhy": v.get("goneWhy") or "",     # «Disconnected»: "pid" = process gone, "silent" = no news (guess)

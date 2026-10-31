@@ -124,7 +124,7 @@ function extBody(d){
     + kv('Platform', aiLogo(d.plat) + ' ' + esc(d.platform || d.plat || ''))
     + kv('Model', esc(d.model || T('Unknown')))
     + kv('Path', esc(d.cwd || '—'))
-    + kv('Status', esc(stateLbl(d.state) || T(d.state || '')) + (d.blocked ? ' · ' + esc(T('Waiting on notification')) : ''))
+    + kv('Status', esc(stateLbl(d.state) || T(d.state || '')) + (d.blocked ? ' · ' + esc(T('waiting for approval')) : ''))
     + kv('Last tool', esc(d.tool || '—'))
     + kv('First seen', esc(tm(d.firstSeen)) + ' · ' + esc(agoAt(d.firstSeen)))
     + kv('Last seen', esc(tm(d.lastSeen)) + ' · ' + esc(agoAt(d.lastSeen)))

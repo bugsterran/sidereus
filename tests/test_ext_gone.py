@@ -127,14 +127,14 @@ class Gone(unittest.TestCase):
         for ago in (31 * 60, 2 * 3600, st.EXT_TTL_S + 60):
             self.clock[0] = NOW + ago
             r = self.row()
-            self.assertEqual((r["state"], r["blocked"]), ("ask", "알림 대기"), ago)
+            self.assertEqual((r["state"], r["blocked"]), ("ask", "승인 대기"), ago)
 
     def test_pidless_prompt_kept_unknown_liveness(self):
         self.feed("Notification", NOW)
         for ago in (31 * 60, 2 * 3600, st.EXT_TTL_S + 60):
             self.clock[0] = NOW + ago
             r = self.row()
-            self.assertEqual((r["state"], r["blocked"]), ("ask", "알림 대기"), ago)
+            self.assertEqual((r["state"], r["blocked"]), ("ask", "승인 대기"), ago)
 
     def test_dead_pid_prompt_leaves(self):
         self.alive.add(4242)
