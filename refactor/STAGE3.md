@@ -121,6 +121,7 @@ notes · parse · adapter · plat_gemini · plat_codex · plat_cursor · plat_co
   `_sess_segments`/`_compacts`/`naps` patched on `timeline` still reach the assembly code. Proof: 31 functions bytecode-identical, 197 global lookups same, agents_timeline 1/12/168h + other outputs sha-equal on synthetic fixtures.
 - `timeline_ext` (2026-10-05, out of `timeline`): ext CLI rows `_ext_child`/`_plat_rows`/`_plat_tl_rows`/`_ext_tl`/`_ext_sess`; `timeline` imports only `_plat_tl_rows`.
   ⚠Patch `_ext`/`ext_runs` on `timeline_ext`; the golden test still patches `_plat_tl_rows` on `timeline` (its own binding).
+  + `_pres_row` (2026-10-31): `_plat_tl_rows` appends one depth-0 row per `ext_presence.ext_presence_rows(now)` (hook-less Cursor/Copilot; imported at top, `ext_presence` is earlier). Tests patch `ext_presence._cands`.
 - `failures` split in two (2026-09-24): `failures_scan` (grading `_fail_grade`/`_GRADE_RULES`, signatures `_fail_sig`/`_tool_sig`, `_fail_line`, cumulative scan
   `_fail_read`/`_fail_transcripts`/`_fail_events`; owns `_FAIL_EV`/`_FAIL_OFF`/`_FAIL_BUSY`/`_FAIL_LOCK`/`_FAIL_SCAN`, `FAIL_*` scan caps) · `failures` (1h card, `_fail_loop`,
   `failures()`, wreckage, alert cards; owns `_FAIL_1H`, `_WRECK_*`/`_DIRTY_CACHE`, `_FAIL_CARDED`/`_WDROP`/`_WSNAP`; re-exports 7 scan names). ⚠Patch scan internals
