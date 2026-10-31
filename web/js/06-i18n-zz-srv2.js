@@ -35,6 +35,7 @@ Object.assign(I18N.ko, {
   "Window-learning data format changed — relearning (v{old} → v{new})": "창 학습치 형식이 달라 다시 배웁니다(v{old} → v{new})",
   "Could not read window-learning data ({err}) — learning from scratch": "창 학습치를 읽지 못했습니다({err}) — 처음부터 배웁니다",
   "Could not save window-learning data ({err})": "창 학습치를 저장하지 못했습니다({err})",
+  "Could not save open background shells ({err}) — they vanish after a restart": "열린 백그라운드 셸을 저장하지 못했습니다({err}) — 재시작하면 사라집니다",
   "Window-learning scan failed ({err})": "창 학습 스캔이 실패했습니다({err})",
   "Window-learning scan stopped refreshing — {err}": "창 학습 스캔 갱신이 멈췄습니다 — {err}",
   "Folder dialog failed: {err}": "폴더 선택 창 오류: {err}",

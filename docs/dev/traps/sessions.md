@@ -246,6 +246,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: a receipt line has no `"Bash"`, so the subagent-transcript filter in `_running_bg_locked` dropped it and a subagent's shell had no path.
   - ⇒ The filter also passes `running in background with ID`; `bg_idle` stats the path per poll in `_row_children` (`tests/test_bgidle.py`).
   - ⚠Never compute it inside the parse cache — a cached parse freezes mtime-based elapsed time. Never open the output file or put the path on a row.
+- ⚠**A subagent's background shell vanished after a restart once its log was older than 6 h** (`bgtasks_open._bg_open_save`/`_bg_open_restore`).
+  - Cause: open rows were memory-only and `_sub_transcripts` skips subagent logs older than 6 h, so the launch was never re-read (★`npm run dev` running 6 h+, bgs = [] after restart).
+  - ⇒ Open bg rows with an output path are saved to `bg-open.json` when the set changes (≤ 200 rows, sessions with no transcript pruned) and restored on the fp's first scan, before its lines.
+  - ⚠Restore skips dismissed tids and rows whose output file is missing or older than boot. Never close a row because its agent ended — the shell outlives it. Never widen the 6 h window (memory/speed). Test: `tests/test_bg_open_persist.py`.
 
 ## Work-log popup and diff window
 

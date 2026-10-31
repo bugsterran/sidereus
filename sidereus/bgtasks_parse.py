@@ -32,7 +32,7 @@ _fg_lab = BoundedMemo(400)     # foreground Bash tool_use id → (row label, lin
 #   Only the measured form (Bash timeout) is matched; a hand-backgrounded message was not seen in any transcript.
 _FG_MOVED_RE = re.compile(r"^\s*Command did not complete within its \S+ timeout and was moved to the background")
 # Output file named in a bg receipt (4th slot of a "bg" row, read by `bgtasks.bg_idle` via stat only).
-#   ⚠Taken from the receipt text, never from tool input; the path never reaches a row, the API or a cache.
+#   ⚠Taken from the receipt text, never from tool input; the path never reaches a row or the API (kept only in bgtasks_open.BG_OPEN_FILE).
 #   Unix or Windows (drive letter + backslashes) form.
 _BG_OUT_RE = re.compile(r"Output is being written to: ((?:/\S+/|[A-Za-z]:\\\S+\\)tasks[/\\][A-Za-z0-9_-]+\.output)")
 
