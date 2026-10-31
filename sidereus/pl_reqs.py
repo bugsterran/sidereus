@@ -13,7 +13,7 @@ import subprocess
 import threading
 import time
 
-from sidereus.config import DATA_DIR
+from sidereus.config import CODE_DIR, DATA_DIR
 from sidereus.bus import RELAY_SID, _atomic_write
 from sidereus import arch_map, gitinfo
 
@@ -31,7 +31,7 @@ KEYS_MAX = 50             # security-fix: finding keys per request (= the page's
 KEY_MAX = 300
 KEYS_CHARS_MAX = 6000     # per record: 50 records x 6000 stay under READ_MAX (_write also drops the oldest past it)
 FIX_PL = "security-fix"
-REVIEW_STAGE = "리뷰"      # = .claude/pipelines/security-fix.json last stage title: «done» needs it done
+REVIEW_STAGE = "리뷰"      # fallback only: the review is the last stage of .claude/pipelines/security-fix.json (_review_title)
 VIEW_PER_REPO = 5
 RUN_SLACK_S = 60          # a run whose t0 is this far before the request still answers it (clock / tag order)
 _ID = re.compile(r"^[0-9A-Za-z]{1,32}$")
@@ -236,9 +236,19 @@ def _pick_run(r, row, until):
     return run
 
 
+def _review_title():
+    """Last stage title of the security-fix pipeline file, so renaming the stage does not leave requests open."""
+    try:
+        with open(os.path.join(CODE_DIR, ".claude", "pipelines", FIX_PL + ".json"), encoding="utf-8") as f:
+            t = json.load(f)["stages"][-1]["title"]
+        return t if isinstance(t, str) and t else REVIEW_STAGE
+    except Exception:
+        return REVIEW_STAGE
+
+
 def _review_done(run):
     st = run.get("stages") if isinstance(run, dict) and isinstance(run.get("stages"), dict) else {}
-    s = st.get(REVIEW_STAGE)
+    s = st.get(_review_title())
     return isinstance(s, dict) and s.get("o") == "done"
 
 

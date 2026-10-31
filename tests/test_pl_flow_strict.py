@@ -316,6 +316,24 @@ class FixReq(unittest.TestCase):
         self.recip_run(950.0, "done", past=True)   # replaced run kept in "past" still counts
         self.assertFalse(self.denied(self.x_edit()))
 
+    def test_r3_renamed_review_stage_still_lifts(self):
+        d = os.path.join(self.tmp, ".claude", "pipelines")
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "security-fix.json"), "w", encoding="utf-8") as f:
+            json.dump({"stages": [{"title": "Fix"}, {"title": "Rescan"}, {"title": "Review"}]}, f)
+        self.req(sid="recip-0002")
+        os.makedirs(self.marks, exist_ok=True)
+        r = {"cur": "Review", "end": 0, "t0": 950.0, "t1": 950.0, "st": {"Fix": {"s": "done"}, "Review": {"s": "done"}}}
+        with open(os.path.join(self.marks, "recip-0002.runs.json"), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "runs": {"security-fix": r}}, f)
+        self.assertFalse(self.denied(self.x_edit()))
+        r["st"]["Review"]["s"] = "run"
+        with open(os.path.join(self.marks, "recip-0002.runs.json"), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "runs": {"security-fix": r}}, f)
+        o = self.x_edit()
+        self.assertTrue(self.denied(o))
+        self.assertIn("[pl:security-fix/Fix]", o["permissionDecisionReason"])
+
     def test_r3_review_not_done_still_denied(self):
         self.req(sid="recip-0002")
         self.recip_run(950.0, "run")

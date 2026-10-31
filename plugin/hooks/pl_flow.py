@@ -1474,7 +1474,13 @@ def _bash_writes(cmd, cwd, proj):
 
 FIX_PL = "security-fix"
 FIX_REQ_S = 86400   # an open security-fix request gates its repo this long after it was sent
-FIX_REVIEW = "리뷰"   # stage title whose «done» ends the request (= .claude/pipelines/security-fix.json)
+FIX_REVIEW = "리뷰"   # fallback only: the review is the file's last stage, so a renamed title still lifts the gate
+
+
+def _fix_titles():
+    """(first, last) stage titles of DATA_DIR/.claude/pipelines/security-fix.json; ("수정", FIX_REVIEW) if unreadable."""
+    got = _stages(DATA_DIR, FIX_PL)
+    return (got[0][0]["title"], got[0][-1]["title"]) if got else ("수정", FIX_REVIEW)
 
 
 def _fix_reviewed(sid, at):
@@ -1486,9 +1492,10 @@ def _fix_reviewed(sid, at):
         d = _load(os.path.join(MARK_DIR, sid + ".runs.json"))
         past = d.get("past") if isinstance(d.get("past"), dict) else {}
         runs = [d["runs"].get(FIX_PL)] + list(past.get(FIX_PL) or [])[-PAST_MAX:]
+        review = _fix_titles()[1]
         for r in runs:
             if isinstance(r, dict) and isinstance(r.get("st"), dict) and float(r.get("t0") or 0) >= at \
-                    and (r["st"].get(FIX_REVIEW) or {}).get("s") == "done":
+                    and (r["st"].get(review) or {}).get("s") == "done":
                 return True
         return False
     except Exception:
@@ -1547,9 +1554,9 @@ def _fix_gate(ev, sid, tool, sub, now):
             if r.get("end") and 0 <= now - float(r.get("end") or 0) <= STRICT_GRACE_S:
                 return False
         return _deny("An open security-fix request for %s (sent %s) gates edits and git commit in that repo. It lifts "
-                     "when the run's review stage finishes, on «Stop», or after 24 h. Open the run with an Agent/Bash description tagged [pl:security-fix/수정], "
+                     "when the run's review stage finishes, on «Stop», or after 24 h. Open the run with an Agent/Bash description tagged [pl:security-fix/%s], "
                      "following %s, or the owner can press «Stop» on the request line."
-                     % (req["repo"], time.strftime("%Y-%m-%d %H:%M", time.localtime(req["at"])),
+                     % (req["repo"], time.strftime("%Y-%m-%d %H:%M", time.localtime(req["at"])), _fix_titles()[0],
                         os.path.join(DATA_DIR, ".claude", "pipelines", FIX_PL + ".json")))
     except Exception:
         return False
