@@ -254,3 +254,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: a new `svSet` helper in 55 shadowed `async function svSet(body)` in 90-settings — the PAGE is one script, so the later declaration wins and every page threw on load.
 - ⇒ Pick a new name after `grep -n "function <name>" web/js`; `tests/test_main_acct_redraw_js.py` fails on any duplicate top-level function name.
 - ⚠`check.sh --fast` does not load the page — only `--full` (screen_check) shows the load-time exception.
+
+## A fold summary holds no buttons or code chips
+- Cause: inside `<summary>` every click toggles the `<details>`, so a button or a `user-select:all` code chip there cannot be used without folding the card.
+- ⇒ Keep commands and controls in the body (47d runtime card: the brew `<code>` stays in the body; the summary is text and badges only).

@@ -9,10 +9,11 @@ from tests._load import js_fn
 from tests.test_saver_quota_js import BASE, i18n, jconst
 from tests._node import node_e
 
-FNS = ("hnN", "hnPl", "hnWhen", "hnRtGet", "hnRtCls", "hnRtBrew", "hnRtCmd", "hnRtItem", "hnRuntime")
+FNS = ("hnN", "hnPl", "hnWhen", "hnRtGet", "hnRtCls", "hnRtBrew", "hnRtCmd", "hnRtItem", "hnRtWorst", "hnRuntime")
 CONSTS = ("esc", "HN_RTL", "HN_RTP", "HN_RTN", "HN_RTF")
 
 SCEN = r"""
+var HN = {fold: {}};
 const it = (o) => Object.assign({rt: 'nodejs', path: '/opt/homebrew/bin/node', cls: 'homebrew', viewer: true, cur: '20.1.0', cycle: '20', level: 'fail',
   patch: {level: 'fail', target: '20.18.1', security: true, eol: '2026-04-30', eol_past: true},
   newest: {level: 'info', target: '24.2.0', behind_n: 2}, fix: 'brew-node'}, o);
@@ -37,6 +38,12 @@ R.stale = hnRuntime({runtime: Object.assign({}, base, {state: 'ok', stale: true,
 R.fresh = hnRuntime({runtime: Object.assign({}, base, {state: 'ok', items: [it({level: 'ok', patch: {level: 'ok', target: '20.1.0'}, newest: {level: 'ok', target: '20.1.0'}})]})});
 R.rec = hnRuntime({runtime: {state: 'none', items: [], cmd: 'scripts/arch_checks.py --category security'}});
 R.proto = hnRuntime({runtime: Object.assign({}, base, {items: [it({level: 'constructor', patch: {level: 'toString'}, fix: '__proto__', rt: 'constructor'})]})});
+R.closed = R.behind;
+HN.fold.rt = true;   // what 47b's toggle listener stores when the person opens it
+R.reopen = hnRuntime({runtime: Object.assign({}, base, {items: [it({}), py]})});
+HN.fold.rt = false;
+R.warnonly2 = hnRuntime({runtime: Object.assign({}, base, {items: [it({patch: {level: 'warn', target: '20.18.1', eol: '2027-04-30', eol_past: false}, level: 'warn'})]})});
+R.infoonly = hnRuntime({runtime: Object.assign({}, base, {state: 'ok', items: [it({level: 'info', patch: {level: 'ok', target: '24.2.0', eol: '2028-04-30', eol_past: false}, newest: {level: 'info', target: '25.1.0', behind_n: 1}})]})});
 R.bad = hnRuntime({runtime: Object.assign({}, base, {state: 'unknown', items: [it({level: 'zz', patch: {level: 'x"y', target: '<b>1</b>'}, newest: {level: 'evil'}, fix: 'rm -rf', cur: '<i>2</i>', cycle: '<s>'})]})});
 """
 
@@ -145,6 +152,54 @@ class HarnessRuntimeJs(unittest.TestCase):
         self.assertIn("latest unknown", p)
         self.assertIn("Update it with the tool that installed it", p)
         self.assertNotIn("function", p)
+
+    def test_r3_not_all_clear_folds_to_one_line(self):
+        h = self.R["closed"]
+        self.assertTrue(h.startswith('<details class="hnmore hnrtw" data-hnmore=rt><summary>'))
+        self.assertTrue(h.endswith("</details>"))
+        summ = h[h.index("<summary>"):h.index("</summary>")]
+        self.assertIn("Runtime behind latest patch", summ)
+        self.assertIn('<b class="hnrtb hnrtl-fail">end of life</b>', summ)
+        self.assertIn("2 runtimes", summ)
+        self.assertIn("from sec-2026.json", summ)
+        # nothing clickable in the summary: a click there toggles the fold
+        self.assertNotIn("<code", summ)
+        self.assertNotIn("<button", summ)
+        self.assertNotIn("<a ", summ)
+        self.assertIn('<b class="hnrtb hnrtl-warn">behind</b>', self.R["warnonly2"])
+        self.assertIn("1 runtime ", self.R["warnonly2"])
+
+    def test_r3_detail_unchanged(self):
+        h = self.R["closed"]
+        body = h[h.index("</summary>") + len("</summary>"):-len("</details>")]
+        self.assertEqual(body.count("class=hnrtr>"), 4)
+        self.assertIn("Move to a supported cycle: <code class=hnrtc>brew install node</code>", body)
+        self.assertIn("python.org publishes no security flag", body)
+        self.assertIn("System Python updates with macOS", body)
+
+    def test_r3_stale_and_none_fold_without_clean_claim(self):
+        st = self.R["stale"]
+        summ = st[st.index("<summary>"):st.index("</summary>")]
+        self.assertIn("checked 12 days ago", summ)
+        self.assertIn("latest unknown", summ)
+        self.assertNotIn("Runtimes on latest patch", st)
+        rc = self.R["rec"]
+        summ = rc[rc.index("<summary>"):rc.index("</summary>")]
+        self.assertIn("No check on record", summ)
+        self.assertNotIn("runtime</", summ)
+        self.assertNotIn("<code", summ)
+
+    def test_r3_info_only_summary(self):
+        h = self.R["infoonly"]
+        summ = h[h.index("<summary>"):h.index("</summary>")]
+        self.assertNotIn("latest unknown", summ)
+        self.assertIn('<b class="hnrtb hnrtl-info">newer cycle available</b>', summ)
+        self.assertIn("1 runtime ", summ)
+
+    def test_r4_open_survives_rerender(self):
+        self.assertNotIn(" open>", self.R["closed"][:80])
+        self.assertTrue(self.R["reopen"].startswith('<details class="hnmore hnrtw" data-hnmore=rt open><summary>'))
+        self.assertEqual(self.R["reopen"].replace(" open>", ">", 1), self.R["closed"])
 
 
 if __name__ == "__main__":

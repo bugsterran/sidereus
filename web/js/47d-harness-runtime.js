@@ -39,6 +39,15 @@ function hnRtItem(it, stale){
     + (nLab ? '<b class="hnrtb' + hnRtCls(HN_RTL, nw.level) + '">' + esc(nLab) + '</b>' : '') + ar + '<code class=hnrc>' + esc(s(nw.target)) + '</code></span>'
     + step + '</div>';
 }
+// Worst state as a fixed key for the folded summary line; never a clean claim.
+function hnRtWorst(rt, items){
+  const p = x => (x.patch && typeof x.patch === 'object') ? x.patch : {};
+  if(items.some(x => p(x).eol_past)) return 'end of life';
+  if(items.some(x => p(x).level === 'fail' || p(x).level === 'warn')) return 'behind';
+  if(rt && rt.state === 'none') return 'No check on record';
+  // ⚠Patch current but a newer cycle exists (item level info) is known, not unknown.
+  return items.some(x => x.level === 'info' && x.newest && x.newest.level === 'info') ? 'newer cycle available' : 'latest unknown';
+}
 function hnRuntime(d){
   const rt = d && d.runtime;
   if(!rt || typeof rt !== 'object') return '';
@@ -58,5 +67,15 @@ function hnRuntime(d){
     body += items.map(x => hnRtItem(x, stale)).join('');
     if(items.length) body += '<div class="hidnote hnrtlim">' + esc(T('Within what the check saw: other installs are not covered. python.org publishes no security flag, so Python is judged by end of life and patch level only.')) + '</div>';
   }
-  return '<div class=hnrtw><div class=brh2><b>' + esc(T('Runtime behind latest patch')) + '</b>' + (src ? ' <i>' + esc(src) + '</i>' : '') + '</div>' + body + '</div>';
+  // Folded to one summary line (open state in HN.fold.rt, kept across repaints by 47b's toggle listener). ⚠Nothing clickable in <summary>: a click there toggles the fold.
+  const wk = hnRtWorst(rt, items), info = wk === 'newer cycle available';
+  const wl = wk === 'end of life' || (wk === 'behind' && items.some(x => x.patch && x.patch.level === 'fail')) ? 'fail' : wk === 'behind' ? 'warn' : info ? 'info' : 'unknown';
+  // Count matches the badge: info items for a newer-cycle summary, otherwise items neither ok nor info.
+  const cnt = rt.state === 'none' ? 0 : items.filter(x => info ? x.level === 'info' : x.level !== 'ok' && x.level !== 'info').length;
+  const sum = ['<b class="hnrtb' + hnRtCls(HN_RTL, wl) + '">' + esc(T(wk)) + '</b>',
+    cnt ? esc(TV({msg: hnPl(cnt, '{n} runtime', '{n} runtimes'), vars: {n: cnt}})) : '',
+    stale ? esc(TV({msg: hnPl(n, 'checked {n} day ago — rerun to know it is current', 'checked {n} days ago — rerun to know it is current'), vars: {n: n}})) : '',
+    src ? '<i>' + esc(src) + '</i>' : ''].filter(Boolean).join(' · ');
+  const open = typeof HN !== 'undefined' && HN.fold && HN.fold.rt ? ' open' : '';
+  return '<details class="hnmore hnrtw" data-hnmore=rt' + open + '><summary><div class=brh2><b>' + esc(T('Runtime behind latest patch')) + '</b><span class=hnrtsm>' + sum + '</span></div></summary>' + body + '</details>';
 }

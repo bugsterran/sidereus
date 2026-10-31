@@ -205,6 +205,12 @@ html[data-theme=light] .hnvdq.hnvd-bad{color:#b0473a}
 html[data-theme=light] .hnvdq.hnvd-check{color:#8a5a12}
 /* «Runtime behind latest patch» card (47d): left accent per level via HN_RTL only; rows wrap at 900, no sideways scroll */
 .hnrtw{margin:0 0 10px;min-width:0}
+.hnrtw>summary{display:block;cursor:pointer;list-style:none}
+.hnrtw>summary::-webkit-details-marker{display:none}
+.hnrtw>summary .brh2{flex-wrap:wrap;gap:4px 8px;margin:4px 0 6px;border-top:0;padding-top:0}   /* one line, wraps at 900 (no ellipsis); sits right under the report heading */
+.hnrtw>summary .brh2::before{content:'▸';color:#5d6878}
+.hnrtw[open]>summary .brh2::before{content:'▾'}
+.hnrtsm{font-weight:400;color:var(--nx-t2,#909298)}   /* one inline run so the « · » separators wrap with their text */
 .hnrt{flex-direction:column;align-items:stretch;gap:3px}
 .hnrt .hnrh,.hnrtr,.hnrtn{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 8px;min-width:0}
 .hnrt .hnrc,.hnrtc{overflow-wrap:anywhere;min-width:0}

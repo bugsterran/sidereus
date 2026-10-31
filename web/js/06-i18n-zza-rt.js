@@ -30,4 +30,8 @@ Object.assign(I18N.ko, {
   'then restart the sessions or tools that use it': '그다음 이것을 쓰는 세션·도구 다시 시작',
   'System Python updates with macOS — or switch to a Homebrew Python': '시스템 Python 은 macOS 업데이트로 올라갑니다 — 또는 Homebrew Python 으로 바꾸기',
   'Update it with the tool that installed it': '설치한 도구로 업데이트',
+  'end of life': '지원 종료',
+  'newer cycle available': '새 버전대 있음',
+  '{n} runtime': '런타임 {n}개',
+  '{n} runtimes': '런타임 {n}개',
 });
