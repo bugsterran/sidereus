@@ -5,7 +5,7 @@ html[data-ui=next][data-ui] .hrow{flex-wrap:nowrap;min-height:48px;column-gap:10
 html[data-ui=next] .hrow > .vtitle{flex:0 0 auto;margin:0;font-size:20px;font-weight:700;line-height:1.3;color:var(--nx-t1);white-space:nowrap}
 /* #todo takes the far-right push; #sesb then sits right after it */
 html[data-ui=next] .hrow > #todo{margin:0 0 0 auto;flex-wrap:nowrap;gap:5px;flex-shrink:0}
-html[data-ui=next] .hrow > #sesb{flex-shrink:0}
+html[data-ui=next] .hrow > #sesb{flex-shrink:0;margin-left:auto} /* ⚠ an empty #todo is display:none, so its auto margin is gone; without this the button sits beside the title */
 html[data-ui=next] .hrow > #todo:not(:empty) ~ #sesb{margin-left:0}
 html[data-ui=next] .hrow > #todo .td{white-space:nowrap}
 /* ≤1000px: short chip labels; ⚠the «Sessions» word stays (hiding it left a bare icon) — the row wraps instead of squeezing. */
