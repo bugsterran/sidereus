@@ -336,7 +336,7 @@ hooks; nothing shows when every entry is present. «Later» hides it per CLI.
 - The original is copied to `<DATA_DIR>/tool-trash/<ts>/<plat>-<file>` first; any failure leaves it unchanged. A
   second «Connect» changes nothing.
 - ⚠A symlinked hook file is refused; edit it by hand.
-- ⚠Restart CLI sessions that were already open: only newly started sessions load the hooks. Codex: restart it, then run `/hooks` and approve the new entries, or Codex ignores them.
+- ⚠Restart CLI sessions that were already open: only newly started sessions load the hooks. Codex: restart it, then run `/hooks` and approve the new entries, or Codex ignores them. A freshly started Codex session shows only after its first message (no event before that; ★Windows, 2026-10-31).
 - Manual setup below stays valid; a hand-edited file is detected the same way.
 
 ### Gemini CLI
