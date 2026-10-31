@@ -15,6 +15,7 @@ from sidereus.perm_marks import note_sub_log
 from sidereus.bgtasks_parse import (_bg_open, _bg_open_at, _bg_seeded, _bg_finished, _bg_dropped, _bg_drop_save,
                                  _bg_popped, _bg_resume, _bg_sent, _sub_label, _bg_pop, _bg_on_notice, _bg_on_line,
                                  _alive_beat)
+from sidereus.bgtasks_open import _bg_open_restore, _bg_open_save
 
 RUN_STALE_S = 7200        # agents launched over 2 hours ago are not counted (a completion notice may have been missed)
 SUB_LIVE_S = 120           # if the subagent log was updated within this, **treat it as running** (comment below)
@@ -199,6 +200,8 @@ def _running_bg_locked(fp, rows=None):
     seeding = fp not in _bg_seeded      # the first scan makes no 'completion cards' (old ones would flood out at once)
     _bg_seeded.add(fp)
     now = time.time()
+    if seeding:
+        _bg_open_restore(fp, open_now, boot_time())   # before the lines, so a notice read now still closes the row
     # ⚠A subagent's own Bash shells (background, or a foreground call moved to the background at its timeout) are
     #   recorded only in that agent's transcript, while their completion notices land in this parent transcript.
     #   Read the agents' Bash lines first so a launch and its notice in the same tick open then close in order.
@@ -223,6 +226,7 @@ def _running_bg_locked(fp, rows=None):
     _bg_evict()
     _bg_expire(open_now, now)
     _bg_revive(fp, open_now, now)
+    _bg_open_save(fp, open_now)
     return _bg_result(fp, open_now)
 
 
