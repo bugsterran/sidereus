@@ -420,6 +420,18 @@ class SecurityFixTest(_Base):
             v = PQ.view([self.row(run)], {})[REPO][0]
         self.assertEqual((v["state"], v["reviewOk"]), ("done", True))
 
+    def test_r4_renamed_review_stage_counts(self):
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root, True)
+        os.makedirs(os.path.join(root, ".claude", "pipelines"))
+        with open(os.path.join(root, ".claude", "pipelines", "security-fix.json"), "w", encoding="utf-8") as f:
+            json.dump({"stages": [{"title": "Fix"}, {"title": "Rescan"}, {"title": "Review"}]}, f)
+        self.send()
+        run = {"name": "security-fix", "t0": NOW + 5, "end": NOW + 900, "cur": "Review", "stages": {"Review": {"o": "done"}}}
+        with mock.patch.object(PQ, "CODE_DIR", root):
+            v = PQ.view([self.row(run)], {})[REPO][0]
+        self.assertEqual((v["state"], v["reviewOk"]), ("done", True))
+
     def test_r4_closed_written_once(self):
         self.send()
         run = {"name": "security-fix", "t0": NOW + 5, "end": NOW + 900, "cur": PQ.REVIEW_STAGE, "stages": {PQ.REVIEW_STAGE: {"o": "done"}}}
