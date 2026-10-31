@@ -8,13 +8,16 @@
       { "type": "command", "bash": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "powershell": "& <PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "timeoutSec": 5 }
     ],
     "PreToolUse": [
-      { "type": "command", "bash": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "powershell": "& <PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "timeoutSec": 5 }
+      { "type": "command", "bash": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "powershell": "& <PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "timeoutSec": 5 },
+      { "type": "command", "bash": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_mark.py --platform copilot", "powershell": "& <PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_mark.py --platform copilot", "timeoutSec": 5 },
+      { "type": "command", "bash": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_flow.py --platform copilot", "powershell": "& <PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_flow.py --platform copilot", "timeoutSec": 5 }
     ],
     "PermissionRequest": [
       { "type": "command", "bash": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "powershell": "& <PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "timeoutSec": 5 }
     ],
     "PostToolUse": [
-      { "type": "command", "bash": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "powershell": "& <PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "timeoutSec": 5 }
+      { "type": "command", "bash": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "powershell": "& <PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "timeoutSec": 5 },
+      { "type": "command", "bash": "<PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_flow.py --platform copilot", "powershell": "& <PYTHON> <MAILBOX_CODE_DIR>/hooks/pl_flow.py --platform copilot", "timeoutSec": 5 }
     ],
     "Stop": [
       { "type": "command", "bash": "<PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "powershell": "& <PYTHON> <MAILBOX_CODE_DIR>/ext-hooks/ext_hook.py --platform copilot", "timeoutSec": 5 }

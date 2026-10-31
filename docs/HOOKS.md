@@ -404,7 +404,13 @@ Copy `ext-hooks/copilot-hooks-example.json` to `~/.copilot/hooks/sidereus.json` 
   `.github/hooks`, or inline hooks in `~/.copilot/settings.json`; if you already added the same hooks there, events
   arrive twice.
 - `COPILOT_HOME` is read from the viewer's environment; under launchd it is usually unset, so `~/.copilot` is used.
-- Not done yet: pipeline stage marks (`[pl:]`) and a Windows check.
+- Pipeline stage marks: `PreToolUse` runs `hooks/pl_mark.py` and `hooks/pl_flow.py --platform copilot`, `PostToolUse`
+  runs `pl_flow.py`. ★Checked on macOS with Copilot CLI 1.0.105 (2026-10-31): the shell tool is `bash` with args
+  `command`, `description`, `mode`, `initial_wait`; a `[pl:<pipeline>/<stage>]` tag at the start of `command` or in
+  `description` lights the stage.
+  - ⚠An undeclared jump is recorded as a skip, never denied. There is no `[pl-end:]` hand-off text after the tool runs.
+  - Already connected before this: press «Connect» again; only the three missing entries are appended.
+- Not done yet: a Windows check.
 
 ### Codex CLI
 

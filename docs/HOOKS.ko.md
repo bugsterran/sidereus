@@ -388,7 +388,13 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 - ⚠«연결» 은 `sidereus.json` 만 쓴다. 다른 `~/.copilot/hooks/*.json`, 저장소의 `.github/hooks`, `~/.copilot/settings.json`
   안의 인라인 훅은 보지 않는다. 거기에 같은 훅을 이미 넣었다면 이벤트가 두 번 온다.
 - `COPILOT_HOME` 은 뷰어의 환경에서 읽는다. launchd 에는 보통 없으므로 `~/.copilot` 을 쓴다.
-- 아직 안 한 것: 파이프라인 단계 표시(`[pl:]`), Windows 확인.
+- 파이프라인 단계 표시: `PreToolUse` 가 `hooks/pl_mark.py` 와 `hooks/pl_flow.py --platform copilot` 을, `PostToolUse` 가
+  `pl_flow.py` 를 실행한다. ★macOS, Copilot CLI 1.0.105 에서 확인(2026-10-31): 셸 도구는 `bash` 이고 인자는 `command`,
+  `description`, `mode`, `initial_wait` 이다. `command` 맨 앞이나 `description` 에 `[pl:<파이프라인>/<단계>]` 태그가 있으면
+  그 단계에 불이 들어온다.
+  - ⚠선언하지 않은 건너뛰기는 막지 않고 건너뜀으로 기록만 한다. 도구 실행 뒤 `[pl-end:]` 인계 문구는 없다.
+  - 이전에 이미 연결했다면 «연결» 을 다시 누른다. 빠진 항목 세 개만 덧붙는다.
+- 아직 안 한 것: Windows 확인.
 
 ### Codex CLI
 
