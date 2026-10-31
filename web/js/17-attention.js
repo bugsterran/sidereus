@@ -71,7 +71,8 @@ const ATTN_LIST_ONLY = new Set(['done', 'bgdone', 'gone']);
 // ⚠Show through attnLbl() (88b and 89 read this table too): 'done' is 'Done|work' in Korean, unlike plain 'Done'.
 const ATTN_LBL = { blocked:'Blocked', ask:'Awaiting answer', abort:'Aborted', ctx95:'Context 95%+', fail:'Failures', wreck:'Half-edited files',
                    stall:'Subagent stalled', loop:'Repeated calls', toolfail:'Tool failures', ctx85:'Context 85%+',
-                   done:'Done', bgdone:'Background done', conflict:'Conflict risk', gone:'Disconnected', mailidle:'Mail waiting' };
+                   done:'Done', bgdone:'Background done', conflict:'Conflict risk', gone:'Disconnected', mailidle:'Mail waiting',
+                   bgidle:'Idle shells' };
 function attnLbl(k){ return T(ATTN_LBL[k] || k, 'work'); }
 function attnPolOf(k){
   if(ATTN_LIST_ONLY.has(k)) return 'list';
@@ -108,6 +109,7 @@ function attnWhy(g){
     case 'mailidle': { const m = w.match(/(\d+)\D+(\d+)/); return T('Mail waiting · session idle') + (m ? ' · ' + PL(m[1], 'message') + ' · ' + U(m[2], 'm') : ''); }
     case 'done': return 'Done · waiting for input ' + U(n, 'm');
     case 'bgdone': return PL(n, 'agent completion') + ' unread';
+    case 'bgidle': { const m = w.match(/(\d+)\D+(\d+)\D+(\d+)/); return m ? PL(m[1], 'background shell') + ' · ' + m[2] + ' idle · longest ' + U(m[3], 'm') : 'Idle shells'; }
     case 'gone': return w === '끊김?' ? 'Disconnected?' : 'Disconnected';
     case 'conflict': { const m = w.match(/파일 (\d+) · (세션|서브에이전트|에이전트) (.*)$/);
       return 'Conflict risk' + (m ? ' · ' + PL(m[1], 'file') + ' · ' + (m[2] === '세션' ? 'sessions ' : 'subagents ') + m[3].replace(/(^|, )메인(?=,|$)/g, '$1main') : ''); }

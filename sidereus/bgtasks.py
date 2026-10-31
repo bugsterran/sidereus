@@ -204,7 +204,8 @@ def _running_bg_locked(fp, rows=None):
     #   Read the agents' Bash lines first so a launch and its notice in the same tick open then close in order.
     for sfp in _sub_transcripts(fp, now):
         for line in _bg_lines(sfp):
-            if '"Bash"' in line or "moved to the background" in line:
+            # ⚠A receipt line carries no '"Bash"'; without the third test its output path was never stored.
+            if '"Bash"' in line or "moved to the background" in line or "running in background with ID" in line:
                 _bg_on_line(line, open_now, fp, seeding, now)
     rows = _bg_lines(fp)
     for line in rows:
@@ -259,6 +260,31 @@ def _bg_expire(open_now, now):
             continue
         if now - v[2] > RUN_STALE_S:
             open_now.pop(key, None)  # drop old ones — do not decide whether finished or quiet (unknown is not counted)
+
+
+BG_IDLE_S = 900            # an open bg shell whose output file has not grown for this long counts as idle
+
+
+def bg_idle(fp, now):
+    """{"n": open bg shells, "idle": idle count, "max": longest idle seconds} for session `fp`, or None when none is idle.
+    ⚠stat only (never opens the output file); called per poll — the parse cache would freeze the elapsed time."""
+    with _bg_lock:
+        paths = [v[3] if len(v) > 3 else "" for v in (_bg_open.get(fp) or {}).values() if v[0] == "bg"]
+    bt = boot_time()
+    k, mx = 0, 0
+    for p in paths:
+        if not p:
+            continue
+        try:
+            mt = os.stat(p).st_mtime
+        except OSError:
+            continue
+        if bt and mt < bt:
+            continue                  # written before the reboot: the shell cannot still be running
+        if now - mt > BG_IDLE_S:
+            k += 1
+            mx = max(mx, int(now - mt))
+    return {"n": len(paths), "idle": k, "max": mx} if k else None
 
 
 def _bg_revive(fp, open_now, now):

@@ -64,7 +64,8 @@ class SameKeysAsRealBuilders(_Patch):
             # `team` only on a leader row (sessions._row_children); `term` is set later by term.term_attach in state()
             # `plrun` too: the real _session_row adds it only when the session has pipeline runs
             # `acct`/`acctDir`: only on a row from a non-primary Claude root (sessions._row_acct)
-            self.assertEqual(set(r) - {"team", "term", "plrun", "acct", "acctDir"}, real, r["id"])
+            # `bgIdle`: only when the session has idle background shells
+            self.assertEqual(set(r) - {"team", "term", "plrun", "acct", "acctDir", "bgIdle"}, real, r["id"])
 
     def test_gemini_row_matches_ext_rows(self):
         now = time.time()

@@ -30,6 +30,19 @@ _fg_lab = BoundedMemo(400)     # foreground Bash tool_use id → (row label, lin
 #   must not open a row.
 #   Only the measured form (Bash timeout) is matched; a hand-backgrounded message was not seen in any transcript.
 _FG_MOVED_RE = re.compile(r"^\s*Command did not complete within its \S+ timeout and was moved to the background")
+# Output file named in a bg receipt (4th slot of a "bg" row, read by `bgtasks.bg_idle` via stat only).
+#   ⚠Taken from the receipt text, never from tool input; the path never reaches a row, the API or a cache.
+#   Unix or Windows (drive letter + backslashes) form.
+_BG_OUT_RE = re.compile(r"Output is being written to: ((?:/\S+/|[A-Za-z]:\\\S+\\)tasks[/\\][A-Za-z0-9_-]+\.output)")
+
+
+def _bg_out(text):
+    """Output path from a bg receipt, or None. ⚠A `..` segment is refused: a crafted transcript must not steer stat()."""
+    m = _BG_OUT_RE.search(text) if isinstance(text, str) else None
+    if not m or ".." in re.split(r"[\\/]", m.group(1)):
+        return None
+    return m.group(1)
+
 
 # ★**Remember** running background tasks (cumulative). The tail alone misses them — measured 2026-08-19: the repo-A transcript
 #   was **780MB**, so the 800KB tail was 209 lines and the running agent's *launch line* was pushed outside it, giving 0.
@@ -275,8 +288,13 @@ def _bg_on_notice(line, open_now, fp, seeding, now):
     alive = summ.startswith("Monitor event:") and _MON_EXPIRED not in txt
     # a resumed session lists the previous run's unfinished tasks as stopped (ids in the summary, not in tags)
     _sm = _STOPPED_IDS_RE.search(txt)
-    for tid in (_sm.group(1).replace(",", " ").split() if _sm else ()):
+    _stopped = set(_sm.group(1).replace(",", " ").split()) if _sm else set()
+    for tid in _stopped:
         open_now.pop("task:" + tid, None)
+    # a bg row is keyed by tool_use id; match the stopped shell id through its output file name
+    for _k5, _v5 in (list(open_now.items()) if _stopped else ()):
+        if _v5[0] == "bg" and len(_v5) > 3 and os.path.basename(_v5[3])[:-len(".output")] in _stopped:
+            _bg_pop(open_now, _k5, fp, seeding, done=False)
     for tid in _TASKID_RE.findall(txt):
         if alive:
             _lb = "감시 " + summ[14:].strip(' "')[:40]
@@ -401,7 +419,9 @@ def _bg_on_result(x, open_now, fp, seeding, line_at=0):
             cc1 = " ".join((y.get("text") or "") for y in cc1 if isinstance(y, dict))
         if isinstance(cc1, str) and _FG_MOVED_RE.match(cc1):
             lab1, t1 = _fg_lab[tid]
-            open_now.setdefault(tid, ("bg", lab1, t1))   # closed by its completion notice, like any background Bash
+            _po1 = _bg_out(cc1)
+            # closed by its completion notice, like any background Bash
+            open_now.setdefault(tid, ("bg", lab1, t1, _po1) if _po1 else ("bg", lab1, t1))
         return
     if tid and (open_now.get(tid) or ("",))[0] == "sub":
         # ★An Agent's tool_result is **a receipt, not completion** (measured 2026-08-19):
@@ -451,6 +471,14 @@ def _bg_on_result(x, open_now, fp, seeding, line_at=0):
             body2 = cc2 if isinstance(cc2, str) else json.dumps(cc2, ensure_ascii=False)
             if "running in background with ID" not in body2:
                 _bg_pop(open_now, tid, fp, seeding, done=False)
+                return
+        cc3 = x.get("content")
+        if isinstance(cc3, list):
+            cc3 = " ".join((y.get("text") or "") for y in cc3 if isinstance(y, dict))
+        _po3 = _bg_out(cc3)
+        if _po3:
+            _v3 = open_now[tid]
+            open_now[tid] = ("bg", _v3[1], _v3[2], _po3)
 
 
 def _bg_on_launch(x, d, open_now, fp, now):

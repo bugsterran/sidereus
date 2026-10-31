@@ -143,6 +143,7 @@ notes · parse · adapter · plat_gemini · plat_codex · ext_store · ext · se
   `_bg_popped`/`_bg_resume`/`_bg_sent`, `BG_DROP` + `_bg_drop_load`/`_bg_drop_save`, `_bg_pop`/`_sub_identity`, line handlers `_bg_on_notice`/`_bg_on_line`/`_bg_on_result`/`_bg_on_launch`) ·
   `bgtasks` (incremental read `_bg_lines` + skip counters, `_bg_lock`/`_running_bg`/`bg_dismiss`, gap flush, evict/expire/revive, `_ended_turn`, rows `_bg_result`; re-exports 12 parse names).
   ⚠Patch `BG_DROP`/`warn_once`/`_atomic_write` (drop list) and `_agent_meta` (for `_sub_identity`/handlers) on `bgtasks_parse`; `boot_time` stays on `bgtasks`.
+  `bgtasks` also owns `BG_IDLE_S`/`bg_idle` (idle bg shells by output-file mtime; `sessions._row_children` → row `bgIdle`); `_BG_OUT_RE` (receipt output path, 4th slot of a "bg" row) is on `bgtasks_parse`.
   Proof: 44 defined names = 20 + 24, 18 functions bytecode-identical, 92 global lookups same object, 7 imported names `is`-same.
 - `usage` split in two (2026-09-24): `usage_index` (local usage index — `_uidx_scan`/`_uidx_meta*`/`_uidx_refresh`/`_uidx_save`, hour buckets `_uidx_hours`,
   prices `USAGE_PRICE`/`USAGE_TIER`/`_price`/`_cost4`, per-request keys `_tier_key`/`_req_rows`/`_req_cost`, key names `_key_split`/`_model_disp`, `_blocks_local`, `_uidx_week`/`_uidx_isoz`, `_uidx_projects`; owns `_uidx`/`_uidx_lock`, `USAGE_INDEX`, `UIDX_*`) ·
