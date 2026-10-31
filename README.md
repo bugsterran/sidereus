@@ -60,7 +60,7 @@ The timeline shows what each session and subagent did and when, with pipeline st
 
 ## Scope
 
-Sidereus is meant for people who run several CLI agent sessions from a terminal, across vendors, accounts or projects; who cannot send their conversations to an outside service; and who run quality gates in pipelines. Claude Code is supported first. Codex, Gemini, Cursor CLI and Copilot CLI connect through hooks ([HOOKS.md](docs/HOOKS.md)); their tokens are counted apart from Claude's limits. Gemini's plan limits live on Google's server, so check them with `/stats`. The Cursor IDE is not supported yet (#9), and other CLIs are untested.
+Sidereus is meant for people who run several CLI agent sessions from a terminal, across vendors, accounts or projects; who cannot send their conversations to an outside service; and who run quality gates in pipelines. Claude Code is supported first. Codex, Gemini, Cursor CLI and Copilot CLI connect through hooks ([HOOKS.md](docs/HOOKS.md)); their tokens are counted apart from Claude's limits. Gemini's plan limits live on Google's server, so check them with `/stats`. Only CLI agents are in scope: IDEs and desktop apps (the Cursor IDE included) are not supported, and other CLIs are untested.
 
 It is probably not what you want if you use one or two agents inside an IDE, if you only use Claude Code and just want waiting sessions first (Claude Code's agent view does that), or if your team needs cloud execution or organisation-wide governance.
 
