@@ -93,12 +93,16 @@ def _deny_n(v):
 
 
 def _deny_log(v):
-    """[{k: "deny", ts, title, code}] from runs.json `dl`; unknown codes and extra keys dropped."""
+    """[{k: "deny", ts, title, code, rt?}] from runs.json `dl`; unknown codes and extra keys dropped.
+    `rt` = resume time (hook `r`, first allowed tagged Pre after the deny); non-numeric or before `t` dropped."""
     out = []
     for e in (v[-HF_DL_MAX:] if isinstance(v, list) else ()):
         if isinstance(e, dict) and e.get("c") in HF_DENY_CODES and pl_runs._num(e.get("t")):
-            out.append({"k": "deny", "ts": pl_runs._num(e.get("t")), "code": e["c"],
-                        "title": e["title"][:40] if isinstance(e.get("title"), str) else ""})
+            x = {"k": "deny", "ts": pl_runs._num(e.get("t")), "code": e["c"],
+                 "title": e["title"][:40] if isinstance(e.get("title"), str) else ""}
+            if pl_runs._num(e.get("r")) >= x["ts"]:
+                x["rt"] = pl_runs._num(e["r"])
+            out.append(x)
     return out
 
 
@@ -138,6 +142,12 @@ def _given_runs(runs, now):
         if x:
             out.append(x)
     return out
+
+
+def runs(proj, runs=None):
+    """Parsed runs of `proj` from the last HF_KEEP_S (plmark files, or `runs` (demo) as in flow()) for harness_cost."""
+    now = _now()
+    return _given_runs(runs, now) if runs is not None else _disk_runs(_repos(proj), now)
 
 
 def guards(proj, runs=None):

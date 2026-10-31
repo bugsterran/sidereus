@@ -57,6 +57,12 @@ class StoreTest(_Base):
         self.assertEqual([(r["id"], r["sid"], r["to"], r["project"], r["state"]) for r in rows[REPO]],
                          [("m1", SID, "alice", "repo", "sent")])
 
+    def test_r1_stops_shape(self):
+        self.req(mid="m1")
+        self.req(mid="m2")
+        PQ.stop({"pipeline": "arch-map", "of": "m1"}, SID, "alice", "s1")
+        self.assertEqual(PQ.stops(NOW), [{"sid8": SID[:8], "pipeline": "arch-map", "at": NOW}])
+
     def test_r1_no_body_key_and_caps(self):
         for i in range(PQ.REQ_MAX + 5):
             self.req(mid="m%d" % i)

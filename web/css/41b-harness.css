@@ -262,3 +262,13 @@ html[data-theme=light] .hnskst{color:#8a5a12;border-color:#8a5a12}
 .hnrmm{color:var(--nx-t2,#9aa3b2);overflow-wrap:anywhere}
 .hnrmm.err{color:var(--nx-warn,#e0a53d)}
 html[data-theme=light] .hnrmdlg{background:var(--nx-panel,#fff);border-color:var(--nx-rule)}
+/* Gate cost line (47j): ~24px, wraps between groups and at «·», never ellipsis; numbers are buttons that open the evidence list */
+.hncl{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;min-height:24px;margin:0 0 8px;font-size:12px;color:var(--nx-t1,#c9d2df);font-variant-numeric:tabular-nums}
+.hncl .hncg{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 8px;min-width:0}
+.hncl .hncit{white-space:nowrap}
+.hncl .hncdot{color:var(--nx-t2,#909298)}
+.hncl button.hncb{font:inherit;color:inherit;background:none;border:0;border-bottom:1px dotted var(--nx-t2,#909298);padding:0;cursor:pointer}
+.hncl button.hncb.on{border-bottom-style:solid;color:var(--nx-info,#5899f3)}
+.hncl .hncnote{font-size:11px}
+.hncev{margin:0 0 10px;max-height:40vh;overflow:auto}
+.hncevt td{overflow-wrap:anywhere}

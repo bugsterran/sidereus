@@ -247,6 +247,15 @@ class GuardsTest(unittest.TestCase):
         r = dict(_run("", NOW - 500, NOW - 10), sid="d3m0f10w0000", name="demo", deny=1, dl=[{"t": NOW - 300, "c": "stop"}])
         self.assertEqual(HF.guards("", runs=[r]), {"runs": 1, "deny": 1, "unknown": 0, "codes": {"stop": 1}})
 
+    def test_resume_kept_garbage_dropped(self):
+        a = _run(self.repo, NOW - 500, NOW - 10)
+        a["dl"] = [{"t": NOW - 300, "c": "jump", "r": NOW - 250}, {"t": NOW - 200, "c": "gate", "r": "later"},
+                   {"t": NOW - 100, "c": "tag", "r": NOW - 150}, {"t": NOW - 90, "c": "stop", "r": True}]
+        self._write("aaaaaaaa1111", {"a": a})
+        got = HF.runs(self.repo)
+        self.assertEqual([e.get("rt") for e in got[0]["dl"]], [NOW - 250, None, None, None])
+        self.assertEqual(HF.runs("", runs=[]), [])
+
 
 if __name__ == "__main__":
     unittest.main()

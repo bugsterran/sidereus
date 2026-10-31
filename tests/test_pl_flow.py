@@ -813,7 +813,9 @@ class Flow(unittest.TestCase):
         self.assertEqual(r["deny"], 6)
         self.assertEqual([(e["c"], e["title"]) for e in r["dl"]],
                          [("jump", "검증"), ("agent", "구현"), ("tag", "설계"), ("stage", ""), ("stage", ""), ("model", "검증")])
-        self.assertTrue(all(sorted(e) == ["c", "t", "title"] for e in r["dl"]))
+        self.assertEqual(r["dl"][4].get("r"), self.t)   # the allowed Pre after the last `stage` deny stamps the resume time
+        self.assertTrue(set(r["dl"][4]) <= {"c", "t", "title", "r"})
+        self.assertTrue(all(sorted(e) == ["c", "t", "title"] for i, e in enumerate(r["dl"]) if i != 4))
         self.assertEqual(r["cur"], "구현")   # a deny never moves the run
         with open(os.path.join(self.marks, SID + ".runs.json"), encoding="utf-8") as f:
             self.assertNotIn("secret", f.read())
