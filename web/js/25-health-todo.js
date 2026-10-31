@@ -75,6 +75,12 @@ function buildTodo(){
   if(nrun)         cells.push(['run',   T('Background tasks'), nrun,          'run', T('Jobs')]);
   if(unread)       cells.push(['unread',T('Unread'), unread,       'bell', T('Unread', 'short')]);
   if(stale.length) cells.push(['stale', T('Stale threads'), stale.length, 'stale', T('Stale')]);
+  // Detected CLIs without Sidereus hooks (90f); names are server data, so they fill a TV slot and are never passed through T().
+  if(typeof hcTodo === 'function'){
+    hcLoad(false);
+    const hk = hcTodo();
+    if(hk.length) cells.push(['hk', TV({msg: 'CLI hooks not connected: {names}', vars: {names: hk.map(x => x.name).join(' · ')}}), hk.length, 'hooks', T('Hooks')]);
+  }
   // ★2026-09-27 QA 900px: full labels made row 1 ~75px too wide — ≤1000px shows the short label (.tds), full text in title.
   setHtml(bar, cells.map(c =>
     '<span class="td ' + c[0] + (stFil === c[3] || (c[3] === 'stale' && todoOpen) ? ' on' : '') + '" data-go="' + c[3] + '"'
@@ -103,6 +109,7 @@ function buildTodo(){
     if(go === 'attn'){ sesdrReveal(); const a = document.getElementById('attn'); if(a) a.scrollIntoView({behavior:'smooth', block:'nearest'}); return; }
     if(go === 'run'){ sesdrReveal(); document.querySelector('.lside').scrollIntoView({behavior:'smooth', block:'nearest'}); return; }
     if(go === 'stale'){ todoOpen = !todoOpen; return buildTodo(); }
+    if(go === 'hooks'){ const h = hcTodo()[0]; if(h) hcAct('open', h.plat); return; }   // preview only; nothing is written before «Apply»
     if(go === 'review'){
       if(typeof brBoard === 'function') return brBoard(true);
       const r = rvRows()[0]; if(r) rvOpen(r.cwd, r.sid, el); return;

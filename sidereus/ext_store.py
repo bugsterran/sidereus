@@ -510,8 +510,9 @@ def ext_dismiss(sid):
     n = 0
     with _ext_lock:
         now = time.time()
-        if not any(k[1] == sid for k in _ext):   # a rollout-only Codex row: hide it for its window
-            _ended_note_locked(("codex", sid), now)
+        if not any(k[1] == sid for k in _ext):   # a record-file-only row (Codex rollout, Cursor/Copilot folder): hide it for its window
+            for p in ("codex", "cursor", "copilot"):
+                _ended_note_locked((p, sid), now)
             n += 1
         for k, v in list(_ext.items()):
             if k[1] == sid and not v.get("pid") and _pending(v):

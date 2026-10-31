@@ -1,6 +1,6 @@
 """Demo world fixtures and tab payloads for `chat_server.py --demo` (split out of sidereus/demo.py).
 
-Owns the fixed synthetic data (ROOT, SEED, REPOS, GEM_ROW, CX, ...), the id/time helpers, and `_WorldPanels` —
+Owns the fixed synthetic data (ROOT, SEED, REPOS, GEM_ROW, CU_ROW, CP_ROW, CX, ...), the id/time helpers, and `_WorldPanels` —
 the per-tab payload builders (quota, tokens, timeline, history, retro, work logs) that `World` inherits.
 Branch/git payloads are in sidereus/demo_git.py (`_WorldGit`, imports from here).
 ⚠Imported only by sidereus/demo.py (itself lazy, under --demo). Never import sidereus.demo from here (cycle).
@@ -37,7 +37,48 @@ GEM_ROW = {
     "tokSplit": {"in": 402_100, "out": 61_300, "cache": 779_800, "thought": 41_400},
     "estCost": 1.63, "costMiss": 0,      # gemini-2.5-pro rates on tokSplit, all requests under 200k
 }
-# Synthetic Codex CLI usage (timeline row + extUsage.cx with plan windows); no session row, so the drawer count stays 7.
+
+
+def _nohook_row(plat, kind, sid, project, model, run):
+    """Hook-less external row (sidereus/ext.py ext_rollout_rows key set): lights «Hooks not connected» in the demo."""
+    return {"id": sid[:8], "sid": sid, "project": project, "gotPrompt": 0, "creq": 0, "burn": 0, "rpm": 0,
+            "cwd": "", "branch": "", "tool": "", "targ": "", "sub": [], "bgs": [], "mon": [],
+            "runmin": {"sub": 0, "bg": 0, "run": run}, "kind": kind, "ageSec": 0, "bytes": 0, "repos": [],
+            "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": model, "win": 0, "winSrc": "", "winN": 0,
+            "git": "", "state": "unknown", "blocked": "", "otel": False, "otelEv": "", "otelAt": 0,
+            "err": False, "plat": plat, "tok": 0, "tokSplit": {"in": 0, "out": 0, "cache": 0, "thought": 0},
+            "estCost": None, "costMiss": 0, "goneWhy": "", "pid": 0, "rollout": True}
+
+
+CU_ROW = _nohook_row("cu", "cursor", "5d2c8e14-7a3f-4b09-8e61-c4f0a2b9d375", "acme-web", "gpt-5", 12)
+CP_ROW = _nohook_row("cp", "copilot", "9a4f0b37-2e6d-4c18-b5a2-1f7e3c8d6b04", "billing-api", "claude-sonnet-4.5", 7)
+# Demo GET /api/hooks/connect rows (hook_connect.listing() shape): both CLIs installed, hooks missing.
+HOOKS_CONNECT = [
+    {"plat": "cursor", "name": "Cursor", "state": "missing", "file": "~/.cursor/hooks.json", "can": True,
+     "why": "", "approve": ""},
+    {"plat": "copilot", "name": "Copilot", "state": "missing", "file": "~/.copilot/hooks/sidereus.json",
+     "can": True, "why": "", "approve": ""},
+]
+_HC_CMD = "/usr/bin/python3 /home/demo/.sidereus/ext-hooks/ext_hook.py --platform "
+_HC_EV = {"cursor": ("sessionStart", "beforeSubmitPrompt", "stop"), "copilot": ("SessionStart", "UserPromptSubmit", "Stop")}
+
+
+def hooks_connect_dry(plat):
+    """Demo dry reply of hook_connect.connect() {ok, diff, base, adds}: Sidereus entries added to a new file.
+    ⚠Without `diff` 90f-hookconn.js shows «Already connected» for a CLI that is not connected."""
+    shown = next(x["file"] for x in HOOKS_CONNECT if x["plat"] == plat)
+    ent = (lambda e: '{"command": "%s%s"}' % (_HC_CMD, plat)) if plat == "cursor" else \
+        (lambda e: '{"type": "command", "bash": "%s%s", "timeoutSec": 5}' % (_HC_CMD, plat))
+    body = ['{', '  "version": 1,', '  "hooks": {']
+    evs = _HC_EV[plat]
+    for i, e in enumerate(evs):
+        body += ['    "%s": [' % e, '      ' + ent(e), '    ]' + ("," if i < len(evs) - 1 else "")]
+    body += ['  }', '}']
+    diff = ["--- " + shown, "+++ " + shown, "@@ -1,0 +1,%d @@" % len(body)] + ["+" + x for x in body]
+    return {"ok": True, "diff": "\n".join(diff) + "\n", "base": "", "adds": len(evs)}
+
+
+# Synthetic Codex CLI usage (timeline row + extUsage.cx with plan windows); no session row, so the drawer count stays 9.
 CX = {"sid": "3c9e5a71-8d20-4f6b-a1e4-7b0c2d9f5e38", "id": "3c9e5a71", "model": "gpt-5-codex",
       "tokSplit": {"in": 318_400, "out": 42_700, "cache": 1_106_200, "thought": 0}, "estCost": 0.87}
 CX["tok"] = sum(CX["tokSplit"].values())

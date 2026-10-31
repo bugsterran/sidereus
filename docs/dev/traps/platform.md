@@ -214,3 +214,13 @@ Fix: the pipeline hooks read both spellings; the shell tool is `bash` and the `[
 Cause: even under a PascalCase registration, Copilot CLI sends `PermissionRequest` with `hookName`, `sessionId`, `toolName` instead of the snake_case keys, so the event had no session id and was dropped.
 Fix: `build()` falls back to those camelCase keys (ids only; `toolInput` is never copied) and maps it to `Notification`.
 ⚠Do not also register the camelCase event names: Copilot accepts both and every event fires twice. ★Copilot CLI 1.0.105, macOS, 2026-10-31.
+
+### `os.kill(pid, 0)` kills on Windows (`sidereus/plat_copilot.py` `_locks`)
+Cause: on Windows `os.kill` with any signal calls `TerminateProcess`, so a liveness probe of a Copilot `inuse.<pid>.lock` would end the CLI.
+Fix: `config.pid_alive` (OpenProcess on Windows); only `True` counts as live.
+⚠Never call `os.kill(pid, 0)` for a liveness check in cross-platform code.
+
+### Cursor `chats/` folder mtime is not an activity signal (`sidereus/plat_cursor.py` `scan`)
+Cause: store.db writes inside `chats/<hash>/<sid>/` do not touch the parent folders' mtime.
+Fix: stat meta.json, store.db and store.db-wal per sid, capped at `ext_presence.PRES_MAX_N` per scan (5 s memo).
+⚠Do not filter by the `chats` or workspace-hash folder mtime — open chats drop out.

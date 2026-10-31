@@ -16,6 +16,7 @@ const TV = o => o.msg.replace(/\\{(\\w+)\\}/g, (_, k) => o.vars[k]);
 const LBL = { tool: 'Running a tool', think: 'Thinking', ask: 'Awaiting answer', wait: 'Awaiting input', unknown: 'Unknown' };
 function stateLbl(k){ return LBL[k] || ''; } function srvEn(s){ return s; } function U(n, u){ return n + u; }
 function waitOnLabel(){ return ''; }
+function platName(k){ return k === 'cx' ? 'Codex' : String(k); }
 function aiLogo(p, extra){ return '<i class=ailg title="' + esc(p + (extra || '')) + '"></i>'; }
 function sessPickHtml(){ return ''; } function sessBranchHtml(){ return ''; } function acctChip(){ return ''; }
 function sessBadges(){ return '<BADGES/>'; }

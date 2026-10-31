@@ -155,7 +155,7 @@ function sessIdRow(x){
   // ⚠A rollout row (x.rollout) has no hook events behind it — its tooltip must not claim they are the source.
   const pl = aiLogo(x.plat, x.rollout ? T(" session — read from its CLI's record file (hooks not connected)")
     : x.plat && x.plat !== 'cc' ? T(' session — drawn from events its CLI hooks send (the transcript is not read)') : T(' session'));
-  const nohk = x.rollout ? '<span class="sz snohk" title="'+esc(T("State read from Codex's record file; set up hooks — docs/HOOKS.md"))+'">'
+  const nohk = x.rollout ? '<span class="sz snohk" title="'+esc(TV({msg: "State read from {name}'s record file; set up hooks — docs/HOOKS.md", vars: {name: platName(x.plat)}}))+'">'
     + esc(T('Hooks not connected'))+'</span>' : '';
   return '<div class=sx>'+sessPickHtml(x)+'<span class=sd></span>'+pl+'<span class=sp title="'+esc(x.project)+'">'+esc(x.project)+'</span>'+sessBranchHtml(x)+acctChip(x, 'sacb')
     + nohk + sessBadges(x) + sessPlChip(x) + '</div>';

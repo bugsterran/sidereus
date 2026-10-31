@@ -32,6 +32,10 @@ All required. Optional ones (`LANE`, `harness_items`, `TIME_BUDGET_S`, …) are 
 Register in `sidereus/ext_store.py`: the `PLAT: KEY` pair in `EXT_PLAT`, the import, and the `PLAT_MODS` tuple. Place it
 before `ext_store` in STAGE3. Tests: `tests/test_adapter_contract.py` and a fixture `scan` test (`tests/test_ext*.py`).
 
+A CLI that only needs a hook-less session row (folder, start, last activity) and has no token records to read goes in
+the presence registry instead: `PRES_MODS` in `sidereus/ext_presence.py` (see `plat_cursor.py`, `plat_copilot.py`).
+⚠Not in `PLAT_MODS` — that registry also drives token reads (Cursor's tokens come from hook `stop` counts).
+
 ## Language plug-in
 
 Teaches the Structure tab's «Size» treemap a language. File `sidereus/structure_lang_<x>.py`; example

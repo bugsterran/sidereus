@@ -69,10 +69,10 @@ class DemoTest(unittest.TestCase):
         self.assertEqual(set(st), STATE_KEYS)
         self.assertEqual(st["build"], "abc123def456")      # same as PAGE_BUILD, or the «new version» toast shows
         self.assertEqual([st[k] for k in ("saver", "saverView", "saverSwitch")], [None] * 3)   # saver hook is not shipped
-        self.assertEqual(len(st["sessions"]), 7)              # 6 Claude + 1 synthetic Gemini
+        self.assertEqual(len(st["sessions"]), 9)              # 6 Claude + Gemini + hook-less Cursor/Copilot
         self.assertEqual([s["plat"] for s in st["sessions"]].count("gm"), 1)
         self.assertEqual(st["extUsage"]["gm"]["tok"], sum(st["extUsage"]["gm"][k] for k in ("in", "out", "cache", "thought")))
-        self.assertEqual({s["state"] for s in st["sessions"]}, {"think", "tool", "ask", "wait", "done"})
+        self.assertEqual({s["state"] for s in st["sessions"]}, {"think", "tool", "ask", "wait", "done", "unknown"})
         self.assertTrue(any(s["sub"] for s in st["sessions"]))
         self.assertIn("conflict", {g["k"] for r in st["attention"]["rows"] for g in r["sigs"]})
         self.assertNotIn("_reset", st["quota"]["five_hour"])
@@ -80,6 +80,40 @@ class DemoTest(unittest.TestCase):
         self.assertEqual([(a["label"], a["primary"]) for a in st["accts"]], [("personal", True), ("work", False)])
         sids = {s["sid"] for s in st["sessions"]}
         self.assertTrue(all(r["sid"] in sids for r in st["attention"]["rows"]))
+
+    def test_hookless_cursor_copilot_rows_and_connect_chip(self):
+        rows = {s["plat"]: s for s in self.get("/api/state", "since=0")["sessions"] if s.get("rollout")}
+        self.assertEqual(set(rows), {"cu", "cp"})
+        self.assertEqual({r["state"] for r in rows.values()}, {"unknown"})
+        self.assertTrue(all(r["cwd"].startswith("/home/demo/") for r in rows.values()))
+        gem = next(s for s in self.get("/api/state", "since=0")["sessions"] if s["plat"] == "gm")
+        self.assertTrue(set(gem) - {"tok", "tokSplit", "estCost", "costMiss"} <= set(rows["cu"]))
+        out = self.get("/api/hooks/connect")
+        self.assertTrue(out["ok"])
+        self.assertEqual([(x["plat"], x["state"], x["can"]) for x in out["plats"]],
+                         [("cursor", "missing", True), ("copilot", "missing", True)])
+        hc = sidereus("hook_connect")
+        self.assertTrue(all(set(x) == {"plat", "name", "state", "file", "can", "why", "approve"} for x in out["plats"]))
+        self.assertTrue(all((x["plat"], x["name"]) in hc.PLATS for x in out["plats"]))   # same plat ids as the real route
+
+    def test_hooks_connect_post_dry_previews_apply_writes_nothing(self):
+        class H:
+            _GET_ROUTES = {}
+            _POST_ROUTES = {"/api/hooks/connect": "real"}
+        self.demo.install(H, "b")
+        u = type("U", (), {"path": "/api/hooks/connect"})()
+
+        def post(body):
+            sent = []
+            me = type("M", (), {"_body_json": lambda s, *a: body, "_raw_json": lambda s, c, o: sent.append((c, o))})()
+            H._POST_ROUTES["/api/hooks/connect"](me, u)
+            return sent[0]
+        for plat, f in (("cursor", "~/.cursor/hooks.json"), ("copilot", "~/.copilot/hooks/sidereus.json")):
+            code, out = post({"plat": plat, "dry": True})
+            self.assertEqual((code, set(out)), (200, {"ok", "diff", "base", "adds"}))
+            self.assertTrue(out["diff"].startswith("--- %s\n+++ %s\n" % (f, f)) and out["adds"] > 0)
+            self.assertIn("--platform " + plat, out["diff"])
+        self.assertEqual(post({"plat": "cursor", "dry": False, "base": ""}), (200, {"ok": True, "demo": True}))
 
     def test_prefs_has_real_shape(self):
         # 90b-mypref.js treats a reply without `keys` as a read failure (red error in Preferences).

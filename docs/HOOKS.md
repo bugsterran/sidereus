@@ -451,6 +451,10 @@ Copy `ext-hooks/codex-hooks-example.json` to `~/.codex/hooks.json`. Checked with
   Agent tool); the flag is the only signal, the payload is not used to guess. On 0.163 `SessionStart` fires with the first turn.
 - Without hooks (not yet approved) a Codex session whose rollout changed in the last 10 minutes still gets a row,
   marked «Hooks not connected»: folder and model only, state unknown. Once hook events arrive the hook row replaces it.
+- Cursor CLI and Copilot CLI get the same hook-less row from their own folders: a Cursor chat whose
+  `~/.cursor/chats/*/<id>/` files changed in the last 10 minutes, a Copilot session whose
+  `~/.copilot/session-state/<id>/inuse.<pid>.lock` names a running process. Folder, start and last activity only.
+  The hook row wins (same id, or a hook row of that CLI in the same folder).
 - `sidereus/plat_codex.py` reads tokens, model, cost and rate limits from `$CODEX_HOME/sessions/**/rollout-*.jsonl` and
   `archived_sessions/`, never message text.
   ⚠`input_tokens` includes cache (split out); requests sum `last_token_usage`, not the total.
