@@ -15,6 +15,7 @@ TR = sidereus("harness_trail")
 D = 86400
 P = 1000000000.0   # PASS time
 N = "change"
+FILL = [("%040x" % (k + 1), int(P - 5000 - k), ["old%d.py" % k]) for k in range(3)]   # unrelated older commits: keeps test files under the «common file» share
 
 
 class Git(object):
@@ -96,7 +97,7 @@ class Outcome(unittest.TestCase):
         self.evidence((P, 0, "aaaaaaa", False))
         base = [("b" * 40, int(P + 15 * D), ["b.py"]),   # day 15: too late
                 ("c" * 40, int(P + 3 * D), ["c.py"]),     # untouched file
-                ("a" * 40, int(P - 30), ["a.py", "b.py"])]
+                ("a" * 40, int(P - 30), ["a.py", "b.py"])] + FILL
         r = self.result(base)
         self.assertEqual((r["n"], r["broke"], r["fixed"]), (1, 0, 0))
         self.assertEqual(r["list"], [{"sha": "a" * 12, "files": ["a.py", "b.py"], "broke": False, "fixed": False}])
@@ -106,8 +107,27 @@ class Outcome(unittest.TestCase):
     def test_dirty_resolves_to_next_commit(self):
         self.evidence((P, 0, "aaaaaaa", True))
         self.assertEqual(self.result([("e" * 40, int(P + 300), ["x.py"])])["n"], 0)   # landed after the run: unchecked
-        r = self.result([("e" * 40, int(P + 300), ["x.py"]), ("a" * 40, int(P + 30), ["x.py"])])
+        r = self.result([("e" * 40, int(P + 300), ["x.py"]), ("a" * 40, int(P + 30), ["x.py"])] + FILL)
         self.assertEqual((r["n"], r["fixed"], r["list"][0]["sha"]), (1, 1, "a" * 12))
+
+    def test_passes_on_one_commit_are_one_entry(self):
+        self.ledger([{"name": N, "t0": P - 100, "end": P + 10}, {"name": N, "t0": P + 100, "end": P + 200}])
+        self.evidence((P, 0, "aaaaaaa", False), (P + 5, 0, "aaaaaaa", False), (P + 150, 0, "aaaaaaa", False))
+        r = self.result([("d" * 40, int(P + 3 * D), ["a.py"]), ("a" * 40, int(P - 30), ["a.py"])] + FILL)
+        self.assertEqual((r["n"], r["fixed"], [x["sha"] for x in r["list"]]), (1, 1, ["a" * 12]))
+
+    def test_same_run_commit_not_a_fix(self):
+        self.evidence((P, 0, "aaaaaaa", False))
+        r = self.result([("d" * 40, int(P + 40), ["a.py"]), ("a" * 40, int(P - 30), ["a.py"])] + FILL)   # run end P+10, +60 s
+        self.assertEqual((r["n"], r["fixed"]), (1, 0))
+
+    def test_common_file_overlap_not_a_fix(self):
+        self.evidence((P, 0, "aaaaaaa", False))
+        log = [("d" * 40, int(P + 3 * D), ["CHANGELOG.md"]), ("a" * 40, int(P - 30), ["a.py", "CHANGELOG.md"])]
+        log += [(s, ct, fs + ["CHANGELOG.md"]) for s, ct, fs in FILL]   # CHANGELOG.md in every commit
+        self.assertEqual(self.result(log)["fixed"], 0)
+        log[0] = ("d" * 40, int(P + 3 * D), ["CHANGELOG.md", "a.py"])   # a later commit sharing a rare file still counts
+        self.assertEqual(self.result(log)["fixed"], 1)
 
     def test_broke_from_later_fail(self):
         self.evidence((P, 0, "aaaaaaa", False), (P + 5, 1, "aaaaaaa", False))
@@ -116,7 +136,7 @@ class Outcome(unittest.TestCase):
 
     def test_side_branch_commit_not_a_fix(self):
         self.evidence((P, 0, "aaaaaaa", False))
-        log = [("d" * 40, int(P + 3 * D), ["a.py"]), ("a" * 40, int(P - 30), ["a.py"])]
+        log = [("d" * 40, int(P + 3 * D), ["a.py"]), ("a" * 40, int(P - 30), ["a.py"])] + FILL
         self.git.side = {"d" * 40}
         self.assertEqual(self.result(log)["fixed"], 0)
         self.git.side = set()

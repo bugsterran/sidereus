@@ -237,6 +237,7 @@ The panel's «Result layer» block states facts per pipeline, no score (`sidereu
 - Review loop-backs: share of runs with a loop-back from a review stage, last 30 days vs the 30 days before. A falling share with «fix followed» flat means review finds less, not that code got better — read the two together.
 - Report: `scripts/pl_report.py` writes the same sentences plus the broken / fix-followed PASS list (short sha, file names) to `eval/<key>/reports/YYYY-MM-DD.md`; a run end regenerates it when the newest is older than 7 days.
 - ⚠«Fix followed» is a proxy: any commit touching the same file counts, including unrelated work. It flags where to look, not a defect count.
+- Counting: one entry per commit the PASSes resolved to (several PASSes on one commit = one «pass»); a fix must land after that PASS's run ended (+60 s) and share a file that sits in at most half of the scanned commits (CHANGELOG and doc indexes are ignored that way).
 
 Basis: seeded defects stand in for real ones because mutant detection correlates with real-fault detection (Just et al., FSE 2014); a gate that passes and fails on the same code is flaky and its verdict carries no signal (Luo et al., FSE 2014); a check counts only once it is seen failing on a known-bad input, as SWE-bench Verified validated each task's tests against the broken and fixed code.
 
