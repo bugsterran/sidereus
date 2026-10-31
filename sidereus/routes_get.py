@@ -22,6 +22,7 @@ from sidereus.arch_map import ARCH_PL, seen_runs as arch_seen_runs
 from sidereus.pipeline_projects import browse_dirs as pipeline_dirs, recent_dirs as pipeline_recent_dirs
 from sidereus.pl_eval_view import pl_eval as pipeline_eval
 from sidereus.harness_plat import harness_evidence_only, harness_plat, harness_plat_file
+from sidereus.harness_cost import cost as harness_cost
 from sidereus.verdict_guide import load as verdict_guide
 from sidereus.hook_diag import diag as hook_diag
 from sidereus.sec_tools import tools as sec_tools
@@ -225,6 +226,12 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
             code, out = harness_plat(_q1(q, "plat", "cc"), _q1(q, "proj"), _q1(q, "days", "30"))   # plat validated there
         except Exception as e:
             code, out = 500, {"ok": False, **_exc_msg(e)}
+        if code == 200 and (_q1(q, "plat", "cc") or "cc") == "cc" and isinstance(out, dict):
+            try:   # «Gate cost»: metadata only (codes, stage titles, times); proj was validated by harness_plat
+                out["cost"] = harness_cost(_q1(q, "proj"))
+            except Exception as e:   # ⚠the harness body must still load; null reads «not measured» on the page
+                out["cost"] = None
+                warn_once("harness-cost", "Gate cost could not be read ({err})", soft=True, vars={"err": f"{type(e).__name__}: {e}"})
         self._raw_json(code, out)
 
     def _g_harness_evidence(self, u):

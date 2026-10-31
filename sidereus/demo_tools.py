@@ -71,7 +71,7 @@ def _demo_harness(a, path):
     """Pipeline tab «Harness»: invented rows that trip every harness_verdict code; file views are off in demo."""
     if path != "/api/harness":
         return 404, {"ok": False, "msg": "File not found."}
-    from sidereus import harness_flow, harness_trail, harness_verdict, sec_runtime
+    from sidereus import harness_cost, harness_flow, harness_trail, harness_verdict, sec_runtime
     t = int(a - 3 * H)
     ev = [{"ev": "SessionStart", "hooks": [_hk("user", "load-context.py", "inject", 41, cost={"runs": 220, "avg": 1450, "blk": 0, "out": 220, "k": 2}),
                                            _hk("user", "warm-cache.sh", "log", None, miss=1)]},
@@ -103,6 +103,8 @@ def _demo_harness(a, path):
     body["guards"] = harness_flow.guards("", runs=_demo_flow_runs(a))
     body["runtime"] = sec_runtime.shape(_demo_runtime(a), a, root="/Users/demo/src/sidereus")   # fake checkout: the real install path stays off demo screens
     body["selfcheck"] = _demo_selfcheck(a)
+    body["cost"] = harness_cost.cost("", runs=_demo_cost_runs(a), stops=[], policy=0, gates={"change-flow": ["검증"]},
+                                     hook={"n": 1320, "rows": [{"ev": "PreToolUse", "ms": 41000}, {"ev": "SessionStart", "ms": 9600}]})
     return 200, harness_verdict.verdict(body, 30)
 
 
@@ -189,6 +191,20 @@ def _demo_flow_runs(a):
              "st": {"설계": st("skip", 2.0, 2.0, 0), "구현": st("done", 1.9, 1.0, 2), "검증": st("done", 1.3, 0.5, 2),
                     "리뷰": st("done", 0.5, 0.42)},
              "lb": [{"f": "검증", "g": "구현", "n": 1, "t": a - 1.2 * H}]}]
+
+
+def _demo_cost_runs(a):
+    """«Gate cost»: the flow run with resume times and a looped gate stage (complied + unknown), plus an older run
+    whose gate block was followed by a skip (Overridden). Kept apart so the «What is guarding» counts stay as they are."""
+    r = dict(_demo_flow_runs(a)[0])
+    r["dl"] = [dict(r["dl"][0], r=a - 1.8 * H + 240), dict(r["dl"][1])]
+    r["st"] = dict(r["st"])
+    r["st"]["검증"] = dict(r["st"]["검증"], p0=a - 0.8 * H, k=2, ps=[{"a": a - 1.3 * H, "b": a - 1.0 * H, "s": "back"}])
+    old = {"sid": "d3m0c0s70000", "name": "change-flow", "t0": a - 5.0 * H, "t1": a - 4.4 * H, "end": a - 4.4 * H, "deny": 1,
+           "dl": [{"c": "gate", "t": a - 4.6 * H, "title": "리뷰", "r": a - 4.6 * H + 420}],
+           "st": {"구현": {"s": "done", "t0": a - 5.0 * H, "t1": a - 4.7 * H, "n": 1},
+                  "리뷰": {"s": "skip", "t0": a - 4.6 * H + 300, "t1": a - 4.6 * H + 300, "n": 0}}}
+    return [r, old]
 
 
 def _ev_steps(*rows):

@@ -340,3 +340,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: `head` is the Sidereus checkout the guards ran from; `stale` compares it with that checkout's HEAD, never the picked project. No fixtures → the runner prints «replay set not found», exits 2 and writes nothing.
 - ⚠Do not label the table with the Harness project's commit, and do not let the viewer run the replay to refresh it.
 - ⚠`stale` compares the HEAD sha only: a dirty worktree is not flagged, and a new commit shows up to 30 s late (`HSC_HEAD_TTL` memo).
+
+## Harness «Gate cost» reads blocks it cannot fully explain (`harness_cost`)
+- Cause: the inputs were never logged for this view — no strict-off record, no resume time on older runs, and other CLIs skip stages for themselves.
+- Fix: count what is known and keep the rest as «unknown» (pending / no resume), never as complied.
+- ⚠An automatic skip on another CLI (`pl_flow._jumped`) is a `skip` stage, so a block followed by it reads «Overridden».
+- ⚠Strict off = `_policy.json` mtime while its content is not `{"enforce":"writes"}`; a deleted file leaves no time and overrides nothing.
+- ⚠`dl[].r` (resume) is written only by hooks that ship with this view: blocks from before read «unknown» for up to 7 days.

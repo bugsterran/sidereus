@@ -2,6 +2,7 @@
 //   health-strip warnings as warn_once `tv` parts joined with ' · ').
 Object.assign(I18N.ko, {
   "Hook settings check failed ({err})": "훅 설정 점검이 실패했습니다({err})",
+  "Gate cost could not be read ({err})": "게이트 비용을 읽지 못했습니다({err})",
   "Account {name} settings lack the perm_mark Notification hook — «Awaiting approval» will not show — run `python3 -m sidereus setup-claude` or install the plugin": "{name} 계정 설정에 perm_mark Notification 훅이 없습니다 — «승인 대기»가 표시되지 않습니다 — `python3 -m sidereus setup-claude` 를 실행하거나 플러그인을 설치하세요",
   "Status uncertain for {n} sessions — running per Claude, but missing or ended here: {sids} — check those sessions in their terminal": "상태 확인 안 됨 {n}개 — Claude 는 실행 중이라는데 여기선 없거나 끝났습니다: {sids} — 그 세션의 터미널에서 확인하세요",
   "Status uncertain for {n} sessions — running per Claude, but missing or ended here: {sids} +{more} more — check those sessions in their terminal": "상태 확인 안 됨 {n}개 — Claude 는 실행 중이라는데 여기선 없거나 끝났습니다: {sids} 외 {more} — 그 세션의 터미널에서 확인하세요",

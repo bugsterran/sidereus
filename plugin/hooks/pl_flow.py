@@ -649,6 +649,17 @@ def _deny_note(r, title, code, now):
         pass
 
 
+def _resume_note(r, now, why):
+    """Pass `why` through; when it is falsy (allowed Pre) stamp dl[-1]["r"] = now once (time only); never raises."""
+    try:
+        dl = r.get("dl")
+        if not why and isinstance(dl, list) and dl and isinstance(dl[-1], dict) and "r" not in dl[-1]:
+            dl[-1]["r"] = now
+    except Exception:
+        pass
+    return why
+
+
 def _is_open(r, now):
     return isinstance(r, dict) and not r.get("end") and now - float(r.get("t1") or 0) <= IDLE_S
 
@@ -1916,13 +1927,13 @@ def _flow(plat, ev):
                 h = _head(proj)
                 if h:
                     r["h0"] = h
-            why = pre(tool, cwd, name, title, st, r, now, bool(shell))
+            why = _resume_note(r, now, pre(tool, cwd, name, title, st, r, now, bool(shell)))
             if why and shell:
                 # ⚠No deny contract is verified for other CLIs: the jump is recorded as skip and the stage starts anyway.
                 for x in _jumped(st, r, title):
                     r["skipok"].append(x)
                     _mark(r, x, "skip", now)
-                why = pre(tool, cwd, name, title, st, r, now, True) and None
+                why = _resume_note(r, now, pre(tool, cwd, name, title, st, r, now, True) and None)
             if not why and tool == "SendMessage":
                 ti = ev.get("tool_input")
                 _ag_note(r, title, ti.get("to") if isinstance(ti, dict) else None)

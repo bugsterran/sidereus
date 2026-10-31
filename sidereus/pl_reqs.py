@@ -208,6 +208,13 @@ def stop(p, sid, to, mid):
         _marker(sid, p["pipeline"], {"at": now, "mid": mid, "of": p["of"]})
 
 
+def stops(now):
+    """[{sid8, pipeline, at}] of every stopped request kept (harness_cost «Overridden»); ids, repo and mids stay here."""
+    with _LOCK:
+        recs = _read(now)
+    return [{"sid8": r["sid"][:8], "pipeline": r["pipeline"], "at": r["stop"]["at"]} for r in recs if r.get("stop")]
+
+
 REQ_TARGET_S = 6 * 3600   # = arch_map.ARCH_PEND_S: an older request no longer names a session's run target
 
 

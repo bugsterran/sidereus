@@ -446,7 +446,7 @@ function hnReport(d){
   if(go && !HN.go.done) (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : setTimeout)(hnGoScroll);   // after plPaint has put the HTML in place
   const since = hnWhen(R.since);
   return '<div class=hnrep><div class=brh2><b>' + esc(T('What the gates caught')) + '</b>' + (since ? ' <i>' + esc(TV({msg: 'since {d}', vars: {d: since}})) + '</i>' : '') + '</div>'
-    + (typeof hnRuntime === 'function' ? hnRuntime(d) : '') + hnTiles(R) + hnStrip(R) + '<div class=hnrepc>' + cards + '</div></div>';
+    + (typeof hnRuntime === 'function' ? hnRuntime(d) : '') + (typeof hnCost === 'function' ? hnCost(d) : '') + hnTiles(R) + hnStrip(R) + '<div class=hnrepc>' + cards + '</div></div>';
 }
 // Verdict counts as plain text for the «Config map» summary (buttons inside <summary> would toggle the fold).
 function hnVdSum(c){
