@@ -21,6 +21,7 @@ _SUMM_RE = re.compile(r"<summary>([^<]{1,70})")
 #   from heartbeats), and the 30-min expiry notice reuses the «Monitor event:» summary, so a dead watcher read as alive.
 _MON_START_RE = re.compile(r"^Monitor started \(task ([A-Za-z0-9_-]+)")
 _MON_EXPIRED = "[Monitor expired after"
+_TASK_STOP_RE = re.compile(r"^\s*Successfully stopped task: ([A-Za-z0-9_-]+)")
 _STOPPED_IDS_RE = re.compile(r"didn't finish before the previous session ended\. Task ids: ([A-Za-z0-9_, -]+)")
 _mon_lab = BoundedMemo(200)    # Monitor tool_use id → (row label, line time), joined with its «Monitor started» result
 # ⚠A foreground Bash that hits its timeout becomes a background task with no
@@ -405,6 +406,32 @@ def _bg_on_line(line, open_now, fp, seeding, now):
 def _bg_on_result(x, open_now, fp, seeding, line_at=0):
     """A `tool_result` block: receipt (keep) vs synchronous end / failed launch (pop)."""
     tid = x.get("tool_use_id")
+    # ⚠TaskStop/KillShell writes no completion notice; its «Successfully stopped task: <id>» result is the only end signal
+    _cs = x.get("content")
+    if isinstance(_cs, list):
+        _cs = " ".join((y.get("text") or "") for y in _cs if isinstance(y, dict))
+    # ⚠the content is usually JSON text {"message", "task_id", ...}; prefer its task_id. Plain text must start with the
+    #   phrase — an unanchored match would let a Read/grep result that quotes it close an unrelated row.
+    _sid = None
+    if isinstance(_cs, str) and not x.get("is_error") and "Successfully stopped task: " in _cs:
+        try:
+            _js = json.loads(_cs)
+        except ValueError:
+            _js = None
+        if isinstance(_js, dict):
+            _mj = _TASK_STOP_RE.match(_js["message"]) if isinstance(_js.get("message"), str) else None
+            if _mj:
+                _tj = _js.get("task_id")
+                _sid = _tj if isinstance(_tj, str) and _tj else _mj.group(1)
+        else:
+            _mp = _TASK_STOP_RE.match(_cs.strip())
+            _sid = _mp.group(1) if _mp else None
+    if _sid:
+        open_now.pop("task:" + _sid, None)
+        for _k6, _v6 in list(open_now.items()):
+            if _v6[0] == "bg" and len(_v6) > 3 and os.path.basename(_v6[3])[:-len(".output")] == _sid:
+                _bg_pop(open_now, _k6, fp, seeding, done=False)
+        return
     if tid and tid in _mon_lab:
         cc0 = x.get("content")
         if isinstance(cc0, list):
