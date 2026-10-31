@@ -191,6 +191,15 @@ class HookConnect(unittest.TestCase):
             row = [r for r in HC.listing() if r["plat"] == "cursor"][0]
         self.assertEqual((row["can"], row["why"]), (False, HC.SYMLINK))
 
+    def test_cursor_detected_by_cli_config_without_path(self):
+        # Windows: the viewer's PATH can lack the Cursor CLI; its own config file still marks it installed
+        plats = lambda: [r["plat"] for r in HC.listing()]
+        self.assertNotIn("cursor", plats())       # ~/.cursor alone (the IDE makes it too) is not enough
+        with open(os.path.join(os.path.dirname(self.files["cursor"]), "cli-config.json"), "w", encoding="utf-8") as f:
+            f.write("{}\n")
+        HC._MEMO.clear()
+        self.assertIn("cursor", plats())
+
     def test_wait_variant_counts(self):
         for flag in ("--wait", "--wake"):    # opt-in variants of the shipped turn-end entry: no churn on «Connect»
             ex = _example("codex")

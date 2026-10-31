@@ -88,7 +88,10 @@ def _linked(p):
 def _installed(plat, path):
     d = os.path.dirname(path)
     if plat == "cursor":    # ⚠a bare `agent` is too generic a name: count it only next to ~/.cursor
-        return bool(_which("cursor-agent") or (_which("agent") and os.path.isdir(d)))
+        # cli-config.json is written by the Cursor CLI itself: detection must not depend on the viewer's PATH,
+        # which on Windows can predate the CLI install (no extra bin dirs there, ident._BIN_DIRS is empty)
+        return bool(_which("cursor-agent") or (_which("agent") and os.path.isdir(d))
+                    or os.path.isfile(os.path.join(d, "cli-config.json")))
     if plat == "copilot":   # ⚠the hooks/ folder does not exist by default: look at the Copilot home above it
         return bool(_which("copilot") or os.path.isdir(os.path.dirname(d)))
     return bool(_which(plat) or os.path.isdir(d))
