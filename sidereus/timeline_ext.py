@@ -2,7 +2,7 @@
 Assembled into the Gantt by `sidereus/timeline.py` (`_plat_tl_rows`)."""
 from sidereus.ident import _proj_name, _sid8
 from sidereus.adapter import adapter_scan
-from sidereus.ext import _ext, _ext_lock, ext_runs, PLAT_MODS, EXT_PLAT, ext_hook_msgs, ext_hook_cwds
+from sidereus.ext import _ext, _ext_lock, ext_runs, PLAT_MODS, EXT_PLAT, ext_side_msgs, ext_side_sess, ext_hook_cwds
 from sidereus.timeline_scan import SEG_GAP, SEG_MAX
 from sidereus.ext_presence import ext_presence_rows, PRES_NAME
 
@@ -57,12 +57,15 @@ def _pres_row(r, cut, now):
     segs = [[int(max(start, cut)), last]] if last >= cut else []
     t0 = segs[0][0] if segs else int(cut)
     proj = _proj_name(cwd) or "?"
+    ms = ext_side_sess(r.get("kind") or "", sid)          # Copilot usage records ({} for Cursor)
+    tk = sorted((v[4], v[0] + v[1] + v[2] + v[3]) for v in ms.values() if v[4] >= cut)
+    lm = max(ms.values(), key=lambda v: v[4], default=None)
     return {"tid": "ext:" + key + "|" + sid, "sid": sid, "type": proj,
             "desc": PRES_NAME.get(r.get("kind") or "", "CLI") + " — " + _sid8(sid),
             "segs": segs, "comp": [], "seen": t0, "start": t0, "end": max(t0, last),
             "run": False, "state": "", "idle": int(max(0, now - last)), "blocked": "",
             "proj": proj, "cwd": cwd or "?", "depth": 0, "kind": "sess",
-            "plat": key, "model": "", "tk": 0, "_tk": [], "last": ""}
+            "plat": key, "model": (lm[5] if lm else "")[:40], "tk": sum(n for _t, n in tk), "_tk": tk, "last": ""}
 
 
 def _hook_scan(plat):
@@ -71,7 +74,7 @@ def _hook_scan(plat):
     def scan(cut):
         with _ext_lock:
             items = [(sid, v.get("cwd") or "", list(v.get("ev") or [])) for (p, sid), v in _ext.items() if p == plat]
-        msgs = {sid: ms for (p, sid), ms in ext_hook_msgs(cut).items() if p == plat}
+        msgs = {sid: ms for (p, sid), ms in ext_side_msgs(cut).items() if p == plat}
         out = [{"sid": sid, "cwd": cwd, "msgs": msgs.get(sid) or {},
                 "acts": {i: float(e.get("t") or 0) for i, e in enumerate(ev)
                          if isinstance(e, dict) and e.get("e") not in ("SessionStart", "SessionEnd")}}
@@ -80,7 +83,8 @@ def _hook_scan(plat):
         live = {sid for sid, _c, _e in items}
         cwds = ext_hook_cwds()
         for sid, ms in msgs.items():
-            if sid not in live:
+            # ⚠Only sessions with hook generations: a record-only Copilot sid has no cwd here (its row is `_pres_row`).
+            if sid not in live and (plat, sid) in cwds:
                 out.append({"sid": sid, "cwd": cwds.get((plat, sid)) or "", "msgs": ms,
                             "acts": {g: v[4] for g, v in ms.items()}})
         return out

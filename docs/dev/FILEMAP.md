@@ -141,6 +141,7 @@ Sidereus is both the shown name and the code name (package, MCP, launchd label, 
 | `06-i18n-zzb-person.js` | `I18N.ko` for the Harness «A person» checkpoint, «Broke again» / «Found by a person first» tiles and their «How to read this» rows (47b, 47e). | | |
 | `06-i18n-zzi-cost.js` | `I18N.ko` for the Harness «Gate cost» line and its evidence lists (47j). | | |
 | `06-i18n-zzi-hooktodo.js` | `I18N.ko` for the header «CLI hooks not connected» chip (25) and the rollout-row hooks tooltip (40b). | | |
+| `06-i18n-zzj-copilot.js` | `I18N.ko` for the Copilot quota piece (`extQuotaStr`, 46) in the status bar (60) and «By platform». | | |
 | `06-i18n-zzc-ci.js` | `I18N.ko` for the Harness «After push (CI)» checkpoint and its «Holding: CI streak n/5» line (47b). | | |
 | `06-i18n-zzd-selfcheck.js` | `I18N.ko` for the Harness «Guard self-check» table (47f). | | |
 | `06-i18n-zzf-next.js` | `I18N.ko` for the Harness «Next step» fold and «Draft instruction» chrome (47g); guide bodies come from `docs/verdicts/*.ko.md`, not here. | | |

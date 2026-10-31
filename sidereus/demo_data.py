@@ -52,6 +52,7 @@ def _nohook_row(plat, kind, sid, project, model, run):
 
 CU_ROW = _nohook_row("cu", "cursor", "5d2c8e14-7a3f-4b09-8e61-c4f0a2b9d375", "acme-web", "gpt-5", 12)
 CP_ROW = _nohook_row("cp", "copilot", "9a4f0b37-2e6d-4c18-b5a2-1f7e3c8d6b04", "billing-api", "claude-sonnet-4.5", 7)
+CP_ROW.update(tok=214_300, tokSplit={"in": 18_400, "out": 9_700, "cache": 186_200, "thought": 0})   # from its usage records
 # Demo GET /api/hooks/connect rows (hook_connect.listing() shape): both CLIs installed, hooks missing.
 HOOKS_CONNECT = [
     {"plat": "cursor", "name": "Cursor", "state": "missing", "file": "~/.cursor/hooks.json", "can": True,

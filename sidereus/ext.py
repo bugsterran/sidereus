@@ -11,12 +11,14 @@ from sidereus.adapter import adapter_scan
 from sidereus import live_probe   # module access: `_ps_snap_cache` is read at call time (tests patch it)
 from sidereus.agents import plm_of
 from sidereus.pl_runs import pl_act, pl_model
+from sidereus import plat_copilot   # module access: tests patch `plat_copilot.root`
 # Re-exported: chat_server, timeline, history import these from `sidereus.ext`.
 # ⚠Patch store internals (`_ext_save_locked`, `_runs_save_locked`, `EXT_FILE`/`EXT_RUNS_FILE`, `_pid_start`) on `ext_store`.
 from sidereus.ext_store import (PLAT_MODS, EXT_PLAT, EXT_EV_N, EXT_RATE_WIN, _ext_lock, _ext,
                              _ext_stat, _runs, _tok_lock, _tok, _ext_prune_locked, ext_ingest, ext_runs,
                              ext_gone_check, ext_dismiss, ext_tok_refresh, _tok_sum, ext_tok,
-                             EXT_ENDED_KEEP_S, ext_ended, ext_hook_msgs, ext_hook_cwds)
+                             EXT_ENDED_KEEP_S, ext_ended, ext_hook_msgs, ext_hook_cwds,
+                             ext_side_msgs, ext_side_sess, ext_side_tok)
 
 
 EXT_NAME = {m.KEY: m.NAME for m in PLAT_MODS.values()}
@@ -50,7 +52,7 @@ def ext_usage_today(now=None):
         for m, v in msgs.items():
             if m not in ondisk:
                 d.setdefault(m, v)
-    for k, msgs in ext_hook_msgs(min(mid, win)).items():   # hook-sent tokens (Cursor), one entry per generation
+    for k, msgs in ext_side_msgs(min(mid, win)).items():   # hook-sent tokens (Cursor) + Copilot usage records
         sess.setdefault(k, {}).update(msgs)
     out = {}
     for (plat, _sid), msgs in sess.items():
@@ -103,6 +105,9 @@ def ext_usage_today(now=None):
             if isinstance(rt.get("plan"), str):   # plan rides along only with a live window, never alone
                 ws["plan"] = rt["plan"]
             p["rate"] = ws
+    cp = out.get(EXT_PLAT[plat_copilot.PLAT])
+    if cp is not None:   # Copilot request quota: the newest snapshot any session reported
+        cp["quota"] = plat_copilot.quota(t.timestamp())
     return out
 
 
@@ -251,7 +256,7 @@ def ext_rows():
             st = v.get("state") or "unknown"
             # ⚠No age cap on ask/blocked: a pending request leaves only on the CLI's own event or a dead pid (ext_gone_check).
             ext_tok_refresh(plat, sid, v.get("transcript_path") or "")
-            tk = ext_tok(plat, sid) or {}
+            tk = ext_tok(plat, sid) or ext_side_tok(plat, sid) or {}   # Copilot: no transcript_path, tokens from its records
             row = {
                 "id": "", "sid": "", "project": "?", "gotPrompt": 0,
                 "creq": 0, "burn": 0, "rpm": 0, "cwd": "", "branch": "",

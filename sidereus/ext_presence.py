@@ -65,6 +65,7 @@ def _row(plat, c, now):
     last = float(c.get("mtime") or now)
     first = float(c.get("start") or last)
     sid = c["sid"]
+    tk = ext_store.ext_side_tok(plat, sid) or {}   # Copilot usage records; Cursor stays 0 here
     row = {
         "id": "", "sid": "", "project": "?", "gotPrompt": 0,
         "creq": 0, "burn": 0, "rpm": 0, "cwd": "", "branch": "",
@@ -78,8 +79,9 @@ def _row(plat, c, now):
     row.update({
         "id": _sid8(sid), "sid": sid, "project": _proj_name(cwd) or "?", "cwd": cwd,
         "branch": str(c.get("branch") or "")[:200],
-        "tok": 0, "tokSplit": {"in": 0, "out": 0, "cache": 0, "thought": 0},
-        "estCost": None, "costMiss": 0,
+        "model": str(tk.get("model") or "")[:40], "tok": tk.get("tok", 0),
+        "tokSplit": {k: tk.get(k, 0) for k in ("in", "out", "cache", "thought")},
+        "estCost": None, "costMiss": tk.get("costMiss", 0),
         "ageSec": max(0, int(now - last)),
         "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
         "kind": plat, "goneWhy": "", "pid": 0, "rollout": True,

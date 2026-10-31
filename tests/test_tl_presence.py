@@ -65,7 +65,7 @@ class TlPresence(unittest.TestCase):
     def test_hook_row_wins(self):
         st._ext[("cursor", CU)] = {"cwd": "/w/other", "ev": [{"e": "stop", "t": NOW - 30}],
                                    "firstSeen": NOW - 100, "lastSeen": NOW - 30, "state": "idle"}
-        with mock.patch.object(te, "ext_hook_msgs", lambda cut: {}):
+        with mock.patch.object(te, "ext_side_msgs", lambda cut: {}):
             got = self.rows(CU)
         self.assertEqual(len(got), 1)
         self.assertEqual(got[0]["cwd"], "/w/other")

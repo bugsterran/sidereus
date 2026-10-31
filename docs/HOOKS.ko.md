@@ -393,6 +393,12 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
   그 단계에 불이 들어온다.
   - ⚠선언하지 않은 건너뛰기는 막지 않고 건너뜀으로 기록만 한다. 도구 실행 뒤 `[pl-end:]` 인계 문구는 없다.
   - 이전에 이미 연결했다면 «연결» 을 다시 누른다. 빠진 항목 세 개만 덧붙는다.
+- 토큰과 할당량(훅 유무와 무관): `sidereus/plat_copilot.py` 가 `session-state/<id>/events.jsonl` 의 `session.usage_record`
+  줄(입력, 출력, 캐시 읽기 + 쓰기, 모델)과 `model.model_call_success` 줄의 요청 할당량(`quotaSnapshots`: 사용, 한도,
+  남은 %, 초기화 날짜)을 읽는다.
+  ⚠읽지 않는 것: 프롬프트, 답변, 요청 메시지, 도구 호출, 그 밖의 모든 줄. 할당량 숫자는 키 위치에서 잘라 읽고 줄 전체는
+  해석하지 않는다. ⚠`type` 이 첫 키가 아닌 줄은 건너뛴다(추측하지 않고 표시하지 않음).
+  할당량은 마지막 Copilot 실행이 알려 준 값뿐이며, 초기화 날짜가 지나면 숨긴다.
 - 아직 안 한 것: Windows 확인.
 
 ### Codex CLI
@@ -421,7 +427,7 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
   모델만 보이고 상태는 알 수 없다. 훅 이벤트가 들어오면 훅 행으로 바뀐다.
 - Cursor CLI 와 Copilot CLI 도 자기 폴더에서 같은 «훅 미연결» 행을 얻는다. Cursor 는 `~/.cursor/chats/*/<id>/` 파일이
   최근 10분 안에 바뀐 대화, Copilot 은 `~/.copilot/session-state/<id>/inuse.<pid>.lock` 의 프로세스가 살아 있는 세션.
-  폴더, 시작, 마지막 활동만 보인다. 훅 행이 이긴다(같은 아이디, 또는 같은 폴더의 그 CLI 훅 행).
+  폴더, 시작, 마지막 활동만 보인다(Copilot 은 토큰 수도). 훅 행이 이긴다(같은 아이디, 또는 같은 폴더의 그 CLI 훅 행).
 - 선택 `SessionStart` 안내: `<PYTHON> <MAILBOX_CODE_DIR>/hooks/invite_notice.py --platform codex`(timeout 10) 와
   `<PYTHON> <MAILBOX_CODE_DIR>/hooks/pipelines_brief.py --platform codex`(timeout 5). Codex 문구는 새 메일이 턴 끝에
   `Stop` 훅으로 온다(아이디 `codex:<cwd>` 키 또는 `<폴더>-codex`)는 것과, 단계를 세션이 직접 순서대로 돌리며

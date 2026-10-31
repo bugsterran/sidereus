@@ -405,7 +405,11 @@ class World(_WorldPanels, _WorldGit):
                          "cx": dict(CX["tokSplit"], tok=CX["tok"], n_sessions=1, cost=CX["estCost"], costMiss=0,
                                     rate={"primary": {"pct": 34.0, "win": 300, "reset": a + 2 * H + 1200},
                                           "secondary": {"pct": 12.0, "win": 10080, "reset": a + 4 * 24 * H},
-                                          "plan": "plus"})},
+                                          "plan": "plus"}),
+                         "cp": dict(CP_ROW["tokSplit"], tok=CP_ROW["tok"], n_sessions=1, cost=None, costMiss=0,
+                                    models=[CP_ROW["model"]],
+                                    quota={"bucket": "chat", "used": 37, "ent": 50, "unl": False, "pct": 26,
+                                           "reset": a + 9 * 24 * H, "at": now - 3 * H})},
             # Includes viewerMe like state.py, so the demo page's own posts count as mine.
             # ⚠ASCII id: the Korean default leaked into en text («1 person <Korean default name>»).
             "mine": ["web-lead", "me", "user"], "cfg": {"stripPrefixes": [], "defaultRoom": "release", "viewerMe": "me",
