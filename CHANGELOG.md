@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-31
+
 ### Added
 
 - Harness report: every verdict has a «Next step» (meaning, why, who acts, next step; AI-session verdicts draft a mailbox instruction with preview + confirm); guides live in docs/verdicts/<id>.md. Refs #27
@@ -22,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Hook writes («Connect» in Diagnostics, «Remove» in Config map) keep a CRLF settings file CRLF; the rewritten `hooks` block used to come out with LF, leaving mixed line endings on Windows. Refs #28
+- Harness report: the recipient select in «Next step» is capped at 32em instead of stretching across the whole card (about 1750 px at 1920); it still shrinks to fit narrow rows. Refs #27
 
 ## [0.10.0] - 2026-10-30
 
@@ -610,7 +613,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/bugsterran/sidereus/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bugsterran/sidereus/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/bugsterran/sidereus/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/bugsterran/sidereus/compare/v0.8.0...v0.8.1
