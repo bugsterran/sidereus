@@ -34,7 +34,7 @@ Next: none planned; reopen if the footprint at 30 s goes over 200 MB.
 
 Hypothesis: running project lint checks from the viewer, next to the security checks, is worth a tab, a badge and a pipeline.
 
-Tried: a `project-checks` pipeline, a lint runner, a Quality tab and a "Checks n" badge.
+Tried: a lint pipeline, a lint runner, a Quality tab and a "Checks n" badge.
 
 Measured: nothing was measured; the removal commit records scope only ([954038ff](https://github.com/bugsterran/sidereus/commit/954038ff), 2026-10-16).
 
