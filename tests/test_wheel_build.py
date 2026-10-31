@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import unittest
 import zipfile
+from unittest import mock
 
 from tests._load import sidereus
 
@@ -83,7 +84,8 @@ class WheelBuild(unittest.TestCase):
         self.assertFalse([n for n in names if "__pycache__" in n or ".bak" in n])
         for want in ("chat_server.py", "sidereus_cli.py", "sidereus/stage_catalog.json",
                      "sidereus/_bundle/web/index.html", "sidereus/_bundle/config.example.json",
-                     "sidereus/_bundle/mcp/sidereus_mcp.py", "sidereus/_bundle/docs/verdicts/dup.md", "sidereus/_bundle/plugin/hooks/hooks.json"):
+                     "sidereus/_bundle/mcp/sidereus_mcp.py", "sidereus/_bundle/docs/verdicts/dup.md", "sidereus/_bundle/plugin/hooks/hooks.json",
+                     "sidereus/_bundle/ext-hooks/ext_hook.py", "sidereus/_bundle/ext-hooks/copilot-hooks-example.json"):
             self.assertIn(want, names)
 
     def test_installed_layout_resolves_bundle(self):
@@ -101,6 +103,27 @@ class WheelBuild(unittest.TestCase):
         self.assertFalse(got["clone"])
         clone = hashlib.sha256(sidereus("page").PAGE.encode("utf-8")).hexdigest()
         self.assertEqual(got["page"], clone)
+
+
+@unittest.skipUnless(importlib.util.find_spec("setuptools"), "test interpreter lacks setuptools (setup.py imports it)")
+class BundleShipsExtHooks(unittest.TestCase):
+    """«Connect» reads ASSET_DIR/ext-hooks; a bundle without it reports «no ext-hooks» on every pipx/uv install."""
+
+    def test_templates_in_bundle_and_resolve(self):
+        hc = sidereus("hook_connect")
+        rels = _setup_mod().bundle_files(REPO)
+        want = ["ext-hooks/" + f for f in hc._TPL.values()] + ["ext-hooks/ext_hook.py"]
+        self.assertEqual([w for w in want if w not in rels], [])
+        self.assertFalse([r for r in rels if r.startswith("ext-hooks/") and ("__pycache__" in r or os.path.basename(r).startswith("."))])
+        tmp = tempfile.mkdtemp(prefix="sidereus-bundle-")
+        self.addCleanup(shutil.rmtree, tmp, True)
+        for rel in rels:
+            t = os.path.join(tmp, rel)
+            os.makedirs(os.path.dirname(t), exist_ok=True)
+            shutil.copy2(os.path.join(REPO, rel), t)
+        with mock.patch.object(hc, "TPL_DIR", None), mock.patch.object(hc.config, "ASSET_DIR", tmp):
+            for plat in hc._TPL:
+                self.assertIsNotNone(hc._template(plat), plat)
 
 
 class SetupCompiles(unittest.TestCase):

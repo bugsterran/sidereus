@@ -18,6 +18,7 @@ SRC = os.path.dirname(os.path.abspath(__file__))
 BUNDLE = (
     ("web", True),
     ("hooks", True),
+    ("ext-hooks", True),              # «Connect» templates + ext_hook.py (sidereus/hook_connect.py); ⚠dot-files (logs, .omc) skipped below
     ("mcp/sidereus_mcp.py", False),
     ("features", True),
     ("scripts/pl_eval.py", False),

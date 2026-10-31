@@ -134,7 +134,7 @@ def _subst(cmd):
 
 
 def _template(plat):
-    """Template `hooks` with placeholders substituted, or None (pipx bundle ships no ext-hooks)."""
+    """Template `hooks` with placeholders substituted, or None (template missing or unreadable)."""
     p = os.path.join(TPL_DIR or os.path.join(_asset(), "ext-hooks"), _TPL[plat])
     try:
         with open(p, "rb") as f:

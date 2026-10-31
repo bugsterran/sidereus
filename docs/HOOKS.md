@@ -337,7 +337,6 @@ hooks; nothing shows when every entry is present. «Later» hides it per CLI.
   second «Connect» changes nothing.
 - ⚠A symlinked hook file is refused; edit it by hand.
 - ⚠Codex: run `/hooks` in Codex afterwards and approve the new entries, or Codex ignores them.
-- ⚠A pipx/uv install has no `ext-hooks/` in its bundle, so «Connect» is unavailable there; set up by hand below.
 - Manual setup below stays valid; a hand-edited file is detected the same way.
 
 ### Gemini CLI
