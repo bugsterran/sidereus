@@ -149,12 +149,12 @@ class HookConnNotice(unittest.TestCase):
         posts = self.r["posts"]
         self.assertEqual(posts[0], ["/api/hooks/connect", {"plat": "cursor", "dry": True}])
         self.assertEqual(posts[1], ["/api/hooks/connect", {"plat": "cursor", "dry": False, "base": "abc"}])
-        self.assertIn("새 세션부터", self.r["done"])
+        self.assertIn("다시 시작하세요", self.r["done"])
         self.assertIn("/hooks", self.r["approve"])
         self.assertIn("data-hca=cancel", self.r["approve"])     # dismissable
 
     def test_apply_refetches_and_drops_connected_row(self):
-        self.assertIn("새 세션부터", self.r["done"])
+        self.assertIn("다시 시작하세요", self.r["done"])
         self.assertEqual(self.r["refetch"], 1)
         self.assertNotIn('data-hcp="cursor"', self.r["afterReload"])
         self.assertIn('data-hcp="codex"', self.r["approve"])
