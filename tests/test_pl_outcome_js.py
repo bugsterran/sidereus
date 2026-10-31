@@ -21,7 +21,7 @@ SENT = [
     "Result: {broke} of {n} passes broke later, fix followed {fixed}",
     "Review loop-backs: {cur}% of runs (last 30 days) vs {prev}% (30 days before)",
     "Review loop-backs: {cur}% of runs (last 30 days), no earlier data",
-    "Latest report {date} · {path}",
+    "Latest report {date}",
     "No report yet",
 ]
 
@@ -62,7 +62,7 @@ class ResultLayer(unittest.TestCase):
         for s in ("Gate: 2 of 3 gates confirmed able to fail", "Procedure: 9 runs, 1 order violations blocked",
                   "Result: 1 of 6 passes broke later, fix followed 2",
                   "Review loop-backs: 25% of runs (last 30 days) vs 50% (30 days before)",
-                  "Latest report 2026-10-11 · /d/eval/k/reports/2026-10-11.md"):
+                  "Latest report 2026-10-11", "<span class=pleocp>/d/eval/k/reports/2026-10-11.md</span>"):
             self.assertIn(s, h)
 
     def test_ko_and_fallbacks(self):
