@@ -56,7 +56,7 @@ EMIT = ("cc", "codex", "gemini")   # platforms that read PostToolUse additionalC
 EVENT = {"BeforeTool": "PreToolUse", "AfterTool": "PostToolUse"}   # Gemini names
 CAMEL = {"preToolUse": "PreToolUse", "postToolUse": "PostToolUse", "postToolUseFailure": "PostToolUse"}   # Cursor names
 SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash",
-         "PowerShell", "Shell")   # Bash/PowerShell only off cc; PowerShell = Claude Code's Windows shell tool; Shell = Cursor
+         "PowerShell", "Shell", "bash")   # Bash/PowerShell only off cc; PowerShell = Claude Code's Windows shell tool; Shell = Cursor
 # ⚠Same as pl_mark.py MARK; anchored at the command start so `grep "[pl:"` never counts.
 MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl(-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n|]{1,40})(\|fail)?)\]""")
 IDLE_S = 6 * 3600     # a run untouched this long is over; the next tag opens a new one
@@ -968,6 +968,16 @@ def _platform(argv):
     return argv[i] if i < len(argv) else ""
 
 
+def _shell_tag(plat, ti):
+    """MARK match of a shell command; on Copilot the bash `description` is the fallback (matched only, never stored)."""
+    cmd = _shell_cmd(ti)
+    m = MARK.match(cmd) if cmd else None
+    if not m and plat == "copilot" and cmd is not None:
+        d = ti.get("description")
+        m = MARK.match(d) if isinstance(d, str) else None
+    return m
+
+
 def _shell_cmd(ti):
     """Same as pl_mark.py shell_cmd."""
     c = ti.get("command", ti.get("cmd")) if isinstance(ti, dict) else None
@@ -1665,9 +1675,30 @@ def _none_pre(plat, ev):
         return False
 
 
-def _norm_ev(ev):
+def _camel_keys(ev, plat):
+    """Copilot: snake_case Pre/Post measured under PascalCase registration (1.0.105, 2026-10-31); camelCase is parsed
+    defensively, only where the snake_case key is missing."""
+    for a, b in (("sessionId", "session_id"), ("toolName", "tool_name"), ("toolInput", "tool_input"),
+                 ("toolArgs", "tool_input"), ("hookName", "hook_event_name")):
+        if b not in ev and a in ev:
+            v = ev[a]
+            if isinstance(v, str) and b == "tool_input":
+                try:
+                    v = json.loads(v)
+                except Exception:
+                    v = None
+            if b != "tool_input" or isinstance(v, dict):
+                ev[b] = v
+    if "hook_event_name" not in ev:   # last fallback: guess from a result key
+        post = any(k in ev for k in ("toolResult", "tool_result", "tool_response"))
+        ev["hook_event_name"] = "PostToolUse" if post else "PreToolUse"
+
+
+def _norm_ev(ev, plat=""):
     """Off cc: Cursor camelCase event -> PascalCase; an empty cwd (Cursor tool events) -> first absolute workspace root.
     ⚠Without it `_flow` returns early (cwd must be absolute) and no Cursor run ever opens."""
+    if plat == "copilot":
+        _camel_keys(ev, plat)
     e = ev.get("hook_event_name")
     if isinstance(e, str) and e in CAMEL:
         ev["hook_event_name"] = CAMEL[e]
@@ -1687,7 +1718,14 @@ def main(argv=None):
     if not isinstance(ev, dict):
         return
     if plat != "cc":
-        ev = _norm_ev(ev)
+        ev = _norm_ev(ev, plat)
+    if plat == "copilot":   # ⚠Copilot may read hook stdout as a decision; the flow only records there
+        with contextlib.redirect_stdout(io.StringIO()):
+            return _main(plat, ev)
+    return _main(plat, ev)
+
+
+def _main(plat, ev):
     denied = False
     del _NONE_NOTE[:]
     try:
@@ -1854,8 +1892,7 @@ def _flow(plat, ev):
         name, title = m.group(1), _ren(m.group(2).strip())
     else:
         event = EVENT.get(event, event)
-        cmd = _shell_cmd(ev.get("tool_input")) if tool in SHELL else None
-        m = MARK.match(cmd) if cmd else None
+        m = _shell_tag(plat, ev.get("tool_input")) if tool in SHELL else None
         if not m or m.group(2):
             return
         shell = "fail" if m.group(5) else "end" if m.group(1) else "start"

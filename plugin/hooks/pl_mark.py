@@ -28,7 +28,7 @@ PLATFORMS = ("cc", "gemini", "codex", "copilot", "cursor", "cline", "windsurf", 
              "deepseek", "qwen", "kimi", "mistral", "ollama", "perplexity", "huggingface", "meta", "openrouter")
 EVENT = {"BeforeTool": "PreToolUse", "AfterTool": "PostToolUse"}   # Gemini names
 CAMEL = {"preToolUse": "PreToolUse", "postToolUse": "PostToolUse", "postToolUseFailure": "PostToolUse"}   # Cursor names
-SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash", "Shell")   # Bash only off cc; Shell = Cursor
+SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash", "Shell", "bash")   # Bash only off cc; Shell = Cursor; bash = Copilot
 # ⚠Anchored at the command start: `grep "[pl:"` or a marker inside a script must never count.
 MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl(-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n|]{1,40})(\|fail)?)\]""")
 
@@ -233,12 +233,15 @@ def _write(path, rec):
     os.replace(tmp, path)
 
 
-def shell_mark(ev, sid):
+def shell_mark(ev, sid, plat=""):
     """Other CLIs: a leading shell marker sets / ends / clears the mark. Stores name/title/t/cwd/hold only."""
     if EVENT.get(ev.get("hook_event_name"), ev.get("hook_event_name")) == "PostToolUse":
         return
     cmd = shell_cmd(ev.get("tool_input"))
     m = MARK.match(cmd) if cmd else None
+    if not m and plat == "copilot" and cmd is not None:   # Copilot bash `description`: matched only, never stored
+        d = ev.get("tool_input").get("description")
+        m = MARK.match(d) if isinstance(d, str) else None
     if not m:
         return
     path = os.path.join(MARK_DIR, sid + ".json")
@@ -266,10 +269,31 @@ def shell_mark(ev, sid):
                   "cwd": cwd if isinstance(cwd, str) else "", "hold": 1})
 
 
-def norm_ev(ev):
+def camel_keys(ev, plat):
+    """Copilot: snake_case Pre/Post measured under PascalCase registration (1.0.105, 2026-10-31); camelCase is parsed
+    defensively, only where the snake_case key is missing."""
+    for a, b in (("sessionId", "session_id"), ("toolName", "tool_name"), ("toolInput", "tool_input"),
+                 ("toolArgs", "tool_input"), ("hookName", "hook_event_name")):
+        if b not in ev and a in ev:
+            v = ev[a]
+            if isinstance(v, str) and b == "tool_input":
+                try:
+                    v = json.loads(v)
+                except Exception:
+                    v = None
+            if b != "tool_input" or isinstance(v, dict):
+                ev[b] = v
+    if "hook_event_name" not in ev:   # last fallback: guess from a result key
+        post = any(k in ev for k in ("toolResult", "tool_result", "tool_response"))
+        ev["hook_event_name"] = "PostToolUse" if post else "PreToolUse"
+
+
+def norm_ev(ev, plat=""):
     """Off cc: Cursor camelCase event -> PascalCase; an empty cwd (Cursor tool events) -> first absolute workspace root."""
     if not isinstance(ev, dict):
         return ev
+    if plat == "copilot":
+        camel_keys(ev, plat)
     e = ev.get("hook_event_name")
     if isinstance(e, str) and e in CAMEL:
         ev["hook_event_name"] = CAMEL[e]
@@ -287,10 +311,10 @@ def main(argv=None):
         return
     ev = json.loads(sys.stdin.read() or "{}")
     if plat != "cc":
-        ev = norm_ev(ev)
+        ev = norm_ev(ev, plat)
         sid = ev.get("session_id") if isinstance(ev, dict) else None
         if isinstance(sid, str) and SID.match(sid) and ev.get("tool_name") in SHELL:
-            shell_mark(ev, sid)
+            shell_mark(ev, sid, plat)
         return
     # ⚠A tagged Agent/Task/SendMessage only CLEARS main's mark: dispatching means main hands off and waits,
     # it is not working that stage. Only Bash sets it.

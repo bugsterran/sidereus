@@ -986,6 +986,47 @@ class Flow(unittest.TestCase):
         v = self.sh("echo [pl-end:%s/설계]" % N, "PostToolUse", plat="codex", tool="Bash")
         self.assertIn("PASS → next", json.loads(v)["hookSpecificOutput"]["additionalContext"])
 
+    def cop(self, desc, cmd="ls", post=False):
+        """Copilot payload: camelCase keys, toolArgs as a JSON string, no hook_event_name; returns stdout."""
+        ev = {"sessionId": SID, "toolName": "bash", "cwd": self.proj,
+              "toolArgs": json.dumps({"command": cmd, "description": desc, "mode": "sync"})}
+        if post:
+            ev["toolResult"] = {"resultType": "success"}
+        out = io.StringIO()
+        with mock.patch("sys.stdin", io.StringIO(json.dumps(ev))), mock.patch("sys.stdout", out):
+            H.main(["--platform", "copilot"])
+        return out.getvalue()
+
+    def test_R1_copilot_stage_lights(self):
+        self.assertEqual(self.cop("[pl:%s/설계] secret" % N), "")
+        r = self.run_()
+        self.assertEqual(r["cur"], "설계")
+        self.assertEqual(self.cop("[pl-end:%s/설계]" % N, post=True), "")   # no hand-off text on Copilot
+        self.assertEqual(self.run_()["done"], ["설계"])
+        with open(os.path.join(self.marks, SID + ".runs.json"), encoding="utf-8") as f:
+            self.assertNotIn("secret", f.read())
+
+    def test_R1_copilot_snake_post_ends_stage(self):
+        self.assertEqual(self.sh(": [pl:%s/설계]" % N, "PreToolUse", plat="copilot", tool="bash"), "")
+        self.assertEqual(self.sh("echo [pl-end:%s/설계]" % N, "PostToolUse", plat="copilot", tool="bash"), "")
+        self.assertEqual(self.run_()["done"], ["설계"])
+
+    def test_R1_copilot_hookname_post(self):
+        self.cop("[pl:%s/설계]" % N)
+        ev = {"sessionId": SID, "toolName": "bash", "cwd": self.proj, "hookName": "postToolUse",
+              "toolArgs": json.dumps({"command": "echo [pl-end:%s/설계]" % N})}
+        out = io.StringIO()
+        with mock.patch("sys.stdin", io.StringIO(json.dumps(ev))), mock.patch("sys.stdout", out):
+            H.main(["--platform", "copilot"])
+        self.assertEqual(out.getvalue(), "")
+        self.assertEqual(self.run_()["done"], ["설계"])
+
+    def test_R2_copilot_jump_is_skip(self):
+        self.assertEqual(self.sh('echo "[pl:%s/검증]"' % N, "PreToolUse", plat="copilot", tool="bash"), "")
+        st = self.run_()["st"]
+        self.assertEqual((st["설계"]["s"], st["구현"]["s"]), ("skip", "skip"))
+        self.assertEqual(self.run_()["cur"], "검증")
+
     def _poke(self, **kv):
         p = os.path.join(self.marks, SID + ".runs.json")
         with open(p, encoding="utf-8") as f:

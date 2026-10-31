@@ -376,6 +376,53 @@ class HookConnect(unittest.TestCase):
         with open(out["backup"], "rb") as f:
             self.assertEqual(f.read(), raw)
 
+    def test_R3_copilot_connect_adds_pl_entries(self):
+        os.makedirs(os.path.dirname(self.files["copilot"]))
+        raw = self._put("copilot", {"version": 1, "hooks": {}})
+        code, dry = HC.connect({"plat": "copilot", "dry": True})
+        self.assertEqual(code, 200, dry)
+        mark = PY + " " + ASSET + "/hooks/pl_mark.py --platform copilot"
+        flow = PY + " " + ASSET + "/hooks/pl_flow.py --platform copilot"
+        self.assertIn(mark, dry["diff"])
+        self.assertIn(flow, dry["diff"])
+        self.assertEqual(self._raw("copilot"), raw)     # preview writes nothing
+        real = HC._backup
+        seen = []
+
+        def bak(*a, **kw):
+            seen.append(self._raw("copilot"))       # backup runs while the file is still the old bytes
+            return real(*a, **kw)
+        with mock.patch.object(HC, "_backup", bak):
+            code, out = HC.connect({"plat": "copilot", "dry": False, "base": dry["base"]})
+        self.assertEqual(code, 200, out)
+        self.assertEqual(seen, [raw])
+        with open(out["backup"], "rb") as f:
+            self.assertEqual(f.read(), raw)
+        d = json.loads(self._raw("copilot"))
+        self.assertEqual([e["bash"] for e in d["hooks"]["PreToolUse"]][1:], [mark, flow])
+        self.assertEqual(d["hooks"]["PostToolUse"][-1]["bash"], flow)
+        self.assertEqual(d["hooks"]["PostToolUse"][-1]["powershell"], "& " + flow)
+
+    def test_R3_copilot_appends_only_missing(self):
+        os.makedirs(os.path.dirname(self.files["copilot"]))
+        ex = _example("copilot")
+        old = {ev: [e for e in lst if "ext_hook.py" in e["bash"]] for ev, lst in ex.items()}   # pre-[pl:] install
+        user = {"type": "command", "bash": "say tool", "powershell": "echo tool"}
+        old["PreToolUse"] = [user] + old["PreToolUse"]
+        self._put("copilot", {"version": 1, "hooks": old})
+        self.assertEqual(HC._state("copilot", self.files["copilot"])[0], "partial")
+        dry, out = self._apply("copilot")
+        self.assertEqual(dry["adds"], 3)
+        self.assertTrue(os.path.isfile(out["backup"]))
+        d = json.loads(self._raw("copilot"))
+        self.assertEqual(d["hooks"]["PreToolUse"], [user] + ex["PreToolUse"])
+        self.assertEqual(d["hooks"]["PostToolUse"], ex["PostToolUse"])
+        self.assertEqual(list(d["hooks"]), list(old))
+        code, again = HC.connect({"plat": "copilot", "dry": True})
+        self.assertEqual(again["adds"], 0)
+        HC._MEMO.clear()
+        self.assertEqual(HC._state("copilot", self.files["copilot"]), ("connected", ""))
+
     def test_r4_copilot_windows_subst(self):
         win_py, win_asset = r"C:\Program Files\Python\python.exe", r"C:\Users\A B\sidereus"
         with mock.patch.object(HC, "_python", lambda: win_py), mock.patch.object(HC, "_asset", lambda: win_asset):

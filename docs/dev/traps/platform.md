@@ -205,6 +205,11 @@ Cause: Codex writes `rate_limits: null` on many `token_count` events (Codex #148
 Fix: the newest non-null `rate_limits` wins; windows past their `resets_at` are dropped, and `plan` is sent only with a live window. No window -> «No limit data» on Codex rows.
 ⚠Never fill a missing window, guess a percentage, or carry a value past its reset — the screen shows only what the CLI reported.
 
+### Copilot stdin key case differs per event (`hooks/pl_mark.py` · `hooks/pl_flow.py` `--platform copilot`)
+Cause: under a PascalCase registration `PreToolUse`/`PostToolUse` send snake_case keys (`session_id`, `tool_name`, `tool_input`) while `PermissionRequest` sends camelCase (`sessionId`, `toolName`).
+Fix: the pipeline hooks read both spellings; the shell tool is `bash` and the `[pl:]` tag sits at the start of `command` or in `description`.
+⚠The internal session log shows camelCase `toolCalls[]` — that is not the stdin shape; never build a parser from it. ★Copilot CLI 1.0.105, macOS, 2026-10-31.
+
 ### Copilot `PermissionRequest` arrives camelCase (`ext-hooks/ext_hook.py` `build`)
 Cause: even under a PascalCase registration, Copilot CLI sends `PermissionRequest` with `hookName`, `sessionId`, `toolName` instead of the snake_case keys, so the event had no session id and was dropped.
 Fix: `build()` falls back to those camelCase keys (ids only; `toolInput` is never copied) and maps it to `Notification`.

@@ -138,6 +138,50 @@ class ShellMarker(unittest.TestCase):
         self._run("echo [pl:sidereus-change/리뷰]", argv=("--platform", "codex"), tool="Bash", event="PreToolUse")
         self.assertEqual(self.mark()["title"], "리뷰")
 
+    def _raw(self, ev, plat="copilot"):
+        out = io.StringIO()
+        with mock.patch("sys.stdin", io.StringIO(json.dumps(ev))), mock.patch("sys.stdout", out):
+            H.main(["--platform", plat])
+        return out.getvalue()
+
+    def test_R1_copilot_bash_command_marker(self):
+        self.assertEqual(self._run("echo [pl:sidereus-change/구현]", argv=("--platform", "copilot"), tool="bash",
+                                   event="PreToolUse"), "")
+        self.assertEqual(self.mark()["title"], "구현")
+
+    def test_R1_copilot_description_tag(self):
+        ev = {"sessionId": "sess-0001", "toolName": "bash", "cwd": self.tmp,
+              "toolArgs": json.dumps({"command": "ls secret-cmd", "description": "[pl:sidereus-change/검증] secret desc"})}
+        self.assertEqual(self._raw(ev), "")
+        with open(self.path, encoding="utf-8") as f:
+            raw = f.read()
+        self.assertNotIn("secret", raw)   # neither the description nor the command is stored
+        m = json.loads(raw)
+        self.assertEqual(sorted(m), ["cwd", "hold", "name", "t", "title"])
+        self.assertEqual(m["title"], "검증")
+        # command marker wins over the description
+        ev["toolArgs"] = json.dumps({"command": ": [pl:sidereus-change/리뷰]", "description": "[pl:-]"})
+        self._raw(ev)
+        self.assertEqual(self.mark()["title"], "리뷰")
+        ev["toolArgs"] = json.dumps({"command": "ls", "description": "[pl:-] cleanup"})
+        self._raw(ev)
+        self.assertFalse(os.path.exists(self.path))
+
+    def test_R1_copilot_grep_not_marker(self):
+        ev = {"sessionId": "sess-0001", "toolName": "bash", "cwd": self.tmp,
+              "toolArgs": json.dumps({"command": 'grep "[pl:sidereus-change/구현]" x', "description": "search [pl:x/y]"})}
+        self._raw(ev)
+        ev["toolResult"] = {"resultType": "success"}   # Post: never marks
+        ev["toolArgs"] = json.dumps({"command": "ls", "description": "[pl:sidereus-change/구현]"})
+        self._raw(ev)
+        self.assertFalse(os.path.exists(self.path))
+
+    def test_R1_description_ignored_off_copilot(self):
+        for plat, tool in (("codex", "Bash"), ("cursor", "Shell"), ("gemini", "run_shell_command")):
+            self._raw({"hook_event_name": "PreToolUse", "session_id": "sess-0001", "tool_name": tool, "cwd": self.tmp,
+                       "tool_input": {"command": "ls", "description": "[pl:sidereus-change/구현]"}}, plat)
+        self.assertFalse(os.path.exists(self.path))
+
     def test_platforms_match_ext_store(self):
         from tests._load import sidereus
         self.assertEqual(set(H.PLATFORMS) - {"cc"}, set(sidereus("ext_store").EXT_PLAT))
