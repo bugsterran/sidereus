@@ -34,7 +34,7 @@ CI 는 푸시된 결과를 검사하고, Sidereus 는 그 결과에 이른 과�
 
 가설: 프로젝트 린트 검사를 보안 검사 옆에서 뷰어로 돌리는 것은 탭 하나, 배지 하나, 파이프라인 하나를 들일 만하다.
 
-해 본 것: `project-checks` 파이프라인, 린트 실행기, Quality 탭, "Checks n" 배지.
+해 본 것: 린트 파이프라인, 린트 실행기, Quality 탭, "Checks n" 배지.
 
 측정: 잰 것이 없다. 제거 커밋에는 범위만 적혀 있다([954038ff](https://github.com/bugsterran/sidereus/commit/954038ff), 2026-10-16).
 
