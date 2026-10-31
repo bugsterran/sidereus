@@ -32,7 +32,7 @@ sidereus doctor
 
 No pipx yet: `py -m pip install --user pipx`, then `py -m pipx ensurepath` and reopen the terminal (`python3 -m pip …` on macOS/Linux).
 
-Upgrade: `pipx upgrade sidereus` (`uv tool upgrade sidereus`). Not available this way: start at login
+Upgrade: `pipx upgrade sidereus` (`uv tool upgrade sidereus`). On Windows a running viewer locks the venv's `python.exe`, so stop it first (`sidereus stop`, or `schtasks /End /TN Sidereus` if it runs as the logon task, §3), upgrade, then start it again. Not available this way: start at login
 (`start --install-service`, §3 — the install path changes on every reinstall) and `scripts/` tools; connect Claude Code
 with the plugin from GitHub (§5).
 Pipeline scoring (`scripts/pl_eval.py`) runs only from a clone.
