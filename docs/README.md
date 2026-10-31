@@ -17,6 +17,7 @@ User docs have a Korean version alongside (`*.ko.md`).
 | [STRUCTURE.md](STRUCTURE.md) · [Korean](STRUCTURE.ko.md) | Structure tab relations mode; supported languages and frameworks |
 | [EXTENDING.md](EXTENDING.md) · [Korean](EXTENDING.ko.md) | Adding platforms, language plug-ins and frameworks |
 | [REVIEW-PIPELINES.md](REVIEW-PIPELINES.md) · [Korean](REVIEW-PIPELINES.ko.md) | Writing a review pipeline: what the platforms publish, templates per CLI |
+| [EXPERIMENT-LOG.md](EXPERIMENT-LOG.md) · [Korean](EXPERIMENT-LOG.ko.md) | Each idea with what was tried, what was measured and the verdict |
 | [schema/sidereus-state.v1.json](schema/sidereus-state.v1.json) | `GET /api/v1/state`, the stable metadata-only schema. The Architecture map's `map.json`: [STRUCTURE](STRUCTURE.md) |
 | [../SECURITY.md](../SECURITY.md) · [../CONTRIBUTING.md](../CONTRIBUTING.md) · [../CHANGELOG.md](../CHANGELOG.md) | Security model, contribution policy, release notes |
 
