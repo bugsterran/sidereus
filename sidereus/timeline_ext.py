@@ -4,6 +4,7 @@ from sidereus.ident import _proj_name, _sid8
 from sidereus.adapter import adapter_scan
 from sidereus.ext import _ext, _ext_lock, ext_runs, PLAT_MODS, EXT_PLAT, ext_hook_msgs, ext_hook_cwds
 from sidereus.timeline_scan import SEG_GAP, SEG_MAX
+from sidereus.ext_presence import ext_presence_rows, PRES_NAME
 
 
 # ── external CLI sessions: Gemini, Codex, ... (metadata only: ids, timestamps, model, token counts) ─────
@@ -43,7 +44,25 @@ def _plat_tl_rows(cut, now, pcwd=None):
     hook_only |= {p for p, _sid in ext_hook_cwds() if p not in PLAT_MODS and p in EXT_PLAT}
     for p in sorted(hook_only):
         out += _ext_tl(cut, now, pcwd, p, EXT_PLAT[p], "CLI", p.title(), _hook_scan(p))
+    # ⚠Hook-less Cursor/Copilot sessions otherwise reached only the session list; hook rows win (skipped there + `_tl_dedup`).
+    out += [_pres_row(r, cut, now) for r in ext_presence_rows(now)]
     return out
+
+
+def _pres_row(r, cut, now):
+    """Main-session row from an `ext_presence` row (metadata only): one bar from start to last activity, idle if older."""
+    key, sid, cwd = r["plat"], r["sid"], r.get("cwd") or ""
+    last = int(now - int(r.get("ageSec") or 0))
+    start = last - int((r.get("runmin") or {}).get("run") or 0) * 60
+    segs = [[int(max(start, cut)), last]] if last >= cut else []
+    t0 = segs[0][0] if segs else int(cut)
+    proj = _proj_name(cwd) or "?"
+    return {"tid": "ext:" + key + "|" + sid, "sid": sid, "type": proj,
+            "desc": PRES_NAME.get(r.get("kind") or "", "CLI") + " — " + _sid8(sid),
+            "segs": segs, "comp": [], "seen": t0, "start": t0, "end": max(t0, last),
+            "run": False, "state": "", "idle": int(max(0, now - last)), "blocked": "",
+            "proj": proj, "cwd": cwd or "?", "depth": 0, "kind": "sess",
+            "plat": key, "model": "", "tk": 0, "_tk": [], "last": ""}
 
 
 def _hook_scan(plat):
