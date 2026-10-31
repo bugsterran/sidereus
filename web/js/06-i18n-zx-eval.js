@@ -53,6 +53,6 @@ Object.assign(I18N.ko, {
   'Result: {broke} of {n} passes broke later, fix followed {fixed}': '결과: 통과 {n}건 중 {broke}건이 나중에 깨짐, 뒤이은 수정 {fixed}건',
   'Review loop-backs: {cur}% of runs (last 30 days) vs {prev}% (30 days before)': '리뷰 되돌림: 실행의 {cur}% (최근 30일) · 그 전 30일 {prev}%',
   'Review loop-backs: {cur}% of runs (last 30 days), no earlier data': '리뷰 되돌림: 실행의 {cur}% (최근 30일), 이전 자료 없음',
-  'Latest report {date} · {path}': '최근 리포트 {date} · {path}',
+  'Latest report {date}': '최근 리포트 {date}',
   'No report yet': '아직 리포트 없음',
 });

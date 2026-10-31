@@ -84,7 +84,7 @@ function plEvalAgree(a){ return a && a.n ? '<span class="pleag' + (a.k < a.n ? '
 const PLE_OC = { gate: 'Gate: {g} of {m} gates confirmed able to fail', proc: 'Procedure: {runs} runs, {jump} order violations blocked',
   result: 'Result: {broke} of {n} passes broke later, fix followed {fixed}',
   lb: 'Review loop-backs: {cur}% of runs (last 30 days) vs {prev}% (30 days before)', lb0: 'Review loop-backs: {cur}% of runs (last 30 days), no earlier data',
-  rep: 'Latest report {date} · {path}', norep: 'No report yet' };
+  rep: 'Latest report {date}', norep: 'No report yet' };
 const plOcPct = c => c && c.n ? Math.round((c.k | 0) * 100 / c.n) : 0;
 // Pure: «Result layer» block — gate / procedure / result facts, loop-back trend, latest report. Counts only, no score.
 function plEvalOutcome(ev){
@@ -94,8 +94,10 @@ function plEvalOutcome(ev){
   const L = [TV({msg: PLE_OC.gate, vars: {g: g.n | 0, m: g.m | 0}}), TV({msg: PLE_OC.proc, vars: {runs: p.runs | 0, jump: p.jump | 0}}),
     TV({msg: PLE_OC.result, vars: {broke: r.broke | 0, n: r.n | 0, fixed: r.fixed | 0}})];
   if(cur.n || prev.n) L.push(TV(prev.n ? {msg: PLE_OC.lb, vars: {cur: plOcPct(cur), prev: plOcPct(prev)}} : {msg: PLE_OC.lb0, vars: {cur: plOcPct(cur)}}));   // no runs in either window: no line
-  const rp = ev.rep && ev.rep.date ? TV({msg: PLE_OC.rep, vars: {date: String(ev.rep.date), path: String(ev.rep.path || '')}}) : T(PLE_OC.norep);
-  return '<div class=pleoc><b>' + esc(T('Result layer')) + '</b><ul>' + L.map(s => '<li>' + esc(s) + '</li>').join('') + '</ul><div class=pleocr>' + esc(rp) + '</div></div>';
+  const has = ev.rep && ev.rep.date, path = has ? String(ev.rep.path || '') : '';
+  const rp = has ? TV({msg: PLE_OC.rep, vars: {date: String(ev.rep.date)}}) : T(PLE_OC.norep);
+  // Path on its own line: inline after the label it broke at the date's hyphen («2026-10-|25.md»).
+  return '<div class=pleoc><b>' + esc(T('Result layer')) + '</b><ul>' + L.map(s => '<li>' + esc(s) + '</li>').join('') + '</ul><div class=pleocr>' + esc(rp) + (path ? '<span class=pleocp>' + esc(path) + '</span>' : '') + '</div></div>';
 }
 function plEvalPanel(ev){
   if(!ev) return '';
