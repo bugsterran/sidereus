@@ -94,7 +94,7 @@ async function hcAct(a, p){
     HCS[p] = { st: 'busy' }; hcPaint();
     try{
       const r = await postJSON('/api/hooks/connect', { plat: p, dry: false, base: s.base });
-      HCS[p] = { st: 'done', pin: !!(r && r.approve), msg: r && r.approve ? T('Connected. Run /hooks inside Codex to approve the new hooks.') : T(r && r.changed === false ? 'Already connected' : 'Connected. New sessions report to Sidereus.') };
+      HCS[p] = { st: 'done', pin: !!(r && r.approve), msg: r && r.approve ? T('Connected. Restart Codex, then run /hooks in it to approve the new hooks.') : T(r && r.changed === false ? 'Already connected' : 'Connected. Restart sessions that are already open: only newly started ones load the hooks.') };
       hcPaint(); hcLoad(true);   // message shows in place first; the reload then drops the connected row
       return;
     }catch(e){ HCS[p] = { st: 'err', msg: hcErr(e) }; }
