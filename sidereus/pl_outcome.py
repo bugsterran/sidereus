@@ -180,8 +180,8 @@ def _after(proj, sha, budget, memo):
 
 
 def _result(proj, rows, runs, now, git):
-    """n = PASSes whose commit was resolved; unchecked = attributed PASSes that could not be (dirty with no landed commit,
-    or git did not answer); partial = some git call failed or ran out of budget."""
+    """n = distinct commits the PASSes resolved to; unchecked = dirty PASSes with no landed commit plus commits git did
+    not answer for; partial = some git call failed or ran out of budget."""
     since = now - OC_WIN_S
     ps = _passes(rows, runs, since)
     res = {"n": 0, "broke": 0, "fixed": 0, "unchecked": 0, "partial": False, "list": []}
@@ -193,18 +193,36 @@ def _result(proj, rows, runs, now, git):
     if not log:
         res["unchecked"], res["partial"] = len(ps), bool(git)
         return res
+    groups = {}   # resolved log index -> [(pass, run end)]: several PASSes on one commit are one entry
     for p, end in ps:
-        h = st.get(p["ts"]) or {}
         i = _resolve(p, end, log)
-        aft = _after(proj, log[i][0], budget, memo) if i >= 0 else None
-        if i < 0 or aft is None or (h.get("state") == "unchecked" and not p["dirty"]):
+        if i < 0:
+            res["unchecked"] += 1   # unresolved dirty PASS is a fact, not a git miss
+            continue
+        groups.setdefault(i, []).append((p, end))
+    seen = {}
+    for c in log:
+        for f in set(c[2]):
+            seen[f] = seen.get(f, 0) + 1
+    # files in more than half the window's commits (CHANGELOG, doc indexes) made every PASS read «fix followed»
+    common = set(f for f, k in seen.items() if k * 2 > len(log))
+    for i in sorted(groups, key=lambda j: -max(p["ts"] for p, _e in groups[j])):
+        g = groups[i]
+        aft = _after(proj, log[i][0], budget, memo)
+        known = [st.get(p["ts"]) or {} for p, _e in g
+                 if not ((st.get(p["ts"]) or {}).get("state") == "unchecked" and not p["dirty"])]
+        if aft is None or not known:
             res["unchecked"] += 1
-            res["partial"] = res["partial"] or i >= 0   # unresolved dirty PASS is a fact; a git miss is not
+            res["partial"] = True
             continue
         sha, ct, files = log[i]
         fs = set(files)
-        fixed = bool(fs) and any(c[0] in aft and c[1] - p["ts"] <= OC_FIX_S and fs & set(c[2]) for c in log[:i])
-        broke = h.get("state") in ("broke", "reverted", "gone")
+        ts, end = max(p["ts"] for p, _e in g), max(e for _p, e in g)
+        rare = fs - common
+        # ⚠a commit made inside the PASS's own run is that run's work, not a later fix (same +60 s slack as _resolve)
+        fixed = bool(rare) and any(c[0] in aft and end + OC_POST_S < c[1] and c[1] - ts <= OC_FIX_S and rare & set(c[2])
+                                   for c in log[:i])
+        broke = any(h.get("state") in ("broke", "reverted", "gone") for h in known)
         res["n"] += 1
         res["broke"] += broke
         res["fixed"] += fixed

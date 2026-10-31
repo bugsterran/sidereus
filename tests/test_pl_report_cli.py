@@ -38,10 +38,11 @@ class Report(unittest.TestCase):
         key = OC.repo_key(self.proj)
         os.makedirs(os.path.join(self.tmp, "eval", key))
         with open(os.path.join(self.tmp, "eval", key, "runs.jsonl"), "w", encoding="utf-8") as f:
-            f.write(json.dumps({"name": "flow", "t0": NOW - 200, "end": NOW - 50, "lb": [{"f": "review", "g": "build", "n": 1}],
+            f.write(json.dumps({"name": "flow", "t0": NOW - 200, "end": NOW - 90, "lb": [{"f": "review", "g": "build", "n": 1}],
                                 "dc": {"jump": 1}}) + "\n")
         self.rep = os.path.join(self.tmp, "eval", key, "reports")
         log = "\x1e%s\x1f%d\n\na.py\n\x1e%s\x1f%d\n\na.py\nb.py\n" % ("b" * 40, NOW - 10, "a" * 40, NOW - 150)
+        log += "".join("\x1e%s\x1f%d\n\nold%d.py\n" % (c * 40, NOW - 900, k) for k, c in enumerate("cd"))   # a.py under half the commits
         out = {"rev-parse": "f" * 40 + "\n", "log": log, "rev-list": "b" * 40 + "\n"}   # rev-list: b descends from a
         git = lambda repo, args: (0, out[args[0]]) if args[0] in out else None
         trgit = lambda repo, args: (0, "f" * 40 + "\n") if args[0] == "rev-parse" else (0, "")   # head an ancestor, no rollback
