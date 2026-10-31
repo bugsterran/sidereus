@@ -2,7 +2,7 @@
 `ext_hook.py` reads hook JSON on stdin and sends it to `POST http://127.0.0.1:8799/api/hook`.
 Change the endpoint with `SIDEREUS_HOOK_URL` or `--url`; `--dry-run` prints the body to stderr only.
 Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`): `gemini codex copilot cursor cline windsurf warp trae zed grok deepseek qwen kimi mistral ollama perplexity huggingface meta openrouter` (19 · ⚠Claude is not in the list - Sidereus already reads its transcripts)
-- Automatic: Settings › «Diagnostics» › «CLI hooks» › «Connect» merges the example below into Cursor, Codex or Gemini after a diff preview and confirm (`docs/HOOKS.md` «Automatic connect»).
+- Automatic: Settings › «Diagnostics» › «CLI hooks» › «Connect» merges the example below into Cursor, Codex, Gemini or Copilot after a diff preview and confirm (`docs/HOOKS.md` «Automatic connect»).
 - Preview: `bash ext-hooks/demo.sh` starts 3 fake external sessions (thinking · running a tool · waiting for a person) and `bash ext-hooks/demo.sh clean` removes them — for seeing the screen without installing a CLI.
 - In the example JSON, replace `<MAILBOX_CODE_DIR>` with the absolute path of this repository and `<PYTHON>` with macOS `/usr/bin/python3` · Windows `py -3` (or the full `python.exe` path).
 - Gemini: merge `hooksConfig`·`mcpServers`·`hooks` from `gemini-settings-example.json` into `~/.gemini/settings.json` (`timeout` = ms)
@@ -16,7 +16,10 @@ Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`):
   - Events are camelCase (`sessionStart` `beforeSubmitPrompt` `preToolUse` `postToolUse` `postToolUseFailure` `stop` `sessionEnd`); `afterAgentThought`/`afterAgentResponse` carry model text and are never sent.
   - The folder comes from the first `workspace_roots` entry (Cursor sends no base `cwd`); `user_email` and tool input are dropped.
   - ⚠`cursor-agent -p` sends no `beforeSubmitPrompt`/`stop`, so a headless row keeps its last state until `sessionEnd`.
-- The other 17: in `generic-hooks-example.json`, **replace every** `<PLATFORM>` with a value from the list above and use it as that CLI's hook config file (JSON allows no comments, so only the placeholder is left)
+- Copilot CLI: copy `copilot-hooks-example.json` to `~/.copilot/hooks/sidereus.json` (or `$COPILOT_HOME/hooks/`). ★Verified on macOS, Copilot CLI 1.0.105 (2026-10-31): list, state.
+  - Register PascalCase event names only. ⚠Never also register the camelCase names - every event then fires twice.
+  - `PermissionRequest` arrives camelCase (`hookName` `sessionId` `toolName`) even when registered PascalCase; it maps to `Notification` (waiting for approval until `PostToolUse`). `toolInput`, `permissionSuggestions` and `timestamp` are dropped.
+- The other 15: in `generic-hooks-example.json`, **replace every** `<PLATFORM>` with a value from the list above and use it as that CLI's hook config file (JSON allows no comments, so only the placeholder is left)
 
 ## Receiving mail — in code (no Monitor or watch.sh needed)
 The turn-end hook `gemini_mail_stop.py --platform <key>` (default gemini) blocks once when there is new mail so the agent reads it. The id is the `<key>:<cwd>` key or `<folder>-<key>` — ⚠never Claude's `identity.json[cwd]` (it would take the Claude mail of the same folder).
@@ -52,7 +55,7 @@ A shell command counts **only when it starts with the marker** — `echo "[pl:<n
 - The command text is never stored (name · stage · time · cwd · hold only). Called without `--platform`, it behaves as for Claude Code.
 - ⚠Payload shape unverified: Gemini `BeforeTool`/`AfterTool` + `run_shell_command` `tool_input.command`, Codex `Bash`/`shell` (last item when argv is a list) — never run against the real CLIs.
 
-⚠**Except for Gemini·Codex·Cursor, the CLIs' hook event names were not verified** — the 7 standard events (`SessionStart` `SessionEnd` `UserPromptSubmit` `PreToolUse` `PostToolUse` `Stop` `Notification`) are accepted by name as-is (Codex never sends `Notification`, but there is a slot for it). If the names differ, pass `--event <standard name>`.
+⚠**Except for Gemini·Codex·Cursor·Copilot, the CLIs' hook event names were not verified** — the 7 standard events (`SessionStart` `SessionEnd` `UserPromptSubmit` `PreToolUse` `PostToolUse` `Stop` `Notification`) are accepted by name as-is (Codex never sends `Notification`, but there is a slot for it). If the names differ, pass `--event <standard name>`.
 ⚠**The hook never blocks the CLI** — exit 0 and empty stdout no matter what (the CLI reads stdout as control instructions).
 ⚠**Passes silently when Sidereus is down** — a connection failure is only logged to `.ext-hook.log` after a 2 s timeout (200KB cap).
 ⚠An event outside the contract or a `--platform` not in the list is **not sent**; it is only logged and exits 0. Missing fields are not guessed — **the key is dropped**.

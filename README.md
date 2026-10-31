@@ -60,7 +60,7 @@ The timeline shows what each session and subagent did and when, with pipeline st
 
 ## Scope
 
-Sidereus is meant for people who run several CLI agent sessions from a terminal, across vendors, accounts or projects; who cannot send their conversations to an outside service; and who run quality gates in pipelines. Claude Code is supported first. Codex, Gemini and Cursor CLI connect through hooks ([HOOKS.md](docs/HOOKS.md)); their tokens are counted apart from Claude's limits. Gemini's plan limits live on Google's server, so check them with `/stats`. The Cursor IDE is not supported yet (#9), and Copilot and other CLIs are untested.
+Sidereus is meant for people who run several CLI agent sessions from a terminal, across vendors, accounts or projects; who cannot send their conversations to an outside service; and who run quality gates in pipelines. Claude Code is supported first. Codex, Gemini, Cursor CLI and Copilot CLI connect through hooks ([HOOKS.md](docs/HOOKS.md)); their tokens are counted apart from Claude's limits. Gemini's plan limits live on Google's server, so check them with `/stats`. The Cursor IDE is not supported yet (#9), and other CLIs are untested.
 
 It is probably not what you want if you use one or two agents inside an IDE, if you only use Claude Code and just want waiting sessions first (Claude Code's agent view does that), or if your team needs cloud execution or organisation-wide governance.
 
@@ -119,7 +119,7 @@ Agents rarely call them unprompted, so add a line about them to your `AGENTS.md`
 | [GETTING-STARTED](docs/GETTING-STARTED.md) | Install and setup, step by step |
 | [GUIDE](docs/GUIDE.md) | Everyday tasks, with screenshots |
 | [CONFIG](docs/CONFIG.md) | Paths, config keys, environment variables, launchd, backups |
-| [HOOKS](docs/HOOKS.md) | Hooks; Codex, Gemini and Cursor CLI setup; the mailbox Stop hook |
+| [HOOKS](docs/HOOKS.md) | Hooks; Codex, Gemini, Cursor CLI and Copilot CLI setup; the mailbox Stop hook |
 | [MCP](docs/MCP.md) | The `sidereus` MCP server |
 | [PARALLEL-WORK](docs/PARALLEL-WORK.md) | Parallel worktrees (`claude -w <name> --tmux`) |
 | [STRUCTURE](docs/STRUCTURE.md) | Structure tab: architecture diagram and flows, size treemap, languages |

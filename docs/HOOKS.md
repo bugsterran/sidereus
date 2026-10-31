@@ -296,17 +296,17 @@ The CLI runs `ext-hooks/ext_hook.py --platform <key>`, which maps the stdin even
 `windsurf`, `warp`, `trae`, `zed`, `openrouter`, `grok`, `deepseek`, `qwen`, `kimi`, `mistral`, `ollama`,
 `perplexity`, `huggingface`, `meta`. ⚠`claude` is not one; Claude sessions come from transcripts.
 
-| Event | State | Gemini name | Codex name | Cursor name |
-|---|---|---|---|---|
-| `SessionStart` | `wait` | same | same | `sessionStart` |
-| `UserPromptSubmit` | `think` | `BeforeAgent` | same | `beforeSubmitPrompt` |
-| `PreToolUse` | `tool` | `BeforeTool` | same | `preToolUse` |
-| `PostToolUse` | `think` | `AfterTool` | same | `postToolUse`, `postToolUseFailure` |
-| `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` | `stop` |
-| `Notification` | `ask` (blocked) | same | `PermissionRequest` | none |
-| `SessionEnd` | row removed | same | same | `sessionEnd` |
+| Event | State | Gemini name | Codex name | Cursor name | Copilot name |
+|---|---|---|---|---|---|
+| `SessionStart` | `wait` | same | same | `sessionStart` | same |
+| `UserPromptSubmit` | `think` | `BeforeAgent` | same | `beforeSubmitPrompt` | same |
+| `PreToolUse` | `tool` | `BeforeTool` | same | `preToolUse` | same |
+| `PostToolUse` | `think` | `AfterTool` | same | `postToolUse`, `postToolUseFailure` | same |
+| `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` | `stop` | same |
+| `Notification` | `ask` (blocked) | same | `PermissionRequest` | none | `PermissionRequest` |
+| `SessionEnd` | row removed | same | same | `sessionEnd` | same |
 
-- Other platforms use the Codex mapping. ⚠Only Gemini, Codex and Cursor were checked; otherwise pass `--event <name>`.
+- Other platforms use the Codex mapping. ⚠Only Gemini, Codex, Cursor and Copilot were checked; otherwise pass `--event <name>`.
 - The blocked mark and «needs me» badge stay until the CLI's next event, `SessionEnd` or a dead pid — never by age.
   Any other row silent for 24 h (`EXT_TTL_S`) is deleted. Rows survive restarts (`ext-sessions.json`).
 - A hook row has no transcript, cost, context or git data and no resume chip. The model name is cut to 20 characters.
@@ -327,7 +327,8 @@ Settings › «Diagnostics» › «CLI hooks» and the first screen show one lin
 hooks; nothing shows when every entry is present. «Later» hides it per CLI.
 
 - Detected: Cursor (`cursor-agent`, or `agent` when `~/.cursor` exists) → `~/.cursor/hooks.json` · Codex (`codex`) →
-  `$CODEX_HOME/hooks.json` · Gemini (`gemini`) → its `settings.json`. Installed = on `PATH` or the config folder exists.
+  `$CODEX_HOME/hooks.json` · Gemini (`gemini`) → its `settings.json` · Copilot (`copilot`) →
+  `$COPILOT_HOME/hooks/sidereus.json` (default `~/.copilot`; a Sidereus-owned file, created if missing). Installed = on `PATH` or the config folder exists.
 - «Connect» shows a diff, writes only after confirm, and adds only the missing entries of the example file
   (`<PYTHON>` and `<MAILBOX_CODE_DIR>` filled in). Your hook entries are kept in order (the `hooks` value is re-serialised, so its formatting may change); every other
   top-level key stays byte for byte. Codex and
@@ -387,6 +388,23 @@ Copy `ext-hooks/cursor-hooks-example.json` to `~/.cursor/hooks.json` or `<projec
 - ⚠Cursor reads stdout of `before*`/`preToolUse` hooks as a decision; `ext_hook.py` prints nothing.
 - ⚠`cursor-agent -p` sends no `beforeSubmitPrompt`/`stop`: a headless row keeps its last state until `sessionEnd`.
 - Interactive order: `sessionStart`, `beforeSubmitPrompt`, tool events, `stop`; `/quit` sends `sessionEnd`.
+
+### Copilot CLI
+
+Copy `ext-hooks/copilot-hooks-example.json` to `~/.copilot/hooks/sidereus.json` (or `$COPILOT_HOME/hooks/`), replacing
+`<PYTHON>` and `<MAILBOX_CODE_DIR>`. ★Checked on macOS with Copilot CLI 1.0.105 (2026-10-31): session list and state
+(`Stop` → Idle, `SessionEnd` → Ended); `copilot -p` fires `SessionStart`, `UserPromptSubmit`, `PreToolUse`,
+`PermissionRequest`, `PostToolUse`, `Stop`, `SessionEnd`.
+
+- ⚠Register PascalCase event names only. Copilot also accepts camelCase names; registering both makes every event fire
+  twice.
+- `PermissionRequest` arrives with camelCase keys (`hookName`, `sessionId`, `toolName`) even under a PascalCase
+  registration; `ext_hook.py` falls back to them and marks the row blocked.
+- ⚠«Connect» writes only `sidereus.json`. It does not read other `~/.copilot/hooks/*.json` files, a repo's
+  `.github/hooks`, or inline hooks in `~/.copilot/settings.json`; if you already added the same hooks there, events
+  arrive twice.
+- `COPILOT_HOME` is read from the viewer's environment; under launchd it is usually unset, so `~/.copilot` is used.
+- Not done yet: pipeline stage marks (`[pl:]`) and a Windows check.
 
 ### Codex CLI
 

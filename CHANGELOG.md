@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Copilot CLI: session list and state via hooks, and «Connect» installs the hooks file. Refs #10
+
 ## [0.11.0] - 2026-10-31
 
 ### Added

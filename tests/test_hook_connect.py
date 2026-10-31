@@ -1,6 +1,6 @@
 """«Connect» CLI hooks (sidereus/hook_connect.py, GET/POST /api/hooks/connect).
 
-⚠HC_FILES, TRASH_DIR, _which, _home and _python point at temp values — no real ~/.cursor, ~/.codex or Gemini file is read or written.
+⚠HC_FILES, TRASH_DIR, _which, _home and _python point at temp values — no real ~/.cursor, ~/.codex, ~/.copilot or Gemini file is read or written.
 """
 import hashlib
 import json
@@ -41,7 +41,9 @@ def _example(plat, **kw):
         hooks = json.load(f)["hooks"]
     out = {}
     for ev, lst in hooks.items():
-        if plat == "cursor":
+        if plat == "copilot":
+            out[ev] = [dict(e, bash=_sub(e["bash"], **kw), powershell=_sub(e["powershell"], **kw)) for e in lst]
+        elif plat == "cursor":
             out[ev] = [dict(e, command=_sub(e["command"], **kw)) for e in lst]
         else:
             out[ev] = [dict(g, hooks=[dict(e, command=_sub(e["command"], **kw)) for e in g["hooks"]]) for g in lst]
@@ -55,9 +57,11 @@ class HookConnect(unittest.TestCase):
         self.home = os.path.join(self.tmp, "home")
         self.files = {"cursor": os.path.join(self.home, ".cursor", "hooks.json"),
                       "codex": os.path.join(self.home, ".codex", "hooks.json"),
-                      "gemini": os.path.join(self.home, ".gemini", "settings.json")}
-        for p in self.files.values():
-            os.makedirs(os.path.dirname(p))
+                      "gemini": os.path.join(self.home, ".gemini", "settings.json"),
+                      "copilot": os.path.join(self.home, ".copilot", "hooks", "sidereus.json")}
+        for plat, p in self.files.items():
+            # ⚠copilot: only the home exists, hooks/ is left out so a write proves makedirs
+            os.makedirs(os.path.dirname(os.path.dirname(p)) if plat == "copilot" else os.path.dirname(p))
         self.trash = os.path.join(self.tmp, "trash")
         self.tpl_dir = os.path.join(HC.config.ASSET_DIR, "ext-hooks")     # the repo's own templates (code, not user data)
         for p in (mock.patch.object(HC, "HC_FILES", self.files), mock.patch.object(HC, "TRASH_DIR", self.trash),
@@ -159,7 +163,7 @@ class HookConnect(unittest.TestCase):
         self.assertFalse(os.path.exists(self.files["gemini"]))
 
     def test_new_file_equals_example(self):
-        for plat, top in (("cursor", {"version": 1}), ("codex", {})):
+        for plat, top in (("cursor", {"version": 1}), ("codex", {}), ("copilot", {"version": 1})):
             self._apply(plat)
             self.assertEqual(json.loads(self._raw(plat)), dict(top, hooks=_example(plat)))
 
@@ -266,11 +270,11 @@ class HookConnect(unittest.TestCase):
         self.assertEqual(dry["base"], "")
 
     def test_listing(self):
-        for d in (".cursor", ".codex", ".gemini"):
+        for d in (".cursor", ".codex", ".gemini", ".copilot"):
             shutil.rmtree(os.path.join(self.home, d))
         self.assertEqual(HC.listing(), [])      # nothing on PATH, no config dir: nothing installed
-        for p in self.files.values():
-            os.makedirs(os.path.dirname(p))
+        for plat, p in self.files.items():
+            os.makedirs(os.path.dirname(os.path.dirname(p)) if plat == "copilot" else os.path.dirname(p))
         HC._MEMO.clear()
         with mock.patch.object(HC, "_which", lambda n: "/bin/" + n if n == "cursor-agent" else None):
             self._put("codex", {"hooks": _example("codex")})
@@ -283,7 +287,104 @@ class HookConnect(unittest.TestCase):
         self.assertEqual(by["codex"]["approve"], "/hooks")
         self.assertEqual(by["gemini"]["state"], "missing")
         self.assertFalse(by["gemini"]["can"])
+        self.assertEqual((by["copilot"]["state"], by["copilot"]["can"], by["copilot"]["approve"]), ("missing", True, ""))
+        self.assertEqual(by["copilot"]["file"], os.path.join("~", ".copilot", "hooks", "sidereus.json"))
         self.assertEqual(set(by["codex"]), {"plat", "name", "state", "file", "can", "why", "approve"})
+
+    def test_r4_copilot_missing_file_dry_diff_and_apply(self):
+        self.assertFalse(os.path.exists(os.path.dirname(self.files["copilot"])))
+        code, dry = HC.connect({"plat": "copilot", "dry": True})
+        self.assertEqual(code, 200, dry)
+        self.assertEqual(dry["base"], "")
+        self.assertIn("+++ " + os.path.join("~", ".copilot", "hooks", "sidereus.json"), dry["diff"])
+        self.assertIn('"PermissionRequest"', dry["diff"])
+        self.assertFalse(os.path.exists(self.files["copilot"]))      # dry writes nothing
+        code, out = HC.connect({"plat": "copilot", "dry": False, "base": dry["base"]})
+        self.assertEqual(code, 200, out)
+        self.assertNotIn("approve", out)
+        self.assertIsNone(out["backup"])
+        d = json.loads(self._raw("copilot"))
+        self.assertEqual(d, {"version": 1, "hooks": _example("copilot")})
+        self.assertFalse(any(k[0].islower() for k in d["hooks"]))     # ⚠camelCase too would fire every event twice
+        self.assertEqual(d["hooks"]["Stop"][0]["bash"], PY + " " + ASSET + "/ext-hooks/ext_hook.py --platform copilot")
+        self.assertEqual(HC._state("copilot", self.files["copilot"]), ("connected", ""))
+
+    def test_r4_copilot_keeps_user_entry_first(self):
+        os.makedirs(os.path.dirname(self.files["copilot"]))
+        user = {"version": 1, "hooks": {"Stop": [{"type": "command", "bash": "say done", "powershell": "echo done"}],
+                                        "Notification": [{"type": "command", "bash": "beep"}]}}
+        self._put("copilot", user)
+        _dry, out = self._apply("copilot")
+        d = json.loads(self._raw("copilot"))
+        self.assertEqual(d["hooks"]["Stop"][0], user["hooks"]["Stop"][0])
+        self.assertEqual(d["hooks"]["Stop"][1:], _example("copilot")["Stop"])
+        self.assertEqual(d["hooks"]["Notification"], user["hooks"]["Notification"])
+        self.assertEqual(list(d["hooks"])[:2], ["Stop", "Notification"])
+        code, again = HC.connect({"plat": "copilot", "dry": True})
+        self.assertEqual(again["adds"], 0)
+
+    def test_r4_copilot_symlink_400(self):
+        os.makedirs(os.path.dirname(self.files["copilot"]))
+        real = os.path.join(self.tmp, "dotfiles-copilot.json")
+        with open(real, "w", encoding="utf-8") as f:
+            f.write('{"version": 1, "hooks": {}}\n')
+        os.symlink(real, self.files["copilot"])
+        code, out = HC.connect({"plat": "copilot", "dry": True})
+        self.assertEqual((code, out["err"]), (400, HC.SYMLINK))
+        code, out = HC.connect({"plat": "copilot", "dry": False, "base": ""})
+        self.assertEqual((code, out["err"]), (400, HC.SYMLINK))
+        self.assertTrue(os.path.islink(self.files["copilot"]))
+        with open(real, encoding="utf-8") as f:
+            self.assertEqual(f.read(), '{"version": 1, "hooks": {}}\n')
+
+    def test_r4_copilot_symlinked_hooks_dir_400(self):
+        elsewhere = os.path.join(self.tmp, "elsewhere")
+        os.makedirs(elsewhere)
+        os.symlink(elsewhere, os.path.dirname(self.files["copilot"]))
+        code, out = HC.connect({"plat": "copilot", "dry": True})
+        self.assertEqual((code, out["err"]), (400, HC.SYMLINK))
+        code, out = HC._write("copilot", self.files["copilot"], None, b"{}")
+        self.assertEqual((code, out["err"]), (400, HC.SYMLINK))
+        self.assertEqual(os.listdir(elsewhere), [])
+        shutil.rmtree(os.path.dirname(self.files["cursor"]))
+        os.symlink(elsewhere, os.path.dirname(self.files["cursor"]))
+        code, out = HC.connect({"plat": "cursor", "dry": True})
+        self.assertEqual((code, out["err"]), (400, HC.SYMLINK))
+
+    def test_r4_copilot_relative_home_ignored(self):
+        with mock.patch.object(HC, "HC_FILES", None):
+            with mock.patch.dict(os.environ, {"COPILOT_HOME": "rel/copilot"}):
+                self.assertEqual(HC._files()["copilot"], os.path.join(self.home, ".copilot", "hooks", "sidereus.json"))
+            absd = os.path.join(self.tmp, "cph")
+            with mock.patch.dict(os.environ, {"COPILOT_HOME": absd}):
+                self.assertEqual(HC._files()["copilot"], os.path.join(absd, "hooks", "sidereus.json"))
+
+    def test_r4_copilot_base_mismatch_409(self):
+        os.makedirs(os.path.dirname(self.files["copilot"]))
+        raw = self._put("copilot", {"version": 1, "hooks": {}})
+        code, out = HC.connect({"plat": "copilot", "dry": False, "base": "0" * 64})
+        self.assertEqual(code, 409)
+        self.assertEqual(self._raw("copilot"), raw)
+        self.assertFalse(os.path.exists(self.trash))
+
+    def test_r4_copilot_backup_in_trash(self):
+        os.makedirs(os.path.dirname(self.files["copilot"]))
+        raw = self._put("copilot", {"version": 1, "hooks": {"Stop": [{"type": "command", "bash": "say done"}]}})
+        _dry, out = self._apply("copilot")
+        self.assertTrue(out["backup"].startswith(self.trash + os.sep))
+        self.assertTrue(out["backup"].endswith("copilot-sidereus.json"))
+        with open(out["backup"], "rb") as f:
+            self.assertEqual(f.read(), raw)
+
+    def test_r4_copilot_windows_subst(self):
+        win_py, win_asset = r"C:\Program Files\Python\python.exe", r"C:\Users\A B\sidereus"
+        with mock.patch.object(HC, "_python", lambda: win_py), mock.patch.object(HC, "_asset", lambda: win_asset):
+            self._apply("copilot")
+        d = json.loads(self._raw("copilot"))
+        ps = d["hooks"]["PreToolUse"][0]["powershell"]
+        self.assertEqual(ps, '& "C:\\Program Files\\Python\\python.exe" "C:\\Users\\A B\\sidereus\\ext-hooks\\ext_hook.py" --platform copilot')
+        self.assertEqual(HC._key(ps), ("ext_hook.py", "--platform copilot"))
+        self.assertEqual(d, {"version": 1, "hooks": _example("copilot", py=win_py, asset=win_asset, sep="\\")})
 
     def test_bare_agent_needs_cursor_dir(self):
         shutil.rmtree(os.path.dirname(self.files["cursor"]))

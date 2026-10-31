@@ -278,17 +278,17 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 `windsurf`, `warp`, `trae`, `zed`, `openrouter`, `grok`, `deepseek`, `qwen`, `kimi`, `mistral`, `ollama`, `perplexity`,
 `huggingface`, `meta`. ⚠`claude` 는 없다. Claude 세션은 대화 기록에서 읽는다.
 
-| 이벤트 | 상태 | Gemini 이름 | Codex 이름 | Cursor 이름 |
-|---|---|---|---|---|
-| `SessionStart` | `wait` | 같음 | 같음 | `sessionStart` |
-| `UserPromptSubmit` | `think` | `BeforeAgent` | 같음 | `beforeSubmitPrompt` |
-| `PreToolUse` | `tool` | `BeforeTool` | 같음 | `preToolUse` |
-| `PostToolUse` | `think` | `AfterTool` | 같음 | `postToolUse`, `postToolUseFailure` |
-| `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` | `stop` |
-| `Notification` | `ask`(막힘) | 같음 | `PermissionRequest` | 없음 |
-| `SessionEnd` | 행 삭제 | 같음 | 같음 | `sessionEnd` |
+| 이벤트 | 상태 | Gemini 이름 | Codex 이름 | Cursor 이름 | Copilot 이름 |
+|---|---|---|---|---|---|
+| `SessionStart` | `wait` | 같음 | 같음 | `sessionStart` | 같음 |
+| `UserPromptSubmit` | `think` | `BeforeAgent` | 같음 | `beforeSubmitPrompt` | 같음 |
+| `PreToolUse` | `tool` | `BeforeTool` | 같음 | `preToolUse` | 같음 |
+| `PostToolUse` | `think` | `AfterTool` | 같음 | `postToolUse`, `postToolUseFailure` | 같음 |
+| `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` | `stop` | 같음 |
+| `Notification` | `ask`(막힘) | 같음 | `PermissionRequest` | 없음 | `PermissionRequest` |
+| `SessionEnd` | 행 삭제 | 같음 | 같음 | `sessionEnd` | 같음 |
 
-- 나머지 플랫폼은 Codex 변환을 쓴다. ⚠Gemini, Codex, Cursor 만 확인했다. 이름이 다르면 `--event <이름>` 을 넘긴다.
+- 나머지 플랫폼은 Codex 변환을 쓴다. ⚠Gemini, Codex, Cursor, Copilot 만 확인했다. 이름이 다르면 `--event <이름>` 을 넘긴다.
 - 막힘 표시와 «나를 기다림» 배지는 CLI 의 다음 이벤트, `SessionEnd`, 프로세스 종료(pid)로만 사라진다. 시간으로는 지우지 않는다. 그 밖에 24시간(`EXT_TTL_S`) 조용한 행은 지운다.
   행은 재시작해도 남는다(`ext-sessions.json`).
 - 훅 행에는 대화 기록, 비용, 컨텍스트, git 정보와 이어 하기 칩이 없다. 모델 이름은 20자에서 자른다.
@@ -310,7 +310,8 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 아무것도 뜨지 않는다. «나중에» 는 CLI 마다 숨긴다.
 
 - 찾는 것: Cursor(`cursor-agent`, 또는 `~/.cursor` 가 있을 때 `agent`) → `~/.cursor/hooks.json` · Codex(`codex`) →
-  `$CODEX_HOME/hooks.json` · Gemini(`gemini`) → 그 `settings.json`. 설치됨 = `PATH` 에 있거나 설정 폴더가 있다.
+  `$CODEX_HOME/hooks.json` · Gemini(`gemini`) → 그 `settings.json` · Copilot(`copilot`) →
+  `$COPILOT_HOME/hooks/sidereus.json`(기본 `~/.copilot`, 시데레우스 전용 파일이라 없으면 만든다). 설치됨 = `PATH` 에 있거나 설정 폴더가 있다.
 - «연결» 은 diff 를 보여 주고 확인한 뒤에만 쓴다. 예시 파일의 항목 중 없는 것만 더한다(`<PYTHON>`, `<MAILBOX_CODE_DIR>`
   는 채워 넣는다). 사용자 훅 항목은 순서 그대로 남는다(`hooks` 값은 다시 직렬화되므로 서식은 바뀔 수 있다).
   그 밖의 최상위 키는 한 바이트도 바뀌지 않는다. Codex·Gemini 는 이벤트마다 새 그룹 하나를 붙이고
@@ -373,6 +374,21 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 - ⚠Cursor 는 `before*`/`preToolUse` 훅의 stdout 을 결정으로 읽는다. `ext_hook.py` 는 아무것도 출력하지 않는다.
 - ⚠`cursor-agent -p` 는 `beforeSubmitPrompt`/`stop` 을 보내지 않는다. 헤드리스 행은 `sessionEnd` 까지 마지막 상태로 남는다.
 - 대화형 순서: `sessionStart`, `beforeSubmitPrompt`, 도구 이벤트, `stop`. `/quit` 은 `sessionEnd` 를 보낸다.
+
+### Copilot CLI
+
+`ext-hooks/copilot-hooks-example.json` 을 `~/.copilot/hooks/sidereus.json`(또는 `$COPILOT_HOME/hooks/`)으로 복사하고
+`<PYTHON>`, `<MAILBOX_CODE_DIR>` 를 바꾼다. ★macOS, Copilot CLI 1.0.105 로 확인했다(2026-10-31): 세션 목록과 상태
+(`Stop` → 쉬는 중, `SessionEnd` → 끝남). `copilot -p` 는 `SessionStart`, `UserPromptSubmit`, `PreToolUse`,
+`PermissionRequest`, `PostToolUse`, `Stop`, `SessionEnd` 를 보낸다.
+
+- ⚠이벤트 이름은 PascalCase 로만 등록한다. Copilot 은 camelCase 이름도 받는데, 둘 다 등록하면 모든 이벤트가 두 번 온다.
+- `PermissionRequest` 는 PascalCase 로 등록해도 camelCase 키(`hookName`, `sessionId`, `toolName`)로 온다.
+  `ext_hook.py` 가 그 키도 읽어 행을 막힘으로 표시한다.
+- ⚠«연결» 은 `sidereus.json` 만 쓴다. 다른 `~/.copilot/hooks/*.json`, 저장소의 `.github/hooks`, `~/.copilot/settings.json`
+  안의 인라인 훅은 보지 않는다. 거기에 같은 훅을 이미 넣었다면 이벤트가 두 번 온다.
+- `COPILOT_HOME` 은 뷰어의 환경에서 읽는다. launchd 에는 보통 없으므로 `~/.copilot` 을 쓴다.
+- 아직 안 한 것: 파이프라인 단계 표시(`[pl:]`), Windows 확인.
 
 ### Codex CLI
 
