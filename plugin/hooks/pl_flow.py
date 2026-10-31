@@ -1478,7 +1478,7 @@ FIX_REVIEW = "리뷰"   # fallback only: the review is the file's last stage, so
 
 
 def _fix_titles():
-    """(first, last) stage titles of DATA_DIR/.claude/pipelines/security-fix.json; ("수정", FIX_REVIEW) if unreadable."""
+    """(first, last) stage titles of DATA_DIR/.claude/pipelines/security-fix.json; the shipped titles if unreadable."""
     got = _stages(DATA_DIR, FIX_PL)
     return (got[0][0]["title"], got[0][-1]["title"]) if got else ("수정", FIX_REVIEW)
 
