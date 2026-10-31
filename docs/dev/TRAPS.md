@@ -2,22 +2,22 @@
 
 Do not step on these again. One file per area under [traps/](traps/); read the area before you touch it.
 
-| File | Area | Entries |
-|---|---|---|
-| [traps/arch.md](traps/arch.md) | Structure tab: architecture map, flows, arch_verify, Size treemap, language plug-ins | 74 |
-| [traps/timeline.md](traps/timeline.md) | Timeline rows, bars, sleep/idle bands, replay, «Changes» rail | 44 |
-| [traps/quota.md](traps/quota.md) | Quota, burndown, saver mode, token and usage accounting | 91 |
-| [traps/sessions.md](traps/sessions.md) | Session state, subagents, external CLIs, permission badges, work-log popup and diff window | 52 |
-| [traps/pipeline.md](traps/pipeline.md) | Pipeline runs, `pl_flow` stage hooks, stage lighting, gates, evaluation | 49 |
-| [traps/git.md](traps/git.md) | Branch tab, board, git, worktrees, History and retro tabs | 20 |
-| [traps/attention.md](traps/attention.md) | Alarms, cards, health strip, attention ranking | 21 |
-| [traps/mailbox.md](traps/mailbox.md) | Mailbox, chat rooms, mail watch (`mailbox_wake`) | 25 |
-| [traps/ui.md](traps/ui.md) | UI kit, CSS, layout, header, i18n (`T()`), animations, drag-resize | 70 |
-| [traps/server.md](traps/server.md) | Server, `/api/state` payload, caching, performance | 22 |
-| [traps/security.md](traps/security.md) | Security and privacy (CSP, guards, metadata-only) | 36 |
-| [traps/platform.md](traps/platform.md) | Platform, config, launcher, Windows, plugin, tests and tooling | 53 |
-| [traps/general.md](traps/general.md) | General lessons that span areas | 32 |
-| [traps/archive.md](traps/archive.md) | Removed features — evidence only, not current rules | 4 |
+| File | Area |
+|---|---|
+| [traps/arch.md](traps/arch.md) | Structure tab: architecture map, flows, arch_verify, Size treemap, language plug-ins |
+| [traps/timeline.md](traps/timeline.md) | Timeline rows, bars, sleep/idle bands, replay, «Changes» rail |
+| [traps/quota.md](traps/quota.md) | Quota, burndown, saver mode, token and usage accounting |
+| [traps/sessions.md](traps/sessions.md) | Session state, subagents, external CLIs, permission badges, work-log popup and diff window |
+| [traps/pipeline.md](traps/pipeline.md) | Pipeline runs, `pl_flow` stage hooks, stage lighting, gates, evaluation |
+| [traps/git.md](traps/git.md) | Branch tab, board, git, worktrees, History and retro tabs |
+| [traps/attention.md](traps/attention.md) | Alarms, cards, health strip, attention ranking |
+| [traps/mailbox.md](traps/mailbox.md) | Mailbox, chat rooms, mail watch (`mailbox_wake`) |
+| [traps/ui.md](traps/ui.md) | UI kit, CSS, layout, header, i18n (`T()`), animations, drag-resize |
+| [traps/server.md](traps/server.md) | Server, `/api/state` payload, caching, performance |
+| [traps/security.md](traps/security.md) | Security and privacy (CSP, guards, metadata-only) |
+| [traps/platform.md](traps/platform.md) | Platform, config, launcher, Windows, plugin, tests and tooling |
+| [traps/general.md](traps/general.md) | General lessons that span areas |
+| [traps/archive.md](traps/archive.md) | Removed features — evidence only, not current rules |
 
 ## Adding a trap
 
