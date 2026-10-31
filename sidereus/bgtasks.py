@@ -205,7 +205,9 @@ def _running_bg_locked(fp, rows=None):
     for sfp in _sub_transcripts(fp, now):
         for line in _bg_lines(sfp):
             # ⚠A receipt line carries no '"Bash"'; without the third test its output path was never stored.
-            if '"Bash"' in line or "moved to the background" in line or "running in background with ID" in line:
+            # ⚠A hook-denied launch gets only an is_error tool_result (no receipt, no notice) — forward it or the row never closes.
+            if ('"Bash"' in line or "moved to the background" in line or "running in background with ID" in line
+                    or '"is_error":true' in line or '"is_error": true' in line):
                 _bg_on_line(line, open_now, fp, seeding, now)
     rows = _bg_lines(fp)
     for line in rows:
