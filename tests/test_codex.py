@@ -179,7 +179,7 @@ class Wiring(_WiringBase):
                         "model": "gpt-6-luna", "transcript_path": p})
         ext.ext_ingest({"platform": "codex", "session_id": SID, "event": "Notification"})
         rows = ext.ext_rows()
-        self.assertEqual((rows[0]["plat"], rows[0]["tok"], rows[0]["blocked"]), ("cx", 3670, "알림 대기"))
+        self.assertEqual((rows[0]["plat"], rows[0]["tok"], rows[0]["blocked"]), ("cx", 3670, "승인 대기"))
         w = ext.ext_work("cx", SID)
         self.assertEqual((w["ok"], w["type"][:5]), (True, "Codex"))
         self.assertEqual(ext.ext_usage_today(now=self.now)["cx"]["tok"], 3670)            # live store does not double-count

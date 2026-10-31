@@ -24,7 +24,7 @@ Object.assign(I18N.ko, {
 //   (sidereus/burn_scan.py, burn_usage.py), external blocked label (sidereus/ext.py). Callers holding such a field call srvEn().
 //   ⚠Patterns are anchored to the exact server templates; a miss returns the source text (never breaks the screen).
 const SRV_EN = {'도구 오류': 'Tool error', 'API 오류': 'API error', '백그라운드 작업': 'Background task',
-                '알림 대기': 'Waiting on notification', '(이름 없음)': '(unnamed)', '기타': 'Other',
+                '승인 대기': 'Waiting for approval', '(이름 없음)': '(unnamed)', '기타': 'Other',
                 '훅이 막음': 'Blocked by hook', '임시(스크래치패드)': 'Temporary (scratchpad)', '홈': 'Home'};
 const SRV_EN_RX = [
   [/^기타 (\d+)개$/, 'Other ($1)'],
