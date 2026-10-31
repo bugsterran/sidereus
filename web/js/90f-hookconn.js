@@ -21,6 +21,12 @@ async function hcLoad(force){
 const hcPlats = () => (HC && Array.isArray(HC.plats) ? HC.plats : []).filter(x => x && typeof x === 'object' && x.plat && (x.state !== 'connected' || hcPin(String(x.plat))));
 // A Codex «/hooks» hint stays until «Close»: ⚠not counted in reloads, which a racing poll reply would consume. The server sends it back as connected, can:false.
 const hcPin = p => !!(HCS[p] && HCS[p].pin);
+// Header to-do chip (25 buildTodo): connectable CLIs still missing hooks, minus «Later»; [{plat, name}] in server order.
+function hcTodo(){
+  if(!hcOn() || !HC || !Array.isArray(HC.plats)) return [];
+  return HC.plats.filter(x => x && typeof x === 'object' && x.plat && x.can && x.state !== 'connected' && !hcLater(String(x.plat)))
+    .map(x => ({ plat: String(x.plat), name: String(x.name || x.plat) }));
+}
 // Pure: inner HTML of one place. 'pl' shows connectable, not-«Later» rows only; 'dx' also shows `can:false` rows as a muted hint.
 function hcInner(where){
   if(!hcOn()) return '';
@@ -61,6 +67,7 @@ function hcPaint(){
       if(b) b.focus();
     }
   });
+  if(typeof buildTodo === 'function') buildTodo();   // header chip follows every reload, «Later» and «Apply» without a page reload
 }
 const hcErr = e => e && e.status === 409 ? T('The file changed since the preview. Preview again.')
   : T('Could not connect') + ': ' + String((e && e.body && (e.body.err || e.body.error)) || (e && e.message) || e);

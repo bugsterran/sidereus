@@ -419,6 +419,9 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 - 막고 기다리기(`--wait`, timeout 3600)는 사람 없이 도는 세션 전용이다. 입력이 메일·시간 초과·Esc 까지 대기열에 쌓인다.
 - 훅이 없어도(승인 전) 최근 10분 안에 rollout 이 바뀐 Codex 세션은 «훅 미연결» 표시가 붙은 행으로 나온다. 폴더와
   모델만 보이고 상태는 알 수 없다. 훅 이벤트가 들어오면 훅 행으로 바뀐다.
+- Cursor CLI 와 Copilot CLI 도 자기 폴더에서 같은 «훅 미연결» 행을 얻는다. Cursor 는 `~/.cursor/chats/*/<id>/` 파일이
+  최근 10분 안에 바뀐 대화, Copilot 은 `~/.copilot/session-state/<id>/inuse.<pid>.lock` 의 프로세스가 살아 있는 세션.
+  폴더, 시작, 마지막 활동만 보인다. 훅 행이 이긴다(같은 아이디, 또는 같은 폴더의 그 CLI 훅 행).
 - 선택 `SessionStart` 안내: `<PYTHON> <MAILBOX_CODE_DIR>/hooks/invite_notice.py --platform codex`(timeout 10) 와
   `<PYTHON> <MAILBOX_CODE_DIR>/hooks/pipelines_brief.py --platform codex`(timeout 5). Codex 문구는 새 메일이 턴 끝에
   `Stop` 훅으로 온다(아이디 `codex:<cwd>` 키 또는 `<폴더>-codex`)는 것과, 단계를 세션이 직접 순서대로 돌리며

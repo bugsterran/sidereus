@@ -32,6 +32,10 @@
 등록은 `sidereus/ext_store.py` 에서 한다. `EXT_PLAT` 에 `PLAT: KEY` 쌍, import, `PLAT_MODS` 튜플. STAGE3 에서는 `ext_store`
 앞에 둔다. 테스트: `tests/test_adapter_contract.py` 와 픽스처로 `scan` 을 보는 테스트(`tests/test_ext*.py`).
 
+훅 없이 세션 행(폴더, 시작, 마지막 활동)만 필요하고 읽을 토큰 기록이 없는 CLI 는 presence 등록부에 넣는다:
+`sidereus/ext_presence.py` 의 `PRES_MODS`(`plat_cursor.py`, `plat_copilot.py` 참고).
+⚠`PLAT_MODS` 에 넣지 않는다 — 그 등록부는 토큰 읽기도 맡는다(Cursor 토큰은 훅 `stop` 수치에서 온다).
+
 ## 언어 플러그인
 
 구조 탭 «크기» 트리맵에 언어 하나를 가르친다. 파일 `sidereus/structure_lang_<x>.py`, 예 `structure_lang_rs.py`.

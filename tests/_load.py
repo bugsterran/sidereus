@@ -55,6 +55,9 @@ def load():
         cr.ACCT_DIR = os.path.join(tmp, "no-acct")   # acct_of: never the live per-session account records
         cr._ACCT_MEMO.clear()
         importlib.import_module("sidereus.quota_roots").USER_HOME = os.path.join(tmp, "no-home")
+        # ⚠sessions() adds hook-less Cursor/Copilot rows: without this the live ~/.cursor / ~/.copilot folders are scanned.
+        for m in ("sidereus.plat_cursor", "sidereus.plat_copilot"):
+            importlib.import_module(m).root = lambda: os.path.join(tmp, "no-home")
     return _MOD
 
 

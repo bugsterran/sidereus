@@ -156,6 +156,7 @@ The Timeline is the evidence behind a verdict: what each agent actually did, and
 - Clicking a blocked or awaiting-answer alert anywhere (card, toast, row, OS notification) raises that session's terminal tab.
 - The idle and git filter chips cycle on click (idle: off, 10, 30, 60 min; git: off, ↑ unpushed, ↑~ unpushed or dirty). The branch chip opens the session's diff.
 - A Codex session without hooks shows «Hooks not connected» and only «Last activity N m ago» ([HOOKS.md](HOOKS.md)).
+- A detected CLI without Sidereus hooks puts a «CLI hooks not connected: Cursor · Copilot» chip in the top bar. Click it for that CLI's «Connect» preview in Settings › «Diagnostics»; nothing is written until «Apply». The chip clears once connected; «Later» drops that CLI from it.
 
 ⚠ Orca opens the exact tab only with its CLI installed (Orca › Settings › General); otherwise only the app comes forward.
 

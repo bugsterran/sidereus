@@ -23,6 +23,7 @@ from sidereus.bgtasks import _bg_open, bg_idle
 from sidereus.notes import _note_bg_done, _note_ctx, _note_transition, _sess_state
 from sidereus.parse import _parse_transcript
 from sidereus.ext import codex_env_dedupe, ext_children, ext_rollout_rows, ext_rows
+from sidereus.ext_presence import ext_presence_rows
 from sidereus import pl_runs, prefs   # module access: tests stub pl_runs._ag_by_name
 from sidereus.perm_marks import perm_wait
 from sidereus.term import term_attach
@@ -488,6 +489,7 @@ def _sessions(max_age_h, cap):
                   vars={"err": f"{type(e).__name__}: {e}"})
     # Codex without hooks: fresh rollout -> coarse row (hook row wins); a launcher id shared by two live rows is not «logged in»
     out.extend(codex_env_dedupe(ext_rows() + ext_rollout_rows()))
+    out.extend(ext_presence_rows())                # Cursor/Copilot without hooks: record-folder rows (hook row wins)
     try:   # ⚠after ext_rows: external rows need `term` too (before, Codex rows always showed «Copy command»)
         term_attach(out)                          # row.term = {app, tty} for «To terminal» (metadata only)
     except Exception as e:

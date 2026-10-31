@@ -14,7 +14,7 @@ import time
 from urllib.parse import parse_qs
 
 # ⚠Fixtures, helpers and the tab payload builders (_WorldPanels) live in sidereus/demo_data.py; re-exported here
-from sidereus.demo_data import (CX, GEM_ROW, H, REPOS, SEED, _WorldPanels,  # noqa: F401
+from sidereus.demo_data import (CP_ROW, CU_ROW, CX, GEM_ROW, H, HOOKS_CONNECT, hooks_connect_dry, REPOS, SEED, _WorldPanels,  # noqa: F401
                              _hex, _iso, _local_iso, _uuid)
 from sidereus.demo_git import _WorldGit   # branch tab + rail payloads (split out of demo_data)
 from sidereus.demo_rel import _ARCH_COMMIT, _ARCH_MODS, demo_arch, demo_file, demo_src, demo_tree   # structure arch/tree payloads
@@ -353,6 +353,8 @@ class World(_WorldPanels, _WorldGit):
                 # two sessions from an extra Claude root (sessions._row_acct shape)
                 **({"acct": "work", "acctDir": "/home/demo/.claude-work"} if s["k"] in ("docs", "search") else {})}))
         sessions.append(dict(GEM_ROW, cwd=REPOS["docs-site"][0], ageSec=140))   # one external CLI (Gemini) row
+        sessions.append(dict(CU_ROW, cwd=REPOS["acme-web"][0], ageSec=310))   # hook-less Cursor / Copilot rows
+        sessions.append(dict(CP_ROW, cwd=REPOS["billing-api"][0], ageSec=520))
         acks = {}
         names = [s["mbox"] for s in self.sess]
         for m in self.msgs:
@@ -526,6 +528,8 @@ def respond(world, path, u):
         return 200, _demo_pl_evidence(w.a)
     if path.startswith("/api/harness"):
         return _demo_harness(w.a, path)
+    if path == "/api/hooks/connect":   # header «CLI hooks» chip; the POST stays the demo no-op
+        return 200, {"ok": True, "plats": [dict(x) for x in HOOKS_CONNECT]}
     if path == "/api/prefs":     # ⚠the bare {"ok": True} fallback lacks `keys` — «Preferences» showed a red read error
         return 200, _demo_prefs()
     if path == "/api/structure":
@@ -567,7 +571,10 @@ def install(handler_cls, page_build):
         return self._raw_json(code, out)
 
     def _post(self, u):
-        self._body_json(1 << 20, {})     # drain the body; nothing is written in demo mode
+        req = self._body_json(1 << 20, {})     # drain the body; nothing is written in demo mode
+        if u.path == "/api/hooks/connect" and isinstance(req, dict) and req.get("dry") is not False \
+                and req.get("plat") in ("cursor", "copilot"):
+            return self._raw_json(200, hooks_connect_dry(req["plat"]))   # preview only; Apply stays the no-op below
         if u.path == "/api/term/focus":  # ⚠never osascript in demo — pretend the tab came forward
             return self._raw_json(200, {"ok": True, "demo": True, "how": "focused"})
         return self._raw_json(200, {"ok": True, "demo": True})

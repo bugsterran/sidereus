@@ -472,11 +472,24 @@ class HookConnect(unittest.TestCase):
         self.assertEqual(out["ok"], True)
         self.assertIsInstance(out["plats"], list)
 
-    def test_demo_empty(self):
+    def test_demo_lists_cursor_copilot_and_post_writes_nothing(self):
         w = DEMO.World()
         code, out = DEMO.respond(w, "/api/hooks/connect", None)
         self.assertEqual(code, 200)
-        self.assertEqual(out.get("plats") or [], [])
+        self.assertEqual([(x["plat"], x["state"], x["can"]) for x in out["plats"]],
+                         [("cursor", "missing", True), ("copilot", "missing", True)])
+
+        class H:
+            _GET_ROUTES = {}
+            _POST_ROUTES = {"/api/hooks/connect": "real"}
+        DEMO.install(H, "b")
+        sent = []
+        me = mock.Mock(_body_json=lambda *a: {"plat": "cursor", "dry": False}, _raw_json=lambda c, o: sent.append((c, o)))
+        u = mock.Mock(path="/api/hooks/connect")
+        with mock.patch.object(HC, "connect", side_effect=AssertionError("demo wrote")), \
+                mock.patch.object(HC, "_write", side_effect=AssertionError("demo wrote")):
+            H._POST_ROUTES["/api/hooks/connect"](me, u)
+        self.assertEqual(sent, [(200, {"ok": True, "demo": True})])
 
 
 if __name__ == "__main__":

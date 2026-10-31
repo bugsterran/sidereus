@@ -15,6 +15,11 @@ html[data-ui=next] .hrow > #todo .td{white-space:nowrap}
   html[data-ui=next] .hrow > #todo .td .tds{display:inline}
   html[data-ui=next][data-ui] .hrow{flex-wrap:wrap;row-gap:6px}
 }
+/* ⚠The hooks chip carries CLI names (long): short «Hooks N» already at ≤1500px or the nowrap row overflows at 1100 (names stay in the title). */
+@media (max-width:1500px){
+  html[data-ui=next] .hrow > #todo .td.hk .tdl{display:none}
+  html[data-ui=next] .hrow > #todo .td.hk .tds{display:inline}
+}
 /* brand mark = live moon phase (92e-moon.js paints the paths) + live indicator (#dot; poll() toggles .off: lit part dimmed, error outline); .es = new and thin-crescent days (earthshine: lighter night side with faint maria, cream rim) */
 /* ⚠Colours are variables so the light theme overrides values only: a html[data-theme=light] .bmol rule would outrank .off's error stroke */
 .brandmk{--bm-dk:#2b3140;--bm-lit:#efe6cf;--bm-mar:#c9bc9f;--bm-ol:#6b7385;--bm-es:#5b6780;--bm-esmar:#48536a;--bm-esol:#a89f88;width:32px;height:32px;margin:-4px 0;flex:none}
