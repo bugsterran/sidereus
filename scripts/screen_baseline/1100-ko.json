@@ -12,7 +12,7 @@
   ],
   "tab:pipe": [
    "파이프라인",
-   "하네스",
+   "하네스 리포트",
    "지금 작업 중",
    "#",
    "‹",
@@ -1168,6 +1168,19 @@
    "#docs",
    "#release-#",
    "태그"
+  ],
+  "attn": [
+   "주의 #",
+   "cart-roundingbugfix/cart-rounding충돌 위험 · 파일 # · 세션 #t#bea, cd#ed# 외 #t 전작업 내역diff재개 복사터미널답장완료나중에지금 상태 — 풀리면 사라짐⋯",
+   "billing-apidevelop질문 대기#t 전작업 내역재개 복사터미널답장완료나중에지금 상태 — 풀리면 사라짐⋯",
+   "acme-webfeature/checkout-redesign충돌 위험 · 파일 # · 세션 #t#bea, cd#ed#t 전작업 내역diff재개 복사터미널답장완료나중에지금 상태 — 풀리면 사라짐⋯",
+   "invoice-pdffeature/invoice-pdf컨텍스트 #% 외 #t 전작업 내역diff재개 복사터미널답장완료나중에지금 상태 — 풀리면 사라짐⋯"
+  ],
+  "rattn": [
+   "billing-api질문 대기#t 전",
+   "cart-rounding충돌 위험#t 전",
+   "acme-web충돌 위험#t 전",
+   "invoice-pdf컨텍스트 #%#t 전"
   ],
   "pop:diff": [
    "acme-web 변경",

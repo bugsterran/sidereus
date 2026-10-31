@@ -184,6 +184,9 @@ function diffLines(a, b) {
 }
 // Tolerance: a region may change up to max(2, 3%) lines (drift in demo ages crossing a unit boundary, etc.)
 const tol = n => STRICT ? 0 : Math.max(2, Math.ceil(n * 0.03));
+// Attention regions hold one line per item: a dropped item is one line, so the default tolerance would let it pass.
+const EXACT = new Set(['attn', 'rattn']);
+const tolOf = (r, n) => EXACT.has(r) ? 0 : tol(n);
 // ⚠Timeline axis labels follow the wall clock (which hours/dates fall in the window, en «# <ap>» vs ko «#»);
 // the demo server builds data from its own now, so freezing only the page clock would misplace bars ⇒ drop bare tick lines on both sides.
 const AXIS_LINE = /^#(?: <ap>)?$/;
@@ -192,10 +195,12 @@ const cmpLines = (r, xs) => r === 'tab:time' ? xs.filter(l => !AXIS_LINE.test(l)
 // ---- page probing ----------------------------------------------------------
 const JS_SNAP = `(() => {
   const t = s => { const e = document.querySelector(s); return e ? e.innerText : ''; };
+  // One line per child: a closed drawer renders nothing (innerText is ''), and rail pills sit on one visual line.
+  const rows = s => { const e = document.querySelector(s); return !e ? '' : [...e.children].map(c => c.textContent.trim()).filter(Boolean).join('\\n'); };
   const vis = [...document.querySelectorAll('#tbar > .tbs')].filter(x => !x.hidden).map(x => x.innerText).join('\\n');
   const se = (typeof SOFT_ERRS === 'object' && SOFT_ERRS) ? Object.keys(SOFT_ERRS).sort() : [];
   const sw = document.scrollingElement ? document.scrollingElement.scrollWidth : 0;
-  return JSON.stringify({ kn: !!document.querySelector('#kn,.kni'), sbar: t('#sbar'), tabs: t('#mvw'), feed: t('#feed'), tbar: vis, body: document.body ? document.body.innerText : '',
+  return JSON.stringify({ kn: !!document.querySelector('#kn,.kni'), sbar: t('#sbar'), tabs: t('#mvw'), feed: t('#feed'), attn: rows('#attn'), rattn: rows('#rattnl'), tbar: vis, body: document.body ? document.body.innerText : '',
     soft: se, sw, iw: innerWidth });
 })()`;
 
@@ -364,6 +369,9 @@ async function runCombo(cdp, base, width, lang, pop, inject) {
     await shot('tab-' + k);
     await tabWalk(k);
   }
+  // Attention lists live outside #feed (session drawer #attn, rail #rattnl); without their own regions a dropped item went unseen.
+  // Read after the tab walk: right after first render the attention poll has not painted them yet.
+  s = await snap(); regions.attn = norm(s.attn); regions.rattn = norm(s.rattn);
   // Popups: same document on /diff and /work with query params (see web/js/00-core.js ISPOP/ISWP).
   for (const [name, url] of [['diff', pop.diff], ['work', pop.work], ['sess', pop.sess]]) {
     await S('Page.navigate', { url: base + noBar(url) });
@@ -399,9 +407,9 @@ function compare(res) {
     const d = diffLines(a, c);
     const changed = Math.max(d.filter(x => x.op === '-').length, d.filter(x => x.op === '+').length, d.some(x => x.op === '!') ? Infinity : 0);
     if (!changed) continue;
-    const msg = r + ': ' + changed + ' line(s) differ (tolerance ' + tol(a.length) + ')\n' +
+    const msg = r + ': ' + changed + ' line(s) differ (tolerance ' + tolOf(r, a.length) + ')\n' +
       d.slice(0, 20).map(x => '      ' + x.op + ' ' + x.line.slice(0, 160)).join('\n') + (d.length > 20 ? '\n      ... ' + (d.length - 20) + ' more' : '');
-    (changed > tol(a.length) ? fails : notes).push(msg);
+    (changed > tolOf(r, a.length) ? fails : notes).push(msg);
   }
   return { fails, notes };
 }
