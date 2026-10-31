@@ -11,7 +11,7 @@ from sidereus import file_owner as _fo
 # ⛔Metadata only: every `why` is built here from tool names, counts and minutes — never task/reply/card text.
 # ★Points decided 2026-09-23 (user). No quota-share signal: not actionable per session.
 ATT_PTS = {"blocked": 100, "ask": 90, "conflict": 85, "mailidle": 75, "abort": 70, "ctx95": 65, "fail": 60, "wreck": 60,
-           "stall": 55, "loop": 50, "toolfail": 45, "ctx85": 25, "done": 20, "bgdone": 15}
+           "stall": 55, "loop": 50, "toolfail": 45, "bgidle": 30, "ctx85": 25, "done": 20, "bgdone": 15}
 ATT_FAIL_CARD_S = 1800      # failure alert card counts for 30 min at most ...
 # ... and clears once the same session shows real activity (row ageSec =
 #   transcript actAt, noise-free — not poll time) past the failure time + this grace. Covers Mac sleep: no activity
@@ -256,6 +256,11 @@ def _row_sigs(r, now):
     if st == "wait" and int(mi.get("n") or 0) > 0:
         sg.append(_sig("mailidle", "메일 %d통 대기 · 세션 쉼 %d분" % (int(mi["n"]), int(mi.get("age") or 0) // 60),
                        now - int(mi.get("age") or 0)))
+    bi = r.get("bgIdle") or {}   # open background shells whose output file is quiet (mtime only, never content)
+    if live and isinstance(bi, dict) and int(bi.get("idle") or 0) > 0:
+        mx = int(bi.get("max") or 0)
+        sg.append(_sig("bgidle", "백그라운드 셸 %d개 · 무출력 %d개 · 최장 %d분" % (int(bi.get("n") or 0), int(bi["idle"]), mx // 60),
+                       now - mx))
     # ⚠A Workflow call returns at launch, so the parent ends its turn (`wait`) while the run goes on — not the human's turn.
     wf_run = any(isinstance(w, dict) and w.get("run") for w in (r.get("wf") or []))
     if st == "wait" and not r.get("sub") and not r.get("bgs") and not wf_run \

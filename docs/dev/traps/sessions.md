@@ -242,6 +242,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: the compact summary is a `user` line (`isCompactSummary`, string content); as the newest user line it mapped to shape `result` = think, and its text could become the task label.
   - ⇒ `_scan_tail` skips `isCompactSummary` lines for shape and task; the turn markers and assistant line before the boundary decide (`tests/test_compact_state.py`). `act_at` still counts it.
   - ⚠Never let the summary text reach `task` — it is conversation content (Rule 1).
+- **Idle background shells (`bgIdle`) need the output path from the bg receipt** (`bgtasks_parse._BG_OUT_RE`, `bgtasks.bg_idle`).
+  - Cause: a receipt line has no `"Bash"`, so the subagent-transcript filter in `_running_bg_locked` dropped it and a subagent's shell had no path.
+  - ⇒ The filter also passes `running in background with ID`; `bg_idle` stats the path per poll in `_row_children` (`tests/test_bgidle.py`).
+  - ⚠Never compute it inside the parse cache — a cached parse freezes mtime-based elapsed time. Never open the output file or put the path on a row.
 
 ## Work-log popup and diff window
 

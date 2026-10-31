@@ -67,8 +67,8 @@ class Base(unittest.TestCase):
 class TestPoints(Base):
     def test_point_table(self):
         self.assertEqual(att.ATT_PTS, {"blocked": 100, "ask": 90, "conflict": 85, "mailidle": 75, "abort": 70, "ctx95": 65, "fail": 60,
-                                       "wreck": 60, "stall": 55, "loop": 50, "toolfail": 45, "ctx85": 25,
-                                       "done": 20, "bgdone": 15})
+                                       "wreck": 60, "stall": 55, "loop": 50, "toolfail": 45, "bgidle": 30,
+                                       "ctx85": 25, "done": 20, "bgdone": 15})
 
     def test_thresholds(self):
         self.assertEqual((att.ATT_FAIL_CARD_S, att.ATT_STALL_S, att.ATT_LOOP_N, att.ATT_TOOLFAIL_N,
@@ -158,6 +158,22 @@ class TestMailIdle(Base):
         self.assertEqual(sg["why"], "메일 3통 대기 · 세션 쉼 12분")
         self.assertEqual(set(sg), SIG_KEYS)
         self.assertEqual(self.kinds(sess("a", state="tool", age=30, mailIdle={"n": 3, "age": 720})), [])
+
+
+class TestBgIdle(Base):
+    def test_R2_bgidle_sig(self):
+        bi = {"n": 3, "idle": 2, "max": 1500}
+        row = self.one(sess("a", state="tool", age=30, bgs=[{}, {}, {}], bgIdle=bi))
+        sg = [s for s in row["sigs"] if s["k"] == "bgidle"][0]
+        self.assertEqual((sg["pts"], sg["why"], sg["since"]), (30, "백그라운드 셸 3개 · 무출력 2개 · 최장 25분", int(NOW) - 1500))
+        self.assertEqual(set(sg), SIG_KEYS)
+        for st in ("gone", "done"):
+            self.assertNotIn("bgidle", self.kinds(sess("a", state=st, age=30, bgIdle=bi)))
+        self.assertNotIn("bgidle", self.kinds(sess("a", state="tool", age=30, bgIdle={"n": 2, "idle": 0, "max": 0})))
+
+    def test_R4_old_shell_still_counts(self):
+        row = self.one(sess("a", state="wait", age=10, bgIdle={"n": 1, "idle": 1, "max": 3 * 3600}))
+        self.assertIn("최장 180분", [s for s in row["sigs"] if s["k"] == "bgidle"][0]["why"])
 
 
 class TestStall(Base):

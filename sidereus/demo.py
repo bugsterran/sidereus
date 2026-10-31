@@ -32,6 +32,9 @@ WF_AGENTS = [("Design", "Spec the search result page", "done", 28, 23, 1_800_000
              ("Implement", "Highlight matched terms", "done", 20, 11, 2_700_000),
              ("Verify", "Run full check", "run", 10, None, 1_300_000),
              ("Verify", "Screen regression at 3 widths", "run", 9, None, 900_000)]
+# Two open background shells on the cart session; one has been quiet 25 min (attention «Idle shells»).
+CART_BGS = [{"lab": "npm run dev", "min": 41}, {"lab": "npm test -- --watch cart", "min": 18}]
+CART_BG_IDLE = {"n": 2, "idle": 1, "max": 1500}
 # Agent team led by the billing session (agents.team_info shape).
 TEAM = {"members": [{"name": "api-dev", "st": "run", "model": "sonnet-5", "tsub": "Retry queue for webhooks", "unread": 0},
                     {"name": "reviewer", "st": "done", "model": "opus-5", "tsub": "", "unread": 1},
@@ -333,7 +336,7 @@ class World(_WorldPanels, _WorldGit):
                 "rpm": round(2 + (len(s["mbox"]) % 5) * 1.3, 1), "cwd": s["cwd"], "root": s["cwd"], "branch": s["branch"],
                 # same shape as sessions._session_row: targ only for an Agent call (rule 1)
                 "tool": s["tool"], "targ": s["targ"] if s["tool"] in ("Agent", "Task") else "",
-                "sub": sub, "bgs": [], "mon": [], "wf": self.wf_runs(s["k"]),
+                "sub": sub, "bgs": CART_BGS if s["k"] == "cart" else [], "mon": [], "wf": self.wf_runs(s["k"]),
                 "runmin": {"sub": len(sub), "bg": 0} if sub else {}, "kind": "system", "ageSec": age,
                 "bytes": s["ctx"] * 40, "repos": [s["cwd"]],   # like git toplevel: a worktree session's repo is its worktree
                 "wt": {"root": s["cwd"], "main": "" if s["cwd"] == REPOS[s["repo"]][0] else REPOS[s["repo"]][0],
@@ -341,6 +344,7 @@ class World(_WorldPanels, _WorldGit):
                 "mbox": s["mbox"], "mboxSrc": "identity", "cost": s["cost"], "ctx": s["ctx"],
                 "model": s["model"], "win": s["win"], "winSrc": "model", "winN": 0,
                 "git": {"web": "~4", "cart": "~2", "inv": "~1"}.get(s["k"], ""), "wreck": 0,
+                **({"bgIdle": CART_BG_IDLE} if s["k"] == "cart" else {}),   # sessions.py shape: one shell quiet 25 min
                 "state": s["state"], "blocked": "", "pmode": "default", "otel": True,
                 "otelEv": "tool_result" if s["state"] in ("think", "tool") else "", "otelAt": 0,
                 "err": False, "rep": {"n": 1, "tool": s["tool"] or "Read"}, "plat": "cc",
@@ -418,7 +422,8 @@ class World(_WorldPanels, _WorldGit):
         why_c = "충돌 위험 · 파일 1 · 세션 %s, %s" % (w["id"], c["id"])
         rows = [
             (b, 90, [("ask", "질문 대기", 90, now - bs[b["id"]]["ageSec"])]),
-            (c, 85, [("conflict", why_c, 85, a - 5 * 60)]),
+            (c, 85, [("conflict", why_c, 85, a - 5 * 60),
+                     ("bgidle", "백그라운드 셸 2개 · 무출력 1개 · 최장 25분", 30, now - CART_BG_IDLE["max"])]),
             (w, 85, [("conflict", why_c, 85, a - 5 * 60)]),
             (i, 25, [("ctx85", "컨텍스트 87%", 25, now - bs[i["id"]]["ageSec"]),
                      ("done", "작업 끝 · 입력 대기 %d분" % (bs[i["id"]]["ageSec"] // 60), 20,
