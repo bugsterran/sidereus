@@ -1,6 +1,7 @@
 """Session transcript parser."""
 import json
 import os
+import re
 from sidereus.transcript import (_human_text, _line_ts, _noise_user, _reply_summary, _tail_lines,
     _tool_target)
 from sidereus.ident import _cwd_from_slug
@@ -77,6 +78,43 @@ def _tail_pmode(rows):
         if isinstance(m, str) and m:
             return m
     return ""
+
+
+# fp -> last permissionMode seen; `permissionMode` sits only on prompt lines, so a long tool run scrolls it out of the tail.
+_PMODE_SEEN = {}
+_PMODE_RE = re.compile(rb'(?<!\\)"permissionMode":\s*"([A-Za-z]+)"')
+_PMODE_SCAN = 8_000_000     # bytes scanned backwards before the tail, once per transcript
+
+
+def _pmode_before(fp, nbytes):
+    """Latest `permissionMode` in the last _PMODE_SCAN bytes before the final `nbytes` ("" = none found)."""
+    try:
+        with open(fp, "rb") as f:
+            end = os.path.getsize(fp) - nbytes
+            stop = max(0, end - _PMODE_SCAN)
+            while end > stop:
+                start = max(stop, end - 1_000_000)
+                f.seek(start)
+                found = _PMODE_RE.findall(f.read(end - start + 64))   # 64-byte overlap covers a match cut at `end`
+                if found:
+                    return found[-1].decode("ascii")
+                end = start
+    except (OSError, ValueError):
+        return ""               # unreadable transcript: mode stays unknown
+    return ""
+
+
+def _pmode_of(fp, rows, nbytes):
+    """permissionMode for fp: the tail's, else the last one remembered or found before the tail."""
+    m = _tail_pmode(rows)
+    if not m:
+        m = _PMODE_SEEN.get(fp)
+        if m is None:
+            m = _pmode_before(fp, nbytes)
+    if len(_PMODE_SEEN) > 4000:
+        _PMODE_SEEN.clear()
+    _PMODE_SEEN[fp] = m
+    return m
 
 
 def _pending_ask_sibling(rows, mid):
@@ -334,4 +372,4 @@ def _parse_transcript(fp):
             "sub": sub, "bgs": bgs, "mon": mon,
             "model": t["model"], "task": t["task"], "reply": shp["reply"],
             "shape": shp["shape"], "ask": shp["ask"], "askTool": ask_tool, "abort": shp["abort"], "err": shp["err"],
-            "rep": _tail_rep(rows), "pmode": _tail_pmode(rows)}
+            "rep": _tail_rep(rows), "pmode": _pmode_of(fp, rows, 400_000)}
