@@ -25,7 +25,8 @@ function buildSessions(){
     + (act.length ? '' : '<div class=hidnote>' + (idleMin||gitFil ? T('No active sessions match the filter.') : T('No active sessions.')) + '</div>')
     + (hid ? '<div class=hidnote>'+TV({msg: '{n} hidden by filter', vars: {n: hid}})+'</div>' : ''));
   const f = document.getElementById('sfold');
-  if(f) f.onclick = () => { sessOpen = !sessOpen; buildSessions(); };
+  // ⚠The mouse is over the list when clicking, so the hover guard would defer this rebuild; clear it first.
+  if(f) f.onclick = () => { sessOpen = !sessOpen; sessHover = false; sessDirty = false; buildSessions(); };
   sessFit(box);
   if(typeof stodoAfter === 'function') stodoAfter(box);   // to-do add-box drafts (40c)
   buildInvite();
