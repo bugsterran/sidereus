@@ -17,7 +17,7 @@ from sidereus.ident import _slug
 #   for importers (sessions, cards, notes, work, history) and for live_cwds/watchers. Patch probe internals on live_probe.
 from sidereus.live_probe import (LIVE_STALE_S, _STALE_LABEL, _STALE_SHOW_S, _UUID_RE, _blocked, _live_pid_cwd,
     _live_sids, _ps_snap, _sid_claim_stale, _sid_transcript, _slow_why, _stale, _stale_clear, _stale_lock,
-    _stale_mark, agent_view, sid_alive, sid_alive_stale)
+    _stale_mark, agent_view, is_claude_argv, sid_alive, sid_alive_stale)
 # ⚠Window learning lives in sidereus/live_win.py (re-exported for chat_server/sessions/recent). Patch its state there.
 from sidereus.live_win import _ctx_window, _model_win, _win_ev, _win_load, _win_loop  # noqa: F401
 
@@ -95,10 +95,8 @@ def _live_official_only():
 
 
 def _live_claude_pids(snap):
-    # ★Uses the once-per-poll full list (`_ps_snap` comment above). The test is still "is argv[0]'s basename
-    #   claude" — measured 0 difference from the old `comm` test (2026-09-21).
-    return [pid for pid, _pp, cmd in snap
-            if cmd.split() and os.path.basename(cmd.split()[0]) == "claude"]
+    # ★Uses the once-per-poll full list (`_ps_snap` comment above). Shared test `is_claude_argv` (claude / claude.exe, helpers excluded).
+    return [pid for pid, _pp, cmd in snap if is_claude_argv(cmd)]
 
 
 # ⚠A claude CLI's cwd is fixed at launch, so cwd is cached per pid and lsof runs only for new pids
@@ -470,7 +468,7 @@ def mailbox_watches():
                 if not p or p in ("0", "1"):
                     break
                 c0 = cmdl.get(p) or ""
-                if c0 and os.path.basename(c0.split()[0]) == "claude":
+                if is_claude_argv(c0):
                     cp = p
                     break
             if not cp:

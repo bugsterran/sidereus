@@ -12,7 +12,7 @@ from sidereus.config import IS_MAC, pid_alive
 from sidereus import claude_roots
 from sidereus.warn import warn_once
 from sidereus.transcript import CLAUDE_PROJECTS
-from sidereus.ident import _slug, bin_path, bin_forget, rich_env
+from sidereus.ident import _slug, bin_path, bin_forget, is_claude_argv, rich_env
 
 LIVE_STALE_S = 30      # when a query fails, **keep using the last good value this long** (reason: live_cwds in sidereus/live.py; also caps sid_alive)
 
@@ -505,7 +505,7 @@ def tool_busy(ttl=2):
     try:
         claude, shells = set(), {}
         for pid, ppid, cmd in _ps_snap():   # ★once-per-poll full list (`_ps_snap` comment above)
-            if cmd.split() and os.path.basename(cmd.split()[0]) == "claude":
+            if is_claude_argv(cmd):
                 claude.add(pid)
             elif "shell-snapshot" in cmd:
                 shells.setdefault(ppid, []).append(pid)

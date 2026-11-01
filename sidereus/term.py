@@ -11,7 +11,7 @@ import time
 from sidereus.config import IS_MAC, IS_WIN
 from sidereus.warn import warn_once
 from sidereus.bus import _load, _save_json
-from sidereus.live_probe import _UUID_RE, _av_cache, _ps_snap_cache, _ps_snap, agent_view
+from sidereus.live_probe import _UUID_RE, _av_cache, _ps_snap_cache, _ps_snap, agent_view, is_claude_argv
 
 TERM_CFG_FILE = "term-cfg.json"            # under DATA_DIR, via bus._load/_save_json
 TERM_APPS = ("auto", "iterm", "apple", "orca", "off")
@@ -130,8 +130,7 @@ def _sid_pids(av, snap):
             out.setdefault(sid, []).append(str(pid))
     known = {str(p) for p in (av or {})}    # ⚠av keys may be int, ps pids str
     for pid, _pp, cmd in snap or []:
-        parts = cmd.split()
-        if not parts or os.path.basename(parts[0]) != "claude" or str(pid) in known:
+        if not is_claude_argv(cmd) or str(pid) in known:
             continue
         m = _UUID_RE.search(cmd)
         if m:
