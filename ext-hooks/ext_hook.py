@@ -263,6 +263,48 @@ def _win_start(pid):
         return ""
 
 
+def _win_image(pid):
+    """Full image path of `pid` (QueryFullProcessImageNameW), or "" on any failure."""
+    try:
+        import ctypes
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        k32.OpenProcess.restype = ctypes.c_void_p
+        k32.CloseHandle.argtypes = (ctypes.c_void_p,)
+        h = k32.OpenProcess(0x1000, False, int(pid))            # PROCESS_QUERY_LIMITED_INFORMATION
+        if not h:
+            return ""
+        try:
+            buf = ctypes.create_unicode_buffer(1024)
+            n = ctypes.c_ulong(1024)
+            if not k32.QueryFullProcessImageNameW(ctypes.c_void_p(h), 0, buf, ctypes.byref(n)):
+                return ""
+        finally:
+            k32.CloseHandle(h)
+        return buf.value
+    except Exception:
+        return ""
+
+
+def _ps_args(pid):
+    """Full command line of one process via ps, or "" on failure."""
+    try:
+        return subprocess.run(["/bin/ps", "-o", "args=", "-p", str(pid)], stdout=subprocess.PIPE,
+                              stderr=subprocess.DEVNULL, timeout=1,
+                              env={"LC_ALL": "C", "PATH": "/bin:/usr/bin"}).stdout.decode("utf-8", "replace").strip()
+    except Exception:
+        return ""
+
+
+# ⚠Codex runs hooks from its app-server daemon, which outlives every session: its pid would keep a closed row «waiting».
+def _codex_daemon(name, pid):
+    if name not in ("codex", "codex.exe"):
+        return False
+    if IS_WIN:
+        return "app-server-daemon" in _win_image(pid).replace("/", "\\").lower()
+    a = " %s " % _ps_args(pid)
+    return " app-server " in a or "app-server-daemon" in a
+
+
 def _cli_pid_win():
     procs = _win_procs()
     if not procs:
@@ -274,6 +316,8 @@ def _cli_pid_win():
             return 0, ""
         name = os.path.basename(p[1]).lower()
         if name not in SKIP_EXE and not name.startswith("python"):
+            if _codex_daemon(name, pid):
+                return 0, ""                                     # daemon: unknown, and its parent is not this session
             return pid, _win_start(pid)
         pid = p[0]
     return 0, ""
@@ -295,7 +339,7 @@ def cli_pid():
             return 0, ""
         name = p[2].lower()
         if name not in SKIP_COMM and not name.startswith("python"):
-            return pid, p[1]
+            return (0, "") if _codex_daemon(name, pid) else (pid, p[1])
         pid = p[0]
     return 0, ""
 

@@ -46,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sessions: "Show n ended" opens on the first click while the mouse is over the list.
 - Windows: external CLI sessions (Codex, Cursor, Copilot, Gemini) leave the list within 10 minutes after the CLI closes; before, the hook sent no process id there and the row stayed "waiting for input" for up to 24 hours.
 - External CLI rows with no process id fold under "Show n ended" after 30 minutes without events, instead of reading "waiting for input" for up to 24 hours (sessions closed by closing the terminal send no end event).
+- Codex: a session closed with /exit no longer stays "waiting for input" forever; recent Codex runs hooks from its long-lived app-server daemon, which the hook mistook for the session process.
 - Header: the "Sessions" button stays at the right edge when there are no to-do chips.
 
 ## [0.11.0] - 2026-10-31
