@@ -98,16 +98,7 @@ def pid_alive(pid):
     if pid <= 0:
         return None
     if IS_WIN:
-        try:
-            import ctypes
-            k32 = ctypes.windll.kernel32
-            h = k32.OpenProcess(0x00100000, False, pid)   # SYNCHRONIZE
-            if not h:
-                return True if k32.GetLastError() == 5 else False   # ERROR_ACCESS_DENIED = exists
-            k32.CloseHandle(h)
-            return True
-        except Exception:
-            return None
+        return _win_pid_alive(pid)
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -117,6 +108,36 @@ def pid_alive(pid):
     except (OSError, OverflowError, ValueError):
         return None
     return True
+
+
+def _win_pid_alive(pid):
+    """Windows half of pid_alive. ⚠An exited process still opens while any handle holds it (parent, terminal):
+    a successful OpenProcess alone read a dead CLI as alive, so the handle is also waited on with timeout 0."""
+    try:
+        import ctypes
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)   # own instance: argtypes never leak to other callers
+        k32.OpenProcess.restype = ctypes.c_void_p
+        k32.OpenProcess.argtypes = (ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32)
+        k32.WaitForSingleObject.restype = ctypes.c_uint32
+        k32.WaitForSingleObject.argtypes = (ctypes.c_void_p, ctypes.c_uint32)
+        k32.CloseHandle.argtypes = (ctypes.c_void_p,)
+        h = k32.OpenProcess(0x00101000, False, pid)             # SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION
+        if not h and ctypes.get_last_error() == 5:
+            h = k32.OpenProcess(0x00100000, False, pid)         # SYNCHRONIZE alone
+        if not h:
+            err = ctypes.get_last_error()
+            if err == 5:
+                return True                                     # ERROR_ACCESS_DENIED = exists
+            return False if err == 87 else None                 # ERROR_INVALID_PARAMETER = no such pid
+        try:
+            r = k32.WaitForSingleObject(h, 0)
+        finally:
+            k32.CloseHandle(h)
+        if r == 0:
+            return False                                        # WAIT_OBJECT_0: signalled = exited
+        return True if r == 0x102 else None                     # WAIT_TIMEOUT = still running
+    except Exception:
+        return None
 
 
 _DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
