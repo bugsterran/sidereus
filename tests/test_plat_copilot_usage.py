@@ -67,7 +67,8 @@ class Usage(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def write(self, s, mode="w", path=None):
-        with open(path or self.p, mode, encoding="utf-8") as f:
+        # newline="" keeps LF on Windows; text mode would write CRLF and shift byte offsets.
+        with open(path or self.p, mode, encoding="utf-8", newline="") as f:
             f.write(s)
         os.utime(path or self.p, (NOW, NOW))
 
@@ -129,6 +130,15 @@ class Usage(unittest.TestCase):
                          "timestamp": _iso(NOW)}, separators=(",", ":"))
         self.write("{}\n" + ln + "\n")
         self.assertEqual(list(cp.usage_msgs(SID)), ["@3"])
+
+    def test_offset_key_crlf(self):
+        ln = json.dumps({"type": "session.usage_record", "data": {"usage": {"inputTokens": 5, "outputTokens": 1}},
+                         "timestamp": _iso(NOW)}, separators=(",", ":")).encode()
+        with open(self.p, "wb") as f:
+            f.write(b"{}\r\n" + ln + b"\r\n")
+        os.utime(self.p, (NOW, NOW))
+        self.assertEqual(list(cp.usage_msgs(SID)), ["@4"])
+        self.assertEqual(cp._ev[self.p]["off"], os.path.getsize(self.p))
 
     def test_oversize_skipped(self):
         self.write(_use("u1", 10, 1, 0, 0, NOW) + "\n")
