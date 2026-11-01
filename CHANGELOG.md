@@ -48,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - External CLI rows with no process id fold under "Show n ended" after 30 minutes without events, instead of reading "waiting for input" for up to 24 hours (sessions closed by closing the terminal send no end event).
 - Codex: a session closed with /exit no longer stays "waiting for input" forever; recent Codex runs hooks from its long-lived app-server daemon, which the hook mistook for the session process.
 - Windows: a CLI process that has exited no longer reads as alive while another program still holds a handle to it, so closed sessions show "Disconnected" and leave the list.
+- Sessions: an ended Codex, Cursor, Copilot or Gemini session folds under "Show n ended" for 12 hours like a Claude session, whether it sent an end event, its process disappeared or it went quiet without a process id; it no longer lingers as "Disconnected" or vanishes at once.
 - Header: the "Sessions" button stays at the right edge when there are no to-do chips.
 
 ## [0.11.0] - 2026-10-31

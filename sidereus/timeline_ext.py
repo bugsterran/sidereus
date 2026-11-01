@@ -40,7 +40,7 @@ def _plat_tl_rows(cut, now, pcwd=None):
     for m in PLAT_MODS.values():
         out += _plat_rows(m, cut, now, pcwd)
     with _ext_lock:
-        hook_only = {p for p, _sid in _ext if p not in PLAT_MODS}
+        hook_only = {p for (p, _sid), v in _ext.items() if p not in PLAT_MODS and not v.get("ended")}
     hook_only |= {p for p, _sid in ext_hook_cwds() if p not in PLAT_MODS and p in EXT_PLAT}
     for p in sorted(hook_only):
         out += _ext_tl(cut, now, pcwd, p, EXT_PLAT[p], "CLI", p.title(), _hook_scan(p))
@@ -73,7 +73,9 @@ def _hook_scan(plat):
     ⚠Without this such sessions reached the session list but never the timeline."""
     def scan(cut):
         with _ext_lock:
-            items = [(sid, v.get("cwd") or "", list(v.get("ev") or [])) for (p, sid), v in _ext.items() if p == plat]
+            # ⚠Folded (`ended`) rows stay in `_ext`; skipped so they draw from stored generations as before.
+            items = [(sid, v.get("cwd") or "", list(v.get("ev") or [])) for (p, sid), v in _ext.items()
+                     if p == plat and not v.get("ended")]
         msgs = {sid: ms for (p, sid), ms in ext_side_msgs(cut).items() if p == plat}
         out = [{"sid": sid, "cwd": cwd, "msgs": msgs.get(sid) or {},
                 "acts": {i: float(e.get("t") or 0) for i, e in enumerate(ev)
@@ -94,7 +96,7 @@ def _hook_scan(plat):
 def _ext_tl(cut, now, pcwd, plat, key, label, name, scan):
     pcwd = pcwd or {}
     with _ext_lock:
-        live = {sid: dict(v) for (p, sid), v in _ext.items() if p == plat}
+        live = {sid: dict(v) for (p, sid), v in _ext.items() if p == plat and not v.get("ended")}
     runs = {r["sid"]: r for r in ext_runs() if r.get("plat") == plat}
     for sid, v in live.items():
         if v.get("parent") and sid not in runs:

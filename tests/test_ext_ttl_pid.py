@@ -50,16 +50,17 @@ class TtlPid(unittest.TestCase):
         self.assertIn(("cursor", "a"), st._ext)
         self.assertFalse(st._ext[("cursor", "a")].get("gone"))
 
-    def test_dead_pid_gone_then_dropped(self):
+    def test_dead_pid_gone_then_folded(self):
         st._ext[("gemini", "b")] = _row(pid=99698)
         self.dead.add(99698)
         st.ext_gone_check(NOW)
         self.assertEqual(st._ext[("gemini", "b")]["state"], "gone")
         with st._ext_lock:
             st._ext_prune_locked(NOW)
-        self.assertIn(("gemini", "b"), st._ext)       # shown as «Disconnected» during the grace
+        self.assertIn(("gemini", "b"), st._ext)       # kept as gone during the grace
         st.ext_gone_check(NOW + st.EXT_GONE_GRACE_S + 1)
-        self.assertNotIn(("gemini", "b"), st._ext)
+        v = st._ext[("gemini", "b")]                  # archived: folded as ended, pid dropped
+        self.assertEqual((v["state"], v["endWhy"], v["ended"], v.get("pid")), ("done", "pid", NOW, None))
 
     def _win_ingest(self, sid, alive):
         """Windows hook payload (pid from the Toolhelp walk), real _pid_gone with pid_alive faked."""
@@ -76,11 +77,15 @@ class TtlPid(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(st._ext[("codex", sid)]["pid"], 4321)
 
-    def test_win_dead_pid_gone_then_dropped(self):
+    def test_win_dead_pid_gone_then_folded(self):
         self._win_ingest("w1", False)
         st.ext_gone_check(NOW)
         self.assertEqual(st._ext[("codex", "w1")]["state"], "gone")
         st.ext_gone_check(NOW + st.EXT_GONE_GRACE_S + 1)
+        self.assertEqual(st._ext[("codex", "w1")]["state"], "done")
+        st.ext_gone_check(NOW + st.EXT_DONE_KEEP_S + 1)
+        with st._ext_lock:
+            st._ext_prune_locked(NOW + st.EXT_DONE_KEEP_S + 1)
         self.assertNotIn(("codex", "w1"), st._ext)
 
     def test_win_live_pid_idle_wait_kept(self):

@@ -299,11 +299,12 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 | `PostToolUse` | `think` | `AfterTool` | 같음 | `postToolUse`, `postToolUseFailure` | 같음 |
 | `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` | `stop` | 같음 |
 | `Notification` | `ask`(막힘) | 같음 | `PermissionRequest` | 없음 | `PermissionRequest` |
-| `SessionEnd` | 행 삭제 | 같음 | 같음 | `sessionEnd` | 같음 |
+| `SessionEnd` | `done`, 12시간 «종료 n개 보기» 아래로 접힘 | 같음 | 같음 | `sessionEnd` | 같음 |
 
 - 나머지 플랫폼은 Codex 변환을 쓴다. ⚠Gemini, Codex, Cursor, Copilot 만 확인했다. 이름이 다르면 `--event <이름>` 을 넘긴다.
 - 막힘 표시와 «나를 기다림» 배지는 CLI 의 다음 이벤트, `SessionEnd`, 프로세스 종료(pid)로만 사라진다. 시간으로는 지우지 않는다. 그 밖에 24시간(`EXT_TTL_S`) 조용한 행은 지운다.
   행은 재시작해도 남는다(`ext-sessions.json`).
+- 프로세스 종료(pid)나 작업 중 무소식이면 바로 `done` 으로 보이고 `SessionEnd` 처럼 접힌다. 다음 이벤트가 오면 다시 살아난다.
 - 훅 행에는 대화 기록, 비용, 컨텍스트, git 정보와 이어 하기 칩이 없다. 모델 이름은 20자에서 자른다.
 
 `ext_hook.py` 옵션: `--platform`(필수), `--event`, `--url` 또는 `SIDEREUS_HOOK_URL`(기본 포트 `SIDEREUS_PORT` > 설정 `port` >

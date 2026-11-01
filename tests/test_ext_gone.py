@@ -79,13 +79,15 @@ class Gone(unittest.TestCase):
     def row(self, sid="g1"):
         return next(r for r in ext.ext_rows() if r["sid"] == sid)
 
-    def test_dead_pid_is_gone_then_dropped(self):
+    def test_dead_pid_is_done_then_folded(self):
         self.feed("UserPromptSubmit", NOW, pid=4242, host=st._HOST, pstart="Thu Sep 24 10:00:00 2026")
         r = self.row()
-        self.assertEqual((r["state"], r["goneWhy"]), ("gone", "pid"))
+        self.assertEqual((r["state"], r["goneWhy"]), ("done", ""))   # R1: never «Disconnected» in the list
         self.assertTrue(all(sig == 0 for _p, sig in self.kills))
         self.clock[0] = NOW + st.EXT_GONE_GRACE_S + 1
-        self.assertEqual(ext.ext_rows(), [])                        # like a SessionEnd
+        self.assertEqual((self.row()["state"], self.row()["goneWhy"]), ("done", ""))   # folded like a SessionEnd
+        self.assertEqual(ext._ext[("gemini", "g1")]["endWhy"], "pid")
+        self.assertTrue(ext._ext[("gemini", "g1")]["ended"])
 
     def test_alive_pid_stays_thinking_even_when_silent(self):
         self.alive.add(4242)
@@ -98,7 +100,8 @@ class Gone(unittest.TestCase):
         self.alive.add(4242)
         self.starts[4242] = "Fri Sep 25 09:00:00 2026"
         self.feed("PreToolUse", NOW, pid=4242, host=st._HOST, pstart="Thu Sep 24 10:00:00 2026", tool_name="x")
-        self.assertEqual(self.row()["state"], "gone")
+        self.assertEqual((self.row()["state"], self.row()["goneWhy"]), ("done", ""))
+        self.assertEqual(ext._ext[("gemini", "g1")]["state"], "gone")   # the store keeps the grace
 
     def test_pid_from_other_host_ignored(self):
         self.feed("UserPromptSubmit", NOW, pid=4242, host="elsewhere")
@@ -111,7 +114,8 @@ class Gone(unittest.TestCase):
         self.assertEqual(self.row()["state"], "tool")
         self.clock[0] = NOW + st.EXT_SILENT_S + 5
         r = self.row()
-        self.assertEqual((r["state"], r["goneWhy"], r["tool"]), ("gone", "silent", ""))
+        self.assertEqual((r["state"], r["goneWhy"], r["tool"]), ("done", "", ""))
+        self.assertEqual(ext._ext[("gemini", "g1")]["goneWhy"], "silent")
         self.feed("PostToolUse", NOW + st.EXT_SILENT_S + 6)       # it was alive after all
         self.assertEqual((self.row()["state"], self.row()["goneWhy"]), ("think", ""))
 
@@ -143,9 +147,9 @@ class Gone(unittest.TestCase):
         self.alive.discard(4242)
         self.clock[0] = NOW + 31 * 60
         r = self.row()
-        self.assertEqual((r["state"], r["blocked"], r["goneWhy"]), ("gone", "", "pid"))
+        self.assertEqual((r["state"], r["blocked"], r["goneWhy"]), ("done", "", ""))
         self.clock[0] = NOW + 31 * 60 + st.EXT_GONE_GRACE_S + 5
-        self.assertEqual(ext.ext_rows(), [])
+        self.assertEqual([(x["state"], x["blocked"]) for x in ext.ext_rows()], [("done", "")])
 
     def test_dismiss_drops_pidless_pending_after_reload(self):
         saved_file = st.EXT_FILE
@@ -171,7 +175,8 @@ class Gone(unittest.TestCase):
         self.alive.add(4242)
         self.feed("UserPromptSubmit", NOW, pid=4242, host=st._HOST)
         self.feed("SessionEnd", NOW + 5)
-        self.assertEqual(ext.ext_rows(), [])
+        self.assertEqual([(r["state"], r["pid"]) for r in ext.ext_rows()], [("done", 0)])   # folded, not removed
+        self.assertEqual(ext._ext[("gemini", "g1")]["endWhy"], "end")
 
     def test_dead_child_leaves_drawer_and_ends(self):
         self.feed("UserPromptSubmit", NOW, sid="c1", parent=PAR, pid=4343, host=st._HOST)
@@ -185,8 +190,9 @@ class Gone(unittest.TestCase):
         self.assertEqual(ext._runs["c1"]["state"], "done")
         self.assertNotIn(("gemini", "c1"), ext._ext)
 
-    def test_attention_lists_gone_as_low(self):
-        self.feed("UserPromptSubmit", NOW, pid=4242, host=st._HOST)
+    def test_ended_row_raises_no_attention_signal(self):
+        """R4: a dead or folded row is 'done' — no gone/blocked signal in attention."""
+        self.feed("Notification", NOW, pid=4242, host=st._HOST)
         r = self.row()
         saved = (att._toolfail_idx, att._conflicts)
         att._toolfail_idx, att._conflicts = (lambda now: {}), (lambda rows, now: [])   # no live scans
@@ -194,8 +200,7 @@ class Gone(unittest.TestCase):
             out = att.attention([r], [], read="", read_ids=[])
         finally:
             att._toolfail_idx, att._conflicts = saved
-        sig = out["rows"][0]["sigs"][0]
-        self.assertEqual((sig["k"], sig["why"]), ("gone", "끊김"))
+        self.assertEqual(out["rows"], [])
 
 
 class HookPid(unittest.TestCase):

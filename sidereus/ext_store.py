@@ -27,9 +27,10 @@ EXT_TTL_S = 24 * 3600        # delete if no news for this long — the only exit
 # ★EXT_SILENT_S from data (2026-09-24): Gemini busy gaps n=93 p99 152s max 152s; Claude tool calls as a
 #   proxy for long tools (7 days, n=18666, no Agent) p99 326s, p99.5 984s, >1200s 0.24%. 20 min sits above both.
 EXT_SILENT_S = 1200
-EXT_GONE_GRACE_S = 600       # «Disconnected» shown this long, then dropped like a SessionEnd
+EXT_GONE_GRACE_S = 600       # 'gone' kept this long (an event may revive it from goneFrom), then folded like a SessionEnd
 # ⚠A pid-less idle row has unknown liveness (Windows hooks sent no pid): without this it stayed «waiting» up to EXT_TTL_S.
 PIDLESS_IDLE_SEC = 1800      # pid-less 'wait' row with no event this long is shown as ended ('done'); its next event revives it
+EXT_DONE_KEEP_S = 12 * 3600  # ended rows fold under «Show n ended» this long (R2) ⚠must equal sessions.sessions() max_age_h
 EXT_PID_EVERY_S = 30         # liveness check interval per session
 EXT_PLAT = {"gemini": "gm", "codex": "cx", "copilot": "cp", "cursor": "cu", "cline": "cl",
             "windsurf": "wf", "warp": "wp", "trae": "tr", "zed": "zd", "grok": "gk",
@@ -43,7 +44,7 @@ EXT_PLAT = {"gemini": "gm", "codex": "cx", "copilot": "cp", "cursor": "cu", "cli
 PLAT_MODS = {m.PLAT: m for m in (adapter_register(x, EXT_PLAT) for x in (plat_gemini, plat_codex))}
 EXT_STATE = {"SessionStart": "wait", "UserPromptSubmit": "think", "PreToolUse": "tool",
              "PostToolUse": "think", "Stop": "wait", "Notification": "ask"}   # ⚠`Stop` is `wait` - with `ask` (rank 0) ended sessions occupy the top of the list for 24h
-             # SessionEnd is a removal, so absent
+             # SessionEnd folds the row (_end_locked), so absent
 # ⚠Platforms whose hooks run in one shared helper (Codex: every TUI's hooks run under the first TUI's `codex app-server`),
 #   so the hook pid is the same for different sessions: never merge rows by it (it dropped a live second Codex session).
 EXT_SHARED_PID = {"codex"}
@@ -61,9 +62,21 @@ def _ended_note_locked(key, now):
 
 
 def ext_ended(plat, now):
-    """Sids of `plat` that ended, went gone or were dismissed within EXT_ENDED_KEEP_S."""
+    """Sids of `plat` that ended, went gone or were dismissed within EXT_ENDED_KEEP_S, plus folded (`ended`) store rows."""
     with _ext_lock:
-        return {k[1] for k, t in _ext_ended.items() if k[0] == plat and now - t <= EXT_ENDED_KEEP_S}
+        return {k[1] for k, t in _ext_ended.items() if k[0] == plat and now - t <= EXT_ENDED_KEEP_S} \
+            | {k[1] for k, v in _ext.items() if k[0] == plat and v.get("ended")}
+
+
+def _end_locked(key, v, ts, why):
+    """End stored row `v` (R1): a child row is dropped, a top-level row folds as 'done' for EXT_DONE_KEEP_S.
+    ⚠Folded rows stay in `_ext` - every liveness reader must skip `ended` rows."""
+    _ended_note_locked(key, ts)
+    for k in ("pid", "pstart", "pidAt", "gone", "goneWhy", "goneFrom"):
+        v.pop(k, None)
+    v.update(state="done", ended=ts, endWhy=why, tool="", blocked=False)
+    if v.get("parent"):
+        _ext.pop(key, None)
 _ext_stat = {"posts": 0, "kept": 0, "drop": 0, "lastPost": 0.0, "lastKept": 0.0}
 _HOST = socket.gethostname()
 
@@ -94,6 +107,8 @@ def _pending(v):
 def _ext_aged_out(v, now):
     """Row is past EXT_TTL_S and may be dropped by age.
     ⚠A row with a pid is never aged out: ext_gone_check is its exit (live idle CLIs vanished after 24 h; gone rows keep the grace)."""
+    if v.get("ended"):                            # folded row: its own clock, before the pid/pending rules (R2)
+        return not isinstance(v["ended"], (int, float)) or now - v["ended"] > EXT_DONE_KEEP_S
     if _pending(v) or v.get("pid"):
         return False
     try:
@@ -350,19 +365,6 @@ def _run_note_locked(plat, sid, v, ev, ts):
     return new or ev in ("SessionEnd", "Stop")
 
 
-def ext_runs(parent=None):
-    """[{sid, plat, parent, cwd, start, end, model, state, tok}] — all, or those under one Claude session."""
-    with _ext_lock:
-        items = [(k, dict(v)) for k, v in _runs.items()]
-    out = []
-    for sid, v in items:
-        if parent is None or v.get("parent") == parent:
-            v["sid"] = sid
-            out.append(v)
-    out.sort(key=lambda r: float(r.get("start") or 0))
-    return out
-
-
 def ext_ingest(req):
     """Apply one `/api/hook` event to the registry — unknown keys ignored. Returns `(ok, reason)`."""
     plat = str(req.get("platform") or "").strip().lower()
@@ -382,13 +384,15 @@ def ext_ingest(req):
         _ext_prune_locked(now)
         if ev == "SessionEnd":
             _ended_note_locked(key, now)
-            gone = _ext.pop(key, None)
-            if gone is not None:
-                if _run_note_locked(plat, sid, gone, ev, ts):
+            if (cur := _ext.get(key)) is not None and not cur.get("ended"):   # repeated SessionEnd on a folded row: no-op
+                if _run_note_locked(plat, sid, cur, ev, ts):
                     _runs_save_locked()
+                _end_locked(key, cur, now, "end")
                 _ext_save_locked()
             return True, "end"
         v = _ext.get(key) or {"firstSeen": ts}
+        if v.get("ended"):                        # revived folded row: run time restarts, the quiet gap is not work
+            v["firstSeen"] = ts
         par = str(req.get("parent") or "").strip()
         if par and _sid_ok(par) and par != sid:
             v["parent"] = par
@@ -410,7 +414,7 @@ def ext_ingest(req):
                 v.pop(k, None)
         if v.get("state") in ("gone", "done"):    # any event proves it is alive again (done = pid-less idle cutoff)
             v["state"] = v.get("goneFrom") or "wait"
-        for k in ("gone", "goneWhy", "goneFrom"):
+        for k in ("gone", "goneWhy", "goneFrom", "ended", "endWhy"):   # any event revives a folded row (R3)
             v.pop(k, None)
         st = EXT_STATE.get(ev)
         if st:
@@ -497,7 +501,7 @@ def _pid_gone(pid, pstart):
 
 
 def ext_gone_check(now=None):
-    """Mark sessions whose CLI died (pid) or fell silent while busy (no pid) as «Disconnected»; drop them after
+    """Mark sessions whose CLI died (pid) or fell silent while busy (no pid) as gone; fold them after
     `EXT_GONE_GRACE_S` like a SessionEnd. History/timeline data stays (runs end at the last event)."""
     now = now or time.time()
     with _ext_lock:
@@ -534,9 +538,8 @@ def ext_gone_check(now=None):
                         _run_note_locked(k[0], k[1], v, "Gone", last)
                         runs = True
             if v.get("gone") and now - float(v["gone"]) > EXT_GONE_GRACE_S:
-                _ext.pop(k, None)
-                _ended_note_locked(k, now)
                 _run_note_locked(k[0], k[1], v, "SessionEnd", last)
+                _end_locked(k, v, float(v["gone"]), v.get("goneWhy") or "pid")
                 changed = True
                 runs = runs or bool(v.get("parent"))
         if runs:

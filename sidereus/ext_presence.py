@@ -94,10 +94,10 @@ def ext_presence_rows(now=None):
     rows = []
     try:
         with _ext_lock:
-            store = [(p, sid, v.get("cwd") or "") for (p, sid), v in _ext.items()]
+            store = [(p, sid, v.get("cwd") or "", bool(v.get("ended"))) for (p, sid), v in _ext.items()]
         for plat in PRES_MODS:
-            known = {sid for p, sid, _ in store if p == plat} | ext_ended(plat, now)
-            cwds = {cwd for p, _, cwd in store if p == plat and cwd}
+            known = {sid for p, sid, _c, _e in store if p == plat} | ext_ended(plat, now)
+            cwds = {cwd for p, _, cwd, end in store if p == plat and cwd and not end}   # ⚠a folded row must not hide a new session in its folder
             for c in _cands(plat, now):
                 sid = c.get("sid") or ""
                 if not _sid_ok(sid) or sid in known or (c.get("cwd") or "") in cwds:

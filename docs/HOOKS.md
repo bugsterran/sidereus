@@ -317,11 +317,12 @@ The CLI runs `ext-hooks/ext_hook.py --platform <key>`, which maps the stdin even
 | `PostToolUse` | `think` | `AfterTool` | same | `postToolUse`, `postToolUseFailure` | same |
 | `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` | `stop` | same |
 | `Notification` | `ask` (blocked) | same | `PermissionRequest` | none | `PermissionRequest` |
-| `SessionEnd` | row removed | same | same | `sessionEnd` | same |
+| `SessionEnd` | `done`, folds under «Show n ended» for 12 h | same | same | `sessionEnd` | same |
 
 - Other platforms use the Codex mapping. ⚠Only Gemini, Codex, Cursor and Copilot were checked; otherwise pass `--event <name>`.
 - The blocked mark and «needs me» badge stay until the CLI's next event, `SessionEnd` or a dead pid — never by age.
   Any other row silent for 24 h (`EXT_TTL_S`) is deleted. Rows survive restarts (`ext-sessions.json`).
+- A dead pid or silence while busy lists the row as `done` at once; it folds like `SessionEnd`. The next event brings it back.
 - A hook row has no transcript, cost, context or git data and no resume chip. The model name is cut to 20 characters.
 
 `ext_hook.py` options: `--platform` (required), `--event`, `--url` or `SIDEREUS_HOOK_URL` (default port: `SIDEREUS_PORT` >
