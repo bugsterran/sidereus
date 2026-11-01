@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Pipeline evaluation: «fix followed» counts a later commit only when a bug-fix pipeline run (`"catch": "person"`) made it and it touches the same code file; shared docs, registries, tests and screen baselines no longer make every pass read «fix followed».
+- Pipeline editor: the «Evaluation» panel opens under its button instead of at the left screen edge over the side rail.
 
 ## [0.11.0] - 2026-10-31
 

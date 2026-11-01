@@ -121,7 +121,12 @@ function plEvalPanel(ev){
 // Floating under the button (popAnchor, fixed): an inline panel pushed the canvas down. ⚠Rebuilt by every repaint ⇒ re-anchored each time.
 function plEvalPlace(){
   const p = document.getElementById('plevp'), b = document.querySelector('[data-pleval]');
-  if(p && b) popAnchor(p, b, { align: 'right', flipY: true });
+  if(p && b) popAnchor(p, b, { align: plEvalAlign(b.getBoundingClientRect(), p.offsetWidth), flipY: true });
+}
+// ⚠Right-aligned only when the panel fits left of the button's right edge: the button sits near the left of the bar,
+//   so a forced right align clamped the panel to the viewport edge (x 8) over the side rail, detached from the button.
+function plEvalAlign(r, w){
+  return r.right - w >= 8 ? 'right' : 'left';
 }
 function plEvalClose(focusBack){
   PLEVAL_OPEN = '';
