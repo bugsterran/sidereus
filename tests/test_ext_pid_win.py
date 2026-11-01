@@ -31,8 +31,10 @@ class _Fn(object):
 
 
 class FakeK32(object):
-    def __init__(self, table=None, ft=FT, open_ok=True, err=87):
+    def __init__(self, table=None, ft=FT, open_ok=True, err=87, images=None):
         self.table = list((table or {}).items())
+        self.images = images or {}
+        self.opened = 0
         self.i = 0
         self.closed = []
         self.err = err
@@ -57,7 +59,18 @@ class FakeK32(object):
         self.CreateToolhelp32Snapshot = _Fn(lambda flags, pid: 77)
         self.Process32FirstW = _Fn(first)
         self.Process32NextW = _Fn(nxt)
-        self.OpenProcess = _Fn(lambda acc, inh, pid: 55 if open_ok else 0)
+        def open_(acc, inh, pid):
+            self.opened = pid
+            return 55 if open_ok else 0
+
+        def image(h, flags, buf, n):
+            path = self.images.get(self.opened)
+            if path is None:
+                return 0
+            buf.value = path
+            return 1
+        self.OpenProcess = _Fn(open_)
+        self.QueryFullProcessImageNameW = _Fn(image)
         self.GetProcessTimes = _Fn(times)
         self.CloseHandle = _Fn(lambda h: self.closed.append(h) or 1)
 
@@ -103,11 +116,40 @@ class HookWin(unittest.TestCase):
         with _windll(FakeK32(TABLE, ft=None)):
             self.assertEqual(hook.cli_pid(), (100, ""))
 
+    def test_codex_daemon_is_unknown(self):
+        t = {300: (200, "python.exe"), 200: (34256, "cmd.exe"), 34256: (26440, "codex.exe"), 26440: (1, "node.exe")}
+        daemon = r"C:\Users\u\.codex\packages\app-server-daemon\releases\0.166.0\bin\codex.exe"
+        with _windll(FakeK32(t, images={34256: daemon})):
+            self.assertEqual(hook.cli_pid(), (0, ""))                # never the daemon, never past it
+        with _windll(FakeK32(t, images={34256: r"C:\Users\u\AppData\npm\codex.exe"})):
+            self.assertEqual(hook.cli_pid(), (34256, config.lstart_fmt(EPOCH)))
+
     def test_formats_match_server(self):
         for e in (EPOCH, EPOCH + 86400 * 9 + 3661, 0):
             self.assertEqual(hook._lstart_fmt(e), config.lstart_fmt(e))
         # ext_presence._start_ts parses the same text back to the instant
         self.assertEqual(sidereus("ext_presence")._start_ts(config.lstart_fmt(EPOCH)), EPOCH)
+
+
+class HookPosixDaemon(unittest.TestCase):
+    def setUp(self):
+        tree = {100: (90, "Thu Sep 24 10:00:01 2026", "sh"), 90: (1, "Thu Sep 24 10:00:00 2026", "codex")}
+        self.args = {}
+        for p in (mock.patch.object(hook, "IS_WIN", False),
+                  mock.patch.object(hook.os, "getppid", lambda: 100),
+                  mock.patch.dict(os.environ, {"SIDEREUS_HOOK_NO_PID": ""}),
+                  mock.patch.object(hook, "_ps", tree.get),
+                  mock.patch.object(hook, "_ps_args", lambda pid: self.args.get(pid, ""), create=True)):
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_app_server_is_unknown(self):
+        self.args[90] = "/home/dev/.codex/packages/app-server-daemon/bin/codex app-server --listen unix://x"
+        self.assertEqual(hook.cli_pid(), (0, ""))
+
+    def test_plain_codex_keeps_pid(self):
+        self.args[90] = "codex --model gpt-5"
+        self.assertEqual(hook.cli_pid(), (90, "Thu Sep 24 10:00:00 2026"))
 
 
 class StoreWin(unittest.TestCase):

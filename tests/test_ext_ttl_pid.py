@@ -91,6 +91,14 @@ class TtlPid(unittest.TestCase):
                 st._ext_prune_locked(NOW)
         self.assertEqual(st._ext[("codex", "w2")]["state"], "wait")
 
+    def test_pidless_event_clears_stored_pid(self):
+        self._win_ingest("w3", True)                  # pid stored (e.g. the Codex app-server daemon before the fix)
+        with frozen(st):
+            st.ext_ingest({"platform": "codex", "session_id": "w3", "event": "Stop", "ts": NOW - 3600, "pid": 0})
+        v = st._ext[("codex", "w3")]
+        self.assertNotIn("pid", v)
+        self.assertNotIn("pstart", v)
+
     def test_no_pid_idle_dropped(self):
         st._ext[("cursor", "c")] = _row()
         with st._ext_lock:
