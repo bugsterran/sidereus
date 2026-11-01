@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Terminal: a Claude Code background job jumps to the terminal tab of the claude that started it. When that tab is gone, the button says "Background" and copies `claude attach <id>` instead of `claude --resume`, which would open a second session.
 - Sessions: a Claude Code installed with npm (process `claude.exe`) is detected as live; its background daemon, pty host and spare process no longer add rows.
 - Sessions: the pipeline chip on a session row shows the stage title in the UI language ("Live verify" in English), like the pipeline view.
+- Pipelines: the stage titles of the bundled pipelines (Diagnose, Confirm, Review-find, Tag, ...) have English names; the English UI no longer shows them in Korean.
 
 ## [0.12.1] - 2026-11-02
 

@@ -29,6 +29,10 @@ const PLG_NAMES = { en: {
   '맥락 파악': 'Understand context', '지적 검증': 'Verify findings',
   '영향 범위': 'Impact scope', '훅 작성': 'Write hook', '훅 실행 시험': 'Hook run test', '실세션 확인': 'Live session check',
   '범위 정의': 'Define scope', '스킬 작성': 'Write skill', '계약 테스트': 'Contract test', '연결 확인': 'Connection check',
+  // Stages of the pipelines shipped in .claude/pipelines/ (tests/test_pipeline_run.py checks every one has an entry)
+  '진단': 'Diagnose', '확인': 'Confirm', '요구사항': 'Requirements', '리뷰-찾기': 'Review-find', '리뷰-확인': 'Review-confirm',
+  '초안': 'Draft', '대조': 'Cross-check', '반영': 'Apply', '전체 검증': 'Full verify', 'CI 확인': 'CI check',
+  'CHANGELOG 정리': 'CHANGELOG', '배포': 'Publish', '재검사': 'Re-check', '위협 모델 리뷰': 'Threat model review', '태그': 'Tag',
 } };
 PLG_NAMES.ko = {};   // Korean = the saved title itself
 // «Standard templates» card titles (sidereus/pipeline_std.py STD), same lookup rule (48e plgTplShow).
