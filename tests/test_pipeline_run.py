@@ -736,3 +736,20 @@ class OrphanNoteNextStep(unittest.TestCase):
         self.assertIn("session hotfix-wt · abcdef12", out)
         self.assertIn("«Add project»", out)
         self.assertIn("session zz — ", out)   # unknown session: id only, no empty folder
+
+
+class ShippedStageNames(unittest.TestCase):
+    def test_every_shipped_stage_title_has_english(self):
+        # A missing entry shows the stored Korean title in the English UI (session chip, timeline, graph).
+        import glob
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        names = re.search(r"^const PLG_NAMES = \{ en: \{(.*?)^\} \};$", js_all(), re.S | re.M).group(1)
+        miss = set()
+        for f in glob.glob(os.path.join(root, ".claude", "pipelines", "*.json")):
+            with open(f, encoding="utf-8") as fh:
+                for st in json.load(fh).get("stages", []):
+                    t = st.get("title") or ""
+                    if re.search("[가-힣]", t) and ("'%s':" % t) not in names:
+                        miss.add(t)
+        self.assertEqual(sorted(miss), [])
+        self.assertEqual(_js("(LANG='en', plgShow('진단'))"), "Diagnose")
