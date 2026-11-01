@@ -21,6 +21,8 @@ def _ts(off=0):
 
 class BgOpenPersist(unittest.TestCase):
     def setUp(self):
+        bp._bg_dropped.pop("TB1", None)
+        bp._bg_popped.pop("TB1", None)       # ⚠another test file in the same process may have consumed TB1's notice
         self.dir = tempfile.mkdtemp()
         self.fp = os.path.join(self.dir, "sess.jsonl")
         self.sub = os.path.join(self.dir, "sess", "subagents", "agent-x.jsonl")

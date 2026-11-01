@@ -9,6 +9,7 @@ import unittest
 from tests._load import sidereus
 
 bt = sidereus("bgtasks")
+bp = sidereus("bgtasks_parse")
 
 
 def _ts(off=0):
@@ -48,11 +49,15 @@ class BgMonitor(unittest.TestCase):
         os.makedirs(os.path.join(self.dir, "sess", "subagents"))
         self._boot = bt.boot_time
         bt.boot_time = lambda: 0
+        self._tids = (set(bp._bg_popped), set(bp._bg_dropped))
 
     def tearDown(self):
         bt.boot_time = self._boot
         for d in (bt._bg_open, bt._bg_open_at, bt._bg_offset):
             d.pop(self.fp, None)
+        for d, keep in zip((bp._bg_popped, bp._bg_dropped), self._tids):   # ⚠a leaked popped tid blocks reuse in other test files
+            for k in set(d) - keep:
+                d.pop(k, None)
         bt._bg_seeded.discard(self.fp)
         shutil.rmtree(self.dir, ignore_errors=True)
 
