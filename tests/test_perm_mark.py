@@ -9,6 +9,7 @@ import unittest
 from unittest import mock
 
 from sidereus import perm_marks as LP
+from sidereus import live_probe as LP_PROBE
 
 _P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hooks", "perm_mark.py")
 _spec = importlib.util.spec_from_file_location("perm_mark_hook", _P)
@@ -28,12 +29,16 @@ class PermMark(unittest.TestCase):
             p.start()
             self.addCleanup(p.stop)
         self.busy = None                      # no live ps probe
+        self.starts = None                    # shell start times unknown (old behaviour)
         self.tp = ""                          # transcript path for _pend_ts ("" = none; never the live projects dir)
         for k, v in (("tool_busy", lambda: self.busy), ("_DEC_AT", {}), ("_pend_cache", {}),
                      ("_sid_transcript", lambda sid: self.tp)):
             p = mock.patch.object(LP, k, v)
             p.start()
             self.addCleanup(p.stop)
+        p = mock.patch.object(LP_PROBE, "shell_starts", lambda: self.starts)   # read by live_probe.shell_after
+        p.start()
+        self.addCleanup(p.stop)
 
     def _hook(self, ev, t=NOW):
         with mock.patch("sys.stdin", io.StringIO(json.dumps(ev))), mock.patch.object(H.time, "time", return_value=t):
@@ -146,6 +151,16 @@ class PermMark(unittest.TestCase):
         self.assertEqual(LP.perm_rows([r], now=NOW)[0]["blocked"], "Bash waiting for approval")
         self.busy = {"/w/p": True}                             # a background command blurs the probe: keep the badge
         self.assertEqual(LP.perm_rows([dict(r, bgs=[{"x": 1}])], now=NOW)[0]["blocked"], "Bash waiting for approval")
+
+    def test_shells_older_than_marker_keep_bash_badge(self):
+        # Long-lived shells (Monitor sleep loop, dev server, earlier git) predate the prompt: not the pending Bash running.
+        self._mark(t=NOW - 60)
+        r = dict(self._row(age=120), tool="Bash", cwd="/w/p", bgs=[], mon=[1])
+        self.busy = {"/w/p": True}
+        self.starts = {"/w/p": [NOW - 86400, NOW - 600, NOW - 300]}
+        self.assertEqual(LP.perm_rows([r], now=NOW)[0]["blocked"], "Bash waiting for approval")
+        self.starts = {"/w/p": [NOW - 86400, NOW - 30]}           # a shell started after the marker = approved, running
+        self.assertEqual(LP.perm_rows([r], now=NOW)[0]["blocked"], "")
 
     def test_subagent_decision_clears_wait_row(self):
         self._mark(t=NOW - 10)

@@ -57,11 +57,13 @@ class _Base(unittest.TestCase):
                  lp._sid_file, lp._sid_stale, lp._live_sids)
         saved = [list(x) for x in lists]
         busy, stale = lp._busy_cache, dict(lp._stale)
+        shells, starts = lp._busy_shells, lp._starts_cache
 
         def restore():
             for x, old in zip(lists, saved):
                 x[:] = old
             lp._busy_cache = busy
+            lp._busy_shells, lp._starts_cache = shells, starts
             lp._stale.clear()
             lp._stale.update(stale)
         self.addCleanup(restore)
@@ -70,6 +72,7 @@ class _Base(unittest.TestCase):
         lp._ps_snap_cache[:] = [0.0, None]
         lp._ps_snap_fail[:] = [0.0, None]
         lp._busy_cache = (0.0, {})
+        lp._busy_shells, lp._starts_cache = {}, (0.0, (), None)
         lp._stale.clear()
 
 
@@ -261,6 +264,16 @@ class ToolBusyTest(_Base):
         (argv,) = self.sub.calls
         self.assertEqual(argv[-1], "100")                  # 101 has only an MCP child; 400's parent is not claude
 
+    def test_shell_starts_per_cwd_from_etime(self):
+        self.sub.outs["lsof"] = "p100\nn/work/a\n"
+        lp.tool_busy(ttl=0)
+        self.sub.outs["ps"] = "  200  1-02:03:04\n"
+        self.assertEqual(lp.shell_starts(ttl=0), {"/work/a": [self.clock.t - 93784]})
+        self.assertEqual(self.sub.calls[-1], ["ps", "-o", "pid=,etime=", "-p", "200"])
+        self.assertEqual([lp._etime_s(v) for v in ("05", "01:05", "x:1")], [5, 65, None])
+        self.sub.outs["ps"] = OSError("ps died")
+        self.assertIsNone(lp.shell_starts(ttl=0))            # unknown, never «no shells»
+
     def test_nothing_busy_skips_lsof(self):
         self.ps = [r for r in self.PS if "shell-snapshot" not in r[2]]
         self.assertEqual(lp.tool_busy(ttl=0), {})
@@ -328,6 +341,16 @@ class BlockedTest(_Base):
         self.assertEqual(lp._blocked("tool", "Bash", 60, "/c", 0), "")
         self.busy = {}                                     # probe ran, nothing running anywhere -> waiting
         self.assertEqual(lp._blocked("tool", "Bash", 60, "/c", 0), "Bash waiting for approval")
+
+    def test_bash_shell_older_than_tool_call_keeps_badge(self):
+        # Long-lived shells (Monitor loop, dev server) in the cwd predate the pending call: not it running.
+        self.busy, starts = {"/c": True}, {"/c": [self.clock.t - 86400, self.clock.t - 300]}
+        with mock.patch.object(lp, "shell_starts", lambda: starts):
+            self.assertEqual(lp._blocked("tool", "Bash", 60, "/c", 0), "Bash waiting for approval")
+            starts["/c"].append(self.clock.t - 30)        # started after the call = approved, running
+            self.assertEqual(lp._blocked("tool", "Bash", 60, "/c", 0), "")
+        with mock.patch.object(lp, "shell_starts", lambda: None):
+            self.assertEqual(lp._blocked("tool", "Bash", 60, "/c", 0), "")   # unknown start times: old answer
 
     def test_bash_with_background_job_not_asserted(self):
         self.assertEqual(lp._blocked("tool", "Bash", 60, "/c", 1), "")
