@@ -55,8 +55,9 @@ def todo_path(repo):
 
 
 def _linked(repo):
-    """True when `.claude` or todo.md is a symlink (lstat) — ⚠import read guard: a link could aim the read anywhere."""
-    for p in (os.path.join(repo, ".claude"), todo_path(repo)):
+    """True when the repo root, `.claude` or todo.md is a symlink (lstat) — ⚠import read guard: a link could aim the read anywhere.
+    The root check matches `_repo_dir`, so /api/state counts and GET /api/todo agree on a symlinked root."""
+    for p in (repo, os.path.join(repo, ".claude"), todo_path(repo)):
         try:
             if os.path.islink(p):
                 return True
@@ -229,8 +230,8 @@ def _h(it):
 
 
 def _ui(items):
-    """[{i, s, t, h}] in store order — the shape web/js/40c-sessions-todo.js reads (i = item id)."""
-    return [{"i": v["id"], "s": v["s"], "t": v["t"], "h": _h(v)} for v in items]
+    """[{i, s, t, h, sid}] in store order — the shape web/js/40c-sessions-todo.js reads (i = item id, sid = who started it)."""
+    return [{"i": v["id"], "s": v["s"], "t": v["t"], "h": _h(v), "sid": v.get("sid") or ""} for v in items]
 
 
 def _day(ts):

@@ -28,13 +28,19 @@ function stodoOrder(items){
   const rk = s => (s === '~' ? 0 : (s === 'x' ? 2 : 1));
   return (items || []).map((it, n) => ({it, n})).sort((a, b) => rk(a.it.s) - rk(b.it.s) || a.n - b.n).map(p => p.it);
 }
+// ⚠The list is per repo: the live label belongs to the session that started the item (`sid`), not to the row it is drawn under.
+function stodoOwner(it, x){
+  if(!it.sid) return null;
+  if(x && x.sid === it.sid) return x;
+  return (typeof SESS !== 'undefined' && Array.isArray(SESS) ? SESS : []).find(r => r && r.sid === it.sid) || null;
+}
 function stodoItemsHtml(items, x){
   return stodoOrder(items).map(it => {
-    const w = it.s === '~', d = it.s === 'x';
-    // ⚠«Working» comes only from the session's `start` (state "~"); the state label beside it is the row's live state, never used to infer it.
+    const w = it.s === '~', d = it.s === 'x', own = w ? stodoOwner(it, x) : null;
+    // ⚠«Working» comes only from the session's `start` (state "~"); the state label beside it is the owner's live state, never used to infer it.
     return '<label class="stdi' + (w ? ' w' : '') + (d ? ' d' : '') + '"><input type=checkbox class=stdx data-tdi="' + esc(it.i) + '" data-tdh="' + esc(it.h) + '"'
       + (d ? ' checked' : '') + '><span class=stdt>' + esc(it.t) + '</span>'
-      + (w ? ' <span class=stdw>' + esc(T('Working')) + '</span> <span class=stds>' + esc(sessLabel(x)) + '</span>' : '') + '</label>';
+      + (w ? ' <span class=stdw>' + esc(T('Working')) + '</span>' + (own ? ' <span class=stds>' + esc(sessLabel(own)) + '</span>' : '') : '') + '</label>';
   }).join('');
 }
 function stodoDaysHtml(days){
