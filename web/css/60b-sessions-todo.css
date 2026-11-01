@@ -1,4 +1,4 @@
-/* Session to-do chip and inline layer (40c-sessions-todo.js). ⚠The chip never shrinks or hides (not in sessFit's SX_DROP). */
+/* Session to-do chip and inline layer (40c-sessions-todo.js). ⚠The chip never shrinks; sessFit (40b SX_DROP) hides it last, only when the row still overflows. */
 .sx > .stdc{flex:0 0 auto;font-size:9.5px;color:#a7d3b0;border:1px solid #2d4a37;border-radius:3px;padding:0 4px;cursor:pointer}
 .sx > .stdc.w{color:#e8c372;border-color:#5a4a24}
 .sx > .stdc.on{background:#1d2a22}

@@ -15,8 +15,8 @@ STUB = ("const TCALLS = [];"
         "const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');"
         "const T = s => { TCALLS.push(s); return s; };"
         "const TV = o => { TCALLS.push(o.msg); return o.msg.replace(/\\{(\\w+)\\}/g, (m, k) => o.vars[k]); };"
-        "const sessLabel = x => 'LIVE-' + x.state; const softErr = () => {}; const note = () => {};"
-        "const getJSON = () => new Promise(() => {}); const postJSON = () => new Promise(() => {});"
+        "const sessLabel = x => 'LIVE-' + x.state; const softErr = () => {}; let note = () => {};"
+        "const getJSON = () => new Promise(() => {}); let postJSON = () => new Promise(() => {});"
         "let sessHover = false, sessDirty = false; const buildSessions = () => {};"
         "const document = {getElementById: () => null};\n")
 
@@ -60,6 +60,37 @@ class TodoChip(unittest.TestCase):
         for t in ("done one", "open <b>&", "busy", "<i>x", "n", "m"):
             self.assertNotIn(t, o["t"])
         self.assertLess(o["h"].index("2026-01-02"), o["h"].index("2026-01-01"))   # newest day first
+
+
+def _key(post):
+    """Enter in the add box with postJSON = `post`; prints box value, draft and notes after the POST settles."""
+    return ("const NOTES = []; note = m => NOTES.push(m); postJSON = " + post + ";"
+            "const t = {value: ' buy milk ', classList: {contains: c => c === 'stda'}, getAttribute: () => 'S|/r'};"
+            "STODO_DRAFT['S|/r'] = t.value; let n = 0; postJSON = (f => (u, b) => (n++, f(u, b)))(postJSON);"
+            "const ev = {key: 'Enter', target: t, preventDefault(){}, stopPropagation(){}};"
+            "stodoKeydown(ev); stodoKeydown(ev);"
+            "setTimeout(() => console.log(JSON.stringify({v: t.value, d: STODO_DRAFT['S|/r'] || null, n: NOTES, calls: n})), 0);")
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class TodoAddBox(unittest.TestCase):
+    def test_maxlength_follows_server_max(self):
+        o = _js("stodoSet({'/r': {o: 1, w: 0, d: 0}}); STODO_OPEN.add('|/r'); const a = stodoLayer({cwd: '/r'});"
+                "STODO_DATA['/r'] = {sig: '1,0,0', at: Date.now(), items: [], days: [], max: 120};"
+                "console.log(JSON.stringify([a, stodoLayer({cwd: '/r'})]));")
+        self.assertIn("maxlength=200 ", o[0])   # before GET answers: the server default
+        self.assertIn("maxlength=120 ", o[1])
+
+    def test_failed_post_keeps_text_and_shows_reason(self):
+        o = _js(_key("() => Promise.reject(Object.assign(new Error('text too long'), {status: 400}))"))
+        self.assertEqual(o["v"], " buy milk ")
+        self.assertEqual(o["d"], " buy milk ")
+        self.assertEqual(o["n"], ["Could not save the to-do: text too long"])
+        self.assertEqual(o["calls"], 1)   # second Enter while in flight does not post again
+
+    def test_saved_post_clears_box(self):
+        o = _js(_key("() => Promise.resolve({ok: true})"))
+        self.assertEqual([o["v"], o["d"], o["n"]], ["", None, []])
 
 
 if __name__ == "__main__":

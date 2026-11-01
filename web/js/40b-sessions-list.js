@@ -34,8 +34,9 @@ function buildSessions(){
   box.onclick = sessClick; if(typeof stodoInput === 'function'){ box.oninput = stodoInput; box.onkeydown = stodoKeydown; }
 }
 // Identity rows are one line (60-sessions.css): when the row overflows or the name/branch would ellipsize under 96/64px,
-// hide whole low-priority chips in this order — size · cost/tokens · model. ⚠Errors, diff, leftovers, context and ↻ never hide.
-const SX_DROP = ['sz', 'sk', 'sm'];
+// hide whole low-priority chips in this order — size · cost/tokens · model · to-do (last: kept whenever the row fits).
+// ⚠Errors, diff, leftovers, context and ↻ never hide; the name only ellipsizes.
+const SX_DROP = ['sz', 'sk', 'sm', 'stdc'];
 function sessFit(box){
   // ⚠Width changes without a repaint (pin/unpin, window resize, demo data never changes) — refit on box resize.
   if(!box._sxro && window.ResizeObserver){ box._sxro = new ResizeObserver(() => sessFit(box)); box._sxro.observe(box); }

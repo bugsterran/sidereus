@@ -4,7 +4,9 @@
 let STODO = null;              // state `todo` (absent when the feature is off ⇒ no chip, no layer)
 const STODO_OPEN = new Set();  // open layers by row key (the list redraws every poll, so open state lives here like wfFold)
 const STODO_DAY = new Set();   // row keys showing «By day»
-const STODO_DATA = {};         // cwd → {sig, at, items, days, err, busy}
+const STODO_DATA = {};         // cwd → {sig, at, items, days, max, err, busy}
+const STODO_MAX = 200;         // add-box limit until GET /api/todo reports `max` (server TEXT_MAX)
+const STODO_SENDING = new Set(); // row keys with an add in flight (a second Enter must not post twice)
 const STODO_DRAFT = {};        // row key → add-box text (restored after a morph reused the input for another row)
 function stodoSet(v){ STODO = v && typeof v === 'object' ? v : null; }
 function stodoCnt(x){
@@ -57,7 +59,7 @@ function stodoLayer(x){
     : (day ? stodoDaysHtml(dt.days) : stodoItemsHtml(dt.items, x));
   return '<div class=stdl data-todok="' + esc(k) + '" title=""><div class=stdhd><span class=stdh>' + esc(T('To-do')) + '</span>'
     + '<button type=button class="stdb' + (day ? ' on' : '') + '" data-tdday="' + esc(k) + '">' + esc(T('By day')) + '</button></div>'
-    + '<input type=text class=stda data-tdadd="' + esc(k) + '" maxlength=300 placeholder="' + esc(T('Add a to-do — Enter to save')) + '">'
+    + '<input type=text class=stda data-tdadd="' + esc(k) + '" maxlength=' + ((dt && +dt.max > 0) ? +dt.max : STODO_MAX) + ' placeholder="' + esc(T('Add a to-do — Enter to save')) + '">'
     + '<div class=stdbody>' + body + '</div></div>';
 }
 function stodoRedraw(){
@@ -69,15 +71,19 @@ async function stodoLoad(cwd, sig){
   const dt = STODO_DATA[cwd] || (STODO_DATA[cwd] = {});
   if(dt.busy) return;
   dt.busy = true;
-  try{ const j = await getJSON('/api/todo?cwd=' + encodeURIComponent(cwd), {timeout: 20000}); dt.items = j.items || []; dt.days = j.days || []; dt.err = false; }
+  try{ const j = await getJSON('/api/todo?cwd=' + encodeURIComponent(cwd), {timeout: 20000}); dt.items = j.items || []; dt.days = j.days || []; dt.max = +j.max || STODO_MAX; dt.err = false; }
   catch(e){ dt.err = true; softErr('todo', e); }
   finally{ dt.busy = false; dt.sig = sig; dt.at = Date.now(); }
   stodoRedraw();
 }
 function stodoCwd(k){ return String(k).slice(String(k).indexOf('|') + 1); }
-function stodoPost(url, body, cwd){
-  return postJSON(url, body).catch(e => {
-    note(e && e.status === 409 ? T('The to-do list changed in the file — reloaded') : T('Could not save the to-do — check the server'));
+// Resolves true on success, false on failure; `ok` runs before the redraw so a cleared draft is not put back.
+function stodoPost(url, body, cwd, ok){
+  return postJSON(url, body).then(() => { if(ok) ok(); return true; }, e => {
+    // ⚠The server's reason (e.g. text too long) is shown as-is, never through T(); no status = the request never arrived.
+    note(e && e.status === 409 ? T('The to-do list changed in the file — reloaded')
+      : e && e.status && e.message ? T('Could not save the to-do') + ': ' + e.message : T('Could not save the to-do — check the server'));
+    return false;
   }).finally(() => { const dt = STODO_DATA[cwd]; if(dt) dt.sig = ''; stodoRedraw(); });
 }
 // Delegated from sessClick (40b) before the row's work-log click; true = handled.
@@ -111,11 +117,15 @@ function stodoKeydown(e){
   const t = e.target;
   if(e.key !== 'Enter' || e.isComposing || !t || !t.classList || !t.classList.contains('stda')) return;
   e.preventDefault(); e.stopPropagation();
-  const k = t.getAttribute('data-tdadd'), text = t.value.trim();
-  if(!text) return;
+  const k = t.getAttribute('data-tdadd'), raw = t.value, text = raw.trim();
+  if(!text || STODO_SENDING.has(k)) return;
   const cwd = stodoCwd(k);
-  t.value = ''; delete STODO_DRAFT[k];
-  stodoPost('/api/todo/add', {cwd: cwd, text: text}, cwd);
+  // ⚠Clear only after the server saved it: on failure the typed text (and its draft) stays in the box.
+  STODO_DRAFT[k] = raw; STODO_SENDING.add(k);
+  stodoPost('/api/todo/add', {cwd: cwd, text: text}, cwd, () => {
+    if(STODO_DRAFT[k] === raw) delete STODO_DRAFT[k];   // text typed meanwhile is kept
+    if(t.getAttribute('data-tdadd') === k && t.value === raw) t.value = '';   // ⚠morph may have moved this input to another row
+  }).finally(() => STODO_SENDING.delete(k));
 }
 // ⚠morphHtml reuses inputs by position: put each row's own draft back after a redraw.
 function stodoAfter(box){
