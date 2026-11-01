@@ -86,6 +86,23 @@ def bin_forget(name):
     _BIN_CACHE.pop(name, None)
 
 
+# Lives here (not live_probe) only because live_probe is at its size cap; live_probe re-exports it.
+_CLAUDE_ARGV0 = ("claude", "claude.exe")
+_CLAUDE_HELPER_ARGS = ("--bg-spare", "--bg-pty-host", "bg-pty-host")
+
+
+def is_claude_argv(cmd):
+    """True for a claude CLI session process (`ps` command line); False for daemon / pty-host / spare helpers."""
+    # ⚠The npm install runs as `.../bin/claude.exe` (macOS too); daemon, pty host and spare are helpers with their
+    #   own cwd (home, /tmp/cc-daemon-*) and must not lend a live path slot.
+    parts = (cmd or "").split()
+    if not parts or os.path.basename(parts[0].replace("\\", "/")).lower() not in _CLAUDE_ARGV0:
+        return False
+    if len(parts) > 1 and parts[1] == "daemon":
+        return False
+    return not any(t in _CLAUDE_HELPER_ARGS for t in parts[1:])
+
+
 # ── Mailbox identity ─────────────────────────────────────────────────────────
 # ★Resolved **in the same order** as the MCP server (`mailbox_mcp.server._me`): a value a session set via login is
 #   unknowable here (it lives only inside that session's process), so only identity.json saved with remember=true
