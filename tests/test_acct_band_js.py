@@ -79,7 +79,7 @@ class AcctChipCss(unittest.TestCase):
         p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "css", "60-sessions.css")
         with open(p, encoding="utf-8") as f:
             css = f.read()
-        base = next(l for l in css.splitlines() if l.startswith(":is(.sx > .sacb,.srec .srecac){"))
+        base = next(l for l in css.splitlines() if l.startswith(":is(.sx .sacb,.srec .srecac){"))
         self.assertIn("background:color-mix(in srgb,var(--acc)", base)
         shrink = int(base.split("flex:")[1].split()[1])
         self.assertLess(shrink, 9)          # a 9x shrink cut labels to a shared prefix

@@ -1,4 +1,4 @@
-// Session to-do list (`<git root>/.claude/todo.md`, kept by the session): «To-do n» chip on the identity row (40b sessIdRow)
+// Session to-do list (`<git root>/.claude/todo.md`, kept by the session): «To-do n» chip on the identity row (40ba sessIdRow)
 // and an inline layer under the row (40b sessRowHtml). Server: state `todo` {cwd: {o, w, d}} · GET /api/todo · POST /api/todo/add|set.
 // ⚠Item text is the person's request text from the file: esc() only, never T() (user data) — tests/test_todo_js.py.
 let STODO = null;              // state `todo` (absent when the feature is off ⇒ no chip, no layer)

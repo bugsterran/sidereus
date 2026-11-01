@@ -297,10 +297,14 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⚠Do not default these back to `wait`/`False` — the screen then claims «Idle»/«quiet» with no evidence.
 - ★**Invite pick box `.spick` was a 13x13 hit target; a 1 px miss opened the work log** (the `.sxw > .sx` click handler skips only `a,input,label,…`).
   ⇒ `sessPickHtml` wraps it in `label.spickw` (padding + equal negative margin, row unchanged); measured hit 22x26 at 900/1100/1440. Test `tests/test_sess_pick_hit_js.py`.
-  ⚠`.sx` has `overflow:hidden` — a left extension is clipped (measured 19x26); grow right into the flex gap and vertically only.
+  ⚠Grow right into the lead-cell gap and vertically only — a left extension was clipped when `.sx` had `overflow:hidden` (measured 19x26).
 - ★**Account chip `.sacb` read «myacc…» at every width** — `flex:0 9 auto` shrank it 9x before `.sp`/`.sb`; a cut prefix cannot tell accounts that share one apart.
   ⇒ `acctChip` shows `acctShort` (shortest prefix of 4+ chars unique among `acctList()` labels) with `acctTip` as its title; rule is `flex:0 0 auto`. Measured «myac» 36/36, «defa» 31/31 px, neighbours uncut at 900/1100/1440. Test `tests/test_acct_band_js.py`.
   ⚠Do not shorten `acctLabel` — it is the account filter key.
 - **«To-do» ledger times are file times, not edit times** (`sidereus/todo.py` `_observe_locked`): times = todo.md mtime when the viewer first saw the change; several edits between polls collapse to one time.
   ⇒ Entries are keyed by text + occurrence number, so a repeated request keeps its own add/done. Tests `tests/test_todo.py` `test_r4_*`.
   ⚠Do not stamp with `_now()` — edits made while no viewer polled would land on the next poll's day.
+- **Identity-row chips shifted with name length and wrapped one by one** (single ↻ or «To-do n» alone on line 2).
+  ⇒ `sessIdRow` emits lead `.sxl` + groups `.sxid`/`.sxus`/`.sxwk`/`.sxac` in `.sxgs`; `sessFit` sets box-wide `--sxlead`/`--sxidw` (≤45%)/`--sxusw`/`--sxwkw`, then drop levels `.sxd1..3` (size · cost · model); past level 3 whole groups wrap under the name. `.sx2`/`.sq`/`.stree` indent by `--sxlead`. Tests `tests/test_sess_row_groups_js.py`.
+  ⚠The ResizeObserver refits only when the box width changes (`_sxw`) — a group wrap changes the height and would loop.
+  ⚠Do not put a chip directly in `.sx` or put `flex-wrap` inside a group: groups wrap whole, never single chips.
