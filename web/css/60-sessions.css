@@ -1,27 +1,34 @@
 /* ★Claude session work state — not the conversation but **what the session is doing now** (requested 2026-08-18).
    No content: project, last tool and elapsed only (another session's prompts belong to that user). */
 h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
-.sx{display:flex;gap:6px;align-items:baseline;font-size:12.5px;padding:2px 0;line-height:1.45}
+.sx{display:grid;grid-template-columns:var(--sxlead,max-content) minmax(0,1fr);align-items:baseline;font-size:12.5px;padding:2px 0;line-height:1.45}
 .sx .sd{width:7px;height:7px;border-radius:50%;flex:0 0 auto;margin-top:4px;background:#3d4553}
 /* ⚠The dot (`.sd`) paints **state** only (`.s-*`, below). Do not put age colors (run/warm) here —
    one dot gets two axes, and the 7 state colors cover it anyway so it is never visible (measured 2026-09-22:
    `.sx.run .sd` and `.sx.warm .sd` both applied 0 times). Age is carried by `.sxw.idlelong .sx2`. */
 .sx .sp{color:#cfd8e6;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sx .st{color:#8b95a7;flex:0 0 auto;font-size:10.5px}
-/* ⚠Many badges overflowed the narrow column: «Log» broke one glyph per line and the name was squeezed to "repo-A-prescripti…".
-   ⚠Wrapping them onto a second line made rows 49-51px vs 24/28px (QA 2026-09-27: ↻ alone on line 2 in the 500px drawer).
-   ⇒ one line, one height: name/branch/worktree shrink with an ellipsis, chips never shrink, sessFit (40b) hides low-priority chips. */
-.sx{flex-wrap:nowrap;overflow:hidden;height:calc(1.45em + 8px);box-sizing:border-box}
-.sx > span{white-space:nowrap;flex:0 0 auto}
-.sx > :is(.sp,.sb,.swt){flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.sx > .sp{flex:1 0 auto;max-width:50%}   /* the name keeps its width (up to half the row); branch/worktree give way */
+/* ⚠Single chips wrapping alone made rows 49-51px vs 24/28px (QA 2026-09-27: ↻ alone on line 2 in the 500px drawer).
+   ⇒ chips sit in groups [identity][usage][work][actions] (40ba sessIdRow, R1) that never wrap inside; sessFit sets box-wide
+   start widths (R2) and drop levels .sxd1..3 only when that yields one line; otherwise whole groups wrap under the name (R3). */
+.sxl{display:flex;gap:4px;align-items:center;justify-content:flex-end;padding-right:6px;align-self:center}
+.sxl .ailg{margin-right:0}
+.sxgs{display:flex;flex-wrap:wrap;column-gap:14px;row-gap:2px;align-items:baseline;min-width:0}
+.sxg{display:inline-flex;flex-wrap:nowrap;gap:6px;align-items:baseline;flex:0 0 auto}
+.sxg > span{white-space:nowrap;flex:0 0 auto}
+.sxid{flex:0 0 var(--sxidw,auto);max-width:100%;min-width:0;overflow:hidden}
+.sxus{min-width:var(--sxusw,0)}
+.sxg .sxac{margin-left:8px}   /* nested action group: 6px gap + 8px = the 14px group gap */
+.sxtl{display:inline-flex;flex-wrap:nowrap;gap:6px;align-items:baseline;flex:0 0 auto}
+.sxid:has(> .sxtl){flex-basis:auto}   /* identity carrying the glued tail: no later chips to align */
+.sxd1 .sxus .sz,.sxd2 .sxus .sk,.sxd3 .sxus .sm{display:none}   /* 40ba SX_DROP order; nohk (.sz) in .sxid stays */
+.sx .sxid > .sp{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 /* ⚠80-branch.css pins .swt to flex:0 0 auto under data-ui=next */
-.sx > :is(.sb,.swt),html[data-ui=next] .sx > .swt{max-width:150px;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.sx > .sxh{display:none}
+.sx .sxid > :is(.sb,.swt),html[data-ui=next] .sx .sxid > .swt{max-width:150px;flex:0 4 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .sx .sb{color:#8ab4ff}
 /* branch + git state in one chip: the name shrinks, the state never does */
 /* ⚠overflow:hidden + min-width:0 let the chip shrink past its content and clip the git state; floor = .sbt min + .sbg */
-.sx > .sb{display:inline-flex;gap:4px;align-items:baseline;overflow:visible;min-width:auto}
+.sx .sxid > .sb{display:inline-flex;gap:4px;align-items:baseline;overflow:visible;min-width:auto}
 /* ⚠No % floor on .sbt: min(6ch,100%) sized as 0 for the chip but 6ch at layout, so «dev» spilled over .sacb */
 .sx .sb .sbt{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .sx .sb .sbg{flex:none;font-size:10px}
@@ -30,8 +37,8 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .sxw > .sx:hover .sp{text-decoration:underline;text-underline-offset:2px}
 .sxw:last-child{border-bottom:0}
 .sxw.run .sp{color:#eaf1fa;font-weight:600}
-.sx2{font-size:11.5px;color:#8b95a7;padding-left:13px}
-.sq{font-size:11.5px;color:#98a4b6;padding-left:13px;margin-top:2px;
+.sx2{font-size:11.5px;color:#8b95a7;padding-left:var(--sxlead,44px)}   /* R4: under the name */
+.sq{font-size:11.5px;color:#98a4b6;padding-left:var(--sxlead,44px);margin-top:2px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* ★4-step context color (requested 2026-08-19: green or blue when low) — the number already states the value,
    so color is **a peripheral-vision aid** (colorblind users still read the %). Absolute values (k) with unknown window get no color. */
@@ -47,7 +54,7 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .se{font-size:10px;color:#e0725f;font-weight:700;flex:0 0 auto}
 .sm{font-size:9.5px;color:#6b7688;flex:0 0 auto}
 /* Account label chip (40b acctChip, >=2 accounts): colour from the row's .accN; text is a unique short prefix (acctShort), so no shrink; 10ch ellipsis is a safety cap. */
-:is(.sx > .sacb,.srec .srecac){font-size:10px;color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 60%,transparent);background:color-mix(in srgb,var(--acc) 16%,transparent);border-radius:3px;padding:0 3px;flex:0 0 auto;min-width:3ch;max-width:10ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+:is(.sx .sacb,.srec .srecac){font-size:10px;color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 60%,transparent);background:color-mix(in srgb,var(--acc) 16%,transparent);border-radius:3px;padding:0 3px;flex:0 0 auto;min-width:3ch;max-width:10ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* ⚠Main (.acc0) owns teal; the pool keeps six hues apart from it (acc5 lime), so main never shares a colour with another account. */
 .acc0{--acc:#3cc6c0}.acc1{--acc:#4fa3ff}.acc2{--acc:#e0a03a}.acc3{--acc:#3fbf7f}.acc4{--acc:#d070d0}.acc5{--acc:#a8c94a}.acc6{--acc:#b48cff}
 /* Account band (>=2 accounts, 40b acctCls): inset shadow, no layout shift. ⚠A blocked row's red .sxw:has(.sl.sblk) wins (higher specificity). */
@@ -86,7 +93,7 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
     /* Leftover badge — no new color, reuses the existing warning color (#f59e0b, same as `.sz.hot`) */
     .swr{font-size:10px;color:#f59e0b;font-weight:600;margin-left:4px;flex:0 0 auto;cursor:pointer}
     .swr:hover{text-decoration:underline}
-/* Pipeline chip (40b sessPlChip): shrinks first so 900px keeps one line */
+/* Pipeline chip (40ba sessPlChip): shrinks first so 900px keeps one line */
 .spl{flex:0 9 auto;min-width:3ch;max-width:16ch;font-size:9.5px;color:#8fb3e0;border:1px solid #2c3b52;border-radius:3px;padding:0 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .spl.spln{color:#8b95a7;border-color:#2a313d}
 .spl.splr{display:inline-flex;max-width:28ch}

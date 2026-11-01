@@ -1,7 +1,7 @@
-/* Session to-do chip and inline layer (40c-sessions-todo.js). ⚠The chip never shrinks; sessFit (40b SX_DROP) hides it last, only when the row still overflows. */
-.sx > .stdc{flex:0 0 auto;font-size:9.5px;color:#a7d3b0;border:1px solid #2d4a37;border-radius:3px;padding:0 4px;cursor:pointer}
-.sx > .stdc.w{color:#e8c372;border-color:#5a4a24}
-.sx > .stdc.on{background:#1d2a22}
+/* Session to-do chip and inline layer (40c-sessions-todo.js). ⚠The chip never shrinks or hides; it sits after the pipeline chip in the work group, else at the end of the last non-empty group before it (40ba sessIdRow). */
+.sx .stdc{flex:0 0 auto;font-size:9.5px;color:#a7d3b0;border:1px solid #2d4a37;border-radius:3px;padding:0 4px;cursor:pointer}
+.sx .stdc.w{color:#e8c372;border-color:#5a4a24}
+.sx .stdc.on{background:#1d2a22}
 /* ⚠The layer wraps (normal white-space, anywhere breaks): long request text must never widen the column at 900. */
 .stdl{margin:2px 0 4px 18px;padding:4px 8px;border-left:2px solid #2d4a37;font-size:11.5px;line-height:1.45;white-space:normal;overflow-wrap:anywhere;cursor:default}
 .stdhd{display:flex;align-items:center;gap:8px;margin-bottom:3px}
@@ -25,6 +25,6 @@
 .stddi{margin-left:8px;color:#cfd8e6}
 html[data-theme=light] .stdl,html[data-theme=light] .stdi,html[data-theme=light] .stddi{color:var(--nx-t1)}
 html[data-theme=light] .stda{color:var(--nx-t1);background:var(--nx-panel,#fff)}
-html[data-theme=light] .sx > .stdc{color:#2f7a45;border-color:#9cc8aa}
-html[data-theme=light] .sx > .stdc.w,html[data-theme=light] .stdw{color:#8b6401;border-color:#d9c08a}
-html[data-theme=light] .sx > .stdc.on{background:#e6f2ea}
+html[data-theme=light] .sx .stdc{color:#2f7a45;border-color:#9cc8aa}
+html[data-theme=light] .sx .stdc.w,html[data-theme=light] .stdw{color:#8b6401;border-color:#d9c08a}
+html[data-theme=light] .sx .stdc.on{background:#e6f2ea}

@@ -19,9 +19,10 @@ function waitOnLabel(){ return ''; }
 function platName(k){ return k === 'cx' ? 'Codex' : String(k); }
 function aiLogo(p, extra){ return '<i class=ailg title="' + esc(p + (extra || '')) + '"></i>'; }
 function sessPickHtml(){ return ''; } function sessBranchHtml(){ return ''; } function acctChip(){ return ''; }
-function sessBadges(){ return '<BADGES/>'; }
+function sessGitChip(){ return ''; } function sessUsage(){ return '<i class=sc>9%</i>'; }
+function sessActs(){ return '<i class=srz>R</i>'; }
 """
-FNS = "\n".join(js_fn(n) for n in ("sessIdRow", "sessLabel", "sessPlChip")) + "\n"
+FNS = "\n".join(js_fn(n) for n in ("sessIdRow", "sessLabel", "sessPlChip", "sessWorkBadges")) + "\n"
 
 
 def run(body):
@@ -43,6 +44,12 @@ class CodexRolloutRow(unittest.TestCase):
         self.assertIn("record file (hooks not connected)", ro)
         self.assertNotIn("Hooks not connected", hk)                        # hooked Codex row: no chip
         self.assertIn("events its CLI hooks send", hk)
+
+    def test_r1_group_order(self):
+        h = run("console.log(JSON.stringify(sessIdRow({plat: 'cx', project: 'p', state: 'wait', err: 1})));")
+        pos = [h.index('class="sxg ' + c + '"') for c in ("sxid", "sxus", "sxwk", "sxac")]
+        self.assertEqual(pos, sorted(pos))
+        self.assertLess(h.index("class=sxl"), pos[0])                     # lead cell before every group
 
     def test_label_is_last_activity_only(self):
         a, b, c, d = run("const L = o => sessLabel(Object.assign({plat: 'cx', rollout: true, state: 'unknown'}, o));"

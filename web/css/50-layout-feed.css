@@ -76,7 +76,7 @@ aside{align-self:start;max-height:100%;min-height:0;overflow-y:auto;overscroll-b
    One per card stacked at the same x and looked like **a line across the panel**, with no meaning —
    each row already has an `agent`/`command`/`watch` label and nesting is told by `├─`/`└─`.
    Indentation stays (that is the part saying who owns what). */
-    .stree{margin:2px 0 4px 13px;padding-left:9px}
+    .stree{margin:2px 0 4px var(--sxlead,44px);padding-left:9px}   /* R4: under the name */
     /* Lineage branch — agents spawned by an agent attach below it (2026-09-02) */
     .stbr{font-style:normal;color:#6b7688;margin-right:1px;letter-spacing:-1px}
 
