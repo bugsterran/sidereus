@@ -5,15 +5,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-02
+
+**Highlights**
+
+- Cursor CLI and Copilot CLI sessions now show up, even before their hooks are connected, and "Connect" works on pipx/uv installs. Refs #9 #10
+- Per-project to-do list kept by the sessions themselves, shown on the session row.
+- Session state is more accurate: a Bash waiting for approval keeps its badge, and background shell rows close when the shell is stopped or denied and survive a viewer restart. Refs #23
+
 ### Added
 
-- To-do list per project: sessions keep `.claude/todo.md` (open, in progress, done), the session row shows «To-do n», and the expanded list lets you add and check items and see them «By day».
-- Copilot CLI: session list and state via hooks, and «Connect» installs the hooks file. Refs #10
+- To-do list per project: sessions keep `.claude/todo.md` (open, in progress, done), the session row shows "To-do n", and the expanded list lets you add and check items and see them "By day".
+- Copilot CLI: session list and state via hooks, and "Connect" installs the hooks file. Refs #10
+- Copilot CLI: token usage on session rows and the timeline, and its quota in the status bar. Refs #10
+- Copilot CLI: pipeline stages light up for Copilot sessions, and "Connect" also adds the pipeline hooks. Refs #10
+- Cursor CLI and Copilot CLI sessions appear in the session list and the timeline without Sidereus hooks (read from each CLI's own records, metadata only); a header chip flags CLIs whose hooks are missing. Refs #9 #10
+- Attention: "Idle shells" flags a live session whose background shells have produced no output for 15 minutes.
+- Harness report: a gate cost line (caught, blocked, overridden; gate time, hook overhead, time paused by a block, last 7 days) next to what the gates caught. Refs #27
+
+### Changed
+
+- Sessions: the first line of each row is grouped into identity, usage, work and actions, and each group starts at the same position on every row.
+- Codex and Copilot rows waiting on a permission request read "Waiting for approval" instead of "Waiting on notification".
+- After "Connect", the result tells you to restart CLI sessions that are already open (Codex: restart, then run /hooks).
+- Harness report: the runtime card folds to one line unless it is all clear, so the tiles come first.
 
 ### Fixed
 
-- Pipeline evaluation: «fix followed» counts a later commit only when a bug-fix pipeline run (`"catch": "person"`) made it and it touches the same code file; shared docs, registries, tests and screen baselines no longer make every pass read «fix followed».
-- Pipeline editor: the «Evaluation» panel opens under its button instead of at the left screen edge over the side rail.
+- Pipeline evaluation: passes are counted once per commit, and "fix followed" counts a later commit only when a bug-fix pipeline run (`"catch": "person"`) made it and it touches the same code file; edits in the same run, shared docs, registries, tests and screen baselines no longer count as fixes.
+- Pipeline editor: the "Evaluation" panel opens under its button instead of at the left screen edge over the side rail.
+- Evaluation popup: the report path sits on its own line instead of breaking at the date.
+- security-fix pipeline: edits in the target repo unlock when the pipeline file's last stage finishes, even after that stage is renamed; before, they stayed gated for 24 hours.
+- pipx/uv installs now include the external CLI hook templates, so external CLI rows offer "Connect" instead of reading "no ext-hooks".
+- Cursor CLI is detected by `~/.cursor/cli-config.json` when it is not on the viewer's PATH (seen on Windows). Refs #9
+- Sessions: a Bash waiting for approval keeps its badge while older shells (servers, loops, earlier commands) run in the same folder. Refs #23
+- Background shells: a launch denied by a hook inside a subagent no longer stays open. Refs #23
+- Background shells: a shell stopped with TaskStop closes its row. Refs #23
+- Background shells: open rows survive a viewer restart. Refs #23
+- Sessions: identity chips never wrap or clip (only the name is shortened), and the pick box sits on the name's line.
+- Sessions: "Show n ended" opens on the first click while the mouse is over the list.
+- Header: the "Sessions" button stays at the right edge when there are no to-do chips.
 
 ## [0.11.0] - 2026-10-31
 
@@ -623,7 +654,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/bugsterran/sidereus/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/bugsterran/sidereus/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bugsterran/sidereus/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/bugsterran/sidereus/compare/v0.8.1...v0.9.0
