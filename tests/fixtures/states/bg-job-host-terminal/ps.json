@@ -1,0 +1,11 @@
+{
+ "cwd": {
+  "700": "/nonexistent-sidereus/demo"
+ },
+ "procs": [
+  ["700", "1", "claude --resume b9b90000-0000-4000-8000-00000000000c"],
+  ["701", "1", "claude.exe daemon run --origin transient --spawned-by {\"label\":\"claude\",\"cwd\":\"/nonexistent-sidereus/demo\",\"pid\":700}"],
+  ["702", "701", "claude.exe --bg-pty-host"],
+  ["703", "702", "claude.exe --session-id b9b90000-0000-4000-8000-00000000000a --fork-session"]
+ ]
+}

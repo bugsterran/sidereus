@@ -1,0 +1,10 @@
+{
+ "ages": {
+  "b9b90000-0000-4000-8000-00000000000a.jsonl": 100,
+  "b9b90000-0000-4000-8000-00000000000b.jsonl": 600,
+  "b9b90000-0000-4000-8000-00000000000c.jsonl": 900
+ },
+ "busy": null,
+ "guards": "the terminal claude named by a live background job daemon's --spawned-by lends no path slot, so an old same-cwd transcript stays ended (live._live_bg_hosts)",
+ "os": "mac"
+}
