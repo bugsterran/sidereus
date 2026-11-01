@@ -9,6 +9,7 @@ import unittest
 from unittest import mock
 
 from sidereus import perm_marks as LP
+from sidereus import live_probe as LP_PROBE
 
 _P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hooks", "perm_mark.py")
 _spec = importlib.util.spec_from_file_location("perm_mark_hook_sub", _P)
@@ -30,10 +31,14 @@ class PermMarkSub(unittest.TestCase):
             p.start()
             self.addCleanup(p.stop)
         self.busy = None
+        self.starts = None
         for k, v in (("tool_busy", lambda: self.busy), ("_DEC_AT", {}), ("_SUB_LOG", {})):
             p = mock.patch.object(LP, k, v)
             p.start()
             self.addCleanup(p.stop)
+        p = mock.patch.object(LP_PROBE, "shell_starts", lambda: self.starts)   # read by live_probe.shell_after
+        p.start()
+        self.addCleanup(p.stop)
 
     def _hook(self, ev, t=NOW - 10):
         ev = dict({"session_id": SID, "message": "SECRET", "tool_input": {"command": "SECRET"}}, **ev)
@@ -93,6 +98,15 @@ class PermMarkSub(unittest.TestCase):
         self.assertEqual(LP.perm_rows([r], now=NOW)[0]["blocked"], "")
         self.busy = {}
         self.assertEqual(LP.perm_rows([r], now=NOW)[0]["blocked"], SUB_MSG)
+
+    def test_sub_shell_older_than_marker_keeps_badge(self):
+        self._sub_req()
+        r = self._row("run", now_tool="Bash", cwd="/w/p")
+        self.busy = {"/w/p": True}
+        self.starts = {"/w/p": [NOW - 3600]}                       # shell predates the sub's prompt
+        self.assertEqual(LP.perm_rows([r], now=NOW)[0]["blocked"], SUB_MSG)
+        self.starts = {"/w/p": [NOW - 3600, NOW - 5]}
+        self.assertEqual(LP.perm_rows([r], now=NOW)[0]["blocked"], "")
 
     def test_parent_own_bash_does_not_hide_sub_badge(self):
         # The shell probe is per cwd: the parent's own running Bash must not read as the sub's approved Bash.

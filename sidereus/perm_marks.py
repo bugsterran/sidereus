@@ -5,7 +5,7 @@ import re
 import time
 from datetime import datetime
 from sidereus.config import DATA_DIR
-from sidereus.live_probe import _UUID_RE, _sid_transcript, tool_busy
+from sidereus.live_probe import _UUID_RE, _sid_transcript, shell_after, tool_busy
 from sidereus.transcript import _TZ_OFF, _tail_lines
 
 
@@ -255,7 +255,7 @@ def _sub_badge(r, files, now):
         # ⚠The shell probe is per process cwd and carries no agent id, so a live shell clears the badge only when this sub
         #   is the sole possible owner: not while the parent runs its own Bash or another sub/workflow agent could run one.
         #   An approved Bash writes nothing to the sub log until its result, so the probe cannot simply be dropped.
-        if bash and _sole_shell_owner(r, aid) and _bash_running(dict(r, tool="Bash")):
+        if bash and _sole_shell_owner(r, aid) and _bash_running(dict(r, tool="Bash"), t):
             continue
         tool = (d or {}).get("tool")
         subs.append((t, tool if isinstance(tool, str) else "", aid))
@@ -292,12 +292,13 @@ def _answered(r, t, now):
     return (_DEC_AT.get(r.get("sid") or "") or {}).get("t", 0) > t
 
 
-def _bash_running(r):
-    """True when the row's pending Bash has a live shell child in its cwd (approved and running, not waiting)."""
+def _bash_running(r, t=0):
+    """True when the row's pending Bash (marker time t) has a live shell child in its cwd (approved and running, not waiting)."""
     if r.get("tool") != "Bash" or r.get("bgs"):
         return False                  # ⚠a background command in the same cwd would look like the pending one running
     busy = tool_busy()
-    return isinstance(busy, dict) and bool(r.get("cwd")) and r["cwd"] in busy
+    # ⚠Shells started before the prompt (Monitor loop, dev server, earlier call) are not the pending Bash; unknown start times keep the old answer.
+    return isinstance(busy, dict) and bool(r.get("cwd")) and r["cwd"] in busy and (not t or shell_after(r["cwd"], t))
 
 
 def perm_wait(sid, act_at, now):
@@ -351,9 +352,9 @@ def perm_rows(rows, now=None):
                 sacts = [_sub_act(s, now) for s in (r.get("sub") or []) if isinstance(s, dict)]
                 own = all(a is not None and a <= t for a in sacts)
                 gone = (own and ((_DEC_AT.get(sid) or {}).get("tools") or {}).get(mtool, 0) > t) \
-                    or (mtool == "Bash" and _bash_running(dict(r, tool="Bash")))
+                    or (mtool == "Bash" and _bash_running(dict(r, tool="Bash"), t))
             else:
-                gone = bool(t) and (_answered(r, t, now) or _bash_running(r))
+                gone = bool(t) and (_answered(r, t, now) or _bash_running(r, t))
             # ⚠An approved long tool writes nothing until its result, so the marker stays newer than activity: clear on decision/running shell.
             if t and not gone:
                 tool = mtool or r.get("tool") or ""

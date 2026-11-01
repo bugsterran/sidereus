@@ -469,6 +469,8 @@ def _ps_snap(ttl=PS_SNAP_TTL):
 
 
 _busy_cache = (0.0, {})
+_busy_shells = {}          # cwd -> shell-snapshot child pids seen by the last tool_busy probe (None = unknown)
+_starts_cache = (0.0, (), None)
 BLOCK_GRACE_S = 8          # no execution trace after this long ⇒ treat as "blocked" (to separate from just started)
 BUSY_STALE_S = 30          # on lookup failure use the last success only this long (same value and reason as live_cwds' LIVE_STALE_S)
 
@@ -494,22 +496,23 @@ def tool_busy(ttl=2):
       ⇒ Use the last value only up to `BUSY_STALE_S` (30 s); beyond that go to **None (unknown)**, not `{}`
         (nothing running). `_blocked()` reads None as "cannot tell" and adds no badge —
         the side that never calls present absent. Normal path measured ps 28ms · lsof 18ms, never hits it."""
-    global _busy_cache
+    global _busy_cache, _busy_shells
     if not IS_MAC:
         return None     # ⚠no ps/lsof probe here — unknown, never {} (_blocked reads {} as «nothing running»)
     if time.time() - _busy_cache[0] < ttl:
         return _busy_cache[1]
     out = {}
     try:
-        claude, shells = set(), set()
+        claude, shells = set(), {}
         for pid, ppid, cmd in _ps_snap():   # ★once-per-poll full list (`_ps_snap` comment above)
             if cmd.split() and os.path.basename(cmd.split()[0]) == "claude":
                 claude.add(pid)
             elif "shell-snapshot" in cmd:
-                shells.add(ppid)
+                shells.setdefault(ppid, []).append(pid)
         busy = [p for p in claude if p in shells]
+        by_cwd = {}
         if not busy:
-            _busy_cache = (time.time(), {})
+            _busy_cache, _busy_shells = (time.time(), {}), {}
             _stale_clear("busy")
             return {}
         r = subprocess.run(["lsof", "-a", "-d", "cwd", "-Fpn", "-p", ",".join(busy[:64])],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
@@ -521,6 +524,7 @@ def tool_busy(ttl=2):
                 cur = ln[1:].strip()
             elif ln.startswith("n") and cur:
                 out[ln[1:].strip()] = True
+                by_cwd.setdefault(ln[1:].strip(), []).extend(shells.get(cur, []))
         if not out:
             # ⚠Busy pids exist but lsof gave no cwd: a failed probe, not «nothing running» ({} would flag every Bash).
             raise RuntimeError("lsof returned no cwd")
@@ -536,11 +540,49 @@ def tool_busy(ttl=2):
         warn_once("busy", "Could not read tool processes ({err}) — 'running a tool' falls back to 'unknown'",
                   vars={"err": type(e).__name__})
         _stale_clear("busy")                   # no longer "last value" — it is unknown
-        _busy_cache = (time.time(), None)
+        _busy_cache, _busy_shells = (time.time(), None), None
         return None
-    _busy_cache = (time.time(), out)
+    _busy_cache, _busy_shells = (time.time(), out), by_cwd
     _stale_clear("busy")
     return out
+
+
+def _etime_s(v):
+    """ps `etime` ([[dd-]hh:]mm:ss) -> seconds, or None."""
+    d, _, hms = v.strip().rpartition("-")
+    try:
+        h, m, s = ([0, 0] + [int(x) for x in hms.split(":")])[-3:] if hms.count(":") <= 2 else (None,) * 3
+        return int(d or 0) * 86400 + h * 3600 + m * 60 + s
+    except (ValueError, TypeError):
+        return None
+
+
+def shell_starts(ttl=2):
+    """{cwd: [start epoch of each shell-snapshot child]} from the last tool_busy probe via one `ps -o etime`, or None = unknown."""
+    global _starts_cache
+    shells = _busy_shells
+    if not IS_MAC or not isinstance(shells, dict):
+        return None
+    pids = tuple(sorted({p for v in shells.values() for p in v}))
+    at, key, res = _starts_cache
+    if key == pids and time.time() - at < ttl:
+        return res
+    try:
+        txt = subprocess.run(["ps", "-o", "pid=,etime=", "-p", ",".join(pids[:64])],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
+                             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=4).stdout
+        now, rows = time.time(), [ln.split() for ln in txt.splitlines()]
+        start = {r[0]: now - _etime_s(r[1]) for r in rows if len(r) == 2 and _etime_s(r[1]) is not None}
+        res = {cwd: [start[p] for p in v if p in start] for cwd, v in shells.items()}
+    except Exception:
+        res = None
+    _starts_cache = (time.time(), pids, res)
+    return res
+
+
+def shell_after(cwd, t):
+    """False only when every shell in cwd provably started before t (shells predating a tool call are not that call)."""
+    starts = shell_starts()
+    return not isinstance(starts, dict) or cwd not in starts or any(s >= t - 2 for s in starts[cwd])
 
 
 # ★Instant tools — once approved they finish within 1 s. So if one hangs long, it is **waiting**.
@@ -570,6 +612,7 @@ def _blocked(state, tool, age, cwd, nbg, pmode=""):
         if nbg:
             return ""                   # a background command holds a process, so it cannot be told apart
         busy = tool_busy()
-        if busy is not None and cwd not in busy:   # {} = probe ran, nothing running; None = unknown
+        # ⚠A shell older than the tool call (Monitor loop, dev server) is not the pending Bash; 2 s = etime rounding.
+        if busy is not None and (cwd not in busy or not shell_after(cwd, time.time() - age)):   # {} = nothing running; None = unknown
             return "Bash waiting for approval"
     return ""
