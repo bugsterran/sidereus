@@ -188,5 +188,51 @@ class StoreWin(unittest.TestCase):
             self.assertFalse(st._pid_gone(4242, config.lstart_fmt(EPOCH)))
 
 
+class PidAliveWin(unittest.TestCase):
+    """config.pid_alive on Windows: OpenProcess + WaitForSingleObject(h, 0), kernel32 faked."""
+
+    def setUp(self):
+        p = mock.patch.object(config, "IS_WIN", True)
+        p.start()
+        self.addCleanup(p.stop)
+        self.kill = mock.patch.object(config.os, "kill", side_effect=AssertionError("os.kill kills on Windows"))
+        self.kill.start()
+        self.addCleanup(self.kill.stop)
+
+    def _run(self, errs=(), wait=0x102):
+        """errs: last-error per OpenProcess call (0 = success). Returns (result, access masks tried)."""
+        tried, errs, last = [], list(errs), [0]
+
+        def open_(acc, inh, pid):
+            tried.append(acc)
+            last[0] = errs.pop(0) if errs else 0
+            return 0 if last[0] else 9
+        k = FakeK32()
+        k.OpenProcess = _Fn(open_)
+        k.WaitForSingleObject = _Fn(lambda h, ms: wait)
+        with _windll(k), mock.patch.object(ctypes, "get_last_error", lambda: last[0], create=True):
+            return config.pid_alive(4242), tried, k.closed
+
+    def test_exited_but_open_handle_is_gone(self):
+        r, tried, closed = self._run(wait=0)          # WAIT_OBJECT_0
+        self.assertIs(r, False)
+        self.assertEqual((tried, closed), ([0x00101000], [9]))
+
+    def test_running_is_alive(self):
+        self.assertIs(self._run(wait=0x102)[0], True)
+
+    def test_access_denied_exists(self):
+        r, tried, _ = self._run(errs=(5, 5))
+        self.assertIs(r, True)
+        self.assertEqual(tried, [0x00101000, 0x00100000])
+        r, tried, _ = self._run(errs=(5, 0), wait=0)  # SYNCHRONIZE alone opens: the wait still decides
+        self.assertIs(r, False)
+
+    def test_invalid_pid_gone_other_error_unknown(self):
+        self.assertIs(self._run(errs=(87,))[0], False)
+        self.assertIsNone(self._run(errs=(6,))[0])
+        self.assertIsNone(self._run(wait=0xFFFFFFFF)[0])   # WAIT_FAILED
+
+
 if __name__ == "__main__":
     unittest.main()

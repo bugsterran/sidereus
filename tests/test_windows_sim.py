@@ -105,16 +105,19 @@ CHILD = textwrap.dedent(r'''
         calls.append("body")
     out["lock"] = calls
 
-    class K32:
-        err = 0
-        def OpenProcess(self, access, inherit, pid):
-            out.setdefault("access", access)
-            if pid == 111: return 7
-            K32.err = 5 if pid == 222 else 87
-            return 0
-        def GetLastError(self): return K32.err
-        def CloseHandle(self, h): out["closed"] = h
-    ctypes.windll = types.SimpleNamespace(kernel32=K32())
+    class Fn:                          # kernel32 function stand-in: accepts restype/argtypes like a ctypes function
+        def __init__(self, f): self.f = f
+        def __call__(self, *a): return self.f(*a)
+    err = [0]
+    def _open(access, inherit, pid):
+        out.setdefault("access", access)
+        if pid == 111: return 7
+        err[0] = 5 if pid == 222 else 87
+        return 0
+    k32 = types.SimpleNamespace(OpenProcess=Fn(_open), WaitForSingleObject=Fn(lambda h, ms: 0x102),
+                                CloseHandle=Fn(lambda h: out.__setitem__("closed", h)))
+    ctypes.WinDLL = lambda name, use_last_error=False: k32
+    ctypes.get_last_error = lambda: err[0]
     out["pids"] = [cfg.pid_alive(111), cfg.pid_alive(222), cfg.pid_alive(333), cfg.pid_alive(0)]
     print("RESULT " + json.dumps(out), flush=True)
     os._exit(0)
@@ -143,7 +146,7 @@ class WindowsSim(unittest.TestCase):
         self.assertEqual(out["code"], 200)
         self.assertTrue(out["json"])
         self.assertEqual(out["lock"], [[1, 1], "body", [0, 1]])
-        self.assertEqual(out["access"], 0x00100000)
+        self.assertEqual(out["access"], 0x00101000)
         self.assertEqual(out["closed"], 7)
         self.assertEqual(out["pids"], [True, True, False, None])
         self.assertEqual(out["page"][0], 200)
