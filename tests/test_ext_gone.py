@@ -118,7 +118,8 @@ class Gone(unittest.TestCase):
     def test_idle_wait_without_pid_is_not_gone(self):
         self.feed("Stop", NOW)
         self.clock[0] = NOW + 3 * 3600
-        self.assertEqual(self.row()["state"], "wait")
+        r = self.row()
+        self.assertEqual((r["state"], r["goneWhy"]), ("done", ""))   # ended past PIDLESS_IDLE_SEC, never «Disconnected»
 
     def test_live_pid_prompt_never_ages_out(self):
         self.alive.add(4242)

@@ -28,6 +28,8 @@ EXT_TTL_S = 24 * 3600        # delete if no news for this long — the only exit
 #   proxy for long tools (7 days, n=18666, no Agent) p99 326s, p99.5 984s, >1200s 0.24%. 20 min sits above both.
 EXT_SILENT_S = 1200
 EXT_GONE_GRACE_S = 600       # «Disconnected» shown this long, then dropped like a SessionEnd
+# ⚠A pid-less idle row has unknown liveness (Windows hooks sent no pid): without this it stayed «waiting» up to EXT_TTL_S.
+PIDLESS_IDLE_SEC = 1800      # pid-less 'wait' row with no event this long is shown as ended ('done'); its next event revives it
 EXT_PID_EVERY_S = 30         # liveness check interval per session
 EXT_PLAT = {"gemini": "gm", "codex": "cx", "copilot": "cp", "cursor": "cu", "cline": "cl",
             "windsurf": "wf", "warp": "wp", "trae": "tr", "zed": "zd", "grok": "gk",
@@ -402,7 +404,7 @@ def ext_ingest(req):
                 v.pop("pidAt", None)
             v["pid"] = pid
             v["pstart"] = str(req.get("pstart") or "")[:40]
-        if v.get("state") == "gone":              # any event proves it is alive again
+        if v.get("state") in ("gone", "done"):    # any event proves it is alive again (done = pid-less idle cutoff)
             v["state"] = v.get("goneFrom") or "wait"
         for k in ("gone", "goneWhy", "goneFrom"):
             v.pop(k, None)
@@ -516,6 +518,10 @@ def ext_gone_check(now=None):
                     why = "pid"
                 elif not v.get("pid") and v.get("state") in ("think", "tool") and now - last > EXT_SILENT_S:
                     why = "silent"
+                if not why and not v.get("pid") and v.get("state") == "wait" and not v.get("blocked") \
+                        and now - last > PIDLESS_IDLE_SEC:
+                    v["state"] = "done"
+                    changed = True
                 if why:
                     v.update(goneFrom=v.get("state") or "", state="gone", goneWhy=why, blocked=False, tool="",
                              gone=now if why == "pid" else last + EXT_SILENT_S)
