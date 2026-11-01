@@ -51,8 +51,8 @@ const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class Chip(unittest.TestCase):
-    def _chips(self, rows):
-        code = PRE + js_fn("sessPlChip") + "\nconsole.log(JSON.stringify(%s.map(sessPlChip)));" % json.dumps(rows)
+    def _chips(self, rows, pre=""):
+        code = PRE + pre + js_fn("sessPlChip") + "\nconsole.log(JSON.stringify(%s.map(sessPlChip)));" % json.dumps(rows)
         r = subprocess.run(node_e(code), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
         if r.returncode != 0:
             raise AssertionError(r.stderr.decode())
@@ -83,6 +83,19 @@ class Chip(unittest.TestCase):
         self.assertEqual(none, "")
         self.assertNotIn("<b>", x)
         self.assertIn('&lt;b></span><span class="splst"> · &quot;q</span>', x)
+
+    def test_stage_title_localised(self):
+        # The stage title goes through plgShow (English UI must not show the Korean stage title).
+        pre = "const plgShow = t => ({'라이브 검증': 'Live verify'})[t] || t;\n"
+        x, y = self._chips([{"plrun": [{"name": "sidereus-bugfix", "cur": "라이브 검증"}]},
+                            {"plrun": [{"name": "p", "cur": "Custom"}]}], pre)
+        self.assertIn('<span class="splst"> · Live verify</span>', x)
+        self.assertIn('title="Pipeline run: sidereus-bugfix · Live verify"', x)
+        self.assertFalse(any("가" <= c <= "힣" for c in x))
+        self.assertIn('<span class="splst"> · Custom</span>', y)
+        # Without plgShow loaded the raw title passes through.
+        z, = self._chips([{"plrun": [{"name": "p", "cur": "Custom"}]}])
+        self.assertIn('<span class="splst"> · Custom</span>', z)
 
     def test_open_run_without_stage(self):
         # The stage span is omitted when no stage is known yet.

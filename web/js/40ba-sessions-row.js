@@ -138,8 +138,10 @@ function sessBranchHtml(x){
 function sessPlChip(x){
   const runs = (x.plrun || []).filter(r => r && r.name), r = runs.find(r => !r.end), n = x.plNone;
   // ⚠Only the name ellipsizes: the stage is the part worth reading, so it sits in its own non-shrinking span.
-  if(r) return '<span class="spl splr" title="'+esc(T('Pipeline run')+': '+r.name+(r.cur ? ' · '+r.cur : ''))+'"><span class="splnm">'+esc(r.name)+'</span>'
-    + (r.cur ? '<span class="splst"> · '+esc(r.cur)+'</span>' : '')+'</span>';
+  // ⚠plgShow lives in 48c (loads later): look it up at call time; the raw title stays the data key.
+  const st = r && r.cur ? (typeof plgShow === 'function' ? plgShow(r.cur) : r.cur) : '';
+  if(r) return '<span class="spl splr" title="'+esc(T('Pipeline run')+': '+r.name+(st ? ' · '+st : ''))+'"><span class="splnm">'+esc(r.name)+'</span>'
+    + (st ? '<span class="splst"> · '+esc(st)+'</span>' : '')+'</span>';
   // ⚠An ended run still outranks plNone: a nudge written before the run must not read «Undeclared» afterwards.
   if(runs.length) return '<span class="spl spln" title="'+esc(T('Pipeline run')+': '+runs[0].name+' · '+T('done'))+'">'+esc(runs[0].name)+'</span>';
   // ⚠cat is an English key from an allow-list — shown as-is, never passed through T().
