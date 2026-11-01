@@ -56,6 +56,19 @@ class Brief(unittest.TestCase):
             json.dump({"pipeline_apply": {"mode": "off"}}, f)
         self.assertIn("todo.md", self.run_hook("SessionStart"))
 
+    def test_off_switch_read_like_viewer(self):
+        with open(self.cfg, "w", encoding="utf-8-sig") as f:   # BOM: the viewer still reads features.todo false
+            json.dump({"features": {"todo": False}}, f)
+        self.assertEqual(self.run_hook("SessionStart"), "")
+        with open(self.cfg, "w", encoding="utf-8") as f:   # invalid dict: the viewer ignores it (all on)
+            json.dump({"features": {"todo": False, "x": "no"}}, f)
+        self.assertIn("todo.md", self.run_hook("SessionStart"))
+
+    def test_apply_mode_read_with_bom(self):
+        with open(self.cfg, "w", encoding="utf-8-sig") as f:
+            json.dump({"pipeline_apply": {"mode": "ask"}}, f)
+        self.assertEqual(H._mode(self.repo), "ask")
+
     def test_no_repo_or_home_repo_silent(self):
         self.assertEqual(H._todo_line(self.tmp), "")
         with mock.patch.object(H, "HOME_DIR", self.repo):

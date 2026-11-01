@@ -197,6 +197,52 @@ class Todo(unittest.TestCase):
                 self.assertNotIn("todo", ST.state())
                 self.assertEqual(F.route_feature("/api/todo/add"), "todo")
 
+    def test_off_feature_skips_piece_entirely(self):
+        saved = {k: getattr(ST, k) for k in _READERS}
+        self.addCleanup(lambda: [setattr(ST, k, v) for k, v in saved.items()])
+        for k, v in _READERS.items():
+            setattr(ST, k, v)
+        calls = []
+        real = F._load(F.FEATURES_DIR)
+        with mock.patch.object(ST, "todo_counts", lambda rows: calls.append(1) or {}), \
+                mock.patch.object(F, "_MANIFESTS", {"todo": real["todo"]}), mock.patch.object(F, "_TOGGLES", {"todo": False}):
+            ST.state()
+        self.assertEqual(calls, [])
+
+    def test_bad_ledger_value_skipped(self):
+        os.makedirs(os.path.dirname(TD._ledger_path(self.repo)))
+        with open(TD._ledger_path(self.repo), "w", encoding="utf-8") as f:
+            f.write('{"v": 1, "items": {"a#0": {"t": "a", "add": "x", "done": "nope"}, "b#0": {"t": "b", "done": true}}}')
+        self.w(b"- [ ] a\n- [x] c\n")
+        self.assertEqual(TD.state_counts([{"cwd": self.cwd}]), {self.cwd: {"o": 1, "w": 0, "d": 1}})
+        led = TD._ledger_load(self.repo)
+        self.assertEqual(led["a#0"]["add"], self.t)
+        self.assertNotIn("done", led["b#0"])
+
+    def test_get_states_text_max_and_tmp_is_excl(self):
+        self.assertEqual(TD.todo_get(self.cwd)[1]["max"], TD.TEXT_MAX)
+        opened = []
+        real_open = os.open
+        with mock.patch.object(TD.os, "open", lambda p, fl, *a: opened.append(fl) or real_open(p, fl, *a)):
+            self.assertEqual(TD.add({"cwd": self.cwd, "text": "a"})[0], 200)
+        self.assertTrue(opened and opened[0] & os.O_EXCL and opened[0] & getattr(os, "O_NOFOLLOW", 0) == getattr(os, "O_NOFOLLOW", 0))
+        self.assertEqual(glob.glob(self.p + ".sidereus-tmp.*"), [])
+
+    def test_link_appearing_before_rename_refused(self):
+        self.w(b"- [ ] a\n")
+        real_read = TD._read
+        def swap(repo):
+            out = real_read(repo)
+            if os.path.lexists(self.p) and not os.path.islink(self.p):
+                os.rename(self.p, self.p + ".moved")
+                os.symlink(self.p + ".moved", self.p)
+            return out
+        with mock.patch.object(TD, "_read", swap):
+            code, _out = TD._write_locked(self.repo, b"- [ ] a\n", b"- [x] a\n")
+        self.assertEqual(code, 400)   # caught by the re-check, not the content compare
+        self.assertTrue(os.path.islink(self.p))
+        self.assertEqual(glob.glob(self.p + ".sidereus-tmp.*"), [])
+
 
 if __name__ == "__main__":
     unittest.main()

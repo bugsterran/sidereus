@@ -6,7 +6,7 @@ import time
 
 from sidereus import config
 from sidereus.config import CFG, MINE, ROOM_DEFAULT, VIEWER_ME, _lock, viewer_ids
-from sidereus.features import snapshot as features_snapshot, state_off
+from sidereus.features import on as feature_on, snapshot as features_snapshot, state_off
 from sidereus.bus import DM_MAX, _ack_cut, _load, ack_map, cursors, messages, messages_first, presence
 from sidereus.cards import cards, cards_read, cards_read_ids
 from sidereus.usage import quota_who, usage
@@ -214,7 +214,8 @@ def state(since=0, ncards=50):
         "cards": _cards,
         "attention": _attn,       # who needs me now (metadata only)
         "review": _piece("review", review, None, _sessions),   # finished sessions' unreviewed uncommitted files (metadata only)
-        "todo": _piece("todo", todo_counts, {}, _sessions),   # {cwd: {o, w, d}} from <repo>/.claude/todo.md, counts only (feature `todo`)
+        # ⚠gated here, not only by state_off(): an off feature must not keep lstat-ing repos or writing ledgers
+        "todo": _piece("todo", todo_counts, {}, _sessions) if feature_on("todo") else {},   # {cwd: {o, w, d}} from <repo>/.claude/todo.md, counts only
         "archRun": _arun,   # arch-map runs in progress per project (sidereus/arch_map.py)
         "secRun": _srun,   # security-checks runs in progress per project (same shape)
         "plReq": _piece("plReq", pl_reqs_view, {}, _sessions, _arun, _srun),   # sent run requests + receiver state (sidereus/pl_reqs.py)

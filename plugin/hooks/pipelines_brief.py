@@ -170,7 +170,7 @@ def _mode(cwd):
     try:
         p = CONFIG_PATH or os.path.expanduser(os.environ.get("MAILBOX_CONFIG") or os.path.join(
             os.environ.get("MAILBOX_DIR") or "~/.mailbox-mcp", "config.local.json"))
-        with open(p, encoding="utf-8") as f:
+        with open(p, encoding="utf-8-sig") as f:   # ⚠BOM accepted, as the viewer reads it (mailbox_config.load)
             v = json.load(f).get("pipeline_apply") or {}
         m = (v.get("projects") or {}).get(cwd) or v.get("mode")
         return m if m in ("auto", "ask", "off") else "auto"
@@ -183,9 +183,13 @@ def _todo_line(cwd):
     try:
         p = CONFIG_PATH or os.path.expanduser(os.environ.get("MAILBOX_CONFIG") or os.path.join(
             os.environ.get("MAILBOX_DIR") or "~/.mailbox-mcp", "config.local.json"))
-        with open(p, encoding="utf-8") as f:
-            if (json.load(f).get("features") or {}).get("todo") is False:
-                return ""
+        with open(p, encoding="utf-8-sig") as f:   # ⚠BOM accepted, as the viewer reads it (mailbox_config.load)
+            ft = json.load(f).get("features") or {}
+        # ⚠same check as sidereus/prefs.py _v_features: an invalid dict is ignored there (all on), so here too
+        ok = isinstance(ft, dict) and len(ft) <= 64 and all(
+            isinstance(k, str) and re.match(r"^[a-z][a-z0-9_]{0,31}$", k) and isinstance(v, bool) for k, v in ft.items())
+        if ok and ft.get("todo") is False:
+            return ""
     except Exception:
         pass   # no or bad config = feature default (on)
     root = _git_root(cwd) if isinstance(cwd, str) and os.path.isabs(cwd) else ""

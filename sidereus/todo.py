@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import shutil
 import threading
 import time
@@ -131,9 +132,15 @@ def _ledger_load(repo):
         with open(_ledger_path(repo), encoding="utf-8") as f:
             d = json.load(f)
         items = d.get("items") if isinstance(d, dict) else None
-        return {k: v for k, v in items.items() if isinstance(v, dict)} if isinstance(items, dict) else {}
+        return {k: _clean_entry(v) for k, v in items.items() if isinstance(v, dict)} if isinstance(items, dict) else {}
     except (OSError, ValueError):
         return {}
+
+
+def _clean_entry(v):
+    """⚠Drop a non-numeric add/start/done (hand-edited ledger): float() on it would raise inside the /api/state poll."""
+    return {k: x for k, x in v.items()
+            if k not in ("add", "start", "done") or (isinstance(x, (int, float)) and not isinstance(x, bool) and x == x)}
 
 
 def _prune(items, now):
@@ -265,7 +272,7 @@ def todo_get(cwd):
     items = parse(raw) if raw is not None else []
     if raw is not None:
         observe(repo, items, k[0] / 1e9)
-    return 200, {"ok": True, "repo": repo, "items": items, "days": days(repo)}
+    return 200, {"ok": True, "repo": repo, "items": items, "days": days(repo), "max": TEXT_MAX}   # max = add limit for the UI
 
 
 # ── writes (POST) ──
@@ -303,9 +310,11 @@ def _write_locked(repo, raw, new_raw):
             os.mkdir(cl)
         if _linked(repo) or not os.path.isdir(cl):
             return 400, {"ok": False, "err": "symlinked .claude or todo.md — edit by hand"}
-        tmp = "%s.sidereus-tmp.%d" % (p, os.getpid())
+        # ⚠random name + O_EXCL|O_NOFOLLOW: a pre-planted file or symlink at a guessable tmp path is never written through
+        tmp = "%s.sidereus-tmp.%d.%s" % (p, os.getpid(), secrets.token_hex(6))
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0), 0o644)
         try:
-            with open(tmp, "wb") as f:
+            with os.fdopen(fd, "wb") as f:
                 f.write(new_raw)
                 f.flush()
                 os.fsync(f.fileno())
@@ -316,9 +325,11 @@ def _write_locked(repo, raw, new_raw):
                 shutil.copymode(p, tmp)
             else:
                 os.chmod(tmp, 0o644)
+            if _linked(repo):   # ⚠re-check right before the rename: `.claude` swapped for a link meanwhile
+                return 400, {"ok": False, "err": "symlinked .claude or todo.md — edit by hand"}
             os.replace(tmp, p)
         finally:
-            if os.path.exists(tmp):
+            if os.path.lexists(tmp):
                 os.remove(tmp)
     except OSError as e:
         return 500, {"ok": False, "err": "write failed (%s)" % type(e).__name__}
