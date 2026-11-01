@@ -203,6 +203,7 @@ class HookPid(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("ext_hook_g", os.path.join(ROOT, "ext-hooks", "ext_hook.py"))
         hook = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(hook)
+        hook.IS_WIN = False                                          # ⚠POSIX `_ps` path; the Windows walk is test_ext_pid_win
         tree = {100: (90, "Thu Sep 24 10:00:01 2026", "sh"), 90: (80, "Thu Sep 24 10:00:00 2026", "node")}
         saved = (hook._ps, hook.os.getppid)
         hook._ps, hook.os.getppid = tree.get, (lambda: 100)
