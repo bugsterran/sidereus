@@ -1,6 +1,7 @@
 """Live session detection: live_cwds, mailbox watchers, parse cache.
 Probes (staleness, sid lookups, official session list, ps snapshot, tool-busy) live in `sidereus/live_probe.py`;
 context-window learning in `sidereus/live_win.py`."""
+import json
 import os
 import re
 import subprocess
@@ -65,6 +66,7 @@ def live_cwds(ttl=2):
         sids, claimed = set(), set()
         av = _live_official(sids, claimed, snap)
         _live_argv_claims(snap, pids, av, pmap, sids, claimed)
+        _live_bg_hosts(snap, av, claimed)
         _live_sids[0], _live_sids[1] = time.time(), sids
         _live_count_paths(pmap, claimed, out)
     except Exception as e:
@@ -212,6 +214,41 @@ def _live_argv_claims(snap, pids, av, pmap, sids, claimed):
                 claimed.add(parts[0])
     except Exception as e:         # if this fails, judge by the old path method only — nothing gets worse
         warn_once("argvclaim", "argv session label parse failed ({err})", vars={"err": type(e).__name__}, soft=True)
+
+
+_SPAWN_ARG = "--spawned-by "   # same marker as term.BG_SPAWN_ARG (term sits above live, so not imported)
+
+
+def _spawned_by(cmd):
+    """Int pid from a daemon argv's `--spawned-by <json>`, or None (strict: one JSON object, int pid > 1)."""
+    i = (cmd or "").find(_SPAWN_ARG)
+    if i < 0:
+        return None
+    try:
+        obj = json.JSONDecoder().raw_decode(cmd, i + len(_SPAWN_ARG))[0]
+    except ValueError:
+        return None
+    p = obj.get("pid") if isinstance(obj, dict) else None
+    return p if isinstance(p, int) and not isinstance(p, bool) and p > 1 else None
+
+
+def _live_bg_hosts(snap, av, claimed):
+    """The terminal claude that spawned a live background job's daemon lends no path slot (claimed by the job)."""
+    # ⚠Its own conversation was forked into the job; left in path counting it let an old same-cwd transcript look live.
+    par = {str(p): str(pp) for p, pp, _c in snap or ()}
+    cmds = {str(p): c for p, _pp, c in snap or ()}
+    for pid, it in (av or {}).items():
+        if not (isinstance(it, dict) and it.get("sessionId")):
+            continue
+        p = str(pid)
+        for _ in range(4):        # job -> pty host -> daemon (bounded walk)
+            p = par.get(p, "")
+            if not p or p in ("0", "1"):
+                break
+            sp = _spawned_by(cmds.get(p, ""))
+            if sp:
+                claimed.add(str(sp))
+                break
 
 
 def _live_count_paths(pmap, claimed, out):
