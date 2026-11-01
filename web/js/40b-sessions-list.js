@@ -27,10 +27,11 @@ function buildSessions(){
   const f = document.getElementById('sfold');
   if(f) f.onclick = () => { sessOpen = !sessOpen; buildSessions(); };
   sessFit(box);
+  if(typeof stodoAfter === 'function') stodoAfter(box);   // to-do add-box drafts (40c)
   buildInvite();
   // ★The list redraws every 2.5s, so no handlers on rows; **delegated to one container**
   //   (listeners piling up on every poll would leak).
-  box.onclick = sessClick;
+  box.onclick = sessClick; if(typeof stodoInput === 'function'){ box.oninput = stodoInput; box.onkeydown = stodoKeydown; }
 }
 // Identity rows are one line (60-sessions.css): when the row overflows or the name/branch would ellipsize under 96/64px,
 // hide whole low-priority chips in this order — size · cost/tokens · model. ⚠Errors, diff, leftovers, context and ↻ never hide.
@@ -158,7 +159,7 @@ function sessIdRow(x){
   const nohk = x.rollout ? '<span class="sz snohk" title="'+esc(TV({msg: "State read from {name}'s record file; set up hooks — docs/HOOKS.md", vars: {name: platName(x.plat)}}))+'">'
     + esc(T('Hooks not connected'))+'</span>' : '';
   return '<div class=sx>'+sessPickHtml(x)+'<span class=sd></span>'+pl+'<span class=sp title="'+esc(x.project)+'">'+esc(x.project)+'</span>'+sessBranchHtml(x)+acctChip(x, 'sacb')
-    + nohk + sessBadges(x) + sessPlChip(x) + '</div>';
+    + nohk + sessBadges(x) + sessPlChip(x) + (typeof stodoChip === 'function' ? stodoChip(x) : '') + '</div>';
 }
 // Current-task line under the state row ('' when there is nothing to show).
 function sessTaskHtml(x){
@@ -261,7 +262,7 @@ function sessRowHtml(x){
   const ac = acctRowCls(x);   // '' with <2 accounts
   // ★`data-ssid` first — several sessions share a cwd (`:8782`), so finding by cwd goes to the first row
   return '<div class="sxw s-'+esc(st)+' '+cls+idl+(ac ? ' '+ac : '')+'" data-ssid="'+esc(x.sid||'')+'" data-scwd="'+esc(x.cwd||'')+'" title="'+tip+'">'
-    + sessIdRow(x) + sessStateRow(x, st) + sessTaskHtml(x) + sessTreeHtml(x)
+    + sessIdRow(x) + sessStateRow(x, st) + sessTaskHtml(x) + (typeof stodoLayer === 'function' ? stodoLayer(x) : '') + sessTreeHtml(x)   // to-do layer (40c; guarded: tests load 40b alone)
     + '</div>';
 }
 // Context-per-request / burn chip on the state row ('' without creq).
@@ -479,6 +480,7 @@ function sessByIdle(a2){
 function sessClick(e){
   // ⚠The click is under the mouse, so hover deferral would hold the expansion until mouseleave — lift it.
   if(acctOthClick(e, () => { sessHover = false; sessDirty = false; buildSessions(); })) return;
+  if(typeof stodoClick === 'function' && stodoClick(e)) return;   // to-do chip and layer (40c), before the row's work-log click
   // ★Checkboxes are intercepted first — so they don't collide with the delegation below
   const cb = e.target.closest && e.target.closest('input.spick[data-mb]');
   if(cb){

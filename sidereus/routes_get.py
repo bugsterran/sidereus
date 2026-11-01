@@ -34,6 +34,7 @@ from sidereus.routes_git import _GitRoutes
 from sidereus.routes_usage import _UsageRoutes, _agent_quota
 from sidereus.retro import retro
 from sidereus.review import review_files
+from sidereus.todo import todo_get
 from sidereus.agent_brief import brief_attention, brief_file, brief_peers
 from sidereus.page import BUILD_TIME, PAGE, PAGE_BUILD, PWA_FILES, pwa_reply
 from sidereus.state import _state_body
@@ -374,6 +375,14 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
             out = {"ok": False, "err": "%s: %s" % (type(e).__name__, e)}
         self._raw_json(200, out)
 
+    def _g_todo(self, u):
+        # «To-do» (feature `todo`): parsed items of <repo>/.claude/todo.md for an on-screen session cwd + the ledger by day
+        try:
+            code, out = todo_get(_q1(parse_qs(u.query), "cwd"))
+        except Exception as e:
+            code, out = 500, {"ok": False, **_exc_msg(e)}
+        self._raw_json(code, out)
+
     def _g_cards(self, u):
         # ★Lightweight cards-only route (2026-09-22) — the "Full history" button (`#aall`) pulled the full `/api/state`
         #   to get a few tens of KB of cards. Measured 3,186,536B → 65,702B (300 cards · 48x).
@@ -460,7 +469,7 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
         "/api/pipelines": _g_pipelines, "/api/pipelines/projects/dirs": _g_pipeline_dirs, "/api/pipelines/eval": _g_pipeline_eval, "/api/harness": _g_harness, "/api/harness/file": _g_harness_file, "/api/harness/evidence": _g_harness_evidence, "/api/verdict-guide": _g_verdict_guide, "/api/diag": _g_diag, "/api/sec-tools": _g_sec_tools, "/api/hooks/connect": _g_hooks_connect,
         "/api/agents/timeline": _g_timeline, "/api/failures": _g_failures, "/api/wreckage": _g_failures,
         "/api/session/work": _g_session_work, "/api/ext/work": _g_ext_work, "/api/git/file": _GitRoutes._g_git_file, "/api/git/diff": _GitRoutes._g_git_diff,
-        "/api/cards": _g_cards, "/api/messages": _g_messages, "/api/state": _g_state, "/api/v1/state": _g_state_v1, "/api/hookstate": _g_hookstate,
+        "/api/todo": _g_todo, "/api/cards": _g_cards, "/api/messages": _g_messages, "/api/state": _g_state, "/api/v1/state": _g_state_v1, "/api/hookstate": _g_hookstate,
         "/api/agent/quota": _g_agent_brief, "/api/agent/peers": _g_agent_brief,
         "/api/agent/file": _g_agent_brief, "/api/agent/attention": _g_agent_brief,
     }

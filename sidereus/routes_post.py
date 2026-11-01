@@ -30,6 +30,7 @@ from sidereus.pipeline_projects import add_project as pipeline_add, apply_set as
 from sidereus.cc_settings import prefs_set_all
 from sidereus.hook_connect import connect as hook_connect
 from sidereus.hook_remove import remove as hook_remove
+from sidereus.todo import add as todo_add, set_state as todo_set
 from sidereus.room_tags import BODY_MAX as TAGS_BODY_MAX, set_tags as room_tags_set
 from sidereus import bus as _busmod
 from sidereus import room_admin
@@ -506,6 +507,19 @@ class _PostRoutes:
             code, out = 500, {"ok": False, "err": type(e).__name__}
         return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
 
+    def _p_todo(self, u):
+        # «To-do» {cwd, text} add / {cwd, i, h, s} toggle of <repo>/.claude/todo.md; ⚠viewer Origin required (writes a repo file)
+        if not _cfg.viewer_origin(self.headers.get("Origin")):
+            self._body_unread()
+            return self._send(403, json.dumps({"ok": False, "err": "viewer origin required"}),
+                              "application/json; charset=utf-8")
+        req = self._body_json(4096, None)
+        try:
+            code, out = (todo_add if u.path == "/api/todo/add" else todo_set)(req)
+        except Exception as e:
+            code, out = 500, {"ok": False, "err": type(e).__name__}
+        return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
+
     def _p_pick_folder(self, u):
         # «Choose folder…»: the OS folder dialog runs on this server (browsers never expose absolute paths); ⚠viewer Origin required
         self._body_unread()
@@ -598,5 +612,6 @@ class _PostRoutes:
         "/api/pipelines/projects/add": _p_pipelines_save, "/api/pipelines/projects/remove": _p_pipelines_save,
         "/api/pipelines/apply": _p_pipelines_save, "/api/pick-folder": _p_pick_folder, "/api/hooks/connect": _p_hooks_connect,
         "/api/hooks/remove": _p_hooks_remove,
+        "/api/todo/add": _p_todo, "/api/todo/set": _p_todo,
         "/api/ui-prefs": _p_ui_prefs, "/api/ui-prefs/reset": _p_ui_prefs, "/api/act": _p_act,
     }

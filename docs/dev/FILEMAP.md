@@ -83,6 +83,7 @@ Sidereus is both the shown name and the code name (package, MCP, launchd label, 
 | `36-wkcompose.js` | Work log mailbox DM `/api/dm` |  |  |
 | `40-sessions.js` | Invite `buildInvite` · repaint held while hovering `sessHover` · Cmd+K palette `cp*` | `buildInvite`, `sessHover` |  |
 | `40b-sessions-list.js` | `sessFit` hides in the order .sz→.sk→.sm · session list `buildSessions` → card `sessRowHtml` · badges `sessBadges` · burn chip `sessBurn` · tree `sessNest`/`sessKid`/`sessByIdle`/`sessGms` · team/workflow group fold `wfFold`, «Expand all / Collapse all» pair above the list `wfFoldBtns`/`wfFoldAll` (only when a group is shown) · `platName`/`platHay` · click delegation `sessClick` · `copyText`/`note` · per-view account picker `acctPick`/`acctInPick`/`acctPickHtml`/`acctPickWire` (UIS `mbAcctPick.<view>`, 2+ accounts; also used by `25` buildFilters and the Timeline toolbar) | `sessFit`, `buildSessions`, `sessRowHtml`, `sessBadges`, `sessBurn`, `sessNest`, `sessKid`, `sessByIdle`, `sessGms`, `platName`, `platHay`, `sessClick`, `copyText`, `note` | ⚠the identity row is one line (nowrap·fixed height) — wrapping drops only ↻ to a second line, 49–51px · ⚠80-branch.css pins .swt to flex:0 0 auto, so shrink rules need `html[data-ui=next]` |
+| `40c-sessions-todo.js` | Session to-do (`<git root>/.claude/todo.md`): «To-do n» chip `stodoChip` (n = open + in progress, after 40b `sessPlChip`) · inline layer under the row `stodoLayer` (in progress «Working» + live state label, then open, then done; «By day» `stodoDaysHtml`) · add box (Enter, no confirm) / checkbox → POST `/api/todo/add`·`/api/todo/set` (409 = stale, refetch) · open set `STODO_OPEN` like `wfFold` · drafts `STODO_DRAFT` restored by `stodoAfter`. State `todo` via `stodoSet`. Korean in `06-i18n-zzk-todo.js`, CSS `60b-sessions-todo.css`, test `tests/test_todo_js.py` | `stodo*`, `STODO*` | ⚠item text esc() only, never T() · ⚠0 items or no file = no chip, no layer |
 | `41-sesdrawer.js` | Session drawer·pinning·header «Sessions» badge · open-session count `sesCount` | `sesCount` |  |
 | `41b-sesrecent.js` † | «Recently ended sessions» (2026-09-27): ended sessions of the last 7 days in the sessions drawer, for `claude --resume`; `GET /api/sessions/recent` on expand only, never on the poll. Metadata only. | | |
 | `42-activity.js` | Needs-me pills in the rail «Attention» list `#rattnl` (count `#rattnn`/`#rattnb`, hover card `#acthc`); the header activity strip `#actv` (running pills, idle/subagent/context chips, `actFit`, `#actpop`) was removed | `#rattnl` |  |
@@ -141,6 +142,7 @@ Sidereus is both the shown name and the code name (package, MCP, launchd label, 
 | `06-i18n-zzb-person.js` | `I18N.ko` for the Harness «A person» checkpoint, «Broke again» / «Found by a person first» tiles and their «How to read this» rows (47b, 47e). | | |
 | `06-i18n-zzi-cost.js` | `I18N.ko` for the Harness «Gate cost» line and its evidence lists (47j). | | |
 | `06-i18n-zzi-hooktodo.js` | `I18N.ko` for the header «CLI hooks not connected» chip (25) and the rollout-row hooks tooltip (40b). | | |
+| `06-i18n-zzk-todo.js` | `I18N.ko` for the session to-do chip and layer (40c). | | |
 | `06-i18n-zzj-copilot.js` | `I18N.ko` for the Copilot quota piece (`extQuotaStr`, 46) in the status bar (60) and «By platform». | | |
 | `06-i18n-zzc-ci.js` | `I18N.ko` for the Harness «After push (CI)» checkpoint and its «Holding: CI streak n/5» line (47b). | | |
 | `06-i18n-zzd-selfcheck.js` | `I18N.ko` for the Harness «Guard self-check» table (47f). | | |
@@ -259,6 +261,7 @@ Token widget placement:
 | `45-saver-quota.css` |  |  |  |
 | `50-layout-feed.css` | Layout · chat room cards `.rcw`/`.rcgrid`/`.rcard`/`.rced` · open-room strip `.rmname`/`.rmmem` | `.rcard`, `.rcgrid` |  |
 | `60-sessions.css` |  |  |  |
+| `60b-sessions-todo.css` | Session to-do chip `.stdc` and layer `.stdl` (40c); the layer wraps, the chip never shrinks | `.stdc`, `.stdl` |  |
 | `62-attention.css` † | «Attention» strip (17-attention.js); empty state is one quiet line. | | |
 | `65-code-compose-alarm.css` |  |  |  |
 | `70-health.css` |  |  |  |

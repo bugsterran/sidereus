@@ -1,0 +1,12 @@
+{
+  "id": "todo",
+  "title": "To-do",
+  "default_on_public": true,
+  "deps": [],
+  "modules": [],
+  "routes": ["/api/todo*"],
+  "threads": [],
+  "state_keys": ["todo"],
+  "web": ["js/40c-sessions-todo.js", "css/60b-sessions-todo.css"],
+  "settings": []
+}

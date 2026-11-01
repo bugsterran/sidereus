@@ -7,6 +7,7 @@ Sidereus's «Apply» mode (config `pipeline_apply`) picks the how-to line (auto 
 ⚠Metadata only: name · title · use · stage titles · missing agent names — never `task` or `rules` text.
 UserPromptSubmit re-sends the brief only when the pipeline set changed since this session's last brief
 (fingerprint in <data dir>/plbrief/<sid>) -- a pipeline created mid-session is otherwise never announced.
+SessionStart also carries one TODO line (`<git root>/.claude/todo.md`, Sidereus «To-do»), with or without pipelines.
 ⚠Never blocks a session: any failure prints nothing and exits 0. Stdlib only, Python 3.9 (/usr/bin/python3).
 """
 import glob
@@ -44,6 +45,10 @@ HOW_ASK_CODEX = ("Before starting work on a request that fits one of these pipel
 PICK = ("Pick by «when»: file-changing work opens a run of the pipeline whose «when» fits; "
         "when starting a run, state the pick and the reason in one line.")
 STRICT = "Strict mode is on: file edits need an open run."   # <project>/.claude/pipelines/_policy.json {"enforce": "writes"}
+# Sidereus «To-do» (feature `todo`): one line at SessionStart even with no pipelines; config `features.todo` false = silent.
+TODO = ("To-do list: record each request the person makes as one line `- [ ] <short request>` in %s "
+        "(create the file if missing; person-level requests only, no internal steps). Mark it `- [~]` when you start it "
+        "(at most one `[~]` per session; back to `- [ ]` if you pause it) and `- [x]` when done.")
 # Sidereus's «Apply» setting (sidereus/prefs.py `pipeline_apply`): auto = HOW, ask = HOW_ASK, off = no output.
 BRIEF_DIR = os.path.join(os.path.expanduser(os.environ.get("MAILBOX_DIR") or "~/.mailbox-mcp"), "plbrief")   # patched in tests
 SID = re.compile(r"^[0-9a-zA-Z-]{8,64}$")
@@ -171,6 +176,23 @@ def _mode(cwd):
         return m if m in ("auto", "ask", "off") else "auto"
     except Exception:
         return "auto"
+
+
+def _todo_line(cwd):
+    """TODO text for the git root of `cwd`, or "" (no repo, a root at home or `/`, or `features.todo` false)."""
+    try:
+        p = CONFIG_PATH or os.path.expanduser(os.environ.get("MAILBOX_CONFIG") or os.path.join(
+            os.environ.get("MAILBOX_DIR") or "~/.mailbox-mcp", "config.local.json"))
+        with open(p, encoding="utf-8") as f:
+            if (json.load(f).get("features") or {}).get("todo") is False:
+                return ""
+    except Exception:
+        pass   # no or bad config = feature default (on)
+    root = _git_root(cwd) if isinstance(cwd, str) and os.path.isabs(cwd) else ""
+    # ⚠same refusal as sidereus/todo.py repo_of: a dotfiles repo at home would aim at ~/.claude/todo.md
+    if not root or os.path.dirname(root) == root or os.path.normpath(root) == os.path.normpath(HOME_DIR):
+        return ""
+    return TODO % os.path.join(root, ".claude", "todo.md")
 
 
 def _clip(s, n):
@@ -382,6 +404,8 @@ def main(argv=None):
         elif event == "UserPromptSubmit":
             return 0
         text = brief(cwd, dirs[1:], plat)
+        if event == "SessionStart":   # ⚠independent of «Apply» off: the to-do list is not a pipeline
+            text = "\n".join(x for x in (text, _todo_line(cwd)) if x)
         if text:
             sys.stdout.write(json.dumps({"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}},
                                         ensure_ascii=False))
