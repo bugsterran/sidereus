@@ -125,6 +125,16 @@ class BundleShipsExtHooks(unittest.TestCase):
             for plat in hc._TPL:
                 self.assertIsNotNone(hc._template(plat), plat)
 
+    def test_recursive_entries_use_forward_slash_on_windows(self):
+        s = _setup_mod()
+        real = os.path.relpath
+        # Simulate ntpath: relpath answers with "\\" and os.sep is "\\".
+        with mock.patch.object(os.path, "relpath", lambda p, start: real(p, start).replace("/", "\\")), \
+                mock.patch.object(os, "sep", "\\"):
+            rels = s.bundle_files(REPO)
+        self.assertIn("ext-hooks/ext_hook.py", rels)
+        self.assertEqual([r for r in rels if "\\" in r], [])
+
 
 class SetupCompiles(unittest.TestCase):
     def test_py_compile_39(self):
