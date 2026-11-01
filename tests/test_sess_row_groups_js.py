@@ -1,13 +1,16 @@
 """Session identity row groups (40ba sessIdRow): chips sit in [identity][usage][work][actions] groups (R1),
 usage/work are always emitted as placeholders (R2), «To-do n» never forms a group alone and sessFit drops only
 size · cost · model (R3). Pure functions under node with stubs."""
+import glob
 import json
+import os
+import re
 from html.parser import HTMLParser
 import shutil
 import subprocess
 import unittest
 
-from tests._load import js_fn
+from tests._load import ROOT, js_fn
 from tests.test_saver_quota_js import jconst
 from tests._node import node_e
 
@@ -25,7 +28,7 @@ function termBtnHtml(x){ return x.term ? '<button class="stm" data-term="s">›_
 function stodoChip(x){ return x.todo ? '<span class="stdc" data-todo="k">To-do 2</span>' : ''; }
 """
 FNS = "\n".join(js_fn(n) for n in ("sessIdRow", "sessGitChip", "sessUsage", "extTokChip", "sessWorkBadges",
-                                    "sessActs", "sessPlChip")) + "\n" + jconst("SX_DROP") + "\n"
+                                    "sessActs", "sessPlChip", "sessFit")) + "\n" + jconst("SX_DROP") + "\n"
 GROUPS = ("sxid", "sxus", "sxwk", "sxac")
 
 
@@ -106,6 +109,68 @@ class SessRowGroups(unittest.TestCase):
 
     def test_r3_drop_order(self):
         self.assertEqual(run("console.log(JSON.stringify(SX_DROP));"), ["sz", "sk", "sm"])
+
+
+def fake(w, sp="null"):
+    """Stub element: subpixel getBoundingClientRect width, integer-rounded offsetWidth (as browsers do)."""
+    return ("{getBoundingClientRect: () => ({width: %s}), offsetWidth: Math.round(%s), offsetTop: 0, offsetHeight: 16,"
+            " firstChild: 1, querySelector: s => s === '.sp' ? %s : null}" % (w, w, sp))
+
+
+def fit(idw, gs=735, spw=None):
+    return run(r"""const window = {};
+const props = {};
+const mk = () => { const id = %s, us = %s, l = %s, gs = {clientWidth: %d};
+  return {clientWidth: 791, querySelector: s => ({'.sxid': id, '.sxus': us, '.sxl': l, '.sxgs': gs})[s] || null,
+          querySelectorAll: () => [id, us]}; };
+const rows = [mk(), mk()];
+const box = {clientWidth: 791, style: {setProperty: (k, v) => { props[k] = v; }, removeProperty: k => { delete props[k]; }},
+             classList: {add() {}, remove() {}}, querySelectorAll: () => rows};
+sessFit(box);
+console.log(JSON.stringify(props));
+""" % (fake(idw, fake(spw) if spw else "null"), fake(120.2), fake(18.6), gs))
+
+
+def px(v):
+    return int(v[:-2])
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class SessFitWidths(unittest.TestCase):
+    """sessFit measures at subpixel precision and rounds up: 225.4 px must not become a 225 px column."""
+    def test_fractional_width_rounds_up(self):
+        p = fit(225.4)
+        self.assertGreaterEqual(px(p["--sxidw"]), 226)
+        self.assertGreaterEqual(px(p["--sxusw"]), 121)
+        self.assertGreaterEqual(px(p["--sxlead"]), 19)
+
+    def test_cap_still_applies(self):
+        self.assertLessEqual(px(fit(500.0, spw=300.0)["--sxidw"]), 332)   # 45% of 735 = 330.75 > needed 296
+
+    def test_cap_floor_is_min_needed(self):
+        # cap 45% of 413 = 186; identity 260 with a 147px name -> needs 260 - (147 - 96) = 209 with the name ellipsized
+        v = px(fit(260.0, gs=413, spw=147.0)["--sxidw"])
+        self.assertGreaterEqual(v, 209)
+        self.assertLess(v, 260)
+        self.assertLessEqual(px(fit(260.0, gs=413, spw=60.0)["--sxidw"]), 262)   # short name: never above natural
+
+
+class SxidNoWrap(unittest.TestCase):
+    def test_no_wrap_rule_for_sxid(self):
+        for f in sorted(glob.glob(os.path.join(ROOT, "web", "css", "*.css"))):
+            with open(f, encoding="utf-8") as fh:
+                css = re.sub(r"/\*.*?\*/", "", fh.read(), flags=re.S)
+            for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+                # rules whose subject is .sxid itself (optionally with :has()/:not() pseudo-classes)
+                if any(re.search(r"\.sxid(:[\w-]+(\([^)]*\))?)*$", s.strip()) for s in sel.split(",")):
+                    self.assertNotRegex(body, r"flex-wrap\s*:\s*wrap", "%s: %s" % (os.path.basename(f), sel.strip()))
+
+    def test_name_ellipsizes_with_floor(self):
+        with open(os.path.join(ROOT, "web", "css", "60-sessions.css"), encoding="utf-8") as fh:
+            m = re.search(r"\.sx \.sxid > \.sp\{([^}]*)\}", fh.read())
+        self.assertIsNotNone(m)
+        for d in ("min-width:96px", "overflow:hidden", "text-overflow:ellipsis"):
+            self.assertIn(d, m.group(1))
 
 
 if __name__ == "__main__":
