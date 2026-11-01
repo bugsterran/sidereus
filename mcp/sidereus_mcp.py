@@ -2,7 +2,8 @@
 """Sidereus MCP server (stdio) — lets a Claude session ASK Sidereus about quota, peers and file owners.
 
 ★2026-09-24 (user-approved): Sidereus answers when asked; it never controls sessions. Every tool is a GET on the
-  local viewer (`/api/agent/*`, built in sidereus/agent_brief.py) — no writes, no session control.
+  local viewer (`/api/agent/*`, built in sidereus/agent_brief.py) — no session control. The one write is
+  sidereus_todo (POST /api/todo/agent): one-line to-do labels kept in Sidereus' data dir, never in the repo.
 ⛔Metadata only: outputs carry ids, names, states, tool names, counts and times — never conversation text.
 Protocol: JSON-RPC 2.0, one JSON message per line on stdin/stdout (MCP stdio transport). Stdlib only (3.9).
 Caller identity = this process's cwd (Claude Code starts MCP servers in the session cwd), overridable per call.
@@ -16,7 +17,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-NAME, VERSION = "sidereus", "0.1.0"
+NAME, VERSION = "sidereus", "0.2.0"
 
 
 def _cfg_root():
@@ -100,6 +101,17 @@ TOOLS = [
     {"name": "sidereus_attention",
      "description": "Sessions currently needing the user — labels only.",
      "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False}},
+    {"name": "sidereus_todo",
+     "description": "This repo's to-do list in Sidereus (one-line request labels, kept in Sidereus, not the repo): "
+                    "add a person-level request; start it when you begin (one per session); open if paused; "
+                    "done when finished; list to read.",
+     "inputSchema": {"type": "object", "properties": {
+         "action": {"type": "string", "enum": ["add", "start", "done", "open", "list"]},
+         "text": {"type": "string", "description": "add: one-line request label (max 200 chars)"},
+         "id": {"type": "integer", "description": "start/done/open: item id from add or list"},
+         "cwd": {"type": "string", "description": "Repo dir (default: this session's cwd)"},
+         "sid": {"type": "string", "description": "Your session id (default: detected from the parent Claude process)"}},
+         "required": ["action"], "additionalProperties": False}},
 ]
 
 
@@ -115,6 +127,25 @@ def _get(path, params=None):
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:     # ⚠subclass of URLError — up but an older build without /api/agent/*
         raise SidereusDown("Sidereus answered HTTP %d for %s — restart it to load the /api/agent routes" % (e.code, path))
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        raise SidereusDown(down_text(type(e).__name__))
+
+
+def _post(path, body):
+    """POST JSON to {BASE}{path} -> dict; same SidereusDown handling as _get. ⚠No Origin header: the route refuses one."""
+    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode("utf-8"), method="POST",
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:  # nosec B310 -- constant loopback http base
+            return json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:     # 400/404 carry {"err": ...}; an older build without the route has none
+            err = json.loads(e.read().decode("utf-8")).get("err")
+        except Exception:
+            err = None
+        if err:
+            return {"ok": False, "err": err}
+        raise SidereusDown("Sidereus answered HTTP %d for %s — restart it to load the route" % (e.code, path))
     except (urllib.error.URLError, OSError, ValueError) as e:
         raise SidereusDown(down_text(type(e).__name__))
 
@@ -234,6 +265,13 @@ def fmt_file(d, me=""):
     return "\n".join(out)
 
 
+def fmt_todo(d):
+    its = d.get("items") or []
+    out = ["repo %s · %d to-do item(s)" % (d.get("repo") or "?", len(its))]
+    out += ["#%s [%s] %s" % (i.get("id"), i.get("s") or " ", i.get("t") or "") for i in its if isinstance(i, dict)]
+    return "\n".join(out)
+
+
 def fmt_attention(d):
     rs = d.get("rows") or []
     if not rs:
@@ -245,7 +283,7 @@ def fmt_attention(d):
     return "\n".join(out)
 
 
-_JSON_TYPES = {"string": str, "object": dict, "array": list, "boolean": bool}
+_JSON_TYPES = {"string": str, "object": dict, "array": list, "boolean": bool, "integer": int}
 
 
 def check_args(name, args):
@@ -264,8 +302,10 @@ def check_args(name, args):
                 return "unknown argument: %s" % k
             continue
         want = _JSON_TYPES.get(props[k].get("type"))
-        if want and not isinstance(v, want):
+        if want and (not isinstance(v, want) or want is int and isinstance(v, bool)):   # ⚠bool is an int subclass
             return "argument %s must be a %s" % (k, props[k]["type"])
+        if "enum" in props[k] and v not in props[k]["enum"]:
+            return "argument %s must be one of %s" % (k, ", ".join(props[k]["enum"]))
     miss = [k for k in sch.get("required") or () if k not in args]
     return "missing argument: %s" % ", ".join(miss) if miss else ""
 
@@ -287,6 +327,13 @@ def call_tool(name, args, cwd=None):
             d, fmt = _get("/api/agent/file", {"path": path, "cwd": cwd}), (lambda x: fmt_file(x, me))
         elif name == "sidereus_attention":
             d, fmt = _get("/api/agent/attention"), fmt_attention
+        elif name == "sidereus_todo":
+            a = args or {}
+            body = {"cwd": cwd, "sid": a.get("sid") or (_self_sid() if DETECT_SELF else ""), "action": a.get("action")}
+            for k in ("text", "id"):
+                if k in a:
+                    body[k] = a[k]
+            d, fmt = _post("/api/todo/agent", body), fmt_todo
         else:
             return "unknown tool: %s" % name, True
     except SidereusDown as e:
@@ -317,8 +364,9 @@ def handle(msg, cwd=None):
         return ok({"protocolVersion": want if want in PROTOCOLS else PROTOCOLS[0],
                    "capabilities": {"tools": {"listChanged": False}},
                    "serverInfo": {"name": NAME, "version": VERSION},
-                   "instructions": "Read-only view of Sidereus (local session control viewer). Ask sidereus_file_peers "
-                                   "before editing a shared file; sidereus_quota before spawning many subagents."})
+                   "instructions": "Sidereus (local session control viewer). Ask sidereus_file_peers before editing a "
+                                   "shared file; sidereus_quota before spawning many subagents. The only write is "
+                                   "sidereus_todo: one-line to-do labels kept in Sidereus' data dir, never in the repo."})
     if method == "ping":
         return ok({})
     if method == "tools/list":

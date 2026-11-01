@@ -1,6 +1,6 @@
-"""«To-do» (sidereus/todo.py + GET /api/todo, POST /api/todo/add · /set, /api/state `todo`).
-⚠Tmp repos only: `_allowed_cwds`, `_now`, `TRASH_DIR`, `LEDGER_DIR` are patched on the todo module."""
-import glob
+"""«To-do» (sidereus/todo.py + GET /api/todo, POST /api/todo/add · /set · /agent, /api/state `todo`).
+⚠Tmp repos only: `_allowed_cwds`, `_now`, `LEDGER_DIR`, `_MEMO`, `_NOIMPORT` are patched on the todo module."""
+import json
 import os
 import shutil
 import tempfile
@@ -25,164 +25,210 @@ class Todo(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tmp, True)
         self.repo = os.path.join(self.tmp, "repo")
         os.makedirs(os.path.join(self.repo, ".git"))
-        os.makedirs(os.path.join(self.repo, ".claude"))
         self.cwd = os.path.join(self.repo, "sub")
         os.makedirs(self.cwd)
         self.t = 1767225600.0   # 2026-01-01T00:00:00Z
-        self.trash = os.path.join(self.tmp, "trash")
+        self.led = os.path.join(self.tmp, "ledger")
         for k, v in (("_allowed_cwds", lambda: {self.cwd: {"cwd": self.cwd}}), ("_now", lambda: self.t),
-                     ("TRASH_DIR", self.trash), ("LEDGER_DIR", os.path.join(self.tmp, "ledger")), ("_MEMO", {})):
+                     ("LEDGER_DIR", self.led), ("_MEMO", {}), ("_NOIMPORT", set())):
             p = mock.patch.object(TD, k, v)
             p.start()
             self.addCleanup(p.stop)
         self.p = os.path.join(self.repo, ".claude", "todo.md")
 
     def w(self, raw):
+        os.makedirs(os.path.dirname(self.p), exist_ok=True)
         with open(self.p, "wb") as f:
             f.write(raw)
-        os.utime(self.p, (self.t, self.t))   # ledger times come from the file mtime
+        os.utime(self.p, (self.t, self.t))   # import falls back to the file mtime
 
     def r(self):
         with open(self.p, "rb") as f:
             return f.read()
+
+    def store(self):
+        with open(TD._ledger_path(self.repo), encoding="utf-8") as f:
+            return json.load(f)
+
+    def ag(self, **kw):
+        kw.setdefault("cwd", self.cwd)
+        kw.setdefault("sid", "s1")
+        return TD.agent(kw)
 
     def test_parse_three_states(self):
         it = TD.parse(b"# notes\n- [ ] a\n  - [~] b\r\n- [x] c\n- [X] d\n- [?] e\n-[ ] f\n")
         self.assertEqual([(x["i"], x["s"], x["t"]) for x in it], [(1, " ", "a"), (2, "~", "b"), (3, "x", "c"), (4, "x", "d")])
         self.assertEqual(TD._counts(it), {"o": 1, "w": 1, "d": 2})
 
-    def test_r5_missing_big_symlink_no_data(self):
-        self.assertEqual(TD._read(self.repo), (None, None))   # missing
-        self.w(b"- [ ] a\n" * (TD.TODO_MAX // 8 + 1))
-        self.assertEqual(TD._read(self.repo), (None, None))   # over 64 KB
-        os.remove(self.p)
-        real = os.path.join(self.tmp, "real.md")
-        with open(real, "wb") as f:
-            f.write(b"- [ ] a\n")
-        os.symlink(real, self.p)
-        self.assertEqual(TD._read(self.repo), (None, None))   # symlinked file
+    def test_r1_r2_writes_never_create_repo_claude(self):
+        self.assertEqual(TD.add({"cwd": self.cwd, "text": "person"})[0], 200)
+        code, out = self.ag(action="add", text="agent item")
+        self.assertEqual((code, [x["t"] for x in out["items"]]), (200, ["person", "agent item"]))
+        it = TD.todo_get(self.cwd)[1]["items"]
+        self.assertEqual(TD.set_state({"cwd": self.cwd, "i": it[0]["i"], "h": it[0]["h"], "s": "x"})[0], 200)
+        self.assertFalse(os.path.lexists(os.path.join(self.repo, ".claude")))
+        self.assertEqual(sorted(os.listdir(self.repo)), [".git", "sub"])
+        st = self.store()
+        self.assertEqual((st["v"], st["repo"], st["seq"]), (2, self.repo, 2))
+        self.assertEqual([(x["s"], x["sid"]) for x in st["items"]], [("x", ""), (" ", "s1")])
+
+    def test_r3_import_copies_items_and_v1_times(self):
+        t0 = self.t
+        old = b"# head\n- [ ] a\n- [~] b\n- [x] c\n"
+        self.w(old)
+        os.makedirs(self.led)
+        with open(TD._ledger_path(self.repo), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "items": {"a#0": {"t": "a", "add": t0 - 500}, "c#0": {"t": "c", "add": t0 - 900, "done": t0 - 100},
+                                         "gone#0": {"t": "gone", "add": t0 - 999, "done": t0 - 50},
+                                         "dropped#0": {"t": "dropped", "add": t0 - 999}}}, f)
+        self.t += 3600
+        code, out = TD.todo_get(self.cwd)
+        self.assertEqual(code, 200)
+        self.assertEqual([(x["s"], x["t"]) for x in out["items"]], [(" ", "a"), ("~", "b"), ("x", "c"), ("x", "gone")])
+        st = self.store()
+        self.assertEqual(st["imported"], t0 + 3600)
+        by = {x["t"]: x for x in st["items"]}
+        self.assertEqual(by["a"]["add"], t0 - 500)
+        self.assertEqual((by["b"]["add"], by["b"]["start"]), (t0, t0))   # no v1 key: file mtime
+        self.assertEqual(by["c"]["done"], t0 - 100)
+        self.assertEqual(by["gone"]["done"], t0 - 50)                   # done-only v1 entry kept for «By day»
+        self.assertEqual(self.r(), old)
+        self.assertEqual(os.stat(self.p).st_mtime, t0)                  # todo.md read-only
+
+    def test_r3_edit_after_import_changes_nothing(self):
+        self.w(b"- [ ] a\n")
+        self.assertEqual(TD.state_counts([{"cwd": self.cwd}]), {self.cwd: {"o": 1, "w": 0, "d": 0}})
+        before = self.store()
+        self.t += 60
+        self.w(b"- [x] a\n- [ ] b\n- [ ] c\n")
+        TD._MEMO.clear()
+        self.assertEqual(TD.state_counts([{"cwd": self.cwd}]), {self.cwd: {"o": 1, "w": 0, "d": 0}})
+        self.assertEqual([x["t"] for x in TD.todo_get(self.cwd)[1]["items"]], ["a"])
+        self.assertEqual(self.store(), before)
+        self.assertEqual(self.r(), b"- [x] a\n- [ ] b\n- [ ] c\n")
+
+    def test_r3_nothing_to_import_writes_no_file(self):
+        self.assertEqual(TD.state_counts([{"cwd": self.cwd}]), {})
+        self.assertEqual(TD.todo_get(self.cwd)[1]["items"], [])
+        self.assertFalse(os.path.exists(self.led))
+        self.w(b"- [ ] late\n")   # in-process memo: not re-read
         self.assertEqual(TD.state_counts([{"cwd": self.cwd}]), {})
 
-    def test_r5_symlinked_parent_no_data_and_refused(self):
-        os.rmdir(os.path.join(self.repo, ".claude"))
+    def test_r3_symlinked_todo_not_imported(self):
         other = os.path.join(self.tmp, "other")
         os.makedirs(other)
         with open(os.path.join(other, "todo.md"), "wb") as f:
             f.write(b"- [ ] a\n")
         os.symlink(other, os.path.join(self.repo, ".claude"))
-        self.assertEqual(TD._read(self.repo), (None, None))
-        code, _ = TD.add({"cwd": self.cwd, "text": "x"})
-        self.assertEqual(code, 400)
-        with open(os.path.join(other, "todo.md"), "rb") as f:
-            self.assertEqual(f.read(), b"- [ ] a\n")
+        self.assertEqual(TD.todo_get(self.cwd)[1]["items"], [])
 
-    def test_r3_add_keeps_crlf_and_other_lines(self):
-        old = b"# head \r\n- [x] done\r\nfree text"
-        self.w(old)
-        code, out = TD.add({"cwd": self.cwd, "text": "  new item "})
-        self.assertEqual(code, 200)
-        self.assertEqual(self.r(), old + b"\r\n- [ ] new item\r\n")
-        self.assertEqual(out["items"][-1]["t"], "new item")
+    def test_r2_set_toggles_and_stale_409(self):
+        self.ag(action="add", text="a")
+        it = TD.todo_get(self.cwd)[1]["items"][0]
+        code, out = TD.set_state({"cwd": self.cwd, "i": it["i"], "h": it["h"], "s": "x"})
+        self.assertEqual((code, out["items"][0]["s"]), (200, "x"))
+        self.assertEqual(TD.set_state({"cwd": self.cwd, "i": it["i"], "h": it["h"], "s": " "})[0], 409)   # h of the old state
+        self.assertEqual(TD.set_state({"cwd": self.cwd, "i": 99, "h": it["h"], "s": " "})[0], 409)
+        self.assertEqual(TD.set_state({"cwd": self.cwd, "i": it["i"], "h": it["h"], "s": "~"})[0], 400)
+        self.assertEqual(self.store()["items"][0]["done"], self.t)
 
-    def test_r3_add_rejects_bad_text(self):
+    def test_r2_add_rejects_bad_text(self):
         for t in ("", "a\nb", "x" * 201, "tab\there", 5, None):
             self.assertEqual(TD.add({"cwd": self.cwd, "text": t})[0], 400, repr(t))
 
-    def test_r3_add_creates_file(self):
-        shutil.rmtree(os.path.join(self.repo, ".claude"))
-        self.assertEqual(TD.add({"cwd": self.cwd, "text": "first"})[0], 200)
-        self.assertEqual(self.r(), b"- [ ] first\n")
-        self.assertEqual(glob.glob(os.path.join(self.trash, "*")), [])   # nothing to back up
-
-    def test_r3_set_changes_bracket_only_and_stale_409(self):
-        old = b"intro\n- [ ] a\n- [~] b\n"
-        self.w(old)
-        it = TD.parse(old)
-        code, _ = TD.set_state({"cwd": self.cwd, "i": 1, "h": it[0]["h"], "s": "x"})
-        self.assertEqual(code, 200)
-        self.assertEqual(self.r(), b"intro\n- [x] a\n- [~] b\n")
-        code, _ = TD.set_state({"cwd": self.cwd, "i": 1, "h": it[0]["h"], "s": " "})   # h of the old line
-        self.assertEqual(code, 409)
-        self.assertEqual(TD.set_state({"cwd": self.cwd, "i": 0, "h": TD._h(b"intro"), "s": "x"})[0], 409)   # not an item
-        self.assertEqual(TD.set_state({"cwd": self.cwd, "i": 2, "h": it[1]["h"], "s": "~"})[0], 400)
-
-    def test_r3_backup_before_write(self):
-        self.w(b"- [ ] a\n")
-        self.assertEqual(TD.add({"cwd": self.cwd, "text": "b"})[0], 200)
-        baks = glob.glob(os.path.join(self.trash, "*", "todo-*.md"))
-        self.assertEqual(len(baks), 1)
-        with open(baks[0], "rb") as f:
-            self.assertEqual(f.read(), b"- [ ] a\n")
-
-    def test_r3_unknown_cwd_refused(self):
-        self.w(b"- [ ] a\n")
+    def test_r2_unknown_cwd_refused(self):
         for cwd in (self.tmp, "/etc", None, "rel"):
             self.assertEqual(TD.add({"cwd": cwd, "text": "x"})[0], 403)
             self.assertEqual(TD.todo_get(cwd)[0], 403)
-        self.assertEqual(self.r(), b"- [ ] a\n")
 
-    def test_r3_origin_required(self):
-        self.w(b"- [ ] a\n")
+    def test_r2_viewer_origin_required(self):
         for origin in (None, EVIL):
             code, _out, _ = post("/api/todo/add", {"cwd": self.cwd, "text": "x"}, origin=origin)
             self.assertEqual(code, 403)
-        self.assertEqual(self.r(), b"- [ ] a\n")
         code, out, _ = post("/api/todo/add", {"cwd": self.cwd, "text": "x"}, origin=ORIGIN)
         self.assertEqual((code, out["ok"]), (200, True))
         code, out = get("/api/todo?cwd=" + self.cwd)
-        self.assertEqual([x["t"] for x in out["items"]], ["a", "x"])
+        self.assertEqual([x["t"] for x in out["items"]], ["x"])
 
-    def test_r4_ledger_add_start_done_incl_direct_edits(self):
-        self.w(b"- [ ] a\n")
-        TD.state_counts([{"cwd": self.cwd}])
-        self.t += 3600
-        self.w(b"- [~] a\n- [ ] bb\n")    # a session edits the file directly
-        TD.state_counts([{"cwd": self.cwd}])
-        self.t += 86400
-        self.w(b"- [x] a\n- [ ] bb\n")
-        self.assertEqual(TD.state_counts([{"cwd": self.cwd}]), {self.cwd: {"o": 1, "w": 0, "d": 1}})
-        led = TD._ledger_load(self.repo)
-        t0 = 1767225600.0
-        self.assertEqual(led["a#0"], {"t": "a", "add": t0, "start": t0 + 3600, "done": t0 + 3600 + 86400})
-        self.assertEqual(led["bb#0"], {"t": "bb", "add": t0 + 3600})
+    def test_r1_agent_route_any_origin_403(self):
+        body = {"cwd": self.cwd, "sid": "s1", "action": "add", "text": "x"}
+        for origin in (ORIGIN, EVIL):
+            self.assertEqual(post("/api/todo/agent", body, origin=origin)[0], 403)
+        self.assertFalse(os.path.exists(self.led))
+        code, out, _ = post("/api/todo/agent", body)
+        self.assertEqual((code, out["repo"], [x["t"] for x in out["items"]]), (200, self.repo, ["x"]))
 
-    def test_r4_repeated_text_keeps_separate_entries(self):
-        t0 = self.t
-        self.w(b"- [x] X\n")
-        TD.todo_get(self.cwd)
-        self.t += 86400
-        self.w(b"- [ ] X\n- [x] X\n")   # done-first: the earlier Done stays on its day
-        for _ in range(3):
-            TD.todo_get(self.cwd)
-            self.t += 60
-        led = TD._ledger_load(self.repo)
-        self.assertEqual(led["x#0"], {"t": "X", "add": t0})   # first line reopened: its done dropped
-        self.assertEqual(led["x#1"], {"t": "X", "add": t0 + 86400, "done": t0 + 86400})
-        self.w(b"- [x] X\n- [x] X\n")
-        TD.todo_get(self.cwd)
-        led = TD._ledger_load(self.repo)
-        self.assertEqual(led["x#1"]["done"], t0 + 86400)   # never re-stamped
+    def test_r1_agent_any_git_root(self):
+        other = os.path.join(self.tmp, "r2")
+        os.makedirs(os.path.join(other, ".git"))
+        self.assertEqual(TD.agent({"cwd": other, "sid": "s", "action": "add", "text": "x"})[0], 200)   # not on screen
 
-    def test_r4_unpolled_edits_use_file_mtime(self):
-        t0 = self.t
-        self.w(b"- [~] a\n- [x] b\n")   # written while no viewer polled
-        self.t = t0 + 5 * 86400         # first poll days later
-        TD.state_counts([{"cwd": self.cwd}])
-        led = TD._ledger_load(self.repo)
-        self.assertEqual(led["a#0"], {"t": "a", "add": t0, "start": t0})
-        self.assertEqual(led["b#0"], {"t": "b", "add": t0, "done": t0})   # never seen [~]: no start
-
-    def test_r4_days_newest_first(self):
-        self.w(b"- [ ] a\n")
-        TD.todo_get(self.cwd)
-        self.t += 2 * 86400
-        self.w(b"- [x] a\n")
-        code, out = TD.todo_get(self.cwd)
+    def test_r1_start_demotes_same_sid_only(self):
+        for t in ("a", "b", "c"):
+            self.ag(action="add", text=t)
+        self.ag(action="start", id=1)
+        self.ag(action="start", id=3, sid="s2")
+        code, out = self.ag(action="start", text="b")
         self.assertEqual(code, 200)
-        days = out["days"]
+        self.assertEqual([(x["t"], x["s"]) for x in out["items"]], [("a", " "), ("b", "~"), ("c", "~")])
+        self.assertEqual(self.ag(action="done", text="b")[1]["items"][1]["s"], "x")
+        self.assertEqual(self.ag(action="open", text="b")[1]["items"][1]["s"], " ")
+        self.assertEqual(self.ag(action="done", id=42)[0], 404)
+        for a in ("start", "done", "open"):
+            self.assertEqual(self.ag(action=a)[0], 400, a)   # neither text nor id
+        self.assertEqual(self.ag(action="done", text="nope")[0], 404)
+        self.assertEqual(TD.state_counts([{"cwd": self.cwd}]), {self.cwd: {"o": 2, "w": 1, "d": 0}})
+
+    def test_r1_open_by_text_reopens_started_or_done(self):
+        self.ag(action="add", text="X")
+        self.ag(action="start", text="X")
+        code, out = self.ag(action="open", text="x")
+        self.assertEqual((code, out["items"][0]["s"]), (200, " "))
+        self.ag(action="done", text="X")
+        code, out = self.ag(action="open", text="X")
+        self.assertEqual((code, out["items"][0]["s"]), (200, " "))
+        self.assertEqual(self.ag(action="open", text="X")[0], 404)   # already open
+
+    def test_r1_agent_bad_input_400(self):
+        for kw in ({"action": "add", "text": "x" * 201}, {"action": "add", "text": "a\x07b"}, {"action": "add", "text": "a\nb"},
+                   {"action": "add"}, {"action": "zap"}, {"action": "list", "sid": "bad sid"}, {"action": "list", "sid": 5}):
+            self.assertEqual(self.ag(**kw)[0], 400, repr(kw))
+        self.assertEqual(self.ag(action="add", text="x" * 200)[0], 200)
+        self.assertEqual(self.ag(action="list")[0], 200)
+
+    def test_r1_agent_home_or_root_404(self):
+        home = os.path.join(self.tmp, "home")
+        os.makedirs(os.path.join(home, ".git"))
+        with mock.patch.object(TD, "_real_home", lambda: home):
+            self.assertEqual(TD.agent({"cwd": home, "sid": "s", "action": "add", "text": "x"})[0], 404)
+        with mock.patch.object(TD, "_git_root", lambda d: "/"):
+            self.assertEqual(TD.agent({"cwd": "/", "sid": "s", "action": "add", "text": "x"})[0], 404)
+        for cwd in ("rel", None, self.tmp):
+            self.assertEqual(TD.agent({"cwd": cwd, "sid": "s", "action": "list"})[0], 404)
+        self.assertFalse(os.path.exists(self.led))
+
+    def test_r2_days_and_prune(self):
+        self.ag(action="add", text="a")
+        self.t += 2 * 86400
+        self.ag(action="done", text="a")
+        days = TD.todo_get(self.cwd)[1]["days"]
         self.assertEqual([d["day"] for d in days], sorted([d["day"] for d in days], reverse=True))
-        self.assertEqual(days[0]["done"], ["a"])
-        self.assertEqual(days[-1]["added"], ["a"])
+        self.assertEqual((days[0]["done"], days[-1]["added"]), (["a"], ["a"]))
+        self.t += TD.LEDGER_DONE_S + 1
+        self.ag(action="add", text="b")
+        self.assertEqual([x["t"] for x in self.store()["items"]], ["b"])
+
+    def test_bad_store_value_skipped(self):
+        os.makedirs(self.led)
+        with open(TD._ledger_path(self.repo), "w", encoding="utf-8") as f:
+            f.write('{"v": 2, "seq": 3, "items": [{"id": 1, "s": " ", "t": "a", "add": "x"}, {"id": 2, "s": "?", "t": "b"},'
+                    ' {"id": true, "s": " ", "t": "c"}, {"id": 3, "s": "x", "t": "d", "done": "nope"}]}')
+        self.assertEqual(TD.state_counts([{"cwd": self.cwd}]), {self.cwd: {"o": 1, "w": 0, "d": 1}})
+        self.assertEqual(TD.todo_get(self.cwd)[1]["days"], [])
+        self.assertEqual(self.ag(action="add", text="e")[1]["items"][-1]["id"], 4)
+
+    def test_get_states_text_max(self):
+        self.assertEqual(TD.todo_get(self.cwd)[1]["max"], TD.TEXT_MAX)
 
     def test_r1_state_key_omitted_when_feature_off(self):
         saved = {k: getattr(ST, k) for k in _READERS}
@@ -196,6 +242,7 @@ class Todo(unittest.TestCase):
             with mock.patch.object(F, "_TOGGLES", {"todo": False}):
                 self.assertNotIn("todo", ST.state())
                 self.assertEqual(F.route_feature("/api/todo/add"), "todo")
+                self.assertEqual(F.route_feature("/api/todo/agent"), "todo")
 
     def test_off_feature_skips_piece_entirely(self):
         saved = {k: getattr(ST, k) for k in _READERS}
@@ -208,40 +255,6 @@ class Todo(unittest.TestCase):
                 mock.patch.object(F, "_MANIFESTS", {"todo": real["todo"]}), mock.patch.object(F, "_TOGGLES", {"todo": False}):
             ST.state()
         self.assertEqual(calls, [])
-
-    def test_bad_ledger_value_skipped(self):
-        os.makedirs(os.path.dirname(TD._ledger_path(self.repo)))
-        with open(TD._ledger_path(self.repo), "w", encoding="utf-8") as f:
-            f.write('{"v": 1, "items": {"a#0": {"t": "a", "add": "x", "done": "nope"}, "b#0": {"t": "b", "done": true}}}')
-        self.w(b"- [ ] a\n- [x] c\n")
-        self.assertEqual(TD.state_counts([{"cwd": self.cwd}]), {self.cwd: {"o": 1, "w": 0, "d": 1}})
-        led = TD._ledger_load(self.repo)
-        self.assertEqual(led["a#0"]["add"], self.t)
-        self.assertNotIn("done", led["b#0"])
-
-    def test_get_states_text_max_and_tmp_is_excl(self):
-        self.assertEqual(TD.todo_get(self.cwd)[1]["max"], TD.TEXT_MAX)
-        opened = []
-        real_open = os.open
-        with mock.patch.object(TD.os, "open", lambda p, fl, *a: opened.append(fl) or real_open(p, fl, *a)):
-            self.assertEqual(TD.add({"cwd": self.cwd, "text": "a"})[0], 200)
-        self.assertTrue(opened and opened[0] & os.O_EXCL and opened[0] & getattr(os, "O_NOFOLLOW", 0) == getattr(os, "O_NOFOLLOW", 0))
-        self.assertEqual(glob.glob(self.p + ".sidereus-tmp.*"), [])
-
-    def test_link_appearing_before_rename_refused(self):
-        self.w(b"- [ ] a\n")
-        real_read = TD._read
-        def swap(repo):
-            out = real_read(repo)
-            if os.path.lexists(self.p) and not os.path.islink(self.p):
-                os.rename(self.p, self.p + ".moved")
-                os.symlink(self.p + ".moved", self.p)
-            return out
-        with mock.patch.object(TD, "_read", swap):
-            code, _out = TD._write_locked(self.repo, b"- [ ] a\n", b"- [x] a\n")
-        self.assertEqual(code, 400)   # caught by the re-check, not the content compare
-        self.assertTrue(os.path.islink(self.p))
-        self.assertEqual(glob.glob(self.p + ".sidereus-tmp.*"), [])
 
 
 if __name__ == "__main__":

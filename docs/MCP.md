@@ -2,8 +2,9 @@
 
 **English** · [Korean](MCP.ko.md)
 
-`mcp/sidereus_mcp.py` lets a Claude session query Sidereus. It is read-only: it never controls, blocks or messages a session.
-Answers contain metadata only (ids, names, states, tool names, counts, times).
+`mcp/sidereus_mcp.py` lets a session query Sidereus. It never controls, blocks or messages a session.
+The only write is `sidereus_todo`: one-line to-do labels kept in the Sidereus data dir, never in the repo.
+Answers contain metadata only (ids, names, states, tool names, counts, times, to-do labels).
 
 ## Register
 
@@ -22,13 +23,15 @@ claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.
 | `sidereus_file_peers` | `path` (required), `sid`, `cwd` | sessions and agents that edited the file in the last 30 min (sid8/unit, agent type, project, time ago, live), and whether it is uncommitted; `no such file` for a missing path |
 | `sidereus_peers` | `cwd` | live sessions and subagents in the same repo, any worktree: state, current tool, ctx % |
 | `sidereus_attention` | none | sessions that need the user now, labels only |
+| `sidereus_todo` | `action` (required: `add` `start` `done` `open` `list`), `text` (add, max 200 chars), `id` (integer), `cwd`, `sid` | the repo's to-do items, one line each: `#id [s] text` |
 
 - `sidereus_quota` numbers are per account of the calling session: when `CLAUDE_CONFIG_DIR` is set and is not `~/.claude`, the
   request carries `dir=<that path>` and the reply's first line is `account: <label>`. An unknown account returns
   `quota unavailable: unknown account` (never the primary account's numbers). Single-account setups send no `dir`.
 - The caller is identified by the MCP process cwd, which Claude Code sets to the session cwd. `cwd` overrides it.
 - `sidereus_file_peers` finds the caller's session from the parent Claude process and marks it `(you)`; `sid` overrides it. `sidereus_peers` includes your own session.
-- Arguments are checked against each tool's `inputSchema` (types, unknown keys, required). A bad call returns JSON-RPC `-32602`.
+- Arguments are checked against each tool's `inputSchema` (types, enums, unknown keys, required; `id: true` is not an integer). A bad call returns JSON-RPC `-32602`.
+- `sidereus_todo` works from any CLI that has this server registered. `sid` defaults to the parent Claude process's session, else empty.
 - The advice line copies the saver hook's verdict (`.saver-view.json` `lv` and stage); the server has no rule of its own.
   The hook (`~/.claude/hooks/saver.py`) is optional and not shipped. Without it, or without its snapshot, `sidereus_quota`
   still returns usage, with no stage and the advice «no pace verdict». If the projected empty time is before the 5h reset, the advice is a warning instead.
@@ -36,6 +39,7 @@ claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.
 ## Implementation
 
 - Viewer routes: `GET /api/agent/{quota,peers,file,attention}` in `sidereus/routes_get.py`; bodies from `sidereus/agent_brief.py`. Same Host check as every GET.
+- `sidereus_todo` posts `{cwd, sid, action, text?, id?}` to `POST /api/todo/agent` with no `Origin` header (the route refuses one). 400 = bad text, 404 = unknown repo.
 - Warm calls take under 2 ms. The first `file` call scans the owner index (~0.4 s).
 - JSON-RPC 2.0 over stdio, standard library only, Python 3.9+ (`/usr/bin/python3` on macOS, `py` on Windows).
 - HTTP timeout 8 s; the first call after a viewer restart can take over 3 s.

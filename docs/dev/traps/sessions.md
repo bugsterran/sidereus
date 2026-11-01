@@ -4,10 +4,13 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Sessions: state, subagents, external CLIs
 
-- ⚠**Session to-do list (`<git root>/.claude/todo.md`) — three traps** (2026-11-01; `sidereus/todo*`, 40c-sessions-todo.js).
-  - Claude Code may ask permission before writing under `.claude/`; the session's first write can wait on that prompt.
-  - The ledger matches items by text: a reworded item is a new item (old one leaves, new one is «added» that day).
-  - No file = no chip, no layer; the session creates the file — Sidereus never writes an empty one. ⇒ Item text is esc() only, never T(). Test `tests/test_todo_js.py`.
+- ⚠**Session to-do list — store in DATA_DIR, not the repo** (2026-11-01; `sidereus/todo.py`, 40c-sessions-todo.js).
+  - Cause: a repo file (`.claude/todo.md`) needed a permission prompt per write and a byte-exact writer in the viewer.
+  - ⇒ Sessions record items via the sidereus MCP tool (POST `/api/todo/agent`) into DATA_DIR/todo/<sha1(repo)[:16]>.json; an old todo.md is imported once when no v2 file exists, then never read again (editing it changes nothing).
+  - ⚠`/api/todo/agent` refuses any Origin header (browsers always send one, the MCP none); `/add`·`/set` keep the viewer-Origin check — the two guards are opposite, never unify them (`routes_post._p_todo`).
+  - ⚠`start` demotes the same sid's other `~` to open: one item in progress per session. In progress is never inferred from session state.
+  - ⚠Person add/set no longer back up to `tool-trash/`: the store is Sidereus-owned, not a user file — do not restore the backup. An unreadable/oversized todo.md at first look is memoed as nothing-to-import until restart.
+  - Item text is esc() only, never T(). Tests `tests/test_todo.py`, `tests/test_todo_js.py`.
 - ⚠**State fixes regressed because each had only a unit test of one helper** (2026-10-25; #23). ★Non-Mac open sessions listed as Ended, a long-tool subagent showed Idle — each passed its own test while the full path (`live_cwds` → `_parse_transcript` → `_row_state` → `_row_status`/`_bg_show`/`_row_acct`) broke.
   - ⇒ `tests/test_state_replay.py` replays every `tests/fixtures/states/<case>/` folder through that path; a new state fix adds a folder (schema: its README).
   - ⚠Fixtures stay metadata-only (text "", tool input {} — the test fails otherwise); fake `_ps_snap` on both `live` and `live_probe` (separate names).
@@ -301,9 +304,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★**Account chip `.sacb` read «myacc…» at every width** — `flex:0 9 auto` shrank it 9x before `.sp`/`.sb`; a cut prefix cannot tell accounts that share one apart.
   ⇒ `acctChip` shows `acctShort` (shortest prefix of 4+ chars unique among `acctList()` labels) with `acctTip` as its title; rule is `flex:0 0 auto`. Measured «myac» 36/36, «defa» 31/31 px, neighbours uncut at 900/1100/1440. Test `tests/test_acct_band_js.py`.
   ⚠Do not shorten `acctLabel` — it is the account filter key.
-- **«To-do» ledger times are file times, not edit times** (`sidereus/todo.py` `_observe_locked`): times = todo.md mtime when the viewer first saw the change; several edits between polls collapse to one time.
-  ⇒ Entries are keyed by text + occurrence number, so a repeated request keeps its own add/done. Tests `tests/test_todo.py` `test_r4_*`.
-  ⚠Do not stamp with `_now()` — edits made while no viewer polled would land on the next poll's day.
+- **«To-do» import times come from the v1 ledger, else the todo.md mtime** (`sidereus/todo.py` `_import_locked`).
+  ⇒ v1 keys are text + occurrence number; done-only v1 entries no longer in the file are kept so «By day» keeps them. Test `test_r3_import_copies_items_and_v1_times`.
 - **Identity-row chips shifted with name length and wrapped one by one** (single ↻ or «To-do n» alone on line 2).
   ⇒ `sessIdRow` emits lead `.sxl` + groups `.sxid`/`.sxus`/`.sxwk`/`.sxac` in `.sxgs`; `sessFit` sets box-wide `--sxlead`/`--sxidw` (≤45%)/`--sxusw`/`--sxwkw`, then drop levels `.sxd1..3` (size · cost · model); past level 3 whole groups wrap under the name. `.sx2`/`.sq`/`.stree` indent by `--sxlead`. Tests `tests/test_sess_row_groups_js.py`.
   ⚠The ResizeObserver refits only when the box width changes (`_sxw`) — a group wrap changes the height and would loop.

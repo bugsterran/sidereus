@@ -100,11 +100,11 @@ setting (`pipeline_apply`) picks auto or ask-first, or turns it off. ⚠Never in
 On `UserPromptSubmit` it re-sends the brief only when pipeline names or stage titles changed since the session's last
 brief (hash in `plbrief/<session_id>`).
 
-At `SessionStart` it also adds one «To-do» line, with or without pipelines and with «Apply» off: record each request
-from the person as `- [ ] <text>` in `<git root>/.claude/todo.md`, `- [~]` when started (one per session, back to
-`- [ ]` when paused), `- [x]` when done. Off when config `features.todo` is false (Settings › «Features» › «To-do»);
-no line without a git root or for a repo at the home folder. `pl_flow.py` never gates edits of that file (strict mode
-and security-fix requests included).
+At `SessionStart` it also adds one «To-do» line, with or without pipelines and with «Apply» off: record each person-level
+request with the `sidereus_todo` MCP tool (`add`; `start` when begun, one per session; `open` if paused; `done` when
+finished), never as a file in the repo. The line has no file path. Off when config `features.todo` is false
+(Settings › «Features» › «To-do»); no line without a git root or for a repo at the home folder. `pl_flow.py` has no
+to-do exemption: a `todo.md` edit is gated like any file.
 
 | CLI | To-do line at start |
 |---|---|

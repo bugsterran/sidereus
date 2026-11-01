@@ -376,7 +376,7 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
         self._raw_json(200, out)
 
     def _g_todo(self, u):
-        # «To-do» (feature `todo`): parsed items of <repo>/.claude/todo.md for an on-screen session cwd + the ledger by day
+        # «To-do» (feature `todo`): items of the DATA_DIR/todo store for an on-screen session cwd's repo + the items by day
         try:
             code, out = todo_get(_q1(parse_qs(u.query), "cwd"))
         except Exception as e:
