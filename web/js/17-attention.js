@@ -173,7 +173,7 @@ function attnSeen(r){
   postJSON('/api/cards/read', {keys}).catch(() => note(T('Could not mark as read — check the server')));
   return true;
 }
-// -> {shown:[row], snoozed:n}. Each row gets vis (policy-visible sigs), score, why, since, badge.
+// -> {shown:[row], resp:[row], info:[row], snoozed:n}. Each row gets vis (policy-visible sigs), score, why, since, badge.
 function attnRows(){
   const rows = (ATTN && ATTN.rows) || [], now = Date.now(), snz = attnSnzLoad(), ack = attnAckLoad();
   const ackKeep = {}, snzGone = [];
@@ -194,8 +194,10 @@ function attnRows(){
     const top = vis[0];
     // A row needs the user if ANY visible signal is a badge kind, not only the top-scored one.
     const badge = vis.some(s => attnPolOf(s.k) === 'badge');
+    // ⚠Group by kind (blocked/ask = «Needs your response»), never by score: a fail@60 must not outrank an ask@50.
+    const resp = vis.some(s => ALARM_TERM_KINDS.has(s.k) && attnPolOf(s.k) === 'badge');   // ⚠a policy-demoted ask is not a response
     const mk = key => ({ r, id, vis, top, key, score: (top.pts || 0) + 5 * (vis.length - 1), since: top.since || r.since || 0,
-               why: attnWhy(top) + (vis.length > 1 ? ' ' + T('+{n} more', 'tail').replace('{n}', vis.length - 1) : ''), badge });
+               why: attnWhy(top) + (vis.length > 1 ? ' ' + T('+{n} more', 'tail').replace('{n}', vis.length - 1) : ''), badge, resp });
     // ⚠Below-threshold rows get key '' so a click never acks them: «N low-priority» must not shrink on click.
     if(!badge){ quiet++; low.push(mk('')); continue; }   // list-only: counted, rendered only when expanded
     const key = attnAckKey(vis, top);
@@ -209,8 +211,8 @@ function attnRows(){
   // prune acks whose session is gone or whose signal changed (legacy string acks are rewritten as objects)
   if(ATTN) for(const k in ack){ if(!(k in ackKeep)) attnAckSave(k, null); else if(ackKeep[k] !== ack[k]) attnAckSave(k, ackKeep[k]); }
   const cmp = (a, b) => (b.score - a.score) || (a.since - b.since);
-  out.sort(cmp); low.sort(cmp);
-  return { shown: out, snoozed, quiet, low };
+  out.sort((a, b) => (b.resp - a.resp) || cmp(a, b)); low.sort(cmp);
+  return { shown: out, resp: out.filter(x => x.resp), info: out.filter(x => !x.resp), snoozed, quiet, low };
 }
 function attnBadgeN(){ return attnRows().shown.filter(x => x.badge).length; }
 function attnSess(r){ return (SESS || []).find(x => r.sid && x.sid === r.sid) || (r.sid ? null : tlLiveOf(r.cwd)) || null; }   // ⚠no cwd fallback for a sid row: it would pick another platform's session
@@ -245,7 +247,7 @@ function attnRowHTML(x){
   const menu = attnMenu === x.id
     ? '<div class=atm><button data-aa="snz30">' + esc(T('30 min')) + '</button><button data-aa="snzclr" title="'
       + esc(T('Wakes automatically when a higher signal appears')) + '">' + esc(T('Until the signal clears')) + '</button></div>' : '';
-  return '<div class="atr' + (x.key ? '' : ' low') + (ac ? ' ' + ac : '') + '" data-akey="' + esc(x.key) + '" data-aid="' + esc(x.id) + '" data-asid="' + esc(r.sid) + '" data-acwd="' + esc(r.cwd) + '" title="' + esc(tip) + '">'
+  return '<div class="atr' + (x.key ? '' : ' low') + (x.resp ? ' resp' : '') + (ac ? ' ' + ac : '') + '" data-akey="' + esc(x.key) + '" data-aid="' + esc(x.id) + '" data-asid="' + esc(r.sid) + '" data-acwd="' + esc(r.cwd) + '" title="' + esc(tip) + '">'
     + '<div class=at1><i class="atd ' + tone + '"></i><b' + (r.project && r.project !== nm ? ' title="' + esc(r.project) + '"' : '') + '>' + esc(nm) + '</b>'
     + (r.branch ? '<span class=atbr>' + esc(r.branch) + '</span>' : '')
     + '<span class=atw>' + esc(x.why) + '</span><span class=ata>' + esc(x.since ? agoAt(x.since) : '') + '</span></div>'
@@ -263,12 +265,13 @@ function attnRowHTML(x){
 function buildAttn(){
   const el = document.getElementById('attn');
   if(!el) return;
-  let { shown, snoozed, quiet, low: lowRows } = attnRows(), oth = '';
+  const a = attnRows();
+  let { snoozed, quiet, low: lowRows } = a, oth = '', resp = a.resp || a.shown.filter(x => x.resp), info = a.info || a.shown.filter(x => !x.resp);   // fallback: stubbed attnRows
   // ⚠Filter here only: attnRows/attnBadgeN feed the tab title and drawer badge, which count every account.
   const pk = acctPick('sess');
   if(pk && !ACC_OTH.attn){   // follows the Sessions account pick
-    const main = x => { const s = attnSess(x.r); return !s || acctInPick(s, 'sess', pk); }, hide = (attnLow ? shown.concat(lowRows) : shown).filter(x => !main(x));   // low rows only while their fold is open
-    shown = shown.filter(main); lowRows = lowRows.filter(main); quiet = lowRows.length;
+    const main = x => { const s = attnSess(x.r); return !s || acctInPick(s, 'sess', pk); }, hide = resp.concat(info, attnLow ? lowRows : []).filter(x => !main(x));   // low rows only while their fold is open
+    resp = resp.filter(main); info = info.filter(main); lowRows = lowRows.filter(main); quiet = lowRows.length;
     oth = acctOthHtml('attn', hide.length, hide.some(x => x.badge));
   }
   const wake = snoozed ? '<span class=atz data-aa="wake" title="' + esc(T('Wake all snoozed sessions')) + '">'
@@ -279,13 +282,15 @@ function buildAttn(){
     + esc(T('{n} low-priority').replace('{n}', quiet)) + (attnLow ? ' ▴' : ' ▾') + '</span>' : '';
   const lowH = attnLow ? lowRows.map(attnRowHTML).join('') : '';
   let h;
-  if(!shown.length) h = '<div class="ath none">' + esc(T('No sessions need you')) + low + wake + '</div>' + lowH + oth;
+  if(!resp.length && !info.length) h = '<div class="ath none">' + esc(T('No sessions need you')) + low + wake + '</div>' + lowH + oth;
   else {
-    const vis = attnMore ? shown : shown.slice(0, ATTN_MAX), rest = shown.length - vis.length;
-    h = '<div class=ath>' + esc(T('Attention')) + ' <b>' + shown.length + '</b>' + low + wake + '</div>'
+    // ⚠«Needs your response» rows never fold; ATTN_MAX and «+N more» apply to FYI rows only (actAttnGo checks `info`).
+    const vis = attnMore ? info : info.slice(0, ATTN_MAX), rest = info.length - vis.length;
+    h = (resp.length ? '<div class="ath resp">' + esc(T('Needs your response')) + ' <b>' + resp.length + '</b></div>' + resp.map(attnRowHTML).join('') : '')
+      + (info.length || quiet || snoozed ? '<div class="ath fyi">' + esc(T('For your information')) + ' <b>' + info.length + '</b>' + low + wake + '</div>' : '')
       + vis.map(attnRowHTML).join('')
       + (rest ? '<div class=atmore data-aa="more">' + esc(T('+{n} more').replace('{n}', rest)) + '</div>'
-              : (attnMore && shown.length > ATTN_MAX ? '<div class=atmore data-aa="more">' + esc(T('Collapse')) + '</div>' : ''))
+              : (attnMore && info.length > ATTN_MAX ? '<div class=atmore data-aa="more">' + esc(T('Collapse')) + '</div>' : ''))
       + lowH + oth;
   }
   if(h === attnHtml) return;     // poll is 2.5s; skip identical redraws so hover/menus stay put

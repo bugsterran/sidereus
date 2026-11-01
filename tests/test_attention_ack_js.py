@@ -23,7 +23,7 @@ def run(rows, ack, polls=1):
     js = ("const LS = {mbAttnAck: %s}; const LANG = 'ko'; function T(s){ return s; }\n"
           "function lsJson(k, d){ return k in LS ? JSON.parse(JSON.stringify(LS[k])) : d; }\n"
           "function lsSetJson(k, v){ LS[k] = JSON.parse(JSON.stringify(v)); }\n"
-          "function apolOf(k){ return {ask:'badge', abort:'badge', fcheck:'badge', agent:'list', bgdone:'list'}[k] || 'badge'; }\n"
+          "const ALARM_TERM_KINDS = new Set(['ask', 'blocked']); function apolOf(k){ return {ask:'badge', abort:'badge', fcheck:'badge', agent:'list', bgdone:'list'}[k] || 'badge'; }\n"
           "let ATTN = null;\n" % json.dumps(ack, ensure_ascii=False)
           + consts + "\n" + "\n".join(js_fn(n) for n in FNS)
           + "\nconst out = []; for(const rs of %s){ ATTN = {rows: rs}; const a = attnRows();"
@@ -143,7 +143,7 @@ class CrossTab(unittest.TestCase):
               "const UIS = {getItem: k => k in M ? M[k] : null, setItem(k, v){ CALLS.push(['set', k]); M[k] = String(v); },\n"
               "  patch(k, u, v){ CALLS.push([k, u, v]); const o = JSON.parse(M[k] || '{}'); if(v === null) delete o[u]; else o[u] = v; M[k] = JSON.stringify(o); }};\n"
               "function lsJson(k, d){ return k in M ? JSON.parse(M[k]) : d; }\n"
-              "function apolOf(k){ return 'badge'; } function buildAlarm(){ BUILT.push(1); }\n"
+              "const ALARM_TERM_KINDS = new Set(['ask', 'blocked']); function apolOf(k){ return 'badge'; } function buildAlarm(){ BUILT.push(1); }\n"
               "let ATTN = null, attnLow = false; const document = {activeElement: null};\n"
               + consts + "\n" + "\n".join(js_fn(n) for n in FNS + ("attnPrefSync",)) + "\n" + body)
         return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)

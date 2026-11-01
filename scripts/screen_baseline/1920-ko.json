@@ -186,6 +186,7 @@
    "#",
    "#",
    "#",
+   "#",
    "토큰",
    "#t",
    "acme-web",
@@ -1228,9 +1229,10 @@
    "태그"
   ],
   "attn": [
-   "주의 #",
-   "cart-roundingbugfix/cart-rounding충돌 위험 · 파일 # · 세션 #t#bea, cd#ed# 외 #t 전작업 내역diff재개 복사터미널답장완료나중에지금 상태 — 풀리면 사라짐⋯",
+   "응답 필요 #",
    "billing-apidevelop질문 대기#t 전작업 내역재개 복사터미널답장완료나중에지금 상태 — 풀리면 사라짐⋯",
+   "참고 #",
+   "cart-roundingbugfix/cart-rounding충돌 위험 · 파일 # · 세션 #t#bea, cd#ed# 외 #t 전작업 내역diff재개 복사터미널답장완료나중에지금 상태 — 풀리면 사라짐⋯",
    "acme-webfeature/checkout-redesign충돌 위험 · 파일 # · 세션 #t#bea, cd#ed#t 전작업 내역diff재개 복사터미널답장완료나중에지금 상태 — 풀리면 사라짐⋯",
    "invoice-pdffeature/invoice-pdf컨텍스트 #% 외 #t 전작업 내역diff재개 복사터미널답장완료나중에지금 상태 — 풀리면 사라짐⋯"
   ],
