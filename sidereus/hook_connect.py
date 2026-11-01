@@ -80,9 +80,9 @@ def _copilot_home():
     return v if os.path.isabs(v) else os.path.join(_home(), ".copilot")     # ⚠a relative value would resolve against the viewer's cwd
 
 
-def _linked(p):
-    # ⚠a symlinked parent (e.g. a created ~/.copilot/hooks pointing elsewhere) would be followed by the write too
-    return os.path.islink(p) or os.path.islink(os.path.dirname(p))
+def _linked(p, plat=None):
+    # ⚠only copilot's hooks/ folder is created by Sidereus, so only there is a symlinked parent refused; a dotfiles-linked ~/.cursor, CODEX_HOME or Gemini dir stays writable
+    return os.path.islink(p) or (plat == "copilot" and os.path.islink(os.path.dirname(p)))
 
 
 def _installed(plat, path):
@@ -297,7 +297,7 @@ def _sha(raw):
 
 def _plan(plat, p):
     """-> dict(raw, new_raw, adds, diff, err); err = (code, message) or None. Writes nothing."""
-    if _linked(p):
+    if _linked(p, plat):
         return {"err": (400, SYMLINK)}      # ⚠os.replace would turn a dotfiles link into a regular file
     tpl = _template(plat)
     if tpl is None:
@@ -413,7 +413,7 @@ def listing():
             continue
         state, why = _state(plat, p)
         can = state in ("missing", "partial")
-        if can and _linked(p):
+        if can and _linked(p, plat):
             can, why = False, SYMLINK
         elif can and _template(plat) is None:
             can, why = False, "no ext-hooks"
@@ -443,7 +443,7 @@ def _write(plat, p, raw, new_raw):
     try:
         bak = _backup(p, plat) if raw is not None else None
         os.makedirs(os.path.dirname(p), exist_ok=True)
-        if _linked(p):
+        if _linked(p, plat):
             return 400, {"ok": False, "err": SYMLINK}
         with open(tmp, "wb") as f:
             f.write(new_raw)

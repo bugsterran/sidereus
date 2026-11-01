@@ -355,10 +355,27 @@ class HookConnect(unittest.TestCase):
         code, out = HC._write("copilot", self.files["copilot"], None, b"{}")
         self.assertEqual((code, out["err"]), (400, HC.SYMLINK))
         self.assertEqual(os.listdir(elsewhere), [])
+
+    def test_symlinked_parent_dir_allowed_for_cursor(self):
+        # dotfiles-linked ~/.cursor must stay connectable; only a symlinked FILE is refused
+        elsewhere = os.path.join(self.tmp, "dot-cursor")
+        os.makedirs(elsewhere)
         shutil.rmtree(os.path.dirname(self.files["cursor"]))
         os.symlink(elsewhere, os.path.dirname(self.files["cursor"]))
+        self.assertFalse(HC._linked(self.files["cursor"], "cursor"))
+        self.assertTrue(HC._linked(self.files["copilot"], "copilot") is False)
         code, out = HC.connect({"plat": "cursor", "dry": True})
-        self.assertEqual((code, out["err"]), (400, HC.SYMLINK))
+        self.assertEqual(code, 200)
+        self.assertNotEqual(out.get("err"), HC.SYMLINK)
+
+    def test_symlinked_file_refused_for_all(self):
+        real = os.path.join(self.tmp, "real.json")
+        with open(real, "w", encoding="utf-8") as f:
+            f.write("{}\n")
+        os.makedirs(os.path.dirname(self.files["copilot"]), exist_ok=True)
+        for plat, p in self.files.items():
+            os.symlink(real, p)
+            self.assertTrue(HC._linked(p, plat), plat)
 
     def test_r4_copilot_relative_home_ignored(self):
         with mock.patch.object(HC, "HC_FILES", None):
