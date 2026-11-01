@@ -68,7 +68,7 @@ IDE 안에서 에이전트 한두 개만 쓰거나, Claude Code만 쓰면서 기
 
 ## 설치
 
-Python 3.9 이상(표준 라이브러리만 사용), Claude Code, 그리고 브랜치·구조·diff 화면용 `git`이 필요합니다. macOS 기본 `/usr/bin/python3`로 됩니다. 새 Mac에서는 처음 실행할 때 Xcode Command Line Tools 설치 창이 뜨니, 설치하고 다시 실행하면 됩니다. macOS에서 테스트했고, Windows는 일부 빠진 기능이 있지만 동작하며, Linux는 테스트하지 않았습니다. 데모 서버는 메모리를 50MB 정도 씁니다.
+Python 3.9 이상(표준 라이브러리만 사용), Claude Code, 그리고 브랜치·구조·diff 화면용 `git`이 필요합니다. macOS 기본 `/usr/bin/python3`로 됩니다. 새 Mac에서는 처음 실행할 때 Xcode Command Line Tools 설치 창이 뜨니, 설치하고 다시 실행하면 됩니다. macOS에서 테스트했고, Windows는 일부 빠진 기능이 있지만 동작하며, Linux는 테스트하지 않았습니다. 화면은 데스크톱용으로, 가로 1920픽셀 창을 기준으로 배치했고 900픽셀까지는 편하게 읽힙니다. 휴대폰 화면은 지원하지 않습니다. 데모 서버는 메모리를 50MB 정도 씁니다.
 
 ```sh
 git clone https://github.com/bugsterran/sidereus.git ~/sidereus && cd ~/sidereus
