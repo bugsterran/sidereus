@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- To-do list per project: sessions record items (open, in progress, done), the session row shows "To-do n", and the expanded list lets you add and check items and see them "By day".
+- To-do list per project: sessions record items (open, in progress, done) through the Sidereus MCP tool (nothing is written in the repo), the session row shows "To-do n", and the expanded list lets you add and check items and see them "By day".
 - Copilot CLI: session list and state via hooks, and "Connect" installs the hooks file. Refs #10
 - Copilot CLI: token usage on session rows and the timeline, and its quota in the status bar. Refs #10
 - Copilot CLI: pipeline stages light up for Copilot sessions, and "Connect" also adds the pipeline hooks. Refs #10
@@ -26,7 +26,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Sessions: the first line of each row is grouped into identity, usage, work and actions, and each group starts at the same position on every row.
-- To-do: sessions record items with a Sidereus MCP tool instead of editing `.claude/todo.md`; nothing is written in the repo, and an existing `todo.md` is imported once.
 - Codex and Copilot rows waiting on a permission request read "Waiting for approval" instead of "Waiting on notification".
 - After "Connect", the result tells you to restart CLI sessions that are already open (Codex: restart, then run /hooks).
 - Harness report: the runtime card folds to one line unless it is all clear, so the tiles come first.
