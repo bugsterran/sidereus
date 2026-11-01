@@ -509,10 +509,10 @@ class TestExtAskCap(Base):
             self.assertEqual(rows[0]["sid"], "s-ask", ago)
             self.assertEqual({s["k"] for s in rows[0]["sigs"]}, {"blocked", "ask"}, ago)
 
-    def test_gone_row_leaves_attention_requests(self):
-        # ext_gone_check turned a dead-pid row into gone (blocked cleared): only the low «gone» signal remains
-        r = self.ext_row(31 * 60, state="gone", blocked=False, goneWhy="pid", gone=self.NOW, pid=4242)
-        self.assertEqual(self.kinds(r), ["gone"])
+    def test_ended_row_raises_no_attention_signal(self):
+        # R4: a dead-pid row lists as 'done' (blocked cleared), so attention gets no signal from it
+        r = self.ext_row(31 * 60, state="done", blocked=False, ended=self.NOW, endWhy="pid")
+        self.assertEqual(self.kinds(r), [])
 
 
 class TestClaudePendingAge(Base):

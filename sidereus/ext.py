@@ -15,14 +15,28 @@ from sidereus import plat_copilot   # module access: tests patch `plat_copilot.r
 # Re-exported: chat_server, timeline, history import these from `sidereus.ext`.
 # ⚠Patch store internals (`_ext_save_locked`, `_runs_save_locked`, `EXT_FILE`/`EXT_RUNS_FILE`, `_pid_start`) on `ext_store`.
 from sidereus.ext_store import (PLAT_MODS, EXT_PLAT, EXT_EV_N, EXT_RATE_WIN, _ext_lock, _ext,
-                             _ext_stat, _runs, _tok_lock, _tok, _ext_prune_locked, ext_ingest, ext_runs,
+                             _ext_stat, _runs, _tok_lock, _tok, _ext_prune_locked, ext_ingest,
                              ext_gone_check, ext_dismiss, ext_tok_refresh, _tok_sum, ext_tok,
-                             EXT_ENDED_KEEP_S, ext_ended, ext_hook_msgs, ext_hook_cwds,
+                             EXT_ENDED_KEEP_S, EXT_DONE_KEEP_S, PIDLESS_IDLE_SEC, ext_ended,
+                             ext_hook_msgs, ext_hook_cwds,
                              ext_side_msgs, ext_side_sess, ext_side_tok)
 
 
 EXT_NAME = {m.KEY: m.NAME for m in PLAT_MODS.values()}
 ROLL_WIN_S = EXT_ENDED_KEEP_S   # 600 s: a Codex rollout written this recently, with no hook event, gets a row
+
+
+def ext_runs(parent=None):
+    """[{sid, plat, parent, cwd, start, end, model, state, tok}] — all, or those under one Claude session (view of `_runs`)."""
+    with _ext_lock:
+        items = [(k, dict(v)) for k, v in _runs.items()]
+    out = []
+    for sid, v in items:
+        if parent is None or v.get("parent") == parent:
+            v["sid"] = sid
+            out.append(v)
+    out.sort(key=lambda r: float(r.get("start") or 0))
+    return out
 
 
 def ext_usage_today(now=None):
@@ -85,8 +99,8 @@ def ext_usage_today(now=None):
     # so a connected CLI does not look missing. ⚠Entries come only from sessions seen today or still open (live pid,
     # not gone — an idle CLI left open overnight is still in use), never from installs alone.
     with _ext_lock:
-        seen = {(p, sid) for (p, sid), v in _ext.items()
-                if float(v.get("lastSeen") or 0) >= mid or (v.get("pid") and not v.get("gone"))}
+        seen = {(p, sid) for (p, sid), v in _ext.items() if not v.get("ended")
+                and (float(v.get("lastSeen") or 0) >= mid or (v.get("pid") and not v.get("gone")))}
     seen |= {k for k, msgs in sess.items() if k not in subs}
     for plat, _sid in seen:
         k = EXT_PLAT.get(plat)
@@ -254,6 +268,12 @@ def ext_rows():
                 last = first = now
             cwd = v.get("cwd") or ""
             st = v.get("state") or "unknown"
+            # ⚠Dead (pid/silent) and folded rows list as 'done' at once, never «Disconnected» (R1); the store keeps the grace.
+            dead = st == "gone" or bool(v.get("ended"))
+            if dead:
+                st = "done"
+            elif st == "done" and not v.get("pid") and now - (last + PIDLESS_IDLE_SEC) > EXT_DONE_KEEP_S:
+                continue                          # pid-less idle cutoff: folded as long as an ended row (R2)
             # ⚠No age cap on ask/blocked: a pending request leaves only on the CLI's own event or a dead pid (ext_gone_check).
             ext_tok_refresh(plat, sid, v.get("transcript_path") or "")
             tk = ext_tok(plat, sid) or ext_side_tok(plat, sid) or {}   # Copilot: no transcript_path, tokens from its records
@@ -287,21 +307,21 @@ def ext_rows():
                 "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
                 "kind": plat,
                 # ⚠The screen prints `blocked` as **a reason string** (`'Blocked · ' + x.blocked`) - a bool would become `Blocked · true`.
-                "blocked": ("승인 대기" if v.get("blocked") else ""),
+                "blocked": ("승인 대기" if v.get("blocked") and not dead else ""),
                 "otel": True,             # this row's state is **event-based** (not inferred)
-                "otelEv": v.get("state") or "",
-                "goneWhy": v.get("goneWhy") or "",     # «Disconnected»: "pid" = process gone, "silent" = no news (guess)
-                "pid": v.get("pid") if isinstance(v.get("pid"), int) else 0,   # hook-reported CLI pid, for «To terminal»
+                "otelEv": "done" if dead else (v.get("state") or ""),
+                "goneWhy": "" if dead else (v.get("goneWhy") or ""),
+                "pid": v.get("pid") if isinstance(v.get("pid"), int) and not dead else 0,   # hook-reported CLI pid, for «To terminal»
             })
             if plat == "codex":   # only Codex hooks log in to the mailbox; other CLIs keep "" (send off)
                 row["mbox"], row["mboxSrc"] = mbox_codex(cwd)
-            plm = None if v.get("goneWhy") else plm_of(sid, now)   # shell-marker [pl:] stage; added only when live, like Claude rows
+            plm = None if dead or v.get("goneWhy") else plm_of(sid, now)   # shell-marker [pl:] stage; added only when live, like Claude rows
             if plm and st in ("wait", "abort") and _stop_after(v, now - plm.get("age", 0)):
                 plm = None   # ⚠turn ended after the mark: a held (45-min) shell marker would keep the stage «running»
             if plm:
                 row["plm"] = plm
             try:   # merged run model; external CLIs have no subagent dir or sub rows
-                plrun = pl_model(sid, "", [], plm, now, pl_act(st, dead=bool(v.get("goneWhy"))))
+                plrun = pl_model(sid, "", [], plm, now, pl_act(st, dead=dead or bool(v.get("goneWhy"))))
             except Exception as e:
                 plrun = []
                 warn_once("ext-plmodel", "Could not build the pipeline run model ({err})",

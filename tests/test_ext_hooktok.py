@@ -74,7 +74,8 @@ class HookTok(unittest.TestCase):
     def test_survives_session_end_and_reload(self):
         self.stop("gen-1", 14645, 28, 3968)
         st.ext_ingest({"platform": "cursor", "session_id": SID, "event": "SessionEnd", "ts": self.now - 10})
-        self.assertNotIn(("cursor", SID), st._ext)
+        v = st._ext[("cursor", SID)]                           # folded under «Show n ended», not removed (R1)
+        self.assertEqual((v["state"], bool(v.get("ended"))), ("done", True))
         self.assertEqual(ext.ext_usage_today(now=self.now)["cu"]["tok"], 18641)
         st._hooktok.clear()
         st._hooktok_load()

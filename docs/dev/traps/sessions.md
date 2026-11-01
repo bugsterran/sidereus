@@ -308,3 +308,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⇒ `sessIdRow` emits lead `.sxl` + groups `.sxid`/`.sxus`/`.sxwk`/`.sxac` in `.sxgs`; `sessFit` sets box-wide `--sxlead`/`--sxidw` (≤45%)/`--sxusw`/`--sxwkw`, then drop levels `.sxd1..3` (size · cost · model); past level 3 whole groups wrap under the name. `.sx2`/`.sq`/`.stree` indent by `--sxlead`. Tests `tests/test_sess_row_groups_js.py`.
   ⚠The ResizeObserver refits only when the box width changes (`_sxw`) — a group wrap changes the height and would loop.
   ⚠Do not put a chip directly in `.sx` or put `flex-wrap` inside a group: groups wrap whole, never single chips.
+- **Ended external CLI rows stay in `_ext`** (`ext_store._end_locked`: state `done`, `ended`, `endWhy` end|pid|silent) so they fold under «Show n ended» for `EXT_DONE_KEEP_S` (12 h).
+  ⇒ Liveness readers skip `ended` rows (`timeline_ext` live/items, `ext_usage_today`); `ext_ended()` returns them so rollout/presence rows stay hidden. Test `tests/test_ext_ended_fold.py`.
+  ⚠A new reader of `_ext` that counts open sessions must filter `ended`. ⚠`EXT_DONE_KEEP_S` must equal `sessions.sessions()` `max_age_h` (guarded in the test).
