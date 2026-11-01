@@ -11,7 +11,9 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 /* ⚠Single chips wrapping alone made rows 49-51px vs 24/28px (QA 2026-09-27: ↻ alone on line 2 in the 500px drawer).
    ⇒ chips sit in groups [identity][usage][work][actions] (40ba sessIdRow, R1) that never wrap inside; sessFit sets box-wide
    start widths (R2) and drop levels .sxd1..3 only when that yields one line; otherwise whole groups wrap under the name (R3). */
-.sxl{display:flex;gap:4px;align-items:center;justify-content:flex-end;padding-right:6px;align-self:center}
+/* ⚠Lead = the name's line box: a zero-width text strut gives .sxl the name's baseline, so the pick box centres on line 1 (align-self:center centred it on the whole wrapped row); padding-left keeps it off the 3px account bar */
+.sxl{display:flex;gap:4px;align-items:center;justify-content:flex-end;padding:0 6px 0 6px;align-self:baseline;height:1.45em}
+.sxl::before{content:'\200b';align-self:baseline;width:0;margin-right:-4px}
 .sxl .ailg{margin-right:0}
 .sxgs{display:flex;flex-wrap:wrap;column-gap:14px;row-gap:2px;align-items:baseline;min-width:0}
 .sxg{display:inline-flex;flex-wrap:nowrap;gap:6px;align-items:baseline;flex:0 0 auto}
@@ -22,7 +24,8 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .sxtl{display:inline-flex;flex-wrap:nowrap;gap:6px;align-items:baseline;flex:0 0 auto}
 .sxid:has(> .sxtl){flex-basis:auto}   /* identity carrying the glued tail: no later chips to align */
 .sxd1 .sxus .sz,.sxd2 .sxus .sk,.sxd3 .sxus .sm{display:none}   /* 40ba SX_DROP order; nohk (.sz) in .sxid stays */
-.sx .sxid > .sp{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sxid{flex-wrap:nowrap}   /* ⚠never wraps inside: when the 45% cap is narrower than the chips, the name ellipsizes */
+.sx .sxid > .sp{flex:0 1 auto;min-width:96px;overflow:hidden;text-overflow:ellipsis}
 /* ⚠80-branch.css pins .swt to flex:0 0 auto under data-ui=next */
 .sx .sxid > :is(.sb,.swt),html[data-ui=next] .sx .sxid > .swt{max-width:150px;flex:0 4 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .sx .sb{color:#8ab4ff}

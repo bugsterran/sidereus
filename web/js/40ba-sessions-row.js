@@ -13,12 +13,17 @@ function sessFit(box){
   const rows = [...box.querySelectorAll('.sx')].filter(r => r.clientWidth);
   if(!rows.length) return;
   // A glued tail (.sxtl: «To-do n» / actions moved into usage or identity) is not part of that group's column width.
-  const nat = e => { const t = e.querySelector(':scope > .sxtl'); return e.offsetWidth - (t ? t.offsetWidth + 6 : 0); };
+  // ⚠Subpixel widths: offsetWidth rounds 225.4 to 225, so the pinned group got 1px short and its last chip wrapped.
+  const bw = e => e.getBoundingClientRect().width;
+  const nat = e => { const t = e.querySelector(':scope > .sxtl'); return bw(e) - (t ? bw(t) + 6 : 0); };
   const mx = sel => rows.reduce((m, r) => { const e = r.querySelector(sel); return e ? Math.max(m, nat(e)) : m; }, 0);
-  const px = (v, n) => box.style.setProperty(v, Math.ceil(n) + 'px');
+  const px = (v, n) => box.style.setProperty(v, Math.ceil(n) + 1 + 'px');   // +1px slack over the rounded-up width
   px('--sxlead', mx('.sxl'));
   const gw = rows[0].querySelector('.sxgs').clientWidth;
-  px('--sxidw', Math.min(mx('.sxid'), gw * 0.45));
+  // ⚠The 45% cap never goes below a row's identity with its name at the 96px floor (.sp min-width): nowrap would clip chips.
+  const need = rows.reduce((m, r) => { const id = r.querySelector('.sxid'), sp = id && id.querySelector('.sp');
+    if(!id) return m; const s = sp ? Math.max(bw(sp), sp.scrollWidth || 0) : 0; return Math.max(m, nat(id) - (s - Math.min(s, 96))); }, 0);
+  px('--sxidw', Math.min(mx('.sxid'), Math.max(gw * 0.45, need)));
   const fits = () => rows.every(r => { const id = r.querySelector('.sxid'), t = id ? id.offsetTop : null;
     // ⚠Line test, not equal tops: baseline-aligned groups with mixed font sizes sit at different offsetTop on one line.
     return [...r.querySelectorAll('.sxg')].every(g => t === null || !g.firstChild || g.offsetTop < t + id.offsetHeight); });
