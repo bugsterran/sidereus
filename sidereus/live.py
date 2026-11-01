@@ -26,6 +26,9 @@ from sidereus.live_win import _ctx_window, _model_win, _win_ev, _win_load, _win_
 #   Conversely a session that just replied and waits for input shows **green** because of the fresh write.
 #   ⇒ Alive = cwd of a `claude` process; "running right now" = shape of the last event.
 _live_cache = (0.0, set())
+# sids an official process left behind (argv `--session-id X`, now answering another sessionId after /clear); read by sessions
+_live_retired = [set()]
+_SESSION_ID_RE = re.compile(r"--session-id[= ]([0-9a-fA-F-]{36})")
 
 
 def live_cwds(ttl=2):
@@ -54,12 +57,13 @@ def live_cwds(ttl=2):
         pids = _live_claude_pids(snap)
         if not pids:
             _live_sids[0], _live_sids[1] = time.time(), set()
+            _live_retired[0] = set()
             _live_cache = (time.time(), out)
             _stale_clear("live")
             return out
         pmap = _live_pid_cwds(pids)
         sids, claimed = set(), set()
-        av = _live_official(sids, claimed)
+        av = _live_official(sids, claimed, snap)
         _live_argv_claims(snap, pids, av, pmap, sids, claimed)
         _live_sids[0], _live_sids[1] = time.time(), sids
         _live_count_paths(pmap, claimed, out)
@@ -148,8 +152,8 @@ def _live_pid_cwds(pids):
     return pmap
 
 
-def _live_official(sids, claimed):
-    """Official pid -> sessionId lookup; fills sids/claimed in place and returns the raw view."""
+def _live_official(sids, claimed, snap=None):
+    """Official pid -> sessionId lookup; fills sids/claimed in place, publishes `_live_retired`, returns the raw view."""
     # ★★**The official lookup comes first** (`agent_view` comment above). The harness states pid → "sessionId
     #   in use now", so there is no need to read argv labels and guess staleness.
     #   ⚠A sid with no transcript yet is **not added to claimed** — removing that pid from path aggregation
@@ -162,6 +166,15 @@ def _live_official(sids, claimed):
         sids.add(_sid)
         if _sid_transcript(_sid):
             claimed.add(_pid)
+    # ⚠After /clear the process keeps argv `--session-id OLD` but answers NEW; OLD must not borrow a same-cwd path slot.
+    cmds = {p: c for p, _pp, c in (snap or ())}
+    retired = set()
+    for _pid, _it in (av or {}).items():
+        _sid = (_it.get("sessionId") or "") if isinstance(_it, dict) else ""
+        m = _SESSION_ID_RE.search(cmds.get(_pid) or "") if _sid else None
+        if m and m.group(1) != _sid:
+            retired.add(m.group(1))
+    _live_retired[0] = retired - sids
     return av
 
 

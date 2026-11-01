@@ -124,7 +124,7 @@ class StateReplay(unittest.TestCase):
         lists = ((lp, "_av_cache", [0.0, None]), (lp, "_av_fail", [0.0]), (lp, "_live_sids", [0.0, set()]),
                  (lp, "_live_pid_cwd", [0.0, {}]), (lp, "_sid_file", [0.0, {}]), (lp, "_sid_stale", [0.0, {}]),
                  (lp, "_ps_snap_cache", [0.0, None]), (lp, "_ps_snap_fail", [0.0, None]),
-                 (agents, "_BOOT", [NOW - 86400]))
+                 (agents, "_BOOT", [NOW - 86400]), (live, "_live_retired", [set()]))
         for mod, name, init in lists:
             cur = getattr(mod, name)
             self.addCleanup(cur.__setitem__, slice(None), list(cur))
@@ -239,7 +239,8 @@ class StateReplay(unittest.TestCase):
                 p["contd"] = sessions._continued(fp)
                 acct = sessions._row_acct(p.get("sid") or "", fp)
                 lv2, stale = sessions._live_slot(p.get("cwd") or "", acct.get("acct") or "", p.get("contd"),
-                                                 live.sid_alive(p.get("sid")), lv, slots, blind)
+                                                 live.sid_alive(p.get("sid")), lv, slots, blind,
+                                                 (p.get("sid") or "") in live._live_retired[0])
                 st, o, _got, dead = sessions._row_state(mt, NOW, lv2, p, stale)
                 row = sessions._row_status(st, o, p, NOW, mt)
                 got[by_fp.get(fp, fp)] = {"state": row["state"], "blocked": row["blocked"],
