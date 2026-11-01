@@ -99,10 +99,19 @@ class TtlPid(unittest.TestCase):
     def test_pidless_event_clears_stored_pid(self):
         self._win_ingest("w3", True)                  # pid stored (e.g. the Codex app-server daemon before the fix)
         with frozen(st):
-            st.ext_ingest({"platform": "codex", "session_id": "w3", "event": "Stop", "ts": NOW - 3600, "pid": 0})
+            st.ext_ingest({"platform": "codex", "session_id": "w3", "event": "Stop", "ts": NOW - 3600, "pid": 0,
+                           "pid_none": "daemon"})
         v = st._ext[("codex", "w3")]
         self.assertNotIn("pid", v)
         self.assertNotIn("pstart", v)
+
+    def test_pid_lookup_failure_keeps_stored_pid(self):
+        self._win_ingest("w4", True)                  # a slow ps on the last event must not drop a live pid
+        with frozen(st):
+            st.ext_ingest({"platform": "codex", "session_id": "w4", "event": "Stop", "ts": NOW - 3600})
+            st.ext_gone_check(NOW + st.PIDLESS_IDLE_SEC + 1)
+        v = st._ext[("codex", "w4")]
+        self.assertEqual((v["pid"], v["pstart"], v["state"]), (4321, "Sat Oct 24 17:00:00 2026", "wait"))
 
     def test_no_pid_idle_dropped(self):
         st._ext[("cursor", "c")] = _row()

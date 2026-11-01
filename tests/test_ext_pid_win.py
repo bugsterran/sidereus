@@ -151,6 +151,18 @@ class HookPosixDaemon(unittest.TestCase):
         self.args[90] = "codex --model gpt-5"
         self.assertEqual(hook.cli_pid(), (90, "Thu Sep 24 10:00:00 2026"))
 
+    def test_daemon_payload_marks_pid_none(self):
+        self.args[90] = "/home/dev/.codex/packages/app-server-daemon/bin/codex app-server --listen unix://x"
+        out, _ = hook.build("codex", {"hook_event_name": "Stop", "session_id": "c1"})
+        self.assertNotIn("pid", out)
+        self.assertEqual(out.get("pid_none"), "daemon")
+
+    def test_ps_timeout_sends_no_marker(self):
+        with mock.patch.object(hook, "_ps", lambda pid: None):     # ps timed out (1 s): lookup failure, not a finding
+            out, _ = hook.build("codex", {"hook_event_name": "Stop", "session_id": "c1"})
+        self.assertNotIn("pid", out)
+        self.assertNotIn("pid_none", out)
+
 
 class StoreWin(unittest.TestCase):
     def setUp(self):

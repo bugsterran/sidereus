@@ -408,8 +408,8 @@ def ext_ingest(req):
                 v.pop("pidAt", None)
             v["pid"] = pid
             v["pstart"] = str(req.get("pstart") or "")[:40]
-        else:
-            # ⚠A pid-less event drops the stored pid: it may be a long-lived parent (Codex app-server daemon) that kept the row alive.
+        elif req.get("pid_none") == "daemon":
+            # ⚠Only an explicit «no pid» drops the stored pid (Codex app-server daemon); a failed ps lookup or an older hook keeps it.
             for k in ("pid", "pstart", "pidAt"):
                 v.pop(k, None)
         if v.get("state") in ("gone", "done"):    # any event proves it is alive again (done = pid-less idle cutoff)

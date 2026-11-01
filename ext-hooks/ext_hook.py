@@ -165,12 +165,14 @@ def build(platform, data, event_override=None):
     par = parent_sid()
     if par:
         out["parent"] = par
-    pid, start = cli_pid()
+    pid, start, why = cli_pid_ex()
     if pid:
         out["pid"] = pid
         out["host"] = socket.gethostname()
         if start:
             out["pstart"] = start
+    elif why:
+        out["pid_none"] = why                    # ⚠deliberate «no pid»: only this clears a stored pid; a failed lookup keeps it
     return out, raw
 
 
@@ -308,40 +310,46 @@ def _codex_daemon(name, pid):
 def _cli_pid_win():
     procs = _win_procs()
     if not procs:
-        return 0, ""
+        return 0, "", ""
     pid = os.getppid()
     for _ in range(6):
         p = procs.get(pid)
         if pid <= 0 or p is None:
-            return 0, ""
+            return 0, "", ""
         name = os.path.basename(p[1]).lower()
         if name not in SKIP_EXE and not name.startswith("python"):
             if _codex_daemon(name, pid):
-                return 0, ""                                     # daemon: unknown, and its parent is not this session
-            return pid, _win_start(pid)
+                return 0, "", "daemon"                           # daemon: unknown, and its parent is not this session
+            return pid, _win_start(pid), ""
         pid = p[0]
-    return 0, ""
+    return 0, "", ""
 
 
-def cli_pid():
-    """pid + start time of the CLI that ran this hook: walk up past shell/python wrappers.
+def cli_pid_ex():
+    """(pid, start, why) of the CLI that ran this hook: walk up past shell/python wrappers.
+    `why` is non-empty only when «no pid» is a finding (Codex daemon), empty when the lookup failed.
     ★Not os.getppid() alone — that is usually the short-lived `sh -c`, which would read as dead at once."""
     if os.environ.get("SIDEREUS_HOOK_NO_PID"):      # tests (tests/_load.py): never run ps
-        return 0, ""
+        return 0, "", ""
     if IS_WIN:
         return _cli_pid_win()
     pid = os.getppid()
     for _ in range(6):
         if pid <= 1:
-            return 0, ""
+            return 0, "", ""
         p = _ps(pid)
-        if p is None:
-            return 0, ""
+        if p is None:                                # ⚠ps timed out (1 s) or failed: unknown, not «gone»
+            return 0, "", ""
         name = p[2].lower()
         if name not in SKIP_COMM and not name.startswith("python"):
-            return (0, "") if _codex_daemon(name, pid) else (pid, p[1])
+            return (0, "", "daemon") if _codex_daemon(name, pid) else (pid, p[1], "")
         pid = p[0]
-    return 0, ""
+    return 0, "", ""
+
+
+def cli_pid():
+    """pid + start time of the CLI that ran this hook, (0, "") when unknown."""
+    return cli_pid_ex()[:2]
 
 
 def parent_sid(env=None):
