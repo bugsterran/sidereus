@@ -48,7 +48,8 @@ def bundle_files(src=SRC):
             dirs[:] = sorted(x for x in dirs if x not in _SKIP_DIR and not x.startswith("."))
             for f in sorted(files):
                 if not _SKIP_FILE.search(f):
-                    out.append(os.path.relpath(os.path.join(d, f), src))
+                    # ⚠relpath uses "\\" on Windows; entries are "/" like the non-recursive ones (tests and wheel names compare them)
+                    out.append(os.path.relpath(os.path.join(d, f), src).replace(os.sep, "/"))
     return sorted(out)
 
 
