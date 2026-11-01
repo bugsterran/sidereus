@@ -160,6 +160,17 @@ The Timeline is the evidence behind a verdict: what each agent actually did, and
 
 ⚠ Orca opens the exact tab only with its CLI installed (Orca › Settings › General); otherwise only the app comes forward.
 
+## Track a session's to-do list
+
+Sessions keep their person-level requests in `<git root>/.claude/todo.md` on their own (`- [ ]` open, `- [~]` in progress, `- [x]` done).
+
+1. A session row with items shows «To-do n» (open + in progress). Click it to open the list under the row: «Working» items first with the session's live state beside them, then open, then done.
+2. Type in the box and press Enter to add an item (no confirm). Tick a box to mark it done; untick to reopen.
+3. «By day» shows, newest day first, what was added, started and done each day.
+
+- No file or no items: nothing is drawn. The session creates the file; Claude Code may ask permission the first time it writes under `.claude/`.
+- Rewording an item makes it a new item. The `todo` feature switch in Settings turns the list off.
+
 ## Check whether quota lasts until the reset
 
 ![Status-bar layer with per-account quota](images/status-layer-en.png)

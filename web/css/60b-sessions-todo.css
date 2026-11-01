@@ -1,0 +1,30 @@
+/* Session to-do chip and inline layer (40c-sessions-todo.js). ⚠The chip never shrinks or hides (not in sessFit's SX_DROP). */
+.sx > .stdc{flex:0 0 auto;font-size:9.5px;color:#a7d3b0;border:1px solid #2d4a37;border-radius:3px;padding:0 4px;cursor:pointer}
+.sx > .stdc.w{color:#e8c372;border-color:#5a4a24}
+.sx > .stdc.on{background:#1d2a22}
+/* ⚠The layer wraps (normal white-space, anywhere breaks): long request text must never widen the column at 900. */
+.stdl{margin:2px 0 4px 18px;padding:4px 8px;border-left:2px solid #2d4a37;font-size:11.5px;line-height:1.45;white-space:normal;overflow-wrap:anywhere;cursor:default}
+.stdhd{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.stdh{color:#8b95a7;font-size:10.5px;flex:1 1 auto}
+.stdb{font:inherit;font-size:10.5px;color:#8b95a7;background:none;border:1px solid #2a313d;border-radius:3px;padding:0 5px;cursor:pointer}
+.stdb.on{color:#cfd8e6;border-color:#3d4a5e}
+.stda{display:block;width:100%;box-sizing:border-box;margin:0 0 4px;font:inherit;font-size:11.5px;padding:2px 6px;color:#cfd8e6;background:#0f1319;border:1px solid #2a313d;border-radius:3px}
+.stdi{display:flex;align-items:baseline;gap:5px;padding:1px 0;color:#cfd8e6;cursor:pointer}
+.stdi input{flex:0 0 auto;margin:0;position:relative;top:1px}
+.stdt{flex:0 1 auto;min-width:0}
+.stdi.d .stdt{color:#6b7484;text-decoration:line-through}
+.stdw{flex:0 0 auto;font-size:9.5px;color:#e8c372;border:1px solid #5a4a24;border-radius:3px;padding:0 3px}
+.stds{flex:0 0 auto;font-size:10px;color:#8b95a7}
+.stdn{color:#8b95a7}
+.stdd{margin:2px 0 5px}
+.stddh{color:#8b95a7;font-size:10.5px}
+.stddk{margin-left:8px}
+.stddl{font-size:10px;color:#8b95a7}
+.stddk.done .stddl{color:#a7d3b0}
+.stddk.started .stddl{color:#e8c372}
+.stddi{margin-left:8px;color:#cfd8e6}
+html[data-theme=light] .stdl,html[data-theme=light] .stdi,html[data-theme=light] .stddi{color:var(--nx-t1)}
+html[data-theme=light] .stda{color:var(--nx-t1);background:var(--nx-panel,#fff)}
+html[data-theme=light] .sx > .stdc{color:#2f7a45;border-color:#9cc8aa}
+html[data-theme=light] .sx > .stdc.w,html[data-theme=light] .stdw{color:#8b6401;border-color:#d9c08a}
+html[data-theme=light] .sx > .stdc.on{background:#e6f2ea}

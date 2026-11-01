@@ -93,6 +93,19 @@
 (`pipeline_apply`)이 자동·먼저 묻기를 고르거나 끈다. ⚠`task` 와 `rules` 내용은 넣지 않는다.
 `UserPromptSubmit` 에서는 세션이 마지막으로 받은 뒤 파이프라인 이름이나 단계 제목이 바뀐 경우에만 다시 보낸다
 (해시는 `plbrief/<session_id>`).
+
+`SessionStart` 에는 파이프라인이 없어도, «적용» 이 꺼져 있어도 «할 일» 한 줄을 붙인다. 사람의 요청마다
+`<git 루트>/.claude/todo.md` 에 `- [ ] <내용>` 로 적고, 시작하면 `- [~]`(세션당 하나, 멈추면 `- [ ]` 로),
+끝나면 `- [x]` 로 바꾸라는 안내다. 설정 `features.todo` 가 false 면 붙이지 않는다(설정 › «기능» › «할 일»).
+git 루트가 없거나 홈 폴더 저장소면 붙이지 않는다. `pl_flow.py` 는 이 파일 편집을 막지 않는다(엄격 모드·보안 수정
+요청 포함).
+
+| CLI | 시작 시 할 일 안내 |
+|---|---|
+| Claude Code | 플러그인 `SessionStart` (`pipelines_brief.py`) |
+| Codex | `SessionStart` 의 `pipelines_brief.py --platform codex` |
+| Gemini · Cursor · Copilot | 시작 시 넣지 않음 |
+
 이 훅과 `pl_mark.py`·`pl_flow.py` 는 cwd 밖에서 세션이 작업하는 프로젝트의 파이프라인도 읽는다. cwd 에 파이프라인이 있으면 cwd 만 본다(대화 기록 끝부분의 Bash `cd`
 대상·기록의 `cwd` 의 git 루트, 읽기만 한 경로는 제외, `plbrief/<session_id>.dirs` 에 캐시. 메일박스 폴더는 제외). `pl_flow.py` 는 cwd 에 파이프라인이 있어도 찾는다. 같은 이름 `<name>.json` 이 여럿이면 단계 제목·단계 에이전트(`subagent_type`)가 맞는 쪽을 골라 실행(`proj`)에 기억한다.
 

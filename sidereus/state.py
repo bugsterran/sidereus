@@ -26,6 +26,7 @@ from sidereus.attention import attention
 from sidereus.arch_map import runs as arch_runs, sec_runs
 from sidereus.pl_reqs import view as pl_reqs_view
 from sidereus.review import review
+from sidereus.todo import state_counts as todo_counts
 from sidereus.room_tags import load as room_tags_load
 from sidereus.room_admin import load as room_admin_load
 from sidereus.term import term_cfg
@@ -213,6 +214,7 @@ def state(since=0, ncards=50):
         "cards": _cards,
         "attention": _attn,       # who needs me now (metadata only)
         "review": _piece("review", review, None, _sessions),   # finished sessions' unreviewed uncommitted files (metadata only)
+        "todo": _piece("todo", todo_counts, {}, _sessions),   # {cwd: {o, w, d}} from <repo>/.claude/todo.md, counts only (feature `todo`)
         "archRun": _arun,   # arch-map runs in progress per project (sidereus/arch_map.py)
         "secRun": _srun,   # security-checks runs in progress per project (same shape)
         "plReq": _piece("plReq", pl_reqs_view, {}, _sessions, _arun, _srun),   # sent run requests + receiver state (sidereus/pl_reqs.py)

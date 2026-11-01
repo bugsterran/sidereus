@@ -77,6 +77,7 @@ __pycache__/
 !.claude/workflows/
 !.claude/pipelines/
 !.claude/skills/
+.claude/todo.md
 .claude.json
 
 refactor/snap/
@@ -92,6 +93,9 @@ tool-stash.json
 # pipeline runtime: write backups + remembered project list
 pipeline-bak/
 pipeline-projects.json
+
+# «To-do» ledger (sidereus/todo.py: add/start/done times per repo)
+/todo/
 
 # pipeline stage marks from ~/.claude/hooks/pl-mark.py (runtime state)
 plmark/

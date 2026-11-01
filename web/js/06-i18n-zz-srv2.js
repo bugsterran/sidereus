@@ -134,4 +134,5 @@ Object.assign(I18N.ko, {
   "Could not read the record ({err})": "기록을 읽지 못했습니다({err})",
   "Cannot read the transcript for session {sid}.": "세션 {sid} 의 트랜스크립트를 읽을 수 없습니다.",
   "quota_who seed failed: {err}": "quota_who 시드 실패: {err}",
+  "To-do ledger write failed ({err})": "할 일 기록 저장 실패({err})",
 });

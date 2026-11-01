@@ -2,7 +2,7 @@
 
 Session control screen. `http://127.0.0.1:8799` · started by launchd `io.sidereus.viewer` (label = `<launchd_label_prefix>.viewer`; `python3 mailbox_config.py --label viewer` prints it).
 **`chat_server.py` = entry point** (~250 lines: `Handler` core (send · guards · dispatch) · `main()` — route bodies are `sidereus/routes_get.py`·`routes_post.py`, `state()` is `sidereus/state.py`, PAGE assembly is `sidereus/page.py`) · **Python body is `sidereus/<domain>.py`**
-(158 modules · order and ownership rules in `refactor/STAGE3.md`) · ⚠each global is owned by **one module only** — don't reassign another module's name, fix it in the owning module · **the screen is `web/`** — `index.html` (skeleton, `@@INCLUDE file@@` placeholders) +
+(159 modules · order and ownership rules in `refactor/STAGE3.md`) · ⚠each global is owned by **one module only** — don't reassign another module's name, fix it in the owning module · **the screen is `web/`** — `index.html` (skeleton, `@@INCLUDE file@@` placeholders) +
 `app-head.js` · `css/NN-*.css` · `js/NN-*.js` (per feature, `@@INCLUDE js/*.js@@` = concatenated in name order · NN is the order).
 The server reads them at import and assembles an **inline PAGE with the same bytes** as before (`_load_page`). Feature ↔ file map: `docs/dev/FILEMAP.md` (was the web/ file map section of `VIEWER-HANDOVER.md`).
 ⚠Split JS files **only at top-level statement boundaries** (each file passes `node --check` on its own) · removing/adding a trailing newline changes the PAGE bytes.
@@ -37,6 +37,7 @@ stderr    viewer.err                # ★append-only — old lines are fossils
    Changing this rule is the owner's decision.
    - A subagent row may show the Agent tool `description` (the task, not only the agent name).
    - A resumed agent's label may use the latest SendMessage `summary` (one-line label from the parent) — never `message`.
+   - A «To-do» item (`<git root>/.claude/todo.md`, `sidereus/todo.py`) is a one-line request label like the Agent description — only parsed `- [ ]`/`- [~]`/`- [x]` lines are shown, never the rest of the file.
    ⚠Message bodies appear nowhere (the description is only a one-line label passed by the parent).
    - The only exception = the **work-log popup** (`sidereus/work.py` `session_work`·`agent_work`, opens on click only · same allow-list as diff; owner-approved).
      ⚠Do not widen this exception to lists, timeline, cards or MCP.
@@ -62,7 +63,8 @@ stderr    viewer.err                # ★append-only — old lines are fossils
    - **Writing tool config is allowed** (owner decision — the feature set outgrew a read-only limit).
      Targets are only skill · agent · command files · MCP servers · hook settings (`~/.claude/` · project `.claude/` · `.mcp.json`).
      Also project `.claude/pipelines/*.json` (stage agent/model, and stage title with every in-file reference renamed in the same write; `sidereus/pipeline.py`; same guards). Owner-approved.
-     ⚠Implemented today: only the pipeline files above, the `settings.json` keys below (`sidereus/cc_settings.py`) and the external CLI hook files below (`sidereus/hook_connect.py`), and removing one Claude Code hook entry from user/project `settings.json` (`sidereus/hook_remove.py`; plugin hooks are never written). Skill · agent · command · MCP writes and adding or editing Claude Code hooks are not built — the «Tools» view is otherwise read-only.
+     Also project `<git root>/.claude/todo.md` («To-do», `sidereus/todo.py`): append one typed `- [ ] text` line or flip one item's bracket byte — Enter/click with no confirm (the person typed or pressed it, like the chat box); backup to `tool-trash/` first · Origin · only a known session repo · symlinked file/`.claude` refused · other bytes identical. Owner-approved.
+     ⚠Implemented today: only the pipeline files and `todo.md` above, the `settings.json` keys below (`sidereus/cc_settings.py`) and the external CLI hook files below (`sidereus/hook_connect.py`), and removing one Claude Code hook entry from user/project `settings.json` (`sidereus/hook_remove.py`; plugin hooks are never written). Skill · agent · command · MCP writes and adding or editing Claude Code hooks are not built — the «Tools» view is otherwise read-only.
      ⚠Every write: preview (diff) + confirm · automatic backup before writing · viewer Origin required · paths outside the allow-list are refused · MCP `env` values are masked on screen.
      ⚠Delete never deletes — it moves the file to the backup folder (can be undone).
    - **Each account's `settings.json` (`claude_roots.accounts()`, primary `~/.claude/settings.json` first): three keys only** — `autoCompactEnabled`·`autoCompactWindow` (`sidereus/cc_settings.py`, Settings › «Preferences»; one save writes every account, or with «Per account» only the accounts whose values changed — an unchanged account is not written; an extra that is missing/invalid/symlinked is skipped, never created). Same guards per file (confirm · backup · Origin) + no other key changes by a single character. Owner-approved, exposed as a settings option.

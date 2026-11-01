@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- To-do list per project: sessions keep `.claude/todo.md` (open, in progress, done), the session row shows «To-do n», and the expanded list lets you add and check items and see them «By day».
 - Copilot CLI: session list and state via hooks, and «Connect» installs the hooks file. Refs #10
 
 ### Fixed

@@ -99,6 +99,19 @@ At `SessionStart`, one line per `<cwd>/.claude/pipelines/*.json` plus how to run
 setting (`pipeline_apply`) picks auto or ask-first, or turns it off. ⚠Never includes `task` or `rules` text.
 On `UserPromptSubmit` it re-sends the brief only when pipeline names or stage titles changed since the session's last
 brief (hash in `plbrief/<session_id>`).
+
+At `SessionStart` it also adds one «To-do» line, with or without pipelines and with «Apply» off: record each request
+from the person as `- [ ] <text>` in `<git root>/.claude/todo.md`, `- [~]` when started (one per session, back to
+`- [ ]` when paused), `- [x]` when done. Off when config `features.todo` is false (Settings › «Features» › «To-do»);
+no line without a git root or for a repo at the home folder. `pl_flow.py` never gates edits of that file (strict mode
+and security-fix requests included).
+
+| CLI | To-do line at start |
+|---|---|
+| Claude Code | plugin `SessionStart` (`pipelines_brief.py`) |
+| Codex | `pipelines_brief.py --platform codex` at `SessionStart` |
+| Gemini · Cursor · Copilot | nothing injected at start |
+
 This hook, `pl_mark.py` and `pl_flow.py` also read the pipelines of projects the session works in outside its cwd
 when the cwd has none (git roots of Bash `cd` targets and transcript `cwd` in the transcript tail, never paths only read; cached in `plbrief/<session_id>.dirs`; the mailbox folder excluded). `pl_flow.py` also scans when the cwd has pipelines: if several projects own `<name>.json` it picks the best fit (stage title, stage agent = `subagent_type`) and keeps it for the run (`proj`).
 

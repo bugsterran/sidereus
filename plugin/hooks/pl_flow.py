@@ -1583,10 +1583,24 @@ def _fix_gate(ev, sid, tool, sub, now):
         return False
 
 
+def _todo_edit(ev, tool):
+    """True when the edited file is `<git root>/.claude/todo.md` (the SessionStart brief asks every session to keep it)."""
+    ti = ev.get("tool_input") if isinstance(ev.get("tool_input"), dict) else {}
+    fp = ti.get("notebook_path" if tool == "NotebookEdit" else "file_path")
+    if not (isinstance(fp, str) and os.path.isabs(fp)):
+        return False
+    fp = os.path.normpath(fp)
+    cl = os.path.dirname(fp)
+    root = os.path.dirname(cl)
+    return os.path.basename(fp) == "todo.md" and os.path.basename(cl) == ".claude" and _git_root(root) == root
+
+
 def _none_gate(ev, sid, tool, desc, now):
     """First file edit / main `git commit` of a session in a pipeline project with no open run and no [pl-none]:
     deny once with the pipeline names; in strict mode (_strict) deny every time. True when denied; fail-open."""
     try:
+        if tool in EDITS and _todo_edit(ev, tool):   # ⚠Sidereus «To-do» bookkeeping is never gated (strict or fix request)
+            return False
         sub = bool(ev.get("agent_id"))
         if _fix_gate(ev, sid, tool, sub, now):   # ⚠before the no-pipelines return: the request's repo may have none
             return True
