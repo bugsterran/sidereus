@@ -40,9 +40,13 @@ class _Base(unittest.TestCase):
         os.makedirs(os.path.dirname(_out(self.dir, "x")))
         self._boot = bt.boot_time
         bt.boot_time = lambda: 0
+        self._tids = (set(bp._bg_popped), set(bp._bg_dropped))
 
     def tearDown(self):
         bt.boot_time = self._boot
+        for d, keep in zip((bp._bg_popped, bp._bg_dropped), self._tids):   # ⚠a leaked popped tid blocks reuse in other test files
+            for k in set(d) - keep:
+                d.pop(k, None)
         for d in (bt._bg_open, bt._bg_open_at, bt._bg_offset):
             for k in list(d):
                 if k.startswith(self.dir):
