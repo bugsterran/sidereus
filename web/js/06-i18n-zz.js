@@ -3,6 +3,8 @@ Object.assign(I18N.ko, {
   // 17-attention.js
   'Sessions needing you': '지금 봐야 할 세션',
   'No sessions need you': '지금 봐야 할 세션 없음',
+  'Needs your response': '응답 필요',
+  'For your information': '참고',
   '+{n} more': '+{n} 더 보기',
   'Copy resume command': '재개 복사',
   'Snooze': '잠재우기',

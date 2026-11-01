@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Attention: sessions waiting for your approval or answer sit in their own "Needs your response" group on top, with a red bar and a count, and never fold; everything else is under "For your information".
+
 ### Fixed
 
 - Sessions: a long-running Bash in auto mode is no longer shown as "Bash waiting for approval".

@@ -119,7 +119,7 @@ function actAttnGo(x){
   let row = actAttnRow(ids);
   if(!row){
     const a = attnRows(), has = l => (l || []).some(r => ids.indexOf(r.id) >= 0);
-    if(attnUnfold((a.shown || []).length > ATTN_MAX && has(a.shown), has(a.low))) row = actAttnRow(ids);   // 17-attention owns attnMore/attnLow
+    if(attnUnfold((a.info || []).length > ATTN_MAX && has(a.info), has(a.low))) row = actAttnRow(ids);   // 17-attention owns attnMore/attnLow
   }
   if(!row) return false;
   row.scrollIntoView({behavior: 'smooth', block: 'nearest'});

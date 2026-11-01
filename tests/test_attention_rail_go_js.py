@@ -23,8 +23,9 @@ def run(rows, more=False, low=False, sess=None):
         "function sesdrReveal(){ out.reveal++; } function softErr(n, e){ throw e; } function actHovHide(){}\n"
         "function railPeekEnd(){ out.peek++; } function termGo(){ out.term++; } function cpGo(x){ out.cp.push(x.sid); }\n"
         "function setTimeout(){}\n"
-        "function attnRows(){ return {shown: ROWS.shown.map(id => ({id})), low: ROWS.low.map(id => ({id}))}; }\n"
-        "function buildAttn(){ rendered = (attnMore ? ROWS.shown : ROWS.shown.slice(0, ATTN_MAX)).concat(attnLow ? ROWS.low : []); }\n"
+        "const INFO = ROWS.info || ROWS.shown, RESP = ROWS.resp || [];\n"   # resp rows render unfolded; only info folds
+        "function attnRows(){ return {shown: RESP.concat(INFO).map(id => ({id})), resp: RESP.map(id => ({id})), info: INFO.map(id => ({id})), low: ROWS.low.map(id => ({id}))}; }\n"
+        "function buildAttn(){ rendered = RESP.concat(attnMore ? INFO : INFO.slice(0, ATTN_MAX), attnLow ? ROWS.low : []); }\n"
         "const document = {querySelector(sel){ out.q.push(sel); const m = sel.match(/^#attn \\.atr\\[data-aid=\"(.*)\"\\]$/);\n"
         "  if(!m || rendered.indexOf(m[1]) < 0) return null;\n"
         "  return {id: m[1], scrollIntoView(o){ out.scroll.push([m[1], o.block]); }, classList: {add(c){ out.flash.push(c); }, remove(){}}}; }};\n"
@@ -51,8 +52,12 @@ class RailAttentionGo(unittest.TestCase):
         self.assertEqual(o["scroll"], [["cwd:/w", "nearest"]])
 
     def test_past_max_expands_more(self):
-        o = run({"shown": ["a", "b", "s1"], "low": []})
+        o = run({"shown": ["a", "b", "s1"], "info": ["a", "b", "s1"], "low": []})
         self.assertEqual((o["more"], o["low"], o["scroll"], o["cp"]), (True, False, [["s1", "nearest"]], []))
+
+    def test_resp_rows_never_unfold(self):
+        o = run({"shown": [], "resp": ["r1", "r2", "s1"], "info": ["a"], "low": []})
+        self.assertEqual((o["more"], o["scroll"]), (False, [["s1", "nearest"]]))
 
     def test_low_priority_expands_low(self):
         o = run({"shown": ["a"], "low": ["s1"]})

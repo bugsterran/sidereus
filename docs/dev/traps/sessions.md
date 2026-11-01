@@ -313,3 +313,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **Ended external CLI rows stay in `_ext`** (`ext_store._end_locked`: state `done`, `ended`, `endWhy` end|pid|silent) so they fold under «Show n ended» for `EXT_DONE_KEEP_S` (12 h).
   ⇒ Liveness readers skip `ended` rows (`timeline_ext` live/items, `ext_usage_today`); `ext_ended()` returns them so rollout/presence rows stay hidden. Test `tests/test_ext_ended_fold.py`.
   ⚠A new reader of `_ext` that counts open sessions must filter `ended`. ⚠`EXT_DONE_KEEP_S` must equal `sessions.sessions()` `max_age_h` (guarded in the test).
+- **Attention list groups by kind, not score** (`web/js/17-attention.js` `attnRows` `resp`/`info`): a row with any `ALARM_TERM_KINDS` signal (blocked/ask) is «Needs your response», else «For your information».
+  ⇒ `resp` sorts first and renders unfolded; `ATTN_MAX`/«+N more» fold `info` only; `actAttnGo` unfolds on `info` length. Test `tests/test_attention_groups_js.py`.
+  ⚠Never group by score — a fail@60 would sort above an ask@50. ⚠Never fold `resp` rows; a waiting question must stay visible.

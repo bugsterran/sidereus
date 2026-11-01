@@ -13,6 +13,7 @@ const LS = {}; const LANG = 'ko'; function T(s){ return s; }
 function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function lsJson(k, d){ return k in LS ? JSON.parse(JSON.stringify(LS[k])) : d; }
 function lsSetJson(k, v){ LS[k] = JSON.parse(JSON.stringify(v)); }
+const ALARM_TERM_KINDS = new Set(['ask', 'blocked']);
 function apolOf(k){ return 'badge'; }
 let ATTN = null, attnMenu = '', attnHtml = '', SESS = [], PRES = {}, POSTS = [], NOTES = [], REPLY = {ok: true, id: 'm1'};
 const CPFB = {key: '', ok: false, until: 0, box: ''};

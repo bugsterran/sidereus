@@ -147,7 +147,7 @@ The Timeline is the evidence behind a verdict: what each agent actually did, and
 
 ![Session drawer](images/sessions-drawer-en.png)
 
-1. Read the «Attention» list in the sidebar (a count badge when folded). Blocked and «Awaiting answer» sessions come first; a pending question stays until answered or its session is known to have ended.
+1. Read the «Attention» list in the sidebar (a count badge when folded). Blocked and «Awaiting answer» sessions sit in «Needs your response» on top (never folded); the rest are under «For your information»; a pending question stays until answered or its session is known to have ended.
 2. Each row acts in one click: «Terminal» raises its tab, «Reply» opens a one-line box (Enter sends to that session's mailbox, Esc closes), «Done» hides that request, «Later» snoozes 30 min, «Seen» marks agent completions read. Clicking the row opens the session.
 3. A session that ended its turn shows a «Done · waiting for input» row about 15 s later, under «N low-priority» with other done and background-done rows.
 4. The session drawer in the top bar has the full list (running a tool, thinking, waiting, done, stalled). Click a row for its work log; with a terminal app set (iTerm2, Terminal.app, Orca), its tab comes forward too.
