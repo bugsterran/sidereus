@@ -331,7 +331,8 @@ def _row_status(st0, o, p, now, mt):
         #     (2) Bash, but **that session has no running process** (tool_busy). But if a background command is running
         #        its process is caught and the check blurs — then do not claim at all.
         #   MCP tools can legitimately take long (browser control), so they are excluded. If unknown, do not set.
-        "blocked": _blocked(st0, p.get("tool") or "", int(now - mt), p.get("cwd") or "",
+        # ⚠Age from the pending tool_use (actAt), not mtime: queued lines bump mtime past the shell start.
+        "blocked": _blocked(st0, p.get("tool") or "", int(now - (p.get("actAt") or mt)), p.get("cwd") or "",
                             len(p.get("bgs") or []), p.get("pmode") or ""),
         "pmode": p.get("pmode") or "",    # permission mode (metadata; auto/bypass/dontAsk never prompt)
         "otel": bool(o),                  # is this row's state **event-based** (not inferred)
