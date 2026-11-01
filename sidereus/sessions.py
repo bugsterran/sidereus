@@ -11,7 +11,7 @@ from sidereus.warn import warn_once
 from sidereus.transcript import _model_label, _tail_lines
 from sidereus.ident import _proj_name, _proj_root, _sid8, mbox_of
 from sidereus.live import (_MBOX_LAB_RE, _blocked, _ctx_window, _model_win, _parse_cache,
-    _parse_lock, live_cwds, mailbox_watches, sid_alive)
+    _live_retired, _parse_lock, live_cwds, mailbox_watches, sid_alive)
 from sidereus.gitinfo import _git_state, _wt_of, session_repos
 from sidereus.agents import WF_HIST_N, WF_HIST_S, WF_KEEP_S, _DESC_TOOLS, _bg_show, _subs_mt, _subs_newer, plm_of, team_info, wf_public, wf_runs
 from sidereus.usage_index import _uidx, _uidx_lock
@@ -395,12 +395,14 @@ def _row_acct(sid, fp):
     return {"acct": lab, "acctDir": d} if lab else {}
 
 
-def _live_slot(cwd, acct, contd, alive, live, slots, blind):
+def _live_slot(cwd, acct, contd, alive, live, slots, blind, retired=False):
     """(live for the row, stale) — pure; takes one of `slots[cwd]` in place. Replayed by tests/test_state_replay.py."""
     if blind and acct in blind:
         return None, False       # account lookup failed: live None -> Unknown (or ask), never done
     if alive:
         return live, False       # confirmed by id — neither uses nor loses a path slot
+    if retired:
+        return live, True        # pre-/clear sid of a live process (`live._live_retired`) — never takes a path slot
     if not isinstance(live, dict) or cwd not in live:
         return live, False
     if contd:
@@ -465,7 +467,7 @@ def _sessions(max_age_h, cap):
                     _parse_cache.put(fp, (key, p, time.time()))
             acct = (_row_acct(p.get("sid") or os.path.basename(fp)[:-6], fp).get("acct") or "") if blind else ""
             lv, stale = _live_slot(p.get("cwd") or "", acct, p.get("contd"), sid_alive(p.get("sid")),
-                                   live, slots, blind)
+                                   live, slots, blind, (p.get("sid") or "") in _live_retired[0])
             row = _session_row(fp, mt, now, lv, p, stale)
             _note_bg_done(fp, row)          # finished ones become cards here (after the row is built, so project·cwd are known)
             out.append(row)

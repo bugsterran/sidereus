@@ -1,0 +1,9 @@
+{
+ "ages": {
+  "c1ea0000-0000-4000-8000-00000000000a.jsonl": 100,
+  "c1ea0000-0000-4000-8000-00000000000b.jsonl": 600
+ },
+ "busy": null,
+ "guards": "after /clear the official process keeps argv --session-id OLD but answers NEW; OLD must not borrow an unrelated same-cwd process's path slot (live._live_retired)",
+ "os": "mac"
+}

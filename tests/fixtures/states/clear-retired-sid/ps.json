@@ -1,0 +1,17 @@
+{
+ "cwd": {
+  "686": "/nonexistent-sidereus/demo"
+ },
+ "procs": [
+  [
+   "646",
+   "1",
+   "claude.exe --session-id c1ea0000-0000-4000-8000-00000000000b --fork-session --resume c1ea0000-0000-4000-8000-00000000000b"
+  ],
+  [
+   "686",
+   "1",
+   "claude"
+  ]
+ ]
+}
