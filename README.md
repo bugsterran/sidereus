@@ -68,7 +68,7 @@ This is one person's tool, published so others can fork it. The UI is in English
 
 ## Install
 
-You need Python 3.9 or later (standard library only), Claude Code, and `git` for the Branches, Structure and diff views. The stock macOS `/usr/bin/python3` works; on a fresh Mac its first run offers to install the Xcode Command Line Tools, so accept and run again. macOS is tested, Windows works with a few gaps, Linux is untested. The demo server uses about 50 MB of memory.
+You need Python 3.9 or later (standard library only), Claude Code, and `git` for the Branches, Structure and diff views. The stock macOS `/usr/bin/python3` works; on a fresh Mac its first run offers to install the Xcode Command Line Tools, so accept and run again. macOS is tested, Windows works with a few gaps, Linux is untested. The viewer is a desktop page laid out for a 1920-pixel-wide window; it stays readable down to 900 pixels, and phone screens are not supported. The demo server uses about 50 MB of memory.
 
 ```sh
 git clone https://github.com/bugsterran/sidereus.git ~/sidereus && cd ~/sidereus
