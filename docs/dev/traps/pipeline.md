@@ -347,3 +347,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠An automatic skip on another CLI (`pl_flow._jumped`) is a `skip` stage, so a block followed by it reads «Overridden».
 - ⚠Strict off = `_policy.json` mtime while its content is not `{"enforce":"writes"}`; a deleted file leaves no time and overrides nothing.
 - ⚠`dl[].r` (resume) is written only by hooks that ship with this view: blocks from before read «unknown» for up to 7 days.
+
+## Result layer «fix followed» on every PASS (`pl_outcome` · `fix_pipes`)
+- Cause: shared registry and doc files (`refactor/STAGE3.md`, `docs/HOOKS*.md`, screen baselines) sit in most commits, so any later commit «shared a file» and every PASS read «fix followed».
+- Fix: count a later commit only when the ledger attributes it to a `"catch": "person"` run (not the PASS's own run) and it shares a code file with the PASS commit.
+- ★2026-11-01, this repo, 30 days: 12 flagged → 1; all 12 were unrelated features, the 1 is 6580f96d → b7512c44.
+- ⚠Do not bring back the «common file» rule or count doc/test files: the signal fires on every PASS again.

@@ -35,16 +35,6 @@ def _git(repo, args):
     return r.returncode, r.stdout or ""
 
 
-def _pipes(proj):
-    """Sorted names of `<proj>/.claude/pipelines/*.json` with `"catch": "person"` (pipeline's guarded reader)."""
-    out = []
-    for n in pipeline._names(proj):
-        P = pipeline._read_pipe(proj, n)[1]
-        if isinstance(P, dict) and P.get("catch") == "person":
-            out.append(n)
-    return out
-
-
 def _tests(files):
     return sorted(set(f for f in files if isinstance(f, str) and f.startswith("tests/") and len(f) <= PS_PATH_MAX))
 
@@ -106,7 +96,7 @@ def person(proj, git=True):
     empty = {"pipes": [], "runs": 0, "cards": [], "git": False}
     if not isinstance(proj, str) or not proj:
         return empty
-    pipes = _pipes(proj)
+    pipes = pipeline.fix_pipes(proj)   # one definition of «bug-fix pipeline», shared with «fix followed»
     if not pipes:
         return empty
     runs = pl_outcome.ledger(pl_outcome.repo_key(proj), 0)

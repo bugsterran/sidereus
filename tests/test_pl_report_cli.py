@@ -32,6 +32,8 @@ class Report(unittest.TestCase):
         os.makedirs(os.path.dirname(self.pf))
         with open(self.pf, "w", encoding="utf-8") as f:
             json.dump({"name": "flow", "stages": [{"title": "build", "agent": "a"}, {"title": "review", "agent": "reviewer"}]}, f)
+        with open(os.path.join(os.path.dirname(self.pf), "hotfix.json"), "w", encoding="utf-8") as f:   # bug-fix pipeline
+            json.dump({"name": "hotfix", "catch": "person", "stages": [{"title": "fix", "agent": "a"}]}, f)
         with open(os.path.join(self.tmp, "evidence.jsonl"), "w", encoding="utf-8") as f:
             f.write(json.dumps({"v": 1, "kind": "check", "repo": self.proj, "ts": NOW - 100, "mode": "fast", "rc": 0,
                                 "head": "a" * 7, "dirty": False, "steps": []}) + "\n")
@@ -40,9 +42,10 @@ class Report(unittest.TestCase):
         with open(os.path.join(self.tmp, "eval", key, "runs.jsonl"), "w", encoding="utf-8") as f:
             f.write(json.dumps({"name": "flow", "t0": NOW - 200, "end": NOW - 90, "lb": [{"f": "review", "g": "build", "n": 1}],
                                 "dc": {"jump": 1}}) + "\n")
+            f.write(json.dumps({"name": "hotfix", "t0": NOW - 60, "end": NOW - 15}) + "\n")   # owns commit b: a fix run
         self.rep = os.path.join(self.tmp, "eval", key, "reports")
         log = "\x1e%s\x1f%d\n\na.py\n\x1e%s\x1f%d\n\na.py\nb.py\n" % ("b" * 40, NOW - 10, "a" * 40, NOW - 150)
-        log += "".join("\x1e%s\x1f%d\n\nold%d.py\n" % (c * 40, NOW - 900, k) for k, c in enumerate("cd"))   # a.py under half the commits
+        log += "".join("\x1e%s\x1f%d\n\nold%d.py\n" % (c * 40, NOW - 900, k) for k, c in enumerate("cd"))   # older unrelated commits
         out = {"rev-parse": "f" * 40 + "\n", "log": log, "rev-list": "b" * 40 + "\n"}   # rev-list: b descends from a
         git = lambda repo, args: (0, out[args[0]]) if args[0] in out else None
         trgit = lambda repo, args: (0, "f" * 40 + "\n") if args[0] == "rev-parse" else (0, "")   # head an ancestor, no rollback
@@ -65,7 +68,7 @@ class Report(unittest.TestCase):
         assert_mode(self, path, 0o600)
         with open(path, encoding="utf-8") as f:
             text = f.read()
-        oc = OC.outcome(self.proj, "flow", ["review"], NOW)
+        oc = OC.outcome(self.proj, "flow", ["review"], NOW, fix=["hotfix"])
         want = OC.sentences({"n": 1, "m": 2}, oc)
         self.assertEqual([ln[2:] for ln in text.splitlines() if ln.startswith("- ")], want)
         self.assertIn("Result: 0 of 1 passes broke later, fix followed 1", want)

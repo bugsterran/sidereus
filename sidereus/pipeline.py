@@ -161,6 +161,17 @@ def _names(proj):
                   if _NAME.fullmatch(n))
 
 
+def fix_pipes(proj):
+    """Sorted bug-fix pipeline names (`"catch": "person"`): the one definition shared by harness_person and the
+    result layer's «fix followed» (pl_outcome gets it from its caller, which may import this feature)."""
+    out = []
+    for n in _names(proj):
+        P = _read_pipe(proj, n)[1]
+        if isinstance(P, dict) and P.get("catch") == "person":
+            out.append(n)
+    return out
+
+
 def _listed(proj):
     """_names minus `"builtin": true` files (Sidereus plumbing, e.g. security-checks): hidden
     from the list and borrowed rows. ⚠They stay in .claude/pipelines — the pl_* hooks and gates resolve them there.
