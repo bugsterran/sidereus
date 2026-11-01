@@ -193,11 +193,99 @@ def _ps(pid):
     return int(f[0]), " ".join(f[1:6]), os.path.basename(" ".join(f[6:]))
 
 
+IS_WIN = sys.platform == "win32"
+# Windows wrappers between the CLI and this script (shells, py launcher, console host); python*.exe is skipped by prefix.
+SKIP_EXE = ("cmd.exe", "powershell.exe", "pwsh.exe", "py.exe", "pyw.exe", "conhost.exe", "bash.exe", "sh.exe",
+            "env.exe")
+_DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+_MONS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def _lstart_fmt(epoch):
+    """⚠Byte-identical copy of sidereus/config.py `lstart_fmt` (this file stays standalone): the server compares pstart verbatim."""
+    t = time.localtime(int(epoch))
+    return "%s %s %d %02d:%02d:%02d %d" % (_DAYS[t.tm_wday], _MONS[t.tm_mon - 1], t.tm_mday,
+                                          t.tm_hour, t.tm_min, t.tm_sec, t.tm_year)
+
+
+def _win_procs():
+    """{pid: (ppid, exe name)} from a Toolhelp snapshot, or None on any failure. ⚠Windows has no /bin/ps."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class PE32(ctypes.Structure):
+            _fields_ = [("dwSize", wintypes.DWORD), ("cntUsage", wintypes.DWORD),
+                        ("th32ProcessID", wintypes.DWORD), ("th32DefaultHeapID", ctypes.c_void_p),
+                        ("th32ModuleID", wintypes.DWORD), ("cntThreads", wintypes.DWORD),
+                        ("th32ParentProcessID", wintypes.DWORD), ("pcPriClassBase", ctypes.c_long),
+                        ("dwFlags", wintypes.DWORD), ("szExeFile", ctypes.c_wchar * 260)]
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        k32.CreateToolhelp32Snapshot.restype = ctypes.c_void_p
+        k32.CloseHandle.argtypes = (ctypes.c_void_p,)
+        snap = k32.CreateToolhelp32Snapshot(2, 0)              # TH32CS_SNAPPROCESS
+        if not snap or snap == ctypes.c_void_p(-1).value:
+            return None
+        out = {}
+        try:
+            e = PE32()
+            e.dwSize = ctypes.sizeof(PE32)
+            ok = k32.Process32FirstW(ctypes.c_void_p(snap), ctypes.byref(e))
+            while ok:
+                out[int(e.th32ProcessID)] = (int(e.th32ParentProcessID), e.szExeFile)
+                ok = k32.Process32NextW(ctypes.c_void_p(snap), ctypes.byref(e))
+        finally:
+            k32.CloseHandle(snap)
+        return out or None
+    except Exception:
+        return None
+
+
+def _win_start(pid):
+    """Start time of `pid` via GetProcessTimes in `_lstart_fmt` form, or "" on any failure."""
+    try:
+        import ctypes
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        k32.OpenProcess.restype = ctypes.c_void_p
+        k32.CloseHandle.argtypes = (ctypes.c_void_p,)
+        h = k32.OpenProcess(0x1000, False, int(pid))            # PROCESS_QUERY_LIMITED_INFORMATION
+        if not h:
+            return ""
+        try:
+            c, e, k, u = (ctypes.c_ulonglong(), ctypes.c_ulonglong(), ctypes.c_ulonglong(), ctypes.c_ulonglong())
+            if not k32.GetProcessTimes(ctypes.c_void_p(h), ctypes.byref(c), ctypes.byref(e),
+                                       ctypes.byref(k), ctypes.byref(u)):
+                return ""
+        finally:
+            k32.CloseHandle(h)
+        return _lstart_fmt((c.value - 116444736000000000) // 10000000) if c.value else ""
+    except Exception:
+        return ""
+
+
+def _cli_pid_win():
+    procs = _win_procs()
+    if not procs:
+        return 0, ""
+    pid = os.getppid()
+    for _ in range(6):
+        p = procs.get(pid)
+        if pid <= 0 or p is None:
+            return 0, ""
+        name = os.path.basename(p[1]).lower()
+        if name not in SKIP_EXE and not name.startswith("python"):
+            return pid, _win_start(pid)
+        pid = p[0]
+    return 0, ""
+
+
 def cli_pid():
     """pid + start time of the CLI that ran this hook: walk up past shell/python wrappers.
     ★Not os.getppid() alone — that is usually the short-lived `sh -c`, which would read as dead at once."""
     if os.environ.get("SIDEREUS_HOOK_NO_PID"):      # tests (tests/_load.py): never run ps
         return 0, ""
+    if IS_WIN:
+        return _cli_pid_win()
     pid = os.getppid()
     for _ in range(6):
         if pid <= 1:

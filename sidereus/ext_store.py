@@ -10,6 +10,7 @@ import subprocess
 import threading
 import time
 from sidereus.config import DATA_DIR, pid_alive
+from sidereus import config   # module access: tests patch `config.IS_WIN` / `config.win_pid_start`
 from sidereus.warn import warn_once
 from sidereus.bus import _atomic_write
 from sidereus import plat_codex, plat_gemini, plat_copilot
@@ -464,6 +465,8 @@ def _ext_dedupe_locked():
 
 def _pid_start(pid):
     """`ps` start time of `pid` ("" when gone, None when ps failed). ⚠LC_ALL=C like the hook — lstart is localized."""
+    if config.IS_WIN:                             # no /bin/ps: GetProcessTimes in the same text form
+        return config.win_pid_start(pid)
     try:
         out = subprocess.run(["/bin/ps", "-o", "lstart=", "-p", str(pid)], stdout=subprocess.PIPE,
                              stderr=subprocess.DEVNULL, timeout=2,

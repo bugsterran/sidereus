@@ -117,6 +117,46 @@ def pid_alive(pid):
     except (OSError, OverflowError, ValueError):
         return None
     return True
+
+
+_DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+_MONS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def lstart_fmt(epoch):
+    """`ps -o lstart` text (LC_ALL=C, whitespace collapsed) of an epoch in local time.
+    ⚠Must stay byte-identical to ext-hooks/ext_hook.py `_lstart_fmt`: the server compares the hook's pstart verbatim."""
+    import time
+    t = time.localtime(int(epoch))
+    return "%s %s %d %02d:%02d:%02d %d" % (_DAYS[t.tm_wday], _MONS[t.tm_mon - 1], t.tm_mday,
+                                          t.tm_hour, t.tm_min, t.tm_sec, t.tm_year)
+
+
+def win_pid_start(pid):
+    """Windows start time of `pid` in `lstart_fmt` form; "" when the pid does not exist, None when unknown."""
+    try:
+        import ctypes
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)   # own instance: argtypes never leak to pid_alive
+        k32.OpenProcess.restype = ctypes.c_void_p
+        k32.OpenProcess.argtypes = (ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32)
+        k32.CloseHandle.argtypes = (ctypes.c_void_p,)
+        h = k32.OpenProcess(0x1000, False, int(pid))            # PROCESS_QUERY_LIMITED_INFORMATION
+        if not h:
+            return "" if ctypes.get_last_error() == 87 else None   # ERROR_INVALID_PARAMETER = no such pid
+        try:
+            c, e, k, u = (ctypes.c_ulonglong(), ctypes.c_ulonglong(), ctypes.c_ulonglong(), ctypes.c_ulonglong())
+            if not k32.GetProcessTimes(ctypes.c_void_p(h), ctypes.byref(c), ctypes.byref(e),
+                                       ctypes.byref(k), ctypes.byref(u)):
+                return None
+        finally:
+            k32.CloseHandle(h)
+        if not c.value:
+            return None
+        return lstart_fmt((c.value - 116444736000000000) // 10000000)   # FILETIME 1601 -> Unix epoch
+    except Exception:
+        return None
+
+
 argv = sys.argv[1:]
 if "--port" in argv:
     PORT = int(argv[argv.index("--port") + 1])

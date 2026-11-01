@@ -1,0 +1,150 @@
+"""Windows CLI pid + start time without /bin/ps: hook parent walk (Toolhelp) and GetProcessTimes, all ctypes faked."""
+import ctypes
+import importlib.util
+import os
+import time
+import unittest
+from unittest import mock
+
+import tests._load  # noqa: F401  (sets SIDEREUS_HOOK_NO_PID before the hook runs)
+from tests._load import sidereus
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_spec = importlib.util.spec_from_file_location("ext_hook_win", os.path.join(ROOT, "ext-hooks", "ext_hook.py"))
+hook = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(hook)
+config = sidereus("config")
+st = sidereus("ext_store")
+
+EPOCH = 1793530800                                   # fixed instant, never the clock
+FT = EPOCH * 10000000 + 116444736000000000           # same instant as a FILETIME
+
+
+class _Fn(object):
+    """Stands in for one kernel32 function; accepts restype/argtypes assignment."""
+
+    def __init__(self, f):
+        self.f = f
+
+    def __call__(self, *a):
+        return self.f(*a)
+
+
+class FakeK32(object):
+    def __init__(self, table=None, ft=FT, open_ok=True, err=87):
+        self.table = list((table or {}).items())
+        self.i = 0
+        self.closed = []
+        self.err = err
+
+        def first(snap, ref):
+            self.i = 0
+            return nxt(snap, ref)
+
+        def nxt(snap, ref):
+            if self.i >= len(self.table):
+                return 0
+            pid, (ppid, exe) = self.table[self.i]
+            self.i += 1
+            ref._obj.th32ProcessID, ref._obj.th32ParentProcessID, ref._obj.szExeFile = pid, ppid, exe
+            return 1
+
+        def times(h, c, e, k, u):
+            if ft is None:
+                return 0
+            c._obj.value = ft
+            return 1
+        self.CreateToolhelp32Snapshot = _Fn(lambda flags, pid: 77)
+        self.Process32FirstW = _Fn(first)
+        self.Process32NextW = _Fn(nxt)
+        self.OpenProcess = _Fn(lambda acc, inh, pid: 55 if open_ok else 0)
+        self.GetProcessTimes = _Fn(times)
+        self.CloseHandle = _Fn(lambda h: self.closed.append(h) or 1)
+
+
+def _windll(k32):
+    return mock.patch.object(ctypes, "WinDLL", lambda name, use_last_error=False: k32, create=True)
+
+
+# node.exe (CLI) -> cmd.exe -> py.exe -> python.exe (the hook's parent)
+TABLE = {300: (200, "python.exe"), 200: (150, "py.exe"), 150: (100, "cmd.exe"), 100: (50, "node.exe"),
+         50: (4, "explorer.exe")}
+
+
+class HookWin(unittest.TestCase):
+    def setUp(self):
+        for p in (mock.patch.object(hook, "IS_WIN", True, create=True),
+                  mock.patch.object(hook.os, "getppid", lambda: 300),
+                  mock.patch.dict(os.environ, {"SIDEREUS_HOOK_NO_PID": ""}),
+                  mock.patch.object(hook, "_ps", lambda pid: self.fail("ps must not run on Windows"))):
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_walks_past_wrappers_to_cli(self):
+        with _windll(FakeK32(TABLE)):
+            self.assertEqual(hook.cli_pid(), (100, config.lstart_fmt(EPOCH)))
+
+    def test_skip_list_honoured(self):
+        t = {300: (200, "python3.11.exe"), 200: (150, "pwsh.exe"), 150: (120, "powershell.exe"),
+             120: (110, "conhost.exe"), 110: (100, "bash.exe"), 100: (50, "codex.exe")}
+        with _windll(FakeK32(t)):
+            self.assertEqual(hook.cli_pid()[0], 100)
+
+    def test_ctypes_failure_is_zero(self):
+        boom = mock.patch.object(ctypes, "WinDLL", mock.Mock(side_effect=OSError("no kernel32")), create=True)
+        with boom:
+            self.assertEqual(hook.cli_pid(), (0, ""))
+
+    def test_parent_missing_is_zero(self):
+        with _windll(FakeK32({1: (0, "node.exe")})):
+            self.assertEqual(hook.cli_pid(), (0, ""))
+
+    def test_start_failure_keeps_pid(self):
+        with _windll(FakeK32(TABLE, ft=None)):
+            self.assertEqual(hook.cli_pid(), (100, ""))
+
+    def test_formats_match_server(self):
+        for e in (EPOCH, EPOCH + 86400 * 9 + 3661, 0):
+            self.assertEqual(hook._lstart_fmt(e), config.lstart_fmt(e))
+        # ext_presence._start_ts parses the same text back to the instant
+        self.assertEqual(sidereus("ext_presence")._start_ts(config.lstart_fmt(EPOCH)), EPOCH)
+
+
+class StoreWin(unittest.TestCase):
+    def setUp(self):
+        p = mock.patch.object(config, "IS_WIN", True)
+        p.start()
+        self.addCleanup(p.stop)
+        self.addCleanup(mock.patch.stopall)
+        mock.patch.object(st.subprocess, "run", side_effect=AssertionError("ps must not run on Windows")).start()
+
+    def test_pid_start_from_process_times(self):
+        k = FakeK32()
+        with _windll(k):
+            self.assertEqual(st._pid_start(4242), config.lstart_fmt(EPOCH))
+        self.assertEqual(k.closed, [55])
+
+    def test_pid_start_times_failure_none(self):
+        with _windll(FakeK32(ft=None)):
+            self.assertIsNone(st._pid_start(4242))
+
+    def test_pid_start_no_such_pid_empty(self):
+        k = FakeK32(open_ok=False)
+        with _windll(k), mock.patch.object(ctypes, "get_last_error", lambda: 87, create=True):
+            self.assertEqual(st._pid_start(4242), "")
+        with _windll(k), mock.patch.object(ctypes, "get_last_error", lambda: 5, create=True):
+            self.assertIsNone(st._pid_start(4242))
+
+    def test_pid_start_ctypes_missing_none(self):
+        with mock.patch.object(ctypes, "WinDLL", mock.Mock(side_effect=OSError()), create=True):
+            self.assertIsNone(st._pid_start(4242))
+
+    def test_reused_pid_is_gone(self):
+        mock.patch.object(st, "pid_alive", lambda pid: True).start()
+        with _windll(FakeK32()):
+            self.assertTrue(st._pid_gone(4242, "Mon Jan 1 00:00:00 2001"))
+            self.assertFalse(st._pid_gone(4242, config.lstart_fmt(EPOCH)))
+
+
+if __name__ == "__main__":
+    unittest.main()
