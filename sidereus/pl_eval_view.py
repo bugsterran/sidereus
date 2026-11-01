@@ -177,13 +177,18 @@ def review_titles(stages):
     return [s["title"] for s in stages if isinstance(s, dict) and isinstance(s.get("title"), str) and _is_review(s, cat)]
 
 
+def fix_pipes(proj):
+    """Bug-fix pipeline names for pl_outcome.outcome(fix=...); also used by scripts/pl_report.py. Tests patch this."""
+    return pipeline.fix_pipes(proj)
+
+
 def _outcome(proj, name, stages):
     """(outcome, rep) for the result layer, (None, None) when pl_outcome is absent or fails."""
     m = _oc()
     if m is None:
         return None, None
     try:
-        return m.outcome(proj, name, review_titles(stages), _now()), m.latest_report(proj)
+        return m.outcome(proj, name, review_titles(stages), _now(), fix=fix_pipes(proj)), m.latest_report(proj)
     except Exception as e:
         warn_once("pl_outcome", "Pipeline evaluation could not be read: {e}", soft=True, vars={"e": type(e).__name__})
         return None, None

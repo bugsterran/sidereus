@@ -31,7 +31,7 @@ class EvalApi(unittest.TestCase):
         self.oc_calls = []
         fake_oc = types.SimpleNamespace(
             counts=oc.counts, latest_report=lambda p: {"date": "2026-10-14", "path": "/d/eval/k/reports/2026-10-14.md"},
-            outcome=lambda p, name, review, now: self.oc_calls.append((name, review)) or {
+            outcome=lambda p, name, review, now, fix=(): self.oc_calls.append((name, review)) or {
                 "proc": {"runs": 3, "jump": 1}, "lb": {"cur": {"n": 3, "k": 1}, "prev": {"n": 0, "k": 0}},
                 "result": {"n": 2, "broke": 1, "fixed": 1, "list": [{"sha": "abc", "files": ["secret_file.py"]}]}})
         self.v._oc = lambda: fake_oc

@@ -101,3 +101,15 @@ Measured: first live numbers over 7 days on 2026-10-31 (n=1): Caught 10, Blocked
 Verdict: undecided.
 
 Next: count Caught against Blocked and Overridden, and total gate time, for 4 to 8 weeks.
+
+## 9. Fix followed counted from fix runs only
+
+Hypothesis: "fix followed" (entry 6) measures fixes to what a gate passed.
+
+Tried: read every flagged pass by hand, then counted a later commit only when the run ledger attributes it to a `"catch": "person"` pipeline run and it shares a code file with the pass commit; docs, tests, `refactor/` and screen baselines are ignored.
+
+Measured: on 2026-11-01, this repo, last 30 days: 12 of 12 flagged passes were unrelated features touching shared registry or doc files (`refactor/STAGE3.md`, `docs/HOOKS*.md`, screen baselines). With the new rule, 12 → 1: [6580f96d](https://github.com/bugsterran/sidereus/commit/6580f96d) → [b7512c44](https://github.com/bugsterran/sidereus/commit/b7512c44), which is still an unrelated fix run on the same code file.
+
+Verdict: undecided. File names alone cannot tell a fix of this pass from another fix on the same file.
+
+Next: watch the real counts over the coming weekly reports before adding any cause-analysis stage.

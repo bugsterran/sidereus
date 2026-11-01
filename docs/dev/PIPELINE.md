@@ -233,11 +233,12 @@ The panel's «Result layer» block states facts per pipeline, no score (`sidereu
 
 - Gate: graded gates / gates (same as «Gates n/m»).
 - Procedure: ended runs in the ledger `eval/<key>/runs.jsonl` and order violations the `pl_flow` hook blocked (deny code `jump`).
-- Result: of the gate PASSes in the last 30 days, how many later broke (reverted · gone · broke, as in the harness «Kept» check) and how many had a commit within 14 days touching a file that PASS changed («fix followed», file names only).
+- Result: of the gate PASSes in the last 30 days, how many later broke (reverted · gone · broke, as in the harness «Kept» check) and how many were followed by a fix («fix followed»): a commit within 14 days that the ledger attributes to a run of a `"catch": "person"` pipeline (`pl_outcome.fix_pipes`) and that shares a code file with the PASS commit.
 - Review loop-backs: share of runs with a loop-back from a review stage, last 30 days vs the 30 days before. A falling share with «fix followed» flat means review finds less, not that code got better — read the two together.
 - Report: `scripts/pl_report.py` writes the same sentences plus the broken / fix-followed PASS list (short sha, file names) to `eval/<key>/reports/YYYY-MM-DD.md`; a run end regenerates it when the newest is older than 7 days.
-- ⚠«Fix followed» is a proxy: any commit touching the same file counts, including unrelated work. It flags where to look, not a defect count.
-- Counting: one entry per commit the PASSes resolved to (several PASSes on one commit = one «pass»); a fix must land after that PASS's run ended (+60 s) and share a file that sits in at most half of the scanned commits (CHANGELOG and doc indexes are ignored that way).
+- Counting: one entry per commit the PASSes resolved to (several PASSes on one commit = one «pass»); a fix must land after that PASS's run ended (+60 s). A commit belongs to a fix run when its time is within that run's t0 − 5 s .. end + 900 s (nearest run end wins; the PASS's own run never counts). Code files only: `docs/`, `refactor/`, `tests/`, `test/`, `scripts/screen_baseline/`, any `*.md` and `CHANGELOG*` are ignored.
+- ⚠«Fix followed» is a proxy on file names only: an unrelated fix run touching the same code file still counts (★measured: 6580f96d → b7512c44). It flags where to look, not a defect count.
+- ⚠A fork with no `"catch": "person"` pipeline always shows 0 fix followed.
 
 Basis: seeded defects stand in for real ones because mutant detection correlates with real-fault detection (Just et al., FSE 2014); a gate that passes and fails on the same code is flaky and its verdict carries no signal (Luo et al., FSE 2014); a check counts only once it is seen failing on a known-bad input, as SWE-bench Verified validated each task's tests against the broken and fixed code.
 

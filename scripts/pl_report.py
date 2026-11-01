@@ -114,7 +114,7 @@ def main(argv=None):
         print("pl_report: unreadable pipeline", file=sys.stderr)
         return 2
     stages = [s for s in (P.get("stages") if isinstance(P, dict) else None) or [] if isinstance(s, dict)]
-    oc = OC.outcome(repo, name, V.review_titles(stages), now)
+    oc = OC.outcome(repo, name, V.review_titles(stages), now, fix=V.fix_pipes(repo))
     text = render(name, today, OC.sentences(_gate(P, name, repo, now), oc), oc)
     path = os.path.join(OC.OC_EVAL_DIR, OC.repo_key(repo), "reports", today + ".md")
     _write(path, text)

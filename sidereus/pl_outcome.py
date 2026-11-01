@@ -16,6 +16,10 @@ from sidereus import config, gitinfo, harness_evidence, harness_trail
 OC_DAY = 86400
 OC_WIN_S = 30 * OC_DAY         # «last 30 days» (PASSes, procedure, current loop-back window)
 OC_FIX_S = 14 * OC_DAY         # a commit this soon after a PASS touching its files = «fix followed»
+# a commit up to this long after a run ended still belongs to that run (orchestrator commits last); = harness_person
+# PS_GRACE_S. ★141 fix runs: first commit after run end within 60 s = 104, 300 s = 111, 900 s = 128, 1800 s = 137
+OC_FIX_GRACE_S = 900
+OC_NONCODE_DIRS = ("docs", "refactor", "tests", "test")
 OC_PRE_S, OC_POST_S = 5, 60    # PASS ↔ run window [t0-5, end+60], same as harness_flow
 OC_PASS_MAX = 30               # newest attributed PASSes examined
 OC_SPAWN_MAX = 2 + OC_PASS_MAX  # git per outcome(): rev-parse + log + one rev-list per resolved commit (states() has its own)
@@ -42,7 +46,7 @@ OC_SENT = {
     "rep": "Latest report {date} · {path}",
     "norep": "No report yet",
 }
-_OC_MEMO = {}   # (repo, name, review, HEAD, newest evidence ts, ledger mtime, 10-min bucket) -> outcome
+_OC_MEMO = {}   # (repo, name, review, HEAD, newest evidence ts, ledger mtime, 10-min bucket, fix pipes) -> outcome
 _now = time.time
 
 
@@ -59,6 +63,27 @@ def repo_key(proj):
     """= arch_verify.repo_key / hooks/pl_flow.py ledger key (sha1 of realpath, 16 hex)."""
     # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1 -- persisted path key, not security
     return hashlib.sha1(os.path.realpath(proj).encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()[:16]
+
+
+def _code(f):
+    """False for docs, tests, refactor notes, screen baselines and changelogs: an overlap there is bookkeeping that
+    nearly every commit touches, not a sign the later commit fixed the PASS's code."""
+    if not isinstance(f, str) or not f:
+        return False
+    parts = f.split("/")
+    base = parts[-1]
+    return not (any(x in OC_NONCODE_DIRS for x in parts[:-1]) or f.startswith("scripts/screen_baseline/")
+                or base.endswith(".md") or base.startswith("CHANGELOG"))
+
+
+def _owner(ct, runs):
+    """Ledger row a commit at `ct` belongs to: window [t0-5, end+OC_FIX_GRACE_S], nearest end wins, or None.
+    ⚠Nearest end, not first match: a long fix run can span a short change run whose own commit lands at its end."""
+    best = None
+    for r in runs:
+        if r["t0"] - OC_PRE_S <= ct <= r["end"] + OC_FIX_GRACE_S and (best is None or abs(r["end"] - ct) < abs(best["end"] - ct)):
+            best = r
+    return best
 
 
 def _num(v):
@@ -143,7 +168,7 @@ def _resolve(p, end, log):
 
 
 def _passes(rows, runs, since):
-    """[(pass row, run end)] of PASS evidence in a run window, newest first, ≤ OC_PASS_MAX."""
+    """[(pass row, run row)] of PASS evidence in a run window, newest first, ≤ OC_PASS_MAX."""
     out = []
     for r in rows:
         if not (isinstance(r, dict) and r.get("kind") == "check" and r.get("rc") == 0):
@@ -154,7 +179,7 @@ def _passes(rows, runs, since):
         w = next((x for x in runs if x["t0"] - OC_PRE_S <= ts <= x["end"] + OC_POST_S), None)
         if w:
             head = r.get("head") if isinstance(r.get("head"), str) and OC_HEX.fullmatch(r["head"]) else ""
-            out.append(({"ts": ts, "head": head, "dirty": r.get("dirty") is True}, w["end"]))
+            out.append(({"ts": ts, "head": head, "dirty": r.get("dirty") is True}, w))
     out.sort(key=lambda x: -x[0]["ts"])
     return out[:OC_PASS_MAX]
 
@@ -179,10 +204,13 @@ def _after(proj, sha, budget, memo):
     return out
 
 
-def _result(proj, rows, runs, now, git):
+def _result(proj, rows, runs, now, git, every=None, fix=()):
     """n = distinct commits the PASSes resolved to; unchecked = dirty PASSes with no landed commit plus commits git did
-    not answer for; partial = some git call failed or ran out of budget."""
+    not answer for; partial = some git call failed or ran out of budget. `every` = ledger rows of all pipelines (commit
+    ownership), `fix` = bug-fix pipeline names: only a commit owned by a fix run can be «fix followed»."""
     since = now - OC_WIN_S
+    every = runs if every is None else every
+    fix = set(fix or ())
     ps = _passes(rows, runs, since)
     res = {"n": 0, "broke": 0, "fixed": 0, "unchecked": 0, "partial": False, "list": []}
     if not ps:
@@ -193,23 +221,17 @@ def _result(proj, rows, runs, now, git):
     if not log:
         res["unchecked"], res["partial"] = len(ps), bool(git)
         return res
-    groups = {}   # resolved log index -> [(pass, run end)]: several PASSes on one commit are one entry
-    for p, end in ps:
-        i = _resolve(p, end, log)
+    groups = {}   # resolved log index -> [(pass, run row)]: several PASSes on one commit are one entry
+    for p, w in ps:
+        i = _resolve(p, w["end"], log)
         if i < 0:
             res["unchecked"] += 1   # unresolved dirty PASS is a fact, not a git miss
             continue
-        groups.setdefault(i, []).append((p, end))
-    seen = {}
-    for c in log:
-        for f in set(c[2]):
-            seen[f] = seen.get(f, 0) + 1
-    # files in more than half the window's commits (CHANGELOG, doc indexes) made every PASS read «fix followed»
-    common = set(f for f, k in seen.items() if k * 2 > len(log))
+        groups.setdefault(i, []).append((p, w))
     for i in sorted(groups, key=lambda j: -max(p["ts"] for p, _e in groups[j])):
         g = groups[i]
         aft = _after(proj, log[i][0], budget, memo)
-        known = [st.get(p["ts"]) or {} for p, _e in g
+        known = [st.get(p["ts"]) or {} for p, _w in g
                  if not ((st.get(p["ts"]) or {}).get("state") == "unchecked" and not p["dirty"])]
         if aft is None or not known:
             res["unchecked"] += 1
@@ -217,11 +239,15 @@ def _result(proj, rows, runs, now, git):
             continue
         sha, ct, files = log[i]
         fs = set(files)
-        ts, end = max(p["ts"] for p, _e in g), max(e for _p, e in g)
-        rare = fs - common
-        # ⚠a commit made inside the PASS's own run is that run's work, not a later fix (same +60 s slack as _resolve)
-        fixed = bool(rare) and any(c[0] in aft and end + OC_POST_S < c[1] and c[1] - ts <= OC_FIX_S and rare & set(c[2])
-                                   for c in log[:i])
+        ts = max(p["ts"] for p, _w in g)
+        own = set(id(w) for _p, w in g)
+        floor = max(w["end"] for _p, w in g) + OC_POST_S
+        code = set(f for f in fs if _code(f))
+        # ⚠any later commit sharing a file read as a fix (feature follow-ups, CHANGELOG): it counts only when a fix
+        # run made it, the run is not the PASS's own, and the overlap is on code files
+        # ⚠floor: a fix run nested in the PASS's own run and ending with it would otherwise own that run's last commit
+        fixed = bool(code) and any(c[0] in aft and floor < c[1] and c[1] - ts <= OC_FIX_S and code & set(c[2])
+                                   and _isfix(c[1], every, fix, own) for c in log[:i])
         broke = any(h.get("state") in ("broke", "reverted", "gone") for h in known)
         res["n"] += 1
         res["broke"] += broke
@@ -230,12 +256,20 @@ def _result(proj, rows, runs, now, git):
     return res
 
 
-def outcome(proj, name, review_titles, now=None, git=True):
+def _isfix(ct, every, fix, own):
+    o = _owner(ct, every)
+    return o is not None and o["name"] in fix and id(o) not in own
+
+
+def outcome(proj, name, review_titles, now=None, git=True, fix=()):
     """{proc: {runs, jump}, lb: {cur: {n, k}, prev: {n, k}}, result: {n, broke, fixed, list: [{sha, files, broke, fixed}]}}.
+    `fix` = bug-fix pipeline names (`pipeline.fix_pipes`), passed in: this core module must not import the pipeline feature.
     ⚠`list` carries file names: the report writes it, the API body drops it (pl_eval_view)."""
     now = _now() if now is None else now
     key = repo_key(proj)
-    runs = [r for r in ledger(key, now - 2 * OC_WIN_S) if r["name"] == name]
+    every = ledger(key, now - 2 * OC_WIN_S)
+    runs = [r for r in every if r["name"] == name]
+    fix = sorted(set(f for f in fix or () if isinstance(f, str)))
     cur = [r for r in runs if r["end"] >= now - OC_WIN_S]
     prev = [r for r in runs if r["end"] < now - OC_WIN_S]
     review = set(t for t in review_titles or () if isinstance(t, str))
@@ -248,12 +282,12 @@ def outcome(proj, name, review_titles, now=None, git=True):
         mt = os.path.getmtime(_ledger_path(key))
     except OSError:
         mt = 0
-    ck = (os.path.realpath(proj), name, tuple(sorted(review)), head, rows[0]["ts"] if rows else 0, mt, int(now // 600))
+    ck = (os.path.realpath(proj), name, tuple(sorted(review)), head, rows[0]["ts"] if rows else 0, mt, int(now // 600), tuple(fix))
     if head and ck in _OC_MEMO:
         return _OC_MEMO[ck]
     out = {"proc": {"runs": len(cur), "jump": sum(r["dc"].get("jump", 0) for r in cur)},
            "lb": {"cur": _lb(cur, review), "prev": _lb(prev, review)},
-           "result": _result(proj, rows, cur + prev, now, bool(head))}
+           "result": _result(proj, rows, cur + prev, now, bool(head), every, fix)}
     if head:
         if len(_OC_MEMO) >= OC_CACHE_MAX:
             _OC_MEMO.clear()
