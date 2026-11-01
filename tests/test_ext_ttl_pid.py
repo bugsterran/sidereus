@@ -61,6 +61,36 @@ class TtlPid(unittest.TestCase):
         st.ext_gone_check(NOW + st.EXT_GONE_GRACE_S + 1)
         self.assertNotIn(("gemini", "b"), st._ext)
 
+    def _win_ingest(self, sid, alive):
+        """Windows hook payload (pid from the Toolhelp walk), real _pid_gone with pid_alive faked."""
+        self.saved_alive, self.saved_start = st.pid_alive, st._pid_start
+        self.addCleanup(setattr, st, "pid_alive", self.saved_alive)
+        st._pid_gone = self.saved[3]
+        st.pid_alive = lambda pid: alive
+        st._pid_start = lambda pid: "Sat Oct 24 17:00:00 2026"
+        self.addCleanup(setattr, st, "_pid_start", self.saved_start)
+        with frozen(st):
+            ok, _ = st.ext_ingest({"platform": "codex", "session_id": sid, "event": "Stop", "ts": NOW - 20 * 3600,
+                                   "cwd": "C:\\w", "pid": 4321, "host": st._HOST,
+                                   "pstart": "Sat Oct 24 17:00:00 2026"})
+        self.assertTrue(ok)
+        self.assertEqual(st._ext[("codex", sid)]["pid"], 4321)
+
+    def test_win_dead_pid_gone_then_dropped(self):
+        self._win_ingest("w1", False)
+        st.ext_gone_check(NOW)
+        self.assertEqual(st._ext[("codex", "w1")]["state"], "gone")
+        st.ext_gone_check(NOW + st.EXT_GONE_GRACE_S + 1)
+        self.assertNotIn(("codex", "w1"), st._ext)
+
+    def test_win_live_pid_idle_wait_kept(self):
+        self._win_ingest("w2", True)
+        with frozen(st):
+            st.ext_gone_check(NOW)
+            with st._ext_lock:
+                st._ext_prune_locked(NOW)
+        self.assertEqual(st._ext[("codex", "w2")]["state"], "wait")
+
     def test_no_pid_idle_dropped(self):
         st._ext[("cursor", "c")] = _row()
         with st._ext_lock:
