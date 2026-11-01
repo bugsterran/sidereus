@@ -13,7 +13,7 @@ import subprocess
 import threading
 import time
 
-from sidereus.config import CODE_DIR, DATA_DIR
+from sidereus.config import DATA_DIR
 from sidereus.bus import RELAY_SID, _atomic_write
 from sidereus import arch_map, gitinfo
 
@@ -246,7 +246,8 @@ def _pick_run(r, row, until):
 def _review_title():
     """Last stage title of the security-fix pipeline file, so renaming the stage does not leave requests open."""
     try:
-        with open(os.path.join(CODE_DIR, ".claude", "pipelines", FIX_PL + ".json"), encoding="utf-8") as f:
+        # ⚠Must read DATA_DIR like hooks/pl_flow.py (CODE_DIR has no .claude/pipelines on a pipx install), or gate and request disagree.
+        with open(os.path.join(DATA_DIR, ".claude", "pipelines", FIX_PL + ".json"), encoding="utf-8") as f:
             t = json.load(f)["stages"][-1]["title"]
         return t if isinstance(t, str) and t else REVIEW_STAGE
     except Exception:

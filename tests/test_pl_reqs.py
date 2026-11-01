@@ -434,7 +434,7 @@ class SecurityFixTest(_Base):
             json.dump({"stages": [{"title": "Fix"}, {"title": "Rescan"}, {"title": "Review"}]}, f)
         self.send()
         run = {"name": "security-fix", "t0": NOW + 5, "end": NOW + 900, "cur": "Review", "stages": {"Review": {"o": "done"}}}
-        with mock.patch.object(PQ, "CODE_DIR", root):
+        with mock.patch.object(PQ, "DATA_DIR", root):
             v = PQ.view([self.row(run)], {})[REPO][0]
         self.assertEqual((v["state"], v["reviewOk"]), ("done", True))
 
@@ -464,6 +464,21 @@ class SecurityFixTest(_Base):
             self.send(keys, mid="s%d" % i)
         self.assertLessEqual(os.path.getsize(self.path), PQ.READ_MAX)
         self.assertEqual(self.stored()[0]["id"], "s%d" % (PQ.REQ_MAX - 1))
+
+
+class ReviewTitleSource(unittest.TestCase):
+    def test_review_title_reads_data_dir(self):
+        # B3: the hook reads DATA_DIR; a renamed last stage there must be the title the viewer looks for
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        d = os.path.join(tmp, ".claude", "pipelines")
+        os.makedirs(d)
+        with open(os.path.join(d, PQ.FIX_PL + ".json"), "w", encoding="utf-8") as f:
+            json.dump({"stages": [{"title": "a"}, {"title": "renamed-review"}]}, f)
+        with mock.patch.object(PQ, "DATA_DIR", tmp):
+            self.assertEqual(PQ._review_title(), "renamed-review")
+        with mock.patch.object(PQ, "DATA_DIR", os.path.join(tmp, "none")):
+            self.assertEqual(PQ._review_title(), PQ.REVIEW_STAGE)
 
 
 if __name__ == "__main__":
