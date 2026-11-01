@@ -122,6 +122,21 @@ class Todo(unittest.TestCase):
         os.symlink(other, os.path.join(self.repo, ".claude"))
         self.assertEqual(TD.todo_get(self.cwd)[1]["items"], [])
 
+    def test_symlinked_repo_root_no_count_and_404(self):
+        self.w(b"- [ ] a\n")
+        lnk = os.path.join(self.tmp, "lnk")
+        os.symlink(self.repo, lnk)
+        with mock.patch.object(TD, "_allowed_cwds", lambda: {lnk: {"cwd": lnk}}):
+            self.assertEqual(TD.todo_get(lnk)[0], 404)
+            self.assertEqual(TD.state_counts([{"cwd": lnk}]), {})   # same verdict as GET: no badge, no import
+        self.assertFalse(os.path.exists(self.led))
+
+    def test_get_items_carry_starting_sid(self):
+        self.ag(action="add", text="a")
+        self.ag(action="add", text="b")
+        self.ag(action="start", id=2, sid="s9")
+        self.assertEqual([x["sid"] for x in TD.todo_get(self.cwd)[1]["items"]], ["s1", "s9"])
+
     def test_r2_set_toggles_and_stale_409(self):
         self.ag(action="add", text="a")
         it = TD.todo_get(self.cwd)[1]["items"][0]

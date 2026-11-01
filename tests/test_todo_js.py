@@ -28,7 +28,7 @@ def _js(body):
     return json.loads(r.stdout)
 
 
-ITEMS = "[{i: 0, s: 'x', t: 'done one', h: 'a'}, {i: 1, s: ' ', t: 'open <b>&', h: 'b'}, {i: 2, s: '~', t: 'busy', h: 'c'}]"
+ITEMS = "[{i: 0, s: 'x', t: 'done one', h: 'a'}, {i: 1, s: ' ', t: 'open <b>&', h: 'b'}, {i: 2, s: '~', t: 'busy', h: 'c', sid: 's'}]"
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
@@ -44,11 +44,22 @@ class TodoChip(unittest.TestCase):
         self.assertEqual(o, ["", "", "", "", ""])
 
     def test_order_working_open_done_and_live_label(self):
-        o = _js("console.log(JSON.stringify(stodoItemsHtml(" + ITEMS + ", {state: 'tool'})));")
+        o = _js("console.log(JSON.stringify(stodoItemsHtml(" + ITEMS + ", {sid: 's', state: 'tool'})));")
         self.assertLess(o.index("busy"), o.index("open &lt;b&gt;&amp;"))
         self.assertLess(o.index("open &lt;b&gt;&amp;"), o.index("done one"))
         self.assertIn("Working</span> <span class=stds>LIVE-tool<", o)
         self.assertEqual(o.count("LIVE-"), 1)   # only the `- [~]` item carries the state label
+
+    def test_working_label_is_the_starting_session_not_the_row(self):
+        items = "[{i: 1, s: '~', t: 'mine', h: 'a', sid: 's1'}, {i: 2, s: '~', t: 'theirs', h: 'b', sid: 's2'}, {i: 3, s: '~', t: 'gone', h: 'c', sid: 's3'}]"
+        o = _js("var SESS = [{sid: 's1', state: 'tool'}, {sid: 's2', state: 'wait'}];"
+                "console.log(JSON.stringify(stodoItemsHtml(" + items + ", {sid: 's1', state: 'tool'})));")
+        mine, theirs, gone = o[o.index("mine"):o.index("theirs")], o[o.index("theirs"):o.index("gone")], o[o.index("gone"):]
+        self.assertIn("LIVE-tool", mine)
+        self.assertIn("LIVE-wait", theirs)       # other on-screen session's own label
+        self.assertNotIn("LIVE-tool", theirs)
+        self.assertIn("Working</span>", gone)
+        self.assertNotIn("LIVE-", gone)           # starter not on screen: plain «Working»
 
     def test_text_escaped_and_never_through_T(self):
         o = _js("const h = stodoItemsHtml(" + ITEMS + ", {state: 'wait'}) + stodoDaysHtml([{day: '2026-01-01', added: ['<i>x'], started: [], done: ['busy']},"
