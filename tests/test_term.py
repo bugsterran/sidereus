@@ -58,6 +58,20 @@ class Detect(Base):
         term.term_attach(rows)                      # cached: no second fork
         self.assertEqual(len(run.calls), 1)
 
+    def test_attach_marks_background_job(self):
+        host = "/x/claude.exe --bg-pty-host /tmp/cc-daemon-501/a/pty/5a49e0bd.sock 140 36 -- /x/claude.exe --session-id " + SID
+        snap = [("50", "1", host), ("101", "50", "claude --resume " + SID)]
+        self.patch(term, "_av_cache", [0.0, {}])
+        self.patch(term, "_ps_snap_cache", [0.0, snap])
+        self.patch(term.subprocess, "run", _Run("101 ttys004 claude HOME=/h\n"))   # tty-less host, but a pty for the child
+        rows = [{"sid": SID, "state": "wait"}]
+        term.term_attach(rows)
+        self.assertEqual(rows[0]["term"], {"app": "bg", "tty": None})
+        self.patch(term, "_av_cache", [0.0, {101: {"sessionId": SID, "kind": "background", "id": "5a49e0bd"}}])
+        self.patch(term, "_ps_snap_cache", [0.0, [("101", "1", "claude")]])
+        term.term_attach(rows)                      # official kind alone is enough
+        self.assertEqual(rows[0]["term"]["app"], "bg")
+
     def test_sid_pids_int_keys_not_doubled(self):
         out = term._sid_pids({101: {"sessionId": SID}}, [("101", "1", "claude --resume " + SID2)])
         self.assertEqual(out, {SID: ["101"]})       # int av key vs str ps pid: same process, argv not re-added
@@ -158,6 +172,20 @@ class Focus(Base):
         term.term_focus(SID, [dict(self.ROW)])
         self.assertEqual([w[0] for w in self.warns], ["term-jump-timeout"] * 2)
         self.assertEqual(self.warns[-1][1]["n"], 2)                # count carried in the line
+
+    def test_background_job_never_offers_resume(self):
+        bg = dict(self.ROW, term={"app": "bg", "tty": None})
+        self.patch(term, "_av_cache", [0.0, {}])
+        for cfg in (None, "iterm", "off"):
+            out = term.term_focus(SID, [dict(bg)], cfg=cfg)[1]
+            self.assertEqual((out["how"], out["cmd"]), ("bg", ""))
+        self.patch(term, "_av_cache", [0.0, {"7": {"sessionId": SID, "kind": "background", "id": "5a49e0bd"}}])
+        self.assertEqual(term.term_focus(SID, [dict(bg)])[1]["cmd"], "claude attach 5a49e0bd")
+        self.patch(term, "_av_cache", [0.0, {"7": {"sessionId": SID, "kind": "background", "id": "-rf x"}}])
+        self.assertEqual(term.term_focus(SID, [dict(bg)])[1]["cmd"], "")   # unsafe id: no command
+        self.patch(term, "_resolve", lambda sid: (True, {"app": "bg", "tty": None}))
+        self.assertEqual(term.term_focus(SID, [dict(self.ROW, term=None)])[1]["how"], "bg")
+        self.assertEqual((self.run.calls, self.warns), ([], []))
 
     def test_off_not_logged(self):
         term.term_focus(SID, [dict(self.ROW)], cfg="off")

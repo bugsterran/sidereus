@@ -34,6 +34,10 @@ ORCA_BUNDLE = "com.stablyai.orca"
 # External row `plat` -> (CLI process basename, resume command prefix). Unlisted platforms get no command, not a wrong one.
 EXT_CLI = {"cx": ("codex", "codex resume ")}
 ORCA_CLIS = ("orca", "orca-ide")           # orca-ide = Linux binary name
+# ⚠A Claude Code background job (`claude --bg`) runs under a tty-less `--bg-pty-host`: no tab exists, and `--resume` would
+#   open a second session on the same conversation. The documented way in is `claude attach <short id from claude agents>`.
+BG_HOST_ARG = "--bg-pty-host"
+BG_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 
 # ⚠The tty arrives only as `item 1 of argv` — never format it into the script text.
 _SCRIPT_ITERM = """on run argv
@@ -178,6 +182,26 @@ def _term_of(pids):
     return None
 
 
+def _bg_term(pids, av, snap):
+    """`{app: 'bg', tty: None}` when a pid is a background job (official kind, or parent argv has `--bg-pty-host`), else None."""
+    par = {str(p): str(pp) for p, pp, _c in snap or []}
+    cmds = {str(p): c for p, _pp, c in snap or []}
+    for pid in pids:
+        it = (av or {}).get(pid) or (av or {}).get(int(pid) if str(pid).isdigit() else pid)
+        if (isinstance(it, dict) and it.get("kind") == "background") or BG_HOST_ARG in cmds.get(par.get(str(pid), ""), "").split():
+            return {"app": "bg", "tty": None}
+    return None
+
+
+def _bg_id(sid):
+    """Short background id of `sid` from the cached official list (server-side only), or ''."""
+    for it in (_av_cache[1] or {}).values():
+        if isinstance(it, dict) and it.get("sessionId") == sid and it.get("kind") == "background":
+            i = it.get("id")
+            return i if isinstance(i, str) and BG_ID_RE.match(i) else ""
+    return ""
+
+
 def _resolve(sid):
     """Request-time re-lookup for a row with no `term` (new or /clear-changed sid) -> (pid found, term or None).
     One bounded pass on a click only (no extra polling): cached official list / ps snapshot when fresh, then one forced ps."""
@@ -193,7 +217,7 @@ def _resolve(sid):
     if not pids:
         return False, None
     _probe(set(pids), force=True)
-    return True, _term_of(pids)
+    return True, _bg_term(pids, av, snap) or _term_of(pids)
 
 
 def _is_ext(r):
@@ -280,7 +304,8 @@ def term_attach(rows):
         if _is_ext(r):
             r["term"] = _resolve_ext(r, snap, force=False)[1]
             continue
-        r["term"] = _term_of(sp.get(r.get("sid") or "", []))
+        pids = sp.get(r.get("sid") or "", [])
+        r["term"] = _bg_term(pids, _av_cache[1], snap) or _term_of(pids)
 
 
 def _orca_handle(sid):
@@ -335,12 +360,18 @@ def _focus_orca(cmd, handle):
     return 200, {"ok": False, "how": "app", "cmd": cmd, "hint": "cli" if not cli else "handle"}
 
 
+def _focus_bg(sid):
+    """Background job: no tab to raise and never `--resume` (a second session); `claude attach <id>` when the id is known."""
+    bid = _bg_id(sid)
+    return 200, {"ok": False, "how": "bg", "cmd": "claude attach " + bid if bid else ""}
+
+
 def term_focus(sid, rows, cfg=None):
     """Bring `sid`'s tab forward -> (code, out). The caller validated the sid shape; tty comes from `rows` (or `_resolve`) only.
-    Every failure but «off» goes to viewer.err (how + short reason, never conversation text)."""
+    Every failure but «off» and «bg» goes to viewer.err (how + short reason, never conversation text)."""
     code, out = _focus(sid, rows, cfg)
     how = out.get("how")
-    if not out.get("ok") and how != "off":
+    if not out.get("ok") and how not in ("off", "bg"):   # bg = expected answer, not a failed jump
         n = _JUMP_FAILS[how] = _JUMP_FAILS.get(how, 0) + 1
         why = str(out.get("err") or out.get("hint") or "-").replace("\n", " ")[:80]
         warn_once("term-jump-" + str(how), "terminal jump failed ({how}: {why}; {n} so far)",
@@ -357,6 +388,8 @@ def _focus(sid, rows, cfg):
         return 200, {"ok": False, "how": "notfound", "cmd": cmd, "err": "session not live on screen"}
     t = row.get("term")
     app = cfg or term_cfg()
+    if not ext and isinstance(t, dict) and t.get("app") == "bg":
+        return _focus_bg(sid)
     if app == "off":
         return 200, {"ok": False, "how": "off", "cmd": cmd}
     xpids = []
@@ -374,6 +407,8 @@ def _focus(sid, rows, cfg):
         found, t = _resolve(sid)
         if not found:
             return 200, {"ok": False, "how": "notfound", "cmd": cmd, "err": "no process for session"}
+        if isinstance(t, dict) and t.get("app") == "bg":
+            return _focus_bg(sid)
         if not isinstance(t, dict):
             return 200, {"ok": False, "how": "unsupported", "cmd": cmd}
     if app == "auto":

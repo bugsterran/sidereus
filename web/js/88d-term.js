@@ -16,6 +16,12 @@ function termCanFocus(x){
 // kind: 'sx' session row chip · 'bd' board card · 'at' attention row. '' for sessions that are not live.
 function termBtnHtml(x, kind){
   if(!termLive(x)) return '';
+  // ⚠Background job (`claude --bg`): no tab, and `--resume` would start a second session — offer `claude attach` instead.
+  if(x.term && x.term.app === 'bg'){
+    const bt = esc(T('Background job — no terminal tab. Click to copy the `claude attach` command')), bl = esc(T('Background'));
+    if(kind === 'sx') return '<button class="stm cp" data-term="' + esc(x.sid) + '" title="' + bt + '" aria-label="' + bl + '">›_</button>';
+    return '<button class="' + (kind === 'at' ? 'atb ' : '') + 'tmgo cp" data-term="' + esc(x.sid) + '" title="' + bt + '">' + bl + '</button>';
+  }
   const f = termCanFocus(x);
   const tip = esc(T(f ? "Bring this session's terminal tab to the front" : 'The terminal tab cannot be reached — click to copy a command that opens it'));
   const lbl = esc(T(f ? 'Terminal' : 'Copy command'));
@@ -34,6 +40,7 @@ async function termGo(sid, btn){
   const cmd = String(r.cmd || ''), ok = cmd ? await copyText(cmd) : false;
   const tail = cmd ? ': ' + cmd : '';
   if(cmd && !ok) return note(T('Could not copy the command') + tail);
+  if(r.how === 'bg') return note(cmd ? T('Background job — copied the attach command') + tail : T('Background job — no terminal tab'));
   // Orca without its CLI (or with a handle from before an Orca restart): only the app came forward.
   if(r.how === 'app') return note(T(r.hint === 'handle' ? 'Brought the Orca app forward only — the tab handle expired (reopen the session after an Orca restart)'
     : 'Brought the Orca app forward only — install the CLI in Orca settings to reach the exact tab') + (cmd ? ' · ' + T('Copy command') + tail : ''));
