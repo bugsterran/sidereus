@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-11-02
+
+### Fixed
+
+- To-do: an item in progress shows the session that started it. With two sessions in one repo, both rows used to label it with their own name.
+- To-do: a repo whose root folder is a symlink no longer shows a "To-do n" badge whose list then fails to open.
+- External CLI sessions: a slow process lookup no longer drops the session's pid, which folded a live session under ended after 30 minutes and broke "To terminal".
+- Pipelines (pipx/uv installs): a renamed review stage in the security-fix pipeline now closes the request on screen, as it already did for the hook.
+- Connect: `~/.cursor`, `CODEX_HOME` or the Gemini folder kept as a symlink (dotfiles) can be connected again, as in 0.11. A symlinked hooks file is still refused.
+
 ## [0.12.0] - 2026-11-02
 
 **Highlights**
@@ -659,7 +669,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/bugsterran/sidereus/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/bugsterran/sidereus/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/bugsterran/sidereus/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/bugsterran/sidereus/compare/v0.9.0...v0.10.0
