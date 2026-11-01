@@ -72,6 +72,40 @@ class Detect(Base):
         term.term_attach(rows)                      # official kind alone is enough
         self.assertEqual(rows[0]["term"]["app"], "bg")
 
+    def _bg_snap(self, spawner_alive):
+        daemon = '/x/claude.exe daemon run --origin transient --spawned-by {"label":"claude","cwd":"/r","pid":68658}'
+        host = "/x/claude.exe --bg-pty-host /tmp/cc-daemon-501/a/pty/5a49e0bd.sock 140 36 -- /x/claude.exe"
+        snap = [("64603", "1", daemon), ("64614", "64603", host), ("64636", "64614", "claude --resume " + SID)]
+        return snap + ([("68658", "1", "claude --resume " + SID2)] if spawner_alive else [])
+
+    def test_background_job_jumps_to_spawner_terminal(self):
+        self.patch(term, "_av_cache", [0.0, {}])
+        self.patch(term, "_ps_snap_cache", [0.0, self._bg_snap(True)])
+        self.patch(term.subprocess, "run", _Run("64636 ttys006 claude HOME=/h\n"
+                                                "68658 ttys002 claude TERM_PROGRAM=iTerm.app LC_TERMINAL=iTerm2\n"))
+        rows = [{"sid": SID, "state": "wait"}]
+        term.term_attach(rows)
+        self.assertEqual(rows[0]["term"], {"app": "iterm", "tty": "ttys002"})
+
+    def test_background_job_spawner_gone_or_unknown_stays_bg(self):
+        self.patch(term, "_av_cache", [0.0, {}])
+        self.patch(term, "_ps_snap_cache", [0.0, self._bg_snap(False)])
+        self.patch(term.subprocess, "run", _Run("64636 ttys006 claude HOME=/h\n"))
+        rows = [{"sid": SID, "state": "wait"}]
+        term.term_attach(rows)
+        self.assertEqual(rows[0]["term"], {"app": "bg", "tty": None})
+        self.patch(term, "_TTY_CACHE", {})
+        self.patch(term, "_ps_snap_cache", [0.0, self._bg_snap(True)])
+        self.patch(term.subprocess, "run", _Run("64636 ttys006 claude\n68658 ttys002 claude TERM_PROGRAM=tmux\n"))
+        term.term_attach(rows)
+        self.assertEqual(rows[0]["term"], {"app": "bg", "tty": None})
+
+    def test_spawner_pid_strict(self):
+        self.assertEqual(term._spawner_pid('d --spawned-by {"pid":68658} --x'), 68658)
+        for bad in ('d --spawned-by {"pid":"68658"}', 'd --spawned-by {"pid":true}', 'd --spawned-by {bad',
+                    'd --spawned-by [68658]', 'd --spawned-by {"pid":1}', "d"):
+            self.assertIsNone(term._spawner_pid(bad))
+
     def test_sid_pids_int_keys_not_doubled(self):
         out = term._sid_pids({101: {"sessionId": SID}}, [("101", "1", "claude --resume " + SID2)])
         self.assertEqual(out, {SID: ["101"]})       # int av key vs str ps pid: same process, argv not re-added

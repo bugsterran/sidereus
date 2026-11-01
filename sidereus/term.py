@@ -1,6 +1,7 @@
 """«To terminal»: bring a live session's terminal tab to the front (iTerm2 / Terminal.app / Orca).
 Detection is metadata only (tty + TERM_PROGRAM of the claude pid). Focus runs a fixed AppleScript with the tty
 as an argv item — never text injection (AGENTS.md rule 7). Orca: fixed `orca terminal switch` argv, same rule. Owns `TERM_CFG_FILE`, `_TTY_CACHE`, `_TTY_FAIL`, `_TTY_LOCK`, `_JUMP_FAILS`, `_CWD_CACHE`, `_CWD_FAIL`."""
+import json
 import os
 import re
 import shutil
@@ -38,6 +39,7 @@ ORCA_CLIS = ("orca", "orca-ide")           # orca-ide = Linux binary name
 #   open a second session on the same conversation. The documented way in is `claude attach <short id from claude agents>`.
 BG_HOST_ARG = "--bg-pty-host"
 BG_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
+BG_SPAWN_ARG = "--spawned-by "             # daemon argv: `--spawned-by {"label":..,"cwd":..,"pid":N}` = the terminal claude that started it
 
 # ⚠The tty arrives only as `item 1 of argv` — never format it into the script text.
 _SCRIPT_ITERM = """on run argv
@@ -182,14 +184,39 @@ def _term_of(pids):
     return None
 
 
-def _bg_term(pids, av, snap):
-    """`{app: 'bg', tty: None}` when a pid is a background job (official kind, or parent argv has `--bg-pty-host`), else None."""
+def _spawner_pid(cmd):
+    """Int pid from a daemon argv's `--spawned-by <json>`, or None (strict: one JSON object, int pid > 1)."""
+    i = (cmd or "").find(BG_SPAWN_ARG)
+    if i < 0:
+        return None
+    try:
+        obj = json.JSONDecoder().raw_decode(cmd, i + len(BG_SPAWN_ARG))[0]
+    except ValueError:
+        return None
+    p = obj.get("pid") if isinstance(obj, dict) else None
+    return p if isinstance(p, int) and not isinstance(p, bool) and p > 1 else None
+
+
+def _bg_term(pids, av, snap, force=False):
+    """Background job (official kind, or parent argv has `--bg-pty-host`) -> the spawner's `{app, tty}` when that terminal
+    claude is alive in iTerm2/Terminal, else `{app: 'bg', tty: None}`. Not a background job -> None.
+    Walk: session pid -> `--bg-pty-host` parent -> daemon parent whose `--spawned-by` names the spawning claude pid."""
     par = {str(p): str(pp) for p, pp, _c in snap or []}
     cmds = {str(p): c for p, _pp, c in snap or []}
     for pid in pids:
         it = (av or {}).get(pid) or (av or {}).get(int(pid) if str(pid).isdigit() else pid)
-        if (isinstance(it, dict) and it.get("kind") == "background") or BG_HOST_ARG in cmds.get(par.get(str(pid), ""), "").split():
-            return {"app": "bg", "tty": None}
+        host = par.get(str(pid), "")
+        on_host = BG_HOST_ARG in cmds.get(host, "").split()
+        if not on_host and not (isinstance(it, dict) and it.get("kind") == "background"):
+            continue
+        sp = _spawner_pid(cmds.get(par.get(host, ""), "")) if on_host else None
+        if sp and str(sp) in cmds:              # alive = present in the same ps snapshot
+            _probe({str(sp)}, force=force)
+            t = _term_of([str(sp)])
+            # ⚠iTerm2/Terminal only: an Orca jump looks its handle up by the session's own pids, not the spawner's.
+            if t and t.get("app") in _SCRIPTS and t.get("tty"):
+                return t
+        return {"app": "bg", "tty": None}
     return None
 
 
@@ -217,7 +244,7 @@ def _resolve(sid):
     if not pids:
         return False, None
     _probe(set(pids), force=True)
-    return True, _bg_term(pids, av, snap) or _term_of(pids)
+    return True, _bg_term(pids, av, snap, force=True) or _term_of(pids)
 
 
 def _is_ext(r):
