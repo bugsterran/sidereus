@@ -1,5 +1,6 @@
 """«To-do» hooks (R1): pipelines_brief TODO line at SessionStart only (cc and codex, with no pipelines), silent with
-config `features.todo` false; pl_flow strict mode lets `<git root>/.claude/todo.md` edits through. Tmp dirs only."""
+config `features.todo` false, pointing at the sidereus_todo MCP tool; pl_flow strict mode no longer exempts a
+repo todo.md (nothing is written in the repo). Tmp dirs only."""
 import io
 import json
 import os
@@ -40,8 +41,9 @@ class Brief(unittest.TestCase):
     def test_session_start_cc_and_codex_without_pipelines(self):
         for plat in (None, "codex"):
             t = self.run_hook("SessionStart", plat)
-            self.assertIn(os.path.join(self.repo, ".claude", "todo.md"), t, plat)
-            self.assertIn("- [~]", t)
+            self.assertIn("sidereus_todo", t, plat)
+            self.assertNotIn("todo.md", t)
+            self.assertNotIn(self.repo, t)
             self.assertNotIn("Pipelines", t)
 
     def test_not_on_prompt(self):
@@ -54,7 +56,7 @@ class Brief(unittest.TestCase):
         self.assertEqual(self.run_hook("SessionStart"), "")
         with open(self.cfg, "w", encoding="utf-8") as f:
             json.dump({"pipeline_apply": {"mode": "off"}}, f)
-        self.assertIn("todo.md", self.run_hook("SessionStart"))
+        self.assertIn("sidereus_todo", self.run_hook("SessionStart"))
 
     def test_off_switch_read_like_viewer(self):
         with open(self.cfg, "w", encoding="utf-8-sig") as f:   # BOM: the viewer still reads features.todo false
@@ -62,7 +64,7 @@ class Brief(unittest.TestCase):
         self.assertEqual(self.run_hook("SessionStart"), "")
         with open(self.cfg, "w", encoding="utf-8") as f:   # invalid dict: the viewer ignores it (all on)
             json.dump({"features": {"todo": False, "x": "no"}}, f)
-        self.assertIn("todo.md", self.run_hook("SessionStart"))
+        self.assertIn("sidereus_todo", self.run_hook("SessionStart"))
 
     def test_apply_mode_read_with_bom(self):
         with open(self.cfg, "w", encoding="utf-8-sig") as f:
@@ -81,14 +83,11 @@ class StrictTodo(unittest.TestCase):
     _ev = S.Strict._ev
     denied = S.Strict.denied
 
-    def test_todo_edit_passes_strict(self):
+    def test_todo_md_edit_is_gated_like_any_file(self):
         fp = os.path.join(self.proj, ".claude", "todo.md")
         for name in ("Edit", "Write"):
-            self.assertFalse(self.denied(self._ev(name, {"file_path": fp, "content": "- [ ] a\n"})), name)
-        other = os.path.join(self.proj, ".claude", "notes.md")
-        self.assertTrue(self.denied(self._ev("Write", {"file_path": other, "content": "x"})))
-        nested = os.path.join(self.proj, "src", ".claude", "todo.md")   # not at the git root
-        self.assertTrue(self.denied(self._ev("Write", {"file_path": nested, "content": "x"})))
+            self.assertTrue(self.denied(self._ev(name, {"file_path": fp, "content": "- [ ] a\n"})), name)
+        self.assertFalse(hasattr(S.H, "_todo_edit"))
 
 
 if __name__ == "__main__":

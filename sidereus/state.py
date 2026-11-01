@@ -215,7 +215,7 @@ def state(since=0, ncards=50):
         "attention": _attn,       # who needs me now (metadata only)
         "review": _piece("review", review, None, _sessions),   # finished sessions' unreviewed uncommitted files (metadata only)
         # ⚠gated here, not only by state_off(): an off feature must not keep lstat-ing repos or writing ledgers
-        "todo": _piece("todo", todo_counts, {}, _sessions) if feature_on("todo") else {},   # {cwd: {o, w, d}} from <repo>/.claude/todo.md, counts only
+        "todo": _piece("todo", todo_counts, {}, _sessions) if feature_on("todo") else {},   # {cwd: {o, w, d}} from the DATA_DIR/todo store, counts only
         "archRun": _arun,   # arch-map runs in progress per project (sidereus/arch_map.py)
         "secRun": _srun,   # security-checks runs in progress per project (same shape)
         "plReq": _piece("plReq", pl_reqs_view, {}, _sessions, _arun, _srun),   # sent run requests + receiver state (sidereus/pl_reqs.py)

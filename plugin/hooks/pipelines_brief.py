@@ -7,7 +7,7 @@ Sidereus's «Apply» mode (config `pipeline_apply`) picks the how-to line (auto 
 ⚠Metadata only: name · title · use · stage titles · missing agent names — never `task` or `rules` text.
 UserPromptSubmit re-sends the brief only when the pipeline set changed since this session's last brief
 (fingerprint in <data dir>/plbrief/<sid>) -- a pipeline created mid-session is otherwise never announced.
-SessionStart also carries one TODO line (`<git root>/.claude/todo.md`, Sidereus «To-do»), with or without pipelines.
+SessionStart also carries one TODO line (Sidereus «To-do» via the sidereus_todo MCP tool) in a git repo, with or without pipelines.
 ⚠Never blocks a session: any failure prints nothing and exits 0. Stdlib only, Python 3.9 (/usr/bin/python3).
 """
 import glob
@@ -46,9 +46,9 @@ PICK = ("Pick by «when»: file-changing work opens a run of the pipeline whose 
         "when starting a run, state the pick and the reason in one line.")
 STRICT = "Strict mode is on: file edits need an open run."   # <project>/.claude/pipelines/_policy.json {"enforce": "writes"}
 # Sidereus «To-do» (feature `todo`): one line at SessionStart even with no pipelines; config `features.todo` false = silent.
-TODO = ("To-do list: record each request the person makes as one line `- [ ] <short request>` in %s "
-        "(create the file if missing; person-level requests only, no internal steps). Mark it `- [~]` when you start it "
-        "(at most one `[~]` per session; back to `- [ ]` if you pause it) and `- [x]` when done.")
+# ⚠No file path: items live in the Sidereus data dir, written only by the MCP tool (nothing in the repo).
+TODO = ("To-do list: record each person-level request with the sidereus_todo tool (add; start when you begin, one per "
+        "session, open if paused; done when finished); never write a to-do file in the repo; skip if the tool is unavailable.")
 # Sidereus's «Apply» setting (sidereus/prefs.py `pipeline_apply`): auto = HOW, ask = HOW_ASK, off = no output.
 BRIEF_DIR = os.path.join(os.path.expanduser(os.environ.get("MAILBOX_DIR") or "~/.mailbox-mcp"), "plbrief")   # patched in tests
 SID = re.compile(r"^[0-9a-zA-Z-]{8,64}$")
@@ -193,10 +193,10 @@ def _todo_line(cwd):
     except Exception:
         pass   # no or bad config = feature default (on)
     root = _git_root(cwd) if isinstance(cwd, str) and os.path.isabs(cwd) else ""
-    # ⚠same refusal as sidereus/todo.py repo_of: a dotfiles repo at home would aim at ~/.claude/todo.md
+    # ⚠same refusal as sidereus/todo.py repo_of: a dotfiles repo at home or `/` is not a project
     if not root or os.path.dirname(root) == root or os.path.normpath(root) == os.path.normpath(HOME_DIR):
         return ""
-    return TODO % os.path.join(root, ".claude", "todo.md")
+    return TODO
 
 
 def _clip(s, n):

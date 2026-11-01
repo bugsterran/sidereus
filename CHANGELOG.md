@@ -10,12 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 **Highlights**
 
 - Cursor CLI and Copilot CLI sessions now show up, even before their hooks are connected, and "Connect" works on pipx/uv installs. Refs #9 #10
-- Per-project to-do list kept by the sessions themselves, shown on the session row.
+- Per-project to-do list recorded by the sessions themselves, shown on the session row.
 - Session state is more accurate: a Bash waiting for approval keeps its badge, and background shell rows close when the shell is stopped or denied and survive a viewer restart. Refs #23
 
 ### Added
 
-- To-do list per project: sessions keep `.claude/todo.md` (open, in progress, done), the session row shows "To-do n", and the expanded list lets you add and check items and see them "By day".
+- To-do list per project: sessions record items (open, in progress, done), the session row shows "To-do n", and the expanded list lets you add and check items and see them "By day".
 - Copilot CLI: session list and state via hooks, and "Connect" installs the hooks file. Refs #10
 - Copilot CLI: token usage on session rows and the timeline, and its quota in the status bar. Refs #10
 - Copilot CLI: pipeline stages light up for Copilot sessions, and "Connect" also adds the pipeline hooks. Refs #10
@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Sessions: the first line of each row is grouped into identity, usage, work and actions, and each group starts at the same position on every row.
+- To-do: sessions record items with a Sidereus MCP tool instead of editing `.claude/todo.md`; nothing is written in the repo, and an existing `todo.md` is imported once.
 - Codex and Copilot rows waiting on a permission request read "Waiting for approval" instead of "Waiting on notification".
 - After "Connect", the result tells you to restart CLI sessions that are already open (Codex: restart, then run /hooks).
 - Harness report: the runtime card folds to one line unless it is all clear, so the tiles come first.

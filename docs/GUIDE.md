@@ -162,14 +162,14 @@ The Timeline is the evidence behind a verdict: what each agent actually did, and
 
 ## Track a session's to-do list
 
-Sessions keep their person-level requests in `<git root>/.claude/todo.md` on their own (`- [ ]` open, `- [~]` in progress, `- [x]` done).
+Sessions record the requests you gave them with the Sidereus MCP to-do tool (open, in progress, done). The list is kept in Sidereus's data folder per project; nothing is written in your repo.
 
 1. A session row with items shows «To-do n» (open + in progress). Click it to open the list under the row: «Working» items first with the session's live state beside them, then open, then done.
 2. Type in the box and press Enter to add an item (no confirm). Tick a box to mark it done; untick to reopen.
 3. «By day» shows, newest day first, what was added, started and done each day.
 
-- No file or no items: nothing is drawn. The session creates the file; Claude Code may ask permission the first time it writes under `.claude/`.
-- Rewording an item makes it a new item. The `todo` feature switch in Settings turns the list off.
+- No items: nothing is drawn. An existing `.claude/todo.md` is imported once; later edits to that file are ignored.
+- Each session has at most one item in progress. The `todo` feature switch in Settings turns the list off.
 
 ## Check whether quota lasts until the reset
 

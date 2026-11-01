@@ -10,7 +10,7 @@ Object.assign(I18N.ko, {
   'Added {n}': '추가 {n}',
   'Started {n}': '시작 {n}',
   'Done {n}': '완료 {n}',
-  'The to-do list changed in the file — reloaded': '파일의 할 일 목록이 바뀌어 다시 불러왔습니다',
+  'The to-do list changed — reloaded': '할 일 목록이 바뀌어 다시 불러왔어요',
   'Could not save the to-do — check the server': '할 일을 저장하지 못했습니다 — 서버를 확인하세요',
   'Could not save the to-do': '할 일을 저장하지 못했습니다',
 });

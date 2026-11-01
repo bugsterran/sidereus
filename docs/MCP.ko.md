@@ -2,8 +2,9 @@
 
 [English](MCP.md) · **한국어**
 
-`mcp/sidereus_mcp.py` 로 Claude 세션이 시데레우스에 물어볼 수 있다. 읽기 전용이라 세션을 제어·차단하거나 메시지를 보내지 않는다.
-답에는 메타데이터만 들어간다(id, 이름, 상태, 도구 이름, 개수, 시각).
+`mcp/sidereus_mcp.py` 로 세션이 시데레우스에 물어볼 수 있다. 세션을 제어·차단하거나 메시지를 보내지 않는다.
+쓰는 것은 `sidereus_todo` 하나뿐이다. 한 줄짜리 할 일 라벨을 시데레우스 데이터 폴더에 두고, 저장소에는 쓰지 않는다.
+답에는 메타데이터만 들어간다(id, 이름, 상태, 도구 이름, 개수, 시각, 할 일 라벨).
 
 ## 등록
 
@@ -22,13 +23,15 @@ claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.
 | `sidereus_file_peers` | `path`(필수), `sid`, `cwd` | 최근 30분 안에 이 파일을 고친 세션·에이전트(sid8/unit, 에이전트 종류, 프로젝트, 경과 시간, 살아 있는지)와 미커밋 여부. 없는 경로는 `no such file` |
 | `sidereus_peers` | `cwd` | 같은 저장소(worktree 무관)에서 살아 있는 세션·서브에이전트: 상태, 지금 도구, ctx % |
 | `sidereus_attention` | 없음 | 지금 사용자가 봐야 할 세션(라벨만) |
+| `sidereus_todo` | `action`(필수: `add` `start` `done` `open` `list`), `text`(add, 200자까지), `id`(정수), `cwd`, `sid` | 저장소의 할 일, 한 줄에 하나: `#id [s] text` |
 
 - `sidereus_quota` 숫자는 호출한 세션의 계정 기준이다. `CLAUDE_CONFIG_DIR` 가 있고 `~/.claude` 가 아니면 요청에
   `dir=<그 경로>` 가 붙고, 답의 첫 줄이 `account: <label>` 이다. 모르는 계정이면 `quota unavailable: unknown account` 를
   돌려준다(주 계정 숫자로 대신하지 않는다). 계정이 하나면 `dir` 를 보내지 않는다.
 - 호출한 쪽은 MCP 프로세스의 cwd 로 알아낸다. Claude Code 가 세션 cwd 에서 띄우기 때문이다. `cwd` 인자가 우선한다.
 - `sidereus_file_peers` 는 부모 Claude 프로세스로 호출한 세션을 찾아 `(you)` 를 붙인다. `sid` 인자가 우선한다. `sidereus_peers` 에는 자기 세션도 나온다.
-- 인자는 도구마다 `inputSchema`(타입, 모르는 키, 필수)로 검사한다. 어긋나면 JSON-RPC `-32602`.
+- 인자는 도구마다 `inputSchema`(타입, 허용 값, 모르는 키, 필수)로 검사한다. `id: true` 는 정수가 아니다. 어긋나면 JSON-RPC `-32602`.
+- `sidereus_todo` 는 이 서버를 등록한 CLI 라면 어디서나 쓴다. `sid` 기본값은 부모 Claude 프로세스의 세션, 없으면 빈 값.
 - 조언 줄은 절약 훅의 판정(`.saver-view.json` 의 `lv` 와 수준)을 옮긴 것이다. 서버에는 자체 규칙이 없다.
   훅(`~/.claude/hooks/saver.py`)은 선택 사항이고 동봉하지 않는다. 훅이나 스냅숏이 없어도 `sidereus_quota` 는 사용량을
   답하고, 수준은 비우고 조언은 «no pace verdict» 가 된다. 예상 소진 시각이 5h 리셋보다 앞이면 조언이 경고로 바뀐다.
@@ -36,6 +39,7 @@ claude mcp add --scope user sidereus -- /usr/bin/python3 "$PWD/mcp/sidereus_mcp.
 ## 구현
 
 - 뷰어 라우트: `sidereus/routes_get.py` 의 `GET /api/agent/{quota,peers,file,attention}`. 본문은 `sidereus/agent_brief.py` 가 만든다. 다른 GET 과 같은 Host 검사를 거친다.
+- `sidereus_todo` 는 `{cwd, sid, action, text?, id?}` 를 `Origin` 헤더 없이 `POST /api/todo/agent` 로 보낸다(Origin 이 있으면 거절). 400 = 잘못된 내용, 404 = 모르는 저장소.
 - 웜 호출은 2 ms 미만. 첫 `file` 호출은 소유자 인덱스를 훑느라 ~0.4 s 걸린다.
 - stdio 위 JSON-RPC 2.0, 표준 라이브러리만, Python 3.9 이상(macOS `/usr/bin/python3`, Windows `py`).
 - HTTP 타임아웃 8 s. 뷰어 재시작 직후 첫 호출은 3 s 를 넘을 수 있다.

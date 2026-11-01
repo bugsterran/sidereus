@@ -66,7 +66,9 @@ class TestProtocol(Base):
     def test_tools_list_schema(self):
         r = self.rpc({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         tools = {t["name"]: t for t in r[0]["result"]["tools"]}
-        self.assertEqual(set(tools), {"sidereus_quota", "sidereus_file_peers", "sidereus_peers", "sidereus_attention"})
+        self.assertEqual(set(tools), {"sidereus_quota", "sidereus_file_peers", "sidereus_peers", "sidereus_attention",
+                                      "sidereus_todo"})
+        self.assertEqual(tools["sidereus_todo"]["inputSchema"]["required"], ["action"])
         for t in tools.values():
             self.assertEqual(t["inputSchema"]["type"], "object")
             self.assertTrue(t["description"])
@@ -203,6 +205,77 @@ class TestTools(Base):
             for p in REPLIES.values():
                 p.pop("task", None)
                 p.pop("reply", None)
+
+
+class TestTodo(Base):
+    def setUp(self):
+        super().setUp()
+        self.posts = []
+        old = m._post
+
+        def fake(path, body):
+            self.posts.append((path, body))
+            return {"ok": True, "repo": "/r", "items": [{"id": 1, "s": "~", "t": "fix it", "task": SECRET}],
+                    "reply": SECRET}
+        m._post = fake
+        self.addCleanup(setattr, m, "_post", old)
+
+    def call(self, args):
+        r = self.rpc({"jsonrpc": "2.0", "id": 9, "method": "tools/call",
+                      "params": {"name": "sidereus_todo", "arguments": args}})
+        return r[0]
+
+    def test_body_and_lines(self):
+        r = self.call({"action": "start", "id": 1, "cwd": "/r", "sid": "abcdef12-3456"})
+        self.assertEqual(self.posts, [("/api/todo/agent", {"cwd": "/r", "sid": "abcdef12-3456", "action": "start",
+                                                           "id": 1})])
+        t = r["result"]["content"][0]["text"]
+        self.assertIn("#1 [~] fix it", t)
+        self.assertNotIn(SECRET, t)
+        self.assertFalse(r["result"]["isError"])
+
+    def test_add_sends_text_and_default_sid_empty(self):
+        self.call({"action": "add", "text": "do x", "cwd": "/r"})   # DETECT_SELF off: no ~/.claude read
+        self.assertEqual(self.posts[0][1], {"cwd": "/r", "sid": "", "action": "add", "text": "do x"})
+
+    def test_schema_rejects_bad_id_and_action(self):
+        for a in ({"action": "done", "id": "1"}, {"action": "done", "id": True}, {"action": "zap"}, {"text": "x"}):
+            self.assertIn("error", self.call(a), a)
+        self.assertEqual(self.posts, [])
+
+    def test_server_error_is_tool_error(self):
+        m._post = lambda path, body: {"ok": False, "err": "bad text"}
+        r = self.call({"action": "add", "text": "", "cwd": "/r"})
+        self.assertTrue(r["result"]["isError"])
+        self.assertIn("bad text", r["result"]["content"][0]["text"])
+
+
+class TestPost(unittest.TestCase):
+    def test_post_request_has_no_origin_and_down_is_error(self):
+        seen = []
+        old = m.urllib.request.urlopen
+
+        def refused(req, timeout=None):
+            seen.append(req)
+            raise m.urllib.error.URLError(ConnectionRefusedError(61, "refused"))
+        m.urllib.request.urlopen = refused
+        self.addCleanup(setattr, m.urllib.request, "urlopen", old)
+        old_label, old_pl = m.launchd_label, m.PLATFORM   # ⚠never resolve against the live config or LaunchAgents
+        m.launchd_label, m.PLATFORM = (lambda: "io.sidereus.viewer"), "win32"
+        self.addCleanup(setattr, m, "launchd_label", old_label)
+        self.addCleanup(setattr, m, "PLATFORM", old_pl)
+        text, err = m.call_tool("sidereus_todo", {"action": "list", "cwd": "/r"})
+        self.assertTrue(err)
+        self.assertIn("not reachable", text)
+        req = seen[0]
+        self.assertEqual(req.get_method(), "POST")
+        self.assertIsNone(req.get_header("Origin"))
+        self.assertEqual(json.loads(req.data.decode("utf-8"))["action"], "list")
+
+    def test_plugin_copy_identical(self):
+        with open(_P, "rb") as a, open(os.path.join(os.path.dirname(os.path.dirname(_P)), "plugin", "mcp",
+                                                    "sidereus_mcp.py"), "rb") as b:
+            self.assertEqual(a.read(), b.read())
 
 
 class TestDown(unittest.TestCase):

@@ -1,6 +1,6 @@
-// Session to-do list (`<git root>/.claude/todo.md`, kept by the session): «To-do n» chip on the identity row (40ba sessIdRow)
+// Session to-do list (server store DATA_DIR/todo/, recorded by the session via the sidereus MCP tool): «To-do n» chip on the identity row (40ba sessIdRow)
 // and an inline layer under the row (40b sessRowHtml). Server: state `todo` {cwd: {o, w, d}} · GET /api/todo · POST /api/todo/add|set.
-// ⚠Item text is the person's request text from the file: esc() only, never T() (user data) — tests/test_todo_js.py.
+// ⚠Item text is the person's request label from the store: esc() only, never T() (user data) — tests/test_todo_js.py.
 let STODO = null;              // state `todo` (absent when the feature is off ⇒ no chip, no layer)
 const STODO_OPEN = new Set();  // open layers by row key (the list redraws every poll, so open state lives here like wfFold)
 const STODO_DAY = new Set();   // row keys showing «By day»
@@ -31,7 +31,7 @@ function stodoOrder(items){
 function stodoItemsHtml(items, x){
   return stodoOrder(items).map(it => {
     const w = it.s === '~', d = it.s === 'x';
-    // ⚠«Working» comes only from the file's `- [~]`; the state label beside it is the row's live state, never used to infer it.
+    // ⚠«Working» comes only from the session's `start` (state "~"); the state label beside it is the row's live state, never used to infer it.
     return '<label class="stdi' + (w ? ' w' : '') + (d ? ' d' : '') + '"><input type=checkbox class=stdx data-tdi="' + esc(it.i) + '" data-tdh="' + esc(it.h) + '"'
       + (d ? ' checked' : '') + '><span class=stdt>' + esc(it.t) + '</span>'
       + (w ? ' <span class=stdw>' + esc(T('Working')) + '</span> <span class=stds>' + esc(sessLabel(x)) + '</span>' : '') + '</label>';
@@ -81,7 +81,7 @@ function stodoCwd(k){ return String(k).slice(String(k).indexOf('|') + 1); }
 function stodoPost(url, body, cwd, ok){
   return postJSON(url, body).then(() => { if(ok) ok(); return true; }, e => {
     // ⚠The server's reason (e.g. text too long) is shown as-is, never through T(); no status = the request never arrived.
-    note(e && e.status === 409 ? T('The to-do list changed in the file — reloaded')
+    note(e && e.status === 409 ? T('The to-do list changed — reloaded')
       : e && e.status && e.message ? T('Could not save the to-do') + ': ' + e.message : T('Could not save the to-do — check the server'));
     return false;
   }).finally(() => { const dt = STODO_DATA[cwd]; if(dt) dt.sig = ''; stodoRedraw(); });
