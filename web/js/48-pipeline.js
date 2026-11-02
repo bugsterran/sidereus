@@ -16,6 +16,17 @@ function plSelBind(o){
     set(v){ if(!m) m = plSelMap(); if(v) m[o.proj] = String(v); else delete m[o.proj]; lsSetJson('sidereus.plselp', m); } });
 }
 plSelBind(PLS);
+// Per-project picks that survive a reload (48j nowSid, 48b runSel): memory only, a reload replaced the watched run with the newest live one.
+// ⚠Validated where read (48j plNowFollow first call, 48b plViewRun) only once sessions and the project data are in.
+function plProjPref(o, prop, key, def, ok){
+  let m = null;
+  const map = () => { if(!m){ const v = lsJson(key, {}); m = v && typeof v === 'object' && !Array.isArray(v) ? v : {}; } return m; };
+  Object.defineProperty(o, prop, { enumerable: true,
+    get(){ const v = map()[o.proj]; return ok(v) ? v : def; },
+    set(v){ const mm = map(); if(v) mm[o.proj] = v; else if(o.proj in mm) delete mm[o.proj]; else return; lsSetJson(key, mm); } });
+}
+plProjPref(PLS, 'nowSid', 'sidereus.plnowsid', '', v => typeof v === 'string');
+plProjPref(PLS, 'runSel', 'sidereus.plrunsel', null, v => !!v && typeof v === 'object' && typeof v.sid === 'string' && typeof v.name === 'string' && v.rid != null);
 // «Pipelines | Harness» view toggle (harness body = 47b-harness.js hnHtml, same project chips); hidden when feature `harness` is off.
 let PLVIEW = lsGet('sidereus.plview', 'pipe') === 'harness' ? 'harness' : 'pipe';
 function plHnOn(){ return PLVIEW === 'harness' && FEATS.harness !== false && typeof hnHtml === 'function'; }

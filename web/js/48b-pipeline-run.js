@@ -77,13 +77,13 @@ function plLiveRun(proj, name){
   const p = ((PLS.data[proj] || {}).pipelines || []).find(q => q.name === name);
   return plPrLv(sid, pr, (p && p.stages) || [], Date.now());
 }
-// Run the canvas shows: an earlier run of the live session picked in the head menu (PLS.runSel {sid, name, rid, cur}, memory only), else plLiveRun.
+// Run the canvas shows: an earlier run of the live session picked in the head menu (PLS.runSel {sid, name, rid, cur}, per project in sidereus.plrunsel), else plLiveRun.
 // ⚠The pick drops itself once the live session or its current rid changes — an old run must never cover a newly started one.
 function plViewRun(proj, name){
   const lv = plLiveRun(proj, name), s = PLS.runSel;
   if(!s) return lv;
   const nav = plRunNav(lv), i = nav && s.name === name && s.sid === nav.sid && s.cur === nav.cur ? nav.past.findIndex(q => q.rid === s.rid) : -1;
-  if(i < 0){ PLS.runSel = null; return lv; }
+  if(i < 0){ if(lv || ((SESS || []).length && PLS.data[proj])) PLS.runSel = null; return lv; }   // ⚠before sessions load (reload) lv is null: keep the restored pick
   const q = nav.past[i], p = ((PLS.data[proj] || {}).pipelines || []).find(x => x.name === name);
   const v = plPrLv(lv.sid, Object.assign({}, q, { name, proj }), (p && p.stages) || [], Date.now());
   v.nav = Object.assign({}, nav, { k: nav.N - 1 - i, rid: q.rid, end: q.end || q.t1 || 0 });

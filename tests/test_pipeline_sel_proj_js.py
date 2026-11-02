@@ -61,5 +61,39 @@ class PipelineSelPerProject(unittest.TestCase):
         self.assertEqual(r["a"], "arch-map")
 
 
+def run_pref(body, store=None):
+    src = ("const STORE = " + json.dumps(store or {}) + ";\n"
+           "function lsJson(k, d){ try{ const v = JSON.parse(STORE[k] || 'null'); return v === null ? d : v; }catch(e){ return d; } }\n"
+           "function lsSetJson(k, o){ STORE[k] = JSON.stringify(o); }\n"
+           "let SESS = []; const PLS = {proj: '/u/a', data: {}};\n" + js_fn("plProjPref") + "\n"
+           "plProjPref(PLS, 'nowSid', 'sidereus.plnowsid', '', v => typeof v === 'string');\n"
+           "plProjPref(PLS, 'runSel', 'sidereus.plrunsel', null, v => !!v && typeof v === 'object' && typeof v.sid === 'string' && typeof v.name === 'string' && v.rid != null);\n"
+           "let LV = null; function plLiveRun(){ return LV; } function plRunNav(){ return null; }\n" + js_fn("plViewRun") + "\n"
+           "const R = {};\n" + body + "\nR.store = STORE;\nprocess.stdout.write(JSON.stringify(R));")
+    r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
+    if r.returncode != 0:
+        raise AssertionError(r.stderr)
+    return json.loads(r.stdout)
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class PipelineRunPickSurvivesReload(unittest.TestCase):
+    def test_now_sid_and_run_sel_persist_per_project(self):
+        r = run_pref("PLS.nowSid = 's1'; PLS.runSel = {sid: 's1', name: 'chg', rid: 2, cur: 4}; PLS.proj = '/u/b'; R.b = [PLS.nowSid, PLS.runSel];")
+        self.assertEqual(r["b"], ["", None])
+        r2 = run_pref("R.a = [PLS.nowSid, PLS.runSel.rid]; PLS.nowSid = ''; R.after = STORE['sidereus.plnowsid'];", r["store"])
+        self.assertEqual((r2["a"], r2["after"]), (["s1", 2], "{}"))
+
+    def test_bad_stored_values_ignored(self):
+        r = run_pref("R.v = [PLS.nowSid, PLS.runSel];", {"sidereus.plnowsid": "[1]", "sidereus.plrunsel": json.dumps({"/u/a": {"sid": 1}})})
+        self.assertEqual(r["v"], ["", None])
+
+    def test_view_run_keeps_restored_pick_until_sessions_and_data_load(self):
+        st = {"sidereus.plrunsel": json.dumps({"/u/a": {"sid": "s1", "name": "chg", "rid": 2, "cur": 4}})}
+        r = run_pref("plViewRun('/u/a', 'chg'); R.a = PLS.runSel && PLS.runSel.rid; SESS = [{sid: 's9'}]; plViewRun('/u/a', 'chg'); R.b = PLS.runSel && PLS.runSel.rid;"
+                     " PLS.data['/u/a'] = {ok: true}; plViewRun('/u/a', 'chg'); R.c = PLS.runSel;", st)
+        self.assertEqual((r["a"], r["b"], r["c"]), (2, 2, None))   # gone once both are in and the run no longer exists
+
+
 if __name__ == "__main__":
     unittest.main()

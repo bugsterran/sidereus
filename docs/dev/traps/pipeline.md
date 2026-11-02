@@ -366,3 +366,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: `pl_mark` asks `pl_flow.bash_denied()` (read-only, same run logic, fail → «not denied») before writing. The Post hint names an over-40 title and its length instead of printing a tag.
 - ⚠A Bash carrying both `[pl-...]` and `[pl:]` and `pl_guard` denies are not checked — still marked.
 - ⚠Keep `plugin/hooks/` byte-identical to `hooks/` (test checks it).
+
+## Picked run replaced by the newest after a reload (`48j plNowFollow`, `48b plViewRun`)
+
+- Cause: `nowSid`/`runSel` were memory only, and the first follow ran before sessions and project data loaded, so the newest live run overwrote the pick.
+- ⇒ both persist per project (`48 plProjPref`: `sidereus.plnowsid`, `sidereus.plrunsel`); follow and `plViewRun` validate the restored pick only once the data is in.
+- ⚠Do not clear the pick before sessions load — `tests/test_pl_now_js.py`, `tests/test_pipeline_sel_proj_js.py`.
