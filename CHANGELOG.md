@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Attention: a session snoozed «Later» or acked that asks a new question shows again at once; acking a row without a session id no longer hides other sessions' questions in the same folder.
 - Quota details: «Who is using the 5h» counts the window of the account in use (marked «≈» when estimated); an account with no login shows «used unknown» instead of 0%.
 - Saver: the «Hook folder not found» message is translated (path shown separately).
+- Quota details: the 5h % in the burn header and the saver badge each show their «as of» time, so two different figures in one modal no longer read as a contradiction.
 - Pipelines: a denied stage jump no longer lights the stage as «main»; a stage title over 40 characters is named in the hint instead of an unmatchable tag; the npm-audit install hint is a command.
 - MCP: an unknown tool name returns JSON-RPC -32602; `sidereus_attention` labels idle-mail and idle-shell signals; a bad To-do request body gets a body error.
 - Structure › Architecture: with a flow lit, the toolbar hint no longer shrinks to a sliver at 900–1100 px; it hides, and a narrow bar shows the lit counter as numbers (full sentence in its tooltip).

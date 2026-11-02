@@ -44,7 +44,7 @@ function buildSaver(sv){
     // ⚠**Always** two lines — see `svr1`/`svr2` comments below. Do not revert to one line.
     setHtml(el, '<div class=svr1><b>' + esc(r.main) + '</b>' + svChip(r.judge)
       + '<i title="' + esc(tip2) + '">?</i></div>'
-      + '<div class=svr2><span>' + esc(r.tag || r.sub) + '</span></div>');
+      + '<div class=svr2><span>' + esc(r.tag || r.sub) + svAsOf(r) + '</span></div>');
     return;
   }
   // ── Below is saver-stage only (pulse + screen tint). Numbers come from the snapshot when it is fresh.
@@ -90,7 +90,12 @@ function buildSaver(sv){
   if(el.className !== 'saver on') el.className = 'saver on';
   setHtml(el, '<div class=svr1><b>' + esc(st ? TV({msg: 'Saver: level {n}', vars: {n: st}}) : T('Saver') + ' ' + T('mode')) + '</b>' + svChip(jS)
     + '<i title="'+esc(tip)+'">?</i></div>'
-    + '<div class=svr2><span>' + esc(why) + '</span></div>');
+    + '<div class=svr2><span>' + esc(why) + svAsOf(r) + '</span></div>');
+}
+// Verdict clock beside the badge: the burn header's 5h % is polled every 30 s, so without it the two figures in one
+// modal read as a contradiction. A stale verdict already says «judged …» in `sub`, so it is skipped there.
+function svAsOf(r){
+  return r && r.at && !r.old ? ' · ' + esc(T('as of {t}', 'conn').replace('{t}', CLK(new Date(r.at * 1000)))) : '';
 }
 // Concurrency inputs line: the hook's own copy (`SV.capIn`/`capN`, clamped) when present, else burn `cap`. ⚠tpm values are raw tokens/min.
 function svCapLine(){
