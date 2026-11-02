@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 """Build plugin/ (Claude Code plugin) + .claude-plugin/marketplace.json from an explicit allow-list.
 
-Usage: build_plugin.py [--check]   (--check: exit 1 if plugin/ or the marketplace file is out of date)
+Usage: build_plugin.py [--check | --version-check]   (--check: exit 1 if plugin/ or the marketplace file is out of date;
+  --version-check: exit 1 if plugin/ changed in a commit after the last VERSION bump — release audit)
 ⚠The plugin source is plugin/, never the repo root: the repo root holds live data (bus.jsonl, identity.json ...)
 that would be copied into every user's plugin cache.
 Copies are byte-for-byte; manifests are generated here. Deterministic (no clock), stdlib only, Python 3.9.
@@ -148,7 +149,26 @@ def build():
     return sorted(exp)
 
 
+def unbumped():
+    """Commits that changed plugin/ after the last commit that changed VERSION (empty = bump not needed).
+    ⚠Claude Code caches a plugin per version: without a bump, `plugin update` keeps the old hooks."""
+    import subprocess
+
+    def git(*a):
+        return subprocess.run(("git", "-C", ROOT) + a, capture_output=True, text=True, check=True).stdout
+    base = git("log", "-1", "--format=%H", "-G", "^VERSION = ", "--", "scripts/build_plugin.py").strip()
+    if not base:
+        return []
+    return git("log", "--oneline", base + "..HEAD", "--", "plugin/").splitlines()
+
+
 def main(argv):
+    if "--version-check" in argv:
+        bad = unbumped()
+        for c in bad:
+            print("plugin/ changed since the last VERSION bump: " + c)
+        print("%d commit(s) need a VERSION bump" % len(bad) if bad else "VERSION ok (%s)" % VERSION)
+        return 1 if bad else 0
     if "--check" in argv:
         bad = stale()
         for p in bad:
