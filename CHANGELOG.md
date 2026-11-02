@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - MCP: To-do errors fill in their values («1-200 characters»); the text field declares its 200-character limit.
 - Keyboard: the overlay rail at narrow widths keeps focus inside and returns it to the opener; an attention row keeps focus after Enter.
 - Demo: shows To-do items and the account fields of the quota views.
+- Tools and Harness report: with the server unreachable they say «check the server» instead of the browser's English «Failed to fetch».
 - Attention (English): «Done · waiting for input» under a minute shows seconds, not the same number as minutes; the MCP label too.
 - Korean UI: server error messages (pipelines, settings, To-do, rooms, git, hooks) are translated; messages with a file name or count send it separately; OS and exception text stays as sent.
 - Quota details: the 5h % in the burn header and the saver badge each show their «as of» time, so two different figures in one modal no longer read as a contradiction.

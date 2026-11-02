@@ -1,6 +1,7 @@
 // Korean for fixed server error strings ({ok: false, err|error|why}) shown through TE() (05-i18n.js).
 Object.assign(I18N.ko, {
   'MCP only': 'MCP 전용입니다',
+  'check the server': '서버를 확인하세요',
   'OTEL endpoint is not the local Sidereus URL — left as is': 'OTEL 주소가 로컬 시데레우스 주소가 아니라 그대로 두었습니다',
   'OTEL endpoint value is not unique in the file — change it by hand': 'OTEL 주소 값이 파일에 여러 번 있습니다 — 직접 고치세요',
   'accts must be a non-empty list': 'accts 는 비어 있지 않은 목록이어야 합니다',
