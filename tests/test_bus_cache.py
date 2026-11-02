@@ -83,7 +83,8 @@ class BusCache(unittest.TestCase):
         old_t = NOW - bus.ACK_KEEP_S * 10 ** 9 + 5
         self.write(self.acks_path, [{"id": "m1", "who": "bob", "t": old_t}])
         self.assertIn("m1", bus.ack_map())
-        bus.time = types.SimpleNamespace(time_ns=lambda: NOW + 10, time=time.time)   # clock moves, file does not
+        # clock moves one cut step (the cut is floored to ACK_CUT_STEP_S), file does not
+        bus.time = types.SimpleNamespace(time_ns=lambda: NOW + bus.ACK_CUT_STEP_S * 10 ** 9, time=time.time)
         self.assertEqual(bus.ack_map(), {})
 
     def test_ack_append_misses(self):

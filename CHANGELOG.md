@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Attention: sessions waiting for your approval or answer sit in their own "Needs your response" group on top, with a red bar and a count, and never fold; everything else is under "For your information".
+- Sessions: ended sessions are listed in one place, "Recently ended sessions"; the "Show N ended" fold is gone. Ended external CLI sessions (Codex, Cursor, Gemini, Copilot) appear there too, with their logo and work log. Jumping to an ended session from the palette opens that list and highlights its row.
+- Structure: clicking a flow in the Edges panel selects it in the "Flows" picker, so "Clear flow" and "Sequence diagram" follow; clicking it again clears it.
+- Timeline: the cost row says "this-window tokens · all accounts"; the status bar's "5h used" counts the primary account only, which the tooltip now says.
+- `/api/state` sends `acksV`; the page polls with it and the server leaves out the unchanged `acks` map (about 18 KB per poll). Callers that send no `acksV` get the full map as before.
 - Settings: the "Burndown curve" option is gone; it changed nothing (the quota details always show the curve). "Token widgets on the right" now says it applies only while the session list is pinned.
 - Harness: the report title is just "Harness report", and a stale runtime check shows its check time once.
 - Sessions: a session card no longer repeats its to-do line when a running subagent row right below shows the same task.

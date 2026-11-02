@@ -174,14 +174,14 @@ class ShellQuote(unittest.TestCase):
 
 
 class DemoRecent(unittest.TestCase):
-    def test_three_synthetic_rows(self):
+    def test_synthetic_rows_plus_merged_done(self):
         demo = sidereus("demo")
         w = demo.World(anchor=1_790_000_000, page_build="x", now=1_790_000_000)
 
         class U:
             query = "days=7"
         code, out = demo.respond(w, "/api/sessions/recent", U())
-        self.assertEqual((code, out["n"]), (200, 3))
+        self.assertEqual((code, out["n"]), (200, 4))                  # 3 synthetic + the demo's done session-list row
         self.assertTrue(all(r["cwd"].startswith("/home/demo/") for r in out["rows"]))
 
 

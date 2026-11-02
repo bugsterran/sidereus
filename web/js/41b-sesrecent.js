@@ -3,7 +3,8 @@
 //   ⚠Metadata only — name, branch, model, times; the command is built here from cwd + sid (sid checked hex/hyphen).
 let SREC = {open: false, rows: null, at: 0, err: false, q: '', busy: false};
 try{ SREC.open = UIS.getItem('sidereus.sesrec') === '1'; }catch(e){ softErr('sesrec-read', e); }
-function srecCmd(r){ return r ? resumeCmd(r.cwd, r.sid, r.acctDir) : ''; }   // quoting lives in 40b resumeCmd
+const srecCC = r => (r.plat || 'cc') === 'cc';   // external CLI rows (merged from the session list) have no `claude --resume`
+function srecCmd(r){ return (r && (r.plat || 'cc') === 'cc') ? resumeCmd(r.cwd, r.sid, r.acctDir) : ''; }   // quoting lives in 40b resumeCmd
 function srecHead(){
   const n = SREC.rows ? ' <b class=srecn>' + SREC.rows.length + '</b>' : '';
   return '<button type=button class=srech aria-expanded=' + SREC.open + ' title="' + esc(T('Expand/collapse recently ended sessions')) + '">'
@@ -18,8 +19,10 @@ function srecRows(){
   const rs = ACC_OTH.srec ? rq : rq.filter((pk => r => acctInPick(r, 'sess', pk))(acctPick('sess'))), oth = acctOthHtml('srec', rq.length - rs.length, false);
   if(!rs.length) return (oth ? '' : '<div class=srecm>' + esc(T('No matching sessions')) + '</div>') + oth;
   return rs.map(r => {
-    const i = SREC.rows.indexOf(r), cmd = srecCmd(r), ac = acctRowCls(r);
+    const i = SREC.rows.indexOf(r), cmd = srecCmd(r), hit = typeof cpFlash === 'string' && !!cpFlash && cpFlash === 's:' + r.sid;   // palette jump flash (40 cpGo)
+    const ac = acctRowCls(r) + (hit ? ' cphit' : '');
     return (ac ? '<div class="srecr ' + ac + '" data-i=' + i + ' title="' + esc(acctTip(r)) + '">' : '<div class=srecr data-i=' + i + '>')
+      + (srecCC(r) ? '' : aiLogo(r.plat))   // platform by logo only
       + '<span class=srecnm title="' + esc(r.cwd || '') + '">' + esc(r.name || '?') + '</span>'
       + (r.branch ? '<span class=srecbr>' + esc(r.branch) + '</span>' : '')
       + acctChip(r, 'srecac')
@@ -31,7 +34,7 @@ function srecRows(){
       + (r.gone ? '<span class=srecgn title="' + esc(T('The folder no longer exists')) + '">⚠</span>' : '')
       + '<span class=srecag>' + esc(agoAt(+r.endedAt || 0)) + '</span>'
       + (cmd ? '<button type=button class=srecb data-a=copy title="' + esc(T('Paste into a terminal to resume this session') + '\n' + cmd) + '">' + esc(cpfbLabel('srec:' + r.sid, T('Copy command'))) + '</button>' : '')
-      + (r.cwd ? '<button type=button class=srecb data-a=work>' + esc(T('Work log')) + '</button>' : '')
+      + ((r.cwd || !srecCC(r)) ? '<button type=button class=srecb data-a=work>' + esc(T('Work log')) + '</button>' : '')
       + '</div>' + cpfbBox('srec:' + r.sid, cmd, 'srcp', 'type=button class=srecb data-a=cpx');
   }).join('') + oth;
 }
@@ -44,6 +47,9 @@ function srecPaint(){
   if(!many && SREC.q){ SREC.q = ''; f.value = ''; }
   f.placeholder = T('Filter by name or branch'); f.setAttribute('aria-label', f.placeholder);
   s.querySelector('.srecl').innerHTML = srecRows();
+  const hit = SREC.go && s.querySelector('.srecr.cphit');   // palette jump target: scroll once it is drawn
+  if(hit && hit.offsetParent) hit.scrollIntoView({behavior:'smooth', block:'center'});
+  if(hit || (SREC.rows && !SREC.busy)) SREC.go = '';
 }
 function srecLoad(){
   if(SREC.busy || (SREC.rows && Date.now() - SREC.at < 30000)) return;
@@ -80,7 +86,7 @@ function srecLang(){ srecPaint(); }
         const cp = CPFB.box === key && CPFB.until && l.querySelector('.srcp input'); if(cp){ cp.focus(); cp.select(); }
       }, T('Copied — paste it in a terminal'));
     }
-    else if(b.dataset.a === 'work') wkPopup(r.cwd, 'sess:' + r.cwd + '|' + r.sid);
+    else if(b.dataset.a === 'work') wkPopup(r.cwd || '-', srecCC(r) ? 'sess:' + r.cwd + '|' + r.sid : 'ext:' + r.plat + '|' + r.sid);   // ext: resolved by (plat, sid) only
   });
   s.querySelector('.srecf').addEventListener('input', e => { SREC.q = e.target.value; s.querySelector('.srecl').innerHTML = srecRows(); });
   srecPaint();

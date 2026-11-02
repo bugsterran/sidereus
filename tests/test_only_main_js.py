@@ -16,7 +16,7 @@ FNS = ("acctList", "mainAcct", "mainAcctOk", "lsGet", "lsSet", "lsDel", "acctLab
 STUBS = r"""
 const EL = {sess: {innerHTML: ''}, attn: {innerHTML: '', querySelector: () => null, contains: () => false}};
 var document = {getElementById: id => EL[id] || null, activeElement: null};
-let SESS = [], ACCTS = [], STORE = {}, sessHover = false, sessDirty = false, sessOpen = false, stFil = '', idleMin = 0, gitFil = '';
+let SESS = [], ACCTS = [], STORE = {}, sessHover = false, sessDirty = false, stFil = '', idleMin = 0, gitFil = '';
 let SREC = {rows: [], q: '', err: false}, ATTN_MAX = 5, attnMore = false, attnLow = true, attnHtml = '', ATTR = null;
 const UIS = {getItem: k => k in STORE ? STORE[k] : null, setItem: (k, v) => { STORE[k] = String(v); }, removeItem: k => { delete STORE[k]; }};
 function softErr(){}
@@ -24,7 +24,7 @@ function buildFilters(){} function sessFit(){} function buildInvite(){} function
 function morphHtml(el, h){ el.innerHTML = h; } function setHtml(el, h){ el.innerHTML = h; }
 function TV(o){ return T(o.msg).replace('{n}', o.vars.n); }
 function sessRowHtml(x){ return '<R' + x.sid + '>'; }
-function acctRowCls(){ return ''; } function acctTip(){ return ''; } function acctChip(){ return ''; } function srecCmd(){ return ''; }
+function acctRowCls(){ return ''; } function acctTip(){ return ''; } function acctChip(){ return ''; } function srecCmd(){ return ''; } const srecCC = r => (r.plat || 'cc') === 'cc'; function aiLogo(p){ return '<L' + p + '>'; }
 const PK = 'mbAcctPick.sess';
 function cpfbLabel(k, s){ return s; } function cpfbBox(){ return ''; } function plStrip(s){ return s; } function agoAt(){ return 'ago'; }
 function attnRows(){ return JSON.parse(JSON.stringify(ATTR)); }
@@ -56,7 +56,7 @@ R.oneOff = all(); STORE[PK] = 'me'; R.oneOn = all();
 ACCTS = [{label: 'me', primary: true}, {label: 'work'}];
 delete STORE[PK]; R.off = all(); R.badge0 = attnBadgeN();
 STORE[PK] = 'me'; R.on = all(); R.badge1 = attnBadgeN();
-sessOpen = true; R.onOpen = all(); sessOpen = false; attnLow = false; R.lowShut = all(); attnLow = true;
+attnLow = false; R.lowShut = all(); attnLow = true;
 STORE[PK] = 'gone'; R.stale = all();
 STORE[PK] = 'work'; R.work = all();
 STORE[PK] = 'me';
@@ -84,7 +84,7 @@ class OnlyMain(unittest.TestCase):
         s, r, a = self.R["on"]
         self.assertIn("<Rp>", s); self.assertIn("<Rx>", s)          # primary + external CLI row stay
         self.assertNotIn("<Rw>", s)
-        self.assertEqual(s.count("data-ao="), 1); self.assertIn("In other accounts: 1", s)   # ended row under the closed fold not counted
+        self.assertEqual(s.count("data-ao="), 1); self.assertIn("In other accounts: 1", s)   # ended row is not in #sess, so not counted
         self.assertEqual(r.count("data-ao="), 1); self.assertIn("In other accounts: 2", r)
         self.assertNotIn(">b<", r); self.assertIn(">a<", r)
         self.assertEqual(a.count("data-ao="), 1); self.assertIn("In other accounts: 2", a)   # shown + low
@@ -93,7 +93,6 @@ class OnlyMain(unittest.TestCase):
         self.assertIn("<b>2</b>", a)                                  # header counts visible only
 
     def test_counts_follow_folds(self):
-        self.assertIn("In other accounts: 2", self.R["onOpen"][0])     # ended fold open: the ended row counts
         a = self.R["lowShut"][2]
         self.assertIn("In other accounts: 1", a)                         # low fold closed: hidden low row not counted
         self.assertIn("acothd", a)

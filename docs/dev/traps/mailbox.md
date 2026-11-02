@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Mailbox and chat
 
+- **`acks` is sent only when its version changed** (`acksV` = `<mtime_ns>-<size>-<cut>` of `acks.jsonl`, `bus.ack_ver`; the page sends it back as `&acksV=`). Cause: the full 7-day map went out on every 2.5 s poll.
+  - ⇒ The cut is floored to `ACK_CUT_STEP_S` (60 s) so it stays put between polls; the version is taken before the read; a failed read (`bus.AckMapError`) gets `acksV: ""`.
+  - ⚠`acks_v` is part of the `_state_body` cache key — a body without `acks` must never reach a caller without that version (MCP, CLI, hook, since=0).
+  - ⚠The page sends `acksV` only after the first state and while connected (`pollAcksQ`); a missing `acks` key keeps `ACK` (`pollAcksTake`). Do not treat a missing key as empty.
 - ★**After `/clear` the session had no mail waiter until its first turn ended** (clears.jsonl `b465d72d`->`0baef0e4` at 07:43:13, new `.wake` waiter only at 07:43:54 after the first turn; the member dropped out of the room list meanwhile). Cause: `mailbox_wake.py` was started only by the Stop hook, and `/clear` kills the old waiter.
   - ⇒ Also run it from `SessionStart` matcher `clear|resume` (asyncRewake); `startup` is left out so a new session's first turn still gets the 6 h lookback at turn end. A Stop waiter for the same sid while the lock is fresh exits 0 (`busy`).
   - ⇒ On `source: clear` with no state, `seed_clear` starts the new sid's cursor at now.

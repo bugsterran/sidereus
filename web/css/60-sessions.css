@@ -216,9 +216,8 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 /* ⚠Row end («opus-5») sat flush against the scrollbar and read as clipped at 1024px — keep a gutter + gap. */
 #sess{max-height:46vh;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:6px}
 #sess::-webkit-scrollbar{width:6px}
+.srecr.cphit{outline:1px solid #8ab4ff;outline-offset:2px;border-radius:5px}   /* same flash as :is(.sxw,.atr).cphit (85) */
 #sess::-webkit-scrollbar-thumb{background:#242c38;border-radius:3px}
-.sfold{margin-top:6px;font-size:10.5px;color:#8b95a7;cursor:pointer;user-select:none}
-.sfold:hover{color:#8ab4ff}
 /* ★The pulse lets you notice "running" **even peripherally** (requested 2026-08-18).
    The dot's ring spreads, three dots flow after the label, a faint band breathes at the row's left.
    ⚠Accessibility: with prefers-reduced-motion all of it is off, falling back to static display (some users are motion-sensitive). */

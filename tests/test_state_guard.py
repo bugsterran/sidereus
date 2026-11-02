@@ -17,7 +17,7 @@ _READERS = {
     "cards_read": lambda: "",
     "cards_read_ids": lambda: [],
     "presence": lambda: {},
-    "ack_map": lambda: {},
+    "ack_map": lambda cut=None: {},
     "messages": lambda since=0: [],
     "messages_first": lambda: [],   # since=0 path (bus.MSG_FIRST stubs)
     "cursors": lambda: {},

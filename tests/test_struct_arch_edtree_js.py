@@ -23,11 +23,11 @@ SVG = "const svg = fakeSvg(['m0', 'm1', 'm2', 'm3', 'm4', 'm5'], [['m0', 'm1'], 
 
 
 def run(body):
-    fns = list(dict.fromkeys(FNS + DET_FNS + EVL_FNS + ET_FNS))
+    fns = list(dict.fromkeys(FNS + DET_FNS + EVL_FNS + ET_FNS + ["archFlowSet"]))
     js = "\n".join([PRE, CONSTS, DOM, "var ARCH_EVL = null;", "\n".join(js_fn(n) for n in fns), SEND,
                     "const D = " + json.dumps(MAP) + "; ARCH.cache['/r'] = D; ARCH.lit = null; ARCH.scope = null; ARCH.et = {};",
                     "const NAMES = {}; D.modules.forEach(m => { NAMES[m.id] = m.name; });", SVG, LIT,
-                    "const H = () => archEdTreeHtml(ARCH.cache['/r'], NAMES, '/r', {op: ARCH.op, et: ARCH.et, dv: {}, sn: ''});",
+                    "const H = () => archEdTreeHtml(ARCH.cache['/r'], NAMES, '/r', {op: ARCH.op, et: ARCH.et, dv: {}, sn: '', lit: ARCH.lit && ARCH.lit.p === '/r' ? ARCH.lit.flow : null});",
                     "(async () => {\n" + body + "\n})().catch(e => { console.error(e); process.exit(1); });"])
     r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     if r.returncode != 0:
@@ -93,16 +93,16 @@ class ArchEdTree(unittest.TestCase):
         self.assertEqual(r[8], [{"p": "/r", "f": 1}, {"p": "/r", "f": 0, "s": 1}, {"p": "/r", "i": 3}, None])
 
     def test_R3_pin_flow_and_step_evidence_stale(self):
-        r = run("const o = []; archEdTreeClick('/r', {aet: '0'}); o.push(ARCH.op, ARCH.et['/r\\t0'], archLitQ('/r'));"
-                "archEdTreeClick('/r', {aet: '0'}); o.push(ARCH.op);"
+        r = run("const o = []; archEdTreeClick('/r', {aet: '0'}); o.push(ARCH.lit, ARCH.et['/r\\t0'], archLitQ('/r'));"
+                "archEdTreeClick('/r', {aet: '0'}); o.push(ARCH.lit);"
                 "archEdTreeClick('/r', {aet: '1'}); archEdTreeClick('/r', {ats: '1.1'}); o.push(ARCH.op, archLitQ('/r'), H());"
                 "ARCH_EVL = {p: '/r', f: 0}; o.push(archLitQ('/r').flow); ARCH_EVL = null;"   # hover beats the pin
                 "archEdTreeClick('/r', {ats: '1.1'}); o.push(ARCH.op);"
-                "ARCH.scope = {p: '/r', layer: 'x', group: null}; ARCH.op = '/r\\tf9'; o.push(archLitQ('/r')); ARCH.op = '/r\\tf0.9'; o.push(archLitQ('/r'));"
+                "ARCH.lit = null; ARCH.scope = {p: '/r', layer: 'x', group: null}; ARCH.op = '/r\\tf9'; o.push(archLitQ('/r')); ARCH.op = '/r\\tf0.9'; o.push(archLitQ('/r'));"
                 "ARCH_EVL = {p: '/r', f: 7}; o.push(archLitQ('/r'));"
                 "console.log(JSON.stringify(o));")
-        self.assertEqual(r[0:3], ["/r\tf0", True, {"flow": "get-order", "tests": False}])   # pin opens the flow
-        self.assertEqual(r[3], "")                                                          # same node again unpins
+        self.assertEqual(r[0:3], [{"p": "/r", "flow": "get-order"}, True, {"flow": "get-order", "tests": False}])   # lights + opens
+        self.assertIsNone(r[3])                                                             # same node again clears
         self.assertEqual(r[4], "/r\tf1.1")
         self.assertEqual(r[5], {"edge": 3, "tests": False})
         self.assertIn('data-aev="f1.1"', r[6])                                              # pinned step shows its evidence
@@ -111,6 +111,27 @@ class ArchEdTree(unittest.TestCase):
         self.assertEqual(r[8], "")
         for q in r[9:12]:
             self.assertEqual(q, {"layer": "x", "group": None})                              # stale n / k falls back
+
+    def test_flow_node_uses_select_setter(self):
+        """A flow node goes through archFlowSet: same ARCH.lit / ARCH.flow as the «Flows» select; Clear / select '' reset the tree."""
+        r = run("const on = () => (H().match(/<li class=\"arche archtn( on)?\"/g) || []).map(x => x.indexOf(' on') >= 0);"
+                "const o = []; ARCH.op = '/r\\t4'; archEdTreeClick('/r', {aet: '1'}); o.push(ARCH.lit, ARCH.op, on());"
+                "ARCH.flow = {p: '/r', id: 'pay-order'}; archEdTreeClick('/r', {aet: '0'}); o.push(ARCH.flow, on());"   # sequence view follows
+                "archEdTreeClick('/r', {aet: '0'}); o.push(ARCH.lit, ARCH.flow, on());"                               # again: clears both
+                "archFlowSet('/r', 'pay-order'); o.push(on()); archFlowSet('/r', ''); o.push(ARCH.lit, on());"       # select / Clear
+                "ARCH.lit = {p: '/r', flow: 'get-order'}; ARCH.lit = null; o.push(on());"                             # «Clear flow» nulls lit
+                "ARCH.lit = {p: '/x', flow: 'get-order'}; o.push(on());"                                              # another project
+                "console.log(JSON.stringify(o));")
+        self.assertEqual(r[0], {"p": "/r", "flow": "pay-order"})
+        self.assertEqual(r[1], "")
+        self.assertEqual(r[2], [False, True])
+        self.assertEqual(r[3], {"p": "/r", "id": "get-order"})
+        self.assertEqual(r[4], [True, False])
+        self.assertEqual(r[5:8], [None, None, [False, False]])
+        self.assertEqual(r[8], [False, True])
+        self.assertEqual(r[9:11], [None, [False, False]])
+        self.assertEqual(r[11], [False, False])
+        self.assertEqual(r[12], [False, False])
 
     def test_R3_empty_space_clears_tree_pin(self):
         empty = re.search(r"^  if\(ARCH\.op && t\.closest\('\.archmap,\.archel-list'\).*$", J, re.M).group(0)
@@ -144,7 +165,7 @@ class ArchEdTree(unittest.TestCase):
         r = run("const o = []; archEdTreeClick('/r', {aetall: '1'}); archEdTreeClick('/r', {ats: '1.0'}); o.push(ARCH.op);"
                 "archEdTreeClick('/r', {aetall: '0'}); o.push(ARCH.op);"
                 "archEdTreeClick('/r', {aetall: '1'}); archEdTreeClick('/r', {ats: '1.0'}); archEdTreeClick('/r', {aetf: '1'}); o.push(ARCH.op);"
-                "archEdTreeClick('/r', {aet: '1'}); archEdTreeClick('/r', {aetall: '0'}); o.push(ARCH.op);"
+                "archEdTreeClick('/r', {aet: '1'}); archEdTreeClick('/r', {aetall: '0'}); o.push(ARCH.lit && ARCH.lit.flow);"
                 "archEdTreeClick('/r', {aet: 'other'}); ARCH.op = '/r\\t4'; archEdTreeClick('/r', {aetf: '0'}); o.push(ARCH.op);"
                 "archEdTreeClick('/r', {aet: 'other'}); o.push(ARCH.op);"
                 "ARCH.op = '/r\\t4'; archEdTreeClick('/r', {aetf: '0'}); o.push(ARCH.op);"   # already folded: a map pin stays
@@ -154,7 +175,7 @@ class ArchEdTree(unittest.TestCase):
         self.assertEqual(r[0], "/r\tf1.0")
         self.assertEqual(r[1], "")                          # Collapse all hid the pinned step
         self.assertEqual(r[2], "")                          # its flow's caret hid it
-        self.assertRegex(r[3], r"\tf1$")                    # a pinned flow node stays visible, stays pinned
+        self.assertEqual(r[3], "pay-order")                 # a lit flow node stays visible, stays lit
         self.assertEqual(r[4], "/r\t4")
         self.assertEqual(r[5], "")                          # folding Other hid the pinned edge
         self.assertEqual(r[6], "/r\t4")

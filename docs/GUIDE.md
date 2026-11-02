@@ -112,6 +112,7 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 ![Flow sequence diagram](images/structure-flow-en.png)
 
 - «Flows» lists one flow per entry point; ✓ = every step proven, a red dashed arrow = unproven step. Click an arrow for the code at that call.
+- Clicking a flow in the «Edges» tree lights it exactly like picking it in «Flows»; click it again or «Clear flow» to clear both.
 
 ### Top issues (security)
 - «Top issues N» opens the findings (gitleaks, npm audit, osv-scanner, semgrep, bandit, trivy — `security-checks` pipeline). Secrets are never shown.
@@ -140,6 +141,7 @@ The Timeline is the evidence behind a verdict: what each agent actually did, and
 3. The «Changes» chip counts files changed in the followed session against «Changes baseline» (default «Uncommitted»); «⚠ n shared» = two sessions touched one file. Click it for the diff; base buttons «Uncommitted», «Since session start», «vs main / master», «All»; «Include untracked files»; one tab per repo.
    Untracked secret files (`.env`, `.env.*` except `.example`/`.sample`/`.template`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, private SSH keys, `.netrc`, `.npmrc`, `.pypirc`, `credentials`) are listed by name only: their contents are never read or sent, and the diff shows «(contents hidden: secret file)».
 4. The bottom summary shows «Results» (commits, runs ✓/✕/↺) and «Evidence» (gate PASS/FAIL, first failing step); «More» adds waiting time, outliers and cost.
+   The «Cost» row's «this-window tokens · all accounts» sums every account; the status bar «5h used» counts the primary account only (hover the label).
 5. Click a commit for its diff, a session or agent for its work log. With a log open, clicks add tabs; Shift+click opens a new window.
 6. Older work: the History tab (with 2+ accounts, an account picker; other accounts' Claude rows fold into «In other accounts: N»).
 

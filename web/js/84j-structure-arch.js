@@ -551,7 +551,7 @@ function archPaint(box, head){
       : '<aside class=archside><div class=archsh><b>' + esc(T('Edges')) + '</b><span>' + esc(T('Click for evidence · click evidence for code')) + '</span>'
     + '<button type=button class=archrf data-arf title="' + esc(T('Reload now')) + '">↻</button></div>'
     + (dvOn ? archDevListHtml(edges, names, p, devAt, devSn, ARCH.op)
-      : typeof archEdTreeHtml === 'function' ? archEdTreeHtml(d, names, p, { op: ARCH.op, et: ARCH.et, dv: devAt, sn: devSn })   // flow tree (84j6)
+      : typeof archEdTreeHtml === 'function' ? archEdTreeHtml(d, names, p, { op: ARCH.op, et: ARCH.et, dv: devAt, sn: devSn, lit: ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : null })   // flow tree (84j6)
       : '<ul class=archel-list>' + ord.map(o => archEdgeRow(o.e, names, o.i, ARCH.op === p + '\t' + o.i, o.io, devAt[o.i], devSn)).join('') + '</ul>') + '</aside>') + strSplitGrip('archbody') + '</div></div>';
   archScrollPut(box, sm, sl, sd);
   // ⚠the room was measured on the previous paint (overview bar or none): re-measure once on the new frame and redraw if it moved

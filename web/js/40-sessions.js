@@ -147,7 +147,17 @@ function cpGo(x){
   if(!x) return;
   const undone = [];                               // if something the user set was undone, **say so**
   try{ sesdrReveal(); }catch(e){ softErr('sesdrReveal', e); }                  // the list lives in the top-right drawer — open it before scrolling
-  if(x.state === 'done') sessOpen = true;          // inside the folded finished list it must be expanded to show
+  if(x.state === 'done' && typeof SREC === 'object'){   // ended rows live only in «Recently ended sessions» (41b): open it there
+    SREC.open = true;
+    try{ UIS.setItem('sidereus.sesrec', '1'); }catch(e){ softErr('sesrec-write', e); }
+    SREC.err = false; SREC.q = ''; SREC.go = x.sid || '';   // a filter could hide it; srecPaint scrolls to SREC.go
+    const s = document.getElementById('sesrec'), f = s && s.querySelector('.srecf'); if(f) f.value = '';
+    if(!(SREC.rows || []).some(r => r.sid === x.sid)) SREC.at = 0;   // just ended: bypass the 30 s client cache once
+    cpFlash = cpKey(x); srecLoad(); srecPaint();
+    if(s && s.offsetParent && !s.querySelector('.srecr.cphit')) s.scrollIntoView({behavior:'smooth', block:'start'});   // row not drawn yet: show the list
+    setTimeout(() => { cpFlash = ''; srecPaint(); }, 1400);
+    return;
+  }
   cpFlash = cpKey(x);
   const find = () => {
     const ns = Array.prototype.slice.call(document.querySelectorAll('#sess .sxw'));
