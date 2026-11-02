@@ -246,9 +246,12 @@ def _row_sigs(r, now):
     if int(r.get("wreck") or 0) > 0 and not _resumed(r, wat, now):
         sg.append(_sig("wreck", "반쯤 고친 파일 %d개" % int(r["wreck"]), t0))
     # parent "waiting" = its own turn is the pending tool or it is idle, and it has not written for 5 min
-    idle = max([int(s.get("idle") or 0) for s in (r.get("sub") or []) if isinstance(s, dict)] or [0])
+    subs = [s for s in (r.get("sub") or []) if isinstance(s, dict)]
+    idle = max([int(s.get("idle") or 0) for s in subs] or [0])
     if live and idle >= ATT_STALL_S and st in ("tool", "wait") and age >= 300:
-        sg.append(_sig("stall", "서브에이전트 %d분 무기록 · 부모 대기" % (idle // 60), now - idle))
+        # ⚠absolute idle start: rows come from a stale snapshot, so `now - idle` drifts per poll and breaks the ack key
+        ats = [int(s["idleAt"]) for s in subs if int(s.get("idle") or 0) >= ATT_STALL_S and s.get("idleAt")]
+        sg.append(_sig("stall", "서브에이전트 %d분 무기록 · 부모 대기" % (idle // 60), min(ats) if ats else now - idle))
     rep = r.get("rep") or {}
     if live and int(rep.get("n") or 0) >= ATT_LOOP_N:
         sg.append(_sig("loop", "%s 같은 호출 %d회 반복" % (rep.get("tool") or "도구", int(rep["n"])), t0))
@@ -260,7 +263,7 @@ def _row_sigs(r, now):
     if live and isinstance(bi, dict) and int(bi.get("idle") or 0) > 0:
         mx = int(bi.get("max") or 0)
         sg.append(_sig("bgidle", "백그라운드 셸 %d개 · 무출력 %d개 · 최장 %d분" % (int(bi.get("n") or 0), int(bi["idle"]), mx // 60),
-                       now - mx))
+                       int(bi.get("at") or 0) or now - mx))   # ⚠absolute `at`: `max` is from a stale snapshot
     # ⚠A Workflow call returns at launch, so the parent ends its turn (`wait`) while the run goes on — not the human's turn.
     wf_run = any(isinstance(w, dict) and w.get("run") for w in (r.get("wf") or []))
     if st == "wait" and not r.get("sub") and not r.get("bgs") and not wf_run \

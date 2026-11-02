@@ -60,6 +60,22 @@ class AckJitter(unittest.TestCase):
         self.assertTrue(all(p["shown"] == [] for p in run(polls, {"s1": {"s": "ask", "t": 1000}})))
 
 
+class ListOnlyChurn(unittest.TestCase):
+    """A list-only kind (bgdone) appearing or leaving between polls must not re-show an acked row."""
+    def test_list_kind_appears(self):
+        polls = [[row("s1", ("bgidle", 30, 1000))], [row("s1", ("bgidle", 30, 1000), ("bgdone", 20, 1500))]]
+        out = run(polls, {"s1": {"s": "bgidle", "t": 1000}})
+        self.assertEqual([p["shown"] for p in out], [[], []])
+        self.assertEqual(out[-1]["ack"], {"s1": {"s": "bgidle", "t": 1000}})
+
+    def test_list_kind_leaves(self):
+        key = run([row("s1", ("bgdone", 40, 1500), ("bgidle", 30, 1000))], {})[0]["keys"][0]
+        s, t = key.rsplit("|", 1)
+        polls = [[row("s1", ("bgdone", 40, 1500), ("bgidle", 30, 1000))], [row("s1", ("bgidle", 30, 1000))]]
+        out = run(polls, {"s1": {"s": s, "t": int(t)}})
+        self.assertEqual([p["shown"] for p in out], [[], []])
+
+
 class BlockedSinceMoves(unittest.TestCase):
     def test_older_or_same_stays_newer_returns(self):
         ack = {"s1": {"s": "blocked", "t": 470}}
