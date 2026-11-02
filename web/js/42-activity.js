@@ -12,9 +12,12 @@ function actAge(x){ return (x.ageSec || 0) + (Date.now() - actAt) / 1000; }
 //   clock at 08:07) printed «8:06 AM · 32s» at 09:58. ageSec is server-relative, so the start must be too.
 let actSrv = 0;
 function actStart(x){ return new Date((actSrv || actAt) - (x.ageSec || 0) * 1000); }
-// ⚠Needs-me = every badge row of attnRows (the same rows as the header «Attention N» chip), plus blocked/ask session flags.
-function actNeedOf(x, am){
+// ⚠Needs-me = every badge row of attnRows (the same rows as the header «Attention N» chip), plus blocked/ask session flags
+//   unless that session's attention row was marked Done/Later (gone): the header chip drops it, so the rail must too.
+function actGone(x, gone){ return gone.has(x.sid) || gone.has('c:' + x.cwd); }
+function actNeedOf(x, am, gone){
   const a = am.get(x.sid) || am.get('c:' + x.cwd);
+  if(gone && actGone(x, gone)) return a || null;
   if(x.blocked) return { k: 'blocked', i: -2 };
   if(x.state === 'ask') return { k: 'ask', i: -1 };
   return a || null;
@@ -26,17 +29,24 @@ function actWhat(x, need, why){
   return attnLbl(need);                                // every rail pill carries a needs-me kind
 }
 function actRows(){
-  const am = new Map();
-  try{ attnRows().shown.forEach((r, i) => { if(!r.badge) return; const v = { k: r.top.k, i, tone: attnTone(r.score), since: r.since, why: r.top.why };   // attnSess matching: sid, else cwd
-    if(r.r.sid) am.set(r.r.sid, v); else if(r.r.cwd) am.set('c:' + r.r.cwd, v); }); }catch(e){ softErr('actRows', e); }
+  const am = new Map(), gone = new Set();
+  try{ const ar = attnRows();
+    ar.shown.forEach((r, i) => { if(!r.badge) return; const v = { k: r.top.k, i, tone: attnTone(r.score), since: r.since, why: r.top.why };   // attnSess matching: sid, else cwd
+    if(r.r.sid) am.set(r.r.sid, v); else if(r.r.cwd) am.set('c:' + r.r.cwd, v); });
+    // Rows with a visible signal that attnRows left out of shown and low = acked (Done) or snoozed (Later).
+    const kept = new Set(ar.shown.concat(ar.low || []).map(r => r.r));
+    for(const r of (ATTN && ATTN.rows) || []){
+      if(kept.has(r) || !(r.sigs || []).some(g => attnPolOf(g.k) !== 'hide')) continue;
+      if(r.sid) gone.add(r.sid); else if(r.cwd) gone.add('c:' + r.cwd);
+    } }catch(e){ softErr('actRows', e); }
   const nd = [];
   for(const x of SESS || []){
-    const n = actNeedOf(x, am);
+    const n = actNeedOf(x, am, gone);
     if(n){ const a = n.tone ? n : am.get(x.sid) || am.get('c:' + x.cwd) || {};   // blocked/ask still take the drawer row's tier + age
       nd.push({ x, need: n.k, rank: n.i, tone: a.tone || (n.k === 'blocked' ? 'err' : 'warn'), since: a.since || 0, why: a.why }); continue; }      // even a done session, so the count matches the header chip
     if(x.state === 'done' || x.state === 'gone') continue;
-    // ⚠Same split as sesCount() (41-sesdrawer): ask/abort need the user.
-    if(x.state === 'ask' || x.state === 'abort') nd.push({ x, need: x.state, rank: 1e6, tone: 'warn' });
+    // ⚠Same split as sesCount() (41-sesdrawer): ask/abort need the user — unless marked Done/Later in the attention list.
+    if((x.state === 'ask' || x.state === 'abort') && !actGone(x, gone)) nd.push({ x, need: x.state, rank: 1e6, tone: 'warn' });
   }
   nd.sort((a, b) => a.rank - b.rank);                               // blocked · ask first, then attention score order
   return { pills: nd };

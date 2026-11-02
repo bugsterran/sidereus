@@ -12,6 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: clicking the run panel «Mode» select no longer drops Edit mode; the Save diff preview scrolls into view; renaming a stage keeps its key order.
 - Chat, rooms and To-do: the screen updates right after a write (state cache cleared); «Outside rooms» counts the viewer once after a language switch.
 - Features: turning Pipelines off no longer erases the Harness choice.
+- Rail «Attention» count no longer includes rows marked Done or Later, so it matches the header chip.
+- Work popup: pipeline stage chips show translated stage names; the «Evaluation» popover re-places itself on window resize.
+- Keyboard: with the shortcut help open, ⌘K, s, / and ⌘B close it before acting, so two overlays never stack.
 - Structure › Architecture: with a flow lit, the toolbar hint no longer shrinks to a sliver at 900–1100 px; it hides, and a narrow bar shows the lit counter as numbers (full sentence in its tooltip).
 
 ## [0.13.0] - 2026-11-02
