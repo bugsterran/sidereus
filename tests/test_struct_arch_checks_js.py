@@ -384,15 +384,18 @@ EVJS = ("globalThis.ARCH_CW = null; let PAINTS = 0, TABS = 0; globalThis.archChk
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class StructArchCheckFilters(unittest.TestCase):
     def test_r2_severity_filters_and_counts(self):
-        r = run(MEMJS + "const a = archChkWinHtml('/r', d, {sel: {}, sev: 'all', tool: ''}, []), e = archChkWinHtml('/r', d, {sel: {}, sev: 'high', tool: ''}, []);"
+        # header counts are scanner totals (archChkSum): tool `n` made to match the listed items here
+        nn = {"gitleaks": {"critical": 1}, "semgrep": {"medium": 1}, "bandit": {"low": 1, "high": 1, "medium": 1}, "osv-scanner": {"high": 1}, "npm-audit": {"low": 1}}
+        r = run(MEMJS + "d.checks.security.tools.forEach(t => { t.n = " + json.dumps(nn) + "[t.id]; });"
+                "const a = archChkWinHtml('/r', d, {sel: {}, sev: 'all', tool: ''}, []), e = archChkWinHtml('/r', d, {sel: {}, sev: 'high', tool: ''}, []);"
                 "const c = archChkWinHtml('/r', d, {sel: {}, sev: 'critical', tool: ''}, []);"
                 "console.log(JSON.stringify([rows(a), rows(e), a, e, archChkView(d, {sev: 'high'}, []).map(x => x.sev), archChkView(d, {sev: 'critical'}, []).map(x => x.sev),"
                 "archChkView(d, {sev: 'error'}, []).map(x => x.sev), c, archChkTop(d).map(x => x.file)]));", lang="en")
         self.assertEqual([r[0], r[1]], [7, 3])
         self.assertIn("Top issues 7", r[2])
-        self.assertIn("critical 1 · high 2 · medium 2 · low 2</span>", r[2])   # from the listed items; no «shown» without a filter
+        self.assertIn("critical 1 · high 2 · medium 2 · low 2</span>", r[2])   # no «shown» without a filter
         self.assertIn("Top issues 3", r[3])
-        self.assertIn("critical 1 · high 2 · medium 0 · low 0 · shown 3 of 7", r[3])
+        self.assertIn("<span>critical 1 · high 2 · shown 3 of 7", r[3])          # levels the filter hides are dropped
         self.assertNotIn('<li class="medium"', r[3])
         self.assertNotIn('<li class="low"', r[3])
         self.assertIn('<option value=high selected>High and above</option>', r[3])
@@ -400,7 +403,7 @@ class StructArchCheckFilters(unittest.TestCase):
         self.assertEqual(r[5], ["critical"])                            # critical only
         self.assertEqual(r[6], r[4])                                    # old "error" filter value -> high and above
         self.assertIn('<option value=critical selected>Critical only</option>', r[7])
-        self.assertIn("critical 1 · high 0 · medium 0 · low 0 · shown 1 of 7", r[7])
+        self.assertIn("<span>critical 1 · shown 1 of 7", r[7])
         self.assertEqual(r[8], ["k.env", "b2.py", "package-lock.json", "s.py", "b3.py", "b1.py", "package.json"])   # by level, list order kept within
         self.assertIn('<li class="critical"', r[2])
         self.assertIn('<li class="low"', r[2])

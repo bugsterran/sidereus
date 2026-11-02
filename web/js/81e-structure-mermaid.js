@@ -218,9 +218,19 @@ function mmdLayout(g){
       // so 81g band ports (top-in) found no route and the line fell back to a side entry.
       const pb = g.sgs[sid].parent && g.sgs[g.sgs[sid].parent] && g.sgs[g.sgs[sid].parent].pass && !g.sgs[sid].pass;
       const tl = g.sgs[sid].title ? lsz(g.sgs[sid].title) : { lw: 0, lh: 0 }, top = PAD + tl.lh + 4 + (g.sgs[sid].box3d ? 8 : 0) + (pb && tl.lw ? PORTGAP : 0);
-      const W = Math.max(pl.w + 2 * PAD, tl.lw + 2 * PAD, 60), ox = (W - pl.w) / 2;
+      let W = Math.max(pl.w + 2 * PAD, tl.lw + 2 * PAD, 60), ox = (W - pl.w) / 2, tx = null;
+      // ⚠Pass bands (84j2) take lines top-in only, and 81g walls the title +2px on 8px cells: a centred title over a member's
+      // top-centre column pushed order->db 39px off-centre ⇒ title left (else right) of every member column; widen if neither fits.
+      if(tl.lw && g.sgs[sid].pass && !g.sgs[sid].box3d && !g.sgs[sid].oneLayer){   // entry rows (oneLayer) only send lines out the bottom
+        const ms = items.filter(v => !g.sgs[v]).map(v => pl.pos[v].x + size(v).w / 2), lw = tl.lw, M = 6;   // M = wall 2 + half a cell
+        const free = x => !ms.some(c => c + ox > x - M && c + ox < x + lw + M);
+        if(!free((W - lw) / 2)){
+          tx = [4, W - 4 - lw].find(free);
+          if(tx == null){ W = Math.max(W, pl.w + 2 * (4 + lw + M + 1 - Math.min(...ms))); ox = (W - pl.w) / 2; tx = 4; }
+        }
+      }
       items.forEach(v => { rel[v] = { x: pl.pos[v].x + ox, y: pl.pos[v].y + top }; });
-      blk[sid] = { w: W, h: pl.h + PAD + top, tl };
+      blk[sid] = { w: W, h: pl.h + PAD + top, tl, tx };
     }else{
       // g.axis (84j2 bands, TB root only): every root block centred on one vertical axis A; g.axisHub (focus) puts that node on A
       // instead of its block's centre. A = the widest left half, so every block starts at RP or right of it. ⚠Opt-in: other views keep bytes.
@@ -237,6 +247,7 @@ function mmdLayout(g){
     if(g.sgs[v]){
       R.depth = depth(v); sgs[v] = R;
       if(z.tl.lw) R.tr = { x: g.sgs[v].box3d ? R.x + 5 : R.x + (R.w - z.tl.lw) / 2, y: R.y + PAD - 4, w: z.tl.lw, h: z.tl.lh };   // title: a wall for lines and labels; ⚠box3d (84i) draws it at the left, so the wall moves with it
+      if(R.tr && z.tx != null) R.tr.x = R.x + z.tx;   // pass band title moved off a member's top-centre column (size pass above)
       place(v, R.x, R.y);
     } else nodes[v] = R;
   });
@@ -384,7 +395,7 @@ function mmdSvg(g, L, key, tag){
         + rect(F, 0) + (t ? '<text class=mmdst x="' + f(R.tr ? R.tr.x + 5 : x + 10) + '" y="' + f(ty) + '" dominant-baseline=central text-decoration=underline>' + esc(t) + '</text>' : '') + '</g>';
       return;
     }
-    o += (tag && g.sgs[k].cls ? '<g class="mmdsg ' + esc(g.sgs[k].cls) + '">' : '<g class=mmdsg>') + st + rect(R, 6) + (t ? txt(t, R.x + R.w / 2, R.tr ? R.tr.y + R.tr.h / 2 : R.y + 12 + (n - 1) * 8, 'mmdst') : '') + '</g>';
+    o += (tag && g.sgs[k].cls ? '<g class="mmdsg ' + esc(g.sgs[k].cls) + '">' : '<g class=mmdsg>') + st + rect(R, 6) + (t ? txt(t, R.tr ? R.tr.x + R.tr.w / 2 : R.x + R.w / 2, R.tr ? R.tr.y + R.tr.h / 2 : R.y + 12 + (n - 1) * 8, 'mmdst') : '') + '</g>';
   });
   const ge = {};   // L.edges keep no index: find the model edge by its ends (84i draws one edge per pair)
   if(tag) g.edges.forEach(e => { const k = e.from + '\u0001' + e.to; if(!ge[k]) ge[k] = e; });

@@ -18,7 +18,7 @@ Object.assign(I18N.ko, {
   'This path cannot be read.': '읽을 수 없는 경로입니다.', 'Invalid range.': '잘못된 범위입니다.',
   'Could not read the file at that point in time.': '그 시점의 파일을 읽지 못했습니다.',
   'A room name and a target are required.': '방 이름과 대상이 필요합니다.',
-  'The Structure tab is not used in demo mode': '데모 모드에서는 구조 탭을 쓰지 않습니다',
+  'The Size view is not available in demo mode': '데모 모드에서는 크기 보기를 쓸 수 없습니다',
 });
 // Korean phrases the server still sends: failure signatures (sidereus/failures_scan.py, failures.py), burn row names
 //   (sidereus/burn_scan.py, burn_usage.py), external blocked label (sidereus/ext.py). Callers holding such a field call srvEn().

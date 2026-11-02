@@ -92,6 +92,8 @@ function hnNxDraft(k){
   const cs = hnNxCands();
   HN_NXS.dr = { key: k, id: c.id, body: hnNxBody(c.id, c.x, PLS.proj, hnNxGuide(c.id), hnNxPipes()), sid: (cs[0] || {}).sid || '', busy: false, msg: '' };
 }
+// Server-written reasons (ok:false or a non-2xx JSON error) are kept; network/bare HTTP errors go through fetchErrMsg.
+function hnNxSendErr(e){ return e && (e.srv || (e.body && (e.body.error || e.body.err || e.body.msg))) ? String(e.message) : fetchErrMsg(e); }
 // Only the confirm button calls this.
 async function hnNxSend(){
   const D = HN_NXS.dr;
@@ -101,10 +103,10 @@ async function hnNxSend(){
   D.busy = true; hnRepaint(false);
   try{
     const j = await postJSON('/api/dm', { to: cur.id, body: D.body, relay: true, sid: cur.sid, thread: 'harness:' + D.id });
-    if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');
+    if(!j || !j.ok){ const er = new Error((j && (j.error || j.err)) || '?'); er.srv = true; throw er; }
     HN_NXS.dr = null;
     note(T('Requested → {s} · {t}').replace('{s}', () => archChkCandLabel(cur)).replace('{t}', () => hhmm(new Date())));
-  }catch(e){ D.busy = false; D.msg = T('Could not send') + ': ' + String((e && e.message) || e); }
+  }catch(e){ D.busy = false; D.msg = T('Could not send') + ': ' + hnNxSendErr(e); }
   hnRepaint(false);
   return true;
 }

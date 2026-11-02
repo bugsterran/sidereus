@@ -537,7 +537,7 @@ def respond(world, path, u):
     if path == "/api/prefs":     # ⚠the bare {"ok": True} fallback lacks `keys` — «Preferences» showed a red read error
         return 200, _demo_prefs()
     if path == "/api/structure":
-        return 200, {"ok": False, "msg": "The Structure tab is not used in demo mode"}
+        return 200, {"ok": False, "msg": "The Size view is not available in demo mode"}   # Architecture view works in demo
     if path == "/api/arch":
         return 200, demo_arch(w.a)
     if path == "/api/arch/files":   # ⚠the bare {"ok": True} fallback left module detail «Files» empty

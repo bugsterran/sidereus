@@ -379,7 +379,7 @@
 "대화 외에 매 요청 함께 읽히는 것 — 토큰은 바이트/3.5 어림":"Loaded with every request besides the conversation — tokens ≈ bytes/3.5",
 "더 높은 신호가 새로 뜨면 자동으로 깨어납니다":"Wakes automatically when a higher signal appears",
 "더 보기":"More",
-"데모 모드에서는 구조 탭을 쓰지 않습니다":"The Structure tab is not used in demo mode",
+"데모 모드에서는 크기 보기를 쓸 수 없습니다":"The Size view is not available in demo mode",
 "데모로 둘러보기":"Try the demo",
 "도구":"Tool",
 "도구 결과를 받아 모델이 처리하는 중 — 곧 다음 도구나 응답이 나옵니다":"The model is processing a tool result — the next tool call or reply comes soon",
