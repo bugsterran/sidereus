@@ -7,7 +7,7 @@ html[data-ui=next] .attn .ath.none{color:var(--nx-t3);padding:0}
 html[data-ui=next] .attn .ath{flex-wrap:wrap}
 html[data-ui=next] .attn .ath.fyi{color:var(--nx-t3)}
 html[data-ui=next] .attn .atr.resp+.ath.fyi{margin-top:6px}
-html[data-ui=next] .attn .atr.resp{border-left:3px solid var(--nx-err)}
+html[data-ui=next] .attn .atr.resp{box-shadow:inset 3px 0 0 var(--nx-err)}
 html[data-ui=next] .attn .atz{margin-left:auto;font-size:11px;color:var(--nx-t3);cursor:pointer;text-decoration:underline dotted}
 html[data-ui=next] .attn .atz+.atz{margin-left:0}
 /* ⚠Dim below-threshold rows by colour, not opacity: .6 opacity measured 2.5-4.9:1 (under 4.5) */
