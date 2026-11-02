@@ -107,6 +107,16 @@ html[data-ui][data-ui][data-ui] .archtab .archok[disabled]{opacity:1;color:var(-
 .archbar:not(.on)>*{flex-shrink:0}
 .archbar:not(.on) .archhint{flex:1 1 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .archbar:not(.on) .archlitc{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ⚠With a flow lit the hint shrank to a 24px stub (1100 ko) / 166px (900 en): hide it instead (full text stays in its title) */
+.archbar:not(.on):has(.archlitc:not([hidden])) .archhint{display:none}
+/* ⚠A 552px bar (1100 ko) still left the count 20 of 133px: narrow bars drop the «Flows» label text (+31px) and show numbers only (full sentence in title); cutoff 860: a 798px bar (900 ko) still cut the sentence by 5px, 892px (1440) fits */
+.archbar{container-type:inline-size}
+@container (max-width:860px){
+  .archbar:not(.on):has(.archlitc:not([hidden])) .archfl{font-size:0;gap:0;min-width:0}
+  .archbar:not(.on):has(.archlitc:not([hidden])) .archfl select{font-size:12.5px}
+  .archbar:not(.on) .archlitc[data-n]:not([data-n=""]){font-size:0;flex-shrink:0;overflow:visible}
+  .archbar:not(.on) .archlitc[data-n]:not([data-n=""])::after{content:attr(data-n);font-size:12.5px}
+}
 .archbar:not(.on) .archfl{flex-shrink:1;min-width:140px;white-space:nowrap}.archbar:not(.on) .archfl select{min-width:90px;flex:0 1 auto}
 .archsel{color:var(--nx-t1,#dfe5ee);font-size:13px}
 /* Focus-view way out: filled accent so it reads as a button (plain text was missed); white on --nx-info-bg = 5.2 dark / 5.4 light */
