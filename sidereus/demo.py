@@ -579,6 +579,12 @@ def install(handler_cls, page_build):
         if u.path == "/api/hooks/connect" and isinstance(req, dict) and req.get("dry") is not False \
                 and req.get("plat") in ("cursor", "copilot"):
             return self._raw_json(200, hooks_connect_dry(req["plat"]))   # preview only; Apply stays the no-op below
+        if u.path in ("/api/room/invite", "/api/rooms/create") and isinstance(req, dict) and req.get("dry") is True:
+            room, ids = str(req.get("room") or "")[:64], req.get("ids") if isinstance(req.get("ids"), list) else []
+            body = ("The user invited you to room **'%s'** from the screen (Sidereus).\nMembers: none yet\n\nTo join: "
+                    "mailbox_room { action: \"join\", room: \"%s\" }" % (room, room))   # ⚠mirrors routes_post.invite_text
+            return self._raw_json(200, {"ok": True, "dry": True, "demo": True, "body": body,   # 92c enables «Confirm» only on a string body
+                                        "added": [i for i in ids if isinstance(i, str)][:20], "already": []})
         if u.path == "/api/term/focus":  # ⚠never osascript in demo — pretend the tab came forward
             return self._raw_json(200, {"ok": True, "demo": True, "how": "focused"})
         return self._raw_json(200, {"ok": True, "demo": True})

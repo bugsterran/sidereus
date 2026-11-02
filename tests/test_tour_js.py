@@ -54,6 +54,7 @@ R.demoOffBody = tourBody(tourPlan({pipeline: false}, all, 0).find(p => p.demo), 
 R.nostrip = tourPlan({}, noStrip, 2).find(p => p.id === 'pl-live');
 R.nostripBody = tourBody(R.nostrip, '').h;
 R.liveSpot = tourBody({id: 'pl-live', mode: 'spot'}, '');
+R.startSpot = tourBody({id: 'pl-start', mode: 'spot'}, '').h; R.startMiss = tourBody({id: 'pl-start', mode: 'centre'}, '').h;
 R.missing = tourPlan({}, none, 2).map(p => p.mode);
 R.auto = {first: tourShouldAuto(false, false, ''), done: tourShouldAuto(true, false, ''), wd: tourShouldAuto(false, true, ''),
           q0: tourShouldAuto(false, false, '?tour=0'), q1: tourShouldAuto(true, true, '?tour=1')};
@@ -118,6 +119,11 @@ R.finish = {writes: writes.slice(), tabs: tabs.slice(), hidden: root.hidden};
         self.assertIn("파이프라인 실행이 열립니다", self.R["liveSpot"]["h"])
         self.assertNotIn("tourms", self.R["liveSpot"]["h"])
         self.assertNotIn("tourdim", self.R["nostripBody"])
+
+    def test_pl_start_without_target_points_at_project(self):
+        self.assertIn("«편집» 을 누른 뒤", self.R["startSpot"])
+        self.assertIn("프로젝트를 고르거나 여세요", self.R["startMiss"])   # no project yet: «Edit» is missing
+        self.assertNotIn("을 누른 뒤", self.R["startMiss"])
 
     def test_missing_targets_all_centred(self):
         self.assertEqual(set(self.R["missing"]), {"centre"})

@@ -76,7 +76,7 @@ cc([same, {label: 'gone', path: '/g/settings.json', auto: true, window: 450000, 
 DRY = {ok: true, dry: true, files: [fl('me', '/p/settings.json', 'same'), fl('work', '/w/settings.json', 'change'), fl('gone', '/g/settings.json', 'skipped', 'symlink')]};
 c.CONF = null;
 vm.runInContext('mpAcctApply()', c).then(() => {
-  R.prev = c.CONF; R.prevPosts = POSTS.map(b => [b.key, b.dry, b.accts.length]);
+  R.prev = c.CONF; R.prevPosts = POSTS.map(b => [b.key, b.dry, b.accts.length]); R.prevAuto = POSTS[0].accts.map(a => a.auto);
   POSTS.length = 0; c.CONF = null;
   DRY = {ok: true, dry: true, files: [fl('me', '/p/settings.json', 'same'), fl('gone', '/g/settings.json', 'skipped', 'symlink')]};
   return vm.runInContext('mpAcctApply()', c);
@@ -85,7 +85,17 @@ vm.runInContext('mpAcctApply()', c).then(() => {
   POSTS.length = 0;
   vm.runInContext("MPACD = {'/w/settings.json': {auto: true, win: '10'}}", c);
   return vm.runInContext('mpAcctApply()', c);
-}).then(() => { R.badWin = [POSTS.length, vm.runInContext('MPERR.cc_acct1', c)]; process.stdout.write(JSON.stringify(R)); });
+}).then(() => {
+  R.badWin = [POSTS.length, vm.runInContext('MPERR.cc_acct1', c)];
+  POSTS.length = 0;
+  cc([same, {label: 'gone', path: '/g/settings.json', auto: true, window: 450000, err: null}]);
+  vm.runInContext("MPACD = {'/w/settings.json': {auto: false, win: '450000'}}", c);
+  return vm.runInContext('mpAcctApply()', c);
+}).then(() => {
+  R.autoSent = POSTS[0].accts.map(a => a.auto);
+  cc([Object.assign({}, same, {auto: false})]); c.CONF = null;
+  return vm.runInContext("mpCcSet('cc_auto_compact', false)", c);
+}).then(() => { R.ccConfSame = c.CONF; process.stdout.write(JSON.stringify(R)); });
 cc([same, {label: 'bad', path: '/b/settings.json', auto: true, window: null, err: 'settings.json not found'}]);
 vm.runInContext("mpCcSet('cc_auto_compact', false)", c);
 R.ccConf = c.CONF;
@@ -224,6 +234,11 @@ class MyPref(unittest.TestCase):
         m = self.R["ccConf"]
         self.assertLess(m.index("/p/settings.json\ntrue\n→ false"), m.index("/w/settings.json\ntrue\n→ false"))
         self.assertIn("/b/settings.json\n건너뜀: settings.json not found", m)
+        self.assertNotIn("/w/settings.json", self.R["ccConfSame"])   # already at the new value: not listed
+
+    def test_per_account_auto_only_when_changed(self):
+        self.assertEqual(self.R["prevAuto"], [None, None, None])      # untouched auto is not sent (file key stays absent)
+        self.assertEqual(self.R["autoSent"], [None, False, None])
 
     def test_main_account_select(self):
         self.assertEqual(self.R["maNone"], "")                      # <2 accounts: no row

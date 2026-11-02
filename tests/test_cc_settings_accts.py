@@ -95,6 +95,16 @@ class CcAccts(unittest.TestCase):
             self.assertEqual(f.read(), x0)                           # one backup holding the original
         self.assertIsNone(self._hist())                              # extra's window: no history line
 
+    def test_window_only_leaves_missing_auto_absent(self):
+        self._put(self.sp)
+        x0 = self._put(self.xp)
+        acc = [{"path": self.xp, "auto": None, "window": 300000}]    # page payload when only the window changed
+        code, out, _ = self._save(acc, dry=True)
+        self.assertEqual((code, out["files"][1]["status"]), (200, "change"), out)
+        self.assertEqual(self._save(acc)[0], 200)
+        self.assertEqual(self._b(self.xp), x0.replace(b"450000", b"300000"))
+        self.assertNotIn("autoCompactEnabled", json.loads(self._b(self.xp)))
+
     def test_unknown_path_refused(self):
         p0, x0 = self._put(self.sp), self._put(self.xp)
         for bad in (os.path.join(self.tmp, "other.json"), self.xp + "/../settings.json", None):
