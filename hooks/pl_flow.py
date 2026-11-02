@@ -14,7 +14,7 @@ PostToolUse (Task|Agent|SendMessage): when the stage's dispatches are back, adds
 No `--platform` = cc (Claude Code), unchanged.
 Run end (last stage done · `[pl-end:]` · main's `git commit`): when the project has an answer key
 (<data dir>/eval/<repo key>/seeds.json) it launches `scripts/pl_eval.py score --auto` detached (no wait, no output).
-Stores stage titles, counts and times only -- never descriptions, commands, task text or tool output.
+Stores stage titles, counts, times and token totals only -- never descriptions, commands, task text or tool output.
 Fail-open: any problem means no output and exit 0. Stdlib only, Python 3.9, no fcntl (Windows target).
 """
 import contextlib
@@ -307,8 +307,110 @@ def _same_run(line, name, t0):
         return False
 
 
+SS_MAX = 32            # stages kept in a ledger row's `ss`
+SS_STATES = {"done": "done", "run": "done", "skip": "skip", "back": "back", "fail": "fail"}   # run = ended mid-stage
+TOK_BUDGET_S = 0.3     # ⚠token scan wall budget per ledger row; past it every stage's tok is null (unknown)
+TOK_FILE_MAX = 64 * 1024 * 1024   # a larger subagent transcript leaves its stage's tok null
+_TP = []               # validated transcript_path of this hook call (set in _main), read by _ledger_add
+
+
+def _mono():
+    return time.monotonic()
+
+
+def _stage_secs(e):
+    """Seconds of one stage = closed passes in `ps` + the current pass (p0 or t0 .. t1)."""
+    t1 = float(e.get("t1") or 0)
+    sec = t1 - float(e.get("p0", e.get("t0")) or t1)
+    for p in e.get("ps") if isinstance(e.get("ps"), list) else []:
+        if isinstance(p, dict) and isinstance(p.get("a"), (int, float)) and isinstance(p.get("b"), (int, float)):
+            sec += p["b"] - p["a"]
+    return max(0, int(round(sec)))
+
+
+def _jsonl_tokens(fp, seen):
+    """input+output+cache_creation+cache_read of complete `"usage"` lines in fp, deduped by (message.id, requestId)
+    across `seen` (= sidereus/usage_index._uidx_scan + _req_rows). ⚠Reads counts only, never message content."""
+    tok = 0
+    with open(fp, "rb") as f:
+        for raw in f:
+            if b'"usage"' not in raw or not raw.endswith(b"\n"):
+                continue
+            try:
+                e = json.loads(raw)
+            except ValueError:
+                continue
+            m = e.get("message") if isinstance(e, dict) else None
+            u = m.get("usage") if isinstance(m, dict) else None
+            if not isinstance(u, dict) or not e.get("timestamp"):
+                continue
+            mid, rid = m.get("id") or "", e.get("requestId") or ""
+            if mid and rid:
+                if (mid, rid) in seen:
+                    continue
+                seen.add((mid, rid))
+            cc = int(u.get("cache_creation_input_tokens") or 0)
+            cco = u.get("cache_creation")
+            if isinstance(cco, dict):
+                cc = max(cc, max(0, int(cco.get("ephemeral_5m_input_tokens") or 0)) + max(0, int(cco.get("ephemeral_1h_input_tokens") or 0)))
+            tok += int(u.get("input_tokens") or 0) + int(u.get("output_tokens") or 0) + cc + int(u.get("cache_read_input_tokens") or 0)
+    return tok
+
+
+def _stage_tokens(r, name, now):
+    """{title: tokens} of `[pl:<name>/<title>]`-tagged subagents whose meta mtime is in [r.t0, now] (= sidereus/pl_runs
+    _meta_ags window); a title absent = unknown. None = no transcript or over TOK_BUDGET_S. ⚠Never stores text."""
+    tp = _TP[0] if _TP else None
+    if not tp:
+        return None
+    d, t0, start = os.path.join(tp[:-len(".jsonl")], "subagents"), float(r.get("t0") or 0), _mono()
+    out, bad, seen = {}, set(), set()
+    for fn in sorted(os.listdir(d)):
+        if not fn.endswith(".meta.json"):
+            continue
+        if _mono() - start > TOK_BUDGET_S:
+            return None
+        mp, title = os.path.join(d, fn), None
+        try:
+            if not (t0 <= os.path.getmtime(mp) <= now):
+                continue
+            with open(mp, encoding="utf-8") as f:
+                m = json.load(f)
+            hit = TAG.search(m.get("description") or "") if isinstance(m, dict) and isinstance(m.get("description"), str) else None
+            if not hit or hit.group(1) != name:
+                continue
+            title, jf = _ren(hit.group(2).strip()), mp[:-len(".meta.json")] + ".jsonl"
+            if os.path.getsize(jf) > TOK_FILE_MAX:
+                bad.add(title)
+                continue
+            out[title] = out.get(title, 0) + _jsonl_tokens(jf, seen)
+        except (OSError, ValueError):
+            bad.add(title)   # an unreadable agent of a known stage leaves that stage unknown
+    if _mono() - start > TOK_BUDGET_S:
+        return None
+    return {k: v for k, v in out.items() if k not in bad}
+
+
+def _stage_summary(r, name, now):
+    """Row `ss` = {title: {s, sec, n, tok}} (≤ SS_MAX); tok None = unknown (main-run stage, no transcript, over budget),
+    never 0; skip stages carry no tok."""
+    st = r.get("st") if isinstance(r.get("st"), dict) else {}
+    ss = {}
+    for title, e in list(st.items())[:SS_MAX]:
+        if isinstance(title, str) and isinstance(e, dict) and e.get("s") in SS_STATES:
+            ss[title] = {"s": SS_STATES[e["s"]], "sec": _stage_secs(e), "n": int(e.get("n") or 0)}
+    try:
+        tk = _stage_tokens(r, name, now)
+    except Exception:
+        tk = None
+    for title, x in ss.items():
+        if x["s"] != "skip":
+            x["tok"] = None if tk is None or st[title].get("m") is True else tk.get(title)
+    return ss
+
+
 def _ledger_add(r, name, now):
-    """Append ended run `r` as {name, t0, end, lb, deny, dc, h0, h1}. ⚠Titles, counts and hashes only, never tool
+    """Append ended run `r` as {name, t0, end, lb, deny, dc, h0, h1, ss}. ⚠Titles, counts and hashes only, never tool
     input; only for a git repo (the result layer needs one); fail-silent — this hook runs live."""
     try:
         proj = r.get("proj") if isinstance(r, dict) else None
@@ -326,6 +428,7 @@ def _ledger_add(r, name, now):
         for k in ("h0", "h1"):
             if isinstance(r.get(k), str) and _HEXH.fullmatch(r[k]):
                 row[k] = r[k]
+        row["ss"] = _stage_summary(r, name, now)
         d = os.path.join(DATA_DIR, "eval", _key(proj))
         os.makedirs(d, mode=0o700, exist_ok=True)
         p = os.path.join(d, "runs.jsonl")
@@ -1740,6 +1843,8 @@ def main(argv=None):
 def _main(plat, ev):
     denied = False
     del _NONE_NOTE[:]
+    tp = ev.get("transcript_path")
+    _TP[:] = [tp] if isinstance(tp, str) and os.path.isabs(tp) and tp.endswith(".jsonl") and ".." not in tp.split(os.sep) else []
     try:
         try:   # pipeline `guards` (hooks/pl_guard.py); ⚠fail-open: a missing or broken guard module runs the flow unguarded
             import importlib.util as _iu

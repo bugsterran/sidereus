@@ -36,6 +36,8 @@ OC_NAME = re.compile(r"[a-z0-9-]{1,40}")
 OC_HEX = re.compile(r"[0-9a-f]{4,40}")
 OC_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})\.md")
 OC_TITLE_MAX = 80
+OC_SS = ("done", "skip", "back", "fail")   # = hooks/pl_flow.py per-stage outcome in the ledger row's "ss"
+OC_SS_MAX = 32                 # stages kept per row / per «Stage cost» table
 # English source of every result-layer sentence (panel: web/js/48i via TV; report: scripts/pl_report.py).
 OC_SENT = {
     "gate": "Gate: {g} of {m} gates confirmed able to fail",
@@ -110,7 +112,43 @@ def _row(d):
     dc = d.get("dc") if isinstance(d.get("dc"), dict) else {}
     hx = lambda v: v if isinstance(v, str) and OC_HEX.fullmatch(v) else ""
     return {"name": d["name"], "t0": _num(d.get("t0")) or end, "end": end, "lb": lb, "deny": _int(d.get("deny")),
-            "dc": {c: _int(dc.get(c)) for c in OC_DENY_CODES if _int(dc.get(c))}, "h0": hx(d.get("h0")), "h1": hx(d.get("h1"))}
+            "dc": {c: _int(dc.get(c)) for c in OC_DENY_CODES if _int(dc.get(c))}, "h0": hx(d.get("h0")), "h1": hx(d.get("h1")),
+            "ss": _ss(d.get("ss"))}
+
+
+def _tok(v):
+    return min(v, 10 ** 12) if isinstance(v, int) and not isinstance(v, bool) and v >= 0 else None   # ⚠not _int: a stage tops 10**6 tokens
+
+
+def _ss(v):
+    """Per-stage {title: {s, sec, n, tok}} of a ledger row; old rows and junk entries -> dropped. tok None = unknown."""
+    out = {}
+    for t, e in (v.items() if isinstance(v, dict) else ()):
+        t = _title(t)
+        if t and isinstance(e, dict) and e.get("s") in OC_SS and len(out) < OC_SS_MAX:
+            out[t] = {"s": e["s"], "sec": _int(e.get("sec")), "n": _int(e.get("n")), "tok": _tok(e.get("tok"))}
+    return out
+
+
+def _med(xs):
+    xs = sorted(xs)
+    k = len(xs)
+    return (xs[k // 2] if k % 2 else int((xs[k // 2 - 1] + xs[k // 2]) / 2 + 0.5)) if k else None
+
+
+def stage_eff(rows):
+    """{title: {n, sec, tok, tn}} over ledger rows: n runs that reached the stage, median seconds, median of the known
+    token counts (None when none known), tn = how many were known. Skipped stages are not counted."""
+    acc = {}
+    for r in rows or ():
+        for t, e in ((r or {}).get("ss") or {}).items():
+            if e.get("s") == "skip" or (t not in acc and len(acc) >= OC_SS_MAX):
+                continue
+            a = acc.setdefault(t, ([], []))
+            a[0].append(e.get("sec") or 0)
+            if e.get("tok") is not None:
+                a[1].append(e["tok"])
+    return {t: {"n": len(s), "sec": _med(s), "tok": _med(k), "tn": len(k)} for t, (s, k) in acc.items()}
 
 
 def _ledger_path(key):
@@ -293,7 +331,7 @@ def outcome(proj, name, review_titles, now=None, git=True, fix=()):
         return _OC_MEMO[ck]
     out = {"proc": {"runs": len(cur), "jump": sum(r["dc"].get("jump", 0) for r in cur)},
            "lb": {"cur": _lb(cur, review), "prev": _lb(prev, review)},
-           "result": _result(proj, rows, cur + prev, now, bool(head), every, fix)}
+           "result": _result(proj, rows, cur + prev, now, bool(head), every, fix), "eff": stage_eff(cur)}
     if head:
         if len(_OC_MEMO) >= OC_CACHE_MAX:
             _OC_MEMO.clear()
@@ -302,15 +340,21 @@ def outcome(proj, name, review_titles, now=None, git=True, fix=()):
 
 
 def counts(oc):
-    """outcome() without the per-PASS list (what the API may carry), or None."""
+    """outcome() without the per-PASS list (what the API may carry), or None. `eff` = stage titles and numbers only."""
     if not isinstance(oc, dict):
         return None
     p, lb, r = oc.get("proc") or {}, oc.get("lb") or {}, oc.get("result") or {}
+    ef = oc.get("eff") if isinstance(oc.get("eff"), dict) else {}
+    eff = {_title(t): {"n": _int(e.get("n")), "sec": _int(e.get("sec")), "tok": _tok(e.get("tok")), "tn": _int(e.get("tn"))}
+           for t, e in list(ef.items())[:OC_SS_MAX] if _title(t) and isinstance(e, dict) and _int(e.get("n"))}
     nk = lambda d: {"n": _int((d or {}).get("n")), "k": min(_int((d or {}).get("k")), _int((d or {}).get("n")))}
-    return {"proc": {"runs": _int(p.get("runs")), "jump": _int(p.get("jump"))},
+    out = {"proc": {"runs": _int(p.get("runs")), "jump": _int(p.get("jump"))},
             "lb": {"cur": nk(lb.get("cur")), "prev": nk(lb.get("prev"))},
             "result": {"n": _int(r.get("n")), "broke": _int(r.get("broke")), "fixed": _int(r.get("fixed")),
                        "unchecked": _int(r.get("unchecked")), "partial": r.get("partial") is True}}
+    if eff:   # absent when empty: rows without per-stage data keep the earlier body shape
+        out["eff"] = eff
+    return out
 
 
 def latest_report(proj):

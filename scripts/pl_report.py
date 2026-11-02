@@ -66,6 +66,15 @@ def render(name, date, sents, oc):
                                                    "yes" if x.get("fixed") else "no", fs))
     else:
         lines.append("None.")
+    eff = (oc or {}).get("eff") or {}
+    lines += ["", "## Stage cost (last 30 days)", ""]
+    if eff:
+        lines += ["| stage | median time | median tokens | n |", "|---|---|---|---|"]
+        for t, e in eff.items():
+            tok = "—" if e.get("tok") is None else "{:,}".format(e["tok"])   # unknown tokens never read as 0
+            lines.append("| %s | %ss | %s | %s |" % (str(t).replace("|", "/").replace("\n", " "), e.get("sec") or 0, tok, e.get("n") or 0))
+    else:
+        lines.append("None.")
     return "\n".join(lines) + "\n"
 
 
