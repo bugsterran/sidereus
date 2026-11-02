@@ -18,6 +18,7 @@ Object.assign(I18N.ko, {
   'Only the first 500 folders are shown — type the path instead': '폴더가 많아 앞쪽 500개만 보입니다 — 경로를 직접 입력하세요',
   'Not in the list': '목록에 없는 프로젝트입니다','Up to 50 projects can be added': '최대 50개까지 추가할 수 있습니다',
   'Retry|stage': '재시도', 'Waiting': '대기', 'Save before running': '저장한 뒤 실행할 수 있습니다',
+  'Opens a run request: pick a live session of this project and write what to do. After you confirm, it goes to that session\'s mailbox and the session runs the pipeline itself; Sidereus runs nothing.': '실행 요청 창을 엽니다: 이 프로젝트의 살아 있는 세션을 고르고 할 일을 적습니다. 확인하면 그 세션의 메일박스로 보내지고, 실행은 그 세션이 직접 합니다 — Sidereus 는 아무것도 실행하지 않습니다.',
   'Close the open form first': '열린 양식을 닫은 뒤 누를 수 있습니다',
   'Fit to view': '화면에 맞추기', 'Zoom so every stage is visible': '전체 단계가 보이게 배율을 맞춥니다',
   'Re-flow so every stage shows · zoom stays if it fits': '모든 단계가 보이게 다시 놓습니다 · 들어가면 배율은 그대로',

@@ -320,7 +320,7 @@ function plBody(ov, hd){
 }
 // Run = the primary filled button in both modes; dirty = disabled until saved.
 function plRunBtn(p, dirty){
-  return '<button class="wkrgb plsv plrn' + (PLRUN && PLRUN.name === p.name ? ' on' : '') + '" data-plrun' + (dirty ? ' disabled title="' + esc(T('Save before running')) + '"' : '') + '><span aria-hidden=true>▶</span> ' + esc(T('Run')) + '</button>';
+  return '<button class="wkrgb plsv plrn' + (PLRUN && PLRUN.name === p.name ? ' on' : '') + '" data-plrun title="' + esc(dirty ? T('Save before running') : T('Opens a run request: pick a live session of this project and write what to do. After you confirm, it goes to that session\'s mailbox and the session runs the pipeline itself; Sidereus runs nothing.')) + '"' + (dirty ? ' disabled' : '') + '><span aria-hidden=true>▶</span> ' + esc(T('Run')) + '</button>';
 }
 // 48k Watch: one head row (project · pipeline · Edit · run progress · Run); no Apply, gate counts, evaluation or write previews.
 function plWatchBody(p, d, row, hd, ov, mb){
