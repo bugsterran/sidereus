@@ -9,7 +9,7 @@ from tests import test_pl_flow as F   # ⚠not `from … import Flow`: its tests
 
 H = F.H
 _Base = type("_Base", (F.Flow,), {k: None for k in dir(F.Flow) if k.startswith("test")})   # helpers only
-KEYS = {"name", "t0", "end", "lb", "deny", "dc", "h0", "h1"}
+KEYS = {"name", "t0", "end", "lb", "deny", "dc", "h0", "h1", "ss"}
 
 
 class Ledger(_Base):

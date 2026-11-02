@@ -396,7 +396,38 @@ class Outcome(unittest.TestCase):
                       "dc": {"jump": 1}, "h0": "abcd123", "h1": "not hex", "msg": "secret"}])
         rows = OC.ledger(OC.repo_key(self.proj), 0)
         self.assertEqual(rows, [{"name": N, "t0": 1.0, "end": 2.0, "lb": [{"f": "a", "g": "b", "n": 1}], "deny": 1,
-                                 "dc": {"jump": 1}, "h0": "abcd123", "h1": ""}])
+                                 "dc": {"jump": 1}, "h0": "abcd123", "h1": "", "ss": {}}])   # old row: no ss
+
+    def test_ledger_stage_stats_allow_listed(self):
+        # R3: per-stage ss whitelisted; junk entries and keys dropped, tok None stays unknown
+        ss = {"build": {"s": "done", "sec": 30, "n": 1, "tok": 5000, "body": "x"}, "review": {"s": "skip", "sec": 0, "n": 0},
+              "verify": {"s": "back", "sec": "9", "n": 2, "tok": -1}, "bad": {"s": "zz", "sec": 1}, "x" * 90: {"s": "fail", "sec": 4},
+              "odd": "done"}
+        self.ledger([{"name": N, "t0": 1, "end": 2, "ss": ss}, {"name": N, "t0": 3, "end": 4, "ss": ["junk"]}])
+        rows = OC.ledger(OC.repo_key(self.proj), 0)
+        self.assertEqual(rows[0]["ss"], {"build": {"s": "done", "sec": 30, "n": 1, "tok": 5000},
+                                         "review": {"s": "skip", "sec": 0, "n": 0, "tok": None},
+                                         "verify": {"s": "back", "sec": 0, "n": 2, "tok": None},
+                                         "x" * 80: {"s": "fail", "sec": 4, "n": 0, "tok": None}})
+        self.assertEqual(rows[1]["ss"], {})
+
+    def test_stage_eff_medians(self):
+        # R3: median seconds / known tokens per stage, skip excluded, unknown tokens never 0
+        st = lambda s, sec, tok: {"s": s, "sec": sec, "n": 1, "tok": tok}
+        rows = [{"ss": {"build": st("done", 10, 100), "review": st("skip", 0, None)}},
+                {"ss": {"build": st("back", 30, None), "review": st("done", 50, None)}},
+                {"ss": {"build": st("done", 20, 300)}}, {"ss": {}}, {}]
+        self.assertEqual(OC.stage_eff(rows), {"build": {"n": 3, "sec": 20, "tok": 200, "tn": 2},
+                                              "review": {"n": 1, "sec": 50, "tok": None, "tn": 0}})
+        self.assertEqual(OC.stage_eff([]), {})
+
+    def test_outcome_eff_window(self):
+        # R3: eff covers the last 30 days only
+        ss = lambda sec: {"impl": {"s": "done", "sec": sec, "n": 1, "tok": sec * 10}}
+        self.ledger([{"name": N, "t0": self.now - 2 * D, "end": self.now - 2 * D, "ss": ss(40)},
+                     {"name": N, "t0": self.now - 40 * D, "end": self.now - 40 * D, "ss": ss(999)},
+                     {"name": "other", "t0": self.now - D, "end": self.now - D, "ss": ss(7)}])
+        self.assertEqual(OC.outcome(self.proj, N, [])["eff"], {"impl": {"n": 1, "sec": 40, "tok": 400, "tn": 1}})
 
     def test_ledger_same_run_twice_counts_once(self):
         a = {"name": N, "t0": 5, "end": 6, "lb": [{"f": "a", "g": "b", "n": 1}]}
@@ -410,6 +441,9 @@ class Outcome(unittest.TestCase):
         c = OC.counts(o)
         self.assertNotIn("list", c["result"])
         self.assertNotIn("files", json.dumps(c))
+        self.assertNotIn("eff", c)   # R3: no eff -> key absent (earlier body shape)
+        o["eff"] = {"impl": {"n": 3, "sec": 20, "tok": None, "tn": 0, "x": "body"}, "gone": {"n": 0, "sec": 1}, "": {"n": 1}}
+        self.assertEqual(OC.counts(o)["eff"], {"impl": {"n": 3, "sec": 20, "tok": None, "tn": 0}})
         self.assertEqual(OC.sentences({"n": 2, "m": 3}, o), [
             "Gate: 2 of 3 gates confirmed able to fail", "Procedure: 8 runs, 1 order violations blocked",
             "Result: 1 of 5 passes broke later, fix followed 2",

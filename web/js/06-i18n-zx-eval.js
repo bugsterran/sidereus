@@ -55,4 +55,7 @@ Object.assign(I18N.ko, {
   'Review loop-backs: {cur}% of runs (last 30 days), no earlier data': '리뷰 되돌림: 실행의 {cur}% (최근 30일), 이전 자료 없음',
   'Latest report {date}': '최근 리포트 {date}',
   'No report yet': '아직 리포트 없음',
+  'Stage cost (last 30 days)': '단계별 비용 (최근 30일)',
+  'Median time': '시간 중앙값',
+  'Median tokens': '토큰 중앙값',
 });

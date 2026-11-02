@@ -35,7 +35,7 @@ def _run(body, lang="en"):
     src = js_all()
     consts = re.search(r"^const PLE_OC = [\s\S]*?\};$", src, re.M).group(0)
     consts += "\n" + re.search(r"^const plOcPct[^\n]*$", src, re.M).group(0)
-    fns = "\n".join(js_fn(f) for f in ("T", "TV", "plEvalOutcome"))
+    fns = "\n".join(js_fn(f) for f in ("T", "TV", "plEvalOutcome", "plEvalEff"))
     code = "let LANG = %s;\n" % json.dumps(lang) + STUBS + _ko() + "\n" + consts + "\n" + fns + "\n" + body
     r = subprocess.run(node_e(code), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     if r.returncode != 0:
@@ -76,6 +76,20 @@ class ResultLayer(unittest.TestCase):
         self.assertIn("No report yet", r[0])
         self.assertNotIn("loop-backs", r[1])   # no runs in either window
         self.assertEqual(r[2:], ["", "", ""])   # no runs and no passes: block hidden
+
+    def test_stage_cost_block(self):
+        # R3: table under «Result layer», hidden without eff, titles escaped, unknown tokens a dash
+        h = _run("console.log(JSON.stringify([plEvalOutcome(%s), plEvalOutcome(Object.assign({}, %s, { outcome: { proc: { runs: 2 },"
+                 " eff: { '<b>x': { n: 2, sec: 30, tok: null, tn: 0 }, impl: { n: 3, sec: 61, tok: 1500, tn: 3 } } } }))]));" % (EV, EV))
+        self.assertNotIn("pleeff", h[0])
+        self.assertIn("<table class=pleeff>", h[1])
+        self.assertIn("Stage cost (last 30 days)", h[1])
+        self.assertIn("&lt;b>x", h[1])
+        self.assertNotIn("<b>x", h[1])
+        self.assertIn("<td>30s</td><td>\u2014</td><td>2</td>", h[1])
+        self.assertIn("<td>1500</td><td>3</td>", h[1])
+        for k in ("Stage cost (last 30 days)", "Median time", "Median tokens"):
+            self.assertIn("'" + k + "':", _ko(), k)
 
     def test_escapes_report_path(self):
         h = _run("console.log(JSON.stringify(plEvalOutcome({ outcome: { result: { n: 1 } }, rep: { date: '<b>', path: '<i>' } })));")

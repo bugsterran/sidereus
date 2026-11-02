@@ -353,3 +353,10 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: count a later commit only when the ledger attributes it to a `"catch": "person"` run (not the PASS's own run) and it shares a code file with the PASS commit.
 - ★2026-11-01, this repo, 30 days: 12 flagged → 1; all 12 were unrelated features, the 1 is 6580f96d → b7512c44.
 - ⚠Do not bring back the «common file» rule or count doc/test files: the signal fires on every PASS again.
+
+## Run ledger per-stage `ss` and subagent tokens (`pl_flow._stage_summary` · `_stage_tokens`)
+- Cause: a runs.jsonl row had only run totals, so stage cost and time were not comparable across runs; a token count of 0 for a stage the main agent ran read as «free».
+- Fix: row `ss` = `{title: {s: done|skip|back|fail, sec, n, tok}}` (≤ 32 stages, `run` → done, `sec` = `ps` passes + current pass); `tok` = `"usage"` lines of `[pl:<name>/<title>]`-tagged subagents with meta mtime in [t0, end], deduped by (message.id, requestId), same sum as `usage_index._uidx_scan`.
+- ⚠`tok: null` = unknown (main-run stage `m`, no transcript, a file over `TOK_FILE_MAX`, scan over `TOK_BUDGET_S` 0.3 s) — never write 0 for it; skip stages carry no `tok`; rows without `ss` are older rows.
+- ⚠The scan runs inside the live hook at run end: keep it fail-silent and counts-only (no text from the transcript or the meta description).
+- ★2026-11-02, synthetic 8 agents × 2 MB (every line a `"usage"` line, worst case): 82–254 ms added per ledger row (4 runs), inside the 0.3 s budget.
