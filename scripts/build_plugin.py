@@ -2,13 +2,15 @@
 """Build plugin/ (Claude Code plugin) + .claude-plugin/marketplace.json from an explicit allow-list.
 
 Usage: build_plugin.py [--check | --version-check]   (--check: exit 1 if plugin/ or the marketplace file is out of date;
-  --version-check: exit 1 if plugin/ changed in a commit after the last VERSION bump — release audit)
+  --version-check: exit 1 if plugin/ changed since the last release tag v* while VERSION still equals the tag's;
+  also exit 1 when no tag is reachable or the clone is shallow — release audit, CI on tag push)
 ⚠The plugin source is plugin/, never the repo root: the repo root holds live data (bus.jsonl, identity.json ...)
 that would be copied into every user's plugin cache.
 Copies are byte-for-byte; manifests are generated here. Deterministic (no clock), stdlib only, Python 3.9.
 """
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -21,7 +23,8 @@ MCP_NAME = "sidereus"   # tools are mcp__sidereus__* in configs and hooks
 VERSION = "0.5.0"
 AUTHOR = "bugsterran"
 DESC = ("Sidereus for Claude Code: mailbox invites and stop-hook relay, pipeline brief, shared-file edit notice, "
-        "pipeline stage marks and hand-offs, and the read-only Sidereus MCP server. Needs the local Sidereus viewer.")
+        "pipeline stage marks and hand-offs, and the Sidereus MCP server (one write tool: To-do labels). "
+        "Needs the local Sidereus viewer.")
 
 # Hand-written second plugin (plugins/orbit/): listed in the marketplace only, never copied by this build.
 FA_ENTRY = {"name": "orbit", "source": "./plugins/orbit",
@@ -149,24 +152,56 @@ def build():
     return sorted(exp)
 
 
+def _version_of(text):
+    m = re.search(r'^VERSION = "([^"]+)"', text or "", re.M)
+    return m.group(1) if m else None
+
+
 def unbumped():
-    """Commits that changed plugin/ after the last commit that changed VERSION (empty = bump not needed).
-    ⚠Claude Code caches a plugin per version: without a bump, `plugin update` keeps the old hooks."""
+    """(problem, commits): problem = why the check cannot decide (None when it could); commits = plugin/ commits since
+    the last release tag while VERSION still equals the tag's (empty = ok).
+    ⚠Claude Code caches a plugin per version: without a bump, `plugin update` keeps the old hooks.
+    ⚠Unknown is not ok: no reachable tag, a shallow clone or an unreadable VERSION is a problem, never a pass."""
     import subprocess
 
     def git(*a):
-        return subprocess.run(("git", "-C", ROOT) + a, capture_output=True, text=True, check=True).stdout
-    base = git("log", "-1", "--format=%H", "-G", "^VERSION = ", "--", "scripts/build_plugin.py").strip()
-    if not base:
-        return []
-    return git("log", "--oneline", base + "..HEAD", "--", "plugin/").splitlines()
+        r = subprocess.run(("git", "-C", ROOT) + a, capture_output=True, text=True)
+        return r.stdout if r.returncode == 0 else None
+    if (git("rev-parse", "--is-shallow-repository") or "").strip() != "false":
+        return "shallow clone or not a git repo: fetch full history and tags (fetch-depth: 0)", []
+
+    def last_tag(rev):
+        return (git("describe", "--tags", "--abbrev=0", "--match", "v[0-9]*", rev) or "").strip()
+    tag = last_tag("HEAD")
+    # HEAD is the release being cut (CI on tag push): compare with the release before it.
+    if tag and (git("rev-parse", tag + "^{commit}") or "").strip() == (git("rev-parse", "HEAD") or "").strip():
+        tag = last_tag("HEAD^") if git("rev-parse", "-q", "--verify", "HEAD^") is not None else ""
+    if not tag:
+        return "no release tag v* reachable from HEAD (fetch tags)", []
+    old = _version_of(git("show", tag + ":scripts/build_plugin.py"))
+    try:
+        with open(os.path.join(ROOT, "scripts", "build_plugin.py"), encoding="utf-8") as f:
+            cur = _version_of(f.read())
+    except OSError:
+        cur = None
+    if old is None or cur is None:
+        return "VERSION unreadable (%s: %s, current: %s)" % (tag, old, cur), []
+    log = git("log", "--oneline", tag + "..HEAD", "--", "plugin/")
+    if log is None:
+        return "git log %s..HEAD failed" % tag, []
+    if cur != old:
+        return None, []
+    return None, ["%s (VERSION %s == %s)" % (c, cur, tag) for c in log.splitlines()]
 
 
 def main(argv):
     if "--version-check" in argv:
-        bad = unbumped()
+        problem, bad = unbumped()
+        if problem:
+            print("version-check: cannot decide: " + problem)
+            return 1
         for c in bad:
-            print("plugin/ changed since the last VERSION bump: " + c)
+            print("plugin/ changed since the last release tag: " + c)
         print("%d commit(s) need a VERSION bump" % len(bad) if bad else "VERSION ok (%s)" % VERSION)
         return 1 if bad else 0
     if "--check" in argv:

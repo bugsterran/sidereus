@@ -188,7 +188,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 ### Plugin update brings nothing when `version` is unchanged
 Cause: Claude Code caches an installed plugin per `version` in `plugin.json`; `plugin update` with the same version keeps the old copy.
 Fix: bump `VERSION` in `scripts/build_plugin.py` (then rebuild) in every commit that changes `plugin/`.
-Check: `build_plugin.py --version-check` (release audit stage) exits 1 when `plugin/` changed after the last bump. ★2026-11-02: stuck at 0.4.0 for 23 commits (0.7.0..0.12.x).
+Check: `build_plugin.py --version-check` (release audit gate · CI on tag push) exits 1 when `plugin/` changed since the last `v*` tag and VERSION equals the tag's, or when no tag is reachable / the clone is shallow. ★2026-11-02: stuck at 0.4.0 for 23 commits (0.7.0..0.12.x).
 ⚠ ★2026-10-17: version stayed 0.1.0 through three releases; the Windows hook fix did not arrive on a real PC after update.
 
 ### Evidence rows need a lock on Windows too (`scripts/evidence_rec.py` · `hooks/ev_hook.py` `_win_append`)
