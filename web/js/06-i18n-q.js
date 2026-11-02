@@ -6,7 +6,7 @@ Object.assign(I18N.ko, {
   'Returns display settings (sizes, filters, selected tabs and so on) to their initial state. Note drafts and notification permission stay.': '화면 설정(크기·필터·선택한 탭 등)을 처음 상태로 되돌립니다. 메모 초안과 알림 권한은 그대로입니다.',
   'Return display settings (sizes, filters, selected tabs and so on) to their initial state? The current settings are moved to the backup folder.': '화면 설정(크기·필터·선택한 탭 등)을 처음 상태로 되돌립니다. 지금 설정은 백업 폴더로 옮겨 둡니다.',
   'Start view': '시작 화면', 'Last tab viewed': '마지막으로 본 탭',
-  'The tab shown first on reload or a fresh open.': '새로고침하거나 새로 열 때 처음 보이는 탭입니다.',
+  'The tab shown first in a newly opened tab. A refresh keeps the view that tab was on.': '새로 연 탭에서 처음 보이는 화면입니다. 새로고침은 그 탭에서 보던 화면을 유지합니다.',
   'Tab order and visibility': '탭 순서와 숨김',
   'Reorder or hide the view tabs at the top. The timeline cannot be hidden.': '위 보기 탭의 순서를 바꾸거나 숨깁니다. 타임라인은 숨길 수 없습니다.',
   'Up': '위로', 'Down': '아래로', 'Shown|visible': '보임', 'The timeline cannot be hidden': '타임라인은 숨길 수 없습니다',

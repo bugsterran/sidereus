@@ -13,7 +13,8 @@ function ntfPref(){
     return { on: localStorage.getItem('sidereus.osntf') === '1', visible: false };
   }catch(e){ return { on: false, visible: false }; }
 }
-function ntfSave(p){ lsSetJson('sidereus.notify', { on: !!p.on, visible: !!p.visible }); }
+// ⚠localStorage, not UIS: ntfPref reads localStorage (app-head.js keeps the notify keys out of UIS); a UIS write never read back.
+function ntfSave(p){ try{ localStorage.setItem('sidereus.notify', JSON.stringify({ on: !!p.on, visible: !!p.visible })); }catch(e){ softErr('ls', e); } }
 function ntfOn(){ return ntfPref().on && typeof Notification !== 'undefined' && Notification.permission === 'granted'; }
 // Pure step: -> {seen, fire:[{r, k, since}]}. First call (seen null) only seeds; a cleared sid|k drops out of seen so it can fire again.
 // ⚠Review rows are primed on their own (NTF_RVMARK): state().review can arrive after attention, and a missing review keeps its keys.
