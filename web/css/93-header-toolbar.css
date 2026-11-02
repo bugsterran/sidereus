@@ -49,6 +49,11 @@ html[data-ui=next] .tbs > .rooms > .rmmem{flex:0 1 auto;min-width:0;text-overflo
 /* ⚠.rmmem is flex, so its own text-overflow never applies; the last member is the item that shrinks with an ellipsis */
 html[data-ui=next] .tbs > .rooms > .rmmem > :last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
 html[data-ui=next] #tbchat > .tbr{flex-shrink:0}
+/* ⚠With all six filter chips in English the fixed parts alone (chips 736 + search/views 409) exceed 1100: wrap the
+   search/views group to a second line instead of scrolling sideways. The room part enters line breaking at 160px so
+   a long member list never forces the wrap, and it never grows past its own content. */
+html[data-ui=next] #tbchat{flex-wrap:wrap;row-gap:6px}
+html[data-ui=next] #tbchat > .rooms{flex:1 1 160px;max-width:max-content}
 /* «+N» lists (.thpop · placed by popAnchor in 08-ui-kit.js): fixed under the button so the header's layout never moves */
 html[data-ui=next] .thpop{position:fixed;z-index:46;display:flex;flex-direction:column;align-items:stretch;gap:1px;
   max-height:min(420px,70vh);overflow:auto;min-width:220px;max-width:min(420px,calc(100vw - 16px));padding:4px;
