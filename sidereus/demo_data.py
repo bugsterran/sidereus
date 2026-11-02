@@ -605,7 +605,7 @@ class _WorldPanels:
     def agent_work(self, tid, sid=""):
         # ⚠ Look the agent up by its own tid (same shape as work.agent_work); falling back to a session
         #   made every agent popup show the first session's title.
-        x = next((y for y in self.subs if y["tid"] == tid), None)
+        x = next((y for y in self.subs if tid in (y["tid"], y["aid"])), None)
         if not x:
             return {"ok": False, "msg": "Could not find that subagent's record (it may not be written yet)."}
         tool, targ = (x["now"].split(" · ", 1) + [""])[:2] if x["now"] else ("Read", "README.md")
