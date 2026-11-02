@@ -58,9 +58,10 @@ function wpStripHtml(run, title, chT){
     const s = run.stages[t] || { o: 'wait' }, o = !TLPL_ICON[s.o] ? 'wait' : s.o === 'run' && !wpLive(run) ? 'done' : s.o;   // ended: no «run» look (as 74c)
     const fr = Object.keys(s.from || {}), nb = fr.reduce((k, f) => k + (+s.from[f] || 0), 0);
     const ags = wpAgs(s);
-    const tip = t + ' · ' + wpLabel(o) + (plWhy(s) ? ' (' + plWhy(s) + ')' : '') + (nb ? ' · ↺ ' + fr.map(f => f + ' ×' + s.from[f]).join(', ') : '')
+    const tip = plgShow(t) + ' · ' + wpLabel(o) + (plWhy(s) ? ' (' + plWhy(s) + ')' : '') + (nb ? ' · ↺ ' + fr.map(f => f + ' ×' + s.from[f]).join(', ') : '')
       + (ags.length ? ' · ' + T('agents ') + ags.length : '');
-    return { st: o, nm: t, tip, cls: (t === title ? ' me' : '') + (ags.length ? '' : ' na'), extra: nb ? '<em>↺' + nb + '</em>' : '',
+    return { st: o, nm: plgShow(t), tip,   // shown name per LANG (as 74c); data-wpls / me stay on the raw title
+      cls: (t === title ? ' me' : '') + (ags.length ? '' : ' na'), extra: nb ? '<em>↺' + nb + '</em>' : '',
       attr: (ags.length ? ' role=button tabindex=0' : '') + ' data-wpls="' + esc(t) + '"' };
   }), ord.indexOf(cur), 'lg' + (wpLive(run) ? '' : ' fin'));
   // Ended run: same outcome label as the timeline row (tlPlEnd, 74c); a «run» stage left by the end counts as cut.

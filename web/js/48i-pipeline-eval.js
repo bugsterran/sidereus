@@ -229,6 +229,7 @@ document.addEventListener('click', e => {
   if(t.closest('[data-plsgo]')) plEvalFixSend();
 });
 document.addEventListener('scroll', () => { if(popIsOpen('plevp')) plEvalPlace(); }, true);
+window.addEventListener('resize', () => { if(popIsOpen('plevp')) plEvalPlace(); });   // a resize moved the button under the popover
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('[data-pleval]');
   if(!b) return;
