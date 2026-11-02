@@ -39,7 +39,7 @@ Object.assign(I18N.ko, {
   'No stage has a graded gate yet (check.sh --fast|--full, arch_checks.py --verify)': '아직 채점 게이트가 있는 단계가 없습니다 (check.sh --fast|--full, arch_checks.py --verify)',
   'Max loop-backs': '되돌림 한도',
   // Session-list pipeline chip (40b sessPlChip).
-  'Pipeline run': '파이프라인 실행', 'No pipeline': '파이프라인 없음', 'Undeclared': '미선언',
+  'Pipeline run': '파이프라인 실행', 'Subagents of pipeline run': '파이프라인 실행의 서브에이전트', 'No pipeline': '파이프라인 없음', 'Undeclared': '미선언',
   'Declared no pipeline for this work': '이 작업은 파이프라인 없이 하겠다고 선언함',
   'Edited files without declaring a pipeline or [pl-none]': '파이프라인이나 [pl-none] 선언 없이 파일을 수정함',
 });
