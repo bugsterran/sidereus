@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- Settings: «Terminal integration» buttons now save (a session terminal-jump listener swallowed the click); notifications can be turned on; the header health warning switches language at once; a one-digit hour such as 9:05 is accepted for the saver target time; Start view and Language help texts describe what actually happens.
+- Saver: saving with no hook folder returns «Hook folder not found» instead of failing with FileNotFoundError.
+- Diagnostics › Connect: a file holding only the user's own hooks shows as not connected instead of «Partly connected»; after Apply the «Connected…» message stays until Close.
+- Pipelines: clicking the run panel «Mode» select no longer drops Edit mode; the Save diff preview scrolls into view; renaming a stage keeps its key order.
+- Chat, rooms and To-do: the screen updates right after a write (state cache cleared); «Outside rooms» counts the viewer once after a language switch.
+- Features: turning Pipelines off no longer erases the Harness choice.
 - Structure › Architecture: with a flow lit, the toolbar hint no longer shrinks to a sliver at 900–1100 px; it hides, and a narrow bar shows the lit counter as numbers (full sentence in its tooltip).
 
 ## [0.13.0] - 2026-11-02

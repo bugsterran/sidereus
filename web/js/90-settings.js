@@ -13,6 +13,7 @@ function setLang(v){
   try{ attnHtml = ''; buildAttn(); buildTodo(); attnTitle(); }catch(e){ softErr('buildAttn', e); }   // top chips + attention strip
   try{ buildWku(); }catch(e){ softErr('buildWku', e); }
   try{ buildSbar(); }catch(e){ softErr('buildSbar', e); }
+  try{ buildHealth(); }catch(e){ softErr('buildHealth', e); }   // header health warning
   try{ const h = document.querySelector('#sdrwin .sdrwh > b'); if(h) h.textContent = T('Quota details'); }catch(e){}   // built once at load
   try{ if(mainView === 'token') paintToken(); else if(mainView === 'struct') paintStruct(); else if(mainView === 'br') paintBr(); else if(mainView === 'hist') paintHist(); else if(mainView === 'retro') paintRetro(); else if(mainView === 'time') paintTl(); else if(mainView === 'pipe') plPaint(); }catch(e){ softErr('paintTab', e); }   // ⚠tab screens repaint only here (timeline was missing: full() wiped it and the rail/toolbar kept the old language until the next load)
 }
@@ -115,7 +116,7 @@ function cfgPaneDisp(){
   const opt = cfgOpt, set = cfgSet, seg = cfgSeg;
   const tone = tonePref();
   const lsPin = sesdrPinned();
-  return set(T('Display language'), T('Language used for the interface. Untranslated text stays in Korean.') + ' ' + T('Applies immediately, no reload needed.'),
+  return set(T('Display language'), T('Language used for the interface. Untranslated text shows in English.') + ' ' + T('Applies immediately, no reload needed.'),
           seg(T('Display language'), opt('lang','ko',T('Korean'),LANG==='ko') + opt('lang','en','English',LANG==='en')))
     + set(T('Background tone'), T('Color of the page background and panels.') + ' ' + T('System follows the OS: white when light, your last dark tone when dark.'),
           seg(T('Background tone'), [['black','Black'],['grey','Grey'],['blue','Blue'],['white','White'],['system','System']]
@@ -128,7 +129,7 @@ function cfgPaneDisp(){
           seg(T('Token widgets on the right'), opt('wks','1',T('On'),wkSide()) + opt('wks','0',T('Off'),!wkSide())))
     + set(T('Terminal integration'), T('Auto = detected per session') + ' · ' + T('The «Terminal» button brings the session tab to the front; if it cannot, it copies a command.'),
           seg(T('Terminal integration'), [['auto',T('Auto')],['iterm','iTerm2'],['apple','Terminal.app'],['orca','Orca'],['off',T('Off', 'state')]]
-        .map(x => opt('term', x[0], x[1], TERM_APP === x[0])).join('')));
+        .map(x => opt('termapp', x[0], x[1], TERM_APP === x[0])).join('')));   // ⚠not data-term: 88d-term.js's capture listener takes every [data-term] as a session jump
 }
 function cfgPaneAl(){
   const opt = cfgOpt, set = cfgSet, seg = cfgSeg;
@@ -276,7 +277,7 @@ function cfgActs(){
     fs:   v => setFs(v),   // no full() — CSS reflows; cfgBind repaints only the modal
     ls:   v => sesdrPin(v === '1', false),
     wks:  v => { wkSideSet(v === '1'); buildWku(); if(mainView === 'token') paintToken(); },
-    term: v => termSet(v),   // 88d-term.js
+    termapp: v => termSet(v),   // 88d-term.js
     dxr:  () => dxLoad(true),   // «Diagnostics» Refresh (90e-diag.js)
     dxcp: v => dxCopy(v),      // «Security tools» Copy: clipboard only (90e-diag.js)
     uo:   v => { if((v === '1') !== unreadOnly){ const t = document.getElementById('aunread'); if(t) t.click(); } },
@@ -299,7 +300,7 @@ function cfgActs(){
                  if(/^\d+$/.test(n) && +n <= 100) return svSet({goal: +n}); else { SVERR = T('Check the value') + ': ' + T('integer 0-100'); } },
     svp:  v => { SVERR = ''; if(v === 'clear'){ SVPACE = false; return svSet({mode:'auto'}); }
                  const el = document.getElementById('svpt'), t = el ? el.value.trim() : '';
-                 if(/^([01]\d|2[0-3]):[0-5]\d$/.test(t)) return svSet({mode:'pace', until:t}); else { SVERR = T('Check the value') + ': ' + T('HH:MM format'); } },
+                 if(/^([01]?\d|2[0-3]):[0-5]\d$/.test(t)) return svSet({mode:'pace', until:t}); else { SVERR = T('Check the value') + ': ' + T('HH:MM format'); } },   // ⚠same pattern as sidereus/saver.py _SAVER_HHMM (one-digit hour ok)
   });
 }
 // ⚠A repaint can drop the pressed button (save/undo vanish once clean): fall back to the same row's control, then the category tab, never BODY.

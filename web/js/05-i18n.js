@@ -33,7 +33,7 @@ const I18N = { ko: {
   'Labels subagent rows by the one-line task description given to the subagent, with the type as a chip. Off shows the type only.': '서브에이전트 행 이름을 서브에이전트에게 맡긴 한 줄 작업 설명으로 보이고, 유형은 옆 칩으로 둡니다. 끄면 유형만 보입니다.',
   // settings screen
   'Language': '언어', 'Korean': '한국어', 'Display language': '화면 언어',
-  'Language used for the interface. Untranslated text stays in Korean.': '화면 문구에 쓰는 언어입니다. 번역이 없는 문구는 한국어 원문으로 보입니다.',
+  'Language used for the interface. Untranslated text shows in English.': '화면 문구에 쓰는 언어입니다. 번역이 없는 문구는 영어 원문으로 보입니다.',
   'Display settings are saved on the viewer server and shared by every browser; saver mode applies to every session.': '화면 설정은 뷰어 서버에 저장돼 모든 브라우저가 같이 쓰고, 절약 모드는 모든 세션에 적용됩니다.',
   'Applies immediately, no reload needed.': '새로고침 없이 바로 바뀝니다.',
   // settings modal — saver switch (same files as /saver)

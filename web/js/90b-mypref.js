@@ -366,7 +366,7 @@ function cfgPaneMe(){
   }).join('') + '</div>';
   let h = '<div class=cfgpd>' + esc(T('Display items are saved on the viewer server and shared by every browser. Server items are written to config.local.json and apply after a restart.')) + '</div>'
     + H(T('Display'))
-    + set(T('Start view'), T('The tab shown first on reload or a fresh open.'),
+    + set(T('Start view'), T('The tab shown first in a newly opened tab. A refresh keeps the view that tab was on.'),
           sel('mpv', T('Start view'), [['last', T('Last tab viewed')]].concat(MP_TABS.map(k => [k, lab[k]])), mpStart(lsGet('mbStartView', ''))))
     + set(T('Moon mark'), T('The sidebar mark runs through a full lunation every hour, or shows the real phase. Its tooltip always describes the real moon.'),
           sel('mpmoon', T('Moon mark'), [['', T('Hourly cycle')], ['1', T('Real phase')]], moonReal() ? '1' : ''))   // 92e-moon.js
