@@ -320,8 +320,9 @@ function plRunPanel(p, models){
   }).join('');
   const req = String(PLRUN.req || '').trim();
   const why = plGoWhy(cur, req, PLRUN.busy);
+  // ⚠Not data-plmode: 48k's `.plw [data-plmode]` click handler read it as the Watch/Edit toggle and left Edit.
   return '<div class=plrun><div class=brh2><b>' + esc(T('Send a run request')) + '</b> <i>' + esc(T('The session runs it — Sidereus runs nothing')) + '</i></div>'
-    + '<label class=pll><span>' + esc(T('Mode', 'how')) + '</span><select class=plrsel data-plmode' + (cur && cur.cx ? ' disabled title="' + esc(T('Workflow mode is not available for this session')) + '"' : '') + '>'
+    + '<label class=pll><span>' + esc(T('Mode', 'how')) + '</span><select class=plrsel data-plrmode' + (cur && cur.cx ? ' disabled title="' + esc(T('Workflow mode is not available for this session')) + '"' : '') + '>'
     + '<option value=direct' + (PLRUN.mode === 'wf' && !(cur && cur.cx) ? '' : ' selected') + '>' + esc(T('Session runs it directly (default)')) + '</option>'
     + '<option value=wf' + (PLRUN.mode === 'wf' && !(cur && cur.cx) ? ' selected' : '') + '>Workflow</option></select></label>'
     + '<div class=plfd>' + esc(T('Direct reuses the same agent on loop-backs and retries (fewer tokens) · Workflow starts a new agent per stage')) + '</div>'
@@ -540,7 +541,7 @@ document.addEventListener('change', e => {
   const s = e.target;
   if(!PLRUN || !s || !s.closest || !s.closest('.plw')) return;
   if(s.dataset.plrs != null){ PLRUN.sid = s.value; plPaint(); }
-  else if(s.dataset.plmode != null){ PLRUN.mode = s.value === 'wf' ? 'wf' : 'direct'; lsSet('sidereus.plmode.' + PLRUN.name, PLRUN.mode); plPaint(); }
+  else if(s.dataset.plrmode != null){ PLRUN.mode = s.value === 'wf' ? 'wf' : 'direct'; lsSet('sidereus.plmode.' + PLRUN.name, PLRUN.mode); plPaint(); }
   else if(s.dataset.plrm != null){ PLRUN.models[s.dataset.plrm] = s.value; plPaint(); }
 });
 // Typing updates state + preview in place (a repaint would drop the caret).

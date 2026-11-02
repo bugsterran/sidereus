@@ -426,6 +426,8 @@ async function plSave(write){
   else if(!write) PLS.diff = { name: p.name, text: r.diff || '' };
   else { PLS.diff = null; PLS.msg = T('Saved · backup') + ' ' + (r.backup || ''); await plLoad(PLS.proj, true); if(typeof plModeSet === 'function') plModeSet('watch', true); }   // a confirmed save ends the edit
   plPaint(); plRefocus('[data-plok]:not([disabled])', '[data-plsave]:not([disabled])', '[data-ppk="plsel"]');   // awaited load: a later repaint would drop focus again
+  const dv = !write && PLS.diff && document.querySelector('.plw .pldiff');   // refocus uses preventScroll: the preview + Confirm sat below the fold
+  if(dv && dv.scrollIntoView) dv.scrollIntoView({ block: 'nearest' });
 }
 async function plDelete(write){
   const p = plCur();
