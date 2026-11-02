@@ -242,7 +242,7 @@ class PlNow(unittest.TestCase):
         self.assertIn('data-pnfold aria-expanded="true"', a)
         self.assertIn('data-spk=plmd', a)
         self.assertIn("<div class=plmdr>BODY</div></div>", a)
-        self.assertTrue(b.startswith('<div class="plmd plnc" style="grid-template-columns:min(200px,60%) 1fr"><aside class="plnl plnlc">'))
+        self.assertTrue(b.startswith('<div class="plmd plmdf" style="grid-template-columns:min(200px,60%) 1fr"><aside class="plnl plnlc">'))
         self.assertIn('aria-expanded="false"', b)
         self.assertNotIn("data-pncwd", b)
 

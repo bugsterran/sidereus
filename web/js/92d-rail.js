@@ -18,7 +18,10 @@ function railApply(){
     const l = T(railOpen ? 'Collapse sidebar' : 'Expand sidebar');
     tg.setAttribute('aria-expanded', String(railOpen)); tg.title = l + ' (⌘B / Ctrl+B)'; tg.setAttribute('aria-label', l);
   }
+  // ⚠Push mode changes the status bar width without a window resize, so the bar refits here (next frame, after layout).
+  if(typeof buildSbar === 'function'){ cancelAnimationFrame(railSbRaf); railSbRaf = requestAnimationFrame(() => { railSbRaf = 0; buildSbar(); }); }
 }
+let railSbRaf = 0;
 // ⚠A peek (opened by the Attention badge) never writes `sidereus.rail`; only railSet (toggle, Cmd/Ctrl+B) changes the saved pref.
 let railPeek = false;
 function railShow(open){ railOpen = !!open; railTip(null); railApply(); }

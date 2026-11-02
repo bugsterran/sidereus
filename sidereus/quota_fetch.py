@@ -5,7 +5,7 @@ import time
 from sidereus.config import IS_MAC
 from sidereus.warn import exc_name, warn_once
 from sidereus.transcript import _iso_ts
-from sidereus.quota import QUOTA_URL, _cc_account, _oauth_token, _quota, _quota_lock, _quota_lookup_on, _quota_retry_after
+from sidereus.quota import QUOTA_URL, _cc_account, _oauth_miss, _oauth_token, _quota, _quota_lock, _quota_lookup_on, _quota_retry_after
 
 
 QF_ERR_KEYS = ("Quota lookup is turned off in settings (quota_lookup)",
@@ -156,7 +156,8 @@ def _quota_fetch():
         return False
     tok = _oauth_token()
     if not tok:
-        _qf_err(QF_ERR_KEYS[1] if IS_MAC else QF_ERR_KEYS[2])     # off macOS: no .credentials.json (not signed in)
+        # off macOS: no .credentials.json; macOS: keychain item missing (rc 44) = not signed in, else access denied
+        _qf_err(QF_ERR_KEYS[2] if (not IS_MAC or _oauth_miss.get("no_login")) else QF_ERR_KEYS[1])
         return False
     ok, body = _qf_request(tok)
     if not ok:

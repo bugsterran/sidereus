@@ -222,7 +222,8 @@ function rtCache(r){
   const h = '<div class=brh2 title="'+esc(T('Cache tokens written (created) as a share of cache tokens written + read — a high share means the prompt cache kept being rebuilt'))+'">'
     + esc(T('Cache rewrites'))+' <i>'+esc(T('Last {n} days').replace('{n}', r.days))+' · '+esc(T('creation share of cache tokens'))+'</i></div>';
   if(!dl.length && !ss.length) return h + '<div class=hidnote>'+esc(T('No cache split stored yet — it appears once OTel API requests arrive'))+'</div>';
-  const col = thc('#e8913a', '#b8641a'), H = 64, mx = Math.max(1, ...dl.map(x => x.pct || 0)), every = dl.length > 10 ? 5 : 1;
+  // Bar fill and share text differ in light theme: the bar colour is 3.9:1 as text on the light card (AA needs 4.5:1).
+  const col = thc('#e8913a', '#b8641a'), tcol = thc('#e8913a', '#9a4f0f'), H = 64, mx = Math.max(1, ...dl.map(x => x.pct || 0)), every = dl.length > 10 ? 5 : 1;
   const bars = dl.length ? '<div class=rtb>' + dl.map((x, i) => {
     const tip = x.d + ' · ' + T('Created', 'cache') + ' ' + fmtTok(x.create || 0) + ' · ' + T('Read', 'cache') + ' ' + fmtTok(x.read || 0);
     const lab = (i % every === 0 || i === dl.length - 1) ? esc(String(x.d).slice(5).replace('-', '/')) : '';
@@ -233,7 +234,7 @@ function rtCache(r){
     + esc(T('Read', 'cache'))+'</th><th class=brv>'+esc(T('Share', 'cache'))+'</th></tr></thead><tbody>'
     + ss.map(x => '<tr><td class=brd title="'+esc((x.path || '')+' · '+T('session id')+' '+(x.sid || ''))+'">'+esc(x.project || x.path || '?')
       + ' <s>'+esc(String(x.sid || '').slice(0, 8))+'</s></td><td class=brv>'+esc(fmtTok(x.create || 0))+'</td><td class=brv>'+esc(fmtTok(x.read || 0))+'</td>'
-      + '<td class=brv style="color:'+col+'">'+esc(fmtPct(x.pct || 0))+'</td></tr>').join('')
+      + '<td class=brv style="color:'+tcol+'">'+esc(fmtPct(x.pct || 0))+'</td></tr>').join('')
     + '</tbody></table>' : '';
   return h + bars + tb;
 }

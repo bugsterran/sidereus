@@ -598,7 +598,7 @@
    "Platform Tokens Cost Breakdown Sessions",
    "Claude #t $# this PC · incl. subagents · Counts toward the #t/#t limits #",
    "Gemini #t ≈ $# Input #K · Cache #K · Output #K · Thinking #K #",
-   "Codex #t ≈ $# Input #K · Cache #t · Output #K · Thinking # · #t #% · resets # · #t #% · resets # # · plan plus #",
+   "Codex #t ≈ $# Input #K · Cache #t · Output #K · Thinking # · #t #% · resets # # · #t #% · resets # # · plan plus #",
    "GitHub Copilot #K — Input #K · Cache #K · Output #K · Thinking # · Quota # / # · #% left · resets # # · seen #t ago #",
    "Period totals",
    "D",
