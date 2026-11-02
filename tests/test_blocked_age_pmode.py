@@ -48,6 +48,18 @@ class PmodeOutOfWindowTest(unittest.TestCase):
         self.assertGreater(os.path.getsize(fp), 500_000)
         self.assertEqual(parse._parse_transcript(fp)["pmode"], "auto")
 
+    def test_mode_past_600_rows_but_inside_400kb_is_found(self):
+        fp = os.path.join(self.tmp, "r.jsonl")
+        ts = "2026-11-02T00:00:00.000Z"
+        with open(fp, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"type": "user", "permissionMode": "auto", "timestamp": ts,
+                                "message": {"role": "user", "content": "go"}}) + "\n")
+            for i in range(700):             # short rows: 700 lines stay well under 400 KB, prompt is row 701 from the end
+                f.write(json.dumps({"type": "user", "timestamp": ts, "message": {"role": "user",
+                                    "content": [{"type": "tool_result", "tool_use_id": "t%d" % i, "content": "ok"}]}}) + "\n")
+        self.assertLess(os.path.getsize(fp), 400_000)
+        self.assertEqual(parse._parse_transcript(fp)["pmode"], "auto")
+
     def test_quoted_mode_inside_a_string_is_ignored(self):
         fp = os.path.join(self.tmp, "q.jsonl")
         with open(fp, "w", encoding="utf-8") as f:
