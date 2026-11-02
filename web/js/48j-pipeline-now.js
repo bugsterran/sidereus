@@ -25,11 +25,12 @@ function plNowRun(x, k){
 // Live x.sub rows only; running first, quiet ones (no log write for PLNOW_QUIET s) dimmed; at most PLNOW_AGMAX, then «+N more».
 // ⚠Metadata only: the Agent description label (rule 1); a [pl:name/stage] tag makes the row select that stage on the canvas.
 const PLNOW_AGMAX = 6, PLNOW_QUIET = 120;
-function plNowAgents(x, only, cls){
+// gtip: hover text of the group; the run bar (plnagrn border) carries no label of its own, so it says which run it marks.
+function plNowAgents(x, only, cls, gtip){
   const subs = (x.sub || []).filter(a => a && a.lab && (!only || only(a))), hot = a => a.busy || !(a.idle > PLNOW_QUIET);   // busy: pending tool call, log silent but working
   const ord = subs.filter(hot).concat(subs.filter(a => !hot(a))), shown = ord.slice(0, PLNOW_AGMAX), more = ord.length - shown.length;
   if(!shown.length) return '';
-  return '<div class=' + (cls ? '"plnag ' + cls + '"' : 'plnag') + '>' + shown.map((a, i) => {
+  return '<div class=' + (cls ? '"plnag ' + cls + '"' : 'plnag') + (gtip ? ' title="' + esc(gtip) + '"' : '') + '>' + shown.map((a, i) => {
     const p = plLabParts(a.lab), d = plDescStage(a.lab), h = hot(a), tip = plLabTip(a.lab) + ' · ' + T(h ? 'Running' : 'Idle');   // state in words, not only the dot/dimming
     const g = { sess: false, type: p.type || T('Agent'), plat: a.plat || x.plat || '', br: i === shown.length - 1 && !more ? '└' : '├', items: [{ aid: a.aid || a.tid || 'a', desc: p.desc }] };
     return '<button type=button class="plnagr tlnm' + (h ? '' : ' quiet') + '" data-pnagc="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" data-pntid="' + esc(subWorkId(a)) + '"'
@@ -43,7 +44,7 @@ function plNowAgentRows(x){
   const names = [...new Set((x.plrun || []).filter(q => q && q.name && !q.end).map(q => q.name))];
   if(!names.length) return plNowAgents(x);
   const runOf = a => { const d = plDescStage(a.lab); return d && names.includes(d.name) ? d.name : ''; };
-  return names.map(n => plNowAgents(x, a => runOf(a) === n, 'plnagrn')).join('') + plNowAgents(x, a => !runOf(a));
+  return names.map(n => plNowAgents(x, a => runOf(a) === n, 'plnagrn', T('Subagents of pipeline run') + ': ' + n)).join('') + plNowAgents(x, a => !runOf(a));
 }
 // Status: need = blocked on the person · work = a turn is running, or (turn ended, 'wait') its open run / a live subagent / an open bg task still works · idle = else.
 // ⚠One predicate for the row, the rail dot and the canvas (plPrLive): state alone read «Idle» while tagged background work ran.
