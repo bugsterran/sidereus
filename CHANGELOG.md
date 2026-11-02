@@ -16,6 +16,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sessions: after `/clear`, the previous session id of the same process no longer shows as a second live row.
 - Terminal: a Claude Code background job jumps to the terminal tab of the claude that started it. When that tab is gone, the button says "Background" and copies `claude attach <id>` instead of `claude --resume`, which would open a second session.
 - Sessions: a Claude Code installed with npm (process `claude.exe`) is detected as live; its background daemon, pty host and spare process no longer add rows.
+- Settings: a "Per account" save no longer adds `autoCompactEnabled` to an account file that did not have it when only the window changed; the confirm dialog no longer lists accounts already at the new value.
+- Pipelines: loop-back labels and the editor's edge and loop panels show stage titles in the UI language.
+- Tour: on a first run with no project picked, the pipeline step says to pick a project first instead of pointing at a missing «Edit» button.
+- Structure: a long flow name cut off with "…" shows its full name on hover.
+- Demo: the room invite and room create previews no longer fail with "unknown error".
 - Sessions: the pipeline chip on a session row shows the stage title in the UI language ("Live verify" in English), like the pipeline view.
 - Pipelines: the stage titles of the bundled pipelines (Diagnose, Confirm, Review-find, Tag, ...) have English names; the English UI no longer shows them in Korean.
 - Attention: a "Needs your response" row lines up with the "For your information" rows; its red bar no longer stacks with the account colour bar on multi-account screens.

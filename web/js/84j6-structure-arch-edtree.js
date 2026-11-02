@@ -34,7 +34,7 @@ function archEdTreeHtml(d, names, p, o){
   const fl = tr.flows.map(f => { const on = open(f.n), pin = op === p + '\tf' + f.n;
     const lbl = T('({n} modules · {m} steps)').replace('{n}', f.mods).replace('{m}', f.steps.length);
     return '<li class="arche archtn' + (pin ? ' on' : '') + '" role=treeitem><button type=button class="archeb archtnb" data-aet="' + f.n + '" aria-expanded=' + (on ? 'true' : 'false') + '>'
-      + car(f.n, on) + '<b>' + esc(f.name) + '</b><small>' + esc(lbl) + '</small></button>'
+      + car(f.n, on) + '<b title="' + esc(f.name) + '">' + esc(f.name) + '</b><small>' + esc(lbl) + '</small></button>'
       + (on ? '<ul class=archetl role=group>' + f.steps.map(s => { const sk = f.n + '.' + s.k, sp = op === p + '\tf' + sk;
         return '<li class="arche' + (sp ? ' on' : '') + (s.s.ok === false ? ' bad' : '') + '" role=treeitem><button type=button class=archeb data-ats="' + sk + '" aria-expanded=' + (sp ? 'true' : 'false') + '>'
           + '<span class=archen><em class=archsk>' + (s.k + 1) + '</em><b>' + esc(nm(s.from)) + '</b><i>→</i><b>' + esc(nm(s.to)) + '</b>'

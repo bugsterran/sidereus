@@ -239,7 +239,8 @@ async function mpAcctApplyRun(){
       if(!c[0]){ MPERR['cc_acct' + i] = mpBad(c[1]); bad = true; return; }
       w = c[1];
     }
-    accts.push({path: x.path, auto: d.auto, window: w});
+    // ⚠auto only when it differs: the server appends autoCompactEnabled to a file that lacked it otherwise.
+    accts.push({path: x.path, auto: d.auto !== x.auto ? d.auto : null, window: w});
   });
   if(bad){ paintCfg(); return; }
   const post = async dry => { try{ return await postJSON('/api/prefs/set', {key: 'cc_accounts', dry: dry, accts: accts}); }
@@ -305,8 +306,9 @@ async function mpCcSetRun(key, val){
   const lab = T(key === 'cc_auto_compact' ? 'Auto-compact' : 'Compact threshold (tokens)') + ' (' + MP_CC[key] + ')';
   // One «path / old → new» block per account file, primary first; files the server will skip say why.
   const accts = Array.isArray(MPSRV.cc_accts) ? MPSRV.cc_accts : [];
-  const blocks = accts.map(x => (x.path || '') + '\n' + (x.err ? T('skipped') + ': ' + x.err
-    : show(key === 'cc_auto_compact' ? x.auto : x.window) + '\n→ ' + show(val)));
+  const cur = x => key === 'cc_auto_compact' ? x.auto : x.window;
+  const blocks = accts.filter(x => x.err || cur(x) !== val).map(x => (x.path || '') + '\n' + (x.err ? T('skipped') + ': ' + x.err
+    : show(cur(x)) + '\n→ ' + show(val)));   // accounts already at the new value are left out
   const msg = !accts.length ? (MPSRV.cc_path || it.path || '') + '\n' + lab + '\n' + show(it.value) + '\n→ ' + show(val)
     : lab + '\n\n' + [(MPSRV.cc_path || it.path || '') + '\n' + show(it.value) + '\n→ ' + show(val)].concat(blocks).join('\n\n');
   if(!confirm(T('Change this Claude Code setting? It applies from new sessions.') + '\n\n' + msg)){

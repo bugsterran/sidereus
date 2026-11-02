@@ -35,7 +35,7 @@ class VersionCheck(unittest.TestCase):
         subprocess.run(("git", "-C", self.root) + a, check=True, env=env, capture_output=True)
 
     def _commit(self, rel, text, msg):
-        with open(os.path.join(self.root, rel), "w") as f:
+        with open(os.path.join(self.root, rel), "w", encoding="utf-8") as f:
             f.write(text)
         self._git("add", rel)
         self._git("commit", "-q", "-m", msg)

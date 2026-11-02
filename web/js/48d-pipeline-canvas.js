@@ -113,7 +113,7 @@ function plEdgesSvg(E){
     if(!a || !b || !lanes[i]) return;
     const g = plgLoopPath(a, b, lanes[i], plgW(G, l.from), plgW(G, l.to), plgH(G, l.from), plgH(G, l.to)), on = sel.k === 'l' && sel.i === i ? ' on' : '';
     const fn = +((st(l.to).from || {})[(plgNode(G, l.from) || {}).title]) || 0;   // times this edge fired (plrun `from`, 48b)
-    const txt = '↩ ' + T('fails') + ' ' + T('max ') + l.max + (l.then ? ' → ' + l.then : '') + (fn ? ' · ↺ ' + fn : ''), w = Math.round(txt.length * 7.2 + 16);
+    const txt = '↩ ' + T('fails') + ' ' + T('max ') + l.max + (l.then ? ' → ' + plgShow(l.then) : '') + (fn ? ' · ↺ ' + fn : ''), w = Math.round(txt.length * 7.2 + 16);
     const pulse = plPulseOn(lt, (plgNode(G, l.from) || {}).title, (plgNode(G, l.to) || {}).title) ? ' pulse' : '';   // 43 .plel.pulse
     h += '<path class=plhit' + plHitA(G, l.from, l.to) + ' data-pledge="l:' + i + '" d="' + g.d + '"/><path class="plel' + on + pulse + '" d="' + g.d + '"/>';
     const lx = Math.max(g.lx, w / 2 + 4);   // ⚠gutter lanes centre near x≈80: a wide pill ran past x=0 and the canvas clipped it
@@ -257,15 +257,15 @@ function plPanel(E, d){
   } else if(s && s.k === 'l' && G.loops[s.i]){
     const l = G.loops[s.i], a = plgNode(G, l.from), b = plgNode(G, l.to), o = plgOrder(G).order;
     const later = o.slice(o.indexOf(l.from) + 1).map(id => plgNode(G, id).title);
-    h = '<div class=plph><b>' + esc(a.title + ' ↩ ' + b.title) + '</b><button class=wkrgb data-pldel>' + esc(T('Delete')) + '</button></div>'
+    h = '<div class=plph><b>' + esc(plgShow(a.title) + ' ↩ ' + plgShow(b.title)) + '</b><button class=wkrgb data-pldel>' + esc(T('Delete')) + '</button></div>'
       + '<div class=plfd>' + esc(T('On failure it goes back to the earlier stage, fixes, and comes back')) + '</div>'
       + plRow(T('Max loops'), '<select data-plf=max>' + [1, 2, 3, 4, 5].map(k => plOpt(k, k, l.max)).join('') + '</select>')
-      + plRow(T('After it passes'), '<select data-plf=then>' + plOpt('', T('next stage'), l.then || '') + later.map(t => plOpt(t, t, l.then || '')).join('') + '</select>')
+      + plRow(T('After it passes'), '<select data-plf=then>' + plOpt('', T('next stage'), l.then || '') + later.map(t => plOpt(t, plgShow(t), l.then || '')).join('') + '</select>')
       + plRow(T('If it fails for another reason'), '<select data-plf=stopOn>' + plOpt('', T('stop'), l.stopOn && !l.stopOn.length ? 'none' : '')
         + plOpt('none', T('never stop'), l.stopOn && !l.stopOn.length ? 'none' : '') + '</select>');
   } else if(s && s.k === 'f' && G.flow[s.i]){
     const e = G.flow[s.i];
-    h = '<div class=plph><b>' + esc(plgNode(G, e[0]).title + ' → ' + plgNode(G, e[1]).title) + '</b><button class=wkrgb data-pldel>' + esc(T('Delete')) + '</button></div>';
+    h = '<div class=plph><b>' + esc(plgShow(plgNode(G, e[0]).title) + ' → ' + plgShow(plgNode(G, e[1]).title)) + '</b><button class=wkrgb data-pldel>' + esc(T('Delete')) + '</button></div>';
   } else {
     h = '<div class=plph><b>' + esc(T('default')) + '</b></div>'
       + plRow(T('Default model'), '<select data-pld=model>' + models.map(m => plOpt(m, m, G.defaults.model)).join('') + '</select>')

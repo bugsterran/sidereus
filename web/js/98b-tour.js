@@ -77,6 +77,8 @@ function tourBody(p, dir){
         [T('Sent back'), 'A failed gate sends the work back to an earlier stage']].map(x => '<dt>' + esc(x[0]) + '</dt><dd>' + esc(T(x[1])) + '</dd>').join('') + '</dl>'};
   if(p.id === 'pl-live') return {t: 'Working now', h: (p.mode === 'spot' ? '' : tourStepper())
     + P('«Working now» on the left lists the sessions at work right now, each with its run and stage — click one to open its pipeline run')};
+  // ⚠No project picked (first run): «Edit» is missing, so the text points at the project picker instead.
+  if(p.id === 'pl-start' && p.mode !== 'spot') return {t: 'Your first pipeline', h: P('Pick or open a project in the Pipelines head row first — then «Edit» › «+ New ▾» starts your first pipeline')};
   if(p.id === 'pl-start') return {t: 'Your first pipeline', h: P('Press «Edit», then open «+ New ▾» and start with «Start from a template» › «Review only» (2 stages) · if writing one is hard, pick «Ask AI for a draft» there')};
   if(p.id === 'arch') return {t: 'Structure › Architecture', h: P('Architecture — a module diagram drawn by an agent; only edges that pass the evidence check remain')};
   return {t: 'You are set', cmds: tourPluginLines(dir),

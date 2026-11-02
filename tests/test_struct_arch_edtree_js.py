@@ -68,7 +68,7 @@ class ArchEdTree(unittest.TestCase):
         self.assertEqual(r[4], [0, 1])
         self.assertIn("같은 쌍 +1", r[3])
         self.assertEqual(r[2], 3)                        # no passed edge: first one with the pair
-        self.assertIn("<b>A &lt;b&gt;</b>", r[3])        # flow name escaped, not translated
+        self.assertIn('<b title="A &lt;b&gt;">A &lt;b&gt;</b>', r[3])   # flow name escaped, not translated; full name on hover
 
     def test_R2_hover_flow_step_and_leave(self):
         r = run("ARCH.scope = {p: '/r', layer: 'x', group: null}; const P = () => { archLitPaint(svg, archLitSet(ARCH.cache['/r'], archLitQ('/r'))); return lit(svg); };"

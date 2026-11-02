@@ -115,6 +115,21 @@ class DemoTest(unittest.TestCase):
             self.assertIn("--platform " + plat, out["diff"])
         self.assertEqual(post({"plat": "cursor", "dry": False, "base": ""}), (200, {"ok": True, "demo": True}))
 
+    def test_room_invite_dry_has_string_body(self):
+        class H:
+            _GET_ROUTES = {}
+            _POST_ROUTES = {"/api/room/invite": "real", "/api/rooms/create": "real"}
+        self.demo.install(H, "b")
+        for path in ("/api/room/invite", "/api/rooms/create"):
+            sent = []
+            me = type("M", (), {"_body_json": lambda s, *a: {"room": "dev", "ids": ["alice"], "dry": True},
+                                "_raw_json": lambda s, c, o: sent.append((c, o))})()
+            H._POST_ROUTES[path](me, type("U", (), {"path": path})())
+            code, out = sent[0]
+            self.assertEqual((code, out["ok"], out["added"]), (200, True, ["alice"]))
+            self.assertIsInstance(out["body"], str)
+            self.assertIn("'dev'", out["body"])
+
     def test_prefs_has_real_shape(self):
         # 90b-mypref.js treats a reply without `keys` as a read failure (red error in Preferences).
         out = self.get("/api/prefs")
