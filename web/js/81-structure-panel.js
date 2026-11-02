@@ -500,7 +500,9 @@ function strWire(){
   if(sv) sv.onclick = () => strPopOpenTree(strOn[0] || (STR && STR.path) || '');
   strBrWire();
   const rf = document.getElementById('strrf');
-  if(rf) rf.onclick = () => { strStop(); strOn.forEach(p => { delete strCache[strCk(p)]; });
+  // Architecture mode reloads /api/arch like the panel ↻ (data-arf); /api/structure is the Size view's data.
+  if(rf) rf.onclick = () => { if(strMode === 'arch'){ ARCH.msg = ''; archFetch(strOn[0] || '', true); return; }
+                              strStop(); strOn.forEach(p => { delete strCache[strCk(p)]; });
                               STR = null; strErr = '';
                               paintStruct(); loadStruct(true); };
   // "Include tests" — the cache key changes, so each toggle **calls the server again** (cache if already fetched)

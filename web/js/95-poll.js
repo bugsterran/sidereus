@@ -57,7 +57,8 @@ async function poll(first){
     // ⚠A remembered brRepo skips loadBr, but the repo chips were painted before state arrived — repaint them.
     if(!STATE_IN){ STATE_IN = true; try{ tourMaybe(s.codeDir); }catch(e){ softErr('tourMaybe', e); }   // first-visit tour (98b)
       if(mainView === 'br') try{ if(!brRepo) loadBr(false); else paintBr(); }catch(e){ softErr('pollBr', e); } }
-    if(mainView === 'struct' && !ISPOP && !ISWP) try{ if(strSessKey() !== strSessSig){ paintStruct(); if(strMode === 'size' || !strOn.length) loadStruct(false); } else strBrSync(); }catch(e){ softErr('pollStruct', e); }
+    // hidden: strBrSync fetches /api/branches; the visibilitychange poll catches up once
+    if(mainView === 'struct' && !ISPOP && !ISWP && !document.hidden) try{ if(strSessKey() !== strSessSig){ paintStruct(); if(strMode === 'size' || !strOn.length) loadStruct(false); } else strBrSync(); }catch(e){ softErr('pollStruct', e); }
     featsApply(s.features);         // feature-off tabs hide on the buildMv below (92-mainview-tabs.js TAB_FEAT)
     if(!ISPOP && !ISWP) try{ plPoll(); }catch(e){ softErr('pollPipe', e); }   // «Pipelines» live lighting (48b-pipeline-run.js)
     if(s.build && MY_BUILD && s.build!==MY_BUILD) document.getElementById('stale').classList.add('on');

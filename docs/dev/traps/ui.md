@@ -171,7 +171,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠**Header KPI strip removed** (`#kn`, former 56/56b). 5h/7d quota shows only in the status bar `#sbar`.
   - ⇒ `screen_check.mjs` / `readme_cdp.mjs` wait for first render on `#sbar` text; `screen_check` fails if `#kn` or `.kni` comes back.
   - ⚠`knQ` (55a), `sesCount` (41), `knUnc` (57) keep their `kn` names on purpose — tests and callers find them by name.
-  - Server `fail1h` and `extUsage[].rate10` stay in `state()` with no page reader (no API change).
+  - Server `extUsage[].rate10` stays in `state()` with no page reader; `fail1h` and `bgskip` were dropped from `state()` (no reader).
 - **Tab content heads do not repeat the header title** (`#vtitle`). Timeline · Tokens · Tools · Insights · Pipelines · Structure · Branches heads keep only the caption (age, status, «Tool list»).
   - ⇒ caption-only `.wvh.wvht` keeps the titled row height via `.wvh.wvht:not(:has(>b))` (40-tokens.css); retro emits no `.tlhd` until it has an age.
   - ⚠Do not add the tab name back as a `<b>`; a head whose title narrows the scope («Subagent timeline», «Harness», «Board») stays. `test_tab_head_dedupe_a_js`.

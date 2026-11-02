@@ -29,7 +29,6 @@ _READERS = {
     "_saver_state": lambda pct, left=None: {"on": False},
     "_saver_view": lambda: None,
     "_saver_switch": lambda: {},
-    "fail1h": lambda: {"n": 0},
     "ext_usage_today": lambda: {"codex": 1},
 }
 
@@ -54,10 +53,12 @@ class StateGuard(unittest.TestCase):
         s = st.state()
         self.assertEqual(s["wtOrder"], {"/r": ["a"]})
         self.assertEqual(s["extUsage"], {"codex": 1})
+        self.assertNotIn("fail1h", s)   # dropped: no page reader
+        self.assertNotIn("bgskip", s)
         self.assertEqual(self.warns, [])
 
     def test_raising_pieces_yield_defaults(self):
-        for k in ("attention", "wt_orders", "quota_who", "ext_usage_today", "fail1h",
+        for k in ("attention", "wt_orders", "quota_who", "ext_usage_today",
                   "_saver_state", "_saver_view", "_saver_switch", "usage", "health", "quota", "selfcheck"):
             setattr(st, k, _boom)
         s = st.state()
@@ -66,7 +67,6 @@ class StateGuard(unittest.TestCase):
         self.assertEqual(s["wtOrder"], {})
         self.assertIsNone(s["quotaWho"])
         self.assertEqual(s["extUsage"], {})
-        self.assertIsNone(s["fail1h"])
         self.assertIsNone(s["saver"])
         self.assertIsNone(s["quota"])
         self.assertIsNone(s["health"])

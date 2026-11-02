@@ -53,15 +53,16 @@ function hnRuntime(d){
   if(!rt || typeof rt !== 'object') return '';
   const items = (Array.isArray(rt.items) ? rt.items : []).filter(x => x && typeof x === 'object');
   const when = hnWhen(rt.at), stale = !!rt.stale, n = hnN(rt.age_d);
-  const src = [when ? TV({msg: 'checked {d}', vars: {d: when}}) : '', rt.report ? TV({msg: 'from {r}', vars: {r: String(rt.report)}}) : ''].filter(Boolean).join(' · ');
+  const chk = when ? TV({msg: 'checked {d}', vars: {d: when}}) : '', from = rt.report ? TV({msg: 'from {r}', vars: {r: String(rt.report)}}) : '';
+  const src = [chk, from].filter(Boolean).join(' · ');
   // A fresh all-clear stays one quiet line.
   if(rt.state === 'ok' && !stale && !rt.offline && items.every(x => x.level === 'ok'))
     return '<div class="hnrtq hnrtl-ok"><b>' + esc(T('Runtimes on latest patch')) + '</b>' + (src ? ' <i class=hntm>' + esc(src) + '</i>' : '') + '</div>';
   let body = '';
   if(rt.state === 'none') body = '<div class=hidnote>' + esc(T('No check on record')) + (rt.cmd ? ' — ' + esc(T('run:')) + ' ' + hnRtCmd(rt.cmd) : '') + '</div>';
   else {
-    if(stale) body += '<div class="hidnote hnrts">' + esc(TV({msg: hnPl(n, 'checked {n} day ago — rerun to know it is current', 'checked {n} days ago — rerun to know it is current'), vars: {n: n}}))
-      + (rt.cmd ? ' ' + hnRtCmd(rt.cmd) : '') + '</div>';
+    // Stale age is told once, in the summary; the body keeps only the rerun command.
+    if(stale && rt.cmd) body += '<div class="hidnote hnrts">' + esc(T('run:')) + ' ' + hnRtCmd(rt.cmd) + '</div>';
     if(rt.offline) body += '<div class=hidnote>' + esc(T('Checked offline — latest versions unknown, not a clean result')) + '</div>';
     if(!items.length) body += '<div class=hidnote>' + esc(T('Latest versions could not be read — not a clean result')) + '</div>';
     body += items.map(x => hnRtItem(x, stale)).join('');
@@ -74,8 +75,9 @@ function hnRuntime(d){
   const cnt = rt.state === 'none' ? 0 : items.filter(x => info ? x.level === 'info' : x.level !== 'ok' && x.level !== 'info').length;
   const sum = ['<b class="hnrtb' + hnRtCls(HN_RTL, wl) + '">' + esc(T(wk)) + '</b>',
     cnt ? esc(TV({msg: hnPl(cnt, '{n} runtime', '{n} runtimes'), vars: {n: cnt}})) : '',
-    stale ? esc(TV({msg: hnPl(n, 'checked {n} day ago — rerun to know it is current', 'checked {n} days ago — rerun to know it is current'), vars: {n: n}})) : '',
-    src ? '<i>' + esc(src) + '</i>' : ''].filter(Boolean).join(' · ');
+    // One time display: stale shows the relative age with the absolute time as a tooltip.
+    stale ? '<span' + (chk ? ' title="' + esc(chk) + '"' : '') + '>' + esc(TV({msg: hnPl(n, 'checked {n} day ago — rerun to know it is current', 'checked {n} days ago — rerun to know it is current'), vars: {n: n}})) + '</span>' : '',
+    (stale ? from : src) ? '<i>' + esc(stale ? from : src) + '</i>' : ''].filter(Boolean).join(' · ');
   const open = typeof HN !== 'undefined' && HN.fold && HN.fold.rt ? ' open' : '';
   return '<details class="hnmore hnrtw" data-hnmore=rt' + open + '><summary><div class=brh2><b>' + esc(T('Runtime behind latest patch')) + '</b><span class=hnrtsm>' + sum + '</span></div></summary>' + body + '</details>';
 }

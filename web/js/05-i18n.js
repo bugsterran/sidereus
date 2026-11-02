@@ -27,7 +27,7 @@ const I18N = { ko: {
   'System follows the OS: white when light, your last dark tone when dark.': '시스템은 OS 가 라이트면 화이트, 다크면 마지막 어두운 톤입니다.',
   // settings modal (header gear)
   '(unknown)': '(알 수 없음)',
-  'Burndown curve': '번다운 곡선', 'Full history': '이력 전체',
+  'Full history': '이력 전체',
   'Unread only': '읽지 않은 것만', 'Replay speed': '재생 속도', 'Refresh interval': '갱신 주기', 'Saved views': '저장된 뷰',
   'Show task description on subagent rows': '서브에이전트 행에 작업 설명 표시',
   'Labels subagent rows by the one-line task description given to the subagent, with the type as a chip. Off shows the type only.': '서브에이전트 행 이름을 서브에이전트에게 맡긴 한 줄 작업 설명으로 보이고, 유형은 옆 칩으로 둡니다. 끄면 유형만 보입니다.',
@@ -45,9 +45,8 @@ const I18N = { ko: {
   'Display': '화면', 'Settings categories': '설정 분류', 'Mode': '작동 모드',
   'Color of the page background and panels.': '화면 바탕과 패널의 색입니다.',
   'Token widgets on the right': '오른쪽에 토큰 위젯 보기',
-  'Keeps the weekly donut, daily, today-by-project and live charts under the session list. When off, they are in the Tokens tab and the 5h card at the top.': '주간 도넛·일별·당일 프로젝트별·실시간을 오른쪽 세션 목록 아래에 둡니다. 끄면 토큰 탭과 위 5시간 카드에서 봅니다.',
+  'Keeps the weekly donut, daily, today-by-project and live charts under the session list. When off, they are in the Tokens tab and the 5h card at the top. Applies only while the session list is pinned.': '주간 도넛·일별·당일 프로젝트별·실시간을 오른쪽 세션 목록 아래에 둡니다. 끄면 토큰 탭과 위 5시간 카드에서 봅니다. 세션 목록을 고정했을 때만 적용됩니다.',
   'Live share since the last fetch (estimate)': '마지막 조회 이후 실시간분(추정)',
-  'Show or collapse the usage burndown curve.': '사용량 번다운 곡선을 보이거나 접습니다.',
   'Show the full alert history or only unread cards.': '알림 목록에 이력 전체를 보일지, 읽지 않은 카드만 보일지 고릅니다.',
   // settings modal — alert policy («Alerts»)
   'Alerts': '알림', 'Alert level': '알림 수준', 'Important only': '중요만', 'Everything': '전부', 'Custom': '사용자 지정',

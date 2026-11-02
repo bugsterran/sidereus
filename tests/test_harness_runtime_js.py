@@ -80,7 +80,7 @@ class HarnessRuntimeJs(unittest.TestCase):
 
     def test_r2_stale_no_current_claim(self):
         h = self.R["stale"]
-        self.assertIn("checked 12 days ago — rerun to know it is current", h)
+        self.assertEqual(h.count("checked 12 days ago — rerun to know it is current"), 1)   # summary only, not repeated in the body
         self.assertNotIn("Runtimes on latest patch", h)
         self.assertNotIn(">latest patch<", h)
         self.assertNotIn(">newest cycle<", h)

@@ -124,10 +124,8 @@ function cfgPaneDisp(){
           seg(T('Text size'), FS_OPTS.map(n => opt('fs', n, n + '%', fsPref() === n)).join('')))
     + set(T('Session list'), T('The drawer opens and closes from the «Sessions» button at the top. Pinned keeps it as the right column, as before.'),
           seg(T('Session list'), opt('ls','0',T('Drawer'),!lsPin) + opt('ls','1',T('Pinned right'),lsPin)))
-    + set(T('Token widgets on the right'), T('Keeps the weekly donut, daily, today-by-project and live charts under the session list. When off, they are in the Tokens tab and the 5h card at the top.'),
+    + set(T('Token widgets on the right'), T('Keeps the weekly donut, daily, today-by-project and live charts under the session list. When off, they are in the Tokens tab and the 5h card at the top. Applies only while the session list is pinned.'),
           seg(T('Token widgets on the right'), opt('wks','1',T('On'),wkSide()) + opt('wks','0',T('Off'),!wkSide())))
-    + set(T('Burndown curve'), T('Show or collapse the usage burndown curve.'),
-          seg(T('Burndown curve'), opt('burn','1',T('Show curve'),BURN_OPEN) + opt('burn','0',T('Collapse'),!BURN_OPEN)))
     + set(T('Terminal integration'), T('Auto = detected per session') + ' · ' + T('The «Terminal» button brings the session tab to the front; if it cannot, it copies a command.'),
           seg(T('Terminal integration'), [['auto',T('Auto')],['iterm','iTerm2'],['apple','Terminal.app'],['orca','Orca'],['off',T('Off', 'state')]]
         .map(x => opt('term', x[0], x[1], TERM_APP === x[0])).join('')));
@@ -281,7 +279,6 @@ function cfgActs(){
     term: v => termSet(v),   // 88d-term.js
     dxr:  () => dxLoad(true),   // «Diagnostics» Refresh (90e-diag.js)
     dxcp: v => dxCopy(v),      // «Security tools» Copy: clipboard only (90e-diag.js)
-    burn: v => { BURN_OPEN = (v === '1'); lsSet('sidereus.burn', BURN_OPEN?'1':'0'); buildBurn(); },
     uo:   v => { if((v === '1') !== unreadOnly){ const t = document.getElementById('aunread'); if(t) t.click(); } },
     ap:   v => { APOL.preset = v; if(v !== 'custom') APOL.kinds = Object.assign({}, APOL_PRESET[v]); apolSave(); buildAlarm(); },
     ak:   v => { const p = v.split(':'); APOL.kinds[p[0]] = p[1]; APOL.preset = 'custom'; apolSave(); buildAlarm(); },

@@ -40,7 +40,11 @@ function sessTaskHtml(x){
   //   one-line description — no reply summary, human instruction or Bash command reaches this line any more.
   const run0 = (x.state==='tool'||x.state==='think');
   const doing = run0 ? plStrip(x.targ||'') : '';   // display only: drop a leading [pl:…] tag
-  return doing ? '<div class=sq title="'+esc(doing + NL + NL + T('— Doing now'))+'">'+esc(doing)+'</div>' : '';
+  // Skip when a running subagent row below already shows the same text (same normalisation as sessKid rows).
+  const dk = doing.trim(), dup = !!dk && (x.sub||[]).some(v => {
+    const lab = (v && v.lab != null) ? String(v.lab) : String(v);
+    return subLab(lab).desc.trim() === dk || plStrip(lab).trim() === dk; });
+  return (doing && !dup) ? '<div class=sq title="'+esc(doing + NL + NL + T('— Doing now'))+'">'+esc(doing)+'</div>' : '';
 }
 // State row: label · tool · elapsed · burn chip · dismiss handle.
 function sessStateRow(x, st){

@@ -1,4 +1,4 @@
-"""First-load stubs (sidereus/bus.py messages_first/messages_range) and state() wiring + rule-1 guard on fail1h.
+"""First-load stubs (sidereus/bus.py messages_first/messages_range) and state() wiring.
 
 Temp bus file only; every live piece of state() is monkeypatched on sidereus.state.
 """
@@ -13,7 +13,6 @@ from tests._load import sidereus
 
 bus = sidereus("bus")
 st = sidereus("state")
-F = sidereus("failures")
 
 
 class FirstLoadStubs(unittest.TestCase):
@@ -63,7 +62,7 @@ class FirstLoadStubs(unittest.TestCase):
 
 
 class StateWiring(unittest.TestCase):
-    """state(): since=0 -> messages_first, since>0 -> messages; fail1h never carries raw tool text."""
+    """state(): since=0 -> messages_first, since>0 -> messages."""
 
     def _patches(self, calls):
         z = lambda *a, **k: None   # noqa: E731
@@ -90,23 +89,6 @@ class StateWiring(unittest.TestCase):
     def test_first_load_uses_stubbed_messages(self):
         self.assertEqual(self.run_state(0)[1], [("first",)])
         self.assertEqual(self.run_state(123)[1], [("messages", 123)])
-
-    def test_fail1h_in_state_has_no_raw_tool_output(self):
-        now = 1_800_000_000.0
-        raw = [{"at": now - 5, "kind": "tool", "proj": "p", "sid": "s", "cwd": "/x", "tool": "Bash",
-                "sig": "RAWSIG-leak", "text": "RAWTEXT-leak", "why": "RAWWHY-leak"}]
-        old = F._FAIL_1H
-        try:
-            with mock.patch.object(F, "_fail_events", lambda h, capped=True: (raw, 1, h)), \
-                 mock.patch.object(F.time, "time", return_value=now):
-                F._fail_1h_build()
-            s, _ = self.run_state(0)
-            dumped = json.dumps(s["fail1h"])
-            self.assertEqual(s["fail1h"]["n"], 1)
-            for bad in ("RAWSIG", "RAWTEXT", "RAWWHY", '"text"', '"sig"'):
-                self.assertNotIn(bad, dumped)
-        finally:
-            F._FAIL_1H = old
 
 
 if __name__ == "__main__":
