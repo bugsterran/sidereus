@@ -188,7 +188,9 @@ console.log(JSON.stringify([item, esc_, out]));""")
         idx = [g.index(k) for k in ("mb + plRunBtn(p, dirty)", "class=plsep", "data-plreset", "data-plsave", "data-pldel")]   # [Edit/Done][Run] | file ops
         self.assertEqual(idx, sorted(idx))
         self.assertIn("(dirty ? '<button class=\"wkrgb\" data-plreset>'", g)
-        self.assertIn("(dirty ? ' disabled title=\"' + esc(T('Save before running'))", js_fn("plRunBtn"))
+        fn = js_fn("plRunBtn")
+        self.assertIn("esc(dirty ? T('Save before running') : T('Opens a run request:", fn)   # tooltip: dirty reason, else what Run does
+        self.assertIn("(dirty ? ' disabled' : '')", fn)
         with open(os.path.join(ROOT, "web", "css", "43-pipeline.css"), encoding="utf-8") as f:
             css = f.read()
         self.assertRegex(css, r"\.plsep\{width:1px;height:16px;[^}]*var\(--nx-rule")

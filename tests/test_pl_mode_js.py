@@ -209,7 +209,8 @@ class PlMode(unittest.TestCase):
         self.assertTrue(row.startswith("<PROJ/><PIPE/><span class=plwrun><RUNBAR/></span><span class=plact>"))
         act = row[row.index("<span class=plact>"):]
         self.assertLess(act.index("data-plmode=edit"), act.index("data-plrun"))   # [✎ Edit][▶ Run] one action group
-        self.assertIn('class="wkrgb plsv plrn" data-plrun><span aria-hidden=true>▶</span> Run', act)   # Run = primary filled
+        self.assertIn('class="wkrgb plsv plrn" data-plrun title="Opens a run request:', act)   # Run = primary filled, tooltip says what it does
+        self.assertIn('Sidereus runs nothing."><span aria-hidden=true>▶</span> Run', act)
         for bad in ("data-plap", "Gates", "pleunred", "data-pleval", "data-plsave", "data-pldel"):
             self.assertNotIn(bad, row)
 
