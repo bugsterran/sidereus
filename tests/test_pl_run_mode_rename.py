@@ -50,5 +50,29 @@ class RenameKeyOrder(unittest.TestCase):
         self.assertEqual(list(new["stages"][2]), [k for k in PL.STAGE_KEYS if k in rows[2]])
 
 
+
+class WorkPopupStageNames(unittest.TestCase):
+    """35e strip names stages through plgShow (as 74c); data-wpls and the .me match stay on the raw title."""
+
+    def test_en_chip_shows_english_name(self):
+        from tests import test_worklog_plrun as W
+        orig = W.node_e
+        W.node_e = lambda src: orig(src.replace("plgShow = t => t", "plgShow = t => ({'\uad6c\ud604': 'Implement', '\uac80\uc99d': 'Verify'})[t] || t"))
+        try:
+            R = W.run("R.s = wpStripHtml(SESS[0].plrun[0], '\uad6c\ud604');")
+        finally:
+            W.node_e = orig
+        s = R["s"]
+        self.assertIn("<i class=tlpn>Implement<", s)
+        self.assertIn('data-wpls="\uad6c\ud604"', s)
+        self.assertIn('title="Implement \u00b7', s)
+        self.assertIn('class="tlpls pl-back p me"', s)
+
+
+class EvalPopoverResize(unittest.TestCase):
+    def test_resize_replaces_open_popover(self):
+        s = _src("web/js/48i-pipeline-eval.js")
+        self.assertRegex(s, r"window\.addEventListener\('resize', \(\) => \{ if\(popIsOpen\('plevp'\)\) plEvalPlace\(\); \}\)")
+
 if __name__ == "__main__":
     unittest.main()
