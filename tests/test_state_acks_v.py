@@ -101,7 +101,8 @@ class AckVer(unittest.TestCase):
         os.utime(mailbox_core.ACKS, ns=(10 ** 18, 10 ** 18))
         v1 = bus.ack_ver(7)
         self.assertEqual(v1, "%d-3-7" % 10 ** 18)
-        os.utime(mailbox_core.ACKS, ns=(10 ** 18 + 1, 10 ** 18 + 1))
+        # ⚠1 ms, not 1 ns: NTFS keeps mtime in 100 ns ticks, so a 1 ns step is lost on Windows
+        os.utime(mailbox_core.ACKS, ns=(10 ** 18 + 10 ** 6, 10 ** 18 + 10 ** 6))
         self.assertNotEqual(bus.ack_ver(7), v1)
         with open(mailbox_core.ACKS, "a", encoding="utf-8", newline="") as f:
             f.write("{}\n")
