@@ -82,7 +82,7 @@ class World(_WorldPanels, _WorldGit):
         subs = [
             ("web", "Explore", "Map payment button call sites", 290, 9, 1, None, ""),
             ("web", "general-purpose", "Price formatter unit tests", 250, 22, 1, None, ""),
-            ("web", "general-purpose", "Checkout form validation", 38, None, 1, None, "Edit"),
+            ("web", "general-purpose", "[pl:change-flow/검증] Checkout form validation", 38, None, 1, None, "Edit"),
             ("web", "Explore", "Find address field usages", 12, None, 2, 2, "Grep"),
             ("web", "code-reviewer", "Review coupon edge cases", 95, 17, 1, None, ""),
             ("cart", "general-purpose", "Reproduce rounding drift", 70, 25, 1, None, ""),

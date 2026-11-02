@@ -21,6 +21,7 @@ parse = sidereus("parse")
 sessions = sidereus("sessions")
 ext = sidereus("ext")
 work = sidereus("work")
+pl_runs = sidereus("pl_runs")
 
 A = 1_790_000_000
 SECRET = "SECRET-91c2 cat /w/private"
@@ -118,6 +119,9 @@ class SameKeysAsRealBuilders(_Patch):
         x = next(s for s in w.subs if s["now"] == "Edit")
         self.assertEqual(w.agent_work(x["tid"])["steps"][-1]["targ"], "src/checkout/Form.tsx")
         self.assertTrue(all(" · " not in s["now"] for s in w.subs))
+        # Popup prose never shows the raw [pl:] tag (the title is stripped client-side by wkLab/plStrip).
+        self.assertTrue(pl_runs._PLR_TAG.search(x["desc"]))
+        self.assertEqual(w.agent_work(x["tid"])["says"][0]["text"], "Starting: Checkout form validation.")
 
     def test_plrun_stack_keys(self):
         # Stacked demo runs (2 open + 1 ended) keep pl_model's row/stage/agent key sets.
@@ -134,6 +138,9 @@ class SameKeysAsRealBuilders(_Patch):
                 self.assertTrue(isinstance(cm, list) and len(cm) <= 4 and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in cm), cm)
                 for a in s["ag"]:
                     self.assertEqual(set(a), {"aid", "tid", "lab", "run", "t0", "t1"})
+        # A live sub carries an open run's [pl:] tag, so the Now list draws the per-run group (48j plNowAgentRows).
+        tags = {pl_runs._PLR_TAG.search(a["lab"]).groups() for a in row["sub"] if pl_runs._PLR_TAG.search(a["lab"])}
+        self.assertIn((pl[0]["name"], pl[0]["cur"]), tags)
 
 
 class MetadataOnly(_Patch):

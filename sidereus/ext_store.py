@@ -30,7 +30,7 @@ EXT_SILENT_S = 1200
 EXT_GONE_GRACE_S = 600       # 'gone' kept this long (an event may revive it from goneFrom), then folded like a SessionEnd
 # ⚠A pid-less idle row has unknown liveness (Windows hooks sent no pid): without this it stayed «waiting» up to EXT_TTL_S.
 PIDLESS_IDLE_SEC = 1800      # pid-less 'wait' row with no event this long is shown as ended ('done'); its next event revives it
-EXT_DONE_KEEP_S = 12 * 3600  # ended rows fold under «Show n ended» this long (R2) ⚠must equal sessions.sessions() max_age_h
+EXT_DONE_KEEP_S = 12 * 3600  # ended rows are listed under «Recently ended sessions» this long (R2) ⚠must equal sessions.sessions() max_age_h
 EXT_PID_EVERY_S = 30         # liveness check interval per session
 EXT_PLAT = {"gemini": "gm", "codex": "cx", "copilot": "cp", "cursor": "cu", "cline": "cl",
             "windsurf": "wf", "warp": "wp", "trae": "tr", "zed": "zd", "grok": "gk",
