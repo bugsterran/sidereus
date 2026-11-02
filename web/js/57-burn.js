@@ -82,7 +82,10 @@ function burnHead(b, nowS){
   if(c && c.now_pct != null){
     const tail = pj.over_at ? TV({msg: 'runs out {t} at this pace', vars: {t: bnHM(pj.over_at)}})
                : c.reset ? T('resets') + ' ' + LATER(bnDur(Math.max(0, c.reset - nowS))) : '';
-    body += '<span class=bhead><b class=blab>5h</b> ' + left(c.now_pct) + used(c.used_local) + lt('5h', c.used_local, c.now_pct) + (tail ? ' · ' + esc(tail) : '') + '</span>';
+    // As-of time: this % is polled every 30 s while the saver badge carries the hook's own verdict time — without
+    // the clock the two read as contradicting figures in the same modal.
+    const asof = b.at ? ' · <span class=bnasof>' + esc(T('as of {t}', 'conn').replace('{t}', bnHM(b.at))) + '</span>' : '';
+    body += '<span class=bhead><b class=blab>5h</b> ' + left(c.now_pct) + used(c.used_local) + lt('5h', c.used_local, c.now_pct) + (tail ? ' · ' + esc(tail) : '') + asof + '</span>';
   }
   // Top-level `wk` = the official 7d snapshot (server `_qb_add_wk`); omitted when missing — never a guessed 0.
   const we = burnWkEst(b);

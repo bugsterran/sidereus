@@ -68,7 +68,13 @@ R.leg = [burnCurve({base: bandB, proj: {raw: 40}}), burnCurve({base: bandB, proj
 R.durEn = [3631].map(bnDur);
 R.sumEn = [burnSum({pct: null}), burnSum({pct: 87.4})];
 R.headEn = [burnHead({cur, proj: {over_at: N + 90 * 60}, wk}, N)];
+R.asof = [burnHead({cur, at: 3600 * 13 + 5 * 60}, N)];
 """ % json.dumps(AGES))
+
+    def test_head_as_of_clock(self):
+        # The 5h % carries its poll time so it cannot read as contradicting the saver badge's verdict.
+        self.assertIn("as of 1:05 PM", self.R["asof"][0])
+        self.assertNotIn("as of", self.R["headEn"][0])
 
     def test_age_edges_ko(self):
         a = self.R["age"]
