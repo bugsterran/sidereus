@@ -20,7 +20,7 @@ model: opus
 - `HOME` in code is `~/.mailbox-mcp`.
 - Globals: change them in the owning module (`refactor/STAGE3.md`), never reassign another module's name.
 - UI changes in `web/`; JS files split only at top-level statements; keep file-final newlines as they are.
-- UI text stays Korean; add the English string to `I18N.en`. New comments in English, minimal (one line per change, `⚠` for traps).
+- UI strings are English-source literals; add the Korean to `I18N.ko` (`web/js/06-i18n-*.js`), never pass user data through `T()`. New comments in English, minimal (one line per change, `⚠` for traps).
 - Desktop widths only: 1920/1440/1100/900 (design at 1920; narrower must wrap or collapse, never cram). No mobile/390px work.
 - Tests never read live files, the clock or the network — monkeypatch the owning module's attributes.
 - Security: `esc()` anything interpolated into innerHTML; validate paths/args from requests; git calls go through `git_argv`.
@@ -31,6 +31,17 @@ model: opus
 2. Implement the slice + its tests.
 3. Run `scripts/check.sh --fast`. Fix failures in your own files. If a failure is in a file outside your slice, stop and report it.
 4. If you were given a verifier/reviewer failure, fix exactly that and re-run step 3.
+
+## Self-check before reporting
+★These classes made up most confirmed «Review-confirm» findings (32 review rounds, 10-18..11-02) and each one cost an implement loop-back. Check every one that your slice touches; fix it, or name it under OUTSIDE.
+- Unknown is not zero: a missing, failed, timed-out or truncated input shows as unknown/null — never `0`, «none», «no commits» or a red FAIL.
+- Counted once: the same run, commit, item or session reaching you twice (two sessions, two files, repeated poll) is deduped by a stable key; your own run's commit is not a «fix».
+- Ended stays ended: a gone, dismissed or ended row/run does not come back from another source (rollout, stale lock, reused pid, old cache).
+- One rule, one place: a regex, cap, title or allow-list the server and the client (or hook and viewer) both apply is shared or tested on both sides with the same input.
+- Caps drop the oldest, never the live: a size/time cap keeps open items and says when it truncated.
+- Poll rebuilds keep UI state: scroll, focus, selection, tooltip and the current project survive a re-render; a late in-flight response for an old selection is discarded.
+- Symlinks: refuse only what the rule refuses (a symlinked target file); a symlinked parent or repo root is resolved, not silently replaced or 404'd.
+- Shell text: parsing a command line handles newlines, `&&`/`;`, heredoc bodies and `cd`.
 
 ## Report (≤8 lines)
 ```

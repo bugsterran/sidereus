@@ -18,7 +18,7 @@ model: opus
 - `HOME` in code is `~/.mailbox-mcp`, not the user home.
 - Each global has one owner module (`refactor/STAGE3.md` import order); change it in the owner. New modules go into that order.
 - UI lives in `web/` (`index.html`, `css/NN-*.css`, `js/NN-*.js`); JS files split only at top-level statement boundaries.
-- UI text is Korean with an `I18N.en` entry (`web/js/05-i18n.js`, `06-i18n-*.js`); comments are English.
+- UI strings are English-source with a Korean `I18N.ko` entry (`web/js/06-i18n-*.js`); comments are English.
 - Desktop only: 1920/1440/1100/900 (design at 1920; narrower must wrap or collapse, never cram). No mobile work.
 - Python must run on `/usr/bin/python3` 3.9 (no `match`, no `X | Y` types).
 - Tests never touch live files, clock or network — monkeypatch the owning module.
@@ -38,5 +38,5 @@ SLICES:
 RULES: <which AGENTS.md / STAGE3 / metadata-only rules apply and how>
 TESTS: <new/changed test files and what they assert>
 SCREEN: <what scripts/screen_check.mjs should show; whether baseline needs --update and why>
-RISK: <what can break; decisions made without asking>
+RISK: <what can break; decisions made without asking; which «Self-check» classes in sidereus-implementer.md each slice touches>
 ```
