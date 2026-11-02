@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sessions: the pipeline chip on a session row shows the stage title in the UI language ("Live verify" in English), like the pipeline view.
 - Pipelines: the stage titles of the bundled pipelines (Diagnose, Confirm, Review-find, Tag, ...) have English names; the English UI no longer shows them in Korean.
 - Attention: a "Needs your response" row lines up with the "For your information" rows; its red bar no longer stacks with the account colour bar on multi-account screens.
+- Terminal: a Claude Code background job shown in the tab of the claude that started it copies `claude attach <id>` (or nothing) when the jump fails, never `claude --resume`, which would open a second session.
 
 ## [0.12.1] - 2026-11-02
 

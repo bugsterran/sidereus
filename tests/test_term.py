@@ -85,7 +85,7 @@ class Detect(Base):
                                                 "68658 ttys002 claude TERM_PROGRAM=iTerm.app LC_TERMINAL=iTerm2\n"))
         rows = [{"sid": SID, "state": "wait"}]
         term.term_attach(rows)
-        self.assertEqual(rows[0]["term"], {"app": "iterm", "tty": "ttys002"})
+        self.assertEqual(rows[0]["term"], {"app": "iterm", "tty": "ttys002", "bg": True})
 
     def test_background_job_spawner_gone_or_unknown_stays_bg(self):
         self.patch(term, "_av_cache", [0.0, {}])
@@ -220,6 +220,27 @@ class Focus(Base):
         self.patch(term, "_resolve", lambda sid: (True, {"app": "bg", "tty": None}))
         self.assertEqual(term.term_focus(SID, [dict(self.ROW, term=None)])[1]["how"], "bg")
         self.assertEqual((self.run.calls, self.warns), ([], []))
+
+    def test_background_job_in_spawner_tab_never_offers_resume(self):
+        tagged = dict(self.ROW, term={"app": "iterm", "tty": "ttys003", "bg": True})
+
+        def slow(*a, **k):
+            raise term.subprocess.TimeoutExpired("osascript", 5)
+        for av in ({}, {101: {"sessionId": SID, "kind": "background", "id": "5a49e0bd"}}):
+            self.patch(term, "_av_cache", [0.0, av])
+            self.run.out = "notfound\n"
+            self.patch(term.subprocess, "run", self.run)
+            out = term.term_focus(SID, [dict(tagged)])[1]
+            self.assertEqual(out["how"], "notfound")
+            self.assertEqual(out["cmd"], "claude attach 5a49e0bd" if av else "")
+            self.patch(term.subprocess, "run", slow)
+            out = term.term_focus(SID, [dict(tagged)])[1]
+            self.assertEqual(out["how"], "timeout")
+            self.assertNotIn("--resume", out["cmd"])
+            self.assertTrue(out["cmd"] == "" or out["cmd"].startswith("claude attach "))
+        self.patch(term, "_resolve", lambda sid: (True, {"app": "iterm", "tty": "ttys003", "bg": True}))
+        out = term.term_focus(SID, [dict(self.ROW, term=None)])[1]   # request-time re-lookup path
+        self.assertNotIn("--resume", out["cmd"])
 
     def test_off_not_logged(self):
         term.term_focus(SID, [dict(self.ROW)], cfg="off")

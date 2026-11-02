@@ -214,7 +214,7 @@ def _bg_term(pids, av, snap, force=False):
             t = _term_of([str(sp)])
             # ⚠iTerm2/Terminal only: an Orca jump looks its handle up by the session's own pids, not the spawner's.
             if t and t.get("app") in _SCRIPTS and t.get("tty"):
-                return t
+                return dict(t, bg=True)         # tag: _focus must not offer `--resume` (it opens a second session)
         return {"app": "bg", "tty": None}
     return None
 
@@ -388,8 +388,7 @@ def _focus_orca(cmd, handle):
 
 def _focus_bg(sid):
     """Background job: no tab to raise and never `--resume` (a second session); `claude attach <id>` when the id is known."""
-    bid = _bg_id(sid)
-    return 200, {"ok": False, "how": "bg", "cmd": "claude attach " + bid if bid else ""}
+    return 200, {"ok": False, "how": "bg", "cmd": _bg_cmd(sid)}
 
 
 def term_focus(sid, rows, cfg=None):
@@ -405,6 +404,12 @@ def term_focus(sid, rows, cfg=None):
     return code, out
 
 
+def _bg_cmd(sid):
+    """Fallback for a background job shown in its spawner's tab: attach by short id, or nothing."""
+    bid = _bg_id(sid)
+    return "claude attach " + bid if bid else ""
+
+
 def _focus(sid, rows, cfg):
     row = next((r for r in rows or [] if r.get("sid") == sid and r.get("state") != "done"), None)
     ext = bool(row) and _is_ext(row)
@@ -416,6 +421,8 @@ def _focus(sid, rows, cfg):
     app = cfg or term_cfg()
     if not ext and isinstance(t, dict) and t.get("app") == "bg":
         return _focus_bg(sid)
+    if not ext and isinstance(t, dict) and t.get("bg"):
+        cmd = _bg_cmd(sid)
     if app == "off":
         return 200, {"ok": False, "how": "off", "cmd": cmd}
     xpids = []
@@ -437,6 +444,8 @@ def _focus(sid, rows, cfg):
             return _focus_bg(sid)
         if not isinstance(t, dict):
             return 200, {"ok": False, "how": "unsupported", "cmd": cmd}
+        if t.get("bg"):
+            cmd = _bg_cmd(sid)
     if app == "auto":
         app = t.get("app")
     if app == "orca":
