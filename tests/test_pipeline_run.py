@@ -459,6 +459,17 @@ class LoopBack(unittest.TestCase):
         self.assertIn(">↺ 1 from Verify · 1 from Re-verify</span>", r[1])
         self.assertIn(">재시도 3</span>", r[2])                         # no from: the old retry badge
 
+    def test_main_run_stage_shows_elapsed(self):
+        # A running stage with no agents (orchestrator-run) shows its elapsed time; zero seconds or a finished stage does not.
+        r = self._cv("const n = E.G.nodes[0]; return [plNodeHtml(E, n, false, {구현: {st: 'run', n: 0, sec: 42}}),"
+                     " plNodeHtml(E, n, false, {구현: {st: 'run', n: 0, sec: 0}}), plNodeHtml(E, n, false, {구현: {st: 'done', n: 0, sec: 42}}),"
+                     " plNodeHtml(E, n, false, {구현: {st: 'run', n: 2, sec: 42}})];")
+        self.assertRegex(r[0], r"<div class=plls [^>]*>[^<]* · 42s</div>")
+        self.assertNotIn("0s<", r[1])
+        self.assertNotIn("42s", r[2])
+        self.assertIn(" · 42s</div>", r[3])
+        self.assertEqual(r[3].count("42s<"), 1)                            # agent stages keep one «Agent n · ago», no second elapsed
+
     def test_pass_picker_only_with_recorded_passes(self):
         L = "{st: 'done', k: %d, n: 1, sec: 9, w0: 0, ag: [], ps: %s}"
         ps = "[{a: 10, b: 20, s: 'back'}]"
