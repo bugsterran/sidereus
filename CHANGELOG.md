@@ -18,6 +18,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Attention: a session snoozed «Later» or acked that asks a new question shows again at once; acking a row without a session id no longer hides other sessions' questions in the same folder.
 - Quota details: «Who is using the 5h» counts the window of the account in use (marked «≈» when estimated); an account with no login shows «used unknown» instead of 0%.
 - Saver: the «Hook folder not found» message is translated (path shown separately).
+- Security: posting to a room, DMs, closing threads, terminal focus/app, saver settings, card/background/health dismiss and review marks now require the viewer page's Origin, so a local script can no longer act as the person.
+- Pipelines: a failed folder load in the folder picker no longer overwrites the remembered folder or leaves the dialog busy; errors sent as `error`/`why` show their reason; a focused button or row keeps focus across the live refresh.
+- Settings: auto-compact history errors and per-account write failures are translated, with values filled in.
+- Quota details: «Who is using the 5h» follows the account whose sessions burned the most this window; per-session figures add up to the project total. The saver badge clock is labelled as the verdict time.
+- MCP: To-do errors fill in their values («1-200 characters»); the text field declares its 200-character limit.
+- Keyboard: the overlay rail at narrow widths keeps focus inside and returns it to the opener; an attention row keeps focus after Enter.
+- Demo: shows To-do items and the account fields of the quota views.
 - Attention (English): «Done · waiting for input» under a minute shows seconds, not the same number as minutes; the MCP label too.
 - Korean UI: server error messages (pipelines, settings, To-do, rooms, git, hooks) are translated; messages with a file name or count send it separately; OS and exception text stays as sent.
 - Quota details: the 5h % in the burn header and the saver badge each show their «as of» time, so two different figures in one modal no longer read as a contradiction.

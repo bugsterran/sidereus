@@ -275,6 +275,30 @@ function attnRowHTML(x){
     + '<button class="atb atx" data-aa="snz" title="' + esc(T('Snooze')) + '">⋯</button>' + menu + '</div>' + rzBox
     + (attnRp.id === x.id && attnRp.to ? attnRpHTML(attnRp.to, to.watch) : '') + '</div>';
 }
+// ⚠innerHTML drops a focused row/button to <body>: keep the same row (same control), else the next, else the previous, else the list.
+function attnFocusPick(oldAids, newAids, aid){
+  if(newAids.indexOf(aid) >= 0) return aid;
+  const i = oldAids.indexOf(aid);
+  if(i < 0) return '';
+  for(let j = i + 1; j < oldAids.length; j++) if(newAids.indexOf(oldAids[j]) >= 0) return oldAids[j];
+  for(let j = i - 1; j >= 0; j--) if(newAids.indexOf(oldAids[j]) >= 0) return oldAids[j];
+  return '';
+}
+function attnFocusOf(el){
+  const a = document.activeElement, row = a && el.contains(a) && a.closest && a.closest('.atr');
+  if(!row || a.matches('.atcp input, .atrpi')) return null;   // copy/reply boxes restore themselves below
+  return {aid: row.getAttribute('data-aid') || '', aa: a === row ? '' : (a.getAttribute('data-aa') || ''),
+          aids: [...el.querySelectorAll('.atr')].map(r => r.getAttribute('data-aid') || '')};
+}
+function attnFocusBack(el, fo){
+  const rows = [...el.querySelectorAll('.atr')], id = attnFocusPick(fo.aids, rows.map(r => r.getAttribute('data-aid') || ''), fo.aid);
+  const row = id ? rows.find(r => r.getAttribute('data-aid') === id) : null;
+  let t = row && id === fo.aid && fo.aa ? row.querySelector('[data-aa="' + CSS.escape(fo.aa) + '"]') : null;
+  if(!t) t = row || el;
+  // ⚠A fresh row is not a tab stop until 98-a11y marks it on the next frame; mark it now so focus() lands.
+  if(!t.hasAttribute('tabindex') && !/^(BUTTON|INPUT)$/.test(t.tagName)){ try{ a11yOne(t); }catch(e){ softErr('attnFocusBack', e); } if(!t.hasAttribute('tabindex')) t.tabIndex = -1; }
+  t.focus({preventScroll: true});
+}
 function buildAttn(){
   const el = document.getElementById('attn');
   if(!el) return;
@@ -309,7 +333,9 @@ function buildAttn(){
   if(h === attnHtml) return;     // poll is 2.5s; skip identical redraws so hover/menus stay put
   const had = !!el.querySelector('.atcp input'), foc = el.contains(document.activeElement) && document.activeElement.matches('.atcp input');
   const rpOld = el.querySelector('.atrpi'), rpFoc = !!rpOld && document.activeElement === rpOld, rpPos = rpFoc ? rpOld.selectionStart : -1;
+  const fo = attnFocusOf(el);
   attnHtml = h; el.innerHTML = h;
+  if(fo) attnFocusBack(el, fo);
   const cp = el.querySelector('.atcp input');
   if(cp && (!had || foc)){ cp.focus(); cp.select(); }   // select when the box appears; keep it selected across poll redraws
   // Restore the reply draft/caret; focus a newly opened box. ⚠preventScroll: opening it must not move the sidebar.

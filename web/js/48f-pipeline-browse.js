@@ -65,7 +65,8 @@ async function plBrLoad(path, fallback){
   PLBR.busy = false;
   if(!j || !j.ok){
     if(fallback && path) return plBrLoad('', false);   // remembered folder vanished or moved outside home: start at home
-    PLBR.msg = j && j.msg ? TE(j) : T('Could not read the folder');   // msg holds display text: translated here, painted as-is plBrPaint(); return;
+    PLBR.msg = j && j.msg ? TE(j) : T('Could not read the folder');   // msg holds display text: translated here, painted as-is
+    plBrPaint(); return;
   }
   Object.assign(PLBR, { path: j.path, home: j.home, parent: j.parent, dirs: j.dirs, more: !!j.more, pick: !!j.pick });
   lsSet('sidereus.plbrdir', j.path);

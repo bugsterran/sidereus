@@ -107,7 +107,7 @@ TOOLS = [
                     "done when finished; list to read.",
      "inputSchema": {"type": "object", "properties": {
          "action": {"type": "string", "enum": ["add", "start", "done", "open", "list"]},
-         "text": {"type": "string", "description": "add: one-line request label (max 200 chars)"},
+         "text": {"type": "string", "maxLength": 200, "description": "add: one-line request label (max 200 chars)"},
          "id": {"type": "integer", "description": "start/done/open: item id from add or list"},
          "cwd": {"type": "string", "description": "Repo dir (default: this session's cwd)"},
          "sid": {"type": "string", "description": "Your session id (default: detected from the parent Claude process)"}},
@@ -131,16 +131,24 @@ def _get(path, params=None):
         raise SidereusDown(down_text(type(e).__name__))
 
 
+def _fill_err(d):
+    """Fill {k} placeholders in d['err'] from d['vars'] (plain replace; unknown placeholders stay)."""
+    if isinstance(d, dict) and isinstance(d.get("err"), str) and isinstance(d.get("vars"), dict):
+        for k, v in d["vars"].items():
+            d["err"] = d["err"].replace("{%s}" % k, str(v))
+    return d
+
+
 def _post(path, body):
     """POST JSON to {BASE}{path} -> dict; same SidereusDown handling as _get. ⚠No Origin header: the route refuses one."""
     req = urllib.request.Request(BASE + path, data=json.dumps(body).encode("utf-8"), method="POST",
                                  headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:  # nosec B310 -- constant loopback http base
-            return json.loads(r.read().decode("utf-8"))
+            return _fill_err(json.loads(r.read().decode("utf-8")))
     except urllib.error.HTTPError as e:
         try:     # 400/404 carry {"err": ...}; an older build without the route has none
-            err = json.loads(e.read().decode("utf-8")).get("err")
+            err = _fill_err(json.loads(e.read().decode("utf-8"))).get("err")
         except Exception:
             err = None
         if err:

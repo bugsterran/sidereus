@@ -100,3 +100,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ the diff preview shows the real bytes that will be written, reformatting included; every other top-level key stays byte-identical.
   - ⇒ `rm` is opaque and re-located by content (event · matcher · command) on apply, and the base sha from the preview must match (409 → preview again).
   - ⚠Never locate the entry by index alone: an edit between preview and apply would remove a different hook. Plugin hook files are never written.
+- **Origin-less POST acts as the person** (`chat_server.py` `_origin_ok`, `sidereus/routes_post.py` `_vo`): `do_POST` lets no-Origin requests through for OTEL and hooks, so a local `curl` (an agent) could post to a room as the person via `/api/say`.
+  - ⇒ say · dm · thread/close · term/focus · term/set · saver/set · cards/read · bg/dismiss · health/dismiss · review/mark are wrapped with `_vo` (`_refuse_origin`, 403 without the viewer Origin).
+  - ⚠A new route that writes as the person or runs a process goes through `_vo` too; only `/v1/*`, `/api/hook` and `/api/todo/agent` are meant for Origin-less callers.

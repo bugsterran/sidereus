@@ -229,7 +229,7 @@ async function plAddGo(path){
 async function plRemove(path){
   if(!confirm(T('Remove from the list? (folder and files stay)') + '\n' + path)) return;
   const r = await plProjPost('/api/pipelines/projects/remove', path);
-  if(!r.ok) alert(T('Could not remove') + (r.err ? ' — ' + TE(r) : ''));
+  if(!r.ok) alert(T('Could not remove') + ((r.err || r.error || r.why) ? ' — ' + TE(r) : ''));
 }
 function plCur(){
   const d = PLS.data[PLS.proj];
@@ -358,7 +358,7 @@ async function plApplySet(mode){
   let r;
   try{ r = await postJSON('/api/pipelines/apply', { proj: PLS.proj, mode: mode }); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
-  if(!r || !r.ok){ alert(T('Could not change it') + (r && r.err ? ' — ' + TE(r) : '')); return false; }
+  if(!r || !r.ok){ alert(T('Could not change it') + (r && (r.err || r.error || r.why) ? ' — ' + TE(r) : '')); return false; }
   d.apply = r.apply;
   plPaint();
   return true;
@@ -375,6 +375,17 @@ function plMainBody(){
   const wt = typeof plWatchOn === 'function' && plWatchOn();   // 48k Watch: «Apply» is an Edit control
   return (typeof plModeBand === 'function' ? plModeBand() : '') + '<div class="pltop' + (wt ? ' plwtop' : '') + '">' + plChips() + hd.row + (!hd.mb && typeof plModeBtn === 'function' ? plModeBtn() : '') + '</div>'
     + (wt || !((PLS.data[PLS.proj] || {}).pipelines || []).length ? '' : plApplySeg(PLS.data[PLS.proj])) + pb + (ov && pb.indexOf(ov) < 0 ? ov : '');
+}
+// Stable selector for a focused control: tag + its data-*/aria-label attributes, plus its index among equal matches.
+function plFocusKey(el, box){
+  const q = v => '"' + String(v).replace(/[\\"]/g, '\\$&').replace(/\n/g, '\\a ') + '"';
+  const all0 = Array.from(el.attributes || []), dt = all0.filter(a => /^data-/.test(a.name));
+  const at = dt.length ? dt : all0.filter(a => a.name === 'aria-label');   // data-* first: labels may carry live status text
+  if(!at.length) return null;
+  const sel = el.tagName.toLowerCase() + at.map(a => '[' + a.name + '=' + q(a.value) + ']').join('');
+  let all; try{ all = Array.from(box.querySelectorAll(sel)); }catch(x){ return null; }
+  const i = all.indexOf(el);
+  return i < 0 ? null : { sel, i };
 }
 function paintPipe(box, fromPoll){
   if(PLDRAG) return;                   // ⚠a repaint mid-drag would drop the dragged node
@@ -399,9 +410,13 @@ function paintPipe(box, fromPoll){
   if(fromPoll && fe && fe.closest && fe.closest('.plnewm')) return;   // ⚠open «+ New ▾» menu: a rebuild drops the focused item (48e)
   // ⚠Harness HTML changes every poll (relative times), and a rebuilt node drops its native title tooltip before the ~1s delay ends: hold while hovering one.
   if(fromPoll && box.querySelector('.hnw [title]:hover')) return;
+  // ⚠a focused button/row loses focus to innerHTML: restore it by a stable key, or hold the poll when it has none
+  const fk = fromPoll && fe && fe !== document.body && box.contains && box.contains(fe) && (fe.tagName === 'BUTTON' || (fe.hasAttribute && fe.hasAttribute('tabindex'))) ? (plFocusKey(fe, box) || 'hold') : null;
+  if(fk === 'hold') return;
   box._plw = h;
   const nl = box.querySelector('.plnl'), nst = nl ? nl.scrollTop : 0;   // ⚠innerHTML resets the list's own scroll on every poll
   box.innerHTML = h;
+  if(fk){ const t = box.querySelectorAll(fk.sel)[fk.i]; if(t && t.focus) t.focus({ preventScroll: true }); }
   const nl2 = nst && box.querySelector('.plnl'); if(nl2) nl2.scrollTop = nst;
   const pw = box.querySelector('.plw'); if(pw) pw.style.setProperty('--plt', (-performance.now()) + 'ms');   // ⚠rebuild restarts animations: negative delay = document time keeps the phase
   if(!hv) plAfterPaint(box);
@@ -422,7 +437,7 @@ async function plSave(write){
   try{ r = await postJSON('/api/pipelines/save', { proj: PLS.proj, name: p.name, base: p.sha, dry: !write, defaults: E.G.defaults, use: E.G.use || '', rules: E.G.rules, guards: plgGuards(E.G, (PLS.data[PLS.proj]||{}).gate_modes), stages: plgStages(E.G, chk.order) }); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
   PLS.saving = false;
-  if(!r || !r.ok){ PLS.msg = T('Could not save') + ' — ' + (r && r.err ? TE(r) : '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLS.diff = null; }
+  if(!r || !r.ok){ PLS.msg = T('Could not save') + ' — ' + (r && (r.err || r.error || r.why) ? TE(r) : '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLS.diff = null; }
   else if(!write) PLS.diff = { name: p.name, text: r.diff || '' };
   else { PLS.diff = null; PLS.msg = T('Saved · backup') + ' ' + (r.backup || ''); await plLoad(PLS.proj, true); if(typeof plModeSet === 'function') plModeSet('watch', true); }   // a confirmed save ends the edit
   plPaint(); plRefocus('[data-plok]:not([disabled])', '[data-plsave]:not([disabled])', '[data-ppk="plsel"]');   // awaited load: a later repaint would drop focus again
@@ -437,7 +452,7 @@ async function plDelete(write){
   try{ r = await postJSON('/api/pipelines/delete', { proj: PLS.proj, name: p.name, dry: !write }); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
   PLS.saving = false;
-  if(!r || !r.ok){ PLS.del = null; PLS.msg = T('Could not delete') + ' — ' + (r && r.err ? TE(r) : ''); }
+  if(!r || !r.ok){ PLS.del = null; PLS.msg = T('Could not delete') + ' — ' + (r && (r.err || r.error || r.why) ? TE(r) : ''); }
   else if(!write) PLS.del = { name: p.name, path: r.path || '', to: r.to || '' };
   else {
     PLS.del = null; delete PLS.g[plEntKey(p.name)];

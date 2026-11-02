@@ -14,7 +14,7 @@ import time
 from urllib.parse import parse_qs
 
 # ⚠Fixtures, helpers and the tab payload builders (_WorldPanels) live in sidereus/demo_data.py; re-exported here
-from sidereus.demo_data import (CP_ROW, CU_ROW, CX, GEM_ROW, H, HOOKS_CONNECT, hooks_connect_dry, REPOS, SEED, _WorldPanels,  # noqa: F401
+from sidereus.demo_data import (CP_ROW, CU_ROW, CX, DEMO_TODO, GEM_ROW, H, HOOKS_CONNECT, hooks_connect_dry, REPOS, SEED, _WorldPanels,  # noqa: F401
                              _hex, _iso, _local_iso, _uuid)
 from sidereus.demo_git import _WorldGit   # branch tab + rail payloads (split out of demo_data)
 from sidereus.demo_rel import _ARCH_COMMIT, _ARCH_MODS, demo_arch, demo_file, demo_src, demo_tree   # structure arch/tree payloads
@@ -38,8 +38,7 @@ CART_BG_IDLE = {"n": 2, "idle": 1, "max": 1500}
 # Agent team led by the billing session (agents.team_info shape).
 TEAM = {"members": [{"name": "api-dev", "st": "run", "model": "sonnet-5", "tsub": "Retry queue for webhooks", "unread": 0},
                     {"name": "reviewer", "st": "done", "model": "opus-5", "tsub": "", "unread": 1},
-                    {"name": "test-writer", "st": "idle", "model": "sonnet-5", "tsub": "Contract tests for refunds",
-                     "unread": 2}],
+                    {"name": "test-writer", "st": "idle", "model": "sonnet-5", "tsub": "Contract tests for refunds", "unread": 2}],
         "tasks": {"pending": 1, "in_progress": 2, "completed": 3}, "done": 3, "total": 6, "run": True}
 
 
@@ -56,18 +55,12 @@ class World(_WorldPanels, _WorldGit):
         R = REPOS
         # ── sessions: (key, repo, cwd, branch, state, tool, targ, model, win, ctx, age, mbox, born_h, cost)
         spec = [
-            ("web", "acme-web", R["acme-web"][0], "feature/checkout-redesign", "think", "Agent",
-             "Checkout form validation", "opus-5", 1000000, 412000, 6, "web-lead", 5.2, 38.40),
-            ("cart", "acme-web", R["acme-web"][1][0][0], "bugfix/cart-rounding", "tool", "Bash",
-             "npm test -- cart", "sonnet-5", 200000, 96000, 21, "cart-fix", 2.1, 6.95),
-            ("bill", "billing-api", R["billing-api"][0], "develop", "ask", "", "", "opus-5", 1000000, 188000,
-             240, "billing", 4.4, 22.10),
-            ("inv", "billing-api", R["billing-api"][1][0][0], "feature/invoice-pdf", "wait", "", "", "opus-5",
-             1000000, 872000, 14 * 60, "invoice", 3.6, 31.75),
-            ("docs", "docs-site", R["docs-site"][0], "main", "done", "", "", "sonnet-5", 200000, 61000,
-             52 * 60, "docs", 2.8, 4.20),
-            ("search", "docs-site", R["docs-site"][1][0][0], "feature/search-index", "think", "Monitor",
-             "Watch search index build", "opus-5", 1000000, 233000, 3, "search", 1.3, 9.60),
+            ("web", "acme-web", R["acme-web"][0], "feature/checkout-redesign", "think", "Agent", "Checkout form validation", "opus-5", 1000000, 412000, 6, "web-lead", 5.2, 38.40),
+            ("cart", "acme-web", R["acme-web"][1][0][0], "bugfix/cart-rounding", "tool", "Bash", "npm test -- cart", "sonnet-5", 200000, 96000, 21, "cart-fix", 2.1, 6.95),
+            ("bill", "billing-api", R["billing-api"][0], "develop", "ask", "", "", "opus-5", 1000000, 188000, 240, "billing", 4.4, 22.10),
+            ("inv", "billing-api", R["billing-api"][1][0][0], "feature/invoice-pdf", "wait", "", "", "opus-5", 1000000, 872000, 14 * 60, "invoice", 3.6, 31.75),
+            ("docs", "docs-site", R["docs-site"][0], "main", "done", "", "", "sonnet-5", 200000, 61000, 52 * 60, "docs", 2.8, 4.20),
+            ("search", "docs-site", R["docs-site"][1][0][0], "feature/search-index", "think", "Monitor", "Watch search index build", "opus-5", 1000000, 233000, 3, "search", 1.3, 9.60),
         ]
         self.sess = []
         for (k, repo, cwd, br, st, tool, targ, model, win, ctx, age, mb, born_h, cost) in spec:
@@ -104,14 +97,9 @@ class World(_WorldPanels, _WorldGit):
         for s in self.subs:
             s["paid"] = self.subs[s["par"]]["aid"] if s["par"] is not None else ""
         # ── session activity segments (minutes ago) for the timeline
-        self.segs = {
-            "web": [(312, 262), (248, 196), (120, 64), (44, 0)],
-            "cart": [(126, 98), (78, 40), (30, 0)],
-            "bill": [(265, 190), (160, 121), (40, 4)],
-            "inv": [(215, 150), (128, 70), (58, 14)],
-            "docs": [(180, 112), (100, 52)],
-            "search": [(78, 60), (30, 0)],
-        }
+        self.segs = {"web": [(312, 262), (248, 196), (120, 64), (44, 0)], "cart": [(126, 98), (78, 40), (30, 0)],
+                     "bill": [(265, 190), (160, 121), (40, 4)], "inv": [(215, 150), (128, 70), (58, 14)],
+                     "docs": [(180, 112), (100, 52)], "search": [(78, 60), (30, 0)]}
         self._commits()
         self._chat()
 
@@ -245,9 +233,7 @@ class World(_WorldPanels, _WorldGit):
 
     # ───────────────────────────── helpers
     def now(self):
-        if self._now is not None:
-            return self._now
-        return max(int(time.time()), self.a)
+        return self._now if self._now is not None else max(int(time.time()), self.a)
 
     def _sess_subs(self, k):
         return [s for s in self.subs if s["k"] == k]
@@ -392,7 +378,7 @@ class World(_WorldPanels, _WorldGit):
                                "max": 3_450_000_000, "pct": 38, "src": "보정"}},
             "quota": self._pub(q),
             "accts": [{"label": "personal", "primary": True}, {"label": "work", "primary": False}],
-            "quotaWho": self.quota_who(),
+            "quotaWho": self.quota_who(), "todo": self.todo_counts(),
             # ⚠None: the saver hook is not shipped in plugin/hooks, so a real install never shows that chip.
             "saver": None, "saverView": None, "saverSwitch": None,
             "health": {"dead": [], "warns": [], "soft": [], "stale": []},
@@ -429,8 +415,7 @@ class World(_WorldPanels, _WorldGit):
                      ("bgidle", "백그라운드 셸 2개 · 무출력 1개 · 최장 25분", 30, now - CART_BG_IDLE["max"])]),
             (w, 85, [("conflict", why_c, 85, a - 5 * 60)]),
             (i, 25, [("ctx85", "컨텍스트 87%", 25, now - bs[i["id"]]["ageSec"]),
-                     ("done", "작업 끝 · 입력 대기 %d분" % (bs[i["id"]]["ageSec"] // 60), 20,
-                      now - bs[i["id"]]["ageSec"])]),
+                     ("done", "작업 끝 · 입력 대기 %d분" % (bs[i["id"]]["ageSec"] // 60), 20, now - bs[i["id"]]["ageSec"])]),
         ]
         out = []
         for s, score, sg in rows:
@@ -451,6 +436,22 @@ class World(_WorldPanels, _WorldGit):
         ]
         return [{"at": _local_iso(a - m * 60), "kind": k, "project": s["repo"], "title": t, "text": x,
                  "cwd": s["cwd"]} for m, k, s, t, x in c]
+
+    def todo_counts(self):
+        """State `todo` = todo.state_counts {cwd: {o, w, d}} for every session row whose repo has demo items."""
+        return {s["cwd"]: {k: sum(x[0] == c for x in DEMO_TODO[s["repo"]]) for k, c in (("o", " "), ("w", "~"), ("d", "x"))}
+                for s in self.sess if s["repo"] in DEMO_TODO}
+
+    def todo_get(self, cwd):
+        """GET /api/todo = todo.todo_get (code, {ok, repo, items, days, max}); 403 for a cwd not on screen, like live."""
+        s = next((x for x in self.sess if x["cwd"] == cwd), None)
+        if s is None:
+            return 403, {"ok": False, "err": "only sessions shown on screen"}
+        its, day = DEMO_TODO.get(s["repo"], []), lambda d: _local_iso(self.a - d * 24 * H)[:10]
+        items = [{"i": n + 1, "s": st, "t": t, "h": "%016x" % (n + 1), "sid": self.by[o]["sid"] if o else ""} for n, (st, t, o) in enumerate(its)]
+        days = [{"day": day(0), "added": [], "started": [t for st, t, _o in its if st == "~"], "done": [t for st, t, _o in its if st == "x"]},
+                {"day": day(1), "added": [t for _s, t, _o in its], "started": [], "done": []}] if its else []
+        return 200, {"ok": True, "repo": REPOS[s["repo"]][0], "items": items, "days": days, "max": 200}
 
 
 # ─────────────────────────────────────────────── HTTP glue
@@ -479,6 +480,8 @@ def respond(world, path, u):
         return 200, {"messages": w.messages_range(int(after), int(before) or None, int(n))}
     if path == "/api/cards":
         return 200, {"cards": w.cards()}
+    if path == "/api/todo":   # writes (/api/todo/add|set) stay the POST no-op
+        return w.todo_get(_q(u, "cwd"))
     if path == "/api/agents/timeline":
         return 200, w.timeline(max(1.0, min(48.0, _num(_q(u, "hours", "12"), 12.0))))
     if path in ("/api/quota/burn", "/api/live"):   # no-arg panels; merged to stay under the 620-line cap

@@ -236,18 +236,24 @@ def _path():
     return mailbox_config.config_path()
 
 
-def _read_file():
-    """(raw dict, error) — a missing file is {}; a broken one is an error (never overwritten)."""
+def _read_file_v():
+    """(raw dict, None | {"err": fixed key, "vars"}) — a missing file is {}; a broken one is an error (never overwritten)."""
     try:
         with open(_path(), encoding="utf-8-sig") as f:     # a leading BOM (Windows editors) is not an error
             d = json.load(f)
     except FileNotFoundError:
         return {}, None
     except (OSError, ValueError) as e:
-        return None, "config file unreadable (%s) — fix it by hand" % type(e).__name__
+        return None, {"err": "config file unreadable ({e}) — fix it by hand", "vars": {"e": type(e).__name__}}
     if not isinstance(d, dict):
-        return None, "config file top level is not an object — fix it by hand"
+        return None, {"err": "config file top level is not an object — fix it by hand"}
     return d, None
+
+
+def _read_file():
+    """(raw dict, error string) — _read_file_v with the vars filled in."""
+    d, e = _read_file_v()
+    return d, (e["err"].format(**e.get("vars", {})) if e else None)
 
 
 def prefs_get():
@@ -287,21 +293,22 @@ def _write(data):
 
 
 def compact_hist_append(day, window):
-    """Add [day, window] to config compact_history (ascending; the same date is replaced) -> error string or None."""
+    """Add [day, window] to config compact_history (ascending; the same date is replaced) -> None or {"err", "vars"}."""
+    # ⚠err is a fixed I18N key; the variable part rides in vars (the client fills it after translating)
     with _LOCK:
-        data, err = _read_file()
+        data, err = _read_file_v()
         if err:
             return err
         try:
             rows = _v_hist(data.get("compact_history") or [])
         except ValueError as e:
-            return "compact_history invalid (%s) — not updated" % e
+            return {"err": "compact_history invalid ({why}) — not updated", "vars": {"why": str(e)}}
         rows = sorted([r for r in rows if r[0] != day] + [[day, window]], key=lambda r: r[0])[-COMPACT_MAX_ROWS:]
         data["compact_history"] = rows
         try:
             _write(data)
         except OSError as e:
-            return "config write failed (%s)" % type(e).__name__
+            return {"err": "config write failed ({e})", "vars": {"e": type(e).__name__}}
     return None
 
 

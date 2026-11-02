@@ -276,6 +276,10 @@ class TestPost(unittest.TestCase):
         self.assertIsNone(req.get_header("Origin"))
         self.assertEqual(json.loads(req.data.decode("utf-8"))["action"], "list")
 
+    def test_err_placeholders_filled_from_vars(self):
+        d = m._fill_err({"ok": False, "err": "one line, 1-{n} characters {x}", "vars": {"n": 200}})
+        self.assertEqual(d["err"], "one line, 1-200 characters {x}")
+
     def test_plugin_copy_identical(self):
         with open(_P, "rb") as a, open(os.path.join(os.path.dirname(os.path.dirname(_P)), "plugin", "mcp",
                                                     "sidereus_mcp.py"), "rb") as b:

@@ -99,6 +99,7 @@ class RailJs(unittest.TestCase):
         # Badge peek opens without lsSet; outside press / jump closes it; only railSet writes the pref.
         src = ("let railOpen = false; const saved = [];\n"
                "function lsSet(k, v){ saved.push(v); } function railTip(){} function railApply(){}\n"
+               "let railOpener = null; const document = {activeElement: null};\n"
                "const mk = inside => ({closest: () => inside ? {} : null});\n"
                "let SESS = [], hid = 0; function actHovHide(){ hid++; } function actKey(){ return ''; }\n"
                + "\n".join(js_fn(n) for n in ("railShow", "railSet", "railPeekEnd", "railPeekOut", "actGo"))
@@ -112,6 +113,32 @@ class RailJs(unittest.TestCase):
         r, saved = run(src)
         self.assertEqual(r, [True, False, True, False, False, False, False, 1, True, False, True, False, False])
         self.assertEqual(saved, ["1", "0"])
+
+    def test_overlay_inert_and_opener_focus(self):
+        # Overlay marks header/sbar/.wrap children inert (not the floating drawer, not pre-inert nodes); Esc returns to the opener.
+        src = ("function el(n, cls, conn){ const a = {}; return {n, isConnected: conn !== false, classList: {contains: c => c === cls},\n"
+               "  hasAttribute: k => k in a, setAttribute(k){ a[k] = 1; }, removeAttribute(k){ delete a[k]; }, getClientRects: () => [1],\n"
+               "  focus(){ FOC = n; }, get inert(){ return 'inert' in a; }}; }\n"
+               "let FOC = '', innerWidth = 1100, railOpen = false, railPeek = false, SESPIN = false;\n"
+               "const hd = el('header'), sb = el('sbar'), ps = el('pside'), ls = el('lside', 'lside'), own = el('own'), tg = el('railtg'), ab = el('rattnb');\n"
+               "own.setAttribute('inert');\n"
+               "const wrap = {children: [ps, ls, own]};\n"
+               "const document = {activeElement: tg, body: {}, querySelector: s => s === 'body > header' ? hd : s === 'body > .wrap' ? wrap : null,\n"
+               "  getElementById: id => id === 'sbar' ? sb : id === 'railtg' ? tg : null};\n"
+               "function lsSet(){} function railTip(){} function railApply(){ railInert(railMode(innerWidth, railOpen) === 'overlay'); }\n"
+               "let railOpener = null, railInertEls = [];\n"
+               + "\n".join(js_fn(n) for n in ("railMode", "railInertTargets", "railInert", "railBackTo", "railShow", "railSet", "railPeekEnd", "railCloseOver"))
+               + "\nconst st = () => [hd, sb, ps, ls, own].map(e => e.inert);\n"
+               "const r = [];\n"
+               "railPeek = true; railShow(true, ab); r.push(st()); r.push(railCloseOver(), FOC, st());\n"
+               "document.activeElement = tg; railSet(true); railCloseOver(); r.push(FOC);\n"
+               "document.activeElement = document.body; railSet(true); railCloseOver(); r.push(FOC);\n"
+               "SESPIN = true; railSet(true); r.push(st()); railSet(false);\n"
+               "innerWidth = 1440; railSet(true); r.push(st(), railCloseOver());\n"
+               "process.stdout.write(JSON.stringify(r));")
+        r = run(src)
+        self.assertEqual(r, [[True, True, True, False, True], True, "rattnb", [False, False, False, False, True], "railtg", "railtg",
+                             [True, True, True, True, True], [False, False, False, False, True], False])
 
 
 if __name__ == "__main__":

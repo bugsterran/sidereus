@@ -183,14 +183,14 @@ class DmRouteTest(_Base):
     def test_relay_needs_viewer_origin(self):
         self._stub({"ok": True, "id": "abc", "to": "alice"})
         req = {"to": "alice", "body": "hi", "relay": True, "sid": "0a1b2c3d"}
-        code, out, _ = post("/api/dm", req)                         # no Origin (agent curl) -> refused, not downgraded
-        self.assertEqual((code, out["ok"], out["err"]), (403, False, "relay needs the viewer page"))
+        code, out, _ = post("/api/dm", req, origin="")              # no Origin (agent curl) -> refused, not downgraded
+        self.assertEqual((code, out["ok"], out["error"]), (403, False, "viewer origin required"))
         self.assertEqual(self.calls, [])
         port = sidereus("config").PORT
         for o in ("http://127.0.0.1:%d" % port, "http://localhost:%d" % port):
             self.assertEqual(post("/api/dm", req, origin=o)[0], 200, o)
-        self.assertEqual(post("/api/dm", {"to": "alice", "body": "hi"})[0], 200)   # plain DM without Origin still ok
-        self.assertEqual(len(self.calls), 3)
+        self.assertEqual(post("/api/dm", {"to": "alice", "body": "hi"}, origin="")[0], 403)   # plain DM needs it too
+        self.assertEqual(len(self.calls), 2)
 
     def test_oversize_not_read(self):
         self._stub({"ok": True})

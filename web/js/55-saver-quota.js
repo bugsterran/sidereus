@@ -94,8 +94,10 @@ function buildSaver(sv){
 }
 // Verdict clock beside the badge: the burn header's 5h % is polled every 30 s, so without it the two figures in one
 // modal read as a contradiction. A stale verdict already says «judged …» in `sub`, so it is skipped there.
+// Labelled «judged», not «as of»: the same row's % and current rate are refreshed live (svLive/svRate), so only the
+// stage verdict carries this clock.
 function svAsOf(r){
-  return r && r.at && !r.old ? ' · ' + esc(T('as of {t}', 'conn').replace('{t}', CLK(new Date(r.at * 1000)))) : '';
+  return r && r.at && !r.old ? ' · ' + esc(TV({msg: 'judged {t}', vars: {t: CLK(new Date(r.at * 1000))}})) : '';
 }
 // Concurrency inputs line: the hook's own copy (`SV.capIn`/`capN`, clamped) when present, else burn `cap`. ⚠tpm values are raw tokens/min.
 function svCapLine(){
