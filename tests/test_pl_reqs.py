@@ -438,6 +438,20 @@ class SecurityFixTest(_Base):
             v = PQ.view([self.row(run)], {})[REPO][0]
         self.assertEqual((v["state"], v["reviewOk"]), ("done", True))
 
+    def test_r4_legacy_review_title_closes_on_renamed_run_stage(self):
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root, True)
+        os.makedirs(os.path.join(root, ".claude", "pipelines"))
+        old = "최종 검증"
+        with open(os.path.join(root, ".claude", "pipelines", "security-fix.json"), "w", encoding="utf-8") as f:
+            json.dump({"stages": [{"title": "Fix"}, {"title": old}]}, f)
+        self.send()
+        new = PQ.RENAMED[old]                                             # the hook and pl_runs key the stage by its new name
+        run = {"name": "security-fix", "t0": NOW + 5, "end": NOW + 900, "cur": new, "stages": {new: {"o": "done"}}}
+        with mock.patch.object(PQ, "DATA_DIR", root):
+            v = PQ.view([self.row(run)], {})[REPO][0]
+        self.assertEqual((v["state"], v["reviewOk"]), ("done", True))
+
     def test_r4_closed_written_once(self):
         self.send()
         run = {"name": "security-fix", "t0": NOW + 5, "end": NOW + 900, "cur": PQ.REVIEW_STAGE, "stages": {PQ.REVIEW_STAGE: {"o": "done"}}}
@@ -479,6 +493,20 @@ class ReviewTitleSource(unittest.TestCase):
             self.assertEqual(PQ._review_title(), "renamed-review")
         with mock.patch.object(PQ, "DATA_DIR", os.path.join(tmp, "none")):
             self.assertEqual(PQ._review_title(), PQ.REVIEW_STAGE)
+
+    def test_renamed_legacy_last_stage_maps_like_run_keys(self):
+        # a legacy last stage title is stored by the hook and pl_runs under its new name
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        d = os.path.join(tmp, ".claude", "pipelines")
+        os.makedirs(d)
+        old = next(iter(PQ.RENAMED))
+        with open(os.path.join(d, PQ.FIX_PL + ".json"), "w", encoding="utf-8") as f:
+            json.dump({"stages": [{"title": "a"}, {"title": old}]}, f)
+        run = {"stages": {PQ.RENAMED[old]: {"o": "done"}}}
+        with mock.patch.object(PQ, "DATA_DIR", tmp):
+            self.assertEqual(PQ._review_title(), PQ.RENAMED[old])
+            self.assertTrue(PQ._review_done(run))
 
 
 if __name__ == "__main__":

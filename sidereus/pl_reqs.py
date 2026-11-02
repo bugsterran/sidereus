@@ -16,6 +16,7 @@ import time
 from sidereus.config import DATA_DIR
 from sidereus.bus import RELAY_SID, _atomic_write
 from sidereus import arch_map, gitinfo
+from sidereus.pl_runs import RENAMED   # core copy; pipeline_schema is feature-owned (test_arch feature_couplings)
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
@@ -249,7 +250,8 @@ def _review_title():
         # ⚠Must read DATA_DIR like hooks/pl_flow.py (CODE_DIR has no .claude/pipelines on a pipx install), or gate and request disagree.
         with open(os.path.join(DATA_DIR, ".claude", "pipelines", FIX_PL + ".json"), encoding="utf-8") as f:
             t = json.load(f)["stages"][-1]["title"]
-        return t if isinstance(t, str) and t else REVIEW_STAGE
+        # ⚠Map legacy titles like hooks/pl_flow.py _ren_stage and pl_runs._title, or the run key never matches.
+        return RENAMED.get(t, t) if isinstance(t, str) and t else REVIEW_STAGE
     except Exception:
         return REVIEW_STAGE
 
