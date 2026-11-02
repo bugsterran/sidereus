@@ -85,3 +85,40 @@ class BandPorts(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# Demo shop shape: order -> db runs past narrower boxes into a wider lone node under a centred band title.
+COL = ("flowchart TB\n  subgraph L1[Service]\n    o[order]\n  end\n  subgraph L2[Domain]\n    c[common]\n  end\n"
+       "  subgraph L3[Infra]\n    p[pay]\n  end\n  subgraph L4[External]\n    db[PostgreSQL database]\n  end\n"
+       "  o --> c\n  o -.-> db\n  o -.-> p\n")
+
+DEMO = ("flowchart TB\n  subgraph L0[\"Entry\"]\n    direction LR\n    subgraph Ek0r0[\"HTTP\"]\n      direction TB\n"
+        "      en0{{\"GET /orders/{id}\"}}\n      en1{{\"POST /orders/{id}/pay\"}}\n    end\n  end\n"
+        "  subgraph L2[\"API\"]\n    m0[\"web\"]\n    m4[\"app (py)\"]\n  end\n  subgraph L3[\"Service\"]\n    m1[\"order\"]\n  end\n"
+        "  subgraph L4[\"Domain\"]\n    m2[\"common\"]\n  end\n  subgraph L6[\"Infra\"]\n    m3[\"pay\"]\n  end\n"
+        "  subgraph Lx[\"External\"]\n    m5([\"PostgreSQL\"])\n  end\n"
+        "  m0 --> m1\n  m1 --> m2\n  m1 -.-> m5\n  m1 -.-> m3\n  en0 --> m0\n  en1 --> m0\n")
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class BandCentre(unittest.TestCase):
+    def test_lone_node_entered_at_top_centre_clear_of_title(self):
+        err, nodes, edges, tr = run("const g = mmdParse(" + json.dumps(COL) + "); ['L1', 'L2', 'L3', 'L4'].forEach(s => { g.sgs[s].pass = true; });"
+                                    " const L = mmdLayout(g); process.stdout.write(JSON.stringify([ERR, L.nodes, L.edges, L.sgs.L4.tr]));")
+        self.assertIsNone(err)
+        R, p = nodes["db"], [e for e in edges if e["to"] == "db"][0]["pts"]
+        self.assertEqual(side(R, p[-1]), "top")
+        self.assertLessEqual(abs(p[-1][0] - (R["x"] + R["w"] / 2)), 2)   # was 39px off before the title moved
+        self.assertTrue(p[-1][0] > tr["x"] + tr["w"] + 2 or p[-1][0] < tr["x"] - 2)   # last run clear of the title wall
+
+    def test_demo_map_db_jogs_onto_top_centre(self):
+        # Demo layered map (84j2 archBandSrc output, bands set up like archBandFix): the trunk past common/pay reached db's top
+        # one column right of centre; 81g0 relSmooth jogs a one-side end onto the centre port.
+        err, nodes, edges, tr = run("const g = mmdParse(" + json.dumps(DEMO) + "); g.slist.forEach(s => { g.sgs[s].pass = true; });"
+                                    " g.sgs.Ek0r0.oneLayer = true; g.rankFix = {L0: 0, L2: 1, L3: 2, L4: 3, L6: 4, Lx: 5}; g.axis = true;"
+                                    " const L = mmdLayout(g); process.stdout.write(JSON.stringify([ERR, L.nodes, L.edges, L.sgs.Lx.tr]));")
+        self.assertIsNone(err)
+        R, p = nodes["m5"], [e for e in edges if e["to"] == "m5"][0]["pts"]
+        self.assertEqual(side(R, p[-1]), "top")
+        self.assertLessEqual(abs(p[-1][0] - (R["x"] + R["w"] / 2)), 2)
+        self.assertTrue(p[-1][0] > tr["x"] + tr["w"] + 2 or p[-1][0] < tr["x"] - 2)

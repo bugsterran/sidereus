@@ -368,3 +368,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: inside the flow tree's steps (84j6) a deviating edge never showed its `.archdev` reason badge.
 - ⇒ the «N outside {s} flow» filter renders its own flat list (`archDevListHtml`), not `archEdTreeHtml`.
 - ⚠Do not route the filtered list back through the tree — `tests/test_struct_arch_devfilter_js.py` `test_R2_R3_filtered_list`.
+
+## Band title walls an edge into a member's top (`81e-structure-mermaid.js`)
+
+- Cause: a centred band title sits over the top-centre port of a member box, so the router treats it as a wall and detours or drops the edge through the title.
+- ⇒ the title moves left/right off the entry column, or the band widens; `relSmooth` jogs a side-held end onto the side-centre port only when it is >2 cells off.
+- ⚠Do not apply the side-centre jog to every edge — ★ARCHITECTURE.md crossings rose 15→20 — `tests/test_mermaid_band_ports_js.py`.

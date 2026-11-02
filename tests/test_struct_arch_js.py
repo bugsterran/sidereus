@@ -223,6 +223,7 @@ class StructArch(unittest.TestCase):
         self.assertNotIn("<script>", r)
         self.assertIn("&lt;script&gt;s", r)
         self.assertIn('data-al="2"', r)
+        self.assertIn('title="x&quot;&gt;&lt;img src=y&gt;.py:2 · ', r)   # truncated path readable in the tooltip
 
     def test_empty_state_has_request(self):
         r = run("ARCH.cache['/r'] = {ok: true, modules: [], edges: [], sidereus: '/r'}; const box = {innerHTML: '', querySelector(){ return null; }};"

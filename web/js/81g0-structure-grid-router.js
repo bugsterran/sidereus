@@ -197,6 +197,29 @@ function relSmooth(G, p, a, b, sps, tps, ga, gb, spen, tpen, jTop, kst){
   const stubOk = q => q.length < 3 || (L1(q[0], q[1]) >= Math.min(need[0], relStubPx(G, a, side(a, q[0]))) - 0.5
     && L1(q[q.length - 1], q[q.length - 2]) >= Math.min(need[1], relStubPx(G, b, side(b, q[q.length - 1]))) - 0.5);
   const tryq = q => { q = relSimp(q); if(!stubOk(q)) return; const v = score(q); if(v < bs - 0.01){ best = q; bs = v; } };   // ⚠rewrites keep the port stubs
+  // ⚠Every port on a side costs the same and a centre landing costs two bends, so a line that ran past narrower boxes (order->db
+  // beside common/pay) joined the wider box 40px off-centre ⇒ jog onto the side-centre port just before the box, when clear.
+  // Offsets within two cells are left to mmdSpread (81g): it re-centres or re-slots them; a jog there only added bends (web entries).
+  const centre = (o, ports, head) => {
+    const q = head ? best.slice().reverse() : best, n = q.length - 1;
+    if(n < 2) return;
+    const E = q[n], R = q[n - 1], sd = side(o, E), t = ports.find(x => x[2] === sd);
+    if(!t) return;
+    const P = ctr(t[0], t[1]), c = sd % 2 ? 'y' : 'x', u = sd % 2 ? 'x' : 'y', dir = [-1, 1, 1, -1][sd];
+    if(Math.abs(E[c] - P[c]) <= 2 * C || Math.abs(R[c] - E[c]) > 0.5) return;
+    for(let k = 1; (R[u] - P[u]) * dir > k * C; k++){
+      const J = P[u] + dir * k * C, c1 = { [c]: R[c], [u]: J }, c2 = { [c]: P[c], [u]: J };
+      if(!ok(c1, c2) || !ok(c2, P)) continue;
+      let w = relSimp(q.slice(0, n).concat([c1, c2, P, bd(o, sd, P)]));
+      if(head) w = w.reverse();
+      if(stubOk(w)){ best = w; return; }
+    }
+  };
+  // ⚠Only for an end held to one side (pass-band top/bottom pens): elsewhere jogs added crossings (ARCHITECTURE.md 15 -> 20).
+  const one = pen => pen.filter(isFinite).length === 1;
+  if(one(tpen)) centre(b, tps, false);
+  if(one(spen)) centre(a, sps, true);
+  bs = score(best);   // before the rewrites: short cuts drop the bends a jog left upstream
   for(let round = 0; round < 3; round++){
     const was = bs, cur = best, n = cur.length;
     tps.forEach(([i, j, sd]) => {                                // tail → target side sd, arriving inward

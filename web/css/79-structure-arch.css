@@ -90,6 +90,7 @@ html[data-ui][data-ui][data-ui] .archtab .archok[disabled]{opacity:1;color:var(-
 /* 900: the edge list goes under the diagram (no sideways scroll) */
 @media (max-width:1060px){
   .archbody{grid-template-columns:minmax(0,1fr);grid-template-rows:100% auto}   /* ⚠map row = whole body, panel below in #feed's scroll: sharing the height left archFitOf too little room (null) */
+  .archbody:has(.archfdg){grid-template-rows:auto auto}   /* flow sequence: a short diagram must not keep a full-height row that pushes the list off screen */
   .archside{max-height:360px;order:0}   /* ⚠60-sessions.css `aside{order:-1}` (≤1000) would lift the panel above the map */
   .archbody>.strspg{display:none}
   /* ⚠module detail floats over the map's bottom-left (minimap keeps bottom-right): below the map it opened at y 872 of 900, off screen */

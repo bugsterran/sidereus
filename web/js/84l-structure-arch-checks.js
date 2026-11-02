@@ -50,10 +50,12 @@ function archChkTopBtn(d, p){   // p = repo of the hidden-rule pref, default the
   // stale = scanned commit is not HEAD: same «cut» + ⚠ marking as the diagram stamp (archHeadNote, 84j)
   const old = !!sec.stale, cm = String(sec.commit || '').slice(0, 7), hd = String((d && d.head) || '').slice(0, 7);
   const gap = typeof archChkImgGap === 'function' ? archChkImgGap(sec) : '';
+  // ⚠unknown is not clean: scanned but no scanner ran ok gets its own grey «not checked» badge, never «issues 0»
+  const nr = !!archChkScanAt(d) && !archChkTools(sec).some(t => t.status === 'ok');
   const tip = archChkLast(d).txt + '\n' + (gap ? '⚠ ' + gap + '\n' : '') + (old ? T('Scanned commit {n} · HEAD now {m}').replace('{n}', cm).replace('{m}', hd) + '\n' + T('The security results are older than the code — run the security check again.') + '\n' : '')
     + archChkTools(sec).map(t => (typeof archChkTid === 'function' ? archChkTid(t) : String(t.id)) + ' · ' + archChkStat(t)).join('\n') + (hid.length ? '\n' + T('{n} rules hidden').replace('{n}', hid.length) : '');
-  return '<button type=button class="strbg strbg-archcki' + (e ? '' : ' strbg-archckiw') + (old ? ' strbg-cut' : '') + '" data-arck aria-haspopup=dialog title="' + esc(tip) + '">'
-    + esc((old ? '⚠ ' : '') + T('Security issues {n}').replace('{n}', vis.length)) + '</button>';
+  return '<button type=button class="strbg strbg-archcki' + (nr ? ' strbg-archckin" style="--bgc:var(--nx-t2,#aab4c3)' : e ? '' : ' strbg-archckiw') + (old ? ' strbg-cut' : '') + '" data-arck aria-haspopup=dialog title="' + esc(tip) + '">'
+    + esc((old ? '⚠ ' : '') + (nr ? T('Security not checked') : T('Security issues {n}').replace('{n}', vis.length))) + '</button>';
 }
 // Pure: one-line rule help — checks.security.rules[item.rk | "tool:rule"]; url kept only when https.
 function archChkHelp(c, x){
@@ -220,10 +222,16 @@ function archChkRunHtml(p, d, S, cands){
 function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (Codex included), default cands
   const c = d && d.checks, sec = archChkSec(d), hid = archChkHidden(p), all = archChkView(d, {}, hid);
   const top = archChkView(d, S, hid), sel = archChkSel(d, S.sel, S, hid), n = sel.length, cm = String((sec && sec.commit) || '').slice(0, 8);
-  const nl = l => top.filter(x => archChkLv(x.sev) === l).length, sf = archChkSevF(S.sev), flt = sf !== 'all' || !!S.tool;
+  const sf = archChkSevF(S.sev), flt = sf !== 'all' || !!S.tool, H = archChkHidSet(hid);
+  // counts = scanner totals (archChkSum, as the badge: image scans and items past the 50 list included) for the tool filter, minus listed hidden rules
+  const sm = archChkSum({ tools: archChkTools(sec).filter(t => !S.tool || String(t.id) === S.tool) });
+  const nl = l => Math.max(0, sm[l[0]] - archChkTop(d).filter(x => H[archChkRk(x)] && archChkLv(x.sev) === l && (!S.tool || String(x.tool || '') === S.tool)).length);
+  // the severity filter drops the levels it hides, so «Critical only» reads «critical N» alone
+  const cnt = (sf === 'critical' ? ['critical'] : sf === 'high' ? ['critical', 'high'] : ['critical', 'high', 'medium', 'low']).map(l => archChkLvLbl(l) + ' ' + nl(l)).join(' · ');
+  const nr = !!sec && !!archChkScanAt(d) && !archChkTools(sec).some(t => t.status === 'ok');   // same «not checked» rule as archChkTopBtn
   const tids = archChkTools(sec).map(t => String(t.id)).concat(archChkTop(d).map(x => String(x.tool || ''))).filter((t, i, a) => t && a.indexOf(t) === i);
   const why = !cands.length ? T('No live session') : !n ? T('Select at least one issue') : '';
-  let h = '<div class=ckwh><b>' + esc(T('Top issues {n}').replace('{n}', top.length)) + '</b><span>' + esc(T('critical {c} · high {h} · medium {m} · low {l}').replace('{c}', nl('critical')).replace('{h}', nl('high')).replace('{m}', nl('medium')).replace('{l}', nl('low')))
+  let h = '<div class=ckwh><b>' + esc(T('Top issues {n}').replace('{n}', top.length)) + '</b><span>' + esc(cnt)
     + (flt ? ' · ' + esc(T('shown {n} of {m}').replace('{n}', top.length).replace('{m}', all.length)) : '')
     + '</span>' + archChkLastHtml(d) + '<span class=ckwp title="' + esc(p) + '">' + esc(archBase(p) + (cm ? ' · ' + cm : '')) + '</span>'
     + '<label class=ckwa><input type=checkbox data-ckall' + (top.length && top.every(x => S.sel && S.sel[archChkKey(x)]) ? ' checked' : '') + '>' + esc(T('Select all')) + '</label>'
@@ -253,7 +261,7 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
   h += (S.sent ? '' : archChkFixRecHtml(p)) + archChkSentHtml(S);   // after a reload S.sent is gone: the server record (plReq) stands in
   const lg = sec ? archChkLogHtml(sec.log, sec.report) : '<div class=archckst>' + esc(T('No security check yet')) + '</div>';
   // ⚠empty top: a status line, not an empty <ol> + grip, else the saved split height paints a tall empty box
-  if(!top.length) return h + (sec ? '<div class="archckst ckwnone" role=status>' + esc(T(flt && all.length ? 'No issues match the filters' : 'No scanner findings')) + '</div>' : '') + lg;
+  if(!top.length) return h + (sec ? '<div class="archckst ckwnone" role=status>' + esc(T(flt && all.length ? 'No issues match the filters' : nr ? 'No scanner ran' : 'No scanner findings')) + '</div>' : '') + lg;
   return h + '<ol class=archckl>' + top.map(x => { const k = archChkKey(x), ln = parseInt(x.line, 10) || 1, sv = archChkLv(x.sev), hp = archChkHelp(c, x);
     return '<li class="' + sv + '"><input type=checkbox data-ckk="' + esc(k) + '"' + (S.sel && S.sel[k] ? ' checked' : '') + ' aria-label="' + esc(x.file + ':' + ln) + '"><div class=ckwr>'
       + '<button type=button data-ckv data-af="' + esc(x.file) + '" data-al="' + esc(ln) + '" title="' + esc(T('View code')) + '">'

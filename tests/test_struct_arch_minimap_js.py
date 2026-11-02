@@ -177,6 +177,12 @@ class AnchorShortMap(unittest.TestCase):
                 "console.log(JSON.stringify(archMmAnchor(v, m)));")
         self.assertEqual(r, {"left": 1000 + 200 - 500, "top": 500 + 150 - 100 - 300})
 
+    def test_toolbar_above_svg_stays_below_sticky_top(self):
+        # tall map: the 25px .mmdbar above the svg must land just under the 100px sticky top, not under it.
+        r = run("const v = {cw: 1000, ch: 700, sw: 3000, sh: 3000, top: 100, bar: 25}, m = {x: 1000, y: 500, w: 400, h: 1500};"
+                "console.log(JSON.stringify(archMmAnchor(v, m)));")
+        self.assertEqual(r["top"], 500 - 25 - 100)
+
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class DrillDownKeepsClickedNode(unittest.TestCase):

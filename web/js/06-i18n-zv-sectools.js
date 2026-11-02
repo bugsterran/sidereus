@@ -12,4 +12,6 @@ Object.assign(I18N.ko, {
   'Known vulnerabilities in npm packages (npm audit)': 'npm 패키지의 알려진 취약점 (npm audit)',
   'network for image scan': '이미지 검사에 네트워크 필요',
   'Dockerfile misconfigurations; with --images, known vulnerabilities in base images': 'Dockerfile 설정 오류 · --images 를 주면 베이스 이미지의 알려진 취약점',
+  'Security not checked': '보안 미점검',
+  'No scanner ran': '실행된 검사기 없음',
 });

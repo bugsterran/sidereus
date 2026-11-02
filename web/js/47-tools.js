@@ -74,7 +74,7 @@ async function tvwOpen(id){
   paintToken();
   let v;
   try{ v = await getJSON('/api/tools/file?id=' + encodeURIComponent(id)); }
-  catch(e){ v = { ok: false, msg: e && e.status === 404 ? T('No such item.') : String((e && e.message) || e) }; }
+  catch(e){ v = { ok: false, msg: e && e.status === 404 ? T('No such item.') : fetchErrMsg(e) }; }
   if(!TOOLF || TOOLF.id !== id) return;
   if(v && v.ok) TOOLF.text = String(v.text || ''); else TOOLF.err = (v && v.msg) || T('Could not read');
   paintToken();

@@ -1,6 +1,5 @@
 // Korean for the structure «Architecture» security issues window (84l-structure-arch-checks.js).
 Object.assign(I18N.ko, {
-  'critical {c} · high {h} · medium {m} · low {l}': '치명 {c} · 높음 {h} · 중간 {m} · 낮음 {l}',
   'not available': '사용 불가',
   'timed out': '시간 초과',
   'Top issues {n}': '주요 문제 {n}건',

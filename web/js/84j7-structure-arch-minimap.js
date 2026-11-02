@@ -51,8 +51,9 @@ function archMmPick(carried, ok, k){
 //   vertically centred when the map fits below the sticky top, else its top just below it. Clamped to [0, max].
 // ⚠Not the vertical centre of a tall map: that clipped the Entry band (top row) out of sight.
 function archMmAnchor(view, map){
-  const cl = (a, hi) => Math.max(0, Math.min(hi, a)), top = view.top || 0, vh = Math.max(0, view.ch - top);
-  const y = map.h <= vh ? map.y + map.h / 2 - top - vh / 2 : map.y - top;
+  const cl = (a, hi) => Math.max(0, Math.min(hi, a)), top = view.top || 0, vh = Math.max(0, view.ch - top), bar = view.bar || 0;
+  const my = map.y - bar, mh = map.h + bar;   // ⚠the .mmdbar toggle sits above the svg: anchoring the svg alone hid it under the sticky .archtop
+  const y = mh <= vh ? my + mh / 2 - top - vh / 2 : my - top;
   return { left: Math.round(cl(map.x + map.w / 2 - view.cw / 2, Math.max(0, view.sw - view.cw))), top: Math.round(cl(y, Math.max(0, view.sh - view.ch))) };
 }
 // Pure: archMmAnchor with left = the hub's centre (hub = {x, w} in content px); no hub = archMmAnchor unchanged.
@@ -63,8 +64,8 @@ function archMmHub(view, map, hub){
 }
 // Live .archmap view + diagram svg rect in scroll content px (same frame as archViewRect).
 function archMmVM(am, svg){
-  const b = am.getBoundingClientRect(), r = svg.getBoundingClientRect(), tp = am.querySelector('.archtop');
-  return { view: { sl: am.scrollLeft, st: am.scrollTop, cw: am.clientWidth, ch: am.clientHeight, sw: am.scrollWidth, sh: am.scrollHeight, top: tp ? tp.offsetHeight : 0 },
+  const b = am.getBoundingClientRect(), r = svg.getBoundingClientRect(), tp = am.querySelector('.archtop'), br = am.querySelector('.archdg .mmdbar');
+  return { view: { sl: am.scrollLeft, st: am.scrollTop, cw: am.clientWidth, ch: am.clientHeight, sw: am.scrollWidth, sh: am.scrollHeight, top: tp ? tp.offsetHeight : 0, bar: br ? br.offsetHeight || 0 : 0 },
     map: { x: r.left - b.left - (am.clientLeft || 0) + am.scrollLeft, y: r.top - b.top - (am.clientTop || 0) + am.scrollTop, w: r.width, h: r.height } };
 }
 // Record where a clicked diagram node sits inside its .archmap (84j archDgClick, before the repaint) for archMmFirst.

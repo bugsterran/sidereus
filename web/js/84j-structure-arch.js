@@ -99,7 +99,7 @@ function archEvHtml(ev, i){
   const xs = (ev || []).filter(x => x && x.file);
   if(!xs.length) return '<div class=archevn>' + esc(T('No evidence')) + '</div>';
   return '<ol class=archev>' + xs.map(x => '<li><button type=button data-aev="' + esc(i) + '" data-af="' + esc(x.file) + '" data-al="' + esc(parseInt(x.line, 10) || 1)
-    + '" data-as="' + esc(x.symbol || '') + '" title="' + esc(T('View code')) + '"><span class=archevf>' + esc(x.file) + '</span><span class=archevl>:' + esc(parseInt(x.line, 10) || 1)
+    + '" data-as="' + esc(x.symbol || '') + '" title="' + esc(x.file + ':' + (parseInt(x.line, 10) || 1) + ' · ' + T('View code')) + '"><span class=archevf>' + esc(x.file) + '</span><span class=archevl>:' + esc(parseInt(x.line, 10) || 1)
     + '</span>' + (x.symbol ? '<code>' + esc(x.symbol) + '</code>' : '') + '</button></li>').join('') + '</ol>';
 }
 // Pure: one edge row (+ its evidence when open). names = module id → display name; io = 'in'|'out' in the focus view.
