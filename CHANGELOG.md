@@ -22,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: a long flow name cut off with "…" shows its full name on hover.
 - Demo: the room invite and room create previews no longer fail with "unknown error".
 - Sessions: the pipeline chip on a session row shows the stage title in the UI language ("Live verify" in English), like the pipeline view.
+- Timeline: a Cursor session row no longer shows "Tokens 0"; Cursor records carry no token counts, so the chip is left out instead of claiming zero.
+- Demo: the work popup of an external session row (Gemini, Codex) opens instead of failing with a script error.
 - Pipelines: a run that two sessions both closed (main and a background agent) is counted once in the result layer and the weekly report; it was counted twice, which raised the run count and the review loop-back rate.
 - Pipelines: the stage titles of the bundled pipelines (Diagnose, Confirm, Review-find, Tag, ...) have English names; the English UI no longer shows them in Korean.
 - Attention: a "Needs your response" row lines up with the "For your information" rows; its red bar no longer stacks with the account colour bar on multi-account screens.
