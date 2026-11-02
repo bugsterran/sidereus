@@ -9,6 +9,7 @@
     {
       "title": "기준선",
       "agent": "sidereus-verifier",
+      "gate": "scripts/check.sh --full",
       "model": "sonnet",
       "task": "Run the full test suite before any change and record the result as the baseline. Change nothing."
     },
@@ -20,11 +21,13 @@
     {
       "title": "리팩토링",
       "agent": "sidereus-implementer",
+      "gate": "scripts/check.sh --fast",
       "task": "Apply the planned steps with no behaviour change. Run the tests after each step; on red, revert the step rather than patch it."
     },
     {
       "title": "검증",
       "agent": "sidereus-verifier",
+      "gate": "scripts/check.sh --full",
       "model": "sonnet",
       "onFail": { "goto": "리팩토링", "max": 2 }
     },

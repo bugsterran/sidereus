@@ -22,6 +22,7 @@
     {
       "title": "반영",
       "agent": "general-purpose",
+      "gate": "scripts/check.sh --fast",
       "task": "Fix every mismatch from 대조 in the draft, move it to its target path, and make one commit containing only that file (stage that one path only; never add other paths). Report the commit hash.",
       "ui": { "x": 540, "y": 24, "color": "#f472b6" }
     }
