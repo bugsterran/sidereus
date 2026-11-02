@@ -64,7 +64,10 @@ def _root_uuid(d):
             j = json.load(f)
         uid = ((j.get("oauthAccount") or {}).get("accountUuid") or None) if isinstance(j, dict) else None
     except (OSError, ValueError, AttributeError):
-        return None
+        # ⚠Claude Code rewrites this file often; a read mid-write must keep the last known uuid (same rule as
+        #   quota._cc_account). Returning None flipped the shared-plugins check off for one TTL, so the other
+        #   account's OMC cache was trusted and the soft warning was logged again on every flip back.
+        return hit[1] if hit else None
     _uuid_cache[p] = (mt, uid)
     return uid
 
