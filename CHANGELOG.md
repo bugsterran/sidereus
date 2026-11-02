@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Plugin: version 0.5.0. The plugin stayed at 0.4.0 since Sidereus 0.7.0, so `claude plugin update` kept the old hooks (Claude Code caches a plugin per version); updating now brings strict mode, Windows gate evidence and the To-do MCP tool.
 - Sessions: a long-running Bash in auto mode is no longer shown as "Bash waiting for approval".
 - Sessions: after `/clear`, the previous session id of the same process no longer shows as a second live row.
 - Terminal: a Claude Code background job jumps to the terminal tab of the claude that started it. When that tab is gone, the button says "Background" and copies `claude attach <id>` instead of `claude --resume`, which would open a second session.
