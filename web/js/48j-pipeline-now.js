@@ -37,11 +37,13 @@ function plNowAgents(x, only, cls){
   }).join('') + (more > 0 ? '<div class=plnagm>' + esc(TV({msg: '+{n} more', vars: {n: more}})) + '</div>' : '') + '</div>';
 }
 // ⚠Only a sub whose [pl:] tag names the open run sits under it (plnagrn); untagged ones stay a plain group — liveness alone is no evidence, no time window.
+// ⚠One session can hold several open runs at once (e.g. feature + bugfix): each gets its own group, else the second run's
+//   agents fell into the plain group (no run bar, 4px further left) next to the first run's group.
 function plNowAgentRows(x){
-  const r = (x.plrun || []).find(q => q && q.name && !q.end);
-  if(!r) return plNowAgents(x);
-  const inRun = a => { const d = plDescStage(a.lab); return !!d && d.name === r.name; };
-  return plNowAgents(x, inRun, 'plnagrn') + plNowAgents(x, a => !inRun(a));
+  const names = [...new Set((x.plrun || []).filter(q => q && q.name && !q.end).map(q => q.name))];
+  if(!names.length) return plNowAgents(x);
+  const runOf = a => { const d = plDescStage(a.lab); return d && names.includes(d.name) ? d.name : ''; };
+  return names.map(n => plNowAgents(x, a => runOf(a) === n, 'plnagrn')).join('') + plNowAgents(x, a => !runOf(a));
 }
 // Status: need = blocked on the person · work = a turn is running, or (turn ended, 'wait') its open run / a live subagent / an open bg task still works · idle = else.
 // ⚠One predicate for the row, the rail dot and the canvas (plPrLive): state alone read «Idle» while tagged background work ran.

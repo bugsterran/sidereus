@@ -346,6 +346,12 @@ class PlNow(unittest.TestCase):
         self.assertIn('data-pnname="arch-map"', grp[0][1])                        # tagged with the run's name: under the run
         self.assertNotIn('GCM', grp[0][1])                                   # untagged: never under the run
         self.assertIn('GCM', grp[1][1])
+        two = ("[{state: 'wait', sid: 's1', cwd: '/a', plat: 'cc', project: 'a', plrun: [{name: 'feature', cur: 'Build'}, {name: 'bugfix', cur: 'Live'}], sub: ["
+               "{lab: 'fe: [pl:feature/Build] header', aid: 'f1', idle: 5}, {lab: 'lv: [pl:bugfix/Live] list', aid: 'b1', idle: 5}]}]")
+        g2 = re.findall(r'<div class=("plnag plnagrn"|plnag)>(.*?)</div>', run(NOW + "console.log(JSON.stringify(plNowList(" + two + ")));"))
+        self.assertEqual([g[0] for g in g2], ['"plnag plnagrn"', '"plnag plnagrn"'])   # two open runs: both under a run bar
+        self.assertIn('data-pnname="feature"', g2[0][1])
+        self.assertIn('data-pnname="bugfix"', g2[1][1])
         none = run(NOW + "console.log(JSON.stringify(plNowAgentRows({cwd: '/a', sub: [{lab: 'b: x', aid: 'u1'}]})));")
         self.assertTrue(none.startswith("<div class=plnag>"))               # no run: same plain group
 
