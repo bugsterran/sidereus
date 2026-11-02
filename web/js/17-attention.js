@@ -141,17 +141,23 @@ function attnAckSave(id, v){   // same per-entry rule as attnSnzSave
 }
 // Row identity: sid, else cwd — rows with an empty sid must not share one ack/snooze slot.
 function attnRowId(r){ return r.sid || ('cwd:' + (r.cwd || '')); }
-function attnAckKey(vis, top){ return vis.map(s => s.k).sort().join(',') + '|' + ((top && top.since) || 0); }
-// Stored value -> {s, t}; legacy string acks were 'sid|kinds|since'.
+// ⚠A non-top ask/blocked adds '|a<since>': a re-ask under a higher-scored top keeps kinds and top since, so it needs its own since.
+function attnAckKey(vis, top){
+  const al = vis.filter(s => s !== top && typeof ALARM_TERM_KINDS !== 'undefined' && ALARM_TERM_KINDS.has(s.k)).map(s => s.since || 0);
+  return vis.map(s => s.k).sort().join(',') + '|' + ((top && top.since) || 0) + (al.length ? '|a' + Math.max(...al) : '');
+}
+// Stored value -> {s, t[, a]}; legacy string acks were 'sid|kinds|since'.
 function attnAckParse(v){
-  if(v && typeof v === 'object') return { s: String(v.s || ''), t: +v.t || 0 };
+  if(v && typeof v === 'object'){ const o = { s: String(v.s || ''), t: +v.t || 0 }; if(v.a !== undefined) o.a = +v.a || 0; return o; }
   if(typeof v !== 'string') return null;
-  const p = v.split('|'); if(p.length < 2) return null;
-  const t = +p.pop(); return { s: p.pop(), t: t || 0 };
+  const p = v.split('|'); const al = /^a\d/.test(p[p.length - 1] || '') ? +p.pop().slice(1) : undefined;
+  if(p.length < 2) return null;
+  const t = +p.pop(), o = { s: p.pop(), t: t || 0 }; if(al !== undefined) o.a = al || 0; return o;
 }
 function attnAckHit(stored, key){
   const a = attnAckParse(stored), b = attnAckParse(key);
   if(!(a && b && a.s === b.s)) return false;
+  if(a.a !== undefined && b.a !== undefined && b.a > a.a + ATTN_ACK_TOL) return false;   // newer non-top ask/blocked; no stored a = legacy, as before
   // ⚠blocked since = newest open subagent mark, so it moves back as siblings leave; only a NEWER wait re-shows the row.
   if(a.s.split(',').includes('blocked')) return b.t <= a.t + ATTN_ACK_TOL;
   return Math.abs(a.t - b.t) <= ATTN_ACK_TOL;
@@ -184,7 +190,12 @@ function attnRows(){
     const vis = (r.sigs || []).filter(s => attnPolOf(s.k) !== 'hide');
     for(const s of r.sigs || []) live.add(id + '|' + s.k);
     if(!vis.length) continue;
-    const on = s => { const e = snz[id + '|' + s.k]; return e === 'clear' || (typeof e === 'number' && e > now); };
+    // Snooze value: number (until) | 'clear' | {u: until|'clear', t: since}. ⚠A newer ask/blocked since = a new question, so it wakes.
+    const on = s => { let e = snz[id + '|' + s.k];
+      if(e && typeof e === 'object'){
+        if(ALARM_TERM_KINDS.has(s.k) && (s.since || 0) > (+e.t || 0) + ATTN_ACK_TOL){ delete snz[id + '|' + s.k]; snzGone.push(id + '|' + s.k); return false; }
+        e = e.u; }
+      return e === 'clear' || (typeof e === 'number' && e > now); };
     const sz = vis.filter(on), un = vis.filter(s => !on(s));
     if(sz.length){
       const hi = s => Math.max(...s.map(x => x.pts || 0));
@@ -207,7 +218,7 @@ function attnRows(){
     out.push(mk(key));
   }
   // housekeeping: expired timers, and 'clear' entries whose signal disappeared
-  if(ATTN) for(const key in snz){ const e = snz[key];
+  if(ATTN) for(const key in snz){ const o = snz[key], e = o && typeof o === 'object' ? o.u : o;
     if((typeof e === 'number' && e <= now) || (e === 'clear' && !live.has(key)) || (e !== 'clear' && typeof e !== 'number')){ delete snz[key]; snzGone.push(key); } }
   for(const k of snzGone) attnSnzSave(k, null);
   // prune acks whose session is gone or whose signal changed (legacy string acks are rewritten as objects)
@@ -375,8 +386,8 @@ function attnTitle(){ if(!ISPOP && !ISWP && !ISBP) document.title = titleOf(attn
     if(act === 'snz'){ attnMenu = attnMenu === id ? '' : id; return redraw(); }
     if(act === 'snz30' || act === 'snzclr' || act === 'later'){
       const r = rowOf();
-      const v = act === 'snzclr' ? 'clear' : Date.now() + ATTN_SNZ_MS;
-      for(const g of (r && r.sigs) || []) attnSnzSave(id + '|' + g.k, v);
+      const u = act === 'snzclr' ? 'clear' : Date.now() + ATTN_SNZ_MS;
+      for(const g of (r && r.sigs) || []) attnSnzSave(id + '|' + g.k, {u, t: g.since || 0});
       attnMenu = ''; return redraw();
     }
     attnRowGo(rowOf(), sid, cwd);

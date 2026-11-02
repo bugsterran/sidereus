@@ -189,7 +189,7 @@ def saver_set(req):
     # ⚠Never create the hook folder (Sidereus does not create tool dirs); without it the lock open raised FileNotFoundError.
     for p, on in ((SAVER_FORCE, mode is not None), (SAVER_LIMIT, lim is not None), (SAVER_GOAL, gobj is not None)):
         if on and not os.path.isdir(os.path.dirname(p)):
-            return {"ok": False, "err": "Hook folder not found: %s" % os.path.dirname(p)}
+            return {"ok": False, "err": "Hook folder not found", "path": os.path.dirname(p)}   # stable text: the client translates it
     if mode == "auto":
         with _saver_lock(SAVER_FORCE):
             try:

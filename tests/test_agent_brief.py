@@ -264,5 +264,21 @@ class TestRoutes(unittest.TestCase):
         self.assertEqual(seen, ["work", None])
 
 
+class TestWhyEveryKind(unittest.TestCase):
+    def test_every_attention_kind_has_english_label(self):
+        # ATT_PTS is indexed by every kind _sig() can emit, so a new kind without a _why_en branch fails here.
+        att = sidereus("attention")
+        whys = {"mailidle": "메일 3통 대기 · 세션 쉼 7분", "bgidle": "백그라운드 셸 2개 · 무출력 1개 · 최장 9분"}
+        for k in att.ATT_PTS:
+            out = ab._why_en({"k": k, "why": whys.get(k, "x 1")})
+            self.assertTrue(out and out != k, k)
+            self.assertFalse(any("가" <= ch <= "힣" for ch in out), (k, out))
+        self.assertEqual(ab._why_en({"k": "mailidle", "why": whys["mailidle"]}),
+                         "Mail waiting · session idle · 3 message(s) · 7 min")
+        self.assertEqual(ab._why_en({"k": "bgidle", "why": whys["bgidle"]}),
+                         "2 background shell(s) · 1 idle · longest 9 min")
+        self.assertEqual(ab._why_en({"k": "bgidle", "why": ""}), "Idle shells")
+
+
 if __name__ == "__main__":
     unittest.main()

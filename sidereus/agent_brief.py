@@ -214,6 +214,12 @@ def _why_en(s):
     if k == "fail":
         c = _num(w, r"등 (\d+)건")
         return "Failure alert" + (" (%s)" % c if c else "")
+    if k == "mailidle":
+        m = re.search(r"(\d+)\D+(\d+)", w)
+        return "Mail waiting · session idle" + (" · %s message(s) · %s min" % (m.group(1), m.group(2)) if m else "")
+    if k == "bgidle":
+        m = re.search(r"(\d+)\D+(\d+)\D+(\d+)", w)
+        return "%s background shell(s) · %s idle · longest %s min" % m.groups() if m else "Idle shells"
     if k == "done":
         return "Done · waiting for input %s min" % n
     if k == "bgdone":

@@ -29,6 +29,13 @@ class Shipped(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
         self.assertEqual({t["group"] for t in d["templates"]}, set(stage_catalog.GROUPS))   # no empty group
 
+    def test_install_hints_are_commands(self):
+        # the palette shows `install` untranslated, so prose would leak English into ko
+        pre = ("brew install ", "pipx install ", "pip install ", "npm install ", "go install ", "cargo install ")
+        bad = [(t["id"], x["install"]) for t in stage_catalog.load()["templates"] for x in t.get("tools") or []
+               if not str(x.get("install", "")).startswith(pre)]
+        self.assertEqual(bad, [])
+
     def test_graded_templates_assert_and_use_sidereus_runner(self):
         for t in stage_catalog.load()["templates"]:
             if t["gate"]:

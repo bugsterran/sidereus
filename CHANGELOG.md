@@ -15,6 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Rail «Attention» count no longer includes rows marked Done or Later, so it matches the header chip.
 - Work popup: pipeline stage chips show translated stage names; the «Evaluation» popover re-places itself on window resize.
 - Keyboard: with the shortcut help open, ⌘K, s, / and ⌘B close it before acting, so two overlays never stack.
+- Attention: a session snoozed «Later» or acked that asks a new question shows again at once; acking a row without a session id no longer hides other sessions' questions in the same folder.
+- Quota details: «Who is using the 5h» counts the window of the account in use (marked «≈» when estimated); an account with no login shows «used unknown» instead of 0%.
+- Saver: the «Hook folder not found» message is translated (path shown separately).
+- Pipelines: a denied stage jump no longer lights the stage as «main»; a stage title over 40 characters is named in the hint instead of an unmatchable tag; the npm-audit install hint is a command.
+- MCP: an unknown tool name returns JSON-RPC -32602; `sidereus_attention` labels idle-mail and idle-shell signals; a bad To-do request body gets a body error.
 - Structure › Architecture: with a flow lit, the toolbar hint no longer shrinks to a sliver at 900–1100 px; it hides, and a narrow bar shows the lit counter as numbers (full sentence in its tooltip).
 
 ## [0.13.0] - 2026-11-02

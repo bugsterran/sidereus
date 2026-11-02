@@ -21,6 +21,7 @@ def _iso(ts):
 class QuotaWhoCase(unittest.TestCase):
     def setUp(self):
         self.saved = (u._usage, u._sid_proj)
+        u._who_acct_win.clear()
         # "seed running" state: quota_who never kicks the real transcript scan thread
         u._usage = {"live": [], "spark": [], "liveby": [], "bycSeed": {"done": False}}
         u._sid_proj = {"aaaa1111-x": "alpha", "bbbb2222-y": "beta", "cccc3333-z": "alpha"}
@@ -51,6 +52,24 @@ class QuotaWhoCase(unittest.TestCase):
         w = u.quota_who(self.q(2 * H), now=NOW)
         self.assertTrue(w["partial"])
         self.assertEqual(w["rows"][0]["name"], "dddd4444")
+
+    def test_idle_primary_uses_active_account_window(self):
+        # primary not signed in (pct 0, resets_at null): the cycle is the in-use extra account's, not now-5h
+        q = {"five_hour": {"pct": 0, "resets_at": None},
+             "accounts": [{"label": "idle", "five_hour": {"pct": 5, "resets_at": _iso(NOW + 4 * H)}},
+                          {"label": "work", "five_hour": {"pct": 60, "resets_at": _iso(NOW + 1 * H)}},
+                          {"label": "gone", "five_hour": {"pct": 90, "resets_at": _iso(NOW - 60)}}]}
+        w = u.quota_who(q, now=NOW)
+        self.assertEqual(w["start"], int(NOW + 1 * H - 5 * H))
+        self.assertTrue(w["exact"])
+        self.assertEqual(w["acct"], "work")
+        w2 = u.quota_who({"five_hour": {"pct": 0, "resets_at": None}}, now=NOW)   # git_wt: no accounts key
+        self.assertEqual((w2["start"], w2["acct"]), (w["start"], "work"))
+
+    def test_live_primary_wins(self):
+        q = dict(self.q(2 * H), accounts=[{"label": "work", "five_hour": {"pct": 60, "resets_at": _iso(NOW + 1 * H)}}])
+        w = u.quota_who(q, now=NOW)
+        self.assertEqual((w["start"], w["acct"]), (int(NOW - 3 * H), ""))
 
     def test_no_reset_falls_back_to_last_5h(self):
         u._usage_add(NOW - 6 * H, 70, 0, "aaaa1111-x")

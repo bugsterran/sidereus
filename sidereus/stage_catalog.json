@@ -254,7 +254,7 @@
       "asserts": "At least one audit tool ran over a lockfile or manifest; otherwise the gate fails as EMPTY.",
       "tools": [
         { "id": "osv-scanner", "bin": "osv-scanner", "install": "brew install osv-scanner", "net": true },
-        { "id": "npm-audit", "bin": "npm", "install": "Install Node.js (npm audit ships with npm)", "net": true }
+        { "id": "npm-audit", "bin": "npm", "install": "brew install node", "net": true }
       ]
     },
     {

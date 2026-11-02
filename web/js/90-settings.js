@@ -88,7 +88,7 @@ async function svSet(body){
   try{
     r = await postJSON('/api/saver/set', body);
   }catch(e){ r = e.body || {ok:false, err:String(e)}; }
-  SVERR = (r && r.ok) ? '' : T('Save failed') + ': ' + ((r && r.err) || '?');   // SVERR carries its own prefix («Check the value» vs «Save failed»)
+  SVERR = (r && r.ok) ? '' : T('Save failed') + ': ' + (r && r.path ? T('Hook folder not found') + ': ' + r.path : (r && r.err) || '?');   // SVERR carries its own prefix («Check the value» vs «Save failed») · ⚠the path is data: never through T()
   if(r && r.ok){
     SVSW = r.switch || SVSW; SVST = r.saver || SVST;
     SVHOLD = {at: Date.now(), sw: JSON.stringify(SVSW || null)};
