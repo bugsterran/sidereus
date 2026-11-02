@@ -28,7 +28,7 @@ function wfLight(run){
 }
 // «Workflow» type badge for a Workflow-run agent row outside this tab (40b session tree, 70 timeline); run name + phase in the title only.
 function wfBadge(name, phase){
-  return '<i class="tlpar tlwfk wfbdg" title="' + esc(['Workflow', name || '', phase || ''].filter(Boolean).join(' · ')) + '">Workflow</i>';
+  return '<i class="tlpar tlwfk wfbdg" title="' + esc([T('Workflow'), name || '', phase || ''].filter(Boolean).join(' · ')) + '">' + esc(T('Workflow')) + '</i>';
 }
 // Run name of a timeline workflow-agent item (tid "wfa:<aid>|<sid>", par "wf:<id>") from SESS[].wf; '' when not in the list.
 function wfRunNameOf(tid, par){

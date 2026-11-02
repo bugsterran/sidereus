@@ -172,7 +172,8 @@ document.addEventListener('click', e => {
   }
   // ⚠«Arrange» sets touched: an untouched view is re-fitted by plGwFit after the paint, which would drop the kept zoom.
   if(e.target.closest('[data-plfit]')){ const w = e.target.closest('.plcvw'); plWrapBest(E, w && w.querySelector('.plcv'), true, true); E.touched = true; plTouch(); plPaint(); return; }   // centred like «Fit to view»: without ctr plFit anchors the chain near the top
-  if(e.target.closest('[data-plfitv]')){ const w = e.target.closest('.plcvw'); plWrapBest(E, w && w.querySelector('.plcv'), false, true); E.touched = true; plTouch(); plPaint(); return; }
+  // ⚠«Fit to view» is zoom/pan only: a re-flow (plWrapBest) moved node ui.x/y, marked the draft dirty and disabled «Run».
+  if(e.target.closest('[data-plfitv]')){ const w = e.target.closest('.plcvw'); plFit(E, w && w.querySelector('.plcv'), false, false, true); E.touched = true; plPaint(); return; }
   const z = e.target.closest('[data-plz]');
   if(z){ const V = plView(E), k = +z.dataset.plz > 0 ? 1.2 : 1 / 1.2; V.z = Math.max(0.4, Math.min(2, V.z * k)); E.touched = true; E.ctrd = false; plPaint(); }
 });

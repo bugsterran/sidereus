@@ -152,7 +152,12 @@ def _creds_file_token(d):
         return None
 
 
+_KEYCHAIN_NOT_FOUND_RC = 44    # `security find-generic-password` exit code when the item does not exist
+_oauth_miss = {"no_login": False}    # why the last macOS read gave no token; read by quota_fetch for the status text
+
+
 def _oauth_token():
+    _oauth_miss["no_login"] = False
     if not _quota_lookup_on():
         return None
     if not IS_MAC:
@@ -162,6 +167,7 @@ def _oauth_token():
                            capture_output=True, text=True, encoding="utf-8", errors="replace",
                            timeout=10)
         if r.returncode != 0:
+            _oauth_miss["no_login"] = r.returncode == _KEYCHAIN_NOT_FOUND_RC     # ⚠other codes (denied, locked) keep the keychain message
             return None
         j = json.loads(r.stdout.strip())
         return (j.get("claudeAiOauth") or {}).get("accessToken") or j.get("accessToken")

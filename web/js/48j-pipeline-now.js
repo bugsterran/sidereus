@@ -83,7 +83,8 @@ function plNowList(ss){
 }
 // List | run view; the list width uses the 81i grip (key sidereus.plmd, px).
 function plNowWrap(body){
-  return '<div class="plmd' + (plNowFolded() ? ' plnc' : '') + '"' + strSplitStyle('plmd') + '>' + plNowList() + strSplitGrip('plmd') + '<div class=plmdr>' + body + '</div></div>';
+  // ⚠Folded class is plmdf, not plnc: .plnc is the node chip row (nowrap, overflow hidden) and clipped the run pane.
+  return '<div class="plmd' + (plNowFolded() ? ' plmdf' : '') + '"' + strSplitStyle('plmd') + '>' + plNowList() + strSplitGrip('plmd') + '<div class=plmdr>' + body + '</div></div>';
 }
 // Session → its open run (plrun without end, else the live [pl:] tag) in its project; no run → that project only.
 function plNowPick(cwd, plat){

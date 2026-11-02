@@ -97,7 +97,7 @@ function buildPeople(){
   const rl = Object.entries(ROOMS).map(([n, r]) =>   // room rows — name · owner · member count
     '<div class="nxr nxrm' + (place === 'room:' + n ? ' on' : '') + '"' + (r.topic ? ' title="' + esc(r.topic) + '"' : '') + '>'
     + '<span class=nxn><b>#' + esc(n) + '</b></span><span class=nxm>' + esc(T('owner')) + ' ' + esc(r.owner || '?') + '</span>'
-    + '<span class=nxm>' + (r.members||[]).length + '</span></div>').join('');
+    + '<span class=nxm>' + rcWhoIds(r.members||[]).length + '</span></div>').join('');   // same viewer-id folding as the room cards
   setHtml(document.getElementById('rinfo'), (rl || '<div>' + esc(T('No room')) + '</div>')
     // Legend uses the same dot elements as the rows, so its colors can never drift from them.
     + '<div class=nxlg>' + [['on', 'Online / active'], ['idle', 'Heartbeat only / within 1h'], ['', 'Other', 'rest']]

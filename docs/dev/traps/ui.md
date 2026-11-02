@@ -258,3 +258,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 ## A fold summary holds no buttons or code chips
 - Cause: inside `<summary>` every click toggles the `<details>`, so a button or a `user-select:all` code chip there cannot be used without folding the card.
 - ⇒ Keep commands and controls in the body (47d runtime card: the brew `<code>` stays in the body; the summary is text and badges only).
+
+## A state class must not reuse a component class name
+- Cause: the folded «Working now» pane got class `plnc`, the node-chip class; `.plnc{nowrap;overflow:hidden}` then applied to the whole run pane (hidnote 964/776 px at 900).
+- ⇒ State classes get their own name (`plmdf`); grep the CSS for the name before adding a class. Same family as the `data-term` / `data-plmode` attribute clashes.
+
+## Layout changes that are not window resizes must refit the status bar
+- Cause: the status bar refits only on `resize`; the rail toggle (Cmd+B) changes its width without one, so CLI cells stayed ellipsised until the next poll (~1.5 s).
+- ⇒ `railApply` schedules one `buildSbar` on the next frame. ⚠Any new push-layout toggle needs the same call.

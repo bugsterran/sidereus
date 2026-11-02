@@ -21,8 +21,9 @@ html[data-ui=next][data-ui] .pltpl .wkrgb.plsv:hover:not([disabled]){background:
 html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--nx-info);outline-offset:2px}
 /* 48j «Working now» list | run view; list width = 81i grip (sidereus.plmd). ⚠.plmdr min-width:0 keeps a wide canvas from pushing the page sideways */
 .plmd{display:grid;grid-template-columns:clamp(150px,20%,240px) minmax(0,1fr);gap:12px;position:relative}
-.plmd.plnc{grid-template-columns:28px minmax(0,1fr)!important}
-.plmd.plnc>.strspg{display:none}
+/* ⚠folded = .plmdf, never .plnc (node chip row: nowrap + overflow hidden leaked into the run pane) */
+.plmd.plmdf{grid-template-columns:28px minmax(0,1fr)!important}
+.plmd.plmdf>.strspg{display:none}
 .plmdr{min-width:0}
 .plnl{align-self:start;position:sticky;top:0;max-height:calc(100vh - 110px);overflow:auto;display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:0}
 .plnlh{display:flex;align-items:center;gap:6px;min-height:24px;color:var(--nx-t2,#8b95a5)}
@@ -434,7 +435,7 @@ html[data-ui=next] .plw .plrunst{display:flex;flex-direction:column;gap:4px;max-
 html[data-ui=next] .plw .plbar>.plrunst{gap:2px}
 html[data-ui=next] .plw .plbar>.plrunst>span{line-height:16px;padding:4px 0;margin:-4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* ⚠padding moves the clip 4px out so the .plrv 24px ::before survives; the -4px margin keeps the 16px row */
 html[data-ui=next] .plw .plbar>.plrunst .plprog{height:4px}
-@media (max-width:1439px){html[data-ui=next] .plw .plbar>.plrunst>span,html[data-ui=next] .plw .pltop>.plwrun>.plrunst>span{white-space:normal;overflow-wrap:anywhere}}   /* ★en 282/319, ko 272/311px cut at 1100/900: wrap below 1440 (the bar may grow a line there); 640px cap unchanged */
+@media (max-width:1439px){html[data-ui=next] .plw .plbar>.plrunst>span,html[data-ui=next] .plw .pltop>.plwrun>.plrunst>span{white-space:normal;word-break:keep-all;overflow-wrap:anywhere}}   /* keep-all: ko breaks between words; anywhere still splits a token that overflows. ★en 282/319, ko 272/311px cut at 1100/900: wrap below 1440 (the bar may grow a line there); 640px cap unchanged */
 html[data-ui=next] .plw .plprog{display:block;height:6px;border-radius:3px;background:var(--nx-hover);overflow:hidden}
 html[data-ui=next] .plw .plprog>i{display:block;position:relative;overflow:hidden;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--plf-plan),var(--plf-build),var(--plf-cust),var(--plf-plan));background-size:200% 100%;transition:width .6s}
 /* Flowing gradient = a 4x-wide layer of two pattern periods translated by one period (transform only; was background-position). */

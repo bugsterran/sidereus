@@ -524,3 +524,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: the switch repainted sessions and the bar only; #burn and #saver changed on the next poll (about 7 s live, much longer under load).
   - ⇒ The poll keeps the saver fields of the last state (`LASTS`); the switch re-derives SV (`svViewSet`) and runs `burnTick`/`buildBurn`/`buildSaver`.
   - ⚠A non-primary curve stays empty until its own `?dir=` fetch lands — never draw the previous account's body meanwhile.
+
+## macOS «no login» read as a keychain permission problem
+- Cause: `security find-generic-password` exits 44 when the item does not exist; every nonzero exit mapped to the keychain-permission message.
+- ⇒ `quota._oauth_miss["no_login"]` is set only on exit 44 and `quota_fetch` shows «No Claude Code login found»; other exits keep the keychain message.
