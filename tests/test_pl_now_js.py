@@ -468,7 +468,7 @@ let CURX = { ok: true, sha: 'h' };
 function plCur(){ return PLS.sel && CURX ? Object.assign({ name: PLS.sel }, CURX) : null; }
 function plLiveRun(proj, name){ return LV[proj + '|' + name] || null; }
 function plWatchFor(p){ return WATCH; }
-Object.assign(PLS, { proj: '/a', sel: 'idle', std: '', wf: null, diff: null, del: null, msg: '', runSel: null }); PLAG = false;
+Object.assign(PLS, { proj: '/a', sel: 'idle', std: '', wf: null, diff: null, del: null, msg: '', runSel: null, projs: { ok: true }, data: new Proxy({}, { get: () => ({ ok: true }) }) }); PLAG = false;
 const S = () => [PLS.proj, PLS.sel, PLS.nowSid];
 Date.now = () => 1e9;   // frozen clock (s = 1e6)
 const RUN = { S: { o: 'run', t1: 1e6 } }, ses = (sid, cwd, runs) => ({ state: 'tool', sid, cwd, plat: sid, plrun: runs.map(r => r.stages ? r : Object.assign({ stages: RUN }, r)) });
@@ -537,7 +537,7 @@ class PlNowFollow(unittest.TestCase):
 
     def test_f4_no_saved_or_loading_project_still_follows(self):
         r = run(FOL + "const N = [ses('s1', '/b', [{name: 'chg', rid: 5, t0: 5}])]; WATCH = false; CURX = { ok: true, suggest: 1 }; plNowFollow([]); plNowFollow(N); const a = S();"
-                "Object.assign(PLS, { proj: '/a', sel: 'idle' }); CURX = null; PLNOW_SEEN = null; plNowFollow([]); plNowFollow(N); console.log(JSON.stringify([a, S()]));")
+                "Object.assign(PLS, { proj: '/a', sel: 'idle', nowSid: '' }); CURX = null; PLNOW_SEEN = null; plNowFollow([]); plNowFollow(N); console.log(JSON.stringify([a, S()]));")
         self.assertEqual(r, [["/b", "chg", "s1"], ["/b", "chg", "s1"]])
 
     def test_j_idle_open_run_viewed_yields_to_working_run(self):
@@ -551,6 +551,19 @@ class PlNowFollow(unittest.TestCase):
                 "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, stages: { S: { o: 'done', t1: 1e6 - 60 } }}]), C]); const a = S();"
                 "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, stages: { S: { o: 'done', t1: 1e6 - 600 } }}]), C]); console.log(JSON.stringify([a, S()]));")
         self.assertEqual(r, [["/a", "p1", ""], ["/c", "p3", "s3"]])            # 60 s pause holds; past the grace -> newest working
+
+    def test_l_reload_waits_for_data_and_keeps_live_pick(self):
+        # Reload: sessions arrive before the project data; the restored pick (live session s1) must not be replaced by the newest run.
+        r = run(FOL + "const N = [ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, stages: { S: { o: 'wait' } }}]), ses('s2', '/c', [{name: 'p2', rid: 9, t0: 9}])];"
+                "Object.assign(PLS, { sel: 'p1', nowSid: 's1', data: {} }); plNowFollow(N); const a = [S(), PLNOW_SEEN];"
+                "PLS.projs = null; PLS.data['/a'] = { ok: true }; plNowFollow(N); const b = PLNOW_SEEN; PLS.projs = { ok: true };"
+                "plNowFollow(N); const c = S(); plNowFollow(N); console.log(JSON.stringify([a, b, c, S()]));")
+        self.assertEqual(r, [[["/a", "p1", "s1"], None], None, ["/a", "p1", "s1"], ["/a", "p1", "s1"]])
+
+    def test_m_restored_pick_of_ended_session_cleared_then_follows(self):
+        r = run(FOL + "Object.assign(PLS, { sel: 'p1', nowSid: 'gone1' });"
+                "plNowFollow([ses('s2', '/c', [{name: 'p2', rid: 9, t0: 9}]), { state: 'gone', sid: 'gone1', cwd: '/a' }]); console.log(JSON.stringify(S()));")
+        self.assertEqual(r, ["/c", "p2", "s2"])                                # nothing live picked: auto-follow as before
 
     def test_i_paint_pipe_follows_before_view_read(self):
         pp = js_fn("paintPipe")

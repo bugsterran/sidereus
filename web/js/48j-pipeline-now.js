@@ -109,7 +109,7 @@ function plNowPickApply(){
   E.first = false; E.sel = { k: 'n', id: n.id };
 }
 // Follow live runs (from paintPipe): a new run is picked when no live run is viewed; the viewed one ending moves to the newest left.
-// ⚠First call (reload): every run counts as new, so the newest live run opens only when nothing live is shown; a live view never jumps. Memory only (no prefs of its own); never plPaint / plFit — the view must not move.
+// ⚠First call (reload): every run counts as new, so the newest live run opens only when nothing live is shown; a live view never jumps. Follow state is memory only (the picks persist via 48 plProjPref); never plPaint / plFit — the view must not move.
 let PLNOW_SEEN = null, PLNOW_VKEY = '';
 // Working = a stage running (plPrLive, as the row status) or one that ran within PLNOW_GRACE s.
 // ⚠An open run whose stages all wait is not working: counting it held the selection on an idle run. The grace keeps a run between two stages from flip-flopping.
@@ -120,9 +120,14 @@ function plNowWorking(r, now){
   return Object.keys(S).some(t => S[t] && (S[t].t1 || 0) >= now - PLNOW_GRACE);
 }
 function plNowFollow(ss){
+  // ⚠Wait for sessions + project data: before them nothing reads as viewed and the newest run overwrote the saved pick on reload.
+  if(!(ss || []).length || !PLS.projs || (PLS.proj && !PLS.data[PLS.proj])) return;
+  const ok = x => x && !['done', 'abort', 'gone'].includes(x.state);
+  if(!PLNOW_SEEN && PLS.nowSid && !ss.some(x => ok(x) && x.sid === PLS.nowSid)) PLS.nowSid = '';   // restored pick (48 plProjPref) whose session ended
+  const kept = !PLNOW_SEEN && !!PLS.nowSid;   // reload with a live picked session: keep that view, like a pick made this session
   const cur = {}, now = Date.now() / 1000;
   // ⚠not plNowLive: its cwd+plat dedup keeps whichever session comes first in this poll
-  (ss || []).filter(x => x && !['done', 'abort', 'gone'].includes(x.state)).forEach(x => (x.plrun || []).forEach(r => { if(r && r.name && !r.end && plNowWorking(r, now)) cur[x.sid + '\n' + r.name + '\n' + (r.rid != null ? r.rid : r.t0)] = { sid: x.sid, proj: r.proj || x.cwd, name: r.name, t0: r.t0 || 0 }; }));
+  ss.filter(ok).forEach(x => (x.plrun || []).forEach(r => { if(r && r.name && !r.end && plNowWorking(r, now)) cur[x.sid + '\n' + r.name + '\n' + (r.rid != null ? r.rid : r.t0)] = { sid: x.sid, proj: r.proj || x.cwd, name: r.name, t0: r.t0 || 0 }; }));
   const viewed = () => {
     const p = plCur(), lv = p && plLiveRun(PLS.proj, p.name);
     if(lv && !lv.pr) return lv.run && lv.run.run ? 'wf\n' + lv.sid + '\n' + p.name : '';   // ⚠Workflow run (x.wf): no pr, still a viewed live run
@@ -132,7 +137,7 @@ function plNowFollow(ss){
   const seen = PLNOW_SEEN || {};
   PLNOW_SEEN = cur;
   const p = plCur(), edit = !!(p && p.ok && p.sha && !plWatchFor(p));   // ⚠only a real Edit view blocks: no saved pipeline / loading still shows the run view
-  if(PLS.runSel || edit || PLS.wf || PLAG || PLS.std || PLS.diff || PLS.del || PLNEW || PLDRAFT){ PLNOW_VKEY = viewed(); return; }   // Edit / past run: track only
+  if(kept || PLS.runSel || edit || PLS.wf || PLAG || PLS.std || PLS.diff || PLS.del || PLNEW || PLDRAFT){ PLNOW_VKEY = viewed(); return; }   // Edit / past run: track only
   const v = viewed();
   if(v){ PLNOW_VKEY = v; return; }   // a live run is viewed: later runs only show as running
   const ks = Object.keys(cur), newest = a => a.reduce((b, k) => (!b || cur[k].t0 > cur[b].t0 ? k : b), '');
