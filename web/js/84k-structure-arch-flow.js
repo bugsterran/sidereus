@@ -180,8 +180,9 @@ function archLitCount(am){
   const c = am && am.querySelector && am.querySelector('[data-arlitc]');
   if(!c) return;
   const svg = am.querySelector('.archdg svg'), ns = svg ? Array.from(svg.querySelectorAll('[data-p].arlit')) : [], v = archViewRect(am);
-  const t = v && ns.length ? archLitText(ns.length, archOffCount(ns.map(g => g.getBoundingClientRect()), v)) : '';
+  const m = v && ns.length ? archOffCount(ns.map(g => g.getBoundingClientRect()), v) : 0, t = m ? archLitText(ns.length, m) : '';
   c.textContent = t; c.title = t; c.hidden = !t;   // title: the one-row bar may cut the count (79 css)
+  if(c.dataset) c.dataset.n = t ? ns.length + ' · ' + m + '↗' : '';   // numbers-only form a narrow bar shows (79 css)
 }
 // Press only: scroll .archmap (never the page or an ancestor) so node g is centred, then flash it.
 function archLitGo(am, g){
