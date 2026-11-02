@@ -67,7 +67,7 @@ class I18nBridge(unittest.TestCase):
                   "}"
                   "out({bad: bad.slice(0, 20), n: Object.keys(OLD).length, ctx: Object.values(map).filter(f => f.ctx).length});")
         self.assertEqual(r["bad"], [])
-        self.assertEqual(r["n"], 1537)   # -6: Burndown curve setting and its row tooltip gone; pinned-only wording on token widgets
+        self.assertEqual(r["n"], 1536)   # -7: Burndown curve setting and its row tooltip gone; pinned-only wording on token widgets; tour plugin line no longer says read-only MCP
         self.assertGreaterEqual(r["ctx"], 33)   # one English text with two Korean readings -> a context key (slices add more)
 
     def test_server_text_corpus(self):

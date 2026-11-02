@@ -75,7 +75,6 @@
 "시데레우스 저장소 위치를 모릅니다":"The Sidereus repository location is unknown",
 "CLI 프로세스가 종료 알림 없이 사라졌습니다(강제 종료·터미널 닫힘) — 10분 뒤 목록에서 빠집니다. «끊김?» 은 pid 없이 20분 넘게 소식이 없다는 추정입니다":"The CLI process went away without an end event (killed, terminal closed) — it leaves the list in 10 min. «Disconnected?» is a guess: no pid and no news for over 20 min",
 "Claude 5시간·7일 한도에는 들어가지 않습니다":"Not counted in the Claude 5h/7d limits",
-"Claude Code 를 쓴다면 아래 두 줄로 시데레우스 플러그인(메일박스 전달 · 파이프라인 단계 표시 · 읽기 전용 MCP)이 들어갑니다.":"If you use Claude Code, these two lines install the Sidereus plugin (mailbox relay · pipeline stage marks · read-only MCP).",
 "Claude Code 설정":"Claude Code settings",
 "Claude Code 설정을 바꿀까요? 새 세션부터 적용됩니다.":"Change this Claude Code setting? It applies from new sessions.",
 "Claude 설정":"Claude config",
