@@ -221,7 +221,7 @@ def _why_en(s):
         m = re.search(r"(\d+)\D+(\d+)\D+(\d+)", w)
         return "%s background shell(s) · %s idle · longest %s min" % m.groups() if m else "Idle shells"
     if k == "done":
-        return "Done · waiting for input %s min" % n
+        return "Done · waiting for input %s %s" % (n, "s" if w.endswith("초") else "min")  # ⚠server sends seconds under 60 s
     if k == "bgdone":
         return "%s agent completion(s) unread" % n
     if k == "gone":

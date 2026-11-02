@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Attention: a session snoozed «Later» or acked that asks a new question shows again at once; acking a row without a session id no longer hides other sessions' questions in the same folder.
 - Quota details: «Who is using the 5h» counts the window of the account in use (marked «≈» when estimated); an account with no login shows «used unknown» instead of 0%.
 - Saver: the «Hook folder not found» message is translated (path shown separately).
+- Attention (English): «Done · waiting for input» under a minute shows seconds, not the same number as minutes; the MCP label too.
 - Korean UI: server error messages (pipelines, settings, To-do, rooms, git, hooks) are translated; messages with a file name or count send it separately; OS and exception text stays as sent.
 - Quota details: the 5h % in the burn header and the saver badge each show their «as of» time, so two different figures in one modal no longer read as a contradiction.
 - Pipelines: a denied stage jump no longer lights the stage as «main»; a stage title over 40 characters is named in the hint instead of an unmatchable tag; the npm-audit install hint is a command.

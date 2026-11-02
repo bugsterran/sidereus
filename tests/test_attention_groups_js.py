@@ -58,6 +58,28 @@ def order(h):
     return re.findall(r'class="ath (resp|fyi)"|data-aid="([^"]+)"', h)
 
 
+def why_en(sigs):
+    """English attnWhy for each (k, why) pair."""
+    js = (STUBS + js_fn("attnWhy") + "\nprocess.stdout.write(JSON.stringify("
+          + json.dumps([{"k": k, "why": w} for k, w in sigs]) + ".map(g => attnWhy(g))));")
+    r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
+    if r.returncode != 0:
+        raise AssertionError(r.stderr)
+    return json.loads(r.stdout)
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class AttentionWhyEn(unittest.TestCase):
+    def test_done_seconds_vs_minutes(self):
+        # attention.py sends seconds under 60 s; minutes otherwise.
+        self.assertEqual(why_en([("done", "작업 끝 · 입력 대기 30초"), ("done", "작업 끝 · 입력 대기 5분")]),
+                         ["Done · waiting for input 30s", "Done · waiting for input 5m"])
+
+    def test_bgdone_and_fail(self):
+        self.assertEqual(why_en([("bgdone", "서브에이전트·백그라운드 완료 3건 미확인"), ("fail", "빌드 실패 등 2건")]),
+                         ["3 agent completion unread", "Failure alert (2)"])
+
+
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class AttentionGroups(unittest.TestCase):
     def test_R1_groups_and_order(self):
