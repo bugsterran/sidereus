@@ -372,4 +372,5 @@ def _parse_transcript(fp):
             "sub": sub, "bgs": bgs, "mon": mon,
             "model": t["model"], "task": t["task"], "reply": shp["reply"],
             "shape": shp["shape"], "ask": shp["ask"], "askTool": ask_tool, "abort": shp["abort"], "err": shp["err"],
-            "rep": _tail_rep(rows), "pmode": _pmode_of(fp, rows, 400_000)}
+            # ⚠the span the rows actually cover, not the 400 KB read window: 600 short rows can end well inside it
+            "rep": _tail_rep(rows), "pmode": _pmode_of(fp, rows, sum(len(l.encode("utf-8")) + 1 for l in rows))}
