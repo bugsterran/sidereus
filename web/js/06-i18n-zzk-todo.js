@@ -13,4 +13,5 @@ Object.assign(I18N.ko, {
   'The to-do list changed — reloaded': '할 일 목록이 바뀌어 다시 불러왔어요',
   'Could not save the to-do — check the server': '할 일을 저장하지 못했습니다 — 서버를 확인하세요',
   'Could not save the to-do': '할 일을 저장하지 못했습니다',
+  'Hook folder not found': '훅 폴더를 찾을 수 없습니다',
 });

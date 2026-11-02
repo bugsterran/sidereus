@@ -348,6 +348,10 @@ def main(argv=None):
     title = m.group(2).strip()
     if not title:
         return
+    # ⚠pl_flow denies a jump/unknown stage in its own hook; marking it anyway lit «main» on a stage that never ran
+    fl = _flow()
+    if fl and fl.bash_denied(ev, desc, MARK_DIR):
+        return
     cwd = ev.get("cwd")
     _write(path, {"name": m.group(1), "title": title, "t": time.time(),
                   "cwd": cwd if isinstance(cwd, str) else ""})

@@ -291,7 +291,7 @@ def check_args(name, args):
     ⚠Unchecked, `path: 123` became the path "<cwd>/123" and unknown keys were silently dropped."""
     tool = next((t for t in TOOLS if t["name"] == name), None)
     if tool is None:
-        return ""                           # call_tool answers "unknown tool" as a tool error
+        return "unknown tool: %s" % name    # missing/unknown name = invalid params (-32602), not a tool error
     if not isinstance(args, dict):
         return "arguments must be an object"
     sch = tool["inputSchema"]

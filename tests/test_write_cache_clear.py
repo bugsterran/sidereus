@@ -74,7 +74,7 @@ class SaverNoHookDirTest(_Base):
         for body in ({"mode": "off"}, {"mode": "auto"}, {"goal": 50}, {"limit": "warn"}):
             out = sv.saver_set(body)
             self.assertFalse(out["ok"], body)
-            self.assertEqual(out["err"], "Hook folder not found: %s" % gone)
+            self.assertEqual((out["err"], out["path"]), ("Hook folder not found", gone))
         code, out, _ = post("/api/saver/set", {"mode": "off"})
         self.assertEqual((code, out["ok"]), (400, False))
         self.assertFalse(os.path.exists(gone))

@@ -34,6 +34,7 @@ DATA_DIR = os.path.expanduser(os.environ.get("MAILBOX_DIR") or "~/.mailbox-mcp")
 MARK_DIR = os.path.join(DATA_DIR, "plmark")
 CONFIG_PATH = None   # None = same rule as pipelines_brief.py; patched in tests
 TAG = re.compile(r"\[pl:([a-z0-9-]{1,40})/([^\]\n]{1,40})\]")
+TITLE_MAX = 40   # ⚠TAG's title cap: a longer stage title can never be tagged, so hints must not teach its tag
 SKIP_TAG = re.compile(r"\[pl-skip:([a-z0-9-]{1,40})/([^\]\n]{1,40})\]")
 NONE_TAG = re.compile(r"\[pl-none:([a-z-]{1,20})\]")   # session-wide «no pipeline for this work» declaration
 NONE_CATS = ("small-fix", "no-fit", "explore", "other")
@@ -1000,7 +1001,19 @@ def pre(tool, cwd, name, title, st, r, now, shell=False):
     return None
 
 
+def _long_note(name, titles):
+    """Warning for stage titles over TITLE_MAX (no tag can match them), or ""."""
+    bad = [t for t in titles if isinstance(t, str) and len(t.strip()) > TITLE_MAX]
+    if not bad:
+        return ""
+    return ("Stage title %s is over the %d-char limit, so no [pl:%s/...] tag can match it; shorten it in "
+            ".claude/pipelines/%s.json." % (", ".join("«%s» (%d chars)" % (t, len(t.strip())) for t in bad),
+                                            TITLE_MAX, name, name))
+
+
 def _step(name, s):
+    if len(s["title"].strip()) > TITLE_MAX:
+        return _long_note(name, [s["title"]])
     out = "[pl:%s/%s] · agent %s" % (name, s["title"], s.get("agent") or "-")
     for k in ("model", "skill", "gate"):
         if isinstance(s.get(k), str) and s.get(k):
@@ -1053,6 +1066,9 @@ def post(name, title, st, after, r, bg, now):
                          ("[pl:%s/%s]" % (name, then)) if then else "stop and report"))
     if st[i].get("onError") == "continue":
         lines.append("Failed fan-out slices do not block.")
+    note = _long_note(name, [x["title"] for x in st if x is not st[j]])
+    if note:
+        lines.append(note)
     return "\n".join(lines)
 
 
@@ -1981,6 +1997,38 @@ def _closed_tail(r, st, title, now):
     if isinstance(e, dict):
         e["t1"] = now
     return True
+
+
+def bash_denied(ev, desc, mark_dir):
+    """True when this hook would deny a tagged cc Bash Pre (unknown stage or undeclared jump); read-only, never raises.
+    ⚠pl_mark runs as a separate hook (no shared result): it calls this so a denied tag never lights «main»."""
+    try:
+        m = TAG.search(desc or "")
+        sid, cwd = ev.get("session_id"), ev.get("cwd")
+        # ⚠"[pl-" declarations are applied by _declare in the same Pre; their outcome is not simulated here
+        if not m or "[pl-" in desc or not (isinstance(sid, str) and SID.match(sid)) \
+                or not (isinstance(cwd, str) and os.path.isabs(cwd)):
+            return False
+        name, title = m.group(1), _ren(m.group(2).strip())
+        now = _now()
+        d = _load(os.path.join(mark_dir, sid + ".runs.json"))
+        old = d["runs"].get(name)
+        keep = old.get("proj") if isinstance(old, dict) and not old.get("end") and now - float(old.get("t1") or 0) <= IDLE_S else None
+        proj = _project(ev, "Bash", name, title, keep)
+        pl = _stages(proj, name) if proj else None
+        if not pl or _apply_off(proj):
+            return False
+        st = pl[0]
+        if _idx(st, title) < 0:
+            return True
+        d = json.loads(json.dumps(d))   # copy: the helpers below mutate the run
+        r = d["runs"].get(name)
+        if _closed_tail(r, st, title, now):
+            return False
+        _boundary(st, r, title, now)
+        return bool(_jumped(st, _run_of(d, name, cwd, now), title))
+    except Exception:
+        return False
 
 
 def _flow(plat, ev):

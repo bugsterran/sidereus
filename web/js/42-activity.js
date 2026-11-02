@@ -14,7 +14,13 @@ let actSrv = 0;
 function actStart(x){ return new Date((actSrv || actAt) - (x.ageSec || 0) * 1000); }
 // ⚠Needs-me = every badge row of attnRows (the same rows as the header «Attention N» chip), plus blocked/ask session flags
 //   unless that session's attention row was marked Done/Later (gone): the header chip drops it, so the rail must too.
-function actGone(x, gone){ return gone.has(x.sid) || gone.has('c:' + x.cwd); }
+// ⚠A sid-less row (gone 'c:'+cwd -> its kinds) hides only a session with that need and no attention row of its own, never every session in the cwd.
+function actGone(x, gone){
+  if(x.sid && gone.has(x.sid)) return true;
+  const k = gone.get('c:' + x.cwd); if(!k) return false;
+  if(x.sid && ((ATTN && ATTN.rows) || []).some(r => r.sid === x.sid)) return false;
+  return k.has(x.blocked ? 'blocked' : x.state);
+}
 function actNeedOf(x, am, gone){
   const a = am.get(x.sid) || am.get('c:' + x.cwd);
   if(gone && actGone(x, gone)) return a || null;
@@ -29,7 +35,7 @@ function actWhat(x, need, why){
   return attnLbl(need);                                // every rail pill carries a needs-me kind
 }
 function actRows(){
-  const am = new Map(), gone = new Set();
+  const am = new Map(), gone = new Map();
   try{ const ar = attnRows();
     ar.shown.forEach((r, i) => { if(!r.badge) return; const v = { k: r.top.k, i, tone: attnTone(r.score), since: r.since, why: r.top.why };   // attnSess matching: sid, else cwd
     if(r.r.sid) am.set(r.r.sid, v); else if(r.r.cwd) am.set('c:' + r.r.cwd, v); });
@@ -37,7 +43,8 @@ function actRows(){
     const kept = new Set(ar.shown.concat(ar.low || []).map(r => r.r));
     for(const r of (ATTN && ATTN.rows) || []){
       if(kept.has(r) || !(r.sigs || []).some(g => attnPolOf(g.k) !== 'hide')) continue;
-      if(r.sid) gone.add(r.sid); else if(r.cwd) gone.add('c:' + r.cwd);
+      if(r.sid) gone.set(r.sid, true);
+      else if(r.cwd){ const k = gone.get('c:' + r.cwd) || new Set(); (r.sigs || []).forEach(g => k.add(g.k)); gone.set('c:' + r.cwd, k); }
     } }catch(e){ softErr('actRows', e); }
   const nd = [];
   for(const x of SESS || []){

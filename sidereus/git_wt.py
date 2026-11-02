@@ -148,7 +148,7 @@ def wt_signals(wts, branches, commits, rows=None, now=None, flow=None, wait=None
         if not _WT_THR:
             _WT_THR.append(threading.Thread(target=_wt_fold_loop, name="wt_fold", daemon=True))
             _WT_THR[0].start()
-    qw = quota_who(quota(), now)
+    qw = quota_who(quota(), now)   # no accounts here: quota_who reuses the in-use window state() last resolved
     start = qw.get("start") or (now - 5 * 3600)
     mid, day_bk, dcov = _wt_fold(now)
     with _usage_lock:

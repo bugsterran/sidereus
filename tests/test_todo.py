@@ -211,6 +211,15 @@ class Todo(unittest.TestCase):
         self.assertEqual(self.ag(action="add", text="x" * 200)[0], 200)
         self.assertEqual(self.ag(action="list")[0], 200)
 
+    def test_bad_body_400_says_body(self):
+        ok = {"cwd": self.cwd, "sid": "s1", "action": "add", "text": "x"}
+        bodies = (b'{"action": "add", "text": "' + b"x" * 4100 + b'"}', b"{not json", json.dumps([ok]).encode(), b"")
+        for path, origin in (("/api/todo/agent", None), ("/api/todo/add", ORIGIN), ("/api/todo/set", ORIGIN)):
+            for b in bodies:
+                code, out, _ = post(path, b, origin=origin)
+                self.assertEqual((code, out["err"]), TD.BAD_BODY[0:1] + (TD.BAD_BODY[1]["err"],), (path, b[:20]))
+        self.assertFalse(os.path.exists(self.led))
+
     def test_r1_agent_home_or_root_404(self):
         home = os.path.join(self.tmp, "home")
         os.makedirs(os.path.join(home, ".git"))

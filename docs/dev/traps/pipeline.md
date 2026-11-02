@@ -360,3 +360,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠`tok: null` = unknown (main-run stage `m`, no transcript, a file over `TOK_FILE_MAX`, scan over `TOK_BUDGET_S` 0.3 s) — never write 0 for it; skip stages carry no `tok`; rows without `ss` are older rows.
 - ⚠The scan runs inside the live hook at run end: keep it fail-silent and counts-only (no text from the transcript or the meta description).
 - ★2026-11-02, synthetic 8 agents × 2 MB (every line a `"usage"` line, worst case): 82–254 ms added per ledger row (4 runs), inside the 0.3 s budget.
+
+## Denied stage still lit «main»; long stage titles (`pl_mark` · `pl_flow.bash_denied` · `TITLE_MAX`)
+- Cause: `pl_mark` wrote `plmark` from the Bash tag alone, in the same PreToolUse where `pl_flow` denied the jump, so a stage that never ran lit «main» for 2 min. A stage title over 40 chars can never match the tag regex `{1,40}`, and the Post hint taught that unmatchable tag.
+- Fix: `pl_mark` asks `pl_flow.bash_denied()` (read-only, same run logic, fail → «not denied») before writing. The Post hint names an over-40 title and its length instead of printing a tag.
+- ⚠A Bash carrying both `[pl-...]` and `[pl:]` and `pl_guard` denies are not checked — still marked.
+- ⚠Keep `plugin/hooks/` byte-identical to `hooks/` (test checks it).

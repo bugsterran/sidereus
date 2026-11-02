@@ -358,8 +358,14 @@ def _new_item(store, text, sid):
     return it
 
 
+# ⚠the route passes None for an oversize, empty or unparsable body: answer that, not a field error
+BAD_BODY = (400, {"ok": False, "err": "bad JSON body (an object of at most 4096 bytes)"})
+
+
 def add(req):
     """POST /api/todo/add {cwd, text} -> append one open item typed by the person."""
+    if not isinstance(req, dict):
+        return BAD_BODY
     text = _clean_text(req.get("text") if isinstance(req, dict) else None)
     if text is None:
         return 400, {"ok": False, "err": "one line, 1-%d characters" % TEXT_MAX}
@@ -388,6 +394,8 @@ def _mark(it, s, sid=None):
 
 def set_state(req):
     """POST /api/todo/set {cwd, i, h, s: " "|"x"} -> toggle item i (409 when h is stale)."""
+    if not isinstance(req, dict):
+        return BAD_BODY
     if not isinstance(req, dict) or req.get("s") not in (" ", "x") or not isinstance(req.get("i"), int) \
             or isinstance(req.get("i"), bool) or not isinstance(req.get("h"), str):
         return 400, {"ok": False, "err": "need i, h and s ' ' or 'x'"}
@@ -433,6 +441,8 @@ def agent(req):
     """POST /api/todo/agent {cwd, sid, action: add|start|done|open|list, text?, id?} -> {ok, repo, items:[{id, s, t}]}.
     Called by the sidereus MCP tool for the session's own repo (any git root, not only on-screen cwds).
     ⚠Labels only (one line ≤ TEXT_MAX); `start` leaves one in-progress item per session (the sid's other `~` go back to open)."""
+    if not isinstance(req, dict):
+        return BAD_BODY
     if not isinstance(req, dict) or req.get("action") not in ("add", "start", "done", "open", "list"):
         return 400, {"ok": False, "err": "action must be add, start, done, open or list"}
     sid = req.get("sid") if req.get("sid") is not None else ""

@@ -170,6 +170,10 @@ class TestTools(Base):
     def raw(self, params):
         return self.rpc({"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": params})[0]
 
+    def test_unknown_or_missing_tool_name_is_invalid_params(self):
+        self.assertEqual(self.raw({"name": "sidereus_nope"})["error"]["code"], -32602)
+        self.assertEqual(self.raw({})["error"]["code"], -32602)
+
     def test_file_peers_requires_path(self):
         self.assertEqual(self.raw({"name": "sidereus_file_peers", "arguments": {}})["error"]["code"], -32602)
         self.assertTrue(self.call("sidereus_file_peers", {"path": ""})["isError"])

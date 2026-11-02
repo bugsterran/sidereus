@@ -280,13 +280,19 @@ function buildSbar(sv){
 // «Who is using the 5h» — per-project share of the current cycle (state.quotaWho; metadata only).
 //   Drawn only while the modal is open; buildSbar calls it, so the language switch re-renders it too.
 let QWHO = null;
+// Approximate when the server had no official 5h reset, or its window is not the account the bar shows (knQ, 55a).
+function qwhoApprox(w){
+  if(!w || !w.exact) return true;
+  const k = typeof knQ === 'function' ? knQ('5h') : null, r = k && k.w && k.w.resets_at ? Date.parse(k.w.resets_at) : NaN;
+  return !isNaN(r) && Math.abs(r / 1000 - 5 * 3600 - w.start) > 120;
+}
 function buildQwho(){
   const el = document.getElementById('qwho');
   if(!el) return;
   const w = QWHO, rows = (w && w.rows) || [];
   const tip = T('Cycle so far from session transcripts, live OTel after server start · subagents fold into the parent session · metadata only (no conversation content)');
   let h = connStaleNote(CONN, Date.now()) + '<div class=qwh title="' + esc(tip) + '"><b>' + esc(T('Who is using the 5h')) + '</b>'
-    + (w ? ' <small>' + esc(CLK(new Date(w.start * 1000))) + '~ · ' + esc(fmtTok(w.total || 0)) + '</small>' : '')
+    + (w ? ' <small' + (qwhoApprox(w) ? ' title="' + esc(T('estimated')) + '">≈' : '>') + esc(CLK(new Date(w.start * 1000))) + '~ · ' + esc(fmtTok(w.total || 0)) + '</small>' : '')
     + (w && w.partial && w.since ? ' <small class=sbwarn>· ' + esc(T('counting since')) + ' ' + esc(CLK(new Date(w.since * 1000))) + '</small>' : '')
     + '</div>';
   if(!rows.length){ setHtml(el, h + '<div class=qwe>' + esc(T('No requests recorded this cycle')) + '</div>'); return; }

@@ -100,6 +100,15 @@ class Flow(unittest.TestCase):
         self.assertEqual((r["cur"], r["inflight"], r["end"]), ("설계", {"설계": 1}, 0))
         self.assertFalse(os.path.exists(os.path.join(self.marks, SID + ".json")))
 
+    def test_long_stage_title_flagged_not_taught(self):
+        long_t = "x" * (H.TITLE_MAX + 1)
+        self._pipe(dict(PIPE, stages=[PIPE["stages"][0], {"title": long_t, "agent": "main"}, PIPE["stages"][1]]))
+        self.assertIsNone(self.pre("설계"))
+        t = self.post("설계")
+        self.assertIn("«%s» (%d chars)" % (long_t, H.TITLE_MAX + 1), t)
+        self.assertIn("%d-char limit" % H.TITLE_MAX, t)
+        self.assertNotIn("[pl:%s/%s]" % (N, long_t), t)   # never teaches a tag TAG cannot match
+
     def _heads(self, seq):
         calls = []
         it = iter(seq)

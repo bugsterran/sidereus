@@ -393,13 +393,40 @@ def _who_seed_kick(start):
     threading.Thread(target=_who_seed, args=(start, None, floor), name="who_seed", daemon=True).start()
 
 
+_who_acct_win = {}   # {"w": (five_hour, label) | None} from the last call that carried `accounts`
+
+
+def _who_window(q, now):
+    """(five_hour, account label) of the account in use: the primary when it has a live 5h window, else the
+    extra signed-in account with a live window and the highest pct; label '' = primary.
+    ⚠A not-signed-in or idle primary has `resets_at` null — taking it gave now-5h (27M shown vs ~306M used)."""
+    q = q or {}
+    fh = q.get("five_hour") or {}
+    if fh.get("resets_at") and (_iso_ts(fh.get("resets_at")) or 0) > now:
+        return fh, ""
+    if "accounts" not in q:   # caller without accounts (git_wt): reuse the window the last full call picked
+        m = _who_acct_win.get("w")
+        ra = _iso_ts(m[0].get("resets_at")) if m else None
+        return m if ra and ra > now else (fh, "")
+    best = None
+    for a in q.get("accounts") or []:
+        w = (a or {}).get("five_hour") or {}
+        ra = _iso_ts(w.get("resets_at")) if w.get("resets_at") else None
+        if not ra or ra <= now or not isinstance(w.get("pct"), (int, float)):
+            continue
+        if best is None or w["pct"] > best[0]["pct"]:
+            best = (w, str(a.get("label") or ""))
+    _who_acct_win["w"] = best
+    return best if best else (fh, "")
+
+
 def quota_who(q, now=None, top=6):
     """Who used the current 5h cycle — per project (metadata only: project name · session ids · tokens).
     Cycle start = official `five_hour.resets_at` - 5h. OTel-only, in-memory since server start:
     `partial` marks a cycle that began before the first recorded request."""
     now = time.time() if now is None else now
-    fh = (q or {}).get("five_hour") or {}
-    r_at = _iso_ts(fh.get("resets_at")) if fh.get("resets_at") else 0
+    fh, acct = _who_window(q, now)
+    r_at = (_iso_ts(fh.get("resets_at")) or 0) if fh.get("resets_at") else 0
     start = (r_at - 5 * 3600) if r_at else (now - 5 * 3600)
     if r_at:
         _who_seed_kick(start)     # seed only against the official cycle start
@@ -423,7 +450,7 @@ def quota_who(q, now=None, top=6):
         ss = sorted(e["sids"].items(), key=lambda x: -x[1])
         rows.append({"name": nm, "tok": e["tok"], "share": round(e["tok"] * 100.0 / total, 1) if total else 0,
                      "n": len(ss), "sids": [{"sid": _sid8(s), "tok": t} for s, t in ss[:5]]})
-    return {"start": int(start), "exact": bool(r_at), "total": total, "rows": rows,
+    return {"start": int(start), "exact": bool(r_at), "acct": acct, "total": total, "rows": rows,
             "others": max(0, len(by) - top), "othersTok": total - sum(r["tok"] for r in rows),
             "partial": bool(not since or since > start),
             "since": int(since) if since else None}

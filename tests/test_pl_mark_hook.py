@@ -187,5 +187,55 @@ class ShellMarker(unittest.TestCase):
         self.assertEqual(set(H.PLATFORMS) - {"cc"}, set(sidereus("ext_store").EXT_PLAT))
 
 
+class DeniedBash(unittest.TestCase):
+    """A tagged Bash that pl_flow denies (undeclared jump, unknown stage) writes no plmark."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp)
+        self.proj = os.path.join(self.tmp, "proj")
+        os.makedirs(os.path.join(self.proj, ".claude", "pipelines"))
+        with open(os.path.join(self.proj, ".claude", "pipelines", "pv.json"), "w", encoding="utf-8") as f:
+            json.dump({"stages": [{"title": "fix", "agent": "a"}, {"title": "verify", "agent": "b"},
+                                  {"title": "live", "agent": "main"}]}, f)
+        self.marks = os.path.join(self.tmp, "plmark")
+        fl = H._flow()
+        for obj, k, v in ((H, "MARK_DIR", self.marks), (H, "CONFIG_PATH", os.path.join(self.tmp, "c.json")),
+                          (H, "HOME_DIR", self.tmp), (H, "DATA_DIR", self.tmp), (fl, "MARK_DIR", self.marks),
+                          (fl, "CONFIG_PATH", os.path.join(self.tmp, "c.json")), (fl, "_now", lambda: 1000.0),
+                          (fl, "CLAUDE_JSON", os.path.join(self.tmp, "none.json")),
+                          (fl, "PROJ_STORE", os.path.join(self.tmp, "none2.json"))):
+            p = mock.patch.object(obj, k, v)
+            p.start()
+            self.addCleanup(p.stop)
+        os.makedirs(self.marks)
+        with open(os.path.join(self.marks, "sess-0001.runs.json"), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "runs": {"pv": {"cwd": self.proj, "proj": self.proj, "t0": 990.0, "t1": 990.0,
+                                               "cur": "fix", "done": [], "inflight": {}, "ret": "", "loops": {},
+                                               "skipok": [], "end": 0, "st": {"fix": {"s": "run", "t0": 990.0,
+                                                                                     "t1": 990.0, "n": 1}}}}}, f)
+        self.path = os.path.join(self.marks, "sess-0001.json")
+
+    def _bash(self, desc):
+        ev = {"tool_name": "Bash", "session_id": "sess-0001", "cwd": self.proj, "tool_input": {"description": desc}}
+        with mock.patch("sys.stdin", io.StringIO(json.dumps(ev))), mock.patch("sys.stdout", io.StringIO()):
+            H.main([])
+
+    def test_jump_and_unknown_stage_not_marked(self):
+        self._bash("[pl:pv/live] restart")          # skips «verify»: pl_flow denies it
+        self.assertFalse(os.path.exists(self.path))
+        self._bash("[pl:pv/nope] x")                # unknown stage: denied too
+        self.assertFalse(os.path.exists(self.path))
+        self._bash("[pl:pv/verify] x")              # next stage: allowed, marked
+        with open(self.path, encoding="utf-8") as f:
+            self.assertEqual(json.load(f)["title"], "verify")
+
+    def test_plugin_copies_byte_identical(self):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for n in ("pl_mark.py", "pl_flow.py"):
+            with open(os.path.join(root, "hooks", n), "rb") as a, open(os.path.join(root, "plugin", "hooks", n), "rb") as b:
+                self.assertEqual(a.read(), b.read(), n)
+
+
 if __name__ == "__main__":
     unittest.main()

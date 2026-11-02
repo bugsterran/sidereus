@@ -81,6 +81,8 @@ function buildQuota(u, q){
     };
     const one = (o, label, loc, win, gauged) => {
       if(!o) return '';
+      // ⚠No window and no usage (not signed in / no data) is unknown, not a real 0%.
+      if(!o.resets_at && !o.pct) return label+' '+esc(T('used'))+' <b class=qstale>'+esc(T('unknown'))+'</b>';
       const p = Math.round(o.pct);
       const d = o.resets_at ? new Date(o.resets_at) : null;
       const when = d ? ((d.toDateString()===new Date().toDateString() ? '' :
