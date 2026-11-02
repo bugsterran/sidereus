@@ -24,7 +24,7 @@ const R = {};
 
 
 def run(body):
-    fns = "".join(js_fn(n) + "\n" for n in ("tourPlan", "tourShouldAuto", "tourPluginLines", "tourStepper", "tourBody", "tourEnd", "tourClick", "tourPlEdit", "plNowShown", "demoCmd"))
+    fns = "".join(js_fn(n) + "\n" for n in ("tourPlan", "tourShouldAuto", "tourPluginLines", "tourStepper", "tourBody", "tourEnd", "tourClick", "tourPlEdit", "plNowShown", "demoCmd", "tourEditExists"))
     code = STUB + STEPS + "\n" + KEY + "\n" + fns + body + "\nprocess.stdout.write(JSON.stringify(R));"
     r = subprocess.run(node_e(code), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
@@ -54,7 +54,11 @@ R.demoOffBody = tourBody(tourPlan({pipeline: false}, all, 0).find(p => p.demo), 
 R.nostrip = tourPlan({}, noStrip, 2).find(p => p.id === 'pl-live');
 R.nostripBody = tourBody(R.nostrip, '').h;
 R.liveSpot = tourBody({id: 'pl-live', mode: 'spot'}, '');
-R.startSpot = tourBody({id: 'pl-start', mode: 'spot'}, '').h; R.startMiss = tourBody({id: 'pl-start', mode: 'centre'}, '').h;
+let editEl = {};   // «Edit» in the DOM; null = no project picked
+document = {querySelector: s => s === '[data-plmode=edit]:not([disabled])' ? editEl : null};
+R.startSpot = tourBody({id: 'pl-start', mode: 'spot'}, '').h;
+R.startOff = tourBody({id: 'pl-start', mode: 'centre'}, '').h;   // present but off screen
+editEl = null; R.startMiss = tourBody({id: 'pl-start', mode: 'centre'}, '').h;
 R.missing = tourPlan({}, none, 2).map(p => p.mode);
 R.auto = {first: tourShouldAuto(false, false, ''), done: tourShouldAuto(true, false, ''), wd: tourShouldAuto(false, true, ''),
           q0: tourShouldAuto(false, false, '?tour=0'), q1: tourShouldAuto(true, true, '?tour=1')};
@@ -124,6 +128,11 @@ R.finish = {writes: writes.slice(), tabs: tabs.slice(), hidden: root.hidden};
         self.assertIn("«편집» 을 누른 뒤", self.R["startSpot"])
         self.assertIn("프로젝트를 고르거나 여세요", self.R["startMiss"])   # no project yet: «Edit» is missing
         self.assertNotIn("을 누른 뒤", self.R["startMiss"])
+
+    def test_pl_start_edit_off_screen_still_says_press_edit(self):
+        # «Edit» exists but is outside the viewport (centred bubble): the text still says to press it.
+        self.assertIn("«편집» 을 누른 뒤", self.R["startOff"])
+        self.assertNotIn("프로젝트를 고르거나 여세요", self.R["startOff"])
 
     def test_missing_targets_all_centred(self):
         self.assertEqual(set(self.R["missing"]), {"centre"})

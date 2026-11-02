@@ -13,5 +13,5 @@ Object.assign(I18N.ko, {
   'No pipeline is running right now.': '지금은 실행 중인 파이프라인이 없습니다.',
   'Start with the standard template «Review only» (2 stages) · if writing one is hard, use «Ask AI for a draft»': '처음엔 표준 템플릿 «리뷰만»(2단계)부터 · 직접 짜기 어려우면 «AI 에게 초안 요청»',
   'Architecture — a module diagram drawn by an agent; only edges that pass the evidence check remain': '아키텍처 — 에이전트가 그린 모듈 구조도, 근거 검증기를 통과한 선만 남습니다',
-  'If you use Claude Code, these two lines install the Sidereus plugin (mailbox relay · pipeline stage marks · read-only MCP).': 'Claude Code 를 쓴다면 아래 두 줄로 시데레우스 플러그인(메일박스 전달 · 파이프라인 단계 표시 · 읽기 전용 MCP)이 들어갑니다.',
+  'If you use Claude Code, these two lines install the Sidereus plugin (mailbox relay · pipeline stage marks · MCP that reads sessions and writes only To-do labels).': 'Claude Code 를 쓴다면 아래 두 줄로 시데레우스 플러그인(메일박스 전달 · 파이프라인 단계 표시 · 세션을 읽고 할 일 라벨만 쓰는 MCP)이 들어갑니다.',
 });
