@@ -476,7 +476,7 @@ def git_commit(cwd, sha, path=""):
     except subprocess.TimeoutExpired:
         return 504, {"ok": False, "err": "timeout"}
     except Exception as e:
-        return 500, {"ok": False, "err": "git " + type(e).__name__}
+        return 500, {"ok": False, "err": "git {cmd}", "vars": {"cmd": type(e).__name__}}
     msg = f[5].rstrip("\n")
     return 200, {"ok": True, "sha": full, "parents": parents, "author": f[2], "email": f[3],
                  "at": int(f[4]) if f[4].isdigit() else 0, "msg": msg[:COMMIT_BODY_MAX],

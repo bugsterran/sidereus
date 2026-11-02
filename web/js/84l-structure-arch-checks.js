@@ -507,7 +507,7 @@ async function archChkReportOpen(p, name){
   let j = null;
   try{ j = await getJSON('/api/arch/secreport?path=' + encodeURIComponent(p) + '&name=' + encodeURIComponent(name)); }catch(e){ softErr('archrep-get', e); }
   try{ if(w.closed) return; }catch(e){ return; }
-  put('<pre style="padding:12px;white-space:pre-wrap;word-break:break-word">' + esc(j && j.ok ? String(j.text || '') : T('Could not load the report') + (j && j.err ? ': ' + j.err : '')) + '</pre>');
+  put('<pre style="padding:12px;white-space:pre-wrap;word-break:break-word">' + esc(j && j.ok ? String(j.text || '') : T('Could not load the report') + (j && j.err ? ': ' + TE(j) : '')) + '</pre>');
   try{ w.focus(); }catch(e){ softErr('archrep-focus', e); }
 }
 // Guard + send: only the preview's confirm calls this (no auto-send, AGENTS.md rule 7).

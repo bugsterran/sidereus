@@ -438,7 +438,7 @@ def save(req):
             if sk and sk != old_sk.get(s.get("title")):
                 have = {x["name"] for x in skill_names(proj)} if have is None else have
                 if sk not in have:
-                    return 400, {"ok": False, "err": "unknown skill %s" % sk}
+                    return 400, {"ok": False, "err": "unknown skill {name}", "vars": {"name": sk}}
         text = dump(new)
         rel = ".claude/pipelines/%s.json" % name
         diff = "".join(difflib.unified_diff(raw.splitlines(True), text.splitlines(True), "a/" + rel, "b/" + rel))
@@ -451,7 +451,7 @@ def save(req):
             bak = _backup(p, proj, name)
             _atomic_write(p, text.encode("utf-8"), prefix=".sidereus-tmp.", like=p)   # keep the repo file's mode
         except OSError as e:
-            return 500, {"ok": False, "err": "write failed (%s)" % type(e).__name__}
+            return 500, {"ok": False, "err": "write failed ({e})", "vars": {"e": type(e).__name__}}
     return 200, {"ok": True, "dry": False, "diff": diff, "backup": bak, "sha": _sha(text)}
 
 

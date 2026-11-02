@@ -229,7 +229,7 @@ async function plAddGo(path){
 async function plRemove(path){
   if(!confirm(T('Remove from the list? (folder and files stay)') + '\n' + path)) return;
   const r = await plProjPost('/api/pipelines/projects/remove', path);
-  if(!r.ok) alert(T('Could not remove') + (r.err ? ' — ' + T(r.err) : ''));
+  if(!r.ok) alert(T('Could not remove') + (r.err ? ' — ' + TE(r) : ''));
 }
 function plCur(){
   const d = PLS.data[PLS.proj];
@@ -273,7 +273,7 @@ function plBody(ov, hd){
   // 400 = outside allowed_projects(): say how to get in (run a Claude session there once), not just «refused». ⚠never a raw «HTTP 400»
   if(!d.ok) return '<div class=hidnote>' + (d.status === 400 ? esc(T('Pipelines are saved in .claude/pipelines/ inside the project, so they open only for folders where a Claude session has run.'))
     + '<br>' + esc(T('Open a Claude session in this folder once and «+ New pipeline» appears here.'))
-    : esc(T('Could not read the pipelines') + (d.msg ? ' — ' + d.msg : ''))) + '</div>';
+    : esc(T('Could not read the pipelines') + (d.msg ? ' — ' + TE(d) : ''))) + '</div>';
   const ps = d.pipelines || [];
   // Running pipelines of this project get the same live dot as the project chips (after the name, like chips and timeline rows), so the one to open is visible on its button.
   const runs = plLiveProjs(SESS, plMem(), plKnown())[PLS.proj] || [];
@@ -358,7 +358,7 @@ async function plApplySet(mode){
   let r;
   try{ r = await postJSON('/api/pipelines/apply', { proj: PLS.proj, mode: mode }); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
-  if(!r || !r.ok){ alert(T('Could not change it') + (r && r.err ? ' — ' + r.err : '')); return false; }
+  if(!r || !r.ok){ alert(T('Could not change it') + (r && r.err ? ' — ' + TE(r) : '')); return false; }
   d.apply = r.apply;
   plPaint();
   return true;
@@ -422,7 +422,7 @@ async function plSave(write){
   try{ r = await postJSON('/api/pipelines/save', { proj: PLS.proj, name: p.name, base: p.sha, dry: !write, defaults: E.G.defaults, use: E.G.use || '', rules: E.G.rules, guards: plgGuards(E.G, (PLS.data[PLS.proj]||{}).gate_modes), stages: plgStages(E.G, chk.order) }); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
   PLS.saving = false;
-  if(!r || !r.ok){ PLS.msg = T('Could not save') + ' — ' + ((r && r.err) || '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLS.diff = null; }
+  if(!r || !r.ok){ PLS.msg = T('Could not save') + ' — ' + (r && r.err ? TE(r) : '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLS.diff = null; }
   else if(!write) PLS.diff = { name: p.name, text: r.diff || '' };
   else { PLS.diff = null; PLS.msg = T('Saved · backup') + ' ' + (r.backup || ''); await plLoad(PLS.proj, true); if(typeof plModeSet === 'function') plModeSet('watch', true); }   // a confirmed save ends the edit
   plPaint(); plRefocus('[data-plok]:not([disabled])', '[data-plsave]:not([disabled])', '[data-ppk="plsel"]');   // awaited load: a later repaint would drop focus again
@@ -437,7 +437,7 @@ async function plDelete(write){
   try{ r = await postJSON('/api/pipelines/delete', { proj: PLS.proj, name: p.name, dry: !write }); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
   PLS.saving = false;
-  if(!r || !r.ok){ PLS.del = null; PLS.msg = T('Could not delete') + ' — ' + ((r && r.err) || ''); }
+  if(!r || !r.ok){ PLS.del = null; PLS.msg = T('Could not delete') + ' — ' + (r && r.err ? TE(r) : ''); }
   else if(!write) PLS.del = { name: p.name, path: r.path || '', to: r.to || '' };
   else {
     PLS.del = null; delete PLS.g[plEntKey(p.name)];

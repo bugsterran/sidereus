@@ -59,7 +59,7 @@ function termSet(v){
   const prev = TERM_APP;
   TERM_APP = v; TERM_PEND = true;
   postJSON('/api/term/set', { termApp: v })
-    .then(r => { if(r && r.ok === false) throw new Error(r.err || 'term/set'); if(r && TERM_APPS.includes(r.termApp)) TERM_APP = r.termApp; })
+    .then(r => { if(r && r.ok === false) throw new Error(TE(r) || 'term/set'); if(r && TERM_APPS.includes(r.termApp)) TERM_APP = r.termApp; })
     .catch(e => { TERM_APP = prev; softErr('termSet', e); note(T('Could not save the terminal setting')); })
     .finally(() => { TERM_PEND = false; paintCfg(); });
 }

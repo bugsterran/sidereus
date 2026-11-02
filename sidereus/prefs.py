@@ -337,5 +337,5 @@ def prefs_set(req):
         except OSError as e:
             warn_once("prefs-write", "Could not write the config file ({err})",
                       vars={"err": f"{type(e).__name__}: {e}"})
-            return 500, {"ok": False, "err": "write failed (%s)" % type(e).__name__}
+            return 500, {"ok": False, "err": "write failed ({e})", "vars": {"e": type(e).__name__}}
     return 200, {"ok": True, "value": val, "restart": True}

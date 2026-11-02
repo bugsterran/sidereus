@@ -118,7 +118,7 @@ def create(req):
     p = os.path.join(d, name + ".json")
     with _LOCK:
         if os.path.lexists(p):
-            return 409, {"ok": False, "err": "%s already exists" % rel}
+            return 409, {"ok": False, "err": "{rel} already exists", "vars": {"rel": rel}}
         if req.get("dry") is not False:
             return 200, {"ok": True, "dry": True, "diff": diff, "replaced": gone}
         try:
@@ -129,7 +129,7 @@ def create(req):
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(text)
         except FileExistsError:
-            return 409, {"ok": False, "err": "%s already exists" % rel}
+            return 409, {"ok": False, "err": "{rel} already exists", "vars": {"rel": rel}}
         except OSError as e:
-            return 500, {"ok": False, "err": "write failed (%s)" % type(e).__name__}
+            return 500, {"ok": False, "err": "write failed ({e})", "vars": {"e": type(e).__name__}}
     return 200, {"ok": True, "dry": False, "diff": diff, "name": name, "sha": _sha(text)}

@@ -62,6 +62,6 @@ async function mpfSave(rows){
     MPF_PEND = null; MPF_NOTE = {ok: 1};
     if(f && typeof featsApply === 'function') featsApply(f);
   }
-  else MPF_NOTE = {err: T('Could not save') + ': ' + ((r && r.err) || '?')};
+  else MPF_NOTE = {err: T('Could not save') + ': ' + ((r && TE(r)) || '?')};
   paintCfg();
 }

@@ -90,7 +90,7 @@ const MPDRAFT = {};
 const MP_SRV_ERR = [[/^port must be/, 'whole number only', '1024~65535 '],[/must be 1\.\.64 characters/, '1-64 characters, no / or \\'],
   [/^path must/, 'Enter a path starting with / or ~ (no ..)'], [/must be an integer/, 'Enter a whole number'], [/^set by env/, 'Set by an environment variable, so it cannot be changed here.'],
   [/^write failed/, 'Could not write the file'], [/^value missing|^unknown key/, 'Bad request']];
-function mpSrvErr(e){ e = String(e || '?'); const m = MP_SRV_ERR.find(x => x[0].test(e)); return T('Save failed') + ': ' + (m ? (m[2] || '') + T(m[1]) : e); }
+function mpSrvErr(e){ e = String(e || '?'); const m = MP_SRV_ERR.find(x => x[0].test(e)); return T('Save failed') + ': ' + (m ? (m[2] || '') + T(m[1]) : TE(e)); }
 const mpBad = msg => T('Check the value') + ': ' + msg;
 // Typing in a field drops its stale error note in place (a repaint would steal focus).
 if(document.addEventListener) document.addEventListener('input', e => {   // guard: node tests load this file with a bare document stub
@@ -138,7 +138,7 @@ async function mpSrvSetRun(key, reset){
   try{ r = await postJSON('/api/prefs/set', body); }catch(e){ r = e.body || {ok: false, err: String((e && e.message) || e)}; }
   if(!reset && !(r && r.ok)){ const el = document.querySelector('#cfgbox [data-mpin="' + key + '"]'); if(el) MPDRAFT[key] = el.value; }   // refused by the server: keep the text too
   if(r && r.ok){ delete MPERR[key]; delete MPDRAFT[key]; MPDONE[key] = 1; it.value = r.value; it.src = reset ? 'default' : 'file';
-    if(r.otel && !r.otel.ok) MPERR[key] = 'OTEL: ' + (r.otel.err || '?'); else if(r.otel && r.otel.value) MPSRV.otel.value = r.otel.value; }
+    if(r.otel && !r.otel.ok) MPERR[key] = 'OTEL: ' + (TE(r.otel) || '?'); else if(r.otel && r.otel.value) MPSRV.otel.value = r.otel.value; }
   else MPERR[key] = mpSrvErr(r && r.err);
   paintCfg();
 }
@@ -176,7 +176,7 @@ function mpCcPane(){
   // Other accounts' settings.json: one line only where its value differs from the primary (a save writes them all).
   accts.forEach(x => {
     const d = [];
-    if(x.err) d.push(x.err);
+    if(x.err) d.push(TE(String(x.err)));
     else {
       if(x.auto !== a.value) d.push('autoCompactEnabled ' + String(x.auto));
       if(x.window !== w.value) d.push('autoCompactWindow ' + (x.window == null ? T('None') : String(x.window)));
@@ -214,7 +214,7 @@ function mpAcctPane(){
       + '<input class=svin data-mpacct=' + i + ' type=number min=50000 max=1000000 step=10000 style="width:96px" value="' + esc(x.err ? '' : d.win)
       + '" aria-label="' + esc(T('Compact threshold (tokens)')) + '">'
       + (MPERR[k] ? '<span class="mpnote err">' + esc(MPERR[k]) + '</span>' : '');
-    return cfgSet(String(x.label || x.path || '?'), String(x.path || '') + (x.err ? ' · ' + T('skipped') + ': ' + String(x.err) : ''), ctl, false, x.err ? String(x.err) : '');
+    return cfgSet(String(x.label || x.path || '?'), String(x.path || '') + (x.err ? ' · ' + T('skipped') + ': ' + TE(String(x.err)) : ''), ctl, false, x.err ? TE(String(x.err)) : '');
   }).join('');
 }
 // Typed window text per row, from the live input when painted, else the draft.
@@ -249,8 +249,8 @@ async function mpAcctApplyRun(){
   if(!(r0 && r0.ok)){ MPERR.cc_accounts = mpSrvErr(r0 && r0.err); paintCfg(); return; }
   const files = Array.isArray(r0.files) ? r0.files : [], nm = f => String(f.label || '') + ' ' + String(f.path || '');
   const ch = files.filter(f => f && f.status === 'change'), sk = files.filter(f => f && f.status === 'skipped');
-  const skTxt = sk.map(f => nm(f) + '\n' + T('skipped') + ': ' + String(f.err || '?'));
-  if(!ch.length){ MPANOTE = [T('No account changed')].concat(sk.map(f => nm(f) + ' ' + T('skipped') + ': ' + String(f.err || '?'))).join(' · '); paintCfg(); return; }
+  const skTxt = sk.map(f => nm(f) + '\n' + T('skipped') + ': ' + (f.err ? TE(String(f.err)) : '?'));
+  if(!ch.length){ MPANOTE = [T('No account changed')].concat(sk.map(f => nm(f) + ' ' + T('skipped') + ': ' + (f.err ? TE(String(f.err)) : '?'))).join(' · '); paintCfg(); return; }
   const msg = ch.map(f => nm(f) + '\n' + mpAcctFmt(f.before) + ' → ' + mpAcctFmt(f.after)).concat(skTxt).join('\n\n');
   if(!confirm(T('Change this Claude Code setting? It applies from new sessions.') + '\n\n' + msg)){ paintCfg(); return; }
   const r = await post(false);
@@ -259,7 +259,7 @@ async function mpAcctApplyRun(){
   const miss = out.filter(f => f && (f.status === 'skipped' || f.status === 'failed'));
   if(r.hist_err) MPERR.cc_accounts = T('Applied, but the auto-compact history was not updated') + ': ' + r.hist_err;
   if(miss.length){
-    const m = T('Applied, but not to') + ': ' + miss.map(f => String(f.label || f.path || '?') + ' (' + String(f.err || f.status) + ')').join(', ');
+    const m = T('Applied, but not to') + ': ' + miss.map(f => String(f.label || f.path || '?') + ' (' + TE(String(f.err || f.status)) + ')').join(', ');
     MPERR.cc_accounts = MPERR.cc_accounts ? MPERR.cc_accounts + ' · ' + m : m;
   }
   MPDONE.cc_accounts = 2; MPACD = {};
@@ -307,7 +307,7 @@ async function mpCcSetRun(key, val){
   // One «path / old → new» block per account file, primary first; files the server will skip say why.
   const accts = Array.isArray(MPSRV.cc_accts) ? MPSRV.cc_accts : [];
   const cur = x => key === 'cc_auto_compact' ? x.auto : x.window;
-  const blocks = accts.filter(x => x.err || cur(x) !== val).map(x => (x.path || '') + '\n' + (x.err ? T('skipped') + ': ' + x.err
+  const blocks = accts.filter(x => x.err || cur(x) !== val).map(x => (x.path || '') + '\n' + (x.err ? T('skipped') + ': ' + TE(String(x.err))
     : show(cur(x)) + '\n→ ' + show(val)));   // accounts already at the new value are left out
   const msg = !accts.length ? (MPSRV.cc_path || it.path || '') + '\n' + lab + '\n' + show(it.value) + '\n→ ' + show(val)
     : lab + '\n\n' + [(MPSRV.cc_path || it.path || '') + '\n' + show(it.value) + '\n→ ' + show(val)].concat(blocks).join('\n\n');
@@ -320,7 +320,7 @@ async function mpCcSetRun(key, val){
   if(r.hist_err) MPERR[key] = T('Applied, but the auto-compact history was not updated') + ': ' + r.hist_err;
   const miss = (Array.isArray(r.files) ? r.files : []).filter(f => f && (f.status === 'skipped' || f.status === 'failed'));
   if(miss.length){
-    const m = T('Applied, but not to') + ': ' + miss.map(f => String(f.label || f.path || '?') + ' (' + String(f.err || f.status) + ')').join(', ');
+    const m = T('Applied, but not to') + ': ' + miss.map(f => String(f.label || f.path || '?') + ' (' + TE(String(f.err || f.status)) + ')').join(', ');
     MPERR[key] = MPERR[key] ? MPERR[key] + ' · ' + m : m;
   }
   paintCfg();

@@ -45,7 +45,7 @@ function plBrHtml(B){
     + '<input class=plbrin data-plbrin value="' + esc(B.path || '') + '" placeholder="' + esc(T('Folder path (e.g. ~/projects/my-app)')) + '">'
     + (B.pick ? '<button class=strp data-plbrpick' + (B.picking ? ' disabled' : '') + '>' + esc(T('Choose folder…')) + '</button>' : '')
     + '<label class=plbrh><input type=checkbox data-plbrhid' + (B.hidden ? ' checked' : '') + '>' + esc(T('Show hidden folders')) + '</label></div>'
-    + '<div class=plbrl>' + plBrList(B) + '</div>' + (B.msg ? '<div class=pladdmsg>' + esc(T(B.msg)) + '</div>' : '')
+    + '<div class=plbrl>' + plBrList(B) + '</div>' + (B.msg ? '<div class=pladdmsg>' + esc(B.msg) + '</div>' : '')
     + '<div class=plbrf><button class="strp on" data-plbradd' + (B.busy || !B.path ? ' disabled' : '') + '>' + esc(T('Add this folder')) + '</button>'
     + '<button class=strp data-plbrx>' + esc(T('Cancel')) + '</button></div></div>';
 }
@@ -65,7 +65,7 @@ async function plBrLoad(path, fallback){
   PLBR.busy = false;
   if(!j || !j.ok){
     if(fallback && path) return plBrLoad('', false);   // remembered folder vanished or moved outside home: start at home
-    PLBR.msg = (j && j.msg) || 'Could not read the folder'; plBrPaint(); return;
+    PLBR.msg = j && j.msg ? TE(j) : T('Could not read the folder');   // msg holds display text: translated here, painted as-is plBrPaint(); return;
   }
   Object.assign(PLBR, { path: j.path, home: j.home, parent: j.parent, dirs: j.dirs, more: !!j.more, pick: !!j.pick });
   lsSet('sidereus.plbrdir', j.path);
@@ -92,14 +92,14 @@ function plBrTrap(e){
 // «Choose folder…»: the server opens the OS dialog (browsers never expose absolute paths); fills the path only, «Add this folder» still adds.
 async function plBrPick(){
   if(!PLBR || PLBR.picking) return;
-  PLBR.picking = true; PLBR.msg = 'A folder dialog is open…'; plBrPaint();
+  PLBR.picking = true; PLBR.msg = T('A folder dialog is open…'); plBrPaint();
   let r;
   try{ r = await postJSON('/api/pick-folder', {}); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
   if(!PLBR) return;
   PLBR.picking = false; PLBR.msg = '';
   if(!r || !r.ok || !r.path){
-    if(r && !r.ok) PLBR.msg = r.busy ? 'A folder dialog is already open' : (r.err || 'Could not read the folder');
+    if(r && !r.ok) PLBR.msg = r.busy ? T('A folder dialog is already open') : (r.err ? TE(r) : T('Could not read the folder'));
     return plBrPaint();   // cancel: nothing changes
   }
   await plBrLoad(r.path, false);
@@ -114,7 +114,7 @@ async function plBrAdd(){
   if(!PLBR) return;
   PLBR.busy = false;
   if(r.ok) return plBrClose();
-  PLBR.msg = r.err || 'Could not add'; plBrPaint();
+  PLBR.msg = r.err ? TE(r) : T('Could not add'); plBrPaint();
 }
 document.addEventListener('click', e => {
   if(!PLBR || !e.target.closest || !e.target.closest('#plbr')) return;

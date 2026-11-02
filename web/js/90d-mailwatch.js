@@ -92,7 +92,7 @@ async function mwSave(){
   let r = null;
   try{ r = await postJSON('/api/prefs/set', body); }catch(e){ r = e.body || { ok: false, err: String((e && e.message) || e) }; }
   if(r && r.ok){ MPSRV.mailbox_watch = { mode: w.mode, projects: Object.assign({}, w.projects) }; MW_PEND = null; MW_NOTE = { ok: 1 }; }
-  else MW_NOTE = { err: T('Could not save') + ': ' + ((r && r.err) || '?') };
+  else MW_NOTE = { err: T('Could not save') + ': ' + ((r && TE(r)) || '?') };
   mwRepaint();
 }
 document.addEventListener('click', e => {

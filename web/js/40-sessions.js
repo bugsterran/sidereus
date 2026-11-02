@@ -69,9 +69,9 @@ function invPreview(room){
   postJSON('/api/room/invite', {room: room, ids: ids, dry: true}).then(j=>{
     if(invPv !== p) return;
     if(j && j.ok && typeof j.body === 'string'){ p.body = j.body; p.added = j.added; p.already = j.already; }
-    else p.err = (j && (j.error || j.msg)) ? TV({msg: j.error || j.msg, vars: j.vars}) : T('unknown error');
+    else p.err = (j && TE(j)) || T('unknown error');   // TE: known server keys only, never T() on raw text
     buildInvite();
-  }).catch(()=>{ if(invPv === p){ p.err = T('Could not invite — check the server'); buildInvite(); } });
+  }).catch(e=>{ if(invPv === p){ p.err = (e && e.body && TE(e.body)) || T('Could not invite — check the server'); buildInvite(); } });
 }
 
 // ★No redraw while the mouse is over the list (measured 2026-08-26: tooltips never appeared).

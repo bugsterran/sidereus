@@ -407,7 +407,7 @@ function wkDonut(d, tail){
   const gup = wkuGiveUp
     ? '<div class="hidnote cwerr">'+TV({msg: 'Waited {n}s for a refresh but no new value came — press ↻ to measure again', vars: {n: WKU_WAIT_SEC}})+'</div>' : '';
   if(d.err) return '<div class=wkh>'+esc(T('Weekly tokens'))+'<button class=wkr title="'+esc(T('Measure again'))+'">↻</button></div>'
-      + '<div class="hidnote cwerr">'+esc(T('Could not read'))+' — '+esc(T(d.err))+'</div>' + tail;
+      + '<div class="hidnote cwerr">'+esc(T('Could not read'))+' — '+esc(TE(d))+'</div>' + tail;
   const rows = (d.rows||[]).filter(r => r.tok > 0);
   const tot = d.total || rows.reduce((a,r)=>a+r.tok,0);
   // ★Separate "not measured yet" from "measured, nothing there" — saying the latter while the server runs ccusage for 26s is a lie

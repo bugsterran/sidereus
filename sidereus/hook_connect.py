@@ -478,7 +478,7 @@ def _write(plat, p, raw, new_raw):
             if os.path.exists(tmp):
                 os.remove(tmp)
     except OSError as e:
-        return 500, {"ok": False, "err": "write failed (%s)" % type(e).__name__}
+        return 500, {"ok": False, "err": "write failed ({e})", "vars": {"e": type(e).__name__}}
     return 200, bak
 
 

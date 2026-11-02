@@ -101,7 +101,7 @@ function plWatchPane(E, d, lv, lt){
   const n = E && E.sel && E.sel.k === 'n' ? plgNode(E.G, E.sel.id) : plWatchDef(E, lt);
   if(!n) return lt ? '<div class="plpan plwp"><div class=hidnote>' + esc(T('Click a stage to see its result')) + '</div></div>' : '';   // no run, nothing picked: no pane
   const L = (lt || {})[n.title] || null, r = plStageRows(lt, [{ title: n.title }])[0];
-  const st = '<div class="plwst plrt-' + r.st + '"' + (r.why ? ' title="' + esc(r.why) + '"' : '') + '><span class=plrtpl>' + esc(PL_MK[r.st] + ' ' + (r.st === 'wait' ? T('Waiting') : plOc(r.st))) + '</span>'
+  const st = '<div class="plwst plrt-' + r.st + '"' + (r.why ? ' title="' + esc(TE({why: r.why})) + '"' : '') + '><span class=plrtpl>' + esc(PL_MK[r.st] + ' ' + (r.st === 'wait' ? T('Waiting') : plOc(r.st))) + '</span>'
     + (r.rb ? (t => '<span title="' + t + '" aria-label="' + t + '">')(esc(TV({msg: 'Sent back here {n} times', vars: {n: r.rb}})))   // the bare ↺n needs words
       + esc('↺ ' + r.rb) + '</span>' : '') + (r.n ? '<span>' + esc(T('Agents') + ' ' + r.n) + '</span>' : '') + (r.sec ? '<span>' + esc(ago(r.sec)) + '</span>' : '')
     + (r.type ? '<span>' + esc(r.type) + '</span>' : '') + '</div>';

@@ -12,14 +12,14 @@ from tests._node import node_e
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SRC = i18n_prelude("'ko'", ("T", "KE")) + r"""
+SRC = i18n_prelude("'ko'", ("T", "KE", "TE")) + r"""
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const R = {}, js = f => fs.readFileSync(path.join(ROOT, 'web', 'js', f), 'utf8');
 const store = init => { const m = Object.assign({}, init);
   return {getItem: k => k in m ? m[k] : null, setItem: (k, v) => { m[k] = String(v); }, removeItem: k => { delete m[k]; }, _m: m,
           get mbMainView(){ return m.mbMainView; }, get mbStartView(){ return m.mbStartView; }, get mbTabsOff(){ return m.mbTabsOff; }, get mbLang(){ return m.mbLang; }}; };
 function ctx(init, ss){
-  const c = {T, softErr: () => {}, UIS: store(init), sessionStorage: ss ? store(ss) : undefined, document: {documentElement: {dataset: {}}, getElementById: () => null}};
+  const c = {T, TE, softErr: () => {}, UIS: store(init), sessionStorage: ss ? store(ss) : undefined, document: {documentElement: {dataset: {}}, getElementById: () => null}};
   vm.createContext(c); return c;
 }
 // mainView at load (05-i18n.js)
@@ -200,7 +200,7 @@ class MyPref(unittest.TestCase):
         self.assertIn("cc_compact_window:set", p[2])
         self.assertNotIn("work:", p[2])
         self.assertIn("<off*>", p[4])                    # an err row does not count as a difference
-        self.assertIn("&lt;x>: symlink", p[4])           # label escaped
+        self.assertIn("&lt;x>: 심볼릭 링크", p[4])   # label escaped, known server reason translated (TE)
         self.assertIn("<div class=cfgpd>work: autoCompactWindow 300000</div>", self.R["ccOff"])
 
     def test_per_account_starts_on_when_different(self):
@@ -217,7 +217,7 @@ class MyPref(unittest.TestCase):
         m = self.R["prev"]
         self.assertIn("work /w/settings.json\ntrue,450000 → true,300000", m)
         self.assertNotIn("me /p/settings.json", m)        # "same" rows are not listed
-        self.assertIn("gone /g/settings.json\n건너뜀: symlink", m)
+        self.assertIn("gone /g/settings.json\n건너뜀: 심볼릭 링크", m)
         self.assertEqual(self.R["prevPosts"], [["cc_accounts", True, 3]])   # confirm stub cancels: no real POST
 
     def test_per_account_none_changed(self):
@@ -225,7 +225,7 @@ class MyPref(unittest.TestCase):
         self.assertIsNone(conf)
         self.assertEqual(posts, 1)                        # dry only
         self.assertIn("바뀐 계정이 없습니다", note)
-        self.assertIn("건너뜀: symlink", note)
+        self.assertIn("건너뜀: 심볼릭 링크", note)
         self.assertIn("바뀐 계정이 없습니다", pane)
         self.assertEqual(self.R["badWin"][0], 0)          # client check refuses before any POST
         self.assertIn("50000", self.R["badWin"][1])

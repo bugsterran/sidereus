@@ -346,7 +346,7 @@ def _commit_locked(repo, store):
     try:
         _save_locked(repo, store)
     except OSError as e:
-        return 500, {"ok": False, "err": "write failed (%s)" % type(e).__name__}
+        return 500, {"ok": False, "err": "write failed ({e})", "vars": {"e": type(e).__name__}}
     _NOIMPORT.discard(repo)
     return None
 
@@ -368,7 +368,7 @@ def add(req):
         return BAD_BODY
     text = _clean_text(req.get("text") if isinstance(req, dict) else None)
     if text is None:
-        return 400, {"ok": False, "err": "one line, 1-%d characters" % TEXT_MAX}
+        return 400, {"ok": False, "err": "one line, 1-{n} characters", "vars": {"n": TEXT_MAX}}
     repo, err = _allowed_repo(req.get("cwd"))
     if err:
         return err
@@ -454,7 +454,7 @@ def agent(req):
         return 400, {"ok": False, "err": "text or id required"}
     if action == "add" or (req.get("text") is not None and not has_id and action != "list"):
         if _clean_text(req.get("text")) is None:
-            return 400, {"ok": False, "err": "one line, 1-%d characters" % TEXT_MAX}
+            return 400, {"ok": False, "err": "one line, 1-{n} characters", "vars": {"n": TEXT_MAX}}
     repo, err = _repo_dir(req.get("cwd"))
     if err:
         return err
