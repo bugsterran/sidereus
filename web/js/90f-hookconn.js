@@ -18,9 +18,9 @@ async function hcLoad(force){
   hcPaint();
   if(HC_AGAIN){ HC_AGAIN = false; hcLoad(true); }
 }
-const hcPlats = () => (HC && Array.isArray(HC.plats) ? HC.plats : []).filter(x => x && typeof x === 'object' && x.plat && (x.state !== 'connected' || hcPin(String(x.plat))));
-// A Codex «/hooks» hint stays until «Close»: ⚠not counted in reloads, which a racing poll reply would consume. The server sends it back as connected, can:false.
-const hcPin = p => !!(HCS[p] && HCS[p].pin);
+const hcPlats = w => (HC && Array.isArray(HC.plats) ? HC.plats : []).filter(x => x && typeof x === 'object' && x.plat && (x.state !== 'connected' || hcPin(String(x.plat), w)));
+// An «Apply» result stays in «Diagnostics» (pin 'dx'), the Codex «/hooks» hint everywhere (pin true), until «Close»: ⚠not counted in reloads, which a racing poll reply would consume. The server sends it back as connected, can:false.
+const hcPin = (p, w) => { const v = HCS[p] && HCS[p].pin; return v === true || (v === 'dx' && w === 'dx'); };
 // Header to-do chip (25 buildTodo): connectable CLIs still missing hooks, minus «Later»; [{plat, name}] in server order.
 function hcTodo(){
   if(!hcOn() || !HC || !Array.isArray(HC.plats)) return [];
@@ -30,7 +30,7 @@ function hcTodo(){
 // Pure: inner HTML of one place. 'pl' shows connectable, not-«Later» rows only; 'dx' also shows `can:false` rows as a muted hint.
 function hcInner(where){
   if(!hcOn()) return '';
-  const dx = where === 'dx', L = hcPlats().filter(x => hcPin(String(x.plat)) || (dx ? (x.can || x.why) : x.can && !hcLater(String(x.plat))));
+  const dx = where === 'dx', L = hcPlats(where).filter(x => hcPin(String(x.plat), where) || (dx ? (x.can || x.why) : x.can && !hcLater(String(x.plat))));
   const rows = L.map(x => {
     const p = String(x.plat), s = HCS[p] || {}, busy = s.st === 'busy', nm = String(x.name || p);
     const lab = x.state === 'connected' ? '' : T(x.state === 'partial' ? 'Partly connected' : 'Sidereus hooks not connected');
@@ -94,8 +94,8 @@ async function hcAct(a, p){
     HCS[p] = { st: 'busy' }; hcPaint();
     try{
       const r = await postJSON('/api/hooks/connect', { plat: p, dry: false, base: s.base });
-      HCS[p] = { st: 'done', pin: !!(r && r.approve), msg: r && r.approve ? T('Connected. Restart Codex, then run /hooks in it to approve the new hooks.') : T(r && r.changed === false ? 'Already connected' : 'Connected. Restart sessions that are already open: only newly started ones load the hooks.') };
-      hcPaint(); hcLoad(true);   // message shows in place first; the reload then drops the connected row
+      HCS[p] = { st: 'done', pin: r && r.approve ? true : 'dx', msg: r && r.approve ? T('Connected. Restart Codex, then run /hooks in it to approve the new hooks.') : T(r && r.changed === false ? 'Already connected' : 'Connected. Restart sessions that are already open: only newly started ones load the hooks.') };
+      hcPaint(); hcLoad(true);   // pinned: the reload keeps the connected row (in «Diagnostics») so the message stays readable
       return;
     }catch(e){ HCS[p] = { st: 'err', msg: hcErr(e) }; }
     hcPaint(); return;

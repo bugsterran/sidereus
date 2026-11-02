@@ -369,6 +369,18 @@ def _check(plat, old, new_text, want, tpl):
         return False
 
 
+def _has_ours(hooks):
+    """True when any entry (flat or inside a matcher group) runs one of our scripts."""
+    for lst in (hooks.values() if isinstance(hooks, dict) else []):
+        for e in (lst if isinstance(lst, list) else []):
+            if not isinstance(e, dict):
+                continue
+            subs = e.get("hooks") if isinstance(e.get("hooks"), list) else [e]
+            if any(isinstance(x, dict) and _key(_cmd(x)) for x in subs):
+                return True
+    return False
+
+
 def _state(plat, p):
     raw, d, err = _read(p)
     if err:
@@ -378,11 +390,13 @@ def _state(plat, p):
     tpl = _template(plat)
     if tpl is None:     # no template to compare with: any of our entries counts as connected
         txt = json.dumps(d.get("hooks") or {})
-        return ("connected" if "ext_hook.py" in txt else "partial"), ""
+        return ("connected" if "ext_hook.py" in txt else "missing"), ""
     try:
         _h, adds = _merge(plat, d.get("hooks") or {}, tpl)
     except ValueError as e:
         return "unreadable", str(e)
+    if not _has_ours(d.get("hooks") or {}):     # ⚠only the user's own hooks = not connected, not «Partly connected»
+        return "missing", ""
     if plat == "gemini" and (d.get("hooksConfig") or {}).get("enabled") is not True:
         adds += 1
     return ("connected" if not adds else "partial"), ""
@@ -417,7 +431,7 @@ def listing():
             can, why = False, SYMLINK
         elif can and _template(plat) is None:
             can, why = False, "no ext-hooks"
-        elif can and state == "missing" and plat == "gemini":
+        elif can and plat == "gemini" and not os.path.exists(p):     # ⚠"missing" also covers a file with only user hooks
             can, why = False, "settings.json not found — run gemini once"
         out.append({"plat": plat, "name": name, "state": state, "file": _shown(p), "can": can, "why": why,
                     "approve": "/hooks" if plat == "codex" else ""})

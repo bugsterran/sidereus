@@ -221,6 +221,14 @@ class HookConnect(unittest.TestCase):
         self._put("cursor", {"version": 1, "hooks": _example("cursor")})
         self.assertEqual(HC._state("cursor", self.files["cursor"])[0], "connected")
 
+    def test_only_user_hooks_is_missing(self):
+        self._put("codex", {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "notify"}]}]}})
+        self.assertEqual(HC._state("codex", self.files["codex"]), ("missing", ""))
+        self._put("gemini", {"hooks": {"BeforeTool": [{"matcher": ".*", "hooks": [{"type": "command", "command": "say"}]}]}})
+        self.assertEqual(HC._state("gemini", self.files["gemini"]), ("missing", ""))
+        self._put("cursor", {"version": 1, "hooks": {"stop": [{"command": "say done"}]}})
+        self.assertEqual(HC._state("cursor", self.files["cursor"]), ("missing", ""))
+
     def test_bad_base_409_unchanged(self):
         raw = self._put("cursor", {"version": 1, "hooks": {}})
         code, out = HC.connect({"plat": "cursor", "dry": False, "base": "0" * 64})
