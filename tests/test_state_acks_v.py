@@ -95,14 +95,15 @@ class AckVer(unittest.TestCase):
 
     def test_missing_then_size_and_mtime_change_the_version(self):
         self.assertEqual(bus.ack_ver(7), "0-0-7")
-        with open(mailbox_core.ACKS, "w", encoding="utf-8") as f:
+        # ⚠newline="": text mode on Windows writes "\r\n", so the asserted size 3 would be 4
+        with open(mailbox_core.ACKS, "w", encoding="utf-8", newline="") as f:
             f.write("{}\n")
         os.utime(mailbox_core.ACKS, ns=(10 ** 18, 10 ** 18))
         v1 = bus.ack_ver(7)
         self.assertEqual(v1, "%d-3-7" % 10 ** 18)
         os.utime(mailbox_core.ACKS, ns=(10 ** 18 + 1, 10 ** 18 + 1))
         self.assertNotEqual(bus.ack_ver(7), v1)
-        with open(mailbox_core.ACKS, "a", encoding="utf-8") as f:
+        with open(mailbox_core.ACKS, "a", encoding="utf-8", newline="") as f:
             f.write("{}\n")
         os.utime(mailbox_core.ACKS, ns=(10 ** 18, 10 ** 18))
         self.assertNotEqual(bus.ack_ver(7), v1)
