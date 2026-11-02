@@ -287,16 +287,14 @@ class _PostRoutes:
         req = self._body_json(4096, None)
         # ⚠`limit` (block/warn) can stop every CLI session: viewer Origin required (no Origin = 403), like /api/prefs/set.
         if isinstance(req, dict) and "limit" in req and not _cfg.viewer_origin(self.headers.get("Origin")):
-            return self._send(403, json.dumps({"ok": False, "err": "viewer origin required"}),
-                              "application/json; charset=utf-8")
+            return self._send(403, json.dumps({"ok": False, "err": "viewer origin required"}), "application/json; charset=utf-8")
         try:
             out = saver_set(req)
             if out.get("ok"):
                 state_cache_clear()   # next /api/state poll must carry the new switch
         except Exception as e:
             out = {"ok": False, "err": f"{type(e).__name__}: {e}"[:200]}
-        return self._send(200 if out.get("ok") else 400, json.dumps(out, ensure_ascii=False),
-                          "application/json; charset=utf-8")
+        return self._send(200 if out.get("ok") else 400, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
 
     def _p_cards_read(self, u):
         # Alarm read — clears only the badge. **Cards themselves are not deleted** (history is the purpose).
@@ -348,8 +346,7 @@ class _PostRoutes:
         room, to = (req.get("room") or "").strip(), (req.get("to") or "").strip()
         me = self._viewer_me()
         if bool(room) == bool(to):
-            return self._send(400, json.dumps({"error": "No recipient — pick a room or one person"}),
-                              "application/json; charset=utf-8")
+            return self._send(400, json.dumps({"error": "No recipient — pick a room or one person"}), "application/json; charset=utf-8")
         if to:
             why = dm_target_error(to, me)
             if why:
@@ -377,6 +374,7 @@ class _PostRoutes:
                 f.write(json.dumps(msg, ensure_ascii=False) + "\n")
         except Exception as e:
             return self._send(500, json.dumps({"error": f"Could not write: {e}"}), "application/json; charset=utf-8")
+        state_cache_clear()   # the client polls right after a write; a 1 s cached state would hide it
         return self._send(200, json.dumps({"ok": True, "id": msg["id"]}), "application/json; charset=utf-8")
 
     def _p_dm(self, u):
@@ -513,13 +511,14 @@ class _PostRoutes:
         ag = u.path == "/api/todo/agent"
         if (self.headers.get("Origin") is not None) if ag else not _cfg.viewer_origin(self.headers.get("Origin")):
             self._body_unread()
-            return self._send(403, json.dumps({"ok": False, "err": "MCP only" if ag else "viewer origin required"}),
-                              "application/json; charset=utf-8")
+            return self._send(403, json.dumps({"ok": False, "err": "MCP only" if ag else "viewer origin required"}), "application/json; charset=utf-8")
         req = self._body_json(4096, None)
         try:
             code, out = (todo_agent if ag else todo_add if u.path == "/api/todo/add" else todo_set)(req)
         except Exception as e:
             code, out = 500, {"ok": False, "err": type(e).__name__}
+        if code == 200:
+            state_cache_clear()
         return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
 
     def _p_pick_folder(self, u):
@@ -560,6 +559,8 @@ class _PostRoutes:
                 code, out = room_admin.set_hidden(req.get("rooms"), u.path == "/api/rooms/hide")
             except Exception as e:
                 code, out = 500, {"ok": False, "error": type(e).__name__}
+        if code == 200:
+            state_cache_clear()
         return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
 
     def _p_rooms_create(self, u):
