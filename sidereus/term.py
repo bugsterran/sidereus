@@ -138,14 +138,15 @@ def _sid_pids(av, snap):
     return out
 
 
-def _probe(pids, force=False):
+def _probe(pids, force=False, evict=True):
     """One `ps -Ewwo pid=,tty=,command=` for pids not cached or past TTL -> fills `_TTY_CACHE`. ⚠Failures cached (poll path).
     ⚠A failed re-probe keeps the previous entry: a pid's tty never changes, and dropping it first turned a ps timeout under
     load into term=None (button fell back to «Copy command»). Only a ps that answers without the pid marks it gone.
-    `force` = request path: ignore the poll fail cache and evict nothing else."""
+    `force` = request path: ignore the poll fail cache and evict nothing else.
+    `evict=False` = partial probe (one spawner pid): ⚠evicting here dropped every other row's expired entry."""
     now = time.time()
     with _TTY_LOCK:
-        if not force:
+        if evict and not force:
             for p in [p for p, v in _TTY_CACHE.items() if p not in pids and now - v[0] > TTY_TTL]:
                 _TTY_CACHE.pop(p, None)
         want = [p for p in pids if p.isdigit() and (p not in _TTY_CACHE or now - _TTY_CACHE[p][0] > TTY_TTL)][:64]
@@ -209,8 +210,9 @@ def _bg_term(pids, av, snap, force=False):
         if not on_host and not (isinstance(it, dict) and it.get("kind") == "background"):
             continue
         sp = _spawner_pid(cmds.get(par.get(host, ""), "")) if on_host else None
-        if sp and str(sp) in cmds:              # alive = present in the same ps snapshot
-            _probe({str(sp)}, force=force)
+        # alive = present in the same ps snapshot as a claude session (⚠a reused pid would jump to a foreign tab)
+        if sp and str(sp) in cmds and is_claude_argv(cmds[str(sp)]):
+            _probe({str(sp)}, force=force, evict=False)
             t = _term_of([str(sp)])
             # ⚠iTerm2/Terminal only: an Orca jump looks its handle up by the session's own pids, not the spawner's.
             if t and t.get("app") in _SCRIPTS and t.get("tty"):

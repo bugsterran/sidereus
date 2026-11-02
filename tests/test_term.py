@@ -100,6 +100,20 @@ class Detect(Base):
         term.term_attach(rows)
         self.assertEqual(rows[0]["term"], {"app": "bg", "tty": None})
 
+    def test_bg_probe_keeps_foreign_expired_entry(self):
+        self.patch(term, "_TTY_CACHE", {"777": (1.0, "ttys009", "iterm", None)})   # another row, past TTY_TTL
+        self.patch(term.subprocess, "run", _Run("68658 ttys002 claude TERM_PROGRAM=iTerm.app\n"))
+        t = term._bg_term(["64636"], {}, self._bg_snap(True))
+        self.assertEqual(t, {"app": "iterm", "tty": "ttys002", "bg": True})
+        self.assertIn("777", term._TTY_CACHE)
+
+    def test_bg_spawner_pid_reused_by_non_claude_stays_bg(self):
+        snap = self._bg_snap(False) + [("68658", "1", "/usr/bin/vim notes.txt")]
+        run = _Run("68658 ttys002 vim TERM_PROGRAM=iTerm.app\n")
+        self.patch(term.subprocess, "run", run)
+        self.assertEqual(term._bg_term(["64636"], {}, snap), {"app": "bg", "tty": None})
+        self.assertEqual(run.calls, [])             # no probe of the foreign pid
+
     def test_spawner_pid_strict(self):
         self.assertEqual(term._spawner_pid('d --spawned-by {"pid":68658} --x'), 68658)
         for bad in ('d --spawned-by {"pid":"68658"}', 'd --spawned-by {"pid":true}', 'd --spawned-by {bad',
