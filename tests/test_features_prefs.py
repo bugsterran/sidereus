@@ -149,9 +149,29 @@ class FeaturePaneJs(unittest.TestCase):
         r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         R = json.loads(r.stdout)
-        self.assertIn("Changes: pipeline On → Off</div>", R["pane"])          # blocked harness is not listed as Off → On
-        self.assertNotIn("harness Off → On", R["pane"])
-        self.assertEqual(R["sent"], {"key": "features", "value": {"pipeline": False, "harness": False}})
+        self.assertIn("Changes: pipeline On → Off · harness Off → On</div>", R["pane"])   # Changes = what Save writes
+        self.assertEqual(R["sent"], {"key": "features", "value": {"pipeline": False, "harness": True}})
+
+    def test_dep_off_keeps_dependent_choice(self):
+        # Turning Pipelines off must not save Harness off: re-enabling Pipelines would leave Harness lost.
+        stub = ("let MPSRV = {features: [{id: 'pipeline', set: true, on: true}, {id: 'harness', set: true, on: true, deps: ['pipeline']}]},"
+                " MPF_PEND = null, MPF_NOTE = null, SENT = null;\n"
+                "const MPF_CORE = {}, T = s => s, esc = s => String(s), paintCfg = () => {};\n"
+                "const postJSON = async (u, b) => { SENT = b; return {ok: true, features: {pipeline: false, harness: false}}; };\n"
+                "const cfgSet = (n, h, c) => '<div class=row data-n=' + n + '>' + c + '</div>';\n"
+                "const cfgOpt = (k, v, l) => '<button data-v=' + v + '>' + l + '</button>';\n")
+        js = ("(async () => { const R = {}; mpfAct('pipeline:0'); R.pane = mpfPane();"
+              " await mpfAct('save'); R.sent = SENT; R.after = mpfPane(); process.stdout.write(JSON.stringify(R)); })();")
+        src = stub + "\n".join(js_fn(f) for f in ("mpfRows", "mpfWant", "mpfEff", "mpfShown", "mpfPane", "mpfAct")) + "\n" + _async_fn("mpfSave") + "\n" + js
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        R = json.loads(r.stdout)
+        self.assertEqual(R["sent"], {"key": "features", "value": {"pipeline": False, "harness": True}})
+        self.assertIn("Changes: pipeline On → Off</div>", R["pane"])
+        for pane in (R["pane"], R["after"]):   # still shown forced off while Pipelines is off
+            row = pane[pane.find("data-n=harness"):]
+            self.assertIn('value="harness" disabled>', row)
+            self.assertNotIn(" checked", row[:row.find("</label>")])
 
 
 if __name__ == "__main__":
