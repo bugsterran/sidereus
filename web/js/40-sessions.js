@@ -188,6 +188,7 @@ document.addEventListener('keydown', e => {
     // ⚠Not intercepted while typing — the palette must not open mid-chat (the palette's own input is the exception).
     if(!cpOn && (tag === 'INPUT' || tag === 'TEXTAREA' || (t && t.isContentEditable))) return;
     e.preventDefault();
+    if(typeof kbHelpYield === 'function') kbHelpYield();   // 98-a11y: never the palette over the help sheet
     if(cpOn) cpClose(); else cpOpen();
     return;
   }

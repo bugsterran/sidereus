@@ -118,7 +118,7 @@ function railTipBind(r){
   }
   document.addEventListener('keydown', e => {
     if(e.isComposing || e.defaultPrevented) return;
-    if(railKeyB(e)){ e.preventDefault(); railSet(!railOpen); return; }
+    if(railKeyB(e)){ e.preventDefault(); if(typeof kbHelpYield === 'function') kbHelpYield(); railSet(!railOpen); return; }   // 98-a11y: help closes first
     if(e.key === 'Escape' && !railCovered() && railCloseOver()) e.preventDefault();
   });
 })();
