@@ -8,6 +8,8 @@ html[data-ui=next] .hrow > #todo{margin:0 0 0 auto;flex-wrap:nowrap;gap:5px;flex
 html[data-ui=next] .hrow > #sesb{flex-shrink:0;margin-left:auto} /* ⚠ an empty #todo is display:none, so its auto margin is gone; without this the button sits beside the title */
 html[data-ui=next] .hrow > #todo:not(:empty) ~ #sesb{margin-left:0}
 html[data-ui=next] .hrow > #todo .td{white-space:nowrap}
+#todo .td .tdlg{display:inline-flex;align-items:center;gap:2px;margin-left:4px;vertical-align:-1px}   /* platform logos of the «CLI hooks not connected» chip */
+#todo .td .tdlg .ailg{margin-right:0}
 /* ≤1000px: short chip labels; ⚠the «Sessions» word stays (hiding it left a bare icon) — the row wraps instead of squeezing. */
 .td .tds{display:none}
 @media (max-width:1000px){

@@ -75,17 +75,18 @@ function buildTodo(){
   if(nrun)         cells.push(['run',   T('Background tasks'), nrun,          'run', T('Jobs')]);
   if(unread)       cells.push(['unread',T('Unread'), unread,       'bell', T('Unread', 'short')]);
   if(stale.length) cells.push(['stale', T('Stale threads'), stale.length, 'stale', T('Stale')]);
-  // Detected CLIs without Sidereus hooks (90f); names are server data, so they fill a TV slot and are never passed through T().
+  // Detected CLIs without Sidereus hooks (90f). Platforms show as logos only (no platform name text on chips); the logo's own title names it.
   if(typeof hcTodo === 'function'){
     if(!document.hidden) hcLoad(false);   // hidden: no refetch; the visibilitychange poll reloads once
     const hk = hcTodo();
-    if(hk.length) cells.push(['hk', TV({msg: 'CLI hooks not connected: {names}', vars: {names: hk.map(x => x.name).join(' · ')}}), hk.length, 'hooks', T('Hooks')]);
+    if(hk.length) cells.push(['hk', T('CLI hooks not connected'), hk.length, 'hooks', T('Hooks'),
+      typeof aiLogo === 'function' ? hk.map(x => aiLogo(HC_LOGO[x.plat] || x.plat)).join('') : '']);
   }
   // ★2026-09-27 QA 900px: full labels made row 1 ~75px too wide — ≤1000px shows the short label (.tds), full text in title.
   setHtml(bar, cells.map(c =>
     '<span class="td ' + c[0] + (stFil === c[3] || (c[3] === 'stale' && todoOpen) ? ' on' : '') + '" data-go="' + c[3] + '"'
     + ' title="' + esc(c[1] + ' ' + c[2]) + '" aria-label="' + esc(c[1] + ' ' + c[2]) + '">'
-    + '<span class=tdl>' + esc(c[1]) + '</span><span class=tds>' + esc(c[4]) + '</span> <b>' + c[2] + '</b></span>').join(''));
+    + '<span class=tdl>' + esc(c[1]) + '</span><span class=tds>' + esc(c[4]) + '</span>' + (c[5] ? '<span class=tdlg>' + c[5] + '</span>' : '') + ' <b>' + c[2] + '</b></span>').join(''));
   if(typeof todoAsk === 'string' && !stale.some(x => x.th === todoAsk)) todoAsk = false;   // asked thread already gone
   setHtml(bar2, (todoOpen && stale.length)
     ? stale.map(x => '<span class=tdth data-th="' + esc(x.th) + '" title="' + T('Last post: ') + esc(x.last) + '">' + esc(x.th)

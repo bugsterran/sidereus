@@ -28,7 +28,7 @@ const c = {T, TV, softErr: () => {}, lsGet: (k, d) => k in LS ? LS[k] : d, lsSet
   document: {addEventListener: () => {}, activeElement: null, querySelectorAll: () => [],
              getElementById: id => id === 'todo' ? bar : id === 'todo2' ? bar2 : null},
   alarmBadgeN: () => 0, staleThreads: () => [], attnBadgeN: () => 0, SESS: [], stFil: '', todoOpen: false, todoAsk: false,
-  sesdrBadge: () => {}, rvTick: () => {}};
+  sesdrBadge: () => {}, rvTick: () => {}, aiLogo: k => '<i class="ailg ailg-' + k + '"></i>'};
 c.getJSON = async () => c.DATA;
 vm.createContext(c);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'web', 'js', '90f-hookconn.js'), 'utf8') + '\n' + FN, c);
@@ -82,7 +82,11 @@ class HookTodoChip(unittest.TestCase):
         self.assertEqual(R["none"], 0)
         self.assertEqual([x["plat"] for x in R["todo"]], ["cursor", "copilot"])   # can:false and connected rows left out
         self.assertEqual(len(R["cell"]), 1)
-        self.assertIn("CLI hooks not connected: Cursor · Copilot &lt;x&gt;", R["cell"][0])   # server name escaped
+        self.assertIn("CLI hooks not connected", R["cell"][0])
+        self.assertIn("ailg-cu", R["cell"][0])
+        self.assertIn("ailg-cp", R["cell"][0])
+        self.assertNotIn("Cursor", R["cell"][0])   # logos only: no platform name text on the chip
+        self.assertNotIn("Copilot", R["cell"][0])
         self.assertIn("<b>2</b>", R["cell"][0])
         self.assertIn('data-go="hooks"', R["cell"][0])
 
@@ -92,7 +96,7 @@ class HookTodoChip(unittest.TestCase):
     def test_later_drops_plat(self):
         R = self.R
         self.assertEqual(len(R["later"]), 1)
-        self.assertNotIn("Cursor", R["later"][0])
+        self.assertNotIn("ailg-cu", R["later"][0])
         self.assertIn("<b>1</b>", R["later"][0])
         self.assertEqual(R["allLater"], 0)
 
@@ -103,7 +107,7 @@ class HookTodoChip(unittest.TestCase):
     def test_ko_entries(self):
         with open(os.path.join(ROOT, "web", "js", "06-i18n-zzi-hooktodo.js"), encoding="utf-8") as f:
             src = f.read()
-        self.assertIn("'CLI hooks not connected: {names}'", src)
+        self.assertIn("'CLI hooks not connected'", src)
         self.assertIn("State read from {name}'s record file", src)
 
 
