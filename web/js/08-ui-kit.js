@@ -169,6 +169,9 @@ async function getJSON(url, opts){
   }catch(e){ if(timedOut && e && typeof e === 'object') e.timeout = true; throw e; }
   finally{ clearTimeout(to); }
 }
+// Reason text for a failed getJSON in a pane: the browser's own fetch error («Failed to fetch», «Load failed») is
+// English and engine-specific, so a request that never got a status reads as «check the server» instead.
+function fetchErrMsg(e){ return e && e.status ? 'HTTP ' + e.status : T('check the server'); }
 // POST JSON body: the server's 400s carry {error|err|msg} (403 refusals are text) — non-2xx throws with that message, e.status and e.body.
 async function postJSON(url, body){
   // X-Sidereus-Lang: an unset viewer_me posts as the default name of this UI language (sidereus/config.py viewer_me_for)

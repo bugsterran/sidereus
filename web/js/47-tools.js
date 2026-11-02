@@ -9,7 +9,7 @@ async function loadTools(force){
   if(toolsBusy || (!force && now - toolsAt < 60000)) return;
   toolsBusy = true; toolsAt = now;
   try{ TOOLS = await getJSON('/api/tools?days=30'); }
-  catch(e){ TOOLS = { ok: false, msg: String((e && e.message) || e) }; }
+  catch(e){ TOOLS = { ok: false, msg: fetchErrMsg(e) }; }
   toolsBusy = false;
   if(mainView === 'token' && TKVIEW === 'tools') paintToken();
   if(TOOLS && TOOLS.scanning) setTimeout(() => { if(mainView === 'token' && TKVIEW === 'tools') loadTools(true); }, 5000);   // partial counts: poll while visible

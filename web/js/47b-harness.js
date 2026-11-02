@@ -241,7 +241,7 @@ async function hnLoad(proj, force){
   HN.busy[k] = 1; HN.at[k] = Date.now();
   let v;
   try{ v = await hnGet('/api/harness?plat=' + encodeURIComponent(plat) + '&proj=' + encodeURIComponent(proj) + '&days=' + HN.days); }
-  catch(e){ v = { ok: false, msg: String((e && e.message) || e) }; }
+  catch(e){ v = { ok: false, msg: fetchErrMsg(e) }; }
   HN.busy[k] = 0; HN.data[k] = v;
   if(v && v.ok && Array.isArray(v.plats)) HN.plats = v.plats;   // kept across loads so the switch stays while another platform loads
   // A remembered platform this server no longer knows: fall back to Claude Code instead of a dead end.
@@ -513,7 +513,7 @@ async function hnOpen(ref, nm){
   strPopOpenText({ key, name: nm, text: T('Loading…') });   // ⚠synchronous: still inside the click gesture
   let v;
   try{ v = await hnGet('/api/harness/file?plat=' + encodeURIComponent(plat) + '&proj=' + encodeURIComponent(proj) + '&ref=' + encodeURIComponent(ref)); }
-  catch(e){ v = { ok: false, msg: String((e && e.message) || e) }; }
+  catch(e){ v = { ok: false, msg: fetchErrMsg(e) }; }
   HN.opening = '';
   if(v && v.ok) strPopTextSet({ key, name: v.name, path: v.path, text: v.text, lang: v.lang });
   else strPopTextSet({ key, name: nm, path: '', text: T('Could not read') + ((v && v.msg) ? ' — ' + hnMsg(v.msg) : ''), lang: '' });
