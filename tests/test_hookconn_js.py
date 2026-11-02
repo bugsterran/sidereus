@@ -56,6 +56,7 @@ const tick = () => new Promise(r => setTimeout(r, 0));
   await tick();
   R.refetch = c.GETS.length - g0;
   R.afterReload = vm.runInContext("hcInner('pl')", c);
+  R.afterReloadDx = vm.runInContext("hcInner('dx')", c);       // the Apply result stays where it was pressed
   c.REPLY = {ok: true, diff: '+x', base: 'b2'};
   await vm.runInContext("hcAct('go', 'codex')", c);
   c.HOLD = true;
@@ -157,6 +158,7 @@ class HookConnNotice(unittest.TestCase):
         self.assertIn("다시 시작하세요", self.r["done"])
         self.assertEqual(self.r["refetch"], 1)
         self.assertNotIn('data-hcp="cursor"', self.r["afterReload"])
+        self.assertIn("다시 시작하세요", self.r["afterReloadDx"])
         self.assertIn('data-hcp="codex"', self.r["approve"])
         self.assertIn("/hooks", self.r["approveDx"])
         self.assertIn("/hooks", self.r["approveNext"])
