@@ -19,6 +19,11 @@ class _WorldGit:
                 return repo
         return None
 
+    def _rail_key(self, cwd):
+        """_RAIL_FILES key of `cwd` (main checkout = repo, worktree = repo.wt); "" when not a demo repo."""
+        repo = self._repo_of(cwd)
+        return "" if not repo else (repo if cwd == REPOS[repo][0] else repo + ".wt")
+
     def branches(self, cwd):
         repo = self._repo_of(cwd)
         if not repo:
@@ -162,6 +167,8 @@ class _WorldGit:
         """Demo `GET /api/git/diff` (patch view): review files of the session at `cwd`, same keys as git_view.git_diff."""
         k = next((k for k in self._REVIEW if self.by[k]["cwd"] == cwd), "")
         body = "".join(self._patch(st, p) for st, p, _a, _d, _rv in self._REVIEW.get(k, []))
+        if not k:   # ⚠no review entry: patch the rail's uncommitted files, else the «Uncommitted N files» chip opened an empty diff
+            body = "".join(self._patch("A" if rec[0] == "A" else "M", rec[1]) for rec in self._RAIL_FILES.get(self._rail_key(cwd), []))
         return {"ok": True, "cwd": cwd, "scope": "Working tree (uncommitted)", "scopeBase": "", "scopeKey": "work", "hasUp": False, "stat": "",
                 "diff": body, "cutBytes": 0, "unpushed": [], "pushed": [], "pushedAll": 0, "pushedWin": "today"}
 
@@ -277,7 +284,7 @@ class _WorldGit:
             sha = (by[sha]["parents"] or [None])[0]
         r = random.Random(SEED + len(cwd))  # nosec B311 -- seeded demo data / retry jitter, not a secret
         files = []
-        key = repo if is_main else repo + ".wt"
+        key = self._rail_key(cwd)
         dirty = {rec[1] for rec in self._RAIL_FILES[key]}
         extra = self._RAIL_COMMITTED.get(key, []) if since_base else []
         for rec in self._RAIL_FILES[key] + [x for x in extra if x[1] not in dirty]:

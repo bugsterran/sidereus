@@ -57,6 +57,19 @@ class DemoGit(unittest.TestCase):
         self.assertNotEqual(r["base"], self.w.git_rail(main, "remote")["base"])
         self.assertFalse(r["noRemote"])
 
+    def test_diff_matches_rail_dirty_count(self):
+        # The «Uncommitted N files» chip (rail `dirty`) opens git_diff: same file count, never an empty diff.
+        cwd = self.w.by["search"]["cwd"]
+        d, r = self.w.git_diff(cwd), self.w.git_rail(cwd)
+        self.assertGreater(r["dirty"], 0)
+        self.assertEqual(d["diff"].count("diff --git "), r["dirty"])
+
+    def test_agent_work_by_aid(self):
+        # Session-list sub rows send the agent id (aid), not the toolu_ tid.
+        x = next(s for s in self.w.subs if s["run"])
+        self.assertTrue(self.w.agent_work(x["aid"])["ok"])
+        self.assertEqual(self.w.agent_work(x["aid"]), self.w.agent_work(x["tid"]))
+
     def test_unknown_repo(self):
         self.assertEqual(self.w.branches("/nope")[0], 400)
         self.assertEqual(self.w.git_links("/nope", set())["links"], {})
