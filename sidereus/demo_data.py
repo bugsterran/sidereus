@@ -614,7 +614,7 @@ class _WorldPanels:
         end = self.now() if x["run"] else x["end"]
         return {"ok": True, "type": x["type"], "desc": x["desc"], "depth": x["depth"],
                 "first": _iso(x["start"]), "last": _iso(end), "prompt": "(demo)",
-                "says": [{"t": _iso(x["start"] + 60), "text": "Starting: " + x["desc"] + "."}], "cutSays": 0, "cutEdits": 0,
+                "says": [{"t": _iso(x["start"] + 60), "text": "Starting: " + x["desc"].split("] ")[-1] + "."}], "cutSays": 0, "cutEdits": 0,
                 "steps": [{"t": _iso(x["start"] + 90), "tool": "Grep", "targ": "src/", "arg": ""},
                           {"t": _iso(end - 30), "tool": tool, "targ": targ, "arg": ""}],
                 "cutSteps": 0, "tools": [["Grep", 2]] if tool == "Grep" else [["Grep", 1], [tool, 1]], "size": x["tk"] // 40}
