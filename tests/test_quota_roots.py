@@ -343,5 +343,29 @@ class PtsRing(Base):
         self.assertGreater(fh["over_at"], self.clock[0])
 
 
+class RootUuidMidWrite(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp)
+        self._cache = dict(qr._uuid_cache)
+        self.addCleanup(lambda: (qr._uuid_cache.clear(), qr._uuid_cache.update(self._cache)))
+        self.p = os.path.join(self.tmp, ".claude.json")
+
+    def _write(self, text, mt):
+        with open(self.p, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.utime(self.p, (mt, mt))
+
+    def test_half_written_file_keeps_last_uuid(self):
+        self._write('{"oauthAccount": {"accountUuid": "U-1"}}', NOW)
+        self.assertEqual(qr._root_uuid(self.tmp), "U-1")
+        self._write('{"oauthAcc', NOW + 1)
+        self.assertEqual(qr._root_uuid(self.tmp), "U-1")
+
+    def test_unreadable_without_history_is_unknown(self):
+        self._write('{"oauthAcc', NOW)
+        self.assertIsNone(qr._root_uuid(self.tmp))
+
+
 if __name__ == "__main__":
     unittest.main()
