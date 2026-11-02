@@ -299,6 +299,14 @@ OC_LEDGER_MAX = 2000   # = sidereus/pl_outcome.py OC_LEDGER_MAX
 _HEXH = re.compile(r"[0-9a-f]{4,40}")
 
 
+def _same_run(line, name, t0):
+    try:
+        d = json.loads(line)
+        return isinstance(d, dict) and d.get("name") == name and float(d.get("t0") or 0) == t0
+    except (ValueError, TypeError):
+        return False
+
+
 def _ledger_add(r, name, now):
     """Append ended run `r` as {name, t0, end, lb, deny, dc, h0, h1}. ⚠Titles, counts and hashes only, never tool
     input; only for a git repo (the result layer needs one); fail-silent — this hook runs live."""
@@ -330,6 +338,10 @@ def _ledger_add(r, name, now):
                     old = f.readlines()
             except OSError:
                 old = []
+            # ⚠one run can live in two sessions' runs files (main + a background agent's session): both close it,
+            #   and a second row with the same (name, t0) inflated the report's run count and loop-back rate
+            if any(_same_run(x, name, row["t0"]) for x in old[-50:]):
+                return
             if len(old) < OC_LEDGER_MAX:
                 with open(p, "a", encoding="utf-8") as f:
                     f.write(line)

@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: a long flow name cut off with "…" shows its full name on hover.
 - Demo: the room invite and room create previews no longer fail with "unknown error".
 - Sessions: the pipeline chip on a session row shows the stage title in the UI language ("Live verify" in English), like the pipeline view.
+- Pipelines: a run that two sessions both closed (main and a background agent) is counted once in the result layer and the weekly report; it was counted twice, which raised the run count and the review loop-back rate.
 - Pipelines: the stage titles of the bundled pipelines (Diagnose, Confirm, Review-find, Tag, ...) have English names; the English UI no longer shows them in Korean.
 - Attention: a "Needs your response" row lines up with the "For your information" rows; its red bar no longer stacks with the account colour bar on multi-account screens.
 - Terminal: a Claude Code background job shown in the tab of the claude that started it copies `claude attach <id>` (or nothing) when the jump fails, never `claude --resume`, which would open a second session.

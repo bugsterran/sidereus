@@ -398,6 +398,12 @@ class Outcome(unittest.TestCase):
         self.assertEqual(rows, [{"name": N, "t0": 1.0, "end": 2.0, "lb": [{"f": "a", "g": "b", "n": 1}], "deny": 1,
                                  "dc": {"jump": 1}, "h0": "abcd123", "h1": ""}])
 
+    def test_ledger_same_run_twice_counts_once(self):
+        a = {"name": N, "t0": 5, "end": 6, "lb": [{"f": "a", "g": "b", "n": 1}]}
+        self.ledger([a, {"name": "other", "t0": 5, "end": 7}, dict(a, end=9)])   # same run closed from two sessions
+        rows = OC.ledger(OC.repo_key(self.proj), 0)
+        self.assertEqual([(r["name"], r["end"]) for r in rows], [(N, 9.0), ("other", 7.0)])
+
     def test_counts_and_sentences(self):
         o = {"proc": {"runs": 8, "jump": 1}, "lb": {"cur": {"n": 8, "k": 1}, "prev": {"n": 4, "k": 1}},
              "result": {"n": 5, "broke": 1, "fixed": 2, "list": [{"sha": "a", "files": ["x"]}]}}

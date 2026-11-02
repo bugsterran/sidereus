@@ -69,6 +69,13 @@ class Ledger(_Base):
         self._cmd("git commit -m x")
         self.assertEqual(self.rows(), [])
 
+    def test_same_run_closed_twice_one_row(self):
+        r = {"proj": self.proj, "t0": 7.0, "lb": []}
+        H._ledger_add(r, F.N, 100.0)
+        H._ledger_add(dict(r), F.N, 119.0)   # the same run closed again from another session's runs file
+        H._ledger_add(dict(r, t0=8.0), F.N, 120.0)
+        self.assertEqual([(x["t0"], x["end"]) for x in self.rows()], [(7.0, 100.0), (8.0, 120.0)])
+
     def test_cap_keeps_newest(self):
         with mock.patch.object(H, "OC_LEDGER_MAX", 3):
             for i in range(5):
