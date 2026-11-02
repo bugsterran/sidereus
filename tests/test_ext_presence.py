@@ -33,6 +33,10 @@ class Presence(unittest.TestCase):
         self._sc, self._sp = pr.plat_cursor.scan, pr.plat_copilot.scan
         pr.plat_cursor.scan = lambda since, n, stat_n: list(self.cands["cursor"])
         pr.plat_copilot.scan = lambda n: list(self.cands["copilot"])
+        self.past = {"cursor": {}, "copilot": {}}                          # ended sessions found only by sid
+        self._oc, self._op = pr.plat_cursor.one, pr.plat_copilot.one
+        pr.plat_cursor.one = lambda sid: self.past["cursor"].get(sid)
+        pr.plat_copilot.one = lambda sid: self.past["copilot"].get(sid)
         self._prune = ext._ext_prune_locked
         ext._ext_prune_locked = lambda now: None
 
@@ -43,6 +47,7 @@ class Presence(unittest.TestCase):
         st._ext_ended.update(self._ended)
         pr._PRES_MEMO.clear()
         pr.plat_cursor.scan, pr.plat_copilot.scan = self._sc, self._sp
+        pr.plat_cursor.one, pr.plat_copilot.one = self._oc, self._op
         ext._ext_prune_locked = self._prune
         st._pid_start = self._ps
 
@@ -113,6 +118,15 @@ class Presence(unittest.TestCase):
         self.assertTrue(pr.ext_work_any("copilot", "cp-1", NOW)["ok"])
         self.assertFalse(pr.ext_work_any("cu", "missing", NOW)["ok"])
         self.assertFalse(pr.ext_work_any("cc", SID, NOW)["ok"])
+
+    def test_work_fallback_ended_session(self):
+        self.past["cursor"]["cu-old"] = {"sid": "cu-old", "cwd": "/w/old", "start": NOW - 9000, "mtime": NOW - 8000}
+        self.past["copilot"]["cp-old"] = {"sid": "cp-old", "cwd": "/w/cpo", "branch": "", "start": NOW - 9000, "mtime": NOW - 8000}
+        w = pr.ext_work_any("cu", "cu-old", NOW)
+        self.assertEqual((w["ok"], w["cwd"], w["state"], w["lastSeen"]), (True, "/w/old", "unknown", NOW - 8000))
+        self.assertEqual(pr.ext_work_any("copilot", "cp-old", NOW)["cwd"], "/w/cpo")
+        self.assertFalse(pr.ext_work_any("cursor", "cp-old", NOW)["ok"])  # resolved by (platform, sid), never across platforms
+        self.assertFalse({"cu-old", "cp-old"} & {r["sid"] for r in self.rows()})   # list rows stay live-only
 
     def test_work_hook_row_first(self):
         st._ext[("cursor", SID)] = {"cwd": "/w/hook", "state": "think", "lastSeen": NOW, "firstSeen": NOW}

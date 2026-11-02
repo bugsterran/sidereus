@@ -120,6 +120,11 @@ def ext_work_any(plat, sid, now=None):
         return out
     now = now or time.time()
     c = next((c for c in _cands(name, now) if c.get("sid") == sid), None)
+    if c is None:                                 # not live any more (timeline, recent list): read its folder by sid
+        try:
+            c = PRES_MODS[name].one(sid)
+        except Exception:
+            c = None
     if c is None:
         return out
     first, last = float(c.get("start") or 0), float(c.get("mtime") or 0)
