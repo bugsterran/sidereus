@@ -87,7 +87,7 @@ class Tokens(_Base):
 
     def test_r2_broken_jsonl_still_writes_row(self):
         self.agent("a1", "[pl:%s/설계] x" % F.N, ['{"usage": broken\n', _line("m1", "r1"), b"\xff\xfe\"usage\"\n".decode("latin-1")])
-        with open(os.path.join(self.subs, "agent-a2.meta.json"), "w") as f:
+        with open(os.path.join(self.subs, "agent-a2.meta.json"), "w", encoding="utf-8") as f:
             f.write("{not json")
         os.utime(os.path.join(self.subs, "agent-a2.meta.json"), (1050.0, 1050.0))
         self.assertEqual(self.ss()["설계"]["tok"], 118)

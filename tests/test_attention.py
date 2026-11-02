@@ -176,6 +176,17 @@ class TestBgIdle(Base):
         self.assertIn("최장 180분", [s for s in row["sigs"] if s["k"] == "bgidle"][0]["why"])
 
 
+class TestSinceStable(Base):
+    def test_bgidle_and_stall_since_ignore_poll_now(self):
+        # A stale snapshot is re-served on later polls: same data, different `now` -> same since (ack key match).
+        r = sess("a", state="tool", age=900, bgIdle={"n": 1, "idle": 1, "max": 1500, "at": int(NOW) - 1500},
+                 sub=[{"idle": 2000, "idleAt": int(NOW) - 2000}, {"idle": 10, "idleAt": int(NOW) - 10}])
+        a = {s["k"]: s["since"] for s in att._row_sigs(r, NOW)}
+        b = {s["k"]: s["since"] for s in att._row_sigs(r, NOW + 41)}
+        self.assertEqual((a["bgidle"], a["stall"]), (int(NOW) - 1500, int(NOW) - 2000))
+        self.assertEqual((b["bgidle"], b["stall"]), (a["bgidle"], a["stall"]))
+
+
 class TestStall(Base):
     def test_needs_parent_waiting_5min(self):
         sub = [{"idle": 1800}]

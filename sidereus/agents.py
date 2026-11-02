@@ -293,6 +293,8 @@ def _bg_show(items, now, dead):
             row["tid"] = it[4]          # the parent's tool_use id — the modal finds the log with this
         if len(it) > 5 and isinstance(it[5], int) and it[5] >= 0:
             row["idle"] = it[5]         # seconds since its own log was last updated — the only real proof of life
+            if len(it) > 9 and it[9]:
+                row["idleAt"] = it[9]   # ⚠absolute log mtime: `idle` is frozen in a stale snapshot, so `now - idle` drifts
         if len(it) > 6 and it[6]:
             row["aid"] = it[6]          # that agent's own id
         if len(it) > 7 and it[7]:
@@ -301,6 +303,7 @@ def _bg_show(items, now, dead):
             row["busy"] = 1             # last tool call still has no result — a quiet log is a long tool, not idle
         elif len(it) > 8 and it[8] is None:
             row.pop("idle", None)       # ⚠log unreadable: without idle the screen shows no «Idle»/«quiet» claim
+            row.pop("idleAt", None)
         out.append(row)
     return out
 

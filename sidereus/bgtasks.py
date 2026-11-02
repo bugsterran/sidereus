@@ -272,12 +272,13 @@ BG_IDLE_S = 900            # an open bg shell whose output file has not grown fo
 
 
 def bg_idle(fp, now):
-    """{"n": open bg shells, "idle": idle count, "max": longest idle seconds} for session `fp`, or None when none is idle.
+    """{"n": open bg shells, "idle": idle count, "max": longest idle seconds, "at": oldest idle mtime} for session `fp`,
+    or None when none is idle. ⚠`at` is absolute: the snapshot holding `max` is served stale, so `now - max` drifts.
     ⚠stat only (never opens the output file); called per poll — the parse cache would freeze the elapsed time."""
     with _bg_lock:
         paths = [v[3] if len(v) > 3 else "" for v in (_bg_open.get(fp) or {}).values() if v[0] == "bg"]
     bt = boot_time()
-    k, mx = 0, 0
+    k, mx, at = 0, 0, 0
     for p in paths:
         if not p:
             continue
@@ -290,7 +291,8 @@ def bg_idle(fp, now):
         if now - mt > BG_IDLE_S:
             k += 1
             mx = max(mx, int(now - mt))
-    return {"n": len(paths), "idle": k, "max": mx} if k else None
+            at = int(mt) if not at else min(at, int(mt))
+    return {"n": len(paths), "idle": k, "max": mx, "at": at} if k else None
 
 
 def _bg_revive(fp, open_now, now):
@@ -423,14 +425,15 @@ def _bg_result(fp, open_now):
             f = m.get("_file") or ""
             now_doing = _agent_last(f)
             try:
-                idle = int(time.time() - os.path.getmtime(f))
+                lmt = os.path.getmtime(f)
+                idle = int(time.time() - lmt)
             except OSError:
-                idle = -1
+                lmt, idle = 0, -1
             note_sub_log(m.get("_id") or "", f)   # perm_marks stats it per poll: `idle` is frozen until the next refresh
             # ★Also pass lineage (own id · parent id) — a depth number alone is not enough for the screen
             #   to build a tree (with several at the same depth it cannot tell whose child it is).
             return [v[1], v[2], now_doing, int(m.get("spawnDepth") or 1), key, idle,
-                    m.get("_id") or "", m.get("parentAgentId") or "", _agent_busy(f)]
+                    m.get("_id") or "", m.get("parentAgentId") or "", _agent_busy(f), int(lmt)]
         return [v[1], v[2]]
 
     def _notice_consumed(key, aid):

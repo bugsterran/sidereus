@@ -200,7 +200,9 @@ function attnRows(){
                why: attnWhy(top) + (vis.length > 1 ? ' ' + T('+{n} more', 'tail').replace('{n}', vis.length - 1) : ''), badge, resp });
     // ⚠Below-threshold rows get key '' so a click never acks them: «N low-priority» must not shrink on click.
     if(!badge){ quiet++; low.push(mk('')); continue; }   // list-only: counted, rendered only when expanded
-    const key = attnAckKey(vis, top);
+    // ⚠List-only kinds (done/bgdone/gone) come and go between polls; keying on them re-shows an acked row.
+    const kv = vis.filter(s => attnPolOf(s.k) !== 'list');
+    const key = attnAckKey(kv, kv[0]);
     if(attnAckHit(ack[id], key)){ ackKeep[id] = ack[id] && typeof ack[id] === 'object' ? ack[id] : attnAckParse(ack[id]); continue; }
     out.push(mk(key));
   }

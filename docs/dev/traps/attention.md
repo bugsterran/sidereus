@@ -181,3 +181,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ fallback compares the marker with the oldest unanswered tool_use of the newest tool_use message (`_pend_ts`, transcript tail, cached by mtime+size); `ask` rows are checked too. `tests/test_perm_mark.py`.
   - ⚠On an `ask` row a tool-less or AskUserQuestion marker is the question itself. ⚠Only a decision for the marker's own tool clears it (OTel decisions are session-wide).
   - ⚠Still open: one marker file per session — a later prompt overwrites the earlier record.
+- **A row marked «Done» came back on the next polls** (`attention._row_sigs`, `17-attention.js` `attnRows`). Cause 1: bgidle/stall `since` = per-poll `now` minus an age frozen in a stale sessions snapshot, so it drifted ~41 s against the 2 s ack tolerance. Cause 2: the ack key's kind set included list-only kinds (`bgdone`/`done`/`gone`), which come and go between polls.
+  - ⇒ absolute times: `bg_idle` returns `at` (oldest idle mtime), sub rows carry `idleAt` (log mtime); the ack key uses only non-list signals. `tests/test_attention.py` `TestSinceStable`, `tests/test_attention_ack_js.py` `ListOnlyChurn`.
+  - ⚠Never key an ack on `now - <age>` from a cached snapshot; carry the absolute event time from where it is measured.
+  - ★2026-11-02 live: bgidle since 1793596062/103/062/079 over 4 polls before; identical over 6 polls and a restart after.
