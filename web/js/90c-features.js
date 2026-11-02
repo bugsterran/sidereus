@@ -13,7 +13,7 @@ function mpfEff(w, deps, id, seen){
   seen[id] = 1;
   return w[id] && (deps[id] || []).every(d => mpfEff(w, deps, d, seen));
 }
-// ⚠Value the checkbox shows (blocked by an off dep = off); Changes and Save must use this, not raw want.
+// Value the checkbox shows (blocked by an off dep = off). ⚠Display only: Save and Changes use raw want, or turning a dep off saved its dependents off and re-enabling it lost them.
 function mpfShown(rows, w){
   const deps = {}, s = {};
   rows.forEach(r => { deps[r.id] = r.deps || []; });
@@ -29,8 +29,8 @@ function mpfPane(){
   let h = '<div class=cfgs>' + esc(T('Features')) + '</div>'
     + '<div class=cfgpd>' + esc(T('A feature that is off stops its tab, requests and background work. Changes apply on Save.')) + '</div>';
   // ⚠Save/Undo sit above the rows: below the last row they fell off-screen and read as «no Save button».
-  const sh = mpfShown(rows, w), ch = rows.filter(r => sh[r.id] !== (r.set !== false));
-  if(ch.length) h += '<div class=cfgpd>' + esc(T('Changes') + ': ' + ch.map(r => nm(r.id) + ' ' + oo(r.set !== false) + ' → ' + oo(sh[r.id])).join(' · ')) + '</div>'
+  const sh = mpfShown(rows, w), ch = rows.filter(r => w[r.id] !== (r.set !== false));
+  if(ch.length) h += '<div class=cfgpd>' + esc(T('Changes') + ': ' + ch.map(r => nm(r.id) + ' ' + oo(r.set !== false) + ' → ' + oo(w[r.id])).join(' · ')) + '</div>'
     + '<button class="strp on" data-mpf=save>' + esc(T('Save')) + '</button>' + cfgOpt('mpf', 'undo', T('Undo'), false);   // primary like hook «Apply»; not cfgOpt(on): no aria-pressed on an action
   if(MPF_NOTE) h += MPF_NOTE.err ? '<span class="mpnote err">' + esc(MPF_NOTE.err) + '</span>' : '<span class=mpnote>' + esc(T('Saved and applied')) + '</span>';
   h += rows.map(r => {
@@ -52,7 +52,7 @@ function mpfAct(v){
   MPF_PEND = Object.assign({}, MPF_PEND || {}); MPF_PEND[id] = v.slice(i + 1) === '1'; MPF_NOTE = null;
 }
 async function mpfSave(rows){
-  const w = mpfShown(rows, mpfWant(rows)), all = rows.every(r => w[r.id]);
+  const w = mpfWant(rows), all = rows.every(r => w[r.id]);   // the user's own choices; the server applies deps (features.on)
   const body = all ? {key: 'features', reset: true} : {key: 'features', value: w};   // all on = drop the key (missing = all on)
   let r = null;
   try{ r = await postJSON('/api/prefs/set', body); }catch(e){ r = e.body || {ok: false, err: String((e && e.message) || e)}; }

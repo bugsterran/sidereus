@@ -299,13 +299,18 @@ function rcMarkSeen(k){
   if(!rcSeen) rcSeen = {};
   if(t > (rcSeen[k] || 0)){ rcSeen[k] = t; rcSeenSave(); }
 }
+// Distinct ids with every viewer spelling (viewerIds: both defaults when unset) folded into viewerMe — a language switch must not count the viewer twice.
+function rcWhoIds(ids){
+  const c = (typeof CFG !== 'undefined' && CFG) || {}, me = c.viewerMe, vi = c.viewerIds || (me ? [me] : []);
+  return [...new Set(ids.filter(Boolean).map(x => me && vi.includes(x) ? me : x))];
+}
 // One card per room plus 'dm' (posts outside rooms); same inPlace predicate as the feed so counts match what opens.
 function rcCards(){
   const seed = !rcSeen; if(seed) rcSeen = {};
   const absorb = soleRoom(), card = (k, name, IN, mem) => ({ k: k, name: name, n: IN.length, tags: k === 'dm' ? [] : rcTags(name),
     last: IN.reduce((a, m) => Math.max(a, +m.t || 0), 0),
     un: seed ? 0 : IN.filter(m => !m.mine && (+m.t || 0) > (rcSeen[k] || 0)).length,
-    who: mem.length ? mem.slice() : [...new Set(IN.filter(m => !m.selfaddr).map(m => m.from).filter(Boolean))] });
+    who: rcWhoIds(mem.length ? mem : IN.filter(m => !m.selfaddr).map(m => m.from)) });
   const live = roomNames(), cs = live.filter(r => !raHidden(r)).map(r => card('room:' + r, r, MSGS.filter(m => inPlace(m, 'room:' + r)), ((ROOMS || {})[r] || {}).members || []));
   raPendingNames(live).forEach(r => cs.push(Object.assign(card('room:' + r, r, [], []), {pend: true})));   // created, nobody joined yet (92c)
   const dm = MSGS.filter(m => inPlace(m, 'dm'));
