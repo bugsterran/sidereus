@@ -104,6 +104,20 @@ def scan(max_n):
     return out
 
 
+def one(sid):
+    """{sid, cwd, branch, start, mtime} of one session folder by sid, lock or not, or None — the work popup of an ended session.
+    ⚠The caller validates sid (`ext_store._sid_ok`); a separator in it is refused here too."""
+    if not sid or os.sep in sid or sid in (".", ".."):
+        return None
+    d = os.path.join(root(), "session-state", sid)
+    y = _yaml(os.path.join(d, "workspace.yaml"))
+    if not y or y.get("id") != sid or not y.get("cwd"):
+        return None
+    last = _mt(os.path.join(d, "events.jsonl")) or _ts(y.get("updated_at")) or _mt(d)
+    return {"sid": sid, "cwd": y["cwd"], "branch": y.get("branch") or "",
+            "start": _ts(y.get("created_at")) or last, "mtime": last}
+
+
 # ── token counts and quota from events.jsonl (incremental, per path) ──
 SCAN_MAX = 256 << 20          # skip events.jsonl files larger than this
 EV_SCAN_N = 300               # newest session folders read by msgs_since / quota

@@ -230,3 +230,8 @@ Fix: stat meta.json, store.db and store.db-wal per sid, capped at `ext_presence.
 Cause: `model.model_call_success` lines hold `requestMessages`/`response` next to `quotaSnapshots`, and `user.message` text can contain the string `"type":"session.usage_record"`.
 Fix: `json.loads` only lines starting with the bytes `{"type":"session.usage_record"`; quota = `rfind('"quotaSnapshots":')` + `raw_decode`, numbers/bools/resetDate only. A partial last line waits for its newline (Windows flushes lag; a half line is never parsed).
 ⚠Never `json.loads` a whole events.jsonl line or loosen the prefix to a substring test. ★Copilot CLI 1.0.105, 13/13 files: `type` is the first key, compact separators.
+
+### Hook-less Cursor/Copilot work popup must resolve ended sessions (`sidereus/ext_presence.py` `ext_work_any`)
+Cause: the fallback searched only the live candidate list (Cursor: chat active within `PRES_WIN_S`; Copilot: running lock pid), so timeline and recent-list bars of an ended session opened «External session not found».
+⇒ When the live list misses, read that one session's folder by sid (`plat_cursor.one` · `plat_copilot.one`, metadata only).
+⚠Keep the session list live-only — `one()` is for the popup; using it in `ext_presence_rows` would bring ended sessions back as rows. Tests stub `one()` (never the real `~/.cursor` / `~/.copilot`).

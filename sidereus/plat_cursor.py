@@ -75,3 +75,22 @@ def scan(since, max_n, stat_n=None):
         if m is not None:
             out.append({"sid": sid, "cwd": m[0], "start": m[1] or last, "mtime": last})
     return out
+
+
+def one(sid):
+    """{sid, cwd, start, mtime} of one chat by sid, live or not, or None — the work popup of an ended session.
+    ⚠The caller validates sid (`ext_store._sid_ok`); a separator in it is refused here too."""
+    if not sid or os.sep in sid or sid in (".", ".."):
+        return None
+    base = os.path.join(root(), "chats")
+    try:
+        ws = os.listdir(base)
+    except OSError:
+        return None
+    for w in ws:
+        d = os.path.join(base, w, sid)
+        m = _meta(os.path.join(d, "meta.json"))
+        if m is not None:
+            last = max(_mt(os.path.join(d, f)) for f in _ACT_FILES)
+            return {"sid": sid, "cwd": m[0], "start": m[1] or last, "mtime": last}
+    return None

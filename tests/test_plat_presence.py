@@ -53,6 +53,14 @@ class Cursor(_Tmp):
         self.chat(age=601)
         self.assertEqual(cu.scan(NOW - 600, 100), [])
 
+    def test_one_by_sid_outside_window(self):
+        self.chat(age=86400, ws="h2")
+        self.assertEqual(cu.one(SID), {"sid": SID, "cwd": "/w/cu", "start": NOW - 900, "mtime": NOW - 900})
+        self.assertNotIn(SECRET, json.dumps(cu.one(SID)))
+        self.assertIsNone(cu.one("missing"))
+        self.assertIsNone(cu.one("../" + SID))
+        self.assertIsNone(cu.one(".."))
+
     def test_malformed_skipped(self):
         self.chat(meta="{not json")
         self.chat(sid="s2", meta=json.dumps(["x"]))
@@ -109,6 +117,16 @@ class Copilot(_Tmp):
         self.sess(pid=99)
         self.sess(sid="nolock", lock=False)
         self.assertEqual(cp.scan(100), [])
+
+    def test_one_by_sid_without_lock(self):
+        self.sess(lock=False)
+        out = cp.one(SID)
+        self.assertEqual((out["sid"], out["cwd"], out["branch"], out["mtime"]), (SID, "/w/cp", "main", NOW - 30))
+        self.assertNotIn(SECRET, json.dumps(out))
+        self.assertIsNone(cp.one("missing"))
+        self.assertIsNone(cp.one("../" + SID))
+        self.sess(sid="other", yaml="id: not-it\ncwd: /w\n", lock=False)
+        self.assertIsNone(cp.one("other"))                                 # yaml id must match the folder
 
     def test_malformed_skipped(self):
         self.sess(yaml="::::\n- [")
