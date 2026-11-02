@@ -542,6 +542,17 @@ class Flow(unittest.TestCase):
         o = self.pre("설계")
         self.assertEqual(o["permissionDecision"], "deny")
         self.assertIn("You skipped 요구사항;", o["permissionDecisionReason"])
+        self.assertIn("A main stage is marked by any Bash described [pl:%s/요구사항]." % N, o["permissionDecisionReason"])
+
+    def test_non_main_skip_has_no_main_hint(self):
+        o = self.pre("구현")
+        self.assertNotIn("A main stage", o["permissionDecisionReason"])
+
+    def test_handoff_to_main_stage_names_marker(self):
+        self._pipe(dict(PIPE, stages=PIPE["stages"][:1] + [{"title": "확인", "agent": "main"}] + PIPE["stages"][1:]))
+        self.pre("설계")
+        self.assertIn("[pl:%s/확인] · agent main · mark it with a Bash described [pl:%s/확인] before moving on" % (N, N),
+                      self.post("설계"))
 
     def test_first_stage_skip_denied_on_new_run(self):
         o = self.pre("구현")

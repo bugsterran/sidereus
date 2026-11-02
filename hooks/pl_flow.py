@@ -950,8 +950,13 @@ def pre(tool, cwd, name, title, st, r, now, shell=False):
     skipped = _jumped(st, r, title)
     if skipped:
         # ⚠Denied every time: a deny-once guard let the retry through, so stages were skipped without a record.
-        return ("You skipped %s; run it, or declare each skip first with a Bash description "
-                "[pl-skip:%s/<stage>] <one-line reason>, then dispatch again." % (", ".join(skipped), name))
+        why = ("You skipped %s; run it, or declare each skip first with a Bash description "
+               "[pl-skip:%s/<stage>] <one-line reason>, then dispatch again." % (", ".join(skipped), name))
+        # ⚠Most jump denies were main stages done in prose only (requirements, owner confirm): nothing carried the tag.
+        mains = [x for x in skipped if st[_idx(st, x)].get("agent") == "main"]
+        if mains:
+            why += " A main stage is marked by any Bash described [pl:%s/%s]." % (name, mains[0])
+        return why
     t = _idx(st, title)
     c = _idx(st, r["cur"])
     if 0 <= t < c:
@@ -1000,6 +1005,8 @@ def _step(name, s):
     for k in ("model", "skill", "gate"):
         if isinstance(s.get(k), str) and s.get(k):
             out += " · %s %s" % (k, s[k])
+    if s.get("agent") == "main":
+        out += " · mark it with a Bash described [pl:%s/%s] before moving on" % (name, s["title"])
     return out
 
 
