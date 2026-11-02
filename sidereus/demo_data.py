@@ -88,6 +88,9 @@ DEMO_WT = {"web": [4, 1380], "cart": [2, 420], "bill": [3, 660]}   # session row
 GEM_CHILD = {"sid": "b41d7e09-2c6a-4f3e-8d15-9a0e6c3b7f24", "model": "gemini-2.5-flash", "tok": 48_200}
 
 
+_EXT_NAMES = {"gm": ("gemini", "Gemini"), "cx": ("codex", "Codex"), "cu": ("cursor", "Cursor"), "cp": ("copilot", "Copilot")}
+
+
 def _tl_acct(k):
     """Timeline `acct` key for one demo session — same extra-root sessions as demo.World's session rows."""
     return {"acct": "work"} if k in ("docs", "search") else {}
@@ -555,6 +558,20 @@ class _WorldPanels:
                                         {"t": _iso(a - 60), "tool": "Bash", "targ": "npm test", "arg": ""}],
                 "cutSteps": 0, "tail": 600, "at": None,     # live tail (no retro `at` window in the demo)
                 "tools": [["Read", 1], ["Edit", 1], ["Bash", 1]], "size": 120000}
+
+    def ext_work(self, plat, sid):
+        """Demo `GET /api/ext/work` — ext.ext_work() keys for a synthetic external timeline row, no hook events."""
+        p, sid = str(plat or "").strip().lower(), str(sid or "").strip()
+        key = next((k for k, (n, _) in _EXT_NAMES.items() if p in (k, n)), "")
+        row = next((r for r in self.timeline(48.0)["rows"] if key and sid and r.get("tid") == "ext:%s|%s" % (key, sid)), None)
+        if row is None:
+            return {"ok": False, "msg": "External session not found"}
+        first, last = float(row.get("start") or 0), float(row.get("end") or 0)
+        return {"ok": True, "ext": True, "plat": key, "platform": _EXT_NAMES[key][0], "sid": sid,
+                "type": _EXT_NAMES[key][1] + " · " + sid[:8], "desc": row.get("cwd") or "", "cwd": row.get("cwd") or "",
+                "model": str(row.get("model") or "")[:40], "state": row.get("state") or "unknown", "tool": "",
+                "blocked": False, "firstSeen": first, "lastSeen": last, "first": _local_iso(first),
+                "last": _local_iso(last), "events": [], "parent": row.get("parent") or "", "steps": [], "cutSteps": 0, "says": []}
 
     def session_context(self, cwd):
         """Demo `GET /api/session/context` — fictional paths, same keys as sidereus/ctxsrc.py."""

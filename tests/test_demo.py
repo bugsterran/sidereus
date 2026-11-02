@@ -157,6 +157,18 @@ class DemoTest(unittest.TestCase):
         self.assertGreater(w["cutEdits"], 0)
         self.assertEqual(sum(1 for s in w["steps"] if s.get("editCut")), w["cutEdits"])
 
+    def test_ext_work_answers_every_external_timeline_row(self):
+        rows = [r for r in self.get("/api/agents/timeline", "hours=48")["rows"] if str(r.get("tid", "")).startswith("ext:")]
+        self.assertGreaterEqual(len(rows), 2)
+        for r in rows:
+            plat, sid = r["tid"][4:].split("|", 1)
+            out = self.get("/api/ext/work", "plat=%s&sid=%s" % (plat, sid))
+            self.assertTrue(out["ok"], r["tid"])
+            self.assertIsInstance(out["events"], list)
+            self.assertIsInstance(out["steps"], list)   # 35b-worklog-view.js reads d.steps.length
+            self.assertEqual((out["plat"], out["sid"], out["ext"]), (plat, sid, True))
+        self.assertEqual(self.get("/api/ext/work", "plat=gm&sid=nope"), {"ok": False, "msg": "External session not found"})
+
     def test_incremental_state_has_no_old_messages(self):
         st = self.get("/api/state", "since=0")
         last = st["messages"][-1]["t"]

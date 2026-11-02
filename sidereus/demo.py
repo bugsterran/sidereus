@@ -484,10 +484,8 @@ def respond(world, path, u):
         return 200, {"cards": w.cards()}
     if path == "/api/agents/timeline":
         return 200, w.timeline(max(1.0, min(48.0, _num(_q(u, "hours", "12"), 12.0))))
-    if path == "/api/quota/burn":
-        return 200, w.quota_burn()
-    if path == "/api/live":
-        return 200, w.live()
+    if path in ("/api/quota/burn", "/api/live"):   # no-arg panels; merged to stay under the 620-line cap
+        return 200, w.quota_burn() if path == "/api/quota/burn" else w.live()
     if path == "/api/wkuse":
         return 200, w.wkuse(int(_num(_q(u, "range", "7"), 7)), _q(u, "acct"))
     if path == "/api/branches":
@@ -518,6 +516,8 @@ def respond(world, path, u):
         return 200, w.agent_work(_q(u, "tid"), _q(u, "sid"))
     if path == "/api/session/work":
         return 200, w.session_work(_q(u, "sid") or w.sess[0]["sid"])
+    if path == "/api/ext/work":   # ⚠the bare {"ok": True} fallback lacks `steps` — every external work popup threw
+        return 200, w.ext_work(_q(u, "plat"), _q(u, "sid"))
     if path == "/api/session/context":
         return 200, w.session_context(_q(u, "cwd"))
     if path.startswith("/api/tools"):

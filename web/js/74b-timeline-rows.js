@@ -90,8 +90,9 @@ function tlSessNmB(g, it, act, nComp, bare){
   return '<b>'+aiLogo(g.plat)+'<i class="tlp c'+repoHue(g.cwd)+'" title="'+esc(g.cwd)+'">'+esc(g.proj || g.cwd.split('/').pop())+'</i>'
         + tlStateDot(it)
         // ⚠the chip is ellipsis-truncated (20-timeline.css .tlnm u) — title carries the full value
-        + (bare ? '' : g.plat ? (tv => '<u title="'+esc(tv)+'">'+esc(tv)+'</u>')(T('Tokens')+' '+fmtTok(g.items.reduce((a2, x) => a2 + (x.tk || 0), 0)))
-                  : (tv => '<u title="'+esc(tv)+'">'+esc(tv)+'</u>')(TV({msg: '{n} active', vars: {n: U(act,'m')}})))
+        // ⚠tk 0 means unknown (Cursor records carry no tokens) — never show «Tokens 0».
+        + (bare ? '' : g.plat ? (tk => tk > 0 ? (tv => '<u title="'+esc(tv)+'">'+esc(tv)+'</u>')(T('Tokens')+' '+fmtTok(tk)) : '')(g.items.reduce((a2, x) => a2 + (x.tk || 0), 0))
+                  :(tv => '<u title="'+esc(tv)+'">'+esc(tv)+'</u>')(TV({msg: '{n} active', vars: {n: U(act,'m')}})))
         // ⚠Both chips name what they count: a bare «202m · 1×» did not say active time / compactions.
         // .tlcpn never shrinks (20-timeline.css), so the compaction word is not ellipsised away.
         + (nComp ? (tv => '<u class=tlcpn title="'+esc(tv)+'">'+esc(tv)+'</u>')(TV({msg: 'compacted {n}×', vars: {n: nComp}})) : '') + '</b>';
