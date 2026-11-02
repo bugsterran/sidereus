@@ -7,7 +7,7 @@ import time
 from sidereus import config
 from sidereus.config import CFG, MINE, ROOM_DEFAULT, VIEWER_ME, _lock, viewer_ids
 from sidereus.features import on as feature_on, snapshot as features_snapshot, state_off
-from sidereus.bus import DM_MAX, _ack_cut, _load, ack_map, cursors, messages, messages_first, presence
+from sidereus.bus import DM_MAX, AckMapError, _ack_cut, _load, ack_map, ack_ver, cursors, messages, messages_first, presence
 from sidereus.cards import cards, cards_read, cards_read_ids
 from sidereus.usage import quota_who, usage
 from sidereus.ext import ext_usage_today
@@ -145,8 +145,8 @@ def _scale_rows(rows, old_total, used):
     return [dict(r, tok=t) for r, t in zip(rows, out)]
 
 
-def state(since=0, ncards=50):
-    """Full screen state received by polling (2.5s).
+def state(since=0, ncards=50, acks_v=""):
+    """Full screen state received by polling (2.5s). `acks_v` = the page's acksV; when it matches, `acks` is omitted.
 
     ★2026-09-07 — **the lock is not held through slow work** (AUDIT cause 4). Previously `with _lock:` also
       called `sessions()`. `sessions()` runs `ps`·`lsof`·git·transcript parsing, so
@@ -175,7 +175,9 @@ def state(since=0, ncards=50):
     # ── the lock is held only while reading «the pair that overlaps invite handling». Placed last so the conversation is freshest.
     with _lock:
         _presence = presence()   # ●online (watcher heartbeat) · ◐recent call · ○stale
-        _acks = ack_map()        # ✔confirmed (recipient explicit) · ➡delivered (automatic) — a stronger signal than cursors
+        _acut = _ack_cut()
+        _av = ack_ver(_acut)     # ⚠taken before the read: a write in between only causes one extra full send
+        _acks = ack_map(_acut)   # same cut as _av ✔confirmed (recipient explicit) · ➡delivered (automatic) — a stronger signal than cursors
         _messages = messages(since) if since else messages_first()   # first load: older bodies stubbed (bus.MSG_FIRST)
         _cursors = cursors()     # read marks are fresh on every response — existing bubbles update in place too
         _rooms = redact_rooms(_load("rooms.json", {}))   # topic is free text that reaches the page
@@ -193,7 +195,8 @@ def state(since=0, ncards=50):
         "presence": _presence,
         "acks": _acks,
         # ★acks for messages before this time (ns) are not in the response — the basis for the screen separating "unread" from "no record"
-        "acksSince": _ack_cut(),
+        "acksSince": _acut,
+        "acksV": _av,
         "messages": _messages,
         "cursors": _cursors,
         "rooms": _rooms,
@@ -247,6 +250,10 @@ def state(since=0, ncards=50):
         out["saverViews"] = _piece("saverViews", _saver_views, {})   # per-account hook snapshots, by label
     for k in state_off():                  # keys claimed by switched-off features are omitted
         out.pop(k, None)
+    if isinstance(_acks, AckMapError):
+        out["acksV"] = ""                  # ⚠an error map is never versioned, or the page would keep it
+    elif acks_v and acks_v == _av:
+        out.pop("acks", None)              # page already holds this exact map (95-poll keeps ACK when the key is absent)
     return out
 
 
@@ -273,12 +280,12 @@ _state_building = set()
 _state_cache_lock = threading.Lock()   # ⚠for protecting the dict·set only. Do not call `state()` inside this.
 
 
-def _state_body(since, nc):
+def _state_body(since, nc, acks_v=""):
     """Serialized `/api/state` body — reused for `_STATE_TTL` for the same arguments.
 
     ★Carries the compressed copy (`gzbox`) too — so 3.7MB is not recompressed on every poll.
     """
-    key = (since, nc)
+    key = (since, nc, acks_v)   # ⚠acks_v in the key: a body without `acks` must never reach a caller lacking that version
     with _state_cache_lock:
         hit = _state_cache.get(key)
         now = time.monotonic()
@@ -288,7 +295,7 @@ def _state_body(since, nc):
             return hit[1], hit[2]         # someone else is building — hand out the stale value and step aside
         _state_building.add(key)
     try:
-        body = json.dumps(state(since, nc), ensure_ascii=False)
+        body = json.dumps(state(since, nc, acks_v) if acks_v else state(since, nc), ensure_ascii=False)
     finally:
         with _state_cache_lock:
             _state_building.discard(key)

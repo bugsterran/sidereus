@@ -6,27 +6,20 @@ function buildSessions(){
   // No session at all = likely a first run: name the next step under the empty line.
   if(!SESS.length){ setHtml(box, '<div class=hidnote>'+esc(T('No sessions active in the last 12 hours.'))+'</div>'
     + '<div class=hidnote>'+esc(T('Next: start an AI coding-agent session — it shows up here within seconds.'))+'</div>'); return; }
-  // ★So the sidebar doesn't grow with more sessions: **finished ones are folded** (count only) and the rest scroll in this area.
+  // Ended sessions are listed only under «Recently ended sessions» (41b); the rest scroll in this area.
   //   The server sorts state-first (working → awaiting input → unknown → finished), then by recent activity within a state.
   const stOK = x => !stFil
     || (stFil === 'hot' ? (x.win && x.ctx && x.ctx / x.win >= 0.85)
     : (stFil === 'blocked' ? !!x.blocked : x.state === stFil));
   const pass = x => (!idleMin || isIdle(x, idleMin)) && (!gitFil || hasGit(x, gitFil)) && stOK(x);
-  const act0 = SESS.filter(x => x.state !== 'done' && pass(x));
-  const fin0 = SESS.filter(x => x.state === 'done' && pass(x));
+  const live = SESS.filter(x => x.state !== 'done'), act0 = live.filter(pass);
   const pk = acctPick('sess'), keep = x => ACC_OTH.sess || acctInPick(x, 'sess', pk);
-  // Count only what the off state would show here: ended rows only while the ended fold is open.
-  const act = act0.filter(keep), fin = fin0.filter(keep), oth0 = (sessOpen ? act0.concat(fin0) : act0).filter(x => !keep(x));
-  const rows = (sessOpen ? act.concat(fin) : act);
-  const hid = SESS.length - (act0.length + fin0.length);      // count hidden by filters — **never silently reduced**
+  const act = act0.filter(keep), oth0 = act0.filter(x => !keep(x)), rows = act;
+  const hid = live.length - act0.length;      // count hidden by filters — **never silently reduced**
   morphHtml(box, wfFoldBtns(rows) + rows.map(x => sessRowHtml(x)).join('')
     + acctOthHtml('sess', oth0.length, oth0.some(x => x.blocked || x.state === 'ask' || x.state === 'abort'))
-    + (fin.length ? '<div class=sfold id=sfold>' + TV({msg: sessOpen ? '▾ Hide {n} ended' : '▸ Show {n} ended', vars: {n: fin.length}}) + '</div>' : '')
     + (act.length ? '' : '<div class=hidnote>' + (idleMin||gitFil ? T('No active sessions match the filter.') : T('No active sessions.')) + '</div>')
     + (hid ? '<div class=hidnote>'+TV({msg: '{n} hidden by filter', vars: {n: hid}})+'</div>' : ''));
-  const f = document.getElementById('sfold');
-  // ⚠The mouse is over the list when clicking, so the hover guard would defer this rebuild; clear it first.
-  if(f) f.onclick = () => { sessOpen = !sessOpen; sessHover = false; sessDirty = false; buildSessions(); };
   sessFit(box);
   if(typeof stodoAfter === 'function') stodoAfter(box);   // to-do add-box drafts (40c)
   buildInvite();

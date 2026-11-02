@@ -217,14 +217,40 @@ ACK_NOTE_MAX = 60          # ★the UI (receipt()) only uses `note.slice(0,60)` 
 # ⚠Bubbles in the cut window are **"no record"**, not "unread" — `acksSince` is sent too so the UI
 #   says so (receipt()). Widening grows the response again (30 days = 124,401B).
 ACK_KEEP_S = 7 * 86400
+ACK_CUT_STEP_S = 60       # ⚠the cut is part of ack_ver: unfloored it moved every poll and the page re-fetched acks each time
 
 
 def _ack_cut():
     """Ack records before this time (ns) are not sent — the UI gets the same value to choose its wording."""
-    return time.time_ns() - ACK_KEEP_S * 10 ** 9
+    step = ACK_CUT_STEP_S * 10 ** 9
+    return (time.time_ns() - ACK_KEEP_S * 10 ** 9) // step * step
 
 
-def ack_map():
+def ack_ver(cut):
+    """Version of the ack map for `cut`: "<mtime_ns>-<size>-<cut>" of acks.jsonl ("0-0-<cut>" when missing, "" on error)."""
+    try:
+        if CODE_DIR not in sys.path:
+            sys.path.insert(0, CODE_DIR)
+        import mailbox_core
+        try:
+            st = os.stat(mailbox_core.ACKS)
+        except FileNotFoundError:
+            return "0-0-%d" % cut
+        return "%d-%d-%d" % (st.st_mtime_ns, st.st_size, cut)
+    except Exception:
+        return ""
+
+
+class AckMapError(dict):
+    """Empty map returned when the ack read failed — state() sends no version for it (the page must not keep it)."""
+
+
+def _ack_warn(e):
+    warn_once("ack-map", "ack map failed ({err}) — delivered/ack marks are missing",
+              vars={"err": f"{type(e).__name__}: {e}"}, soft=True)
+
+
+def ack_map(cut=None):
     """Message id -> delivered/acked. Recording without **showing** leaves the trust problem as is.
 
     ★Fields the UI does not read are not sent (measured 2026-09-22): `acks` was 846,069B (98%) of an
@@ -232,30 +258,33 @@ def ack_map():
       `at` is never used ⇒ drop `at` + cut note at 60 chars.
     ⚠If the UI starts using `at` (or text past 60 chars), restore it here."""
     try:
-        if CODE_DIR not in sys.path:    # ⚠called per poll: an unconditional insert grew sys.path forever
-            sys.path.insert(0, CODE_DIR)
-        import mailbox_core
-        # ⚠mailbox_core.acks() swallows read errors, so a partial parse stays cached until the file changes
-        parsed, _ = _cached(mailbox_core.ACKS, lambda: (mailbox_core.acks() or {}, None))
-        out = {}
-        cut = _ack_cut()
-        for mid, e in parsed.items():
-            if int(e.get("t") or 0) <= cut:
-                continue                       # outside the retention window — still in the file
-            slim = []
-            for a in (e.get("ack") or []):
-                n = a.get("note")
-                # no truncation marker (JS also cuts without ellipsis) — display unchanged
-                slim.append({"who": a.get("who"),
-                             "note": n[:ACK_NOTE_MAX] if isinstance(n, str) else n})
-            out[mid] = {"delivered": list(e.get("delivered") or []), "ack": slim}   # copy: cached list
-            if e.get("hooked"):   # only when present — keeps the incremental response small
-                out[mid]["hooked"] = list(e["hooked"])
-        return out
+        return _ack_slim(_ack_cut() if cut is None else cut)
     except Exception as e:
-        warn_once("ack-map", "ack map failed ({err}) — delivered/ack marks are missing",
-                  vars={"err": f"{type(e).__name__}: {e}"}, soft=True)
-        return {}
+        _ack_warn(e)
+        return AckMapError()
+
+
+def _ack_slim(cut):
+    """ack_map body for one cut; raises on failure."""
+    if CODE_DIR not in sys.path:    # ⚠called per poll: an unconditional insert grew sys.path forever
+        sys.path.insert(0, CODE_DIR)
+    import mailbox_core
+    # ⚠mailbox_core.acks() swallows read errors, so a partial parse stays cached until the file changes
+    parsed, _ = _cached(mailbox_core.ACKS, lambda: (mailbox_core.acks() or {}, None))
+    out = {}
+    for mid, e in parsed.items():
+        if int(e.get("t") or 0) <= cut:
+            continue                       # outside the retention window — still in the file
+        slim = []
+        for a in (e.get("ack") or []):
+            n = a.get("note")
+            # no truncation marker (JS also cuts without ellipsis) — display unchanged
+            slim.append({"who": a.get("who"),
+                         "note": n[:ACK_NOTE_MAX] if isinstance(n, str) else n})
+        out[mid] = {"delivered": list(e.get("delivered") or []), "ack": slim}   # copy: cached list
+        if e.get("hooked"):   # only when present — keeps the incremental response small
+            out[mid]["hooked"] = list(e["hooked"])
+    return out
 
 
 def presence():

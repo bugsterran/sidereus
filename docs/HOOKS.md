@@ -317,7 +317,7 @@ The CLI runs `ext-hooks/ext_hook.py --platform <key>`, which maps the stdin even
 | `PostToolUse` | `think` | `AfterTool` | same | `postToolUse`, `postToolUseFailure` | same |
 | `Stop` | `wait` | `AfterAgent` | `Stop`, `Interrupt` | `stop` | same |
 | `Notification` | `ask` (blocked) | same | `PermissionRequest` | none | `PermissionRequest` |
-| `SessionEnd` | `done`, folds under «Show n ended» for 12 h | same | same | `sessionEnd` | same |
+| `SessionEnd` | `done`, listed under «Recently ended sessions» for 12 h | same | same | `sessionEnd` | same |
 
 - Other platforms use the Codex mapping. ⚠Only Gemini, Codex, Cursor and Copilot were checked; otherwise pass `--event <name>`.
 - The blocked mark and «needs me» badge stay until the CLI's next event, `SessionEnd` or a dead pid — never by age.

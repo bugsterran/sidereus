@@ -63,6 +63,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: Other rows sit under two folds (`p\tother` and `p\tother.w` / `p\tother.c`); a key missing from Expand all leaves rows hidden, missing from the unpin check leaves the map lit with no visible row.
   - ⇒ Expand all sets `other`, `other.w`, `other.c`; a pinned Other row unpins when `other` or its own sub-fold goes open → closed.
   - ⚠`data-aet` values `other.w`/`other.c` must not reach the numeric flow-pin branch (`/^\d+$/`).
+- **A tree flow node lights through `archFlowSet`, not `ARCH.op`** (`84j6` `archEdTreeClick`, `archEdTreeHtml` `o.lit`).
+  - Cause: pinning `ARCH.op = p\tf<n>` lit the map while the «Flows» select, «Clear flow» and «Sequence diagram» read `ARCH.lit`, so they disagreed.
+  - ⇒ The node calls the select's setter (`archFlowSet(p, lit === id ? '' : id)`) and is `.on` iff `ARCH.lit.flow` is its id; steps still pin via `ARCH.op`.
+  - ⚠Do not pin flow nodes in `ARCH.op` again — Clear / select '' would leave the tree node lit.
 - **Fix-request recipient: `repos` sessions are tier 1 «Uses this repo», never tier 0** (`84l` `archChkFixCands`).
   - Cause: `repos` lists every repo a session touched, so treating it as «This project» put unrelated sessions on top; excluding it left the button dead when no session ran in the repo.
   - ⇒ Tiers 0 cwd/under/worktree · 1 `repos` · 2 other live cc sessions; the DM body names the target repo (`Target repository: <p>`); last pick per repo in `sidereus.ckfix`.

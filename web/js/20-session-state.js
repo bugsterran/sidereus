@@ -22,7 +22,6 @@ function money(c){ return !c ? '' : fmtMoney(c); }   // rules live in fmtMoney (
 //   done = no process (finished session)            unknown = process unreadable (no assertion)
 //   ⚠Labels are neutral — first written as '★my turn', fixed because "whose turn" didn't read on screen.
 //     "awaiting input" means *that session finished its turn*, which answers "is the work done".
-let sessOpen = false;              // expanded state of finished sessions — survives polling
 
 // ★Idle/unpushed filters (backlog 2026-08-19) — the goal is **reduction**. With twenty sessions sorting alone doesn't reveal them.
 //   Only states **where the ball is with the human** count as idle: response done · question waiting · aborted.

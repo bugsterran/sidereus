@@ -67,7 +67,7 @@ class StateWiring(unittest.TestCase):
     def _patches(self, calls):
         z = lambda *a, **k: None   # noqa: E731
         names = {"quota": z, "sessions_cached": lambda **k: ([], True), "cards": lambda n: [], "usage": z, "selfcheck": z, "health": z,
-                 "cards_read": lambda: "", "cards_read_ids": lambda: [], "presence": lambda: {}, "ack_map": lambda: {},
+                 "cards_read": lambda: "", "cards_read_ids": lambda: [], "presence": lambda: {}, "ack_map": lambda cut=None: {},
                  "cursors": lambda: {}, "_load": lambda n, d: d, "attention": z, "review": z,
                  "wt_orders": lambda *a: {}, "quota_who": z, "_saver_state": z, "_saver_view": z,
                  "_saver_switch": z, "ext_usage_today": lambda: {}, "term_cfg": lambda: "auto",

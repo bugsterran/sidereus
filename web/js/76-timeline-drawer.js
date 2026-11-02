@@ -206,7 +206,8 @@ function tlSumDraw(host){
     const xs = Object.keys(xt).map(p => ' · ' + aiLogo(p) + ' ' + fmtTok(xt[p])).join('');
     const cl = xs ? aiLogo('cc') + ' ' : '';
     const cc = (_w == null) ? ((d.tok || {}).sum || 0) : _w;
-    const tkTxt = ((_w == null) ? T('tokens') : T('this-window tokens')) + ' ' + cl + fmtTok(cc) + xs;
+    // ⚠curWinTok sums every account; the status bar «5h used» counts the primary account only, so the label says which.
+    const tkTxt = ((_w == null) ? T('tokens') : '<span title="' + esc(T('The status bar «5h used» counts the primary account only')) + '">' + esc(T('this-window tokens · all accounts')) + '</span>') + ' ' + cl + fmtTok(cc) + xs;
     const all = cc + Object.keys(xt).reduce((s, p) => s + (xt[p] || 0), 0);
     m += row('Cost', tkTxt + ' · ' + T('per commit') + ' ' + (w.c ? fmtTok(Math.round(all / w.c)) : '—')
       + ' <s>· ' + TV({msg: '{s} sessions · {a} subagents · {t} tool calls', vars: {s: ss.length, a: ag.length, t: tcN}}) + '</s>');

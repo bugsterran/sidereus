@@ -12,7 +12,7 @@ from sidereus.ident import _cwd_from_slug, _proj_name
 from sidereus.usage_index import _uidx, _uidx_lock, _uidx_refresh
 from sidereus.live import _ctx_window, sid_alive
 from sidereus.gitinfo import _wt_of
-from sidereus.sessions import sessions_rows
+from sidereus.sessions import _SNAP, sessions_rows
 from sidereus.work import _SID_SAFE
 
 
@@ -92,10 +92,35 @@ def _acct(sid, fp):
     return {"acct": lab, "acctDir": d} if lab else {}
 
 
-def _live_set():
+def _live_set(snap):
     """Sids that are live now: confirmed by id, or a non-`done` row of the last session poll."""
-    snap = sessions_rows(max_age=120)   # ⚠request path: snapshot (short wait on a kicked refresh), never a cold sessions()
     return {r.get("sid") for r in snap if r.get("sid") and r.get("state") != "done" and r.get("plat") == "cc"}
+
+
+def _snap_at():
+    """When the session snapshot was taken (0 = none) — its `ageSec` values are relative to this, not to now."""
+    return float(_SNAP.get("at") or 0)
+
+
+def _done_rows(snap, have, now):
+    """`done` rows of the session snapshot not already listed (cc or external) — the drawer has no other ended list.
+    ⚠Copies metadata keys only; never `targ`, tool or any tool input."""
+    out, base = [], min(now, _snap_at() or now)   # ⚠snapshot may be up to 120 s old
+    for r in snap:
+        sid = r.get("sid") or ""
+        if r.get("state") != "done" or not sid or sid in have:
+            continue
+        have.add(sid)
+        cwd, wt = r.get("cwd") or "", r.get("wt") or None
+        ctx, win = int(r.get("ctx") or 0), int(r.get("win") or 0)
+        out.append({
+            "sid": sid, "cwd": cwd,
+            "name": wt["name"] if (isinstance(wt, dict) and not wt.get("main") and wt.get("name")) else (r.get("project") or "?"),
+            "branch": r.get("branch") or "", "model": r.get("model") or "",
+            "endedAt": int(base - int(r.get("ageSec") or 0)), "pct": round(ctx * 100 / win) if (win and ctx) else None,
+            "agentDesc": "", "gone": bool(cwd) and not os.path.isdir(cwd), "plat": r.get("plat") or "cc",
+            **({"acct": r["acct"], "acctDir": r.get("acctDir") or ""} if r.get("acct") else {})})
+    return out
 
 
 def recent_sessions(days=7):
@@ -115,7 +140,8 @@ def recent_sessions(days=7):
     with _uidx_lock:
         ents = [(fp, e.get("sl") or "", float(e.get("mt") or 0), int(e.get("sz") or 0), e.get("br") or "")
                 for fp, e in _uidx["files"].items()]
-    live = _live_set()
+    snap = sessions_rows(max_age=120) or []   # ⚠request path: snapshot (short wait on a kicked refresh), never a cold sessions()
+    live = _live_set(snap)
     cut = now - days * 86400
     cand = []
     for fp, sl, mt, sz, br in ents:
@@ -143,7 +169,10 @@ def recent_sessions(days=7):
             "agentDesc": p.get("agentDesc") or "",   # last Agent description (rule 1 one-line label) — tells same-repo rows apart
             "gone": not (cwd and os.path.isdir(cwd)),
             **_acct(sid, fp)})
-    out = {"ok": True, "days": days, "at": time.time(), "n": len(rows), "total": len(cand), "cap": RECENT_CAP,
+    # Ended rows of the session list (external CLIs, or cc files outside the cap/index) join here, exempt from the cap.
+    extra = _done_rows(snap, {r["sid"] for r in rows}, now)
+    rows = sorted(rows + extra, key=lambda r: -r["endedAt"])
+    out = {"ok": True, "days": days, "at": time.time(), "n": len(rows), "total": len(cand) + len({e["sid"] for e in extra} - {c[2] for c in cand}), "cap": RECENT_CAP,
            "rows": rows, "ms": int((time.time() - t0) * 1000)}
     with _recent_lock:
         _recent_cache[days] = (time.time(), out)

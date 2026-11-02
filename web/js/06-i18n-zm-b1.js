@@ -270,7 +270,7 @@ Object.assign(I18N.ko, {
   // 40-sessions.js
   'Cleared {f} to reach it': '찾아가려고 {f}를 풀었습니다',
   // 40b-sessions-list.js
-  '▾ Hide {n} ended': '▾ 종료 {n}개 접기', '▸ Show {n} ended': '▸ 종료 {n}개 보기', '{n} hidden by filter': '필터로 {n}개 감춤',
+  '{n} hidden by filter': '필터로 {n}개 감춤',
   'same-model': '이 모델',
   'estimate — a {w} window was observed in {n} {m} sessions on this machine (auto-compaction point or over 200K). This session has not passed 200K yet, so it has not proven it itself': '추정 — 이 머신의 {m} 세션 {n}개에서 창이 {w}로 관측됐습니다(자동 압축 지점 또는 200K 초과). 이 세션 자체는 아직 200K 를 넘지 않아 스스로 증명하진 못했습니다',
   'Context per request {n} tokens': '요청당 컨텍스트 {n} 토큰',

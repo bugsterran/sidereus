@@ -10,6 +10,13 @@ var CFG = null;   // last state().cfg (dmMax for the relay comment cap in 88c)
 let LASTS = null;   // saver + quota fields of the last poll, for an instant «Main account» redraw (pollMainRedraw)
 var ACCTS = [];   // state accts [{label, primary}], only with >=2 Claude accounts (40b acctCls)
 const MSEEN = new Set();          // Ids of posts already received — never counted twice whichever path they came in by
+let ACKV = '';   // state().acksV of the ACK held; sent back so the server can omit an unchanged `acks`
+// ⚠Not before the first state or while down: a fresh or reconnected page must get the full map.
+function pollAcksQ(){ return (STATE_IN && ACKV && !CONN.fails) ? '&acksV=' + encodeURIComponent(ACKV) : ''; }
+function pollAcksTake(s){
+  if('acks' in s){ ACK = s.acks || {}; ACKV = s.acksV || ''; }
+  else if(s.acksV !== ACKV) ACKV = '';   // omitted for another version: drop ours so the next poll gets the map
+}
 // Running feature map (state().features or a Features Save reply); a change repaints tabs, Pipelines and Settings without a reload.
 let FEATS_SIG = null;   // ⚠null = first apply: the first poll paints everything itself, so only set FEATS then
 function featsApply(f){
@@ -36,7 +43,7 @@ async function poll(first){
     // A network failure (TypeError) is «Disconnected»; a reply that is non-2xx or not JSON is «Bad response».
     // Warm state answers from a snapshot in <1s; the first load or one after an outage may wait for a cold build (STATE_COLD_S 60s).
     const stTo = (!STATE_IN || CONN.fails) ? POLL_COLD_MS : POLL_TIMEOUT_MS;
-    try{ s = await getJSON('/api/state?since='+since+(alarmAll?'&cards=300':''), {timeout: stTo}); }
+    try{ s = await getJSON('/api/state?since='+since+(alarmAll?'&cards=300':'')+pollAcksQ(), {timeout: stTo}); }
     catch(e){ pollDown(!!e.status || e instanceof SyntaxError, t0); return; }
     const wasDown = CONN.fails > 0;
     connMark(CONN, true, false, Date.now());
@@ -46,7 +53,7 @@ async function poll(first){
     if(s.cfg&&Array.isArray(s.cfg.stripPrefixes)) STRIP_PREFIXES=s.cfg.stripPrefixes;
     if(s.cfg) CFG = s.cfg;
     if(s.cfg) termCfg(s.cfg.termApp);   // «Terminal link» setting (88d-term.js)
-    CUR=s.cursors; ROOMS=s.rooms; PROF=s.profiles; MINE=s.mine; PRES=s.presence||{}; ACK=s.acks||{}; ACKSINCE=s.acksSince||0; SESS=s.sessions||[]; ACCTS=s.accts||[];
+    CUR=s.cursors; ROOMS=s.rooms; PROF=s.profiles; MINE=s.mine; PRES=s.presence||{}; pollAcksTake(s); ACKSINCE=s.acksSince||0; SESS=s.sessions||[]; ACCTS=s.accts||[];
     ARCHRUN = s.archRun || {}; SECRUN = s.secRun || {}; SIDEREUS_DIR = s.codeDir || '';   // arch-map runs in progress per project (84j archRunOf, 48h)
     PLREQ = s.plReq || {};   // who received each arch-map request and its run state (84l2)
     PROJ_GONE = new Set(s.projGone || []);   // session folders deleted from disk — project chips skip them (80, 48)

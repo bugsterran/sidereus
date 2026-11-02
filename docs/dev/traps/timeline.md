@@ -298,3 +298,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Fix: repaint on the first signature too and include account labels in it (`74c-timeline-plrun.js` `tlPlSync`; debounced, one paint).
 - ⚠Do not restore the first-call skip to save a paint — it is the whole defect.
 - ★Headless demo, Timeline as start view: before = picker/lane absent after 6 s; after = both present.
+
+### Drawer «Cost» tokens vs status bar «5h used»
+- Cause: the drawer's `curWinTok` sums every account, the status bar «5h used» counts the primary only, so the two numbers differ with 2+ accounts.
+- Fix: the label reads «this-window tokens · all accounts» with a tooltip naming the difference (`76-timeline-drawer.js` `tlSumDraw`).
+- ⚠Do not "fix" the numbers to match — they measure different scopes; only the label explains it.

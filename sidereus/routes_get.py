@@ -2,6 +2,7 @@
 Methods use `self._send`/`self._raw_json` from Handler."""
 import gzip
 import json
+import re
 from urllib.parse import parse_qs
 
 from sidereus.cards import cards
@@ -407,7 +408,9 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
         except ValueError:
             nc = 50
         nc = max(1, min(nc, 300))
-        _body, _gz = _state_body(since, nc)
+        _av = (_q.get("acksV") or [""])[0]
+        _av = _av if re.fullmatch(r"[0-9-]{1,64}", _av) else ""   # bounded: it becomes a cache key
+        _body, _gz = _state_body(since, nc, _av) if _av else _state_body(since, nc)   # no acksV = the old full call
         return self._send(200, _body, "application/json; charset=utf-8", _gz)
 
     def _g_messages(self, u):

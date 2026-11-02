@@ -26,12 +26,14 @@ function archEdTreeQ(d, n, k, tests){
   const s = f.steps[k];
   return !s ? null : s.ei >= 0 ? { edge: s.ei, tests } : { mods: [s.from, s.to], tests };
 }
-// Pure: «Connections» tree html. o = {op: ARCH.op, et: fold state (key p\tn | p\tother | p\tother.w | p\tother.c, true = open), dv, sn}; default folded.
+// Pure: «Connections» tree html. o = {op: ARCH.op, et: fold state (key p\tn | p\tother | p\tother.w | p\tother.c, true = open), dv, sn, lit: lit flow id}; default folded.
 function archEdTreeHtml(d, names, p, o){
   const tr = archEdTree(d), es = (d && d.edges) || [], op = (o && o.op) || '', et = (o && o.et) || {};
   const nm = id => names[id] || String(id || ''), open = k => archOwn(et, p + '\t' + k) && !!et[p + '\t' + k];
   const car = (k, on) => '<i aria-hidden=true' + (k == null ? '' : ' data-aetf="' + k + '"') + '>' + (on ? '▾' : '▸') + '</i>';
-  const fl = tr.flows.map(f => { const on = open(f.n), pin = op === p + '\tf' + f.n;
+  const lit = o && o.lit != null ? String(o.lit) : null;
+  // ⚠A flow node is .on from the lit flow (same state as the «Flows» select), not from ARCH.op.
+  const fl = tr.flows.map(f => { const on = open(f.n), pin = lit === f.id;
     const lbl = T('({n} modules · {m} steps)').replace('{n}', f.mods).replace('{m}', f.steps.length);
     return '<li class="arche archtn' + (pin ? ' on' : '') + '" role=treeitem><button type=button class="archeb archtnb" data-aet="' + f.n + '" aria-expanded=' + (on ? 'true' : 'false') + '>'
       + car(f.n, on) + '<b title="' + esc(f.name) + '">' + esc(f.name) + '</b><small>' + esc(lbl) + '</small></button>'
@@ -53,14 +55,17 @@ function archEdTreeHtml(d, names, p, o){
     + '<button type=button class=archnxa data-aetall=0>' + esc(T('Collapse all')) + '</button></div>'
     + '<ul class="archel-list archet" role=tree>' + fl.join('') + ot + '</ul>';
 }
-// Tree click (ds = the clicked element's dataset): caret folds; a flow node pins its flow (and opens); a step pins its edge.
+// Tree click (ds = the clicked element's dataset): caret folds; a flow node lights its flow via archFlowSet (and opens); a step pins its edge.
 function archEdTreeClick(p, ds){
   const d = ARCH.cache[p] || {}, et = Object.assign({}, ARCH.et), pin = k => { ARCH.op = ARCH.op === p + '\t' + k ? '' : p + '\t' + k; };
   if(ds.aetall != null){ Object.keys(et).forEach(k => { if(k.indexOf(p + '\t') === 0) delete et[k]; });
     if(ds.aetall === '1'){ archEdTree(d).flows.forEach(f => { et[p + '\t' + f.n] = true; }); ['other', 'other.w', 'other.c'].forEach(k => { et[p + '\t' + k] = true; }); } }
   else if(ds.aetf != null) et[p + '\t' + ds.aetf] = !et[p + '\t' + ds.aetf];
   else if(/^other(\.[wc])?$/.test(ds.aet || '')) et[p + '\t' + ds.aet] = !et[p + '\t' + ds.aet];
-  else if(/^\d+$/.test(ds.aet || '')){ pin('f' + ds.aet); if(ARCH.op) et[p + '\t' + ds.aet] = true; }
+  else if(/^\d+$/.test(ds.aet || '')){ const f = archEdTree(d).flows[+ds.aet];
+    // ⚠Same setter as the «Flows» select (84k), so select / «Clear flow» / «Sequence diagram» stay in step with the tree.
+    if(f){ const cur = ARCH.lit && ARCH.lit.p === p ? String(ARCH.lit.flow) : '', v = cur === f.id ? '' : f.id;
+      archFlowSet(p, v); if(v) et[p + '\t' + ds.aet] = true; } }
   else if(ds.ats != null) pin('f' + ds.ats);
   // ⚠A fold that hides the pinned step / Other row must unpin it, else the map stays lit with no visible row.
   const ok = ARCH.op && ARCH.op.indexOf(p + '\t') === 0 ? ARCH.op.slice(p.length + 1) : '', sm = /^f(\d+)\.\d+$/.exec(ok);

@@ -400,7 +400,18 @@ class _WorldPanels:
                          "pct": round(ctx * 100 / win), "gone": i == 2,
                          "agentDesc": ("Fix cart rounding", "Invoice PDF review", "")[i],
                          **({"acct": "work", "acctDir": "/home/demo/.claude-work"} if i < 2 else {})})   # extra Claude root
-        return {"ok": True, "days": days, "at": float(a), "n": 3, "total": 3, "cap": 50, "rows": rows, "ms": 2}
+        now = self.now()
+        for r in self.state()["sessions"]:   # same merge as recent._done_rows: ended session-list rows (cc or external)
+            if r.get("state") != "done" or any(x["sid"] == r["sid"] for x in rows):
+                continue
+            wt, ctx, win = r.get("wt") or {}, r.get("ctx") or 0, r.get("win") or 0
+            rows.append({"sid": r["sid"], "cwd": r.get("cwd") or "",
+                         "name": wt["name"] if (not wt.get("main") and wt.get("name")) else (r.get("project") or "?"),
+                         "branch": r.get("branch") or "", "model": r.get("model") or "", "gone": False, "agentDesc": "",
+                         "endedAt": int(now - (r.get("ageSec") or 0)), "pct": round(ctx * 100 / win) if (win and ctx) else None, "plat": r.get("plat") or "cc",
+                         **({"acct": r["acct"], "acctDir": r.get("acctDir") or ""} if r.get("acct") else {})})
+        rows.sort(key=lambda x: -x["endedAt"])
+        return {"ok": True, "days": days, "at": float(a), "n": len(rows), "total": len(rows), "cap": 50, "rows": rows, "ms": 2}
 
     def history_units(self, sid):
         s = next((x for x in self.sess if x["sid"] == sid), None)
