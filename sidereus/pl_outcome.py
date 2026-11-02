@@ -129,14 +129,20 @@ def ledger(key, since):
         return []
     if size > OC_LEDGER_READ_MAX:
         lines = lines[1:]   # ⚠first line of a mid-file seek is partial
-    out = []
+    out, seen = [], {}
     for ln in lines:
         try:
             r = _row(json.loads(ln.decode("utf-8")))
         except ValueError:
             continue
-        if r and r["end"] >= since:
-            out.append(r)
+        if not (r and r["end"] >= since):
+            continue
+        k = (r["name"], r["t0"])
+        if k in seen:   # ⚠same run closed from two sessions' runs files (older ledgers): one run, the later close wins
+            out[seen[k]] = r
+            continue
+        seen[k] = len(out)
+        out.append(r)
     return out
 
 
