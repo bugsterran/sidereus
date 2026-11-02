@@ -145,12 +145,6 @@
 .burn .bnh u{text-decoration:none;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap}
 .burn .bnh .bnac{flex:0 0 auto;max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-/* ★The toggle is **a text label + button shape** (2026-09-21: the collapse toggle was too small).
-   With only a `▾` glyph nobody knew the row was clickable, and it was reported as "the curve is not showing".
-   ⚠No new colors — the blue pair of `.jump` (this file's existing «clickable pill») as-is.
-   ⚠The click area is the whole `.bnh` row (`cursor:pointer` is there too). Do not narrow it to this chip. */
-.burn .bnh i{font-style:normal;flex:0 0 auto;white-space:nowrap;font-size:10.5px;
-  color:#bcd4f5;background:#1d2b42;border:1px solid #3a5a8c;border-radius:999px;padding:1px 8px}
 .burn em{font-style:normal;color:#b9c4d4;font-weight:600}   /* estimate number — lower weight than official (.quota b) */
 /* ★Near-empty warning. ⚠**The selector was a descendant (`.burn .bwarn`), so until 2026-09-21 it never applied** —
    `bwarn` is on `.burn` **itself** (`el.className = 'burn on' + ' bwarn'`). The fix also narrowed

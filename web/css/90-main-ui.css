@@ -160,9 +160,8 @@ html[data-ui=next] .sdrw .qwb{height:6px;background:#8883;border-radius:3px;over
 html[data-ui=next] .sdrw .qwb i{display:block;height:100%}
 html[data-ui=next] .sdrw .qwr b{text-align:right}
 html[data-ui=next] .sdrw .qwe{opacity:.6}
-/* Burndown renders open in the drawer: no collapse toggle. */
+/* Burndown renders open in the drawer. */
 html[data-ui=next] .sdrw .burn .bnh{cursor:default}
-html[data-ui=next] .sdrw .burn .bnh i{display:none}
 html[data-ui=next] .sdrw .burn svg{width:100%;height:200px}
 /* Modal text sizes/colours: the sidebar-sized 9.5-10.5px greys (#5f6a7a 3.17:1, .qwe light 3.97:1) fail in the modal; tokens keep both themes >=4.5:1.
    ⚠[data-ui] twice = #nxcss twin generator skips these rules and they outrank the sidebar rules' twins (05-controls.css). */

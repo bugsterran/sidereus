@@ -77,7 +77,7 @@ function buildTodo(){
   if(stale.length) cells.push(['stale', T('Stale threads'), stale.length, 'stale', T('Stale')]);
   // Detected CLIs without Sidereus hooks (90f); names are server data, so they fill a TV slot and are never passed through T().
   if(typeof hcTodo === 'function'){
-    hcLoad(false);
+    if(!document.hidden) hcLoad(false);   // hidden: no refetch; the visibilitychange poll reloads once
     const hk = hcTodo();
     if(hk.length) cells.push(['hk', TV({msg: 'CLI hooks not connected: {names}', vars: {names: hk.map(x => x.name).join(' · ')}}), hk.length, 'hooks', T('Hooks')]);
   }

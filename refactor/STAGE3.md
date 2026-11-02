@@ -199,8 +199,7 @@ notes · parse · adapter · plat_gemini · plat_codex · plat_cursor · plat_co
   ⚠Patch moved names on the new module: `_win_*`/`WIN_FILE` on `live_win`, `_quota`/`_oauth_token`/`warn_once`/`time` for the fetch on `quota_fetch`, `_struct_disk_file` on `structure_cache`.
 
 ## Shared mutable globals
-- Five names are rebound after import (`global`): `_live_cache` (live_cwds), `_busy_cache` and `_busy_shells` (tool_busy) and `_starts_cache` (shell_starts) in `sidereus/live_probe.py`,
-  `_FAIL_1H` (`_fail_1h_build`) in `sidereus/failures.py`. Each is rebound and read only in its own module (AST check 2026-09-24:
+- Four names are rebound after import (`global`): `_live_cache` (live_cwds), `_busy_cache` and `_busy_shells` (tool_busy) and `_starts_cache` (shell_starts) in `sidereus/live_probe.py`. Each is rebound and read only in its own module (AST check 2026-09-24:
   no `from sidereus.* import` of any of them) — a rebound name read from a second module would see a stale object.
 - `sidereus/file_owner.py` (2026-09-24): `_FO` (dict: at/off/per/who, guarded by `_FO_LOCK`; `_FO_SCAN` = one scanner) and `_FO_GIT` (root → uncommitted set) are mutated in place, never rebound. `attention._conflicts` is a module seam tests swap.
 - `sidereus/commit_link.py` (2026-09-24) owns `_cl` (index + `busy` flag), `_cl_lock`, `_cl_git` (git log cache) — containers mutated in place, never rebound; tests swap `CL_ROOT`/`CL_INDEX`.

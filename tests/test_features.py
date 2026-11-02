@@ -38,7 +38,7 @@ class _FakeThread:
 
 class Features(unittest.TestCase):
     def setUp(self):
-        man = {"retro": _m("retro", deps=["hist"], routes=["/api/retro"], threads=["tl_warm"], state_keys=["fail1h"]),
+        man = {"retro": _m("retro", deps=["hist"], routes=["/api/retro"], threads=["tl_warm"], state_keys=["extUsage"]),
                "hist": _m("hist", routes=["/api/prefs*"])}
         self.tmp = tempfile.mkdtemp(prefix="sidereus-feat-")
         self.addCleanup(shutil.rmtree, self.tmp, True)
@@ -91,11 +91,11 @@ class Features(unittest.TestCase):
         for k, v in _READERS.items():
             setattr(ST, k, v)
         s = ST.state()
-        self.assertIn("fail1h", s)
+        self.assertIn("extUsage", s)
         self.assertEqual(s["features"], {"hist": True, "retro": True})
         self._off(retro=False)
         s = ST.state()
-        self.assertNotIn("fail1h", s)
+        self.assertNotIn("extUsage", s)
         self.assertEqual(s["features"], {"hist": True, "retro": False})
 
     def test_save_replaces_cache(self):
@@ -128,7 +128,7 @@ class Features(unittest.TestCase):
         for want, live in (({}, True), ({"retro": False}, False), ({"hist": False}, False), ({}, True)):
             self.assertEqual(F.save({"key": "features", "value": want})[0], 200)
             self.assertEqual(get("/api/retro"), (200, {}) if live else (404, {"error": "feature off"}), want)
-            self.assertEqual("fail1h" in ST.state(), live, want)
+            self.assertEqual("extUsage" in ST.state(), live, want)
             self.assertEqual(F.snapshot()["retro"], live, want)    # hist off forces retro off
 
     def test_thread_registry(self):

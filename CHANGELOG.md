@@ -8,9 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Attention: sessions waiting for your approval or answer sit in their own "Needs your response" group on top, with a red bar and a count, and never fold; everything else is under "For your information".
+- Settings: the "Burndown curve" option is gone; it changed nothing (the quota details always show the curve). "Token widgets on the right" now says it applies only while the session list is pinned.
+- Harness: the report title is just "Harness report", and a stale runtime check shows its check time once.
+- Sessions: a session card no longer repeats its to-do line when a running subagent row right below shows the same task.
+- A hidden viewer tab no longer polls harness evidence, branches or hook-connect status; the view refreshes once when it becomes visible. `/api/state` drops two keys nothing read (`fail1h`, `bgskip`), and `sidereus start/stop` checks liveness with a small request instead of the full state.
 
 ### Fixed
 
+- Structure: the header reload button in Architecture view reloads the architecture map; it reloaded only the size view's data.
 - Plugin: version 0.5.0. The plugin stayed at 0.4.0 since Sidereus 0.7.0, so `claude plugin update` kept the old hooks (Claude Code caches a plugin per version); updating now brings strict mode, Windows gate evidence and the To-do MCP tool.
 - Sessions: a long-running Bash in auto mode is no longer shown as "Bash waiting for approval".
 - Sessions: after `/clear`, the previous session id of the same process no longer shows as a second live row.

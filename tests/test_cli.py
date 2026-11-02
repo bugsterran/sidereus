@@ -488,6 +488,13 @@ class Stop(CliBase):
         self.cli._urlopen = self._fake_urlopen
         self.assertEqual(self.cli.answering(8799), 0)          # refused stays «down»
 
+    def test_answering_probes_light_route_not_full_state(self):
+        urls = []
+        self.up = True
+        self.cli._urlopen = lambda url, timeout=None: urls.append(url) or self._fake_urlopen(url, timeout)
+        self.assertEqual(self.cli.answering(8799), 200)
+        self.assertEqual(urls, ["http://127.0.0.1:8799/api/hookstate"])   # ⚠/api/state is ~780KB per poll
+
     def test_windows_timeout_on_free_port_is_down_and_start_spawns(self):
         self._busy()
         self.cli.IS_WIN = True

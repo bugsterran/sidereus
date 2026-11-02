@@ -6,7 +6,7 @@ Port: --port N > env SIDEREUS_PORT > config `port` > 8799 (mailbox_config.port()
 once the viewer answers (`--install-service` saves it first: the service reads the config).
 
 start   first run copies config.example.json -> config.local.json (never overwrites), then runs
-        chat_server.py --no-open detached, records DATA_DIR/sidereus.pid and waits for /api/state.
+        chat_server.py --no-open detached, records DATA_DIR/sidereus.pid and waits for the viewer to answer (PROBE_PATH).
         Opens a browser tab only with --open.
         --demo runs chat_server.py --demo in the foreground (port --port or 18799); no config, no pid record.
 stop    stops only the pid this launcher recorded, and only while that pid is alive and its port answers.
@@ -62,6 +62,7 @@ WIN_TASK = "Sidereus"
 WIN_SPAWN_FLAGS = 0x08000000 | 0x00000200   # CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP (hidden console children inherit)
 START_WAIT_S = 20.0           # ★first /api/state on a fresh data dir measured up to 6.5 s
 BUSY = -1                    # answering(): connected but no reply in time = a live server that is busy
+PROBE_PATH = "/api/hookstate"  # ⚠quota subset (<1KB, served since 0.1.0); /api/state is ~780KB and wait_up polls every 0.5 s
 STOP_WAIT_S = 5.0
 _sleep = time.sleep          # tests replace these module attributes
 _now = time.time
@@ -281,9 +282,9 @@ def port_bound(port):
 
 
 def answering(port):
-    """HTTP status of /api/state on port, BUSY on timeout, 0 when nothing answers. ⚠Only 200 means Sidereus (is_sidereus)."""
+    """HTTP status of the probe route on port, BUSY on timeout, 0 when nothing answers. ⚠Only 200 means Sidereus (is_sidereus)."""
     try:
-        r = _urlopen("http://127.0.0.1:%d/api/state" % int(port), timeout=2)
+        r = _urlopen("http://127.0.0.1:%d%s" % (int(port), PROBE_PATH), timeout=2)
         try:
             _IDENT[int(port)] = (getattr(r, "headers", None) or {}).get("X-Sidereus-Instance") or ""
             return int(getattr(r, "status", 0) or r.getcode() or 0)

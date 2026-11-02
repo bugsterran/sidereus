@@ -221,7 +221,7 @@ Replay it from the «?» panel or Settings › «Replay the tour». `?tour=1` fo
 
 Settings (gear), one tab per group. Screen values are stored on the viewer server and apply at once; server values (`config.local.json`) apply after a restart. A dimmed row has no effect right now (hover for why).
 
-- «Display»: language, background tone (default «System»), text size, session list («Drawer» / «Pinned right»), token widgets, burndown curve, «Terminal integration» (Auto · iTerm2 · Terminal.app · Orca · Off).
+- «Display»: language, background tone (default «System»), text size, session list («Drawer» / «Pinned right»), token widgets (only with «Pinned right»), «Terminal integration» (Auto · iTerm2 · Terminal.app · Orca · Off).
 - «Alerts»: «Alert level», «Group repeats per session (30 min)», «Cards in the alerts list», «Notify when a session waits for me» (OS notification, off by default).
 - «Saver mode» (same file as `/saver`, every session): «Mode», «Target burn», «At the target limit» («Notify only» · «Warn, then allow» · «Block»), «What each level does».
 - «Timeline»: replay speed, refresh, range, «Changes baseline», task description on subagent rows.

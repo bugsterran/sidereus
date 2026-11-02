@@ -4,12 +4,8 @@
 // (`.burn em`) — on a monitoring screen an estimate that looks measured is a lie.
 // ⚠No new timer — piggybacks on `poll()` (2.5s) and throttles to 30s here.
 // (The server also caches with TTL 30s, so calling more often returns the same value.)
-// ★Default is **expanded** (2026-09-21: collapsed was too small to notice) — people did not know the row was collapsed
-// and reported "curve not visible" as a bug. A single glyph is not an affordance.
-// ⚠The stored value has 3 states — a single `=== '1'` cannot tell "never touched" from "deliberately
-// collapsed". No key (null)=expanded · `'0'`=user collapsed it, leave it · `'1'`=expanded.
-let BURN = null, BURN_AT = 0, BURN_BUSY = false, BURN_OPEN = true;
-{ const bo = lsGet('sidereus.burn', null); if(bo !== null) BURN_OPEN = (bo === '1'); }
+// The curve is always shown; a stored `sidereus.burn` from the removed collapse setting is never read.
+let BURN = null, BURN_AT = 0, BURN_BUSY = false;
 // BURNM = the non-primary «Main account»'s body (`?dir=`); BURN stays the primary's (drawer burndown, tokens).
 let BURNM = null, BURNM_DIR = '';
 function burnMainDir(){

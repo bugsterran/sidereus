@@ -555,7 +555,7 @@ document.addEventListener('input', e => {
 });
 // Called from each /api/state poll (95-poll.js): relight the open pipeline view from the fresh SESS rows.
 function plPoll(){
-  if(mainView !== 'pipe') return;
+  if(mainView !== 'pipe' || document.hidden) return;   // hidden: the repaint refetches evidence; the visibilitychange poll relights once
   // After an «Ask AI for a draft» DM: re-list every 20 s for 10 min so the new file shows up (48e PLS.draft); the session's cwd too
   const now = Date.now(), dr = PLS.draft;
   if(dr && !(now - dr.at < PL_DRAFT_TTL)) plDraftSet(null);

@@ -16,9 +16,7 @@ function buildBurn(){
   const body = burnHead(b, nowS) + burnCurve(b);
   const cls = 'burn on' + (warn ? ' bwarn' : '');
   if(el.className !== cls) el.className = cls;   // ⚠same-value writes still fire attribute mutations every poll
-  // ★Show a **text label**, not only a glyph — a lone `▾` did not show the row is clickable.
-  // The click area is still the whole header row (`.bnh`). Narrowing it to the label would be worse than now.
-  setHtml(el, '<div class=bnh>'+(ul ? '<b class=bnac>'+esc(ul)+'</b>' : '')+'<u>'+burnSum(pj)+'</u><i>'+(BURN_OPEN?'▴ '+esc(T('Collapse')):'▾ '+esc(T('Show curve')))+'</i></div>' + body);
+  setHtml(el, '<div class=bnh>'+(ul ? '<b class=bnac>'+esc(ul)+'</b>' : '')+'<u>'+burnSum(pj)+'</u></div>' + body);
   // ⚠In the modal a native title cannot be styled and pops over the modal title — use a hover card on `.bnh` instead.
   if(el.closest && el.closest('.sdrw')){
     if(el.hasAttribute('title')) el.removeAttribute('title');
@@ -28,7 +26,7 @@ function buildBurn(){
     const tip = burnTitle(b);
     if(el.title !== tip) el.title = tip;
   }
-  // ⚠No header click toggle — the drawer always shows the curve; sidereus.burn is set only from the settings modal.
+  // ⚠No collapse toggle — the curve is always shown (an old stored sidereus.burn value is ignored).
 }
 // ⚠Warning (`.bwarn`) reddens **only this one `.bpj`** — this number is the basis of `warn` (`pj.raw >= 100`).
 // ★`pj.pct == null` means **too few samples** (e.g. right after reset, 2026-09-22) — "? at reset" is unhelpful.
@@ -140,7 +138,7 @@ function burnHcBind(el){
     const h = e.target.closest && e.target.closest('.bnh');
     const bd = burnDraw();
     if(!h || !(bd && bd.cur)) return;
-    const c = hcShow('bnhc', esc(burnTitle(bd, true)), 'tlhc bnhc'), r = h.getBoundingClientRect();
+    const c = hcShow('bnhc', esc(burnTitle(bd)), 'tlhc bnhc'), r = h.getBoundingClientRect();
     c.style.left = Math.round(r.left) + 'px'; c.style.top = Math.round(r.bottom + 6) + 'px';
   });
   el.addEventListener('mouseout', e => {
@@ -150,8 +148,7 @@ function burnHcBind(el){
   document.addEventListener('keydown', e => { if(e.key === 'Escape') hcHide('bnhc'); });   // Escape closes the modal under the pointer
   document.addEventListener('click', e => { if(!(e.target.closest && e.target.closest('#burn .bnh'))) hcHide('bnhc'); });
 }
-// noToggle: the modal has no collapse toggle, so the «Click the row…» line is omitted there.
-function burnTitle(b, noToggle){
+function burnTitle(b){
   const c = b.cur;
   return TV({msg: 'Estimate — the slope of the last 45 min ({r}%/h) extended unchanged to the reset.', vars: {r: c.rate_pph==null?'?':c.rate_pph}}) + '\n' + T('The measured value is the 5h row above (official quota); this row is computed.')
     + '\n\n' + TV({msg: 'Cycle {a} – {b} · last measured {t}', vars: {a: bnHM(c.start), b: bnHM(c.reset), t: AGO(ageU(c.age,120,false))}})
@@ -159,8 +156,7 @@ function burnTitle(b, noToggle){
         + (b.delta>0?'+':'') + b.delta + '%p')
     + (b.base && b.base.band && b.base.band.length >= 2
         ? '\n\n' + TV({msg: 'Faint band = p25–p75 of the last {n} cycles at the same elapsed time', vars: {n: b.base.n}})
-          + (b.base.bw == null ? '' : TV({msg: ' (median width {w}%p)', vars: {w: b.base.bw}})) : '')
-    + (noToggle ? '' : '\n' + (BURN_OPEN ? T('Click the row to collapse the curve.') : T('Click the row to expand the curve.')));
+          + (b.base.bw == null ? '' : TV({msg: ' (median width {w}%p)', vars: {w: b.base.bw}})) : '');
 }
 function buildQuotaLocal(u, q){
   const el = document.getElementById('quota');

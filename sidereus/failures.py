@@ -24,42 +24,6 @@ _WRECK_CACHE = BoundedMemo(300)   # (agent log, cwd) -> (mtime, [{cwd,path}])
 _DIRTY_CACHE = {}           # repo -> (lookup time, {relative path: status})
 
 
-FAIL_1H_SPAN = 3600         # header card window (s)
-FAIL_1H_BINS = 6            # 10-min buckets
-_FAIL_1H = {}               # last summary; ⚠rebound only by _fail_1h_build (the loop), read by fail1h() in state()
-
-
-def _fail_1h_fold(evs, now, span=FAIL_1H_SPAN, nb=FAIL_1H_BINS):
-    """Pure fold: events -> counts by kind plus `nb` equal buckets over the last `span` s (oldest first)."""
-    step = span // nb
-    kinds, bins, bk, last = {}, [0] * nb, [{} for _ in range(nb)], []
-    for ev in evs:
-        age = max(0.0, now - (ev.get("at") or 0))
-        if age >= span:
-            continue
-        k = ev.get("kind") or "?"
-        i = nb - 1 - int(age // step)
-        kinds[k] = kinds.get(k, 0) + 1
-        bins[i] += 1
-        bk[i][k] = bk[i].get(k, 0) + 1
-        # ⚠Metadata only (time · kind · project · session id) — no error text/signature reaches the page.
-        last.append({"at": int(ev.get("at") or 0), "kind": k, "proj": ev.get("proj") or "", "sid": ev.get("sid") or ""})
-    last.sort(key=lambda q: -q["at"])
-    return {"at": int(now), "n": sum(bins), "step": step, "kinds": kinds, "bins": bins, "bk": bk, "last": last[:8]}
-
-
-def _fail_1h_build():
-    """Rebuild the cached last-hour summary from `_fail_events` (offsets already advanced by the loop)."""
-    global _FAIL_1H
-    evs, _n, _h = _fail_events(FAIL_1H_SPAN / 3600.0)
-    _FAIL_1H = _fail_1h_fold(evs, time.time())
-
-
-def fail1h():
-    """Cached last-hour failure summary for state() — no scan here; {} until the loop's first pass."""
-    return _FAIL_1H
-
-
 def _fail_loop():
     """Advance read offsets in the background — so opening the tab does not read 1GB on the spot."""
     while True:
@@ -73,7 +37,6 @@ def _fail_loop():
                 #   failure tab could read **not one file**. Now they alternate per file.
                 for _mt, fp in files:
                     _fail_read(fp)
-                _fail_1h_build()       # header «Failures (1h)» card — built here so state() only reads the cache
                 _wreck_snapshot()      # ★outside the lock — _fail_events takes the same lock (calling inside would hang)
                 _wreck_cards(_wreck_by_cwd())   # session row "leftover" badge + wreckage alerts — computed only here
                 _fail_cards()          # put new failures on the bell

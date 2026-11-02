@@ -10,12 +10,10 @@ from sidereus.features import on as feature_on, snapshot as features_snapshot, s
 from sidereus.bus import DM_MAX, _ack_cut, _load, ack_map, cursors, messages, messages_first, presence
 from sidereus.cards import cards, cards_read, cards_read_ids
 from sidereus.usage import quota_who, usage
-from sidereus.bgtasks import _bg_lock, _bg_skipped_mb, _bg_skips
 from sidereus.ext import ext_usage_today
 from sidereus.sessions import sessions_cached
 from sidereus.perm_marks import perm_rows
 from sidereus.sessions_health import health, selfcheck
-from sidereus.failures import fail1h
 from sidereus.git_wt import wt_orders
 from sidereus.quota import quota
 from sidereus.quota_roots import quota_accounts
@@ -174,13 +172,6 @@ def state(since=0, ncards=50):
     _piece("selfcheck", selfcheck, None, _sessions)   # ★must run **before** health() to make it into this poll
     _health = _piece("health", health, None)   # ★server self-status — pulls `viewer.err` onto the screen
     _cread, _cread_ids = cards_read(), cards_read_ids()
-    # ★`_bg_skips`·`_bg_skipped_mb` are mutated by `_running_bg_locked` inside `_bg_lock`.
-    #   ⚠Previously `_lock` serializing polls kept this from blowing up; with that removed, **read under the owner lock**.
-    #     `sum(d.values())` raises `RuntimeError: dictionary changed size during
-    #     iteration` the moment someone inserts a key, and then that poll's state vanishes entirely.
-    with _bg_lock:
-        _bgskip = {"n": sum(_bg_skips.values()),
-                   "mb": round(sum(_bg_skipped_mb.values()), 1)}
     # ── the lock is held only while reading «the pair that overlaps invite handling». Placed last so the conversation is freshest.
     with _lock:
         _presence = presence()   # ●online (watcher heartbeat) · ◐recent call · ○stale
@@ -222,9 +213,6 @@ def state(since=0, ncards=50):
         "wtOrder": _piece("wtOrder", wt_orders, {}, _sessions, _attn),   # Branches tab card order per repo — server is the only sorter
         "build": PAGE_BUILD,      # ★if an open tab holds old JS the screen does not render (measured 2026-08-19)
         "usage": _usg,
-        # ★Diagnostic: spans skipped in background decisions (when a session writes too fast). Nonzero means
-        #   notifications were scanned separately that many times — the root spot of finished agents lingering.
-        "bgskip": _bgskip,
         "quota": _q0,                # ★official quota (%·reset) — same value as /usage
         # Quota modal «who is using the 5h» — per-project tokens in the current cycle (metadata only, not an attention signal).
         "quotaWho": _who,
@@ -236,7 +224,6 @@ def state(since=0, ncards=50):
         "health": _health,
         "cardsRead": _cread,         # cards after this time are unread (stored on the server, not the browser)
         "cardsReadIds": _cread_ids,  # card keys read **individually** among them (`at|kind|project`)
-        "fail1h": _piece("fail1h", fail1h, None),        # header «Failures (1h)» card — cache from _fail_loop (60s), no scan here
         # ⚠External CLI tokens today, per platform — never merged into `usage`/`quota` (those are Claude-only).
         "extUsage": _piece("extUsage", ext_usage_today, {}),
         # ⚠Includes VIEWER_ME: /api/say · /api/dm · invites write from=VIEWER_ME, and the page marks `m.mine` from this

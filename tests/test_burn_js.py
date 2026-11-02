@@ -149,15 +149,16 @@ R.headEn = [burnHead({cur, proj: {over_at: N + 90 * 60}, wk}, N)];
         self.assertNotIn('stroke="#5f6a7a"', svg)
 
     def test_modal_tooltip_is_hover_card(self):
-        # Inside the modal: no native title (unstyled, covers the modal title); hcShow card with no «Click the row» line.
+        # Inside the modal: no native title (unstyled, covers the modal title); hcShow card. No collapse toggle, so no «Click the row» line.
         bb, bind = js_fn("buildBurn"), js_fn("burnHcBind")
         modal = bb.split("closest('.sdrw')", 1)[1].split("} else {", 1)[0]
         self.assertNotIn("el.title", modal)
         self.assertIn("removeAttribute('title')", modal)
         self.assertIn("hcShow('bnhc'", bind)
-        self.assertIn("burnTitle(bd, true)", bind)
+        self.assertIn("burnTitle(bd)", bind)
         self.assertIn("hcHide('bnhc')", bind)
-        self.assertIn("(noToggle ? ''", js_fn("burnTitle"))
+        self.assertNotIn("Click the row", js_fn("burnTitle"))
+        self.assertNotIn("BURN_OPEN", bb)
 
     def test_no_token_headroom(self):
         # Percent and time only: only measured «사용 NM» — never head's limit/headroom/estimated used.
