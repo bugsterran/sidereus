@@ -99,11 +99,11 @@ def add_project(req):
         old = _read_store()
         new = ([p] + [x for x in old if x != p])[:PROJ_STORE_MAX]
         if len(old) >= PROJ_STORE_MAX and p not in old:
-            return 400, {"ok": False, "err": "Up to %d projects can be added" % PROJ_STORE_MAX}  # ⚠I18N key in 06-i18n-v.js assumes 50
+            return 400, {"ok": False, "err": "Up to {n} projects can be added", "vars": {"n": PROJ_STORE_MAX}}
         try:
             _write_store(new)
         except OSError as e:
-            return 500, {"ok": False, "err": "write failed (%s)" % type(e).__name__}
+            return 500, {"ok": False, "err": "write failed ({e})", "vars": {"e": type(e).__name__}}
     return 200, {"ok": True, "path": p, "added": new}
 
 
@@ -118,7 +118,7 @@ def remove_project(req):
         try:
             _write_store(new)
         except OSError as e:
-            return 500, {"ok": False, "err": "write failed (%s)" % type(e).__name__}
+            return 500, {"ok": False, "err": "write failed ({e})", "vars": {"e": type(e).__name__}}
     return 200, {"ok": True, "added": new}
 
 

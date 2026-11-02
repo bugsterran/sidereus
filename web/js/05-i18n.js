@@ -178,6 +178,14 @@ function TV(j){
   const v = (j.vars && typeof j.vars === 'object') ? j.vars : {};
   return T(j.msg).replace(/\{(\w+)\}/g, (all, k) => Object.prototype.hasOwnProperty.call(v, k) ? String(v[k]) : all);
 }
+// Server error reply (or string) -> text; ⚠only a known I18N.ko key is translated/filled, anything else returns verbatim.
+function TE(r){
+  if(r && typeof r === 'object' && r.msg) return TV(r);
+  const s = typeof r === 'string' ? r : String((r && (r.err || r.error || r.why)) || '');
+  if(!Object.prototype.hasOwnProperty.call(I18N.ko, s)) return s;
+  const v = (r && typeof r === 'object' && r.vars && typeof r.vars === 'object') ? r.vars : null;
+  return v ? T(s).replace(/\{(\w+)\}/g, (all, k) => Object.prototype.hasOwnProperty.call(v, k) ? String(v[k]) : all) : T(s);
+}
 // ⚠User data (project/agent names) must not go through T() or srvEn(): a name equal to a dictionary key or server phrase
 //   would be translated. Only the server's fixed placeholders are translated here (sidereus/burn_scan.py, sidereus/failures.py).
 function TN(s){

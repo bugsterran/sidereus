@@ -27,7 +27,7 @@ def delete(req):
         if os.path.islink(p) or os.path.realpath(d) != os.path.join(os.path.realpath(proj), ".claude", "pipelines"):
             return 400, {"ok": False, "err": "path leaves the project"}   # ⚠a symlink would move a file from outside
         if not os.path.isfile(p):
-            return 404, {"ok": False, "err": "%s not found" % rel}
+            return 404, {"ok": False, "err": "{rel} not found", "vars": {"rel": rel}}
         if req.get("dry") is not False:
             to = os.path.join(_pl._bak_dir(), _pl._strftime("%Y%m%d-%H%M%S"),
                               "%s--%s.json" % (re.sub(r"[^A-Za-z0-9._-]", "_", os.path.basename(proj.rstrip("/"))), name))
@@ -35,5 +35,5 @@ def delete(req):
         try:
             dst = _pl._backup(p, proj, name, move=True)
         except OSError as e:
-            return 500, {"ok": False, "err": "move failed (%s)" % type(e).__name__}
+            return 500, {"ok": False, "err": "move failed ({e})", "vars": {"e": type(e).__name__}}
     return 200, {"ok": True, "dry": False, "path": p, "backup": dst}

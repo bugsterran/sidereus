@@ -82,8 +82,8 @@ function raDryFetch(){
     try{
       const j = await postJSON(raBox.k === 'inv' ? '/api/room/invite' : '/api/rooms/create', {room: room, ids: ids, dry: true});
       d = j && j.ok && typeof j.body === 'string' ? {key, body: j.body, added: j.added}
-        : {key, err: (j && (j.error || j.msg)) ? TV({msg: j.error || j.msg, vars: j.vars}) : T('unknown error')};
-    }catch(e){ d = {key, err: T(e.message)}; }
+        : {key, err: (j && TE(j)) || T('unknown error')};
+    }catch(e){ d = {key, err: TE((e && e.body) || (e && e.message) || '') || T('unknown error')}; }   // ⚠e.message is server text: TE, never T()
     if(!raBox || raKey() !== key) return;
     raDry = d;
     const pb = feed.querySelector('.rapb'), ok = feed.querySelector('.rayes'), pv = feed.querySelector('.rapv');
@@ -178,12 +178,12 @@ async function raPost(url, body, apply){
   if(ok) ok.disabled = true;
   try{
     const j = await postJSON(url, body);
-    if(!j || j.ok === false) throw new Error((j && (j.error || j.msg)) ? TV({msg: j.error || j.msg, vars: j.vars}) : T('unknown error'));
+    if(!j || j.ok === false) throw new Error((j && TE(j)) || T('unknown error'));
     apply(); raBox = null; raPick.clear();
     if(j.msg) note(TV(j));
     rcPaint(true); poll();
   }catch(e){
-    if(er) er.textContent = T('Failed') + ': ' + T(e.message);
+    if(er) er.textContent = T('Failed') + ': ' + (TE((e && e.body) || (e && e.message) || '') || T('unknown error'));
     if(raBox && raNeedDry()){ raDry = null; raDryFetch(); }   // e.g. room changed since the preview: rebuild it before «Confirm» again
     if(ok) ok.disabled = !(raBox && raOkOn());
   }

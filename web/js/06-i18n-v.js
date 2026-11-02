@@ -16,7 +16,7 @@ Object.assign(I18N.ko, {
   'Add project': '프로젝트 불러오기', 'Pick a folder to add to the list': '폴더를 골라 목록에 추가합니다', 'Parent folder': '상위 폴더',
   'Add this folder': '이 폴더 추가', 'Recent session folders': '최근 세션 폴더', 'Choose folder…': '폴더 선택…', 'Show hidden folders': '숨김 폴더 보기', 'A folder dialog is open…': '선택 창이 열렸습니다…', 'A folder dialog is already open': '선택 창이 이미 열려 있습니다', 'Timed out — the folder dialog was not closed within 5 minutes': '시간 초과 — 선택 창이 5분 안에 닫히지 않았습니다', 'The chosen path cannot be used': '선택한 경로를 쓸 수 없습니다', 'Could not open the folder dialog': '선택 창을 열지 못했습니다','No subfolders': '하위 폴더가 없습니다', 'Claude config': 'Claude 설정', 'Could not read the folder': '폴더를 읽지 못했습니다',
   'Only the first 500 folders are shown — type the path instead': '폴더가 많아 앞쪽 500개만 보입니다 — 경로를 직접 입력하세요',
-  'Not in the list': '목록에 없는 프로젝트입니다','Up to 50 projects can be added': '최대 50개까지 추가할 수 있습니다',
+  'Not in the list': '목록에 없는 프로젝트입니다','Up to 50 projects can be added': '최대 50개까지 추가할 수 있습니다','Up to {n} projects can be added': '최대 {n}개까지 추가할 수 있습니다',
   'Retry|stage': '재시도', 'Waiting': '대기', 'Save before running': '저장한 뒤 실행할 수 있습니다',
   'Opens a run request: pick a live session of this project and write what to do. After you confirm, it goes to that session\'s mailbox and the session runs the pipeline itself; Sidereus runs nothing.': '실행 요청 창을 엽니다: 이 프로젝트의 살아 있는 세션을 고르고 할 일을 적습니다. 확인하면 그 세션의 메일박스로 보내지고, 실행은 그 세션이 직접 합니다 — Sidereus 는 아무것도 실행하지 않습니다.',
   'Close the open form first': '열린 양식을 닫은 뒤 누를 수 있습니다',

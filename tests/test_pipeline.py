@@ -376,7 +376,8 @@ class Routes(unittest.TestCase):
         self.assertNotIn("secret-skill-body", json.dumps(out))                 # names only, SKILL.md never read
         st = self._stages()
         code, out, _ = self._save({"stages": [dict(st[0], skill="nope")] + st[1:], "dry": True})
-        self.assertEqual((code, out.get("err")), (400, "unknown skill nope"))
+        self.assertEqual((code, out.get("err")), (400, "unknown skill {name}"))
+        self.assertEqual(out.get("vars"), {"name": "nope"})
         code, out, _ = self._save({"stages": [dict(st[0], skill="Bad X")] + st[1:], "dry": True})
         self.assertEqual(code, 400)
         self.assertTrue(any(".skill" in e for e in out["errs"]), out)

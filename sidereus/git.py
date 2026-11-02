@@ -93,7 +93,7 @@ def wt_files(cwd):
     except subprocess.TimeoutExpired:
         return 504, {"ok": False, "err": "timeout"}
     except Exception as e:
-        return 500, {"ok": False, "err": "git " + type(e).__name__}
+        return 500, {"ok": False, "err": "git {cmd}", "vars": {"cmd": type(e).__name__}}
     if r.returncode != 0:
         return 400, {"ok": False, "err": "not a git repo"}
     files = [{"st": rec[:2].strip(), "path": rec[3:]} for rec in r.stdout.split("\0") if len(rec) > 3]
@@ -265,7 +265,7 @@ def branch_graph(cwd, n=BRANCH_N_DEF, _warm=False):
     except subprocess.TimeoutExpired:
         return {"ok": False, "err": "timeout"}
     except Exception as e:
-        return {"ok": False, "err": "git " + type(e).__name__}
+        return {"ok": False, "err": "git {cmd}", "vars": {"cmd": type(e).__name__}}
 
     branches, head, detached = _br_refs(r1.stdout)
     unborn = _br_unborn(run) if detached else ""

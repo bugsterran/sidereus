@@ -18,7 +18,7 @@ const I18N = { ko: {} };
 def _run(status, lang="en", msg=""):
     with open(os.path.join(ROOT, "web", "js", "06-i18n-v.js"), encoding="utf-8") as fh:
         ko = fh.read()
-    fns = "\n".join(js_fn(f) for f in ("T", "plBody"))
+    fns = "\n".join(js_fn(f) for f in ("T", "TV", "TE", "plBody"))
     body = ("const PLS = { proj: '/p', data: { '/p': { ok: false, status: %d, msg: %s } } };\n"
             "console.log(JSON.stringify(plBody()));" % (status, json.dumps(msg)))
     code = "let LANG = %s;\n" % json.dumps(lang) + STUBS + ko + "\n" + fns + "\n" + body

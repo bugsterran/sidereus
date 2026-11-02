@@ -167,7 +167,7 @@ async function plNewSend(write){
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
   if(!PLNEW) return;
   PLNEW.busy = false;
-  if(!r || !r.ok){ PLNEW.err = T('Could not create') + ' — ' + ((r && r.err) || '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLNEW.diff = ''; }
+  if(!r || !r.ok){ PLNEW.err = T('Could not create') + ' — ' + (r && r.err ? TE(r) : '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLNEW.diff = ''; }
   else if(!write){ PLNEW.diff = r.diff || ''; PLNEW.replaced = r.replaced || []; }
   else { plModeSet('edit', true); PLS.sel = r.name; PLS.std = ''; PLS.msg = T('Created') + ' · .claude/pipelines/' + r.name + '.json'; PLNEW = null; PLS.projs = null; await Promise.all([plLoadProjs(), plLoad(PLS.proj, true)]); }
   plPaint(); plRefocus('[data-plnok]:not([disabled])', '[data-plnprev]:not([disabled])', '[data-plnf=name]', '[data-ppk="plsel"]');
