@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-02
+
+**Highlights**
+
+- Plugin 0.5.0: `claude plugin update sidereus@sidereus` now brings every hook change since Sidereus 0.7.0 (strict mode, the To-do MCP tool, Windows fixes). Earlier releases kept the plugin at 0.4.0, so updating did nothing. The release audit now fails when plugin hooks change without a version bump.
+- Attention: sessions waiting for your approval or answer sit in their own "Needs your response" group on top.
+- Attention: a row marked "Done" stays dismissed instead of coming back on the next poll.
+
+### Added
+
+- Pipelines: the run ledger records time and tokens per stage, and the weekly report and the "Result layer" of the Evaluation popup show a "Stage cost (last 30 days)" table (median time, tokens and count per stage; unknown tokens are shown as unknown, not zero).
+
 ### Changed
 
 - Attention: sessions waiting for your approval or answer sit in their own "Needs your response" group on top, with a red bar and a count, and never fold; everything else is under "For your information".
@@ -16,6 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Harness: the report title is just "Harness report", and a stale runtime check shows its check time once.
 - Sessions: a session card no longer repeats its to-do line when a running subagent row right below shows the same task.
 - A hidden viewer tab no longer polls harness evidence, branches or hook-connect status; the view refreshes once when it becomes visible. `/api/state` drops two keys nothing read (`fail1h`, `bgskip`), and `sidereus start/stop` checks liveness with a small request instead of the full state.
+- Pipelines: the run bar beside subagent rows in the Now list has a tooltip naming its run ("Subagents of pipeline run: <name>").
+- Pipelines: when the orchestrator does a stage itself (requirements, CI check, owner confirm, publish), the hand-off line and the skip message name the exact Bash tag that marks it, so the next stage is no longer refused.
+- Pipelines: the bundled implementer brief carries a self-check of the review findings that recur most (unknown shown as zero, double counting, ended rows coming back, and others), and the designer names the ones that apply under Risk.
+- Release audit: the plugin version check compares against the last release tag and is a gate of the release pipeline and a CI job on tag push; a shallow clone or a missing tag fails instead of passing.
 
 ### Fixed
 
@@ -37,6 +53,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: the stage titles of the bundled pipelines (Diagnose, Confirm, Review-find, Tag, ...) have English names; the English UI no longer shows them in Korean.
 - Attention: a "Needs your response" row lines up with the "For your information" rows; its red bar no longer stacks with the account colour bar on multi-account screens.
 - Terminal: a Claude Code background job shown in the tab of the claude that started it copies `claude attach <id>` (or nothing) when the jump fails, never `claude --resume`, which would open a second session.
+- Attention: a row marked "Done" stays dismissed across polls; it came back when nothing new had happened.
+- Terminal: a background job row no longer clears other sessions' terminal lookup, which turned their "Terminal" button into copying `--resume`; a reused process id can no longer jump to an unrelated iTerm tab.
+- Sessions: the false "Bash waiting for approval" in auto mode no longer returns after a viewer restart when the transcript's last rows were short.
+- Sessions: the terminal hosting a Claude Code background job no longer adds a second "Waiting for input" row from an old transcript in the same folder.
+- Pipelines: a request whose last stage was renamed closes on screen when the run ends, as it already did for the hook.
+- Pipelines: when one session holds several open runs, the subagents of every run are grouped under their own run bar in the Now list; the second run's agents showed as plain rows.
+- Tour: the pipeline step says "Press Edit" when the Edit button exists but is scrolled out of view, and the plugin step no longer calls the Sidereus MCP server read-only.
+- Chat: at 1100 px the toolbar wraps to a second line instead of scrolling the page sideways.
+- Quota: a half-written `.claude.json` no longer lets another account's OMC cache mix into the primary account's quota for 30 s, and the "OMC cache not read or written" warning is no longer logged again on each flip.
 
 ## [0.12.1] - 2026-11-02
 
@@ -702,7 +727,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/bugsterran/sidereus/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/bugsterran/sidereus/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/bugsterran/sidereus/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/bugsterran/sidereus/compare/v0.10.0...v0.11.0
