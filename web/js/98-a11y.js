@@ -98,6 +98,8 @@ function kbHelpOpen(){
   p.hidden = false; p.focus();
 }
 popReg('kbhelp', '#kbhelp', kbHelpClose);
+// A shortcut that opens or focuses something else closes help first (⌘K · ⌘B · `/` · `s`), so two overlays never stack.
+function kbHelpYield(){ if(popIsOpen('kbhelp')) kbHelpClose(false); }
 // ⚠With the Korean IME on, `s` arrives as that key's Hangul jamo (or 'Process') — fall back to the physical key when e.key is not ASCII.
 function kbKey(e){
   const k = e.key || '';
@@ -121,6 +123,6 @@ document.addEventListener('keydown', e => {
     if(b){ e.preventDefault(); setMainView(b.dataset.mv); }
     return;
   }
-  if(k === '/'){ const q = kbSearchBox(); if(q){ e.preventDefault(); q.focus(); q.select(); } return; }
-  if(k === 's' || k === 'S'){ const b = document.getElementById('sesb'); if(b && b.offsetParent !== null){ e.preventDefault(); b.click(); } }
+  if(k === '/'){ const q = kbSearchBox(); if(q){ e.preventDefault(); kbHelpYield(); q.focus(); q.select(); } return; }
+  if(k === 's' || k === 'S'){ const b = document.getElementById('sesb'); if(b && b.offsetParent !== null){ e.preventDefault(); kbHelpYield(); b.click(); } }
 });
