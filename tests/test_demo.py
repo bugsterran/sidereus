@@ -19,7 +19,7 @@ DENY = ("mailbox-mcp", "/Users/") + tuple(
 
 STATE_KEYS = {"presence", "acks", "acksSince", "messages", "cursors", "rooms", "profiles", "sessions", "cards",
               "attention", "build", "usage", "quota", "quotaWho", "saver", "saverView", "saverSwitch",
-              "health", "cardsRead", "cardsReadIds", "extUsage", "mine", "cfg", "review", "roomTags", "accts"}
+              "health", "cardsRead", "cardsReadIds", "extUsage", "mine", "cfg", "review", "roomTags", "accts", "todo"}
 
 # Same keys as sidereus/arch_map.load() output.
 ARCH_KEYS = {"ok", "prov", "empty", "sidereus", "commit", "head", "stale", "behind", "at", "v", "groups", "modules", "edges", "rate", "md",

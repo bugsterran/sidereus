@@ -13,6 +13,7 @@ function railApply(){
   r.classList.toggle('open', railOpen);
   b.toggle('railpush', m === 'push'); b.toggle('railover', m === 'overlay');
   const s = document.getElementById('railscrim'); if(s) s.hidden = m !== 'overlay';
+  railInert(m === 'overlay');
   const tg = document.getElementById('railtg');
   if(tg){
     const l = T(railOpen ? 'Collapse sidebar' : 'Expand sidebar');
@@ -22,9 +23,26 @@ function railApply(){
   if(typeof buildSbar === 'function'){ cancelAnimationFrame(railSbRaf); railSbRaf = requestAnimationFrame(() => { railSbRaf = 0; buildSbar(); }); }
 }
 let railSbRaf = 0;
+// Overlay rail = modal over the page: what the scrim covers is inert, so Tab stays out of the header and content.
+//   ⚠Only these containers: settings/work-log/alerts/Cmd+K/tour sit above the rail and must stay usable; the floating
+//   sessions drawer (.lside while not pinned) also opens above it. Only nodes this file marked are cleared.
+let railInertEls = [];
+function railInertTargets(doc, pinned){
+  const w = doc.querySelector('body > .wrap');
+  return [doc.querySelector('body > header'), doc.getElementById('sbar')]
+    .concat(w ? [...w.children].filter(c => pinned || !c.classList.contains('lside')) : []).filter(Boolean);
+}
+function railInert(on){
+  for(const e of railInertEls) e.removeAttribute('inert');
+  railInertEls = on ? railInertTargets(document, typeof SESPIN !== 'undefined' && SESPIN).filter(e => !e.hasAttribute('inert')) : [];
+  for(const e of railInertEls) e.setAttribute('inert', '');
+}
+// Esc/scrim close returns focus to what opened the overlay (toggle, Attention badge, a key press); the toggle if that is gone.
+let railOpener = null;
+function railBackTo(o, tg){ return o && o.isConnected && o !== document.body && o.getClientRects().length ? o : tg; }
 // ⚠A peek (opened by the Attention badge) never writes `sidereus.rail`; only railSet (toggle, Cmd/Ctrl+B) changes the saved pref.
 let railPeek = false;
-function railShow(open){ railOpen = !!open; railTip(null); railApply(); }
+function railShow(open, from){ if(open && !railOpen) railOpener = from || document.activeElement; if(!open) railOpener = null; railOpen = !!open; railTip(null); railApply(); }
 function railSet(open){
   railPeek = false; lsSet('sidereus.rail', open ? '1' : '0'); railShow(open);
 }
@@ -33,8 +51,9 @@ function railPeekEnd(){ if(!railPeek) return false; railPeek = false; railShow(f
 function railPeekOut(t){ return railPeek && !(t && t.closest && t.closest('#rail,#rattnl')); }
 function railCloseOver(){
   if(!railOpen || railMode(innerWidth, railOpen) !== 'overlay') return false;
+  const o = railOpener;
   if(!railPeekEnd()) railSet(false);
-  const tg = document.getElementById('railtg'); if(tg) tg.focus({preventScroll: true});
+  const t = railBackTo(o, document.getElementById('railtg')); if(t) t.focus({preventScroll: true});
   return true;
 }
 // Something layered above the overlay rail owns Esc (settings, Cmd+K, tour, work-log modal, the floating sessions drawer).
@@ -109,7 +128,7 @@ function railTipBind(r){
   railLang(); railApply(); railTitle();
   const tg = document.getElementById('railtg'); if(tg) tg.addEventListener('click', () => railSet(!railOpen));
   const ab = document.getElementById('rattnb');
-  if(ab) ab.addEventListener('click', () => { if(!railOpen){ railPeek = true; railShow(true); } const f = document.querySelector('#rattnl > .acp'); if(f) f.focus({preventScroll: true}); });
+  if(ab) ab.addEventListener('click', () => { if(!railOpen){ railPeek = true; railShow(true, ab); } const f = document.querySelector('#rattnl > .acp'); if(f) f.focus({preventScroll: true}); });
   const sc = document.getElementById('railscrim'); if(sc) sc.addEventListener('click', railCloseOver);
   railTipBind(document.getElementById('rail'));
   document.addEventListener('pointerdown', e => { if(railPeekOut(e.target)) railPeekEnd(); }, true);   // capture: repaints can detach the target

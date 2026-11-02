@@ -7,6 +7,7 @@ import subprocess
 import threading
 import time
 from sidereus.config import DATA_DIR, IS_MAC
+from sidereus import claude_roots
 from sidereus.warn import warn_once
 from sidereus.bus import _atomic_write
 from sidereus.memo import BoundedMemo
@@ -393,31 +394,75 @@ def _who_seed_kick(start):
     threading.Thread(target=_who_seed, args=(start, None, floor), name="who_seed", daemon=True).start()
 
 
-_who_acct_win = {}   # {"w": (five_hour, label) | None} from the last call that carried `accounts`
+_who_acct_win = {}   # {"w": (five_hour, label) | None} — the window the last call carrying `accounts` picked
+
+
+def _who_burn(cands, now):
+    """{label: tokens} each candidate account's own sessions burned in its own live 5h window (OTel `byc`).
+    ⚠Sessions without a SessionStart account record are not counted — acct_of() would file them under the primary."""
+    by_dir = {}
+    for a in claude_roots.accounts():
+        by_dir.setdefault(os.path.realpath(a["dir"]), "" if a.get("primary") else str(a.get("label") or ""))
+    lo = min(s for s in cands.values())
+    with _usage_lock:
+        bk = [(k, dict(v)) for k, v in (_usage.get("byc") or {}).items() if k + WHO_STEP > lo and k <= now]
+    out, lab = {}, {}
+    for k, row in bk:
+        for sid, tk in row.items():
+            if sid not in lab:
+                rd = claude_roots._acct_rec(sid)
+                lab[sid] = by_dir.get(rd) if rd else None
+            a = lab[sid]
+            if a is not None and a in cands and k + WHO_STEP > cands[a]:
+                out[a] = out.get(a, 0) + int(tk or 0)
+    return out
 
 
 def _who_window(q, now):
-    """(five_hour, account label) of the account in use: the primary when it has a live 5h window, else the
-    extra signed-in account with a live window and the highest pct; label '' = primary.
+    """(five_hour, account label) of the account in use; label '' = primary.
+    In use = the live-window account whose own sessions burned the most in that window (a live but idle primary
+    window showed 205K while the extra account in use had burned ~5M). No burn data: the primary when its window is
+    live, else the extra with a live window and the highest pct.
     ⚠A not-signed-in or idle primary has `resets_at` null — taking it gave now-5h (27M shown vs ~306M used)."""
     q = q or {}
     fh = q.get("five_hour") or {}
-    if fh.get("resets_at") and (_iso_ts(fh.get("resets_at")) or 0) > now:
-        return fh, ""
     if "accounts" not in q:   # caller without accounts (git_wt): reuse the window the last full call picked
         m = _who_acct_win.get("w")
-        ra = _iso_ts(m[0].get("resets_at")) if m else None
-        return m if ra and ra > now else (fh, "")
+        ra = _iso_ts(m[0].get("resets_at")) if m and m[0].get("resets_at") else None
+        if ra and ra > now:
+            return m
+        return fh, ""
+    live = {}
+    pra = _iso_ts(fh.get("resets_at")) if fh.get("resets_at") else None
+    if pra and pra > now:
+        live[""] = (fh, pra)
     best = None
     for a in q.get("accounts") or []:
         w = (a or {}).get("five_hour") or {}
         ra = _iso_ts(w.get("resets_at")) if w.get("resets_at") else None
         if not ra or ra <= now or not isinstance(w.get("pct"), (int, float)):
             continue
+        lab = str(a.get("label") or "")
+        if lab and lab not in live:
+            live[lab] = (w, ra)
         if best is None or w["pct"] > best[0]["pct"]:
-            best = (w, str(a.get("label") or ""))
-    _who_acct_win["w"] = best
-    return best if best else (fh, "")
+            best = (w, lab)
+    pick = None
+    if len(live) > 1:
+        try:
+            burn = _who_burn({k: ra - 5 * 3600 for k, (_w, ra) in live.items()}, now)
+        except Exception as e:
+            warn_once("who_burn", "quota_who account burn failed: {err}", vars={"err": repr(e)})
+            burn = {}
+        top = max(burn.values(), default=0)
+        if top > 0:
+            # ⚠a tie keeps the primary (single-account output unchanged)
+            lab = "" if burn.get("") == top and "" in live else min(k for k, v in burn.items() if v == top)
+            pick = (live[lab][0], lab)
+    if pick is None:
+        pick = (fh, "") if "" in live else best
+    _who_acct_win["w"] = pick
+    return pick if pick else (fh, "")
 
 
 def quota_who(q, now=None, top=6):

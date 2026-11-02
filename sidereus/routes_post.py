@@ -285,9 +285,6 @@ class _PostRoutes:
     def _p_saver_set(self, u):
         # Same switch files as `/saver`; affects every CLI session from its next prompt.
         req = self._body_json(4096, None)
-        # ⚠`limit` (block/warn) can stop every CLI session: viewer Origin required (no Origin = 403), like /api/prefs/set.
-        if isinstance(req, dict) and "limit" in req and not _cfg.viewer_origin(self.headers.get("Origin")):
-            return self._send(403, json.dumps({"ok": False, "err": "viewer origin required"}), "application/json; charset=utf-8")
         try:
             out = saver_set(req)
             if out.get("ok"):
@@ -382,11 +379,6 @@ class _PostRoutes:
         req = self._body_json(65536, None)
         if not isinstance(req, dict):
             return self._send(400, json.dumps({"ok": False, "error": "Could not read the body"}, ensure_ascii=False),
-                              "application/json; charset=utf-8")
-        # ⚠The Stop hook frames a relay as a human instruction: require our page's Origin (no-Origin curl is refused, not downgraded)
-        if req.get("relay") is True and not _cfg.viewer_origin(self.headers.get("Origin")):
-            return self._send(403, json.dumps({"ok": False, "error": "Relays can only be sent from the Sidereus page",
-                                               "err": "relay needs the viewer page"}, ensure_ascii=False),
                               "application/json; charset=utf-8")
         # Pipeline run request / stop (Architecture view): ⚠a stop is validated against its request before anything is sent
         pr = None
@@ -601,15 +593,16 @@ class _PostRoutes:
             code, out = 500, {"ok": False, "error": type(e).__name__}
         return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
 
+    # ⚠Acts as the person or runs a process: viewer Origin required (no Origin = 403); do_POST lets Origin-less posts through.
+    _vo = lambda fn: lambda self, u: None if self._refuse_origin() else fn(self, u)   # noqa: E731
     _POST_ROUTES = {
         "/v1/logs": _p_otel, "/v1/metrics": _p_otel, "/api/hook": _p_hook,
-        "/api/bg/dismiss": _p_bg_dismiss, "/api/health/dismiss": _p_health_dismiss, "/api/ext/dismiss": _p_ext_dismiss,
+        "/api/bg/dismiss": _vo(_p_bg_dismiss), "/api/health/dismiss": _vo(_p_health_dismiss), "/api/ext/dismiss": _p_ext_dismiss,
         "/api/room/invite": _p_room_invite, "/api/rooms/tags": _p_room_tags,
         "/api/rooms/hide": _p_rooms_hide, "/api/rooms/unhide": _p_rooms_hide, "/api/rooms/create": _p_rooms_create,
-        "/api/saver/set": _p_saver_set,
-        "/api/cards/read": _p_cards_read, "/api/say": _p_say, "/api/dm": _p_dm,
-        "/api/thread/close": _p_thread_close, "/api/review/mark": _p_review_mark,
-        "/api/term/focus": _p_term_focus, "/api/term/set": _p_term_set,
+        "/api/saver/set": _vo(_p_saver_set), "/api/cards/read": _vo(_p_cards_read), "/api/say": _vo(_p_say), "/api/dm": _vo(_p_dm),
+        "/api/thread/close": _vo(_p_thread_close), "/api/review/mark": _vo(_p_review_mark),
+        "/api/term/focus": _vo(_p_term_focus), "/api/term/set": _vo(_p_term_set),
         "/api/prefs/set": _p_prefs_set, "/api/pipelines/save": _p_pipelines_save, "/api/pipelines/create": _p_pipelines_save,
         "/api/pipelines/delete": _p_pipelines_save,
         "/api/pipelines/projects/add": _p_pipelines_save, "/api/pipelines/projects/remove": _p_pipelines_save,

@@ -136,13 +136,27 @@ def _scale_rows(rows, old_total, used):
     Each row's `share` is kept — it is the OTel ratio; only the token figure moves."""
     if not rows or old_total <= 0 or used is None:
         return rows
-    raw = [r.get("tok") or 0 for r in rows]
-    target = int(round(sum(raw) * used / float(old_total)))
-    exact = [t * used / float(old_total) for t in raw]
+    out = _lr_scale([r.get("tok") or 0 for r in rows], used, float(old_total))
+    res = []
+    for r, t in zip(rows, out):
+        r2 = dict(r, tok=t)
+        ss = [s for s in (r.get("sids") or []) if isinstance(s, dict)]
+        if ss and (r.get("tok") or 0) > 0:
+            # ⚠sids scale with their row, else a session shows 6.7M under a 203K project
+            st = _lr_scale([s.get("tok") or 0 for s in ss], t, float(r.get("tok")))
+            r2["sids"] = [dict(s, tok=v) for s, v in zip(ss, st)]
+        res.append(r2)
+    return res
+
+
+def _lr_scale(raw, num, den):
+    """`raw` * num/den in ints by largest remainder, so the parts sum to round(sum(raw) * num/den)."""
+    target = int(round(sum(raw) * num / den))
+    exact = [t * num / den for t in raw]
     out = [int(x) for x in exact]
     for i in sorted(range(len(out)), key=lambda i: -(exact[i] - out[i]))[:max(0, target - sum(out))]:
         out[i] += 1
-    return [dict(r, tok=t) for r, t in zip(rows, out)]
+    return out
 
 
 def state(since=0, ncards=50, acks_v=""):

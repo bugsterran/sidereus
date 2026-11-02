@@ -25,7 +25,7 @@ def run(body, fns):
 class VerifyS1(unittest.TestCase):
     def test_rail_apply_rebuilds_status_bar_once_next_frame(self):
         R = run(r"""
-let frames = [], sb = 0, railOpen = true, railSbRaf = 0; const RAIL_W = 1200, innerWidth = 1440;
+let frames = [], sb = 0, railOpen = true, railSbRaf = 0, railInertEls = []; const RAIL_W = 1200, innerWidth = 1440;
 function requestAnimationFrame(f){ frames.push(f); return frames.length; }
 function cancelAnimationFrame(id){ if(id) frames[id - 1] = null; }
 function buildSbar(){ sb++; } function railTip(){}
@@ -34,7 +34,7 @@ const rail = {classList: cl()};
 document.body = {classList: cl()}; document.getElementById = id => id === 'rail' ? rail : null;
 railApply(); railApply();
 R.before = sb; frames.forEach(f => f && f()); R.after = sb;
-""", ("railMode", "railActive", "railApply"))
+""", ("railMode", "railActive", "railInertTargets", "railInert", "railApply"))
         self.assertEqual((R["before"], R["after"]), (0, 1))
 
     def test_wf_badge_translated(self):

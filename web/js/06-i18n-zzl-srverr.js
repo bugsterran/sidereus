@@ -86,4 +86,8 @@ Object.assign(I18N.ko, {
   'write failed ({e})': '쓰기 실패({e})',
   'move failed ({e})': '옮기기 실패({e})',
   'git {cmd}': 'git 오류({cmd})',
+  'config write failed ({e})': '설정 파일 쓰기 실패({e})',
+  'compact_history invalid ({why}) — not updated': 'compact_history 가 올바르지 않습니다({why}) — 갱신하지 않았습니다',
+  'config file unreadable ({e}) — fix it by hand': '설정 파일을 읽을 수 없습니다({e}) — 직접 고치세요',
+  'config file top level is not an object — fix it by hand': '설정 파일 최상위가 객체가 아닙니다 — 직접 고치세요',
 });

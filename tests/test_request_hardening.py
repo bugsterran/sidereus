@@ -45,8 +45,8 @@ class RequestHardeningTest(unittest.TestCase):
 
     def _say(self, length):
         # No body bytes follow: a server that tries to read would hang until the timeout.
-        return self._status(b"POST /api/say HTTP/1.1\r\nHost: 127.0.0.1:%d\r\n"
-                            b"Content-Type: application/json\r\nContent-Length: %s\r\n\r\n" % (PORT, length))
+        return self._status(b"POST /api/say HTTP/1.1\r\nHost: 127.0.0.1:%d\r\nOrigin: http://127.0.0.1:%d\r\n"
+                            b"Content-Type: application/json\r\nContent-Length: %s\r\n\r\n" % (PORT, PORT, length))
 
     def test_say_negative_length(self):
         self.assertIn(self._say(b"-1").split()[1], (b"400", b"413"))

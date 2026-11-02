@@ -27,6 +27,9 @@ PORT = cs.PORT
 HOST = "127.0.0.1:%d" % PORT
 EVIL = "http://evil.example"
 OWN = "http://127.0.0.1:%d" % PORT
+# Routes that act as the person or run a process: post() sends OWN by default; origin="" sends none.
+VIEWER_ONLY = {"/api/say", "/api/dm", "/api/thread/close", "/api/term/focus", "/api/term/set", "/api/saver/set",
+               "/api/cards/read", "/api/bg/dismiss", "/api/health/dismiss", "/api/review/mark"}
 
 
 class _Rfile(io.BytesIO):
@@ -46,6 +49,8 @@ def post(path, body=b"", clen=None, origin=None, te=None):
     hdr = "Host: %s\r\nContent-Type: application/json\r\n" % HOST
     hdr += ("Transfer-Encoding: %s\r\n" % te) if te else \
         "Content-Length: %s\r\n" % (len(body) if clen is None else clen)
+    if origin is None and path.split("?")[0] in VIEWER_ONLY:
+        origin = OWN
     if origin:
         hdr += "Origin: %s\r\n" % origin
     h = cs.Handler.__new__(cs.Handler)
@@ -502,6 +507,22 @@ class UnreadBodyClosesTest(_Base):
         for path in self.ROUTES:
             _, _, h = post(path, {"k": 1}, origin=OWN)
             self.assertFalse(h.close_connection, path)
+
+
+class ViewerOnlyTest(unittest.TestCase):
+    """Routes that act as the person (say, DM) or run a process (terminal focus) refuse Origin-less posts."""
+
+    def test_refused_without_viewer_origin(self):
+        for path in sorted(VIEWER_ONLY):
+            for origin in ("", EVIL):
+                code, out, h = post(path, {"x": 1}, origin=origin)
+                self.assertEqual(code, 403, (path, origin))
+                self.assertEqual(h.rfile.reads, 0, (path, origin))
+
+    def test_viewer_origin_reaches_handler(self):
+        # Malformed body: the handler answers 400 itself, so nothing is written or run.
+        for path in sorted(VIEWER_ONLY - {"/api/cards/read", "/api/health/dismiss", "/api/review/mark", "/api/term/set"}):
+            self.assertEqual(post(path, b"[1]", origin=OWN)[0], 400, path)
 
 
 if __name__ == "__main__":

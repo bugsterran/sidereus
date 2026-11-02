@@ -30,7 +30,7 @@ const document = {getElementById(){ return EL; }, activeElement: null};
 """
 FNS = ("attnPolOf", "attnWhy", "attnLbl", "attnLife", "attnTone", "attnAckLoad", "attnAckSave", "attnRowId", "attnAckKey",
        "attnAckParse", "attnAckHit", "attnDone", "attnSnzLoad", "attnSnzSave", "attnRows", "attnBadgeN", "attnSess",
-       "attnName", "attnSeenKeys", "attnRowHTML", "buildAttn")
+       "attnName", "attnSeenKeys", "attnRowHTML", "attnFocusPick", "attnFocusOf", "attnFocusBack", "buildAttn")
 
 
 def run(rows, body="", more=False):

@@ -466,7 +466,7 @@ class Route(Base):
         cs = load()
         h = cs.Handler.__new__(cs.Handler)
         raw = body if isinstance(body, bytes) else json.dumps(body).encode()
-        h.headers = {"Content-Length": str(len(raw))}
+        h.headers = {"Content-Length": str(len(raw)), "Origin": "http://127.0.0.1:%d" % cs.PORT}
         h.rfile = io.BytesIO(raw)
         got = {}
         h._send = lambda code, b, ct: got.update(code=code, body=json.loads(b))

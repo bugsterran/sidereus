@@ -172,7 +172,8 @@ class Marks(_Base):
 
 
 def _post(path, body):
-    hdr = "Host: 127.0.0.1:%d\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n" % (cs.PORT, len(body))
+    hdr = "Host: 127.0.0.1:%d\r\nOrigin: http://127.0.0.1:%d\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n" \
+        % (cs.PORT, cs.PORT, len(body))
     h = cs.Handler.__new__(cs.Handler)
     h.headers = http.client.parse_headers(io.BytesIO(hdr.encode("latin-1")))
     h.rfile, h.wfile = io.BytesIO(body), io.BytesIO()

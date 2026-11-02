@@ -33,8 +33,7 @@ GEM_ROW = {
     "mon": [], "runmin": {"sub": 0, "bg": 0, "run": 38}, "kind": "gemini", "ageSec": 0, "bytes": 0, "repos": [],
     "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": "gemini-2.5-pro", "win": 0, "winSrc": "", "winN": 0,
     "git": "", "state": "wait", "blocked": "", "otel": True, "otelEv": "wait", "otelAt": 0,
-    "err": False, "plat": "gm", "tok": 1_284_600,
-    "tokSplit": {"in": 402_100, "out": 61_300, "cache": 779_800, "thought": 41_400},
+    "err": False, "plat": "gm", "tok": 1_284_600, "tokSplit": {"in": 402_100, "out": 61_300, "cache": 779_800, "thought": 41_400},
     "estCost": 1.63, "costMiss": 0,      # gemini-2.5-pro rates on tokSplit, all requests under 200k
 }
 
@@ -55,11 +54,12 @@ CP_ROW = _nohook_row("cp", "copilot", "9a4f0b37-2e6d-4c18-b5a2-1f7e3c8d6b04", "b
 CP_ROW.update(tok=214_300, tokSplit={"in": 18_400, "out": 9_700, "cache": 186_200, "thought": 0})   # from its usage records
 # Demo GET /api/hooks/connect rows (hook_connect.listing() shape): both CLIs installed, hooks missing.
 HOOKS_CONNECT = [
-    {"plat": "cursor", "name": "Cursor", "state": "missing", "file": "~/.cursor/hooks.json", "can": True,
-     "why": "", "approve": ""},
-    {"plat": "copilot", "name": "Copilot", "state": "missing", "file": "~/.copilot/hooks/sidereus.json",
-     "can": True, "why": "", "approve": ""},
+    {"plat": "cursor", "name": "Cursor", "state": "missing", "file": "~/.cursor/hooks.json", "can": True, "why": "", "approve": ""},
+    {"plat": "copilot", "name": "Copilot", "state": "missing", "file": "~/.copilot/hooks/sidereus.json", "can": True, "why": "", "approve": ""},
 ]
+# Demo «To-do» store (todo._ui items): repo -> [(state " "/"~"/"x", one-line label, key of the session that started it)].
+DEMO_TODO = {"acme-web": [("~", "Inline errors on the address form", "web"), (" ", "Coupon edge cases in the cart total", ""), ("x", "Split checkout step components", "")],
+             "billing-api": [("~", "Retry queue for failed webhooks", "bill"), (" ", "Tax line rounding in the invoice PDF", ""), (" ", "Refund contract tests", "")]}
 _HC_CMD = "/usr/bin/python3 /home/demo/.sidereus/ext-hooks/ext_hook.py --platform "
 _HC_EV = {"cursor": ("sessionStart", "beforeSubmitPrompt", "stop"), "copilot": ("SessionStart", "UserPromptSubmit", "Stop")}
 
@@ -140,7 +140,8 @@ class _WorldPanels:
                               "seven_day": {"pct": 61.0, "resets_at": datetime.fromtimestamp(wk_reset - 30 * H, timezone.utc).isoformat(),
                                             "leftSec": wk_reset - 30 * H - now}}]}
 
-    def quota_who(self):
+    def quota_who(self, est=False):
+        """usage.quota_who shape; est = no official 5h reset, so the start is now-5h (exact False, page shows «≈»)."""
         rows, tot = [], 0
         share = {"acme-web": 0.46, "billing-api": 0.38, "docs-site": 0.16}
         total = 212_400_000
@@ -150,9 +151,9 @@ class _WorldPanels:
             rows.append({"name": repo, "tok": tok, "share": round(sh * 100, 1), "n": len(ss),
                          "sids": [{"sid": s["id"], "tok": tok // len(ss)} for s in ss]})
             tot += tok
-        q = self.quota()
-        return {"start": q["five_hour"]["_reset"] - 5 * H, "exact": True, "total": tot, "rows": rows, "others": 0,
-                "partial": False, "since": q["five_hour"]["_reset"] - 5 * H}
+        st = self.now() - 5 * H if est else self.quota()["five_hour"]["_reset"] - 5 * H
+        return {"start": st, "exact": not est, "acct": "", "total": tot, "rows": rows, "others": 0, "othersTok": 0,
+                "partial": est, "since": None if est else st}
 
     def quota_burn(self):
         now, q = self.now(), self.quota()
@@ -171,7 +172,7 @@ class _WorldPanels:
         rate = 55 / (el / H)
         return {"ok": True, "at": now,
                 "cur": {"start": start, "reset": reset, "now": now, "now_pct": 55.0, "left": reset - now,
-                        "elapsed": el, "age": 40, "rate_pph": round(rate, 2), "pts": pts},
+                        "elapsed": el, "age": 40, "rate_pph": round(rate, 2), "pts": pts, "used_acct": 208_900_000},
                 "proj": {"pct": 91.0, "raw": 91.4, "over_at": None, "over_in": None},
                 "base": {"n": 6, "pts": base, "band": band, "bw": 15.0, "band_n": 5, "why": None},
                 "head": {"tok": 173_700_000, "used": 212_400_000, "per_pct": 3_862_000, "lim": 386_000_000,
@@ -179,7 +180,8 @@ class _WorldPanels:
                          "wk": {"used": 1_310_000_000, "lim": 3_450_000_000, "pct": 38.0, "left": q["seven_day"]["leftSec"],
                                 "src": "cyc", "lo": 3_400_000_000, "hi": 3_500_000_000, "unc": 0.013},
                          "eff": 173_700_000, "cap": "5h", "unc": 0.062, "unc_n": 6},
-                "delta": -9.0, "wk": {"now_pct": 38.0, "left": q["seven_day"]["leftSec"]}}
+                # used_acct = burn's hour-bucket sums (approximate, «used ≈»); wk.used_local = the measured 7d sum
+                "delta": -9.0, "wk": {"now_pct": 38.0, "left": q["seven_day"]["leftSec"], "used_acct": 1_288_000_000, "used_local": 1_302_500_000}}
 
     # ───────────────────────────── tokens tab
     def _live(self):
@@ -208,17 +210,15 @@ class _WorldPanels:
         acct = acct if acct in ("personal", "work") else ""
         r = random.Random(SEED + 3)  # nosec B311 -- seeded demo data / retry jitter, not a secret
         days = [datetime.fromtimestamp(a - (6 - i) * 24 * H).strftime("%Y-%m-%d") for i in range(7)]
-        per = {"acme-web": [r.randint(40, 260) * 10 ** 6 for _ in days],
-               "billing-api": [r.randint(30, 200) * 10 ** 6 for _ in days],
+        per = {"acme-web": [r.randint(40, 260) * 10 ** 6 for _ in days], "billing-api": [r.randint(30, 200) * 10 ** 6 for _ in days],
                "docs-site": [r.randint(5, 70) * 10 ** 6 for _ in days]}
         per["acme-web"][2] = 0
         if acct:     # «Period totals» account pick: work = these two repos, personal = the rest (sums to All)
             per = {k: v for k, v in per.items() if (k in ("docs-site", "billing-api")) == (acct == "work")}
-        rows = [{"slug": "-home-demo-src-" + k, "name": k, "tok": sum(v), "cost": round(sum(v) * 5.6e-7, 2),
-                 "days": sum(1 for x in v if x)} for k, v in per.items()]
+        rows = [{"slug": "-home-demo-src-" + k, "name": k, "tok": sum(v), "cost": round(sum(v) * 5.6e-7, 2), "days": sum(1 for x in v if x)}
+                for k, v in per.items()]
         total = sum(x["tok"] for x in rows)
-        daily = [{"d": d, "tok": sum(v[i] for v in per.values()),
-                  "cost": round(sum(v[i] for v in per.values()) * 5.6e-7, 2),
+        daily = [{"d": d, "tok": sum(v[i] for v in per.values()), "cost": round(sum(v[i] for v in per.values()) * 5.6e-7, 2),
                   # same shape as burn_usage._wk_daily: top 2 projects of the day, >0 only
                   "top": [{"name": k, "tok": v[i]} for k, v in
                           sorted(per.items(), key=lambda kv: (-kv[1][i], kv[0])) if v[i] > 0][:2]}

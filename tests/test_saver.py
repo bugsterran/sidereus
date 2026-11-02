@@ -434,7 +434,7 @@ class SaverLimitTest(_TempSaver):
     def test_route_requires_viewer_origin(self):
         from tests.test_routes_post import post, EVIL
         from tests.test_prefs import ORIGIN
-        for origin in (None, EVIL):
+        for origin in ("", EVIL):
             code, _o, _ = post("/api/saver/set", {"limit": "block"}, origin=origin)
             self.assertEqual(code, 403)
         self.assertFalse(os.path.exists(sv.SAVER_LIMIT))

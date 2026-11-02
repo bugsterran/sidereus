@@ -24,7 +24,7 @@ st = sidereus("state")
 
 def say(body, lang=None):
     raw = json.dumps(body).encode("utf-8")
-    hdr = "Host: %s\r\nContent-Type: application/json\r\nContent-Length: %d\r\n" % (HOST, len(raw))
+    hdr = "Host: %s\r\nOrigin: http://%s\r\nContent-Type: application/json\r\nContent-Length: %d\r\n" % (HOST, HOST, len(raw))
     if lang is not None:
         hdr += "X-Sidereus-Lang: %s\r\n" % lang
     h = cs.Handler.__new__(cs.Handler)

@@ -163,5 +163,54 @@ class SeedCase(unittest.TestCase):
         self.assertEqual(sum(sum(r.values()) for r in u._usage["byc"].values()), 49)   # nothing added twice
 
 
+class InUseAccountCase(unittest.TestCase):
+    """Account in use = the live-window account whose own sessions burned the most in that window."""
+
+    def setUp(self):
+        cr = u.claude_roots
+        self.saved = (u._usage, u._sid_proj, cr._acct_rec, cr.accounts)
+        u._who_acct_win.clear()
+        u._usage = {"live": [], "spark": [], "liveby": [], "bycSeed": {"done": False}}
+        u._sid_proj = {"aaaa1111-x": "alpha", "bbbb2222-y": "beta"}
+        recs = {"aaaa1111-x": "/cfg/prim", "bbbb2222-y": "/cfg/mine"}
+        cr._acct_rec = lambda sid: recs.get(sid, "")
+        cr.accounts = lambda: [{"dir": "/cfg/prim", "label": "main", "primary": True},
+                               {"dir": "/cfg/mine", "label": "mine", "primary": False}]
+
+    def tearDown(self):
+        cr = u.claude_roots
+        u._usage, u._sid_proj, cr._acct_rec, cr.accounts = self.saved
+
+    def q(self):
+        return {"five_hour": {"pct": 3, "resets_at": _iso(NOW + 2 * H)},
+                "accounts": [{"label": "mine", "five_hour": {"pct": 40, "resets_at": _iso(NOW + 1 * H)}}]}
+
+    def test_active_extra_beats_idle_live_primary(self):
+        u._usage_add(NOW - 2 * H, 205_000, 0, "aaaa1111-x")
+        u._usage_add(NOW - 600, 5_000_000, 0, "bbbb2222-y")
+        w = u.quota_who(self.q(), now=NOW)
+        self.assertEqual((w["start"], w["acct"]), (int(NOW + 1 * H - 5 * H), "mine"))
+        w2 = u.quota_who({"five_hour": self.q()["five_hour"]}, now=NOW)   # git_wt: no accounts key
+        self.assertEqual((w2["start"], w2["acct"]), (w["start"], "mine"))
+
+    def test_no_burn_data_keeps_live_primary(self):
+        u._usage_add(NOW - 600, 9, 0, "eeee5555-z")   # no account record: not counted
+        w = u.quota_who(self.q(), now=NOW)
+        self.assertEqual((w["start"], w["acct"]), (int(NOW - 3 * H), ""))
+
+
+class ScaleSidsCase(unittest.TestCase):
+    def test_sids_sum_to_row_after_rescale(self):
+        st = _load.sidereus("state")
+        rows = [{"name": "a", "tok": 6_700_000, "share": 97.1,
+                 "sids": [{"sid": "s1", "tok": 6_500_001}, {"sid": "s2", "tok": 199_999}]},
+                {"name": "b", "tok": 200_000, "share": 2.9, "sids": [{"sid": "s3", "tok": 200_000}]}]
+        out = st._scale_rows(rows, 6_900_000, 203_000)
+        for r in out:
+            self.assertEqual(sum(s["tok"] for s in r["sids"]), r["tok"])
+        self.assertEqual(sum(r["tok"] for r in out), 203_000)
+        self.assertEqual(rows[0]["sids"][0]["tok"], 6_500_001)   # input not mutated
+
+
 if __name__ == "__main__":
     unittest.main()

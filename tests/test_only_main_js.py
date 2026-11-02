@@ -11,7 +11,7 @@ from tests.test_saver_quota_js import i18n, jconst
 from tests._node import node_e
 
 FNS = ("acctList", "mainAcct", "mainAcctOk", "lsGet", "lsSet", "lsDel", "acctLabel", "acctPick", "acctInPick", "acctOthHtml", "acctOthClick",
-       "buildSessions", "wfFoldBtns", "sessClick", "srecRows", "buildAttn")
+       "buildSessions", "wfFoldBtns", "sessClick", "srecRows", "attnFocusPick", "attnFocusOf", "attnFocusBack", "buildAttn")
 
 STUBS = r"""
 const EL = {sess: {innerHTML: ''}, attn: {innerHTML: '', querySelector: () => null, contains: () => false}};

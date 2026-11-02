@@ -90,7 +90,8 @@ const MPDRAFT = {};
 const MP_SRV_ERR = [[/^port must be/, 'whole number only', '1024~65535 '],[/must be 1\.\.64 characters/, '1-64 characters, no / or \\'],
   [/^path must/, 'Enter a path starting with / or ~ (no ..)'], [/must be an integer/, 'Enter a whole number'], [/^set by env/, 'Set by an environment variable, so it cannot be changed here.'],
   [/^write failed/, 'Could not write the file'], [/^value missing|^unknown key/, 'Bad request']];
-function mpSrvErr(e){ e = String(e || '?'); const m = MP_SRV_ERR.find(x => x[0].test(e)); return T('Save failed') + ': ' + (m ? (m[2] || '') + T(m[1]) : TE(e)); }
+// Takes the reply object ({err, vars}) so TE can fill {e}-style slots; a bare string still works.
+function mpSrvErr(r){ const e = String((r && typeof r === 'object' ? (r.err || r.error || r.why) : r) || '?'); const m = MP_SRV_ERR.find(x => x[0].test(e)); return T('Save failed') + ': ' + (m ? (m[2] || '') + T(m[1]) : (TE(r && typeof r === 'object' ? r : e) || e)); }
 const mpBad = msg => T('Check the value') + ': ' + msg;
 // Typing in a field drops its stale error note in place (a repaint would steal focus).
 if(document.addEventListener) document.addEventListener('input', e => {   // guard: node tests load this file with a bare document stub
@@ -139,7 +140,7 @@ async function mpSrvSetRun(key, reset){
   if(!reset && !(r && r.ok)){ const el = document.querySelector('#cfgbox [data-mpin="' + key + '"]'); if(el) MPDRAFT[key] = el.value; }   // refused by the server: keep the text too
   if(r && r.ok){ delete MPERR[key]; delete MPDRAFT[key]; MPDONE[key] = 1; it.value = r.value; it.src = reset ? 'default' : 'file';
     if(r.otel && !r.otel.ok) MPERR[key] = 'OTEL: ' + (TE(r.otel) || '?'); else if(r.otel && r.otel.value) MPSRV.otel.value = r.otel.value; }
-  else MPERR[key] = mpSrvErr(r && r.err);
+  else MPERR[key] = mpSrvErr(r);
   paintCfg();
 }
 // Claude Code keys (sidereus/cc_settings.py). ⚠Only these two keys of ~/.claude/settings.json are ever written.
@@ -246,7 +247,7 @@ async function mpAcctApplyRun(){
   const post = async dry => { try{ return await postJSON('/api/prefs/set', {key: 'cc_accounts', dry: dry, accts: accts}); }
     catch(e){ return e.body || {ok: false, err: String((e && e.message) || e)}; } };
   const r0 = await post(true);
-  if(!(r0 && r0.ok)){ MPERR.cc_accounts = mpSrvErr(r0 && r0.err); paintCfg(); return; }
+  if(!(r0 && r0.ok)){ MPERR.cc_accounts = mpSrvErr(r0); paintCfg(); return; }
   const files = Array.isArray(r0.files) ? r0.files : [], nm = f => String(f.label || '') + ' ' + String(f.path || '');
   const ch = files.filter(f => f && f.status === 'change'), sk = files.filter(f => f && f.status === 'skipped');
   const skTxt = sk.map(f => nm(f) + '\n' + T('skipped') + ': ' + (f.err ? TE(String(f.err)) : '?'));
@@ -254,12 +255,12 @@ async function mpAcctApplyRun(){
   const msg = ch.map(f => nm(f) + '\n' + mpAcctFmt(f.before) + ' → ' + mpAcctFmt(f.after)).concat(skTxt).join('\n\n');
   if(!confirm(T('Change this Claude Code setting? It applies from new sessions.') + '\n\n' + msg)){ paintCfg(); return; }
   const r = await post(false);
-  if(!(r && r.ok)){ MPERR.cc_accounts = mpSrvErr(r && r.err); paintCfg(); return; }
+  if(!(r && r.ok)){ MPERR.cc_accounts = mpSrvErr(r); paintCfg(); return; }
   const out = Array.isArray(r.files) ? r.files : [], wr = out.filter(f => f && f.status === 'written');
   const miss = out.filter(f => f && (f.status === 'skipped' || f.status === 'failed'));
-  if(r.hist_err) MPERR.cc_accounts = T('Applied, but the auto-compact history was not updated') + ': ' + r.hist_err;
+  if(r.hist_err) MPERR.cc_accounts = T('Applied, but the auto-compact history was not updated') + ': ' + TE(r.hist_err);
   if(miss.length){
-    const m = T('Applied, but not to') + ': ' + miss.map(f => String(f.label || f.path || '?') + ' (' + TE(String(f.err || f.status)) + ')').join(', ');
+    const m = T('Applied, but not to') + ': ' + miss.map(f => String(f.label || f.path || '?') + ' (' + (f.err ? TE(f) : TE(String(f.status))) + ')').join(', ');
     MPERR.cc_accounts = MPERR.cc_accounts ? MPERR.cc_accounts + ' · ' + m : m;
   }
   MPDONE.cc_accounts = 2; MPACD = {};
@@ -315,12 +316,12 @@ async function mpCcSetRun(key, val){
     delete MPDRAFT[key]; paintCfg(); return; }
   let r = null;
   try{ r = await postJSON('/api/prefs/set', {key: key, value: val}); }catch(e){ r = e.body || {ok: false, err: String((e && e.message) || e)}; }
-  if(!(r && r.ok)){ MPERR[key] = mpSrvErr(r && r.err); if(raw != null) MPDRAFT[key] = raw; paintCfg(); return; }
+  if(!(r && r.ok)){ MPERR[key] = mpSrvErr(r); if(raw != null) MPDRAFT[key] = raw; paintCfg(); return; }
   delete MPERR[key]; delete MPDRAFT[key]; MPDONE[key] = 2; it.value = r.value;
-  if(r.hist_err) MPERR[key] = T('Applied, but the auto-compact history was not updated') + ': ' + r.hist_err;
+  if(r.hist_err) MPERR[key] = T('Applied, but the auto-compact history was not updated') + ': ' + TE(r.hist_err);
   const miss = (Array.isArray(r.files) ? r.files : []).filter(f => f && (f.status === 'skipped' || f.status === 'failed'));
   if(miss.length){
-    const m = T('Applied, but not to') + ': ' + miss.map(f => String(f.label || f.path || '?') + ' (' + TE(String(f.err || f.status)) + ')').join(', ');
+    const m = T('Applied, but not to') + ': ' + miss.map(f => String(f.label || f.path || '?') + ' (' + (f.err ? TE(f) : TE(String(f.status))) + ')').join(', ');
     MPERR[key] = MPERR[key] ? MPERR[key] + ' · ' + m : m;
   }
   paintCfg();
@@ -410,7 +411,7 @@ async function mpUiResetRun(){
   if(!confirm(T('Return display settings (sizes, filters, selected tabs and so on) to their initial state? The current settings are moved to the backup folder.'))) return;
   let r = null;
   try{ r = await postJSON('/api/ui-prefs/reset', {}); }catch(e){ r = e.body || {ok: false, err: String((e && e.message) || e)}; }
-  if(!(r && r.ok)){ MPERR.uireset = mpSrvErr(r && (r.err || r.error)); paintCfg(); return; }
+  if(!(r && r.ok)){ MPERR.uireset = mpSrvErr(r); paintCfg(); return; }
   delete MPERR.uireset;
   UIS.wipe();
   try{ sessionStorage.clear(); }catch(e){ softErr('uireset-ss', e); }

@@ -393,7 +393,7 @@ def cc_set(pk, value):
                     row.update(status="written", backup=xb)
                     into = into or os.path.dirname(os.path.dirname(xb))
                 else:
-                    row.update(status="failed", err=xb.get("err"))
+                    row.update(status="failed", err=xb.get("err"), vars=xb.get("vars") or {})
             files.append(row)
     out = {"ok": True, "value": val, "restart": False, "apply": "new_session", "backup": bak}
     if len(tg) > 1:
@@ -506,7 +506,7 @@ def cc_set_accts(req):
                 row.update(status="written", backup=xb)
                 into = into or os.path.dirname(os.path.dirname(xb))
             else:
-                row.update(status="failed", err=xb.get("err"), after=dict(row["before"]))
+                row.update(status="failed", err=xb.get("err"), vars=xb.get("vars") or {}, after=dict(row["before"]))
     out = {"ok": True, "dry": False, "files": rows, "restart": False, "apply": "new_session"}
     prim, ppl = rows[0], plans[0]
     nw = (want.get(prim["path"]) or {}).get("autoCompactWindow")
