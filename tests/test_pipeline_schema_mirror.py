@@ -151,5 +151,18 @@ class CatchKey(unittest.TestCase):
         new = PL._replace(P, {"stages": [{"title": "설계", "agent": "Explore"}]})
         self.assertEqual(new.get("catch"), "person")
 
+    def test_canvas_rename_and_reorder_keeps_key_order(self):
+        # `was` (old title) is the key order source when the same save also reorders; it never reaches the file.
+        PL = sidereus("pipeline")
+        P = copy.deepcopy(BASE)
+        P["stages"] = [{"title": "A", "model": "opus", "agent": "x", "task": "t"},
+                       {"title": "B", "task": "u", "agent": "y"}]
+        rows = [{"title": "B", "agent": "y", "instr": "u"},
+                {"title": "C", "agent": "x", "model": "opus", "instr": "t", "was": "A"}]
+        new = PL._replace(P, {"stages": rows})
+        self.assertEqual([list(s) for s in new["stages"]], [["title", "task", "agent"], ["title", "model", "agent", "task"]])
+        rows[1].pop("was")   # without it the index fallback misses A and C falls back to schema order
+        self.assertEqual(list(PL._replace(P, {"stages": rows})["stages"][1]), ["title", "agent", "task", "model"])
+
 if __name__ == "__main__":
     unittest.main()

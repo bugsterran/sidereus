@@ -24,7 +24,7 @@ function plgFrom(p){
   const S = p.stages || [], ids = S.map((s, i) => 'n' + (i + 1));
   const placed = S.every(s => s.ui && isFinite(s.ui.x) && isFinite(s.ui.y));
   const nodes = S.map((s, i) => {
-    const n = { id: ids[i] };
+    const n = { id: ids[i], t0: s.title };   // t0 = title in the file: sent as `was` on rename so the server keeps that stage's key order
     PLG_KEYS.forEach(k => { if(s[k] !== undefined) n[k] = k === 'ui' ? Object.assign({ x: s.ui.x, y: s.ui.y }, s.ui.color ? { color: s.ui.color } : {}) : s[k]; });
     if(!placed) n.ui = { x: PLG_X0 + i * (PLG_W + PLG_GX), y: PLG_Y0 };
     return n;
@@ -64,6 +64,7 @@ function plgStages(G, order){
     PLG_KEYS.forEach(k => { const v = n[k]; if(v !== undefined && v !== null && v !== '' && v !== false) s[k] = v; });
     const l = G.loops.find(x => x.from === id), to = l && plgNode(G, l.to);
     if(l && to) s.onFail = Object.assign({ goto: to.title, max: l.max }, l.then ? { then: l.then } : {}, l.stopOn !== undefined ? { stopOn: l.stopOn } : {});
+    if(n.t0 && n.t0 !== n.title) s.was = n.t0;
     return s;
   });
 }

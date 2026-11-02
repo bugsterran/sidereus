@@ -367,7 +367,8 @@ def _replace(P, req):
     if len(rows) > 20:
         raise ValueError("stages: at most 20")
     old = {s["title"]: s for s in P["stages"]}
-    # Canvas rename map: a new title at index i takes the old stage at i when that old title is gone (key order source).
+    # Key order source for a renamed stage: the row's `was` (its old title, sent by the editor) — survives a reorder in
+    # the same save; without it, a new title at index i takes the old stage at i when that old title is gone.
     kept = {r.get("title").strip() if isinstance(r, dict) and isinstance(r.get("title"), str) else None for r in rows}
     was = {i: s for i, s in enumerate(P["stages"]) if s.get("title") not in kept}
     out = []
@@ -376,6 +377,7 @@ def _replace(P, req):
         if not isinstance(r, dict):
             raise ValueError("stage must be an object")
         r = dict(r)
+        w = r.pop("was", None)
         if "instr" in r:
             r["task"] = r.pop("instr")
         if isinstance(r.get("ui"), dict) and "color" in r["ui"] and not (isinstance(r["ui"]["color"], str) and _COLOR.fullmatch(r["ui"]["color"])):
@@ -395,7 +397,8 @@ def _replace(P, req):
         if r.get("title") in seen:
             raise ValueError("stage title: already used in this pipeline")
         seen.add(r.get("title"))
-        prev = old.get(r.get("title")) or was.get(i) or {}
+        src = old.get(w) if isinstance(w, str) and w not in kept else None
+        prev = old.get(r.get("title")) or src or was.get(i) or {}
         keys = [k for k in prev if k in r] + [k for k in STAGE_KEYS if k in r and k not in prev]
         out.append({k: r[k] for k in keys})
     new["stages"] = out
