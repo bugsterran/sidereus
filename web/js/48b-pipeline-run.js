@@ -339,6 +339,18 @@ function plRunPanel(p, models){
     + '<div class=plbar><button class="wkrgb" data-plgo' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Confirm — send')) + '</button>'
     + '<button class="wkrgb" data-plrx>' + esc(T('Cancel')) + '</button></div></div>';
 }
+// Run layer under its «Run» button, right edges aligned, clamped to the viewport; re-placed after every paint, scroll and resize.
+// Fixed, so it overlays the canvas instead of pushing it; falls back to the CSS top/right when the button is not on screen.
+function plRunPlace(){
+  const L = document.querySelector('.plw .plrun'), b = L && document.querySelector('.plw [data-plrun].on');
+  if(!L) return;
+  if(!b){ L.style.left = L.style.top = L.style.maxHeight = ''; return; }
+  const r = b.getBoundingClientRect(), w = L.offsetWidth, top = Math.max(8, Math.round(r.bottom + 6));
+  L.style.left = Math.round(Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8))) + 'px';
+  L.style.right = 'auto'; L.style.top = top + 'px'; L.style.maxHeight = Math.max(200, window.innerHeight - top - 12) + 'px';
+}
+window.addEventListener('resize', plRunPlace);
+document.addEventListener('scroll', () => { if(PLRUN) plRunPlace(); }, true);   // capture: the feed scrolls, not the window
 // Pure: UI-only note for a Codex recipient (it reads the mailbox at a turn end); never part of the sent body.
 function plCxHint(cur){
   return cur && cur.cx ? '<div class=plfd data-cxhint>' + esc(T('This session picks it up when its current or next turn ends — type a line in its terminal if it is idle')) + '</div>' : '';
