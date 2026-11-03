@@ -1,0 +1,17 @@
+{
+ "cwd": {
+  "686": "/nonexistent-sidereus/demo"
+ },
+ "procs": [
+  [
+   "646",
+   "1",
+   "claude.exe --resume /x/projects/s/c1ea0000-0000-4000-8000-00000000000b.jsonl"
+  ],
+  [
+   "686",
+   "1",
+   "claude --resume c1ea0000-0000-4000-8000-0000000000ff"
+  ]
+ ]
+}

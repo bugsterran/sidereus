@@ -1,0 +1,9 @@
+{
+ "ages": {
+  "c1ea0000-0000-4000-8000-00000000000a.jsonl": 100,
+  "c1ea0000-0000-4000-8000-00000000000b.jsonl": 600
+ },
+ "busy": null,
+ "guards": "a background job's argv stays --resume <acct>/projects/<slug>/OLD.jsonl after /clear while it answers NEW; OLD must not borrow an unrelated same-cwd process's path slot (live._live_retired)",
+ "os": "mac"
+}
