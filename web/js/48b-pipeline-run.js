@@ -234,8 +234,8 @@ function plDmDirect(p, req, models, dt){
   const mo = used.filter(t => ovr[t]).map(t => '[pl-model:' + p.name + '/' + t + '=' + ovr[t] + ']');
   const mtag = mo.length ? 'Model overrides for this run — before the first stage run one Bash (`true`) per line, description = the line:\n' + mo.join('\n') + '\n' : '';
   // «» bounds the request: it may itself contain ' or " (e.g. "isn't").
-  // ⚠The run request is mailbox text the session reads (wire format), so its Korean head line stays as is.
-  return '파이프라인 ' + p.name + ' 실행 (세션 직접) — 요청: «' + req + '»\n'
+  // Sent text read by an AI session, not UI: English, never through T(); stage titles stay verbatim because [pl:] tags match them.
+  return 'Pipeline ' + p.name + ' run (session runs it) — request: «' + req + '»\n'
     + 'Run .claude/pipelines/' + p.name + '.json yourself with the Agent tool (not the Workflow tool). Stages in order:\n' + steps + '\n'
     + mtag + 'Each stage: Agent(subagent_type = its agent, model unless inherit, description starting with "[pl:' + p.name + '/<stage title>]" — Sidereus lights stages from it), '
     + 'prompt = the default instruction for the title + the stage "task" + the pipeline "rules" + this request + earlier stage summaries and changed files'
@@ -253,7 +253,7 @@ function plDmCodex(p, req, models, dt){
   const steps = p.stages.map((s, i) => (i + 1) + '. ' + s.title + (s.skill ? ' · skill ' + s.skill : '') + (s.gate ? ' · gate `' + s.gate + '`' : '')
     + (s.onFail ? ' · onFail → ' + s.onFail.goto + ' (max ' + s.onFail.max + (s.onFail.then ? ', then ' + s.onFail.then : '') + ')' : '')).join('\n');
   const defs = used.filter(t => dt && dt[t]).map(t => t + ': ' + dt[t]).join('\n');
-  return '파이프라인 ' + p.name + ' 실행 (세션 직접) — 요청: «' + req + '»\n'
+  return 'Pipeline ' + p.name + ' run (session runs it) — request: «' + req + '»\n'
     + 'Run .claude/pipelines/' + p.name + '.json yourself in this session, doing each stage\'s task in order (stage agent/model are Claude settings; a stage skill means follow that skill). Stages in order:\n' + steps + '\n'
     + 'Start each stage with a shell command echo "[pl:' + p.name + '/<stage title>]" and end it with echo "[pl-end:' + p.name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.\n'
     + 'At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.\n'   // ⚠one Codex context holds every stage
@@ -273,9 +273,9 @@ function plDmText(p, req, models){
   Object.keys(models || {}).forEach(t => { if(models[t]) ovr[t] = models[t]; });
   const args = Object.assign({ pipeline: p.name, request: req }, Object.keys(ovr).length ? { models: ovr } : {});
   const steps = p.stages.map(s => s.title + '(' + s.agent + '·' + (ovr[s.title] || s.model || p.defaults.model) + ')').join('→');
-  return '파이프라인 ' + p.name + ' 실행 — 요청: «' + req + '»\n'
-    + 'Workflow 도구로 실행: scriptPath .claude/workflows/pipeline.js · args ' + JSON.stringify(args) + '\n'
-    + '단계: ' + steps;
+  return 'Pipeline ' + p.name + ' run — request: «' + req + '»\n'
+    + 'Run with the Workflow tool: scriptPath .claude/workflows/pipeline.js · args ' + JSON.stringify(args) + '\n'
+    + 'Stages: ' + steps;
 }
 // Live sessions of the project (metadata only: sid, model, state, mailbox login, project, running Agent one-line description).
 function plSessions(proj){

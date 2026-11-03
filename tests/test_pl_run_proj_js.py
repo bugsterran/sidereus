@@ -48,7 +48,7 @@ DP = {"name": "bugfix", "defaults": {"model": "sonnet"}, "stages": [
     {"title": "리뷰", "agent": "o-dev", "onFail": {"goto": "수정", "max": 2}}]}
 DD = {"/a": {"default_tasks": {"원인": "DEF-CAUSE"}, "agents": [{"name": "o-dev", "scope": "project"}]}}
 DM_FNS = ("plDmFor", "plDmDirect", "plDmText", "plDmCodex", "plDmMissing", "plAgMissing")
-DM_DIRECT = ("파이프라인 bugfix 실행 (세션 직접) — 요청: «fix it»\nRun .claude/pipelines/bugfix.json yourself with the Agent tool (not the Workflow tool). Stages in order:\n"
+DM_DIRECT = ("Pipeline bugfix run (session runs it) — request: «fix it»\nRun .claude/pipelines/bugfix.json yourself with the Agent tool (not the Workflow tool). Stages in order:\n"
              "1. 원인 — agent o-dev · model opus · skill dbg\n2. 수정 — agent o-gone · model haiku · gate `bash t.sh`\n3. 리뷰 — agent o-dev · model sonnet · onFail → 수정 (max 2)\n"
              "Model overrides for this run — before the first stage run one Bash (`true`) per line, description = the line:\n[pl-model:bugfix/수정=haiku]\n"
              "Each stage: Agent(subagent_type = its agent, model unless inherit, description starting with \"[pl:bugfix/<stage title>]\" — Sidereus lights stages from it), "
@@ -59,9 +59,9 @@ DM_DIRECT = ("파이프라인 bugfix 실행 (세션 직접) — 요청: «fix it
              "Report each stage in ≤10 lines. Never restart or commit unless the rules say so.\n"
              "Default instructions (also .claude/pipelines/_defaults.json in the Sidereus repo):\n원인: DEF-CAUSE\n"
              "Missing agents → run as general-purpose with the same task: o-gone")
-DM_WF = ("파이프라인 bugfix 실행 — 요청: «fix it»\nWorkflow 도구로 실행: scriptPath .claude/workflows/pipeline.js · args "
+DM_WF = ("Pipeline bugfix run — request: «fix it»\nRun with the Workflow tool: scriptPath .claude/workflows/pipeline.js · args "
          "{\"pipeline\":\"bugfix\",\"request\":\"fix it\",\"models\":{\"수정\":\"haiku\"}}\n"
-         "단계: 원인(o-dev·opus)→수정(o-gone·haiku)→리뷰(o-dev·sonnet)\nMissing agents → run as general-purpose with the same task: o-gone")
+         "Stages: 원인(o-dev·opus)→수정(o-gone·haiku)→리뷰(o-dev·sonnet)\nMissing agents → run as general-purpose with the same task: o-gone")
 CLAUDE_ONLY = ("Agent tool", "subagent_type", "SendMessage", "Workflow", "pl-model", "AskUserQuestion")
 
 
@@ -95,7 +95,7 @@ class CodexRecipient(unittest.TestCase):
     def test_codex_shell_markers_any_mode(self):
         for mode in ("direct", "wf"):
             t = _dm(mode, True)
-            self.assertTrue(t.startswith("파이프라인 bugfix 실행 (세션 직접) — 요청: «fix it»\n"))
+            self.assertTrue(t.startswith("Pipeline bugfix run (session runs it) — request: «fix it»\n"))
             self.assertIn('echo "[pl:bugfix/<stage title>]"', t)
             self.assertIn('echo "[pl-end:bugfix/<stage title>]"', t)
             self.assertIn("2. 수정 · gate `bash t.sh`", t)

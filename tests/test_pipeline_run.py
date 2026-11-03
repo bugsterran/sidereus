@@ -247,18 +247,18 @@ class DmText(unittest.TestCase):
 
     def test_text(self):
         t = _js("plDmText(%s, '버튼 고치기', {검증: 'haiku', 설계: ''})" % json.dumps(self.P), "plDmText")
-        self.assertEqual(t.split("\n")[0], "파이프라인 sidereus-change 실행 — 요청: «버튼 고치기»")
+        self.assertEqual(t.split("\n")[0], "Pipeline sidereus-change run — request: «버튼 고치기»")
         args = json.loads(t.split("\n")[1].split(" · args ", 1)[1])
         self.assertEqual(args, {"pipeline": "sidereus-change", "request": "버튼 고치기", "models": {"검증": "haiku"}})
         self.assertIn("scriptPath .claude/workflows/pipeline.js", t)
-        self.assertEqual(t.split("\n")[2], "단계: 설계(sidereus-designer·inherit)→검증(sidereus-verifier·haiku)")
+        self.assertEqual(t.split("\n")[2], "Stages: 설계(sidereus-designer·inherit)→검증(sidereus-verifier·haiku)")
 
     def test_direct_text(self):
         P = dict(self.P, stages=[dict(self.P["stages"][0]), dict(self.P["stages"][1], onFail={"goto": "설계", "max": 2})])
         t = _js("plDmDirect(%s, '버튼 고치기', {설계: 'opus'}, {설계: 'DEF-SPEC'})" % json.dumps(P), "plDmDirect")
-        self.assertTrue(t.startswith("파이프라인 sidereus-change 실행 (세션 직접) — 요청: «버튼 고치기»"))
+        self.assertTrue(t.startswith("Pipeline sidereus-change run (session runs it) — request: «버튼 고치기»"))
         q = _js("plDmDirect(%s, \"isn't 'x'\", {}, {})" % json.dumps(P), "plDmDirect")
-        self.assertTrue(q.startswith("파이프라인 sidereus-change 실행 (세션 직접) — 요청: «isn't 'x'»\n"))   # ' inside stays unambiguous
+        self.assertTrue(q.startswith("Pipeline sidereus-change run (session runs it) — request: «isn't 'x'»\n"))   # ' inside stays unambiguous
         self.assertIn("1. 설계 — agent sidereus-designer · model opus", t)
         self.assertIn("onFail → 설계 (max 2)", t)
         self.assertIn('[pl:sidereus-change/<stage title>]', t)

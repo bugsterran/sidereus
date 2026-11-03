@@ -159,7 +159,7 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("data-ckgo", r[3])
         self.assertNotIn("data-ckgo disabled", r[3])
         self.assertIn("Fix these ru&lt;f&gt;f findings (commit abcdef12):", r[3])   # escaped in the preview
-        self.assertEqual(r[4], "파이프라인 security-fix 실행 — 요청: «/r 보안 수정 2건»\n"
+        self.assertEqual(r[4], "Pipeline security-fix run — request: «/r: security fix, 2 findings»\n"
                                "Target repository: /r — work there (cd), not in your own cwd.\n"
                                "Pipeline: .claude/pipelines/security-fix.json (fix → re-scan → review); run it from the Sidereus repository with --repo /r\n"
                                "Gate: python3 scripts/arch_checks.py --verify --last --category security (Windows: py scripts/arch_checks.py --verify --last --category security)\n"
@@ -215,7 +215,7 @@ class StructArchChecks(unittest.TestCase):
 
     def test_fix_body_target_repo(self):
         r = run("console.log(JSON.stringify(archChkFixBody('/x/shop-api', {commit: ''}, [{tool: 'ruff', file: 'a.py', line: 3, rule: 'F1', sev: 'error'}])));")
-        self.assertEqual(r.splitlines()[:2], ["파이프라인 security-fix 실행 — 요청: «/x/shop-api 보안 수정 1건»",
+        self.assertEqual(r.splitlines()[:2], ["Pipeline security-fix run — request: «/x/shop-api: security fix, 1 finding»",
                                               "Target repository: /x/shop-api — work there (cd), not in your own cwd."])
 
     def test_r1_fix_body_is_security_fix_run_request(self):   # header as the run body: pipeline file + gate, then the findings
@@ -291,7 +291,7 @@ class StructArchChecks(unittest.TestCase):
                 "archChkHdBtn(d), archChkHdBtn({ok: false}), archChkWinHtml('/x/shop', d, Object.assign({}, S, {run: Object.assign({}, S.run, {busy: true})}), c),"
                 "archChkScanAt({checks: {security: {at: 5, log: {at_scan: 9}}}}), archChkScanAt({})]));")
         self.assertEqual(r[0], ["a1"])                       # repos-only session is not logged in; other projects never
-        self.assertEqual(r[1].splitlines()[0], "파이프라인 security-checks 실행 — 요청: «/x/shop 보안 점검»")
+        self.assertEqual(r[1].splitlines()[0], "Pipeline security-checks run — request: «/x/shop: security check»")
         self.assertIn("/sid/.claude/pipelines/security-checks.json", r[1])
         self.assertIn("--repo /x/shop", r[1])
         self.assertNotIn("/usr/bin/python3", r[1])   # absent on Windows
@@ -593,7 +593,7 @@ class StructArchCheckFilters(unittest.TestCase):
         b = r[0]
         self.assertEqual(b["thread"], "pipeline:security-fix")
         self.assertEqual(b["plreq"], {"kind": "req", "pipeline": "security-fix", "repo": "/r", "keys": [r[1]]})
-        self.assertTrue(b["body"].startswith("파이프라인 security-fix 실행 — 요청: «/r 보안 수정 1건»\n"))
+        self.assertTrue(b["body"].startswith("Pipeline security-fix run — request: «/r: security fix, 1 finding»\n"))
         self.assertEqual(r[2:], [None, None, 50, None])                  # = pl_reqs KEYS_MAX / KEY_MAX / KEYS_CHARS_MAX: past them nothing is sent
 
     def test_r4_fix_line_counts_requested_findings(self):   # j = requested keys missing from the newer scan; «Done» needs j = k and reviewOk

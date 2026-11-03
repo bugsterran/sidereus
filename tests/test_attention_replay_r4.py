@@ -196,6 +196,11 @@ class Replay(Base):
         woke = ask_turn(T) + [notify(T + 200), call(T + 210, "Read", "toolu_r")]
         self.assertIn("ask", self.kinds(row_of(woke, bgs=[{}]), [card("ask", T + 21)]))
 
+    def test_r4_question_holds_when_pushed_out_of_tail(self):
+        # only wake-ups after the question: the question and every human line left the tail (humanAt 0, tailAt > card)
+        self.assertEqual(sorted(self.kinds(row_of([say(T + 200), turn_end(T + 201)]), [card("ask", T + 21)])),
+                         ["ask", "done"])
+
 
 def _placeholder_only(obj):
     """Rule-1 guard (as tests/test_state_replay.py): text only "" / x / ?, empty shell tags, tool input {}, results empty."""

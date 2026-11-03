@@ -5,7 +5,9 @@
 /* ⚠Vertical: .archmap is the scroller and .archtop (sticky, opaque) covers its top, so top:0 hides the bar under it; pin at the live .archtop height (84j8 archZmTop) minus the 6px padding .archtop's top:-6px cancels. */
 .archdg .mmdbar{top:calc(var(--archtop-sh,0px) - 6px);z-index:1;background:var(--mmd-bg)}
 .archmap{scroll-padding-top:calc(var(--archtop-h) + 25px)}   /* focus scroll clears the pinned bar row too */
-.archdg[data-fv] .mmdbar{position:sticky;align-items:flex-start}
+/* ⚠Focus view: a row of its own like the overview (overrides 79 height:0) — floating, the group covered the band's top-right at 1100/900 and at any width once zoomed in. ★hub still on the first screen: +25px on 767/771/723 (900/1100/1440) stays under the ~819 pane bottom */
+.archdg[data-fv] .mmdbar{position:sticky;height:auto;padding:4px 6px 0;align-items:center}
+.archdg[data-fv] .mmdtg{margin-top:0}
 .archzm{display:inline-flex;flex:0 0 auto}
 /* ⚠79 .mmdtg sticky right:10px shifts it after flex layout, onto the zoom group (ko «Fit» overlapped by 11px at 1100); the pane-wide bar already pins it, so plain flex flow */
 .archdg .mmdtg{position:static;flex:0 0 auto}
@@ -15,4 +17,3 @@
 .archzm-pct{min-width:46px}
 .archzm-b:hover{color:var(--nx-t1,#dfe5ee)}
 .archzm-b:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
-.archdg[data-fv] .archzm{margin-top:6px}

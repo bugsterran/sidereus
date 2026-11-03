@@ -251,12 +251,12 @@ class StructArch(unittest.TestCase):
               " Object.assign({ok: true, commit: 'h1', head: 'h1'}, m)]){"
               " ARCH.cache['/r'] = d; ARCH.req = {p: '/r', sid: '', busy: false}; box._arsig = ''; archPaint(box, head);"
               " const h = box.innerHTML, b = h.slice(h.indexOf('data-arq')), t = h.match(/<div class=archrqh><b>([^<]*)<\\/b>/);"
-              " out.push([b.slice(b.indexOf('>') + 1, b.indexOf('</button>')), t ? t[1] : null, (h.match(/«\\/r 아키텍처 구조도 ([^»]*)»/) || [])[1] || null]); }"
+              " out.push([b.slice(b.indexOf('>') + 1, b.indexOf('</button>')), t ? t[1] : null, (h.match(/«\\/r: ([^»]*) architecture diagram»/) || [])[1] || null]); }"
               "console.log(JSON.stringify(out));")
-        self.assertEqual(run(js), [["구조도 생성 요청", "구조도 생성 요청", "생성"], ["구조도 업데이트 요청", "구조도 업데이트 요청", "업데이트"],
-                                   ["다시 그리기", "다시 그리기", "다시 그리기"]])
-        self.assertEqual(run(js, "en"), [["Generate diagram", "Generate diagram", "생성"], ["Update diagram", "Update diagram", "업데이트"],
-                                         ["Redraw", "Redraw", "다시 그리기"]])
+        self.assertEqual(run(js), [["구조도 생성 요청", "구조도 생성 요청", "generate"], ["구조도 업데이트 요청", "구조도 업데이트 요청", "update"],
+                                   ["다시 그리기", "다시 그리기", "redraw"]])
+        self.assertEqual(run(js, "en"), [["Generate diagram", "Generate diagram", "generate"], ["Update diagram", "Update diagram", "update"],
+                                         ["Redraw", "Redraw", "redraw"]])
 
     def test_stale_marker_on_stamp_no_chip(self):
         # Stale map / live run: no separate stale chip in the controls (it wrapped the header badges); the «Generated»
@@ -377,12 +377,12 @@ class StructArch(unittest.TestCase):
 
     def test_dm_body(self):
         r = run("console.log(JSON.stringify(archDmBody(ARCH_PL, '/repo/x', '/sidereus/')));")
-        self.assertTrue(r.startswith("파이프라인 arch-map 실행"))
+        self.assertTrue(r.startswith("Pipeline arch-map run"))
         self.assertIn("/repo/x", r)
-        self.assertIn("읽기 전용, 저장소에 쓰지 않음", r)
+        self.assertIn("Read-only: never write to the repository", r)
         self.assertIn("/sidereus/.claude/pipelines/arch-map.json", r)   # absolute: the recipient may sit in another repo
         self.assertNotIn("/usr/bin/python3", r)   # absent on Windows
-        self.assertIn("게이트: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last)", r)
+        self.assertIn("Gate: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last)", r)
         self.assertIn("/arch/<key>/<commit>/", r)
 
     def test_no_send_without_confirm(self):
@@ -421,8 +421,8 @@ class StructArch(unittest.TestCase):
         self.assertIn(">other · z1", r[2])
 
     def test_dm_body_codex_markers(self):
-        r = run("console.log(JSON.stringify([archDmBody('arch-map', '/r', '/sidereus/', '업데이트', false), archDmBody('arch-map', '/r', '/sidereus/', '업데이트'),"
-                " archDmBody('arch-map', '/r', '/sidereus/', '업데이트', true)]));")
+        r = run("console.log(JSON.stringify([archDmBody('arch-map', '/r', '/sidereus/', 'update', false), archDmBody('arch-map', '/r', '/sidereus/', 'update'),"
+                " archDmBody('arch-map', '/r', '/sidereus/', 'update', true)]));")
         self.assertEqual(r[0], ARCH_DM_CC + ARCH_DM_TAG)   # Claude recipient: frozen bytes + the stage-tag line
         self.assertEqual(r[1], ARCH_DM_CC + ARCH_DM_TAG)
         self.assertTrue(r[2].startswith(ARCH_DM_CC + "\n"))
@@ -469,10 +469,10 @@ class StructArch(unittest.TestCase):
 
 
 # frozen output of archDmBody before Codex recipients existed (Claude request bytes must not change)
-ARCH_DM_CC = ("파이프라인 arch-map 실행 — 요청: «/r 아키텍처 구조도 업데이트»\n대상 저장소: /r\n"
-              "읽기 전용, 저장소에 쓰지 않음 — 쓰기는 ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ 아래만 (key: 파이프라인 rules)\n"
-              "파이프라인: /sidereus/.claude/pipelines/arch-map.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n"
-              "게이트: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last)")
+ARCH_DM_CC = ("Pipeline arch-map run — request: «/r: update architecture diagram»\nTarget repository: /r\n"
+              "Read-only: never write to the repository — write only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ (key: pipeline rules)\n"
+              "Pipeline: /sidereus/.claude/pipelines/arch-map.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n"
+              "Gate: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last)")
 # ⚠a Claude recipient in another repo tagged every dispatch [pl:-] without it, so no run was recorded
 ARCH_DM_TAG = ("\nTag each stage dispatch description with [pl:arch-map/<stage title>] (not [pl:-]); "
                "a stage you run yourself: Bash description with the same tag.")

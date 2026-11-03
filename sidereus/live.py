@@ -32,7 +32,9 @@ _live_cache = (0.0, set())
 _live_retired = [set()]
 _SESSION_ID_RE = re.compile(r"--session-id[= ]([0-9a-fA-F-]{36})")
 # ⚠A background job's argv is `--resume <acct>/projects/<slug>/OLD.jsonl` (or a bare uuid) and never changes after /clear
-_RESUME_ID_RE = re.compile(r"--resume[= ](?:\S*/)?([0-9a-fA-F-]{36})(?:\.jsonl)?(?=\s|$)")
+#   ps joins argv with spaces (no quoting), so an absolute path may contain spaces; it may not run past the next ` -flag`.
+_RESUME_ID_RE = re.compile(r"(?:^|\s)(?:--resume[= ]|-r )"
+                           r"(?:[/~](?:(?!\s--?[A-Za-z])[^\n])*?/|\S*/)?([0-9a-fA-F-]{36})(?:\.jsonl)?(?=\s|$)")
 
 
 def live_cwds(ttl=2):

@@ -186,8 +186,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Never key an ack on `now - <age>` from a cached snapshot; carry the absolute event time from where it is measured.
   - ★2026-11-02 live: bgidle since 1793596062/103/062/079 over 4 polls before; identical over 6 polls and a restart after.
 - **«Question waiting» stayed after the person replied** (`attention._ask_open`, `parse._scan_tail`). Cause: large records pushed the reply past the 400 KB transcript tail, so `humanAt` was 0 and read as «never replied».
-  - ⇒ the parse also returns `tailAt` (oldest record time in the tail); with `humanAt` 0 the card drops only when `tailAt > card time`; `tailAt` 0 (old parse cache, hook-only CLI rows) still holds. `tests/test_attention.py`, `tests/test_ask_state.py`.
-  - ⚠`humanAt` 0 is «not in the window», not «no reply». ⚠Keep the hold when the window covers the card and has no human line — a real unanswered question must not vanish.
+  - ⇒ with no human line in the tail, `parse._human_deep` scans past it (8 MB cap, memo per file so later polls read only appended bytes; same `_human_line` rule as the tail). `humanAt` 0 always holds the card. `tests/test_ask_state.py`, `tests/test_attention_replay_r4.py`.
+  - ⚠Never drop on `tailAt > card time`: notifications and hand-backs alone pushed the unanswered question out of the tail and dropped it. ⚠A capped scan with no hit is unknown (0), never «replied».
   - ★Measured: replies sat ~607 KB from the end of the transcript.
 
 ## «Question waiting» held after the question was answered in its picker (`parse.py humanAt`)

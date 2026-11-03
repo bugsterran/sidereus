@@ -127,11 +127,11 @@ function archDevListHtml(edges, names, p, devAt, sn, op){
 // ⚠Absolute paths under the Sidereus repo (home): the recipient may run in another repo, where relative ones miss.
 function archDmBody(name, repo, home, verb, cx){   // verb = archReqOf(d).vb (wire text, default generate) · cx = Codex recipient
   const h = home ? String(home).replace(/\/+$/, '') + '/' : '';
-  return '파이프라인 ' + name + ' 실행 — 요청: «' + repo + ' 아키텍처 구조도 ' + (verb || '생성') + '»\n'
-    + '대상 저장소: ' + repo + '\n'
-    + '읽기 전용, 저장소에 쓰지 않음 — 쓰기는 ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ 아래만 (key: 파이프라인 rules)\n'
-    + '파이프라인: ' + h + '.claude/pipelines/' + name + '.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n'
-    + '게이트: python3 ' + h + 'scripts/arch_verify.py --last (Windows: py ' + h + 'scripts/arch_verify.py --last)'   // ⚠page has no server-OS signal: both forms
+  return 'Pipeline ' + name + ' run — request: «' + repo + ': ' + (verb || 'generate') + ' architecture diagram»\n'
+    + 'Target repository: ' + repo + '\n'
+    + 'Read-only: never write to the repository — write only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ (key: pipeline rules)\n'
+    + 'Pipeline: ' + h + '.claude/pipelines/' + name + '.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n'   // stage titles verbatim: [pl:] tags match them
+    + 'Gate: python3 ' + h + 'scripts/arch_verify.py --last (Windows: py ' + h + 'scripts/arch_verify.py --last)'   // ⚠page has no server-OS signal: both forms
     // ⚠No Agent tool there: stages are lit by a leading shell marker (hooks/pl_mark.py --platform codex MARK).
     + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + name + '/<stage title>]" and end it with echo "[pl-end:' + name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
       + ' At each stage start re-read only the files the previous stage wrote (for arch-map: plan.json, then map.json, then flows.json); do not rely on earlier stage context.'   // ⚠one Codex context holds every stage: stale earlier reads leak into later stages
@@ -166,8 +166,8 @@ function archWhyOff(home, cands, cur){
 }
 // Request button label + DM verb by map state: none/invalid -> generate · stale -> update · built at HEAD -> redraw.
 function archReqOf(d){
-  if(!d || !d.ok || d.empty || d.bad || !(d.modules || []).length) return { lb: 'Generate diagram', vb: '생성' };
-  return !d.stale && d.head && d.commit === d.head ? { lb: 'Redraw', vb: '다시 그리기' } : { lb: 'Update diagram', vb: '업데이트' };
+  if(!d || !d.ok || d.empty || d.bad || !(d.modules || []).length) return { lb: 'Generate diagram', vb: 'generate' };
+  return !d.stale && d.head && d.commit === d.head ? { lb: 'Redraw', vb: 'redraw' } : { lb: 'Update diagram', vb: 'update' };
 }
 // Header request button: same place in every map state; disabled while a run/request is in flight.
 function archReqBtn(p, home, cands, d){

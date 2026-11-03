@@ -117,6 +117,69 @@ def _pmode_of(fp, rows, nbytes):
     return m
 
 
+def _human_line(d, ask_ids):
+    """A record the person produced: typed prompt, `!` command or picker answer (not tool_result/meta/compact summary)."""
+    if d.get("type") != "user" or d.get("isCompactSummary") or d.get("isMeta"):
+        return False
+    c = (d.get("message") or {}).get("content")
+    return bool(_human_text(c) or _answers_ask(c, ask_ids) or _bang_input(c))
+
+
+# fp -> (offset after the last complete line scanned, newest human time before it; 0 = none found)
+_HUMAN_SEEN = {}
+_HUMAN_SCAN = 8_000_000     # bytes scanned backwards per call; the memo makes later calls read only appended bytes
+_USER_RE = re.compile(rb'"type":\s*"user"')
+
+
+def _human_deep(fp):
+    """Newest human-input time in the transcript, not limited to the parsed tail (0 = none within reach).
+    ⚠Large records push a reply out of the 400 KB tail; an absent reply must still read as 0 so the «ask» card holds."""
+    hi0, at0 = _HUMAN_SEEN.get(fp) or (0, 0)
+    got, lines_end, carry = 0, None, b""
+    try:
+        size = os.path.getsize(fp)
+        if hi0 > size:                       # rewritten/truncated file: the memo is void
+            hi0, at0 = 0, 0
+        floor = max(hi0, size - _HUMAN_SCAN)
+        end = size
+        with open(fp, "rb") as f:
+            while end > floor and not got:
+                start = max(floor, end - 1_000_000)
+                f.seek(start)
+                buf = f.read(end - start) + carry
+                end, carry = start, b""
+                if lines_end is None:        # drop the trailing partial line (still being written)
+                    cut = buf.rfind(b"\n")
+                    if cut < 0:
+                        carry = buf
+                        continue
+                    lines_end, buf = start + cut + 1, buf[:cut]
+                parts = buf.split(b"\n")
+                if start > floor:            # first piece continues in the earlier chunk
+                    carry, parts = parts[0], parts[1:]
+                ids = _ask_tool_ids([l.decode("utf-8", "replace") for l in parts
+                                     if b'"AskUserQuestion"' in l or b'"ExitPlanMode"' in l])
+                for ln in reversed(parts):
+                    if not _USER_RE.search(ln):
+                        continue
+                    try:
+                        d = json.loads(ln.decode("utf-8", "replace"))
+                    except ValueError:
+                        continue
+                    if isinstance(d, dict) and _human_line(d, ids):
+                        got = int(_line_ts(d, 0) or 0)
+                        if got:
+                            break
+    except (OSError, ValueError):
+        return 0                             # unreadable: unknown, the card holds
+    # ⚠the memo answer counts only when the scan reached its boundary; a capped scan with no hit is unknown (0)
+    at = got or (at0 if floor == hi0 else 0)
+    if len(_HUMAN_SEEN) > 4000:
+        _HUMAN_SEEN.clear()
+    _HUMAN_SEEN[fp] = (lines_end if lines_end is not None else hi0, at)
+    return at
+
+
 def _pending_ask_sibling(rows, mid):
     """True if a line of message `mid` holds an AskUserQuestion/ExitPlanMode tool_use with no tool_result yet."""
     asks, done = set(), set()
@@ -350,8 +413,7 @@ def _scan_tail(rows):
         # Newest human-prompt time (attention: an «ask» card holds until the owner replies after it).
         # ⚠An AskUserQuestion/ExitPlanMode answered in its picker comes back as a tool_result, not a prompt: it is a reply too,
         #   or the «ask» card raised by that question stays until the next typed prompt.
-        if not human_at and d.get("type") == "user" and not summary and not d.get("isMeta") \
-                and (_human_text(msg.get("content")) or _answers_ask(msg.get("content"), ask_ids) or bang):
+        if not human_at and _human_line(d, ask_ids):
             human_at = int(_line_ts(d, 0) or 0)
         if cwd and sid and tool and ctx and task and human_at:
             break
@@ -431,7 +493,9 @@ def _parse_transcript(fp):
     ask_tool = _ask_pending(rows, shp)
     cwd = _session_cwd(fp, t["cwd"])
     creq, burn, rpm = _use_rate(t["use"])
-    return {"actAt": t["actAt"], "humanAt": t["humanAt"], "tailAt": t["tailAt"], "creq": int(creq), "burn": int(burn), "rpm": rpm,
+    # ⚠no human line in the tail is not «no reply»: look past the tail (memoised, appended bytes only)
+    human_at = t["humanAt"] or _human_deep(fp)
+    return {"actAt": t["actAt"], "humanAt": human_at, "tailAt": t["tailAt"], "creq": int(creq), "burn": int(burn), "rpm": rpm,
             "sid": t["sid"], "cwd": cwd, "branch": t["branch"], "tool": t["tool"], "targ": t["targ"],
             "kind": t["kind"], "ctx": t["ctx"],
             "sub": sub, "bgs": bgs, "mon": mon,
