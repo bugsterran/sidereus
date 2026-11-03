@@ -57,9 +57,7 @@ async function poll(first){
     ARCHRUN = s.archRun || {}; SECRUN = s.secRun || {}; SIDEREUS_DIR = s.codeDir || '';   // arch-map runs in progress per project (84j archRunOf, 48h)
     PLREQ = s.plReq || {};   // who received each arch-map request and its run state (84l2)
     PROJ_GONE = new Set(s.projGone || []);   // session folders deleted from disk — project chips skip them (80, 48)
-    if(typeof roomTagsSet === 'function') roomTagsSet(s.roomTags);   // chat room card tags (92); missing key = {}
     if(typeof stodoSet === 'function') stodoSet(s.todo);   // session to-do counts (40c); missing key = feature off
-    if(typeof roomAdminSet === 'function') roomAdminSet(s.roomAdmin);   // hidden / pending rooms (92c); missing key = {}
     // First state: the branch view painted "loading" while SESS was empty — pick its repo now.
     // ⚠A remembered brRepo skips loadBr, but the repo chips were painted before state arrived — repaint them.
     if(!STATE_IN){ STATE_IN = true; try{ tourMaybe(s.codeDir); }catch(e){ softErr('tourMaybe', e); }   // first-visit tour (98b)

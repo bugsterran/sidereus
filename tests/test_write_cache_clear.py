@@ -27,27 +27,15 @@ class _Base(unittest.TestCase):
 class CacheClearTest(_Base):
     def test_say(self):
         self.patch(RP, "BUS_PATH", os.path.join(self.tmp, "bus.jsonl"))
-        self.patch(RP.room_admin, "say_room", lambda r, d: (r, ""))
+        self.patch(RP.room_check, "say_room", lambda r, d: (r, ""))
         code, _, _ = post("/api/say", {"body": "hi", "room": "r1"})
         self.assertEqual((code, len(self.cleared)), (200, 1))
 
     def test_say_failed_write_keeps_cache(self):
         self.patch(RP, "BUS_PATH", os.path.join(self.tmp, "no", "bus.jsonl"))
-        self.patch(RP.room_admin, "say_room", lambda r, d: (r, ""))
+        self.patch(RP.room_check, "say_room", lambda r, d: (r, ""))
         code, _, _ = post("/api/say", {"body": "hi", "room": "r1"})
         self.assertEqual((code, self.cleared), (500, []))
-
-    def test_rooms_hide_unhide(self):
-        self.patch(RP.room_admin, "set_hidden", lambda rooms, hide: (200, {"ok": True, "hidden": []}))
-        for path in ("/api/rooms/hide", "/api/rooms/unhide"):
-            code, _, _ = post(path, {"rooms": ["r1"]}, origin=OWN)
-            self.assertEqual(code, 200, path)
-        self.assertEqual(len(self.cleared), 2)
-
-    def test_rooms_hide_refused_keeps_cache(self):
-        self.patch(RP.room_admin, "set_hidden", lambda rooms, hide: (400, {"ok": False, "error": "x"}))
-        post("/api/rooms/hide", {"rooms": ["r1"]}, origin=OWN)
-        self.assertEqual(self.cleared, [])
 
     def test_todo_add_set(self):
         ok = lambda req: (200, {"ok": True, "items": []})

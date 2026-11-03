@@ -18,7 +18,7 @@ function stateLbl(k){ return LBL[k] || ''; } function srvEn(s){ return s; } func
 function waitOnLabel(){ return ''; }
 function platName(k){ return k === 'cx' ? 'Codex' : String(k); }
 function aiLogo(p, extra){ return '<i class=ailg title="' + esc(p + (extra || '')) + '"></i>'; }
-function sessPickHtml(){ return ''; } function sessBranchHtml(){ return ''; } function acctChip(){ return ''; }
+function sessBranchHtml(){ return ''; } function acctChip(){ return ''; }
 function sessGitChip(){ return ''; } function sessUsage(){ return '<i class=sc>9%</i>'; }
 function sessActs(){ return '<i class=srz>R</i>'; }
 """

@@ -73,8 +73,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠A key containing «auth» is masked whole — `oauth.clientId` is hidden too. Keep it that way.
 - ★**`sidereus stop`: a timeout is not «down»** (2026-10-05, empty HOME, /api/state 5/20 over 2 s, max 6.5 s). `answering()` returned 0 for timeout and refused alike, so `stop` deleted the pid record of a live server (unstoppable afterwards) and `start` reported «no reply in 10 s» while up.
   - ⇒ timeout = `BUSY` (-1): `stop` keeps the record if the pid outlives `STOP_WAIT_S`; `start`/`wait_up` keep waiting (20 s) and never spawn a second server (sidereus_cli).
-- ★**JS `slice` cuts UTF-16 units** (2026-10-05). A tag of «a» + 10 emoji was cut mid surrogate pair; the lone `\ud83d` reached `room_tags` and the utf-8 write raised → HTTP 500.
-  - ⇒ `Array.from(x).slice(0,20)` (code points, same as Python `len`); the server refuses lone surrogates with 400; dedupe is case-insensitive on both sides so the confirm preview equals what is saved.
+- ★**JS `slice` cuts UTF-16 units** (2026-10-05). A label of «a» + 10 emoji cut to 20 was split mid surrogate pair; the lone `\ud83d` reached the server and the utf-8 write raised → HTTP 500.
+  - ⇒ `Array.from(x).slice(0,20)` (code points, same as Python `len`); the server refuses lone surrogates with 400.
 - ★**Pipeline: a node's glow washes out the edge end** (2026-10-05, 1440/1100 dark+light, glow frozen at peak). The running edge met the border geometrically (0 px), yet looked cut short: HTML nodes sit above the edge SVG, so the running node's breathing box-shadow (up to 24+7 px) covered the line's last pixels (contrast at the border 37 dark / 34 light).
   - ⇒ `plHeadsSvg` redraws the last 32 px of the running edge in the heads layer (above nodes), clipped to end at the border (`.plrin`, 48d); border contrast 94 dark / 87 light.
   - ⚠Do not "fix" such a gap by moving the endpoint into the box — the geometry is right; the glow is what hides it.

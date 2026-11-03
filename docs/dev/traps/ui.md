@@ -217,8 +217,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 ## Chat counter names the «Outside rooms» card (`92-mainview-tabs.js` rcPaint)
 
 - Cause: the counter excluded the dm card, so «2 rooms» showed above three cards.
-- ⇒ `nr` stays the room count; « + Outside rooms» is appended only while the dm card is in `show` (a tag filter hides it).
-- ⚠Do not count the dm card as a room — room actions (Invite · Hide · tags) never apply to it.
+- ⇒ `nr` stays the room count; « + Outside rooms» is appended only while the dm card is in `show`.
+- ⚠Do not count the dm card as a room — it is not a mailbox room.
 
 ## Demo start tab comes from a seeded pref (`ui_prefs.memory_only(seed)`)
 

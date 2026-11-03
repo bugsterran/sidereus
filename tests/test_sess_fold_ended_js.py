@@ -26,7 +26,7 @@ const SESS = [{id: 'a', sid: 'a', state: 'tool'}, {id: 'b', sid: 'b', state: 'do
 const buildFilters = () => {}, isIdle = () => true, hasGit = () => true;
 const acctPick = () => null, acctInPick = () => true, acctOthHtml = () => '';
 const wfFoldBtns = () => '', sessRowHtml = x => '<row ' + x.id + '>';
-const sessFit = () => {}, buildInvite = () => {}, sessClick = () => {}, softErr = () => {};
+const sessFit = () => {}, sessClick = () => {}, softErr = () => {};
 const cpClose = () => {}, sesdrReveal = () => {}, note = m => CALLS.push('note:' + m), saveFil = () => {}, buildTodo = () => {};
 const srecLoad = () => CALLS.push('load:' + SREC.at + ':' + cpFlash), srecPaint = () => CALLS.push('paint');
 const setTimeout = () => {};

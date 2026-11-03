@@ -48,17 +48,7 @@ class SaveVisible(unittest.TestCase):
 
 
 
-class RoomTagParse(unittest.TestCase):
-    def parse(self, s):
-        return node(js_fn("rcParse") + "\nprocess.stdout.write(JSON.stringify(rcParse(" + json.dumps(s) + ")));")
-
-    def test_case_insensitive_dedupe(self):
-        self.assertEqual(self.parse("Dup,dup, DUP"), ["Dup"])
-
-    def test_emoji_cut_at_code_points(self):
-        out = self.parse("\U0001F600" * 25)
-        self.assertEqual(out, ["\U0001F600" * 20])   # whole pairs only, never a lone surrogate
-
+class RoomNameCss(unittest.TestCase):
     def test_long_room_name_ellipsis_rule(self):
         import os, re
         css = open(os.path.join(os.path.dirname(__file__), "..", "web", "css", "50-layout-feed.css"), encoding="utf-8").read()

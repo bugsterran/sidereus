@@ -30,7 +30,7 @@ class LivePathCopies(unittest.TestCase):
     def test_named_data_paths_under_tmp(self):
         for mod, name in (("config", "DATA_DIR"), ("config", "BUS"), ("config", "BUS_PATH"), ("bus", "BUS"),
                           ("bus", "DATA_DIR"), ("routes_post", "BUS_PATH"), ("cards", "CARDS"), ("notes", "CARDS"),
-                          ("usage", "ANCHOR_FILE"), ("quota_loop", "ANCHOR_FILE"), ("room_tags", "ROOMS_PATH")):
+                          ("usage", "ANCHOR_FILE"), ("quota_loop", "ANCHOR_FILE"), ("room_check", "ROOMS_PATH")):
             p = getattr(sidereus(mod), name)
             self.assertTrue(_under_tmp(p), mod + "." + name + "=" + p)
 

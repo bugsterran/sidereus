@@ -41,15 +41,10 @@ const PLG_TPL_NAMES = { en: {
   '의존성 업그레이드': 'Dependency upgrade', '장애 대응': 'Incident response', '리뷰만': 'Review only',
   '훅 변경': 'Hook change', '스킬 작성·변경': 'Skill write · change', '도구·MCP 추가': 'Add tool · MCP',
 }, ko: {} };
-// Chat room list (92 rcPaint): cards, tag chips and the tag editor.
+// Chat room list (92 rcPaint): cards and the open-room strip.
 Object.assign(I18N.ko, {
-  'Tags': '태그', 'Edit tags': '태그 편집', 'Comma-separated — up to 8': '쉼표로 구분 — 최대 8개', 'Before': '바꾸기 전', 'After': '바꾼 뒤',
-  'Open this room': '이 방 열기', 'No rooms match.': '해당하는 방이 없습니다.', 'Back to the room list': '방 목록으로', '← Rooms': '← 방 목록',
-  // Room admin (92c): «Manage» mode, hide/unhide, create, invite
-  'Manage': '관리', 'Select all': '전체 선택', 'New room': '방 만들기', 'Hide': '숨기기', 'Hidden rooms': '숨긴 방',
-  'No hidden rooms': '숨긴 방이 없습니다', 'New posts since hidden': '숨긴 뒤 새 글이 있습니다', 'Room name': '방 이름',
-  'Enter a room name': '방 이름을 입력하세요', 'No sessions to pick': '고를 세션이 없습니다', 'Failed': '처리하지 못했습니다',
-  'Posts stay in the mailbox · restore from Hidden rooms': '보낸 글은 메일박스에 그대로 남습니다 · 숨긴 방에서 되돌릴 수 있습니다',
+  'Open this room': '이 방 열기', 'No rooms yet.': '아직 방이 없습니다.', 'Back to the room list': '방 목록으로', '← Rooms': '← 방 목록',
+  'Select all': '전체 선택', 'Hide': '숨기기', 'Failed': '처리하지 못했습니다',
   // Branch tab (88): unborn HEAD note, known server errors (BR_ERRS)
   'Empty repository': '빈 저장소', 'no commits yet': '아직 커밋이 없습니다',
   'Not a git repository': 'git 저장소가 아닙니다', 'Timed out': '시간이 초과되었습니다',

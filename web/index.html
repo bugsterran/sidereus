@@ -65,10 +65,6 @@
   <aside class=lside id=sesdr tabindex=-1 aria-label="Sessions">
     <h2 class=sesh><span class=seshn>Sessions</span><button class=sesdb id=sespin aria-pressed=false title="Pin as the right column (previous layout)">Pin</button><button class=sesdb id=sesx title="Close (Esc)" aria-label="Close">✕</button></h2>
     <div class=attn id=attn></div>
-    <!-- ★The invite bar is outside #sess and **above the list** (2026-08-25).
-         Outside: the list redraws every 2.5s, so an input inside it would lose typing every time.
-         Above: with more sessions it got pushed below the list and needed scrolling — it must be in view right after picking. -->
-    <div class=sinv id=sinv></div>
     <div class=sfil id=sfil></div><div id=sess></div>
     <!-- ★Token info in one place (2026-08-27): weekly donut right below the quota gauges (5h·7d).
          The gauge used to sit separately above the input, scattering one topic to both ends of the screen.

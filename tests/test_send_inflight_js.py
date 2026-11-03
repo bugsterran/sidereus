@@ -55,13 +55,12 @@ class WorkPopupSend(unittest.TestCase):
 
 class RoomCount(unittest.TestCase):
     def cnt(self, lang, kinds):
-        js = ("let LANG='" + lang + "', mainView='chat', place='all', q='', rcEdit=null, rcTag='';\n" + UNIT + LANG_FNS
-              + "const CS=" + json.dumps([{"k": k, "name": k, "tags": []} for k in kinds]) + ";\n"
+        js = ("let LANG='" + lang + "', mainView='chat', place='all', q='';\n" + UNIT + LANG_FNS
+              + "const CS=" + json.dumps([{"k": k, "name": k} for k in kinds]) + ";\n"
               "const E={cnt:{textContent:''}}, document={getElementById:i=>E[i]};\n"
               "const feed={querySelector(){return null;}};\n"
-              "function T(s){return s;} function esc(s){return s;} function raHold(){return false;}\n"
-              "function rcCards(){return CS;} function raBarHtml(){return '';} function raToolHtml(){return '';}\n"
-              "function raBoxHtml(){return '';} function raCardHtml(){return '';} function rcBind(){}\n"
+              "function T(s){return s;} function esc(s){return s;}\n"
+              "function rcCards(){return CS;} function rcCardHtml(){return '';} function rcBind(){}\n"
               + js_fn("rcPaint") + "\nrcPaint();\nprocess.stdout.write(JSON.stringify(E.cnt.textContent));")
         return run(js)
 

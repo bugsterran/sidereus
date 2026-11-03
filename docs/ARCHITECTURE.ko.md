@@ -130,8 +130,7 @@ sequenceDiagram
 | `bus.jsonl` | 메일박스 MCP, `bus` | 메일박스 글 전부, 추가만 |
 | `acks.jsonl` | 메일박스 MCP, 감시기, `mailbox_stop.py` | 전달·읽음 기록 |
 | `identity.json` | 메일박스 MCP(`mailbox_login`) | cwd → id. DM 을 보낼 수 있는 유일한 대상 |
-| `rooms.json`, `profiles.json` | 메일박스 MCP, `routes_post` | 방, 참여자, 초대 |
-| `room-admin.json`, `room-tags.json` | `room_admin`, `room_tags` | 숨긴 방(보기에서만), 방 해시태그 |
+| `rooms.json`, `profiles.json` | 메일박스 MCP(`/api/say` 때 `room_check` 가 읽음) | 방, 참여자 |
 | `cards.jsonl`, `review-state.json` | `cards`, `review` | 작업 카드, «검토함» 표시 |
 | `config.local.json` | `prefs`, `cc_settings` | 설정([CONFIG](CONFIG.ko.md)) |
 | `quota-*`, `usage-*`, `otel-*.json` | `quota`, `usage_index`, `usage`, `otel` | 한도, 토큰, OTel 집계 |

@@ -19,7 +19,7 @@ DENY = ("mailbox-mcp", "/Users/") + tuple(
 
 STATE_KEYS = {"presence", "acks", "acksSince", "messages", "cursors", "rooms", "profiles", "sessions", "cards",
               "attention", "build", "usage", "quota", "quotaWho", "saver", "saverView", "saverSwitch",
-              "health", "cardsRead", "cardsReadIds", "extUsage", "mine", "cfg", "review", "roomTags", "accts", "todo"}
+              "health", "cardsRead", "cardsReadIds", "extUsage", "mine", "cfg", "review", "accts", "todo"}
 
 # Same keys as sidereus/arch_map.load() output.
 ARCH_KEYS = {"ok", "prov", "empty", "sidereus", "commit", "head", "stale", "behind", "at", "v", "groups", "modules", "edges", "rate", "md",
@@ -115,34 +115,6 @@ class DemoTest(unittest.TestCase):
             self.assertIn("--platform " + plat, out["diff"])
         self.assertEqual(post({"plat": "cursor", "dry": False, "base": ""}), (200, {"ok": True, "demo": True}))
 
-    def test_room_invite_dry_has_string_body(self):
-        class H:
-            _GET_ROUTES = {}
-            _POST_ROUTES = {"/api/room/invite": "real", "/api/rooms/create": "real"}
-        self.demo.install(H, "b")
-        for path in ("/api/room/invite", "/api/rooms/create"):
-            sent = []
-            me = type("M", (), {"_body_json": lambda s, *a: {"room": "dev", "ids": ["alice"], "dry": True},
-                                "_raw_json": lambda s, c, o: sent.append((c, o))})()
-            H._POST_ROUTES[path](me, type("U", (), {"path": path})())
-            code, out = sent[0]
-            self.assertEqual((code, out["ok"], out["added"]), (200, True, ["alice"]))
-            self.assertIsInstance(out["body"], str)
-            self.assertIn("'dev'", out["body"])
-
-    def test_room_invite_dry_body_is_invite_text(self):
-        class H:
-            _GET_ROUTES = {}
-            _POST_ROUTES = {"/api/room/invite": "real"}
-        self.demo.install(H, "b")
-        sent = []
-        me = type("M", (), {"_body_json": lambda s, *a: {"room": "dev", "ids": [], "topic": "Plan X", "dry": True},
-                            "_raw_json": lambda s, c, o: sent.append((c, o))})()
-        H._POST_ROUTES["/api/room/invite"](me, type("U", (), {"path": "/api/room/invite"})())
-        body = sent[0][1]["body"]
-        self.assertEqual(body, sidereus("routes_post").invite_text("dev", "Plan X", [])[1])
-        self.assertIn("Topic: Plan X", body)
-
     def test_prefs_has_real_shape(self):
         # 90b-mypref.js treats a reply without `keys` as a read failure (red error in Preferences).
         out = self.get("/api/prefs")
@@ -156,12 +128,9 @@ class DemoTest(unittest.TestCase):
         st = self.get("/api/state", "since=0")
         self.assertIn(st["cfg"]["viewerMe"], st["mine"])     # same rule as state.py: the page's own posts are mine
 
-    def test_room_tags_and_ascii_viewer_id(self):
+    def test_no_room_tags_and_ascii_viewer_id(self):
         st = self.get("/api/state", "since=0")
-        tags = st["roomTags"]
-        self.assertGreaterEqual(len(tags), 2)
-        self.assertTrue(set(tags) <= set(st["rooms"]))   # tags only on rooms that exist
-        self.assertTrue(all(isinstance(v, list) and all(isinstance(t, str) for t in v) for v in tags.values()))
+        self.assertFalse({"roomTags", "roomAdmin"} & set(st))   # hashtags and the room admin overlay were removed
         ids = [st["cfg"]["viewerMe"]] + st["cfg"]["viewerIds"] + st["mine"] + [m["from"] for m in st["messages"]]
         self.assertTrue(all(i.isascii() for i in ids if i))    # Korean ids leaked into en card text
 

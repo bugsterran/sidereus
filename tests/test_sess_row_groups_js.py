@@ -20,7 +20,7 @@ const T = s => s;
 const TV = o => o.msg.replace(/\{(\w+)\}/g, (_, k) => o.vars[k]);
 function platName(k){ return String(k); }
 function aiLogo(p){ return '<i class=ailg></i>'; }
-function sessPickHtml(){ return ''; } function sessBranchHtml(){ return ''; } function acctChip(){ return ''; }
+function sessBranchHtml(){ return ''; } function acctChip(){ return ''; }
 function extTid(){ return ''; } function sz(n){ return n + 'B'; } function money(n){ return '$' + n; }
 function fmtTok(n){ return String(n); } function extCostTip(){ return ''; }
 function resumeCmd(){ return 'rc'; }

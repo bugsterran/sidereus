@@ -20,7 +20,7 @@ let SESS = [], ACCTS = [], STORE = {}, sessHover = false, sessDirty = false, stF
 let SREC = {rows: [], q: '', err: false}, ATTN_MAX = 5, attnMore = false, attnLow = true, attnHtml = '', ATTR = null;
 const UIS = {getItem: k => k in STORE ? STORE[k] : null, setItem: (k, v) => { STORE[k] = String(v); }, removeItem: k => { delete STORE[k]; }};
 function softErr(){}
-function buildFilters(){} function sessFit(){} function buildInvite(){} function isIdle(){ return true; } function hasGit(){ return true; }
+function buildFilters(){} function sessFit(){} function isIdle(){ return true; } function hasGit(){ return true; }
 function morphHtml(el, h){ el.innerHTML = h; } function setHtml(el, h){ el.innerHTML = h; }
 function TV(o){ return T(o.msg).replace('{n}', o.vars.n); }
 function sessRowHtml(x){ return '<R' + x.sid + '>'; }

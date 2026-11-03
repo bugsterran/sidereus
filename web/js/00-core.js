@@ -399,12 +399,9 @@ let PROJ_GONE = new Set();   // state `projGone`: session folders deleted from d
 let STATE_IN = false;
 let ACKSINCE=0;                      // acks for posts older than this are not sent by the server (receipt wording differs)
 let USG = null;      // last usage (the 5h limit is needed to draw the live chart's reference line)
-// ★Invite selection lives **outside the DOM** — the list redraws every 2.5s, so checkbox state in the DOM would vanish.
-const picked = new Set();      // set of mailbox ids
 let diffOpen = '';             // cwd of the session this popup is viewing (one window = one diff)
 let diffRepo = '';             // repo being viewed now — one session can touch several repos
 let diffData = null;           // that response — survives polling re-renders
-let inviteRoom = '';           // room name being typed (survives re-renders)
 // ★Place (room) and filter are **separate** (2026-08-26). Filters, rooms and threads used to share one tab row, so
 //   "awaiting reply in room-A" was impossible (both were tabs, only one could be on). A few more rooms and nothing could be found.
 //   A room is **a place, not a filter** — own row, and filters apply only within the chosen place.
