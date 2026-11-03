@@ -22,18 +22,13 @@ function buildPeople(){
              mem: RM ? ((ROOMS[RM]||{}).members||[]).includes(id) : false,
              rooms: Object.keys(ROOMS).filter(r => (ROOMS[r].members||[]).includes(id)) };
   }).sort((a,b) => b.act - a.act)
-  // ★**Remove participants quiet for over a day** (user instruction 2026-08-11) — ids that passed once long ago
-  // stayed on the list and blurred "who is in this conversation now". Keep only current participants.
-  // ⚠Ids with **no activity timestamps at all** (send, read cursor) have no basis for judgment, so keep them —
-  // do not mix "old" with "unknown" (discipline repeated in this repo).
-  // ★And **exempt anyone connected** (2026-08-21: being connected via ack means online).
-  // Measured: room chat had merely been silent 24.4h, yet `repo-A`·`advocate` with heartbeats 1s ago were caught
-  // by this filter and vanished entirely. Removing **someone attached right now** for being 'quiet' is wrong.
+  // Drop participants quiet for over a day: ids that passed once long ago blur "who is in this conversation now".
+  // ⚠Ids with no activity timestamps at all (send, read cursor) have no basis for judgment, so keep them — old is not unknown.
+  // ⚠Anyone connected is exempt: a room silent for 24.4h still has peers with a 1s-old heartbeat, and they must not vanish.
   .filter(p => { const pr = PRES[p.id] || {};
     if(pr.online || (pr.at && Date.now()/1000 - pr.at < 900)) return true;   // Connected — always keep
     return !p.act || (now - p.act) / 6e10 < 1440; });
-  // ★**Show only connected people** (user instruction 2026-08-14) — before, everyone showed regardless of connection
-  // and "who is in this room now" was invisible. presence (heartbeat) is the source of truth.
+  // Show only connected people, so "who is in this room now" is visible; presence (heartbeat) is the source of truth.
   // ⚠Keep **a count** of hidden people — deleting silently cannot tell "nobody" from "not shown".
   // ★Two-stage check — `watch` updates every second, but `mcp` is stamped **only on tool calls**.
   // Using only `online` (30s) drops peers that are actually working (measured: origin called 350s ago → dropped).

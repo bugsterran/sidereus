@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Pipelines: the "Get started" checklist also shows when every pipeline file of a project is invalid.
+- Attention: a question answered after a long run no longer comes back as "Question waiting" when the question was read in an earlier scan.
+- Sessions: project folders with non-ASCII names and Windows drive paths map to the same transcript folder Claude Code uses.
+- Harness: the runtime summary counts only end-of-life runtimes in "end of life · N runtimes".
+- Quota details: "Who is using the 5h" names the account it counts.
+- Insights: durations use Korean units in Korean.
+- Sessions drawer: the branch chip no longer wraps mid-name.
+
 ## [0.14.1] - 2026-11-03
 
 ### Fixed

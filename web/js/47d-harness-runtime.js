@@ -71,8 +71,8 @@ function hnRuntime(d){
   // Folded to one summary line (open state in HN.fold.rt, kept across repaints by 47b's toggle listener). ⚠Nothing clickable in <summary>: a click there toggles the fold.
   const wk = hnRtWorst(rt, items), info = wk === 'newer cycle available';
   const wl = wk === 'end of life' || (wk === 'behind' && items.some(x => x.patch && x.patch.level === 'fail')) ? 'fail' : wk === 'behind' ? 'warn' : info ? 'info' : 'unknown';
-  // Count matches the badge: info items for a newer-cycle summary, otherwise items neither ok nor info.
-  const cnt = rt.state === 'none' ? 0 : items.filter(x => info ? x.level === 'info' : x.level !== 'ok' && x.level !== 'info').length;
+  // Count matches the badge: info items for a newer-cycle summary, EOL items for an EOL badge (a «behind» item is not EOL), otherwise items neither ok nor info.
+  const cnt = rt.state === 'none' ? 0 : items.filter(x => info ? x.level === 'info' : wk === 'end of life' ? !!(x.patch && typeof x.patch === 'object' && x.patch.eol_past) : x.level !== 'ok' && x.level !== 'info').length;
   const sum = ['<b class="hnrtb' + hnRtCls(HN_RTL, wl) + '">' + esc(T(wk)) + '</b>',
     cnt ? esc(TV({msg: hnPl(cnt, '{n} runtime', '{n} runtimes'), vars: {n: cnt}})) : '',
     // One time display: stale shows the relative age with the absolute time as a tooltip.

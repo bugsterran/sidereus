@@ -226,6 +226,8 @@ Object.assign(I18N.ko, {
   '{n}d': '{n}일',
   '{n}h': '{n}시간',
   '{n}m': '{n}분',
+  '{n}s': '{n}초',
+  '{n}ms': '{n}ms',
   'Waited {n}s for a refresh but no new value came — press ↻ to measure again': '갱신을 {n}초 기다렸지만 새 값이 오지 않았습니다 — ↻ 로 다시 잰다',
   'No records in the last {n} days': '최근 {n}일 기록이 없습니다',
   ' tokens · {n} d': ' 토큰 · {n}일',
