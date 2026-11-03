@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Sessions: state, subagents, external CLIs
 
+- ★**A background job showed «Background» though its iTerm claude was alive** (2026-11-03; daemon.log `bg adopt: adopted=1`).
+  - Cause: after a daemon upgrade/respawn the job's `--bg-pty-host` is re-parented to launchd (pid 1), so `_bg_term` found no `--spawned-by` on the parent.
+  - ⇒ `term._orphan_spawner`: a live `daemon run` with `--json-path` under the host's account dir (`--resume <acct>/projects/…`) and `--spawned-by` cwd equal to the job cwd (av cwd, else slug) supplies the pid; the claude/iTerm/tty checks still follow. `tests/test_term.py`.
+  - ⚠The daemon's `--spawned-by` is whoever started the daemon, not this job — never drop the account and cwd match; two daemons naming different pids stay «Background».
+
 - ⚠**Session to-do list — store in DATA_DIR, not the repo** (2026-11-01; `sidereus/todo.py`, 40c-sessions-todo.js).
   - Cause: a repo file (`.claude/todo.md`) needed a permission prompt per write and a byte-exact writer in the viewer.
   - ⇒ Sessions record items via the sidereus MCP tool (POST `/api/todo/agent`) into DATA_DIR/todo/<sha1(repo)[:16]>.json; an old todo.md is imported once when no v2 file exists, then never read again (editing it changes nothing).
