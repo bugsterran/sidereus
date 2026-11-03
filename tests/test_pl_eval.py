@@ -173,14 +173,14 @@ class Flaky(Tmp):
         g1 = STAGES[1]["gate"]
         P = {"name": "p", "stages": STAGES + [{"title": "검증", "agent": "x", "gate": "bash scripts/check.sh --fast"}]}
         self.assertEqual(PE.graded_summary(P, self.repo, NOW), {"n": 0, "m": 4, "unred": ["검사 실행", "검증"], "unstable": []})
-        PE.save_red(g1, {"pipeline": "p", "stage": "검사 실행", "mode": "checks-security", "key": "k", "verdict": "pass",
+        PE.save_red(g1, {"pipeline": "p", "stage": "검사 실행", "mode": "checks-security", "key": PE.AV.repo_key(self.repo), "verdict": "pass",
                          "why": "", "at": NOW, "ms": 5})
-        PE.save_red("bash scripts/check.sh --fast", {"pipeline": "q", "stage": "x", "mode": "fast", "key": "k",
+        PE.save_red("bash scripts/check.sh --fast", {"pipeline": "q", "stage": "x", "mode": "fast", "key": PE.AV.repo_key(self.repo),
                                                      "verdict": "pass", "why": "", "at": NOW, "ms": 5})
         j = json.loads(rd(os.path.join(PE.EVAL_DIR, "redcheck.json")))
-        self.assertEqual(sorted(j["gates"]), sorted([PE.gate_key(g1), PE.gate_key("bash scripts/check.sh --fast")]))
+        self.assertEqual(sorted(j["gates"]), sorted([PE.red_key(PE.AV.repo_key(self.repo), g1), PE.red_key(PE.AV.repo_key(self.repo), "bash scripts/check.sh --fast")]))
         self.assertEqual(len(PE.gate_key(g1)), 16)
-        st = PE.redcheck_status("p", P["stages"])
+        st = PE.redcheck_status("p", P["stages"], PE.AV.repo_key(self.repo))
         self.assertEqual((st["검사 실행"]["verdict"], st["검사 실행"]["same"], st["검증"]["same"]), ("pass", True, False))
         self.assertEqual(PE.graded_summary(P, self.repo, NOW), {"n": 2, "m": 4, "unred": [], "unstable": []})
         with open(PE.EVAL_EV_FILE, "w", encoding="utf-8") as f:
@@ -189,6 +189,27 @@ class Flaky(Tmp):
         self.assertEqual(PE.graded_summary(P, self.repo, NOW), {"n": 1, "m": 4, "unred": [], "unstable": ["검증"]})
         with self.assertRaises(ValueError):
             PE.save_red(g1, {"verdict": "maybe"})
+        with self.assertRaises(ValueError):
+            PE.save_red(g1, {"verdict": "pass"})   # no repo key: a record must name its repo
+
+    def test_red_store_is_per_repo(self):
+        # Same gate text in two repos: neither overwrites nor lights the other (regression: keyed by gate alone).
+        g, a, b = "npm test", PE.AV.repo_key(self.repo), PE.AV.repo_key(self.repo + "-other")
+        st = [{"title": "T", "gate": g}]
+        PE.save_red(g, {"pipeline": "p", "stage": "T", "mode": "rc", "key": a, "verdict": "pass", "why": "", "at": NOW, "ms": 1})
+        PE.save_red(g, {"pipeline": "p", "stage": "T", "mode": "rc", "key": b, "verdict": "fail", "why": "", "at": NOW + 1, "ms": 1})
+        self.assertEqual(PE.redcheck_status("p", st, a)["T"]["verdict"], "pass")
+        self.assertEqual(PE.redcheck_status("p", st, b)["T"]["verdict"], "fail")
+        self.assertEqual(PE.redcheck_status("p", st, PE.AV.repo_key(self.repo + "-third")), {})
+
+    def test_red_store_reads_old_gate_only_keys(self):
+        # Records written before the per-repo key: re-keyed by their own `key` field; one without it names no repo.
+        g, a = "npm test", PE.AV.repo_key(self.repo)
+        os.makedirs(PE.EVAL_DIR, exist_ok=True)
+        with open(os.path.join(PE.EVAL_DIR, "redcheck.json"), "w", encoding="utf-8") as f:
+            json.dump({"v": 1, "gates": {PE.gate_key(g): {"key": a, "verdict": "pass"}, PE.gate_key("x"): {"verdict": "pass"}}}, f)
+        st = [{"title": "T", "gate": g}, {"title": "X", "gate": "x"}]
+        self.assertEqual(sorted(PE.redcheck_status("p", st, a)), ["T"])
 
 
 if __name__ == "__main__":

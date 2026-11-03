@@ -4,7 +4,7 @@
 Store under DATA_DIR/eval/ — never the target repo:
   <key>/seeds.json            {v:1, seeds:[{id, kind, file, line?, rule?, pkg?, expectStage, holdout?}]} (0600)
   <key>/<commit>/eval.json    {v:1, repo, commit, pipeline, at, stages:[{title, n, caught, missed:[ids]}], holdout:{n, caught}}
-  redcheck.json               {v:1, gates:{sha1(gate)[:16]: {pipeline, stage, mode, key, verdict, why, at, ms}}}
+  redcheck.json               {v:1, gates:{<repo_key>:<sha1(gate)[:16]>: {pipeline, stage, mode, key, verdict, why, at, ms}}}
 key = arch_verify.repo_key. ⚠Holdout seed ids never leave seeds.json: eval.json, output and API carry counts only.
 Metadata only (seed ids, file:line, rule ids, counts). No subprocess here: scripts/pl_eval.py runs the clones.
 """
@@ -270,6 +270,12 @@ def gate_key(gate):
     return hashlib.sha1(gate.encode("utf-8", "surrogateescape"), usedforsecurity=False).hexdigest()[:16]
 
 
+def red_key(repo_key, gate):
+    # ⚠Per repo: the same gate text (`npm test`) in another repo proves nothing here; keyed by gate alone, one repo's
+    # pass showed «Gate red-checked» on a repo whose gate fails on a clean clone, and the next run overwrote the other's.
+    return "%s:%s" % (repo_key, gate_key(gate))
+
+
 def _red_file():
     return os.path.join(EVAL_DIR, "redcheck.json")
 
@@ -277,27 +283,38 @@ def _red_file():
 def _red_gates():
     j = _read(_red_file())
     g = j.get("gates") if isinstance(j, dict) and j.get("v") == 1 else None
-    return g if isinstance(g, dict) else {}
+    if not isinstance(g, dict):
+        return {}
+    out = {}
+    for k, e in g.items():   # older entries were keyed by the gate hash alone; their own `key` field names the repo
+        if isinstance(k, str) and ":" not in k:
+            k = "%s:%s" % (e.get("key"), k) if isinstance(e, dict) and isinstance(e.get("key"), str) and e["key"] else None
+        if k and k not in out:
+            out[k] = e
+    return out
 
 
 def save_red(gate, entry):
-    """Record one red-check verdict under sha1(gate)[:16]; keeps the newest EVAL_RED_MAX."""
+    """Record one red-check verdict under red_key(entry["key"], gate); keeps the newest EVAL_RED_MAX."""
     if entry.get("verdict") not in VERDICTS:
         raise ValueError("verdict")
+    if not (isinstance(entry.get("key"), str) and entry["key"]):
+        raise ValueError("key")
     g = _red_gates()
-    g[gate_key(gate)] = entry
+    g[red_key(entry["key"], gate)] = entry
     keep = sorted(g.items(), key=lambda kv: -(kv[1].get("at") or 0) if isinstance(kv[1], dict) else 0)[:EVAL_RED_MAX]
     _dump(_red_file(), {"v": 1, "gates": dict(keep)}, 0o644)
 
 
-def redcheck_status(pipeline_name, stages):
-    """{stage title: {verdict, why, at, mode}} for stages whose gate has a red-check entry (keyed by gate text, so the
-    same gate in another pipeline shares it; pipeline_name is kept for callers that filter by the recording pipeline)."""
+def redcheck_status(pipeline_name, stages, repo_key):
+    """{stage title: {verdict, why, at, mode}} for stages whose gate has a red-check entry in this repo (keyed by repo +
+    gate text, so the same gate in another pipeline of the repo shares it; pipeline_name is kept for callers that filter
+    by the recording pipeline)."""
     g, out = _red_gates(), {}
     for s in stages or []:
         if not (isinstance(s, dict) and isinstance(s.get("gate"), str) and s["gate"].strip()):
             continue
-        e = g.get(gate_key(s["gate"]))
+        e = g.get(red_key(repo_key, s["gate"]))
         if isinstance(e, dict) and e.get("verdict") in VERDICTS:
             out[s.get("title")] = {"verdict": e["verdict"], "why": e.get("why") if isinstance(e.get("why"), str) else "",
                                    "at": e.get("at") if isinstance(e.get("at"), (int, float)) else 0,
@@ -391,7 +408,7 @@ def graded_summary(pipeline_obj, repo_root, now):
     """{n graded, m stages, unred: [titles with a gate but no red-check pass], unstable: [titles whose gate mode is
     flaky]}. Graded = has a gate AND red check passed AND its mode is not unstable."""
     stages = [s for s in (pipeline_obj or {}).get("stages") or [] if isinstance(s, dict)]
-    red = redcheck_status((pipeline_obj or {}).get("name"), stages)
+    red = redcheck_status((pipeline_obj or {}).get("name"), stages, AV.repo_key(repo_root) if repo_root else "")
     bad = set(flaky_modes(repo_root, now)) if repo_root else set()
     n, unred, unstable = 0, [], []
     for s in stages:

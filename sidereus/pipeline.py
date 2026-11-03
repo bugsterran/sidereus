@@ -267,7 +267,7 @@ def pipelines(proj, runs=None):
         return 200, {"ok": True, "projects": projs, "added": added}
     if not _proj_ok(proj):
         return 400, {"ok": False, "msg": "unknown project"}     # ⚠not 404: the page reads 404 as «feature off»
-    rows = _red_counts([_row(proj, n) for n in _listed(proj)])
+    rows = _red_counts([_row(proj, n) for n in _listed(proj)], proj)
     agents = _agents(proj)
     return 200, {"ok": True, "proj": proj, "pipelines": rows, "borrowed": borrowed(proj, runs), "agents": agents, "models": list(MODELS), "roles": _role_agents(proj, agents),   # names + one-line descriptions only, no paths (48c plgAddPreset)
                  "default_tasks": default_tasks(), "catalog": catalog(), "gate_modes": [rx for rx, _m in GATE_MODES], "skills": skill_names(proj), "rule_files": _rule_files(proj), "workflows": _workflows(proj),
@@ -275,14 +275,14 @@ def pipelines(proj, runs=None):
                  "std": [_draft_row(d["P"], std=True, src=d["src"], chain=d["chain"], gp=d["gp"]) for d in suggest(proj, std=True)]}
 
 
-def _red_counts(rows):
+def _red_counts(rows, proj):
     """Row `red` = stages whose current gate text has a red-check record with verdict «pass» (skip/fail prove nothing,
     so the «Gate red-checked» step stays open); one redcheck.json read per call.
     ⚠Unreadable store = no `red` key (unknown), never 0. Titles repeat across pipelines, so stages are keyed by position."""
     flat = [(r, s.get("gate")) for r in rows if r.get("ok") for s in r["stages"] if isinstance(s.get("gate"), str)]
     try:
-        from sidereus import pl_eval
-        hit = pl_eval.redcheck_status("", [{"title": i, "gate": g} for i, (_r, g) in enumerate(flat)])
+        from sidereus import arch_verify, pl_eval
+        hit = pl_eval.redcheck_status("", [{"title": i, "gate": g} for i, (_r, g) in enumerate(flat)], arch_verify.repo_key(proj))
     except Exception:
         return rows
     for r in rows:

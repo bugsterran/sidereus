@@ -5,7 +5,7 @@ import unittest
 from unittest import mock
 
 from tests import _load
-from tests.test_pl_eval_cli import PE, Base, git
+from tests.test_pl_eval_cli import AV, PE, Base, git
 
 _load.load()
 from sidereus import pipeline as PL, pipeline_schema as PS  # noqa: E402
@@ -36,7 +36,7 @@ class RcMode(Base):
         self.assertEqual((rc, out.strip()), (0, "redcheck: pass — gate rc 1 on a broken repo"))
         self.assertEqual(git(self.repo, "status", "--porcelain"), before)   # the break stayed in the temp clone
         with open(os.path.join(PE.EVAL_DIR, "redcheck.json"), encoding="utf-8") as f:
-            self.assertEqual(json.load(f)["gates"][PE.gate_key(GATE)]["mode"], "rc")
+            self.assertEqual(json.load(f)["gates"][PE.red_key(AV.repo_key(self.repo), GATE)]["mode"], "rc")
         self.assertEqual([(r["mode"], r["steps"][0]["name"]) for r in self.rows()], [("redcheck", "rc")])
 
     def test_rc_gate_never_red(self):
@@ -63,22 +63,22 @@ class RedCount(unittest.TestCase):
                 {"ok": True, "stages": [{"title": "A", "gate": "go test"}]}, {"ok": False}]
         calls = []
 
-        def status(name, stages):
+        def status(name, stages, key):
             calls.append(len(stages))
             return {s["title"]: {"verdict": "pass"} for s in stages if s["gate"] in ("npm test", "go test")}
         from sidereus import pl_eval
         with mock.patch.object(pl_eval, "redcheck_status", status):
-            out = PL._red_counts(rows)
+            out = PL._red_counts(rows, "/p")
         self.assertEqual([r.get("red") for r in out], [1, 1, None])
         self.assertEqual(calls, [3])   # one store read for every pipeline
 
     def test_unreadable_store_is_unknown(self):
         from sidereus import pl_eval
 
-        def boom(name, stages):
+        def boom(name, stages, key):
             raise OSError
         with mock.patch.object(pl_eval, "redcheck_status", boom):
-            self.assertNotIn("red", PL._red_counts([{"ok": True, "stages": []}])[0])
+            self.assertNotIn("red", PL._red_counts([{"ok": True, "stages": []}], "/p")[0])
 
 
 if __name__ == "__main__":
