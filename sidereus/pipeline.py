@@ -276,7 +276,8 @@ def pipelines(proj, runs=None):
 
 
 def _red_counts(rows):
-    """Row `red` = stages whose current gate text has a red-check record (any verdict); one redcheck.json read per call.
+    """Row `red` = stages whose current gate text has a red-check record with verdict «pass» (skip/fail prove nothing,
+    so the «Gate red-checked» step stays open); one redcheck.json read per call.
     ⚠Unreadable store = no `red` key (unknown), never 0. Titles repeat across pipelines, so stages are keyed by position."""
     flat = [(r, s.get("gate")) for r in rows if r.get("ok") for s in r["stages"] if isinstance(s.get("gate"), str)]
     try:
@@ -288,7 +289,7 @@ def _red_counts(rows):
         if r.get("ok"):
             r["red"] = 0
     for i, (r, _g) in enumerate(flat):
-        r["red"] += i in hit
+        r["red"] += (hit.get(i) or {}).get("verdict") == "pass"
     return rows
 
 
