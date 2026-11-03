@@ -100,6 +100,28 @@ class ParseAndState(Patch):
         self.assertEqual(p["humanAt"], int(parse._line_ts(json.loads(u("2026-09-24T00:50:00.000Z", "")), 0)))
         self.assertEqual(self.parse([asst({"type": "text", "text": "x"})])["humanAt"], 0)
 
+    def test_answered_ask_tool_counts_as_reply(self):
+        # The picker answer is a tool_result: it must clear the «ask» card like a typed prompt.
+        def at(ts, kind, *content):
+            return json.dumps({"type": kind, "sessionId": "s1", "cwd": CWD, "timestamp": ts, "message": {"content": list(content)}})
+        ts = lambda s: int(parse._line_ts({"timestamp": s}, 0))
+        p = self.parse([at("2026-09-24T00:50:00.000Z", "user", {"type": "text", "text": "go"}),
+                        at("2026-09-24T00:51:00.000Z", "assistant", tu("AskUserQuestion", "q1")),
+                        at("2026-09-24T00:51:05.000Z", "user", tr("q1")),
+                        at("2026-09-24T00:52:00.000Z", "assistant", tu("Bash", "b1")),
+                        at("2026-09-24T00:52:01.000Z", "user", tr("b1"))])
+        self.assertEqual(p["humanAt"], ts("2026-09-24T00:51:05.000Z"))
+        card = ts("2026-09-24T00:51:00.000Z")
+        row = {"sid": "s1", "state": "think", "humanAt": p["humanAt"], "tailAt": p["tailAt"]}
+        self.assertFalse(att._ask_open(row, {"sid": "s1"}, card))
+        # an ordinary tool_result is not a reply: the card still holds
+        p2 = self.parse([at("2026-09-24T00:50:00.000Z", "user", {"type": "text", "text": "go"}),
+                         at("2026-09-24T00:51:00.000Z", "assistant", tu("AskUserQuestion", "q1")),
+                         at("2026-09-24T00:52:00.000Z", "assistant", tu("Bash", "b1")),
+                         at("2026-09-24T00:52:01.000Z", "user", tr("b1"))])
+        self.assertEqual(p2["humanAt"], ts("2026-09-24T00:50:00.000Z"))
+        self.assertTrue(att._ask_open(dict(row, humanAt=p2["humanAt"]), {"sid": "s1"}, card))
+
     def test_human_line_beyond_tail_window(self):
         # A human reply >400 KB from the end falls outside the tail: humanAt 0, tailAt after that reply.
         import os, tempfile
