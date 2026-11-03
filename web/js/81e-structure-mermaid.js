@@ -313,7 +313,7 @@ function mmdTip(e, n, P){
 function mmdFlPlace(g, L){
   const obs = Object.keys(L.nodes).map(k => L.nodes[k]).concat(Object.keys(L.sgs).map(k => L.sgs[k].tr).filter(Boolean));
   const ov = (a, b) => a.x < b.x + b.w + 2 && b.x < a.x + a.w + 2 && a.y < b.y + b.h + 2 && b.y < a.y + a.h + 2;
-  const placed = [], labs = [], leg = [];
+  const placed = [], labs = [], leg = [], segs = L.edges.map(e => (e.pts || []).slice(1).map((p, k) => [e.pts[k], p]));
   // ⚠flHead: in-edge labels first, so head-anchored out-labels avoid them instead of displacing them
   const ord = L.edges.map((e, i) => i);
   if(g.flHead) ord.sort((p, q) => (L.edges[p].from === g.flHead) - (L.edges[q].from === g.flHead));
@@ -335,16 +335,19 @@ function mmdFlPlace(g, L){
     }
     const d = R => Math.hypot(R.x + R.w / 2 - ax, R.y + R.h / 2 - ay);
     const free = R => R.x >= 0 && R.y >= 0 && R.x + R.w <= L.w && R.y + R.h <= L.h && !obs.some(o => ov(R, o)) && !placed.some(o => ov(R, o));
-    const R = cs.sort((p, q) => d(p) - d(q)).find(free);
+    // ⚠a pill on another edge's line reads as that edge's label: prefer spots clear of other lines, else plain free (no extra badges)
+    const soft = R => free(R) && !segs.some((ss, j) => j !== i && ss.some(x => mmdSegRect(x[0], x[1], R, 2)));
+    const pick = a => a.find(soft) || a.find(free);
+    const R = pick(cs.sort((p, q) => d(p) - d(q)));
     if(R){ placed.push(R); labs[i] = { R }; return; }
     const num = mmdNum(leg.length + 1), bw = Math.max(18, mmdTw(num) + 8), bc = cs.map(R => ({ x: R.x + R.w / 2 - bw / 2, y: R.y + R.h / 2 - 9, w: bw, h: 18 }));
     // badge: nearest candidate spot clear of placed labels first; the anchor only when every spot is taken
-    let B = bc.sort((p, q) => d(p) - d(q)).find(free);
+    let B = pick(bc.sort((p, q) => d(p) - d(q)));
     // ⚠no bc spot free: slide along the edge (4px steps) before the anchor, which ignores nodes and labels (last resort)
     if(!B){ const sl = [];
       for(let k = 1; k < ps.length; k++){ const a = ps[k - 1], b = ps[k], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 4));
         for(let j = 0; j <= n; j++){ const x = a[0] + (b[0] - a[0]) * j / n, y = a[1] + (b[1] - a[1]) * j / n; sl.push({ x: x - bw / 2, y: y - 9, w: bw, h: 18 }); } }
-      B = sl.sort((p, q) => d(p) - d(q)).find(free) || { x: ax - bw / 2, y: ay - 9, w: bw, h: 18 }; }
+      B = pick(sl.sort((p, q) => d(p) - d(q))) || { x: ax - bw / 2, y: ay - 9, w: bw, h: 18 }; }
     placed.push(B); labs[i] = { R: B, num }; leg.push({ num, label: e.label, e });
   });
   return { labs, leg };
