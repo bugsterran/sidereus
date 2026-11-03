@@ -42,6 +42,7 @@ Sidereus is both the shown name and the code name (package, MCP, launchd label, 
   - `plugin/` — **generated**, do not edit: copies of `hooks/*` · `mcp/sidereus_mcp.py` · `mailbox_config.py` · `LICENSE` + `hooks/hooks.json` · `.mcp.json` · `.claude-plugin/plugin.json`.
   - `scripts/build_plugin.py` — builds `plugin/` + the marketplace file from an allow-list; `--check` = exit 1 on drift (`tests/test_plugin.py`).
   - `.claude-plugin/marketplace.json` — marketplace `sidereus`: plugin `sidereus` (source `./plugin`, MCP server `sidereus`) + `orbit` (`plugins/orbit/`, formerly folder-accounts).
+- `scripts/sweep_world.py` — `build --out <tmp>` / `append-ask` = sandbox world generated in code (synthetic, metadata only) + the env to launch a viewer on it; cases in `docs/dev/SWEEP-FIXTURES.md`.
 - `scripts/i18n_flip.mjs` — rewrites Korean `T()`/`U()` literals to the English source (inverse of `I18N.ko`), `--write` to apply, manual list otherwise; also the dictionary loader for `scripts/i18n_check.mjs` (static i18n guard in `check.sh --fast`) and `tests/test_i18n_flip.py`.
 - ★**PAGE lives in `web/`** (2026-09-23 · split stage 1). `@@INCLUDE app-head.js|app.css|app.js@@` in `index.html` is replaced by the file contents and assembled inline (`_load_page`, `newline=""`).
   - Verified: `PAGE`·`PAGE_BUILD` byte-identical to 55a1147; the only added top-level names are `WEB_DIR`·`_WEB_INCLUDE`·`_load_page`.

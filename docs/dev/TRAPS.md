@@ -15,7 +15,7 @@ Do not step on these again. One file per area under [traps/](traps/); read the a
 | [traps/ui.md](traps/ui.md) | UI kit, CSS, layout, header, i18n (`T()`), animations, drag-resize |
 | [traps/server.md](traps/server.md) | Server, `/api/state` payload, caching, performance |
 | [traps/security.md](traps/security.md) | Security and privacy (CSP, guards, metadata-only) |
-| [traps/platform.md](traps/platform.md) | Platform, config, launcher, Windows, plugin, tests and tooling |
+| [traps/platform.md](traps/platform.md) | Platform, config, launcher, Windows, plugin, tests, sweep sandbox (`SIDEREUS_USER_HOME`) and tooling |
 | [traps/general.md](traps/general.md) | General lessons that span areas |
 | [traps/archive.md](traps/archive.md) | Removed features — evidence only, not current rules |
 

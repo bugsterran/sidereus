@@ -4,6 +4,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Platform, config, launcher, tests and tooling
 
+- **A HOME override alone does not isolate external CLI hook paths** (`sidereus/ident.py` `_real_home`, `scripts/sweep_world.py`).
+  - Cause: `_real_home` reads the pwd entry, not `$HOME` (the viewer runs with HOME = its data dir), so a sandbox still read the real `~/.cursor` · `~/.codex` · `~/.copilot` · Gemini files.
+  - ⇒ Set `SIDEREUS_USER_HOME` in the sandbox env; honoured only when absolute and an existing dir.
+    It also moves the «not the real home» guards (todo.py, ident.py) and `$HOME` expansion in harness_plat.py — intended for a sandbox.
+  - ⚠Never set it in the launchd/service env — the live viewer would stop seeing the real hook files.
+
 - **Feature toggles change at runtime** (`sidereus/features.py` `save` · `start_threads`).
   - Cause: Save swaps `_TOGGLES` while request threads and loops read it; mutating the dict in place lets one `on()` call see half old, half new.
   - ⇒ `save()` replaces the dict whole under `_SWAP` (rolled back if the write fails); each reader takes one local ref per call.

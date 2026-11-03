@@ -35,6 +35,11 @@ _BIN_DIRS = () if IS_WIN else (("/opt/homebrew/bin",) if IS_MAC else ()) + (
 
 
 def _real_home():
+    # External CLI hook paths are pwd-based, so a HOME override alone does not isolate a sandbox;
+    # ⚠honoured only when absolute and an existing dir (a typo must not point hook writes elsewhere).
+    o = os.environ.get("SIDEREUS_USER_HOME") or ""
+    if o and os.path.isabs(o) and os.path.isdir(o):
+        return o
     try:
         import pwd
         return pwd.getpwuid(os.getuid()).pw_dir     # ⚠not $HOME — the viewer runs with HOME=data dir

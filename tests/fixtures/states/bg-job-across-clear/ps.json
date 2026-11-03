@@ -1,0 +1,10 @@
+{
+ "cwd": {
+  "803": "/nonexistent-sidereus/demo"
+ },
+ "procs": [
+  ["801", "1", "claude.exe daemon run --origin transient"],
+  ["802", "801", "claude.exe --bg-pty-host"],
+  ["803", "802", "claude.exe --session-id b9c10000-0000-4000-8000-00000000000a --fork-session"]
+ ]
+}
