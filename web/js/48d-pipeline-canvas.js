@@ -511,4 +511,5 @@ function plAfterPaint(box){
   const E = plCurEnt(), cv = box.querySelector('.plcv');
   if(E && cv && !E.view){ E.first = true; E.ctrd = true; E.laid = E.auto; plFit(E, cv, E.auto); E.auto = false; plWrapFirst(E, cv); if(E.view){ if(E.laid) E.base = plgKey(E.G); plApplyView(E, cv); plPaintEdgesNodes(E, cv); plZoomLabel(cv, E.view.z); } }
   plFitPills(box);
+  if(typeof plRunPlace === 'function') plRunPlace();   // 48b: run layer hangs under its «Run» button
 }
