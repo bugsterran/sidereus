@@ -227,7 +227,11 @@ function tlSumDraw(host){
   const mb = document.getElementById('tlsmore');
   if(mb) mb.onclick = mb.onkeydown = ev => {
     if(ev.type === 'keydown' && ev.key !== 'Enter' && ev.key !== ' ') return;
+    const had = document.activeElement === mb;
     tlSumMoreSet(!tlSumMoreOn()); tlSumHtml = ''; tlSumDraw(host);
+    // ⚠innerHTML rewrite drops focus to BODY; put it back on the new toggle so a second Enter works
+    const nb = had && document.getElementById('tlsmore');
+    if(nb) nb.focus({preventScroll: true});
   };
 }
 function tlDrawer(){

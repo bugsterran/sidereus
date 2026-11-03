@@ -19,6 +19,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Insights: durations use Korean units in Korean.
 - Sessions drawer: the branch chip no longer wraps mid-name.
 - Pipelines: the «Run» side layer takes focus when it opens and gives it back to «Run» when closed with Esc or ✕.
+- Sessions: a background job whose terminal host was re-parented no longer shows a second "Waiting for input" row.
+- Pipelines: below 1440 px the live-run status moves under the title instead of wrapping one word per line.
+- Keyboard: the Timeline summary "More"/"Less" toggle and a tour started from shortcut help keep focus; the To-do layer header is no longer an empty tab stop.
 
 ## [0.14.1] - 2026-11-03
 
