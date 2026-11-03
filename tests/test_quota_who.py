@@ -3,6 +3,7 @@
 `_usage` and `_sid_proj` are swapped for fresh dicts per test; `now` is passed in, so no
 live file, clock or network is used.
 """
+import os
 import unittest
 from datetime import datetime, timezone
 
@@ -173,7 +174,8 @@ class InUseAccountCase(unittest.TestCase):
         u._usage = {"live": [], "spark": [], "liveby": [], "bycSeed": {"done": False}}
         u._sid_proj = {"aaaa1111-x": "alpha", "bbbb2222-y": "beta"}
         recs = {"aaaa1111-x": "/cfg/prim", "bbbb2222-y": "/cfg/mine"}
-        cr._acct_rec = lambda sid: recs.get(sid, "")
+        # ⚠The real _acct_rec returns a realpath and _who_burn keys by realpath (Windows adds a drive prefix).
+        cr._acct_rec = lambda sid: os.path.realpath(recs[sid]) if sid in recs else ""
         cr.accounts = lambda: [{"dir": "/cfg/prim", "label": "main", "primary": True},
                                {"dir": "/cfg/mine", "label": "mine", "primary": False}]
 

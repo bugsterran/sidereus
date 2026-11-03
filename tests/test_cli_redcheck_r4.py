@@ -1,4 +1,5 @@
 """R4: `sidereus redcheck ...` runs the bundled scripts/pl_eval.py in the foreground and returns its exit code."""
+import importlib.util
 import os
 import sys
 import unittest
@@ -22,8 +23,8 @@ class RedcheckCli(CliBase):
         self.assertEqual(c.main(["redcheck", "--repo", "/p"]), 2)
         self.assertEqual(self.called, [])
 
+    @unittest.skipUnless(importlib.util.find_spec("setuptools"), "test interpreter lacks setuptools (setup.py imports it)")
     def test_script_is_in_the_wheel_bundle(self):
-        import importlib.util
         spec = importlib.util.spec_from_file_location("sidereus_setup_t", os.path.join(ROOT, "setup.py"))
         m = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(m)
