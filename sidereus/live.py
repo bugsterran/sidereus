@@ -30,6 +30,8 @@ _live_cache = (0.0, set())
 # sids an official process left behind (argv `--session-id X`, now answering another sessionId after /clear); read by sessions
 _live_retired = [set()]
 _SESSION_ID_RE = re.compile(r"--session-id[= ]([0-9a-fA-F-]{36})")
+# ⚠A background job's argv is `--resume <acct>/projects/<slug>/OLD.jsonl` (or a bare uuid) and never changes after /clear
+_RESUME_ID_RE = re.compile(r"--resume[= ](?:\S*/)?([0-9a-fA-F-]{36})(?:\.jsonl)?(?=\s|$)")
 
 
 def live_cwds(ttl=2):
@@ -171,9 +173,12 @@ def _live_official(sids, claimed, snap=None):
     retired = set()
     for _pid, _it in (av or {}).items():
         _sid = (_it.get("sessionId") or "") if isinstance(_it, dict) else ""
-        m = _SESSION_ID_RE.search(cmds.get(_pid) or "") if _sid else None
-        if m and m.group(1) != _sid:
-            retired.add(m.group(1))
+        if not _sid:
+            continue
+        for _re in (_SESSION_ID_RE, _RESUME_ID_RE):
+            m = _re.search(cmds.get(_pid) or "")
+            if m and m.group(1) != _sid:
+                retired.add(m.group(1))
     _live_retired[0] = retired - sids
     return av
 

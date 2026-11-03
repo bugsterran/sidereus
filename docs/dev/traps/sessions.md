@@ -262,6 +262,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: open rows were memory-only and `_sub_transcripts` skips subagent logs older than 6 h, so the launch was never re-read (★`npm run dev` running 6 h+, bgs = [] after restart).
   - ⇒ Open bg rows with an output path are saved to `bg-open.json` when the set changes (≤ 200 rows, sessions with no transcript pruned) and restored on the fp's first scan, before its lines.
   - ⚠Restore skips dismissed tids and rows whose output file is missing or older than boot. Never close a row because its agent ended — the shell outlives it. Never widen the 6 h window (memory/speed). Test: `tests/test_bg_open_persist.py`.
+- **A background job's pre-/clear sid lives in `--resume <path>/OLD.jsonl`, not `--session-id`** (`live._live_official`).
+  - Cause: only `--session-id X` fed `_live_retired`; a bg job's argv stays `--resume …/projects/<slug>/OLD.jsonl`, so OLD skipped the `retired` early return in `sessions` and took a free same-cwd path slot (stale «idlelong» row, copy command only).
+  - ⇒ `_RESUME_ID_RE` also reads the official pid's `--resume` arg (bare uuid or `…/<uuid>.jsonl`) and retires it when it differs from the official sessionId. Fixture `tests/fixtures/states/clear-retired-resume-path/`.
+  - ⚠Official pids only — a non-official `--resume` label is an argv claim (`_live_argv_claims`), not a retirement.
 
 ## Work-log popup and diff window
 
