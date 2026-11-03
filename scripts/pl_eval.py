@@ -14,7 +14,8 @@ usage: pl_eval.py seeds --repo R (--set F | --check) | score --repo R --pipeline
             there (MAILBOX_DIR / SIDEREUS_EVIDENCE in the temp dir) and record pass|fail|skip under sha1(gate)[:16].
             ⚠R itself must be unchanged (HEAD + status) or the verdict is fail «target changed». Missing tool = skip.
             A gate with no evidence mode (npm test, pytest, ...) uses mode `rc`: one syntax break in the repo's main language.
-            `rc` runs the gate on the clean clone first; failing there = skip «gate fails on a clean clone», never pass.
+            rc-judged modes (rc, fast, full) run the gate on the clean clone first; failing there = skip «gate fails on a
+            clean clone», never pass.
 """
 import base64
 import hashlib
@@ -414,7 +415,9 @@ def _red_in(pfile, argv, mode, repo, clone, store, tmp, head, t_end):
 def _red_gate(pfile, argv, mode, repo, clone, store, tmp, head, t_end):
     cwd = _gate_cwd(pfile, repo, clone)
     env = dict(os.environ, MAILBOX_DIR=store, SIDEREUS_EVIDENCE=os.path.join(tmp, "ev.jsonl"))
-    if mode == "rc":   # ⚠a gate that already fails on the clean clone (wrong command, broken test) proves nothing
+    # ⚠Every rc-judged mode (rc, fast, full): a gate that already fails on the clean clone (wrong command, broken test,
+    # unrelated red test) proves nothing. checks-* modes are judged by the expected finding, not by rc.
+    if mode not in PE.CHECKS_FILES:
         rc, late = _run(argv, cwd, env, t_end - _now())
         if late:
             return "skip", "gate timeout"

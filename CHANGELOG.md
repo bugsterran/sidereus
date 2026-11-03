@@ -62,7 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: a denied stage jump no longer lights the stage as «main»; a stage title over 40 characters is named in the hint instead of an unmatchable tag; the npm-audit install hint is a command.
 - MCP: an unknown tool name returns JSON-RPC -32602; `sidereus_attention` labels idle-mail and idle-shell signals; a bad To-do request body gets a body error.
 - Structure › Architecture: with a flow lit, the toolbar hint no longer shrinks to a sliver at 900–1100 px; it hides, and a narrow bar shows the lit counter as numbers (full sentence in its tooltip).
-- Pipelines: a red check first runs the gate on the clean clone; a gate that already fails is reported as skipped instead of recording a pass, and "Gate red-checked" counts only passes.
+- Pipelines: a red check first runs the gate on the clean clone (also for `check.sh --fast`/`--full` gates); a gate that already fails is reported as skipped instead of recording a pass, and "Gate red-checked" counts only passes.
 - Pipelines: renaming and reordering a stage in one save keeps the stage's key order.
 - Pipelines: a run with a far-future end time is no longer kept as running.
 - Attention: a permission prompt is cleared only by a decision for the same tool; subagents' auto-approved tools no longer hide the main session's prompt.
