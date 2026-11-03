@@ -210,6 +210,31 @@ class PermMark(unittest.TestCase):
         done = dict(row, otelEv="tool_decision", otelAt=int(NOW - 5))
         self.assertEqual(LP.perm_rows([done], now=NOW)[0]["blocked"], "")
 
+    def _tool_mark(self, tool, t=NOW - 10):
+        with open(os.path.join(self.tmp, SID + ".json"), "w", encoding="utf-8") as f:
+            json.dump({"sid": SID, "t": t, "tool": tool}, f)
+
+    def test_named_marker_ignores_other_tools_otel(self):
+        # Session-wide OTel from auto-approved calls (e.g. a background sub) must not answer a Write prompt.
+        self._tool_mark("Write")
+        base = dict(self._row(age=30), tool="Bash")
+        res = dict(base, otelEv="tool_result", otelAt=int(NOW - 5))
+        self.assertEqual(LP.perm_rows([res], now=NOW)[0]["blocked"], "Write waiting for approval")
+        dec = dict(base, tool="Read", otelEv="tool_decision", otelAt=int(NOW - 4))
+        self.assertEqual(LP.perm_rows([dec], now=NOW)[0]["blocked"], "Write waiting for approval")
+        ok = dict(base, tool="Write", otelEv="tool_decision", otelAt=int(NOW - 3))
+        self.assertEqual(LP.perm_rows([ok], now=NOW)[0]["blocked"], "")
+
+    def test_named_marker_wait_row_ignores_other_tools_otel(self):
+        self._tool_mark("Write")
+        w = self._wait([{"lab": "x", "min": 3, "idle": 200}])
+        dec = dict(w, tool="Read", otelEv="tool_decision", otelAt=int(NOW - 5))
+        self.assertEqual(LP.perm_rows([dec], now=NOW)[0]["blocked"], "subagent waiting for approval")
+        res = dict(w, otelEv="tool_result", otelAt=int(NOW - 4))
+        self.assertEqual(LP.perm_rows([res], now=NOW)[0]["blocked"], "subagent waiting for approval")
+        ok = dict(w, tool="Write", otelEv="tool_decision", otelAt=int(NOW - 3))
+        self.assertEqual(LP.perm_rows([ok], now=NOW)[0]["blocked"], "")
+
 
     def _transcript(self, lines):
         self.tp = os.path.join(self.tmp, "t.jsonl")

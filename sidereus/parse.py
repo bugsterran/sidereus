@@ -142,6 +142,9 @@ def _pending_ask_sibling(rows, mid):
     return bool(asks - done)
 
 
+_ASK_END = ("?", "\uff1f", "까요", "할까", "될까")
+
+
 def _turn_shape(d, msg, turn_end):
     """Shape of the newest non-noise assistant/user line -> {shape, askTool, mid, ask, reply, abort, err}.
     Called at most once per scan (the first such line from the tail)."""
@@ -167,8 +170,9 @@ def _turn_shape(d, msg, turn_end):
                 if x.get("type") == "tool_use" and x.get("name") in ("AskUserQuestion", "ExitPlanMode"):
                     asking = True
                 if x.get("type") == "text":
-                    tl = (x.get("text") or "").strip()
-                    if tl.endswith(("?", "?", "까요", "할까", "될까")):
+                    # ⚠A status line after the question hid it: check the last 3 non-empty lines, not only the last one.
+                    tl = [ln.strip() for ln in (x.get("text") or "").splitlines() if ln.strip()][-3:]
+                    if any(ln.endswith(_ASK_END) for ln in tl):
                         asking = True
         reply = _reply_summary(c0)
         # ★Split shape into three (measured 2026-09-07: the triage bot showed as input-wait
@@ -229,6 +233,7 @@ def _scan_tail(rows):
     shp = None
     turn_end = False           # was there a turn-end marker **after** the last assistant line (see below)
     act_at = 0                 # last record time **that counts as activity** (see _NOT_ACT comment above)
+    human_at = 0               # newest human-prompt line time (0 = none in the tail)
     # ★Per-request context samples (2026-09-03). Measured: 97.9% of cost was **cache reads** —
     #   i.e. each request re-reading the whole context is the entire cost. Measuring its size and frequency gives
     #   "how much this session burns per minute", the basis for deciding when to start a new session.
@@ -302,12 +307,16 @@ def _scan_tail(rows):
                 model = msg.get("model") or model
         if not task and d.get("type") == "user" and not summary:
             task = _human_text(msg.get("content"))
-        if cwd and sid and tool and ctx and task:
+        # Newest human-prompt time (attention: an «ask» card holds until the owner replies after it).
+        if not human_at and d.get("type") == "user" and not summary and not d.get("isMeta") \
+                and _human_text(msg.get("content")):
+            human_at = int(_line_ts(d, 0) or 0)
+        if cwd and sid and tool and ctx and task and human_at:
             break
     shp = shp or {"shape": None, "askTool": False, "mid": None, "ask": False, "reply": "",
                   "abort": False, "err": False}
     return {"cwd": cwd, "branch": branch, "sid": sid, "tool": tool, "targ": targ, "kind": kind, "ctx": ctx,
-            "model": model, "task": task, "actAt": act_at, "use": use, "shp": shp}
+            "model": model, "task": task, "actAt": act_at, "humanAt": human_at, "use": use, "shp": shp}
 
 
 def _ask_pending(rows, shp):
@@ -366,7 +375,7 @@ def _parse_transcript(fp):
     ask_tool = _ask_pending(rows, shp)
     cwd = _session_cwd(fp, t["cwd"])
     creq, burn, rpm = _use_rate(t["use"])
-    return {"actAt": t["actAt"], "creq": int(creq), "burn": int(burn), "rpm": rpm,
+    return {"actAt": t["actAt"], "humanAt": t["humanAt"], "creq": int(creq), "burn": int(burn), "rpm": rpm,
             "sid": t["sid"], "cwd": cwd, "branch": t["branch"], "tool": t["tool"], "targ": t["targ"],
             "kind": t["kind"], "ctx": t["ctx"],
             "sub": sub, "bgs": bgs, "mon": mon,

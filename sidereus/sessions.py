@@ -369,6 +369,7 @@ def _session_row(fp, mt, now, live, p, stale=False):
         # ★Measured from **last activity**, not file mtime — so noise records (away_summary) touching the file
         #   do not look like "just worked". If the tail window has no activity at all, fall back to mtime.
         "ageSec": int(now - (p.get("actAt") or mt)),
+        "humanAt": int(p.get("humanAt") or 0),   # newest real human prompt (time only): attention holds an unanswered «ask» card until it moves
         "bytes": (lambda: (os.path.getsize(fp) if os.path.exists(fp) else 0))(),  # transcript size
         "repos": session_repos(fp, mt, p.get("cwd")),   # git repositories this session touched
         "wt": _wt_of(p.get("cwd")),       # {root, main, name} — Branches tab work unit + sidebar worktree chip

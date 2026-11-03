@@ -323,7 +323,7 @@ class World(_WorldPanels, _WorldGit):
                 # same shape as sessions._session_row: targ only for an Agent call (rule 1)
                 "tool": s["tool"], "targ": s["targ"] if s["tool"] in ("Agent", "Task") else "",
                 "sub": sub, "bgs": CART_BGS if s["k"] == "cart" else [], "mon": [], "wf": self.wf_runs(s["k"]),
-                "runmin": {"sub": len(sub), "bg": 0} if sub else {}, "kind": "system", "ageSec": age,
+                "runmin": {"sub": len(sub), "bg": 0} if sub else {}, "kind": "system", "ageSec": age, "humanAt": 0,
                 "bytes": s["ctx"] * 40, "repos": [s["cwd"]],   # like git toplevel: a worktree session's repo is its worktree
                 "wt": {"root": s["cwd"], "main": "" if s["cwd"] == REPOS[s["repo"]][0] else REPOS[s["repo"]][0],
                        "name": s["cwd"].rsplit("/", 1)[-1]},
@@ -580,11 +580,11 @@ def install(handler_cls, page_build):
                 and req.get("plat") in ("cursor", "copilot"):
             return self._raw_json(200, hooks_connect_dry(req["plat"]))   # preview only; Apply stays the no-op below
         if u.path in ("/api/room/invite", "/api/rooms/create") and isinstance(req, dict) and req.get("dry") is True:
-            room, ids = str(req.get("room") or "")[:64], req.get("ids") if isinstance(req.get("ids"), list) else []
-            body = ("The user invited you to room **'%s'** from the screen (Sidereus).\nMembers: none yet\n\nTo join: "
-                    "mailbox_room { action: \"join\", room: \"%s\" }" % (room, room))   # ⚠mirrors routes_post.invite_text
-            return self._raw_json(200, {"ok": True, "dry": True, "demo": True, "body": body,   # 92c enables «Confirm» only on a string body
-                                        "added": [i for i in ids if isinstance(i, str)][:20], "already": []})
+            room, ids = str(req.get("room") or "")[:64], [i for i in (req.get("ids") if isinstance(req.get("ids"), list) else []) if isinstance(i, str)][:20]
+            mem = (world.state().get("rooms") or {}).get(room, {}).get("members") or [] if u.path == "/api/room/invite" else []   # as the real path: members listed, `already` split
+            body = ("The user invited you to room **'%s'** from the screen (Sidereus).\nMembers: %s\n\nTo join: mailbox_room "
+                    "{ action: \"join\", room: \"%s\" }" % (room, ", ".join(mem) or "none yet", room))   # ⚠mirrors routes_post.invite_text
+            return self._raw_json(200, {"ok": True, "dry": True, "demo": True, "body": body, "added": [i for i in ids if i not in mem], "already": [i for i in ids if i in mem]})   # 92c: «Confirm» only on a string body
         if u.path == "/api/term/focus":  # ⚠never osascript in demo — pretend the tab came forward
             return self._raw_json(200, {"ok": True, "demo": True, "how": "focused"})
         return self._raw_json(200, {"ok": True, "demo": True})

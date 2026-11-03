@@ -292,6 +292,18 @@ def _answered(r, t, now):
     return (_DEC_AT.get(r.get("sid") or "") or {}).get("t", 0) > t
 
 
+def _mark_tool(sid):
+    """Tool name the session marker carries, else ""."""
+    tool = (_read(sid + ".json") or {}).get("tool")
+    return tool if isinstance(tool, str) else ""
+
+
+def _tool_decided(r, sid, tool, t, now):
+    """True when an OTel tool_decision for `tool` came after marker time t."""
+    _note_dec(r, now)
+    return ((_DEC_AT.get(sid) or {}).get("tools") or {}).get(tool, 0) > t
+
+
 def _bash_running(r, t=0):
     """True when the row's pending Bash (marker time t) has a live shell child in its cwd (approved and running, not waiting)."""
     if r.get("tool") != "Bash" or r.get("bgs"):
@@ -341,7 +353,7 @@ def perm_rows(rows, now=None):
         st = r.get("state")
         if st in ("tool", "ask") or (st == "think" and r.get("tool")):
             t = _mark_t(sid, act, now) if st != "ask" else 0
-            mtool = ""
+            mtool = _mark_tool(sid) if t else ""
             if not t:
                 t, mtool = _pend_mark(sid, now, ask=st == "ask")
             # ⚠Activity after the marker: OTel decisions are session-wide, so only a decision for the marker's own tool clears it.
@@ -351,7 +363,7 @@ def perm_rows(rows, now=None):
                 #   calls emit one too): the decision is unattributable, so only a running shell clears a Bash marker.
                 sacts = [_sub_act(s, now) for s in (r.get("sub") or []) if isinstance(s, dict)]
                 own = all(a is not None and a <= t for a in sacts)
-                gone = (own and ((_DEC_AT.get(sid) or {}).get("tools") or {}).get(mtool, 0) > t) \
+                gone = (own and _tool_decided(r, sid, mtool, t, now)) \
                     or (mtool == "Bash" and _bash_running(dict(r, tool="Bash"), t))
             else:
                 gone = bool(t) and (_answered(r, t, now) or _bash_running(r, t))
@@ -373,7 +385,9 @@ def perm_rows(rows, now=None):
             if (subs or wfa is not None) and all(a is not None for a in sacts):
                 acts = [act] + ([max(sacts)] if sacts else []) + ([wfa] if wfa is not None else [])
                 t = _mark_t(sid, max(acts), now, skip_ask=True)
-                if t and not _answered(r, t, now):
+                # ⚠A named marker is answered only by a decision for its own tool (other agents' decisions share the sid).
+                mt = _mark_tool(sid) if t else ""
+                if t and not (_tool_decided(r, sid, mt, t, now) if mt else _answered(r, t, now)):
                     r = dict(r, blocked="subagent waiting for approval", blockedAt=int(t))
         if not r.get("blocked") and r.get("state") in _SUB_STATES and sid in subs_by_sid:
             t = _sub_badge(r, subs_by_sid[sid], now)

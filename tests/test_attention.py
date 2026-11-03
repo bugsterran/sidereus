@@ -218,6 +218,28 @@ class TestCards(Base):
         c = {"kind": "flimit", "cwd": "/w/p", "at": iso(NOW - 1900)}
         self.assertIsNone(self.one(sess("a", cwd="/w/p"), [c]))
 
+    def test_ask_card_holds_after_row_leaves_ask(self):
+        # A hand-back woke the session (row now think) while the question is still unanswered.
+        c = {"kind": "ask", "cwd": "/w/p", "sid": "a", "project": "p", "at": iso(NOW - 120)}
+        row = self.one(sess("a", state="think", age=5, humanAt=int(NOW - 600)), [c])
+        self.assertEqual([s["k"] for s in row["sigs"]], ["ask"])
+        self.assertEqual((row["sigs"][0]["pts"], row["sigs"][0]["why"]), (90, "질문 대기"))
+        # a newer row of the same cwd does not take it
+        out = self.run_att([sess("a", state="think", age=5, humanAt=0), sess("b", state="run", age=1)], [c])
+        self.assertEqual([r["sid"] for r in out], ["a"])
+
+    def test_ask_card_cleared(self):
+        c = {"kind": "ask", "cwd": "/w/p", "sid": "a", "project": "p", "at": iso(NOW - 120)}
+        self.assertIsNone(self.one(sess("a", state="think", humanAt=int(NOW - 60)), [c]))   # owner replied
+        self.assertIsNone(self.one(sess("a", state="done", humanAt=0), [c]))                # session ended
+        self.assertIsNone(self.one(sess("a", state="think"), [c]))                          # humanAt unknown
+        self.assertIsNone(self.one(sess("a", state="think", humanAt=0), [dict(c, old=True)]))
+        att._TF.update(at=0.0, idx={})
+        key = "%s|ask|p" % c["at"]
+        self.assertEqual(att.attention([sess("a", state="think", humanAt=0)], [c], read="", read_ids=[key])["rows"], [])
+        # row already ask: one signal, not two
+        self.assertEqual(self.kinds(sess("a", state="ask", humanAt=0), [c]), ["ask"])
+
     def test_fail_attached_to_most_recent_session(self):
         c = {"kind": "fcut", "cwd": "/w/p", "at": iso(NOW - 60)}
         out = self.run_att([sess("old", cwd="/w/p", age=500), sess("new", cwd="/w/p", age=20)], [c])

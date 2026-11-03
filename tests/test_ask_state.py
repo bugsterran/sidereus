@@ -82,6 +82,24 @@ class ParseAndState(Patch):
         self.assertFalse(p["askTool"])
         self.assertEqual(self.st(p), "think")
 
+    def test_question_followed_by_status_line_is_ask(self):
+        p = self.parse([asst({"type": "text", "text": "Done.\n\nShall I push it?\n\nTests: 31 OK"})])
+        self.assertTrue(p["ask"])
+
+    def test_question_far_up_is_not_ask(self):
+        p = self.parse([asst({"type": "text", "text": "Push it?\nline a\nline b\nline c\nline d"})])
+        self.assertFalse(p["ask"])
+
+    def test_human_at_skips_notifications(self):
+        def u(ts, text, **kw):
+            return json.dumps(dict({"type": "user", "sessionId": "s1", "cwd": CWD, "timestamp": ts,
+                                    "message": {"content": [{"type": "text", "text": text}]}}, **kw))
+        p = self.parse([u("2026-09-24T00:50:00.000Z", "do it"),
+                        u("2026-09-24T00:55:00.000Z", "<task-notification>x</task-notification>"),
+                        u("2026-09-24T00:56:00.000Z", "skill body", isMeta=True)])
+        self.assertEqual(p["humanAt"], int(parse._line_ts(json.loads(u("2026-09-24T00:50:00.000Z", "")), 0)))
+        self.assertEqual(self.parse([asst({"type": "text", "text": "x"})])["humanAt"], 0)
+
     def test_question_text_beside_bash_stays_tool(self):
         # a '?' in text sets `ask`, but the pending tool is Bash — it is running, not waiting on the user
         p = self.parse([asst({"type": "text", "text": "run it?"}, tu("Bash", "b1"))])
