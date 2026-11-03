@@ -42,8 +42,6 @@ Object.assign(I18N.ko, {
   "At most 50 at a time.": "한 번에 최대 50개입니다.",
   "Tags are 1–20 characters.": "태그는 1–20자입니다.",
   "At most 8 tags.": "태그는 최대 8개입니다.",
-  "Unconfirmed identity: {ids} — run `/room as <id>` in that session to register before inviting.": "신원이 확정되지 않은 대상: {ids} — 그 세션에서 `/room as <아이디>` 를 실행해 등록해야 초대할 수 있습니다.",
-  "Invite failed ({err})": "초대 실패({err})",
   "Could not read telemetry ({err})": "텔레메트리를 읽지 못했습니다({err})",
   "Could not read external hooks ({err})": "외부 훅을 읽지 못했습니다({err})",
   "Empty posts are not sent": "빈 글은 보내지 않습니다",

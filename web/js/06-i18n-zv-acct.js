@@ -8,7 +8,6 @@ Object.assign(I18N.ko, {
   'All accounts': '모든 계정',
   'Show one account in this view only': '이 화면에서만 한 계정만 표시',
   'Nothing for {a} in the last {n}h · {m} in other accounts': '최근 {n}시간 동안 {a} 기록 없음 · 다른 계정 {m}개',
-  "Create room '{m}' and invite {n}": "'{m}' 방을 만들고 {n}명 초대", 'Already there': '이미 있음',
 });
 // Korean for the status-bar «Show in bar» account pick (55a kpiAcct · 60b select).
 Object.assign(I18N.ko, {

@@ -29,6 +29,12 @@ class ChatToolbarWrap(unittest.TestCase):
         self.assertEqual(d.get("flex"), "1 1 160px")
         self.assertEqual(d.get("max-width"), "max-content")
 
+    def test_room_name_does_not_shrink_before_members(self):
+        # 21-member room at 1100: the name got 31 of 72px while members kept theirs.
+        d = _decls("html[data-ui=next] .tbs > .rooms > .rmname")
+        self.assertEqual(d.get("flex-shrink"), "0")
+        self.assertEqual(d.get("max-width"), "200px")
+
 
 if __name__ == "__main__":
     unittest.main()

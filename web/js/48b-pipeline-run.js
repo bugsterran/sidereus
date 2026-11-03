@@ -545,25 +545,27 @@ async function plRunSend(){
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');   // ⚠ok first: nothing went out, remember nothing
     const m = plMem(); m[cur.sid] = { name: p.name, at: Date.now() }; lsSetJson('sidereus.plrun', m);
     PLRUN = null; PLS.msg = T('Sent') + ' → ' + cur.id;
-  }catch(e){ PLRUN.busy = false; PLS.msg = T('Could not send') + ': ' + T((e && e.message) || e); }
+  }catch(e){ PLRUN.busy = false; PLS.msg = T('Could not send') + ': ' + TE((e && e.message) || e); }
   plPaint();
 }
 // role=dialog: focus moves into the layer on open and back to «Run» on close (keyboard users otherwise land on <body>).
 function plRunFocusIn(){ const el = document.querySelector('.plrun select, .plrun textarea, .plrun input, .plrun button'); if(el) el.focus(); }
+// A repaint replaces the layer's nodes; refocus the same control by its data attribute (else focus drops to <body>).
+function plRunRefocus(attr, val){ const el = Array.from(document.querySelectorAll('.plrun [' + attr + ']')).find(x => val == null || x.getAttribute(attr) === val); if(el) el.focus(); }
 function plRunClose(){ PLRUN = null; plPaint(); const b = document.querySelector('.plw [data-plrun]'); if(b) b.focus(); }
 document.addEventListener('click', e => {
   if(!e.target.closest || !e.target.closest('.plw')) return;
   if(e.target.closest('[data-plrun]')){ const p = plCur(); if(p && !p.from){ if(PLRUN && PLRUN.name === p.name){ plRunClose(); return; } PLRUN = { name: p.name, sid: '', req: '', models: {}, busy: false, mode: plModeOf(p.name) }; PLS.msg = ''; plPaint(); plRunFocusIn(); } return; }
   if(e.target.closest('[data-plrx]')){ plRunClose(); return; }
-  if(PLRUN && e.target.closest('[data-plrmo]')){ PLRUN.mOpen = !PLRUN.mOpen; plPaint(); return; }
+  if(PLRUN && e.target.closest('[data-plrmo]')){ PLRUN.mOpen = !PLRUN.mOpen; plPaint(); plRunRefocus('data-plrmo'); return; }
   if(e.target.closest('[data-plgo]')) plRunSend();
 });
 document.addEventListener('change', e => {
   const s = e.target;
   if(!PLRUN || !s || !s.closest || !s.closest('.plw')) return;
-  if(s.dataset.plrs != null){ PLRUN.sid = s.value; plPaint(); }
-  else if(s.dataset.plrmode != null){ PLRUN.mode = s.value === 'wf' ? 'wf' : 'direct'; lsSet('sidereus.plmode.' + PLRUN.name, PLRUN.mode); plPaint(); }
-  else if(s.dataset.plrm != null){ PLRUN.models[s.dataset.plrm] = s.value; plPaint(); }
+  if(s.dataset.plrs != null){ PLRUN.sid = s.value; plPaint(); plRunRefocus('data-plrs'); }
+  else if(s.dataset.plrmode != null){ PLRUN.mode = s.value === 'wf' ? 'wf' : 'direct'; lsSet('sidereus.plmode.' + PLRUN.name, PLRUN.mode); plPaint(); plRunRefocus('data-plrmode'); }
+  else if(s.dataset.plrm != null){ const k = s.dataset.plrm; PLRUN.models[k] = s.value; plPaint(); plRunRefocus('data-plrm', k); }
 });
 // Typing updates state + preview in place (a repaint would drop the caret).
 document.addEventListener('input', e => {

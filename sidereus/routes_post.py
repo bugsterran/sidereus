@@ -150,7 +150,7 @@ class _PostRoutes:
                           "application/json; charset=utf-8")
 
     def _refuse_origin(self):
-        # ⚠viewer Origin required (no Origin = 403): these routes write rooms.json / bus.jsonl / room-admin.json
+        # ⚠viewer Origin required (no Origin = 403): these routes write bus.jsonl (rooms.json is only read, by room_check)
         if _cfg.viewer_origin(self.headers.get("Origin")):
             return False
         self._body_unread()

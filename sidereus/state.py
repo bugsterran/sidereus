@@ -162,17 +162,15 @@ def state(since=0, ncards=50, acks_v=""):
 
     ★2026-09-07 — **the lock is not held through slow work** (AUDIT cause 4). Previously `with _lock:` also
       called `sessions()`. `sessions()` runs `ps`·`lsof`·git·transcript parsing, so
-      at worst it takes minutes, and meanwhile **invite handling (writes)** using the same lock hung entirely.
+      at worst it takes minutes, and meanwhile the viewer's write path on the same lock hung entirely.
       Measured (2026-09-07 · `sessions()` simulated at 1.0s): before = the write path waited **0.880s** on the lock
       ⇒ after = 0.000s. With no wait cap, even when the page froze `dot` did not go off and **it did not look broken.**
-    ★What `_lock` actually guards is only **the pair invite handling touches**:
-      `rooms.json` (read-modify-write) and the invite message then appended to `bus.jsonl`. So only that pair —
-      the conversation·roster bundle (presence·acks·messages·cursors·rooms·profiles) — is read together in **one short lock**.
+    ★The viewer no longer writes rooms.json (rooms are managed by sessions via the mailbox MCP); `_lock` now only keeps
+      the conversation·roster bundle (presence·acks·messages·cursors·rooms·profiles) read together in **one short lock**.
       Measured, the whole bundle is 0.022s (orders of magnitude from sessions cold 0.515s).
-      ⚠Why it must not be split: if the invite message is visible but not in the roster, or vice versa, the screen lies.
     ⚠`sessions()`·`cards()`·`usage()` touch **nothing** `_lock` guards (each uses
-      `_parse_lock`·`_bg_lock`·`_usage_lock`). That is why they moved outside, and 6 other places
-      (timeline·work history·git·leftovers·wkuse·invites) were already calling `sessions()` without `_lock`."""
+      `_parse_lock`·`_bg_lock`·`_usage_lock`). That is why they moved outside, and other places
+      (timeline·work history·git·leftovers·wkuse) were already calling `sessions()` without `_lock`."""
     _q0 = _piece("quota", quota, None)   # not called twice — the saver decision below uses the same value
     _q0 = _with_accounts(_q0)
     # ── slow things run **outside** the lock into locals (even if this takes seconds, the write path is not blocked)
