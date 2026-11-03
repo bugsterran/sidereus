@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-03
+
 **Highlights**
 
 - Pipelines: a "Get started" checklist on the Pipelines view, "Start with recommended setup" that writes quick-fix, change and bugfix pipelines, and "Request a red check" that asks a live session to prove its gate turns red.
@@ -805,7 +807,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/bugsterran/sidereus/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bugsterran/sidereus/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/bugsterran/sidereus/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/bugsterran/sidereus/compare/v0.11.0...v0.12.0
