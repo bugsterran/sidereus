@@ -9,7 +9,7 @@
 //
 // The demo has no live progression, so the script rewrites the web session's `plrun` (the server's merged run model)
 // step by step in the page — on SESS for an immediate repaint and on every /api/state reply so a poll keeps the step.
-// Frames: app viewport 1200x750 captured at device scale APP_DSF, composited in Node into the backdrop frame rendered once
+// Frames: app viewport VW x VH captured at device scale APP_DSF, composited in Node into the backdrop frame rendered once
 // with a solid black and a solid white box (alpha = (white - black) / 255, so rounded corners and shadow stay exact),
 // then one global 255-colour median-cut palette, per-frame changed-rectangle with transparency, LZW, NETSCAPE loop.
 import fs from 'node:fs';
@@ -18,10 +18,11 @@ import zlib from 'node:zlib';
 import { ROOT, sleep, sandbox, CDP, openApp, frameHtml } from './readme_cdp.mjs';
 
 const OUT = path.join(ROOT, 'docs', 'images');
-const VW = 1200, VH = 750;                      // app viewport, same as readme_shots
-const FW = 1280, FH = 800, IW = 1152, IH = 720; // frame page and inner box (css px), same as readme_shots
-const SCALE = 0.875;                            // frame device scale ⇒ GIF 1120x700; offsets 56,35 stay integer
-const APP_DSF = IW * SCALE / VW;                // 0.84 ⇒ app capture 1008x630 = inner box in device px
+// FHD viewport captured 1:1: the screens are designed at 1920 wide, and a 1200-wide app shrunk to 0.84 read small and soft.
+const VW = 1920, VH = 1080;                     // app viewport (css px)
+const FW = 1376, FH = 776, IW = 1280, IH = 720; // frame page and inner box (css px)
+const SCALE = 1.5;                              // frame device scale ⇒ GIF 2064x1164; offsets 72,42 stay integer
+const APP_DSF = IW * SCALE / VW;                // 1 ⇒ app capture 1920x1080 = inner box in device px
 const STEP_MS = 1100, HOLD_MS = 2000, FRAME_MS = 100;
 const DEADLINE_MS = 240000;
 const { cleanup, startDemo, startChrome } = sandbox('readme-gif');
