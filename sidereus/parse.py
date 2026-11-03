@@ -218,6 +218,29 @@ def _turn_shape(d, msg, turn_end):
             "abort": aborted, "err": errored}
 
 
+def _ask_tool_ids(rows):
+    """tool_use ids of AskUserQuestion/ExitPlanMode calls in the tail (string pre-check: most lines are skipped unparsed)."""
+    ids = set()
+    for line in rows:
+        if '"AskUserQuestion"' not in line and '"ExitPlanMode"' not in line:
+            continue
+        try:
+            c = ((json.loads(line).get("message") or {}).get("content"))
+        except Exception:
+            continue
+        for x in c if isinstance(c, list) else ():
+            if isinstance(x, dict) and x.get("type") == "tool_use" and x.get("name") in ("AskUserQuestion", "ExitPlanMode") \
+                    and x.get("id"):
+                ids.add(x["id"])
+    return ids
+
+
+def _answers_ask(content, ask_ids):
+    """True if a user line carries the tool_result of one of `ask_ids` (the person answered the question)."""
+    return bool(ask_ids) and isinstance(content, list) and any(
+        isinstance(x, dict) and x.get("type") == "tool_result" and x.get("tool_use_id") in ask_ids for x in content)
+
+
 def _scan_tail(rows):
     """Newest-first pass over the tail: identity, last tool, context, task, turn shape and usage samples."""
     cwd = branch = sid = None
@@ -239,6 +262,7 @@ def _scan_tail(rows):
     #   "how much this session burns per minute", the basis for deciding when to start a new session.
     #   ⚠Tail only — not a whole-session average but the burn rate of **the recent span** (the value to use for current decisions).
     use = []                   # [(time, cache read+cache create, cache read)]
+    ask_ids = _ask_tool_ids(rows)
     for line in reversed(rows):
         try:
             d = json.loads(line)
@@ -308,8 +332,10 @@ def _scan_tail(rows):
         if not task and d.get("type") == "user" and not summary:
             task = _human_text(msg.get("content"))
         # Newest human-prompt time (attention: an «ask» card holds until the owner replies after it).
+        # ⚠An AskUserQuestion/ExitPlanMode answered in its picker comes back as a tool_result, not a prompt: it is a reply too,
+        #   or the «ask» card raised by that question stays until the next typed prompt.
         if not human_at and d.get("type") == "user" and not summary and not d.get("isMeta") \
-                and _human_text(msg.get("content")):
+                and (_human_text(msg.get("content")) or _answers_ask(msg.get("content"), ask_ids)):
             human_at = int(_line_ts(d, 0) or 0)
         if cwd and sid and tool and ctx and task and human_at:
             break

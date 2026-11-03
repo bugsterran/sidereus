@@ -189,3 +189,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ the parse also returns `tailAt` (oldest record time in the tail); with `humanAt` 0 the card drops only when `tailAt > card time`; `tailAt` 0 (old parse cache, hook-only CLI rows) still holds. `tests/test_attention.py`, `tests/test_ask_state.py`.
   - ⚠`humanAt` 0 is «not in the window», not «no reply». ⚠Keep the hold when the window covers the card and has no human line — a real unanswered question must not vanish.
   - ★Measured: replies sat ~607 KB from the end of the transcript.
+
+## «Question waiting» held after the question was answered in its picker (`parse.py humanAt`)
+
+- Cause: `_ask_open` drops an «ask» card only on a human line after it; an AskUserQuestion/ExitPlanMode answer is a `tool_result`, so the card held until the next typed prompt.
+- ⇒ `_scan_tail` counts a tool_result whose `tool_use_id` is an ask-tool call in the tail (`_ask_tool_ids`, `_answers_ask`) as `humanAt`.
+- ⚠Only ask-tool results count; any other tool_result is not a reply — `tests/test_ask_state.py`.
