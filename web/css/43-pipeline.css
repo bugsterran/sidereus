@@ -442,6 +442,7 @@ html[data-ui=next] .plw .plbar>.plrunst{gap:2px}
 html[data-ui=next] .plw .plbar>.plrunst>span{line-height:16px;padding:4px 0;margin:-4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* ⚠padding moves the clip 4px out so the .plrv 24px ::before survives; the -4px margin keeps the 16px row */
 html[data-ui=next] .plw .plbar>.plrunst .plprog{height:4px}
 @media (max-width:1439px){html[data-ui=next] .plw .plbar>.plrunst>span,html[data-ui=next] .plw .pltop>.plwrun>.plrunst>span{white-space:normal;word-break:keep-all;overflow-wrap:anywhere}}   /* keep-all: ko breaks between words; anywhere still splits a token that overflows. ★en 282/319, ko 272/311px cut at 1100/900: wrap below 1440 (the bar may grow a line there); 640px cap unchanged */
+@media (max-width:1439px){.plbar>.plrunst{flex-basis:320px}}   /* ⚠basis 0 + wrap squeezed it to one word per line (★900 en 28px wide, 15 lines): a 320px floor wraps it under the title instead */
 html[data-ui=next] .plw .plprog{display:block;height:6px;border-radius:3px;background:var(--nx-hover);overflow:hidden}
 html[data-ui=next] .plw .plprog>i{display:block;position:relative;overflow:hidden;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--plf-plan),var(--plf-build),var(--plf-cust),var(--plf-plan));background-size:200% 100%;transition:width .6s}
 /* Flowing gradient = a 4x-wide layer of two pattern periods translated by one period (transform only; was background-position). */

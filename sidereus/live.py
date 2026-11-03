@@ -258,20 +258,54 @@ def _live_argv_claims(snap, pids, av, pmap, sids, claimed):
         warn_once("argvclaim", "argv session label parse failed ({err})", vars={"err": type(e).__name__}, soft=True)
 
 
-_SPAWN_ARG = "--spawned-by "   # same marker as term.BG_SPAWN_ARG (term sits above live, so not imported)
+# Background-job argv markers, shared with term (term sits above live and imports these).
+BG_HOST_ARG = "--bg-pty-host"
+BG_DAEMON_ARG = " daemon run "
+BG_JSON_RE = re.compile(r"--json-path (\S+)")
+BG_RESUME_RE = re.compile(r"--resume (\S+)/projects/([^/\s]+)/[^/\s]+\.jsonl")
+BG_SPAWN_ARG = "--spawned-by "             # daemon argv: `--spawned-by {"label":..,"cwd":..,"pid":N}` = the terminal claude that started it
 
 
 def _spawned_by(cmd):
-    """Int pid from a daemon argv's `--spawned-by <json>`, or None (strict: one JSON object, int pid > 1)."""
-    i = (cmd or "").find(_SPAWN_ARG)
+    """The `--spawned-by <json>` object of a daemon argv, or None."""
+    i = (cmd or "").find(BG_SPAWN_ARG)
     if i < 0:
         return None
     try:
-        obj = json.JSONDecoder().raw_decode(cmd, i + len(_SPAWN_ARG))[0]
+        obj = json.JSONDecoder().raw_decode(cmd, i + len(BG_SPAWN_ARG))[0]
     except ValueError:
         return None
-    p = obj.get("pid") if isinstance(obj, dict) else None
+    return obj if isinstance(obj, dict) else None
+
+
+def _spawner_pid(cmd):
+    """Int pid from a daemon argv's `--spawned-by <json>`, or None (strict: one JSON object, int pid > 1)."""
+    p = (_spawned_by(cmd) or {}).get("pid")
     return p if isinstance(p, int) and not isinstance(p, bool) and p > 1 else None
+
+
+def _orphan_spawner(host_cmd, cwd, cmds):
+    """Spawner pid for a `--bg-pty-host` re-parented to launchd after a daemon respawn, or None.
+    ⚠The daemon's `--spawned-by` is the claude that started the daemon, not this job: require the same account dir
+    (host `--resume <acct>/projects/<slug>/…`, daemon `--json-path` under <acct>) and the same cwd (av cwd, else slug)."""
+    m = BG_RESUME_RE.search(host_cmd or "")
+    if not m:
+        return None
+    acct, slug = m.group(1).rstrip("/") + "/", m.group(2)
+    cwd = cwd if isinstance(cwd, str) else ""
+    found = set()
+    for c in cmds.values():
+        if BG_DAEMON_ARG not in c:
+            continue
+        j = BG_JSON_RE.search(c)
+        sb = _spawned_by(c) or {}
+        scwd = sb.get("cwd") if isinstance(sb.get("cwd"), str) else ""
+        if not (j and j.group(1).startswith(acct) and scwd) or (scwd != cwd if cwd else _slug(scwd) != slug):
+            continue
+        sp = _spawner_pid(c)
+        if sp:
+            found.add(sp)
+    return found.pop() if len(found) == 1 else None       # ⚠two daemons naming different claudes = ambiguous
 
 
 def _live_bg_hosts(snap, av, claimed):
@@ -284,10 +318,16 @@ def _live_bg_hosts(snap, av, claimed):
             continue
         p = str(pid)
         for _ in range(4):        # job -> pty host -> daemon (bounded walk)
-            p = par.get(p, "")
-            if not p or p in ("0", "1"):
+            q = par.get(p, "")
+            if not q or q in ("0", "1"):
+                # ⚠a pty host re-parented to launchd after a daemon respawn still names its spawner (same rule as term)
+                if BG_HOST_ARG in cmds.get(p, "").split():
+                    sp = _orphan_spawner(cmds[p], it.get("cwd"), cmds)
+                    if sp:
+                        claimed.add(str(sp))
                 break
-            sp = _spawned_by(cmds.get(p, ""))
+            p = q
+            sp = _spawner_pid(cmds.get(p, ""))
             if sp:
                 claimed.add(str(sp))
                 break

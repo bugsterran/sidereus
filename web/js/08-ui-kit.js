@@ -101,6 +101,7 @@ function setHtml(el, h){
 //   re-marked each new node (~48 tabindex/role/data-kb writes per 10s, measured 2026-09-26). Kept nodes stay marked.
 // ⚠Attributes added by 98-a11y (tabindex/role/data-kb on [data-kb]) are kept when the new markup lacks them.
 const MORPH_KEEP = {tabindex: 1, role: 1, 'data-kb': 1};
+function morphKind(e){ return (e.getAttribute('class') || '').trim().split(/\s+/)[0]; }
 function morphKids(o, n){
   const ok = Array.from(o.childNodes), nk = Array.from(n.childNodes);
   for(let i = 0; i < nk.length; i++){
@@ -108,8 +109,11 @@ function morphKids(o, n){
     if(!a){ o.appendChild(b); continue; }
     if(a.nodeType !== b.nodeType || a.nodeName !== b.nodeName){ o.replaceChild(b, a); continue; }
     if(a.nodeType !== 1){ if(a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; continue; }
-    for(const at of Array.from(b.attributes)) if(a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value);
+    // ⚠A marked node whose first class differs is another kind of element (row → .stdhd): replace it, so the kept
+    //   tabindex/role/data-kb never land on a non-clickable node and 98-a11y re-marks the new one if it is clickable.
     const kb = a.hasAttribute('data-kb');
+    if(kb && morphKind(a) !== morphKind(b)){ o.replaceChild(b, a); continue; }
+    for(const at of Array.from(b.attributes)) if(a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value);
     for(const at of Array.from(a.attributes))
       if(!b.hasAttribute(at.name) && !(kb && MORPH_KEEP[at.name])) a.removeAttribute(at.name);
     if(a.tagName === 'INPUT' && a.checked !== b.defaultChecked) a.checked = b.defaultChecked;

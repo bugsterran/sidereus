@@ -1,0 +1,10 @@
+{
+ "ages": {
+  "b9b90000-0000-4000-8000-00000000000a.jsonl": 100,
+  "b9b90000-0000-4000-8000-00000000000b.jsonl": 600,
+  "b9b90000-0000-4000-8000-00000000000c.jsonl": 900
+ },
+ "busy": null,
+ "guards": "a --bg-pty-host re-parented to launchd (ppid 1) still claims its spawner via the daemon on the same account dir and cwd, so the spawner's old same-cwd transcript stays ended (live._live_bg_hosts -> _orphan_spawner)",
+ "os": "mac"
+}

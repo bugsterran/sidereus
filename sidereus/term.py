@@ -1,7 +1,6 @@
 """«To terminal»: bring a live session's terminal tab to the front (iTerm2 / Terminal.app / Orca).
 Detection is metadata only (tty + TERM_PROGRAM of the claude pid). Focus runs a fixed AppleScript with the tty
 as an argv item — never text injection (AGENTS.md rule 7). Orca: fixed `orca terminal switch` argv, same rule. Owns `TERM_CFG_FILE`, `_TTY_CACHE`, `_TTY_FAIL`, `_TTY_LOCK`, `_JUMP_FAILS`, `_CWD_CACHE`, `_CWD_FAIL`, `_BG_LAST`, `_BG_LOCK`."""
-import json
 import os
 import re
 import shutil
@@ -11,7 +10,8 @@ import time
 from sidereus.config import IS_MAC, IS_WIN
 from sidereus.warn import warn_once
 from sidereus.bus import _load, _save_json
-from sidereus.ident import _slug
+# bg argv markers + spawner walk are owned by live (its path-slot claim needs the same walk; live must not import term)
+from sidereus.live import BG_HOST_ARG, _orphan_spawner, _spawner_pid
 from sidereus.live_probe import _UUID_RE, _av_cache, _ps_snap_cache, _ps_snap, agent_view, is_claude_argv
 
 TERM_CFG_FILE = "term-cfg.json"            # under DATA_DIR, via bus._load/_save_json
@@ -41,12 +41,7 @@ EXT_CLI = {"cx": ("codex", "codex resume ")}
 ORCA_CLIS = ("orca", "orca-ide")           # orca-ide = Linux binary name
 # ⚠A Claude Code background job (`claude --bg`) runs under a tty-less `--bg-pty-host`: no tab exists, and `--resume` would
 #   open a second session on the same conversation. The documented way in is `claude attach <short id from claude agents>`.
-BG_HOST_ARG = "--bg-pty-host"
 BG_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
-BG_DAEMON_ARG = " daemon run "
-BG_JSON_RE = re.compile(r"--json-path (\S+)")
-BG_RESUME_RE = re.compile(r"--resume (\S+)/projects/([^/\s]+)/[^/\s]+\.jsonl")
-BG_SPAWN_ARG = "--spawned-by "             # daemon argv: `--spawned-by {"label":..,"cwd":..,"pid":N}` = the terminal claude that started it
 
 # ⚠The tty arrives only as `item 1 of argv` — never format it into the script text.
 _SCRIPT_ITERM = """on run argv
@@ -189,48 +184,6 @@ def _term_of(pids):
         if hit and (hit[1] or hit[3]):
             return {"app": hit[2], "tty": hit[1]}
     return None
-
-
-def _spawned_by(cmd):
-    """The `--spawned-by <json>` object of a daemon argv, or None."""
-    i = (cmd or "").find(BG_SPAWN_ARG)
-    if i < 0:
-        return None
-    try:
-        obj = json.JSONDecoder().raw_decode(cmd, i + len(BG_SPAWN_ARG))[0]
-    except ValueError:
-        return None
-    return obj if isinstance(obj, dict) else None
-
-
-def _spawner_pid(cmd):
-    """Int pid from a daemon argv's `--spawned-by <json>`, or None (strict: one JSON object, int pid > 1)."""
-    p = (_spawned_by(cmd) or {}).get("pid")
-    return p if isinstance(p, int) and not isinstance(p, bool) and p > 1 else None
-
-
-def _orphan_spawner(host_cmd, cwd, cmds):
-    """Spawner pid for a `--bg-pty-host` re-parented to launchd after a daemon respawn, or None.
-    ⚠The daemon's `--spawned-by` is the claude that started the daemon, not this job: require the same account dir
-    (host `--resume <acct>/projects/<slug>/…`, daemon `--json-path` under <acct>) and the same cwd (av cwd, else slug)."""
-    m = BG_RESUME_RE.search(host_cmd or "")
-    if not m:
-        return None
-    acct, slug = m.group(1).rstrip("/") + "/", m.group(2)
-    cwd = cwd if isinstance(cwd, str) else ""
-    found = set()
-    for c in cmds.values():
-        if BG_DAEMON_ARG not in c:
-            continue
-        j = BG_JSON_RE.search(c)
-        sb = _spawned_by(c) or {}
-        scwd = sb.get("cwd") if isinstance(sb.get("cwd"), str) else ""
-        if not (j and j.group(1).startswith(acct) and scwd) or (scwd != cwd if cwd else _slug(scwd) != slug):
-            continue
-        sp = _spawner_pid(c)
-        if sp:
-            found.add(sp)
-    return found.pop() if len(found) == 1 else None       # ⚠two daemons naming different claudes = ambiguous
 
 
 def _bg_term(pids, av, snap, force=False, last=None):

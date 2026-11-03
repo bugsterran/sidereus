@@ -93,7 +93,7 @@ function kbHelpOpen(){
     + '<div class=kbhn>'+esc(T('Inactive while typing or with Cmd/Ctrl/Alt held.'))+'</div>'
     + '<button class=kbhtour>'+esc(T('Replay the tour'))+'</button>';
   p.querySelector('.kbhx').onclick = () => kbHelpClose(true);
-  p.querySelector('.kbhtour').onclick = () => { kbHelpClose(false); tourOpen(0); };   // 98b-tour.js
+  p.querySelector('.kbhtour').onclick = () => { kbHelpClose(true); tourOpen(0); };   // ⚠ focus back to the opener first: tourOpen saves activeElement as its Esc return target (98b-tour.js)
   kbHelpFrom = document.activeElement;
   p.hidden = false; p.focus();
 }

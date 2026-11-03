@@ -187,7 +187,9 @@ class StateReplay(unittest.TestCase):
     def _fakes(self, d, case, dirs):
         is_mac = case.get("os", "mac") == "mac"
         ps = _read(d, "ps.json", {"procs": [], "cwd": {}})
-        snap = [tuple(r) for r in ps.get("procs") or []] if is_mac else []
+        # `@ACCT@` in an argv = the primary temp account dir (real bg argv carry absolute config-dir paths)
+        acct = dirs[next(a["label"] for a in case.get("accounts") or [{"label": "main", "primary": True}] if a.get("primary"))]
+        snap = [tuple(str(x).replace("@ACCT@", acct) for x in r) for r in ps.get("procs") or []] if is_mac else []
         out = _read(d, "agents.json")
         per = {m.group(1): _read(d, n) for n in os.listdir(d) for m in [_AGENTS_RE.match(n)] if m}
         prim = {a["label"] for a in case.get("accounts") or [{"label": "main", "primary": True}] if a.get("primary")}
