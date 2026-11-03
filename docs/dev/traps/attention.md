@@ -185,3 +185,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ absolute times: `bg_idle` returns `at` (oldest idle mtime), sub rows carry `idleAt` (log mtime); the ack key uses only non-list signals. `tests/test_attention.py` `TestSinceStable`, `tests/test_attention_ack_js.py` `ListOnlyChurn`.
   - ⚠Never key an ack on `now - <age>` from a cached snapshot; carry the absolute event time from where it is measured.
   - ★2026-11-02 live: bgidle since 1793596062/103/062/079 over 4 polls before; identical over 6 polls and a restart after.
+- **«Question waiting» stayed after the person replied** (`attention._ask_open`, `parse._scan_tail`). Cause: large records pushed the reply past the 400 KB transcript tail, so `humanAt` was 0 and read as «never replied».
+  - ⇒ the parse also returns `tailAt` (oldest record time in the tail); with `humanAt` 0 the card drops only when `tailAt > card time`; `tailAt` 0 (old parse cache, hook-only CLI rows) still holds. `tests/test_attention.py`, `tests/test_ask_state.py`.
+  - ⚠`humanAt` 0 is «not in the window», not «no reply». ⚠Keep the hold when the window covers the card and has no human line — a real unanswered question must not vanish.
+  - ★Measured: replies sat ~607 KB from the end of the transcript.

@@ -100,6 +100,27 @@ class ParseAndState(Patch):
         self.assertEqual(p["humanAt"], int(parse._line_ts(json.loads(u("2026-09-24T00:50:00.000Z", "")), 0)))
         self.assertEqual(self.parse([asst({"type": "text", "text": "x"})])["humanAt"], 0)
 
+    def test_human_line_beyond_tail_window(self):
+        # A human reply >400 KB from the end falls outside the tail: humanAt 0, tailAt after that reply.
+        import os, tempfile
+        def rec(ts, typ, content):
+            return json.dumps({"type": typ, "sessionId": "s1", "cwd": CWD, "timestamp": ts,
+                               "message": {"content": content}})
+        big = [{"type": "text", "text": "x" * 100_000}]
+        lines = [rec("2026-09-24T00:50:00.000Z", "user", [{"type": "text", "text": "yes, go"}])]
+        lines += [rec("2026-09-24T00:5%d:00.000Z" % (1 + i), "assistant", big) for i in range(6)]
+        d = tempfile.mkdtemp()
+        self.addCleanup(lambda: (os.remove(fp), os.rmdir(d)))
+        fp = os.path.join(d, "s1.jsonl")
+        with open(fp, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        self.patch(parse, "_running_bg", lambda fp: ([], [], []))
+        self.patch(parse, "_cwd_from_slug", lambda s: CWD)
+        p = parse._parse_transcript(fp)
+        reply = int(parse._line_ts(json.loads(lines[0]), 0))
+        self.assertEqual(p["humanAt"], 0)
+        self.assertGreater(p["tailAt"], reply)
+
     def test_question_text_beside_bash_stays_tool(self):
         # a '?' in text sets `ask`, but the pending tool is Bash — it is running, not waiting on the user
         p = self.parse([asst({"type": "text", "text": "run it?"}, tu("Bash", "b1"))])

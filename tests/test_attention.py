@@ -225,8 +225,19 @@ class TestCards(Base):
         self.assertEqual([s["k"] for s in row["sigs"]], ["ask"])
         self.assertEqual((row["sigs"][0]["pts"], row["sigs"][0]["why"]), (90, "질문 대기"))
         # a newer row of the same cwd does not take it
-        out = self.run_att([sess("a", state="think", age=5, humanAt=0), sess("b", state="run", age=1)], [c])
+        out = self.run_att([sess("a", state="think", age=5, humanAt=0, tailAt=int(NOW - 3600)),
+                            sess("b", state="run", age=1)], [c])
         self.assertEqual([r["sid"] for r in out], ["a"])
+
+    def test_ask_card_humanat_zero_needs_tail_cover(self):
+        # humanAt 0 proves «no reply» only when the parsed tail reaches back to the card
+        at = int(NOW - 120)
+        c = {"kind": "ask", "cwd": "/w/p", "sid": "a", "project": "p", "at": iso(at)}
+        self.assertIsNone(self.one(sess("a", state="tool", humanAt=0, tailAt=at + 600), [c]))   # reply fell out of the tail
+        self.assertEqual(self.kinds(sess("a", state="tool", humanAt=0), [c]), ["ask"])          # tail start unknown: hold
+        # tail unknown (0) or covering the card with no human line: a real unanswered question stays
+        for ta in (0, at, at - 600):
+            self.assertEqual(self.kinds(sess("a", state="tool", humanAt=0, tailAt=ta), [c]), ["ask"])
 
     def test_ask_card_cleared(self):
         c = {"kind": "ask", "cwd": "/w/p", "sid": "a", "project": "p", "at": iso(NOW - 120)}

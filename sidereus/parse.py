@@ -315,8 +315,18 @@ def _scan_tail(rows):
             break
     shp = shp or {"shape": None, "askTool": False, "mid": None, "ask": False, "reply": "",
                   "abort": False, "err": False}
+    # ⚠Oldest record time in the window: humanAt 0 means «no reply» only when the tail reaches back that far.
+    tail_at = 0
+    for line in rows:
+        try:
+            tail_at = int(_line_ts(json.loads(line), 0) or 0)
+        except Exception:
+            continue
+        if tail_at:
+            break
     return {"cwd": cwd, "branch": branch, "sid": sid, "tool": tool, "targ": targ, "kind": kind, "ctx": ctx,
-            "model": model, "task": task, "actAt": act_at, "humanAt": human_at, "use": use, "shp": shp}
+            "model": model, "task": task, "actAt": act_at, "humanAt": human_at, "tailAt": tail_at,
+            "use": use, "shp": shp}
 
 
 def _ask_pending(rows, shp):
@@ -375,7 +385,7 @@ def _parse_transcript(fp):
     ask_tool = _ask_pending(rows, shp)
     cwd = _session_cwd(fp, t["cwd"])
     creq, burn, rpm = _use_rate(t["use"])
-    return {"actAt": t["actAt"], "humanAt": t["humanAt"], "creq": int(creq), "burn": int(burn), "rpm": rpm,
+    return {"actAt": t["actAt"], "humanAt": t["humanAt"], "tailAt": t["tailAt"], "creq": int(creq), "burn": int(burn), "rpm": rpm,
             "sid": t["sid"], "cwd": cwd, "branch": t["branch"], "tool": t["tool"], "targ": t["targ"],
             "kind": t["kind"], "ctx": t["ctx"],
             "sub": sub, "bgs": bgs, "mon": mon,
