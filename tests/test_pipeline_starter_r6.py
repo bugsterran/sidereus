@@ -44,11 +44,34 @@ class Starter(unittest.TestCase):
         self.w("Cargo.toml", "")
         self.assertEqual(ST.detect_test(self.proj), "cargo test")
         os.makedirs(os.path.join(self.proj, "tests"))
+        self.assertEqual(ST.detect_test(self.proj), "cargo test")   # a tests/ folder alone is not pytest
+        self.w("pytest.ini", "[pytest]\n")
         self.assertEqual(ST.detect_test(self.proj), "python3 -m pytest -q")
         self.w("package.json", json.dumps({"scripts": {"test": 'echo "Error: no test specified" && exit 1'}}))
         self.assertEqual(ST.detect_test(self.proj), "python3 -m pytest -q")   # npm init stub is not a test
         self.w("package.json", json.dumps({"scripts": {"test": "jest"}}))
         self.assertEqual(ST.detect_test(self.proj), "npm test")
+
+    def test_pytest_only_on_explicit_evidence(self):
+        os.makedirs(os.path.join(self.proj, "tests"))
+        self.w("pyproject.toml", '[project]\nname = "x"\n# [tool.pytest.ini_options] in a comment\n')
+        self.w("setup.cfg", "[metadata]\nname = x\n")
+        self.w("tox.ini", "[tox]\nenvlist = py39\n")
+        self.w("tests/test_a.py", "import unittest\n")
+        self.assertIsNone(ST.detect_test(self.proj))   # unittest repo: undetected, never guessed
+        evidence = (("pytest.ini", ""), ("conftest.py", ""), ("tests/conftest.py", ""),
+                    ("pyproject.toml", '[project]\nname = "x"\n\n[tool.pytest.ini_options]\naddopts = "-q"\n'),
+                    ("setup.cfg", "[metadata]\nname = x\n[tool:pytest]\ntestpaths = tests\n"),
+                    ("tox.ini", "[tox]\n[pytest]\naddopts = -q\n"))
+        for rel, text in evidence:
+            sub = os.path.join(self.tmp, "p-" + rel.replace("/", "-"))
+            os.makedirs(os.path.join(sub, "tests"))
+            fp = os.path.join(sub, rel)
+            with open(fp, "w", encoding="utf-8") as f:
+                f.write(text)
+            self.assertEqual(ST.detect_test(sub), "python3 -m pytest -q", rel)
+            os.remove(fp)
+            self.assertIsNone(ST.detect_test(sub), rel)   # negative control: same tree without the evidence
 
     def test_resolve_agent(self):
         self.assertEqual(ST.resolve_agent("review", ["x-reviewer", "a-fixer"]), "x-reviewer")

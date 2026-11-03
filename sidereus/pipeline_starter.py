@@ -39,6 +39,23 @@ def _read(fp):
         return None
 
 
+# ⚠Explicit pytest config only: a tests/ folder or a bare pyproject.toml also fits unittest/JS/Go repos (undetected = person types it).
+_PYTEST_CFG = (("pyproject.toml", re.compile(r"^\s*\[tool\.pytest", re.M)),
+               ("setup.cfg", re.compile(r"^\s*\[tool:pytest\]", re.M)),
+               ("tox.ini", re.compile(r"^\s*\[pytest\]", re.M)))
+
+
+def _pytest_evidence(proj):
+    if any(_read(os.path.join(proj, *p)) is not None
+           for p in (("pytest.ini",), ("conftest.py",), ("tests", "conftest.py"))):
+        return True
+    for f, rx in _PYTEST_CFG:
+        t = _read(os.path.join(proj, f))
+        if t is not None and rx.search(t):
+            return True
+    return False
+
+
 def detect_test(proj):
     """Test command from project files (read only, never run), or None."""
     pk = _read(os.path.join(proj, "package.json"))
@@ -50,8 +67,7 @@ def detect_test(proj):
         t = sc.get("test") if isinstance(sc, dict) else None
         if isinstance(t, str) and t.strip() and _NPM_STUB not in t:
             return "npm test"
-    if any(_read(os.path.join(proj, f)) is not None for f in ("pyproject.toml", "pytest.ini")) or \
-            os.path.isdir(os.path.join(proj, "tests")):
+    if _pytest_evidence(proj):
         return "python3 -m pytest -q"
     if _read(os.path.join(proj, "Cargo.toml")) is not None:
         return "cargo test"

@@ -65,7 +65,7 @@ class RedCount(unittest.TestCase):
 
         def status(name, stages):
             calls.append(len(stages))
-            return {s["title"]: {"verdict": "fail"} for s in stages if s["gate"] in ("npm test", "go test")}
+            return {s["title"]: {"verdict": "pass"} for s in stages if s["gate"] in ("npm test", "go test")}
         from sidereus import pl_eval
         with mock.patch.object(pl_eval, "redcheck_status", status):
             out = PL._red_counts(rows)

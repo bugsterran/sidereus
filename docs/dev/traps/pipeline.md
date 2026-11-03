@@ -379,7 +379,17 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠`rc` lives only in redcheck.json and the red row's step name — never add it to `GATE_MODES` or `evidence_rec.MODES` (graded runs would then expect evidence rows the gate never writes).
 - ⚠`sidereus redcheck` is dispatched before the `--help` check, or its own flags would print the launcher usage.
 
+## Red check `rc` false pass on an always-failing gate (`scripts/pl_eval.py` `_red_gate` · `pipeline._red_counts`)
+- Cause: `rc` judged only the broken clone, so a gate that always fails (wrong command, broken test, missing pytest) recorded «pass», and the «Gate red-checked» step counted any record (skip/fail too).
+- Fix: `rc` runs the gate on the clean clone first; rc ≠ 0 there = skip «gate fails on a clean clone». Row `red` counts only verdict «pass».
+- ⚠Never judge a red check from the broken run alone — `tests/test_pl_eval_rc_clean_first.py`.
+
 ## «Start with recommended setup» reply shape and blank gate (`sidereus/pipeline_starter.py` · `web/js/48l-pipeline-start.js`)
 - Cause: the client printed `files` rows ({rel, state}) with `String()` and read a `written` list the server never sends; a blank gate got 400 though the input says «Empty — the gate is left out»; a dry error replaced the whole form.
 - Fix: show `rel`, build the saved message from rows with `state === 'written'`; a sent blank `gate` = no gate (missing key = detected); an error renders under the form with Confirm disabled.
 - ⚠Do not drop the `gate` key client-side when blank — the server would fall back to the detected command. JS test stubs must return the real server shape (`tests/test_pl_starter_preview_r6_js.py`).
+
+## Starter gate guessed pytest (`sidereus/pipeline_starter.py` `detect_test`)
+- Cause: a `tests/` folder or any `pyproject.toml` returned `python3 -m pytest -q`, so unittest, JS and Go repos got a gate that cannot run.
+- Fix: pytest only on explicit config — `pytest.ini`, `conftest.py` (root or `tests/`), `[tool.pytest` in `pyproject.toml`, `[tool:pytest]` in `setup.cfg`, `[pytest]` in `tox.ini`; else undetected and the person types the gate (blank = no gate).
+- ⚠Never infer a runner from folder names or a bare manifest (`tests/test_pipeline_starter_r6.py`).
