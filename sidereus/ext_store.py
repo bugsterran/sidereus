@@ -108,14 +108,14 @@ def _ext_aged_out(v, now):
     """Row is past EXT_TTL_S and may be dropped by age.
     ⚠A row with a pid is never aged out: ext_gone_check is its exit (live idle CLIs vanished after 24 h; gone rows keep the grace)."""
     if v.get("ended"):                            # folded row: its own clock, before the pid/pending rules (R2)
-        return not isinstance(v["ended"], (int, float)) or now - v["ended"] > EXT_DONE_KEEP_S
+        return not isinstance(v["ended"], (int, float)) or not now - v["ended"] <= EXT_DONE_KEEP_S
     if _pending(v) or v.get("pid"):
         return False
     try:
         last = float(v.get("lastSeen") or 0)
     except (TypeError, ValueError):
         last = 0
-    return now - last > EXT_TTL_S
+    return not now - last <= EXT_TTL_S          # ⚠`not <=`: a stored NaN lastSeen ages out
 
 
 def _ext_prune_locked(now):
@@ -174,7 +174,7 @@ def _runs_save_locked():
 
 
 def _runs_prune_locked(now):
-    for k in [k for k, v in _runs.items() if now - float(v.get("end") or 0) > EXT_RUNS_TTL_S]:
+    for k in [k for k, v in _runs.items() if not now - float(v.get("end") or 0) <= EXT_RUNS_TTL_S]:   # NaN ages out
         _runs.pop(k, None)
     if len(_runs) > EXT_RUNS_MAX:
         for k in sorted(_runs, key=lambda k: float(_runs[k].get("end") or 0))[:len(_runs) - EXT_RUNS_MAX]:
@@ -257,7 +257,7 @@ def _hooktok_load():
             gens = {}
             for g, v in e["gens"].items():
                 if _sid_ok(str(g)) and isinstance(v, list) and len(v) == 6 and all(_usage_ok(x) for x in v[:4]) \
-                        and isinstance(v[4], (int, float)) and isinstance(v[5], str):
+                        and isinstance(v[4], (int, float)) and 0 <= v[4] < 1e11 and isinstance(v[5], str):
                     gens[str(g)] = [v[0], v[1], v[2], v[3], float(v[4]), v[5][:40]]
             if gens:
                 _hooktok[plat + "|" + sid] = {"cwd": str(e.get("cwd") or ""), "gens": gens}
@@ -376,7 +376,7 @@ def ext_ingest(req):
         return False, "unknown platform"
     now = time.time()
     try:
-        ts = float(req.get("ts") or 0) or now
+        ts = t if 0 < (t := float(req.get("ts") or 0)) <= now + 300 else now   # ⚠NaN/inf/future never age out
     except (TypeError, ValueError):
         ts = now                                  # ★if `ts` is missing or broken, it is **the receive time**
     key = (plat, sid)

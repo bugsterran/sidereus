@@ -94,7 +94,10 @@ class PlWatchFollow(unittest.TestCase):
             src = f.read()
         i = src.index("function plCanvas(")
         body = src[i:src.index("\n}", i)]
-        self.assertIn("plWatchFor(p) && typeof plWatchFollow === 'function') plWatchFollow(E, lt, plWRunKey(plViewRun(PLS.proj, p.name)))", body)
+        self.assertIn("const wt = typeof plWatchFor === 'function' && plWatchFor(p);", body)
+        self.assertIn("if(wt && lv === undefined) lv = plViewRun(PLS.proj, p.name);", body)   # one plViewRun per paint: the caller's lv when passed
+        self.assertIn("if(wt && typeof plWatchFollow === 'function') plWatchFollow(E, lt, plWRunKey(lv))", body)
+        self.assertIn("plWatchPane(E, d, lv, lt)", body)
         self.assertLess(body.index("plWatchFollow(E, lt"), body.index("plNodeHtml("))   # before node HTML reads E.sel
 
     def test_r4_edit_never_follows(self):

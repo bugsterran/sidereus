@@ -492,7 +492,8 @@ function plOvPick(proj, name, sid){   // same as a chip click + pipeline pick; �
     else if(d && d.ok && !(d.borrowed || []).some(b => b && b.name === name)) PLS.data[proj] = null;   // stale borrowed list: paintPipe reloads it
   }
   plProjGo(proj); PLS.sel = name; PLS.wf = null;
-  PLS.nowSid = ns;   // ⚠after plProjGo, which clears it; marks the «Working now» row
+  PLS.runSel = null;   // ⚠the destination's saved past-run pick would cover the live run just clicked
+  PLS.nowSid = ns;   // marks the «Working now» row
   if(!PLS.projs) PLS.pend = proj;   // ⚠plLoadProjs would reset a project not in its list (borrowed-only) to the first one
   PLAG = false;   // an open arch-map panel (48h) would hide the picked pipeline
   PLNEW = null; PLS.std = ''; PLS.diff = null; PLS.del = null; PLS.msg = ''; plPaint();

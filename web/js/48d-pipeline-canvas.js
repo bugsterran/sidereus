@@ -183,10 +183,12 @@ function plNodeHtml(E, n, bad, lt){
     + mln + (chips.length || unv ? '<div class=plnc title="' + esc(chips.map(c => c[0] + ' — ' + c[1]).join('\n')) + '">' + unv + esc(chips.map(c => c[0]).join(' · ')) + '</div>' : '')
     + (L && typeof PLS === 'object' ? plEvLine(plEvRows(PLS.proj), L, plEvCommits(PLS.proj), typeof FEATS === 'object' && FEATS.harness !== false) : '') + live + pb + '</div>';
 }
-function plCanvas(p, d, lt){
+function plCanvas(p, d, lt, lv){   // lv = the caller's plViewRun result (Watch), computed here when not passed
   const E = plEnt(p), G = E.G, chk = plgCheck(G), bad = {};
   E.lt = lt || null;
-  if(typeof plWatchFor === 'function' && plWatchFor(p) && typeof plWatchFollow === 'function') plWatchFollow(E, lt, plWRunKey(plViewRun(PLS.proj, p.name)));   // before node HTML reads E.sel; same run the pane shows
+  const wt = typeof plWatchFor === 'function' && plWatchFor(p);
+  if(wt && lv === undefined) lv = plViewRun(PLS.proj, p.name);
+  if(wt && typeof plWatchFollow === 'function') plWatchFollow(E, lt, plWRunKey(lv));   // before node HTML reads E.sel; same run the pane shows
   chk.errs.forEach(x => { if(x.id) bad[x.id] = 1; });
   const v = E.view || { x: 0, y: 0, z: 1 }, VG = plVG(E);
   const mx = Math.max(1200, ...VG.nodes.map(n => n.ui.x + plgW(G, n.id) + 240)), my = Math.max(600, ...VG.nodes.map(n => n.ui.y + plgH(G, n.id) + 240 + PLG_LANE * G.loops.length));
@@ -206,7 +208,7 @@ function plCanvas(p, d, lt){
   const errs = chk.errs.length ? '<ul class=plerrs>' + chk.errs.map(x => '<li' + (x.id ? ' data-plpick="' + esc(x.id) + '"' : '') + '>' + esc(x.msg) + '</li>').join('') + '</ul>' : '';
   const gh = '<div class=plgh data-plgh title="' + esc(T('Drag to resize · double-click to reset', 'height')) + '"></div>';
   // 48k Watch: no palette, no editor; the selected stage's result sits in the panel slot. ⚠Edit output must stay byte-identical.
-  if(typeof plWatchFor === 'function' && plWatchFor(p)) return { html: '<div class="plgw plwt">' + cv + errs + '</div>' + plWGrip('p') + plWatchPane(E, d, plViewRun(PLS.proj, p.name), lt) + '</div>', ok: !chk.errs.length };
+  if(wt) return { html: '<div class="plgw plwt">' + cv + errs + '</div>' + plWGrip('p') + plWatchPane(E, d, lv, lt) + '</div>', ok: !chk.errs.length };
   return { html: '<div class=plgw>' + plPalette(E, d.catalog)
     + cv + errs + '</div>' + gh + plPanel(E, d) + '</div>', ok: !chk.errs.length };
 }

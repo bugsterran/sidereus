@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- Pipelines: each project keeps its own picked run across project switches, and a run clicked from the overview is no longer covered by an older saved pick.
+- Sessions: folding one session's «Team» block no longer folds it on every card.
+- External sessions and run requests: a non-finite or far-future hook timestamp no longer keeps a row alive forever.
 - Settings: «Terminal integration» buttons now save (a session terminal-jump listener swallowed the click); notifications can be turned on; the header health warning switches language at once; a one-digit hour such as 9:05 is accepted for the saver target time; Start view and Language help texts describe what actually happens.
 - Saver: saving with no hook folder returns «Hook folder not found» instead of failing with FileNotFoundError.
 - Diagnostics › Connect: a file holding only the user's own hooks shows as not connected instead of «Partly connected»; after Apply the «Connected…» message stays until Close.

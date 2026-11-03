@@ -100,7 +100,7 @@ function sessTreeHtml(x){
   // ★**Show all**. Folding to 5 was tried and
   //   reverted — how many are running is this panel's purpose, and folding hides that answer.
   //   If height runs short the panel scrolls (#sess already has overflow-y:auto).
-  const treeIn = sessTeamHtml(x.team) + sessWfHtml(x.wf) + sessKid(T('Subagents'),'a',sessNest(x.sub))
+  const treeIn = sessTeamHtml(x.team, x.sid) + sessWfHtml(x.wf) + sessKid(T('Subagents'),'a',sessNest(x.sub))
                + sessKid(T('Command'),'b',sessByIdle(x.bgs)) + sessKid(T('Monitors'),'m',x.mon)
                + sessGmKids(x.gms);
   return treeIn ? '<div class=stree>'+treeIn+'</div>' : '';
@@ -257,8 +257,9 @@ function sessWfHtml(list){
 }
 // ★Agent team the session leads (2026-09-26): «Team · N members · tasks done/total», members = name · state · current task
 //   subject · unread count. ⚠Task descriptions and inbox message text never reach the page (server sends counts/subjects).
-function sessTeamHtml(t){
+function sessTeamHtml(t, sid){
   if(!t) return '';
+  const tk = 'team:' + (sid || '');   // per-session fold key — a shared 'team' folded every card
   const ST = {run: T('working'), idle: T('idle'), done: T('Done')};
   const tc = t.tasks || {};
   const head = esc(T('members ') + (t.members || []).length + ' · ' + T('tasks ')) + wfBar(t.done, t.total)
@@ -270,7 +271,7 @@ function sessTeamHtml(t){
     + '<span class=e>' + esc(ST[m.st] || m.st || '') + '</span>'
     + (m.unread ? '<span class="e tmu" title="' + esc(TV({msg: '{n} unread messages', vars: {n: m.unread}})) + '">'
         + esc(T('unread ') + m.unread) + '</span>' : '') + '</div>').join('');
-  return '<details class="swf' + (t.run ? ' on' : '') + '" data-wf="team"' + (wfFold.has('team') ? '' : ' open') + '>'
+  return '<details class="swf' + (t.run ? ' on' : '') + '" data-wf="' + esc(tk) + '"' + (wfFold.has(tk) ? '' : ' open') + '>'
     + '<summary class=sti title="' + esc(T('Agent team — members · tasks done/total · tasks by status')) + '">'
     + '<span class="k w">' + esc(T('Team')) + '</span><span class=v>' + head + '</span></summary>' + kids + '</details>';
 }

@@ -211,7 +211,9 @@ function plChips(){
 function plProjGo(p){
   if(p === PLS.proj) return false;
   PLS.proj = p; lsSet('sidereus.plproj', PLS.proj); PLNEW = null; PLDRAFT = null; PLSTD = false; PLS.std = ''; PLS.wf = null; PLS.diff = null; PLS.del = null; PLS.msg = '';
-  PLS.nowSid = ''; PLS.nowPick = null;   // 48j: the previous project's session / stage pick
+  PLS.nowPick = null;   // 48j stage pick; ⚠nowSid/runSel are per project (plProjPref): clearing them here wiped the destination's saved pick
+  const ss = typeof SESS === 'object' && SESS || [];   // restored nowSid whose session ended must not come back (runSel self-checks in 48b plViewRun)
+  if(PLS.nowSid && ss.length && !ss.some(x => x && x.sid === PLS.nowSid && !['done', 'abort', 'gone'].includes(x.state))) PLS.nowSid = '';
   PLS.pipeTop = 0;   // one saved scroll: never restore another project's
   return true;
 }
@@ -335,7 +337,7 @@ function plRunBtn(p, dirty){
 }
 // 48k Watch: one head row (project · pipeline · Edit · run progress · Run); no Apply, gate counts, evaluation or write previews.
 function plWatchBody(p, d, row, hd, ov, mb){
-  const lv = plViewRun(PLS.proj, p.name), lt = lv ? (lv.lt || plLight(p.stages, lv.run)) : null, dirty = plDirty(p.name), cv = plCanvas(p, d, lt);
+  const lv = plViewRun(PLS.proj, p.name), lt = lv ? (lv.lt || plLight(p.stages, lv.run)) : null, dirty = plDirty(p.name), cv = plCanvas(p, d, lt, lv);
   const act = '<span class=plact>' + (dirty ? '<span class=plwdirty>' + esc(T('Unsaved changes — Edit to save')) + '</span>' : '') + (mb || '') + plRunBtn(p, dirty) + '</span>';
   const head = plHeadRow(hd, row + '<span class=plwrun>' + plLiveHead(lv, lt) + '</span>' + act);
   return head + plUseLine(p) + plNewForm() + cv.html + plWGrip('r') + plWatchOv(ov) + plRunPanel(p, d.models || [])
