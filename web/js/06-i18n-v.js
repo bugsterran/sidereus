@@ -25,7 +25,7 @@ Object.assign(I18N.ko, {
   'not logged in to the mailbox': '메일박스 미접속',
   'Send a run request': '실행 요청 보내기',
   'No live session in this project': '이 프로젝트에 살아 있는 세션이 없습니다', 'One-line request': '한 줄 요청',
-  'Change models for this run only': '이번 실행만 모델 바꾸기', 'saved': '저장값', 'Message to send': '보낼 메시지',
+  'Change models for this run only': '이번 실행만 모델 바꾸기', '{n} changed': '{n}개 바꿈', 'saved': '저장값', 'Message to send': '보낼 메시지',
   'Confirm — send': '확인 — 보내기', 'Last run': '최근 실행',
   'Sending…|run': '보내는 중입니다', 'No session to send to': '보낼 세션이 없습니다',
   'This session is not logged in to the mailbox, so it cannot receive the request': '이 세션이 메일박스에 접속하지 않아 보낼 수 없습니다',

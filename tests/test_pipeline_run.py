@@ -764,3 +764,28 @@ class ShippedStageNames(unittest.TestCase):
                         miss.add(t)
         self.assertEqual(sorted(miss), [])
         self.assertEqual(_js("(LANG='en', plgShow('진단'))"), "Diagnose")
+
+
+class RunPanelLayer(unittest.TestCase):
+    """«Run» opens a side layer (fixed overlay), not a block appended under the canvas; explanations are tooltips."""
+    def _html(self):
+        src = ("const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\"/g, '&quot;'); const T = s => s; const TV = j => j.msg.replace('{n}', j.vars.n);\n"
+               "const sid8 = s => s.slice(0, 8); const PLS = {proj: '/p'}; let PLRUN = {name: 'x', sid: 's1', req: 'do it', models: {}, busy: false, mode: 'direct'};\n"
+               "function plSessions(){ return [{sid: 's1', model: 'opus', login: true, id: 'me'}]; } function plDmFor(){ return 'DM'; }\n"
+               + "\n".join(js_fn(f) for f in ("plRunPanel", "plGoWhy", "plRunModels", "plCxHint"))
+               + "\nconsole.log(JSON.stringify(plRunPanel({name: 'x', defaults: {model: 'opus'}, stages: [{title: 'A'}]}, ['opus'])));")
+        return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
+
+    def test_layer_with_close_and_tooltips(self):
+        h = self._html()
+        self.assertTrue(h.startswith('<div class=plrun role=dialog'))
+        self.assertIn('data-plrx aria-label="Cancel">', h)   # header close button
+        self.assertIn('title="Direct reuses the same agent', h)   # mode explanation is a tooltip
+        self.assertNotIn('<div class=plfd>Direct reuses', h)   # no longer an extra visible line
+        self.assertIn('title="The session runs it — Sidereus runs nothing">?</span>', h)
+        self.assertIn('data-plrmo aria-expanded=false>▸ Change models for this run only</button></div>', h)   # stage rows collapsed by default
+        self.assertNotIn('data-plrm="A"', h)
+
+    def test_css_is_fixed_overlay(self):
+        css = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "css", "43-pipeline.css"), encoding="utf-8").read()
+        self.assertRegex(css, r"\.plrun\{position:fixed;")

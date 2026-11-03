@@ -202,11 +202,17 @@ html[data-ui=next][data-ui] .plact .wkrgb[disabled]{opacity:.45;cursor:default}
 @media (prefers-reduced-motion:reduce){.plrtdot{animation:none}}
 .plrunst{font-size:12px;color:#9aa6b8;margin:0 0 6px}
 .plrunst.on{color:#8fb3f5}
-.plrun{margin-top:10px;border:1px solid #2b3545;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:6px;max-width:900px}
+.plrun{position:fixed;z-index:70;top:56px;right:12px;max-height:calc(100vh - 68px);width:min(520px,calc(100vw - 24px));overflow:auto;border:1px solid #2b3545;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--nx-panel,#121417);box-shadow:-6px 0 24px rgba(0,0,0,.4)}   /* side layer: never shifts the canvas */
 .plrun .pll>span{flex:0 0 64px}
+.plrun .brh2{display:flex;align-items:center;gap:6px}
+.plrun>.brh2:first-child{margin-top:0;border-top:0;padding-top:0}   /* layer title sits at the top edge */
+.plrun .plrxx{margin-left:auto;padding:0 7px}
+.plrun .plprev{flex:0 1 auto;max-height:40vh;overflow:auto}
+.plhelp{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border:1px solid #3a4558;border-radius:50%;font-size:10px;font-style:normal;color:#8a96a8;cursor:help}
 .plreq{flex:1 1 auto;min-width:0;font-size:12px}
 .plrms{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
-.plrmh{font-size:12px;color:#8b95a5;flex-basis:100%}
+.plrmh{font-size:12px;color:#8b95a5;flex-basis:100%;text-align:left;background:none;border:0;padding:2px 0;cursor:pointer}
+.plrmh:hover{color:#c3ccda}
 .plrms .pll>span{flex:none}
 .plprev{white-space:pre-wrap;word-break:break-word;font-size:12px;margin:0}
 html[data-mv=pipe] .wrap{max-width:none}

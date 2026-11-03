@@ -50,7 +50,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 
 ### Request a run
 1. «▶ Run» (disabled with unsaved edits: save first).
-2. In «Send a run request» pick the mode («Session runs it directly (default)» or «Workflow»; Workflow is not offered for Codex), the session (only sessions logged in to the mailbox), a one-line request, and optionally «Change models for this run only».
+2. In «Send a run request» pick the mode («Session runs it directly (default)» or «Workflow»; Workflow is not offered for Codex), the session (only sessions logged in to the mailbox), a one-line request, and optionally «Change models for this run only» (collapsed; it shows how many stages differ). The panel opens as a layer on the right; Esc or ✕ closes it.
 3. Check «Message to send», then «Confirm — send». A greyed button names what is missing in its tooltip.
 - The session runs the pipeline with its own permissions; Sidereus runs nothing. A Codex session picks the request up when its current or next turn ends.
 
