@@ -67,6 +67,43 @@ class BadgeSlide(unittest.TestCase):
         self.assertEqual(self.c["leg"], 1)
 
 
+# two parallel horizontal edges 20px apart: edge 0's nearest pill spot (16px above y=100) crosses edge 1's line at y=80
+LINES = """
+const run2 = (blocks) => { const L = { nodes: blocks || {}, sgs: {}, w: 400, h: 200, edges: [
+  { from: 'p', to: 'q', label: 'xxxxxxxxxx', pts: [[0, 100], [400, 100]] },
+  { from: 'r', to: 's', pts: [[0, 80], [400, 80]] }] };
+  return mmdFlPlace({}, L).labs[0]; };
+// every spot below y=100 is a node; every spot above crosses the other line -> fallback to the old free spot
+const wall = { b: { x: 0, y: 103, w: 400, h: 97 } };
+process.stdout.write(JSON.stringify([run2(), run2(wall)]));
+"""
+
+
+def seg_hits(R, y, m=2):
+    return R["y"] - m < y < R["y"] + R["h"] + m
+
+
+class LabelClearOfLines(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        js = "\n".join([MPRE] + [js_fn(f) for f in MFNS] + [LINES])
+        r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+        if r.returncode != 0:
+            raise AssertionError(r.stderr.decode())
+        cls.free, cls.forced = json.loads(r.stdout)
+
+    def test_pill_avoids_other_edge_line(self):
+        R = self.free["R"]
+        self.assertNotIn("num", self.free)
+        self.assertFalse(seg_hits(R, 80), R)
+        self.assertGreaterEqual(R["y"], 100)   # took the spot below its own line
+
+    def test_every_spot_on_a_line_still_places_pill(self):
+        lab = self.forced
+        self.assertNotIn("num", lab)   # fallback to the plain free check, not a number badge
+        self.assertTrue(seg_hits(lab["R"], 80), lab["R"])
+
+
 # archProvNote: «drawn by» badge from the /api/arch `prov` field
 PROV_PRE = """
 const I18N = { ko: {} }; let LANG = 'en';
