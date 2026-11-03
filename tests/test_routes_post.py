@@ -354,130 +354,22 @@ class BgDismissTest(_Base):
         self.assertEqual(bt._bg_open["/fp-b"], {})
 
 
-class RoomInviteTest(_Base):
-    def setUp(self):
-        super().setUp()
+class RemovedRoomRoutesTest(_Base):
+    """Room invite/tags/hide/create were removed from the viewer (rooms are managed by sessions): 404 JSON, nothing written."""
+
+    def test_removed_routes_404(self):
         self.patch(bus, "DATA_DIR", self.tmp)
-        self.busf = os.path.join(self.tmp, "bus.jsonl")
-        self.patch(bus, "BUS", self.busf)
-        self.patch(RP, "sessions_rows", lambda **k: [
-            {"mbox": "alice", "mboxSrc": "identity", "project": "p1"},
-            {"mbox": "bob", "mboxSrc": "folder", "project": "p2"}])
-        self.patch(RP, "VIEWER_ME", "me")
-
-    def _rooms(self):
-        try:
-            with open(os.path.join(self.tmp, "rooms.json"), encoding="utf-8") as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return None
-
-    def _nothing_written(self):
-        self.assertIsNone(self._rooms())
-        self.assertFalse(os.path.exists(self.busf))
-
-    def test_malformed_and_empty(self):
-        for body in (b"{bad", b"", b'{"room": "r"}', b'{"ids": ["alice"]}'):
-            code, out, _ = post("/api/room/invite", body, origin=OWN)
-            self.assertEqual(code, 200, body)
-            self.assertFalse(out["ok"], body)
-        self._nothing_written()
-
-    def test_weak_identity_refused(self):
-        out = post("/api/room/invite", {"room": "r", "ids": ["bob"]}, origin=OWN)[1]
-        self.assertFalse(out["ok"])
-        self.assertIn("bob", out["vars"]["ids"])
-        self._nothing_written()
-
-    def _codex_rows(self, ok):
-        self.patch(RP, "sessions_rows", lambda **k: [
-            {"mbox": "alice", "mboxSrc": "identity", "project": "p1"},
-            {"mbox": "p-codex", "mboxSrc": "env", "plat": "cx", "project": "p"},
-            {"mbox": "g-codex", "mboxSrc": "folder", "plat": "cx", "project": "g"}])
-        self.patch(bus, "_codex_ok", ok)
-
-    def test_codex_launcher_id_invited_when_published(self):
-        self._codex_rows(frozenset({"p-codex", "g-codex"}))
-        out = post("/api/room/invite", {"room": "r", "ids": ["p-codex"], "dry": True}, origin=OWN)[1]
-        self.assertEqual((out["ok"], out["added"]), (True, ["p-codex"]))
-        out = post("/api/room/invite", {"room": "r", "ids": ["g-codex"]}, origin=OWN)[1]   # folder guess: never
-        self.assertFalse(out["ok"])
-        self._nothing_written()
-
-    def test_codex_launcher_id_refused_without_server_rule(self):
-        for ok in (None, frozenset()):   # no poll yet / not published (no reader or not unique)
-            self._codex_rows(ok)
-            out = post("/api/room/invite", {"room": "r", "ids": ["p-codex"]}, origin=OWN)[1]
-            self.assertFalse(out["ok"], ok)
-            self.assertIn("p-codex", out["vars"]["ids"])
-        self._codex_rows(frozenset({"p-codex"}))
-        with open(os.path.join(self.tmp, "identity.json"), "w", encoding="utf-8") as f:
-            json.dump({"/r/p": "p-codex"}, f)   # a Claude session owns the id -> codex_id_ok refuses the env path
-        self.patch(RP, "sessions_rows", lambda **k: [{"mbox": "p-codex", "mboxSrc": "env", "plat": "cx"}])
-        self.assertFalse(post("/api/room/invite", {"room": "r", "ids": ["p-codex"]}, origin=OWN)[1]["ok"])
-        self._nothing_written()
-
-    def test_cross_origin(self):
-        self.assertRefused("/api/room/invite", {"room": "r", "ids": ["alice"]})
-        self._nothing_written()
-
-    def test_missing_origin_403(self):
-        code, out, h = post("/api/room/invite", {"room": "r", "ids": ["alice"]})
-        self.assertEqual((code, h.rfile.reads), (403, 0))
-        self._nothing_written()
-
-    def test_bak_before_rooms_write(self):
-        post("/api/room/invite", {"room": "r1", "ids": ["alice"]}, origin=OWN)
-        self.assertFalse(os.path.exists(os.path.join(self.tmp, "rooms.json.bak")))
-        post("/api/room/invite", {"room": "r2", "ids": ["alice"]}, origin=OWN)
-        with open(os.path.join(self.tmp, "rooms.json.bak"), encoding="utf-8") as f:
-            self.assertEqual(sorted(json.load(f)), ["r1"])
-
-    def test_oversize(self):
-        code, out, h = post("/api/room/invite", b"", clen=65537, origin=OWN)
-        self.assertEqual((code, out["ok"], h.rfile.reads), (200, False, 0))
-        self._nothing_written()
-
-    def test_happy_then_already(self):
-        code, out, _ = post("/api/room/invite", {"room": "r1", "ids": ["alice"], "topic": "t"}, origin=OWN)
-        self.assertEqual(code, 200)
-        self.assertEqual((out["ok"], out["created"], out["added"]), (True, True, ["alice"]))
-        room = self._rooms()["r1"]
-        self.assertEqual((room["invited"], room["members"], room["topic"]), (["alice"], [], "t"))
-        with open(self.busf, encoding="utf-8") as f:
-            lines = [json.loads(x) for x in f]
-        # same author id as /api/say and /api/dm (the page marks it «mine»); idSrc still says it came from the screen
-        self.assertEqual([(m["to"], m["from"], m["idSrc"], m["thread"]) for m in lines], [("alice", "me", "viewer", "invite:r1")])
-        out = post("/api/room/invite", {"room": "r1", "ids": ["alice"]}, origin=OWN)[1]
-        self.assertEqual((out["created"], out["added"], out["already"]), (False, [], ["alice"]))
-        with open(self.busf, encoding="utf-8") as f:
-            self.assertEqual(len(f.readlines()), 1)
-
-    def test_dry_preview_is_the_sent_body(self):
-        code, out, _ = post("/api/room/invite", {"room": "r1", "ids": ["alice"], "topic": "t", "dry": True}, origin=OWN)
-        self.assertEqual((code, out["ok"], out["dry"], out["added"]), (200, True, True, ["alice"]))
-        self.assertIsNone(self._rooms())                          # dry writes nothing
-        self.assertFalse(os.path.exists(self.busf))
-        self.assertEqual(out["body"], RP.invite_text("r1", "t", [])[1])
-        code, sent, _ = post("/api/room/invite", {"room": "r1", "ids": ["alice"], "topic": "t", "expect": out["body"]}, origin=OWN)
-        self.assertTrue(sent["ok"])
-        with open(self.busf, encoding="utf-8") as f:
-            (m,) = [json.loads(x) for x in f]
-        self.assertEqual((m["body"], m["subject"]), (out["body"], out["subject"]))
-
-    def test_stale_expect_refused_without_writing(self):
-        code, out, _ = post("/api/room/invite", {"room": "r1", "ids": ["alice"], "expect": "older preview"}, origin=OWN)
-        self.assertEqual((out["ok"], out.get("stale")), (False, True))
-        self.assertIsNone(self._rooms())
-        self.assertFalse(os.path.exists(self.busf))
-        self.assertFalse(post("/api/room/invite", {"room": "r1", "ids": ["alice"], "expect": 5}, origin=OWN)[1]["ok"])
+        for path in ("/api/room/invite", "/api/rooms/tags", "/api/rooms/hide", "/api/rooms/unhide", "/api/rooms/create"):
+            code, out, _ = post(path, {"room": "r", "ids": ["alice"]}, origin=OWN)
+            self.assertEqual((code, out), (404, {"error": "not found"}), path)
+            self.assertNotIn(path, RP._PostRoutes._POST_ROUTES)
+        self.assertEqual(os.listdir(self.tmp), [])
 
 
 class UnreadBodyClosesTest(_Base):
     """A body left unread must close the connection, or keep-alive parses it as the next request."""
     ROUTES = {"/api/hook": 1_000_000, "/v1/logs": 8_000_000, "/api/cards/read": 65536,
-              "/api/saver/set": 4096, "/api/health/dismiss": 4096, "/api/bg/dismiss": 4096,
-              "/api/room/invite": 65536}
+              "/api/saver/set": 4096, "/api/health/dismiss": 4096, "/api/bg/dismiss": 4096}
 
     def setUp(self):
         super().setUp()
@@ -486,7 +378,6 @@ class UnreadBodyClosesTest(_Base):
         self.patch(RP, "set_cards_read", lambda: "stub")
         self.patch(RP, "saver_set", lambda req: {"ok": False})
         self.patch(RP, "bg_dismiss", lambda *a: 0)
-        self.patch(RP._PostRoutes, "_room_invite", lambda self_, req: {"ok": False})
         self.addCleanup(RP._ext_stat.update, dict(RP._ext_stat))
         self.addCleanup(RP._otel_stat.update, dict(RP._otel_stat))
 

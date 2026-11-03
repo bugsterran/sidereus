@@ -22,7 +22,6 @@ function buildSessions(){
     + (hid ? '<div class=hidnote>'+TV({msg: '{n} hidden by filter', vars: {n: hid}})+'</div>' : ''));
   sessFit(box);
   if(typeof stodoAfter === 'function') stodoAfter(box);   // to-do add-box drafts (40c)
-  buildInvite();
   // ★The list redraws every 2.5s, so no handlers on rows; **delegated to one container**
   //   (listeners piling up on every poll would leak).
   box.onclick = sessClick; if(typeof stodoInput === 'function'){ box.oninput = stodoInput; box.onkeydown = stodoKeydown; }
@@ -104,20 +103,6 @@ function sessTreeHtml(x){
                + sessKid(T('Command'),'b',sessByIdle(x.bgs)) + sessKid(T('Monitors'),'m',x.mon)
                + sessGmKids(x.gms);
   return treeIn ? '<div class=stree>'+treeIn+'</div>' : '';
-}
-// Invite pick box (checkbox, dimmed dot, or '' for finished sessions).
-function sessPickHtml(x){
-  // ★Only sessions whose identity is explicit in the path can be picked. Inviting by an id picked up from a folder name etc.
-  //   calls the wrong session — same spot as the measured incident (2026-08-12).
-  //   Logged-in rule is mboxIn (17): identity.json or a cx launcher id; the server re-checks it in _room_invite.
-  const pickable = x.state !== 'done' && mboxIn(x);
-  return pickable
-    // ⚠label pads the 13px box to a ~21x27 hit area (right/vertical only: .sx clips overflow); a miss used to fall through to the row's open-log click
-    ? '<label class=spickw><input type=checkbox class=spick data-mb="'+esc(x.mbox)+'"'+(picked.has(x.mbox)?' checked':'')
-      + ' title="'+esc(TV({msg: 'Pick {n} to invite to a room', vars: {n: x.mbox}}))+'"></label>'
-    : (x.state !== 'done' ? '<span class=spick title="'+esc(T('Cannot invite — identity not confirmed')
-        + (x.mbox ? TV({msg: ' (guess: {n} · source {m})', vars: {n: x.mbox, m: x.mboxSrc}}) : '')
-        + T(' — run `/room as <id>` in that session to register it'))+'" style="opacity:.3">·</span>' : '');
 }
 // Card tooltip (raw text; caller escapes) — permission mode line only when known.
 function sessCardTip(x){
@@ -352,15 +337,6 @@ function sessClick(e){
   // ⚠The click is under the mouse, so hover deferral would hold the expansion until mouseleave — lift it.
   if(acctOthClick(e, () => { sessHover = false; sessDirty = false; buildSessions(); })) return;
   if(typeof stodoClick === 'function' && stodoClick(e)) return;   // to-do chip and layer (40c), before the row's work-log click
-  // ★Checkboxes are intercepted first — so they don't collide with the delegation below
-  const cb = e.target.closest && e.target.closest('input.spick[data-mb]');
-  if(cb){
-    e.stopPropagation();
-    const mb = cb.getAttribute('data-mb');
-    if(cb.checked) picked.add(mb); else picked.delete(mb);
-    buildInvite();
-    return;
-  }
   const wfa = e.target.closest && e.target.closest('[data-wfa]');
   if(wfa){
     e.stopPropagation();

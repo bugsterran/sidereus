@@ -25,8 +25,6 @@ from sidereus.arch_map import runs as arch_runs, sec_runs
 from sidereus.pl_reqs import view as pl_reqs_view
 from sidereus.review import review
 from sidereus.todo import state_counts as todo_counts
-from sidereus.room_tags import load as room_tags_load
-from sidereus.room_admin import load as room_admin_load
 from sidereus.term import term_cfg
 from sidereus.page import PAGE_BUILD
 from sidereus.warn import warn_once
@@ -214,8 +212,6 @@ def state(since=0, ncards=50, acks_v=""):
         "messages": _messages,
         "cursors": _cursors,
         "rooms": _rooms,
-        "roomTags": _piece("roomTags", room_tags_load, {}),   # Sidereus-owned hashtags (sidereus/room_tags.py)
-        "roomAdmin": _piece("roomAdmin", room_admin_load, {"hidden": {}, "pending": {}}),   # hide/pending overlay (sidereus/room_admin.py)
         "profiles": _profiles,
         "sessions": _sessions,
         "projGone": _piece("projGone", proj_gone, [], _sessions),   # session folders gone from disk — dropped from project chips

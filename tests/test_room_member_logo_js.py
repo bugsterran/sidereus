@@ -9,10 +9,10 @@ from tests._node import node_e
 
 
 def card(who, sess):
-    js = ("const SESS=" + json.dumps(sess) + ", rcEdit=null;\n"
+    js = ("const SESS=" + json.dumps(sess) + ";\n"
           "function esc(s){return String(s).replace(/</g,'&lt;');} function T(s){return s;}\n"
           "function aiLogo(p){return '<i class=\"ailg ailg-'+p+'\"></i>';}\n"
-          "function rcLabel(c){return c.name;} function rcAgo(){return '';} function rcChip(t){return t;}\n"
+          "function rcLabel(c){return c.name;} function rcAgo(){return '';}\n"
           + js_fn("rcPlat") + "\n" + js_fn("rcWho") + "\n" + js_fn("rcCardHtml") + "\n"
           "const h=rcCardHtml({k:'room:r',name:'r',who:" + json.dumps(who) + ",tags:[],n:1,last:0,un:0});\n"
           "process.stdout.write(JSON.stringify(h.match(/<div class=rcwho[^>]*>(.*?)<\\/div>/)[1]));")

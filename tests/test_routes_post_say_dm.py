@@ -16,7 +16,7 @@ from tests._load import sidereus
 from tests.test_routes_post import OWN, post
 
 RP = sidereus("routes_post")
-RA = sidereus("room_admin")
+RC = sidereus("room_check")
 bus = sidereus("bus")
 wm = sidereus("warn")
 
@@ -38,10 +38,9 @@ class SayTest(_Base):
         self.busf = os.path.join(self.tmp, "bus.jsonl")
         self.patch(RP, "BUS_PATH", self.busf)
         self.patch(RP, "VIEWER_ME", "me")
-        # room existence (room_admin.say_room): r1 exists, «home» is the default room, nothing pending
+        # room existence (room_check.say_room): r1 exists, «home» is the default room
         self.patch(RP, "ROOM_DEFAULT", "home")
-        self.patch(RA, "_room_known", lambda r: r == "r1")
-        self.patch(RA, "ADMIN_PATH", os.path.join(self.tmp, "room-admin.json"))
+        self.patch(RC, "_room_known", lambda r: r == "r1")
         # identity.json fixture for DM targets (bus.dm_target_error reads it through bus._load)
         self.patch(bus, "DATA_DIR", self.tmp)
         with open(os.path.join(self.tmp, "identity.json"), "w", encoding="utf-8") as f:
@@ -77,11 +76,9 @@ class SayTest(_Base):
             self.assertEqual(code, 400, room)
             self.assertIn(why, out["error"], room)
         self.assertEqual(self._lines(), [])
-        with open(RA.ADMIN_PATH, "w", encoding="utf-8") as f:
-            json.dump({"pending": {"fresh": {"created": 1}}}, f)
-        for room in ("home", " home ", "fresh"):        # default room («방 밖 글») even before it exists · a pending room
+        for room in ("home", " home "):        # default room («Outside rooms») even before it exists
             self.assertEqual(post("/api/say", {"body": "hi", "room": room})[0], 200, room)
-        self.assertEqual([m["room"] for m in self._lines()], ["home", "home", "fresh"])
+        self.assertEqual([m["room"] for m in self._lines()], ["home", "home"])
 
     def test_dm_reply_goes_to_peer_not_a_room(self):
         req = {"body": "ok", "to": " alice ", "replyTo": "ab12", "thread": "th1"}
@@ -150,6 +147,33 @@ class SayTest(_Base):
             self.assertEqual(code, 400, req)
             self.assertIn("Fields that are not strings", out["error"])
         self.assertEqual(self._lines(), [])
+
+
+class RoomCheckTest(_Base):
+    """room_check.say_room directly: name rules, existence via rooms.json / bus posts, default room."""
+
+    def setUp(self):
+        super().setUp()
+        self.patch(RC, "ROOMS_PATH", os.path.join(self.tmp, "rooms.json"))
+        self.patch(RC, "_bus_rooms", lambda: {"busroom"})
+        with open(RC.ROOMS_PATH, "w", encoding="utf-8") as f:
+            json.dump({"r1": {}}, f)
+
+    def test_refusals(self):
+        for room, why in (("dm", "'dm'"), ("a\x07b", "control"), ("nope", "No such room"), ("", "required"),
+                          (None, "required"), ("x" * 201, "required")):
+            got, err = RC.say_room(room, "home")
+            self.assertIsNone(got, room)
+            self.assertIn(why, err, room)
+
+    def test_known_and_default(self):
+        for room, want in ((" r1 ", "r1"), ("busroom", "busroom"), ("home", "home")):
+            self.assertEqual(RC.say_room(room, "home"), (want, None), room)
+
+    def test_broken_rooms_file_is_not_known(self):
+        with open(RC.ROOMS_PATH, "w", encoding="utf-8") as f:
+            f.write("{bad")
+        self.assertEqual(RC.say_room("r1", "home")[0], None)
 
 
 class DmRouteTest(_Base):
@@ -304,18 +328,6 @@ class BodyShapeEdgesTest(_Base):
         self.assertEqual((code, out), (200, {"ok": True, "ids": ["x"]}))
         self.assertEqual(got, [["a", "b", "c"]])
 
-    def test_room_invite_exception_is_reported(self):
-        self.patch(RP._PostRoutes, "_room_invite", lambda self_, req: 1 / 0)
-        code, out, _ = post("/api/room/invite", {"room": "r", "ids": ["a"]}, origin=OWN)
-        self.assertEqual(code, 200)
-        self.assertFalse(out["ok"])
-        self.assertIn("ZeroDivisionError", out["vars"]["err"])
-
-    def test_room_invite_non_object(self):
-        self.patch(RP, "sessions_rows", lambda **k: self.fail("sessions read for a bad body"))
-        code, out, _ = post("/api/room/invite", b"[1]", origin=OWN)
-        self.assertEqual((code, out["ok"]), (200, False))
-
     def test_saver_set_exception_is_400(self):
         def boom(req):
             raise ValueError("x" * 500)
@@ -341,11 +353,6 @@ class BodyShapeEdgesTest(_Base):
         self.assertEqual(got, [["a"]])
         self.assertEqual(post("/api/cards/read", {"key": 5, "keys": [3]})[1], {"ok": True, "at": "AT"})
 
-    def test_room_invite_bad_field_types(self):
-        self.patch(RP, "sessions_rows", lambda **k: self.fail("sessions read for a bad body"))
-        for req in ({"room": 5, "ids": ["a"]}, {"room": "r", "ids": "alice"}, {"room": "r", "ids": ["a"], "topic": 1}):
-            code, out, _ = post("/api/room/invite", req, origin=OWN)
-            self.assertEqual((code, out["ok"]), (200, False), req)
 
 
 if __name__ == "__main__":

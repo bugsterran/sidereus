@@ -166,6 +166,6 @@ function sessIdRow(x){
   if(wk) wk += td + acg;
   else if(td || acg){ const tl = '<span class=sxtl>' + td + acg + '</span>'; if(us) us += tl; else id += tl; }
   // ⚠R2: .sxus/.sxwk are always emitted (empty = placeholder) so a later group keeps its x.
-  return '<div class=sx><span class=sxl>'+sessPickHtml(x)+'<span class=sd></span>'+pl+'</span><div class=sxgs>'
+  return '<div class=sx><span class=sxl><span class=sd></span>'+pl+'</span><div class=sxgs>'
     + g('sxid')(id) + g('sxus')(us) + g('sxwk')(wk) + '</div></div>';
 }

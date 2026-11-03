@@ -18,7 +18,7 @@ from tests._node import node_e
 
 cfg = sidereus("config")
 RP = sidereus("routes_post")
-RA = sidereus("room_admin")
+RC = sidereus("room_check")
 st = sidereus("state")
 
 
@@ -72,8 +72,7 @@ class SayAuthor(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tmp, True)
         self.busf = os.path.join(self.tmp, "bus.jsonl")
         for obj, k, v in ((RP, "BUS_PATH", self.busf), (RP, "ROOM_DEFAULT", "home"),
-                          (RA, "_room_known", lambda r: r == "r1"),
-                          (RA, "ADMIN_PATH", os.path.join(self.tmp, "room-admin.json"))):
+                          (RC, "_room_known", lambda r: r == "r1")):
             p = mock.patch.object(obj, k, v)
             p.start()
             self.addCleanup(p.stop)

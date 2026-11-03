@@ -208,15 +208,12 @@ Sessions can check this themselves with the MCP tool `sidereus_file_peers` ([MCP
 - Insights, for longer periods: «Tool ranking», «Time spent», «Cache rewrites», «Activity by hour» and «Models» (last 8 days), «Hook cost» (per event type, scripts are not named).
 - With 2+ accounts the picker scopes only the period totals (Tokens) and the OTel cards (Insights); live figures stay all accounts.
 
-## Manage chat rooms
+## Chat rooms
 
-Chat tab › «Manage» on the room list.
+The Chat tab lists mailbox rooms as cards. Click a card to read its posts and post to it; DMs to a session work the same way.
 
-1. Hide: tick rooms, «Hide selected (N)», «Confirm». Unhide: «Hidden rooms N» › «Undo».
-2. Create: «New room», name, pick sessions, check the preview, «Confirm». Invite: «Invite» on a card.
-
-- Hiding changes the view only; posts stay in the mailbox (`room-admin.json` holds the list).
-- Only logged-in sessions can be picked; invites go as mailbox DMs. «Participants» shows a platform logo for live sessions.
+- Creating, inviting to, leaving and destroying rooms is done from a session with the session-side `room` skill. Sidereus does not manage rooms.
+- «Participants» shows a platform logo for live sessions.
 - The «To» line shows where Enter posts (`# room` or `DM → peer`). Red numbers count unopened posts (this browser only).
 
 ## First-visit tour

@@ -27,27 +27,16 @@ Object.assign(I18N.ko, {
   // ⚠Unused since the gate report; kept only because tests/fixtures/i18n_legacy_en.json pins them (test_i18n_flip).
   'n/a': '해당 없음', 'Details': '상세', '{n} declared skip(s)': '건너뜀 선언 {n}', '{n} loop-back(s)': '되돌림 {n}', 'Blocked {n}': '차단 {n}',
   'File not found.': '파일이 없습니다.', 'Unknown project': '알 수 없는 프로젝트', 'Invalid period': '잘못된 기간', 'Invalid file reference': '잘못된 파일 참조', 'Unknown platform': '알 수 없는 플랫폼', 'Platform': '플랫폼', 'Runs without output are not recorded, so the count is unknown': '출력 없는 실행은 기록되지 않아 횟수를 알 수 없음', 'Counts only runs that printed output': '출력을 남긴 실행만 집계',
-  "Created room '{name}' (waiting for invites).": "'{name}' 방을 만들었습니다 (초대 대기).",
-  "Created '{room}' and invited {n}": "'{room}' 방을 만들고 {n}건 초대", "Invited {n} to '{room}'": "'{room}' {n}건 초대",
-  "Created '{room}' and invited {n} · {m} already there": "'{room}' 방을 만들고 {n}건 초대 · {m}건은 이미 있음",
-  "Invited {n} to '{room}' · {m} already there": "'{room}' {n}건 초대 · {m}건은 이미 있음",
   'Quota lookup is turned off in settings (quota_lookup)': '할당량 조회를 설정에서 껐습니다(quota_lookup)',
   'Could not read the token from the keychain (access may need to be allowed)': '키체인에서 토큰을 못 읽었습니다(권한 허용이 필요할 수 있습니다)',
   'No Claude Code login found': 'Claude Code 로그인 정보를 찾지 못했습니다',
   'Could not reach the usage API': '사용량 API 에 연결하지 못했습니다',
 });
-// Room admin server errors (sidereus/room_admin.py, sidereus/routes_post.py) — raw `error`/`msg` go through T().
+// Room name server errors (sidereus/room_check.py, sidereus/routes_post.py) — raw `error`/`msg` go through T().
 Object.assign(I18N.ko, {
   'A room name is required.': '방 이름이 필요합니다.', "'dm' cannot be used as a room name.": 'dm 은 방 이름으로 쓸 수 없습니다.',
   'Room names cannot contain control characters.': '방 이름에 제어 문자를 쓸 수 없습니다.',
-  'A list of rooms is required.': '방 목록이 필요합니다.', 'This room cannot be hidden.': '숨길 수 없는 방입니다.',
-  'This room already exists.': '이미 있는 방입니다.', 'Bad request.': '잘못된 요청입니다.',
-  'The room changed since the preview — check again.': '미리보기 이후 방 정보가 바뀌었습니다 — 다시 확인하세요.',
-});
-// Room tag server errors (sidereus/room_tags.py).
-Object.assign(I18N.ko, {
-  'A tag list is required.': '태그 목록이 필요합니다.', 'Tags must be strings.': '태그는 문자열이어야 합니다.',
-  'Tags cannot contain # or control characters.': '태그에 # 나 제어 문자를 쓸 수 없습니다.', 'No such room.': '없는 방입니다.',
+  'Bad request.': '잘못된 요청입니다.', 'No such room.': '없는 방입니다.',
 });
 // Pipeline tab hint for a run launched outside its project (48b plOrphHtml).
 Object.assign(I18N.ko, {

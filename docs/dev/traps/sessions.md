@@ -307,9 +307,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **A live session with no readable last turn record showed Idle; an unreadable subagent log read as not busy** — both were guesses.
   ⇒ `parse._turn_shape` returns shape `None` for empty/non-list content, `notes._sess_state` maps `None` on a live session to `unknown` (`ask` still wins); `agents._agent_last_busy` returns busy `None` and `_bg_show` then drops `idle`. Fixtures `live-no-turn-record` · `live-unreadable-last-record`.
   ⚠Do not default these back to `wait`/`False` — the screen then claims «Idle»/«quiet» with no evidence.
-- ★**Invite pick box `.spick` was a 13x13 hit target; a 1 px miss opened the work log** (the `.sxw > .sx` click handler skips only `a,input,label,…`).
-  ⇒ `sessPickHtml` wraps it in `label.spickw` (padding + equal negative margin, row unchanged); measured hit 22x26 at 900/1100/1440. Test `tests/test_sess_pick_hit_js.py`.
-  ⚠Grow right into the lead-cell gap and vertically only — a left extension was clipped when `.sx` had `overflow:hidden` (measured 19x26).
 - ★**Account chip `.sacb` read «myacc…» at every width** — `flex:0 9 auto` shrank it 9x before `.sp`/`.sb`; a cut prefix cannot tell accounts that share one apart.
   ⇒ `acctChip` shows `acctShort` (shortest prefix of 4+ chars unique among `acctList()` labels) with `acctTip` as its title; rule is `flex:0 0 auto`. Measured «myac» 36/36, «defa» 31/31 px, neighbours uncut at 900/1100/1440. Test `tests/test_acct_band_js.py`.
   ⚠Do not shorten `acctLabel` — it is the account filter key.

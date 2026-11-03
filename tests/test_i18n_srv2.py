@@ -47,7 +47,7 @@ def _texts(a):
     if isinstance(a, ast.BinOp) and isinstance(a.op, ast.Mod) and isinstance(a.left, ast.Constant):
         return [a.left.value % w for w in WHATS]
     if isinstance(a, (ast.Name, ast.Subscript)):
-        return []          # PENDING_MSG / INVITE_MSGS[...] constants: tests/test_room_admin.py checks those keys
+        return []          # named constants (fixed i18n keys) are checked next to their definitions
     return None
 
 

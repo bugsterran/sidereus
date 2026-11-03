@@ -131,8 +131,7 @@ In the data folder, written atomically (temp file + `os.replace`). The owner mod
 | `bus.jsonl` | mailbox MCP, `bus` | every mailbox post, append-only |
 | `acks.jsonl` | mailbox MCP, watcher, `mailbox_stop.py` | delivery and read receipts |
 | `identity.json` | mailbox MCP (`mailbox_login`) | cwd → id; the only valid DM targets |
-| `rooms.json`, `profiles.json` | mailbox MCP, `routes_post` | rooms, members, invites |
-| `room-admin.json`, `room-tags.json` | `room_admin`, `room_tags` | hidden rooms (view only), room hashtags |
+| `rooms.json`, `profiles.json` | mailbox MCP (`room_check` reads it for `/api/say`) | rooms, members |
 | `cards.jsonl`, `review-state.json` | `cards`, `review` | task cards, «reviewed» marks |
 | `config.local.json` | `prefs`, `cc_settings` | settings ([CONFIG](CONFIG.md)) |
 | `quota-*`, `usage-*`, `otel-*.json` | `quota`, `usage_index`, `usage`, `otel` | quota, token and OTel tallies |

@@ -273,21 +273,8 @@ function tbSlot(k, html){
   }
   return tbSet(k, html);
 }
-// Room list (place 'all') = tag chips + room cards in #feed; a room (place 'room:<r>' | 'dm') = member strip + the feed.
-// ⚠Rule 1: cards carry metadata only (name · members · count · last time · tags) — never a subject or body.
-let ROOMTAGS = {};     // state().roomTags {room: [tag]}; fed by roomTagsSet from the poll
-let rcTag = '';        // selected tag chip ('' = «All»)
-let rcEdit = null;     // {room, before} while a card's tag editor is open — poll repaints skip the grid so typing survives
-function roomTagsSet(v){ ROOMTAGS = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}; }
-function rcTags(r){ const t = ROOMTAGS[r]; return Array.isArray(t) ? t.filter(x => typeof x === 'string' && x) : []; }
-// Editor text -> tags: split on commas/spaces, leading '#' dropped, de-duplicated case-insensitively, 8 x 20 chars (the server checks the same caps).
-// ⚠Cut by code point (Array.from), not UTF-16 unit: .slice splits an emoji pair and the server counts code points.
-function rcParse(s){
-  const out = [], seen = new Set();
-  String(s || '').split(/[,\s]+/).forEach(x => { x = Array.from(x.replace(/^#+/, '')).slice(0, 20).join(''); const lc = x.toLowerCase();
-    if(x && !seen.has(lc) && out.length < 8){ seen.add(lc); out.push(x); } });
-  return out;
-}
+// Room list (place 'all') = room cards in #feed; a room (place 'room:<r>' | 'dm') = member strip + the feed.
+// ⚠Rule 1: cards carry metadata only (name · members · count · last time) — never a subject or body.
 // Per-room «seen up to» time (ns) in this browser only — a viewer convenience, not shared state.
 // ⚠First run seeds every room at its latest post, so history does not show up as unread; a room first seen later counts all its posts.
 const RC_SEEN_K = 'mbRoomSeen';
@@ -307,12 +294,11 @@ function rcWhoIds(ids){
 // One card per room plus 'dm' (posts outside rooms); same inPlace predicate as the feed so counts match what opens.
 function rcCards(){
   const seed = !rcSeen; if(seed) rcSeen = {};
-  const absorb = soleRoom(), card = (k, name, IN, mem) => ({ k: k, name: name, n: IN.length, tags: k === 'dm' ? [] : rcTags(name),
+  const absorb = soleRoom(), card = (k, name, IN, mem) => ({ k: k, name: name, n: IN.length,
     last: IN.reduce((a, m) => Math.max(a, +m.t || 0), 0),
     un: seed ? 0 : IN.filter(m => !m.mine && (+m.t || 0) > (rcSeen[k] || 0)).length,
     who: rcWhoIds(mem.length ? mem : IN.filter(m => !m.selfaddr).map(m => m.from)) });
-  const live = roomNames(), cs = live.filter(r => !raHidden(r)).map(r => card('room:' + r, r, MSGS.filter(m => inPlace(m, 'room:' + r)), ((ROOMS || {})[r] || {}).members || []));
-  raPendingNames(live).forEach(r => cs.push(Object.assign(card('room:' + r, r, [], []), {pend: true})));   // created, nobody joined yet (92c)
+  const cs = roomNames().map(r => card('room:' + r, r, MSGS.filter(m => inPlace(m, 'room:' + r)), ((ROOMS || {})[r] || {}).members || []));
   const dm = MSGS.filter(m => inPlace(m, 'dm'));
   if(!(absorb && !dm.length)) cs.push(card('dm', 'dm', dm, []));
   if(seed){ cs.forEach(c => { if(c.last) rcSeen[c.k] = c.last; }); rcSeenSave(); }
@@ -320,91 +306,37 @@ function rcCards(){
 }
 const rcLabel = c => c.k === 'dm' ? T('Outside rooms') : '# ' + c.name;
 const rcAgo = t => t ? AGO(ago(Math.max(0, Math.round((Date.now() * 1e6 - t) / 1e9)))) : T('no messages yet');
-const rcChip = t => '<span class=rctg>#' + esc(t) + '</span>';
-function rcEditHtml(c){
-  return '<div class=rced><input class="svin rcin" data-r="' + esc(c.name) + '" maxlength=200 autocomplete=off spellcheck=false'
-    + ' value="' + esc(rcEdit.before.join(', ')) + '" placeholder="' + esc(T('Comma-separated — up to 8')) + '" aria-label="' + esc(T('Tags')) + '">'
-    + '<div class=rcdiff>' + rcDiff(rcEdit.before, rcEdit.before) + '</div>'
-    + '<button class="strp on rcok" data-r="' + esc(c.name) + '">' + esc(T('Save')) + '</button>'
-    + '<button class="strp rcno">' + esc(T('Cancel')) + '</button><span class=rcerr></span></div>';
-}
-const rcDiff = (a, b) => '<span>' + esc(T('Before')) + ':</span> ' + (a.length ? a.map(rcChip).join(' ') : '<i>' + esc(T('None')) + '</i>')
-  + ' <span>→ ' + esc(T('After')) + ':</span> ' + (b.length ? b.map(rcChip).join(' ') : '<i>' + esc(T('None')) + '</i>');
 // Member id -> platform from the live session list (same `plat` the session rows draw). ⚠'' when no session matches — aiLogo would guess Claude.
 function rcPlat(w){ const x = (SESS || []).find(s => s && s.mbox === w); return x ? (x.plat || 'cc') : ''; }
 function rcWho(w){ const p = rcPlat(w); return (p ? aiLogo(p) : '') + esc(w); }
-// opts (room admin, 92c): {pend, adm, sel} — pending class, plus checkbox and «Invite» · «Hide» when adm.
-function rcCardHtml(c, opts){
-  const nm = c.who.join(', '), o = opts || {};
-  return (o.pend ? '<div class="rcard rapend" data-p="' : '<div class=rcard data-p="') + esc(c.k) + '">'
-    + (o.adm ? '<input type=checkbox class="raop rachk" data-r="' + esc(c.name) + '"' + (o.sel ? ' checked' : '') + ' aria-label="' + esc(T('Select')) + '">' : '')
+function rcCardHtml(c){
+  const nm = c.who.join(', ');
+  return '<div class=rcard data-p="' + esc(c.k) + '">'
     + '<div class=rchd><button class=rcnm data-p="' + esc(c.k) + '" title="' + esc(rcLabel(c) + ' — ' + T('Open this room')) + '">' + esc(rcLabel(c)) + '</button>'
     + (c.un ? '<span class=rcun title="' + esc((c.un === 1 ? T('{n} unread post') : T('{n} unread posts')).replace('{n}', c.un)) + '">' + (c.un > 99 ? '99+' : c.un) + '</span>' : '') + '</div>'
     + '<div class=rcwho title="' + esc(nm) + '"><b>' + esc((c.who.length === 1 ? T('{n} person') : T('{n} people')).replace('{n}', c.who.length)) + '</b> ' + (c.who.length ? c.who.map(rcWho).join(', ') : '—') + '</div>'
     + '<div class=rcmeta><span>' + esc((c.n === 1 ? T('{n} post') : T('{n} posts')).replace('{n}', c.n)) + '</span><span>' + esc(rcAgo(c.last)) + '</span></div>'
-    + (rcEdit && rcEdit.room === c.name && c.k !== 'dm' ? rcEditHtml(c)
-      : '<div class=rctags>' + c.tags.map(rcChip).join('')
-        + (c.k === 'dm' ? '' : '<button class="strp rcte" data-r="' + esc(c.name) + '" title="' + esc(T('Edit tags')) + '">' + esc(T('Tags')) + '</button>') + '</div>')
-    + (o.adm ? '<div class=raact><button class="strp raop rainv" data-r="' + esc(c.name) + '">' + esc(T('Invite')) + '</button>'
-      + '<button class="strp raop rahone" data-r="' + esc(c.name) + '">' + esc(T('Hide')) + '</button></div>' : '')
     + '</div>';
 }
 // Paints the room list into #feed. ⚠#feed is shared by every tab and full() writes innerHTML directly, so
 //   the skip check is our own cache plus «the grid is really there» (setHtml's _sh would go stale).
 function rcPaint(force){
-  if(mainView !== 'chat' || place !== 'all' || q || ((rcEdit || raHold()) && !force)) return;
-  // Chips group case-insensitively like the server's casefold dedupe; the first spelling seen is shown.
-  const cs = rcCards(), lc = t => t.toLowerCase(), um = new Map();
-  cs.forEach(c => c.tags.forEach(t => { if(!um.has(lc(t))) um.set(lc(t), t); }));
-  const used = [...um.values()].sort();
-  if(rcTag && !um.has(lc(rcTag))) rcTag = '';
-  if(rcTag) rcTag = um.get(lc(rcTag));
-  const show = rcTag ? cs.filter(c => c.tags.some(t => lc(t) === lc(rcTag))) : cs;
-  const h = '<div class=rcw><div class=rcbar role=group aria-label="' + esc(T('Tags')) + '">'
-    + ['', ...used].map(t => '<button class="strp rcf' + (t === rcTag ? ' on' : '') + '" data-t="' + esc(t) + '" aria-pressed=' + (t === rcTag) + '>'
-      + (t ? '#' + esc(t) : esc(T('All'))) + '</button>').join('') + raBarHtml() + '</div>' + raToolHtml(show) + raBoxHtml()
-    + (show.length ? '<div class=rcgrid>' + show.map(raCardHtml).join('') + '</div>' : '<div class=empty>' + esc(T('No rooms match.')) + '</div>') + '</div>';
+  if(mainView !== 'chat' || place !== 'all' || q) return;
+  const show = rcCards();
+  const h = '<div class=rcw>'
+    + (show.length ? '<div class=rcgrid>' + show.map(c => rcCardHtml(c)).join('') + '</div>' : '<div class=empty>' + esc(T('No rooms yet.')) + '</div>') + '</div>';
   const nr = show.filter(c => c.k !== 'dm').length;   // the «Outside rooms» card is not a room
   // The dm card is named after the room count only when it is on screen, so the label matches the visible cards.
   document.getElementById('cnt').textContent = KE(U(nr, ' rooms'), PL(nr, 'room')) + (show.length > nr ? ' + ' + T('Outside rooms') : '');
   if(feed._rcH === h && feed.querySelector(':scope > .rcw')) return;
   feed.innerHTML = h; feed._rcH = h; feed._sh = undefined;
-  rcBind(show);
+  rcBind();
 }
-function rcBind(cs){
-  feed.querySelectorAll('.rcf').forEach(b => b.onclick = () => { rcTag = b.dataset.t || ''; rcPaint(true); });
-  feed.querySelectorAll('.rcard').forEach(c => c.onclick = e => { if(!e.target.closest('.rced,.rcte,.raop') && !c.classList.contains('rapend')) rcOpen(c.dataset.p); });
-  feed.querySelectorAll('.rcte').forEach(b => b.onclick = () => {
-    rcEdit = {room: b.dataset.r, before: rcTags(b.dataset.r)}; rcPaint(true);
-    const i = feed.querySelector('.rcin'); if(i){ i.focus(); i.select(); }
-  });
-  const i = feed.querySelector('.rcin'), d = feed.querySelector('.rcdiff');
-  if(i && d){
-    i.oninput = () => { d.innerHTML = rcDiff(rcEdit.before, rcParse(i.value)); };
-    i.onkeydown = e => { if(e.key === 'Escape'){ e.stopPropagation(); rcEdit = null; rcPaint(true); } else if(e.key === 'Enter' && !e.isComposing) rcSave(); };
-  }
-  const no = feed.querySelector('.rcno'); if(no) no.onclick = () => { rcEdit = null; rcPaint(true); };
-  const ok = feed.querySelector('.rcok'); if(ok) ok.onclick = rcSave;
-  raBind(cs || []);   // «Manage» mode controls (92c)
-}
-// Saves the editor's tags (the diff above it is the confirmation); the server answers {ok, tags} | {ok:false, error}.
-async function rcSave(){
-  const i = feed.querySelector('.rcin'), ok = feed.querySelector('.rcok'), er = feed.querySelector('.rcerr');
-  if(!i || !rcEdit || (ok && ok.disabled)) return;
-  const room = rcEdit.room, tags = rcParse(i.value);
-  if(ok) ok.disabled = true;
-  try{
-    const j = await postJSON('/api/rooms/tags', {room: room, tags: tags});
-    if(!j || !j.ok) throw new Error((j && j.error) || '?');
-    ROOMTAGS = Object.assign({}, ROOMTAGS, {[room]: Array.isArray(j.tags) ? j.tags : tags});
-    rcEdit = null; rcPaint(true);
-  }catch(e){
-    if(er) er.textContent = T('Could not save') + ': ' + T(e.message);
-    if(ok) ok.disabled = false;
-  }
+function rcBind(){
+  feed.querySelectorAll('.rcard').forEach(c => c.onclick = () => rcOpen(c.dataset.p));
 }
 function rcOpen(k){
-  rcEdit = null; place = k; setFilter('all'); shownN = 10;
+  place = k; setFilter('all'); shownN = 10;
   rcMarkSeen(k);
   buildRooms(); buildTabs(); buildPeople(); full();
   if(place === 'all') feed.scrollTop = 0; else toBottom(false);
@@ -447,7 +379,7 @@ function buildRooms(){
     } else setHtml(el, '');
     rcPaint(false); return;
   }
-  const c = rcCards().find(x => x.k === place) || {k: place, name: place.slice(5), who: [], tags: []};
+  const c = rcCards().find(x => x.k === place) || {k: place, name: place.slice(5), who: []};
   const who = c.who.slice(0, 8);
   if(!setHtml(el, '<button class="rm rmback" title="'+esc(T('Back to the room list'))+'">'+esc(T('← Rooms'))+'</button>'
     + '<b class=rmname title="'+esc(rcLabel(c))+'">'+esc(rcLabel(c))+'</b>'

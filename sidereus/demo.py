@@ -359,8 +359,6 @@ class World(_WorldPanels, _WorldGit):
                                   "members": names, "topic": "Release 1.5 coordination", "invited": []},
                       "docs": {"created": (a - 2 * 24 * H) * 1_000_000_000, "owner": "docs",
                                "members": ["docs", "search"], "topic": "Docs site", "invited": []}},
-            # room_tags.load() shape {room: [tag]}; a shared tag so the tag filter narrows to 2 rooms vs 1.
-            "roomTags": {"release": ["release-1.5", "frontend"], "docs": ["docs", "release-1.5"]},
             "profiles": {"web-lead": {"role": "Frontend lead", "updated": (a - 2 * H) * 10 ** 9},
                          "cart-fix": {"role": "Cart bugfix", "updated": (a - 2 * H) * 10 ** 9},
                          "billing": {"role": "Billing API", "updated": (a - 4 * H) * 10 ** 9},
@@ -579,12 +577,6 @@ def install(handler_cls, page_build):
         if u.path == "/api/hooks/connect" and isinstance(req, dict) and req.get("dry") is not False \
                 and req.get("plat") in ("cursor", "copilot"):
             return self._raw_json(200, hooks_connect_dry(req["plat"]))   # preview only; Apply stays the no-op below
-        if u.path in ("/api/room/invite", "/api/rooms/create") and isinstance(req, dict) and req.get("dry") is True:
-            room, ids = str(req.get("room") or "")[:64], [i for i in (req.get("ids") if isinstance(req.get("ids"), list) else []) if isinstance(i, str)][:20]
-            cur = (world.state().get("rooms") or {}).get(room) or {}
-            mem = (cur.get("members") or []) if u.path == "/api/room/invite" else []   # as the real path: members listed, `already` split
-            body = __import__("sidereus.routes_post", fromlist=["x"]).invite_text(room, cur.get("topic") or (str(req.get("topic") or "")[:200] or None), mem)[1]   # lazy: the real preview's builder
-            return self._raw_json(200, {"ok": True, "dry": True, "demo": True, "body": body, "added": [i for i in ids if i not in mem], "already": [i for i in ids if i in mem]})   # 92c: «Confirm» only on a string body
         if u.path == "/api/term/focus":  # ⚠never osascript in demo — pretend the tab came forward
             return self._raw_json(200, {"ok": True, "demo": True, "how": "focused"})
         return self._raw_json(200, {"ok": True, "demo": True})

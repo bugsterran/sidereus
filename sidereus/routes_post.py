@@ -1,14 +1,13 @@
 """POST route handlers (split out of chat_server.py 2026-09-24) — a mixin `chat_server.Handler` inherits.
 Methods use `self._send`/`self._raw_json`/`self._body_json` from Handler."""
 import json
-import os
 import time
 import uuid
 
-from sidereus.config import BUS_PATH, ROOM_DEFAULT, VIEWER_ME, _lock
+from sidereus.config import BUS_PATH, ROOM_DEFAULT, VIEWER_ME
 from sidereus import config as _cfg
 from sidereus.warn import WARN_MUTE_S, _SOFT, _WARN_LOG, _warn_lock, _warned, _wmute, warn_once
-from sidereus.bus import _bus_append, _load, _open_append, dm_send, dm_target_error, thread_close
+from sidereus.bus import _open_append, dm_send, dm_target_error, thread_close
 from sidereus.live import _parse_cache, _parse_lock
 from sidereus.cards import mark_cards_read, set_cards_read
 from sidereus.otel import _otel_ingest, _otel_lock, _otel_stat
@@ -32,26 +31,8 @@ from sidereus.cc_settings import prefs_set_all
 from sidereus.hook_connect import connect as hook_connect
 from sidereus.hook_remove import remove as hook_remove
 from sidereus.todo import add as todo_add, agent as todo_agent, set_state as todo_set
-from sidereus.room_tags import BODY_MAX as TAGS_BODY_MAX, set_tags as room_tags_set
-from sidereus import bus as _busmod
-from sidereus import room_admin
+from sidereus import room_check
 from sidereus import pl_reqs
-
-# (created, any already-present) -> fixed i18n key for the invite note; each needs an I18N.ko entry
-INVITE_MSGS = {(True, False): "Created '{room}' and invited {n}", (False, False): "Invited {n} to '{room}'",
-               (True, True): "Created '{room}' and invited {n} · {m} already there",
-               (False, True): "Invited {n} to '{room}' · {m} already there"}
-
-
-def invite_text(room, topic, members):
-    """(subject, body) of an invite DM — one builder for the confirm preview (dry) and the sent post."""
-    # ⚠The leading tag is the mailbox wire tag for invites (kept as is); the rest is read by the invited session's model.
-    return (f"[초대] room '{room}'",
-            f"The user invited you to room **'{room}'** from the screen (Sidereus)."
-            + (f"\nTopic: {topic}" if topic else "")
-            + f"\nMembers: {', '.join(members) or 'none yet'}"
-            + f"\n\nTo join: mailbox_room {{ action: \"join\", room: \"{room}\" }}")
-
 
 class _PostRoutes:
     # ★The user **writes directly.** Before it was read-only: humans only watched and had to go through an agent to speak
@@ -61,95 +42,6 @@ class _PostRoutes:
     def _viewer_me(self):
         # Page UI language lives in the browser only (05-i18n.js LANG); postJSON sends it so a default id follows it.
         return _cfg.viewer_me_for(VIEWER_ME, (self.headers.get("X-Sidereus-Lang") or "").strip())
-
-    def _room_invite(self, req):
-        """**Invite** the sessions picked on screen to a room (does not make them join).
-
-        ★Why not write members directly: the roster is that room's record, and who joined when is
-          evidence for verdicts (reviews judge by the traces left, not by either side's word).
-          Silently changing the roster from the screen contaminates that evidence. Invites are discovery, so safe.
-        ★Weak identities (folder-name fallback etc.) are rejected — measured incident (2026-08-12): an identity
-          derived from a folder name left posts under someone else's name. Invites also require a confirmed id.
-        ★Does the same as MCP `_invite`: adds to invited in rooms.json and leaves an invite post in the
-          peer's inbox (1:1). That way it reaches even sessions without the room feature."""
-        if not isinstance(req, dict) or not isinstance(req.get("room") or "", str) \
-           or not isinstance(req.get("topic") or "", str) or not isinstance(req.get("ids") or [], list):
-            return {"ok": False, "msg": "Bad request."}   # ⚠a string `ids` used to iterate per character
-        room = (req.get("room") or "").strip()
-        ids = [str(x).strip() for x in (req.get("ids") or []) if str(x).strip()]
-        topic = (req.get("topic") or "").strip()
-        if not room or not ids:
-            return {"ok": False, "msg": "A room name and a target are required."}
-        room, err = room_admin.check_name(room)   # same name rules as create: no 'dm', control chars or overlong names
-        if err:
-            return {"ok": False, "msg": err}
-
-        # Check the targets are sessions on screen now with confirmed identity — never invite by a guessed id
-        known = {}
-        ident = _load("identity.json", {})
-        for r in sessions_rows(max_age=10):   # ⚠request path: short wait for a just-started session, never cold
-            # A Codex launcher id counts only under the DM rule (bus.codex_env_ok: published by the poll, fails closed)
-            if r.get("mbox") and (r.get("mboxSrc") == "identity"
-                                  or (r.get("mboxSrc") == "env" and _busmod.codex_env_ok(r["mbox"], ident))):
-                known[r["mbox"]] = r.get("project") or r.get("cwd") or ""
-        bad = [i for i in ids if i not in known]
-        if bad:
-            return {"ok": False, "msg": "Unconfirmed identity: {ids} — run `/room as <id>` in that session to register"
-                    " before inviting.", "vars": {"ids": ", ".join(bad)}}
-
-        dry = req.get("dry") is True
-        expect = req.get("expect")
-        if expect is not None and not isinstance(expect, str):
-            return {"ok": False, "msg": "Bad request."}
-        with _lock:
-            rooms = _load("rooms.json", {})
-            if not isinstance(rooms, dict):
-                rooms = {}
-            created = room not in rooms
-            # dry works on a copy so the preview runs the exact code path that builds the sent body
-            cur = rooms.get(room)
-            r = dict(cur) if isinstance(cur, dict) else {"created": time.time_ns(), "owner": "", "members": [],
-                                                          "topic": topic, "invited": []}
-            if topic and not r.get("topic"):
-                r["topic"] = topic
-            inv = list(r.get("invited") or [])
-            mem = list(r.get("members") or [])
-            added, already = [], []
-            for i in ids:
-                if i in mem or i in inv:
-                    already.append(i)
-                else:
-                    inv.append(i)
-                    added.append(i)
-            subject, body = invite_text(room, r.get("topic"), mem)
-            if dry:
-                return {"ok": True, "dry": True, "subject": subject, "body": body, "added": added, "already": already}
-            # ⚠The confirm showed `expect`; if rooms.json changed since (topic, members), the bytes would differ — ask again
-            if expect is not None and expect != body:
-                return {"ok": False, "stale": True, "msg": "The room changed since the preview — check again."}
-            r["invited"], r["members"] = inv, mem
-            rooms[room] = r
-            # ⚠the MCP owns rooms.json — keep a one-step undo before writing it
-            _busmod._save_json_bak(os.path.join(_busmod.DATA_DIR, "rooms.json"), rooms)
-
-            # Also leave it in the inbox — this is the path by which the invite actually arrives
-            me = self._viewer_me()
-            for i in added:
-                _bus_append({
-                    "id": uuid.uuid4().hex[:8],
-                    "t": time.time_ns(),
-                    "from": me,         # same author id as /api/say and /api/dm, so the page counts it as mine
-                    "idSrc": "viewer",
-                    "to": i,
-                    "room": None,
-                    "subject": subject,
-                    "thread": f"invite:{room}",
-                    "body": body,
-                })
-        # msg = one of INVITE_MSGS (fixed i18n keys); values go in `vars` (TV in 05-i18n.js)
-        return {"ok": True, "created": created, "added": added, "already": already,
-                "msg": INVITE_MSGS[(bool(created), bool(already))],
-                "vars": {"room": room, "n": len(added), "m": len(already)}}
 
     def _p_otel(self, u):
         # ★Claude Code sends telemetry here (settings.json env). Return 200 quickly —
@@ -273,16 +165,6 @@ class _PostRoutes:
         struct_mark_act()
         return self._send(200, json.dumps({"ok": True}), "application/json; charset=utf-8")
 
-    def _p_room_invite(self, u):
-        if self._refuse_origin():
-            return
-        req = self._body_json(65536, {})
-        try:
-            out = self._room_invite(req)
-        except Exception as e:
-            out = {"ok": False, "msg": "Invite failed ({err})", "vars": {"err": f"{type(e).__name__}: {e}"}}
-        self._raw_json(200, out, cache=False)
-
     def _p_saver_set(self, u):
         # Same switch files as `/saver`; affects every CLI session from its next prompt.
         req = self._body_json(4096, None)
@@ -350,7 +232,7 @@ class _PostRoutes:
             if why:
                 return self._send(400, json.dumps({"error": why}), "application/json; charset=utf-8")
         else:
-            room, why = room_admin.say_room(room, ROOM_DEFAULT)
+            room, why = room_check.say_room(room, ROOM_DEFAULT)
             if why:
                 return self._send(400, json.dumps({"error": why}), "application/json; charset=utf-8")
         msg = {
@@ -527,63 +409,6 @@ class _PostRoutes:
             code, out = 500, {"ok": False, "err": type(e).__name__}
         return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
 
-    def _p_room_tags(self, u):
-        # {room, tags:[...]} -> room-tags.json (Sidereus-owned); ⚠viewer Origin required (no Origin = 403), like other config writes
-        if self._refuse_origin():
-            return
-        req = self._body_json(TAGS_BODY_MAX, None)
-        if not isinstance(req, dict):
-            code, out = 400, {"ok": False, "error": "Bad request."}
-        else:
-            try:
-                code, out = room_tags_set(req.get("room"), req.get("tags"))
-            except Exception as e:
-                code, out = 500, {"ok": False, "error": type(e).__name__}
-        return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
-
-    def _p_rooms_hide(self, u):
-        # {rooms:[...]} -> room-admin.json `hidden` overlay; ⚠never deletes from rooms.json or bus.jsonl
-        if self._refuse_origin():
-            return
-        req = self._body_json(room_admin.BODY_MAX, None)
-        if not isinstance(req, dict):
-            code, out = 400, {"ok": False, "error": "Bad request."}
-        else:
-            try:
-                code, out = room_admin.set_hidden(req.get("rooms"), u.path == "/api/rooms/hide")
-            except Exception as e:
-                code, out = 500, {"ok": False, "error": type(e).__name__}
-        if code == 200:
-            state_cache_clear()
-        return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
-
-    def _p_rooms_create(self, u):
-        # {room, ids?, topic?}: with ids = the invite path (rooms.json + invite-tag DMs); without = pending overlay only
-        if self._refuse_origin():
-            return
-        req = self._body_json(65536, None)
-        if not isinstance(req, dict) or not isinstance(req.get("ids") or [], list):
-            code, out = 400, {"ok": False, "error": "Bad request."}
-        else:
-            room, err = room_admin.check_name(req.get("room"))
-            try:
-                if err:
-                    code, out = 400, {"ok": False, "error": err}
-                elif req.get("ids") and room_admin._room_known(room):   # ⚠else «create» silently invites into an existing room
-                    code, out = 400, {"ok": False, "error": "This room already exists."}
-                elif req.get("ids"):
-                    out = self._room_invite(dict(req, room=room))
-                    code = 200 if out.get("ok") else 400
-                    if out.get("ok") and not out.get("dry"):
-                        room_admin.drop_pending(room)
-                elif req.get("dry") is True:
-                    code, out = 200, {"ok": True, "dry": True, "body": None}   # no invite DM to preview
-                else:
-                    code, out = room_admin.add_pending(room)
-            except Exception as e:
-                code, out = 500, {"ok": False, "error": type(e).__name__}
-        return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")
-
     def _p_ui_prefs(self, u):
         # {set:{k:v}, del:[k]} -> ui-prefs.json; /reset moves the file to ui-prefs-bak; ⚠viewer Origin required (no Origin = 403)
         if self._refuse_origin():
@@ -600,8 +425,6 @@ class _PostRoutes:
     _POST_ROUTES = {
         "/v1/logs": _p_otel, "/v1/metrics": _p_otel, "/api/hook": _p_hook,
         "/api/bg/dismiss": _vo(_p_bg_dismiss), "/api/health/dismiss": _vo(_p_health_dismiss), "/api/ext/dismiss": _p_ext_dismiss,
-        "/api/room/invite": _p_room_invite, "/api/rooms/tags": _p_room_tags,
-        "/api/rooms/hide": _p_rooms_hide, "/api/rooms/unhide": _p_rooms_hide, "/api/rooms/create": _p_rooms_create,
         "/api/saver/set": _vo(_p_saver_set), "/api/cards/read": _vo(_p_cards_read), "/api/say": _vo(_p_say), "/api/dm": _vo(_p_dm),
         "/api/thread/close": _vo(_p_thread_close), "/api/review/mark": _vo(_p_review_mark),
         "/api/term/focus": _vo(_p_term_focus), "/api/term/set": _vo(_p_term_set),

@@ -212,8 +212,6 @@
 "test_retro_rank_js": 0.08,
 "test_review": 0.15,
 "test_room_absorb": 0.31,
-"test_room_admin": 0.15,
-"test_room_tags": 0.15,
 "test_routes_post": 0.16,
 "test_routes_post_say_dm": 0.15,
 "test_saver": 0.79,
