@@ -26,7 +26,8 @@ class ChatToolbarWrap(unittest.TestCase):
     def test_room_part_small_basis_capped_at_content(self):
         # A content-sized basis lets a long member list push every part onto its own line (3 rows measured).
         d = _decls("html[data-ui=next] #tbchat > .rooms")
-        self.assertEqual(d.get("flex"), "1 1 160px")
+        # 320px: name (≤200) plus a readable member slice; 160px left members 5px wide at en 1440.
+        self.assertEqual(d.get("flex"), "1 1 320px")
         self.assertEqual(d.get("max-width"), "max-content")
 
     def test_room_name_does_not_shrink_before_members(self):
