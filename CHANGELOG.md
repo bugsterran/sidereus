@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Quota details: "Who is using the 5h" names the account it counts.
 - Insights: durations use Korean units in Korean.
 - Sessions drawer: the branch chip no longer wraps mid-name.
+- Pipelines: the «Run» side layer takes focus when it opens and gives it back to «Run» when closed with Esc or ✕.
 
 ## [0.14.1] - 2026-11-03
 

@@ -423,7 +423,7 @@ document.addEventListener('click', e => {
   plPskClose(); plPaint();
 });
 document.addEventListener('keydown', e => { if(PLPSK && e.key === 'Escape') plPskClose(); });
-document.addEventListener('keydown', e => { if(PLRUN && !PLRUN.busy && e.key === 'Escape' && !PLPSK && !PLRV){ PLRUN = null; plPaint(); } });   // side layer closes like the other overlays; a draft behind it stays (48e plEscSnap snapshots PLRUN in capture)
+document.addEventListener('keydown', e => { if(PLRUN && !PLRUN.busy && e.key === 'Escape' && !PLPSK && !PLRV) plRunClose(); });   // side layer closes like the other overlays; a draft behind it stays (48e plEscSnap snapshots PLRUN in capture)
 // Elapsed-cell tooltip: total + pass count, then one «Pass n · outcome · elapsed» line per recorded pass and the latest.
 // Header strip: gradient progress (done / stages) + elapsed; green «Done» once every stage is done and nothing runs.
 // Running-runs overview: every running (project, pipeline) above the chips. Metadata only: stage titles + agent counts.
@@ -548,10 +548,13 @@ async function plRunSend(){
   }catch(e){ PLRUN.busy = false; PLS.msg = T('Could not send') + ': ' + T((e && e.message) || e); }
   plPaint();
 }
+// role=dialog: focus moves into the layer on open and back to «Run» on close (keyboard users otherwise land on <body>).
+function plRunFocusIn(){ const el = document.querySelector('.plrun select, .plrun textarea, .plrun input, .plrun button'); if(el) el.focus(); }
+function plRunClose(){ PLRUN = null; plPaint(); const b = document.querySelector('.plw [data-plrun]'); if(b) b.focus(); }
 document.addEventListener('click', e => {
   if(!e.target.closest || !e.target.closest('.plw')) return;
-  if(e.target.closest('[data-plrun]')){ const p = plCur(); if(p && !p.from){ PLRUN = PLRUN && PLRUN.name === p.name ? null : { name: p.name, sid: '', req: '', models: {}, busy: false, mode: plModeOf(p.name) }; PLS.msg = ''; plPaint(); } return; }
-  if(e.target.closest('[data-plrx]')){ PLRUN = null; plPaint(); return; }
+  if(e.target.closest('[data-plrun]')){ const p = plCur(); if(p && !p.from){ if(PLRUN && PLRUN.name === p.name){ plRunClose(); return; } PLRUN = { name: p.name, sid: '', req: '', models: {}, busy: false, mode: plModeOf(p.name) }; PLS.msg = ''; plPaint(); plRunFocusIn(); } return; }
+  if(e.target.closest('[data-plrx]')){ plRunClose(); return; }
   if(PLRUN && e.target.closest('[data-plrmo]')){ PLRUN.mOpen = !PLRUN.mOpen; plPaint(); return; }
   if(e.target.closest('[data-plgo]')) plRunSend();
 });
