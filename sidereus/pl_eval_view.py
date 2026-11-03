@@ -279,7 +279,7 @@ def pl_eval(proj, name):
     sugg = []
     try:
         ev = pe.load_eval(repo_key(proj), commit) if commit else None
-        red = pe.redcheck_status(name, stages)
+        red = pe.redcheck_status(name, stages, repo_key(proj))
         graded = pe.graded_summary(dict(P, name=name), proj, _now())   # the file need not carry its own name
         ga = getattr(pe, "gate_agreement", None)
         agree = ga(P, proj, _now(), commit) if ga else None

@@ -54,8 +54,8 @@ class ChecklistCount(unittest.TestCase):
         rows = [{"ok": True, "stages": [{"title": str(i), "gate": "g%d" % i} for i in range(len(verdicts))]}]
         from sidereus import pl_eval
         with mock.patch.object(pl_eval, "redcheck_status",
-                               lambda _n, st: {s["title"]: {"verdict": v} for s, v in zip(st, verdicts) if v}):
-            return PL._red_counts(rows)[0]["red"]
+                               lambda _n, st, _k: {s["title"]: {"verdict": v} for s, v in zip(st, verdicts) if v}):
+            return PL._red_counts(rows, "/p")[0]["red"]
 
     def test_skip_and_fail_do_not_count(self):
         self.assertEqual(self.count(["skip", "fail", None]), 0)

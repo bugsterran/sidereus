@@ -52,7 +52,7 @@ class EvalApi(unittest.TestCase):
         fake = types.SimpleNamespace(
             load_eval=lambda key, commit: {"stages": [{"title": "build", "n": 8, "caught": 7, "missed": ["case-17"]}],
                                            "holdout": {"n": 12, "caught": 10, "ids": ["secret-case"]}},
-            redcheck_status=lambda name, stages: {"build": {"verdict": "pass", "why": "x", "at": 1}, "check": {"verdict": "weird"}},
+            redcheck_status=lambda name, stages, key: {"build": {"verdict": "pass", "why": "x", "at": 1}, "check": {"verdict": "weird"}},
             graded_summary=graded, gate_agreement=lambda P, root, now, head: {"check": {"k": 2, "n": 3}, "zz": {"k": 1, "n": 1}})
         self.v._pe = lambda: fake
 
@@ -126,7 +126,7 @@ class EvalApi(unittest.TestCase):
         pe = sidereus("pl_eval")
         saved = [(pe, k, getattr(pe, k)) for k in ("_red_gates", "flaky_modes", "load_eval")]
         try:
-            pe._red_gates = lambda: {pe.gate_key("make test"): {"verdict": "pass"}}
+            pe._red_gates = lambda: {pe.red_key(sidereus("arch_verify").repo_key(self.proj), "make test"): {"verdict": "pass"}}
             pe.flaky_modes = lambda root, now: set()
             pe.load_eval = lambda key, commit: None
             self.v._pe = lambda: pe

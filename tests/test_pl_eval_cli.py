@@ -167,7 +167,7 @@ class Red(Base):
 
     def entry(self, gate):
         with open(os.path.join(PE.EVAL_DIR, "redcheck.json"), encoding="utf-8") as f:
-            return json.load(f)["gates"][PE.gate_key(gate)]
+            return json.load(f)["gates"][PE.red_key(AV.repo_key(self.repo), gate)]
 
     def test_fast_pass_fail_and_target_changed(self):
         self.w("mod.py", "x = 1\n")
