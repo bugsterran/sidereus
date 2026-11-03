@@ -374,3 +374,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: a centred band title sits over the top-centre port of a member box, so the router treats it as a wall and detours or drops the edge through the title.
 - ⇒ the title moves left/right off the entry column, or the band widens; `relSmooth` jogs a side-held end onto the side-centre port only when it is >2 cells off.
 - ⚠Do not apply the side-centre jog to every edge — ★ARCHITECTURE.md crossings rose 15→20 — `tests/test_mermaid_band_ports_js.py`.
+
+## Edge through band titles and boxes when a group spans a band (`81g mmdRouteAll`)
+
+- Cause: a non-pass group spanning almost a whole pass band is walled for edges from other groups, so the only way is the outer margin; relRoute runs out of `RR_POPS` on every pass and the `mmdRoute` elbow fallback ignores every wall (titles, boxes).
+- ⇒ after the relaxed-port retries, a still-null route retries once with group interiors open (`blk.set(base)`: node boxes and titles stay walls) before the elbow. ★real project map: title/box hits 4 → 0, crossings 107 → 112; ARCHITECTURE.md crossings 15 → 15.
+- ⚠Do not drop to the elbow first, and do not open interiors for routes that already succeed — `tests/test_mermaid_band_ports_js.py` `test_band_wide_group_routes_clear_of_titles_and_boxes`.

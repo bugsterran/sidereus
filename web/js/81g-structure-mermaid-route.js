@@ -215,6 +215,8 @@ function mmdRouteAll(g, nodes, sgs, dirOf){
       // Strict ports found no route: target ports relaxed first (the source keeps its band exit), then both, before the elbow fallback.
       if(!p && bp){ G.tpen = tp0; p = run(); }
       if(!p && bp){ G.spen = null; p = run(); }
+      // ⚠A non-pass group spanning a band walls every way through it; the elbow fallback ignores all walls (titles, boxes), so retry with group interiors open first.
+      if(!p && bp){ blk.set(base); G.spen = bp[0]; G.tpen = bp[1]; p = run(); }
       G.nbOff = G.stubOff = 0;
     }
     G.spen = null;
