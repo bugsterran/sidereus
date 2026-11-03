@@ -50,15 +50,15 @@ function plStartList(){
 // Pure: server dry diff + strict-mode box (unticked by default) + test-command input (gate); nothing is written before «Confirm».
 function plStartPrev(V, proj){
   if(!V || V.proj !== proj) return '';
-  if(V.err && !V.diff) return '<div class="hidnote plerr" role=alert>' + esc(V.err) + '</div>';
-  const files = (V.files || []).map(f => String(f)).join(' · ');
+  // ⚠Server rows are {rel, state}; an error keeps the form so the command can be fixed and previewed again.
+  const files = (V.files || []).map(f => f && typeof f === 'object' ? String(f.rel || '') : String(f)).filter(Boolean).join(' · ');
   return '<div class="pldiff plstpv"><div class=brh2><b>' + esc(T('Start with recommended setup')) + '</b> <i>' + esc(files) + '</i></div>'
     + '<label class=plstpol><input type=checkbox data-plstpol' + (V.policy ? ' checked' : '') + (V.busy ? ' disabled' : '') + '> ' + esc(T('Turn on strict mode (file edits need an open run)')) + '</label>'
     + '<div class="hidnote plstpoln">' + esc(T('When on, file edits in this project need an open pipeline run.')) + '</div>'
     + (V.cmd != null ? '<label class=plstcmd>' + esc(T('Test command')) + ' <input type=text data-plstcmd value="' + esc(V.cmd) + '" placeholder="' + esc(T('Your test command, e.g. npm test')) + '"' + (V.busy ? ' disabled' : '') + '>'
       + (V.det && V.cmd === V.det ? ' <span class=plstdet>' + esc(T('Detected')) + '</span>' : '') + '</label>'
       + (V.cmd.trim() ? '' : '<div class="hidnote plstng">' + esc(T('Empty — the gate is left out')) + '</div>') : '')
-    + (V.diff != null ? '<pre>' + diffHtml(V.diff, typeof agLang === 'function' ? agLang('x.json') : '') + '</pre>' : '<div class=hidnote>' + esc(T('Loading…')) + '</div>')
+    + (V.diff != null ? '<pre>' + diffHtml(V.diff, typeof agLang === 'function' ? agLang('x.json') : '') + '</pre>' : V.err && !V.busy ? '' : '<div class=hidnote>' + esc(T('Loading…')) + '</div>')
     + (V.err ? '<div class="hidnote plerr" role=alert>' + esc(V.err) + '</div>' : '')
     + '<div class=plbar><button type=button class=wkrgb data-plstok' + (V.busy || V.diff == null ? ' disabled' : '') + '>' + esc(T('Confirm')) + '</button><button type=button class=wkrgb data-plstno>' + esc(T('Cancel')) + '</button></div></div>';
 }
@@ -78,7 +78,8 @@ async function plStartFetch(write){
   if(!r || !r.ok){ V.err = T('Could not save') + (r && (r.err || r.error || r.why) ? ' — ' + TE(r) : ''); plPaint(); return; }
   if(!write){ V.diff = String(r.diff || ''); V.files = Array.isArray(r.files) ? r.files : []; if(V.cmd == null){ V.det = typeof r.detected === 'string' ? r.detected : ''; V.cmd = V.det; } plPaint(); return; }
   PLST_PV = null;
-  PLS.msg = r.demo ? T('Demo — nothing is written') : (r.written || []).map(String).join(' · ');
+  const wr = (Array.isArray(r.files) ? r.files : []).filter(f => f && f.state === 'written').map(f => String(f.rel || '')).filter(Boolean);   // server reports per-file state, no `written` list
+  PLS.msg = r.demo ? T('Demo — nothing is written') : wr.length ? T('Saved: {s}').replace('{s}', () => wr.join(' · ')) : T('Nothing written — the files already exist');
   PLS.projs = null; plLoadProjs(); await plLoad(proj, true);
   plPaint();
 }

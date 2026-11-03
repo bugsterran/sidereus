@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- Pipelines «Start with recommended setup»: the preview lists file names instead of «[object Object]», an empty test command saves without a gate (projects with no detected command could not save at all), a preview error keeps the form editable, and the saved message names the written files.
+- Pipelines «Request a red check»: the preview and the sent line scroll into view, the message names the target repository, and recipient labels show project and state (also for eval fix requests).
+- Demo: the room invite preview includes the Topic line like the real one.
 - Pipelines: each project keeps its own picked run across project switches, and a run clicked from the overview is no longer covered by an older saved pick.
 - Sessions: folding one session's «Team» block no longer folds it on every card.
 - External sessions and run requests: a non-finite or far-future hook timestamp no longer keeps a row alive forever.

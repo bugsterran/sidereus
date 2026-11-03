@@ -11,6 +11,8 @@ Object.assign(I18N.ko, {
   'Detected': '감지됨',
   'Your test command, e.g. npm test': '테스트 명령 (예: npm test)',
   'Empty — the gate is left out': '비우면 게이트를 넣지 않습니다',
+  'Saved: {s}': '저장했습니다: {s}',
+  'Nothing written — the files already exist': '쓰지 않았습니다 — 파일이 이미 있습니다',
   'Request a red check': 'red 확인 요청',
   'Open a Claude Code session in this project and log in to the mailbox to request it': '요청하려면 이 프로젝트에서 Claude Code 세션을 열고 메일박스에 로그인하세요',
   'Red check requested → {s} · {t}': 'red 확인 요청함 → {s} · {t}',

@@ -2,7 +2,7 @@
 with none — quick-fix · change · bugfix — plus `_policy.json` (strict mode) only when `policy` is ticked.
 
 dry = one unified diff of every new file; dry:false writes each with O_EXCL and reports files that already exist
-(never overwritten). The gate is the person's `gate` when sent, else detect_test()'s command, else the key is left out.
+(never overwritten). The gate is the person's `gate` when sent (blank = left out), else detect_test()'s command, else left out.
 ⚠Titles are English: these files ship to any user. Only pipeline files are written — never Claude Code settings —
 and Sidereus never runs the gate or anything else here (rule 7).
 """
@@ -126,10 +126,11 @@ def starter(req):
     if not _proj_ok(proj):
         return 403, {"ok": False, "err": "unknown project"}
     mine = req.get("gate")
-    if mine is not None and not (isinstance(mine, str) and mine.strip() and len(mine) <= GATE_MAX and not _CTRL.search(mine)):
-        return 400, {"ok": False, "err": "gate: one line, 1..200 chars"}
+    if mine is not None and not (isinstance(mine, str) and len(mine) <= GATE_MAX and not _CTRL.search(mine)):
+        return 400, {"ok": False, "err": "gate: one line, up to 200 chars"}
     detected = detect_test(proj)
-    gate = mine.strip() if mine is not None else detected
+    # ⚠A sent "" (blank) is an explicit «no gate», not «use detected»: the UI offers an empty input as «gate left out».
+    gate = (mine.strip() or None) if mine is not None else detected
     files = _files(proj, req.get("policy") is True, gate)
     d = _pipe_dir(proj)
     with _LOCK:
