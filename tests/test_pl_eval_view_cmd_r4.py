@@ -1,5 +1,6 @@
 """R4: the red-check command in the DM works without a clone (`sidereus redcheck`); a clone keeps the script path."""
 import os
+import shlex
 import unittest
 from unittest import mock
 
@@ -23,7 +24,8 @@ class RedcheckCmd(unittest.TestCase):
         with mock.patch.object(config, "IS_CLONE", True):
             c = PV.redcheck_cmd("/p", "flow", "Verify", nt=False)
         self.assertTrue(c.startswith("python3 "))
-        self.assertIn(os.path.join(config.ASSET_DIR, "scripts", "pl_eval.py") + " redcheck", c)
+        # nt=False quotes POSIX-style, so a Windows ASSET_DIR (backslashes) comes back shlex-quoted.
+        self.assertIn(shlex.quote(os.path.join(config.ASSET_DIR, "scripts", "pl_eval.py")) + " redcheck", c)
 
     def test_explicit_code_dir_keeps_script_form(self):   # the demo passes its fake code dir
         with mock.patch.object(config, "IS_CLONE", False):
