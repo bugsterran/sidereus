@@ -1,6 +1,7 @@
 """External CLI agent sessions (Gemini CLI, Codex CLI) fed by hooks — views: rows, work panel, child runs,
 today usage, hook-settings check. The store (registry, ingest, persistence, token store) is sidereus/ext_store.py."""
 import json
+import math
 import os
 import time
 from sidereus.warn import warn_once
@@ -266,6 +267,11 @@ def ext_rows():
                 first = float(v.get("firstSeen") or last)
             except (TypeError, ValueError):
                 last = first = now
+            # ⚠A corrupt store can hold NaN/inf: int() below would raise and the loop-wide except drops every later row.
+            if not math.isfinite(last):
+                last = now
+            if not math.isfinite(first):
+                first = last
             cwd = v.get("cwd") or ""
             st = v.get("state") or "unknown"
             # ⚠Dead (pid/silent) and folded rows list as 'done' at once, never «Disconnected» (R1); the store keeps the grace.

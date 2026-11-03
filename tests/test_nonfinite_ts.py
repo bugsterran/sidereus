@@ -72,3 +72,16 @@ class NumNonFinite(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StoredNonFinite(unittest.TestCase):
+    """Corrupt store values (not the hook input path): +inf lastSeen ages out, a far-future run t1 is not kept open."""
+
+    def test_stored_inf_last_seen_ages_out(self):
+        self.assertTrue(st._ext_aged_out({"lastSeen": float("inf")}, NOW))
+
+    def test_far_future_run_dropped(self):
+        rows = PR.pl_runs_of(SID, NOW, _raw={"quick-fix": {"t0": NOW - 60, "t1": NOW + 10 ** 9}})
+        self.assertEqual(rows, [])
+        rows = PR.pl_runs_of(SID, NOW, _raw={"quick-fix": {"t0": NOW - 60, "t1": NOW - 30}})
+        self.assertEqual(len(rows), 1)

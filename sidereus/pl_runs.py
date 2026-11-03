@@ -198,7 +198,8 @@ def pl_runs_of(sid, now, _raw=None):
         if not (isinstance(name, str) and re.match(r"^[a-z0-9-]{1,40}$", name) and isinstance(r, dict)):
             continue
         t1 = _num(r.get("t1"))
-        if now - t1 > PLR_KEEP_S:
+        # ⚠A far-future t1 (corrupt or hand-edited ledger) would never age out and stay «working» forever.
+        if now - t1 > PLR_KEEP_S or t1 > now + 300:
             continue
         # `stop` = Sidereus «Stop» time stamped by hooks/pl_guard.py; ⚠a stopped run counts as ended (never shown running)
         stop = _num(r.get("stop"))
