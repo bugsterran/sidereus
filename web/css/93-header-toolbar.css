@@ -50,6 +50,8 @@ html[data-ui=next] .tbs > .rooms{flex:0 1 auto;min-width:0}
 html[data-ui=next] .tbs > .rooms > .rmmem{flex:0 1 auto;min-width:0;text-overflow:ellipsis}
 /* ⚠.rmmem is flex, so its own text-overflow never applies; the last member is the item that shrinks with an ellipsis */
 html[data-ui=next] .tbs > .rooms > .rmmem > :last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* ⚠The name keeps its width (base .rmname has min-width:0, so it shrank first); the 200px cap keeps the ellipsis for long names */
+html[data-ui=next] .tbs > .rooms > .rmname{flex-shrink:0;max-width:200px}
 html[data-ui=next] #tbchat > .tbr{flex-shrink:0}
 /* ⚠With all six filter chips in English the fixed parts alone (chips 736 + search/views 409) exceed 1100: wrap the
    search/views group to a second line instead of scrolling sideways. The room part enters line breaking at 160px so

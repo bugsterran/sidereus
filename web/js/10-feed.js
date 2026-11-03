@@ -128,7 +128,7 @@ async function send(){
     box.value=''; box.style.height='auto'; setReply(null); await poll();
     // ⚠«Outside rooms» shows only room-less posts, so a default-room post would vanish — follow it into that room.
     if(g.dflt && place.indexOf('room:') !== 0) rcOpen('room:' + g.room);
-  }catch(e){ alert(T('Could not send')+': '+T(e.message)); }
+  }catch(e){ alert(T('Could not send')+': '+TE(e.message)); }  // ⚠TE: the error may carry a typed room name
   finally{ btn._busy=false; btn.disabled=false; ctoPaint(); box.focus(); }
 }
 document.addEventListener('click', e=>{

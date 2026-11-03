@@ -205,7 +205,6 @@ Object.assign(I18N.ko, {
   '{n} project total cost {m} — a per-project total, not per session; subagents are counted separately': '{n} 프로젝트 누적 비용 {m} — 세션별이 아니라 프로젝트 단위 누계이고, 서브에이전트는 따로 집계됩니다',
   'In this state for {n} min. ': '이 상태로 {n}분째입니다. ',
   'No new transcript line for {n} min in this state — may be a long job or may be stuck (cannot tell from outside)': '이 상태로 {n}분째 트랜스크립트에 줄이 안 붙었습니다 — 긴 작업일 수도, 멈춘 것일 수도 있습니다(밖에서는 못 가릅니다)',
-  'Pick {n} to invite to a room': '{n} 를 방에 초대할 대상으로 선택',
   ' (guess: {n} · source {m})': ' (추정: {n} · 출처 {m})',
   '{n} unread messages': '안 읽은 메시지 {n}개',
   'Subagent spawned by a subagent (depth {n}) — the parent is not in the list': '서브에이전트가 띄운 서브에이전트 (깊이 {n}) — 띄운 부모는 목록에 없습니다',

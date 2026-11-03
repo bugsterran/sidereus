@@ -74,7 +74,7 @@ async function wkcPost(to, body){
     if(ta.value.trim() === body) { ta.value = ''; ta.style.height = 'auto'; }
     wkcSentAt = Date.now();
     await poll();
-  }catch(e){ note(T('Could not send') + ': ' + T(e.message)); }
+  }catch(e){ note(T('Could not send') + ': ' + TE(e.message)); }  // ⚠TE: server text may carry user data
   finally{ wkcBusy = false; wkcAsk = null; const q = document.getElementById('wkcq'); q.hidden = true; q.innerHTML = ''; wkcPaint(); ta.focus(); }
 }
 function wkcSend(){

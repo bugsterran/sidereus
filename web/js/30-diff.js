@@ -1,6 +1,3 @@
-// ★Invite only — members are never edited directly. The roster is the room's record, and who joined when
-//   is verdict evidence for reviews; changing it silently from the screen would contaminate that evidence.
-//   Invites are a discovery mechanism, so safe. The invitee also sees it in their inbox.
 // ★diff coloring — kept separate from the code highlighter. diff meaning splits **per line** (+/-/@@),
 //   and mixing it with token coloring makes both unreadable. Only row color.
 // ★Code inside diffs gets **the same coloring as code blocks**.
