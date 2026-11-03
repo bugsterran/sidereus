@@ -2,8 +2,13 @@
 /* ⚠The bar spans the whole (wider than the pane) .mmd: it is pinned to the visible pane width (container units) so the buttons never scroll away. */
 .archmap{container-type:inline-size}
 .archdg .mmdbar{position:sticky;left:0;box-sizing:border-box;width:calc(100cqw - 2px);gap:6px;align-items:center}
+/* ⚠Vertical: .archmap is the scroller and .archtop (sticky, opaque) covers its top, so top:0 hides the bar under it; pin at the live .archtop height (84j8 archZmTop) minus the 6px padding .archtop's top:-6px cancels. */
+.archdg .mmdbar{top:calc(var(--archtop-sh,0px) - 6px);z-index:1;background:var(--mmd-bg)}
+.archmap{scroll-padding-top:calc(var(--archtop-h) + 25px)}   /* focus scroll clears the pinned bar row too */
 .archdg[data-fv] .mmdbar{position:sticky;align-items:flex-start}
 .archzm{display:inline-flex;flex:0 0 auto}
+/* ⚠79 .mmdtg sticky right:10px shifts it after flex layout, onto the zoom group (ko «Fit» overlapped by 11px at 1100); the pane-wide bar already pins it, so plain flex flow */
+.archdg .mmdtg{position:static;flex:0 0 auto}
 .archzm-b{font-size:11px;line-height:1.4;padding:1px 7px;min-width:24px;border:1px solid var(--nx-rule,#2a3442);border-left-width:0;background:var(--mmd-bg);color:var(--nx-t2,#9aa4b4);cursor:pointer;font-variant-numeric:tabular-nums}
 .archzm-b:first-child{border-left-width:1px;border-radius:4px 0 0 4px}
 .archzm-b:last-child{border-radius:0 4px 4px 0}

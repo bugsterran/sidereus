@@ -137,6 +137,22 @@ class ArchZoom(unittest.TestCase):
         fill = re.search(r"slot\.innerHTML = ARCH\.svg\[k\];.*?archScrollPut\(box, pd", ARCH, re.S).group(0)
         self.assertIn("archZmApply(slot)", fill)
 
+    def test_bar_pinned_below_sticky_top_on_vertical_scroll(self):
+        css = _read("css", "79d-structure-arch-zoom.css")
+        rule = re.search(r"^\.archdg \.mmdbar\{top:([^;]+);z-index:1;background:var\(--mmd-bg\)\}", css, re.M)
+        self.assertIsNotNone(rule)   # opaque bar under .archtop (z 2), not top:0 (hidden behind .archtop)
+        self.assertEqual(rule.group(1), "calc(var(--archtop-sh,0px) - 6px)")
+        self.assertIn(".archtop{position:sticky;top:-6px;", _read("css", "79-structure-arch.css"))   # the 6px the calc cancels
+        r = run("const s = fakeSvg(800, 400), m = fakeMap(s), P = {}; m.am.style = { setProperty: (k, v) => { P[k] = v; } };"
+                "archZmApply(m.slot); console.log(JSON.stringify([P['--archtop-sh'], s.a.width]));")
+        self.assertEqual(r, ["100px", "800"])   # set even with no stored zoom
+
+    def test_source_text_in_flex_flow_never_over_zoom_group(self):
+        css = _read("css", "79d-structure-arch-zoom.css")
+        self.assertIn("\n.archdg .mmdtg{position:static;flex:0 0 auto}", css)   # overrides 79 sticky right:10px (offset ignores the flex sibling)
+        self.assertIn(".archdg .mmdtg{position:sticky;right:10px}", _read("css", "79-structure-arch.css"))
+        self.assertGreater(css.index(".archdg .mmdtg{position:static"), css.index(".archzm{display:inline-flex;flex:0 0 auto}"))
+
     def test_ko_entries(self):
         ko = _read("js", "06-i18n-zu-arch-zoom.js") + _read("js", "06-i18n-zm-b1.js")
         for s in ("Zoom out", "Zoom in", "Reset to 100%", "Fit to width", "Fit"):
