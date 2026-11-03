@@ -129,12 +129,21 @@ def _owner_of(rows):
     return own
 
 
-def _card_sigs(extra, cards, own, now, read, rid):
+def _ask_open(r, c, at):
+    """An «ask» card still unanswered: same session, row live and not already `ask`, no human prompt after the card.
+    ⚠humanAt missing (old parse cache, external CLI row) is unknown: no card signal rather than a stale one."""
+    ha = r.get("humanAt")
+    return bool(c.get("sid")) and c.get("sid") == r.get("sid") and (r.get("state") or "") not in ("ask", "done", "gone") \
+        and isinstance(ha, int) and not isinstance(ha, bool) and ha < at
+
+
+def _card_sigs(extra, cards, own, now, read, rid, by_sid=None):
     grp = {}
     evat = _ev_at({c.get("tid") for c in cards or [] if (c.get("kind") or "").startswith("f") and c.get("tid")})
     for c in cards or []:
         k, cw = c.get("kind") or "", c.get("cwd") or ""
-        r = own(cw)
+        # An «ask» card belongs to its own session, not to the newest row of the cwd.
+        r = (by_sid or {}).get(c.get("sid") or "") if k == "ask" else own(cw)
         if r is None:
             continue
         at = _card_ts(c)
@@ -150,16 +159,23 @@ def _card_sigs(extra, cards, own, now, read, rid):
             ck = "%s|%s|%s" % (c.get("at"), k, c.get("project") or "")
             if ck not in rid:
                 grp.setdefault((id(r), "bgdone"), []).append((at, "서브에이전트" if k == "agent" else "백그라운드", ck))
+        elif k == "ask" and at and not c.get("old") and not (read and c.get("at", "") <= read) and _ask_open(r, c, at):
+            # ⚠Hand-backs and task notifications wake the session and flip the row off `ask` while the question is unanswered.
+            ck = "%s|%s|%s" % (c.get("at"), k, c.get("project") or "")
+            if ck not in rid:
+                grp.setdefault((id(r), "ask"), []).append((at, "질문 대기", ck))
     # one signal per kind: several cards of the same kind count once (+5 is per distinct signal)
     for (rk, k), its in grp.items():
         its.sort()
         if k == "fail":
             why = its[-1][1] + (" 등 %d건" % len(its) if len(its) > 1 else "")
+        elif k == "ask":
+            why = its[0][1]
         else:
             labs = sorted({x[1] for x in its})
             why = "%s 완료 %d건 미확인" % ("·".join(labs), len(its))
         sg = _sig(k, why, its[0][0])
-        if k == "bgdone":                   # card read keys (at|kind|project, metadata) so the row's «Seen» can POST /api/cards/read
+        if k in ("bgdone", "ask"):          # card read keys (at|kind|project, metadata) so the row's «Seen» can POST /api/cards/read
             sg["keys"] = [x[2] for x in its]
         if k == "fail":                     # only card signals expire on a clock: the UI shows the 30-min cap left
             sg["until"] = int(its[-1][0] + ATT_FAIL_CARD_S)
@@ -207,7 +223,7 @@ def _collect(rows, cards, now, read, rid):
     """id(row) -> [signal] from cwd-scoped evidence: cards, then tool failures, then conflicts."""
     own = _owner_of(rows)
     extra = {}
-    _card_sigs(extra, cards, own, now, read, rid)
+    _card_sigs(extra, cards, own, now, read, rid, {r["sid"]: r for r in rows if r.get("sid")})
     _toolfail_sigs(extra, own, now)
     _conflict_sigs(extra, rows, now)
     for sl in extra.values():
