@@ -7,6 +7,7 @@ from sidereus.ident import _sid8
 from sidereus.cards import cards_read, cards_read_ids
 from sidereus import failures as _fl
 from sidereus import file_owner as _fo
+from sidereus.bgtasks import BG_IDLE_S
 
 # ⛔Metadata only: every `why` is built here from tool names, counts and minutes — never task/reply/card text.
 # ★Points decided 2026-09-23 (user). No quota-share signal: not actionable per session.
@@ -106,6 +107,13 @@ def _resumed(r, at, now):
     return bool(at) and now - int(r.get("ageSec") or 0) > at + ATT_RESUME_GRACE_S
 
 
+def _human_after(r, t):
+    """The person responded in this session after `t` (typed prompt, `!` command, picker answer).
+    ⚠humanAt 0/missing is unknown, never «replied»: an unanswered question must not drop."""
+    ha = r.get("humanAt")
+    return isinstance(ha, int) and not isinstance(ha, bool) and ha > 0 and ha > t
+
+
 _conflicts = _fo.conflicts      # module seam: tests swap it so attention() never scans live transcripts
 
 
@@ -158,7 +166,8 @@ def _card_sigs(extra, cards, own, now, read, rid, by_sid=None):
                 continue
             grp.setdefault((id(r), "fail"), []).append((at, _FAIL_TITLE.get(k, "실패 알림")))
         elif k in ("agent", "bgdone") and at and not c.get("old") and not (read and c.get("at", "") <= read):
-            if same and _resumed(r, at, now):   # session carried on after the completion: treat as seen
+            # session carried on after the completion, or the person typed there (inside the grace): treat as seen
+            if same and (_resumed(r, at, now) or _human_after(r, at)):
                 continue
             ck = "%s|%s|%s" % (c.get("at"), k, c.get("project") or "")
             if ck not in rid:
@@ -282,12 +291,15 @@ def _row_sigs(r, now):
     bi = r.get("bgIdle") or {}   # open background shells whose output file is quiet (mtime only, never content)
     if live and isinstance(bi, dict) and int(bi.get("idle") or 0) > 0:
         mx = int(bi.get("max") or 0)
-        sg.append(_sig("bgidle", "백그라운드 셸 %d개 · 무출력 %d개 · 최장 %d분" % (int(bi.get("n") or 0), int(bi["idle"]), mx // 60),
-                       int(bi.get("at") or 0) or now - mx))   # ⚠absolute `at`: `max` is from a stale snapshot
+        bsince = int(bi.get("at") or 0) or now - mx   # ⚠absolute `at`: `max` is from a stale snapshot
+        # ⚠Compare with the newest idle onset (mtime + BG_IDLE_S), not `at`: a prompt before a shell went idle must not hide it.
+        if not _human_after(r, int(bi.get("last") or bsince) + BG_IDLE_S):
+            sg.append(_sig("bgidle", "백그라운드 셸 %d개 · 무출력 %d개 · 최장 %d분" % (int(bi.get("n") or 0), int(bi["idle"]), mx // 60),
+                           bsince))
     # ⚠A Workflow call returns at launch, so the parent ends its turn (`wait`) while the run goes on — not the human's turn.
     wf_run = any(isinstance(w, dict) and w.get("run") for w in (r.get("wf") or []))
     if st == "wait" and not r.get("sub") and not r.get("bgs") and not wf_run \
-            and ATT_DONE_S[0] <= age <= ATT_DONE_S[1]:
+            and ATT_DONE_S[0] <= age <= ATT_DONE_S[1] and not _human_after(r, t0):   # ⚠a `!` line is not activity: t0 stays old
         sg.append(_sig("done", ("작업 끝 · 입력 대기 %d분" % (age // 60)) if age >= 60 else ("작업 끝 · 입력 대기 %d초" % age), t0))
     return sg
 

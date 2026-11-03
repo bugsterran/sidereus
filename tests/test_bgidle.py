@@ -74,7 +74,11 @@ class BgIdleJudge(_Base):
                                                        "T2": ("bg", "b", NOW - 3600, p14),
                                                        "T3": ("sub", "c", NOW)}}):
             got = bt.bg_idle(self.fp, NOW)
-            self.assertEqual(got, {"n": 2, "idle": 1, "max": 16 * 60, "at": int(NOW - 16 * 60)})
+            self.assertEqual(got, {"n": 2, "idle": 1, "max": 16 * 60, "at": int(NOW - 16 * 60), "last": int(NOW - 16 * 60)})
+            os.utime(p14, (NOW - 15.5 * 60, NOW - 15.5 * 60))   # both idle: `at` = oldest mtime, `last` = newest
+            got = bt.bg_idle(self.fp, NOW)
+            self.assertEqual((got["at"], got["last"]), (int(NOW - 16 * 60), int(NOW - 15.5 * 60)))
+            os.utime(p14, (NOW - 14 * 60, NOW - 14 * 60))
             # content rewritten but mtime kept old: still idle (only mtime is read)
             with open(p16, "w", encoding="utf-8") as f:
                 f.write("new output")
@@ -123,7 +127,8 @@ class BgIdleOpenAndExcluded(_Base):
         bt._bg_expire(opened, NOW)
         self.assertIn("T1", opened)                  # not expired by the 2-hour backstop
         with mock.patch.dict(bt._bg_open, {self.fp: opened}):
-            self.assertEqual(bt.bg_idle(self.fp, NOW), {"n": 1, "idle": 1, "max": 3 * 3600, "at": int(NOW - 3 * 3600)})
+            self.assertEqual(bt.bg_idle(self.fp, NOW), {"n": 1, "idle": 1, "max": 3 * 3600, "at": int(NOW - 3 * 3600),
+                                                          "last": int(NOW - 3 * 3600)})
 
     def test_R4_excluded(self):
         p1, p2 = _out(self.dir, "b111"), _out(self.dir, "b222")

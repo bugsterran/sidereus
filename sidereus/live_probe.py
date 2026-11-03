@@ -229,6 +229,7 @@ AGENTS_TIMEOUT = 6
 _av_cache = [0.0, None]     # (success time, {pid(str): entry}) — primary's state; with several accounts, the merged view
 _av_fail = [0.0]            # last failure time (negative cache) — 0.0 means "no recent failure"
 _av_lock = threading.Lock()
+_av_held = {}               # account key ("" single, else realpath) -> last successful view; never cut (live._live_held)
 # Each account's CLI lists only its own sessions (CLAUDE_CONFIG_DIR) ⇒ one lookup per account, merged by pid.
 _av_acct = {}               # realpath(dir) -> ([ok_at, view], [fail_at]) per account when more than one is signed in
 _av_unknown = set()         # account labels whose lookup is unknown as of the last agent_view() (primary = "")
@@ -372,6 +373,7 @@ def _av_one(env, cache, fail, ttl, skey, cfg_dir="", sig_key=None):
             cache[0], cache[1] = time.time(), out
             _av_sigs[sig_key] = sig      # taken before the spawn, so a change during it refreshes again
             fail[0] = 0.0                # recovered — lift the negative cache
+            _av_held[sig_key or ""] = out
             if skey:
                 _stale_clear(skey)
             return out

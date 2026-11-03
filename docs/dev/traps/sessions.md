@@ -334,3 +334,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: a daemon respawn gap (no spawner in the ps snapshot) or a skipped tty probe under load returned `{app:'bg'}`, with no memory of the good result one poll earlier.
 - ⇒ `_BG_LAST` (job pid -> spawner, last good term) is reused only on a transient miss while the job and the same spawner are alive; a dead or non-iTerm spawner drops it. Poll path only (`term_attach`).
 - ⚠Do not share the cache with `_resolve` or direct `_bg_term` calls — tests reuse job pids — `tests/test_term_bg_last_good.py`.
+
+## Background job's open question shows as ended while `claude agents` times out (`live._live_held`)
+
+- Cause: a bg job's argv is `--resume OLD.jsonl`; with its account's official lookup unknown, the argv guess bound the pid to OLD, the live sid lost the same-cwd path slot to a newer transcript and `_live_slot` forced `done` (attention drops `ask` on done).
+- ⇒ `live_probe._av_held` keeps each account's last successful answer; while that account is unknown, `_live_held` reuses its pid -> sessionId pairs only for pids still in the ps snapshot with the argv they had when an answer named them (ps has no start time). Test `tests/test_attention_bg_ask_r2.py`.
+- ⚠A pid that left the snapshot or changed argv is dropped for good; an account that answered is never second-guessed. ⚠Do not loosen `stale` in `_live_slot` instead (dead-session ghosts). ⚠Known gap: a bg job started during the outage was never in an answer and still falls to the argv guess.
