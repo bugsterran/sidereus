@@ -1,0 +1,13 @@
+/* «Architecture» zoom buttons (84j8) in the map's .mmdbar, left of «Source text»; same height as .mmdtg so archFitOf's bar measure does not move. */
+/* ⚠The bar spans the whole (wider than the pane) .mmd: it is pinned to the visible pane width (container units) so the buttons never scroll away. */
+.archmap{container-type:inline-size}
+.archdg .mmdbar{position:sticky;left:0;box-sizing:border-box;width:calc(100cqw - 2px);gap:6px;align-items:center}
+.archdg[data-fv] .mmdbar{position:sticky;align-items:flex-start}
+.archzm{display:inline-flex;flex:0 0 auto}
+.archzm-b{font-size:11px;line-height:1.4;padding:1px 7px;min-width:24px;border:1px solid var(--nx-rule,#2a3442);border-left-width:0;background:var(--mmd-bg);color:var(--nx-t2,#9aa4b4);cursor:pointer;font-variant-numeric:tabular-nums}
+.archzm-b:first-child{border-left-width:1px;border-radius:4px 0 0 4px}
+.archzm-b:last-child{border-radius:0 4px 4px 0}
+.archzm-pct{min-width:46px}
+.archzm-b:hover{color:var(--nx-t1,#dfe5ee)}
+.archzm-b:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:-2px}
+.archdg[data-fv] .archzm{margin-top:6px}

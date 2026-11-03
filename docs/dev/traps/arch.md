@@ -380,3 +380,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: a non-pass group spanning almost a whole pass band is walled for edges from other groups, so the only way is the outer margin; relRoute runs out of `RR_POPS` on every pass and the `mmdRoute` elbow fallback ignores every wall (titles, boxes).
 - ⇒ after the relaxed-port retries, a still-null route retries once with group interiors open (`blk.set(base)`: node boxes and titles stay walls) before the elbow. ★real project map: title/box hits 4 → 0, crossings 107 → 112; ARCHITECTURE.md crossings 15 → 15.
 - ⚠Do not drop to the elbow first, and do not open interiors for routes that already succeed — `tests/test_mermaid_band_ports_js.py` `test_band_wide_group_routes_clear_of_titles_and_boxes`.
+
+## Zoom lost or scroll clamped on repaint (`84j8 archZmApply`)
+
+- Cause: every repaint re-emits the cached 1x svg string (`ARCH.svg[k]`); restoring the scroll onto that smaller svg clamps it.
+- ⇒ `archZmApply(slot)` re-applies the stored zoom right after the `innerHTML` (archPaint and the archDiagram fill), before `archScrollPut`.
+- ⚠Do not move it after `archScrollPut`, and never select bare `svg.mmdsvg` — the `.archmm` minimap clone has that class too — `tests/test_struct_arch_zoom_js.py`.
