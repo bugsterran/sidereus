@@ -309,7 +309,7 @@ function archMmd(src, mods, sel, kinds, fit, bp){   // kinds = 84j2 archKindMap 
     }
   }catch(e){ svg = ''; if(typeof softErr === 'function') softErr('arch', e); }
   if(!svg) return mmdBlock(src);
-  return '<div class=mmd><div class=mmdbar><button type=button class=mmdtg aria-pressed=false>' + esc(T('Source text')) + '</button></div>'
+  return '<div class=mmd><div class=mmdbar>' + (typeof archZmBar === 'function' ? archZmBar() : '') + '<button type=button class=mmdtg aria-pressed=false>' + esc(T('Source text')) + '</button></div>'
     + '<div class=mmdv>' + svg + '</div><div class=mmdsrc>' + codeBlock(src, 'mermaid') + '</div></div>';
 }
 // Drawing room of the visible .archmap box for the focus view, 20px buckets (cache key) · null before the first paint.
@@ -380,7 +380,7 @@ function archDiagram(box, k, src, mods, si, kinds, fit, bp){
     const slot = box.querySelector && box.querySelector('.archdg');
     if(fit && !(slot && slot.dataset && slot.dataset.k === k)) return;   // a refit already replaced this view: no stale layout
     if(!ARCH.svg[k]){ const ks = Object.keys(ARCH.svg); if(ks.length >= 40) ARCH.svg = {}; ARCH.svg[k] = archMmd(src, mods, si, kinds, fit, bp); }
-    if(slot && slot.dataset && slot.dataset.k === k){ slot.innerHTML = ARCH.svg[k];
+    if(slot && slot.dataset && slot.dataset.k === k){ slot.innerHTML = ARCH.svg[k]; if(typeof archZmApply === 'function') archZmApply(slot);   // ⚠cached svg is 1x: re-zoom before the scroll goes back (84j8)
       const pd = box._arpend; box._arpend = null;   // ⚠the paint put the scroll back onto the short loading line, which clamped it to 0
       if(pd) archScrollPut(box, pd[0], pd[1], pd[2]);
       if(typeof archLitNow === 'function') archLitNow(slot); }
@@ -553,7 +553,7 @@ function archPaint(box, head){
     + (dvOn ? archDevListHtml(edges, names, p, devAt, devSn, ARCH.op)
       : typeof archEdTreeHtml === 'function' ? archEdTreeHtml(d, names, p, { op: ARCH.op, et: ARCH.et, dv: devAt, sn: devSn, lit: ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : null })   // flow tree (84j6)
       : '<ul class=archel-list>' + ord.map(o => archEdgeRow(o.e, names, o.i, ARCH.op === p + '\t' + o.i, o.io, devAt[o.i], devSn)).join('') + '</ul>') + '</aside>') + strSplitGrip('archbody') + '</div></div>';
-  archScrollPut(box, sm, sl, sd);
+  if(typeof archZmApply === 'function') archZmApply(box.querySelector && box.querySelector('.archdg')); archScrollPut(box, sm, sl, sd);   // ⚠zoom first: a 1x svg clamps the restored scroll (84j8)
   // ⚠the room was measured on the previous paint (overview bar or none): re-measure once on the new frame and redraw if it moved
   if(sel && !box._arfit){ const f2 = archFitOf(box); if(f2 && f2.w + 'x' + f2.h !== fzk){ box._arfit = 1; box._arhold = [sm, sl, sd]; box._arsig = ''; try{ archPaint(box, head); } finally { box._arfit = 0; box._arhold = null; } return; } }
   if(typeof archLitNow === 'function') archLitNow(box.querySelector && box.querySelector('.archdg'));   // cached svg: lit classes go back on
