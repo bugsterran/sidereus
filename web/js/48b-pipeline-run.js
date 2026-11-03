@@ -318,18 +318,21 @@ function plRunPanel(p, models){
       + models.map(x => '<option value="' + esc(x) + '"' + (x === v ? ' selected' : '') + '>' + esc(x + (x === saved ? ' · ' + T('saved') : '')) + '</option>').join('')
       + '</select></label>';
   }).join('');
-  const req = String(PLRUN.req || '').trim();
+  const req = String(PLRUN.req || '').trim(), nCh = Object.keys(plRunModels(p)).length;
   const why = plGoWhy(cur, req, PLRUN.busy);
   // ⚠Not data-plmode: 48k's `.plw [data-plmode]` click handler read it as the Watch/Edit toggle and left Edit.
-  return '<div class=plrun><div class=brh2><b>' + esc(T('Send a run request')) + '</b> <i>' + esc(T('The session runs it — Sidereus runs nothing')) + '</i></div>'
-    + '<label class=pll><span>' + esc(T('Mode', 'how')) + '</span><select class=plrsel data-plrmode' + (cur && cur.cx ? ' disabled title="' + esc(T('Workflow mode is not available for this session')) + '"' : '') + '>'
+  // Side layer (fixed, 43-pipeline.css .plrun) so opening it never pushes the canvas; explanations live in tooltips, not extra lines.
+  return '<div class=plrun role=dialog aria-label="' + esc(T('Send a run request')) + '"><div class=brh2><b>' + esc(T('Send a run request')) + '</b> <span class=plhelp tabindex=0 title="' + esc(T('The session runs it — Sidereus runs nothing')) + '">?</span>'
+    + '<button class="wkrgb plrxx" data-plrx aria-label="' + esc(T('Cancel')) + '">✕</button></div>'
+    + '<label class=pll title="' + esc(T('Direct reuses the same agent on loop-backs and retries (fewer tokens) · Workflow starts a new agent per stage')) + '"><span>' + esc(T('Mode', 'how')) + ' <i class=plhelp aria-hidden=true>?</i></span><select class=plrsel data-plrmode' + (cur && cur.cx ? ' disabled title="' + esc(T('Workflow mode is not available for this session')) + '"' : '') + '>'
     + '<option value=direct' + (PLRUN.mode === 'wf' && !(cur && cur.cx) ? '' : ' selected') + '>' + esc(T('Session runs it directly (default)')) + '</option>'
     + '<option value=wf' + (PLRUN.mode === 'wf' && !(cur && cur.cx) ? ' selected' : '') + '>Workflow</option></select></label>'
-    + '<div class=plfd>' + esc(T('Direct reuses the same agent on loop-backs and retries (fewer tokens) · Workflow starts a new agent per stage')) + '</div>'
     + (ss.length ? '<label class=pll><span>' + esc(T('Sessions')) + '</span><select class=plrsel data-plrs>' + sOpts + '</select></label>'
       : '<div class=hidnote>' + esc(T('No live session in this project')) + '</div>')
     + '<label class=pll><span>' + esc(T('Request')) + '</span><input class=plreq data-plrq maxlength=500 value="' + esc(PLRUN.req || '') + '" placeholder="' + esc(T('One-line request')) + '"></label>'
-    + '<div class=plrms><span class=plrmh>' + esc(T('Change models for this run only')) + '</span>' + mRows + '</div>'
+    // Collapsed by default: one row per stage makes a long pipeline's layer noisy; the head shows how many differ.
+    + '<div class=plrms><button type=button class=plrmh data-plrmo aria-expanded=' + !!PLRUN.mOpen + '>' + (PLRUN.mOpen ? '▾ ' : '▸ ') + esc(T('Change models for this run only'))
+    + (nCh ? ' · ' + esc(TV({msg: '{n} changed', vars: {n: nCh}})) : '') + '</button>' + (PLRUN.mOpen ? mRows : '') + '</div>'
     + '<div class=brh2><b>' + esc(T('Message to send')) + '</b>' + (cur && cur.id ? ' <i>→ ' + esc(cur.id) + '</i>' : '') + '</div>'
     + '<pre class=plprev>' + esc(plDmFor(p, req || '…', plRunModels(p), !!(cur && cur.cx))) + '</pre>'
     + plCxHint(cur)
@@ -408,6 +411,7 @@ document.addEventListener('click', e => {
   plPskClose(); plPaint();
 });
 document.addEventListener('keydown', e => { if(PLPSK && e.key === 'Escape') plPskClose(); });
+document.addEventListener('keydown', e => { if(PLRUN && !PLRUN.busy && e.key === 'Escape' && !PLPSK && !PLRV){ PLRUN = null; plPaint(); } });   // side layer closes like the other overlays; a draft behind it stays (48e plEscSnap snapshots PLRUN in capture)
 // Elapsed-cell tooltip: total + pass count, then one «Pass n · outcome · elapsed» line per recorded pass and the latest.
 // Header strip: gradient progress (done / stages) + elapsed; green «Done» once every stage is done and nothing runs.
 // Running-runs overview: every running (project, pipeline) above the chips. Metadata only: stage titles + agent counts.
@@ -536,6 +540,7 @@ document.addEventListener('click', e => {
   if(!e.target.closest || !e.target.closest('.plw')) return;
   if(e.target.closest('[data-plrun]')){ const p = plCur(); if(p && !p.from){ PLRUN = PLRUN && PLRUN.name === p.name ? null : { name: p.name, sid: '', req: '', models: {}, busy: false, mode: plModeOf(p.name) }; PLS.msg = ''; plPaint(); } return; }
   if(e.target.closest('[data-plrx]')){ PLRUN = null; plPaint(); return; }
+  if(PLRUN && e.target.closest('[data-plrmo]')){ PLRUN.mOpen = !PLRUN.mOpen; plPaint(); return; }
   if(e.target.closest('[data-plgo]')) plRunSend();
 });
 document.addEventListener('change', e => {
