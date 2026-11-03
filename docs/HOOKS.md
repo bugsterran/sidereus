@@ -70,7 +70,7 @@ delivered with its body.
 - Delivered even with a live watcher. Write order: `relay_t` (staged as `pending` when two-phase), stdout, then a
   `hooked` row in `acks.jsonl` (two-phase: at the promoting stop).
 - ⚠A `kind:"relay"` row from any other source is ordinary mail.
-- `POST /api/dm` takes `relay:true` only with the viewer's `Origin`, else 403. ⚠That stops an agent's casual `curl`,
+- Every `POST /api/dm` (with or without `relay:true`) needs the viewer's `Origin`; a missing or foreign one gets 403. ⚠That stops an agent's casual `curl`,
   not same-user code, which can forge the header or append to `bus.jsonl`.
 
 ```json

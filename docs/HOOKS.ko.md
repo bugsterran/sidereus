@@ -65,7 +65,7 @@
 
 - 감시기가 살아 있어도 건넨다. 쓰는 순서는 `relay_t`(두 단계면 `pending`), stdout, 그다음 `acks.jsonl` 의 `hooked` 행이다(두 단계면 확정하는 Stop 에서).
 - ⚠다른 출처의 `kind:"relay"` 행은 일반 메일이다.
-- `POST /api/dm` 은 뷰어의 `Origin` 이 있어야 `relay:true` 를 받고, 아니면 403 이다. ⚠에이전트의 무심한 `curl` 은
+- 모든 `POST /api/dm` 은 (`relay:true` 여부와 상관없이) 뷰어의 `Origin` 이 있어야 하고, 없거나 다른 출처면 403 이다. ⚠에이전트의 무심한 `curl` 은
   막지만, 같은 사용자로 도는 코드는 헤더를 꾸미거나 `bus.jsonl` 에 직접 쓸 수 있다.
 
 ```json
