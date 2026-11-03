@@ -115,7 +115,7 @@ def _ext_aged_out(v, now):
         last = float(v.get("lastSeen") or 0)
     except (TypeError, ValueError):
         last = 0
-    return not now - last <= EXT_TTL_S          # ⚠`not <=`: a stored NaN lastSeen ages out
+    return last == float("inf") or not now - last <= EXT_TTL_S   # ⚠`not <=` ages out a stored NaN; +inf needs its own test
 
 
 def _ext_prune_locked(now):
