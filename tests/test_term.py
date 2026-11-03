@@ -114,6 +114,31 @@ class Detect(Base):
         self.assertEqual(term._bg_term(["64636"], {}, snap), {"app": "bg", "tty": None})
         self.assertEqual(run.calls, [])             # no probe of the foreign pid
 
+    def _orphan_snap(self, cwd="/r", acct="/acct", spawner=True):
+        daemon = ('/x/claude.exe daemon run --json-path %s/daemon.json --origin transient '
+                  '--spawned-by {"label":"claude","cwd":"%s","pid":68658}' % (acct, cwd))
+        host = ("/x/claude.exe --bg-pty-host /tmp/cc-daemon-501/a/pty/5a49e0bd.sock 140 36 -- /x/claude.exe "
+                "--resume /acct/projects/-r/%s.jsonl" % SID)
+        snap = [("70000", "1", daemon), ("64614", "1", host), ("64636", "64614", "claude --resume " + SID)]
+        return snap + ([("68658", "1", "claude --resume " + SID2)] if spawner else [])
+
+    def test_orphaned_bg_host_finds_spawner_via_daemon(self):
+        self.patch(term.subprocess, "run", _Run("68658 ttys002 claude TERM_PROGRAM=iTerm.app\n"))
+        self.assertEqual(term._bg_term(["64636"], {}, self._orphan_snap()),
+                         {"app": "iterm", "tty": "ttys002", "bg": True})
+        self.assertEqual(term._bg_term(["64636"], {"64636": {"cwd": "/r", "kind": "background"}}, self._orphan_snap()),
+                         {"app": "iterm", "tty": "ttys002", "bg": True})
+
+    def test_orphaned_bg_host_mismatch_or_dead_stays_bg(self):
+        self.patch(term.subprocess, "run", _Run("68658 ttys002 claude TERM_PROGRAM=iTerm.app\n"))
+        bg = {"app": "bg", "tty": None}
+        self.assertEqual(term._bg_term(["64636"], {}, self._orphan_snap(cwd="/other")), bg)
+        self.assertEqual(term._bg_term(["64636"], {"64636": {"cwd": "/r2"}}, self._orphan_snap()), bg)
+        self.assertEqual(term._bg_term(["64636"], {}, self._orphan_snap(acct="/acct2")), bg)
+        self.assertEqual(term._bg_term(["64636"], {}, self._orphan_snap(spawner=False)), bg)
+        two = self._orphan_snap() + [("70001", "1", self._orphan_snap()[0][2].replace("68658", "68659"))]
+        self.assertEqual(term._bg_term(["64636"], {}, two), bg)   # ambiguous daemons
+
     def test_spawner_pid_strict(self):
         self.assertEqual(term._spawner_pid('d --spawned-by {"pid":68658} --x'), 68658)
         for bad in ('d --spawned-by {"pid":"68658"}', 'd --spawned-by {"pid":true}', 'd --spawned-by {bad',
