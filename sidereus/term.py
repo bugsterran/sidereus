@@ -1,6 +1,6 @@
 """«To terminal»: bring a live session's terminal tab to the front (iTerm2 / Terminal.app / Orca).
 Detection is metadata only (tty + TERM_PROGRAM of the claude pid). Focus runs a fixed AppleScript with the tty
-as an argv item — never text injection (AGENTS.md rule 7). Orca: fixed `orca terminal switch` argv, same rule. Owns `TERM_CFG_FILE`, `_TTY_CACHE`, `_TTY_FAIL`, `_TTY_LOCK`, `_JUMP_FAILS`, `_CWD_CACHE`, `_CWD_FAIL`."""
+as an argv item — never text injection (AGENTS.md rule 7). Orca: fixed `orca terminal switch` argv, same rule. Owns `TERM_CFG_FILE`, `_TTY_CACHE`, `_TTY_FAIL`, `_TTY_LOCK`, `_JUMP_FAILS`, `_CWD_CACHE`, `_CWD_FAIL`, `_BG_LAST`."""
 import json
 import os
 import re
@@ -27,6 +27,8 @@ _TTY_FAIL = [0.0]
 _TTY_LOCK = threading.Lock()
 _CWD_CACHE = {}                            # pid(str) -> (probed at, cwd or "") for the external-row cwd fallback
 _CWD_FAIL = [0.0]
+_BG_LAST = {}                              # bg job pid(str) -> (spawner pid(str), last good `{app, tty, bg}`), poll path only
+BG_LAST_MAX = 200
 _ENV_PROG = re.compile(r"(?:^|\s)TERM_PROGRAM=(\S+)")
 _ENV_LCT = re.compile(r"(?:^|\s)LC_TERMINAL=(\S+)")
 _ENV_ORCA = re.compile(r"(?:^|\s)ORCA_TERMINAL_HANDLE=(\S+)")
@@ -230,10 +232,11 @@ def _orphan_spawner(host_cmd, cwd, cmds):
     return found.pop() if len(found) == 1 else None       # ⚠two daemons naming different claudes = ambiguous
 
 
-def _bg_term(pids, av, snap, force=False):
+def _bg_term(pids, av, snap, force=False, last=None):
     """Background job (official kind, or parent argv has `--bg-pty-host`) -> the spawner's `{app, tty}` when that terminal
     claude is alive in iTerm2/Terminal, else `{app: 'bg', tty: None}`. Not a background job -> None.
-    Walk: session pid -> `--bg-pty-host` parent -> daemon parent whose `--spawned-by` names the spawning claude pid."""
+    Walk: session pid -> `--bg-pty-host` parent -> daemon parent whose `--spawned-by` names the spawning claude pid.
+    `last` (poll path: `_BG_LAST`) = last good result per job pid, reused only when this lookup failed transiently."""
     par = {str(p): str(pp) for p, pp, _c in snap or []}
     cmds = {str(p): c for p, _pp, c in snap or []}
     for pid in pids:
@@ -246,12 +249,26 @@ def _bg_term(pids, av, snap, force=False):
         if on_host and sp is None:              # orphaned host (parent = launchd after a daemon respawn/adopt)
             sp = _orphan_spawner(cmds.get(host, ""), it.get("cwd") if isinstance(it, dict) else "", cmds)
         # alive = present in the same ps snapshot as a claude session (⚠a reused pid would jump to a foreign tab)
-        if sp and str(sp) in cmds and is_claude_argv(cmds[str(sp)]):
+        alive = bool(sp and str(sp) in cmds and is_claude_argv(cmds[str(sp)]))
+        if alive:
             _probe({str(sp)}, force=force, evict=False)
             t = _term_of([str(sp)])
             # ⚠iTerm2/Terminal only: an Orca jump looks its handle up by the session's own pids, not the spawner's.
             if t and t.get("app") in _SCRIPTS and t.get("tty"):
-                return dict(t, bg=True)         # tag: _focus must not offer `--resume` (it opens a second session)
+                good = dict(t, bg=True)         # tag: _focus must not offer `--resume` (it opens a second session)
+                if last is not None:
+                    last.pop(str(pid), None)    # re-insert = newest, so the size cap drops the oldest
+                    last[str(pid)] = (str(sp), dict(good))
+                return good
+        if last is not None:
+            # ⚠A daemon respawn gap (no spawner in this snapshot) or a skipped probe (fail cache) must not flip the jump
+            #   button to copy-only for one poll; a dead or non-iTerm spawner is a real answer and drops the entry.
+            hit = last.get(str(pid))
+            transient = sp is None or (alive and str(sp) not in _TTY_CACHE)
+            if (hit and transient and str(pid) in cmds and (sp is None or str(sp) == hit[0])
+                    and hit[0] in cmds and is_claude_argv(cmds[hit[0]])):
+                return dict(hit[1])
+            last.pop(str(pid), None)
         return {"app": "bg", "tty": None}
     return None
 
@@ -368,7 +385,13 @@ def term_attach(rows):
             r["term"] = _resolve_ext(r, snap, force=False)[1]
             continue
         pids = sp.get(r.get("sid") or "", [])
-        r["term"] = _bg_term(pids, _av_cache[1], snap) or _term_of(pids)
+        r["term"] = _bg_term(pids, _av_cache[1], snap, last=_BG_LAST) or _term_of(pids)
+    if snap:                                    # ⚠no snapshot = unknown, keep entries; else drop gone job pids
+        live = {str(p) for p, _pp, _c in snap}
+        for k in [k for k in _BG_LAST if k not in live]:
+            _BG_LAST.pop(k, None)
+    while len(_BG_LAST) > BG_LAST_MAX:
+        _BG_LAST.pop(next(iter(_BG_LAST)))
 
 
 def _orca_handle(sid):

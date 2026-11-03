@@ -328,3 +328,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **Ended sessions have one list: «Recently ended sessions»** (the «Show n ended» fold in `#sess` is gone).
   ⇒ `recent._done_rows` merges every `done` row of the `sessions_rows` snapshot not already listed (external CLIs, cc files past `RECENT_CAP` or missing from the index), exempt from the cap, sorted by `endedAt`; rows carry `plat`. 41b: copy command only for cc, external = logo + `ext:<plat>|<sid>` work log; `cpGo` on a done row opens `#sesrec`. Test `tests/test_recent_merge.py`, `tests/test_sess_fold_ended_js.py`.
   ⚠Never copy `targ`/`tool` from the snapshot row (rule 1). ⚠`#sess` «{n} hidden by filter» counts live rows only.
+
+## Background-job jump button flips to copy-only for one poll (`term.py _bg_term`)
+
+- Cause: a daemon respawn gap (no spawner in the ps snapshot) or a skipped tty probe under load returned `{app:'bg'}`, with no memory of the good result one poll earlier.
+- ⇒ `_BG_LAST` (job pid -> spawner, last good term) is reused only on a transient miss while the job and the same spawner are alive; a dead or non-iTerm spawner drops it. Poll path only (`term_attach`).
+- ⚠Do not share the cache with `_resolve` or direct `_bg_term` calls — tests reuse job pids — `tests/test_term_bg_last_good.py`.
