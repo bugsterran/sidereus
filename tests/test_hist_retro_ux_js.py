@@ -12,12 +12,12 @@ from tests._node import node_e
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SRC = i18n_prelude("'ko'", ("T", "KE", "srvEn")) + r"""
+SRC = i18n_prelude("'ko'", ("T", "KE", "srvEn", "TV")) + r"""
 const fs = require('fs'), vm = require('vm'), path = require('path');
 // Fixed clock: 2026-10-05 10:40 local — `new Date()` / `Date.now()` never read the real time.
 const FIX = new Date(2026, 9, 5, 10, 40, 0).getTime();
 class FD extends Date { constructor(...a){ if(a.length) super(...a); else super(FIX); } static now(){ return FIX; } }
-const c = {LANG: 'ko', T, KE, srvEn, thc: a => a, Math, Date: FD, JSON, SESS: []};
+const c = {LANG: 'ko', T, KE, srvEn, TV, thc: a => a, Math, Date: FD, JSON, SESS: []};
 Date = FD;
 vm.createContext(c);
 vm.runInContext(HELP + '\n' + fs.readFileSync(path.join(ROOT, 'web', 'js', '86-retro.js'), 'utf8')

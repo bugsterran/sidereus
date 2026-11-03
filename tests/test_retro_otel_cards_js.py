@@ -12,9 +12,9 @@ from tests._node import node_e
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SRC = i18n_prelude("'ko'", ("T", "KE")) + r"""
+SRC = i18n_prelude("'ko'", ("T", "KE", "TV")) + r"""
 const fs = require('fs'), vm = require('vm'), path = require('path');
-const c = {I18N: {en: {}}, LANG: 'ko', T, KE, thc: a => a};
+const c = {I18N: {en: {}}, LANG: 'ko', T, KE, TV, thc: a => a};
 vm.createContext(c);
 // fixed clock: 2026-10-05 noon local, so the 7-day range starts 2026-09-29
 vm.runInContext('Date = class extends Date { constructor(...a){ if(a.length) super(...a); else super(2026, 9, 5, 12); } };', c);
@@ -86,8 +86,8 @@ class RetroOtelCards(unittest.TestCase):
         self.assertIn("&lt;img src=x&gt;", t)
         self.assertNotIn("<img", t)
         self.assertLess(t.index("&lt;img"), t.index(">Bash<"))      # server order (tms desc) kept
-        self.assertIn(">3m 10s<", t)                                # 190000 ms via rtMs
-        self.assertIn(">1m 32s<", t)
+        self.assertIn(">3분 10초<", t)                                # 190000 ms via rtMs
+        self.assertIn(">1분 32초<", t)
 
     def test_r1_failed_share_shown(self):
         t = self.R["time"]
@@ -200,8 +200,8 @@ class RetroOtelCards(unittest.TestCase):
         self.assertIn("이벤트 종류별 OTel 훅 실행", m)
         self.assertLess(m.index(">PreToolUse<"), m.index("&lt;b&gt;Stop"))   # server order (ms desc) kept
         self.assertIn(">1,200<", m)                                           # runs
-        self.assertIn(">1h 2m<", m)                                           # total >= 1h reads in hours
-        self.assertIn(">3.1s<", m)                                            # average
+        self.assertIn(">1시간 2분<", m)                                           # total >= 1h reads in hours
+        self.assertIn(">3.1초<", m)                                            # average
         self.assertIn('class="brv rtwarn">3<', m)                             # failures > 0 coloured
         self.assertIn('class="brv">0<', m)
         self.assertNotIn("<b>Stop", m)

@@ -171,11 +171,12 @@ def mbox_codex(cwd):
 
 
 def _slug(cwd):
-    """cwd -> directory name under `~/.claude/projects/`. Every non-alphanumeric becomes `-` (matches observed harness values).
+    """cwd -> directory name under `~/.claude/projects/`. Every char outside [A-Za-z0-9] becomes `-` (matches observed harness values).
 
     The reverse (_cwd_from_slug) needs guessing, since `-` could have been `/`·`.`·`_`,
     but this direction is lossless. So finding "this path's directory" always uses this one."""
-    return "".join(c if c.isalnum() else "-" for c in cwd or "")
+    # ⚠ASCII only: str.isalnum() keeps Hangul/accents, but the harness folder name turns them into `-`.
+    return "".join(c if c.isascii() and c.isalnum() else "-" for c in cwd or "")
 
 
 def _cwd_from_slug(dirname):
@@ -187,6 +188,9 @@ def _cwd_from_slug(dirname):
     if not parts:
         return ""
     path, i = "/", 0
+    # Windows `C:\Users\me` -> `C--Users-me`: start at the drive root, not `/` (else it never resolves).
+    if os.name == "nt" and len(parts[0]) == 1 and parts[0].isalpha() and dirname.startswith(parts[0] + "--"):
+        path, i = parts[0] + ":\\", 1
     while i < len(parts):
         # ★a hyphen may be part of a folder name (bot-A) — pick **the longest child name**.
         best, best_j = None, None

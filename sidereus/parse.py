@@ -125,8 +125,9 @@ def _human_line(d, ask_ids):
     return bool(_human_text(c) or _answers_ask(c, ask_ids) or _bang_input(c))
 
 
-# fp -> (offset after the last complete line scanned, newest human time before it; 0 = none found)
+# fp -> (offset after the last complete line scanned, newest human time before it (0 = none found), open ask ids)
 _HUMAN_SEEN = {}
+_ASK_OPEN_CAP = 64          # open AskUserQuestion/ExitPlanMode ids carried between incremental scans
 _HUMAN_SCAN = 8_000_000     # bytes scanned backwards per call; the memo makes later calls read only appended bytes
 _USER_RE = re.compile(rb'"type":\s*"user"')
 
@@ -134,12 +135,14 @@ _USER_RE = re.compile(rb'"type":\s*"user"')
 def _human_deep(fp):
     """Newest human-input time in the transcript, not limited to the parsed tail (0 = none within reach).
     ⚠Large records push a reply out of the 400 KB tail; an absent reply must still read as 0 so the «ask» card holds."""
-    hi0, at0 = _HUMAN_SEEN.get(fp) or (0, 0)
+    hi0, at0, open0 = _HUMAN_SEEN.get(fp) or (0, 0, ())
     got, lines_end, carry = 0, None, b""
+    # ⚠an ask written before hi0 is answered in the appended chunk: its id must come from the memo, not the chunk
+    seen, answered = list(open0), set()
     try:
         size = os.path.getsize(fp)
         if hi0 > size:                       # rewritten/truncated file: the memo is void
-            hi0, at0 = 0, 0
+            hi0, at0, seen = 0, 0, []
         floor = max(hi0, size - _HUMAN_SCAN)
         end = size
         with open(fp, "rb") as f:
@@ -157,8 +160,10 @@ def _human_deep(fp):
                 parts = buf.split(b"\n")
                 if start > floor:            # first piece continues in the earlier chunk
                     carry, parts = parts[0], parts[1:]
-                ids = _ask_tool_ids([l.decode("utf-8", "replace") for l in parts
+                new = _ask_tool_ids([l.decode("utf-8", "replace") for l in parts
                                      if b'"AskUserQuestion"' in l or b'"ExitPlanMode"' in l])
+                seen += [i for i in sorted(new) if i not in seen]
+                ids = set(seen)
                 for ln in reversed(parts):
                     if not _USER_RE.search(ln):
                         continue
@@ -166,6 +171,10 @@ def _human_deep(fp):
                         d = json.loads(ln.decode("utf-8", "replace"))
                     except ValueError:
                         continue
+                    c = (d.get("message") or {}).get("content") if isinstance(d, dict) else None
+                    for x in c if isinstance(c, list) else ():
+                        if isinstance(x, dict) and x.get("type") == "tool_result" and x.get("tool_use_id") in ids:
+                            answered.add(x["tool_use_id"])
                     if isinstance(d, dict) and _human_line(d, ids):
                         got = int(_line_ts(d, 0) or 0)
                         if got:
@@ -176,7 +185,8 @@ def _human_deep(fp):
     at = got or (at0 if floor == hi0 else 0)
     if len(_HUMAN_SEEN) > 4000:
         _HUMAN_SEEN.clear()
-    _HUMAN_SEEN[fp] = (lines_end if lines_end is not None else hi0, at)
+    still = tuple(i for i in seen if i not in answered)[-_ASK_OPEN_CAP:]
+    _HUMAN_SEEN[fp] = (lines_end if lines_end is not None else hi0, at, still)
     return at
 
 

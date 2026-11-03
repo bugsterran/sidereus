@@ -56,9 +56,13 @@ class StartChecklist(unittest.TestCase):
                  "const d = plStartSteps(null, {ok: true, projects: [{path: '/s', n: 3, self_only: true}]}, {}).map(s => s.done);"
                  "const e = plStartSteps(false, null, {}).map(s => s.done);"
                  "const f = plStartSteps(true, pj, {'/a': {ok: true, pipelines: [{name: 'x', ok: true, red: 0}, {name: 'bad', ok: false}]}}).map(s => s.done);"
-                 "console.log(JSON.stringify([a, b, c, d, e, f]));")
-        a, b, c, d, e, f = r
+                 "const g = plStartSteps(true, pj, {'/a': {ok: true, pipelines: [{name: 'bad', ok: false}]}}).map(s => s.done);"
+                 "const h = plStartSteps(true, pj, {}).map(s => s.done);"
+                 "console.log(JSON.stringify([a, b, c, d, e, f, g, h]));")
+        a, b, c, d, e, f, g, h = r
         self.assertEqual(f, [True, True, True, False])     # invalid pipeline file does not make the step unknown
+        self.assertEqual(g, [True, True, True, False])     # only file invalid: list still shows (not hidden by null)
+        self.assertEqual(h, [True, True, True, None])      # project list not loaded yet: unknown
         self.assertEqual(a, [True, True, True, False])
         self.assertEqual(b, [True, True, True, True])
         self.assertEqual(c[3], None)                       # server without `red`: unknown, not 0

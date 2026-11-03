@@ -291,7 +291,9 @@ function buildQwho(){
   if(!el) return;
   const w = QWHO, rows = (w && w.rows) || [];
   const tip = T('Cycle so far from session transcripts, live OTel after server start · subagents fold into the parent session · metadata only (no conversation content)');
+  // Account whose 5h window is shown (usage.quota_who acct; '' = primary): a user label, so esc() only, never T().
   let h = connStaleNote(CONN, Date.now()) + '<div class=qwh title="' + esc(tip) + '"><b>' + esc(T('Who is using the 5h')) + '</b>'
+    + (w && w.acct ? ' <small class=qwa>' + esc(String(w.acct)) + '</small>' : '')
     + (w ? ' <small' + (qwhoApprox(w) ? ' title="' + esc(T('estimated')) + '">≈' : '>') + esc(CLK(new Date(w.start * 1000))) + '~ · ' + esc(fmtTok(w.total || 0)) + '</small>' : '')
     + (w && w.partial && w.since ? ' <small class=sbwarn>· ' + esc(T('counting since')) + ' ' + esc(CLK(new Date(w.since * 1000))) + '</small>' : '')
     + '</div>';

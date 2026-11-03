@@ -12,9 +12,9 @@ from tests._node import node_e
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SRC = i18n_prelude("'ko'", ("T", "KE")) + r"""
+SRC = i18n_prelude("'ko'", ("T", "KE", "TV")) + r"""
 const fs = require('fs'), vm = require('vm'), path = require('path');
-const c = {I18N: {en: {}}, LANG: 'ko', T, KE, thc: a => a};
+const c = {I18N: {en: {}}, LANG: 'ko', T, KE, TV, thc: a => a};
 vm.createContext(c);
 // fixed clock: 2026-10-05 noon local, so the 7-day range starts 2026-09-29
 vm.runInContext('Date = class extends Date { constructor(...a){ if(a.length) super(...a); else super(2026, 9, 5, 12); } };', c);
@@ -91,7 +91,8 @@ class RetroRank(unittest.TestCase):
         self.assertNotIn("OTEL 데이터 없음", self.R["live"])
 
     def test_ms_format(self):
-        self.assertEqual(self.R["ms"], ["0.8s", "120ms", "—", "2.5s", "59.9s", "18m 15s", "2m 0s", "56h 26m", "59m 59s"])
+        self.assertEqual(self.R["ms"], ["0.8초", "120ms", "—", "2.5초", "59.9초", "18분 15초", "2분 0초", "56시간 26분", "59분 59초"])   # ko units via TV
+        self.assertNotIn("56h", self.R["ms"])
 
     def test_calls_thousands_separator(self):
         self.assertIn(">178,783<", self.R["big"])

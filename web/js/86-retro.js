@@ -156,9 +156,11 @@ function rtTools(r){
 // Card ① tool ranking — server `rank` = per-day OTel tally (survives restarts), top rows + folded rest.
 let rtRankOpen = false;             // «N more» fold state, kept across repaints
 // Hours unit: «Time spent» totals reach days of Bash time, and «3384m 35s» does not read as 56 hours.
-const rtMs = ms => ms == null ? '—' : ms >= 3600000 ? Math.floor(Math.round(ms / 60000) / 60) + 'h ' + Math.round(ms / 60000) % 60 + 'm'
-  : ms >= 60000 ? Math.floor(Math.round(ms / 1000) / 60) + 'm ' + Math.round(ms / 1000) % 60 + 's'
-  : ms >= 500 ? (ms / 1000).toFixed(1) + 's' : Math.round(ms) + 'ms';
+// Units go through TV so ko gets its own hour/minute words; values are numbers, never user data.
+const rtU = (u, n) => TV({msg: '{n}' + u, vars: {n: n}});
+const rtMs = ms => ms == null ? '—' : ms >= 3600000 ? rtU('h', Math.floor(Math.round(ms / 60000) / 60)) + ' ' + rtU('m', Math.round(ms / 60000) % 60)
+  : ms >= 60000 ? rtU('m', Math.floor(Math.round(ms / 1000) / 60)) + ' ' + rtU('s', Math.round(ms / 1000) % 60)
+  : ms >= 500 ? rtU('s', (ms / 1000).toFixed(1)) : rtU('ms', Math.round(ms));
 // Classed on the shown (rounded) value — 97.6 and 98.2 both read «98%» and must share a colour.
 const rtOkCls = p => { const q = Math.round(p); return q >= 98 ? 'rtok' : q >= 90 ? 'rtwarn' : 'rterr'; };
 // Local-time YYYY-MM-DD; shared by the period labels below.

@@ -42,6 +42,8 @@ R.closed = R.behind;
 HN.fold.rt = true;   // what 47b's toggle listener stores when the person opens it
 R.reopen = hnRuntime({runtime: Object.assign({}, base, {items: [it({}), py]})});
 HN.fold.rt = false;
+// EOL badge counts only EOL items: 2 EOL + 1 behind (supported cycle) -> «2 runtimes», not 3.
+R.eolmix = hnRuntime({runtime: Object.assign({}, base, {items: [it({}), py, it({level: 'warn', path: '/opt/homebrew/bin/node22', patch: {level: 'warn', target: '22.9.0', eol: '2027-04-30', eol_past: false}})]})});
 R.warnonly2 = hnRuntime({runtime: Object.assign({}, base, {items: [it({patch: {level: 'warn', target: '20.18.1', eol: '2027-04-30', eol_past: false}, level: 'warn'})]})});
 R.infoonly = hnRuntime({runtime: Object.assign({}, base, {state: 'ok', items: [it({level: 'info', patch: {level: 'ok', target: '24.2.0', eol: '2028-04-30', eol_past: false}, newest: {level: 'info', target: '25.1.0', behind_n: 1}})]})});
 R.bad = hnRuntime({runtime: Object.assign({}, base, {state: 'unknown', items: [it({level: 'zz', patch: {level: 'x"y', target: '<b>1</b>'}, newest: {level: 'evil'}, fix: 'rm -rf', cur: '<i>2</i>', cycle: '<s>'})]})});
@@ -62,6 +64,11 @@ class HarnessRuntimeJs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.R = run()
+
+    def test_eol_count_excludes_behind_items(self):
+        h = self.R["eolmix"]
+        self.assertIn(">end of life</b> · 2 runtimes", h)
+        self.assertNotIn("3 runtimes", h)
 
     def test_missing_runtime_renders_nothing(self):
         self.assertEqual(self.R["none"], "")
