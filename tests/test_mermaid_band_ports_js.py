@@ -122,3 +122,52 @@ class BandCentre(unittest.TestCase):
         self.assertEqual(side(R, p[-1]), "top")
         self.assertLessEqual(abs(p[-1][0] - (R["x"] + R["w"] / 2)), 2)
         self.assertTrue(p[-1][0] > tr["x"] + tr["w"] + 2 or p[-1][0] < tr["x"] - 2)
+
+
+# Band-wide non-pass group (real map shape): relRoute runs out of pops on every pass, and the elbow fallback ignored all walls.
+WALL = ("flowchart TB\n  subgraph LA[Top]\n    direction LR\n    subgraph GA[group a]\n      a[alpha]\n    end\n  end\n"
+        "  subgraph LB[Middle]\n    direction LR\n    subgraph GB[wide group]\n      direction TB\n"
+        + "".join("      b%d[member number %d]\n" % (i, i) for i in range(1, 5)) + "    end\n  end\n"
+        "  subgraph LC[Bottom]\n    direction LR\n    d[box in the way]\n    subgraph GC[a very long group title here]\n      c[c]\n    end\n  end\n"
+        "  a --> c\n")
+OPEN = "if(!p && bp){ blk.set(base);"
+
+
+def hits(p, R, m=0):
+    for (x0, y0), (x1, y1) in zip(p, p[1:]):
+        if (min(x0, x1) < R["x"] + R["w"] - m and max(x0, x1) > R["x"] + m
+                and min(y0, y1) < R["y"] + R["h"] - m and max(y0, y1) > R["y"] + m):
+            return True
+    return False
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class BandWall(unittest.TestCase):
+    def wall(self, old):
+        # Small search budget so this fixture exhausts relRoute the way the real map does at full budget.
+        router = ROUTER.replace("RR_POPS = 20000", "RR_POPS = 400")
+        self.assertNotEqual(router, ROUTER)
+        fn = js_fn("mmdRouteAll")
+        self.assertIn(OPEN, fn)
+        fns = [js_fn(f) for f in FNS if f != "mmdRouteAll"] + [fn.replace(OPEN, "if(false){") if old else fn]
+        js = "\n".join([PRE, "const MMD_BUDGET = 1e9, MMD_UNCROSS = 1e9; let ERR = null; function softErr(t, e){ ERR = String(e); }", router] + fns
+                       + ["const g = mmdParse(%s); ['LA', 'LB', 'LC'].forEach(s => { g.sgs[s].pass = true; });"
+                          " g.rankFix = {LA: 0, LB: 1, LC: 2}; g.axis = true; const L = mmdLayout(g);"
+                          " process.stdout.write(JSON.stringify([ERR, L.nodes, L.edges[0].pts,"
+                          " Object.keys(L.sgs).map(k => L.sgs[k].tr).filter(Boolean)]));" % json.dumps(WALL)])
+        r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+        if r.returncode != 0:
+            raise AssertionError(r.stderr.decode())
+        return json.loads(r.stdout)
+
+    def bad(self, nodes, p, trs):
+        return [k for k, R in nodes.items() if k not in ("a", "c") and hits(p, R)] + [t["x"] for t in trs if hits(p, t)]
+
+    def test_band_wide_group_routes_clear_of_titles_and_boxes(self):
+        err, nodes, p, trs = self.wall(False)
+        self.assertIsNone(err)
+        self.assertEqual(self.bad(nodes, p, trs), [], p)
+        self.assertEqual(side(nodes["c"], p[-1]), "top", p)
+        self.assertLess(p[-2][1], p[-1][1], p)
+        _, nodes, p, trs = self.wall(True)   # fixture check: without the open-interior retry the elbow ran through them
+        self.assertTrue(self.bad(nodes, p, trs), p)
