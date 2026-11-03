@@ -25,6 +25,7 @@ from sidereus.prefs import PREFS_BODY_MAX
 from sidereus import ui_prefs
 from sidereus.pipeline import SAVE_BODY_MAX as PIPE_BODY_MAX, save as pipeline_save
 from sidereus.pipeline_new import create as pipeline_create
+from sidereus.pipeline_starter import starter as pipeline_starter
 from sidereus.pipeline_del import delete as pipeline_delete
 from sidereus.pipeline_projects import add_project as pipeline_add, apply_set as pipeline_apply, pick_folder, remove_project as pipeline_remove
 from sidereus.cc_settings import prefs_set_all
@@ -458,6 +459,7 @@ class _PostRoutes:
         # /api/pipelines/delete {proj, name, dry}: same guards, moves the file to pipeline-bak (never deletes)
         # /api/pipelines/projects/add|remove {path}: the person's «+ Add project» list (remove = list entry only)
         # /api/pipelines/apply {mode, proj?}: «Apply» mode read by hooks/pipelines_brief.py (config.local.json `pipeline_apply`)
+        # /api/pipelines/starter {proj, policy, dry}: three default pipelines (+ _policy.json if ticked), O_EXCL, never overwrites
         if not _cfg.viewer_origin(self.headers.get("Origin")):
             self._body_unread()
             return self._send(403, json.dumps({"ok": False, "err": "viewer origin required"}),
@@ -465,7 +467,7 @@ class _PostRoutes:
         req = self._body_json(PIPE_BODY_MAX, None)
         try:
             fn = {"/api/pipelines/create": pipeline_create, "/api/pipelines/delete": pipeline_delete, "/api/pipelines/projects/add": pipeline_add,
-                  "/api/pipelines/projects/remove": pipeline_remove, "/api/pipelines/apply": pipeline_apply}.get(u.path, pipeline_save)
+                  "/api/pipelines/projects/remove": pipeline_remove, "/api/pipelines/apply": pipeline_apply, "/api/pipelines/starter": pipeline_starter}.get(u.path, pipeline_save)
             code, out = fn(req)
         except Exception as e:
             code, out = 500, {"ok": False, "err": type(e).__name__}
@@ -606,7 +608,7 @@ class _PostRoutes:
         "/api/prefs/set": _p_prefs_set, "/api/pipelines/save": _p_pipelines_save, "/api/pipelines/create": _p_pipelines_save,
         "/api/pipelines/delete": _p_pipelines_save,
         "/api/pipelines/projects/add": _p_pipelines_save, "/api/pipelines/projects/remove": _p_pipelines_save,
-        "/api/pipelines/apply": _p_pipelines_save, "/api/pick-folder": _p_pick_folder, "/api/hooks/connect": _p_hooks_connect,
+        "/api/pipelines/apply": _p_pipelines_save, "/api/pipelines/starter": _p_pipelines_save, "/api/pick-folder": _p_pick_folder, "/api/hooks/connect": _p_hooks_connect,
         "/api/hooks/remove": _p_hooks_remove,
         "/api/todo/add": _p_todo, "/api/todo/set": _p_todo, "/api/todo/agent": _p_todo,
         "/api/ui-prefs": _p_ui_prefs, "/api/ui-prefs/reset": _p_ui_prefs, "/api/act": _p_act,

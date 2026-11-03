@@ -1,6 +1,6 @@
-"""Pipeline run requests the page sent (arch-map diagram, security-checks, security-fix), plain fix DMs (checks-fix, eval-fix) and «Stop» instructions.
+"""Pipeline run requests the page sent (arch-map diagram, security-checks, security-fix), plain DMs (checks-fix, eval-fix, redcheck) and «Stop» instructions.
 
-DATA_DIR/plreq.json {"v": 1, "reqs": [{id, repo, pipeline, sid, to, mid, at, name? (eval-fix), keys? + closed? (security-fix),
+DATA_DIR/plreq.json {"v": 1, "reqs": [{id, repo, pipeline, sid, to, mid, at, name? (eval-fix, redcheck), stage? (redcheck), keys? + closed? (security-fix),
 stop?: {mid, at}}]} keeps who received a
 request so the row survives a reload (`id` = `mid` = the request DM's mailbox id).
 DATA_DIR/plstop/<sid>.json {pipeline: {at, mid, of}} = the stop marker hooks/pl_guard.py reads before a stage dispatch.
@@ -20,8 +20,8 @@ from sidereus.pl_runs import RENAMED   # core copy; pipeline_schema is feature-o
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
-PIPELINES = ("arch-map", "security-checks", "security-fix", "checks-fix", "eval-fix")   # checks-fix: old plain records stay readable
-PLAIN = ("checks-fix", "eval-fix")   # a plain fix DM: sent/gone only, no run tracking, no stop marker (exclude-list: _state also gets other pipeline names)
+PIPELINES = ("arch-map", "security-checks", "security-fix", "checks-fix", "eval-fix", "redcheck")   # checks-fix: old plain records stay readable
+PLAIN = ("checks-fix", "eval-fix", "redcheck")   # redcheck = «Request a red check» DM (the session runs it; the viewer never does) · a plain fix DM: sent/gone only, no run tracking, no stop marker (exclude-list: _state also gets other pipeline names)
 RUNS = tuple(p for p in PIPELINES if p not in PLAIN)
 REQ_MAX = 50              # records kept, newest
 REQ_KEEP_S = 7 * 86400    # older records dropped
@@ -39,6 +39,8 @@ _ID = re.compile(r"^[0-9A-Za-z]{1,32}$")
 _CTRL = re.compile(r"[\x00-\x1f\x7f]")
 _KEY_CTRL = re.compile(r"[\x00-\x08\x0a-\x1f\x7f]")   # ⚠a finding key (84l archChkKey) joins its fields with TAB: tab only is allowed
 _NAME = re.compile(r"[a-z0-9-]{1,40}")   # = pipeline_schema._NAME (no cross-feature import); ⚠fullmatch only
+STAGE_MAX = 200           # redcheck: stage title (one line)
+NAMED = ("eval-fix", "redcheck")   # requests that name one pipeline file
 _LOCK = threading.Lock()
 _MEM = []                 # records while PLREQ_PATH is None
 _now = time.time          # tests patch
@@ -68,6 +70,10 @@ def _to_ok(t):
     return isinstance(t, str) and 0 < len(t) <= TO_MAX and not _CTRL.search(t)
 
 
+def _stage_ok(t):
+    return isinstance(t, str) and 0 < len(t) <= STAGE_MAX and t.strip() != "" and not _CTRL.search(t)
+
+
 def _keys_ok(v):
     return (isinstance(v, list) and 0 < len(v) <= KEYS_MAX and all(isinstance(k, str) and 0 < len(k) <= KEY_MAX and not _KEY_CTRL.search(k) for k in v)
             and sum(len(k) for k in v) <= KEYS_CHARS_MAX)
@@ -80,14 +86,18 @@ def _clean(r, now):
             and _to_ok(r.get("to")) and isinstance(r.get("mid"), str) and _ID.match(r["mid"])):
         return None
     at = _num(r.get("at"))
-    if not at or now - at > REQ_KEEP_S:
+    if not at or now - at > REQ_KEEP_S or at > now + 300:   # ⚠a far-future `at` would never age out (req_repo keeps it)
         return None
     out = {k: r[k] for k in ("id", "repo", "pipeline", "sid", "to", "mid")}
     out["at"] = at
-    if r["pipeline"] == "eval-fix":   # names the pipeline file the fix is for: one project holds several
+    if r["pipeline"] in NAMED:   # names the pipeline file the request is for: one project holds several
         if not (isinstance(r.get("name"), str) and _NAME.fullmatch(r["name"])):
             return None
         out["name"] = r["name"]
+    if r["pipeline"] == "redcheck":
+        if not _stage_ok(r.get("stage")):
+            return None
+        out["stage"] = r["stage"]
     if r["pipeline"] == FIX_PL and _keys_ok(r.get("keys")):   # metadata: tool · file · line · rule of each requested finding
         out["keys"] = list(r["keys"])
     if r["pipeline"] == FIX_PL and _num(r.get("closed")):
@@ -161,11 +171,15 @@ def check(plreq, req):
     if not (isinstance(sid, str) and RELAY_SID.match(sid)) or not _to_ok(to):
         return None, "Invalid session id"
     out = {"kind": kind, "pipeline": pipeline, "repo": repo}
-    if pipeline == "eval-fix":
+    if pipeline in NAMED:
         name = plreq.get("name")
         if not (isinstance(name, str) and _NAME.fullmatch(name)):
             return None, "Invalid pipeline request"
         out["name"] = name
+    if pipeline == "redcheck":
+        if not _stage_ok(plreq.get("stage")):
+            return None, "Invalid pipeline request"
+        out["stage"] = plreq["stage"]
     if pipeline == FIX_PL and kind == "req":
         if not _keys_ok(plreq.get("keys")):
             return None, "Invalid pipeline request"
@@ -191,6 +205,8 @@ def record(p, sid, to, mid):
             r["name"] = p["name"]
         if p.get("keys"):
             r["keys"] = list(p["keys"])
+        if p.get("stage"):
+            r["stage"] = p["stage"]
         recs.insert(0, r)
         _write(recs)
         if p["pipeline"] not in PLAIN:
@@ -355,7 +371,8 @@ def _fix_commit(repo, at, now):
 
 
 def view(sessions, arch_run, sec_run=None, now=None):
-    """`/api/state` `plReq`: {repo: [{id, pipeline, sid, to, project, state, stage, at, stopAt?, name?, keys?, reviewOk?, fix?}]} newest first."""
+    """`/api/state` `plReq`: {repo: [{id, pipeline, sid, to, project, state, stage, at, stopAt?, name?, keys?, reviewOk?, fix?}]} newest first
+    (redcheck: `stage` = the requested stage title)."""
     now = _now() if now is None else now
     with _LOCK:
         recs = _read(now)
@@ -380,6 +397,8 @@ def view(sessions, arch_run, sec_run=None, now=None):
             v["stopAt"] = r["stop"]["at"]
         if r.get("name"):
             v["name"] = r["name"]
+        if r["pipeline"] == "redcheck":
+            v["stage"] = r["stage"][:80]   # the requested stage title (a plain DM has no run stage)
         if r["pipeline"] == FIX_PL:
             v["keys"] = list(r.get("keys") or ())
             v["reviewOk"] = st == "done"

@@ -39,3 +39,17 @@ html[data-theme=light] .pleocr{color:#5b6a80}
 details.plesec>summary.plesech{cursor:pointer}
 .plesec ul{margin:4px 0 0;padding:0 0 0 14px}.plesec li{padding:2px 0;line-height:1.4}.plesec li span{color:#8fa0b8}
 html[data-theme=light] .plesech{color:#1f7a3f}html[data-theme=light] .plesec-lo .plesech{color:#9a5a00}html[data-theme=light] .plesec li span{color:#5b6a80}
+.plevp .plrrq{margin-left:6px;font-size:11px;padding:0 6px}   /* «Request a red check» (48m) beside «red check needed» */
+.plevp .archreq{max-width:560px;margin-top:8px}.plevp .archreq .archdm{max-height:160px;overflow:auto;white-space:pre-wrap}
+/* «Get started» checklist (48l): 4 steps in one row at 1440+, 2x2 below; a step never shrinks below its label */
+.plst{margin:8px 0;padding:8px 10px;border:1px solid #2b3445;border-radius:8px;color:#c7d0dc}
+.plsth{display:flex;align-items:center;gap:8px;margin-bottom:6px}.plsth b{font-weight:600;flex:1}
+.plstl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 12px;margin:0;padding:0;list-style:none}
+@media (max-width:1279px){.plstl{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.plsti{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;line-height:1.4}
+.plstm{flex:none;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1px solid #5b6a80;font-size:11px;color:#8fa0b8}
+.plsti.on .plstm{border-color:#5fbf7f;background:#5fbf7f;color:#0d1014}.plsti.on .plstt{color:#8fa0b8}
+.plsti .wkrgb{font-size:11px}
+.plstpol{display:flex;align-items:center;gap:6px;margin:6px 0}.plstng{color:#e0a53d}
+html[data-theme=light] .plst{border-color:#d4dae3;color:#2b3445}html[data-theme=light] .plsti.on .plstm{border-color:#1f7a3f;background:#1f7a3f;color:#fff}html[data-theme=light] .plstng{color:#9a5a00}
+.plstpoln{margin:-4px 0 6px 22px}.plstcmd{display:flex;align-items:center;gap:6px;margin:6px 0}.plstcmd input{flex:1;max-width:420px;font:inherit}.plstdet{font-size:11px;color:#5fbf7f}

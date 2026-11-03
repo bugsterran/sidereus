@@ -35,7 +35,7 @@ pipx 가 없으면 `py -m pip install --user pipx`, `py -m pipx ensurepath` 를 
 업그레이드: `pipx upgrade sidereus`(`uv tool upgrade sidereus`). Windows 에서는 실행 중인 뷰어가 venv 의 `python.exe` 를 잡고 있어 실패하므로, 먼저 멈추고(`sidereus stop`, 로그온 작업이면 `schtasks /End /TN Sidereus`, 3장) 업그레이드한 뒤 다시 띄운다. 이 방식으로는 로그인 시 자동 실행
 (`start --install-service`, 3장 — 설치 경로가 다시 설치할 때마다 바뀐다)과 `scripts/` 도구를 쓸 수 없다.
 Claude Code 는 GitHub 플러그인으로 연결한다(5장).
-파이프라인 채점(`scripts/pl_eval.py`)은 클론에서만 돌아간다.
+`sidereus redcheck` 는 설치본에서도 된다. 시드와 점수(`scripts/pl_eval.py`)는 여전히 클론이 있어야 한다.
 구조도 요청과 보안 점검 요청도 클론에서만 된다(`arch-map`·`security-checks` 파이프라인이 저장소에 있다).
 0.7.0 으로 올린 뒤 처음 시작하면 도구 사용 캐시를 한 번 다시 만든다(도구·하네스에 1분쯤 «불러오는 중…»).
 
@@ -139,8 +139,8 @@ setx SIDEREUS_PYTHON py
 /plugin install sidereus@sidereus
 ```
 
-대안: 로컬 클론은 `/plugin marketplace add <클론 경로>`. 플러그인도 뷰어가 떠 있어야 하고(2장), 클론이 없으면
-파이프라인 채점(`scripts/pl_eval.py`)은 건너뛴다.
+대안: 로컬 클론은 `/plugin marketplace add <클론 경로>`. 플러그인도 뷰어가 떠 있어야 하고(2장), `sidereus redcheck` 는
+설치본에서도 되지만 시드와 점수(`scripts/pl_eval.py`)는 여전히 클론이 있어야 한다.
 
 업데이트(로컬 클론은 `git pull` 뒤):
 

@@ -16,6 +16,8 @@ doctor  one OK/FAIL line per setup check (Python, git, claude, hooks, viewer; Wi
 setup-claude [--mailbox-mcp DIR]
         prints the `claude mcp add` lines and the hooks JSON block with this clone's real paths; writes nothing.
         --write shows the MCP command and a settings.json diff, asks, then backs up, merges hooks and registers MCP.
+redcheck --pipeline P.json --stage S --repo R [--timeout N]
+        runs scripts/pl_eval.py redcheck (bundled on a pipx/uv install) in the foreground and returns its exit code.
 """
 import getpass
 import json
@@ -142,9 +144,12 @@ MSG = {
     "st_dead": (" (실행 중 아님)", " (not running)"),
     "st_unowned": ("%d 포트에 무언가 응답합니다 (실행 기록 없음)", "something answers on %d (no run record)"),
     "usage": ("사용법: {cmd} start [--port N] [--open] [--demo] [--install-service] | stop [--port N] | status [--port N]"
-              " | setup-claude [--mailbox-mcp DIR] [--write [--yes]] | doctor [--port N]",
+              " | setup-claude [--mailbox-mcp DIR] [--write [--yes]] | doctor [--port N]"
+              " | redcheck --pipeline P.json --stage S --repo R",
               "usage: {cmd} start [--port N] [--open] [--demo] [--install-service] | stop [--port N] | status [--port N]"
-              " | setup-claude [--mailbox-mcp DIR] [--write [--yes]] | doctor [--port N]"),
+              " | setup-claude [--mailbox-mcp DIR] [--write [--yes]] | doctor [--port N]"
+              " | redcheck --pipeline P.json --stage S --repo R"),
+    "rc_missing": ("레드 체크 스크립트가 없습니다: %s", "Red-check script missing: %s"),
     "dr_line": ("%-4s  %s — %s", "%-4s  %s — %s"),
     "dr_fix": (" — 해결: %s", " — fix: %s"),
     "dr_notfound": ("찾지 못함", "not found"),
@@ -1020,8 +1025,23 @@ def cmd_doctor(port=None):
     return 0 if all(r[1] for r in rows) else 1
 
 
+def cmd_redcheck(rest):
+    """`redcheck ...` = scripts/pl_eval.py redcheck in the foreground (same interpreter, argv list, no shell); its exit code.
+    ⚠Install layout: setup.py BUNDLE ships scripts/pl_eval.py under sidereus/_bundle, so ASSET_DIR holds it with or without a clone."""
+    script = os.path.join(ASSET_DIR, "scripts", "pl_eval.py")
+    if not os.path.isfile(script):
+        print(t("rc_missing", script), file=sys.stderr)
+        return 2
+    try:
+        return _call([sys.executable, script, "redcheck"] + list(rest))
+    except KeyboardInterrupt:
+        return 130
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "redcheck":   # before --help: its own flags pass through to pl_eval.py untouched
+        return cmd_redcheck(argv[1:])
     if argv and (argv[0] == "help" or "--help" in argv or "-h" in argv):
         print(t("usage"))
         return 0

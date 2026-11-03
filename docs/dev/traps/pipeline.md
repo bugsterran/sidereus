@@ -372,3 +372,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: `nowSid`/`runSel` were memory only, and the first follow ran before sessions and project data loaded, so the newest live run overwrote the pick.
 - ⇒ both persist per project (`48 plProjPref`: `sidereus.plnowsid`, `sidereus.plrunsel`); follow and `plViewRun` validate the restored pick only once the data is in.
 - ⚠Do not clear the pick before sessions load — `tests/test_pl_now_js.py`, `tests/test_pipeline_sel_proj_js.py`.
+
+## Red check on a pipx/uv install; gates outside GATE_MODES (`pl_eval_view.redcheck_cmd` · `scripts/pl_eval.py` mode `rc`)
+- Cause: the copied command named `<site-packages>/sidereus/_bundle/scripts/pl_eval.py`, a path a session has no reason to trust or find; and `npm test`-style gates had no mode, so every red check said «gate mode not graded».
+- Fix: install = `sidereus redcheck …` (`sidereus_cli.cmd_redcheck` runs the bundled script, same interpreter, no shell); clone keeps the script path. A gate with no evidence mode is red-checked as `rc`: one syntax break appended to the first file of the repo's most common language (.py/.js/.ts/.go/.rs/.java) in the temp clone, pass = gate rc ≠ 0.
+- ⚠`rc` lives only in redcheck.json and the red row's step name — never add it to `GATE_MODES` or `evidence_rec.MODES` (graded runs would then expect evidence rows the gate never writes).
+- ⚠`sidereus redcheck` is dispatched before the `--help` check, or its own flags would print the launcher usage.

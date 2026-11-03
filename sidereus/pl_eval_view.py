@@ -163,10 +163,15 @@ def suggest(stages, ev, red, unstable, kinds, templates, cmd_of):
 
 
 def redcheck_cmd(proj, name, title, code_dir=None, nt=None):
-    """Copyable red-check command for one stage: `py` + list2cmdline on Windows, `python3` + POSIX quoting elsewhere."""
+    """Copyable red-check command for one stage: `py` + list2cmdline on Windows, `python3` + POSIX quoting elsewhere.
+    pipx/uv install (no clone, no code_dir): `sidereus redcheck ...` — the console script runs the bundled pl_eval.py."""
     nt = os.name == "nt" if nt is None else nt
-    py = ("py" if nt else "python3") if config.IS_CLONE else (sys.executable or "python3")   # install: the venv has the package
-    argv = [py, os.path.join(code_dir or config.ASSET_DIR, "scripts", "pl_eval.py"), "redcheck",
+    if not config.IS_CLONE and code_dir is None:
+        head = ["sidereus", "redcheck"]   # ⚠never the _bundle path: a session reading the DM has no clone to find it in
+    else:
+        py = ("py" if nt else "python3") if config.IS_CLONE else (sys.executable or "python3")
+        head = [py, os.path.join(code_dir or config.ASSET_DIR, "scripts", "pl_eval.py"), "redcheck"]
+    argv = head + [
             "--pipeline", os.path.join(proj, ".claude", "pipelines", name + ".json"), "--stage", title, "--repo", proj]
     return subprocess.list2cmdline(argv) if nt else " ".join(shlex.quote(a) for a in argv)
 
