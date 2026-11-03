@@ -1,0 +1,9 @@
+{
+ "ages": {
+  "b9c10000-0000-4000-8000-00000000000a.jsonl": 900,
+  "b9c10000-0000-4000-8000-00000000000b.jsonl": 100
+ },
+ "busy": null,
+ "guards": "one background job across /clear: the pty host keeps argv --session-id OLD while claude agents --json answers NEW; NEW is live, OLD reads ended and is not merged into NEW's row (pins current output)",
+ "os": "mac"
+}

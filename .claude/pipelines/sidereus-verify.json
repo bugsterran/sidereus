@@ -22,7 +22,7 @@
     {
       "title": "점검",
       "agent": "general-purpose",
-      "task": "Check your area only, on the live page read-only or in your own sandbox. Report each defect as a finding with evidence and the owning file:line; list what passed in summary. Fix nothing.",
+      "task": "Check your area only, on the live page read-only or in your own sandbox. Report each defect as a finding with evidence and the owning file:line; list what passed in summary. Fix nothing. For a sandbox, build the sweep fixture world with `python3 scripts/sweep_world.py build --out <tmp>` (docs/dev/SWEEP-FIXTURES.md) and launch with the env it prints; never copy live files.",
       "fanout": "slices",
       "onError": "continue",
       "ui": { "x": 292, "y": 24 }

@@ -591,7 +591,7 @@ class _WorldPanels:
                (cwd + "/.claude/rules/style.md", "rule", 1430)]
         instr = [{"path": p, "scope": sc, "bytes": n, "tokens": int(round(n / 3.5))} for p, sc, n in ins]
         mb = 2840
-        mem = {"dir": "/home/demo/.claude/projects/" + "".join(c if c.isalnum() else "-" for c in cwd) + "/memory",
+        mem = {"dir": "/home/demo/.claude/projects/" + "".join(c if c.isascii() and c.isalnum() else "-" for c in cwd) + "/memory",
                "index": "", "bytes": mb, "tokens": int(round(mb / 3.5)), "files": 12}
         mem["index"] = mem["dir"] + "/MEMORY.md"
         mcp = [{"name": n, "scope": sc} for n, sc in (("github", "project"), ("playwright", "local"), ("context7", "user"))]
