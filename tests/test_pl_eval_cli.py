@@ -188,6 +188,14 @@ class Red(Base):
         self.commit([{"title": "검증", "agent": "x", "gate": "bash check.sh --fast"}])
         self.assertEqual(self.red()[:2], (1, "redcheck: fail — gate passed on a broken repo"))
 
+    def test_fast_always_failing_is_skip_not_pass(self):
+        # fast/full are rc-judged too: a gate red on the clean clone must not record a pass
+        self.w("mod.py", "x = 1\n")
+        self.w("check.sh", "exit 1\n")
+        self.commit([{"title": "검증", "agent": "x", "gate": "bash check.sh --fast"}])
+        self.assertEqual(self.red()[:2], (2, "redcheck: skip — gate fails on a clean clone"))
+        self.assertEqual(self.entry("bash check.sh --fast")["verdict"], "skip")
+
     def test_target_changed(self):
         self.w("mod.py", "x = 1\n")
         self.w("check.sh", "echo x > %s/stray.txt\nexit 1\n" % self.repo)

@@ -381,7 +381,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 
 ## Red check `rc` false pass on an always-failing gate (`scripts/pl_eval.py` `_red_gate` · `pipeline._red_counts`)
 - Cause: `rc` judged only the broken clone, so a gate that always fails (wrong command, broken test, missing pytest) recorded «pass», and the «Gate red-checked» step counted any record (skip/fail too).
-- Fix: `rc` runs the gate on the clean clone first; rc ≠ 0 there = skip «gate fails on a clean clone». Row `red` counts only verdict «pass».
+- Fix: every rc-judged mode (`rc`, `fast`, `full`) runs the gate on the clean clone first; rc ≠ 0 there = skip «gate fails on a clean clone». Row `red` counts only verdict «pass».
 - ⚠Never judge a red check from the broken run alone — `tests/test_pl_eval_rc_clean_first.py`.
 
 ## «Start with recommended setup» reply shape and blank gate (`sidereus/pipeline_starter.py` · `web/js/48l-pipeline-start.js`)
