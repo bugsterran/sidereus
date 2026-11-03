@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- Plugin: version 0.6.0, so `claude plugin update` brings the hook and MCP fixes made since Sidereus 0.13.0 (Claude Code caches a plugin per version).
 - Pipelines «Start with recommended setup»: the preview lists file names instead of «[object Object]», an empty test command saves without a gate (projects with no detected command could not save at all), a preview error keeps the form editable, and the saved message names the written files.
 - Pipelines «Request a red check»: the preview and the sent line scroll into view, the message names the target repository, and recipient labels show project and state (also for eval fix requests).
 - Demo: the room invite preview includes the Topic line like the real one.
