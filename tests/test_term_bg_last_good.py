@@ -85,6 +85,28 @@ class BgLastGood(unittest.TestCase):
         term.term_attach([])
         self.assertEqual(list(term._BG_LAST), ["2", "3"])
 
+    def test_concurrent_attach_raises_nothing(self):
+        import threading
+        self.patch(term, "_ps_snap_cache", [0.0, [DAEMON, HOST, JOB, SPAWNER]])
+        for k in range(300):                                              # stale entries the prune pops mid-run
+            term._BG_LAST[str(90000 + k)] = ("9", GOOD)
+        errs = []
+
+        def run():
+            try:
+                for _ in range(100):
+                    term.term_attach([{"sid": SID, "state": "wait"}])
+                    term._BG_LAST.setdefault(str(80000 + threading.get_ident() % 1000), ("9", GOOD))
+            except Exception as e:  # pragma: no cover - the failure being guarded
+                errs.append(e)
+        ts = [threading.Thread(target=run) for _ in range(8)]
+        for t in ts:
+            t.start()
+        for t in ts:
+            t.join()
+        self.assertEqual(errs, [])
+        self.assertEqual(term._BG_LAST.get("64636"), ("68658", GOOD))
+
 
 if __name__ == "__main__":
     unittest.main()
