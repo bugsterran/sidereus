@@ -378,3 +378,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: install = `sidereus redcheck …` (`sidereus_cli.cmd_redcheck` runs the bundled script, same interpreter, no shell); clone keeps the script path. A gate with no evidence mode is red-checked as `rc`: one syntax break appended to the first file of the repo's most common language (.py/.js/.ts/.go/.rs/.java) in the temp clone, pass = gate rc ≠ 0.
 - ⚠`rc` lives only in redcheck.json and the red row's step name — never add it to `GATE_MODES` or `evidence_rec.MODES` (graded runs would then expect evidence rows the gate never writes).
 - ⚠`sidereus redcheck` is dispatched before the `--help` check, or its own flags would print the launcher usage.
+
+## «Start with recommended setup» reply shape and blank gate (`sidereus/pipeline_starter.py` · `web/js/48l-pipeline-start.js`)
+- Cause: the client printed `files` rows ({rel, state}) with `String()` and read a `written` list the server never sends; a blank gate got 400 though the input says «Empty — the gate is left out»; a dry error replaced the whole form.
+- Fix: show `rel`, build the saved message from rows with `state === 'written'`; a sent blank `gate` = no gate (missing key = detected); an error renders under the form with Confirm disabled.
+- ⚠Do not drop the `gate` key client-side when blank — the server would fall back to the detected command. JS test stubs must return the real server shape (`tests/test_pl_starter_preview_r6_js.py`).

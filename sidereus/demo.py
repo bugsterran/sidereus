@@ -581,9 +581,9 @@ def install(handler_cls, page_build):
             return self._raw_json(200, hooks_connect_dry(req["plat"]))   # preview only; Apply stays the no-op below
         if u.path in ("/api/room/invite", "/api/rooms/create") and isinstance(req, dict) and req.get("dry") is True:
             room, ids = str(req.get("room") or "")[:64], [i for i in (req.get("ids") if isinstance(req.get("ids"), list) else []) if isinstance(i, str)][:20]
-            mem = (world.state().get("rooms") or {}).get(room, {}).get("members") or [] if u.path == "/api/room/invite" else []   # as the real path: members listed, `already` split
-            body = ("The user invited you to room **'%s'** from the screen (Sidereus).\nMembers: %s\n\nTo join: mailbox_room "
-                    "{ action: \"join\", room: \"%s\" }" % (room, ", ".join(mem) or "none yet", room))   # ⚠mirrors routes_post.invite_text
+            cur = (world.state().get("rooms") or {}).get(room) or {}
+            mem = (cur.get("members") or []) if u.path == "/api/room/invite" else []   # as the real path: members listed, `already` split
+            body = __import__("sidereus.routes_post", fromlist=["x"]).invite_text(room, cur.get("topic") or (str(req.get("topic") or "")[:200] or None), mem)[1]   # lazy: the real preview's builder
             return self._raw_json(200, {"ok": True, "dry": True, "demo": True, "body": body, "added": [i for i in ids if i not in mem], "already": [i for i in ids if i in mem]})   # 92c: «Confirm» only on a string body
         if u.path == "/api/term/focus":  # ⚠never osascript in demo — pretend the tab came forward
             return self._raw_json(200, {"ok": True, "demo": True, "how": "focused"})

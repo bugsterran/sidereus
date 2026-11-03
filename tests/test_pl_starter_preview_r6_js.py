@@ -16,9 +16,12 @@ let LS = {}, POSTS = [];
 function lsGet(k, d){ return k in LS ? LS[k] : d; } function lsSet(k, v){ LS[k] = v; }
 function plPaint(){} function plLoadAll(){} function diffHtml(s){ return '<code>' + esc(s) + '</code>'; } function TE(r){ return r.err || ''; }
 async function plLoadProjs(){} async function plLoad(){}
-let DET = '';
-async function postJSON(u, b){ POSTS.push([u, b]); return b.dry ? { ok: true, diff: '+ new file ' + (b.policy ? '_policy.json' : 'ci.json') + ' gate=' + (b.gate || ''), files: ['.claude/pipelines/ci.json'], detected: DET }
-  : { ok: true, written: ['.claude/pipelines/ci.json'], skipped: [] }; }
+let DET = '', EXIST = false, FAIL = '';
+// Real server shape: files are [{rel, state}] rows, there is no `written` list.
+async function postJSON(u, b){ POSTS.push([u, b]);
+  if(FAIL){ const x = new Error('400'); x.body = { ok: false, err: FAIL }; throw x; }
+  const rows = [{ rel: '.claude/pipelines/ci.json', state: EXIST ? 'exists' : b.dry ? 'new' : 'written' }, { rel: '.claude/pipelines/old.json', state: 'exists' }];
+  return { ok: true, dry: !!b.dry, diff: '+ new file ' + (b.policy ? '_policy.json' : 'ci.json') + ' gate=' + (b.gate || ''), files: rows, detected: DET }; }
 const PLST_KEY = 'sidereus.plStartDone';
 let PLST_DX = { on: false }, PLST_PV = null;
 let PLS = { proj: '/a', projs: { ok: true, projects: [{ path: '/a', n: 0 }] }, data: { '/a': { ok: true, pipelines: [] } }, msg: '' };
@@ -84,7 +87,24 @@ class Starter(unittest.TestCase):
         self.assertIn("_policy.json", h)
         self.assertEqual(posts[2], ["/api/pipelines/starter", {"proj": "/a", "policy": True, "dry": False, "gate": ""}])
         self.assertIsNone(pv)
-        self.assertIn("ci.json", msg)
+        self.assertEqual(msg, "Saved: .claude/pipelines/ci.json")   # only rows the server marked written
+        self.assertNotIn("[object Object]", h)
+        self.assertIn(".claude/pipelines/ci.json · .claude/pipelines/old.json", h)
+
+    def test_all_existing_says_nothing_written(self):
+        r = _run("EXIST = true;" + NEW + "await plStartFetch(false); await plStartFetch(true); console.log(JSON.stringify([PLS.msg]));")
+        self.assertEqual(r, ["Nothing written — the files already exist"])
+
+    def test_dry_error_keeps_form_and_disables_confirm(self):
+        r = _run("DET = 'npm test';" + NEW + "await plStartFetch(false); FAIL = 'gate: bad'; PLST_PV.cmd = 'x';"
+                 "await plStartFetch(false); console.log(JSON.stringify([plStartList()]));")
+        h = r[0]
+        self.assertRegex(h, r'data-plstcmd value="x"(?![^>]*disabled)')
+        self.assertIn("data-plstpol", h)
+        self.assertRegex(h, r"data-plstok[^>]*disabled")
+        self.assertIn("data-plstno", h)
+        self.assertIn("gate: bad", h)
+        self.assertNotIn("Loading", h)
 
     def test_late_reply_for_closed_preview_is_dropped(self):
         r = _run(NEW + "const p = plStartFetch(false); PLST_PV = null; await p; console.log(JSON.stringify([PLST_PV]));")

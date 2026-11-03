@@ -86,11 +86,23 @@ class Starter(unittest.TestCase):
         b = ST.starter({"proj": self.proj, "gate": "make check"})[1]
         self.assertEqual((b["gate"], b["detected"]), ("make check", "go test ./..."))
         self.assertNotIn("go test", b["diff"])
-        for bad in ("", " ", "a\nb", "x" * 201, 3):
+        for bad in ("a\nb", "x" * 201, 3, "a\tb"):
             self.assertEqual(ST.starter({"proj": self.proj, "gate": bad})[0], 400, bad)
         ST.starter({"proj": self.proj, "gate": "make check", "dry": False})
         with open(os.path.join(self.pdir(), "bugfix.json"), encoding="utf-8") as f:
             self.assertEqual([s.get("gate") for s in json.load(f)["stages"]], [None, None, "make check", "make check"])
+
+    def test_blank_gate_is_no_gate_even_when_detected(self):
+        self.w("go.mod", "module x\n")
+        for blank in ("", "  "):
+            c, b = ST.starter({"proj": self.proj, "gate": blank})
+            self.assertEqual((c, b["gate"], b["detected"]), (200, None, "go test ./..."))
+            self.assertNotIn('"gate"', b["diff"])
+        c, b = ST.starter({"proj": self.proj, "gate": "", "dry": False})
+        self.assertEqual((c, [f["state"] for f in b["files"]]), (200, ["written"] * 3))
+        for n in NAMES:
+            with open(os.path.join(self.pdir(), n + ".json"), encoding="utf-8") as f:
+                self.assertTrue(all("gate" not in s for s in json.load(f)["stages"]), n)
 
     def test_policy_only_when_ticked_and_existing_kept(self):
         self.w(".claude/pipelines/change.json", "mine\n")

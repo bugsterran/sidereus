@@ -413,6 +413,15 @@ class AskAiRecipient(unittest.TestCase):
         self.assertEqual(r[1], [])
         self.assertIsNone(r[2])
 
+    def test_ran_label_has_project_and_state(self):   # the «ran» row prints through 84l archChkCandLabel
+        with open(os.path.join(ROOT, "web", "js", "84l-structure-arch-checks.js"), encoding="utf-8") as fh:
+            src = fh.read()
+        lab = src[src.index("function archChkCandLabel"):].split("\n", 1)[0]
+        ss = [self._sess(sid="041d8bea99", cwd="/elsewhere/proj-a", model="opus-5", mbox="web-lead", plrun=[self.RUN])]
+        r = _recip("const sid8 = s => String(s).slice(0, 8); function sessLabel(x){ return 'ST:' + x.state; }\n" + lab +
+                   "\nconst ss = %s; console.log(JSON.stringify(archChkCandLabel(plEvalRecips(ss, '/p', 'flow', '')[0])));" % json.dumps(ss))
+        self.assertEqual(r, "proj-a · 041d8bea · web-lead · ST:wait · opus-5")
+
     def test_prechecked_once(self):
         r = _recip("const S = {sel: {}, init: false}; plEvalPre(S, [1, 2]); delete S.sel[0]; plEvalPre(S, [1, 2]);"
                    " console.log(JSON.stringify(S.sel));")

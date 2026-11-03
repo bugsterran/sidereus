@@ -130,6 +130,19 @@ class DemoTest(unittest.TestCase):
             self.assertIsInstance(out["body"], str)
             self.assertIn("'dev'", out["body"])
 
+    def test_room_invite_dry_body_is_invite_text(self):
+        class H:
+            _GET_ROUTES = {}
+            _POST_ROUTES = {"/api/room/invite": "real"}
+        self.demo.install(H, "b")
+        sent = []
+        me = type("M", (), {"_body_json": lambda s, *a: {"room": "dev", "ids": [], "topic": "Plan X", "dry": True},
+                            "_raw_json": lambda s, c, o: sent.append((c, o))})()
+        H._POST_ROUTES["/api/room/invite"](me, type("U", (), {"path": "/api/room/invite"})())
+        body = sent[0][1]["body"]
+        self.assertEqual(body, sidereus("routes_post").invite_text("dev", "Plan X", [])[1])
+        self.assertIn("Topic: Plan X", body)
+
     def test_prefs_has_real_shape(self):
         # 90b-mypref.js treats a reply without `keys` as a read failure (red error in Preferences).
         out = self.get("/api/prefs")
