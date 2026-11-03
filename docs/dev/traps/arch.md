@@ -387,3 +387,4 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ `archZmApply(slot)` re-applies the stored zoom right after the `innerHTML` (archPaint and the archDiagram fill), before `archScrollPut`.
 - ⚠Do not move it after `archScrollPut`, and never select bare `svg.mmdsvg` — the `.archmm` minimap clone has that class too — `tests/test_struct_arch_zoom_js.py`.
 - ⚠Zoom bar scrolled away vertically: `.archmap` is the scroller and the opaque sticky `.archtop` covers its top, so `.mmdbar` `top:0` sits hidden behind it. ⇒ `top:calc(var(--archtop-sh) - 6px)`, `--archtop-sh` = live `.archtop` height set by `archZmTop` (ResizeObserver, re-observed per repaint).
+- ⚠Ctrl/⌘+wheel zoom slid the spot away: the svg grows from its top-left corner. ⇒ 81e `mmdZoomAnchor` shifts the nearest scrolling ancestor by the cursor point's drift (live: < 1px at 182% -> 122%) — `tests/test_mmd_wheel_anchor_js.py`.

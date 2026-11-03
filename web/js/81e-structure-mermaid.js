@@ -468,6 +468,18 @@ document.addEventListener('wheel', ev => {
   if(!s) return;
   ev.preventDefault();
   const vb = (s.getAttribute('viewBox') || '').split(' ').map(Number), z = Math.max(0.5, Math.min(3, (+s.dataset.z || 1) * Math.exp(-ev.deltaY * 0.002)));
+  const r0 = s.getBoundingClientRect(), fx = r0.width > 0 ? (ev.clientX - r0.left) / r0.width : 0, fy = r0.height > 0 ? (ev.clientY - r0.top) / r0.height : 0;
   s.dataset.z = String(z);
   s.setAttribute('width', String(Math.round(vb[2] * z))); s.setAttribute('height', String(Math.round(vb[3] * z)));
+  mmdZoomAnchor(s, r0, fx, fy, ev.clientX, ev.clientY);
 }, { passive: false });
+// Keep the diagram point that was under the cursor under it after a resize: shift the nearest scrolling ancestor by the drift.
+// ⚠Without this the svg grows from its top-left corner and the spot being zoomed slides away (no auto-centre: only the drift is undone).
+function mmdZoomAnchor(s, r0, fx, fy, cx, cy){
+  const r1 = s.getBoundingClientRect(), dx = r1.left + fx * r1.width - cx, dy = r1.top + fy * r1.height - cy;
+  for(let p = s.parentElement, nx = !dx, ny = !dy; p && !(nx && ny); p = p.parentElement){
+    const cs = getComputedStyle(p);
+    if(!nx && /auto|scroll/.test(cs.overflowX) && p.scrollWidth > p.clientWidth){ p.scrollLeft += dx; nx = true; }
+    if(!ny && /auto|scroll/.test(cs.overflowY) && p.scrollHeight > p.clientHeight){ p.scrollTop += dy; ny = true; }
+  }
+}
