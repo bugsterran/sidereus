@@ -96,7 +96,7 @@ def _agent_meta(sess_dir, ttl=20):
     return out
 
 
-_BOOT = [0.0]
+_BOOT = [None]     # None = not computed yet; 0.0 = unavailable (cached so a failing sysctl runs once)
 
 
 def boot_time():
@@ -107,7 +107,7 @@ def boot_time():
       was a tool call so `_agent_ended` saw it as 'still working'. So it stayed 'running' for 63 min.
     ★Boot time is **not a guess** — a process cannot survive a reboot. If the last activity is
       before boot, that agent is certainly dead. Unlike other checks in this file, there is no gray zone here."""
-    if _BOOT[0]:
+    if _BOOT[0] is not None:
         return _BOOT[0]
     if not IS_MAC:
         return 0.0      # ⚠non-Mac — no `kern.boottime`. At 0 the orphan check is not used at all
@@ -116,8 +116,7 @@ def boot_time():
                              capture_output=True, text=True, encoding="utf-8", errors="replace",
                              timeout=3).stdout
         m = re.search(r"sec\s*=\s*(\d+)", out)
-        if m:
-            _BOOT[0] = float(m.group(1))
+        _BOOT[0] = float(m.group(1)) if m else 0.0
     except Exception as e:
         warn_once("boottime", "Could not read boot time ({err}) — orphan-agent check is off",
                   vars={"err": type(e).__name__}, soft=True)

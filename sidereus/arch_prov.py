@@ -35,7 +35,7 @@ _now = time.time
 
 
 def _num(v):
-    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0.0
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) and abs(v) < 1e18 else 0.0   # NaN/inf -> 0
 
 
 def _model(m):

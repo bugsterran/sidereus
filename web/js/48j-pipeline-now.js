@@ -92,7 +92,7 @@ function plNowPick(cwd, plat){
   if(!x) return;
   const r = (x.plrun || []).find(q => q && q.name && !q.end) || (x.plm && x.plm.name ? { name: x.plm.name } : null);
   plNowGoProj((r && r.proj) || x.cwd || PLS.proj);
-  PLS.nowSid = x.sid || '';   // ⚠after plNowGoProj: a project change clears nowSid
+  PLS.nowSid = x.sid || '';   // marks the picked row
   if(r) PLS.sel = r.name;
   plPaint();
 }
@@ -146,6 +146,7 @@ function plNowFollow(ss){
   PLNOW_VKEY = viewed() || k;
 }
 // Same reset as plPickProj (48 plProjGo), without its paint; an open arch-map panel (48h PLAG) would hide the picked pipeline.
+// Callers jump to a live run, so the destination's past-run pick is dropped on purpose (after plProjGo: runSel is per project).
 function plNowGoProj(proj){
   plProjGo(proj);
   PLS.runSel = null; plAgSet(false);

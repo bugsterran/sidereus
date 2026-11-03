@@ -94,6 +94,20 @@ class PipelineRunPickSurvivesReload(unittest.TestCase):
                      " PLS.data['/u/a'] = {ok: true}; plViewRun('/u/a', 'chg'); R.c = PLS.runSel;", st)
         self.assertEqual((r["a"], r["b"], r["c"]), (2, 2, None))   # gone once both are in and the run no longer exists
 
+    def test_project_switch_keeps_each_projects_pick(self):
+        # plProjGo must not wipe the destination's saved nowSid/runSel; a nowSid whose session ended is dropped.
+        go = "let PLNEW = null, PLDRAFT = null, PLSTD = false; function lsSet(){}\n" + js_fn("plProjGo") + "\n"
+        st = {"sidereus.plnowsid": json.dumps({"/u/b": "s2", "/u/c": "dead"}),
+              "sidereus.plrunsel": json.dumps({"/u/b": {"sid": "s2", "name": "chg", "rid": 2, "cur": 4}})}
+        r = run_pref(go + "SESS = [{sid: 's1', state: 'tool'}, {sid: 's2', state: 'tool'}, {sid: 'dead', state: 'done'}];"
+                     " PLS.nowSid = 's1'; plProjGo('/u/b'); R.b = [PLS.nowSid, PLS.runSel && PLS.runSel.rid];"
+                     " plProjGo('/u/a'); R.a = PLS.nowSid; plProjGo('/u/c'); R.c = PLS.nowSid;", st)
+        self.assertEqual((r["b"], r["a"], r["c"]), (["s2", 2], "s1", ""))
+
+    def test_running_row_pick_drops_destination_past_run(self):
+        pk = js_fn("plOvPick")
+        self.assertLess(pk.index("plProjGo(proj)"), pk.index("PLS.runSel = null"))
+
 
 if __name__ == "__main__":
     unittest.main()
