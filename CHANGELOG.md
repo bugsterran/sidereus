@@ -5,7 +5,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+**Highlights**
+
+- Pipelines: a "Get started" checklist on the Pipelines view, "Start with recommended setup" that writes quick-fix, change and bugfix pipelines, and "Request a red check" that asks a live session to prove its gate turns red.
+- Attention: permission prompts and open questions no longer drop out while subagents run, and they clear on their own once you respond (typed prompt, picker answer or `!` command).
+- Security: every POST that acts for the person (room posts, DMs, terminal focus, saver settings, dismissals, review marks) now requires the viewer page's Origin, so a local script can no longer act as you.
+
+### Added
+
+- Pipelines: a "Get started" checklist (Claude Code connected, Project added, First pipeline, Gate red-checked), built from existing data and gone once all are done or on "Hide".
+- Pipelines: "Start with recommended setup" writes quick-fix, change and bugfix pipelines with a gate from the detected test command or a one-line input; diff preview and confirm, never overwrites, strict mode is an unticked opt-in.
+- Pipelines: "Request a red check" in the evaluation panel relays a red-check request to a live session of the project after preview and confirm; `sidereus redcheck` runs the bundled runner, so red checks work in pipx and uv installs.
+- Structure: zoom controls on the architecture map (- 100% + Fit); the % label follows Ctrl/Cmd+wheel zoom too.
+
+### Changed
+
+- Header: the "CLI hooks not connected" chip shows the platforms as logos.
+- Pipelines: a running stage done by the orchestrator (no agents) shows its elapsed time on the canvas chip.
+- Pipelines: the Run button's tooltip says it opens a run request that the chosen session executes; Sidereus runs nothing.
+- Pipelines: the bundled refactor, docs and release pipelines gate every stage a command can grade (file-editing stages run `check.sh --fast`, verify stages `--full`, CI stages watch their exact commit).
+- Pipelines: recommended setup picks pytest only when the project configures it (pytest.ini, conftest.py, pyproject, setup.cfg or tox.ini); a `tests/` folder alone leaves the gate for you to fill.
+
 ### Fixed
+
 - Plugin: version 0.6.0, so `claude plugin update` brings the hook and MCP fixes made since Sidereus 0.13.0 (Claude Code caches a plugin per version).
 - Pipelines «Start with recommended setup»: the preview lists file names instead of «[object Object]», an empty test command saves without a gate (projects with no detected command could not save at all), a preview error keeps the form editable, and the saved message names the written files.
 - Pipelines «Request a red check»: the preview and the sent line scroll into view, the message names the target repository, and recipient labels show project and state (also for eval fix requests).
@@ -39,6 +61,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: a denied stage jump no longer lights the stage as «main»; a stage title over 40 characters is named in the hint instead of an unmatchable tag; the npm-audit install hint is a command.
 - MCP: an unknown tool name returns JSON-RPC -32602; `sidereus_attention` labels idle-mail and idle-shell signals; a bad To-do request body gets a body error.
 - Structure › Architecture: with a flow lit, the toolbar hint no longer shrinks to a sliver at 900–1100 px; it hides, and a narrow bar shows the lit counter as numbers (full sentence in its tooltip).
+- Pipelines: a red check first runs the gate on the clean clone; a gate that already fails is reported as skipped instead of recording a pass, and "Gate red-checked" counts only passes.
+- Pipelines: renaming and reordering a stage in one save keeps the stage's key order.
+- Pipelines: a run with a far-future end time is no longer kept as running.
+- Attention: a permission prompt is cleared only by a decision for the same tool; subagents' auto-approved tools no longer hide the main session's prompt.
+- Attention: "Question waiting" clears when the question is answered in its picker (AskUserQuestion, plan approval), when the reply sits far back in a long transcript, or after a `!` shell command; "Done", "Background done" and "Background idle" clear once you type in that session.
+- Attention: a question followed by a status line still counts as asking.
+- Sessions: a background job whose `claude agents` lookup times out keeps its session instead of reading "done" under an old id; its pre-`/clear` session id no longer stays as a second live row.
+- Terminal: a background job keeps its jump button through a one-poll lookup miss and after a daemon respawn re-parents its host.
+- Terminal: concurrent polls no longer fail with "dictionary changed size during iteration" in the background-job terminal lookup.
+- Work popup: ended Cursor and Copilot sessions without hooks open instead of "External session not found".
+- Security: a scan where no scanner ran reads "Security not checked" instead of "issues 0"; the issues window header counts image scans and the severity filter drops the levels it hides.
+- Structure: Ctrl/Cmd+wheel zoom keeps the point under the cursor; the zoom bar stays pinned under the header and no longer overlaps "Source text", which is clickable on a fresh load.
+- Structure: module diagram lines no longer cut through group titles and boxes when route search runs out; a 900 px flow sequence view starts its edge list right below the diagram; evidence buttons show a "file:line" tooltip.
+- Demo: subagent work logs open, and the diff popup shows the uncommitted files the rail counts.
 
 ## [0.13.0] - 2026-11-02
 
