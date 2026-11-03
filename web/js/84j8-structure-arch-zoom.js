@@ -42,8 +42,19 @@ function archZmSet(am, z){
   if(typeof archOffMark === 'function') archOffMark(slot);
   archZmLabel(slot, z);
 }
+// Publish the live .archtop height as --archtop-sh so the sticky .mmdbar (79d) pins just below it; re-measured when it wraps.
+function archZmTop(slot){
+  const am = slot && slot.closest ? slot.closest('.archmap') : null, top = am && am.querySelector ? am.querySelector('.archtop') : null;
+  if(!top || !am.style) return;
+  const put = () => am.style.setProperty('--archtop-sh', (top.offsetHeight || 0) + 'px');
+  put();
+  if(typeof ResizeObserver !== 'function') return;
+  if(ARCH_ZM.ro) ARCH_ZM.ro.disconnect();   // ⚠each repaint replaces .archtop: observe only the live one
+  ARCH_ZM.ro = new ResizeObserver(put); ARCH_ZM.ro.observe(top);
+}
 // Re-apply the stored zoom after a repaint (the cached svg string is 1x); no scroll change — archScrollPut runs after this.
 function archZmApply(slot){
+  archZmTop(slot);
   const s = archZmSvg(slot);   // ⚠element.querySelector matches the full selector in document context, so .archdg may be slot itself
   const vk = typeof archMmVk === 'function' ? archMmVk(slot && slot.dataset && slot.dataset.k) : '', z = vk ? ARCH_ZM.z[vk] : 0;
   if(!s || !z) return;
