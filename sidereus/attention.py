@@ -131,10 +131,14 @@ def _owner_of(rows):
 
 def _ask_open(r, c, at):
     """An «ask» card still unanswered: same session, row live and not already `ask`, no human prompt after the card.
-    ⚠humanAt missing (old parse cache, external CLI row) is unknown: no card signal rather than a stale one."""
+    ⚠humanAt missing (old parse cache, external CLI row) is unknown: no card signal rather than a stale one.
+    ⚠humanAt 0 = no human line in the tail window; it proves «no reply» only when the window reaches back to the card
+    — so the card drops only when the window is known to start after it (tailAt > card time); tailAt 0 (old cache,
+    hook-only CLI rows) stays a hold. Large records push replies out of the 400 KB tail, which kept the card forever."""
     ha = r.get("humanAt")
     return bool(c.get("sid")) and c.get("sid") == r.get("sid") and (r.get("state") or "") not in ("ask", "done", "gone") \
-        and isinstance(ha, int) and not isinstance(ha, bool) and ha < at
+        and isinstance(ha, int) and not isinstance(ha, bool) and ha < at \
+        and (ha > 0 or not (r.get("tailAt") or 0) > at)
 
 
 def _card_sigs(extra, cards, own, now, read, rid, by_sid=None):

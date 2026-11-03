@@ -323,7 +323,7 @@ class World(_WorldPanels, _WorldGit):
                 # same shape as sessions._session_row: targ only for an Agent call (rule 1)
                 "tool": s["tool"], "targ": s["targ"] if s["tool"] in ("Agent", "Task") else "",
                 "sub": sub, "bgs": CART_BGS if s["k"] == "cart" else [], "mon": [], "wf": self.wf_runs(s["k"]),
-                "runmin": {"sub": len(sub), "bg": 0} if sub else {}, "kind": "system", "ageSec": age, "humanAt": 0,
+                "runmin": {"sub": len(sub), "bg": 0} if sub else {}, "kind": "system", "ageSec": age, "humanAt": 0, "tailAt": 0,
                 "bytes": s["ctx"] * 40, "repos": [s["cwd"]],   # like git toplevel: a worktree session's repo is its worktree
                 "wt": {"root": s["cwd"], "main": "" if s["cwd"] == REPOS[s["repo"]][0] else REPOS[s["repo"]][0],
                        "name": s["cwd"].rsplit("/", 1)[-1]},
