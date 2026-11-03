@@ -60,11 +60,12 @@ class InstalledPackage(unittest.TestCase):
         self.assertEqual({t["id"] for t in left}, ids - needs)
         self.assertNotIn(config.CODE_DIR, repr(left))
 
-    def test_redcheck_uses_venv_python(self):
+    def test_redcheck_install_uses_cli(self):
+        # An install has no clone path to quote: the session runs the `sidereus redcheck` entry point instead.
         with mock.patch.object(PV.sys, "executable", "/venv/bin/python"):
             self.assertTrue(PV.redcheck_cmd("/p", "x", "t", nt=False).startswith("python3 "))
             with mock.patch.object(config, "IS_CLONE", False):
-                self.assertTrue(PV.redcheck_cmd("/p", "x", "t", nt=False).startswith("/venv/bin/python "))
+                self.assertTrue(PV.redcheck_cmd("/p", "x", "t", nt=False).startswith("sidereus redcheck "))
 
 
 class InstallServiceRefused(CliBase):

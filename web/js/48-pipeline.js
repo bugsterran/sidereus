@@ -387,6 +387,7 @@ function plMainBody(){
   const ov = plOverview(), hd = { row: '' }, pb = plBody(ov, hd);   // one head row: project · pipeline · «+ New ▾» (· Workflow chips)
   const wt = typeof plWatchOn === 'function' && plWatchOn();   // 48k Watch: «Apply» is an Edit control
   return (typeof plModeBand === 'function' ? plModeBand() : '') + '<div class="pltop' + (wt ? ' plwtop' : '') + '">' + plChips() + hd.row + (!hd.mb && typeof plModeBtn === 'function' ? plModeBtn() : '') + '</div>'
+    + (typeof plStartList === 'function' ? plStartList() : '')   // 48l «Get started», also in the no-project body
     + (wt || !((PLS.data[PLS.proj] || {}).pipelines || []).length ? '' : plApplySeg(PLS.data[PLS.proj])) + pb + (ov && pb.indexOf(ov) < 0 ? ov : '');
 }
 // Stable selector for a focused control: tag + its data-*/aria-label attributes, plus its index among equal matches.

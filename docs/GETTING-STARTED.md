@@ -35,7 +35,7 @@ No pipx yet: `py -m pip install --user pipx`, then `py -m pipx ensurepath` and r
 Upgrade: `pipx upgrade sidereus` (`uv tool upgrade sidereus`). On Windows a running viewer locks the venv's `python.exe`, so stop it first (`sidereus stop`, or `schtasks /End /TN Sidereus` if it runs as the logon task, §3), upgrade, then start it again. Not available this way: start at login
 (`start --install-service`, §3 — the install path changes on every reinstall) and `scripts/` tools; connect Claude Code
 with the plugin from GitHub (§5).
-Pipeline scoring (`scripts/pl_eval.py`) runs only from a clone.
+`sidereus redcheck` works in installs; seeds and score (`scripts/pl_eval.py`) still need a clone.
 Structure map and security check requests also need a clone (the `arch-map` and `security-checks` pipelines live in the repository).
 The first start after updating to 0.7.0 rebuilds the tool usage cache once (about a minute of «Loading…» in Tools and Harness).
 
@@ -141,7 +141,7 @@ Install, inside Claude Code:
 ```
 
 Alternative: local clone, `/plugin marketplace add <path to your clone>`. The plugin still needs a running viewer
-(§2); without a clone, pipeline scoring (`scripts/pl_eval.py`) is skipped.
+(§2); `sidereus redcheck` works in installs, but seeds and score (`scripts/pl_eval.py`) still need a clone.
 
 Update (local clone: after `git pull`):
 

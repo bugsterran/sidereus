@@ -68,8 +68,6 @@ This is one person's tool, published so others can fork it. The UI is in English
 
 ## Install
 
-You need Python 3.9 or later (standard library only), Claude Code, and `git` for the Branches, Structure and diff views. The stock macOS `/usr/bin/python3` works; on a fresh Mac its first run offers to install the Xcode Command Line Tools, so accept and run again. macOS is tested, Windows works with a few gaps, Linux is untested. The viewer is a desktop page laid out for a 1920-pixel-wide window; it stays readable down to 900 pixels, and phone screens are not supported. The demo server uses about 50 MB of memory.
-
 ```sh
 git clone https://github.com/bugsterran/sidereus.git ~/sidereus && cd ~/sidereus
 python3 -m sidereus start --open             # http://127.0.0.1:8799. Windows: sidereus.cmd start --open
@@ -89,7 +87,16 @@ To connect Claude Code, install the plugin from inside Claude Code, then restart
 /plugin install sidereus@sidereus
 ```
 
-[Getting started](docs/GETTING-STARTED.md) covers the rest: Windows setup, changing the port, manual hooks instead of the plugin, start at login, upgrading and uninstalling. Before installing, read what Sidereus reads and sends (keychain token for the quota lookup, advisory lookups, keeping the Mac awake), why other accounts on a shared Mac can reach its API, and how to turn each off in [SECURITY.md](SECURITY.md) and [CONFIG.md](docs/CONFIG.md).
+Before you install:
+
+- You need Python 3.9 or later (standard library only), Claude Code, and `git` for the Branches, Structure and diff views. The stock macOS `/usr/bin/python3` works.
+- On a fresh Mac the first run offers to install the Xcode Command Line Tools; accept and run again.
+- macOS is tested, Windows works with a few gaps, Linux is untested.
+- The viewer is a desktop page laid out for a 1920-pixel-wide window. It stays readable down to 900 pixels; phone screens are not supported.
+- The demo server uses about 50 MB of memory.
+- [SECURITY.md](SECURITY.md) and [CONFIG.md](docs/CONFIG.md) describe what Sidereus reads and sends (keychain token for the quota lookup, advisory lookups, keeping the Mac awake), why other accounts on a shared Mac can reach its API, and how to turn each off.
+
+[Getting started](docs/GETTING-STARTED.md) covers the rest: Windows setup, changing the port, manual hooks instead of the plugin, start at login, upgrading and uninstalling.
 
 ## Privacy
 

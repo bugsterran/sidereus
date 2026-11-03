@@ -13,6 +13,7 @@ usage: pl_eval.py seeds --repo R (--set F | --check) | score --repo R --pipeline
   redcheck  clone R (--shared) to a temp dir, inject one break for the stage's gate mode, run the producer and the gate
             there (MAILBOX_DIR / SIDEREUS_EVIDENCE in the temp dir) and record pass|fail|skip under sha1(gate)[:16].
             ⚠R itself must be unchanged (HEAD + status) or the verdict is fail «target changed». Missing tool = skip.
+            A gate with no evidence mode (npm test, pytest, ...) uses mode `rc`: one syntax break in the repo's main language.
 """
 import base64
 import hashlib
@@ -48,6 +49,10 @@ AUTO_STALE_S = 600
 _SKIP = {".git", "node_modules", "build", "target", "dist", "out", ".venv", "venv", "__pycache__", ".gradle"}
 _SHELL = ("&&", "||", ";", "|", ">", "<", "&")
 RED_TOOLS = {"checks-security": ("gitleaks",)}
+# mode `rc` (a gate outside GATE_MODES): the break appended to the first file of the repo's most common language.
+RC_LANGS = ((".py", "def sidereus_red_check(:\n"), (".js", "function sidereus_red_check( {\n"),
+            (".ts", "function sidereus_red_check( {\n"), (".go", "func sidereus_red_check( {\n"),
+            (".rs", "fn sidereus_red_check( {\n"), (".java", "class SidereusRedCheck { void f( }\n"))
 RED_RC = {"pass": 0, "fail": 1, "skip": 2}  # nosec B105 -- verdict-to-exit-code map, not a password
 
 
@@ -269,6 +274,13 @@ def inject(mode, clone):
             return None, "no .py file to break"
         _append(os.path.join(clone, py[0]), "def sidereus_red_check(:\n")
         return [], "syntax error in " + py[0]
+    if mode == "rc":
+        found = [(_files(clone, (ext,)), brk) for ext, brk in RC_LANGS]
+        fs, brk = max(found, key=lambda x: len(x[0]))   # first of equals = RC_LANGS order
+        if not fs:
+            return None, "no source file to break"
+        _append(os.path.join(clone, fs[0]), brk)
+        return [], "syntax error in " + fs[0]
     return None, "gate mode not graded"
 
 
@@ -363,7 +375,7 @@ def _rmtree(path):
 
 def red(pfile, gate, mode, repo, timeout):
     """(verdict, why, head). ⚠checks-* modes: red = the injected item is in the temp checks file (their verify exits 0
-    with findings); fast/full: red = gate rc != 0."""
+    with findings); fast/full/rc: red = gate rc != 0."""
     argv = _split_gate(gate)
     if mode is None:
         return "skip", "gate mode not graded", ""
@@ -428,12 +440,12 @@ def cmd_redcheck(pfile, title, repo, timeout):
     gate = st.get("gate") if isinstance(st.get("gate"), str) else ""
     if not gate.strip():
         return 2, "redcheck: stage has no gate"
-    mode, t0 = gate_mode(gate), _now()
+    mode, t0 = gate_mode(gate) or "rc", _now()   # ⚠rc is a red-check mode only: evidence rows and GATE_MODES never carry it
     verdict, why, head = red(pfile, gate, mode, repo, timeout)
     PE.save_red(gate, {"pipeline": P.get("name") if isinstance(P.get("name"), str) else "", "stage": title,
-                       "mode": mode or "", "key": AV.repo_key(repo), "verdict": verdict, "why": why, "at": round(t0, 3),
+                       "mode": mode, "key": AV.repo_key(repo), "verdict": verdict, "why": why, "at": round(t0, 3),
                        "ms": int(max(0, _now() - t0) * 1000)})
-    _record(PE.red_row(repo, head, mode or "none", verdict, t0))
+    _record(PE.red_row(repo, head, mode, verdict, t0))
     return RED_RC[verdict], "redcheck: %s — %s" % (verdict, why)
 
 

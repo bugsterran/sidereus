@@ -32,6 +32,10 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - Drag the grips between the parts to resize; double-click a grip for the defaults (canvas 75%, pane 14%, card 11% of the free height). Sizes are kept as shares, so a window resize keeps the proportions.
 - The head row holds the pickers, the run bar, «✎ Edit» and «▶ Run».
 
+### Get started
+- A four-step checklist sits at the top: «Claude Code connected», «Project added», «First pipeline», «Gate red-checked». «Hide» dismisses it.
+- «Start with recommended setup» writes three starter pipelines (quick-fix, change, review) to `.claude/pipelines/` after a diff preview and confirm. The gate is taken from the project's test command when one is found. Strict mode is an opt-in checkbox, off by default.
+
 ### Pick a project and pipeline
 - «Project»: search working, recent and all projects; «+ Add project» at the bottom; its folder picker suggests up to 8 «Recent session folders» (sessions in the last 14 days) — click one, then «Add this folder». «Pipeline»: this project's pipelines (⚠ = file breaks the schema, • = unsaved edits, a dot = running). The file's `use` line («When to use») shows under the head row in Watch and Edit and in the picker tooltip.
 - «+ New ▾»: «+ New pipeline», «Import from another project», «Ask AI for a draft», «Start from a template». «+ New pipeline» appears only in a folder that has had one Claude session (the file lives in its `.claude/`).
@@ -86,6 +90,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - «Guards» (stage panel, nothing selected): gates required before `git commit` and «Max loop-backs» ([HOOKS.md](HOOKS.md#guards-hookspl_guardpy-claude-code-only)).
 - «Evaluation»: per-stage seeded-defect catch rate, red check and stability ([dev/PIPELINE.md](dev/PIPELINE.md#evaluation-seeds-red-check-flaky-gates)). «Suggestions»: «Fix it myself» fills the editor, «Ask AI» previews a request.
   - Terms: «Catch» = share of deliberately planted defects (seeds) the stage gate caught · «Red check» = the gate was run once on a deliberately broken copy and failed, proof it can catch a defect · «Holdout» = planted defects kept out of tuning, used only to check the score is not overfit. Hover a header for the same text.
+  - «Request a red check» sends the red-check command to a live session in this project after a preview and confirm. The session runs it on a temporary clone; the viewer runs nothing. From a terminal: `sidereus redcheck --pipeline <name> --stage <title> --repo <path>`.
 - «Details» › «Results»: recorded check runs, newest first (with [`ev_hook.py`](HOOKS.md#ev_hookpy), test/build/lint commands from any project).
 
 ⚠ Without Claude Code telemetry, hooks that print nothing leave no record: «no record» does not mean «never ran». With telemetry on ([CONFIG.md](CONFIG.md)), every Claude Code hook gets a full run count, and one that ran 0 times over 3+ covered days is flagged «did not run in N days».
