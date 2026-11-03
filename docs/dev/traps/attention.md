@@ -195,3 +195,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `_ask_open` drops an «ask» card only on a human line after it; an AskUserQuestion/ExitPlanMode answer is a `tool_result`, so the card held until the next typed prompt.
 - ⇒ `_scan_tail` counts a tool_result whose `tool_use_id` is an ask-tool call in the tail (`_ask_tool_ids`, `_answers_ask`) as `humanAt`.
 - ⚠Only ask-tool results count; any other tool_result is not a reply — `tests/test_ask_state.py`.
+
+## A `!` shell command did not clear «Question waiting» / «Done» (`parse._scan_tail`, `attention._human_after`)
+
+- Cause: `<bash-input` is in `transcript._NOT_HUMAN`/`_NOT_HUMAN_STATE`, so the `!` line set neither `humanAt` nor the turn shape; the older text+`?` line kept `ask`, and «done» (t0 = last non-noise activity) stayed. bgdone needed activity past card + 60 s grace; bgidle never cleared on input.
+- ⇒ `_bang_input` (boolean) counts toward `humanAt` and, when newer than the shape line, clears `shp.ask` (never `askTool`); attention skips done/bgdone when `humanAt` is after their time, bgidle only when after the newest idle onset (`bg_idle.last` + `BG_IDLE_S`). `tests/test_attention_response_r1_r3.py`, `tests/test_attention_replay_r4.py`.
+- ⚠`<bash-stdout` alone is the harness echo, not a reply. ⚠`humanAt` 0/missing never clears anything (an unanswered question must stay).

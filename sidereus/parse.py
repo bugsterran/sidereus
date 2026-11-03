@@ -241,6 +241,18 @@ def _answers_ask(content, ask_ids):
         isinstance(x, dict) and x.get("type") == "tool_result" and x.get("tool_use_id") in ask_ids for x in content)
 
 
+def _bang_input(content):
+    """True if a user line is a `!` shell command typed by the person (boolean only; the command text is never kept).
+    ⚠`<bash-stdout` alone is the harness echoing output, not a human response."""
+    if isinstance(content, str):
+        txt = content
+    elif isinstance(content, list):
+        txt = next((x.get("text") or "" for x in content if isinstance(x, dict) and x.get("type") == "text"), "")
+    else:
+        return False
+    return isinstance(txt, str) and txt.strip().startswith("<bash-input")
+
+
 def _scan_tail(rows):
     """Newest-first pass over the tail: identity, last tool, context, task, turn shape and usage samples."""
     cwd = branch = sid = None
@@ -257,6 +269,7 @@ def _scan_tail(rows):
     turn_end = False           # was there a turn-end marker **after** the last assistant line (see below)
     act_at = 0                 # last record time **that counts as activity** (see _NOT_ACT comment above)
     human_at = 0               # newest human-prompt line time (0 = none in the tail)
+    bang_after = False         # a `!` command newer than the line that set `shp` (answers a question in the shell)
     # ★Per-request context samples (2026-09-03). Measured: 97.9% of cost was **cache reads** —
     #   i.e. each request re-reading the whole context is the entire cost. Measuring its size and frequency gives
     #   "how much this session burns per minute", the basis for deciding when to start a new session.
@@ -312,6 +325,9 @@ def _scan_tail(rows):
         #     The existing `aborted` path must stay alive (interruption is a state).
         # ⚠An auto-compact summary is a `user` line written by the harness: neither turn shape nor task label (metadata only).
         summary = d.get("type") == "user" and bool(d.get("isCompactSummary"))
+        bang = d.get("type") == "user" and not summary and not d.get("isMeta") and _bang_input(msg.get("content"))
+        if bang and shp is None:
+            bang_after = True
         if shp is None and d.get("type") in ("assistant", "user") and not summary \
                 and not (d.get("type") == "user" and _noise_user(msg.get("content"))):
             shp = _turn_shape(d, msg, turn_end)
@@ -335,12 +351,16 @@ def _scan_tail(rows):
         # ⚠An AskUserQuestion/ExitPlanMode answered in its picker comes back as a tool_result, not a prompt: it is a reply too,
         #   or the «ask» card raised by that question stays until the next typed prompt.
         if not human_at and d.get("type") == "user" and not summary and not d.get("isMeta") \
-                and (_human_text(msg.get("content")) or _answers_ask(msg.get("content"), ask_ids)):
+                and (_human_text(msg.get("content")) or _answers_ask(msg.get("content"), ask_ids) or bang):
             human_at = int(_line_ts(d, 0) or 0)
         if cwd and sid and tool and ctx and task and human_at:
             break
     shp = shp or {"shape": None, "askTool": False, "mid": None, "ask": False, "reply": "",
                   "abort": False, "err": False}
+    # ⚠A `!` line is shape noise (transcript._NOT_HUMAN_STATE), so the older text+ask line kept «Question waiting»;
+    #   it is still a response. askTool stays: an open picker is answered only by its tool_result.
+    if bang_after:
+        shp = dict(shp, ask=False)
     # ⚠Oldest record time in the window: humanAt 0 means «no reply» only when the tail reaches back that far.
     tail_at = 0
     for line in rows:

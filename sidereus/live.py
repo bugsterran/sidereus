@@ -18,6 +18,7 @@ from sidereus.ident import _slug
 from sidereus.live_probe import (LIVE_STALE_S, _STALE_LABEL, _STALE_SHOW_S, _UUID_RE, _blocked, _live_pid_cwd,
     _live_sids, _ps_snap, _sid_claim_stale, _sid_transcript, _slow_why, _stale, _stale_clear, _stale_lock,
     _stale_mark, agent_view, is_claude_argv, sid_alive, sid_alive_stale)
+from sidereus import live_probe as _lp
 # ⚠Window learning lives in sidereus/live_win.py (re-exported for chat_server/sessions/recent). Patch its state there.
 from sidereus.live_win import _ctx_window, _model_win, _win_ev, _win_load, _win_loop  # noqa: F401
 
@@ -161,6 +162,9 @@ def _live_official(sids, claimed, snap=None):
     #   ⚠A sid with no transcript yet is **not added to claimed** — removing that pid from path aggregation
     #     leaves no row to attach to and a just-started session vanishes (calling present absent is worse).
     av = agent_view()
+    held = _live_held(snap, av) if snap else {}
+    if held:
+        av = dict(av or {}, **held)
     for _pid, _it in (av or {}).items():
         _sid = (_it.get("sessionId") or "") if isinstance(_it, dict) else ""
         if not _sid:
@@ -181,6 +185,39 @@ def _live_official(sids, claimed, snap=None):
                 retired.add(m.group(1))
     _live_retired[0] = retired - sids
     return av
+
+
+_av_argv = {}        # pid -> argv while an official answer named it and the pid stays in the snapshot unchanged
+AV_HOLD_MAX = 256
+
+
+def _av_key_unknown(key):
+    """Is this account's official lookup unknown now (`live_probe._av_held` key: "" single, else realpath)?"""
+    if not key:
+        return _lp._av_cache[1] is None
+    c = _lp._av_acct.get(key)
+    return c is None or c[0][1] is None
+
+
+def _live_held(snap, av):
+    """{pid: entry} kept from the last successful `claude agents` answer of an account whose lookup is unknown now,
+    only for pids still in the snapshot with the argv they had when an answer named them."""
+    # ⚠A bg job's argv is `--resume OLD.jsonl`: during a lookup outage the argv guess bound the job to OLD, its live sid
+    #   lost the same-cwd path slot and an open question read as ended. ps gives no start time ⇒ identity = pid + argv.
+    cmds = {str(p): c for p, _pp, c in snap}
+    for p in [p for p, c in _av_argv.items() if cmds.get(p) != c]:
+        del _av_argv[p]                                    # gone or changed: never revived from an old answer
+    for p in (av or {}):
+        if p in cmds and (p in _av_argv or len(_av_argv) < AV_HOLD_MAX):
+            _av_argv[p] = cmds[p]
+    out = {}
+    for key, view in list(_lp._av_held.items()):
+        if not _av_key_unknown(key):
+            continue
+        for p, it in (view or {}).items():
+            if p in _av_argv and not (av and p in av) and isinstance(it, dict):
+                out[p] = it
+    return out
 
 
 def _live_argv_claims(snap, pids, av, pmap, sids, claimed):

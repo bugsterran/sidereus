@@ -272,13 +272,14 @@ BG_IDLE_S = 900            # an open bg shell whose output file has not grown fo
 
 
 def bg_idle(fp, now):
-    """{"n": open bg shells, "idle": idle count, "max": longest idle seconds, "at": oldest idle mtime} for session `fp`,
+    """{"n": open bg shells, "idle": idle count, "max": longest idle seconds, "at": oldest idle mtime,
+    "last": newest idle mtime} for session `fp`,
     or None when none is idle. ⚠`at` is absolute: the snapshot holding `max` is served stale, so `now - max` drifts.
     ⚠stat only (never opens the output file); called per poll — the parse cache would freeze the elapsed time."""
     with _bg_lock:
         paths = [v[3] if len(v) > 3 else "" for v in (_bg_open.get(fp) or {}).values() if v[0] == "bg"]
     bt = boot_time()
-    k, mx, at = 0, 0, 0
+    k, mx, at, last = 0, 0, 0, 0
     for p in paths:
         if not p:
             continue
@@ -292,7 +293,8 @@ def bg_idle(fp, now):
             k += 1
             mx = max(mx, int(now - mt))
             at = int(mt) if not at else min(at, int(mt))
-    return {"n": len(paths), "idle": k, "max": mx, "at": at} if k else None
+            last = max(last, int(mt))
+    return {"n": len(paths), "idle": k, "max": mx, "at": at, "last": last} if k else None
 
 
 def _bg_revive(fp, open_now, now):
