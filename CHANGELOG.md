@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-11-03
+
 ### Fixed
 
 - Pipelines: the "Get started" checklist shows even when one project has an invalid pipeline file (it was hidden as "unknown").
@@ -814,7 +816,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/bugsterran/sidereus/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/bugsterran/sidereus/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bugsterran/sidereus/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/bugsterran/sidereus/compare/v0.12.0...v0.12.1
