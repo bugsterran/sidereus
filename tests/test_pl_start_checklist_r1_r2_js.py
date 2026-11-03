@@ -55,8 +55,10 @@ class StartChecklist(unittest.TestCase):
                  "const c = plStartSteps(true, pj, {'/a': {ok: true, pipelines: [{name: 'x'}]}}).map(s => s.done);"
                  "const d = plStartSteps(null, {ok: true, projects: [{path: '/s', n: 3, self_only: true}]}, {}).map(s => s.done);"
                  "const e = plStartSteps(false, null, {}).map(s => s.done);"
-                 "console.log(JSON.stringify([a, b, c, d, e]));")
-        a, b, c, d, e = r
+                 "const f = plStartSteps(true, pj, {'/a': {ok: true, pipelines: [{name: 'x', ok: true, red: 0}, {name: 'bad', ok: false}]}}).map(s => s.done);"
+                 "console.log(JSON.stringify([a, b, c, d, e, f]));")
+        a, b, c, d, e, f = r
+        self.assertEqual(f, [True, True, True, False])     # invalid pipeline file does not make the step unknown
         self.assertEqual(a, [True, True, True, False])
         self.assertEqual(b, [True, True, True, True])
         self.assertEqual(c[3], None)                       # server without `red`: unknown, not 0

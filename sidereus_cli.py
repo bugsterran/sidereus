@@ -508,11 +508,13 @@ def _run_out(argv):
 def service_port():
     """Port the installed service serves, None when not installed or unreadable.
     No --port in its argv = it follows the config (server_argv / schtasks_argv omit the flag then)."""
-    args = None
+    args = svc_data = None
     if IS_MAC:
         try:
             with open(mac_plist_path(mac_label()), "rb") as f:
-                args = " ".join(str(a) for a in plistlib.load(f).get("ProgramArguments") or [])
+                pl = plistlib.load(f)
+            args = " ".join(str(a) for a in pl.get("ProgramArguments") or [])
+            svc_data = os.path.dirname(str(pl.get("StandardErrorPath") or "")) or None
         except Exception:
             return None
     elif IS_WIN:
@@ -520,7 +522,23 @@ def service_port():
     if not args:
         return None
     m = re.search(r"--port\s+(\d+)", args)
-    return int(m.group(1)) if m else configured_port()
+    if m:
+        return int(m.group(1))
+    # ⚠A flagless service follows the config of its own data dir (launchd sets no MAILBOX_DIR), not of the
+    #   caller's: with MAILBOX_DIR elsewhere, our config port made a second instance look like the service's.
+    if svc_data and os.path.realpath(svc_data) != os.path.realpath(data_dir()):
+        return _config_port_in(svc_data)
+    return configured_port()
+
+
+def _config_port_in(d):
+    try:
+        with open(os.path.join(d, "config.local.json"), encoding="utf-8") as f:
+            cfg = json.load(f)
+    except (OSError, ValueError):
+        cfg = {}
+    v = cfg.get("port") if isinstance(cfg, dict) else None
+    return mailbox_config.valid_port(v) or mailbox_config.DEFAULT_PORT
 
 
 def svc_owns(port):
@@ -1028,6 +1046,10 @@ def cmd_doctor(port=None):
 def cmd_redcheck(rest):
     """`redcheck ...` = scripts/pl_eval.py redcheck in the foreground (same interpreter, argv list, no shell); its exit code.
     ⚠Install layout: setup.py BUNDLE ships scripts/pl_eval.py under sidereus/_bundle, so ASSET_DIR holds it with or without a clone."""
+    if not rest or rest[0] in ("-h", "--help"):
+        # ⚠Answered here: pl_eval.py's own usage names itself and the clone-only seeds/score commands.
+        print("usage: sidereus redcheck --pipeline P.json --stage S --repo R [--timeout N]")
+        return 0 if rest else 2
     script = os.path.join(ASSET_DIR, "scripts", "pl_eval.py")
     if not os.path.isfile(script):
         print(t("rc_missing", script), file=sys.stderr)

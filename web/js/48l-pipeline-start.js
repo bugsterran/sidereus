@@ -29,8 +29,10 @@ function plStartSteps(dx, projs, data){
   const ld = L ? L.map(x => data && data[x.path]).filter(d => d && d.ok) : [];
   const pls = [].concat(...ld.map(d => d.pipelines || []));
   const first = L ? L.some(x => x.n > 0) || pls.length > 0 : null;
-  const red = first === false ? false : first === null ? null : pls.some(q => (+q.red || 0) > 0) ? true
-    : !pls.length || pls.some(q => typeof q.red !== 'number') ? null : false;   // no list loaded yet, or a server without `red`
+  // ⚠An invalid pipeline file (ok false) never gets `red` from the server; counting it made the step unknown and hid the list.
+  const plv = pls.filter(q => q && q.ok !== false);
+  const red = first === false ? false : first === null ? null : plv.some(q => (+q.red || 0) > 0) ? true
+    : !plv.length || plv.some(q => typeof q.red !== 'number') ? null : false;   // no list loaded yet, or a server without `red`
   return [{ k: 'cc', en: 'Claude Code connected', done: dx }, { k: 'proj', en: 'Project added', done: add },
     { k: 'pl', en: 'First pipeline', done: first }, { k: 'red', en: 'Gate red-checked', done: red }];
 }

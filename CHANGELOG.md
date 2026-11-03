@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Pipelines: the "Get started" checklist shows even when one project has an invalid pipeline file (it was hidden as "unknown").
+- Structure: edge labels in the architecture overview and focus view prefer spots clear of other edges' lines, so a label no longer reads as another edge's.
+- CLI: `sidereus status`/`stop` with `MAILBOX_DIR` set elsewhere no longer treat that instance as the installed service; a service without `--port` is read with its own data folder's port.
+- CLI: `sidereus redcheck --help` prints its own usage and exits 0.
+
 ## [0.14.0] - 2026-11-03
 
 **Highlights**

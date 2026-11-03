@@ -619,6 +619,18 @@ class ServicePort(CliBase):
         self.assertEqual(self.cli.service_port(), 9000)
         self.assertFalse(self.cli.svc_owns(8799))
 
+    def test_flagless_service_of_other_data_dir_uses_its_own_config(self):
+        other = os.path.join(self.tmp, "svcdata")
+        os.makedirs(other)
+        with open(self.plist, "w", encoding="utf-8") as f:
+            f.write(self.cli.build_plist(self.cli.mac_label(), 8799, other))
+        self.cli.save_port(8899)                                   # caller's data dir says 8899
+        self.assertEqual(self.cli.service_port(), 8799)           # service dir has no config: default port
+        self.assertFalse(self.cli.svc_owns(8899))
+        with open(os.path.join(other, "config.local.json"), "w", encoding="utf-8") as f:
+            json.dump({"port": 9100}, f)
+        self.assertEqual(self.cli.service_port(), 9100)
+
     def test_stop_other_port_kills_recorded_pid(self):
         self._pidfile(777, 18799)
         self.cli._sleep = lambda s: setattr(self, "up", False)
@@ -651,3 +663,15 @@ class ServicePort(CliBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RedcheckHelp(CliBase):
+    def test_help_is_own_usage_exit_0(self):
+        buf = io.StringIO()
+        with mock.patch("sys.stdout", new=buf):
+            self.assertEqual(self.cli.cmd_redcheck(["--help"]), 0)
+            self.assertEqual(self.cli.cmd_redcheck([]), 2)
+        out = buf.getvalue()
+        self.assertIn("usage: sidereus redcheck", out)
+        self.assertNotIn("seeds", out)
+        self.assertEqual(self.spawned, [])
