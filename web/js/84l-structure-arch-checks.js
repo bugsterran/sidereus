@@ -126,7 +126,7 @@ const ARCH_FIX_PL = 'security-fix', ARCH_FIX_KEYS = 50, ARCH_FIX_KEY_MAX = 300, 
 function archChkFixBody(p, c, items, home){
   const tools = items.map(x => String(x.tool || '?')).filter((t, i, a) => a.indexOf(t) === i).join(', '), cm = String((c && ((c.security && c.security.commit) || c.commit)) || '').slice(0, 8);
   const h = home ? String(home).replace(/\/+$/, '') + '/' : '', pl = 'security-fix';   // = ARCH_FIX_PL; literal: other tests extract this function alone
-  return '파이프라인 ' + pl + ' 실행 — 요청: «' + p + ' 보안 수정 ' + items.length + '건»\n'
+  return 'Pipeline ' + pl + ' run — request: «' + p + ': security fix, ' + items.length + ' finding' + (items.length === 1 ? '' : 's') + '»\n'
     + 'Target repository: ' + p + ' — work there (cd), not in your own cwd.\n'   // recipient may be a session of another repo (tier 1/2)
     + 'Pipeline: ' + h + '.claude/pipelines/' + pl + '.json (fix → re-scan → review); run it from ' + (h || 'the Sidereus repository') + ' with --repo ' + p + '\n'
     + 'Gate: python3 ' + h + 'scripts/arch_checks.py --verify --last --category security (Windows: py ' + h + 'scripts/arch_checks.py --verify --last --category security)\n'
@@ -157,7 +157,7 @@ function archChkRunCands(cands, home){ return (cands || []).filter(c => c && c.l
 // Pure: DM body (mailbox wire text in the archDmBody format, not UI); absolute paths under the Sidereus repo (home).
 function archChkRunBody(p, home, cx, img){   // cx = Codex recipient · img = «Include images» checked
   const h = home ? String(home).replace(/\/+$/, '') + '/' : '';
-  return '파이프라인 ' + ARCH_SEC_PL + ' 실행 — 요청: «' + p + ' 보안 점검»\n'
+  return 'Pipeline ' + ARCH_SEC_PL + ' run — request: «' + p + ': security check»\n'
     + 'Target repository: ' + p + '\n'
     + 'Pipeline: ' + h + '.claude/pipelines/' + ARCH_SEC_PL + '.json (scanners → threat-model review); run it from ' + (h || 'the Sidereus repository') + ' with --repo ' + p + '\n'
     + 'Gate: python3 ' + h + 'scripts/arch_checks.py --verify --last --category security (Windows: py ' + h + 'scripts/arch_checks.py --verify --last --category security)'

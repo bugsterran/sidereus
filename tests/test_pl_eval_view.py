@@ -73,7 +73,7 @@ class EvalApi(unittest.TestCase):
         self.assertEqual(b["graded"], {"n": 1, "m": 3, "unred": 0, "unstable": ["check"]})   # check is red-checked but flaky
         self.assertEqual(b["stages"], [
             {"title": "build", "catch": {"caught": 7, "n": 8}, "red": "pass", "unstable": False, "ci": {"lo": 53, "hi": 98},
-             "agree": None},
+             "agree": None, "why": "x"},
             {"title": "check", "catch": None, "red": "none", "unstable": True, "ci": None, "agree": {"k": 2, "n": 3}},   # unknown verdict -> none
             {"title": "review", "catch": None, "red": "none", "unstable": False, "ci": None, "agree": None}])
         self.assertEqual(self.calls, [("flow", self.proj)])
@@ -84,7 +84,7 @@ class EvalApi(unittest.TestCase):
         s = json.dumps(b)
         self.assertNotIn("secret-case", s)
         self.assertNotIn("case-17", s)
-        self.assertNotIn("why", s)
+        self.assertEqual([x.get("why") for x in b["stages"]], ["x", None, None])   # verdict reason only on a known verdict
         self.assertNotIn("secret_file", s)
         self.assertNotIn('"list"', s)
 
@@ -275,6 +275,15 @@ class Suggest(unittest.TestCase):
             {"code": "redcheck", "stage": "sec", "cmd": "cmd sec"},
             {"code": "add-review", "tpl": "review"}])
 
+    def test_skip_carries_why_and_redcheck(self):
+        # a skipped red check proves nothing: the row keeps the reason and the stage gets the copyable command
+        st = [{"title": "chk", "agent": "a-reviewer", "gate": "scripts/check.sh --fast"}]
+        self.assertEqual(self.sg(st, None, {"chk": "skip"}), [{"code": "redcheck", "stage": "chk", "cmd": "cmd chk"}])
+        b = self.v.body("flow", ["chk"], None, {"chk": {"verdict": "skip", "why": " no clean pass first "}}, None, "")
+        self.assertEqual((b["stages"][0]["red"], b["stages"][0]["why"]), ("skip", "no clean pass first"))
+        b = self.v.body("flow", ["chk"], None, {"chk": {"verdict": "skip", "why": ""}}, None, "")
+        self.assertNotIn("why", b["stages"][0])
+
     def test_sast_add_gate(self):
         ev = {"stages": [{"title": "impl", "n": 1, "caught": 0}]}
         self.assertEqual(self.sg([{"title": "impl", "agent": "dev"}], ev, kinds={"impl": ["sast"]}),
@@ -285,7 +294,7 @@ class Suggest(unittest.TestCase):
         self.assertEqual(self.sg(st, None, None), [])                        # core absent: no red rules
         self.assertEqual(self.sg(st, None, {"chk": "pass"}), [])
         ev = {"stages": [], "holdout": {"n": 2, "caught": 1}}
-        self.assertEqual(self.sg(st, ev, {"chk": "skip"}), [])                # a review agent exists
+        self.assertEqual(self.sg(st, ev, {"chk": "pass"}), [])                # a review agent exists
         self.assertEqual(self.sg([{"title": "단위 테스트", "agent": "x"}], ev, {}), [])   # a test catalog stage exists
 
     def test_cmd_quoted(self):
@@ -323,6 +332,13 @@ class SuggestUi(unittest.TestCase):
         ko = _node("console.log(JSON.stringify(plEvalPanel(%s)));" % json.dumps(SG_EV), lang="ko")
         self.assertIn("red 확인 필요", ko)
         self.assertIn("직접 고치기", ko)
+
+    def test_skip_why_tooltip(self):
+        ev = dict(EV, stages=[{"title": "y", "catch": None, "red": "skip", "unstable": False, "why": "gate <b>failed</b> clean"}],
+                  sugg=[{"code": "redcheck", "stage": "y", "cmd": "c"}])
+        r = _node("console.log(JSON.stringify(plEvalPanel(%s)));" % json.dumps(ev))
+        self.assertIn('<span class=plerv title="gate &lt;b>failed&lt;/b> clean">skip</span>', r)   # reason escaped, verdict kept
+        self.assertIn("red check needed", r)   # skip still offers the command
 
     def test_preview_and_body(self):
         r = _node("const S = {sel: {0: 1}, req: {sid: 's<1>', body: plEvalFixBody('/p', 'flow', [%s])}, sent: '', msg: ''};"

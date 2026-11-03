@@ -12,7 +12,7 @@
 .archmap{--archtop-h:96px;scroll-padding-top:var(--archtop-h)}   /* ⚠focus scroll ignores sticky .archtop (one row = 87px at 900/1100/1440): without this, Tab lands on «Source text» hidden under it */
 .archdg .mmd{width:max-content;min-width:100%;box-sizing:border-box}
 .archdg .mmdtg{position:sticky;right:10px}   /* «Source text» stays at the visible right edge of the wider box */
-/* ⚠Focus view: the «Source text» row floats over the band's top-right corner — a row of its own (25px) cut the hub off the first screen at 900 */
+/* Focus view bar: 79d-structure-arch-zoom.css gives it a row of its own again (the zoom group floating here covered the first band at 900/1100) */
 .archdg[data-fv] .mmdbar{position:relative;z-index:1;height:0;padding:0 6px;overflow:visible;align-items:flex-start}
 .archdg[data-fv] .mmdtg{margin-top:6px;background:var(--mmd-bg)}
 .archside{min-width:0;display:flex;flex-direction:column;border:1px solid var(--nx-rule,#2a3442);border-radius:8px;background:var(--nx-panel,#141a23);overflow:hidden}

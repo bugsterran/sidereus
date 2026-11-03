@@ -233,10 +233,9 @@ class TestCards(Base):
         # humanAt 0 proves «no reply» only when the parsed tail reaches back to the card
         at = int(NOW - 120)
         c = {"kind": "ask", "cwd": "/w/p", "sid": "a", "project": "p", "at": iso(at)}
-        self.assertIsNone(self.one(sess("a", state="tool", humanAt=0, tailAt=at + 600), [c]))   # reply fell out of the tail
         self.assertEqual(self.kinds(sess("a", state="tool", humanAt=0), [c]), ["ask"])          # tail start unknown: hold
-        # tail unknown (0) or covering the card with no human line: a real unanswered question stays
-        for ta in (0, at, at - 600):
+        # no human line found is never «replied», whatever the tail covers (parse.py looks past the tail for one)
+        for ta in (0, at, at - 600, at + 600):
             self.assertEqual(self.kinds(sess("a", state="tool", humanAt=0, tailAt=ta), [c]), ["ask"])
 
     def test_ask_card_cleared(self):

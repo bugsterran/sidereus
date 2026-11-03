@@ -23,11 +23,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Header: the "CLI hooks not connected" chip shows the platforms as logos.
 - Pipelines: a running stage done by the orchestrator (no agents) shows its elapsed time on the canvas chip.
 - Pipelines: the Run button's tooltip says it opens a run request that the chosen session executes; Sidereus runs nothing.
+- Pipelines: "Run" opens a side layer that hangs right under its button instead of a block under the canvas; the canvas does not move.
 - Pipelines: the bundled refactor, docs and release pipelines gate every stage a command can grade (file-editing stages run `check.sh --fast`, verify stages `--full`, CI stages watch their exact commit).
 - Pipelines: recommended setup picks pytest only when the project configures it (pytest.ini, conftest.py, pyproject, setup.cfg or tox.ini); a `tests/` folder alone leaves the gate for you to fill.
 
 ### Fixed
 
+- Attention: an unanswered "Question waiting" card no longer drops when long unattended work pushes the question out of the parsed transcript tail; only a real reply after it clears the card.
+- Pipelines: a skipped red check shows its reason on hover and offers the red-check command.
+- Pipelines: run requests composed by Sidereus (Pipelines "Run", architecture map, security checks) are English; stage titles stay as written.
+- Structure: in the architecture map focus view the zoom bar has its own row and no longer covers the diagram at 1100 and 900.
+- Sessions: a background job resumed with `claude -r <id>` or from a path with spaces retires its pre-/clear row.
 - Pipelines: a red check result is kept per repository. The same gate text in another repository (`npm test`) no longer marks that repository's gate as red-checked or overwrites its result.
 - Plugin: version 0.6.0, so `claude plugin update` brings the hook and MCP fixes made since Sidereus 0.13.0 (Claude Code caches a plugin per version).
 - Pipelines «Start with recommended setup»: the preview lists file names instead of «[object Object]», an empty test command saves without a gate (projects with no detected command could not save at all), a preview error keeps the form editable, and the saved message names the written files.

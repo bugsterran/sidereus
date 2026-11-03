@@ -152,7 +152,7 @@ def suggest(stages, ev, red, unstable, kinds, templates, cmd_of):
                         "tpl": tpl_for_mode(mode, templates)})
         if t in unstable:                                    # (c) passed and failed on the same commit
             out.append({"code": "unstable", "stage": t, "mode": mode})
-        if red is not None and v not in ("pass", "fail", "skip"):   # (e) never red-checked, or the gate text changed
+        if red is not None and v not in ("pass", "fail"):   # (e) never red-checked, gate text changed, or skipped (= not proven)
             out.append({"code": "redcheck", "stage": t, "cmd": cmd_of(t)})
     h = (ev or {}).get("holdout") if isinstance((ev or {}).get("holdout"), dict) else {}
     if _int(h.get("n")) > _int(h.get("caught")) and not any(_is_review(s, templates) for s in stages):   # (d)
@@ -238,11 +238,15 @@ def body(name, titles, ev, red, graded, commit, sugg=None, agree=None, sec=None,
     un = set(g["unstable"]) if g else set()
     stages = []
     for t in titles[:EV_STAGES_MAX]:
-        v = ((red or {}).get(t) or {}).get("verdict") if isinstance((red or {}).get(t), dict) else None
+        e = (red or {}).get(t) if isinstance((red or {}).get(t), dict) else {}
+        v, why = e.get("verdict"), e.get("why")
         c = by.get(t)
-        stages.append({"title": _title(t), "catch": c, "red": v if v in EV_VERDICTS else "none", "unstable": t in un,
-                       "ci": wilson(min(c["caught"], c["n"]), c["n"]) if c else None,
-                       "agree": _agree((agree or {}).get(t)) if isinstance(agree, dict) else None})
+        row = {"title": _title(t), "catch": c, "red": v if v in EV_VERDICTS else "none", "unstable": t in un,
+               "ci": wilson(min(c["caught"], c["n"]), c["n"]) if c else None,
+               "agree": _agree((agree or {}).get(t)) if isinstance(agree, dict) else None}
+        if row["red"] != "none" and isinstance(why, str) and why.strip():
+            row["why"] = why.strip()[:300]   # reason behind the verdict (e.g. why a red check skipped); only when present
+        stages.append(row)
     ho = _counts((ev or {}).get("holdout"), "n", "caught") if isinstance(ev, dict) else None
     ho = dict(ho, ci=wilson(min(ho["caught"], ho["n"]), ho["n"])) if ho and ho["n"] else None   # pl_eval fills an absent holdout with zeros
     return {"ok": True, "name": name, "graded": g, "stages": stages, "holdout": ho, "commit": commit[:12] if commit else "",

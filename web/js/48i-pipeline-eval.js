@@ -116,7 +116,8 @@ function plEvalPanel(ev){
   const rows = st.map(s => {
     const c = s.catch, r = PLE_RED[s.red], cmd = need[s.title];
     const cc = !c || !c.n ? '' : c.caught >= c.n ? ' class=plec-all' : c.caught > 0 ? ' class=plec-part' : ' class=plec-none';   // catch colour: all / some / none
-    return '<tr><td>' + esc(typeof plgShow === 'function' ? plgShow(s.title) : s.title) + '</td><td' + cc + '>' + (c ? esc(c.caught + '/' + c.n) + plEvalCi(s.ci) : '–') + '</td><td class="pler' + (r ? ' pler-' + r : '') + '">' + (cmd != null ? '<button type=button class=plerneed data-plecp="' + esc(cmd) + '" title="' + esc(plEvalRedHelp() + '\n' + cmd) + '">' + esc(T('red check needed')) + '</button>' + (rq ? plRedReqBtn(s.title, cands) : '') : r ? '<span class=plerv>' + esc(T(r, 'redcheck')) + '</span>' : '–') + '</td><td>'
+    const rv = r ? '<span class=plerv' + (typeof s.why === 'string' && s.why ? ' title="' + esc(s.why) + '"' : '') + '>' + esc(T(r, 'redcheck')) + '</span>' : '';   // why = recorded reason, never through T()
+    return '<tr><td>' + esc(typeof plgShow === 'function' ? plgShow(s.title) : s.title) + '</td><td' + cc + '>' + (c ? esc(c.caught + '/' + c.n) + plEvalCi(s.ci) : '–') + '</td><td class="pler' + (r ? ' pler-' + r : '') + '">' + (cmd != null ? rv + '<button type=button class=plerneed data-plecp="' + esc(cmd) + '" title="' + esc(plEvalRedHelp() + '\n' + cmd) + '">' + esc(T('red check needed')) + '</button>' + (rq ? plRedReqBtn(s.title, cands) : '') : rv || '–') + '</td><td>'
       + plEvalAgree(s.agree) + (s.unstable ? '<span class=pleun>' + esc(T('unstable')) + '</span>' : '') + '</td></tr>';
   }).join('');
   const h = ev.holdout;

@@ -123,7 +123,7 @@ class ParseAndState(Patch):
         self.assertTrue(att._ask_open(dict(row, humanAt=p2["humanAt"]), {"sid": "s1"}, card))
 
     def test_human_line_beyond_tail_window(self):
-        # A human reply >400 KB from the end falls outside the tail: humanAt 0, tailAt after that reply.
+        # A human reply >400 KB from the end falls outside the tail: the scan past the tail still finds it.
         import os, tempfile
         def rec(ts, typ, content):
             return json.dumps({"type": typ, "sessionId": "s1", "cwd": CWD, "timestamp": ts,
@@ -140,8 +140,18 @@ class ParseAndState(Patch):
         self.patch(parse, "_cwd_from_slug", lambda s: CWD)
         p = parse._parse_transcript(fp)
         reply = int(parse._line_ts(json.loads(lines[0]), 0))
-        self.assertEqual(p["humanAt"], 0)
+        self.assertEqual(p["humanAt"], reply)
         self.assertGreater(p["tailAt"], reply)
+        row = {"sid": "s1", "state": "think", "humanAt": p["humanAt"], "tailAt": p["tailAt"]}
+        self.assertFalse(att._ask_open(row, {"sid": "s1"}, reply - 30))          # replied after the question: clears
+        self.assertTrue(att._ask_open(row, {"sid": "s1"}, reply + 30))           # asked after that line: holds
+        # appended wake-ups (no human) keep the memoised answer; a new prompt past the cap is found again
+        with open(fp, "a", encoding="utf-8") as f:
+            f.write(rec("2026-09-24T01:00:00.000Z", "user", "<task-notification>x</task-notification>") + "\n")
+        self.assertEqual(parse._parse_transcript(fp)["humanAt"], reply)
+        self.patch(parse, "_HUMAN_SCAN", 1000)
+        parse._HUMAN_SEEN.pop(fp, None)
+        self.assertEqual(parse._parse_transcript(fp)["humanAt"], 0)              # beyond the cap: unknown, holds
 
     def test_question_text_beside_bash_stays_tool(self):
         # a '?' in text sets `ask`, but the pending tool is Bash — it is running, not waiting on the user
