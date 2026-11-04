@@ -391,7 +391,8 @@ function attnTitle(){ if(!ISPOP && !ISWP && !ISBP) document.title = titleOf(attn
       setTimeout(redraw, 150);
     };
     if(act === 'work'){ openSession(cwd, 'sess:' + cwd + '|' + sid); attnSeen(rowOf()); if(!row.getAttribute('data-akey')) redraw(); return dismiss(); }
-    if(act === 'seen'){ attnSeen(rowOf()); return redraw(); }
+    // Handling a row (Done / Seen) closes the Sessions drawer too: the person came for that row. A pinned column stays (sesdrOpen no-ops).
+    if(act === 'seen'){ attnSeen(rowOf()); redraw(); return sesdrOpen(false, false); }
     if(act === 'diff'){ loadDiff(cwd); return dismiss(); }
     // ★2026-09-27 «Copy resume command» looked dead: the row vanished at once, toast far away. ⚠Do not dismiss on rz: the row is needed until resumed.
     if(act === 'rz'){
@@ -401,7 +402,7 @@ function attnTitle(){ if(!ISPOP && !ISWP && !ISBP) document.title = titleOf(attn
       return;
     }
     if(act === 'rzx'){ CPFB.box = ''; return redraw(); }
-    if(act === 'done') return dismiss();
+    if(act === 'done'){ dismiss(); return sesdrOpen(false, false); }
     if(act === 'rp'){
       if(attnRp.id === id){ attnRpClose(); return redraw(); }
       const to = attnRpTo(attnSess(rowOf() || {sid, cwd})).id;
