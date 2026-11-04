@@ -76,7 +76,7 @@ flowchart LR
 ### 개요 (arch-brief)
 
 `.claude/pipelines/arch-brief.json`: 준비 → 개요 그리기 → 검증. 같은 커밋의 arch-map 결과 위에서 돈다. 결과가 없으면 준비 단계에서 멈추고 arch-map 을 먼저 돌리라고 알린다.
-에이전트가 `brief.json` 을 쓴다(도메인별로 묶은 상자 12개 이하를 띠에 배치 + 결정 순서: 요청이 어느 도메인으로 가는지). `scripts/arch_brief.py --last` 는 모르는 id, 두 상자에 들어간 모듈, 상자 사이에 검증된 map 연결이 없는 화살표, 커밋에 없는 경로 `file:line` 이 있으면 실패하고, 통과하면 `map.json` 옆에 `brief.html`(두 섹션, 파일 하나로 완결)을 쓴다. 뷰어에는 표시하지 않는다.
+에이전트가 `brief.json` 을 쓴다(도메인별로 묶은 상자 12개 이하를 띠에 배치 + 결정 순서: 요청이 어느 도메인으로 가는지). `scripts/arch_brief.py --last` 는 모르는 id, 두 상자에 들어간 모듈, 상자 사이에 검증된 map 연결이 없는 화살표, 커밋에 없는 경로 `file:line` 이 있으면 실패하고, 통과하면 `map.json` 옆에 `brief.html`(두 섹션, 파일 하나로 완결)을 쓴다. 뷰어: «HTML 추출 › 심플»이 이것을 열거나(HEAD 커밋만) 실행을 요청하고, «HTML 추출 › 상세»는 모듈 구조도를 내려받는다.
 
 ### 검증 규칙
 

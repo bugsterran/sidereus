@@ -3,7 +3,7 @@
 // ⚠Evidence is file:line:symbol only (metadata); code opens on click through the existing popup (81 strPopOpenRel).
 // ⚠The request button never sends by itself: preview → a person presses confirm → /api/dm relay (AGENTS.md rule 7).
 const ARCH_PL = 'arch-map';
-const ARCH = { cache: {}, load: {}, op: '', req: null, msg: '', sel: null, tests: false, full: false, svg: {}, sent: null, flow: null, pstop: null, scope: null, lit: null, nx: {}, ifx: null, et: {}, dvf: '' };   // dvf = project path while the deviation filter is on, '' off · et = «Connections» tree folds, key p\tn | p\tother, true = open (84j6) · ifx = {p, id} focus view with infrastructure unfolded (84j4) · scope = {p, layer, group} lit path level · lit = {p, flow, fs?} lit flow(s) · nx = folded neighbour branches (84j3)   // svg = archKey → rendered diagram; flow = {p, id} picked flow (84k)   // op = «path\tedge index» of the open evidence list; sel = {p, id} focused module
+const ARCH = { cache: {}, load: {}, op: '', req: null, msg: '', sel: null, tests: false, full: false, svg: {}, sent: null, flow: null, pstop: null, breq: null, xm: '', scope: null, lit: null, nx: {}, ifx: null, et: {}, dvf: '' };   // dvf = project path while the deviation filter is on, '' off · et = «Connections» tree folds, key p\tn | p\tother, true = open (84j6) · ifx = {p, id} focus view with infrastructure unfolded (84j4) · scope = {p, layer, group} lit path level · lit = {p, flow, fs?} lit flow(s) · nx = folded neighbour branches (84j3)   // svg = archKey → rendered diagram; flow = {p, id} picked flow (84k)   // op = «path\tedge index» of the open evidence list; sel = {p, id} focused module
 const ARCH_DIR = 'TB';   // ★live map, 17 modules · 46 pairs: TB 917x1146px, 85 crossings · LR 2870x328px, 88 crossings
 
 // Fetch through fetch(), not getJSON: an allow-list refusal is a non-2xx whose JSON message must reach the screen.
@@ -64,7 +64,7 @@ function archHeadNote(d, on){
     + strHdBadge('n', T('Edges verified {n}/{m} ({k}%)').replace('{n}', r.n).replace('{m}', r.m).replace('{k}', r.pct), T('Module connections whose evidence was checked in the code / all connections drawn'))
     + s.ev + strHdBadge('', T('{n} modules').replace('{n}', ((d && d.modules) || []).length)) + (d && d.stale ? '' : gen) + archProvNote(d && d.prov)
     + (s.est ? s.sty : '') + s.dev + (d && d.stale ? gen : '')
-    + (typeof archChkHdBtn === 'function' ? archChkHdBtn(d) : '') + (typeof archBriefHtml === 'function' ? archBriefHtml(d, typeof strOn !== 'undefined' ? strOn[0] : '') : '');   // 84l: issues badge (red/amber), or «Security check» when the project has no results yet · 84m: «Overview» link for the shown project (= archPaint p)
+    + (typeof archChkHdBtn === 'function' ? archChkHdBtn(d) : '');   // 84l: issues badge (red/amber), or «Security check» when the project has no results yet (the overview link lives in 84m «Export HTML»)
 }
 // Pure: «drawn by» badge from server `prov` (platform logo + model; per-stage models when they differ).
 // ⚠aiLogo falls back to the Claude mark for unknown codes — only call it when AILG has the code. Stage titles are stored data: esc, never T().
@@ -125,16 +125,16 @@ function archDevListHtml(edges, names, p, devAt, sn, op){
 // Pure: DM body the person previews; names the pipeline and the target repo, read-only by contract.
 // Mailbox wire text in the same format as 48b pipeline run requests, not UI.
 // ⚠Absolute paths under the Sidereus repo (home): the recipient may run in another repo, where relative ones miss.
-function archDmBody(name, repo, home, verb, cx){   // verb = archReqOf(d).vb (wire text, default generate) · cx = Codex recipient
+function archDmBody(name, repo, home, verb, cx, o){   // verb = archReqOf(d).vb (wire text, default generate) · cx = Codex recipient · o = {head(h), reread}: another pipeline's lines (84m), shared tail
   const h = home ? String(home).replace(/\/+$/, '') + '/' : '';
-  return 'Pipeline ' + name + ' run — request: «' + repo + ': ' + (verb || 'generate') + ' architecture diagram»\n'
+  return (o ? o.head(h) : 'Pipeline ' + name + ' run — request: «' + repo + ': ' + (verb || 'generate') + ' architecture diagram»\n'
     + 'Target repository: ' + repo + '\n'
     + 'Read-only: never write to the repository — write only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ (key: pipeline rules)\n'
     + 'Pipeline: ' + h + '.claude/pipelines/' + name + '.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n'   // stage titles verbatim: [pl:] tags match them
-    + 'Gate: python3 ' + h + 'scripts/arch_verify.py --last (Windows: py ' + h + 'scripts/arch_verify.py --last)'   // ⚠page has no server-OS signal: both forms
+    + 'Gate: python3 ' + h + 'scripts/arch_verify.py --last (Windows: py ' + h + 'scripts/arch_verify.py --last)')   // ⚠page has no server-OS signal: both forms
     // ⚠No Agent tool there: stages are lit by a leading shell marker (hooks/pl_mark.py --platform codex MARK).
     + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + name + '/<stage title>]" and end it with echo "[pl-end:' + name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
-      + ' At each stage start re-read only the files the previous stage wrote (for arch-map: plan.json, then map.json, then flows.json); do not rely on earlier stage context.'   // ⚠one Codex context holds every stage: stale earlier reads leak into later stages
+      + ' At each stage start re-read only the files the previous stage wrote (' + (o ? 'for ' + name + ': ' + o.reread : 'for arch-map: plan.json, then map.json, then flows.json') + '); do not rely on earlier stage context.'   // ⚠one Codex context holds every stage: stale earlier reads leak into later stages
       + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.'
       // ⚠A Claude recipient in another repo tagged every dispatch [pl:-] and no run was recorded: name the tag.
       : '\nTag each stage dispatch description with [pl:' + name + '/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.');   // ⚠Codex ended its turn after each stage and waited for a new prompt
@@ -470,20 +470,20 @@ function archPaint(box, head){
   archFetch(p, false);
   const d = ARCH.cache[p], home = archHome(d), cands = archCands(home, SESS, p);
   archSentFin(p, d);
-  if(ARCH.req && ARCH.req.p !== p) ARCH.req = null;
+  if(ARCH.req && ARCH.req.p !== p) ARCH.req = null; if(typeof archXFix === 'function') archXFix(p, cands);   // 84m: export menu / brief preview follow the shown project
   const run = archRunOf(p);
   if(run && !ARCH.rsig) ARCH.rsig = [p, run.stage, run.n, run.sid].join('\t');   // first paint: a run ending before archTick's first look still refetches
   if(run) ARCH.req = null;   // ⚠one run per project: a live run closes the preview so no second request goes out
   if(ARCH.req && !cands.some(c => c.sid === ARCH.req.sid) && cands.length) ARCH.req.sid = cands[0].sid;
   const fz = ARCH.sel && ARCH.sel.p === p ? archFitOf(box) : null, fzk = fz ? fz.w + 'x' + fz.h : '';   // focus room (resize repaints on change)
   // Poll repaints on every session change: same response + same view state keeps the drawing (no flicker, select keeps focus).
-  const sig = [p, LANG, ARCH.op, JSON.stringify(ARCH.req), ARCH.msg, archSentPh(p), run ? [run.stage, run.n, run.sid].join('/') : '', JSON.stringify(ARCH.sel), JSON.stringify(ARCH.flow || null), JSON.stringify([ARCH.scope, ARCH.lit, ARCH.nx, ARCH.ifx, ARCH.et, ARCH.dvf]), ARCH.tests, ARCH.full, fzk, typeof archReqSig === 'function' ? archReqSig(p) : '', cands.map(c => c.sid + (c.login ? '+' : '')).join(',')].join('\t');
+  const sig = [p, LANG, ARCH.op, JSON.stringify(ARCH.req), typeof archXSig === 'function' ? archXSig(p) : '', ARCH.msg, archSentPh(p), run ? [run.stage, run.n, run.sid].join('/') : '', JSON.stringify(ARCH.sel), JSON.stringify(ARCH.flow || null), JSON.stringify([ARCH.scope, ARCH.lit, ARCH.nx, ARCH.ifx, ARCH.et, ARCH.dvf]), ARCH.tests, ARCH.full, fzk, typeof archReqSig === 'function' ? archReqSig(p) : '', cands.map(c => c.sid + (c.login ? '+' : '')).join(',')].join('\t');
   if(d && box._arj === d && box._arsig === sig && box.querySelector('.archtab')) return;
   box._arj = d; box._arsig = sig;
   const msg = ARCH.msg ? '<div class=archmsg role=status>' + esc(ARCH.msg) + '</div>' : '';
   if(!d){ box.innerHTML = '<div class="strtab archtab">' + head(esc(T('Loading…'))) + '' + archWaitHtml() + '</div>'; return; }
   const req = archReqHtml(ARCH.req, p, home, cands, ARCH.req && ARCH.req.busy, d);
-  const pre = archReqBtn(p, home, cands, d), pre0 = pre + (typeof archChkEntry === 'function' ? archChkEntry(d) : '');   // no-map states: security check entry too (84l)
+  const pre = archReqBtn(p, home, cands, d) + (typeof archXBtn === 'function' ? archXBtn(d, p) : ''), pre0 = pre + (typeof archChkEntry === 'function' ? archChkEntry(d) : '');   // no-map states: security check entry too (84l)
   if(!d.ok){   // allow-list refusal and other server errors: the server's own words
     box.innerHTML = '<div class="strtab archtab">' + head('', '', d.empty ? pre0 : '') + '<div class="tlhd cwerr">' + esc(d.msg ? TV(d) : T(String(d.error || '?'))) + '</div>'
       + (d.empty ? '<div class=archempty>' + archStatusHtml(p, req) + '</div>' : '') + msg + '</div>';
@@ -505,7 +505,7 @@ function archPaint(box, head){
   // (a separate chip widened the controls and wrapped the header badges onto many lines at 900-1440px).
   const prow = typeof archReqLast === 'function' ? archReqLast(p, ARCH_PL) : null;   // request record (84l2): a live one takes the header line's place
   const hst = (prow && archReqLive(prow) ? '' : run ? archRunHtml(run) : d.stale ? archSentHtml(p) : '');
-  const rq0 = req || (!d.stale && !run ? archSentHtml(p) : ''), rq = prow ? archReqSlot(p, ARCH_PL, rq0, req) : rq0;   // map preview / sent line under the header
+  const rq0 = req || (!d.stale && !run ? archSentHtml(p) : ''), rq = (prow ? archReqSlot(p, ARCH_PL, rq0, req) : rq0) + (typeof archBriefSlot === 'function' ? archBriefSlot(p, home, cands) : '');   // map preview / sent line under the header · 84m arch-brief preview / row
   // Selection survives poll repaints; a module gone from a rebuilt map falls back to the overview.
   const si = ARCH.sel && ARCH.sel.p === p ? mods.findIndex(m => m && m.id === ARCH.sel.id) : -1, sel = si >= 0 ? mods[si].id : '';
   const tests = ARCH.tests || (si >= 0 && archIsTest(mods[si]));   // a focused test module shows its own edges
@@ -627,7 +627,7 @@ document.addEventListener('click', ev => {
   if(t.closest('[data-arq]')){ const c = archCands(archHome(ARCH.cache[p]), SESS, p); ARCH.msg = '';
     if(archRunOf(p) || archSentPh(p) || (typeof archReqBusy === 'function' && archReqBusy(p, ARCH_PL))) return;
     if(ARCH.req && ARCH.req.p === p){ if(!ARCH.req.busy) ARCH.req = null; }   // second press closes the preview
-    else ARCH.req = { p, sid: (c[0] || {}).sid || '', busy: false };
+    else { ARCH.req = { p, sid: (c[0] || {}).sid || '', busy: false }; ARCH.breq = null; ARCH.xm = ''; }   // one preview at a time (84m breq)
     const hadF = document.activeElement === t.closest('[data-arq]');   // ⚠the repaint drops focus to <body>
     paintStruct();
     if(hadF) kbHold('.archtab [data-arq]');

@@ -76,7 +76,7 @@ The plan names an architecture style (layered, hexagonal, …). Edges that break
 ### Overview (arch-brief)
 
 `.claude/pipelines/arch-brief.json`: Prepare → Draw overview → Verify. Runs on a finished arch-map result of the same commit; without one, Prepare stops and says to run arch-map first.
-The agent writes `brief.json` (≤12 boxes grouped by domain, in bands, plus the decision order: how a request is routed to a domain). `scripts/arch_brief.py --last` fails on unknown ids, a module in two boxes, an arrow without a verified map edge between its boxes, or a route `file:line` missing at the commit; on pass it writes `brief.html` (two sections, one self-contained file) next to `map.json`. Not shown in the viewer.
+The agent writes `brief.json` (≤12 boxes grouped by domain, in bands, plus the decision order: how a request is routed to a domain). `scripts/arch_brief.py --last` fails on unknown ids, a module in two boxes, an arrow without a verified map edge between its boxes, or a route `file:line` missing at the commit; on pass it writes `brief.html` (two sections, one self-contained file) next to `map.json`. Viewer: «Export HTML › Simple» opens it (HEAD commit only) or requests the run; «Export HTML › Detailed» downloads the module map.
 
 ### Check rules
 

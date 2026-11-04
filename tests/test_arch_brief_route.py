@@ -176,7 +176,9 @@ class BriefRuns(Base):
         st = __import__("tests._load", fromlist=["sidereus"]).sidereus("state")
         self.assertIs(st.brief_runs, AM.brief_runs)
         import inspect
-        self.assertIn('"briefRun": _piece("briefRun", brief_runs', inspect.getsource(st))
+        src = inspect.getsource(st)   # built once as _brun: plReq reuses it for the arch-brief request row
+        self.assertIn('_brun = _piece("briefRun", brief_runs', src)
+        self.assertIn('"briefRun": _brun', src)
 
 
 class _Stub(RS._StructRoutes):

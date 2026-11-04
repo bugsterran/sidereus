@@ -201,6 +201,7 @@ def state(since=0, ncards=50, acks_v=""):
     _usg, _who = _piece("used5", _used5_one, (_usg, _who), _usg, _who)   # one 5h «used» figure on every surface
     _arun = _piece("archRun", arch_runs, {}, _sessions)
     _srun = _piece("secRun", sec_runs, {}, _sessions)
+    _brun = _piece("briefRun", brief_runs, {}, _sessions)
     out = {
         "presence": _presence,
         "acks": _acks,
@@ -220,8 +221,8 @@ def state(since=0, ncards=50, acks_v=""):
         "todo": _piece("todo", todo_counts, {}, _sessions) if feature_on("todo") else {},   # {cwd: {o, w, d}} from the DATA_DIR/todo store, counts only
         "archRun": _arun,   # arch-map runs in progress per project (sidereus/arch_map.py)
         "secRun": _srun,   # security-checks runs in progress per project (same shape)
-        "briefRun": _piece("briefRun", brief_runs, {}, _sessions),   # arch-brief runs (same shape); its end re-fetches /api/arch (84m)
-        "plReq": _piece("plReq", pl_reqs_view, {}, _sessions, _arun, _srun),   # sent run requests + receiver state (sidereus/pl_reqs.py)
+        "briefRun": _brun,   # arch-brief runs (same shape); its end re-fetches /api/arch (84m)
+        "plReq": _piece("plReq", lambda: pl_reqs_view(_sessions, _arun, _srun, brief_run=_brun), {}),   # sent run requests + receiver state (sidereus/pl_reqs.py)
         "wtOrder": _piece("wtOrder", wt_orders, {}, _sessions, _attn),   # Branches tab card order per repo — server is the only sorter
         "build": PAGE_BUILD,      # ★if an open tab holds old JS the screen does not render (measured 2026-08-19)
         "usage": _usg,

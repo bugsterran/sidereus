@@ -1,4 +1,4 @@
-"""Pipeline run requests the page sent (arch-map diagram, security-checks, security-fix), plain DMs (checks-fix, eval-fix, redcheck) and «Stop» instructions.
+"""Pipeline run requests the page sent (arch-map diagram, arch-brief overview, security-checks, security-fix), plain DMs (checks-fix, eval-fix, redcheck) and «Stop» instructions.
 
 DATA_DIR/plreq.json {"v": 1, "reqs": [{id, repo, pipeline, sid, to, mid, at, name? (eval-fix, redcheck), stage? (redcheck), keys? + closed? (security-fix),
 stop?: {mid, at}}]} keeps who received a
@@ -20,7 +20,7 @@ from sidereus.pl_runs import RENAMED   # core copy; pipeline_schema is feature-o
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
-PIPELINES = ("arch-map", "security-checks", "security-fix", "checks-fix", "eval-fix", "redcheck")   # checks-fix: old plain records stay readable
+PIPELINES = ("arch-map", "arch-brief", "security-checks", "security-fix", "checks-fix", "eval-fix", "redcheck")   # checks-fix: old plain records stay readable · arch-brief ends on brief.ok.json (arch_map.result_at)
 PLAIN = ("checks-fix", "eval-fix", "redcheck")   # redcheck = «Request a red check» DM (the session runs it; the viewer never does) · a plain fix DM: sent/gone only, no run tracking, no stop marker (exclude-list: _state also gets other pipeline names)
 RUNS = tuple(p for p in PIPELINES if p not in PLAIN)
 REQ_MAX = 50              # records kept, newest
@@ -370,7 +370,7 @@ def _fix_commit(repo, at, now):
     return h
 
 
-def view(sessions, arch_run, sec_run=None, now=None):
+def view(sessions, arch_run, sec_run=None, now=None, brief_run=None):
     """`/api/state` `plReq`: {repo: [{id, pipeline, sid, to, project, state, stage, at, stopAt?, name?, keys?, reviewOk?, fix?}]} newest first
     (redcheck: `stage` = the requested stage title)."""
     now = _now() if now is None else now
@@ -380,7 +380,8 @@ def view(sessions, arch_run, sec_run=None, now=None):
     for s in sessions or ():
         if isinstance(s, dict) and isinstance(s.get("sid"), str) and s["sid"]:
             rows.setdefault(s["sid"], s)
-    runs = {"arch-map": arch_run if isinstance(arch_run, dict) else {}, "security-checks": sec_run if isinstance(sec_run, dict) else {}}
+    runs = {"arch-map": arch_run if isinstance(arch_run, dict) else {}, "security-checks": sec_run if isinstance(sec_run, dict) else {},
+            "arch-brief": brief_run if isinstance(brief_run, dict) else {}}
     out, newer, closing = {}, {}, set()
     for r in recs:   # newest first: newer[(sid, pipeline)] = `at` of the request after this one
         k = (r["sid"], r["pipeline"])
