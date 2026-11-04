@@ -161,12 +161,15 @@ if __name__ == "__main__":
 
 
 class HandledRowClosesDrawer(unittest.TestCase):
-    """«Done» / «Seen» on an Attention row also close the Sessions drawer (a pinned column stays: sesdrOpen no-ops)."""
+    """«Done» / «Seen» close the Sessions drawer only when an Attention chip opened it (a pinned column stays: sesdrOpen no-ops)."""
 
     def test_done_and_seen_close_drawer(self):
         src = js_all()
         for act in ("done", "seen"):
             m = re.search(r"if\(act === '" + act + r"'\)\{[^\n]*\}", src)
             self.assertIsNotNone(m, act)
-            self.assertIn("sesdrOpen(false, false)", m.group(0), act)
+            self.assertIn("if(sesdrAttn) sesdrOpen(false, false)", m.group(0), act)
+        # only the Attention chip paths mark the opener; «Sessions» and other jumps do not
+        self.assertEqual(len(re.findall(r"sesdrReveal\(true\)", src)), 2)
+        self.assertIn("sesdrAttn = false;", src)
         self.assertRegex(src, r"function sesdrOpen\(open, focus\)\{\n  if\(SESPIN")

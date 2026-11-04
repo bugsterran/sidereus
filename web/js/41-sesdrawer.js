@@ -32,18 +32,21 @@ function sesdrOpen(open, focus){
   if(open && !SESOPEN){   // remember the opener (top chip, attention row…) so closing returns focus there, not to #sesb (★ 2026-09-27 interaction audit)
     const ae = document.activeElement;
     sesdrFrom = ae && ae !== document.body && !(d && d.contains(ae)) ? ae : null;
+    sesdrAttn = false;   // sesdrReveal(attn) sets it again when an Attention chip opened the drawer
   }
   SESOPEN = !!open; sesdrSave(); sesdrApply();
   if(SESOPEN){ if(focus && d) d.focus({preventScroll: true}); return; }
   // ⚠the hidden list would stay frozen by the hover guard (40-sessions.js) until the next mouseover
   if(sessHover){ sessHover = false; if(sessDirty){ sessDirty = false; buildSessions(); } }
-  const back = sesdrFrom && sesdrFrom.isConnected ? sesdrFrom : btn;
+  // ⚠Visible too: an opener pill in the collapsed rail is connected but 0 wide, focus() fails and focus fell to body.
+  const back = sesdrFrom && sesdrFrom.isConnected && sesdrFrom.getClientRects().length && sesdrFrom.offsetWidth > 0 ? sesdrFrom : btn;
   sesdrFrom = null;
   if(d && back && (focus || d.contains(document.activeElement))) back.focus({preventScroll: true});
 }
 let sesdrFrom = null;   // element focused when the drawer opened (null = #sesb)
+let sesdrAttn = false;  // opened by an Attention chip: handling the row (Done / Seen) closes it; opened elsewhere it stays
 // Jumps (Cmd+K, attention rows, top chips) open the drawer before scrolling to a row.
-function sesdrReveal(){ if(!SESPIN && !SESOPEN) sesdrOpen(true, false); }
+function sesdrReveal(attn){ if(!SESPIN && !SESOPEN){ sesdrOpen(true, false); sesdrAttn = !!attn; } }
 function sesdrPin(on, keepOpen){
   SESPIN = !!on; if(!SESPIN) SESOPEN = !!keepOpen;
   sesdrSave(); sesdrApply();

@@ -13,6 +13,7 @@ const RT_GRADE_TIP = {check:'A failure notice whose cause could not be read — 
                       cut:'External cause (connection, limit, overload) — just rerun',
                       mine:'Something I blocked (permission denial, hook) — nothing to do',
                       noise:'A tool returned an error — part of normal work, usually nothing to do'};
+const rtN = n => (+n || 0).toLocaleString();   // counts read like the other cards (36,774), never a bare 1976
 function rtKind(k){ const r = RT_KIND[k] || [k, '#7b7c82', '#62636a']; return [r[0], thc(r[1], r[2])]; }
 // ★2026-09-25: «Tool error 738» beside «Read 1/7» looked contradictory — each heading names its source and period.
 // Failure signatures come from the server (sidereus/failures_scan.py) in Korean; srvEn translates the fixed phrases only.
@@ -48,14 +49,14 @@ function rtFailChart(r){
   const cols = dl.map((x, i) => {
     const segs = order.filter(k => (x.kinds||{})[k]).map(k =>
       '<i style="height:'+Math.max(1, Math.round(x.kinds[k] / mx * H))+'px;background:'+rtKind(k)[1]+'"></i>').join('');
-    const tip = x.d + ' · ' + T('Failures') + ' ' + x.fails
-      + order.filter(k => (x.kinds||{})[k]).map(k => '\n' + T(rtKind(k)[0]) + ' ' + x.kinds[k]).join('');
+    const tip = x.d + ' · ' + T('Failures') + ' ' + rtN(x.fails)
+      + order.filter(k => (x.kinds||{})[k]).map(k => '\n' + T(rtKind(k)[0]) + ' ' + rtN(x.kinds[k])).join('');
     const lab = (i % every === 0 || i === dl.length - 1) ? esc(x.d.slice(5).replace('-', '/')) : '';
     return '<div class=rtc title="'+esc(tip)+'">'
-      + '<span class=rts style="height:'+(H+14)+'px">'+segs+'<b class=rtz>'+(x.fails || '')+'</b></span><span class=rtl>'+lab+'</span></div>';
+      + '<span class=rts style="height:'+(H+14)+'px">'+segs+'<b class=rtz>'+(x.fails ? rtN(x.fails) : '')+'</b></span><span class=rtl>'+lab+'</span></div>';
   }).join('');
   const lg = order.map(k => '<em><b style="background:'+rtKind(k)[1]+'"></b>'+esc(T(rtKind(k)[0]))
-    + '<s>'+r.kinds[k]+'</s></em>').join('');
+    + '<s>'+rtN(r.kinds[k])+'</s></em>').join('');
   // «to check N» is a button when a listed failure row holds those events — it opens and marks them (rtShowChk).
   const hasChk = (r.sigs || []).some(x => x.chk);
   const gr = Object.keys(RT_GRADE).filter(g => (r.grades||{})[g])
@@ -315,7 +316,7 @@ function rtWeeks(r){
     + w.map(x => '<tr><td class=brn>'+esc(x.from.slice(5).replace('-','/'))+'~'+esc(x.to.slice(5).replace('-','/'))
         + (x.days < 7 ? ' <s>'+U(x.days,'d')+'</s>' : '')+'</td>'
       + '<td class=brv>'+fmtTok(x.tok)+'</td><td class=brv>'+(x.cost ? money(x.cost) : '—')+'</td>'
-      + '<td class=brv>'+x.sessions+'</td><td class=brv>'+x.commits+'</td><td class=brv>'+x.fails+'</td>'
+      + '<td class=brv>'+x.sessions+'</td><td class=brv>'+x.commits+'</td><td class=brv>'+rtN(x.fails)+'</td>'
       + '<td class=brd title="'+esc((x.top||[]).map(p => p.project+' '+fmtTok(p.tok)).join(' · '))+'">'+(x.top||[]).map(p => esc(p.project)+' <s>'+fmtTok(p.tok)+'</s>').join(' · ')+'</td></tr>').join('')
     + '</tbody></table>';
 }
@@ -373,7 +374,7 @@ function paintRetro(){
     const tools = rtTools(r);
     body = '<div class="rtg'+(tools ? ' split2' : '')+'"><section class=rtp>'
       + '<div class=brh2 title="'+esc(T('Counted by re-reading failure records in the transcripts — «Tools failing most» on the right counts only tool calls received over OTel since the server started'))+'">'
-      + esc(T('Failure trend'))+' <i>'+esc(T('Last {n} days').replace('{n}', r.days))+' · '+esc(T('transcript records'))+' · '+esc(T('daily · by kind'))+' · '+esc(T('Total'))+' '+r.fails+'</i></div>'
+      + esc(T('Failure trend'))+' <i>'+esc(T('Last {n} days').replace('{n}', r.days))+' · '+esc(T('transcript records'))+' · '+esc(T('daily · by kind'))+' · '+esc(T('Total'))+' '+rtN(r.fails)+'</i></div>'
       + rtFailChart(r) + rtSigs(r) + '</section>' + (tools ? '<section class=rtp>'+tools+'</section>' : '') + '</div>'
       // OTel cards: ① tool ranking | ② time spent side by side, ③ cache rewrites full width (its day bars need the room).
       + rtAcctHead(r)

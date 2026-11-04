@@ -31,6 +31,7 @@ html[data-ui=next][data-ui] :is(.wkrgb,.strp)[disabled]{opacity:.45;cursor:defau
 html[data-ui=next][data-ui] :is(.wkrgb,.strp)[disabled]:hover:not(.on){background:var(--seg-bg);color:var(--seg-c)}
 /* «Confirm — send» (.archok) is the one action of a request preview; with the neutral segment look it read as disabled. */
 html[data-ui][data-ui][data-ui] .wkrgb.archok:not([disabled]){background:var(--nx-info-bg,#2f6fd6);border-color:var(--nx-info-bg,#2f6fd6);color:#fff;font-weight:600}
+:is(#feed,body) .wkrgb.archok:not([disabled]):focus-visible{outline:2px solid #fff;outline-offset:-4px}   /* ⚠the inset blue ring (95-focus) vanished on the blue fill (1.04:1); white inside the fill. :is(#feed,body) outranks that id rule */
 html[data-ui][data-ui][data-ui] .wkrgb.archok:not([disabled]):hover{background:color-mix(in srgb,var(--nx-info-bg,#2f6fd6) 82%,#000);color:#fff}
 /* Header main tabs are navigation, not a segmented control: joined bar, no radius per tab, but on the same height scale. */
 html[data-ui=next][data-ui] .mvb{box-sizing:border-box;height:var(--nav-h)}

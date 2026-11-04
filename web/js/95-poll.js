@@ -34,7 +34,8 @@ function featsApply(f){
 }
 async function poll(first){
   if(pollBusy && !first){   // Previous request not finished — skip this tick; a long wait refreshes «Data delayed» (60)
-    if(CONN.pend && Date.now() - CONN.pend >= SB_POLL_SLOW_MS) try{ buildSbar(); }catch(e){ softErr('pollSlowSbar', e); }
+    // ⚠Also while CONN.slow: a timed-out poll resets pend, so the age froze for the first SB_POLL_SLOW_MS of the next request.
+    if(CONN.slow || (CONN.pend && Date.now() - CONN.pend >= SB_POLL_SLOW_MS)) try{ buildSbar(); }catch(e){ softErr('pollSlowSbar', e); }
     return;
   }
   // Backing off while down (connBackoffMs, 60-statusbar.js): a skipped tick only refreshes the «as of N s ago» age.

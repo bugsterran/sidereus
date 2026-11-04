@@ -33,6 +33,13 @@ def _int(v, lo=-1, hi=10 ** 9):
     return max(lo, min(hi, int(v)))
 
 
+def _rc(v):
+    # ⚠Missing or non-numeric exit code stays None: _int's 0 would render PASS for a record that proves nothing.
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return None
+    return max(-255, min(255, int(v)))
+
+
 def _num(v):
     if isinstance(v, bool) or not isinstance(v, (int, float)) or v != v:
         return 0.0
@@ -49,7 +56,7 @@ def _ts(v):
 def _step(s):
     if not isinstance(s, dict) or not isinstance(s.get("name"), str) or not EV_STEP.fullmatch(s["name"]):
         return None
-    return {"name": s["name"], "rc": _int(s.get("rc"), -255, 255), "n": _int(s.get("n"), 0),
+    return {"name": s["name"], "rc": _rc(s.get("rc")), "n": _int(s.get("n"), 0),
             "failed": _int(s.get("failed"), 0), "secs": _num(s.get("secs"))}
 
 
@@ -68,7 +75,7 @@ def _row(d, repos):
     steps = [x for x in (_step(s) for s in (d.get("steps") if isinstance(d.get("steps"), list) else [])[:40]) if x]
     row = {"kind": d["kind"], "ts": _ts(d.get("ts")), "mode": mode if isinstance(mode, str) and EV_MODE.fullmatch(mode) else "",
            "head": head if isinstance(head, str) and EV_HEAD.fullmatch(head) else "", "dirty": d.get("dirty") is True,
-           "rc": _int(d.get("rc"), -255, 255), "steps": steps}
+           "rc": _rc(d.get("rc")), "steps": steps}
     if d["kind"] == "ci":
         row.update(mode="ci", steps=[], dirty=False)   # a CI row has no local steps or worktree state
     if isinstance(d.get("screen"), list):

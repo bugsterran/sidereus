@@ -382,7 +382,9 @@ def rt_verdict(rt, cur, releases, eol_table, today):
     cyc = _cycle(rtn, cur)
     eol = eol_table.get(cyc, "")
     eol_past = bool(eol) and datetime.date.fromisoformat(eol) <= today
-    patch = {"level": "fail" if eol_past else "unknown", "target": "", "security": False, "eol": eol, "eol_past": eol_past}
+    # ⚠Patch level = missed patches only; end of life is its own field (eol_past) and chip. Folding it in here
+    # labelled a cycle already on its last patch «behind» (3.10.19 → 3.10.19).
+    patch = {"level": "unknown", "target": "", "security": False, "eol": eol, "eol_past": eol_past}
     newest = {"level": "unknown", "target": "", "behind_n": 0}
     if releases is not None:
         same = [r for r in releases if _cycle(rtn, r["v"]) == cyc]
@@ -392,14 +394,14 @@ def rt_verdict(rt, cur, releases, eol_table, today):
             sec = any(r["security"] for r in missed)
             patch["target"], patch["security"] = top["v"], sec
             # ⚠a cycle missing from the EOL table (odd Node majors) is never ok: its end date is unknown here
-            patch["level"] = "fail" if eol_past or sec else "warn" if missed else "ok" if eol else "unknown"
+            patch["level"] = "fail" if sec else "warn" if missed else "ok" if eol else "unknown"
         lines = _lines(rtn, releases)
         if lines:
             top = max(lines, key=lambda r: _ver_tuple(r["v"]))
             mine = _ver_tuple(cyc)
             ahead = {_cycle(rtn, r["v"]) for r in lines if _ver_tuple(_cycle(rtn, r["v"])) > mine}
             newest = {"level": "info" if ahead else "ok", "target": top["v"], "behind_n": len(ahead)}
-    level = max(patch["level"], newest["level"], key=_RANK.index)
+    level = max(patch["level"], newest["level"], "fail" if eol_past else "ok", key=_RANK.index)   # the item still fails on end of life
     return {"rt": rtn, "path": rt["path"], "cls": rt["cls"], "viewer": bool(rt.get("viewer")), "cur": cur, "cycle": cyc,
             "level": level, "patch": patch, "newest": newest}
 

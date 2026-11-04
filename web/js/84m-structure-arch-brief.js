@@ -93,6 +93,8 @@ async function archBriefSend(){
 function archXClose(){
   ARCH.xm = '';
   document.querySelectorAll('.archtab .archxm').forEach(m => m.remove());
+  // ⚠The menu left the DOM without a repaint, so the last paint signature is stale: drop it, else reopening matches it and archPaint skips (menu never shows again).
+  document.querySelectorAll('.archtab').forEach(t => { for(let b = t.parentElement; b; b = b.parentElement) if('_arsig' in b){ b._arsig = ''; break; } });
   document.querySelectorAll('.archtab [data-arxp]').forEach(b => { b.classList.remove('on'); b.setAttribute('aria-expanded', 'false'); });
 }
 document.addEventListener('click', ev => {   // capture: outside click closes the menu
