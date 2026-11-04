@@ -7,14 +7,14 @@ function hnRmBtn(h){
   if(h.plug) return '<button type=button class=hnrmb data-hnrmp="' + esc(h.plug) + '" title="' + esc(T('How to turn off') + ': /plugin disable ' + h.plug) + '">' + esc(T('How to turn off')) + '</button>';
   return '';
 }
-// Server errors are English lines; only a fixed reason of ours goes through T(), the raw line is shown escaped.
+// Server errors are English lines; known refusals map to our own text, the rest goes through TE() (known keys only).
 function hnRmErr(e){
   const b = (e && e.body) || {}, m = String(b.err || b.error || (e && e.message) || e || '');
   if(e && e.status === 409) return T('The file changed since the preview. Preview again.');
   if(/origin/i.test(m)) return T('Refused: the request did not come from the viewer page.');
   if(/symlink/i.test(m)) return T('Refused: the settings file is a symlink. Edit it by hand.');
   if(/allow|outside/i.test(m)) return T('Refused: the file is outside the allowed settings files.');
-  return T('Not removed') + ': ' + m;
+  return T('Not removed') + ': ' + (TE(b.err || b.error ? b : m) || m);
 }
 function hnRmHtml(){
   const s = HNRM;

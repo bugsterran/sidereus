@@ -20,6 +20,8 @@ html[data-ui=next][data-theme=light] .brtf i,html[data-ui=next][data-theme=light
 html[data-ui=next][data-theme=light] .brtf.brtg b{color:var(--nx-t1)}
 html[data-ui=next][data-theme=light] .brtf:focus-visible,html[data-ui=next][data-theme=light] .brtl:focus-visible,html[data-ui=next][data-theme=light] .brmg:focus-visible{outline-color:var(--nx-info)}
 html[data-ui=next][data-theme=light] .brtw{color:var(--nx-ok);border-color:#9fd0b3}
+/* ★idle was 4.43:1 on bg; t3 = 5.37 bg · 5.04 hover · 4.92 selected row (>=4.5 text). */
+html[data-ui=next][data-theme=light] .brwm .brwst,html[data-ui=next][data-theme=light] .brpr .brsg.brsgo{color:var(--nx-t3)}
 html[data-ui=next][data-theme=light] .sdrw.on{background:#0004}
 html[data-ui=next][data-theme=light] .sdrw .sdrwin{box-shadow:0 12px 32px #0003}
 /* Neutral letter glyphs (cx/gk) are near-white on dark; darken them so they stay legible on white. */

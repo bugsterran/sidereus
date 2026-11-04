@@ -90,7 +90,8 @@ function tlPlKeyFit(box){
     const sm = head.querySelector('.tlsum'), hr = head.querySelector('.tlhr');
     const f = tlPlKeyWraps(sm && sm.getBoundingClientRect(), hr && hr.getBoundingClientRect());
     g.classList.toggle('tlplgf', f);
-    if(lab){ if(f){ lab.tabIndex = 0; lab.setAttribute('aria-describedby', 'tlplgp'); } else { lab.removeAttribute('tabindex'); lab.removeAttribute('aria-describedby'); } }
+    // ⚠data-kb goes with tabindex: 98-a11y restores focus after a poll repaint only for [data-kb] (key = i.tlplgt, no data-* attrs).
+    if(lab){ if(f){ lab.tabIndex = 0; lab.setAttribute('data-kb', ''); lab.setAttribute('aria-describedby', 'tlplgp'); } else { lab.removeAttribute('tabindex'); lab.removeAttribute('data-kb'); lab.removeAttribute('aria-describedby'); } }
     if(pop){ if(f) pop.setAttribute('role', 'tooltip'); else pop.removeAttribute('role'); }
   };
   fit();

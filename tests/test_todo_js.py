@@ -14,6 +14,7 @@ with open(os.path.join(ROOT, "web", "js", "40c-sessions-todo.js"), encoding="utf
 STUB = ("const TCALLS = [];"
         "const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');"
         "const T = s => { TCALLS.push(s); return s; };"
+        "const TE = r => r && r.err ? r.err.replace(/\\{(\\w+)\\}/g, (m, k) => r.vars[k]) : '';"
         "const TV = o => { TCALLS.push(o.msg); return o.msg.replace(/\\{(\\w+)\\}/g, (m, k) => o.vars[k]); };"
         "const sessLabel = x => 'LIVE-' + x.state; const softErr = () => {}; let note = () => {};"
         "const getJSON = () => new Promise(() => {}); let postJSON = () => new Promise(() => {});"
@@ -98,6 +99,11 @@ class TodoAddBox(unittest.TestCase):
         self.assertEqual(o["d"], " buy milk ")
         self.assertEqual(o["n"], ["Could not save the to-do: text too long"])
         self.assertEqual(o["calls"], 1)   # second Enter while in flight does not post again
+
+    def test_failed_post_reason_goes_through_te(self):
+        o = _js(_key("() => Promise.reject(Object.assign(new Error('one line, 1-{n} characters'), "
+                     "{status: 400, body: {ok: false, err: 'one line, 1-{n} characters', vars: {n: 200}}}))"))
+        self.assertEqual(o["n"], ["Could not save the to-do: one line, 1-200 characters"])
 
     def test_saved_post_clears_box(self):
         o = _js(_key("() => Promise.resolve({ok: true})"))

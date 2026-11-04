@@ -76,7 +76,8 @@ function tourBody(p, dir){
     + '<dl class=tourterms>' + [[T('Stage'), 'One stretch of work owned by one agent'], [T('Gate'), 'A check that must pass before the next stage'],
         [T('Sent back'), 'A failed gate sends the work back to an earlier stage']].map(x => '<dt>' + esc(x[0]) + '</dt><dd>' + esc(T(x[1])) + '</dd>').join('') + '</dl>'};
   if(p.id === 'pl-live') return {t: 'Working now', h: (p.mode === 'spot' ? '' : tourStepper())
-    + P('«Working now» on the left lists the sessions at work right now, each with its run and stage — click one to open its pipeline run')};
+    + P(tourNowFolded() ? 'The dots on the left are the sessions at work right now — hover one for its run and stage, click it (or «›» «Expand list») to open the list'
+      : '«Working now» on the left lists the sessions at work right now, each with its run and stage — click one to open its pipeline run')};
   // ⚠No project picked (first run): «Edit» is missing, so the text points at the project picker instead.
   //   Decided by DOM presence, not p.mode: an «Edit» that exists but is off screen is centred yet still pressable.
   if(p.id === 'pl-start' && !tourEditExists()) return {t: 'Your first pipeline', h: P('Pick or open a project in the Pipelines head row first — then «Edit» › «+ New ▾» starts your first pipeline')};
@@ -86,6 +87,8 @@ function tourBody(p, dir){
     h: P('If you use Claude Code, these two lines install the Sidereus plugin (mailbox relay · pipeline stage marks · MCP that reads sessions and writes only To-do labels).')};
 }
 function tourHas(sel){ return !!tourRect(sel); }
+// Under 1000px the list is a dot rail (48j plNowFolded), so step 'pl-live' describes the dots instead.
+function tourNowFolded(){ try{ return typeof plNowFolded === 'function' && plNowFolded(); }catch(e){ softErr('tourNowFold', e); return false; } }
 function tourEditExists(){ try{ return !!document.querySelector('[data-plmode=edit]:not([disabled])'); }catch(e){ softErr('tourEdit', e); return false; } }
 // ⚠48k plNowShown, not !plWatchOn: no pipeline yet (first run) or the workflow view still shows the list.
 function tourPlEdit(){ try{ return typeof plNowShown === 'function' && !plNowShown(); }catch(e){ softErr('tourPlMode', e); return false; } }

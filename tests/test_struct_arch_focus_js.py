@@ -441,7 +441,7 @@ class ArchFocusPillClamp(unittest.TestCase):
         # Badge at the right edge (x 290..300 of a 300px SVG) with a 150px pill: the pill must not run past L.w.
         js = "\n".join(["function esc(s){ return String(s); }", "function mmdTw(t){ return t.length * 7; }",
                         "function mmdFlPlace(g, L){ return {labs: L.edges.map((e, i) => ({R: L.R[i]}))}; }",
-                        js_fn("archFocusPills"),
+                        js_fn("archFocusPills"), js_fn("mmdEdgeName"),
                         "const g = {edges: [{from: 'a', to: 'b'}, {from: 'c', to: 'd'}]};"
                         "const lab = {'a\\u0001b': 'x'.repeat(20), 'c\\u0001d': 'y'.repeat(60)};"
                         "const L = {w: 300, edges: [{from: 'a', to: 'b'}, {from: 'c', to: 'd'}], R: [{x: 290, y: 40, w: 10, h: 10}, {x: 150, y: 80, w: 10, h: 10}]};"
@@ -453,6 +453,18 @@ class ArchFocusPillClamp(unittest.TestCase):
         self.assertGreaterEqual(x1, 0)
         self.assertLessEqual(x1 + w1, 300)                                # clamped inside the SVG
         self.assertEqual(x2, 2)                                           # wider than the SVG: left-aligned at 2
+
+    def test_pill_group_is_named(self):
+        # 98-a11y gives the pill's .mmdfe role=button: it carries the escaped «from → to» name
+        js = "\n".join(["function esc(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\"/g, '&quot;'); }",
+                        "function mmdTw(t){ return t.length * 7; }",
+                        "function mmdFlPlace(g, L){ return {labs: L.edges.map(() => ({R: {x: 10, y: 10, w: 10, h: 10}}))}; }",
+                        js_fn("archFocusPills"), js_fn("mmdEdgeName"),
+                        "const g = {nodes: {a: {label: 'A<\"x'}, b: {label: 'B'}}, edges: [{from: 'a', to: 'b'}]};"
+                        "process.stdout.write(archFocusPills(g, {w: 300, edges: [{from: 'a', to: 'b'}]}, {'a\\u0001b': 'calls'}));"])
+        p = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
+        self.assertEqual(p.returncode, 0, p.stderr.decode())
+        self.assertIn('aria-label="A&lt;&quot;x \u2192 B"', p.stdout.decode("utf-8"))
 
 
 if __name__ == "__main__":

@@ -41,7 +41,8 @@ document.addEventListener('keydown', e => {
   if((e.key !== 'Enter' && e.key !== ' ') || e.defaultPrevented || e.isComposing || e.repeat) return;
   const t = e.target;
   if(!t || !t.hasAttribute || !t.hasAttribute('data-kb')) return;
-  e.preventDefault(); t.click();
+  // ⚠SVG <g> (arch map .mmdfe / [data-p]) has no click(): dispatch a bubbling click instead.
+  e.preventDefault(); if(typeof t.click === 'function') t.click(); else t.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
 });
 // Re-renders (the click's own and every 2.5s poll) swap the focused node out, dropping focus to <body>.
 //   ⚠Refocusing only right after click() is not enough — the next poll dropped it again (measured 2026-09-23).

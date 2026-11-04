@@ -12,7 +12,7 @@ from tests._node import node_e
 
 FNS = ("codeBlock", "mdLinks", "md", "mmdLabel", "mmdSplit", "mmdChain", "mmdParse", "mmdTw", "mmdBox", "mmdAcyclic", "mmdFixed", "mmdRank",
        "mmdPav", "mmdOrder", "mmdLayers", "mmdPlace", "mmdAnc", "mmdRoute", "mmdSegRect", "mmdSpread", "mmdUncross", "mmdRouteAll", "mmdPathD", "mmdNum",
-       "mmdLabels", "mmdQuality", "mmdLayout", "mmdPoly", "mmdTip", "mmdFlPlace", "mmdSvg", "mmdLegend", "mmdSeqParse", "mmdSeqLayout", "mmdSeqSvg", "mmdBlock")
+       "mmdLabels", "mmdQuality", "mmdLayout", "mmdPoly", "mmdTip", "mmdFlPlace", "mmdSvg", "mmdEdgeName", "mmdLegend", "mmdSeqParse", "mmdSeqLayout", "mmdSeqSvg", "mmdBlock")
 # The grid router (81g0) runs whole: its RR_* constants and relRRB buffer are top-level statements, not functions.
 ROUTER = open(__import__("os").path.join(__import__("os").path.dirname(__file__), "..", "web", "js", "81g0-structure-grid-router.js"), encoding="utf-8").read()
 
@@ -364,13 +364,20 @@ R.tips = ['flowchart TD', 'flowchart LR'].map(h => { const g = mmdParse(h + SHAP
     def test_tag_edge_ends(self):
         # tag mode: every edge group names its ends by node key (84j hover reads them); untagged stays pinned above
         h = self.R["tag"]
-        self.assertGreaterEqual(h.count('class=mmdfe data-c="" data-f="a" data-t="b">'), 2)   # line + label
+        self.assertGreaterEqual(h.count('class=mmdfe data-c="" data-f="a" data-t="b" aria-label="a \u2192 b">'), 2)   # line + label, same name
         self.assertIn('data-p="a"', h)
+
+    def test_edge_name_uses_labels_escaped(self):
+        # 98-a11y gives .mmdfe role=button: the name is «from → to» by node label, newline flattened; caller esc()s it
+        r = run("const g = mmdParse('flowchart LR\\n a[Run job] --> s1\\n subgraph s1 [Box]\\n c\\n end'); R.n = mmdEdgeName(g, 'a', 's1');"
+                "R.m = mmdEdgeName({nodes: {p: {label: 'L1\\nL2'}}}, 'p', 'q');")
+        self.assertEqual(r["n"], "Run job \u2192 Box")
+        self.assertEqual(r["m"], "L1 L2 \u2192 q")
 
     def test_tag_edge_hit_path(self):
         # tag mode: each line group starts with a transparent .mmdhit copy of the same d (84j edge click); untagged has none
         h = self.R["tag"]
-        m = re.search(r'class=mmdfe data-c="" data-f="a" data-t="b"><path class=mmdhit d="([^"]+)"/><path class="mmde e-solid" d="([^"]+)"', h)
+        m = re.search(r'class=mmdfe data-c="" data-f="a" data-t="b" aria-label="[^"]*"><path class=mmdhit d="([^"]+)"/><path class="mmde e-solid" d="([^"]+)"', h)
         self.assertIsNotNone(m, h)
         self.assertEqual(m.group(1), m.group(2))
         self.assertEqual(h.count("mmdhit"), 1)                          # line group only, not the label group

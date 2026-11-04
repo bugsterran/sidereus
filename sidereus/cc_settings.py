@@ -79,6 +79,30 @@ def _read():
     return _read_at(settings_path())
 
 
+class _Err(str):
+    """Fixed error template with {name} slots; .vars fills them (the page's TE() translates the template)."""
+    def __new__(cls, tpl, **kw):
+        o = str.__new__(cls, tpl)
+        o.vars = kw
+        return o
+
+
+def _ev(err):
+    return dict(getattr(err, "vars", None) or {})
+
+
+def _efull(err):
+    """Reply body part {err, vars?} for one error."""
+    v = _ev(err)
+    return {"err": err, "vars": v} if v else {"err": err}
+
+
+def _etext(err):
+    """Filled English text. ⚠Row `err` and `cc_err` are read as plain strings by the page (90b TE(String(x.err))): never send a bare template there."""
+    v = _ev(err)
+    return str(err).format(**v) if v else err
+
+
 def _read_at(p):
     """(raw bytes, dict, error). ⚠A missing, unparsable or non-object file is an error — never written."""
     try:
@@ -87,11 +111,11 @@ def _read_at(p):
     except FileNotFoundError:
         return None, None, "settings.json not found"
     except OSError as e:
-        return None, None, "settings.json unreadable (%s)" % type(e).__name__
+        return None, None, _Err("settings.json unreadable ({e})", e=type(e).__name__)
     try:
         d = json.loads(raw.decode("utf-8-sig"))     # Windows editors write a BOM; Claude Code accepts it
     except ValueError as e:
-        return raw, None, "settings.json is not valid JSON (%s) — fix it by hand" % type(e).__name__
+        return raw, None, _Err("settings.json is not valid JSON ({e}) — fix it by hand", e=type(e).__name__)
     if not isinstance(d, dict):
         return raw, None, "settings.json top level is not an object — fix it by hand"
     return raw, d, None
@@ -137,7 +161,7 @@ def otel_port_set(port):
     with _LOCK:
         raw, old, err = _read()
         if err:
-            return 400, {"ok": False, "err": err}
+            return 400, dict({"ok": False}, **_efull(err))
         env = old.get("env")
         cur = env.get(OTEL_KEY) if isinstance(env, dict) else None
         m = _OTEL_RE.fullmatch(cur) if isinstance(cur, str) else None
@@ -275,7 +299,7 @@ def _acct_row(t):
     if os.path.islink(t["path"]):
         return {"label": t["label"], "path": t["path"], "auto": None, "window": None, "err": "symlink"}
     _raw, d, err = _read_at(t["path"])
-    row = {"label": t["label"], "path": t["path"], "err": err}
+    row = {"label": t["label"], "path": t["path"], "err": _etext(err)}
     for name, pk in (("auto", "cc_auto_compact"), ("window", "cc_compact_window")):
         sk, check, default = CC_KEYS[pk]
         val = default
@@ -297,7 +321,7 @@ def prefs_get_all():
     out["otel"] = otel_get()
     out["features"] = features_listing()   # settings «Features» rows (web/js/90c-features.js)
     if err:
-        out["cc_err"] = err
+        out["cc_err"] = _etext(err)
     tg = _targets()
     out["cc_primary_label"] = tg[0]["label"]
     if len(tg) > 1:
@@ -373,7 +397,7 @@ def cc_set(pk, value):
                 plans.append(_plan(t["path"], sk, val))
         raw, new_raw, prev, perr = plans[0]
         if perr:
-            return perr[0], {"ok": False, "err": perr[1]}    # primary refused: nothing is written anywhere
+            return perr[0], dict({"ok": False}, **_efull(perr[1]))    # primary refused: nothing is written anywhere
         bak = None
         if new_raw != raw:
             code, bak = _write_raw(tg[0]["path"], raw, new_raw)
@@ -384,7 +408,7 @@ def cc_set(pk, value):
         for t, (xraw, xnew, _xprev, xerr) in zip(tg[1:], plans[1:]):
             row = {"label": t["label"], "path": t["path"]}
             if xerr:
-                row.update(status="skipped", err=xerr[1])
+                row.update(status="skipped", err=_etext(xerr[1]))
             elif xnew == xraw:
                 row["status"] = "same"
             else:
@@ -481,8 +505,8 @@ def cc_set_accts(req):
                 row.update(before=_shown(d), status="same")
             elif pl["err"]:
                 if t["primary"]:
-                    return pl["err"][0], {"ok": False, "err": pl["err"][1]}   # primary refused: nothing is written anywhere
-                row.update(before=_shown(pl["old"]), status="skipped", err=pl["err"][1])
+                    return pl["err"][0], dict({"ok": False}, **_efull(pl["err"][1]))   # primary refused: nothing is written anywhere
+                row.update(before=_shown(pl["old"]), status="skipped", err=_etext(pl["err"][1]))
             else:
                 row.update(before=_shown(pl["old"]), status="change" if pl["new_raw"] != pl["raw"] else "same")
             row["after"] = _shown(json.loads(pl["new_raw"].decode("utf-8-sig"))) if row["status"] == "change" else dict(row["before"])

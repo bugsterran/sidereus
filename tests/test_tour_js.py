@@ -24,7 +24,7 @@ const R = {};
 
 
 def run(body):
-    fns = "".join(js_fn(n) + "\n" for n in ("tourPlan", "tourShouldAuto", "tourPluginLines", "tourStepper", "tourBody", "tourEnd", "tourClick", "tourPlEdit", "plNowShown", "demoCmd", "tourEditExists"))
+    fns = "".join(js_fn(n) + "\n" for n in ("tourPlan", "tourShouldAuto", "tourPluginLines", "tourStepper", "tourBody", "tourEnd", "tourClick", "tourPlEdit", "plNowShown", "demoCmd", "tourEditExists", "tourNowFolded"))
     code = STUB + STEPS + "\n" + KEY + "\n" + fns + body + "\nprocess.stdout.write(JSON.stringify(R));"
     r = subprocess.run(node_e(code), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
@@ -54,6 +54,7 @@ R.demoOffBody = tourBody(tourPlan({pipeline: false}, all, 0).find(p => p.demo), 
 R.nostrip = tourPlan({}, noStrip, 2).find(p => p.id === 'pl-live');
 R.nostripBody = tourBody(R.nostrip, '').h;
 R.liveSpot = tourBody({id: 'pl-live', mode: 'spot'}, '');
+var plNowFolded = () => true; R.liveFolded = tourBody({id: 'pl-live', mode: 'spot'}, ''); plNowFolded = () => false;   // under 1000px: dot rail
 let editEl = {};   // «Edit» in the DOM; null = no project picked
 document = {querySelector: s => s === '[data-plmode=edit]:not([disabled])' ? editEl : null};
 R.startSpot = tourBody({id: 'pl-start', mode: 'spot'}, '').h;
@@ -123,6 +124,12 @@ R.finish = {writes: writes.slice(), tabs: tabs.slice(), hidden: root.hidden};
         self.assertIn("파이프라인 실행이 열립니다", self.R["liveSpot"]["h"])
         self.assertNotIn("tourms", self.R["liveSpot"]["h"])
         self.assertNotIn("tourdim", self.R["nostripBody"])
+
+    def test_pl_live_folded_rail_describes_dots(self):
+        # Folded rail (48j plNowFolded): the step names the dots and «Expand list», not the list rows.
+        self.assertIn("왼쪽 점들이", self.R["liveFolded"]["h"])
+        self.assertIn("목록 펼치기", self.R["liveFolded"]["h"])
+        self.assertNotIn("왼쪽 점들이", self.R["liveSpot"]["h"])
 
     def test_pl_start_without_target_points_at_project(self):
         self.assertIn("«편집» 을 누른 뒤", self.R["startSpot"])
