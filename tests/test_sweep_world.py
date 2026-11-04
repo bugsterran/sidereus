@@ -3,6 +3,7 @@ import importlib.util
 import json
 import ntpath
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -59,7 +60,7 @@ class SweepWorld(unittest.TestCase):
     def test_env_and_launch_lines(self):
         o = os.path.realpath(self.out)
         for k, sub in (("HOME", "home"), ("CLAUDE_CONFIG_DIR", "cc"), ("MAILBOX_DIR", "data"), ("SIDEREUS_USER_HOME", "home")):
-            self.assertIn("export %s=%s" % (k, os.path.join(o, sub)), self.lines)
+            self.assertIn("export %s=%s" % (k, shlex.quote(os.path.join(o, sub))), self.lines)   # Windows paths get quoted
         self.assertTrue(self.lines[-1].endswith("sidereus_cli.py start --port 8899"))
 
     def test_refuses_non_empty_and_tool_dirs(self):
