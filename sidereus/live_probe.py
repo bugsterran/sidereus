@@ -9,6 +9,7 @@ import subprocess
 import threading
 import time
 from sidereus.config import IS_MAC, pid_alive
+from sidereus.memo import Refresher
 from sidereus import claude_roots
 from sidereus.warn import warn_once
 from sidereus.transcript import CLAUDE_PROJECTS
@@ -198,33 +199,28 @@ def sid_alive(sid):
 def sid_alive_stale(sid):
     """The id **was seen alive, but that evidence is stale** (= unknown, not dead).
 
-    ★Separates `sid_alive()` returning False at the cap (`LIVE_STALE_S`) from `done`.
-      True here means "not measured", not "dead" — the UI goes to `unknown`, and once `ps` succeeds on
-      the next poll it returns to the real state at once (falls toward not asserting)."""
+    ★Separates `sid_alive()` returning False at the cap (`LIVE_STALE_S`) from `done`: True = "not measured", so
+      the UI shows `unknown` and returns to the real state once `ps` succeeds on the next poll."""
     return bool(sid) and sid in _live_sids[1] and time.time() - _live_sids[0] >= LIVE_STALE_S
 
 
 # ── Official session lookup ─────────────────────────────────────────────────
 # ★★**Identity comes from an official lookup, not a guess** (2026-09-08; a documented way to check state).
-#   `claude agents --json` gives, per pid, **the sessionId that process is writing now**
-#   (docs: code.claude.com/docs/en/agent-view.md · `--json` =
-#   "Print active sessions (interactive and background) as a JSON array and exit").
+#   `claude agents --json` gives, per pid, **the sessionId that process is writing now** (docs:
+#   code.claude.com/docs/en/agent-view.md · "Print active sessions (interactive and background) as a JSON array and exit").
 #   Measured 2.1.263 fields: `pid · cwd · kind · name · startedAt · sessionId · status`.
 #   ⇒ Reading the argv `--resume <sid>` label and guessing whether it is stale **becomes unnecessary**:
 #     pid 41001  argv `--resume aa11aa11` → official sessionId **bb22bb22** (the 2026-09-08 bug)
 #     pid 57914 argv `--resume ff66ff66` → official sessionId **5c040e0b** (the documented trap)
-#   ⚠**The old inference is kept as the fallback path, not deleted** — some versions may lack or fail this command.
-#     On `None` (unknown) behavior is **exactly** as before (no regression).
-#   ⚠Cost is an order of magnitude higher: measured 0.16~0.43 s (`ps` 0.03 s). With a 2.5 s poll it **cannot run every poll**
-#     ⇒ TTL cache + **dedicated lock** (16 concurrent poll threads must not spawn 16 processes) + last value on failure.
-#   ⚠`status` is only `busy`/`idle` and **not an activity signal** (measured: advocate-repo quiet for 5 h showed
-#     `busy`). So it is not used for state — only **identity (pid→sid)** is taken from here.
+#   ⚠**The old inference stays as the fallback** (some versions lack or fail this command); `None` = exactly as before.
+#   ⚠Measured 0.16~0.43 s (`ps` 0.03 s) — cannot run every 2.5 s poll ⇒ TTL cache + dedicated lock (16 poll threads
+#     must not spawn 16 processes) + last value on failure + background refresh.
+#   ⚠`status` (`busy`/`idle`) is **not an activity signal** (measured: quiet 5 h, still `busy`) — only pid→sid is used.
 #   ⚠`claude`'s shebang must find node ⇒ `bin_path` + `rich_env` (launchd PATH trap, 2026-08-24).
 AGENTS_TTL = 8              # reuse a success — call once per three polls
 AGENTS_STALE_S = 90         # on failure, keep the last success this long (same pattern as live_cwds' LIVE_STALE_S)
-AGENTS_FAIL_TTL = 15        # ★cache a failure (= unknown) this long — 6 calls within one poll fork only once.
-                            # ⚠Do not make it equal to the success TTL (8 s): shorter re-incurs the 6 s timeout,
-                            #   longer freezes "unknown" and slows recovery. 6x the poll (2.5 s) = 6 calls' worth.
+AGENTS_FAIL_TTL = 15        # ★failure (= unknown) cached this long: 6 calls in one poll fork once. ⚠Not the success TTL
+                            #   (8 s): shorter re-incurs the 6 s timeout, longer freezes "unknown". 6x the 2.5 s poll.
 AGENTS_TIMEOUT = 6
 _av_cache = [0.0, None]     # (success time, {pid(str): entry}) — primary's state; with several accounts, the merged view
 _av_fail = [0.0]            # last failure time (negative cache) — 0.0 means "no recent failure"
@@ -234,12 +230,12 @@ _av_held = {}               # account key ("" single, else realpath) -> last suc
 _av_acct = {}               # realpath(dir) -> ([ok_at, view], [fail_at]) per account when more than one is signed in
 _av_unknown = set()         # account labels whose lookup is unknown as of the last agent_view() (primary = "")
 # ★Re-run the CLI only when its answer could have changed (2026-10-13: the 8 s TTL spawned `claude agents --json`
-#   every 11-18 s, 120-157MB RSS per child, per account). Consumers use only pid · sessionId · cwd, which mirror the
-#   CLI's registry `<config dir>/sessions/<pid>.json` ⇒ signature = (file, pid, sessionId, cwd, pid alive) per file;
-#   start/exit/crash//clear refresh on the next poll, AGENTS_MAX_AGE is the safety refresh. ~7.5/min → ~1/min + events.
+#   every 11-18 s, 120-157MB RSS per child, per account). Signature = (file, pid, sessionId, cwd, pid alive) of the
+#   registry `<config dir>/sessions/<pid>.json`; AGENTS_MAX_AGE is the safety refresh. ~7.5/min → ~1/min + events.
 #   ⚠Never add `status`/`updatedAt` (they change every turn). No registry dir ⇒ None ⇒ plain AGENTS_TTL.
 AGENTS_MAX_AGE = 60
 _av_sigs = {}               # account key ("" = single account, else realpath) -> signature at the last success
+_AV_BG = Refresher()            # background `claude agents --json` refresh, keyed per account
 
 
 def _av_registry_sig(cfg_dir):
@@ -344,13 +340,20 @@ def _av_one(env, cache, fail, ttl, skey, cfg_dir="", sig_key=None):
     now = time.time()
     if fresh(now):
         return cache[1]
-    # ★★**Failures are cached too** (2026-09-22). The TTL check was `is not None`, so only successes were cached —
-    #   6 places call this within one `state()` (live_cwds · _watch_transcript · _recent_transcripts ·
-    #   selfcheck), and with the lookup dead, 6 s timeout × 6 = **36 s** became a cold response (measured 38.5 s)
-    #   (the 49 `official session lookup is slow (TimeoutExpired)` lines in `viewer.err` are exactly that).
-    #   ⇒ For AGENTS_FAIL_TTL after a failure, don't fork; return **the same fallback** as the failure branch.
+    # ★★Failures are cached too (2026-09-22): 6 callers per `state()` × 6 s timeout = 36 s cold response (measured
+    #   38.5 s; 49 `TimeoutExpired` lines in `viewer.err`). ⇒ Within AGENTS_FAIL_TTL, no fork; same fallback as failure.
     if now - fail[0] < AGENTS_FAIL_TTL:
         return _av_fallback(now, cache)
+    # ★At load 138-190 /api/state took 30-39 s waiting on lookups. ⇒ Serve the last value, refresh in the background.
+    #   ⚠Cold start (no last value) still asks inline: there is nothing to serve, and None drops to the argv guess.
+    if cache[1] is not None and now - cache[0] < AGENTS_STALE_S:
+        _AV_BG.kick(sig_key or "", lambda: _av_fetch(env, cache, fail, skey, sig, sig_key, fresh))
+        return cache[1]                  # re-read: an inline spawn (tests) has just refreshed it
+    return _av_fetch(env, cache, fail, skey, sig, sig_key, fresh)
+
+
+def _av_fetch(env, cache, fail, skey, sig, sig_key, fresh):
+    """Run `claude agents --json` once under `_av_lock` and store the result in `cache`/`fail` (see `_av_one`)."""
     with _av_lock:
         now = time.time()
         if fresh(now):
@@ -411,15 +414,12 @@ def _av_one(env, cache, fail, ttl, skey, cfg_dir="", sig_key=None):
 # ★★**The full process list is taken once per poll** (2026-09-21). Each collector used to run its own `ps`,
 #   up to 5 `ps` per poll — that is where the cumulative **70** `TimeoutExpired` in `viewer.err` came from, and
 #   under high load (load 70.3 in the last warning) the 4 s-capped calls queued up, leaving screen values stale for up to 28 s.
-#   ⇒ Only calls that "fetch the same list again" are merged here: `live_cwds` ×2 · `mailbox_watches` ×1 ·
-#     `tool_busy` ×1. **Each collector's parsing and logic stay as is** — only the list's source changes.
+#   ⇒ Only same-list calls are merged (`live_cwds` ×2 · `mailbox_watches` · `tool_busy`); parsing stays per collector.
 #   ⚠Not merged: ① `ps -Ewwo …` (env `-E`) — a different command used for a few watcher processes only;
 #     on the full list it would drag every environment along (see the ⚠ comment there). ② the 2 `lsof` calls — different pid sets and purposes.
-#   ⚠Fields are the **union** of what the four collectors use (`pid,ppid,command`). Only `live_cwds` used
-#     `comm=`, but the claude test (`basename(...) == "claude"`) gives the same answer on both fields —
-#     measured 2026-09-21: of 626 processes, 4 by comm · 4 by argv[0], **0 difference**
-#     (argv[0] is the test `tool_busy` always used). `comm` values contain spaces
-#     (measured `/Applications/…/Google Chrome Helper`), so putting it on one line with `command` breaks parsing.
+#   ⚠Fields = the union the collectors use (`pid,ppid,command`). `comm=` dropped: the claude test gives the same answer
+#     on argv[0] — measured 2026-09-21: of 626 processes, 4 by comm · 4 by argv[0], **0 difference**; `comm` values
+#     contain spaces (measured `/Applications/…/Google Chrome Helper`), so one line with `command` breaks parsing.
 PS_SNAP_TTL = 2.0              # shorter than the poll (2.5 s) — reused within a poll, retaken on the next
 PS_SNAP_FAIL_TTL = 4.0         # ★failures cached this long — equal to the `ps` timeout (4 s). The 3 calls within
                                # a poll fork only once. ⚠Do not make it equal to the success TTL (2 s):
