@@ -399,3 +399,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: `--fast` runs `tests.test_arch` after leakscan (13 tests ≈5 s, «Ran N» via `need`). The quick-fix and sidereus-bugfix fix stages gate on `scripts/check.sh --fast && /usr/bin/python3 scripts/trap_check.py`: a changed `sidereus/*.py` (untracked counts) without a changed `docs/dev/traps/*.md` = FAIL.
 - ⚠A git error is FAIL «unknown», never PASS (`tests/test_trap_check.py`). Keep `check.sh --fast` first in the compound gate — `GATE_MODES` grades it as `fast` by that substring. A deleted trap file (porcelain `D`) is not an entry.
 - ⚠Evidence limit: check.sh writes its `fast` row (rc 0) before trap_check runs, so a trap_check FAIL leaves no failing row and pl_eval/scorecard still read the gate as held. Do not make trap_check write a `fast` row — a pass and a fail on one clean commit marks `fast` flaky (`pl_eval.flaky`).
+
+## Auto-backgrounded gate recorded as a pass (`hooks/ev_hook.py` `handle`)
+- Cause: Claude Code moves a long foreground Bash to the background (background subagents: after 3 min) with no `run_in_background` in the input; PostToolUse then fired with no exit code and the hook wrote rc 0.
+- Fix: a PostToolUse response carrying `backgroundTaskId` writes no row (result unknown), same as an interrupted run.
+- ★2026-11-05: 1,009 of 2,277 backgrounded Bash calls in local transcripts were auto-moved (195 with `subagentCapApplied`).
+- ⚠Never treat a backgrounded response as rc 0; keep `hooks/` and `plugin/hooks/` copies identical (`tests/test_ev_hook.py`).
