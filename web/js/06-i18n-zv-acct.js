@@ -22,3 +22,7 @@ Object.assign(I18N.ko, {
 Object.assign(I18N.ko, {
   'Records before {date} have no account': '{date} 이전 기록에는 계정이 없습니다',
 });
+// Korean for the Tokens tab period-button names (46 wkrBtns aria-label) and its empty-table line (46 tkNone).
+Object.assign(I18N.ko, {
+  'Day': '일간', 'Week': '주간', 'Month': '월간', 'No data': '데이터 없음',
+});

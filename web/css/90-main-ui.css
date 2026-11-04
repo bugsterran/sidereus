@@ -141,6 +141,8 @@ html[data-ui=next] .sbar .sbidle{color:var(--nx-t2)}
 html.agstale .sbar > span:not(.sbconn):not(.sbchev):not(.sbgap){opacity:.8;transition:opacity .2s}
 /* ⚠.45 + grayscale put light-theme status text at 1.81-2.63:1; .7 still left light .sbok at 2.89 — .8 = min 3.24 light / 3.88 dark (traps/ui.md «Stale dimming»). */
 .sbconn small{font-weight:400;opacity:.85}
+/* ⚠.sbconn never shrinks, so an 80-char repo made the piece ~837px at 1440: cap the name here (full text in the title). */
+.sbconn > small:first-of-type{display:inline-block;max-width:32ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 .connst{margin:0 0 6px;padding:3px 8px;border-radius:4px;font-size:12px;color:var(--nx-err,#f45460);background:rgba(244,84,96,.12)}
 html[data-ui=next] .sbar .sbgoal{color:var(--nx-info);border:1px solid currentColor;border-radius:9px;padding:0 7px;margin-right:6px}
 /* Quota detail opens as a modal from the status bar (user preference over a bottom drawer). */

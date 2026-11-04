@@ -55,7 +55,7 @@ function archHeadNote(d, on){
   const r = archRate(d), c = String((d && d.commit) || '').slice(0, 7), h = String((d && d.head) || '').slice(0, 7);
   const at = d && typeof d.at === 'number' && isFinite(d.at) && d.at > 0 ? d.at : 0;
   const tip = T('Diagram commit {n} · HEAD now {m}').replace('{n}', c).replace('{m}', h);
-  const ahead = d && d.stale ? (typeof d.behind === 'number' ? TV({msg: 'HEAD is {n} commits ahead', vars: {n: d.behind}}) : T('stale')) + ' · ' : '';
+  const ahead = d && d.stale ? (typeof d.behind === 'number' ? TV({msg: d.behind === 1 ? 'HEAD is {n} commit ahead' : 'HEAD is {n} commits ahead', vars: {n: d.behind}}) : T('stale')) + ' · ' : '';
   const why = d && d.stale ? '\n' + T('The diagram is older than the code — a new one is built from the latest commit.') : '';
   const s = archStyleParts(d, on) || { est: false, sty: '', fw: '', ev: '', dev: '' };
   const gen = c ? strHdBadge(d.stale ? 'cut' : '', (d.stale ? '⚠ ' : '') + (at ? T('Generated {t} · {c}').replace('{c}', c).replace('{t}', hhmm(at, { date: true, dsep: '-' })) : c), ahead + tip + why) : '';

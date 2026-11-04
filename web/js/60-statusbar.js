@@ -67,6 +67,7 @@ function sbBusyHtml(b){
     + (un ? '\n' + TV({msg: 'outside Claude sessions: CPU {c}% · {m} GB', vars: {c: Math.round(un.cpu), m: gb(un.rssMb)}}) : '');
   // ⚠The repo name is the point («who»): it drops last (SB_STEPS end); the numbers drop first (SB_STEPS[0]). At 1440 one piece
   //   with the first step hid the name and the tooltip did not carry it either.
+  //   The first <small> (repo) is width-capped in 90-main-ui.css; the full name stays in the .sbconn title.
   const sfx = t ? ' <small class=sbd' + SB_STEPS[SB_STEPS.length - 1] + '>· ' + esc(TV({msg: 'mostly {r}', vars: {r: t.repo}})) + '</small>'
     + '<small class=sbd' + SB_STEPS[0] + '> · ' + esc(TV({msg: 'CPU {c}% · {m} GB', vars: {c: Math.round(t.cpu), m: gb(t.rssMb)}})) + '</small>' : '';
   return '<span class=sbconn title="' + esc(tip) + '"><b class=sbwarn>● ' + esc(lbl) + '</b>' + sfx + '</span>';

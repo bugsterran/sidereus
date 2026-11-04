@@ -24,7 +24,7 @@ class _SlowSub(object):
     def run(self, argv, **kw):
         self.threads.append(threading.get_ident())
         self.gate.wait(5)
-        return mock.Mock(stdout="")
+        return mock.Mock(stdout="", returncode=0)
 
 
 class StateNoSpawn(unittest.TestCase):

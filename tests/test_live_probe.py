@@ -27,7 +27,7 @@ class _Clock:
 
 
 class _Sub:
-    """subprocess stand-in: `outs` maps argv[0] to stdout text or an exception instance."""
+    """subprocess stand-in: `outs` maps argv[0] to stdout text, `(returncode, stdout)` or an exception instance."""
     TimeoutExpired = _real_sp.TimeoutExpired
 
     def __init__(self, outs):
@@ -38,7 +38,8 @@ class _Sub:
         v = self.outs[argv[0]]
         if isinstance(v, BaseException):
             raise v
-        return mock.Mock(stdout=v)
+        rc, v = v if isinstance(v, tuple) else (0, v)
+        return mock.Mock(stdout=v, returncode=rc)
 
 
 class _Base(unittest.TestCase):
@@ -127,6 +128,18 @@ class AgentViewTest(_Base):
         self.sub.outs["claude"] = ""
         self.assertEqual(lp.agent_view(), {})
         self.assertEqual(self.warns, [])
+
+    def test_nonzero_exit_is_unknown_not_empty(self):
+        self.sub.outs["claude"] = (1, "")
+        self.assertIsNone(lp.agent_view())
+        self.assertEqual(self.warns, ["agents"])
+        prev = {"1": {"pid": 1}}
+        lp._av_cache[:] = [self.clock.t - 20, prev]
+        lp._av_fail[:] = [0.0]
+        self.assertIs(lp.agent_view(ttl=0), prev)          # held answer, not {}
+        self.sub.outs["claude"] = (0, "[]")
+        lp._av_fail[:] = [0.0]
+        self.assertEqual(lp.agent_view(ttl=0), {})
 
     def test_non_list_without_prev_is_unknown_and_negative_cached(self):
         self.sub.outs["claude"] = '{"pid": 1}'
