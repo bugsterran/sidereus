@@ -210,6 +210,11 @@ class EvHook(unittest.TestCase):
         self.assertEqual(self.rows(), [])
         self.assertFalse(os.path.exists(ev.START_DIR))
 
+    def test_auto_backgrounded_writes_nothing(self):
+        # Foreground command moved to the background mid-run: no run_in_background flag, response has backgroundTaskId.
+        self.evt("PostToolUse", "npm test", tool_response={"backgroundTaskId": "b1", "timedOutAfterMs": 180000, "subagentCapApplied": True})
+        self.assertEqual(self.rows(), [])
+
     def test_unmatched_touches_nothing(self):
         self.evt("PreToolUse", "ls -la")
         self.evt("PostToolUse", "ls -la")

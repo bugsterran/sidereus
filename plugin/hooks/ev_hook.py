@@ -350,6 +350,11 @@ def handle(ev):
         resp = ev.get("tool_response")
         if isinstance(resp, dict) and resp.get("interrupted") is True:
             return None
+        # Claude Code moves a long foreground command to the background (subagents: after 3 min) without
+        # run_in_background in the input; the response then carries backgroundTaskId and no exit code yet.
+        # ⚠Recording rc 0 here would pass a gate that has not finished.
+        if isinstance(resp, dict) and resp.get("backgroundTaskId"):
+            return None
         rc = 0
     else:
         if ev.get("is_interrupt") is True:
