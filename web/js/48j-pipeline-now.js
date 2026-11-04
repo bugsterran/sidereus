@@ -39,7 +39,7 @@ function plNowAgents(x, only, cls, gtip){
 }
 // ⚠Only a sub whose [pl:] tag names the open run sits under it (plnagrn); untagged ones stay a plain group — liveness alone is no evidence, no time window.
 // ⚠One session can hold several open runs at once (e.g. feature + bugfix): each gets its own group, else the second run's
-//   agents fell into the plain group (no run bar, 4px further left) next to the first run's group.
+//   agents fell into the plain group (uncoloured bar) next to the first run's group.
 function plNowAgentRows(x){
   const names = [...new Set((x.plrun || []).filter(q => q && q.name && !q.end).map(q => q.name))];
   if(!names.length) return plNowAgents(x);
