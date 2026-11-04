@@ -7,10 +7,12 @@ function archBriefHref(d, p){
   if(!b || !p || !b.commit || !b.file) return '';
   return '/api/arch/brief?path=' + encodeURIComponent(p) + '&commit=' + encodeURIComponent(String(b.commit));
 }
-// Pure: export needs a map drawn at HEAD; a stale or other-commit map would describe code that is no longer there.
+// Pure: export needs a drawn map; an older-commit map exports too, stamped with its own commit and how far HEAD moved (84m2).
 function archXOk(d){
-  return !!(d && d.ok && !d.empty && !d.bad && (d.modules || []).length && !d.stale && d.head && d.commit === d.head);
+  return !!(d && d.ok && !d.empty && !d.bad && (d.modules || []).length);
 }
+// Pure: a new overview request needs the map at HEAD (arch-brief draws on top of the current arch-map result).
+function archXHead(d){ return archXOk(d) && !d.stale && !!d.head && d.commit === d.head; }
 function archBriefBusy(p){ return !!((typeof archReqLive === 'function' && archReqLive(archReqLast(p, ARCH_BRIEF_PL))) || (BRIEFRUN && BRIEFRUN[p])); }   // ⚠'sent' counts: only run/stopping let a second request out
 // Pure: header button (disabled with the reason when there is no HEAD map) + its menu while ARCH.xm === p (absolute: the header never shifts).
 function archXBtn(d, p){
@@ -24,8 +26,9 @@ function archXMenu(d, p){
   const href = archBriefHref(d, p), busy = !href && archBriefBusy(p), lb = esc(T('Simple', 'arch export'));
   const s = href ? '<a role=menuitem class="wkrgb archxi" data-arxc target=_blank rel="noopener noreferrer" href="' + esc(href) + '" title="'
       + esc(T('Open the big-picture overview in a new tab') + '\n' + String(d.brief.file)) + '">' + lb + '</a>'
-    : '<button type=button role=menuitem class="wkrgb archxi" data-arxs' + (busy ? ' disabled' : '') + ' title="'
-      + esc(T(busy ? 'An overview run is in progress' : 'No overview for this commit yet — ask a session to draw one')) + '">' + lb + '</button>';
+    : '<button type=button role=menuitem class="wkrgb archxi" data-arxs' + (busy || !archXHead(d) ? ' disabled' : '') + ' title="'
+      + esc(T(busy ? 'An overview run is in progress' : !archXHead(d) ? 'Draw the architecture map for the current commit first'
+              : 'No overview for this commit yet — ask a session to draw one')) + '">' + lb + '</button>';
   return '<div class=archxm role=menu aria-label="' + esc(T('Export HTML')) + '">' + s + '<button type=button role=menuitem class="wkrgb archxi" data-arxd title="'
     + esc(T('Download the module map as one HTML file')) + '">' + esc(T('Detailed', 'arch export')) + '</button></div>';
 }
@@ -77,7 +80,7 @@ async function archBriefSend(){
   const q = ARCH.breq;
   if(!q || q.busy) return false;
   const d = ARCH.cache[q.p], home = archHome(d), cs = archCands(home, SESS, q.p), cur = cs.find(c => c.sid === q.sid);
-  if(!cur || archWhyOff(home, cs, cur) || archBriefBusy(q.p) || !archXOk(d)) return false;
+  if(!cur || archWhyOff(home, cs, cur) || archBriefBusy(q.p) || !archXHead(d)) return false;
   q.busy = true; paintStruct();
   try{
     const j = await postJSON('/api/dm', { to: cur.id, sid: cur.sid, relay: true, thread: 'pipeline:' + ARCH_BRIEF_PL, body: archBriefDmBody(q.p, home, !!cur.cx),
@@ -112,7 +115,7 @@ document.addEventListener('click', ev => {
   if(t.closest('[data-arxp]')){ ARCH.xm = ARCH.xm === p ? '' : p; ARCH.msg = ''; paintStruct(); kbHold(ARCH.xm ? '.archtab .archxi:not([disabled])' : '.archtab [data-arxp]'); return; }
   if(t.closest('[data-arxc]')){ setTimeout(archXClose, 0); return; }   // ⚠a sync removal disconnects the <a> before its navigation runs: no tab opens
   if(t.closest('[data-arxs]')){ const d = ARCH.cache[p], c = archCands(archHome(d), SESS, p); ARCH.xm = ''; ARCH.msg = '';
-    if(archXOk(d) && !archBriefBusy(p) && !(ARCH.breq && ARCH.breq.p === p)){ ARCH.breq = { p, sid: (c[0] || {}).sid || '', busy: false }; if(ARCH.req && !ARCH.req.busy) ARCH.req = null; }   // one preview at a time
+    if(archXHead(d) && !archBriefBusy(p) && !(ARCH.breq && ARCH.breq.p === p)){ ARCH.breq = { p, sid: (c[0] || {}).sid || '', busy: false }; if(ARCH.req && !ARCH.req.busy) ARCH.req = null; }   // one preview at a time
     paintStruct(); kbHold('.archtab [data-arxp]'); return; }
   if(t.closest('[data-arxd]')){ ARCH.xm = ''; ARCH.msg = typeof archXDownload === 'function' && archXDownload(p) ? '' : T('The module map is not drawn yet'); paintStruct(); kbHold('.archtab [data-arxp]'); return; }
   if(t.closest('[data-arbx]')){ if(ARCH.breq && !ARCH.breq.busy) ARCH.breq = null; paintStruct(); return; }

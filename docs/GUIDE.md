@@ -111,7 +111,7 @@ The Structure tab opens on «Architecture», a diagram of the project's modules.
 ### Make or refresh it
 - «Generate diagram» (none yet) / «Update diagram» (older than the code) / «Redraw» (at HEAD) → preview → «Confirm — send» asks an open session to run the read-only `arch-map` pipeline. The diagram draws itself when it arrives. It needs Sidereus run from a git clone; an installed package (pipx/uv) has no repository to run the pipeline from, and the disabled send says so.
 - A row shows who received it (project · session · mailbox id) and its state: «Sent», «Running · <stage>», «Stopping», then «Stopped» / «Done» / «No session». It survives a reload. «Stop» (preview + confirm) asks the session to finish the current stage and start no more.
-- «Export HTML» (header) › «Simple» / «Detailed». Off until the map is drawn at the current commit (the tooltip says so). «Simple» opens the commit's big-picture overview (`arch-brief`) in a new tab (scripts blocked); with none yet it shows a preview, and «Confirm — send» asks a session to run `arch-brief`, with the same request row and «Stop». «Detailed» downloads the module map as one HTML file.
+- «Export HTML» (header) › «Simple» / «Detailed». Off until a map is drawn (the tooltip says so); an older-commit map exports too, and the file says how many commits HEAD has moved since. «Simple» opens the commit's big-picture overview (`arch-brief`) in a new tab (scripts blocked); with none yet (and the map at the current commit) it shows a preview, and «Confirm — send» asks a session to run `arch-brief`, with the same request row and «Stop». «Detailed» downloads the module map as one HTML file.
 
 ### Flows
 
