@@ -10,7 +10,7 @@ import time
 from sidereus.config import IS_MAC
 from sidereus import claude_roots
 from sidereus.warn import warn_once
-from sidereus.memo import BoundedMemo
+from sidereus.memo import BoundedMemo, on_request_path, serve_last
 from sidereus.transcript import CLAUDE_PROJECTS, _continued
 from sidereus.ident import _slug
 # ⚠Probes (staleness, sid lookups, agent_view, _ps_snap, tool_busy/_blocked) live in sidereus/live_probe.py; re-exported here
@@ -532,6 +532,8 @@ def mailbox_watches():
     now = time.time()
     if _mon_cache[1] is not None and now - _mon_cache[0] < MON_TTL:
         return _mon_cache[1]
+    if on_request_path():              # never spawn on a request thread (`memo.request_path`)
+        return serve_last("mon", mailbox_watches, lambda: tuple(_mon_cache), MON_STALE_S, time.time)
     try:
         live_cwds()          # fills the pid -> cwd by-product (its own 2 s TTL cache, so not an extra call)
         par, cmdl, watch = {}, {}, []

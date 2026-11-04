@@ -1,4 +1,5 @@
 """Bounded in-memory memo shared by every module (stdlib only, no sidereus imports)."""
+import contextlib
 import threading
 from collections import OrderedDict
 
@@ -88,3 +89,46 @@ class Refresher:
                 self._on.discard(key)
             return False
         return True
+
+
+# ★Load 105-135 on 12 CPUs (2026-11-04): /api/state stalled 30-60 s; `sample` showed 9 request threads parked on
+#   live_probe's `_ps_snap_lock`/`_av_lock` behind spawns (ps 4 s, claude agents 6 s cap). ⇒ Inside `request_path()`
+#   a probe never spawns or takes those locks: it kicks one off-thread refresh per key and serves its last value.
+#   ⚠Background collectors (sessions refresh, term, live_probe._AV_BG) run outside the flag and spawn as before.
+_req = threading.local()
+_PROBE_BG = Refresher()
+PROBE_ERR = {}               # probe key -> last exception its background refresh raised (kept off the thread's stderr)
+
+
+@contextlib.contextmanager
+def request_path():
+    """Mark this thread as serving a request: probes answer from cache only (`serve_last`)."""
+    prev = getattr(_req, "on", False)
+    _req.on = True
+    try:
+        yield
+    finally:
+        _req.on = prev
+
+
+def on_request_path():
+    return bool(getattr(_req, "on", False))
+
+
+def serve_last(key, refresh, read, max_age, clock):
+    """Kick `refresh()` off-thread (one per key) and return `read()` = (measured at, value) if younger than
+    max_age by `clock()`, else None (unknown). ⚠`refresh` records its own failure; read is taken after the kick
+    because an inline spawn (tests) has just filled it."""
+    def run():
+        prev = getattr(_req, "on", False)
+        _req.on = False        # ⚠an inline spawn runs on the caller's thread — the refresh itself must probe for real
+        try:
+            refresh()
+            PROBE_ERR.pop(key, None)
+        except Exception as e:  # ⚠the probe caches its own failure (e.g. `_ps_snap_fail`) and its readers warn
+            PROBE_ERR[key] = e
+        finally:
+            _req.on = prev
+    _PROBE_BG.kick(key, run)
+    at, val = read()
+    return val if val is not None and clock() - at < max_age else None
