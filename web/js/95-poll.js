@@ -55,6 +55,7 @@ async function poll(first){
     if(s.cfg) termCfg(s.cfg.termApp);   // «Terminal link» setting (88d-term.js)
     CUR=s.cursors; ROOMS=s.rooms; PROF=s.profiles; MINE=s.mine; PRES=s.presence||{}; pollAcksTake(s); ACKSINCE=s.acksSince||0; SESS=s.sessions||[]; ACCTS=s.accts||[];
     ARCHRUN = s.archRun || {}; SECRUN = s.secRun || {}; SIDEREUS_DIR = s.codeDir || '';   // arch-map runs in progress per project (84j archRunOf, 48h)
+    if(typeof archBriefPoll === 'function') archBriefPoll(s.briefRun || {});   // arch-brief run ended: re-fetch /api/arch (84m)
     PLREQ = s.plReq || {};   // who received each arch-map request and its run state (84l2)
     PROJ_GONE = new Set(s.projGone || []);   // session folders deleted from disk — project chips skip them (80, 48)
     if(typeof stodoSet === 'function') stodoSet(s.todo);   // session to-do counts (40c); missing key = feature off

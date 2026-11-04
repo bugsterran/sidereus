@@ -18,7 +18,7 @@ const PLG_NAMES = { en: {
   '롤백 계획': 'Rollback plan', '사람 승인': 'Human approval', '메일박스 알림': 'Mailbox notify',
   '웹 조사': 'Web research', '선행 연구': 'Prior art + papers', '라이브러리 문서 확인': 'Library + docs lookup', '선택지 비교': 'Option comparison',
   '스파이크': 'Spike + prototype', '유사 도구 조사': 'Reference survey', '개선': 'Improve', '성능 개선': 'Optimize', '코드 정리': 'Cleanup',
-  '읽기 계획': 'Reading plan', '모듈 그리기': 'Draw modules', '흐름 그리기': 'Draw flows', '점검 계획': 'Check plan', '점검': 'Check', '업데이트': 'Update',
+  '읽기 계획': 'Reading plan', '모듈 그리기': 'Draw modules', '흐름 그리기': 'Draw flows', '준비': 'Prepare', '개요 그리기': 'Draw overview', '점검 계획': 'Check plan', '점검': 'Check', '업데이트': 'Update',
   '검사 실행': 'Run checks', '보안 검사': 'Security checks', '화면 확인': 'Screen check', '수용 확인': 'Acceptance check',
   // «Standard templates» stages (sidereus/pipeline_std.py STD)
   '실패 테스트': 'Failing test', '기준선': 'Baseline', '계획': 'Plan', '리팩토링': 'Refactor', '측정': 'Measure', '병목 분석': 'Bottleneck analysis',

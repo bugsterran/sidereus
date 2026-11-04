@@ -30,6 +30,9 @@ _USER_SRC = "<user-src>"
 warnings.filterwarnings("ignore", category=SyntaxWarning, module=re.escape(_USER_SRC) + "$")
 
 ARCH_DIR = os.path.join(DATA_DIR, "arch")
+# Overview (arch-brief) files in the same store dir; the pointer sits next to arch-map's _last.json.
+BRIEF_JSON, BRIEF_HTML, BRIEF_LAST = "brief.json", "brief.html", "_brief_last.json"
+BRIEF_OK = "brief.ok.json"   # written only by the gate: sha256 of the brief.html it rendered (an agent-written html has none)
 ARCH_K = 2                 # symbol may sit within line ±K (agents miscount by a line or two)
 ARCH_GATE_MIN = 0.7        # verified-edge rate below this fails the gate
 ARCH_FILE_MAX = 1_000_000  # chars read per cited file; lines past the cap count as out of range

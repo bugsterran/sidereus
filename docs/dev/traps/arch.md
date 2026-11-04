@@ -389,3 +389,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Do not move it after `archScrollPut`, and never select bare `svg.mmdsvg` — the `.archmm` minimap clone has that class too — `tests/test_struct_arch_zoom_js.py`.
 - ⚠Zoom bar scrolled away vertically: `.archmap` is the scroller and the opaque sticky `.archtop` covers its top, so `.mmdbar` `top:0` sits hidden behind it. ⇒ `top:calc(var(--archtop-sh) - 6px)`, `--archtop-sh` = live `.archtop` height set by `archZmTop` (ResizeObserver, re-observed per repaint).
 - ⚠Ctrl/⌘+wheel zoom slid the spot away: the svg grows from its top-left corner. ⇒ 81e `mmdZoomAnchor` shifts the nearest scrolling ancestor by the cursor point's drift (live: < 1px at 182% -> 122%) — `tests/test_mmd_wheel_anchor_js.py`.
+
+## Overview arrow cites an edge that does not join its boxes (`arch_brief.check`)
+
+- Cause: an arrow between two domain boxes can cite a real, verified map edge whose ends sit in other boxes; the figure then shows a link the code does not have.
+- ⇒ each cited edge index must be `ok` in verify.json and its `from`/`to` must be in the arrow's from-box/to-box modules; an unreadable commit tree reads «tree unreadable», never «file missing».
+- ⚠Do not accept an edge by index alone or in either direction — `tests/test_arch_brief.py` `test_arrow_edge_not_joining_boxes`.

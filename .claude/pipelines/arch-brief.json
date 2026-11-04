@@ -1,0 +1,31 @@
+{
+  "v": 1,
+  "name": "arch-brief",
+  "title": "아키텍처 개요 — 한 장 요약",
+  "use": "Draw a one-page architecture overview (domain boxes + decision order) on top of a finished arch-map result.",
+  "rules": "Target repo: in the request; read-only (no write, commit, checkout, build).\nNeeds the arch-map result (map.json + verify.json) of the repo's HEAD commit; run arch-map first when «준비» says it is missing.\nWrite only S/brief.json, S = the store dir printed by «준비» (same key/commit as arch-map). Never edit map.json, verify.json or flows.json.\nMetadata only (module ids, names, file:line), never source text.",
+  "defaults": { "model": "inherit", "retry": 0 },
+  "stages": [
+    {
+      "title": "준비",
+      "agent": "general-purpose",
+      "model": "sonnet",
+      "task": "Run `/usr/bin/python3 scripts/arch_brief.py --pre --repo <repo>` once (from the Sidereus folder) and report its line verbatim. On a miss it says to run arch-map first; stop there and edit nothing.",
+      "gate": "/usr/bin/python3 scripts/arch_brief.py --ready"
+    },
+    {
+      "title": "개요 그리기",
+      "agent": "general-purpose",
+      "model": "opus",
+      "task": "Read S/map.json and S/verify.json. Write S/brief.json only: {v:1, repo:<realpath>, commit, title<=80, heads?:{arch<=40, route<=40}, bands:[{id, name<=40}] 1..4 top to bottom, boxes:[{id, name<=40, band, note?<=80, modules:[map module ids] 1..}] 1..12, arrows:[{from, to, label?<=40, edges:[map.json edges index] 1..5}] <=24, route:{na<=120} | {by<=80, rows:[{when<=80, goes<=120, box?, evidence:{file, line}}] 1..16}}. No other keys. Group modules by domain/feature for a non-developer (what it does, not code layers); a module in at most one box. Each arrow cites map edges whose verify.json verdict is ok and whose from/to modules sit in the from/to boxes. route = how a request is routed to a domain, in the order the code decides, each row citing the deciding line (repo-relative file, line at the commit); no router: route = {na: one line why}. Text follows map.json's label language. Never write brief.html or brief.ok.json (gate only)."
+    },
+    {
+      "title": "검증",
+      "agent": "general-purpose",
+      "model": "sonnet",
+      "task": "Run the gate once and report its printed line verbatim. It fails on unknown module/box/band ids, a module in two boxes, more than 12 boxes, an arrow edge that is not verified or does not join its boxes, and route evidence whose file:line does not exist at the commit; on pass it writes S/brief.html and S/brief.ok.json (sha256 of that html). Do not edit brief.json.",
+      "gate": "/usr/bin/python3 scripts/arch_brief.py --last",
+      "onFail": { "goto": "개요 그리기", "max": 1 }
+    }
+  ]
+}

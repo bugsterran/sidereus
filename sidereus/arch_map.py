@@ -3,16 +3,18 @@
 Metadata only — modules, edges and their file/line/symbol evidence; never file contents. The stored files are
 agent-written, so they are re-validated (arch_verify.schema_errors) and capped here before going to the page.
 """
+import hashlib
 import json
 import os
 import re
+import stat
 import subprocess
 import time
 
 from sidereus.config import CODE_DIR, IS_CLONE
 from sidereus.gitinfo import _git_run, _git_run_capped
 from sidereus.structure import _struct_src_root
-from sidereus.arch_verify import ARCH_DIR, NAME_MAX, PATH_MAX, SYM_MAX, est_of, head_of, read_json, render_md, repo_key, \
+from sidereus.arch_verify import BRIEF_HTML, BRIEF_OK, ARCH_DIR, NAME_MAX, PATH_MAX, SYM_MAX, est_of, head_of, read_json, render_md, repo_key, \
     schema_errors, COMMIT_RE, ARCH_GIT_TIMEOUT, ARCH_TREE_MAX, ID_RE, STYLES, ROLES, FW_MAX, UNITS_MAX, EV_MAX, SUM_MAX, OWNS_MAX
 from sidereus.arch_flow import load_flows
 from sidereus.arch_checks import load_checks
@@ -24,14 +26,17 @@ SIDEREUS_ROOT = os.path.realpath(CODE_DIR) if IS_CLONE else ""   # "" = installe
 ARCH_PL = "arch-map"
 _ARCH_TAG = re.compile(r"\[pl:arch-map/([^\]]{1,80})\]")
 SEC_PL = "security-checks"   # = ARCH_SEC_PL (84l); its runs are tracked the same way (state `secRun`)
-_TAGS = {ARCH_PL: _ARCH_TAG, SEC_PL: re.compile(r"\[pl:security-checks/([^\]]{1,80})\]")}
+BRIEF_PL = "arch-brief"     # ends on the gate's brief.ok.json (state `briefRun` via brief_runs)
+_TAGS = {ARCH_PL: _ARCH_TAG, SEC_PL: re.compile(r"\[pl:security-checks/([^\]]{1,80})\]"), BRIEF_PL: re.compile(r"\[pl:arch-brief/([^\]]{1,80})\]")}
 ARCH_RUN_GAP_S = 180       # a run stays «in progress» this long after its last tagged sign (main thinks between stages)
 ARCH_BUSY_S = 30 * 60      # a busy session keeps its open plrun only this long after the run last moved
 ARCH_PEND_S = 6 * 3600     # = pl_runs.PLR_KEEP_S: an older plan.json without verify.json is an abandoned run
+BRIEF_MAX = 1_000_000      # bytes of brief.html served by /api/arch/brief
 FILES_MAX = 200            # file names per module in /api/arch/files; total still counts all
 _TREE_CACHE = {}           # (realpath, commit) -> (sorted names, cut); a commit's tree never changes, 4 entries kept
 _RUN_SEEN = {}             # project path -> {stage, sid, t0, at}: last tagged sign per project (bridges stage gaps)
 _SEC_SEEN = {}             # same for security-checks runs
+_BRIEF_SEEN = {}           # same for arch-brief runs
 _REQ_SRC = None            # fn(sid, pl, now) -> repo the page last asked that session to run pl on, ""; set by pl_reqs
 
 
@@ -109,7 +114,7 @@ def load(path):
     head = head_of(root)
     base = {"ok": True, "empty": True, "sidereus": SIDEREUS_ROOT, "commit": "", "head": head, "stale": False,
             "behind": None, "at": None, "v": None, "groups": [], "modules": [], "edges": [], "rate": None, "md": "", "style": None, "dev": [], "flows": [],
-            "checks": None, "prov": None}
+            "checks": None, "prov": None, "brief": _brief(root, head)}
     commit = _newest(os.path.join(ARCH_DIR, repo_key(root)))
     if not commit:
         return base
@@ -142,6 +147,51 @@ def load(path):
                 rate=rate if isinstance(rate, (int, float)) and not isinstance(rate, bool) else None,
                 md=md, style=_style(v.get("style")), dev=_dev(v.get("dev"), edges), flows=load_flows(d, m, root, commit),
                 checks=load_checks(root, d, m, head), prov=_prov(root, commit, d))
+
+
+def _brief_file(root, commit):
+    """(brief.html path, sha256 from the gate's brief.ok.json for this commit), ("", "") when either is missing or unsafe."""
+    if not (isinstance(commit, str) and COMMIT_RE.fullmatch(commit)):
+        return "", ""
+    kd = os.path.join(os.path.realpath(ARCH_DIR), repo_key(root))
+    fp, okp = os.path.join(kd, commit, BRIEF_HTML), os.path.join(kd, commit, BRIEF_OK)
+    # ⚠realpath must equal the plain join: a symlinked key dir, commit dir or file escapes the store and is refused.
+    if os.path.islink(kd) or any(os.path.islink(x) or os.path.realpath(x) != x or not os.path.isfile(x) for x in (fp, okp)):
+        return "", ""
+    try:
+        ok = read_json(okp) if os.path.getsize(okp) <= 4096 else None
+    except (OSError, ValueError):
+        return "", ""
+    sha = ok.get("sha256") if isinstance(ok, dict) and ok.get("commit") == commit else None
+    return (fp, sha) if isinstance(sha, str) and sha else ("", "")
+
+
+def _brief_bytes(root, commit):
+    """(path, bytes) of brief.html only when its sha256 equals the gate's record (an agent-edited page is never served)."""
+    fp, sha = _brief_file(root, commit)
+    if not fp:
+        return None
+    try:
+        with os.fdopen(os.open(fp, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)), "rb") as f:
+            data = f.read(BRIEF_MAX + 1) if stat.S_ISREG(os.fstat(f.fileno()).st_mode) else b""
+    except OSError:
+        return None
+    return (fp, data) if data and len(data) <= BRIEF_MAX and hashlib.sha256(data).hexdigest() == sha else None
+
+
+def _brief(root, head):
+    """`brief` of /api/arch: the HEAD commit's gate-passed overview only (not the newest map's), None when there is none."""
+    b = _brief_bytes(root, head)
+    return {"commit": head, "file": b[0]} if b else None
+
+
+def brief_html(path, commit):
+    """`GET /api/arch/brief?path=&commit=` body: brief.html bytes of an allowed repo's store, or {ok: False, err}."""
+    root = _struct_src_root(path)
+    if not root:
+        return {"ok": False, "err": "Only projects shown on screen can be opened."}
+    b = _brief_bytes(root, commit)
+    return b[1] if b else {"ok": False, "err": "no brief"}
 
 
 def _prov(root, commit, d):
@@ -307,8 +357,8 @@ def _sec_final_at(root):
 
 
 def _final_at(pl, root):
-    """Result time that ends a run of pl (arch-map: the gate's verify.json · security-checks: a review-stage record)."""
-    return _result_at(root) if pl == ARCH_PL else _sec_final_at(root)
+    """Result time that ends a run of pl (arch-map: the gate's verify.json · arch-brief: brief.ok.json · security-checks: a review-stage record)."""
+    return _sec_final_at(root) if pl == SEC_PL else _result_at(root, BRIEF_OK if pl == BRIEF_PL else "verify.json")
 
 
 def result_at(pl, root):
@@ -339,8 +389,8 @@ def _pending_at(root):
     return best
 
 
-def _result_at(root):
-    """mtime of the newest verify.json under root's store (a run's gate result), 0 if none."""
+def _result_at(root, name="verify.json"):
+    """mtime of the newest gate result file `name` under root's store, 0 if none."""
     rdir, best = os.path.join(ARCH_DIR, repo_key(root)), 0.0
     try:
         names = os.listdir(rdir)
@@ -348,7 +398,7 @@ def _result_at(root):
         return 0.0
     for c in names:
         if COMMIT_RE.fullmatch(c):
-            f = os.path.join(rdir, c, "verify.json")
+            f = os.path.join(rdir, c, name)
             if os.path.isfile(f):   # most commit dirs have no gate result yet; a vanished file just counts as none
                 try:
                     best = max(best, os.path.getmtime(f))
@@ -506,12 +556,17 @@ def sec_runs(sessions, now=None):
     return runs(sessions, now, SEC_PL)
 
 
+def brief_runs(sessions, now=None):
+    """`/api/state` `briefRun`: runs() for arch-brief (same shape; ends on brief.ok.json)."""
+    return runs(sessions, now, BRIEF_PL)
+
+
 def runs(sessions, now=None, pl=ARCH_PL):
     """`/api/state` `archRun`: {project path: {stage, n, of, t0, sid}} for runs of pl in progress, from session rows.
     ⚠Metadata only — stage title, times, session id. The pipeline hook keeps no run for a session whose cwd has its own
     pipelines (arch-map lives in the Sidereus repo), so the row's live [pl:arch-map/…] tags are the source, not plrun alone."""
     now = time.time() if now is None else now
-    seen, ended, fin, mem = {}, set(), [], _RUN_SEEN if pl == ARCH_PL else _SEC_SEEN
+    seen, ended, fin, mem = {}, set(), [], {ARCH_PL: _RUN_SEEN, SEC_PL: _SEC_SEEN}.get(pl, _BRIEF_SEEN)
     rows = {}
     for s in sessions or ():
         if not isinstance(s, dict) or s.get("state") in ("done", "gone"):

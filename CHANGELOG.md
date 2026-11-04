@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Structure: an "Overview" link in the Architecture header opens the current commit's `arch-brief` page in a new tab, served with scripts blocked.
+
 ### Removed
 
 - Chat: room hashtags, the room list "Manage" mode (create, invite, hide rooms) and the sessions drawer invite bar. The Chat tab keeps the room list, reading and posting; manage rooms from a session with the `room` skill.
