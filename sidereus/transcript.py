@@ -1,4 +1,5 @@
 """Transcript primitives shared by every domain: tail readers, human-text/noise filters, tool targets, line timestamps."""
+import json
 import os
 import re
 import time
@@ -384,3 +385,44 @@ def _line_ts(d, fallback):
 
 # transcript timestamps are UTC — convert to local (otherwise they look 9 hours old and all expire)
 _TZ_OFF = -time.timezone if time.daylight == 0 else -time.altzone
+
+
+_CONT_KEY = '"continuedInSessionId"'
+_CONV_TYPES = ("user", "assistant")
+EXITED = "/exit"                      # `_continued` result for a transcript ended by `/exit`/`/quit` (no successor)
+_EXIT_CMDS = ("<command-name>/exit</command-name>", "<command-name>/quit</command-name>")
+_LOCAL_OUT = ("<local-command-stdout>", "<local-command-stderr>", "<local-command-caveat>")
+
+
+def _user_text(d):
+    """Plain text of a user record (str content or its text blocks); "" for anything else."""
+    m = d.get("message")
+    c = m.get("content") if isinstance(m, dict) else None
+    if isinstance(c, list):
+        c = "".join(b.get("text") or "" for b in c if isinstance(b, dict) and b.get("type") == "text")
+    return c.strip() if isinstance(c, str) else ""
+
+
+def _continued(fp):
+    """Successor sid if the transcript's last conversation record is a continuation, `EXITED` if it is `/exit`, else "".
+
+    ★2026-09-24 (f3f9583a): a fork leaves `continued-in` {continuedInSessionId} at the tail (only metadata
+      after it). A plain `claude`/`claude -c` terminal pid has no sid in argv, so it keeps a path slot and the
+      old transcript showed as live next to its successor. ⚠A user/assistant line after it = resumed, not continued.
+    ⚠An `/exit`-ended file took the path slot of the next `claude` in that cwd (read as «Asked a question» forever);
+      its stdout/caveat records are skipped. `/clear` is not an end."""
+    for line in reversed(_tail_lines(fp, nbytes=16384, limit=40)):
+        if _CONT_KEY not in line and '"user"' not in line and '"assistant"' not in line:
+            continue                  # cheap pre-filter before json
+        try:
+            d = json.loads(line)
+        except Exception:
+            continue
+        if d.get("continuedInSessionId"):
+            return str(d["continuedInSessionId"])
+        if d.get("type") in _CONV_TYPES:
+            t = _user_text(d) if d.get("type") == "user" else ""
+            if t.startswith(_LOCAL_OUT):
+                continue              # output/caveat of a local command — look at the command itself
+            return EXITED if t.startswith(_EXIT_CMDS) else ""
+    return ""

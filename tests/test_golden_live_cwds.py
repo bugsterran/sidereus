@@ -8,7 +8,9 @@ trace of dependency calls (with the fake clock reading) and the shared state it 
 """
 import json
 import os
+import shutil
 import subprocess
+import tempfile
 import unittest
 
 from tests._load import sidereus
@@ -104,7 +106,7 @@ def run(sc):
 
     def sid_tx(sid):
         trace.append(["_sid_transcript", sid])
-        return ("/p/%s.jsonl" % sid) if sid in sc["tx"] else None
+        return os.path.join(sc.get("txdir", "/p"), sid + ".jsonl") if sid in sc["tx"] else None
 
     def claim_stale(sid, cwd=None):
         trace.append(["_sid_claim_stale", sid, cwd])
@@ -117,7 +119,7 @@ def run(sc):
 
     fakes = {"time": _T, "subprocess": _SP, "IS_MAC": sc["mac"], "_ps_snap": ps_snap, "agent_view": agent_view,
              "_sid_transcript": sid_tx, "_sid_claim_stale": claim_stale, "warn_once": warn,
-             "_slow_why": lambda: [{"msg": "why"}],
+             "_slow_why": lambda: [{"msg": "why"}], "_reg_dirs": lambda: list(sc.get("reg", ())),
              "_stale_clear": lambda k: trace.append(["_stale_clear", k]),
              "_stale_mark": lambda k, at: trace.append(["_stale_mark", k, at]),
              "_live_cache": sc["cache"]}
@@ -154,6 +156,34 @@ def _j(v):
 
 def capture():
     return {name: run(sc) for name, sc in _scenarios().items()}
+
+
+class ParkedClaim(unittest.TestCase):
+    """A parked claude (registry `parkedJobId`, transcript continued elsewhere) lends no path slot. Temp files only."""
+    def setUp(self):
+        self.d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.d, True)
+
+    def _res(self, reg, tail):
+        with open(os.path.join(self.d, "301.json"), "w", encoding="utf-8") as f:
+            json.dump(reg, f)
+        with open(os.path.join(self.d, A + ".jsonl"), "w", encoding="utf-8") as f:
+            f.write("".join(json.dumps(r) + "\n" for r in tail))
+        sc = {"snap": [("301", "1", "claude")], "lsof": _lsof({"301": "/w/x"}), "av": {}, "tx": {A},
+              "txdir": self.d, "reg": [self.d], "stale": set(), "mac": True, "cache": (0.0, set())}
+        return run(sc)["result"]
+
+    CONT = [{"type": "assistant"}, {"type": "continued-in", "continuedInSessionId": B}, {"type": "cost-state"}]
+
+    def test_parked_continued_lends_no_slot(self):
+        self.assertEqual(self._res({"pid": 301, "sessionId": A, "parkedJobId": "j1"}, self.CONT), {"dict": []})
+
+    def test_typed_again_after_continuation_keeps_slot(self):
+        tail = self.CONT + [{"type": "user", "message": {"content": "go on"}}]
+        self.assertEqual(self._res({"pid": 301, "sessionId": A, "parkedJobId": "j1"}, tail), {"dict": [["/w/x", 1]]})
+
+    def test_not_parked_keeps_slot(self):
+        self.assertEqual(self._res({"pid": 301, "sessionId": A}, self.CONT), {"dict": [["/w/x", 1]]})
 
 
 class GoldenLiveCwds(unittest.TestCase):

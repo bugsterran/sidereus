@@ -1,0 +1,9 @@
+{
+ "ages": {
+  "99999999-0000-4000-8000-0000000000c1.jsonl": 600,
+  "99999999-0000-4000-8000-0000000000c2.jsonl": 100
+ },
+ "busy": null,
+ "guards": "a parked claude (registry parkedJobId, transcript continued-in) lends no path slot to a dead same-cwd transcript (live._live_parked)",
+ "os": "mac"
+}

@@ -11,7 +11,7 @@ from sidereus.config import IS_MAC
 from sidereus import claude_roots
 from sidereus.warn import warn_once
 from sidereus.memo import BoundedMemo
-from sidereus.transcript import CLAUDE_PROJECTS
+from sidereus.transcript import CLAUDE_PROJECTS, _continued
 from sidereus.ident import _slug
 # ⚠Probes (staleness, sid lookups, agent_view, _ps_snap, tool_busy/_blocked) live in sidereus/live_probe.py; re-exported here
 #   for importers (sessions, cards, notes, work, history) and for live_cwds/watchers. Patch probe internals on live_probe.
@@ -72,6 +72,7 @@ def live_cwds(ttl=2):
         av = _live_official(sids, claimed, snap)
         _live_argv_claims(snap, pids, av, pmap, sids, claimed)
         _live_bg_hosts(snap, av, claimed)
+        _live_parked(pmap, av, claimed)
         _live_sids[0], _live_sids[1] = time.time(), sids
         _live_count_paths(pmap, claimed, out)
     except Exception as e:
@@ -331,6 +332,30 @@ def _live_bg_hosts(snap, av, claimed):
             if sp:
                 claimed.add(str(sp))
                 break
+
+
+def _reg_dirs():
+    """Every account's session registry dir `<cfg>/sessions` (same roots as `live_probe.agent_view`)."""
+    return [os.path.join(d or _lp.rich_env().get("CLAUDE_CONFIG_DIR") or os.path.join(claude_roots.SCAN_HOME, ".claude"),
+                         "sessions") for _l, d, _p in _lp._av_accounts()]
+
+
+def _live_parked(pmap, av, claimed):
+    """A parked claude (registry `parkedJobId`, its sessionId continued elsewhere) lends no path slot."""
+    # ⚠Absent from `claude agents`; left in path counting its cwd slot went to a dead same-cwd transcript (ask forever).
+    #   A new line after `continued-in` clears `_continued`, so the claim lifts once the person types there again.
+    left = [p for p in pmap if p not in claimed and p not in (av or {})]
+    for d in (_reg_dirs() if left else ()):
+        for pid in left:
+            try:
+                with open(os.path.join(d, pid + ".json"), encoding="utf-8", errors="replace") as f:
+                    reg = json.load(f)
+            except (OSError, ValueError):
+                continue
+            sid = reg.get("sessionId") if isinstance(reg, dict) and reg.get("parkedJobId") else ""
+            fp = _sid_transcript(sid) if isinstance(sid, str) and _UUID_RE.fullmatch(sid) else None
+            if fp and _continued(fp):
+                claimed.add(pid)
 
 
 def _live_count_paths(pmap, claimed, out):
