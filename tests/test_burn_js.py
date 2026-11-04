@@ -90,7 +90,7 @@ R.asof = [burnHead({cur, at: 3600 * 13 + 5 * 60}, N)];
         self.assertEqual(a["hrs"][6:], ["59m", "1h", "1h", "2h", "24h"])
 
     def test_duration_and_clock(self):
-        self.assertEqual(self.R["dur"], ["0분", "0분", "0분", "1분", "59분", "1시간 0분", "1시간 0분", "1시간 1분", "1일 1시간"])
+        self.assertEqual(self.R["dur"], ["0분", "0분", "0분", "1분", "59분", "1시간", "1시간", "1시간 1분", "1일 1시간"])
         self.assertEqual(self.R["durEn"], ["1h 1m"])
         self.assertEqual(self.R["hm"], ["오전 12:00", "오후 01:05"])
 
