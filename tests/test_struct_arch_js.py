@@ -84,6 +84,11 @@ class StructArch(unittest.TestCase):
         self.assertNotIn("오래됨", r)
         self.assertIn("abcdef1", r)                    # tooltip kept
 
+    def test_behind_singular(self):
+        js = "console.log(JSON.stringify(archHeadNote({edges: [], modules: [], stale: true, behind: 1, commit: 'abcdef123', head: '999888777'})));"
+        self.assertIn('title="HEAD is 1 commit ahead · ', run(js, "en"))
+        self.assertIn('title="HEAD 가 1커밋 앞섬 · ', run(js))
+
     def test_version_stamp(self):
         # 1791469200 = 2026-10-08 14:20 UTC (run() pins TZ=UTC)
         js = ("const f = {edges: [], modules: [], stale: false, at: 1791469200, commit: 'abc1234ffff', head: 'abc1234ffff'};"

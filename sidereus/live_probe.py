@@ -347,6 +347,9 @@ def _av_fetch(env, cache, fail, skey, sig, sig_key, fresh):
                                capture_output=True, text=True, encoding="utf-8", errors="replace",
                                timeout=AGENTS_TIMEOUT,
                                env=env)
+            # ⚠rc != 0 with empty stdout would parse as [] = «no sessions» and end every open row; it is unknown.
+            if r.returncode != 0:
+                raise RuntimeError("exit %s" % r.returncode)
             arr = json.loads(r.stdout or "[]")
             if not isinstance(arr, list):
                 raise ValueError("not an array")

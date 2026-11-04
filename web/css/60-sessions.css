@@ -141,7 +141,9 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .hsr > :is(b,s,.hsm){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}   /* one line per row at 900; full text in title */
 .hsr em{font-style:normal;margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap;
   color:#8b95a7}
-.hst{font-variant-numeric:tabular-nums;color:#7e8896;white-space:nowrap}
+.hst{font-variant-numeric:tabular-nums;color:#7e8896;white-space:nowrap;min-width:10ch}
+/* min-width = longest same-day range («23:00~24:00» ko, «12:00 AM–12:00 PM» en) so the project column lines up; day-prefixed ranges still grow */
+html[data-lang=en] .hst{min-width:16ch}
 .hst.hsxd{color:#a3adbb;cursor:help}
 .hsm{color:#9dc0f0;font-size:10.5px}
 .hsti{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c4cfdf}

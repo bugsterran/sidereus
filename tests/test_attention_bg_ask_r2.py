@@ -47,7 +47,7 @@ class R2BgAsk(unittest.TestCase):
         def run(*a, **k):
             if rows is None:
                 raise subprocess.TimeoutExpired("claude", 6)
-            return types.SimpleNamespace(stdout=json.dumps(rows))
+            return types.SimpleNamespace(stdout=json.dumps(rows), returncode=0)
         lp._av_fail[0] = 0.0                               # no negative cache between the scripted lookups
         with _clock.frozen(lp), mock.patch.object(lp.subprocess, "run", run):
             return lp._av_one({}, lp._av_cache, lp._av_fail, 0, None)

@@ -171,6 +171,7 @@ def simulate_agents(lv, cfg_dir, seconds=60.0, tick=2.5, per_tick=3, on_tick=Non
 
     class _R(object):
         stdout = "[]"
+        returncode = 0
 
     class _S(object):
         TimeoutExpired = subprocess.TimeoutExpired

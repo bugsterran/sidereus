@@ -42,7 +42,7 @@ class _Sub:
         v = self.outs[d]
         if isinstance(v, BaseException):
             raise v
-        return mock.Mock(stdout=v)
+        return mock.Mock(stdout=v, returncode=0)
 
 
 def _rows(*pids):

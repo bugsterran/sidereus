@@ -37,7 +37,7 @@
     {
       "title": "수정",
       "agent": "sidereus-implementer",
-      "task": "Fix your slice only with the smallest change and a regression test where logic changed. Report changed files; anything outside your slice goes in findings.",
+      "task": "Fix your slice only with the smallest change and a regression test where logic changed. ⚠Tests with a fixed functions list (FNS) must include every new helper you add. Report changed files; anything outside your slice goes in findings.",
       "fanout": "slices",
       "gate": "scripts/check.sh --fast",
       "onError": "continue",

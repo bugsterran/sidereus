@@ -31,8 +31,10 @@ function paintToken(){
   // ⚠Period buttons sit in the «Period totals» title line they control (the header toolbar was ~360px above it); clicks stay delegated (.wkrgb).
   tbSet('token', tkViewSeg());   // sub-view switch lives in the header toolbar slot, like Branches/Insights
   if(TKVIEW === 'tools'){ paintTools(box); return; }
+  const wkrName = {1: 'Day', 7: 'Week', 30: 'Month'};   // D/W/M alone is no accessible name
   const wkrBtns = [1,7,30].map(x => '<button class="wkrgb'
-    + (x === WKRANGE ? ' on' : '') + '" data-r="' + x + '">' + esc(T(WKR_LABEL[x])) + '</button>').join('');
+    + (x === WKRANGE ? ' on' : '') + '" data-r="' + x + '" aria-pressed="' + (x === WKRANGE) + '" aria-label="' + esc(T(wkrName[x]))
+    + '" title="' + esc(T(wkrName[x])) + '">' + esc(T(WKR_LABEL[x])) + '</button>').join('');
   const d = WKU, b = (d && d.burn) || null;
   // A failed fetch with nothing held says so with a retry — «Measuring…» is only for a server that is measuring.
   if(d && d.err){ box.innerHTML = '<div class="hidnote cwerr">'
@@ -81,8 +83,8 @@ function paintToken(){
     + '<div class=brsum>'+esc(T('Total'))+' <b>'+fmtTok(b.tot)+'</b>'
       + (lim ? TV({msg: ' · <b>{n}</b> of the 5h limit', vars: {n: fmtPct(pct(b.tot))}}) : '')
       + TV({msg: ' · {n}/min · {m} requests', vars: {n: fmtTok(Math.round(b.tot/Math.max(1,b.min))), m: (b.rows||[]).reduce((a,r)=>a+r.req,0)}})+'</div>'
-    + '<table class=brt><thead><tr><th>'+esc(T('Project'))+'</th><th>'+esc(T('Context'))+'</th><th></th><th>'+esc(T('Requests'))+'</th>'
-      + '<th>'+esc(T('Per request'))+'</th><th>'+esc(T('Per minute'))+'</th><th>'+esc(T('Of limit'))+'</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    + (rows ? '<table class=brt><thead><tr><th>'+esc(T('Project'))+'</th><th>'+esc(T('Context'))+'</th><th></th><th>'+esc(T('Requests'))+'</th>'
+      + '<th>'+esc(T('Per request'))+'</th><th>'+esc(T('Per minute'))+'</th><th>'+esc(T('Of limit'))+'</th></tr></thead><tbody>'+rows+'</tbody></table>' : tkNone())
     + '<div class="bsp'+(subs || agch ? ' split2' : '')+'"><div>'
     // ⚠`b.subs` = every subagent with requests in the burn window (burn_scan), finished ones included — the dot marks
     // the running ones. Titling it «running now» listed agents that had ended an hour ago.
@@ -92,7 +94,7 @@ function paintToken(){
         + '<tbody>'+subs+'</tbody></table>' : '')
     + agch + '</div><div>'
     + '<div class=brh2>'+esc(T('Compaction window per session'))+' <i>'+esc(T('Each session keeps the setting it started with'))+(b.win ? ' · '+esc(T('Current'))+' '+fmtTok(b.win) : '')+'</i></div>'
-    + '<table class=brt><thead><tr><th>'+esc(T('Sessions'))+'</th><th>'+esc(T('Started'))+'</th><th>'+esc(T('Window'))+'</th></tr></thead><tbody>'+ses+'</tbody></table>'
+    + (ses ? '<table class=brt><thead><tr><th>'+esc(T('Sessions'))+'</th><th>'+esc(T('Started'))+'</th><th>'+esc(T('Window'))+'</th></tr></thead><tbody>'+ses+'</tbody></table>' : tkNone())
     + '</div></div></div>';
   if(typeof acctPickWire === 'function') acctPickWire('tok', () => { WKR = null; wkrAt = 0; paintToken(); loadWkRange(true); }, apFo);
 }
@@ -153,16 +155,18 @@ function tkRange(){
       + lnh + dth
       // Mix + models | projects side by side when #feed is wide (`.split2`, container query in 50-layout-feed.css).
       + '<div class="bsp'+(mixh || moh ? ' split2' : '')+'"><div>' + mixh + moh + '</div><div>'
-      + '<table class=brt><thead><tr><th>'+esc(T('Project'))+'</th><th>'+esc(T('Tokens'))+'</th><th></th><th>'+esc(T('Cost'))+'</th><th>'+esc(T('Share'))+'</th></tr></thead><tbody>'
+      + (!rr.length ? tkNone() : '<table class=brt><thead><tr><th>'+esc(T('Project'))+'</th><th>'+esc(T('Tokens'))+'</th><th></th><th>'+esc(T('Cost'))+'</th><th>'+esc(T('Share'))+'</th></tr></thead><tbody>'
       + rr.map((x,i) => '<tr><td class=brn><span style="color:'+wkc(i)+'">■</span> '+esc(TN(x.name))+'</td>'
           + '<td class=brv>'+fmtTok(x.tok)+'</td><td class=brg>'+bar(x.tok, rmx, wkc(i))+'</td>'
           + '<td class=brv>'+fmtMoney(x.cost||0)+'</td>'
           + '<td class=brv>'+(tt ? fmtPct(x.tok/tt*100) : '—')+'</td></tr>').join('')
-      + '</tbody></table></div></div>';
+      + '</tbody></table>') + '</div></div>';
   }
   return rng;
 }
 // Per-day totals shared by the trend line and the daily table; today's point adds the live share.
+// Muted one-liner for a measured-but-empty table (a header-only table read as broken).
+function tkNone(){ return '<div class=hidnote>' + esc(T('No data')) + '</div>'; }
 function tkTot(dl, td, add){ return dl.map(x => x.tok + (x.d === td ? add : 0)); }
 // «Daily» table, newest first. ⚠Cost has no live share (only tokens do), so today's cost cell says so in a tooltip.
 // ⚠Fixed-height scroll box: a 30-row table would push everything below it when the range changes.
@@ -183,9 +187,9 @@ function tkDailyTable(dl, tot, td){
 // Daily trend lines (total area + top projects) for the picked period; '' with fewer than 2 days.
 function tkTrend(dl, td, add){
     let lnh = '';
-    if(dl.length > 1){
+    const tot = tkTot(dl, td, add);
+    if(dl.length > 1 && tot.some(v => v > 0)){   // all-zero days drew a flat 0-1 chart
       const W = 300, H = 82, PAD = 4;
-      const tot = tkTot(dl, td, add);
       const tr = (WKR.trend || []).filter(t => (t.series || []).length === dl.length);
       // Nice y ticks: step = smallest 1/2/5x10^n >= max/4, so the axis has 2-4 steps ending on a round value.
       const raw = Math.max(1, ...tot), e10 = Math.max(1, Math.pow(10, Math.floor(Math.log10(raw / 4))));
@@ -371,7 +375,7 @@ function tkTopRuns(d){
   if(!tp['1'] && !tp['7']) return '';
   const mx = rs.length ? rs[0].tok : 1;
   const dur = s => s == null ? '—' : actDur(s);
-  const tg = ['1', '7'].map(k => '<button class="atpb' + (k === AGT_ND ? ' on' : '') + '" data-nd="' + k + '">'
+  const tg = ['1', '7'].map(k => '<button class="atpb' + (k === AGT_ND ? ' on' : '') + '" data-nd="' + k + '" aria-pressed="' + (k === AGT_ND) + '">'
     + esc(k === '1' ? T('Today') : T('7 days')) + '</button>').join('');
   return '<div class="wktr atp"><div class=wktrh><b>' + esc(AGT_ND === '1' ? T('Top 5 costly runs today')
       : T('Top 5 costly runs · 7 days')) + '</b><span class=atpg>' + tg + '</span></div>'

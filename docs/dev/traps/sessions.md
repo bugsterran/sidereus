@@ -343,3 +343,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `-c` appends to the newest same-cwd transcript under the same sessionId but carries no sid in argv; while the cached `claude agents --json` has not listed it, the /exit tail gave up the path slot and an older same-cwd row looked live (false «Asked a question»).
 - ⇒ a `-c`/`--continue` pid (no uuid, no `--resume`/`-r`/`--fork-session`) claims the newest sid of its cwd as first seen for that pid+argv; a different newest later drops back to path counting. Tests `tests/test_sess_continued.py` (ContinueClaim), `tests/test_state_replay.py`.
 - ⚠Do not change the EXITED branch of `_live_slot` / `transcript._continued` instead (a dead /exit file would hold the slot forever). ⚠Known gap: ps has no start time — a `-c` pid first seen after a newer same-cwd session exited claims that newer sid.
+- ⚠Known gap: the newest-transcript lookup spans every account root, so a `-c` pid the official answer misses can claim another account's newer same-cwd sid. Left as is: binding a pid to its account needs process-env inspection.
+
+## `claude agents --json` exit code ignored made every open session read ended (`live_probe._av_fetch`)
+
+- Cause: a non-zero exit with empty stdout parsed as `[]` = «no sessions», so off macOS (no ps fallback) every open row ended.
+- ⇒ `returncode != 0` raises into the failure branch: negative cache + held last answer, else unknown (`None`). Test `tests/test_live_probe.py` (`test_nonzero_exit_is_unknown_not_empty`).
+- ⚠Do not map a failed lookup to `{}` — empty means «answered, none running»; unknown must stay `None`.

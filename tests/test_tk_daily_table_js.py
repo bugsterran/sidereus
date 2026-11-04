@@ -10,7 +10,7 @@ from tests._load import js_fn
 from tests.test_saver_quota_js import i18n, jconst
 from tests._node import node_e
 
-FNS = ("fmtTok", "fmtMoney", "fmtPct", "tkTot", "tkDailyTable", "tkTrend", "tkRange")
+FNS = ("fmtTok", "fmtMoney", "fmtPct", "tkNone", "tkTot", "tkDailyTable", "tkTrend", "tkRange")
 
 STUBS = r"""
 var document = {getElementById: () => null, addEventListener: () => {}};
