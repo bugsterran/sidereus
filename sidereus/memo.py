@@ -47,3 +47,44 @@ class BoundedMemo(OrderedDict):
 
     def copy(self):
         return OrderedDict(self)   # ⚠mock.patch.dict copies via copy(); the default would call __init__(mapping)
+
+
+def _start(fn):
+    threading.Thread(target=fn, name="bg-refresh", daemon=True).start()
+
+
+def run_inline(fn):
+    """`Refresher.spawn` for tests: the refresh runs in the caller, so the cache is filled when `kick` returns."""
+    fn()
+
+
+class Refresher:
+    """At most one background run per key — request paths serve their own cache (any age) and `kick` the refresh.
+    ⚠`fn` must store its result itself and catch its own errors; read the cache again after `kick` (an inline
+    `spawn` has filled it). Instances are owned by the module that defines them, like BoundedMemo."""
+
+    def __init__(self):
+        self._on = set()
+        self._lock = threading.Lock()
+        self.spawn = _start
+
+    def kick(self, key, fn):
+        """Start fn() off the caller's thread unless `key` is already running; True when started."""
+        with self._lock:
+            if key in self._on:
+                return False
+            self._on.add(key)
+
+        def run():
+            try:
+                fn()
+            finally:
+                with self._lock:
+                    self._on.discard(key)
+        try:
+            self.spawn(run)
+        except RuntimeError:   # thread limit: retried on the next poll
+            with self._lock:
+                self._on.discard(key)
+            return False
+        return True

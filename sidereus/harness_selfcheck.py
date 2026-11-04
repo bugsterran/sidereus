@@ -11,6 +11,7 @@ import time
 
 from sidereus import gitinfo
 from sidereus.config import CODE_DIR, DATA_DIR
+from sidereus.memo import Refresher
 
 HSC_FILE = os.path.join(DATA_DIR, "harness-selfcheck.json")
 HSC_CMD = "python3 scripts/harness_selfcheck.py"
@@ -23,6 +24,7 @@ HSC_CODE_RE = re.compile(r"^[a-z][a-z0-9_-]{0,23}$")
 HSC_CODES_MAX = 8
 HSC_HEAD_TTL = 30.0
 _HSC_MEMO = {}
+_HSC_BG = Refresher()
 
 
 def _now():
@@ -30,19 +32,24 @@ def _now():
 
 
 def _head(root):
-    """Current HEAD sha of `root`, memoised HSC_HEAD_TTL (the Harness tab polls); "" on a git miss."""
+    """Current HEAD sha of `root`, memoised HSC_HEAD_TTL (the Harness tab polls); "" on a git miss or before the first answer.
+    ⚠git runs off the request thread (`_head_fill`); the last sha is served meanwhile."""
     t = _now()
     hit = _HSC_MEMO.get(root)
     if hit and t - hit[0] < HSC_HEAD_TTL:
         return hit[1]
+    _HSC_BG.kick(root, lambda: _head_fill(root, t))
+    hit = _HSC_MEMO.get(root) or hit
+    return hit[1] if hit else ""
+
+
+def _head_fill(root, t):
     try:
         p = gitinfo._git_run(root, ["rev-parse", "HEAD"], 3, wait=0.5)
         s = (p.stdout or "").strip() if p.returncode == 0 else ""
     except Exception:
         s = ""
-    s = s if HSC_HEAD_RE.match(s) else ""
-    _HSC_MEMO[root] = (t, s)
-    return s
+    _HSC_MEMO[root] = (t, s if HSC_HEAD_RE.match(s) else "")
 
 
 def _str(v):

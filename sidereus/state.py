@@ -11,7 +11,7 @@ from sidereus.bus import DM_MAX, AckMapError, _ack_cut, _load, ack_map, ack_ver,
 from sidereus.cards import cards, cards_read, cards_read_ids
 from sidereus.usage import quota_who, usage
 from sidereus.ext import ext_usage_today
-from sidereus.sessions import sessions_cached
+from sidereus.sessions import sessions_cached, snapshot_age
 from sidereus.perm_marks import perm_rows
 from sidereus.sessions_health import health, selfcheck
 from sidereus.git_wt import wt_orders
@@ -39,6 +39,14 @@ from sidereus.ui_prefs import rev as ui_prefs_rev
 STATE_FRESH_S = 1.0   # snapshot this fresh is served as-is (a second tab polling right after)
 STATE_WAIT_S = 0.5    # wait for the kicked refresh; slower -> last snapshot (one poll stale)
 STATE_COLD_S = 60.0   # no snapshot yet (just restarted): wait for the first one — [] would read as «no sessions»
+# ★2026-11-04 (load 100-190): /api/state took 30-39 s and the page showed «Disconnected» — with FRESH 1 s nearly every
+#   poll kicked a refresh and waited WAIT. A snapshot this young is served at once (refresh still kicked, no wait).
+STATE_SERVE_S = 5.0
+SLOW_PIECE_MS = 300   # srvLoad.slow: pieces of one build at least this slow
+SLOW_MAX = 5
+_tick = time.monotonic       # piece timing; ⚠tests patch
+_loadavg = getattr(os, "getloadavg", None)   # absent on Windows -> load1 None
+_build = threading.local()   # .slow = [(piece, ms)] of the state() build running on this thread
 
 
 def _with_accounts(q0):
@@ -76,12 +84,35 @@ def _piece(key, fn, default, *args):
     ⚠Defaults must match what web/js/95-poll.js already tolerates (`s.x || null` / `|| {}`) — no new shapes.
     ⚠Core pieces (messages bundle · sessions · cards · cardsRead) are NOT wrapped: an empty default there
       would lie (no sessions / every card unread -> toast storm), so they keep failing loudly."""
+    t0 = _tick()
     try:
         return fn(*args)
     except Exception as e:
         warn_once("state-" + key, "state piece {key} failed ({err}) — sent empty",
                   vars={"key": key, "err": f"{type(e).__name__}: {e}"}, soft=True)
         return default
+    finally:
+        _slow_note(key, t0)
+
+
+def _slow_note(key, t0):
+    ms = int((_tick() - t0) * 1000)
+    slow = getattr(_build, "slow", None)
+    if slow is not None and ms >= SLOW_PIECE_MS:
+        slow.append((key, ms))
+
+
+def _srv_load():
+    """state().srvLoad {load1, snapAge, slow} — machine load and this build's slow pieces (metadata only).
+    ⚠Unknown stays None (no getloadavg / no snapshot), never 0."""
+    try:
+        l1 = round(float(_loadavg()[0]), 2) if _loadavg else None
+    except (OSError, TypeError, ValueError, IndexError):
+        l1 = None
+    age = snapshot_age()
+    slow = sorted(getattr(_build, "slow", None) or [], key=lambda x: -x[1])[:SLOW_MAX]
+    return {"load1": l1, "snapAge": round(age, 1) if age is not None else None,
+            "slow": [[k, ms] for k, ms in slow]}
 
 
 PROJ_DIR_TTL_S = 30.0   # s — per-path isdir memo, so the 2.5 s poll does not stat every session folder each time
@@ -171,11 +202,14 @@ def state(since=0, ncards=50, acks_v=""):
     ⚠`sessions()`·`cards()`·`usage()` touch **nothing** `_lock` guards (each uses
       `_parse_lock`·`_bg_lock`·`_usage_lock`). That is why they moved outside, and other places
       (timeline·work history·git·leftovers·wkuse) were already calling `sessions()` without `_lock`."""
+    _build.slow = []
     _q0 = _piece("quota", quota, None)   # not called twice — the saver decision below uses the same value
     _q0 = _with_accounts(_q0)
     # ── slow things run **outside** the lock into locals (even if this takes seconds, the write path is not blocked)
     # ⚠Never sessions() here: a background refresh fills the snapshot; wait ≤0.5 s, else serve the last one (2026-09-29).
-    _sessions = sessions_cached(wait=STATE_WAIT_S, max_age=STATE_FRESH_S, cold_wait=STATE_COLD_S)[0]
+    _t0 = _tick()
+    _sessions = sessions_cached(wait=STATE_WAIT_S, max_age=STATE_FRESH_S, cold_wait=STATE_COLD_S, serve=STATE_SERVE_S)[0]
+    _slow_note("sessions", _t0)
     _sessions = _piece("permWait", perm_rows, _sessions, _sessions)   # permission-prompt markers -> «Awaiting approval»
     _cards = cards(ncards)       # task-complete cards (automatic transitions + ones sessions left themselves)
     _usg = _piece("usage", usage, None)   # tokens·cost (local aggregate) — (⚠must not clash with the global `_usage` name)
@@ -260,6 +294,8 @@ def state(since=0, ncards=50, acks_v=""):
         out["saverViews"] = _piece("saverViews", _saver_views, {})   # per-account hook snapshots, by label
     for k in state_off():                  # keys claimed by switched-off features are omitted
         out.pop(k, None)
+    out["srvLoad"] = _piece("srvLoad", _srv_load, None)   # last: includes every piece timed above
+    _build.slow = None
     if isinstance(_acks, AckMapError):
         out["acksV"] = ""                  # ⚠an error map is never versioned, or the page would keep it
     elif acks_v and acks_v == _av:

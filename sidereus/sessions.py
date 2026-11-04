@@ -528,10 +528,17 @@ def _refresh_run():
             _SNAP_CV.notify_all()
 
 
-def sessions_cached(wait=0.5, max_age=60, cold_wait=None):
+def snapshot_age():
+    """Seconds since the last default sessions() snapshot, None before the first (unknown, not 0)."""
+    at = _SNAP["at"]
+    return max(0.0, time.time() - at) if at else None
+
+
+def sessions_cached(wait=0.5, max_age=60, cold_wait=None, serve=None):
     """`(rows, fresh)` for request/hook paths — ⚠never runs sessions() in the calling thread.
     ★2026-09-29: cold sessions() took 40 s when spawns were slow; request/hook callers timed out.
-    Stale -> start one background refresh, wait <=`wait` s (`cold_wait` before any snapshot), else the last rows or []."""
+    Stale -> start one background refresh, wait <=`wait` s (`cold_wait` before any snapshot), else the last rows or [].
+    `serve` = a snapshot at most this old is returned at once (refresh still started), skipping the wait."""
     rows = sessions_snapshot(max_age)
     if rows is not None:
         return rows, True
@@ -539,6 +546,10 @@ def sessions_cached(wait=0.5, max_age=60, cold_wait=None):
         kick, _REFRESH["on"] = not _REFRESH["on"], True
     if kick:
         threading.Thread(target=_refresh_run, name="sessions_refresh", daemon=True).start()
+    if serve is not None:
+        rows = sessions_snapshot(serve)
+        if rows is not None:
+            return rows, False
     rows = sessions_snapshot_wait(cold_wait if cold_wait is not None and not _SNAP["at"] else wait, max_age)
     return (rows, True) if rows is not None else (_SNAP["rows"] if _SNAP["at"] else [], False)
 

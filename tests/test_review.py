@@ -38,6 +38,7 @@ class _Base(unittest.TestCase):
                     "sub": [], "bgs": [], "wf": [], "repos": [self.root], "plat": "cc"}
         self.patch(rv, "RV_FILE", os.path.join(self.tmp, "review-state.json"))
         self.patch(rv, "_git_run", self._git)
+        self.patch(rv._RV_BG, "spawn", sidereus("memo").run_inline)   # poll-path refresh answers in this call
         self.patch(rv, "sessions_snapshot", lambda n=60: None)
         self.patch(fo, "index", lambda now=None: {
             os.path.join(self.root, f): {(SID, "main"): {"ts": NOW - 60, "n": 1, "agent": "", "desc": "",

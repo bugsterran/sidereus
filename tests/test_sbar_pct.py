@@ -19,6 +19,7 @@ const svParts = () => null, svLive = () => null, sbExt = () => '', sbFit = () =>
 const setHtml = (el, h) => { OUT = h; return false; };
 const aiLogo = () => '<i class=ailg>L</i>';
 const popIsOpen = () => false;
+const SRVLOAD = null, CONN = {}, sbBusy = () => null;   // «Machine busy» piece: tests/test_poll_slow_js.py
 let SV = null, SVSW = null, SBAR_SV = null, SDRW_OPEN = false, EXTU = null, SB_JNAME = {}, SV_JTIP = '';
 let ACCTS = [], BURNM = null, BURNM_DIR = '';
 const UIS = {getItem: () => null};
