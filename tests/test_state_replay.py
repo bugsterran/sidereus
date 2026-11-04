@@ -287,6 +287,12 @@ class LiveSlot(unittest.TestCase):
         self.assertEqual(sessions._live_slot("/a", "", "new", False, self.L, slots, set()), (self.L, True))
         self.assertEqual(slots, {"/a": 1})
 
+    def test_exit_ended_leaves_slot_to_next_row(self):
+        slots = {"/a": 1}
+        self.assertEqual(sessions._live_slot("/a", "", sessions.EXITED, False, self.L, slots, set()), (self.L, True))
+        self.assertEqual(sessions._live_slot("/a", "", "", False, self.L, slots, set()), (self.L, False))
+        self.assertEqual(slots, {"/a": 0})
+
     def test_slot_taken_then_full(self):
         slots = {"/a": 1}
         self.assertEqual(sessions._live_slot("/a", "", "", False, self.L, slots, set()), (self.L, False))
