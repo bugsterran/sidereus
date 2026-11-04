@@ -399,7 +399,9 @@ def _user_text(d):
     m = d.get("message")
     c = m.get("content") if isinstance(m, dict) else None
     if isinstance(c, list):
-        c = "".join(b.get("text") or "" for b in c if isinstance(b, dict) and b.get("type") == "text")
+        # ⚠a non-str `text` (malformed line) must not raise: the caller's try empties the whole session list
+        c = "".join(b["text"] for b in c
+                    if isinstance(b, dict) and b.get("type") == "text" and isinstance(b.get("text"), str))
     return c.strip() if isinstance(c, str) else ""
 
 

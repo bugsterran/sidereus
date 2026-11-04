@@ -100,3 +100,10 @@ class TopTest(_Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TornSnapshotTest(_Base):
+    def test_rows_and_res_from_different_snapshots_is_none(self):
+        # `_ps_snap` writes rows first: new rows paired with old res would read every new pid as CPU 0
+        lp._ps_snap_cache[0] = NOW - 0.5
+        self.assertIsNone(pl.top())

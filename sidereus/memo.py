@@ -127,6 +127,10 @@ def serve_last(key, refresh, read, max_age, clock):
             PROBE_ERR.pop(key, None)
         except Exception as e:  # ⚠the probe caches its own failure (e.g. `_ps_snap_fail`) and its readers warn
             PROBE_ERR[key] = e
+            from sidereus.warn import warn_once   # lazy: memo is imported before warn by several modules
+            # ⚠without this a refresh that fails every time is silent — the value just stays unknown
+            warn_once("probe:" + key, "Background refresh {key} failed ({err}) — that value shows as unknown",
+                      vars={"key": key, "err": type(e).__name__}, soft=True)
         finally:
             _req.on = prev
     _PROBE_BG.kick(key, run)

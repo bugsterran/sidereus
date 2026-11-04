@@ -62,8 +62,9 @@ def _owners(rows):
 
 def _calc(now):
     at, res = live_probe._ps_res[0], live_probe._ps_res[1]
-    rows = live_probe._ps_snap_cache[1]
-    if not rows or not res or now - at >= live_probe.LIVE_STALE_S:
+    snap_at, rows = live_probe._ps_snap_cache[0], live_probe._ps_snap_cache[1]
+    # ⚠`_ps_snap` writes rows before res: a differing stamp means rows and res are from two snapshots
+    if not rows or not res or snap_at != at or now - at >= live_probe.LIVE_STALE_S:
         return at, None      # unknown, never «idle»
     own, cwds = _owners(rows), live_probe._live_pid_cwd[1]
     sess, rest = {}, [0.0, 0, 0]
