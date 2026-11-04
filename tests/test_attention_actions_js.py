@@ -158,3 +158,15 @@ class BlockedToolName(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HandledRowClosesDrawer(unittest.TestCase):
+    """«Done» / «Seen» on an Attention row also close the Sessions drawer (a pinned column stays: sesdrOpen no-ops)."""
+
+    def test_done_and_seen_close_drawer(self):
+        src = js_all()
+        for act in ("done", "seen"):
+            m = re.search(r"if\(act === '" + act + r"'\)\{[^\n]*\}", src)
+            self.assertIsNotNone(m, act)
+            self.assertIn("sesdrOpen(false, false)", m.group(0), act)
+        self.assertRegex(src, r"function sesdrOpen\(open, focus\)\{\n  if\(SESPIN")
