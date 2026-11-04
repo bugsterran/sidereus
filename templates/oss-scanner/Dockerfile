@@ -13,11 +13,14 @@ RUN apt-get update && apt-get upgrade -y \
       ca-certificates build-essential git python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# --- dependency fetch goes here (pip install -r, npm ci, go mod download, ...) ---
-
 # Package installs need root; the build and tests run as an unprivileged user that owns /src and its HOME.
+# ⚠ Create the user and set HOME before the fetch step: anything fetched with HOME=/root (pip/npm/go caches,
+# `pip install --user`) lands in /root and is unreadable once the build switches to `USER scanner`.
 RUN useradd --create-home --shell /usr/sbin/nologin scanner
 ENV HOME=/home/scanner
+
+# --- dependency fetch goes here (pip install -r, npm ci, go mod download, ...) ---
+# System-wide installs may stay root; per-user fetches go after `USER scanner` (switch back with `USER root` if needed).
 
 # scanner contract: the checkout lives inside the image, at /src
 COPY . /src

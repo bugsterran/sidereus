@@ -80,6 +80,13 @@ class OssScannerFiles(unittest.TestCase):
             self.assertIn("rm -rf /var/lib/apt/lists/*", text, d)
         self.assertRegex(read(".oss-scanner/Dockerfile"), r"(?m)^FROM python:3\.9[\w.-]*-slim-[a-z]+@sha256:")
 
+    def test_template_user_before_fetch(self):
+        # A fetch step that runs with HOME=/root leaves caches the unprivileged build user cannot read.
+        text = read("templates/oss-scanner/Dockerfile")
+        user = text.index("RUN useradd ")
+        self.assertLess(user, text.index("ENV HOME=/home/scanner"))
+        self.assertLess(text.index("ENV HOME=/home/scanner"), text.index("dependency fetch goes here"))
+
     def test_security_links_scanner_folder(self):
         for f in ("SECURITY.md", "SECURITY.ko.md"):
             self.assertIn("(.oss-scanner/)", read(f), f)
