@@ -7,5 +7,5 @@ if [ "$cur" = ".githooks" ]; then
   echo "core.hooksPath already .githooks — nothing to do"
 else
   git config core.hooksPath .githooks
-  echo "core.hooksPath: '${cur:-<unset>}' -> '.githooks' (pre-commit runs scripts/check.sh --fast)"
+  echo "core.hooksPath: '${cur:-<unset>}' -> '.githooks' (pre-commit runs scripts/check.sh --fast; commit-msg refuses «Closes #N» outside a release commit)"
 fi

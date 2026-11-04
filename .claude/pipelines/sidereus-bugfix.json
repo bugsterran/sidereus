@@ -22,8 +22,8 @@
     {
       "title": "수정",
       "agent": "sidereus-implementer",
-      "task": "Apply the minimal fix at the diagnosed point and add a regression test that fails before and passes after. ⚠Tests with a fixed functions list (FNS) must include every new helper you add. Report changed files; anything outside the fix goes in findings.",
-      "gate": "scripts/check.sh --fast",
+      "task": "Apply the minimal fix at the diagnosed point and add a regression test that fails before and passes after. For a behaviour fix, add a trap entry to docs/dev/traps/<domain>.md (docnote shape); the gate refuses a sidereus/*.py fix without one. ⚠Tests with a fixed functions list (FNS) must include every new helper you add. Report changed files; anything outside the fix goes in findings.",
+      "gate": "scripts/check.sh --fast && /usr/bin/python3 scripts/trap_check.py",
       "ui": { "x": 292, "y": 24 }
     },
     {

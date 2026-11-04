@@ -10,6 +10,7 @@ How: `install(Handler, build)` swaps the handler's GET/POST route tables in one 
 """
 import json
 import random
+import threading
 import time
 from urllib.parse import parse_qs
 
@@ -48,7 +49,7 @@ class World(_WorldPanels, _WorldGit):
     def __init__(self, anchor=None, page_build="", now=None):
         self.a = int(anchor if anchor is not None else time.time())
         self.build = page_build
-        self._now = now     # pin (tests): two Worlds with same anchor+now are byte-identical
+        self._now, self._req = now, threading.local()     # pin (tests): two Worlds with same anchor+now are byte-identical
         rng = random.Random(SEED)  # nosec B311 -- seeded demo data / retry jitter, not a secret
         self.rng = rng
         a = self.a
@@ -233,7 +234,7 @@ class World(_WorldPanels, _WorldGit):
 
     # ───────────────────────────── helpers
     def now(self):
-        return self._now if self._now is not None else max(int(time.time()), self.a)
+        return self._now if self._now is not None else getattr(self._req, "now", None) or max(int(time.time()), self.a)
 
     def _sess_subs(self, k):
         return [s for s in self.subs if s["k"] == k]
@@ -467,6 +468,7 @@ def _num(s, d):
 def respond(world, path, u):
     """(status, payload) for a demo GET. Unknown /api paths get an empty-but-valid answer."""
     w = world
+    w._req.now = max(int(time.time()), w.a)   # ⚠one clock per request (per thread): a second tick mid-build split running `end` ties and reordered timeline groups
     if path == "/api/state":
         since = _q(u, "since", "0")     # ⚠ns epoch (19 digits) — int(), never float(), or the last message repeats
         return 200, w.state(int(since) if since.isdigit() else 0,
