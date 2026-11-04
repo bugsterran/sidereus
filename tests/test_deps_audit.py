@@ -167,7 +167,7 @@ class RtVerdict(unittest.TestCase):
     def test_fail_eol(self):
         it = da.rt_verdict(self.PY, "3.9.6", [{"v": "3.9.25", "security": False}, {"v": "3.14.2", "security": False},
                                               {"v": "3.12.9", "security": False}], da.PY_EOL, self.TODAY)
-        self.assertEqual(self.lv(it), ("fail", "fail", "3.9.25", False, "info", "3.14.2", 2))
+        self.assertEqual(self.lv(it), ("fail", "warn", "3.9.25", False, "info", "3.14.2", 2))   # item fails on EOL; patch = missed patches
         self.assertEqual((it["patch"]["eol"], it["patch"]["eol_past"], it["cycle"]), ("2025-10-31", True, "3.9"))
 
     def test_fail_missed_node_security(self):
@@ -191,11 +191,15 @@ class RtVerdict(unittest.TestCase):
         behind = da.rt_verdict(self.NODE, "25.9.0", rel, da.NODE_EOL, self.TODAY)
         self.assertEqual(behind["patch"]["level"], "warn")
 
+    def test_eol_on_last_patch_not_behind(self):
+        # An ended cycle already on its newest patch: the item fails on EOL, but the patch is not «behind».
+        it = da.rt_verdict(self.PY, "3.9.25", [{"v": "3.9.25", "security": False}], da.PY_EOL, self.TODAY)
+        self.assertEqual((it["level"], it["patch"]["level"], it["patch"]["eol_past"]), ("fail", "ok", True))
     def test_unknown_no_data(self):
         it = da.rt_verdict(self.NODE, "22.23.3", None, da.NODE_EOL, self.TODAY)
         self.assertEqual(self.lv(it), ("unknown", "unknown", "", False, "unknown", "", 0))
         py = da.rt_verdict(self.PY, "3.9.6", None, da.PY_EOL, self.TODAY)
-        self.assertEqual((py["level"], py["patch"]["level"]), ("fail", "fail"))   # EOL is known offline
+        self.assertEqual((py["level"], py["patch"]["level"]), ("fail", "unknown"))   # EOL is known offline; patches are not
         miss = da.rt_verdict(self.NODE, "21.0.0", self.NREL, da.NODE_EOL, self.TODAY)
         self.assertEqual(miss["patch"]["level"], "unknown")   # own line not listed: never ok
 
@@ -255,7 +259,7 @@ class CollectRich(Collect):
         self.assertEqual(len(rich), 1)
         self.assertIn(da.NODE_RELEASES, self.fetched)
         it = rich[0]["items"][0]
-        self.assertEqual((rich[0]["offline"], it["patch"]["level"], it["patch"]["target"]), (False, "fail", "3.9.25"))
+        self.assertEqual((rich[0]["offline"], it["patch"]["level"], it["patch"]["target"]), (False, "warn", "3.9.25"))
 
     def test_main_stdout_identical_and_offline_unknown(self):
         import io

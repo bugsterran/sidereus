@@ -107,7 +107,7 @@ function buildTodo(){
   bar.querySelectorAll('.td').forEach(el => el.onclick = () => {
     const go = el.dataset.go;
     if(go === 'bell') return openAlarm(true);
-    if(go === 'attn'){ sesdrReveal(); const a = document.getElementById('attn'); if(a) a.scrollIntoView({behavior:'smooth', block:'nearest'}); return; }
+    if(go === 'attn'){ sesdrReveal(true); const a = document.getElementById('attn'); if(a) a.scrollIntoView({behavior:'smooth', block:'nearest'}); return; }
     if(go === 'run'){ sesdrReveal(); document.querySelector('.lside').scrollIntoView({behavior:'smooth', block:'nearest'}); return; }
     if(go === 'stale'){ todoOpen = !todoOpen; return buildTodo(); }
     if(go === 'hooks'){ const h = hcTodo()[0]; if(h) hcAct('open', h.plat); return; }   // preview only; nothing is written before «Apply»

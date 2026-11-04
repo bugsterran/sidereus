@@ -125,9 +125,11 @@ function olderTxt(hidden){
                        : '▲ 이전 '+k+'개 더 보기<span>· 숨김 '+hidden+'건</span>';
 }
 // Two-part span (ko hours + minutes) | '3h 5m' (minutes in). Shared by the several duration formatters below.
+// A zero second part is dropped («1h», not «1h 0m»).
 function HM(m){
-  return m>=1440 ? U(Math.floor(m/1440),'d')+' '+U(Math.floor((m%1440)/60),'h')
-       : (m>=60 ? U(Math.floor(m/60),'h')+' '+U(m%60,'m') : U(m,'m'));
+  const two = (a, ua, b, ub) => U(a, ua) + (b ? ' ' + U(b, ub) : '');
+  return m>=1440 ? two(Math.floor(m/1440),'d',Math.floor((m%1440)/60),'h')
+       : (m>=60 ? two(Math.floor(m/60),'h',m%60,'m') : U(m,'m'));
 }
 // Clock (ko PM-marker + '08:49') | '8:49 PM' and date+clock (9/27 + ko clock) | '9/27 2:59 AM'.
 // ⚠The ko clock is built from the I18N dictionary, not Intl ko-KR: a runtime without Korean locale data

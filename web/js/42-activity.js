@@ -131,7 +131,7 @@ function actAttnRow(ids){
 // ⚠Scroll only that row ('nearest'), nothing else is centred. -> false when no row renders (acked/snoozed/other account).
 function actAttnGo(x){
   const ids = actAttnIds(x);
-  try{ sesdrReveal(); }catch(e){ softErr('sesdrReveal', e); }
+  try{ sesdrReveal(true); }catch(e){ softErr('sesdrReveal', e); }
   buildAttn();
   let row = actAttnRow(ids);
   if(!row){

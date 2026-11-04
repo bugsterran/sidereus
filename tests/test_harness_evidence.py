@@ -58,7 +58,7 @@ class EvidenceTest(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         r = rows[0]
         self.assertEqual(set(r), {"kind", "ts", "mode", "head", "dirty", "rc", "steps", "screen"})
-        self.assertEqual(r["steps"], [{"name": "leak", "rc": 0, "n": 0, "failed": 0, "secs": 0.0}])
+        self.assertEqual(r["steps"], [{"name": "leak", "rc": None, "n": 0, "failed": 0, "secs": 0.0}])   # junk rc is unknown, never 0 (PASS)
         self.assertEqual((r["head"], r["mode"]), ("", ""))
         self.assertEqual(r["screen"], [{"w": 900, "lang": "ko", "ok": False, "diff": 0.5}])
         self.assertNotIn("SENTINEL", json.dumps(rows))

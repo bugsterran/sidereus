@@ -116,3 +116,14 @@ R.hiEn = sbBusyHtml(sbBusy({load1: 5.04, snapAge: 30, slow: [['cards', 900]]}, o
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class SlowAgeTicks(unittest.TestCase):
+    def test_skipped_tick_repaints_while_slow(self):
+        # After a timed-out poll pend restarts with the next request; while CONN.slow the skipped tick must still repaint
+        # the bar, else «Data delayed · Ns ago» froze for SB_POLL_SLOW_MS.
+        r = run("pollBusy = true; CONN.okAt = 1; CONN.slow = true; NOW = 50000; CONN.pend = NOW - 1000; SBN = 0;\n"
+                "await poll(false); R.slow = SBN;\n"
+                "CONN.slow = false; SBN = 0; await poll(false); R.fresh = SBN;")
+        self.assertEqual((r["slow"], r["fresh"]), (1, 0))
