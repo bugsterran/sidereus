@@ -272,7 +272,7 @@ function plDraftForm(){
       : '<div class=hidnote>' + esc(T('No live session in this project')) + '</div>')
     + '<div class=brh2><b>' + esc(T('Message to send')) + '</b>' + (cur && cur.id ? ' <i>→ ' + esc(cur.id) + '</i>' : '') + '</div><pre class=plprev>' + esc(text) + '</pre>'
     + (PLDRAFT.err ? '<div class="plfd plnerr">' + esc(PLDRAFT.err) + '</div>' : '')
-    + '<div class=plbar><button class="wkrgb" data-pldgo' + (ok ? '' : ' disabled') + '>' + esc(T('Confirm — send')) + '</button>'
+    + '<div class=plbar><button class="wkrgb archok" data-pldgo' + (ok ? '' : ' disabled') + '>' + esc(T('Confirm — send')) + '</button>'
     + plBackBtn('data-pldx') + '</div></div>';
 }
 function plDraftOk(cur, nerr){ return !!(cur && cur.login && (PLDRAFT.wf || PLDRAFT.desc.trim()) && PLDRAFT.name && !nerr && !PLDRAFT.busy); }
