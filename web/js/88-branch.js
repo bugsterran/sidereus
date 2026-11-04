@@ -405,13 +405,18 @@ function brPopBoot(){
     .then(r => r.json()).then(j => brPopPaint(j || { ok: false }), () => brPopPaint({ ok: false }));
 }
 function brClose(){ brDet = null; brSel = ''; brPanPaint(); }
+// Selector that finds the same control after the pane is rebuilt (tree rows, work-unit rows, then any element id).
+function brFocusKey(el){
+  const d = el.dataset || {};
+  for(const k of ['bt', 'bn', 'bw']) if(d[k] != null) return '[data-' + k + '="' + CSS.escape(d[k]) + '"]';
+  return el.id ? '#' + CSS.escape(el.id) : '';
+}
 // Repaint only the right pane (keeps graph/list scroll); ⚠the pane's own scrollTop is carried over by hand.
 function brPanPaint(){
   const p = document.getElementById('brpan');
   if(!p) return paintBr();
   const top = p.scrollTop, ae = document.activeElement;
-  const fk = ae && p.contains(ae) ? (ae.dataset.bt != null ? '[data-bt="' + CSS.escape(ae.dataset.bt) + '"]'
-    : ae.dataset.bn != null ? '[data-bn="' + CSS.escape(ae.dataset.bn) + '"]' : '') : '';
+  const fk = ae && p.contains(ae) ? brFocusKey(ae) : '';
   p.className = 'brpan' + (brDet || brWu ? ' brdt' : '');
   p.innerHTML = brPanLast = brPanBody();
   p.scrollTop = top;

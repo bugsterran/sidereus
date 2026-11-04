@@ -73,6 +73,7 @@ Object.assign(I18N.ko, {
   'settings.json not found — run gemini once': 'settings.json 이 없습니다 — gemini 를 한 번 실행하세요',
   '`hooksConfig` is not an object — fix it by hand': '`hooksConfig` 가 객체가 아닙니다 — 직접 고치세요',
   "file layout can't be edited safely (duplicate key?) — change it by hand": '파일 구조를 안전하게 고칠 수 없습니다(중복 키?) — 직접 고치세요',
+  "settings.json layout can't be edited safely (duplicate {key}?) — change it by hand": 'settings.json 구조를 안전하게 고칠 수 없습니다({key} 중복?) — 직접 고치세요',
   'refused: other entries would change': '거부: 다른 항목이 바뀝니다',
   'path leaves .claude/pipelines': '경로가 .claude/pipelines 밖입니다',
   'file too large': '파일이 너무 큽니다',

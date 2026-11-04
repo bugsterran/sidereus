@@ -71,7 +71,7 @@ class PyTemplates(unittest.TestCase):
             code, out = CS.otel_port_set(4318)
         self.assertEqual((code, out), (400, {"ok": False, "err": "settings.json top level is not an object — fix it by hand"}))
         row = CS._acct_row({"label": "x", "path": self._put("{bad")})
-        self.assertEqual(row["err"], "settings.json is not valid JSON (JSONDecodeError) — fix it by hand")   # ⚠rows: filled text
+        self.assertEqual((row["err"], row["vars"]), ("settings.json is not valid JSON ({e}) — fix it by hand", {"e": "JSONDecodeError"}))
 
 
 class KoEntries(unittest.TestCase):
