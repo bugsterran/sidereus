@@ -97,7 +97,7 @@ function attnWhy(g){
   const n = (w.match(/(\d+)/) || [])[1] || '';
   switch(g.k){
     case 'blocked': return 'Waiting for permission';
-    case 'ask': return 'Awaiting answer';   // same wording as the activity strip
+    case 'ask': return / · 이후 작업 계속$/.test(w) ? 'Awaiting answer · kept working' : 'Awaiting answer';   // card-held ask: session worked on after asking
     case 'abort': return 'Interrupted — needs a new instruction';
     case 'ctx95': return 'Context ' + n + '% — auto-compact soon';
     case 'ctx85': return 'Context ' + n + '%';
