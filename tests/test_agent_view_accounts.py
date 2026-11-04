@@ -63,6 +63,14 @@ class AgentViewAccounts(unittest.TestCase):
             p = mock.patch.object(lp, name, val)
             p.start()
             self.addCleanup(p.stop)
+        self.kicks = []
+
+        def spawn(fn):                  # background refresh runs inline, so the cache is filled when kick returns
+            self.kicks.append(fn)
+            fn()
+        p = mock.patch.object(lp._AV_BG, "spawn", spawn)
+        p.start()
+        self.addCleanup(p.stop)
         saved = (list(lp._av_cache), list(lp._av_fail), dict(lp._av_acct), set(lp._av_unknown), dict(lp._stale))
 
         def restore():
@@ -110,6 +118,20 @@ class AgentViewAccounts(unittest.TestCase):
         self.clock.t += lp.AGENTS_TTL + 1                      # primary refreshes, dead account does not fork
         lp.agent_view()
         self.assertEqual([c[1].get("CLAUDE_CONFIG_DIR") for c in self.sub.calls[n:]], [PRIM])
+
+    def test_stale_value_served_and_refreshed_in_background(self):
+        self.sub.outs[PRIM] = _rows(1)
+        lp.agent_view()                                          # cold start: inline, no background run
+        self.assertEqual((len(self.sub.calls), len(self.kicks)), (1, 0))
+        self.sub.outs[PRIM] = _rows(2)
+        self.clock.t += lp.AGENTS_MAX_AGE + 1                    # stale but younger than AGENTS_STALE_S
+        with mock.patch.object(lp._AV_BG, "spawn", lambda fn: self.kicks.append(fn)):   # refresh not run yet
+            self.assertEqual(set(lp.agent_view()), {"1"})        # last value, no CLI call on the request path
+            self.assertEqual(set(lp.agent_view()), {"1"})        # second request while running: no second kick
+        self.assertEqual((len(self.sub.calls), len(self.kicks)), (1, 1))
+        lp._AV_BG._on.clear()
+        self.kicks[0]()                                          # the background run lands
+        self.assertEqual(set(lp.agent_view()), {"2"})
 
     def test_all_failing_is_none(self):
         self.two()
