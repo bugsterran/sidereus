@@ -5,9 +5,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-05
+
+**Highlights**
+
+- Busy machine: under heavy load the page keeps answering. `/api/state` no longer waits on git, `ps` or `claude agents --json`; a slow poll reads "Data delayed" instead of "Disconnected", and the status bar names the Claude session using the most CPU and memory.
+- Attention: sessions ended with `/exit`, parked into a background job or continued with `claude -c` no longer leave an older transcript looking live with a false "Asked a question"; a prompt typed mid-turn counts as your reply.
+- Chat: room hashtags, room management and the invite bar are gone; manage rooms from a session with the `room` skill.
+
 ### Added
 
-- Structure: an "Overview" link in the Architecture header opens the current commit's `arch-brief` page in a new tab, served with scripts blocked.
+- Structure: an "Export HTML" menu in the Architecture header. "Simple" opens the current commit's `arch-brief` overview in a new tab (served with scripts blocked), or, when none exists, sends an arch-brief run request after preview and confirm. "Detailed" downloads the shown module map as one self-contained HTML file with no scripts, also for a map drawn at an older commit (the file says how many commits HEAD has moved).
+- Status bar: while the machine is busy or data is delayed it shows "Machine busy · load N · mostly <repo> · CPU N% · M GB"; the tooltip lists the numbers and executable counts. Metadata only (repo name, numbers, executable names).
+
+### Changed
+
+- Status bar: a slow poll shows "Data delayed · Ns ago" (amber, the age keeps counting) with load in the tooltip; "Disconnected" is kept for network errors or 75 s without any reply.
+- Attention: a question card held after the session went back to work reads "Awaiting answer · kept working".
+- Attention: "Done" and "Seen" close the Sessions drawer when an Attention chip opened it; a pinned drawer stays open.
+- Request previews: "Confirm — send" is painted as the primary action, with a visible focus ring; disabled ones still look disabled.
+- OSS Scanner Dockerfiles (own copy and template): run as a non-root `scanner` user with a `HEALTHCHECK`; the user is created before the dependency fetch so caches stay readable.
 
 ### Removed
 
@@ -15,17 +32,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Busy machine: `/api/state` stopped answering for 30-60 s under high load (git lookups, `ps` probes and `claude agents --json` ran on the request path behind locks); they now serve the last value and refresh in the background.
+- Attention: a session ended with `/exit` no longer holds a live slot and keeps showing "Asked a question".
+- Sessions: a claude parked into a background job, or `claude -c` started after `/exit`, no longer lets an older transcript in the same folder show as live.
+- Attention: a prompt typed while a turn is running counts as the reply to an open question.
+- Sessions: one malformed transcript line no longer empties the session list.
 - Pipelines: the "Get started" checklist also shows when every pipeline file of a project is invalid.
 - Attention: a question answered after a long run no longer comes back as "Question waiting" when the question was read in an earlier scan.
 - Sessions: project folders with non-ASCII names and Windows drive paths map to the same transcript folder Claude Code uses.
-- Harness: the runtime summary counts only end-of-life runtimes in "end of life · N runtimes".
-- Quota details: "Who is using the 5h" names the account it counts.
-- Insights: durations use Korean units in Korean.
-- Sessions drawer: the branch chip no longer wraps mid-name.
-- Pipelines: the «Run» side layer takes focus when it opens and gives it back to «Run» when closed with Esc or ✕.
 - Sessions: a background job whose terminal host was re-parented no longer shows a second "Waiting for input" row.
+- Harness: the runtime summary counts only end-of-life runtimes in "end of life · N runtimes"; a runtime on the last patch of an ended cycle is no longer "behind" (it still fails on end of life).
+- Harness: gate evidence with a missing or non-numeric exit code stays unknown instead of reading as a pass.
+- Quota details: "Who is using the 5h" names the account it counts.
+- Insights: durations use Korean units in Korean, drop a zero part ("1h", not "1h 0m"), and fail counts use thousands separators.
+- Pipelines: the "Run" side layer takes focus when it opens, keeps it when a mode, session or model select repaints, and gives it back to "Run" when closed with Esc or ✕.
 - Pipelines: below 1440 px the live-run status moves under the title instead of wrapping one word per line.
-- Keyboard: the Timeline summary "More"/"Less" toggle and a tour started from shortcut help keep focus; the To-do layer header is no longer an empty tab stop.
+- Pipelines: untagged subagent rows line up with the run group's rows.
+- Keyboard: the Timeline summary "More"/"Less" toggle, the Timeline "Pipeline" label and a tour started from shortcut help keep focus; the To-do layer header is no longer an empty tab stop.
+- Structure: Enter and Space activate architecture map targets, and edges are named "from → to" for screen readers.
+- Tour: the "Working now" step describes the dot rail when the list is folded.
+- Branch: below 1000 px the side pane stacks under the graph instead of cramming commit subjects; Work-unit buttons keep focus across the live refresh.
+- Korean UI: Preferences, settings and hook-file server errors are translated; Preferences shows the broken-config note it used to hide.
+- Chat: the open room's name keeps its width and the member list wraps instead of shrinking to a few pixels.
+- Light theme: architecture map focus rings and Branch status chips meet contrast.
+- Sessions drawer: the branch chip no longer wraps mid-name.
 
 ## [0.14.1] - 2026-11-03
 
