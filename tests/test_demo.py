@@ -23,7 +23,7 @@ STATE_KEYS = {"presence", "acks", "acksSince", "messages", "cursors", "rooms", "
 
 # Same keys as sidereus/arch_map.load() output.
 ARCH_KEYS = {"ok", "prov", "empty", "sidereus", "commit", "head", "stale", "behind", "at", "v", "groups", "modules", "edges", "rate", "md",
-             "style", "dev", "flows", "checks"}
+             "style", "dev", "flows", "checks", "brief"}
 
 
 class _U:

@@ -4,7 +4,10 @@ from urllib.parse import parse_qs
 
 from sidereus.structure import structure, structure_src, structure_pair
 from sidereus.structure_tree import structure_file, structure_img, structure_tree
-from sidereus.arch_map import files as arch_files, load as arch_load, security_report as arch_secreport
+from sidereus.arch_map import files as arch_files, load as arch_load, security_report as arch_secreport, brief_html as arch_brief
+
+# ⚠brief.html is agent-written HTML: no script, no fetch, sandboxed even when opened directly in a tab.
+BRIEF_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox"
 
 
 def _q1(q, k, d=""):
@@ -133,3 +136,24 @@ class _StructRoutes:
         except Exception as e:
             out = {"ok": False, **_exc_msg(e)}
         self._raw_json(200, out)
+
+    def _g_arch_brief(self, u):
+        # «Overview» link: one brief.html; allow list, commit id, store confinement, symlink and size checks inside arch_map.brief_html().
+        q = parse_qs(u.query)
+        try:
+            out = arch_brief(_q1(q, "path") or None, _q1(q, "commit"))
+        except Exception as e:
+            out = {"ok": False, **_exc_msg(e)}
+        if isinstance(out, dict):
+            self._raw_json(404, out)
+            return
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(out)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Security-Policy", BRIEF_CSP)
+            self.end_headers()   # adds X-Content-Type-Options: nosniff
+            self.wfile.write(out)
+        except (ConnectionResetError, BrokenPipeError):
+            self.close_connection = True

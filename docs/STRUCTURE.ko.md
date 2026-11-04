@@ -73,6 +73,11 @@ flowchart LR
 `.claude/pipelines/arch-map.json`: 읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증(`scripts/arch_verify.py --last`, 실패 시 모듈 그리기로 1회).
 계획 단계에서 아키텍처 스타일(계층형, 헥사고날 등)을 정한다. 그 흐름을 벗어난 연결은 숨기지 않고 따로 보여 준다.
 
+### 개요 (arch-brief)
+
+`.claude/pipelines/arch-brief.json`: 준비 → 개요 그리기 → 검증. 같은 커밋의 arch-map 결과 위에서 돈다. 결과가 없으면 준비 단계에서 멈추고 arch-map 을 먼저 돌리라고 알린다.
+에이전트가 `brief.json` 을 쓴다(도메인별로 묶은 상자 12개 이하를 띠에 배치 + 결정 순서: 요청이 어느 도메인으로 가는지). `scripts/arch_brief.py --last` 는 모르는 id, 두 상자에 들어간 모듈, 상자 사이에 검증된 map 연결이 없는 화살표, 커밋에 없는 경로 `file:line` 이 있으면 실패하고, 통과하면 `map.json` 옆에 `brief.html`(두 섹션, 파일 하나로 완결)을 쓴다. 뷰어에는 표시하지 않는다.
+
 ### 검증 규칙
 
 `scripts/arch_verify.py` 는 `git show <커밋>:<파일>` 로 읽는다(작업 트리는 안 본다). 심볼 ±2줄(`ARCH_K`), 게이트 70%(`ARCH_GATE_MIN`).
@@ -80,7 +85,7 @@ flowchart LR
 
 ### 저장
 
-`<데이터 폴더>/arch/<저장소 해시>/<커밋>/`(`plan.json`, `map.json`, `verify.json`, `flows.json`, `flows.verify.json`, `map.md`).
+`<데이터 폴더>/arch/<저장소 해시>/<커밋>/`(`plan.json`, `map.json`, `verify.json`, `flows.json`, `flows.verify.json`, `map.md`, `brief.json`, `brief.html`).
 
 ### 보안 검사
 

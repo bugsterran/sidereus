@@ -73,6 +73,11 @@ still selects it. The minimap in the bottom-right corner shows the whole map and
 `.claude/pipelines/arch-map.json`: Plan → Draw modules → Draw flows → Verify (`scripts/arch_verify.py --last`; on failure, back to Draw modules once).
 The plan names an architecture style (layered, hexagonal, …). Edges that break it are listed, not hidden.
 
+### Overview (arch-brief)
+
+`.claude/pipelines/arch-brief.json`: Prepare → Draw overview → Verify. Runs on a finished arch-map result of the same commit; without one, Prepare stops and says to run arch-map first.
+The agent writes `brief.json` (≤12 boxes grouped by domain, in bands, plus the decision order: how a request is routed to a domain). `scripts/arch_brief.py --last` fails on unknown ids, a module in two boxes, an arrow without a verified map edge between its boxes, or a route `file:line` missing at the commit; on pass it writes `brief.html` (two sections, one self-contained file) next to `map.json`. Not shown in the viewer.
+
 ### Check rules
 
 `scripts/arch_verify.py` reads files with `git show <commit>:<file>`, never the working tree. Symbol within ±2 lines (`ARCH_K`), gate 70% (`ARCH_GATE_MIN`).
@@ -80,7 +85,7 @@ Flows (`sidereus/arch_flow.py`) check every step the same way, but never change 
 
 ### Store
 
-`<data dir>/arch/<repo hash>/<commit>/` (`plan.json`, `map.json`, `verify.json`, `flows.json`, `flows.verify.json`, `map.md`).
+`<data dir>/arch/<repo hash>/<commit>/` (`plan.json`, `map.json`, `verify.json`, `flows.json`, `flows.verify.json`, `map.md`, `brief.json`, `brief.html`).
 
 ### Security checks
 
