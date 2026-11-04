@@ -119,6 +119,11 @@ def _pmode_of(fp, rows, nbytes):
 
 def _human_line(d, ask_ids):
     """A record the person produced: typed prompt, `!` command or picker answer (not tool_result/meta/compact summary)."""
+    # ⚠A prompt typed while the turn runs is written as a `queued_command` attachment; only `humanTurn: true`
+    #   marks the person (task notifications and reminders use the same attachment type without it).
+    if d.get("type") == "attachment":
+        a = d.get("attachment")
+        return isinstance(a, dict) and a.get("type") == "queued_command" and a.get("humanTurn") is True
     if d.get("type") != "user" or d.get("isCompactSummary") or d.get("isMeta"):
         return False
     c = (d.get("message") or {}).get("content")
@@ -129,7 +134,7 @@ def _human_line(d, ask_ids):
 _HUMAN_SEEN = {}
 _ASK_OPEN_CAP = 64          # open AskUserQuestion/ExitPlanMode ids carried between incremental scans
 _HUMAN_SCAN = 8_000_000     # bytes scanned backwards per call; the memo makes later calls read only appended bytes
-_USER_RE = re.compile(rb'"type":\s*"user"')
+_USER_RE = re.compile(rb'"type":\s*"user"|"humanTurn":\s*true')
 
 
 def _human_deep(fp):
