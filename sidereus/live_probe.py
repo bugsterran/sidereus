@@ -8,9 +8,10 @@ import re
 import subprocess
 import threading
 import time
-from sidereus.config import IS_MAC, pid_alive
-from sidereus.memo import Refresher
+from sidereus.config import IS_MAC
+from sidereus.memo import Refresher, on_request_path, serve_last
 from sidereus import claude_roots
+from sidereus.claude_roots import registry_sig as _av_registry_sig
 from sidereus.warn import warn_once
 from sidereus.transcript import CLAUDE_PROJECTS
 from sidereus.ident import _slug, bin_path, bin_forget, is_claude_argv, rich_env
@@ -238,26 +239,6 @@ _av_sigs = {}               # account key ("" = single account, else realpath) -
 _AV_BG = Refresher()            # background `claude agents --json` refresh, keyed per account
 
 
-def _av_registry_sig(cfg_dir):
-    """Cheap signature of one account's session registry (no subprocess), or None when it cannot be read."""
-    if not cfg_dir:
-        return None
-    sig = []
-    try:
-        with os.scandir(os.path.join(cfg_dir, "sessions")) as it:
-            paths = sorted(e.path for e in it if e.name.endswith(".json"))
-    except OSError:
-        return None
-    for fp in paths:
-        try:
-            with open(fp, encoding="utf-8", errors="replace") as f:
-                d = json.load(f)
-            sig.append((fp, str(d.get("pid")), d.get("sessionId") or "", d.get("cwd") or "", pid_alive(d.get("pid"))))
-        except (OSError, ValueError, AttributeError):
-            sig.append((fp, "?"))           # unreadable mid-write: the next read settles it
-    return tuple(sig)
-
-
 def _av_fallback(now, cache=None):
     """Value while the negative cache is valid — **same fallback as the failure branch** (last value if still fresh, else unknown)."""
     prev_at, prev = cache if cache is not None else _av_cache
@@ -345,10 +326,10 @@ def _av_one(env, cache, fail, ttl, skey, cfg_dir="", sig_key=None):
     if now - fail[0] < AGENTS_FAIL_TTL:
         return _av_fallback(now, cache)
     # ★At load 138-190 /api/state took 30-39 s waiting on lookups. ⇒ Serve the last value, refresh in the background.
-    #   ⚠Cold start (no last value) still asks inline: there is nothing to serve, and None drops to the argv guess.
-    if cache[1] is not None and now - cache[0] < AGENTS_STALE_S:
+    #   ⚠Cold start asks inline only off the request path (memo.request_path); there None (unknown) until it lands.
+    if (cache[1] is not None and now - cache[0] < AGENTS_STALE_S) or on_request_path():
         _AV_BG.kick(sig_key or "", lambda: _av_fetch(env, cache, fail, skey, sig, sig_key, fresh))
-        return cache[1]                  # re-read: an inline spawn (tests) has just refreshed it
+        return _av_fallback(time.time(), cache)   # re-read: an inline spawn (tests) has just refreshed it
     return _av_fetch(env, cache, fail, skey, sig, sig_key, fresh)
 
 
@@ -446,6 +427,11 @@ def _ps_snap(ttl=PS_SNAP_TTL):
         return _ps_snap_cache[1]
     if _ps_snap_fail[1] is not None and time.time() - _ps_snap_fail[0] < PS_SNAP_FAIL_TTL:
         raise _ps_snap_fail[1].with_traceback(None)   # clear the traceback (the same object keeps growing)
+    if on_request_path():
+        rows = serve_last("ps", lambda: _ps_snap(ttl), lambda: tuple(_ps_snap_cache), LIVE_STALE_S, time.time)
+        if rows is None:
+            raise RuntimeError("process list not collected yet")   # unknown — each caller takes its own fallback
+        return rows
     with _ps_snap_lock:
         if _ps_snap_cache[1] is not None and time.time() - _ps_snap_cache[0] < ttl:
             return _ps_snap_cache[1]      # another thread just took it — don't run again
@@ -503,6 +489,8 @@ def tool_busy(ttl=2):
         return None     # ⚠no ps/lsof probe here — unknown, never {} (_blocked reads {} as «nothing running»)
     if time.time() - _busy_cache[0] < ttl:
         return _busy_cache[1]
+    if on_request_path():
+        return serve_last("busy", lambda: tool_busy(ttl), lambda: _busy_cache, BUSY_STALE_S, time.time)
     out = {}
     try:
         claude, shells = set(), {}
@@ -569,6 +557,10 @@ def shell_starts(ttl=2):
     at, key, res = _starts_cache
     if key == pids and time.time() - at < ttl:
         return res
+    if on_request_path():
+        return serve_last("starts", lambda: shell_starts(ttl),
+                          lambda: (_starts_cache[0], _starts_cache[2]) if _starts_cache[1] == pids else (0.0, None),
+                          BUSY_STALE_S, time.time)
     try:
         txt = subprocess.run(["ps", "-o", "pid=,etime=", "-p", ",".join(pids[:64])],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                              capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=4).stdout

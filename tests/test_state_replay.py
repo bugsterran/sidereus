@@ -210,7 +210,7 @@ class StateReplay(unittest.TestCase):
         self._patch(lp, "bin_forget", lambda n: None)        # ⚠in-memory only, stubbed so no real cache is touched
         self._patch(lp, "rich_env", lambda: {"PATH": "/usr/bin"})
         self._patch(lp, "_slow_why", lambda: [])
-        self._patch(lp, "pid_alive", lambda pid: str(pid) in alive)
+        self._patch(claude_roots, "pid_alive", lambda pid: str(pid) in alive)   # read by registry_sig
         busy = case.get("busy")
         self._patch(lp, "tool_busy", lambda ttl=2: busy)
         ot = _read(d, "otel.json", {}) or {}

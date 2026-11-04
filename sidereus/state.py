@@ -32,7 +32,7 @@ from sidereus.redact import redact_rooms
 from sidereus.burn import used5_peek
 from sidereus.burn_calc import _qb_forecast
 from sidereus.transcript import iso_epoch
-from sidereus.memo import BoundedMemo
+from sidereus.memo import BoundedMemo, request_path
 from sidereus.ui_prefs import rev as ui_prefs_rev
 
 
@@ -189,6 +189,12 @@ def _lr_scale(raw, num, den):
 
 
 def state(since=0, ncards=50, acks_v=""):
+    """`_state_poll` with process probes answering from cache only — a poll never spawns or waits on probe locks."""
+    with request_path():
+        return _state_poll(since, ncards, acks_v)
+
+
+def _state_poll(since=0, ncards=50, acks_v=""):
     """Full screen state received by polling (2.5s). `acks_v` = the page's acksV; when it matches, `acks` is omitted.
 
     ★2026-09-07 — **the lock is not held through slow work** (AUDIT cause 4). Previously `with _lock:` also

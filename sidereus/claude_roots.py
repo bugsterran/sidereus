@@ -7,13 +7,14 @@ Read-only: nothing here writes. Callers read the roots at call time (never copy 
 `accounts()` = roots + shared-history profiles (own dir, projects/ symlinked to a root already scanned);
 `acct_of(sid, fp)` reads the SessionStart hook's per-session record (`ACCT_DIR/<sid>`, one line = config dir).
 """
+import json
 import os
 import re
 import stat
 import threading
 import time
 
-from sidereus.config import DATA_DIR, claude_home
+from sidereus.config import DATA_DIR, claude_home, pid_alive
 from sidereus.memo import BoundedMemo
 from sidereus.prefs import dir_too_wide, effective
 
@@ -250,3 +251,24 @@ def primary_owned(sid, fp):
     rows, acc, _br = _cached()
     pr = _real_projects(rows[0]["dir"])
     return not any(_real_projects(a["dir"]) == pr for a in acc if not a["primary"])
+
+
+def registry_sig(cfg_dir):
+    """Cheap signature of one account's session registry (no subprocess), or None when it cannot be read.
+    ⚠Field choice and why: the AGENTS_MAX_AGE comment in `live_probe` (used as its `_av_registry_sig`)."""
+    if not cfg_dir:
+        return None
+    sig = []
+    try:
+        with os.scandir(os.path.join(cfg_dir, "sessions")) as it:
+            paths = sorted(e.path for e in it if e.name.endswith(".json"))
+    except OSError:
+        return None
+    for fp in paths:
+        try:
+            with open(fp, encoding="utf-8", errors="replace") as f:
+                d = json.load(f)
+            sig.append((fp, str(d.get("pid")), d.get("sessionId") or "", d.get("cwd") or "", pid_alive(d.get("pid"))))
+        except (OSError, ValueError, AttributeError):
+            sig.append((fp, "?"))           # unreadable mid-write: the next read settles it
+    return tuple(sig)

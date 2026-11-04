@@ -170,9 +170,9 @@ class AgentViewSignatureTest(_Base):
         self.addCleanup(shutil.rmtree, self.cfg, True)
         os.mkdir(os.path.join(self.cfg, "sessions"))
         self.alive = {"11"}
-        for name, val in (("_av_registry_sig", _REAL_SIG), ("pid_alive", lambda pid: str(pid) in self.alive),
-                          ("_av_accounts", lambda: [("", self.cfg, True)])):
-            p = mock.patch.object(lp, name, val)
+        for mod, name, val in ((lp, "_av_registry_sig", _REAL_SIG), (lp.claude_roots, "pid_alive", lambda pid: str(pid) in self.alive),
+                               (lp, "_av_accounts", lambda: [("", self.cfg, True)])):
+            p = mock.patch.object(mod, name, val)
             p.start()
             self.addCleanup(p.stop)
         p = mock.patch.dict(lp._av_sigs, clear=True)
