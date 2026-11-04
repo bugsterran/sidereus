@@ -223,7 +223,10 @@ class TestCards(Base):
         c = {"kind": "ask", "cwd": "/w/p", "sid": "a", "project": "p", "at": iso(NOW - 120)}
         row = self.one(sess("a", state="think", age=5, humanAt=int(NOW - 600)), [c])
         self.assertEqual([s["k"] for s in row["sigs"]], ["ask"])
-        self.assertEqual((row["sigs"][0]["pts"], row["sigs"][0]["why"]), (90, "질문 대기"))
+        self.assertEqual((row["sigs"][0]["pts"], row["sigs"][0]["why"]), (90, "질문 대기 · 이후 작업 계속"))
+        # a row that is itself asking keeps the plain label
+        live = self.one(sess("a", state="ask", humanAt=0), [c])
+        self.assertEqual(live["sigs"][0]["why"], "질문 대기")
         # a newer row of the same cwd does not take it
         out = self.run_att([sess("a", state="think", age=5, humanAt=0, tailAt=int(NOW - 3600)),
                             sess("b", state="run", age=1)], [c])

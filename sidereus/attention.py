@@ -174,7 +174,8 @@ def _card_sigs(extra, cards, own, now, read, rid, by_sid=None):
             # ⚠Hand-backs and task notifications wake the session and flip the row off `ask` while the question is unanswered.
             ck = "%s|%s|%s" % (c.get("at"), k, c.get("project") or "")
             if ck not in rid:
-                grp.setdefault((id(r), "ask"), []).append((at, "질문 대기", ck))
+                # distinct label: the question is no longer the last thing in the terminal, so say it scrolled up
+                grp.setdefault((id(r), "ask"), []).append((at, "질문 대기 · 이후 작업 계속", ck))
     # one signal per kind: several cards of the same kind count once (+5 is per distinct signal)
     for (rk, k), its in grp.items():
         its.sort()

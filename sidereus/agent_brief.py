@@ -194,7 +194,7 @@ def _why_en(s):
     if k == "blocked":
         return "Waiting for permission"
     if k == "ask":
-        return "Asked a question"
+        return "Asked a question" + (" · kept working since" if w.endswith(" · 이후 작업 계속") else "")
     if k == "abort":
         return "Interrupted — needs a new instruction"
     if k == "ctx95":
