@@ -17,7 +17,11 @@ ENTRY_MAX = 80
 WHYS = ("nomod", "owner", "overlap", "nofile", "range", "nosym", "bad", "nodef", "noroute")
 # Route mapping lines: Spring, JAX-RS, FastAPI/Flask/Express (`x.get(`, `.route(`, ...). Heuristic, line-based.
 ROUTE_LINE_RE = re.compile(r"@(?:Request|Get|Post|Put|Delete|Patch)Mapping\b|@(?:Path|GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\b"
-                           r"|\.(?:get|post|put|delete|patch|route|api_route)\s*\(")
+                           r"|\.(?:get|post|put|delete|patch|route|api_route)\s*\("
+                           r"|(?:^|[{,])\s*([\"'])/[^\"'\s]*\1\s*:")
+# Dict route table entry (`"/api/x": handler,`): a quoted leading-slash key after `{`, `,` or line start.
+# ⚠Only keys count: a ternary `? "/a" : "/b"` or a path-valued `"k": "/v"` is not a route.
+_DICT_KEY_RE = re.compile(r"(?:^|[{,])\s*([\"'])(/[^\"'\s]*)\1\s*:")
 _CLASS_RE = re.compile(r"\b(?:class|interface|object)\s+[A-Za-z_]")
 _LIT_RE = re.compile(r"([\"'`])(/[^\"'`]*)?\1")
 _BARE_RE = re.compile(r"@[\w.]+\s*(?:\(\s*\))?")
@@ -67,7 +71,8 @@ def _be_routes(lines, ln):
         if i in pre_ix:                      # the cited line is the class mapping itself: prefix alone
             methods.append("")
             continue
-        lits = [m.group(2) or "" for m in _LIT_RE.finditer(x)]
+        keys = [m.group(2) for m in _DICT_KEY_RE.finditer(x)]
+        lits = keys or [m.group(2) or "" for m in _LIT_RE.finditer(x)]
         # ⚠A non-literal argument (`value = CONST`) is unknown, not "": "" would let the bare class prefix match.
         methods += lits or ([""] if _BARE_RE.fullmatch(x.strip()) else [])
     return [p.rstrip("/") + "/" + mp.lstrip("/") for p in (prefixes or [""]) for mp in methods]
