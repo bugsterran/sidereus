@@ -336,7 +336,7 @@ function plRunPanel(p, models){
     + '<div class=brh2><b>' + esc(T('Message to send')) + '</b>' + (cur && cur.id ? ' <i>→ ' + esc(cur.id) + '</i>' : '') + '</div>'
     + '<pre class=plprev>' + esc(plDmFor(p, req || '…', plRunModels(p), !!(cur && cur.cx))) + '</pre>'
     + plCxHint(cur)
-    + '<div class=plbar><button class="wkrgb" data-plgo' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Confirm — send')) + '</button>'
+    + '<div class=plbar><button class="wkrgb archok" data-plgo' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Confirm — send')) + '</button>'
     + '<button class="wkrgb" data-plrx>' + esc(T('Cancel')) + '</button></div></div>';
 }
 // Run layer under its «Run» button, right edges aligned, clamped to the viewport; re-placed after every paint, scroll and resize.
