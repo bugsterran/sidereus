@@ -124,5 +124,46 @@ class SessContinued(unittest.TestCase):
         self.assertEqual(rows["cx-1"]["term"], {"app": "iterm", "tty": "ttys005"})
 
 
+class ContinueClaim(unittest.TestCase):
+    """live._live_argv_claims: a `claude -c` pid claims the newest transcript sid of its cwd (same sid it appends to)."""
+    def setUp(self):
+        self.live = sidereus("live")
+        self.lc = sidereus("live_cont")
+        self._saved = (self.lc._newest_slug, dict(self.lc._cont_sid), list(self.lc._cont_newest))
+        self.newest = {CWD: "/p/-Users-x-proj/" + NEW + ".jsonl"}
+        self.lc._newest_slug = lambda cwd: self.newest.get(cwd, "")
+        self.lc._cont_sid.clear()
+        self.lc._cont_newest[:] = [0.0, {}]
+
+    def tearDown(self):
+        self.lc._newest_slug = self._saved[0]
+        self.lc._cont_sid.clear()
+        self.lc._cont_sid.update(self._saved[1])
+        self.lc._cont_newest[:] = self._saved[2]
+
+    def claim(self, cmd, sids=None, pid="501"):
+        sids, claimed = set(sids or ()), set()
+        self.live._live_argv_claims([(pid, "1", cmd)], [pid], {}, {pid: CWD}, sids, claimed)
+        return sids, claimed
+
+    def test_continue_claims_newest_sid(self):
+        for cmd in ("claude -c", "/opt/bin/claude --continue --model opus"):
+            self.lc._cont_sid.clear()
+            self.assertEqual(self.claim(cmd), ({NEW}, {"501"}), cmd)
+
+    def test_plain_fork_or_owned_does_not_claim(self):
+        self.assertEqual(self.claim("claude"), (set(), set()))
+        self.assertEqual(self.claim("claude -c --fork-session"), (set(), set()))
+        self.assertEqual(self.claim("claude -c", sids={NEW}), ({NEW}, set()))   # another live process owns it
+
+    def test_newest_moved_drops_claim(self):
+        self.assertEqual(self.claim("claude -c"), ({NEW}, {"501"}))
+        self.newest[CWD] = "/p/-Users-x-proj/" + OLD + ".jsonl"
+        self.lc._cont_newest[:] = [0.0, {}]
+        self.assertEqual(self.claim("claude -c"), (set(), set()))      # /clear or another session: path counting
+        self.live._live_argv_claims([], [], {}, {}, set(), set())
+        self.assertEqual(self.lc._cont_sid, {})                       # pid gone: pruned
+
+
 if __name__ == "__main__":
     unittest.main()

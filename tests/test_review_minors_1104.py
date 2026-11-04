@@ -18,9 +18,9 @@ class ProbeFailureTest(unittest.TestCase):
     def test_failing_refresh_is_warned(self):
         def boom():
             raise ValueError("x")
-        with mock.patch.object(memo._PROBE_BG, "spawn", memo.run_inline), \
-                mock.patch("sidereus.warn.warn_once") as w:
-            self.assertIsNone(memo.serve_last("t-fail", boom, lambda: (0.0, None), 5, lambda: 1.0))
+        w = mock.Mock()
+        with mock.patch.object(memo._PROBE_BG, "spawn", memo.run_inline):
+            self.assertIsNone(memo.serve_last("t-fail", boom, lambda: (0.0, None), 5, lambda: 1.0, w))
         self.assertTrue(w.called)
         self.assertEqual(w.call_args[1]["vars"]["key"], "t-fail")
         memo.PROBE_ERR.pop("t-fail", None)

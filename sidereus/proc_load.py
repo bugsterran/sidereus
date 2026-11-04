@@ -12,6 +12,7 @@ import time
 from sidereus import live_probe
 from sidereus.ident import _proj_root, is_claude_argv
 from sidereus.memo import on_request_path, serve_last
+from sidereus.warn import warn_once
 
 PL_TOP_TTL = 2.0       # s — recompute at most this often (the snapshot itself turns over every PS_SNAP_TTL)
 PL_EXE_MAX = 5
@@ -107,7 +108,7 @@ def top():
     """srvLoad.top or None. ⚠On the request path only the last value is served (no `_proj_root` stat there)."""
     if on_request_path():
         return serve_last("procload", top, lambda: (_top_cache[0], _top_cache[1]),
-                          live_probe.LIVE_STALE_S, _now)
+                          live_probe.LIVE_STALE_S, _now, warn_once)
     now = _now()
     if _top_cache[0] == live_probe._ps_res[0] and now - _top_cache[2] < PL_TOP_TTL:
         return _top_cache[1]

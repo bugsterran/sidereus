@@ -39,7 +39,7 @@ class RootsBase(unittest.TestCase):
         ps = [mock.patch.object(self.cr, "SCAN_HOME", self.home),
               mock.patch.object(self.cr, "claude_home", lambda: self.prim),
               mock.patch.object(self.cr, "effective", lambda k: [])]
-        for m in ("work", "cards", "live_probe", "live", "timeline", "history"):
+        for m in ("work", "cards", "live_probe", "live_cont", "timeline", "history"):
             ps.append(mock.patch.object(_load.sidereus(m), "CLAUDE_PROJECTS", self.pp))
         for p in ps:
             p.start()

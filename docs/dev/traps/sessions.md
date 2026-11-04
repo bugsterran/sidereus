@@ -337,3 +337,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: a bg job's argv is `--resume OLD.jsonl`; with its account's official lookup unknown, the argv guess bound the pid to OLD, the live sid lost the same-cwd path slot to a newer transcript and `_live_slot` forced `done` (attention drops `ask` on done).
 - ⇒ `live_probe._av_held` keeps each account's last successful answer; while that account is unknown, `_live_held` reuses its pid -> sessionId pairs only for pids still in the ps snapshot with the argv they had when an answer named them (ps has no start time). Test `tests/test_attention_bg_ask_r2.py`.
 - ⚠A pid that left the snapshot or changed argv is dropped for good; an account that answered is never second-guessed. ⚠Do not loosen `stale` in `_live_slot` instead (dead-session ghosts). ⚠Known gap: a bg job started during the outage was never in an answer and still falls to the argv guess.
+
+## `claude -c` after /exit reads EXITED until the first new line (`live_cont._cont_claim`)
+
+- Cause: `-c` appends to the newest same-cwd transcript under the same sessionId but carries no sid in argv; while the cached `claude agents --json` has not listed it, the /exit tail gave up the path slot and an older same-cwd row looked live (false «Asked a question»).
+- ⇒ a `-c`/`--continue` pid (no uuid, no `--resume`/`-r`/`--fork-session`) claims the newest sid of its cwd as first seen for that pid+argv; a different newest later drops back to path counting. Tests `tests/test_sess_continued.py` (ContinueClaim), `tests/test_state_replay.py`.
+- ⚠Do not change the EXITED branch of `_live_slot` / `transcript._continued` instead (a dead /exit file would hold the slot forever). ⚠Known gap: ps has no start time — a `-c` pid first seen after a newer same-cwd session exited claims that newer sid.
