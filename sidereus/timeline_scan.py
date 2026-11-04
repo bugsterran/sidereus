@@ -3,7 +3,9 @@
 Split out of `sidereus/timeline.py` (2026-09-24); `timeline` assembles the rows and re-exports the names it uses.
 ⚠Patch these names here, not on `timeline` — functions in this module read their own globals."""
 import json
+import os
 import re
+import signal
 import subprocess
 import threading
 import time
@@ -392,14 +394,27 @@ def _nap_parse(txt):
 
 def _naps_fetch():
     """Raw sleep intervals from `pmset -g log`; empty list on non-Mac, **None** on failure or timeout."""
+    if not IS_MAC:
+        return []   # ⚠non-Mac — no pmset (empty list)
     try:
         # ⚠The raw log is huge — always narrow with `grep` and set a timeout.
-        r = subprocess.run(
+        # ⚠A timeout kills only /bin/sh; pmset|grep are grandchildren — run in its own group and kill the group.
+        p = subprocess.Popen(
             ["/bin/sh", "-c",
              "/usr/bin/pmset -g log | /usr/bin/grep -E "
              "'Entering Sleep state|Wake from'"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=12) if IS_MAC else None
-        return _nap_parse(r.stdout or "") if r is not None else []   # ⚠non-Mac — no pmset (empty list)
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
+            start_new_session=True)
+        try:
+            out, _err = p.communicate(timeout=12)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                p.kill()   # group already gone; kill the leader in case it lingers
+            p.communicate()   # reap
+            raise
+        return _nap_parse(out or "")
     except subprocess.TimeoutExpired:
         warn_once("naps-slow", "Sleep lookup (pmset -g log) took over 12 s — timeline gaps are not marked as asleep")
     except Exception as e:
