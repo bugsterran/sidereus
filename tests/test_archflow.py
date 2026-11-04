@@ -205,6 +205,13 @@ class HttpStepTest(Base):
         self.assertEqual(AF._be_routes(spring, 10), ["/objectchange/"])                      # bare annotation
         self.assertEqual(AF._be_routes(spring, 14), ["/objectchange/"])
 
+    def test_be_routes_dict_table(self):
+        table = ["ROUTES = {", "    \"/api/state\": h_state, '/api/todo': h_todo,", "}"]
+        self.assertEqual(AF._be_routes(table, 2), ["/api/state", "/api/todo"])
+        self.assertTrue(AF.route_match("/api/state", AF._be_routes(table, 2)[0]))
+        self.assertEqual(AF._be_routes(["x = {\"a\": 1, \"k\": \"/v\"}"], 1), [])          # no leading-slash key
+        self.assertEqual(AF._be_routes(["u = ok ? \"/a\" : \"/b\""], 1), [])               # ternary is not a key
+
     def test_route_match(self):
         self.assertTrue(AF.route_match("http://h:8/api/objectchange/", "/objectchange/{id}"))
         self.assertTrue(AF.route_match("/api/users?x=1", "/users"))

@@ -407,3 +407,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ close the menu on `setTimeout(archXClose, 0)`, after the default action.
 - ⚠Do not close it synchronously or call paintStruct in that click handler.
 - ⚠The menu wrapper is a span inside `.wvh`: 40-tokens `.wvh span{overflow:hidden}` clips the absolute `.archxm` (invisible, unclickable) ⇒ `.wvh .archxw{overflow:visible}`.
+
+## Flow step to a dict route table fails as «noroute» (`arch_flow.ROUTE_LINE_RE`)
+
+- Cause: only decorator and `.get(`-style lines were route lines, so a step citing `_GET_ROUTES = {"/api/state": _g_state, ...}` had no BE route.
+- ⇒ a quoted leading-slash key after `{`, `,` or line start followed by `:` is a route; only the keys are taken (`_DICT_KEY_RE`).
+- ⚠Do not take every path literal on such a line — a ternary `? "/a" : "/b"` or a path value `"k": "/v"` is not a route (`tests/test_archflow.py` `test_be_routes_dict_table`).
