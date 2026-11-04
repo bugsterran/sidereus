@@ -115,10 +115,10 @@ def on_request_path():
     return bool(getattr(_req, "on", False))
 
 
-def serve_last(key, refresh, read, max_age, clock):
+def serve_last(key, refresh, read, max_age, clock, warn=None):
     """Kick `refresh()` off-thread (one per key) and return `read()` = (measured at, value) if younger than
     max_age by `clock()`, else None (unknown). ⚠`refresh` records its own failure; read is taken after the kick
-    because an inline spawn (tests) has just filled it."""
+    because an inline spawn (tests) has just filled it. `warn` = the caller's `warn_once` (memo sits below warn)."""
     def run():
         prev = getattr(_req, "on", False)
         _req.on = False        # ⚠an inline spawn runs on the caller's thread — the refresh itself must probe for real
@@ -127,10 +127,10 @@ def serve_last(key, refresh, read, max_age, clock):
             PROBE_ERR.pop(key, None)
         except Exception as e:  # ⚠the probe caches its own failure (e.g. `_ps_snap_fail`) and its readers warn
             PROBE_ERR[key] = e
-            from sidereus.warn import warn_once   # lazy: memo is imported before warn by several modules
             # ⚠without this a refresh that fails every time is silent — the value just stays unknown
-            warn_once("probe:" + key, "Background refresh {key} failed ({err}) — that value shows as unknown",
-                      vars={"key": key, "err": type(e).__name__}, soft=True)
+            if warn:
+                warn("probe:" + key, "Background refresh {key} failed ({err}) — that value shows as unknown",
+                     vars={"key": key, "err": type(e).__name__}, soft=True)
         finally:
             _req.on = prev
     _PROBE_BG.kick(key, run)

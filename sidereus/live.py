@@ -11,7 +11,7 @@ from sidereus.config import IS_MAC
 from sidereus import claude_roots
 from sidereus.warn import warn_once
 from sidereus.memo import BoundedMemo, on_request_path, serve_last
-from sidereus.transcript import CLAUDE_PROJECTS, _continued
+from sidereus.transcript import _continued
 from sidereus.ident import _slug
 # ⚠Probes (staleness, sid lookups, agent_view, _ps_snap, tool_busy/_blocked) live in sidereus/live_probe.py; re-exported here
 #   for importers (sessions, cards, notes, work, history) and for live_cwds/watchers. Patch probe internals on live_probe.
@@ -21,6 +21,8 @@ from sidereus.live_probe import (LIVE_STALE_S, _STALE_LABEL, _STALE_SHOW_S, _UUI
 from sidereus import live_probe as _lp
 # ⚠Window learning lives in sidereus/live_win.py (re-exported for chat_server/sessions/recent). Patch its state there.
 from sidereus.live_win import _ctx_window, _model_win, _win_ev, _win_load, _win_loop  # noqa: F401
+# ⚠`claude -c` claims and the newest-transcript lookup live in sidereus/live_cont.py; patch them there.
+from sidereus.live_cont import _CONT_ARG_RE, _CONT_SKIP_RE, _cont_claim, _cont_prune, _newest_jsonl, _newest_slug  # noqa: F401
 
 
 # ★Liveness is decided by **process** — mtime does not work (2026-08-18).
@@ -255,6 +257,9 @@ def _live_argv_claims(snap, pids, av, pmap, sids, claimed):
                     continue
                 sids.add(sid)
                 claimed.add(parts[0])
+            elif _CONT_ARG_RE.search(parts[1]) and not _CONT_SKIP_RE.search(parts[1]):
+                _cont_claim(parts[0], parts[1], pmap.get(parts[0]), sids, claimed)
+        _cont_prune(snap)
     except Exception as e:         # if this fails, judge by the old path method only — nothing gets worse
         warn_once("argvclaim", "argv session label parse failed ({err})", vars={"err": type(e).__name__}, soft=True)
 
@@ -442,39 +447,6 @@ def _etime_ts(et, now):
         return 0                # unparsable etime: caller falls back to now
 
 
-def _newest_jsonl(d):
-    """**Newest .jsonl** in that project directory ("" if none). ⚠Depth 1 only (`subagents/` is out of scope)."""
-    best, best_mt = "", 0
-    try:
-        for fn in os.listdir(d):
-            if not fn.endswith(".jsonl"):
-                continue
-            fp = os.path.join(d, fn)
-            try:
-                mt = os.path.getmtime(fp)
-            except OSError:
-                continue
-            if mt > best_mt:
-                best, best_mt = fp, mt
-    except OSError:
-        return ""
-    return best
-
-
-def _newest_slug(cwd):
-    """Newest .jsonl of cwd's slug across every Claude root ("" if none). ⚠Same cwd in two roots: newest wins."""
-    best, best_mt = "", -1.0
-    for root in claude_roots.projects_dirs(CLAUDE_PROJECTS):
-        f = _newest_jsonl(os.path.join(root, _slug(cwd)))
-        try:
-            mt = os.path.getmtime(f) if f else -1.0
-        except OSError:
-            continue
-        if mt > best_mt:
-            best, best_mt = f, mt
-    return best
-
-
 def _watch_transcript(cmd, pid):
     """The watcher's ancestor `claude` process -> that session's **transcript path** ("" if not found).
 
@@ -533,7 +505,7 @@ def mailbox_watches():
     if _mon_cache[1] is not None and now - _mon_cache[0] < MON_TTL:
         return _mon_cache[1]
     if on_request_path():              # never spawn on a request thread (`memo.request_path`)
-        return serve_last("mon", mailbox_watches, lambda: tuple(_mon_cache), MON_STALE_S, time.time)
+        return serve_last("mon", mailbox_watches, lambda: tuple(_mon_cache), MON_STALE_S, time.time, warn_once)
     try:
         live_cwds()          # fills the pid -> cwd by-product (its own 2 s TTL cache, so not an extra call)
         par, cmdl, watch = {}, {}, []

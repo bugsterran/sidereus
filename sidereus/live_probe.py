@@ -429,7 +429,7 @@ def _ps_snap(ttl=PS_SNAP_TTL):
     if _ps_snap_fail[1] is not None and time.time() - _ps_snap_fail[0] < PS_SNAP_FAIL_TTL:
         raise _ps_snap_fail[1].with_traceback(None)   # clear the traceback (the same object keeps growing)
     if on_request_path():
-        rows = serve_last("ps", lambda: _ps_snap(ttl), lambda: tuple(_ps_snap_cache), LIVE_STALE_S, time.time)
+        rows = serve_last("ps", lambda: _ps_snap(ttl), lambda: tuple(_ps_snap_cache), LIVE_STALE_S, time.time, warn_once)
         if rows is None:
             raise RuntimeError("process list not collected yet")   # unknown — each caller takes its own fallback
         return rows
@@ -493,7 +493,7 @@ def tool_busy(ttl=2):
     if time.time() - _busy_cache[0] < ttl:
         return _busy_cache[1]
     if on_request_path():
-        return serve_last("busy", lambda: tool_busy(ttl), lambda: _busy_cache, BUSY_STALE_S, time.time)
+        return serve_last("busy", lambda: tool_busy(ttl), lambda: _busy_cache, BUSY_STALE_S, time.time, warn_once)
     out = {}
     try:
         claude, shells = set(), {}
@@ -563,7 +563,7 @@ def shell_starts(ttl=2):
     if on_request_path():
         return serve_last("starts", lambda: shell_starts(ttl),
                           lambda: (_starts_cache[0], _starts_cache[2]) if _starts_cache[1] == pids else (0.0, None),
-                          BUSY_STALE_S, time.time)
+                          BUSY_STALE_S, time.time, warn_once)
     try:
         txt = subprocess.run(["ps", "-o", "pid=,etime=", "-p", ",".join(pids[:64])],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                              capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=4).stdout

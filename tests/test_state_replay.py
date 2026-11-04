@@ -22,6 +22,7 @@ from tests._load import load, sidereus
 
 load()
 live = sidereus("live")
+live_cont = sidereus("live_cont")
 lp = sidereus("live_probe")
 sessions = sidereus("sessions")
 notes = sidereus("notes")
@@ -267,6 +268,27 @@ class StateReplay(unittest.TestCase):
 class LiveSlot(unittest.TestCase):
     """sessions._live_slot branch order, one assertion per branch."""
     L = {"/a": 1}
+
+    def test_continue_after_exit_keeps_newest_live(self):
+        # `claude -c` into an /exit-ended transcript: newest row EXITED, older row's tail asks, one process.
+        new, old = "ee55ee55-0000-4000-8000-000000000005", "ff66ff66-0000-4000-8000-000000000006"
+        saved = (live_cont._newest_slug, dict(live_cont._cont_sid), list(live_cont._cont_newest))
+        live_cont._newest_slug = lambda cwd: "/p/-a/" + new + ".jsonl"
+        live_cont._cont_sid.clear()
+        live_cont._cont_newest[:] = [0.0, {}]
+        try:
+            sids, claimed, out = set(), set(), {}
+            live._live_argv_claims([("9", "1", "claude -c")], ["9"], {}, {"9": "/a"}, sids, claimed)
+            live._live_count_paths({"9": "/a"}, claimed, out)
+        finally:
+            live_cont._newest_slug = saved[0]
+            live_cont._cont_sid.clear()
+            live_cont._cont_sid.update(saved[1])
+            live_cont._cont_newest[:] = saved[2]
+        slots = dict(out)
+        self.assertEqual(sessions._live_slot("/a", "", sessions.EXITED, new in sids, out, slots, set()), (out, False))
+        got_old = sessions._live_slot("/a", "", "", old in sids, out, slots, set())
+        self.assertNotIn("/a", got_old[0])                 # older row gets no live slot: not «Asked a question»
 
     def test_blind_account_reads_unknown(self):
         slots = {"/a": 1}
