@@ -33,6 +33,7 @@ from sidereus.burn import used5_peek
 from sidereus.burn_calc import _qb_forecast
 from sidereus.transcript import iso_epoch
 from sidereus.memo import BoundedMemo, request_path
+from sidereus import proc_load
 from sidereus.ui_prefs import rev as ui_prefs_rev
 
 
@@ -103,7 +104,7 @@ def _slow_note(key, t0):
 
 
 def _srv_load():
-    """state().srvLoad {load1, snapAge, slow} — machine load and this build's slow pieces (metadata only).
+    """state().srvLoad {load1, ncpu, snapAge, slow, top} — machine load (top: heaviest session tree, proc_load) and this build's slow pieces (metadata only).
     ⚠Unknown stays None (no getloadavg / no snapshot), never 0."""
     try:
         l1 = round(float(_loadavg()[0]), 2) if _loadavg else None
@@ -111,8 +112,9 @@ def _srv_load():
         l1 = None
     age = snapshot_age()
     slow = sorted(getattr(_build, "slow", None) or [], key=lambda x: -x[1])[:SLOW_MAX]
-    return {"load1": l1, "snapAge": round(age, 1) if age is not None else None,
-            "slow": [[k, ms] for k, ms in slow]}
+    # ncpu lets the page call load busy only relative to the core count (None = unknown).
+    return {"load1": l1, "ncpu": os.cpu_count() or None, "snapAge": round(age, 1) if age is not None else None,
+            "slow": [[k, ms] for k, ms in slow], "top": proc_load.top()}
 
 
 PROJ_DIR_TTL_S = 30.0   # s — per-path isdir memo, so the 2.5 s poll does not stat every session folder each time

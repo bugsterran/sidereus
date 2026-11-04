@@ -398,7 +398,7 @@ def _av_fetch(env, cache, fail, skey, sig, sig_key, fresh):
 #   ⇒ Only same-list calls are merged (`live_cwds` ×2 · `mailbox_watches` · `tool_busy`); parsing stays per collector.
 #   ⚠Not merged: ① `ps -Ewwo …` (env `-E`) — a different command used for a few watcher processes only;
 #     on the full list it would drag every environment along (see the ⚠ comment there). ② the 2 `lsof` calls — different pid sets and purposes.
-#   ⚠Fields = the union the collectors use (`pid,ppid,command`). `comm=` dropped: the claude test gives the same answer
+#   ⚠Fields = the union the collectors use (`pid,ppid,pcpu,rss,command`; `command` last — it holds spaces). `comm=` dropped: the claude test gives the same answer
 #     on argv[0] — measured 2026-09-21: of 626 processes, 4 by comm · 4 by argv[0], **0 difference**; `comm` values
 #     contain spaces (measured `/Applications/…/Google Chrome Helper`), so one line with `command` breaks parsing.
 PS_SNAP_TTL = 2.0              # shorter than the poll (2.5 s) — reused within a poll, retaken on the next
@@ -406,6 +406,7 @@ PS_SNAP_FAIL_TTL = 4.0         # ★failures cached this long — equal to the `
                                # a poll fork only once. ⚠Do not make it equal to the success TTL (2 s):
                                # then one poll could incur another 4 s call.
 _ps_snap_cache = [0.0, None]   # (success time, [(pid, ppid, command), ...])
+_ps_res = [0.0, {}]            # (success time, {pid: (pcpu, rss_kb)}) — raw strings for proc_load, same stamp as the cache
 _ps_snap_fail = [0.0, None]    # (failure time, its exception) — the contract is "raise", so the exception is cached, not a value
 _ps_snap_lock = threading.Lock()
 
@@ -439,20 +440,22 @@ def _ps_snap(ttl=PS_SNAP_TTL):
             raise _ps_snap_fail[1].with_traceback(None)   # another thread just failed — don't run again
         try:
             # ⚠`errors="replace"` is required — encoding alone means strict, and one bad byte kills session detection entirely.
-            txt = subprocess.run(["ps", "-Ao", "pid=,ppid=,command="],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
+            txt = subprocess.run(["ps", "-Ao", "pid=,ppid=,pcpu=,rss=,command="],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                                  capture_output=True, text=True, encoding="utf-8", errors="replace",
                                  timeout=4).stdout
         except Exception as e:
             _ps_snap_fail[0], _ps_snap_fail[1] = time.time(), e
             raise
         _ps_snap_fail[0], _ps_snap_fail[1] = 0.0, None    # recovered — lift the negative cache
-        rows = []
+        rows, res = [], {}
         for ln in txt.splitlines():
-            parts = ln.split(None, 2)
-            if len(parts) < 3:
+            parts = ln.split(None, 4)
+            if len(parts) < 5:
                 continue
-            rows.append((parts[0], parts[1], parts[2]))
+            rows.append((parts[0], parts[1], parts[4]))   # ⚠rows stay 3-tuples — ~10 callers unpack (pid, ppid, cmd)
+            res[parts[0]] = (parts[2], parts[3])
         _ps_snap_cache[0], _ps_snap_cache[1] = time.time(), rows
+        _ps_res[0], _ps_res[1] = _ps_snap_cache[0], res
         return rows
 
 

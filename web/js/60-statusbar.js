@@ -33,25 +33,43 @@ function connTimedOut(c, now, downMs){
 //   the cause (load, slow pieces) goes in the tooltip only. Load alone does not delay data, so it is not a trigger.
 const SB_SNAP_OLD_S = 10, SB_POLL_SLOW_MS = 10000;
 var SRVLOAD = null;   // state().srvLoad {load1, snapAge, slow: [[piece, ms]]} of the last good poll (set by 95-poll); null = old server
-// Delay verdict or null. Missing/odd srvLoad fields count as unknown, never as 0.
+// Delay/load verdict or null. Missing/odd srvLoad fields count as unknown, never as 0.
+// ★Load 30-135 on 12 cores with no poll delay (2026-11-04): «Data delayed» alone never showed who used the CPU,
+//   so load above SB_LOAD_X × ncpu is a second trigger («Machine busy»); unknown ncpu leaves only the delay path.
+const SB_LOAD_X = 2;
 function sbBusy(srv, c, now){
   const num = v => typeof v === 'number' && isFinite(v) ? v : null;
-  const l = srv ? num(srv.load1) : null, sa = srv ? num(srv.snapAge) : null;
+  const l = srv ? num(srv.load1) : null, sa = srv ? num(srv.snapAge) : null, nc = srv ? num(srv.ncpu) : null;
   const cli = c.okAt > 0 && (c.slow || (c.pend > 0 && now - c.pend >= SB_POLL_SLOW_MS));
-  if(!(cli || (sa != null && sa >= SB_SNAP_OLD_S))) return null;
+  const delayed = !!(cli || (sa != null && sa >= SB_SNAP_OLD_S));
+  if(!delayed && !(l != null && nc > 0 && l > nc * SB_LOAD_X)) return null;
   // Age of the data on screen: time since the last applied reply or the server snapshot age, whichever is larger.
   const age = Math.round(Math.max(sa != null ? sa : 0, c.okAt ? Math.max(0, now - c.okAt) / 1000 : 0));
   const slow = (srv && Array.isArray(srv.slow) ? srv.slow : []).filter(p => Array.isArray(p) && p.length >= 2).slice(0, 8);
-  return {load: l, age: age, slow: slow};
+  // Busiest session (srvLoad.top); an odd shape is dropped, never shown as 0.
+  const t = srv && srv.top, top = t && typeof t === 'object' && typeof t.repo === 'string' && t.repo && num(t.cpu) != null && num(t.rssMb) != null ? t : null;
+  const out = {load: l, age: age, slow: slow, delayed: delayed};
+  if(top) out.top = top;
+  return out;
 }
 // Calm (amber, not red) connection piece; piece names are server data, so esc() only, never T().
 function sbBusyHtml(b){
-  const lbl = T('Data delayed · {s}s ago').replace('{s}', String(b.age));
   const n = b.load == null ? '' : String(b.load >= 10 ? Math.round(b.load) : Math.round(b.load * 10) / 10);
+  const lbl = b.delayed === false ? TV({msg: 'Machine busy · load {n}', vars: {n: n}}) : T('Data delayed · {s}s ago').replace('{s}', String(b.age));
   const why = (n ? T('load {n}').replace('{n}', n) : '')
     + (b.slow.length ? (n ? ' · ' : '') + T('slow:') + ' ' + b.slow.map(p => String(p[0]) + ' ' + Math.round(+p[1] || 0) + ' ms').join(', ') : '');
-  const tip = T('The server is answering slowly — the screen keeps the last data') + (why ? '\n' + why : '');
-  return '<span class=sbconn title="' + esc(tip) + '"><b class=sbwarn>● ' + esc(lbl) + '</b></span>';
+  const t = b.top, gb = v => String(Math.round(v / 1024 * 10) / 10);
+  const ex = t && Array.isArray(t.exe) ? t.exe.filter(p => Array.isArray(p) && p.length >= 2).slice(0, 5) : [];
+  const un = t && t.unowned && typeof t.unowned === 'object' && typeof t.unowned.cpu === 'number' && isFinite(t.unowned.cpu) && typeof t.unowned.rssMb === 'number' && isFinite(t.unowned.rssMb) ? t.unowned : null;
+  const tip = (b.delayed === false ? T('Load is above twice the CPU count') : T('The server is answering slowly — the screen keeps the last data')) + (why ? '\n' + why : '')
+    + (t ? '\n' + TV({msg: 'mostly {r} · CPU {c}% · {m} GB', vars: {r: t.repo, c: Math.round(t.cpu), m: gb(t.rssMb)}}) : '')
+    + (ex.length ? '\n' + T('processes:') + ' ' + ex.map(p => String(p[0]) + ' ×' + Math.round(+p[1] || 0)).join(', ') : '')
+    + (un ? '\n' + TV({msg: 'outside Claude sessions: CPU {c}% · {m} GB', vars: {c: Math.round(un.cpu), m: gb(un.rssMb)}}) : '');
+  // ⚠The repo name is the point («who»): it drops last (SB_STEPS end); the numbers drop first (SB_STEPS[0]). At 1440 one piece
+  //   with the first step hid the name and the tooltip did not carry it either.
+  const sfx = t ? ' <small class=sbd' + SB_STEPS[SB_STEPS.length - 1] + '>· ' + esc(TV({msg: 'mostly {r}', vars: {r: t.repo}})) + '</small>'
+    + '<small class=sbd' + SB_STEPS[0] + '> · ' + esc(TV({msg: 'CPU {c}% · {m} GB', vars: {c: Math.round(t.cpu), m: gb(t.rssMb)}})) + '</small>' : '';
+  return '<span class=sbconn title="' + esc(tip) + '"><b class=sbwarn>● ' + esc(lbl) + '</b>' + sfx + '</span>';
 }
 // «as of 2 min ago» — age of the last good poll; '' while connected or before the first success.
 function connAge(c, now){
