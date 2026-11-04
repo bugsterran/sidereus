@@ -5,11 +5,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Sessions: when `claude agents --json` exits with an error and no output, sessions are treated as unknown instead of all ended (seen off macOS).
+- Timeline: the sleep lookup (`pmset`) is stopped with its whole process group on timeout instead of running on in the background.
+- Structure: the flow check reads routes declared in a dict table, so those request steps no longer fail as "no route".
+- Structure: the export stamp and header tooltip say "HEAD is 1 commit ahead".
+- Tokens: the Day/Week/Month and Today/7 days toggles announce their state and name; empty tables show "No data" instead of a bare header.
+- Status bar: a long repo name in "mostly <repo>" is cut with an ellipsis; the full name stays in the tooltip.
+- History: the time column has a fixed width so the project column lines up.
+- Demo: the Timeline no longer reorders when a response spans a second boundary.
+
+### Changed
+
+- Contributors: `check.sh --fast` also runs the architecture tests; bug-fix pipelines require a trap note; a commit-msg hook allows closing keywords only in a release commit.
+
 ## [0.15.0] - 2026-11-05
 
 **Highlights**
 
-- Busy machine: under heavy load the page keeps answering. `/api/state` no longer waits on git, `ps` or `claude agents --json`; a slow poll reads "Data delayed" instead of "Disconnected", and the status bar names the Claude session using the most CPU and memory.
+- Busy machine: under heavy load the page keeps answering. `/api/state` no longer waits on git, `ps` or `claude agents --json`; a slow poll reads "Data delayed" instead of "Disconnected", and the status bar names the repo whose Claude session uses the most CPU and memory.
 - Attention: sessions ended with `/exit`, parked into a background job or continued with `claude -c` no longer leave an older transcript looking live with a false "Asked a question"; a prompt typed mid-turn counts as your reply.
 - Chat: room hashtags, room management and the invite bar are gone; manage rooms from a session with the `room` skill.
 
