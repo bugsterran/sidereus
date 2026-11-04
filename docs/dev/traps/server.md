@@ -4,6 +4,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Server, /api/state payload, caching, performance
 
+- ★**`_ps_snap` reads `ps -Ao pid=,ppid=,pcpu=,rss=,command=` by position** (2026-11-04, `sidereus/live_probe.py` `_ps_snap`, split `split(None, 4)`).
+  - ⚠`command` must stay the last column — it holds spaces; any column after it is swallowed into the command. Adding a column = insert it before `command` and bump the split count.
+  - ⚠Rows stay `(pid, ppid, cmd)` 3-tuples (~10 callers unpack them); pcpu/rss go to `_ps_res` for `proc_load`. pcpu may use a decimal comma.
 - ★**The `claude agents` budget (≤ 2/min) holds only in registry-signature mode** (2026-10-25, #24, `scripts/perf_budget.py`). ★sessions/ present: 1 spawn per simulated minute.
   - ⚠No `<config dir>/sessions/` dir ⇒ `_av_registry_sig` returns None ⇒ plain `AGENTS_TTL` 8 s ≈ 7.5 spawns/min (sidereus/live_probe.py `_av_one`).
   - ⇒ The budget run writes a `sessions/<pid>.json` first; never call `agent_view(ttl=…)` from a poll path.

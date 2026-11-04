@@ -107,7 +107,7 @@ R.hiEn = sbBusyHtml(sbBusy({load1: 5.04, snapAge: 30, slow: [['cards', 900]]}, o
         self.assertNotIn("부하", self.R["old"])
 
     def test_pending_poll_is_busy(self):
-        self.assertEqual(self.R["pend"], {"load": None, "age": 11, "slow": []})
+        self.assertEqual(self.R["pend"], {"load": None, "age": 11, "slow": [], "delayed": True})
 
     def test_english(self):
         self.assertIn("● Data delayed · 30s ago</b>", self.R["hiEn"])

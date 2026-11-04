@@ -53,7 +53,7 @@ class _Base(unittest.TestCase):
             p = mock.patch.object(lp, name, val)
             p.start()
             self.addCleanup(p.stop)
-        lists = (lp._av_cache, lp._av_fail, lp._ps_snap_cache, lp._ps_snap_fail,
+        lists = (lp._av_cache, lp._av_fail, lp._ps_snap_cache, lp._ps_res, lp._ps_snap_fail,
                  lp._sid_file, lp._sid_stale, lp._live_sids)
         saved = [list(x) for x in lists]
         busy, stale = lp._busy_cache, dict(lp._stale)
@@ -70,6 +70,7 @@ class _Base(unittest.TestCase):
         lp._av_cache[:] = [0.0, None]
         lp._av_fail[:] = [0.0]
         lp._ps_snap_cache[:] = [0.0, None]
+        lp._ps_res[:] = [0.0, {}]
         lp._ps_snap_fail[:] = [0.0, None]
         lp._busy_cache = (0.0, {})
         lp._busy_shells, lp._starts_cache = {}, (0.0, (), None)
@@ -78,11 +79,13 @@ class _Base(unittest.TestCase):
 
 class PsSnapTest(_Base):
     def test_parses_and_skips_short_lines(self):
-        self.sub.outs["ps"] = "  1   0 /sbin/launchd\n 42 1 claude --resume x y\n\n 7 3\n"
+        self.sub.outs["ps"] = "  1   0  0.1  9000 /sbin/launchd\n 42 1 12,5 2048 claude --resume x y\n\n 7 3 0.0 5\n"
         self.assertEqual(lp._ps_snap(), [("1", "0", "/sbin/launchd"), ("42", "1", "claude --resume x y")])
+        self.assertEqual(lp._ps_res, [self.clock.t, {"1": ("0.1", "9000"), "42": ("12,5", "2048")}])
+        self.assertEqual(self.sub.calls[0][2], "pid=,ppid=,pcpu=,rss=,command=")
 
     def test_reused_within_ttl_then_retaken(self):
-        self.sub.outs["ps"] = "1 0 a\n"
+        self.sub.outs["ps"] = "1 0 0.0 1 a\n"
         lp._ps_snap()
         self.clock.t += 1.0
         lp._ps_snap()
@@ -100,7 +103,7 @@ class PsSnapTest(_Base):
             lp._ps_snap()
         self.assertEqual(len(self.sub.calls), 1, "a cached failure must not fork ps again")
         self.clock.t += 1.0
-        self.sub.outs["ps"] = "5 1 x\n"
+        self.sub.outs["ps"] = "5 1 0.0 1 x\n"
         self.assertEqual(lp._ps_snap(), [("5", "1", "x")])
         self.assertEqual(lp._ps_snap_fail, [0.0, None])
 

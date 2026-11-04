@@ -129,6 +129,9 @@ class SrvLoad(unittest.TestCase):
             "review": lambda rows: None, "_saver_state": lambda pct, left=None: None, "_saver_view": lambda: None,
             "_saver_switch": lambda: None, "ext_usage_today": lambda: {}, "state_off": lambda: set(),
         }
+        p = mock.patch("os.cpu_count", lambda: 12)   # no live machine facts
+        p.start()
+        self.addCleanup(p.stop)
         for k, v in readers.items():
             p = mock.patch.object(st, k, v)
             p.start()
@@ -136,14 +139,16 @@ class SrvLoad(unittest.TestCase):
 
     def test_shape_and_slowest_first(self):
         s = st.state()["srvLoad"]
-        self.assertEqual(s, {"load1": 1.25, "snapAge": 2.4,
-                             "slow": [["attention", 500], ["wtOrder", 375], ["quotaWho", 312]]})
+        self.assertEqual(s, {"load1": 1.25, "ncpu": 12, "snapAge": 2.4,
+                             "slow": [["attention", 500], ["wtOrder", 375], ["quotaWho", 312]], "top": None})
 
     def test_unknown_is_none_and_cap(self):
         with mock.patch.object(st, "_loadavg", None), mock.patch.object(st, "snapshot_age", lambda: None), \
                 mock.patch.object(st, "SLOW_PIECE_MS", 0):
             s = st.state()["srvLoad"]
         self.assertEqual((s["load1"], s["snapAge"]), (None, None))
+        with mock.patch("os.cpu_count", lambda: None):
+            self.assertIsNone(st.state()["srvLoad"]["ncpu"])
         self.assertEqual(len(s["slow"]), st.SLOW_MAX)
         self.assertEqual([x[1] for x in s["slow"]], sorted((x[1] for x in s["slow"]), reverse=True))
 
