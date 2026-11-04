@@ -15,7 +15,7 @@ PRE = "\n".join([
     "function sid8(s){ return String(s).slice(0, 8); } function mboxIn(x){ return !!x.mbox; }",
     "const ARCH_BRIEF_PL = 'arch-brief';",
 ])
-FNS = ("archBriefHref", "archXOk", "archBriefBusy", "archXBtn", "archXMenu", "archDmBody", "archBriefDmBody", "archNoHome", "archWhyOff",
+FNS = ("archBriefHref", "archXOk", "archXHead", "archBriefBusy", "archXBtn", "archXMenu", "archDmBody", "archBriefDmBody", "archNoHome", "archWhyOff",
        "archBriefReqHtml")
 C = "a" * 40
 MAP = {"ok": True, "modules": [{"id": "m"}], "edges": [], "commit": C, "head": C}
@@ -31,21 +31,29 @@ def run(expr):
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class ArchBriefJs(unittest.TestCase):
-    def test_x_ok_needs_head_map(self):
-        """R4: no map, empty, bad, stale or commit != head -> export off."""
+    def test_x_ok_needs_a_map(self):
+        """No map, empty, bad or no modules -> export off; an older-commit map exports (stamped in 84m2)."""
         ds = [None, dict(MAP, ok=False), dict(MAP, empty=True), dict(MAP, bad=True), dict(MAP, modules=[]), dict(MAP, stale=True),
               dict(MAP, head="b" * 40), dict(MAP, head=""), MAP]
-        self.assertEqual(run("%s.map(archXOk)" % json.dumps(ds)), [False] * 8 + [True])
+        self.assertEqual(run("%s.map(archXOk)" % json.dumps(ds)), [False] * 5 + [True] * 4)
+        self.assertEqual(run("%s.map(archXHead)" % json.dumps(ds)), [False] * 8 + [True])
 
     def test_disabled_button_tooltip(self):
-        """R4: disabled with the «draw first» reason; no menu even if xm is set."""
-        h = run("(ARCH.xm = '/r', archXBtn(" + json.dumps(dict(MAP, stale=True)) + ", '/r'))")
+        """Disabled with the «draw first» reason only when there is no map; no menu even if xm is set."""
+        h = run("(ARCH.xm = '/r', archXBtn(" + json.dumps(dict(MAP, modules=[])) + ", '/r'))")
         self.assertIn("data-arxp", h)
         self.assertIn(" disabled", h)
         self.assertIn("aria-haspopup=menu", h)
         self.assertIn("지금 커밋의 아키텍처 구조도를 먼저 그려 주세요", h)
         self.assertIn("HTML 추출", h)
         self.assertNotIn("archxm", h)
+
+    def test_stale_map_exports_but_no_overview_request(self):
+        """An older-commit map opens the menu; «Simple» without a brief cannot request a run (needs the HEAD map)."""
+        h = run("(ARCH.xm = '/r', archXBtn(" + json.dumps(dict(MAP, stale=True, head="b" * 40)) + ", '/r'))")
+        self.assertIn("archxm", h)
+        self.assertRegex(h, r"data-arxs disabled")
+        self.assertIn("data-arxd", h)
 
     def test_menu_with_brief_is_a_link(self):
         """R1/R2: open menu = «Simple» real link (new tab, noopener noreferrer) + «Detailed» button."""

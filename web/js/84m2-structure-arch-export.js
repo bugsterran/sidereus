@@ -91,7 +91,10 @@ function archXDownload(p){
   if(!s || !d || !d.ok || (box && box._arp && box._arp !== p)) return false;
   const leg = tab.querySelector('.archleg'), am = s.closest('.archmap'), r = archRate(d), c7 = String(d.commit || '').slice(0, 7);
   const mods = d.modules || [], sel = ARCH.sel && ARCH.sel.p === p && mods.some(m => m && m.id === ARCH.sel.id) ? ARCH.sel.id : '';
-  const base = archBase(p), meta = [base, c7, T('Edges verified {n}/{m} ({k}%)').replace('{n}', r.n).replace('{m}', r.m).replace('{k}', r.pct)].filter(Boolean).join(' · ');
+  // ⚠An older-commit map exports too: say how far HEAD moved, so the file never passes for the current code.
+  const old = d.stale || (d.head && d.commit && d.commit !== d.head)
+    ? (typeof d.behind === 'number' ? TV({msg: 'HEAD is {n} commits ahead', vars: {n: d.behind}}) : T('stale')) : '';
+  const base = archBase(p), meta = [base, c7, old, T('Edges verified {n}/{m} ({k}%)').replace('{n}', r.n).replace('{m}', r.m).replace('{k}', r.pct)].filter(Boolean).join(' · ');
   const cl = archXColors(am);
   const html = archXDoc({ title: base + (c7 ? ' · ' + c7 : ''), meta: meta, bg: cl.bg, fg: cl.fg, leg: leg ? archXPart(leg) : '', svg: archXPart(s) });
   const url = URL.createObjectURL(new Blob([html], { type: 'text/html' })), a = document.createElement('a');
