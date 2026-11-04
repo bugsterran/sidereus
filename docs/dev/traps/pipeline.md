@@ -393,3 +393,9 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: a `tests/` folder or any `pyproject.toml` returned `python3 -m pytest -q`, so unittest, JS and Go repos got a gate that cannot run.
 - Fix: pytest only on explicit config — `pytest.ini`, `conftest.py` (root or `tests/`), `[tool.pytest` in `pyproject.toml`, `[tool:pytest]` in `setup.cfg`, `[pytest]` in `tox.ini`; else undetected and the person types the gate (blank = no gate).
 - ⚠Never infer a runner from folder names or a bare manifest (`tests/test_pipeline_starter_r6.py`).
+
+## Fix gates enforce structure rules and the trap entry (`scripts/check.sh` step `arch` · `scripts/trap_check.py`)
+- Cause: `tests/test_arch.py` ran only in `--full`, and a behaviour fix could pass the fix stage with no trap entry; both were patched by hand after review.
+- Fix: `--fast` runs `tests.test_arch` after leakscan (13 tests ≈5 s, «Ran N» via `need`). The quick-fix and sidereus-bugfix fix stages gate on `scripts/check.sh --fast && /usr/bin/python3 scripts/trap_check.py`: a changed `sidereus/*.py` (untracked counts) without a changed `docs/dev/traps/*.md` = FAIL.
+- ⚠A git error is FAIL «unknown», never PASS (`tests/test_trap_check.py`). Keep `check.sh --fast` first in the compound gate — `GATE_MODES` grades it as `fast` by that substring. A deleted trap file (porcelain `D`) is not an entry.
+- ⚠Evidence limit: check.sh writes its `fast` row (rc 0) before trap_check runs, so a trap_check FAIL leaves no failing row and pl_eval/scorecard still read the gate as held. Do not make trap_check write a `fast` row — a pass and a fail on one clean commit marks `fast` flaky (`pl_eval.flaky`).

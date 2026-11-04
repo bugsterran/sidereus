@@ -1,6 +1,6 @@
 #!/bin/bash
 # Single gate runner: check.sh [--fast|--full]  (default --full). Fail-fast; last line is PASS or FAIL.
-# --fast skips the unit tests and the screen check (pre-commit hook).
+# --fast skips the unit tests (except tests/test_arch.py) and the screen check (pre-commit hook).
 set -u
 MODE=full
 case "${1:-}" in
@@ -99,6 +99,14 @@ rc=$?
 if [ $rc -ne 0 ]; then grep -v '^leakscan:' "$TMP/leak.log" | head -30; fail leakscan "$(tail -1 "$TMP/leak.log")"; fi
 need leakscan "shipped files" "$(tail -1 "$TMP/leak.log" | grep -oE '[0-9]+ shipped files' | grep -oE '^[0-9]+')"
 ok leakscan "$(tail -1 "$TMP/leak.log" | sed 's/^leakscan: //')"
+
+# 5b. structure rules (tests/test_arch.py, ~5s) in every mode — a module-ownership break must not wait for --full
+PYTHONPYCACHEPREFIX="$TMP/pyc" TZ=UTC LC_ALL=C.UTF-8 "$PY" -m unittest tests.test_arch >"$TMP/arch.log" 2>&1
+rc=$?
+n=$(sed -n 's/^Ran \([0-9][0-9]*\) tests\{0,1\}.*/\1/p' "$TMP/arch.log" | tail -1)
+[ $rc -eq 0 ] || fail arch "$(grep -m1 -E '^(FAIL|ERROR): ' "$TMP/arch.log" || tail -1 "$TMP/arch.log") (log $TMP/arch.log)"
+need arch "tests/test_arch.py (Ran N)" "$n"
+ok arch "$n tests"
 
 # 6a. screen check before the unit tests — the most frequent --full failure, so it surfaces in seconds, not after ~200s
 if [ $MODE = full ] && [ -f scripts/screen_check.mjs ]; then

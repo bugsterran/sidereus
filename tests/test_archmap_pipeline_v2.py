@@ -21,7 +21,7 @@ class ArchMapPipelineV2Test(unittest.TestCase):
 
     def test_draw_modules_v2(self):
         t = self.st["모듈 그리기"]["task"]
-        for w in ("v:2", "`v: 2`", "layer", "group", "summary", "read", "write", "serve", "event", "owns", "web->api"):
+        for w in ("v:2", "`v: 2`", "groups:[{id,name}]", "layer", "group", "summary", "read", "write", "serve", "event", "owns", "web->api"):
             self.assertIn(w, t)
 
     def test_plan_v2(self):

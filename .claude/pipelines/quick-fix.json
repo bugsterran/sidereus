@@ -10,8 +10,8 @@
     {
       "title": "수정",
       "agent": "main",
-      "task": "Apply the minimal fix at the known cause and add or update a regression test. Report changed files; anything outside the fix goes in findings.",
-      "gate": "scripts/check.sh --fast",
+      "task": "Apply the minimal fix at the known cause and add or update a regression test. For a behaviour fix, add a trap entry to docs/dev/traps/<domain>.md (docnote shape); the gate refuses a sidereus/*.py fix without one. Report changed files; anything outside the fix goes in findings.",
+      "gate": "scripts/check.sh --fast && /usr/bin/python3 scripts/trap_check.py",
       "ui": { "x": 44, "y": 24 }
     },
     {

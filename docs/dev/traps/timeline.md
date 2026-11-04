@@ -303,3 +303,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: the drawer's `curWinTok` sums every account, the status bar «5h used» counts the primary only, so the two numbers differ with 2+ accounts.
 - Fix: the label reads «this-window tokens · all accounts» with a tooltip naming the difference (`76-timeline-drawer.js` `tlSumDraw`).
 - ⚠Do not "fix" the numbers to match — they measure different scopes; only the label explains it.
+
+### Demo timeline group order flaked in screen_check
+- Cause: running sessions tie on `sessLast` (every running `end` = now) and keep insertion order; the demo re-read the clock per call, so a second tick mid-response gave the workflow rows `now+1` and lifted «search-index» to the top (★1 in 3 runs: 36 lines in `tab:time`).
+- Fix: `demo.respond` freezes one clock per request in a thread-local that `World.now()` reads (`sidereus/demo.py`).
+- ⚠Never call `time.time()` directly in a demo builder, and do not raise the screen_check tolerance for this — it hides real reorders.
+- ★`tests/test_demo_world.py`: with a clock ticking per read, running `end` values split before the fix and match after.

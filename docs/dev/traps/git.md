@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Branch tab, board, git and worktrees
 
+- ★**«Closes #N» in a dev commit closes an issue early or hits the wrong one** (2026-11-04). Cause: GitHub acts on closing keywords when the commit reaches `main`, and a Sidereus to-do number written as `#64` names an unrelated issue.
+  - ⇒ `.githooks/commit-msg` → `scripts/commit_msg_check.py check(msg, staged)`: closing keywords (`close[sd]`/`fix(e[sd])`/`resolve[sd]`, optional `:` and `owner/repo`) are allowed only when `CHANGELOG.md` is staged (the release commit); otherwise «use Refs #N». Comment lines (`#…`) are ignored as git does. The regex lives only there.
+  - ⚠`commit -v` puts the diff after the scissors line `# --- >8 ---`; cut there first, or a staged `+Fixes #3` is refused. A message-only `--amend` of the release commit stages nothing ⇒ with an empty stage, HEAD's files (`diff-tree -r HEAD`) count. Test `tests/test_commit_msg_check.py`.
+  - ⚠A hook file without the executable bit is skipped silently — `scripts/install-hooks.sh` re-runs `chmod +x .githooks/*`. ⚠`git commit --no-verify` bypasses it; the hook is a guard, not enforcement.
 - ★**Diff window «Include untracked files» (`untr=1`) is opt-in and capped** (2026-10-17). Cause: the blanket untracked list once buried real changes under build/ and logs (08-25 decision).
   - ⇒ `git_diff(..., untr="1")` appends `_untracked_patch` for at most `DIFF_UNTR_MAX` = 40 status paths, only for scope `work` or `b:<sha>`; pref `sidereus.dfUntr` (35c).
   - ⚠Each path still goes through `_untracked_patch` (literal pathspec · realpath inside root · no symlink · `ls-files --others` · 1 MB read cap). Keep the `git_rail` import lazy — git_rail imports git_view.
