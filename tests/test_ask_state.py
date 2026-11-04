@@ -122,6 +122,23 @@ class ParseAndState(Patch):
         self.assertEqual(p2["humanAt"], ts("2026-09-24T00:50:00.000Z"))
         self.assertTrue(att._ask_open(dict(row, humanAt=p2["humanAt"]), {"sid": "s1"}, card))
 
+    def test_queued_prompt_mid_turn_counts_as_reply(self):
+        # A prompt typed while the turn runs lands as a queued_command attachment with humanTurn true.
+        def att_line(ts, **a):
+            return json.dumps({"type": "attachment", "sessionId": "s1", "cwd": CWD, "timestamp": ts,
+                               "attachment": dict({"type": "queued_command", "commandMode": "prompt", "prompt": "x"}, **a)})
+        def at(ts, kind, *content):
+            return json.dumps({"type": kind, "sessionId": "s1", "cwd": CWD, "timestamp": ts, "message": {"content": list(content)}})
+        ts = lambda s: int(parse._line_ts({"timestamp": s}, 0))
+        head = [at("2026-09-24T00:50:00.000Z", "user", {"type": "text", "text": "go"}),
+                at("2026-09-24T00:51:00.000Z", "assistant", tu("Bash", "b1"))]
+        p = self.parse(head + [att_line("2026-09-24T00:51:30.000Z", humanTurn=True)])
+        self.assertEqual(p["humanAt"], ts("2026-09-24T00:51:30.000Z"))
+        # a task notification or reminder uses the same attachment type without humanTurn: not a reply
+        p2 = self.parse(head + [att_line("2026-09-24T00:51:30.000Z", commandMode="task-notification")])
+        self.assertEqual(p2["humanAt"], ts("2026-09-24T00:50:00.000Z"))
+        self.assertTrue(parse._USER_RE.search(att_line("2026-09-24T00:51:30.000Z", humanTurn=True).encode()))
+
     def test_human_line_beyond_tail_window(self):
         # A human reply >400 KB from the end falls outside the tail: the scan past the tail still finds it.
         import os, tempfile
