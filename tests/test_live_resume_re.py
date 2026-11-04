@@ -38,6 +38,8 @@ class ResumeRe(unittest.TestCase):
         new, cwd = "dd44dd44-0000-4000-8000-000000000002", "/Users/x/proj"
         saved = {k: getattr(lv, k) for k in ("_ps_snap", "agent_view", "subprocess", "IS_MAC", "_sid_transcript")}
         cache = lv._live_cache
+        # ⚠module state shared with sessions: a leaked retired U (== another test's OLD) forced that row to done
+        retired, av_argv = set(lv._live_retired[0]), dict(lv._av_argv)
         try:
             lv.IS_MAC = True
             lv._sid_transcript = lambda sid: "/t/%s.jsonl" % sid
@@ -52,6 +54,9 @@ class ResumeRe(unittest.TestCase):
             for k, v in saved.items():
                 setattr(lv, k, v)
             lv._live_cache = cache
+            lv._live_retired[0] = retired
+            lv._av_argv.clear()
+            lv._av_argv.update(av_argv)
 
 
 if __name__ == "__main__":
