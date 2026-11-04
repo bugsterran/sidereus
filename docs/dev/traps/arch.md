@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Structure tab (Architecture · Size)
 
+- **«Export HTML» › «Detailed» must inline computed styles, not copy CSS** (`web/js/84m2-structure-arch-export.js`).
+  - Cause: the map's look comes from ancestor-scoped rules (`.archdg[data-fv] .mmdfl{visibility:hidden}`) and CSS variables (`--mmd-tx`); a copied stylesheet outside `.archtab` draws every hidden label and loses the theme.
+  - ⇒ `archXInline` writes allow-listed computed props per element; `archXClean` drops script/style/foreignObject, on*/data-*/xmlns, non-`#` href and resets the root size to the viewBox (zoom 1x).
+  - ⚠Never add the `.mmdsrc` source text or evidence lists to the file (rule 1); a new SVG style prop must join `ARCH_X_SVG` or the export loses it. Test: `tests/test_struct_arch_export_js.py`.
+
 - **Warm-up idle never came with a tab open** (`structure.struct_mark_act`).
   - Cause: idle was «no GET/POST outside a path deny-list»; the work log (2.5 s), timeline drawer (5 s), diff rail and `/api/arch` (30 s) timers and MCP `/api/agent/*` were not listed, and shared paths cannot be split by path.
   - ⇒ Positive signal only: the page posts `/api/act` on pointerdown/keydown/wheel (≤ 1 per 10 s, `web/js/08-ui-kit.js` `actPing`) and page loads (`STRUCT_PAGE_PATHS`) mark; no other request does.
@@ -395,3 +400,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: an arrow between two domain boxes can cite a real, verified map edge whose ends sit in other boxes; the figure then shows a link the code does not have.
 - ⇒ each cited edge index must be `ok` in verify.json and its `from`/`to` must be in the arrow's from-box/to-box modules; an unreadable commit tree reads «tree unreadable», never «file missing».
 - ⚠Do not accept an edge by index alone or in either direction — `tests/test_arch_brief.py` `test_arrow_edge_not_joining_boxes`.
+
+## «Export HTML» menu link opens no tab (84m `[data-arxc]`)
+
+- Cause: removing or repainting the menu inside the click on its `<a target=_blank>` disconnects the link before its navigation runs, so no tab opens.
+- ⇒ close the menu on `setTimeout(archXClose, 0)`, after the default action.
+- ⚠Do not close it synchronously or call paintStruct in that click handler.
+- ⚠The menu wrapper is a span inside `.wvh`: 40-tokens `.wvh span{overflow:hidden}` clips the absolute `.archxm` (invisible, unclickable) ⇒ `.wvh .archxw{overflow:visible}`.
