@@ -309,3 +309,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Fix: `demo.respond` freezes one clock per request in a thread-local that `World.now()` reads (`sidereus/demo.py`).
 - ⚠Never call `time.time()` directly in a demo builder, and do not raise the screen_check tolerance for this — it hides real reorders.
 - ★`tests/test_demo_world.py`: with a clock ticking per read, running `end` values split before the fix and match after.
+
+### `pmset` outlived its sleep-lookup timeout
+- Cause: `_naps_fetch` ran `sh -c "pmset -g log | grep …"` with `subprocess.run(timeout=12)`, which kills only `sh`; pmset and grep were re-parented to launchd and kept reading tens of MB, and `NAP_RETRY_S` (30 s) retries could stack them.
+- Fix: `Popen(start_new_session=True)` + `communicate(timeout=12)`; on timeout `os.killpg(pid, SIGKILL)` then reap (`sidereus/timeline_scan.py`). Return/cache behaviour unchanged (None, last good bands kept).
+- ⚠Any shell pipeline with a timeout needs its own process group — `subprocess.run(timeout=)` never reaches grandchildren.
+- ★`tests/test_naps_timeout.py`: killpg on the group pid, then reap; errors before the fix.
