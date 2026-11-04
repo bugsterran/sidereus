@@ -70,6 +70,33 @@ class SessContinued(unittest.TestCase):
                           {"type": "user", "sessionId": OLD}])
         self.assertEqual(self.states(), {OLD: "wait", NEW: "done"})
 
+    def _exit_tail(self):
+        return [{"type": "assistant", "sessionId": OLD,
+                 "message": {"role": "assistant", "content": [{"type": "text", "text": "Shall I go on?"}]}},
+                {"type": "system", "subtype": "turn_duration"},
+                {"type": "user", "isMeta": True, "message": {"role": "user", "content": "<local-command-caveat>x</local-command-caveat>"}},
+                {"type": "user", "message": {"role": "user", "content":
+                    "<command-name>/exit</command-name>\n<command-message>exit</command-message>"}},
+                {"type": "user", "message": {"role": "user", "content": "<local-command-stdout>(no content)</local-command-stdout>"}},
+                {"type": "system", "subtype": "away_summary"}, {"type": "bridge-session"}, {"type": "cost-state"}]
+
+    def test_exit_ended_is_detected_and_gives_slot(self):
+        _write(self.old, self._exit_tail())
+        self.assertEqual(ss._continued(self.old), ss.EXITED)
+        self.assertEqual(self.states(), {OLD: "done", NEW: "wait"})
+
+    def test_no_exit_is_not_ended(self):
+        _write(self.old, [r for r in self._exit_tail() if "command-name" not in str(r)])
+        self.assertEqual(ss._continued(self.old), "")
+
+    def test_exit_then_resumed_is_not_ended(self):
+        _write(self.old, self._exit_tail() + [{"type": "user", "message": {"role": "user", "content": "go on"}}])
+        self.assertEqual(ss._continued(self.old), "")
+
+    def test_clear_is_not_ended(self):
+        _write(self.old, [{"type": "user", "message": {"role": "user", "content": "<command-name>/clear</command-name>"}}])
+        self.assertEqual(ss._continued(self.old), "")
+
     def test_ext_rows_get_term_on_poll(self):
         # ⚠term_attach must run after ext_rows are merged, or Codex rows never get `term` («Copy command» only).
         term = sidereus("term")
