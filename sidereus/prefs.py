@@ -258,7 +258,7 @@ def _read_file():
 
 def prefs_get():
     """GET /api/prefs body."""
-    data, err = _read_file()
+    data, err = _read_file_v()      # ⚠err stays template + vars: the page's TE() matches the bare template
     keys = {}
     for k, (default, check, env) in PREFS.items():
         if k in PREFS_OWN_PANE:
@@ -279,7 +279,7 @@ def prefs_get():
     except ValueError:
         out["mailbox_watch"] = dict(PREFS["mailbox_watch"][0], projects={})
     if err:
-        out["err"] = err
+        out.update(err)
     return out
 
 
@@ -331,9 +331,9 @@ def prefs_set(req):
         except ValueError as e:
             return 400, {"ok": False, "err": str(e)}
     with _LOCK:
-        data, err = _read_file()
+        data, err = _read_file_v()
         if err:
-            return 400, {"ok": False, "err": err}
+            return 400, dict({"ok": False}, **err)
         if reset:
             data.pop(key, None)
             val = default

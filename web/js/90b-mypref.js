@@ -46,7 +46,7 @@ function mpVmDefault(s){
 async function mpSrvLoad(force){
   if(MPSRV_LD || (!force && MPSRV && Date.now() - MPSRV_AT < 15000)) return;
   MPSRV_LD = true;
-  try{ const r = await getJSON('/api/prefs'); MPSRV = (r && r.ok && r.keys) ? r : {ok: false, err: (r && r.err) || T('unexpected response shape')}; }
+  try{ const r = await getJSON('/api/prefs'); MPSRV = (r && r.ok && r.keys) ? r : {ok: false, err: (r && r.err) || T('unexpected response shape'), vars: r && r.vars}; }
   catch(e){ MPSRV = {ok: false, err: String((e && e.message) || e)}; }
   mpVmDefault(MPSRV);
   MPSRV_LD = false; MPSRV_AT = Date.now();
@@ -165,7 +165,7 @@ function mpCcPane(){
     : MPDONE[k] ? '<span class=mpnote>' + esc(T(MPDONE[k] === 2 ? 'Checking…' : 'Applies from new sessions')) + '</span>' : '';
   let h = '<div class=cfgpd>' + esc(T('Claude Code settings')) + ': <code>' + esc(MPSRV.cc_path || a.path || '') + '</code> · ' + esc(T('Applies from new sessions'))
     + ' · ' + esc(T('A running Claude Code may rewrite this file, so it is re-read after 3 seconds to check.')) + '</div>';
-  if(MPSRV.cc_err) h += '<div class="cfgpd err">' + esc(MPSRV.cc_err) + '</div>';
+  if(MPSRV.cc_err) h += '<div class="cfgpd err">' + esc(TE({err: MPSRV.cc_err, vars: MPSRV.cc_vars})) + '</div>';   // server sends template + vars
   const accts = Array.isArray(MPSRV.cc_accts) ? MPSRV.cc_accts : [];
   if(accts.length){
     const on = mpAcctOn();
@@ -177,7 +177,7 @@ function mpCcPane(){
   // Other accounts' settings.json: one line only where its value differs from the primary (a save writes them all).
   accts.forEach(x => {
     const d = [];
-    if(x.err) d.push(TE(String(x.err)));
+    if(x.err) d.push(TE(x));
     else {
       if(x.auto !== a.value) d.push('autoCompactEnabled ' + String(x.auto));
       if(x.window !== w.value) d.push('autoCompactWindow ' + (x.window == null ? T('None') : String(x.window)));
@@ -200,7 +200,7 @@ let MPACON = null, MPACD = {}, MPANOTE = '';
 function mpAcctRows(){
   const K = MPSRV.keys, ex = Array.isArray(MPSRV.cc_accts) ? MPSRV.cc_accts : [];
   return [{label: MPSRV.cc_primary_label || '', path: MPSRV.cc_path || K.cc_auto_compact.path || '', primary: true,
-    auto: K.cc_auto_compact.value, window: K.cc_compact_window.value, err: MPSRV.cc_err || null}].concat(ex.map(x => Object.assign({primary: false}, x)));
+    auto: K.cc_auto_compact.value, window: K.cc_compact_window.value, err: MPSRV.cc_err || null, vars: MPSRV.cc_vars}].concat(ex.map(x => Object.assign({primary: false}, x)));
 }
 function mpAcctOn(){
   if(MPACON != null) return MPACON;
@@ -215,7 +215,7 @@ function mpAcctPane(){
       + '<input class=svin data-mpacct=' + i + ' type=number min=50000 max=1000000 step=10000 style="width:96px" value="' + esc(x.err ? '' : d.win)
       + '" aria-label="' + esc(T('Compact threshold (tokens)')) + '">'
       + (MPERR[k] ? '<span class="mpnote err">' + esc(MPERR[k]) + '</span>' : '');
-    return cfgSet(String(x.label || x.path || '?'), String(x.path || '') + (x.err ? ' · ' + T('skipped') + ': ' + TE(String(x.err)) : ''), ctl, false, x.err ? TE(String(x.err)) : '');
+    return cfgSet(String(x.label || x.path || '?'), String(x.path || '') + (x.err ? ' · ' + T('skipped') + ': ' + TE(x) : ''), ctl, false, x.err ? TE(x) : '');
   }).join('');
 }
 // Typed window text per row, from the live input when painted, else the draft.
@@ -250,8 +250,8 @@ async function mpAcctApplyRun(){
   if(!(r0 && r0.ok)){ MPERR.cc_accounts = mpSrvErr(r0); paintCfg(); return; }
   const files = Array.isArray(r0.files) ? r0.files : [], nm = f => String(f.label || '') + ' ' + String(f.path || '');
   const ch = files.filter(f => f && f.status === 'change'), sk = files.filter(f => f && f.status === 'skipped');
-  const skTxt = sk.map(f => nm(f) + '\n' + T('skipped') + ': ' + (f.err ? TE(String(f.err)) : '?'));
-  if(!ch.length){ MPANOTE = [T('No account changed')].concat(sk.map(f => nm(f) + ' ' + T('skipped') + ': ' + (f.err ? TE(String(f.err)) : '?'))).join(' · '); paintCfg(); return; }
+  const skTxt = sk.map(f => nm(f) + '\n' + T('skipped') + ': ' + (f.err ? TE(f) : '?'));
+  if(!ch.length){ MPANOTE = [T('No account changed')].concat(sk.map(f => nm(f) + ' ' + T('skipped') + ': ' + (f.err ? TE(f) : '?'))).join(' · '); paintCfg(); return; }
   const msg = ch.map(f => nm(f) + '\n' + mpAcctFmt(f.before) + ' → ' + mpAcctFmt(f.after)).concat(skTxt).join('\n\n');
   if(!confirm(T('Change this Claude Code setting? It applies from new sessions.') + '\n\n' + msg)){ paintCfg(); return; }
   const r = await post(false);
@@ -308,7 +308,7 @@ async function mpCcSetRun(key, val){
   // One «path / old → new» block per account file, primary first; files the server will skip say why.
   const accts = Array.isArray(MPSRV.cc_accts) ? MPSRV.cc_accts : [];
   const cur = x => key === 'cc_auto_compact' ? x.auto : x.window;
-  const blocks = accts.filter(x => x.err || cur(x) !== val).map(x => (x.path || '') + '\n' + (x.err ? T('skipped') + ': ' + TE(String(x.err))
+  const blocks = accts.filter(x => x.err || cur(x) !== val).map(x => (x.path || '') + '\n' + (x.err ? T('skipped') + ': ' + TE(x)
     : show(cur(x)) + '\n→ ' + show(val)));   // accounts already at the new value are left out
   const msg = !accts.length ? (MPSRV.cc_path || it.path || '') + '\n' + lab + '\n' + show(it.value) + '\n→ ' + show(val)
     : lab + '\n\n' + [(MPSRV.cc_path || it.path || '') + '\n' + show(it.value) + '\n→ ' + show(val)].concat(blocks).join('\n\n');
@@ -379,7 +379,9 @@ function cfgPaneMe(){
     + H(T('Server') + ' · ' + T('Applies after restart'));
   mpSrvLoad(false);
   if(!MPSRV) return h + '<div class=cfgpd>' + esc(T('Loading…')) + '</div>';
-  if(!MPSRV.ok) return h + '<div class="cfgpd err">' + esc(T('Could not read the server settings')) + ': ' + esc(MPSRV.err || T('unknown error')) + '</div>';
+  if(!MPSRV.ok) return h + '<div class="cfgpd err">' + esc(T('Could not read the server settings')) + ': ' + esc(MPSRV.err ? TE(MPSRV) : T('unknown error')) + '</div>';
+  // ok with err: config.local.json is broken, so the rows show defaults — say why
+  if(MPSRV.err) h += '<div class="cfgpd err">' + esc(TE(MPSRV)) + '</div>';
   if(MPSRV.path) h += '<div class=cfgpd>' + esc(T('File')) + ': <code>' + esc(MPSRV.path) + '</code></div>';
   const row = k => {
     const it = MPSRV.keys[k] || {}, l = MP_SRV_LAB[k] || [k, ''], env = it.src === 'env', ro = env || k === 'compact_history';

@@ -98,7 +98,7 @@ def _efull(err):
 
 
 def _etext(err):
-    """Filled English text. ⚠Row `err` and `cc_err` are read as plain strings by the page (90b TE(String(x.err))): never send a bare template there."""
+    """Filled English text (logs/tests). ⚠Page-bound `err`/`cc_err` stay bare templates + vars so 90b TE() can match the ko key."""
     v = _ev(err)
     return str(err).format(**v) if v else err
 
@@ -299,7 +299,7 @@ def _acct_row(t):
     if os.path.islink(t["path"]):
         return {"label": t["label"], "path": t["path"], "auto": None, "window": None, "err": "symlink"}
     _raw, d, err = _read_at(t["path"])
-    row = {"label": t["label"], "path": t["path"], "err": _etext(err)}
+    row = dict({"label": t["label"], "path": t["path"], "err": None}, **(_efull(err) if err else {}))
     for name, pk in (("auto", "cc_auto_compact"), ("window", "cc_compact_window")):
         sk, check, default = CC_KEYS[pk]
         val = default
@@ -321,7 +321,9 @@ def prefs_get_all():
     out["otel"] = otel_get()
     out["features"] = features_listing()   # settings «Features» rows (web/js/90c-features.js)
     if err:
-        out["cc_err"] = _etext(err)
+        out["cc_err"] = err
+        if _ev(err):
+            out["cc_vars"] = _ev(err)
     tg = _targets()
     out["cc_primary_label"] = tg[0]["label"]
     if len(tg) > 1:
@@ -369,7 +371,7 @@ def _plan_raw(raw, old, sk, val):
     """Splice sk=val into raw (parsed as old) and re-check -> (new_raw, new dict, err); err = (code, message) or None."""
     new_raw = _splice(raw, sk, val)
     if new_raw is None:
-        return None, None, (400, "settings.json layout can't be edited safely (duplicate %s?) — change it by hand" % sk)
+        return None, None, (400, _Err("settings.json layout can't be edited safely (duplicate {key}?) — change it by hand", key=sk))
     try:
         chk = json.loads(new_raw.decode("utf-8-sig"))
     except ValueError:
@@ -408,7 +410,7 @@ def cc_set(pk, value):
         for t, (xraw, xnew, _xprev, xerr) in zip(tg[1:], plans[1:]):
             row = {"label": t["label"], "path": t["path"]}
             if xerr:
-                row.update(status="skipped", err=_etext(xerr[1]))
+                row.update(status="skipped", **_efull(xerr[1]))
             elif xnew == xraw:
                 row["status"] = "same"
             else:
@@ -506,7 +508,7 @@ def cc_set_accts(req):
             elif pl["err"]:
                 if t["primary"]:
                     return pl["err"][0], dict({"ok": False}, **_efull(pl["err"][1]))   # primary refused: nothing is written anywhere
-                row.update(before=_shown(pl["old"]), status="skipped", err=_etext(pl["err"][1]))
+                row.update(before=_shown(pl["old"]), status="skipped", **_efull(pl["err"][1]))
             else:
                 row.update(before=_shown(pl["old"]), status="change" if pl["new_raw"] != pl["raw"] else "same")
             row["after"] = _shown(json.loads(pl["new_raw"].decode("utf-8-sig"))) if row["status"] == "change" else dict(row["before"])
