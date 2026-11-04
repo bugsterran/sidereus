@@ -91,4 +91,12 @@ Object.assign(I18N.ko, {
   'compact_history invalid ({why}) — not updated': 'compact_history 가 올바르지 않습니다({why}) — 갱신하지 않았습니다',
   'config file unreadable ({e}) — fix it by hand': '설정 파일을 읽을 수 없습니다({e}) — 직접 고치세요',
   'config file top level is not an object — fix it by hand': '설정 파일 최상위가 객체가 아닙니다 — 직접 고치세요',
+  'unreadable ({e})': '읽을 수 없습니다({e})',
+  'not valid JSON — fix it by hand': '올바른 JSON 이 아닙니다 — 직접 고치세요',
+  'top level is not an object — fix it by hand': '최상위가 객체가 아닙니다 — 직접 고치세요',
+  '`hooks` is not an object — fix it by hand': '`hooks` 가 객체가 아닙니다 — 직접 고치세요',
+  'settings.json not found': 'settings.json 이 없습니다',
+  'settings.json unreadable ({e})': 'settings.json 을 읽을 수 없습니다({e})',
+  'settings.json is not valid JSON ({e}) — fix it by hand': 'settings.json 이 올바른 JSON 이 아닙니다({e}) — 직접 고치세요',
+  'settings.json top level is not an object — fix it by hand': 'settings.json 최상위가 객체가 아닙니다 — 직접 고치세요',
 });

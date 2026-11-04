@@ -404,7 +404,7 @@ function mmdSvg(g, L, key, tag){
   if(tag) g.edges.forEach(e => { const k = e.from + '\u0001' + e.to; if(!ge[k]) ge[k] = e; });
   // data-f/data-t = node keys (same as data-p) so 84j hover can light an edge's ends without a lookup
   const fe = e => { const m = ge[e.from + '\u0001' + e.to]; return '<g class=mmdfe data-c="' + esc(((m && m.calls) || []).join(' ')) + '"' + (m && m.kind ? ' data-k="' + esc(m.kind) + '"' : '')   // data-k: 84j v2 edge kind only
-    + ' data-f="' + esc(e.from) + '" data-t="' + esc(e.to) + '">'; };
+    + ' data-f="' + esc(e.from) + '" data-t="' + esc(e.to) + '" aria-label="' + esc(mmdEdgeName(g, e.from, e.to)) + '">'; };   // 98-a11y makes it a button: give it a name
   L.edges.forEach(e => {
     const pp = e.pts.slice(), z = pp.length - 1, pg = k => g.nodes[k] && L.nodes[k] ? mmdPoly(g.nodes[k].shape, L.nodes[k]) : null;
     if(z > 0 && e.from !== e.to){ pp[0] = mmdTip(pp[0], pp[1], pg(e.from)); pp[z] = mmdTip(pp[z], pp[z - 1], pg(e.to)); }
@@ -427,6 +427,11 @@ function mmdSvg(g, L, key, tag){
   else L.edges.forEach(e => { const R = e.lr; if(e.label && R) o += '<g class="mmdel' + (e.num ? ' mmdnum' : '') + '">' + rect(R, Math.min(R.h / 2, 9))
     + txt(e.num || e.label, R.x + R.w / 2, R.y + R.h / 2, 'mmdtx') + '</g>'; });
   return o + '</svg>';
+}
+// Accessible name of a tagged edge group: «from → to» by node label (subgraph title, else key). Caller esc()s it.
+function mmdEdgeName(g, a, b){
+  const nm = id => String(g.nodes && g.nodes[id] ? g.nodes[id].label : g.sgs && g.sgs[id] ? g.sgs[id].title || id : id).replace(/\n/g, ' ');
+  return nm(a) + ' \u2192 ' + nm(b);
 }
 // Numbered labels (no free spot on their line) listed under the diagram: «① label  from → to».
 function mmdLegend(g, L){

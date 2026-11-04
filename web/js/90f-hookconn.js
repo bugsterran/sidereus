@@ -41,7 +41,7 @@ function hcInner(where){
       + (dx ? '' : '<button type=button class=strp data-hca=later data-hcv="' + esc(p) + '">' + esc(T('Later')) + '</button>');
     if(s.st === 'done') h += '<button type=button class=strp data-hca=cancel data-hcv="' + esc(p) + '">' + esc(T('Close')) + '</button>';   // dismiss the result (and a pinned hint)
     h += '</div><small class=hcf title="' + esc(x.file || '') + '">' + esc(x.file || '') + '</small>';
-    if(!x.can && x.why) h += '<small class=hcw0>' + esc(x.why) + '</small>';   // server reason is data: esc, never T()
+    if(!x.can && x.why) h += '<small class=hcw0>' + esc(TE(x)) + '</small>';   // fixed server reason: TE() translates known keys only (fills x.vars), else verbatim
     if(dx && s.st === 'prev') h += '<div class=hcd><small>' + esc(T('Nothing is written until Apply.')) + '</small><pre>' + diffHtml(s.diff || '', agLang('x.json')) + '</pre>'
       + '<div class=hcb><button type=button class="strp on" data-hca=apply data-hcv="' + esc(p) + '">' + esc(T('Apply')) + '</button>'
       + '<button type=button class=strp data-hca=cancel data-hcv="' + esc(p) + '">' + esc(T('Cancel')) + '</button></div></div>';
@@ -70,7 +70,7 @@ function hcPaint(){
   if(typeof buildTodo === 'function') buildTodo();   // header chip follows every reload, «Later» and «Apply» without a page reload
 }
 const hcErr = e => e && e.status === 409 ? T('The file changed since the preview. Preview again.')
-  : T('Could not connect') + ': ' + String((e && e.body && (e.body.err || e.body.error)) || (e && e.message) || e);
+  : T('Could not connect') + ': ' + String((e && e.body && TE(e.body)) || (e && e.message) || e);
 async function hcAct(a, p){
   if(a === 'later'){ lsSet('sidereus.hclater.' + p, '1'); hcPaint(); return; }
   if(a === 'cancel'){ delete HCS[p]; hcPaint(); return; }

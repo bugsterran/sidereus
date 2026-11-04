@@ -70,6 +70,8 @@ html[data-ui=next] .brsvg.dim path.hl{stroke-width:2.6}
 .brpr .brsg{color:#8ab4ff;font-size:10px;flex:0 0 auto}
 /* Remote ahead/behind older than the last fetch threshold: muted, dotted = has a tooltip. */
 .brsg.brsgo{opacity:.45;text-decoration:underline dotted;cursor:help}
+/* ★opacity .45 text was 2.6-2.7:1 ⇒ muted solid colour, >=5.4:1 on row/hover/selected. ⚠Scoped with data-ui so the twin generator skips it. */
+html[data-ui=next] .brpr .brsg.brsgo{opacity:1;color:#9aa6ba}
 .wvh .brfro{color:var(--nx-warn,#fad83e)}
 .brfc{font:inherit;font-size:10px;padding:0 5px;margin-left:2px;border:1px solid var(--nx-rule,#252629);border-radius:3px;background:none;color:inherit;cursor:pointer}
 .brpr.hd b{color:#e0b45f;font-weight:600}

@@ -86,9 +86,9 @@ function stodoCwd(k){ return String(k).slice(String(k).indexOf('|') + 1); }
 // Resolves true on success, false on failure; `ok` runs before the redraw so a cleared draft is not put back.
 function stodoPost(url, body, cwd, ok){
   return postJSON(url, body).then(() => { if(ok) ok(); return true; }, e => {
-    // ⚠The server's reason (e.g. text too long) is shown as-is, never through T(); no status = the request never arrived.
+    // ⚠The server's reason goes through TE() (known keys only, vars filled), never T(); no status = the request never arrived.
     note(e && e.status === 409 ? T('The to-do list changed — reloaded')
-      : e && e.status && e.message ? T('Could not save the to-do') + ': ' + e.message : T('Could not save the to-do — check the server'));
+      : e && e.status && e.message ? T('Could not save the to-do') + ': ' + ((e.body && TE(e.body)) || e.message) : T('Could not save the to-do — check the server'));
     return false;
   }).finally(() => { const dt = STODO_DATA[cwd]; if(dt) dt.sig = ''; stodoRedraw(); });
 }

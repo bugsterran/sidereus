@@ -233,7 +233,7 @@ class MyPref(unittest.TestCase):
     def test_cc_confirm_lists_every_file(self):
         m = self.R["ccConf"]
         self.assertLess(m.index("/p/settings.json\ntrue\n→ false"), m.index("/w/settings.json\ntrue\n→ false"))
-        self.assertIn("/b/settings.json\n건너뜀: settings.json not found", m)
+        self.assertIn("/b/settings.json\n건너뜀: settings.json 이 없습니다", m)
         self.assertNotIn("/w/settings.json", self.R["ccConfSame"])   # already at the new value: not listed
 
     def test_per_account_auto_only_when_changed(self):

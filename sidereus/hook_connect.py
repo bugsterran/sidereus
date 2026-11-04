@@ -163,6 +163,18 @@ def _template(plat):
     return out
 
 
+class _Err(str):
+    """Fixed error template with {name} slots; .vars fills them (the page's TE() translates the template)."""
+    def __new__(cls, tpl, **kw):
+        o = str.__new__(cls, tpl)
+        o.vars = kw
+        return o
+
+
+def _ev(err):
+    return dict(getattr(err, "vars", None) or {})
+
+
 def _read(p):
     """(raw bytes or None, dict or None, error or None). Missing file = (None, None, None)."""
     try:
@@ -171,7 +183,7 @@ def _read(p):
     except FileNotFoundError:
         return None, None, None
     except OSError as e:
-        return None, None, "unreadable (%s)" % type(e).__name__
+        return None, None, _Err("unreadable ({e})", e=type(e).__name__)
     try:
         d = json.loads(raw.decode("utf-8-sig"))
     except ValueError:
@@ -433,8 +445,11 @@ def listing():
             can, why = False, "no ext-hooks"
         elif can and plat == "gemini" and not os.path.exists(p):     # ⚠"missing" also covers a file with only user hooks
             can, why = False, "settings.json not found — run gemini once"
-        out.append({"plat": plat, "name": name, "state": state, "file": _shown(p), "can": can, "why": why,
-                    "approve": "/hooks" if plat == "codex" else ""})
+        row = {"plat": plat, "name": name, "state": state, "file": _shown(p), "can": can, "why": why,
+               "approve": "/hooks" if plat == "codex" else ""}
+        if _ev(why):
+            row["vars"] = _ev(why)
+        out.append(row)
     _MEMO["list"] = (_now(), st, out)
     return out
 
@@ -491,7 +506,10 @@ def connect(req):
     with _LOCK:
         pl = _plan(plat, p)
         if pl["err"]:
-            return pl["err"][0], {"ok": False, "err": pl["err"][1]}
+            out = {"ok": False, "err": pl["err"][1]}
+            if _ev(pl["err"][1]):
+                out["vars"] = _ev(pl["err"][1])
+            return pl["err"][0], out
         if req.get("dry") is not False:
             return 200, {"ok": True, "diff": pl["diff"], "base": _sha(pl["raw"]), "adds": pl["adds"]}
         if not isinstance(req.get("base"), str) or req["base"] != _sha(pl["raw"]):

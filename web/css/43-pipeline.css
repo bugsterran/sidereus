@@ -296,7 +296,7 @@ html[data-ui=next] .plw .plgrp{color:var(--nx-t2)}
 .plel{fill:none;stroke:#e0a53d;stroke-width:2;stroke-dasharray:6 4}
 .plef.on,.plel.on{stroke-width:3.5}
 .plhit{fill:none;stroke:transparent;stroke-width:12;cursor:pointer}
-html[data-ui] .plw .plhit:focus-visible{outline:none;stroke:var(--nx-info,#5b8def);stroke-opacity:.45}
+html[data-ui] .plw .plhit:focus-visible{outline:none;stroke:var(--nx-info,#5b8def);stroke-opacity:.85}   /* ★.45 was 1.93-2.25:1; .85 = 3.8-4.2 light, 4.2-5.2 dark (>=3:1 non-text) */
 html[data-ui] .plw .plnd:focus-visible{outline:2px solid var(--nx-info,#5b8def);outline-offset:2px}
 .plmf{fill:#6d8fd6}.plml{fill:#e0a53d}
 .pllt{cursor:pointer}

@@ -17,11 +17,11 @@ DATA = {"ok": True, "plats": [
     {"plat": "gemini", "name": "Gemini", "state": "connected", "file": "~/.gemini/settings.json", "can": False, "why": "", "approve": ""}]}
 DATA_NOCAN = {"ok": True, "plats": [{"plat": "cursor", "name": "Cursor", "state": "missing", "file": "~/.cursor/hooks.json", "can": False, "why": "no <ext-hooks>"}]}
 
-SRC = i18n_prelude("'ko'", ("T",)) + r"""
+SRC = i18n_prelude("'ko'", ("T", "TE")) + r"""
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const js = f => fs.readFileSync(path.join(ROOT, 'web', 'js', f), 'utf8');
 const LS = {}, W = [];
-const c = {T, softErr: () => {}, lsGet: (k, d) => k in LS ? LS[k] : d, lsSet: (k, v) => { LS[k] = String(v); return true; },
+const c = {T, TE, softErr: () => {}, lsGet: (k, d) => k in LS ? LS[k] : d, lsSet: (k, v) => { LS[k] = String(v); return true; },
   esc: s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
   aiLogo: k => '<i class="ailg ailg-' + k + '"></i>', diffHtml: s => '<table>' + c.esc(s) + '</table>', agLang: () => 'json',
   setHtml: (el, h) => { el.html = h; (el.hist = el.hist || []).push(h); return true; },
