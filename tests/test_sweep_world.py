@@ -61,7 +61,8 @@ class SweepWorld(unittest.TestCase):
         o = os.path.realpath(self.out)
         for k, sub in (("HOME", "home"), ("CLAUDE_CONFIG_DIR", "cc"), ("MAILBOX_DIR", "data"), ("SIDEREUS_USER_HOME", "home")):
             self.assertIn("export %s=%s" % (k, shlex.quote(os.path.join(o, sub))), self.lines)   # Windows paths get quoted
-        self.assertTrue(self.lines[-1].endswith("sidereus_cli.py start --port 8899"))
+        self.assertTrue(self.lines[-1].endswith(" start --port 8899"), self.lines[-1])
+        self.assertIn("sidereus_cli.py", self.lines[-1])   # quoted on Windows: ...sidereus_cli.py' start
 
     def test_refuses_non_empty_and_tool_dirs(self):
         with self.assertRaises(ValueError):
