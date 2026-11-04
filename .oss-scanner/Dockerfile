@@ -14,10 +14,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends ca-certificates git nodejs curl \
     && rm -rf /var/lib/apt/lists/*
+# apt-get needs root; everything after the checkout runs as an unprivileged user (trivy DS-0002).
+RUN useradd --create-home --shell /usr/sbin/nologin scanner
+ENV HOME=/home/scanner
 
 # scanner contract: the checkout lives inside the image, at /src
 COPY . /src
+RUN chown -R scanner:scanner /src
 WORKDIR /src
+USER scanner
 
 # Syntax gates (python 3.9 is the supported floor); a failure fails the build.
 RUN python3 -m py_compile chat_server.py sidereus/*.py mcp/*.py \
@@ -26,3 +31,7 @@ RUN python3 -m py_compile chat_server.py sidereus/*.py mcp/*.py \
 # Run the tests so you know the image works, but do not let a failing test abort the build.
 # Drivers: `bash tests/run.sh`, and `python3 chat_server.py --demo --no-open` for a synthetic server.
 RUN (bash tests/run.sh || echo "WARNING: tests reported failures")
+
+# Offline liveness probe (trivy DS-0026): the interpreter starts and the checkout is present; no network.
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD python3 -c "import os, sys; sys.exit(0 if os.path.isdir('/src/sidereus') else 1)"
+USER scanner

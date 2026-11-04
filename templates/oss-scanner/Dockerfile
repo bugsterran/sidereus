@@ -15,12 +15,22 @@ RUN apt-get update && apt-get upgrade -y \
 
 # --- dependency fetch goes here (pip install -r, npm ci, go mod download, ...) ---
 
+# Package installs need root; the build and tests run as an unprivileged user that owns /src and its HOME.
+RUN useradd --create-home --shell /usr/sbin/nologin scanner
+ENV HOME=/home/scanner
+
 # scanner contract: the checkout lives inside the image, at /src
 COPY . /src
+RUN chown -R scanner:scanner /src
 WORKDIR /src
+USER scanner
 
 # --- build the project as its maintainers build it; a step that fails fails the build ---
 # RUN make -j"$(nproc)"
 
 # Run the cheap tests so you know the image works, but do not let a failing test abort the build.
 RUN (make test || echo "WARNING: tests reported failures")
+
+# Cheap offline health probe: the checkout is present; needs no network or extra packages.
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD test -d /src || exit 1
+USER scanner
