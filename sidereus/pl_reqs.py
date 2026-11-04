@@ -16,6 +16,7 @@ import time
 from sidereus.config import DATA_DIR
 from sidereus.bus import RELAY_SID, _atomic_write
 from sidereus import arch_map, gitinfo
+from sidereus.memo import Refresher
 from sidereus.pl_runs import RENAMED   # core copy; pipeline_schema is feature-owned (test_arch feature_couplings)
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
@@ -49,6 +50,8 @@ FIX_LOG_N = 50
 FIX_MISS_S = 30           # no commit yet: asked again after this; a found hash is final
 FIX_CACHE_MAX = 64
 _FIX_CACHE = {}           # (repo, at) -> (checked at, hash or "")
+_FIX_LOCK = threading.Lock()   # guards _FIX_CACHE eviction (fills run on background threads)
+_FIX_BG = Refresher()
 
 
 def memory_only():
@@ -350,11 +353,20 @@ def _git_log(repo, at):
 
 
 def _fix_commit(repo, at, now):
-    """Short hash of the first commit in repo after a checks-fix / security-fix request at `at`, "" if none yet (hash + time only)."""
+    """Short hash of the first commit in repo after a checks-fix / security-fix request at `at`, "" if none yet (hash + time only).
+    ⚠Poll path: git runs off this thread (`_fix_fill`); the last answer is served meanwhile ("" before the first)."""
     k = (repo, at)
     hit = _FIX_CACHE.get(k)
     if hit and (hit[1] or now - hit[0] < FIX_MISS_S):
         return hit[1]
+    _FIX_BG.kick(k, lambda: _fix_fill(repo, at, now))
+    hit = _FIX_CACHE.get(k) or hit
+    return hit[1] if hit else ""
+
+
+def _fix_fill(repo, at, now):
+    k = (repo, at)
+    hit = _FIX_CACHE.get(k)
     text = _git_log(repo, at)
     h = ""
     for ln in (text or "").splitlines()[:FIX_LOG_N]:   # newest first: the last match is the oldest after the request
@@ -362,12 +374,12 @@ def _fix_commit(repo, at, now):
         if len(f) >= 2 and FIX_HASH.fullmatch(f[0]) and f[1].isdigit() and int(f[1]) > at:
             h = f[0]
     if text is None and hit:
-        return hit[1]   # slot miss keeps the previous answer, uncached
-    _FIX_CACHE.pop(k, None)
-    _FIX_CACHE[k] = (now, h)
-    while len(_FIX_CACHE) > FIX_CACHE_MAX:
-        _FIX_CACHE.pop(next(iter(_FIX_CACHE)))
-    return h
+        return   # slot miss keeps the previous answer, uncached
+    with _FIX_LOCK:
+        _FIX_CACHE.pop(k, None)
+        _FIX_CACHE[k] = (now, h)
+        while len(_FIX_CACHE) > FIX_CACHE_MAX:
+            _FIX_CACHE.pop(next(iter(_FIX_CACHE)))
 
 
 def view(sessions, arch_run, sec_run=None, now=None, brief_run=None):

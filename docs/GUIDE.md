@@ -187,6 +187,7 @@ Sessions record the requests you gave them with the Sidereus MCP to-do tool (ope
 2. «left at reset» = projected headroom at the reset; «100% at» = when the 5-hour limit runs out at this pace. `≈` and `±N%` mark estimates that narrow as the window goes on.
 3. With 2+ Claude accounts: colour bands, name chips, account pickers, and «Make main» on hover ([CONFIG](CONFIG.md#several-claude-accounts)).
 4. A Copilot segment adds its quota when Copilot reported one: «used / limit · N% left · resets date · seen N ago» («unlimited» on unlimited plans); the Tokens tab «By platform» row shows the same. The values refresh only when Copilot runs, so check «seen». No quota reported = no piece. It is the first piece dropped on a narrow bar.
+5. The right end shows the connection: «Connected» (data fresh), «Data delayed · Ns ago» (a poll waits 10 s or the server's data is 10 s old; the screen keeps the last data, hover for the load and the slow parts), or «Disconnected» (a network error or no reply for 75 s).
 
 The saver verdict changes only when the projection is more than 3 minutes past a boundary.
 

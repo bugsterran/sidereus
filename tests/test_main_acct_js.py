@@ -121,7 +121,7 @@ const SBEL = {title: '', clientWidth: 1100, _fitW: 1100};
 document.getElementById = id => id === 'sbar' ? SBEL : id === 'dot' ? {classList: {contains: () => false}} : null;
 function svParts(){ return null; } function svLive(){ return null; } function sbExt(){ return ''; } function aiLogo(){ return ''; }
 function connAge(){ return ''; } function setHtml(el, h){ HTML = h; return true; } function sbFit(){} function buildQwho(){}
-function popIsOpen(){ return false; }
+function popIsOpen(){ return false; } const SRVLOAD = null; function sbBusy(){ return null; }
 function LATER(s){ return s; } function HM(m){ return m + 'm'; } function burnEstTip(){ return 'e'; }
 BURN.proj = {pct: 70, over_at: 1}; BURN.cur.rate_pph = 10; BURN.at = 1;
 // .sbd8 (7d used) stays inside its segment's piece.

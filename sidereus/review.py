@@ -13,7 +13,7 @@ import threading
 import time
 
 from sidereus.config import DATA_DIR
-from sidereus.memo import BoundedMemo
+from sidereus.memo import BoundedMemo, Refresher
 from sidereus.warn import warn_once
 from sidereus.bus import _atomic_write
 from sidereus.gitinfo import _git_root, _git_run
@@ -32,6 +32,7 @@ _RV_LOCK = threading.RLock()  # guards the store read-modify-write and _RV_MEM
 _RV_MEM = {"key": None, "items": {}}   # parsed store keyed by (path, mtime_ns, size)
 _RV_CACHE = BoundedMemo(128)           # (root, rels) -> {"at", "head", "files": {rel: (st, add, del)}}
 _RV_OWN = [(None, {})]                 # [(index() result, {sid: {root: set(rel)}})] (see _owned_by_sid)
+_RV_BG = Refresher()                   # poll-path git refresh, one per (root, rels)
 
 
 def _finished(r):
@@ -129,11 +130,23 @@ def _fsig(root, rel, st, add, dl):
     return hashlib.sha1(("%d\t%d\t%d\t%d" % (add, dl, size, mt)).encode(), usedforsecurity=False).hexdigest()[:16]
 
 
-def _files(root, rels, now):
-    """(head, {rel: {st, add, del, fsig}}) for the session's uncommitted files in root, or None when unknown."""
+def _root_stat_bg(root, rels, now):
+    """Poll path: the cached answer of any age (None before the first); a stale one is refreshed off this thread.
+    ⚠Never git on the /api/state thread: under load (2026-11-04, load 100-190) it took the poll to 30-39 s."""
+    ck = (root, tuple(rels))
+    hit = _RV_CACHE.get(ck)
+    if hit and now - hit["at"] < RV_TTL:
+        return hit
+    _RV_BG.kick(ck, lambda: _root_stat(root, rels, now))
+    return _RV_CACHE.get(ck) or hit
+
+
+def _files(root, rels, now, bg=False):
+    """(head, {rel: {st, add, del, fsig}}) for the session's uncommitted files in root, or None when unknown.
+    `bg` = poll path (no git in this thread); marks and the file list ask git now so a signature is current."""
     if not rels:
         return None
-    got = _root_stat(root, rels, now)
+    got = (_root_stat_bg if bg else _root_stat)(root, rels, now)
     if not got:
         return None
     fs = {}
@@ -217,7 +230,7 @@ def review(rows, now=None):
         for root, rels in sorted(_owned(sid, now).items()):
             if root not in allowed:
                 continue
-            got = _files(root, rels, now)
+            got = _files(root, rels, now, bg=True)
             if not got or not got[1]:
                 continue
             head, fs = got

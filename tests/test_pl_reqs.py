@@ -27,6 +27,9 @@ class _Base(unittest.TestCase):
             p.start()
             self.addCleanup(p.stop)
         self.git = []   # git log text per call; [] = git miss (never the live repo)
+        p = mock.patch.object(PQ._FIX_BG, "spawn", lambda fn: fn())   # background fix lookup runs inline here
+        p.start()
+        self.addCleanup(p.stop)
         for k, v in (("_git_log", lambda repo, at: self.git.pop(0) if self.git else None), ("_FIX_CACHE", {})):
             p = mock.patch.object(PQ, k, v)
             p.start()

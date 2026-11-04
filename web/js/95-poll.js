@@ -5,7 +5,9 @@
 // **the store is clean.** The duplicates were a screen-side problem.
 // And responses over 2.5s really happen (1GB transcript parse · `ps` timeout warnings in the log).
 let pollBusy = false;
-const POLL_TIMEOUT_MS = 15000, POLL_COLD_MS = 75000;   // a timeout counts as «Disconnected» (pollDown)
+// ★Load 100-190 made /api/state take 30-39 s (2026-11-04): a timeout is «slow» (connTimedOut, 60) — the next try waits
+// POLL_COLD_MS and the screen keeps the last data; only POLL_DOWN_MS with no reply at all is «Disconnected» (pollDown).
+const POLL_TIMEOUT_MS = 15000, POLL_COLD_MS = 75000, POLL_DOWN_MS = 75000;
 var CFG = null;   // last state().cfg (dmMax for the relay comment cap in 88c)
 let LASTS = null;   // saver + quota fields of the last poll, for an instant «Main account» redraw (pollMainRedraw)
 var ACCTS = [];   // state accts [{label, primary}], only with >=2 Claude accounts (40b acctCls)
@@ -31,22 +33,30 @@ function featsApply(f){
   try{ paintCfg(); }catch(e){ softErr('featsCfg', e); }   // no-op while Settings is closed
 }
 async function poll(first){
-  if(pollBusy && !first) return;  // Previous request not finished — skip this tick
+  if(pollBusy && !first){   // Previous request not finished — skip this tick; a long wait refreshes «Data delayed» (60)
+    if(CONN.pend && Date.now() - CONN.pend >= SB_POLL_SLOW_MS) try{ buildSbar(); }catch(e){ softErr('pollSlowSbar', e); }
+    return;
+  }
   // Backing off while down (connBackoffMs, 60-statusbar.js): a skipped tick only refreshes the «as of N s ago» age.
   if(!first && connWait(CONN, Date.now())){ try{ buildSbar(); }catch(e){ softErr('pollWaitSbar', e); } return; }
   pollBusy = true;
   const t0 = Date.now();   // backoff counts from request start, not from when the failure came back
+  CONN.pend = t0;
   try{
     // ★While «Full history» is on, polling must also fetch 300 — otherwise the next poll (2.5s) overwrote with the default 50
     // and the list soon collapsed again (measured 2026-08-26: clicking reverted to 50).
     let s;
     // A network failure (TypeError) is «Disconnected»; a reply that is non-2xx or not JSON is «Bad response».
     // Warm state answers from a snapshot in <1s; the first load or one after an outage may wait for a cold build (STATE_COLD_S 60s).
-    const stTo = (!STATE_IN || CONN.fails) ? POLL_COLD_MS : POLL_TIMEOUT_MS;
+    const stTo = (!STATE_IN || CONN.fails || CONN.slow) ? POLL_COLD_MS : POLL_TIMEOUT_MS;
     try{ s = await getJSON('/api/state?since='+since+(alarmAll?'&cards=300':'')+pollAcksQ(), {timeout: stTo}); }
-    catch(e){ pollDown(!!e.status || e instanceof SyntaxError, t0); return; }
+    catch(e){
+      if(e && e.timeout && !connTimedOut(CONN, Date.now(), POLL_DOWN_MS)){ CONN.pend = 0; try{ buildSbar(); }catch(e2){ softErr('pollSlowSbar', e2); } return; }
+      pollDown(!!e.status || e instanceof SyntaxError, t0); return;
+    }
     const wasDown = CONN.fails > 0;
     connMark(CONN, true, false, Date.now());
+    SRVLOAD = s && s.srvLoad && typeof s.srvLoad === 'object' ? s.srvLoad : null;   // absent on an old server
     document.documentElement.classList.remove('agstale');
     document.getElementById('dot').classList.remove('off');
     if(wasDown) loadWku(true);     // token figures were held from before the outage — refresh them now, not 30s later
@@ -152,7 +162,7 @@ async function poll(first){
       wtShown().filter(k => k !== fk).forEach(k => wtFetch(wtabs.find(t => t.key === k)));
     }
   }catch(e){ pollDown(true, t0); }      // the reply arrived but could not be applied
-  finally{ pollBusy = false; }
+  finally{ pollBusy = false; CONN.pend = 0; }
 }
 // Saver verdict of the «Main account»: primary (no main) -> s.saverView; other -> s.saverViews[label].
 // ⚠Never fall back to the primary's view for a non-primary main — null hides the chip.

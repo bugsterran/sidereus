@@ -7,18 +7,52 @@ let SDRW_OPEN = false;    // a modal never reopens by itself on reload
 // and quota drawer. `bad` = the server answered but the body was unusable (bad JSON, non-2xx).
 // ⚠While down, every number on screen is the last good value — html.agstale dims it and «as of N min ago» says how old;
 //   a failed fetch must never be drawn as a fresh zero.
-const CONN = {fails: 0, next: 0, okAt: 0, bad: false};
+// `slow` = the last try timed out but the server answered within POLL_DOWN_MS; `pend` = start of the request in flight (0 = none).
+const CONN = {fails: 0, next: 0, okAt: 0, bad: false, slow: false, pend: 0};
 // Poll backoff while down: 5 → 10s cap (base tick 2.5s); the first success resets it.
 // ⚠Without it a dead server got ~55 failed requests a minute (state 2.5s + live 3s), each one a console error.
 // ⚠Cap stays at 10s: the viewer restarts often, and a 30s cap took ~23s to notice it was back up.
 function connBackoffMs(n){ return n > 0 ? Math.min(10000, 2500 * Math.pow(2, n)) : 0; }
 function connMark(c, ok, bad, now){
+  c.slow = false;
   if(ok){ c.fails = 0; c.next = 0; c.okAt = now; c.bad = false; }
   // ⚠`now` = request start (ticks align to it); 250ms absorbs timer jitter so the retry gap stays ≤ the 10s cap.
   else { c.fails++; c.bad = !!bad; c.next = now + connBackoffMs(c.fails) - 250; }
   return c;
 }
 function connWait(c, now){ return c.fails > 0 && now < c.next; }
+// A timed-out poll: true = count it as down (no reply ever, already down, or none for `downMs`); false = mark slow only.
+// ⚠Slow is not down: the server is alive, the screen keeps the last data and the next try waits longer.
+function connTimedOut(c, now, downMs){
+  if(!c.okAt || c.fails > 0 || now - c.okAt >= downMs) return true;
+  c.slow = true;
+  return false;
+}
+// ★Load 100-190 made /api/state take 30-39 s (2026-11-04) and the bar read «Disconnected» while the server was alive.
+// ⇒ «Data delayed · Ns ago» replaces «Connected» while a poll is slow/pending or the server snapshot is old;
+//   the cause (load, slow pieces) goes in the tooltip only. Load alone does not delay data, so it is not a trigger.
+const SB_SNAP_OLD_S = 10, SB_POLL_SLOW_MS = 10000;
+var SRVLOAD = null;   // state().srvLoad {load1, snapAge, slow: [[piece, ms]]} of the last good poll (set by 95-poll); null = old server
+// Delay verdict or null. Missing/odd srvLoad fields count as unknown, never as 0.
+function sbBusy(srv, c, now){
+  const num = v => typeof v === 'number' && isFinite(v) ? v : null;
+  const l = srv ? num(srv.load1) : null, sa = srv ? num(srv.snapAge) : null;
+  const cli = c.okAt > 0 && (c.slow || (c.pend > 0 && now - c.pend >= SB_POLL_SLOW_MS));
+  if(!(cli || (sa != null && sa >= SB_SNAP_OLD_S))) return null;
+  // Age of the data on screen: time since the last applied reply or the server snapshot age, whichever is larger.
+  const age = Math.round(Math.max(sa != null ? sa : 0, c.okAt ? Math.max(0, now - c.okAt) / 1000 : 0));
+  const slow = (srv && Array.isArray(srv.slow) ? srv.slow : []).filter(p => Array.isArray(p) && p.length >= 2).slice(0, 8);
+  return {load: l, age: age, slow: slow};
+}
+// Calm (amber, not red) connection piece; piece names are server data, so esc() only, never T().
+function sbBusyHtml(b){
+  const lbl = T('Data delayed · {s}s ago').replace('{s}', String(b.age));
+  const n = b.load == null ? '' : String(b.load >= 10 ? Math.round(b.load) : Math.round(b.load * 10) / 10);
+  const why = (n ? T('load {n}').replace('{n}', n) : '')
+    + (b.slow.length ? (n ? ' · ' : '') + T('slow:') + ' ' + b.slow.map(p => String(p[0]) + ' ' + Math.round(+p[1] || 0) + ' ms').join(', ') : '');
+  const tip = T('The server is answering slowly — the screen keeps the last data') + (why ? '\n' + why : '');
+  return '<span class=sbconn title="' + esc(tip) + '"><b class=sbwarn>● ' + esc(lbl) + '</b></span>';
+}
 // «as of 2 min ago» — age of the last good poll; '' while connected or before the first success.
 function connAge(c, now){
   if(!c.fails || !c.okAt) return '';
@@ -267,7 +301,8 @@ function buildSbar(sv){
   const off = document.getElementById('dot').classList.contains('off');
   // Connection sits after the gap, pinned right beside the chevron — it must never be clipped by overflow:hidden.
   const age = off ? connAge(CONN, Date.now()) : '';
-  const conn = it(off ? 'sberr' : 'sbok', '● ' + esc(off ? (CONN.bad ? T('Bad response') : T('Disconnected', 'link')) : T('Connected')) + (age ? ' <small>· ' + esc(age) + '</small>' : ''))
+  const busy = off ? null : sbBusy(SRVLOAD, CONN, Date.now());
+  const conn = busy ? sbBusyHtml(busy) : it(off ? 'sberr' : 'sbok', '● ' + esc(off ? (CONN.bad ? T('Bad response') : T('Disconnected', 'link')) : T('Connected')) + (age ? ' <small>· ' + esc(age) + '</small>' : ''))
     .replace('<span', '<span class=sbconn');
   const tip = T('Click (or Enter) for quota and session summary');
   if(el.title !== tip) el.title = tip;

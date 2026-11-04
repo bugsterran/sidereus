@@ -112,7 +112,8 @@ class Loader(_Tmp):
         calls = []
         g = mock.Mock(returncode=0, stdout=SHA + "\n")
         with mock.patch.dict(HSC._HSC_MEMO, clear=True), mock.patch.object(HSC, "_now", lambda: 100.0), \
-                mock.patch.object(HSC.gitinfo, "_git_run", lambda *a, **k: calls.append(a) or g):
+                mock.patch.object(HSC.gitinfo, "_git_run", lambda *a, **k: calls.append(a) or g), \
+                mock.patch.object(HSC._HSC_BG, "spawn", lambda fn: fn()):
             self.assertEqual((_REAL_HEAD("/r"), _REAL_HEAD("/r")), (SHA, SHA))
         self.assertEqual(len(calls), 1)
 
