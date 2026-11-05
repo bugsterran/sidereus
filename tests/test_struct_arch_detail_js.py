@@ -204,7 +204,8 @@ class ArchDetail(unittest.TestCase):
         self.assertIn("archel-list", ov)
         self.assertIn("class=archdet", fo)
         self.assertIn("data-arpath=mod", fo)
-        self.assertLess(fo.index("archpath"), fo.index("archbar"))   # path bar first in .archtop
+        ly = fo.partition("class=archly ")[2]                         # focus lives in the layer above the unchanged overview
+        self.assertLess(ly.index("archpath"), ly.index("archly-t"))   # path first in the layer head, then the bar
         self.assertNotIn("archel-list", fo.split("archside")[1].split("</aside>")[0].replace("archnxl", ""))
         self.assertIn("data-arpath=layer aria-current", sp)
         self.assertTrue(changed)

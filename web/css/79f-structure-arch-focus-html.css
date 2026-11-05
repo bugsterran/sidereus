@@ -1,0 +1,65 @@
+/* «Architecture» focus view as HTML rows (84j9): band rows of card-like boxes, connectors in an SVG overlay (.archfh-e).
+   Colours only through --nx-* tokens (91-light redefines them). Mirrors the .archmap svg kind / in-out / hover / lit rules for the .archfh root.
+   ⚠Boxes keep one fixed height: 84j9 archFhMeasure splits wrapped sub-rows by offsetTop. ⚠No position on rows or boxes: offsets are taken against .archfh. */
+.archfh-w{overflow:hidden}
+.archfh{--mmd-bg:var(--nx-bg,#0d1014);--mmd-ln:var(--nx-t2,#9aa4b4);--mmd-tx:var(--nx-t1,#dfe5ee);
+  position:relative;box-sizing:border-box;transform-origin:0 0;padding:14px 0 14px 0;font-size:12px;color:var(--mmd-tx)}
+/* band = a region wrapping its boxes, name on top (a side label column wrapped mid-word and floated apart from its boxes) */
+.archfh-row{display:flex;flex-direction:column;align-items:stretch;margin:28px 8px 0;padding:6px 0 12px;border:1px dashed var(--nx-rule,#2a3442);border-radius:10px;background:color-mix(in srgb,var(--nx-t3,#8b95a7) 5%,transparent)}
+.archfh-row:first-child{margin-top:0}
+.archfh-lb{padding:0 12px 8px;font-size:11px;letter-spacing:.03em;color:var(--nx-t3,#8b95a7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.archfh-bx{flex:1 1 0;min-width:0;display:flex;flex-wrap:wrap;justify-content:center;column-gap:24px;row-gap:14px;
+  padding:0 var(--fh-gr,16px) 0 var(--fh-gl,16px);border-radius:8px}
+.archfh .archfh-n{--ac:var(--nx-info,#5899f3);box-sizing:border-box;height:30px;max-width:220px;margin:0;padding:0 12px;font:inherit;font-size:12px;line-height:28px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:var(--nx-t1,#dfe5ee);
+  background:color-mix(in srgb,var(--ac) 8%,var(--nx-panel,#151b24));border:1px solid color-mix(in srgb,var(--ac) 40%,var(--nx-rule,#2a3442));border-left:3px solid var(--ac);border-radius:8px}
+.archfh .archfh-n:hover{border-color:var(--ac)}
+.archfh .archfh-n:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:2px}
+.archfh .archfh-n[data-kd=store]{--ac:var(--st-dat,#b07cf0)}
+.archfh .archfh-n[data-kd=external]{--ac:var(--nx-t3,#8b95a7);border-radius:15px;border-left-width:1px;border-style:dashed}
+.archfh .archfh-n[data-kd=ifx]{border-style:dashed;border-left-width:1px}
+/* entry nodes and paired entry modules: hexagon (clip-path drops the border, so a tinted fill carries it) */
+.archfh .archfh-n.hx{border:0;padding:0 18px;border-radius:0;background:color-mix(in srgb,var(--ac) 22%,var(--nx-panel,#151b24));
+  clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%,0 50%)}
+.archfh .archfh-n[data-on]{border:2px solid var(--nx-t1,#dfe5ee);border-left-width:4px;font-weight:700;background:color-mix(in srgb,var(--ac) 18%,var(--nx-panel,#151b24))}
+/* connectors: overlay is click-through except the 10px hit stroke */
+.archfh-e{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.archfh-e .mmdhit{fill:none;stroke:transparent;stroke-width:10;pointer-events:stroke;cursor:pointer}
+.archfh .mmde{fill:none;stroke:var(--mmd-ln);stroke-width:1.1}
+.archfh .mmdah{fill:var(--mmd-ln)}
+.archfh .mmdfe[data-k=read] .mmde{stroke:var(--st-dat,#b07cf0)}
+.archfh .mmdfe[data-k=write] .mmde{stroke:var(--nx-warn,#e3b341)}
+.archfh .mmdfe[data-k=event] .mmde{stroke-dasharray:9 4}
+.archfh .mmdfe[data-k=uses] .mmde{stroke-width:.8;stroke-dasharray:3 3}
+.archfh .mmdfe[data-k=entry] .mmde{stroke-width:1}
+.archfh .mmdfe[data-c=in] .mmde{stroke:var(--nx-ok,#71c269);stroke-width:1.8}
+.archfh .mmdfe[data-c=out] .mmde{stroke:var(--nx-info,#5899f3);stroke-width:1.8}
+/* badges: hidden except the hovered edge or a lit step number (as .archdg[data-fv]); solid pill */
+.archfh .mmdfl{visibility:hidden}
+.archfh .mmdfl rect{fill:var(--mmd-bg);stroke:var(--nx-rule,#2a3442);stroke-width:1}
+.archfh .mmdfl text{font-size:11px;fill:var(--mmd-tx)}
+.archfh.archdim .mmdfe.arhe .mmdfl,.archfh.arlitdim .mmdfe.arlit .mmdfl{visibility:visible}
+/* hover (84j archHovPaint on .archfh): transient, so opacity is fine here as on the svg map */
+.archfh.archdim .archfh-n:not(.arn){opacity:.35}
+.archfh.archdim .mmdfe:not(.arn){opacity:.1}
+.archfh.archdim .mmdfe.arn .mmde{stroke-width:2.2}
+.archfh.archdim .mmdfe.arin .mmde{stroke:var(--nx-ok,#71c269)}
+.archfh.archdim .mmdfe.arout .mmde{stroke:var(--nx-info,#5899f3)}
+.archfh.archdim .archfh-n.arin{border-color:var(--nx-ok,#71c269)}
+.archfh.archdim .archfh-n.arout{border-color:var(--nx-info,#5899f3)}
+.archfh.archdim .archfh-n.arh{border-color:var(--nx-t1,#dfe5ee)}
+/* path-level / flow highlight (84j3 archLitPaint on .archfh). ⚠Always-on state: colour only, no opacity (contrast 4.5:1) */
+.archfh.arlitdim:not(.archdim) .archfh-n:not(.arlit){border-color:var(--nx-rule,#2a3442);color:var(--nx-t3,#8b95a7)}
+.archfh.arlitdim:not(.archdim) .mmdfe:not(.arlit) .mmde{stroke:var(--nx-rule,#2a3442)}
+.archfh.arlitdim:not(.archdim) .archfh-n.arlit{border-color:var(--nx-warn,#e3b341)}
+.archfh.arlitdim:not(.archdim) .archfh-n.arlit.hx{background:color-mix(in srgb,var(--nx-warn,#e3b341) 28%,var(--nx-panel,#151b24))}
+.archfh{--fh-c0:#e3b341;--fh-c1:#5899f3;--fh-c2:#71c269;--fh-c3:#c678dd;--fh-c4:#f0883e;--fh-c5:#39c5cf}
+.archfh.arlitdim:not(.archdim) .mmdfe.arlit .mmde{stroke:var(--fh-c0);stroke-width:1.8}
+.archfh.arlitdim:not(.archdim) .mmdfe.arlit[data-ci="1"] .mmde{stroke:var(--fh-c1)}
+.archfh.arlitdim:not(.archdim) .mmdfe.arlit[data-ci="2"] .mmde{stroke:var(--fh-c2)}
+.archfh.arlitdim:not(.archdim) .mmdfe.arlit[data-ci="3"] .mmde{stroke:var(--fh-c3)}
+.archfh.arlitdim:not(.archdim) .mmdfe.arlit[data-ci="4"] .mmde{stroke:var(--fh-c4)}
+.archfh.arlitdim:not(.archdim) .mmdfe.arlit[data-ci="5"] .mmde{stroke:var(--fh-c5)}
+.archfh.arlitdim:not(.archdim) .mmdfe.arlit .mmdfl rect{stroke:currentColor}
+.archfh.arlitdim:not(.archdim) .mmdfe.arlit.archfx .mmde{stroke:var(--nx-err,#f45460)}
+.archfh.arlitdim:not(.archdim) .mmdfe.arlit.arevk .mmde{stroke-width:3.4}

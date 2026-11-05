@@ -139,7 +139,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Neither may scroll; a stale `ARCH.op`/hover index after a refetch falls back to lit flow / scope in `archLitQ`.
 - **Arch minimap: clone once per svg key, rAF on scroll, sit outside `.archmap`** (84j7, 79c `.archmm`). ⚠Re-cloning on scroll/hover stalls large maps; inside `.archmap` a press starts the drag-pan; `.archmap` is pinned to grid cell 1/1 or the overlay pushes it to the next cell.
 - **Arch map scrolls once per map identity, never per svg key** (84j7 `archMmFirst`, `ARCH_MM.seen`). ⚠The svg key changes with selection / full / lit — keying the first scroll on it moves the view on clicks; only an overview at scroll 0,0 moves, and a hidden (zero-size) paint is not marked seen.
-- **Focus view centres its hub once per focus identity** (84j7 `archMmFirst`/`archMmHub`, 84j `.archdg[data-hub]`).
+- **Focus view centres its hub once per focus identity** (84j7 `archMmFirst`/`archMmHub`, 84j `.archdg[data-hub]`). Overview only since the focus view moved to the HTML layer (84j9); that layer never centres.
   - Cause: the focus view is a new map that kept the overview scroll and never anchored, so the clicked module jumped (★1100: (209,387) → (293,543)).
   - ⇒ First sight of map + focused module (`ARCH_MM.seen['f\t'…]`): left = hub `[data-p]` centre, top = archMmAnchor rule; no hub element = archMmAnchor on the map rect. Whatever the inherited scroll.
   - ⚠Key it on the focus identity, not the svg key (fv/lit/fit change it); it also marks the overview seen so going back never centres.
@@ -151,7 +151,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: the repaint copied `.archmap` scroll from whatever was on screen, so project B opened at A's scroll (★2424, 949); bar/legend scrolled away on a ★4865×2438 banded map.
   - ⇒ Scroll is copied only when `box._arp` is the same project; bar, «No layers» notice and legend sit in one sticky `.archtop` (top/left = minus the scroller padding).
   - ⚠Do not drop the same-project keep — poll repaints and clicks must not move the view.
-- **Arch focus view fits a room measured from `.archmap`** (2026-10-14, 84j `archFitOf`, 81f `mmdPlace` room) — v1 maps only (v2 focus keeps the bands, 84j4).
+- **Arch focus view fits a room measured from `.archmap`** (2026-10-14, 84j `archFitOf`, 81f `mmdPlace` room) — overview only now: the focus view is the HTML layer (84j9), which wraps rows instead of fitting a room.
   - Cause: the room is `.archmap` offsetWidth/Height. It is bounded only because `.archbody` is flex `1 1 auto` with `min-height:0`.
   - ⇒ Only spacing grows (row gap at most 120, layer gap at most 480). Room is in 20px buckets, so a refit happens only when the bucket changes; resize is debounced 160ms. ★demo 1440×900: 570×218 → 936×458, boxHits 0.
   - ⚠If that parent ever sizes to its content, a bigger drawing grows the room, which grows the drawing again: a loop. ⚠Do not use clientWidth/Height (a scrollbar would flip the bucket).
@@ -161,7 +161,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Do not set `flHead` in the overview or anchor in-edges at the head — their tails differ, and the overview SVG must stay byte-equal.
   - Badge with no free candidate fell back to the anchor, ignoring nodes and labels (★m20: ① covered m19 by 7px) · ⇒ slide along the edge (4px steps) first, anchor last · ⚠never move the candidate-first order, or no-overlap badges shift.
   - ⚠With `flHead`, in-edge labels are placed before out-edge labels. In edge order, head-anchored out-labels took the in-labels' spots by each caller. ★self-map m0: 20/37 in-labels moved, 4 badges; with in-labels first, 6 moved, 0 badges.
-- **Arch focus keeps the bands; labels hover-only** (2026-10-14, 84j4 `archFocusSrc`, 79 `.archdg[data-fv]`).
+- **Arch focus keeps the bands; labels hover-only** (2026-10-14, 84j4 `archFocusSrc`, 79 `.archdg[data-fv]`). Mermaid focus only — the HTML layer (84j9) keeps the bands as rows and the hover-only badges; see «Focus view drawn as HTML rows».
   - Cause: the LR star dropped the layer bands, so a focused module lost where it sits; every edge label drawn at once piled up at the hub.
   - ⇒ v2 focus redraws the clicked module + direct neighbours inside the top-level bands and group boxes; infra/shared neighbours fold into one `ifx` chip (n>=2). Labels show only as lit flow step numbers (`.arlit`) or on edge hover: box hover = no text (edges lit only), edge hover = that one pill (`.arhe`, solid).
   - ⚠Do not reduce focus pairs (`archReduce`) — the focus view is where every direct edge is shown.
@@ -174,7 +174,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: the shrinking row budget also wrapped the rank above the hub inside its own band; a mutual neighbour (calls and is called) stayed in that rank. ★1100 pane: hub box 851-881, first screen ends at 860.
   - ⇒ Ranks above the hub keep the full room; if still too wide, mutual neighbours move below the hub (hub listed first so the renderer's DFS cycle break starts at it, plus `hub ~~~ m`). ★svg hub y 456 -> 382 (= 1440's).
   - ⚠The invisible edge alone does not move them — the renderer's cycle break keeps the mutual one above unless the hub comes first in the source.
-  - ⚠The limit is the map pane bottom (~819 at 860 high), not 860, and the chrome above the svg counts as much as the layout: the svg scale is 1:1, so svg y + svg top = screen y. The path wrapping to 2 lines (+28px at 1100) and the «Source text» row (25px) kept the hub at 824-854. ⇒ 79 `.archpath` nowrap (only the group crumb shrinks to «…») and the focus `.mmdbar` floats (height 0, `align-items:flex-start` or the button stretches to 0). ★hub 792/824/748 -> 767/771/723 (900/1100/1440). ⚠Superseded for the bar: once the zoom group joined it, the floating bar covered the first band at 900/1100, so 79d gives the focus bar its own row (+~25px); the hub margin is now that much thinner — re-measure on a real map if the path chrome grows.
+  - ⚠The limit is the map pane bottom (~819 at 860 high), not 860, and the chrome above the svg counts as much as the layout: the svg scale is 1:1, so svg y + svg top = screen y. The path wrapping to 2 lines (+28px at 1100) and the «Source text» row (25px) kept the hub at 824-854. ⇒ 79 `.archpath` nowrap (only the group crumb shrinks to «…») and the focus `.mmdbar` floats (height 0, `align-items:flex-start` or the button stretches to 0). ★hub 792/824/748 -> 767/771/723 (900/1100/1440). ⚠Superseded for the bar: once the zoom group joined it, the floating bar covered the first band at 900/1100, so 79d gives the focus bar its own row (+~25px); the hub margin is now that much thinner — re-measure on a real map if the path chrome grows. The focus `.mmdbar` rule now applies to the overview only (focus = HTML layer, 84j9).
 - **Arch overview hover ≠ all neighbours** (2026-10-07, 84j `archReduce`).
   - Cause: the overview drops implied pairs (★self-map crossings 109 -> 2), and hover reads edges from the drawn SVG.
   - ⇒ Bar hint counts the hidden pairs; «All edges» (`ARCH.full`) or a click (focus view) shows every direct edge.
@@ -356,7 +356,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: `_struct_warm_loop` called `structure()` like a screen request, so warm-loop order decided which of the `STRUCT_CACHE_N` cells stayed in memory.
   - ⇒ Warm-up calls `structure(..., mem=False)`: disk write only, memory neither filled nor touched; the next screen request is a disk hit (no rebuild).
   - ⚠Do not drop `mem=False` from the warm call — `tests/test_structure_warm_cache.py`.
-- ⚠**A drill-down click must not move the clicked node** (UX sweep 2026-10-26: first-sight hub centring moved it up to 195 px).
+- ⚠**A drill-down click must not move the clicked node** (UX sweep 2026-10-26: first-sight hub centring moved it up to 195 px). Click anchor and pad now apply to the overview only; the HTML focus layer (84j9) opens without scrolling.
   - ⇒ `archDgClick` records the node's spot (`archMmAt`); `archMmFirst` scrolls so the new hub keeps it (`archMmStay`); short focus content gets a top/bottom pad (`ARCH_MM.pad`, re-applied on repaint). Centring is only the fallback when no click anchor exists.
   - ⚠Do not re-centre on first sight — `tests/test_struct_arch_minimap_js.py` `DrillDownKeepsClickedNode`.
 - ⚠**A focused control can land under the sticky `.archtop` header** — browsers ignore sticky headers when scrolling a focused element into view.
@@ -413,3 +413,18 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: only decorator and `.get(`-style lines were route lines, so a step citing `_GET_ROUTES = {"/api/state": _g_state, ...}` had no BE route.
 - ⇒ a quoted leading-slash key after `{`, `,` or line start followed by `:` is a route; only the keys are taken (`_DICT_KEY_RE`).
 - ⚠Do not take every path literal on such a line — a ternary `? "/a" : "/b"` or a path value `"k": "/v"` is not a route (`tests/test_archflow.py` `test_be_routes_dict_table`).
+
+## Focus layer must not repaint the overview behind it (`84j archPaint`, `84j3 archLyHtml`)
+
+- Cause: the focus view used to replace the overview in `.archmap`, so closing it re-laid the map out and lost its zoom/scroll.
+- ⇒ the overview is always built as with no module focused (own tests/ents/bp/key, `.archmap inert`); the focus is `.archly` after it, its own scroller `.archlym` (reset to 0,0 on a new focus id). ×, Esc and the backdrop all call `archLyClose`, which restores `ARCH.scope`/`ARCH.lit` from `ARCH.ly0` (taken when the layer opened from the overview).
+- ⚠Do not pass `sel` into the overview's key, source or `.archtop`: one byte of difference re-lays it out (`tests/test_struct_arch_js.py` `test_overview_unchanged_under_layer`).
+- ⚠≤1060px the detail popover shares cell 1/1 with the layer: keep `.archly~.archdetp` above it (79e).
+
+## Focus view drawn as HTML rows (`84j9 archFhHtml`/`archFhRoute`, 79f)
+
+- Cause: Mermaid laid the focus out by call depth with long-edge dummies, so lines ran through boxes and piled up (★live 67-module repo, one screen module + its 32-step flow lit: 14 boxes, 49 crossings).
+- ⇒ HTML rows per band ordered by first step · in · hub · out; orthogonal connectors in row gaps (per-gap lane order from stub constraints, `archFhLanes`) and side gutters for runs over 2+ rows (inner = shorter, then far end). ★synthetic dbuser shape (14 modules, 32 steps, 5 rows): 17 crossings, 0 box hits at 1100 and 900.
+- ⚠No flow lit = hub edges only; never draw unrelated modules. A reverse pair shares one line (one crossing, not two).
+- ⚠Gaps are sized from `need` and re-measured (wrapping moves with the gutter padding): do not drop the measure → route loop or lanes squeeze into one line.
+- ⚠Keep boxes one fixed height and rows/boxes unpositioned — sub-rows are split by offsetTop against `.archfh`.

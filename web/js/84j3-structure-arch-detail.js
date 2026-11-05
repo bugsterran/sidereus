@@ -83,9 +83,13 @@ function archLitQ(p){
   return !sel && sc && sc.p === p && sc.layer ? { layer: sc.layer, group: sc.group } : null;
 }
 function archLitNow(slot){
-  const svg = slot && slot.querySelector && slot.querySelector('svg'), p = strOn[0] || '';
+  const ly = !!(slot && slot.closest && slot.closest('.archly')), p = strOn[0] || '';
+  const svg = slot && slot.querySelector && ((ly && slot.querySelector('.archfh')) || slot.querySelector('svg'));   // focus layer: the HTML diagram root (84j9)
   if(typeof archEvlLive === 'function') archEvlLive(p);   // 84j5: drop a hover that a repaint left behind
   if(svg) archLitPaint(svg, archLitSet(ARCH.cache[p], archLitQ(p)));
+  if(ly) return;   // no minimap / off-screen line for the layer
+  const lys = slot && slot.closest && slot.closest('.archbody'), lyd = lys && lys.querySelector('.archly .archdg');
+  if(lyd) archLitNow(lyd);   // callers pass the overview slot: an open layer follows the same highlight
   if(typeof archMmSync === 'function') archMmSync(slot);   // 84j7 minimap mirrors the lit classes
   if(typeof archLitCount === 'function' && slot && slot.closest) archLitCount(slot.closest('.archmap'));   // 84k off-screen line
   if(typeof archOffMark === 'function') archOffMark(slot);   // 84j5 «Off screen» marker for the row's edge
@@ -269,6 +273,61 @@ document.addEventListener('click', ev => {
         const dir = e.from === sel ? 'out' : 'in'; nx[dir] = true; nx[dir + ':' + (ARCH_NBR_KINDS.indexOf(e.kind) >= 0 ? e.kind : 'other')] = true; }); }
     ARCH.nx = nx; paintStruct(); hold('.archdet [data-arnall="' + b.dataset.arnall + '"]'); return; }
 });
+// Pure: focus layer html (79e) — header path + ×, bar (no back button), legend, zoom; the scroller holds the focus diagram.
+// v2 maps: s2's HTML renderer archFhHtml (sync string); v1 maps (or without it): the old neighbours-only archSrc drawing, drawn in place.
+function archLyHtml(d, mods, edges, sel, si, tests, pick, any){
+  const p = ARCH.sel.p, m = mods[si], lay = archHasLayers(d, tests);
+  const ents = lay && Array.isArray(d.flows) && d.flows.length && typeof archFlowEntries === 'function' ? archFlowEntries(d, mods, tests) : null;
+  const fo = !!(lay && ARCH.ifx && ARCH.ifx.p === p && ARCH.ifx.id === sel), lf = lay && ARCH.lit && ARCH.lit.p === p ? (ARCH.lit.fs || [ARCH.lit.flow]).map(String) : null;
+  const flit = { flows: d.flows, fs: lf }, bp = lay && typeof archBandPlan === 'function' ? archBandPlan(d, mods, tests) : null;
+  const fh = lay && typeof archFhHtml === 'function', kinds = lay && typeof archFocusKinds === 'function' ? archFocusKinds(mods, edges, tests, sel, ents, fo, flit, bp) : null;
+  const kF = archKey(d, sel, tests, ARCH.full, ents, lay ? 'fv' + (fo ? 1 : 0) + '|' + (lf || []).join(',') : '') + (fh ? '\tfh' : '');
+  let dg = '';
+  if(any && fh) dg = archFhHtml(mods, edges, tests, sel, d.groups, ents, fo, flit, bp);
+  else if(any){ if(!ARCH.svg[kF]){ if(Object.keys(ARCH.svg).length >= 40) ARCH.svg = {}; ARCH.svg[kF] = archMmd(archSrc(mods, edges, tests, sel, ARCH.full), mods, si, null, null, null); }
+    dg = ARCH.svg[kF]; }   // ⚠v1 focus is neighbours only: small enough to lay out in the paint
+  const x = esc(T('Close (Esc)'));
+  return '<div class=archly role=dialog aria-modal=true aria-label="' + esc((m && (m.name || m.id)) || sel) + '"><div class=archly-p>'
+    + '<div class=archly-h>' + (typeof archPathHtml === 'function' ? archPathHtml(mods, d.groups, sel, null) : '') + '<button type=button class=archlyx data-arall title="' + x + '" aria-label="' + x + '">×</button></div>'
+    + '<div class=archly-t>' + archBarHtml(mods, edges, sel, tests, ARCH.full, pick, fo)
+    + (lay ? '' : '<div class="archmsg archnol" role=status>' + esc(T('No layers — redraw the diagram')) + '</div>')
+    + (any ? archLegHtml(lay, !!kinds && Object.keys(kinds).some(k => kinds[k] === 'uses')) : '') + (any && fh && typeof archZmBar === 'function' ? archZmBar() : '') + '</div>'
+    + '<div class=archlym>' + (any ? '<div class=archdg data-fv' + (fh ? ' data-fh' : '') + ' data-k="' + esc(kF) + '" data-hub="m' + si + '">' + dg + '</div>'
+      : '<div class=strload>' + esc(T('No edge passed the check.')) + '</div>') + '</div></div></div>';
+}
+// Layer zoom (CSS zoom on the HTML focus diagram, same 0.5–3x steps as 84j8) + edge re-route; label shows the factor.
+function archLyZoomPut(slot){
+  const z = +ARCH.lyz || 1;
+  if(slot.style && slot.hasAttribute && slot.hasAttribute('data-fh')) slot.style.zoom = z === 1 ? '' : String(z);
+  const ly = slot.closest && slot.closest('.archly'), b = ly && ly.querySelector('.archzm-pct');
+  if(b) b.textContent = Math.round(z * 100) + '%';
+  if(typeof archFhRoute === 'function' && slot.hasAttribute && slot.hasAttribute('data-fh')) archFhRoute(slot);
+}
+// Zoom button in the layer: keeps the point at the scroller centre in place (no auto-centre).
+function archLyZoom(a){
+  const sc = document.querySelector('.archtab .archly .archlym'), slot = sc && sc.querySelector('.archdg[data-fh]');
+  if(!slot || typeof archZmStep !== 'function') return;
+  const z = +ARCH.lyz || 1;
+  slot.style.zoom = ''; const fh = slot.querySelector('.archfh'), w = fh ? Math.max(fh.scrollWidth, fh.offsetWidth) : 0;   // natural width at 1x
+  const nz = a === 'fit' ? archZmFit(sc.clientWidth - 18, w) : a === '0' ? 1 : archZmStep(z, +a), r = nz / z;
+  const cx = sc.scrollLeft + sc.clientWidth / 2, cy = sc.scrollTop + sc.clientHeight / 2;
+  ARCH.lyz = nz; archLyZoomPut(slot);
+  sc.scrollLeft = Math.max(0, Math.round(cx * r - sc.clientWidth / 2)); sc.scrollTop = Math.max(0, Math.round(cy * r - sc.clientHeight / 2));
+}
+// Close the focus layer (×, Esc, backdrop): the overview's own path level and lit flow come back from the snapshot taken at open.
+function archLyClose(){
+  const s = ARCH.ly0, p = ARCH.sel && ARCH.sel.p, ok = !!s && s.p === p;
+  ARCH.sel = null; ARCH.op = ''; ARCH.lyz = 1; ARCH.ly0 = null;
+  ARCH.scope = ok ? s.scope : null; ARCH.lit = ok ? s.lit : null;
+  paintStruct();
+}
+// Focus layer re-routes its HTML diagram edges on resize (debounced); the overview behind is not repainted.
+let ARCH_RZ = 0;
+if(typeof window !== 'undefined' && window.addEventListener) window.addEventListener('resize', () => {
+  clearTimeout(ARCH_RZ);
+  ARCH_RZ = setTimeout(() => { const s = mainView === 'struct' && strMode === 'arch' && ARCH.sel ? document.querySelector('.archtab .archly .archdg[data-fh]') : null;
+    if(s && typeof archFhRoute === 'function') archFhRoute(s); }, 160);
+});
 // Pure guard for Esc: false in fields, after another handler, while a code popup / palette / drawer is open, or off the arch view.
 function archEscOk(e, st){
   const t = e && e.target, tag = t && t.tagName ? String(t.tagName).toLowerCase() : '';
@@ -276,9 +335,12 @@ function archEscOk(e, st){
   if(tag === 'input' || tag === 'select' || tag === 'textarea' || (t && t.isContentEditable)) return false;
   return !!st && st.view === 'struct' && st.mode === 'arch' && !st.pop && !st.pal;
 }
-// One Esc press (true = handled): a lit flow (and its sequence view) clears first, then one level up.
+// One Esc press (true = handled): the flow sequence view (and its lit flow) clears first, then an open focus layer closes in one press
+// (84j archLyClose), then a lit flow, then one level up.
 function archEscStep(p){
-  if((ARCH.lit && ARCH.lit.p === p) || (ARCH.flow && ARCH.flow.p === p)){ ARCH.lit = null; ARCH.flow = null; paintStruct(); return true; }
+  if(ARCH.flow && ARCH.flow.p === p){ ARCH.lit = null; ARCH.flow = null; paintStruct(); return true; }
+  if(ARCH.sel && ARCH.sel.p === p){ archLyClose(); return true; }
+  if(ARCH.lit && ARCH.lit.p === p){ ARCH.lit = null; paintStruct(); return true; }
   const d = ARCH.cache[p] || {};
   const r = archUp({ sel: ARCH.sel && ARCH.sel.p === p ? ARCH.sel.id : '', scope: ARCH.scope && ARCH.scope.p === p ? ARCH.scope : null }, d.modules);
   if(!r) return false;

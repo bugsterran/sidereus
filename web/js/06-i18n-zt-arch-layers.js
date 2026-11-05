@@ -35,6 +35,4 @@ Object.assign(I18N.ko, {
   'Uses|arch edge': '사용',
   'Infrastructure {n}': '기반 {n}개',
   'Fold infrastructure': '기반 접기',
-  'Back to full diagram': '전체 구조도로',
-  'Back (Esc)': '돌아가기 (Esc)',
 });

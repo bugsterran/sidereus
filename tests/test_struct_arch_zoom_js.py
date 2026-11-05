@@ -133,7 +133,7 @@ class ArchZoom(unittest.TestCase):
 
     def test_apply_runs_before_scroll_restore(self):
         paint = ARCH[ARCH.index("box.innerHTML = '<div class=\"strtab archtab\">' + head(archHeadNote(d, dvOn)"):]
-        self.assertLess(paint.index("archZmApply("), paint.index("archScrollPut(box, sm, sl, sd)"))
+        self.assertLess(paint.index("archZmApply("), paint.index("archScrollPut(box, sm, sl, sd"))
         fill = re.search(r"slot\.innerHTML = ARCH\.svg\[k\];.*?archScrollPut\(box, pd", ARCH, re.S).group(0)
         self.assertIn("archZmApply(slot)", fill)
 

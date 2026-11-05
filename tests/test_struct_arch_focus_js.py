@@ -16,6 +16,7 @@ from tests.test_struct_arch_js import SELF_MODS
 WEB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web")
 _rd = lambda *p: open(os.path.join(WEB, *p), encoding="utf-8").read()
 L2, FOC, J = _rd("js", "84j2-structure-arch-layers.js"), _rd("js", "84j4-structure-arch-focus.js"), _rd("js", "84j-structure-arch.js")
+DETJ = _rd("js", "84j3-structure-arch-detail.js")   # focus layer html (archLyHtml)
 CSS = _rd("css", "79-structure-arch.css")
 NAMES = [n for m, n in SELF_MODS if not m.startswith("ext.") and "test" not in n]   # a test-like name would hide the module
 
@@ -198,7 +199,7 @@ class ArchFocus(unittest.TestCase):
         self.assertIsNone(r[0])
         self.assertRegex(r[1], r'<g class=mmdfe[^>]*><g class="mmdel mmdfl')   # pair labels still in the svg for hover
         self.assertIn("a0.hub", r[1])
-        self.assertIn("(fv ? ' data-fv' : '')", J)                             # focus slot marked for the CSS
+        self.assertIn("'<div class=archdg data-fv'", DETJ)                      # focus layer slot marked for the CSS
         self.assertIn(".archdg[data-fv] .mmdfe .mmdfl{visibility:hidden}", CSS)
         self.assertIn(".archdg[data-fv] svg.archdim .mmdfe.arhe .mmdfl{visibility:visible}", CSS)
         self.assertNotRegex(CSS, r"data-fv\][^{]*\.arn[^{]*\.mmdfl")              # box hover must not reveal its edges' text
@@ -359,28 +360,38 @@ setTimeout(() => process.stdout.write(JSON.stringify([h, slot.innerHTML, am.scro
         self.assertEqual(json.loads(p.stdout), ["wait", "<svg>", 1094, 12])
         self.assertIn("box._arsm = [sm, sl, sd];", J)                                    # archPaint saves the scroll it read before innerHTML
 
-    def test_r2_refit_keeps_scroll(self):
-        # «Fold infrastructure» appearing changes the bar height, so archPaint refits and paints twice; the second pass must not
-        # read the scroll from the DOM the first pass just rebuilt (clamped to 0 under the loading line).
+    def test_layer_open_keeps_overview_scroll(self):
+        # Opening the focus layer paints once and leaves the overview scroll as it was (no refit pass, no re-layout).
         from tests.test_struct_arch_js import run as arun, MODS, EDGES
-        r = arun("const D2 = {ok: true, commit: 'c', modules: " + json.dumps(MODS) + ", edges: " + json.dumps(EDGES) + "};"
-                 "ARCH.cache['/r'] = D2; ARCH.sel = {p: '/r', id: 'a'}; let tall = 120, sets = 0;"
-                 "const top = {get offsetHeight(){ return tall; }};"
-                 "const am = {scrollTop: 1110, scrollLeft: 30, offsetWidth: 900, offsetHeight: 900, querySelector: q => q === '.archtop' ? top : null};"
-                 "const box = {_arp: '/r', _h: '', get innerHTML(){ return this._h; }, set innerHTML(v){ this._h = v; sets++; am.scrollTop = 0; am.scrollLeft = 0; tall += 30; },"
+        r = arun("const D2 = {ok: true, commit: 'c', modules: " + json.dumps(MODS) + ", edges: " + json.dumps(EDGES) + "}; globalThis.archMmd = () => '<M/>';"
+                 "ARCH.cache['/r'] = D2; let sets = 0; const am = {scrollTop: 0, scrollLeft: 0};"
+                 "const box = {_arp: '/r', _h: '', get innerHTML(){ return this._h; }, set innerHTML(v){ this._h = v; sets++; am.scrollTop = 0; am.scrollLeft = 0; },"
                  " querySelector: q => q === '.archmap' ? am : null};"
-                 "archPaint(box, head); await new Promise(res => setTimeout(res, 20));"
-                 "console.log(JSON.stringify([sets, am.scrollTop, am.scrollLeft]));")
-        sets, top, left = r
-        self.assertEqual(sets, 2)                                              # the refit pass ran (bar height changed)
-        self.assertEqual([top, left], [1110, 30])
+                 "archPaint(box, head); await new Promise(res => setTimeout(res, 20)); am.scrollTop = 1110; am.scrollLeft = 30; sets = 0; box._arpend = null;"   # fill done (this fake has no .archdg slot to clear it)
+                 "ARCH.sel = {p: '/r', id: 'a'}; archPaint(box, head); await new Promise(res => setTimeout(res, 20));"
+                 "console.log(JSON.stringify([sets, am.scrollTop, am.scrollLeft, box.innerHTML.includes('class=archly')]));")
+        self.assertEqual(r, [1, 1110, 30, True])
+
+    def test_layer_scroll_kept_and_reset(self):
+        # .archlym keeps its scroll across poll repaints of one focus; another focus id opens it at 0,0; the overview .archmap is put back.
+        from tests.test_struct_arch_js import run as arun, MODS, EDGES
+        r = arun("const D2 = {ok: true, commit: 'c', modules: " + json.dumps(MODS) + ", edges: " + json.dumps(EDGES) + "}; globalThis.archMmd = () => '<M/>';"
+                 "ARCH.cache['/r'] = D2; const am = {scrollTop: 0, scrollLeft: 0}, lm = {scrollTop: 0, scrollLeft: 0}, o = [];"
+                 "const box = {_arp: '/r', _h: '', get innerHTML(){ return this._h; }, set innerHTML(v){ this._h = v; Object.assign(am, {scrollTop: 0, scrollLeft: 0}); Object.assign(lm, {scrollTop: 0, scrollLeft: 0}); },"
+                 " querySelector: q => q === '.archmap' ? am : q === '.archlym' && box._h.includes('archlym') ? lm : null};"
+                 "ARCH.sel = {p: '/r', id: 'a'}; archPaint(box, head); await new Promise(res => setTimeout(res, 20));"
+                 "box._arpend = null; am.scrollTop = 300; lm.scrollTop = 80; lm.scrollLeft = 12; box._arsig = ''; archPaint(box, head); o.push([am.scrollTop, lm.scrollTop, lm.scrollLeft]);"
+                 "ARCH.sel = {p: '/r', id: 'b'}; lm.scrollTop = 80; archPaint(box, head); o.push([am.scrollTop, lm.scrollTop, lm.scrollLeft]);"
+                 "console.log(JSON.stringify(o));")
+        self.assertEqual(r, [[300, 80, 12], [300, 0, 0]])
+        self.assertIn("put('.archlym', slm)", J)
 
     def test_r2_entry_click_keeps_scroll(self):
         # Entry click lights a flow: its «n lit · m off-screen» line resizes the bar while the diagram is still loading, so the
         # next poll repaints before the fill. That paint must use the pending scroll, not the DOM clamped to 0.
         from tests.test_struct_arch_js import run as arun, MODS, EDGES
         r = arun("const D2 = {ok: true, commit: 'c', modules: " + json.dumps(MODS) + ", edges: " + json.dumps(EDGES) + "};"
-                 "ARCH.cache['/r'] = D2; ARCH.sel = {p: '/r', id: 'a'}; let tall = 120, sets = 0;"
+                 "ARCH.cache['/r'] = D2; ARCH.sel = {p: '/r', id: 'a'}; let tall = 120, sets = 0; globalThis.archMmd = () => '<M/>';"
                  "const top = {get offsetHeight(){ return tall; }};"
                  "const am = {scrollTop: 152, scrollLeft: 4, offsetWidth: 900, offsetHeight: 900, querySelector: q => q === '.archtop' ? top : null};"
                  "const box = {_arp: '/r', _h: '', get innerHTML(){ return this._h; }, set innerHTML(v){ this._h = v; sets++; am.scrollTop = 0; am.scrollLeft = 0; },"
@@ -391,14 +402,14 @@ setTimeout(() => process.stdout.write(JSON.stringify([h, slot.innerHTML, am.scro
         self.assertGreaterEqual(sets, 2)                                       # the second paint ran before the fill
         self.assertEqual([top, left], [152, 4])
 
-    def test_back_button_first_and_accent(self):
+    def test_focus_bar_has_no_back_button(self):
+        # The focus view is a layer: its header × (data-arall) closes it, so the bar starts with the flow picker.
         from tests.test_struct_arch_js import run as arun, MODS, EDGES
         body = ("console.log(JSON.stringify(archBarHtml(" + json.dumps(MODS) + ", " + json.dumps(EDGES) + ", 'a', false, false, '<PICK>', '', false)));")
-        en, ko = arun(body, lang="en"), arun(body)
-        self.assertTrue(en.startswith('<div class="archbar on"><button type=button class=archall data-arall title="Back (Esc)">← Back to full diagram</button><PICK>'), en)
-        self.assertIn('title="돌아가기 (Esc)">← 전체 구조도로</button>', ko)
-        self.assertRegex(CSS, r"\.archall\{[^}]*background:var\(--nx-info-bg")     # filled accent, not plain text
-        self.assertIn("html[data-ui=next][data-ui] .archall{color:#fff}", CSS)   # light theme keeps white (5.4:1)
+        en = arun(body, lang="en")
+        self.assertTrue(en.startswith('<div class="archbar on"><PICK><b class=archsel>'), en)
+        self.assertNotIn("data-arall", en)
+        self.assertNotIn("Back to full diagram", J)
 
     def test_chrome_above_focus_map_stays_short(self):
         # ★Live 1100x860 (pane bottom ~819): hub box 824-854 with a 2-line path and the «Source text» row; 771-801 without them.

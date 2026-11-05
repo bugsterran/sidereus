@@ -1,0 +1,23 @@
+/* «Architecture» focus layer (84j archLyHtml): opens over the map cell of .archbody; the overview behind stays as it was (inert, dimmed). Desktop only.
+   ⚠Dim with the backdrop colour, never opacity on the panel: its labels must stay readable (>=4.5:1). */
+.archbody>.archly{grid-column:1;grid-row:1;z-index:4;position:relative;display:flex;min-width:0;min-height:0;padding:14px;border-radius:8px;background:color-mix(in srgb,var(--nx-bg,#0d1014) 62%,transparent);cursor:pointer}
+.archly-p{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;min-height:0;border:1px solid var(--nx-rule,#2a3442);border-radius:8px;background:var(--nx-panel,#141a23);box-shadow:0 6px 24px rgba(0,0,0,.4);cursor:auto;overflow:hidden}
+.archly-h{display:flex;align-items:center;gap:8px;padding:6px 8px 4px 10px;border-bottom:1px solid var(--nx-rule,#2a3442)}
+.archly-h>.archpath{flex:1 1 auto;min-width:0}
+.archlyx{flex:0 0 auto;margin-left:auto;width:28px;height:28px;border:1px solid var(--nx-rule,#2a3442);border-radius:5px;background:transparent;color:var(--nx-t1,#dfe5ee);font:inherit;font-size:18px;line-height:1;cursor:pointer}
+.archlyx:hover{background:color-mix(in srgb,var(--nx-info,#5899f3) 18%,transparent)}
+.archlyx:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px}
+/* bar · legend · zoom wrap onto more rows at 900-1100 instead of squeezing */
+.archly-t{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:4px 10px 6px;border-bottom:1px solid var(--nx-rule,#2a3442)}
+.archly-t>.archbar{flex:1 1 auto;min-width:0;flex-wrap:wrap;row-gap:4px}
+.archly-t>.archzm{margin-left:auto}
+.archly-t .archzm-b{background:var(--nx-bg,#0d1014)}
+.archlym{flex:1 1 auto;min-height:0;overflow:auto;padding:8px}
+.archmap[inert]{user-select:none}
+/* ≤1060: the module detail popover (79) shares cell 1/1 and must stay above the layer; the scroll spacer moves into the layer */
+@media (max-width:1060px){
+  .archbody>.archly~.archdetp{z-index:5}
+  .archbody:has(>.archly)>.archmap::after{display:none}
+  .archbody:has(>.archdetp)>.archly .archlym::after{content:'';display:block;height:378px}
+}
+.archly-t .archfl{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}   /* the label sat in a narrow flex cell and broke one glyph per line */

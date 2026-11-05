@@ -18,6 +18,7 @@ FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archProvNote", "arch
        "archHasLayers", "archEntPair", "archBandSrc", "archBandFix", "archBandHint", "archFront", "archKindMap", "archKindLegHtml"]   # 84j2 (archPaint calls them)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archReqHtml calls it)
 FNS.append("archDevListHtml")   # deviation filter list (archPaint calls it)
+FNS += ["archLyHtml", "archLyZoomPut", "archLyZoom", "archLyClose"]   # focus layer (archPaint / click / Esc call them)
 def _read(p):
     with open(p, encoding="utf-8") as fh:
         return fh.read()
@@ -559,7 +560,7 @@ class ArchOverview(unittest.TestCase):
                 " archBarHtml(MODS_, [], '', false), archEdgeRow(d.edges[0], N, 0, false, 'in')]));".replace("MODS_", json.dumps(MODS)))
         self.assertIn("data-art", r[0])
         self.assertNotIn(" checked", r[0])
-        self.assertIn("data-arall", r[1])
+        self.assertNotIn("data-arall", r[1])          # focus bar: no back button (the layer header × closes)
         self.assertIn("들어옴 1", r[1])
         self.assertIn("나감 1", r[1])
         self.assertIn(" checked", r[1])
@@ -974,6 +975,66 @@ class ArchFlow(unittest.TestCase):
                      " archKey(d, '', false, false, en), archKey(d, '', false, false, [Object.assign({}, en[0], {to: new Set([1])})])]));")
         self.assertEqual(len(set(r[:3])), 1)
         self.assertEqual(len(set(r)), 3)
+
+
+# v2 map (layers) for the focus layer tests; archFhHtml / archFhRoute (84j9) are stubbed.
+LY_MAP = {"ok": True, "v": 2, "commit": "c", "groups": [], "edges": [
+    {"from": "a", "to": "b", "kind": "call", "label": "", "ok": True, "est": False, "evidence": []},
+    {"from": "b", "to": "c", "kind": "call", "label": "", "ok": True, "est": False, "evidence": []}],
+    "modules": [{"id": "a", "name": "A", "kind": "module", "layer": "ui"}, {"id": "b", "name": "B", "kind": "module", "layer": "api"},
+                {"id": "c", "name": "C", "kind": "module", "layer": "service"}]}
+LY_PRE = ("ARCH.cache['/r'] = " + json.dumps(LY_MAP) + "; globalThis.archMmd = src => '<M>' + esc(src) + '</M>';"
+          "const FH = [], RT = []; globalThis.archFhHtml = (...a) => { FH.push(a[3]); return '<div class=archfh>FH</div>'; };"
+          "globalThis.archZmBar = () => '<span class=archzm></span>'; globalThis.archFhRoute = s => RT.push(s.tag); const slot = {tag: 'L', style: {}, hasAttribute: a => a === 'data-fh', closest: () => null};"
+          "const box = {innerHTML: '', querySelector(q){ return q === '.archly .archdg' && box.innerHTML.includes('class=archly') ? slot : null; }};")
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class ArchLayer(unittest.TestCase):
+    def test_overview_unchanged_under_layer(self):
+        r = run(LY_PRE + "archPaint(box, head); await new Promise(f => setTimeout(f, 5)); box._arsig = ''; archPaint(box, head); const h0 = box.innerHTML, s0 = JSON.stringify(ARCH.svg);"
+                "ARCH.sel = {p: '/r', id: 'b'}; box._arsig = ''; archPaint(box, head); await new Promise(f => setTimeout(f, 5));"
+                "console.log(JSON.stringify([h0, box.innerHTML, s0 === JSON.stringify(ARCH.svg), FH, RT, slot.style.zoom]));", lang="en")
+        h0, h1, same_svg, fh, rt, zoom = r
+        k = re.compile(r'class=archdg data-k="([^"]*)"')
+        self.assertEqual(k.search(h0).group(1), k.search(h1).group(1))       # overview key unchanged while a module is focused
+        self.assertTrue(same_svg)                                            # no re-layout of the overview
+        a = h0[h0.index("<div class=archmap"):h0.index("<aside")]
+        b = h1[h1.index("<div class=archmap"):h1.index("<div class=archly")]
+        self.assertIn("<div class=archmap inert>", b)
+        self.assertEqual(b.replace("<div class=archmap inert>", "<div class=archmap>", 1), a)   # byte-identical overview
+        ly = h1[h1.index("<div class=archly"):]
+        self.assertIn('class=archlyx data-arall title="Close (Esc)" aria-label="Close (Esc)">×</button>', ly)
+        self.assertNotIn("Back to full diagram", h1)
+        self.assertIn("<div class=archlym><div class=archdg data-fv data-fh", ly)
+        self.assertIn("<div class=archfh>FH</div>", ly)
+        self.assertLess(ly.index("archly-h"), ly.index("archbar"))          # header (path + ×) above the bar
+        self.assertIn("archzm", ly)
+        self.assertEqual([fh, rt, zoom], [["b"], ["L"], ""])                # s2 renderer once, edges routed after insertion, 1x
+
+    def test_close_restores_overview_state(self):
+        r = run(LY_PRE + "ARCH.scope = {p: '/r', layer: 'api', group: null}; ARCH.lit = {p: '/r', flow: 'f1'};"
+                "const T_ = ds => ({ closest: s => s === '.archdg [data-p]' ? { dataset: ds } : null });"
+                "archDgClick('/r', T_({p: 'm1'})); const o = [JSON.stringify(ARCH.ly0)];"
+                "ARCH.lit = {p: '/r', flow: 'f9'}; ARCH.lyz = 2; archDgClick('/r', T_({p: 'm2'})); o.push(JSON.stringify(ARCH.sel), JSON.stringify(ARCH.ly0));"   # drilling: layer only
+                "archLyClose(); o.push(ARCH.sel, ARCH.scope, ARCH.lit, ARCH.lyz, ARCH.ly0); console.log(JSON.stringify(o));")
+        self.assertEqual(r[0], r[2])                                        # snapshot taken once, at open from the overview
+        self.assertEqual(r[1], '{"p":"/r","id":"c"}')
+        self.assertEqual(r[3:], [None, {"p": "/r", "layer": "api", "group": None}, {"p": "/r", "flow": "f1"}, 1, None])
+
+    def test_esc_closes_layer_in_one_press(self):
+        js_esc = js_fn("archEscStep") + "\n" + js_fn("archUp") + "\n" + js_fn("archGoUp")
+        r = run(js_esc + "\nARCH.cache['/r'] = " + json.dumps(LY_MAP) + "; ARCH.scope = null; ARCH.lit = null; ARCH.flow = null;"
+                "ARCH.ly0 = {p: '/r', scope: null, lit: null}; ARCH.sel = {p: '/r', id: 'b'}; ARCH.lit = {p: '/r', flow: 'f1'};"
+                "const h = archEscStep('/r'); console.log(JSON.stringify([h, ARCH.sel, ARCH.lit, archEscStep('/r')]));")
+        self.assertEqual(r, [True, None, None, False])                     # one press: layer gone (not group / layer level first)
+
+    def test_backdrop_and_close_share_one_helper(self):
+        self.assertIn("if(t.closest('[data-arall]') || (t.closest('.archly') && !t.closest('.archly-p'))){ archLyClose(); return; }", _SRC)
+        css = _read(_SRC_P.replace(os.path.join("js", "84j-structure-arch.js"), os.path.join("css", "79e-structure-arch-layer.css")))
+        self.assertRegex(css, r"\.archbody>\.archly\{[^}]*z-index:4")
+        self.assertIn(".archbody>.archly~.archdetp{z-index:5}", css)       # ≤1060 detail popover stays above the layer
+        self.assertNotRegex(css, r"\.archly[^{]*\{[^}]*opacity")           # dim by backdrop colour, text stays readable
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
