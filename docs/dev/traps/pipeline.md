@@ -361,6 +361,11 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⚠The scan runs inside the live hook at run end: keep it fail-silent and counts-only (no text from the transcript or the meta description).
 - ★2026-11-02, synthetic 8 agents × 2 MB (every line a `"usage"` line, worst case): 82–254 ms added per ledger row (4 runs), inside the 0.3 s budget.
 
+## Run cost share / median / last run (`pl_outcome.run_cost`)
+- Cause: summing stage tok with null read as 0 makes an all-unknown run a «0-token run» and pulls the median down.
+- Fix: a run total = its known non-skip tok only; a run with none known is left out of `med`/`mn`; `last.tok` null and share `{}` show «—».
+- ⚠A run with some stages unknown still counts with its known part (a lower bound); `mn` says how many runs the median covers.
+
 ## Denied stage still lit «main»; long stage titles (`pl_mark` · `pl_flow.bash_denied` · `TITLE_MAX`)
 - Cause: `pl_mark` wrote `plmark` from the Bash tag alone, in the same PreToolUse where `pl_flow` denied the jump, so a stage that never ran lit «main» for 2 min. A stage title over 40 chars can never match the tag regex `{1,40}`, and the Post hint taught that unmatchable tag.
 - Fix: `pl_mark` asks `pl_flow.bash_denied()` (read-only, same run logic, fail → «not denied») before writing. The Post hint names an over-40 title and its length instead of printing a tag.

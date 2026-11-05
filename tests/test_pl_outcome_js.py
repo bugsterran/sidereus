@@ -86,10 +86,37 @@ class ResultLayer(unittest.TestCase):
         self.assertIn("Stage cost (last 30 days)", h[1])
         self.assertIn("&lt;b>x", h[1])
         self.assertNotIn("<b>x", h[1])
-        self.assertIn("<td>30s</td><td>\u2014</td><td>2</td>", h[1])
-        self.assertIn("<td>1500</td><td>3</td>", h[1])
+        self.assertIn("<td>30s</td><td>\u2014</td><td>\u2014</td><td>2</td>", h[1])   # R1: no cost -> share a dash
+        self.assertIn("<td>1500</td><td>\u2014</td><td>3</td>", h[1])
+        self.assertNotIn("pleeffs", h[1])
         for k in ("Stage cost (last 30 days)", "Median time", "Median tokens"):
             self.assertIn("'" + k + "':", _ko(), k)
+
+    def test_stage_cost_share_and_summary(self):
+        # R1-R3: share column, median per run (hidden at mn 0), last run (dash for unknown tokens), titles escaped
+        eff = "{ '<b>x': { n: 2, sec: 30, tok: null, tn: 0 }, impl: { n: 3, sec: 61, tok: 1500, tn: 3 } }"
+        r = _run("console.log(JSON.stringify(["
+                 " plEvalEff(%s, { share: { impl: 100 }, med: 1500, mn: 3, last: { tok: 1500, sec: 61 } }),"
+                 " plEvalEff(%s, { share: {}, med: null, mn: 0, last: { tok: null, sec: 30 } }),"
+                 " plEvalEff({}, { share: { impl: 100 }, med: 1500, mn: 3, last: { tok: 1, sec: 1 } })]));" % (eff, eff))
+        self.assertIn("<td>1500</td><td>100%</td><td>3</td>", r[0])
+        self.assertIn("<td>\u2014</td><td>\u2014</td><td>2</td>", r[0])   # stage missing from share
+        self.assertIn("Median per run: 1500 tokens (3 runs)", r[0])
+        self.assertIn("Last run: 1500 \u00b7 61s", r[0])
+        self.assertIn("&lt;b>x", r[0])
+        self.assertNotIn("<b>x", r[0])
+        self.assertIn("<td>1500</td><td>\u2014</td><td>3</td>", r[1])   # empty share
+        self.assertNotIn("Median per run", r[1])   # mn 0: never a 0 median
+        self.assertIn("Last run: \u2014 \u00b7 30s", r[1])
+        self.assertEqual(r[2], "")   # no eff: whole block gone
+        ko = _ko()
+        # "Share" already has a ko entry in 05a-i18n-en.js; a second one fails i18n_check as a duplicate.
+        for k in ("Median per run: {tok} tokens ({n} runs)", "Last run: {tok} \u00b7 {dur}"):
+            self.assertIn("'" + k + "':", ko, k)
+        h = _run("console.log(JSON.stringify(plEvalOutcome({ outcome: { proc: { runs: 2 }, eff: { impl: { n: 1, sec: 5, tok: 9, tn: 1 } },"
+                 " cost: { share: { impl: 100 }, med: 9, mn: 1, last: { tok: 9, sec: 5 } } } })));", "ko")
+        self.assertIn("<th>Share</th>", h)   # harness loads only the eval dictionary; its ko lives in 05a
+        self.assertIn("100%", h)
 
     def test_escapes_report_path(self):
         h = _run("console.log(JSON.stringify(plEvalOutcome({ outcome: { result: { n: 1 } }, rep: { date: '<b>', path: '<i>' } })));")

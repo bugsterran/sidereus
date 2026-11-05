@@ -151,6 +151,32 @@ def stage_eff(rows):
     return {t: {"n": len(s), "sec": _med(s), "tok": _med(k), "tn": len(k)} for t, (s, k) in acc.items()}
 
 
+def run_cost(rows):
+    """{share: {title: pct}, med, mn, last: {tok, sec}} over ledger rows (oldest first), or None for no rows.
+    Same stage loop as stage_eff so titles match. ⚠Unknown tok is left out, never counted as 0: a run with no known
+    tok is not in med/mn, and last.tok is None."""
+    if not rows:
+        return None
+    acc, per, last = {}, [], None
+    for r in rows:
+        known = None
+        for t, e in ((r or {}).get("ss") or {}).items():
+            if e.get("s") == "skip" or (t not in acc and len(acc) >= OC_SS_MAX):
+                continue
+            acc.setdefault(t, 0)
+            if e.get("tok") is not None:
+                acc[t] += e["tok"]
+                known = (known or 0) + e["tok"]
+        if known is not None:
+            per.append(known)
+        last = known
+    tot = sum(acc.values())
+    share = {t: int(v * 100 / tot + 0.5) for t, v in acc.items()} if tot else {}
+    r = rows[-1] or {}
+    sec = int(max(0, (r.get("end") or 0) - (r.get("t0") or 0)))
+    return {"share": share, "med": _med(per), "mn": len(per), "last": {"tok": last, "sec": sec}}
+
+
 def _ledger_path(key):
     return os.path.join(OC_EVAL_DIR, key, "runs.jsonl")
 
@@ -331,7 +357,8 @@ def outcome(proj, name, review_titles, now=None, git=True, fix=()):
         return _OC_MEMO[ck]
     out = {"proc": {"runs": len(cur), "jump": sum(r["dc"].get("jump", 0) for r in cur)},
            "lb": {"cur": _lb(cur, review), "prev": _lb(prev, review)},
-           "result": _result(proj, rows, cur + prev, now, bool(head), every, fix), "eff": stage_eff(cur)}
+           "result": _result(proj, rows, cur + prev, now, bool(head), every, fix), "eff": stage_eff(cur),
+           "cost": run_cost(cur)}
     if head:
         if len(_OC_MEMO) >= OC_CACHE_MAX:
             _OC_MEMO.clear()
@@ -354,6 +381,13 @@ def counts(oc):
                        "unchecked": _int(r.get("unchecked")), "partial": r.get("partial") is True}}
     if eff:   # absent when empty: rows without per-stage data keep the earlier body shape
         out["eff"] = eff
+    co = oc.get("cost") if isinstance(oc.get("cost"), dict) else {}
+    sh = co.get("share") if isinstance(co.get("share"), dict) else {}
+    la = co.get("last") if isinstance(co.get("last"), dict) else {}
+    if co:   # same «absent when empty» rule as eff
+        out["cost"] = {"share": {_title(t): min(100, _int(v)) for t, v in sh.items() if _title(t) in eff},
+                       "med": _tok(co.get("med")), "mn": _int(co.get("mn")),
+                       "last": {"tok": _tok(la.get("tok")), "sec": _int(la.get("sec"))}}
     return out
 
 
