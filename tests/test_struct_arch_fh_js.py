@@ -146,6 +146,7 @@ const far = P.paths[11].pts, gut = far.some(q => q[0] < x0 || q[0] > x1);
 process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), gut, P.paths.every(p => p.pts && p.pts.length >= 2), P.need, P.gw]));""", [], [], [])
         q, gut, all_drawn, need, gw = r
         self.assertEqual(q["boxHits"], 0)
+        self.assertEqual(q["overlaps"], 0)
         self.assertLessEqual(q["crossings"], 1)
         self.assertTrue(gut)                                                   # 3 rows apart: side gutter, not through rows 1/2
         self.assertTrue(all_drawn)
@@ -159,8 +160,19 @@ t.forEach((k, i) => { R[k] = { x: 120 + i * 130, y: 100, w: 100, h: 30 }; });
 const P = archFhPaths(R, [['h'], t], t.map(b => ({ a: 'h', b })));
 process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths.map(p => p.pts[1][1])]));""", [], [], [])
         q, ys = r
-        self.assertEqual(q, {"crossings": 0, "boxHits": 0})
+        self.assertEqual(q, {"crossings": 0, "boxHits": 0, "overlaps": 0})
         self.assertEqual(ys, sorted(ys, reverse=True))
+
+    def test_in_and_out_ends_on_one_side_get_own_ports(self):
+        # hub's in-edge from s and out-edge to b both end on the hub top: at its centre the shorter stub lay on the longer one
+        r = run(r"""const R = { s: { x: 0, y: 0, w: 100, h: 30 }, b: { x: 260, y: 0, w: 100, h: 30 }, h: { x: 130, y: 100, w: 100, h: 30 } };
+const P = archFhPaths(R, [['s', 'b'], ['h']], [{ a: 's', b: 'h' }, { a: 'h', b: 'b' }]);
+process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths[0].pts[P.paths[0].pts.length - 1], P.paths[1].pts[0]]));""", [], [], [])
+        q, s_end, b_start = r
+        self.assertEqual(q, {"crossings": 0, "boxHits": 0, "overlaps": 0})
+        self.assertEqual(s_end[1], 100)                                        # both on the hub top
+        self.assertEqual(b_start[1], 100)
+        self.assertLess(s_end[0], b_start[0])                                  # own ports, ordered by the far end's x
 
     def test_real_and_dbuser_shapes(self):
         M, E, G, F = _real()
@@ -169,6 +181,7 @@ process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths.map(p =>
         qa, qb, nrows = r
         self.assertEqual(qa["boxHits"], 0)
         self.assertEqual(qb["boxHits"], 0)
+        self.assertEqual((qa["overlaps"], qb["overlaps"]), (0, 0))             # one port per end: no stub drawn over another
         self.assertGreater(nrows, 2)
         M, E, G, F = _dbuser()
         r = run("const P = archFocusPlanM(M, E, false, 's0', archFlowEntries(D, M, false), false, { flows: D.flows, fs: ['f.screen.dbuser'] }, BP), F = archFhPlan(P, false);"
@@ -179,6 +192,7 @@ process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths.map(p =>
         self.assertEqual(n, 14)
         self.assertEqual(q1100["boxHits"], 0)
         self.assertEqual(q900["boxHits"], 0)
+        self.assertEqual((q1100["overlaps"], q900["overlaps"]), (0, 0))
         self.assertLess(q1100["crossings"], 49)                                # Mermaid on the live case: 49
 
 
