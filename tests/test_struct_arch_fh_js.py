@@ -73,6 +73,14 @@ class ArchFocusHtmlOneZoom(unittest.TestCase):
         self.assertNotIn("archZmKeep", FH)
         self.assertNotIn("addEventListener", FH)                               # hover/click handled by 84j
 
+    def test_hex_hub_has_no_clipped_border(self):
+        # The [data-on] hub border is cut by the .hx clip-path into slivers at the slanted corners; the hexagon hub drops it.
+        import re
+        css = _rd("css", "79f-structure-arch-focus-html.css")
+        m = re.search(r"\.archfh \.archfh-n\.hx\[data-on\]\{([^}]*)\}", css)
+        self.assertIsNotNone(m)
+        self.assertIn("border:0", m.group(1))
+
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class ArchFocusHtml(unittest.TestCase):
