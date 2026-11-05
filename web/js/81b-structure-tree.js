@@ -282,7 +282,11 @@ function strTreeWire(body){
       strTreeFoldAll(dfShut, open ? strTreeVis.dirs : strTreeHtml(ls.files, '', '', '').dirs, open);
       strTreePaintList(body); return;
     }
-    if(fi){ const p = strTreeVis.paths[+fi.getAttribute('data-fi')]; if(p) strTreeOpenFile(p); return; }
+    if(fi){ const p = strTreeVis.paths[+fi.getAttribute('data-fi')]; if(!p) return;
+      strTreeOpenFile(p);   // ⚠strSrcShow focuses the code pane; hand focus back like the arrow path so the next arrow moves the tree
+      const t = strPopDoc().querySelector('#spbody .srtt');
+      if(t) try{ t.focus({ preventScroll: true }); }catch(e){ softErr('srt-focus4', e); }
+      return; }
     if(dd){ const d = dd.getAttribute('data-dir'); strTreeToggle(d); strPop.tree.cur = 'd:' + d; strTreePaintList(body); }
   });
   body.addEventListener('dblclick', ev => { if(on() && ev.target.closest && ev.target.closest('.srt')) ev.stopPropagation(); });
