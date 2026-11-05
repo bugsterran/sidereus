@@ -315,9 +315,8 @@ function plBody(ov, hd){
   const cv = plCanvas(p, d, lt);
   const dirty = plDirty(p.name);
   // Live run status sits between the title and the actions: on its own row it pushed the buttons above the progress bar.
-  const cov = plGateCov(plEnt(p).G);   // from the editor graph: unsaved gate edits count
-  const ev = p.sha && !p.std ? plEvalOf(PLS.proj, p.name) : null; plEvalCov(cov, ev, dirty);   // saved file only (48i)
-  const bar = '<div class=plbar><b>' + esc(p.title) + '</b><span class="plcov' + (cov.n < cov.m ? ' plcovlo' : '') + '" title="' + esc(TV({msg: 'Stages machine-checked by a gate command: {n} of {m}', vars: {n: cov.n, m: cov.m}})) + '">' + esc(TV({msg: 'Gates {n}/{m}', vars: {n: cov.n, m: cov.m}})) + '</span>' + plEvalHead(ev, PLEVAL_OPEN === p.name) + plLiveHead(lv, lt) + '<span class=plact>'   // right-aligned, colour-coded action group (43-pipeline.css)
+  const ce = plCovEval(p, dirty), ev = ce.ev;
+  const bar = '<div class=plbar><b>' + esc(p.title) + '</b>' + ce.html + plLiveHead(lv, lt) + '<span class=plact>'   // right-aligned, colour-coded action group (43-pipeline.css)
     // Run first (primary; relays a run request to a session), then a divider, then the file operations; Delete last.
     + mb + plRunBtn(p, dirty) + '<span class=plsep aria-hidden=true></span>'   // Save always follows, so the divider never trails
     + (dirty ? '<button class="wkrgb" data-plreset>' + esc(T('Undo')) + '</button>' : '')
@@ -335,12 +334,20 @@ function plBody(ov, hd){
 function plRunBtn(p, dirty){
   return '<button class="wkrgb plsv plrn' + (PLRUN && PLRUN.name === p.name ? ' on' : '') + '" data-plrun title="' + esc(dirty ? T('Save before running') : T('Opens a run request: pick a live session of this project and write what to do. After you confirm, it goes to that session\'s mailbox and the session runs the pipeline itself; Sidereus runs nothing.')) + '"' + (dirty ? ' disabled' : '') + '><span aria-hidden=true>▶</span> ' + esc(T('Run')) + '</button>';
 }
-// 48k Watch: one head row (project · pipeline · Edit · run progress · Run); no Apply, gate counts, evaluation or write previews.
+// «Gates n/m» chip + «Evaluation» button, shared by Edit and Watch. cov comes from the editor graph (unsaved gate edits count); ev is the saved file only (48i).
+function plCovEval(p, dirty){
+  const cov = plGateCov(plEnt(p).G);
+  const ev = p.sha && !p.std ? plEvalOf(PLS.proj, p.name) : null; plEvalCov(cov, ev, dirty);
+  return { ev: ev, html: '<span class="plcov' + (cov.n < cov.m ? ' plcovlo' : '') + '" title="' + esc(TV({msg: 'Stages machine-checked by a gate command: {n} of {m}', vars: {n: cov.n, m: cov.m}})) + '">' + esc(TV({msg: 'Gates {n}/{m}', vars: {n: cov.n, m: cov.m}})) + '</span>' + plEvalHead(ev, PLEVAL_OPEN === p.name) };
+}
+// 48k Watch: one head row (project · pipeline · gates · Evaluation · Edit · run progress · Run); no Apply or write previews.
+// ⚠Watch is the landing view, so gate evidence and Evaluation must show here too, not only in Edit.
 function plWatchBody(p, d, row, hd, ov, mb){
   const lv = plViewRun(PLS.proj, p.name), lt = lv ? (lv.lt || plLight(p.stages, lv.run)) : null, dirty = plDirty(p.name), cv = plCanvas(p, d, lt, lv);
+  const ce = p.ok ? plCovEval(p, dirty) : { ev: null, html: '' };   // a schema-breaking file has no editor graph
   const act = '<span class=plact>' + (dirty ? '<span class=plwdirty>' + esc(T('Unsaved changes — Edit to save')) + '</span>' : '') + (mb || '') + plRunBtn(p, dirty) + '</span>';
-  const head = plHeadRow(hd, row + '<span class=plwrun>' + plLiveHead(lv, lt) + '</span>' + act);
-  return head + plUseLine(p) + plNewForm() + cv.html + plWGrip('r') + plWatchOv(ov) + plRunPanel(p, d.models || [])
+  const head = plHeadRow(hd, row + ce.html + '<span class=plwrun>' + plLiveHead(lv, lt) + '</span>' + act);
+  return head + plUseLine(p) + (PLEVAL_OPEN === p.name ? plEvalPanel(ce.ev) : '') + plNewForm() + cv.html + plWGrip('r') + plWatchOv(ov) + plRunPanel(p, d.models || [])
     + (PLS.msg ? '<div class=hidnote>' + esc(PLS.msg) + '</div>' : '');
 }
 // Delete preview: what moves where (rule 7: moved to the backup folder, never deleted)
