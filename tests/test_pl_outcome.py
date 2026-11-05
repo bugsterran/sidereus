@@ -433,6 +433,9 @@ class Outcome(unittest.TestCase):
         self.assertEqual(OC.run_cost(rows[:1])["last"], {"tok": 100, "sec": 10})
         self.assertEqual(OC.run_cost(rows[3:]), {"share": {}, "med": None, "mn": 0, "last": {"tok": None, "sec": 40}})
         self.assertIsNone(OC.run_cost([]))
+        # a stage that ran but never had a known tok has no share (dash), never 0%
+        self.assertEqual(OC.run_cost([{"t0": 0, "end": 5, "ss": {"a": st("done", 100), "b": st("done", None)}}])["share"],
+                         {"a": 100})
 
     def test_outcome_cost_present(self):
         # R1-R3: outcome() carries run_cost of the 30-day window

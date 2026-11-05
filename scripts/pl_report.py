@@ -77,10 +77,12 @@ def render(name, date, sents, oc):
             pct = "%s%%" % sh[t] if t in sh else "—"
             lines.append("| %s | %ss | %s | %s | %s |" % (str(t).replace("|", "/").replace("\n", " "), e.get("sec") or 0,
                                                        fmt(e.get("tok")), e.get("n") or 0, pct))
-        if co:   # R2/R3: numbers only
+        if co:   # stage titles and numbers only
             la = co.get("last") or {}
-            lines += ["", "Median per run: %s tokens (%s runs)" % (fmt(co.get("med")), co.get("mn") or 0),
-                      "Last run: %s tokens · %ss" % (fmt(la.get("tok")), la.get("sec") or 0)]
+            lines.append("")
+            if co.get("mn"):   # same rule as the panel: no median line without a run of known tokens
+                lines.append("Median per run: %s tokens (%s runs)" % (fmt(co.get("med")), co.get("mn")))
+            lines.append("Last run: %s tokens · %ss" % (fmt(la.get("tok")), la.get("sec") or 0))
     else:
         lines.append("None.")
     return "\n".join(lines) + "\n"

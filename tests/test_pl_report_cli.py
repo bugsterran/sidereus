@@ -98,6 +98,8 @@ class Report(unittest.TestCase):
         self.assertIn("Last run: — tokens · 75s", text)
         oc["cost"]["med"] = None
         self.assertIn("Median per run: — tokens (2 runs)", R.render("flow", "2026-10-18", [], oc))
+        oc["cost"]["mn"] = 0   # same as the panel: no median line without a run of known tokens
+        self.assertNotIn("Median per run", R.render("flow", "2026-10-18", [], oc))
         empty = R.render("flow", "2026-10-18", [], {"eff": {}, "cost": {"share": {}, "med": None, "mn": 0, "last": {}}})
         self.assertEqual(empty.split("## Stage cost (last 30 days)")[1].strip(), "None.")
 
