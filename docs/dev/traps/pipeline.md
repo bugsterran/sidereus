@@ -412,3 +412,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: a PostToolUse response carrying `backgroundTaskId` writes no row (result unknown), same as an interrupted run.
 - ★2026-11-05: 1,009 of 2,277 backgrounded Bash calls in local transcripts were auto-moved (195 with `subagentCapApplied`).
 - ⚠Never treat a backgrounded response as rc 0; keep `hooks/` and `plugin/hooks/` copies identical (`tests/test_ev_hook.py`).
+
+## Watch: viewed run ended and the view moved nowhere (`web/js/48j-pipeline-now.js` `plNowFollow`)
+- Cause: the fallback after the viewed run ended looked only at working runs (`plNowWorking`); an open run on «hold» or idle past `PLNOW_GRACE` was skipped, and `PLNOW_VKEY` was then wiped, so a later resume did not jump either.
+- Fix: no working run left → newest open run (live session, `!r.end`, the same rule as the «Working now» row `plNowRun`); with nothing open the ended key stays pending (`PLNOW_VEND` = the view it was kept at) until a run appears or the person picks another view.
+- ⚠Working runs keep priority; the open fallback fires only for an ended viewed run, never for an idle one (it would pick itself). `tests/test_pl_now_js.py` `test_n`..`test_q`.

@@ -463,7 +463,7 @@ class PlNow(unittest.TestCase):
 
 # plNowFollow harness: plCur = the selected name; plLiveRun reads LV[proj|name]; plWatchOn reads WATCH.
 FOL = (NOW + _const("PLNOW_GRACE", "48j-pipeline-now.js") + js_fn("plNowWorking") + js_fn("plNowFollow") + """
-let PLNOW_SEEN = null, PLNOW_VKEY = '', WATCH = true, LV = {};
+let PLNOW_SEEN = null, PLNOW_VKEY = '', PLNOW_VEND = '', WATCH = true, LV = {};
 let CURX = { ok: true, sha: 'h' };
 function plCur(){ return PLS.sel && CURX ? Object.assign({ name: PLS.sel }, CURX) : null; }
 function plLiveRun(proj, name){ return LV[proj + '|' + name] || null; }
@@ -551,6 +551,34 @@ class PlNowFollow(unittest.TestCase):
                 "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, stages: { S: { o: 'done', t1: 1e6 - 60 } }}]), C]); const a = S();"
                 "plNowFollow([ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, stages: { S: { o: 'done', t1: 1e6 - 600 } }}]), C]); console.log(JSON.stringify([a, S()]));")
         self.assertEqual(r, [["/a", "p1", ""], ["/c", "p3", "s3"]])            # 60 s pause holds; past the grace -> newest working
+
+    # Viewed run p1 (s1, /a) ends on the second poll; END = that poll's session row.
+    END = ("PLS.sel = 'p1'; LV['/a|p1'] = { sid: 's1', pr: { rid: 5 } }; const A = ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5}]);"
+           "const E = ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, end: 7}]), end = () => { LV['/a|p1'].pr.end = 7; };")
+
+    def test_n_viewed_ends_moves_to_open_run_on_hold_or_idle(self):
+        r = run(FOL + self.END + "const H = ses('s2', '/b', [{name: 'ph', rid: 3, t0: 3, stages: { S: { o: 'hold' } }}]),"
+                "I = ses('s3', '/c', [{name: 'pi', rid: 4, t0: 4, stages: { S: { o: 'done', t1: 1e6 - 600 } }}]);"
+                "plNowFollow([A, H]); end(); plNowFollow([E, H]); const a = [S(), PAINT, FIT];"
+                "Object.assign(PLS, { proj: '/a', sel: 'p1', nowSid: '' }); LV['/a|p1'].pr.end = 0; PLNOW_SEEN = null; PLNOW_VKEY = PLNOW_VEND = '';"
+                "plNowFollow([A, I]); end(); plNowFollow([E, I]); console.log(JSON.stringify([a, S()]));")
+        self.assertEqual(r, [[["/b", "ph", "s2"], 0, 0], ["/c", "pi", "s3"]])   # non-working open runs are a fallback target
+
+    def test_o_end_with_nothing_open_stays_pending_until_a_run_starts(self):
+        r = run(FOL + self.END + "const H = ses('s2', '/b', [{name: 'ph', rid: 3, t0: 3, stages: { S: { o: 'hold' } }}]);"
+                "plNowFollow([A]); end(); plNowFollow([E]); const a = [S(), !!PLNOW_VKEY]; plNowFollow([E]); const b = S();"
+                "plNowFollow([E, H]); const c = S(); console.log(JSON.stringify([a, b, c]));")
+        self.assertEqual(r, [[["/a", "p1", ""], True], ["/a", "p1", ""], ["/b", "ph", "s2"]])   # end kept across polls, later run taken
+
+    def test_p_pending_end_dropped_by_a_new_pick(self):
+        r = run(FOL + self.END + "const H = ses('s2', '/b', [{name: 'ph', rid: 3, t0: 3, stages: { S: { o: 'hold' } }}]);"
+                "plNowFollow([A]); end(); plNowFollow([E]); PLS.sel = 'other'; plNowFollow([E, H]); console.log(JSON.stringify(S()));")
+        self.assertEqual(r, ["/a", "other", ""])                               # the person's pick stays
+
+    def test_q_working_run_beats_newer_non_working_one(self):
+        r = run(FOL + self.END + "const H = ses('s2', '/b', [{name: 'ph', rid: 9, t0: 9, stages: { S: { o: 'hold' } }}]), W = ses('s3', '/c', [{name: 'pw', rid: 3, t0: 3}]);"
+                "plNowFollow([A, H, W]); end(); plNowFollow([E, H, W]); console.log(JSON.stringify(S()));")
+        self.assertEqual(r, ["/c", "pw", "s3"])
 
     def test_l_reload_waits_for_data_and_keeps_live_pick(self):
         # Reload: sessions arrive before the project data; the restored pick (live session s1) must not be replaced by the newest run.
