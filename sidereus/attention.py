@@ -7,12 +7,12 @@ from sidereus.ident import _sid8
 from sidereus.cards import cards_read, cards_read_ids
 from sidereus import failures as _fl
 from sidereus import file_owner as _fo
-from sidereus.bgtasks import BG_IDLE_S
+from sidereus.bgtasks import BG_IDLE_S, BG_LONG_S
 
 # ⛔Metadata only: every `why` is built here from tool names, counts and minutes — never task/reply/card text.
 # ★Points decided 2026-09-23 (user). No quota-share signal: not actionable per session.
 ATT_PTS = {"blocked": 100, "ask": 90, "conflict": 85, "mailidle": 75, "abort": 70, "ctx95": 65, "fail": 60, "wreck": 60,
-           "stall": 55, "loop": 50, "toolfail": 45, "bgidle": 30, "ctx85": 25, "done": 20, "bgdone": 15}
+           "stall": 55, "loop": 50, "toolfail": 45, "bgidle": 30, "bglong": 30, "ctx85": 25, "done": 20, "bgdone": 15}
 ATT_FAIL_CARD_S = 1800      # failure alert card counts for 30 min at most ...
 # ... and clears once the same session shows real activity (row ageSec =
 #   transcript actAt, noise-free — not poll time) past the failure time + this grace. Covers Mac sleep: no activity
@@ -288,7 +288,18 @@ def _row_sigs(r, now):
         sg.append(_sig("mailidle", "메일 %d통 대기 · 세션 쉼 %d분" % (int(mi["n"]), int(mi.get("age") or 0) // 60),
                        now - int(mi.get("age") or 0)))
     bi = r.get("bgIdle") or {}   # open background shells whose output file is quiet (mtime only, never content)
-    if live and isinstance(bi, dict) and int(bi.get("idle") or 0) > 0:
+    bl = r.get("bgLong") or {}   # open background shells launched > BG_LONG_S ago (launch time only)
+    bil = int(bi.get("idle") or 0) if isinstance(bi, dict) else 0
+    bgl = False
+    if live and isinstance(bl, dict) and int(bl.get("long") or 0) > 0:
+        # One bg signal per session: a long shell absorbs the idle count so the row is not listed twice.
+        lsince = int(bl.get("at") or 0) or now - int(bl.get("max") or 0)
+        if not _human_after(r, int(bl.get("last") or lsince) + BG_LONG_S):
+            bgl = True
+            sg.append(_sig("bglong", "장기 백그라운드 %d개 · 최장 %d분" % (int(bl["long"]), int(bl.get("max") or 0) // 60)
+                           + (" · 무출력 %d개" % bil if bil > 0 else ""), lsince))
+    # ⚠Only a shown bglong absorbs bgidle: one cleared by input must not hide a shell that went idle later.
+    if live and not bgl and isinstance(bi, dict) and bil > 0:
         mx = int(bi.get("max") or 0)
         bsince = int(bi.get("at") or 0) or now - mx   # ⚠absolute `at`: `max` is from a stale snapshot
         # ⚠Compare with the newest idle onset (mtime + BG_IDLE_S), not `at`: a prompt before a shell went idle must not hide it.

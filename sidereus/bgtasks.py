@@ -297,6 +297,33 @@ def bg_idle(fp, now):
     return {"n": len(paths), "idle": k, "max": mx, "at": at, "last": last} if k else None
 
 
+BG_LONG_S = 1800           # an open bg shell launched this long ago counts as long-running (output or not)
+
+
+def bg_long(fp, now):
+    """{"n": open bg shells, "long": count open > BG_LONG_S, "max": longest open seconds, "at": oldest launch,
+    "last": newest launch past the threshold} for session `fp`, or None when none is long.
+    Launch time only (row slot 2) — no stat, no output read. ⚠`at` is absolute, same reason as bg_idle."""
+    with _bg_lock:
+        ts = [v[2] for v in (_bg_open.get(fp) or {}).values() if v and v[0] == "bg" and len(v) > 2]
+    bt = boot_time()
+    k, mx, at, last, n = 0, 0, 0, 0, 0
+    for t in ts:
+        try:
+            t = float(t)
+        except (TypeError, ValueError):
+            continue
+        if t <= 0 or (bt and t < bt):
+            continue                  # unknown launch, or launched before the reboot: not running
+        n += 1
+        if now - t > BG_LONG_S:
+            k += 1
+            mx = max(mx, int(now - t))
+            at = int(t) if not at else min(at, int(t))
+            last = max(last, int(t))
+    return {"n": n, "long": k, "max": mx, "at": at, "last": last} if k else None
+
+
 def _bg_revive(fp, open_now, now):
     """Re-add agents whose own log shows fresh activity, and the ancestors of any open agent."""
     # ★Revive resumed agents (measured 2026-08-26). `<task-notification>` is **not a completion notice** —

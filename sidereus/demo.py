@@ -36,6 +36,7 @@ WF_AGENTS = [("Design", "Spec the search result page", "done", 28, 23, 1_800_000
 # Two open background shells on the cart session; one has been quiet 25 min (attention «Idle shells»).
 CART_BGS = [{"lab": "npm run dev", "min": 41}, {"lab": "npm test -- --watch cart", "min": 18}]
 CART_BG_IDLE = {"n": 2, "idle": 1, "max": 1500}
+CART_BG_LONG = {"n": 2, "long": 1, "max": 41 * 60}   # `npm run dev` open 41 min
 # Agent team led by the billing session (agents.team_info shape).
 TEAM = {"members": [{"name": "api-dev", "st": "run", "model": "sonnet-5", "tsub": "Retry queue for webhooks", "unread": 0},
                     {"name": "reviewer", "st": "done", "model": "opus-5", "tsub": "", "unread": 1},
@@ -332,6 +333,7 @@ class World(_WorldPanels, _WorldGit):
                 "model": s["model"], "win": s["win"], "winSrc": "model", "winN": 0,
                 "git": {"web": "~4", "cart": "~2", "inv": "~1"}.get(s["k"], ""), "wreck": 0,
                 **({"bgIdle": CART_BG_IDLE} if s["k"] == "cart" else {}),   # sessions.py shape: one shell quiet 25 min
+                **({"bgLong": CART_BG_LONG} if s["k"] == "cart" else {}),
                 "state": s["state"], "blocked": "", "pmode": "default", "otel": True,
                 "otelEv": "tool_result" if s["state"] in ("think", "tool") else "", "otelAt": 0,
                 "err": False, "rep": {"n": 1, "tool": s["tool"] or "Read"}, "plat": "cc",
@@ -411,7 +413,7 @@ class World(_WorldPanels, _WorldGit):
         rows = [
             (b, 90, [("ask", "질문 대기", 90, now - bs[b["id"]]["ageSec"])]),
             (c, 85, [("conflict", why_c, 85, a - 5 * 60),
-                     ("bgidle", "백그라운드 셸 2개 · 무출력 1개 · 최장 25분", 30, now - CART_BG_IDLE["max"])]),
+                     ("bglong", "장기 백그라운드 1개 · 최장 41분 · 무출력 1개", 30, now - CART_BG_LONG["max"])]),
             (w, 85, [("conflict", why_c, 85, a - 5 * 60)]),
             (i, 25, [("ctx85", "컨텍스트 87%", 25, now - bs[i["id"]]["ageSec"]),
                      ("done", "작업 끝 · 입력 대기 %d분" % (bs[i["id"]]["ageSec"] // 60), 20, now - bs[i["id"]]["ageSec"])]),

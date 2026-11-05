@@ -220,6 +220,12 @@ def _why_en(s):
     if k == "bgidle":
         m = re.search(r"(\d+)\D+(\d+)\D+(\d+)", w)
         return "%s background shell(s) · %s idle · longest %s min" % m.groups() if m else "Idle shells"
+    if k == "bglong":
+        m = re.search(r"(\d+)\D+(\d+)", w)
+        if not m:
+            return "Long background shells"
+        q = _num(w, r"무출력 (\d+)")
+        return "Long background %s · longest %s min" % m.groups() + (" · %s idle" % q if q else "")
     if k == "done":
         return "Done · waiting for input %s %s" % (n, "s" if w.endswith("초") else "min")  # ⚠server sends seconds under 60 s
     if k == "bgdone":

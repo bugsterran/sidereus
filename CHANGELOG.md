@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Attention: a background shell open for more than 30 minutes raises «Long background» (merged with «Idle shells»); background rows get «Ask to check», which previews a one-line request to that session and sends it only on «Confirm — send».
+
 ### Fixed
 
 - Pipelines: Watch (the landing view) shows «Gates n/m» and «Evaluation» in its head row; they were only in Edit.

@@ -201,3 +201,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `<bash-input` is in `transcript._NOT_HUMAN`/`_NOT_HUMAN_STATE`, so the `!` line set neither `humanAt` nor the turn shape; the older text+`?` line kept `ask`, and «done» (t0 = last non-noise activity) stayed. bgdone needed activity past card + 60 s grace; bgidle never cleared on input.
 - ⇒ `_bang_input` (boolean) counts toward `humanAt` and, when newer than the shape line, clears `shp.ask` (never `askTool`); attention skips done/bgdone when `humanAt` is after their time, bgidle only when after the newest idle onset (`bg_idle.last` + `BG_IDLE_S`). `tests/test_attention_response_r1_r3.py`, `tests/test_attention_replay_r4.py`.
 - ⚠`<bash-stdout` alone is the harness echo, not a reply. ⚠`humanAt` 0/missing never clears anything (an unanswered question must stay).
+
+## A dev server running for hours never reached Attention (`bgtasks.bg_long`, `attention._row_sigs`)
+
+- Cause: the only shell signal was «Idle shells» (output-file mtime > 15 min); a shell that keeps printing never went idle, so a forgotten long-running shell stayed invisible.
+- ⇒ `bg_long` counts open `bg` rows by launch time (row slot 2, > `BG_LONG_S` 30 min, launches before boot skipped); attention emits one `bglong` sig per session and folds the idle count into its why (« · N idle» in English), so bgidle is not listed twice. `tests/test_bglong.py`, `tests/test_attention.py` `TestBgLong`.
+- ⚠Launch time only — no stat, no output read, no shell label in `why`. ⚠Only a shown bglong absorbs bgidle: a bglong cleared by input must not hide a shell that went idle later.

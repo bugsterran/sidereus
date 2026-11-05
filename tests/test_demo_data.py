@@ -65,8 +65,25 @@ class SameKeysAsRealBuilders(_Patch):
             # `team` only on a leader row (sessions._row_children); `term` is set later by term.term_attach in state()
             # `plrun` too: the real _session_row adds it only when the session has pipeline runs
             # `acct`/`acctDir`: only on a row from a non-primary Claude root (sessions._row_acct)
-            # `bgIdle`: only when the session has idle background shells
-            self.assertEqual(set(r) - {"team", "term", "plrun", "acct", "acctDir", "bgIdle"}, real, r["id"])
+            # `bgIdle`/`bgLong`: only when the session has idle / long-running background shells
+            self.assertEqual(set(r) - {"team", "term", "plrun", "acct", "acctDir", "bgIdle", "bgLong"}, real, r["id"])
+
+    def test_cart_long_shell_merged_sig(self):
+        w = self.world()
+        st = w.state()
+        cart = [r for r in st["sessions"] if r["id"] == w.by["cart"]["id"]][0]
+        self.assertEqual(cart["bgLong"]["long"], 1)
+        self.assertEqual(cart["bgLong"]["max"] // 60, 41)
+        row = [r for r in st["attention"]["rows"] if r["sid"] == cart["sid"]][0]
+        ks = [g["k"] for g in row["sigs"]]
+        self.assertIn("bglong", ks)
+        self.assertNotIn("bgidle", ks)   # merged: one bg signal per session
+        g = [g for g in row["sigs"] if g["k"] == "bglong"][0]
+        self.assertEqual(g["since"], st["attention"]["at"] - 41 * 60)
+        # the real ranker builds the same text from the demo row
+        att = sidereus("attention")
+        real = [x for x in att._row_sigs(dict(cart, state="tool"), st["attention"]["at"]) if x["k"] == "bglong"]
+        self.assertEqual(real[0]["why"], g["why"])
 
     def test_gemini_row_matches_ext_rows(self):
         now = time.time()
