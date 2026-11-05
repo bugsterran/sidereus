@@ -97,16 +97,24 @@ function plEvalOutcome(ev){
   const has = ev.rep && ev.rep.date, path = has ? String(ev.rep.path || '') : '';
   const rp = has ? TV({msg: PLE_OC.rep, vars: {date: String(ev.rep.date)}}) : T(PLE_OC.norep);
   // Path on its own line: inline after the label it broke at the date's hyphen («2026-10-|25.md»).
-  return '<div class=pleoc><b>' + esc(T('Result layer')) + '</b><ul>' + L.map(s => '<li>' + esc(s) + '</li>').join('') + '</ul>' + plEvalEff(o.eff) + '<div class=pleocr>' + esc(rp) + (path ? '<span class=pleocp>' + esc(path) + '</span>' : '') + '</div></div>';
+  return '<div class=pleoc><b>' + esc(T('Result layer')) + '</b><ul>' + L.map(s => '<li>' + esc(s) + '</li>').join('') + '</ul>' + plEvalEff(o.eff, o.cost) + '<div class=pleocr>' + esc(rp) + (path ? '<span class=pleocp>' + esc(path) + '</span>' : '') + '</div></div>';
 }
-// Pure: «Stage cost» table (pl_outcome.stage_eff) — median time, median known tokens, runs; unknown tokens are «—», never 0.
-function plEvalEff(eff){
+// Pure: «Stage cost» table (pl_outcome.stage_eff) — median time, median known tokens, share, runs; unknown tokens are «—», never 0.
+// cost (R1-R3, optional): {share:{title:pct}, med, mn, last:{tok, sec}}; all-unknown runs are excluded server-side (mn 0 = no median line).
+function plEvalEff(eff, cost){
   const E = eff && typeof eff === 'object' ? Object.entries(eff) : [];
   if(!E.length) return '';
   const dur = s => typeof actDur === 'function' ? actDur(s) : s + 's';
-  return '<table class=pleeff><caption>' + esc(T('Stage cost (last 30 days)')) + '</caption><tr><th>' + esc(T('Stage')) + '</th><th>' + esc(T('Median time')) + '</th><th>' + esc(T('Median tokens')) + '</th><th>' + esc(T('Runs')) + '</th></tr>'
+  const tk = v => v != null ? (typeof fmtTok === 'function' ? fmtTok(+v) : String(+v)) : '—';
+  const C = cost && typeof cost === 'object' ? cost : {}, sh = C.share && typeof C.share === 'object' ? C.share : {};
+  const shr = t => Object.prototype.hasOwnProperty.call(sh, t) && sh[t] != null ? String(+sh[t]) + '%' : '—';
+  const L = [];
+  if(C.mn > 0 && C.med != null) L.push(TV({msg: 'Median per run: {tok} tokens ({n} runs)', vars: {tok: tk(C.med), n: C.mn | 0}}));
+  if(C.last && typeof C.last === 'object') L.push(TV({msg: 'Last run: {tok} · {dur}', vars: {tok: tk(C.last.tok), dur: dur((C.last.sec) | 0)}}));
+  return '<table class=pleeff><caption>' + esc(T('Stage cost (last 30 days)')) + '</caption><tr><th>' + esc(T('Stage')) + '</th><th>' + esc(T('Median time')) + '</th><th>' + esc(T('Median tokens')) + '</th><th>' + esc(T('Share')) + '</th><th>' + esc(T('Runs')) + '</th></tr>'
     + E.map(([t, e]) => '<tr><td>' + esc(typeof plgShow === 'function' ? plgShow(t) : t) + '</td><td>' + esc(dur((e && e.sec) | 0)) + '</td><td>'
-      + esc(e && e.tok != null ? (typeof fmtTok === 'function' ? fmtTok(+e.tok) : String(+e.tok)) : '—') + '</td><td>' + esc(String((e && e.n) | 0)) + '</td></tr>').join('') + '</table>';
+      + esc(tk(e && e.tok != null ? e.tok : null)) + '</td><td>' + esc(shr(t)) + '</td><td>' + esc(String((e && e.n) | 0)) + '</td></tr>').join('') + '</table>'
+    + (L.length ? '<div class=pleeffs>' + L.map(x => '<div>' + esc(x) + '</div>').join('') + '</div>' : '');
 }
 function plEvalPanel(ev){
   if(!ev) return '';

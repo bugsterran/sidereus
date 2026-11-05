@@ -86,6 +86,21 @@ class Report(unittest.TestCase):
         empty = R.render("flow", "2026-10-18", [], {"eff": {}})
         self.assertEqual(empty.split("## Stage cost (last 30 days)")[1].strip(), "None.")
 
+    def test_r4_share_median_last(self):
+        # R4: share column, median/last lines, unknown as a dash; empty table stays «None.»
+        oc = {"eff": {"build": {"n": 3, "sec": 20, "tok": 12345, "tn": 2}, "review": {"n": 1, "sec": 50, "tok": None, "tn": 0}},
+              "cost": {"share": {"build": 100}, "med": 24690, "mn": 2, "last": {"tok": None, "sec": 75}}}
+        text = R.render("flow", "2026-10-18", [], oc)
+        self.assertIn("| stage | median time | median tokens | n | share |", text)
+        self.assertIn("| build | 20s | 12,345 | 3 | 100% |", text)
+        self.assertIn("| review | 50s | — | 1 | — |", text)
+        self.assertIn("Median per run: 24,690 tokens (2 runs)", text)
+        self.assertIn("Last run: — tokens · 75s", text)
+        oc["cost"]["med"] = None
+        self.assertIn("Median per run: — tokens (2 runs)", R.render("flow", "2026-10-18", [], oc))
+        empty = R.render("flow", "2026-10-18", [], {"eff": {}, "cost": {"share": {}, "med": None, "mn": 0, "last": {}}})
+        self.assertEqual(empty.split("## Stage cost (last 30 days)")[1].strip(), "None.")
+
     def test_auto_cadence(self):
         os.makedirs(self.rep)
         open(os.path.join(self.rep, "2026-10-12.md"), "w", encoding="utf-8").close()   # 6 days old

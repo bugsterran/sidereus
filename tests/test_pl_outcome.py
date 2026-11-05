@@ -421,6 +421,35 @@ class Outcome(unittest.TestCase):
                                               "review": {"n": 1, "sec": 50, "tok": None, "tn": 0}})
         self.assertEqual(OC.stage_eff([]), {})
 
+    def test_r1_r2_r3_run_cost(self):
+        # R1 share over known tok only; R2 all-unknown run left out of med/mn; R3 last = newest row, tok None when unknown
+        st = lambda s, tok: {"s": s, "sec": 1, "n": 1, "tok": tok}
+        rows = [{"t0": 0, "end": 10, "ss": {"build": st("done", 100), "review": st("skip", 900)}},
+                {"t0": 10, "end": 20, "ss": {"build": st("done", 200), "review": st("done", 100)}},
+                {"t0": 20, "end": 25, "ss": {"build": st("done", 300)}},
+                {"t0": 30, "end": 70, "ss": {"build": st("back", None), "review": st("done", None)}}]
+        self.assertEqual(OC.run_cost(rows), {"share": {"build": 86, "review": 14}, "med": 300, "mn": 3,
+                                             "last": {"tok": None, "sec": 40}})
+        self.assertEqual(OC.run_cost(rows[:1])["last"], {"tok": 100, "sec": 10})
+        self.assertEqual(OC.run_cost(rows[3:]), {"share": {}, "med": None, "mn": 0, "last": {"tok": None, "sec": 40}})
+        self.assertIsNone(OC.run_cost([]))
+
+    def test_outcome_cost_present(self):
+        # R1-R3: outcome() carries run_cost of the 30-day window
+        ss = {"impl": {"s": "done", "sec": 5, "n": 1, "tok": 400}}
+        self.ledger([{"name": N, "t0": self.now - 2 * D - 60, "end": self.now - 2 * D, "ss": ss}])
+        self.assertEqual(OC.outcome(self.proj, N, [])["cost"],
+                         {"share": {"impl": 100}, "med": 400, "mn": 1, "last": {"tok": 400, "sec": 60}})
+
+    def test_counts_cost_projection(self):
+        # R1-R3: cost absent with no runs; junk dropped, share keys limited to eff titles, pct clamped
+        o = {"eff": {"impl": {"n": 3, "sec": 20, "tok": 5, "tn": 1}}, "cost": None}
+        self.assertNotIn("cost", OC.counts(o))
+        o["cost"] = {"share": {"impl": 140, "gone": 30, 5: 1}, "med": -3, "mn": "x", "last": {"tok": "9", "sec": True}, "x": "body"}
+        self.assertEqual(OC.counts(o)["cost"], {"share": {"impl": 100}, "med": None, "mn": 0, "last": {"tok": None, "sec": 0}})
+        o["cost"]["last"] = "junk"
+        self.assertEqual(OC.counts(o)["cost"]["last"], {"tok": None, "sec": 0})
+
     def test_outcome_eff_window(self):
         # R3: eff covers the last 30 days only
         ss = lambda sec: {"impl": {"s": "done", "sec": sec, "n": 1, "tok": sec * 10}}

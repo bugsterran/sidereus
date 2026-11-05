@@ -68,11 +68,19 @@ def render(name, date, sents, oc):
         lines.append("None.")
     eff = (oc or {}).get("eff") or {}
     lines += ["", "## Stage cost (last 30 days)", ""]
+    co = (oc or {}).get("cost") or {}
+    sh = co.get("share") or {}
+    fmt = lambda v: "—" if v is None else "{:,}".format(v)   # unknown tokens never read as 0
     if eff:
-        lines += ["| stage | median time | median tokens | n |", "|---|---|---|---|"]
+        lines += ["| stage | median time | median tokens | n | share |", "|---|---|---|---|---|"]
         for t, e in eff.items():
-            tok = "—" if e.get("tok") is None else "{:,}".format(e["tok"])   # unknown tokens never read as 0
-            lines.append("| %s | %ss | %s | %s |" % (str(t).replace("|", "/").replace("\n", " "), e.get("sec") or 0, tok, e.get("n") or 0))
+            pct = "%s%%" % sh[t] if t in sh else "—"
+            lines.append("| %s | %ss | %s | %s | %s |" % (str(t).replace("|", "/").replace("\n", " "), e.get("sec") or 0,
+                                                       fmt(e.get("tok")), e.get("n") or 0, pct))
+        if co:   # R2/R3: numbers only
+            la = co.get("last") or {}
+            lines += ["", "Median per run: %s tokens (%s runs)" % (fmt(co.get("med")), co.get("mn") or 0),
+                      "Last run: %s tokens · %ss" % (fmt(la.get("tok")), la.get("sec") or 0)]
     else:
         lines.append("None.")
     return "\n".join(lines) + "\n"

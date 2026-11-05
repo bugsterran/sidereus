@@ -58,4 +58,6 @@ Object.assign(I18N.ko, {
   'Stage cost (last 30 days)': '단계별 비용 (최근 30일)',
   'Median time': '시간 중앙값',
   'Median tokens': '토큰 중앙값',
+  'Median per run: {tok} tokens ({n} runs)': '실행당 중앙값: 토큰 {tok} (실행 {n}회 기준)',
+  'Last run: {tok} · {dur}': '최근 실행: {tok} · {dur}',
 });
