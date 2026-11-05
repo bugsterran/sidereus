@@ -124,3 +124,34 @@ class Files(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PrePush(unittest.TestCase):
+    """--pre-push: outgoing commits' added lines, messages and e-mails (temp repo, no live config)."""
+
+    def test_push_ranges(self):
+        z = L.ZERO
+        self.assertEqual(L.push_ranges(["r a1 r b2", "r %s r b2" % z, "r a1 r %s" % z, "junk"]),
+                         [["b2..a1"], ["a1", "--not", "--remotes"]])
+
+    def test_added_lines(self):
+        d = "+++ b/x.py\n@@ -1,0 +5,2 @@\n+one\n+two\n+++ /dev/null\n@@ -1 +0,0 @@\n+gone\n"
+        self.assertEqual(L.added_lines(d), [("x.py", 5, "one"), ("x.py", 6, "two")])
+
+    def test_scan_push_sees_removed_secret_message_and_distignore(self):
+        d = tempfile.mkdtemp()
+        self.addCleanup(rmtree_force, d)
+        env = dict(os.environ, GIT_CONFIG_GLOBAL=os.path.join(d, "none"), GIT_CONFIG_NOSYSTEM="1")
+        g = lambda *a: subprocess.run(["git", "-C", d] + list(a), check=True, capture_output=True, env=env, text=True).stdout
+        g("init", "-q"); g("config", "user.name", "nickpub"); g("config", "user.email", "nickpub@mailhost.example")
+        w = lambda rel, t: open(os.path.join(d, rel), "w", encoding="utf-8").write(t)
+        w(".distignore", "local.txt\n"); g("add", "."); g("commit", "-qm", "base")
+        base = g("rev-parse", "HEAD").strip()
+        w("a.py", "k = 'ghp_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8'\n")
+        w("local.txt", "by Kim Tester\n")
+        g("add", "."); g("commit", "-qm", "add for Kim Tester")
+        g("rm", "-q", "a.py"); g("commit", "-qm", "remove")
+        shas, hits = L.scan_push(d, [[base + "..HEAD"]], IDS)
+        self.assertEqual(len(shas), 2)
+        kinds_ = sorted((h[0].split(":", 1)[1], h[2]) for h in hits)
+        self.assertEqual(kinds_, [("a.py", "token"), ("meta", "ident")])   # local.txt excluded by .distignore

@@ -130,6 +130,78 @@ def private_words(root):
     return [re.compile(r"(?i)(?<![A-Za-z0-9])" + re.escape(w) + r"(?![A-Za-z0-9])") for w in ws]
 
 
+ZERO = "0" * 40
+_HUNK = re.compile(r"^@@ -\S+ \+(\d+)")
+
+
+def push_ranges(lines):
+    """git pre-push stdin lines -> rev-list args per pushed ref (deletes skipped; a new ref = what no remote has)."""
+    out = []
+    for ln in lines:
+        f = ln.split()
+        if len(f) != 4 or f[1] == ZERO:
+            continue
+        out.append([f[1], "--not", "--remotes"] if f[3] == ZERO else [f[3] + ".." + f[1]])
+    return out
+
+
+def added_lines(diff):
+    """Unified diff (-U0) -> [(path, lineno, text)] of added lines; /dev/null targets skipped."""
+    rel, n, out = None, 0, []
+    for line in diff.splitlines():
+        if line.startswith("+++ "):
+            rel = line[6:] if line.startswith("+++ b/") else None
+        elif line.startswith("@@"):
+            m = _HUNK.match(line)
+            n = int(m.group(1)) if m else 0
+        elif rel and line.startswith("+"):
+            out.append((rel, n, line[1:]))
+            n += 1
+    return out
+
+
+def not_shipped(root, paths):
+    """Subset of paths .distignore excludes (gitignore matching by git; works for paths gone from HEAD)."""
+    excl = os.path.join(root, ".distignore")
+    if not paths or not os.path.exists(excl):
+        return set()
+    r = subprocess.run(["git", "-C", root, "-c", "core.excludesFile=" + excl, "check-ignore", "--no-index", "--stdin", "-z"],
+                       input="\0".join(paths), capture_output=True, text=True, encoding="utf-8")
+    return set(x for x in r.stdout.split("\0") if x)
+
+
+def scan_push(root, ranges, idents):
+    """Outgoing commits: added lines of shipped files, commit messages and author/committer e-mails.
+    ⚠The tree scan alone misses a secret added then removed inside the pushed range, and commits made
+    with --no-verify; history is public once pushed."""
+    shas = []
+    for rg in ranges:
+        for s in _git(root, "rev-list", *rg).split():
+            if s not in shas:
+                shas.append(s)
+    hits = []
+    for s in shas:
+        meta = _git(root, "log", "-1", "--format=%ae%n%ce%n%B", s)
+        hits.extend((s[:9] + ":meta", n, k, x) for _, n, k, x in scan_text("meta", meta, idents))
+        rows = added_lines(_git(root, "show", "--format=", "--no-color", "--no-ext-diff", "--no-renames", "-U0", s))
+        skip = not_shipped(root, sorted(set(r for r, _, _ in rows)))
+        for rel, n, text in rows:
+            if rel not in skip:
+                hits.extend((s[:9] + ":" + rel, n, k, x) for _, _, k, x in scan_text(rel, text, idents))
+    return shas, hits
+
+
+def pre_push(root=ROOT, stdin=None):
+    """Pre-push gate: the shipped tree, then every outgoing commit. Exit 1 on any hit (bypass: git push --no-verify)."""
+    rc = main(root)
+    idents = git_idents(root)
+    shas, hits = scan_push(root, push_ranges((stdin or sys.stdin).read().splitlines()), idents)
+    for rel, n, kind, snip in hits:
+        print("%s:%d: [%s] %s" % (rel, n, kind, snip))
+    print("leakscan: %d outgoing commits, %d hits" % (len(shas), len(hits)))
+    return 1 if hits or rc else 0
+
+
 def main(root=ROOT):
     idents = git_idents(root)
     files = shipped(root)
@@ -143,4 +215,6 @@ def main(root=ROOT):
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["--pre-push"]:
+        sys.exit(pre_push())
     sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else ROOT))

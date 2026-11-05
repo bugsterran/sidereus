@@ -144,6 +144,7 @@ sequenceDiagram
 | 게이트 | 검사 |
 |---|---|
 | `scripts/check.sh --fast` | `/usr/bin/python3` py_compile, `node --check`, `bash -n`, 파이프라인 JSON, PAGE 조립, 유출 검사. pre-commit 훅도 이것 |
+| `scripts/leakscan.py --pre-push` | pre-push 훅: 배포 파일 전체 + 나가는 커밋마다 추가된 줄·커밋 메시지·작성자/커미터 메일 |
 | `scripts/check.sh --full` | + `tests/run.sh`, `screen_check.mjs` |
 | `tests/test_arch.py` | 계층, STAGE3, 전역 주인, 크기 상한, 안전, 조용한 오류, JS 전역, 메타데이터만, 기능 정의 |
 
