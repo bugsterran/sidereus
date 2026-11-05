@@ -270,3 +270,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 ## Arrow-opened files must hand focus back to the list
 - Cause: opening a file re-renders the pane (diff popup `diffShow` replaces `#dbody`; structure `strSrcShow` focuses the code pane), so the next arrow scrolled code or had no row to start from.
 - ⇒ Arrows move the highlight at once and open after 250 ms of quiet (`strTreeOpenLater`, `dfListKey`); the open re-focuses the tree / picked row. ⚠Per-keypress opening re-renders the whole patch each time.
+
+## Diff window list loses its scroll on open (sweep 18)
+- Cause: `diffShow` rebuilds `#dbody` at scrollTop 0, so after an arrow-key or click open the picked row sat below the list edge (★row top 1750 vs list bottom 929).
+- ⇒ `dfPickOpen` (35c) keeps the `.dfl` scrollTop across `diffShow`.
+- ⚠Focus the picked row with preventScroll only; do not scrollIntoView (no auto-centre).

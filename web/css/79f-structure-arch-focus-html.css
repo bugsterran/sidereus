@@ -54,6 +54,8 @@
 .archfh.arlitdim:not(.archdim) .archfh-n.arlit{border-color:var(--nx-warn,#e3b341)}
 .archfh.arlitdim:not(.archdim) .archfh-n.arlit.hx{background:color-mix(in srgb,var(--nx-warn,#e3b341) 28%,var(--nx-panel,#151b24))}
 .archfh{--fh-c0:#e3b341;--fh-c1:#5899f3;--fh-c2:#71c269;--fh-c3:#c678dd;--fh-c4:#f0883e;--fh-c5:#39c5cf}
+/* ⚠light panel: the dark-tuned hues fall under 3:1 (non-text contrast); darker shades of the same hues */
+[data-theme=light] .archfh{--fh-c0:#9a6700;--fh-c1:#0b5cc4;--fh-c2:#2a7a2a;--fh-c3:#8a3fa8;--fh-c4:#b4520a;--fh-c5:#0b7a83}
 .archfh.arlitdim:not(.archdim) .mmdfe.arlit .mmde{stroke:var(--fh-c0);stroke-width:1.8}
 .archfh.arlitdim:not(.archdim) .mmdfe.arlit[data-ci="1"] .mmde{stroke:var(--fh-c1)}
 .archfh.arlitdim:not(.archdim) .mmdfe.arlit[data-ci="2"] .mmde{stroke:var(--fh-c2)}

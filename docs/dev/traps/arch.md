@@ -428,3 +428,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠No flow lit = hub edges only; never draw unrelated modules. A reverse pair shares one line (one crossing, not two).
 - ⚠Gaps are sized from `need` and re-measured (wrapping moves with the gutter padding): do not drop the measure → route loop or lanes squeeze into one line.
 - ⚠Keep boxes one fixed height and rows/boxes unpositioned — sub-rows are split by offsetTop against `.archfh`.
+
+## Focus layer: one zoom, modal focus, light colours (sweep 18)
+- Cause: 84j3 CSS zoom and an 84j9 transform scale both handled `.archly [data-arz]` (one "+" = ~1.56x); the dialog never took focus (Tab left it); `--fh-c*` hues were dark-tuned only (★light 1.93 / 2.86 / 2.16:1).
+- ⇒ Layer zoom lives only in 84j3 `archLyZoom`. 84ja `archLyFocus` moves focus to × only when a repaint dropped it to body; `archLyTab` cycles Tab inside. Light theme overrides `--fh-c*` (≥3:1).
+- ⚠Never pull focus back from outside the layer (≤1060px detail popover) on repaint. ⚠Never add a second zoom in 84j9.
+- ⚠`.archly-t>.archbar` keeps a min-width: with 0 the legend squeezed it to 37px at 1920.
