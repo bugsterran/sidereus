@@ -145,6 +145,7 @@ In the data folder, written atomically (temp file + `os.replace`). The owner mod
 | Gate | Checks |
 |---|---|
 | `scripts/check.sh --fast` | py_compile with `/usr/bin/python3`, `node --check`, `bash -n`, pipeline JSON, PAGE assembly, leak scan; also the pre-commit hook |
+| `scripts/leakscan.py --pre-push` | pre-push hook: the shipped tree plus every outgoing commit's added lines, message and author/committer e-mail |
 | `scripts/check.sh --full` | + `tests/run.sh`, `screen_check.mjs` |
 | `tests/test_arch.py` | layering, STAGE3, global ownership, size caps, safety, silent errors, JS globals, metadata only, feature manifests |
 

@@ -1,0 +1,3 @@
+#!/bin/bash
+# Blocking pre-push leak scan: shipped tree + outgoing commits (bypass once with `git push --no-verify`).
+exec /usr/bin/python3 "$(git rev-parse --show-toplevel)/scripts/leakscan.py" --pre-push

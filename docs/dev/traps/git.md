@@ -136,3 +136,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠The main page is **metadata only** — content appears only in the existing `/work` popup (`wkPopup`). The main transcript is not read, so its tool count is `None` (no estimating).
   - Ended sessions: `session_work`/`agent_work` allow a cwd outside the list via `_past_row(cwd, sid)` (only when the transcript is under the `_slug(cwd)` folder). Agent tid is `<toolUseId>|<sid>` → `workUrl` passes `&sid=`.
   - ⚠Requests without a sid still allow only the on-screen list — never widen the allow range to cwd alone.
+
+## Leaks in pushed history (`.githooks/pre-push` → `scripts/leakscan.py --pre-push`)
+- Cause: pre-commit scans only the working tree; a secret added then removed inside the pushed range, a `--no-verify` commit, a commit message or a private author e-mail reached the remote unchecked.
+- Fix: pre-push reruns the tree scan, then scans each outgoing commit (`rev-list` from the pre-push stdin; new ref = `--not --remotes`): added lines of shipped files (`.distignore` via `check-ignore --no-index`), message, `%ae`/`%ce`.
+- ★2026-11-05: full history (573 commits) gives 28 `ident` hits, all private project words in commit messages already on origin/dev; future pushes scan only outgoing commits.
+- ⚠`git push --no-verify` bypasses it; a hit means fix the commit before pushing, not add `leakscan: allow` to a message.
