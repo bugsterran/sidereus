@@ -435,12 +435,13 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Do not go back to `cx()` for ends; do not drop `overlaps` from the tests — crossings alone cannot see this.
 - Two-way pair: b → a reused the a → b line (arrow heads on both ends); in/out colours differ, so on screen it was still one line drawn over another. ⇒ each direction routes on its own; straight neighbours split by ±`ARCH_FH.RV`; ports of one gap (row r bottom, row r+1 top) closer than 3px are nudged 6px. ★dbuser: crossings 27 → 31, overlaps 1 → 0.
 - ⚠Do not merge reverse edges onto one path again.
-- Gap nudge also pushed a box's own spread ports onto its clamped right edge (★real shape, 47px hub: 6 ends on one x, overlaps 28). ⇒ nudge only against other boxes' ports, alternate ±6px, keep the spread x when no slot is free.
+- Gap nudge also pushed a box's own spread ports onto its clamped right edge (★real shape, 47px hub: 5 ends on one x, overlaps 28). ⇒ nudge only against other boxes' ports, alternate ±6px, keep the spread x when no slot is free.
 
 ## Focus hub band splits into callers / hub / callees (`84j9 archFhPlan` `r.sp`)
 - Cause: a band holding the hub drew in one line, so every hub link was a U-turn through the gap above (stacked lanes; direction readable only at the arrow head).
 - ⇒ `r.sp = [callers only, [hub], rest]`; 84j9 renders `.archfh-bx.sp` with one `.archfh-sr` flex group per part; `archFhMeasure` still splits lines by offsetTop, so routing is unchanged. v1 (no bands) already has In / Out rows and is not split.
 - Stacked boxes in adjacent rows still bent (spread ports rarely share an x). ⇒ `archFhPaths` moves one end's port over the other when it lies inside that box (6px in) and no port is within 6px (same side) / 3px (same gap): a straight vertical. ⚠Gutter links keep their bends.
+- Many links on one side read as a comb of arrow heads. ⇒ `archFhPaths` bundles 3+ adjacent-row links on one (box, side) with the same direction and kind (`data-k` + dashed): one port, one gap lane (one `it()` item), so they merge on one run into one trunk. `archFhQuality` skips overlaps inside one `p.bd`. ⚠A box right under the port joins the bundle: left out, its straight line crossed the run. ⚠Gutter links never bundle.
 - ⚠Two-way and flow-only neighbours go below (a module both calling and called is not «a caller only»). ⚠The test `LAY` stand-in must start a line per `r.sp` part, or tests route a layout the page never draws.
 
 ## Focus layer: one zoom, modal focus, light colours (sweep 18)

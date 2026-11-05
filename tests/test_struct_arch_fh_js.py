@@ -204,6 +204,21 @@ process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths.map(p =>
         self.assertEqual(len(pf), 4)
         self.assertEqual((q["overlaps"], q["boxHits"]), (0, 0))
 
+    def test_bundle_three_plus_same_kind(self):
+        # 4 calls into the hub top merge on one run into one trunk; 2 reads stay separate (fewer than 3, other kind)
+        r = run(r"""const R = { h: { x: 400, y: 100, w: 160, h: 30 } }, ks = ['c0', 'c1', 'c2', 'c3', 'r0', 'r1'];
+ks.forEach((k, i) => { R[k] = { x: i * 150, y: 0, w: 120, h: 30 }; });
+const es = ks.map(k => ({ a: k, b: 'h', k: k[0] === 'c' ? 'call' : 'read' })), P = archFhPaths(R, [ks, ['h']], es);
+process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths.map(p => [p.pts[p.pts.length - 1], p.pts.length > 2 ? p.pts[p.pts.length - 2][1] : null, p.bd || null])]));""", [], [], [])
+        q, ends = r
+        calls, reads = ends[:4], ends[4:]
+        self.assertEqual(len({tuple(e[0]) for e in calls}), 1)                 # one trunk, one arrow head
+        self.assertEqual(len({e[1] for e in calls if e[1] is not None}), 1)     # one shared run
+        self.assertTrue(all(e[2] for e in calls))
+        self.assertEqual(len({tuple(e[0]) for e in reads}), 2)                 # not bundled
+        self.assertFalse(any(e[2] for e in reads))
+        self.assertEqual((q["overlaps"], q["boxHits"]), (0, 0))               # a bundle's own shared run is not an overlap
+
     def test_two_way_edges_draw_two_lines(self):
         # h <-> b (rows apart) and h <-> n (neighbours): each direction is its own line, never drawn on its reverse
         r = run(r"""const R = { b: { x: 260, y: 0, w: 100, h: 30 }, h: { x: 130, y: 100, w: 100, h: 30 }, n: { x: 260, y: 100, w: 100, h: 30 } };
