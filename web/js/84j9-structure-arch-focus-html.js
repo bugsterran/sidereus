@@ -3,7 +3,7 @@
 // Markup keeps the 81e tag-mode contract: boxes [data-p] (hub data-on), edges .mmdfe[data-f/t/k/c] with a .mmdel.mmdfl badge,
 // so 84j archDgClick, 84j4 archFocusClick/archFocusHx, 84j archHovPaint and 84j3 archLitPaint work on the .archfh root unchanged.
 // ⚠Names, entry labels and step numbers are agent data: esc() only, never T().
-const ARCH_FH = { LS: 14, GS: 12, G0: 12, ROW: 28, SUB: 14, PAD: 16 };   // px: lane step · gutter lane step · gutter offset · min band gap · min sub-row gap · min side pad
+const ARCH_FH = { LS: 14, GS: 12, G0: 12, ROW: 28, SUB: 14, PAD: 16, RV: 5 };   // px: lane step · gutter lane step · gutter offset · min band gap · min sub-row gap · min side pad · two-way neighbour split
 // Pure: what the focus rows draw from an 84j4 plan. ⚠No flow lit: only edges touching the hub (entry/ifx edges into it included), so far
 // modules never appear. A lit flow keeps every numbered step edge and its entry too — the person follows the whole flow.
 // Rows = band index (entries 0, ifx P.fl, external bp.n, unknown layer bp.n+1); v1 (no layers): callers / hub / callees.
@@ -94,11 +94,13 @@ function archFhPaths(rects, rows, edges){
   const paths = (edges || []).map((e, n) => {
     const p = { a: e.a, b: e.b, pts: null, lx: 0, ly: 0 }, pk = e.a < e.b ? e.a + '\u0001' + e.b : e.b + '\u0001' + e.a;
     if(e.a === e.b || !ins(e.a) || !ins(e.b)) return p;
-    if(own(pair, pk)){ p.rev = pair[pk]; return p; }   // b -> a shares the a -> b line (arrow heads on both ends), one line to cross
-    pair[pk] = n;
+    // ⚠b -> a used to reuse the a -> b line with arrow heads on both ends: in and out colours differ, so it read as two lines on top
+    // of each other. ⇒ each direction is its own path (own ports and lanes); straight neighbours split by +-C.RV px.
+    const rv = own(pair, pk) ? 1 : 0; pair[pk] = n;
     const ra = rk[e.a], rb = rk[e.b], A = rects[e.a], B = rects[e.b];
     if(ra === rb && Math.abs(ix[e.a] - ix[e.b]) === 1){   // neighbours in one row: straight between facing sides
-      const l = A.x < B.x, xa = l ? A.x + A.w : A.x, xb = l ? B.x : B.x + B.w, ya = cy(e.a), yb = cy(e.b), xh = (xa + xb) / 2;
+      const two = rv || (edges || []).some(f => f.a === e.b && f.b === e.a), dy = two ? (rv ? C.RV : -C.RV) : 0;
+      const l = A.x < B.x, xa = l ? A.x + A.w : A.x, xb = l ? B.x : B.x + B.w, ya = cy(e.a) + dy, yb = cy(e.b) + dy, xh = (xa + xb) / 2;
       p.pts = ya === yb ? [[xa, ya], [xb, yb]] : [[xa, ya], [xh, ya], [xh, yb], [xb, yb]]; return p; }
     p.ra = ra; p.rb = rb;
     if(Math.abs(ra - rb) >= 2){   // side: fewer boxes between the ends and the gutter in the rows beside the two gaps, else the nearer half
@@ -117,8 +119,13 @@ function archFhPaths(rects, rows, edges){
   paths.forEach(p => { if(p.ra == null) return; const dn = p.rb > p.ra, g = p.gx != null;
     add(p.a, dn ? 1 : 0, g ? p.gx : cx(p.b), x => { p.xa = x; });
     add(p.b, p.rb === p.ra || dn ? 0 : 1, g ? p.gx : cx(p.a), x => { p.xb = x; }); });
-  Object.keys(pe).forEach(id => { const L = pe[id].sort((u, v) => u.far - v.far), r = rects[L[0].k];
-    L.forEach((e, i) => e.set(r.x + r.w * (i + 1) / (L.length + 1))); });
+  // ⚠A bottom port of row r and a top port of row r+1 can land on one x by chance: their stubs then share the gap's vertical. ⇒ nudge by 6px.
+  const gx = {};
+  Object.keys(pe).forEach(id => { const L = pe[id].sort((u, v) => u.far - v.far), k = L[0].k, r = rects[k], g = rk[k] + (id.endsWith('\u00011') ? 1 : 0);
+    const used = gx[g] = gx[g] || [];
+    L.forEach((e, i) => { let x = r.x + r.w * (i + 1) / (L.length + 1);
+      for(let t = 0; t < 4 && used.some(u => Math.abs(u - x) < 3); t++) x = Math.min(r.x + r.w - 4, x + 6);
+      used.push(x); e.set(x); }); });
   paths.forEach(p => { if(p.ra == null) return;
     const xa = p.xa, xb = p.xb, dn = p.rb > p.ra, d = Math.abs(p.rb - p.ra);
     p.it = d === 0 ? [it(p.ra, [], [xa, xb])] : d === 1 ? [dn ? it(p.rb, [xa], [xb]) : it(p.ra, [xb], [xa])]
@@ -131,7 +138,6 @@ function archFhPaths(rects, rows, edges){
     const ya = dn ? A.y + A.h : A.y, yb = p.rb === p.ra ? B.y : dn ? B.y : B.y + B.h;
     p.pts = p.it.length === 1 ? [[xa, ya], [xa, Y[0]], [xb, Y[0]], [xb, yb]] : [[xa, ya], [xa, Y[0]], [p.gx, Y[0]], [p.gx, Y[1]], [xb, Y[1]], [xb, yb]];
     delete p.it; delete p.ra; delete p.rb; delete p.gx; delete p.xa; delete p.xb; });
-  paths.forEach(p => { if(p.rev != null && paths[p.rev].pts){ p.pts = paths[p.rev].pts.slice().reverse(); } delete p.rev; });
   paths.forEach(p => { if(!p.pts) return;
     p.pts = p.pts.filter((q, i) => !i || q[0] !== p.pts[i - 1][0] || q[1] !== p.pts[i - 1][1]);
     let bl = -1, s = null;   // badge: middle of the longest horizontal run, else of the path

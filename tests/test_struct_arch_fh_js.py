@@ -174,6 +174,17 @@ process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths[0].pts[P
         self.assertEqual(b_start[1], 100)
         self.assertLess(s_end[0], b_start[0])                                  # own ports, ordered by the far end's x
 
+    def test_two_way_edges_draw_two_lines(self):
+        # h <-> b (rows apart) and h <-> n (neighbours): each direction is its own line, never drawn on its reverse
+        r = run(r"""const R = { b: { x: 260, y: 0, w: 100, h: 30 }, h: { x: 130, y: 100, w: 100, h: 30 }, n: { x: 260, y: 100, w: 100, h: 30 } };
+const P = archFhPaths(R, [['b'], ['h', 'n']], [{ a: 'h', b: 'b' }, { a: 'b', b: 'h' }, { a: 'h', b: 'n' }, { a: 'n', b: 'h' }]);
+process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths.map(p => p.pts)]));""", [], [], [])
+        q, pts = r
+        self.assertEqual(q["overlaps"], 0)
+        self.assertNotEqual(pts[0], list(reversed(pts[1])))
+        self.assertNotEqual(pts[2], list(reversed(pts[3])))
+        self.assertEqual(pts[2][0][1] + 10, pts[3][0][1])                      # neighbours split by 2 * RV
+
     def test_real_and_dbuser_shapes(self):
         M, E, G, F = _real()
         r = run("const a = route(plan('hub', null, BP), 1100), b = route(plan('hub', ['f4', 'f6'], BP), 1100);"
