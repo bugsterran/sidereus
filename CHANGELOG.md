@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: when the watched run ends, Watch moves to another open run even if that run is waiting on a person or idle between stages; with none open it moves as soon as one starts.
 - Pipelines: Watch (the landing view) shows «Gates n/m» and «Evaluation» in its head row; they were only in Edit.
 - Sessions: when `claude agents --json` exits with an error and no output, sessions are treated as unknown instead of all ended (seen off macOS).
 - Timeline: the sleep lookup (`pmset`) is stopped with its whole process group on timeout instead of running on in the background.
