@@ -429,6 +429,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Gaps are sized from `need` and re-measured (wrapping moves with the gutter padding): do not drop the measure → route loop or lanes squeeze into one line.
 - ⚠Keep boxes one fixed height and rows/boxes unpositioned — sub-rows are split by offsetTop against `.archfh`.
 
+## Focus connectors get one port per end (`84j9 archFhPaths`, `archFhQuality.overlaps`)
+- Cause: every end sat on the side centre, so a hub's in-edge from the row above and out-edge to it shared one vertical (★repro: 23px drawn twice); the strict crossing test never counts collinear runs, so quality read 0/0.
+- ⇒ Ends on one (box, side) are spread at `x + w*(i+1)/(n+1)`, sorted by the far end's x (gutter ends: the gutter x); the same port x feeds the lane stubs. `archFhQuality` counts `overlaps` (collinear axis runs from different lines > 0.5px). ★dbuser shape at 1100/900: crossings 17 → 27, overlaps 54 → 0 (the old count hid crossings inside shared stubs).
+- ⚠Do not go back to `cx()` for ends; do not drop `overlaps` from the tests — crossings alone cannot see this.
+
 ## Focus layer: one zoom, modal focus, light colours (sweep 18)
 - Cause: 84j3 CSS zoom and an 84j9 transform scale both handled `.archly [data-arz]` (one "+" = ~1.56x); the dialog never took focus (Tab left it); `--fh-c*` hues were dark-tuned only (★light 1.93 / 2.86 / 2.16:1).
 - ⇒ Layer zoom lives only in 84j3 `archLyZoom`. 84ja `archLyFocus` moves focus to × only when a repaint dropped it to body; `archLyTab` cycles Tab inside. Light theme overrides `--fh-c*` (≥3:1).

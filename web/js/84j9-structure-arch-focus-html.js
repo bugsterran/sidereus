@@ -78,7 +78,7 @@ function archFhLanes(its){
   return lanes.length;
 }
 // Pure: orthogonal connector paths. rects = {key: {x, y, w, h}}, rows = [[key]] top → bottom (wrapped sub-rows are rows), edges = [{a, b}].
-// Ends sit on side centres; horizontal runs on lanes in the gap between rows; a run spanning 2+ rows takes a left/right gutter lane
+// Ends sit on per-end ports along the side; horizontal runs on lanes in the gap between rows; a run spanning 2+ rows takes a left/right gutter lane
 // (outer = longer, so nested runs never cross). → {paths: [{a, b, pts, lx, ly}], need: [px per gap g above row g], gw: [left, right px]}.
 function archFhPaths(rects, rows, edges){
   const C = ARCH_FH, own = (o, k) => Object.prototype.hasOwnProperty.call(o, k), rk = {}, ix = {}, R = rows.length, gi = [];
@@ -112,18 +112,25 @@ function archFhPaths(rects, rows, edges){
   gut.sort((u, v) => (u.hi - u.lo) - (v.hi - v.lo) || v.far - u.far).forEach(u => { let l = 0;
     gl[u.s].forEach(v => { if(u.lo <= v.hi && v.lo <= u.hi) l = Math.max(l, v.l + 1); });
     u.l = l; gl[u.s].push(u); gn[u.s] = Math.max(gn[u.s], l + 1); u.p.gx = u.s ? x1 + C.G0 + l * C.GS : x0 - C.G0 - l * C.GS; });
+  // ⚠Ends on one side centre drew one stub over another (in + out on the hub top). ⇒ one port per end, spread along the side, ordered by the far end's x.
+  const pe = {}, add = (k, s, far, set) => { const id = k + '\u0001' + s; (pe[id] = pe[id] || []).push({ k, far, set }); };
+  paths.forEach(p => { if(p.ra == null) return; const dn = p.rb > p.ra, g = p.gx != null;
+    add(p.a, dn ? 1 : 0, g ? p.gx : cx(p.b), x => { p.xa = x; });
+    add(p.b, p.rb === p.ra || dn ? 0 : 1, g ? p.gx : cx(p.a), x => { p.xb = x; }); });
+  Object.keys(pe).forEach(id => { const L = pe[id].sort((u, v) => u.far - v.far), r = rects[L[0].k];
+    L.forEach((e, i) => e.set(r.x + r.w * (i + 1) / (L.length + 1))); });
   paths.forEach(p => { if(p.ra == null) return;
-    const xa = cx(p.a), xb = cx(p.b), dn = p.rb > p.ra, d = Math.abs(p.rb - p.ra);
+    const xa = p.xa, xb = p.xb, dn = p.rb > p.ra, d = Math.abs(p.rb - p.ra);
     p.it = d === 0 ? [it(p.ra, [], [xa, xb])] : d === 1 ? [dn ? it(p.rb, [xa], [xb]) : it(p.ra, [xb], [xa])]
       : dn ? [it(p.ra + 1, [xa], [p.gx]), it(p.rb, [p.gx], [xb])] : [it(p.ra, [p.gx], [xa]), it(p.rb + 1, [xb], [p.gx])]; });
   const nl = gi.map(archFhLanes), need = nl.map(n => n ? (n + 1) * C.LS : 0);
   const span = g => { const b = g < R ? top(g) : 0, t = g > 0 ? bot(g - 1) : Math.max(0, b - need[g]); return g < R ? [t, b] : [t, t + need[g]]; };
   const ly = o => { const [t, b] = span(o.g); return t + (o.l + 1) * (b - t) / (nl[o.g] + 1); };
   paths.forEach(p => { if(p.ra == null) return;
-    const A = rects[p.a], B = rects[p.b], xa = cx(p.a), xb = cx(p.b), Y = p.it.map(ly), dn = p.rb > p.ra;
+    const A = rects[p.a], B = rects[p.b], xa = p.xa, xb = p.xb, Y = p.it.map(ly), dn = p.rb > p.ra;
     const ya = dn ? A.y + A.h : A.y, yb = p.rb === p.ra ? B.y : dn ? B.y : B.y + B.h;
     p.pts = p.it.length === 1 ? [[xa, ya], [xa, Y[0]], [xb, Y[0]], [xb, yb]] : [[xa, ya], [xa, Y[0]], [p.gx, Y[0]], [p.gx, Y[1]], [xb, Y[1]], [xb, yb]];
-    delete p.it; delete p.ra; delete p.rb; delete p.gx; });
+    delete p.it; delete p.ra; delete p.rb; delete p.gx; delete p.xa; delete p.xb; });
   paths.forEach(p => { if(p.rev != null && paths[p.rev].pts){ p.pts = paths[p.rev].pts.slice().reverse(); } delete p.rev; });
   paths.forEach(p => { if(!p.pts) return;
     p.pts = p.pts.filter((q, i) => !i || q[0] !== p.pts[i - 1][0] || q[1] !== p.pts[i - 1][1]);
@@ -133,7 +140,7 @@ function archFhPaths(rects, rows, edges){
     p.lx = (s[0][0] + s[1][0]) / 2; p.ly = (s[0][1] + s[1][1]) / 2; p.bs = s[0][1] === s[1][1] ? [Math.min(s[0][0], s[1][0]), Math.max(s[0][0], s[1][0])] : null; });
   return { paths, need, gw: gn.map(n => Math.max(C.PAD, n ? C.G0 + (n - 1) * C.GS + 6 : 0)) };
 }
-// Pure: {crossings, boxHits} of drawn lines (a reverse pair on one line counts once), the 81g mmdQuality segment tests (strict crossings, a box shrunk 1px so touching ends do not count).
+// Pure: {crossings, boxHits, overlaps} of drawn lines (a reverse pair on one line counts once), the 81g mmdQuality segment tests (strict crossings, a box shrunk 1px so touching ends do not count).
 function archFhQuality(paths, rects){
   const seen = new Set(), line = p => { const k = JSON.stringify(p.pts), r = JSON.stringify(p.pts.slice().reverse()); if(seen.has(k) || seen.has(r)) return false; seen.add(k); return true; };
   const segs = (paths || []).filter(p => p && p.pts && line(p)).map(p => p.pts.slice(1).map((q, i) => [p.pts[i], q])), rs = Object.keys(rects || {}).map(k => rects[k]);
@@ -142,7 +149,12 @@ function archFhQuality(paths, rects){
   const o = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
   for(let i = 0; i < segs.length; i++) for(let j = i + 1; j < segs.length; j++)
     segs[i].forEach(a => segs[j].forEach(b => { if(o(a[0], a[1], b[0]) * o(a[0], a[1], b[1]) < 0 && o(b[0], b[1], a[0]) * o(b[0], b[1], a[1]) < 0) crossings++; }));
-  return { crossings, boxHits };
+  // ⚠The strict test above never sees collinear runs: two lines drawn on top of each other count as overlaps (> 0.5px shared).
+  let overlaps = 0; const ax = (s, d) => Math.abs(s[0][d] - s[1][d]) < 0.01;
+  const ov = (a, b, d) => Math.abs(a[0][d] - b[0][d]) < 0.01 && Math.min(Math.max(a[0][1 - d], a[1][1 - d]), Math.max(b[0][1 - d], b[1][1 - d])) - Math.max(Math.min(a[0][1 - d], a[1][1 - d]), Math.min(b[0][1 - d], b[1][1 - d])) > 0.5;
+  for(let i = 0; i < segs.length; i++) for(let j = i + 1; j < segs.length; j++)
+    segs[i].forEach(a => segs[j].forEach(b => { if([0, 1].some(d => ax(a, d) && ax(b, d) && ov(a, b, d))) overlaps++; }));
+  return { crossings, boxHits, overlaps };
 }
 // Box rects (offsets inside .archfh, position:relative) and sub-rows: boxes of one band whose tops differ by over half a box start a new row.
 function archFhMeasure(fh){
