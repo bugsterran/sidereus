@@ -85,6 +85,7 @@ function sessLabel(x){
   const bw = typeof x.blocked === 'string' && / waiting for approval$/.test(x.blocked) ? x.blocked.slice(0, -21) : null;
   if(bw) return T('Blocked') + ' · ' + bw + ' ' + T('waiting for approval');
   if(x.blocked) return T('Blocked') + ' · ' + T(srvEn(x.blocked));
+  if(x.cmp && !x.blocked) return T('Compacting');   // compaction marker (sidereus/compact_marks.py); approval wins
   // ★Prompt arrived but the transcript didn't move (server gotPrompt). Calling it «Thinking» is false, and
   //   calling it «Awaiting input» means it is the human's turn, also false — **only what is known** is written.
   if(x.gotPrompt > 0)

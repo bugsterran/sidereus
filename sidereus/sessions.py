@@ -25,6 +25,7 @@ from sidereus.ext import codex_env_dedupe, ext_children, ext_rollout_rows, ext_r
 from sidereus.ext_presence import ext_presence_rows
 from sidereus import pl_runs, prefs   # module access: tests stub pl_runs._ag_by_name
 from sidereus.perm_marks import perm_wait
+from sidereus.compact_marks import compacting
 from sidereus.term import term_attach
 
 
@@ -346,6 +347,8 @@ def _session_row(fp, mt, now, live, p, stale=False):
         # ★Measured from **last activity**, not file mtime — so noise records (away_summary) touching the file
         #   do not look like "just worked". If the tail window has no activity at all, fall back to mtime.
         "ageSec": int(now - (p.get("actAt") or mt)),
+        # «Compacting» marker (hooks/compact_mark.py): {at, estMs, n} or None; never on an ended row.
+        "cmp": None if dead else compacting(p.get("sid") or "", fp, p.get("actAt") or mt, now),
         "humanAt": int(p.get("humanAt") or 0),   # newest real human prompt (time only): attention holds an unanswered «ask» card until it moves
         "tailAt": int(p.get("tailAt") or 0),     # oldest record time of the parsed tail (0 = unknown); attention no longer reads it — humanAt comes from a deep scan when the tail has no human line
         "bytes": (lambda: (os.path.getsize(fp) if os.path.exists(fp) else 0))(),  # transcript size

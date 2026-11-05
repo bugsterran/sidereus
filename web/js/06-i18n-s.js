@@ -13,4 +13,5 @@ Object.assign(I18N.ko, {
   'a running Claude Code wrote the file back': '실행 중인 Claude Code 가 파일을 되돌렸습니다',
   'Per account': '계정별', 'Same for all accounts': '모든 계정 같게', 'No account changed': '바뀐 계정이 없습니다',
   'Apply to changed accounts': '바뀐 계정에 적용',
+  'Compacting': '압축 중', 'Estimated from recent compaction times on this account': '이 계정의 최근 압축 시간으로 추정',
 });

@@ -125,6 +125,12 @@ class PluginTest(unittest.TestCase):
         ms = [g.get("matcher") for g in h["Notification"] if any("perm_mark.py" in c["command"] for c in g["hooks"])]
         self.assertEqual(ms, ["permission_prompt|elicitation_dialog"])
 
+    def test_compact_mark_hooks(self):
+        h = _json("plugin/hooks/hooks.json")["hooks"]
+        for e in ("PreCompact", "PostCompact"):
+            cmds = [c for g in h[e] for c in g["hooks"] if "compact_mark.py" in c["command"]]
+            self.assertEqual([c["timeout"] for c in cmds], [5], e)
+
     def test_no_skills_dir(self):
         self.assertFalse(os.path.exists(os.path.join(PLUGIN, "skills")))
 

@@ -118,6 +118,8 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .stx:hover{color:#e0725f}
 .sdrop{color:#7e8896;cursor:pointer;padding:0 3px;font-size:10px}
 .smon{color:#7e8896;font-size:10.5px;white-space:nowrap}
+.scmp{color:#7fa8d6;font-size:10.5px;white-space:nowrap;font-variant-numeric:tabular-nums}   /* compaction m:ss · ~P%; tabular digits keep the row still */
+html[data-theme=light] .scmp{color:#2f5f94}
 .sslow{color:#c9a24a;cursor:help}      /* tool/thinking for 5min+ — may be stuck */
 /* 10min+ no transcript — don't assert `thinking` (it is unknown) */
 .s-tool .sl.smute,.s-think .sl.smute{color:#c9a24a;font-weight:600}

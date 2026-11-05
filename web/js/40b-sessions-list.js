@@ -82,10 +82,22 @@ function sessStateRow(x, st){
   //   «Awaiting answer» (ask) is more urgent, so it is not overridden.
   return '<div class=sx2><span class="sl'+(x.blocked?' sblk':'')+(waitOn?' swait':'')+(mute?' smute':'')+'" title="'
     + esc(x.blocked ? T(BLKTIP) : (mute ? MUTETIP : (waitOn ? T(WAITTIP) : T(TIP[st]||''))))+'">'
-    + esc(sessLabel(x))+'</span>'+(ms ? ' <span class=smon>'+esc(ms)+'</span>' : '')+' '+(tool ? tool+' · ' : '· ')
+    + esc(sessLabel(x))+'</span>'+sessCmpHtml(x)+(ms ? ' <span class=smon>'+esc(ms)+'</span>' : '')+' '+(tool ? tool+' · ' : '· ')
     + sessAgoHtml(x, st)
     + sessBurn(x)
     + drop+'</div>';
+}
+// Compaction elapsed m:ss (+ ~P% from this account's median compaction time); '' without a marker.
+function sessCmpHtml(x){
+  if(!x.cmp || x.blocked) return '';
+  const at = Math.floor(+x.cmp.at) || 0, est = Math.floor(+x.cmp.estMs) || 0;
+  return ' <span class=scmp data-cmpat="'+esc(String(at))+'" data-cmpest="'+esc(String(est))+'"'
+    + (est > 0 ? ' title="'+esc(T('Estimated from recent compaction times on this account'))+'"' : '')+'>'+esc(cmpText(at, est))+'</span>';
+}
+function cmpText(at, est){
+  const el = Math.max(0, Math.floor(Date.now()/1000 - at));
+  const s = Math.floor(el/60)+':'+String(el%60).padStart(2,'0');
+  return est > 0 ? s+' · ~'+Math.min(95, Math.floor(el*1000*100/est))+'%' : s;
 }
 // Elapsed time on the state row, colored when tool/thinking has run 5+ min.
 function sessAgoHtml(x, st){
@@ -543,4 +555,10 @@ function note(msg){
   box.appendChild(el);
   setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 320); }, 2600);
 }
+// One 1 s tick refreshes every compaction elapsed span in place (no re-render); guarded against a second install.
+if(!window._cmpTick) window._cmpTick = setInterval(function(){
+  document.querySelectorAll('.scmp').forEach(function(el){
+    el.textContent = cmpText(+el.dataset.cmpat || 0, +el.dataset.cmpest || 0);
+  });
+}, 1000);
 
