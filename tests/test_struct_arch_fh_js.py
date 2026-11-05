@@ -21,8 +21,9 @@ LAY = r"""
 const lay = (F, W, need, gw) => { const rects = {}, rows = [], C = ARCH_FH; let y = Math.max(C.SUB, need[0] || 0), g = 0;
   F.rows.forEach((r, bi) => { const x0 = 92 + gw[0], room = W - x0 - gw[1], subs = [[]]; let used = 0;
     if(bi) y += Math.max(C.ROW, need[g] || 0);
-    r.ks.forEach(k => { const w = Math.min(220, mmdTw(k) + 26); if(subs[subs.length - 1].length && used + 24 + w > room){ subs.push([]); used = 0; }
-      used += (subs[subs.length - 1].length ? 24 : 0) + w; subs[subs.length - 1].push([k, w]); });
+    (r.sp || [r.ks]).forEach((grp, gi2) => { if(gi2){ subs.push([]); used = 0; }   // r.sp: hub band parts each start a line
+      grp.forEach(k => { const w = Math.min(220, mmdTw(k) + 26); if(subs[subs.length - 1].length && used + 24 + w > room){ subs.push([]); used = 0; }
+      used += (subs[subs.length - 1].length ? 24 : 0) + w; subs[subs.length - 1].push([k, w]); }); });
     subs.forEach((s, si) => { if(si) y += Math.max(C.SUB, need[g] || 0);
       const tw = s.reduce((a, q) => a + q[1], 0) + 24 * (s.length - 1); let x = x0 + (room - tw) / 2;
       s.forEach(([k, w]) => { rects[k] = { x, y, w, h: 30 }; x += w + 24; }); rows.push(s.map(q => q[0])); y += 30; g++; }); });
@@ -173,6 +174,35 @@ process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths[0].pts[P
         self.assertEqual(s_end[1], 100)                                        # both on the hub top
         self.assertEqual(b_start[1], 100)
         self.assertLess(s_end[0], b_start[0])                                  # own ports, ordered by the far end's x
+
+    def test_hub_band_splits_callers_hub_callees(self):
+        # one band holding hub, callers, callees and a two-way neighbour: three lines, callers above, hub alone, the rest below
+        L = ["hub", "c0", "c1", "c2", "e0", "e1", "e2", "t0"]
+        M = [{"id": i, "name": "%s wizard" % i, "kind": "module", "layer": "service", "group": "g"} for i in L]
+        E = [("c0", "hub"), ("c1", "hub"), ("c2", "hub"), ("hub", "e0"), ("hub", "e1"), ("hub", "e2"), ("hub", "t0"), ("t0", "hub"), ("c0", "e2")]
+        E = [{"from": f, "to": t, "kind": "call", "ok": True, "est": False, "label": "%s.%s" % (f, t)} for f, t in E]
+        r = run("const F = plan('hub', null, BP), U1 = { rows: F.rows.map(r => ({ b: r.b, ks: r.ks })), edges: F.edges };"
+                "const s = route(F, 1100), u = route(U1, 1100), hr = F.rows.find(r => r.sp);"
+                "process.stdout.write(JSON.stringify([hr.sp, ['hub', 'c0', 'c1', 'c2', 'e0', 'e1', 'e2', 't0'].map(ix), s.q, u.q, archFhHtml(M, E, false, 'hub', [], [], null, null, BP).includes('archfh-bx sp')]));",
+                M, E, [{"id": "g", "name": "G"}], [])
+        sp, (hub, c0, c1, c2, e0, e1, e2, t0), q, q1, html_sp = r
+        self.assertEqual(sorted(sp[0]), sorted([c0, c1, c2]))                 # callers only above (c0 also calls e2: still a caller)
+        self.assertEqual(sp[1], [hub])
+        self.assertEqual(sorted(sp[2]), sorted([e0, e1, e2, t0]))             # callees and two-way below
+        self.assertEqual((q["overlaps"], q["boxHits"]), (0, 0))
+        self.assertLessEqual(q["crossings"], q1["crossings"])                 # never worse than the single line
+        self.assertTrue(html_sp)
+
+    def test_stacked_boxes_link_straight(self):
+        # a sits over h (adjacent rows): a straight vertical, no bend; f is off to the side and still bends
+        r = run(r"""const R = { a: { x: 100, y: 0, w: 100, h: 30 }, f: { x: 400, y: 0, w: 100, h: 30 }, h: { x: 80, y: 100, w: 160, h: 30 } };
+const P = archFhPaths(R, [['a', 'f'], ['h']], [{ a: 'a', b: 'h' }, { a: 'f', b: 'h' }]);
+process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths.map(p => p.pts)]));""", [], [], [])
+        q, (pa, pf) = r
+        self.assertEqual(len(pa), 2)
+        self.assertEqual(pa[0][0], pa[1][0])
+        self.assertEqual(len(pf), 4)
+        self.assertEqual((q["overlaps"], q["boxHits"]), (0, 0))
 
     def test_two_way_edges_draw_two_lines(self):
         # h <-> b (rows apart) and h <-> n (neighbours): each direction is its own line, never drawn on its reverse
