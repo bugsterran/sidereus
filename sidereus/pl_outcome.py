@@ -157,21 +157,23 @@ def run_cost(rows):
     tok is not in med/mn, and last.tok is None."""
     if not rows:
         return None
-    acc, per, last = {}, [], None
+    acc, per, last, kn = {}, [], None, set()
     for r in rows:
         known = None
         for t, e in ((r or {}).get("ss") or {}).items():
             if e.get("s") == "skip" or (t not in acc and len(acc) >= OC_SS_MAX):
                 continue
-            acc.setdefault(t, 0)
+            acc.setdefault(t, 0)   # counted for the OC_SS_MAX cap even when unknown, so titles match stage_eff
             if e.get("tok") is not None:
                 acc[t] += e["tok"]
+                kn.add(t)
                 known = (known or 0) + e["tok"]
-        if known is not None:
+        if known is not None:   # ⚠a run with some unknown stages counts its known part only (a lower bound)
             per.append(known)
         last = known
     tot = sum(acc.values())
-    share = {t: int(v * 100 / tot + 0.5) for t, v in acc.items()} if tot else {}
+    # A stage with no known tok in any run has no share (dash on screen), not 0%.
+    share = {t: int(v * 100 / tot + 0.5) for t, v in acc.items() if t in kn} if tot else {}
     r = rows[-1] or {}
     sec = int(max(0, (r.get("end") or 0) - (r.get("t0") or 0)))
     return {"share": share, "med": _med(per), "mn": len(per), "last": {"tok": last, "sec": sec}}
