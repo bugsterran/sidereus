@@ -60,6 +60,58 @@ async function attnRpSend(redraw){
   }catch(e){ attnRp.busy = false; note(T('Could not send') + ': ' + e.message); }   // note() sets textContent: no esc, no T() on data
   redraw();
 }
+// «Ask to check» on a background-shell row: Sidereus composes the text, so preview + Confirm (rule 7); one row at a time.
+// ⚠body is fixed when the preview opens: what Confirm sends is exactly what was shown. Numbers only, never shell labels/output.
+let attnAsk = {id: '', to: '', body: '', busy: false};
+const ATTN_BG_KINDS = ['bglong', 'bgidle'];
+function attnAskSig(sigs){ for(const k of ATTN_BG_KINDS){ const g = (sigs || []).find(s => s.k === k); if(g) return g; } return null; }
+function attnAskBody(k, min){
+  return (k === 'bglong' ? 'Background task running ' : 'Background shell quiet ') + Math.max(0, Math.floor(+min || 0))
+    + ' min — check whether it is still needed or stuck, and report back';
+}
+function attnAskHTML(a){
+  return '<div class="atrp atask"><span class=atrpto>→ <b>' + esc(a.to) + '</b></span><pre class=atpre>' + esc(a.body) + '</pre>'
+    + '<button class="wkrgb archok" data-aa="asks"' + (a.busy ? ' disabled' : '') + '>' + esc(T('Confirm — send')) + '</button>'
+    + '<button class=atb data-aa="askx">' + esc(T('Cancel')) + '</button></div>';
+}
+// Sent marks {rowId: {t}} (unix s). Per-entry writes like attnAckSave. ⚠Only a mark at/after the signal's since shows: a new episode starts clean.
+function attnAskLoad(){ const v = lsJson('mbAttnAsk', {}); return (v && typeof v === 'object') ? v : {}; }
+function attnAskSave(id, v){
+  if(typeof UIS !== 'undefined' && UIS && typeof UIS.patch === 'function') return UIS.patch('mbAttnAsk', id, v);
+  const o = attnAskLoad(); if(v === null) delete o[id]; else o[id] = v; lsSetJson('mbAttnAsk', o);
+}
+// Row parts: button (disabled with the «Reply» reason when not logged in), sent mark, open preview.
+function attnAskRow(x, to){
+  const g = attnAskSig(x.vis);
+  if(!g) return {btn: '', box: ''};
+  const t = attnAskAt(x.id, g), dis = '<button class=atb disabled title="' + esc(T('Not logged into the mailbox — cannot receive')) + '">' + esc(T('Ask to check')) + '</button>';
+  const btn = (to.id ? '<button class=atb data-aa="ask" title="' + esc(T('Preview a one-line request to check its background task, then confirm to send')) + '">' + esc(T('Ask to check')) + '</button>' : dis)
+    + (t ? '<span class=atck>' + esc(T('Check requested')) + ' · ' + esc(agoAt(t)) + '</span>' : '');
+  return {btn, box: attnAsk.id === x.id && attnAsk.to ? attnAskHTML(attnAsk) : ''};
+}
+// Open the preview only; nothing is posted until «Confirm — send». X = whole minutes since the signal's since.
+function attnAskOpen(id, r, s){
+  const g = attnAskSig(r && r.sigs), to = attnRpTo(s).id;
+  if(!id || !to || !g) return false;
+  attnRpClose();
+  attnAsk = {id, to, body: attnAskBody(g.k, g.since ? (Date.now() / 1000 - g.since) / 60 : 0), busy: false};
+  return true;
+}
+function attnAskAt(id, g){ const e = attnAskLoad()[id], t = e && +e.t || 0; return t && g && t + ATTN_ACK_TOL >= (g.since || 0) ? t : 0; }
+async function attnAskSend(redraw){
+  const a = attnAsk;
+  if(a.busy || !a.id || !a.to || !a.body) return;
+  a.busy = true;
+  try{
+    const j = await postJSON('/api/dm', {to: a.to, body: a.body});
+    if(!j || !j.ok) throw new Error((j && j.error) || '?');
+    const now = Math.floor(Date.now() / 1000), old = attnAskLoad();
+    for(const k in old) if(!(old[k] && +old[k].t > now - 86400)) attnAskSave(k, null);   // marks older than a day can no longer show
+    attnAskSave(a.id, {t: now});
+    attnAsk = {id: '', to: '', body: '', busy: false}; note(T('Sent to {n}').replace('{n}', a.to));
+  }catch(e){ a.busy = false; note(T('Could not send') + ': ' + e.message); }
+  redraw();
+}
 let attnLow = (() => { try{ return UIS.getItem('mbAttnLow') === '1'; }catch(e){ return false; } })();   // «N low-priority» expanded
 const ATTN_MAX = 5, ATTN_SNZ_MS = 30 * 60 * 1000;
 // sig k -> alert-policy kind (15-alarms.js APOL). Kinds not listed have no policy and always count.
@@ -72,7 +124,7 @@ const ATTN_LIST_ONLY = new Set(['done', 'bgdone', 'gone']);
 const ATTN_LBL = { blocked:'Blocked', ask:'Awaiting answer', abort:'Aborted', ctx95:'Context 95%+', fail:'Failures', wreck:'Half-edited files',
                    stall:'Subagent stalled', loop:'Repeated calls', toolfail:'Tool failures', ctx85:'Context 85%+',
                    done:'Done', bgdone:'Background done', conflict:'Conflict risk', gone:'Disconnected', mailidle:'Mail waiting',
-                   bgidle:'Idle shells' };
+                   bgidle:'Idle shells', bglong:'Long background' };
 function attnLbl(k){ return T(ATTN_LBL[k] || k, 'work'); }
 function attnPolOf(k){
   if(ATTN_LIST_ONLY.has(k)) return 'list';
@@ -110,6 +162,8 @@ function attnWhy(g){
     case 'done': return 'Done · waiting for input ' + U(n, /초$/.test(w) ? 's' : 'm');   // ⚠server sends seconds under 60 s
     case 'bgdone': return PL(n, 'agent completion') + ' unread';
     case 'bgidle': { const m = w.match(/(\d+)\D+(\d+)\D+(\d+)/); return m ? PL(m[1], 'background shell') + ' · ' + m[2] + ' idle · longest ' + U(m[3], 'm') : 'Idle shells'; }
+    case 'bglong': { const m = w.match(/(\d+)\D+(\d+)/), q = w.match(/무출력 (\d+)/);
+      return m ? 'Long background ' + m[1] + ' · longest ' + m[2] + ' min' + (q ? ' · ' + q[1] + ' idle' : '') : 'Long background'; }
     case 'gone': return w === '끊김?' ? 'Disconnected?' : 'Disconnected';
     case 'conflict': { const m = w.match(/파일 (\d+) · (세션|서브에이전트|에이전트) (.*)$/);
       return 'Conflict risk' + (m ? ' · ' + PL(m[1], 'file') + ' · ' + (m[2] === '세션' ? 'sessions ' : 'subagents ') + m[3].replace(/(^|, )메인(?=,|$)/g, '$1main') : ''); }
@@ -254,6 +308,8 @@ function attnRowHTML(x){
     + (at ? '\n' + at : '');
   const hasDiff = x.vis.some(g => g.k === 'wreck' || g.k === 'fail') || /~/.test(s.git || '');
   const isExt = !!extTid(s), to = attnRpTo(ss);
+  // ⚠typeof: older row harnesses load attnRowHTML without the «Ask to check» helpers.
+  const ask = typeof attnAskRow === 'function' ? attnAskRow(x, to) : {btn: '', box: ''};
   const rzCmd = (r.sid && r.sid.length > 8 && r.cwd && s.plat === 'cc') ? resumeCmd(r.cwd, r.sid, s.acctDir) : '';
   const rzLbl = cpfbLabel(r.sid, T('Copy resume command')), rzBox = cpfbBox(r.sid, rzCmd, 'atcp', 'data-aa="rzx"');
   const b = (act, lbl, t) => '<button class=atb data-aa="' + act + '"' + (t ? ' title="' + esc(t) + '"' : '') + '>' + esc(lbl) + '</button>';
@@ -269,11 +325,13 @@ function attnRowHTML(x){
                         : b('diff', 'diff', T("View this session's changes (diff)"))) : '')
     + (rzCmd ? b('rz', rzLbl, rzCmd) : '') + termBtnHtml(s, 'at')
     + (to.id ? b('rp', T('Reply'), T('Send this session a one-line message')) : '<button class=atb disabled title="' + esc(T('Not logged into the mailbox — cannot receive')) + '">' + esc(T('Reply')) + '</button>')
+    + ask.btn
     + (x.vis.some(g => g.k === 'bgdone') && attnSeenKeys(r).length ? b('seen', T('Seen'), T('Mark these agent completions read')) : '')
     + (x.key ? b('done', T('Done'), T('Hide this request; a new request from the session shows again')) + b('later', T('Later'), T('Snooze for 30 min')) : '')
     + '<span class=atl>' + esc(attnLife(x.top)) + '</span>'
     + '<button class="atb atx" data-aa="snz" title="' + esc(T('Snooze')) + '">⋯</button>' + menu + '</div>' + rzBox
-    + (attnRp.id === x.id && attnRp.to ? attnRpHTML(attnRp.to, to.watch) : '') + '</div>';
+    + (attnRp.id === x.id && attnRp.to ? attnRpHTML(attnRp.to, to.watch) : '')
+    + ask.box + '</div>';
 }
 // ⚠innerHTML drops a focused row/button to <body>: keep the same row (same control), else the next, else the previous, else the list.
 function attnFocusPick(oldAids, newAids, aid){
@@ -384,6 +442,7 @@ function attnTitle(){ if(!ISPOP && !ISWP && !ISBP) document.title = titleOf(attn
       if(!key || row.classList.contains('gone')) return;
       if(!attnDone(id, key)) return;
       if(attnRp.id === id) attnRpClose();
+      if(attnAsk.id === id) attnAsk = {id: '', to: '', body: '', busy: false};
       // ⚠A pid-less external pending row is never pruned by age, so the ack also drops it from the server store.
       const s = sid && attnSess(rowOf() || {sid});
       if(s && s.plat && s.plat !== 'cc') postJSON('/api/ext/dismiss', {sid}).catch(() => {});
@@ -408,9 +467,18 @@ function attnTitle(){ if(!ISPOP && !ISWP && !ISBP) document.title = titleOf(attn
       if(attnRp.id === id){ attnRpClose(); return redraw(); }
       const to = attnRpTo(attnSess(rowOf() || {sid, cwd})).id;
       if(!to) return;
+      attnAsk = {id: '', to: '', body: '', busy: false};
       attnRp = {id, to, draft: '', busy: false}; return redraw();
     }
     if(act === 'rps') return attnRpSend(redraw);
+    if(act === 'ask'){
+      if(attnAsk.id === id){ attnAsk = {id: '', to: '', body: '', busy: false}; return redraw(); }
+      const r = rowOf();
+      if(attnAskOpen(id, r, attnSess(r || {sid, cwd}))) redraw();
+      return;
+    }
+    if(act === 'askx'){ attnAsk = {id: '', to: '', body: '', busy: false}; return redraw(); }
+    if(act === 'asks') return attnAskSend(redraw);
     if(act === 'snz'){ attnMenu = attnMenu === id ? '' : id; return redraw(); }
     if(act === 'snz30' || act === 'snzclr' || act === 'later'){
       const r = rowOf();

@@ -25,16 +25,23 @@ def const_src(name):
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class BgIdleJs(unittest.TestCase):
-    def why(self, lang, w):
+    def why(self, lang, w, k="bgidle"):
         src = ("let LANG = " + json.dumps(lang) + "; const T = s => s; const UNIT_KO = {m: '\\ubd84'};\n"
                + "\n".join(js_fn(n) for n in ("U", "PL", "attnWhy")) + "\n"
-               "process.stdout.write(JSON.stringify(attnWhy({k: 'bgidle', why: " + json.dumps(w) + "})));")
+               "process.stdout.write(JSON.stringify(attnWhy({k: " + json.dumps(k) + ", why: " + json.dumps(w) + "})));")
         return node(src)
 
     def test_R2_en_why(self):
         self.assertEqual(self.why("en", WHY), "3 background shells · 2 idle · longest 25m")
         self.assertEqual(self.why("en", WHY.replace("셸 3개", "셸 1개")), "1 background shell · 2 idle · longest 25m")
         self.assertEqual(self.why("ko", WHY), WHY)
+
+    def test_bglong_en_why(self):
+        w = "장기 백그라운드 2개 · 최장 45분"
+        self.assertEqual(self.why("en", w, "bglong"), "Long background 2 · longest 45 min")
+        self.assertEqual(self.why("en", w + " · 무출력 1개", "bglong"), "Long background 2 · longest 45 min · 1 idle")
+        self.assertEqual(self.why("ko", w, "bglong"), w)
+        self.assertIn("bglong:'Long background'", const_src("ATTN_LBL"))
 
     def test_R2_label(self):
         self.assertIn("bgidle:'Idle shells'", const_src("ATTN_LBL"))

@@ -161,6 +161,7 @@ The Timeline is the evidence behind a verdict: what each agent actually did, and
 4. The session drawer in the top bar has the full list (running a tool, thinking, waiting, done, stalled). Click a row for its work log; with a terminal app set (iTerm2, Terminal.app, Orca), its tab comes forward too.
 
 - «Idle shells»: a session with an open background shell whose output has not changed for 15 min (open shell count, idle count, longest quiet time). Clean up with /tasks in that session; Sidereus never stops a shell.
+- «Long background»: a session with a background shell open for more than 30 min (count, longest run, idle count); when it also has idle shells they merge into this one row. «Ask to check» on an idle or long background row previews a one-line request and the recipient session; only «Confirm — send» puts it in that session's mailbox, and the row then shows «Check requested». It is disabled when the session is not logged into the mailbox.
 - Clicking a blocked or awaiting-answer alert anywhere (card, toast, row, OS notification) raises that session's terminal tab.
 - The idle and git filter chips cycle on click (idle: off, 10, 30, 60 min; git: off, ↑ unpushed, ↑~ unpushed or dirty). The branch chip opens the session's diff.
 - A Codex session without hooks shows «Hooks not connected» and only «Last activity N m ago» ([HOOKS.md](HOOKS.md)).

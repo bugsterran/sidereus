@@ -67,7 +67,7 @@ class Base(unittest.TestCase):
 class TestPoints(Base):
     def test_point_table(self):
         self.assertEqual(att.ATT_PTS, {"blocked": 100, "ask": 90, "conflict": 85, "mailidle": 75, "abort": 70, "ctx95": 65, "fail": 60,
-                                       "wreck": 60, "stall": 55, "loop": 50, "toolfail": 45, "bgidle": 30,
+                                       "wreck": 60, "stall": 55, "loop": 50, "toolfail": 45, "bgidle": 30, "bglong": 30,
                                        "ctx85": 25, "done": 20, "bgdone": 15})
 
     def test_thresholds(self):
@@ -174,6 +174,52 @@ class TestBgIdle(Base):
     def test_R4_old_shell_still_counts(self):
         row = self.one(sess("a", state="wait", age=10, bgIdle={"n": 1, "idle": 1, "max": 3 * 3600}))
         self.assertIn("최장 180분", [s for s in row["sigs"] if s["k"] == "bgidle"][0]["why"])
+
+
+class TestBgLong(Base):
+    BL = {"n": 2, "long": 1, "max": 31 * 60, "at": int(NOW) - 31 * 60, "last": int(NOW) - 31 * 60}
+
+    def test_bglong_alone(self):
+        row = self.one(sess("a", state="tool", age=30, bgLong=self.BL))
+        sg = [s for s in row["sigs"] if s["k"] == "bglong"]
+        self.assertEqual(len(sg), 1)
+        self.assertEqual((sg[0]["pts"], sg[0]["why"], sg[0]["since"]), (30, "장기 백그라운드 1개 · 최장 31분", int(NOW) - 31 * 60))
+        self.assertEqual(set(sg[0]), SIG_KEYS)
+
+    def test_bglong_absorbs_bgidle(self):
+        bi = {"n": 2, "idle": 1, "max": 1500, "at": int(NOW) - 1500, "last": int(NOW) - 1500}
+        ks = self.kinds(sess("a", state="tool", age=30, bgLong=self.BL, bgIdle=bi))
+        self.assertEqual(ks, ["bglong"])
+        why = self.one(sess("a", state="tool", age=30, bgLong=self.BL, bgIdle=bi))["why"]
+        self.assertEqual(why, "장기 백그라운드 1개 · 최장 31분 · 무출력 1개")
+
+    def test_bgidle_only_unchanged(self):
+        bi = {"n": 3, "idle": 2, "max": 1500}
+        row = self.one(sess("a", state="tool", age=30, bgIdle=bi))
+        self.assertEqual([s["k"] for s in row["sigs"]], ["bgidle"])
+        self.assertEqual(row["why"], "백그라운드 셸 3개 · 무출력 2개 · 최장 25분")
+
+    def test_not_live_none(self):
+        for st in ("gone", "done"):
+            self.assertNotIn("bglong", self.kinds(sess("a", state=st, age=30, bgLong=self.BL)))
+        self.assertEqual(self.kinds(sess("a", state="tool", age=30, bgLong={"n": 1, "long": 0, "max": 0})), [])
+
+    def test_since_stable(self):
+        r = sess("a", state="tool", age=30, bgLong=self.BL)
+        a = [s["since"] for s in att._row_sigs(r, NOW) if s["k"] == "bglong"]
+        b = [s["since"] for s in att._row_sigs(r, NOW + 41) if s["k"] == "bglong"]
+        self.assertEqual(a, b)
+        self.assertEqual(a, [int(NOW) - 31 * 60])
+
+    def test_human_input_after_onset_clears(self):
+        onset = self.BL["last"] + att.BG_LONG_S
+        self.assertEqual(self.kinds(sess("a", state="tool", age=30, bgLong=self.BL, humanAt=onset + 5)), [])
+        self.assertEqual(self.kinds(sess("a", state="tool", age=30, bgLong=self.BL, humanAt=onset - 5)), ["bglong"])
+
+    def test_cleared_bglong_does_not_hide_later_idle(self):
+        bi = {"n": 2, "idle": 1, "max": 950, "at": int(NOW) - 950, "last": int(NOW) - 950}
+        ha = self.BL["last"] + att.BG_LONG_S + 5   # after the long onset, before the idle onset
+        self.assertEqual(self.kinds(sess("a", state="tool", age=30, bgLong=self.BL, bgIdle=bi, humanAt=ha)), ["bgidle"])
 
 
 class TestSinceStable(Base):

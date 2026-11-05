@@ -278,6 +278,11 @@ class TestWhyEveryKind(unittest.TestCase):
         self.assertEqual(ab._why_en({"k": "bgidle", "why": whys["bgidle"]}),
                          "2 background shell(s) · 1 idle · longest 9 min")
         self.assertEqual(ab._why_en({"k": "bgidle", "why": ""}), "Idle shells")
+        self.assertEqual(ab._why_en({"k": "bglong", "why": "장기 백그라운드 2개 · 최장 41분"}),
+                         "Long background 2 · longest 41 min")
+        self.assertEqual(ab._why_en({"k": "bglong", "why": "장기 백그라운드 1개 · 최장 41분 · 무출력 1개"}),
+                         "Long background 1 · longest 41 min · 1 idle")
+        self.assertEqual(ab._why_en({"k": "bglong", "why": ""}), "Long background shells")
         self.assertEqual(ab._why_en({"k": "done", "why": "작업 끝 · 입력 대기 30초"}), "Done · waiting for input 30 s")
         self.assertEqual(ab._why_en({"k": "done", "why": "작업 끝 · 입력 대기 5분"}), "Done · waiting for input 5 min")
 

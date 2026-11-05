@@ -18,7 +18,7 @@ from sidereus.cards import _WRECK_BY_CWD, _note_lock, _recent_transcripts
 from sidereus.usage import _sid_proj
 from sidereus.otel import OTEL_TRUST_S, _otel_state
 from sidereus.projcost import _projcost_of
-from sidereus.bgtasks import _bg_open, bg_idle
+from sidereus.bgtasks import _bg_open, bg_idle, bg_long
 from sidereus.notes import _note_bg_done, _note_ctx, _note_transition, _sess_state
 from sidereus.parse import _parse_transcript
 from sidereus.ext import codex_env_dedupe, ext_children, ext_rollout_rows, ext_rows
@@ -269,10 +269,12 @@ def _row_children(fp, p, now, dead, act="run"):
         plnone = None
     # idle bg shells (stat per poll, never cached); added only when present (demo-mirrored key set)
     bgidle = None if dead else bg_idle(fp, now)
+    bglong = None if dead else bg_long(fp, now)   # launch time only; same present-only rule
     # `wfh` is added only when present, so rows without history keep the demo-mirrored key set.
     return dict({"wf": wf}, **({"wfh": wfh} if wfh else {}), **({"team": team} if team else {}), **({"plm": plm} if plm else {}),
                 **({"plrun": plrun} if plrun else {}), **({"plOff": True} if ploff else {}),
-                **({"plNone": plnone} if plnone else {}), **({"bgIdle": bgidle} if bgidle else {}), **{
+                **({"plNone": plnone} if plnone else {}), **({"bgIdle": bgidle} if bgidle else {}),
+                **({"bgLong": bglong} if bglong else {}), **{
         # ★Ended sessions show nothing running — no process, so no tasks either (only old notifications linger).
         "sub": sub,   # subagents — elapsed counted **now** (not frozen in the cache)
         "bgs": bgs,   # background commands

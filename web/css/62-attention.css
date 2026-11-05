@@ -44,3 +44,5 @@ html[data-ui=next] .attn .atrpto{width:100%;font-size:11px;color:var(--nx-t2)}
 html[data-ui=next] .attn .atrpto small{color:var(--nx-t3)}
 html[data-ui=next] .attn .atrp input{flex:1 1 auto;min-width:0;font:inherit;font-size:12px;padding:2px 6px;border:1px solid var(--nx-field);border-radius:4px;background:var(--nx-bg);color:var(--nx-t1)}
 html[data-ui=next] .attn .atrp button{font:inherit;font-size:11px;padding:1px 7px;border:1px solid var(--nx-rule);border-radius:4px;background:var(--nx-bg);color:var(--nx-t2);cursor:pointer}
+html[data-ui=next] .attn .atpre{width:100%;margin:0;font:inherit;font-size:11.5px;white-space:pre-wrap;overflow-wrap:anywhere;padding:3px 6px;border:1px solid var(--nx-rule);border-radius:4px;background:var(--nx-bg);color:var(--nx-t1)}
+html[data-ui=next] .attn .atck{align-self:center;font-size:10.5px;color:var(--nx-t3);white-space:nowrap}
