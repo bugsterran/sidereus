@@ -58,13 +58,14 @@ function archFhHtml(mods, edges, tests, sel, groups, ents, fo, flit, bp){
   const rows = F.rows.map(r => '<div class=archfh-row data-b="' + r.b + '"><span class=archfh-lb>' + esc(r.lbl) + '</span><div class="archfh-bx' + (r.sp ? ' sp' : '') + '">'
     + (r.sp ? r.sp.map(s => '<div class=archfh-sr>' + s.map(box).join('') + '</div>').join('') : r.ks.map(box).join('')) + '</div></div>').join('');
   const tix = {}; F.edges.forEach(e => { if(!own(tix, e.b)) tix[e.b] = Object.keys(tix).length % 6; });   // colour per target box: lines into one box share a hue
-  const eg = e => { const kd = kinds[e.a + '\u0001' + e.b] || e.kind || '', lab = String(e.lab || ''), c = e.a === sk ? 'out' : e.b === sk ? 'in' : '';
+  // ⚠Full step labels (several calls) ran 300px wide over boxes and each other. ⇒ badge text cut at 28 chars; the full label is the <title>.
+  const eg = e => { const kd = kinds[e.a + '\u0001' + e.b] || e.kind || '', full = String(e.lab || ''), lab = archFocusCut(full, 28), c = e.a === sk ? 'out' : e.b === sk ? 'in' : '';
     const w = (typeof mmdTw === 'function' ? mmdTw(lab) : 7 * lab.length) + 8;
     return '<g class=mmdfe data-f="' + esc(e.a) + '" data-t="' + esc(e.b) + '"' + (kd ? ' data-k="' + esc(kd) + '"' : '') + ' data-c="' + c + '" data-ci=' + (own(tix, e.b) ? tix[e.b] : 0) + ' aria-label="' + esc(nm(e.a) + ' → ' + nm(e.b)) + '">'
       + '<path class=mmdhit d="M0 0"/><path class="mmde e-' + (e.est ? 'dot' : 'solid') + '" d="M0 0" marker-end="url(#archfh-ah)"/>'
-      + (lab ? '<g class="mmdel mmdfl"><rect width="' + w + '" height=18 rx=3 /><text class=mmdtx text-anchor=middle dominant-baseline=central>' + esc(lab) + '</text></g>' : '') + '</g>'; };
+      + (lab ? '<g class="mmdel mmdfl"><title>' + esc(full) + '</title><rect width="' + w + '" height=18 rx=3 /><text class=mmdtx text-anchor=middle dominant-baseline=central>' + esc(lab) + '</text></g>' : '') + '</g>'; };
   return '<div class=archfh-w><div class=archfh data-sk="' + esc(sk) + '">' + rows
-    + '<svg class=archfh-e xmlns="http://www.w3.org/2000/svg"><defs><marker id=archfh-ah viewBox="0 0 10 10" refX=9 refY=5 markerWidth=7 markerHeight=7 orient=auto-start-reverse>'
+    + '<svg class=archfh-e xmlns="http://www.w3.org/2000/svg"><defs><marker id=archfh-ah viewBox="0 0 10 10" refX=9 refY=5 markerUnits=userSpaceOnUse markerWidth=8 markerHeight=8 orient=auto-start-reverse>'
     + '<path class=mmdah d="M0,0L10,5L0,10z"/></marker></defs>' + F.edges.map(eg).join('') + '</svg></div></div>';
 }
 // Pure: lanes of one gap. its = [{up: [x], dn: [x], lo, hi}] (stubs leaving the run upward / downward) → sets it.l, returns the lane count.
@@ -241,6 +242,11 @@ function archFhRoute(slot){
       const hit = x => put.some(o => Math.abs(o[0] - x) < (o[2] + w) / 2 + 3 && Math.abs(o[1] - p.ly) < 20);
       if(p.bs) for(let k = 1; hit(p.lx) && k < 12; k++){ const dx = Math.ceil(k / 2) * (w + 6) * (k % 2 ? 1 : -1), x = p.lx + dx;
         if(x - w / 2 >= p.bs[0] && x + w / 2 <= p.bs[1] && !hit(x)){ p.lx = x; break; } }
+      // ⚠A short run (or one shared by a bundle) has no free spot: try beside the path's own vertical runs, longest first.
+      if(hit(p.lx)){ const v = p.pts.slice(1).map((q, j) => [p.pts[j], q]).filter(s => s[0][0] === s[1][0])
+          .sort((a, b) => Math.abs(b[1][1] - b[0][1]) - Math.abs(a[1][1] - a[0][1]));
+        for(const s of v){ const y = (s[0][1] + s[1][1]) / 2, ok = x => !put.some(o => Math.abs(o[0] - x) < (o[2] + w) / 2 + 3 && Math.abs(o[1] - y) < 20);
+          const x = [s[0][0] + w / 2 + 4, s[0][0] - w / 2 - 4].find(ok); if(x != null){ p.lx = x; p.ly = y; break; } } }
       put.push([p.lx, p.ly, w]);
       r.setAttribute('x', f(p.lx - w / 2)); r.setAttribute('y', f(p.ly - 9)); t.setAttribute('x', f(p.lx)); t.setAttribute('y', f(p.ly)); } });
   const q = archFhQuality(R.paths, M.rects);
