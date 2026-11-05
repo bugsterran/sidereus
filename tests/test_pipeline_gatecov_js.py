@@ -41,9 +41,9 @@ G = ("{ defaults: { model: 'opus' }, loops: [], nodes: ["
 
 
 def _bar_expr():
-    body = js_fn("plBody")
+    body = js_fn("plCovEval")   # shared by Edit (plBody) and Watch (plWatchBody)
     cov = re.search(r"^\s*const cov = [^\n]*$", body, re.M).group(0)
-    span = "'" + re.search(r"""'</b>(<span class="plcov'.*?'</span>')""", body).group(1)
+    span = "'" + re.search(r"""html: '(<span class="plcov'.*?'</span>')""", body).group(1)
     return cov, span
 
 
