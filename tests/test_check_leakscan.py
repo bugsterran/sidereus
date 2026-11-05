@@ -142,7 +142,7 @@ class PrePush(unittest.TestCase):
         d = tempfile.mkdtemp()
         self.addCleanup(rmtree_force, d)
         env = dict(os.environ, GIT_CONFIG_GLOBAL=os.path.join(d, "none"), GIT_CONFIG_NOSYSTEM="1")
-        g = lambda *a: subprocess.run(["git", "-C", d] + list(a), check=True, capture_output=True, env=env, text=True).stdout
+        g = lambda *a: subprocess.run(["git", "-C", d] + list(a), check=True, capture_output=True, env=env, text=True, encoding="utf-8").stdout
         g("init", "-q"); g("config", "user.name", "nickpub"); g("config", "user.email", "nickpub@mailhost.example")
         w = lambda rel, t: open(os.path.join(d, rel), "w", encoding="utf-8").write(t)
         w(".distignore", "local.txt\n"); g("add", "."); g("commit", "-qm", "base")
