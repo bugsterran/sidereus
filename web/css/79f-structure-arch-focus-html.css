@@ -10,6 +10,9 @@
 .archfh-lb{padding:0 12px 8px;font-size:11px;letter-spacing:.03em;color:var(--nx-t3,#8b95a7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .archfh-bx{flex:1 1 0;min-width:0;display:flex;flex-wrap:wrap;justify-content:center;column-gap:24px;row-gap:14px;
   padding:0 var(--fh-gr,16px) 0 var(--fh-gl,16px);border-radius:8px}
+/* hub band split (84j9 archFhPlan r.sp): one flex line group per part; the inline rowGap of .archfh-bx spaces the parts and their own wraps */
+.archfh-bx.sp{flex-direction:column;flex-wrap:nowrap;align-items:stretch}
+.archfh-sr{display:flex;flex-wrap:wrap;justify-content:center;column-gap:24px;row-gap:inherit}
 .archfh .archfh-n{--ac:var(--nx-info,#5899f3);box-sizing:border-box;height:30px;max-width:220px;margin:0;padding:0 12px;font:inherit;font-size:12px;line-height:28px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:var(--nx-t1,#dfe5ee);
   background:color-mix(in srgb,var(--ac) 8%,var(--nx-panel,#151b24));border:1px solid color-mix(in srgb,var(--ac) 40%,var(--nx-rule,#2a3442));border-left:3px solid var(--ac);border-radius:8px}

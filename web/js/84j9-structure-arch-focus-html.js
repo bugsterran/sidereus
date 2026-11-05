@@ -32,6 +32,12 @@ function archFhPlan(P, v1){
   const fk = k => own(first, k) ? first[k] : Infinity;
   const rows = Object.keys(by).map(Number).sort((a, b) => a - b).map(b => ({ b, lbl: lbl(b), ks: by[b].sort((x, y) =>
     fk(x) - fk(y) || ior(x) - ior(y) || (name(x) < name(y) ? -1 : name(x) > name(y) ? 1 : 0) || (x < y ? -1 : x > y ? 1 : 0)) }));
+  // ⚠One band in a single line made every hub link a U-turn through the gap above (stacked lanes, direction only at the arrow head).
+  // ⇒ the hub's band splits into three lines: callers only above, the hub alone, the rest (callees, two-way, flow-only) below.
+  if(!v1){ const cr = new Set(es.filter(e => e.b === sk).map(e => e.a)), ce = new Set(es.filter(e => e.a === sk).map(e => e.b));
+    rows.forEach(r => { if(!r.ks.includes(sk) || r.ks.length < 2) return;
+      const o = r.ks.filter(k => k !== sk), up = o.filter(k => cr.has(k) && !ce.has(k)), dn = o.filter(k => !(cr.has(k) && !ce.has(k)));
+      r.sp = [up, [sk], dn].filter(a => a.length); r.ks = [].concat(...r.sp); }); }
   return { rows, edges: es.filter(e => e.a !== e.b), keep };
 }
 // HTML of the focus view (sync, no Mermaid). Connectors are empty here: 84j calls archFhRoute(slot) once the string is in the DOM.
@@ -49,7 +55,8 @@ function archFhHtml(mods, edges, tests, sel, groups, ents, fo, flit, bp){
     const tip = nm(k) + (m.path ? ' · ' + m.path : '') + (g !== '' ? ' · ' + g : '') + (k === sk && m.path ? ' — ' + T('Click again to open the code') : '');
     return '<button type=button class="archfh-n' + (own(P.hx || {}, k) ? ' hx' : '') + '" data-p="' + esc(k) + '" data-kd="' + esc(m.kind || 'module') + '"'
       + (k === sk ? ' data-on=1' : '') + ' title="' + esc(tip) + '">' + esc(nm(k)) + '</button>'; };
-  const rows = F.rows.map(r => '<div class=archfh-row data-b="' + r.b + '"><span class=archfh-lb>' + esc(r.lbl) + '</span><div class=archfh-bx>' + r.ks.map(box).join('') + '</div></div>').join('');
+  const rows = F.rows.map(r => '<div class=archfh-row data-b="' + r.b + '"><span class=archfh-lb>' + esc(r.lbl) + '</span><div class="archfh-bx' + (r.sp ? ' sp' : '') + '">'
+    + (r.sp ? r.sp.map(s => '<div class=archfh-sr>' + s.map(box).join('') + '</div>').join('') : r.ks.map(box).join('')) + '</div></div>').join('');
   const tix = {}; F.edges.forEach(e => { if(!own(tix, e.b)) tix[e.b] = Object.keys(tix).length % 6; });   // colour per target box: lines into one box share a hue
   const eg = e => { const kd = kinds[e.a + '\u0001' + e.b] || e.kind || '', lab = String(e.lab || ''), c = e.a === sk ? 'out' : e.b === sk ? 'in' : '';
     const w = (typeof mmdTw === 'function' ? mmdTw(lab) : 7 * lab.length) + 8;
@@ -123,9 +130,24 @@ function archFhPaths(rects, rows, edges){
   const gx = {};
   Object.keys(pe).forEach(id => { const L = pe[id].sort((u, v) => u.far - v.far), k = L[0].k, r = rects[k], g = rk[k] + (id.endsWith('\u00011') ? 1 : 0);
     const used = gx[g] = gx[g] || [];
-    L.forEach((e, i) => { let x = r.x + r.w * (i + 1) / (L.length + 1);
-      for(let t = 0; t < 4 && used.some(u => Math.abs(u - x) < 3); t++) x = Math.min(r.x + r.w - 4, x + 6);
-      used.push(x); e.set(x); }); });
+    // ⚠only against other boxes' ports: nudging against its own spread ports piled a crowded side onto its clamped edge
+    const hit = x => used.some(u => u.k !== k && Math.abs(u.x - x) < 3);
+    L.forEach((e, i) => { const x0 = r.x + r.w * (i + 1) / (L.length + 1); let x = x0;
+      for(let t = 1; t <= 6 && hit(x); t++){ const c = x0 + (t % 2 ? 1 : -1) * 6 * Math.ceil(t / 2); if(c > r.x + 2 && c < r.x + r.w - 2) x = c; }
+      if(hit(x)) x = x0;
+      used.push({ k, x }); e.set(x); }); });
+  // ⚠A link between boxes stacked over each other bent anyway (spread ports rarely share an x). ⇒ adjacent rows: when one end's port
+  // lies over the other box and no other port sits within 6px there (same side) or 3px (same gap), move that port: a straight vertical.
+  const po = [];
+  paths.forEach(p => { if(p.ra == null || p.ra === p.rb) return; const dn = p.rb > p.ra;
+    p.qa = { k: p.a, s: dn ? 1 : 0, x: p.xa }; p.qb = { k: p.b, s: dn ? 0 : 1, x: p.xb }; po.push(p.qa, p.qb); });
+  const free = (q, x, p) => !po.some(o => o !== q && (o.k === q.k ? o.s === q.s && Math.abs(o.x - x) < 6
+    : o.k !== p.a && o.k !== p.b && rk[o.k] + o.s === rk[q.k] + q.s && Math.abs(o.x - x) < 3));
+  const over = (R, x) => x > R.x + 6 && x < R.x + R.w - 6;
+  paths.forEach(p => { if(!p.qa || p.gx != null || Math.abs(p.rb - p.ra) !== 1) return;
+    if(over(rects[p.b], p.xa) && free(p.qb, p.xa, p)){ p.xb = p.qb.x = p.xa; }
+    else if(over(rects[p.a], p.xb) && free(p.qa, p.xb, p)){ p.xa = p.qa.x = p.xb; } });
+  paths.forEach(p => { delete p.qa; delete p.qb; });
   paths.forEach(p => { if(p.ra == null) return;
     const xa = p.xa, xb = p.xb, dn = p.rb > p.ra, d = Math.abs(p.rb - p.ra);
     p.it = d === 0 ? [it(p.ra, [], [xa, xb])] : d === 1 ? [dn ? it(p.rb, [xa], [xb]) : it(p.ra, [xb], [xa])]
@@ -140,6 +162,7 @@ function archFhPaths(rects, rows, edges){
     delete p.it; delete p.ra; delete p.rb; delete p.gx; delete p.xa; delete p.xb; });
   paths.forEach(p => { if(!p.pts) return;
     p.pts = p.pts.filter((q, i) => !i || q[0] !== p.pts[i - 1][0] || q[1] !== p.pts[i - 1][1]);
+    p.pts = p.pts.filter((q, i, a) => !i || i === a.length - 1 || !((a[i - 1][0] === q[0] && q[0] === a[i + 1][0]) || (a[i - 1][1] === q[1] && q[1] === a[i + 1][1])));   // drop a corner on a straight run
     let bl = -1, s = null;   // badge: middle of the longest horizontal run, else of the path
     p.pts.slice(1).forEach((q, i) => { const a = p.pts[i], L = Math.abs(q[0] - a[0]); if(a[1] === q[1] && L > bl){ bl = L; s = [a, q]; } });
     if(!s){ const m = Math.floor((p.pts.length - 1) / 2); s = [p.pts[m], p.pts[m + 1] || p.pts[m]]; }
