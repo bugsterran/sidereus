@@ -3,7 +3,7 @@
 // ⚠Evidence is file:line:symbol only (metadata); code opens on click through the existing popup (81 strPopOpenRel).
 // ⚠The request button never sends by itself: preview → a person presses confirm → /api/dm relay (AGENTS.md rule 7).
 const ARCH_PL = 'arch-map';
-const ARCH = { cache: {}, load: {}, op: '', req: null, msg: '', sel: null, tests: false, full: false, svg: {}, sent: null, flow: null, pstop: null, breq: null, xm: '', scope: null, lit: null, nx: {}, ifx: null, et: {}, dvf: '' };   // dvf = project path while the deviation filter is on, '' off · et = «Connections» tree folds, key p\tn | p\tother, true = open (84j6) · ifx = {p, id} focus view with infrastructure unfolded (84j4) · scope = {p, layer, group} lit path level · lit = {p, flow, fs?} lit flow(s) · nx = folded neighbour branches (84j3)   // svg = archKey → rendered diagram; flow = {p, id} picked flow (84k)   // op = «path\tedge index» of the open evidence list; sel = {p, id} focused module
+const ARCH = { cache: {}, load: {}, op: '', req: null, msg: '', sel: null, tests: false, full: false, svg: {}, sent: null, flow: null, pstop: null, breq: null, xm: '', scope: null, lit: null, nx: {}, ifx: null, et: {}, dvf: '', ly0: null, lyz: 1 };   // ly0 = {p, scope, lit} overview state when the focus layer opened · lyz = focus layer zoom   // dvf = project path while the deviation filter is on, '' off · et = «Connections» tree folds, key p\tn | p\tother, true = open (84j6) · ifx = {p, id} focus view with infrastructure unfolded (84j4) · scope = {p, layer, group} lit path level · lit = {p, flow, fs?} lit flow(s) · nx = folded neighbour branches (84j3)   // svg = archKey → rendered diagram; flow = {p, id} picked flow (84k)   // op = «path\tedge index» of the open evidence list; sel = {p, id} focused module
 const ARCH_DIR = 'TB';   // ★live map, 17 modules · 46 pairs: TB 917x1146px, 85 crossings · LR 2870x328px, 88 crossings
 
 // Fetch through fetch(), not getJSON: an allow-list refusal is a non-2xx whose JSON message must reach the screen.
@@ -331,8 +331,7 @@ function archBarHtml(mods, edges, sel, tests, full, pick, ifx){   // ifx = infra
     const hint = cut && !full ? T('{n} indirect edges hidden — click a module for all').replace('{n}', cut) : T('Click a module to see only its edges');
     return '<div class=archbar>' + (pick || '') + '<span class=archhint title="' + esc(hint) + '">' + esc(hint) + '</span>' + ft + tg + '</div>'; }
   const ps = archPairs(mods, edges, tests), ni = ps.filter(p => p.to === sel).length, no = ps.filter(p => p.from === sel).length;
-  return '<div class="archbar on"><button type=button class=archall data-arall title="' + esc(T('Back (Esc)')) + '">' + esc('← ' + T('Back to full diagram')) + '</button>'   // first: where the eye starts
-    + (pick || '') + '<b class=archsel>' + esc(m.name || m.id) + '</b>'
+  return '<div class="archbar on">' + (pick || '') + '<b class=archsel>' + esc(m.name || m.id) + '</b>'   // focus layer bar: the layer header's × closes it (no back button)
     + '<span class="archlg in">' + esc(T('In') + ' ' + ni) + '</span><span class="archlg out">' + esc(T('Out') + ' ' + no) + '</span>'
     + (ifx ? '<button type=button class=archfbt data-arifx>' + esc(T('Fold infrastructure')) + '</button>' : '') + tg + '</div>';
 }
@@ -475,9 +474,8 @@ function archPaint(box, head){
   if(run && !ARCH.rsig) ARCH.rsig = [p, run.stage, run.n, run.sid].join('\t');   // first paint: a run ending before archTick's first look still refetches
   if(run) ARCH.req = null;   // ⚠one run per project: a live run closes the preview so no second request goes out
   if(ARCH.req && !cands.some(c => c.sid === ARCH.req.sid) && cands.length) ARCH.req.sid = cands[0].sid;
-  const fz = ARCH.sel && ARCH.sel.p === p ? archFitOf(box) : null, fzk = fz ? fz.w + 'x' + fz.h : '';   // focus room (resize repaints on change)
   // Poll repaints on every session change: same response + same view state keeps the drawing (no flicker, select keeps focus).
-  const sig = [p, LANG, ARCH.op, JSON.stringify(ARCH.req), typeof archXSig === 'function' ? archXSig(p) : '', ARCH.msg, archSentPh(p), run ? [run.stage, run.n, run.sid].join('/') : '', JSON.stringify(ARCH.sel), JSON.stringify(ARCH.flow || null), JSON.stringify([ARCH.scope, ARCH.lit, ARCH.nx, ARCH.ifx, ARCH.et, ARCH.dvf]), ARCH.tests, ARCH.full, fzk, typeof archReqSig === 'function' ? archReqSig(p) : '', cands.map(c => c.sid + (c.login ? '+' : '')).join(',')].join('\t');
+  const sig = [p, LANG, ARCH.op, JSON.stringify(ARCH.req), typeof archXSig === 'function' ? archXSig(p) : '', ARCH.msg, archSentPh(p), run ? [run.stage, run.n, run.sid].join('/') : '', JSON.stringify(ARCH.sel), JSON.stringify(ARCH.flow || null), JSON.stringify([ARCH.scope, ARCH.lit, ARCH.nx, ARCH.ifx, ARCH.et, ARCH.dvf]), ARCH.tests, ARCH.full, typeof archReqSig === 'function' ? archReqSig(p) : '', cands.map(c => c.sid + (c.login ? '+' : '')).join(',')].join('\t');
   if(d && box._arj === d && box._arsig === sig && box.querySelector('.archtab')) return;
   box._arj = d; box._arsig = sig;
   const msg = ARCH.msg ? '<div class=archmsg role=status>' + esc(ARCH.msg) + '</div>' : '';
@@ -514,22 +512,22 @@ function archPaint(box, head){
     .sort((a, b) => (b.e.ok ? 1 : 0) - (a.e.ok ? 1 : 0));   // passed first, failed last
   const same = box._arp === p; box._arp = p;   // ⚠keep scroll only within one project: another project opens at 0,0
   const keep = n => { const x = same && box.querySelector && box.querySelector(n); return x ? [x.scrollTop, x.scrollLeft] : null; };
-  // ⚠refit pass, or a paint while the diagram is still loading (a lit flow's off-screen count resizes the bar, so the next poll repaints):
+  const lyk = sel ? p + '\t' + sel : '', lyNew = box._arly !== lyk; box._arly = lyk;   // a new focus id opens the layer at 0,0 (no centring)
+  // ⚠a paint while the diagram is still loading (a lit flow's off-screen count resizes the bar, so the next poll repaints):
   //   the DOM scroll was clamped to 0 under the loading line, use the saved one
-  const hold = box._arfit ? box._arhold : same && box._arpend && box._arpend[0] ? box._arpend : null;
-  let sm = hold ? hold[0] : keep('.archmap'); const sl = hold ? hold[1] : keep('.archel-list'), sd = hold ? hold[2] : keep('.archdet');   // ⚠innerHTML resets scroll: clicks must not move the view
+  const hold = same && box._arpend && box._arpend[0] ? box._arpend : null;
+  let sm = hold ? hold[0] : keep('.archmap'); const sl = hold ? hold[1] : keep('.archel-list'), sd = hold ? hold[2] : keep('.archdet'), slm = sel && !lyNew ? keep('.archlym') : null;   // ⚠innerHTML resets scroll: clicks must not move the view
   box._arsm = [sm, sl, sd];   // a cache miss draws after a frame (archDiagram fill): it restores this once the diagram is in
   const devAt = {}, devSn = d.style && d.style.style ? archStyleName(d.style) : '';   // edge index -> deviation (server validated i)
   if(devSn) (Array.isArray(d.dev) ? d.dev : []).forEach(x => { if(x && typeof x.i === 'number') devAt[x.i] = x; });
-  const lay = archHasLayers(d, tests);   // ⚠v1: archSrc/archRanks path unchanged (R4)
-  const fv = lay && sel && typeof archFocusSrc === 'function';   // v2 focus: bands kept, neighbours only (84j4)
-  const ents = lay && (!sel || fv) && Array.isArray(d.flows) && d.flows.length && typeof archFlowEntries === 'function' ? archFlowEntries(d, mods, tests) : null;   // entry nodes (84k)
-  const fo = !!(fv && ARCH.ifx && ARCH.ifx.p === p && ARCH.ifx.id === sel), lf = fv && ARCH.lit && ARCH.lit.p === p ? (ARCH.lit.fs || [ARCH.lit.flow]).map(String) : null;
-  const flit = { flows: d.flows, fs: lf }, fx = fv ? 'fv' + (fo ? 1 : 0) + '|' + (lf || []).join(',') : '';
-  const bp = lay && typeof archBandPlan === 'function' ? archBandPlan(d, mods, tests) : null;   // band mode from the map style (84j2)
-  const kinds = fv ? archFocusKinds(mods, edges, tests, sel, ents, fo, flit, bp) : lay ? archKindMap(mods, edges, tests, ents, bp) : null;
-  const src = fv ? archFocusSrc(mods, edges, tests, sel, d.groups, ents, fo, flit, fz, bp) : lay && !sel ? archBandSrc(mods, edges, tests, ARCH.full, d.groups, ents, bp) : archSrc(mods, edges, tests, sel, ARCH.full), any = edges.some(e => e && e.ok), k = archKey(d, sel, tests, ARCH.full, ents, fx) + (sel && fz ? '\t' + fzk : '');
-  // ⚠no .archmap in the DOM (back from another main tab / «Size» / a flow) or a view-key change (focus -> overview): put back that view's last scroll (84j7)
+  // ⚠Overview is always painted as with no module focused (own tests/ents/bp/key): the focus opens as a layer above it, so the
+  //   map behind keeps its exact drawing, zoom and scroll and comes back unchanged when the layer closes.
+  const tests0 = ARCH.tests || false, lay0 = archHasLayers(d, tests0);   // ⚠v1: archSrc/archRanks path unchanged (R4)
+  const ents0 = lay0 && Array.isArray(d.flows) && d.flows.length && typeof archFlowEntries === 'function' ? archFlowEntries(d, mods, tests0) : null;   // entry nodes (84k)
+  const bp0 = lay0 && typeof archBandPlan === 'function' ? archBandPlan(d, mods, tests0) : null;   // band mode from the map style (84j2)
+  const kinds0 = lay0 ? archKindMap(mods, edges, tests0, ents0, bp0) : null;
+  const src0 = lay0 ? archBandSrc(mods, edges, tests0, ARCH.full, d.groups, ents0, bp0) : archSrc(mods, edges, tests0, '', ARCH.full), any = edges.some(e => e && e.ok), k = archKey(d, '', tests0, ARCH.full, ents0, '');
+  // ⚠no .archmap in the DOM (back from another main tab / «Size» / a flow) or a view-key change: put back that view's last scroll (84j7)
   //   instead of the carried one; before archDiagram reads box._arsm. No saved entry = carried scroll (archMmFirst rules apply).
   // ⚠Also after a project switch (no carried scroll): a map seen earlier is never re-anchored by archMmFirst, so without its saved entry it opened at 0,0.
   if(!hold && typeof archMmPick === 'function'){ const od = same && box.querySelector && box.querySelector('.archdg');
@@ -542,26 +540,30 @@ function archPaint(box, head){
   const fhd = d.stale ? archStatusHtml(p, archReqBtn(p, home, cands, d)) : hst;
   if(fl){ box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d, dvOn), '', fhd) + (d.stale && req ? '<div class=archck>' + req + '</div>' : '') + msg + archFlowBody(fa.fls, fa.fi, names) + '</div>';
     archScrollPut(box, sm, sl); archFlowMark(box.querySelector && box.querySelector('.archfdg svg'), fl); return; }
+  const pick = fa ? archFlowPick(fa.fls, ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : '') : '';
+  const ly = sel && typeof archLyHtml === 'function' ? archLyHtml(d, mods, edges, sel, si, tests, pick, any) : '';   // 84j3
   box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d, dvOn), '', hst + pre) + (rq ? '<div class=archck>' + rq + '</div>' : '') + msg
-    + '<div class=archbody' + strSplitStyle('archbody') + '><div class=archmap><div class=archtop>' + (typeof archPathHtml === 'function' ? archPathHtml(mods, d.groups, sel, ARCH.scope && ARCH.scope.p === p ? ARCH.scope : null) : '') + archBarHtml(mods, edges, sel, tests, ARCH.full, fa ? archFlowPick(fa.fls, ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : '') : '', fo)
-    + (lay ? '' : '<div class="archmsg archnol" role=status>' + esc(T('No layers — redraw the diagram')) + '</div>')
-    + (any ? archLegHtml(lay, !!kinds && Object.keys(kinds).some(x => kinds[x] === 'uses')) : '') + '</div>' + (any ? '<div class=archdg data-k="' + esc(k) + '"' + (sel && typeof archMmPadCss === 'function' ? archMmPadCss(k) : '') + (fv ? ' data-fv' : '') + (si >= 0 ? ' data-hub="m' + si + '"' : '') + (sel && fz ? ' data-fit="' + esc(fzk) + '"' : '') + '>' + archDiagram(box, k, src, mods, si >= 0 ? si : '', kinds, sel ? fz : null, bp) + '</div>' : '<div class=strload>' + esc(T('No edge passed the check.')) + '</div>') + '</div>'
-    + (any && lay && typeof archMmHtml === 'function' ? archMmHtml(archMmOn()) : '')   // minimap overlay (84j7), outside .archmap
+    + '<div class=archbody' + strSplitStyle('archbody') + '><div class=archmap' + (ly ? ' inert' : '') + '><div class=archtop>' + (typeof archPathHtml === 'function' ? archPathHtml(mods, d.groups, '', ARCH.scope && ARCH.scope.p === p ? ARCH.scope : null) : '') + archBarHtml(mods, edges, '', tests0, ARCH.full, pick, false)
+    + (lay0 ? '' : '<div class="archmsg archnol" role=status>' + esc(T('No layers — redraw the diagram')) + '</div>')
+    + (any ? archLegHtml(lay0, !!kinds0 && Object.keys(kinds0).some(x => kinds0[x] === 'uses')) : '') + '</div>' + (any ? '<div class=archdg data-k="' + esc(k) + '">' + archDiagram(box, k, src0, mods, '', kinds0, null, bp0) + '</div>' : '<div class=strload>' + esc(T('No edge passed the check.')) + '</div>') + '</div>'
+    + (any && lay0 && typeof archMmHtml === 'function' ? archMmHtml(archMmOn()) : '')   // minimap overlay (84j7), outside .archmap
+    + ly   // focus layer (79e): above the map and minimap, below the ≤1060px detail popover
     + (sel && typeof archDetHtml === 'function' ? archDetHtml(d, sel, names, ARCH.nx, { op: i => ARCH.op === p + '\t' + i, dv: i => devAt[i], sn: devSn, drawn: archDrawn(mods, edges, tests, sel, ARCH.full), lit: ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : null })   // module detail (84j3)
       : '<aside class=archside><div class=archsh><b>' + esc(T('Edges')) + '</b><span>' + esc(T('Click for evidence · click evidence for code')) + '</span>'
     + '<button type=button class=archrf data-arf title="' + esc(T('Reload now')) + '">↻</button></div>'
     + (dvOn ? archDevListHtml(edges, names, p, devAt, devSn, ARCH.op)
       : typeof archEdTreeHtml === 'function' ? archEdTreeHtml(d, names, p, { op: ARCH.op, et: ARCH.et, dv: devAt, sn: devSn, lit: ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : null })   // flow tree (84j6)
       : '<ul class=archel-list>' + ord.map(o => archEdgeRow(o.e, names, o.i, ARCH.op === p + '\t' + o.i, o.io, devAt[o.i], devSn)).join('') + '</ul>') + '</aside>') + strSplitGrip('archbody') + '</div></div>';
-  if(typeof archZmApply === 'function') archZmApply(box.querySelector && box.querySelector('.archdg')); archScrollPut(box, sm, sl, sd);   // ⚠zoom first: a 1x svg clamps the restored scroll (84j8)
-  // ⚠the room was measured on the previous paint (overview bar or none): re-measure once on the new frame and redraw if it moved
-  if(sel && !box._arfit){ const f2 = archFitOf(box); if(f2 && f2.w + 'x' + f2.h !== fzk){ box._arfit = 1; box._arhold = [sm, sl, sd]; box._arsig = ''; try{ archPaint(box, head); } finally { box._arfit = 0; box._arhold = null; } return; } }
-  if(typeof archLitNow === 'function') archLitNow(box.querySelector && box.querySelector('.archdg'));   // cached svg: lit classes go back on
+  if(typeof archZmApply === 'function') archZmApply(box.querySelector && box.querySelector('.archdg'));   // ⚠zoom first: a 1x svg clamps the restored scroll (84j8)
+  const fs = ly && box.querySelector ? box.querySelector('.archly .archdg') : null;
+  if(fs && typeof archLyZoomPut === 'function') archLyZoomPut(fs);   // layer zoom + route (s2 archFhRoute) before its scroll goes back
+  archScrollPut(box, sm, sl, sd, slm);
+  if(typeof archLitNow === 'function') archLitNow(box.querySelector && box.querySelector('.archdg'));   // cached svg: lit classes go back on (the layer too)
 }
-// Restore the map/list scroll saved before an innerHTML repaint.
-function archScrollPut(box, sm, sl, sd){
+// Restore the map/list/layer scroll saved before an innerHTML repaint (the first .archmap is the overview).
+function archScrollPut(box, sm, sl, sd, slm){
   const put = (n, v) => { const x = v && box.querySelector && box.querySelector(n); if(x){ x.scrollTop = v[0]; x.scrollLeft = v[1]; } };
-  put('.archmap', sm); put('.archel-list', sl); put('.archdet', sd);
+  put('.archmap', sm); put('.archel-list', sl); put('.archdet', sd); put('.archlym', slm);
 }
 // Pure guard + send: only the confirm button calls this, and only with an open preview (no auto-send).
 async function archSend(){
@@ -591,7 +593,8 @@ function archDgClick(p, t){
     if(!m){ if(typeof archFocusClick === 'function') archFocusClick(p, d, String(b.dataset.p || '')); return true; }   // ifx chip / entry node (focus view only)
     if(typeof archFocusHx === 'function' && b.closest('.archdg[data-fv]') && archFocusHx(b.dataset.p)){ archFocusClick(p, d, b.dataset.p); return true; }   // paired entry hexagon: lights its flows
     if(ARCH.sel && ARCH.sel.p === p && ARCH.sel.id === m.id){ if(m.path) strPopOpenTree(p, String(m.path)); }
-    else { if(typeof archMmAt === 'function') archMmAt(b); ARCH.sel = { p, id: m.id }; ARCH.op = ''; paintStruct(); }
+    else { if(typeof archMmAt === 'function') archMmAt(b); if(!(ARCH.sel && ARCH.sel.p === p)) ARCH.ly0 = { p, scope: ARCH.scope, lit: ARCH.lit };   // opened from the overview: what × / Esc restore
+      ARCH.sel = { p, id: m.id }; ARCH.op = ''; paintStruct(); }   // a module inside the layer only changes the layer
     return true; }
   if((b = t.closest('.archdg .mmdfe'))){ const f = at(b.dataset.f), to = at(b.dataset.t);
     const i = f && to ? (d.edges || []).findIndex(e => e && e.ok && e.from === f.id && e.to === to.id) : -1;
@@ -616,7 +619,8 @@ document.addEventListener('click', ev => {
   if((b = t.closest('[data-aev]'))){ strPopOpenRel(p, b.dataset.af, parseInt(b.dataset.al, 10) || 1, 80, b.dataset.as || ''); return; }
   // ⚠.archdg only: flow lifelines (84k .archfdg) carry data-p too
   if(archDgClick(p, t)) return;
-  if(t.closest('[data-arall]')){ ARCH.sel = null; ARCH.scope = null; ARCH.lit = null; ARCH.op = ''; paintStruct(); return; }
+  if((b = t.closest('.archly [data-arz]'))){ archLyZoom(b.dataset.arz); return; }
+  if(t.closest('[data-arall]') || (t.closest('.archly') && !t.closest('.archly-p'))){ archLyClose(); return; }   // × or the dimmed backdrop
   if(t.closest('[data-ardv]')){ const on = ARCH.dvf !== p; ARCH.dvf = on ? p : '';
     if(on){ ARCH.sel = null; ARCH.flow = null; ARCH.op = ''; }
     const hadF = document.activeElement === t.closest('[data-ardv]');   // ⚠the repaint drops focus to <body>
@@ -649,7 +653,7 @@ document.addEventListener('change', ev => {
 setInterval(() => archTick(Date.now()), 5000);
 // Hover focus (overview and focus view alike); the last key is kept on the svg so moves inside one node do no work.
 document.addEventListener('pointerover', ev => {
-  const t = ev.target && ev.target.closest ? ev.target : null, svg = t && t.closest('.archdg svg');   // ⚠not .archmap svg: legend swatches are svgs there too
+  const t = ev.target && ev.target.closest ? ev.target : null, svg = t && (t.closest('.archdg .archfh') || t.closest('.archdg svg'));   // ⚠not .archmap svg: legend swatches are svgs there too · .archfh = HTML focus layer (84j9)
   if(!svg) return;
   const p = t.closest('[data-p]'), e = !p && t.closest('.mmdfe');
   const h = p ? { node: p.dataset.p } : e ? { edge: { f: e.dataset.f, t: e.dataset.t } } : null, k = JSON.stringify(h);
@@ -657,7 +661,7 @@ document.addEventListener('pointerover', ev => {
   svg._arh = k; archHovPaint(svg, h);
 });
 document.addEventListener('pointerout', ev => {
-  const t = ev.target && ev.target.closest ? ev.target : null, svg = t && t.closest('.archdg svg'), r = ev.relatedTarget;
+  const t = ev.target && ev.target.closest ? ev.target : null, svg = t && (t.closest('.archdg .archfh') || t.closest('.archdg svg')), r = ev.relatedTarget;
   if(!svg || (r && svg.contains(r))) return;
   svg._arh = 'null'; archHovPaint(svg, null);
 });
@@ -691,9 +695,3 @@ function archPanStart(e){
 }
 document.addEventListener('pointerdown', ev => { archPanStart(ev); });
 document.addEventListener('click', ev => { if(ARCH_PAN_EAT){ ARCH_PAN_EAT = false; ev.stopPropagation(); ev.preventDefault(); } }, true);
-// Focus view refits to the map box on resize (debounced); archPaint repaints only when the 20px room bucket moved.
-let ARCH_RZ = 0;
-if(typeof window !== 'undefined' && window.addEventListener) window.addEventListener('resize', () => {
-  clearTimeout(ARCH_RZ);
-  ARCH_RZ = setTimeout(() => { if(mainView === 'struct' && strMode === 'arch' && ARCH.sel) paintStruct(); }, 160);
-});

@@ -47,7 +47,10 @@ function archFocusPlan(mods, edges, tests, sel, ents, open, lit, bp){
   const ms = (mods || []).filter(m => m && m.id != null && ix[m.id] === mods.indexOf(m) && drawn(m.id));
   const fl = fold ? Math.min(...F.map(id => bp.of(mods[ix[id]]))) : -1;
   const sm = mods[ix[sel]], sb = !sm ? -1 : bp.of(sm);   // hub band index (bp.n = external band)
-  return { ix, ms, fold, fl, edges: E, ents: en, hx, sb, sk: 'm' + ix[sel], bp };
+  // io: node key -> 'in' | 'out' | 'both' toward the hub (84j9 row order); num: id pair -> lit step numbers; fs: lit flow ids
+  const sk = 'm' + ix[sel], io = {}, put = (k, v) => { io[k] = io[k] && io[k] !== v ? 'both' : v; };
+  E.forEach(e => { if(e.b === sk && e.a !== sk) put(e.a, 'in'); if(e.a === sk && e.b !== sk) put(e.b, 'out'); });
+  return { ix, ms, fold, fl, edges: E, ents: en, hx, sb, sk, bp, num, io, fs };
 }
 // Pure: entry node label: kind · label cut at 12 characters (full label in the flow picker).
 // ⚠Longer made two entries wider than a 1100px pane's row (room 432), so the second one wrapped under the first.
