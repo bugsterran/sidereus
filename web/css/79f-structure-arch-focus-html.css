@@ -22,6 +22,8 @@
 .archfh .archfh-n.hx{border:0;padding:0 18px;border-radius:0;background:color-mix(in srgb,var(--ac) 22%,var(--nx-panel,#151b24));
   clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%,0 50%)}
 .archfh .archfh-n[data-on]{border:2px solid var(--nx-t1,#dfe5ee);border-left-width:4px;font-weight:700;background:color-mix(in srgb,var(--ac) 18%,var(--nx-panel,#151b24))}
+/* ⚠hexagon hub: the clip-path cuts the border above into white slivers at the slanted corners, so a stronger fill marks it instead */
+.archfh .archfh-n.hx[data-on]{border:0;background:color-mix(in srgb,var(--ac) 45%,var(--nx-panel,#151b24))}
 /* connectors: overlay is click-through except the 10px hit stroke */
 .archfh-e{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .archfh-e .mmdhit{fill:none;stroke:transparent;stroke-width:10;pointer-events:stroke;cursor:pointer}
