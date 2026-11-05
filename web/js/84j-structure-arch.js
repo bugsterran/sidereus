@@ -558,6 +558,7 @@ function archPaint(box, head){
   const fs = ly && box.querySelector ? box.querySelector('.archly .archdg') : null;
   if(fs && typeof archLyZoomPut === 'function') archLyZoomPut(fs);   // layer zoom + route (s2 archFhRoute) before its scroll goes back
   archScrollPut(box, sm, sl, sd, slm);
+  if(ly && typeof archLyFocus === 'function') archLyFocus(box);   // 84j3: modal layer takes focus only when the repaint dropped it
   if(typeof archLitNow === 'function') archLitNow(box.querySelector && box.querySelector('.archdg'));   // cached svg: lit classes go back on (the layer too)
 }
 // Restore the map/list/layer scroll saved before an innerHTML repaint (the first .archmap is the overview).

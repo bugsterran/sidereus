@@ -173,11 +173,11 @@ class ArchDetail(unittest.TestCase):
     def test_r3_esc_guards(self):
         r = run("const st = {view: 'struct', mode: 'arch', pop: false, pal: false}, E = (o, t) => Object.assign({key: 'Escape', target: t || {tagName: 'DIV'}}, o);"
                 "console.log(JSON.stringify([archEscOk(E({}), st), archEscOk(E({key: 'Enter'}), st), archEscOk(E({defaultPrevented: true}), st),"
-                " archEscOk(E({isComposing: true}), st), archEscOk(E({}, {tagName: 'INPUT'}), st), archEscOk(E({}, {tagName: 'SELECT'}), st),"
+                " archEscOk(E({isComposing: true}), st), archEscOk(E({keyCode: 229}), st), archEscOk(E({}, {tagName: 'INPUT'}), st), archEscOk(E({}, {tagName: 'SELECT'}), st),"
                 " archEscOk(E({}, {tagName: 'TEXTAREA'}), st), archEscOk(E({}, {tagName: 'DIV', isContentEditable: true}), st),"
                 " archEscOk(E({}), Object.assign({}, st, {pop: true})), archEscOk(E({}), Object.assign({}, st, {pal: true})),"
                 " archEscOk(E({}), Object.assign({}, st, {mode: 'size'})), archEscOk(E({}), Object.assign({}, st, {view: 'tl'}))]));")
-        self.assertEqual(r, [True] + [False] * 11)
+        self.assertEqual(r, [True] + [False] * 12)
         self.assertRegex(DET, r"addEventListener\('keydown', e => \{[\s\S]*?\}, true\);")   # capture: before 35c closes the popup
 
     def test_r4_no_view_movement(self):

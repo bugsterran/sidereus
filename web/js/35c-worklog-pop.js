@@ -225,7 +225,10 @@ document.addEventListener('change', e => {
 // diffShow replaces the whole body, so the picked row is re-focused (and marked by 98-a11y now, not next frame):
 // otherwise the first arrow after a click or an open has no row to start from.
 function dfPickOpen(fi){
+  const l0 = document.querySelector('#dbody .dfl'), st = l0 ? l0.scrollTop : 0;
   diffPick = fi; fullOn = false; diffShow();
+  const l1 = document.querySelector('#dbody .dfl');
+  if(l1) l1.scrollTop = st;   // ⚠diffShow rebuilds the list at scrollTop 0: the picked row fell out of view after every open
   const on = document.querySelector('#dbody .dfl .dfi[data-fi="' + fi + '"]');
   if(!on) return;
   if(typeof a11yMark === 'function') a11yMark(on);

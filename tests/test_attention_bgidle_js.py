@@ -38,8 +38,8 @@ class BgIdleJs(unittest.TestCase):
 
     def test_bglong_en_why(self):
         w = "장기 백그라운드 2개 · 최장 45분"
-        self.assertEqual(self.why("en", w, "bglong"), "Long background 2 · longest 45 min")
-        self.assertEqual(self.why("en", w + " · 무출력 1개", "bglong"), "Long background 2 · longest 45 min · 1 idle")
+        self.assertEqual(self.why("en", w, "bglong"), "Long background 2 · longest 45m")
+        self.assertEqual(self.why("en", w + " · 무출력 1개", "bglong"), "Long background 2 · longest 45m · 1 idle")
         self.assertEqual(self.why("ko", w, "bglong"), w)
         self.assertIn("bglong:'Long background'", const_src("ATTN_LBL"))
 

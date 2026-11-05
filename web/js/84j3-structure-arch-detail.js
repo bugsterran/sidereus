@@ -331,7 +331,7 @@ if(typeof window !== 'undefined' && window.addEventListener) window.addEventList
 // Pure guard for Esc: false in fields, after another handler, while a code popup / palette / drawer is open, or off the arch view.
 function archEscOk(e, st){
   const t = e && e.target, tag = t && t.tagName ? String(t.tagName).toLowerCase() : '';
-  if(!e || e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return false;
+  if(!e || e.key !== 'Escape' || e.defaultPrevented || e.isComposing || e.keyCode === 229) return false;   // 229 = IME (Safari omits isComposing)
   if(tag === 'input' || tag === 'select' || tag === 'textarea' || (t && t.isContentEditable)) return false;
   return !!st && st.view === 'struct' && st.mode === 'arch' && !st.pop && !st.pal;
 }

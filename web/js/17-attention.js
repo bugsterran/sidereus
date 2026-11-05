@@ -163,7 +163,7 @@ function attnWhy(g){
     case 'bgdone': return PL(n, 'agent completion') + ' unread';
     case 'bgidle': { const m = w.match(/(\d+)\D+(\d+)\D+(\d+)/); return m ? PL(m[1], 'background shell') + ' · ' + m[2] + ' idle · longest ' + U(m[3], 'm') : 'Idle shells'; }
     case 'bglong': { const m = w.match(/(\d+)\D+(\d+)/), q = w.match(/무출력 (\d+)/);
-      return m ? 'Long background ' + m[1] + ' · longest ' + m[2] + ' min' + (q ? ' · ' + q[1] + ' idle' : '') : 'Long background'; }
+      return m ? 'Long background ' + m[1] + ' · longest ' + U(m[2], 'm') + (q ? ' · ' + q[1] + ' idle' : '') : 'Long background'; }
     case 'gone': return w === '끊김?' ? 'Disconnected?' : 'Disconnected';
     case 'conflict': { const m = w.match(/파일 (\d+) · (세션|서브에이전트|에이전트) (.*)$/);
       return 'Conflict risk' + (m ? ' · ' + PL(m[1], 'file') + ' · ' + (m[2] === '세션' ? 'sessions ' : 'subagents ') + m[3].replace(/(^|, )메인(?=,|$)/g, '$1main') : ''); }
