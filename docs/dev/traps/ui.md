@@ -266,3 +266,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 ## Layout changes that are not window resizes must refit the status bar
 - Cause: the status bar refits only on `resize`; the rail toggle (Cmd+B) changes its width without one, so CLI cells stayed ellipsised until the next poll (~1.5 s).
 - ⇒ `railApply` schedules one `buildSbar` on the next frame. ⚠Any new push-layout toggle needs the same call.
+
+## Arrow-opened files must hand focus back to the list
+- Cause: opening a file re-renders the pane (diff popup `diffShow` replaces `#dbody`; structure `strSrcShow` focuses the code pane), so the next arrow scrolled code or had no row to start from.
+- ⇒ Arrows move the highlight at once and open after 250 ms of quiet (`strTreeOpenLater`, `dfListKey`); the open re-focuses the tree / picked row. ⚠Per-keypress opening re-renders the whole patch each time.

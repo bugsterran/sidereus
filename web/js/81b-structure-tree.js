@@ -209,6 +209,21 @@ function strTreeBrSync(){
   if(bb) bb.onclick = () => { if(!(strWin && !strWin.closed)) strPopClose(); strBrGo(p); try{ window.focus(); }catch(e){ softErr('spbr-focus', e); } };
 }
 function strTreeOpenFile(p){ strSrcGo(p, 0, ''); }
+// Arrows open the file row the cursor settles on: one fetch + nav entry per burst, not per keypress.
+// ⚠strSrcShow focuses the code pane, where arrows scroll — focus returns to `foc` (tree or filter) so the next arrow keeps moving.
+// ⚠strPop is swapped per child window; a timer that fires after another window took over does nothing.
+const STR_TREE_OPEN_MS = 250;
+let strTreeOpenT = 0;
+function strTreeOpenLater(sp, foc){
+  clearTimeout(strTreeOpenT);
+  strTreeOpenT = setTimeout(() => {
+    const q = sp && sp.tree;
+    if(strPop !== sp || !q || String(q.cur).slice(0, 2) !== 'f:' || q.cur.slice(2) === q.file) return;
+    strTreeOpenFile(q.cur.slice(2));
+    const t = strPopDoc().querySelector('#spbody ' + foc);
+    if(t) try{ t.focus({ preventScroll: true }); }catch(e){ softErr('srt-focus3', e); }
+  }, STR_TREE_OPEN_MS);
+}
 function strTreeToggle(d, want){         // want: 'open' | 'shut' | undefined (flip)
   const shut = dfShut.has(d);
   if(want === 'open' ? !shut : (want === 'shut' ? shut : false)) return;
@@ -237,7 +252,8 @@ function strTreeKey(ev, body){
   let i = rows.findIndex(r => strTreeRowKey(r) === q.cur);
   if(k === 'ArrowUp' || k === 'ArrowDown'){
     i = (i < 0) ? 0 : Math.max(0, Math.min(rows.length - 1, i + (k === 'ArrowDown' ? 1 : -1)));
-    q.cur = strTreeRowKey(rows[i]); strTreePaintList(body); return;
+    q.cur = strTreeRowKey(rows[i]); strTreePaintList(body);
+    strTreeOpenLater(strPop, inInput ? '.srtq' : '.srtt'); return;
   }
   if(i < 0) return;
   const cur = q.cur, isDir = cur.slice(0, 2) === 'd:', key = cur.slice(2);

@@ -213,7 +213,7 @@ document.addEventListener('click', e => {
     return;
   }
   const fi = e.target.closest && e.target.closest('.dfi[data-fi]');
-  if(fi){ diffPick = parseInt(fi.getAttribute('data-fi'), 10); fullOn = false; diffShow(); return; }
+  if(fi){ dfPickOpen(parseInt(fi.getAttribute('data-fi'), 10)); return; }
   // ★'click outside = close' was removed — a floating window exists so you can use what is outside it.
 });
 document.addEventListener('change', e => {
@@ -222,6 +222,36 @@ document.addEventListener('change', e => {
   lsSet('sidereus.dfUntr', dfUntr ? '1' : '0');
   if(diffRepo) loadRepo(diffRepo);
 });
+// diffShow replaces the whole body, so the picked row is re-focused (and marked by 98-a11y now, not next frame):
+// otherwise the first arrow after a click or an open has no row to start from.
+function dfPickOpen(fi){
+  diffPick = fi; fullOn = false; diffShow();
+  const on = document.querySelector('#dbody .dfl .dfi[data-fi="' + fi + '"]');
+  if(!on) return;
+  if(typeof a11yMark === 'function') a11yMark(on);
+  try{ on.focus({ preventScroll: true }); }catch(er){ softErr('df-focus', er); }
+}
+// Up/Down in the file list move the highlight at once and open the row the cursor settles on:
+// one diffShow per burst — each re-renders the whole patch, too heavy per keypress.
+const DF_KEY_OPEN_MS = 250;
+let dfKeyT = 0;
+function dfListKey(e){
+  if((e.key !== 'ArrowDown' && e.key !== 'ArrowUp') || e.altKey || e.metaKey || e.ctrlKey) return;
+  const cur = e.target && e.target.closest && e.target.closest('#dbody .dfl .dfi[data-fi]');
+  if(!cur) return;
+  e.preventDefault();
+  const rows = Array.prototype.slice.call(document.querySelectorAll('#dbody .dfl .dfi[data-fi]'));
+  const nx = rows[rows.indexOf(cur) + (e.key === 'ArrowDown' ? 1 : -1)];
+  if(!nx) return;
+  rows.forEach(r => r.classList.toggle('on', r === nx));
+  if(typeof a11yMark === 'function') a11yMark(nx);
+  nx.focus({ preventScroll: true });
+  if(nx.scrollIntoView) nx.scrollIntoView({ block: 'nearest' });
+  const fi = parseInt(nx.getAttribute('data-fi'), 10);
+  clearTimeout(dfKeyT);
+  dfKeyT = setTimeout(() => { if(diffPick !== fi) dfPickOpen(fi); }, DF_KEY_OPEN_MS);
+}
+document.addEventListener('keydown', dfListKey);
 document.addEventListener('keydown', e => {
   // in the popup, Esc closes that window. The main view has no diff anymore.
   if(e.key === 'Escape' && strPop){ strPopClose(); return; }   // the structure code popup follows the same rule
