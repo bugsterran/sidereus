@@ -275,3 +275,4 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `diffShow` rebuilds `#dbody` at scrollTop 0, so after an arrow-key or click open the picked row sat below the list edge (★row top 1750 vs list bottom 929).
 - ⇒ `dfPickOpen` (35c) keeps the `.dfl` scrollTop across `diffShow`.
 - ⚠Focus the picked row with preventScroll only; do not scrollIntoView (no auto-centre).
+- ⚠Structure source tree: a mouse click on a file row hands focus back to `.srtt` too (81b click path), not only the arrow path — otherwise arrows scroll the code pane after a click.
