@@ -30,7 +30,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - The pane shows the stage's outcome, loop-backs (↺), agent count and age, its gate evidence («No gate evidence for this stage yet» when none) and gate command («No gate command — nothing machine-checks this stage» when none). Agent buttons open that agent's work log.
 - «Running N» lists every open run (project, pipeline, stage chips, agent count); click a row to open it. It stays in place with «No runs running», so runs starting or ending do not move the layout.
 - Drag the grips between the parts to resize; double-click a grip for the defaults (canvas 75%, pane 14%, card 11% of the free height). Sizes are kept as shares, so a window resize keeps the proportions.
-- The head row holds the pickers, the run bar, «✎ Edit» and «▶ Run».
+- The head row holds the pickers, «Gates n/m», «Evaluation», the run bar, «✎ Edit» and «▶ Run».
 
 ### Get started
 - A four-step checklist sits at the top: «Claude Code connected», «Project added», «First pipeline», «Gate red-checked». «Hide» dismisses it.

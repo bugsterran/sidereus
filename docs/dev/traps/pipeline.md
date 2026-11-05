@@ -190,6 +190,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: Watch reuses the canvas read-only, so every edit guard has to stop there as it does for a borrowed pipeline.
 - ⇒ 48h `plRO()` is true in Watch as well as for a borrowed pipeline. Any new canvas/panel handler that writes must check `plRO()`, never `p.from` — except a handler that switches to Edit itself (48i «Fix it myself» checks `p.from`, then calls `plModeSet`).
 - ⇒ Edit renders byte-identical output to the tab before the split; Watch only adds around it.
+- ⇒ «Gates n/m» + «Evaluation» come from one helper (48 `plCovEval`) in both modes; Watch shows the panel under its head row.
+- ⚠Watch is the landing view: leaving gate evidence / Evaluation to Edit hid them from the default screen. Do not drop them from Watch again.
 - ⇒ Leaving Edit with unsaved edits keeps them in memory (`PLS.g`, • mark, «Unsaved changes — Edit to save» in Watch).
 - ⚠A reload still loses unsaved edits; Watch never saves. The tour (98b) never switches the mode: in Edit its 'pl-live' step drops.
 

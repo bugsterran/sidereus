@@ -199,25 +199,31 @@ class PlMode(unittest.TestCase):
     def _watch_head(self, mode):
         stubs = ("function plViewRun(){ return {sid: 's1', lt: {}}; } function plLight(){ return {}; } function plDirty(){ return false; }"
                  "function plCanvas(){ return {html: '<CV/>'}; } function plLiveHead(){ return '<RUNBAR/>'; } function plNewForm(){ return ''; }"
-                 "function plRunTable(){ return ''; } function plRunPanel(){ return ''; } let PLRUN = null;")
+                 "function plRunTable(){ return ''; } function plRunPanel(){ return ''; } let PLRUN = null;"
+                 "let PLEVAL_OPEN = ''; function plCovEval(){ return {ev: null, html: '<COVEVAL/>'}; }")
         return run(MODE + stubs + "\n" + "\n".join(js_fn(n) for n in ("plHeadRow", "plRunBtn", "plUseLine", "plWatchBody"))
                    + "\nCUR = " + SAVED + "; plModeSet('" + mode + "', true); const hd = {row: ''};"
                    "plWatchBody(CUR, {}, '<PROJ/><PIPE/>', hd, '', plModeBtn()); console.log(JSON.stringify(hd.row));")
 
     def test_r2_r3_watch_head_row(self):
         row = self._watch_head("watch")
-        self.assertTrue(row.startswith("<PROJ/><PIPE/><span class=plwrun><RUNBAR/></span><span class=plact>"))
+        # Watch is the landing view: «Gates n/m» + «Evaluation» (plCovEval) sit right after the pickers, as in Edit.
+        self.assertTrue(row.startswith("<PROJ/><PIPE/><COVEVAL/><span class=plwrun><RUNBAR/></span><span class=plact>"))
         act = row[row.index("<span class=plact>"):]
         self.assertLess(act.index("data-plmode=edit"), act.index("data-plrun"))   # [✎ Edit][▶ Run] one action group
         self.assertIn('class="wkrgb plsv plrn" data-plrun title="Opens a run request:', act)   # Run = primary filled, tooltip says what it does
         self.assertIn('Sidereus runs nothing."><span aria-hidden=true>▶</span> Run', act)
-        for bad in ("data-plap", "Gates", "pleunred", "data-pleval", "data-plsave", "data-pldel"):
+        for bad in ("data-plap", "data-plsave", "data-pldel"):
             self.assertNotIn(bad, row)
+        wb = js_fn("plWatchBody")
+        self.assertIn("p.ok ? plCovEval(p, dirty)", wb)                         # schema-breaking file: no graph, no chip
+        self.assertIn("(PLEVAL_OPEN === p.name ? plEvalPanel(ce.ev) : '')", wb)
 
     def test_use_line_in_watch_and_picker_tooltip(self):
         # «When to use» is file data: escaped, never T(); empty = no line; picker row tooltip = «title — use».
         stubs = ("function plViewRun(){ return null; } function plDirty(){ return false; } function plCanvas(){ return {html: '<CV/>'}; }"
                  "function plLiveHead(){ return ''; } function plNewForm(){ return ''; } function plRunPanel(){ return ''; } function plWGrip(){ return ''; } function plWatchOv(){ return ''; } let PLRUN = null;"
+                 "let PLEVAL_OPEN = '';"
                  "let PPS = null; function plSelPick(){} function plLiveDot(){ return ''; } function ppFilter(a){ return a; }"
                  "function ppComboHtml(o){ return o.items.map((e, i) => o.rowHtml(e, i)).join(''); }")
         r = run(MODE + stubs + "\n" + "\n".join(js_fn(n) for n in ("plHeadRow", "plRunBtn", "plUseLine", "plWatchBody", "plPickHtml", "plComboHtml"))
@@ -235,8 +241,11 @@ class PlMode(unittest.TestCase):
     def test_r2_edit_keeps_eval_and_apply(self):
         body = js_fn("plBody")
         i = body.index("const bar = ")
-        for k in ("Gates {n}/{m}", "plEvalHead(ev", "mb + plRunBtn(p, dirty)", "data-plsave", "data-pldel"):
+        for k in ("ce.html", "mb + plRunBtn(p, dirty)", "data-plsave", "data-pldel"):
             self.assertIn(k, body[i:])
+        ce = js_fn("plCovEval")
+        for k in ("Gates {n}/{m}", "plEvalHead(ev"):
+            self.assertIn(k, ce)
         mb = js_fn("plMainBody")
         self.assertIn("(wt || !((PLS.data[PLS.proj] || {}).pipelines || []).length ? '' : plApplySeg(PLS.data[PLS.proj]))", mb)
         self.assertIn("plModeBand()", mb)
