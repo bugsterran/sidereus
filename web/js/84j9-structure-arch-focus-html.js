@@ -122,10 +122,21 @@ function archFhPaths(rects, rows, edges){
     gl[u.s].forEach(v => { if(u.lo <= v.hi && v.lo <= u.hi) l = Math.max(l, v.l + 1); });
     u.l = l; gl[u.s].push(u); gn[u.s] = Math.max(gn[u.s], l + 1); u.p.gx = u.s ? x1 + C.G0 + l * C.GS : x0 - C.G0 - l * C.GS; });
   // ⚠Ends on one side centre drew one stub over another (in + out on the hub top). ⇒ one port per end, spread along the side, ordered by the far end's x.
+  // Bundle: 3+ adjacent-row links on one (box, side), same direction and kind, share that box's port and one gap lane: they merge on
+  // one horizontal run into one trunk / arrow head. ⚠Not via a gutter. A box right over the port joins too: left out, its straight line
+  // crossed the bundle's run (its branch off the run is straight anyway).
+  const bun = {}, kd = n => { const e = (edges || [])[n] || {}; return String(e.k || '') + (e.est ? '~' : ''); };
+  const cand = paths.map((p, n) => p.ra == null || p.gx != null || Math.abs(p.rb - p.ra) !== 1 ? null : n);
+  const gk = (p, n, end) => { const dn = p.rb > p.ra; return [end ? p.b : p.a, end ? (dn ? 0 : 1) : (dn ? 1 : 0), end, kd(n)].join('\u0001'); };
+  [1, 0].forEach(end => { const by = {};
+    cand.forEach(n => { if(n == null || paths[n].bd) return; const k = gk(paths[n], n, end); if(k) (by[k] = by[k] || []).push(paths[n]); });
+    Object.keys(by).forEach(k => { if(by[k].length < 3) return; bun[k] = { end, ps: by[k] }; by[k].forEach(p => { p.bd = k; }); }); });
   const pe = {}, add = (k, s, far, set) => { const id = k + '\u0001' + s; (pe[id] = pe[id] || []).push({ k, far, set }); };
-  paths.forEach(p => { if(p.ra == null) return; const dn = p.rb > p.ra, g = p.gx != null;
-    add(p.a, dn ? 1 : 0, g ? p.gx : cx(p.b), x => { p.xa = x; });
-    add(p.b, p.rb === p.ra || dn ? 0 : 1, g ? p.gx : cx(p.a), x => { p.xb = x; }); });
+  paths.forEach(p => { if(p.ra == null) return; const dn = p.rb > p.ra, g = p.gx != null, B = p.bd ? bun[p.bd] : null;
+    if(!B || B.end) add(p.a, dn ? 1 : 0, g ? p.gx : cx(p.b), x => { p.xa = x; });
+    if(!B || !B.end) add(p.b, p.rb === p.ra || dn ? 0 : 1, g ? p.gx : cx(p.a), x => { p.xb = x; }); });
+  Object.keys(bun).forEach(k => { const B = bun[k], p0 = B.ps[0], dn = p0.rb > p0.ra, far = B.ps.reduce((s, p) => s + cx(B.end ? p.a : p.b), 0) / B.ps.length;
+    add(B.end ? p0.b : p0.a, B.end ? (dn ? 0 : 1) : (dn ? 1 : 0), far, x => B.ps.forEach(p => { if(B.end) p.xb = x; else p.xa = x; })); });
   // ⚠A bottom port of row r and a top port of row r+1 can land on one x by chance: their stubs then share the gap's vertical. ⇒ nudge by 6px.
   const gx = {};
   Object.keys(pe).forEach(id => { const L = pe[id].sort((u, v) => u.far - v.far), k = L[0].k, r = rects[k], g = rk[k] + (id.endsWith('\u00011') ? 1 : 0);
@@ -144,11 +155,14 @@ function archFhPaths(rects, rows, edges){
   const free = (q, x, p) => !po.some(o => o !== q && (o.k === q.k ? o.s === q.s && Math.abs(o.x - x) < 6
     : o.k !== p.a && o.k !== p.b && rk[o.k] + o.s === rk[q.k] + q.s && Math.abs(o.x - x) < 3));
   const over = (R, x) => x > R.x + 6 && x < R.x + R.w - 6;
-  paths.forEach(p => { if(!p.qa || p.gx != null || Math.abs(p.rb - p.ra) !== 1) return;
+  paths.forEach(p => { if(!p.qa || p.bd || p.gx != null || Math.abs(p.rb - p.ra) !== 1) return;
     if(over(rects[p.b], p.xa) && free(p.qb, p.xa, p)){ p.xb = p.qb.x = p.xa; }
     else if(over(rects[p.a], p.xb) && free(p.qa, p.xb, p)){ p.xa = p.qa.x = p.xb; } });
   paths.forEach(p => { delete p.qa; delete p.qb; });
-  paths.forEach(p => { if(p.ra == null) return;
+  Object.keys(bun).forEach(k => { const ps = bun[k].ps, dn = ps[0].rb > ps[0].ra, u = new Set(), w = new Set();
+    ps.forEach(p => { u.add(dn ? p.xa : p.xb); w.add(dn ? p.xb : p.xa); });
+    const o = it(dn ? ps[0].rb : ps[0].ra, [...u], [...w]); ps.forEach(p => { p.it = [o]; }); });
+  paths.forEach(p => { if(p.ra == null || p.bd) return;
     const xa = p.xa, xb = p.xb, dn = p.rb > p.ra, d = Math.abs(p.rb - p.ra);
     p.it = d === 0 ? [it(p.ra, [], [xa, xb])] : d === 1 ? [dn ? it(p.rb, [xa], [xb]) : it(p.ra, [xb], [xa])]
       : dn ? [it(p.ra + 1, [xa], [p.gx]), it(p.rb, [p.gx], [xb])] : [it(p.ra, [p.gx], [xa]), it(p.rb + 1, [xb], [p.gx])]; });
@@ -172,7 +186,8 @@ function archFhPaths(rects, rows, edges){
 // Pure: {crossings, boxHits, overlaps} of drawn lines (a reverse pair on one line counts once), the 81g mmdQuality segment tests (strict crossings, a box shrunk 1px so touching ends do not count).
 function archFhQuality(paths, rects){
   const seen = new Set(), line = p => { const k = JSON.stringify(p.pts), r = JSON.stringify(p.pts.slice().reverse()); if(seen.has(k) || seen.has(r)) return false; seen.add(k); return true; };
-  const segs = (paths || []).filter(p => p && p.pts && line(p)).map(p => p.pts.slice(1).map((q, i) => [p.pts[i], q])), rs = Object.keys(rects || {}).map(k => rects[k]);
+  const ln = (paths || []).filter(p => p && p.pts && line(p)), bd = ln.map(p => p.bd || null);   // one bundle shares its run and trunk on purpose
+  const segs = ln.map(p => p.pts.slice(1).map((q, i) => [p.pts[i], q])), rs = Object.keys(rects || {}).map(k => rects[k]);
   let boxHits = 0, crossings = 0;
   segs.forEach(ss => rs.forEach(R => { if(ss.some(s => mmdSegRect(s[0], s[1], R, -1))) boxHits++; }));
   const o = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
@@ -182,7 +197,7 @@ function archFhQuality(paths, rects){
   let overlaps = 0; const ax = (s, d) => Math.abs(s[0][d] - s[1][d]) < 0.01;
   const ov = (a, b, d) => Math.abs(a[0][d] - b[0][d]) < 0.01 && Math.min(Math.max(a[0][1 - d], a[1][1 - d]), Math.max(b[0][1 - d], b[1][1 - d])) - Math.max(Math.min(a[0][1 - d], a[1][1 - d]), Math.min(b[0][1 - d], b[1][1 - d])) > 0.5;
   for(let i = 0; i < segs.length; i++) for(let j = i + 1; j < segs.length; j++)
-    segs[i].forEach(a => segs[j].forEach(b => { if([0, 1].some(d => ax(a, d) && ax(b, d) && ov(a, b, d))) overlaps++; }));
+    if(!bd[i] || bd[i] !== bd[j]) segs[i].forEach(a => segs[j].forEach(b => { if([0, 1].some(d => ax(a, d) && ax(b, d) && ov(a, b, d))) overlaps++; }));
   return { crossings, boxHits, overlaps };
 }
 // Box rects (offsets inside .archfh, position:relative) and sub-rows: boxes of one band whose tops differ by over half a box start a new row.
@@ -213,7 +228,7 @@ function archFhSpace(fh, M, need, gw){
 function archFhRoute(slot){
   const fh = !slot ? null : slot.classList && slot.classList.contains('archfh') ? slot : slot.querySelector ? slot.querySelector('.archfh') : null;
   if(!fh) return null;
-  const gs = Array.from(fh.querySelectorAll('.archfh-e .mmdfe')), es = gs.map(g => ({ a: g.dataset.f, b: g.dataset.t })), f = v => String(Math.round(v * 10) / 10);
+  const gs = Array.from(fh.querySelectorAll('.archfh-e .mmdfe')), es = gs.map(g => ({ a: g.dataset.f, b: g.dataset.t, k: g.dataset.k || '', est: !!g.querySelector('.e-dot') })), f = v => String(Math.round(v * 10) / 10);
   let M = null, R = null;
   for(let i = 0; i < 4; i++){ M = archFhMeasure(fh); R = archFhPaths(M.rects, M.rows, es); if(i === 3 || !archFhSpace(fh, M, R.need, R.gw)) break; }
   const put = [];
