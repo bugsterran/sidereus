@@ -123,6 +123,7 @@ class ArchFocusHtml(unittest.TestCase):
         M, E, G = _hub(n_in=2, n_out=3, n_infra=0)
         M[1]["name"] = '<b>x</b>&"'
         E[0]["label"] = "<img src=x>"
+        E[1]["label"] = "call hostLinkMode, navigateToPath, apiConfigured"
         r = run("const h = archFhHtml(M, E, false, 'hub', GR, archFlowEntries(D, M, false), false, { flows: D.flows, fs: null }, BP);"
                 "process.stdout.write(JSON.stringify([h, ix('hub'), ARCH_FOCUS_MEMO.P && ARCH_FOCUS_MEMO.P.sk]));", M, E, G)
         h, hub, memo = r
@@ -133,7 +134,11 @@ class ArchFocusHtml(unittest.TestCase):
         self.assertIn('data-p="%s" data-kd="module" data-on=1' % hub, h)
         self.assertRegex(h, r'<g class=mmdfe data-f="m\d+" data-t="%s" data-k="call" data-c="in"' % hub)
         self.assertRegex(h, r'data-f="%s" data-t="m\d+" data-k="call" data-c="out"' % hub)
-        self.assertIn('<g class="mmdel mmdfl"><rect', h)
+        self.assertIn('<g class="mmdel mmdfl"><title>', h)
+        self.assertIn("markerUnits=userSpaceOnUse", h)                         # arrow heads keep their size when lines thicken
+        # long step label: badge text cut at 28 chars, the full label stays in the <title>
+        self.assertIn("<title>call hostLinkMode, navigateToPath, apiConfigured</title>", h)
+        self.assertIn(">call hostLinkMode, navigate…</text>", h)
         self.assertIn("class=archfh-row data-b=", h)
 
     def test_paths_fixed_rects(self):
