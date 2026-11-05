@@ -37,7 +37,7 @@ COPY = ("LICENSE", "mailbox_config.py", "mcp/sidereus_mcp.py",
         "hooks/invite_notice.py", "hooks/mailbox_stop.py", "hooks/mailbox_wake.py", "hooks/mail_wait.py",
         "hooks/pipelines_brief.py",
         "hooks/file_peers_notice.py", "hooks/pl_mark.py", "hooks/pl_flow.py", "hooks/pl_guard.py",
-        "hooks/perm_mark.py", "hooks/ev_hook.py", "hooks/pyrun.sh")
+        "hooks/perm_mark.py", "hooks/compact_mark.py", "hooks/ev_hook.py", "hooks/pyrun.sh")
 
 # Source of the hook set: `sidereus_cli.py setup-claude` prints plugin/hooks/hooks.json with the clone's real paths.
 # (event, matcher or None, script, timeout s)
@@ -58,6 +58,9 @@ HOOKS = (("SessionStart", None, "invite_notice.py", 10),
          ("PreToolUse", "Edit|Write|MultiEdit|NotebookEdit", "pl_flow.py", 5),   # first-edit [pl-none] reminder
          ("PostToolUse", "Task|Agent|SendMessage", "pl_flow.py", 5),
          ("Notification", "permission_prompt|elicitation_dialog", "perm_mark.py", 5),
+         # «Compacting» row label: PreCompact writes the marker, PostCompact removes it.
+         ("PreCompact", None, "compact_mark.py", 5),
+         ("PostCompact", None, "compact_mark.py", 5),
          # Harness evidence: test/build/check/lint Bash runs -> evidence.jsonl rows (metadata only).
          ("PreToolUse", "Bash", "ev_hook.py", 3),
          ("PostToolUse", "Bash", "ev_hook.py", 3),

@@ -350,3 +350,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: a non-zero exit with empty stdout parsed as `[]` = «no sessions», so off macOS (no ps fallback) every open row ended.
 - ⇒ `returncode != 0` raises into the failure branch: negative cache + held last answer, else unknown (`None`). Test `tests/test_live_probe.py` (`test_nonzero_exit_is_unknown_not_empty`).
 - ⚠Do not map a failed lookup to `{}` — empty means «answered, none running»; unknown must stay `None`.
+
+## «Compacting» marker can be orphaned or hidden (`compact_marks.compacting`)
+
+- Cause: hooks/compact_mark.py writes `compacting/<sid>.json` on PreCompact and removes it on PostCompact; a crash, kill or failed compaction never fires PostCompact and leaves the marker behind.
+- ⇒ the marker counts only while `actAt < t` and `now - t <= CMP_MAX_S` (300 s). Test `tests/test_compact_mark.py`.
+- ⚠Any transcript line written after PreCompact (a hook line, a queued prompt) sets actAt past the marker and hides the label for the rest of that compaction — accepted: a false «Compacting» is worse than a missed one.
+- ⚠Do not raise the cap to cover long compactions without a stale check; the ~P% estimate is capped at 95 because it is a median, not progress.

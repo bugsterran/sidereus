@@ -32,7 +32,7 @@ def run(lang, extra_cases=(), row=False):
     js = "\n".join(["let LANG = " + json.dumps(lang) + ";",
                     i18n_switch(("T", "TV", "U", "srvEn", "monLab")), lbl, ctx, fn("stateLbl"),
                     fn("sessLabel"), fn("wfRunning"), fn("waitOnLabel"), fn("monSuffix"), fn("sessKidLab", lst),
-                    fn("sessStateRow", lst), "const esc = v => String(v), TIP = {}, BLKTIP = '', WAITTIP = '';",
+                    fn("sessStateRow", lst), fn("sessCmpHtml", lst), "const esc = v => String(v), TIP = {}, BLKTIP = '', WAITTIP = '';",
                     "const sessAgoHtml = () => 'AGO', sessBurn = () => '';",
                     "const C = " + json.dumps(cases) + ";",
                     "console.log(JSON.stringify(" + out + "));"])

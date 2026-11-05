@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Sessions: a Claude Code session that is compacting shows «Compacting» with elapsed time and an estimated percentage (from this account's recent compaction times; capped at 95% until it ends). Needs the plugin's new PreCompact/PostCompact hook.
 - Attention: a background shell open for more than 30 minutes raises «Long background» (merged with «Idle shells»); background rows get «Ask to check», which previews a one-line request to that session and sends it only on «Confirm — send».
 
 ### Fixed
