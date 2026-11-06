@@ -126,6 +126,9 @@ html[data-ui][data-ui][data-ui] .archtab .archok[disabled]{opacity:1;color:var(-
 /* ⚠The light twin remaps #fff to #1a1a1a (3.2:1 on --nx-info-bg): keep white explicitly */
 html[data-ui=next][data-ui] .archall{color:#fff}
 .archlg{display:inline-flex;align-items:center;gap:5px}
+/* ⚠Focus bar at ~580px split «In» / «Out» across lines: the pair + fold button wrap as one unit, and the 260px flow select shrinks */
+.archlgp{display:inline-flex;align-items:center;gap:6px 12px;white-space:nowrap}
+@container (max-width:640px){.archbar.on .archfl select{max-width:160px;min-width:90px}}
 .archlg::before{content:'';width:16px;height:0;border-top:2.4px solid var(--lc)}
 .archlg.in,.arche.in{--lc:var(--nx-ok,#71c269)}
 .archlg.out,.arche.out{--lc:var(--nx-info,#5899f3)}

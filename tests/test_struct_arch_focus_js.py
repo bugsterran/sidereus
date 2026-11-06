@@ -411,6 +411,13 @@ setTimeout(() => process.stdout.write(JSON.stringify([h, slot.innerHTML, am.scro
         self.assertNotIn("data-arall", en)
         self.assertNotIn("Back to full diagram", J)
 
+    def test_focus_bar_legend_wraps_as_one_group(self):
+        # ⚠A ~580px bar split «In» and «Out» across lines: the pair + fold button sit in one nowrap group.
+        from tests.test_struct_arch_js import run as arun, MODS, EDGES
+        en = arun("console.log(JSON.stringify(archBarHtml(" + json.dumps(MODS) + ", " + json.dumps(EDGES) + ", 'a', false, false, '', true)));", lang="en")
+        self.assertRegex(en, r'<span class=archlgp><span class="archlg in">[^<]*</span><span class="archlg out">[^<]*</span><button[^>]*data-arifx>[^<]*</button></span>')
+        self.assertRegex(CSS, r"\.archlgp\{[^}]*white-space:nowrap")
+
     def test_chrome_above_focus_map_stays_short(self):
         # ★Live 1100x860 (pane bottom ~819): hub box 824-854 with a 2-line path and the «Source text» row; 771-801 without them.
         self.assertRegex(CSS, r"\.archpath\{[^}]*flex-wrap:nowrap")                 # path stays one line

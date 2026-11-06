@@ -332,8 +332,8 @@ function archBarHtml(mods, edges, sel, tests, full, pick, ifx){   // ifx = infra
     return '<div class=archbar>' + (pick || '') + '<span class=archhint title="' + esc(hint) + '">' + esc(hint) + '</span>' + ft + tg + '</div>'; }
   const ps = archPairs(mods, edges, tests), ni = ps.filter(p => p.to === sel).length, no = ps.filter(p => p.from === sel).length;
   return '<div class="archbar on">' + (pick || '') + '<b class=archsel>' + esc(m.name || m.id) + '</b>'   // focus layer bar: the layer header's × closes it (no back button)
-    + '<span class="archlg in">' + esc(T('In') + ' ' + ni) + '</span><span class="archlg out">' + esc(T('Out') + ' ' + no) + '</span>'
-    + (ifx ? '<button type=button class=archfbt data-arifx>' + esc(T('Fold infrastructure')) + '</button>' : '') + tg + '</div>';
+    + '<span class=archlgp><span class="archlg in">' + esc(T('In') + ' ' + ni) + '</span><span class="archlg out">' + esc(T('Out') + ' ' + no) + '</span>'   // one group: a narrow bar wraps In/Out + fold together
+    + (ifx ? '<button type=button class=archfbt data-arifx>' + esc(T('Fold infrastructure')) + '</button>' : '') + '</span>' + tg + '</div>';
 }
 // Pure: rendered-diagram cache key. Layout is deterministic for the same map + view, so re-opens and evidence clicks reuse it.
 // ents (84k archFlowEntries) add their signature, so a flows change never reuses a drawing without its entry nodes.
