@@ -462,3 +462,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ Badge text is cut at 28 chars (`archFocusCut`), full label in the badge `<title>`; when the run has no free spot, the badge goes beside the path's own vertical runs (longest first).
 - ⚠Never pass the uncut label to the badge width: the rect is sized from the shown text.
 - Arrow heads grew with the line (default `markerUnits=strokeWidth`: ★1.1 → 1.8 → 2.2px lines gave 7.7 → 12.6 → 15.4px heads on hover). ⇒ `#archfh-ah` uses `markerUnits=userSpaceOnUse` 8px; lines still thicken on hover. ⚠Do not drop `markerUnits`.
+
+## Flow sequence left the bottom of a tall pane empty (`84k archFlowFill`)
+- Cause: `mmdSeqLayout` uses a fixed row pitch; ★1920×1600, 35-step flow: diagram ended at y≈1270, pane at ≈1555 (≈300px empty).
+- ⇒ After paint, `archFlowFill` measures the free pane height under the SVG and redraws only that SVG with `gy` extra pitch per row (`archFlowGy`: none under 24px, cap 16). Small panes keep the tight pitch.
+- ⚠Measure the pane, never `innerHeight`: stacked layout (<1061) sizes the pane by content, and fit scaling changes px per row.
+- ⚠`gy` 0/absent must keep `mmdSeqLayout` byte-identical (md preview tests).

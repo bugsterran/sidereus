@@ -69,14 +69,41 @@ function archFlowGraph(fl, names){
   return g;
 }
 // Pure: tighter lifeline gaps than the md preview (labels still widen them); self-loop labels count in the total width.
-function archFlowLay(g){ return mmdSeqLayout(g, { tight: 1 }); }
+function archFlowLay(g, gy){ return mmdSeqLayout(g, gy ? { tight: 1, gy } : { tight: 1 }); }
 // Sequence SVG in tag mode (messages carry data-i), scaled to the pane down to 0.75, then the pane scrolls; '' when it cannot be drawn.
-function archFlowSvg(fl, names, fi){
+function archFlowSvg(fl, names, fi, gy){
   try{
     const g = archFlowGraph(fl, names);
-    if(g.ok) return mmdSeqSvg(g, archFlowLay(g), 'af' + fi, { tag: 1, fit: 0.75 });
+    if(g.ok) return mmdSeqSvg(g, archFlowLay(g, gy), 'af' + fi, { tag: 1, fit: 0.75 });
   }catch(e){ if(typeof softErr === 'function') softErr('archflow', e); }
   return '';
+}
+// Pure: extra row pitch that spreads a short diagram over the free pane height. free = px left under the SVG,
+// s = on-screen px per layout px (fit scaling), n = message/note rows. Capped so a 3-step flow does not turn into a sparse ladder.
+function archFlowGy(free, s, n){
+  if(!(free > 24) || !(s > 0) || !(n > 0)) return 0;
+  return Math.min(16, Math.floor(free / s / n));
+}
+// After paint: when the whole diagram fits with room to spare, redraw only its SVG with a wider row pitch.
+// ⚠Measured, not guessed from innerHeight: the pane height depends on the stacked/side layout and the fit scale on the width.
+// ⚠A pane that already scrolls (free <= 0) or a stacked layout (pane sized by content) keeps the tight pitch.
+function archFlowFill(box, fl, names, fi){
+  const pane = box && box.querySelector && box.querySelector('.archmap'), v = pane && pane.querySelector('.archfdg .mmdv');
+  const svg = v && v.querySelector('svg');
+  if(!svg || !svg.getBoundingClientRect || pane.scrollHeight > pane.clientHeight + 1) return 0;
+  const g = archFlowGraph(fl, names);
+  if(!g.ok) return 0;
+  // free = pane content bottom − .mmdv bottom (the box includes its own horizontal scrollbar), minus a small margin.
+  const L = archFlowLay(g), r = svg.getBoundingClientRect(), cs = getComputedStyle(pane);
+  const pb = pane.getBoundingClientRect().bottom - (parseFloat(cs.borderBottomWidth) || 0) - (parseFloat(cs.paddingBottom) || 0) - 8;
+  const gy = archFlowGy(pb - v.getBoundingClientRect().bottom, r.height / L.h, L.msgs.length + L.notes.length);
+  if(!gy) return 0;
+  const s2 = archFlowSvg(fl, names, fi, gy), old = v.innerHTML;
+  if(!s2) return 0;
+  v.innerHTML = s2;
+  if(pane.scrollHeight > pane.clientHeight + 1){ v.innerHTML = old; return 0; }   // ⚠never trade the empty space for a scrollbar
+  archFlowMark(v.querySelector('svg'), fl);
+  return gy;
 }
 // After paint: failed steps get .archfx and an SVG <title> with the gate's reason (text node, no markup).
 // ⚠data-i = step index + 1: item 0 is the synthetic entry arrow.
