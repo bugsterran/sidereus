@@ -17,14 +17,14 @@
       "agent": "main",
       "skill": "requirements",
       "task": "The orchestrator itself writes R1..Rn checkable criteria plus one Non-goal for the request, following the requirements skill; the owner confirms once before 설계 is dispatched. No subagent.",
-      "ui": { "x": 44, "y": 24 }
+      "ui": { "x": 44, "y": 52 }
     },
     {
       "title": "설계",
       "agent": "sidereus-designer",
       "task": "Write the spec for the request: summary, rules affected, tests, screen expectations, risk. Put them in summary. Read-only. Consume the request's R1..Rn criteria; each slice names the R ids it covers; tests cite R ids.",
       "produces": "slices",
-      "ui": { "x": 292, "y": 24 }
+      "ui": { "x": 267, "y": 35 }
     },
     {
       "title": "구현",
@@ -33,7 +33,7 @@
       "fanout": "slices",
       "gate": "scripts/check.sh --fast",
       "onError": "continue",
-      "ui": { "x": 540, "y": 24 }
+      "ui": { "x": 479, "y": 24 }
     },
     {
       "title": "검증",
@@ -42,7 +42,7 @@
       "task": "Run the gate once and report each failing step as a finding with file/line. Do not fix anything.",
       "gate": "scripts/check.sh --full",
       "onFail": { "goto": "구현", "max": 2 },
-      "ui": { "x": 788, "y": 24 }
+      "ui": { "x": 694, "y": 24 }
     },
     {
       "title": "리뷰-찾기",
@@ -51,7 +51,7 @@
       "task": "Find candidate defects in the working-tree diff (git diff + untracked files); follow .claude/review-guide.md. Two reviewers in one message, one lens each: (a) AGENTS.md rules + security (esc, path/arg checks, git_argv, metadata only); (b) logic/behaviour bugs incl. regressions. Every finding = file:line + the rule or failure scenario + a short diff excerpt; style, naming, cleanup and nits are not findings. Report PASS with the candidates; 리뷰-확인 decides. After a loop-back, review only the fix diff. Small change (under ~100 changed lines, no security/metadata path: routes, work.py, MCP, innerHTML, git calls): one reviewer covering both lenses, its FAIL is final, then declare [pl-skip:sidereus-change/리뷰-확인].",
       "onFail": { "goto": "구현", "max": 1, "then": "재검증" },
       "parallel": 2,
-      "ui": { "x": 1036, "y": 24 }
+      "ui": { "x": 943, "y": 24 }
     },
     {
       "title": "리뷰-확인",
@@ -59,7 +59,7 @@
       "model": "opus",
       "task": "Try to disprove each 리뷰-찾기 finding against the code, git blame and git log -L. Tag survivors Important / Nit / Pre-existing, drop Nits, report only confirmed findings ranked by severity, plus one line per finding: id, rule, verdict (confirmed|disproved|pre-existing). status FAIL only on a confirmed Important introduced by this diff; Pre-existing never blocks.",
       "onFail": { "goto": "구현", "max": 1, "then": "재검증" },
-      "ui": { "x": 1284, "y": 24 }
+      "ui": { "x": 1155, "y": 25 }
     },
     {
       "title": "재검증",
@@ -68,7 +68,7 @@
       "task": "Run the gate once after the review fix round and report. Do not fix anything.",
       "gate": "scripts/check.sh --full",
       "onlyOnJump": true,
-      "ui": { "x": 1532, "y": 24, "color": "#ff0000" },
+      "ui": { "x": 1367, "y": 25, "color": "#ff0000" },
       "onFail": { "goto": "구현", "max": 1 }
     },
     {
@@ -76,7 +76,7 @@
       "skill": "sidereus-ship",
       "agent": "general-purpose",
       "task": "Report each R line as PASS/FAIL + one piece of evidence (screen crop, test name or file:line).",
-      "ui": { "x": 1780, "y": 24, "color": "#2ec4b6" }
+      "ui": { "x": 1579, "y": 41, "color": "#2ec4b6" }
     }
   ]
 }
