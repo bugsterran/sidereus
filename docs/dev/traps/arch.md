@@ -69,6 +69,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ `Hb<i>r0`/`r1` (band) or `Hg<n>r0`/`r1` (group box): others in r0, hubs in r1, LR parent stacks them (oneLayer, cls `archhrow`, invisible). No hub = source bytes unchanged.
   - ⚠Never drop the 81e `.sub` check: without it the band title sits centred over r0's member columns and lines into them fall back to side entry. It walks into r0's group boxes too (their members take lines from above).
   - ⚠Hubs go one row per level (a hub another hub in the same container calls drops a row): one shared r1 sent the hub -> hub line sideways.
+  - ⚠A hub's cycle partners (same container, reached from the hub and reaching it back) share its row: left in r0, the closing edge climbed back up (★real SPA shell -> a screen line, ~1000px).
 - **«Not on a traced flow» sub-fold keys must be in both Expand all and the unpin check** (`84j6` `archEdTreeClick`).
   - Cause: Other rows sit under two folds (`p\tother` and `p\tother.w` / `p\tother.c`); a key missing from Expand all leaves rows hidden, missing from the unpin check leaves the map lit with no visible row.
   - ⇒ Expand all sets `other`, `other.w`, `other.c`; a pinned Other row unpins when `other` or its own sub-fold goes open → closed.
