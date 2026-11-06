@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: Watch also moves to a newly started run when nothing else is working, even if that run opens waiting on a person or before its first stage is recorded; it used to stay on the previous run.
 - Structure: on a narrow module focus bar the flow select shrinks and the In/Out legend (with the fold button) wraps as one group instead of splitting across lines. At 1920 the focus bar now takes its own row (legend and zoom below); a long legend had squeezed it to about a quarter of the row.
 - Pipelines: stage cards on one row line up on a shared middle line even after hand-dragging (rows group within 30 px, a dropped card snaps to the nearest row and the aligned position is saved), and their status chips sit at the same height.
 - Pipelines: when the watched run ends, Watch moves to another open run even if that run is waiting on a person or idle between stages; with none open it moves as soon as one starts.

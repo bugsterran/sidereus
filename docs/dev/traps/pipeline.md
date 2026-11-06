@@ -418,6 +418,11 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: no working run left → newest open run (live session, `!r.end`, the same rule as the «Working now» row `plNowRun`); with nothing open the ended key stays pending (`PLNOW_VEND` = the view it was kept at) until a run appears or the person picks another view.
 - ⚠Working runs keep priority; the open fallback fires only for an ended viewed run, never for an idle one (it would pick itself). `tests/test_pl_now_js.py` `test_n`..`test_q`.
 
+## Watch: a new run that opened without a working stage was never followed (`48j` `plNowFollow`)
+- Cause: new-run follow read only working runs (`cur`); a run opening on «hold» or with no stage recorded yet (main doing its first stage unmarked) stayed off-screen while nothing else worked.
+- Fix: after working runs, the newest open run not in `PLNOW_OSEEN` (open keys of the last poll) is picked.
+- ⚠First call (reload) seeds `PLNOW_OSEEN` with every open run, so a restored pick is not replaced by an old idle run. `test_r`.
+
 ## Stage cards on one row not aligned (`web/js/48c-pipeline-graph.js` `plgRows`)
 - Cause: rows grouped a card only within ±8px of the row's first card top, and a drop saved raw y; hand-dragged tops 24/35/52 split into two rows, so `plgAlign` never centred them. Status pills hang from each card's top, so centred cards of different heights put them at different y.
 - Fix: rows group by middle line against the row's running mean (`PLG_ROWTOL` 30); a drop snaps to the nearest row's middle within `PLG_H/2` (`plgSnapY`) and writes back the aligned y like x; pills are lifted by `--plcd` (`plgChipDy`) to the row's top.

@@ -110,7 +110,8 @@ function plNowPickApply(){
 }
 // Follow live runs (from paintPipe): a new run is picked when no live run is viewed; the viewed one ending moves to the newest left.
 // ⚠First call (reload): every run counts as new, so the newest live run opens only when nothing live is shown; a live view never jumps. Follow state is memory only (the picks persist via 48 plProjPref); never plPaint / plFit — the view must not move.
-let PLNOW_SEEN = null, PLNOW_VKEY = '', PLNOW_VEND = '';   // VEND: view (proj/sel/sid) at which an unviewed VKEY was kept; another view drops it
+// VEND: view (proj/sel/sid) at which an unviewed VKEY was kept; another view drops it. OSEEN: open run keys of the last poll.
+let PLNOW_SEEN = null, PLNOW_VKEY = '', PLNOW_VEND = '', PLNOW_OSEEN = null;
 // Working = a stage running (plPrLive, as the row status) or one that ran within PLNOW_GRACE s.
 // ⚠An open run whose stages all wait is not working: counting it held the selection on an idle run. The grace keeps a run between two stages from flip-flopping.
 const PLNOW_GRACE = 120;
@@ -135,6 +136,7 @@ function plNowFollow(ss){
     const k = lv && !lv.pr.end ? lv.sid + '\n' + p.name + '\n' + lv.pr.rid : '';
     return k && cur[k] ? k : '';
   };
+  const oseen = PLNOW_OSEEN || open; PLNOW_OSEEN = open;   // first call: every open run counts as seen (a restored pick stays)
   const seen = PLNOW_SEEN || {}, sig = () => [PLS.proj, PLS.sel, PLS.nowSid].join('\n'), prev = PLNOW_VEND && PLNOW_VEND !== sig() ? '' : PLNOW_VKEY;
   PLNOW_SEEN = cur; PLNOW_VEND = '';
   const p = plCur(), edit = !!(p && p.ok && p.sha && !plWatchFor(p));   // ⚠only a real Edit view blocks: no saved pipeline / loading still shows the run view
@@ -143,7 +145,9 @@ function plNowFollow(ss){
   if(v){ PLNOW_VKEY = v; return; }   // a live run is viewed: later runs only show as running
   const ks = Object.keys(cur), newest = (m, a) => a.reduce((b, k) => (!b || m[k].t0 > m[b].t0 ? k : b), '');
   // ⚠Viewed run ended with no working run left: fall back to the newest open one (on hold / idle past the grace), else the end moved nowhere.
-  const k = (prev && !cur[prev] ? newest(cur, ks) : newest(cur, ks.filter(q => !seen[q]))) || (prev && !open[prev] ? newest(open, Object.keys(open)) : '');
+  // ⚠A run that opens without a working stage (first stage on hold, or done by main without a mark) was never picked: newly opened runs come next.
+  const ok2 = Object.keys(open), k = (prev && !cur[prev] ? newest(cur, ks) : newest(cur, ks.filter(q => !seen[q]))) || newest(open, ok2.filter(q => !oseen[q]))
+    || (prev && !open[prev] ? newest(open, ok2) : '');
   if(k){ const e = open[k]; plNowGoProj(e.proj); PLS.nowSid = e.sid; PLS.sel = e.name; }   // same steps as plNowPick, without its paint
   // ⚠No move: keep an ended / no-longer-working key (pending end) while the view is unchanged, so a run starting on a later poll still takes over.
   const vk = viewed();

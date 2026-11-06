@@ -463,7 +463,7 @@ class PlNow(unittest.TestCase):
 
 # plNowFollow harness: plCur = the selected name; plLiveRun reads LV[proj|name]; plWatchOn reads WATCH.
 FOL = (NOW + _const("PLNOW_GRACE", "48j-pipeline-now.js") + js_fn("plNowWorking") + js_fn("plNowFollow") + """
-let PLNOW_SEEN = null, PLNOW_VKEY = '', PLNOW_VEND = '', WATCH = true, LV = {};
+let PLNOW_SEEN = null, PLNOW_VKEY = '', PLNOW_VEND = '', PLNOW_OSEEN = null, WATCH = true, LV = {};
 let CURX = { ok: true, sha: 'h' };
 function plCur(){ return PLS.sel && CURX ? Object.assign({ name: PLS.sel }, CURX) : null; }
 function plLiveRun(proj, name){ return LV[proj + '|' + name] || null; }
@@ -480,7 +480,7 @@ class PlNowFollow(unittest.TestCase):
     def test_a_first_call_opens_newest_unless_live_viewed(self):
         r = run(FOL + "const N = [ses('s1', '/b', [{name: 'p1', rid: 5, t0: 5}]), ses('s2', '/c', [{name: 'p2', rid: 9, t0: 9}])];"
                 "plNowFollow(N); const a = [S(), PAINT, FIT]; plNowFollow(N); const b = S();"
-                "PLNOW_SEEN = null; Object.assign(PLS, { proj: '/a', sel: 'p0', nowSid: '' }); LV['/a|p0'] = { sid: 's0', pr: { rid: 3 } };"
+                "PLNOW_SEEN = PLNOW_OSEEN = null; Object.assign(PLS, { proj: '/a', sel: 'p0', nowSid: '' }); LV['/a|p0'] = { sid: 's0', pr: { rid: 3 } };"
                 "plNowFollow(N.concat([ses('s0', '/a', [{name: 'p0', rid: 3, t0: 3}])])); console.log(JSON.stringify([a, b, S()]));")
         self.assertEqual(r, [[["/c", "p2", "s2"], 0, 0], ["/c", "p2", "s2"], ["/a", "p0", ""]])   # reload: newest live; a viewed live run is kept
 
@@ -537,7 +537,7 @@ class PlNowFollow(unittest.TestCase):
 
     def test_f4_no_saved_or_loading_project_still_follows(self):
         r = run(FOL + "const N = [ses('s1', '/b', [{name: 'chg', rid: 5, t0: 5}])]; WATCH = false; CURX = { ok: true, suggest: 1 }; plNowFollow([]); plNowFollow(N); const a = S();"
-                "Object.assign(PLS, { proj: '/a', sel: 'idle', nowSid: '' }); CURX = null; PLNOW_SEEN = null; plNowFollow([]); plNowFollow(N); console.log(JSON.stringify([a, S()]));")
+                "Object.assign(PLS, { proj: '/a', sel: 'idle', nowSid: '' }); CURX = null; PLNOW_SEEN = PLNOW_OSEEN = null; plNowFollow([]); plNowFollow(N); console.log(JSON.stringify([a, S()]));")
         self.assertEqual(r, [["/b", "chg", "s1"], ["/b", "chg", "s1"]])
 
     def test_j_idle_open_run_viewed_yields_to_working_run(self):
@@ -560,7 +560,7 @@ class PlNowFollow(unittest.TestCase):
         r = run(FOL + self.END + "const H = ses('s2', '/b', [{name: 'ph', rid: 3, t0: 3, stages: { S: { o: 'hold' } }}]),"
                 "I = ses('s3', '/c', [{name: 'pi', rid: 4, t0: 4, stages: { S: { o: 'done', t1: 1e6 - 600 } }}]);"
                 "plNowFollow([A, H]); end(); plNowFollow([E, H]); const a = [S(), PAINT, FIT];"
-                "Object.assign(PLS, { proj: '/a', sel: 'p1', nowSid: '' }); LV['/a|p1'].pr.end = 0; PLNOW_SEEN = null; PLNOW_VKEY = PLNOW_VEND = '';"
+                "Object.assign(PLS, { proj: '/a', sel: 'p1', nowSid: '' }); LV['/a|p1'].pr.end = 0; PLNOW_SEEN = PLNOW_OSEEN = null; PLNOW_VKEY = PLNOW_VEND = '';"
                 "plNowFollow([A, I]); end(); plNowFollow([E, I]); console.log(JSON.stringify([a, S()]));")
         self.assertEqual(r, [[["/b", "ph", "s2"], 0, 0], ["/c", "pi", "s3"]])   # non-working open runs are a fallback target
 
@@ -572,8 +572,18 @@ class PlNowFollow(unittest.TestCase):
 
     def test_p_pending_end_dropped_by_a_new_pick(self):
         r = run(FOL + self.END + "const H = ses('s2', '/b', [{name: 'ph', rid: 3, t0: 3, stages: { S: { o: 'hold' } }}]);"
-                "plNowFollow([A]); end(); plNowFollow([E]); PLS.sel = 'other'; plNowFollow([E, H]); console.log(JSON.stringify(S()));")
-        self.assertEqual(r, ["/a", "other", ""])                               # the person's pick stays
+                "plNowFollow([A, H]); end(); PLS.sel = 'other'; LV['/a|p1'] = null; plNowFollow([E]); const a = S(); plNowFollow([E]); console.log(JSON.stringify([a, S()]));")
+        self.assertEqual(r, [["/a", "other", ""], ["/a", "other", ""]])        # the person's pick stays; no pending end left
+
+    def test_r_new_run_without_a_working_stage_is_followed(self):
+        # nothing working: a run that opens on hold (or with no stage recorded yet) is followed like a new working run
+        I = "{ S: { o: 'done', t1: 1e6 - 600 } }"
+        r = run(FOL + self.END + "const AI = ses('s1', '/a', [{name: 'p1', rid: 5, t0: 5, stages: " + I + "}]),"
+                "H = ses('s2', '/b', [{name: 'ph', rid: 9, t0: 9, stages: { S: { o: 'hold', t1: 1e6 - 300 } }}]), Z = ses('s3', '/c', [{name: 'pz', rid: 11, t0: 11, stages: {}}]);"
+                "plNowFollow([A]); plNowFollow([AI]); plNowFollow([AI, H]); const a = S();"
+                "Object.assign(PLS, { proj: '/a', sel: 'p1', nowSid: 's1' }); plNowFollow([AI, H]); const b = S(); plNowFollow([AI, H, Z]); const c = S();"
+                "PLNOW_SEEN = PLNOW_OSEEN = null; Object.assign(PLS, { proj: '/a', sel: 'p1', nowSid: '' }); plNowFollow([AI, H, Z]); console.log(JSON.stringify([a, b, c, S()]));")
+        self.assertEqual(r, [["/b", "ph", "s2"], ["/a", "p1", "s1"], ["/c", "pz", "s3"], ["/a", "p1", ""]])   # reload: open runs count as seen
 
     def test_q_working_run_beats_newer_non_working_one(self):
         r = run(FOL + self.END + "const H = ses('s2', '/b', [{name: 'ph', rid: 9, t0: 9, stages: { S: { o: 'hold' } }}]), W = ses('s3', '/c', [{name: 'pw', rid: 3, t0: 3}]);"
