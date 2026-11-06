@@ -16,6 +16,7 @@
 .archmm .mmdsg.archband>rect{fill:color-mix(in srgb,var(--nx-t3,#8b95a7) 12%,transparent);stroke:color-mix(in srgb,var(--nx-t3,#8b95a7) 55%,transparent);stroke-dasharray:3 3}
 .archmm .mmdsg.archgrp>rect{fill:color-mix(in srgb,var(--nx-info,#5899f3) 10%,transparent);stroke:color-mix(in srgb,var(--nx-info,#5899f3) 45%,transparent)}
 .archmm .mmdsg.archerow>rect{fill:color-mix(in srgb,var(--nx-info,#5899f3) 8%,transparent);stroke:none}
+.archmm .mmdsg.archhrow>rect{fill:none;stroke:none}
 .archmm .mmdfe[data-k=read] .mmde{stroke:var(--st-dat,#b07cf0)}
 .archmm .mmdfe[data-k=write] .mmde{stroke:var(--nx-warn,#e3b341)}
 .archmm .mmdfe[data-k=event] .mmde{stroke-dasharray:9 4}

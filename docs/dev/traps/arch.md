@@ -64,6 +64,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ Both ends in `pass` bands: other band below → source bottom only, target top only (reverse for above); same band → sides when rows overlap, else by relative y. No route with strict ports → target ports relaxed, then both, before the elbow fallback.
   - ⚠A group inside a pass band needs `PORTGAP` (16px, `81e` `mmdLayout`) more under its title: with 8px a first-row box under a wider title had no top port (★real focus Security/auth → Main RDB entered the left side); 8 extra still failed, 24 pushed the 1100 focus hub past the first screen (406 > 400).
   - ⚠Graphs without `pass` must route byte-for-byte as before (`tests/test_mermaid_band_ports_js.py`); reset `G.spen` per edge and after the loop.
+- **An in-band hub sits on its own sub-row, not mid-row** (`84j2` `archBandHubs`/`archBandSrc` H rows, `81e` `.sub` title check).
+  - Cause: an entry serves the shell and every screen, so all are front and 81f pins them to rank 0; the shell (≥ 3 same-band callers) landed mid-row and same-row lines took side ports.
+  - ⇒ `Hb<i>r0`/`r1` (band) or `Hg<n>r0`/`r1` (group box): others in r0, hubs in r1, LR parent stacks them (oneLayer, cls `archhrow`, invisible). No hub = source bytes unchanged.
+  - ⚠Never drop the 81e `.sub` check: without it the band title sits centred over r0's member columns and lines into them fall back to side entry.
 - **«Not on a traced flow» sub-fold keys must be in both Expand all and the unpin check** (`84j6` `archEdTreeClick`).
   - Cause: Other rows sit under two folds (`p\tother` and `p\tother.w` / `p\tother.c`); a key missing from Expand all leaves rows hidden, missing from the unpin check leaves the map lit with no visible row.
   - ⇒ Expand all sets `other`, `other.w`, `other.c`; a pinned Other row unpins when `other` or its own sub-fold goes open → closed.

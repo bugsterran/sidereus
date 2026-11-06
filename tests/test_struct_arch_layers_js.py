@@ -441,6 +441,110 @@ class ArchLayers(unittest.TestCase):
         self.assertEqual(r[0], r[1])
         self.assertEqual(r[2], r[0] + "\tloc")
 
+    # client band with 4 front screens all calling a front SPA shell (hub), a store module in a cycle with it, one server module
+    HUB_M = ([{"id": "web", "name": "Web", "kind": "entry", "ext": "http", "layer": "entry"}]
+             + [{"id": "s%d" % i, "name": "Screen %d" % i, "kind": "module", "layer": "ui", "group": "app"} for i in range(1, 5)]
+             + [{"id": "shell", "name": "SPA shell", "kind": "module", "layer": "ui", "group": "app"},
+                {"id": "ctx", "name": "Store", "kind": "module", "layer": "infra", "group": "app"},
+                {"id": "api", "name": "API", "kind": "module", "layer": "api", "group": "srv"}])
+
+    @staticmethod
+    def _ed(rows):
+        return [{"from": f, "to": t, "kind": k, "ok": True, "est": False, "label": ""} for f, t, k in rows]
+
+    HUB_E = [{"from": f, "to": t, "kind": k, "ok": True, "est": False, "label": ""} for f, t, k in
+             [("web", s, "serve") for s in ("s1", "s2", "s3", "s4", "shell")] + [("s%d" % i, "shell", "call") for i in range(1, 5)]
+             + [("shell", "ctx", "call"), ("ctx", "shell", "call"), ("s1", "api", "call")]]
+
+    def _hub(self, mods, edges, tests=False, body=""):
+        return render("const HM = " + json.dumps(mods) + ", HE = " + json.dumps(edges) + ", TS = " + json.dumps(tests) + ";"
+                      "const bp = archBandPlan({v: 2, style: {style: 'feature-pkgs'}, edges: HE}, HM, TS), src = archBandSrc(HM, HE, TS, true, [], null, bp);"
+                      "const g = mmdParse(src); archBandFix(g, bp); const L = mmdLayout(g), q = mmdQuality(g, L), svg = archMmd(src, HM, '', archKindMap(HM, HE, TS, null, bp), null, bp);"
+                      "const ns = s => g.nlist.filter(k => g.nodes[k].sg === s), R = Object.keys(L.nodes).map(k => L.nodes[k]);"
+                      "const ov = R.filter((a, i) => R.some((b, j) => j > i && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h)).length;" + body)
+
+    def test_hub_sub_row_under_band(self):
+        r = self._hub(self.HUB_M, self.HUB_E,
+                      body="const r0 = ns('Hb1r0'), c = R => R.x + R.w / 2, S = g.sgs.Hb1r1, hub = L.nodes.m5;"
+                      "const down = L.edges.filter(e => e.to === 'm5' && /^m[1-4]$/.test(e.from)).map(e => e.pts[0][1] < e.pts[e.pts.length - 1][1]);"
+                      "process.stdout.write(JSON.stringify([ERR, g.slist.filter(s => /^H/.test(s)), ns('Hb1r1'), r0, hub.y >= Math.max(...r0.map(k => L.nodes[k].y + L.nodes[k].h)),"
+                      " Math.abs(c(hub) - c(L.sgs.L1)), [S.cls, S.pass, S.oneLayer, S.sub, S.title, g.sgs.Hb1r0.cls], q.boxHits, q.labelOverlaps, ov, down,"
+                      " svg.indexOf('mmdsg archhrow') >= 0]));")
+        err, rows, r1, r0, below, dx, meta, hits, lov, ov, down, cls = r
+        self.assertIsNone(err)
+        self.assertEqual(rows, ["Hb1r0", "Hb1r1"])                      # R1: solo client band split into rows
+        self.assertEqual(r1, ["m5"])                                      # the hub alone on the sub-row
+        self.assertEqual(r0, ["m1", "m2", "m3", "m4", "m6"])             # every other member stays in the top row
+        self.assertTrue(below)
+        self.assertLessEqual(dx, 2)                                       # centred under the band
+        self.assertEqual(meta, ["archhrow", True, True, True, "", "archhrow"])
+        self.assertEqual([hits, lov, ov], [0, 0, 0])                      # R2
+        self.assertEqual(down, [True] * 4)                                # screen -> hub lines drop top to bottom
+        self.assertTrue(cls)
+        self.assertIn(".archmap .mmdsg.archhrow>rect{fill:none;stroke:none}", CSS)
+
+    def test_hub_two_hubs_source_order(self):
+        m = self.HUB_M + [{"id": "nav", "name": "Nav", "kind": "module", "layer": "ui", "group": "app"}]
+        e = self._ed([("s%d" % i, "nav", "call") for i in range(1, 4)]) + self.HUB_E   # nav's edges first: order still follows the modules
+        r = self._hub(m, e, body="process.stdout.write(JSON.stringify([ERR, ns('Hb1r1'), q.boxHits, ov]));")
+        self.assertEqual(r, [None, ["m5", "m8"], 0, 0])
+
+    def test_hub_inside_group_box(self):
+        m = self.HUB_M + [{"id": "lib", "name": "UI kit", "kind": "module", "layer": "ui", "group": "kit"}]
+        r = self._hub(m, self.HUB_E, body="const hs = g.slist.filter(s => /^H/.test(s)), gb = g.sgs[hs[0]].parent;"
+                      "process.stdout.write(JSON.stringify([ERR, hs.map(s => s.replace(/\\d+r/, 'r')), hs.map(s => g.sgs[s].parent === gb), g.sgs[gb].parent, g.sgs[gb].cls,"
+                      " g.sgs[gb].dir, g.nodes.m5.sg === hs[1], L.nodes.m5.y >= Math.max(...ns(hs[0]).map(k => L.nodes[k].y + L.nodes[k].h)), q.boxHits, ov]));")
+        err, rows, under, band, cls, d, inr1, below, hits, ov = r
+        self.assertIsNone(err)
+        self.assertEqual(rows, ["Hgr0", "Hgr1"])                          # rows inside the group box, not the band
+        self.assertEqual(under, [True, True])
+        self.assertEqual([band, cls, d, inr1, below], ["L1", "archgrp", "LR", True, True])
+        self.assertEqual([hits, ov], [0, 0])
+
+    def test_hub_hidden_and_entry_callers_not_counted(self):
+        m = self.HUB_M + [{"id": "t1", "name": "Shell spec", "kind": "test", "layer": "ui", "group": "app"}]
+        e = self._ed([("s1", "shell", "call"), ("s2", "shell", "call"), ("t1", "shell", "call")])
+        r = self._hub(m, e, body="const on = archBandSrc(HM, HE, true, true, [], null, archBandPlan({v: 2, style: {style: 'feature-pkgs'}, edges: HE}, HM, true));"
+                      "const ps = [{from: 'e', to: 'h'}, {from: 'a', to: 'h'}, {from: 'b', to: 'h'}, {from: 'a', to: 'h'}], bo = id => id === 'x' ? 'Lx' : 'L1';"
+                      "process.stdout.write(JSON.stringify([src.indexOf('Hb') < 0, on.indexOf('subgraph Hb1r1[ ]') >= 0,"
+                      " archBandHubs(ps, bo, id => id === 'e'), archBandHubs(ps, bo), archBandHubs(ps.concat([{from: 'x', to: 'h'}]), bo)]));")
+        no, yes, ent, all3, xb = r
+        self.assertTrue(no)                                               # 2 real + 1 hidden test caller: no hub
+        self.assertTrue(yes)                                              # tests on: the test caller counts
+        self.assertEqual(ent, {})                                         # an entry caller does not count; repeats counted once
+        self.assertEqual(all3, {"L1": ["h"]})
+        self.assertEqual(xb, {"L1": ["h"]})                               # another band's caller is not counted
+
+    def test_hub_none_bytes_unchanged(self):
+        # R3: no hub -> archBandSrc source identical to the pre-hub output (captured before the change)
+        two = self._ed([("web", s, "serve") for s in ("s1", "s2", "shell")] + [("s1", "shell", "call"), ("s2", "shell", "call"),
+                                                                                ("shell", "ctx", "call"), ("s1", "api", "call")])
+        exp_m = ('flowchart TB\n  subgraph L0["진입"]\n    subgraph G0["I/O"]\n      m0["HTTP"]\n      m1["CLI"]\n    end\n  end\n'
+                 '  subgraph L2["API"]\n    subgraph G1["Core"]\n      m2["Routes"]\n    end\n  end\n  subgraph L3["서비스"]\n'
+                 '    subgraph G2["Core"]\n      m3["Service"]\n    end\n    subgraph G3["&#60;b&#62;Evil&#60;/b&#62;"]\n      m4["Jobs"]\n    end\n  end\n'
+                 '  subgraph L7["데이터"]\n    subgraph G4["I/O"]\n      m5["Postgres"]\n    end\n  end\n  subgraph Lx["외부"]\n'
+                 '    subgraph G5["db"]\n      m6(["libpq"])\n    end\n    subgraph G6["api"]\n      m7(["Stripe"])\n    end\n  end\n'
+                 '  m0 --> m2\n  m1 --> m5\n  m2 --> m3\n  m3 -->|"×2"| m5\n  m3 --> m4\n  m2 -->|"×2"| m4\n  m2 --> m5\n  m3 --> m6\n  m4 --> m7')
+        exp_two = ('flowchart TB\n  subgraph L0["진입 · 요청이 시작되는 곳"]\n    m0["Web"]\n  end\n  subgraph L1["클라이언트 · 브라우저에서 실행"]\n'
+                   '    m1["Screen 1"]\n    m2["Screen 2"]\n    m3["Screen 3"]\n    m4["Screen 4"]\n    m5["SPA shell"]\n    m6["Store"]\n  end\n'
+                   '  subgraph L2["서버 · 백엔드 코드"]\n    m7["API"]\n  end\n  m0 --> m1\n  m0 --> m2\n  m0 --> m5\n  m1 --> m5\n  m2 --> m5\n  m5 --> m6\n  m1 --> m7')
+        r = self._hub(self.HUB_M, two, body="const g1 = mmdParse(src); archBandFix(g1, bp); g1.slist.forEach(s => { g1.sgs[s].sub = false; });"
+                      "process.stdout.write(JSON.stringify([src, archBandSrc(M, E, false, true, GR), JSON.stringify(mmdLayout(g1)) === JSON.stringify(L)]));")
+        self.assertEqual(r[0], exp_two)
+        self.assertEqual(r[1], exp_m)
+        self.assertTrue(r[2])                                             # no .sub row: 81e layout unchanged
+
+    def test_hub_band_title_off_top_row(self):
+        # 81e: the band title stays clear of the top row's member columns; without .sub it sat centred over them
+        r = self._hub(self.HUB_M, self.HUB_E,
+                      body="const TT = L => [L.sgs.L1.tr.x, L.sgs.L1.tr.w, L.sgs.L1.x + L.sgs.L1.w / 2, ns('Hb1r0').map(k => L.nodes[k].x + L.nodes[k].w / 2)];"
+                      "const g0 = mmdParse(src); archBandFix(g0, bp); g0.slist.forEach(s => { delete g0.sgs[s].sub; });"
+                      "process.stdout.write(JSON.stringify([TT(L), TT(mmdLayout(g0))]));")
+        (x, w, _, cs), (x0, w0, mid0, cs0) = r
+        self.assertTrue(all(c < x - 6 or c > x + w + 6 for c in cs), (x, w, cs))
+        self.assertLessEqual(abs(x0 + w0 / 2 - mid0), 1)                    # fixture: centred title sat over a top-row column
+        self.assertTrue(any(x0 <= c <= x0 + w0 for c in cs0))
+
     def test_r4_v1_svg_has_no_kind(self):
         r = render("const s = archSrc(M, E, false, '', false); process.stdout.write(JSON.stringify([archMmd(s, M, '').indexOf('data-k') < 0, ERR]));")
         self.assertEqual(r, [True, None])

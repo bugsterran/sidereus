@@ -15,7 +15,7 @@ FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archProvNote", "arch
        "archNoHome", "archWhyOff", "archReqOf", "archReqBtn", "archReqHtml", "archPaint", "archIsTest", "archMq", "archPairs", "archReduce", "archRanks", "archSrc", "archBarHtml", "archKey", "archWaitHtml", "archDiagram", "archHov", "archHovPaint",
        "archSentRun", "archSentPh", "archEl", "archSentDone", "archSentHtml", "archSentFin", "archTick", "archBase", "archRunOf", "archRunEl", "archRunHtml", "archStatusHtml", "archLegHtml", "hhmm",
        "archStyleName", "archRoleName", "archFwParts", "archStyleParts", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",
-       "archHasLayers", "archEntPair", "archBandSrc", "archBandFix", "archBandHint", "archFront", "archKindMap", "archKindLegHtml"]   # 84j2 (archPaint calls them)
+       "archHasLayers", "archEntPair", "archBandHubs", "archBandSrc", "archBandFix", "archBandHint", "archFront", "archKindMap", "archKindLegHtml"]   # 84j2 (archPaint calls them)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archReqHtml calls it)
 FNS.append("archDevListHtml")   # deviation filter list (archPaint calls it)
 FNS += ["archLyHtml", "archLyZoomPut", "archLyZoom", "archLyClose"]   # focus layer (archPaint / click / Esc call them)
