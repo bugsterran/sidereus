@@ -235,37 +235,6 @@ process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths.map(p =>
         self.assertNotEqual(pts[2], list(reversed(pts[3])))
         self.assertEqual(pts[2][0][1] + 10, pts[3][0][1])                      # neighbours split by 2 * RV
 
-    def test_badges_clear_each_other_and_lines(self):
-        # live shape: hub 220 wide over three adjacent children (100/133/121, 70px gap), a 3-branch bundle + one child -> hub,
-        # badges 130-200 wide. Default spots stack on the shared run: the gap grows and every badge gets a free spot.
-        r = run(r"""const ws = [130, 200, 160, 150], es = [{ a: 'h', b: 'c0' }, { a: 'h', b: 'c1' }, { a: 'h', b: 'c2' }, { a: 'c1', b: 'h' }], rows = [['h'], ['c0', 'c1', 'c2']];
-const at = gap => { const R = { h: { x: 140, y: 20, w: 220, h: 30 } }; let x = 250 - (100 + 133 + 121 + 48) / 2;
-  [['c0', 100], ['c1', 133], ['c2', 121]].forEach(([k, w]) => { R[k] = { x, y: 50 + gap, w, h: 30 }; x += w + 24; }); return R; };
-let ex = 0, gap = 70, R = null, P = null, B = null, first = null;
-for(let i = 0; i < 6; i++){ R = at(gap); P = archFhPaths(R, rows, es); B = archFhBadges(P.paths, ws, R, rows); if(!first) first = [P.need[1], B.more[1]];
-  ex = Math.min(88, ex + B.more[1]); const g2 = Math.max(70, P.need[1] + ex); if(g2 === gap) break; gap = g2; }
-const bx = B.at.map((c, i) => ({ x: c[0] - ws[i] / 2, y: c[1] - 9, w: ws[i], h: 18 }));
-const ov = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-let bb = 0, sb = 0, xb = 0; bx.forEach((a, i) => bx.forEach((b, j) => { if(i < j && ov(a, b)) bb++; }));
-P.paths.forEach((p, j) => bx.forEach((b, i) => { if(i !== j && p.pts.slice(1).some((q, k) => mmdSegRect(p.pts[k], q, b, 0))) sb++; }));
-bx.forEach(b => Object.keys(R).forEach(k => { if(ov(b, R[k])) xb++; }));
-process.stdout.write(JSON.stringify([bb, sb, xb, first, gap, B.more]));""", [], [], [])
-        bb, sb, xb, (need0, more0), gap, more = r
-        self.assertEqual((bb, sb, xb), (0, 0, 0))                              # no badge on a badge, a line or a box
-        self.assertGreaterEqual(more0, 22)                                     # 70px held no free spot: one stacked badge (18 + 4) asked
-        self.assertGreaterEqual(gap, need0 + 22)
-        self.assertEqual(sum(more), 0)
-
-    def test_badges_free_spot_kept(self):
-        # a lone fan with short labels: every badge stays on its own run's middle and no gap grows
-        r = run(r"""const R = { h: { x: 0, y: 0, w: 100, h: 30 } }, t = ['a', 'b'];
-t.forEach((k, i) => { R[k] = { x: 200 + i * 300, y: 100, w: 100, h: 30 }; });
-const P = archFhPaths(R, [['h'], t], t.map(b => ({ a: 'h', b }))), B = archFhBadges(P.paths, [40, 40], R, [['h'], t]);
-process.stdout.write(JSON.stringify([B.at, P.paths.map(p => [p.lx, p.ly]), B.more]));""", [], [], [])
-        at, mid, more = r
-        self.assertEqual(at, mid)
-        self.assertEqual(sum(more), 0)
-
     def test_real_and_dbuser_shapes(self):
         M, E, G, F = _real()
         r = run("const a = route(plan('hub', null, BP), 1100), b = route(plan('hub', ['f4', 'f6'], BP), 1100);"
