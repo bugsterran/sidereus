@@ -19,7 +19,7 @@ function plgFreeTitle(G, t){
 function plgTplShow(title){ const d = PLG_TPL_NAMES[LANG] || {}; return Object.prototype.hasOwnProperty.call(d, title) ? d[title] : title; }
 const PLG_MODELS = ['inherit', 'opus', 'sonnet', 'haiku'];
 const PLG_KEYS = ['title', 'agent', 'instr', 'model', 'skill', 'retry', 'gate', 'parallel', 'produces', 'fanout', 'onError', 'onlyOnJump', 'ui'];
-const PLG_W = 184, PLG_H = 100, PLG_GX = 64, PLG_X0 = 44, PLG_Y0 = 24, PLG_LANE = 34;   // X0 leaves a left gutter for cross-row loop-backs   // node size · gaps · loop-back lane spacing
+const PLG_W = 184, PLG_H = 100, PLG_GX = 64, PLG_X0 = 44, PLG_Y0 = 24, PLG_LANE = 34, PLG_ROWTOL = 30;   // ROWTOL = plgRows middle-line tolerance   // X0 leaves a left gutter for cross-row loop-backs   // node size · gaps · loop-back lane spacing
 function plgFrom(p){
   const S = p.stages || [], ids = S.map((s, i) => 'n' + (i + 1));
   const placed = S.every(s => s.ui && isFinite(s.ui.x) && isFinite(s.ui.y));
@@ -123,13 +123,33 @@ function plgLayout(G, gx, cols){
   x = PLG_X0;
   rest.forEach(n => { n.ui = Object.assign({}, n.ui, { x, y }); x += plgW(G, n.id) + g; });
 }
-// Display-only push: in each row (same top or middle line ±8) a node that overlaps its left neighbour (content-wide nodes on old 248px spacing)
+// Display-only push: in each row (middle line within PLG_ROWTOL of the row's mean middle line) a node that overlaps its left neighbour (content-wide nodes on old 248px spacing)
 // moves right to keep a 28px gap, cascading. Returns {id: x} for moved nodes; G is not changed (no dirty draft).
+// ⚠Group against the row's running mean, not its first node's top ±8: hand-dragged tops 24/35/52 split into two rows and never aligned.
 function plgRows(G){
-  const N = G.nodes.filter(n => n.ui).slice().sort((a, b) => a.ui.y - b.ui.y || a.ui.x - b.ui.x), rows = [];
   const cy = n => n.ui.y + plgH(G, n.id) / 2;   // rows by middle line: plgLayout centres nodes, so tops differ
-  N.forEach(n => { const r = rows[rows.length - 1]; if(r && (Math.abs(n.ui.y - r[0].ui.y) <= 8 || Math.abs(cy(n) - cy(r[0])) <= 8)) r.push(n); else rows.push([n]); });
+  const N = G.nodes.filter(n => n.ui).slice().sort((a, b) => cy(a) - cy(b) || a.ui.x - b.ui.x), rows = [];
+  let m = 0;
+  N.forEach(n => { const r = rows[rows.length - 1]; if(r && Math.abs(cy(n) - m) <= PLG_ROWTOL){ r.push(n); m += (cy(n) - m) / r.length; } else { rows.push([n]); m = cy(n); } });
   return rows;
+}
+// Drop snap: y that puts node `id`'s middle on the nearest other row's middle line (within PLG_H/2), else null. Saved, unlike plgAlign.
+function plgSnapY(G, id){
+  const n = plgNode(G, id), h = plgH(G, id);
+  if(!n || !n.ui) return null;
+  const c = n.ui.y + h / 2;
+  let best = null;
+  plgRows(Object.assign({}, G, { nodes: G.nodes.filter(x => x.id !== id) })).forEach(r => {
+    const rc = Math.min(...r.map(x => x.ui.y)) + Math.max(...r.map(x => plgH(G, x.id))) / 2;   // = the middle line plgAlign gives the row
+    if(Math.abs(rc - c) <= PLG_H / 2 && (best == null || Math.abs(rc - c) < Math.abs(best - c))) best = rc;
+  });
+  return best == null ? null : Math.round(best - h / 2);
+}
+// Status-pill offset per node = its top minus its row's top, so every pill of a row sits at the same y (cards of different heights are centred).
+function plgChipDy(G){
+  const out = {};
+  plgRows(G).forEach(r => { const top = Math.min(...r.map(n => n.ui.y)); r.forEach(n => { out[n.id] = n.ui.y - top; }); });
+  return out;
 }
 function plgPush(G){
   const out = {};

@@ -10,7 +10,7 @@ from tests._load import ROOT, js_all, js_fn
 from tests._node import node_e
 
 FNS = ("plTk", "plgFrom", "plgNode", "plgOrder", "plgStages", "plgKey", "plgCheck", "plgRemove", "plgConnect", "plgAdd", "plgLayout",
-       "plgInsert", "plgLoopLanes", "plgLoopPath", "plgGap", "plgRowH", "plgCols", "plgFlowPath", "plgRulesSplit", "plgRulesJoin", "plDraftText", "plgSlots", "plgFam", "plgChain", "plgLine", "plgMove", "plgInsertAt", "plgPathPts", "plgEdgeAt", "plMarkers", "plHeadsSvg", "plgColor", "plgW", "plgH", "plgSumW", "plgPush", "plgRows", "plgAlign", "plVG",
+       "plgInsert", "plgLoopLanes", "plgLoopPath", "plgGap", "plgRowH", "plgCols", "plgFlowPath", "plgRulesSplit", "plgRulesJoin", "plDraftText", "plgSlots", "plgFam", "plgChain", "plgLine", "plgMove", "plgInsertAt", "plgPathPts", "plgEdgeAt", "plMarkers", "plHeadsSvg", "plgColor", "plgW", "plgH", "plgSumW", "plgPush", "plgRows", "plgAlign", "plVG", "plgSnapY", "plgChipDy",
        "plgTpl", "plgHue", "plgPfc", "plgAddTpl", "plgGraded", "plgGuards", "plgShow", "plgBase", "plgFreeTitle")
 
 
@@ -255,6 +255,29 @@ class Graph(unittest.TestCase):
         self.assertEqual(out["px"], {})
         self.assertEqual(out["vx"], [44, 292, 540, 788, 1036])
 
+    def test_hand_dragged_tops_one_row(self):
+        # tops 24/35/52 (|35-24| = 11 split the old ±8 row) with mixed heights -> one row, equal middles, pills on one line
+        out = run("G.nodes.forEach((n, i) => { n.ui = {x: 44 + 248 * i, y: [52, 35, 24, 400, 400][i]}; }); G.ht = {n1: 100, n2: 140, n3: 120};"
+                  "const rows = plgRows(G).map(r => r.map(n => n.id).sort()), V = plVG({G}), cd = plgChipDy(V);"
+                  "console.log(JSON.stringify({rows, mid: V.nodes.map(n => n.ui.y + plgH(G, n.id) / 2), pill: V.nodes.map(n => n.ui.y - cd[n.id])}));")
+        self.assertEqual(sorted(out["rows"]), [["n1", "n2", "n3"], ["n4", "n5"]])
+        self.assertEqual(len(set(out["mid"][:3])), 1)
+        self.assertEqual(len(set(out["pill"][:3])), 1)                  # every pill of the row hangs from the same top
+        self.assertEqual(out["pill"][:3], [min(out["pill"][:3])] * 3)
+
+    def test_rows_keep_far_rows_apart(self):
+        out = run("G.nodes.forEach((n, i) => { n.ui = {x: 44 + 248 * i, y: [24, 24, 60, 300, 330][i]}; });"
+                  "console.log(JSON.stringify(plgRows(G).map(r => r.map(n => n.id).sort())));")
+        self.assertEqual(out, [["n1", "n2"], ["n3"], ["n4", "n5"]])     # middles 74/74 vs 110 (36 > 30) stay apart
+
+    def test_drop_snaps_to_row_middle(self):
+        # dropped card within PLG_H/2 of a row's middle line takes it; farther stays where dropped
+        out = run("G.nodes.forEach((n, i) => { n.ui = {x: 44 + 248 * i, y: i < 3 ? 24 : 600}; }); G.ht = {n2: 140};"
+                  "plgNode(G, 'n4').ui = {x: 788, y: 70}; const a = plgSnapY(G, 'n4'); plgNode(G, 'n4').ui = {x: 788, y: 140}; const b = plgSnapY(G, 'n4');"
+                  "console.log(JSON.stringify({a, b}));")
+        self.assertEqual(out["a"], 44)        # row middle = 24 + 140/2 = 94; 94 - 50
+        self.assertIsNone(out["b"])
+
     def test_layout_keeps_colour(self):
         out = run("plgNode(G, 'n2').ui.color = '#f472b6'; plgLayout(G, 28, 3); console.log(JSON.stringify(plgNode(G, 'n2').ui));")
         self.assertEqual(out, {"x": 256, "y": 24, "color": "#f472b6"})
@@ -283,7 +306,7 @@ class Graph(unittest.TestCase):
         import pathlib
         css = (pathlib.Path(__file__).resolve().parent.parent / "web" / "css" / "43-pipeline.css").read_text(encoding="utf-8")
         rule = re.search(r"html\[data-ui=next\] \.plw \.plnd \.plls\{([^}]*)\}", css).group(1)
-        for d in ("left:-1px", "bottom:calc(100% + 6px)", "height:22px", "max-width:calc(100% + 24px)"):
+        for d in ("left:-1px", "bottom:calc(100% + 6px + var(--plcd, 0px))", "height:22px", "max-width:calc(100% + 24px)"):
             self.assertIn(d, rule)
         self.assertNotIn("plstreak", css)                                  # the running-node border streak was removed
 

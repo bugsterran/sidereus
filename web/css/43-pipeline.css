@@ -432,8 +432,9 @@ html[data-ui=next] .plw .plnd.pl-fail.pl-new{animation:plshake .45s}
 html[data-ui=next] .plw .plrb{margin-left:6px;font-size:11px;font-weight:700;padding:0 6px;border-radius:8px;background:color-mix(in srgb,var(--nx-warn) 20%,transparent);color:var(--nx-warn);vertical-align:1px}   /* tint, not a solid fill: it marks a finished stage */
 /* Live label sits fully above the node (6px gap, left-aligned) so it never covers the title row at any zoom.
    ⚠max-width = node + 24px: wider, it reached the next node's label across a 28px gap. The row-wrap connector runs at top-40
-   and rows leave 62px (48c plgFlowPath / plgRowH; checked by tests/test_pipeline_graph.py test_lanes_clear_status_pills) */
-html[data-ui=next] .plw .plnd .plls{position:absolute;z-index:3;left:-1px;bottom:calc(100% + 6px);height:22px;line-height:18px;box-sizing:border-box;max-width:calc(100% + 24px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;padding:1px 10px;border-radius:11px;background:var(--nx-panel);border:1px solid var(--nx-rule);color:var(--nx-t2);opacity:1}
+   and rows leave 62px (48c plgFlowPath / plgRowH; checked by tests/test_pipeline_graph.py test_lanes_clear_status_pills)
+   --plcd (48c plgChipDy) lifts a shorter, centred card's pill to its row's top so one row's pills line up. */
+html[data-ui=next] .plw .plnd .plls{position:absolute;z-index:3;left:-1px;bottom:calc(100% + 6px + var(--plcd, 0px));height:22px;line-height:18px;box-sizing:border-box;max-width:calc(100% + 24px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;padding:1px 10px;border-radius:11px;background:var(--nx-panel);border:1px solid var(--nx-rule);color:var(--nx-t2);opacity:1}
 /* Rain on the edge into the running node: 3 dash layers, period 60, fronts aligned (offset = len - 14) = bright head + fading tail */
 html[data-ui=next] .plw .plef.run{stroke-width:1.5}
 html[data-ui=next] .plw .plrunst{display:flex;flex-direction:column;gap:4px;max-width:640px}

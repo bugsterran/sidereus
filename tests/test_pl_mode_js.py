@@ -27,7 +27,7 @@ const PLS = { proj: '/p', wf: null, g: {} };
 CANVAS_STUB = """
 const PLG_LANE = 30;
 const E = {G: {nodes: [{id: 'n1', title: 'A', ui: {x: 10, y: 20}}, {id: 'n2', title: 'B', ui: {x: 300, y: 20}}], loops: [{}]}, view: {x: 5, y: 6, z: 0.8}, sel: null};
-function plEnt(){ return E; } function plgCheck(){ return {errs: [{id: 'n1', msg: 'bad <x>'}, {msg: 'other'}]}; } function plVG(E){ return E.G; }
+function plEnt(){ return E; } function plgCheck(){ return {errs: [{id: 'n1', msg: 'bad <x>'}, {msg: 'other'}]}; } function plVG(E){ return E.G; } function plgChipDy(){ return {}; }
 function plgW(){ return 200; } function plgH(){ return 90; } function plEdgesSvg(){ return '<EDGES>'; } function plMarkers(){ return '<MK>'; } function plHeadsSvg(){ return '<HD>'; }
 function plNodeHtml(E, n, bad, lt){ return '<N ' + n.id + (bad ? ' bad' : '') + (lt ? ' lt' : '') + '>'; }
 function plPalette(E, c){ return '<PAL ' + (c ? c.items.length : 0) + '>'; } function plPanel(E, d){ return '<PAN>'; }

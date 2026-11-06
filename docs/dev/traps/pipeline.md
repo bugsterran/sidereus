@@ -417,3 +417,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: the fallback after the viewed run ended looked only at working runs (`plNowWorking`); an open run on «hold» or idle past `PLNOW_GRACE` was skipped, and `PLNOW_VKEY` was then wiped, so a later resume did not jump either.
 - Fix: no working run left → newest open run (live session, `!r.end`, the same rule as the «Working now» row `plNowRun`); with nothing open the ended key stays pending (`PLNOW_VEND` = the view it was kept at) until a run appears or the person picks another view.
 - ⚠Working runs keep priority; the open fallback fires only for an ended viewed run, never for an idle one (it would pick itself). `tests/test_pl_now_js.py` `test_n`..`test_q`.
+
+## Stage cards on one row not aligned (`web/js/48c-pipeline-graph.js` `plgRows`)
+- Cause: rows grouped a card only within ±8px of the row's first card top, and a drop saved raw y; hand-dragged tops 24/35/52 split into two rows, so `plgAlign` never centred them. Status pills hang from each card's top, so centred cards of different heights put them at different y.
+- Fix: rows group by middle line against the row's running mean (`PLG_ROWTOL` 30); a drop snaps to the nearest row's middle within `PLG_H/2` (`plgSnapY`) and writes back the aligned y like x; pills are lifted by `--plcd` (`plgChipDy`) to the row's top.
+- ⚠Rows are ≥196px apart (`plgRowH`); do not raise the tolerance toward that. `tests/test_pipeline_graph.py` `test_hand_dragged_tops_one_row`.

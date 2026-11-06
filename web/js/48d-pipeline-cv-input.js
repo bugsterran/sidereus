@@ -55,7 +55,8 @@ document.addEventListener('pointerup', e => {
   const E = D.E;
   if(D.k === 'node'){
     E.pxF = null; E.pyF = null;
-    if(D.moved){ const px = plgPush(E.G); Object.keys(px).forEach(id => { plgNode(E.G, id).ui.x = px[id]; }); }   // a drag saves what is shown
+    if(D.moved){ const sy = plgSnapY(E.G, D.n.id); if(sy != null) D.n.ui.y = sy; }   // ⚠no snap = raw y saved; tops 24/35/52 broke one row
+    if(D.moved){ const px = plgPush(E.G), py = plgAlign(E.G); Object.keys(px).forEach(id => { plgNode(E.G, id).ui.x = px[id]; }); Object.keys(py).forEach(id => { plgNode(E.G, id).ui.y = py[id]; }); }   // a drag saves what is shown
     const f = D.moved && D.drop >= 0 && E.G.flow[D.drop];
     if(f && plgInsertAt(E.G, D.n.id, f[0], f[1])){ E.sel = { k: 'n', id: D.n.id }; E.laid = true; E.touched = false; plFit(E, D.cv, true); }   // re-flow like «Arrange»
     if(!D.moved && ((E.lt || {})[D.n.title] || {}).st === 'run'){ plNodeWork(D.n.title, D.el.getBoundingClientRect()); return; }   // lit ● node: no select, no repaint

@@ -147,7 +147,7 @@ function plAgDesc(name){
   const a = (((PLS.data || {})[PLS.proj] || {}).agents || []).find(x => x && x.name === name);
   return (a && a.desc) || '';
 }
-function plNodeHtml(E, n, bad, lt){
+function plNodeHtml(E, n, bad, lt, cdy){   // cdy = 48c plgChipDy offset (status pill on the row's top)
   const G = E.G, L0 = lt && lt[n.title], pi = L0 ? plPassSel(E, n.id, L0) : -1, L = pi >= 0 ? Object.assign({}, L0, plPass(L0, pi)) : L0, eff = n.model || G.defaults.model;
   const warn = PL_JUDGED.includes(n.title) && PL_LOW.includes(eff) ? ' <span class=plwarn title="' + esc(T('Judgment stages should keep a strong model')) + '">⚠</span>' : '';
   const chips = plFlagChips(n);
@@ -175,7 +175,7 @@ function plNodeHtml(E, n, bad, lt){
   // Direct-mode subagents behind a lit stage (workflow runs carry no labs: no hover)
   const ad = n.agent ? plAgDesc(n.agent) : '', adh = ad ? '<div class=plnad title="' + esc(ad) + '">' + esc(ad) + '</div>' : '';
   const tip = L && L.nn ? ' title="' + esc(T('Not needed on this run — runs only on a loop-back')) + '"' : L && L.labs && L.labs.length ? ' title="' + esc(L.labs.map(a => plLabTip(a.lab) + ' (' + (a.run ? T('Running') : T('Done')) + ')').join('\n')) + '"' : '';
-  return '<div class="plnd pf-' + plgFam(n.title) + hl + sel + (bad ? ' bad' : '') + (L ? ' pl-' + L.st + fresh : '') + '" data-plnode="' + esc(n.id) + '" tabindex=0 role=button data-kb aria-label="' + esc(plgShow(n.title) + (lsTxt ? ' · ' + lsTxt : '')) + '"' + tip + ' style="left:' + (+n.ui.x) + 'px;top:' + (+n.ui.y) + 'px' + (plgHue(n) ? ';--pfc:' + plgHue(n) : '') + '">'
+  return '<div class="plnd pf-' + plgFam(n.title) + hl + sel + (bad ? ' bad' : '') + (L ? ' pl-' + L.st + fresh : '') + '" data-plnode="' + esc(n.id) + '" tabindex=0 role=button data-kb aria-label="' + esc(plgShow(n.title) + (lsTxt ? ' · ' + lsTxt : '')) + '"' + tip + ' style="left:' + (+n.ui.x) + 'px;top:' + (+n.ui.y) + 'px' + (cdy ? ';--plcd:' + (+cdy) + 'px' : '') + (plgHue(n) ? ';--pfc:' + plgHue(n) : '') + '">'
     + '<i class="plport plpin" title="' + esc(T('Incoming flow')) + '"></i>'
     + '<i class="plport plpout" data-plport=flow title="' + esc(T('Drag to connect the next stage')) + '"></i>'
     + '<i class="plport plpbk" data-plport=loop title="' + esc(T('Drag to an earlier stage to loop back on failure')) + '"></i>'
@@ -203,7 +203,7 @@ function plCanvas(p, d, lt, lv){   // lv = the caller's plViewRun result (Watch)
     + '<span class=plhint>' + esc(T('Drag background = pan · Ctrl+wheel = zoom')) + '</span></div>';
   const cv = '<div class=plcvw>' + tb + '<div class=plcv data-plcv><div class=plcvi style="transform:translate(' + v.x + 'px,' + v.y + 'px) scale(' + v.z + ');--plz:' + v.z + '">'
     + '<svg class=plsvg width="' + mx + '" height="' + my + '"><g class=pledges>' + plEdgesSvg(E) + '</g><path class=pltmp d=""/></svg>'
-    + VG.nodes.map(n => plNodeHtml(E, n, bad[n.id], lt)).join('')
+    + (cdy => VG.nodes.map(n => plNodeHtml(E, n, bad[n.id], lt, cdy[n.id])).join(''))(plgChipDy(VG))
     + '<svg class="plsvg plheads" width="' + mx + '" height="' + my + '"><defs>' + plMarkers(G) + '</defs><g class=plhd>' + plHeadsSvg(E) + '</g></svg></div></div>';
   const errs = chk.errs.length ? '<ul class=plerrs>' + chk.errs.map(x => '<li' + (x.id ? ' data-plpick="' + esc(x.id) + '"' : '') + '>' + esc(x.msg) + '</li>').join('') + '</ul>' : '';
   const gh = '<div class=plgh data-plgh title="' + esc(T('Drag to resize · double-click to reset', 'height')) + '"></div>';
@@ -468,7 +468,8 @@ function plVG(E){
 }
 // Re-place nodes and edges in place after a re-flow (no innerHTML rebuild).
 function plPaintEdgesNodes(E, cv){
-  plVG(E).nodes.forEach(n => { const el = cv.querySelector('[data-plnode="' + n.id + '"]'); if(el){ el.style.left = n.ui.x + 'px'; el.style.top = n.ui.y + 'px'; } });
+  const VG = plVG(E), cd = plgChipDy(VG);
+  VG.nodes.forEach(n => { const el = cv.querySelector('[data-plnode="' + n.id + '"]'); if(el){ el.style.left = n.ui.x + 'px'; el.style.top = n.ui.y + 'px'; el.style.setProperty('--plcd', (cd[n.id] || 0) + 'px'); } });
   plRedrawEdges(E, cv);
 }
 // Loop-label pills sized from the rendered text (user units, so zoom does not matter); ⚠a chars*px guess overflowed on Hangul.
