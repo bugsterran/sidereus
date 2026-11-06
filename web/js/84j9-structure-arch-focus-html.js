@@ -128,7 +128,8 @@ function archFhPaths(rects, rows, edges){
   // crossed the bundle's run (its branch off the run is straight anyway).
   const bun = {}, kd = n => { const e = (edges || [])[n] || {}; return String(e.k || '') + (e.est ? '~' : ''); };
   const cand = paths.map((p, n) => p.ra == null || p.gx != null || Math.abs(p.rb - p.ra) !== 1 ? null : n);
-  const gk = (p, n, end) => { const dn = p.rb > p.ra; return [end ? p.b : p.a, end ? (dn ? 0 : 1) : (dn ? 1 : 0), end, kd(n)].join('\u0001'); };
+  // ⚠A badged link never bundles: on a shared trunk its badge had no run of its own and stacked beside the trunk, unreadable.
+  const gk = (p, n, end) => { const dn = p.rb > p.ra; return ((edges || [])[n] || {}).lab ? '' : [end ? p.b : p.a, end ? (dn ? 0 : 1) : (dn ? 1 : 0), end, kd(n)].join('\u0001'); };
   [1, 0].forEach(end => { const by = {};
     cand.forEach(n => { if(n == null || paths[n].bd) return; const k = gk(paths[n], n, end); if(k) (by[k] = by[k] || []).push(paths[n]); });
     Object.keys(by).forEach(k => { if(by[k].length < 3) return; bun[k] = { end, ps: by[k] }; by[k].forEach(p => { p.bd = k; }); }); });
@@ -144,9 +145,11 @@ function archFhPaths(rects, rows, edges){
     const used = gx[g] = gx[g] || [];
     // ⚠only against other boxes' ports: nudging against its own spread ports piled a crowded side onto its clamped edge
     const hit = x => used.some(u => u.k !== k && Math.abs(u.x - x) < 3);
-    L.forEach((e, i) => { const x0 = r.x + r.w * (i + 1) / (L.length + 1); let x = x0;
-      for(let t = 1; t <= 6 && hit(x); t++){ const c = x0 + (t % 2 ? 1 : -1) * 6 * Math.ceil(t / 2); if(c > r.x + 2 && c < r.x + r.w - 2) x = c; }
-      if(hit(x)) x = x0;
+    // ⚠a nudge on a crowded side landed ~1px from a sibling port (one run): a candidate must stay half a spread step from every sibling slot
+    const st = r.w / (L.length + 1), mine = c => L.some((_, j) => Math.abs(r.x + st * (j + 1) - c) < st / 2);
+    L.forEach((e, i) => { const x0 = r.x + st * (i + 1); let x = x0;
+      for(let t = 1; t <= 6 && hit(x); t++){ const c = x0 + (t % 2 ? 1 : -1) * 6 * Math.ceil(t / 2); if(c > r.x + 2 && c < r.x + r.w - 2 && !mine(c)) x = c; }
+      if(hit(x)) x = [x0 + st / 4, x0 - st / 4].find(c => !hit(c)) || x0;   // quarter step: siblings stay half a step apart
       used.push({ k, x }); e.set(x); }); });
   // ⚠A link between boxes stacked over each other bent anyway (spread ports rarely share an x). ⇒ adjacent rows: when one end's port
   // lies over the other box and no other port sits within 6px there (same side) or 3px (same gap), move that port: a straight vertical.
@@ -241,7 +244,7 @@ function archFhFill(fh, n){
 function archFhRoute(slot){
   const fh = !slot ? null : slot.classList && slot.classList.contains('archfh') ? slot : slot.querySelector ? slot.querySelector('.archfh') : null;
   if(!fh) return null;
-  const gs = Array.from(fh.querySelectorAll('.archfh-e .mmdfe')), es = gs.map(g => ({ a: g.dataset.f, b: g.dataset.t, k: g.dataset.k || '', est: !!g.querySelector('.e-dot') })), f = v => String(Math.round(v * 10) / 10);
+  const gs = Array.from(fh.querySelectorAll('.archfh-e .mmdfe')), es = gs.map(g => ({ a: g.dataset.f, b: g.dataset.t, k: g.dataset.k || '', est: !!g.querySelector('.e-dot'), lab: !!g.querySelector('.mmdfl') })), f = v => String(Math.round(v * 10) / 10);
   let M = null, R = null;
   for(let i = 0; i < 4; i++){ M = archFhMeasure(fh); R = archFhPaths(M.rects, M.rows, es); if(i === 3 || !archFhSpace(fh, M, R.need, R.gw)) break; }
   const e = archFhFill(fh, M.bands.length - 1);
