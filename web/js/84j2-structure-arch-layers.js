@@ -95,10 +95,10 @@ function archBandSrc(mods, edges, tests, full, groups, ents, bp){
   (groups || []).forEach(g => { if(g && g.id != null && !own.call(gn, g.id)) gn[g.id] = g.name || g.id; });
   let ps = archPairs(mods, edges, tests);
   if(!full) ps = archReduce(ps);
-  const bo = Object.create(null), kd = Object.create(null);
+  const bo = Object.create(null), kd = Object.create(null), gk = Object.create(null);
   (mods || []).filter(m => m && m.id != null && (tests || !archIsTest(m))).forEach(m => {
     const ex = m.kind === 'external', b = ex ? 'Lx' : 'L' + (bp ? bp.of(m) : ARCH_LAYERS.indexOf(m.layer)), k = ex ? String(m.ext || '') : m.group == null ? '' : String(m.group);
-    bo[m.id] = b; kd[m.id] = m.kind;
+    bo[m.id] = b; kd[m.id] = m.kind; gk[m.id] = k;
     const B = bands[b] = bands[b] || { ks: [], by: {} };
     if(!own.call(B.by, '\u0001' + k)){ B.ks.push(k); B.by['\u0001' + k] = []; }
     B.by['\u0001' + k].push(m);
@@ -111,11 +111,18 @@ function archBandSrc(mods, edges, tests, full, groups, ents, bp){
   const pr = archEntPair(en, i => !!l0[i]), eu = en ? en.filter(e => pr[Array.from(e.to)[0]] !== e) : null;
   const hb = Object.create(null), hubs = archBandHubs(ps, id => { const b = bo[id]; return !b || b === 'Lx' || (en && b === 'L0') ? '' : b; }, id => kd[id] === 'entry');
   Object.keys(hubs).forEach(b => hubs[b].forEach(id => { hb[id] = 1; }));
-  // Hub sub-rows (archBandFix H rows): r0 = the container's other children, unchanged; r1.. = its hubs (≤ 8 a row), stacked under r0 by the LR parent.
-  const hsplit = (to, id, pad, rest, hs) => {
+  // Hub level = 1 + the deepest hub in the same container that calls it. ⚠One shared row put a hub->hub line sideways along it.
+  const hc = Object.create(null), hl = Object.create(null);
+  ps.forEach(p => { if(hb[p.from] && hb[p.to] && p.from !== p.to && bo[p.from] === bo[p.to] && gk[p.from] === gk[p.to]) (hc[p.to] = hc[p.to] || []).push(p.from); });
+  const lv = (id, d) => hl[id] != null ? hl[id] : d > 8 ? 0 : (hl[id] = Math.max(0, ...(hc[id] || []).map(c => 1 + lv(c, d + 1))));   // d caps a cycle
+  // Hub sub-rows (archBandFix H rows): r0 = the container's other children, unchanged; r1.. = its hubs by level (≤ 8 a row), stacked under r0 by the LR parent.
+  const hsplit = (to, id, pad, rest, hm, f) => {
     to.push(pad + 'direction LR', pad + 'subgraph ' + id + 'r0[ ]', pad + '  direction TB');
     rest.forEach(l => to.push('  ' + l)); to.push(pad + 'end');
-    for(let j = 0; j < hs.length; j += 8){ to.push(pad + 'subgraph ' + id + 'r' + (1 + j / 8) + '[ ]', pad + '  direction TB'); hs.slice(j, j + 8).forEach(l => to.push('  ' + l)); to.push(pad + 'end'); }
+    const by = [];
+    hm.forEach(m => { const l = lv(m.id, 0); (by[l] = by[l] || []).push(f(m)); });
+    let r = 1;
+    by.filter(Boolean).forEach(hs => { for(let j = 0; j < hs.length; j += 8){ to.push(pad + 'subgraph ' + id + 'r' + r++ + '[ ]', pad + '  direction TB'); hs.slice(j, j + 8).forEach(l => to.push('  ' + l)); to.push(pad + 'end'); } });
   };
   let n = 0;
   // L0 entry rows, one kind per row block in this order (index = <k> of Ek<k>r<r>); any other kind goes to row EK.length.
@@ -144,19 +151,19 @@ function archBandSrc(mods, edges, tests, full, groups, ents, bp){
         ln.push('    end'); } });
     }
     const so = !ex && !!bp && !!bp.solo(+b.slice(1)) && B.ks.length === 1;
-    const body = [], hs = [];   // hs: band-level hubs; no hub = body pushed as is (same bytes)
+    const body = [], hs = [];   // hs: band-level hub modules; no hub = body pushed as is (same bytes)
     B.ks.forEach(k => {
       const ms = B.by['\u0001' + k];
-      if(!k || (!ex && so)){ ms.forEach(m => (hb[m.id] ? hs : body).push(nd(m).slice(2))); return; }   // no group or no ext: straight in the band (an External box inside the External band repeats it)
+      if(!k || (!ex && so)){ ms.forEach(m => { if(hb[m.id]) hs.push(m); else body.push(nd(m).slice(2)); }); return; }   // no group or no ext: straight in the band (an External box inside the External band repeats it)
       const gi = n++, gh = ms.filter(m => hb[m.id]);
       body.push('    subgraph G' + gi + '[' + archMq(ex ? k || T('External') : own.call(gn, k) ? gn[k] : k) + ']');
       if(wr) body.push('      direction TB');
-      if(gh.length && gh.length < ms.length) hsplit(body, 'Hg' + gi, '      ', ms.filter(m => !hb[m.id]).map(nd), gh.map(nd));
+      if(gh.length && gh.length < ms.length) hsplit(body, 'Hg' + gi, '      ', ms.filter(m => !hb[m.id]).map(nd), gh, nd);
       else ms.forEach(m => body.push(nd(m)));
       body.push('    end');
     });
-    if(hs.length && body.length) hsplit(ln, 'Hb' + b.slice(1), '    ', body, hs);
-    else body.concat(hs).forEach(l => ln.push(l));
+    if(hs.length && body.length) hsplit(ln, 'Hb' + b.slice(1), '    ', body, hs, m => nd(m).slice(2));
+    else body.concat(hs.map(m => nd(m).slice(2))).forEach(l => ln.push(l));
     ln.push('  end');
   });
   ps.forEach(p => ln.push('  m' + ix[p.from] + ' ' + (p.est ? '-.->' : '-->') + (p.n > 1 ? '|' + archMq('×' + p.n) + '|' : '') + ' m' + ix[p.to]));
