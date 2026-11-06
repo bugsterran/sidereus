@@ -224,6 +224,18 @@ function archFhSpace(fh, M, need, gw){
   sv('--fh-gl', gw[0]); sv('--fh-gr', gw[1]);
   return ch;
 }
+// Pure: extra px per row gap that spreads a short focus map over the free height under it (none under 24px, cap 120).
+function archFhGap(free, n){ return n > 0 && free > 24 ? Math.min(120, Math.floor(free / n)) : 0; }
+// Free height under the map inside its scrolling box, in layout px (the slot may be CSS-zoomed). 0 when that box already scrolls.
+// ⚠Only the vertical gaps grow: node sizes, lanes and badges keep the tight layout.
+function archFhFill(fh, n){
+  let sc = fh.parentElement;
+  while(sc && sc !== document.body){ const oy = getComputedStyle(sc).overflowY; if(oy === 'auto' || oy === 'scroll') break; sc = sc.parentElement; }
+  if(!sc || sc === document.body || sc.scrollHeight > sc.clientHeight + 1 || !fh.offsetHeight) return 0;
+  const r = fh.getBoundingClientRect(), z = r.height / fh.offsetHeight || 1, cs = getComputedStyle(sc);
+  const bot = sc.getBoundingClientRect().bottom - (parseFloat(cs.borderBottomWidth) || 0) - (parseFloat(cs.paddingBottom) || 0) - 8;
+  return archFhGap((bot - r.bottom) / z, n);
+}
 // After insertion: measure, size the gaps (re-measure while wrapping moves), draw each .mmdfe path and badge.
 // Returns archFhQuality (also on data-q) — never moves the scroll.
 function archFhRoute(slot){
@@ -232,6 +244,9 @@ function archFhRoute(slot){
   const gs = Array.from(fh.querySelectorAll('.archfh-e .mmdfe')), es = gs.map(g => ({ a: g.dataset.f, b: g.dataset.t, k: g.dataset.k || '', est: !!g.querySelector('.e-dot') })), f = v => String(Math.round(v * 10) / 10);
   let M = null, R = null;
   for(let i = 0; i < 4; i++){ M = archFhMeasure(fh); R = archFhPaths(M.rects, M.rows, es); if(i === 3 || !archFhSpace(fh, M, R.need, R.gw)) break; }
+  const e = archFhFill(fh, M.bands.length - 1);
+  if(e){ const C = ARCH_FH, n2 = R.need.map((v, g) => g && M.bands[g] ? Math.max(M.bands[g].sub ? C.SUB : C.ROW, v || 0) + e : v);   // need has one gap past the last row
+    archFhSpace(fh, M, n2, R.gw); M = archFhMeasure(fh); R = archFhPaths(M.rects, M.rows, es); }
   const put = [];
   gs.forEach((g, i) => { const p = R.paths[i], d = p && p.pts ? 'M' + p.pts.map(q => f(q[0]) + ',' + f(q[1])).join('L') : '';
     g.style.display = d ? '' : 'none';
