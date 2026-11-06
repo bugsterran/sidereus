@@ -155,6 +155,8 @@ html[data-ui=next][data-ui] .archall{color:#fff}
 /* entry kind rows (84j2 Ek<k>r<r>): a tint, no outline, small title */
 .archmap .mmdsg.archerow>rect{fill:color-mix(in srgb,var(--nx-info,#5899f3) 8%,transparent);stroke:none}
 .archmap .mmdsg.archerow>text{font-size:11px;fill:var(--nx-t3,#8b95a7)}
+/* hub sub-rows (84j2 H<b|g><n>r<r>): layout only, invisible */
+.archmap .mmdsg.archhrow>rect{fill:none;stroke:none}
 /* Edge click target: 81e tag mode puts a 10px transparent .mmdhit under each line (a 1.1px stroke is too thin to hit) */
 .archmap .mmdhit{fill:none;stroke:transparent;stroke-width:10;pointer-events:stroke}
 .archdg .mmdfe{cursor:pointer}

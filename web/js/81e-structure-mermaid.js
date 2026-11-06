@@ -222,7 +222,8 @@ function mmdLayout(g){
       // ⚠Pass bands (84j2) take lines top-in only, and 81g walls the title +2px on 8px cells: a centred title over a member's
       // top-centre column pushed order->db 39px off-centre ⇒ title left (else right) of every member column; widen if neither fits.
       if(tl.lw && g.sgs[sid].pass && !g.sgs[sid].box3d && !g.sgs[sid].oneLayer){   // entry rows (oneLayer) only send lines out the bottom
-        const ms = items.filter(v => !g.sgs[v]).map(v => pl.pos[v].x + size(v).w / 2), lw = tl.lw, M = 6;   // M = wall 2 + half a cell
+        const ms = items.filter(v => !g.sgs[v]).map(v => pl.pos[v].x + size(v).w / 2).concat(...items.filter(v => g.sgs[v] && g.sgs[v].sub).slice(0, 1)   // ⚠.sub (84j2 hub rows): the first row's members are the band's top row
+          .map(c => (kids[c] || []).filter(v => !g.sgs[v]).map(v => pl.pos[c].x + rel[v].x + size(v).w / 2))), lw = tl.lw, M = 6;   // M = wall 2 + half a cell
         const free = x => !ms.some(c => c + ox > x - M && c + ox < x + lw + M);
         if(!free((W - lw) / 2)){
           tx = [4, W - 4 - lw].find(free);

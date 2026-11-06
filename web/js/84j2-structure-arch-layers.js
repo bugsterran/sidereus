@@ -72,6 +72,16 @@ function archEntPair(ents, l0){
   (ents || []).forEach(e => { const t = Array.from(e.to); if(t.length === 1 && hit[t[0]] === 1 && l0(t[0])) out[t[0]] = e; });
   return out;
 }
+// Pure: drawn pairs → {band: hub ids}: a module with ≥ 3 distinct same-band callers (an entry caller does not count).
+// bandOf(id) → band key, '' = not counted (Lx, L0 entry rows). ⚠81f front pinning put such a hub mid-row among its callers.
+function archBandHubs(ps, bandOf, isEntry){
+  const src = Object.create(null), out = Object.create(null);
+  (ps || []).forEach(p => { const b = bandOf(p.to);
+    if(!b || p.from === p.to || bandOf(p.from) !== b || (isEntry && isEntry(p.from))) return;
+    (src[p.to] = src[p.to] || Object.create(null))[p.from] = 1; });
+  Object.keys(src).forEach(id => { if(Object.keys(src[id]).length >= 3){ const b = bandOf(id); (out[b] = out[b] || []).push(id); } });
+  return out;
+}
 // Pure: banded mermaid source. Band L<i> (i = ARCH_LAYERS index) per non-empty layer, a G<n> box per (layer, group);
 // externals in band Lx, one box per ext. Node id = 'm' + index in mods, edges as the archSrc overview.
 // ⚠Group/ext names are agent data: archMq only, never T(). ⚠Bands stay TB: an LR block ranks along x, so unlinked groups stacked in one column.
@@ -85,8 +95,10 @@ function archBandSrc(mods, edges, tests, full, groups, ents, bp){
   (groups || []).forEach(g => { if(g && g.id != null && !own.call(gn, g.id)) gn[g.id] = g.name || g.id; });
   let ps = archPairs(mods, edges, tests);
   if(!full) ps = archReduce(ps);
+  const bo = Object.create(null), kd = Object.create(null);
   (mods || []).filter(m => m && m.id != null && (tests || !archIsTest(m))).forEach(m => {
     const ex = m.kind === 'external', b = ex ? 'Lx' : 'L' + (bp ? bp.of(m) : ARCH_LAYERS.indexOf(m.layer)), k = ex ? String(m.ext || '') : m.group == null ? '' : String(m.group);
+    bo[m.id] = b; kd[m.id] = m.kind;
     const B = bands[b] = bands[b] || { ks: [], by: {} };
     if(!own.call(B.by, '\u0001' + k)){ B.ks.push(k); B.by['\u0001' + k] = []; }
     B.by['\u0001' + k].push(m);
@@ -97,6 +109,14 @@ function archBandSrc(mods, edges, tests, full, groups, ents, bp){
   const l0 = {};
   if(en) bands.L0.ks.forEach(k => bands.L0.by['\u0001' + k].forEach(m => { if(m.kind === 'entry') l0[ix[m.id]] = 1; }));
   const pr = archEntPair(en, i => !!l0[i]), eu = en ? en.filter(e => pr[Array.from(e.to)[0]] !== e) : null;
+  const hb = Object.create(null), hubs = archBandHubs(ps, id => { const b = bo[id]; return !b || b === 'Lx' || (en && b === 'L0') ? '' : b; }, id => kd[id] === 'entry');
+  Object.keys(hubs).forEach(b => hubs[b].forEach(id => { hb[id] = 1; }));
+  // Hub sub-rows (archBandFix H rows): r0 = the container's other children, unchanged; r1.. = its hubs (≤ 8 a row), stacked under r0 by the LR parent.
+  const hsplit = (to, id, pad, rest, hs) => {
+    to.push(pad + 'direction LR', pad + 'subgraph ' + id + 'r0[ ]', pad + '  direction TB');
+    rest.forEach(l => to.push('  ' + l)); to.push(pad + 'end');
+    for(let j = 0; j < hs.length; j += 8){ to.push(pad + 'subgraph ' + id + 'r' + (1 + j / 8) + '[ ]', pad + '  direction TB'); hs.slice(j, j + 8).forEach(l => to.push('  ' + l)); to.push(pad + 'end'); }
+  };
   let n = 0;
   // L0 entry rows, one kind per row block in this order (index = <k> of Ek<k>r<r>); any other kind goes to row EK.length.
   const EK = ['http', 'hook', 'event', 'job', 'cli', 'mcp', 'file'], EKL = { http: 'HTTP', hook: 'Hook', event: 'Event', job: 'Job', cli: 'CLI', mcp: 'MCP', file: 'File' };
@@ -124,14 +144,19 @@ function archBandSrc(mods, edges, tests, full, groups, ents, bp){
         ln.push('    end'); } });
     }
     const so = !ex && !!bp && !!bp.solo(+b.slice(1)) && B.ks.length === 1;
+    const body = [], hs = [];   // hs: band-level hubs; no hub = body pushed as is (same bytes)
     B.ks.forEach(k => {
       const ms = B.by['\u0001' + k];
-      if(!k || (!ex && so)){ ms.forEach(m => ln.push(nd(m).slice(2))); return; }   // no group or no ext: straight in the band (an External box inside the External band repeats it)
-      ln.push('    subgraph G' + (n++) + '[' + archMq(ex ? k || T('External') : own.call(gn, k) ? gn[k] : k) + ']');
-      if(wr) ln.push('      direction TB');
-      ms.forEach(m => ln.push(nd(m)));
-      ln.push('    end');
+      if(!k || (!ex && so)){ ms.forEach(m => (hb[m.id] ? hs : body).push(nd(m).slice(2))); return; }   // no group or no ext: straight in the band (an External box inside the External band repeats it)
+      const gi = n++, gh = ms.filter(m => hb[m.id]);
+      body.push('    subgraph G' + gi + '[' + archMq(ex ? k || T('External') : own.call(gn, k) ? gn[k] : k) + ']');
+      if(wr) body.push('      direction TB');
+      if(gh.length && gh.length < ms.length) hsplit(body, 'Hg' + gi, '      ', ms.filter(m => !hb[m.id]).map(nd), gh.map(nd));
+      else ms.forEach(m => body.push(nd(m)));
+      body.push('    end');
     });
+    if(hs.length && body.length) hsplit(ln, 'Hb' + b.slice(1), '    ', body, hs);
+    else body.concat(hs).forEach(l => ln.push(l));
     ln.push('  end');
   });
   ps.forEach(p => ln.push('  m' + ix[p.from] + ' ' + (p.est ? '-.->' : '-->') + (p.n > 1 ? '|' + archMq('×' + p.n) + '|' : '') + ' m' + ix[p.to]));
@@ -143,9 +168,10 @@ function archBandSrc(mods, edges, tests, full, groups, ents, bp){
 // hub = focused node key (84j4 focus): on the shared centre axis (81e g.axis) instead of its band's centre.
 function archBandFix(g, bp, hub){
   const at = s => s === 'Lx' ? ARCH_LAYERS.length : +s.slice(1), fix = {};
-  g.slist.forEach(s => { const S = g.sgs[s], row = /^Ek\d+r\d+$/.test(s);
+  g.slist.forEach(s => { const S = g.sgs[s], row = /^(Ek\d+r\d+|H[bg]\d+r\d+)$/.test(s), hr = row && s[0] === 'H';
     if(S.parent && !row){ S.cls = 'archgrp'; return; }
-    S.pass = true; S.cls = row ? 'archerow' : 'archband';
+    S.pass = true; S.cls = hr ? 'archhrow' : row ? 'archerow' : 'archband';
+    if(hr) S.sub = true;   // H hub rows (archBandSrc): untinted; 81e keeps the band title off their member columns
     if(bp && !row){ const t = bp.tip(s === 'Lx' ? bp.n : +s.slice(1)); if(t) S.tip = t; }
     if(row) S.oneLayer = true; });   // Ek<k>r<r> entry rows: pass-through like a band, stacked in source (kind) order and centred by 81f
   g.slist.filter(s => !g.sgs[s].parent).sort((a, b) => at(a) - at(b)).forEach((s, i) => { fix[s] = i; });
