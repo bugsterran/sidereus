@@ -33,6 +33,17 @@ const route = (F, W) => { let need = [], gw = [16, 16], L = null, R = null;
   return { L, R, q: archFhQuality(R.paths, L.rects) }; };
 """
 
+# Vertical runs of different paths sharing > 0.5px of height: [count closer than 1px, min x gap]; routeB = route with badged links.
+SAME = r"""
+const same = P => { const V = P.paths.filter(p => p.pts).map(p => p.pts.slice(1).map((q, j) => [p.pts[j], q]).filter(s => s[0][0] === s[1][0]));
+  let n = 0, md = 1e9; for(let i = 0; i < V.length; i++) for(let j = i + 1; j < V.length; j++) V[i].forEach(a => V[j].forEach(b => {
+    const lo = Math.max(Math.min(a[0][1], a[1][1]), Math.min(b[0][1], b[1][1])), hi = Math.min(Math.max(a[0][1], a[1][1]), Math.max(b[0][1], b[1][1]));
+    if(hi - lo > 0.5){ const d = Math.abs(a[0][0] - b[0][0]); md = Math.min(md, d); if(d < 1) n++; } })); return [n, md]; };
+const routeB = (F, W) => { let need = [], gw = [16, 16], L = null, R = null;
+  for(let i = 0; i < 3; i++){ L = lay(F, W, need, gw); R = archFhPaths(L.rects, L.rows, F.edges.map(e => ({ a: e.a, b: e.b, k: e.kind, lab: true }))); need = R.need; gw = R.gw; }
+  return [archFhQuality(R.paths, L.rects), same(R)]; };
+"""
+
 
 def run(body, M, E, G, flows=None):
     js = "\n".join([MPRE, "const document = { addEventListener(){} };", "function codeBlock(s){ return s; }", ROUTER] + [js_fn(f) for f in MFNS]
@@ -228,6 +239,47 @@ process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths.map(p =>
         self.assertEqual(len({tuple(e[0]) for e in reads}), 2)                 # not bundled
         self.assertFalse(any(e[2] for e in reads))
         self.assertEqual((q["overlaps"], q["boxHits"]), (0, 0))               # a bundle's own shared run is not an overlap
+
+    def test_badged_hub_ends_get_own_vertical_runs(self):
+        # a lit flow badges every link: a bundle trunk at the hub stacked its badges in pairs beside the trunk. Badged links never bundle,
+        # each end has its own port inside its box, and no two paths share (or nearly share) a vertical run.
+        r = run(SAME + r"""const R = { h: { x: 400, y: 100, w: 160, h: 30 } }, up = ['a0', 'a1'], dn = ['b0', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
+up.forEach((k, i) => { R[k] = { x: 250 + i * 300, y: 0, w: 120, h: 30 }; });
+dn.forEach((k, i) => { R[k] = { x: 20 + i * 130, y: 200, w: 110, h: 30 }; });
+const es = up.map(k => ({ a: k, b: 'h', k: 'call' })).concat(dn.map(k => ({ a: 'h', b: k, k: 'call' })), [{ a: 'b2', b: 'h', k: 'call' }]);
+const P = archFhPaths(R, [up, ['h'], dn], es.map(e => Object.assign({ lab: true }, e))), B = archFhPaths(R, [up, ['h'], dn], es);
+const inside = P.paths.every(p => { const s = p.pts[0], t = p.pts[p.pts.length - 1];
+  return s[0] >= R[p.a].x && s[0] <= R[p.a].x + R[p.a].w && t[0] >= R[p.b].x && t[0] <= R[p.b].x + R[p.b].w; });
+process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), same(P), inside, P.paths.some(p => p.bd), same(B)]));""", [], [], [])
+        q, (n, md), inside, bundled, (nb, _) = r
+        print("\n  badged hub: crossings %d, shared vertical runs %d (bundled: %d), min gap %.1fpx" % (q["crossings"], n, nb, md))
+        self.assertEqual(n, 0)
+        self.assertGreaterEqual(md, 6)
+        self.assertTrue(inside)
+        self.assertFalse(bundled)
+        self.assertGreater(nb, 0)                                              # unbadged links still bundle into one trunk
+        self.assertEqual((q["boxHits"], q["overlaps"]), (0, 0))
+
+    def test_badged_shapes_no_more_crossings(self):
+        # ★before (bundles + sibling-blind nudge): fixed 1 crossing / 9 shared runs, dbuser 30 / 0 (min gap 3.6px), real lit 31 / 67
+        r = run(SAME + r"""const R = {}, rows = [], put = (ks, y) => { rows.push(ks); ks.forEach((k, i) => { R[k] = { x: 120 + i * 130, y, w: 100, h: 30 }; }); };
+put(['c0', 'c1', 'c2'], 20); put(['s0', 'h', 's1'], 100); put(['o0', 'o1', 'o2', 'o3'], 180); put(['o4', 'o5'], 240);
+const es = [['c0','h'],['c1','h'],['c2','h'],['s0','h'],['h','s1'],['h','o0'],['h','o1'],['h','o2'],['h','o3'],['h','o4'],['h','o5'],['c0','o5']].map(([a, b]) => ({ a, b, lab: true }));
+const P = archFhPaths(R, rows, es); process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), same(P)]));""", [], [], [])
+        M, E, G, F = _dbuser()
+        d = run(SAME + "const F = archFhPlan(archFocusPlanM(M, E, false, 's0', archFlowEntries(D, M, false), false, { flows: D.flows, fs: ['f.screen.dbuser'] }, BP), false);"
+                "process.stdout.write(JSON.stringify([1100, 900].map(W => routeB(F, W))));", M, E, G, F)
+        M, E, G, F = _real()
+        e = run(SAME + "process.stdout.write(JSON.stringify(routeB(plan('hub', ['f4', 'f6'], BP), 1100)));", M, E, G, F)
+        print("\n  after: fixed %s · dbuser %s · real lit %s" % (r, d, e))
+        self.assertLessEqual(r[0]["crossings"], 1)
+        self.assertEqual(r[1][0], 0)
+        for q, (n, md) in d:
+            self.assertLessEqual(q["crossings"], 30)
+            self.assertEqual((n, q["boxHits"], q["overlaps"]), (0, 0, 0))
+            self.assertGreaterEqual(md, 3)
+        self.assertLessEqual(e[0]["crossings"], 31)
+        self.assertEqual((e[1][0], e[0]["boxHits"]), (0, 0))
 
     def test_two_way_edges_draw_two_lines(self):
         # h <-> b (rows apart) and h <-> n (neighbours): each direction is its own line, never drawn on its reverse
