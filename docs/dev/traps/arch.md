@@ -449,6 +449,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ Layer zoom lives only in 84j3 `archLyZoom`. 84ja `archLyFocus` moves focus to × only when a repaint dropped it to body; `archLyTab` cycles Tab inside. Light theme overrides `--fh-c*` (≥3:1).
 - ⚠Never pull focus back from outside the layer (≤1060px detail popover) on repaint. ⚠Never add a second zoom in 84j9.
 - ⚠`.archly-t>.archbar` keeps a min-width: with 0 the legend squeezed it to 37px at 1920.
+- ⚠It also keeps `flex-basis:100%` (sweep 19): `container-type:inline-size` gives it ~0 intrinsic width, so with `auto` a long legend shared the row and squeezed the bar to 372px at 1920 (flow select capped at 160px, In/Out on a second line) while 900 looked fine. The bar owns its row; legend and zoom wrap below.
 
 ## Focus step badges overlap each other (`84j9 archFhHtml` badge, `archFhRoute`)
 - Cause: a lit flow shows full step labels (several calls, ★~300px) on close lanes; sliding only inside the badge's own short (or bundle-shared) run found no free spot, so badges stacked over each other and the boxes.

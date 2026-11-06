@@ -9,7 +9,7 @@
 .archlyx:focus-visible{outline:2px solid var(--nx-info,#5899f3);outline-offset:1px}
 /* bar · legend · zoom wrap onto more rows at 900-1100 instead of squeezing */
 .archly-t{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:4px 10px 6px;border-bottom:1px solid var(--nx-rule,#2a3442)}
-.archly-t>.archbar{flex:1 1 auto;min-width:min(360px,100%);flex-wrap:wrap;row-gap:4px}   /* ⚠min-width 0 let the legend squeeze the bar to ~37px at 1920; the legend wraps instead */
+.archly-t>.archbar{flex:1 1 100%;min-width:min(360px,100%);flex-wrap:wrap;row-gap:4px}   /* ⚠basis 100%, not auto: container-type gives the bar ~0 intrinsic width, so the legend took the row and squeezed it (37px, then 372px at 1920); the bar owns its row, legend and zoom wrap below */
 .archly-t>.archzm{margin-left:auto}
 .archly-t .archzm-b{background:var(--nx-bg,#0d1014)}
 .archlym{flex:1 1 auto;min-height:0;overflow:auto;padding:8px}

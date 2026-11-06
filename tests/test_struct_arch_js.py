@@ -1035,6 +1035,7 @@ class ArchLayer(unittest.TestCase):
         self.assertRegex(css, r"\.archbody>\.archly\{[^}]*z-index:4")
         self.assertIn(".archbody>.archly~.archdetp{z-index:5}", css)       # ≤1060 detail popover stays above the layer
         self.assertNotRegex(css, r"\.archly[^{]*\{[^}]*opacity")           # dim by backdrop colour, text stays readable
+        self.assertRegex(css, r"\.archly-t>\.archbar\{flex:1 1 100%")      # bar owns its row: container-type makes its auto basis ~0
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
