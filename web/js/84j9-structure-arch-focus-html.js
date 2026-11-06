@@ -201,31 +201,6 @@ function archFhQuality(paths, rects){
     if(!bd[i] || bd[i] !== bd[j]) segs[i].forEach(a => segs[j].forEach(b => { if([0, 1].some(d => ax(a, d) && ax(b, d) && ov(a, b, d))) overlaps++; }));
   return { crossings, boxHits, overlaps };
 }
-// Pure: badge centres for archFhPaths paths. ws[i] = badge width (0 = none), rects/rows as archFhPaths. A spot is free when its 18px rect
-// meets no placed badge, no box and no other path's segment. → {at: [[x, y] | null], more: [extra px per gap g above row g]}.
-// ⚠Checking badges only against badges (DOM order, own short run) left bundled branches' badges on each other and lines through them.
-// ⇒ no free spot: the badge keeps its default spot and its gap asks for one stacked badge height more; archFhRoute routes again.
-function archFhBadges(paths, ws, rects, rows){
-  const H = 18, P = 3, put = [], rs = Object.keys(rects || {}).map(k => rects[k]), at = [], more = (rows || []).map(() => 0).concat([0]);
-  const bot = r => Math.max(...r.filter(k => rects[k]).map(k => rects[k].y + rects[k].h)), bs = (rows || []).map(bot);
-  const segs = (paths || []).map(p => p && p.pts ? p.pts.slice(1).map((q, j) => [p.pts[j], q]) : []);
-  const ov = (a, b) => a.x < b.x + b.w + P && b.x < a.x + a.w + P && a.y < b.y + b.h + P && b.y < a.y + a.h + P;
-  (paths || []).forEach((p, i) => { const w = ws[i] || 0; if(!w || !p || !p.pts){ at.push(null); return; }
-    const box = (x, y) => ({ x: x - w / 2, y: y - H / 2, w, h: H });
-    const ok = (x, y) => { const b = box(x, y); return !put.some(o => ov(o, b)) && !rs.some(R => ov(R, b))
-      && !segs.some((ss, j) => j !== i && ss.some(s => mmdSegRect(s[0], s[1], b, 1))); };
-    const cs = [[p.lx, p.ly]];
-    if(p.bs) for(let k = 1; k < 12; k++){ const x = p.lx + Math.ceil(k / 2) * (w + 6) * (k % 2 ? 1 : -1); if(x - w / 2 >= p.bs[0] && x + w / 2 <= p.bs[1]) cs.push([x, p.ly]); }
-    // own runs, longest first: on the line, stepping out from the middle; beside a vertical run after that
-    segs[i].slice().sort((a, b) => Math.hypot(b[1][0] - b[0][0], b[1][1] - b[0][1]) - Math.hypot(a[1][0] - a[0][0], a[1][1] - a[0][1])).forEach(s => {
-      const v = s[0][0] === s[1][0], lo = Math.min(s[0][v ? 1 : 0], s[1][v ? 1 : 0]), hi = Math.max(s[0][v ? 1 : 0], s[1][v ? 1 : 0]), m = (lo + hi) / 2, r = v ? H / 2 + 2 : w / 2;
-      for(let k = 0; k <= 40; k++){ const c = m + Math.ceil(k / 2) * 6 * (k % 2 ? 1 : -1); if(c < lo + r || c > hi - r) continue;
-        if(v) cs.push([s[0][0], c], [s[0][0] + w / 2 + 4, c], [s[0][0] - w / 2 - 4, c]); else cs.push([c, s[0][1]]); } });
-    const ix = cs.findIndex(c => ok(c[0], c[1]));
-    if(ix < 0) more[bs.filter(y => y <= p.ly).length] += H + 4;
-    const c = ix < 0 ? cs[0] : cs[ix]; at.push(c); put.push(box(c[0], c[1])); });
-  return { at, more };
-}
 // Box rects (offsets inside .archfh, position:relative) and sub-rows: boxes of one band whose tops differ by over half a box start a new row.
 function archFhMeasure(fh){
   const rects = {}, rows = [], bands = [];
@@ -255,18 +230,25 @@ function archFhRoute(slot){
   const fh = !slot ? null : slot.classList && slot.classList.contains('archfh') ? slot : slot.querySelector ? slot.querySelector('.archfh') : null;
   if(!fh) return null;
   const gs = Array.from(fh.querySelectorAll('.archfh-e .mmdfe')), es = gs.map(g => ({ a: g.dataset.f, b: g.dataset.t, k: g.dataset.k || '', est: !!g.querySelector('.e-dot') })), f = v => String(Math.round(v * 10) / 10);
-  const ws = gs.map(g => { const r = g.querySelector('.mmdfl rect'); return r ? +r.getAttribute('width') || 0 : 0; });
-  let M = null, R = null, B = null, ex = [];
-  // gaps = lanes (archFhPaths need) + badge room (archFhBadges more, kept across passes; ⚠capped at 4 badges so a spot no gap frees cannot grow it forever)
-  for(let i = 0; i < 6; i++){ M = archFhMeasure(fh); R = archFhPaths(M.rects, M.rows, es); B = archFhBadges(R.paths, ws, M.rects, M.rows);
-    B.more.forEach((v, g) => { ex[g] = Math.min(88, (ex[g] || 0) + v); });
-    if(i === 5 || !archFhSpace(fh, M, R.need.map((v, g) => v + (ex[g] || 0)), R.gw)) break; }
+  let M = null, R = null;
+  for(let i = 0; i < 4; i++){ M = archFhMeasure(fh); R = archFhPaths(M.rects, M.rows, es); if(i === 3 || !archFhSpace(fh, M, R.need, R.gw)) break; }
+  const put = [];
   gs.forEach((g, i) => { const p = R.paths[i], d = p && p.pts ? 'M' + p.pts.map(q => f(q[0]) + ',' + f(q[1])).join('L') : '';
     g.style.display = d ? '' : 'none';
     g.querySelectorAll(':scope > path').forEach(x => x.setAttribute('d', d || 'M0 0'));
-    const r = g.querySelector('.mmdfl rect'), t = g.querySelector('.mmdfl text'), c = B.at[i];
-    if(r && t && d && c){ const w = ws[i];
-      r.setAttribute('x', f(c[0] - w / 2)); r.setAttribute('y', f(c[1] - 9)); t.setAttribute('x', f(c[0])); t.setAttribute('y', f(c[1])); } });
+    const r = g.querySelector('.mmdfl rect'), t = g.querySelector('.mmdfl text');
+    if(r && t && d){ const w = +r.getAttribute('width') || 0;
+      // ⚠Close lanes put badges on top of each other: slide along the badge's own horizontal run to the nearest free spot.
+      const hit = x => put.some(o => Math.abs(o[0] - x) < (o[2] + w) / 2 + 3 && Math.abs(o[1] - p.ly) < 20);
+      if(p.bs) for(let k = 1; hit(p.lx) && k < 12; k++){ const dx = Math.ceil(k / 2) * (w + 6) * (k % 2 ? 1 : -1), x = p.lx + dx;
+        if(x - w / 2 >= p.bs[0] && x + w / 2 <= p.bs[1] && !hit(x)){ p.lx = x; break; } }
+      // ⚠A short run (or one shared by a bundle) has no free spot: try beside the path's own vertical runs, longest first.
+      if(hit(p.lx)){ const v = p.pts.slice(1).map((q, j) => [p.pts[j], q]).filter(s => s[0][0] === s[1][0])
+          .sort((a, b) => Math.abs(b[1][1] - b[0][1]) - Math.abs(a[1][1] - a[0][1]));
+        for(const s of v){ const y = (s[0][1] + s[1][1]) / 2, ok = x => !put.some(o => Math.abs(o[0] - x) < (o[2] + w) / 2 + 3 && Math.abs(o[1] - y) < 20);
+          const x = [s[0][0] + w / 2 + 4, s[0][0] - w / 2 - 4].find(ok); if(x != null){ p.lx = x; p.ly = y; break; } } }
+      put.push([p.lx, p.ly, w]);
+      r.setAttribute('x', f(p.lx - w / 2)); r.setAttribute('y', f(p.ly - 9)); t.setAttribute('x', f(p.lx)); t.setAttribute('y', f(p.ly)); } });
   const q = archFhQuality(R.paths, M.rects);
   fh.dataset.q = q.crossings + ',' + q.boxHits;
   return q;
