@@ -461,6 +461,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: a lit flow shows full step labels (several calls, ★~300px) on close lanes; sliding only inside the badge's own short (or bundle-shared) run found no free spot, so badges stacked over each other and the boxes.
 - ⇒ Badge text is cut at 28 chars (`archFocusCut`), full label in the badge `<title>`; when the run has no free spot, the badge goes beside the path's own vertical runs (longest first).
 - ⚠Never pass the uncut label to the badge width: the rect is sized from the shown text.
+- Bundled branches still stacked (★a real repo, a hub with 3 children 70px below: 3 out-edges on one lane, own run 32px vs a 131px badge; gaps sized for lines only, `(n+1)*14`). ⇒ `archFhBadges` rejects spots on a badge, a box or another path's segment (`mmdSegRect`); none free → that gap asks 22px more and `archFhRoute` routes again (cap 88px per gap). ⚠Never keep a colliding spot silently: grow the gap.
 - Arrow heads grew with the line (default `markerUnits=strokeWidth`: ★1.1 → 1.8 → 2.2px lines gave 7.7 → 12.6 → 15.4px heads on hover). ⇒ `#archfh-ah` uses `markerUnits=userSpaceOnUse` 8px; lines still thicken on hover. ⚠Do not drop `markerUnits`.
 
 ## Flow sequence left the bottom of a tall pane empty (`84k archFlowFill`)
