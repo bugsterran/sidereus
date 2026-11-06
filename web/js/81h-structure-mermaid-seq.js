@@ -61,8 +61,7 @@ function mmdSeqParse(src){
 // opt {tight:1} (84k only): smaller minimum gap, box padding and label padding; a self label reserves only its own width
 // (its number sits on the lifeline). Omitted = md preview spacing, unchanged.
 function mmdSeqLayout(g, opt){
-  const PAD = 10, SW = 30, LH = 16, M = 12, np = g.parts.length, TI = !!(opt && opt.tight), GMIN = TI ? 64 : 110, GP = TI ? 24 : 36, LP = TI ? 8 : 24,
-    GY = Math.max(0, +(opt && opt.gy) || 0);   // extra pitch per message/note row (84k fills a tall pane); 0 keeps the output byte-identical
+  const PAD = 10, SW = 30, LH = 16, M = 12, np = g.parts.length, TI = !!(opt && opt.tight), GMIN = TI ? 64 : 110, GP = TI ? 24 : 36, LP = TI ? 8 : 24;
   const lw = t => (t ? Math.max(...String(t).split('\n').map(mmdTw)) : 0), nl = t => (t ? String(t).split('\n').length : 1);
   const bx = g.parts.map(p => mmdBox(p.label, 'rect')), BH = Math.max(...bx.map(b => b.h)), ix = id => g.pmap[id].i;
   const gap = [];
@@ -96,11 +95,11 @@ function mmdSeqLayout(g, opt){
       if(it.a === it.b){
         const y0 = y + 6, hh = Math.max(20, h);
         msgs.push({ it, pts: [[a, y0], [a + SW, y0], [a + SW, y0 + hh], [a, y0 + hh]], lx: a + SW + 6, ly: y0 + hh / 2, self: true });
-        ext(a, a + SW + 6 + lw(it.label)); y = y0 + hh + 14 + GY;
+        ext(a, a + SW + 6 + lw(it.label)); y = y0 + hh + 14;
       } else {
         y += h + 6;
         msgs.push({ it, pts: [[a, y], [b, y]], lx: (a + b) / 2 + (it.n ? (b > a ? 9 : -9) : 0), ly: y - 4 - h / 2 });
-        ext(Math.min(a, b), Math.max(a, b)); y += 14 + GY;
+        ext(Math.min(a, b), Math.max(a, b)); y += 14;
       }
     } else if(it.k === 'note'){
       const i = ix(it.ps[0]), j = ix(it.ps[it.ps.length - 1]), h = nl(it.label) * LH + 12;
@@ -108,7 +107,7 @@ function mmdSeqLayout(g, opt){
       if(it.pos === 'left') x = cx[i] - 10 - w;
       else if(it.pos === 'right') x = cx[i] + 10;
       else { const l = Math.min(cx[i], cx[j]) - (i === j ? 0 : 20), r = Math.max(cx[i], cx[j]) + (i === j ? 0 : 20); w = Math.max(w, r - l); x = (l + r) / 2 - w / 2; }
-      y += 4; notes.push({ it, x, y, w, h }); ext(x, x + w); y += h + 10 + GY;
+      y += 4; notes.push({ it, x, y, w, h }); ext(x, x + w); y += h + 10;
     } else if(it.k === 'open'){
       y += 4;
       const f = fr[it.f] = { kind: it.kind, label: it.label, top: y, x0: Infinity, x1: -Infinity, sects: [], depth: open.length };

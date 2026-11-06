@@ -731,7 +731,7 @@ class ArchMdRender(unittest.TestCase):
         self.assertEqual(out[7:], [3, 4])                  # overview: 3 pairs, 4 modules (gates hidden)
 
 
-FLOW_FNS = ["archFlowKind", "archFlowName", "archFlowAt", "archFlowCur", "archFlowPick", "archFlowRate", "archFlowSrc", "archFlowGraph", "archFlowLay", "archFlowSvg", "archFlowGy", "archFlowFill", "archFlowMark",
+FLOW_FNS = ["archFlowKind", "archFlowName", "archFlowAt", "archFlowCur", "archFlowPick", "archFlowRate", "archFlowSrc", "archFlowGraph", "archFlowLay", "archFlowSvg", "archFlowMark",
             "archFlowRow", "archFlowBody", "archFlowOpen", "archFlowClick", "archFlowEntries", "archFlowBtn", "archFlowSet",
             "archLitOrder", "archLitNext", "archOffCount", "archLitText", "archScrollAt", "archViewRect", "archLitCount", "archLitGo", "archLitGoBtn",
             "codeBlock", "mmdLabel", "mmdSplit", "mmdChain", "mmdParse", "mmdTw", "mmdBox", "mmdSeqParse", "mmdSeqLayout", "mmdSeqSvg", "mmdBlock"]
@@ -832,19 +832,6 @@ class ArchFlow(unittest.TestCase):
         self.assertIn("<title>FE shell (app, components, lib)</title>", svg)
         self.assertIn("width:100%;height:auto;max-width:" + str(w) + "px;min-width:" + str(-(-w * 3 // 4)) + "px", svg)
         self.assertIn("class=mmdsqm data-i=6", svg)            # step 5 -> data-i 6 still
-
-    def test_tall_pane_widens_row_pitch(self):
-        # A short diagram in a tall pane spreads its rows; no room (or an already scrolling pane) keeps the tight pitch.
-        r = run_flow("const g = archFlowGraph(" + json.dumps(FLOWS[0]) + ", {}), L0 = archFlowLay(g), L1 = archFlowLay(g, 10),"
-                     " M0 = mmdSeqLayout(g, {tight: 1});"
-                     "console.log(JSON.stringify([L0.h === M0.h, L1.h - L0.h, L0.msgs.length + L0.notes.length,"
-                     " archFlowGy(0, 1, 3), archFlowGy(20, 1, 3), archFlowGy(30, 1, 3), archFlowGy(900, 0.75, 3), archFlowGy(900, 1, 0),"
-                     " archFlowSvg(" + json.dumps(FLOWS[0]) + ", {}, 0) === archFlowSvg(" + json.dumps(FLOWS[0]) + ", {}, 0, 0)]));")
-        same, grow, rows, g0, g20, g30, gbig, gnone, svg0 = r
-        self.assertTrue(same)                     # no gy -> the old tight layout
-        self.assertEqual(grow, 10 * rows)         # every message/note row gets the extra pitch
-        self.assertEqual([g0, g20, g30, gbig, gnone], [0, 0, 10, 16, 0])   # threshold 24px, cap 16
-        self.assertTrue(svg0)
 
     def test_click_opens_code(self):
         d = {"ok": True, "commit": "c1", "modules": MODS, "edges": EDGES, "flows": FLOWS}

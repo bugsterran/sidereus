@@ -539,7 +539,7 @@ function archPaint(box, head){
   // Flow view has no header buttons: a stale map puts its request button in the controls; an open preview sits under the header.
   const fhd = d.stale ? archStatusHtml(p, archReqBtn(p, home, cands, d)) : hst;
   if(fl){ box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d, dvOn), '', fhd) + (d.stale && req ? '<div class=archck>' + req + '</div>' : '') + msg + archFlowBody(fa.fls, fa.fi, names) + '</div>';
-    archScrollPut(box, sm, sl); archFlowMark(box.querySelector && box.querySelector('.archfdg svg'), fl); archFlowFill(box, fl, names, fa.fi); return; }
+    archScrollPut(box, sm, sl); archFlowMark(box.querySelector && box.querySelector('.archfdg svg'), fl); return; }
   const pick = fa ? archFlowPick(fa.fls, ARCH.lit && ARCH.lit.p === p ? ARCH.lit.flow : '') : '';
   const ly = sel && typeof archLyHtml === 'function' ? archLyHtml(d, mods, edges, sel, si, tests, pick, any) : '';   // 84j3
   box.innerHTML = '<div class="strtab archtab">' + head(archHeadNote(d, dvOn), '', hst + pre) + (rq ? '<div class=archck>' + rq + '</div>' : '') + msg
