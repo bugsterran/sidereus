@@ -545,6 +545,32 @@ class ArchLayers(unittest.TestCase):
         self.assertLessEqual(abs(x0 + w0 / 2 - mid0), 1)                    # fixture: centred title sat over a top-row column
         self.assertTrue(any(x0 <= c <= x0 + w0 for c in cs0))
 
+    def test_hub_called_by_hub_drops_a_row(self):
+        # a hub another hub calls sits one row lower, so the hub -> hub line drops instead of running along one row
+        m = self.HUB_M + [{"id": "nav", "name": "Nav", "kind": "module", "layer": "ui", "group": "app"}]
+        e = self._ed([("s%d" % i, "nav", "call") for i in range(1, 4)] + [("nav", "shell", "call")]) + self.HUB_E
+        r = self._hub(m, e, body="const d = L.edges.filter(x => x.from === 'm8' && x.to === 'm5').map(x => x.pts[0][1] < x.pts[x.pts.length - 1][1]);"
+                      "process.stdout.write(JSON.stringify([ERR, g.slist.filter(s => /^H/.test(s)), ns('Hb1r1'), ns('Hb1r2'), d, q.boxHits, ov]));")
+        self.assertEqual(r, [None, ["Hb1r0", "Hb1r1", "Hb1r2"], ["m8"], ["m5"], [True], 0, 0])
+
+    def test_hub_band_title_off_group_members_in_top_row(self):
+        # 81e: with a band-level hub the top row holds group boxes; the title also clears the columns of their members
+        m = ([{"id": "web", "name": "Web", "kind": "entry", "ext": "http", "layer": "entry"}]
+             + [{"id": "s%d" % i, "name": "Screen %d" % i, "kind": "module", "layer": "ui", "group": "app"} for i in range(1, 4)]
+             + [{"id": "k%d" % i, "name": "Kit %d" % i, "kind": "module", "layer": "ui", "group": "kit"} for i in range(1, 3)]
+             + [{"id": "shell", "name": "SPA shell", "kind": "module", "layer": "ui"}])
+        e = self._ed([("web", s, "serve") for s in ("s1", "s2", "s3", "k1", "shell")]
+                     + [("s%d" % i, "shell", "call") for i in range(1, 4)] + [("k1", "shell", "call"), ("s1", "k2", "call")])
+        r = self._hub(m, e, body="const up = (k, s) => { for(let t = g.nodes[k].sg; t; t = g.sgs[t].parent) if(t === s) return true; return false; };"
+                      "const cs = g.nlist.filter(k => !g.sgs[g.nodes[k].sg].sub && up(k, 'Hb1r0')).map(k => L.nodes[k].x + L.nodes[k].w / 2);"
+                      "process.stdout.write(JSON.stringify([ERR, g.slist.filter(s => g.sgs[s].parent === 'Hb1r0').length, L.sgs.L1.tr.x, L.sgs.L1.tr.w, cs, q.boxHits, ov]));")
+        err, nb, x, w, cs, hits, ov = r
+        self.assertIsNone(err)
+        self.assertGreaterEqual(nb, 2)                                    # group boxes in the top row
+        self.assertTrue(cs)
+        self.assertTrue(all(c < x - 6 or c > x + w + 6 for c in cs), (x, w, cs))
+        self.assertEqual([hits, ov], [0, 0])
+
     def test_r4_v1_svg_has_no_kind(self):
         r = render("const s = archSrc(M, E, false, '', false); process.stdout.write(JSON.stringify([archMmd(s, M, '').indexOf('data-k') < 0, ERR]));")
         self.assertEqual(r, [True, None])

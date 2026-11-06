@@ -27,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Structure: in the overview map a module that 3 or more modules of its own band call (a hub such as an SPA shell) sits on its own row below the band, centred, so the links into it drop straight down instead of running along the row.
+- Structure: in the overview map a module that 3 or more modules of its own band call (a hub such as an SPA shell) sits on its own row below the band, centred, so the links into it drop straight down instead of running along the row. A hub that another hub calls sits one row lower, and the band title also keeps clear of modules inside group boxes on the top row.
 
 - Contributors: `check.sh --fast` also runs the architecture tests; bug-fix pipelines require a trap note; a commit-msg hook allows closing keywords only in a release commit.
 
