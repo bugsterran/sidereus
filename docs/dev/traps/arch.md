@@ -462,3 +462,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ Badge text is cut at 28 chars (`archFocusCut`), full label in the badge `<title>`; when the run has no free spot, the badge goes beside the path's own vertical runs (longest first).
 - ⚠Never pass the uncut label to the badge width: the rect is sized from the shown text.
 - Arrow heads grew with the line (default `markerUnits=strokeWidth`: ★1.1 → 1.8 → 2.2px lines gave 7.7 → 12.6 → 15.4px heads on hover). ⇒ `#archfh-ah` uses `markerUnits=userSpaceOnUse` 8px; lines still thicken on hover. ⚠Do not drop `markerUnits`.
+
+## Focus view left the bottom of a tall screen empty (`84j9 archFhFill`)
+- Cause: row gaps were sized only for the lanes they carry (min 28px band, 14px sub-row); ★1920×1080, a 3-band focus used 560px of a 734px pane.
+- ⇒ After routing, `archFhFill` measures the free height under the map in its scrolling box (`.archlym`) and `archFhGap` splits it over the row gaps (none under 24px, cap 120px per gap); lanes are spaced by gap height, so lines spread too.
+- ⚠Only vertical gaps grow; node sizes and badges stay. A box that already scrolls keeps the tight layout. `need` has one entry past the last row — skip it (no band).

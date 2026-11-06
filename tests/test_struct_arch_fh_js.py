@@ -141,6 +141,11 @@ class ArchFocusHtml(unittest.TestCase):
         self.assertIn(">call hostLinkMode, navigate…</text>", h)
         self.assertIn("class=archfh-row data-b=", h)
 
+    def test_free_height_spreads_gaps(self):
+        # Free height under a short map is split over its row gaps; little room or no gaps keeps the tight layout; capped per gap.
+        r = run("console.log(JSON.stringify([archFhGap(0, 3), archFhGap(24, 3), archFhGap(300, 3), archFhGap(900, 3), archFhGap(500, 0)]));", [], [], [])
+        self.assertEqual(r, [0, 0, 100, 120, 0])
+
     def test_paths_fixed_rects(self):
         # row 0: 3 callers · row 1: sibling, hub, sibling · row 2/3: callees wrapped into two sub-rows · far edge row 0 -> row 3 uses a gutter
         r = run(r"""const R = {}, rows = [], put = (ks, y) => { rows.push(ks); ks.forEach((k, i) => { R[k] = { x: 120 + i * 130, y, w: 100, h: 30 }; }); };
