@@ -96,6 +96,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠settings.json is read only. In env, only keys containing `AUTOCOMPACT` and not `PCT` count as the window value.
 - ★**Waiting on AskUserQuestion showed «thinking»** (2026-09-24 UX audit, a393bb9a 09:58:18–09:59:48). Two causes: `_sess_state` checked shape=`tool` before `asking` → `tool`; then the same response's OTel `api_request` (→ think) overwrote it.
   - ⇒ `parse` emits `askTool` (unanswered AskUserQuestion/ExitPlanMode on the last assistant line); `_sess_state` returns `ask` for it even when shape=tool · `_session_row` never overwrites `ask` with OTel. Result: attention 90 pts (red) · activity band «needs you». `tests/test_ask_state.py`.
+  - ★2026-11-06: a bold question line «**… push?**» showed «Done» — the line ends with `*`, not `?`. ⇒ `parse._turn_shape` strips trailing `*_`~` before the `_ASK_END` check (`test_bold_question_is_ask`).
   - ⚠Never turn tool into ask on `asking` (trailing «?») alone — a question mark next to a Bash call becomes a question wait. Permission prompts leave no trace in the transcript; they stay with `_blocked`.
   - ⇒ The header «No sessions need you» appends «N low-priority» when list-only rows (done · bgdone) exist (17-attention `quiet`) — list and header count the same `attnRows()`.
   - ★The same audit's «state since 08:06 AM · 32 s» came from that fake clock. ⇒ Start time = server time (`ATTN.at`) − `ageSec` (42-activity `actStart`) — the same server base as the elapsed time.

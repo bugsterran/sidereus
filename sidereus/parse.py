@@ -249,7 +249,8 @@ def _turn_shape(d, msg, turn_end):
                     asking = True
                 if x.get("type") == "text":
                     # ⚠A status line after the question hid it: check the last 3 non-empty lines, not only the last one.
-                    tl = [ln.strip() for ln in (x.get("text") or "").splitlines() if ln.strip()][-3:]
+                    # ⚠Strip trailing markdown emphasis/code marks: «**Push it?**» ends with «*», not «?».
+                    tl = [ln.strip().rstrip("*_`~ ") for ln in (x.get("text") or "").splitlines() if ln.strip()][-3:]
                     if any(ln.endswith(_ASK_END) for ln in tl):
                         asking = True
         reply = _reply_summary(c0)

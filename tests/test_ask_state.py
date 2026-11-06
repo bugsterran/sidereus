@@ -86,6 +86,10 @@ class ParseAndState(Patch):
         p = self.parse([asst({"type": "text", "text": "Done.\n\nShall I push it?\n\nTests: 31 OK"})])
         self.assertTrue(p["ask"])
 
+    def test_bold_question_is_ask(self):
+        p = self.parse([asst({"type": "text", "text": "Done.\n\n**Push e7f3 to develop?**\n\nNote a\n\nNote b"})])
+        self.assertTrue(p["ask"])
+
     def test_question_far_up_is_not_ask(self):
         p = self.parse([asst({"type": "text", "text": "Push it?\nline a\nline b\nline c\nline d"})])
         self.assertFalse(p["ask"])
