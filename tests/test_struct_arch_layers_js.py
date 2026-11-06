@@ -473,8 +473,8 @@ class ArchLayers(unittest.TestCase):
         err, rows, r1, r0, below, dx, meta, hits, lov, ov, down, cls = r
         self.assertIsNone(err)
         self.assertEqual(rows, ["Hb1r0", "Hb1r1"])                      # R1: solo client band split into rows
-        self.assertEqual(r1, ["m5"])                                      # the hub alone on the sub-row
-        self.assertEqual(r0, ["m1", "m2", "m3", "m4", "m6"])             # every other member stays in the top row
+        self.assertEqual(r1, ["m5", "m6"])                                # the hub and its cycle partner (Store) on the sub-row
+        self.assertEqual(r0, ["m1", "m2", "m3", "m4"])                   # every other member stays in the top row
         self.assertTrue(below)
         self.assertLessEqual(dx, 2)                                       # centred under the band
         self.assertEqual(meta, ["archhrow", True, True, True, "", "archhrow"])
@@ -487,7 +487,7 @@ class ArchLayers(unittest.TestCase):
         m = self.HUB_M + [{"id": "nav", "name": "Nav", "kind": "module", "layer": "ui", "group": "app"}]
         e = self._ed([("s%d" % i, "nav", "call") for i in range(1, 4)]) + self.HUB_E   # nav's edges first: order still follows the modules
         r = self._hub(m, e, body="process.stdout.write(JSON.stringify([ERR, ns('Hb1r1'), q.boxHits, ov]));")
-        self.assertEqual(r, [None, ["m5", "m8"], 0, 0])
+        self.assertEqual(r, [None, ["m5", "m6", "m8"], 0, 0])
 
     def test_hub_inside_group_box(self):
         m = self.HUB_M + [{"id": "lib", "name": "UI kit", "kind": "module", "layer": "ui", "group": "kit"}]
@@ -551,7 +551,17 @@ class ArchLayers(unittest.TestCase):
         e = self._ed([("s%d" % i, "nav", "call") for i in range(1, 4)] + [("nav", "shell", "call")]) + self.HUB_E
         r = self._hub(m, e, body="const d = L.edges.filter(x => x.from === 'm8' && x.to === 'm5').map(x => x.pts[0][1] < x.pts[x.pts.length - 1][1]);"
                       "process.stdout.write(JSON.stringify([ERR, g.slist.filter(s => /^H/.test(s)), ns('Hb1r1'), ns('Hb1r2'), d, q.boxHits, ov]));")
-        self.assertEqual(r, [None, ["Hb1r0", "Hb1r1", "Hb1r2"], ["m8"], ["m5"], [True], 0, 0])
+        self.assertEqual(r, [None, ["Hb1r0", "Hb1r1", "Hb1r2"], ["m8"], ["m5", "m6"], [True], 0, 0])
+
+    def test_hub_cycle_partners_share_its_row(self):
+        # a module the hub calls that calls back into it (over any path in the container) joins the hub row: no line climbs back to r0
+        m = self.HUB_M + [{"id": "scr", "name": "Assistant", "kind": "module", "layer": "ui", "group": "app"},
+                          {"id": "api2", "name": "FE API", "kind": "module", "layer": "infra", "group": "app"}]
+        e = self.HUB_E + self._ed([("shell", "scr", "call"), ("scr", "api2", "call"), ("api2", "shell", "call")])
+        r = self._hub(m, e, body="const row = k => g.nodes[k].sg;"
+                      "const up = L.edges.filter(x => /r[1-9]$/.test(row(x.from)) && row(x.to) === 'Hb1r0').length;"
+                      "process.stdout.write(JSON.stringify([ERR, ns('Hb1r1'), ns('Hb1r0'), up, q.boxHits, ov]));")
+        self.assertEqual(r, [None, ["m5", "m6", "m8", "m9"], ["m1", "m2", "m3", "m4"], 0, 0, 0])
 
     def test_hub_band_title_off_group_members_in_top_row(self):
         # 81e: with a band-level hub the top row holds group boxes; the title also clears the columns of their members

@@ -115,12 +115,22 @@ function archBandSrc(mods, edges, tests, full, groups, ents, bp){
   const hc = Object.create(null), hl = Object.create(null);
   ps.forEach(p => { if(hb[p.from] && hb[p.to] && p.from !== p.to && bo[p.from] === bo[p.to] && gk[p.from] === gk[p.to]) (hc[p.to] = hc[p.to] || []).push(p.from); });
   const lv = (id, d) => hl[id] != null ? hl[id] : d > 8 ? 0 : (hl[id] = Math.max(0, ...(hc[id] || []).map(c => 1 + lv(c, d + 1))));   // d caps a cycle
+  // Cycle partners: a same-container module the hub reaches and that reaches the hub back joins the hub's row.
+  // ⚠Left in r0, the drawn cycle's closing edge (hub -> partner) ran up across the rows (SPA shell -> a screen, ~1000px).
+  const pt = Object.create(null), same = (a, b) => bo[a] === bo[b] && gk[a] === gk[b];
+  const reach = (h, fw) => { const seen = Object.create(null), st = [h];
+    while(st.length){ const x = st.pop(); ps.forEach(p => { const [u, v] = fw ? [p.from, p.to] : [p.to, p.from];
+      if(u === x && v !== h && !seen[v] && same(v, h)){ seen[v] = 1; st.push(v); } }); }
+    return seen; };
+  Object.keys(hb).forEach(h => { const f = reach(h, true), r = reach(h, false);
+    Object.keys(f).forEach(id => { if(r[id] && !hb[id] && !pt[id] && kd[id] !== 'entry') pt[id] = h; }); });
+  Object.keys(pt).forEach(id => { hb[id] = 1; });
   // Hub sub-rows (archBandFix H rows): r0 = the container's other children, unchanged; r1.. = its hubs by level (≤ 8 a row), stacked under r0 by the LR parent.
   const hsplit = (to, id, pad, rest, hm, f) => {
     to.push(pad + 'direction LR', pad + 'subgraph ' + id + 'r0[ ]', pad + '  direction TB');
     rest.forEach(l => to.push('  ' + l)); to.push(pad + 'end');
     const by = [];
-    hm.forEach(m => { const l = lv(m.id, 0); (by[l] = by[l] || []).push(f(m)); });
+    hm.forEach(m => { const l = lv(pt[m.id] || m.id, 0); (by[l] = by[l] || []).push(f(m)); });
     let r = 1;
     by.filter(Boolean).forEach(hs => { for(let j = 0; j < hs.length; j += 8){ to.push(pad + 'subgraph ' + id + 'r' + r++ + '[ ]', pad + '  direction TB'); hs.slice(j, j + 8).forEach(l => to.push('  ' + l)); to.push(pad + 'end'); } });
   };
