@@ -455,7 +455,7 @@ def ext_hook_check(now=None):
                 if mt != c["mt"]:
                     c["mt"] = mt
                     try:
-                        with open(path, encoding="utf-8") as f:
+                        with open(path, encoding="utf-8-sig") as f:   # ⚠a BOM-saved file must not read as no hooks
                             cfg = json.load(f)
                     except (OSError, ValueError):
                         cfg = None

@@ -48,6 +48,15 @@ class HookSettings(unittest.TestCase):
         self.assertEqual(ext.ext_hook_check(NOW), {})
         self.assertEqual(self.warned, [])
 
+    def test_bom_settings_read_as_complete(self):
+        # An editor on Windows may save settings.json with a UTF-8 BOM; it must not read as "every hook missing".
+        p = os.path.join(self.gdir, "settings.json")
+        with open(p, "wb") as f:
+            f.write(b"\xef\xbb\xbf" + json.dumps(_full()).encode("utf-8"))
+        self.assertEqual(ext.ext_hook_check(NOW), {})
+        self.assertEqual(self.warned, [])
+        self.assertEqual(gm._load_json(p).get("hooksConfig"), {"enabled": True})
+
     def test_missing_after_agent_warns_and_names_it(self):
         cfg = _full()
         del cfg["hooks"]["AfterAgent"]

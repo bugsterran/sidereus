@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Platforms: a Gemini `settings.json` or `~/.codex/hooks.json` saved with a UTF-8 BOM is read normally; Gemini showed «Sidereus hooks are missing» while Connect said connected, and the hook list was empty.
+
 ## [0.16.0] - 2026-11-07
 
 **Highlights**

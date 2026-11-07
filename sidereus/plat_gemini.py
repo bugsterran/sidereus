@@ -331,7 +331,7 @@ RULE_FILE = "GEMINI.md"
 def _load_json(p):
     try:
         with open(p, "rb") as f:
-            d = json.loads(f.read(1 << 20).decode("utf-8", "replace"))
+            d = json.loads(f.read(1 << 20).decode("utf-8-sig", "replace"))   # ⚠strip a BOM (Windows editors)
         return d if isinstance(d, dict) else {}
     except (OSError, ValueError):
         return {}
