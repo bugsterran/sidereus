@@ -1,10 +1,10 @@
 #!/usr/bin/python3
-"""Pipeline result-layer report: DATA_DIR/eval/<key>/reports/YYYY-MM-DD.md (core: sidereus/pl_outcome.py).
+"""Pipeline result-layer report: DATA_DIR/eval/<key>/reports/<pipeline>/YYYY-MM-DD.md (core: sidereus/pl_outcome.py).
 
 usage: pl_report.py --repo R --pipeline P.json [--auto] [--data-dir D]
   Writes the panel's fact sentences (pl_outcome.sentences) plus the PASSes that broke or had a fix follow
   (short sha, file names). ⚠Metadata only: no diffs, messages or file contents. Mode 0600, atomic replace.
-  --auto      (pl_flow hook at run end, detached): exit 0 without writing while the newest report is under 7 days old.
+  --auto      (pl_flow hook at run end, detached): exit 0 without writing while this pipeline's newest report is under 7 days old.
   --data-dir  data folder to use instead of MAILBOX_DIR (the hook passes its own, so tests stay in their temp dir).
 """
 import argparse
@@ -121,7 +121,7 @@ def main(argv=None):
     now = _now()
     today = time.strftime("%Y-%m-%d", time.localtime(now))
     if a.auto:
-        last = OC.latest_report(repo)
+        last = OC.latest_report(repo, name)
         if last:
             age = (time.mktime(time.strptime(today, "%Y-%m-%d")) - time.mktime(time.strptime(last["date"], "%Y-%m-%d"))) / 86400
             if age < REPORT_AGE_DAYS:
@@ -135,7 +135,7 @@ def main(argv=None):
     stages = [s for s in (P.get("stages") if isinstance(P, dict) else None) or [] if isinstance(s, dict)]
     oc = OC.outcome(repo, name, V.review_titles(stages), now, fix=V.fix_pipes(repo))
     text = render(name, today, OC.sentences(_gate(P, name, repo, now), oc), oc)
-    path = os.path.join(OC.OC_EVAL_DIR, OC.repo_key(repo), "reports", today + ".md")
+    path = os.path.join(OC.report_dir(repo, name), today + ".md")
     _write(path, text)
     print(path)
     return 0

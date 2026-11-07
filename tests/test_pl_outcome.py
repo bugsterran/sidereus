@@ -486,12 +486,21 @@ class Outcome(unittest.TestCase):
         self.assertEqual(len(OC.sentences(None, o)), 3)
 
     def test_latest_report(self):
-        self.assertIsNone(OC.latest_report(self.proj))
-        d = os.path.join(self.tmp, "eval", OC.repo_key(self.proj), "reports")
+        self.assertIsNone(OC.latest_report(self.proj, "flow"))
+        base = os.path.join(self.tmp, "eval", OC.repo_key(self.proj), "reports")
+        d = os.path.join(base, "flow")
         os.makedirs(d)
+        os.makedirs(os.path.join(base, "other"))
         for n in ("2026-10-01.md", "2026-10-09.md", "notes.md"):
             open(os.path.join(d, n), "w", encoding="utf-8").close()
-        self.assertEqual(OC.latest_report(self.proj), {"date": "2026-10-09", "path": os.path.join(d, "2026-10-09.md")})
+        open(os.path.join(base, "other", "2026-10-20.md"), "w", encoding="utf-8").close()
+        with open(os.path.join(base, "2026-10-12.md"), "w", encoding="utf-8") as f:
+            f.write("# Pipeline report: other\n")
+        self.assertEqual(OC.latest_report(self.proj, "flow"), {"date": "2026-10-09", "path": os.path.join(d, "2026-10-09.md")})
+        with open(os.path.join(base, "2026-10-11.md"), "w", encoding="utf-8") as f:
+            f.write("# Pipeline report: flow\n")   # flat report from before the per-pipeline folders
+        self.assertEqual(OC.latest_report(self.proj, "flow"), {"date": "2026-10-11", "path": os.path.join(base, "2026-10-11.md")})
+        self.assertEqual(OC.latest_report(self.proj, "other")["date"], "2026-10-20")
 
     def test_states_since(self):
         rows = [{"kind": "check", "ts": t, "mode": "fast", "rc": rc, "head": "", "dirty": False,

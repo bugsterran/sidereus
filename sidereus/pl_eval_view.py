@@ -193,7 +193,7 @@ def _outcome(proj, name, stages):
     if m is None:
         return None, None
     try:
-        return m.outcome(proj, name, review_titles(stages), _now(), fix=fix_pipes(proj)), m.latest_report(proj)
+        return m.outcome(proj, name, review_titles(stages), _now(), fix=fix_pipes(proj)), m.latest_report(proj, name)
     except Exception as e:
         warn_once("pl_outcome", "Pipeline evaluation could not be read: {e}", soft=True, vars={"e": type(e).__name__})
         return None, None

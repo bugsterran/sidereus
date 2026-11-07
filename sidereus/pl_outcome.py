@@ -393,14 +393,47 @@ def counts(oc):
     return out
 
 
-def latest_report(proj):
-    """{date, path} of the newest eval/<key>/reports/YYYY-MM-DD.md, or None."""
-    d = os.path.join(OC_EVAL_DIR, repo_key(proj), "reports")
+def report_dir(proj, name):
+    """eval/<key>/reports/<pipeline>/ — one folder per pipeline so each keeps its own weekly cadence."""
+    return os.path.join(OC_EVAL_DIR, repo_key(proj), "reports", name)
+
+
+def _legacy_reports(d, name):
+    """Flat reports/YYYY-MM-DD.md written before the per-pipeline folders, kept only when its title names `name`."""
+    out = []
     try:
-        names = sorted(n for n in os.listdir(d) if OC_DATE.fullmatch(n))
+        names = [n for n in os.listdir(d) if OC_DATE.fullmatch(n)]
     except OSError:
+        return out
+    head = "# Pipeline report: %s" % name
+    for n in names:
+        if _first_line(os.path.join(d, n)) == head:
+            out.append((n, os.path.join(d, n)))
+    return out
+
+
+def _first_line(path):
+    """First line of a small text file, "" when unreadable (an unreadable old report simply does not count)."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.readline().rstrip("\n")
+    except (OSError, ValueError):
+        return ""
+
+
+def latest_report(proj, name):
+    """{date, path} of the newest report of pipeline `name`, or None.
+    ⚠Keyed by pipeline: with one folder per repo the first pipeline to close each week blocked every other one."""
+    d = report_dir(proj, name)
+    try:
+        found = [(n, os.path.join(d, n)) for n in os.listdir(d) if OC_DATE.fullmatch(n)]
+    except OSError:
+        found = []
+    found += _legacy_reports(os.path.dirname(d), name)
+    if not found:
         return None
-    return {"date": names[-1][:10], "path": os.path.join(d, names[-1])} if names else None
+    n, p = max(found)
+    return {"date": n[:10], "path": p}
 
 
 def _pct(nk):

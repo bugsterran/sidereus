@@ -43,7 +43,7 @@ class Report(unittest.TestCase):
             f.write(json.dumps({"name": "flow", "t0": NOW - 200, "end": NOW - 90, "lb": [{"f": "review", "g": "build", "n": 1}],
                                 "dc": {"jump": 1}}) + "\n")
             f.write(json.dumps({"name": "hotfix", "t0": NOW - 60, "end": NOW - 15}) + "\n")   # owns commit b: a fix run
-        self.rep = os.path.join(self.tmp, "eval", key, "reports")
+        self.rep = os.path.join(self.tmp, "eval", key, "reports", "flow")
         log = "\x1e%s\x1f%d\n\na.py\n\x1e%s\x1f%d\n\na.py\nb.py\n" % ("b" * 40, NOW - 10, "a" * 40, NOW - 150)
         log += "".join("\x1e%s\x1f%d\n\nold%d.py\n" % (c * 40, NOW - 900, k) for k, c in enumerate("cd"))   # older unrelated commits
         out = {"rev-parse": "f" * 40 + "\n", "log": log, "rev-list": "b" * 40 + "\n"}   # rev-list: b descends from a
@@ -111,6 +111,27 @@ class Report(unittest.TestCase):
         self.now = NOW + 2 * 86400   # 8 days
         self.assertEqual(self.run_("--auto"), 0)
         self.assertIn("2026-10-20.md", os.listdir(self.rep))
+
+    def test_auto_cadence_per_pipeline(self):
+        # another pipeline's fresh report must not skip this one (one folder per repo did)
+        other = os.path.join(os.path.dirname(self.rep), "quick-fix")
+        os.makedirs(other)
+        open(os.path.join(other, "2026-10-17.md"), "w", encoding="utf-8").close()
+        self.assertEqual(self.run_("--auto"), 0)
+        self.assertEqual(os.listdir(self.rep), ["2026-10-18.md"])
+        self.assertEqual(os.listdir(other), ["2026-10-17.md"])
+
+    def test_auto_reads_legacy_flat_report(self):
+        flat = os.path.dirname(self.rep)
+        os.makedirs(flat)
+        with open(os.path.join(flat, "2026-10-15.md"), "w", encoding="utf-8") as f:
+            f.write("# Pipeline report: flow\n")
+        self.assertEqual(self.run_("--auto"), 0)
+        self.assertFalse(os.path.exists(self.rep))   # flow's own flat report is 3 days old
+        with open(os.path.join(flat, "2026-10-15.md"), "w", encoding="utf-8") as f:
+            f.write("# Pipeline report: quick-fix\n")
+        self.assertEqual(self.run_("--auto"), 0)
+        self.assertEqual(os.listdir(self.rep), ["2026-10-18.md"])   # another pipeline's flat report does not count
 
     def test_bad_args(self):
         with mock.patch("sys.stderr", io.StringIO()):

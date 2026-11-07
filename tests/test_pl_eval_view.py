@@ -30,7 +30,7 @@ class EvalApi(unittest.TestCase):
         oc = sidereus("pl_outcome")
         self.oc_calls = []
         fake_oc = types.SimpleNamespace(
-            counts=oc.counts, latest_report=lambda p: {"date": "2026-10-14", "path": "/d/eval/k/reports/2026-10-14.md"},
+            counts=oc.counts, latest_report=lambda p, n: {"date": "2026-10-14", "path": "/d/eval/k/reports/2026-10-14.md"},
             outcome=lambda p, name, review, now, fix=(): self.oc_calls.append((name, review)) or {
                 "proc": {"runs": 3, "jump": 1}, "lb": {"cur": {"n": 3, "k": 1}, "prev": {"n": 0, "k": 0}},
                 "result": {"n": 2, "broke": 1, "fixed": 1, "list": [{"sha": "abc", "files": ["secret_file.py"]}]}})
@@ -110,7 +110,7 @@ class EvalApi(unittest.TestCase):
         self.v._oc = lambda: None
         _c, b = self.v.pl_eval(self.proj, "flow")
         self.assertEqual((b["outcome"], b["rep"]), (None, None))
-        boom = types.SimpleNamespace(outcome=lambda *a: 1 / 0, latest_report=lambda p: None, counts=lambda o: o)
+        boom = types.SimpleNamespace(outcome=lambda *a: 1 / 0, latest_report=lambda p, n: None, counts=lambda o: o)
         self.v._oc = lambda: boom
         self.assertEqual(self.v.pl_eval(self.proj, "flow")[1]["outcome"], None)
 

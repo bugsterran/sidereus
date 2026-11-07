@@ -427,3 +427,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: rows grouped a card only within ±8px of the row's first card top, and a drop saved raw y; hand-dragged tops 24/35/52 split into two rows, so `plgAlign` never centred them. Status pills hang from each card's top, so centred cards of different heights put them at different y.
 - Fix: rows group by middle line against the row's running mean (`PLG_ROWTOL` 30); a drop snaps to the nearest row's middle within `PLG_H/2` (`plgSnapY`) and writes back the aligned y like x; pills are lifted by `--plcd` (`plgChipDy`) to the row's top.
 - ⚠Rows are ≥196px apart (`plgRowH`); do not raise the tolerance toward that. `tests/test_pipeline_graph.py` `test_hand_dragged_tops_one_row`.
+
+## Weekly report: only the first pipeline to close each week got one (`scripts/pl_report.py` · `pl_outcome.latest_report`)
+- Cause: reports were `eval/<key>/reports/<date>.md`, one folder per repo, and `--auto` skipped while any report in it was under 7 days old; ★11-06 real data: sidereus-change had no report since 10-25 because quick-fix closed first each week.
+- Fix: `reports/<pipeline>/<date>.md` (`report_dir`), and `latest_report(proj, name)` reads only that pipeline; a flat report from before still counts when its first line is `# Pipeline report: <name>`.
+- ⚠Never key the cadence by repo again. `tests/test_pl_report_cli.py` `test_auto_cadence_per_pipeline` · `test_auto_reads_legacy_flat_report`.
