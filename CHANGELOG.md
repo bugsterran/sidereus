@@ -5,13 +5,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-07
+
+**Highlights**
+
+- Structure: clicking a module opens a detail layer over the map with an HTML focus diagram of only its connected modules, in stage order; the map keeps its scroll spot and Esc closes it.
+- Pipelines: Evaluation shows token cost per run (median and last run) and each stage's share; unknown tokens read as a dash, never 0.
+- Sessions: a compacting session shows «Compacting» with elapsed time and an estimated percentage; a background shell left open over 30 minutes raises «Long background» with «Ask to check».
+
 ### Added
 
+- Structure: clicking a module opens a detail layer over the architecture map (x or Esc closes it, the map keeps its scroll spot). The detail is an HTML focus diagram: only connected modules, in stage order, layer boxes with names above, edge colours per target box, and the rows spread over the free screen height.
+- Pipelines: Evaluation shows the median tokens per run, the last run's tokens and duration, and a Share column per stage; the Harness report markdown carries the same numbers.
+- Trees: arrow keys in a source tree open the file they land on, and a click on a file keeps the arrow keys on the tree.
+- Contributors: a pre-push hook runs the leak scan on outgoing commits.
 - Sessions: a Claude Code session that is compacting shows «Compacting» with elapsed time and an estimated percentage (from this account's recent compaction times; capped at 95% until it ends). Needs the plugin's new PreCompact/PostCompact hook.
 - Attention: a background shell open for more than 30 minutes raises «Long background» (merged with «Idle shells»); background rows get «Ask to check», which previews a one-line request to that session and sends it only on «Confirm — send».
 
 ### Fixed
 
+- Evidence: a gate that Claude Code moved to the background on its own no longer records a pass before it has finished.
+- Sessions: a question wrapped in markdown bold counts as a question wait; it used to show Done.
+- Structure: the detail layer keeps keyboard focus inside (Tab / Shift-Tab cycle, focus returns to the close button after a repaint, Esc ignores IME composition), and the light theme's flow-edge colours have enough contrast.
+- Diff window: picking a file keeps the file list's scroll position.
+- Attention: «Long background» minutes use the same short unit as «Idle shells» («45m»).
 - Pipelines: Watch also moves to a newly started run when nothing else is working, even if that run opens waiting on a person or before its first stage is recorded; it used to stay on the previous run.
 - Structure: on a narrow module focus bar the flow select shrinks and the In/Out legend (with the fold button) wraps as one group instead of splitting across lines. At 1920 the focus bar now takes its own row (legend and zoom below); a long legend had squeezed it to about a quarter of the row.
 - Pipelines: stage cards on one row line up on a shared middle line even after hand-dragging (rows group within 30 px, a dropped card snaps to the nearest row and the aligned position is saved), and their status chips sit at the same height.
