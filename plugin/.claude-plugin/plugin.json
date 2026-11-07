@@ -1,6 +1,6 @@
 {
   "name": "sidereus",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Sidereus for Claude Code: mailbox invites and stop-hook relay, pipeline brief, shared-file edit notice, pipeline stage marks and hand-offs, and the Sidereus MCP server (one write tool: To-do labels). Needs the local Sidereus viewer.",
   "author": {
     "name": "bugsterran"
