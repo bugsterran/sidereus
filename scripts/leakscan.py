@@ -165,7 +165,7 @@ def not_shipped(root, paths):
     excl = os.path.join(root, ".distignore")
     if not paths or not os.path.exists(excl):
         return set()
-    r = subprocess.run(["git", "-C", root, "-c", "core.excludesFile=" + excl, "check-ignore", "--no-index", "--stdin", "-z"],
+    r = subprocess.run(["git", "-C", root, "-c", "core.excludesFile=" + excl, "check-ignore", "--no-index", "--stdin", "-z"],  # nosec B607 -- PATH lookup on purpose: the tool's location differs per OS
                        input="\0".join(paths), capture_output=True, text=True, encoding="utf-8")
     return set(x for x in r.stdout.split("\0") if x)
 
