@@ -337,9 +337,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠The badge (`#credit`) still turns on only at **5h 100%** — `is_enabled` means «available», not «in use».
   - ⚠Wording split (2026-09-11): the gauge row says only «Credits»; **the status text «credit mode» appears only on the badge**.
 - ★**A usage-billed seat showed money but no tokens on the status bar** (2026-11-09; `burn` is `ok:false`, so `used_local` is null).
-  ⇒ `sbCreditTok(USG)` (`web/js/60-statusbar.js`) appends the local `usage.block` / `usage.week` sums to the credit segment, window spans in the tooltip.
-  - ★Measured: block 25,084,941 · week 605,558,125 while extra was $196.90/$600.
-  - ⚠Used tokens only — never a «left» estimate from them («Token headroom» above).
+  ⇒ `sbCreditTok(USG, extra)` (`web/js/60-statusbar.js`) converts credit used / limit (cents) to tokens at this week's local $/token (`usage.week` cost / tokens), shown as «≈ used/limit», rate in the tooltip.
+  - ⚠Not a local token sum: the API gives credit only in money, and local transcripts mix other accounts and pre-credit plans (★11-09: month sum 7.59B · $3,042 vs credit $203).
+  - ⚠Not the 5h block or week sums either — other periods, cannot be read against a month-to-date amount (first version showed them).
+  - ⚠The rate moves with model mix and cache share; always «≈», never presented as measured.
 - ★**The saver badge shows stage and cap** (2026-09-10).
   Before, it said only «saver mode», so **how many agents may run now** was not on screen.
   ⇒ `_saver_state()` sends `stage`·`cap` and `buildSaver` writes «saver stage 3 · no agents».

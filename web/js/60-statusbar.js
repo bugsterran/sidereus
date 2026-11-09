@@ -194,18 +194,18 @@ function sbPrimNote(){
 }
 // Colour class keyed on used % (>=70 / >=90 used = <=30 / <=10 left); shared with the status-bar layer (60b).
 function sbPctCls(p){ return p >= 90 ? 'sberr' : p >= 70 ? 'sbwarn' : 'sbok'; }
-// Usage-billed seat: no 5h/7d windows, so `used_local` stays empty and the local sums of usage.block / usage.week are
-//   the only measured token figures. Used only, never turned into a «left» estimate (traps/quota.md «Token headroom»).
-// {html, tip}: html joins the credit segment (5h drops at step 4, week at step 8); tip lines name each window.
-function sbCreditTok(u){
-  const b = u && u.block, w = u && u.week;
-  const bt = b && b.tokens > 0 ? b.tokens : null, wt = w && w.tokens > 0 ? w.tokens : null;
-  const span = (s, e) => { const a = new Date(s || NaN), z = new Date(e || NaN); return isNaN(a) || isNaN(z) ? '' : ' (' + CLK(a) + '–' + CLK(z) + ')'; };
-  const html = (bt != null ? ' <small class=sbd4>· 5h</small> <b class=sbd4>' + esc(fmtTok(bt)) + '</b>' : '')
-    + (wt != null ? ' <small class=sbd8>· ' + esc(T('Week')) + '</small> <b class=sbd8>' + esc(fmtTok(wt)) + '</b>' : '');
-  const tip = (bt != null ? '\n' + TV({msg: '5h tokens {n} · ${c} (local 5h block — its edges differ from the reset cycle)', vars: {n: bt.toLocaleString(), c: b.cost || 0}}) + span(b.start, b.end) : '')
-    + (wt != null ? '\n' + TV({msg: 'Weekly tokens {n} · ${c}', vars: {n: wt.toLocaleString(), c: w.cost || 0}}) + (w.week ? ' (' + w.week + '~)' : '') : '');
-  return {html: html, tip: tip ? '\n\n' + T('[Reference · local count]') + tip : ''};
+// Usage-billed seat: the official API gives the credit only in money (cents), never in tokens, and local transcripts
+//   cannot tell which tokens were billed against it (other accounts and pre-credit plans share them). So the credit
+//   used / limit are converted at the local average price of this week (usage.week cost / tokens, which carries the
+//   model mix and cache share) and marked «≈»; the tooltip states the rate.
+// {html, tip}: html joins the credit segment (drops at step 8); empty when the rate or the amounts are unknown.
+function sbCreditTok(u, ex){
+  const w = u && u.week, rate = w && w.tokens > 0 && w.cost > 0 ? w.cost / w.tokens : null;   // USD per token
+  if(!rate || !ex || !(ex.used >= 0) || !(ex.limit > 0)) return {html: '', tip: ''};
+  const ut = ex.used / 100 / rate, lt = ex.limit / 100 / rate;   // ⚠credit amounts arrive in cents
+  return {html: ' <small class=sbd8>· ' + esc(T('Tokens')) + '</small> <b class=sbd8>≈' + esc(fmtTok(ut) + '/' + fmtTok(lt)) + '</b>',
+          tip: '\n\n' + TV({msg: 'Credit in tokens ≈ {u} used of {l} ({r} per 1M tokens: this week\'s local average; model mix and cache share move it)',
+                            vars: {u: fmtTok(ut), l: fmtTok(lt), r: '$' + (rate * 1e6).toFixed(2)}})};
 }
 let SB_RZ = 0;
 // ⚠One rebuild per frame, not a timeout debounce: buildSbar is ~0.3 ms, and a 150 ms debounce froze the bar's old layout for the whole drag.
@@ -248,7 +248,7 @@ function buildSbar(sv){
   //   the drawer badge was the only credit sign and is hidden while the drawer is closed. Credits replace both segments.
   const cs = !ma && typeof creditInfo === 'function' ? creditInfo(typeof QLAST !== 'undefined' && QLAST && QLAST.q) : null;
   const meterSeat = !!(cs && cs.meter), fh = meterSeat ? null : k5.w, sd = meterSeat ? null : k7.w;
-  const ctk = meterSeat ? sbCreditTok(USG) : null;
+  const ctk = meterSeat ? sbCreditTok(USG, QLAST && QLAST.q && QLAST.q.extra) : null;
   if(meterSeat) out.push('<span class=sbcredit title="' + esc(cs.tip + ctk.tip) + '">' + aiLogo('cc').replace(/ title="[^"]*"/, '')
     + '<b class=sbwarn>' + esc(T('Credit mode')) + '</b>'
     // Monthly-limit gauge (used share), coloured on the same used-% steps as the 5h/7d «left» numbers.

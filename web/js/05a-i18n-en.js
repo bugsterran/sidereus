@@ -156,6 +156,7 @@ Object.assign(I18N.ko, {
     'Context 85%+': '컨텍스트 85%↑',
     'Credit': '크레딧',
     'Credit mode': '크레딧 모드',
+    'Credit in tokens ≈ {u} used of {l} ({r} per 1M tokens: this week\'s local average; model mix and cache share move it)': '크레딧 토큰 환산 ≈ {l} 중 {u} 사용 (100만 토큰당 {r}: 이번 주 로컬 평균 단가 — 모델 구성·캐시 비율에 따라 달라집니다)',
     'Credit comes only from the official API (extra_usage) — this value freezes when the lookup is blocked': '크레딧은 공식 API(extra_usage)에서만 옵니다 — 조회가 막히면 이 값이 멈춥니다',
     'Decisions': '판정',
     'Pending': '판정 대기',

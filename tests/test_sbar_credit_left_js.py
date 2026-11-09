@@ -66,23 +66,21 @@ process.stdout.write(JSON.stringify(sblAccRows(cq, acctList(), '')));
         self.assertEqual((ci["left"], ci["usedOf"]), ("$499.87 left", "$100.13/$600.00"))
 
     def test_credit_segment_shows_local_used_tokens(self):
-        # A usage-billed seat has no 5h/7d windows: the credit segment carries the local block/week sums, used only.
+        # The credit comes only in money (cents): used/limit are converted to tokens at this week's local $/token, «≈».
         tk = js_fn("sbCreditTok")
-        u = ("{block: {tokens: 25084941, cost: 7.4, start: '2026-11-09T08:00:00.000Z', end: '2026-11-09T13:00:00.000Z'},"
-             " week: {tokens: 605558125, cost: 214.41, week: '2026-11-08'}}")
-        out = self.run_js(tk + "\nprocess.stdout.write(JSON.stringify([sbCreditTok(" + u + "), sbCreditTok({week: {tokens: 0}}),"
-                          " sbCreditTok(null)]));")
-        full, none0, nul = out
-        self.assertIn("<small class=sbd4>· 5h</small> <b class=sbd4>25.1M</b>", full["html"])
-        self.assertIn("<b class=sbd8>605.6M</b>", full["html"])
-        self.assertIn("25,084,941", full["tip"])
-        self.assertIn("605,558,125", full["tip"])
-        self.assertIn("(2026-11-08~)", full["tip"])
-        self.assertNotIn("left", full["html"])
-        self.assertEqual(none0, {"html": "", "tip": ""})
-        self.assertEqual(nul, {"html": "", "tip": ""})
+        u = "{block: {tokens: 25084941}, week: {tokens: 600000000, cost: 240}}"   # $0.40 per 1M tokens
+        ex = "{used: 20000, limit: 60000}"                                       # $200 of $600
+        out = self.run_js(tk + "\nprocess.stdout.write(JSON.stringify([sbCreditTok(" + u + ", " + ex + "),"
+                          " sbCreditTok({week: {tokens: 9, cost: 0}}, " + ex + "), sbCreditTok(" + u + ", {used: 1}),"
+                          " sbCreditTok(null, null)]));")
+        full, nocost, nolimit, nul = out
+        self.assertEqual(full["html"], " <small class=sbd8>· Tokens</small> <b class=sbd8>≈500.0M/1500.0M</b>")
+        self.assertIn("$0.40 per 1M tokens", full["tip"])
+        self.assertNotIn("25.1M", full["html"])
+        for e in (nocost, nolimit, nul):
+            self.assertEqual(e, {"html": "", "tip": ""})
         src = read("web/js/60-statusbar.js")
-        self.assertIn("sbCreditTok(USG)", src)
+        self.assertIn("sbCreditTok(USG, QLAST && QLAST.q && QLAST.q.extra)", src)
         self.assertIn("esc(cs.tip + ctk.tip)", src)
 
 
