@@ -6,7 +6,7 @@
 ![Python 3.9, stdlib only](https://img.shields.io/badge/python-3.9%20stdlib%20only-3776AB.svg)
 ![Platform: macOS · Windows](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Windows-lightgrey.svg)
 
-Sidereus는 AI 코딩 세션이 한 일을 확인하는 로컬 뷰어입니다. 터미널에서 돌고 있는 Claude Code, Codex CLI, Gemini CLI 세션 옆에서 돌면서, 어떤 세션이 내 답을 기다리는지, 각 실행이 파이프라인을 따랐는지, 결과의 근거가 무엇인지를 한 화면에 보여 줍니다. 저장소의 모듈·흐름 지도를 그리고 보안 점검도 돌립니다. 에이전트를 직접 실행하거나 터미널에 입력하지는 않습니다.
+Sidereus는 AI 코딩 세션이 한 일을 확인하는 로컬 뷰어입니다. 터미널에서 돌고 있는 Claude Code, Codex CLI, Gemini CLI(Code Assist 또는 유료 API 키) 세션 옆에서 돌면서, 어떤 세션이 내 답을 기다리는지, 각 실행이 파이프라인을 따랐는지, 결과의 근거가 무엇인지를 한 화면에 보여 줍니다. 저장소의 모듈·흐름 지도를 그리고 보안 점검도 돌립니다. 에이전트를 직접 실행하거나 터미널에 입력하지는 않습니다. 개인 Google 계정에서 Gemini CLI를 대신하게 된 Antigravity CLI는 아직 지원하지 않습니다.
 
 저는 보통 Claude Code·Codex 세션 여러 개를 터미널과 프로젝트를 나눠 띄워 둡니다. 어느 세션이 제 답을 기다리는지 자꾸 놓쳤고, 세션이 "테스트 통과"라고 해도 정말 돌렸는지 바로 확인할 방법이 없었습니다. 그래서 만들었습니다.
 

@@ -6,7 +6,7 @@
 ![Python 3.9, stdlib only](https://img.shields.io/badge/python-3.9%20stdlib%20only-3776AB.svg)
 ![Platform: macOS · Windows](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Windows-lightgrey.svg)
 
-Sidereus is a local viewer for checking the work of AI coding sessions. It runs next to the Claude Code, Codex CLI and Gemini CLI sessions in your terminals and shows them on one screen: which ones are waiting for you, whether each run followed its pipeline, and what evidence backs each result. It also draws a module and flow map of the repo and runs security checks on it. It never starts your agents or types into your terminal.
+Sidereus is a local viewer for checking the work of AI coding sessions. It runs next to the Claude Code, Codex CLI and Gemini CLI (Code Assist or a paid API key) sessions in your terminals and shows them on one screen: which ones are waiting for you, whether each run followed its pipeline, and what evidence backs each result. It also draws a module and flow map of the repo and runs security checks on it. It never starts your agents or types into your terminal. Antigravity CLI, which replaced Gemini CLI for personal Google accounts, is not supported yet.
 
 I usually have several Claude Code and Codex sessions running in different terminals and projects. I kept losing track of which one was waiting for me, and when a session reported "all tests pass" I had no quick way to check that it really ran them. I built Sidereus for that.
 
