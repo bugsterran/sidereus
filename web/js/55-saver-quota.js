@@ -35,7 +35,9 @@ function buildSaver(sv){
   if(!legacyBadge){
     // Non-saver modes — goal/off/headroom/limit unknown. With no inputs at all, take no space
     // (hiding is the "hook is dead" signal — headroom is not hidden, it stays at lowest contrast).
-    if(!r){ setHtml(el, ''); if(el.className !== 'saver') el.className = 'saver'; el.removeAttribute('title'); return; }
+    // ⚠A usage-billed seat has no 5h cycle, so a 5h-based goal/headroom verdict means nothing there: not drawn.
+    const ci = typeof creditInfo === 'function' ? creditInfo(QLAST && QLAST.q) : null;
+    if(!r || (ci && ci.meter)){ setHtml(el, ''); if(el.className !== 'saver') el.className = 'saver'; el.removeAttribute('title'); return; }
     const tip2 = KE(r.head || r.main, r.main + (r.sub ? '\n' + r.sub : '')) +(r.old ? '\n\n' + r.ago + T(' — the hook has not run since') : '')
       + svCapTip(r.head)
       + '\n\n' + T('Manual switch — /saver on [1-4] (pick a stage) · /saver off · /saver auto · /saver status');

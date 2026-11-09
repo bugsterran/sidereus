@@ -220,7 +220,10 @@ function buildSbar(sv){
   // Pace vs goal is the primary word; "no throttle" (the old «Easy») is the dim secondary.
   const r = svParts(SV, null, svLive());
   const snap = !!(r && !r.old);
-  if(r){
+  // ⚠A usage-billed seat has no 5h cycle: the 5h pace verdict is dropped unless a manual /saver switch is set.
+  //   (pace/goal is itself 5h-based, so only on/off count as manual.)
+  const sbMeter = !(SVSW && /^(on|off)$/.test(SVSW.mode)) && typeof creditInfo === 'function' && !!(creditInfo(QLAST && QLAST.q) || {}).meter;
+  if(r && !sbMeter){
     const j = r.judge;
     const JC = {ok: 'sbok', slow: 'sbinfo', slow2: 'sbinfo', fast: 'sbwarn', fast2: 'sberr', wait: 'sbidle'};
     // A manual /saver switch wins over the hook snapshot, which only refreshes on the next CLI prompt.

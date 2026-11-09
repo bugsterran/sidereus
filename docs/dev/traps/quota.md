@@ -342,6 +342,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Not the 5h block or week sums either — other periods, cannot be read against a month-to-date amount (first version showed them).
   - ⚠The rate moves with model mix and cache share; always «≈», never presented as measured.
   - ⚠The quota modal's «Who is using the 5h» (`buildQwho`) is not drawn on such a seat: its 5h window would be invented.
+  - ⚠The saver badge's 5h verdict (`buildSaver`: «No throttle», goal %) is not drawn there either, nor the status bar pace word (unless a manual /saver switch is set); a saver level (stage > 0) still is.
 - ★**The saver badge shows stage and cap** (2026-09-10).
   Before, it said only «saver mode», so **how many agents may run now** was not on screen.
   ⇒ `_saver_state()` sends `stage`·`cap` and `buildSaver` writes «saver stage 3 · no agents».
