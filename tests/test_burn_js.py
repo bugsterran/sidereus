@@ -15,7 +15,7 @@ var document = {getElementById: () => null, documentElement: {dataset: {}}};
 const thc = (dk, lt) => document.documentElement.dataset.theme === 'light' ? lt : dk;
 const fmtTok = n => n >= 1e6 ? Math.round(n/1e6) + 'M' : n >= 1e3 ? Math.round(n/1e3) + 'K' : String(n);
 """
-FNS = ("fmtPct", "ageU", "burnSum", "burnHead", "burnUsedTip", "burnEst", "burnEstTip", "burnWkEst", "burnWkTxt", "burnCol", "burnCurve", "burnOut", "burnOutLab", "burnX")
+FNS = ("fmtPct", "ageU", "burnSum", "burnHead", "burnUsedTip", "burnEst", "burnEstTip", "burnWkEst", "estLeftTxt", "estLeftTip", "burnWkTxt", "burnCol", "burnCurve", "burnOut", "burnOutLab", "burnX")
 CONSTS = ("esc", "bnDur", "bnHM", "BURN_W")
 
 
@@ -238,6 +238,25 @@ class BurnIdle(unittest.TestCase):
         src = js_fn("buildBurn")
         self.assertIn("b.why === 'stale' || b.why === 'no-data'", src)
         self.assertIn("idle ? burnIdle(un.dir ? un.label : '') : ''", src)
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class LeftAtRounded100(unittest.TestCase):
+    """The usage API rounds to whole %, so 100 can leave up to 0.5%: «left» reads «< 1%», never a token 0."""
+
+    def test_zero_left_reads_under_one_percent(self):
+        R = run(r"""
+LANG = 'en';
+const N = 1000000 * 60, est = {h5_per_pct: 6e5, h5_n: 6, h5_src: 'med', wk_per_pct: 3.2e6, wk_n: 160, h5_left: 0, wk_left: 0, wk_used: 3.2e8};
+R.head = burnHead({cur: {now_pct: 100, reset: N + 3600, used_local: 4e7}, est}, N);
+R.wk = burnWkTxt({est});
+R.pos = burnWkTxt({est: Object.assign({}, est, {wk_left: 3.2e6})});
+""")
+        self.assertIn("left ≈ &lt; 1%", R["head"])
+        self.assertIn("rounds to whole %", R["head"])
+        self.assertNotIn("left ≈ 0", R["head"])
+        self.assertTrue(R["wk"].endswith("left ≈ < 1%"), R["wk"])
+        self.assertTrue(R["pos"].endswith("left ≈ 3M"), R["pos"])
 
 
 if __name__ == "__main__":

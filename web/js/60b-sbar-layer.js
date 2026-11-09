@@ -32,7 +32,7 @@ function sblEst(r, k){
 }
 function sblEstHtml(r, k){
   const e = sblEst(r, k);
-  return e && e.left != null ? '<small class=sbl-est title="' + esc(e.tip) + '">' + esc(TV({msg: '≈ {n} left', vars: {n: fmtTok(e.left)}})) + '</small>' : '';
+  return e && e.left != null ? '<small class=sbl-est title="' + esc(estLeftTip(e)) + '">' + esc(TV({msg: '≈ {n} left', vars: {n: estLeftTxt(e)}})) + '</small>' : '';
 }
 function sblHtml(nowMs){
   const q = typeof QLAST !== 'undefined' && QLAST && QLAST.q;

@@ -68,16 +68,20 @@ function burnWkEst(b){
   return w && w.lim > 0 && w.used != null ? {used: w.used, left: Math.max(0, w.lim - w.used),
     tip: T('same-account tokens per 1% × % — estimate')} : null;
 }
+// ⚠The usage API reports whole percent, so «100» can still leave up to 0.5% until requests are refused;
+//   a token «left 0» there reads as exhausted while tens of millions more tokens still go through. Show «< 1%» instead.
+function estLeftTxt(e){ return e.left > 0 ? fmtTok(e.left) : T('< 1%'); }
+function estLeftTip(e){ return e.left > 0 ? e.tip : e.tip + '\n' + T('The usage API rounds to whole %: 100% can still leave under 1% until requests are refused'); }
 function burnWkTxt(b){
   const e = burnWkEst(b);
-  return e ? T('used ≈') + ' ' + fmtTok(e.used) + ' · ' + T('left ≈') + ' ' + fmtTok(e.left) : '';
+  return e ? T('used ≈') + ' ' + fmtTok(e.used) + ' · ' + T('left ≈') + ' ' + estLeftTxt(e) : '';
 }
 function burnHead(b, nowS){
   const c = b && b.cur, pj = (b && b.proj) || {}, w = b && b.wk;
   const left = p => esc(fmtPct(Math.min(100, p)));   // used %, as before
   // Used tokens are a measured local sum (server `cur.used_local`), so they stay — no ≈.
   const used = n => n == null ? '' : ' · <span title="' + esc(burnUsedTip()) + '">' + esc(T('used') + ' ' + fmtTok(n)) + '</span>';
-  const lt = (k, n, p) => { const e = burnEst(b, k, n, p); return e ? ' · <span title="' + esc(e.tip) + '">' + esc(T('left ≈') + ' ' + fmtTok(e.left)) + '</span>' : ''; };
+  const lt = (k, n, p) => { const e = burnEst(b, k, n, p); return e ? ' · <span title="' + esc(estLeftTip(e)) + '">' + esc(T('left ≈') + ' ' + estLeftTxt(e)) + '</span>' : ''; };
   let body = '';
   if(c && c.now_pct != null){
     const tail = pj.over_at ? TV({msg: 'runs out {t} at this pace', vars: {t: bnHM(pj.over_at)}})

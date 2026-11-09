@@ -528,3 +528,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 ## macOS «no login» read as a keychain permission problem
 - Cause: `security find-generic-password` exits 44 when the item does not exist; every nonzero exit mapped to the keychain-permission message.
 - ⇒ `quota._oauth_miss["no_login"]` is set only on exit 44 and `quota_fetch` shows «No Claude Code login found»; other exits keep the keychain message.
+
+## «left ≈ 0» at a rounded 100%
+- Cause: the usage API reports whole percent; at 99.5%+ it says 100 while requests still pass, so `per-1% × (100 − pct)` gave a token 0.
+- ★2026-11-09: weekly read 100% (CLI said 99%) while about 40M more tokens went through.
+- ⇒ `estLeftTxt`/`estLeftTip` (57-burn.js) show «< 1%» with a rounding note for any non-positive estimate; burn head, 7d text and status-bar layer use them.
+- ⚠Do not render `fmtTok(e.left)` for «left» directly — go through `estLeftTxt`.

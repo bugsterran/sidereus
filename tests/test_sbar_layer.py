@@ -29,7 +29,7 @@ const burnFor = () => BURNM_B;
 const fmtTok = n => (n / 1e6).toFixed(1) + 'M';
 """
 FNS = ("fmtPct", "acctList", "mainAcct", "mainAcctOk", "sblAccRows", "sblHtml", "sbPctCls", "sblMakeMain",
-       "sblEst", "sblEstHtml", "burnEst", "burnEstTip", "burnWkEst")
+       "sblEst", "sblEstHtml", "burnEst", "burnEstTip", "burnWkEst", "estLeftTxt", "estLeftTip")
 
 N = "Date.parse('2030-01-01T00:00:00Z')"
 QUOTA = """
