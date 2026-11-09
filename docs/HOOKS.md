@@ -110,6 +110,7 @@ to-do exemption: a `todo.md` edit is gated like any file.
 |---|---|
 | Claude Code | plugin `SessionStart` (`pipelines_brief.py`) |
 | Codex | `pipelines_brief.py --platform codex` at `SessionStart` |
+| pi | `pipelines_brief.py --platform pi` from the extension's `session_start` |
 | Gemini · Cursor · Copilot | nothing injected at start |
 
 This hook, `pl_mark.py` and `pl_flow.py` also read the pipelines of projects the session works in outside its cwd
@@ -307,7 +308,7 @@ The CLI runs `ext-hooks/ext_hook.py --platform <key>`, which maps the stdin even
 
 `--platform` must be a key of `EXT_PLAT` (`sidereus/ext_store.py`): `gemini`, `codex`, `copilot`, `cursor`, `cline`,
 `windsurf`, `warp`, `trae`, `zed`, `openrouter`, `grok`, `deepseek`, `qwen`, `kimi`, `mistral`, `ollama`,
-`perplexity`, `huggingface`, `meta`. ⚠`claude` is not one; Claude sessions come from transcripts.
+`perplexity`, `huggingface`, `meta`, `pi`. ⚠`claude` is not one; Claude sessions come from transcripts.
 
 | Event | State | Gemini name | Codex name | Cursor name | Copilot name |
 |---|---|---|---|---|---|
@@ -480,6 +481,28 @@ Copy `ext-hooks/codex-hooks-example.json` to `~/.codex/hooks.json`. Checked with
   ⚠`input_tokens` includes cache (split out); requests sum `last_token_usage`, not the total.
   ⚠`.jsonl.zst` is skipped. ⚠Cost is an API list-price estimate. ⚠Limit % needs `rate_limits`, often null (#14880).
 - Codex tokens and cost never count in Claude's totals.
+
+### pi
+
+«Connect» (Settings › «Diagnostics») writes `<agent dir>/extensions/sidereus.ts` (default `~/.pi/agent`,
+`PI_CODING_AGENT_DIR` honoured), rendered from `ext-hooks/pi-extension.ts`, and adds the `sidereus` and `mailbox`
+servers to `<agent dir>/mcp.json` (mailbox through `gemini_mailbox_mcp.sh pi`; not on Windows). Restart pi after it.
+
+| pi event | Scripts (`--platform pi`) |
+|---|---|
+| `session_start` | `ext_hook.py` SessionStart · `invite_notice.py` · `pipelines_brief.py` |
+| `before_agent_start` | `ext_hook.py` UserPromptSubmit · `pipelines_brief.py` UserPromptSubmit |
+| `tool_call` | `ext_hook.py` PreToolUse; bash also `pl_mark.py` · `pl_flow.py` |
+| `tool_execution_end` | `ext_hook.py` PostToolUse; bash also `pl_flow.py` |
+| `ui_prompt_start` · `agent_settled` · `session_shutdown` | Notification · Stop · SessionEnd |
+
+- The notices go into a system-prompt section (`systemPromptOptions.sections.sidereus`), not a stored message.
+- Payloads carry session id, cwd, event and tool name; only the bash command goes to `pl_mark.py`/`pl_flow.py`.
+  ⚠The prompt and tool results are never sent.
+- A `pl_flow.py` deny blocks the bash call (`{block: true}`). Stages use shell markers, as on Codex.
+- ⚠`agent_end` is not final (retry, compaction, queued messages follow); `Stop` comes from `agent_settled`.
+- Mail is not delivered automatically: the mailbox id is the `pi:<cwd>` key or `<folder>-pi`; it reads `mailbox_inbox` itself.
+- Every call has a 5 s timeout and never throws; a missing Python only drops that event.
 
 Other platforms: `ext-hooks/generic-hooks-example.json` with `<PLATFORM>` replaced, wherever that CLI reads hooks
 (not verified per CLI).

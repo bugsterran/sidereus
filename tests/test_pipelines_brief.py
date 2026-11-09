@@ -215,6 +215,22 @@ class Brief(unittest.TestCase):
         v = out.getvalue()
         return json.loads(v)["hookSpecificOutput"] if v else None
 
+    def test_pi_uses_shell_marker_wording(self):
+        self._w("ok", _pipe("ok"))
+        out = io.StringIO()
+        ev = {"cwd": self.tmp, "session_id": "sess-0009", "hook_event_name": "SessionStart"}
+        with mock.patch("sys.stdin", io.StringIO(json.dumps(ev))), mock.patch("sys.stdout", out):
+            self.assertEqual(H.main(["--platform", "pi"]), 0)
+        t = json.loads(out.getvalue())["hookSpecificOutput"]["additionalContext"]
+        self.assertTrue(t.endswith(H.HOW_CODEX + H.PI_SKIP))   # pi has no Agent tool: shell `echo "[pl:...]"` markers
+        self.assertIn('echo "[pl-skip:<name>/<stage title>] <reason>"', t)
+        self.assertNotIn("pl-skip", H.brief(self.tmp, plat="codex"))   # codex output unchanged
+        for w in ("Agent tool", "subagent_type", "SendMessage", "secret"):
+            self.assertNotIn(w, t)
+        with open(self.cfg, "w", encoding="utf-8") as f:
+            json.dump({"pipeline_apply": {"mode": "ask"}}, f)
+        self.assertTrue(H.brief(self.tmp, plat="pi").endswith(H.HOW_ASK_CODEX + H.PI_SKIP))
+
     def test_rebrief_only_on_change(self):
         self._w("ok", _pipe("ok"))
         o = self._run("SessionStart")

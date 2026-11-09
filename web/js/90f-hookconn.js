@@ -5,7 +5,7 @@
 let HC = null, HC_LD = false, HC_AT = 0, HC_AGAIN = false;   // last GET reply · in flight · fetch time (ms) · forced while in flight
 const HCS = {};                             // per plat: {st: 'prev'|'busy'|'done'|'err', diff, base, msg}
 const HC_TTL = 300000;                      // refetch at most every 5 min from repaints; «Refresh» and «Apply» force it
-const HC_LOGO = { cursor: 'cu', codex: 'cx', gemini: 'gm', copilot: 'cp' };
+const HC_LOGO = { cursor: 'cu', codex: 'cx', gemini: 'gm', copilot: 'cp', pi: 'pi' };
 const hcOn = () => !(typeof FEATS === 'object' && FEATS && FEATS.diag === false);   // ⚠the route 404s with the feature off
 const hcLater = p => lsGet('sidereus.hclater.' + p, '') === '1';
 async function hcLoad(force){
@@ -42,7 +42,7 @@ function hcInner(where){
     if(s.st === 'done') h += '<button type=button class=strp data-hca=cancel data-hcv="' + esc(p) + '">' + esc(T('Close')) + '</button>';   // dismiss the result (and a pinned hint)
     h += '</div><small class=hcf title="' + esc(x.file || '') + '">' + esc(x.file || '') + '</small>';
     if(!x.can && x.why) h += '<small class=hcw0>' + esc(TE(x)) + '</small>';   // fixed server reason: TE() translates known keys only (fills x.vars), else verbatim
-    if(dx && s.st === 'prev') h += '<div class=hcd><small>' + esc(T('Nothing is written until Apply.')) + '</small><pre>' + diffHtml(s.diff || '', agLang('x.json')) + '</pre>'
+    if(dx && s.st === 'prev') h += '<div class=hcd><small>' + esc(T('Nothing is written until Apply.')) + '</small><pre>' + diffHtml(s.diff || '', p === 'pi' ? 'none' : agLang('x.json')) + '</pre>'   // pi: extension + mcp.json in one diff, no single language
       + '<div class=hcb><button type=button class="strp on" data-hca=apply data-hcv="' + esc(p) + '">' + esc(T('Apply')) + '</button>'
       + '<button type=button class=strp data-hca=cancel data-hcv="' + esc(p) + '">' + esc(T('Cancel')) + '</button></div></div>';
     if(s.msg) h += '<small class="hcm' + (s.st === 'err' ? ' err' : '') + '" role=status>' + esc(s.msg) + '</small>';

@@ -1006,6 +1006,37 @@ class Flow(unittest.TestCase):
         v = self.sh("echo [pl-end:%s/설계]" % N, "PostToolUse", plat="codex", tool="Bash")
         self.assertIn("PASS → next", json.loads(v)["hookSpecificOutput"]["additionalContext"])
 
+    def test_pi_shell(self):
+        # pi bash tool (ext-hooks/pi-extension.ts): markers advance the run; no hand-off text (pi is not in EMIT).
+        self.assertEqual(self.sh('echo "[pl:%s/설계]"' % N, "PreToolUse", plat="pi", tool="bash"), "")
+        self.assertEqual(self.sh("echo [pl-end:%s/설계]" % N, "PostToolUse", plat="pi", tool="bash"), "")
+        self.assertEqual(self.run_()["done"], ["설계"])
+        # pi can block a tool call, so a stage jump is denied as on cc; nothing is marked skip
+        o = json.loads(self.sh('echo "[pl:%s/검증]"' % N, "PreToolUse", plat="pi", tool="bash"))["hookSpecificOutput"]
+        self.assertEqual(o["permissionDecision"], "deny")
+        self.assertIn("You skipped 구현", o["permissionDecisionReason"])
+        self.assertIn('echo "[pl-skip:%s/<stage>] <reason>"' % N, o["permissionDecisionReason"])
+        self.assertNotIn("Bash description", o["permissionDecisionReason"])
+        self.assertNotEqual((self.run_()["st"].get("구현") or {}).get("s"), "skip")
+
+    def test_pi_skip_declaration_allows_jump(self):
+        self.assertEqual(self.sh('echo "[pl:%s/설계]"' % N, "PreToolUse", plat="pi", tool="bash"), "")
+        self.assertEqual(self.sh("echo [pl-end:%s/설계]" % N, "PostToolUse", plat="pi", tool="bash"), "")
+        self.assertEqual(self.sh('echo "[pl-skip:%s/구현] secret reason"' % N, "PreToolUse", plat="pi", tool="bash"), "")
+        self.assertEqual(self.sh('echo "[pl:%s/검증]"' % N, "PreToolUse", plat="pi", tool="bash"), "")
+        r = self.run_()
+        self.assertEqual((r["st"]["구현"]["s"], r["cur"]), ("skip", "검증"))
+        with open(os.path.join(self.marks, SID + ".runs.json"), encoding="utf-8") as f:
+            self.assertNotIn("secret", f.read())
+        v = self.sh('echo "[pl-skip:%s/없음] x"' % N, "PreToolUse", plat="pi", tool="bash")   # unknown stage
+        self.assertEqual(json.loads(v)["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_copilot_shell_jump_still_skip(self):
+        self.assertEqual(self.sh(": [pl:%s/설계]" % N, "PreToolUse", plat="copilot", tool="bash"), "")
+        self.assertEqual(self.sh("echo [pl-end:%s/설계]" % N, "PostToolUse", plat="copilot", tool="bash"), "")
+        self.assertEqual(self.sh(": [pl:%s/검증]" % N, "PreToolUse", plat="copilot", tool="bash"), "")
+        self.assertEqual(self.run_()["st"]["구현"]["s"], "skip")
+
     def cop(self, desc, cmd="ls", post=False):
         """Copilot payload: camelCase keys, toolArgs as a JSON string, no hook_event_name; returns stdout."""
         ev = {"sessionId": SID, "toolName": "bash", "cwd": self.proj,

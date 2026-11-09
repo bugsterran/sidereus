@@ -28,6 +28,7 @@ from sidereus.verdict_guide import load as verdict_guide
 from sidereus.hook_diag import diag as hook_diag
 from sidereus.sec_tools import tools as sec_tools
 from sidereus.hook_connect import listing as hook_connect_list
+from sidereus.hook_connect_pi import row as hook_connect_pi_row
 from sidereus.claude_roots import accounts as claude_accounts
 from sidereus.warn import warn_once
 from sidereus.routes_struct import _StructRoutes, _q1, _exc_err, _exc_msg
@@ -271,7 +272,7 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
     def _g_hooks_connect(self, u):
         # «CLI hooks» notice: installed Cursor/Codex/Gemini and whether Sidereus hooks are in place; names, states, paths only (sidereus/hook_connect.py)
         try:
-            code, out = 200, {"ok": True, "plats": hook_connect_list()}
+            code, out = 200, {"ok": True, "plats": hook_connect_list() + hook_connect_pi_row()}
         except Exception as e:
             code, out = 500, {"ok": False, **_exc_msg(e)}
         self._raw_json(code, out, cache=False)

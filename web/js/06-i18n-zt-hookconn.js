@@ -10,4 +10,6 @@ Object.assign(I18N.ko, {
   'Connected. Restart Codex, then run /hooks in it to approve the new hooks.': '연결했습니다. Codex 를 다시 시작한 뒤 /hooks 에서 새 훅을 승인하세요.',
   'The file changed since the preview. Preview again.': '미리보기 뒤에 파일이 바뀌었습니다. 다시 미리보기하세요.',
   'Could not connect': '연결하지 못함',
+  '`mcpServers` is not an object — fix it by hand': '`mcpServers` 가 객체가 아닙니다 — 직접 고치세요',
+  "State read from {name}'s record file; connect hooks — Settings › Diagnostics › Connect": '{name} 기록 파일에서 읽은 상태입니다 · 훅 연결은 설정 › 진단 › 연결',
 });

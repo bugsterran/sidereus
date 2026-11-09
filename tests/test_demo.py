@@ -91,10 +91,11 @@ class DemoTest(unittest.TestCase):
         out = self.get("/api/hooks/connect")
         self.assertTrue(out["ok"])
         self.assertEqual([(x["plat"], x["state"], x["can"]) for x in out["plats"]],
-                         [("cursor", "missing", True), ("copilot", "missing", True)])
+                         [("cursor", "missing", True), ("copilot", "missing", True), ("pi", "missing", True)])
         hc = sidereus("hook_connect")
         self.assertTrue(all(set(x) == {"plat", "name", "state", "file", "can", "why", "approve"} for x in out["plats"]))
-        self.assertTrue(all((x["plat"], x["name"]) in hc.PLATS for x in out["plats"]))   # same plat ids as the real route
+        hp = sidereus("hook_connect_pi")    # the live route appends hook_connect_pi.row() after hc.listing()
+        self.assertTrue(all((x["plat"], x["name"]) in hc.PLATS + ((hp.PLAT, sidereus("plat_pi").NAME),) for x in out["plats"]))
 
     def test_hooks_connect_post_dry_previews_apply_writes_nothing(self):
         class H:

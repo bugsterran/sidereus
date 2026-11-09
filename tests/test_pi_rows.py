@@ -91,7 +91,8 @@ class PiRows(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         r = rows[0]
         self.assertEqual((r["sid"], r["cwd"], r["project"], r["state"]), (SID, "/w/pi-proj", "pi-proj", "unknown"))
-        self.assertTrue(r["hookless"] and r["rollout"])
+        self.assertTrue(r["rollout"])
+        self.assertNotIn("hookless", r)                         # pi hooks connect now: the row lights «Hooks not connected»
         self.assertEqual(r["model"], "openai/gpt-5")
         self.assertEqual(r["tok"], 2 * (100 + 20 + 30))
         self.assertAlmostEqual(r["estCost"], 0.03)

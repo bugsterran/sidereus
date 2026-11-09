@@ -1,5 +1,5 @@
-"""pi logo and hook-less row (R5): aiLogo('pi') is an original glyph with no visible text; a pi row (server
-`hookless: true`) shows no «Hooks not connected» chip and its logo tooltip does not advise hooks. Node, no live files."""
+"""pi logo and rollout row: aiLogo('pi') is an original glyph with no visible text; a pi rollout row shows the
+«Hooks not connected» chip whose tooltip points to Settings › Diagnostics › Connect, not docs/HOOKS.md. Node, no live files."""
 import json
 import os
 import re
@@ -51,14 +51,14 @@ class PiRowJs(unittest.TestCase):
         inner = re.sub(r"<[^>]*>", "", h)              # only the title attribute may carry the name
         self.assertEqual(inner.strip(), "")
 
-    def test_r5_hookless_row_has_no_hook_chip(self):
+    def test_pi_rollout_row_has_connect_chip(self):
         pi, cx = run("const r = o => sessIdRow(Object.assign({project: 'p', rollout: true, state: 'unknown'}, o));"
-                     "console.log(JSON.stringify([r({plat: 'pi', hookless: true}), r({plat: 'cx'})]));")
+                     "console.log(JSON.stringify([r({plat: 'pi'}), r({plat: 'cx'})]));")
         self.assertIn("ailg-pi", pi)
-        self.assertNotIn("Hooks not connected", pi)
-        self.assertNotIn("hooks not connected", pi)
-        self.assertIn("read from its CLI's record file", pi)
-        self.assertIn("Hooks not connected", cx)        # a Codex rollout row keeps its chip
+        self.assertIn(">Hooks not connected</span>", pi)
+        self.assertIn("Settings › Diagnostics › Connect", pi)
+        self.assertNotIn("docs/HOOKS.md", pi)
+        self.assertIn("docs/HOOKS.md", cx)              # other CLIs keep the manual hook docs
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
   "title": "Diagnostics",
   "default_on_public": true,
   "deps": [],
-  "modules": ["hook_fields", "hook_diag", "sec_tools", "hook_connect"],
+  "modules": ["hook_fields", "hook_diag", "sec_tools", "hook_connect", "hook_connect_pi"],
   "routes": ["/api/diag", "/api/sec-tools", "/api/hooks/connect"],
   "threads": [],
   "state_keys": [],

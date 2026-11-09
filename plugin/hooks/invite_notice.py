@@ -166,7 +166,10 @@ WAKE_EN = ("New mail wakes this session via the Stop hook (mailbox_wake) — do 
            " When woken, read it with mailbox_inbox.")
 # Codex has no mailbox_wake/Monitor: ext-hooks/gemini_mail_stop.py --platform codex holds the turn end once on new mail.
 WAKE_EN_CODEX = "New mail is delivered at turn end by the Stop hook — when it arrives, read it with mailbox_inbox."
-PLATFORM = "cc"   # set from --platform in main(); only "codex" changes anything
+# pi has no stop-hook mail relay: nothing pushes mail into the session.
+WAKE_EN_PI = "Mail is not delivered automatically — check it with mailbox_inbox when you start or finish a task."
+PLATFORM = "cc"   # set from --platform in main(); "codex" and "pi" change the wording
+OTHER_PLATS = ("codex", "pi")   # non-Claude CLIs with their own mailbox id (ext-hooks/gemini_mailbox_mcp.sh <plat>)
 
 
 def notice_unregistered(cwd, watch=True):
@@ -189,21 +192,27 @@ def notice_wake(me):
     """Registered session: one line saying the Stop hook wakes it. SessionStart only.
 
     ⚠No «watcher off» warning any more — without Monitor that is the normal state."""
-    cx = PLATFORM == "codex"
-    print(f"[mailbox] id `{me}` · " + (WAKE_EN_CODEX if cx else WAKE_EN))
+    wake = {"codex": WAKE_EN_CODEX, "pi": WAKE_EN_PI}.get(PLATFORM, WAKE_EN)
+    print(f"[mailbox] id `{me}` · " + wake)
 
 
-def codex_id(cwd):
-    """Codex session's mailbox id: identity.json["codex:<realpath>"] or "<basename>-codex"; "" if it equals a Claude id.
+def plat_id(cwd, plat):
+    """Non-Claude session's mailbox id: identity.json["<plat>:<realpath>"] or "<basename>-<plat>"; "" if it equals a Claude id.
 
-    ⚠Same rule as ext-hooks/gemini_mail_stop.py gemini_id (inlined: standalone hook). identity.json[cwd] is the Claude id."""
+    ⚠Same rule as ext-hooks/gemini_mail_stop.py gemini_id and gemini_mailbox_mcp.sh <plat> (inlined: standalone hook).
+    identity.json[cwd] is the Claude id."""
     ident = load(IDENTITY, {})
     ident = ident if isinstance(ident, dict) else {}
     real = os.path.realpath(cwd)
-    me = ident.get("codex:" + real)
+    me = ident.get(plat + ":" + real)
     if not isinstance(me, str) or not me:
-        me = os.path.basename(real.rstrip("/")) + "-codex"
-    return "" if me in {v for k, v in ident.items() if not str(k).startswith("codex:")} else me
+        me = os.path.basename(real.rstrip("/")) + "-" + plat
+    return "" if me in {v for k, v in ident.items() if not str(k).startswith(plat + ":")} else me
+
+
+def codex_id(cwd):
+    """Codex id (sidereus/ident.py mirrors this rule)."""
+    return plat_id(cwd, "codex")
 
 
 def _platform(argv):
@@ -319,7 +328,7 @@ def record_clear(event, source, sid):
 def main(argv=None):
     global PLATFORM
     PLATFORM = _platform(sys.argv[1:] if argv is None else argv)
-    if PLATFORM not in ("cc", "codex"):
+    if PLATFORM not in ("cc",) + OTHER_PLATS:
         return
     try:
         raw = sys.stdin.read()
@@ -330,8 +339,8 @@ def main(argv=None):
     event = inp.get("hook_event_name") or ""
     cwd = inp.get("cwd") or os.getcwd()
     sid = inp.get("session_id") or ""
-    if PLATFORM == "codex":   # ⚠acct/sesspid records are Claude config dir / Claude pid; Codex ids always have a default
-        me = codex_id(cwd)
+    if PLATFORM in OTHER_PLATS:   # ⚠acct/sesspid records are Claude config dir / Claude pid; these ids always have a default
+        me = plat_id(cwd, PLATFORM)
         if event == "SessionStart" and me and watch_mode(cwd) == "on":
             notice_wake(me)
     else:
@@ -396,10 +405,10 @@ if __name__ == "__main__":
         except Exception:
             pass
     # ⚠Codex parses SessionStart stdout that starts with `[` or `{` as JSON and fails the hook on «[mailbox] …»,
-    #   so under --platform codex the text goes out wrapped as hookSpecificOutput.additionalContext.
+    #   so under --platform codex the text goes out wrapped as hookSpecificOutput.additionalContext (pi extension reads the same).
     import contextlib
     import io
-    _cx = _platform(sys.argv[1:]) == "codex"
+    _cx = _platform(sys.argv[1:]) in OTHER_PLATS
     _buf = io.StringIO()
     try:
         with (contextlib.redirect_stdout(_buf) if _cx else contextlib.nullcontext()):

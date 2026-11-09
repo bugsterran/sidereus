@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Platforms: pi hooks and the Sidereus MCP server connect through «Connect» in Settings › «Diagnostics» (an extension plus `mcp.json`, previewed first); a pi row without hooks shows «Hooks not connected». Mail wake-up is still not supported.
+
 ## [0.17.0] - 2026-11-10
 
 **Highlights**

@@ -39,6 +39,11 @@ _RUN_CODEX = ("follow .claude/pipelines/<name>.json yourself, doing each stage's
               "Start each stage with a shell command echo \"[pl:<name>/<stage title>]\" and end it with "
               "echo \"[pl-end:<name>/<stage title>]\" (\"|fail\" before \"]\" when its gate failed); echo \"[pl:-]\" clears.")
 HOW_CODEX = "Default = run the pipeline directly: " + _RUN_CODEX
+# pi only: pl_flow blocks a stage jump there (its extension can block a tool call), so it must know the skip marker.
+PI_SKIP = (" A stage that is not needed is skipped only after running echo \"[pl-skip:<name>/<stage title>] <reason>\"; "
+           "another model/agent: echo \"[pl-model:<name>/<stage title>=<model>]\" / "
+           "\"[pl-agent:<name>/<stage title>=<agent>]\"; jumping a stage without it is blocked.")
+SHELL_PLATS = ("codex", "pi")   # no Agent tool: stages are marked by shell `echo "[pl:...]"` (pl_mark.py --platform <key>)
 HOW_ASK_CODEX = ("Before starting work on a request that fits one of these pipelines, ask the user which to use "
                  "(the fitting pipelines + «파이프라인 없이 진행»), then run the choice; "
                  "questions and one-line fixes do not ask. To run one: " + _RUN_CODEX)
@@ -264,7 +269,7 @@ def _strict(d):
 
 def brief(cwd, extra=(), plat="cc"):
     """additionalContext text for project `cwd` plus the session's other projects `extra`, or "" when none has
-    readable pipelines. Another project's pipeline is named «name (path)». plat "codex" = shell-marker how-to."""
+    readable pipelines. Another project's pipeline is named «name (path)». plat "codex"/"pi" = shell-marker how-to."""
     if not (isinstance(cwd, str) and os.path.isabs(cwd)):
         return ""
     lines, mode, other, strict = [], None, False, False
@@ -293,8 +298,8 @@ def brief(cwd, extra=(), plat="cc"):
         other = other or (got and d != cwd)
     if not lines:
         return ""
-    if plat == "codex":
-        how = HOW_ASK_CODEX if mode == "ask" else HOW_CODEX
+    if plat in SHELL_PLATS:
+        how = (HOW_ASK_CODEX if mode == "ask" else HOW_CODEX) + (PI_SKIP if plat == "pi" else "")
     else:
         how = HOW_ASK if mode == "ask" else HOW
     head = ("Pipelines (.claude/pipelines/ of this project, or of the project in parentheses):" if other
@@ -391,7 +396,7 @@ def _platform(argv):
 
 def main(argv=None):
     plat = _platform(sys.argv[1:] if argv is None else argv)
-    if plat not in ("cc", "codex"):
+    if plat not in ("cc",) + SHELL_PLATS:
         return 0
     try:
         data = json.loads(sys.stdin.read() or "{}")

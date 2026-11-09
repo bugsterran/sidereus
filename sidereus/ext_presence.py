@@ -138,8 +138,6 @@ def _row(plat, c, now):
         "pid": c["pid"] if pi and isinstance(c.get("pid"), int) and c["pid"] > 1 else 0,   # running pi CLI, for «To terminal»
         "hooksOff": plat == "copilot" and plat_copilot.hooks_disabled(cwd),
     })
-    if pi:     # no hooks to connect yet: no «Hooks not connected» advice. ⚠pi rows only — cu/cp keep the rollout key set
-        row["hookless"] = True
     return row
 
 

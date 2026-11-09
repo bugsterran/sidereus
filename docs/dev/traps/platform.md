@@ -250,9 +250,15 @@ Cause: top-level `disableAllHooks: true` in the repo's `.github/copilot/settings
 ### pi `--<cwd>--` folder name is lossy (`sidereus/plat_pi.py` `_row`)
 Cause: pi names the session folder by stripping the leading separator and turning `/`, `\` and `:` into `-`, so `/a/b-c` and `/a/b/c` share one folder name.
 ⇒ cwd and project come only from the header line (`type: "session"`, `cwd`); a file whose line 1 is not that header is skipped.
-⚠Never rebuild cwd from the folder name. The pi row's `hookless` key is set on pi rows only — `test_key_set_matches_rollout_row` pins the Cursor/Copilot key set to the Codex rollout row.
+⚠Never rebuild cwd from the folder name.
 
 ### Idle pi session vanished after 10 min while pi still ran (`sidereus/ext_presence.py` `_pi_cands`)
 Cause: pi has no hooks or lock file, so rows came only from files written within `PRES_WIN_S` (600 s); an idle but open pi dropped out.
 ⇒ A `pi` process (poll ps snapshot + term's cached lsof cwd, `_pi_procs`) keeps the newest file of its cwd (header cwd must match) listed at any age, with that pid on the row. No process found → the 600 s window alone.
 ⚠One cwd with several running pi processes shows only its newest file (nothing links a pid to a session file). Never fork ps here — a stale or missing snapshot is unknown and falls back to the window. State stays «unknown» (no turn-end evidence; «wait» would raise attention).
+
+### pi hooks come from an extension, not a hook file (`sidereus/hook_connect.py` plat `pi`)
+Cause: pi has no hook config; events come only from a TypeScript extension it loads, and MCP servers from `mcp.json`.
+⇒ «Connect» for pi writes both (one preview, plain diff); until then the row shows «Hooks not connected» pointing at Settings › «Diagnostics».
+⚠An extension load error is silent: pi keeps running and the session falls back to the presence row (state «Unknown»), so a broken extension looks like «not connected».
+⚠Never add a `project_trust` handler to the extension.

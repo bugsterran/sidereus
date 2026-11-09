@@ -104,6 +104,7 @@
 |---|---|
 | Claude Code | 플러그인 `SessionStart` (`pipelines_brief.py`) |
 | Codex | `SessionStart` 의 `pipelines_brief.py --platform codex` |
+| pi | 확장의 `session_start` 에서 `pipelines_brief.py --platform pi` |
 | Gemini · Cursor · Copilot | 시작 시 넣지 않음 |
 
 이 훅과 `pl_mark.py`·`pl_flow.py` 는 cwd 밖에서 세션이 작업하는 프로젝트의 파이프라인도 읽는다. cwd 에 파이프라인이 있으면 cwd 만 본다(대화 기록 끝부분의 Bash `cd`
@@ -289,7 +290,7 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 
 `--platform` 은 `EXT_PLAT`(`sidereus/ext_store.py`)의 키여야 한다. `gemini`, `codex`, `copilot`, `cursor`, `cline`,
 `windsurf`, `warp`, `trae`, `zed`, `openrouter`, `grok`, `deepseek`, `qwen`, `kimi`, `mistral`, `ollama`, `perplexity`,
-`huggingface`, `meta`. ⚠`claude` 는 없다. Claude 세션은 대화 기록에서 읽는다.
+`huggingface`, `meta`, `pi`. ⚠`claude` 는 없다. Claude 세션은 대화 기록에서 읽는다.
 
 | 이벤트 | 상태 | Gemini 이름 | Codex 이름 | Cursor 이름 | Copilot 이름 |
 |---|---|---|---|---|---|
@@ -453,6 +454,28 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
   ⚠`.jsonl.zst` 는 건너뛴다. ⚠비용은 API 정가로 낸 추정치다. ⚠한도 비율은 `rate_limits` 가 있어야 보이는데 자주
   null 이다(#14880).
 - Codex 토큰과 비용은 Claude 합계에 넣지 않는다.
+
+### pi
+
+«연결»(설정 › «진단»)이 `ext-hooks/pi-extension.ts` 로 만든 `<agent dir>/extensions/sidereus.ts` 를 쓰고
+(기본 `~/.pi/agent`, `PI_CODING_AGENT_DIR` 를 따른다) `<agent dir>/mcp.json` 에 `sidereus`·`mailbox` 서버를 더한다
+(mailbox 는 `gemini_mailbox_mcp.sh pi`; Windows 는 제외). 연결한 뒤 pi 를 다시 시작한다.
+
+| pi 이벤트 | 스크립트 (`--platform pi`) |
+|---|---|
+| `session_start` | `ext_hook.py` SessionStart · `invite_notice.py` · `pipelines_brief.py` |
+| `before_agent_start` | `ext_hook.py` UserPromptSubmit · `pipelines_brief.py` UserPromptSubmit |
+| `tool_call` | `ext_hook.py` PreToolUse; bash 는 `pl_mark.py` · `pl_flow.py` 도 |
+| `tool_execution_end` | `ext_hook.py` PostToolUse; bash 는 `pl_flow.py` 도 |
+| `ui_prompt_start` · `agent_settled` · `session_shutdown` | Notification · Stop · SessionEnd |
+
+- 알림은 저장되는 메시지가 아니라 시스템 프롬프트 섹션(`systemPromptOptions.sections.sidereus`)에 들어간다.
+- 보내는 것은 세션 id·cwd·이벤트·도구 이름뿐이고, bash 명령만 `pl_mark.py`/`pl_flow.py` 로 간다.
+  ⚠프롬프트와 도구 결과는 보내지 않는다.
+- `pl_flow.py` 가 deny 하면 그 bash 호출을 막는다(`{block: true}`). 단계 표시는 Codex 처럼 셸 마커를 쓴다.
+- ⚠`agent_end` 는 끝이 아니다(재시도·압축·대기 메시지가 이어진다). `Stop` 은 `agent_settled` 에서 보낸다.
+- 메일은 자동으로 전달되지 않는다. 메일박스 id 는 `pi:<cwd>` 키 또는 `<폴더>-pi` 이고, 세션이 `mailbox_inbox` 로 직접 읽는다.
+- 호출마다 5초 제한이며 예외를 던지지 않는다. Python 이 없으면 그 이벤트만 빠진다.
 
 그 밖의 플랫폼: `ext-hooks/generic-hooks-example.json` 의 `<PLATFORM>` 을 바꿔 그 CLI 가 훅을 읽는 곳에 둔다(CLI 마다
 확인하지는 않았다).

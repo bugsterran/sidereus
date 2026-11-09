@@ -56,26 +56,26 @@ CP_ROW.update(tok=214_300, tokSplit={"in": 18_400, "out": 9_700, "cache": 186_20
 HOOKS_CONNECT = [
     {"plat": "cursor", "name": "Cursor", "state": "missing", "file": "~/.cursor/hooks.json", "can": True, "why": "", "approve": ""},
     {"plat": "copilot", "name": "Copilot", "state": "missing", "file": "~/.copilot/hooks/sidereus.json", "can": True, "why": "", "approve": ""},
+    {"plat": "pi", "name": "Pi", "state": "missing", "file": "~/.pi/agent/mcp.json", "can": True, "why": "", "approve": ""},   # hook_connect_pi.row()
 ]
 # Demo «To-do» store (todo._ui items): repo -> [(state " "/"~"/"x", one-line label, key of the session that started it)].
 DEMO_TODO = {"acme-web": [("~", "Inline errors on the address form", "web"), (" ", "Coupon edge cases in the cart total", ""), ("x", "Split checkout step components", "")],
              "billing-api": [("~", "Retry queue for failed webhooks", "bill"), (" ", "Tax line rounding in the invoice PDF", ""), (" ", "Refund contract tests", "")]}
 _HC_CMD = "/usr/bin/python3 /home/demo/.sidereus/ext-hooks/ext_hook.py --platform "
 _HC_EV = {"cursor": ("sessionStart", "beforeSubmitPrompt", "stop"), "copilot": ("SessionStart", "UserPromptSubmit", "Stop")}
+_HC_PI = (("~/.pi/agent/mcp.json", '{"mcpServers": {"sidereus": {"command": "/usr/bin/python3"}}}'), ("~/.pi/agent/extensions/sidereus.ts", "export default function (pi) {}"))
 
 
 def hooks_connect_dry(plat):
     """Demo dry reply of hook_connect.connect() {ok, diff, base, adds}: Sidereus entries added to a new file.
     ⚠Without `diff` 90f-hookconn.js shows «Already connected» for a CLI that is not connected."""
-    shown = next(x["file"] for x in HOOKS_CONNECT if x["plat"] == plat)
-    ent = (lambda e: '{"command": "%s%s"}' % (_HC_CMD, plat)) if plat == "cursor" else \
-        (lambda e: '{"type": "command", "bash": "%s%s", "timeoutSec": 5}' % (_HC_CMD, plat))
-    body = ['{', '  "version": 1,', '  "hooks": {']
-    evs = _HC_EV[plat]
+    shown, evs = next(x["file"] for x in HOOKS_CONNECT if x["plat"] == plat), _HC_EV.get(plat)
+    if plat == "pi":   # two new files in one preview (hook_connect_pi): the mcp.json entry and the extension
+        return {"ok": True, "diff": "".join("--- %s\n+++ %s\n@@ -1,0 +1,1 @@\n+%s\n" % (f, f, b) for f, b in _HC_PI), "base": "", "adds": 2}
+    fmt, body = '{"command": "%s%s"}' if plat == "cursor" else '{"type": "command", "bash": "%s%s", "timeoutSec": 5}', ['{', '  "version": 1,', '  "hooks": {']
     for i, e in enumerate(evs):
-        body += ['    "%s": [' % e, '      ' + ent(e), '    ]' + ("," if i < len(evs) - 1 else "")]
-    body += ['  }', '}']
-    diff = ["--- " + shown, "+++ " + shown, "@@ -1,0 +1,%d @@" % len(body)] + ["+" + x for x in body]
+        body += ['    "%s": [' % e, '      ' + fmt % (_HC_CMD, plat), '    ]' + ("," if i < len(evs) - 1 else "")]
+    diff = ["--- " + shown, "+++ " + shown, "@@ -1,0 +1,%d @@" % (len(body) + 2)] + ["+" + x for x in body + ['  }', '}']]
     return {"ok": True, "diff": "\n".join(diff) + "\n", "base": "", "adds": len(evs)}
 
 

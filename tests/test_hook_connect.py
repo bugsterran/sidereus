@@ -502,7 +502,7 @@ class HookConnect(unittest.TestCase):
         code, out = DEMO.respond(w, "/api/hooks/connect", None)
         self.assertEqual(code, 200)
         self.assertEqual([(x["plat"], x["state"], x["can"]) for x in out["plats"]],
-                         [("cursor", "missing", True), ("copilot", "missing", True)])
+                         [("cursor", "missing", True), ("copilot", "missing", True), ("pi", "missing", True)])
 
         class H:
             _GET_ROUTES = {}

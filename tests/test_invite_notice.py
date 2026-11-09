@@ -335,5 +335,57 @@ class ClearRecord(unittest.TestCase):
             self.assertEqual(inv._claude_pid(), 900)
 
 
+class InvitePi(unittest.TestCase):
+    """--platform pi: own id (`pi:<realpath>` / `<basename>-pi`), one no-auto-delivery wake line, no Claude records."""
+    def setUp(self):
+        self.d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.d, True)
+        self.proj = os.path.realpath(os.path.join(self.d, "proj"))
+        os.makedirs(self.proj)
+        vals = {"STORE": self.d, "ROOMS": os.path.join(self.d, "rooms.json"),
+                "IDENTITY": os.path.join(self.d, "identity.json"), "SKIP": os.path.join(self.d, "skip.json"),
+                "SEEN": os.path.join(self.d, "seen.json"), "CONFIG": os.path.join(self.d, "config.local.json"),
+                "CLAUDE_JSON": os.path.join(self.d, "claude.json"), "ACCT_DIR": os.path.join(self.d, "acct"),
+                "PLATFORM": "cc"}
+        for k, v in vals.items():
+            p = mock.patch.object(inv, k, v)
+            p.start()
+            self.addCleanup(p.stop)
+        self._w({self.proj: "proj-bot"})
+
+    def _w(self, ident, rooms=None):
+        with open(inv.IDENTITY, "w", encoding="utf-8") as f:
+            json.dump(ident, f)
+        if rooms is not None:
+            with open(inv.ROOMS, "w", encoding="utf-8") as f:
+                json.dump(rooms, f)
+
+    def run_hook(self, event="SessionStart"):
+        payload = json.dumps({"hook_event_name": event, "cwd": self.proj, "session_id": "sess-0001"})
+        out = io.StringIO()
+        with mock.patch.object(sys, "stdin", io.StringIO(payload)), contextlib.redirect_stdout(out):
+            inv.main(["--platform", "pi"])
+        return out.getvalue()
+
+    def test_default_id_and_wake(self):
+        self.assertEqual(self.run_hook(), "[mailbox] id `proj-pi` · " + inv.WAKE_EN_PI + "\n")
+        for w in ("mailbox_wake", "Stop hook", "Monitor", "AskUserQuestion"):
+            self.assertNotIn(w, inv.WAKE_EN_PI)
+        self.assertFalse(os.path.exists(inv.ACCT_DIR))   # Claude-only records skipped
+        self.assertEqual(self.run_hook("UserPromptSubmit"), "")   # wake line at SessionStart only
+
+    def test_identity_key_and_invites(self):
+        self._w({self.proj: "proj-bot", "pi:" + self.proj: "pibot", "codex:" + self.proj: "cx"},
+                {"r1": {"invited": ["pibot"], "members": ["a"]}})
+        out = self.run_hook()
+        self.assertIn("id `pibot`", out)
+        self.assertIn("**r1**", out)
+        self.assertEqual(inv.plat_id(self.proj, "codex"), "cx")
+
+    def test_id_colliding_with_claude_is_silent(self):
+        self._w({self.proj: "proj-pi"})
+        self.assertEqual(self.run_hook(), "")
+
+
 if __name__ == "__main__":
     unittest.main()

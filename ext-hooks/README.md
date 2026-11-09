@@ -1,7 +1,7 @@
 # ext-hooks — external AI CLIs into Sidereus
 `ext_hook.py` reads hook JSON on stdin and sends it to `POST http://127.0.0.1:8799/api/hook`.
 Change the endpoint with `SIDEREUS_HOOK_URL` or `--url`; `--dry-run` prints the body to stderr only.
-Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`): `gemini codex copilot cursor cline windsurf warp trae zed grok deepseek qwen kimi mistral ollama perplexity huggingface meta openrouter` (19 · ⚠Claude is not in the list - Sidereus already reads its transcripts)
+Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`): `gemini codex copilot cursor cline windsurf warp trae zed grok deepseek qwen kimi mistral ollama perplexity huggingface meta openrouter pi` (20 · ⚠Claude is not in the list - Sidereus already reads its transcripts)
 - Automatic: Settings › «Diagnostics» › «CLI hooks» › «Connect» merges the example below into Cursor, Codex, Gemini or Copilot after a diff preview and confirm (`docs/HOOKS.md` «Automatic connect»).
 - Preview: `bash ext-hooks/demo.sh` starts 3 fake external sessions (thinking · running a tool · waiting for a person) and `bash ext-hooks/demo.sh clean` removes them — for seeing the screen without installing a CLI.
 - In the example JSON, replace `<MAILBOX_CODE_DIR>` with the absolute path of this repository and `<PYTHON>` with macOS `/usr/bin/python3` · Windows `py -3` (or the full `python.exe` path).
@@ -16,6 +16,10 @@ Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`):
   - Events are camelCase (`sessionStart` `beforeSubmitPrompt` `preToolUse` `postToolUse` `postToolUseFailure` `stop` `sessionEnd`); `afterAgentThought`/`afterAgentResponse` carry model text and are never sent.
   - The folder comes from the first `workspace_roots` entry (Cursor sends no base `cwd`); `user_email` and tool input are dropped.
   - ⚠`cursor-agent -p` sends no `beforeSubmitPrompt`/`stop`, so a headless row keeps its last state until `sessionEnd`.
+- pi: not a hooks file but an extension, `pi-extension.ts`. «Connect» renders it into `<agent dir>/extensions/sidereus.ts` (`~/.pi/agent` by default) and adds the `sidereus`/`mailbox` MCP servers to `<agent dir>/mcp.json` (`docs/HOOKS.md` «pi»).
+  - It spawns `ext_hook.py`, `invite_notice.py`, `pipelines_brief.py`, `pl_mark.py` and `pl_flow.py` with `--platform pi` (5 s timeout, never throws); a `pl_flow.py` deny blocks the bash call.
+  - ⚠Session id, cwd, event and tool name only; the bash command goes to `pl_mark.py`/`pl_flow.py` and nowhere else. Prompt and tool results are never sent.
+  - Mail is not delivered automatically; the id is `<folder>-pi` (or the `pi:<cwd>` key).
 - Copilot CLI: copy `copilot-hooks-example.json` to `~/.copilot/hooks/sidereus.json` (or `$COPILOT_HOME/hooks/`). ★Verified on macOS, Copilot CLI 1.0.105 (2026-10-31): list, state.
   - Register PascalCase event names only. ⚠Never also register the camelCase names - every event then fires twice.
   - `PermissionRequest` arrives camelCase (`hookName` `sessionId` `toolName`) even when registered PascalCase; it maps to `Notification` (waiting for approval until `PostToolUse`). `toolInput`, `permissionSuggestions` and `timestamp` are dropped.

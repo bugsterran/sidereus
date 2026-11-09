@@ -29,6 +29,7 @@ from sidereus.pipeline_del import delete as pipeline_delete
 from sidereus.pipeline_projects import add_project as pipeline_add, apply_set as pipeline_apply, pick_folder, remove_project as pipeline_remove
 from sidereus.cc_settings import prefs_set_all
 from sidereus.hook_connect import connect as hook_connect
+from sidereus.hook_connect_pi import connect as hook_connect_pi
 from sidereus.hook_remove import remove as hook_remove
 from sidereus.todo import add as todo_add, agent as todo_agent, set_state as todo_set
 from sidereus import room_check
@@ -363,7 +364,7 @@ class _PostRoutes:
                               "application/json; charset=utf-8")
         req = self._body_json(4096, None)
         try:
-            code, out = hook_connect(req)
+            code, out = (hook_connect_pi if isinstance(req, dict) and req.get("plat") == "pi" else hook_connect)(req)
         except Exception as e:
             code, out = 500, {"ok": False, "err": type(e).__name__}
         return self._send(code, json.dumps(out, ensure_ascii=False), "application/json; charset=utf-8")

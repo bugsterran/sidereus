@@ -93,7 +93,7 @@ EVENTS["copilot"] = dict(EVENTS["codex"], permissionRequest="Notification")
 #   ⚠CLIs with different event names must pass the standard name via `--event` - the default mapping is the standard 7, same as Codex.
 for _p in ("copilot", "cursor", "cline", "windsurf", "warp", "trae", "zed", "grok",
            "deepseek", "qwen", "kimi", "mistral", "ollama", "perplexity",
-           "huggingface", "meta", "openrouter"):   # ⚠exclude Claude - Sidereus already sees it via transcripts
+           "huggingface", "meta", "openrouter", "pi"):   # ⚠exclude Claude - Sidereus already sees it via transcripts
     EVENTS.setdefault(_p, dict(EVENTS["codex"]))
 
 

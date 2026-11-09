@@ -52,7 +52,7 @@ FIELD = {"Bash": "description", "Agent": "description", "Task": "description", "
 DISPATCH = ("Agent", "Task", "SendMessage")
 # Same keys as sidereus/ext_store.py EXT_PLAT, plus cc; an unknown --platform does nothing.
 PLATFORMS = ("cc", "gemini", "codex", "copilot", "cursor", "cline", "windsurf", "warp", "trae", "zed", "grok",
-             "deepseek", "qwen", "kimi", "mistral", "ollama", "perplexity", "huggingface", "meta", "openrouter")
+             "deepseek", "qwen", "kimi", "mistral", "ollama", "perplexity", "huggingface", "meta", "openrouter", "pi")
 EMIT = ("cc", "codex", "gemini")   # platforms that read PostToolUse additionalContext; others get no stdout
 EVENT = {"BeforeTool": "PreToolUse", "AfterTool": "PostToolUse"}   # Gemini names
 CAMEL = {"preToolUse": "PreToolUse", "postToolUse": "PostToolUse", "postToolUseFailure": "PostToolUse"}   # Cursor names
@@ -60,6 +60,8 @@ SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash",
          "PowerShell", "Shell", "bash")   # Bash/PowerShell only off cc; PowerShell = Claude Code's Windows shell tool; Shell = Cursor
 # ⚠Same as pl_mark.py MARK; anchored at the command start so `grep "[pl:"` never counts.
 MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl(-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n|]{1,40})(\|fail)?)\]""")
+# pi only: `echo "[pl-skip:...]"` / `[pl-model:...]` / `[pl-agent:...]` at the command start (it has no Bash description).
+DECL_MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl-(?:skip|model|agent):""")
 IDLE_S = 6 * 3600     # a run untouched this long is over; the next tag opens a new one
 LOST_S = 45 * 60      # ⚠a dispatch refused or failed before running gets no Post; its slice is presumed lost after this
 LOCK_WAIT_S, LOCK_STALE_S = 2.0, 5.0
@@ -946,9 +948,13 @@ def _reopen(st, r, g):
     r["skipok"] = [x for x in r["skipok"] if _idx(st, x) < g]
 
 
-def pre(tool, cwd, name, title, st, r, now, shell=False):
-    """Advance run `r` for a tagged Pre; returns a deny reason or None (nothing changed on a deny)."""
+def pre(tool, cwd, name, title, st, r, now, shell=False, sh_decl=False):
+    """Advance run `r` for a tagged Pre; returns a deny reason or None (nothing changed on a deny).
+    `sh_decl`: the CLI declares skips by a shell command (pi), so the deny names that form."""
     skipped = _jumped(st, r, title)
+    if skipped and sh_decl:
+        return ("You skipped %s; run it, or declare each skip first by running a command starting with "
+                "echo \"[pl-skip:%s/<stage>] <reason>\", then run the stage marker again." % (", ".join(skipped), name))
     if skipped:
         # ⚠Denied every time: a deny-once guard let the retry through, so stages were skipped without a record.
         why = ("You skipped %s; run it, or declare each skip first with a Bash description "
@@ -1885,11 +1891,11 @@ def _main(plat, ev):
                 buf = io.StringIO()
                 try:
                     with contextlib.redirect_stdout(buf):
-                        denied = _g.run(plat, ev, _me, _flow) if _g else _flow(plat, ev)
+                        denied = _g.run(plat, ev, _me, _flow_pi) if _g else _flow_pi(plat, ev)
                 finally:
                     sys.stdout.write(_none_emit(buf.getvalue()))
             else:
-                denied = _g.run(plat, ev, _me, _flow) if _g else _flow(plat, ev)
+                denied = _g.run(plat, ev, _me, _flow_pi) if _g else _flow_pi(plat, ev)
     except Exception as e:   # __main__ swallows it; leave the type name only
         _why(ev, "exc:" + type(e).__name__)
         raise
@@ -2031,6 +2037,19 @@ def bash_denied(ev, desc, mark_dir):
         return False
 
 
+def _flow_pi(plat, ev):
+    """_flow, but a pi bash starting with a declaration marker goes to _declare (pi has no Bash description)."""
+    sid, cwd, tool = ev.get("session_id"), ev.get("cwd"), ev.get("tool_name")
+    line = (_shell_cmd(ev.get("tool_input")) or "").split("\n", 1)[0] if tool in SHELL else ""
+    if plat != "pi" or EVENT.get(ev.get("hook_event_name"), ev.get("hook_event_name")) != "PreToolUse" \
+            or not DECL_MARK.match(line) or not (isinstance(sid, str) and SID.match(sid)) \
+            or not (isinstance(cwd, str) and os.path.isabs(cwd)):
+        return _flow(plat, ev)
+    # ⚠first line only, [pl-end:] stripped: an end is the shell marker's job
+    why = _declare(ev, cwd, os.path.join(MARK_DIR, sid + ".runs.json"), END_TAG.sub("", line), _now())
+    return _deny(why) if why else None
+
+
 def _flow(plat, ev):
     event, tool = ev.get("hook_event_name"), ev.get("tool_name")
     sid, cwd = ev.get("session_id"), ev.get("cwd")
@@ -2136,8 +2155,9 @@ def _flow(plat, ev):
                 h = _head(proj)
                 if h:
                     r["h0"] = h
-            why = _resume_note(r, now, pre(tool, cwd, name, title, st, r, now, bool(shell)))
-            if why and shell:
+            why = _resume_note(r, now, pre(tool, cwd, name, title, st, r, now, bool(shell), plat == "pi"))
+            # pi's extension blocks the tool call on a deny ({block: true}); Copilot's hook and the other CLIs cannot.
+            if why and shell and plat != "pi":
                 # ⚠No deny contract is verified for other CLIs: the jump is recorded as skip and the stage starts anyway.
                 for x in _jumped(st, r, title):
                     r["skipok"].append(x)

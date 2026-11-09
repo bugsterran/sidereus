@@ -36,6 +36,7 @@ const tick = () => new Promise(r => setTimeout(r, 0));
 (async () => {
   const R = {};
   R.first = vm.runInContext("hcRow('pl')", c);
+  R.piLogo = vm.runInContext("HC_LOGO.pi", c);
   await tick();
   R.gets = c.GETS.slice();
   R.pl = vm.runInContext("hcInner('pl')", c);
@@ -123,6 +124,9 @@ class HookConnNotice(unittest.TestCase):
     def test_fetch_once_and_empty_wrapper_first(self):
         self.assertEqual(self.r["gets"], ["/api/hooks/connect"])
         self.assertIn('data-hcw="pl"></div>', self.r["first"])   # empty until the GET lands, filled in place
+
+    def test_pi_logo_key(self):
+        self.assertEqual(self.r["piLogo"], "pi")              # reuses the aiLogo('pi') glyph
 
     def test_connected_hidden_others_shown(self):
         pl = self.r["pl"]
