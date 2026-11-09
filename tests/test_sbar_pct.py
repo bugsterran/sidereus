@@ -73,7 +73,7 @@ process.stdout.write(JSON.stringify(OUT));
     def test_history_estimate(self):
         # «남은 ≈» from the account's history per-1% (`est`, >= 3 windows); 7d unmeasured gets «사용 ≈ · 남은 ≈».
         h = self._est(6, "med")
-        self.assertIn("남은 ≈</small> <b>37M</b>", h)                # history, not the window average (4M)
+        self.assertIn("남은 ≈</small> <b>4M–37M</b>", h)            # history 37M vs window 4M: range, not one side
         self.assertIn("<span class=sbd8> <small>· 사용 ≈</small> <b>106M</b></span><span class=sbd3> <small>· 남은 ≈</small> <b>214M</b></span>", h)
         self.assertIn("1%당 토큰 중앙값", h)                          # tooltip names the source
 

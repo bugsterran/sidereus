@@ -577,3 +577,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `quota_roots._targets` drops a non-primary root with the primary's `accountUuid` (no quota row), but `state.accts` still listed it, so `mainAcctOk`/`burn_use` took it as main and `/api/quota/burn?dir=` answered «not measured» (no projection, ETA or curve; saver cap followed an empty account).
 - ⇒ `quota_roots.same_labels` names such roots; `state._accts` marks them `same`, `mainAcctOk` and `burn_use` skip them, `quota_burn_acct` returns the primary body. Test `tests/test_same_acct.py`.
 - ⚠The `mbMainAcct` pref is kept as is; unknown uuid on either side is never «same».
+
+### «left ≈» picked one side of two disagreeing estimates
+- Cause: history per-1% won outright from 3 windows; at 74% it read 107M while this window ran 2.2M/% (57M). Either side can be wrong: history ignores the token mix, the window average breaks when other devices move the %.
+- ⇒ `burnEst` (57-burn.js): from 30%, a gap over 1.5x returns `{left: low, hi: high}` and `estLeftTxt` prints «57M–107M». `left` stays the lower bound for numeric callers.
+- ⚠Do not let the window average win alone; `used_local` is this PC only.
+

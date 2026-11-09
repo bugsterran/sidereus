@@ -54,6 +54,9 @@ R.head = [burnHead(null, N), burnHead({}, N),
           burnHead({cur: {now_pct: 100.4, reset: N}, head: tokHead}, N),
           burnHead({cur: Object.assign({used_local: 2.2e6, wk_used_local: 3.1e7}, cur), wk, head: tokHead}, N)];
 const est = {h5_per_pct: 6e5, h5_n: 6, h5_src: 'med', wk_per_pct: 3.2e6, wk_n: 160, h5_left: 3.72e7, wk_left: 2.144e8, wk_used: 1.056e8};
+R.off = [burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 1.62e8, 74), burnEst({est: {h5_left: 6e7, h5_n: 5}}, '5h', 1.62e8, 74),
+         burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 1.62e8, 20)];
+R.offTxt = estLeftTxt(R.off[0]);
 R.est = [burnHead({cur: Object.assign({used_local: 2.2e6}, cur), wk, est}, N),
          burnHead({cur: Object.assign({used_local: 2.2e6}, cur), wk, est: Object.assign({}, est, {h5_src: 'pool'})}, N),
          burnHead({cur: Object.assign({used_local: 2.2e6}, cur), wk, est: Object.assign({}, est, {h5_src: 'pool', h5_n: 2})}, N)];
@@ -119,12 +122,20 @@ R.asof = [burnHead({cur, at: 3600 * 13 + 5 * 60}, N)];
         self.assertIn(" · <span title=\"이 PC 기록 기준 · 다른 기기·claude.ai 미포함\">사용 2M</span> · <span title=\"이번 창 평균(사용 ÷ %) × 남은 % — 쓰는 방식에 따라 크게 달라집니다\">남은 ≈ 4M</span> · 리셋", h)
         self.assertIn(">사용 31M</span> · <span title=\"이번 창 평균(사용 ÷ %) × 남은 % — 쓰는 방식에 따라 크게 달라집니다\">남은 ≈ 63M</span> · 리셋 3일", h)            # 7d only from the measured `wk_used_local`
 
+    def test_window_wins_when_history_far_off(self):
+        off = self.R["off"]
+        self.assertAlmostEqual(off[0]["left"], 1.62e8 / 74 * 26, delta=1)   # 107M history vs ~57M window: range, low end first
+        self.assertEqual(off[0]["hi"], 1.07e8)
+        self.assertEqual(self.R["offTxt"], "57M–107M")
+        self.assertEqual((off[1]["left"], off[1].get("hi")), (6e7, None))   # within 1.5x: history alone
+        self.assertEqual((off[2]["left"], off[2].get("hi")), (1.07e8, None))   # under 30%: window too young
+
     def test_history_estimate_wins(self):
         h = self.R["est"][0]
         tip5 = "이 계정 기록 6개 창의 1%당 토큰 중앙값 × 남은 % — 추정"
-        self.assertIn(">사용 2M</span> · <span title=\"" + tip5 + "\">남은 ≈ 37M</span> · 리셋", h)   # not 2.2/38*62 = 4M
+        self.assertIn(">사용 2M</span> · <span title=\"" + tip5 + "\n이번 창 평균과 1.5배 넘게 달라 두 값을 범위로 보여 줍니다\">남은 ≈ 4M–37M</span> · 리셋", h)   # not 2.2/38*62 = 4M
         self.assertIn("<span title=\"이 계정 7일 기록(160%p)의 1%당 토큰 × 남은 % — 추정\">사용 ≈ 106M · 남은 ≈ 214M</span>", h)
-        self.assertNotIn("이번 창 평균", h)
+        self.assertNotIn("이번 창 평균(사용 ÷ %)", h)   # history tip leads; the range line names the window average
         self.assertIn("6개 창 구간의 1%당 토큰", self.R["est"][1])   # pooled fallback says so
         # < 3 history windows: window average (2.2M / 38 x 62 = 3.6M) so «사용 : 남은» = official %
         self.assertIn("기록 2창 — 이번 창 평균으로 추정\n이번 창 평균(사용 ÷ %)", self.R["est"][2])

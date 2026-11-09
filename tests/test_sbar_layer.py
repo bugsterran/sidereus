@@ -128,7 +128,7 @@ process.stdout.write(JSON.stringify([a, b, c]));
         h = self.run_js(QUOTA + "MAIN = '<w>&'; BURNM_B = " + low + ";"
                         "BURN = {ok: true, cur: {now_pct: 38, used_local: 1e6}, est: {h5_left: 2.5e7, h5_n: 5, h5_src: 'med'}};"
                         "process.stdout.write(JSON.stringify(sblHtml(N)));")
-        self.assertIn(">≈ 25.0M 남음</small>", h)          # primary 5h
+        self.assertIn(">≈ 1.6M–25.0M 남음</small>", h)   # primary 5h: history 25M vs window 1.6M, shown as a range
         self.assertIn(">≈ 7.0M 남음</small>", h)           # main account 5h (own window, low)
         self.assertIn(">≈ 160.0M 남음</small>", h)         # main account 7d
         self.assertEqual(h.count("class=sbl-est"), 3)     # no 7d est for the primary; none for the third row

@@ -57,7 +57,14 @@ function burnEst(b, k, n, p){
   const e = b && b.est, l = e && (k === '5h' ? e.h5_left : e.wk_left);
   const win = n != null && p >= 30 && p < 100;
   const thin = k === '5h' && e && !e.low && l != null && (e.h5_n || 0) < 3;
-  if(l != null && !(thin && win)) return {left: l, tip: burnEstTip(k, e)};
+  // ⚠Neither side alone is right when they disagree: history ignores this window's token mix (more output/subagents
+  //   = fewer tokens per 1%), the window average breaks when other devices/claude.ai move the % (used_local is this PC).
+  //   From 30%, a gap over 1.5x shows both as a range; `left` stays the lower bound for callers that use the number.
+  const wl = win ? n / p * (100 - p) : null;
+  const off = wl != null && l != null && Math.max(l, wl) > 1.5 * Math.max(1, Math.min(l, wl));
+  if(l != null && !(thin && win)) return off
+    ? {left: Math.min(l, wl), hi: Math.max(l, wl), tip: burnEstTip(k, e) + '\n' + T('This window\'s average differs by over 1.5x — the range shows both')}
+    : {left: l, tip: burnEstTip(k, e)};
   const low = b && b.est_why === 'plan' ? ' · ' + T('Not enough history — low accuracy') : '';   // plan changed: history dropped
   return win ? {left: n / p * (100 - p),
     tip: (thin ? TV({msg: 'history {n} windows — estimated from this window\'s average', vars: {n: e.h5_n || 0}}) + '\n' : '')
@@ -73,7 +80,7 @@ function burnWkEst(b){
 }
 // ⚠The usage API reports whole percent, so «100» can still leave up to 0.5% until requests are refused;
 //   a token «left 0» there reads as exhausted while tens of millions more tokens still go through. Show «< 1%» instead.
-function estLeftTxt(e){ return e.left > 0 ? fmtTok(e.left) : T('< 1%'); }
+function estLeftTxt(e){ return e.left > 0 ? fmtTok(e.left) + (e.hi > e.left ? '–' + fmtTok(e.hi) : '') : T('< 1%'); }
 function estLeftTip(e){ return e.left > 0 ? e.tip : e.tip + '\n' + T('The usage API rounds to whole %: 100% can still leave under 1% until requests are refused'); }
 function burnWkTxt(b){
   const e = burnWkEst(b);
