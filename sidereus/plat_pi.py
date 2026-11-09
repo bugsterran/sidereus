@@ -4,7 +4,8 @@ Records: `<agent dir>/sessions/--<cwd>--/<timestamp>_<id>.jsonl` — line 1 is t
 then tree entries (`message`, `model_change`, `usage`, `compaction`, `branch_summary`, ...).
 ⚠Metadata only: header id/cwd/timestamp, entry ids and times, provider/model, token counts, cost and tool names.
 Message content, tool arguments, tool output, thinking, summaries, session names and system sections are never read.
-⚠No hooks yet: rows come from the files alone (ext_presence), so state is always unknown.
+⚠No hooks yet: rows come from the files alone (ext_presence), so state is always unknown; a running `pi` process
+in the same cwd keeps its newest file listed past the window and gives the row its pid (ext_presence._pi_procs).
 """
 import glob
 import json
@@ -178,6 +179,34 @@ def scan(since=0.0):
             for k in [k for k in _cache if k not in seen]:
                 _cache.pop(k, None)
     return out
+
+
+NEWEST_N = 8           # files read per cwd folder when looking for a running session's file
+
+
+def folder(cwd):
+    """pi's session folder name for `cwd` (lossy: leading separator dropped, `/`, `\\`, `:` -> `-`)."""
+    return "--" + re.sub(r"[/\\:]", "-", re.sub(r"^[/\\]", "", cwd)) + "--"
+
+
+def newest(cwd):
+    """Row of the newest session file (any age) whose header cwd is `cwd`, or None.
+    ⚠The folder name is lossy, so the header cwd is checked; only the newest NEWEST_N files are read."""
+    if not isinstance(cwd, str) or not cwd:
+        return None
+    d = os.path.join(root(), "sessions", folder(cwd))
+    paths = []
+    for p in glob.glob(os.path.join(glob.escape(d), "*.jsonl")):
+        try:
+            paths.append((os.stat(p).st_mtime, p))
+        except OSError:
+            continue
+    paths.sort(reverse=True)
+    for _mt, p in paths[:NEWEST_N]:
+        hit = next((c for c in _rows([p], 0.0)[0] if c["cwd"] == cwd), None)
+        if hit:
+            return hit
+    return None
 
 
 def one(sid):

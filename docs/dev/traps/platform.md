@@ -251,3 +251,8 @@ Cause: top-level `disableAllHooks: true` in the repo's `.github/copilot/settings
 Cause: pi names the session folder by stripping the leading separator and turning `/`, `\` and `:` into `-`, so `/a/b-c` and `/a/b/c` share one folder name.
 ⇒ cwd and project come only from the header line (`type: "session"`, `cwd`); a file whose line 1 is not that header is skipped.
 ⚠Never rebuild cwd from the folder name. The pi row's `hookless` key is set on pi rows only — `test_key_set_matches_rollout_row` pins the Cursor/Copilot key set to the Codex rollout row.
+
+### Idle pi session vanished after 10 min while pi still ran (`sidereus/ext_presence.py` `_pi_cands`)
+Cause: pi has no hooks or lock file, so rows came only from files written within `PRES_WIN_S` (600 s); an idle but open pi dropped out.
+⇒ A `pi` process (poll ps snapshot + term's cached lsof cwd, `_pi_procs`) keeps the newest file of its cwd (header cwd must match) listed at any age, with that pid on the row. No process found → the 600 s window alone.
+⚠One cwd with several running pi processes shows only its newest file (nothing links a pid to a session file). Never fork ps here — a stale or missing snapshot is unknown and falls back to the window. State stays «unknown» (no turn-end evidence; «wait» would raise attention).

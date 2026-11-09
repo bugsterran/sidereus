@@ -4,6 +4,7 @@
 A hook row wins: same sid in the store, an ended/dismissed sid, or a hook row of the same platform in the same cwd.
 ⚠Not `ext_store.PLAT_MODS` — that registry drives token reads (Cursor's come from hook `stop` counts).
 """
+import os
 import time
 
 from sidereus.warn import warn_once
@@ -14,6 +15,7 @@ from sidereus import ext_store   # module access: tests patch `ext_store._pid_st
 from sidereus.ext_store import EXT_PLAT, EXT_EV_N, _ext, _ext_lock, _sid_ok, _tok_sum, ext_ended
 from sidereus.ext import ROLL_WIN_S, ext_work
 from sidereus.adapter import adapter_scan
+from sidereus import live_probe, term   # module access: tests patch `_ps_snap_cache` / `_probe_cwd`
 
 PRES_MODS = {plat_cursor.PLAT: plat_cursor, plat_copilot.PLAT: plat_copilot, plat_pi.PLAT: plat_pi}
 PRES_NAME = {"cursor": "Cursor", "copilot": "Copilot", "pi": "Pi"}
@@ -49,14 +51,58 @@ def _copilot_live(c, now):
     return False
 
 
+def _is_pi_argv(cmd):
+    a = str(cmd or "").split()
+    b = [os.path.basename(x) for x in a[:2]]
+    return bool(b) and (b[0] == "pi" or (b[0] in ("node", "bun") and b[1:] == ["pi"]))
+
+
+def _pi_procs(now):
+    """{cwd: pid} of running `pi` CLIs, or None = unknown. Reads the poll's ps snapshot and term's cached lsof cwd
+    (same path as the external-row «To terminal» fallback); ⚠never forks ps. Non-Mac: no snapshot -> None."""
+    at, snap = live_probe._ps_snap_cache[0], live_probe._ps_snap_cache[1]
+    if snap is None or not 0 <= now - at < live_probe.LIVE_STALE_S:
+        return None
+    pids = sorted({str(p) for p, _pp, cmd in snap if _is_pi_argv(cmd)}, key=lambda p: int(p) if p.isdigit() else 0)
+    if not pids:
+        return {}
+    term._probe_cwd(set(pids))
+    out = {}
+    for p in pids:
+        cwd = (term._CWD_CACHE.get(p) or (0, ""))[1]
+        if cwd and p.isdigit():
+            out.setdefault(cwd, int(p))
+    return out
+
+
+def _pi_cands(now):
+    """pi files written within PRES_WIN_S, plus the newest file of every cwd a `pi` process runs in (any age).
+    ⚠One cwd with several running pi processes shows only its newest file (no pid -> session file link)."""
+    c = adapter_scan(plat_pi, now - PRES_WIN_S)
+    procs = _pi_procs(now) or {}
+    for cwd, pid in procs.items():
+        try:
+            n = plat_pi.newest(cwd)
+        except Exception:
+            n = None
+        if not n:
+            continue
+        hit = next((x for x in c if x.get("sid") == n["sid"]), None)
+        if hit is None:
+            c.append(n)
+            hit = n
+        hit["pid"] = pid
+    return c
+
+
 def _cands(plat, now):
     m = _PRES_MEMO.get(plat)
     if m and 0 <= now - m[0] < PRES_MEMO_S:
         return m[1]
     if plat == "cursor":
         c = plat_cursor.scan(now - PRES_WIN_S, PRES_MAX_N, PRES_STAT_N)
-    elif plat == "pi":            # no liveness file yet: a session file written within PRES_WIN_S counts as open
-        c = adapter_scan(plat_pi, now - PRES_WIN_S)
+    elif plat == "pi":            # no liveness file: a running pi in the cwd, else a file written within PRES_WIN_S
+        c = _pi_cands(now)
     else:
         c = [x for x in plat_copilot.scan(PRES_MAX_N) if _copilot_live(x, now)]
     _PRES_MEMO[plat] = (now, c)
@@ -88,7 +134,8 @@ def _row(plat, c, now):
         "estCost": tk.get("cost") if pi else None, "costMiss": tk.get("costMiss", 0),
         "ageSec": max(0, int(now - last)),
         "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
-        "kind": plat, "goneWhy": "", "pid": 0, "rollout": True,
+        "kind": plat, "goneWhy": "", "rollout": True,
+        "pid": c["pid"] if pi and isinstance(c.get("pid"), int) and c["pid"] > 1 else 0,   # running pi CLI, for «To terminal»
         "hooksOff": plat == "copilot" and plat_copilot.hooks_disabled(cwd),
     })
     if pi:     # no hooks to connect yet: no «Hooks not connected» advice. ⚠pi rows only — cu/cp keep the rollout key set

@@ -1,5 +1,7 @@
 """Hook-less Cursor/Copilot rows (ext_presence): rollout-row shape, hook row wins, work-panel fallback."""
 import json
+import os
+import shutil
 import time
 import unittest
 
@@ -41,6 +43,8 @@ class Presence(unittest.TestCase):
         self.cands["pi"] = []
         pr.plat_pi.scan = lambda since=0.0: list(self.cands["pi"])
         pr.plat_pi.one = lambda sid: None
+        self._pp = pr._pi_procs
+        pr._pi_procs = lambda now: {}                             # ⚠no live ps snapshot / lsof
         self._prune = ext._ext_prune_locked
         ext._ext_prune_locked = lambda now: None
 
@@ -53,6 +57,7 @@ class Presence(unittest.TestCase):
         pr.plat_cursor.scan, pr.plat_copilot.scan = self._sc, self._sp
         pr.plat_cursor.one, pr.plat_copilot.one = self._oc, self._op
         pr.plat_pi.scan, pr.plat_pi.one = self._pis, self._pio
+        pr._pi_procs = self._pp
         ext._ext_prune_locked = self._prune
         st._pid_start = self._ps
 
@@ -219,6 +224,102 @@ class HooksOff(unittest.TestCase):
         self.cp._HOOKS_OFF.clear()
         self.put('{"disableAllHooks": true, "pad": "%s"}' % ("x" * self.cp.SETTINGS_MAX), NOW)
         self.assertFalse(self.cp.hooks_disabled(self.sub))
+
+
+class PiRunning(unittest.TestCase):
+    """Idle pi session stays listed while a `pi` process runs in its cwd (temp sessions dir, patched ps/lsof caches)."""
+
+    def setUp(self):
+        import tempfile
+        from unittest import mock
+        self.tmp = tempfile.mkdtemp(prefix="sidereus-pipres-")
+        self.root = os.path.join(self.tmp, "agent")
+        self.cwd = "/w/pi-proj"
+        lp = pr.live_probe
+        self.snap = [("501", "1", "pi"), ("777", "1", "/bin/zsh"), ("888", "1", "node /opt/bin/pi --x")]
+        self.cwds = {"501": self.cwd, "777": self.cwd, "888": "/w/other"}
+        self.probed = []
+
+        def probe(pids, force=False):
+            self.probed.append(set(pids))
+            for q in pids:
+                pr.term._CWD_CACHE[q] = (NOW, self.cwds.get(q, ""))
+        self.p = [mock.patch.object(pr.plat_pi, "root", lambda: self.root),
+                  mock.patch.object(lp, "_ps_snap_cache", [NOW - 1, self.snap]),
+                  mock.patch.object(pr.term, "_probe_cwd", probe),
+                  mock.patch.object(pr.term, "_CWD_CACHE", {}),
+                  mock.patch.object(st, "_ext", {}), mock.patch.object(st, "_ext_ended", {})]
+        for x in self.p:
+            x.start()
+        pr._PRES_MEMO.clear()
+        pr.plat_pi._cache.clear()
+
+    def tearDown(self):
+        for x in self.p:
+            x.stop()
+        pr._PRES_MEMO.clear()
+        pr.plat_pi._cache.clear()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def write(self, sid, mtime, cwd=None):
+        cwd = cwd or self.cwd
+        d = os.path.join(self.root, "sessions", pr.plat_pi.folder(cwd))
+        os.makedirs(d, exist_ok=True)
+        p = os.path.join(d, "2026-11-10T00-00-00-000Z_%s.jsonl" % sid)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"type": "session", "id": sid, "timestamp": "2026-11-10T00:00:00.000Z", "cwd": cwd}) + "\n")
+        os.utime(p, (mtime, mtime))
+        return p
+
+    def pi_rows(self):
+        pr._PRES_MEMO.clear()
+        return [r for r in pr.ext_presence_rows(NOW) if r["plat"] == "pi"]
+
+    def test_idle_session_kept_while_process_runs(self):
+        self.write("pi-old", NOW - 9000)
+        self.write("pi-new", NOW - 2200)                          # idle 37 min, past PRES_WIN_S
+        rows = self.pi_rows()
+        self.assertEqual([(r["sid"], r["pid"], r["state"]) for r in rows], [("pi-new", 501, "unknown")])
+        self.assertEqual(self.probed, [{"501", "888"}])          # only pi argv, never the shell
+
+    def test_no_process_falls_back_to_window(self):
+        self.snap[:] = [("777", "1", "/bin/zsh")]
+        self.write("pi-new", NOW - 2200)
+        self.assertEqual(self.pi_rows(), [])
+        self.write("pi-fresh", NOW - 30)
+        self.assertEqual([(r["sid"], r["pid"]) for r in self.pi_rows()], [("pi-fresh", 0)])
+
+    def test_unknown_snapshot_is_not_none(self):
+        with mock_obj(pr.live_probe, "_ps_snap_cache", [NOW - 600, self.snap]):   # stale snapshot = unknown
+            self.write("pi-new", NOW - 2200)
+            self.assertEqual(self.pi_rows(), [])
+            self.assertEqual(self.probed, [])
+            self.assertIsNone(pr._pi_procs(NOW))
+
+    def test_fresh_file_gets_pid_once(self):
+        self.write("pi-new", NOW - 20)
+        rows = self.pi_rows()
+        self.assertEqual([(r["sid"], r["pid"]) for r in rows], [("pi-new", 501)])
+
+    def test_dismissed_stays_hidden(self):
+        self.write("pi-new", NOW - 2200)
+        st._ext_ended[("pi", "pi-new")] = NOW - 10
+        self.assertEqual(self.pi_rows(), [])
+
+    def test_header_cwd_must_match_lossy_folder(self):
+        self.write("pi-other", NOW - 2200, cwd="/w/pi/proj")       # same folder name as /w/pi-proj
+        self.assertEqual(pr.plat_pi.folder("/w/pi/proj"), pr.plat_pi.folder(self.cwd))
+        self.assertEqual(self.pi_rows(), [])
+
+    def test_pi_argv(self):
+        for cmd, ok in (("pi", True), ("/usr/local/bin/pi -p x", True), ("node /x/pi", True),
+                        ("pip install", False), ("node /x/pi-other", False), ("", False), ("vim pi", False)):
+            self.assertEqual(pr._is_pi_argv(cmd), ok, cmd)
+
+
+def mock_obj(obj, name, val):
+    from unittest import mock
+    return mock.patch.object(obj, name, val)
 
 
 if __name__ == "__main__":
