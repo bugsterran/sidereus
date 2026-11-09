@@ -39,6 +39,11 @@ tlWtFold.add(MAIN);
 res.fold = rows(mk(true));
 res.foldSynth = rows(mk(false));
 tlWtFold.clear();
+// non-git cwd whose wt came from a touched repo: never nested; a subfolder of the worktree still nests
+const NOGIT = '/r/bot', SUB = WT + '/pkg';
+SESS = [{cwd: NOGIT, plat: '', sid: 'n', wt: {root: '/r/agent/.claude/worktrees/y', main: '/r/agent', name: 'y'}},
+        {cwd: SUB, plat: '', sid: 's', wt: {root: WT, main: MAIN, name: 'x'}}];
+res.nogit = rows([sb(NOGIT, []), sb(SUB, [])]);
 SESS = [];
 res.ended = rows([sb(WT, []), sb(MAIN, [])]);
 process.stdout.write(JSON.stringify(res));
@@ -68,6 +73,10 @@ process.stdout.write(JSON.stringify(res));
     def test_run_only_keeps_child_heads(self):
         self.assertEqual([k for k, _, _ in self.R["runOnly"]],
                          ["S|/r/app", "S|/r/app/.claude/worktrees/x", "S|/r/other"])
+
+    def test_non_git_cwd_not_nested_subfolder_nested(self):
+        self.assertEqual(self.R["nogit"], [
+            ["S|/r/bot", None, 0], ["W|/r/app", None, 1], ["S|/r/app/.claude/worktrees/x/pkg", None, 0]])
 
     def test_ended_worktree_stays_top_level(self):
         self.assertEqual([k for k, _, _ in self.R["ended"]], ["S|/r/app/.claude/worktrees/x", "S|/r/app"])

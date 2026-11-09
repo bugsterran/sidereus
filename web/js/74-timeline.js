@@ -1,5 +1,6 @@
 // Session row's linked worktree from SESS (same `wt` as the sidebar chip); main checkout -> null.
-function tlWtOf(cwd){ const c = brNorm(cwd); const x = (SESS || []).find(s => s && s.wt && s.wt.main && s.cwd && (brNorm(s.cwd) === c || c.indexOf(brNorm(s.wt.root) + '/') === 0 || c === brNorm(s.wt.root))); return x ? x.wt : null; }
+// ⚠Match only a cwd inside wt.root: a non-git cwd gets wt from the repo it last touched (sessions.py _row_repos_wt); same rule as 40bb sessWtGroups.
+function tlWtOf(cwd){ const c = brNorm(cwd); if(!c) return null; const x = (SESS || []).find(s => { if(!(s && s.wt && s.wt.main && s.cwd)) return false; const r = brNorm(s.wt.root); return r ? (c === r || c.indexOf(r + '/') === 0) : brNorm(s.cwd) === c; }); return x ? x.wt : null; }
 // ★Row hover card (2026-09-24: inline label text was always truncated) — replaces the native titles on `.tlnm` and bars.
 // ⚠Metadata only: Agent `description`, type, status, times, tokens, tool count, last tool NAME (never its target), worktree, path, id.
 let tlHovG = [], tlHovT = 0, tlHovKey = '', tlHovEl = null, tlHovXY = [0, 0];
