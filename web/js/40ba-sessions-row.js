@@ -18,7 +18,9 @@ function sessFit(box){
   const nat = e => { const t = e.querySelector(':scope > .sxtl'); return bw(e) - (t ? bw(t) + 6 : 0); };
   const mx = sel => rows.reduce((m, r) => { const e = r.querySelector(sel); return e ? Math.max(m, nat(e)) : m; }, 0);
   const px = (v, n) => box.style.setProperty(v, Math.ceil(n) + 1 + 'px');   // +1px slack over the rounded-up width
-  px('--sxlead', mx('.sxl'));
+  // ⚠Folded worktree children are not rendered: 40bb reserves their ├─ stem so a fold never shifts every column.
+  const wtLead = box.querySelector && box.querySelector('.swtg') && typeof sessWtStemLead === 'function' ? sessWtStemLead(rows, nat) : 0;
+  px('--sxlead', Math.max(mx('.sxl'), wtLead));
   const gw = rows[0].querySelector('.sxgs').clientWidth;
   // ⚠The 45% cap never goes below a row's identity with its name at the 96px floor (.sp min-width): nowrap would clip chips.
   const need = rows.reduce((m, r) => { const id = r.querySelector('.sxid'), sp = id && id.querySelector('.sp');

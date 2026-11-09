@@ -118,21 +118,21 @@ R.moneyEn = creditMoney(1234, 'EUR');
 
     def test_credit_badge_text(self):
         cls, html, tip = self.R["onHtml"]
-        self.assertEqual(html, "<b>크레딧 모드</b><span>$190 남음</span>")
+        self.assertEqual(html, "<b>크레딧 모드</b><span>$190.31 남음</span>")
         self.assertIn("5시간 한도를 다 써서", tip)
         self.assertIn("월 한도 $200 중 $9.7 사용 (4.80%)", tip)
-        self.assertIn("<span>$5.0 사용</span>", self.R["onUsedOnly"])
+        self.assertIn("<span>$5.00 사용</span>", self.R["onUsedOnly"])
         self.assertTrue(self.R["meterTip"].startswith("쓴 만큼 과금되는 좌석입니다(enterprise_usage_based)"))
         self.assertNotIn("무료 구간", self.R["meterTip"])
-        self.assertEqual(self.R["onEn"], "<b>Credit mode</b><span>$190 left</span>")
+        self.assertEqual(self.R["onEn"], "<b>Credit mode</b><span>$190.31 left</span>")
 
     def test_credit_row(self):
         r = self.R["row"]
         self.assertEqual(r[:2], ["", ""])
         self.assertIn('<b class="qcool">4.80%</b>', r[2])
         self.assertIn("$9.69/$200.00", r[2])
-        self.assertIn('<span class="">$190 남음</span>', r[2])
-        self.assertIn('<span class="qhot">≈$10 남음</span>', r[3])      # p >= 90 reddens the remaining amount
+        self.assertIn('<span class="">$190.31 남음</span>', r[2])   # exact, same formatter as used/limit
+        self.assertIn('<span class="qhot">≈$10.00 남음</span>', r[3])      # p >= 90 reddens the remaining amount
         self.assertIn("≈$190.00/$200.00", r[3])
         self.assertNotIn("qg", r[4])                                     # no pct → no gauge
         self.assertIn("$1.00 사용", r[4])
@@ -208,7 +208,7 @@ R.sub = creditInfo({extra: ex, five_hour: {pct: 100}});
 R.off = creditInfo({extra: ex, five_hour: {pct: 40}});
 """)
         self.assertTrue(R["meter"]["meter"])
-        self.assertEqual(R["meter"]["left"], "$593 남음")
+        self.assertEqual(R["meter"]["left"], "$593.44 남음")
         self.assertEqual(R["meter"]["usedOf"], "$6.56/$600.00")   # status bar: exact used/limit
         self.assertFalse(R["sub"]["meter"])     # subscription credit: the 5h segment stays
         self.assertIsNone(R["off"])

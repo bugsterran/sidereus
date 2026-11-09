@@ -15,6 +15,9 @@ function sblAccRows(q, list, main){
     return {label: prim ? (pl || '—') : String(a.label || '—'), c: prim ? '' : String(a.label || ''),
       l5: left(w5), l7: left(w7), u5: used(w5), u7: used(w7), rs5: rs(w5), main: false, primary: prim, err: e}; };
   const rows = [row(q, true)];
+  // ⚠A usage-billed seat reports empty 5h/7d windows (pct 0): «100% left» would be false, so show the credit used/limit instead.
+  const ci = typeof creditInfo === 'function' ? creditInfo(q) : null;
+  if(ci && ci.meter) Object.assign(rows[0], {l5: ci.usedOf || '—', l7: '—', u5: null, u7: null, rs5: ''});
   for(const a of (Array.isArray(q.accounts) ? q.accounts : [])) if(a && !(pl && a.label === pl)) rows.push(row(a, false));
   // Exactly one mark: the chosen main account, else (unset or not in the quota response) the primary.
   const mi = main ? rows.findIndex(r => !r.primary && r.c === main) : -1;

@@ -239,6 +239,21 @@ function archFhFill(fh, n){
   const bot = sc.getBoundingClientRect().bottom - (parseFloat(cs.borderBottomWidth) || 0) - (parseFloat(cs.paddingBottom) || 0) - 8;
   return archFhGap((bot - r.bottom) / z, n);
 }
+// Pure: badge spot for path p (w wide, 18 high) clear of placed badges put [[x, y, w]] and boxes [{x, y, w, h}]; sets p.lx / p.ly.
+function archFhBadge(p, w, put, boxes){
+  const bx = (x, y) => (boxes || []).some(R => x - w / 2 < R.x + R.w && x + w / 2 > R.x && y - 9 < R.y + R.h && y + 9 > R.y);
+  const cl = (x, y) => put.some(o => Math.abs(o[0] - x) < (o[2] + w) / 2 + 3 && Math.abs(o[1] - y) < 20) || bx(x, y);
+  // ⚠Close lanes put badges on top of each other: slide along the badge's own horizontal run to the nearest free spot.
+  if(p.bs) for(let k = 1; cl(p.lx, p.ly) && k < 12; k++){ const dx = Math.ceil(k / 2) * (w + 6) * (k % 2 ? 1 : -1), x = p.lx + dx;
+    if(x - w / 2 >= p.bs[0] && x + w / 2 <= p.bs[1] && !cl(x, p.ly)){ p.lx = x; break; } }
+  // ⚠A short run (or one shared by a bundle) has no free spot: try beside the path's own vertical runs, longest first.
+  if(cl(p.lx, p.ly)){ const v = p.pts.slice(1).map((q, j) => [p.pts[j], q]).filter(s => s[0][0] === s[1][0])
+      .sort((a, b) => Math.abs(b[1][1] - b[0][1]) - Math.abs(a[1][1] - a[0][1]));
+    for(const s of v){ const y = (s[0][1] + s[1][1]) / 2, x = [s[0][0] + w / 2 + 4, s[0][0] - w / 2 - 4].find(x => !cl(x, y));
+      if(x != null){ p.lx = x; p.ly = y; break; } } }
+  // ⚠A run between two adjacent boxes is shorter than the badge: step off the boxes across the run, nearest side first.
+  if(bx(p.lx, p.ly)) for(let k = 1; k <= 24; k++){ const y = p.ly + Math.ceil(k / 2) * 4 * (k % 2 ? -1 : 1); if(!cl(p.lx, y)){ p.ly = y; break; } }
+}
 // After insertion: measure, size the gaps (re-measure while wrapping moves), draw each .mmdfe path and badge.
 // Returns archFhQuality (also on data-q) — never moves the scroll.
 function archFhRoute(slot){
@@ -256,15 +271,7 @@ function archFhRoute(slot){
     g.querySelectorAll(':scope > path').forEach(x => x.setAttribute('d', d || 'M0 0'));
     const r = g.querySelector('.mmdfl rect'), t = g.querySelector('.mmdfl text');
     if(r && t && d){ const w = +r.getAttribute('width') || 0;
-      // ⚠Close lanes put badges on top of each other: slide along the badge's own horizontal run to the nearest free spot.
-      const hit = x => put.some(o => Math.abs(o[0] - x) < (o[2] + w) / 2 + 3 && Math.abs(o[1] - p.ly) < 20);
-      if(p.bs) for(let k = 1; hit(p.lx) && k < 12; k++){ const dx = Math.ceil(k / 2) * (w + 6) * (k % 2 ? 1 : -1), x = p.lx + dx;
-        if(x - w / 2 >= p.bs[0] && x + w / 2 <= p.bs[1] && !hit(x)){ p.lx = x; break; } }
-      // ⚠A short run (or one shared by a bundle) has no free spot: try beside the path's own vertical runs, longest first.
-      if(hit(p.lx)){ const v = p.pts.slice(1).map((q, j) => [p.pts[j], q]).filter(s => s[0][0] === s[1][0])
-          .sort((a, b) => Math.abs(b[1][1] - b[0][1]) - Math.abs(a[1][1] - a[0][1]));
-        for(const s of v){ const y = (s[0][1] + s[1][1]) / 2, ok = x => !put.some(o => Math.abs(o[0] - x) < (o[2] + w) / 2 + 3 && Math.abs(o[1] - y) < 20);
-          const x = [s[0][0] + w / 2 + 4, s[0][0] - w / 2 - 4].find(ok); if(x != null){ p.lx = x; p.ly = y; break; } } }
+      archFhBadge(p, w, put, Object.keys(M.rects).map(k => M.rects[k]));
       put.push([p.lx, p.ly, w]);
       r.setAttribute('x', f(p.lx - w / 2)); r.setAttribute('y', f(p.ly - 9)); t.setAttribute('x', f(p.lx)); t.setAttribute('y', f(p.ly)); } });
   const q = archFhQuality(R.paths, M.rects);

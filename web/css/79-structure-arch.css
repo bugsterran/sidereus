@@ -158,7 +158,9 @@ html[data-ui=next][data-ui] .archall{color:#fff}
 /* hub sub-rows (84j2 H<b|g><n>r<r>): layout only, invisible */
 .archmap .mmdsg.archhrow>rect{fill:none;stroke:none}
 /* Edge click target: 81e tag mode puts a 10px transparent .mmdhit under each line (a 1.1px stroke is too thin to hit) */
-.archmap .mmdhit{fill:none;stroke:transparent;stroke-width:10;pointer-events:stroke}
+.archmap .mmdhit,.archly .mmdhit{fill:none;stroke:transparent;stroke-width:10;pointer-events:stroke}
+/* Open arrowhead (81e tag-mode marker id+'o'): an unfilled path renders black without this, same stroke as .mmdahx */
+.mmdaho{fill:none;stroke:var(--mmd-ln);stroke-width:1.5}
 .archdg .mmdfe{cursor:pointer}
 .archmap .mmdfe[data-c=in] .mmde{stroke:var(--nx-ok,#71c269);stroke-width:1.8}
 .archmap .mmdfe[data-c=out] .mmde{stroke:var(--nx-info,#5899f3);stroke-width:1.8}

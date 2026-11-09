@@ -145,7 +145,7 @@ class StatusBarFollowsMain(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        src = "\n".join(js_fn(f) for f in ("buildSbar", "sbPctCls", "sbPrimNote", "burnMainDir", "burnFor"))
+        src = "\n".join(js_fn(f) for f in ("buildSbar", "sbPctCls", "sbPrimNote", "burnMainDir", "burnFor", "estLeftTxt"))
         cls.R = run(src + "\n" + SBAR)
 
     def test_default_primary_with_burn(self):

@@ -263,7 +263,7 @@ function buildSbar(sv){
     const u = n != null ? sbt(T('used'), n) : w ? sbt(T('used ≈'), w.used) : a != null ? sbt(T('used ≈'), a) : '';
     // 7d used (.sbd8) goes before ext «Today»; 5h used stays (it is the live cycle).
     return (p == null ? '' : '<small>' + esc(T('left')) + '</small> <b class=' + pc(p) + '>' + esc(fmtPct(Math.max(0, 100 - p))) + '</b>') + (u && k === '7d' ? '<span class=sbd8>' + u + '</span>' : u)
-      + (e ? '<span class=sbd3>' + sbt(T('left ≈'), e.left) + '</span>' : '');
+      + (e ? '<span class=sbd3> <small>· ' + esc(T('left ≈')) + '</small> <b>' + esc(estLeftTxt(e)) + '</b></span>' : '');   // estLeftTxt: rounded 100% reads «< 1%», not 0
   };
   if(fh){
     const ms = fh.resets_at ? Date.parse(fh.resets_at) : NaN;
@@ -274,7 +274,7 @@ function buildSbar(sv){
     const t5 =T('5-hour limit — official usage') + ' ' + (fh.pct == null ? '?' : fmtPct(fh.pct)) + mtip(k5)
       + (cu0.used_local != null ? '\n' + T('Tokens used') + ' ' + fmtTok(cu0.used_local) + ' — ' + burnUsedTip() : '')
       + (au5 != null ? '\n' + T('used ≈') + ' ' + fmtTok(au5) : '')
-      + (e5 ? '\n' + T('left ≈') + ' ' + fmtTok(e5.left) + ' — ' + e5.tip : '')   // same pick as the bar text
+      + (e5 ? '\n' + T('left ≈') + ' ' + estLeftTxt(e5) + ' — ' + e5.tip : '')   // same pick as the bar text
       + (!isNaN(ms) ? '\n' + T('Resets', 'card') + ' ' + CLK(new Date(ms)) : '');
     // Claude logo leads the Claude group (5h … 7d); external platforms lead theirs in sbExt.
     out.push('<span title="' + esc(t5) + '">' + aiLogo('cc').replace(/ title="[^"]*"/, '') + '<b>5h</b> '
@@ -312,7 +312,7 @@ function buildSbar(sv){
       + (wkU != null ? '\n' + T('Tokens used') + ' ' + fmtTok(wkU) + ' — ' + burnUsedTip() : '')
       + (au7 != null ? '\n' + T('used ≈') + ' ' + fmtTok(au7) : '')
       + (wkU == null && au7 == null && w7 ? '\n' + T('used ≈') + ' ' + fmtTok(w7.used) : '')   // bar's estimate case, so dropping .sbd8 loses nothing
-      + (est0.wk_left != null ? '\n' + T('left ≈') + ' ' + fmtTok(est0.wk_left) + ' — ' + burnEstTip('7d', est0) : '')
+      + (est0.wk_left != null ? '\n' + T('left ≈') + ' ' + estLeftTxt({left: est0.wk_left}) + ' — ' + burnEstTip('7d', est0) : '')
       + (d && !isNaN(d) ? '\n' + T('Resets', 'card') + ' ' + RST7(d).abs + ' · ' + RST7(d).rel : '');
     out.push('<span title="' + esc(t7) + '"><b>7d</b> <small class=sbd6>' + esc(T('account')) + '</small> ' + use(sd.pct, wkU, '7d', au7)
       + (d && !isNaN(d) ? ' <small class="sbd6' + (d - now < 6*3600e3 ? ' sbwarn' : '') + '">· ' + esc(T('reset')) + ' ' + esc(RST7(d).rel) + '</small>' : '') + '</span>');   // rel piece only: abs+rel pushed other segments out at 1100 (full text in the title)

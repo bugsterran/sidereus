@@ -32,10 +32,11 @@ function sessWtAttn(kids){
   return k.some(x => x.gotPrompt > 0) ? 'stuck' : '';
 }
 function sessWtNeed(kids){ return (kids || []).filter(x => x && (x.blocked || x.state === 'ask' || x.state === 'abort' || x.gotPrompt > 0)).length; }
+function sessWtCount(n){ return TV({msg: n === 1 ? '{n} worktree session' : '{n} worktree sessions', vars: {n: n}}); }
 // Fold caret; collapsed, it carries the hidden children's count and attention so a need never disappears (R4).
 function sessWtCaret(gr){
   const open = !wtFold.has(gr.key), at = sessWtAttn(gr.kids), need = sessWtNeed(gr.kids);
-  const cnt = TV({msg: '{n} worktree sessions', vars: {n: gr.kids.length}}), nd = need ? TV({msg: '{n} need you', vars: {n: need}}) : '';
+  const cnt = sessWtCount(gr.kids.length), nd = need ? TV({msg: '{n} need you', vars: {n: need}}) : '';
   const tip = (open ? T('Collapse worktrees') : T('Expand worktrees')) + ' · ' + cnt + (nd ? ' · ' + nd : '');
   return '<button type=button class="swtg' + (at ? ' swta-' + at : '') + '" data-wtf="' + esc(gr.key) + '" aria-expanded=' + (open ? 'true' : 'false')
     + ' title="' + esc(tip) + '">' + (open ? '▾' : '▸' + gr.kids.length) + (!open && nd ? ' <b class=swtnd>' + esc(nd) + '</b>' : '') + '</button>';
@@ -43,7 +44,7 @@ function sessWtCaret(gr){
 // Header-only row for a group whose main checkout has no session in view (R3); not a .sx row, so sessFit skips it.
 function sessWtHeadHtml(gr){
   return '<div class=swth title="' + esc(gr.main + ' · ' + T('Main repo has no session in view')) + '">' + sessWtCaret(gr)
-    + '<span class=swthn>' + esc(gr.name) + '</span><span class=swthc>' + esc(TV({msg: '{n} worktree sessions', vars: {n: gr.kids.length}})) + '</span></div>';
+    + '<span class=swthn>' + esc(gr.name) + '</span><span class=swthc>' + esc(sessWtCount(gr.kids.length)) + '</span></div>';
 }
 function sessWtLead(h, ins){ return h.replace('<span class=sxl>', '<span class=sxl>' + ins); }
 // Every group as cards: head (with caret) then, unless folded, children with a ├─/└─ glyph in the lead cell.
@@ -55,6 +56,17 @@ function sessWtListHtml(rows){
     return head + gr.kids.map((x, i) => sessWtLead(sessRowHtml(x).replace('class="sxw ', 'class="sxw swtk '),
       '<i class=swtbr>' + (i === gr.kids.length - 1 ? '└─' : '├─') + '</i>')).join('');
   }).join('');
+}
+// Lead width a child row would take (widest bare lead + gap + ├─ stem); sessFit (40ba) floors --sxlead at it.
+function sessWtStemLead(rows, nat){
+  const ls = rows.map(r => r.querySelector('.sxl')).filter(Boolean);
+  if(!ls.length) return 0;
+  const bw = e => e.getBoundingClientRect().width, gap = l => parseFloat(getComputedStyle(l).columnGap) || 0;
+  const base = ls.reduce((m, l) => Math.max(m, nat(l) - [...l.querySelectorAll('.swtg,.swtbr')].reduce((s, e) => s + bw(e) + gap(l), 0)), 0);
+  const br = ls.map(l => l.querySelector('.swtbr')).find(Boolean);
+  let stem = br ? bw(br) : 0;
+  if(!br){ const p = document.createElement('i'); p.className = 'swtbr'; p.textContent = '├─'; ls[0].prepend(p); stem = bw(p); p.remove(); }
+  return base + gap(ls[0]) + stem;
 }
 function sessWtAny(rows){ return sessWtGroups(rows).some(g => g.kids.length); }
 // «Expand all / Collapse all» (40b) also covers worktree groups.

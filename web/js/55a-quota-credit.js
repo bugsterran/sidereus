@@ -26,7 +26,6 @@ function creditPct(p){ return p == null || !isFinite(p) ? '—' : Math.max(0, p)
 function creditRow(q){
   const ex = q && q.extra;
   if(!(ex && (ex.pct!=null || ex.used!=null))) return '';
-  const money = c => creditMoney(c, ex.cur);
   const p = ex.pct==null ? null : Math.round(ex.pct);
   // ★`≈` = an **approximation reconstructed as ratio × monthly limit** (header path · server `_quota_probe_hdr`).
   // Headers carry only the ratio, no cents — looking like an exact value would be a lie.
@@ -46,7 +45,7 @@ function creditRow(q){
     + '<span class=qamt title="'+esc(T('Extra usage (credit) — official extra_usage · against the monthly limit'))+'">'
     + ap + creditExact(ex.used, ex.cur) + (ex.limit!=null ? '/'+creditExact(ex.limit, ex.cur) : T(' used')) + '</span>'
     + (ex.limit!=null && ex.used!=null
-        ? '<span class="'+(p!=null&&p>=90?'qhot':'')+'">'+ap+money(ex.limit-ex.used)+T(' left')+'</span>' : '')
+        ? '<span class="'+(p!=null&&p>=90?'qhot':'')+'">'+ap+creditExact(ex.limit-ex.used, ex.cur)+T(' left')+'</span>' : '')
     + cold;
 }
 // ⛔NOT the reset cycle's total - it sums `TLD`, so it follows the timeline's **display range**
@@ -179,7 +178,7 @@ function creditInfo(q){
   const meter = ex && typeof ex.seat === 'string' && ex.seat.indexOf('usage_based') >= 0;
   if(!(ex && (meter || (fh && fh.pct != null && fh.pct >= 100)))) return null;
   const money = c => creditMoney(c, ex.cur);
-  const left = (ex.limit!=null && ex.used!=null) ? money(ex.limit-ex.used)+T(' left') : money(ex.used)+T(' used');
+  const left = (ex.limit!=null && ex.used!=null) ? creditExact(ex.limit-ex.used, ex.cur)+T(' left') : creditExact(ex.used, ex.cur)+T(' used');   // exact, matches usedOf beside it
   const ct = (meter ? TV({msg: 'This seat is billed by usage ({s}) — what you use now is billed.', vars: {s: esc(String(ex.seat))}}) + '\n'
                     : T('The 5h limit is spent; from here it draws credit (extra usage) — this is really billed.') + '\n')
     + TV({msg: '{u} used of the {l} monthly limit', vars: {u: money(ex.used), l: money(ex.limit)}})

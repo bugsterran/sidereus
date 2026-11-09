@@ -157,6 +157,22 @@ class ArchFocusHtml(unittest.TestCase):
         r = run("console.log(JSON.stringify([archFhGap(0, 3), archFhGap(24, 3), archFhGap(300, 3), archFhGap(900, 3), archFhGap(500, 0)]));", [], [], [])
         self.assertEqual(r, [0, 0, 100, 120, 0])
 
+    def test_badge_steps_off_adjacent_boxes(self):
+        # A wide badge on the short link between two neighbours in one row overlapped both boxes; it now ends clear of every box.
+        # A badge with room on its run keeps the spot it had before.
+        r = run("const A = {x: 100, y: 50, w: 80, h: 30}, B = {x: 204, y: 50, w: 80, h: 30}, w = 44;"
+                "const ov = (p, R) => p.lx - w / 2 < R.x + R.w && p.lx + w / 2 > R.x && p.ly - 9 < R.y + R.h && p.ly + 9 > R.y;"
+                "const p = {pts: [[180, 65], [204, 65]], lx: 192, ly: 65, bs: [180, 204]}; archFhBadge(p, w, [], [A, B]);"
+                "const q = {pts: [[0, 200], [300, 200]], lx: 150, ly: 200, bs: [0, 300]}; archFhBadge(q, w, [], [A, B]);"
+                "console.log(JSON.stringify([ov(p, A) || ov(p, B), p.lx, q.lx, q.ly]));", [], [], [])
+        self.assertEqual(r, [False, 192, 150, 200])
+
+    def test_css_hit_and_open_arrowhead(self):
+        # The no-layers focus (.archly) hit paths and the open arrowhead rendered filled black without these rules.
+        css = _rd("css", "79-structure-arch.css")
+        self.assertRegex(css, r"\.archly \.mmdhit[^{]*\{fill:none")
+        self.assertRegex(css, r"\.mmdaho\{fill:none;stroke:var\(--mmd-ln\)")
+
     def test_paths_fixed_rects(self):
         # row 0: 3 callers · row 1: sibling, hub, sibling · row 2/3: callees wrapped into two sub-rows · far edge row 0 -> row 3 uses a gutter
         r = run(r"""const R = {}, rows = [], put = (ks, y) => { rows.push(ks); ks.forEach((k, i) => { R[k] = { x: 120 + i * 130, y, w: 100, h: 30 }; }); };
