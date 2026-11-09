@@ -259,5 +259,16 @@ R.pos = burnWkTxt({est: Object.assign({}, est, {wk_left: 3.2e6})});
         self.assertTrue(R["pos"].endswith("left ≈ 3M"), R["pos"])
 
 
+class MeterSeatHidesWindows(unittest.TestCase):
+    """Usage-billed seat: the quota modal drops the 5h curve and the 5h/7d rows (they would be invented)."""
+
+    def test_burn_and_quota_guard_on_meter_seat(self):
+        b = js_fn("buildBurn")
+        self.assertIn("ci && ci.meter", b)
+        self.assertIn("!un.dir", b)                  # another main account's curve is still drawn
+        q = js_fn("buildQuota")
+        self.assertIn("ci && ci.meter ? ['<b class=qcm>'", q)
+
+
 if __name__ == "__main__":
     unittest.main()

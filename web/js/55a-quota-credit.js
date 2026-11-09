@@ -15,6 +15,12 @@ function creditMoney(c, cur){
   const s = fmtMoney(c/100);
   return (!cur || cur === 'USD') ? s : s.replace('$', '') + ' ' + cur;
 }
+// Exact amount with cents («$7.77»): the used/limit pair is read against each other, so fmtMoney's rounding («$7.8») hides change.
+function creditExact(c, cur){
+  if(c == null || !isFinite(c)) return '?';
+  const s = (c/100).toFixed(2);
+  return (!cur || cur === 'USD') ? '$' + s : s + ' ' + cur;
+}
 function creditRow(q){
   const ex = q && q.extra;
   if(!(ex && (ex.pct!=null || ex.used!=null))) return '';
@@ -36,7 +42,7 @@ function creditRow(q){
     : '';
   return esc(T('Credit')) + ' ' + (p!=null ? gauge(p)+'<b class="'+qcls(p)+'">'+esc(fmtPct(ex.pct))+'</b> ' : '')
     + '<span class=qamt title="'+esc(T('Extra usage (credit) — official extra_usage · against the monthly limit'))+'">'
-    + ap + money(ex.used) + (ex.limit!=null ? ' / '+money(ex.limit) : T(' used')) + '</span>'
+    + ap + creditExact(ex.used, ex.cur) + (ex.limit!=null ? '/'+creditExact(ex.limit, ex.cur) : T(' used')) + '</span>'
     + (ex.limit!=null && ex.used!=null
         ? '<span class="'+(p!=null&&p>=90?'qhot':'')+'">'+ap+money(ex.limit-ex.used)+T(' left')+'</span>' : '')
     + cold;
@@ -128,9 +134,13 @@ function buildQuota(u, q){
     const g5 = gaugeTok('5h'), g7 = gaugeTok('7d');
     // ⚠No tally fallback: until the back-solve warms up the chip shows the % alone. A number from another
     //   source here is what put `5h 119M` next to the burn-down's `5h 206M` on the same screen.
-    const parts=[one(q.five_hour,'5h',null, g5, g5 != null),
-                 // ★2026-09-27 cross-tab audit: 7d passed the local weekly tally here (182M first paint -> 105M after burn).
-                 one(q.seven_day,'7d',null, g7, g7 != null)].filter(Boolean);
+    // ⚠A usage-billed seat has no 5h/7d windows (null -> 0%): «5h 0% · 7d 0%» read as plenty left while every
+    //   token is billed. A headline replaces both rows; the credit gauge row below carries the numbers.
+    const ci = typeof creditInfo === 'function' ? creditInfo(q) : null;
+    const parts = ci && ci.meter ? ['<b class=qcm>' + esc(T('Credit mode')) + '</b> <small>' + esc(T('Billed by usage — this seat has no 5h/7d windows')) + '</small>']
+      : [one(q.five_hour,'5h',null, g5, g5 != null),
+         // ★2026-09-27 cross-tab audit: 7d passed the local weekly tally here (182M first paint -> 105M after burn).
+         one(q.seven_day,'7d',null, g7, g7 != null)].filter(Boolean);
     const cr = creditRow(q);
     if(cr) parts.push(cr);
     if(typeof sbPrimNote === 'function' && sbPrimNote()) parts.unshift('<small>' + esc(sbPrimNote()) + '</small>');   // rows are the primary's
@@ -174,7 +184,8 @@ function creditInfo(q){
     + (ex.pct!=null ? ' (' + fmtPct(ex.pct) + ')' : '')
     + (meter ? '' : T('\nWhen the limit resets (5h row above), usage is back to the included allowance.'));
   const pct = ex.pct != null ? ex.pct : (ex.limit > 0 && ex.used != null ? ex.used / ex.limit * 100 : null);
-  return {meter: !!meter, left, tip: ct, pct};
+  const usedOf = ex.used != null && ex.limit != null ? creditExact(ex.used, ex.cur) + '/' + creditExact(ex.limit, ex.cur) : left;
+  return {meter: !!meter, left, tip: ct, pct, usedOf};
 }
 function buildCredit(q){
   const el = document.getElementById('credit');

@@ -34,7 +34,7 @@ const setHtml = (el, h) => { el.innerHTML = h; };
 const agoAt = at => 'AT' + at;
 let QLAST = null, SV = null;
 """
-FNS = ("fmtPct", "fmtMoney", "ageU", "creditMoney", "creditRow", "creditInfo", "buildCredit", "svJudge", "svChip", "svRate",
+FNS = ("fmtPct", "fmtMoney", "ageU", "creditMoney", "creditExact", "creditRow", "creditInfo", "buildCredit", "svJudge", "svChip", "svRate",
        "svOver", "svParts")
 CONSTS = ("esc", "qcls", "gauge", "SV_STALE", "SV_JLV", "SV_JREC", "SV_JTIP", "SV_JLONG", "svJName", "SB_JNAME")
 
@@ -130,12 +130,12 @@ R.moneyEn = creditMoney(1234, 'EUR');
         r = self.R["row"]
         self.assertEqual(r[:2], ["", ""])
         self.assertIn('<b class="qcool">4.8%</b>', r[2])
-        self.assertIn("$9.7 / $200", r[2])
+        self.assertIn("$9.69/$200.00", r[2])
         self.assertIn('<span class="">$190 남음</span>', r[2])
         self.assertIn('<span class="qhot">≈$10 남음</span>', r[3])      # p >= 90 reddens the remaining amount
-        self.assertIn("≈$190 / $200", r[3])
+        self.assertIn("≈$190.00/$200.00", r[3])
         self.assertNotIn("qg", r[4])                                     # no pct → no gauge
-        self.assertIn("$1.0 사용", r[4])
+        self.assertIn("$1.00 사용", r[4])
         self.assertNotIn("qold", r[5])                                   # age < 120 → no age span
         self.assertIn('<span class="qold" title=', r[6])
         self.assertIn(">2분 전 값</span>", r[6])
@@ -209,6 +209,7 @@ R.off = creditInfo({extra: ex, five_hour: {pct: 40}});
 """)
         self.assertTrue(R["meter"]["meter"])
         self.assertEqual(R["meter"]["left"], "$593 남음")
+        self.assertEqual(R["meter"]["usedOf"], "$6.56/$600.00")   # status bar: exact used/limit
         self.assertFalse(R["sub"]["meter"])     # subscription credit: the 5h segment stays
         self.assertIsNone(R["off"])
         self.assertAlmostEqual(R["meter"]["pct"], 1.1)          # gauge fill = monthly-limit share

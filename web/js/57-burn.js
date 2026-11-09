@@ -3,6 +3,9 @@ function buildBurn(){
   const el = document.getElementById('burn');
   if(!el) return;
   const b = burnDraw(), un = burnUse(), ul = acctList() ? un.label : '';   // name the account only with >= 2 accounts
+  // ⚠Usage-billed primary seat: no 5h window, so the curve, «left at reset» and the 100% ETA would be invented. Hidden.
+  const ci = !un.dir && typeof creditInfo === 'function' ? creditInfo(typeof QLAST !== 'undefined' && QLAST && QLAST.q) : null;
+  if(ci && ci.meter){ if(el.className !== 'burn') el.className = 'burn'; setHtml(el, ''); return; }
   // ⚠No current 5h window on the drawn account (idle since the last reset, or no rows yet): an empty block read as a broken chart.
   if(!(b && b.ok && b.cur)){
     const idle = !!(b && (b.why === 'stale' || b.why === 'no-data' || (un.dir && b.ok === false))), cls = idle ? 'burn on' : 'burn';

@@ -546,3 +546,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★2026-11-09: org switch to a usage-billed seat; bar read «5h left 100% · left ≈ 406M · 100% at 10:14 PM».
 - ⇒ `creditInfo(q)` (55a) is shared by the badge and the bar; on a meter seat with no main account the bar shows «Credit mode», a monthly-limit gauge (`.sbqg`, used-% step colour) and «$N left» instead of 5h/7d.
 - ⚠Subscription credit (5h at 100%) keeps the 5h segment — its window still resets.
+
+## Quota details on a usage-billed seat
+- Cause: the modal drew the primary's 5h/7d rows (null -> 0%) and a 5h curve for a seat that has no windows.
+- ⇒ `buildQuota` swaps both rows for a «Credit mode — billed by usage» headline above the credit row; `buildBurn` hides the curve when the drawn account is the primary (`!un.dir`). Amounts read exact used/limit (`creditExact`, «$7.77/$600.00»).
+- ⚠A non-primary main/used account keeps its own curve — it has real windows.

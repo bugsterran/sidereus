@@ -6,5 +6,6 @@ Object.assign(I18N.ko, {
   'Main': '메인', 'Make main': '메인으로',
   '≈ {n} left': '≈ {n} 남음',
   '< 1%': '1% 미만',
+  'Billed by usage — this seat has no 5h/7d windows': '쓴 만큼 과금 — 이 좌석에는 5h/7d 창이 없습니다',
   'The usage API rounds to whole %: 100% can still leave under 1% until requests are refused': '사용량 API 는 정수 % 로 반올림합니다 — 100% 여도 요청이 거절되기 전까지 1% 미만이 남아 있을 수 있습니다',
 });
