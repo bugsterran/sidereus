@@ -188,7 +188,7 @@ def ext_rollout_rows(now=None):
                 "estCost": tk.get("cost"), "costMiss": tk.get("costMiss", 0),
                 "ageSec": max(0, int(now - last)),
                 "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
-                "kind": "codex", "goneWhy": "", "pid": 0, "rollout": True,
+                "kind": "codex", "goneWhy": "", "pid": 0, "rollout": True, "hooksOff": False,
             })
             row["mbox"], row["mboxSrc"] = mbox_codex(cwd)
             rows.append(row)

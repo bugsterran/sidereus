@@ -15,7 +15,7 @@ import time
 from datetime import datetime
 
 from sidereus import config        # module access: tests patch `config.pid_alive`
-from sidereus.ident import _real_home
+from sidereus.ident import _git_walk, _real_home
 
 PLAT = "copilot"
 YAML_MAX = 64 * 1024
@@ -37,6 +37,37 @@ def _mt(p):
         return os.stat(p).st_mtime
     except OSError:
         return 0.0
+
+
+SETTINGS_MAX = 64 * 1024
+_HOOKS_OFF = {}   # settings path -> (mtime, disabled); re-read only when the file changes
+
+
+def hooks_disabled(cwd):
+    """True when the repo's `.github/copilot/settings.json` sets top-level `disableAllHooks: true`.
+    Copilot then skips every hook in that repo, so the row must not tell the person to set hooks up.
+    Only that one key is kept. ⚠The same key inside one `.github/hooks/*.json` turns off only that file — not read."""
+    if not cwd or not os.path.isabs(cwd):
+        return False
+    p = os.path.join(_git_walk(cwd) or cwd, ".github", "copilot", "settings.json")
+    mt = _mt(p)
+    if not mt:
+        return False
+    hit = _HOOKS_OFF.get(p)
+    if hit and hit[0] == mt:
+        return hit[1]
+    off = False
+    try:
+        if os.path.getsize(p) <= SETTINGS_MAX:
+            with open(p, encoding="utf-8-sig") as f:   # -sig: an editor may save a BOM
+                d = json.load(f)
+            off = isinstance(d, dict) and d.get("disableAllHooks") is True
+    except (OSError, ValueError):
+        off = False   # unreadable: keep the ordinary «set up hooks» hint
+    if len(_HOOKS_OFF) >= 256:
+        _HOOKS_OFF.clear()
+    _HOOKS_OFF[p] = (mt, off)
+    return off
 
 
 def _yaml(p):

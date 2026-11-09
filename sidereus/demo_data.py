@@ -46,7 +46,7 @@ def _nohook_row(plat, kind, sid, project, model, run):
             "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": model, "win": 0, "winSrc": "", "winN": 0,
             "git": "", "state": "unknown", "blocked": "", "otel": False, "otelEv": "", "otelAt": 0,
             "err": False, "plat": plat, "tok": 0, "tokSplit": {"in": 0, "out": 0, "cache": 0, "thought": 0},
-            "estCost": None, "costMiss": 0, "goneWhy": "", "pid": 0, "rollout": True}
+            "estCost": None, "costMiss": 0, "goneWhy": "", "pid": 0, "rollout": True, "hooksOff": False}
 
 
 CU_ROW = _nohook_row("cu", "cursor", "5d2c8e14-7a3f-4b09-8e61-c4f0a2b9d375", "acme-web", "gpt-5", 12)

@@ -72,6 +72,15 @@ class Presence(unittest.TestCase):
             self.assertEqual(r["state"], "unknown")
         json.dumps(rows)
 
+    def test_copilot_row_carries_hooks_off(self):
+        hd = pr.plat_copilot.hooks_disabled
+        pr.plat_copilot.hooks_disabled = lambda cwd: cwd == "/w/cp"
+        try:
+            got = {r["plat"]: r["hooksOff"] for r in self.rows()}
+        finally:
+            pr.plat_copilot.hooks_disabled = hd
+        self.assertEqual(got, {"cp": True, "cu": False})   # Cursor never reads the Copilot settings file
+
     def test_same_sid_in_store_hidden(self):
         st._ext[("cursor", SID)] = {"cwd": "/elsewhere", "state": "wait"}
         self.assertEqual([r["plat"] for r in self.rows()], ["cp"])
@@ -131,6 +140,53 @@ class Presence(unittest.TestCase):
     def test_work_hook_row_first(self):
         st._ext[("cursor", SID)] = {"cwd": "/w/hook", "state": "think", "lastSeen": NOW, "firstSeen": NOW}
         self.assertEqual(pr.ext_work_any("cu", SID, NOW)["cwd"], "/w/hook")
+
+
+
+class HooksOff(unittest.TestCase):
+    """Copilot `disableAllHooks` in the repo settings (temp dirs only, never a live repo)."""
+
+    def setUp(self):
+        import tempfile
+        self.cp = sidereus("plat_copilot")
+        self.cp._HOOKS_OFF.clear()
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = self.tmp.name
+        import os
+        os.makedirs(os.path.join(self.repo, ".git"))
+        os.makedirs(os.path.join(self.repo, ".github", "copilot"))
+        self.sub = os.path.join(self.repo, "web", "app")
+        os.makedirs(self.sub)
+        self.cfg = os.path.join(self.repo, ".github", "copilot", "settings.json")
+
+    def tearDown(self):
+        self.cp._HOOKS_OFF.clear()
+        self.tmp.cleanup()
+
+    def put(self, text, mtime):
+        import os
+        with open(self.cfg, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.utime(self.cfg, (mtime, mtime))
+
+    def test_key_true_from_subdir(self):
+        self.put('\ufeff{"disableAllHooks": true, "other": 1}', NOW)
+        self.assertTrue(self.cp.hooks_disabled(self.sub))
+
+    def test_missing_false_or_bad_is_off(self):
+        self.assertFalse(self.cp.hooks_disabled(self.sub))          # no file
+        self.put('{"disableAllHooks": "true"}', NOW)                 # only the JSON boolean counts
+        self.assertFalse(self.cp.hooks_disabled(self.sub))
+        self.cp._HOOKS_OFF.clear()
+        self.put('{not json', NOW + 1)
+        self.assertFalse(self.cp.hooks_disabled(self.sub))
+        self.assertFalse(self.cp.hooks_disabled("relative/dir"))
+
+    def test_reread_on_mtime_change(self):
+        self.put('{"disableAllHooks": false}', NOW)
+        self.assertFalse(self.cp.hooks_disabled(self.sub))
+        self.put('{"disableAllHooks": true}', NOW + 5)
+        self.assertTrue(self.cp.hooks_disabled(self.sub))
 
 
 if __name__ == "__main__":

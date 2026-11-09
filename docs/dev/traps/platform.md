@@ -241,3 +241,8 @@ Fix: `json.loads` only lines starting with the bytes `{"type":"session.usage_rec
 Cause: the fallback searched only the live candidate list (Cursor: chat active within `PRES_WIN_S`; Copilot: running lock pid), so timeline and recent-list bars of an ended session opened «External session not found».
 ⇒ When the live list misses, read that one session's folder by sid (`plat_cursor.one` · `plat_copilot.one`, metadata only).
 ⚠Keep the session list live-only — `one()` is for the popup; using it in `ext_presence_rows` would bring ended sessions back as rows. Tests stub `one()` (never the real `~/.cursor` / `~/.copilot`).
+
+### Copilot repo with every hook turned off still said «set up hooks» (`sidereus/plat_copilot.py` `hooks_disabled`)
+Cause: top-level `disableAllHooks: true` in the repo's `.github/copilot/settings.json` makes Copilot skip every hook there, but the hook-less row always advised setting hooks up.
+⇒ The Copilot presence row carries `hooksOff` (that one key, from the git root of the session cwd, re-read on mtime change); the chip reads «Hooks off in repo».
+⚠Every rollout-shaped row (Codex, Cursor, demo) carries `hooksOff` too — `test_key_set_matches_rollout_row` pins one key set. The per-file key in `.github/hooks/*.json` turns off only that file and is not read.

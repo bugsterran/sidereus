@@ -85,6 +85,7 @@ def _row(plat, c, now):
         "ageSec": max(0, int(now - last)),
         "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
         "kind": plat, "goneWhy": "", "pid": 0, "rollout": True,
+        "hooksOff": plat == "copilot" and plat_copilot.hooks_disabled(cwd),
     })
     return row
 
