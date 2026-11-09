@@ -34,7 +34,7 @@ const setHtml = (el, h) => { el.innerHTML = h; };
 const agoAt = at => 'AT' + at;
 let QLAST = null, SV = null;
 """
-FNS = ("fmtPct", "fmtMoney", "ageU", "creditMoney", "creditRow", "buildCredit", "svJudge", "svChip", "svRate",
+FNS = ("fmtPct", "fmtMoney", "ageU", "creditMoney", "creditRow", "creditInfo", "buildCredit", "svJudge", "svChip", "svRate",
        "svOver", "svParts")
 CONSTS = ("esc", "qcls", "gauge", "SV_STALE", "SV_JLV", "SV_JREC", "SV_JTIP", "SV_JLONG", "svJName", "SB_JNAME")
 
@@ -195,6 +195,22 @@ process.stdout.write(JSON.stringify(out));
         none, some = json.loads(r.stdout)
         self.assertNotIn("<b>5h</b>", some.split("</span>")[0])   # control: a snapshot draws a saver span before the 5h quota
         self.assertIn("<b>5h</b>", none.split("</span>")[0])       # null: the 5h quota leads, no saver span
+
+
+class CreditInfo(unittest.TestCase):
+    """creditInfo feeds the status bar: `meter` only for a usage-billed seat (it has no 5h/7d windows)."""
+
+    def test_meter_flag(self):
+        R = run(r"""
+const ex = {pct: 1.1, used: 656, limit: 60000, cur: 'USD'};
+R.meter = creditInfo({extra: Object.assign({seat: 'enterprise_usage_based'}, ex), five_hour: {pct: 0}});
+R.sub = creditInfo({extra: ex, five_hour: {pct: 100}});
+R.off = creditInfo({extra: ex, five_hour: {pct: 40}});
+""")
+        self.assertTrue(R["meter"]["meter"])
+        self.assertEqual(R["meter"]["left"], "$593 남음")
+        self.assertFalse(R["sub"]["meter"])     # subscription credit: the 5h segment stays
+        self.assertIsNone(R["off"])
 
 
 if __name__ == "__main__":

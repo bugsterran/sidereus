@@ -230,7 +230,13 @@ function buildSbar(sv){
   // Quota window = knQ (55a: «Main account» or the primary); token parts are primary-only (hidden while main is set),
   // projection and 100% ETA read burnFor() (main's own `?dir=` body, nothing when it is missing).
   // «Show in bar» (kpiQ, 60b select): another account's 5h/7d only — tokens, «left ≈», projection and ETA are main's, so they hide (kx).
-  const kq = typeof kpiQ === 'function' ? kpiQ : knQ, k5 = kq('5h'), k7 = kq('7d'), kx = k5.kpi, ma = mainAcct() || kx, fh = k5.w, sd = k7.w;
+  const kq = typeof kpiQ === 'function' ? kpiQ : knQ, k5 = kq('5h'), k7 = kq('7d'), kx = k5.kpi, ma = mainAcct() || kx;
+  // ⚠A usage-billed seat has no 5h/7d windows (both null -> 0%), so «left 100% · left ≈ N» and a 100% ETA were false;
+  //   the drawer badge was the only credit sign and is hidden while the drawer is closed. Credits replace both segments.
+  const cs = !ma && typeof creditInfo === 'function' ? creditInfo(typeof QLAST !== 'undefined' && QLAST && QLAST.q) : null;
+  const meterSeat = !!(cs && cs.meter), fh = meterSeat ? null : k5.w, sd = meterSeat ? null : k7.w;
+  if(meterSeat) out.push('<span class=sbcredit title="' + esc(cs.tip) + '">' + aiLogo('cc').replace(/ title="[^"]*"/, '')
+    + '<b class=sbwarn>' + esc(T('Credit mode')) + '</b> <small>' + esc(cs.left) + '</small></span>');
   const mtip = r => (r.kpi ? '\n' + TV({msg: 'Shown in bar: {a}', vars: {a: r.kpi}}) + (r.kmiss ? ' (' + TV({msg: 'Quota unknown for {a} — showing the main account', vars: {a: r.kpi}}) + ')' : '') : '')
     + (r.main && (!r.kpi || r.kmiss) ? '\n' + T('Main account') + ' ' + r.main + (r.miss ? ' (' + T('Main account quota unknown — showing the default account') + ')' : '') : '');
   // Remaining official % only — no token used/headroom (traps/quota.md «Token headroom»).

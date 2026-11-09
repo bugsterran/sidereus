@@ -157,27 +157,32 @@ function buildQuota(u, q){
 // Both conditions required: (a) `quota.extra` exists (= extra_usage.is_enabled) (b) 5h limit at 100%.
 // ⚠Turning on with (a) alone is a lie — `is_enabled` means "credits are allowed", not "in use".
 // While limit remains, credits do not decrease.
-function buildCredit(q){
-  const el = document.getElementById('credit');
-  if(!el) return;
+// {meter, left, tip} when credits are in use; null otherwise. Shared by the drawer badge and the status bar.
+function creditInfo(q){
   const ex = q && q.extra, fh = q && q.five_hour;
   // ★If the seat is **billed by usage**, do not wait for 5h (2026-09-11 · the credit-in-use badge had disappeared).
   // `enterprise_usage_based` is a seat that pays from the start, so the 5h 100% condition
   // never holds — when the 5h cell went empty on 429, the badge went off with it.
   // ⚠Subscription seats still require **5h 100%**. `is_enabled` means "can use", not "in use".
   const meter = ex && typeof ex.seat === 'string' && ex.seat.indexOf('usage_based') >= 0;
-  const on = !!(ex && (meter || (fh && fh.pct != null && fh.pct >= 100)));
-  if(!on){ setHtml(el, ''); if(el.className !== 'credit') el.className = 'credit'; return; }
+  if(!(ex && (meter || (fh && fh.pct != null && fh.pct >= 100)))) return null;
   const money = c => creditMoney(c, ex.cur);
   const left = (ex.limit!=null && ex.used!=null) ? money(ex.limit-ex.used)+T(' left') : money(ex.used)+T(' used');
-  if(el.className !== 'credit on') el.className = 'credit on';
-  setHtml(el, '<b>'+esc(T('Credit mode'))+'</b><span>'+esc(left)+'</span>');   // ★Unified wording (2026-09-10)
   const ct = (meter ? TV({msg: 'This seat is billed by usage ({s}) — what you use now is billed.', vars: {s: esc(String(ex.seat))}}) + '\n'
                     : T('The 5h limit is spent; from here it draws credit (extra usage) — this is really billed.') + '\n')
     + TV({msg: '{u} used of the {l} monthly limit', vars: {u: money(ex.used), l: money(ex.limit)}})
     + (ex.pct!=null ? ' (' + fmtPct(ex.pct) + ')' : '')
     + (meter ? '' : T('\nWhen the limit resets (5h row above), usage is back to the included allowance.'));
-  if(el.title !== ct) el.title = ct;
+  return {meter: !!meter, left, tip: ct};
+}
+function buildCredit(q){
+  const el = document.getElementById('credit');
+  if(!el) return;
+  const c = creditInfo(q);
+  if(!c){ setHtml(el, ''); if(el.className !== 'credit') el.className = 'credit'; return; }
+  if(el.className !== 'credit on') el.className = 'credit on';
+  setHtml(el, '<b>'+esc(T('Credit mode'))+'</b><span>'+esc(c.left)+'</span>');   // ★Unified wording (2026-09-10)
+  if(el.title !== c.tip) el.title = c.tip;
 }
 // Quota window of the «Main account» (UIS mbMainAcct) -> {w, main, miss}; no main = the primary's QLAST window as before.
 // miss = main's row absent, errored without kept data younger than quota_roots.ROW_KEEP_S (1800 s), or without a numeric pct: the primary window is shown and the card title says so.

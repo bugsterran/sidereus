@@ -540,3 +540,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★2026-11-09: same account moved to an enterprise usage-based org (credits 140/60000 USD received) while the screen held 7d 100% with `keptAt`, 12 h to reset.
 - ⇒ `quota._cc_scope()` = `accountUuid@organizationUuid`; `_scope_moved` guards `_qf_store`, the OMC credit carry and `_quota_load`. A stored bare uuid (older cache) counts as moved: it cannot say which org it came from (refetched once).
 - ⚠The quota log and burn history keep the bare uuid plus plan code — do not switch them to the scope (history would split on every upgrade).
+
+## Usage-billed seat showed «5h left 100%» in the status bar
+- Cause: an `enterprise_usage_based` seat has no 5h/7d windows (both null -> 0%); the bar drew «left 100% · left ≈ N» and a 100% ETA, and the only credit sign was the drawer badge, hidden while the drawer is closed.
+- ★2026-11-09: org switch to a usage-billed seat; bar read «5h left 100% · left ≈ 406M · 100% at 10:14 PM».
+- ⇒ `creditInfo(q)` (55a) is shared by the badge and the bar; on a meter seat with no main account the bar shows «Credit mode $N left» instead of 5h/7d.
+- ⚠Subscription credit (5h at 100%) keeps the 5h segment — its window still resets.
