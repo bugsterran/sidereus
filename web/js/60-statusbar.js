@@ -239,6 +239,7 @@ function buildSbar(sv){
     + '<b class=sbwarn>' + esc(T('Credit mode')) + '</b>'
     // Monthly-limit gauge (used share), coloured on the same used-% steps as the 5h/7d «left» numbers.
     + (cs.pct != null ? '<span class="sbqg ' + sbPctCls(cs.pct) + '"><i style="width:' + Math.min(100, Math.max(0, cs.pct)).toFixed(1) + '%"></i></span>' : '')
+    + (cs.pct != null ? '<b class=' + sbPctCls(cs.pct) + '>' + esc(creditPct(cs.pct)) + '</b>' : '')
     + '<small>' + esc(cs.usedOf) + '</small></span>');
   const mtip = r => (r.kpi ? '\n' + TV({msg: 'Shown in bar: {a}', vars: {a: r.kpi}}) + (r.kmiss ? ' (' + TV({msg: 'Quota unknown for {a} — showing the main account', vars: {a: r.kpi}}) + ')' : '') : '')
     + (r.main && (!r.kpi || r.kmiss) ? '\n' + T('Main account') + ' ' + r.main + (r.miss ? ' (' + T('Main account quota unknown — showing the default account') + ')' : '') : '');

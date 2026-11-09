@@ -34,7 +34,7 @@ const setHtml = (el, h) => { el.innerHTML = h; };
 const agoAt = at => 'AT' + at;
 let QLAST = null, SV = null;
 """
-FNS = ("fmtPct", "fmtMoney", "ageU", "creditMoney", "creditExact", "creditRow", "creditInfo", "buildCredit", "svJudge", "svChip", "svRate",
+FNS = ("fmtPct", "fmtMoney", "ageU", "creditMoney", "creditExact", "creditPct", "creditRow", "creditInfo", "buildCredit", "svJudge", "svChip", "svRate",
        "svOver", "svParts")
 CONSTS = ("esc", "qcls", "gauge", "SV_STALE", "SV_JLV", "SV_JREC", "SV_JTIP", "SV_JLONG", "svJName", "SB_JNAME")
 
@@ -120,7 +120,7 @@ R.moneyEn = creditMoney(1234, 'EUR');
         cls, html, tip = self.R["onHtml"]
         self.assertEqual(html, "<b>크레딧 모드</b><span>$190 남음</span>")
         self.assertIn("5시간 한도를 다 써서", tip)
-        self.assertIn("월 한도 $200 중 $9.7 사용 (4.8%)", tip)
+        self.assertIn("월 한도 $200 중 $9.7 사용 (4.80%)", tip)
         self.assertIn("<span>$5.0 사용</span>", self.R["onUsedOnly"])
         self.assertTrue(self.R["meterTip"].startswith("쓴 만큼 과금되는 좌석입니다(enterprise_usage_based)"))
         self.assertNotIn("무료 구간", self.R["meterTip"])
@@ -129,7 +129,7 @@ R.moneyEn = creditMoney(1234, 'EUR');
     def test_credit_row(self):
         r = self.R["row"]
         self.assertEqual(r[:2], ["", ""])
-        self.assertIn('<b class="qcool">4.8%</b>', r[2])
+        self.assertIn('<b class="qcool">4.80%</b>', r[2])
         self.assertIn("$9.69/$200.00", r[2])
         self.assertIn('<span class="">$190 남음</span>', r[2])
         self.assertIn('<span class="qhot">≈$10 남음</span>', r[3])      # p >= 90 reddens the remaining amount
@@ -213,6 +213,8 @@ R.off = creditInfo({extra: ex, five_hour: {pct: 40}});
         self.assertFalse(R["sub"]["meter"])     # subscription credit: the 5h segment stays
         self.assertIsNone(R["off"])
         self.assertAlmostEqual(R["meter"]["pct"], 1.1)          # gauge fill = monthly-limit share
+        R2 = run("R.p = [creditPct(4.043333), creditPct(0.23), creditPct(null)];")
+        self.assertEqual(R2["p"], ["4.04%", "0.23%", "—"])        # two decimals: 1% of $600 is $6
 
 
 if __name__ == "__main__":

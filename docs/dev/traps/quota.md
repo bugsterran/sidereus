@@ -549,5 +549,5 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Quota details on a usage-billed seat
 - Cause: the modal drew the primary's 5h/7d rows (null -> 0%) and a 5h curve for a seat that has no windows.
-- ⇒ `buildQuota` swaps both rows for a «Credit mode — billed by usage» headline above the credit row; `buildBurn` hides the curve when the drawn account is the primary (`!un.dir`). Amounts read exact used/limit (`creditExact`, «$7.77/$600.00»).
+- ⇒ `buildQuota` swaps both rows for a «Credit mode — billed by usage» headline above the credit row; `buildBurn` hides the curve when the drawn account is the primary (`!un.dir`). Credits read `creditPct` (2 decimals, 1% = $6 on $600) + exact used/limit (`creditExact`), ≈ when header-derived.
 - ⚠A non-primary main/used account keeps its own curve — it has real windows.

@@ -21,6 +21,8 @@ function creditExact(c, cur){
   const s = (c/100).toFixed(2);
   return (!cur || cur === 'USD') ? '$' + s : s + ' ' + cur;
 }
+// Credit share with two decimals: 1% of a $600 limit is $6, so fmtPct's «<1%» / whole-% rounding hides real spend.
+function creditPct(p){ return p == null || !isFinite(p) ? '—' : Math.max(0, p).toFixed(2) + '%'; }
 function creditRow(q){
   const ex = q && q.extra;
   if(!(ex && (ex.pct!=null || ex.used!=null))) return '';
@@ -40,7 +42,7 @@ function creditRow(q){
     ? ' <span class="qold'+(cage>=1800?' qhot':'')+'" title="'+esc(T('Credit comes only from the official API (extra_usage) — this value freezes when the lookup is blocked'))+'">'
         + TV({msg: 'as of {t}', vars: {t: AGO(ageU(cage,0,true))}}) + '</span>'
     : '';
-  return esc(T('Credit')) + ' ' + (p!=null ? gauge(p)+'<b class="'+qcls(p)+'">'+esc(fmtPct(ex.pct))+'</b> ' : '')
+  return esc(T('Credit')) + ' ' + (p!=null ? gauge(p)+'<b class="'+qcls(p)+'">'+esc(creditPct(ex.pct))+'</b> ' : '')
     + '<span class=qamt title="'+esc(T('Extra usage (credit) — official extra_usage · against the monthly limit'))+'">'
     + ap + creditExact(ex.used, ex.cur) + (ex.limit!=null ? '/'+creditExact(ex.limit, ex.cur) : T(' used')) + '</span>'
     + (ex.limit!=null && ex.used!=null
@@ -181,10 +183,11 @@ function creditInfo(q){
   const ct = (meter ? TV({msg: 'This seat is billed by usage ({s}) — what you use now is billed.', vars: {s: esc(String(ex.seat))}}) + '\n'
                     : T('The 5h limit is spent; from here it draws credit (extra usage) — this is really billed.') + '\n')
     + TV({msg: '{u} used of the {l} monthly limit', vars: {u: money(ex.used), l: money(ex.limit)}})
-    + (ex.pct!=null ? ' (' + fmtPct(ex.pct) + ')' : '')
+    + (ex.pct!=null ? ' (' + creditPct(ex.pct) + ')' : '')
     + (meter ? '' : T('\nWhen the limit resets (5h row above), usage is back to the included allowance.'));
   const pct = ex.pct != null ? ex.pct : (ex.limit > 0 && ex.used != null ? ex.used / ex.limit * 100 : null);
-  const usedOf = ex.used != null && ex.limit != null ? creditExact(ex.used, ex.cur) + '/' + creditExact(ex.limit, ex.cur) : left;
+  // ⚠Header-path credits (`approx`) are ratio x limit, the ratio has 2 decimals: mark with ≈ like creditRow.
+  const usedOf = ex.used != null && ex.limit != null ? (ex.approx ? '≈' : '') + creditExact(ex.used, ex.cur) + '/' + creditExact(ex.limit, ex.cur) : left;
   return {meter: !!meter, left, tip: ct, pct, usedOf};
 }
 function buildCredit(q){
