@@ -5,7 +5,7 @@ import time
 from sidereus.config import IS_MAC
 from sidereus.warn import exc_name, warn_once
 from sidereus.transcript import _iso_ts
-from sidereus.quota import QUOTA_URL, _cc_account, _oauth_miss, _oauth_token, _quota, _quota_lock, _quota_lookup_on, _quota_retry_after
+from sidereus.quota import QUOTA_URL, _cc_scope, _scope_moved, _oauth_miss, _oauth_token, _quota, _quota_lock, _quota_lookup_on, _quota_retry_after
 
 
 QF_ERR_KEYS = ("Quota lookup is turned off in settings (quota_lookup)",
@@ -137,8 +137,8 @@ def _qf_store(out):
             #     rolled over is a lie. Past values are simply dropped.
             # ⚠If the account changed, **there is no previous value to carry.** Showing the old account's 5h on the
             #   new account's screen is someone else's number (measured 2026-09-11 — hence this guard precedes the merge).
-            _ac = _cc_account()
-            if _ac and _quota.get("acct") and _quota["acct"] != _ac:
+            _ac = _cc_scope()
+            if _scope_moved(_quota.get("acct"), _ac):
                 _quota["data"] = None
             if _ac:
                 _quota["acct"] = _ac

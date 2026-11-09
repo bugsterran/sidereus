@@ -239,7 +239,7 @@ QUOTA_CACHE = os.path.join(DATA_DIR, "quota-cache.json")
 #   ⚠Use only the uuid — email·name are not values to put on a shared screen (this file's «metadata only» rule).
 CLAUDE_CONF = claude_json()
 ACCT_TTL_S = 60                  # this file is read often and is hundreds of KB — do not parse on every poll
-_acct = {"at": 0, "mt": 0, "id": None, "seat": None, "tier": None, "org": None}
+_acct = {"at": 0, "mt": 0, "id": None, "ouid": None, "seat": None, "tier": None, "org": None}
 
 
 def _cc_plan():
@@ -283,12 +283,30 @@ def _cc_account():
         _acct["seat"] = _oa.get("seatTier") or None
         _acct["tier"] = _oa.get("userRateLimitTier") or None
         _acct["org"] = _oa.get("organizationType") or None
+        _acct["ouid"] = _oa.get("organizationUuid") or None
     except (OSError, ValueError, AttributeError):
         return _acct["id"]              # config mid-write/odd: keep the known account until the next TTL
     if aid and _acct["id"] and aid != _acct["id"]:
         warn_once("acct-switch-" + aid[:8], "The signed-in account changed — dropping the previous account's quota cache")
     _acct["mt"], _acct["id"] = mt, aid
     return aid
+
+
+def _cc_scope():
+    """Quota cache scope `accountUuid@organizationUuid` (or the bare uuid); None if unknown.
+
+    ⚠Switching organization keeps the same `accountUuid`, so a uuid-only guard kept the old org's 7d 100%
+      until its reset while the new seat (enterprise usage-based) reported both windows null."""
+    aid = _cc_account()
+    return aid + "@" + _acct["ouid"] if aid and _acct.get("ouid") else aid
+
+
+def _scope_moved(stored, cur):
+    """True only when both scopes are known and differ.
+
+    ⚠A stored bare uuid (older cache) is a mismatch once an org is known: it cannot say which org it was measured
+      under, and treating it as a match carried exactly the old org's 7d 100% this guard exists to drop."""
+    return bool(stored and cur and stored != cur)
 # ★The OMC cache **is sometimes empty** (measured 2026-08-20: `data: null, error: true` — OMC also gets 429s).
 #   So trusting OMC and not keeping our own value blanks the screen. Keep the last success **in a file** so it survives restarts.
 
@@ -520,7 +538,7 @@ def _quota_save():
             d, at, sr = _quota["data"], _quota["at"], _quota.get("src") or ""
         if d:
             # ⚠atomic — an in-place "w" let `_quota_load` (another thread/restart) read a half file
-            _atomic_write(QUOTA_CACHE, json.dumps({"data": d, "at": at, "acct": _cc_account()},
+            _atomic_write(QUOTA_CACHE, json.dumps({"data": d, "at": at, "acct": _cc_scope()},
                                                   ensure_ascii=False).encode("utf-8"), prefix=".quota-cache.")
             _quota_log(d, at, sr)
     except OSError as e:
@@ -532,10 +550,10 @@ def _quota_load():
     try:
         with open(QUOTA_CACHE, encoding="utf-8") as f:
             c = json.load(f)
-        ac = _cc_account()
+        ac = _cc_scope()
         # ⚠**Do not load another account's cache.** Revived on restart, the screen would show someone else's numbers again.
         #   If either is unknown (None), do not discard — unknown is not a mismatch.
-        if ac and c.get("acct") and c["acct"] != ac:
+        if _scope_moved(c.get("acct"), ac):
             return
         if c.get("data"):
             with _quota_lock:

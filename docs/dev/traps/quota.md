@@ -534,3 +534,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★2026-11-09: weekly read 100% (CLI said 99%) while about 40M more tokens went through.
 - ⇒ `estLeftTxt`/`estLeftTip` (57-burn.js) show «< 1%» with a rounding note for any non-positive estimate; burn head, 7d text and status-bar layer use them.
 - ⚠Do not render `fmtTok(e.left)` for «left» directly — go through `estLeftTxt`.
+
+## Organization switch kept the old org's 7d 100%
+- Cause: the cache guard compared `accountUuid` only; switching organization keeps it, so the new seat's null windows lost to the old org's carried values until their reset.
+- ★2026-11-09: same account moved to an enterprise usage-based org (credits 140/60000 USD received) while the screen held 7d 100% with `keptAt`, 12 h to reset.
+- ⇒ `quota._cc_scope()` = `accountUuid@organizationUuid`; `_scope_moved` guards `_qf_store`, the OMC credit carry and `_quota_load`. A stored bare uuid (older cache) counts as moved: it cannot say which org it came from (refetched once).
+- ⚠The quota log and burn history keep the bare uuid plus plan code — do not switch them to the scope (history would split on every upgrade).

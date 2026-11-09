@@ -1,7 +1,7 @@
 """Golden trace for `_quota_fetch` (guards the behaviour-preserving phase split).
 
 Every dependency is replaced by a recording stub: clock, token reader, urllib Request/urlopen,
-warn_once, _cc_account, _iso_ts, the lock, the `_quota` slot and `_quota_retry_after`.
+warn_once, _cc_scope, _iso_ts, the lock, the `_quota` slot and `_quota_retry_after`.
 The golden holds, per case, the ordered call trace (incl. lock enter/exit and each slot write),
 the final slot, the retry-after cell and the return value. No network, no live file, no real clock.
 Regenerate only for an intended change:
@@ -185,7 +185,7 @@ def _run_case(case):
     cell = _Cell(log, [0])
     # ⚠IS_MAC pinned: the no-token message differs off macOS (keychain vs .credentials.json) and the golden holds the macOS one.
     patches = {"IS_MAC": True, "time": T, "_oauth_token": fake_tok, "warn_once": fake_warn,
-               "_cc_account": fake_acct, "_iso_ts": fake_iso,
+               "_cc_scope": fake_acct, "_iso_ts": fake_iso,
                "_quota": slot, "_quota_lock": _Lock(log), "_quota_retry_after": cell}
     saved = {k: getattr(q, k) for k in patches}
     saved_req = (urllib.request.Request, urllib.request.urlopen)

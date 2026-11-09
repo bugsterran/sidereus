@@ -112,7 +112,7 @@ class AtomicSaves(unittest.TestCase):
 
     def test_quota_save_concurrent_valid_same_format(self):
         path = os.path.join(self.d, "quota-cache.json")
-        self.patch(q, QUOTA_CACHE=path, _cc_account=lambda: "acct", _quota_log=lambda *a: None)
+        self.patch(q, QUOTA_CACHE=path, _cc_scope=lambda: "acct", _quota_log=lambda *a: None)
         old = dict(q._quota)
         self.addCleanup(lambda: (q._quota.clear(), q._quota.update(old)))
 
@@ -198,6 +198,19 @@ class AtomicSaves(unittest.TestCase):
     def test_pipeline_save_uses_atomic_write(self):
         pl = _load.sidereus("pipeline")
         self.assertIs(pl._atomic_write, bus._atomic_write)
+
+
+class ScopeMoved(unittest.TestCase):
+    """Quota cache scope = account@organization: an org switch on the same account drops the old org's 5h/7d."""
+
+    def test_scope_rules(self):
+        from sidereus.quota import _scope_moved
+        self.assertTrue(_scope_moved("A@org1", "A@org2"))      # same account, new organization
+        self.assertFalse(_scope_moved("A@org1", "A@org1"))
+        self.assertTrue(_scope_moved("A", "A@org1"))            # older cache with a bare uuid: org unknown, refetch
+        self.assertTrue(_scope_moved("A", "B@org1"))
+        self.assertFalse(_scope_moved(None, "A@org1"))          # unknown is not a mismatch
+        self.assertFalse(_scope_moved("A@org1", None))
 
 
 if __name__ == "__main__":

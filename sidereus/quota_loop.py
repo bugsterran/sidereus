@@ -9,9 +9,10 @@ from sidereus.transcript import _iso_ts
 from sidereus.usage import (ANCHOR_FILE, USAGE_BACKFILL_S, _anchors, _usage_backfill, _usage_load,
     _usage_save, usage)
 from sidereus.quota import (OMC_FRESH_S, QUOTA_HDR_EVERY_S, QUOTA_HOLD_EVERY_S, _hdr_at,
-    _cc_account, _omc_cache_write, _quota, _quota_from_omc, _quota_interval, _quota_load,
+    _cc_scope, _omc_cache_write, _quota, _quota_from_omc, _quota_interval, _quota_load,
     _quota_lock, _quota_probe_hdr, _quota_retry_after, _quota_save, _wait_hint, quota)
 from sidereus.quota_fetch import _quota_fetch
+from sidereus.quota import _scope_moved
 from sidereus.quota_roots import tick as _acc_tick
 
 # ⚠Log a 429 only once the last success is this old. Routine 429 retries recover within minutes and
@@ -239,8 +240,7 @@ def _quota_try_omc(st):
                 #   Checked only when there is something to carry, so the config file is not read otherwise.
                 _ex = (_quota.get("data") or {}).get("extra")
                 if _ex and _quota.get("acct"):
-                    _ac = _cc_account()
-                    if _ac and _quota["acct"] != _ac:
+                    if _scope_moved(_quota["acct"], _cc_scope()):
                         _ex = None
                 _new = dict(o["data"] or {})
                 if _ex and "extra" not in _new:
