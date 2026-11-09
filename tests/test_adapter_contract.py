@@ -15,11 +15,12 @@ ad = sidereus("adapter")
 st = sidereus("ext_store")      # importing it registers the adapters
 gm = sidereus("plat_gemini")
 cx = sidereus("plat_codex")
+pi = sidereus("plat_pi")
 sidereus("state_v1")
 from sidereus.state_v1 import load_schema, validate  # noqa: E402  (after the loader)
 
 FIX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "adapters")
-FIX_DIR = {"gm": "gemini", "cx": "codex"}
+FIX_DIR = {"gm": "gemini", "cx": "codex", "pi": "pi"}
 CANARY = "CANARY-ADAPTER"
 SMALL_MAX = 64 << 10
 
@@ -68,9 +69,10 @@ def _no_net(*a, **k):
 
 class AdapterContract(unittest.TestCase):
     def test_registry(self):
-        self.assertEqual(list(st.PLAT_MODS), ["gemini", "codex"])
+        self.assertEqual(list(st.PLAT_MODS), ["gemini", "codex", "pi"])
         self.assertIs(st.PLAT_MODS["gemini"], gm)
         self.assertIs(st.PLAT_MODS["codex"], cx)
+        self.assertIs(st.PLAT_MODS["pi"], pi)
         for k, m in ad.ADAPTERS.items():
             self.assertIs(st.PLAT_MODS[m.PLAT], m)
             self.assertEqual(st.EXT_PLAT[m.PLAT], k)
@@ -109,8 +111,8 @@ class AdapterContract(unittest.TestCase):
                     for t in r["acts"].values():
                         self.assertIsInstance(t, float)
                 self.assertTrue(live[0])
-                if m.KEY == "cx":
-                    self.assertIsNone(live[-1])     # codex refuses big files; gemini tails them (TAIL_READ)
+                if m.KEY in ("cx", "pi"):
+                    self.assertIsNone(live[-1])     # codex/pi refuse big files; gemini tails them (TAIL_READ)
                 self.assertNotIn(CANARY, json.dumps(rows, default=str))
                 self.assertNotIn(CANARY, json.dumps(live, default=str))
 

@@ -246,3 +246,8 @@ Cause: the fallback searched only the live candidate list (Cursor: chat active w
 Cause: top-level `disableAllHooks: true` in the repo's `.github/copilot/settings.json` makes Copilot skip every hook there, but the hook-less row always advised setting hooks up.
 ⇒ The Copilot presence row carries `hooksOff` (that one key, from the git root of the session cwd, re-read on mtime change); the chip reads «Hooks off in repo».
 ⚠Every rollout-shaped row (Codex, Cursor, demo) and every hook-event row (`ext_rows`, always `False`) carries `hooksOff` too — `test_key_set_matches_rollout_row` pins one key set. The per-file key in `.github/hooks/*.json` turns off only that file and is not read.
+
+### pi `--<cwd>--` folder name is lossy (`sidereus/plat_pi.py` `_row`)
+Cause: pi names the session folder by stripping the leading separator and turning `/`, `\` and `:` into `-`, so `/a/b-c` and `/a/b/c` share one folder name.
+⇒ cwd and project come only from the header line (`type: "session"`, `cwd`); a file whose line 1 is not that header is skipped.
+⚠Never rebuild cwd from the folder name. The pi row's `hookless` key is set on pi rows only — `test_key_set_matches_rollout_row` pins the Cursor/Copilot key set to the Codex rollout row.

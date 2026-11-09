@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Platforms: pi (earendil-works/pi) sessions are read from `~/.pi/agent/sessions` — session rows, model and token usage, tool activity on the Timeline and in the work popup; metadata only, no hooks or mail wake yet.
 - Status bar: on a usage-billed seat (credit mode) the credit segment shows the credit as tokens, «≈ used/limit», converted at this week's local average price; the tooltip states the rate.
 
 ### Fixed

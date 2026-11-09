@@ -154,10 +154,12 @@ function sessPlChip(x){
 // Identity row: lead (pick box · dot · logo) + groups [identity][usage][work][actions] (R1); an empty action group is omitted.
 function sessIdRow(x){
   // ⚠A rollout row (x.rollout) has no hook events behind it — its tooltip must not claim they are the source.
-  const pl = aiLogo(x.plat, x.rollout ? T(" session — read from its CLI's record file (hooks not connected)")
+  // ⚠hookless (pi): no hooks exist to connect yet, so neither the tooltip nor a chip may advise connecting them.
+  const pl = aiLogo(x.plat, x.hookless ? T(" session — read from its CLI's record file")
+    : x.rollout ? T(" session — read from its CLI's record file (hooks not connected)")
     : x.plat && x.plat !== 'cc' ? T(' session — drawn from events its CLI hooks send (the transcript is not read)') : T(' session'));
   // ⚠hooksOff: the repo turned every hook off on purpose (Copilot disableAllHooks) — «set up hooks» would be wrong advice.
-  const nohk = !x.rollout ? '' : x.hooksOff
+  const nohk = !x.rollout || x.hookless ? '' : x.hooksOff
     ? '<span class="sz snohk" title="'+esc(TV({msg: "Hooks are turned off in this repo (.github/copilot/settings.json disableAllHooks); state read from {name}'s record file", vars: {name: platName(x.plat)}}))+'">'
       + esc(T('Hooks off in repo'))+'</span>'
     : '<span class="sz snohk" title="'+esc(TV({msg: "State read from {name}'s record file; set up hooks — docs/HOOKS.md", vars: {name: platName(x.plat)}}))+'">'

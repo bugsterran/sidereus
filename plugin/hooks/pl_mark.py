@@ -25,7 +25,7 @@ FIELD = {"Bash": "description", "Agent": "description", "Task": "description",
          "SendMessage": "summary"}
 # Same keys as sidereus/ext_store.py EXT_PLAT, plus cc; an unknown --platform does nothing.
 PLATFORMS = ("cc", "gemini", "codex", "copilot", "cursor", "cline", "windsurf", "warp", "trae", "zed", "grok",
-             "deepseek", "qwen", "kimi", "mistral", "ollama", "perplexity", "huggingface", "meta", "openrouter")
+             "deepseek", "qwen", "kimi", "mistral", "ollama", "perplexity", "huggingface", "meta", "openrouter", "pi")
 EVENT = {"BeforeTool": "PreToolUse", "AfterTool": "PostToolUse"}   # Gemini names
 CAMEL = {"preToolUse": "PreToolUse", "postToolUse": "PostToolUse", "postToolUseFailure": "PostToolUse"}   # Cursor names
 SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash", "Shell", "bash")   # Bash only off cc; Shell = Cursor; bash = Copilot

@@ -26,6 +26,7 @@ html[data-ui=next][data-theme=light] .sdrw.on{background:#0004}
 html[data-ui=next][data-theme=light] .sdrw .sdrwin{box-shadow:0 12px 32px #0003}
 /* Neutral letter glyphs (cx/gk) are near-white on dark; darken them so they stay legible on white. */
 html[data-theme=light] .ailg-cx,html[data-theme=light] .ailg-gk{color:#4b5563}
+html[data-theme=light] .ailg-pi{color:#1f7a50}
 /* Timeline legend chips: hatch stripes use t3/idle (>=4.3:1 on panel) so the glyph reads on white. */
 html[data-ui=next][data-theme=light] .tlaxr .tllg{color:var(--nx-t3)}
 /* ★10-06: time cursor lines were 1.62/1.71/1.67:1 on the light bg ⇒ >=3:1 non-text contrast. ⚠Scoped to beat the next-UI twins of .tlcur.on/.rp. */

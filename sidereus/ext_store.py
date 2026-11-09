@@ -13,7 +13,7 @@ from sidereus.config import DATA_DIR, pid_alive
 from sidereus import config   # module access: tests patch `config.IS_WIN` / `config.win_pid_start`
 from sidereus.warn import warn_once
 from sidereus.bus import _atomic_write
-from sidereus import plat_codex, plat_gemini, plat_copilot
+from sidereus import plat_codex, plat_gemini, plat_copilot, plat_pi
 from sidereus.adapter import adapter_register
 
 
@@ -35,13 +35,13 @@ EXT_PID_EVERY_S = 30         # liveness check interval per session
 EXT_PLAT = {"gemini": "gm", "codex": "cx", "copilot": "cp", "cursor": "cu", "cline": "cl",
             "windsurf": "wf", "warp": "wp", "trae": "tr", "zed": "zd", "grok": "gk",
             "deepseek": "ds", "qwen": "qw", "kimi": "ki", "mistral": "mi", "ollama": "ol",
-            "perplexity": "px", "huggingface": "hf", "meta": "ma", "openrouter": "or"}
+            "perplexity": "px", "huggingface": "hf", "meta": "ma", "openrouter": "or", "pi": "pi"}
 # hook `platform` value → row `plat` key (same key as the logo `AILG`).
 # ⚠Do not put Claude here - it is already loaded from transcripts, so the same `sid` would become two rows and `_sid_proj` would be overwritten.
 
 # Platforms whose record files are read by an `sidereus/plat_<name>.py` adapter (contract: sidereus/adapter.py).
 # ⚠Order is output order (timeline rows, history blocks): Gemini first, as before the split.
-PLAT_MODS = {m.PLAT: m for m in (adapter_register(x, EXT_PLAT) for x in (plat_gemini, plat_codex))}
+PLAT_MODS = {m.PLAT: m for m in (adapter_register(x, EXT_PLAT) for x in (plat_gemini, plat_codex, plat_pi))}
 EXT_STATE = {"SessionStart": "wait", "UserPromptSubmit": "think", "PreToolUse": "tool",
              "PostToolUse": "think", "Stop": "wait", "Notification": "ask"}   # ⚠`Stop` is `wait` - with `ask` (rank 0) ended sessions occupy the top of the list for 24h
              # SessionEnd folds the row (_end_locked), so absent
@@ -557,7 +557,7 @@ def ext_dismiss(sid):
     with _ext_lock:
         now = time.time()
         if not any(k[1] == sid for k in _ext):   # a record-file-only row (Codex rollout, Cursor/Copilot folder): hide it for its window
-            for p in ("codex", "cursor", "copilot"):
+            for p in ("codex", "cursor", "copilot", "pi"):
                 _ended_note_locked((p, sid), now)
             n += 1
         for k, v in list(_ext.items()):

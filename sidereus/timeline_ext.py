@@ -171,6 +171,7 @@ def _ext_sess(c, cut, now, live, out, key, name):
     tk = sorted((v[4], v[0] + v[1] + v[2] + v[3]) for v in msgs.values() if v[4] >= cut)
     last = max(msgs.values(), key=lambda v: v[4], default=None)
     st = lv.get("state") or ""
+    tools = c.get("tools") or ()          # pi: [(ts, tool name)] — the name only, never its arguments
     out.append({"tid": "ext:" + key + "|" + sid, "sid": sid, "type": proj, "desc": name + " — " + _sid8(sid),
                 "segs": [[int(x), int(y)] for x, y in segs], "comp": [],
                 "seen": t0, "start": t0, "end": max(t0, t1),
@@ -178,4 +179,4 @@ def _ext_sess(c, cut, now, live, out, key, name):
                 "idle": int(max(0, now - t1)), "blocked": "",
                 "proj": proj, "cwd": cwd, "depth": 0, "kind": "sess",
                 "plat": key, "model": (lv.get("model") or (last[5] if last else ""))[:40],
-                "tk": sum(n for _t, n in tk), "_tk": tk, "last": ""})
+                "tk": sum(n for _t, n in tk), "_tk": tk, "last": tools[-1][1] if tools else ""})

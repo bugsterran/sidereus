@@ -189,6 +189,7 @@ function platHay(k){
     cc: '클로드',
     gm: '제미나이',
     cx: '코덱스',
+    pi: '파이',
   };
   return [platName(k), AILG[k] ? AILG[k][0] : '', ko[k] || ''].join(' ').toLowerCase();
 }

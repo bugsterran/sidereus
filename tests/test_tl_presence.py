@@ -25,7 +25,7 @@ class TlPresence(unittest.TestCase):
         pr._PRES_MEMO.clear()
         # Cursor: started before the window, active inside it; Copilot: whole span inside the window.
         self.cands = {"cursor": [{"sid": CU, "cwd": CWD, "start": CUT - 1200, "mtime": NOW - 60}],
-                      "copilot": [{"sid": CP, "cwd": CWD, "start": NOW - 1800, "mtime": NOW - 600}]}
+                      "copilot": [{"sid": CP, "cwd": CWD, "start": NOW - 1800, "mtime": NOW - 600}], "pi": []}
         self.p = [mock.patch.object(pr, "_cands", lambda plat, now: list(self.cands[plat])),
                   mock.patch.object(te, "PLAT_MODS", {}),
                   mock.patch.object(te, "ext_runs", lambda parent=None: []),

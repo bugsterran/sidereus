@@ -26,7 +26,7 @@ WAKE = {"claude": "async-rewake", "codex": "app-server-turn", "gemini": "turn-en
         "copilot": "none", "cursor": "none", "cline": "none", "windsurf": "none", "warp": "none",
         "trae": "none", "zed": "none", "grok": "none", "deepseek": "none", "qwen": "none", "kimi": "none",
         "mistral": "none", "ollama": "none", "perplexity": "none", "huggingface": "none", "meta": "none",
-        "openrouter": "none"}
+        "openrouter": "none", "pi": "none"}   # pi: session files only, no wake path yet
 METHODS = ("async-rewake", "stop-wait", "app-server-turn", "turn-end", "none")
 
 POLL_S = 2.0

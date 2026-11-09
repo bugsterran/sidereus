@@ -1,4 +1,4 @@
-"""Hook-less rows for CLIs whose record folder shows a session (Cursor, Copilot) — same shape as ext.ext_rollout_rows.
+"""Hook-less rows for CLIs whose record folder shows a session (Cursor, Copilot, pi) — same shape as ext.ext_rollout_rows.
 
 `rollout: True` means «row from the CLI's record files, no hook events»; state is always "unknown".
 A hook row wins: same sid in the store, an ended/dismissed sid, or a hook row of the same platform in the same cwd.
@@ -9,13 +9,14 @@ import time
 from sidereus.warn import warn_once
 from sidereus.ident import _proj_name, _sid8
 from sidereus.timefmt import iso_local
-from sidereus import plat_copilot, plat_cursor
+from sidereus import plat_copilot, plat_cursor, plat_pi
 from sidereus import ext_store   # module access: tests patch `ext_store._pid_start`
-from sidereus.ext_store import EXT_PLAT, _ext, _ext_lock, _sid_ok, ext_ended
+from sidereus.ext_store import EXT_PLAT, EXT_EV_N, _ext, _ext_lock, _sid_ok, _tok_sum, ext_ended
 from sidereus.ext import ROLL_WIN_S, ext_work
+from sidereus.adapter import adapter_scan
 
-PRES_MODS = {plat_cursor.PLAT: plat_cursor, plat_copilot.PLAT: plat_copilot}
-PRES_NAME = {"cursor": "Cursor", "copilot": "Copilot"}
+PRES_MODS = {plat_cursor.PLAT: plat_cursor, plat_copilot.PLAT: plat_copilot, plat_pi.PLAT: plat_pi}
+PRES_NAME = {"cursor": "Cursor", "copilot": "Copilot", "pi": "Pi"}
 PRES_WIN_S = ROLL_WIN_S       # Cursor has no liveness file: a chat written this recently counts as open
 PRES_MAX_N = 300              # sid folders stat'ed per root per scan
 PRES_MEMO_S = 5
@@ -54,6 +55,8 @@ def _cands(plat, now):
         return m[1]
     if plat == "cursor":
         c = plat_cursor.scan(now - PRES_WIN_S, PRES_MAX_N, PRES_STAT_N)
+    elif plat == "pi":            # no liveness file yet: a session file written within PRES_WIN_S counts as open
+        c = adapter_scan(plat_pi, now - PRES_WIN_S)
     else:
         c = [x for x in plat_copilot.scan(PRES_MAX_N) if _copilot_live(x, now)]
     _PRES_MEMO[plat] = (now, c)
@@ -65,7 +68,8 @@ def _row(plat, c, now):
     last = float(c.get("mtime") or now)
     first = float(c.get("start") or last)
     sid = c["sid"]
-    tk = ext_store.ext_side_tok(plat, sid) or {}   # Copilot usage records; Cursor stays 0 here
+    pi = plat == "pi"
+    tk = _tok_sum(c.get("msgs") or {}) if pi else ext_store.ext_side_tok(plat, sid) or {}   # Copilot usage records; Cursor stays 0 here
     row = {
         "id": "", "sid": "", "project": "?", "gotPrompt": 0,
         "creq": 0, "burn": 0, "rpm": 0, "cwd": "", "branch": "",
@@ -79,14 +83,16 @@ def _row(plat, c, now):
     row.update({
         "id": _sid8(sid), "sid": sid, "project": _proj_name(cwd) or "?", "cwd": cwd,
         "branch": str(c.get("branch") or "")[:200],
-        "model": str(tk.get("model") or "")[:40], "tok": tk.get("tok", 0),
+        "model": str((c.get("model") if pi else tk.get("model")) or "")[:40], "tok": tk.get("tok", 0),
         "tokSplit": {k: tk.get(k, 0) for k in ("in", "out", "cache", "thought")},
-        "estCost": None, "costMiss": tk.get("costMiss", 0),
+        "estCost": tk.get("cost") if pi else None, "costMiss": tk.get("costMiss", 0),
         "ageSec": max(0, int(now - last)),
         "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
         "kind": plat, "goneWhy": "", "pid": 0, "rollout": True,
         "hooksOff": plat == "copilot" and plat_copilot.hooks_disabled(cwd),
     })
+    if pi:     # no hooks to connect yet: no «Hooks not connected» advice. ⚠pi rows only — cu/cp keep the rollout key set
+        row["hookless"] = True
     return row
 
 
@@ -110,7 +116,7 @@ def ext_presence_rows(now=None):
 
 
 def ext_work_any(plat, sid, now=None):
-    """ext.ext_work, then the record-folder row (metadata only) for a hook-less Cursor/Copilot session."""
+    """ext.ext_work, then the record-folder row (metadata only) for a hook-less Cursor/Copilot/pi session."""
     out = ext_work(plat, sid, now)
     if out.get("ok"):
         return out
@@ -132,6 +138,8 @@ def ext_work_any(plat, sid, now=None):
     iso = lambda t: iso_local(t) if t else ""
     return {"ok": True, "ext": True, "plat": EXT_PLAT[name], "platform": name, "sid": sid,
             "type": PRES_NAME[name] + " · " + _sid8(sid), "desc": c.get("cwd") or "",
-            "cwd": c.get("cwd") or "", "model": "", "state": "unknown", "tool": "", "blocked": False,
+            "cwd": c.get("cwd") or "", "model": str(c.get("model") or "")[:40] if name == "pi" else "",
+            "state": "unknown", "tool": "", "blocked": False,
             "firstSeen": first, "lastSeen": last, "first": iso(first), "last": iso(last),
-            "events": [], "parent": "", "steps": [], "cutSteps": 0, "says": []}
+            "events": [{"e": "PostToolUse", "tool": n, "t": t} for t, n in (c.get("tools") or [])[-EXT_EV_N:]],
+            "parent": "", "steps": [], "cutSteps": 0, "says": []}
