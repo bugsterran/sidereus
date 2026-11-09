@@ -177,7 +177,8 @@ function creditInfo(q){
   // ⚠Subscription seats still require **5h 100%**. `is_enabled` means "can use", not "in use".
   const meter = ex && typeof ex.seat === 'string' && ex.seat.indexOf('usage_based') >= 0;
   if(!(ex && (meter || (fh && fh.pct != null && fh.pct >= 100)))) return null;
-  const money = c => creditMoney(c, ex.cur);
+  // exact like the badge beside it (fmtMoney rounded $100.13 to $100); `≈` on header-path ratios (creditRow)
+  const money = c => (ex.approx ? '≈' : '') + creditExact(c, ex.cur);
   const left = (ex.limit!=null && ex.used!=null) ? creditExact(ex.limit-ex.used, ex.cur)+T(' left') : creditExact(ex.used, ex.cur)+T(' used');   // exact, matches usedOf beside it
   const ct = (meter ? TV({msg: 'This seat is billed by usage ({s}) — what you use now is billed.', vars: {s: esc(String(ex.seat))}}) + '\n'
                     : T('The 5h limit is spent; from here it draws credit (extra usage) — this is really billed.') + '\n')

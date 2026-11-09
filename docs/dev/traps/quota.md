@@ -565,3 +565,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Rule: `total` is a local sum (Claude transcripts via `used5_peek` = `cur.used_local`, else OTel) — never the API-reported usage — so pi is not inside it and is added, not carved out of the Claude rows.
 - ⚠QWHO `total` then exceeds the status bar's 5h «used» by `piTok`. If the headline ever becomes API-derived, rescale Claude rows to (total − pi) instead of adding (double count).
 - ⚠Other providers (openai, github-copilot, google, ...) are other quotas — not counted. Forked/cloned files count only entries after their header (`read`).
+
+## Credit tooltip amounts must match the badge (`55a creditInfo`)
+
+- Cause: the tooltip's «{u} used of the {l} monthly limit» used `creditMoney` (fmtMoney rounding, $100.13 -> $100) while the badge and bar beside it use `creditExact`.
+- ⇒ the tooltip uses `creditExact` too, with `≈` on header-path (`approx`) values like `creditRow`. Test `tests/test_sbar_credit_left_js.py`.
+- ⚠Never show a rounded or ratio-derived amount without `≈` next to an exact one.

@@ -64,6 +64,9 @@ process.stdout.write(JSON.stringify(sblAccRows(cq, acctList(), '')));
         self.assertIn("$100.13/$600.00", h)
         ci = self.run_js("process.stdout.write(JSON.stringify(creditInfo({extra: {seat: 'x_usage_based', used: 10013, limit: 60000}})));")
         self.assertEqual((ci["left"], ci["usedOf"]), ("$499.87 left", "$100.13/$600.00"))
+        self.assertIn("$100.13 used of the $600.00 monthly limit", ci["tip"])
+        ap = self.run_js("process.stdout.write(JSON.stringify(creditInfo({extra: {seat: 'x_usage_based', used: 10013, limit: 60000, approx: true}})));")
+        self.assertIn("≈$100.13 used of the ≈$600.00 monthly limit", ap["tip"])
 
     def test_credit_segment_shows_local_used_tokens(self):
         # The credit comes only in money (cents): used/limit are converted to tokens at this week's local $/token, «≈».
