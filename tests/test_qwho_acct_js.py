@@ -52,6 +52,7 @@ const R = {};
 QWHO = {start: 1900000000, exact: true, total: 10, rows: [{name: 'p', n: 1, share: 100, tok: 10, sids: []}]};
 buildQwho(); R.meter = OUT;
 METER = false; buildQwho(); R.sub = OUT;
+METER = true; QWHO = Object.assign({}, QWHO, {acct: 'work'}); buildQwho(); R.extra = OUT;
 process.stdout.write(JSON.stringify(R));
 """
         src = (STUBS + i18n() + "\n" + jconst("esc") + "\n" + js_fn("fmtPct") + "\nlet QWHO = null;\n" + js_fn("buildQwho") + "\n" + body)
@@ -62,6 +63,32 @@ process.stdout.write(JSON.stringify(R));
         self.assertEqual(R["meter"], "")
         self.assertIn("<div class=qwh", R["sub"])
         self.assertIn("<div class=qwr", R["sub"])
+        # An extra account in use keeps its own 5h window even when the primary is a credit seat.
+        self.assertIn("<div class=qwr", R["extra"])
+
+    def test_pi_row_logo_and_tip(self):
+        # A pi row carries the pi logo, an account-in-use tooltip and the escaped folder name; other plat values get no logo.
+        body = """
+const aiLogo = p => '<i class=ailg-' + p + '></i>';
+const R = {};
+QWHO = {start: 1900000000, exact: true, total: 10, rows: [
+  {plat: 'pi', name: '<x>', n: 1, share: 60, tok: 6, sids: [{sid: 's1', tok: 6}]},
+  {plat: '<evil>', name: 'q', n: 1, share: 40, tok: 4, sids: []}]};
+buildQwho(); R.out = OUT;
+process.stdout.write(JSON.stringify(R));
+"""
+        src = (STUBS + i18n() + "\n" + jconst("esc") + "\n" + js_fn("fmtPct") + "\nlet QWHO = null;\n" + js_fn("buildQwho") + "\n" + body)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
+        if r.returncode != 0:
+            raise AssertionError(r.stderr)
+        out = json.loads(r.stdout)["out"]
+        pi, other = out.split("<div class=qwr")[1:3]
+        self.assertIn("<i class=ailg-pi></i> &lt;x&gt;", pi)
+        self.assertIn("이 계정이라고 가정합니다", pi.split('">')[0])
+        self.assertIn("s1 6", pi.split('">')[0])
+        self.assertNotIn("<x>", out)
+        self.assertNotIn("ailg", other)
+        self.assertNotIn("주 계정", other)
 
 
 if __name__ == "__main__":

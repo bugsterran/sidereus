@@ -139,7 +139,9 @@ def ext_work_any(plat, sid, now=None):
     return {"ok": True, "ext": True, "plat": EXT_PLAT[name], "platform": name, "sid": sid,
             "type": PRES_NAME[name] + " · " + _sid8(sid), "desc": c.get("cwd") or "",
             "cwd": c.get("cwd") or "", "model": str(c.get("model") or "")[:40] if name == "pi" else "",
-            "state": "unknown", "tool": "", "blocked": False,
+            # src 'file': no hook record, rows read from the session folder; tool = last recorded tool name (pi only)
+            "state": "unknown", "src": "file", "tool": (c.get("tools") or [(0, "")])[-1][1] if name == "pi" else "",
+            "blocked": False,
             "firstSeen": first, "lastSeen": last, "first": iso(first), "last": iso(last),
             "events": [{"e": "PostToolUse", "tool": n, "t": t} for t, n in (c.get("tools") or [])[-EXT_EV_N:]],
             "parent": "", "steps": [], "cutSteps": 0, "says": []}

@@ -341,7 +341,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Not a local token sum: the API gives credit only in money, and local transcripts mix other accounts and pre-credit plans (★11-09: month sum 7.59B · $3,042 vs credit $203).
   - ⚠Not the 5h block or week sums either — other periods, cannot be read against a month-to-date amount (first version showed them).
   - ⚠The rate moves with model mix and cache share; always «≈», never presented as measured.
-  - ⚠The quota modal's «Who is using the 5h» (`buildQwho`) is not drawn on such a seat: its 5h window would be invented.
+  - ⚠The quota modal's «Who is using the 5h» (`buildQwho`) is not drawn on such a seat: its 5h window would be invented. Only when the list is the primary's (`QWHO.acct` ''): an extra account in use keeps its own window.
   - ⚠The saver badge's 5h verdict (`buildSaver`: «No throttle», goal %) is not drawn there either, nor the status bar pace word (unless a manual /saver switch is set); a saver level (stage > 0) still is.
 - ★**The saver badge shows stage and cap** (2026-09-10).
   Before, it said only «saver mode», so **how many agents may run now** was not on screen.
@@ -558,3 +558,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: the modal drew the primary's 5h/7d rows (null -> 0%) and a 5h curve for a seat that has no windows.
 - ⇒ `buildQuota` swaps both rows for a «Credit mode — billed by usage» headline above the credit row; `buildBurn` hides the curve when the drawn account is the primary (`!un.dir`). Credits read `creditPct` (2 decimals, 1% = $6 on $600) + exact used/limit (`creditExact`), ≈ when header-derived.
 - ⚠A non-primary main/used account keeps its own curve — it has real windows.
+
+## pi rows in «Who is using the 5h»
+- Cause: pi (earendil-works/pi) on provider `anthropic` draws on the same 5h window, but QWHO counted Claude Code use only.
+- ⇒ `state._who_pi` (piece `quotaWhoPi`, after `used5`) adds `plat_pi.who_5h(start, now)` rows (`plat: "pi"`) to whichever account's list QWHO shows (the account in use from `usage._who_window`, any `acct`; assumption: pi's Claude login is that account) and adds their tokens to `total`; re-sort, cut at 6, overflow -> `others`/`othersTok` so rows + othersTok == total.
+- Rule: `total` is a local sum (Claude transcripts via `used5_peek` = `cur.used_local`, else OTel) — never the API-reported usage — so pi is not inside it and is added, not carved out of the Claude rows.
+- ⚠QWHO `total` then exceeds the status bar's 5h «used» by `piTok`. If the headline ever becomes API-derived, rescale Claude rows to (total − pi) instead of adding (double count).
+- ⚠Other providers (openai, github-copilot, google, ...) are other quotas — not counted. Forked/cloned files count only entries after their header (`read`).

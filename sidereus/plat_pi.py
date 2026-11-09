@@ -204,3 +204,19 @@ def session_msgs(path):
         return None
     r = _parsed(path, st)
     return dict(r["msgs"]) if r else None
+
+
+def who_5h(start, now):
+    """{project: {"tok", "sids": {sid: tok}}} of Anthropic-billed entries with start <= ts <= now (QWHO pi rows).
+    ⚠Only provider `anthropic` draws on the Claude 5h window; openai/github-copilot/... are other quotas."""
+    out = {}
+    for r in scan(since=start):
+        n = 0
+        for t in r["msgs"].values():
+            if start <= t[4] <= now and str(t[5]).startswith("anthropic/"):
+                n += t[0] + t[1] + t[2]          # in + out + cacheRead + cacheWrite
+        if n:
+            e = out.setdefault(r["project"], {"tok": 0, "sids": {}})
+            e["tok"] += n
+            e["sids"][r["sid"]] = e["sids"].get(r["sid"], 0) + n
+    return out

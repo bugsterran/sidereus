@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Quota details: «Who is using the 5h» includes pi sessions that ran on Claude (provider anthropic), with the pi logo; the pi login is assumed to be the account shown.
 - Platforms: pi (earendil-works/pi) sessions are read from `~/.pi/agent/sessions` — session rows, model and token usage, tool activity on the Timeline and in the work popup; metadata only, no hooks or mail wake yet.
 - Status bar: on a usage-billed seat (credit mode) the credit segment shows the credit as tokens, «≈ used/limit», converted at this week's local average price; the tooltip states the rate.
 
@@ -14,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Platforms: a Gemini `settings.json` or `~/.codex/hooks.json` saved with a UTF-8 BOM is read normally; Gemini showed «Sidereus hooks are missing» while Connect said connected, and the hook list was empty.
 - Quota details: a usage-billed seat (credit mode) no longer shows «Who is using the 5h»; that seat has no 5-hour window.
+- Work popup for pi, Cursor and Copilot sessions says «Session events» and that it reads the session file, not hook events; pi shows its real last tool.
+- Quota details: «Who is using the 5h» stays visible when the primary is a credit seat but the list is another account's.
 - Status bar account layer: the popup sizes to its content, so a wide credit amount no longer cuts the account name to «myaccount…».
 - Saver badge and status bar: a usage-billed seat no longer shows the 5h pace verdict («No throttle», goal %); a manual /saver on/off still shows.
 - Sessions and Timeline: a session started in a non-git folder that works inside a linked worktree is nested under that worktree's main repo (judged from the most recently touched repo).

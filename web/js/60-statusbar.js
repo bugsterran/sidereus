@@ -371,8 +371,10 @@ function buildQwho(){
   const el = document.getElementById('qwho');
   if(!el) return;
   // ⚠A usage-billed seat has no 5h cycle: the section's window would be invented, so it is not drawn at all.
+  //   Only when the list is the primary's (QWHO.acct ''): QLAST.q is the primary's quota, and an extra account
+  //   in use keeps its own 5h window even when the primary is a credit seat.
   const ci = typeof creditInfo === 'function' ? creditInfo(typeof QLAST !== 'undefined' && QLAST && QLAST.q) : null;
-  if(ci && ci.meter){ setHtml(el, connStaleNote(CONN, Date.now())); return; }
+  if(ci && ci.meter && !(QWHO && QWHO.acct)){ setHtml(el, connStaleNote(CONN, Date.now())); return; }
   const w = QWHO, rows = (w && w.rows) || [];
   const tip = T('Cycle so far from session transcripts, live OTel after server start · subagents fold into the parent session · metadata only (no conversation content)');
   // Account whose 5h window is shown (usage.quota_who acct; '' = primary): a user label, so esc() only, never T().
@@ -382,8 +384,10 @@ function buildQwho(){
     + (w && w.partial && w.since ? ' <small class=sbwarn>· ' + esc(T('counting since')) + ' ' + esc(CLK(new Date(w.since * 1000))) + '</small>' : '')
     + '</div>';
   if(!rows.length){ setHtml(el, h + '<div class=qwe>' + esc(T('No requests recorded this cycle')) + '</div>'); return; }
-  h += rows.map((r, i) => '<div class=qwr title="' + esc(r.sids.map(x => x.sid + ' ' + fmtTok(x.tok)).join('\n')) + '">'
-    + '<span class=qwn>' + esc(r.name) + (r.n > 1 ? ' <small>×' + r.n + '</small>' : '') + '</span>'
+  // pi rows (allow-listed plat) get the logo and a note that its login is folded into the main account.
+  const piTip = T('pi requests with provider anthropic — the pi login is assumed to be this account');
+  h += rows.map((r, i) => '<div class=qwr title="' + esc((r.plat === 'pi' ? piTip + '\n' : '') + (r.sids || []).map(x => x.sid + ' ' + fmtTok(x.tok)).join('\n')) + '">'
+    + '<span class=qwn>' + (r.plat === 'pi' ? aiLogo('pi') + ' ' : '') + esc(r.name) + (r.n > 1 ? ' <small>×' + r.n + '</small>' : '') + '</span>'
     + '<span class=qwb><i style="width:' + Math.max(1, Math.min(100, r.share)) + '%;background:' + wkc(i) + '"></i></span>'
     + '<b>' + esc(fmtPct(r.share)) + '</b><small>' + esc(fmtTok(r.tok)) + '</small></div>').join('')
     + (w.others ? '<div class=qwe>' + esc(T('Other', 'rest') + ' ' + w.others + (w.othersTok ? ' · ' + fmtTok(w.othersTok) : '')) + '</div>' : '');

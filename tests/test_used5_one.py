@@ -75,5 +75,47 @@ class Used5Case(unittest.TestCase):
         self.assertEqual(st._used5_one(None, None, NOW), (None, None))
 
 
+class WhoPiCase(unittest.TestCase):
+    """`_who_pi`: pi's Anthropic use joins the primary account's QWHO; `plat_pi.who_5h` is stubbed."""
+    def setUp(self):
+        self.pi = {}
+        self.seen = []
+        self._w = st.pi_who_5h
+        st.pi_who_5h = lambda start, now: (self.seen.append((start, now)), self.pi)[1]
+
+    def tearDown(self):
+        st.pi_who_5h = self._w
+
+    def who(self, acct=""):
+        rows = [{"name": "c%d" % i, "tok": 100 - i * 10, "share": 0, "n": 1, "sids": []} for i in range(6)]
+        return {"start": int(START), "acct": acct, "total": 600, "rows": rows, "others": 1,
+                "othersTok": 600 - sum(r["tok"] for r in rows)}
+
+    def test_primary_adds_pi_row_and_total(self):
+        self.pi = {"pp": {"tok": 95, "sids": {"0199aaaa-bbbb-7ccc-8ddd-0000000000c1": 95}}}
+        w = st._who_pi(self.who(), NOW)
+        self.assertEqual(self.seen, [(float(int(START)), NOW)])
+        # ⚠local total excludes pi, so pi adds to it (no rescale of Claude rows)
+        self.assertEqual(w["total"], 695)
+        self.assertEqual([r["name"] for r in w["rows"]], ["c0", "pp", "c1", "c2", "c3", "c4"])
+        p = w["rows"][1]
+        self.assertEqual((p["plat"], p["tok"], p["n"], p["sids"]), ("pi", 95, 1, [{"sid": "0199aaaa", "tok": 95}]))
+        self.assertEqual(p["share"], round(95 * 100.0 / 695, 1))
+        self.assertEqual(w["rows"][0]["tok"], 100)          # Claude rows not rescaled
+        self.assertEqual((w["others"], w["othersTok"]), (2, 695 - sum(r["tok"] for r in w["rows"])))
+        self.assertEqual(sum(r["tok"] for r in w["rows"]) + w["othersTok"], w["total"])
+
+    def test_extra_account_in_use_also_gets_pi(self):
+        self.pi = {"pp": {"tok": 95, "sids": {"s": 95}}}
+        w = st._who_pi(self.who("work"), NOW)
+        self.assertEqual((w["acct"], w["total"], w["rows"][1]["plat"]), ("work", 695, "pi"))
+        self.assertIs(st._who_pi({"acct": "", "total": 5}, NOW).get("rows"), None)   # no start: left alone
+
+    def test_no_pi_use_unchanged(self):
+        who = self.who()
+        self.assertIs(st._who_pi(who, NOW), who)
+        self.assertIsNone(st._who_pi(None, NOW))
+
+
 if __name__ == "__main__":
     unittest.main()

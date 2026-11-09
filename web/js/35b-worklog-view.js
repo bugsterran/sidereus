@@ -28,7 +28,8 @@ function agentRepaint(){
 // One-line summary for the modal header, from the already-fetched work data (no extra API).
 function wkSum(d){
   if(!d || !d.ok) return '';
-  if(d.ext) return T('Hook events') + ' ' + U((d.events||[]).length, '#msgs') + ' · ' + (stateLbl(d.state) || T(d.state || ''));
+  // src 'file' = hook-less adapter: the count is of session-file events, not hook events.
+  if(d.ext) return (d.src === 'file' ? T('Session events') : T('Hook events')) + ' ' + U((d.events||[]).length, '#msgs') + ' · ' + (stateLbl(d.state) || T(d.state || ''));
   const st = d.steps || [];
   const nErr = st.filter(s => s.res && s.res.err).length;
   const nF = agFileList(d).length;

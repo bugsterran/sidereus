@@ -141,6 +141,25 @@ class R2Tokens(PiBase):
         self.assertIsNone(pi.session_msgs(os.path.join(self.tmp, "x.jsonl")))
 
 
+class Who5h(PiBase):
+    def test_who_5h_anthropic_only_inside_window(self):
+        self.write([head(), asst("a0", -50), asst("a1", 2), asst("a2", 3, prov="openai", model="gpt-5"),
+                    asst("a3", 4, prov="github-copilot", model="claude-x"), asst("a4", 500)])
+        w = pi.who_5h(T0, T0 + 100)
+        self.assertEqual(w, {"my-proj": {"tok": 1700, "sids": {SID: 1700}}})   # a0 before start, a4 after now
+
+    def test_who_5h_fork_counts_only_new_entries(self):
+        parent = [head(), asst("a1", 2)]
+        pp = self.write(parent)
+        h2 = dict(head(sid="fork-1"), timestamp=_iso(T0 + 100), parentSession=pp)
+        self.write([h2] + parent[1:] + [asst("a9", 120)], folder="--fork--", sid="fork-1")
+        w = pi.who_5h(T0, T0 + 200)
+        self.assertEqual(w["my-proj"], {"tok": 3400, "sids": {SID: 1700, "fork-1": 1700}})
+
+    def test_who_5h_empty(self):
+        self.assertEqual(pi.who_5h(T0, T0 + 100), {})
+
+
 class R4Robust(PiBase):
     def test_r4_bad_lines_skipped(self):
         self.write([head(), "{not json", "[1,2]", "null",

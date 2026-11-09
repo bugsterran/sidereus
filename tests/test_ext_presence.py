@@ -37,6 +37,10 @@ class Presence(unittest.TestCase):
         self._oc, self._op = pr.plat_cursor.one, pr.plat_copilot.one
         pr.plat_cursor.one = lambda sid: self.past["cursor"].get(sid)
         pr.plat_copilot.one = lambda sid: self.past["copilot"].get(sid)
+        self._pis, self._pio = pr.plat_pi.scan, pr.plat_pi.one     # ⚠never the live ~/.pi
+        self.cands["pi"] = []
+        pr.plat_pi.scan = lambda since=0.0: list(self.cands["pi"])
+        pr.plat_pi.one = lambda sid: None
         self._prune = ext._ext_prune_locked
         ext._ext_prune_locked = lambda now: None
 
@@ -48,6 +52,7 @@ class Presence(unittest.TestCase):
         pr._PRES_MEMO.clear()
         pr.plat_cursor.scan, pr.plat_copilot.scan = self._sc, self._sp
         pr.plat_cursor.one, pr.plat_copilot.one = self._oc, self._op
+        pr.plat_pi.scan, pr.plat_pi.one = self._pis, self._pio
         ext._ext_prune_locked = self._prune
         st._pid_start = self._ps
 
@@ -136,6 +141,18 @@ class Presence(unittest.TestCase):
         self.assertEqual(pr.ext_work_any("copilot", "cp-old", NOW)["cwd"], "/w/cpo")
         self.assertFalse(pr.ext_work_any("cursor", "cp-old", NOW)["ok"])  # resolved by (platform, sid), never across platforms
         self.assertFalse({"cu-old", "cp-old"} & {r["sid"] for r in self.rows()})   # list rows stay live-only
+
+    def test_work_fallback_src_and_tool(self):
+        self.cands["pi"] = [{"sid": "pi-1", "cwd": "/w/pi", "start": NOW - 100, "mtime": NOW - 5, "model": "anthropic/m",
+                             "tools": [(NOW - 20, "read"), (NOW - 6, "bash")]}]
+        pr._PRES_MEMO.clear()
+        w = pr.ext_work_any("pi", "pi-1", NOW)
+        self.assertEqual((w["ok"], w["src"], w["tool"]), (True, "file", "bash"))
+        self.cands["pi"][0]["tools"] = []
+        pr._PRES_MEMO.clear()
+        self.assertEqual(pr.ext_work_any("pi", "pi-1", NOW)["tool"], "")
+        w = pr.ext_work_any("cu", SID, NOW)
+        self.assertEqual((w["src"], w["tool"]), ("file", ""))
 
     def test_work_hook_row_first(self):
         st._ext[("cursor", SID)] = {"cwd": "/w/hook", "state": "think", "lastSeen": NOW, "firstSeen": NOW}

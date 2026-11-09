@@ -30,6 +30,8 @@ from sidereus.page import PAGE_BUILD
 from sidereus.warn import warn_once
 from sidereus.redact import redact_rooms
 from sidereus.burn import used5_peek
+from sidereus.plat_pi import who_5h as pi_who_5h
+from sidereus.ident import _sid8
 from sidereus.burn_calc import _qb_forecast
 from sidereus.transcript import iso_epoch
 from sidereus.memo import BoundedMemo, request_path
@@ -162,6 +164,32 @@ def _used5_one(usg, who, now=None):
     return usg, who
 
 
+WHO_TOP = 6   # same cut as usage.quota_who(top=6)
+
+
+def _who_pi(who, now=None):
+    """Add pi rows (provider anthropic, inside who.start..now) to «Who is using the 5h» of the account QWHO shows.
+    ⚠Any `acct`: QWHO shows the account in use (usage._who_window); pi's Claude login is assumed to be that one.
+    ⚠`total` is a local sum (Claude transcripts via used5, else OTel), so pi is not in it: pi adds to total.
+    Re-sorts, cuts at WHO_TOP and folds the overflow into others/othersTok so rows + othersTok == total."""
+    if not who or not who.get("start"):
+        return who
+    now = time.time() if now is None else now
+    pi = pi_who_5h(float(who["start"]), now)
+    add = [{"name": nm, "tok": e["tok"], "n": len(e["sids"]), "plat": "pi",
+            "sids": [{"sid": _sid8(s), "tok": t} for s, t in sorted(e["sids"].items(), key=lambda x: -x[1])[:5]]}
+           for nm, e in pi.items() if e.get("tok")]
+    if not add:
+        return who
+    rows = sorted(list(who.get("rows") or []) + add, key=lambda r: -(r.get("tok") or 0))
+    total = (who.get("total") or 0) + sum(r["tok"] for r in add)
+    keep, cut = rows[:WHO_TOP], rows[WHO_TOP:]
+    keep = [dict(r, share=round((r.get("tok") or 0) * 100.0 / total, 1) if total else 0) for r in keep]
+    return dict(who, rows=keep, total=total, piTok=sum(r["tok"] for r in add),
+                others=(who.get("others") or 0) + len(cut),
+                othersTok=total - sum(r.get("tok") or 0 for r in keep))
+
+
 def _scale_rows(rows, old_total, used):
     """Rescale OTel row tokens onto the shared headline (largest remainder, so rows + «others» sum to `used`).
     Each row's `share` is kept — it is the OTel ratio; only the token figure moves."""
@@ -241,6 +269,7 @@ def _state_poll(since=0, ncards=50, acks_v=""):
     _fh = (_q0 or {}).get("five_hour") or {}
     _who = _piece("quotaWho", quota_who, None, _q0)
     _usg, _who = _piece("used5", _used5_one, (_usg, _who), _usg, _who)   # one 5h «used» figure on every surface
+    _who = _piece("quotaWhoPi", _who_pi, _who, _who)   # pi's Anthropic-billed use in the same window
     _arun = _piece("archRun", arch_runs, {}, _sessions)
     _srun = _piece("secRun", sec_runs, {}, _sessions)
     _brun = _piece("briefRun", brief_runs, {}, _sessions)

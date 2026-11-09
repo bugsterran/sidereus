@@ -116,6 +116,7 @@ function hhmmss(iso){
   return hhmm(d, {sec: true});
 }
 // External CLI session panel — only hook metadata exists (no transcript is read), so show exactly that.
+// src 'file' = hook-less adapter: metadata comes from the session file, so the note must not claim hooks.
 function extBody(d){
   const tm = t => t ? new Date(t * 1000).toLocaleTimeString(LANG === 'en' ? 'en-GB' : 'ko-KR', {hour12:false}) : '—';
   const kv = (k, v) => '<tr><th>' + esc(T(k)) + '</th><td>' + v + '</td></tr>';
@@ -128,7 +129,7 @@ function extBody(d){
     + kv('Last tool', esc(d.tool || '—'))
     + kv('First seen', esc(tm(d.firstSeen)) + ' · ' + esc(agoAt(d.firstSeen)))
     + kv('Last seen', esc(tm(d.lastSeen)) + ' · ' + esc(agoAt(d.lastSeen)))
-    + '</table><div class=extnt>' + esc(T('Only events sent by hooks are shown — conversation text and tool input are not read')) + '</div>'
+    + '</table><div class=extnt>' + esc(d.src === 'file' ? T('Read from the session file — conversation text and tool input are not read') : T('Only events sent by hooks are shown — conversation text and tool input are not read')) + '</div>'
     + '<table class=extev><tr><th>' + esc(T('Time')) + '</th><th>' + esc(T('Event')) + '</th><th>' + esc(T('Tool')) + '</th></tr>'
     + (evs.length ? evs.map(e => '<tr><td>' + esc(tm(e.t)) + '</td><td>' + esc(e.e) + '</td><td>' + esc(e.tool || '') + '</td></tr>').join('')
                   : '<tr><td colspan=3>' + esc(T('No events recorded')) + '</td></tr>')
