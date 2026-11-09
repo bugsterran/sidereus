@@ -8,7 +8,10 @@ function sessWtNorm(p){ return typeof brNorm === 'function' ? brNorm(p) : String
 // A group sits at its best-ranked member's index; the first-ranked main-checkout session of that root is the head.
 function sessWtGroups(rows){
   const N = sessWtNorm, list = (rows || []).filter(Boolean), kids = new Map(), par = new Map(), done = new Set(), out = [];
-  const mainOf = x => (x.wt && x.wt.main) ? N(x.wt.main) : '';
+  // ⚠Nest only when the session runs inside the worktree. A non-git cwd gets wt from the repo it last touched
+  //   (sidereus/sessions.py _row_repos_wt); nesting that row put it under a repo it does not live in.
+  const inWt = x => { const c = N(x.cwd), r = N(x.wt.root); return !c || !r || c === r || c.startsWith(r + '/'); };
+  const mainOf = x => (x.wt && x.wt.main && inWt(x)) ? N(x.wt.main) : '';
   // ⚠A row without wt (git lookup failed) can still head its repo by cwd; a worktree row never heads one.
   const rootOf = x => x.wt ? (x.wt.main ? '' : N(x.wt.root)) : N(x.cwd);
   list.forEach(x => { const m = mainOf(x); if(m){ if(!kids.has(m)) kids.set(m, []); kids.get(m).push(x); } });

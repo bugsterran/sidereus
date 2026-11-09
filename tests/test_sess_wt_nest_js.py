@@ -30,6 +30,8 @@ const out = {
   bycwd: view(sessWtGroups([Object.assign(S('q', null), {cwd: '/private/r/app/'}), S('a', w('a'))])),
   // two main-checkout sessions: children attach to the first-ranked one
   twop: view(sessWtGroups([S('p1', main), S('p2', main), S('a', w('a'))])),
+  // non-git cwd whose wt came from a touched repo: stays a plain row, never nests under that repo
+  outside: view(sessWtGroups([S('t', w('a'), {cwd: '/x/bot'}), S('s', w('b'), {cwd: '/r/app/.claude/worktrees/b/sub'})])),
   attn: [sessWtAttn([{state: 'ask'}, {blocked: true}]), sessWtAttn([{gotPrompt: 3}, {state: 'ask'}]),
          sessWtAttn([{state: 'abort'}, {gotPrompt: 2}]), sessWtAttn([{gotPrompt: 2}]), sessWtAttn([{state: 'tool'}]), sessWtAttn(null)],
 };
@@ -39,6 +41,11 @@ process.stdout.write(JSON.stringify(out));
         if r.returncode != 0:
             raise AssertionError(r.stderr)
         cls.R = json.loads(r.stdout)
+
+    def test_outside_cwd_not_nested(self):
+        o = self.R["outside"]
+        self.assertEqual(o[0], {"h": "t", "main": "", "name": "", "k": []})
+        self.assertEqual(o[1]["k"], ["s"])   # a subfolder of the worktree still nests
 
     def test_children_follow_parent_in_order(self):
         self.assertEqual(self.R["nested"][0], {"h": "p", "main": "/r/app", "name": "app", "k": ["a", "b"]})
