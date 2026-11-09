@@ -1,6 +1,6 @@
 #!/bin/bash
 # Single gate runner: check.sh [--fast|--full]  (default --full). Fail-fast; last line is PASS or FAIL.
-# --fast skips the unit tests (except tests/test_arch.py) and the screen check (pre-commit hook).
+# --fast skips the unit tests (except tests/test_arch.py and the row key-set tests) and the screen check (pre-commit hook).
 set -u
 MODE=full
 case "${1:-}" in
@@ -107,6 +107,15 @@ n=$(sed -n 's/^Ran \([0-9][0-9]*\) tests\{0,1\}.*/\1/p' "$TMP/arch.log" | tail -
 [ $rc -eq 0 ] || fail arch "$(grep -m1 -E '^(FAIL|ERROR): ' "$TMP/arch.log" || tail -1 "$TMP/arch.log") (log $TMP/arch.log)"
 need arch "tests/test_arch.py (Ran N)" "$n"
 ok arch "$n tests"
+
+# 5c. row key-set tests (~0.3s) in every mode — a key added to one session-row producer (rollout, hook-event, demo)
+#   but not the others passed --fast and broke only under --full.
+PYTHONPYCACHEPREFIX="$TMP/pyc" TZ=UTC LC_ALL=C.UTF-8 "$PY" -m unittest tests.test_ext_rollout tests.test_demo_data >"$TMP/rows.log" 2>&1
+rc=$?
+n=$(sed -n 's/^Ran \([0-9][0-9]*\) tests\{0,1\}.*/\1/p' "$TMP/rows.log" | tail -1)
+[ $rc -eq 0 ] || fail rows "$(grep -m1 -E '^(FAIL|ERROR): ' "$TMP/rows.log" || tail -1 "$TMP/rows.log") (log $TMP/rows.log)"
+need rows "row key-set tests (Ran N)" "$n"
+ok rows "$n tests"
 
 # 6a. screen check before the unit tests — the most frequent --full failure, so it surfaces in seconds, not after ~200s
 if [ $MODE = full ] && [ -f scripts/screen_check.mjs ]; then
