@@ -205,6 +205,21 @@ class HooksOff(unittest.TestCase):
         self.put('{"disableAllHooks": true}', NOW + 5)
         self.assertTrue(self.cp.hooks_disabled(self.sub))
 
+    def test_special_or_oversize_file_is_off_without_reading_it(self):
+        import os
+        if not hasattr(os, "mkfifo") or not os.path.exists("/dev/zero"):
+            self.skipTest("POSIX only")
+        os.mkfifo(self.cfg)                       # open() would block without O_NONBLOCK
+        self.assertFalse(self.cp.hooks_disabled(self.sub))
+        os.remove(self.cfg)
+        self.cp._HOOKS_OFF.clear()
+        os.symlink("/dev/zero", self.cfg)         # getsize 0, endless read without the fstat check
+        self.assertFalse(self.cp.hooks_disabled(self.sub))
+        os.remove(self.cfg)
+        self.cp._HOOKS_OFF.clear()
+        self.put('{"disableAllHooks": true, "pad": "%s"}' % ("x" * self.cp.SETTINGS_MAX), NOW)
+        self.assertFalse(self.cp.hooks_disabled(self.sub))
+
 
 if __name__ == "__main__":
     unittest.main()

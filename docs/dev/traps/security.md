@@ -103,3 +103,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **Origin-less POST acts as the person** (`chat_server.py` `_origin_ok`, `sidereus/routes_post.py` `_vo`): `do_POST` lets no-Origin requests through for OTEL and hooks, so a local `curl` (an agent) could post to a room as the person via `/api/say`.
   - ⇒ say · dm · thread/close · term/focus · term/set · saver/set · cards/read · bg/dismiss · health/dismiss · review/mark are wrapped with `_vo` (`_refuse_origin`, 403 without the viewer Origin).
   - ⚠A new route that writes as the person or runs a process goes through `_vo` too; only `/v1/*`, `/api/hook` and `/api/todo/agent` are meant for Origin-less callers.
+- **Repo-controlled settings read can stall the poll** (`sidereus/plat_copilot.py` `hooks_disabled`): a cloned repo's `.github/copilot/settings.json` as a symlink to `/dev/zero` passed the `getsize` cap (0) and `json.load` read forever; a FIFO blocked `open()`.
+  - ⇒ `os.open(O_RDONLY|O_NONBLOCK)` + `fstat` on the same fd must be `S_ISREG` + `read(SETTINGS_MAX + 1)`; over the cap or not a regular file = hooks not off.
+  - ⚠Never size-check by path and then read unbounded — any file a repo can ship goes through the same three steps.

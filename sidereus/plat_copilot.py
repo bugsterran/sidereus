@@ -10,6 +10,7 @@ parsing the line — see docs/dev/traps/platform.md.
 import json
 import os
 import re
+import stat
 import threading
 import time
 from datetime import datetime
@@ -58,9 +59,13 @@ def hooks_disabled(cwd):
         return hit[1]
     off = False
     try:
-        if os.path.getsize(p) <= SETTINGS_MAX:
-            with open(p, encoding="utf-8-sig") as f:   # -sig: an editor may save a BOM
-                d = json.load(f)
+        # ⚠The file is repo-controlled: a symlink to /dev/zero reports size 0 and a FIFO blocks open().
+        # Non-blocking open + fstat on the same fd + bounded read keep a crafted clone from stalling the poll.
+        fd = os.open(p, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+        with os.fdopen(fd, "rb") as f:
+            raw = f.read(SETTINGS_MAX + 1) if stat.S_ISREG(os.fstat(fd).st_mode) else b""
+        if 0 < len(raw) <= SETTINGS_MAX:
+            d = json.loads(raw.decode("utf-8-sig"))   # -sig: an editor may save a BOM
             off = isinstance(d, dict) and d.get("disableAllHooks") is True
     except (OSError, ValueError):
         off = False   # unreadable: keep the ordinary «set up hooks» hint
