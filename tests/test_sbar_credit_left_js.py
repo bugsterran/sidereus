@@ -65,6 +65,26 @@ process.stdout.write(JSON.stringify(sblAccRows(cq, acctList(), '')));
         ci = self.run_js("process.stdout.write(JSON.stringify(creditInfo({extra: {seat: 'x_usage_based', used: 10013, limit: 60000}})));")
         self.assertEqual((ci["left"], ci["usedOf"]), ("$499.87 left", "$100.13/$600.00"))
 
+    def test_credit_segment_shows_local_used_tokens(self):
+        # A usage-billed seat has no 5h/7d windows: the credit segment carries the local block/week sums, used only.
+        tk = js_fn("sbCreditTok")
+        u = ("{block: {tokens: 25084941, cost: 7.4, start: '2026-11-09T08:00:00.000Z', end: '2026-11-09T13:00:00.000Z'},"
+             " week: {tokens: 605558125, cost: 214.41, week: '2026-11-08'}}")
+        out = self.run_js(tk + "\nprocess.stdout.write(JSON.stringify([sbCreditTok(" + u + "), sbCreditTok({week: {tokens: 0}}),"
+                          " sbCreditTok(null)]));")
+        full, none0, nul = out
+        self.assertIn("<small class=sbd4>· 5h</small> <b class=sbd4>25.1M</b>", full["html"])
+        self.assertIn("<b class=sbd8>605.6M</b>", full["html"])
+        self.assertIn("25,084,941", full["tip"])
+        self.assertIn("605,558,125", full["tip"])
+        self.assertIn("(2026-11-08~)", full["tip"])
+        self.assertNotIn("left", full["html"])
+        self.assertEqual(none0, {"html": "", "tip": ""})
+        self.assertEqual(nul, {"html": "", "tip": ""})
+        src = read("web/js/60-statusbar.js")
+        self.assertIn("sbCreditTok(USG)", src)
+        self.assertIn("esc(cs.tip + ctk.tip)", src)
+
 
 if __name__ == "__main__":
     unittest.main()

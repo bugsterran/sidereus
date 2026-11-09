@@ -194,6 +194,19 @@ function sbPrimNote(){
 }
 // Colour class keyed on used % (>=70 / >=90 used = <=30 / <=10 left); shared with the status-bar layer (60b).
 function sbPctCls(p){ return p >= 90 ? 'sberr' : p >= 70 ? 'sbwarn' : 'sbok'; }
+// Usage-billed seat: no 5h/7d windows, so `used_local` stays empty and the local sums of usage.block / usage.week are
+//   the only measured token figures. Used only, never turned into a «left» estimate (traps/quota.md «Token headroom»).
+// {html, tip}: html joins the credit segment (5h drops at step 4, week at step 8); tip lines name each window.
+function sbCreditTok(u){
+  const b = u && u.block, w = u && u.week;
+  const bt = b && b.tokens > 0 ? b.tokens : null, wt = w && w.tokens > 0 ? w.tokens : null;
+  const span = (s, e) => { const a = new Date(s || NaN), z = new Date(e || NaN); return isNaN(a) || isNaN(z) ? '' : ' (' + CLK(a) + '–' + CLK(z) + ')'; };
+  const html = (bt != null ? ' <small class=sbd4>· 5h</small> <b class=sbd4>' + esc(fmtTok(bt)) + '</b>' : '')
+    + (wt != null ? ' <small class=sbd8>· ' + esc(T('Week')) + '</small> <b class=sbd8>' + esc(fmtTok(wt)) + '</b>' : '');
+  const tip = (bt != null ? '\n' + TV({msg: '5h tokens {n} · ${c} (local 5h block — its edges differ from the reset cycle)', vars: {n: bt.toLocaleString(), c: b.cost || 0}}) + span(b.start, b.end) : '')
+    + (wt != null ? '\n' + TV({msg: 'Weekly tokens {n} · ${c}', vars: {n: wt.toLocaleString(), c: w.cost || 0}}) + (w.week ? ' (' + w.week + '~)' : '') : '');
+  return {html: html, tip: tip ? '\n\n' + T('[Reference · local count]') + tip : ''};
+}
 let SB_RZ = 0;
 // ⚠One rebuild per frame, not a timeout debounce: buildSbar is ~0.3 ms, and a 150 ms debounce froze the bar's old layout for the whole drag.
 addEventListener('resize', () => { cancelAnimationFrame(SB_RZ); SB_RZ = requestAnimationFrame(() => { SB_RZ = 0; buildSbar(); }); });
@@ -235,12 +248,13 @@ function buildSbar(sv){
   //   the drawer badge was the only credit sign and is hidden while the drawer is closed. Credits replace both segments.
   const cs = !ma && typeof creditInfo === 'function' ? creditInfo(typeof QLAST !== 'undefined' && QLAST && QLAST.q) : null;
   const meterSeat = !!(cs && cs.meter), fh = meterSeat ? null : k5.w, sd = meterSeat ? null : k7.w;
-  if(meterSeat) out.push('<span class=sbcredit title="' + esc(cs.tip) + '">' + aiLogo('cc').replace(/ title="[^"]*"/, '')
+  const ctk = meterSeat ? sbCreditTok(USG) : null;
+  if(meterSeat) out.push('<span class=sbcredit title="' + esc(cs.tip + ctk.tip) + '">' + aiLogo('cc').replace(/ title="[^"]*"/, '')
     + '<b class=sbwarn>' + esc(T('Credit mode')) + '</b>'
     // Monthly-limit gauge (used share), coloured on the same used-% steps as the 5h/7d «left» numbers.
     + (cs.pct != null ? '<span class="sbqg ' + sbPctCls(cs.pct) + '"><i style="width:' + Math.min(100, Math.max(0, cs.pct)).toFixed(1) + '%"></i></span>' : '')
     + (cs.pct != null ? '<b class=' + sbPctCls(cs.pct) + '>' + esc(creditPct(cs.pct)) + '</b>' : '')
-    + '<small>' + esc(cs.usedOf) + '</small></span>');
+    + '<small>' + esc(cs.usedOf) + '</small>' + ctk.html + '</span>');
   const mtip = r => (r.kpi ? '\n' + TV({msg: 'Shown in bar: {a}', vars: {a: r.kpi}}) + (r.kmiss ? ' (' + TV({msg: 'Quota unknown for {a} — showing the main account', vars: {a: r.kpi}}) + ')' : '') : '')
     + (r.main && (!r.kpi || r.kmiss) ? '\n' + T('Main account') + ' ' + r.main + (r.miss ? ' (' + T('Main account quota unknown — showing the default account') + ')' : '') : '');
   // Remaining official % only — no token used/headroom (traps/quota.md «Token headroom»).

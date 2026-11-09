@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: Evaluation shows the median tokens per run, the last run's tokens and duration, and a Share column per stage; the Harness report markdown carries the same numbers.
 - Trees: arrow keys in a source tree open the file they land on, and a click on a file keeps the arrow keys on the tree.
 - Contributors: a pre-push hook runs the leak scan on outgoing commits.
+- Status bar: on a usage-billed seat (credit mode) the credit segment also shows the tokens used in the local 5-hour block and this week; the tooltip names both windows.
 - Sessions: a Claude Code session that is compacting shows «Compacting» with elapsed time and an estimated percentage (from this account's recent compaction times; capped at 95% until it ends). Needs the plugin's new PreCompact/PostCompact hook.
 - Attention: a background shell open for more than 30 minutes raises «Long background» (merged with «Idle shells»); background rows get «Ask to check», which previews a one-line request to that session and sends it only on «Confirm — send».
 

@@ -336,6 +336,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ★Measured 09-10: `five_hour` empty with `err:"HTTPError 429"` while `extra` was fine (4.8% · $9.69/$200).
   - ⚠The badge (`#credit`) still turns on only at **5h 100%** — `is_enabled` means «available», not «in use».
   - ⚠Wording split (2026-09-11): the gauge row says only «Credits»; **the status text «credit mode» appears only on the badge**.
+- ★**A usage-billed seat showed money but no tokens on the status bar** (2026-11-09; `burn` is `ok:false`, so `used_local` is null).
+  ⇒ `sbCreditTok(USG)` (`web/js/60-statusbar.js`) appends the local `usage.block` / `usage.week` sums to the credit segment, window spans in the tooltip.
+  - ★Measured: block 25,084,941 · week 605,558,125 while extra was $196.90/$600.
+  - ⚠Used tokens only — never a «left» estimate from them («Token headroom» above).
 - ★**The saver badge shows stage and cap** (2026-09-10).
   Before, it said only «saver mode», so **how many agents may run now** was not on screen.
   ⇒ `_saver_state()` sends `stage`·`cap` and `buildSaver` writes «saver stage 3 · no agents».
