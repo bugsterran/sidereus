@@ -318,6 +318,7 @@ def ext_rows():
                 "otelEv": "done" if dead else (v.get("state") or ""),
                 "goneWhy": "" if dead else (v.get("goneWhy") or ""),
                 "pid": v.get("pid") if isinstance(v.get("pid"), int) and not dead else 0,   # hook-reported CLI pid, for «To terminal»
+                "hooksOff": False,        # hooks fired, so they are on; same key set as rollout rows
             })
             if plat == "codex":   # only Codex hooks log in to the mailbox; other CLIs keep "" (send off)
                 row["mbox"], row["mboxSrc"] = mbox_codex(cwd)

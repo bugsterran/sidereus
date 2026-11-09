@@ -34,7 +34,7 @@ GEM_ROW = {
     "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": "gemini-2.5-pro", "win": 0, "winSrc": "", "winN": 0,
     "git": "", "state": "wait", "blocked": "", "otel": True, "otelEv": "wait", "otelAt": 0,
     "err": False, "plat": "gm", "tok": 1_284_600, "tokSplit": {"in": 402_100, "out": 61_300, "cache": 779_800, "thought": 41_400},
-    "estCost": 1.63, "costMiss": 0,      # gemini-2.5-pro rates on tokSplit, all requests under 200k
+    "estCost": 1.63, "costMiss": 0, "hooksOff": False,   # gemini-2.5-pro rates on tokSplit, all requests under 200k
 }
 
 

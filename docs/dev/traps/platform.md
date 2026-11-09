@@ -245,4 +245,4 @@ Cause: the fallback searched only the live candidate list (Cursor: chat active w
 ### Copilot repo with every hook turned off still said «set up hooks» (`sidereus/plat_copilot.py` `hooks_disabled`)
 Cause: top-level `disableAllHooks: true` in the repo's `.github/copilot/settings.json` makes Copilot skip every hook there, but the hook-less row always advised setting hooks up.
 ⇒ The Copilot presence row carries `hooksOff` (that one key, from the git root of the session cwd, re-read on mtime change); the chip reads «Hooks off in repo».
-⚠Every rollout-shaped row (Codex, Cursor, demo) carries `hooksOff` too — `test_key_set_matches_rollout_row` pins one key set. The per-file key in `.github/hooks/*.json` turns off only that file and is not read.
+⚠Every rollout-shaped row (Codex, Cursor, demo) and every hook-event row (`ext_rows`, always `False`) carries `hooksOff` too — `test_key_set_matches_rollout_row` pins one key set. The per-file key in `.github/hooks/*.json` turns off only that file and is not read.
