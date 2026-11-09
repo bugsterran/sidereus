@@ -68,8 +68,9 @@ function sessWtListHtml(rows){
     if(gr.head) return sessRowHtml(gr.head, sessWtSubHtml(gr.kids));
     const head = sessWtHeadHtml(gr);
     if(wtFold.has(gr.key)) return head;
-    return head + gr.kids.map((x, i) => sessWtLead(sessRowHtml(x).replace('class="sxw ', 'class="sxw swtk '),
-      '<i class=swtbr>' + (i === gr.kids.length - 1 ? '└─' : '├─') + '</i>')).join('');
+    // ⚠Open group is wrapped (.swtgr) so it has a visible end; unwrapped, every row below read as one of its children.
+    return '<div class=swtgr>' + head + gr.kids.map((x, i) => sessWtLead(sessRowHtml(x).replace('class="sxw ', 'class="sxw swtk '),
+      '<i class=swtbr>' + (i === gr.kids.length - 1 ? '└─' : '├─') + '</i>')).join('') + '</div>';
   }).join('');
 }
 // Lead width a child row would take (widest bare lead + gap + ├─ stem); sessFit (40ba) floors --sxlead at it.

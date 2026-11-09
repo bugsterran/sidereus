@@ -124,7 +124,11 @@ class SessWtSubLine(unittest.TestCase):
         self.assertIn('class="swth"', o)
         self.assertIn('class="sxw swtk', o)
         self.assertNotIn("swts", o)
+        # open group is closed by its wrapper, so rows after it do not read as its children
+        self.assertIn('<div class=swtgr><div class="swth"', o)
+        self.assertEqual(o.count('<div class=swtgr>'), 1)
         self.assertIn('class="swth swthf"', self.R["folded"])
+        self.assertNotIn("swtgr", self.R["folded"])
         self.assertNotIn("swtk", self.R["folded"])
 
     def test_sub_line_attention(self):

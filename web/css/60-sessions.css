@@ -357,6 +357,9 @@ html[data-ui=next][data-ui][data-theme=light] .tlpar.tlwff{border-color:#b0564a}
 /* Folded header-only group ends like a card (.sxw border) so the next top-level row does not read as its child. */
 .swth.swthf{margin:2px 0 0;padding-bottom:6px;border-bottom:1px solid #151a22}
 .swth.swthf:last-child{border-bottom:0}
+.swtgr{margin:4px 0 8px;padding:0 4px;border:1px solid rgba(128,140,160,.35);border-radius:6px}
+.swtgr:last-child{margin-bottom:0}
+.swtgr > .sxw:last-child{border-bottom:0}
 /* Worktree sub-line inside the main card (40bb sessWtSubHtml): subagent .sti metrics, one line; only the name ellipsizes. */
 .stiw.swts{cursor:pointer;border-radius:5px;margin-left:-4px;padding-left:4px;min-width:0}
 .stiw.swts:hover{background:#1a2130}
