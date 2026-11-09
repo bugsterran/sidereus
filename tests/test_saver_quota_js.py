@@ -120,7 +120,7 @@ R.moneyEn = creditMoney(1234, 'EUR');
         cls, html, tip = self.R["onHtml"]
         self.assertEqual(html, "<b>크레딧 모드</b><span>$190.31 남음</span>")
         self.assertIn("5시간 한도를 다 써서", tip)
-        self.assertIn("월 한도 $200 중 $9.7 사용 (4.80%)", tip)
+        self.assertIn("월 한도 $200.00 중 $9.69 사용 (4.80%)", tip)
         self.assertIn("<span>$5.00 사용</span>", self.R["onUsedOnly"])
         self.assertTrue(self.R["meterTip"].startswith("쓴 만큼 과금되는 좌석입니다(enterprise_usage_based)"))
         self.assertNotIn("무료 구간", self.R["meterTip"])

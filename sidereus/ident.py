@@ -217,6 +217,8 @@ _PROJ_ROOT = BoundedMemo(PROJ_ROOT_MAX)   # cwd -> project root (no TTL, like gi
 
 def _git_walk(d):
     """Nearest ancestor of an absolute dir holding `.git` (dir, or file in a worktree); "" if none. Uncached fs walk."""
+    if not d or not os.path.isabs(d):   # ⚠abspath would resolve it against the server cwd and widen the allow-list
+        return ""
     cur = os.path.abspath(d)
     while True:
         g = os.path.join(cur, ".git")

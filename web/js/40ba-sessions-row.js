@@ -122,7 +122,10 @@ function extTokChip(x){
   const tip = T('Session total tokens ') + x.tok.toLocaleString()
     + '\n' + T('Input') + ' ' + fmtTok(s.in||0) + ' · ' + T('Cache') + ' ' + fmtTok(s.cache||0)
     + ' · ' + T('Output') + ' ' + fmtTok(s.out||0) + ' · ' + T('Thinking') + ' ' + fmtTok(s.thought||0)
-    + '\n' + extCostTip(x.estCost, x.costMiss) + '\n' + T('Not counted in the Claude 5h/7d limits');
+    + '\n' + extCostTip(x.estCost, x.costMiss, x.plat)
+    // pi on provider anthropic draws on the Claude 5h window (plat_pi.py quota share); other providers do not.
+    + '\n' + T(x.plat === 'pi' && String(x.model || '').startsWith('anthropic/')
+      ? 'Requests with provider anthropic count in «Who is using the 5h»' : 'Not counted in the Claude 5h/7d limits');
   return '<span class=sk title="'+esc(tip)+'">'+fmtTok(x.tok)+' tok</span>';
 }
 // Branch and worktree chips after the project name on the identity row.

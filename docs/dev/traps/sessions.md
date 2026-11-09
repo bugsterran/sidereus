@@ -375,3 +375,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `repos` is per session (`session_repos(fp, ...)`), but `_allowed_cwds` keeps one row per cwd, so a second session in the same cwd replaced the first and its touched repos vanished from pipeline chips and structure warm-up.
 - ⇒ keep the row choice (Claude row wins, Gemini never replaces it) and union `repos` of every row in that cwd, order kept, on copies of the snapshot rows. Test `tests/test_work_allow_repos.py`.
 - ⚠Do not mutate the rows from `sessions_rows()` — they are the shared poll snapshot.
+
+## Non-absolute session cwd widened the allow-list (`ident._git_walk`)
+
+- Cause: a relative cwd or one recorded on another OS (`C:\Users\demo\app` on macOS) went through `os.path.abspath`, resolved against the server's cwd, and gave that session repos=[Sidereus' own repo].
+- ⇒ `_git_walk` returns "" for any non-absolute path (same check as `_proj_root`). Test `tests/test_git_walk_abs.py`.
+- ⚠Do not resolve a session cwd with `abspath`/`realpath` before an `isabs` check; the server's cwd is never a session's.

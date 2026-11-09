@@ -309,8 +309,11 @@ function extQuotaStr(q){
 }
 function extCostTip(c, miss, k){
   if(c == null) return T('Model not in the price table');
-  return T('Estimated cost') + ' ' + extCostStr(c) + ' — '
-    + T(k === 'cx' ? 'Estimate from OpenAI API list prices · a ChatGPT login is not billed per token' : 'Estimate from Google list prices · actual charge is 0 on the free tier')
+  // ⚠Source sentence per platform key; an unknown key gets the amount only (pi's figure is its own record, not a list price).
+  const src = k === 'cx' ? T('Estimate from OpenAI API list prices · a ChatGPT login is not billed per token')
+    : k === 'gm' ? T('Estimate from Google list prices · actual charge is 0 on the free tier')
+    : k === 'pi' ? T('Cost recorded by pi in its session file') : '';
+  return T('Estimated cost') + ' ' + extCostStr(c) + (src ? ' — ' + src : '')
     + (miss ? '\n' + TV({msg: '{n} requests left out (model not in the price table)', vars: {n: miss}}) : '');
 }
 // «By platform» today — Claude from ccusage (WKU), others from their own chat files (state().extUsage).
