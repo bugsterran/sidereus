@@ -338,14 +338,22 @@ def _wt_main(repo):
         g = s.split(":", 1)[1].strip()
         # ⚠The .git file is untrusted text: realpath it and require <main>/.git/worktrees/<name>, else not a worktree.
         g = os.path.realpath(os.path.join(repo, g))
-        i = g.find("/.git/worktrees/")
-        if i <= 0:
-            return ""
-        main = g[:i]
-        wt = os.path.join(main, ".git", "worktrees") + os.sep
-        return main if g.startswith(wt) and os.path.isdir(g) and len(g) > len(wt) else ""
+        main = _wt_split(g)
+        return main if main and os.path.isdir(g) else ""
     except (OSError, ValueError):
         return ""                 # unreadable or odd .git file (NUL, bad UTF-8): not a worktree
+
+
+def _wt_split(g, pm=os.path):
+    """Realpath'd gitdir -> main repo if it is <main>/.git/worktrees/<name>, else ""."""
+    # ⚠realpath uses the native separator (backslash on Windows): a literal "/.git/worktrees/" never matches there.
+    mark = pm.sep + pm.join(".git", "worktrees") + pm.sep
+    i = g.find(mark)
+    if i <= 0:
+        return ""
+    main = g[:i]
+    wt = pm.join(main, ".git", "worktrees") + pm.sep
+    return main if g.startswith(wt) and len(g) > len(wt) else ""
 
 
 WT_MAX = 40

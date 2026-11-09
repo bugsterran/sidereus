@@ -142,3 +142,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Fix: pre-push reruns the tree scan, then scans each outgoing commit (`rev-list` from the pre-push stdin; new ref = `--not --remotes`): added lines of shipped files (`.distignore` via `check-ignore --no-index`), message, `%ae`/`%ce`.
 - ★2026-11-05: full history (573 commits) gives 28 `ident` hits, all private project words in commit messages already on origin/dev; future pushes scan only outgoing commits.
 - ⚠`git push --no-verify` bypasses it; a hit means fix the commit before pushing, not add `leakscan: allow` to a message.
+
+## Worktree gitdir match on Windows (`gitinfo._wt_split`)
+- Cause: `_wt_main` searched the literal `/.git/worktrees/` in a `realpath` result; Windows realpath uses backslashes, so every worktree read as "not a worktree" (harness evidence 400, `git_view._repo_ok` refused worktrees).
+- ⇒ `_wt_split(g, pm=os.path)` builds the marker from `pm.sep`; test `tests/test_wt_split_sep.py` runs it with `ntpath`.
+- ⚠Never hard-code `/` when matching a `realpath`/`abspath` result; build it from `os.sep`/`os.path.join`.
