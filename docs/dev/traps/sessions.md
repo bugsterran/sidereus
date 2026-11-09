@@ -388,3 +388,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: name, branch/git, project cost (`sessions._projcost_of(cwd)`) and To-do are folder values, so two live sessions in the same cwd differed only by context % and state.
 - ⇒ `buildSessions` (40b) counts live rows per normalised cwd before filters (`sessFolderSet`); 2+ adds a muted «n in folder» chip after the name whose tooltip names cost/To-do as folder totals. A folded header-only worktree group gets a row end (`.swthf`). An open one is wrapped in `.swtgr` with a closing border; unwrapped, every row below it read as its child. A row nests only when its cwd is inside `wt.root`: a non-git cwd gets `wt` from the repo it last touched (`_row_repos_wt`) and nesting it showed a header for a repo with no session. Test `tests/test_sess_folder_js.py`.
 - ⚠done/gone rows never count and a row without cwd is unknown, not a folder; do not count only the filtered rows (the marker would flicker with filters).
+
+### pi room member showed the Claude logo
+- Cause: pi rows carried `mbox: ""`, so the room member id matched an older Claude row of the same folder (`rcPlat`, 92).
+- ⇒ pi rows take `mbox_of(cwd)` (`sidereus/ext.py`, `ext_presence.py`): pi loads the same mailbox MCP server, so `identity.json[cwd]` or the folder name. Test `tests/test_ext_presence.py`.
+- ⚠Not `mbox_codex`: only Codex hooks log in as `<folder>-codex`.
