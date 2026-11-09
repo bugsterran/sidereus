@@ -369,3 +369,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `sessFit` (40ba) sets box-wide widths from the widest `.sxl` lead, so a row-level indent (margin/padding on `.sxw`) moves that row's groups off the shared x.
 - ⇒ the `├─/└─` glyph and the fold caret are inserted inside `.sxl` (string insert after 40b `sessRowHtml`); the header-only group row is not `.sx`, so sessFit skips it. Test `tests/test_sess_wt_nest_js.py`.
 - ⚠Do not indent children with CSS margin; a collapsed group must keep its children's attention on the caret (`sessWtAttn`), never drop it.
+
+## Allowed-cwd list drops a sibling session's repos (`work._allowed_cwds`)
+
+- Cause: `repos` is per session (`session_repos(fp, ...)`), but `_allowed_cwds` keeps one row per cwd, so a second session in the same cwd replaced the first and its touched repos vanished from pipeline chips and structure warm-up.
+- ⇒ keep the row choice (Claude row wins, Gemini never replaces it) and union `repos` of every row in that cwd, order kept, on copies of the snapshot rows. Test `tests/test_work_allow_repos.py`.
+- ⚠Do not mutate the rows from `sessions_rows()` — they are the shared poll snapshot.

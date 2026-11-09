@@ -26,12 +26,21 @@ def _allowed_cwds(ttl=5):
       The 2.5 s poll already does the same computation, so holding it 5 s removes the wobble."""
     if _ALLOW[1] and time.time() - _ALLOW[0] < ttl:
         return _ALLOW[1]
-    got = {}
+    got, reps = {}, {}
     try:
         for r in sessions_rows():   # ⚠request path: poll snapshot, never a cold sessions()
+            c = r.get("cwd")
+            if not c:
+                continue
+            # ⚠repos are per session: two sessions in one cwd touch different repos, so union them (order kept)
+            #   or the dropped row's repos vanish from pipeline chips and structure warm-up.
+            reps.setdefault(c, [])
+            reps[c] += [x for x in (r.get("repos") or []) if x not in reps[c]]
             # ⚠a Gemini row never replaces the Claude row of the same cwd (it has no repos — diff/branch allow list would shrink)
-            if r.get("cwd") and (r.get("plat") in (None, "", "cc") or r["cwd"] not in got):
-                got[r["cwd"]] = r
+            if r.get("plat") in (None, "", "cc") or c not in got:
+                got[c] = r
+        # copies: the rows belong to the shared poll snapshot
+        got = {c: dict(r, repos=reps[c]) for c, r in got.items()}
     except Exception:
         return _ALLOW[1] or {}        # on failure use **the last value** (never kill the tab with an empty list)
     _ALLOW[0] = time.time()
