@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Sessions: state, subagents, external CLIs
 
+- ⚠**A non-git cwd working in linked worktrees was never nested under the main repo** (`sessions._row_repos_wt`).
+  - Cause: `wt` came from `_wt_of(cwd)` only, which is None when the cwd has no `.git`, even though `repos` already lists the worktrees it edits.
+  - ⇒ when `_wt_of(cwd)` is None, use `_wt_of(repos[0])` (most recent) and keep it only if `main != ""` (a linked worktree). Test `tests/test_sess_wt_repos_fallback.py`.
+  - ⚠A git cwd keeps its own `wt` exactly; do not fall back to a plain repo (it would group an unrelated session under that repo).
+
 - ★**A background job showed «Background» though its iTerm claude was alive** (2026-11-03; daemon.log `bg adopt: adopted=1`).
   - Cause: after a daemon upgrade/respawn the job's `--bg-pty-host` is re-parented to launchd (pid 1), so `_bg_term` found no `--spawned-by` on the parent.
   - ⇒ `term._orphan_spawner`: a live `daemon run` with `--json-path` under the host's account dir (`--resume <acct>/projects/…`) and `--spawned-by` cwd equal to the job cwd (av cwd, else slug) supplies the pid; the claude/iTerm/tty checks still follow. `tests/test_term.py`.

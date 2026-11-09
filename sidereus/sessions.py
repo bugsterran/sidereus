@@ -352,8 +352,7 @@ def _session_row(fp, mt, now, live, p, stale=False):
         "humanAt": int(p.get("humanAt") or 0),   # newest real human prompt (time only): attention holds an unanswered «ask» card until it moves
         "tailAt": int(p.get("tailAt") or 0),     # oldest record time of the parsed tail (0 = unknown); attention no longer reads it — humanAt comes from a deep scan when the tail has no human line
         "bytes": (lambda: (os.path.getsize(fp) if os.path.exists(fp) else 0))(),  # transcript size
-        "repos": session_repos(fp, mt, p.get("cwd")),   # git repositories this session touched
-        "wt": _wt_of(p.get("cwd")),       # {root, main, name} — Branches tab work unit + sidebar worktree chip
+        **_row_repos_wt(p.get("cwd"), session_repos(fp, mt, p.get("cwd"))),   # repos touched · wt {root, main, name}
         # mbox = this session's mailbox id (including guesses) · mboxSrc = its source (weak = not an invite target); one lookup per row
         **dict(zip(("mbox", "mboxSrc"), mbox_of(p.get("cwd")))),
         "cost": round(_projcost_of(p.get("cwd")), 2),   # ★project total (not per session — comment above)
@@ -369,6 +368,16 @@ def _session_row(fp, mt, now, live, p, stale=False):
         "plat": "cc",                     # ★platform marker — the only key separating external CLI rows (`ext_rows`)
         **_row_acct(p.get("sid") or os.path.basename(fp)[:-6], fp),
     }
+
+
+def _row_repos_wt(cwd, repos):
+    """repos (git repos touched, most recent first) + wt (Branches tab work unit + sidebar worktree chip)."""
+    wt = _wt_of(cwd)
+    # ⚠A non-git cwd working in linked worktrees nests under its main repo via repos[0]; a plain repo there is not a worktree.
+    if wt is None and repos:
+        alt = _wt_of(repos[0])
+        wt = alt if alt and alt.get("main") else None
+    return {"repos": repos, "wt": wt}
 
 
 def _row_acct(sid, fp):
