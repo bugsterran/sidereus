@@ -66,6 +66,15 @@ function cpClose(){
 //   otherwise "I picked it and nothing happened".
 // key pointing to the row — sid if present, else cwd (external rows always have a sid)
 function cpKey(x){ return (x && x.sid) ? 's:'+x.sid : 'c:'+((x && x.cwd) || ''); }
+// Row (or nested worktree sub-line) for a palette pick: sid first, then cwd; rows before sub-lines.
+// A worktree session nested in its main card (40bb) has only a .swts sub-line, no row of its own.
+function cpFindRow(x){
+  const ns = Array.prototype.slice.call(document.querySelectorAll('#sess .sxw'));
+  const ws = Array.prototype.slice.call(document.querySelectorAll('#sess .swts[data-ssid]'));
+  const by = (a, v) => n => n.getAttribute(a) === v;
+  return (x.sid ? ns.find(by('data-ssid', x.sid)) || ws.find(by('data-ssid', x.sid)) : null)
+      || ns.find(by('data-scwd', x.cwd || '')) || ws.find(by('data-scwd', x.cwd || '')) || null;
+}
 function cpGo(x){
   cpClose();
   if(!x) return;
@@ -83,11 +92,7 @@ function cpGo(x){
     return;
   }
   cpFlash = cpKey(x);
-  const find = () => {
-    const ns = Array.prototype.slice.call(document.querySelectorAll('#sess .sxw'));
-    return (x.sid ? ns.find(n => n.getAttribute('data-ssid') === x.sid) : null)
-        || ns.find(n => n.getAttribute('data-scwd') === (x.cwd||''));
-  };
+  const find = () => cpFindRow(x);
   sessHover = false; sessDirty = false; buildSessions();
   let row = find();
   if(!row){                                        // hidden by a filter — clear filters and redraw

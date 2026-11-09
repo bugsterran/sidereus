@@ -364,11 +364,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Any transcript line written after PreCompact (a hook line, a queued prompt) sets actAt past the marker and hides the label for the rest of that compaction — accepted: a false «Compacting» is worse than a missed one.
 - ⚠Do not raise the cap to cover long compactions without a stale check; the ~P% estimate is capped at 95 because it is a median, not progress.
 
-## Worktree children must not shift the sidebar columns (`40bb sessWtListHtml`)
+## Worktree sessions: sub-line in the main card, or a header-only group (`40bb sessWtListHtml`)
 
-- Cause: `sessFit` (40ba) sets box-wide widths from the widest `.sxl` lead, so a row-level indent (margin/padding on `.sxw`) moves that row's groups off the shared x.
-- ⇒ the `├─/└─` glyph and the fold caret are inserted inside `.sxl` (string insert after 40b `sessRowHtml`); the header-only group row is not `.sx`, so sessFit skips it. Test `tests/test_sess_wt_nest_js.py`.
-- ⚠Do not indent children with CSS margin; a collapsed group must keep its children's attention on the caret (`sessWtAttn`), never drop it.
+- Cause: a worktree child row under its main row repeated the whole card and, as a row, its indent shifted `sessFit` (40ba) columns.
+- ⇒ main session in view: no row of its own, one `.stiw.swts` sub-line (name or branch · state · age) passed as `sessRowHtml(head, tail)`; no caret. Main not in view: header-only `.swth` (`.swthf` folded) with `.sxw.swtk` rows, `├─/└─` inside `.sxl`.
+- ⇒ jump targets: a `.swts` click goes through 40b `sessOpenRow` (same as a row header); `cpGo` (40) also finds `#sess .swts[data-ssid]`. `sessWtAny` counts only header-only groups. Tests `tests/test_sess_wt_nest_js.py`, `tests/test_sess_wt_lead_js.py`.
+- ⚠Do not indent child rows with CSS margin; a folded group keeps its children's attention on the caret (`sessWtAttn`); the sub-line never carries `targ`, tool input or bodies.
 
 ## Allowed-cwd list drops a sibling session's repos (`work._allowed_cwds`)
 

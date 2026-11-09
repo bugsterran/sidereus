@@ -571,3 +571,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: the tooltip's «{u} used of the {l} monthly limit» used `creditMoney` (fmtMoney rounding, $100.13 -> $100) while the badge and bar beside it use `creditExact`.
 - ⇒ the tooltip uses `creditExact` too, with `≈` on header-path (`approx`) values like `creditRow`. Test `tests/test_sbar_credit_left_js.py`.
 - ⚠Never show a rounded or ratio-derived amount without `≈` next to an exact one.
+
+## A profile signed in to the primary's account picked as «Main account»
+
+- Cause: `quota_roots._targets` drops a non-primary root with the primary's `accountUuid` (no quota row), but `state.accts` still listed it, so `mainAcctOk`/`burn_use` took it as main and `/api/quota/burn?dir=` answered «not measured» (no projection, ETA or curve; saver cap followed an empty account).
+- ⇒ `quota_roots.same_labels` names such roots; `state._accts` marks them `same`, `mainAcctOk` and `burn_use` skip them, `quota_burn_acct` returns the primary body. Test `tests/test_same_acct.py`.
+- ⚠The `mbMainAcct` pref is kept as is; unknown uuid on either side is never «same».

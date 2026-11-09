@@ -16,7 +16,7 @@ from sidereus.perm_marks import perm_rows
 from sidereus.sessions_health import health, selfcheck
 from sidereus.git_wt import wt_orders
 from sidereus.quota import quota
-from sidereus.quota_roots import quota_accounts
+from sidereus.quota_roots import quota_accounts, same_labels as quota_same_labels
 from sidereus.claude_roots import accounts as claude_accounts
 from sidereus.saver import _saver_state, _saver_switch, _saver_view, _saver_views
 from sidereus.mail_idle import annotate as mail_idle_annotate
@@ -75,9 +75,14 @@ def _accounts_over(rows):
 
 
 def _accts():
-    """[{label, primary, dir}] for the account colour band and tooltips; None (key dropped) with a single account."""
+    """[{label, primary, dir, same?}] for the account colour band and tooltips; None (key dropped) with a single account.
+    `same`: signed in to the primary's account, so the page never picks it as a separate main (`mainAcctOk`)."""
     a = claude_accounts()
-    return [{"label": r["label"], "primary": bool(r["primary"]), "dir": r.get("dir") or ""} for r in a] if len(a) >= 2 else None
+    if len(a) < 2:
+        return None
+    same = quota_same_labels(a)
+    return [dict({"label": r["label"], "primary": bool(r["primary"]), "dir": r.get("dir") or ""},
+                 **({"same": True} if r["label"] in same else {})) for r in a]
 
 
 def _piece(key, fn, default, *args):

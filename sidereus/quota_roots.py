@@ -85,6 +85,23 @@ def _targets():
     return out
 
 
+def same_labels(accts=None):
+    """Non-primary labels signed in to the primary's own account: they share the primary's 5h window (no quota row).
+    ⚠Unknown uuid on either side is not «same» (same rule as `_targets`); `_cc_account` is read only when needed."""
+    prim, out = None, set()
+    for r in (claude_roots.accounts() if accts is None else accts):
+        if r.get("primary") or not r.get("label"):
+            continue
+        uid = _root_uuid(r.get("dir") or "")
+        if not uid:
+            continue
+        if prim is None:
+            prim = _cc_account() or ""
+        if uid == prim:
+            out.add(r["label"])
+    return out
+
+
 def _svc_names(d):
     """Keychain service names Claude Code may have used for root `d`.
 

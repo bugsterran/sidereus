@@ -35,8 +35,9 @@ const probe = [row(plain)];
 fit(probe, true);
 process.stdout.write(JSON.stringify({
   none: fit([row(plain), row(plain)], false),
-  expanded: fit([row(['swtg', ...plain]), row(['swtbr', ...plain]), row(plain)], true),
-  folded: fit([row(['swtg', ...plain]), row(plain)], true),
+  // header-only (orphan) group: the caret sits on the non-row .swth, only child rows carry ├─
+  expanded: fit([row(['swtbr', ...plain]), row(plain)], true),
+  folded: fit([row(plain), row(plain)], true),
   headerOnly: fit([row(plain)], true),
   probeLeft: probe[0].querySelector('.sxl').items.length,
   one: sessWtCount(1), two: sessWtCount(2),

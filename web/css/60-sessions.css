@@ -357,5 +357,17 @@ html[data-ui=next][data-ui][data-theme=light] .tlpar.tlwff{border-color:#b0564a}
 /* Folded header-only group ends like a card (.sxw border) so the next top-level row does not read as its child. */
 .swth.swthf{margin:2px 0 0;padding-bottom:6px;border-bottom:1px solid #151a22}
 .swth.swthf:last-child{border-bottom:0}
+/* Worktree sub-line inside the main card (40bb sessWtSubHtml): subagent .sti metrics, one line; only the name ellipsizes. */
+.stiw.swts{cursor:pointer;border-radius:5px;margin-left:-4px;padding-left:4px;min-width:0}
+.stiw.swts:hover{background:#1a2130}
+.stiw.swts .sti{flex-wrap:nowrap;min-width:0}
+.swts .sti .k.w{color:#7fc4c9}
+.swts .swtst{flex:0 0 auto;font-size:10px;color:#8b95a7;white-space:nowrap}
+.swts .sti .e{white-space:nowrap}
+.swts.swta-blocked .swtst{color:#f28b82}
+.swts.swta-ask .swtst{color:#f0c674}
+.swts.swta-abort .swtst{color:#e3a06b}
+.swts.swta-stuck .swtst{color:#c98fd8}
+.stiw.swts.cphit{outline:1px solid #8ab4ff;outline-offset:2px}   /* same flash as :is(.sxw,.atr).cphit (85) */
 /* «n in folder» (40ba sessFolderChip): muted, never shrinks so the name ellipsizes first */
 .sfn{color:#6b7688;font-size:10.5px;white-space:nowrap;flex:none}

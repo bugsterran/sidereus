@@ -122,8 +122,8 @@ function sessTreeHtml(x){
 function sessCardTip(x){
   return (x.cwd||'')+' · '+x.id+(x.model?' · '+x.model:'')+(x.pmode ? NL+T('Permission: ')+x.pmode : '');
 }
-// One session card (identity row · state row · current task · agent/command/watch tree).
-function sessRowHtml(x){
+// One session card (identity row · state row · current task · agent/command/watch tree); `tail` = extra sub-lines (40bb worktrees).
+function sessRowHtml(x, tail){
   const cls = (x.ageSec<90 && x.state !== 'gone' ? 'run' : '') + (cpFlash && cpFlash === cpKey(x) ? ' cphit' : '');   // ⚠`warm` was dropped — no CSS applies to it. `run` is used by `.sxw.run .sp`
   const at = acctTip(x), tip = esc(sessCardTip(x) + (at ? NL + at : ''));
   const st = x.state || 'unknown';
@@ -132,7 +132,7 @@ function sessRowHtml(x){
   // ★`data-ssid` first — several sessions share a cwd (`:8782`), so finding by cwd goes to the first row
   return '<div class="sxw s-'+esc(st)+' '+cls+idl+(ac ? ' '+ac : '')+'" data-ssid="'+esc(x.sid||'')+'" data-scwd="'+esc(x.cwd||'')+'" title="'+tip+'">'
     + sessIdRow(x) + sessStateRow(x, st) + sessTaskHtml(x) + (typeof stodoLayer === 'function' ? stodoLayer(x) : '') + sessTreeHtml(x)   // to-do layer (40c; guarded: tests load 40b alone)
-    + '</div>';
+    + (tail || '') + '</div>';
 }
 // Context-per-request / burn chip on the state row ('' without creq).
 function sessBurn(x){
@@ -421,14 +421,25 @@ function sessClick(e){
   //   If the path is needed, the diff modal header shows the full path.
   // A click on the card's header area opens its work log (replaces the removed «Log» badge).
   //   Skipped while text is selected, and inside the agent list / details, which have their own targets.
+  // Worktree sub-line (40bb) opens that session like its own row would; before the header test (it sits inside .sxw).
+  const wts = e.target.closest && e.target.closest('.swts[data-ssid]');
+  if(wts){
+    const sel = window.getSelection && String(window.getSelection());
+    if(!sel && sessOpenRow(wts.getAttribute('data-scwd'), wts.getAttribute('data-ssid'))) e.stopPropagation();
+    return;
+  }
   const hd = e.target.closest && e.target.closest('.sxw > .sx, .sxw > .sx2, .sxw > .sq');
   if(hd && !(e.target.closest('a,input,label,button,summary,details'))){   // label: pick box padding (forwards its click to the input)
     const sel = window.getSelection && String(window.getSelection());
-    const cwd = hd.closest('.sxw').getAttribute('data-scwd'), ssid = hd.closest('.sxw').getAttribute('data-ssid');
-    const et = extTid((SESS||[]).find(x => ssid && x.sid === ssid));
-    if(et && !sel){ e.stopPropagation(); openSession(cwd, et); }
-    else if(cwd && !sel){ e.stopPropagation(); openSession(cwd, ssid ? 'sess:' + cwd + '|' + ssid : undefined); }   // ⚠without the sid the server opens the cwd's newest session
+    if(!sel && sessOpenRow(hd.closest('.sxw').getAttribute('data-scwd'), hd.closest('.sxw').getAttribute('data-ssid'))) e.stopPropagation();
   }
+}
+// Open one session's work log; true when something was opened.
+function sessOpenRow(cwd, ssid){
+  const et = extTid((SESS||[]).find(x => ssid && x.sid === ssid));
+  if(et){ openSession(cwd, et); return true; }
+  if(cwd){ openSession(cwd, ssid ? 'sess:' + cwd + '|' + ssid : undefined); return true; }   // ⚠without the sid the server opens the cwd's newest session
+  return false;
 }
 // Clipboard — 127.0.0.1 is a secure context, so `navigator.clipboard` works. If it fails, fall back to the old method.
 function copyText(t){
@@ -460,7 +471,8 @@ function acctList(){ return typeof ACCTS !== 'undefined' && Array.isArray(ACCTS)
 function mainAcct(){ let v = ''; try{ v = String(UIS.getItem('mbMainAcct') || ''); }catch(e){ return ''; } return mainAcctOk(v); }
 function mainAcctOk(v){
   const list = acctList(); if(!list) return '';
-  return v && list.some(a => a && !a.primary && String(a.label || '') === v) ? v : '';
+  // ⚠`same` = signed in to the primary's account: its window is the primary's, never a separate main.
+  return v && list.some(a => a && !a.primary && !a.same && String(a.label || '') === v) ? v : '';
 }
 function acctHash(s){ let h = 0; for(const c of String(s)) h = (h * 31 + c.codePointAt(0)) >>> 0; return h; }
 // Hue = label hash with linear probing over labels sorted, so a label keeps its colour in every list and order.

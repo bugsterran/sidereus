@@ -6,6 +6,7 @@ Object.assign(I18N.ko, {
   '{n} worktree sessions': '워크트리 세션 {n}개',
   '{n} need you': '확인 필요 {n}개',
   'Main repo has no session in view': '메인 저장소 세션이 목록에 없음',
+  'Worktree': '워크트리',
   // Sessions sharing one folder (40ba sessFolderChip)
   '{n} in folder': '폴더 세션 {n}개',
   '{n} live sessions share this folder — this row is a separate session. Project cost and To-do are folder totals, not per session':

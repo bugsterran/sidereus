@@ -30,7 +30,8 @@ class BurnUse(unittest.TestCase):
         with mock.patch.object(cr, "accounts", lambda: [dict(a) for a in accts]), \
              mock.patch.object(up, "load", lambda: prefs), \
              mock.patch.object(bu, "_qburn_pts", lambda: list(prim)), \
-             mock.patch.object(bu, "ring_last", lambda: dict(ring or {})):
+             mock.patch.object(bu, "ring_last", lambda: dict(ring or {})), \
+             mock.patch.object(bu, "same_labels", lambda accts=None: set()):   # never stats the fake roots
             return bu.burn_use(NOW)
 
     def test_r4_single_account_is_primary(self):

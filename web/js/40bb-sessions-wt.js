@@ -33,7 +33,7 @@ function sessWtAttn(kids){
 }
 function sessWtNeed(kids){ return (kids || []).filter(x => x && (x.blocked || x.state === 'ask' || x.state === 'abort' || x.gotPrompt > 0)).length; }
 function sessWtCount(n){ return TV({msg: n === 1 ? '{n} worktree session' : '{n} worktree sessions', vars: {n: n}}); }
-// Fold caret; collapsed, it carries the hidden children's count and attention so a need never disappears (R4).
+// Fold caret (header-only groups); collapsed, it carries the hidden children's count and attention so a need never disappears (R4).
 function sessWtCaret(gr){
   const open = !wtFold.has(gr.key), at = sessWtAttn(gr.kids), need = sessWtNeed(gr.kids);
   const cnt = sessWtCount(gr.kids.length), nd = need ? TV({msg: '{n} need you', vars: {n: need}}) : '';
@@ -48,11 +48,25 @@ function sessWtHeadHtml(gr){
     + '<span class=swthn>' + esc(gr.name) + '</span><span class=swthc>' + esc(sessWtCount(gr.kids.length)) + '</span></div>';
 }
 function sessWtLead(h, ins){ return h.replace('<span class=sxl>', '<span class=sxl>' + ins); }
-// Every group as cards: head (with caret) then, unless folded, children with a ├─/└─ glyph in the lead cell.
+// Worktree sessions as one-line subs inside the main card (R1); metadata only: name, state, age — never targ or bodies.
+// ⚠Wrapped in .stree so the indent (--sxlead) and rhythm match the subagent sub-lines; never add a separate offset.
+function sessWtSubHtml(kids){
+  const ks = (kids || []).filter(Boolean);
+  return ks.length ? '<div class="stree swtsl">' + ks.map(x => {
+    const at = sessWtAttn([x]), hit = cpFlash && cpFlash === cpKey(x) ? ' cphit' : '';
+    const nm = (x.wt && x.wt.name) || x.branch || '';
+    return '<div class="stiw swts' + (at ? ' swta-' + at : '') + hit + '" data-ssid="' + esc(x.sid || '') + '" data-scwd="' + esc(x.cwd || '')
+      + '" title="' + esc(sessCardTip(x)) + '"><div class=sti><span class="k w">' + esc(T('Worktree')) + '</span>'
+      + '<span class=v>' + esc(nm) + '</span><span class=swtst>' + esc(sessLabel(x)) + '</span>'
+      + (typeof x.ageSec === 'number' ? '<span class=e>' + esc(AGO(ago(x.ageSec))) + '</span>' : '') + '</div></div>';
+  }).join('') + '</div>' : '';
+}
+// Main session in view: one card with worktree subs (R1). Otherwise header-only group, children with ├─/└─ in the lead cell (R3).
 function sessWtListHtml(rows){
   return sessWtGroups(rows).map(gr => {
     if(!gr.kids.length) return sessRowHtml(gr.head);
-    const head = gr.head ? sessWtLead(sessRowHtml(gr.head), sessWtCaret(gr)) : sessWtHeadHtml(gr);
+    if(gr.head) return sessRowHtml(gr.head, sessWtSubHtml(gr.kids));
+    const head = sessWtHeadHtml(gr);
     if(wtFold.has(gr.key)) return head;
     return head + gr.kids.map((x, i) => sessWtLead(sessRowHtml(x).replace('class="sxw ', 'class="sxw swtk '),
       '<i class=swtbr>' + (i === gr.kids.length - 1 ? '└─' : '├─') + '</i>')).join('');
@@ -69,7 +83,8 @@ function sessWtStemLead(rows, nat){
   if(!br){ const p = document.createElement('i'); p.className = 'swtbr'; p.textContent = '├─'; ls[0].prepend(p); stem = bw(p); p.remove(); }
   return base + gap(ls[0]) + stem;
 }
-function sessWtAny(rows){ return sessWtGroups(rows).some(g => g.kids.length); }
+// Only header-only groups keep a fold caret, so only they need «Expand all».
+function sessWtAny(rows){ return sessWtGroups(rows).some(g => g.kids.length && !g.head); }
 // «Expand all / Collapse all» (40b) also covers worktree groups.
 function sessWtFoldAll(keys, open){
   if(open) wtFold.clear(); else (keys || []).forEach(k => wtFold.add(k));

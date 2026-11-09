@@ -86,6 +86,7 @@ class TestQuota(Patch):
                                               "cur": {"used_local": 27_000_000}, "proj": {"over_at": 2000}})
         self.patch(ab, "_saver_state", lambda p, l: saver)
         self.patch(ab, "_saver_view", lambda: view)
+        self.patch(ab, "same_labels", lambda accts=None: set())   # never stats the fake roots
         self.patch(ab, "claude_accounts", lambda: [{"label": "main", "dir": "/c/main", "primary": True},
                                                    {"label": "work", "dir": "/c/work", "primary": False}])
 

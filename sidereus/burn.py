@@ -11,7 +11,7 @@ from sidereus.usage import _anchors
 from sidereus.timeline import _tok_events
 from sidereus.usage_index import acct_tokens
 from sidereus.quota import QUOTA_LOG, _cc_account, quota, quota_calibrating
-from sidereus.quota_roots import _conf_path, quota_accounts, ring_last, row_usable
+from sidereus.quota_roots import _conf_path, quota_accounts, ring_last, row_usable, same_labels
 from sidereus import boot_queue, claude_roots, ui_prefs
 # Pure math owned by burn_calc; the ones only tests read are re-exported too.
 from sidereus.burn_calc import (  # noqa: F401
@@ -194,6 +194,9 @@ def _qb_num(v):
 
 def quota_burn_acct(label):
     """Burn body for a non-primary account `label` from its `quota_accounts()` row (label + percentages only)."""
+    # Same account as the primary: no quota row of its own (`_targets` drops it), its 5h window is the primary's.
+    if not any(r.get("label") == label for r in quota_accounts()) and label in same_labels():
+        return quota_burn()
     now = time.time()
     c = _qb_acct.get(label)
     if c and now - c[0] < QBURN_TTL:
@@ -285,7 +288,8 @@ def burn_use(now=None):
     now = time.time() if now is None else now
     acc = claude_roots.accounts()
     prim = next((r.get("label") for r in acc if r.get("primary")), "")
-    others = {r.get("label") for r in acc if not r.get("primary") and r.get("label")}
+    # ⚠A root signed in to the primary's account is the primary's window, never a separate main/live account.
+    others = {r.get("label") for r in acc if not r.get("primary") and r.get("label")} - same_labels(acc)
     if others:
         try:
             m = (ui_prefs.load() or {}).get("mbMainAcct")

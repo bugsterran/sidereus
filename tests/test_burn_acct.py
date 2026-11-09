@@ -44,6 +44,7 @@ class BurnAcct(unittest.TestCase):
         for obj, name, val in ((bu.time, "time", lambda: NOW), (ru, "claude_accounts", lambda: [dict(a) for a in ACCTS]),
                                (ru, "saver_cap", lambda now, out: {"n": 1}),
                                (ru, "burn_use", lambda: dict(USE_P)),
+                               (bu, "same_labels", lambda accts=None: set()),   # ⚠never the live account roots
                                (bu, "acct_tokens", lambda a, t0, t1: 0)):   # ⚠never the live usage index
             p = mock.patch.object(obj, name, val)
             p.start()

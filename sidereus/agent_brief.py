@@ -14,7 +14,7 @@ from sidereus.sessions import sessions_rows
 from sidereus.cards import cards
 from sidereus.quota import quota
 from sidereus.burn import quota_burn, quota_burn_acct
-from sidereus.quota_roots import quota_accounts, row_usable
+from sidereus.quota_roots import quota_accounts, row_usable, same_labels
 from sidereus.claude_roots import accounts as claude_accounts
 from sidereus.saver import SAVER_CAP, SAVER_VIEW_STALE, _saver_state, _saver_view, _saver_views
 from sidereus.steps import _edit_target
@@ -50,7 +50,8 @@ def brief_quota(now=None, acct=None):
     ⚠Advice is copied from the saver hook's own verdict (`.saver-view.json` lv / stage) — no new rule here."""
     now = time.time() if now is None else now
     prim = _primary_label()
-    extra = bool(acct) and acct != prim
+    # A root signed in to the primary's account has no quota row: it is the primary's window (`same_labels`).
+    extra = bool(acct) and acct != prim and acct not in same_labels()
     if extra:
         # ⚠Never fall back to the primary's numbers: a missing row is "not measured", not someone else's quota.
         q = next((r for r in quota_accounts() if r.get("label") == acct and row_usable(r)), None) or {}
