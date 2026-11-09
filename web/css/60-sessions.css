@@ -354,3 +354,8 @@ html[data-ui=next][data-ui][data-theme=light] .tlpar.tlwff{border-color:#b0564a}
 .swth{display:flex;align-items:baseline;gap:6px;padding:3px 6px;margin:2px 0;color:#aab4c3;font-size:11.5px;min-width:0}
 .swthn{font-weight:600;color:#cdd6e4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .swthc{color:#6b7688;font-size:10.5px;white-space:nowrap}
+/* Folded header-only group ends like a card (.sxw border) so the next top-level row does not read as its child. */
+.swth.swthf{margin:2px 0 0;padding-bottom:6px;border-bottom:1px solid #151a22}
+.swth.swthf:last-child{border-bottom:0}
+/* «n in folder» (40ba sessFolderChip): muted, never shrinks so the name ellipsizes first */
+.sfn{color:#6b7688;font-size:10.5px;white-space:nowrap;flex:none}

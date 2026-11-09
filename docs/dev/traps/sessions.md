@@ -381,3 +381,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: a relative cwd or one recorded on another OS (`C:\Users\demo\app` on macOS) went through `os.path.abspath`, resolved against the server's cwd, and gave that session repos=[Sidereus' own repo].
 - ⇒ `_git_walk` returns "" for any non-absolute path (same check as `_proj_root`). Test `tests/test_git_walk_abs.py`.
 - ⚠Do not resolve a session cwd with `abspath`/`realpath` before an `isabs` check; the server's cwd is never a session's.
+
+## Two live sessions in one folder render as identical rows (`40ba sessFolderChip`)
+
+- Cause: name, branch/git, project cost (`sessions._projcost_of(cwd)`) and To-do are folder values, so two live sessions in the same cwd differed only by context % and state.
+- ⇒ `buildSessions` (40b) counts live rows per normalised cwd before filters (`sessFolderSet`); 2+ adds a muted «n in folder» chip after the name whose tooltip names cost/To-do as folder totals. A folded header-only worktree group gets a row end (`.swthf`). Test `tests/test_sess_folder_js.py`.
+- ⚠done/gone rows never count and a row without cwd is unknown, not a folder; do not count only the filtered rows (the marker would flicker with filters).

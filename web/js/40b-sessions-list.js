@@ -13,6 +13,7 @@ function buildSessions(){
     : (stFil === 'blocked' ? !!x.blocked : x.state === stFil));
   const pass = x => (!idleMin || isIdle(x, idleMin)) && (!gitFil || hasGit(x, gitFil)) && stOK(x);
   const live = SESS.filter(x => x.state !== 'done'), act0 = live.filter(pass);
+  if(typeof sessFolderSet === 'function') sessFolderSet(live);   // «n in folder» marker (40ba), counted before filters
   const pk = acctPick('sess'), keep = x => ACC_OTH.sess || acctInPick(x, 'sess', pk);
   const act = act0.filter(keep), oth0 = act0.filter(x => !keep(x)), rows = act;
   const hid = live.length - act0.length;      // count hidden by filters — **never silently reduced**

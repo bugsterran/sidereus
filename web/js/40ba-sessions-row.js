@@ -55,6 +55,24 @@ function sessGitChip(x){
       + (x.git ? esc(x.git)+' ' : '') + (extTid(x) ? esc(T('Folder diff')) : 'diff') + '</span>'
     : '';
 }
+// Live sessions per folder: rows sharing a cwd show the same name, branch, project cost and To-do, so each gets a marker.
+// ⚠Ended rows (done/gone) never count; a row without cwd is unknown, never a shared folder.
+let sessFolderN = new Map();   // refilled by buildSessions (40b) from every live row, before filters
+function sessFolderKey(x){
+  if(!x || !x.cwd || x.state === 'done' || x.state === 'gone') return '';
+  return typeof sessWtNorm === 'function' ? sessWtNorm(x.cwd) : String(x.cwd).replace(/\/+$/, '');
+}
+function sessFolderCounts(rows){
+  const m = new Map();
+  (rows || []).forEach(x => { const k = sessFolderKey(x); if(k) m.set(k, (m.get(k) || 0) + 1); });
+  return m;
+}
+function sessFolderSet(rows){ sessFolderN = sessFolderCounts(rows); }
+function sessFolderChip(x, n){
+  if(!(n >= 2)) return '';
+  return '<span class=sfn title="'+esc(TV({msg: '{n} live sessions share this folder — this row is a separate session. Project cost and To-do are folder totals, not per session', vars: {n: n}}))
+    +'">'+esc(TV({msg: '{n} in folder', vars: {n: n}}))+'</span>';
+}
 // Usage group: context · size · cost (or external-CLI tokens) · model.
 function sessUsage(x){
   // ★Context **uses no bar** — limits differ per model (1M/200k), so one bar would be false.
@@ -169,7 +187,8 @@ function sessIdRow(x){
       + esc(T('Hooks not connected'))+'</span>';
   const g = c => h => '<span class="sxg '+c+'">'+h+'</span>';
   const td = typeof stodoChip === 'function' ? stodoChip(x) : '';   // 40c; guarded: tests load this file alone
-  let id = '<span class=sp title="'+esc(x.project)+'">'+esc(x.project)+'</span>'+sessBranchHtml(x)+acctChip(x, 'sacb')+nohk+sessGitChip(x);
+  const fc = typeof sessFolderChip === 'function' ? sessFolderChip(x, sessFolderN.get(sessFolderKey(x))) : '';   // guarded: tests load sessIdRow alone
+  let id = '<span class=sp title="'+esc(x.project)+'">'+esc(x.project)+'</span>'+fc+sessBranchHtml(x)+acctChip(x, 'sacb')+nohk+sessGitChip(x);
   let us = sessUsage(x), wk = sessWorkBadges(x);
   const ac = sessActs(x), acg = ac ? g('sxac')(ac) : '';
   // ⚠R3: «To-do n» and the action group never wrap alone — they are glued to the end of the last non-empty group

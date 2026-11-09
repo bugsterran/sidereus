@@ -42,8 +42,9 @@ function sessWtCaret(gr){
     + ' title="' + esc(tip) + '">' + (open ? '▾' : '▸' + gr.kids.length) + (!open && nd ? ' <b class=swtnd>' + esc(nd) + '</b>' : '') + '</button>';
 }
 // Header-only row for a group whose main checkout has no session in view (R3); not a .sx row, so sessFit skips it.
+// ⚠Folded, it gets a row end (.swthf): otherwise the next top-level row reads as its child.
 function sessWtHeadHtml(gr){
-  return '<div class=swth title="' + esc(gr.main + ' · ' + T('Main repo has no session in view')) + '">' + sessWtCaret(gr)
+  return '<div class="swth' + (wtFold.has(gr.key) ? ' swthf' : '') + '" title="' + esc(gr.main + ' · ' + T('Main repo has no session in view')) + '">' + sessWtCaret(gr)
     + '<span class=swthn>' + esc(gr.name) + '</span><span class=swthc>' + esc(sessWtCount(gr.kids.length)) + '</span></div>';
 }
 function sessWtLead(h, ins){ return h.replace('<span class=sxl>', '<span class=sxl>' + ins); }
