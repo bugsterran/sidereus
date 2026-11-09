@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Platforms: a Gemini `settings.json` or `~/.codex/hooks.json` saved with a UTF-8 BOM is read normally; Gemini showed «Sidereus hooks are missing» while Connect said connected, and the hook list was empty.
+- Quota details: a usage-billed seat (credit mode) no longer shows «Who is using the 5h»; that seat has no 5-hour window.
 - Sessions and Timeline: a session started in a non-git folder that works inside a linked worktree is nested under that worktree's main repo (judged from the most recently touched repo).
 
 ## [0.16.0] - 2026-11-07

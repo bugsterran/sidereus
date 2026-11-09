@@ -43,6 +43,26 @@ class QwhoAcct(unittest.TestCase):
         self.assertNotIn("<b>work</b>", R["acct"])
         self.assertNotIn("qwa", R["primary"])
 
+    def test_credit_seat_hides_5h_section(self):
+        # A usage-billed seat has no 5h cycle: the «Who is using the 5h» section is not drawn.
+        body = """
+let QLAST = {q: {}}, METER = true;
+const creditInfo = q => METER ? {meter: true} : null;
+const R = {};
+QWHO = {start: 1900000000, exact: true, total: 10, rows: [{name: 'p', n: 1, share: 100, tok: 10, sids: []}]};
+buildQwho(); R.meter = OUT;
+METER = false; buildQwho(); R.sub = OUT;
+process.stdout.write(JSON.stringify(R));
+"""
+        src = (STUBS + i18n() + "\n" + jconst("esc") + "\n" + js_fn("fmtPct") + "\nlet QWHO = null;\n" + js_fn("buildQwho") + "\n" + body)
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, env=dict(os.environ, TZ="UTC"), encoding="utf-8")
+        if r.returncode != 0:
+            raise AssertionError(r.stderr)
+        R = json.loads(r.stdout)
+        self.assertEqual(R["meter"], "")
+        self.assertIn("<div class=qwh", R["sub"])
+        self.assertIn("<div class=qwr", R["sub"])
+
 
 if __name__ == "__main__":
     unittest.main()

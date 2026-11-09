@@ -367,6 +367,9 @@ function qwhoApprox(w){
 function buildQwho(){
   const el = document.getElementById('qwho');
   if(!el) return;
+  // ⚠A usage-billed seat has no 5h cycle: the section's window would be invented, so it is not drawn at all.
+  const ci = typeof creditInfo === 'function' ? creditInfo(typeof QLAST !== 'undefined' && QLAST && QLAST.q) : null;
+  if(ci && ci.meter){ setHtml(el, connStaleNote(CONN, Date.now())); return; }
   const w = QWHO, rows = (w && w.rows) || [];
   const tip = T('Cycle so far from session transcripts, live OTel after server start · subagents fold into the parent session · metadata only (no conversation content)');
   // Account whose 5h window is shown (usage.quota_who acct; '' = primary): a user label, so esc() only, never T().

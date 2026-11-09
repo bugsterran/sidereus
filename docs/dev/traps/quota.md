@@ -341,6 +341,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Not a local token sum: the API gives credit only in money, and local transcripts mix other accounts and pre-credit plans (★11-09: month sum 7.59B · $3,042 vs credit $203).
   - ⚠Not the 5h block or week sums either — other periods, cannot be read against a month-to-date amount (first version showed them).
   - ⚠The rate moves with model mix and cache share; always «≈», never presented as measured.
+  - ⚠The quota modal's «Who is using the 5h» (`buildQwho`) is not drawn on such a seat: its 5h window would be invented.
 - ★**The saver badge shows stage and cap** (2026-09-10).
   Before, it said only «saver mode», so **how many agents may run now** was not on screen.
   ⇒ `_saver_state()` sends `stage`·`cap` and `buildSaver` writes «saver stage 3 · no agents».
