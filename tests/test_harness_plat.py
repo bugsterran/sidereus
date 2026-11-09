@@ -235,6 +235,26 @@ class HarnessPlatTest(unittest.TestCase):
             HP.harness_evidence.recent, HP.harness_evidence.commits = saved
         self.assertEqual((code, calls, b["commits"]), (200, [60], [{"h": "abcdef1", "ct": 5}]))
 
+    def test_evidence_only_accepts_worktree_of_allowed_repo(self):
+        PP = sidereus("pipeline_projects")
+        main, wt, other = (os.path.join(self.tmp, n) for n in ("main", "wt", "other"))
+        os.makedirs(os.path.join(main, ".git", "worktrees", "x"))
+        os.makedirs(other)
+        _w(os.path.join(wt, ".git"), "gitdir: %s\n" % os.path.join(main, ".git", "worktrees", "x"))
+        saved = (PP.allowed_projects, HP._proj_ok, HP.harness_evidence.recent, HP.harness_evidence.commits)
+        PP.allowed_projects = lambda: [main]
+        HP._proj_ok = PP._proj_ok
+        seen = []
+        HP.harness_evidence.recent = lambda proj, limit=30: seen.append(proj) or []
+        HP.harness_evidence.commits = lambda proj: []
+        try:
+            self.assertEqual(HP.harness_evidence_only(wt)[0], 200)
+            self.assertEqual(seen, [wt])   # read stays scoped to the worktree path
+            self.assertEqual(HP.harness_evidence_only(other), (400, {"ok": False, "msg": "unknown project"}))
+            self.assertFalse(PP._proj_ok(wt))
+        finally:
+            PP.allowed_projects, HP._proj_ok, HP.harness_evidence.recent, HP.harness_evidence.commits = saved
+
 
 if __name__ == "__main__":
     unittest.main()

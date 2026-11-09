@@ -432,3 +432,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: reports were `eval/<key>/reports/<date>.md`, one folder per repo, and `--auto` skipped while any report in it was under 7 days old; ★11-06 real data: sidereus-change had no report since 10-25 because quick-fix closed first each week.
 - Fix: `reports/<pipeline>/<date>.md` (`report_dir`), and `latest_report(proj, name)` reads only that pipeline; a flat report from before still counts when its first line is `# Pipeline report: <name>`.
 - ⚠Never key the cadence by repo again. `tests/test_pl_report_cli.py` `test_auto_cadence_per_pipeline` · `test_auto_reads_legacy_flat_report`.
+
+## Evidence: a linked worktree's session got 400 «unknown project» on every load (`harness_plat.harness_evidence_only`)
+- Cause: the timeline drawer passes a session's worktree path (`s.repos[0]`) and `_proj_ok` is an exact match on `allowed_projects()`, which lists only the main repo.
+- Fix: this read-only route also accepts `proj` when `gitinfo._wt_main(proj)` passes `_proj_ok` (same as `git_view._repo_ok`); evidence is still read for the given path (its own git root).
+- ⚠Do not widen `_proj_ok` itself — it also guards `pipeline_del` and other write routes. `tests/test_harness_plat.py` `test_evidence_only_accepts_worktree_of_allowed_repo`.

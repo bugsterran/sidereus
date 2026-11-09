@@ -12,6 +12,7 @@ import time
 from sidereus import arch_verify, ctxsrc, harness, harness_evidence, harness_flow, harness_person, harness_selfcheck, harness_trail, harness_verdict, sec_runtime, toolinv
 from sidereus.config import CODE_DIR, DATA_DIR
 from sidereus.ext_store import PLAT_MODS
+from sidereus.gitinfo import _wt_main
 from sidereus.ident import _real_home
 from sidereus.pipeline_projects import _proj_ok
 
@@ -100,7 +101,8 @@ def _rows(mod, proj, items):
 
 def harness_evidence_only(proj):
     """(code, body) for GET /api/harness/evidence?proj= — gate evidence alone, so the pipeline view can label stages without the hook scan."""
-    if not _proj_ok(proj):
+    # ⚠Linked worktree of an allowed repo is accepted here only (read-only); _proj_ok stays exact — it guards writes.
+    if not (_proj_ok(proj) or (isinstance(proj, str) and _proj_ok(_wt_main(proj)))):
         return 400, {"ok": False, "msg": "unknown project"}
     return 200, {"ok": True, "evidence": harness_evidence.recent(proj, 60), "commits": harness_evidence.commits(proj)}
 
