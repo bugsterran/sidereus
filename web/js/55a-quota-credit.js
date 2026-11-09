@@ -173,7 +173,8 @@ function creditInfo(q){
     + TV({msg: '{u} used of the {l} monthly limit', vars: {u: money(ex.used), l: money(ex.limit)}})
     + (ex.pct!=null ? ' (' + fmtPct(ex.pct) + ')' : '')
     + (meter ? '' : T('\nWhen the limit resets (5h row above), usage is back to the included allowance.'));
-  return {meter: !!meter, left, tip: ct};
+  const pct = ex.pct != null ? ex.pct : (ex.limit > 0 && ex.used != null ? ex.used / ex.limit * 100 : null);
+  return {meter: !!meter, left, tip: ct, pct};
 }
 function buildCredit(q){
   const el = document.getElementById('credit');

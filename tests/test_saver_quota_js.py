@@ -211,6 +211,7 @@ R.off = creditInfo({extra: ex, five_hour: {pct: 40}});
         self.assertEqual(R["meter"]["left"], "$593 남음")
         self.assertFalse(R["sub"]["meter"])     # subscription credit: the 5h segment stays
         self.assertIsNone(R["off"])
+        self.assertAlmostEqual(R["meter"]["pct"], 1.1)          # gauge fill = monthly-limit share
 
 
 if __name__ == "__main__":
