@@ -19,8 +19,8 @@ class OmcKeepsExtra(unittest.TestCase):
     def setUp(self):
         self.saved = {k: getattr(ql, k) for k in ("_quota", "_quota_lock", "_quota_from_omc",
                                                   "_quota_save", "_quota_calibrate", "_quota_interval",
-                                                  "time", "_cc_account")}
-        ql._cc_account = lambda: None
+                                                  "time", "_cc_scope")}
+        ql._cc_scope = lambda: None
 
         class T:
             @staticmethod
@@ -58,7 +58,7 @@ class OmcKeepsExtra(unittest.TestCase):
         self.assertEqual(ql._quota["data"]["extra"]["at"], T0 - 300)
 
     def test_same_account_carries(self):
-        ql._cc_account = lambda: "acct-a"
+        ql._cc_scope = lambda: "acct-a"
         ql._quota = {"data": {"extra": {"pct": 10, "at": T0 - 900}}, "at": T0 - 300, "err": None,
                      "acct": "acct-a"}
         ql._quota_try_omc([0])
@@ -66,7 +66,7 @@ class OmcKeepsExtra(unittest.TestCase):
 
     def test_other_account_drops(self):
         # ⚠After an account switch, the previous account's credits must not show under the new one.
-        ql._cc_account = lambda: "acct-b"
+        ql._cc_scope = lambda: "acct-b"
         ql._quota = {"data": {"extra": {"pct": 10, "at": T0 - 900}}, "at": T0 - 300, "err": None,
                      "acct": "acct-a"}
         ql._quota_try_omc([0])
