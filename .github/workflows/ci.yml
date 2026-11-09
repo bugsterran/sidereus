@@ -24,10 +24,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python: ["3.9", "3.12"]
-        # setup-python may lack 3.9 for arm64 macOS runners; 3.9 is still covered on Linux.
-        exclude:
-          - os: macos-latest
+        python: ["3.12"]
+        # ⚠3.9 (the supported floor) runs on a pinned ubuntu-24.04: setup-python has no 3.9 build
+        # for ubuntu-latest once it moved to 26.04, nor for arm64 macOS runners.
+        include:
+          - os: ubuntu-24.04
             python: "3.9"
     steps:
       - uses: actions/checkout@v7
