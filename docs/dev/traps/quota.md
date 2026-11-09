@@ -582,4 +582,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: history per-1% won outright from 3 windows; at 74% it read 107M while this window ran 2.2M/% (57M). Either side can be wrong: history ignores the token mix, the window average breaks when other devices move the %.
 - ⇒ `burnEst` (57-burn.js): from 30%, a gap over 1.5x returns `{left: low, hi: high}` and `estLeftTxt` prints «57M–107M». `left` stays the lower bound for numeric callers.
 - ⚠Do not let the window average win alone; `used_local` is this PC only.
+- ★Range too wide late in the window: 79% read «45M–86M» (window 2.16M/% over 170M tokens vs history median 4.1M/%, n=15).
+- ⇒ From 60% `burnEst` returns one value blended toward the window, w = (p-30)/70; the tooltip names both. The range stays for 30–60%.
 

@@ -60,11 +60,15 @@ function burnEst(b, k, n, p){
   // ⚠Neither side alone is right when they disagree: history ignores this window's token mix (more output/subagents
   //   = fewer tokens per 1%), the window average breaks when other devices/claude.ai move the % (used_local is this PC).
   //   From 30%, a gap over 1.5x shows both as a range; `left` stays the lower bound for callers that use the number.
+  // ⚠From 60% the range was too wide to read (79%: «45M–86M»); one value blended toward the window by progress
+  //   (w = (p-30)/70) — the backtest has history and window error about even by 70%, so neither side wins alone.
   const wl = win ? n / p * (100 - p) : null;
   const off = wl != null && l != null && Math.max(l, wl) > 1.5 * Math.max(1, Math.min(l, wl));
-  if(l != null && !(thin && win)) return off
-    ? {left: Math.min(l, wl), hi: Math.max(l, wl), tip: burnEstTip(k, e) + '\n' + T('This window\'s average differs by over 1.5x — the range shows both')}
-    : {left: l, tip: burnEstTip(k, e)};
+  const w = (p - 30) / 70;
+  if(l != null && !(thin && win)) return !off ? {left: l, tip: burnEstTip(k, e)}
+    : p >= 60 ? {left: l * (1 - w) + wl * w, tip: burnEstTip(k, e) + '\n'
+        + TV({msg: 'History {h} vs this window {w} — blended by progress', vars: {h: fmtTok(l), w: fmtTok(wl)}})}
+    : {left: Math.min(l, wl), hi: Math.max(l, wl), tip: burnEstTip(k, e) + '\n' + T('This window\'s average differs by over 1.5x — the range shows both')};
   const low = b && b.est_why === 'plan' ? ' · ' + T('Not enough history — low accuracy') : '';   // plan changed: history dropped
   return win ? {left: n / p * (100 - p),
     tip: (thin ? TV({msg: 'history {n} windows — estimated from this window\'s average', vars: {n: e.h5_n || 0}}) + '\n' : '')

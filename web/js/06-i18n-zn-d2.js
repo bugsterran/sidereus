@@ -42,6 +42,7 @@ Object.assign(I18N.ko, {
   'history {n} windows — estimated from this window\'s average': '기록 {n}창 — 이번 창 평균으로 추정',
   'this window\'s average (used ÷ %) × remaining % — varies with usage': '이번 창 평균(사용 ÷ %) × 남은 % — 쓰는 방식에 따라 크게 달라집니다',
   'This window\'s average differs by over 1.5x — the range shows both': '이번 창 평균과 1.5배 넘게 달라 두 값을 범위로 보여 줍니다',
+  'History {h} vs this window {w} — blended by progress': '기록 {h} · 이번 창 {w} — 진행률만큼 섞은 값',
   'same-account tokens per 1% × % — estimate': '같은 계정 기록의 1%당 토큰 × % — 추정',
   'resets': '리셋',
   'From this PC\'s logs · other devices and claude.ai not included': '이 PC 기록 기준 · 다른 기기·claude.ai 미포함',

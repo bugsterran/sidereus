@@ -54,8 +54,8 @@ R.head = [burnHead(null, N), burnHead({}, N),
           burnHead({cur: {now_pct: 100.4, reset: N}, head: tokHead}, N),
           burnHead({cur: Object.assign({used_local: 2.2e6, wk_used_local: 3.1e7}, cur), wk, head: tokHead}, N)];
 const est = {h5_per_pct: 6e5, h5_n: 6, h5_src: 'med', wk_per_pct: 3.2e6, wk_n: 160, h5_left: 3.72e7, wk_left: 2.144e8, wk_used: 1.056e8};
-R.off = [burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 1.62e8, 74), burnEst({est: {h5_left: 6e7, h5_n: 5}}, '5h', 1.62e8, 74),
-         burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 1.62e8, 20)];
+R.off = [burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 5e7, 50), burnEst({est: {h5_left: 6e7, h5_n: 5}}, '5h', 1.62e8, 74),
+         burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 1.62e8, 20), burnEst({est: {h5_left: 8.64e7, h5_n: 15}}, '5h', 1.706e8, 79)];
 R.offTxt = estLeftTxt(R.off[0]);
 R.est = [burnHead({cur: Object.assign({used_local: 2.2e6}, cur), wk, est}, N),
          burnHead({cur: Object.assign({used_local: 2.2e6}, cur), wk, est: Object.assign({}, est, {h5_src: 'pool'})}, N),
@@ -124,11 +124,14 @@ R.asof = [burnHead({cur, at: 3600 * 13 + 5 * 60}, N)];
 
     def test_window_wins_when_history_far_off(self):
         off = self.R["off"]
-        self.assertAlmostEqual(off[0]["left"], 1.62e8 / 74 * 26, delta=1)   # 107M history vs ~57M window: range, low end first
+        self.assertAlmostEqual(off[0]["left"], 5e7, delta=1)   # 107M history vs 50M window at 50%: range, low end first
         self.assertEqual(off[0]["hi"], 1.07e8)
-        self.assertEqual(self.R["offTxt"], "57M–107M")
+        self.assertEqual(self.R["offTxt"], "50M–107M")
         self.assertEqual((off[1]["left"], off[1].get("hi")), (6e7, None))   # within 1.5x: history alone
         self.assertEqual((off[2]["left"], off[2].get("hi")), (1.07e8, None))   # under 30%: window too young
+        wl, w = 1.706e8 / 79 * 21, 49 / 70                                       # from 60%: one blended value, no range
+        self.assertAlmostEqual(off[3]["left"], 8.64e7 * (1 - w) + wl * w, delta=1)
+        self.assertIsNone(off[3].get("hi"))
 
     def test_history_estimate_wins(self):
         h = self.R["est"][0]
