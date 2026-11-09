@@ -307,7 +307,11 @@ function rcCards(){
 const rcLabel = c => c.k === 'dm' ? T('Outside rooms') : '# ' + c.name;
 const rcAgo = t => t ? AGO(ago(Math.max(0, Math.round((Date.now() * 1e6 - t) / 1e9)))) : T('no messages yet');
 // Member id -> platform from the live session list (same `plat` the session rows draw). ⚠'' when no session matches — aiLogo would guess Claude.
-function rcPlat(w){ const x = (SESS || []).find(s => s && s.mbox === w); return x ? (x.plat || 'cc') : ''; }
+// ⚠Claude and pi in one folder share the id (same mailbox MCP, identity.json[cwd]): a live row wins over an ended one.
+function rcPlat(w){
+  const m = (SESS || []).filter(s => s && s.mbox === w), x = m.find(s => s.state !== 'done' && s.state !== 'gone') || m[0];
+  return x ? (x.plat || 'cc') : '';
+}
 function rcWho(w){ const p = rcPlat(w); return (p ? aiLogo(p) : '') + esc(w); }
 function rcCardHtml(c){
   const nm = c.who.join(', ');

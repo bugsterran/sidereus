@@ -393,3 +393,5 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: pi rows carried `mbox: ""`, so the room member id matched an older Claude row of the same folder (`rcPlat`, 92).
 - ⇒ pi rows take `mbox_of(cwd)` (`sidereus/ext.py`, `ext_presence.py`): pi loads the same mailbox MCP server, so `identity.json[cwd]` or the folder name. Test `tests/test_ext_presence.py`.
 - ⚠Not `mbox_codex`: only Codex hooks log in as `<folder>-codex`.
+- ⚠Claude and pi in one folder share the mailbox id; `rcPlat` (92) prefers a live row over an ended one. Test `tests/test_room_member_logo_js.py`.
+

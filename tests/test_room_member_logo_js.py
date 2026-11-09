@@ -29,6 +29,11 @@ class RoomMemberLogo(unittest.TestCase):
     def test_session_without_plat_is_claude(self):
         self.assertIn("ailg-cc", card(["amy"], [{"mbox": "amy"}]))
 
+    def test_live_row_wins_shared_id(self):
+        # Claude and pi in one folder share the id; the ended Claude row ranked first must not pick the logo
+        self.assertIn("ailg-pi", card(["adv"], [{"mbox": "adv", "plat": "cc", "state": "done"}, {"mbox": "adv", "plat": "pi", "state": "wait"}]))
+        self.assertIn("ailg-cc", card(["adv"], [{"mbox": "adv", "plat": "cc", "state": "done"}]))
+
     def test_name_escaped(self):
         self.assertIn("&lt;b>", card(["<b>"], []))
 
