@@ -358,3 +358,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ the marker counts only while `actAt < t` and `now - t <= CMP_MAX_S` (300 s). Test `tests/test_compact_mark.py`.
 - ⚠Any transcript line written after PreCompact (a hook line, a queued prompt) sets actAt past the marker and hides the label for the rest of that compaction — accepted: a false «Compacting» is worse than a missed one.
 - ⚠Do not raise the cap to cover long compactions without a stale check; the ~P% estimate is capped at 95 because it is a median, not progress.
+
+## Worktree children must not shift the sidebar columns (`40bb sessWtListHtml`)
+
+- Cause: `sessFit` (40ba) sets box-wide widths from the widest `.sxl` lead, so a row-level indent (margin/padding on `.sxw`) moves that row's groups off the shared x.
+- ⇒ the `├─/└─` glyph and the fold caret are inserted inside `.sxl` (string insert after 40b `sessRowHtml`); the header-only group row is not `.sx`, so sessFit skips it. Test `tests/test_sess_wt_nest_js.py`.
+- ⚠Do not indent children with CSS margin; a collapsed group must keep its children's attention on the caret (`sessWtAttn`), never drop it.

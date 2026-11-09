@@ -1,0 +1,65 @@
+// Sessions list: linked-worktree sessions nest under their main repo's session (40b buildSessions walks these groups).
+// ⚠Cards are built by 40b sessRowHtml and only post-processed here (lead-cell insert), so sessFit (40ba) keeps every
+//   row's columns aligned: the branch glyph and the caret live inside .sxl, never as a row margin.
+const wtFold = new Set();   // normalised main roots the user collapsed (the list re-renders every poll)
+// ⚠brNorm is owned by 89-branch-worktree.js; the fallback only covers this file loaded alone.
+function sessWtNorm(p){ return typeof brNorm === 'function' ? brNorm(p) : String(p || '').replace(/\/+$/, ''); }
+// Rows (server order) -> [{head: row|null, main, name, key, kids: [row...]}]; a plain row is {head: x, kids: []}.
+// A group sits at its best-ranked member's index; the first-ranked main-checkout session of that root is the head.
+function sessWtGroups(rows){
+  const N = sessWtNorm, list = (rows || []).filter(Boolean), kids = new Map(), par = new Map(), done = new Set(), out = [];
+  const mainOf = x => (x.wt && x.wt.main) ? N(x.wt.main) : '';
+  // ⚠A row without wt (git lookup failed) can still head its repo by cwd; a worktree row never heads one.
+  const rootOf = x => x.wt ? (x.wt.main ? '' : N(x.wt.root)) : N(x.cwd);
+  list.forEach(x => { const m = mainOf(x); if(m){ if(!kids.has(m)) kids.set(m, []); kids.get(m).push(x); } });
+  list.forEach(x => { const r = rootOf(x); if(r && kids.has(r) && !par.has(r)) par.set(r, x); });
+  list.forEach(x => {
+    const m = mainOf(x) || (par.get(rootOf(x)) === x ? rootOf(x) : '');
+    if(!m){ out.push({head: x, main: '', name: '', key: '', kids: []}); return; }
+    if(done.has(m)) return;
+    done.add(m);
+    const ks = kids.get(m), main = String(ks[0].wt.main);
+    out.push({head: par.get(m) || null, main: main, name: main.replace(/\/+$/, '').split('/').pop() || main, key: m, kids: ks});
+  });
+  return out;
+}
+// Strongest attention among child rows: 'blocked' > 'ask' > 'abort' > 'stuck' (prompt arrived, transcript still) > ''.
+function sessWtAttn(kids){
+  const k = (kids || []).filter(Boolean);
+  if(k.some(x => x.blocked)) return 'blocked';
+  if(k.some(x => x.state === 'ask')) return 'ask';
+  if(k.some(x => x.state === 'abort')) return 'abort';
+  return k.some(x => x.gotPrompt > 0) ? 'stuck' : '';
+}
+function sessWtNeed(kids){ return (kids || []).filter(x => x && (x.blocked || x.state === 'ask' || x.state === 'abort' || x.gotPrompt > 0)).length; }
+// Fold caret; collapsed, it carries the hidden children's count and attention so a need never disappears (R4).
+function sessWtCaret(gr){
+  const open = !wtFold.has(gr.key), at = sessWtAttn(gr.kids), need = sessWtNeed(gr.kids);
+  const cnt = TV({msg: '{n} worktree sessions', vars: {n: gr.kids.length}}), nd = need ? TV({msg: '{n} need you', vars: {n: need}}) : '';
+  const tip = (open ? T('Collapse worktrees') : T('Expand worktrees')) + ' · ' + cnt + (nd ? ' · ' + nd : '');
+  return '<button type=button class="swtg' + (at ? ' swta-' + at : '') + '" data-wtf="' + esc(gr.key) + '" aria-expanded=' + (open ? 'true' : 'false')
+    + ' title="' + esc(tip) + '">' + (open ? '▾' : '▸' + gr.kids.length) + (!open && nd ? ' <b class=swtnd>' + esc(nd) + '</b>' : '') + '</button>';
+}
+// Header-only row for a group whose main checkout has no session in view (R3); not a .sx row, so sessFit skips it.
+function sessWtHeadHtml(gr){
+  return '<div class=swth title="' + esc(gr.main + ' · ' + T('Main repo has no session in view')) + '">' + sessWtCaret(gr)
+    + '<span class=swthn>' + esc(gr.name) + '</span><span class=swthc>' + esc(TV({msg: '{n} worktree sessions', vars: {n: gr.kids.length}})) + '</span></div>';
+}
+function sessWtLead(h, ins){ return h.replace('<span class=sxl>', '<span class=sxl>' + ins); }
+// Every group as cards: head (with caret) then, unless folded, children with a ├─/└─ glyph in the lead cell.
+function sessWtListHtml(rows){
+  return sessWtGroups(rows).map(gr => {
+    if(!gr.kids.length) return sessRowHtml(gr.head);
+    const head = gr.head ? sessWtLead(sessRowHtml(gr.head), sessWtCaret(gr)) : sessWtHeadHtml(gr);
+    if(wtFold.has(gr.key)) return head;
+    return head + gr.kids.map((x, i) => sessWtLead(sessRowHtml(x).replace('class="sxw ', 'class="sxw swtk '),
+      '<i class=swtbr>' + (i === gr.kids.length - 1 ? '└─' : '├─') + '</i>')).join('');
+  }).join('');
+}
+function sessWtAny(rows){ return sessWtGroups(rows).some(g => g.kids.length); }
+// «Expand all / Collapse all» (40b) also covers worktree groups.
+function sessWtFoldAll(keys, open){
+  if(open) wtFold.clear(); else (keys || []).forEach(k => wtFold.add(k));
+  return wtFold.size;
+}
+function sessWtToggle(key){ if(wtFold.has(key)) wtFold.delete(key); else wtFold.add(key); }

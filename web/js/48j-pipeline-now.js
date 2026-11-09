@@ -74,11 +74,12 @@ function plNowList(ss){
   const hc = typeof hcRow === 'function' ? hcRow('pl') : '';   // «Connect» notice for CLIs without Sidereus hooks (90f); expanded list only
   if(!live.length) return '<aside class=plnl>' + head + '<div class=plnle>' + esc(T('No sessions working now')) + '</div>' + hc + '</aside>';
   // Row = the Timeline's session name cell (74b tlSessNmB, bare: no time/token chips) + the run summary; one button per (cwd, plat).
+  // wtKid: a linked-worktree run carries the «worktree» tag — its project name equals the main repo's.
   return '<aside class=plnl>' + head + live.map(x => {
     const on = !!PLS.nowSid && x.sid === PLS.nowSid, k = plNowSt(x), it = { cwd: x.cwd || '', plat: x.plat || '', state: k === 'work' && x.state === 'wait' ? 'run' : x.state, blocked: x.blocked, idle: x.ageSec };   // dot agrees with plNowSt (list item only, x untouched)
     const st = T(PLNOW_ST[k]), al = [x.project || '', st, plNowRunTxt(x)].filter(Boolean).join(' · ');   // ⚠project is user data: never through T()
     return '<div class="plnlr' + (on ? ' on' : '') + '"><button type=button class="plnli tlnm' + (on ? ' on' : '') + '" data-pncwd="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc((x.project || '') + '\n' + st) + '" aria-label="' + esc(al) + '"'
-      + (on ? ' aria-current=true' : '') + '>' + tlSessNmB({ sess: true, cwd: x.cwd || '', plat: x.plat || '', proj: x.project || '', items: [it] }, it, 0, 0, true) + plNowRun(x, k) + '</button>' + plNowAgentRows(x) + '</div>';
+      + (on ? ' aria-current=true' : '') + '>' + tlSessNmB({ sess: true, cwd: x.cwd || '', plat: x.plat || '', proj: x.project || '', items: [it], wtKid: typeof tlWtOf === 'function' && tlWtOf(x.cwd || '') ? 1 : 0 }, it, 0, 0, true) + plNowRun(x, k) + '</button>' + plNowAgentRows(x) + '</div>';
   }).join('') + hc + '</aside>';
 }
 // List | run view; the list width uses the 81i grip (key sidereus.plmd, px).

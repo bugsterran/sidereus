@@ -86,7 +86,7 @@ class PlNow(unittest.TestCase):
                          '<span class="plnlrun plnlrun-work" title="Pipeline run: chg · Implement"><i class="plnld plnld-work plnlpulse"></i>Working · Implement</span>')
         self.assertNotIn("<u", "".join(items))                                # bare: no time/token chips
         tl = js_fn("tlSessRow")
-        self.assertIn("tlSessNmB(g, it, act, nComp) + tlPlStrip(pl)", tl)    # Timeline keeps its chips and stepper
+        self.assertIn("tlSessNmB(g, it, act, nComp, false, tlWtPre(g)) + tlPlStrip(pl)", tl)    # Timeline keeps its chips and stepper
 
     def test_r1_run_summary_states(self):
         r = run(NOW + "console.log(JSON.stringify([plNowRun({plrun: [{name: 'chg', cur: 'Verify'}]}, 'need'), plNowRun({plrun: [{name: 'chg'}]}, 'idle'),"

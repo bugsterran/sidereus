@@ -16,7 +16,8 @@ function buildSessions(){
   const pk = acctPick('sess'), keep = x => ACC_OTH.sess || acctInPick(x, 'sess', pk);
   const act = act0.filter(keep), oth0 = act0.filter(x => !keep(x)), rows = act;
   const hid = live.length - act0.length;      // count hidden by filters — **never silently reduced**
-  morphHtml(box, wfFoldBtns(rows) + rows.map(x => sessRowHtml(x)).join('')
+  // Worktree sessions nest under their main repo (40bb; guarded: tests load 40b alone).
+  morphHtml(box, wfFoldBtns(rows) + (typeof sessWtListHtml === 'function' ? sessWtListHtml(rows) : rows.map(x => sessRowHtml(x)).join(''))
     + acctOthHtml('sess', oth0.length, oth0.some(x => x.blocked || x.state === 'ask' || x.state === 'abort'))
     + (act.length ? '' : '<div class=hidnote>' + (idleMin||gitFil ? T('No active sessions match the filter.') : T('No active sessions.')) + '</div>')
     + (hid ? '<div class=hidnote>'+TV({msg: '{n} hidden by filter', vars: {n: hid}})+'</div>' : ''));
@@ -215,7 +216,7 @@ function wfFoldAll(ids, open){
 }
 // The pair above the list, only when some shown card has a team or workflow group (same .relfx look as the branch/git trees).
 function wfFoldBtns(rows){
-  if(!(rows || []).some(x => x && (x.team || (x.wf || []).length))) return '';
+  if(!(rows || []).some(x => x && (x.team || (x.wf || []).length)) && !(typeof sessWtAny === 'function' && sessWtAny(rows))) return '';
   return '<div class=swfall>' + [['1', 'Expand all'], ['0', 'Collapse all']]
     .map(t => '<button type=button class="relfx swfa" data-wfa=' + t[0] + '>' + esc(T(t[1])) + '</button>').join('') + '</div>';
 }
@@ -354,10 +355,13 @@ function sessClick(e){
     e.stopPropagation();
     const box = document.getElementById('sess');
     wfFoldAll([...box.querySelectorAll('.swf[data-wf]')].map(d => d.getAttribute('data-wf')), wfa.getAttribute('data-wfa') === '1');
+    if(typeof sessWtFoldAll === 'function') sessWtFoldAll([...box.querySelectorAll('[data-wtf]')].map(d => d.getAttribute('data-wtf')), wfa.getAttribute('data-wfa') === '1');
     // ⚠clear _sh: a native toggle changed the DOM without the cached string, so an identical new string would skip the morph
     sessHover = false; sessDirty = false; box._sh = ''; buildSessions();
     return;
   }
+  const wtf = e.target.closest && e.target.closest('.swtg[data-wtf]');   // worktree group caret (40bb)
+  if(wtf){ e.stopPropagation(); sessWtToggle(wtf.getAttribute('data-wtf')); sessHover = false; sessDirty = false; buildSessions(); return; }
   const wfs = e.target.closest && e.target.closest('.swf > summary');
   if(wfs){ const id = wfs.parentElement.getAttribute('data-wf'); if(wfFold.has(id)) wfFold.delete(id); else wfFold.add(id); return; }
   if(e.target && e.target.tagName === 'SUMMARY' && e.target.closest('.agp')){

@@ -132,7 +132,7 @@ function sessBranchHtml(x){
       + '<span class=sbt>'+esc(x.branch)+'</span>'+(x.git ? '<span class=sbg>'+esc(x.git)+'</span>' : '')+'</span>'
     : '')
     + ((x.wt && x.wt.main) ? ' <span class=swt data-wtj="'+esc(x.wt.root)+'" data-wtc="'+esc(x.cwd||'')+'" title="'
-        + esc(T("Show this worktree's work unit in the Branches tab")+' · '+x.wt.root)+'">worktree: '+esc(x.wt.name)+'</span>' : '');
+        + esc(x.wt.name+' · '+T("Show this worktree's work unit in the Branches tab")+' · '+x.wt.root)+'">worktree</span>' : '');
 }
 // Pipeline chip: open run «name · stage» · declared [pl-none] «No pipeline · cat» · undeclared edit «Undeclared».
 function sessPlChip(x){

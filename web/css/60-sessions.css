@@ -26,6 +26,9 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
 .sxd1 .sxus .sz,.sxd2 .sxus .sk,.sxd3 .sxus .sm{display:none}   /* 40ba SX_DROP order; nohk (.sz) in .sxid stays */
 .sxid{flex-wrap:nowrap}   /* ⚠never wraps inside: when the 45% cap is narrower than the chips, the name ellipsizes */
 .sx .sxid > .sp{flex:0 1 auto;min-width:96px;overflow:hidden;text-overflow:ellipsis}
+/* Worktree tag sits at the right end of the identity group: the group grows only when it carries one. */
+.sx .sxid:has(> .swt){flex-grow:1}
+.sx .sxid > .swt{margin-left:auto}
 /* ⚠80-branch.css pins .swt to flex:0 0 auto under data-ui=next */
 .sx .sxid > :is(.sb,.swt),html[data-ui=next] .sx .sxid > .swt{max-width:150px;flex:0 4 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .sx .sb{color:#8ab4ff}
@@ -338,3 +341,15 @@ html[data-ui=next][data-ui] .tlpar.tlwff{border-color:#c0604f}
 html[data-ui=next][data-ui][data-theme=light] .tlpar.tlwff{border-color:#b0564a}
 .tmt{font-style:normal;color:#7e8896;margin-left:4px}
 .sti .e.tmu{color:#f0b357}
+/* Worktree groups (40bb): caret and ├─/└─ glyph sit inside .sxl so sessFit columns stay aligned across rows */
+.swtg{background:none;border:0;padding:0 2px;color:#8a95a8;font-size:10.5px;cursor:pointer;line-height:1;white-space:nowrap}
+.swtg:hover{color:#cdd6e4}
+.swtbr{font-style:normal;color:#4d5868;font-size:11px;letter-spacing:-1px}
+.swtg.swta-blocked,.swth .swta-blocked{color:#f28b82}
+.swtg.swta-ask{color:#f0c674}
+.swtg.swta-abort{color:#e3a06b}
+.swtg.swta-stuck{color:#c98fd8}
+.swtnd{font-weight:600}
+.swth{display:flex;align-items:baseline;gap:6px;padding:3px 6px;margin:2px 0;color:#aab4c3;font-size:11.5px;min-width:0}
+.swthn{font-weight:600;color:#cdd6e4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.swthc{color:#6b7688;font-size:10.5px;white-space:nowrap}

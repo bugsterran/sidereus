@@ -315,3 +315,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Fix: `Popen(start_new_session=True)` + `communicate(timeout=12)`; on timeout `os.killpg(pid, SIGKILL)` then reap (`sidereus/timeline_scan.py`). Return/cache behaviour unchanged (None, last good bands kept).
 - ⚠Any shell pipeline with a timeout needs its own process group — `subprocess.run(timeout=)` never reaches grandchildren.
 - ★`tests/test_naps_timeout.py`: killpg on the group pid, then reap; errors before the fix.
+
+### Worktree session rows nest under the main repo's row
+- Cause: a linked-worktree session was a separate top-level bucket, so its rows sat far from the main repo's session and the pair read as unrelated work.
+- Fix: `tlWtNest` (74-timeline.js) moves each bucket whose live SESS row has `wt.main` right after its main-repo bucket (or a header-only `W|<main>` row, `tlWtHeadRow` in 74b); the group sits at its best member's rank, the caret (`tlWtFold`) hides the worktree rows and the head keeps a needs-you count.
+- ⚠The header-only row has no `data-tlc` and `items: []` — 75/76 select session rows by `data-tlc`, and an ended worktree session (no SESS row) stays top-level, never guessed.
+- Worktree rows carry the main repo's project name, so a «worktree» tag (`.tlwtc`, name + path in its title) sits at the right edge of the name cell (`b:has(> u.tlwtc){flex-grow:1}` + `margin-left:auto`). Same tag on Pipelines «Working now» rows (48j) and the Sessions list (`.swt`). ⚠The <1100 rule that hides name-cell chips excludes `.tlwtc` — it is the only thing telling sibling rows apart.
+- Test `tests/test_tl_wt_nest_js.py`.

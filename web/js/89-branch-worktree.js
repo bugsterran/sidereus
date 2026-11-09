@@ -286,7 +286,7 @@ function brWuOpen(path){
   brWuFetch(path);
   brPanPaint();
 }
-// Sidebar "worktree: <name>" chip -> Branch tab with that worktree's work unit open (no other view reset).
+// Sidebar "worktree" chip -> Branch tab with that worktree's work unit open (no other view reset).
 function brWuJump(root, cwd){
   if(!(BR && BR.ok && brWtFind(root))){
     const x = (SESS || []).find(s => s && s.cwd === cwd) || {};

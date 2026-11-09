@@ -257,8 +257,12 @@ html[data-ui=next][data-theme=light] .tlsi i{filter:brightness(.7)}
 .tlclri{background:var(--nx-info,#5899f3)}
 /* Compaction chip is the short «N×» form (full text in its title), so it never ellipsises and the project pill keeps the room */
 .tlnm u.tlcpn{flex:0 0 auto;overflow:visible;text-overflow:clip}
+/* The name cell grows only on a worktree row, so margin-left:auto can push the tag to the right edge. */
+.tlnm b:has(> u.tlwtc){flex-grow:1}
+.tlnm u.tlwtc{margin-left:auto;color:#8fb4d8;background:transparent;border:1px solid #3a5878;border-radius:4px;padding:0 6px}
+html[data-theme=light] .tlnm u.tlwtc,html[data-ui=next][data-theme=light] .tlnm u.tlwtc{color:#2f6aa3;background:transparent;border-color:#9dbbd8}
 /* Below 1100 session rows drop the age/compaction chips (both stay in the row hover card) so the project pill is whole */
-@media (max-width:1099px){ .tlrs .tlnm > b > u{display:none} }
+@media (max-width:1099px){ .tlrs .tlnm > b > u:not(.tlwtc){display:none} }
 .tlunk{position:absolute;top:0;bottom:0;cursor:help;background:repeating-linear-gradient(
   45deg,color-mix(in srgb,var(--nx-t3,#84868c) 28%,transparent) 0 2px,transparent 2px 6px)}
 /* ⚠Tokens, not literals: #161c25 on #11161d was near-invisible in dark and the light twin washed it out. */
@@ -381,3 +385,12 @@ html[data-ui=next][data-theme=light] .tlnm u:not(.tlcpn){color:var(--nx-t1);back
 /* Counter / type chips (i/n, agent type): same ring in their own text colour; workflow/fail chips already set light borders (60-sessions.css). */
 html[data-ui=next][data-theme=light] .tlnm .tlpar:not(.tlwfk):not(.tlwff){border-color:color-mix(in srgb,currentColor 45%,transparent);font-weight:500}
 html[data-ui=next][data-theme=light] .tlnm .tlpar.tlagt{color:var(--nx-t1)}
+/* Worktree group (74 tlWtNest): fold caret on the group head, hidden / needs-you counts while folded, header-only row (.tlrw). */
+.tlwtg{font-style:normal;cursor:pointer;color:#8ab4f8;flex:0 0 auto;padding:0 3px;border-radius:3px}
+.tlwtg:hover,.tlwtg:focus-visible{background:#1a2433;color:#cfe0ff}
+.tlwtn{font-style:normal;font-weight:500;color:#7d90ab;font-size:11px;flex:0 0 auto}
+.tlwta{font-style:normal;flex:0 0 auto;font-size:10px;font-weight:700;color:#0d1014;background:#f0b357;border-radius:8px;padding:0 5px}
+.tlrw{padding:4px 0;border-bottom:1px solid #1a212b;margin:9px 0 3px;cursor:default}
+.tlrw:first-child{margin-top:0}
+.tlrw .tlnm b{color:#9aa7b8}
+.tlrs.tlrwk{margin-top:2px}

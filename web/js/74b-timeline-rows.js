@@ -9,6 +9,7 @@ function tlPick(g){
 }
 // One timeline row (L = shared layout: pct, t0, idleb, ticks, napb). Also fills tlHovG[gi] for the hover card.
 function tlRow(g, gi, L){
+    if(g.wtHead) return tlWtHeadRow(g, L);
     const sess = g.sess;
     const pick = tlPick(g) || {};
     const tkSum = g.items.reduce((a2, r) => a2 + (r.tk || 0), 0);
@@ -80,14 +81,14 @@ function tlSessRow(g, gi, nmOpen, L){
       }).join('')).join('');
       Object.assign(tlHovG[gi], {act, nSeg, nComp});
       const pl = tlPlRun(g, L);            // pipeline strip + bands (74c); '' without a run keeps the row unchanged
-      return '<div class="tlr tlrs'+tlPlRowCls(pl)+'" data-tlc="'+esc(g.cwd)+'" data-tlp="'+esc(g.plat || '')+'">'
+      return '<div class="tlr tlrs'+(g.wtKid ? ' tlrwk' : '')+tlPlRowCls(pl)+'" data-tlc="'+esc(g.cwd)+'" data-tlp="'+esc(g.plat || '')+'">'
         + '<div class=tlnm'+nmOpen+'>'
-        + tlSessNmB(g, it, act, nComp) + tlPlStrip(pl) + tlPlOffNote(g) + '</div>'
+        + tlSessNmB(g, it, act, nComp, false, tlWtPre(g)) + tlPlStrip(pl) + tlPlOffNote(g) + '</div>'
         + '<div class=tlt>'+idleb+ticks+napb+unk+bars2+comps+tlPlBands(pl, L, its)+'</div></div>';
 }
 // Session name cell «logo · project · state dot · chips»; also the «Pipelines» «Working now» row (48j; bare = no time/token chips).
-function tlSessNmB(g, it, act, nComp, bare){
-  return '<b>'+aiLogo(g.plat)+'<i class="tlp c'+repoHue(g.cwd)+'" title="'+esc(g.cwd)+'">'+esc(g.proj || g.cwd.split('/').pop())+'</i>'
+function tlSessNmB(g, it, act, nComp, bare, pre){
+  return '<b>'+(pre || '')+aiLogo(g.plat)+'<i class="tlp c'+repoHue(g.cwd)+'" title="'+esc(g.cwd)+'">'+esc(g.proj || g.cwd.split('/').pop())+'</i>'
         + tlStateDot(it)
         // ⚠the chip is ellipsis-truncated (20-timeline.css .tlnm u) — title carries the full value
         // ⚠tk 0 means unknown (Cursor records carry no tokens) — never show «Tokens 0».
@@ -95,7 +96,27 @@ function tlSessNmB(g, it, act, nComp, bare){
                   :(tv => '<u title="'+esc(tv)+'">'+esc(tv)+'</u>')(TV({msg: '{n} active', vars: {n: U(act,'m')}})))
         // ⚠Both chips name what they count: a bare «202m · 1×» did not say active time / compactions.
         // .tlcpn never shrinks (20-timeline.css), so the compaction word is not ellipsised away.
-        + (nComp ? (tv => '<u class=tlcpn title="'+esc(tv)+'">'+esc(tv)+'</u>')(TV({msg: 'compacted {n}×', vars: {n: nComp}})) : '') + '</b>';
+        + (nComp ? (tv => '<u class=tlcpn title="'+esc(tv)+'">'+esc(tv)+'</u>')(TV({msg: 'compacted {n}×', vars: {n: nComp}})) : '')
+        // Worktree tag sits last, pushed to the right edge (20-timeline.css .tlwtc); the worktree name and path are in its title.
+        + (g.wtKid ? (w => w ? '<u class=tlwtc title="'+esc(w.name+' · '+(w.root || ''))+'">worktree</u>' : '')(tlWtOf(g.cwd)) : '') + '</b>';
+}
+// Worktree group prefix: «├─» on a worktree session head, fold caret (+ hidden count, needs-you count while folded) on its group head.
+function tlWtPre(g){
+  let s = g.wtKid ? '<i class=tlbr2>'+(g.wtLast ? '└' : '├')+'─</i>' : '';
+  if(!g.wtPar) return s;
+  const f = tlWtFold.has(g.wtPar);
+  s += '<i class="tlwtg'+(f ? ' fold' : '')+'" data-tlwf="'+esc(g.wtPar)+'" role=button tabindex=0 aria-expanded='+(f ? 'false' : 'true')
+    + ' title="'+esc(T(f ? 'Show worktree sessions' : 'Hide worktree sessions'))+'">'+(f ? '▸' : '▾')+'</i>';
+  if(!f) return s;
+  // ⚠Folding must not hide a worktree session that is waiting on you — its count stays on the group head.
+  return s + '<i class=tlwtn title="'+esc(TV({msg: '{n} worktree sessions hidden', vars: {n: g.wtN}}))+'">+'+g.wtN+'</i>'
+    + (g.wtAtt ? '<i class=tlwta title="'+esc(TV({msg: '{n} worktree sessions need you', vars: {n: g.wtAtt}}))+'">'+g.wtAtt+'</i>' : '');
+}
+// Header-only group row for worktree sessions whose main repo has no session row. ⚠No data-tlc: 75/76 select session rows by it.
+function tlWtHeadRow(g, L){
+  return '<div class="tlr tlrw"><div class=tlnm><b>'+tlWtPre(g)
+    + '<i class="tlp c'+repoHue(g.cwd)+'" title="'+esc(g.cwd)+'">'+esc(g.proj || g.cwd.split('/').pop())+'</i></b></div>'
+    + '<div class=tlt>'+((L && L.ticks) || '')+'</div></div>';
 }
 // /clear spots (`x.clr = [{at, old8, new8}]`); absent/empty renders nothing so rows without a record keep their bytes.
 function tlClrMarks(its, pct){
@@ -370,6 +391,19 @@ function tlWireRows(box){
   // No new view (same renderer, same tab system).
   // One row has several spans, so the **bar** is the click target
   tlPlWire(box);
+  // Worktree fold caret; ⚠paintTl rewrites the rows, so keyboard focus is put back on the same group's caret.
+  box.querySelectorAll('.tlwtg[data-tlwf]').forEach(c => {
+    const go = e => {
+      e.stopPropagation(); e.preventDefault();
+      const m = c.dataset.tlwf, f = document.activeElement === c;
+      if(tlWtFold.has(m)) tlWtFold.delete(m); else tlWtFold.add(m);
+      paintTl();
+      const n = f && [...document.querySelectorAll('#feed .tlwtg[data-tlwf]')].find(x => x.dataset.tlwf === m);
+      if(n) n.focus({preventScroll: true});
+    };
+    c.onclick = go;
+    c.onkeydown = e => { if(e.key === 'Enter' || e.key === ' ') go(e); };
+  });
   box.querySelectorAll('.tlb[data-tlt]').forEach(bb => bb.onclick = (e) => {
     e.stopPropagation();
     if(e.target.closest && e.target.closest('.tlpl')) return;
@@ -383,7 +417,7 @@ function tlWireRows(box){
     nn.style.cursor = 'pointer';
     nn.onclick = (e) => {
       e.stopPropagation();                 // ⚠Must not leak into the time cursor's pin toggle
-      if(e.target.closest && e.target.closest('.tlpl, .tlplx')) return;   // strips open the pipeline view, the chip folds runs (tlPlWire)
+      if(e.target.closest && e.target.closest('.tlpl, .tlplx, .tlwtg')) return;   // strips open the pipeline view, the chip folds runs (tlPlWire), the caret folds worktrees
       const tr = nn.closest('.tlr');
       tlgFollow(tr.dataset.tlc, tr.dataset.tlp, nn.dataset.tlt);
       tlOpen(tr.dataset.tlc, nn.dataset.tlt);

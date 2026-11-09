@@ -531,9 +531,53 @@ function tlSessions(groups, t0, t1){
   const sessAll = [...bySess.values()];
   const sessKeep = sessAll.filter(sessShown);
   const tlHidden = sessAll.length - sessKeep.length;
-  const sessOrder = sessKeep.sort((a2, b2) =>
-    (sessRank(a2) - sessRank(b2)) || (sessLast(b2) - sessLast(a2)));
+  const sorted = sessKeep.sort((a2, b2) => (sessRank(a2) - sessRank(b2)) || (sessLast(b2) - sessLast(a2)));
+  // ⚠Guarded: tests load tlSessions on its own; without the nesting the order is the plain rank order.
+  const sessOrder = typeof tlWtNest === 'function' ? tlWtNest(sorted, sessRank) : sorted;
   return {sessOrder, tlHidden};
+}
+// Main-repo paths whose linked-worktree session rows are folded (Timeline only, not persisted).
+const tlWtFold = new Set();
+// Linked-worktree session buckets hang right after their main repo's bucket (or a header-only row); a group sits at its best member's rank.
+// ⚠Only buckets whose live SESS row carries `wt.main` nest — an ended worktree session stays top-level, never guessed.
+function tlWtNest(order, rank){
+  const nm = typeof brNorm === 'function' ? brNorm : p => String(p || '').replace(/\/+$/, '');
+  const kidsOf = new Map();
+  order.forEach(v => {
+    v.wtKid = 0; v.wtLast = 0; v.wtMain = '';
+    if(v.head) Object.assign(v.head, {wtKid: 0, wtLast: 0, wtPar: '', wtN: 0, wtAtt: 0});
+    const w = v.head && v.cwd && typeof tlWtOf === 'function' ? tlWtOf(v.cwd) : null;
+    if(!w || !w.main) return;
+    const m = nm(w.main);
+    v.wtKid = 1; v.wtMain = m;
+    if(!kidsOf.has(m)) kidsOf.set(m, []);
+    kidsOf.get(m).push(v);
+  });
+  if(!kidsOf.size) return order;
+  const isPar = (p, m) => {
+    if(p.wtKid || !p.head) return false;
+    if(nm(p.cwd) === m) return true;
+    const live = typeof tlLiveOf === 'function' ? tlLiveOf(p.cwd || '', p.plat) : null;
+    return !!(live && live.wt && !live.wt.main && nm(live.wt.root) === m);
+  };
+  const grpOf = new Map();
+  kidsOf.forEach((ks, m) => {
+    const cs = order.filter(p => !grpOf.has(p) && isPar(p, m));
+    const par = cs.find(p => (p.plat || '') === (ks[0].plat || '')) || cs[0]
+      || {head: {key: 'W|' + m, sess: true, wtHead: true, items: [], cwd: m, proj: m.split('/').pop() || m, plat: ''},
+          kids: [], cwd: m, plat: ''};
+    Object.assign(par.head, {wtPar: m, wtN: ks.length, wtAtt: ks.filter(k => rank && rank(k) === 1).length});
+    ks.forEach((k, i) => { k.wtLast = i === ks.length - 1 ? 1 : 0; k.head.wtKid = 1; k.head.wtLast = k.wtLast; });
+    const g = [par].concat(ks);
+    g.forEach(v => grpOf.set(v, g));
+  });
+  const out = [], done = new Set();
+  order.forEach(v => {
+    const g = grpOf.get(v);
+    if(!g) out.push(v);
+    else if(!done.has(g)){ done.add(g); out.push(...g); }
+  });
+  return out;
 }
 // Flatten sessions into drawn row order: session head, then its agents as a lineage tree (running branches first).
 // runOnly: agent rows only — keep branches with a running agent (finished ancestors stay for lineage); session heads always stay.
@@ -543,6 +587,7 @@ function tlOrdered(sessOrder, runOnly){
   const parOf = g => (g.items.find(x=>x.par)||{}).par || '';
   const ordered = [];
   for(const v of sessOrder){
+    if(v.wtKid && tlWtFold.has(v.wtMain)) continue;    // folded worktree group: the head row stays, its worktree rows go
     v.kids.sort((x, y) => x.items[0].start - y.items[0].start);
     if(v.head) ordered.push(v.head);
     // ★After splitting, include ids of **all items** in the group — including only the first makes nested agents
@@ -583,7 +628,7 @@ function tlOrdered(sessOrder, runOnly){
         if(ch) walk(ch, depth + 1);
       });
     };
-    walk(roots, 0);
+    walk(roots, v.wtKid ? 1 : 0);
   }
   return ordered;
 }
