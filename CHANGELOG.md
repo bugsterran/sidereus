@@ -5,8 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-10
+
+**Highlights**
+
+- Credit mode: on a usage-billed seat the status bar and Quota details show the monthly credit (gauge, used share, exact used/limit) instead of 5h/7d windows the seat does not have.
+- Platforms: pi sessions are read as a CLI adapter, with rows, tokens, Timeline activity and the work popup; pi's Claude use counts in «Who is using the 5h».
+- Sessions and Timeline: linked-worktree sessions are nested under their main repo, with a fold caret and a worktree session count.
+
 ### Added
 
+- Status bar: on a usage-billed seat (credit mode) the bar shows «Credit mode» with a monthly-limit gauge, the used share to two decimals and the exact used/limit, instead of «5h left 100%».
+- Quota details: a usage-billed seat gets a «Credit mode - billed by usage» headline over the credit gauge row; the 5h/7d rows and 5h curve are hidden.
+- Sessions and Timeline: sessions in a linked worktree are indented under the main repo's session (fold caret, «N worktree sessions»); a header row names the main repo when it has no session of its own.
+- Sessions: a Copilot session in a repo whose `.github/copilot/settings.json` sets `disableAllHooks` shows «Hooks off in repo» instead of advice to set up hooks.
 - Quota details: «Who is using the 5h» includes pi sessions that ran on Claude (provider anthropic), with the pi logo; the pi login is assumed to be the account shown.
 - Platforms: pi (earendil-works/pi) sessions are read from `~/.pi/agent/sessions` — session rows, model and token usage, tool activity on the Timeline and in the work popup; metadata only, no hooks or mail wake yet.
 - Status bar: on a usage-billed seat (credit mode) the credit segment shows the credit as tokens, «≈ used/limit», converted at this week's local average price; the tooltip states the rate.
@@ -20,6 +32,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Status bar account layer: the popup sizes to its content, so a wide credit amount no longer cuts the account name to «myaccount…».
 - Saver badge and status bar: a usage-billed seat no longer shows the 5h pace verdict («No throttle», goal %); a manual /saver on/off still shows.
 - Sessions and Timeline: a session started in a non-git folder that works inside a linked worktree is nested under that worktree's main repo (judged from the most recently touched repo).
+- Quota: the cached usage is bound to account and organization, so switching organization no longer carries the old org's 7d 100% until its reset.
+- Quota and status bar: a usage reading rounded to 100% shows «< 1%» left instead of «left ~ 0».
+- Credit mode: amounts in the badge, bar, tooltip, status-bar layer and Quota details use exact cents; the layer shows a dash instead of «5h/7d left 100%».
+- Pipelines: the weekly report is kept per pipeline, so every pipeline gets its own report and the panel no longer shows another pipeline's.
+- Pipelines and Structure: when two sessions share a folder, the repos touched by both are kept for pipeline chips and structure warm-up.
+- Harness: evidence for a session working in a linked worktree of an allowed repo loads instead of failing with «unknown project».
+- Windows: linked worktrees are recognised (path separator), so their evidence and diff views open.
+- Sessions: folding a worktree group no longer shifts the columns; a single child reads «1 worktree session».
+- Structure: arrowheads and hit areas in the module focus view are no longer drawn filled black.
+- Copilot: a crafted `.github/copilot/settings.json` (symlink to a device or a FIFO) can no longer stall the poll; only a regular file is read, with a size cap.
+
+### Changed
+
+- Sessions: the token tooltip on external session rows uses each platform's wording (Codex, Gemini, pi); a pi session on a Claude model says it counts in «Who is using the 5h».
 
 ## [0.16.0] - 2026-11-07
 
@@ -928,7 +954,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.14.1...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/bugsterran/sidereus/compare/v0.16.0...v0.17.0
+[0.16.0]: https://github.com/bugsterran/sidereus/compare/v0.15.0...v0.16.0
+[0.15.0]: https://github.com/bugsterran/sidereus/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/bugsterran/sidereus/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/bugsterran/sidereus/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/bugsterran/sidereus/compare/v0.12.1...v0.13.0
