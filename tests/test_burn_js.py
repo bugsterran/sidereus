@@ -57,6 +57,8 @@ const est = {h5_per_pct: 6e5, h5_n: 6, h5_src: 'med', wk_per_pct: 3.2e6, wk_n: 1
 R.off = [burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 5e7, 50), burnEst({est: {h5_left: 6e7, h5_n: 5}}, '5h', 1.62e8, 74),
          burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 1.62e8, 20), burnEst({est: {h5_left: 8.64e7, h5_n: 15}}, '5h', 1.706e8, 79)];
 R.offTxt = estLeftTxt(R.off[0]);
+R.zero = [burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 0, 50), burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 0, 70),
+          burnEst({est: null}, '5h', 0, 50)];
 R.est = [burnHead({cur: Object.assign({used_local: 2.2e6}, cur), wk, est}, N),
          burnHead({cur: Object.assign({used_local: 2.2e6}, cur), wk, est: Object.assign({}, est, {h5_src: 'pool'})}, N),
          burnHead({cur: Object.assign({used_local: 2.2e6}, cur), wk, est: Object.assign({}, est, {h5_src: 'pool', h5_n: 2})}, N)];
@@ -132,6 +134,12 @@ R.asof = [burnHead({cur, at: 3600 * 13 + 5 * 60}, N)];
         wl, w = 1.706e8 / 79 * 21, 49 / 70                                       # from 60%: one blended value, no range
         self.assertAlmostEqual(off[3]["left"], 8.64e7 * (1 - w) + wl * w, delta=1)
         self.assertIsNone(off[3].get("hi"))
+
+    def test_zero_local_use_keeps_history(self):
+        z = self.R["zero"]   # this PC used 0 while other devices moved the %: no window value
+        self.assertEqual((z[0]["left"], z[0].get("hi")), (1.07e8, None))
+        self.assertEqual((z[1]["left"], z[1].get("hi")), (1.07e8, None))
+        self.assertIsNone(z[2])
 
     def test_history_estimate_wins(self):
         h = self.R["est"][0]

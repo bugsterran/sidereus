@@ -55,7 +55,8 @@ function burnEstTip(k, e){
 //   2.66M/% vs window 3.97M/% put «Used 207M · left ≈ 136M» at 60% by tokens. ⚠≥ 3 windows: history still wins.
 function burnEst(b, k, n, p){
   const e = b && b.est, l = e && (k === '5h' ? e.h5_left : e.wk_left);
-  const win = n != null && p >= 30 && p < 100;
+  // ⚠n = 0 (only other devices/claude.ai moved the %) is no window value: it would read «< 1%» or drag the blend to 0.
+  const win = n > 0 && p >= 30 && p < 100;
   const thin = k === '5h' && e && !e.low && l != null && (e.h5_n || 0) < 3;
   // ⚠Neither side alone is right when they disagree: history ignores this window's token mix (more output/subagents
   //   = fewer tokens per 1%), the window average breaks when other devices/claude.ai move the % (used_local is this PC).

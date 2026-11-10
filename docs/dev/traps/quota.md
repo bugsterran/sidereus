@@ -584,4 +584,5 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Do not let the window average win alone; `used_local` is this PC only.
 - ★Range too wide late in the window: 79% read «45M–86M» (window 2.16M/% over 170M tokens vs history median 4.1M/%, n=15).
 - ⇒ From 60% `burnEst` returns one value blended toward the window, w = (p-30)/70; the tooltip names both. The range stays for 30–60%.
+- ⚠`used_local` 0 (only claude.ai/other devices moved the %) is no window value: it made the range «< 1%» at 30–59% and halved the blend from 60%. `win` needs `n > 0`.
 
