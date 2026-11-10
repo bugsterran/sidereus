@@ -113,6 +113,7 @@ export default function (pi: any) {
   let queue: Promise<unknown> = Promise.resolve();
   const commands = new Map<string, string>();
   let waiter: any = null;
+  let quietW = false;   // the live waiter wakes only on mail newer than what it found pending
   let ended = false;
   let wakes = 0;
   let retry: any = null;
@@ -169,7 +170,7 @@ export default function (pi: any) {
     try { m = JSON.parse(line); } catch (_e) { return; }
     if (m && m.end === "timeout") {
       waiter = null;
-      arm(ctx);   // lifetime over: re-arm silently, no model turn
+      arm(ctx, false, quietW);   // lifetime over: re-arm silently, no model turn, same quiet flag
       return;
     }
     if (!m || typeof m.wake !== "string") return;
@@ -182,8 +183,11 @@ export default function (pi: any) {
     }
     // ⚠Only "ok" marks the mail surfaced; "no" leaves it for the next wake or turn end.
     try { child.stdin.end(ok ? "ok\n" : "no\n"); } catch (_e) { /* gone */ }
+    // ⚠An idle session never fires agent_settled: without a waiter its .watch heartbeat stops and the presence is
+    //   pruned. A quiet waiter keeps the heartbeat and wakes only on newer mail (a normal one would re-fire in 1 s).
+    if (!ok && !ended) arm(ctx, false, true);
   };
-  const arm = (ctx: any, again = false) => {
+  const arm = (ctx: any, again = false, quiet = false) => {
     if (CHILD || ended || waiter) return;   // one waiter per instance; a subagent child never waits on mail
     if (retry) { clearTimeout(retry); retry = null; }
     let sid = "";
@@ -193,12 +197,14 @@ export default function (pi: any) {
     if (!sid || !cwd) return;
     let child: any = null;
     try {
-      child = spawn(PY, [path.join(CODE, "ext-hooks", "pi_wake.py"), sid, cwd],
-        { stdio: ["pipe", "pipe", "ignore"], windowsHide: true });
+      const argv = [path.join(CODE, "ext-hooks", "pi_wake.py"), sid, cwd];
+      if (quiet) argv.push("quiet");
+      child = spawn(PY, argv, { stdio: ["pipe", "pipe", "ignore"], windowsHide: true });
     } catch (_e) {
       return;
     }
     waiter = child;
+    quietW = quiet;
     let buf = "";
     let said = false;
     const gone = () => {
@@ -209,7 +215,7 @@ export default function (pi: any) {
       if (said || again || ended) return;
       retry = setTimeout(() => {
         retry = null;
-        try { if (!ended && ctx.isIdle()) arm(ctx, true); } catch (_e) { /* stale ctx */ }
+        try { if (!ended && ctx.isIdle()) arm(ctx, true, quiet); } catch (_e) { /* stale ctx */ }
       }, REARM_MS);
       try { retry.unref(); } catch (_e) { /* no unref */ }
     };
@@ -290,7 +296,11 @@ export default function (pi: any) {
   on("ui_prompt_start", async (_event, ctx) => { send(base(ctx, "Notification")); });
   // ⚠agent_end is not final (retry, compaction, queued messages follow); agent_settled is.
   on("agent_start", async (_event, _ctx) => { stopWaiter(); });
-  on("agent_settled", async (_event, ctx) => { send(base(ctx, "Stop")); arm(ctx); });
+  on("agent_settled", async (_event, ctx) => {
+    send(base(ctx, "Stop"));
+    if (waiter && quietW) stopWaiter();   // ⚠a quiet waiter would hide the refused mail at turn end; arm() skips while one lives
+    arm(ctx);
+  });
   on("session_shutdown", async (_event, ctx) => {
     ended = true;   // ⚠no re-arm after shutdown: a reload/new session gets a fresh extension instance
     stopWaiter();

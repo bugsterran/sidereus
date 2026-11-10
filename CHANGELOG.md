@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Platforms: an idle pi session no longer drops out of the mailbox after a refused wake (wake cap or busy); its waiter keeps the presence alive and wakes only on newer mail (re-run «Connect» for pi).
 - Accounts: a profile signed in to the primary's account is never taken as «Main account» or the in-use account.
 - Sessions: a folded header-only worktree group ends with a border, so the next row no longer reads as its child.
 - Sessions and Timeline: a session nests under a worktree only when its folder is inside that worktree, not when it merely touched the repo.

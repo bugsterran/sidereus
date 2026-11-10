@@ -8,6 +8,8 @@ Protocol (one JSON line out, then exit):
   Only "ok" within ACK_S marks the mail surfaced (shared read cursor with the turn-end line), else it stays unread.
 - {"end": "timeout"} after LIFE_S: the extension re-arms without a model turn.
 - {"end": "off"} when this session has no usable id (Claude-id clash) or watch.sh already watches it.
+- argv[3] "quiet" (re-arm after a refused wake): mail already pending at the first hit only sets a floor; only mail
+  newer than it wakes. ⚠Without it the refused mail (still unmarked) would fire again within FIRST_S, a loop.
 - Nothing when the slot is busy/lost or stdin closed (extension gone, session busy, shutdown).
 Rules:
 - ⚠The wake text is decide()'s line only (ids, room names, a count): never a subject or body, never extension input.
@@ -72,7 +74,7 @@ def _ack(acks, wait_s, clock):
             return True
 
 
-def run(sid, cwd, store=None, stdin=None, stdout=None, sleep=time.sleep, clock=time.monotonic, ack_s=ACK_S):
+def run(sid, cwd, store=None, stdin=None, stdout=None, sleep=time.sleep, clock=time.monotonic, ack_s=ACK_S, quiet=False):
     """Return a short outcome tag (for tests); never raises."""
     try:
         out = stdout or sys.stdout
@@ -90,6 +92,7 @@ def run(sid, cwd, store=None, stdin=None, stdout=None, sleep=time.sleep, clock=t
         t.start()
         inp = {"session_id": sid, "cwd": cwd}
         hold = {}
+        floor = [None]
 
         def check():
             if gone.is_set():
@@ -97,7 +100,14 @@ def run(sid, cwd, store=None, stdin=None, stdout=None, sleep=time.sleep, clock=t
             gms.T0 = time.monotonic()      # ⚠decide() gives up after BUDGET_S from T0
             hold.clear()
             # ⚠hold: mark surfaced only after the extension acks the turn, else the mail would be lost.
-            return gms.decide(inp, store=store, hold=hold)
+            got = gms.decide(inp, store=store, hold=hold)
+            if quiet and floor[0] is None:
+                # ⚠Floor from the first check, mail or not: a floor taken at a later first hit would swallow new mail.
+                floor[0] = hold["newest"] if got else 0
+                return None
+            if got and quiet and hold["newest"] <= floor[0]:
+                return None
+            return got
 
         def nap(s):
             if gone.is_set():
@@ -140,6 +150,6 @@ if __name__ == "__main__":
         signal.signal(signal.SIGTERM, _term)
     except Exception:
         pass
-    a = sys.argv[1:] + [""] * 2
-    run(a[0], a[1])
+    a = sys.argv[1:] + [""] * 3
+    run(a[0], a[1], quiet=(a[2] == "quiet"))
     sys.exit(0)

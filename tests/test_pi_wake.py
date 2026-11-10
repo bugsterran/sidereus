@@ -83,7 +83,7 @@ class PiWake(unittest.TestCase):
     def sleep(self, s):
         self.now[0] += max(s, 0.5)
 
-    def go(self, reply="ok", fin=None, on_sleep=None, ack_s=5.0):
+    def go(self, reply="ok", fin=None, on_sleep=None, ack_s=5.0, quiet=False):
         fin = fin or FakeIn()
         out = FakeOut(fin, reply)
 
@@ -91,7 +91,8 @@ class PiWake(unittest.TestCase):
             if on_sleep:
                 on_sleep(fin)
             self.sleep(s)
-        tag = pw.run(SID, self.cwd, store=self.d, stdin=fin, stdout=out, sleep=sl, clock=self.clock, ack_s=ack_s)
+        tag = pw.run(SID, self.cwd, store=self.d, stdin=fin, stdout=out, sleep=sl, clock=self.clock, ack_s=ack_s,
+                     quiet=quiet)
         fin.push(None)
         return tag, out.lines
 
@@ -135,6 +136,42 @@ class PiWake(unittest.TestCase):
         self.assertEqual(self.go(reply=None, ack_s=0.2)[0], "rejected")   # ack timeout: still unmarked
         self.assertNotIn("last_t", self.state())
         self.assertEqual(self.go()[0], "fired")
+
+    def beat_path(self):
+        return os.path.join(self.d, "presence-%s.watch" % self.me)
+
+    def test_quiet_rearm_skips_refused_mail_but_beats(self):
+        # After a refused wake the mail stays unmarked; a quiet waiter must not re-fire it (loop) yet keep the heartbeat.
+        self.mail()
+        self.assertEqual(self.go(reply="no")[0], "rejected")
+        tag, lines = self.go(quiet=True)
+        self.assertEqual(tag, "timeout")
+        self.assertEqual(lines, [{"end": "timeout"}])
+        self.assertTrue(os.path.exists(self.beat_path()))
+        self.assertNotIn("last_t", self.state())
+
+    def test_quiet_fires_on_newer_mail(self):
+        self.mail()
+        n = [0]
+
+        def later(_fin):
+            n[0] += 1
+            if n[0] == 3:
+                time.sleep(0.002)   # distinct ns timestamp from the first mail
+                self.mail()
+        tag, lines = self.go(quiet=True, on_sleep=later)
+        self.assertEqual(tag, "fired")
+        self.assertEqual(len(lines), 1)
+        self.assertTrue(lines[0]["wake"].startswith("[mailbox] 2 new mail"), lines[0]["wake"])
+
+    def test_quiet_no_mail_at_start_still_fires_on_new(self):
+        n = [0]
+
+        def later(_fin):
+            n[0] += 1
+            if n[0] == 3:
+                self.mail()
+        self.assertEqual(self.go(quiet=True, on_sleep=later)[0], "fired")
 
     def test_R2_no_mail_only_timeout(self):
         tag, lines = self.go()

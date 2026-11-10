@@ -32,6 +32,8 @@ if os.path.basename(sys.argv[0]) == "pi_wake.py":
         k = 0
     wl({"spawn": k, "argv": sys.argv[1:]})
     mode = os.environ.get("PI_TEST_WAKE", "block")
+    if sys.argv[3:] == ["quiet"]:   # quiet waiter: the pending mail never wakes it
+        mode = "block"
     if mode == "silent":   # slot busy: exits with no line
         wl({"exit": k})
         sys.exit(0)
@@ -199,6 +201,11 @@ if (scenario === "wake") {
   await handlers.input({ source: "interactive", text: "x" }, ctx);
   await handlers.agent_settled({}, ctx);
   await until((r) => n("ack")(r) >= 3);
+} else if (scenario === "settle") {
+  await handlers.session_start({ reason: "startup" }, ctx);
+  await until((r) => n("ack")(r) >= 1 && n("spawn")(r) >= 2);
+  await handlers.agent_settled({}, ctx);
+  await until((r) => n("spawn")(r) >= 3);
 } else if (scenario === "kill") {
   await handlers.session_start({ reason: "startup" }, ctx);
   await until((r) => n("spawn")(r) >= 1);
@@ -269,6 +276,20 @@ class PiExtensionWake(unittest.TestCase):
         sends, rows = self.wake("wake", "wake", busy=True)
         self.assertEqual(sends, [])
         self.assertEqual([x["ack"] for x in rows if "ack" in x], ["no"])
+
+    def test_R4_refused_wake_rearms_quiet(self):
+        # ⚠An idle session never fires agent_settled: after "no" a quiet waiter must keep the heartbeat.
+        _, rows = self.wake("wake", "wake", busy=True)
+        spawns = [x for x in rows if "spawn" in x]
+        self.assertEqual([x["argv"] for x in spawns], [["sess-0001", "/tmp/proj"],
+                                                       ["sess-0001", "/tmp/proj", "quiet"]])
+
+    def test_agent_settled_replaces_quiet_waiter(self):
+        _, rows = self.wake("settle", "wake", busy=True)
+        spawns = [x["argv"] for x in rows if "spawn" in x]
+        self.assertGreaterEqual(len(spawns), 3)
+        self.assertEqual(spawns[1][2:], ["quiet"])
+        self.assertEqual(spawns[2], ["sess-0001", "/tmp/proj"])   # normal again: the refused mail is offered at turn end
 
     def test_R4_before_agent_start_kills_waiter(self):
         sends, rows = self.wake("kill")
