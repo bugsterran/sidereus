@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Platforms: pi hooks and the Sidereus MCP server connect through «Connect» in Settings › «Diagnostics» (an extension plus `mcp.json`, previewed first); a pi row without hooks shows «Hooks not connected». Mail wake-up is still not supported.
 
+### Changed
+
+- Structure: the diagram request («Generate diagram» / «Update diagram» / «Redraw») also draws the one-page overview, so «Simple» is ready after one request; `arch-brief` remains for redrawing only the overview, and a failed overview leaves the verified map in place.
+
 ### Fixed
 
 - Structure: in a module focus view a box with many links grows wide enough to keep its link ends 10 px apart, instead of drawing them about 2 px apart.

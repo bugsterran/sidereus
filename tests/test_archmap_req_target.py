@@ -17,7 +17,7 @@ NOW = 1792637980.0
 PLAN_T, VERIFY_T, ST_T = 1792636977.0, 1792637109.0, 1792637050.05
 AG_T0, AG_T1 = 1792637121.74, 1792637121.83   # ★live: a finished agent's t0 and t1 are both stamped after verify.json
 REQ_AT, RUN_T0 = 1792635575.0, 1792635600.0
-TITLES = ["읽기 계획", "모듈 그리기", "흐름 그리기", "검증"]
+TITLES = ["읽기 계획", "모듈 그리기", "흐름 그리기", "검증", "개요 그리기", "개요 검증"]
 
 
 class ReqTargetTest(unittest.TestCase):

@@ -12,7 +12,11 @@ AM = sidereus("arch_map")
 AV = sidereus("arch_verify")
 C1 = "a" * 40
 NOW = 1_000_000.0
-TITLES = ["읽기 계획", "모듈 그리기", "흐름 그리기", "검증"]
+TITLES = ["읽기 계획", "모듈 그리기", "흐름 그리기", "검증", "개요 그리기", "개요 검증"]
+# pipeline file in the patched Sidereus root (no file there = a map-only pipeline: verify.json ends the run)
+PL_FILE = {"name": "arch-map", "stages": [{"title": t} for t in TITLES[:3]]
+           + [{"title": "검증", "gate": "/usr/bin/python3 scripts/arch_verify.py --last"},
+              {"title": "개요 그리기"}, {"title": "개요 검증", "gate": "/usr/bin/python3 scripts/arch_brief.py --last"}]}
 
 
 class RunTest(unittest.TestCase):
@@ -46,7 +50,7 @@ class RunTest(unittest.TestCase):
     def test_live_subagent_in_target_cwd(self):
         s = self.row(sub=[{"lab": "general-purpose: [pl:arch-map/모듈 그리기] repo map", "min": 2}])
         r = AM.runs([s], NOW)
-        self.assertEqual(r, {self.repo: {"stage": "모듈 그리기", "n": 2, "of": 4, "t0": NOW - 120, "sid": "s1"}})
+        self.assertEqual(r, {self.repo: {"stage": "모듈 그리기", "n": 2, "of": 6, "t0": NOW - 120, "sid": "s1"}})
 
     def test_agent_call_targ_and_sidereus_session_with_pending_store(self):
         self.put("plan.json", NOW - 300)   # plan written, no verify.json yet -> this repo is the target
@@ -100,12 +104,68 @@ class RunTest(unittest.TestCase):
     def test_gate_result_ends_run_despite_busy_session(self):
         pr = [{"name": "arch-map", "end": 0, "cur": "검증", "t0": NOW - 900, "t1": NOW - 60}]
         self.put("plan.json", NOW - 800)
-        self.assertEqual(AM.runs([self.row(plrun=pr)], NOW)[self.repo]["n"], 4)     # last stage, gate not written yet
+        self.assertEqual(AM.runs([self.row(plrun=pr)], NOW)[self.repo]["n"], 4)     # map gate stage, gate not written yet
         self.put("verify.json", NOW + 10)
         done = [dict(pr[0], end=NOW + 130)]
         busy = self.row(cwd=self.home, plrun=done, plm={"name": "arch-map", "title": "검증"})
         self.assertEqual(AM.runs([busy], NOW + 140), {})                             # no carry-over
         self.assertEqual(AM.runs([busy], NOW + 150), {})                             # and not resurrected later
+
+    def with_overview(self):
+        d = os.path.join(self.home, ".claude", "pipelines")
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "arch-map.json"), "w", encoding="utf-8") as f:
+            json.dump(PL_FILE, f, ensure_ascii=False)
+
+    def test_late_titles_follow_the_map_gate(self):
+        self.assertEqual(AM._late_titles(), frozenset())                             # no file: map-only
+        self.with_overview()
+        self.assertEqual(AM._late_titles(), frozenset(TITLES[3:]))
+
+    def test_verify_json_does_not_end_overview_stages(self):
+        self.with_overview()
+        self.put("verify.json", NOW - 30)
+        pr = [{"name": "arch-map", "end": 0, "cur": "개요 그리기", "t0": NOW - 900, "t1": NOW - 60}]
+        s = self.row(plrun=pr, plm={"name": "arch-map", "title": "개요 그리기"})
+        self.assertEqual(AM.runs([s], NOW)[self.repo]["n"], 5)                       # map verified, overview still drawing
+        self.put(AM.BRIEF_OK, NOW + 10)
+        self.assertEqual(AM.runs([self.row(plrun=pr)], NOW + 20), {})               # overview gate passed: run over
+
+    def test_old_brief_ok_does_not_end_overview_stages(self):
+        self.with_overview()
+        self.put(AM.BRIEF_OK, NOW - 3000)                                            # previous run's overview
+        self.put("verify.json", NOW - 30)
+        s = self.row(plm={"name": "arch-map", "title": "개요 검증"})
+        self.assertEqual(AM.runs([s], NOW)[self.repo]["n"], 6)
+
+    def test_gap_after_map_gate_keeps_run_for_overview(self):
+        self.with_overview()
+        self.put("plan.json", NOW - 800)
+        AM.runs([self.row(sub=[{"lab": "[pl:arch-map/검증] x", "min": 2}])], NOW)
+        self.put("verify.json", NOW + 10)
+        self.assertIn(self.repo, AM.runs([self.row()], NOW + 30))                   # main between 검증 and 개요 그리기
+        r = AM.runs([self.row(sub=[{"lab": "[pl:arch-map/개요 그리기] x", "min": 0}])], NOW + 60)
+        self.assertEqual((r[self.repo]["n"], r[self.repo]["t0"]), (5, NOW - 800))   # same run, start (plan.json) kept
+
+    def test_closed_by_result_on_overview_stage(self):
+        self.with_overview()
+        rec = {"name": "arch-map", "end": 0, "cur": "개요 그리기", "t0": NOW - 900, "t1": NOW - 10,
+               "stages": {"개요 그리기": {"t0": NOW - 20}}}   # overview stage started after the map gate
+        self.put("verify.json", NOW - 30)
+        self.assertFalse(AM._closed_by_result(rec, self.repo))
+        self.put(AM.BRIEF_OK, NOW - 5)
+        self.assertTrue(AM._closed_by_result(rec, self.repo))
+
+    def test_closed_by_result_old_brief_ok_falls_back_to_verify(self):
+        # Codex-shaped record (end 0, no [pl-end:]) with an earlier run's brief.ok.json older than this verify.json
+        self.with_overview()
+        self.put(AM.BRIEF_OK, NOW - 3000)
+        self.put("verify.json", NOW - 30)
+        at_gate = {"name": "arch-map", "end": 0, "cur": "검증", "t0": NOW - 900, "t1": NOW - 60, "stages": {}}
+        self.assertTrue(AM._closed_by_result(at_gate, self.repo))                    # stopped at the map gate: verify.json closes it
+        drawing = {"name": "arch-map", "end": 0, "cur": "개요 그리기", "t0": NOW - 900, "t1": NOW - 10,
+                   "stages": {"개요 그리기": {"t0": NOW - 20}}}
+        self.assertFalse(AM._closed_by_result(drawing, self.repo))                   # overview sign newer than verify: still open
 
     def test_result_with_live_tagged_subagent_and_open_record_still_runs(self):
         self.put("verify.json", NOW - 30)

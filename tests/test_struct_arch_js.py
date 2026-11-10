@@ -32,7 +32,7 @@ PRE = "\n".join([
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
     "const ARCH_PL = 'arch-map', ARCH_DIR = 'TB'; const ARCH = { cache: {}, load: {}, op: '', req: null, msg: '', sel: null, tests: false, svg: {} };",
     "let ARCHRUN = {}, SESS = [], strOn = ['/r'], mainView = 'struct', strMode = 'arch', POSTS = [], PAINTS = 0;",
-    "const ARCH_STAGES = ['읽기 계획', '모듈 그리기', '흐름 그리기', '검증'], TLPL_ICON = {done: '✓', run: '◉', wait: '·', fail: '✕'};",
+    "const ARCH_STAGES = ['읽기 계획', '모듈 그리기', '흐름 그리기', '검증', '개요 그리기', '개요 검증'], TLPL_ICON = {done: '✓', run: '◉', wait: '·', fail: '✕'};",
     "function plStepper(st, ci, mod){ return '<STEP ' + mod + ' ci=' + ci + '>' + st.map(x => x.st + ':' + x.nm).join(',') + '</STEP>'; }",
     "function CLK(d){ return '15:00'; } function ago(s){ return s + 's'; } const ARCH_POLL_MS = 30000, NOTES = [], FETCHES = [];",
     "function note(m){ NOTES.push(m); } globalThis.document = { hidden: false, querySelector(){ return null; } };",
@@ -271,7 +271,7 @@ class StructArch(unittest.TestCase):
                 "globalThis.archMmd = s => '<M/>';"
                 "const pt = d => { ARCH.cache['/r'] = d; box._arsig = ''; archPaint(box, head); out.push(box.innerHTML); };"
                 "pt(Object.assign({ok: true, commit: 'c1'}, m)); pt(Object.assign({ok: true, commit: 'c1', stale: true}, m));"
-                "ARCHRUN = {'/r': {stage: '검증', n: 4, of: 4, sid: 'abcdef123', t0: 1}}; pt(Object.assign({ok: true, commit: 'c1'}, m));"
+                "ARCHRUN = {'/r': {stage: '검증', n: 4, of: 6, sid: 'abcdef123', t0: 1}}; pt(Object.assign({ok: true, commit: 'c1'}, m));"
                 "console.log(JSON.stringify(out));")
         self.assertNotIn("구조도가 지금 코드보다 오래되었습니다", r[0])
         self.assertNotIn("⚠", r[0].split("</H>")[0])
@@ -389,6 +389,8 @@ class StructArch(unittest.TestCase):
         self.assertIn("/sidereus/.claude/pipelines/arch-map.json", r)   # absolute: the recipient may sit in another repo
         self.assertNotIn("/usr/bin/python3", r)   # absent on Windows
         self.assertIn("Gate: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last)", r)
+        self.assertIn("overview: python3 /sidereus/scripts/arch_brief.py --last", r)
+        self.assertIn("검증 → 개요 그리기 → 개요 검증)", r)   # every stage title verbatim, matching the pipeline file
         self.assertIn("/arch/<key>/<commit>/", r)
 
     def test_no_send_without_confirm(self):
@@ -444,7 +446,8 @@ class StructArch(unittest.TestCase):
                 "const box = {innerHTML: '', querySelector(){ return null; }}; archPaint(box, head); const h = box.innerHTML; await archSend();"
                 "console.log(JSON.stringify([h, POSTS[0][1].body]));")
         self.assertIn("[pl:arch-map/", r[1])
-        self.assertIn("re-read only the files the previous stage wrote (for arch-map: plan.json, then map.json, then flows.json)", r[1])
+        self.assertIn("re-read only the files the previous stage wrote (for arch-map: plan.json, then map.json, then flows.json, "
+                      "then S/map.json and S/verify.json, then S/brief.json)", r[1])
         self.assertIn("Run all stages back to back in this turn: do not end the turn or report between stages", r[1])
         self.assertIn(r[1].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"), r[0])
 
@@ -474,11 +477,12 @@ class StructArch(unittest.TestCase):
         self.assertEqual(r, [1, "r-codex"])
 
 
-# frozen output of archDmBody before Codex recipients existed (Claude request bytes must not change)
+# frozen output of archDmBody for a Claude recipient (all six stages, map gate then overview gate)
 ARCH_DM_CC = ("Pipeline arch-map run — request: «/r: update architecture diagram»\nTarget repository: /r\n"
               "Read-only: never write to the repository — write only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ (key: pipeline rules)\n"
-              "Pipeline: /sidereus/.claude/pipelines/arch-map.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증)\n"
-              "Gate: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last)")
+              "Pipeline: /sidereus/.claude/pipelines/arch-map.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증 → 개요 그리기 → 개요 검증)\n"
+              "Gate: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last); "
+              "overview: python3 /sidereus/scripts/arch_brief.py --last (Windows: py /sidereus/scripts/arch_brief.py --last)")
 # ⚠a Claude recipient in another repo tagged every dispatch [pl:-] without it, so no run was recorded
 ARCH_DM_TAG = ("\nTag each stage dispatch description with [pl:arch-map/<stage title>] (not [pl:-]); "
                "a stage you run yourself: Bash description with the same tag.")

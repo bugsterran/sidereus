@@ -286,30 +286,41 @@ def security_report(path, name):
         return {"ok": False, "err": "no report"}
     return {"ok": True, "name": name, "text": text}
 
-def _titles():
-    """Stage titles of the arch-map pipeline in order, [] if unreadable (read directly: sidereus.pipeline is a feature module)."""
+def _stages(pl):
+    """Titled stages of Sidereus' pipeline pl in order, [] if unreadable (read directly: sidereus.pipeline is a feature module)."""
     if not SIDEREUS_ROOT:
         return []
     try:
-        with open(os.path.join(SIDEREUS_ROOT, ".claude", "pipelines", ARCH_PL + ".json"), "rb") as f:
+        with open(os.path.join(SIDEREUS_ROOT, ".claude", "pipelines", pl + ".json"), "rb") as f:
             P = json.loads(f.read(65536))
-        return [s["title"] for s in P["stages"] if isinstance(s, dict) and isinstance(s.get("title"), str)]
+        return [s for s in P["stages"] if isinstance(s, dict) and isinstance(s.get("title"), str)]
     except (OSError, ValueError, TypeError, KeyError):
         return []
+
+
+def _titles():
+    return [s["title"] for s in _stages(ARCH_PL)]
+
+
+def _late_titles():
+    """arch-map titles from its map gate (arch_verify) on when overview stages follow it, else an empty set.
+    ⚠verify.json no longer ends such a run: these stages end on the overview gate's brief.ok.json instead."""
+    st = _stages(ARCH_PL)
+    g = next((i for i, s in enumerate(st) if "arch_verify.py" in str(s.get("gate") or "")), -1)
+    return frozenset(s["title"] for s in st[g:]) if 0 <= g < len(st) - 1 else frozenset()
+
+
+def _end_at(pl, root, stage, late):
+    """Result time that ends a run of pl sitting on `stage`; a late arch-map stage needs a brief.ok.json newer than verify.json."""
+    b = _result_at(root, BRIEF_OK) if pl == ARCH_PL and stage in late else None
+    return _final_at(pl, root) if b is None else (b if b > _result_at(root) else 0.0)
 
 
 def _pl_titles(pl):
     """Stage titles of pipeline pl (arch-map through _titles so tests can patch it)."""
     if pl == ARCH_PL:
         return _titles()
-    if not SIDEREUS_ROOT or pl not in _TAGS:
-        return []
-    try:
-        with open(os.path.join(SIDEREUS_ROOT, ".claude", "pipelines", pl + ".json"), "rb") as f:
-            P = json.loads(f.read(65536))
-        return [s["title"] for s in P["stages"] if isinstance(s, dict) and isinstance(s.get("title"), str)]
-    except (OSError, ValueError, TypeError, KeyError):
-        return []
+    return [s["title"] for s in _stages(pl)] if pl in _TAGS else []
 
 
 def _mtime(fp):
@@ -424,14 +435,14 @@ def _closed_by_result(r, root, pl=ARCH_PL):
             signs += [_tnum(s.get(k)) for k in ("t0", "t1", "p0")]
             # ⚠A finished agent's t0 and t1 are both stamped when its end is seen (12 s after verify.json): skip it, stage t0 covers dispatch.
             signs += [_tnum(a.get("t1")) for a in s.get("ag") or () if isinstance(a, dict) and a.get("run") is True]
-    v = result_at(pl, root)
+    v = max(_end_at(pl, root, r.get("cur"), _late_titles()), result_at(pl, root)) if pl == ARCH_PL else result_at(pl, root)   # ⚠verify.json still closes a run stopped at the map gate; overview signs postdate it
     return bool(v) and v > max(signs)
 
 
-def _finished(p, s, sg, pt, old, pl=ARCH_PL):
+def _finished(p, s, sg, pt, old, pl=ARCH_PL, late=frozenset()):
     """True when p's run already has its result: a final result newer than any sign of this run started, and either the
     run record closed after it or no tagged subagent / Agent call is still live in the session."""
-    v, tag = _final_at(pl, p), _TAGS[pl]
+    v, tag = _end_at(pl, p, sg[0], late), _TAGS[pl]
     if not v or pt > v or sg[1] > v or (old and old["t0"] > v):
         return False
     for r in s.get("plrun") or ():
@@ -567,7 +578,7 @@ def runs(sessions, now=None, pl=ARCH_PL):
     pipelines (arch-map lives in the Sidereus repo), so the row's live [pl:arch-map/…] tags are the source, not plrun alone."""
     now = time.time() if now is None else now
     seen, ended, fin, mem = {}, set(), [], {ARCH_PL: _RUN_SEEN, SEC_PL: _SEC_SEEN}.get(pl, _BRIEF_SEEN)
-    rows = {}
+    rows, late = {}, _late_titles() if pl == ARCH_PL else frozenset()
     for s in sessions or ():
         if not isinstance(s, dict) or s.get("state") in ("done", "gone"):
             continue
@@ -580,7 +591,7 @@ def runs(sessions, now=None, pl=ARCH_PL):
             continue
         old = mem.get(p)
         # ⚠A busy orchestrator keeps signs alive long after the gate passed: once the result exists the run is over.
-        if _finished(p, s, sg, pt, old, pl):
+        if _finished(p, s, sg, pt, old, pl, late):
             ended.add(p)
             if old and pl == ARCH_PL:
                 fin.append((p, old, s))
@@ -593,7 +604,7 @@ def runs(sessions, now=None, pl=ARCH_PL):
     live = {v["sid"] for v in seen.values()}
     for p, v in list(mem.items()):   # ⚠a stage gap keeps the run only while its session lives; past the gap it is over
         if p not in seen and p not in ended and v["sid"] in alive and v["sid"] not in live and now - v["at"] <= ARCH_RUN_GAP_S \
-                and _final_at(pl, p) < v["t0"] and not _ended_run(rows.get(v["sid"]), pl, v["t0"]):
+                and _end_at(pl, p, v["stage"], late) < v["t0"] and not _ended_run(rows.get(v["sid"]), pl, v["t0"]):
             seen[p] = v
         elif p not in seen and p not in ended and pl == ARCH_PL and _final_at(pl, p) >= v["t0"]:
             # ⚠Usual end: verify.json written, verify agent ends, plrun closes, marker clears -> no sign, _finished never runs.

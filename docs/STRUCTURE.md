@@ -70,12 +70,12 @@ still selects it. The minimap in the bottom-right corner shows the whole map and
 
 ### Pipeline
 
-`.claude/pipelines/arch-map.json`: Plan → Draw modules → Draw flows → Verify (`scripts/arch_verify.py --last`; on failure, back to Draw modules once).
+`.claude/pipelines/arch-map.json`: Plan → Draw modules → Draw flows → Verify (`scripts/arch_verify.py --last`; on failure, back to Draw modules once) → Draw overview → Verify overview (`scripts/arch_brief.py --last`; on failure, back to Draw overview once). A failed overview never invalidates the verified map.
 The plan names an architecture style (layered, hexagonal, …). Edges that break it are listed, not hidden.
 
 ### Overview (arch-brief)
 
-`.claude/pipelines/arch-brief.json`: Prepare → Draw overview → Verify. Runs on a finished arch-map result of the same commit; without one, Prepare stops and says to run arch-map first.
+`.claude/pipelines/arch-brief.json`: Prepare → Draw overview → Verify. arch-map already ends with these steps; arch-brief redraws only the overview. Runs on a finished arch-map result of the same commit; without one, Prepare stops and says to run arch-map first.
 The agent writes `brief.json` (≤12 boxes grouped by domain, in bands, plus the decision order: how a request is routed to a domain). `scripts/arch_brief.py --last` fails on unknown ids, a module in two boxes, an arrow without a verified map edge between its boxes, or a route `file:line` missing at the commit; on pass it writes `brief.html` (two sections, one self-contained file) next to `map.json`. Viewer: «Export HTML › Simple» opens it (HEAD commit only) or requests the run; «Export HTML › Detailed» downloads the module map.
 
 ### Check rules

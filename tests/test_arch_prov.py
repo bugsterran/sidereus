@@ -175,10 +175,30 @@ class ProvTest(unittest.TestCase):
         row = {"sid": SID, "plat": "cc", "cwd": self.repo, "model": "opus-4-1", "state": "think", "tool": "",
                "plm": {"name": "arch-map", "title": VER, "age": 100}, "plrun": []}
         seen = {self.repo: {"stage": VER, "sid": SID, "t0": T, "at": T + 100}}
+        # SIDEREUS_ROOT without a pipeline file = map-only arch-map, so verify.json ends the run
         with mock.patch.object(AM, "_RUN_SEEN", seen), mock.patch.object(AM, "_titles", lambda: []), \
+                mock.patch.object(AM, "SIDEREUS_ROOT", self.sidereus), \
                 mock.patch.object(AM, "_target", lambda s, now, pl="arch-map": (self.repo, 0.0)):
             AM.runs([row], now=T + 250)
         self.assertEqual(AP.get(self.repo, C1, T + 200)["sid"], SID)
+
+    def test_r1_records_after_overview_gate(self):
+        # with overview stages the run (and its provenance) ends on brief.ok.json, not on verify.json
+        self.cc_session(SID, [])
+        d = os.path.join(AM.ARCH_DIR, AV.repo_key(self.repo), C1)
+        os.makedirs(d)
+        for name, t in (("verify.json", T + 150), (AM.BRIEF_OK, T + 200)):
+            with open(os.path.join(d, name), "w", encoding="utf-8") as f:
+                f.write("{}")
+            os.utime(os.path.join(d, name), (t, t))
+        row = {"sid": SID, "plat": "cc", "cwd": self.repo, "model": "opus-4-1", "state": "think", "tool": "",
+               "plm": {"name": "arch-map", "title": "개요 검증", "age": 100}, "plrun": []}
+        seen = {self.repo: {"stage": "개요 검증", "sid": SID, "t0": T, "at": T + 100}}
+        with mock.patch.object(AM, "_RUN_SEEN", seen), mock.patch.object(AM, "_titles", lambda: []), \
+                mock.patch.object(AM, "_late_titles", lambda: frozenset((VER, "개요 그리기", "개요 검증"))), \
+                mock.patch.object(AM, "_target", lambda s, now, pl="arch-map": (self.repo, 0.0)):
+            AM.runs([row], now=T + 250)
+        self.assertEqual(AP.get(self.repo, C1, T + 150)["sid"], SID)
 
     def test_r1_fallback_matches_non_sidereus_repo(self):
         # R1: the target is the session cwd (repo subfolder or its store dir), never runs.json `proj`.

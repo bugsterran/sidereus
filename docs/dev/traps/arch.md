@@ -474,3 +474,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: ports spread over the box's own width (`w / (n + 1)`); a narrow hub with many unbundled ends (badged links, mixed kinds) got ~2px steps, so runs read as one thick line.
 - ⇒ `archFhPaths` returns `wd` = `(ports on the busiest side + 1) * ARCH_FH.PS` (10px) per box; `archFhRoute` sets that as `min-width` (past the CSS `max-width:220px`) and re-measures. ★12 badged ends on a 60px box: step 4.6px → 10px.
 - ⚠Only grows: a box whose ports already fit keeps its size. Bundled links count as one port.
+
+## arch-map run ended at verify.json while its overview stages still ran (`sidereus/arch_map.py` `_late_titles`, `_end_at`)
+- Cause: arch-map now ends with Draw overview / Verify overview; the run-end checks (`_finished`, stage gap, `_closed_by_result`) treated verify.json as the end, so the run vanished (and «Simple» stayed absent) mid-overview.
+- ⇒ From the arch_verify-gated stage on, a run ends only on a `brief.ok.json` newer than verify.json; a pipeline file without later stages keeps ending on verify.json. Provenance and request closure still use verify.json.
+- ⚠Never make the overview gate a map gate: a failed overview leaves the verified map valid.
