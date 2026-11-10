@@ -65,8 +65,8 @@ function archBriefReqHtml(q, repo, home, cands){
   const cur = cands.find(c => c.sid === q.sid) || null, why = archWhyOff(home, cands, cur);
   return '<div class=archreq role=group aria-label="' + esc(T('Request preview')) + '"><div class=archrqh><b>' + esc(T('Simple overview')) + '</b>'
     + '<label>' + esc(T('To session')) + ' <select data-arbs>' + (cands.length ? cands.map(c => '<option value="' + esc(c.sid) + '"' + (c.sid === q.sid ? ' selected' : '') + '>'
-      + esc((c.dir ? c.dir + ' · ' : '') + sid8(c.sid) + (c.model ? ' · ' + c.model : '') + (c.id ? ' · ' + c.id : '')) + '</option>').join('') : '<option value="">' + esc(T('None')) + '</option>')
-    + '</select></label></div><pre class=archdm>' + esc(archBriefDmBody(repo, home, !!(cur && cur.cx))) + '</pre>' + (typeof plCxHint === 'function' ? plCxHint(cur) : '') + '<div class=archrqb>'
+      + esc((c.sh && typeof platName === 'function' ? platName(c.plat) + ' · ' : '') + (c.dir ? c.dir + ' · ' : '') + sid8(c.sid) + (c.model ? ' · ' + c.model : '') + (c.id ? ' · ' + c.id : '')) + '</option>').join('') : '<option value="">' + esc(T('None')) + '</option>')
+    + '</select></label></div><pre class=archdm>' + esc(archBriefDmBody(repo, home, !!(cur && cur.sh))) + '</pre>' + (typeof plCxHint === 'function' ? plCxHint(cur) : '') + '<div class=archrqb>'
     + '<button type=button class="wkrgb archok" data-arbgo' + (why || q.busy ? ' disabled' : '') + (why ? ' title="' + esc(why) + '"' : '') + '>' + esc(T(q.busy ? 'Sending…' : 'Confirm — send')) + '</button>'
     + '<button type=button class=wkrgb data-arbx>' + esc(T('Cancel')) + '</button>' + (why ? '<span class=archwhy>' + esc(why) + '</span>' : '') + '</div></div>';
 }
@@ -83,7 +83,7 @@ async function archBriefSend(){
   if(!cur || archWhyOff(home, cs, cur) || archBriefBusy(q.p) || !archXHead(d)) return false;
   q.busy = true; paintStruct();
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, sid: cur.sid, relay: true, thread: 'pipeline:' + ARCH_BRIEF_PL, body: archBriefDmBody(q.p, home, !!cur.cx),
+    const j = await postJSON('/api/dm', { to: cur.id, sid: cur.sid, relay: true, thread: 'pipeline:' + ARCH_BRIEF_PL, body: archBriefDmBody(q.p, home, !!cur.sh),
       plreq: { kind: 'req', pipeline: ARCH_BRIEF_PL, repo: q.p } });   // server records who received it (state `plReq`)
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');   // ⚠ok first: nothing went out, remember nothing
     const m = plMem(); m[cur.sid] = { name: ARCH_BRIEF_PL, at: Date.now() }; lsSetJson('sidereus.plrun', m);   // same lighting memo as 48b plRunSend

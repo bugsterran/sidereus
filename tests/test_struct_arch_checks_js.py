@@ -319,6 +319,21 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("data-ckrgo disabled", r[9])
         self.assertEqual([r[10], r[11]], [9, 0])
 
+    def test_fix_request_other_platforms(self):   # pi / cu rows are fix-request recipients with the shell-marker tail; Claude tail unchanged
+        li = {"cwd": "/r", "mboxSrc": "identity", "state": "idle", "ageSec": 1}
+        sess = [dict(li, sid="pi1", plat="pi", mbox="pm"), dict(li, sid="cu1", plat="cu", mbox="cm"), dict(li, sid="cc1", mbox="cc")]
+        r = run("const c = archChkFixCands(" + json.dumps(sess) + ", '/r', true), d = {checks: " + json.dumps(CK) + "}, it = archChkTop(d).slice(0, 1);"
+                "const h = archChkWinHtml('/r', d, {sel: {}, req: {sid: 'pi1', busy: false}}, c);"
+                "console.log(JSON.stringify([c.map(x => [x.sid, x.sh]), archChkFixBody('/r', d.checks, it, '/sid', true), archChkFixBody('/r', d.checks, it, '/sid'),"
+                " archChkFixCands(" + json.dumps(sess) + ", '/r').map(x => x.sid), h]));")
+        self.assertEqual(sorted(r[0]), [["cc1", False], ["cu1", True], ["pi1", True]])
+        self.assertIn('echo "[pl:security-fix/<stage title>]"', r[1])
+        self.assertNotIn("Tag each stage dispatch", r[1])
+        self.assertIn("Tag each stage dispatch description with [pl:security-fix/<stage title>]", r[2])
+        self.assertEqual(r[1][:r[1].index("\nRun the stages yourself")], r[2][:r[2].index("\nTag each stage")])
+        self.assertEqual(r[3], ["cc1"])             # without `all` (47g/48i Agent-tool bodies): Claude only
+        self.assertNotIn("data-cxhint", r[4])
+
     def test_run_security_check_codex(self):   # a logged-in Codex session of the repo is a run recipient, never a fix-request one
         sess = [{"sid": "x1", "plat": "cx", "cwd": "/x/shop", "mbox": "admin-codex", "mboxSrc": "identity", "state": "idle", "ageSec": 1}]
         r = run("const fc = archChkFixCands(" + json.dumps(sess) + ", '/x/shop'), rc = archChkRunCands(archChkFixCands(" + json.dumps(sess) + ", '/x/shop', true));"

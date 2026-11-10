@@ -75,8 +75,15 @@ class CodexRecipient(unittest.TestCase):
         sess = [{"sid": "s1", "cwd": "/a"}, {"sid": "s2", "cwd": "/a", "plat": "cc"}, {"sid": "s3", "cwd": "/a", "plat": "cx", "mbox": "cx", "mboxSrc": "identity"},
                 {"sid": "s4", "cwd": "/a", "plat": "gm"}, {"sid": "s5", "cwd": "/a", "plat": "cx", "state": "done"}]
         stub = "Object.assign(globalThis, {SESS: %s, PLS: {data: {}}, lsJson: () => ({})});" % json.dumps(sess)
-        r = _js("(() => { %s return plSessions('/a').map(x => [x.sid, x.cx, x.login]); })()" % stub, "mboxIn", "plSessions", "plProjSess", "plMem", "plSubsOf")
-        self.assertEqual(r, [["s1", False, False], ["s2", False, False], ["s3", True, True]])
+        r = _js("(() => { %s return plSessions('/a').map(x => [x.sid, x.cx, x.sh, x.login]); })()" % stub, "mboxIn", "plSessions", "plProjSess", "plMem", "plSubsOf")
+        self.assertEqual(r, [["s1", False, False, False], ["s2", False, False, False], ["s3", True, True, True], ["s4", False, True, False]])
+
+    def test_sessions_include_pi_and_other_ext(self):   # no platform allow-list: pi and cu rows are shell-marker recipients
+        sess = [{"sid": "p1", "cwd": "/a", "plat": "pi", "mbox": "pm", "mboxSrc": "identity"}, {"sid": "u1", "cwd": "/a", "plat": "cu"}]
+        stub = "Object.assign(globalThis, {SESS: %s, PLS: {data: {}}, lsJson: () => ({})});" % json.dumps(sess)
+        r = _js("(() => { %s return plSessions('/a').map(x => [x.sid, x.plat, x.sh, x.cx]); })()" % stub, "mboxIn", "plSessions", "plProjSess", "plMem", "plSubsOf")
+        self.assertEqual(r, [["p1", "pi", True, False], ["u1", "cu", True, False]])
+        self.assertIn('echo "[pl:', _dm("direct", True))   # sh recipients get plDmCodex (shell markers)
 
     def test_codex_launcher_env_id_is_logged_in(self):
         # cx env = launcher id with a read cursor (server-checked); a Claude env (MAILBOX_ME guess) stays off

@@ -102,28 +102,28 @@ function archChkView(d, S, hid){
 }
 // Pure: selected items in list order, visible ones only (keys of items no longer listed drop out).
 function archChkSel(d, sel, S, hid){ return archChkView(d, S, hid).filter(x => sel && sel[archChkKey(x)]); }
-// Pure: fix-request targets = every live cc session, tiered g: 0 cwd is p / under p/ / worktree of p (wt.main),
+// Pure: fix-request and run targets = every live session of any platform (sh: shell-marker body), tiered g: 0 cwd is p / under p/ / worktree of p (wt.main),
 //   1 lists p in `repos` (touched it, works elsewhere), 2 the rest. Tier, then logged-in first, then most recently active.
 //   ⚠`repos` is tier 1, never 0 — it lists every repo a session touched; the body names the target path instead.
-function archChkFixCands(sess, p, cx){   // cx: also Codex rows (run picker only; a fix request stays Claude-only)
+function archChkFixCands(sess, p, all){   // all: every platform (84l pickers); omitted = Claude only (47g/48i bodies are Agent-tool text)
   const inRepo = x => !!p && (x.cwd === p || String(x.cwd || '').startsWith(p + '/') || !!(x.wt && x.wt.main && x.wt.main === p));
   const tier = x => inRepo(x) ? 0 : p && Array.isArray(x.repos) && x.repos.indexOf(p) >= 0 ? 1 : 2;
-  return (sess || []).filter(x => x && x.sid && x.state !== 'done' && (!x.plat || x.plat === 'cc' || (cx && x.plat === 'cx')))
-    .map(x => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', id: x.mbox || '', login: mboxIn(x), proj: x.project || archBase(x.cwd), age: +x.ageSec || 0, cwd: x.cwd || '',
+  return (sess || []).filter(x => x && x.sid && x.state !== 'done' && (all || !x.plat || x.plat === 'cc'))
+    .map(x => ({ sid: x.sid, model: x.model || '', plat: x.plat || 'cc', sh: !!x.plat && x.plat !== 'cc', cx: x.plat === 'cx', id: x.mbox || '', login: mboxIn(x), proj: x.project || archBase(x.cwd), age: +x.ageSec || 0, cwd: x.cwd || '',
       g: tier(x), st: typeof sessLabel === 'function' ? sessLabel(x) : String(x.state || '') }))
     .sort((a, b) => a.g - b.g || (b.login ? 1 : 0) - (a.login ? 1 : 0) || a.age - b.age);
 }
 // Metadata only: project · sid8 · mailbox id · state · model (no task text).
-function archChkCandLabel(c){ return [c.proj, sid8(c.sid), c.id, c.st, c.model].filter(Boolean).join(' · '); }
+function archChkCandLabel(c){ return [c.sh && typeof platName === 'function' ? platName(c.plat) : '', c.proj, sid8(c.sid), c.id, c.st, c.model].filter(Boolean).join(' · '); }
 // Last pick per repo (localStorage sidereus.ckfix = {repo: sid}) if still a candidate, else the first candidate.
 function archChkPick(cands, p){
   const m = typeof lsJson === 'function' ? lsJson('sidereus.ckfix', {}) : {}, sid = m && typeof m === 'object' && Object.prototype.hasOwnProperty.call(m, p) ? m[p] : '';
   return (cands.find(c => c.sid === sid) || cands[0] || {}).sid || '';
 }
 // Pure: DM body (mailbox wire text, not UI) = a security-fix run request (header as archChkRunBody) + rule · file:line · help only — no code text (rule 1).
-// ⚠The pipeline's re-scan stage moves the Security badge, not arch-map. Recipients are Claude-only (archChkFixCands without cx).
+// ⚠The pipeline's re-scan stage moves the Security badge, not arch-map. sh = non-Claude recipient: shell-marker tail as archChkRunBody.
 const ARCH_FIX_PL = 'security-fix', ARCH_FIX_KEYS = 50, ARCH_FIX_KEY_MAX = 300, ARCH_FIX_CHARS = 6000;   // = sidereus/pl_reqs.py KEYS_MAX / KEY_MAX / KEYS_CHARS_MAX
-function archChkFixBody(p, c, items, home){
+function archChkFixBody(p, c, items, home, sh){
   const tools = items.map(x => String(x.tool || '?')).filter((t, i, a) => a.indexOf(t) === i).join(', '), cm = String((c && ((c.security && c.security.commit) || c.commit)) || '').slice(0, 8);
   const h = home ? String(home).replace(/\/+$/, '') + '/' : '', pl = 'security-fix';   // = ARCH_FIX_PL; literal: other tests extract this function alone
   return 'Pipeline ' + pl + ' run — request: «' + p + ': security fix, ' + items.length + ' finding' + (items.length === 1 ? '' : 's') + '»\n'
@@ -135,7 +135,10 @@ function archChkFixBody(p, c, items, home){
       return '- ' + archChkLv(x.sev) + ' · ' + (archChkRule(x, true) || '?') + ' · ' + x.file + ':' + (parseInt(x.line, 10) || 1)
         + (hp.desc ? ' — ' + hp.desc : '') + (hp.url ? ' (' + hp.url + ')' : ''); }).join('\n')
     + "\nFix the cause, keep behaviour, run the project's tests."
-    + '\nTag each stage dispatch description with [pl:' + pl + '/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.';
+    + (sh ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + pl + '/<stage title>]" and end it with echo "[pl-end:' + pl + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
+      + ' At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.'
+      + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.'
+      : '\nTag each stage dispatch description with [pl:' + pl + '/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.');
 }
 // Pure: plreq keys of the requested findings (the line counts j/k on these); null past the server caps.
 function archChkFixKeys(items){
@@ -155,14 +158,14 @@ function archChkHdBtn(d){ return d && d.ok ? archChkEntry(d) : ''; }
 // The home tier exists because the run body points at <home>/.claude/pipelines, so a session there can run it with --repo (same as 84j archCands).
 function archChkRunCands(cands, home){ return (cands || []).filter(c => c && c.login && (c.g <= 1 || (!!home && c.cwd === home))); }
 // Pure: DM body (mailbox wire text in the archDmBody format, not UI); absolute paths under the Sidereus repo (home).
-function archChkRunBody(p, home, cx, img){   // cx = Codex recipient · img = «Include images» checked
+function archChkRunBody(p, home, cx, img){   // cx = non-Claude recipient (cand.sh) · img = «Include images» checked
   const h = home ? String(home).replace(/\/+$/, '') + '/' : '';
   return 'Pipeline ' + ARCH_SEC_PL + ' run — request: «' + p + ': security check»\n'
     + 'Target repository: ' + p + '\n'
     + 'Pipeline: ' + h + '.claude/pipelines/' + ARCH_SEC_PL + '.json (scanners → threat-model review); run it from ' + (h || 'the Sidereus repository') + ' with --repo ' + p + '\n'
     + 'Gate: python3 ' + h + 'scripts/arch_checks.py --verify --last --category security (Windows: py ' + h + 'scripts/arch_checks.py --verify --last --category security)'
     + (img ? '\nInclude images: pass --images to the scanner run (trivy image on each Dockerfile FROM and compose image:).' : '')
-    // ⚠No Agent tool in Codex: same stage-marker tail as archDmBody (84j).
+    // ⚠No Agent tool outside Claude Code: same stage-marker tail as archDmBody (84j).
     + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + ARCH_SEC_PL + '/<stage title>]" and end it with echo "[pl-end:' + ARCH_SEC_PL + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
       + ' At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.'
       + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.'
@@ -210,7 +213,7 @@ function archChkRunHtml(p, d, S, cands){
       + (cm ? row('sh', 'macOS / Linux') + row('win', 'Windows') : '<div class=archwhy>' + esc(archNoHome()) + '</div>')
       + '<div class=archrqb><button type=button class=wkrgb data-ckrx>' + esc(T('Cancel')) + '</button></div></div>' + sent;
   }
-  const cur = rc.find(c => c.sid === S.run.sid) || null, body = archChkRunBody(p, home, !!(cur && cur.cx), !!S.run.img), off = !home ? archNoHome() : !cur ? T('No live session') : '';
+  const cur = rc.find(c => c.sid === S.run.sid) || null, body = archChkRunBody(p, home, !!(cur && cur.sh), !!S.run.img), off = !home ? archNoHome() : !cur ? T('No live session') : '';
   return '<div class=archreq role=group aria-label="' + esc(T('Run security check')) + '">' + head
     + '<label>' + esc(T('To session')) + ' <select data-ckrs>' + rc.map(x => '<option value="' + esc(x.sid) + '"' + (cur && x.sid === cur.sid ? ' selected' : '') + '>' + esc(archChkCandLabel(x)) + '</option>').join('')
     + '</select></label>' + (typeof archChkImgBox === 'function' ? archChkImgBox(S) : '') + '</div><pre class=archdm>' + esc(body) + '</pre>' + plCxHint(cur) + '<div class=archrqb>'
@@ -254,8 +257,8 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
     h += '<div class=archreq role=group aria-label="' + esc(T('Fix request preview')) + '"><div class=archrqh><b>' + esc(T('Fix request preview')) + '</b>'
       + '<label>' + esc(T('To session')) + ' <select data-cks>' + (cands.length ? [[0, 'This project'], [1, 'Uses this repo'], [2, 'Other sessions']].map(a => { const G = cands.filter(x => x.g === a[0]);
           return G.length ? '<optgroup label="' + esc(T(a[1])) + '">' + G.map(x => '<option value="' + esc(x.sid) + '"' + (x.sid === S.req.sid ? ' selected' : '') + '>' + esc(archChkCandLabel(x)) + '</option>').join('') + '</optgroup>' : ''; }).join('')
-        : '<option value="">' + esc(T('None')) + '</option>') + '</select></label></div><pre class=archdm>' + esc(archChkFixBody(p, c, sel, archHome(d))) + '</pre><div class=archrqb>'
-      + '<button type=button class="wkrgb archok" data-ckgo' + (off || S.req.busy ? ' disabled' : '') + (off ? ' title="' + esc(off) + '"' : '') + '>' + esc(T(archChkGoLabel(S, archChkReqKey(S.req.sid, archChkFixBody(p, c, sel, archHome(d)))))) + '</button>'
+        : '<option value="">' + esc(T('None')) + '</option>') + '</select></label></div><pre class=archdm>' + esc(archChkFixBody(p, c, sel, archHome(d), !!(cur && cur.sh))) + '</pre>' + plCxHint(cur) + '<div class=archrqb>'
+      + '<button type=button class="wkrgb archok" data-ckgo' + (off || S.req.busy ? ' disabled' : '') + (off ? ' title="' + esc(off) + '"' : '') + '>' + esc(T(archChkGoLabel(S, archChkReqKey(S.req.sid, archChkFixBody(p, c, sel, archHome(d), !!(cur && cur.sh)))))) + '</button>'
       + '<button type=button class=wkrgb data-ckx>' + esc(T('Cancel')) + '</button>' + (off ? '<span class=archwhy>' + esc(off) + '</span>' : '') + '</div></div>';
   }
   h += (S.sent ? '' : archChkFixRecHtml(p)) + archChkSentHtml(S);   // after a reload S.sent is gone: the server record (plReq) stands in
@@ -440,7 +443,7 @@ function archChkWinPaint(){
   const root = w.document.getElementById('ckroot');
   if(!root) return false;
   archChkWinCss(document, w.document);
-  const cands = archChkFixCands(SESS, S.p), l = root.querySelector('.archckl'), st = l ? l.scrollTop : 0;   // ⚠innerHTML resets the list scroll
+  const cands = archChkFixCands(SESS, S.p, true), l = root.querySelector('.archckl'), st = l ? l.scrollTop : 0;   // ⚠innerHTML resets the list scroll
   if(S.req && cands.length && !cands.some(c => c.sid === S.req.sid)) S.req.sid = archChkPick(cands, S.p);
   root.innerHTML = archChkWinHtml(S.p, ARCH.cache[S.p], S, cands, archChkFixCands(SESS, S.p, true));
   archChkSplitPaint(root);
@@ -483,7 +486,7 @@ function archChkWinEv(e, w){
   if((b = t.closest('[data-ckv]'))){ strPopOpenRel(S.p, b.dataset.af, parseInt(b.dataset.al, 10) || 1, 80, ''); return; }
   if((b = t.closest('[data-ckrep]'))){ archChkReportOpen(S.p, b.dataset.ckrep); return; }
   if(t.closest('[data-ckfix]')){
-    if(!S.req){ S.req = { sid: archChkPick(archChkFixCands(SESS, S.p), S.p), busy: false }; S.msg = ''; }   // S.sent stays: it marks a repeat
+    if(!S.req){ S.req = { sid: archChkPick(archChkFixCands(SESS, S.p, true), S.p), busy: false }; S.msg = ''; }   // S.sent stays: it marks a repeat
     else if(!S.req.busy) S.req = null;   // second press closes the preview
     archChkWinPaint(); return;
   }
@@ -522,9 +525,9 @@ async function archChkReportOpen(p, name){
 async function archChkFixSend(){
   const S = ARCH_CW, q = S && S.req;
   if(!q || q.busy) return false;
-  const d = ARCH.cache[S.p], items = archChkSel(d, S.sel, S, archChkHidden(S.p)), cur = archChkFixCands(SESS, S.p).find(c => c.sid === q.sid);
+  const d = ARCH.cache[S.p], items = archChkSel(d, S.sel, S, archChkHidden(S.p)), cur = archChkFixCands(SESS, S.p, true).find(c => c.sid === q.sid);
   if(!items.length || !cur || !cur.login) return false;
-  const body = archChkFixBody(S.p, d && d.checks, items, archHome(d)), key = archChkReqKey(cur.sid, body), keys = archChkFixKeys(items);
+  const body = archChkFixBody(S.p, d && d.checks, items, archHome(d), !!cur.sh), key = archChkReqKey(cur.sid, body), keys = archChkFixKeys(items);
   if(!keys){ S.msg = T('Too many findings — select at most {n}').replace('{n}', () => ARCH_FIX_KEYS); archChkWinPaint(); return false; }
   if(S.sent && S.sent.key === key && !q.again){ q.again = true; archChkWinPaint(); return false; }   // first click on «Sent · send again» only arms
   q.busy = true; archChkWinPaint();
@@ -553,7 +556,7 @@ async function archChkRunSend(){
   if(!q || q.busy) return false;
   const d = ARCH.cache[S.p], home = archHome(d), cur = archChkRunCands(archChkFixCands(SESS, S.p, true), home).find(c => c.sid === q.sid);
   if(!home || !cur) return false;
-  const body = archChkRunBody(S.p, home, !!cur.cx, !!q.img), key = archChkReqKey(cur.sid, body);
+  const body = archChkRunBody(S.p, home, !!cur.sh, !!q.img), key = archChkReqKey(cur.sid, body);
   if(S.runSent && S.runSent.key === key && !q.again){ q.again = true; archChkWinPaint(); return false; }   // first click on «Sent · send again» only arms
   q.busy = true; archChkWinPaint();
   try{

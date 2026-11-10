@@ -422,8 +422,8 @@ class StructArch(unittest.TestCase):
                 "ARCH.cache['/r'] = {ok: true, modules: [], edges: [], sidereus: '/sidereus'}; ARCH.req = {p: '/r', sid: 'gone', busy: false};"
                 "const box = {innerHTML: '', querySelector(){ return null; }}; archPaint(box, head);"
                 "console.log(JSON.stringify([archCands('/sidereus', SESS, '/r').map(c => c.sid), ARCH.req.sid, box.innerHTML, archCands('/sidereus', SESS, '/r').map(c => c.cx)]));")
-        self.assertEqual(r[0], ["p2", "d", "p1", "a1", "z1"])   # live plat 'cx' (Codex) included · 'gm' not
-        self.assertEqual(r[3], [False, True, False, False, False])
+        self.assertEqual(r[0], ["p2", "d", "g", "p1", "a1", "z1"])   # every live platform included (no cc/cx allow-list)
+        self.assertEqual(r[3], [False, True, False, False, False, False])
         self.assertEqual(r[1], "p2")                       # project session preselected
         self.assertIn('value="p2" selected>r · p2', r[2])  # folder name in the label
         self.assertIn(">other · z1", r[2])
@@ -439,6 +439,23 @@ class StructArch(unittest.TestCase):
         self.assertIn('echo "[pl-end:arch-map/<stage title>]"', r[2])
         for w in CLAUDE_ONLY:
             self.assertNotIn(w, r[2])
+
+    def test_other_platforms_get_shell_marker_body(self):
+        # pi and any other external CLI (cu) are recipients and get the shell-marker body; Codex-only hint stays off for them
+        out = []
+        for plat in ("pi", "cu"):
+            r = run("SESS = [{sid: 'e1', cwd: '/r', plat: '" + plat + "', mbox: 'em', mboxSrc: 'identity'}];"
+                    "ARCH.cache['/r'] = {ok: true, modules: [], edges: [], sidereus: '/sidereus'}; ARCH.req = {p: '/r', sid: 'e1', busy: false};"
+                    "const box = {innerHTML: '', querySelector(){ return null; }}; archPaint(box, head); const h = box.innerHTML; await archSend();"
+                    "console.log(JSON.stringify([archCands('/sidereus', SESS, '/r').map(c => [c.sid, c.sh, c.cx]), h, POSTS[0][1].body]));")
+            self.assertEqual(r[0], [["e1", True, False]])
+            self.assertIn('echo "[pl:arch-map/<stage title>]"', r[2])
+            self.assertNotIn(ARCH_DM_TAG, r[2])
+            for w in CLAUDE_ONLY:
+                self.assertNotIn(w, r[2])
+            self.assertNotIn("data-cxhint", r[1])
+            out.append(r[2])
+        self.assertEqual(out[0], out[1])
 
     def test_codex_recipient_preview_matches_send(self):
         r = run("SESS = [{sid: 'd1', cwd: '/r', plat: 'cx', mbox: 'cx', mboxSrc: 'identity'}];"

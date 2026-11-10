@@ -246,7 +246,7 @@ function plDmDirect(p, req, models, dt){
     + 'Report each stage in ≤10 lines. Never restart or commit unless the rules say so.\n'
     + 'Default instructions (also .claude/pipelines/_defaults.json in the Sidereus repo):\n' + (defs || '(custom stages only — use their task)');
 }
-// Codex recipient: no Agent tool / SendMessage / Workflow, so one session runs every stage and lights it with shell markers
+// Non-Claude recipient (Codex, pi, every other CLI): no Agent tool / SendMessage / Workflow, so one session runs every stage and lights it with shell markers
 // (same wording as hooks/pipelines_brief.py _RUN_CODEX; pl_mark.py --platform codex). ⚠Model overrides do not apply there.
 function plDmCodex(p, req, models, dt){
   const used = p.stages.map(s => s.title);
@@ -263,7 +263,7 @@ function plDmCodex(p, req, models, dt){
     + 'Default instructions (also .claude/pipelines/_defaults.json in the Sidereus repo):\n' + (defs || '(custom stages only — use their task)');
 }
 function plModeOf(name){ return lsGet('sidereus.plmode.' + name, 'direct') === 'wf' ? 'wf' : 'direct'; }
-function plDmFor(p, req, models, cx){   // cx = Codex recipient: ignores PLRUN.mode
+function plDmFor(p, req, models, cx){   // cx = non-Claude recipient (session.sh): ignores PLRUN.mode
   const d = PLS.data[PLS.proj] || {};
   return (cx ? plDmCodex(p, req, models, d.default_tasks || {}) : PLRUN && PLRUN.mode === 'wf' ? plDmText(p, req, models) : plDmDirect(p, req, models, d.default_tasks || {})) + (cx ? '' : plDmMissing(p, d.agents));   // Codex runs no agents
 }
@@ -279,8 +279,8 @@ function plDmText(p, req, models){
 }
 // Live sessions of the project (metadata only: sid, model, state, mailbox login, project, running Agent one-line description).
 function plSessions(proj){
-  return plProjSess(proj).filter(x => x.state !== 'done' && (!x.plat || x.plat === 'cc' || x.plat === 'cx'))
-    .map(x => ({ sid: x.sid, model: x.model || '', cx: x.plat === 'cx', state: x.state || '', id: x.mbox || '', login: mboxIn(x),
+  return plProjSess(proj).filter(x => x.state !== 'done')   // ⚠every platform: no allow-list, so a new CLI needs no picker change
+    .map(x => ({ sid: x.sid, model: x.model || '', plat: x.plat || 'cc', sh: !!x.plat && x.plat !== 'cc', cx: x.plat === 'cx', state: x.state || '', id: x.mbox || '', login: mboxIn(x),
       project: x.project || '', doing: ['tool', 'think'].includes(x.state) ? plStrip(x.targ || '') : '' }));   // doing: same rule as sessTaskHtml (targ = Agent description only)
 }
 function plRunModels(p){   // overrides that differ from the saved value only
@@ -311,7 +311,7 @@ function plRunPanel(p, models){
   if(!ss.some(x => x.sid === PLRUN.sid)) PLRUN.sid = (ss.find(x => x.login) || ss[0] || {}).sid || '';
   const cur = ss.find(x => x.sid === PLRUN.sid);
   const sOpts = ss.map(x => '<option value="' + esc(x.sid) + '"' + (x.sid === PLRUN.sid ? ' selected' : '') + (x.login ? '' : ' disabled') + '>'
-    + esc(sid8(x.sid) + (x.model ? ' · ' + x.model : '') + (x.login ? '' : ' · ' + T('not logged in to the mailbox'))) + '</option>').join('');
+    + esc((x.sh && typeof platName === 'function' ? platName(x.plat) + ' · ' : '') + sid8(x.sid) + (x.model ? ' · ' + x.model : '') + (x.login ? '' : ' · ' + T('not logged in to the mailbox'))) + '</option>').join('');
   const mRows = p.stages.map(s => {
     const saved = s.model || p.defaults.model, v = PLRUN.models[s.title] || saved;
     return '<label class=pll><span>' + esc(s.title) + '</span><select class=plrsel data-plrm="' + esc(s.title) + '">'
@@ -324,9 +324,9 @@ function plRunPanel(p, models){
   // Side layer (fixed, 43-pipeline.css .plrun) so opening it never pushes the canvas; explanations live in tooltips, not extra lines.
   return '<div class=plrun role=dialog aria-label="' + esc(T('Send a run request')) + '"><div class=brh2><b>' + esc(T('Send a run request')) + '</b> <span class=plhelp tabindex=0 title="' + esc(T('The session runs it — Sidereus runs nothing')) + '">?</span>'
     + '<button class="wkrgb plrxx" data-plrx aria-label="' + esc(T('Cancel')) + '">✕</button></div>'
-    + '<label class=pll title="' + esc(T('Direct reuses the same agent on loop-backs and retries (fewer tokens) · Workflow starts a new agent per stage')) + '"><span>' + esc(T('Mode', 'how')) + ' <i class=plhelp aria-hidden=true>?</i></span><select class=plrsel data-plrmode' + (cur && cur.cx ? ' disabled title="' + esc(T('Workflow mode is not available for this session')) + '"' : '') + '>'
-    + '<option value=direct' + (PLRUN.mode === 'wf' && !(cur && cur.cx) ? '' : ' selected') + '>' + esc(T('Session runs it directly (default)')) + '</option>'
-    + '<option value=wf' + (PLRUN.mode === 'wf' && !(cur && cur.cx) ? ' selected' : '') + '>Workflow</option></select></label>'
+    + '<label class=pll title="' + esc(T('Direct reuses the same agent on loop-backs and retries (fewer tokens) · Workflow starts a new agent per stage')) + '"><span>' + esc(T('Mode', 'how')) + ' <i class=plhelp aria-hidden=true>?</i></span><select class=plrsel data-plrmode' + (cur && cur.sh ? ' disabled title="' + esc(T('Workflow mode is not available for this session')) + '"' : '') + '>'
+    + '<option value=direct' + (PLRUN.mode === 'wf' && !(cur && cur.sh) ? '' : ' selected') + '>' + esc(T('Session runs it directly (default)')) + '</option>'
+    + '<option value=wf' + (PLRUN.mode === 'wf' && !(cur && cur.sh) ? ' selected' : '') + '>Workflow</option></select></label>'
     + (ss.length ? '<label class=pll><span>' + esc(T('Sessions')) + '</span><select class=plrsel data-plrs>' + sOpts + '</select></label>'
       : '<div class=hidnote>' + esc(T('No live session in this project')) + '</div>')
     + '<label class=pll><span>' + esc(T('Request')) + '</span><input class=plreq data-plrq maxlength=500 value="' + esc(PLRUN.req || '') + '" placeholder="' + esc(T('One-line request')) + '"></label>'
@@ -334,7 +334,7 @@ function plRunPanel(p, models){
     + '<div class=plrms><button type=button class=plrmh data-plrmo aria-expanded=' + !!PLRUN.mOpen + '>' + (PLRUN.mOpen ? '▾ ' : '▸ ') + esc(T('Change models for this run only'))
     + (nCh ? ' · ' + esc(TV({msg: '{n} changed', vars: {n: nCh}})) : '') + '</button>' + (PLRUN.mOpen ? mRows : '') + '</div>'
     + '<div class=brh2><b>' + esc(T('Message to send')) + '</b>' + (cur && cur.id ? ' <i>→ ' + esc(cur.id) + '</i>' : '') + '</div>'
-    + '<pre class=plprev>' + esc(plDmFor(p, req || '…', plRunModels(p), !!(cur && cur.cx))) + '</pre>'
+    + '<pre class=plprev>' + esc(plDmFor(p, req || '…', plRunModels(p), !!(cur && cur.sh))) + '</pre>'
     + plCxHint(cur)
     + '<div class=plbar><button class="wkrgb archok" data-plgo' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Confirm — send')) + '</button>'
     + '<button class="wkrgb" data-plrx>' + esc(T('Cancel')) + '</button></div></div>';
@@ -541,7 +541,7 @@ async function plRunSend(){
   if(!cur || !cur.login || !req) return;
   PLRUN.busy = true; plPaint();
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, body: plDmFor(p, req, plRunModels(p), !!cur.cx), relay: true, sid: cur.sid, thread: 'pipeline:' + p.name });
+    const j = await postJSON('/api/dm', { to: cur.id, body: plDmFor(p, req, plRunModels(p), !!cur.sh), relay: true, sid: cur.sid, thread: 'pipeline:' + p.name });
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');   // ⚠ok first: nothing went out, remember nothing
     const m = plMem(); m[cur.sid] = { name: p.name, at: Date.now() }; lsSetJson('sidereus.plrun', m);
     PLRUN = null; PLS.msg = T('Sent') + ' → ' + cur.id;
@@ -574,7 +574,7 @@ document.addEventListener('input', e => {
   PLRUN.req = s.value;
   const p = plCur(), pre = s.closest('.plw').querySelector('.plprev'), go = s.closest('.plw').querySelector('[data-plgo]');
   const cur = plSessions(PLS.proj).find(x => x.sid === PLRUN.sid);
-  if(p && pre) pre.textContent = plDmFor(p, String(PLRUN.req).trim() || '…', plRunModels(p), !!(cur && cur.cx));
+  if(p && pre) pre.textContent = plDmFor(p, String(PLRUN.req).trim() || '…', plRunModels(p), !!(cur && cur.sh));
   plGoSet(go, cur, PLRUN.req, PLRUN.busy);
 });
 // Called from each /api/state poll (95-poll.js): relight the open pipeline view from the fresh SESS rows.
