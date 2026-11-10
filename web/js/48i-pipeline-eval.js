@@ -56,7 +56,7 @@ function plEvalSgHtml(ev, S, cands, cat){
     const to = cur && !S.req.pick ? '<span class=plsto>' + esc(lab(cur)) + '</span>' + (cands.length > 1 ? ' <button type=button class=wkrgb data-plsch>' + esc(T('Change')) + '</button>' : '')
       : '<select data-plss>' + (cands.length ? cands.map(x => '<option value="' + esc(x.sid) + '"' + (x.sid === S.req.sid ? ' selected' : '') + '>' + esc(lab(x)) + '</option>').join('') : '<option value="">' + esc(T('None')) + '</option>') + '</select>';
     h += '<div class=archreq role=group aria-label="' + esc(T('Fix request preview')) + '"><div class=archrqh><b>' + esc(T('Fix request preview')) + '</b><label>' + esc(T('To session')) + ' ' + to
-      + '</label></div><pre class=archdm>' + esc(S.req.body || '') + '</pre><div class=archrqb><button type=button class="wkrgb archok" data-plsgo' + (off || S.req.busy ? ' disabled' : '') + (off ? ' title="' + esc(off) + '"' : '') + '>'
+      + '</label></div><pre class=archdm>' + esc(S.req.body || '') + '</pre>' + (typeof plCxHint === 'function' ? plCxHint(cur) : '') + '<div class=archrqb><button type=button class="wkrgb archok" data-plsgo' + (off || S.req.busy ? ' disabled' : '') + (off ? ' title="' + esc(off) + '"' : '') + '>'
       + esc(T(archChkGoLabel(S, archChkReqKey(S.req.sid, S.req.body)))) + '</button><button type=button class=wkrgb data-plsx>' + esc(T('Cancel')) + '</button>' + (off ? '<span class=archwhy>' + esc(off) + '</span>' : '') + '</div></div>';
   }
   return h + plEvalFixRec(S) + archChkSentHtml(S) + '</div>';   // same success/error lines and repeat guard as the 84l issues window
@@ -156,14 +156,15 @@ function plEvalClose(focusBack){
 popReg('plevp', '#plevp, [data-pleval]', plEvalClose);
 // Pure: relay targets, ordered — live sessions that ran this pipeline (runSid = 48b plLiveRun first, then newest plrun), then
 //   live sessions inside the project (84l rule). ⚠A gone run session drops out, so the repo rule is the fallback.
+//   ⚠Every platform (no allow-list): the fix / red-check bodies are plain edit/run text, no Agent tool.
 function plEvalRecips(sess, proj, name, runSid){
   const mine = r => r && r.name === name && r.proj === proj;
-  const ran = (sess || []).filter(x => x && x.sid && x.state !== 'done' && x.state !== 'gone' && (!x.plat || x.plat === 'cc') && (x.sid === runSid || (x.plrun || []).some(mine)));
+  const ran = (sess || []).filter(x => x && x.sid && x.state !== 'done' && x.state !== 'gone' && (x.sid === runSid || (x.plrun || []).some(mine)));
   const t1 = x => x.sid === runSid ? Infinity : Math.max(0, ...(x.plrun || []).filter(mine).map(r => +r.t1 || 0));
-  const rc = ran.sort((a, b) => t1(b) - t1(a)).map(x => ({ sid: x.sid, model: x.model || '', id: x.mbox || '', login: mboxIn(x), dir: archBase(x.cwd),
+  const rc = ran.sort((a, b) => t1(b) - t1(a)).map(x => ({ sid: x.sid, model: x.model || '', plat: x.plat || 'cc', sh: !!x.plat && x.plat !== 'cc', cx: x.plat === 'cx', id: x.mbox || '', login: mboxIn(x), dir: archBase(x.cwd),
     // proj/st are what archChkCandLabel (84l) prints; same build as archChkFixCands
     proj: x.project || archBase(x.cwd), st: typeof sessLabel === 'function' ? sessLabel(x) : String(x.state || ''), age: +x.ageSec || 0, ran: true }));
-  return rc.concat((typeof archChkFixCands === 'function' ? archChkFixCands(sess, proj) : []).filter(c => !rc.some(r => r.sid === c.sid)));
+  return rc.concat((typeof archChkFixCands === 'function' ? archChkFixCands(sess, proj, true) : []).filter(c => !rc.some(r => r.sid === c.sid)));
 }
 // Pure: default recipient — a mailbox-logged-in run session, else any logged-in one, else the first (preview shows why it cannot send).
 function plEvalPick(cands){ return cands.find(x => x.ran && x.login) || cands.find(x => x.login) || cands[0] || null; }

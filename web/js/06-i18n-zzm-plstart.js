@@ -14,6 +14,6 @@ Object.assign(I18N.ko, {
   'Saved: {s}': '저장했습니다: {s}',
   'Nothing written — the files already exist': '쓰지 않았습니다 — 파일이 이미 있습니다',
   'Request a red check': 'red 확인 요청',
-  'Open a Claude Code session in this project and log in to the mailbox to request it': '요청하려면 이 프로젝트에서 Claude Code 세션을 열고 메일박스에 로그인하세요',
+  'Open an AI session in this project and log in to the mailbox to request it': '요청하려면 이 프로젝트에서 AI 세션을 열고 메일박스에 로그인하세요',
   'Red check requested → {s} · {t}': 'red 확인 요청함 → {s} · {t}',
 });

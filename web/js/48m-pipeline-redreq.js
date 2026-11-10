@@ -1,7 +1,7 @@
 // «Request a red check» in the 48i Evaluation panel (Red check cell): preview (recipient + exact body) → «Confirm» relays one
 // mailbox message; the session runs the command on a temporary clone. ⚠Sidereus never runs the red check itself.
 let PLRR = { k: '', stage: '', sid: '', pick: false, busy: false, sent: null, msg: '' };
-const PLRR_OFF = 'Open a Claude Code session in this project and log in to the mailbox to request it';
+const PLRR_OFF = 'Open an AI session in this project and log in to the mailbox to request it';
 function plRedReqState(){
   const p = typeof plCur === 'function' ? plCur() : null, k = PLS.proj + '\n' + ((p && p.name) || '');
   if(PLRR.k !== k) PLRR = { k, stage: '', sid: '', pick: false, busy: false, sent: null, msg: '' };   // another pipeline/project: no stale preview

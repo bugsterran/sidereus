@@ -105,7 +105,7 @@ function archChkSel(d, sel, S, hid){ return archChkView(d, S, hid).filter(x => s
 // Pure: fix-request and run targets = every live session of any platform (sh: shell-marker body), tiered g: 0 cwd is p / under p/ / worktree of p (wt.main),
 //   1 lists p in `repos` (touched it, works elsewhere), 2 the rest. Tier, then logged-in first, then most recently active.
 //   ⚠`repos` is tier 1, never 0 — it lists every repo a session touched; the body names the target path instead.
-function archChkFixCands(sess, p, all){   // all: every platform (84l pickers); omitted = Claude only (47g/48i bodies are Agent-tool text)
+function archChkFixCands(sess, p, all){   // all: every platform (84l pickers); omitted = Claude only (no current caller; every picker passes it)
   const inRepo = x => !!p && (x.cwd === p || String(x.cwd || '').startsWith(p + '/') || !!(x.wt && x.wt.main && x.wt.main === p));
   const tier = x => inRepo(x) ? 0 : p && Array.isArray(x.repos) && x.repos.indexOf(p) >= 0 ? 1 : 2;
   return (sess || []).filter(x => x && x.sid && x.state !== 'done' && (all || !x.plat || x.plat === 'cc'))

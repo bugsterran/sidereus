@@ -46,7 +46,7 @@ class RedReq(unittest.TestCase):
         a, b, c = r
         for h in (a, b):
             self.assertIn(" disabled", h)
-            self.assertIn("Open a Claude Code session in this project and log in to the mailbox to request it", h)
+            self.assertIn("Open an AI session in this project and log in to the mailbox to request it", h)
         self.assertNotIn("disabled", c)
         self.assertIn('data-plrrq="검증"', c)
 

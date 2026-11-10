@@ -31,7 +31,8 @@ function hnNxPipes(){
 function hnNxW(v, max){ return String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, max || 200); }
 // Pure: relay text (English wire, never T()) = verdict id · level · file/base name · event · counts · short heads · mode
 // (+ pipeline when the guide names one that exists). ⚠Metadata only (rule 1): every other field of ctx is dropped.
-function hnNxBody(id, ctx, proj, guide, pipes){
+// sh = non-Claude recipient (cand.sh): a named pipeline gets the run-it-yourself shell-marker tail (plShTail).
+function hnNxBody(id, ctx, proj, guide, pipes, sh){
   const x = ctx && typeof ctx === 'object' ? ctx : {}, vd = x.vd && typeof x.vd === 'object' ? x.vd : {}, vp = vd.vp && typeof vd.vp === 'object' ? vd.vp : {};
   const L = ['Harness verdict: ' + hnNxW(id, 40) + (vd.lvl === 'bad' || vd.lvl === 'check' ? ' (' + vd.lvl + ')' : '')];
   if(proj) L.push('Project: ' + hnNxW(proj, 300));
@@ -46,9 +47,16 @@ function hnNxBody(id, ctx, proj, guide, pipes){
   if(fh || ph) L.push('Heads: ' + (fh || '?') + ' → ' + (ph || '?'));
   if(typeof x.mode === 'string' && /^[a-z0-9_-]{1,20}$/.test(x.mode)) L.push('Mode: ' + x.mode);
   const pl = guide && typeof guide.pipeline === 'string' ? guide.pipeline : '';
-  if(pl && Array.isArray(pipes) && pipes.indexOf(pl) >= 0) L.push('Pipeline: ' + pl);
+  const hasPl = !!pl && Array.isArray(pipes) && pipes.indexOf(pl) >= 0;
+  if(hasPl) L.push('Pipeline: ' + pl);
   L.push('Guide: docs/verdicts/' + hnNxW(id, 40) + '.md — read it, then act on this one item.');
-  return L.join('\n');
+  return L.join('\n') + (sh && hasPl ? plShTail(pl) : '');
+}
+// Non-Claude run tail (no Agent tool: one session runs every stage, lit by shell markers). ⚠Same text as the 84l/84j sh branch (tested equal).
+function plShTail(pl){
+  return '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + pl + '/<stage title>]" and end it with echo "[pl-end:' + pl + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
+    + ' At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.'
+    + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.';
 }
 // Fold key: verdict id + the row's own content (incident mode|fail ts · row scope/src/event/matcher/path/name); a guard code has one fold.
 // ⚠Never vd.id: it is the row's list position (harness_verdict.py), so a reordered reload moved an open fold under another row.
@@ -59,14 +67,16 @@ function hnNxKey(id, x){
     : [x.scope, x.src, x.ev, x.matcher, x.path, x.name, x.cmd ? hnBase(x.cmd) : ''].map(s).join('|');
   return id + '\n' + r;
 }
-// Recipients: live Claude sessions of the project that are logged into the mailbox (84l archChkFixCands). The pick is not stored.
-function hnNxCands(){ return typeof archChkFixCands === 'function' ? archChkFixCands(typeof SESS !== 'undefined' ? SESS : [], PLS.proj).filter(c => c.login) : []; }
+// Recipients: live sessions of every platform that are logged into the mailbox (84l archChkFixCands, all). The pick is not stored.
+function hnNxCands(){ return typeof archChkFixCands === 'function' ? archChkFixCands(typeof SESS !== 'undefined' ? SESS : [], PLS.proj, true).filter(c => c.login) : []; }
+// Body for the picked recipient: preview and send both read this, so what is shown is what is posted.
+function hnNxDraftBody(D, cur){ return D ? (cur && cur.sh ? D.shBody : D.body) : ''; }
 function hnNxDraftHtml(k){
   const D = HN_NXS.dr;
   if(!D || D.key !== k) return '';
   const cs = hnNxCands(), cur = cs.find(c => c.sid === D.sid) || cs[0];
   return '<div class=hnnxdr><label>' + esc(T('To session')) + ' <select data-hnnxs>' + (cs.length ? cs.map(c => '<option value="' + esc(c.sid) + '"' + (cur && c.sid === cur.sid ? ' selected' : '') + '>' + esc(archChkCandLabel(c)) + '</option>').join('')
-      : '<option value="">' + esc(T('None')) + '</option>') + '</select></label><pre class=hnnxpre>' + esc(D.body) + '</pre>'
+      : '<option value="">' + esc(T('None')) + '</option>') + '</select></label><pre class=hnnxpre>' + esc(hnNxDraftBody(D, cur)) + '</pre>' + (typeof plCxHint === 'function' ? plCxHint(cur) : '')
     + '<button type=button class="wkrgb archok" data-hnnxgo' + (!cur || D.busy ? ' disabled' : '') + '>' + esc(T(D.busy ? 'Sending…' : 'Confirm — send')) + '</button>'
     + (D.msg ? ' <i class=hntm>' + esc(D.msg) + '</i>' : '') + '</div>';
 }
@@ -89,8 +99,8 @@ function hnNxDraft(k){
   const c = HN_NXS.ctx[k];
   if(!c) return;
   if(HN_NXS.dr && HN_NXS.dr.key === k){ HN_NXS.dr = null; return; }
-  const cs = hnNxCands();
-  HN_NXS.dr = { key: k, id: c.id, body: hnNxBody(c.id, c.x, PLS.proj, hnNxGuide(c.id), hnNxPipes()), sid: (cs[0] || {}).sid || '', busy: false, msg: '' };
+  const cs = hnNxCands(), g = hnNxGuide(c.id), pp = hnNxPipes();
+  HN_NXS.dr = { key: k, id: c.id, body: hnNxBody(c.id, c.x, PLS.proj, g, pp), shBody: hnNxBody(c.id, c.x, PLS.proj, g, pp, true), sid: (cs[0] || {}).sid || '', busy: false, msg: '' };
 }
 // Server-written reasons (ok:false or a non-2xx JSON error) are kept; network/bare HTTP errors go through fetchErrMsg.
 function hnNxSendErr(e){ return e && (e.srv || (e.body && (e.body.error || e.body.err || e.body.msg))) ? String(e.message) : fetchErrMsg(e); }
@@ -102,7 +112,7 @@ async function hnNxSend(){
   if(!cur) return false;
   D.busy = true; hnRepaint(false);
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, body: D.body, relay: true, sid: cur.sid, thread: 'harness:' + D.id });
+    const j = await postJSON('/api/dm', { to: cur.id, body: hnNxDraftBody(D, cur), relay: true, sid: cur.sid, thread: 'harness:' + D.id });
     if(!j || !j.ok){ const er = new Error((j && (j.error || j.err)) || '?'); er.srv = true; throw er; }
     HN_NXS.dr = null;
     note(T('Requested → {s} · {t}').replace('{s}', () => archChkCandLabel(cur)).replace('{t}', () => hhmm(new Date())));

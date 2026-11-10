@@ -124,6 +124,42 @@ setTimeout(() => console.log(JSON.stringify([n0, prev, POSTS, NOTES, HN_NXS.dr])
         self.assertEqual(len(notes), 1)
         self.assertIsNone(dr)
 
+    def test_other_platform_recipients_get_shell_markers(self):   # pi / cu rows are recipients; their body is the one previewed and posted
+        from tests._load import js_fn
+        li = {"cwd": "/w/a", "mboxSrc": "identity", "state": "idle", "ageSec": 1}
+        ss = [dict(li, sid="pi1", plat="pi", mbox="pm"), dict(li, sid="cu1", plat="cu", mbox="cm"), dict(li, sid="cc1", mbox="cc")]
+        real = "\n".join(js_fn(f) for f in ("archChkFixCands", "mboxIn", "archBase")) + "\n"   # hoisted: replaces the _DOC stub
+        r = _js(real + """
+SESS = %s; PLS.data = {'/w/a': {ok: true, pipelines: [{name: 'sidereus-bugfix'}]}};
+const k = hnNxKey('refixed', %s); hnNxFold('refixed', %s);
+const click = m => LST.click.forEach(f => f({target: {closest: s => s in m ? m[s] : null}, stopPropagation(){}}));
+click({'.hnw .hnnx': {}, '[data-hnnxd]': {dataset: {hnnxd: k}}});
+const sids = hnNxCands().map(c => [c.sid, c.sh]);
+HN_NXS.dr.sid = 'pi1'; const prev = hnNxFold('refixed', %s);
+click({'.hnw .hnnx': {}, '[data-hnnxgo]': {}});
+setTimeout(() => console.log(JSON.stringify([sids, prev, POSTS, hnNxBody('refixed', %s, '/w/a', {pipeline: 'sidereus-bugfix'}, ['sidereus-bugfix'])])), 0);
+""" % (json.dumps(ss), json.dumps(_INC), json.dumps(_INC), json.dumps(_INC), json.dumps(_INC)))
+        sids, prev, posts, cc = r
+        self.assertEqual(sorted(sids), [["cc1", False], ["cu1", True], ["pi1", True]])
+        body = posts[0][1]["body"]
+        self.assertEqual(posts[0][1]["sid"], "pi1")
+        self.assertIn('echo "[pl:sidereus-bugfix/<stage title>]"', body)
+        self.assertIn("(no subagents)", body)
+        self.assertIn(body.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;"), prev)   # preview = posted body
+        self.assertNotIn("[pl:", cc)                                   # Claude body unchanged
+        self.assertTrue(body.startswith(cc))
+
+    def test_shell_tail_same_text_as_84l(self):   # one rule, one text: each plShTail line is verbatim in the 84l security-fix sh branch
+        from tests._load import js_fn
+        lines = [ln.strip() for ln in js_fn("plShTail").split("\n")[1:-1]]
+        frags = [ln[len("return "):] if ln.startswith("return ") else ln[2:] for ln in lines]
+        self.assertEqual(len(frags), 3)
+        with open(os.path.join(ROOT, "web", "js", "84l-structure-arch-checks.js"), encoding="utf-8") as f:
+            src = f.read()
+        fb = src[src.index("function archChkFixBody"):src.index("\n}", src.index("function archChkFixBody"))]
+        for fr in frags:
+            self.assertIn(fr.rstrip(";"), fb)
+
     def test_r2_fold_key_is_content_not_position(self):
         r = _js("""
 const a = {scope: 'user', src: '/s.json', ev: 'Stop', cmd: 'python3 /h/a.py', vd: {id: 'v0', why: 'hook_missing'}};

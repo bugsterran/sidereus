@@ -283,4 +283,5 @@ Cause: `ext_children` only attached children to Claude rows and ran before exter
 ### Request-recipient pickers listed only Claude Code and Codex (`web/js/84j` `archCands` · `48b` `plSessions` · `84l` `archChkFixCands`)
 Cause: the filter `!x.plat || plat === 'cc' || plat === 'cx'` predated other CLIs, so pi and every `EXT_PLAT` platform could not receive a pipeline / arch-map / security request.
 ⇒ Every live non-done row is a candidate; `sh` (plat not Claude) picks the shell-marker body, `cx` (Codex only) keeps the turn-end hint (`plCxHint`).
-⚠Never re-add a platform allow-list to a picker: a new CLI must not need a picker change. `archChkFixCands` without `all` stays Claude-only for the 47g/48i Agent-tool bodies.
+⚠Never re-add a platform allow-list to a picker: a new CLI must not need a picker change.
+Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick gets `plShTail` (47g) when a pipeline is named; preview and send read `hnNxDraftBody`.

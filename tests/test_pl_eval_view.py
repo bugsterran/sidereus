@@ -438,6 +438,19 @@ class AskAiRecipient(unittest.TestCase):
                    "\nconst ss = %s; console.log(JSON.stringify(archChkCandLabel(plEvalRecips(ss, '/p', 'flow', '')[0])));" % json.dumps(ss))
         self.assertEqual(r, "proj-a · 041d8bea · web-lead · ST:wait · opus-5")
 
+    def test_other_platform_rows_are_recipients(self):   # pi / cu rows (ran or in the repo) are listed via the real 84l rule; body is platform-neutral
+        real = "const archBase = p => String(p || '').split('/').pop();\n" + js_fn("archChkFixCands") + "\n"
+        ss = [self._sess(sid="pi1", plat="pi", cwd="/elsewhere", plrun=[self.RUN]), self._sess(sid="cu1", plat="cu"), self._sess(sid="cc1")]
+        code = real + "\n".join(js_fn(f) for f in ("mboxIn", "plEvalRecips", "plEvalFixBody")) + (
+            "\nconst ss = %s; console.log(JSON.stringify([plEvalRecips(ss, '/p', 'flow', '').map(c => [c.sid, c.sh, !!c.ran]),"
+            " plEvalFixBody('/p', 'flow', [])]));" % json.dumps(ss))
+        r = subprocess.run(node_e(code), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+        self.assertEqual(r.returncode, 0, r.stderr.decode())
+        rows, body = json.loads(r.stdout)
+        self.assertEqual(rows[0], ["pi1", True, True])
+        self.assertEqual(sorted(rows[1:]), [["cc1", False, False], ["cu1", True, False]])
+        self.assertNotIn("Agent", body)   # one-session edit request: no Agent-tool wording to swap for non-Claude rows
+
     def test_prechecked_once(self):
         r = _recip("const S = {sel: {}, init: false}; plEvalPre(S, [1, 2]); delete S.sel[0]; plEvalPre(S, [1, 2]);"
                    " console.log(JSON.stringify(S.sel));")

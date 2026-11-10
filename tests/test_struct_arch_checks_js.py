@@ -331,7 +331,7 @@ class StructArchChecks(unittest.TestCase):
         self.assertNotIn("Tag each stage dispatch", r[1])
         self.assertIn("Tag each stage dispatch description with [pl:security-fix/<stage title>]", r[2])
         self.assertEqual(r[1][:r[1].index("\nRun the stages yourself")], r[2][:r[2].index("\nTag each stage")])
-        self.assertEqual(r[3], ["cc1"])             # without `all` (47g/48i Agent-tool bodies): Claude only
+        self.assertEqual(r[3], ["cc1"])             # without `all`: Claude only
         self.assertNotIn("data-cxhint", r[4])
 
     def test_run_security_check_codex(self):   # a logged-in Codex session of the repo is a run recipient, never a fix-request one
