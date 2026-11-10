@@ -1,9 +1,9 @@
 """ext-hooks/pi-extension.ts under node with a fake `pi` object and a stub Python that logs argv + stdin. Tmp dirs only."""
 import json
 import os
+import pathlib
 import re
 import shutil
-import stat
 import subprocess
 import sys
 import tempfile
@@ -13,9 +13,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "ext-hooks", "pi-extension.ts")
 NODE = shutil.which("node")
 
-STUB = r'''#!%s
-import json, os, signal, sys
-if os.path.basename(sys.argv[1]) == "pi_wake.py":
+# ⚠Copied under each spawned script's name and run by the real interpreter: Windows cannot spawn a .py without a shell.
+STUB = r'''import json, os, signal, sys
+if os.path.basename(sys.argv[0]) == "pi_wake.py":
     # Waiter stub: mode from PI_TEST_WAKE; every event goes to PI_TEST_WLOG.
     wlog = os.environ.get("PI_TEST_WLOG") or os.devnull
     def wl(o):
@@ -30,7 +30,7 @@ if os.path.basename(sys.argv[1]) == "pi_wake.py":
             k = sum(1 for x in f if '"spawn"' in x)
     except OSError:
         k = 0
-    wl({"spawn": k, "argv": sys.argv[2:]})
+    wl({"spawn": k, "argv": sys.argv[1:]})
     mode = os.environ.get("PI_TEST_WAKE", "block")
     if mode == "silent":   # slot busy: exits with no line
         wl({"exit": k})
@@ -46,8 +46,8 @@ if os.path.basename(sys.argv[1]) == "pi_wake.py":
     sys.exit(0)
 data = sys.stdin.read()
 with open(os.environ["PI_TEST_LOG"], "a", encoding="utf-8") as f:
-    f.write(json.dumps({"argv": sys.argv[1:], "stdin": json.loads(data or "{}")}) + "\n")
-s = os.path.basename(sys.argv[1])
+    f.write(json.dumps({"argv": sys.argv, "stdin": json.loads(data or "{}")}) + "\n")
+s = os.path.basename(sys.argv[0])
 if s == "pl_flow.py" and os.environ.get("PI_TEST_DENY"):
     sys.stdout.write(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
                                                         "permissionDecisionReason": "jump refused"}}))
@@ -100,17 +100,23 @@ class PiExtension(unittest.TestCase):
             self.skipTest("node cannot strip TypeScript types")
         self.d = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.d, True)
-        self.py = os.path.join(self.d, "stub.py")
-        with open(self.py, "w", encoding="utf-8") as f:
-            f.write(STUB % sys.executable)
-        os.chmod(self.py, os.stat(self.py).st_mode | stat.S_IEXEC)
         with open(SRC, encoding="utf-8") as f:
             src = f.read()
         self.assertEqual(src.count('"<PYTHON>"'), 1)
         self.assertEqual(src.count('"<MAILBOX_CODE_DIR>"'), 1)
+        self.code = os.path.join(self.d, "code")
+        names = set(re.findall(r'"((?:ext-hooks|hooks)/\w+\.py)"', src)) | {"ext-hooks/pi_wake.py"}
+        self.assertEqual(len(names), 6)   # every script the extension spawns gets a stub copy
+        for n in names:
+            dst = os.path.join(self.code, *n.split("/"))
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            with open(dst, "w", encoding="utf-8") as f:
+                f.write(STUB)
         self.ext = os.path.join(self.d, "ext.ts")
         with open(self.ext, "w", encoding="utf-8") as f:
-            f.write(src.replace('"<PYTHON>"', json.dumps(self.py)).replace('"<MAILBOX_CODE_DIR>"', json.dumps("/code")))
+            f.write(src.replace('"<PYTHON>"', json.dumps(sys.executable))
+                    .replace('"<MAILBOX_CODE_DIR>"', json.dumps(self.code)))
+        self.ext_url = pathlib.Path(self.ext).as_uri()   # file:///C:/... on Windows; "file://" + path is not a URL there
         self.driver = os.path.join(self.d, "driver.mjs")
         with open(self.driver, "w", encoding="utf-8") as f:
             f.write(DRIVER)
@@ -121,7 +127,7 @@ class PiExtension(unittest.TestCase):
         env.pop("PI_TEST_DENY", None)
         if deny:
             env["PI_TEST_DENY"] = "1"
-        r = subprocess.run([NODE] + self.args + ["--no-warnings", self.driver, "file://" + self.ext, scenario,
+        r = subprocess.run([NODE] + self.args + ["--no-warnings", self.driver, self.ext_url, scenario,
                                                  str(want), self.log],
                            capture_output=True, text=True, encoding="utf-8", timeout=60, env=env)
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -133,7 +139,7 @@ class PiExtension(unittest.TestCase):
         return json.loads(r.stdout.strip().splitlines()[-1]), calls
 
     def by_script(self, calls):
-        return {os.path.relpath(c["argv"][0], "/code"): c for c in calls}
+        return {os.path.relpath(c["argv"][0], self.code): c for c in calls}
 
     def test_bash_tool_call_three_calls(self):
         out, calls = self.drive("bash", 3)
@@ -245,7 +251,7 @@ class PiExtensionWake(unittest.TestCase):
         env.pop("SIDEREUS_MAIL_WAIT_MAX", None)
         if cap is not None:
             env["SIDEREUS_MAIL_WAIT_MAX"] = str(cap)
-        r = subprocess.run([NODE] + self.args + ["--no-warnings", self.wdriver, "file://" + self.ext, scenario,
+        r = subprocess.run([NODE] + self.args + ["--no-warnings", self.wdriver, self.ext_url, scenario,
                                                  self.wlog, "1" if busy else "0"],
                            capture_output=True, text=True, encoding="utf-8", timeout=60, env=env)
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -267,7 +273,11 @@ class PiExtensionWake(unittest.TestCase):
     def test_R4_before_agent_start_kills_waiter(self):
         sends, rows = self.wake("kill")
         self.assertEqual(sends, [])
-        self.assertEqual(len([x for x in rows if "end" in x]), 1)
+        ends = len([x for x in rows if "end" in x])
+        if os.name == "nt":   # ⚠kill() is TerminateProcess there: the stub's SIGTERM handler never runs
+            self.assertIn(ends, (0, 1))
+        else:
+            self.assertEqual(ends, 1)
 
     def test_R4_one_waiter_at_a_time(self):
         _, rows = self.wake("one")

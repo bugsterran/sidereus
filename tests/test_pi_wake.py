@@ -177,6 +177,8 @@ class PiWake(unittest.TestCase):
         self.assertEqual(tag, "fired")
         self.assertIn("advocate", lines[0]["wake"])
 
+    # ⚠hooks/mailbox_stop.py never probes a pid on Windows (os.kill(pid, 0) terminates there), so no watcher is «alive».
+    @unittest.skipIf(os.name == "nt", "watcher liveness is not probed on Windows")
     def test_R4_watch_alive_off(self):
         with open(os.path.join(self.d, ".watch-%s.pid" % self.me), "w", encoding="utf-8") as f:
             f.write(str(os.getpid()))
