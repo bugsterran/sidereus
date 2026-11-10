@@ -269,3 +269,6 @@ Cause: pi has no hook that can resume an idle session; only extension code insid
 ⚠Detach the child before `sendUserMessage`: that call fires `input`, whose stop would kill the child before its «ok» and the same mail would wake again.
 ⚠The child handles SIGTERM so `mail_wait` frees the lock; a killed waiter's fresh lock reads «busy» for 15 s and drops the next re-arm silently. Windows kill() skips the handler, so a waiter that exits with no line is re-armed once after 16 s (idle only, never looped).
 ⚠Re-arm only on `end:timeout`; `end:off`, busy or no output means no waiter until the next `agent_settled`. The turn text is decide()'s line only — never a subject or body.
+★A pi session logged in as a role id that a Claude folder key also maps to (`advocate`) never woke: the waiter watched the derived `<folder>-pi`.
+⇒ pi only: an explicit `pi:<cwd>` entry in `identity.json` wins over the Claude-id clash guard (`gemini_id`); the derived default stays guarded, Gemini/Codex keep the guard.
+⚠With that entry, a Claude session on the same id would wake on the same mail too.

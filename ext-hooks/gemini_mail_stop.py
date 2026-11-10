@@ -92,6 +92,10 @@ def gemini_id(cwd, ident):
     """Mailbox id of the Gemini session in cwd, or None if it would collide with a Claude identity."""
     real = os.path.realpath(cwd)
     me = ident.get(KEY_PREFIX + real) if isinstance(ident, dict) else None
+    # ⚠pi only: an explicit `pi:<cwd>` entry is a declaration (a pi session taking over a role id), so it may name
+    #   an id a Claude folder also maps to. Other platforms keep the guard. Two live sessions on one id both wake.
+    if PLATFORM == "pi" and isinstance(me, str) and me:
+        return me
     if not isinstance(me, str) or not me:
         me = os.path.basename(real.rstrip("/")) + ID_SUFFIX
     claude_ids = {v for k, v in ident.items() if not str(k).startswith(KEY_PREFIX)} if isinstance(ident, dict) else set()

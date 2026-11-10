@@ -168,6 +168,15 @@ class PiWake(unittest.TestCase):
         self.assertEqual(tag, "off")
         self.assertEqual(lines, [{"end": "off"}])
 
+    def test_R1_explicit_pi_mapping_may_name_a_claude_id(self):
+        # an explicit `pi:<cwd>` entry is a declaration; only the derived `<folder>-pi` default is clash-guarded
+        self.ident({self.cwd: "advocate", "pi:" + self.cwd: "advocate"})
+        self.me = "advocate"
+        self.mail()
+        tag, lines = self.go()
+        self.assertEqual(tag, "fired")
+        self.assertIn("advocate", lines[0]["wake"])
+
     def test_R4_watch_alive_off(self):
         with open(os.path.join(self.d, ".watch-%s.pid" % self.me), "w", encoding="utf-8") as f:
             f.write(str(os.getpid()))
