@@ -54,8 +54,11 @@ const SHOTS = [
     await archFlow(P, 'Get an order');
     await P.css('.archtab .archleg,.archtab .archhint{display:none!important}');
     // Unfold the lit flow in the side list so its ordered steps show.
+    // ⚠Click the caret ([data-aetf], fold only), not the node button: the node toggles the flow, so on an already lit
+    // flow it clears the light and never opens.
     await P.ev(`(() => { const b = [...document.querySelectorAll('.archtab button.archtnb[data-aet]')].find(b => b.textContent.indexOf('Get an order') >= 0);
-      if (b && b.getAttribute('aria-expanded') !== 'true') b.click(); return 1; })()`);
+      const c = b && b.querySelector('[data-aetf]');
+      if (c && b.getAttribute('aria-expanded') !== 'true') c.click(); return 1; })()`);
     await P.wait(`[...document.querySelectorAll('.archtab button.archtnb[data-aet]')].some(b => b.textContent.indexOf('Get an order') >= 0 && b.getAttribute('aria-expanded') === 'true')`, 'flow unfolded');
     await sleep(300);
     await P.ev(`(document.querySelector('.archmap').scrollTop = 0, 1)`);
