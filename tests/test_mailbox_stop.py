@@ -1,10 +1,6 @@
 """hooks/mailbox_stop.py (Stop hook): synthetic data dir only — never the live bus, identity or state."""
 import json
 import os
-try:
-    import resource   # POSIX only
-except ImportError:
-    resource = None
 import shutil
 import subprocess
 import sys
@@ -18,13 +14,6 @@ CWD = "/p/work"
 ME = "alice"
 # The launchd interpreter where it exists (3.9 floor); CI on Windows has only sys.executable.
 PY = "/usr/bin/python3" if os.path.exists("/usr/bin/python3") else sys.executable
-
-
-def _child_cpu():
-    if resource is None:
-        return 0.0
-    r = resource.getrusage(resource.RUSAGE_CHILDREN)
-    return r.ru_utime + r.ru_stime
 
 
 class MailboxStop(unittest.TestCase):
@@ -63,10 +52,8 @@ class MailboxStop(unittest.TestCase):
         if active is not None:
             inp["stop_hook_active"] = active
         inp = json.dumps(inp)
-        c0 = _child_cpu()
         r = subprocess.run([PY, HOOK], input=inp, capture_output=True, text=True,
                            env=env, timeout=10, encoding="utf-8")
-        self.cpu = _child_cpu() - c0
         self.assertEqual(r.returncode, 0)
         return json.loads(r.stdout) if r.stdout.strip() else None
 
@@ -144,24 +131,41 @@ class MailboxStop(unittest.TestCase):
         r = subprocess.run([PY, HOOK], input="not json", capture_output=True, text=True, env=env, encoding="utf-8")
         self.assertEqual((r.returncode, r.stdout), (0, ""))
 
-    @unittest.skipUnless(resource is not None, "child CPU time needs the POSIX resource module")
-    def test_time_budget_on_large_bus(self):
-        # ⚠Child CPU time against a small-bus baseline from this run: wall time failed under parallel load (0.65s).
-        base = []
-        for _ in range(2):
-            self.post("bob", to=ME)
-            self.assertIsNotNone(self.run_hook())
-            base.append(self.cpu)
+    def test_large_bus_reads_only_the_tail(self):
+        # ⚠Counts bytes read, not CPU time: on fast CI runners a full 27 MB scan cost about as much as the noise
+        #   between two small-bus runs, so a timing margin failed without any regression.
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mailbox_stop_t", HOOK)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
         big = json.dumps({"id": "z", "t": self.now - 10 ** 12, "from": "bob", "room": "r1", "body": "x" * 400})
         with open(self.p("bus.jsonl"), "a", encoding="utf-8") as f:
-            f.write((big + "\n") * 60000)          # ~27 MB: a full scan costs >= 0.12 s CPU, the tail read ~5 ms
-        cost = []
-        for _ in range(2):
-            self.post("bob", to=ME)
-            self.assertIsNotNone(self.run_hook())
-            cost.append(self.cpu)
-        self.assertLess(min(cost), min(base) + 0.06, (base, cost))
-        self.assertLess(min(cost), 0.3)            # hook budget
+            f.write((big + "\n") * 60000)          # ~27 MB
+        self.post("bob", to=ME)
+        read = []
+
+        class Spy:
+            def __init__(self, f):
+                self.f = f
+            def __enter__(self):
+                return self
+            def __exit__(self, *a):
+                self.f.close()
+            def __getattr__(self, k):
+                return getattr(self.f, k)
+            def read(self, *a):
+                data = self.f.read(*a)
+                read.append(len(data))
+                return data
+
+        def spy_open(path, *a, **kw):
+            f = open(path, *a, **kw)
+            return Spy(f) if os.path.basename(str(path)) == "bus.jsonl" else f
+        mod.open = spy_open                        # module global shadows the builtin for tail_rows
+        inp = {"session_id": "s1", "cwd": CWD, "transcript_path": "/x", "hook_event_name": "Stop", "stop_hook_active": False}
+        self.assertIn("new mail", mod.decide(inp, store=self.d, now_ns=self.now + 10 ** 9) or "")
+        self.assertTrue(read)
+        self.assertLessEqual(sum(read), mod.BUS_TAIL)
 
     # --- Sidereus relays (kind:relay, idSrc:viewer) ---
     def relay(self, sid=None, src="viewer", body="DO-THIS", to=ME):

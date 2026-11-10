@@ -92,6 +92,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **Stop hook wall-clock budget makes subprocess tests flaky** (`hooks/mailbox_stop.py` `BUDGET_S` 0.25 s from process start). ★CI 39867579325 (ubuntu 3.9): a loaded runner descheduled the hook > 0.25 s on a 1-line bus, it printed nothing, `test_time_budget_on_large_bus` failed.
   - ⇒ `MAILBOX_STOP_BUDGET_S` overrides the budget (invalid → 0.25); every test that runs the hook as a subprocess and expects output sets it to `inf`. The over-budget path is tested in-process with `plan(t0=...)` (`test_over_budget_prints_nothing`).
   - ⚠Do not raise the 0.25 default to calm a test. Gemini/Codex mail stop reads the same value through the module (`tests/test_gemini_mail_stop.py`).
+- **Large-bus test timed CPU, which CI noise could not separate from a full scan.** ★CI 42742565531 (macos 3.12): small-bus base 0.054/0.063 s vs 27 MB bus 0.124/0.119 s, margin 0.06 missed by 5 ms; the hook still read only the 512 KB tail.
+  - ⇒ `test_large_bus_reads_only_the_tail` counts bytes read from `bus.jsonl` in-process (module `open` spy) against `BUS_TAIL`. ⚠Do not go back to a CPU or wall-time margin.
 
 ## Mail watch: waking without Monitor (`hooks/mailbox_wake.py`)
 
