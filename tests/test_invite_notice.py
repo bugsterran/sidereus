@@ -387,6 +387,13 @@ class InvitePi(unittest.TestCase):
         self._w({self.proj: "proj-pi"})
         self.assertEqual(self.run_hook(), "")
 
+    def test_explicit_pi_id_may_equal_claude_id(self):
+        self._w({self.proj: "advocate", "pi:" + os.path.realpath(self.proj): "advocate"})
+        self.assertEqual(inv.plat_id(self.proj, "pi"), "advocate")   # same rule as gemini_id: the waiter wakes on it
+        self.assertIn("id `advocate`", self.run_hook())
+        self._w({self.proj: "advocate", "codex:" + os.path.realpath(self.proj): "advocate"})
+        self.assertEqual(inv.plat_id(self.proj, "codex"), "")          # other platforms keep the guard
+
 
 if __name__ == "__main__":
     unittest.main()

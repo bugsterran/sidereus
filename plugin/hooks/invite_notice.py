@@ -205,6 +205,9 @@ def plat_id(cwd, plat):
     ident = ident if isinstance(ident, dict) else {}
     real = os.path.realpath(cwd)
     me = ident.get(plat + ":" + real)
+    # ⚠pi only: an explicit `pi:<cwd>` entry may name a Claude-owned id (gemini_id wakes on it)
+    if plat == "pi" and isinstance(me, str) and me:
+        return me
     if not isinstance(me, str) or not me:
         me = os.path.basename(real.rstrip("/")) + "-" + plat
     return "" if me in {v for k, v in ident.items() if not str(k).startswith(plat + ":")} else me
