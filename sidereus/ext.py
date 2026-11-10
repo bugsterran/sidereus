@@ -6,7 +6,7 @@ import os
 import time
 from sidereus.warn import warn_once
 from sidereus.bus import _load, codex_cursor, codex_id_ok, codex_ok_set
-from sidereus.ident import _proj_name, _sid8, mbox_codex, mbox_of
+from sidereus.ident import _proj_name, _sid8, mbox_codex, mbox_pi
 from sidereus.timefmt import iso_local
 from sidereus.adapter import adapter_scan
 from sidereus import live_probe   # module access: `_ps_snap_cache` is read at call time (tests patch it)
@@ -322,8 +322,8 @@ def ext_rows():
             })
             if plat == "codex":   # Codex hooks log in under their own <folder>-codex id
                 row["mbox"], row["mboxSrc"] = mbox_codex(cwd)
-            elif plat == "pi":    # pi loads the same mailbox MCP server (~/.pi/agent/mcp.json): identity.json[cwd] or folder name
-                row["mbox"], row["mboxSrc"] = mbox_of(cwd)
+            elif plat == "pi":    # pi logs in as `pi:<cwd>` or <folder>-pi (gemini_mailbox_mcp.sh pi), not the Claude id
+                row["mbox"], row["mboxSrc"] = mbox_pi(cwd)
             plm = None if dead or v.get("goneWhy") else plm_of(sid, now)   # shell-marker [pl:] stage; added only when live, like Claude rows
             if plm and st in ("wait", "abort") and _stop_after(v, now - plm.get("age", 0)):
                 plm = None   # ⚠turn ended after the mark: a held (45-min) shell marker would keep the stage «running»

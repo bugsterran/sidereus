@@ -8,7 +8,7 @@ import os
 import time
 
 from sidereus.warn import warn_once
-from sidereus.ident import _proj_name, _sid8, mbox_of
+from sidereus.ident import _proj_name, _sid8, mbox_pi
 from sidereus.timefmt import iso_local
 from sidereus import plat_copilot, plat_cursor, plat_pi
 from sidereus import ext_store   # module access: tests patch `ext_store._pid_start`
@@ -138,8 +138,8 @@ def _row(plat, c, now):
         "pid": c["pid"] if pi and isinstance(c.get("pid"), int) and c["pid"] > 1 else 0,   # running pi CLI, for «To terminal»
         "hooksOff": plat == "copilot" and plat_copilot.hooks_disabled(cwd),
     })
-    if pi:   # same mailbox MCP server as Claude (~/.pi/agent/mcp.json), so the same id; "" made room members show the Claude logo
-        row["mbox"], row["mboxSrc"] = mbox_of(cwd)
+    if pi:   # the pi mailbox id (`pi:<cwd>` or <folder>-pi), never the Claude id; "" made room members show the Claude logo
+        row["mbox"], row["mboxSrc"] = mbox_pi(cwd)
     return row
 
 

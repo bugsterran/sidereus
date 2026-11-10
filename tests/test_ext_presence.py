@@ -92,14 +92,14 @@ class Presence(unittest.TestCase):
         self.assertEqual(got, {"cp": True, "cu": False})   # Cursor never reads the Copilot settings file
 
     def test_pi_row_gets_mailbox_id(self):
-        # pi loads the same mailbox MCP server as Claude, so a room member logged in from pi maps to this row
+        # pi rows carry the pi mailbox id (ident.mbox_pi), so a room member logged in from pi maps to this row
         self.cands["pi"] = [{"sid": "pi-1", "cwd": "/w/pi", "start": NOW - 100, "mtime": NOW - 5, "model": "anthropic/m"}]
-        mo = pr.mbox_of
-        pr.mbox_of = lambda cwd: ("pi-id", "identity") if cwd == "/w/pi" else ("", "none")
+        mo = pr.mbox_pi
+        pr.mbox_pi = lambda cwd: ("pi-id", "identity") if cwd == "/w/pi" else ("", "none")
         try:
             got = {r["plat"]: r["mbox"] for r in self.rows()}
         finally:
-            pr.mbox_of = mo
+            pr.mbox_pi = mo
         self.assertEqual(got.get(pr.EXT_PLAT["pi"]), "pi-id")
         self.assertEqual(got.get("cu"), "")   # other CLIs have no mailbox login
 

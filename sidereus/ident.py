@@ -175,6 +175,25 @@ def mbox_codex(cwd):
     return me, src
 
 
+def mbox_pi(cwd):
+    """(id, source) of a pi session — same rule as ext-hooks/gemini_mail_stop.py `gemini_id` with platform pi
+    (the id `gemini_mailbox_mcp.sh pi` logs in as and pi_wake waits on).
+    ⚠Not mbox_of: identity.json[cwd] is the Claude id; composer and run pickers would address the Claude session.
+    An explicit `pi:<cwd>` entry may name a Claude-owned id (role takeover); the folder fallback may not."""
+    if not cwd:
+        return "", "none"
+    ident = _load("identity.json", {})
+    ident = ident if isinstance(ident, dict) else {}
+    real = os.path.realpath(cwd)
+    me = ident.get("pi:" + real)
+    if isinstance(me, str) and me:
+        return me, "identity"
+    me = os.path.basename(real.rstrip("/")) + "-pi"
+    if me in {v for k, v in ident.items() if not str(k).startswith("pi:")}:
+        return "", "none"
+    return me, "folder"   # not known to be logged in, so mboxIn() keeps it unsendable
+
+
 def _slug(cwd):
     """cwd -> directory name under `~/.claude/projects/`. Every char outside [A-Za-z0-9] becomes `-` (matches observed harness values).
 
