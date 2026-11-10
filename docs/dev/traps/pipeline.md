@@ -423,6 +423,11 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: after working runs, the newest open run not in `PLNOW_OSEEN` (open keys of the last poll) is picked.
 - ⚠First call (reload) seeds `PLNOW_OSEEN` with every open run, so a restored pick is not replaced by an old idle run. `test_r`.
 
+## Watch result pane cut its last line through the glyphs (`web/js/48k-pipeline-mode.js` `plWatchFit`)
+- Cause: the pane height comes from shares only (`plWSizes` → `--plwph`), so the clip edge falls anywhere; ★1440x900: pane 160px, a text line at 153.6–168.6 was cut.
+- Fix: `plWSnap` after the last `plWApply` moves the edge up to the top of any text line box it crosses (`Range.getClientRects`) and gives the freed px to the Running card, so the total stays; capped at `PLW_SNAP_MAX` 32px and the pane min, skipped while dragging.
+- ⚠Never round the pane to a fixed px step (27px was tried): line heights vary. `tests/test_pl_watch_snap_js.py`.
+
 ## Stage cards on one row not aligned (`web/js/48c-pipeline-graph.js` `plgRows`)
 - Cause: rows grouped a card only within ±8px of the row's first card top, and a drop saved raw y; hand-dragged tops 24/35/52 split into two rows, so `plgAlign` never centred them. Status pills hang from each card's top, so centred cards of different heights put them at different y.
 - Fix: rows group by middle line against the row's running mean (`PLG_ROWTOL` 30); a drop snaps to the nearest row's middle within `PLG_H/2` (`plgSnapY`) and writes back the aligned y like x; pills are lifted by `--plcd` (`plgChipDy`) to the row's top.

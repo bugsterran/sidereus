@@ -175,6 +175,33 @@ function plWKey(e){
   const s = plWStep(plWNow(g, oc), gr.dataset.plwg === 'p' ? 0 : 1, dy);
   plWApply(g, oc, s); plWSave(s);
 }
+// The pane clip edge must not cross a text line: move it up to the top of any line box it would cut; the freed px go to the Running card.
+// ⚠Line heights vary (title, small, mono rows) — snap to measured line rects, never round to a fixed px step.
+const PLW_SNAP_MAX = 32;
+function plWSnapCut(lines, B){
+  let X = B;
+  for(let hit = true; hit;){ hit = false; for(const l of lines) if(l.t < X - 0.5 && X < l.b - 0.5){ X = l.t; hit = true; } }
+  return B - X;
+}
+function plWLines(p){
+  const out = [], w = document.createTreeWalker(p, NodeFilter.SHOW_TEXT), r = document.createRange();
+  for(let n = w.nextNode(); n; n = w.nextNode()){
+    if(!n.nodeValue.trim()) continue;
+    r.selectNodeContents(n);
+    for(const q of r.getClientRects()) if(q.height > 0) out.push({t: q.top, b: q.bottom});
+  }
+  return out;
+}
+function plWSnap(g, oc, s){
+  const p = oc && g.querySelector(':scope>.plwp');
+  if(!p || PLWDRAG) return s;
+  const B = p.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(p).borderBottomWidth) || 0);
+  const cut = plWSnapCut(plWLines(p), B);
+  if(!(cut > 0) || cut > PLW_SNAP_MAX || s[1] - cut < PLW_MIN[1]) return s;   // bounded; never grows the pane
+  const t = [s[0], s[1] - cut, s[2] + cut];
+  plWApply(g, oc, t);
+  return t;
+}
 function plWatchFit(g, fd, h){
   if(PLWDRAG) return;
   g.style.height = '';
@@ -183,12 +210,14 @@ function plWatchFit(g, fd, h){
   // Sizes come from shares only (never from content), so polls never move the canvas.
   const F = plWShares(), end = oc || g, pb = parseFloat(getComputedStyle(fd).paddingBottom) || 0;
   let A = h - 2 * PLW_GRIP;
-  plWApply(g, oc, plWSizes(A, F));
+  let s = plWSizes(A, F);
+  plWApply(g, oc, s);
   // Close the gap to the feed bottom (h is the shared estimate), then take back anything that overflows (Run panel, a note): no page scroll.
   const slack = Math.floor(fd.getBoundingClientRect().bottom - pb - end.getBoundingClientRect().bottom) - 2;
-  if(slack > 0){ A += slack; plWApply(g, oc, plWSizes(A, F)); }
+  if(slack > 0){ A += slack; s = plWSizes(A, F); plWApply(g, oc, s); }
   const over = fd.scrollHeight - fd.clientHeight;
-  if(over > 0){ A -= over; plWApply(g, oc, plWSizes(A, F)); }
+  if(over > 0){ A -= over; s = plWSizes(A, F); plWApply(g, oc, s); }
+  plWSnap(g, oc, s);
   if(nl) nl.style.minHeight = Math.max(0, Math.round(end.getBoundingClientRect().bottom - nl.getBoundingClientRect().top)) + 'px';
 }
 document.addEventListener('pointerdown', e => {
