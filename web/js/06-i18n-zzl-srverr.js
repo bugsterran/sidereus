@@ -68,6 +68,7 @@ Object.assign(I18N.ko, {
   'file changed since the preview (open it again)': '미리보기 뒤 파일이 바뀌었습니다(다시 여세요)',
   'could not edit safely (edit by hand)': '안전하게 고칠 수 없습니다(직접 고치세요)',
   'symlink — edit it by hand': '심볼릭 링크입니다 — 직접 고치세요',
+  'mailbox entry is not the Sidereus launcher — edit it by hand': 'mailbox 항목이 Sidereus 런처가 아닙니다 — 직접 고치세요',
   'symlink': '심볼릭 링크',
   'no ext-hooks': 'ext-hooks 가 없습니다',
   'settings.json not found — run gemini once': 'settings.json 이 없습니다 — gemini 를 한 번 실행하세요',

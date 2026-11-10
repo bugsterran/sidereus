@@ -202,6 +202,28 @@ class HookConnectPi(unittest.TestCase):
         self.assertTrue(out["backup"].endswith("pi-sidereus.ts"))
         self.assertEqual(HP.row()[0]["state"], "connected")
 
+    def test_foreign_mailbox_entry_not_connected(self):
+        self._apply()
+        d = json.loads(self._mcp())
+        d["mcpServers"]["mailbox"] = {"command": "uv", "args": ["--directory", "/x", "run", "mailbox-mcp"]}
+        self._put(json.dumps(d))
+        r = HP.row()[0]
+        self.assertEqual((r["state"], r["can"], r["why"]), ("partial", False, HP.FOREIGN_MAILBOX))
+        d["mcpServers"]["mailbox"] = {"command": "/a/ext-hooks/gemini_mailbox_mcp.sh", "args": ["gemini"]}
+        self._put(json.dumps(d))
+        self.assertEqual(HP.row()[0]["why"], HP.FOREIGN_MAILBOX)   # launcher with another platform key
+        d["mcpServers"]["mailbox"] = {"command": "/b/ext-hooks/gemini_mailbox_mcp.sh", "args": ["pi"]}
+        self._put(json.dumps(d))
+        self.assertEqual((HP.row()[0]["state"], HP.row()[0]["why"]), ("connected", ""))
+
+    def test_foreign_mailbox_ignored_on_windows(self):
+        with mock.patch.object(HC.config, "IS_WIN", True):
+            self._apply()
+            d = json.loads(self._mcp())
+            d["mcpServers"]["mailbox"] = {"command": "uv"}
+            self._put(json.dumps(d))
+            self.assertEqual(HP.row()[0]["state"], "connected")
+
     def test_windows_no_mailbox(self):
         with mock.patch.object(HC.config, "IS_WIN", True):
             self.assertEqual([n for n, _ in HP._servers()], ["sidereus"])   # the plan itself, not only the write

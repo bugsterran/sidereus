@@ -41,6 +41,23 @@ def _servers():
     return out
 
 
+# A user's own `mailbox` entry (plain `uv run mailbox-mcp`) is kept by the merge, but without the launcher the server has no
+# project key: every pi login lands on identity.json["default"], so no pi session reads as logged in.
+FOREIGN_MAILBOX = "mailbox entry is not the Sidereus launcher — edit it by hand"
+
+
+def _foreign_mailbox(ms):
+    """True when mcpServers has a mailbox entry that does not run ext-hooks/gemini_mailbox_mcp.sh with the pi key."""
+    if _win():
+        return False                              # no mailbox entry is wanted on Windows
+    for k, v in ms.items():
+        if _fold(k) == "mailbox":
+            cmd, args = (v.get("command"), v.get("args")) if isinstance(v, dict) else (None, None)
+            return not (isinstance(cmd, str) and os.path.basename(cmd) == "gemini_mailbox_mcp.sh"
+                        and isinstance(args, list) and args[:1] == [PLAT])
+    return False
+
+
 def _missing(ms):
     have = {_fold(k) for k in ms}
     return [(k, v) for k, v in _servers() if _fold(k) not in have]
@@ -214,13 +231,16 @@ def row():
         mine = len(_missing(ms)) < len(_servers())
         if ts == "unreadable":
             state = "unreadable"
-        elif not _missing(ms) and ts == "sync":
+        elif not _missing(ms) and ts == "sync" and not _foreign_mailbox(ms):
             state = "connected"
         elif not mine and ts == "missing":
             state = "missing"
         else:
             state = "partial"
     can = state in ("missing", "partial")
+    # ⚠Connect never rewrites a user entry; with nothing else to append, say why instead of offering a no-op Connect.
+    if can and not err and _foreign_mailbox(ms) and not _missing(ms) and ts == "sync":
+        can, why = False, FOREIGN_MAILBOX
     if can and _linked(fs):
         can, why = False, hc.SYMLINK
     elif can and want is None:

@@ -285,3 +285,8 @@ Cause: the filter `!x.plat || plat === 'cc' || plat === 'cx'` predated other CLI
 ⇒ Every live non-done row is a candidate; `sh` (plat not Claude) picks the shell-marker body, `cx` (Codex only) keeps the turn-end hint (`plCxHint`).
 ⚠Never re-add a platform allow-list to a picker: a new CLI must not need a picker change.
 Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick gets `plShTail` (47g) when a pipeline is named; preview and send read `hnNxDraftBody`.
+
+## pi «Connect» shows connected with a user's own mailbox entry (`hook_connect_pi._foreign_mailbox`)
+- Cause: the merge keeps an existing `mailbox` entry (by folded name); a plain `uv run mailbox-mcp` entry gives the server no `CLAUDE_PROJECT_DIR`, so every pi `mailbox_login` lands on `identity.json["default"]` and no pi row reads as logged in, yet the row said «connected».
+- ⇒ the row is «partial» unless `mailbox` runs `ext-hooks/gemini_mailbox_mcp.sh` with `pi` as the first arg; with nothing else to append, `can:false` and the reason `FOREIGN_MAILBOX` (edit by hand). Test `tests/test_hook_connect_pi.py`.
+- ⚠Connect still never rewrites a user entry; Windows wants no mailbox entry, so the check is off there.
