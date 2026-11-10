@@ -41,7 +41,8 @@ class ReviewTemplates(unittest.TestCase):
             self.assertIn("untested", (P["title"] + P["use"]).lower(), n)
 
     def test_docs_link_each_template(self):
-        self.assertEqual(sorted(f[:-5] for f in os.listdir(DIR) if f.endswith(".json")), sorted(NAMES))
+        # Only review-* templates belong to the review docs; other templates (migrate-pi) are linked from HOOKS.md.
+        self.assertEqual(sorted(f[:-5] for f in os.listdir(DIR) if f.startswith("review-") and f.endswith(".json")), sorted(NAMES))
         for d in DOCS:
             text = _read(d)
             for n in NAMES:

@@ -488,5 +488,19 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
     `/reload` 한다.
 - 훅 스크립트 호출마다 5초 제한(메일 대기자는 제한 없음)이며 예외를 던지지 않는다. Python 이 없으면 그 이벤트만 빠진다.
 
+#### Claude Code 설정을 pi 로 옮기기
+
+템플릿: [migrate-pi.json](examples/pipelines/migrate-pi.json)(미검증). `<project>/.claude/pipelines/` 에 복사해
+Claude Code 에서 돌린다: Inventory, Map, Convert, Verify, Report. 작업은 세션이 하고 Sidereus 는 단계만 켠다.
+
+- 원본은 Claude 파일이다. pi 에는 심볼릭 링크(`.claude/skills` -> `.agents/skills`)나 저장소 안 스크립트가 만든
+  사본(`.pi/agents/*.md`, gitignore)을 준다. ⚠두 사본을 손으로 고치지 않는다.
+- pi 는 폴더마다 컨텍스트 파일 하나만 읽는다: 같은 폴더에서는 `AGENTS.md` 가 `CLAUDE.md` 보다 먼저다.
+- 프로젝트의 `.agents/skills` · `.pi/prompts` · `.pi/mcp.json` 은 프로젝트를 신뢰한 뒤에만 읽힌다.
+- 에이전트는 pi 예제 subagent 확장을 `~/.pi/agent/extensions/subagent/` 에 두고 `agentScope: "both"` 로 부른다.
+- Sidereus 훅은 위 «연결»로 들어온다. 프로젝트 전용 훅만 pi 확장으로 옮긴다.
+- 옮기지 않는 것: 파이프라인 단계 태그. pi subagent 도구에는 description 필드가 없어 `[pl:]` 를 실을 수 없다.
+- 확장을 설치한 뒤 pi 에서 `/reload` 한다. 설치 전에 시작한 세션은 확장을 읽지 않는다.
+
 그 밖의 플랫폼: `ext-hooks/generic-hooks-example.json` 의 `<PLATFORM>` 을 바꿔 그 CLI 가 훅을 읽는 곳에 둔다(CLI 마다
 확인하지는 않았다).

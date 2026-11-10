@@ -515,5 +515,19 @@ servers to `<agent dir>/mcp.json` (mailbox through `gemini_mailbox_mcp.sh pi`; n
     then restart pi or run `/reload`.
 - Every hook-script call has a 5 s timeout (the mail waiter has none) and never throws; a missing Python only drops that event.
 
+#### Migrating a Claude Code setup
+
+Template: [migrate-pi.json](examples/pipelines/migrate-pi.json) (untested). Copy it to `<project>/.claude/pipelines/`
+and run it from Claude Code: Inventory, Map, Convert, Verify, Report. The session does the work; Sidereus lights the stages.
+
+- Claude files stay the source. pi gets symlinks (`.claude/skills` -> `.agents/skills`) or copies made by a script in
+  the repo (`.pi/agents/*.md`, gitignored). ⚠Never hand-edit two copies.
+- pi loads one context file per directory: `AGENTS.md` wins over `CLAUDE.md` in the same folder.
+- Project `.agents/skills`, `.pi/prompts` and `.pi/mcp.json` load only after project trust.
+- Agents need pi's example subagent extension in `~/.pi/agent/extensions/subagent/`, called with `agentScope: "both"`.
+- Sidereus hooks come from «Connect» above; only project-specific hooks need porting to a pi extension.
+- Not mapped: pipeline stage tags. The pi subagent tool has no description field, so `[pl:]` cannot ride on it.
+- Run `/reload` in pi after an extension install; a session started before it does not load it.
+
 Other platforms: `ext-hooks/generic-hooks-example.json` with `<PLATFORM>` replaced, wherever that CLI reads hooks
 (not verified per CLI).
