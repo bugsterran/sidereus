@@ -22,6 +22,8 @@ hook_connect = sidereus("hook_connect")
 # plat_cursor/plat_copilot.root are stubbed by tests._load; their paths are covered through hook_connect._files
 plats = [sidereus(n) for n in ("plat_codex", "plat_gemini")]
 demo_data = sidereus("demo_data")
+plat_pi = sidereus("plat_pi")
+work = sidereus("work")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _spec = importlib.util.spec_from_file_location("sweep_world", os.path.join(ROOT, "scripts", "sweep_world.py"))
@@ -53,7 +55,7 @@ class SweepWorld(unittest.TestCase):
     def test_manifest_paths_exist(self):
         with open(os.path.join(ROOT, "tests", "fixtures", "sweep", "manifest.json"), encoding="utf-8") as f:
             man = json.load(f)
-        self.assertEqual([c["id"] for c in man["cases"]], ["a", "b", "c", "e"])
+        self.assertEqual([c["id"] for c in man["cases"]], ["a", "b", "c", "e", "f"])
         for c in man["cases"]:
             self.assertTrue(os.path.exists(os.path.join(self.out, c["path"])), c["id"])
 
@@ -139,6 +141,29 @@ class SweepWorld(unittest.TestCase):
         ident.os = _fake_os("nt", ntpath, {"C:\\Users", "C:\\Users\\demo", "C:\\Users\\demo\\app"})
         self.addCleanup(setattr, ident, "os", old)
         self.assertEqual(ident._cwd_from_slug(sw.WIN_SLUG), sw.WIN_CWD)
+
+    def test_f_pi_session_parsed_under_sandbox_home(self):
+        home = self.p["home"]
+        cwd, fp = sw.pi_path(self.out, NOW)
+        self.assertTrue(os.path.isfile(fp))
+        self.assertTrue(os.path.isdir(cwd))                               # cwd exists in the world
+        self.assertTrue(fp.startswith(os.path.realpath(self.out) + os.sep))
+        root = os.path.join(home, ".pi", "agent")                          # plat_pi.root() default under SIDEREUS_USER_HOME
+        self.assertTrue(fp.startswith(os.path.join(root, "sessions") + os.sep))
+        self.assertIn("PI_CODING_AGENT_DIR", self.lines[0])               # unset, so the sandbox home wins
+        self.addCleanup(plat_pi._cache.clear)
+        with mock.patch.object(plat_pi, "root", lambda: root):          # ⚠tests._load stubs root(); patch, not env
+            row = plat_pi.one(sw.PI_SID)
+            self.assertIsNotNone(row)
+            self.assertEqual((row["path"], row["cwd"]), (fp, cwd))
+            self.assertEqual([n for _t, n in row["tools"]], ["bash"])
+            self.assertTrue(row["msgs"])
+            self.assertEqual(work._pi_file(sw.PI_SID), fp)
+            sc, err = work._work_scan(work._pi_lines(fp, cwd, {}), cwd)
+        self.assertFalse(err)
+        steps, says = sc[0], sc[1]
+        self.assertEqual([st["tool"] for st in steps], ["Bash"])
+        self.assertEqual([x["text"] for x in says], ["sample step", "sample reply"])
 
     def test_e_hook_paths_under_sandbox_home(self):
         home = self.p["home"]

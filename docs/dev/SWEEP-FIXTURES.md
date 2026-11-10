@@ -35,6 +35,7 @@ python3 scripts/sweep_world.py append-ask --out <tmp>
 | c | non-ASCII folder name + Windows `C--` slug | resolves to the same transcript folder as Claude Code |
 | d | `states/bg-job-across-clear` (background job running across `/clear`) | the current output stays pinned |
 | e | external CLI hook files under the sandbox home | Settings › «Diagnostics» reads only `<tmp>/home`, never the real home |
+| f | one pi session (`home/.pi/agent/sessions/--<cwd>--/`, cwd `proj/onlybad`, fake text: one `bash` step + two replies) | the pi row's work-log popup shows the step and the replies; ⚠it is the only fixture with text — keep it obviously fake |
 
 ## Adding a case
 

@@ -4,6 +4,7 @@
   {"id": "a", "path": "proj/onlybad/.claude/pipelines/broken.json", "guards": "a project whose only pipeline file is invalid: Get started red step reads false, not unknown"},
   {"id": "b", "path": "proj/ask", "guards": "an AskUserQuestion pushed out of the 400 KB tail; the answer appended by append-ask counts on the incremental scan"},
   {"id": "c", "path": "cc/projects/C--Users-demo-app", "guards": "non-ASCII project folder uses ident._slug; a Windows drive slug resolves"},
-  {"id": "e", "path": "home/.cursor/hooks.json", "guards": "external CLI hook files resolve under SIDEREUS_USER_HOME, never the real home"}
+  {"id": "e", "path": "home/.cursor/hooks.json", "guards": "external CLI hook files resolve under SIDEREUS_USER_HOME, never the real home"},
+  {"id": "f", "path": "home/.pi/agent/sessions", "guards": "one pi session file under the sandbox home (fake text only): the pi work-log popup shows its step and replies"}
  ]
 }

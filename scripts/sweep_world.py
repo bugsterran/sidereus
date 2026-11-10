@@ -6,8 +6,10 @@
 
 build writes DIR/{home,cc,data,proj} and prints the env lines + the launch line; append-ask appends the answer of case (b).
 Cases: (a) a project whose only pipeline file is invalid · (b) an AskUserQuestion pushed out of the 400 KB tail ·
-(c) a non-ASCII project folder + a Windows-shaped `C--Users-demo-app` folder · (e) external CLI hook files under home.
-Records are metadata only (empty text, tool input {}, empty tool_result), like tests/fixtures/states/README.md.
+(c) a non-ASCII project folder + a Windows-shaped `C--Users-demo-app` folder · (e) external CLI hook files under home ·
+(f) one pi session file under home (work-log popup).
+Claude records are metadata only (empty text, tool input {}, empty tool_result), like tests/fixtures/states/README.md;
+the pi file carries obviously fake text only (the popup needs a step and a reply to show).
 """
 import argparse
 import json
@@ -21,6 +23,7 @@ if REPO not in sys.path:
     sys.path.insert(0, REPO)
 
 from sidereus import ident  # noqa: E402  (slug rule lives in one place)
+from sidereus import plat_pi  # noqa: E402  (pi session folder rule)
 
 ASK_SID = "5ee90000-0000-4000-8000-0000000000b1"  # leakscan: allow (synthetic)
 ASK_ID = "toolu_sweep_ask_b1"
@@ -31,6 +34,7 @@ FILL_BYTES = 420_000          # > the 400 KB tail parse._parse_transcript reads
 UNICODE_DIR = "\ud504\ub85c\uc81d\ud2b8-caf\u00e9"   # non-ASCII folder name (escaped: no Hangul in source)
 WIN_SLUG = "C--Users-demo-app"
 WIN_CWD = "C:\\Users\\demo\\app"
+PI_SID = "5ee90000-0000-7000-8000-0000000000f1"  # leakscan: allow (synthetic)
 _TOOL_DIRS = (".claude", ".codex", ".cursor", ".gemini", ".copilot")
 
 
@@ -128,6 +132,36 @@ def _hook_files(home):
             os.path.join(home, ".copilot", "hooks", "sidereus.json"): {"version": 1, "hooks": {}}}
 
 
+def _pi_ms(t):
+    return int(t) * 1000
+
+
+def _pi_text(sid, cwd, now):
+    """pi session file (header + user / assistant toolCall / toolResult / assistant reply), fake text only."""
+    t = now - 180
+    e = lambda typ, i, dt, **kw: dict({"type": typ, "id": "f1%06d" % i, "timestamp": _iso(t + dt)}, **kw)
+    usage = {"input": 10, "output": 5, "cacheRead": 0, "cacheWrite": 0, "cost": {"total": 0.0}}
+    asst = {"role": "assistant", "provider": "anthropic", "model": "sample-model", "usage": usage}
+    rows = [{"type": "session", "version": 3, "id": sid, "timestamp": _iso(t), "cwd": cwd},
+            e("message", 1, 1, message={"role": "user", "content": "sample request", "timestamp": _pi_ms(t + 1)}),
+            e("message", 2, 2, message=dict(asst, timestamp=_pi_ms(t + 2), content=[
+                {"type": "text", "text": "sample step"},
+                {"type": "toolCall", "id": "call_f1", "name": "bash", "arguments": {"command": "echo sample"}}])),
+            e("message", 3, 3, message={"role": "toolResult", "toolCallId": "call_f1", "toolName": "bash",
+                                         "isError": False, "content": [{"type": "text", "text": "sample"}],
+                                         "timestamp": _pi_ms(t + 3)}),
+            e("message", 4, 4, message=dict(asst, timestamp=_pi_ms(t + 4), content=[{"type": "text", "text": "sample reply"}]))]
+    return "".join(_line(r) for r in rows)
+
+
+def pi_path(out, now):
+    """`<out>/home/.pi/agent/sessions/--<cwd>--/<ts>_<id>.jsonl`, the layout plat_pi.root() resolves under SIDEREUS_USER_HOME."""
+    p = paths(out)
+    cwd = os.path.join(p["proj"], "onlybad")
+    stamp = time.strftime("%Y-%m-%dT%H-%M-%S", time.gmtime(now - 180)) + "-000Z"
+    return cwd, os.path.join(p["home"], ".pi", "agent", "sessions", plat_pi.folder(cwd), "%s_%s.jsonl" % (stamp, PI_SID))
+
+
 def build(out, port=8899, now=None):
     """Write the world under `out` and return the printed lines (env + launch). Raises ValueError when refused."""
     err = check_out(out)
@@ -153,6 +187,9 @@ def build(out, port=8899, now=None):
     # (e) external CLI hook files, each with one user entry (Connect must keep it)
     for fp, d in sorted(_hook_files(p["home"]).items()):
         _write(fp, json.dumps(d, indent=2, sort_keys=True) + "\n", now)
+    # (f) one pi session under the sandbox home (lines() unsets PI_CODING_AGENT_DIR, so plat_pi.root() lands here)
+    pcwd, pfp = pi_path(out, now)
+    _write(pfp, _pi_text(PI_SID, pcwd, now), now - 176)
     projs = {k: {} for k in sorted((bad, p["ask_cwd"], uni))}
     _write(os.path.join(p["cc"], ".claude.json"), json.dumps({"projects": projs}, indent=1, sort_keys=True, ensure_ascii=False) + "\n", now)
     return lines(out, port)
