@@ -469,3 +469,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: row gaps were sized only for the lanes they carry (min 28px band, 14px sub-row); ★1920×1080, a 3-band focus used 560px of a 734px pane.
 - ⇒ After routing, `archFhFill` measures the free height under the map in its scrolling box (`.archlym`) and `archFhGap` splits it over the row gaps (none under 24px, cap 120px per gap); lanes are spaced by gap height, so lines spread too.
 - ⚠Only vertical gaps grow; node sizes and badges stay. A box that already scrolls keeps the tight layout. `need` has one entry past the last row — skip it (no band).
+
+## Crowded focus box drew its runs ~2px apart (`84j9 archFhPaths` wd, `archFhWiden`)
+- Cause: ports spread over the box's own width (`w / (n + 1)`); a narrow hub with many unbundled ends (badged links, mixed kinds) got ~2px steps, so runs read as one thick line.
+- ⇒ `archFhPaths` returns `wd` = `(ports on the busiest side + 1) * ARCH_FH.PS` (10px) per box; `archFhRoute` sets that as `min-width` (past the CSS `max-width:220px`) and re-measures. ★12 badged ends on a 60px box: step 4.6px → 10px.
+- ⚠Only grows: a box whose ports already fit keeps its size. Bundled links count as one port.

@@ -308,6 +308,22 @@ process.stdout.write(JSON.stringify([archFhQuality(P.paths, R), P.paths.map(p =>
         self.assertNotEqual(pts[2], list(reversed(pts[3])))
         self.assertEqual(pts[2][0][1] + 10, pts[3][0][1])                      # neighbours split by 2 * RV
 
+    def test_crowded_box_asks_for_port_step_width(self):
+        # A 60px hub with 12 callees below: ports were 60/13 ~ 4.6px apart. wd asks (12 + 1) * PS; widened, ports sit >= PS - 0.5 apart.
+        js = FH + r"""
+const rects = { h: { x: 400, y: 0, w: 60, h: 30 } }, below = [], edges = [];
+for(let i = 0; i < 12; i++){ const k = 'c' + i; rects[k] = { x: i * 90, y: 100, w: 70, h: 30 }; below.push(k); edges.push({ a: 'h', b: k, lab: true }); }   // badged: never bundled into one trunk
+const a = archFhPaths(rects, [['h'], below], edges), r2 = Object.assign({}, rects, { h: { x: 400, y: 0, w: a.wd.h, h: 30 } });
+const xs = archFhPaths(r2, [['h'], below], edges).paths.map(p => p.pts[0][0]).sort((u, v) => u - v);
+process.stdout.write(JSON.stringify([a.wd.h, a.wd.c0, Math.min(...xs.slice(1).map((x, i) => x - xs[i])), ARCH_FH.PS]));
+"""
+        r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+        self.assertEqual(r.returncode, 0, r.stderr.decode())
+        wh, wc, gap, ps = json.loads(r.stdout)
+        self.assertEqual(wh, 13 * ps)
+        self.assertLess(wc, 70)                                                # one-port box: no growth asked
+        self.assertGreaterEqual(gap, ps - 0.5)
+
     def test_real_and_dbuser_shapes(self):
         M, E, G, F = _real()
         r = run("const a = route(plan('hub', null, BP), 1100), b = route(plan('hub', ['f4', 'f6'], BP), 1100);"

@@ -3,7 +3,7 @@
 // Markup keeps the 81e tag-mode contract: boxes [data-p] (hub data-on), edges .mmdfe[data-f/t/k/c] with a .mmdel.mmdfl badge,
 // so 84j archDgClick, 84j4 archFocusClick/archFocusHx, 84j archHovPaint and 84j3 archLitPaint work on the .archfh root unchanged.
 // ⚠Names, entry labels and step numbers are agent data: esc() only, never T().
-const ARCH_FH = { LS: 14, GS: 12, G0: 12, ROW: 28, SUB: 14, PAD: 16, RV: 5 };   // px: lane step · gutter lane step · gutter offset · min band gap · min sub-row gap · min side pad · two-way neighbour split
+const ARCH_FH = { LS: 14, GS: 12, G0: 12, ROW: 28, SUB: 14, PAD: 16, RV: 5, PS: 10 };   // px: lane step · gutter lane step · gutter offset · min band gap · min sub-row gap · min side pad · two-way neighbour split · min port step
 // Pure: what the focus rows draw from an 84j4 plan. ⚠No flow lit: only edges touching the hub (entry/ifx edges into it included), so far
 // modules never appear. A lit flow keeps every numbered step edge and its entry too — the person follows the whole flow.
 // Rows = band index (entries 0, ifx P.fl, external bp.n, unknown layer bp.n+1); v1 (no layers): callers / hub / callees.
@@ -140,8 +140,10 @@ function archFhPaths(rects, rows, edges){
   Object.keys(bun).forEach(k => { const B = bun[k], p0 = B.ps[0], dn = p0.rb > p0.ra, far = B.ps.reduce((s, p) => s + cx(B.end ? p.a : p.b), 0) / B.ps.length;
     add(B.end ? p0.b : p0.a, B.end ? (dn ? 0 : 1) : (dn ? 1 : 0), far, x => B.ps.forEach(p => { if(B.end) p.xb = x; else p.xa = x; })); });
   // ⚠A bottom port of row r and a top port of row r+1 can land on one x by chance: their stubs then share the gap's vertical. ⇒ nudge by 6px.
-  const gx = {};
+  // ⚠A narrow hub with many ends spread its ports ~2px apart: runs read as one thick line. ⇒ wd = width each box needs for C.PS per port; archFhRoute widens.
+  const gx = {}, wd = {};
   Object.keys(pe).forEach(id => { const L = pe[id].sort((u, v) => u.far - v.far), k = L[0].k, r = rects[k], g = rk[k] + (id.endsWith('\u00011') ? 1 : 0);
+    wd[k] = Math.max(wd[k] || 0, (L.length + 1) * C.PS);
     const used = gx[g] = gx[g] || [];
     // ⚠only against other boxes' ports: nudging against its own spread ports piled a crowded side onto its clamped edge
     const hit = x => used.some(u => u.k !== k && Math.abs(u.x - x) < 3);
@@ -185,7 +187,15 @@ function archFhPaths(rects, rows, edges){
     p.pts.slice(1).forEach((q, i) => { const a = p.pts[i], L = Math.abs(q[0] - a[0]); if(a[1] === q[1] && L > bl){ bl = L; s = [a, q]; } });
     if(!s){ const m = Math.floor((p.pts.length - 1) / 2); s = [p.pts[m], p.pts[m + 1] || p.pts[m]]; }
     p.lx = (s[0][0] + s[1][0]) / 2; p.ly = (s[0][1] + s[1][1]) / 2; p.bs = s[0][1] === s[1][1] ? [Math.min(s[0][0], s[1][0]), Math.max(s[0][0], s[1][0])] : null; });
-  return { paths, need, gw: gn.map(n => Math.max(C.PAD, n ? C.G0 + (n - 1) * C.GS + 6 : 0)) };
+  return { paths, need, gw: gn.map(n => Math.max(C.PAD, n ? C.G0 + (n - 1) * C.GS + 6 : 0)), wd };
+}
+// Boxes narrower than archFhPaths wd get that min-width (past the CSS max-width). true = changed. ⚠Only grows: few-port boxes keep their size.
+function archFhWiden(fh, M, wd){
+  let ch = false;
+  Object.keys(wd || {}).forEach(k => { const r = M.rects[k]; if(!r || wd[k] <= r.w + 0.5) return;
+    const el = Array.from(fh.querySelectorAll('.archfh-n')).find(n => n.dataset.p === k);
+    if(el){ el.style.minWidth = Math.ceil(wd[k]) + 'px'; el.style.maxWidth = 'none'; ch = true; } });
+  return ch;
 }
 // Pure: {crossings, boxHits, overlaps} of drawn lines (a reverse pair on one line counts once), the 81g mmdQuality segment tests (strict crossings, a box shrunk 1px so touching ends do not count).
 function archFhQuality(paths, rects){
@@ -261,7 +271,8 @@ function archFhRoute(slot){
   if(!fh) return null;
   const gs = Array.from(fh.querySelectorAll('.archfh-e .mmdfe')), es = gs.map(g => ({ a: g.dataset.f, b: g.dataset.t, k: g.dataset.k || '', est: !!g.querySelector('.e-dot'), lab: !!g.querySelector('.mmdfl') })), f = v => String(Math.round(v * 10) / 10);
   let M = null, R = null;
-  for(let i = 0; i < 4; i++){ M = archFhMeasure(fh); R = archFhPaths(M.rects, M.rows, es); if(i === 3 || !archFhSpace(fh, M, R.need, R.gw)) break; }
+  for(let i = 0; i < 4; i++){ M = archFhMeasure(fh); R = archFhPaths(M.rects, M.rows, es); if(i === 3) break;
+    const w = archFhWiden(fh, M, R.wd); if(!archFhSpace(fh, M, R.need, R.gw) && !w) break; }
   const e = archFhFill(fh, M.bands.length - 1);
   if(e){ const C = ARCH_FH, n2 = R.need.map((v, g) => g && M.bands[g] ? Math.max(M.bands[g].sub ? C.SUB : C.ROW, v || 0) + e : v);   // need has one gap past the last row
     archFhSpace(fh, M, n2, R.gw); M = archFhMeasure(fh); R = archFhPaths(M.rects, M.rows, es); }
