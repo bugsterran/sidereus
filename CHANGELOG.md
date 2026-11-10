@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Sessions: the branch chip shows the live git branch of the folder; a session back from an isolation worktree no longer keeps the `worktree-agent-…` name.
 - Platforms: an idle pi session no longer drops out of the mailbox after a refused wake (wake cap or busy); its waiter keeps the presence alive and wakes only on newer mail (re-run «Connect» for pi).
 - Accounts: a profile signed in to the primary's account is never taken as «Main account» or the in-use account.
 - Sessions: a folded header-only worktree group ends with a border, so the next row no longer reads as its child.

@@ -147,3 +147,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `_wt_main` searched the literal `/.git/worktrees/` in a `realpath` result; Windows realpath uses backslashes, so every worktree read as "not a worktree" (harness evidence 400, `git_view._repo_ok` refused worktrees).
 - ⇒ `_wt_split(g, pm=os.path)` builds the marker from `pm.sep`; test `tests/test_wt_split_sep.py` runs it with `ntpath`.
 - ⚠Never hard-code `/` when matching a `realpath`/`abspath` result; build it from `os.sep`/`os.path.join`.
+
+## Session branch chip from a stale transcript (`gitinfo.git_branch`)
+- Cause: the row took `gitBranch` from the transcript; Claude Code keeps an isolation worktree's `worktree-agent-<id>` there after the session is back in the main checkout, so the chip paired main's live `↑1 ~2` with another branch's name.
+- ⇒ `git_branch(cwd, fallback)` reads the branch from the `## ` header of the same cached `status --branch` call (no extra fork); the transcript value is used only when git never answered. Test `tests/test_git_branch_live.py`.
+- ⚠A detached HEAD returns "", never the transcript name.

@@ -11,7 +11,7 @@ from sidereus.transcript import EXITED, _continued, _model_label  # noqa: F401 (
 from sidereus.ident import _proj_name, _proj_root, _sid8, mbox_of
 from sidereus.live import (_MBOX_LAB_RE, _blocked, _ctx_window, _model_win, _parse_cache,
     _live_retired, _parse_lock, live_cwds, mailbox_watches, sid_alive)
-from sidereus.gitinfo import _git_state, _wt_of, session_repos
+from sidereus.gitinfo import _git_state, _wt_of, git_branch, session_repos
 from sidereus.agents import WF_HIST_N, WF_HIST_S, WF_KEEP_S, _DESC_TOOLS, _bg_show, _subs_mt, _subs_newer, plm_of, team_info, wf_public, wf_runs
 from sidereus.usage_index import _uidx, _uidx_lock
 from sidereus.cards import _WRECK_BY_CWD, _note_lock, _recent_transcripts
@@ -338,7 +338,8 @@ def _session_row(fp, mt, now, live, p, stale=False):
         # context per request · burn per minute (tokens/min) · requests per minute — based on the recent tail span
         "creq": p.get("creq") or 0, "burn": p.get("burn") or 0, "rpm": p.get("rpm") or 0,
         "cwd": p.get("cwd") or "",
-        "branch": "" if p.get("branch") in (None, "HEAD") else p.get("branch"),
+        # Live git first: the transcript gitBranch keeps an isolation worktree's name after the session left it.
+        "branch": git_branch(p.get("cwd"), "" if p.get("branch") in (None, "HEAD") else p.get("branch")),
         "tool": ((o or {}).get("tool") if (o and o.get("state") == "tool") else None) or p.get("tool") or "",
         # ⚠Only an Agent call's one-line description — other targets are tool input (Bash command, path): rule 1, 2026-09-25.
         "targ": (p.get("targ") or "") if p.get("tool") in _DESC_TOOLS else "",

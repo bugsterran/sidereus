@@ -16,6 +16,10 @@ _git_cache = {}                 # cwd -> (lookup time, marker, TTL for this entr
 #   — ahead · ahead+behind · no upstream · detached · worktree (.git is a file) · bare · non-repo — both methods'
 #   output matched everywhere). Forks per session go 2 → 1.
 _AHEAD_RE = re.compile(r"\[(?:[^\]]*?\bahead (\d+))")
+# The same header names the checked-out branch. The transcript `gitBranch` is stale after a session leaves an
+# isolation worktree (it keeps `worktree-agent-<id>`), so the row prefers this live name; detached -> "".
+_git_branch_cache = {}          # cwd -> branch from the last successful `status --branch` ("" = detached / unknown)
+_BRANCH_RE = re.compile(r"^## (?:No commits yet on |Initial commit on )?(.+?)(?:\.\.\.\S+)?(?: \[[^\]]*\])?$")
 # ★A cwd that is not a git repo is **not re-asked every time** (⚠`.mailbox-mcp` itself is one).
 #   It was forking every 20 s only to get 128 and discard it. Not permanent, since `git init` may come later.
 GIT_NOREPO_TTL = 300
@@ -160,6 +164,9 @@ def _git_state(cwd, ttl=20):
             if lines and lines[0].startswith("##"):
                 m = _AHEAD_RE.search(lines[0])    # no upstream or detached ⇒ no match → 0
                 ahead = m.group(1) if m else "0"
+                b = _BRANCH_RE.match(lines[0])
+                b = b.group(1) if b else ""
+                _git_branch_cache[cwd] = "" if b.startswith("HEAD") else b   # "## HEAD (no branch)" = detached
                 lines = lines[1:]
             dirty = len([x for x in lines if x])
             bits = []
@@ -177,6 +184,13 @@ def _git_state(cwd, ttl=20):
         val, keep = "", ttl                       # not git or slow — just leave empty (no guessing)
     _git_cache[cwd] = (time.time(), val, keep)
     return val
+
+
+def git_branch(cwd, fallback=""):
+    """Live branch of cwd from the cached `status --branch` header; `fallback` (transcript value) only when git never answered.
+    ⚠A known detached HEAD returns "" (not the fallback): the transcript would show a branch the checkout is not on."""
+    _git_state(cwd)                               # cached 20 s; the header is parsed in the same call, no extra fork
+    return _git_branch_cache.get(cwd, fallback or "") if cwd else (fallback or "")
 
 
 # ★Subagent changes are hard for a human to review (2026-08-25) — when a session launches several agents,
