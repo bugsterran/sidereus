@@ -276,3 +276,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ `dfPickOpen` (35c) keeps the `.dfl` scrollTop across `diffShow`.
 - ⚠Focus the picked row with preventScroll only; do not scrollIntoView (no auto-centre).
 - ⚠Structure source tree: a mouse click on a file row hands focus back to `.srtt` too (81b click path), not only the arrow path — otherwise arrows scroll the code pane after a click.
+
+## Timeline tab dot must count main sessions working without subagents
+- Cause: the dot counted only `SESS[].sub`; a session working in its own turn (state `tool`/`think`, no subagent, no open run) lit no tab, so the screen looked idle.
+- ⇒ `buildMv` (92) also counts `tool`/`think` sessions under 600 s idle; the tooltip names both counts.
+- ⚠Keep the 600 s cut in step with the session list mute rule (40b) — a stale «working» row must not light the tab.

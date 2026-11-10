@@ -14,6 +14,7 @@ Object.assign(I18N.ko, {
   '{n} more|count': '{n}개 더',
   'Default|short': '기본',
   '{n} subagents running|tab': '서브에이전트 {n}개가 도는 중',
+  '{n} sessions working|tab': '작업 중 세션 {n}개',
   '{n} other files · {m}': '기타 {n}개 파일 · {m}개',
   'Source = main code without tests · All = source + tests · Tests = test code only': '본코드 = 테스트를 뺀 본체 · 전체 = 본코드 + 테스트 · 테스트 = 테스트 코드만',
   '{n} snapshots': '스냅샷 {n}개',

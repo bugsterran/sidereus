@@ -25,12 +25,15 @@ function buildMv(){
   // ★When an agent is running, put **a dot on the mode button** (2026-09-01) — even while viewing chat
   // one must know something is running. Uses the same value as the session card (SESS sub).
   const nRun = (SESS||[]).reduce((a,x) => a + (x.sub||[]).length, 0);
+  // A main session working without subagents or an open run lit no tab, so the screen looked idle while work went on.
+  // Same «working» rule as the session list (tool/think); past 600s it is muted there (may be stuck), so it does not light here either.
+  const nWork = (SESS||[]).filter(x => x && (x.state === 'tool' || x.state === 'think') && !(x.ageSec >= 600)).length;
   let nPl = 0; try{ const kn = plKnown(); nPl = plLiveN(plLiveProjs(SESS, plMem(), kn), kn); if(nPl && !kn && FEATS.pipeline !== false) plLoadProjs(); }catch(e){ softErr('plLiveProjs', e); }   // pipe tab dot (48-pipeline.js)
   let nMsg = 0; try{ nMsg = (mainView === 'chat') ? 0 : chatNew(); }catch(e){ softErr('chatNew', e); }
   let kbN = 0;   // shortcut digit = position in the row (98-a11y.js reads the same order)
   const tab = (k, lab) => '<button class="mvb'+(mainView===k?' on':'')+'" data-mv="'+k+'" role=tab aria-selected="'+(mainView===k)
     +'" tabindex="'+(mainView===k?0:-1)+'" title="'+esc(lab+' — '+T('Shortcut')+' '+(++kbN)+' · ? '+T('help'))+'">'+tabIco(k)+'<span class=mvl>'+lab+'</span>'
-    + (k === 'time' && nRun ? '<i class=mvdot title="'+T('{n} subagents running', 'tab').replace('{n}', nRun)+'"></i>' : '')
+    + (k === 'time' && (nRun || nWork) ? '<i class=mvdot title="'+esc([nRun ? T('{n} subagents running', 'tab').replace('{n}', nRun) : '', nWork ? T('{n} sessions working', 'tab').replace('{n}', nWork) : ''].filter(Boolean).join(' · '))+'"></i>' : '')
     + (k === 'pipe' && nPl ? plLiveDot(nPl) : '')
     + (k === 'chat' && nMsg ? '<i class="mvnum mvmsg" title="'+T('{n} new unseen messages').replace('{n}', nMsg)+'">'+nMsg+'</i>' : '')
     + '</button>';
