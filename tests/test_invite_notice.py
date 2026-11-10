@@ -367,13 +367,31 @@ class InvitePi(unittest.TestCase):
             inv.main(["--platform", "pi"])
         return out.getvalue()
 
-    def test_default_id_and_wake(self):
+    def test_undeclared_pi_is_asked_to_register(self):
+        out = self.run_hook()
+        self.assertIn("no registered mailbox identity", out)
+        self.assertIn("register as `proj-pi`", out)                 # derived id offered, not announced as the id
+        self.assertIn("`pi:" + self.proj + "`", out)                # decline key is the pi key, not the Claude path
+        self.assertIn(inv.WAKE_EN_PI, out)
+        for w in ("AskUserQuestion", "mailbox_wake", "proj-bot"):
+            self.assertNotIn(w, out)
+        self.assertFalse(os.path.exists(inv.ACCT_DIR))   # Claude-only records skipped
+        self.assertEqual(self.run_hook("UserPromptSubmit"), "")   # SessionStart only
+
+    def test_declined_pi_is_silent(self):
+        with open(inv.SKIP, "w", encoding="utf-8") as f:
+            json.dump({"pi:" + self.proj: True}, f)
+        self.assertEqual(self.run_hook(), "")
+        with open(inv.SKIP, "w", encoding="utf-8") as f:
+            json.dump({self.proj: True}, f)                          # the Claude decline does not silence pi
+        self.assertIn("no registered mailbox identity", self.run_hook())
+
+    def test_declared_pi_gets_wake_line(self):
+        self._w({self.proj: "proj-bot", "pi:" + self.proj: "proj-pi"})
         self.assertEqual(self.run_hook(), "[mailbox] id `proj-pi` · " + inv.WAKE_EN_PI + "\n")
         for w in ("mailbox_wake", "Stop hook", "Monitor", "AskUserQuestion"):
             self.assertNotIn(w, inv.WAKE_EN_PI)
         self.assertIn("wakes this idle session", inv.WAKE_EN_PI)   # R1: the extension wakes pi on mail
-        self.assertFalse(os.path.exists(inv.ACCT_DIR))   # Claude-only records skipped
-        self.assertEqual(self.run_hook("UserPromptSubmit"), "")   # wake line at SessionStart only
 
     def test_identity_key_and_invites(self):
         self._w({self.proj: "proj-bot", "pi:" + self.proj: "pibot", "codex:" + self.proj: "cx"},
@@ -383,9 +401,11 @@ class InvitePi(unittest.TestCase):
         self.assertIn("**r1**", out)
         self.assertEqual(inv.plat_id(self.proj, "codex"), "cx")
 
-    def test_id_colliding_with_claude_is_silent(self):
+    def test_id_colliding_with_claude_never_offered(self):
         self._w({self.proj: "proj-pi"})
-        self.assertEqual(self.run_hook(), "")
+        out = self.run_hook()
+        self.assertIn("type a name", out)
+        self.assertNotIn("register as", out)                        # never propose an id a Claude session owns
 
     def test_explicit_pi_id_may_equal_claude_id(self):
         self._w({self.proj: "advocate", "pi:" + os.path.realpath(self.proj): "advocate"})

@@ -481,7 +481,11 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
   `pi.sendUserMessage("[mailbox] N new mail …")`(보낸 id·방·개수만)로 턴 하나를 시작한다.
   - «ok» 응답이 와야 메일을 표시한 것으로 기록한다(턴 끝 안내와 같은 커서). 한 메일은 많아야 한 번 깨운다.
   - 바쁘거나 끝났거나 상한(`SIDEREUS_MAIL_WAIT_MAX`, 입력 없이 깨운 횟수 기본 20)을 넘으면 턴을 만들지 않고 메일은
-    다음 깨우기까지 남는다. 대기자 수명(6시간)이 끝나면 조용히 다시 건다.
+    읽지 않은 채 남는다. 대기자는 조용한 모드로 다시 떠서 접속 표시만 유지하고, 더 새 메일이 와야 다시 깨운다.
+    대기자 수명(6시간)이 끝나면 조용히 다시 건다.
+  - 로그인: pi 세션은 `pi:<cwd>` 항목이 있어야 로그인한 것으로 친다(`mailbox_login`. `mailbox` 서버가
+    `ext-hooks/gemini_mailbox_mcp.sh pi` 로 떠야 한다). 없으면 세션 시작 때 `<폴더>-pi` 로 등록할지 사용자에게 묻는다
+    (거절하면 `identity-skip.json` 에 `pi:<cwd>` 를 적는다).
   - `watch.sh` 가 그 id 를 지켜보거나, 폴더에서 만든 `<폴더>-pi` id 가 Claude id 와 같으면 꺼진다. 명시한 `pi:<cwd>`
     id 는 그래도 쓴다(같은 id 의 Claude 세션도 같은 메일에 깨어난다).
   - ⚠설치된 `sidereus.ts` 는 만들어 둔 사본이다. 설정 › «진단» › «연결» 로만 갱신되고, 그 뒤 pi 를 다시 시작하거나

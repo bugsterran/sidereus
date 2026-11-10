@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Platforms: a pi session without a `pi:<cwd>` mailbox id is asked at start whether to register `<folder>-pi`, instead of being told the derived id as if it were logged in.
 - Platforms: pi «Connect» no longer reports connected while `~/.pi/agent/mcp.json` keeps its own `mailbox` entry that skips the Sidereus launcher (pi logins then never count); Diagnostics says to edit that entry by hand.
 - Sessions: the branch chip shows the live git branch of the folder; a session back from an isolation worktree no longer keeps the `worktree-agent-…` name.
 - Platforms: an idle pi session no longer drops out of the mailbox after a refused wake (wake cap or busy); its waiter keeps the presence alive and wakes only on newer mail (re-run «Connect» for pi).

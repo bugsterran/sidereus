@@ -290,3 +290,8 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - Cause: the merge keeps an existing `mailbox` entry (by folded name); a plain `uv run mailbox-mcp` entry gives the server no `CLAUDE_PROJECT_DIR`, so every pi `mailbox_login` lands on `identity.json["default"]` and no pi row reads as logged in, yet the row said «connected».
 - ⇒ the row is «partial» unless `mailbox` runs `ext-hooks/gemini_mailbox_mcp.sh` with `pi` as the first arg; with nothing else to append, `can:false` and the reason `FOREIGN_MAILBOX` (edit by hand). Test `tests/test_hook_connect_pi.py`.
 - ⚠Connect still never rewrites a user entry; Windows wants no mailbox entry, so the check is off there.
+
+## pi session never asked to register a mailbox id (`hooks/invite_notice.py --platform pi`)
+- Cause: the unregistered notice ran only for `PLATFORM == "cc"`; pi got «id `<folder>-pi`» as if registered, while the viewer counts pi as logged in only with an explicit `pi:<cwd>` entry, so the session showed «not logged in» and never asked.
+- ⇒ pi without `pi:<realpath>` in identity.json gets the register notice (suggest `<folder>-pi`, or «type a name» when that equals a Claude id; decline key `pi:<realpath>` in identity-skip.json). Tests `tests/test_invite_notice.py` (InvitePi).
+- ⚠Never propose an id a Claude session owns; a Claude decline for the same folder does not silence pi.

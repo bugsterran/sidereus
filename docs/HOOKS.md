@@ -508,7 +508,11 @@ servers to `<agent dir>/mcp.json` (mailbox through `gemini_mailbox_mcp.sh pi`; n
   `pi.sendUserMessage("[mailbox] N new mail …")` (from-id, room, count only) when pi is idle with nothing queued.
   - Only an «ok» ack marks the mail surfaced (same cursor as the turn-end line), so one mail wakes at most once.
   - Busy, ended or over the cap (`SIDEREUS_MAIL_WAIT_MAX`, default 20 wakes without a typed prompt) = no turn; the
-    mail stays unread for the next wake. After the waiter's 6 h lifetime it re-arms silently.
+    mail stays unread. The waiter re-arms quiet: it keeps the presence heartbeat and wakes again only on newer mail.
+    After the waiter's 6 h lifetime it re-arms silently.
+  - Login: a pi session counts as logged in only with an explicit `pi:<cwd>` entry (`mailbox_login`, which needs the
+    `mailbox` server to run `ext-hooks/gemini_mailbox_mcp.sh pi`). Without one, SessionStart asks the user to register
+    `<folder>-pi` (declining writes `pi:<cwd>` to `identity-skip.json`).
   - Off while `watch.sh` watches the id, or when the folder-derived `<folder>-pi` id equals a Claude id; an explicit
     `pi:<cwd>` id is used even then (a Claude session on that id wakes on the same mail).
   - ⚠The installed `sidereus.ts` is a rendered copy: it updates only through Settings › «Diagnostics» › «Connect»,

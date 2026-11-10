@@ -172,18 +172,28 @@ PLATFORM = "cc"   # set from --platform in main(); "codex" and "pi" change the w
 OTHER_PLATS = ("codex", "pi")   # non-Claude CLIs with their own mailbox id (ext-hooks/gemini_mailbox_mcp.sh <plat>)
 
 
-def notice_unregistered(cwd, watch=True):
-    """Unregistered-identity notice. SessionStart only — the goal is for the session to ask the user and register."""
-    folder = os.path.basename(cwd.rstrip("/")) or "unknown"
+def notice_unregistered(cwd, watch=True, suggest="", skip_key=""):
+    """Unregistered-identity notice. SessionStart only — the goal is for the session to ask the user and register.
+
+    suggest / skip_key: a non-Claude CLI (pi) proposes its own `<folder>-pi` id and declines under `pi:<cwd>`, so a
+    Claude session's choice in the same folder is never reused or silenced by it."""
+    folder = suggest if (suggest or skip_key) else (os.path.basename(cwd.rstrip("/")) or "unknown")
+    # ⚠skip_key without suggest = the derived id equals a Claude id; never propose a name another session owns.
+    opts = (f"  Options: (1) register as `{folder}`  (2) type a name  (3) no (don't ask again)" if folder
+            else "  Options: (1) type a name (the folder id is taken by a Claude session)  (2) no (don't ask again)")
+    no = "(3)" if folder else "(2)"
+    # ⚠pi has no AskUserQuestion tool; the generic wording works on every CLI.
+    ask = "Ask the user" if PLATFORM in OTHER_PLATS else "Ask the user with AskUserQuestion"
+    wake = {"codex": WAKE_EN_CODEX, "pi": WAKE_EN_PI}.get(PLATFORM, WAKE_EN)
     # Model-facing text is English only; the session asks the user in the user's own language.
     print("\n".join([
         f"[mailbox] This project has no registered mailbox identity (path: {cwd}).",
         "Until it is registered it cannot receive room invites, and posting is blocked by the identity guard.",
-        'Ask the user with AskUserQuestion, in the user\'s language — "This project has no mailbox id. Register one?"',
-        f"  Options: (1) register as `{folder}`  (2) type a name  (3) no (don't ask again)",
+        ask + ', in the user\'s language — "This project has no mailbox id. Register one?"',
+        opts,
         'Register with mailbox_login {as_id:"<name>"} — remember (default) saves it to identity.json.',
-    ] + ([WAKE_EN] if watch else []) + [
-        f"If the user picks (3), add this path to {_tilde(SKIP)}.",
+    ] + ([wake] if watch else []) + [
+        f"If the user picks {no}, add {('the key `' + skip_key + '`') if skip_key else 'this path'} to {_tilde(SKIP)}.",
         "Do not choose an id yourself before the user answers.",
     ]))
 
@@ -344,8 +354,18 @@ def main(argv=None):
     sid = inp.get("session_id") or ""
     if PLATFORM in OTHER_PLATS:   # ⚠acct/sesspid records are Claude config dir / Claude pid; these ids always have a default
         me = plat_id(cwd, PLATFORM)
-        if event == "SessionStart" and me and watch_mode(cwd) == "on":
-            notice_wake(me)
+        if event == "SessionStart":
+            on = watch_mode(cwd) == "on"
+            # ⚠pi counts as logged in only with an explicit `pi:<cwd>` entry (viewer mboxIn: mboxSrc identity); the derived
+            #   `<folder>-pi` id is a guess, so announcing it as the session's id left it unregistered and never asked.
+            key = PLATFORM + ":" + os.path.realpath(cwd)
+            ident = load(IDENTITY, {})
+            declared = isinstance(ident, dict) and isinstance(ident.get(key), str) and bool(ident.get(key))
+            if PLATFORM == "pi" and not declared:
+                if not skipped(key):
+                    notice_unregistered(cwd, on, suggest=me, skip_key=key)
+            elif me and on:
+                notice_wake(me)
     else:
         record_acct(event, sid)
         record_clear(event, inp.get("source") or "", sid)
