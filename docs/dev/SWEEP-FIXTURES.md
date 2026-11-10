@@ -22,7 +22,7 @@ python3 scripts/sweep_world.py append-ask --out <tmp>
 | `SIDEREUS_USER_HOME` | `<tmp>/home` (external CLI hook paths; see TRAPS «HOME override alone») |
 | `SIDEREUS_QUOTA_LOOKUP` | `0` (otherwise the sandbox calls the real usage API with the live keychain token) |
 | port | a spare port (`--port`), never 8799 |
-| unset | `CODEX_HOME` `GEMINI_CLI_HOME` `COPILOT_HOME` (they win over `SIDEREUS_USER_HOME`) |
+| unset | `CODEX_HOME` `GEMINI_CLI_HOME` `COPILOT_HOME` `PI_CODING_AGENT_DIR` (they win over `SIDEREUS_USER_HOME`) |
 
 `sidereus_cli.py start` opens no browser unless `--open` is passed.
 

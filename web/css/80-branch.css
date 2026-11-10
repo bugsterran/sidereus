@@ -135,7 +135,8 @@ html[data-ui=next] .brws .sd{width:7px;height:7px;border-radius:50%;flex:0 0 aut
 html[data-ui=next] .brws.st-tool .sd{background:var(--nx-ok)}
 html[data-ui=next] .brws.st-think .sd{background:var(--nx-info)}
 html[data-ui=next] .brws.st-wait .sd,html[data-ui=next] .brws.st-ask .sd{background:var(--nx-warn)}
-html[data-ui=next] .brws b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--nx-t1)}
+/* ⚠Name keeps its width (cap 50%): shrinking with the branch label cut «acme-web» 61→57px while the label could wrap */
+html[data-ui=next] .brws b{flex:0 0 auto;max-width:50%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--nx-t1)}
 html[data-ui=next] .brws s,html[data-ui=next] .brws u{text-decoration:none;flex:0 0 auto;color:var(--nx-info)}
 /* ★Session branch label was 150/141px clipped: wrap instead of ellipsis. */
 html[data-ui=next] .brws .brwb{min-width:0;overflow-wrap:anywhere;color:var(--nx-t3)}

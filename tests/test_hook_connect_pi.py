@@ -102,6 +102,37 @@ class HookConnectPi(unittest.TestCase):
         with open(os.path.join(self.trash, baks[0], "pi-mcp.json"), encoding="utf-8") as f:
             self.assertEqual(f.read(), text)
 
+    def test_one_line_user_entry_byte_identical(self):
+        mine = '"mine": {"command": "a", "args": ["-x"], "env": {"K": "secret"}}'
+        for nl in ("\n", "\r\n"):
+            text = '{\n  "mcpServers": {\n    %s\n  },\n  "z": 1\n}\n'.replace("\n", nl) % mine
+            self._put(text)
+            dry = HP._plan_mcp(self.files["mcp"])
+            self.assertIsNone(dry["err"])
+            new = dry["new_raw"].decode("utf-8")
+            self.assertTrue(new.startswith(text.split(mine)[0] + mine + ","), new)
+            self.assertTrue(new.endswith(nl + "  }," + nl + '  "z": 1' + nl + "}" + nl))
+            self.assertEqual(list(json.loads(new)["mcpServers"]), ["mine", "sidereus", "mailbox"])
+            body = [ln for ln in dry["diff"].splitlines()[2:] if not ln.startswith("@@")]
+            # ⚠JSON needs a comma after the last user member: that line is the only -/+ pair, and only gains ","
+            minus = [ln for ln in body if ln.startswith("-")]
+            self.assertEqual(len(minus), 1)
+            self.assertIn("+" + minus[0][1:] + ",", body)
+            self.assertNotIn("secret", dry["diff"])
+            if nl == "\n":
+                self.assertTrue(all(ln.startswith("+    ") or ln.startswith("+      ") for ln in body if ln[0] == "+"))
+            else:
+                self.assertNotIn("\n", new.replace("\r\n", ""))   # no bare LF mixed into a CRLF file
+
+    def test_one_line_object_stays_one_line(self):
+        text = '{"mcpServers": {"mine": {"command": "a"}}, "z": 1}\n'
+        self._put(text)
+        self._apply()
+        new = self._mcp()
+        self.assertTrue(new.startswith('{"mcpServers": {"mine": {"command": "a"}, "sidereus": '), new)
+        self.assertEqual(new.count("\n"), 1)
+        self.assertEqual(json.loads(new)["mcpServers"], dict({"mine": {"command": "a"}}, **self._want()))
+
     def test_folded_names_not_readded(self):
         for name in ("sidereus", "side_reus"):
             self._put(json.dumps({"mcpServers": {name: {"command": "x"}, "Mail-box": {"command": "y"}}}))

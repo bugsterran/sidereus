@@ -85,7 +85,7 @@ function rtWhere(x){
 function rtSigs(r){
   const s = r.sigs || [];
   if(!s.length) return '';
-  return '<table class=brt><thead><tr><th>'+esc(T('Frequent failures'))+'</th><th>'+esc(T('Type'))+'</th><th class=brv>'
+  return '<table class="brt rtsg"><thead><tr><th>'+esc(T('Frequent failures'))+'</th><th>'+esc(T('Type'))+'</th><th class=brv>'
     + esc(T('Count'))+'</th><th class=brv>'+esc(T('Last'))+'</th></tr></thead><tbody>'
     + s.map((x, i) => { const op = rtOpen.has(rtKey(x));
       return '<tr class="rtsr'+(x.chk ? ' rtchk' : '')+(op ? ' on' : '')+'" data-rsi="'+i+'" role=button tabindex=0 aria-expanded="'+op+'">'
@@ -338,28 +338,28 @@ function rtProjects(r){
         + '%;background:'+wkc(i)+'"></i></span>' : '')+'</td></tr>').join('')
     + '</tbody></table>';
 }
-// Account picker row above the OTel cards ('' below 2 accounts); failure, weekly and commit cards always stay All.
+// Note above the OTel cards under a pick (the picker itself sits in the toolbar); failure, weekly and commit cards always stay All.
 // Under a pick, days before the server's acctSince carry no account and count under All only — say so when that falls in range.
 function rtAcctHead(r){
-  const pk = acctPickHtml('retro'); if(!pk) return '';
+  if(!acctPick('retro')) return '';
   const s = String((r && r.acct && r.acctSince) || ''), okS = /^\d{4}-\d{2}-\d{2}$/.test(s);
   const s0 = new Date(); s0.setDate(s0.getDate() - (((r && r.days) || 7) - 1));
   const since = rtYmd(s0);
   const ln = okS && s > since ? ' <i>' + esc(T('Records before {date} have no account').replace('{date}', (+s.slice(5, 7)) + '/' + (+s.slice(8, 10)))) + '</i>' : '';
-  return '<div class=hidnote>' + pk + ln + '</div>';
+  return ln ? '<div class=hidnote>' + ln + '</div>' : '';
 }
 function paintRetro(){
   if(mainView !== 'retro') return;
   const box = document.getElementById('feed');
   if(!box) return;
-  const apFo = acctPickFocusId();   // ⚠innerHTML below replaces the picker
+  const apFo = acctPickFocusId();   // ⚠tbSlot below replaces the picker
   const tabs = RETRO_STEPS.map(x => '<button class="wkrgb'+(x === (retroBusy ? retroWant : retroDays) ? ' on' : '')+'" data-rd="'+x+'">'
     + esc(T('Last {n} days').replace('{n}', x))+'</button>').join('');
   const r = RETRO;
   // Aggregation time is a debug number — tooltip only; the heading keeps just the age.
   const meta = (r && r.ok) ? '<i title="'+esc((r.ms||0)+'ms '+T('measured'))+'">'+agoSec(r.at)+'</i>' : '';
-  // Range buttons (+ loading hint) live in the header toolbar slot.
-  tbSlot('retro', '<span class="tbg rtrg">'+tabs+(retroBusy ? ' <i>'+esc(T('Loading…', 'read'))+'</i>' : '')+'</span>');
+  // Range buttons (+ loading hint) and the account picker live in the header toolbar slot, as on History.
+  tbSlot('retro', '<span class="tbg rtrg">'+tabs+(retroBusy ? ' <i>'+esc(T('Loading…', 'read'))+'</i>' : '')+'</span>' + acctPickHtml('retro'));
   // Age only (header names the tab); no age yet = no row.
   const head = (meta ? '<div class=tlhd>'+meta+'</div>' : '')
     + '<div class=hidnote>'+esc(T('Sources are the token index, failure records and local git — only projects, counts and tokens are shown (no conversation).'))+'</div>';

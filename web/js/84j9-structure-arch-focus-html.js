@@ -149,16 +149,18 @@ function archFhPaths(rects, rows, edges){
     const hit = x => used.some(u => u.k !== k && Math.abs(u.x - x) < 3);
     // ⚠a nudge on a crowded side landed ~1px from a sibling port (one run): a candidate must stay half a spread step from every sibling slot
     const st = r.w / (L.length + 1), mine = c => L.some((_, j) => Math.abs(r.x + st * (j + 1) - c) < st / 2);
+    // ⚠a nudge kept only st/2 from sibling slots: on a box widened to exactly PS per port, nudged ends sat ~6-7px apart. ⇒ PS from placed/unplaced siblings.
+    const xs = [], near = (c, i) => L.some((_, j) => j !== i && Math.abs((j < i ? xs[j] : r.x + st * (j + 1)) - c) < Math.min(C.PS, st) - 1e-6);
     L.forEach((e, i) => { const x0 = r.x + st * (i + 1); let x = x0;
-      for(let t = 1; t <= 6 && hit(x); t++){ const c = x0 + (t % 2 ? 1 : -1) * 6 * Math.ceil(t / 2); if(c > r.x + 2 && c < r.x + r.w - 2 && !mine(c)) x = c; }
-      if(hit(x)) x = [x0 + st / 4, x0 - st / 4].find(c => !hit(c)) || x0;   // quarter step: siblings stay half a step apart
-      used.push({ k, x }); e.set(x); }); });
+      for(let t = 1; t <= 6 && hit(x); t++){ const c = x0 + (t % 2 ? 1 : -1) * 6 * Math.ceil(t / 2); if(c > r.x + 2 && c < r.x + r.w - 2 && !mine(c) && !near(c, i)) x = c; }
+      if(hit(x)) x = [x0 + st / 4, x0 - st / 4].find(c => !hit(c) && !near(c, i)) || x0;   // quarter step: siblings stay half a step apart
+      xs.push(x); used.push({ k, x }); e.set(x); }); });
   // ⚠A link between boxes stacked over each other bent anyway (spread ports rarely share an x). ⇒ adjacent rows: when one end's port
-  // lies over the other box and no other port sits within 6px there (same side) or 3px (same gap), move that port: a straight vertical.
+  // lies over the other box and no other port sits within C.PS there (same side; 6px left widened hubs' ends 6px apart) or 3px (same gap), move that port: a straight vertical.
   const po = [];
   paths.forEach(p => { if(p.ra == null || p.ra === p.rb) return; const dn = p.rb > p.ra;
     p.qa = { k: p.a, s: dn ? 1 : 0, x: p.xa }; p.qb = { k: p.b, s: dn ? 0 : 1, x: p.xb }; po.push(p.qa, p.qb); });
-  const free = (q, x, p) => !po.some(o => o !== q && (o.k === q.k ? o.s === q.s && Math.abs(o.x - x) < 6
+  const free = (q, x, p) => !po.some(o => o !== q && (o.k === q.k ? o.s === q.s && Math.abs(o.x - x) < C.PS
     : o.k !== p.a && o.k !== p.b && rk[o.k] + o.s === rk[q.k] + q.s && Math.abs(o.x - x) < 3));
   const over = (R, x) => x > R.x + 6 && x < R.x + R.w - 6;
   paths.forEach(p => { if(!p.qa || p.bd || p.gx != null || Math.abs(p.rb - p.ra) !== 1) return;

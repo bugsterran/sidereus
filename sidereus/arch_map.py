@@ -312,7 +312,7 @@ def _late_titles():
 
 def _end_at(pl, root, stage, late):
     """Result time that ends a run of pl sitting on `stage`; a late arch-map stage needs a brief.ok.json newer than verify.json."""
-    b = _result_at(root, BRIEF_OK) if pl == ARCH_PL and stage in late else None
+    b = _result_at(root, BRIEF_OK) if pl == ARCH_PL and stage in late else None   # ⚠no brief.ok.json = 0.0, not None: still 0
     return _final_at(pl, root) if b is None else (b if b > _result_at(root) else 0.0)
 
 

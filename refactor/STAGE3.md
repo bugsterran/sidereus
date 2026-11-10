@@ -198,7 +198,7 @@ notes · parse · adapter · plat_gemini · plat_codex · plat_cursor · plat_co
 
 - Size-cap splits (2026-09-28, no behaviour change): `live_win` (context-window learning `WIN_*`/`_win_*`/`_ctx_window`/`_win_loop`; owns `_win_seen`/`_win_ev`/`_win_scanned`/`_win_lock`; live re-exports 5 names) ·
   `quota_fetch` (`_quota_fetch` + `_qf_*`; imports `_quota`/`_quota_lock`/`_quota_retry_after`/`_oauth_token`/`_cc_account` from quota, quota_loop imports `_quota_fetch` from here) ·
-  `quota_roots` (per-account 5h/7d for extra signed-in roots: owns `_acc`/`_acc_lock`/`_uuid_cache`/`PTS_FILE`/`_pts`/`_pts_loaded` (5h pts ring per root, under `_acc_lock`); `tick()` from `quota_loop._quota_tick`, `quota_accounts()` from `state`; ⚠never calls `_qf_*` — they mutate the primary `_quota`) ·
+  `quota_roots` (per-account 5h/7d for extra signed-in roots: owns `_acc`/`_acc_lock`/`_uuid_cache`/`PTS_FILE`/`_pts`/`_pts_loaded` (5h pts ring per root, under `_acc_lock`); `tick()` from `quota_loop._quota_tick`, `quota_accounts()` from `state`, `same_labels()` (non-primary labels on the primary's own account) from `agent_brief`/`burn`/`state`; ⚠never calls `_qf_*` — they mutate the primary `_quota`) ·
   `git_flow` (remote freshness `remote_info`/`_git_common_dir`/`_url_host`/`BR_FETCH_STALE_H` + git-flow `flow_*`; no sidereus imports; git_view re-exports 6 names) ·
   `structure_cache` (disk cache `STRUCT_DISK_*`/`_struct_disk_*`/`_struct_enc_build`/`_struct_dec_build`/`_struct_fc*`; owns `_struct_fc_loaded`/`_struct_fc_sig`; structure/structure_snap import from here) ·
   `demo_rel` (lazy: demo source tree + file popup `demo_tree`/`demo_src`/`demo_file`, demo arch map `demo_arch`).

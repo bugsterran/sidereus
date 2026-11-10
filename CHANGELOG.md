@@ -7,14 +7,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Platforms: pi hooks and the Sidereus MCP server connect through «Connect» in Settings › «Diagnostics» (an extension plus `mcp.json`, previewed first); a pi row without hooks shows «Hooks not connected». Mail wake-up is still not supported.
+- Platforms: pi hooks and the Sidereus MCP server connect through «Connect» in Settings › «Diagnostics» (an extension plus `mcp.json`, previewed first); a pi row without hooks shows «Hooks not connected».
+- Platforms: new mail wakes an idle pi session through the Sidereus pi extension (one turn with the mail metadata only, sent only while pi is idle); no model turn runs while it waits.
+- Sessions: two live sessions in one folder each show a muted «n in folder» chip; its tooltip says cost and To-do are folder totals.
 
 ### Changed
 
+- Sessions: when the main repo's session is in view, a linked-worktree session is one «Worktree» line inside that card (name or branch, state, age), next to the subagent lines; clicking it opens that session. With no main session in view the header row stays.
+- Quota: «left ≈» shows a range (for example «57M-107M») when the history estimate and this window disagree by more than 1.5x between 30% and 60% used; from 60% it is one value blended toward this window, and the tooltip names both.
 - Structure: the diagram request («Generate diagram» / «Update diagram» / «Redraw») also draws the one-page overview, so «Simple» is ready after one request; `arch-brief` remains for redrawing only the overview, and a failed overview leaves the verified map in place.
 
 ### Fixed
 
+- Accounts: a profile signed in to the primary's account is never taken as «Main account» or the in-use account.
+- Sessions: a folded header-only worktree group ends with a border, so the next row no longer reads as its child.
+- Sessions and Timeline: a session nests under a worktree only when its folder is inside that worktree, not when it merely touched the repo.
+- Quota: «left ≈» ignores this window's average when this PC used nothing in it (only claude.ai or another device moved the %), instead of reading «< 1%».
+- Platforms: an idle pi session stays listed while pi still runs in its folder, instead of dropping after 10 minutes without writes.
+- Platforms: pi rows carry the mailbox id pi logs in as, so the work-popup composer and run pickers address the pi session, and a room member from pi shows the pi logo.
 - Structure: in a module focus view a box with many links grows wide enough to keep its link ends 10 px apart, instead of drawing them about 2 px apart.
 
 ## [0.17.0] - 2026-11-10

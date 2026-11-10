@@ -509,7 +509,8 @@ servers to `<agent dir>/mcp.json` (mailbox through `gemini_mailbox_mcp.sh pi`; n
   - Only an «ok» ack marks the mail surfaced (same cursor as the turn-end line), so one mail wakes at most once.
   - Busy, ended or over the cap (`SIDEREUS_MAIL_WAIT_MAX`, default 20 wakes without a typed prompt) = no turn; the
     mail stays unread for the next wake. After the waiter's 6 h lifetime it re-arms silently.
-  - Off while `watch.sh` watches the id, or when the id equals a Claude id.
+  - Off while `watch.sh` watches the id, or when the folder-derived `<folder>-pi` id equals a Claude id; an explicit
+    `pi:<cwd>` id is used even then (a Claude session on that id wakes on the same mail).
   - ⚠The installed `sidereus.ts` is a rendered copy: it updates only through Settings › «Diagnostics» › «Connect»,
     then restart pi or run `/reload`.
 - Every hook-script call has a 5 s timeout (the mail waiter has none) and never throws; a missing Python only drops that event.

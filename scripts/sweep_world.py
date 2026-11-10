@@ -162,7 +162,7 @@ def lines(out, port):
     p = paths(out)
     env = (("HOME", p["home"]), ("CLAUDE_CONFIG_DIR", p["cc"]), ("MAILBOX_DIR", p["data"]), ("SIDEREUS_USER_HOME", p["home"]))
     # ⚠the per-CLI home overrides beat SIDEREUS_USER_HOME, so a set one would point the sandbox at real files
-    return ["unset CODEX_HOME GEMINI_CLI_HOME COPILOT_HOME"] + ["export %s=%s" % (k, shlex.quote(v)) for k, v in env] + \
+    return ["unset CODEX_HOME GEMINI_CLI_HOME COPILOT_HOME PI_CODING_AGENT_DIR"] + ["export %s=%s" % (k, shlex.quote(v)) for k, v in env] + \
         ["python3 %s start --port %d" % (shlex.quote(os.path.join(REPO, "sidereus_cli.py")), int(port))]
 
 

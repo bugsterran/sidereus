@@ -46,6 +46,7 @@ function hcInner(where){
       + '<div class=hcb><button type=button class="strp on" data-hca=apply data-hcv="' + esc(p) + '">' + esc(T('Apply')) + '</button>'
       + '<button type=button class=strp data-hca=cancel data-hcv="' + esc(p) + '">' + esc(T('Cancel')) + '</button></div></div>';
     if(s.msg) h += '<small class="hcm' + (s.st === 'err' ? ' err' : '') + '" role=status>' + esc(s.msg) + '</small>';
+    if(s.bak) h += '<small class="hcm err">' + esc(T('The first file was already written. Backup to restore it')) + ': ' + esc(s.bak) + '</small>';
     return h + '</div>';
   }).join('');
   const err = dx && HC && HC.err ? '<div class="cfgpd err">' + esc(T('Could not load')) + ': ' + esc(HC.err) + '</div>' : '';
@@ -71,6 +72,8 @@ function hcPaint(){
 }
 const hcErr = e => e && e.status === 409 ? T('The file changed since the preview. Preview again.')
   : T('Could not connect') + ': ' + String((e && e.body && TE(e.body)) || (e && e.message) || e);
+// A failed second write (pi) carries the first file's backup(s): ⚠shown so the person can undo the half-done write.
+const hcBak = e => { const b = e && e.body; const L = b && Array.isArray(b.backups) ? b.backups : (b && b.backup ? [b.backup] : []); return L.filter(x => typeof x === 'string' && x).join(', '); };
 async function hcAct(a, p){
   if(a === 'later'){ lsSet('sidereus.hclater.' + p, '1'); hcPaint(); return; }
   if(a === 'cancel'){ delete HCS[p]; hcPaint(); return; }
@@ -97,7 +100,7 @@ async function hcAct(a, p){
       HCS[p] = { st: 'done', pin: r && r.approve ? true : 'dx', msg: r && r.approve ? T('Connected. Restart Codex, then run /hooks in it to approve the new hooks.') : T(r && r.changed === false ? 'Already connected' : 'Connected. Restart sessions that are already open: only newly started ones load the hooks.') };
       hcPaint(); hcLoad(true);   // pinned: the reload keeps the connected row (in «Diagnostics») so the message stays readable
       return;
-    }catch(e){ HCS[p] = { st: 'err', msg: hcErr(e) }; }
+    }catch(e){ HCS[p] = { st: 'err', msg: hcErr(e), bak: hcBak(e) }; }
     hcPaint(); return;
   }
 }

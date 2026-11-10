@@ -125,6 +125,9 @@ body:not(.wkside) .lside > .wku{display:none}
 .brt .brn s{text-decoration:none;color:#7e8896;font-size:10.5px}
 .brt .brd{color:#8b95a7;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;max-width:280px}
 .brt .brg{width:34%}
+/* Insights «Frequent failures»: content-width table — at 100% the Type cell sat 1487px from the name at 1920 */
+.brt.rtsg{width:auto;min-width:min(100%,560px);max-width:min(100%,1100px)}
+.rtw .brt.rtsg .brd{width:auto;max-width:520px}   /* ⚠overrides 87-retro's width:100%, which stretched the table back to the cap */
 /* ⚠auto table layout grows to fit a nowrap name, so a long project path pushed the table past its card; max-width:0 lets the cell shrink and ellipsize. */
 .brt.rtpj .brn{max-width:0;width:30%;overflow:hidden;text-overflow:ellipsis}
 /* «Daily» table: ⚠fixed height (~8 rows, not max-height) + inner scroll so switching 7/30 days never moves what is below. */
@@ -170,8 +173,9 @@ html[data-ui=next][data-theme=light] .wktb i s{color:#fff}
 /* .atpb look = 05-controls.css (compact height) */
 /* Type/project grow to their full text from free space (minmax(0,max-content)) and ellipsize only when it runs out.
    ⚠Columns live on the list and rows are subgrid — per-row max-content tracks would misalign the bars row to row. */
-.atp .wktq{display:grid;row-gap:5px;column-gap:8px;
-  grid-template-columns:8px minmax(60px,1fr) minmax(0,max-content) minmax(0,max-content) minmax(30px,70px) auto 58px 38px}
+.atp .wktq{display:grid;row-gap:5px;column-gap:8px;justify-content:start;
+  grid-template-columns:8px fit-content(560px) minmax(0,max-content) minmax(0,max-content) minmax(30px,70px) auto 58px 38px}
+/* ⚠fit-content, not 1fr, for the name: a 1fr name left an 827px gap before the values at 1920 (proximity) */
 .wktqr.atpr{grid-column:1/-1;grid-template-columns:subgrid}
 .wktqr.atpr.atpk{cursor:pointer}
 .wktqr.atpr.atpk:hover{color:#dbe3ee}

@@ -257,7 +257,7 @@ Cause: pi has no hooks or lock file, so rows came only from files written within
 ⇒ A `pi` process (poll ps snapshot + term's cached lsof cwd, `_pi_procs`) keeps the newest file of its cwd (header cwd must match) listed at any age, with that pid on the row. No process found → the 600 s window alone.
 ⚠One cwd with several running pi processes shows only its newest file (nothing links a pid to a session file). Never fork ps here — a stale or missing snapshot is unknown and falls back to the window. State stays «unknown» (no turn-end evidence; «wait» would raise attention).
 
-### pi hooks come from an extension, not a hook file (`sidereus/hook_connect.py` plat `pi`)
+### pi hooks come from an extension, not a hook file (`sidereus/hook_connect_pi.py`)
 Cause: pi has no hook config; events come only from a TypeScript extension it loads, and MCP servers from `mcp.json`.
 ⇒ «Connect» for pi writes both (one preview, plain diff); until then the row shows «Hooks not connected» pointing at Settings › «Diagnostics».
 ⚠The two writes are sequential: when the `.ts` write fails after `mcp.json` was written, the error body still carries `backup`/`backups` (undo path); pressing Connect again plans only the `.ts`.
@@ -266,11 +266,9 @@ Cause: pi has no hook config; events come only from a TypeScript extension it lo
 
 ### pi wake = extension turn, waiter is a child of pi (`ext-hooks/pi-extension.ts` · `ext-hooks/pi_wake.py`)
 Cause: pi has no hook that can resume an idle session; only extension code inside pi can start a turn (`pi.sendUserMessage`).
-⇒ The extension keeps one `pi_wake.py` child (armed at `session_start`/`agent_settled`, stopped on `input`/`before_agent_start`/`agent_start`/`session_shutdown`); on `{"wake"}` it sends only if idle with nothing queued and acks «ok»/«no»; only «ok» marks the mail surfaced.
+⇒ One `pi_wake.py` child (armed at `session_start`/`agent_settled`, stopped on `input`/`before_agent_start`/`agent_start`/`session_shutdown`) sends only when idle with nothing queued; only an «ok» ack marks the mail surfaced. An explicit `pi:<cwd>` id wins over the Claude-id clash guard (`gemini_id`); the derived `<folder>-pi` stays guarded.
+★A pi session on a role id that a Claude folder key also maps to (`advocate`) never woke: the waiter watched the derived `<folder>-pi`.
 ⚠Detach the child before `sendUserMessage`: that call fires `input`, whose stop would kill the child before its «ok» and the same mail would wake again.
 ⚠The child handles SIGTERM so `mail_wait` frees the lock; a killed waiter's fresh lock reads «busy» for 15 s and drops the next re-arm silently. Windows kill() skips the handler, so a waiter that exits with no line is re-armed once after 16 s (idle only, never looped).
 ⚠Re-arm only on `end:timeout`; `end:off`, busy or no output means no waiter until the next `agent_settled`. The turn text is decide()'s line only — never a subject or body.
-★A pi session logged in as a role id that a Claude folder key also maps to (`advocate`) never woke: the waiter watched the derived `<folder>-pi`.
-⇒ pi only: an explicit `pi:<cwd>` entry in `identity.json` wins over the Claude-id clash guard (`gemini_id`); the derived default stays guarded, Gemini/Codex keep the guard.
-⚠Keep `invite_notice.plat_id` (and its plugin copy) and `ident.mbox_pi` on the same rule; `plat_id` dropped the explicit id, so SessionStart never told pi its id or wake line.
-⚠With that entry, a Claude session on the same id would wake on the same mail too.
+⚠Keep `invite_notice.plat_id` (and its plugin copy) and `ident.mbox_pi` on the explicit-id rule (`plat_id` dropped it, so SessionStart never told pi its id); with that id a Claude session on the same id wakes on the same mail too.

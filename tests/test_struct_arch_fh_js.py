@@ -324,6 +324,25 @@ process.stdout.write(JSON.stringify([a.wd.h, a.wd.c0, Math.min(...xs.slice(1).ma
         self.assertLess(wc, 70)                                                # one-port box: no growth asked
         self.assertGreaterEqual(gap, ps - 0.5)
 
+    def test_widened_hub_nudges_keep_port_step(self):
+        # ★live hub, 13-14 ends per side widened to PS per port: nudged / straightened ends sat 6-7px apart (synthetic: 6.0).
+        r = run(r"""let seed = 1, gap = 1e9, hits = 0, ovl = 0; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+for(let s = 1; s <= 60; s++){ seed = s; const n = 13 + (s % 2), up = [], dn = [], R = {}, E = [];
+  for(let i = 0; i < 3 + s % 4; i++){ const k = 'u' + i; up.push(k); R[k] = { x: 40 + i * 150 + rnd() * 20, y: 0, w: 120, h: 30 }; E.push({ a: k, b: 'h', lab: true }); }
+  R.h = { x: 300 + rnd() * 100, y: 100, w: 60, h: 30 }; R.s = { x: 40, y: 100, w: 100, h: 30 };
+  for(let i = 0; i < n + 2; i++){ const k = 'd' + i; dn.push(k); R[k] = { x: 10 + i * 75 + rnd() * 5, y: 220, w: 65, h: 30 }; }
+  for(let i = 0; i < n; i++) E.push(rnd() < 0.7 ? { a: 'h', b: dn[i + 1], lab: true } : { a: dn[i + 1], b: 'h', lab: true });
+  dn.forEach(k => { if(rnd() < 0.6) E.push({ a: 's', b: k, lab: true }); });
+  const rows = [up, ['s', 'h'], dn], a = archFhPaths(R, rows, E); R.h.w = Math.max(R.h.w, a.wd.h);
+  const b = archFhPaths(R, rows, E), q = archFhQuality(b.paths, R); hits += q.boxHits; ovl += q.overlaps;
+  [R.h.y, R.h.y + R.h.h].forEach(y => { const xs = []; b.paths.forEach(p => { const f = p.pts[0], l = p.pts[p.pts.length - 1];
+    if(p.a === 'h' && f[1] === y) xs.push(f[0]); if(p.b === 'h' && l[1] === y) xs.push(l[0]); });
+    xs.sort((u, v) => u - v).forEach((x, i) => { if(i) gap = Math.min(gap, x - xs[i - 1]); }); }); }
+process.stdout.write(JSON.stringify([gap, hits, ovl, ARCH_FH.PS]));""", [], [], [])
+        gap, hits, ovl, ps = r
+        self.assertGreaterEqual(gap, ps - 1e-6)
+        self.assertEqual((hits, ovl), (0, 0))
+
     def test_real_and_dbuser_shapes(self):
         M, E, G, F = _real()
         r = run("const a = route(plan('hub', null, BP), 1100), b = route(plan('hub', ['f4', 'f6'], BP), 1100);"

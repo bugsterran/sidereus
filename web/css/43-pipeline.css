@@ -35,7 +35,8 @@ html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--
 .plnlr{display:flex;flex-direction:column;min-width:0}
 /* Row = a card like a stage node (.plnd) holding the Timeline name cell + run summary; selected = node-style strong border, no blue fill */
 .plw .plnl .plnli.tlnm{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;width:100%;min-height:30px;padding:5px 8px;background:var(--nx-panel,#121821);border:1px solid var(--nx-rule,#2b3545);border-radius:6px;color:inherit;font:inherit;text-align:left;cursor:pointer;overflow:hidden}
-.plw .plnl .plnli.tlnm>b{flex:0 1 auto;min-width:0;max-width:100%}
+.plw .plnl .plnli.tlnm>b{flex:0 1 auto;min-width:0;max-width:100%;flex-wrap:wrap;row-gap:2px}
+.plw .plnl .plnli.tlnm>b>.tlp{max-width:calc(100% - 16px)}   /* ★1100: ring + «worktree» chip squeezed names to 45-55px; the meta wraps under the name instead (16 = 11px logo + 5px gap keeps the logo on the name line) */
 .plw .plnl .plnli.tlnm>b>.tlp{flex:0 1 auto;min-width:3ch}.plw .plnl .plnli.tlnm>b>:not(.tlp){flex:none}   /* ⚠.tlp is flex:0 0 auto (20-timeline): the name never shrank, so the b clipped it with no ellipsis and cut the status ring */
 .plw .plnl .tlnm>b{white-space:normal}.plw .plnl .tlnm :is(.tlp,.tlagd){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;max-width:100%;white-space:normal;overflow-wrap:anywhere}   /* ★names were cut to 130/150-161px at 1920 and 76/85 at 900: wrap to 2 lines instead of one-line ellipsis */
 .plw .plnl .plnli:hover{border-color:var(--nx-t3,#6b7280);background:var(--nx-hover,#1b1e23)}
@@ -49,6 +50,7 @@ html[data-ui=next][data-ui] .pltpl .wkrgb:focus-visible{outline:2px solid var(--
 .plnlpulse{position:relative}.plnlpulse::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--nx-info,#5899f3);animation:plr 1.5s cubic-bezier(.4,0,.6,1) infinite}   /* running run; plr keyframes = 60-sessions.css */
 @media (prefers-reduced-motion:reduce){.plnlpulse::after{animation:none;display:none}}
 .plnlh>small.plnln{min-width:18px;padding:0 6px;border-radius:9px;background:color-mix(in srgb,var(--nx-info,#5899f3) 20%,transparent);color:var(--nx-info,#5899f3);font-weight:600;text-align:center;line-height:16px}
+html[data-theme=light] .plnlh>small.plnln{color:color-mix(in srgb,var(--nx-info,#1961d4) 75%,var(--nx-t1,#252b31))}   /* ★light info on its 20% tint was 4.19:1 at 10.8px; now 5.36 (dark 4.71 unchanged) */
 /* Subagent tree under a card: the Timeline agent name cell (74b tlAgNmB) as flat buttons; quiet = no log write for 2 min */
 .plnag{display:flex;flex-direction:column;gap:1px;margin:2px 0 2px 8px;min-width:0;border-left:2px solid transparent;padding-left:4px}   /* ⚠same bar width on every group: only the run group's bar is coloured, else untagged rows sat 6px further left */
 .plnag.plnagrn{border-left-color:var(--nx-info,#5899f3)}   /* tagged subs of the open run; untagged ones keep the plain group */

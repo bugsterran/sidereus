@@ -85,7 +85,10 @@ function sessWtStemLead(rows, nat){
   const br = ls.map(l => l.querySelector('.swtbr')).find(Boolean);
   let stem = br ? bw(br) : 0;
   if(!br){ const p = document.createElement('i'); p.className = 'swtbr'; p.textContent = '├─'; ls[0].prepend(p); stem = bw(p); p.remove(); }
-  return base + gap(ls[0]) + stem;
+  // Boxed children (.swtgr) lose the box inset from their lead (60-sessions.css --swtin); reserved even when folded.
+  let p = ls[0]; while(p && !(p.querySelector && p.querySelector('.swth'))) p = p.parentElement;
+  const h = p && p.querySelector('.swth'), inset = h ? parseFloat(getComputedStyle(h).getPropertyValue('--swtin')) || 0 : 0;
+  return base + gap(ls[0]) + stem + inset;
 }
 // Only header-only groups keep a fold caret, so only they need «Expand all».
 function sessWtAny(rows){ return sessWtGroups(rows).some(g => g.kids.length && !g.head); }

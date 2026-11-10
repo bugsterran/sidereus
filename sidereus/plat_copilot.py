@@ -62,7 +62,12 @@ def hooks_disabled(cwd):
         # ⚠The file is repo-controlled: a symlink to /dev/zero reports size 0 and a FIFO blocks open().
         # Non-blocking open + fstat on the same fd + bounded read keep a crafted clone from stalling the poll.
         fd = os.open(p, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
-        with os.fdopen(fd, "rb") as f:
+        try:
+            f = os.fdopen(fd, "rb")
+        except OSError:
+            os.close(fd)   # ⚠fdopen on a directory raises EISDIR without closing the fd it was given
+            raise
+        with f:
             raw = f.read(SETTINGS_MAX + 1) if stat.S_ISREG(os.fstat(fd).st_mode) else b""
         if 0 < len(raw) <= SETTINGS_MAX:
             d = json.loads(raw.decode("utf-8-sig"))   # -sig: an editor may save a BOM

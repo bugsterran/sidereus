@@ -237,6 +237,21 @@ class HooksOff(unittest.TestCase):
         self.put('{"disableAllHooks": true, "pad": "%s"}' % ("x" * self.cp.SETTINGS_MAX), NOW)
         self.assertFalse(self.cp.hooks_disabled(self.sub))
 
+    def test_directory_at_settings_path_closes_fd(self):
+        import os
+        from unittest import mock
+        os.makedirs(self.cfg)                     # fdopen raises EISDIR on a directory fd
+        fds, real = [], os.open
+
+        def rec(*a, **k):
+            fds.append(real(*a, **k))
+            return fds[-1]
+        with mock.patch.object(self.cp.os, "open", rec):
+            self.assertFalse(self.cp.hooks_disabled(self.sub))
+        self.assertEqual(len(fds), 1)
+        with self.assertRaises(OSError):
+            os.fstat(fds[0])                      # the fd was closed
+
 
 class PiRunning(unittest.TestCase):
     """Idle pi session stays listed while a `pi` process runs in its cwd (temp sessions dir, patched ps/lsof caches)."""

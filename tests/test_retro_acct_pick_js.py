@@ -56,6 +56,7 @@ SCEN = r"""
   R.headIn = rtAcctHead({ok: true, days: 7, acct: 'work', acctSince: '2026-10-12'});
   R.headOld = rtAcctHead({ok: true, days: 7, acct: 'work', acctSince: '2026-10-01'});
   R.headStart = rtAcctHead({ok: true, days: 7, acct: 'work', acctSince: '2026-10-09'});
+  R.pickHtml = acctPickHtml('retro');
   ACCTS = [{label: 'me', primary: true}];
   R.head1 = rtAcctHead({ok: true, days: 7, acct: 'work', acctSince: '2026-10-12'}); R.pick1 = acctPick('retro');
   R.store = STORE;
@@ -97,8 +98,10 @@ class RetroAcctPick(unittest.TestCase):
         self.assertEqual(self.R["indep"], "/api/retro?days=7")
 
     def test_no_account_line_only_under_pick_in_range(self):
-        self.assertIn('id="acpk-retro"', self.R["headAll"])
-        self.assertNotIn("have no account", self.R["headAll"])
+        # the picker lives in the toolbar now; the head carries only the note, so no pick = no head
+        self.assertEqual(self.R["headAll"], "")
+        self.assertNotIn("acpk-retro", self.R["headIn"])
+        self.assertIn('id="acpk-retro"', self.R["pickHtml"])
         self.assertIn("Records before 10/12 have no account", self.R["headIn"])
         self.assertNotIn("have no account", self.R["headOld"])
         self.assertNotIn("have no account", self.R["headStart"])
@@ -119,6 +122,10 @@ class RetroAcctPick(unittest.TestCase):
         # picker sits above the OTel cards only: failure trend comes before it, weekly summary after
         self.assertLess(src.index("Failure trend"), src.index("rtAcctHead(r)"))
         self.assertLess(src.index("rtAcctHead(r)"), src.index("rtRank(r)"))
+        # picker goes into the toolbar slot (as on History), not the feed body
+        tb = src[src.index("tbSlot('retro'"):]
+        self.assertIn("acctPickHtml('retro')", tb[:tb.index(";")])
+        self.assertNotIn("acctPickHtml", src[src.index("box.innerHTML"):])
 
 
 if __name__ == "__main__":

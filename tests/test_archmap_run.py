@@ -147,6 +147,23 @@ class RunTest(unittest.TestCase):
         r = AM.runs([self.row(sub=[{"lab": "[pl:arch-map/개요 그리기] x", "min": 0}])], NOW + 60)
         self.assertEqual((r[self.repo]["n"], r[self.repo]["t0"]), (5, NOW - 800))   # same run, start (plan.json) kept
 
+    def test_gap_after_map_gate_same_with_or_without_old_brief_ok(self):
+        # first overview (no brief.ok.json) and a redraw (old brief.ok.json) keep the quiet run alike
+        for old_brief in (False, True):
+            with self.subTest(old_brief=old_brief):
+                shutil.rmtree(self.store, ignore_errors=True)
+                AM._RUN_SEEN.clear()
+                self.with_overview()
+                self.put("plan.json", NOW - 800)
+                if old_brief:
+                    self.put(AM.BRIEF_OK, NOW - 3000)
+                AM.runs([self.row(sub=[{"lab": "[pl:arch-map/검증] x", "min": 2}])], NOW)
+                self.put("verify.json", NOW + 10)
+                self.assertIn(self.repo, AM.runs([self.row()], NOW + 30))
+                self.assertEqual(AM._end_at(AM.ARCH_PL, self.repo, "개요 그리기", AM._late_titles()), 0.0)
+                self.put(AM.BRIEF_OK, NOW + 40)
+                self.assertEqual(AM.runs([self.row()], NOW + 50), {})                # overview gate passed: run over
+
     def test_closed_by_result_on_overview_stage(self):
         self.with_overview()
         rec = {"name": "arch-map", "end": 0, "cur": "개요 그리기", "t0": NOW - 900, "t1": NOW - 10,

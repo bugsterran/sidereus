@@ -116,6 +116,28 @@ def _check(text, new, old, adds):
     return len(ms) == len(oms) + adds and not _missing(ms)
 
 
+def _append(text, miss):
+    """text with `miss` appended inside the existing non-empty mcpServers object, user bytes untouched, or None."""
+    m = _members(text)
+    hits = [x for x in (m[1] if m else []) if x[0] == "mcpServers"]
+    if len(hits) != 1:
+        return None
+    _k, ks, _ke, vs, ve = hits[0]
+    inner = _members(text[vs:ve])
+    if not inner or not inner[1]:
+        return None     # empty object: nothing of the user's to keep, the re-serialising path is fine
+    _ik, iks, ike, ivs, ive = inner[1][-1]
+    nl = "\r\n" if "\r\n" in text else "\n"
+    ind = hc._ind(text, vs + iks)
+    sep = text[vs + ike:vs + ivs]
+    if ind:     # members on their own lines: one new line block per server at the same indent
+        add = "".join("," + nl + ind + json.dumps(k) + sep + hc._enc(v, ind, nl) for k, v in miss)
+    else:       # ⚠one-line object: stay on that line rather than reflowing the user's servers
+        add = "".join(", " + json.dumps(k) + sep + json.dumps(v, ensure_ascii=False) for k, v in miss)
+    at = vs + ive
+    return text[:at] + add + text[at:]
+
+
 def _plan_mcp(p):
     """-> dict(raw, new_raw, adds, diff, err)."""
     raw, d, err = _read_mcp(p)
@@ -130,12 +152,15 @@ def _plan_mcp(p):
     miss = _missing(cur)
     if not miss:
         return {"raw": raw, "new_raw": raw, "adds": 0, "diff": "", "err": None}
-    ms = dict(cur)
-    ms.update(miss)
-    sp = hc._splice(text, [("mcpServers", ms)])
-    if sp is None:
-        return {"raw": raw, "err": (400, "file layout can't be edited safely (duplicate key?) — change it by hand")}
-    new = sp[0]
+    # ⚠re-serialising the whole object rewrote a user's one-line server as five lines: append in place first
+    new = _append(text, miss)
+    if new is None:
+        ms = dict(cur)
+        ms.update(miss)
+        sp = hc._splice(text, [("mcpServers", ms)])
+        if sp is None:
+            return {"raw": raw, "err": (400, "file layout can't be edited safely (duplicate key?) — change it by hand")}
+        new = sp[0]
     if not _check(text, new, d, len(miss)):
         return {"raw": raw, "err": (500, "refused: other entries would change")}
     # ⚠only our appended entries are shown unmasked: the user's servers may carry env secrets
