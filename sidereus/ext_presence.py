@@ -148,7 +148,8 @@ def ext_presence_rows(now=None):
     rows = []
     try:
         with _ext_lock:
-            store = [(p, sid, v.get("cwd") or "", bool(v.get("ended"))) for (p, sid), v in _ext.items()]
+            # ⚠A parented child (pi subagent) counts as ended here: its cwd must not hide the hookless parent pi row.
+            store = [(p, sid, v.get("cwd") or "", bool(v.get("ended") or v.get("parent"))) for (p, sid), v in _ext.items()]
         for plat in PRES_MODS:
             known = {sid for p, sid, _c, _e in store if p == plat} | ext_ended(plat, now)
             cwds = {cwd for p, _, cwd, end in store if p == plat and cwd and not end}   # ⚠a folded row must not hide a new session in its folder

@@ -19,6 +19,34 @@ const WAKE_MAX = (() => {
 })();
 // hooks/mail_wait.STALE_S (15 s) + 1 s: a waiter lock left by a kill that skipped cleanup has gone stale by then.
 const REARM_MS = 16000;
+// Subagent child: a `pi -p` spawned by a parent pi's subagent tool inherits these (set only around that tool call).
+const PARENT0: string = String(process.env.SIDEREUS_PARENT_SID ?? "");
+const CHILD: boolean = process.env.SIDEREUS_PARENT_PLAT === "pi" && !!PARENT0;
+const NAME_RE = /^[\w.-]{1,64}$/;
+const PROMPT_RE = /^prompt-([\w.-]{1,64})\.md$/;
+
+// Child label: the pi subagent's own prompt-file name, else the name the parent put in env.
+// ⚠Reads only the argv element right after --append-system-prompt (its basename); the task argv is never read.
+function childAgent(): string {
+  try {
+    const i = process.argv.indexOf("--append-system-prompt");
+    if (i >= 0 && i + 1 < process.argv.length) {
+      const m = PROMPT_RE.exec(path.basename(String(process.argv[i + 1])));
+      if (m) return m[1];
+    }
+  } catch (_e) { /* fall through */ }
+  const s = String(process.env.SIDEREUS_CHILD_AGENT ?? "").replace(/[^\w.-]+/g, "_").slice(0, 64);
+  return NAME_RE.test(s) ? s : "";
+}
+const AGENT: string = CHILD ? childAgent() : "";
+
+// ⚠Hook scripts get the env this process started with: the subagent window's own sid must not make this
+//   session its own parent.
+function hookEnv(): any {
+  const e: any = Object.assign({}, process.env);
+  if (PARENT0) e.SIDEREUS_PARENT_SID = PARENT0; else delete e.SIDEREUS_PARENT_SID;
+  return e;
+}
 
 function run(script: string, payload: object): Promise<string> {
   return new Promise((resolve) => {
@@ -33,7 +61,7 @@ function run(script: string, payload: object): Promise<string> {
     };
     try {
       const child = spawn(PY, [path.join(CODE, script), "--platform", "pi"],
-        { stdio: ["pipe", "pipe", "ignore"], windowsHide: true });
+        { stdio: ["pipe", "pipe", "ignore"], windowsHide: true, env: hookEnv() });
       timer = setTimeout(() => { try { child.kill(); } catch (_e) { /* gone */ } finish(); }, TIMEOUT_MS);
       child.stdout.on("data", (d: any) => { if (out.length < OUT_MAX) out += String(d); });
       child.on("error", finish);
@@ -62,7 +90,21 @@ function base(ctx: any, event: string): any {
   const p: any = { hook_event_name: event };
   try { p.session_id = ctx.sessionManager.getSessionId(); } catch (_e) { /* unknown */ }
   try { p.cwd = ctx.cwd; } catch (_e) { /* unknown */ }
+  if (AGENT) p.agent_name = AGENT;
   return p;
+}
+
+// Agent name of one subagent call: `agent`, or the one name every tasks[]/chain[] item shares; else "".
+function agentOf(input: any): string {
+  try {
+    if (typeof input?.agent === "string") return input.agent;
+    const list = Array.isArray(input?.tasks) ? input.tasks : Array.isArray(input?.chain) ? input.chain : null;
+    if (!list || !list.length) return "";
+    const names = new Set(list.map((t: any) => String(t?.agent ?? "")));
+    return names.size === 1 ? String([...names][0]) : "";
+  } catch (_e) {
+    return "";
+  }
 }
 
 export default function (pi: any) {
@@ -74,6 +116,33 @@ export default function (pi: any) {
   let ended = false;
   let wakes = 0;
   let retry: any = null;
+  // Subagent window: env the subagent tool's spawned `pi -p` inherits; saved values come back when the last call ends.
+  const subCalls = new Set<string>();
+  let saved: any = null;
+  const ENV_KEYS = ["SIDEREUS_PARENT_SID", "SIDEREUS_PARENT_PLAT", "SIDEREUS_CHILD_AGENT"];
+  const openSub = (id: string, ctx: any, input: any) => {
+    // ⚠A parented pi is never a top-level row, so children pointing at it would vanish: keep the outer parent.
+    if (PARENT0 || process.env.CLAUDE_CODE_SESSION_ID) return;
+    let sid = "";
+    try { sid = String(ctx.sessionManager.getSessionId() || ""); } catch (_e) { sid = ""; }
+    if (!sid || subCalls.has(id)) return;
+    if (!subCalls.size) {
+      saved = {};
+      for (const k of ENV_KEYS) saved[k] = process.env[k];
+    }
+    subCalls.add(id);
+    process.env.SIDEREUS_PARENT_SID = sid;
+    process.env.SIDEREUS_PARENT_PLAT = "pi";
+    const name = agentOf(input);
+    if (name) process.env.SIDEREUS_CHILD_AGENT = name; else delete process.env.SIDEREUS_CHILD_AGENT;
+  };
+  const closeSub = (id: string) => {
+    if (!subCalls.delete(id) || subCalls.size || !saved) return;
+    for (const k of ENV_KEYS) {
+      if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k];
+    }
+    saved = null;
+  };
 
   // ⚠ext_hook calls go through one queue: a fast tool's PostToolUse must not reach the viewer before its PreToolUse.
   const send = (payload: any): Promise<unknown> => {
@@ -115,7 +184,7 @@ export default function (pi: any) {
     try { child.stdin.end(ok ? "ok\n" : "no\n"); } catch (_e) { /* gone */ }
   };
   const arm = (ctx: any, again = false) => {
-    if (ended || waiter) return;   // one waiter per instance
+    if (CHILD || ended || waiter) return;   // one waiter per instance; a subagent child never waits on mail
     if (retry) { clearTimeout(retry); retry = null; }
     let sid = "";
     let cwd = "";
@@ -166,7 +235,7 @@ export default function (pi: any) {
     arm(ctx);
     send(base(ctx, "SessionStart"));
     const [a, b] = await Promise.all([
-      run("hooks/invite_notice.py", base(ctx, "SessionStart")),
+      CHILD ? Promise.resolve("") : run("hooks/invite_notice.py", base(ctx, "SessionStart")),
       run("hooks/pipelines_brief.py", base(ctx, "SessionStart")),
     ]);
     invite = contextOf(a);
@@ -192,6 +261,7 @@ export default function (pi: any) {
   on("tool_call", async (event, ctx) => {
     const tool = String(event?.toolName || "");
     send(Object.assign(base(ctx, "PreToolUse"), { tool_name: tool }));
+    if (tool === "subagent") openSub(String(event?.toolCallId || ""), ctx, event?.input);
     if (tool !== "bash") return undefined;
     const command = String(event?.input?.command ?? "");
     if (event?.toolCallId) commands.set(String(event.toolCallId), command);
@@ -208,6 +278,7 @@ export default function (pi: any) {
 
   on("tool_execution_end", async (event, ctx) => {
     const tool = String(event?.toolName || "");
+    if (tool === "subagent") closeSub(String(event?.toolCallId || ""));
     send(Object.assign(base(ctx, "PostToolUse"), { tool_name: tool }));
     if (tool !== "bash") return;
     const id = String(event?.toolCallId || "");
@@ -223,6 +294,7 @@ export default function (pi: any) {
   on("session_shutdown", async (_event, ctx) => {
     ended = true;   // ⚠no re-arm after shutdown: a reload/new session gets a fresh extension instance
     stopWaiter();
+    for (const id of [...subCalls]) closeSub(id);   // ⚠a reload must not leave this sid in the shared process env
     await send(base(ctx, "SessionEnd"));
   });
 }

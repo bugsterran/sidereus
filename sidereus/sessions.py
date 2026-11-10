@@ -476,14 +476,14 @@ def _sessions(max_age_h, cap):
             _note_transition(dict(info, **txt))
             _note_ctx(info)
     # ⚠External CLI rows are merged **after** the `_note_*` above — feeding them in would raise cards (transition·context) wrongly.
-    try:
-        ext_children(out)                         # Gemini runs launched by a Claude session hang under it
-    except Exception as e:
-        warn_once("ext-children", "Could not attach child Gemini runs ({err})",
-                  vars={"err": f"{type(e).__name__}: {e}"})
     # Codex without hooks: fresh rollout -> coarse row (hook row wins); a launcher id shared by two live rows is not «logged in»
     out.extend(codex_env_dedupe(ext_rows() + ext_rollout_rows()))
     out.extend(ext_presence_rows())                # Cursor/Copilot without hooks: record-folder rows (hook row wins)
+    try:   # ⚠after the external rows: a pi subagent child hangs under its pi parent row (only sets `gms`)
+        ext_children(out)                         # child CLI runs hang under the session that launched them
+    except Exception as e:
+        warn_once("ext-children", "Could not attach child Gemini runs ({err})",
+                  vars={"err": f"{type(e).__name__}: {e}"})
     try:   # ⚠after ext_rows: external rows need `term` too (before, Codex rows always showed «Copy command»)
         term_attach(out)                          # row.term = {app, tty} for «To terminal» (metadata only)
     except Exception as e:

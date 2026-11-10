@@ -165,6 +165,10 @@ def build(platform, data, event_override=None):
     par = parent_sid()
     if par:
         out["parent"] = par
+    # pi subagent child label (agent name only, from pi-extension.ts); anything else is dropped, never cleaned up.
+    name = data.get("agent_name")
+    if isinstance(name, str) and 0 < len(name) <= 64 and all(c.isascii() and (c.isalnum() or c in "._-") for c in name):
+        out["agent_name"] = name
     pid, start, why = cli_pid_ex()
     if pid:
         out["pid"] = pid

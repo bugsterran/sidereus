@@ -261,7 +261,7 @@ def ext_rows():
             items = [(k, dict(v)) for k, v in _ext.items()]
         for (plat, sid), v in items:
             if v.get("parent"):
-                continue                          # shown under its Claude session (`ext_children`)
+                continue                          # shown under its parent session (`ext_children`)
             try:
                 last = float(v.get("lastSeen") or now)
                 first = float(v.get("firstSeen") or last)
@@ -372,7 +372,7 @@ EXT_CHILD_MAX = 20      # per parent in the sessions drawer (the timeline shows 
 
 
 def ext_children(rows, now=None):
-    """Attach `gms` (child CLI runs **still live**) to each Claude row whose sid launched them.
+    """Attach `gms` (child CLI runs **still live**) to each row whose sid launched them (Claude, or a pi parent).
     ★Finished runs leave the drawer (persistence is the timeline's job — `timeline_ext._ext_tl`, ext-runs.json).
     ⚠Label is metadata only: «gemini -p» + model + duration + tokens — never the task text."""
     now = now or time.time()
@@ -385,12 +385,14 @@ def ext_children(rows, now=None):
     with _ext_lock:
         live = {sid: dict(v) for (_p, sid), v in _ext.items()
                 if v.get("parent") and v.get("state") != "gone"}     # a dead run leaves the drawer at once
+    seen = set()
     for row in rows:
-        if row.get("plat") not in (None, "", "cc"):
-            continue
-        runs = by_par.get(row.get("sid") or "")
+        # Any parent platform: a pi subagent child carries its pi parent's sid. ⚠First row per sid only (counted once).
+        psid = row.get("sid") or ""
+        runs = by_par.get(psid) if psid and psid not in seen else None
         if not runs:
             continue
+        seen.add(psid)
         out = []
         for r in [x for x in runs if x["sid"] in live][-EXT_CHILD_MAX:]:
             sid = r["sid"]
@@ -409,7 +411,10 @@ def ext_children(rows, now=None):
                         "run": bool(lv) and st in ("tool", "think"), "done": not lv,
                         "idle": max(0, int(now - end)), "min": max(0, int((now - start) / 60))})
             # ⚠Always send `cmd`: the drawer's JS no longer has a per-platform fallback (it shows the platform name).
-            if plat in PLAT_MODS:
+            agn = r.get("agent") or (lv or {}).get("agent")   # pi subagent name (validated at ingest), else the CLI label
+            if agn:
+                out[-1]["cmd"] = str(agn)[:64]
+            elif plat in PLAT_MODS:
                 out[-1]["cmd"] = PLAT_MODS[plat].CHILD_LABEL
         if out:
             row["gms"] = out

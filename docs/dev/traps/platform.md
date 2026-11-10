@@ -272,3 +272,10 @@ Cause: pi has no hook that can resume an idle session; only extension code insid
 ⚠The child handles SIGTERM so `mail_wait` frees the lock; a killed waiter's fresh lock reads «busy» for 15 s and drops the next re-arm silently. Windows kill() skips the handler, so a waiter that exits with no line is re-armed once after 16 s (idle only, never looped).
 ⚠Re-arm only on `end:timeout`; `end:off`, busy or no output means no waiter until the next `agent_settled`. The turn text is decide()'s line only — never a subject or body.
 ⚠Keep `invite_notice.plat_id` (and its plugin copy) and `ident.mbox_pi` on the explicit-id rule (`plat_id` dropped it, so SessionStart never told pi its id); with that id a Claude session on the same id wakes on the same mail too.
+
+### pi subagent child showed as its own pi row (`sidereus/ext.py` `ext_children` · `sidereus/ext_presence.py`)
+Cause: `ext_children` only attached children to Claude rows and ran before external rows were merged, so a `pi -p --no-session` child with a pi parent sid had nowhere to hang.
+⇒ `ext_children` runs after `ext_rows`/`ext_presence_rows` and attaches to any row with a sid (first row per sid); the label is the hook's `agent_name` (`^[A-Za-z0-9._-]{1,64}\Z`), else `CHILD_LABEL`.
+⚠A parented store row must not enter the presence cwd-hide set: the child shares its parent's cwd and would hide a hookless parent pi row.
+⚠Finished children leave the drawer like `gemini -p` (timeline keeps them); a child whose parent row is not listed is not shown in Sessions.
+⚠Never store the subagent's task text — only the validated name.

@@ -32,10 +32,9 @@ EXT_GONE_GRACE_S = 600       # 'gone' kept this long (an event may revive it fro
 PIDLESS_IDLE_SEC = 1800      # pid-less 'wait' row with no event this long is shown as ended ('done'); its next event revives it
 EXT_DONE_KEEP_S = 12 * 3600  # ended rows are listed under «Recently ended sessions» this long (R2) ⚠must equal sessions.sessions() max_age_h
 EXT_PID_EVERY_S = 30         # liveness check interval per session
-EXT_PLAT = {"gemini": "gm", "codex": "cx", "copilot": "cp", "cursor": "cu", "cline": "cl",
-            "windsurf": "wf", "warp": "wp", "trae": "tr", "zed": "zd", "grok": "gk",
-            "deepseek": "ds", "qwen": "qw", "kimi": "ki", "mistral": "mi", "ollama": "ol",
-            "perplexity": "px", "huggingface": "hf", "meta": "ma", "openrouter": "or", "pi": "pi"}
+EXT_PLAT = {"gemini": "gm", "codex": "cx", "copilot": "cp", "cursor": "cu", "cline": "cl", "windsurf": "wf", "warp": "wp",
+            "trae": "tr", "zed": "zd", "grok": "gk", "deepseek": "ds", "qwen": "qw", "kimi": "ki", "mistral": "mi",
+            "ollama": "ol", "perplexity": "px", "huggingface": "hf", "meta": "ma", "openrouter": "or", "pi": "pi"}
 # hook `platform` value → row `plat` key (same key as the logo `AILG`).
 # ⚠Do not put Claude here - it is already loaded from transcripts, so the same `sid` would become two rows and `_sid_proj` would be overwritten.
 
@@ -85,10 +84,7 @@ def _ext_save_locked():
     """tmp + `os.replace` — dying midway leaves no half-written file. ⚠Call while holding `_ext_lock`."""
     recs = []
     for (plat, sid), v in _ext.items():
-        r = dict(v)
-        r["platform"] = plat
-        r["session_id"] = sid
-        recs.append(r)
+        recs.append(dict(v, platform=plat, session_id=sid))
     try:
         _atomic_write(EXT_FILE, json.dumps(recs, ensure_ascii=False).encode("utf-8"),
                       tmp=EXT_FILE + ".tmp")
@@ -158,11 +154,12 @@ _ext_load()
 EXT_RUNS_FILE = os.path.join(DATA_DIR, "ext-runs.json")
 EXT_RUNS_MAX = 200
 EXT_RUNS_TTL_S = 7 * 24 * 3600      # the timeline window goes up to a week
-_runs = {}                          # sid → {plat, parent, cwd, start, end, model, state, tok}
+_runs = {}                          # sid → {plat, parent, cwd, start, end, model, state, tok, agent}
 
 
-def _sid_ok(s):
-    return 0 < len(s) <= 64 and all(c.isalnum() or c in "-_" for c in s)
+def _sid_ok(s, extra="-_"):
+    return 0 < len(s) <= 64 and all(c.isalnum() or c in extra for c in s)
+_agent_ok = lambda s: s.isascii() and _sid_ok(s, "._-")   # pi subagent name [A-Za-z0-9._-]{1,64} (hook `agent_name`)
 
 
 def _runs_save_locked():
@@ -189,12 +186,12 @@ def _runs_load():
         return
     if not isinstance(d, dict):
         return
-    keep = ("plat", "parent", "cwd", "start", "end", "model", "state", "tok")
+    keep = ("plat", "parent", "cwd", "start", "end", "model", "state", "tok", "agent")
     with _ext_lock:
         for sid, v in d.items():
             if isinstance(v, dict) and _sid_ok(str(sid)) and _sid_ok(str(v.get("parent") or "")) \
                     and v.get("plat") in EXT_PLAT:
-                _runs[str(sid)] = {k: v[k] for k in keep if k in v}
+                _runs[str(sid)] = {k: v[k] for k in keep if k in v and (k != "agent" or _agent_ok(str(v[k])))}
         _runs_prune_locked(time.time())
 
 
@@ -350,8 +347,9 @@ def _run_note_locked(plat, sid, v, ev, ts):
         _runs[sid] = r
     r["end"] = ts
     r["cwd"] = v.get("cwd") or r.get("cwd") or ""
-    if v.get("model"):
-        r["model"] = str(v["model"])[:40]
+    for k, n in (("model", 40), ("agent", 64)):
+        if v.get(k):
+            r[k] = str(v[k])[:n]
     r["state"] = "done" if ev == "SessionEnd" else (v.get("state") or "wait")
     if ev == "SessionEnd":
         ext_tok_refresh(plat, sid, v.get("transcript_path") or "")
@@ -396,6 +394,8 @@ def ext_ingest(req):
         par = str(req.get("parent") or "").strip()
         if par and _sid_ok(par) and par != sid:
             v["parent"] = par
+        if _agent_ok(agn := str(req.get("agent_name") or "").strip()):   # subagent name only (child label), never its task
+            v["agent"] = agn
         for src, dst in (("cwd", "cwd"), ("model", "model"),
                          ("transcript_path", "transcript_path"), ("turn_id", "turnId")):
             if req.get(src):
@@ -416,8 +416,7 @@ def ext_ingest(req):
             v["state"] = v.get("goneFrom") or "wait"
         for k in ("gone", "goneWhy", "goneFrom", "ended", "endWhy"):   # any event revives a folded row (R3)
             v.pop(k, None)
-        st = EXT_STATE.get(ev)
-        if st:
+        if st := EXT_STATE.get(ev):
             v["state"] = st
         if ev == "PreToolUse":
             v["tool"] = str(req.get("tool_name") or "")
@@ -429,8 +428,7 @@ def ext_ingest(req):
         evs.append({"e": ev[:40], "tool": str(req.get("tool_name") or "")[:60], "t": ts})
         v["ev"] = evs[-EXT_EV_N:]
         v["lastSeen"] = ts
-        if not v.get("firstSeen"):
-            v["firstSeen"] = ts
+        v["firstSeen"] = v.get("firstSeen") or ts
         _ext[key] = v
         if _run_note_locked(plat, sid, v, ev, ts):
             _runs_save_locked()
