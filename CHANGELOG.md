@@ -26,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Platforms: an idle pi session stays listed while pi still runs in its folder, instead of dropping after 10 minutes without writes.
 - Platforms: pi rows carry the mailbox id pi logs in as, so the work-popup composer and run pickers address the pi session, and a room member from pi shows the pi logo.
 - Structure: in a module focus view a box with many links grows wide enough to keep its link ends 10 px apart, instead of drawing them about 2 px apart.
+- Pipelines: in «Watch» the stage detail pane ends on a line boundary instead of cutting its last line in half.
+- Sessions: the tool-state bar sits on the same left edge and height as the account band, instead of a second shorter bar beside it.
 
 ## [0.17.0] - 2026-11-10
 
