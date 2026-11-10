@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Sessions: state, subagents, external CLIs
 
+- ⚠**Tool bar and account band on stacked rows sat at different x and ends** (`60-sessions.css .sxw.s-tool::before`).
+  - Cause: the bar was `left:-9px; top/bottom:4px; 2px` while the `.acb` band is `inset 3px` at the row edge, full height.
+  - ⇒ the bar uses the band's geometry (`left:0; top:0; bottom:0; width:3px`); on an `.acb` row it overlays the band. Test `tests/test_sess_tool_bar_css.py`.
+  - ⚠Change both together; moving one alone splits the bars again.
+
 - ⚠**A non-git cwd working in linked worktrees was never nested under the main repo** (`sessions._row_repos_wt`).
   - Cause: `wt` came from `_wt_of(cwd)` only, which is None when the cwd has no `.git`, even though `repos` already lists the worktrees it edits.
   - ⇒ when `_wt_of(cwd)` is None, use `_wt_of(repos[0])` (most recent) and keep it only if `main != ""` (a linked worktree). Test `tests/test_sess_wt_repos_fallback.py`.

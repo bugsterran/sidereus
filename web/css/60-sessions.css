@@ -241,7 +241,8 @@ html[data-lang=en] .hst{min-width:16ch}
 .s-tool .sl::after{content:'···';display:inline-block;margin-right:.14em;text-align:left;
   animation:dots 1.5s step-end infinite}
 .sxw.s-tool,.sxw.s-think{position:relative}
-.sxw.s-tool::before{content:'';position:absolute;left:-9px;top:4px;bottom:4px;width:2px;border-radius:2px;
+/* ⚠Same x, width and full height as the .acb account band (inset 3px), so a tool bar and a band on stacked rows line up. */
+.sxw.s-tool::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:0 2px 2px 0;
   background:#5fbf82;animation:bar 1.5s ease-in-out infinite}
 @keyframes dots{0%{clip-path:inset(0 100% 0 0)}12.5%{clip-path:inset(0 66.667% 0 0)}37.5%{clip-path:inset(0 33.333% 0 0)}62.5%,100%{clip-path:inset(0)}}
 @keyframes bar{0%,100%{opacity:.25}50%{opacity:.9}}
