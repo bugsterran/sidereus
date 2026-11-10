@@ -17,7 +17,7 @@ def _src(path):
 class RunModeSelect(unittest.TestCase):
     def test_select_not_caught_by_view_mode_click(self):
         run = _src("web/js/48b-pipeline-run.js")
-        sel = re.search(r"<select class=plrsel data-(\w+)' \+ \(cur && cur\.cx", run)
+        sel = re.search(r"<select class=plrsel data-(\w+)' \+ \(cur && cur\.\w+", run)
         self.assertIsNotNone(sel)
         self.assertNotEqual(sel.group(1), "plmode")   # 48k: `.plw [data-plmode]` click -> plModeSet(undefined) left Edit
         self.assertIn("s.dataset." + sel.group(1) + " != null){ PLRUN.mode", run)
