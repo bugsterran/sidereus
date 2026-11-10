@@ -262,3 +262,10 @@ Cause: pi has no hook config; events come only from a TypeScript extension it lo
 ⇒ «Connect» for pi writes both (one preview, plain diff); until then the row shows «Hooks not connected» pointing at Settings › «Diagnostics».
 ⚠An extension load error is silent: pi keeps running and the session falls back to the presence row (state «Unknown»), so a broken extension looks like «not connected».
 ⚠Never add a `project_trust` handler to the extension.
+
+### pi wake = extension turn, waiter is a child of pi (`ext-hooks/pi-extension.ts` · `ext-hooks/pi_wake.py`)
+Cause: pi has no hook that can resume an idle session; only extension code inside pi can start a turn (`pi.sendUserMessage`).
+⇒ The extension keeps one `pi_wake.py` child (armed at `session_start`/`agent_settled`, stopped on `input`/`before_agent_start`/`agent_start`/`session_shutdown`); on `{"wake"}` it sends only if idle with nothing queued and acks «ok»/«no»; only «ok» marks the mail surfaced.
+⚠Detach the child before `sendUserMessage`: that call fires `input`, whose stop would kill the child before its «ok» and the same mail would wake again.
+⚠The child handles SIGTERM so `mail_wait` frees the lock; a killed waiter's fresh lock reads «busy» for 15 s and drops the next re-arm silently. Windows kill() skips the handler, so a waiter that exits with no line is re-armed once after 16 s (idle only, never looped).
+⚠Re-arm only on `end:timeout`; `end:off`, busy or no output means no waiter until the next `agent_settled`. The turn text is decide()'s line only — never a subject or body.

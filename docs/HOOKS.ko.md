@@ -468,14 +468,24 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 | `tool_call` | `ext_hook.py` PreToolUse; bash 는 `pl_mark.py` · `pl_flow.py` 도 |
 | `tool_execution_end` | `ext_hook.py` PostToolUse; bash 는 `pl_flow.py` 도 |
 | `ui_prompt_start` · `agent_settled` · `session_shutdown` | Notification · Stop · SessionEnd |
+| `session_start` · `agent_settled` | 메일 대기자 `ext-hooks/pi_wake.py <sid> <cwd>` 시작 (세션당 하나) |
+| `input` · `before_agent_start` · `agent_start` · `session_shutdown` | 메일 대기자 중지 |
 
 - 알림은 저장되는 메시지가 아니라 시스템 프롬프트 섹션(`systemPromptOptions.sections.sidereus`)에 들어간다.
 - 보내는 것은 세션 id·cwd·이벤트·도구 이름뿐이고, bash 명령만 `pl_mark.py`/`pl_flow.py` 로 간다.
   ⚠프롬프트와 도구 결과는 보내지 않는다.
 - `pl_flow.py` 가 deny 하면 그 bash 호출을 막는다(`{block: true}`). 단계 표시는 Codex 처럼 셸 마커를 쓴다.
 - ⚠`agent_end` 는 끝이 아니다(재시도·압축·대기 메시지가 이어진다). `Stop` 은 `agent_settled` 에서 보낸다.
-- 메일은 자동으로 전달되지 않는다. 메일박스 id 는 `pi:<cwd>` 키 또는 `<폴더>-pi` 이고, 세션이 `mailbox_inbox` 로 직접 읽는다.
-- 호출마다 5초 제한이며 예외를 던지지 않는다. Python 이 없으면 그 이벤트만 빠진다.
+- 메일 깨우기(`hooks/mail_wait.py` «extension-turn»): 메일박스 id 는 `pi:<cwd>` 키 또는 `<폴더>-pi` 다. 대기자는
+  `bus.jsonl` 만 본다(기다리는 동안 모델 턴 없음). 새 메일이 오면 pi 가 한가하고 대기 메시지가 없을 때 확장이
+  `pi.sendUserMessage("[mailbox] N new mail …")`(보낸 id·방·개수만)로 턴 하나를 시작한다.
+  - «ok» 응답이 와야 메일을 표시한 것으로 기록한다(턴 끝 안내와 같은 커서). 한 메일은 많아야 한 번 깨운다.
+  - 바쁘거나 끝났거나 상한(`SIDEREUS_MAIL_WAIT_MAX`, 입력 없이 깨운 횟수 기본 20)을 넘으면 턴을 만들지 않고 메일은
+    다음 깨우기까지 남는다. 대기자 수명(6시간)이 끝나면 조용히 다시 건다.
+  - `watch.sh` 가 그 id 를 지켜보거나 id 가 Claude id 와 같으면 꺼진다.
+  - ⚠설치된 `sidereus.ts` 는 만들어 둔 사본이다. 설정 › «진단» › «연결» 로만 갱신되고, 그 뒤 pi 를 다시 시작하거나
+    `/reload` 한다.
+- 훅 스크립트 호출마다 5초 제한(메일 대기자는 제한 없음)이며 예외를 던지지 않는다. Python 이 없으면 그 이벤트만 빠진다.
 
 그 밖의 플랫폼: `ext-hooks/generic-hooks-example.json` 의 `<PLATFORM>` 을 바꿔 그 CLI 가 훅을 읽는 곳에 둔다(CLI 마다
 확인하지는 않았다).

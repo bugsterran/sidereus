@@ -19,7 +19,7 @@ Supported `--platform` (source of truth: `EXT_PLAT` in `sidereus/ext_store.py`):
 - pi: not a hooks file but an extension, `pi-extension.ts`. «Connect» renders it into `<agent dir>/extensions/sidereus.ts` (`~/.pi/agent` by default) and adds the `sidereus`/`mailbox` MCP servers to `<agent dir>/mcp.json` (`docs/HOOKS.md` «pi»).
   - It spawns `ext_hook.py`, `invite_notice.py`, `pipelines_brief.py`, `pl_mark.py` and `pl_flow.py` with `--platform pi` (5 s timeout, never throws); a `pl_flow.py` deny blocks the bash call.
   - ⚠Session id, cwd, event and tool name only; the bash command goes to `pl_mark.py`/`pl_flow.py` and nowhere else. Prompt and tool results are never sent.
-  - Mail is not delivered automatically; the id is `<folder>-pi` (or the `pi:<cwd>` key).
+  - Mail wake: a `pi_wake.py` child waits on the mailbox (no model turn) and the extension starts one «[mailbox] N new mail …» turn with `pi.sendUserMessage` while pi is idle; the id is `<folder>-pi` (or the `pi:<cwd>` key). Update the installed copy with «Connect», then restart pi or `/reload`.
 - Copilot CLI: copy `copilot-hooks-example.json` to `~/.copilot/hooks/sidereus.json` (or `$COPILOT_HOME/hooks/`). ★Verified on macOS, Copilot CLI 1.0.105 (2026-10-31): list, state.
   - Register PascalCase event names only. ⚠Never also register the camelCase names - every event then fires twice.
   - `PermissionRequest` arrives camelCase (`hookName` `sessionId` `toolName`) even when registered PascalCase; it maps to `Notification` (waiting for approval until `PostToolUse`). `toolInput`, `permissionSuggestions` and `timestamp` are dropped.

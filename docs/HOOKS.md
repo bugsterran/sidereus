@@ -495,14 +495,24 @@ servers to `<agent dir>/mcp.json` (mailbox through `gemini_mailbox_mcp.sh pi`; n
 | `tool_call` | `ext_hook.py` PreToolUse; bash also `pl_mark.py` · `pl_flow.py` |
 | `tool_execution_end` | `ext_hook.py` PostToolUse; bash also `pl_flow.py` |
 | `ui_prompt_start` · `agent_settled` · `session_shutdown` | Notification · Stop · SessionEnd |
+| `session_start` · `agent_settled` | start the mail waiter `ext-hooks/pi_wake.py <sid> <cwd>` (one per session) |
+| `input` · `before_agent_start` · `agent_start` · `session_shutdown` | stop the mail waiter |
 
 - The notices go into a system-prompt section (`systemPromptOptions.sections.sidereus`), not a stored message.
 - Payloads carry session id, cwd, event and tool name; only the bash command goes to `pl_mark.py`/`pl_flow.py`.
   ⚠The prompt and tool results are never sent.
 - A `pl_flow.py` deny blocks the bash call (`{block: true}`). Stages use shell markers, as on Codex.
 - ⚠`agent_end` is not final (retry, compaction, queued messages follow); `Stop` comes from `agent_settled`.
-- Mail is not delivered automatically: the mailbox id is the `pi:<cwd>` key or `<folder>-pi`; it reads `mailbox_inbox` itself.
-- Every call has a 5 s timeout and never throws; a missing Python only drops that event.
+- Mail wake (`hooks/mail_wait.py` «extension-turn»): the mailbox id is the `pi:<cwd>` key or `<folder>-pi`. The waiter
+  polls `bus.jsonl` (no model turn while waiting); on new mail the extension starts one turn with
+  `pi.sendUserMessage("[mailbox] N new mail …")` (from-id, room, count only) when pi is idle with nothing queued.
+  - Only an «ok» ack marks the mail surfaced (same cursor as the turn-end line), so one mail wakes at most once.
+  - Busy, ended or over the cap (`SIDEREUS_MAIL_WAIT_MAX`, default 20 wakes without a typed prompt) = no turn; the
+    mail stays unread for the next wake. After the waiter's 6 h lifetime it re-arms silently.
+  - Off while `watch.sh` watches the id, or when the id equals a Claude id.
+  - ⚠The installed `sidereus.ts` is a rendered copy: it updates only through Settings › «Diagnostics» › «Connect»,
+    then restart pi or run `/reload`.
+- Every hook-script call has a 5 s timeout (the mail waiter has none) and never throws; a missing Python only drops that event.
 
 Other platforms: `ext-hooks/generic-hooks-example.json` with `<PLATFORM>` replaced, wherever that CLI reads hooks
 (not verified per CLI).

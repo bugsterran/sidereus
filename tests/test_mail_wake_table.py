@@ -29,6 +29,7 @@ class WakeTable(unittest.TestCase):
         self.assertEqual(set(MW.WAKE), set(plats))         # no stale rows
         self.assertEqual((MW.wake_method("claude"), MW.wake_method("codex"), MW.wake_method("gemini")),
                          ("async-rewake", "app-server-turn", "turn-end"))
+        self.assertEqual(MW.wake_method("pi"), "extension-turn")   # R1: pi wakes through its extension
 
     def test_R4_unknown_is_none(self):
         for p in ("nope", "", None, 3, "CODEX"):

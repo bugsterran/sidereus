@@ -2,7 +2,7 @@
 """Shared mail waiter for hooks: one waiter per session, waits on bus.jsonl, calls `check` when the bus changes (and every retry_s if given).
 
 Used by hooks/mailbox_wake.py (Claude, asyncRewake), ext-hooks/gemini_mail_stop.py --wait (sync Stop wait) and
-ext-hooks/codex_wake.py (Codex, app-server turn).
+ext-hooks/codex_wake.py (Codex, app-server turn) and ext-hooks/pi_wake.py (pi, extension turn).
 Rules:
 - WAKE is the adapter table: how each CLI's idle session is woken. A new CLI = one row here + its contract test
   (tests/test_mail_wake_table.py checks every EXT_PLAT key has a row).
@@ -20,14 +20,15 @@ import time
 #   ⚠Opt-in (`--wait`): it also holds every interactive turn, so typed input queues; the example ships it off.
 # app-server-turn: the Stop hook spawns a detached waiter that starts a turn through the Codex app-server daemon
 #   (ext-hooks/codex_wake.py, opt-in `--wake`; the example ships turn-end delivery); typed input never queues behind it.
+# extension-turn: the pi extension keeps a waiter child (ext-hooks/pi_wake.py) and calls pi.sendUserMessage when idle.
 # turn-end: mail only at the next turn end (Gemini AfterAgent; worker mode is the opt-in idle wait).
 # none: not measured; turn-end hook from generic-hooks-example.json at best.
 WAKE = {"claude": "async-rewake", "codex": "app-server-turn", "gemini": "turn-end",
         "copilot": "none", "cursor": "none", "cline": "none", "windsurf": "none", "warp": "none",
         "trae": "none", "zed": "none", "grok": "none", "deepseek": "none", "qwen": "none", "kimi": "none",
         "mistral": "none", "ollama": "none", "perplexity": "none", "huggingface": "none", "meta": "none",
-        "openrouter": "none", "pi": "none"}   # pi: session files only, no wake path yet
-METHODS = ("async-rewake", "stop-wait", "app-server-turn", "turn-end", "none")
+        "openrouter": "none", "pi": "extension-turn"}
+METHODS = ("async-rewake", "stop-wait", "app-server-turn", "extension-turn", "turn-end", "none")
 
 POLL_S = 2.0
 RETRY_S = 30.0             # ⚠Claude's plan() also reads non-bus inputs (time budget, cursor, rooms, pending): retry without a bus change
@@ -101,10 +102,10 @@ def wait(store, sid, me, check, life_s, poll_s=POLL_S, first_s=0.0, sleep=time.s
     if not take_lock(lp, time.time()):
         return "busy", None
     end = clock() + life_s
-    sleep(first_s)
     seen = object()                # never equal: the first poll always checks
-    last = clock()
     try:
+        sleep(first_s)             # ⚠inside try: a sleep that raises (pi_wake stdin EOF / SIGTERM) must free the slot
+        last = clock()
         while clock() < end:
             if not owns(lp):
                 return "lost", None

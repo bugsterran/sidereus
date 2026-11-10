@@ -166,8 +166,8 @@ WAKE_EN = ("New mail wakes this session via the Stop hook (mailbox_wake) — do 
            " When woken, read it with mailbox_inbox.")
 # Codex has no mailbox_wake/Monitor: ext-hooks/gemini_mail_stop.py --platform codex holds the turn end once on new mail.
 WAKE_EN_CODEX = "New mail is delivered at turn end by the Stop hook — when it arrives, read it with mailbox_inbox."
-# pi has no stop-hook mail relay: nothing pushes mail into the session.
-WAKE_EN_PI = "Mail is not delivered automatically — check it with mailbox_inbox when you start or finish a task."
+# pi: the Sidereus extension's waiter starts one turn when mail arrives (ext-hooks/pi_wake.py).
+WAKE_EN_PI = "New mail wakes this idle session (Sidereus pi extension) — read it with mailbox_inbox."
 PLATFORM = "cc"   # set from --platform in main(); "codex" and "pi" change the wording
 OTHER_PLATS = ("codex", "pi")   # non-Claude CLIs with their own mailbox id (ext-hooks/gemini_mailbox_mcp.sh <plat>)
 

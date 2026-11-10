@@ -371,6 +371,7 @@ class InvitePi(unittest.TestCase):
         self.assertEqual(self.run_hook(), "[mailbox] id `proj-pi` · " + inv.WAKE_EN_PI + "\n")
         for w in ("mailbox_wake", "Stop hook", "Monitor", "AskUserQuestion"):
             self.assertNotIn(w, inv.WAKE_EN_PI)
+        self.assertIn("wakes this idle session", inv.WAKE_EN_PI)   # R1: the extension wakes pi on mail
         self.assertFalse(os.path.exists(inv.ACCT_DIR))   # Claude-only records skipped
         self.assertEqual(self.run_hook("UserPromptSubmit"), "")   # wake line at SessionStart only
 
