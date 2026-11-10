@@ -12,12 +12,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sessions: two live sessions in one folder each show a muted «n in folder» chip; its tooltip says cost and To-do are folder totals.
 - Sessions: pi subagent children hang under their pi parent row with the agent name as label (re-run «Connect» for pi).
 - Sessions: the work-log popup shows steps and replies for pi sessions, read from the pi session file.
+- Docs: a pi migration pipeline template (`docs/examples/pipelines/migrate-pi.json`, stages Inventory, Map, Convert, Verify, Report) keeps the Claude Code files as the source and gives pi symlinks or generated copies; linked from the pi section of HOOKS (untested on pi).
 
 ### Changed
 
 - Sessions: when the main repo's session is in view, a linked-worktree session is one «Worktree» line inside that card (name or branch, state, age), next to the subagent lines; clicking it opens that session. With no main session in view the header row stays.
 - Quota: «left ≈» shows a range (for example «57M-107M») when the history estimate and this window disagree by more than 1.5x between 30% and 60% used; from 60% it is one value blended toward this window, and the tooltip names both.
 - Structure: the diagram request («Generate diagram» / «Update diagram» / «Redraw») also draws the one-page overview, so «Simple» is ready after one request; `arch-brief` remains for redrawing only the overview, and a failed overview leaves the verified map in place.
+- Requests: the recipient pickers for security check fixes, the Harness «Next step» and pipeline evaluation «Ask AI» list live sessions of every platform (before, Claude Code only), and the structure diagram, overview and pipeline run pickers, which already listed several platforms, now list every one; the Harness «Next step» lists only sessions logged in to the mailbox. Sessions from other CLIs get a run-it-yourself body with shell stage markers, and sending still needs a mailbox login.
+- Pipelines: the red-check «off» hint reads «Open an AI session in this project and log in to the mailbox to request it» instead of naming Claude Code.
 
 ### Fixed
 
@@ -30,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: in a module focus view a box with many links grows wide enough to keep its link ends 10 px apart, instead of drawing them about 2 px apart.
 - Pipelines: in «Watch» the stage detail pane ends on a line boundary instead of cutting its last line in half.
 - Sessions: the tool-state bar sits on the same left edge and height as the account band, instead of a second shorter bar beside it.
+- Timeline: the tab dot also lights while a main session works in its own turn without subagents (sessions idle 600 s or more excluded, as in the session list); its tooltip names both counts.
 
 ## [0.17.0] - 2026-11-10
 
