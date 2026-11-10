@@ -238,6 +238,10 @@ def connect(req):
                 continue
             code, bak = hc._write(PLAT, fs[key], pl["raw"], pl["new_raw"])
             if code != 200:
+                # ⚠mcp.json may already be written: keep its backup in the error so the person can undo it
+                if baks:
+                    hc._MEMO.clear()
+                    bak = dict(bak, backup=baks[0], backups=baks)
                 return code, bak
             if bak:
                 baks.append(bak)

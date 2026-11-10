@@ -260,6 +260,7 @@ Cause: pi has no hooks or lock file, so rows came only from files written within
 ### pi hooks come from an extension, not a hook file (`sidereus/hook_connect.py` plat `pi`)
 Cause: pi has no hook config; events come only from a TypeScript extension it loads, and MCP servers from `mcp.json`.
 ⇒ «Connect» for pi writes both (one preview, plain diff); until then the row shows «Hooks not connected» pointing at Settings › «Diagnostics».
+⚠The two writes are sequential: when the `.ts` write fails after `mcp.json` was written, the error body still carries `backup`/`backups` (undo path); pressing Connect again plans only the `.ts`.
 ⚠An extension load error is silent: pi keeps running and the session falls back to the presence row (state «Unknown»), so a broken extension looks like «not connected».
 ⚠Never add a `project_trust` handler to the extension.
 
@@ -271,4 +272,5 @@ Cause: pi has no hook that can resume an idle session; only extension code insid
 ⚠Re-arm only on `end:timeout`; `end:off`, busy or no output means no waiter until the next `agent_settled`. The turn text is decide()'s line only — never a subject or body.
 ★A pi session logged in as a role id that a Claude folder key also maps to (`advocate`) never woke: the waiter watched the derived `<folder>-pi`.
 ⇒ pi only: an explicit `pi:<cwd>` entry in `identity.json` wins over the Claude-id clash guard (`gemini_id`); the derived default stays guarded, Gemini/Codex keep the guard.
+⚠Keep `invite_notice.plat_id` (and its plugin copy) and `ident.mbox_pi` on the same rule; `plat_id` dropped the explicit id, so SessionStart never told pi its id or wake line.
 ⚠With that entry, a Claude session on the same id would wake on the same mail too.

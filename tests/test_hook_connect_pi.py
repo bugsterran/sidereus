@@ -134,6 +134,22 @@ class HookConnectPi(unittest.TestCase):
         self.assertEqual(HP.connect({"plat": "pi", "dry": True})[0], 400)
         self.assertEqual(os.listdir(ext), [])
 
+    def test_second_write_failure_keeps_first_backup(self):
+        os.makedirs(os.path.dirname(self.files["mcp"]), exist_ok=True)
+        with open(self.files["mcp"], "w", encoding="utf-8") as f:
+            f.write('{"mcpServers": {}}')
+        real, calls = HC._write, []
+
+        def fake(plat, p, raw, new_raw):
+            calls.append(p)
+            return real(plat, p, raw, new_raw) if len(calls) == 1 else (500, {"ok": False, "err": "write failed ({e})"})
+        code, out = HP.connect({"plat": "pi", "dry": True})
+        with mock.patch.object(HC, "_write", fake):
+            code, out = HP.connect({"plat": "pi", "dry": False, "base": out["base"]})
+        self.assertEqual(code, 500)
+        self.assertTrue(out["backup"] and os.path.exists(out["backup"]))   # mcp.json was written; its undo path is reported
+        self.assertEqual(out["backups"], [out["backup"]])
+
     def test_base_mismatch_409(self):
         self._put("{}")
         code, out = HP.connect({"plat": "pi", "dry": True})
