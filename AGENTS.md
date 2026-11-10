@@ -39,7 +39,7 @@ stderr    viewer.err                # ★append-only — old lines are fossils
    - A resumed agent's label may use the latest SendMessage `summary` (one-line label from the parent) — never `message`.
    - A «To-do» item (`sidereus/todo.py`, stored in `DATA_DIR/todo/`) is a one-line request label (≤200 chars) like the Agent description, recorded by the session through the sidereus MCP tool — never a message body. An old `<git root>/.claude/todo.md` is imported once, read-only (parsed `- [ ]`/`- [~]`/`- [x]` lines only); nothing is written in the repo.
    ⚠Message bodies appear nowhere (the description is only a one-line label passed by the parent).
-   - The only exception = the **work-log popup** (`sidereus/work.py` `session_work`·`agent_work`, opens on click only · same allow-list as diff; owner-approved).
+   - The only exception = the **work-log popup** (`sidereus/work.py` `session_work`·`agent_work`·`ext_work_log` (pi only, the session file under `plat_pi.root()/sessions`), opens on click only · same allow-list as diff; owner-approved).
      ⚠Do not widen this exception to lists, timeline, cards or MCP.
 2. **`HOME` is `~/.mailbox-mcp`** (`:42`), not the user's home. Check it every time you build a path.
 3. **Two gates — both must pass before a restart.**

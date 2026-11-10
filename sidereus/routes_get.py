@@ -7,10 +7,10 @@ from urllib.parse import parse_qs
 
 from sidereus.cards import cards
 from sidereus.bus import MSG_RANGE_DEFAULT, messages_range
-from sidereus.ext_presence import ext_work_any as ext_work   # hook row first, then the Cursor/Copilot record folder
 from sidereus.timeline import TL_HOURS, agents_timeline
 from sidereus.failures import FAIL_HOURS, failures, wreckage
-from sidereus.work import agent_work, session_work
+# hook row first, then the Cursor/Copilot/pi record folder; a pi session file adds its steps (work-log exception)
+from sidereus.work import agent_work, ext_work_log as ext_work, session_work
 from sidereus.peer import peer_state
 from sidereus.history import history, history_units
 from sidereus.recent import recent_sessions

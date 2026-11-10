@@ -138,7 +138,7 @@ function extBody(d){
 function agentBody(d){
   if(!d) return '<div class=t>'+T('Loading…')+'</div>';
   if(!d.ok) return '<div class=t>'+esc(d.msg ? TV(d) : T('Could not fetch'))+'</div>';
-  if(d.ext) return extBody(d);
+  if(d.ext && !d.log) return extBody(d);   // log = ext session with a readable session log (pi): normal feed
   const dur = (d.first && d.last)
     ? Math.max(0, Math.round((Date.parse(d.last)-Date.parse(d.first))/60000)) : null;
   // ★The header states how many files were edited — at 0 the screen answers "why is there no diff" first.

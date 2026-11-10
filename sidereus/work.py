@@ -1,8 +1,10 @@
 """Session and agent work views (GET /api/work) and the allowed-cwd gate."""
+import json
 import os
 import re
 import time
 from sidereus import claude_roots
+from sidereus import ext_presence, plat_pi   # module access: tests patch `plat_pi.root`
 from sidereus.transcript import CLAUDE_PROJECTS
 from sidereus.ident import _proj_name, _sid8, _slug
 from sidereus.live import _sid_transcript
@@ -247,3 +249,126 @@ def agent_work(cwd, tid, sid=""):
             "steps": steps[-AGENT_STEPS_MAX:], "cutSteps": cut,
             "tools": sorted(tools.items(), key=lambda kv: -kv[1]),
             "size": (os.path.getsize(fp) if os.path.exists(fp) else 0)})
+
+
+def _pi_file(sid):
+    """pi session file of `sid`, re-checked under `plat_pi.root()/sessions` (a symlink out is refused), else ""."""
+    try:
+        fp = (plat_pi.one(sid) or {}).get("path") or ""
+    except Exception:
+        return ""
+    return fp if plat_pi.path_ok(fp) and os.path.isfile(fp) else ""
+
+
+def _pi_abs(p, cwd):
+    # pi tools take cwd-relative paths; `_edit_target` and the diff tree need absolute ones
+    if isinstance(p, str) and p and not os.path.isabs(p) and os.path.isabs(cwd or ""):
+        return os.path.normpath(os.path.join(cwd, p))
+    return p
+
+
+def _pi_input(name, a, cwd):
+    """pi tool call -> (Claude tool name, Claude-shape input) so `_scan_blocks` applies the same allow-list.
+    ⚠Schema of pi's built-ins (core/tools/*.d.ts): bash{command} · read{path} · write{path, content} ·
+      edit{path, edits[{oldText, newText}]} (old calls carry top-level oldText/newText). Others keep their arguments."""
+    a = a if isinstance(a, dict) else {}
+    if name == "bash":
+        return "Bash", {"command": a.get("command")}
+    if name == "read":
+        return "Read", {"file_path": _pi_abs(a.get("path"), cwd)}
+    if name == "write":
+        return "Write", {"file_path": _pi_abs(a.get("path"), cwd), "content": a.get("content")}
+    if name == "edit":
+        eds = a.get("edits") if isinstance(a.get("edits"), list) else (
+            [{"oldText": a.get("oldText"), "newText": a.get("newText")}] if isinstance(a.get("oldText"), str) else [])
+        return "Edit", {"file_path": _pi_abs(a.get("path"), cwd),
+                        "edits": [{"old_string": x.get("oldText"), "new_string": x.get("newText")}
+                                  for x in eds if isinstance(x, dict)]}
+    return name, a
+
+
+def _pi_text(c):
+    # text blocks only: images, thinking and anything else never leave the file
+    if isinstance(c, str):
+        return c
+    return [{"type": "text", "text": b.get("text")} for b in (c if isinstance(c, list) else [])
+            if isinstance(b, dict) and b.get("type") == "text" and isinstance(b.get("text"), str)]
+
+
+def _pi_lines(fp, cwd, names):
+    """Tail of a pi session file as Claude-shape transcript lines for `_work_scan`; fills `names` {call id: pi tool name}.
+    Only `message` entries of role user/assistant/toolResult; assistant `thinking` is dropped."""
+    for ln in _open_or_tail(fp, tail=SESS_TAIL):
+        try:
+            o = json.loads(ln)
+        except ValueError:
+            continue
+        m = o.get("message") if isinstance(o, dict) and o.get("type") == "message" else None
+        if not isinstance(m, dict):
+            continue
+        ts = o.get("timestamp") if isinstance(o.get("timestamp"), str) else None
+        role = m.get("role")
+        if role == "user":
+            e = {"type": "user", "message": {"role": "user", "content": _pi_text(m.get("content"))}}
+        elif role == "assistant":
+            bl = []
+            for b in m.get("content") if isinstance(m.get("content"), list) else []:
+                if not isinstance(b, dict):
+                    continue
+                if b.get("type") == "text" and isinstance(b.get("text"), str):
+                    bl.append({"type": "text", "text": b["text"]})
+                elif b.get("type") == "toolCall" and isinstance(b.get("name"), str) and b["name"]:
+                    nm, inp = _pi_input(b["name"], b.get("arguments"), cwd)
+                    cid = b.get("id") if isinstance(b.get("id"), str) else ""
+                    if cid:
+                        names[cid] = b["name"][:64]
+                    bl.append({"type": "tool_use", "id": cid or None, "name": nm, "input": inp})
+            e = {"type": "assistant", "message": {"role": "assistant", "content": bl}}
+        elif role == "toolResult" and isinstance(m.get("toolCallId"), str):
+            e = {"type": "user", "message": {"role": "user", "content": [{
+                "type": "tool_result", "tool_use_id": m["toolCallId"], "content": _pi_text(m.get("content")),
+                "is_error": bool(m.get("isError"))}]}}
+        else:
+            continue
+        if ts:
+            e["timestamp"] = ts
+        yield json.dumps(e)
+
+
+def ext_work_log(plat, sid, now=None):
+    """External session work panel; for a pi session with a session file, also its steps and replies.
+    ★Work-log exception (AGENTS.md rule 1) widened to pi: click-only popup, same allow-list and redaction as
+      `session_work`. ⚠Any read/parse failure returns the metadata result unchanged (no file = existing empty state)."""
+    out = ext_presence.ext_work_any(plat, sid, now)
+    if not out.get("ok") or out.get("plat") != plat_pi.KEY:
+        return out
+    fp = _pi_file(str(sid or "").strip())
+    if not fp:
+        return out
+    try:
+        cwd = out.get("cwd") or ""
+        names = {}
+        sc, err = _work_scan(_pi_lines(fp, cwd, names), cwd)
+        if err:
+            return out
+        steps, says, results, _prompt, first, last, luser = sc
+        for st in steps:
+            r = results.get(st.get("id"))
+            if r:
+                r["code"], r["lang"] = _res_is_code(st.get("tool"), st.get("arg"))   # Claude names decide code
+                st["res"] = r
+            st["tool"] = names.get(st.get("id") or "", st["tool"])   # then pi's own tool name
+            st.pop("id", None)
+        cut = max(0, len(steps) - AGENT_STEPS_MAX)
+        tools = {}
+        for st in steps:
+            tools[st["tool"]] = tools.get(st["tool"], 0) + 1
+        steps = steps[-AGENT_STEPS_MAX:]
+        cut_ed = _cap_edit_bodies(steps)
+        log = dict(out, log=True, steps=steps, cutSteps=cut, cutEdits=cut_ed, prompt=luser,
+                   says=says[-AGENT_SAYS_MAX:], cutSays=max(0, len(says) - AGENT_SAYS_MAX),
+                   first=first or out.get("first") or "", last=last or out.get("last") or "",
+                   tools=sorted(tools.items(), key=lambda kv: -kv[1]), size=os.path.getsize(fp), tail=SESS_TAIL)
+        return redact_work(log)
+    except Exception:
+        return out

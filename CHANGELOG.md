@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Platforms: pi hooks and the Sidereus MCP server connect through «Connect» in Settings › «Diagnostics» (an extension plus `mcp.json`, previewed first); a pi row without hooks shows «Hooks not connected».
 - Platforms: new mail wakes an idle pi session through the Sidereus pi extension (one turn with the mail metadata only, sent only while pi is idle); no model turn runs while it waits.
 - Sessions: two live sessions in one folder each show a muted «n in folder» chip; its tooltip says cost and To-do are folder totals.
+- Sessions: pi subagent children hang under their pi parent row with the agent name as label (re-run «Connect» for pi).
+- Sessions: the work-log popup shows steps and replies for pi sessions, read from the pi session file.
 
 ### Changed
 

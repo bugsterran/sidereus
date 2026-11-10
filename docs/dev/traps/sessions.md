@@ -400,3 +400,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Not `mbox_of`: `identity.json[cwd]` is the Claude id; the work-popup composer and run/red-check pickers sent to the Claude session.
 - ⚠Only an explicit `pi:<cwd>` entry may equal a Claude id (role takeover); then `rcPlat` (92) prefers a live row over an ended one. Test `tests/test_room_member_logo_js.py`.
 
+## pi work-log popup reads the pi session file (`work.ext_work_log`)
+
+- Cause: pi lines are `message` entries with `toolCall{id,name,arguments}` / role `toolResult` and lowercase tools whose args use `path`/`edits[].oldText`, so `_work_scan` saw nothing.
+- ⇒ `_pi_lines` rewrites the tail (`SESS_TAIL`) into Claude-shape lines (bash→Bash{command}, read/write/edit→Read/Write/Edit{file_path}, edit `edits` → `old_string`/`new_string`, relative paths joined to the session cwd); pi's tool name is restored after `_res_is_code`. File via `plat_pi.one(sid)`, re-checked with `path_ok` + `isfile`. Test `tests/test_work_pi.py`.
+- ⚠Only `/api/ext/work` (click-only popup) calls it; `plat_pi.read`/`scan`, `ext_work_any`, timeline and MCP stay metadata only. `thinking`, images, system and compaction entries are never passed on.
+- ⚠Any read/parse error returns the metadata result unchanged; no file (`pi -p --no-session`) is the existing empty state, not an error.
+

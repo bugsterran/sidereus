@@ -29,7 +29,7 @@ function agentRepaint(){
 function wkSum(d){
   if(!d || !d.ok) return '';
   // src 'file' = hook-less adapter: the count is of session-file events, not hook events.
-  if(d.ext) return (d.src === 'file' ? T('Session events') : T('Hook events')) + ' ' + U((d.events||[]).length, '#msgs') + ' · ' + (stateLbl(d.state) || T(d.state || ''));
+  if(d.ext && !d.log) return (d.src === 'file' ? T('Session events') : T('Hook events')) + ' ' + U((d.events||[]).length, '#msgs') + ' · ' + (stateLbl(d.state) || T(d.state || ''));
   const st = d.steps || [];
   const nErr = st.filter(s => s.res && s.res.err).length;
   const nF = agFileList(d).length;
