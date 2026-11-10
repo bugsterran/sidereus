@@ -24,7 +24,7 @@ const inside = B => LINES.some(l => l.t < B && B < l.b);
 
 
 def _fn():
-    return "\n".join(js_fn(n) for n in ("plWApply", "plWSnapCut", "plWSnap")) + "\nconst PLW_SNAP_MAX = 32;"
+    return "\n".join(js_fn(n) for n in ("plWApply", "plWSnapCut", "plWSnapGrow", "plWSnap")) + "\nconst PLW_SNAP_MAX = 32;"
 
 
 def run(body):
@@ -45,8 +45,21 @@ class PlWatchSnap(unittest.TestCase):
         for cut, total, shrunk, card in o:
             self.assertFalse(cut)               # clip edge outside every line box
             self.assertAlmostEqual(total, 710)  # canvas + pane + card unchanged
-            self.assertTrue(shrunk)             # never grows the pane
+            self.assertTrue(shrunk)             # room above the minimum: shrink, not grow
         self.assertAlmostEqual(o[1][3], 110 + (100 - 91.6))   # freed px went to the Running card
+
+    def test_pane_at_its_minimum_grows_to_the_line_bottom(self):
+        # Default pane 80-86 px: shrinking would break PLW_MIN[1], so the edge snaps down instead.
+        o = run("LINES = Array.from({length: 12}, (_, i) => ({t: TOP + 10 + i * 16, b: TOP + 26 + i * 16})); const out = [];"
+                "for(const ph of [80, 82, 86]){ const s = [600, ph, 110]; plWApply(G, OC, s); const t = plWSnap(G, OC, s);"
+                " const B = TOP + parseFloat(ST['--plwph']);"
+                " out.push([inside(B), t[0] + t[1] + t[2] - ph, t[0] >= PLW_MIN[0], t[1] >= PLW_MIN[1], t[2] >= PLW_MIN[2], t[1] > ph]); }"
+                "console.log(JSON.stringify(out));")
+        for cut, total, m0, m1, m2, grew in o:
+            self.assertFalse(cut)
+            self.assertAlmostEqual(total, 710)
+            self.assertTrue(m0 and m1 and m2)
+            self.assertTrue(grew)
 
     def test_side_by_side_lines_of_mixed_height(self):
         # A 15px label beside an 18px chip: the taller box decides.
@@ -59,13 +72,14 @@ class PlWatchSnap(unittest.TestCase):
     def test_bounded_and_no_op_cases(self):
         o = run("const out = []; let s;"
                 "LINES = [{t: 160, b: 220}]; s = [600, 100, 110]; plWApply(G, OC, s); out.push(plWSnap(G, OC, s));"   # cut 40 > cap: kept
-                "LINES = [{t: 150, b: 200}]; s = [600, 80, 110]; plWApply(G, OC, s); out.push(plWSnap(G, OC, s));"   # pane under its min: kept
+                "LINES = [{t: 150, b: 200}]; s = [600, 80, 84]; plWApply(G, OC, s); out.push(plWSnap(G, OC, s));"   # grow too: card at min, canvas pays
+                "LINES = [{t: 150, b: 200}]; s = [270, 80, 84]; plWApply(G, OC, s); out.push(plWSnap(G, OC, s));"   # no side can pay: kept
                 "LINES = [{t: 180, b: 190}, {t: 210, b: 220}]; s = [600, 100, 110]; plWApply(G, OC, s); out.push(plWSnap(G, OC, s));"   # edge in a gap
                 "LINES = [{t: 160, b: 200}]; s = [600, 100, 110]; plWApply(G, OC, s); out.push(plWSnap(G, OC, s));"   # edge on a line bottom
                 "PLWDRAG = {}; LINES = [{t: 190, b: 210}]; s = [600, 100, 110]; plWApply(G, OC, s); out.push(plWSnap(G, OC, s)); PLWDRAG = null;"
                 "out.push(plWSnap(G, null, s));"                                                                # no card: total cannot be kept
                 "console.log(JSON.stringify(out));")
-        self.assertEqual(o, [[600, 100, 110], [600, 80, 110], [600, 100, 110], [600, 100, 110], [600, 100, 110], [600, 100, 110]])
+        self.assertEqual(o, [[600, 100, 110], [580, 100, 84], [270, 80, 84], [600, 100, 110], [600, 100, 110], [600, 100, 110], [600, 100, 110]])
 
     def test_fit_snaps_after_the_last_apply(self):
         fit = js_fn("plWatchFit")

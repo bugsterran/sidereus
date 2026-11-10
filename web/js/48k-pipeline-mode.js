@@ -175,13 +175,18 @@ function plWKey(e){
   const s = plWStep(plWNow(g, oc), gr.dataset.plwg === 'p' ? 0 : 1, dy);
   plWApply(g, oc, s); plWSave(s);
 }
-// The pane clip edge must not cross a text line: move it up to the top of any line box it would cut; the freed px go to the Running card.
+// The pane clip edge must not cross a text line: move it up to the top of any line box it would cut (freed px go to the Running card), or, when that would go under the pane minimum, down to its bottom.
 // ⚠Line heights vary (title, small, mono rows) — snap to measured line rects, never round to a fixed px step.
 const PLW_SNAP_MAX = 32;
 function plWSnapCut(lines, B){
   let X = B;
   for(let hit = true; hit;){ hit = false; for(const l of lines) if(l.t < X - 0.5 && X < l.b - 0.5){ X = l.t; hit = true; } }
   return B - X;
+}
+function plWSnapGrow(lines, B){
+  let X = B;
+  for(let hit = true; hit;){ hit = false; for(const l of lines) if(l.t < X - 0.5 && X < l.b - 0.5){ X = l.b; hit = true; } }
+  return X - B;
 }
 function plWLines(p){
   const out = [], w = document.createTreeWalker(p, NodeFilter.SHOW_TEXT), r = document.createRange();
@@ -196,9 +201,17 @@ function plWSnap(g, oc, s){
   const p = oc && g.querySelector(':scope>.plwp');
   if(!p || PLWDRAG) return s;
   const B = p.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(p).borderBottomWidth) || 0);
-  const cut = plWSnapCut(plWLines(p), B);
-  if(!(cut > 0) || cut > PLW_SNAP_MAX || s[1] - cut < PLW_MIN[1]) return s;   // bounded; never grows the pane
-  const t = [s[0], s[1] - cut, s[2] + cut];
+  const lines = plWLines(p), cut = plWSnapCut(lines, B);
+  if(!(cut > 0) || cut > PLW_SNAP_MAX) return s;
+  let t;
+  if(s[1] - cut >= PLW_MIN[1]) t = [s[0], s[1] - cut, s[2] + cut];
+  else {   // ⚠the default pane sits at its minimum, so shrinking never fits there: grow to the cut line's bottom instead
+    const grow = plWSnapGrow(lines, B);
+    if(!(grow > 0) || grow > PLW_SNAP_MAX) return s;
+    if(s[2] - grow >= PLW_MIN[2]) t = [s[0], s[1] + grow, s[2] - grow];
+    else if(s[0] - grow >= PLW_MIN[0]) t = [s[0] - grow, s[1] + grow, s[2]];
+    else return s;
+  }
   plWApply(g, oc, t);
   return t;
 }
