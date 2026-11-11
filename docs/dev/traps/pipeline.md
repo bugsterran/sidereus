@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Runs, stage hooks and evaluation
 
+- **Pipeline verdict sentences are keyed twice** (sidereus/pl_outcome.py `OC_VERDICT` · web `PLE_VD`).
+  - Cause: the weekly report writes the English sentence from `OC_VERDICT`; the panel shows its own copy keyed by the same id.
+  - ⇒ Change an id or sentence in both places in one change; guides live in `docs/verdicts/<id>.md` (+ `.ko.md`), `healthy` has none.
+  - ⚠Missing earlier runs (`prev.n` 0) is unknown, never a 0% baseline for the loop-back rise. `tests/test_pl_outcome_verdict.py`.
+
 - **A pi run never closed: `[pl-end:...]` sat on a later line of a multi-line bash command** (hooks/pl_flow.py · pl_mark.py `mark_match`).
   - Cause: `MARK` matches only at the command start, so `cd …\n…\necho "[pl-end:security-checks/<last>]"` left `end` 0, no ledger row, no report.
   - ⇒ `mark_match` also takes a later line that is `echo`/`printf` of a marker (heredoc bodies skipped; first marker wins); the pi request text (84j · 84l) asks for each marker as its own single-line command.

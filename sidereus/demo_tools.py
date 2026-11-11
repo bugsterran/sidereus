@@ -320,6 +320,7 @@ DEMO_EVAL = {"ok": True, "graded": {"n": 1, "m": 4, "unred": 1, "unstable": ["�
              # = pl_outcome.counts() shape (no per-PASS list); path is a fake data dir, never the real install
              "outcome": {"proc": {"runs": 14, "jump": 3}, "lb": {"cur": {"n": 14, "k": 4}, "prev": {"n": 11, "k": 5}},
                          "result": {"n": 12, "broke": 2, "fixed": 3, "unchecked": 1, "partial": False},
+                         "verdict": "pl_broke",   # = pl_outcome.verdict() of this body (broke 2)
                          "eff": {"설계": {"n": 14, "sec": 95, "tok": 41000, "tn": 14}, "구현": {"n": 14, "sec": 610, "tok": 236000, "tn": 12},
                                  "검증": {"n": 13, "sec": 240, "tok": None, "tn": 0}, "리뷰": {"n": 11, "sec": 180, "tok": 58000, "tn": 11}},
                          "cost": {"share": {"설계": 12, "구현": 71, "리뷰": 17}, "med": 330000, "mn": 12,

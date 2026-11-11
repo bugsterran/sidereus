@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Pipelines: each pipeline gets one verdict from its 30-day result (a pass broke, too few runs, review loop-backs rose, or healthy); the weekly report writes it right after the date, with «Next step» guides for the three warnings.
+
 ## [0.18.0] - 2026-11-12
 
 **Highlights**

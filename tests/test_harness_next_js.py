@@ -104,9 +104,9 @@ const k = hnNxKey('refixed', %s); hnNxFold('refixed', %s);
 const tgt = m => ({closest: s => s in m ? m[s] : null});
 const click = m => LST.click.forEach(f => f({target: tgt(m), stopPropagation(){}}));
 hnNxSend();
-click({'.hnw .hnnx': {}, '[data-hnnxd]': {dataset: {hnnxd: k}}});
+click({[HN_NX_SEL]: {}, '[data-hnnxd]': {dataset: {hnnxd: k}}});
 const n0 = POSTS.length, prev = hnNxFold('refixed', %s);
-click({'.hnw .hnnx': {}, '[data-hnnxgo]': {}});
+click({[HN_NX_SEL]: {}, '[data-hnnxgo]': {}});
 setTimeout(() => console.log(JSON.stringify([n0, prev, POSTS, NOTES, HN_NXS.dr])), 0);
 """ % (json.dumps(_INC), json.dumps(_INC), json.dumps(_INC)))
         n0, prev, posts, notes, dr = r
@@ -133,10 +133,10 @@ setTimeout(() => console.log(JSON.stringify([n0, prev, POSTS, NOTES, HN_NXS.dr])
 SESS = %s; PLS.data = {'/w/a': {ok: true, pipelines: [{name: 'sidereus-bugfix'}]}};
 const k = hnNxKey('refixed', %s); hnNxFold('refixed', %s);
 const click = m => LST.click.forEach(f => f({target: {closest: s => s in m ? m[s] : null}, stopPropagation(){}}));
-click({'.hnw .hnnx': {}, '[data-hnnxd]': {dataset: {hnnxd: k}}});
+click({[HN_NX_SEL]: {}, '[data-hnnxd]': {dataset: {hnnxd: k}}});
 const sids = hnNxCands().map(c => [c.sid, c.sh]);
 HN_NXS.dr.sid = 'pi1'; const prev = hnNxFold('refixed', %s);
-click({'.hnw .hnnx': {}, '[data-hnnxgo]': {}});
+click({[HN_NX_SEL]: {}, '[data-hnnxgo]': {}});
 setTimeout(() => console.log(JSON.stringify([sids, prev, POSTS, hnNxBody('refixed', %s, '/w/a', {pipeline: 'sidereus-bugfix'}, ['sidereus-bugfix'])])), 0);
 """ % (json.dumps(ss), json.dumps(_INC), json.dumps(_INC), json.dumps(_INC), json.dumps(_INC)))
         sids, prev, posts, cc = r
@@ -172,10 +172,30 @@ console.log(JSON.stringify([hnNxKey('hook_missing', a) === hnNxKey('hook_missing
     def test_click_in_fold_clears_go_target(self):
         r = _js("""
 HN.go = {mode: 'fast', ts: 1};
-LST.click.forEach(f => f({target: {closest: s => s === '.hnw .hnnx' ? {} : null}, stopPropagation(){}}));
+LST.click.forEach(f => f({target: {closest: s => s === HN_NX_SEL ? {} : null}, stopPropagation(){}}));
 console.log(JSON.stringify(HN.go));
 """)
         self.assertIsNone(r)
+
+    def test_r4_selectors_cover_eval_popover(self):
+        with open(_FS[1], encoding="utf-8") as f:
+            src = f.read()
+        self.assertIn("#plevp .hnnx", _js("console.log(JSON.stringify(HN_NX_SEL))"))
+        self.assertIn("#plevp [data-hnnxs]", src)
+        self.assertEqual(src.count("hnRepaint("), 1)   # only inside hnNxRepaint: draft/send/guide-load all go through it
+
+    def test_r4_draft_and_send_repaint_open_popover(self):
+        r = _js("""
+mainView = 'token'; let OPEN = true; function popIsOpen(id){ return id === 'plevp' && OPEN; }
+const k = hnNxKey('refixed', %s); hnNxFold('refixed', %s);
+const click = m => LST.click.forEach(f => f({target: {closest: s => s in m ? m[s] : null}, stopPropagation(){}}));
+const p0 = PAINTS; click({[HN_NX_SEL]: {}, '[data-hnnxd]': {dataset: {hnnxd: k}}});
+const p1 = PAINTS; const sid = HN_NXS.dr.sid;
+hnNxSend().then(() => { const p2 = PAINTS; OPEN = false; hnNxRepaint(true);
+  console.log(JSON.stringify([p1 - p0, p2 - p1, PAINTS - p2, sid])); });
+""" % (json.dumps(_INC), json.dumps(_INC)))
+        self.assertEqual(r[:3], [1, 2, 0])   # popover open: plPaint; closed and not the Harness view: no plPaint
+        self.assertEqual(r[3], "s1")
 
     def test_r2_css_fold_stays_in_its_cell(self):
         with open(os.path.join(ROOT, "web", "css", "41b-harness.css"), encoding="utf-8") as f:

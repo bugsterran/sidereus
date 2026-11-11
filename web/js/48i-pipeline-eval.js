@@ -86,8 +86,18 @@ const PLE_OC = { gate: 'Gate: {g} of {m} gates confirmed able to fail', proc: 'P
   lb: 'Review loop-backs: {cur}% of runs (last 30 days) vs {prev}% (30 days before)', lb0: 'Review loop-backs: {cur}% of runs (last 30 days), no earlier data',
   rep: 'Latest report {date}', norep: 'No report yet' };
 const plOcPct = c => c && c.n ? Math.round((c.k | 0) * 100 / c.n) : 0;
+// R4 verdict sentence per pl_outcome.OC_VERDICT id (fixed English keys); unknown/absent id = no line.
+const PLE_VD = { pl_broke: 'A pass from this pipeline broke later.', pl_too_few: 'Fewer than 5 runs in the last 30 days, too few to judge.',
+  pl_loopback: 'Review loop-backs rose sharply against the 30 days before.', healthy: 'No pass broke, enough runs, loop-backs steady.' };
+// Pure: first «Result layer» line; a non-healthy verdict carries 47g's «Next step» fold (same relay as the Harness report).
+function plEvalVerdict(o, name){
+  const id = o && typeof o.verdict === 'string' && Object.prototype.hasOwnProperty.call(PLE_VD, o.verdict) ? o.verdict : '';
+  if(!id) return '';
+  const fd = id !== 'healthy' && typeof hnNxFold === 'function' ? hnNxFold(id, { name: name || '', n: ((o.proc || {}).runs) | 0, vd: { vp: { pipe: name || '' } } }) : '';
+  return '<li class="plevd plevd-' + (id === 'healthy' ? 'ok' : 'bad') + '">' + esc(T(PLE_VD[id])) + fd + '</li>';
+}
 // Pure: «Result layer» block — gate / procedure / result facts, loop-back trend, latest report. Counts only, no score.
-function plEvalOutcome(ev){
+function plEvalOutcome(ev, name){
   const o = ev && ev.outcome;
   if(!o || !((o.result && o.result.n) || (o.proc && o.proc.runs))) return '';   // pl_outcome always sends outcome: hide it until there is data
   const g = ev.graded || {}, p = o.proc || {}, r = o.result || {}, lb = o.lb || {}, cur = lb.cur || {}, prev = lb.prev || {};
@@ -97,7 +107,7 @@ function plEvalOutcome(ev){
   const has = ev.rep && ev.rep.date, path = has ? String(ev.rep.path || '') : '';
   const rp = has ? TV({msg: PLE_OC.rep, vars: {date: String(ev.rep.date)}}) : T(PLE_OC.norep);
   // Path on its own line: inline after the label it broke at the date's hyphen («2026-10-|25.md»).
-  return '<div class=pleoc><b>' + esc(T('Result layer')) + '</b><ul>' + L.map(s => '<li>' + esc(s) + '</li>').join('') + '</ul>' + plEvalEff(o.eff, o.cost) + '<div class=pleocr>' + esc(rp) + (path ? '<span class=pleocp>' + esc(path) + '</span>' : '') + '</div></div>';
+  return '<div class=pleoc><b>' + esc(T('Result layer')) + '</b><ul>' + (typeof plEvalVerdict === 'function' ? plEvalVerdict(o, name) : '') + L.map(s => '<li>' + esc(s) + '</li>').join('') + '</ul>' + plEvalEff(o.eff, o.cost) + '<div class=pleocr>' + esc(rp) + (path ? '<span class=pleocp>' + esc(path) + '</span>' : '') + '</div></div>';
 }
 // Pure: «Stage cost» table (pl_outcome.stage_eff) — median time, median known tokens, share, runs; unknown tokens are «—», never 0.
 // cost (R1-R3, optional): {share:{title:pct}, med, mn, last:{tok, sec}}; all-unknown runs are excluded server-side (mn 0 = no median line).
@@ -134,7 +144,7 @@ function plEvalPanel(ev){
   if(typeof requestAnimationFrame === 'function') requestAnimationFrame(plEvalPlace);   // placed after paintPipe writes it
   const S = typeof PLS === 'object' ? plEvalPre(plEvalState(plCur()), plEvalSgList(ev)) : { sel: {} }, fx = plEvalSgList(ev).length ? '' : plEvalFixRec(S),
     sg = fx ? '<div class=plesg>' + fx + '</div>' : plEvalSgList(ev).length ? plEvalSgHtml(ev, S, cands, typeof plCat === 'function' ? plCat() : null) : '';   // fixed: no suggestions left, the request line stays
-  return '<div id=plevp class="thpop plevp">' + (typeof plEvalSec === 'function' ? plEvalSec(ev.security, PLE_SEC_OPEN) : '') + '<table><tr><th>' + esc(T('Stage')) + '</th><th title="' + esc(T('Catch: share of deliberately planted defects (seeds) that this stage gate caught')) + '">' + esc(T('Catch')) + '</th><th title="' + esc(plEvalRedHelp()) + '">' + esc(T('Red check')) + '</th><th>' + esc(T('Agreement')) + '</th></tr>' + rows + ho + '</table>' + (typeof plEvalOutcome === 'function' ? plEvalOutcome(ev) : '')
+  return '<div id=plevp class="thpop plevp">' + (typeof plEvalSec === 'function' ? plEvalSec(ev.security, PLE_SEC_OPEN) : '') + '<table><tr><th>' + esc(T('Stage')) + '</th><th title="' + esc(T('Catch: share of deliberately planted defects (seeds) that this stage gate caught')) + '">' + esc(T('Catch')) + '</th><th title="' + esc(plEvalRedHelp()) + '">' + esc(T('Red check')) + '</th><th>' + esc(T('Agreement')) + '</th></tr>' + rows + ho + '</table>' + (typeof plEvalOutcome === 'function' ? plEvalOutcome(ev, PLEVAL_OPEN) : '')
     + (empty && !sg ? '<div class=hidnote>' + esc(T('No evaluation yet')) + '</div>' : '') + (rq ? plRedReqHtml(plRedReqState(), need[PLRR.stage], cands) : '') + sg + '</div>';
 }
 // Floating under the button (popAnchor, fixed): an inline panel pushed the canvas down. ⚠Rebuilt by every repaint ⇒ re-anchored each time.

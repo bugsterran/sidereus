@@ -65,9 +65,13 @@ def _gate(P, name, repo, now):
         return None
 
 
-def render(name, date, sents, oc):
-    """Markdown text of one report (pure; tests compare its sentences with pl_outcome.sentences)."""
-    lines = ["# Pipeline report: %s" % name, "", "Date: %s" % date, ""]
+def render(name, date, sents, oc, vd=None):
+    """Markdown text of one report (pure; tests compare its sentences with pl_outcome.sentences).
+    `vd` = (verdict id, sentence) from pl_outcome (R2), written right after «Date:»."""
+    lines = ["# Pipeline report: %s" % name, "", "Date: %s" % date]
+    if vd:
+        lines.append("Verdict: %s — %s" % vd)
+    lines.append("")
     lines += ["- %s" % s for s in sents]
     rows = [x for x in ((oc or {}).get("result") or {}).get("list") or [] if x.get("broke") or x.get("fixed")]
     lines += ["", "## Passes that broke or had a fix follow", ""]
@@ -148,7 +152,8 @@ def main(argv=None):
         return 2
     stages = [s for s in (P.get("stages") if isinstance(P, dict) else None) or [] if isinstance(s, dict)]
     oc = OC.outcome(repo, name, V.review_titles(stages), now, fix=V.fix_pipes(repo))
-    text = render(name, today, OC.sentences(_gate(P, name, repo, now), oc), oc)
+    vid = OC.verdict(oc)
+    text = render(name, today, OC.sentences(_gate(P, name, repo, now), oc), oc, (vid, OC.OC_VERDICT[vid]))
     path = os.path.join(OC.report_dir(repo, name), today + ".md")
     _write(path, text)
     print(path)

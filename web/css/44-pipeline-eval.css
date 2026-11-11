@@ -26,6 +26,9 @@ html[data-theme=light] .plevp .pleci,html[data-theme=light] .pleag{color:#5b6a80
 .pleeff{margin-top:6px;width:100%;table-layout:fixed}.pleeff caption{text-align:left;color:#8fa0b8;font-size:11px;padding-bottom:2px}   /* «Stage cost»: fixed layout wraps long titles inside 560px */
 .pleeff th:first-child,.pleeff td:first-child{width:38%;overflow-wrap:anywhere}.pleeff td:not(:first-child),.pleeff th:not(:first-child){text-align:right;white-space:nowrap}
 .pleeffs{margin-top:4px;font-size:11px;color:#8fa0b8}   /* median per run + last run under «Stage cost» */
+.plevp .plevd{font-weight:600}.plevp .plevd-bad{color:#e0a53d}.plevp .plevd-ok{color:#5fbf7f}   /* R4 verdict line (plEvalVerdict), first in «Result layer» */
+.plevp .plevd .hnnx{font-weight:normal;color:#c7d0dc}.plevp .hnnxpre{max-height:160px;overflow:auto}   /* fold wraps inside the 560px block (41b .hnnx rules); the preview scrolls, not the popover */
+html[data-theme=light] .plevp .plevd-bad{color:#9a5a00}html[data-theme=light] .plevp .plevd-ok{color:#1f7a3f}html[data-theme=light] .plevp .plevd .hnnx{color:#2b3445}
 .pleocr{margin-top:4px;color:#8fa0b8;font-size:11px}
 .pleocp{display:block;word-break:break-all}   /* own line: the path fits whole at the popup width; break-all only when narrower */
 html[data-theme=light] .pleocr{color:#5b6a80}

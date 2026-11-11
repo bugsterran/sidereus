@@ -66,7 +66,8 @@ class EvalApi(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(set(b), {"ok", "name", "graded", "stages", "holdout", "commit", "sugg", "security", "outcome", "rep"})
         self.assertEqual(b["outcome"], {"proc": {"runs": 3, "jump": 1}, "lb": {"cur": {"n": 3, "k": 1}, "prev": {"n": 0, "k": 0}},
-                                        "result": {"n": 2, "broke": 1, "fixed": 1, "unchecked": 0, "partial": False}})   # R3: counts only, no list/files
+                                        "result": {"n": 2, "broke": 1, "fixed": 1, "unchecked": 0, "partial": False},
+                                        "verdict": "pl_broke"})   # R3: counts only, no list/files
         self.assertEqual(b["rep"], {"date": "2026-10-14", "path": "/d/eval/k/reports/2026-10-14.md"})
         self.assertEqual(self.oc_calls, [("flow", [])])   # _is_review: agent "a" and a non-catalog title are not review
         self.assertEqual(self.v.review_titles([{"title": "x", "agent": "my-reviewer"}, {"title": "y", "agent": "a"}]), ["x"])

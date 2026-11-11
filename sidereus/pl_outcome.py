@@ -48,6 +48,15 @@ OC_SENT = {
     "rep": "Latest report {date} · {path}",
     "norep": "No report yet",
 }
+OC_LB_RISE_PP = 15   # R1 loop-back rise (percentage points) that flags a pipeline; provisional, to be set from 30-day data
+# R1 one verdict per pipeline, English source. ⚠Keyed twice: web PLE_VD carries the same sentences; change both.
+OC_VERDICT = {
+    "pl_broke": "A pass from this pipeline broke later.",
+    "pl_too_few": "Fewer than 5 runs in the last 30 days, too few to judge.",
+    "pl_loopback": "Review loop-backs rose sharply against the 30 days before.",
+    "healthy": "No pass broke, enough runs, loop-backs steady.",
+}
+OC_VERDICT_MIN_RUNS = 5
 _OC_MEMO = {}   # (repo, name, review, HEAD, newest evidence ts, ledger mtime, 10-min bucket, fix pipes) -> outcome
 _now = time.time
 
@@ -390,7 +399,25 @@ def counts(oc):
         out["cost"] = {"share": {_title(t): min(100, _int(v)) for t, v in sh.items() if _title(t) in eff},
                        "med": _tok(co.get("med")), "mn": _int(co.get("mn")),
                        "last": {"tok": _tok(la.get("tok")), "sec": _int(la.get("sec"))}}
+    out["verdict"] = _verdict(out)
     return out
+
+
+def _verdict(c):
+    """R1 on a counts() body: first match of broke, too few runs, loop-back rise, else healthy."""
+    if c["result"]["broke"] >= 1:
+        return "pl_broke"
+    if c["proc"]["runs"] < OC_VERDICT_MIN_RUNS:
+        return "pl_too_few"
+    cur, prev = c["lb"]["cur"], c["lb"]["prev"]
+    if prev["n"] and _pct(cur) - _pct(prev) >= OC_LB_RISE_PP:   # ⚠no earlier runs is unknown, never a 0% baseline
+        return "pl_loopback"
+    return "healthy"
+
+
+def verdict(oc):
+    """R1 verdict id (a key of OC_VERDICT) of an outcome() or counts() body; pure."""
+    return (counts(oc) or counts({}))["verdict"]
 
 
 def report_dir(proj, name):

@@ -3,6 +3,7 @@
 // ⚠The relay never sends by itself: «Draft instruction» → preview + recipient pick → «Confirm — send» → /api/dm (AGENTS.md rule 7).
 const HN_NX_INC = ['refixed', 'reverted', 'unchecked'], HN_NX_GD = ['skipgate'];
 const HN_NX_WHO = { self: 'Yourself', ai: 'Hand to an AI session', owner: 'Owner decision' };
+const HN_NX_SEL = '.hnw .hnnx, #plevp .hnnx';   // ⚠capture handlers: a #plevp fold must not reach 48i's popover click handler either
 const HN_NXS = { guide: {}, busy: {}, ctx: {}, dr: null };   // guide per UI language · ctx = last rendered row per fold key · dr = open draft
 function hnNxOpen(){ return HN.nx || (HN.nx = {}); }
 function hnNxLang(){ return typeof LANG !== 'undefined' && LANG === 'en' ? 'en' : 'ko'; }
@@ -14,7 +15,12 @@ async function hnNxLoad(){
   let v = null;
   try{ v = await hnGet('/api/verdict-guide?lang=' + l); }catch(e){ v = null; }
   HN_NXS.guide[l] = v && typeof v === 'object' && !Array.isArray(v) ? v : {};
-  if(typeof hnRepaint === 'function') hnRepaint(true);
+  hnNxRepaint(true);
+}
+// R4: folds also live in the Pipelines «Evaluation» popover (48i plEvalVerdict); repaint whichever view shows them.
+function hnNxRepaint(poll){
+  if(typeof popIsOpen === 'function' && popIsOpen('plevp') && typeof plPaint === 'function') plPaint(poll);
+  else if(typeof hnRepaint === 'function') hnRepaint(poll);
 }
 function hnNxGuide(id){
   const g = HN_NXS.guide[hnNxLang()];
@@ -110,29 +116,29 @@ async function hnNxSend(){
   if(!D || D.busy) return false;
   const cur = hnNxCands().find(c => c.sid === D.sid) || hnNxCands()[0];
   if(!cur) return false;
-  D.busy = true; hnRepaint(false);
+  D.busy = true; hnNxRepaint(false);
   try{
     const j = await postJSON('/api/dm', { to: cur.id, body: hnNxDraftBody(D, cur), relay: true, sid: cur.sid, thread: 'harness:' + D.id });
     if(!j || !j.ok){ const er = new Error((j && (j.error || j.err)) || '?'); er.srv = true; throw er; }
     HN_NXS.dr = null;
     note(T('Requested → {s} · {t}').replace('{s}', () => archChkCandLabel(cur)).replace('{t}', () => hhmm(new Date())));
   }catch(e){ D.busy = false; D.msg = T('Could not send') + ': ' + hnNxSendErr(e); }
-  hnRepaint(false);
+  hnNxRepaint(false);
   return true;
 }
 // ⚠Capture phase: a fold inside a hook chip must not reach 47b's «open file» click/Enter handlers.
 document.addEventListener('click', e => {
-  const t = e.target, f = t && t.closest && t.closest('.hnw .hnnx');
+  const t = e.target, f = t && t.closest && t.closest(HN_NX_SEL);
   if(!f) return;
   e.stopPropagation();
   if(HN.go){ HN.go = null; const a = document.activeElement; if(a && a.classList && a.classList.contains('hngo') && a.blur) a.blur(); }   // same as 47b's click: the target highlight ends on any click in the view
   const d = t.closest('[data-hnnxd]');
-  if(d){ hnNxDraft(d.dataset.hnnxd); hnRepaint(false); return; }
+  if(d){ hnNxDraft(d.dataset.hnnxd); hnNxRepaint(false); return; }
   if(t.closest('[data-hnnxgo]')) hnNxSend();
 }, true);
-document.addEventListener('keydown', e => { if(e.target && e.target.closest && e.target.closest('.hnw .hnnx')) e.stopPropagation(); }, true);
+document.addEventListener('keydown', e => { if(e.target && e.target.closest && e.target.closest(HN_NX_SEL)) e.stopPropagation(); }, true);
 document.addEventListener('change', e => {
-  const s = e.target && e.target.closest && e.target.closest('.hnw [data-hnnxs]');
+  const s = e.target && e.target.closest && e.target.closest('.hnw [data-hnnxs], #plevp [data-hnnxs]');
   if(s && HN_NXS.dr) HN_NXS.dr.sid = s.value;
 }, true);
 // ⚠'toggle' does not bubble: capture phase.

@@ -98,7 +98,7 @@ class TestShippedGuides(unittest.TestCase):
     def test_r4_owner_guides_say_when_to_ignore(self):
         en = VG.load("en")
         owners = [k for k, g in en.items() if g["who"] == "owner"]
-        self.assertEqual(sorted(owners), ["idle", "never_ran", "no_effect", "reverted", "skipgate", "slow", "slow_block"])
+        self.assertEqual(sorted(owners), ["idle", "never_ran", "no_effect", "pl_too_few", "reverted", "skipgate", "slow", "slow_block"])
         for k in owners:
             self.assertTrue(en[k]["ignore"], k)
 
@@ -112,7 +112,7 @@ class TestShippedGuides(unittest.TestCase):
 
     def test_r3_ai_guides_and_bugfix_pipeline(self):
         en = VG.load("en")
-        self.assertEqual(sorted(k for k, g in en.items() if g["who"] == "ai"), ["ref_missing", "refixed", "rule_big"])
+        self.assertEqual(sorted(k for k, g in en.items() if g["who"] == "ai"), ["pl_broke", "pl_loopback", "ref_missing", "refixed", "rule_big"])
         self.assertEqual(en["refixed"]["pipeline"], "sidereus-bugfix")
         self.assertTrue(os.path.isfile(os.path.join(ROOT, ".claude", "pipelines", "sidereus-bugfix.json")))
 

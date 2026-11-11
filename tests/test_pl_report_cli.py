@@ -74,6 +74,12 @@ class Report(unittest.TestCase):
         self.assertIn("Result: 0 of 1 passes broke later, fix followed 1", want)
         self.assertIn("| aaaaaaaaaaaa | no | yes | `a.py`, `b.py` |", text)
         self.assertEqual(os.listdir(self.rep), ["2026-10-18.md"])   # no temp file left
+        # R2: the verdict line follows «Date:» directly; the fact sentences stay as checked above
+        ls = text.splitlines()
+        i = ls.index("Date: 2026-10-18")
+        vid = OC.verdict(oc)
+        self.assertEqual(vid, "pl_too_few")   # one run in the fixture
+        self.assertEqual(ls[i + 1], "Verdict: %s — %s" % (vid, OC.OC_VERDICT[vid]))
 
     def test_stage_cost_table(self):
         # R3: per-stage median time / tokens / n, unknown tokens as a dash, «None.» when empty
