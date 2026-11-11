@@ -31,6 +31,33 @@ CAMEL = {"preToolUse": "PreToolUse", "postToolUse": "PostToolUse", "postToolUseF
 SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash", "Shell", "bash")   # Bash only off cc; Shell = Cursor; bash = Copilot
 # ⚠Anchored at the command start: `grep "[pl:"` or a marker inside a script must never count.
 MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl(-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n|]{1,40})(\|fail)?)\]""")
+# --- later-line marker: identical block in pl_mark.py · pl_flow.py (tests compare) ---
+# Later lines count only as `echo`/`printf` of a marker (a bare or `#` line may be doc text); heredoc bodies are skipped.
+LATER = re.compile(r"""^[ \t]*(?:echo|printf)[ \t]+(?=["']?\[pl)""")
+HEREDOC = re.compile(r"""(?<!<)<<(?!<)-?[ \t]*["']?([A-Za-z_][A-Za-z0-9_]*)""")
+
+
+def mark_match(cmd):
+    """MARK at the command start, else the first `echo`/`printf` marker line outside a heredoc body.
+    ⚠pi writes markers as later lines of one command; first marker wins (as on line 1) so `[pl-end:..]` then `[pl:-]`
+    still closes the run."""
+    m = MARK.match(cmd)
+    if m or "\n" not in cmd:
+        return m
+    end = None
+    for i, ln in enumerate(cmd.split("\n")):
+        if end is not None:
+            if ln.strip() == end:
+                end = None
+            continue
+        e = LATER.match(ln) if i else None
+        m = MARK.match(ln[e.end():]) if e else None
+        if m:
+            return m
+        h = HEREDOC.search(ln)
+        end = h.group(1) if h else None
+    return None
+# --- end later-line marker ---
 
 
 # --- session pipeline dirs: identical block in pl_mark.py · pl_flow.py · pipelines_brief.py (tests compare) ---
@@ -238,7 +265,7 @@ def shell_mark(ev, sid, plat=""):
     if EVENT.get(ev.get("hook_event_name"), ev.get("hook_event_name")) == "PostToolUse":
         return
     cmd = shell_cmd(ev.get("tool_input"))
-    m = MARK.match(cmd) if cmd else None
+    m = mark_match(cmd) if cmd else None
     if not m and plat == "copilot" and cmd is not None:   # Copilot bash `description`: matched only, never stored
         d = ev.get("tool_input").get("description")
         m = MARK.match(d) if isinstance(d, str) else None

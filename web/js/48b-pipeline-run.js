@@ -255,7 +255,7 @@ function plDmCodex(p, req, models, dt){
   const defs = used.filter(t => dt && dt[t]).map(t => t + ': ' + dt[t]).join('\n');
   return 'Pipeline ' + p.name + ' run (session runs it) — request: «' + req + '»\n'
     + 'Run .claude/pipelines/' + p.name + '.json yourself in this session, doing each stage\'s task in order (stage agent/model are Claude settings; a stage skill means follow that skill). Stages in order:\n' + steps + '\n'
-    + 'Start each stage with a shell command echo "[pl:' + p.name + '/<stage title>]" and end it with echo "[pl-end:' + p.name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.\n'
+    + 'Start each stage with a shell command echo "[pl:' + p.name + '/<stage title>]" and end it with echo "[pl-end:' + p.name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears. Run each marker as its own single-line shell command, never inside a longer script.\n'
     + 'At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.\n'   // ⚠one Codex context holds every stage
     + 'Each stage: the default instruction for the title + the stage "task" + the pipeline "rules" + this request + earlier stage results. Each stage ends with status PASS/FAIL, summary, findings (file/line/text), changed files.\n'
     + 'onFail: redo the goto stage with the findings, then rerun the failing stage — at most max times; after it passes go to "then" if set.\n'

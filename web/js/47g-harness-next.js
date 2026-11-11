@@ -54,7 +54,7 @@ function hnNxBody(id, ctx, proj, guide, pipes, sh){
 }
 // Non-Claude run tail (no Agent tool: one session runs every stage, lit by shell markers). ⚠Same text as the 84l/84j sh branch (tested equal).
 function plShTail(pl){
-  return '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + pl + '/<stage title>]" and end it with echo "[pl-end:' + pl + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
+  return '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + pl + '/<stage title>]" and end it with echo "[pl-end:' + pl + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears. Run each marker as its own single-line shell command, never inside a longer script.'
     + ' At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.'
     + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.';
 }

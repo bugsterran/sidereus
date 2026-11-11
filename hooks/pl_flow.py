@@ -60,6 +60,33 @@ SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash",
          "PowerShell", "Shell", "bash")   # Bash/PowerShell only off cc; PowerShell = Claude Code's Windows shell tool; Shell = Cursor
 # ⚠Same as pl_mark.py MARK; anchored at the command start so `grep "[pl:"` never counts.
 MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl(-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n|]{1,40})(\|fail)?)\]""")
+# --- later-line marker: identical block in pl_mark.py · pl_flow.py (tests compare) ---
+# Later lines count only as `echo`/`printf` of a marker (a bare or `#` line may be doc text); heredoc bodies are skipped.
+LATER = re.compile(r"""^[ \t]*(?:echo|printf)[ \t]+(?=["']?\[pl)""")
+HEREDOC = re.compile(r"""(?<!<)<<(?!<)-?[ \t]*["']?([A-Za-z_][A-Za-z0-9_]*)""")
+
+
+def mark_match(cmd):
+    """MARK at the command start, else the first `echo`/`printf` marker line outside a heredoc body.
+    ⚠pi writes markers as later lines of one command; first marker wins (as on line 1) so `[pl-end:..]` then `[pl:-]`
+    still closes the run."""
+    m = MARK.match(cmd)
+    if m or "\n" not in cmd:
+        return m
+    end = None
+    for i, ln in enumerate(cmd.split("\n")):
+        if end is not None:
+            if ln.strip() == end:
+                end = None
+            continue
+        e = LATER.match(ln) if i else None
+        m = MARK.match(ln[e.end():]) if e else None
+        if m:
+            return m
+        h = HEREDOC.search(ln)
+        end = h.group(1) if h else None
+    return None
+# --- end later-line marker ---
 # pi only: `echo "[pl-skip:...]"` / `[pl-model:...]` / `[pl-agent:...]` at the command start (it has no Bash description).
 DECL_MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl-(?:skip|model|agent):""")
 IDLE_S = 6 * 3600     # a run untouched this long is over; the next tag opens a new one
@@ -1115,7 +1142,7 @@ def _platform(argv):
 def _shell_tag(plat, ti):
     """MARK match of a shell command; on Copilot the bash `description` is the fallback (matched only, never stored)."""
     cmd = _shell_cmd(ti)
-    m = MARK.match(cmd) if cmd else None
+    m = mark_match(cmd) if cmd else None
     if not m and plat == "copilot" and cmd is not None:
         d = ti.get("description")
         m = MARK.match(d) if isinstance(d, str) else None
@@ -1788,7 +1815,7 @@ def _none_clear(ev, now):
         desc = ti.get(FIELD.get(ev.get("tool_name"), "description")) if isinstance(ti, dict) else None
         cmd = _shell_cmd(ti) or ""
         if ev.get("hook_event_name") not in ("PreToolUse", "BeforeTool") or not (isinstance(sid, str) and SID.match(sid)) \
-                or not (TAG.search(desc if isinstance(desc, str) else "") or MARK.match(cmd)):
+                or not (TAG.search(desc if isinstance(desc, str) else "") or mark_match(cmd)):
             return
         p = os.path.join(MARK_DIR, sid + ".none.json")
         d = _none_load(p)
@@ -1938,7 +1965,7 @@ def _commit_close(ev, now):
         #   unrelated commit here, so its next stage was denied as a jump past stages that had run.
         ti = ev.get("tool_input") if isinstance(ev.get("tool_input"), dict) else {}
         desc = ti.get("description") if isinstance(ti.get("description"), str) else ""
-        mk, tg = MARK.match(cmd), TAG.search(desc)
+        mk, tg = mark_match(cmd), TAG.search(desc)
         if "[pl:-]" in desc or (mk and mk.group(2)):
             return
         only = tg.group(1) if tg else (mk.group(3) if mk else None)

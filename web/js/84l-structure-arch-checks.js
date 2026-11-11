@@ -135,7 +135,7 @@ function archChkFixBody(p, c, items, home, sh){
       return '- ' + archChkLv(x.sev) + ' · ' + (archChkRule(x, true) || '?') + ' · ' + x.file + ':' + (parseInt(x.line, 10) || 1)
         + (hp.desc ? ' — ' + hp.desc : '') + (hp.url ? ' (' + hp.url + ')' : ''); }).join('\n')
     + "\nFix the cause, keep behaviour, run the project's tests."
-    + (sh ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + pl + '/<stage title>]" and end it with echo "[pl-end:' + pl + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
+    + (sh ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + pl + '/<stage title>]" and end it with echo "[pl-end:' + pl + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears. Run each marker as its own single-line shell command, never inside a longer script.'
       + ' At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.'
       + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.'
       : '\nTag each stage dispatch description with [pl:' + pl + '/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.');
@@ -166,7 +166,7 @@ function archChkRunBody(p, home, cx, img){   // cx = non-Claude recipient (cand.
     + 'Gate: python3 ' + h + 'scripts/arch_checks.py --verify --last --category security (Windows: py ' + h + 'scripts/arch_checks.py --verify --last --category security)'
     + (img ? '\nInclude images: pass --images to the scanner run (trivy image on each Dockerfile FROM and compose image:).' : '')
     // ⚠No Agent tool outside Claude Code: same stage-marker tail as archDmBody (84j).
-    + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + ARCH_SEC_PL + '/<stage title>]" and end it with echo "[pl-end:' + ARCH_SEC_PL + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears.'
+    + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + ARCH_SEC_PL + '/<stage title>]" and end it with echo "[pl-end:' + ARCH_SEC_PL + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears. Run each marker as its own single-line shell command, never inside a longer script.'
       + ' At each stage start re-read only the files the previous stage wrote; do not rely on earlier stage context.'
       + ' Run all stages back to back in this turn: do not end the turn or report between stages; report once after the last stage.'
       : '\nTag each stage dispatch description with [pl:' + ARCH_SEC_PL + '/<stage title>] (not [pl:-]); a stage you run yourself: Bash description with the same tag.');   // same Claude tail as archDmBody (84j)
