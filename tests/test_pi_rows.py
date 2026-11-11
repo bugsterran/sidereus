@@ -127,5 +127,92 @@ class PiRows(unittest.TestCase):
         self.assertNotIn(MARK, out)
 
 
+
+class ExtOld(unittest.TestCase):
+    """«Old extension» (R1-R4): rev on ext_hook/ext_store, extOld on ext rows. No live files: store and revs patched."""
+    CUR = "0123456789ab"
+
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("ext_hook_pi_rev", os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ext-hooks", "ext_hook.py"))
+        self.hook = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.hook)
+        self.ext = sidereus("ext")
+        self.inst = self.CUR
+        self._ext = dict(st._ext)
+        st._ext.clear()
+        self.p = [mock.patch.object(pi, "ext_rev", lambda tpl=None: self.cur),
+                  mock.patch.object(pi, "installed_rev", lambda: self.inst),
+                  mock.patch.object(st, "_ext_save_locked", lambda: None),
+                  mock.patch.object(st, "_runs_save_locked", lambda: None)]
+        for n, v in {"ext_gone_check": lambda now: None, "_ext_prune_locked": lambda now: None,
+                     "ext_tok_refresh": lambda *a: None, "ext_tok": lambda *a: {}, "ext_side_tok": lambda *a: {},
+                     "plm_of": lambda *a: None, "pl_model": lambda *a: []}.items():
+            self.p.append(mock.patch.object(self.ext, n, v))
+        for p in self.p:
+            p.start()
+        self.cur = self.CUR
+
+    def tearDown(self):
+        for p in self.p:
+            p.stop()
+        st._ext.clear()
+        st._ext.update(self._ext)
+
+    def _put(self, plat="pi", sid="pi-s1", **kw):
+        v = {"cwd": "/w/pi-proj", "state": "think", "firstSeen": NOW, "lastSeen": NOW}
+        v.update(kw)
+        st._ext[(plat, sid)] = v
+
+    def _old(self, sid="pi-s1"):
+        return next(r["extOld"] for r in self.ext.ext_rows() if r["sid"] == sid)
+
+    def test_r1_ext_hook_copies_only_valid_pi_rev(self):
+        ev = {"hook_event_name": "PreToolUse", "session_id": "pi-s1", "tool_name": "read"}
+        out, _raw = self.hook.build("pi", dict(ev, ext_rev=self.CUR))
+        self.assertEqual(out["ext_rev"], self.CUR)
+        for bad in ("0123456789AB", "0123456789a", self.CUR + "\n", 123456789012, ["x"]):
+            out, _raw = self.hook.build("pi", dict(ev, ext_rev=bad))
+            self.assertNotIn("ext_rev", out, bad)
+        out, _raw = self.hook.build("gemini", {"hook_event_name": "BeforeTool", "session_id": "g", "ext_rev": self.CUR})
+        self.assertNotIn("ext_rev", out or {})
+
+    def test_r1_ext_store_revalidates(self):
+        base = {"platform": "pi", "session_id": "pi-s1", "event": "PreToolUse", "ts": NOW}
+        st.ext_ingest(dict(base, ext_rev=self.CUR))
+        self.assertEqual(st._ext[("pi", "pi-s1")]["extRev"], self.CUR)
+        st.ext_ingest(dict(base, ext_rev=self.CUR + "\n"))           # anyone can POST: same shape check as ext_hook
+        self.assertEqual(st._ext[("pi", "pi-s1")]["extRev"], "")
+        st.ext_ingest(dict(base, platform="gemini", ext_rev=self.CUR))
+        self.assertNotIn("extRev", st._ext[("gemini", "pi-s1")])
+
+    def test_r2_old_rev_reload_or_connect(self):
+        self._put(extRev="aaaaaaaaaaaa")
+        self.assertEqual(self._old(), "reload")                       # installed file is current: /reload in pi
+        self.inst = "aaaaaaaaaaaa"
+        self.assertEqual(self._old(), "connect")                      # installed file old too: Connect, then /reload
+        self.inst = None
+        self.assertEqual(self._old(), "connect")
+
+    def test_r3_no_rev_is_old(self):
+        self._put()
+        self.assertEqual(self._old(), "reload")
+
+    def test_r4_same_rev_ended_other_plat_and_no_reference(self):
+        self._put(extRev=self.CUR)
+        self._put(sid="pi-dead", state="gone")
+        self._put(sid="pi-end", ended=True)
+        self._put(plat="gemini", sid="g-1")
+        for sid in ("pi-s1", "pi-dead", "pi-end", "g-1"):
+            self.assertEqual(self._old(sid), "", sid)
+        self._put(sid="pi-old")
+        self.cur = None                                               # template unreadable: never warn without a reference
+        self.assertEqual(self._old("pi-old"), "")
+
+    def test_r4_hookless_row_has_no_chip(self):
+        self.assertEqual(pr._row("pi", {"sid": SID, "cwd": "/w/pi-proj", "start": NOW, "mtime": NOW}, NOW)["extOld"], "")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -60,6 +60,27 @@ class PiRowJs(unittest.TestCase):
         self.assertNotIn("docs/HOOKS.md", pi)
         self.assertIn("docs/HOOKS.md", cx)              # other CLIs keep the manual hook docs
 
+    def test_r2_r3_old_extension_chip_tooltips(self):
+        rl, cn = run("const r = o => sessIdRow(Object.assign({project: 'p', plat: 'pi', state: 'idle'}, o));"
+                     "console.log(JSON.stringify([r({extOld: 'reload'}), r({extOld: 'connect'})]));")
+        for h in (rl, cn):
+            self.assertIn('class="sz snohk"', h)
+            self.assertIn(">Old extension</span>", h)
+            self.assertNotIn("Hooks not connected", h)
+        self.assertIn("run /reload in pi", rl)
+        self.assertNotIn("pi Connect", rl)
+        self.assertIn("Settings › Diagnostics › pi Connect, then /reload", cn)
+
+    def test_r4_no_chip_same_rev_and_unconnected_unchanged(self):
+        same, miss, bad, roll = run(
+            "const r = o => sessIdRow(Object.assign({project: 'p', plat: 'pi', state: 'idle'}, o));"
+            "console.log(JSON.stringify([r({extOld: ''}), r({}), r({extOld: '<x>'}), r({rollout: true, state: 'unknown'})]));")
+        for h in (same, miss, bad):
+            self.assertNotIn("Old extension", h)
+            self.assertNotIn("snohk", h)
+        self.assertIn(">Hooks not connected</span>", roll)
+        self.assertNotIn("Old extension", roll)
+
 
 if __name__ == "__main__":
     unittest.main()

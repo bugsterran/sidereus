@@ -69,7 +69,7 @@ class DemoTest(unittest.TestCase):
         self.assertEqual(set(st), STATE_KEYS)
         self.assertEqual(st["build"], "abc123def456")      # same as PAGE_BUILD, or the «new version» toast shows
         self.assertEqual([st[k] for k in ("saver", "saverView", "saverSwitch")], [None] * 3)   # saver hook is not shipped
-        self.assertEqual(len(st["sessions"]), 9)              # 6 Claude + Gemini + hook-less Cursor/Copilot
+        self.assertEqual(len(st["sessions"]), 10)             # 6 Claude + Gemini + hook-fed pi + hook-less Cursor/Copilot
         self.assertEqual([s["plat"] for s in st["sessions"]].count("gm"), 1)
         self.assertEqual(st["extUsage"]["gm"]["tok"], sum(st["extUsage"]["gm"][k] for k in ("in", "out", "cache", "thought")))
         self.assertEqual({s["state"] for s in st["sessions"]}, {"think", "tool", "ask", "wait", "done", "unknown"})
@@ -91,7 +91,7 @@ class DemoTest(unittest.TestCase):
         out = self.get("/api/hooks/connect")
         self.assertTrue(out["ok"])
         self.assertEqual([(x["plat"], x["state"], x["can"]) for x in out["plats"]],
-                         [("cursor", "missing", True), ("copilot", "missing", True), ("pi", "missing", True)])
+                         [("cursor", "missing", True), ("copilot", "missing", True), ("pi", "connected", False)])
         hc = sidereus("hook_connect")
         self.assertTrue(all(set(x) == {"plat", "name", "state", "file", "can", "why", "approve"} for x in out["plats"]))
         hp = sidereus("hook_connect_pi")    # the live route appends hook_connect_pi.row() after hc.listing()

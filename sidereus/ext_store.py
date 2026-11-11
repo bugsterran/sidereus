@@ -396,6 +396,8 @@ def ext_ingest(req):
             v["parent"] = par
         if _agent_ok(agn := str(req.get("agent_name") or "").strip()):   # subagent name only (child label), never its task
             v["agent"] = agn
+        if plat == "pi":   # ⚠anyone can POST: 12-hex rev only; an event without one (older extension) stores ""
+            v["extRev"] = r if isinstance(r := req.get("ext_rev"), str) and plat_pi.REV_HEX.fullmatch(r) else ""
         for src, dst in (("cwd", "cwd"), ("model", "model"),
                          ("transcript_path", "transcript_path"), ("turn_id", "turnId")):
             if req.get(src):

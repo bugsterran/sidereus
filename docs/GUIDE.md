@@ -169,6 +169,7 @@ The Timeline is the evidence behind a verdict: what each agent actually did, and
 - Two live sessions in one folder each show «n in folder»: they are separate sessions, and cost and To-do are folder totals.
 - A Codex session without hooks shows «Hooks not connected» and only «Last activity N m ago» ([HOOKS.md](HOOKS.md)).
 - A pi session is read from its session file under `~/.pi/agent/sessions`: it shows in the list while the file changed in the last 10 minutes or pi still runs in that folder, with its tokens, cost, model and tool names on the Timeline. Until its hooks are connected the state reads «Unknown» and the row shows «Hooks not connected»; «Connect» in Settings › «Diagnostics» installs the pi extension and the Sidereus MCP entry. New mail wakes an idle pi session through that extension.
+- A pi session running an older Sidereus extension than the one Sidereus ships shows an "Old extension" chip. Its tooltip says to run `/reload` in pi, or, when the installed file is old too, to Connect in Settings › Diagnostics first and then `/reload`.
 - A detected CLI without Sidereus hooks puts a «CLI hooks not connected: Cursor · Copilot» chip in the top bar. Click it for that CLI's «Connect» preview in Settings › «Diagnostics»; nothing is written until «Apply». The chip clears once connected; «Later» drops that CLI from it.
 
 ⚠ Orca opens the exact tab only with its CLI installed (Orca › Settings › General); otherwise only the app comes forward.

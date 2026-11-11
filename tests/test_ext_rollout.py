@@ -82,6 +82,7 @@ class RolloutRows(unittest.TestCase):
         self.assertEqual((r["cwd"], r["model"], r["project"]), ("/w/cxproj", "gpt-5.1-codex", "cxproj"))
         self.assertEqual((r["blocked"], r["otel"], r["pid"], r["ageSec"]), ("", False, 0, 60))
         self.assertEqual(r["tok"], 120)
+        self.assertEqual(r["extOld"], "")       # R4: no hook events, no rev to compare
         for k in ("plm", "plrun"):
             self.assertNotIn(k, r)
 

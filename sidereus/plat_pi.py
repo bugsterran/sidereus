@@ -8,12 +8,14 @@ Message content, tool arguments, tool output, thinking, summaries, session names
 in the same cwd keeps its newest file listed past the window and gives the row its pid (ext_presence._pi_procs).
 """
 import glob
+import hashlib
 import json
 import math
 import os
 import re
 import threading
 
+from sidereus import config   # module access: tests patch `config.ASSET_DIR`
 from sidereus.ident import _proj_name, _real_home
 from sidereus.transcript import iso_epoch
 
@@ -26,6 +28,10 @@ TOOLS_N = 50             # tool names kept per session (timeline label, work pan
 _TOOL = re.compile(r"^[A-Za-z0-9_.:-]{1,40}$")
 _lock = threading.Lock()
 _cache = {}              # path -> ((size, mtime), parsed | None)
+REV_HEX = re.compile(r"[0-9a-f]{12}")   # extension rev, fullmatch only (same shape as ext_hook.build)
+_REV_LINE = re.compile(rb'^const REV: string = "([0-9a-f]{12})";', re.M)
+REV_READ_MAX = 256 << 10  # bytes read from the installed extension when looking for its rev
+_rev_memo = {}           # (kind, path) -> ((mtime, size), rev | None)
 
 
 def root():
@@ -249,3 +255,40 @@ def who_5h(start, now):
             e["tok"] += n
             e["sids"][r["sid"]] = e["sids"].get(r["sid"], 0) + n
     return out
+
+
+def _rev_of(kind, path, fn):
+    """Memoised fn(bytes) for `path` keyed on (mtime, size); None when missing or unreadable."""
+    try:
+        st = os.stat(path)
+        key = (st.st_mtime, st.st_size)
+        with _lock:
+            c = _rev_memo.get((kind, path))
+        if c and c[0] == key:
+            return c[1]
+        with open(path, "rb") as f:
+            r = fn(f.read(REV_READ_MAX + 1) if kind == "inst" else f.read())
+    except OSError:
+        return None
+    with _lock:
+        _rev_memo[(kind, path)] = (key, r)
+    return r
+
+
+def ext_rev(tpl=None):
+    """Current extension rev: sha256(raw template bytes)[:12], or None when the template is unreadable."""
+    p = tpl or os.path.join(config.ASSET_DIR, "ext-hooks", "pi-extension.ts")
+    return _rev_of("tpl", p, lambda b: hashlib.sha256(b).hexdigest()[:12])
+
+
+def installed_rev():
+    """REV of the installed `<root>/extensions/sidereus.ts`, or None (missing, unreadable, no rev, outside root)."""
+    p = os.path.join(root(), "extensions", "sidereus.ts")
+    # ⚠Same rule as path_ok: the real path must stay under the real agent dir; a symlinked root is resolved.
+    if not os.path.realpath(p).startswith(os.path.realpath(root()) + os.sep) or not os.path.isfile(p):
+        return None
+
+    def _find(b):
+        m = _REV_LINE.search(b[:REV_READ_MAX])
+        return m.group(1).decode("ascii") if m else None
+    return _rev_of("inst", p, _find)

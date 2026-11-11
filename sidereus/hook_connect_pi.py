@@ -76,6 +76,10 @@ def _render():
         return None   # ⚠the extension spawns PY with no shell: only one absolute executable path works
     # ⚠json.dumps, not hc._q: a path with a quote or backslash must stay one valid TS string literal
     t = t.replace('"<PYTHON>"', json.dumps(py)).replace('"<MAILBOX_CODE_DIR>"', json.dumps(hc._asset()))
+    # Rev of these template bytes: an installed copy of an older template no longer equals `want` (state "partial").
+    rev = plat_pi.ext_rev(p)
+    if rev:
+        t = t.replace('"<SIDEREUS_REV>"', json.dumps(rev))
     return t.encode("utf-8")
 
 

@@ -264,6 +264,12 @@ Cause: pi has no hook config; events come only from a TypeScript extension it lo
 ⚠An extension load error is silent: pi keeps running and the session falls back to the presence row (state «Unknown»), so a broken extension looks like «not connected».
 ⚠Never add a `project_trust` handler to the extension.
 
+### pi keeps running an old extension after Connect (`sidereus/plat_pi.py` `ext_rev` · `sidereus/ext.py` `_ext_old`)
+Cause: pi loads `extensions/sidereus.ts` once at start; a new template (or a re-Connect) changes nothing in a running session until `/reload`, and a stale installed copy looked «connected».
+⇒ Connect renders `REV` = sha256(template bytes)[:12]; each event carries it (`ext_rev`, 12 hex, checked in `ext_hook.build` and again in `ext_store.ext_ingest`). A live pi hook row whose rev is missing or differs gets `extOld` «reload» (installed file current) or «connect» (installed file old too).
+⚠No reference rev (template unreadable) means no chip; a rev-less event is an older extension, never «unknown = fine».
+⚠Display only: never reinstall the extension or send `/reload` from Sidereus.
+
 ### pi wake = extension turn, waiter is a child of pi (`ext-hooks/pi-extension.ts` · `ext-hooks/pi_wake.py`)
 Cause: pi has no hook that can resume an idle session; only extension code inside pi can start a turn (`pi.sendUserMessage`).
 ⇒ One `pi_wake.py` child (armed at `session_start`/`agent_settled`, stopped on `input`/`before_agent_start`/`agent_start`/`session_shutdown`) sends only when idle with nothing queued; only an «ok» ack marks the mail surfaced. An explicit `pi:<cwd>` id wins over the Claude-id clash guard (`gemini_id`); the derived `<folder>-pi` stays guarded.

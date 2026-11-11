@@ -185,10 +185,14 @@ function sessIdRow(x){
     : '<span class="sz snohk" title="'+esc(x.plat === 'pi' ? TV({msg: "State read from {name}'s record file; connect hooks — Settings › Diagnostics › Connect", vars: {name: platName(x.plat)}})
       : TV({msg: "State read from {name}'s record file; set up hooks — docs/HOOKS.md", vars: {name: platName(x.plat)}}))+'">'
       + esc(T('Hooks not connected'))+'</span>';
+  // R2/R3: x.extOld ("reload" | "connect") = the running pi extension's rev differs from Sidereus'; display only.
+  const exto = x.extOld === 'reload' || x.extOld === 'connect'
+    ? '<span class="sz snohk" title="'+esc(x.extOld === 'reload' ? T('Loaded Sidereus extension is older than the installed one — run /reload in pi')
+      : T('Sidereus extension is out of date — Settings › Diagnostics › pi Connect, then /reload'))+'">'+esc(T('Old extension'))+'</span>' : '';
   const g = c => h => '<span class="sxg '+c+'">'+h+'</span>';
   const td = typeof stodoChip === 'function' ? stodoChip(x) : '';   // 40c; guarded: tests load this file alone
   const fc = typeof sessFolderChip === 'function' ? sessFolderChip(x, sessFolderN.get(sessFolderKey(x))) : '';   // guarded: tests load sessIdRow alone
-  let id = '<span class=sp title="'+esc(x.project)+'">'+esc(x.project)+'</span>'+fc+sessBranchHtml(x)+acctChip(x, 'sacb')+nohk+sessGitChip(x);
+  let id = '<span class=sp title="'+esc(x.project)+'">'+esc(x.project)+'</span>'+fc+sessBranchHtml(x)+acctChip(x, 'sacb')+nohk+exto+sessGitChip(x);
   let us = sessUsage(x), wk = sessWorkBadges(x);
   const ac = sessActs(x), acg = ac ? g('sxac')(ac) : '';
   // ⚠R3: «To-do n» and the action group never wrap alone — they are glued to the end of the last non-empty group

@@ -34,7 +34,7 @@ GEM_ROW = {
     "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": "gemini-2.5-pro", "win": 0, "winSrc": "", "winN": 0,
     "git": "", "state": "wait", "blocked": "", "otel": True, "otelEv": "wait", "otelAt": 0,
     "err": False, "plat": "gm", "tok": 1_284_600, "tokSplit": {"in": 402_100, "out": 61_300, "cache": 779_800, "thought": 41_400},
-    "estCost": 1.63, "costMiss": 0, "hooksOff": False,   # gemini-2.5-pro rates on tokSplit, all requests under 200k
+    "estCost": 1.63, "costMiss": 0, "hooksOff": False, "extOld": "",   # gemini-2.5-pro rates on tokSplit, all requests under 200k
 }
 
 
@@ -46,17 +46,17 @@ def _nohook_row(plat, kind, sid, project, model, run):
             "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": model, "win": 0, "winSrc": "", "winN": 0,
             "git": "", "state": "unknown", "blocked": "", "otel": False, "otelEv": "", "otelAt": 0,
             "err": False, "plat": plat, "tok": 0, "tokSplit": {"in": 0, "out": 0, "cache": 0, "thought": 0},
-            "estCost": None, "costMiss": 0, "goneWhy": "", "pid": 0, "rollout": True, "hooksOff": False}
+            "estCost": None, "costMiss": 0, "goneWhy": "", "pid": 0, "rollout": True, "hooksOff": False, "extOld": ""}
 
 
 CU_ROW = _nohook_row("cu", "cursor", "5d2c8e14-7a3f-4b09-8e61-c4f0a2b9d375", "acme-web", "gpt-5", 12)
 CP_ROW = _nohook_row("cp", "copilot", "9a4f0b37-2e6d-4c18-b5a2-1f7e3c8d6b04", "billing-api", "claude-sonnet-4.5", 7)
 CP_ROW.update(tok=214_300, tokSplit={"in": 18_400, "out": 9_700, "cache": 186_200, "thought": 0})   # from its usage records
-# Demo GET /api/hooks/connect rows (hook_connect.listing() shape): both CLIs installed, hooks missing.
+# Demo GET /api/hooks/connect rows (hook_connect.listing() shape): Cursor/Copilot hooks missing, pi connected.
 HOOKS_CONNECT = [
     {"plat": "cursor", "name": "Cursor", "state": "missing", "file": "~/.cursor/hooks.json", "can": True, "why": "", "approve": ""},
     {"plat": "copilot", "name": "Copilot", "state": "missing", "file": "~/.copilot/hooks/sidereus.json", "can": True, "why": "", "approve": ""},
-    {"plat": "pi", "name": "Pi", "state": "missing", "file": "~/.pi/agent/mcp.json", "can": True, "why": "", "approve": ""},   # hook_connect_pi.row()
+    {"plat": "pi", "name": "Pi", "state": "connected", "file": "~/.pi/agent/mcp.json", "can": False, "why": "", "approve": ""},   # installed file current (demo PI_ROW)
 ]
 # Demo «To-do» store (todo._ui items): repo -> [(state " "/"~"/"x", one-line label, key of the session that started it)].
 DEMO_TODO = {"acme-web": [("~", "Inline errors on the address form", "web"), (" ", "Coupon edge cases in the cart total", ""), ("x", "Split checkout step components", "")],
@@ -79,7 +79,7 @@ def hooks_connect_dry(plat):
     return {"ok": True, "diff": "\n".join(diff) + "\n", "base": "", "adds": len(evs)}
 
 
-# Synthetic Codex CLI usage (timeline row + extUsage.cx with plan windows); no session row, so the drawer count stays 9.
+# Synthetic Codex CLI usage (timeline row + extUsage.cx with plan windows); no session row, so the drawer count stays 10.
 CX = {"sid": "3c9e5a71-8d20-4f6b-a1e4-7b0c2d9f5e38", "id": "3c9e5a71", "model": "gpt-5-codex",
       "tokSplit": {"in": 318_400, "out": 42_700, "cache": 1_106_200, "thought": 0}, "estCost": 0.87}
 CX["tok"] = sum(CX["tokSplit"].values())

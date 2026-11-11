@@ -1,6 +1,6 @@
 // Sidereus extension for pi (https://pi.dev): forwards session/tool events to the Sidereus hook scripts.
-// Installed by Settings › "Diagnostics" › "Connect" (sidereus/hook_connect_pi.py renders the two placeholders below).
-// ⚠Metadata only: payloads carry session id, cwd, event and tool name; only the bash command goes to pl_mark/pl_flow.
+// Installed by Settings › "Diagnostics" › "Connect" (sidereus/hook_connect_pi.py renders the three placeholders below).
+// ⚠Metadata only: payloads carry session id, cwd, event, tool name and the extension rev; only the bash command goes to pl_mark/pl_flow.
 //   Prompt text and tool results are never sent.
 // ⚠Never throws: every handler is wrapped, a missing Python or a slow script only drops that one event.
 // Mail wake: one ext-hooks/pi_wake.py child per instance waits on the mailbox (no model turn while waiting) and asks
@@ -10,6 +10,9 @@ import * as path from "node:path";
 
 const PY: string = "<PYTHON>";
 const CODE: string = "<MAILBOX_CODE_DIR>";
+// Extension rev (sha256[:12] of the template, rendered by hook_connect_pi): Sidereus compares it to flag an old copy.
+const REV: string = "<SIDEREUS_REV>";
+const REV_RE = /^[0-9a-f]{12}$/;
 const TIMEOUT_MS = 5000;
 const OUT_MAX = 64 * 1024;
 // Runaway cap: wakes in a row without a typed prompt (same env and default as the Codex wake).
@@ -91,6 +94,7 @@ function base(ctx: any, event: string): any {
   try { p.session_id = ctx.sessionManager.getSessionId(); } catch (_e) { /* unknown */ }
   try { p.cwd = ctx.cwd; } catch (_e) { /* unknown */ }
   if (AGENT) p.agent_name = AGENT;
+  if (REV_RE.test(REV)) p.ext_rev = REV;   // ⚠an unrendered template sends no rev
   return p;
 }
 

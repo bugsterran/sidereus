@@ -204,5 +204,66 @@ class R4Robust(PiBase):
         self.assertEqual(pi.scan(0.0), [])
 
 
+
+class R1Rev(PiBase):
+    """ext_rev (sha256[:12] of the template) and installed_rev (REV read from extensions/sidereus.ts)."""
+
+    def setUp(self):
+        super().setUp()
+        pi._rev_memo.clear()
+        self.addCleanup(pi._rev_memo.clear)
+        self.tpl = os.path.join(self.tmp, "pi-extension.ts")
+        with open(self.tpl, "wb") as f:
+            f.write(b'const REV: string = "<SIDEREUS_REV>";\n')
+        self.inst = os.path.join(self.root, "extensions", "sidereus.ts")
+        os.makedirs(os.path.dirname(self.inst))
+
+    def put(self, text, path=None):
+        with open(path or self.inst, "w", encoding="utf-8") as f:
+            f.write(text)
+
+    def test_r1_ext_rev_is_sha_prefix_and_follows_edits(self):
+        import hashlib
+        want = hashlib.sha256(b'const REV: string = "<SIDEREUS_REV>";\n').hexdigest()[:12]
+        self.assertEqual(pi.ext_rev(self.tpl), want)
+        self.assertTrue(pi.REV_HEX.fullmatch(want))
+        self.put("// changed template, other size\n", self.tpl)
+        self.assertNotEqual(pi.ext_rev(self.tpl), want)
+
+    def test_r1_ext_rev_default_path_and_missing(self):
+        os.makedirs(os.path.join(self.tmp, "ext-hooks"))
+        shutil.copy(self.tpl, os.path.join(self.tmp, "ext-hooks", "pi-extension.ts"))
+        with mock.patch.object(pi.config, "ASSET_DIR", self.tmp):
+            self.assertEqual(pi.ext_rev(), pi.ext_rev(self.tpl))
+        self.assertIsNone(pi.ext_rev(os.path.join(self.tmp, "nope.ts")))
+
+    def test_r2_installed_rev(self):
+        self.assertIsNone(pi.installed_rev())                       # missing
+        self.put('// x\nconst REV: string = "0123456789ab";\n')
+        self.assertEqual(pi.installed_rev(), "0123456789ab")
+        self.put('const REV: string = "<SIDEREUS_REV>";\n')     # unrendered / pre-rev copy
+        self.assertIsNone(pi.installed_rev())
+        self.put('const REV: string = "0123456789AB";\n')
+        self.assertIsNone(pi.installed_rev())
+
+    def test_r2_installed_rev_bounded_read(self):
+        with mock.patch.object(pi, "REV_READ_MAX", 64):
+            self.put("/" * 100 + '\nconst REV: string = "0123456789ab";\n')
+            self.assertIsNone(pi.installed_rev())
+
+    def test_r2_installed_rev_symlink_out_of_root_refused(self):
+        out = os.path.join(self.tmp, "elsewhere.ts")
+        self.put('const REV: string = "0123456789ab";\n', out)
+        os.symlink(out, self.inst)
+        self.assertIsNone(pi.installed_rev())
+
+    def test_r2_installed_rev_symlinked_root_resolved(self):
+        self.put('const REV: string = "0123456789ab";\n')
+        alias = os.path.join(self.tmp, "alias")
+        os.symlink(self.root, alias)
+        with mock.patch.object(pi, "root", lambda: alias):
+            self.assertEqual(pi.installed_rev(), "0123456789ab")
+
+
 if __name__ == "__main__":
     unittest.main()

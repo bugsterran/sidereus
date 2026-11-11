@@ -137,6 +137,7 @@ def _row(plat, c, now):
         "kind": plat, "goneWhy": "", "rollout": True,
         "pid": c["pid"] if pi and isinstance(c.get("pid"), int) and c["pid"] > 1 else 0,   # running pi CLI, for «To terminal»
         "hooksOff": plat == "copilot" and plat_copilot.hooks_disabled(cwd),
+        "extOld": "",   # no hook events: no rev to compare (R4)
     })
     if pi:   # the pi mailbox id (`pi:<cwd>` or <folder>-pi), never the Claude id; "" made room members show the Claude logo
         row["mbox"], row["mboxSrc"] = mbox_pi(cwd)

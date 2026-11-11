@@ -188,6 +188,24 @@ class PiExtension(unittest.TestCase):
         self.assertEqual(calls[0]["stdin"], {"session_id": "sess-0001", "cwd": "/tmp/proj",
                                              "hook_event_name": "PreToolUse", "tool_name": "read"})
 
+    def _with_rev(self, rev):
+        with open(self.ext, encoding="utf-8") as f:
+            src = f.read()
+        self.assertEqual(src.count('"<SIDEREUS_REV>"'), 1)
+        with open(self.ext, "w", encoding="utf-8") as f:
+            f.write(src.replace('"<SIDEREUS_REV>"', json.dumps(rev)))
+
+    def test_r1_rendered_rev_rides_on_events(self):
+        self._with_rev("0123456789ab")
+        _out, calls = self.drive("read", 1)
+        self.assertEqual(calls[0]["stdin"], {"session_id": "sess-0001", "cwd": "/tmp/proj", "ext_rev": "0123456789ab",
+                                             "hook_event_name": "PreToolUse", "tool_name": "read"})
+
+    def test_r1_bad_rev_sends_nothing(self):
+        self._with_rev("0123456789AB")   # not 12 lowercase hex: same as an unrendered template
+        _out, calls = self.drive("read", 1)
+        self.assertNotIn("ext_rev", calls[0]["stdin"])
+
     def test_before_agent_start_sets_section(self):
         out, calls = self.drive("prompt", 5)
         self.assertEqual(out["sections"], {"sidereus": "INVITE\n\nBRIEF"})

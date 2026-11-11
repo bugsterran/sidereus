@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Platforms: new mail wakes an idle pi session through the Sidereus pi extension (one turn with the mail metadata only, sent only while pi is idle); no model turn runs while it waits.
 - Sessions: two live sessions in one folder each show a muted «n in folder» chip; its tooltip says cost and To-do are folder totals.
 - Sessions: pi subagent children hang under their pi parent row with the agent name as label (re-run «Connect» for pi).
+- Sessions: a running pi session whose loaded Sidereus extension is older than the current one shows an «Old extension» chip; its tooltip says to run `/reload` in pi, or to «Connect» pi in Settings › «Diagnostics» first when the installed file is old too.
 - Sessions: the work-log popup shows steps and replies for pi sessions, read from the pi session file.
 - Docs: a pi migration pipeline template (`docs/examples/pipelines/migrate-pi.json`, stages Inventory, Map, Convert, Verify, Report) keeps the Claude Code files as the source and gives pi symlinks or generated copies; linked from the pi section of HOOKS (untested on pi).
 - Security checks: osv-scanner findings get a reachability verdict — «Unused (verified)» (collapsed, out of the counts), «Invalidated» with the hit file:line, or «Unjudged»; the builtin `osv-triage` pipeline reads the advisory preconditions of unjudged ids and appends fixed-string usage rules (source URL and date) through `scripts/osv_rules.py`.

@@ -37,6 +37,9 @@ WF_AGENTS = [("Design", "Spec the search result page", "done", 28, 23, 1_800_000
 CART_BGS = [{"lab": "npm run dev", "min": 41}, {"lab": "npm test -- --watch cart", "min": 18}]
 CART_BG_IDLE = {"n": 2, "idle": 1, "max": 1500}
 CART_BG_LONG = {"n": 2, "long": 1, "max": 41 * 60}   # `npm run dev` open 41 min
+PI_SID = _uuid(random.Random(SEED + 31))   # hook-fed pi row (ext.py ext_rows key set), extension older than the template
+PI_ROW = dict(GEM_ROW, id=PI_SID[:8], sid=PI_SID, project="acme-web", kind="pi", plat="pi",
+              model="anthropic/claude-sonnet-4-5", state="tool", otelEv="tool", tool="Bash", targ="", goneWhy="", pid=0, extOld="reload")
 # Agent team led by the billing session (agents.team_info shape).
 TEAM = {"members": [{"name": "api-dev", "st": "run", "model": "sonnet-5", "tsub": "Retry queue for webhooks", "unread": 0},
                     {"name": "reviewer", "st": "done", "model": "opus-5", "tsub": "", "unread": 1},
@@ -343,6 +346,7 @@ class World(_WorldPanels, _WorldGit):
                 **({"acct": "work", "acctDir": "/home/demo/.claude-work"} if s["k"] in ("docs", "search") else {})}))
         sessions.append(dict(GEM_ROW, cwd=REPOS["docs-site"][0], ageSec=140))   # one external CLI (Gemini) row
         sessions.append(dict(CU_ROW, cwd=REPOS["acme-web"][0], ageSec=310))   # hook-less Cursor / Copilot rows
+        sessions.append(dict(PI_ROW, cwd=REPOS["acme-web"][0], ageSec=45))   # hook-fed pi row, «Old extension»
         sessions.append(dict(CP_ROW, cwd=REPOS["billing-api"][0], ageSec=520))
         acks = {}
         names = [s["mbox"] for s in self.sess]

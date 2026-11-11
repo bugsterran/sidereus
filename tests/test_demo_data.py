@@ -98,6 +98,23 @@ class SameKeysAsRealBuilders(_Patch):
         self.assertEqual(set(dd.GEM_ROW["tokSplit"]), set(real["tokSplit"]))
         self.assertEqual(set(dd.GEM_ROW["runmin"]), set(real["runmin"]))
 
+    def test_pi_row_matches_ext_rows(self):
+        # R2 demo: a hook-fed pi row with an old extension; same key set as the real builder, chip value in range.
+        now = time.time()
+        self.patch(ext, "_ext", {("pi", "p-sid-1"): {"cwd": "/w/p", "state": "tool", "firstSeen": now - 60, "lastSeen": now}})
+        for n, v in {"ext_gone_check": lambda now: None, "_ext_prune_locked": lambda now: None,
+                     "ext_tok_refresh": lambda *a: None, "ext_tok": lambda *a: {}}.items():
+            self.patch(ext, n, v)
+        self.patch(ext.plat_pi, "ext_rev", lambda tpl=None: "0123456789ab")
+        self.patch(ext.plat_pi, "installed_rev", lambda: "0123456789ab")
+        (real,) = ext.ext_rows()
+        self.assertEqual(real["extOld"], "reload")
+        mine = [r for r in self.world().state()["sessions"] if r["plat"] == "pi"]
+        self.assertEqual(len(mine), 1)
+        self.assertEqual(set(mine[0]), set(real))
+        self.assertEqual(mine[0]["extOld"], "reload")
+        self.assertEqual(dd.GEM_ROW["extOld"], "")
+
     def _work_env(self):
         d = tempfile.mkdtemp(prefix="sidereus-demo-work-")
         self.addCleanup(shutil.rmtree, d, True)

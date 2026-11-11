@@ -517,6 +517,10 @@ servers to `<agent dir>/mcp.json` (mailbox through `gemini_mailbox_mcp.sh pi`; n
     `pi:<cwd>` id is used even then (a Claude session on that id wakes on the same mail).
   - ⚠The installed `sidereus.ts` is a rendered copy: it updates only through Settings › «Diagnostics» › «Connect»,
     then restart pi or run `/reload`.
+- Every event carries the extension's version (`rev`). When a running session's `rev` differs from the one Sidereus
+  ships, or is missing (an older extension), its row shows an "Old extension" chip. The tooltip says what to do: run
+  `/reload` in pi when the installed file is already current, otherwise Connect in Settings › Diagnostics first.
+  The chip is display only; Sidereus never reinstalls the extension or reloads pi.
 - Every hook-script call has a 5 s timeout (the mail waiter has none) and never throws; a missing Python only drops that event.
 
 #### Migrating a Claude Code setup

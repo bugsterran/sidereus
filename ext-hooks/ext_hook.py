@@ -169,6 +169,10 @@ def build(platform, data, event_override=None):
     name = data.get("agent_name")
     if isinstance(name, str) and 0 < len(name) <= 64 and all(c.isascii() and (c.isalnum() or c in "._-") for c in name):
         out["agent_name"] = name
+    # pi extension rev (12 hex, fixed at load): the viewer flags an old extension; any other value is dropped.
+    rev = data.get("ext_rev")
+    if platform == "pi" and isinstance(rev, str) and len(rev) == 12 and all(c in "0123456789abcdef" for c in rev):
+        out["ext_rev"] = rev
     pid, start, why = cli_pid_ex()
     if pid:
         out["pid"] = pid

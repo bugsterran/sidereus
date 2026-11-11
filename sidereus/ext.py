@@ -13,6 +13,7 @@ from sidereus import live_probe   # module access: `_ps_snap_cache` is read at c
 from sidereus.agents import plm_of
 from sidereus.pl_runs import pl_act, pl_model
 from sidereus import plat_copilot   # module access: tests patch `plat_copilot.root`
+from sidereus import plat_pi   # module access: tests patch `plat_pi.ext_rev` / `installed_rev`
 # Re-exported: chat_server, timeline, history import these from `sidereus.ext`.
 # ⚠Patch store internals (`_ext_save_locked`, `_runs_save_locked`, `EXT_FILE`/`EXT_RUNS_FILE`, `_pid_start`) on `ext_store`.
 from sidereus.ext_store import (PLAT_MODS, EXT_PLAT, EXT_EV_N, EXT_RATE_WIN, _ext_lock, _ext,
@@ -188,7 +189,7 @@ def ext_rollout_rows(now=None):
                 "estCost": tk.get("cost"), "costMiss": tk.get("costMiss", 0),
                 "ageSec": max(0, int(now - last)),
                 "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
-                "kind": "codex", "goneWhy": "", "pid": 0, "rollout": True, "hooksOff": False,
+                "kind": "codex", "goneWhy": "", "pid": 0, "rollout": True, "hooksOff": False, "extOld": "",
             })
             row["mbox"], row["mboxSrc"] = mbox_codex(cwd)
             rows.append(row)
@@ -247,6 +248,17 @@ def _stop_after(v, t):
                    for e in (v.get("ev") or []))
     except (TypeError, ValueError):
         return False
+
+
+def _ext_old(plat, v, dead):
+    """«Old extension» for a live pi hook row: "" (current, not pi, ended), "reload" (installed file current) or "connect".
+    ⚠No reference rev (template unreadable) means no warning; an event without a rev is an older extension (R3)."""
+    if plat != "pi" or dead or v.get("goneWhy"):
+        return ""
+    cur = plat_pi.ext_rev()
+    if not cur or v.get("extRev") == cur:
+        return ""
+    return "reload" if plat_pi.installed_rev() == cur else "connect"
 
 
 def ext_rows():
@@ -319,6 +331,7 @@ def ext_rows():
                 "goneWhy": "" if dead else (v.get("goneWhy") or ""),
                 "pid": v.get("pid") if isinstance(v.get("pid"), int) and not dead else 0,   # hook-reported CLI pid, for «To terminal»
                 "hooksOff": False,        # hooks fired, so they are on; same key set as rollout rows
+                "extOld": _ext_old(plat, v, dead),   # pi only: "reload" | "connect" | ""
             })
             if plat == "codex":   # Codex hooks log in under their own <folder>-codex id
                 row["mbox"], row["mboxSrc"] = mbox_codex(cwd)

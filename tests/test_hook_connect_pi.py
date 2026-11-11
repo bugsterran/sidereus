@@ -202,6 +202,21 @@ class HookConnectPi(unittest.TestCase):
         self.assertTrue(out["backup"].endswith("pi-sidereus.ts"))
         self.assertEqual(HP.row()[0]["state"], "connected")
 
+    def test_r2_rev_rendered_and_old_install_partial(self):
+        PL = sidereus("plat_pi")
+        PL._rev_memo.clear()
+        self.addCleanup(PL._rev_memo.clear)
+        with open(self.tpl, "w", encoding="utf-8") as f:
+            f.write(TPL_TEXT + 'const REV: string = "<SIDEREUS_REV>";\n')
+        rev = hashlib.sha256((TPL_TEXT + 'const REV: string = "<SIDEREUS_REV>";\n').encode()).hexdigest()[:12]
+        self._apply()
+        with open(self.files["ts"], encoding="utf-8") as f:
+            self.assertIn('const REV: string = "%s";' % rev, f.read())
+        self.assertEqual(HP.row()[0]["state"], "connected")
+        with open(self.tpl, "a", encoding="utf-8") as f:
+            f.write("// next version\n")                   # template moved on: the installed copy is now old
+        self.assertEqual((HP.row()[0]["state"], HP.row()[0]["can"]), ("partial", True))
+
     def test_foreign_mailbox_entry_not_connected(self):
         self._apply()
         d = json.loads(self._mcp())
