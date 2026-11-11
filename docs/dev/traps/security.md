@@ -114,3 +114,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ «unused» only when every file was read and no rule pattern hit; any incomplete scan is «none» (Unjudged). Any hit = «Invalidated».
   - ⇒ Rules are written only by the osv-triage pipeline through `osv_rules.py --append`; ids with no code signal get no rule.
   - ⚠Never map an incomplete or failed grep to «unused». A hit carries file:line only — never the matched line or pattern context.
+- **osv «Unused» from the `--no-tests` copy** (`scripts/arch_checks.py` `run`): the usage grep read the pruned copy while osv-scanner read the full tree, so a use only under tests/ became «unused» and left the counts, title and history — the same commit got a different verdict per flag.
+  - ⇒ `OU.apply(src, items)`: the grep reads the full export, the tree osv-scanner judged (`test_osv_usage_greps_full_tree`).
+  - ⚠Dependency results never depend on `--no-tests`; only gitleaks · semgrep · bandit read the pruned copy.

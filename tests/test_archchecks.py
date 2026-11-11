@@ -235,6 +235,13 @@ class NoTestsTest(Tmp):
             j2 = dict(self.j(), tests_excluded=bad)
             self.assertEqual(AC.checks_errors(j2, self.repo, C1, SC.SEC_IDS), ["tests_excluded"], bad)
 
+    def test_osv_usage_greps_full_tree(self):   # a test-only use must not turn «unused» under --no-tests
+        roots = []
+        with mock.patch.object(self.cli.OU, "apply", lambda root, its: roots.append(root) or its):
+            self.cli.run(self.repo, no_tests=True)
+        self.assertEqual(len(roots), 1)
+        self.assertIn("sidereus-src-", roots[0])
+
     def test_only_test_files(self):   # nothing outside test code: code scanners are skipped with a reason, gate EMPTY
         for rel in ("a.py", "package-lock.json", "Dockerfile", "src/x.test.js"):
             os.remove(os.path.join(self.repo, rel))

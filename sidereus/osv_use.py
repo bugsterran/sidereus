@@ -1,7 +1,7 @@
 """Usage judgement of osv-scanner findings: does the repo use the feature an advisory's precondition names?
 
 A rule maps advisory ids (GHSA / CVE) to fixed strings; the runner `scripts/arch_checks.py` greps its source export
-(git archive HEAD, or the `--no-tests` copy) and stores per item `use` = {s: unused | used | none, r, at, hf, hl}.
+(git archive HEAD, the full tree even under `--no-tests`, since osv-scanner reads that tree) and stores per item `use` = {s: unused | used | none, r, at, hf, hl}.
 Rules: the tracked pack `templates/osv-usage/pack.json` + the user file `<ARCH_DIR>/osv-rules.json` (written only by
 `scripts/osv_rules.py --append`). ⚠Only the rule name, its date and the first hit's file:line are stored — never the
 matched line text or the patterns. ⚠An incomplete grep (any limit, read error or skipped file) is `none`, never
