@@ -29,12 +29,19 @@ SCRIPTS = ("ext-hooks/ext_hook.py", "ext-hooks/pi_wake.py", "hooks/pl_mark.py", 
 ENV_KEYS = ("SIDEREUS_PARENT_SID", "SIDEREUS_PARENT_PLAT", "SIDEREUS_CHILD_AGENT")
 
 # Every spawned script logs its name, stdin and the three window env values; pi_wake exits at once.
-STUB = r'''import json, os, sys
+# ⚠One atomic file per record (tmp + os.replace) in the PI_TEST_LOG dir: hooks are spawned fire-and-forget, and
+# Windows O_APPEND is seek-then-write, so concurrent appends to one shared file overwrite each other's lines.
+STUB = r'''import json, os, sys, time, uuid
 data = "" if os.path.basename(sys.argv[0]) == "pi_wake.py" else sys.stdin.read()
-with open(os.environ["PI_TEST_LOG"], "a", encoding="utf-8") as f:
+d = os.environ["PI_TEST_LOG"]
+os.makedirs(d, exist_ok=True)
+name = "%%020d-%%010d-%%04d-%%s" %% (time.time_ns(), os.getpid(), 1, uuid.uuid4().hex)
+tmp = os.path.join(d, name + ".tmp")
+with open(tmp, "w", encoding="utf-8") as f:
     f.write(json.dumps({"script": os.path.basename(sys.argv[0]), "argv": sys.argv[1:],
                         "stdin": json.loads(data or "{}"),
-                        "env": {k: os.environ.get(k) for k in %r}}) + "\n")
+                        "env": {k: os.environ.get(k) for k in %r}}))
+os.replace(tmp, os.path.join(d, name + ".json"))
 ''' % (ENV_KEYS,)
 
 # Scenario driver: prints {snaps}, each snap = the window env this process would hand to a spawned subagent.
@@ -49,11 +56,12 @@ const ctx = { cwd: "/tmp/proj", sessionManager: { getSessionId: () => "sess-0001
 const K = ["SIDEREUS_PARENT_SID", "SIDEREUS_PARENT_PLAT", "SIDEREUS_CHILD_AGENT"];
 const snaps = [];
 const snap = () => snaps.push(Object.fromEntries(K.map((k) => [k, process.env[k] ?? null])));
-const n = () => { try { return fs.readFileSync(log, "utf8").split("\n").filter(Boolean).length; } catch { return 0; } };
+const recs = () => { try { return fs.readdirSync(log).filter((x) => x.endsWith(".json")); } catch { return []; } };
+const n = () => recs().length;
 // ⚠session_shutdown kills the waiter; a slow python start would die before logging, so wait for its line first.
 const untilWake = async () => {
   if (!process.env.PI_TEST_NEED_WAKE) return;
-  const has = () => { try { return fs.readFileSync(log, "utf8").includes('"script": "pi_wake.py"'); } catch { return false; } };
+  const has = () => recs().some((x) => { try { return fs.readFileSync(`${log}/${x}`, "utf8").includes('"script": "pi_wake.py"'); } catch { return false; } });
   const t = Date.now();
   while (!has() && Date.now() - t < 8000) await new Promise((r) => setTimeout(r, 20));
 };
@@ -91,6 +99,38 @@ if (scenario !== "child") await handlers.session_shutdown({ reason: "quit" }, ct
 '''
 
 
+def read_log(d):
+    """Records in write order; a missing dir means no stub ran."""
+    try:
+        names = sorted(x for x in os.listdir(d) if x.endswith(".json"))
+    except OSError:
+        return []
+    out = []
+    for x in names:
+        with open(os.path.join(d, x), encoding="utf-8") as f:
+            out.append(json.load(f))
+    return out
+
+
+class StubConcurrentWrites(unittest.TestCase):
+    def test_concurrent_stubs_keep_every_record(self):
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        stub = os.path.join(d, "ext_hook.py")
+        with open(stub, "w", encoding="utf-8") as f:
+            f.write(STUB)
+        log = os.path.join(d, "calls")
+        e = dict(os.environ, PI_TEST_LOG=log)
+        n = 12
+        ps = [subprocess.Popen([sys.executable, stub], stdin=subprocess.PIPE, env=e) for _ in range(n)]
+        for i, p in enumerate(ps):
+            p.communicate(json.dumps({"i": i, "pad": "x" * 4096}).encode("utf-8"), timeout=60)
+            self.assertEqual(p.returncode, 0)
+        calls = read_log(log)
+        self.assertEqual(sorted(c["stdin"]["i"] for c in calls), list(range(n)))
+        self.assertFalse([x for x in os.listdir(log) if x.endswith(".tmp")])
+
+
 @unittest.skipUnless(NODE, "node not installed")
 class PiChildExtension(unittest.TestCase):
     def setUp(self):
@@ -115,7 +155,7 @@ class PiChildExtension(unittest.TestCase):
         self.driver = os.path.join(self.d, "driver.mjs")
         with open(self.driver, "w", encoding="utf-8") as f:
             f.write(DRIVER)
-        self.log = os.path.join(self.d, "calls.jsonl")
+        self.log = os.path.join(self.d, "calls")
 
     def drive(self, scenario, want, env=None, extra=(), wake=False):
         e = dict(os.environ, PI_TEST_LOG=self.log)
@@ -128,12 +168,7 @@ class PiChildExtension(unittest.TestCase):
                                                  str(want), self.log] + list(extra),
                            capture_output=True, text=True, encoding="utf-8", timeout=60, env=e)
         self.assertEqual(r.returncode, 0, r.stderr)
-        try:
-            with open(self.log, encoding="utf-8") as f:
-                calls = [json.loads(x) for x in f if x.strip()]
-        except OSError:
-            calls = []
-        return json.loads(r.stdout.strip().splitlines()[-1])["snaps"], calls
+        return json.loads(r.stdout.strip().splitlines()[-1])["snaps"], read_log(self.log)
 
     def test_R1_window_sets_own_sid_and_restores(self):
         snaps, calls = self.drive("parent", 7, wake=True)

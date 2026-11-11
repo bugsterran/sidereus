@@ -302,3 +302,8 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - Cause: the unregistered notice ran only for `PLATFORM == "cc"`; pi got «id `<folder>-pi`» as if registered, while the viewer counts pi as logged in only with an explicit `pi:<cwd>` entry, so the session showed «not logged in» and never asked.
 - ⇒ pi without `pi:<realpath>` in identity.json gets the register notice (suggest `<folder>-pi`, or «type a name» when that equals a Claude id; decline key `pi:<realpath>` in identity-skip.json). Tests `tests/test_invite_notice.py` (InvitePi).
 - ⚠Never propose an id a Claude session owns; a Claude decline for the same folder does not silence pi.
+
+## Concurrent test stubs lost records on Windows (`tests/test_pi_child_hook.py` `STUB`)
+- Cause: every spawned stub appended a line to one shared log file; the pi extension spawns hooks fire-and-forget, and Windows O_APPEND is seek-then-write, so concurrent writers overwrote each other and `json.loads` failed.
+- ⇒ One file per record (`time_ns`-pid-counter-uuid name, `.tmp` then `os.replace` to `.json`) in a log dir, read back sorted — same scheme as `put()` in `tests/test_pi_extension.py`. Regression `StubConcurrentWrites`.
+- ⚠Never share one append-mode log file between concurrently spawned test stubs; macOS/Linux appends hide the race.
