@@ -43,9 +43,12 @@ function archChkTopBtn(d, p){   // p = repo of the hidden-rule pref, default the
   const sec = archChkSec(d);
   if(!sec) return '';
   if(p === undefined) p = typeof strOn !== 'undefined' && strOn ? strOn[0] || '' : '';
-  const hid = archChkHidden(p), H = archChkHidSet(hid), top = archChkTop(d), vis = top.filter(x => !H[archChkRk(x)]);
+  const hid = archChkHidden(p), H = archChkHidSet(hid), top = archChkTop(d), vis0 = top.filter(x => !H[archChkRk(x)]);
+  const vis = typeof archChkUnusedSplit === 'function' ? archChkUnusedSplit(vis0).live : vis0;   // 84l5: verified-unused rows are not issues
   // red only with critical/high, amber otherwise; ⚠tool totals exceed the 50-item list, so only listed hidden critical/high items are subtracted
-  const sm = archChkSum(sec), e = Math.max(0, sm.c + sm.h - top.filter(x => ['critical', 'high'].indexOf(archChkLv(x.sev)) >= 0 && H[archChkRk(x)]).length);
+  // listed verified-unused rows leave the colour too, as they leave the window counts (nl)
+  const un = typeof archChkUnusedSplit === 'function' ? archChkUnusedSplit(vis0).un : [];
+  const sm = archChkSum(sec), e = Math.max(0, sm.c + sm.h - top.filter(x => ['critical', 'high'].indexOf(archChkLv(x.sev)) >= 0 && (H[archChkRk(x)] || un.indexOf(x) >= 0)).length);
   // shown even at 0 so missing scanners stay visible; scanner states in the tooltip
   // stale = scanned commit is not HEAD: same «cut» + ⚠ marking as the diagram stamp (archHeadNote, 84j)
   const old = !!sec.stale, cm = String(sec.commit || '').slice(0, 7), hd = String((d && d.head) || '').slice(0, 7);
@@ -101,7 +104,10 @@ function archChkView(d, S, hid){
   return archChkTop(d).filter(x => !H[archChkRk(x)] && ok(x) && (!tool || String(x.tool || '') === tool));
 }
 // Pure: selected items in list order, visible ones only (keys of items no longer listed drop out).
-function archChkSel(d, sel, S, hid){ return archChkView(d, S, hid).filter(x => sel && sel[archChkKey(x)]); }
+function archChkSel(d, sel, S, hid){
+  const v = archChkView(d, S, hid);   // ⚠collapsed verified-unused rows (84l5) are never sent, even with a stale key in sel
+  return (typeof archChkUnusedSplit === 'function' ? archChkUnusedSplit(v).live : v).filter(x => sel && sel[archChkKey(x)]);
+}
 // Pure: fix-request and run targets = every live session of any platform (sh: shell-marker body), tiered g: 0 cwd is p / under p/ / worktree of p (wt.main),
 //   1 lists p in `repos` (touched it, works elsewhere), 2 the rest. Tier, then logged-in first, then most recently active.
 //   ⚠`repos` is tier 1, never 0 — it lists every repo a session touched; the body names the target path instead.
@@ -224,12 +230,13 @@ function archChkRunHtml(p, d, S, cands){
 }
 // Pure: window body — header (counts · select all · «Request fix»), preview / sent line, issue rows.
 function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (Codex included), default cands
-  const c = d && d.checks, sec = archChkSec(d), hid = archChkHidden(p), all = archChkView(d, {}, hid);
-  const top = archChkView(d, S, hid), sel = archChkSel(d, S.sel, S, hid), n = sel.length, cm = String((sec && sec.commit) || '').slice(0, 8);
+  const c = d && d.checks, sec = archChkSec(d), hid = archChkHidden(p), spl = a => typeof archChkUnusedSplit === 'function' ? archChkUnusedSplit(a) : { live: a, un: [] };
+  const all = spl(archChkView(d, {}, hid)).live, sp = spl(archChkView(d, S, hid)), top = sp.live, sel = archChkSel(d, S.sel, S, hid), n = sel.length, cm = String((sec && sec.commit) || '').slice(0, 8);
   const sf = archChkSevF(S.sev), flt = sf !== 'all' || !!S.tool, H = archChkHidSet(hid);
   // counts = scanner totals (archChkSum, as the badge: image scans and items past the 50 list included) for the tool filter, minus listed hidden rules
   const sm = archChkSum({ tools: archChkTools(sec).filter(t => !S.tool || String(t.id) === S.tool) });
-  const nl = l => Math.max(0, sm[l[0]] - archChkTop(d).filter(x => H[archChkRk(x)] && archChkLv(x.sev) === l && (!S.tool || String(x.tool || '') === S.tool)).length);
+  const unl = spl(archChkTop(d).filter(x => !H[archChkRk(x)])).un;   // listed verified-unused rows leave the counts like hidden ones
+  const nl = l => Math.max(0, sm[l[0]] - archChkTop(d).filter(x => (H[archChkRk(x)] || unl.indexOf(x) >= 0) && archChkLv(x.sev) === l && (!S.tool || String(x.tool || '') === S.tool)).length);
   // the severity filter drops the levels it hides, so «Critical only» reads «critical N» alone
   const cnt = (sf === 'critical' ? ['critical'] : sf === 'high' ? ['critical', 'high'] : ['critical', 'high', 'medium', 'low']).map(l => archChkLvLbl(l) + ' ' + nl(l)).join(' · ');
   const nr = !!sec && !!archChkScanAt(d) && !archChkTools(sec).some(t => t.status === 'ok');   // same «not checked» rule as archChkTopBtn
@@ -237,7 +244,7 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
   const why = !cands.length ? T('No live session') : !n ? T('Select at least one issue') : '';
   let h = '<div class=ckwh><b>' + esc(T('Top issues {n}').replace('{n}', top.length)) + '</b><span>' + esc(cnt)
     + (flt ? ' · ' + esc(T('shown {n} of {m}').replace('{n}', top.length).replace('{m}', all.length)) : '')
-    + '</span>' + archChkLastHtml(d) + '<span class=ckwp title="' + esc(p) + '">' + esc(archBase(p) + (cm ? ' · ' + cm : '')) + '</span>'
+    + '</span>' + (typeof archChkOsvHint === 'function' ? archChkOsvHint(sec) : '') + archChkLastHtml(d) + '<span class=ckwp title="' + esc(p) + '">' + esc(archBase(p) + (cm ? ' · ' + cm : '')) + '</span>'
     + '<label class=ckwa><input type=checkbox data-ckall' + (top.length && top.every(x => S.sel && S.sel[archChkKey(x)]) ? ' checked' : '') + '>' + esc(T('Select all')) + '</label>'
     // ⚠ no inline reason span here: it pushed «Run security check» alone onto a second line; the reason is the button title
     + '<span class=ckwbtn><button type=button class="archgo' + (S.req ? ' on' : '') + '" data-ckfix' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Request fix') + (n ? ' (' + n + ')' : '')) + '</button>'
@@ -264,17 +271,25 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
   }
   h += (S.sent ? '' : archChkFixRecHtml(p)) + archChkSentHtml(S);   // after a reload S.sent is gone: the server record (plReq) stands in
   const lg = sec ? archChkLogHtml(sec.log, sec.report) : '<div class=archckst>' + esc(T('No security check yet')) + '</div>';
+  // one issue row; ck = selectable (live rows only) ⚠a closure, not a top-level function: other tests extract archChkWinHtml alone
+  const row = (x, ck) => {
+    const k = archChkKey(x), ln = parseInt(x.line, 10) || 1, sv = archChkLv(x.sev), hp = archChkHelp(c, x), uc = typeof archChkUseChip === 'function' ? archChkUseChip(x) : '';
+    return '<li class="' + sv + '">' + (ck ? '<input type=checkbox data-ckk="' + esc(k) + '"' + (S.sel && S.sel[k] ? ' checked' : '') + ' aria-label="' + esc(x.file + ':' + ln) + '">' : '') + '<div class="ckwr' + (uc ? ' ckwu' : '') + '">'
+        + '<button type=button data-ckv data-af="' + esc(x.file) + '" data-al="' + esc(ln) + '" title="' + esc(T('View code')) + '">'
+        + '<b class=archcks>' + esc(archChkLvLbl(sv)) + '</b><small title="' + esc(x.tool || '') + '">' + esc(x.tool || '') + '</small><code title="' + esc(archChkRule(x)) + '">' + esc(archChkRule(x)) + '</code>'
+        + '<span class=archckf title="' + esc(x.file + ':' + ln) + '">' + esc(x.file).replace(/\//g, '/<wbr>') + '<span class=archevl>:' + esc(ln) + '</span></span>'   // full path, may break after «/»
+        + '<em title="' + esc(x.mod || '') + '">' + esc(x.mod || '') + '</em></button>' + uc   // chip sits beside the row button: its hit link is a button too
+        + (hp.desc || hp.url ? '<div class=archckh>' + (hp.desc ? '<span>' + esc(hp.desc) + '</span>' : '')
+          + (hp.url ? '<a href="' + esc(hp.url) + '" target=_blank rel="noopener noreferrer">' + esc(T('docs ↗')) + '</a>' : '') + '</div>' : '') + '</div>'
+        + '<button type=button class="wkrgb ckhide" data-ckhide="' + esc(archChkRk(x)) + '" title="' + esc(T('Hide every item of this rule (this view only)')) + '">' + esc(T('Hide rule')) + '</button></li>';
+  };
+  // verified-unused rows: one <details>, closed by default (open state S.unz), no checkbox so they never join a fix request
+  const unz = sp.un.length ? '<details class=ckunz data-ckunused' + (S.unz ? ' open' : '') + '><summary>' + esc(T('Unused (verified) {n}').replace('{n}', () => String(sp.un.length))) + '</summary>'
+    + '<ol class="archckl ckwun">' + sp.un.map(x => row(x, false)).join('') + '</ol></details>' : '';
   // ⚠empty top: a status line, not an empty <ol> + grip, else the saved split height paints a tall empty box
-  if(!top.length) return h + (sec ? '<div class="archckst ckwnone" role=status>' + esc(T(flt && all.length ? 'No issues match the filters' : nr ? 'No scanner ran' : 'No scanner findings')) + '</div>' : '') + lg;
-  return h + '<ol class=archckl>' + top.map(x => { const k = archChkKey(x), ln = parseInt(x.line, 10) || 1, sv = archChkLv(x.sev), hp = archChkHelp(c, x);
-    return '<li class="' + sv + '"><input type=checkbox data-ckk="' + esc(k) + '"' + (S.sel && S.sel[k] ? ' checked' : '') + ' aria-label="' + esc(x.file + ':' + ln) + '"><div class=ckwr>'
-      + '<button type=button data-ckv data-af="' + esc(x.file) + '" data-al="' + esc(ln) + '" title="' + esc(T('View code')) + '">'
-      + '<b class=archcks>' + esc(archChkLvLbl(sv)) + '</b><small title="' + esc(x.tool || '') + '">' + esc(x.tool || '') + '</small><code title="' + esc(archChkRule(x)) + '">' + esc(archChkRule(x)) + '</code>'
-      + '<span class=archckf title="' + esc(x.file + ':' + ln) + '">' + esc(x.file).replace(/\//g, '/<wbr>') + '<span class=archevl>:' + esc(ln) + '</span></span>'   // full path, may break after «/»
-      + '<em title="' + esc(x.mod || '') + '">' + esc(x.mod || '') + '</em></button>'
-      + (hp.desc || hp.url ? '<div class=archckh>' + (hp.desc ? '<span>' + esc(hp.desc) + '</span>' : '')
-        + (hp.url ? '<a href="' + esc(hp.url) + '" target=_blank rel="noopener noreferrer">' + esc(T('docs ↗')) + '</a>' : '') + '</div>' : '') + '</div>'
-      + '<button type=button class="wkrgb ckhide" data-ckhide="' + esc(archChkRk(x)) + '" title="' + esc(T('Hide every item of this rule (this view only)')) + '">' + esc(T('Hide rule')) + '</button></li>'; }).join('') + '</ol>'
+  // only verified-unused rows left: the group alone, no «No scanner findings» line above it
+  if(!top.length) return h + (sec && !(sp.un.length && !flt) ? '<div class="archckst ckwnone" role=status>' + esc(T(flt && all.length ? 'No issues match the filters' : nr ? 'No scanner ran' : 'No scanner findings')) + '</div>' : '') + unz + lg;
+  return h + '<ol class=archckl>' + top.map(x => row(x, true)).join('') + '</ol>' + unz
     + (lg.indexOf('<ol class="archckl ckwlog">') >= 0 ? archChkSplitGrip() : '') + lg;   // grip only when there is a history list to share with
 }
 // Issues | history split (same pattern as the 48k Watch grips): the findings list height in px is kept in sidereus.ckwh,
@@ -426,7 +441,7 @@ function archChkWinOpen(p){
     + '<body class=ckwin><div id=ckroot></div><script>' + ARCH_CW_JS + '</' + 'script>');
   dc.close();
   strWinTheme(w);
-  ARCH_CW = { p, w, sel: Object.create(null), req: null, sent: '', msg: '', run: null, runSent: null, cp: null, seen: ARCH.cache[p], sev: 'all', tool: '' };   // filters reset on reopen
+  ARCH_CW = { p, w, sel: Object.create(null), req: null, sent: '', msg: '', run: null, runSent: null, cp: null, seen: ARCH.cache[p], sev: 'all', tool: '', unz: false };   // filters reset on reopen; unz = «Unused (verified)» group open
   try{ w.focus(); }catch(e){ softErr('archck-focus', e); }
   archChkWinPaint();
 }
@@ -471,7 +486,8 @@ function archChkWinEv(e, w){
   }
   if(e.type === 'change'){
     if(t.matches('[data-ckall]')){
-      archChkView(ARCH.cache[S.p], S, archChkHidden(S.p)).forEach(x => { const k = archChkKey(x); if(t.checked) S.sel[k] = 1; else delete S.sel[k]; }); }   // visible items only
+      const v = archChkView(ARCH.cache[S.p], S, archChkHidden(S.p));
+      (typeof archChkUnusedSplit === 'function' ? archChkUnusedSplit(v).live : v).forEach(x => { const k = archChkKey(x); if(t.checked) S.sel[k] = 1; else delete S.sel[k]; }); }   // visible live items only
     else if(t.matches('[data-cksev]')) S.sev = archChkSevF(t.value);
     else if(t.matches('[data-cktool]')) S.tool = String(t.value || '');
     else if(t.matches('[data-ckk]')){ if(t.checked) S.sel[t.dataset.ckk] = 1; else delete S.sel[t.dataset.ckk]; }
@@ -483,6 +499,8 @@ function archChkWinEv(e, w){
     archChkWinPaint(); return;
   }
   let b;
+  // ⚠click fires before the native toggle: record the state it is about to take, no repaint (that would undo the toggle)
+  if((b = t.closest('[data-ckunused]>summary'))){ S.unz = !b.parentNode.open; return; }
   if((b = t.closest('[data-ckhide]'))){ const hid = archChkHidden(S.p); archChkSetHidden(S.p, hid.concat([b.dataset.ckhide])); archChkWinPaint(); archChkTabRepaint(); return; }
   if(t.closest('[data-ckunhide]')){ archChkSetHidden(S.p, []); archChkWinPaint(); archChkTabRepaint(); return; }
   if((b = t.closest('[data-ckv]'))){ strPopOpenRel(S.p, b.dataset.af, parseInt(b.dataset.al, 10) || 1, 80, ''); return; }

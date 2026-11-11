@@ -110,3 +110,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **Repo-controlled settings read can stall the poll** (`sidereus/plat_copilot.py` `hooks_disabled`): a cloned repo's `.github/copilot/settings.json` as a symlink to `/dev/zero` passed the `getsize` cap (0) and `json.load` read forever; a FIFO blocked `open()`.
   - ⇒ `os.open(O_RDONLY|O_NONBLOCK)` + `fstat` on the same fd must be `S_ISREG` + `read(SETTINGS_MAX + 1)`; over the cap or not a regular file = hooks not off.
   - ⚠Never size-check by path and then read unbounded — any file a repo can ship goes through the same three steps.
+- **osv «Unused» from a partial grep hides a live vulnerability** (`sidereus/osv_use.py`, `scripts/osv_rules.py`): «Unused (verified)» moves a finding out of the counts, the badge and «Request fix», so a grep that stopped early (file cap, timeout, unreadable or skipped file) would silence a real one.
+  - ⇒ «unused» only when every file was read and no rule pattern hit; any incomplete scan is «none» (Unjudged). Any hit = «Invalidated».
+  - ⇒ Rules are written only by the osv-triage pipeline through `osv_rules.py --append`; ids with no code signal get no rule.
+  - ⚠Never map an incomplete or failed grep to «unused». A hit carries file:line only — never the matched line or pattern context.

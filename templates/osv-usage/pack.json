@@ -1,0 +1,314 @@
+{
+ "v": 1,
+ "rules": [
+  {
+   "name": "xslt-view",
+   "ids": [
+    "GHSA-pc63-qcmh-9cmg"
+   ],
+   "any": [
+    "XsltView",
+    "XsltViewResolver"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-pc63-qcmh-9cmg",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "script-template",
+   "ids": [
+    "GHSA-4773-3jfm-qmx3"
+   ],
+   "any": [
+    "ScriptTemplateView",
+    "ScriptTemplateConfigurer",
+    "mvc:script-template"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-4773-3jfm-qmx3",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "functional-web",
+   "ids": [
+    "GHSA-cx7f-g6mp-7hqm"
+   ],
+   "any": [
+    "RouterFunction",
+    "RouterFunctions"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-cx7f-g6mp-7hqm",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "sse",
+   "ids": [
+    "GHSA-6hcq-hmm3-jj3c"
+   ],
+   "any": [
+    "SseEmitter",
+    "ServerSentEvent"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-6hcq-hmm3-jj3c",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "static-resources",
+   "ids": [
+    "GHSA-72pg-x5f8-j25j",
+    "GHSA-x23c-287f-qqv5",
+    "GHSA-mq64-j8f9-9gcj",
+    "GHSA-wg35-8jpf-2xv3",
+    "GHSA-6p4f-wcwh-5vvm",
+    "GHSA-g5vr-rgqm-vf78",
+    "GHSA-r936-gwx5-v52f"
+   ],
+   "any": [
+    "mvc:resources",
+    "ResourceHandlerRegistry",
+    "addResourceHandlers",
+    "ResourceHttpRequestHandler",
+    "VersionResourceResolver",
+    "RouterFunctions"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-72pg-x5f8-j25j",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "jsp-form-tags",
+   "ids": [
+    "GHSA-957g-f97v-vppc"
+   ],
+   "any": [
+    "spring-form.tld",
+    "http://www.springframework.org/tags/form",
+    "<form:"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-957g-f97v-vppc",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "js-escape",
+   "ids": [
+    "GHSA-3chg-m5w7-qfv5"
+   ],
+   "any": [
+    "JavaScriptUtils",
+    "javaScriptEscape"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-3chg-m5w7-qfv5",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "http-invoker",
+   "ids": [
+    "GHSA-4wrc-f8pq-fpqp"
+   ],
+   "any": [
+    "HttpInvoker",
+    "RemoteInvocation",
+    "RmiServiceExporter"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-4wrc-f8pq-fpqp",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "spel-untrusted",
+   "ids": [
+    "GHSA-775g-4xr8-78h8",
+    "GHSA-9f52-rjqv-25qv",
+    "GHSA-r5w3-xv2f-j59q",
+    "GHSA-wxpp-56q6-5pcg"
+   ],
+   "any": [
+    "SpelExpressionParser",
+    "parseExpression",
+    "StandardEvaluationContext"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-775g-4xr8-78h8",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "method-security",
+   "ids": [
+    "GHSA-jmp9-x22r-554x"
+   ],
+   "any": [
+    "@PreAuthorize",
+    "@PostAuthorize",
+    "@Secured",
+    "@RolesAllowed",
+    "EnableGlobalMethodSecurity",
+    "EnableMethodSecurity"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-jmp9-x22r-554x",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "databinder-disallowed",
+   "ids": [
+    "GHSA-4gc7-5j7h-4qph",
+    "GHSA-4wp7-92pw-q264"
+   ],
+   "any": [
+    "setDisallowedFields"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-4gc7-5j7h-4qph",
+   "at": "2026-11-11"
+  },
+  {
+   "name": "requestbody-bytes",
+   "ids": [
+    "GHSA-w3c8-7r8f-9jp8"
+   ],
+   "any": [
+    "@RequestBody byte[]",
+    "@RequestBody final byte[]"
+   ],
+   "globs": [
+    "*.java",
+    "*.kt",
+    "*.groovy",
+    "*.xml",
+    "*.jsp",
+    "*.jspx",
+    "*.tag",
+    "*.properties",
+    "*.yml",
+    "*.yaml"
+   ],
+   "src": "https://github.com/advisories/GHSA-w3c8-7r8f-9jp8",
+   "at": "2026-11-11"
+  }
+ ]
+}

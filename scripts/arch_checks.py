@@ -41,6 +41,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sidereus import arch_checks as AC  # noqa: E402  (path set just above)
 from sidereus import arch_verify as AV  # noqa: E402
+from sidereus import osv_use as OU  # noqa: E402
 from sidereus import sec_checks as SC  # noqa: E402
 from sidereus import sec_report as SR  # noqa: E402
 from sidereus import sec_runtime as SRT  # noqa: E402
@@ -354,6 +355,7 @@ def run(repo, only=None, offline=False, dev=False, images=False, no_tests=False)
             tools.append(row)
             items += its
         items = ST.merge(items)   # one finding per (CVE, package) across images
+        items = OU.apply(code or src, items)   # osv-scanner usage judgement on the scanned export (before cleanup)
         changed = (_tree_sig(src), _tree_sig(code) if code else None) != sig   # a tool wrote into a scanned tree
     finally:
         _rmtree(tmp)

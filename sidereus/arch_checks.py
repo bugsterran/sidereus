@@ -11,6 +11,7 @@ import re
 
 from sidereus.arch_verify import COMMIT_RE, owns, plan_globs, read_json, safe_rel
 from sidereus.arch_checks_parse import SEV_RANK, SEVS, clean_help, level, zero
+from sidereus import osv_use as OU
 from sidereus import sec_checks as SC
 from sidereus import sec_trivy as ST
 from sidereus import sec_report as SR
@@ -103,7 +104,10 @@ def build(repo, commit, dirty, src_changed, at, tools, items, tests_excluded=Non
             if _nat(t.get(k)):
                 e[k] = t[k]
         out_t.append(e)
-    its = sorted(items, key=lambda x: (SEV_RANK[x["sev"]], x["file"], x["line"], x["tool"]))[:ITEMS_MAX]
+    # ⚠judged-unused findings sort last so the caps keep used / unjudged ones
+    its = sorted(items, key=lambda x: ((x.get("use") or {}).get("s") == "unused", SEV_RANK[x["sev"]], x["file"],
+                                       x["line"], x["tool"]))[:ITEMS_MAX]
+    ou = OU.counts(items)   # counted before the cap; absent = osv-scanner usage was not judged
     rules = {}
     for x in its:   # help only for rules that reach the stored items; first finding's metadata wins
         h = clean_help((x.get("help") or {}).get("desc"), (x.get("help") or {}).get("url"))
@@ -114,8 +118,9 @@ def build(repo, commit, dirty, src_changed, at, tools, items, tests_excluded=Non
             "items": [dict({"tool": x["tool"], "file": x["file"], "line": x["line"], "rule": x["rule"], "sev": x["sev"]},
                            **({"pkg": x["pkg"]} if x.get("pkg") else {}), **({"cve": x["cve"]} if x.get("cve") else {}),
                            **({"imgs": x["imgs"]} if _nat(x.get("imgs")) and x["imgs"] >= 1 else {}),
-                           **({"fix": x["fix"]} if isinstance(x.get("fix"), bool) else {}))
-                      for x in its], "rules": rules, **({"tests_excluded": _tests_excluded(tests_excluded)} if _tests_excluded(tests_excluded) else {})}
+                           **({"fix": x["fix"]} if isinstance(x.get("fix"), bool) else {}),
+                           **({"use": OU.clean_use(x.get("use"))} if OU.clean_use(x.get("use")) else {}))
+                      for x in its], "rules": rules, **({"osv_use": ou} if ou else {}), **({"tests_excluded": _tests_excluded(tests_excluded)} if _tests_excluded(tests_excluded) else {})}
 
 
 # ── schema (gate) and page loader ──
@@ -143,10 +148,12 @@ def checks_errors(j, repo=None, commit=None, ids=()):
     if not isinstance(j, dict):
         return ["top level must be an object"]
     errs = []
-    if set(j) - {"rules", "tests_excluded"} != {"v", "repo", "commit", "dirty", "src_changed", "at", "tools", "files", "items"}:
+    if set(j) - {"rules", "tests_excluded", "osv_use"} != {"v", "repo", "commit", "dirty", "src_changed", "at", "tools", "files", "items"}:
         errs.append("keys")
     if "tests_excluded" in j and _tests_excluded(j["tests_excluded"]) is None:
         errs.append("tests_excluded")
+    if "osv_use" in j and OU.clean_counts(j["osv_use"]) != j["osv_use"]:
+        errs.append("osv_use")
     rs = j.get("rules", {})
     if not isinstance(rs, dict) or len(rs) > ITEMS_MAX or any(_rule_key(k, ids) != k or not isinstance(v, dict)
                                                               or clean_help(v.get("desc"), v.get("url")) != v
@@ -228,9 +235,12 @@ def _clean_item(x, ids=()):
     im, fx = x.get("imgs"), x.get("fix")   # image findings: distinct image count, whether a fixed version exists
     if ("imgs" in x and not (_nat(im) and im >= 1)) or ("fix" in x and not isinstance(fx, bool)):
         return None
+    us = OU.clean_use(x.get("use")) if x["tool"] == OU.TOOL else None   # usage judgement: osv-scanner items only
+    if "use" in x and not us:
+        return None
     return dict({"tool": x["tool"], "file": f, "line": ln, "rule": r, "sev": sv}, **({"pkg": pk} if "pkg" in x else {}),
                 **({"cve": cv} if "cve" in x else {}), **({"imgs": im} if "imgs" in x else {}),
-                **({"fix": fx} if "fix" in x else {}))
+                **({"fix": fx} if "fix" in x else {}), **({"use": us} if us else {}))
 
 
 def aggregate(files, mods, globs):
@@ -349,4 +359,7 @@ def _load_one(root, map_dir, m, head, name, ids):
     tx = _tests_excluded(j.get("tests_excluded"))
     if tx:   # ⚠absent = tests were scanned (or an older file): no badge, never «0 files»
         out["tests_excluded"] = tx
+    ou = OU.clean_counts(j.get("osv_use"))
+    if ou:   # ⚠absent = usage not judged (older file or no osv-scanner items): no counts, never zeros
+        out["osv_use"] = ou
     return out
