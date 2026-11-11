@@ -94,21 +94,29 @@ def _text_w(s):
     return int(sum(11 if ord(c) >= 0x1100 else 6.5 for c in str(s or ""))) + 6
 
 
+def _title_w(s):
+    """Estimated .t-band (13px bold, .5px spacing) width, on the wide side so lines keep clear of it."""
+    s = str(s or "")
+    return sum(14 if ord(c) >= 0x1100 else 9 for c in s) + len(s) // 2 + 6
+
+
 def _plan(brief, grid):
     """Per drawn arrow: rows, sides, attach x, vertical lane x; plus the arrows using each gap (gap g = above row g)."""
-    where, rowlist = {}, []
-    for _b, rows in grid:
-        for row in rows:
+    where, rowlist, rows3 = {}, [], []
+    for b, rows in grid:
+        for r, row in enumerate(rows):
+            # ⚠A first row's top attach points and any vertical through the band cross its title strip: keep x past it.
+            block = (PAD + 16 - 4, PAD + 16 + _title_w(b["name"]) + 4) if r == 0 else None
             for bid, x, w in row:
-                where[bid] = (len(rowlist), x, w)
-            rowlist.append([(x, 0, w, 0) for _bid, x, w in row])
-    rows3 = [(0, 0, r) for r in rowlist]
+                where[bid] = (len(rowlist), x, w, block)
+            rowlist.append(row)
+            rows3.append((0, 0, [(x, 0, w, 0) for _bid, x, w in row], block))
     gaps = [[] for _ in range(len(rowlist) + 1)]
     plan, used_xv = {}, []
     for k, a in enumerate(brief.get("arrows") or []):
         if a["from"] not in where or a["to"] not in where or a["from"] == a["to"]:
             continue
-        (ri, ax, aw), (rj, bx, bw) = where[a["from"]], where[a["to"]]
+        (ri, ax, aw, _ba), (rj, bx, bw, _bb) = where[a["from"]], where[a["to"]]
         ca, cb = ax + aw // 2, bx + bw // 2
         xv = None
         if ri == rj:   # same row: always around the row (a side-to-side line put its label over both boxes)
@@ -141,12 +149,69 @@ def _plan(brief, grid):
         a = brief["arrows"][k]
         sides.setdefault((a["from"], p["sa"]), []).append((p["other_a"], k, 0))
         sides.setdefault((a["to"], p["sb"]), []).append((p["other_b"], k, 1))
-    for (bid, _s), lst in sides.items():
-        _r, x, w = where[bid]
+    for (bid, side), lst in sides.items():
+        _r, x, w, block = where[bid]
+        lo = x
+        if side == "top" and block and block[0] < x + w and x < block[1] and x + w - block[1] >= 40:
+            lo = max(x, block[1])
         lst.sort()
         for i, (_o, k, end) in enumerate(lst):
-            plan[k]["xb" if end else "xa"] = x + (i + 1) * w // (len(lst) + 1)
+            plan[k]["xb" if end else "xa"] = lo + (i + 1) * (x + w - lo) // (len(lst) + 1)
+    for g, ks in enumerate(gaps):
+        gaps[g] = _order(g, ks, plan, brief)
     return plan, gaps
+
+
+def _gap_runs(p, g):
+    """(run lo, run hi, [(stub x, +1 down / -1 up)]) of the arrow's horizontal run in gap g."""
+    da = 1 if p["sa"] == "top" else -1      # leaving the top of a box below the gap: the stub hangs down
+    db = 1 if p["sb"] == "top" else -1
+    if p["xv"] is None:
+        xf, xt, st = p["xa"], p["xb"], [(p["xa"], da), (p["xb"], db)]
+    else:
+        dv = 1 if p["rj"] > p["ri"] else -1
+        if g == p["gaps"][0]:
+            xf, xt, st = p["xa"], p["xv"], [(p["xa"], da), (p["xv"], dv)]
+        else:
+            xf, xt, st = p["xv"], p["xb"], [(p["xv"], -dv), (p["xb"], db)]
+    return min(xf, xt), max(xf, xt), st
+
+
+def _order(g, ks, plan, brief):
+    """Lane order in one gap with the fewest stub-over-run and stub-over-label crossings (insertion + adjacent swaps)."""
+    info = {}
+    for k in ks:
+        lo, hi, st = _gap_runs(plan[k], g)
+        lab = (brief["arrows"][k].get("label") or "")
+        p = plan[k]
+        own = p["xv"] is None or max(_gap_runs(p, x)[1] - _gap_runs(p, x)[0] for x in p["gaps"]) == hi - lo
+        hw = (_text_w(lab) // 2 + 4) if lab and own else 0
+        c = (lo + hi) // 2
+        info[k] = (lo, hi, st, c - hw, c + hw)
+
+    def cost(a, b):   # a in the lane above b: a's down stubs cross b, b's up stubs cross a
+        A, B = info[a], info[b]
+        n = 0
+        for x, d in A[2]:
+            if d > 0:
+                n += (B[0] < x < B[1]) + 2 * (B[3] < x < B[4])
+        for x, d in B[2]:
+            if d < 0:
+                n += (A[0] < x < A[1]) + 2 * (A[3] < x < A[4])
+        return n
+
+    order = []
+    for k in ks:
+        best = min(range(len(order) + 1), key=lambda i: (sum(cost(o, k) for o in order[:i]) + sum(cost(k, o) for o in order[i:]), i))
+        order.insert(best, k)
+    moved = True
+    while moved:
+        moved = False
+        for i in range(len(order) - 1):
+            if cost(order[i + 1], order[i]) < cost(order[i], order[i + 1]):
+                order[i], order[i + 1] = order[i + 1], order[i]
+                moved = True
+    return order
 
 
 def _geom(brief):
@@ -192,7 +257,9 @@ def layout(brief):
 
 
 def _clear_x(x, rows):
-    return all(not (r[0] <= x <= r[0] + r[2]) for row in rows for r in row[2])
+    """x crosses no box of the rows, nor the band title of a row that is first in its band (row[3])."""
+    return all(not (r[0] <= x <= r[0] + r[2]) for row in rows for r in row[2]) and \
+        all(not (row[3][0] <= x <= row[3][1]) for row in rows if len(row) > 3 and row[3])
 
 
 def _lane_x(x1, x2, mid_rows):
@@ -200,6 +267,8 @@ def _lane_x(x1, x2, mid_rows):
     cands = [x1, x2, PAD // 2, W - PAD // 2]
     for row in mid_rows:
         rs = row[2]
+        if len(row) > 3 and row[3]:
+            cands.append(row[3][1] + 4)
         cands.append((PAD + rs[0][0]) // 2)
         cands.append((rs[-1][0] + rs[-1][2] + W - PAD) // 2)
         cands.extend((p[0] + p[2] + q[0]) // 2 for p, q in zip(rs, rs[1:]))
@@ -240,37 +309,56 @@ def routes(brief):
                 out.append(q)
         pts[k] = out
         verts += [(k, q[0], min(q[1], r[1]), max(q[1], r[1])) for q, r in zip(out, out[1:]) if q[0] == r[0]]
-    titles = [(PAD + 16, y + 8, _text_w(b["name"]) * 13 // 11, 15) for b, y, _bh in bands]
+    horiz = [(k, min(q[0], r[0]), max(q[0], r[0]), q[1]) for k, out in pts.items() for q, r in zip(out, out[1:]) if q[1] == r[1]]
+    titles = [(PAD + 16, y + 8, _title_w(b["name"]), 15) for b, y, _bh in bands]
     placed, boxes, res = [], list(pos.values()), {}
+
+    def score(k, r):
+        return (1000 * sum(_hit(r, o) for o in placed + boxes) + 50 * sum(_hit(r, t) for t in titles)
+                + sum(1 for kk, x, ya, yb in verts if kk != k and r[0] < x < r[0] + r[2] and ya < r[1] + r[3] and r[1] < yb)
+                + sum(1 for kk, xa, xb, y in horiz if kk != k and r[1] < y < r[1] + r[3] and xa < r[0] + r[2] and r[0] < xb))
+
     for k in sorted(plan):
         label = arrows[k].get("label")
         lw = _text_w(label) if label else 0
-        best = None
-        # Longest run first; slide along it until the label meets no label, box, band title or other arrow's vertical.
-        for ly, xf, xt in sorted(_spans(plan[k], lane, k), key=lambda s: -abs(s[2] - s[1])):
-            lo, hi = min(xf, xt), max(xf, xt)
-            c = (lo + hi) // 2
-            cands = [c]
-            for s in range(6, (hi - lo) // 2 + 1, 6):
-                cands += [c + s, c - s]
-            for cx in cands:
-                cx = min(max(cx, PAD // 2 + lw // 2), W - PAD // 2 - lw // 2)
-                r = (cx - lw // 2, ly - 15, lw, 13)
-                score = 0
-                if label:
-                    score = (1000 * sum(_hit(r, o) for o in placed + boxes) + 50 * sum(_hit(r, t) for t in titles)
-                             + sum(1 for kk, x, ya, yb in verts if kk != k and r[0] < x < r[0] + r[2] and ya < r[1] + r[3] and r[1] < yb))
-                if best is None or score < best[0]:
-                    best = (score, cx, ly, r)
-                if score == 0:
-                    break
-            if best[0] == 0:
-                break
+        spans = sorted(_spans(plan[k], lane, k), key=lambda s: -abs(s[2] - s[1]))
+        ly, xf, xt = spans[0]
+        best = (0, (xf + xt) // 2, ly - 5, None)
         if label:
+            best = None
+            # Longest run first; slide along it (the label may hang past a short run's ends but stays over it).
+            for ly, xf, xt in spans:
+                lo, hi = min(xf, xt), max(xf, xt)
+                c, reach = (lo + hi) // 2, (hi - lo) // 2 + max(0, lw // 2 - 8)
+                cands = [c]
+                for s in range(6, reach + 1, 6):
+                    cands += [c + s, c - s]
+                for cx in cands:
+                    cx = min(max(cx, PAD // 2 + lw // 2), W - PAD // 2 - lw // 2)
+                    r = (cx - lw // 2, ly - 15, lw, 13)
+                    sc = score(k, r)
+                    if best is None or sc < best[0]:
+                        best = (sc, cx, ly - 5, r)
+                    if sc == 0:
+                        break
+                if best[0] == 0:
+                    break
+            # ⚠No free spot over a run (crossing stubs span the whole gap height, so a taller gap frees nothing):
+            # set the label beside one of the arrow's own vertical segments instead.
+            if best[0]:
+                for kk, x, ya, yb in verts:
+                    if kk != k:
+                        continue
+                    for top in range(ya + 2, yb - 14, 4):
+                        for rx in (x + 4, x - 4 - lw):
+                            r = (rx, top, lw, 13)
+                            sc = score(k, r)
+                            if sc < best[0] and 0 < rx and rx + lw < W:
+                                best = (sc, rx + lw // 2, top + 10, r)
             placed.append(best[3])
         out = pts[k]
         d = "M%d,%d " % out[0] + " ".join("L%d,%d" % x for x in out[1:])
-        res[k] = (out, d, best[1], best[2] - 5)
+        res[k] = (out, d, best[1], best[2])
     return res
 
 

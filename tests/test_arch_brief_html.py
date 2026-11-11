@@ -139,6 +139,22 @@ class RenderTest(unittest.TestCase):
         heads = [v[0][-1] for v in rt.values()]
         self.assertEqual(len(heads), len(set(heads)), "two arrowheads end on one point")
 
+        def cuts(p, q, r):
+            x, y, w, h = r
+            if p[0] == q[0]:
+                return x < p[0] < x + w and min(p[1], q[1]) < y + h and max(p[1], q[1]) > y
+            return y < p[1] < y + h and min(p[0], q[0]) < x + w and max(p[0], q[0]) > x
+
+        segs = [(k, p, q) for k, v in rt.items() for p, q in zip(v[0], v[0][1:])]
+        for i, r in enumerate(labs):
+            for k, p, q in segs:
+                self.assertFalse(k != i and cuts(p, q, r), "arrow %d crosses label %d" % (k, i))
+        # Band title text at (PAD + 16, band top + 20), 13px bold: ~9px per narrow glyph.
+        for bd, y, _h in AH.layout(b)[1]:
+            r = (AH.PAD + 16, y + 8, 9 * len(bd["name"]), 15)
+            for k, p, q in segs:
+                self.assertFalse(cuts(p, q, r), "arrow %d strikes band title %s" % (k, bd["id"]))
+
     def test_deterministic(self):
         self.assertEqual(AH.render(brief(7)).encode("utf-8"), AH.render(brief(7)).encode("utf-8"))
 
