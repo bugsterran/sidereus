@@ -32,17 +32,18 @@ SHELL = ("run_shell_command", "shell", "exec_command", "local_shell", "Bash", "S
 # ⚠Anchored at the command start: `grep "[pl:"` or a marker inside a script must never count.
 MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl(-end)?:(?:(-)|([a-z0-9-]{1,40})/([^\]\n|]{1,40})(\|fail)?)\]""")
 # --- later-line marker: identical block in pl_mark.py · pl_flow.py (tests compare) ---
-# Later lines count only as `echo`/`printf` of a marker (a bare or `#` line may be doc text); heredoc bodies are skipped.
+# A later segment (after a top-level `;` `&&` `||` or newline) counts only as `echo`/`printf` of a marker: a bare, `#`
+# or piped marker may be doc text or a grep argument; heredoc bodies are skipped.
 LATER = re.compile(r"""^[ \t]*(?:echo|printf)[ \t]+(?=["']?\[pl)""")
 HEREDOC = re.compile(r"""(?<!<)<<(?!<)-?[ \t]*["']?([A-Za-z_][A-Za-z0-9_]*)""")
 
 
 def mark_match(cmd):
-    """MARK at the command start, else the first `echo`/`printf` marker line outside a heredoc body.
+    """MARK at the command start, else the first `echo`/`printf` marker segment outside a heredoc body.
     ⚠pi writes markers as later lines of one command; first marker wins (as on line 1) so `[pl-end:..]` then `[pl:-]`
     still closes the run."""
     m = MARK.match(cmd)
-    if m or "\n" not in cmd:
+    if m:
         return m
     end = None
     for i, ln in enumerate(cmd.split("\n")):
@@ -50,13 +51,40 @@ def mark_match(cmd):
             if ln.strip() == end:
                 end = None
             continue
-        e = LATER.match(ln) if i else None
-        m = MARK.match(ln[e.end():]) if e else None
-        if m:
-            return m
+        for seg in _segs(ln)[0 if i else 1:]:   # ⚠line 1's first segment is MARK's alone
+            e = LATER.match(seg)
+            m = MARK.match(seg[e.end():]) if e else None
+            if m:
+                return m
         h = HEREDOC.search(ln)
         end = h.group(1) if h else None
     return None
+
+
+def _segs(ln):
+    """Split one line on top-level `;` `&&` `||` (quotes and backslashes respected); a `#` word ends the line."""
+    out, cur, q, i = [], [], "", 0
+    while i < len(ln):
+        c = ln[i]
+        if c == "\\" and q != "'" and i + 1 < len(ln):
+            cur.append(ln[i:i + 2])
+            i += 2
+            continue
+        if q:
+            q = "" if c == q else q
+        elif c in "'\"":
+            q = c
+        elif c == "#" and (not cur or cur[-1][-1:] in " \t"):
+            break
+        elif c == ";" or ln[i:i + 2] in ("&&", "||"):
+            out.append("".join(cur))
+            cur = []
+            i += 1 if c == ";" else 2
+            continue
+        cur.append(c)
+        i += 1
+    out.append("".join(cur))
+    return out
 # --- end later-line marker ---
 
 

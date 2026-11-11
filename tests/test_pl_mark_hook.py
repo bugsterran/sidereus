@@ -123,7 +123,7 @@ class ShellMarker(unittest.TestCase):
 
     def test_not_a_marker(self):
         self._run('grep "[pl:" -r .')
-        self._run('ls; echo "[pl:sidereus-change/구현]"')
+        self._run('ls | grep "[pl:sidereus-change/구현]"')   # `ls; echo "[pl:..]"` counts since mark_match segments
         self._run('echo "[pl:sidereus-change/구현]"', event="AfterTool")
         self._run('echo "[pl:sidereus-change/구현]"', argv=())                              # cc: command ignored
         self._run('echo "[pl:sidereus-change/구현]"', argv=("--platform", "cc"), tool="Bash")

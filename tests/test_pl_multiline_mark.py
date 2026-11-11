@@ -48,6 +48,17 @@ class MarkMatch(unittest.TestCase):
             self.assertEqual(mm('ls\necho "[pl-skip:x/a] r"\necho "[pl-end:x/y]"').group(4), "y")
             self.assertEqual(mm('echo "[pl:x/a]"\necho "[pl-end:x/y]"').group(4), "a")   # line 1 unchanged
 
+    def test_segments(self):
+        for mod in (M, F):
+            mm = mod.mark_match
+            self.assertEqual(mm('cd /d; echo "[pl:p/s]"').group(3), "p")
+            self.assertEqual(mm('cd /d && echo "[pl-end:p/s]"').group(1), "-end")
+            self.assertEqual(mm('cd /d\na | b; echo "[pl-end:p/s]"').group(4), "s")
+            self.assertEqual(mm('cd /d || echo "[pl:p/a]"; echo "[pl:p/b]"').group(4), "a")   # first wins
+            for c in ('grep "[pl:p/s]" f; true', 'a | grep "[pl:p/s]"', 'echo "x; [pl:p/s]"', "ls; echo 'a;' [pl:p/s]",
+                      'ls # ; echo "[pl:p/s]"', 'ls\na | echo "[pl:p/s]"'):
+                self.assertIsNone(mm(c), c)
+
 
 class Hooks(unittest.TestCase):
     def setUp(self):
@@ -109,6 +120,10 @@ class Hooks(unittest.TestCase):
         self._stage("review", END)
         self.assertTrue(self._runs()[PL].get("end"))
         self.assertEqual(len(self._rows()), 1)
+
+    def test_flow_opens_on_one_line_segment(self):
+        self._run(F, "PreToolUse", 'cd %s; echo "[pl:%s/scan]"' % (self.proj, PL))
+        self.assertEqual(self._runs()[PL]["st"]["scan"]["s"], "run")
 
     def test_flow_ignores_grep_on_later_line(self):
         self._stage("scan", 'echo "[pl-end:%s/scan]"' % PL)
