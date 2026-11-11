@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+**Highlights**
+
+- Platforms: pi connects through «Connect» (hooks, MCP servers, a Sidereus extension), and new mail wakes an idle pi session without a model turn while it waits.
+- Security checks: osv-scanner findings get a reachability verdict, and test code is left out of the code scanners by default («Include test code» scans it).
+- Requests: recipient pickers (security fixes, Harness «Next step», pipeline evaluation, runs) list live sessions of every platform, not only Claude Code.
+
 ### Added
 
 - Platforms: pi hooks and the Sidereus MCP server connect through «Connect» in Settings › «Diagnostics» (an extension plus `mcp.json`, previewed first); a pi row without hooks shows «Hooks not connected».
@@ -24,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: the diagram request («Generate diagram» / «Update diagram» / «Redraw») also draws the one-page overview, so «Simple» is ready after one request; `arch-brief` remains for redrawing only the overview, and a failed overview leaves the verified map in place.
 - Requests: the recipient pickers for security check fixes, the Harness «Next step» and pipeline evaluation «Ask AI» list live sessions of every platform (before, Claude Code only), and the structure diagram, overview and pipeline run pickers, which already listed several platforms, now list every one; the Harness «Next step» lists only sessions logged in to the mailbox. Sessions from other CLIs get a run-it-yourself body with shell stage markers, and sending still needs a mailbox login.
 - Pipelines: the red-check «off» hint reads «Open an AI session in this project and log in to the mailbox to request it» instead of naming Claude Code.
+- Retro: the «All accounts» picker moves to the toolbar.
 
 ### Fixed
 
@@ -46,7 +53,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Platforms: an idle pi session stays listed while pi still runs in its folder, instead of dropping after 10 minutes without writes.
 - Platforms: pi rows carry the mailbox id pi logs in as, so the work-popup composer and run pickers address the pi session, and a room member from pi shows the pi logo.
 - Structure: in a module focus view a box with many links grows wide enough to keep its link ends 10 px apart, instead of drawing them about 2 px apart.
-- Pipelines: in «Watch» the stage detail pane ends on a line boundary instead of cutting its last line in half.
+- Pipelines: in «Watch» the stage detail pane ends on a line boundary instead of cutting its last line in half; at its minimum height it grows to the next line.
+- Platforms: a pi session whose explicit `pi:<cwd>` mailbox id is also a Claude folder's id is woken by new mail and told that id at start, instead of falling back to `<folder>-pi`.
+- Rooms: when a Claude session and a pi session share a mailbox id, the member logo follows the live one.
+- Layout: History rows wrap at 1100/900 instead of cutting fields; Pipelines «Working now» names stay on one line at 1100; Tokens «Top 5 costly runs» and Retro «Frequent failures» keep values next to names at 1920; the light count badge meets contrast.
 - Sessions: the tool-state bar sits on the same left edge and height as the account band, instead of a second shorter bar beside it.
 - Timeline: the tab dot also lights while a main session works in its own turn without subagents (sessions idle 600 s or more excluded, as in the session list); its tooltip names both counts.
 
