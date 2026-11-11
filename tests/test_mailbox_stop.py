@@ -138,6 +138,7 @@ class MailboxStop(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("mailbox_stop_t", HOOK)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
+        mod.BUDGET_S = float("inf")                # ⚠budget clock starts at import; the 27 MB setup below can outlast it (slow on Windows)
         big = json.dumps({"id": "z", "t": self.now - 10 ** 12, "from": "bob", "room": "r1", "body": "x" * 400})
         with open(self.p("bus.jsonl"), "a", encoding="utf-8") as f:
             f.write((big + "\n") * 60000)          # ~27 MB

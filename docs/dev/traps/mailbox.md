@@ -94,6 +94,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Do not raise the 0.25 default to calm a test. Gemini/Codex mail stop reads the same value through the module (`tests/test_gemini_mail_stop.py`).
 - **Large-bus test timed CPU, which CI noise could not separate from a full scan.** ★CI 42742565531 (macos 3.12): small-bus base 0.054/0.063 s vs 27 MB bus 0.124/0.119 s, margin 0.06 missed by 5 ms; the hook still read only the 512 KB tail.
   - ⇒ `test_large_bus_reads_only_the_tail` counts bytes read from `bus.jsonl` in-process (module `open` spy) against `BUS_TAIL`. ⚠Do not go back to a CPU or wall-time margin.
+- **In-process load of `mailbox_stop` starts the 0.25 s budget clock at import.** Cause: `T0` is set by `exec_module`, and slow setup after it (27 MB bus write on Windows CI) made `plan()` return None.
+  - ⇒ In-process tests set `mod.BUDGET_S = float("inf")` right after `exec_module`, as `run_hook` does with `MAILBOX_STOP_BUDGET_S=inf`.
+  - ⚠Do not reorder setup to dodge the clock; lift the budget explicitly.
 
 ## Mail watch: waking without Monitor (`hooks/mailbox_wake.py`)
 
