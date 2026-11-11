@@ -2,6 +2,7 @@
 Object.assign(I18N.ko, {
   'Unused (verified)': '미사용 (검증됨)',
   'Unused (verified) {n}': '미사용 (검증됨) {n}',
+  'unused (verified) {u}': '미사용 (검증됨) {u}',
   'Invalidated': '판정 무효',
   'Unjudged': '미판정',
   'judged {d}': '{d} 판정',

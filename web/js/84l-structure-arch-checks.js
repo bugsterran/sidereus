@@ -103,6 +103,8 @@ function archChkView(d, S, hid){
   const ok = x => { const lv = archChkLv(x.sev); return sev === 'all' || lv === 'critical' || (sev === 'high' && lv === 'high'); };
   return archChkTop(d).filter(x => !H[archChkRk(x)] && ok(x) && (!tool || String(x.tool || '') === tool));
 }
+// Pure: count of listed live rows (verified-unused rows excluded, 84l5) — the window title counts what the header counts.
+function archChkLiveN(d, S, hid){ const v = archChkView(d, S, hid); return (typeof archChkUnusedSplit === 'function' ? archChkUnusedSplit(v).live : v).length; }
 // Pure: selected items in list order, visible ones only (keys of items no longer listed drop out).
 function archChkSel(d, sel, S, hid){
   const v = archChkView(d, S, hid);   // ⚠collapsed verified-unused rows (84l5) are never sent, even with a stale key in sel
@@ -270,7 +272,7 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
       + '<button type=button class=wkrgb data-ckx>' + esc(T('Cancel')) + '</button>' + (off ? '<span class=archwhy>' + esc(off) + '</span>' : '') + '</div></div>';
   }
   h += (S.sent ? '' : archChkFixRecHtml(p)) + archChkSentHtml(S);   // after a reload S.sent is gone: the server record (plReq) stands in
-  const lg = sec ? archChkLogHtml(sec.log, sec.report) : '<div class=archckst>' + esc(T('No security check yet')) + '</div>';
+  const lg = sec ? archChkLogHtml(sec.log, sec.report, archChkTop(d)) : '<div class=archckst>' + esc(T('No security check yet')) + '</div>';
   // one issue row; ck = selectable (live rows only) ⚠a closure, not a top-level function: other tests extract archChkWinHtml alone
   const row = (x, ck) => {
     const k = archChkKey(x), ln = parseInt(x.line, 10) || 1, sv = archChkLv(x.sev), hp = archChkHelp(c, x), uc = typeof archChkUseChip === 'function' ? archChkUseChip(x) : '';
@@ -355,14 +357,17 @@ function archChkSplitDrag(e, w, g){
 }
 // Pure: read-only security history (sidereus/sec_checks.log_view) — last check age, then open / resolved / false-positive rows.
 //   Metadata only (sev · file:line · key · one-line desc); AI review rows are labelled as unverified model output.
-function archChkLogHtml(L, rep){
+//   top = current check items: an open scan row whose items are all verified unused (84l5) is counted apart, not listed as open.
+function archChkLogHtml(L, rep, top){
   L = L && typeof L === 'object' ? L : {};
   const arr = k => (Array.isArray(L[k]) ? L[k] : []).filter(x => x && x.file), num = v => typeof v === 'number' && isFinite(v);
-  const open = arr('open'), res = arr('resolved'), fp = arr('fp');
+  const isUn = x => typeof archChkLogUnused === 'function' && archChkLogUnused(x, top);
+  const op0 = arr('open'), open = op0.filter(x => !isUn(x)), unu = op0.length - open.length, res = arr('resolved'), fp = arr('fp');
   const ST = { open: T('open', 'finding'), resolved: T('resolved', 'finding'), fp: T('false positive', 'finding') };
   let h = '<div class=archckst>' + esc(num(L.at_scan) ? T('Last security check {t}').replace('{t}', () => agoAt(L.at_scan)) : T('Never checked'))
     + (num(L.at_review) ? ' · ' + esc(T('Last AI review {t}').replace('{t}', () => agoAt(L.at_review))) : '')
-    + ' · ' + esc(T('Open {o} · resolved {r} · false positives {f}').replace('{o}', open.length).replace('{r}', res.length).replace('{f}', fp.length)) + '</div>';
+    + ' · ' + esc(T('Open {o} · resolved {r} · false positives {f}').replace('{o}', open.length).replace('{r}', res.length).replace('{f}', fp.length))
+    + (unu ? ' · ' + esc(T('unused (verified) {u}').replace('{u}', unu)) : '') + '</div>';
   if(rep && typeof rep === 'object' && typeof rep.name === 'string' && rep.name)   // security.report {name, at}: name is file data, esc
     h += '<div class=archckst><button type=button class=wkrgb data-ckrep="' + esc(rep.name) + '" title="' + esc(rep.name) + '">'
       + esc(T('Last report {t}').replace('{t}', () => num(rep.at) ? hhmm(rep.at, {date: true}) : rep.name)) + '</button></div>';
@@ -417,7 +422,7 @@ function archChkFixRecHtml(p, rec){
   const fx = typeof r.fix === 'string' && /^[0-9a-f]{7,12}$/.test(r.fix) ? r.fix : '', dl = ak.length || (Array.isArray(a.delivered) && a.delivered.length);
   const sf = r.pipeline === 'security-fix' ? archChkFixProg(p, r) : '';   // literal, not ARCH_FIX_PL: 48i tests extract this function alone
   const rc = sf ? sf : r.pipeline === 'security-fix' ? (dl ? T('Delivered') : r.state === 'gone' ? T('No session', 'pl request') : '')
-    : r.pipeline === 'checks-fix' ? (r.state === 'done' ? T('re-scan done — {n} issues left').replace('{n}', () => (ARCH.cache[p] ? archChkView(ARCH.cache[p], {}, archChkHidden(p)).length : 0))
+    : r.pipeline === 'checks-fix' ? (r.state === 'done' ? T('re-scan done — {n} issues left').replace('{n}', () => (ARCH.cache[p] ? archChkLiveN(ARCH.cache[p], {}, archChkHidden(p)) : 0))
     : fx ? T('fix commit seen {h}').replace('{h}', () => fx) : dl ? T('Delivered') : r.state === 'gone' ? T('No session', 'pl request') : '')
     : r.state === 'done' ? T('Done', 'pl request') : ak.length ? T('acked') + ' · ' + ak.map(x => String(x.who) + (x.note ? ' — ' + String(x.note).slice(0, 60) : '')).join(' · ')
     : (Array.isArray(a.delivered) && a.delivered.length ? T('Delivered') : r.state === 'gone' ? T('No session', 'pl request') : '');
@@ -437,7 +442,7 @@ function archChkWinOpen(p){
   if(!w){ note(T('Popup blocked — allow popups for this site.')); return; }
   const css = archChkCssText(document), dc = w.document;
   dc.open();
-  dc.write('<!doctype html><meta charset=utf-8><title>' + esc(T('Top issues {n}').replace('{n}', archChkView(ARCH.cache[p], {}, archChkHidden(p)).length)) + '</title><style>' + css + '</style>'
+  dc.write('<!doctype html><meta charset=utf-8><title>' + esc(T('Top issues {n}').replace('{n}', archChkLiveN(ARCH.cache[p], {}, archChkHidden(p)))) + '</title><style>' + css + '</style>'
     + '<body class=ckwin><div id=ckroot></div><script>' + ARCH_CW_JS + '</' + 'script>');
   dc.close();
   strWinTheme(w);
@@ -464,7 +469,7 @@ function archChkWinPaint(){
   root.innerHTML = archChkWinHtml(S.p, ARCH.cache[S.p], S, cands, archChkFixCands(SESS, S.p, true));
   archChkSplitPaint(root);
   const l2 = root.querySelector('.archckl'); if(l2) l2.scrollTop = st;
-  w.document.title = T('Top issues {n}').replace('{n}', archChkView(ARCH.cache[S.p], S, archChkHidden(S.p)).length) + ' — ' + archBase(S.p);
+  w.document.title = T('Top issues {n}').replace('{n}', archChkLiveN(ARCH.cache[S.p], S, archChkHidden(S.p))) + ' — ' + archBase(S.p);
   return true;
 }
 // Events from the issues window (forwarded by ARCH_CW_JS). Esc closes the preview first, then the window.

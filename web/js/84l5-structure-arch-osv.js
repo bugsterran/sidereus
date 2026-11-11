@@ -24,6 +24,13 @@ function archChkUnusedSplit(top){
   const a = Array.isArray(top) ? top : [], un = a.filter(x => { const u = archChkUse(x); return !!u && u.s === 'unused'; });
   return { live: a.filter(x => un.indexOf(x) < 0), un };
 }
+// Pure: history row (sec_checks.log_view, key «tool:rule») is verified unused when every current item with the same key and file is.
+//   ⚠No matching item (past the top list, other tool, AI review row) = no verdict, so the row stays open (unknown is not «unused»).
+function archChkLogUnused(x, top){
+  if(!x || x.ai || typeof x.key !== 'string' || !Array.isArray(top)) return false;
+  const m = top.filter(y => y && y.file === x.file && String(y.tool || '') + ':' + String(y.rule || '') === x.key);
+  return m.length > 0 && m.every(y => { const u = archChkUse(y); return !!u && u.s === 'unused'; });
+}
 // Pure: header hint «Unjudged {n} · run the osv-triage pipeline»; '' without a natural osv_use.none > 0 (old results show nothing).
 function archChkOsvHint(sec){
   const o = sec && sec.osv_use, n = o && typeof o === 'object' && !Array.isArray(o) ? o.none : null;

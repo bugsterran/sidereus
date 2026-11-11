@@ -10,7 +10,7 @@ import tests.test_struct_arch_checks_js as base
 from tests._load import js_fn
 from tests._node import node_e
 
-FNS = base.FNS + ["archChkUse", "archChkUseChip", "archChkUnusedSplit", "archChkOsvHint"]
+FNS = base.FNS + ["archChkUse", "archChkUseChip", "archChkUnusedSplit", "archChkOsvHint", "archChkLiveN", "archChkLogUnused"]
 
 
 def run(body, lang="en"):
@@ -107,6 +107,37 @@ class ArchOsv(unittest.TestCase):
         self.assertNotIn("data-ckunused", r)
         self.assertNotIn("Unjudged", r)
         self.assertIn("Top issues 2", r)
+
+    def test_title_count_matches_header(self):
+        r = run("const d2 = {checks: {security: " + json.dumps(SEC) + "}};"
+                "console.log(JSON.stringify([archChkLiveN(d2, {}, []), archChkLiveN(d2, {sev: 'all', tool: ''}, ['osv-scanner:GHSA-4']), archChkLiveN({}, {}, [])]));")
+        self.assertEqual(r, [3, 2, 0])                                                      # 5 rows minus 2 verified unused, as «Top issues 3»
+
+    def test_history_unused_not_open(self):
+        top = SEC["top"] + [dict(_it(1, None), line=9)] + [dict(_it(6, UN), file="b.json"), dict(_it(6), file="b.json", line=7)]
+        lg = {"open": [{"file": "package-lock.json", "line": 5, "sev": "high", "key": "osv-scanner:GHSA-5"},     # unused -> counted apart
+                       {"file": "package-lock.json", "line": 2, "sev": "high", "key": "osv-scanner:GHSA-2"},     # used -> open
+                       {"file": "package-lock.json", "line": 3, "sev": "high", "key": "osv-scanner:GHSA-3"},     # unjudged -> open
+                       {"file": "package-lock.json", "line": 1, "sev": "high", "key": "osv-scanner:GHSA-1"},     # one of two items unused -> open
+                       {"file": "b.json", "line": 6, "sev": "high", "key": "osv-scanner:GHSA-6"},                # mixed verdicts -> open
+                       {"file": "x.json", "line": 1, "sev": "high", "key": "osv-scanner:GHSA-99"},               # not in top -> unknown, open
+                       {"file": "package-lock.json", "line": 5, "sev": "high", "key": "osv-scanner:GHSA-5", "ai": True}],   # AI row -> open
+              "resolved": [], "fp": []}
+        r = run("console.log(JSON.stringify([archChkLogHtml(" + json.dumps(lg) + ", null, " + json.dumps(top) + "),"
+                "archChkLogHtml(" + json.dumps(lg) + ", null), archChkLogHtml(" + json.dumps(lg) + ", null, " + json.dumps(top) + ").length]));")
+        self.assertIn("Open 6 · resolved 0 · false positives 0 · unused (verified) 1</div>", r[0])
+        self.assertEqual(r[0].count("<li "), 6)                                             # the unused row is not listed as open
+        self.assertNotIn('<code title="osv-scanner:GHSA-5">GHSA-5</code>', r[0])           # scan row gone; the AI row (full key) stays
+        self.assertIn("Open 7 · resolved 0 · false positives 0</div>", r[1])               # no current items: no verdict, all open
+        self.assertNotIn("unused (verified)", r[1])
+        r = run("console.log(JSON.stringify(archChkLogHtml(" + json.dumps(lg) + ", null, " + json.dumps(top) + ")));", lang="ko")
+        self.assertIn("미사용 (검증됨) 1", r)
+
+    def test_window_history_uses_current_items(self):
+        sec = dict(SEC, log={"open": [{"file": "package-lock.json", "line": 1, "sev": "high", "key": "osv-scanner:GHSA-1"},
+                                      {"file": "package-lock.json", "line": 2, "sev": "high", "key": "osv-scanner:GHSA-2"}]})
+        r = run("const S = {sel: {}, sev: 'all', tool: ''}; console.log(JSON.stringify(archChkWinHtml('/r', {checks: {security: " + json.dumps(sec) + "}}, S, [])));")
+        self.assertIn("Open 1 · resolved 0 · false positives 0 · unused (verified) 1", r)
 
 
 if __name__ == "__main__":
