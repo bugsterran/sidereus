@@ -15,6 +15,7 @@ from sidereus.arch_checks_parse import SEVS
 from sidereus.arch_verify import safe_rel
 from sidereus.bus import _atomic_write
 from sidereus.sec_checks import LOG_ITEMS_MAX
+from sidereus.sec_testpaths import is_test
 
 REPORT_RE = re.compile(r"security-report-\d{8}-\d{4}\.md")
 KEEP = 10
@@ -56,7 +57,11 @@ def scan_pair(records, at):
     if len(scans) < 2:
         return None, cur["items"]
     ran = set(cur.get("tools") or ())
-    return [x for x in scans[-2]["items"] if x["key"].split(":", 1)[0] in ran], cur["items"]
+    # ⚠either side skipped test code: compare non-test findings only, else test findings read as «gone» or «new»
+    nt = cur.get("notests") is True or scans[-2].get("notests") is True
+    keep = lambda x: not (nt and is_test(x.get("file")))
+    return [x for x in scans[-2]["items"] if x["key"].split(":", 1)[0] in ran and keep(x)], \
+        [x for x in cur["items"] if keep(x)]
 
 
 def _ident(x):
@@ -94,6 +99,9 @@ def render(j, view, prev_items, cur_items, deps):
            "- Repo: `%s`" % _cell(j.get("repo") or "?", 400),
            "- Commit: `%s`%s" % (_cell(str(j.get("commit") or "?")[:12]), " (uncommitted changes)" if j.get("dirty") else ""),
            "- Run: %s (local time)" % time.strftime("%Y-%m-%d %H:%M", time.localtime(at))]
+    tx = j.get("tests_excluded")
+    if isinstance(tx, dict) and isinstance(tx.get("n"), int) and not isinstance(tx.get("n"), bool):
+        out.append("- Test code excluded: %d files (gitleaks, semgrep, bandit)" % tx["n"])
     if j.get("src_changed"):
         out.append("- ⚠A tool changed files in the repo during the run")
     tools = [t for t in j.get("tools") or () if isinstance(t, dict)]

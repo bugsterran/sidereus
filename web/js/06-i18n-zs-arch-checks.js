@@ -32,6 +32,8 @@ Object.assign(I18N.ko, {
   'Stop|pl request': '중단',
   'Resize issues and history lists': '이슈 목록과 기록 목록 크기 조절',
   'Include images': '이미지 포함',
+  'Include test code': '테스트 코드도 검사',
+  'Test code excluded · {n} files': '테스트 코드 제외됨 · {n}개 파일',
   'Base images': '베이스 이미지',
   'fixable high/critical {n}': '고칠 수 있는 높음/치명 {n}건',
   'Replace base image': '베이스 이미지 교체',

@@ -61,6 +61,11 @@ class SecurityPipelineTest(unittest.TestCase):
         self.assertIn("Add `--images` only when the request asks to include images.", t)
         self.assertNotIn("--images", self.st[0]["gate"])
 
+    def test_no_tests_flag_only_on_request(self):
+        t = self.st[0]["task"]
+        self.assertIn("Add `--no-tests` only when the request asks to skip test code.", t)
+        self.assertNotIn("--no-tests", self.st[0]["gate"])
+
     def test_rules_name_log(self):
         self.assertIn("security-log.jsonl", self.d["rules"])
         self.assertIn("--log-review", self.d["rules"])

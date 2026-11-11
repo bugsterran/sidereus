@@ -14,6 +14,7 @@ from sidereus.arch_checks_parse import SEV_RANK, SEVS, clean_help, level, zero
 from sidereus import sec_checks as SC
 from sidereus import sec_trivy as ST
 from sidereus import sec_report as SR
+from sidereus import sec_testpaths as TP
 
 STATUSES = ("ok", "fail", "timeout", "missing", "skipped")
 RULE_RE = re.compile(r"[A-Za-z0-9_./@:-]{1,60}")
@@ -78,9 +79,9 @@ def _judge(plan, res, repo):
     return "ok", None, items
 
 
-def build(repo, commit, dirty, src_changed, at, tools, items):
+def build(repo, commit, dirty, src_changed, at, tools, items, tests_excluded=None):
     """checks.json v2 dict. tools = [{id, rules, status, why?, ms, files, target?, fixable?, waiting?}] (n added here);
-    items most severe first, capped."""
+    items most severe first, capped. tests_excluded = {n, patterns} of a `--no-tests` run, else the key is absent."""
     files, n = {}, {}
     for x in items:
         files.setdefault(x["file"], zero())[x["sev"]] += 1
@@ -114,7 +115,7 @@ def build(repo, commit, dirty, src_changed, at, tools, items):
                            **({"pkg": x["pkg"]} if x.get("pkg") else {}), **({"cve": x["cve"]} if x.get("cve") else {}),
                            **({"imgs": x["imgs"]} if _nat(x.get("imgs")) and x["imgs"] >= 1 else {}),
                            **({"fix": x["fix"]} if isinstance(x.get("fix"), bool) else {}))
-                      for x in its], "rules": rules}
+                      for x in its], "rules": rules, **({"tests_excluded": _tests_excluded(tests_excluded)} if _tests_excluded(tests_excluded) else {})}
 
 
 # ── schema (gate) and page loader ──
@@ -142,8 +143,10 @@ def checks_errors(j, repo=None, commit=None, ids=()):
     if not isinstance(j, dict):
         return ["top level must be an object"]
     errs = []
-    if set(j) - {"rules"} != {"v", "repo", "commit", "dirty", "src_changed", "at", "tools", "files", "items"}:
+    if set(j) - {"rules", "tests_excluded"} != {"v", "repo", "commit", "dirty", "src_changed", "at", "tools", "files", "items"}:
         errs.append("keys")
+    if "tests_excluded" in j and _tests_excluded(j["tests_excluded"]) is None:
+        errs.append("tests_excluded")
     rs = j.get("rules", {})
     if not isinstance(rs, dict) or len(rs) > ITEMS_MAX or any(_rule_key(k, ids) != k or not isinstance(v, dict)
                                                               or clean_help(v.get("desc"), v.get("url")) != v
@@ -172,6 +175,21 @@ def checks_errors(j, repo=None, commit=None, ids=()):
     if not isinstance(its, list) or len(its) > ITEMS_MAX or any(_clean_item(x, ids) != x for x in its):
         errs.append("items")
     return errs
+
+
+TX_PAT_RE = re.compile(r"[A-Za-z0-9_.*?-]{1,39}/?")   # a folder (`tests/`) or a basename glob, never a path
+TX_PAT_MAX = 20
+
+
+def _tests_excluded(v):
+    """{n, patterns} when n is a natural number and patterns is a short list of pattern shapes, else None.
+    ⚠Not pinned to today's sec_testpaths.PATTERNS: older results must still pass after the list changes; the cap and
+    the no-inner-slash shape keep a list of skipped file paths out."""
+    ps = v.get("patterns") if isinstance(v, dict) else None
+    if not (isinstance(v, dict) and set(v) == {"n", "patterns"} and _nat(v["n"]) and isinstance(ps, list)
+            and 0 < len(ps) <= TX_PAT_MAX and all(isinstance(p, str) and TX_PAT_RE.fullmatch(p) for p in ps)):
+        return None
+    return {"n": v["n"], "patterns": list(ps)}
 
 
 def _row_extra(t):
@@ -325,6 +343,10 @@ def _load_one(root, map_dir, m, head, name, ids):
         if len(top) >= TOP_MAX:
             break
     at = j.get("at")
-    return {"commit": c, "at": at if isinstance(at, (int, float)) and not isinstance(at, bool) else None,
-            "stale": bool(head) and head != c, "dirty": j.get("dirty") is True, "src_changed": j.get("src_changed") is True,
-            "tools": tools, "mods": mods, "other": other, "top": top, "rules": rules}
+    out = {"commit": c, "at": at if isinstance(at, (int, float)) and not isinstance(at, bool) else None,
+           "stale": bool(head) and head != c, "dirty": j.get("dirty") is True, "src_changed": j.get("src_changed") is True,
+           "tools": tools, "mods": mods, "other": other, "top": top, "rules": rules}
+    tx = _tests_excluded(j.get("tests_excluded"))
+    if tx:   # ⚠absent = tests were scanned (or an older file): no badge, never «0 files»
+        out["tests_excluded"] = tx
+    return out

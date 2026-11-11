@@ -170,6 +170,99 @@ class RunnerTest(Tmp):
         self.assertFalse(os.path.exists(self.fp()))
 
 
+class NoTestsTest(Tmp):
+    """--no-tests: code scanners read a pruned copy, dependency/image scanners keep the full tree (fake binaries)."""
+    def setUp(self):
+        super().setUp()
+        self.store = os.path.join(self.tmp, "store")
+        self.cli = cli()
+        for rel in ("a.py", "tests/fixtures/mock_secret", "package-lock.json", "Dockerfile", "src/x.test.js"):
+            self.w(rel, "x\n")
+        self.seen = []
+
+        def ex(p, t, tmp):
+            fs = sorted(os.path.relpath(os.path.join(dp, f), p["cwd"]).replace(os.sep, "/")
+                        for dp, _d, fns in os.walk(p["cwd"]) for f in fns)
+            self.seen.append((p["id"], list(p["argv"]), p["cwd"], fs))
+            return {"rc": 1, "out": json.dumps(BANDIT), "err": "", "t0": 0, "ms": 5}
+        git = lambda repo, args: (C1 + "\n") if args[0] == "rev-parse" else ""
+        self.p = [mock.patch.object(AV, "ARCH_DIR", self.store), mock.patch.object(self.cli, "_git", git),
+                  mock.patch.object(self.cli, "_which", lambda n: "/bin/" + n),
+                  mock.patch.object(self.cli, "_probe", lambda: True),
+                  mock.patch.object(self.cli, "_exec", ex)]
+        for p in self.p:
+            p.start()
+
+    def tearDown(self):
+        for p in self.p:
+            p.stop()
+        super().tearDown()
+
+    def j(self):
+        return AV.read_json(os.path.join(self.store, AV.repo_key(self.repo), C1, SC.SEC_FILE))
+
+    @staticmethod
+    def norm(row):
+        import re
+        sub = lambda x: re.sub(r"[^ ]*sidereus-(src|code)-[^/ ]+", r"<\1>", x)
+        return (row[0], [sub(a) for a in row[1]], sub(row[2]))
+
+    def test_code_scanners_skip_tests_deps_unchanged(self):
+        self.cli.run(self.repo)
+        full, self.seen = self.seen, []
+        self.assertIsNone(self.j().get("tests_excluded"))   # included: no record, never 0
+        self.cli.run(self.repo, no_tests=True)
+        code = {r[0]: r for r in self.seen if r[0] in ("gitleaks", "semgrep", "bandit")}
+        self.assertEqual(sorted(code), ["bandit", "gitleaks", "semgrep"])
+        for r in code.values():
+            self.assertIn("sidereus-code-", r[2])
+            self.assertNotIn("tests/fixtures/mock_secret", r[3])
+            self.assertNotIn("src/x.test.js", r[3])
+            self.assertIn("a.py", r[3])
+        keep = lambda rows: sorted(self.norm(r) for r in rows if r[0] not in ("gitleaks", "semgrep", "bandit"))
+        self.assertEqual([r[0] for r in keep(self.seen)], ["npm-audit", "osv-scanner", "trivy-config"])
+        self.assertEqual(keep(self.seen), keep(full))   # R4: same argv and cwd (src) as without the flag
+        self.assertTrue(all("tests/fixtures/mock_secret" in r[3] for r in self.seen if r[0] == "npm-audit"))
+        j = self.j()
+        self.assertEqual(j["tests_excluded"]["n"], 2)
+        self.assertEqual(AC.checks_errors(j, self.repo, C1, SC.SEC_IDS), [])
+        j["extra"] = 1
+        self.assertIn("keys", AC.checks_errors(j, self.repo, C1, SC.SEC_IDS))
+        old = {"n": 1, "patterns": ["tests/", "test/", "*_test.*"]}   # an older PATTERNS list still validates
+        self.assertEqual(AC.checks_errors(dict(self.j(), tests_excluded=old), self.repo, C1, SC.SEC_IDS), [])
+        for bad in ({"n": -1, "patterns": list(SC.TP.PATTERNS)}, {"n": 1, "patterns": ["src/a/secret.py"]}, {"n": 1},
+                    {"n": 1, "patterns": []}, {"n": 21, "patterns": ["f%d.py" % i for i in range(21)]}):
+            j2 = dict(self.j(), tests_excluded=bad)
+            self.assertEqual(AC.checks_errors(j2, self.repo, C1, SC.SEC_IDS), ["tests_excluded"], bad)
+
+    def test_only_test_files(self):   # nothing outside test code: code scanners are skipped with a reason, gate EMPTY
+        for rel in ("a.py", "package-lock.json", "Dockerfile", "src/x.test.js"):
+            os.remove(os.path.join(self.repo, rel))
+        self.cli.run(self.repo, no_tests=True)
+        self.assertEqual([r[0] for r in self.seen], [])
+        why = {t["id"]: (t["status"], t.get("why")) for t in self.j()["tools"]}
+        self.assertEqual(why["gitleaks"], ("skipped", "no files outside test code"))
+        self.assertEqual(why["semgrep"], ("skipped", "no files outside test code"))
+        self.assertEqual(self.j()["tests_excluded"]["n"], 1)
+        rc, line = self.cli.verify(self.repo, C1)
+        self.assertEqual(rc, 1)
+        self.assertIn("EMPTY: no tool ran", line)
+
+    def test_bandit_py_only_in_tests(self):
+        os.remove(os.path.join(self.repo, "a.py"))
+        self.w("tests/test_a.py", "x = 1\n")
+        self.cli.run(self.repo, no_tests=True)
+        b = [t for t in self.j()["tools"] if t["id"] == "bandit"]
+        self.assertEqual([(t["status"], t.get("why")) for t in b], [("skipped", "no Python outside test code")])
+
+    def test_args(self):
+        a = self.cli._args(["--repo", self.repo, "--category", "security"])
+        self.assertFalse(a["no-tests"])
+        self.assertTrue(self.cli._args(["--repo", self.repo, "--category", "security", "--no-tests"])["no-tests"])
+        for bad in (["--verify", "--last", "--category", "security", "--no-tests"], ["--log-show", "--last", "--no-tests"]):
+            self.assertIsNone(self.cli._args(bad), bad)
+
+
 class LoadTest(Tmp):
     def setUp(self):
         super().setUp()
@@ -241,6 +334,15 @@ class LoadTest(Tmp):
         self.assertEqual([(x["rule"], x["sev"]) for x in s["top"]], [("B1", "low"), ("B2", "critical")])
         self.put(C1, {}, [], v=3)
         self.assertIsNone(AC.load_checks(self.repo, self.mdir, self.m, C1))
+
+    def test_tests_excluded_passthrough(self):
+        self.put(C1, {}, [])
+        self.assertNotIn("tests_excluded", AC.load_checks(self.repo, self.mdir, self.m, C1)["security"])   # absent, not 0
+        tx = {"n": 4, "patterns": list(SC.TP.PATTERNS)}
+        self.put(C1, {}, [], tests_excluded=tx)
+        self.assertEqual(AC.load_checks(self.repo, self.mdir, self.m, C1)["security"]["tests_excluded"], tx)
+        self.put(C1, {}, [], tests_excluded={"n": "4", "patterns": tx["patterns"]})
+        self.assertNotIn("tests_excluded", AC.load_checks(self.repo, self.mdir, self.m, C1)["security"])
 
     def test_stale_and_foreign_repo(self):
         self.put(C2, {}, [])

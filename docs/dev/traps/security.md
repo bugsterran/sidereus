@@ -4,6 +4,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Security and privacy
 
+- **A `--no-tests` scan must not resolve findings in test code** (`sidereus/sec_checks.py` `log_view`, `sec_report.scan_pair`). Code scanners never read test paths in that run, so an old test finding is absent without being fixed. ⇒ the scan record carries `notests: true`; such a scan resolves no finding whose file `sec_testpaths.is_test`, and the report's «gone» skips them too.
+  - ⚠The runner CLI defaults to include: old pipeline copies, the security-fix re-scan, `release.json` and pi/Codex sessions call it without flags. Only the viewer (or a request) adds `--no-tests`.
+  - ⚠Only the code scanners (gitleaks · semgrep · bandit) read the pruned copy; npm audit, osv-scanner and trivy keep the full tree with unchanged argv. Store the count and `PATTERNS` only, never skipped file names.
+
 - **python.org has no security flag, so a Python runtime fails only on EOL** (`scripts/deps_audit.py` `rt_verdict`, Harness runtime card). nodejs.org `dist/index.json` marks security releases (`security: true`); python.org `/api/v2/downloads/release` does not. ⇒ Node: a missed same-line security release = `fail`; Python: patch behind = `warn`, `fail` only when the cycle is EOL (`PY_EOL`).
   - ⚠No release list (offline, fetch error, own line not listed) = `unknown`, never `ok`; the viewer never fetches — only the runner writes `arch/deps-last.json`.
   - ⚠«Newest» counts Node even majors only (odd ones never reach LTS); every CPython minor counts.

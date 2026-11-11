@@ -16,6 +16,7 @@ FNS = ["mboxIn", "strHdBadge", "hhmm", "archBase", "archHome", "archNoHome", "ar
 FNS += ["archChkLast", "archChkLastHtml"]   # last-check line (window header, badge tooltip)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
 FNS += ["archChkTid", "archChkImgGap", "archChkImgBox", "archChkImgHtml"]   # 84l3: trivy scanner label, image-scan gap line, «Include images» box, base-image groups
+FNS += ["archChkTestBox", "archChkTestBadge"]   # 84l4: «Include test code» box, excluded-tests line
 FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqWho",
         "archReqRowHtml", "archChkProgHtml", "archChkFixLast", "archChkFixProg", "archChkFixKeys", "archChkFixRecHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
@@ -296,8 +297,8 @@ class StructArchChecks(unittest.TestCase):
         self.assertIn("--repo /x/shop", r[1])
         self.assertNotIn("/usr/bin/python3", r[1])   # absent on Windows
         self.assertIn("Gate: python3 /sid/scripts/arch_checks.py --verify --last --category security (Windows: py /sid/scripts/arch_checks.py --verify --last --category security)", r[1])
-        self.assertEqual(r[2], {"sh": 'python3 "/sid/scripts/arch_checks.py" --repo "/x/shop" --category security',
-                                "win": 'py "/sid/scripts/arch_checks.py" --repo "/x/shop" --category security'})
+        self.assertEqual(r[2], {"sh": 'python3 "/sid/scripts/arch_checks.py" --repo "/x/shop" --category security --no-tests',
+                                "win": 'py "/sid/scripts/arch_checks.py" --repo "/x/shop" --category security --no-tests'})   # test code excluded by default
         self.assertEqual(r[3:7], [None] * 4)                 # quoting-breaking path / unknown home / cmd %VAR% !VAR! -> no command
         del r[5:7]
         self.assertIn("data-ckrgo>", r[5])                    # confirm enabled, preview shown
@@ -735,14 +736,14 @@ class StructArchCheckFilters(unittest.TestCase):
                 "archChkRunHtml('/x/shop', d, on, c), archChkRunHtml('/x/shop', d, off, c), archChkRunHtml('/x/shop', d, non, []), archChkFixBody('/x/shop', null, [{tool: 'trivy-image', file: 'Dockerfile', line: 1, rule: 'CVE-2024-1', sev: 'high', imgs: 2}], '/sid')]));")
         self.assertIn("pass --images", r[0])
         self.assertNotIn("--images", r[1])
-        self.assertTrue(r[2]["sh"].endswith("--category security --images") and r[2]["win"].endswith("--category security --images"))
+        self.assertTrue(r[2]["sh"].endswith("--category security --images --no-tests") and r[2]["win"].endswith("--category security --images --no-tests"))
         self.assertNotIn("--images", r[3]["sh"] + r[3]["win"])
         self.assertIn("<input type=checkbox data-ckimg checked> 이미지 포함", r[4])
         self.assertIn("pass --images", r[4])                 # preview shows what will be sent
         self.assertIn("<input type=checkbox data-ckimg> 이미지 포함", r[5])
         self.assertNotIn("--images", r[5])
         self.assertIn("data-ckimg checked", r[6])            # terminal branch has the box too
-        self.assertIn("--category security --images</code>", r[6])
+        self.assertIn("--category security --images --no-tests</code>", r[6])
         self.assertIn("CVE-2024-1 · 2 images", r[7])         # mailbox text stays English
         self.assertNotIn("이미지", r[7])
 

@@ -14,6 +14,7 @@ import re
 import sys
 
 from sidereus import arch_verify as AV
+from sidereus import sec_testpaths as TP
 from sidereus.arch_checks_parse import SEV_RANK, SEVS, clean_help, level
 from sidereus.arch_verify import COMMIT_RE, safe_rel
 
@@ -412,12 +413,13 @@ def _log_item(x, src):
     return {"sev": sv, "file": f, "line": ln, "key": k, "desc": _desc(x.get("desc"))}
 
 
-def scan_record(commit, at, tools_ok, items):
-    """Scan record from checks-security items; tools_ok = ids that ran ok (only those can resolve their findings)."""
+def scan_record(commit, at, tools_ok, items, notests=False):
+    """Scan record from checks-security items; tools_ok = ids that ran ok (only those can resolve their findings).
+    notests: the scan excluded test code (`--no-tests`), so it cannot resolve findings in test files."""
     its = [_log_item({"sev": x.get("sev"), "file": x.get("file"), "line": x.get("line"),
                       "key": "%s:%s" % (x.get("tool"), x.get("rule")), "desc": x.get("rule")}, "scan") for x in items]
-    return {"v": 1, "at": at, "commit": commit, "src": "scan", "tools": sorted(t for t in set(tools_ok) if t in SEC_IDS),
-            "items": [x for x in its if x][:LOG_ITEMS_MAX]}
+    return dict({"v": 1, "at": at, "commit": commit, "src": "scan", "tools": sorted(t for t in set(tools_ok) if t in SEC_IDS),
+                 "items": [x for x in its if x][:LOG_ITEMS_MAX]}, **({"notests": True} if notests else {}))
 
 
 def review_record(commit, at, items):
@@ -457,6 +459,8 @@ def _valid(r):
     out["items"] = [y for y in (_log_item(x, r["src"]) for x in its[:LOG_ITEMS_MAX]) if y]
     if r["src"] == "scan":
         out["tools"] = [t for t in r.get("tools") or () if t in SEC_IDS] if isinstance(r.get("tools"), list) else []
+        if r.get("notests") is True:
+            out["notests"] = True
     return out
 
 
@@ -512,8 +516,10 @@ def log_view(kdir):
                 x.update(sev=y["sev"], line=y["line"], desc=y["desc"])
         if r["src"] == "scan":
             ran = set(r["tools"])
+            nt = r.get("notests") is True   # ⚠a scan that never read test files is no evidence a test finding was fixed
             for ident, x in st.items():
-                if ident[0] == "scan" and ident not in seen and x["status"] == "open" and ident[1].split(":", 1)[0] in ran:
+                if ident[0] == "scan" and ident not in seen and x["status"] == "open" and ident[1].split(":", 1)[0] in ran \
+                        and not (nt and TP.is_test(ident[2])):
                     x.update(status="resolved", at=r["at"], commit=r["commit"])
     rows = sorted(st.values(), key=lambda x: (SEV_RANK.get(x["sev"], 9), x["file"], x["line"], x["key"]))
     pick = lambda s: [x for x in rows if x["status"] == s][:LOG_ITEMS_MAX]
