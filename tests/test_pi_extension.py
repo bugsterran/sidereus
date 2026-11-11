@@ -14,22 +14,37 @@ SRC = os.path.join(ROOT, "ext-hooks", "pi-extension.ts")
 NODE = shutil.which("node")
 
 # ⚠Copied under each spawned script's name and run by the real interpreter: Windows cannot spawn a .py without a shell.
-STUB = r'''import json, os, signal, sys
+STUB = r'''import json, os, signal, sys, time, uuid
+SEQ = [0]
+def put(d, o):
+    # One file per record named by wall clock + pid + counter, so readers sort into write order.
+    # ⚠Not perf_counter_ns: on 3.9 macOS it starts at 0 in each process, so it cannot order across processes.
+    if not d:
+        return
+    os.makedirs(d, exist_ok=True)
+    SEQ[0] += 1
+    name = "%020d-%010d-%04d-%s" % (time.time_ns(), os.getpid(), SEQ[0], uuid.uuid4().hex)
+    tmp = os.path.join(d, name + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(json.dumps(o))
+    os.replace(tmp, os.path.join(d, name + ".json"))
 if os.path.basename(sys.argv[0]) == "pi_wake.py":
-    # Waiter stub: mode from PI_TEST_WAKE; every event goes to PI_TEST_WLOG.
-    wlog = os.environ.get("PI_TEST_WLOG") or os.devnull
+    # Waiter stub: mode from PI_TEST_WAKE; every event goes to the PI_TEST_WLOG directory.
+    wlog = os.environ.get("PI_TEST_WLOG", "")
     def wl(o):
-        with open(wlog, "a", encoding="utf-8") as f:
-            f.write(json.dumps(o) + "\n")
+        put(wlog, o)
     def term(_s, _f):
         wl({"end": "term"})
         os._exit(0)
     signal.signal(signal.SIGTERM, term)
+    k = 0
     try:
-        with open(wlog, encoding="utf-8") as f:
-            k = sum(1 for x in f if '"spawn"' in x)
-    except OSError:
-        k = 0
+        for x in os.listdir(wlog):
+            if x.endswith(".json"):
+                with open(os.path.join(wlog, x), encoding="utf-8") as f:
+                    k += "spawn" in json.load(f)
+    except (OSError, ValueError):
+        pass
     wl({"spawn": k, "argv": sys.argv[1:]})
     mode = os.environ.get("PI_TEST_WAKE", "block")
     if sys.argv[3:] == ["quiet"]:   # quiet waiter: the pending mail never wakes it
@@ -47,8 +62,7 @@ if os.path.basename(sys.argv[0]) == "pi_wake.py":
     wl({"ack": line.strip()} if line else {"end": "eof"})
     sys.exit(0)
 data = sys.stdin.read()
-with open(os.environ["PI_TEST_LOG"], "a", encoding="utf-8") as f:
-    f.write(json.dumps({"argv": sys.argv, "stdin": json.loads(data or "{}")}) + "\n")
+put(os.environ["PI_TEST_LOG"], {"argv": sys.argv, "stdin": json.loads(data or "{}")})
 s = os.path.basename(sys.argv[0])
 if s == "pl_flow.py" and os.environ.get("PI_TEST_DENY"):
     sys.stdout.write(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
@@ -74,12 +88,22 @@ if (scenario === "prompt") {
   await handlers.session_start({ reason: "startup" }, ctx);
   await handlers.before_agent_start({ prompt: "SECRET PROMPT", systemPromptOptions: { sections } }, ctx);
 }
-const n = () => { try { return fs.readFileSync(log, "utf8").split("\n").filter(Boolean).length; } catch { return 0; } };
+const n = () => { try { return fs.readdirSync(log).filter((x) => x.endsWith(".json")).length; } catch { return 0; } };
 const t0 = Date.now();
 while (n() < Number(want) && Date.now() - t0 < 8000) await new Promise((r) => setTimeout(r, 20));
 await new Promise((r) => setTimeout(r, 150));
 console.log(JSON.stringify({ ret: ret ?? null, sections }));
 '''
+
+
+def read_dir(d):
+    """Stub records in write order (file names sort by clock, pid, counter)."""
+    out = []
+    for x in sorted(os.listdir(d)):
+        if x.endswith(".json"):
+            with open(os.path.join(d, x), encoding="utf-8") as f:
+                out.append(json.load(f))
+    return out
 
 
 def _node_args():
@@ -122,7 +146,9 @@ class PiExtension(unittest.TestCase):
         self.driver = os.path.join(self.d, "driver.mjs")
         with open(self.driver, "w", encoding="utf-8") as f:
             f.write(DRIVER)
-        self.log = os.path.join(self.d, "calls.jsonl")
+        # ⚠One file per stub record, never a shared append: concurrent O_APPEND writes are not atomic on Windows.
+        self.log = os.path.join(self.d, "calls")
+        os.makedirs(self.log)
 
     def drive(self, scenario, want, deny=False):
         env = dict(os.environ, PI_TEST_LOG=self.log)
@@ -133,12 +159,7 @@ class PiExtension(unittest.TestCase):
                                                  str(want), self.log],
                            capture_output=True, text=True, encoding="utf-8", timeout=60, env=env)
         self.assertEqual(r.returncode, 0, r.stderr)
-        try:
-            with open(self.log, encoding="utf-8") as f:
-                calls = [json.loads(x) for x in f if x.strip()]
-        except OSError:
-            calls = []
-        return json.loads(r.stdout.strip().splitlines()[-1]), calls
+        return json.loads(r.stdout.strip().splitlines()[-1]), read_dir(self.log)
 
     def by_script(self, calls):
         return {os.path.relpath(c["argv"][0], self.code): c for c in calls}
@@ -186,7 +207,7 @@ const sends = [];
 mod.default({ on: (n, f) => { handlers[n] = f; }, sendUserMessage: (t) => { sends.push(t); } });
 const ctx = { cwd: "/tmp/proj", sessionManager: { getSessionId: () => "sess-0001" },
               isIdle: () => busy !== "1", hasPendingMessages: () => false };
-const rows = () => { try { return fs.readFileSync(wlog, "utf8").split("\n").filter(Boolean).map((x) => JSON.parse(x)); } catch { return []; } };
+const rows = () => { try { return fs.readdirSync(wlog).filter((x) => x.endsWith(".json")).sort().map((x) => JSON.parse(fs.readFileSync(wlog + "/" + x, "utf8"))); } catch { return []; } };
 const until = async (f) => { const t0 = Date.now(); while (!f(rows()) && Date.now() - t0 < 8000) await new Promise((r) => setTimeout(r, 20)); };
 const n = (k) => (r) => r.filter((x) => k in x).length;
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -251,7 +272,8 @@ class PiExtensionWake(unittest.TestCase):
         self.wdriver = os.path.join(self.d, "wake.mjs")
         with open(self.wdriver, "w", encoding="utf-8") as f:
             f.write(WAKE_DRIVER)
-        self.wlog = os.path.join(self.d, "wake.jsonl")
+        self.wlog = os.path.join(self.d, "wake")
+        os.makedirs(self.wlog)
 
     def wake(self, scenario, mode="block", busy=False, cap=None):
         env = dict(os.environ, PI_TEST_LOG=self.log, PI_TEST_WLOG=self.wlog, PI_TEST_WAKE=mode)
@@ -262,9 +284,7 @@ class PiExtensionWake(unittest.TestCase):
                                                  self.wlog, "1" if busy else "0"],
                            capture_output=True, text=True, encoding="utf-8", timeout=60, env=env)
         self.assertEqual(r.returncode, 0, r.stderr)
-        with open(self.wlog, encoding="utf-8") as f:
-            rows = [json.loads(x) for x in f if x.strip()]
-        return json.loads(r.stdout.strip().splitlines()[-1])["sends"], rows
+        return json.loads(r.stdout.strip().splitlines()[-1])["sends"], read_dir(self.wlog)
 
     def test_R1_idle_wake_sends_once_and_acks_ok(self):
         sends, rows = self.wake("wake", "wake")
@@ -322,7 +342,8 @@ class PiExtensionWake(unittest.TestCase):
     def test_R4_silent_exit_no_rearm_when_busy_or_typed(self):
         _, rows = self.wake("rearm", "silent", busy=True)
         self.assertEqual(len([x for x in rows if "spawn" in x]), 1)
-        os.remove(self.wlog)
+        shutil.rmtree(self.wlog)
+        os.makedirs(self.wlog)
         _, rows = self.wake("rearm-input", "silent")
         self.assertEqual(len([x for x in rows if "spawn" in x]), 1)
 
