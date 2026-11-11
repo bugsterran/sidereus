@@ -2113,7 +2113,10 @@ def _commit_close(ev, now):
                 #   mid-run: closing it archived the run and denied the next stage as a jump. Untagged/last-stage closes.
                 sd = _stages(proj, rn) if only else None
                 ci = _idx(sd[0], cur) if sd else -1
-                if ci >= 0 and _plain_next(sd[0], ci) >= 0:
+                ni = _plain_next(sd[0], ci) if ci >= 0 else -1
+                while ni >= 0 and sd[0][ni]["title"] in (r.get("skipok") or []):   # ⚠a declared skip is not a next stage:
+                    ni = _plain_next(sd[0], ni)                                     #   skipped last stage + commit never closed
+                if ni >= 0:
                     r["t1"] = now
                     continue
                 if isinstance(st.get(cur), dict) and st[cur].get("s") == "run":

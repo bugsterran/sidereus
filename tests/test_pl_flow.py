@@ -313,6 +313,17 @@ class Flow(unittest.TestCase):
         self._cmd("git commit -m y")
         self.assertNotEqual(self.run_()["end"], 0)
 
+    def test_tagged_commit_closes_when_rest_is_skipped(self):
+        """A tagged commit whose only later stages were declared skipped is the run's last work: it closes the run."""
+        self._pipe({"v": 1, "name": N, "stages": [{"title": "수정", "agent": "main"}, {"title": "확인", "agent": "main"}]})
+        self.assertIsNone(self.pre("수정", tool="Bash"))
+        self._cmd("echo skip", desc="[pl-skip:%s/확인] runner-only fix" % N)
+        self.assertEqual(self.run_()["end"], 0)
+        self._cmd("git commit -m x", desc="[pl:%s/수정] commit" % N)
+        r = self.run_()
+        self.assertNotEqual(r["end"], 0)
+        self.assertEqual(r["st"]["수정"]["s"], "done")
+
     def test_main_stage_bash_after_closed_run_counts(self):
         """Main's own first-stage Bash after a run closed on that same stage starts a new run, so the next dispatch passes."""
         pipe = dict(PIPE, stages=[{"title": "요구사항", "agent": "main"}] + PIPE["stages"])

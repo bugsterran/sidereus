@@ -10,6 +10,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ One-line commands too (`cd X; echo "[pl:..]"`): each line is split on top-level `;` `&&` `||` (`_segs`, quotes respected) and every segment after line 1's first gets the same `echo`/`printf` rule; piped args (`a | grep "[pl:"`) never count.
   - ⇒ The quote state carries across lines: a segment that starts inside a quote opened on an earlier line (a multi-line `git commit -m "…"` body) is text. A heredoc starts only at an unquoted `<<` outside `$((..))` — `echo "a <<EOF"` used to hide every later marker.
   - ⚠Never accept a bare, `#` or mid-text marker on later lines (`grep "[pl:"`, doc text); keep the block identical in both hooks. `tests/test_pl_multiline_mark.py`.
+- **A run whose last stage was skipped never closed on its tagged commit** (hooks/pl_flow.py `_commit_close`): a commit tagged at a stage with a next stage is treated as mid-run (release: tag, then deploy), and a `[pl-skip:]`-declared stage still counted as that next stage.
+  - ⇒ Stages in `skipok` are passed over when looking for the next stage; an untagged main commit already closed. `test_tagged_commit_closes_when_rest_is_skipped`.
+  - ⚠A `[pl:-]` commit never closes a run by design — commit run work with the run's tag or untagged.
 
 - **Evaluation «Ask AI» left no trace after a page reload** (48i `plEvalFixSend` · `plEvalFixRec`, `pl_reqs`).
   - Cause: the sent line lived only in `PLEVAL_S.sent`.
