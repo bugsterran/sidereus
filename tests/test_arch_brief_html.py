@@ -199,6 +199,16 @@ class RenderTest(unittest.TestCase):
         for ln in lines:   # 14px bold: Hangul ~1em, narrow ~0.6em
             self.assertLessEqual(sum(14 if ord(c) >= 0x1100 else 8.4 for c in ln), bw - 20)
 
+    def test_evidence_wraps(self):
+        # A long file:line cell under nowrap widened the decision table past main at 900px.
+        b = brief(route={"by": "path", "rows": [{"when": "/x", "goes": "X", "box": "b1",
+                                                  "evidence": {"file": "a/" * 40 + "very_long_module_name.py", "line": 1234}}]})
+        h = AH.render(b)
+        self.assertIn("very_long_module_name.py", h)
+        rule = re.search(r"td\.ev\s*\{([^}]*)\}", h).group(1)
+        self.assertNotIn("nowrap", rule)
+        self.assertIn("overflow-wrap: anywhere", rule)
+
     def test_deterministic(self):
         self.assertEqual(AH.render(brief(7)).encode("utf-8"), AH.render(brief(7)).encode("utf-8"))
 

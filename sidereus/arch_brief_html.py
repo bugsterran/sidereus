@@ -40,7 +40,8 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 600; }
 td.n { color: var(--muted); width: 40px; }
-td.ev { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--muted); white-space: nowrap; }
+/* a long file:line token must wrap at narrow widths, not widen the table past main */
+td.ev { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
 .by { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
 """
 

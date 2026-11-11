@@ -485,3 +485,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ Each arrow owns one lane per gap it uses, 16px apart, and the gap grows to fit; same-row arrows go around the row through the less used gap; attach points spread along the side ordered by where the line heads; a label slides along its run to skip other arrows' verticals. ★9 boxes / 24 arrows: label/label 17 → 0, label/box 8 → 0, runs within 4px 39 → 0, shared arrowheads 13 → 0; height 646 → 1032.
 - ⚠Never share a lane between arrows in one gap: a label's free band is exactly its lane's 16px, and no box may sit within 18px of a lane.
 - ⇒ `_order` sorts each gap's lanes by stub-over-run/label crossings; first-row top attach points and vertical lanes stay past the band title (`_title_w`); a label with no free run spot sits beside its own vertical (a taller gap frees nothing: stubs span the gap). ★same brief: labels crossed 1 → 0, band titles struck 2/4 → 0, segment crossings 55 → 35, height 1032 unchanged.
+
+## Overview page scrolled sideways at 900px (`sidereus/arch_brief_html.py` CSS `td.ev`)
+- Cause: `td.ev` had `white-space: nowrap`; an evidence `file:line` is one unbreakable token, so the auto-layout decision table could not shrink below it. ★900px viewport: scrollWidth 935 → 900.
+- ⇒ `td.ev` uses `overflow-wrap: anywhere` with normal wrapping (needs both; either alone kept 935).
+- ⚠Stored briefs keep the old CSS until regenerated: served bytes must match the gate's sha256 (`sidereus/arch_map.py` `_brief_bytes`), so never patch a stored brief.html in place.
