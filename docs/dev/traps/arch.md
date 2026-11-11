@@ -27,7 +27,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ★Entries are gzip'd disk-encoded bytes (~450 KB vs ~5.1 MB decoded, bound ~163 -> ~15 MB); read/write only via `structure_snap._struct_mem_get`/`_struct_mem_put`.
 - **Security «Request fix» re-ran arch-map, so the badge never refreshed** (84l `archChkFixBody`, `archChkTopBtn`).
   - Cause: the fix DM told the session to re-run arch-map, which never writes `checks-security.json`; the badge also ignored `security.stale`.
-  - ★2026-10-21: live `.mailbox-mcp` scan 2480dd2 vs HEAD 9cef6ba → «⚠ Security 50», border-style dashed; fix preview ends with the security-checks command.
+  - ★2026-10-21: live `.mailbox-mcp` scan 1c32777 vs HEAD 1868bd7 → «⚠ Security 50», border-style dashed; fix preview ends with the security-checks command.
   - ⇒ The DM is now a `security-fix` run request (`archChkFixBody`, header as `archChkRunBody`); its re-scan stage runs security-checks' scanner. A stale scan gets ⚠, a dashed border (`strbg-cut`) and «Scanned commit … · HEAD now …».
   - ⚠The fix request must name security-fix (re-scan = `arch_checks.py --category security`), not arch-map. Keep the severity colour on a stale badge.
 - **«Request fix» left no trace after a page reload** (84l `archChkFixSend` · `archChkFixRecHtml`, `pl_reqs`).

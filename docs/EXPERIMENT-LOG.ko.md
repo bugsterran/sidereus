@@ -10,7 +10,7 @@ CI 는 푸시된 결과를 검사하고, Sidereus 는 그 결과에 이른 과�
 
 가설: 뷰어의 메모리 비용은 브라우저 페이지가 아니라 Python 서버의 캐시에서 나온다.
 
-해 본 것: 둘을 따로 잰 뒤, 도구 사용 색인을 파일별 압축 배열로 바꾸고 구조 캐시에 상한을 뒀다([9ed37819](https://github.com/bugsterran/sidereus/commit/9ed37819), [80674309](https://github.com/bugsterran/sidereus/commit/80674309), [#17](https://github.com/bugsterran/sidereus/issues/17)).
+해 본 것: 둘을 따로 잰 뒤, 도구 사용 색인을 파일별 압축 배열로 바꾸고 구조 캐시에 상한을 뒀다([80e0978d](https://github.com/bugsterran/sidereus/commit/80e0978d), [2b83fde7](https://github.com/bugsterran/sidereus/commit/2b83fde7), [#17](https://github.com/bugsterran/sidereus/issues/17)).
 
 측정: 2026-10-21 에 서버 RSS 423 MB, 페이지 JS 힙 28 MB. 수정 전에는 재시작 36분 뒤 715 MB 이고 계속 올랐다. 수정 후에는 26분부터 4시간까지 282-304 MB, 8시간까지 310-338 MB 로 평탄했다. 표본은 한 번이다([#17](https://github.com/bugsterran/sidereus/issues/17)).
 
@@ -22,7 +22,7 @@ CI 는 푸시된 결과를 검사하고, Sidereus 는 그 결과에 이른 과�
 
 가설: "기동 후 30초 동안 매초 RSS 200 MB 이하" 는 안정된 예산이다.
 
-해 본 것: 도구 색인 저장과 꼬리 읽기를 스트리밍으로 바꾸고([083e305d](https://github.com/bugsterran/sidereus/commit/083e305d), [283eb2db](https://github.com/bugsterran/sidereus/commit/283eb2db)) macOS 에서 기동 구간을 표본으로 쟀다([#30](https://github.com/bugsterran/sidereus/issues/30)).
+해 본 것: 도구 색인 저장과 꼬리 읽기를 스트리밍으로 바꾸고([1dcba282](https://github.com/bugsterran/sidereus/commit/1dcba282), [30b51c91](https://github.com/bugsterran/sidereus/commit/30b51c91)) macOS 에서 기동 구간을 표본으로 쟀다([#30](https://github.com/bugsterran/sidereus/issues/30)).
 
 측정: 스트리밍 저장으로 기동 최고치 291 에서 226 MB(같은 데이터로 A/B). 10초 시점 75 MB 라는 값은 페이지 압축 때문이었다. 기동 8분 뒤 footprint 199 MB, 압축 81 MB, RSS 131 MB 였고, 얼마나 압축되는지는 시스템 메모리 압박에 따라 달라진다(2026-10-26 ~ 10-29, [#30](https://github.com/bugsterran/sidereus/issues/30)).
 
@@ -36,7 +36,7 @@ CI 는 푸시된 결과를 검사하고, Sidereus 는 그 결과에 이른 과�
 
 해 본 것: 린트 파이프라인, 린트 실행기, Quality 탭, "Checks n" 배지.
 
-측정: 잰 것이 없다. 제거 커밋에는 범위만 적혀 있다([954038ff](https://github.com/bugsterran/sidereus/commit/954038ff), 2026-10-16).
+측정: 잰 것이 없다. 제거 커밋에는 범위만 적혀 있다([35b1f0dc](https://github.com/bugsterran/sidereus/commit/35b1f0dc), 2026-10-16).
 
 판정: 폐기. 검사 종류는 보안 검사 하나만 남았다.
 
@@ -46,9 +46,9 @@ CI 는 푸시된 결과를 검사하고, Sidereus 는 그 결과에 이른 과�
 
 가설: Harness 리포트가 하는 주장(가드가 막았다, 게이트가 빨강에서 초록이 됐다, 통과가 유지됐다)은 실제 훅을 고정된 사례로 재생해 확인할 수 있다. 사례마다 통과해야 하는 대조군을 둔다.
 
-해 본 것: 잡을 사례와 대조군을 실제 기록기로 재생하는 세트([9fbf2cb8](https://github.com/bugsterran/sidereus/commit/9fbf2cb8)), 사례 수는 [62226d42](https://github.com/bugsterran/sidereus/commit/62226d42) 기준 11개, 이후 "Guard self-check" 표로 화면에 보였다([62226d42](https://github.com/bugsterran/sidereus/commit/62226d42), [#27](https://github.com/bugsterran/sidereus/issues/27)).
+해 본 것: 잡을 사례와 대조군을 실제 기록기로 재생하는 세트([957e9266](https://github.com/bugsterran/sidereus/commit/957e9266)), 사례 수는 [6da368f0](https://github.com/bugsterran/sidereus/commit/6da368f0) 기준 11개, 이후 "Guard self-check" 표로 화면에 보였다([6da368f0](https://github.com/bugsterran/sidereus/commit/6da368f0), [#27](https://github.com/bugsterran/sidereus/issues/27)).
 
-측정: 세트가 실제 결함 하나를 찾았다. 필수 게이트 전 커밋을 가드가 막고도 기록하지 않아 화면이 "Blocked 0" 이었다. 수정 후 라이브에서 11개 중 11개 통과(2026-10-30, [62226d42](https://github.com/bugsterran/sidereus/commit/62226d42)).
+측정: 세트가 실제 결함 하나를 찾았다. 필수 게이트 전 커밋을 가드가 막고도 기록하지 않아 화면이 "Blocked 0" 이었다. 수정 후 라이브에서 11개 중 11개 통과(2026-10-30, [6da368f0](https://github.com/bugsterran/sidereus/commit/6da368f0)).
 
 판정: 유지.
 
@@ -60,7 +60,7 @@ CI 는 푸시된 결과를 검사하고, Sidereus 는 그 결과에 이른 과�
 
 해 본 것: 게이트마다 일부러 깨뜨린 복제본에서 게이트를 돌리는 레드 체크.
 
-측정: 이 저장소에서 보안 게이트의 레드 체크가 실패했다. 스캐너는 `git archive HEAD` 내보내기를 읽기 때문에 커밋되지 않은 가짜 키 파일은 검사되지 않았다. 복제본 안에서 주입을 커밋하게 바꾼 뒤 `check.sh --fast`, `--full`, 보안 게이트 모두 레드 체크를 통과한다(2026-10-24, [352d5a65](https://github.com/bugsterran/sidereus/commit/352d5a65)).
+측정: 이 저장소에서 보안 게이트의 레드 체크가 실패했다. 스캐너는 `git archive HEAD` 내보내기를 읽기 때문에 커밋되지 않은 가짜 키 파일은 검사되지 않았다. 복제본 안에서 주입을 커밋하게 바꾼 뒤 `check.sh --fast`, `--full`, 보안 게이트 모두 레드 체크를 통과한다(2026-10-24, [d2a39fe5](https://github.com/bugsterran/sidereus/commit/d2a39fe5)).
 
 판정: 유지.
 
@@ -68,11 +68,11 @@ CI 는 푸시된 결과를 검사하고, Sidereus 는 그 결과에 이른 과�
 
 ## 6. 게이트 통과가 그 뒤에도 유지됐나
 
-가설: 통과가 유지됐는지는 git 만으로 읽을 수 있다. 14일 안에 같은 파일을 건드린 커밋이 오면 "수정이 뒤따름" 으로 센다([ab8c87de](https://github.com/bugsterran/sidereus/commit/ab8c87de), [#1](https://github.com/bugsterran/sidereus/issues/1)).
+가설: 통과가 유지됐는지는 git 만으로 읽을 수 있다. 14일 안에 같은 파일을 건드린 커밋이 오면 "수정이 뒤따름" 으로 센다([06a61ca0](https://github.com/bugsterran/sidereus/commit/06a61ca0), [#1](https://github.com/bugsterran/sidereus/issues/1)).
 
 해 본 것: 실행이 끝날 때 파이프라인별로 쓰는 주간 리포트(리포트는 로컬에만 있고 `eval/` 은 커밋하지 않는다).
 
-측정: `sidereus-change` 의 2026-10-25 로컬 리포트: 실행 33회, 순서 위반 14건 차단, 통과 22건 중 나중에 깨진 것 0건, 22건 모두 수정이 뒤따름, 최근 30일 실행의 70% 에서 리뷰 되돌림. 통과 22건은 커밋 4개에서 나왔다: [cc9cbbd9](https://github.com/bugsterran/sidereus/commit/cc9cbbd9), [90a8c734](https://github.com/bugsterran/sidereus/commit/90a8c734), [1667ab35](https://github.com/bugsterran/sidereus/commit/1667ab35), [88bea14d](https://github.com/bugsterran/sidereus/commit/88bea14d).
+측정: `sidereus-change` 의 2026-10-25 로컬 리포트: 실행 33회, 순서 위반 14건 차단, 통과 22건 중 나중에 깨진 것 0건, 22건 모두 수정이 뒤따름, 최근 30일 실행의 70% 에서 리뷰 되돌림. 통과 22건은 커밋 4개에서 나왔다: [0fbd6f55](https://github.com/bugsterran/sidereus/commit/0fbd6f55), [96b7e98b](https://github.com/bugsterran/sidereus/commit/96b7e98b), [d788c6f7](https://github.com/bugsterran/sidereus/commit/d788c6f7), [a8c82d5b](https://github.com/bugsterran/sidereus/commit/a8c82d5b).
 
 판정: 미정. 모든 통과에 켜지는 신호로는 아직 통과끼리 구분이 안 된다.
 
@@ -82,7 +82,7 @@ CI 는 푸시된 결과를 검사하고, Sidereus 는 그 결과에 이른 과�
 
 가설: 세션이 파이프라인 밖 작업을 종류별로 선언하게 하면, 반복되는 "no-fit" 선언이 어떤 파이프라인이 빠졌는지 보여 준다.
 
-해 본 것: `[pl-none:<category>]` 선언, 선언 없으면 한 번 거부([baa40276](https://github.com/bugsterran/sidereus/commit/baa40276)), 프로젝트별 기록([0279017c](https://github.com/bugsterran/sidereus/commit/0279017c)), 7일 안에 세 번째 "no-fit" 이 오면 파이프라인 초안 제안([ceee702d](https://github.com/bugsterran/sidereus/commit/ceee702d), [#16](https://github.com/bugsterran/sidereus/issues/16)).
+해 본 것: `[pl-none:<category>]` 선언, 선언 없으면 한 번 거부([72c5a0f3](https://github.com/bugsterran/sidereus/commit/72c5a0f3)), 프로젝트별 기록([4128491b](https://github.com/bugsterran/sidereus/commit/4128491b)), 7일 안에 세 번째 "no-fit" 이 오면 파이프라인 초안 제안([ee152cab](https://github.com/bugsterran/sidereus/commit/ee152cab), [#16](https://github.com/bugsterran/sidereus/issues/16)).
 
 측정: 이슈가 답하려던 질문, 즉 잊어서 안 쓴 경우와 맞는 파이프라인이 정말 없는 경우의 비율은 아직 세지 않았다.
 
@@ -94,7 +94,7 @@ CI 는 푸시된 결과를 검사하고, Sidereus 는 그 결과에 이른 과�
 
 가설: 강제 게이트(strict 모드, 커밋 전 필수 게이트)는 더하는 시간과 막는 작업만큼 충분히 잡아낸다.
 
-해 본 것: Caught, Blocked, Overridden 카운터와 게이트 시간 집계를 [c4b44c59](https://github.com/bugsterran/sidereus/commit/c4b44c59) 에서 넣었다.
+해 본 것: Caught, Blocked, Overridden 카운터와 게이트 시간 집계를 [5d0ef63d](https://github.com/bugsterran/sidereus/commit/5d0ef63d) 에서 넣었다.
 
 측정: 2026-10-31 기준 7일간 첫 라이브 수치(n=1): Caught 10, Blocked 14, Overridden 5, unknown 9. Paused 는 아직 재지 않았다. 재개 기록은 그 커밋부터 남는다.
 
@@ -108,7 +108,7 @@ CI 는 푸시된 결과를 검사하고, Sidereus 는 그 결과에 이른 과�
 
 해 본 것: 표시된 통과를 하나씩 직접 읽은 뒤, 실행 기록이 `"catch": "person"` 파이프라인 실행으로 돌린 커밋이면서 통과 커밋과 코드 파일을 공유할 때만 세도록 바꿨다. 문서·테스트·`refactor/`·화면 기준선은 무시한다.
 
-측정: 2026-11-01, 이 저장소, 최근 30일: 표시된 통과 12건이 12건 모두 공용 등록·문서 파일(`refactor/STAGE3.md`, `docs/HOOKS*.md`, 화면 기준선)을 건드린 무관한 기능이었다. 새 규칙으로 12 → 1: [6580f96d](https://github.com/bugsterran/sidereus/commit/6580f96d) → [b7512c44](https://github.com/bugsterran/sidereus/commit/b7512c44) 이고, 이것도 같은 코드 파일을 건드린 무관한 수정 실행이다.
+측정: 2026-11-01, 이 저장소, 최근 30일: 표시된 통과 12건이 12건 모두 공용 등록·문서 파일(`refactor/STAGE3.md`, `docs/HOOKS*.md`, 화면 기준선)을 건드린 무관한 기능이었다. 새 규칙으로 12 → 1: [1c0160ea](https://github.com/bugsterran/sidereus/commit/1c0160ea) → [e0639a02](https://github.com/bugsterran/sidereus/commit/e0639a02) 이고, 이것도 같은 코드 파일을 건드린 무관한 수정 실행이다.
 
 판정: 미정. 파일 이름만으로는 이 통과를 고친 것과 같은 파일의 다른 수정을 가르지 못한다.
 

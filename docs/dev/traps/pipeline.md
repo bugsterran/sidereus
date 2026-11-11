@@ -359,7 +359,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 ## Result layer «fix followed» on every PASS (`pl_outcome` · `fix_pipes`)
 - Cause: shared registry and doc files (`refactor/STAGE3.md`, `docs/HOOKS*.md`, screen baselines) sit in most commits, so any later commit «shared a file» and every PASS read «fix followed».
 - Fix: count a later commit only when the ledger attributes it to a `"catch": "person"` run (not the PASS's own run) and it shares a code file with the PASS commit.
-- ★2026-11-01, this repo, 30 days: 12 flagged → 1; all 12 were unrelated features, the 1 is 6580f96d → b7512c44.
+- ★2026-11-01, this repo, 30 days: 12 flagged → 1; all 12 were unrelated features, the 1 is 1c0160ea → e0639a02.
 - ⚠Do not bring back the «common file» rule or count doc/test files: the signal fires on every PASS again.
 
 ## Run ledger per-stage `ss` and subagent tokens (`pl_flow._stage_summary` · `_stage_tokens`)
