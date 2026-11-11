@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-12
+
 **Highlights**
 
 - Platforms: pi connects through «Connect» (hooks, MCP servers, a Sidereus extension), and new mail wakes an idle pi session without a model turn while it waits.
@@ -1012,7 +1014,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/bugsterran/sidereus/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/bugsterran/sidereus/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/bugsterran/sidereus/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/bugsterran/sidereus/compare/v0.14.1...v0.15.0
