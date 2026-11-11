@@ -35,6 +35,7 @@ Tag each Bash description with `[pl:<pipeline>/<stage>]` when running inside a p
    R2: <line> — FAIL (<why>)
    Not doing: <Non-goal>
    ```
+   ⚠Evidence names no other repo, path or organisation — write a generic noun ("a Maven repo", "another repo"); this repo is public.
 
 - ⚠Updating the screen baseline (`node scripts/screen_check.mjs --update`) is the orchestrator's decision, never an agent's.
 - Commit only what was verified live; keep refactor commits separate from feature commits.

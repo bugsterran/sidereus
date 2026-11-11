@@ -500,8 +500,8 @@ function tlSessions(groups, t0, t1){
   // The server filters by window. Still, a session row enters **if its span (start~end) touches the window**,
   // while that session's **active spans (`segs`) may be outside it** ⇒ empty rows with no bars remain.
   // ★Measured (2026-09-08 · `hours=3`): 5 of 10 sessions had 0 bars in window, and of those
-  // `repo-C-batch`·`repo-log`·`repo-C-x` were **also disconnected** (= to hide).
-  // ⚠**It is AND — hide only when both hold.** At the same moment `proj-C/admin`·`advocate-repo` also had 0 bars
+  // `repo-A`·`repo-B`·`repo-C` were **also disconnected** (= to hide).
+  // ⚠**It is AND — hide only when both hold.** At the same moment `repo-D`·`repo-E` also had 0 bars
   // but **were alive** ⇒ keep. Quiet differs from absent (this file's 2026-08-24 trap:
   // a session may be launched and deliberately left doing nothing).
   // ⚠**The window parameter is `hours`** (not `h` · :11322). Measuring with `h=` makes the server ignore it and return the default

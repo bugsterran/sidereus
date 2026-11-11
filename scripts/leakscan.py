@@ -3,6 +3,7 @@
 
 Shipped = `git ls-files` minus what .distignore excludes (git does the gitignore matching).
 Exit 1 and print file:line on any hit. A line containing `leakscan: allow` is skipped.
+Extra private words (repo/org names) stay out of tracked files: `git config --local --add leakscan.ident <word>`.
 """
 import os
 import re
@@ -117,7 +118,17 @@ def git_idents(root):
     if (gname or gmail) and (lname, lmail) != (gname, gmail):
         keep = {rx.pattern for rx in identifiers(gname, gmail)}
         pub = {rx.pattern for rx in identifiers(lname, lmail)} - keep
-    return [rx for rx in priv if rx.pattern not in pub] + private_words(root)
+    return [rx for rx in priv if rx.pattern not in pub] + private_words(root) + config_words(root)
+
+
+def config_words(root):
+    """Word regexes from multi-valued git config `leakscan.ident` (repo-local; missing key = none)."""
+    try:
+        out = _git(root, "config", "--get-all", "leakscan.ident")
+    except (subprocess.CalledProcessError, OSError):
+        return []
+    ws = sorted(set(w.strip() for w in out.splitlines() if w.strip()))
+    return [re.compile(r"(?i)(?<![A-Za-z0-9])" + re.escape(w) + r"(?![A-Za-z0-9])") for w in ws]
 
 
 def private_words(root):

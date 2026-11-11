@@ -141,6 +141,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: pre-commit scans only the working tree; a secret added then removed inside the pushed range, a `--no-verify` commit, a commit message or a private author e-mail reached the remote unchecked.
 - Fix: pre-push reruns the tree scan, then scans each outgoing commit (`rev-list` from the pre-push stdin; new ref = `--not --remotes`): added lines of shipped files (`.distignore` via `check-ignore --no-index`), message, `%ae`/`%ce`.
 - ★2026-11-05: full history (573 commits) gives 28 `ident` hits, all private project words in commit messages already on origin/dev; future pushes scan only outgoing commits.
+- ⇒ Private repo/org names that no git identity yields: `git config --local --add leakscan.ident <word>` (one value per word, kept out of tracked files; `config_words`).
 - ⚠`git push --no-verify` bypasses it; a hit means fix the commit before pushing, not add `leakscan: allow` to a message.
 
 ## Worktree gitdir match on Windows (`gitinfo._wt_split`)

@@ -42,5 +42,6 @@ Show the block to the owner; one reply (or a one-line edit) confirms it. Then di
 - The block goes verbatim into the design, implement and live check briefs.
 - The live check reports each R as PASS/FAIL + one piece of evidence (screen crop, test name or `file:line`).
 - The commit body ends with `Done when:` (the R lines, each marked PASS/FAIL) and `Not doing:` (the Non-goal).
+  ⚠Evidence names no other repo, path or organisation — write a generic noun ("a Maven repo", "another repo"); this repo is public.
   A future scorer reads it from `git log` by commit — the same key as `DATA_DIR/eval/<key>/<commit>/`.
 - ⚠No scoring UI is built from this; the commit body is the only store.

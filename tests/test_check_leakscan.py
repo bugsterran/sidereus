@@ -69,6 +69,33 @@ class Matcher(unittest.TestCase):
         self.assertEqual(hit("by Kim Tester\n"), ["ident"])
         self.assertEqual(hit("host acmecorp.io\n"), ["ident"])
 
+    def _config_words(self, out):
+        """config_words() with L._git patched: `out` is the config stdout, or an exception to raise."""
+        calls, old = [], L._git
+
+        def fake(root, *args):
+            calls.append(args)
+            if isinstance(out, Exception):
+                raise out
+            return out
+        L._git = fake
+        try:
+            ids = L.config_words("/nowhere")
+        finally:
+            L._git = old
+        return calls, lambda t: [h[2] for h in L.scan_text("a.py", t, ids)]
+
+    def test_config_idents_matched_case_insensitive(self):
+        calls, hit = self._config_words("acme-internal\n\n  \nWidgetCo\n")
+        self.assertEqual(calls, [("config", "--get-all", "leakscan.ident")])
+        self.assertEqual(hit("see ACME-Internal repo\n"), ["ident"])
+        self.assertEqual(hit("by widgetco\n"), ["ident"])
+        self.assertEqual(hit("acme-internalx widgetcorp\n"), [])   # word-bounded literal
+
+    def test_config_idents_missing_key_is_empty(self):
+        _, hit = self._config_words(subprocess.CalledProcessError(1, ["git"]))
+        self.assertEqual(hit("acme-internal\n"), [])
+
     def test_homedir(self):
         self.assertEqual(kinds("a.py", 'p = "/Users/zed/x"\n'), ["homedir"])  # leakscan: allow
         self.assertEqual(kinds("a.py", 'p = "/Users/x/proj" or "/Users/demo"\n'), [])
