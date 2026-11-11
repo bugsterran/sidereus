@@ -240,6 +240,8 @@ class HooksOff(unittest.TestCase):
     def test_directory_at_settings_path_closes_fd(self):
         import os
         from unittest import mock
+        if os.name == "nt":
+            self.skipTest("POSIX only: Windows os.open refuses a directory before any fd exists")
         os.makedirs(self.cfg)                     # fdopen raises EISDIR on a directory fd
         fds, real = [], os.open
 
