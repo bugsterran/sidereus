@@ -84,8 +84,9 @@ function plBorrowLv(proj, p){
   let pr = null, sid = '';
   (SESS || []).forEach(x => { if(x && (bi || x.cwd === proj)) (x.plrun || []).forEach(r => {
     if(!r || r.name !== p.name || (bi ? r.proj !== proj : r.proj && r.proj !== p.from)) return;
-    const on = plPrLive(r);
-    if(!pr || (on && !plPrLive(pr)) || (on === plPrLive(pr) && (r.t1 || 0) > (pr.t1 || 0))){ pr = r; sid = x.sid; }
+    // ⚠Open (no end) beats ended before t1: an open run between stages has no 'run' stage, and a newer ended run won.
+    const on = plPrLive(r), op = !r.end;
+    if(!pr || (on && !plPrLive(pr)) || (on === plPrLive(pr) && (op && pr.end || (op === !pr.end && (r.t1 || 0) > (pr.t1 || 0))))){ pr = r; sid = x.sid; }
   }); });
   return pr ? plPrLv(sid, pr, p.stages || [], Date.now()) : null;
 }

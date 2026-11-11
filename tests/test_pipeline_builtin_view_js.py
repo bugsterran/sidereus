@@ -45,6 +45,13 @@ class PipelineBuiltinView(unittest.TestCase):
         r = run("const lv = plBorrowLv(ADMIN, B); console.log(JSON.stringify([lv.sid, lv.run.run]));")
         self.assertEqual(r, ["new", True])
 
+    def test_borrow_lv_open_between_stages_beats_newer_ended(self):
+        r = run("const GAP = {name: 'security-fix', proj: ADMIN, t0: 1, t1: 5, end: 0, stages: {Fix: {o: 'done', t0: 1, t1: 5}}};"
+                "const ENDED = {name: 'security-fix', proj: ADMIN, t0: 1, t1: 30, end: 30, stages: {Fix: {o: 'done', t0: 1, t1: 30}}};"
+                "SESS = [{sid: 'a', cwd: SIDE, plrun: [GAP]}, {sid: 'b', cwd: SIDE, plrun: [ENDED]}];"
+                "console.log(JSON.stringify(plBorrowLv(ADMIN, B).sid));")
+        self.assertEqual(r, "a")
+
     def test_arch_map_keeps_cwd_rule(self):
         r = run("const A = {name: 'arch-map', ok: true, from: SIDE, builtin: true, stages: [{title: 'Fix'}]};"
                 "SESS = [{sid: 'far', cwd: SIDE, plrun: [{name: 'arch-map', proj: SIDE, t1: 3, stages: {Fix: {o: 'run'}}}]}];"
