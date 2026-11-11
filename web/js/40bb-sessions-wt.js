@@ -39,7 +39,7 @@ function sessWtCount(n){ return TV({msg: n === 1 ? '{n} worktree session' : '{n}
 // Fold caret (header-only groups); collapsed, it carries the hidden children's count and attention so a need never disappears (R4).
 function sessWtCaret(gr){
   const open = !wtFold.has(gr.key), at = sessWtAttn(gr.kids), need = sessWtNeed(gr.kids);
-  const cnt = sessWtCount(gr.kids.length), nd = need ? TV({msg: '{n} need you', vars: {n: need}}) : '';
+  const cnt = sessWtCount(gr.kids.length), nd = need ? TV({msg: '{n} in Attention', vars: {n: need}}) : '';
   const tip = (open ? T('Collapse worktrees') : T('Expand worktrees')) + ' · ' + cnt + (nd ? ' · ' + nd : '');
   return '<button type=button class="swtg' + (at ? ' swta-' + at : '') + '" data-wtf="' + esc(gr.key) + '" aria-expanded=' + (open ? 'true' : 'false')
     + ' title="' + esc(tip) + '">' + (open ? '▾' : '▸' + gr.kids.length) + (!open && nd ? ' <b class=swtnd>' + esc(nd) + '</b>' : '') + '</button>';

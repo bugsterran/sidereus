@@ -59,9 +59,9 @@ function sesdrBadge(){
   sesdrBdg = key;
   const n = document.getElementById('sesbn'), a = document.getElementById('sesba'), btn = document.getElementById('sesb');
   if(n) n.textContent = s.open ? String(s.open) : '';
-  // ⚠labelled: two bare numbers side by side gave no hint which one was «need you»
-  if(a) a.textContent = at ? T('need you {n}').replace('{n}', at) : '';
-  if(btn) btn.title = TV({msg: 'Sessions — {o} open ({w} working · {n} waiting on you · {i} idle) · {a} need you',
+  // ⚠labelled: two bare numbers side by side gave no hint which one was «Attention»
+  if(a) a.textContent = at ? T('Attention {n}').replace('{n}', at) : '';
+  if(btn) btn.title = TV({msg: 'Sessions — {o} open ({w} working · {n} waiting on you · {i} idle) · Attention {a}',
                           vars: {o: s.open, w: s.work, n: s.need, i: s.idle, a: at}}) + '\n' + T('Show sessions');
 }
 // ★Drawer size (resizable): sidereus.sesdrsz {w,h} = width / max-height px, 0 = default (640 · content-driven).

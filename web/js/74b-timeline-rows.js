@@ -110,7 +110,7 @@ function tlWtPre(g){
   if(!f) return s;
   // ⚠Folding must not hide a worktree session that is waiting on you — its count stays on the group head.
   return s + '<i class=tlwtn title="'+esc(TV({msg: '{n} worktree sessions hidden', vars: {n: g.wtN}}))+'">+'+g.wtN+'</i>'
-    + (g.wtAtt ? '<i class=tlwta title="'+esc(TV({msg: '{n} worktree sessions need you', vars: {n: g.wtAtt}}))+'">'+g.wtAtt+'</i>' : '');
+    + (g.wtAtt ? '<i class=tlwta title="'+esc(TV({msg: '{n} worktree sessions in Attention', vars: {n: g.wtAtt}}))+'">'+g.wtAtt+'</i>' : '');
 }
 // Header-only group row for worktree sessions whose main repo has no session row. ⚠No data-tlc: 75/76 select session rows by it.
 function tlWtHeadRow(g, L){

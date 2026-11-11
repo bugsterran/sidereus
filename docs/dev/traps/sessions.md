@@ -108,7 +108,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ `parse` emits `askTool` (unanswered AskUserQuestion/ExitPlanMode on the last assistant line); `_sess_state` returns `ask` for it even when shape=tool · `_session_row` never overwrites `ask` with OTel. Result: attention 90 pts (red) · activity band «needs you». `tests/test_ask_state.py`.
   - ★2026-11-06: a bold question line «**… push?**» showed «Done» — the line ends with `*`, not `?`. ⇒ `parse._turn_shape` strips trailing `*_`~` before the `_ASK_END` check (`test_bold_question_is_ask`).
   - ⚠Never turn tool into ask on `asking` (trailing «?») alone — a question mark next to a Bash call becomes a question wait. Permission prompts leave no trace in the transcript; they stay with `_blocked`.
-  - ⇒ The header «No sessions need you» appends «N low-priority» when list-only rows (done · bgdone) exist (17-attention `quiet`) — list and header count the same `attnRows()`.
+  - ⇒ The header «Nothing in Attention» appends «N low-priority» when list-only rows (done · bgdone) exist (17-attention `quiet`) — list and header count the same `attnRows()`.
   - ★The same audit's «state since 08:06 AM · 32 s» came from that fake clock. ⇒ Start time = server time (`ATTN.at`) − `ageSec` (42-activity `actStart`) — the same server base as the elapsed time.
 - ★**16 finished subagents showed «Running»** (2026-09-24 screenshot). Cause: CLI 2.1.281 carries completion notices in `type=attachment` · `attachment.prompt` (`queued_command`/`task-notification`), but `_running_bg` read only `message.content`·`content` (all 62 skipped). Also, when a session moves to a new transcript (f3f9583a → 729ffb33) notices arrive only in the new file, so old-file rows linger.
   - ⇒ Read `attachment.prompt` too · third ground in `_retired`: the agent log's last user/assistant record has `stop_reason == "end_turn"` and it has been quiet `SUB_DONE_QUIET_S` (300s). Measured 16 → 1 (the one really running). `tests/test_bg_completion.py`.
@@ -407,3 +407,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Only `/api/ext/work` (click-only popup) calls it; `plat_pi.read`/`scan`, `ext_work_any`, timeline and MCP stay metadata only. `thinking`, images, system and compaction entries are never passed on.
 - ⚠Any read/parse error returns the metadata result unchanged; no file (`pi -p --no-session`) is the existing empty state, not an error.
 
+
+## One name for the attention count (`web/js/41-sesdrawer.js` · `40bb-sessions-wt.js` · `74b-timeline-rows.js` · `17-attention.js`)
+- Cause: the same count of sessions in the Attention list showed as «Attention» on the rail and «need you» in the header, drawer, worktree rows and timeline, with four different Korean words between them.
+- ⇒ Every place that shows that count reads «Attention» (one ko entry, `06-i18n-zu-rail.js`); «Needs your response» / «Needs you» stays only for rows that wait on an answer.
+- ⚠Do not reintroduce «need you» for the count; the i18n check fails on a T() literal without a ko entry.

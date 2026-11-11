@@ -377,7 +377,7 @@ function buildAttn(){
     + esc(T('{n} low-priority').replace('{n}', quiet)) + (attnLow ? ' ▴' : ' ▾') + '</span>' : '';
   const lowH = attnLow ? lowRows.map(attnRowHTML).join('') : '';
   let h;
-  if(!resp.length && !info.length) h = '<div class="ath none">' + esc(T('No sessions need you')) + low + wake + '</div>' + lowH + oth;
+  if(!resp.length && !info.length) h = '<div class="ath none">' + esc(T('Nothing in Attention')) + low + wake + '</div>' + lowH + oth;
   else {
     // ⚠«Needs your response» rows never fold; ATTN_MAX and «+N more» apply to FYI rows only (actAttnGo checks `info`).
     const vis = attnMore ? info : info.slice(0, ATTN_MAX), rest = info.length - vis.length;

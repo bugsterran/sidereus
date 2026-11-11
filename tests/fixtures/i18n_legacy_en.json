@@ -1176,7 +1176,6 @@
 "지금 디스크에 있는 작업 트리 — 커밋·백업이 아닌 최신 상태":"The working tree on disk now — the latest state, not a commit or backup",
 "지금 몇 번째 단계인지, 게이트를 통과했는지 여기서 봅니다 — 파이프라인 › 하네스 «결과» 에 근거가 남습니다":"See the current stage and whether its gate passed here — the evidence stays in Pipelines › Harness «Results»",
 "지금 봐야 할 세션":"Sessions needing you",
-"지금 봐야 할 세션 없음":"No sessions need you",
 "지금 상태 — 풀리면 사라짐":"Live state — clears when resolved",
 "지금 속도로 5h 한도 100% 에 닿는 시각":"When the 5h limit reaches 100% at the current pace",
 "지금 열려 있는 세션입니다 — 끝 시각은 현재 시각입니다":"Session still open — the end is the current time",

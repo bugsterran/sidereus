@@ -9,7 +9,7 @@ Object.assign(I18N.ko, {
   'Subagent': '서브에이전트',
   // 25-health-todo.js
   'Click = dismiss all (shows again if it recurs)': '클릭 = 모두 치움 (다시 발생하면 또 뜹니다)',
-  'Attn': '주의',
+  'Attn': '주목',
   'Background tasks': '백그라운드 작업',
   'Jobs': '작업',
   'Unread|short': '안읽음',
@@ -284,7 +284,7 @@ Object.assign(I18N.ko, {
   '{n} min in — may be a long job or a missed completion notice (cannot tell from outside)': '{n}분째입니다 — 긴 작업일 수도, 완료 통지를 놓친 것일 수도 있습니다(밖에서는 못 가릅니다)',
   '{n} min in': '{n}분째', 'quiet ': '조용 ', 'Monitors': '감시',
   // 41-sesdrawer.js
-  'Sessions — {o} open ({w} working · {n} waiting on you · {i} idle) · {a} need you': '세션 — 열린 세션 {o} (작업 중 {w} · 나를 기다림 {n} · 유휴 {i}) · 봐야 할 세션 {a}',
+  'Sessions — {o} open ({w} working · {n} waiting on you · {i} idle) · Attention {a}': '세션 — 열린 세션 {o} (작업 중 {w} · 나를 기다림 {n} · 유휴 {i}) · 주목 {a}',
   // 45-tokens.js
   'today +{n} live': '오늘 +{n} 실시간', 'last {n} days': '최근 {n}일', 'counted {n}s ago': '{n}초 전 집계',
   'Last {m} min · one point every {s}s · 60s moving window · refreshed every 3s': '최근 {m}분 · {s}초마다 한 점 · 60초 이동 창 · 3초마다 갱신',

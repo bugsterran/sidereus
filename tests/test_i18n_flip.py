@@ -67,7 +67,7 @@ class I18nBridge(unittest.TestCase):
                   "}"
                   "out({bad: bad.slice(0, 20), n: Object.keys(OLD).length, ctx: Object.values(map).filter(f => f.ctx).length});")
         self.assertEqual(r["bad"], [])
-        self.assertEqual(r["n"], 1498)   # -36: room tags, room admin and the invite picker gone; -2: Language and Start view help reworded (untranslated text shows in English; refresh keeps the tab's view); -7: Burndown curve setting and its row tooltip gone; pinned-only wording on token widgets; tour plugin line no longer says read-only MCP
+        self.assertEqual(r["n"], 1497)   # -1: the empty Attention header reworded to «Nothing in Attention»; -36: room tags, room admin and the invite picker gone; -2: Language and Start view help reworded (untranslated text shows in English; refresh keeps the tab's view); -7: Burndown curve setting and its row tooltip gone; pinned-only wording on token widgets; tour plugin line no longer says read-only MCP
         self.assertGreaterEqual(r["ctx"], 33)   # one English text with two Korean readings -> a context key (slices add more)
 
     def test_server_text_corpus(self):
