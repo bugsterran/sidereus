@@ -25,6 +25,7 @@ python3 scripts/sweep_world.py append-ask --out <tmp>
 | unset | `CODEX_HOME` `GEMINI_CLI_HOME` `COPILOT_HOME` `PI_CODING_AGENT_DIR` (they win over `SIDEREUS_USER_HOME`) |
 
 `sidereus_cli.py start` opens no browser unless `--open` is passed.
+⚠Launch only with the printed `sidereus_cli.py start --port N` line (it passes `--no-open`); `chat_server.py --port N` run directly opens a visible browser tab unless `--no-open` is given.
 
 ## Cases
 

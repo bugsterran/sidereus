@@ -66,14 +66,14 @@ function wfBody(sid, id){
   const head = '<div class=plbar><b>' + esc(r.name || r.id) + '</b>' + wfSumHtml(r, now) + '<span class="hidnote wfnote">' + esc(T('Workflow') + ' · ' + T('read-only') + ' · ' + sid8(sid) + ' · '
     + (r.run ? T('Running') : T('Last run'))) + '</span></div>';
   const ph = wfStages(r).map(t => { const L = lt[t]; return '<div class="wfnd pl-' + L.st + '"><div class=plt>' + mk[L.st] + esc(t) + '</div><div class=plls>'
-    + esc(L.n ? T('Agent') + ' ' + L.n + ' · ' + ago(L.sec) : T('Waiting')) + '</div></div>'; }).join('<i class=wfarr>→</i>');
+    + esc(L.n ? T('Agents') + ' ' + L.n + ' · ' + ago(L.sec) : T('Waiting')) + '</div></div>'; }).join('<i class=wfarr>→</i>');
   const ags = (r.agents || []).slice().sort((a, b) => ((b.st === 'run') - (a.st === 'run')) || ((b.start || 0) - (a.start || 0)));
   const rows = ags.map(a => { const s = WF_ST[a.st] || WF_ST.done, live = a.st === 'run' && r.run;
     return '<tr data-wfw="' + esc(sid) + '"' + (/^a[0-9a-f]{6,40}$/.test(String(a.aid || '')) ? ' data-tid="' + esc(a.aid) + '"' : '') + (live ? ' class=on' : '') + '><td title="' + esc(a.lab || '') + '">' + esc(a.lab || '') + '</td><td title="' + esc(a.phase || '') + '">'
       + esc(a.phase || '') + '</td><td class=' + s[1] + '><span class=plrtpl>' + (live ? '<i class=plrtdot></i>' : '') + esc(T(s[0], 'stage')) + '</span></td><td>'
       + esc(ago(Math.max(0, Math.round((live ? now : (a.end || 0)) - (a.start || 0))))) + '</td></tr>'; }).join('');
   return head + '<div class=wfph>' + (ph || '<span class=hidnote>' + esc(T('No phases')) + '</span>') + '</div>'
-    + '<div class=plrt><div class=plrth><b>' + esc(T('Agent') + ' ' + ags.length) + '</b></div><table class="plrtb wftb"><colgroup><col><col class=c2><col class=c4><col class=c5></colgroup><thead><tr><th>'
+    + '<div class=plrt><div class=plrth><b>' + esc(T('Agents') + ' ' + ags.length) + '</b></div><table class="plrtb wftb"><colgroup><col><col class=c2><col class=c4><col class=c5></colgroup><thead><tr><th>'
     + esc(T('Doing')) + '</th><th>' + esc(T('Stage')) + '</th><th>' + esc(T('Status')) + '</th><th>' + esc(T('Elapsed')) + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 document.addEventListener('click', e => {

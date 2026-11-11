@@ -155,6 +155,50 @@ class RenderTest(unittest.TestCase):
             for k, p, q in segs:
                 self.assertFalse(cuts(p, q, r), "arrow %d strikes band title %s" % (k, bd["id"]))
 
+    def _verticals_shared(self, layout, pairs):
+        bands = [{"id": "b%d" % k, "name": "B%d" % k} for k in range(max(layout) + 1)]
+        boxes = [{"id": "x%d" % k, "name": "X%d" % k, "band": "b%d" % bd, "modules": ["m"]} for k, bd in enumerate(layout)]
+        b = {"bands": bands, "boxes": boxes, "arrows": [{"from": "x%d" % f, "to": "x%d" % t, "edges": [0]} for f, t in pairs]}
+        rt = AH.routes(b)
+        self.assertEqual(len(rt), len(pairs))
+        vs = [(k, p[0], min(p[1], q[1]), max(p[1], q[1])) for k, v in rt.items()
+              for p, q in zip(v[0], v[0][1:]) if p[0] == q[0] and p[1] != q[1]]
+        return [(a[0], c[0]) for i, a in enumerate(vs) for c in vs[i + 1:]
+                if a[0] != c[0] and abs(a[1] - c[1]) < 6 and a[2] < c[3] and c[2] < a[3]]
+
+    def test_lane_avoids_attach_stub(self):
+        # Arrow 1 skips the middle band; its lane must not sit on arrow 0's attach stub in the gap it crosses.
+        self.assertEqual(self._verticals_shared([0, 1, 2, 1, 2, 0, 0, 2], [(3, 2), (0, 7)]), [])
+
+    def test_lanes_one_px_apart_are_one_line(self):
+        # Two lanes over the same rows from different base candidates (1px apart) must still separate.
+        self.assertEqual(self._verticals_shared([0, 1, 2, 0, 2, 0, 2], [(4, 5), (5, 6)]), [])
+
+    def test_note_fits_box(self):
+        b = brief(5)
+        b["boxes"][0]["note"] = u"인증 토큰을 확인하고 세션 저장소에서 사용자 권한을 읽어 오는 단계" * 2
+        b["boxes"][0]["modules"] = ["module_%d" % k for k in range(20)]
+        pos = AH.layout(b)[0]
+        bw = pos["b0"][2]
+        h = AH.figure(b)
+        sub = re.search(r'data-box="b0".*?class="t-sub">([^<]*)<', h, re.S).group(1)
+        ids = re.search(r'data-box="b0".*?class="t-ids">([^<]*)<', h, re.S).group(1)
+        self.assertTrue(sub.endswith(u"…") and ids.endswith(u"…"))
+
+        def w(s, size):   # 12px Hangul ~12px/glyph, narrow ~0.6em
+            return sum(size if ord(c) >= 0x1100 else 0.6 * size for c in s)
+        self.assertLessEqual(w(sub, 12), bw - 20)
+        self.assertLessEqual(w(ids, 10), bw - 20)
+
+    def test_title_fits_box(self):
+        b = brief(5)
+        b["boxes"][0]["name"] = u"외부 플랫폼 세션 수집과 상태 판정 계층 전체"
+        bw = AH.layout(b)[0]["b0"][2]
+        lines = re.findall(r'class="t-title">([^<]*)<', AH.figure(b).split('data-box="b1"')[0])
+        self.assertEqual(len(lines), 2)
+        for ln in lines:   # 14px bold: Hangul ~1em, narrow ~0.6em
+            self.assertLessEqual(sum(14 if ord(c) >= 0x1100 else 8.4 for c in ln), bw - 20)
+
     def test_deterministic(self):
         self.assertEqual(AH.render(brief(7)).encode("utf-8"), AH.render(brief(7)).encode("utf-8"))
 

@@ -156,7 +156,7 @@ function plNodeHtml(E, n, bad, lt, cdy){   // cdy = 48c plgChipDy offset (status
   const mln = '<div class=plnm' + (inh ? ' title="' + esc(T("No model set; the stage uses the session's model")) + '"' : '') + '>' + esc(mtx) + warn + '</div>';
   const ngt = T('No check command runs after this stage — nothing machine-checks it');
   const unv = String(n.gate || '').trim() ? '' : '<span class=plunv title="' + esc(ngt) + '" aria-label="' + esc(T('No gate') + ' — ' + ngt) + '">' + esc(T('No gate')) + '</span>';   // pairs with the «Gate» chip; judgment stages are expected here
-  const oc = L && PL_OUTCOME[L.st] ? plOc(L.st) + (L.why ? ' (' + L.why + ')' : '') : '', lsTxt = L ? [oc, L.n ? T('Agent') + ' ' + L.n + ' · ' + ago(L.sec) : L.st === 'run' && L.sec > 0 ? ago(L.sec) : oc ? '' : T('Waiting')].filter(Boolean).join(' · ') : '';
+  const oc = L && PL_OUTCOME[L.st] ? plOc(L.st) + (L.why ? ' (' + L.why + ')' : '') : '', lsTxt = L ? [oc, L.n ? T('Agents') + ' ' + L.n + ' · ' + ago(L.sec) : L.st === 'run' && L.sec > 0 ? ago(L.sec) : oc ? '' : T('Waiting')].filter(Boolean).join(' · ') : '';
   // A stage the orchestrator runs itself (no agents) still shows its elapsed time while running, like the detail pane.
   const live = L ? '<div class=plls title="' + esc(lsTxt) + '">' + esc(lsTxt) + '</div>' : '';   // title: the pill ellipsizes at 150px
   const sel = E.sel && E.sel.k === 'n' && E.sel.id === n.id ? ' on' : '';

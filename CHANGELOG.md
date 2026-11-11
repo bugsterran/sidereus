@@ -34,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Structure overview: two arrows no longer share one vertical line (a lane next to another arrow's attach point or a lane 1 px away), and box titles, notes and ids are cut by measured width so Hangul text stays inside the box.
+- Pipelines: agent counts read «Agents N» everywhere (some places said «Agent N»).
 - Security checks: the window title, the re-scan notice and the history no longer count osv-scanner findings marked «Unused (verified)» as open.
 - Pipelines: a stage marker in a shell command counts on a later line or after `;` `&&` `||` when it is an `echo`/`printf` of the marker (pi writes them so); a marker inside a multi-line quoted string or a heredoc body is text.
 - Pipelines: a builtin security run started from a session in another repo shows and is filed under that repo, instead of «pipeline file not found».

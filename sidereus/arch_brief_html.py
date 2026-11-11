@@ -54,14 +54,15 @@ def _cut(s, n):
     return s if len(s) <= n else s[:max(0, n - 1)] + "…"
 
 
-def _wrap2(s, n):
-    """At most two lines of ~n chars; the second is cut with an ellipsis."""
+def _wrap2(s, px, size):
+    """At most two lines within px at font size `size` (measured, not counted: Hangul is ~1em); the second is cut with an ellipsis."""
     s = str(s or "")
-    if len(s) <= n:
+    if _fit(s, px, size) == s:
         return [s]
+    n = max(1, len(_fit(s, px, size)) - 1)   # chars that fit on line one (drop the ellipsis)
     cut = s.rfind(" ", 0, n + 1)
     cut = cut if cut > n // 2 else n
-    return [s[:cut].rstrip(), _cut(s[cut:].lstrip(), n)]
+    return [s[:cut].rstrip(), _fit(s[cut:].lstrip(), px, size)]
 
 
 LANE = 16                 # ⚠lane spacing >= label height (13px), so a label above its lane never meets the next lane's
@@ -94,6 +95,16 @@ def _text_w(s):
     return int(sum(11 if ord(c) >= 0x1100 else 6.5 for c in str(s or ""))) + 6
 
 
+def _fit(s, px, size):
+    """s cut with an ellipsis so its estimated width at font size `size` stays within px (a char count overflows on Hangul)."""
+    s = "" if s is None else str(s)
+    if _text_w(s) * size / 11.0 <= px:
+        return s
+    while s and _text_w(s + "…") * size / 11.0 > px:
+        s = s[:-1]
+    return s + "…"
+
+
 def _title_w(s):
     """Estimated .t-band (13px bold, .5px spacing) width, on the wide side so lines keep clear of it."""
     s = str(s or "")
@@ -112,7 +123,7 @@ def _plan(brief, grid):
             rowlist.append(row)
             rows3.append((0, 0, [(x, 0, w, 0) for _bid, x, w in row], block))
     gaps = [[] for _ in range(len(rowlist) + 1)]
-    plan, used_xv = {}, []
+    plan, used_xv, search = {}, [], {}
     for k, a in enumerate(brief.get("arrows") or []):
         if a["from"] not in where or a["to"] not in where or a["from"] == a["to"]:
             continue
@@ -132,13 +143,10 @@ def _plan(brief, grid):
             if mid:
                 lo, hi = min(ri, rj), max(ri, rj)
                 base = _lane_x(ca, cb, mid)
-                xv = base
-                for off in (0, 10, -10, 20, -20, 30, -30):   # arrows crossing the same rows get their own vertical
-                    c = base + off
-                    if 0 < c < W and _clear_x(c, mid) and not any(u == c and ul < hi and lo < uh for u, ul, uh in used_xv):
-                        xv = c
-                        break
+                # Arrows crossing the same rows get their own vertical (bases from different candidates may differ by 1px).
+                xv = _free_x(base, mid, [u for u, ul, uh in used_xv if ul < hi and lo < uh])
                 used_xv.append((xv, lo, hi))
+                search[k] = (base, mid, lo, hi)
         for g in use:
             gaps[g].append(k)
         plan[k] = {"ri": ri, "rj": rj, "sa": sa, "sb": sb, "gaps": use, "xv": xv,
@@ -157,9 +165,30 @@ def _plan(brief, grid):
         lst.sort()
         for i, (_o, k, end) in enumerate(lst):
             plan[k]["xb" if end else "xa"] = lo + (i + 1) * (x + w - lo) // (len(lst) + 1)
+    # ⚠Attach stubs are only known now: a vertical lane on another arrow's stub x in a gap it crosses shares a line with it.
+    stubs = [(k, p["xa"], p["ri"] + (p["sa"] == "bot")) for k, p in plan.items()] + \
+        [(k, p["xb"], p["rj"] + (p["sb"] == "bot")) for k, p in plan.items()]
+    for k in sorted(search):
+        base, mid, lo, hi = search[k]
+        taken = [x for kk, x, g in stubs if kk != k and lo < g <= hi] + \
+            [plan[kk]["xv"] for kk, (_b, _m, l2, h2) in search.items() if kk != k and l2 < hi and lo < h2]
+        if any(abs(plan[k]["xv"] - t) < _NEAR for t in taken):
+            plan[k]["xv"] = _free_x(base, mid, taken, plan[k]["xv"])
     for g, ks in enumerate(gaps):
         gaps[g] = _order(g, ks, plan, brief)
     return plan, gaps
+
+
+_NEAR = 6                 # verticals closer than this read as one line
+
+
+def _free_x(base, mid, taken, fallback=None):
+    """First x near base that crosses no row in mid and keeps _NEAR from every taken x; else fallback (or base)."""
+    for off in (0, 10, -10, 20, -20, 30, -30, 40, -40):
+        c = base + off
+        if 0 < c < W and _clear_x(c, mid) and all(abs(c - t) >= _NEAR for t in taken):
+            return c
+    return base if fallback is None else fallback
 
 
 def _gap_runs(p, g):
@@ -375,18 +404,17 @@ def figure(brief):
     for x in brief["boxes"]:
         bx, by, bw, bh = pos[x["id"]]
         stroke, fill = PALETTE[band_ix.get(x["band"], 0) % len(PALETTE)]
-        chars = max(8, (bw - 20) // 8)
         ids = " ".join(x["modules"])
         rows = ['<g data-box="%s" data-mods="%s"><title>%s</title>' % (e(x["id"]), e(ids), e(x["name"] + " — " + ids)),
                 '<rect x="%d" y="%d" width="%d" height="%d" rx="10" fill="%s" stroke="%s" stroke-width="1.4"/>'
                 % (bx, by, bw, bh, fill, stroke)]
         ty = by + 22
-        for ln in _wrap2(x["name"], chars):
+        for ln in _wrap2(x["name"], bw - 20, 14):
             rows.append('<text x="%d" y="%d" class="t-title">%s</text>' % (bx + 10, ty, e(ln)))
             ty += 17
         if x.get("note"):
-            rows.append('<text x="%d" y="%d" class="t-sub">%s</text>' % (bx + 10, ty, e(_cut(x["note"], chars + 4))))
-        rows.append('<text x="%d" y="%d" class="t-ids">%s</text></g>' % (bx + 10, by + bh - 9, e(_cut(ids, chars + 10))))
+            rows.append('<text x="%d" y="%d" class="t-sub">%s</text>' % (bx + 10, ty, e(_fit(x["note"], bw - 20, 12))))
+        rows.append('<text x="%d" y="%d" class="t-ids">%s</text></g>' % (bx + 10, by + bh - 9, e(_fit(ids, bw - 20, 10))))
         out.extend(rows)
     rt = routes(brief)
     for k, a in enumerate(brief.get("arrows") or []):

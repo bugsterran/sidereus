@@ -532,7 +532,7 @@ function plLiveHead(lv, lt){
   const r = lv.run, v = Object.values(lt || {}), n = v.length, k = v.filter(x => x.st === 'done' || x.st === 'skip').length;   // a skipped stage is finished too
   const fin = !r.run && n > 0 && k === n, sec = r.start ? Math.max(0, (r.run ? Date.now() / 1000 : (r.end || 0)) - r.start) : Math.max(0, ...v.map(x => x.sec || 0));
   const txt = (fin ? T('Done') : r.run ? T('Running') : T('Last run')) + ' · ' + sid8(lv.sid)
-    + (r.phase ? ' · ' + plgShow(r.phase) : '') + ' · ' + T('Agent') + ' ' + r.total + (r.fail ? ' · ' + T('Failures') + ' ' + r.fail : '') + ' · ' + TV({msg: '{n}/{m} done', vars: {n: k, m: n}}) + ' · ' + ago(Math.round(sec));   // counts finished stages; agents are counted above
+    + (r.phase ? ' · ' + plgShow(r.phase) : '') + ' · ' + T('Agents') + ' ' + r.total + (r.fail ? ' · ' + T('Failures') + ' ' + r.fail : '') + ' · ' + TV({msg: '{n}/{m} done', vars: {n: k, m: n}}) + ' · ' + ago(Math.round(sec));   // counts finished stages; agents are counted above
   const nav = plRunNav(lv), old = !!nav && nav.rid !== nav.cur;
   return '<div class="plrunst' + (r.run ? ' on' : '') + (fin ? ' fin' : '') + (old ? ' old' : '') + '"><span title="' + esc(txt) + '">' + plRunPick(nav) + esc(txt)   // title: the bar line is ellipsised (43-pipeline.css)
     + '</span><i class=plprog><i style="width:' + (n ? Math.round(100 * k / n) : 0) + '%"></i></i></div>';
