@@ -14,18 +14,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sessions: the work-log popup shows steps and replies for pi sessions, read from the pi session file.
 - Docs: a pi migration pipeline template (`docs/examples/pipelines/migrate-pi.json`, stages Inventory, Map, Convert, Verify, Report) keeps the Claude Code files as the source and gives pi symlinks or generated copies; linked from the pi section of HOOKS (untested on pi).
 - Security checks: osv-scanner findings get a reachability verdict — «Unused (verified)» (collapsed, out of the counts), «Invalidated» with the hit file:line, or «Unjudged»; the builtin `osv-triage` pipeline reads the advisory preconditions of unjudged ids and appends fixed-string usage rules (source URL and date) through `scripts/osv_rules.py`.
+- Security checks: test code (tests/, fixtures/, `*.test.*` and similar) is left out of the code scanners (gitleaks, semgrep, bandit) by default, so mock secrets no longer show as findings; «Include test code» scans it. Dependency and image scanners always read the full tree.
 
 ### Changed
 
 - Sessions: when the main repo's session is in view, a linked-worktree session is one «Worktree» line inside that card (name or branch, state, age), next to the subagent lines; clicking it opens that session. With no main session in view the header row stays.
-- Quota: «left ≈» shows a range (for example «57M-107M») when the history estimate and this window disagree by more than 1.5x between 30% and 60% of the 5h window; the weekly window and 5h from 60% show one value blended toward this window, and the tooltip names both.
+- Quota: «left ≈» on the 5h window shows a range (for example «57M-107M») when the history estimate and this window disagree by more than 1.5x between 30% and 60%; from 60%, and on the weekly window from 30%, it is one value blended toward this window.
 - Structure: the diagram request («Generate diagram» / «Update diagram» / «Redraw») also draws the one-page overview, so «Simple» is ready after one request; `arch-brief` remains for redrawing only the overview, and a failed overview leaves the verified map in place.
 - Requests: the recipient pickers for security check fixes, the Harness «Next step» and pipeline evaluation «Ask AI» list live sessions of every platform (before, Claude Code only), and the structure diagram, overview and pipeline run pickers, which already listed several platforms, now list every one; the Harness «Next step» lists only sessions logged in to the mailbox. Sessions from other CLIs get a run-it-yourself body with shell stage markers, and sending still needs a mailbox login.
 - Pipelines: the red-check «off» hint reads «Open an AI session in this project and log in to the mailbox to request it» instead of naming Claude Code.
 
 ### Fixed
 
-- Structure: the one-page overview («Simple») gives every arrow its own lane and moves labels to a free spot, so a busy figure no longer stacks labels on each other or on box text; an existing overview changes after «Redraw».
+- Security checks: the window title, the re-scan notice and the history no longer count osv-scanner findings marked «Unused (verified)» as open.
+- Pipelines: a stage marker in a shell command counts on a later line or after `;` `&&` `||` when it is an `echo`/`printf` of the marker (pi writes them so); a marker inside a multi-line quoted string or a heredoc body is text.
+- Pipelines: a builtin security run started from a session in another repo shows and is filed under that repo, instead of «pipeline file not found».
+- Pipelines: a borrowed canvas shows the open run instead of another session's newer ended run.
+- Timeline: finished pi subagent rows keep their agent name instead of collapsing into one «pi -p» row.
+- Structure: the one-page overview («Simple») gives every arrow its own lane and moves labels to a free spot, so a busy figure no longer stacks labels on each other or on box text; lanes are ordered to cross the fewest lines and labels and keep clear of band titles; an existing overview changes after «Redraw».
 - Plugin: the SessionStart hook shipped in the plugin includes the pi id prompt above (the plugin copy was stale).
 - Platforms: a pi session without a `pi:<cwd>` mailbox id is asked at start whether to register `<folder>-pi`, instead of being told the derived id as if it were logged in.
 - Platforms: pi «Connect» no longer reports connected while `~/.pi/agent/mcp.json` keeps its own `mailbox` entry that skips the Sidereus launcher (pi logins then never count); Diagnostics says to edit that entry by hand.
