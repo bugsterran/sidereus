@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Security checks: the window title, the re-scan notice and the history no longer count osv-scanner findings marked «Unused (verified)» as open.
 - Pipelines: a stage marker in a shell command counts on a later line or after `;` `&&` `||` when it is an `echo`/`printf` of the marker (pi writes them so); a marker inside a multi-line quoted string or a heredoc body is text.
 - Pipelines: a builtin security run started from a session in another repo shows and is filed under that repo, instead of «pipeline file not found».
+- Pipelines: a commit tagged for a run closes it when the remaining stages were declared skipped, instead of leaving the run open.
 - Pipelines: a borrowed canvas shows the open run instead of another session's newer ended run.
 - Timeline: finished pi subagent rows keep their agent name instead of collapsing into one «pi -p» row.
 - Structure: the one-page overview («Simple») gives every arrow its own lane and moves labels to a free spot, so a busy figure no longer stacks labels on each other or on box text; lanes are ordered to cross the fewest lines and labels and keep clear of band titles; an existing overview changes after «Redraw».
