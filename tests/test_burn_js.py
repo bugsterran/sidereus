@@ -56,6 +56,7 @@ R.head = [burnHead(null, N), burnHead({}, N),
 const est = {h5_per_pct: 6e5, h5_n: 6, h5_src: 'med', wk_per_pct: 3.2e6, wk_n: 160, h5_left: 3.72e7, wk_left: 2.144e8, wk_used: 1.056e8};
 R.off = [burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 5e7, 50), burnEst({est: {h5_left: 6e7, h5_n: 5}}, '5h', 1.62e8, 74),
          burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 1.62e8, 20), burnEst({est: {h5_left: 8.64e7, h5_n: 15}}, '5h', 1.706e8, 79)];
+R.offWk = burnEst({est: {wk_left: 1.07e8}}, '7d', 5e7, 50);
 R.offTxt = estLeftTxt(R.off[0]);
 R.zero = [burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 0, 50), burnEst({est: {h5_left: 1.07e8, h5_n: 5}}, '5h', 0, 70),
           burnEst({est: null}, '5h', 0, 50)];
@@ -134,6 +135,9 @@ R.asof = [burnHead({cur, at: 3600 * 13 + 5 * 60}, N)];
         wl, w = 1.706e8 / 79 * 21, 49 / 70                                       # from 60%: one blended value, no range
         self.assertAlmostEqual(off[3]["left"], 8.64e7 * (1 - w) + wl * w, delta=1)
         self.assertIsNone(off[3].get("hi"))
+        wk, w = self.R["offWk"], 20 / 70                                         # weekly at 50%: blended, never a range
+        self.assertAlmostEqual(wk["left"], 1.07e8 * (1 - w) + 5e7 * w, delta=1)
+        self.assertIsNone(wk.get("hi"))
 
     def test_zero_local_use_keeps_history(self):
         z = self.R["zero"]   # this PC used 0 while other devices moved the %: no window value

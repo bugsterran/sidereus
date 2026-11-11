@@ -65,9 +65,11 @@ function burnEst(b, k, n, p){
   //   (w = (p-30)/70) — the backtest has history and window error about even by 70%, so neither side wins alone.
   const wl = win ? n / p * (100 - p) : null;
   const off = wl != null && l != null && Math.max(l, wl) > 1.5 * Math.max(1, Math.min(l, wl));
+  // ⚠Weekly never shows a range: a 7d window spans days, so the 30-60% band lasts long enough that «A-B» was the
+  //   usual weekly reading; it blends from 30% (w = 0 there, history alone) like 5h does from 60%.
   const w = (p - 30) / 70;
   if(l != null && !(thin && win)) return !off ? {left: l, tip: burnEstTip(k, e)}
-    : p >= 60 ? {left: l * (1 - w) + wl * w, tip: burnEstTip(k, e) + '\n'
+    : p >= 60 || k === '7d' ? {left: l * (1 - w) + wl * w, tip: burnEstTip(k, e) + '\n'
         + TV({msg: 'History {h} vs this window {w} — blended by progress', vars: {h: fmtTok(l), w: fmtTok(wl)}})}
     : {left: Math.min(l, wl), hi: Math.max(l, wl), tip: burnEstTip(k, e) + '\n' + T('This window\'s average differs by over 1.5x — the range shows both')};
   const low = b && b.est_why === 'plan' ? ' · ' + T('Not enough history — low accuracy') : '';   // plan changed: history dropped

@@ -583,6 +583,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ `burnEst` (57-burn.js): from 30%, a gap over 1.5x returns `{left: low, hi: high}` and `estLeftTxt` prints «57M–107M». `left` stays the lower bound for numeric callers.
 - ⚠Do not let the window average win alone; `used_local` is this PC only.
 - ★Range too wide late in the window: 79% read «45M–86M» (window 2.16M/% over 170M tokens vs history median 4.1M/%, n=15).
-- ⇒ From 60% `burnEst` returns one value blended toward the window, w = (p-30)/70; the tooltip names both. The range stays for 30–60%.
+- ⇒ From 60% `burnEst` returns one value blended toward the window, w = (p-30)/70; the tooltip names both. The range stays for 30–60% on 5h only; weekly (7d) blends from 30% and never shows a range — its 30–60% band lasts days, so «A–B» was the usual weekly reading.
 - ⚠`used_local` 0 (only claude.ai/other devices moved the %) is no window value: it made the range «< 1%» at 30–59% and halved the blend from 60%. `win` needs `n > 0`.
 

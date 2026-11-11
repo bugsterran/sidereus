@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Sessions: when the main repo's session is in view, a linked-worktree session is one «Worktree» line inside that card (name or branch, state, age), next to the subagent lines; clicking it opens that session. With no main session in view the header row stays.
-- Quota: «left ≈» shows a range (for example «57M-107M») when the history estimate and this window disagree by more than 1.5x between 30% and 60% used; from 60% it is one value blended toward this window, and the tooltip names both.
+- Quota: «left ≈» shows a range (for example «57M-107M») when the history estimate and this window disagree by more than 1.5x between 30% and 60% of the 5h window; the weekly window and 5h from 60% show one value blended toward this window, and the tooltip names both.
 - Structure: the diagram request («Generate diagram» / «Update diagram» / «Redraw») also draws the one-page overview, so «Simple» is ready after one request; `arch-brief` remains for redrawing only the overview, and a failed overview leaves the verified map in place.
 - Requests: the recipient pickers for security check fixes, the Harness «Next step» and pipeline evaluation «Ask AI» list live sessions of every platform (before, Claude Code only), and the structure diagram, overview and pipeline run pickers, which already listed several platforms, now list every one; the Harness «Next step» lists only sessions logged in to the mailbox. Sessions from other CLIs get a run-it-yourself body with shell stage markers, and sending still needs a mailbox login.
 - Pipelines: the red-check «off» hint reads «Open an AI session in this project and log in to the mailbox to request it» instead of naming Claude Code.
