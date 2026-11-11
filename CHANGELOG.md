@@ -24,6 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Structure: the one-page overview («Simple») gives every arrow its own lane and moves labels to a free spot, so a busy figure no longer stacks labels on each other or on box text; an existing overview changes after «Redraw».
+- Plugin: the SessionStart hook shipped in the plugin includes the pi id prompt above (the plugin copy was stale).
 - Platforms: a pi session without a `pi:<cwd>` mailbox id is asked at start whether to register `<folder>-pi`, instead of being told the derived id as if it were logged in.
 - Platforms: pi «Connect» no longer reports connected while `~/.pi/agent/mcp.json` keeps its own `mailbox` entry that skips the Sidereus launcher (pi logins then never count); Diagnostics says to edit that entry by hand.
 - Sessions: the branch chip shows the live git branch of the folder; a session back from an isolation worktree no longer keeps the `worktree-agent-…` name.
