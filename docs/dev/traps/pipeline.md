@@ -448,3 +448,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: the timeline drawer passes a session's worktree path (`s.repos[0]`) and `_proj_ok` is an exact match on `allowed_projects()`, which lists only the main repo.
 - Fix: this read-only route also accepts `proj` when `gitinfo._wt_main(proj)` passes `_proj_ok` (same as `git_view._repo_ok`); evidence is still read for the given path (its own git root).
 - ⚠Do not widen `_proj_ok` itself — it also guards `pipeline_del` and other write routes. `tests/test_harness_plat.py` `test_evidence_only_accepts_worktree_of_allowed_repo`.
+
+## Builtin runs: proj = definition dir, repo = filing dir (`hooks/pl_flow.py` `_run_repo` · `sidereus/pl_runs.py`)
+- Cause: security-fix/security-checks live in the code dir, so `proj` (where `<name>.json` was found) filed a run on another repo's admin session under the Sidereus project: ledger, report and `plrun` row.
+- Fix: at run start a builtin run gets `repo` once (newest open, fresh plreq.json entry for this sid and pipeline sent after the sid's previous run of it ended, else the cwd git root unless it is a code dir); ledger, `_head`, commit match, `_autoscore` row `proj` and `harness_flow._disk_runs` use `repo or proj`; `scripts/pl_report.py` accepts the code dir's builtin pf.
+- ⚠Never resolve stages, readonly or «Apply» from `repo`, and never spawn `pl_eval` for a builtin (its gates would run in the code dir); nothing is written in the target repo. `tests/test_pl_flow_builtin_repo.py`.

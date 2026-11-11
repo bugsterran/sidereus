@@ -16,6 +16,7 @@ import tempfile
 import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
+CODE_DIR = os.path.dirname(_HERE)   # holds builtin pipelines; patched in tests
 REPORT_AGE_DAYS = 7
 _NAME = re.compile(r"[a-z0-9-]{1,40}")
 _now = time.time   # tests patch this
@@ -40,6 +41,18 @@ def _load(data_dir):
     sys.path.insert(0, up)
     from sidereus import pl_outcome, pl_eval_view
     return pl_outcome, pl_eval_view
+
+
+def _builtin_pf(pf):
+    """True when real path `pf` is <code dir>/.claude/pipelines/<name>.json with `"builtin": true` (code dir = parent of
+    scripts/): a builtin run files under its target repo while its definition stays here (hooks/pl_flow.py repo)."""
+    try:
+        if os.path.dirname(pf) != os.path.join(os.path.realpath(CODE_DIR), ".claude", "pipelines"):
+            return False
+        with open(pf, encoding="utf-8") as f:
+            return json.load(f).get("builtin") is True
+    except Exception:
+        return False
 
 
 def _gate(P, name, repo, now):
@@ -114,7 +127,8 @@ def main(argv=None):
     repo = os.path.realpath(a.repo)
     pf = os.path.realpath(a.pipeline)
     name = os.path.basename(pf)[:-5] if pf.endswith(".json") else ""
-    if not os.path.isdir(repo) or not _NAME.fullmatch(name) or os.path.dirname(pf) != os.path.join(repo, ".claude", "pipelines"):
+    if not os.path.isdir(repo) or not _NAME.fullmatch(name) or (
+            os.path.dirname(pf) != os.path.join(repo, ".claude", "pipelines") and not _builtin_pf(pf)):
         print("pl_report: --pipeline must be <repo>/.claude/pipelines/<name>.json", file=sys.stderr)
         return 2
     OC, V = _load(a.data_dir)

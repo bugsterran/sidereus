@@ -139,6 +139,30 @@ class Report(unittest.TestCase):
             self.assertEqual(R.main(["--repo", self.proj, "--pipeline", self.pf, "--data-dir", "rel"]), 2)
         self.assertFalse(os.path.exists(self.rep))
 
+    def _code_pf(self, builtin):
+        code = os.path.realpath(os.path.join(self.tmp, "code"))
+        pf = os.path.join(code, ".claude", "pipelines", "flow.json")
+        os.makedirs(os.path.dirname(pf), exist_ok=True)
+        with open(pf, "w", encoding="utf-8") as f:
+            json.dump(dict({"name": "flow", "stages": [{"title": "review", "agent": "reviewer"}]},
+                           **({"builtin": True} if builtin else {})), f)
+        p = mock.patch.object(R, "CODE_DIR", code)
+        p.start()
+        self.addCleanup(p.stop)
+        return pf
+
+    def test_builtin_pf_in_code_dir_files_under_repo(self):
+        pf = self._code_pf(True)
+        with mock.patch("sys.stdout", io.StringIO()):
+            self.assertEqual(R.main(["--repo", self.proj, "--pipeline", pf]), 0)
+        self.assertEqual(os.listdir(self.rep), ["2026-10-18.md"])   # filed under the target repo's key
+
+    def test_non_builtin_pf_outside_repo_refused(self):
+        pf = self._code_pf(False)
+        with mock.patch("sys.stderr", io.StringIO()):
+            self.assertEqual(R.main(["--repo", self.proj, "--pipeline", pf]), 2)
+        self.assertFalse(os.path.exists(self.rep))
+
 
 if __name__ == "__main__":
     unittest.main()

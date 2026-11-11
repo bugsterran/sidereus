@@ -4,7 +4,7 @@ hooks/pl_flow.py writes DATA_DIR/plmark/<sid>.runs.json {"v": 1, "runs": {<name>
 "past": {<name>: [run, ...]}} (past = earlier runs of the same name, oldest first, same run shape).
 ⚠Metadata only (AGENTS.md rule 1): name/cur/end/t0/t1/st/lb/stop are copied through an allow-list — cwd, proj, loops, ret,
   inflight and anything a later hook version adds never reach a row.
-  `pl_model` (row `plrun`) adds only a validated absolute `proj` path on top of that.
+  `pl_model` (row `plrun`) adds only a validated absolute `proj` path on top of that (`repo` when set, else `proj`).
 """
 import json
 import os
@@ -340,7 +340,8 @@ def pl_model(sid, sess_dir, sub, plm, now, act="run", pend_sub=(), bgs=()):
     for i, r in enumerate(runs):
         stages = _stage_map(r)
         lo, hi = r["t0"] - PLR_AG_SLACK_S, (r["end"] or now) + PLR_AG_SLACK_S
-        row = {"name": r["name"], "proj": _proj((raw.get(r["name"]) or {}).get("proj")), "sid": sid,
+        rr = raw.get(r["name"]) or {}   # repo = a builtin run's target (hooks/pl_flow.py), filed there over its definition dir
+        row = {"name": r["name"], "proj": _proj(rr.get("repo")) or _proj(rr.get("proj")), "sid": sid,
                "rid": r["t0"], "lab": _run_lab(byname.get(r["name"]), lo, hi),
                "cur": r["cur"], "end": r["end"], "t0": r["t0"], "t1": r["t1"], "stop": r["stop"], "stages": stages, "past": []}
         for p in past.get(r["name"], ()):

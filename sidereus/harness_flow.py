@@ -126,7 +126,8 @@ def _disk_runs(repos, now):
             continue
         runs = d.get("runs") if isinstance(d, dict) else None
         for name, r in (runs.items() if isinstance(runs, dict) else ()):
-            p = pl_runs._proj(r.get("proj")) if isinstance(r, dict) else ""
+            # repo = a builtin run's target (hooks/pl_flow.py); same rule as pl_runs row `proj`
+            p = (pl_runs._proj(r.get("repo")) or pl_runs._proj(r.get("proj"))) if isinstance(r, dict) else ""
             if p and os.path.realpath(p) in repos:
                 x = _parse(sid, name, r, now)
                 if x:

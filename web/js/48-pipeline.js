@@ -99,7 +99,7 @@ function plLiveProjs(sess, mem, known, orph){
   const out = {};
   let wait = false;
   const owns = (p, n) => !known || (known[p] && known[p].n > 0 && (n === '?' || !known[p].names || known[p].names.includes(n)));
-  const add = (p, n) => { if(!owns(p, n)) return; const l = out[p] || (out[p] = []); if(!l.includes(n)) l.push(n); };
+  const add = (p, n) => { if(!owns(p, n) && !(typeof plBi === 'function' && plBi(known, n))) return; const l = out[p] || (out[p] = []); if(!l.includes(n)) l.push(n); };
   // ⚠A session whose arch-map run already shows on its target (ARCHRUN, below) must not also dot the Sidereus repo:
   //   its repos include the pipeline's home, so the tag landed there too and one run read «Running 2».
   const agSid = new Set(typeof plAgRun === 'function' ? Object.keys(ARCHRUN || {}).filter(p => plAgRun(p)).map(p => ARCHRUN[p].sid).filter(Boolean) : []);
@@ -125,6 +125,7 @@ function plLoadAll(){
 // ⇒ Pick the project whose pipeline fits the tagged subagents (stage title present +1, its agent = the sub's type +2);
 //   the cwd only breaks a tie. cwd-first alone sent an app-api bugfix (run by app-api agents) to app-origin.
 function plHomes(x, n, known){
+  if(typeof plBi === 'function' && plBi(known, n)){ const b = plBiProj(x, n); return b ? [b] : []; }   // builtin: its target repo only, never cwd/repos too
   const c = [x.cwd].concat(x.repos || []).filter((p, i, a) => p && a.indexOf(p) === i);
   const ownsN = p => !known || (known[p] && known[p].n > 0 && (n === '?' || !known[p].names || known[p].names.includes(n)));
   // ⚠The server's recorded run project (plrun proj, open run first, then newest) beats stage-fit scoring: a same-named
@@ -168,6 +169,7 @@ function plAway(x, names, known){
   const ks = Object.keys(known).filter(p => known[p].n > 0);
   const own = (p, n) => known[p] && known[p].n > 0 && (!known[p].names || known[p].names.includes(n));
   names.forEach(n => {
+    if(typeof plBi === 'function' && plBi(known, n) && !r.home[n] && !r.orph.includes(n)){ const b = plBiProj(x, n); if(b) r.home[n] = b; else r.orph.push(n); return; }
     if(n === '?' || r.home[n] || r.orph.includes(n) || [x.cwd].concat(x.repos || []).some(p => p && own(p, n))) return;
     if(ks.some(p => !known[p].names)){ r.wait = true; return; }
     const hit = ks.filter(p => known[p].names.includes(n));
@@ -182,7 +184,16 @@ function plKnown(){
     const d = PLS.data[x.path];
     k[x.path] = { n: x.n, names: d && d.ok && d.pipelines ? d.pipelines.map(q => q.name) : null };
   });
+  // ⚠Non-enumerable: callers iterate Object.keys(known) as project paths.
+  Object.defineProperty(k, 'bi', { value: new Set(PLS.projs.builtin || []) });
   return k;
+}
+// Sidereus builtin pipeline (security-fix): hidden from every list, so no project «owns» it; it lands on its run's recorded proj.
+function plBi(known, n){ return !!(known && known.bi && known.bi.has(n)); }
+// Recorded target project of a session's builtin run (open run first, then newest), or ''.
+function plBiProj(x, n){
+  const rp = (x.plrun || []).filter(r => r && r.name === n && r.proj).sort((a, b) => (!a.end - !b.end) || ((a.t1 || 0) - (b.t1 || 0))).pop();
+  return rp ? rp.proj : '';
 }
 // Tab count = distinct (project, name) pairs; known null = distinct names only (cwd + repos would count one run several times).
 function plLiveN(live, known){ return known ? Object.values(live).reduce((a, l) => a + l.length, 0) : new Set([].concat(...Object.values(live))).size; }

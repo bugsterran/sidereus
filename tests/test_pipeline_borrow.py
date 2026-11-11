@@ -67,6 +67,27 @@ class Borrow(unittest.TestCase):
         self.assertEqual({p["path"]: p["n"] for p in out["projects"]}, {self.sidereus: 1, self.here: 2, self.other: 1})
         self.assertTrue(os.path.isfile(os.path.join(self.sidereus, ".claude", "pipelines", "security-checks.json")))   # file stays for the hooks
 
+    def test_builtin_borrowed_by_run_proj(self):
+        _mk(self.sidereus, "security-fix", dict(P, builtin=True))
+        rows = [{"sid": "s1", "cwd": self.other, "repos": [], "plrun": [{"name": "security-fix", "proj": self.here}]},
+                {"sid": "s2", "cwd": self.here, "repos": [], "plrun": [{"name": "security-fix"}]}]   # no proj: not attached by cwd
+        out = PL.pipelines(self.here, PL.runs_here(self.here, rows, {}, "arch-map"))[1]
+        self.assertEqual([(r["name"], r["from"], r["builtin"]) for r in out["borrowed"]], [("security-fix", self.sidereus, True)])
+        self.assertEqual(PL.runs_here(self.other, rows, {}, "arch-map"), [])   # the session's cwd does not get it too
+        with mock.patch.object(PL, "_remembered", lambda: []):
+            self.assertEqual(PL.pipelines("")[1]["builtin"], ["security-fix"])
+
+    def test_builtin_from_data_dir(self):
+        data = os.path.join(self.tmp, "data")
+        _mk(data, "security-fix", dict(P, builtin=True))
+        code_dir = os.path.join(self.tmp, "pipx")   # pipx install: no .claude/pipelines in CODE_DIR
+        os.makedirs(code_dir)
+        rows = [{"sid": "s1", "cwd": self.other, "repos": [], "plrun": [{"name": "security-fix", "proj": self.here}]}]
+        with mock.patch.object(PL, "CODE_DIR", code_dir), mock.patch.object(PL, "DATA_DIR", data), mock.patch.object(PL, "_remembered", lambda: []):
+            self.assertEqual(PL.pipelines("")[1]["builtin"], ["security-fix"])
+            out = PL.pipelines(self.here, PL.runs_here(self.here, rows, {}, "arch-map"))[1]
+        self.assertEqual([(r["name"], r["from"], r["builtin"]) for r in out["borrowed"]], [("security-fix", data, True)])
+
     def test_shown_only_while_run_exists(self):
         code, out = PL.pipelines(self.here, self._arch_runs())
         self.assertEqual(code, 200)

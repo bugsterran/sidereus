@@ -290,9 +290,75 @@ SCORE_SCRIPT = None   # None = <hook dir>/../scripts/pl_eval.py, else <data dir>
 _CLOSED = []          # (project dir, pipeline name, since) of runs this hook call ended
 
 
-def _closed(proj, name, since=None):
-    """since = closing `git commit` Pre time: the scorer skips unless a commit at/after it landed."""
-    _CLOSED.append((proj, name, since))
+def _closed(proj, name, since=None, repo=None):
+    """since = closing `git commit` Pre time: the scorer skips unless a commit at/after it landed.
+    proj = definition dir, repo = filing dir of a builtin run (None = proj)."""
+    _CLOSED.append((proj, name, since, repo if isinstance(repo, str) and repo else None))
+
+
+def _code_dirs():
+    """Real paths of the code dirs that ship builtin pipelines: the hook's grandparent and DATA_DIR (= _score_script)."""
+    return [os.path.realpath(d) for d in (os.path.dirname(os.path.dirname(os.path.abspath(__file__))), DATA_DIR)]
+
+
+def _builtin(proj, name):
+    """True when `proj` is a code dir whose <name>.json has `"builtin": true`; any problem = False."""
+    try:
+        if not (isinstance(proj, str) and proj and os.path.realpath(proj) in _code_dirs()):
+            return False
+        with open(os.path.join(proj, ".claude", "pipelines", name + ".json"), encoding="utf-8") as f:
+            return json.load(f).get("builtin") is True
+    except Exception:
+        return False
+
+
+def _req_repo(sid, name, now, since=0.0):
+    """`repo` of the newest open (no stop/closed), fresh (< FIX_REQ_S) plreq.json entry of `name` sent to `sid` after
+    `since` (end of this sid's previous run of `name`), or None. ⚠Only security-fix requests get `closed`: an answered
+    security-checks request stayed open 24 h and filed the session's next self-started run under its repo."""
+    try:
+        with open(os.path.join(DATA_DIR, "plreq.json"), encoding="utf-8") as f:
+            reqs = json.load(f).get("reqs")
+        best, at0 = None, 0.0
+        for q in reqs if isinstance(reqs, list) else ():
+            if not (isinstance(q, dict) and q.get("pipeline") == name and q.get("sid") == sid and not q.get("stop")
+                    and not q.get("closed") and isinstance(q.get("repo"), str) and os.path.isabs(q["repo"])):
+                continue
+            at = q.get("at")
+            if isinstance(at, bool) or not isinstance(at, (int, float)) or not at or not 0 <= now - at < FIX_REQ_S or at <= since:
+                continue
+            if at > at0 and os.path.isdir(q["repo"]):
+                best, at0 = q["repo"], float(at)
+        return best
+    except Exception:
+        return None
+
+
+def _run_repo(ev, proj, name, now, since=0.0):
+    """Filing dir of a new run: for a builtin pipeline the plreq target, else the cwd git root unless that is a code
+    dir; None otherwise. ⚠Builtin definitions live in the code dir, so `proj` alone filed every target's run there."""
+    try:
+        if not _builtin(proj, name):
+            return None
+        rp = _req_repo(ev.get("session_id"), name, now, since)
+        if rp:
+            return rp
+        cwd = ev.get("cwd")
+        g = _git_root(cwd) if isinstance(cwd, str) and os.path.isabs(cwd) else ""
+        return g if g and os.path.realpath(g) not in _code_dirs() else None
+    except Exception:
+        return None
+
+
+def _set_proj(r, ev, proj, name, now, fresh, prev=None):
+    """r.proj = definition dir; r.repo set once when the run is `fresh` (an open run keeps its first); prev = the run
+    it replaced, whose end bounds which plreq entries still count."""
+    r["proj"] = proj
+    if fresh and "repo" not in r:
+        since = float(prev.get("end") or prev.get("t1") or 0) if isinstance(prev, dict) else 0.0
+        rp = _run_repo(ev, proj, name, now, since)
+        if rp:
+            r["repo"] = rp
 
 
 def _score_script():
@@ -335,19 +401,21 @@ def _key(proj):
 def _autoscore():
     """Score each run ended in this call where seeds.json exists, and ask for the weekly report (pl_report --auto)."""
     todo, _CLOSED[:] = list(dict.fromkeys(_CLOSED)), []
-    for proj, name, since in todo:
+    for proj, name, since, repo in todo:
         try:
             if not (isinstance(proj, str) and os.path.isabs(proj) and isinstance(name, str) and _PLNAME.fullmatch(name)):
                 continue
-            key = _key(proj)
+            fd = repo if isinstance(repo, str) and os.path.isabs(repo) else proj   # filing dir; pf stays the definition
             pf, sc = os.path.join(proj, ".claude", "pipelines", name + ".json"), _score_script()
-            if sc and os.path.isfile(os.path.join(DATA_DIR, "eval", key, "seeds.json")) and os.path.isfile(pf):
-                _spawn([sys.executable or "python3", sc, "score", "--repo", proj, "--pipeline", pf, "--auto"]
+            # ⚠never pl_eval for a builtin: its gates would run in the code dir, not the target repo
+            if sc and not _builtin(proj, name) and os.path.isfile(os.path.join(DATA_DIR, "eval", _key(fd), "seeds.json")) \
+                    and os.path.isfile(pf):
+                _spawn([sys.executable or "python3", sc, "score", "--repo", fd, "--pipeline", pf, "--auto"]
                        + (["--since", str(int(since))] if since else []))
             rp = _report_script()
             # ⚠--data-dir: the child derives every path from it, so a hook run against a patched DATA_DIR stays there
-            if rp and os.path.isfile(pf) and _git_root(os.path.realpath(proj)):
-                _spawn([sys.executable or "python3", rp, "--repo", proj, "--pipeline", pf, "--auto", "--data-dir", DATA_DIR])
+            if rp and os.path.isfile(pf) and _git_root(os.path.realpath(fd)):
+                _spawn([sys.executable or "python3", rp, "--repo", fd, "--pipeline", pf, "--auto", "--data-dir", DATA_DIR])
         except Exception:
             pass
 
@@ -471,7 +539,7 @@ def _ledger_add(r, name, now):
     """Append ended run `r` as {name, t0, end, lb, deny, dc, h0, h1, ss}. ⚠Titles, counts and hashes only, never tool
     input; only for a git repo (the result layer needs one); fail-silent — this hook runs live."""
     try:
-        proj = r.get("proj") if isinstance(r, dict) else None
+        proj = (r.get("repo") or r.get("proj")) if isinstance(r, dict) else None   # repo = builtin run's filing dir
         if not (isinstance(proj, str) and os.path.isabs(proj) and isinstance(name, str) and _PLNAME.fullmatch(name)):
             return
         if not _git_root(os.path.realpath(proj)):
@@ -1053,7 +1121,7 @@ def pre(tool, cwd, name, title, st, r, now, shell=False, sh_decl=False):
     if title != r["cur"]:
         r["inflight"] = {}   # ⚠counts left by background dispatches of another stage would block every hand-off
         # HEAD at stage start (one git call per transition; a fresh run reuses h0)
-        h = r.get("h0") if not r["cur"] and r.get("h0") else _head(r.get("proj"))
+        h = r.get("h0") if not r["cur"] and r.get("h0") else _head(r.get("repo") or r.get("proj"))
         if h:
             r["h1"] = h
     r["cur"], r["t1"] = title, now
@@ -1333,7 +1401,7 @@ def _declare(ev, cwd, path, desc, now):
                     r["end"] = now
                     _ledger_add(r, name, now)
                     _save(path, d)
-                    _closed(r.get("proj") or proj, name)
+                    _closed(r.get("proj") or proj, name, repo=r.get("repo"))
                 continue
             o = d["runs"].get(name)
             if model is None and _boundary(pl[0], o, title, now):   # skipping the first stage of a run already past it = a new run
@@ -1343,8 +1411,9 @@ def _declare(ev, cwd, path, desc, now):
             if model is None and isinstance(o, dict) and o.get("stop") and o.get("end") \
                     and _idx(pl[0], title) > _idx(pl[0], o.get("cur") or ""):
                 continue   # ⚠skipping the rest of a stopped run acknowledges the stop; a fresh run here stayed open forever
+            fresh = not _is_open(o, now)
             r = _run_of(d, name, cwd, now)
-            r["proj"] = proj
+            _set_proj(r, ev, proj, name, now, fresh, o)
             if model is None:
                 if title not in r["skipok"]:
                     r["skipok"].append(title)
@@ -1352,7 +1421,7 @@ def _declare(ev, cwd, path, desc, now):
                 if _skip_ends(pl[0], r):   # ⚠no Post follows a skip: without this the run stayed open until idle
                     r["end"] = now
                     _ledger_add(r, name, now)
-                    _closed(proj, name)
+                    _closed(proj, name, repo=r.get("repo"))
             elif agent is not None:
                 r["agents"][title] = agent
             else:
@@ -2014,7 +2083,8 @@ def _commit_close(ev, now):
                 proj = r.get("proj") if isinstance(r, dict) else None
                 if (only and rn != only) or not isinstance(proj, str) or not proj or r.get("end") or now - float(r.get("t1") or 0) > IDLE_S:
                     continue
-                p = os.path.realpath(proj)
+                rp = r.get("repo")   # a builtin run's commits land in its target repo, not the definition dir
+                p = os.path.realpath(rp if isinstance(rp, str) and os.path.isabs(rp) else proj)
                 if not any(x == p or x.startswith(p + os.sep) for x in dirs):
                     continue
                 st = r.get("st") if isinstance(r.get("st"), dict) else {}
@@ -2038,7 +2108,7 @@ def _commit_close(ev, now):
                     _mark(r, cur, "done", now)
                 r["end"], r["t1"] = now, now
                 _ledger_add(r, rn, now)
-                _closed(proj, rn, now)
+                _closed(proj, rn, now, r.get("repo"))
             if hit:
                 _save(path, d)
     except Exception:
@@ -2183,7 +2253,7 @@ def _flow(plat, ev):
                     _ag_note(r, title, _bg_aid(ev))
                 text = post(name, title, st, after, r, bg, now)
             if r.get("end"):   # post() ended the run (last stage back)
-                _closed(r.get("proj") or proj, name)
+                _closed(r.get("proj") or proj, name, repo=r.get("repo"))
             if text:
                 out = {"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": text}}
         else:
@@ -2193,9 +2263,9 @@ def _flow(plat, ev):
             # ⚠Before was_open: a boundary-closed run is not open, so a refused dispatch below saves nothing.
             if _boundary(st, r, title, now, tool == "SendMessage"):   # ⚠SendMessage = a fix loop of this run's agent
                 _ledger_add(r, name, now)
-            was_open = _is_open(r, now)
+            was_open, prev = _is_open(r, now), r
             r = _run_of(d, name, cwd, now)
-            r["proj"] = proj   # later Bash/SendMessage/Post of this run use the same file
+            _set_proj(r, ev, proj, name, now, not was_open, prev)   # later Bash/SendMessage/Post of this run use the same file
             fit = None if shell else _fit(ev, tool, name, st[_idx(st, title)], r, [proj, cwd, _git_root(cwd)])
             if fit:
                 _deny(fit[1])
@@ -2207,7 +2277,7 @@ def _flow(plat, ev):
                         pass
                 return True
             if "h0" not in r:   # HEAD at run start; ⚠not in _commit_close (Pre runs before the commit exists)
-                h = _head(proj)
+                h = _head(r.get("repo") or proj)
                 if h:
                     r["h0"] = h
             why = _resume_note(r, now, pre(tool, cwd, name, title, st, r, now, bool(shell), plat == "pi"))

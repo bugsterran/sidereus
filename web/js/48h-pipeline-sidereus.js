@@ -79,9 +79,11 @@ function plBorrowLv(proj, p){
     plAgSteps((p.stages || []).map(s => s.title), a).forEach(s => { lt[s.nm] = { st: s.st, n: 0, sec: 0, retry: 0 }; });
     return { sid: a.sid || '', run: { run: true, start: +a.t0 || 0, total: 0 }, lt };
   }
+  // Builtin (security-fix): attached by the run's recorded target proj (runs_here), from a session whose cwd is elsewhere.
+  const bi = typeof plBi === 'function' && plBi(typeof plKnown === 'function' ? plKnown() : null, p.name);
   let pr = null, sid = '';
-  (SESS || []).forEach(x => { if(x && x.cwd === proj) (x.plrun || []).forEach(r => {
-    if(!r || r.name !== p.name || (r.proj && r.proj !== p.from)) return;
+  (SESS || []).forEach(x => { if(x && (bi || x.cwd === proj)) (x.plrun || []).forEach(r => {
+    if(!r || r.name !== p.name || (bi ? r.proj !== proj : r.proj && r.proj !== p.from)) return;
     const on = plPrLive(r);
     if(!pr || (on && !plPrLive(pr)) || (on === plPrLive(pr) && (r.t1 || 0) > (pr.t1 || 0))){ pr = r; sid = x.sid; }
   }); });

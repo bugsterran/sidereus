@@ -464,6 +464,9 @@ function plOverview(){
     const d = PLS.data[proj];
     if(!d) plLoad(proj, false);
     const p = d && d.ok ? (d.pipelines || []).find(q => q.name === name) : null;
+    // Builtin run (security-fix) on its target: stages come from the borrowed row, the run from plBorrowLv (same attach rule).
+    const b = !p && typeof plBi === 'function' && plBi(plKnown(), name) && typeof plBorrowOf === 'function' ? plBorrowOf(d, name) : null;
+    if(b && b.ok){ rows.push(plOvRow(proj, name, b, plBorrowLv(proj, b), null, now)); return; }
     const tags = p ? null : [].concat(...plProjSess(proj).map(x => plSubsOf(x).map(a => ({ aid: a.aid || a.lab, sid: x.sid, d: plDescStage(a.lab) }))))
       .filter(t => t.d && t.d.name === name).map(t => ({ aid: t.aid, sid: t.sid, title: t.d.title }));
     rows.push(plOvRow(proj, name, p, p ? plLiveRun(proj, name) : null, tags, now));

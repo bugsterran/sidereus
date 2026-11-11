@@ -185,6 +185,21 @@ def _builtin(P):
     return isinstance(P, dict) and P.get("builtin") is True
 
 
+def _bi_owner():
+    """{name: owning dir} of Sidereus `"builtin": true` pipelines (run on a target repo), CODE_DIR first.
+    ⚠DATA_DIR too, like hooks/pl_flow.py _code_dirs: CODE_DIR has no .claude/pipelines on a pipx install."""
+    out = {}
+    for d in (CODE_DIR, DATA_DIR):
+        for n in _names(d):
+            if n not in out and _builtin(_read_pipe(d, n)[1]):
+                out[n] = d
+    return out
+
+
+def _builtins():
+    return sorted(_bi_owner())
+
+
 RULE_FILES = ("AGENTS.md", "CLAUDE.md")   # repo-root rule files offered as «Follow the project rule file» (names only)
 _WF = re.compile(r"[A-Za-z0-9._-]{1,60}\.js")
 
@@ -221,18 +236,21 @@ def _strs(v):
 def runs_here(proj, rows, arch, arch_name):
     """[(pipeline name, [owner hint projects])] of runs attached to `proj`: the Sidereus tool run on it (`arch` = arch_map
     seen_runs, hints = its session's cwd + repos) and plrun runs of sessions whose cwd is `proj` (hints = run proj, cwd, repos).
-    ⚠cwd only for plrun: a session listing Sidereus in `repos` would otherwise lend every pipeline it runs to Sidereus."""
+    ⚠cwd only for plrun: a session listing Sidereus in `repos` would otherwise lend every pipeline it runs to Sidereus.
+    Builtin names (security-fix) attach by the run's recorded proj (its target repo) instead: the session's cwd is elsewhere."""
     rows = [r for r in rows or () if isinstance(r, dict)]
-    out = []
+    out, bi = [], None
     a = (arch or {}).get(proj)
     if isinstance(a, dict):
         s = next((r for r in rows if a.get("sid") and r.get("sid") == a.get("sid")), {})
         out.append((arch_name, _strs([s.get("cwd")] + list(s.get("repos") or []))))
     for r in rows:
-        if r.get("cwd") != proj:
-            continue
         for x in r.get("plrun") or ():
-            if isinstance(x, dict) and isinstance(x.get("name"), str):
+            if not (isinstance(x, dict) and isinstance(x.get("name"), str)):
+                continue
+            if bi is None:
+                bi = set(_builtins())
+            if (x.get("proj") == proj) if x["name"] in bi else (r.get("cwd") == proj):
                 out.append((x["name"], _strs([x.get("proj"), r.get("cwd")] + list(r.get("repos") or []))))
     return out
 
@@ -244,16 +262,18 @@ def borrowed(proj, runs):
         return []   # ⚠allowed_projects() costs ~0.74 s cold; no runs = nothing to borrow
     local, names, out = set(_names(proj)), {}, []
     known = [p for p in allowed_projects() if p != proj]
+    bi = _bi_owner()   # a builtin defined in proj itself is skipped below as local
     for name, hints in runs or ():
         if not isinstance(name, str) or not _NAME.fullmatch(name) or name in local or any(b["name"] == name for b in out):
             continue
-        cands = [p for p in known if name in (names[p] if p in names else names.setdefault(p, _listed(p)))]
+        # builtin names are hidden from _listed, so their only owner is the dir that ships them
+        cands = [bi[name]] if name in bi else [p for p in known if name in (names[p] if p in names else names.setdefault(p, _listed(p)))]
         own = next((h for h in hints if h in cands), "")
         why = "run" if own else "first"
         own = own or (cands[0] if cands else "")
         if own:
             # builtin = owned by the Sidereus repo itself (CODE_DIR, e.g. arch-map): labelled «Sidereus built-in», not «from <dir>»
-            out.append(dict(_row(own, name), **{"from": own, "why": why, "builtin": os.path.realpath(own) == os.path.realpath(CODE_DIR)}))
+            out.append(dict(_row(own, name), **{"from": own, "why": why, "builtin": name in bi or os.path.realpath(own) == os.path.realpath(CODE_DIR)}))
     return out[:BORROW_MAX]
 
 
@@ -264,7 +284,7 @@ def pipelines(proj, runs=None):
         added = _remembered()
         allowed, selfp = project_list()
         projs = [dict({"path": p, "n": len(_listed(p))}, **({"self_only": True} if p == selfp else {})) for p in allowed if _listed(p) or p in added]
-        return 200, {"ok": True, "projects": projs, "added": added}
+        return 200, {"ok": True, "projects": projs, "added": added, "builtin": _builtins()}
     if not _proj_ok(proj):
         return 400, {"ok": False, "msg": "unknown project"}     # ⚠not 404: the page reads 404 as «feature off»
     rows = _red_counts([_row(proj, n) for n in _listed(proj)], proj)
