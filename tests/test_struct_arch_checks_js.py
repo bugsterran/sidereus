@@ -17,7 +17,7 @@ FNS += ["archChkLast", "archChkLastHtml"]   # last-check line (window header, ba
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archChkRunHtml calls it)
 FNS += ["archChkTid", "archChkImgGap", "archChkImgBox", "archChkImgHtml"]   # 84l3: trivy scanner label, image-scan gap line, «Include images» box, base-image groups
 FNS += ["archChkTestBox", "archChkTestBadge"]   # 84l4: «Include test code» box, excluded-tests line
-FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv"]   # view filters + hidden rules
+FNS += ["archChkRk", "archChkHidSet", "archChkHidPref", "archChkHidden", "archChkSetHidden", "archChkView", "archChkWinEv", "archChkLiveN"]   # view filters + hidden rules
 FNS += ["ago", "archRunOf", "archRunEl", "archRunHtml", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk", "archReqWho",
         "archReqRowHtml", "archChkProgHtml", "archChkFixLast", "archChkFixProg", "archChkFixKeys", "archChkFixRecHtml"]   # run progress line (84j archRun* shared with arch-map, 84l2 request rows)
 FNS += ["archChkSplitGet", "archChkSplitGrip", "archChkSplitClamp", "archChkSplitEls", "archChkSplitAria", "archChkSplitSet", "archChkSplitMove", "archChkSplitReset", "archChkSplitKey"]   # issues | history grip
