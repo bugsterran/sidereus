@@ -28,7 +28,9 @@ h1 { font-size: 24px; margin: 0 0 6px; }
 h2 { font-size: 19px; margin: 36px 0 12px; }
 .lead { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
 .fig { border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
-svg { display: block; width: 100%; min-width: 900px; height: auto; }
+/* min-width keeps box text legible on phones (scrolls inside .fig); it must stay below
+   the .fig inner width at a 900px viewport (900 - 2*16 padding - 2 border = 866) */
+svg { display: block; width: 100%; min-width: 840px; height: auto; }
 svg text { font-family: inherit; fill: var(--text); }
 .t-band { font-size: 13px; font-weight: 700; fill: var(--muted); letter-spacing: .5px; }
 .t-title { font-size: 14px; font-weight: 700; }

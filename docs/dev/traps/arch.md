@@ -490,3 +490,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `td.ev` had `white-space: nowrap`; an evidence `file:line` is one unbreakable token, so the auto-layout decision table could not shrink below it. ★900px viewport: scrollWidth 935 → 900.
 - ⇒ `td.ev` uses `overflow-wrap: anywhere` with normal wrapping (needs both; either alone kept 935).
 - ⚠Stored briefs keep the old CSS until regenerated: served bytes must match the gate's sha256 (`sidereus/arch_map.py` `_brief_bytes`), so never patch a stored brief.html in place.
+
+## Overview figure scrolled sideways inside .fig at 900px (`sidereus/arch_brief_html.py` CSS `svg`)
+- Cause: `svg { min-width: 900px }` is wider than the `.fig` inner width at a 900px viewport (900 - 32 padding - 2 border = 866), so the figure scrolled inside its box.
+- ⇒ `min-width: 840px` — still stops the 1200-wide viewBox shrinking to unreadable text on phones.
+- ⚠Keep min-width at or below 866 while main padding and the 900px floor stay; `tests/test_arch_brief_html.py` checks it. Stored briefs keep the old CSS until regenerated.

@@ -209,6 +209,13 @@ class RenderTest(unittest.TestCase):
         self.assertNotIn("nowrap", rule)
         self.assertIn("overflow-wrap: anywhere", rule)
 
+    def test_svg_min_width_fits_900(self):
+        # .fig inner width at a 900px viewport is 866 (main padding 16+16, border 1+1);
+        # a larger min-width scrolled the figure sideways at a supported width.
+        h = AH.render(brief())
+        rule = re.search(r"\nsvg\s*\{([^}]*)\}", h).group(1)
+        self.assertLessEqual(int(re.search(r"min-width:\s*(\d+)px", rule).group(1)), 866)
+
     def test_deterministic(self):
         self.assertEqual(AH.render(brief(7)).encode("utf-8"), AH.render(brief(7)).encode("utf-8"))
 
