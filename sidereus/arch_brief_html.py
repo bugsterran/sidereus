@@ -64,41 +64,131 @@ def _wrap2(s, n):
     return [s[:cut].rstrip(), _cut(s[cut:].lstrip(), n)]
 
 
-def layout(brief):
-    """{box id: (x, y, w, h)}, [(band, y, h)], total height — pure, integers only."""
-    pos, bands, y = {}, [], PAD
+LANE = 16                 # ⚠lane spacing >= label height (13px), so a label above its lane never meets the next lane's
+LANE_TOP = 18             # first lane sits this far below the gap's top edge (its label fits above it)
+LANE_PAD = 10             # gap height for n lanes = LANE * n + LANE_PAD
+
+
+def _grid(brief):
+    """[(band, [[(box id, x, w)] per row])] — x only; row y depends on how many arrow lanes each gap needs."""
+    out = []
     for b in brief["bands"]:
         mine = [x for x in brief["boxes"] if x["band"] == b["id"]]
         n = len(mine)
         cols = max(1, n if n <= ROW_MAX else (n + 1) // 2)
-        rows = max(1, (n + cols - 1) // cols)
         bw = min(BOX_W_MAX, (W - 2 * PAD - 32 - (cols - 1) * GAP_X) // cols)
-        h = BAND_HEAD + rows * BOX_H + (rows - 1) * GAP_Y + 16
+        rows = []
         for k, x in enumerate(mine):
             r, c = divmod(k, cols)
             in_row = min(cols, n - r * cols)
             left = (W - (in_row * bw + (in_row - 1) * GAP_X)) // 2
-            pos[x["id"]] = (left + c * (bw + GAP_X), y + BAND_HEAD + r * (BOX_H + GAP_Y), bw, BOX_H)
-        bands.append((b, y, h))
-        y += h + BAND_GAP
-    return pos, bands, y - BAND_GAP + PAD
+            if c == 0:
+                rows.append([])
+            rows[-1].append((x["id"], left + c * (bw + GAP_X), bw))
+        out.append((b, rows))
+    return out
 
 
-def _rows(pos):
-    """[(top, bottom, [box rects])] sorted top to bottom; rows never overlap vertically."""
-    by = {}
-    for r in pos.values():
-        by.setdefault(r[1], []).append(r)
-    return [(y, y + rs[0][3], sorted(rs)) for y, rs in sorted(by.items())]
+def _text_w(s):
+    """Estimated .t-edge (11px) width: wide (CJK/Hangul) glyphs ~11px, others ~6.5px."""
+    return int(sum(11 if ord(c) >= 0x1100 else 6.5 for c in str(s or ""))) + 6
 
 
-def _channels(rows):
-    """Horizontal lane y above row k = ch[k], below row k = ch[k + 1]; every lane lies in a gap between rows."""
-    ch = [PAD // 2]
-    for k in range(len(rows) - 1):
-        ch.append(rows[k][1] + min(rows[k + 1][0] - rows[k][1], 2 * 21) // 2)
-    ch.append(rows[-1][1] + 8)
-    return ch
+def _plan(brief, grid):
+    """Per drawn arrow: rows, sides, attach x, vertical lane x; plus the arrows using each gap (gap g = above row g)."""
+    where, rowlist = {}, []
+    for _b, rows in grid:
+        for row in rows:
+            for bid, x, w in row:
+                where[bid] = (len(rowlist), x, w)
+            rowlist.append([(x, 0, w, 0) for _bid, x, w in row])
+    rows3 = [(0, 0, r) for r in rowlist]
+    gaps = [[] for _ in range(len(rowlist) + 1)]
+    plan, used_xv = {}, []
+    for k, a in enumerate(brief.get("arrows") or []):
+        if a["from"] not in where or a["to"] not in where or a["from"] == a["to"]:
+            continue
+        (ri, ax, aw), (rj, bx, bw) = where[a["from"]], where[a["to"]]
+        ca, cb = ax + aw // 2, bx + bw // 2
+        xv = None
+        if ri == rj:   # same row: always around the row (a side-to-side line put its label over both boxes)
+            up = len(gaps[ri]) <= len(gaps[ri + 1])
+            sa = sb = "top" if up else "bot"
+            use = [ri if up else ri + 1]
+        else:
+            if rj > ri:
+                sa, sb, g1, g2, mid = "bot", "top", ri + 1, rj, rows3[ri + 1:rj]
+            else:
+                sa, sb, g1, g2, mid = "top", "bot", ri, rj + 1, rows3[rj + 1:ri]
+            use = [g1] if g1 == g2 else [g1, g2]
+            if mid:
+                lo, hi = min(ri, rj), max(ri, rj)
+                base = _lane_x(ca, cb, mid)
+                xv = base
+                for off in (0, 10, -10, 20, -20, 30, -30):   # arrows crossing the same rows get their own vertical
+                    c = base + off
+                    if 0 < c < W and _clear_x(c, mid) and not any(u == c and ul < hi and lo < uh for u, ul, uh in used_xv):
+                        xv = c
+                        break
+                used_xv.append((xv, lo, hi))
+        for g in use:
+            gaps[g].append(k)
+        plan[k] = {"ri": ri, "rj": rj, "sa": sa, "sb": sb, "gaps": use, "xv": xv,
+                   "other_a": cb if xv is None else xv, "other_b": ca if xv is None else xv}
+    # Attach points spread along each used side, ordered by where the line heads (fewer crossings, no shared ends).
+    sides = {}
+    for k, p in plan.items():
+        a = brief["arrows"][k]
+        sides.setdefault((a["from"], p["sa"]), []).append((p["other_a"], k, 0))
+        sides.setdefault((a["to"], p["sb"]), []).append((p["other_b"], k, 1))
+    for (bid, _s), lst in sides.items():
+        _r, x, w = where[bid]
+        lst.sort()
+        for i, (_o, k, end) in enumerate(lst):
+            plan[k]["xb" if end else "xa"] = x + (i + 1) * w // (len(lst) + 1)
+    return plan, gaps
+
+
+def _geom(brief):
+    """(pos, bands, H, lane ys per gap, plan, gaps) — gaps between rows grow to hold one lane per arrow using them."""
+    grid = _grid(brief)
+    plan, gaps = _plan(brief, grid)
+
+    def need(g):
+        return LANE * len(gaps[g]) + LANE_PAD if gaps[g] else 0
+
+    def lanes_at(g, top):
+        return [top + LANE_TOP + LANE * i for i in range(len(gaps[g]))]
+
+    pos, bands, lane_y = {}, [], [[] for _ in gaps]
+    lane_y[0] = lanes_at(0, 0)
+    y, gi, bottom = max(PAD, need(0)), 0, PAD
+    for b, rows in grid:
+        top, ry = y, y + BAND_HEAD
+        for r, row in enumerate(rows):
+            if r:
+                lane_y[gi] = lanes_at(gi, ry)
+                ry += max(GAP_Y, need(gi))
+            for bid, x, w in row:
+                pos[bid] = (x, ry, w, BOX_H)
+            ry += BOX_H
+            gi += 1
+        if not rows:
+            ry += BOX_H
+        bottom = ry + 16
+        bands.append((b, top, bottom - top))
+        if rows:   # inter-band lanes live in the white space between band rects, clear of the band labels
+            lane_y[gi] = lanes_at(gi, bottom)
+            y = bottom + max(BAND_GAP, need(gi))
+        else:
+            y = bottom + BAND_GAP
+    H = max([bottom + PAD] + [ly + 8 for ys in lane_y for ly in ys])
+    return pos, bands, H, lane_y, plan, gaps
+
+
+def layout(brief):
+    """{box id: (x, y, w, h)}, [(band, y, h)], total height — pure, integers only."""
+    return _geom(brief)[:3]
 
 
 def _clear_x(x, rows):
@@ -117,52 +207,71 @@ def _lane_x(x1, x2, mid_rows):
     return min(ok, key=lambda x: (abs(x - x1) + abs(x - x2), x))
 
 
-def _points(a, b, rows, ch, off):
-    """Orthogonal polyline a -> b that leaves and enters at side mid-points and never crosses a box:
-    side to side for neighbours in one row, else through the gaps between rows (⚠never straight across a row)."""
-    ax, ay, aw, ah = a
-    bx, by, bw, bh = b
-    ri = [k for k, row in enumerate(rows) if row[0] == ay][0]
-    rj = [k for k, row in enumerate(rows) if row[0] == by][0]
-    if ri == rj:
-        lo, hi = sorted((ax, bx))
-        between = [r for r in rows[ri][2] if lo < r[0] < hi]
-        if not between:
-            x1, x2 = (ax + aw, bx) if bx >= ax else (ax, bx + bw)
-            return [(x1, ay + ah // 2), (x2, ay + ah // 2)]
-        y = ch[ri] + off   # around the row through the gap above it
-        return [(ax + aw // 2, ay), (ax + aw // 2, y), (bx + bw // 2, y), (bx + bw // 2, by)]
-    x1, x2 = ax + aw // 2, bx + bw // 2
-    if rj > ri:
-        y1, c1, c2, y2, mid = ay + ah, ch[ri + 1] + off, ch[rj] + off, by, rows[ri + 1:rj]
-    else:
-        y1, c1, c2, y2, mid = ay, ch[ri] + off, ch[rj + 1] + off, by + bh, rows[rj + 1:ri]
-    if not mid:
-        return [(x1, y1), (x1, c1), (x2, c1), (x2, y2)]
-    xv = _lane_x(x1, x2, mid)
-    return [(x1, y1), (x1, c1), (xv, c1), (xv, c2), (x2, c2), (x2, y2)]
+def _hit(a, c):
+    return a[0] < c[0] + c[2] and c[0] < a[0] + a[2] and a[1] < c[1] + c[3] and c[1] < a[1] + a[3]
 
 
-def _route(a, b, rows, ch, k):
-    """(points, d, label x, label y); arrows k spread over three lanes 4px apart so shared gaps stay readable."""
-    pts = _points(a, b, rows, ch, ((k % 3) - 1) * 4)
-    out = [pts[0]]
-    for p in pts[1:]:
-        if p != out[-1]:
-            out.append(p)
-    segs = [(p, q) for p, q in zip(out, out[1:]) if p[1] == q[1]] or list(zip(out, out[1:]))
-    (p, q) = max(segs, key=lambda s: abs(s[1][0] - s[0][0]) + abs(s[1][1] - s[0][1]))
-    d = "M%d,%d " % out[0] + " ".join("L%d,%d" % x for x in out[1:])
-    return out, d, (p[0] + q[0]) // 2, (p[1] + q[1]) // 2 - 5
+def _spans(p, lane, k):
+    """[(lane y, x from, x to)] — the arrow's horizontal runs, one per gap it uses (⚠never straight across a row)."""
+    ls = [lane[(g, k)] for g in p["gaps"]]
+    if p["xv"] is None:
+        return [(ls[0], p["xa"], p["xb"])]
+    return [(ls[0], p["xa"], p["xv"]), (ls[1], p["xv"], p["xb"])]
 
 
 def routes(brief):
-    """{arrow index: points} for the arrows that are drawn — pure, for the figure and tests."""
-    pos = layout(brief)[0]
-    rows = _rows(pos)
-    ch = _channels(rows) if rows else []
-    return {k: _route(pos[a["from"]], pos[a["to"]], rows, ch, k)
-            for k, a in enumerate(brief.get("arrows") or []) if a["from"] in pos and a["to"] in pos and a["from"] != a["to"]}
+    """{arrow index: (points, d, label x, label y)} for the arrows that are drawn — pure, for the figure and tests.
+    Each arrow owns one lane per gap it crosses, so runs and labels in one gap never share a y."""
+    pos, bands, _h, lane_y, plan, gaps = _geom(brief)
+    arrows = brief.get("arrows") or []
+    lane = {(g, k): lane_y[g][i] for g, ks in enumerate(gaps) for i, k in enumerate(ks)}
+    pts, verts = {}, []
+    for k, p in plan.items():
+        a, b = pos[arrows[k]["from"]], pos[arrows[k]["to"]]
+        y1 = a[1] if p["sa"] == "top" else a[1] + a[3]
+        y2 = b[1] if p["sb"] == "top" else b[1] + b[3]
+        raw = [(p["xa"], y1)]
+        for ly, xf, xt in _spans(p, lane, k):
+            raw += [(xf, ly), (xt, ly)]
+        raw.append((p["xb"], y2))
+        out = [raw[0]]
+        for q in raw[1:]:
+            if q != out[-1]:
+                out.append(q)
+        pts[k] = out
+        verts += [(k, q[0], min(q[1], r[1]), max(q[1], r[1])) for q, r in zip(out, out[1:]) if q[0] == r[0]]
+    titles = [(PAD + 16, y + 8, _text_w(b["name"]) * 13 // 11, 15) for b, y, _bh in bands]
+    placed, boxes, res = [], list(pos.values()), {}
+    for k in sorted(plan):
+        label = arrows[k].get("label")
+        lw = _text_w(label) if label else 0
+        best = None
+        # Longest run first; slide along it until the label meets no label, box, band title or other arrow's vertical.
+        for ly, xf, xt in sorted(_spans(plan[k], lane, k), key=lambda s: -abs(s[2] - s[1])):
+            lo, hi = min(xf, xt), max(xf, xt)
+            c = (lo + hi) // 2
+            cands = [c]
+            for s in range(6, (hi - lo) // 2 + 1, 6):
+                cands += [c + s, c - s]
+            for cx in cands:
+                cx = min(max(cx, PAD // 2 + lw // 2), W - PAD // 2 - lw // 2)
+                r = (cx - lw // 2, ly - 15, lw, 13)
+                score = 0
+                if label:
+                    score = (1000 * sum(_hit(r, o) for o in placed + boxes) + 50 * sum(_hit(r, t) for t in titles)
+                             + sum(1 for kk, x, ya, yb in verts if kk != k and r[0] < x < r[0] + r[2] and ya < r[1] + r[3] and r[1] < yb))
+                if best is None or score < best[0]:
+                    best = (score, cx, ly, r)
+                if score == 0:
+                    break
+            if best[0] == 0:
+                break
+        if label:
+            placed.append(best[3])
+        out = pts[k]
+        d = "M%d,%d " % out[0] + " ".join("L%d,%d" % x for x in out[1:])
+        res[k] = (out, d, best[1], best[2] - 5)
+    return res
 
 
 def figure(brief):

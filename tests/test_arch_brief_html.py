@@ -98,11 +98,46 @@ class RenderTest(unittest.TestCase):
                                          "arrow %s crosses its own end box" % (pairs[k],))
                     else:
                         self.assertFalse(hits(p, q, r), "arrow %s crosses box %s" % (pairs[k], bid))
-            a, z = ends
-            self.assertIn(pts[0], [(a[0] + a[2] // 2, a[1]), (a[0] + a[2] // 2, a[1] + a[3]),
-                                   (a[0], a[1] + a[3] // 2), (a[0] + a[2], a[1] + a[3] // 2)], "starts off a side mid-point")
-            self.assertIn(pts[-1], [(z[0] + z[2] // 2, z[1]), (z[0] + z[2] // 2, z[1] + z[3]),
-                                    (z[0], z[1] + z[3] // 2), (z[0] + z[2], z[1] + z[3] // 2)], "ends off a side mid-point")
+            for pt, r in ((pts[0], ends[0]), (pts[-1], ends[1])):   # attach points spread along a top/bottom side
+                self.assertTrue(r[0] < pt[0] < r[0] + r[2] and pt[1] in (r[1], r[1] + r[3]), "end off a box side")
+
+    def test_busy_figure_never_stacks(self):
+        # 4 bands, rows of 1/1/4/3 boxes, 24 labelled arrows: opposite pairs, same-row pairs, five arrows into one box.
+        bands = [{"id": "b%d" % k, "name": "Band %d" % k} for k in range(4)]
+        layout = [0, 1, 2, 2, 2, 2, 3, 3, 3]
+        boxes = [{"id": "x%d" % k, "name": "Box %d" % k, "band": "b%d" % bd, "modules": ["m%d" % k]}
+                 for k, bd in enumerate(layout)]
+        pairs = [(0, 6), (0, 2), (0, 4), (0, 3), (6, 8), (5, 6), (3, 6), (4, 6), (3, 5), (5, 2), (2, 6), (4, 5),
+                 (3, 2), (4, 2), (6, 3), (6, 2), (5, 4), (6, 4), (6, 5), (2, 4), (3, 7), (5, 7), (3, 4), (2, 7)]
+        wide = u"인증 확인"   # wide glyphs: labels 90-130px, wider than the 28px gap between boxes
+        arrows = [{"from": "x%d" % f, "to": "x%d" % t, "label": "%s %d" % (wide if k % 2 else "reads data", k), "edges": [k]}
+                  for k, (f, t) in enumerate(pairs)]
+        b = {"v": 1, "repo": "/r", "commit": "a" * 40, "title": "T", "bands": bands, "boxes": boxes, "arrows": arrows,
+             "route": {"na": "n/a"}}
+        pos = AH.layout(b)[0]
+        rt = AH.routes(b)
+        self.assertEqual(len(rt), len(pairs))
+
+        def tw(s):
+            return sum(11 if ord(c) >= 0x1100 else 6.5 for c in s)
+
+        def hit(a, c):
+            return a[0] < c[0] + c[2] and c[0] < a[0] + a[2] and a[1] < c[1] + c[3] and c[1] < a[1] + a[3]
+
+        labs = [(rt[k][2] - tw(a["label"]) / 2, rt[k][3] - 10, tw(a["label"]), 13) for k, a in enumerate(arrows)]
+        for i, r in enumerate(labs):
+            for j in range(i + 1, len(labs)):
+                self.assertFalse(hit(r, labs[j]), "labels %d and %d overlap" % (i, j))
+            for bid, box in pos.items():
+                self.assertFalse(hit(r, box), "label %d covers box %s" % (i, bid))
+        hs = [(k, min(p[0], q[0]), max(p[0], q[0]), p[1]) for k, v in rt.items()
+              for p, q in zip(v[0], v[0][1:]) if p[1] == q[1] and p[0] != q[0]]
+        for i, h in enumerate(hs):
+            for g in hs[i + 1:]:
+                if h[0] != g[0] and h[1] < g[2] and g[1] < h[2]:
+                    self.assertGreaterEqual(abs(h[3] - g[3]), 13, "runs of arrows %d and %d stack" % (h[0], g[0]))
+        heads = [v[0][-1] for v in rt.values()]
+        self.assertEqual(len(heads), len(set(heads)), "two arrowheads end on one point")
 
     def test_deterministic(self):
         self.assertEqual(AH.render(brief(7)).encode("utf-8"), AH.render(brief(7)).encode("utf-8"))

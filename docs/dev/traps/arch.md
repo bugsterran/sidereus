@@ -479,3 +479,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: arch-map now ends with Draw overview / Verify overview; the run-end checks (`_finished`, stage gap, `_closed_by_result`) treated verify.json as the end, so the run vanished (and «Simple» stayed absent) mid-overview.
 - ⇒ From the arch_verify-gated stage on, a run ends only on a `brief.ok.json` newer than verify.json; a pipeline file without later stages keeps ending on verify.json. Provenance and request closure still use verify.json.
 - ⚠Never make the overview gate a map gate: a failed overview leaves the verified map valid.
+
+## Overview figure stacked labels and runs on top of each other (`sidereus/arch_brief_html.py` `_plan`, `_geom`, `routes`)
+- Cause: lanes came from the global arrow index (3 lanes 4px apart, labels 13px tall), same-row neighbours drew side to side with a 92-125px label over a 28px gap, and every arrow attached at a side mid-point.
+- ⇒ Each arrow owns one lane per gap it uses, 16px apart, and the gap grows to fit; same-row arrows go around the row through the less used gap; attach points spread along the side ordered by where the line heads; a label slides along its run to skip other arrows' verticals. ★9 boxes / 24 arrows: label/label 17 → 0, label/box 8 → 0, runs within 4px 39 → 0, shared arrowheads 13 → 0; height 646 → 1032.
+- ⚠Never share a lane between arrows in one gap: a label's free band is exactly its lane's 16px, and no box may sit within 18px of a lane.
