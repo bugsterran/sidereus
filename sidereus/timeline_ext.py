@@ -5,6 +5,7 @@ from sidereus.adapter import adapter_scan
 from sidereus.ext import _ext, _ext_lock, ext_runs, PLAT_MODS, EXT_PLAT, ext_side_msgs, ext_side_sess, ext_hook_cwds
 from sidereus.timeline_scan import SEG_GAP, SEG_MAX
 from sidereus.ext_presence import ext_presence_rows, PRES_NAME
+from sidereus.ext_store import _agent_ok
 
 
 # ── external CLI sessions: Gemini, Codex, ... (metadata only: ids, timestamps, model, token counts) ─────
@@ -19,6 +20,9 @@ def _ext_child(sid, run, lv, pcwd, segs, tk, model, now, key, label):
     proj = (pc[1] if pc else "") or _proj_name(cwd) or "?"
     st = (lv or {}).get("state") or ("" if lv else "done")
     start, end = int(segs[0][0]), int(segs[-1][1])
+    # pi subagent name, re-checked with the store's rule (⚠the page groups by type: one label merged every child)
+    agn = run.get("agent") or (lv or {}).get("agent")
+    label = agn if isinstance(agn, str) and _agent_ok(agn) else label
     return {"tid": "ext:" + key + "|" + sid, "type": label, "aid": "", "par": "",
             "desc": (label + " · " + (model or ""))[:60], "last": "",
             "segs": segs, "start": start, "end": end,

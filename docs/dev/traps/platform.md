@@ -279,6 +279,7 @@ Cause: `ext_children` only attached children to Claude rows and ran before exter
 ⚠A parented store row must not enter the presence cwd-hide set: the child shares its parent's cwd and would hide a hookless parent pi row.
 ⚠Finished children leave the drawer like `gemini -p` (timeline keeps them); a child whose parent row is not listed is not shown in Sessions.
 ⚠Never store the subagent's task text — only the validated name.
+⚠The timeline row (`timeline_ext._ext_child`) must use the same validated `agent`, not `CHILD_LABEL`: the page groups by `type`, so every finished child merged into one «pi -p · N» row.
 
 ### Request-recipient pickers listed only Claude Code and Codex (`web/js/84j` `archCands` · `48b` `plSessions` · `84l` `archChkFixCands`)
 Cause: the filter `!x.plat || plat === 'cc' || plat === 'cx'` predated other CLIs, so pi and every `EXT_PLAT` platform could not receive a pipeline / arch-map / security request.

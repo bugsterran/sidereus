@@ -104,5 +104,25 @@ class PiChildren(unittest.TestCase):
         self.assertEqual((len(rows[0]["gms"]), "gms" in rows[1]), (1, False))
 
 
+
+class PiChildTimelineLabel(unittest.TestCase):
+    """A finished pi child's timeline row is typed by its stored agent name (the page groups by type)."""
+    tx = sidereus("timeline_ext")
+
+    def row(self, run, lv=None):
+        return self.tx._ext_child(KID, run, lv, {}, [[NOW - 60, NOW - 30]], [], "m", NOW, "pi", PI.CHILD_LABEL)
+
+    def test_agent_name_types_the_row(self):
+        r = self.row({"parent": PAR, "cwd": CWD, "agent": "worker"})
+        self.assertEqual((r["type"], r["desc"]), ("worker", "worker · m"))
+
+    def test_no_agent_keeps_cli_label(self):
+        self.assertEqual(self.row({"parent": PAR, "cwd": CWD})["type"], PI.CHILD_LABEL)
+
+    def test_bad_agent_falls_back_to_cli_label(self):
+        for bad in ("scout\nrm -rf /", "a" * 65, "x y", 7):
+            self.assertEqual(self.row({"parent": PAR, "cwd": CWD, "agent": bad})["type"], PI.CHILD_LABEL)
+
+
 if __name__ == "__main__":
     unittest.main()
