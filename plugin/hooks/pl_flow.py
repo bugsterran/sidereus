@@ -65,6 +65,7 @@ MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl(-end)?:(?:(-)|([a-z0-9
 # or piped marker may be doc text or a grep argument; heredoc bodies are skipped.
 LATER = re.compile(r"""^[ \t]*(?:echo|printf)[ \t]+(?=["']?\[pl)""")
 HEREDOC = re.compile(r"""(?<!<)<<(?!<)-?[ \t]*["']?([A-Za-z_][A-Za-z0-9_]*)""")
+ARITH = re.compile(r"\$\(\([^()]*\)\)")
 
 
 def mark_match(cmd):
@@ -74,31 +75,40 @@ def mark_match(cmd):
     m = MARK.match(cmd)
     if m:
         return m
-    end = None
+    end, q = None, ""
     for i, ln in enumerate(cmd.split("\n")):
         if end is not None:
             if ln.strip() == end:
                 end = None
             continue
-        for seg in _segs(ln)[0 if i else 1:]:   # ⚠line 1's first segment is MARK's alone
+        q0 = q
+        segs, q, top = _segs(ln, q)
+        # ⚠line 1's first segment is MARK's alone; a segment that starts inside a quote left open on an earlier line is
+        #   string text (a multi-line commit message), never a marker.
+        for seg in segs[1 if (q0 or not i) else 0:]:
             e = LATER.match(seg)
             m = MARK.match(seg[e.end():]) if e else None
             if m:
                 return m
-        h = HEREDOC.search(ln)
+        # ⚠only unquoted text outside $((..)) starts a heredoc: `echo "a <<EOF"` or `$((a<<b))` hid every later marker.
+        ar = [a.span() for a in ARITH.finditer(ln)]
+        h = next((h for h in HEREDOC.finditer(ln) if h.start() in top
+                  and not any(a <= h.start() < b for a, b in ar)), None)
         end = h.group(1) if h else None
     return None
 
 
-def _segs(ln):
-    """Split one line on top-level `;` `&&` `||` (quotes and backslashes respected); a `#` word ends the line."""
-    out, cur, q, i = [], [], "", 0
+def _segs(ln, q=""):
+    """Split one line on top-level `;` `&&` `||` (quotes and backslashes respected); a `#` word ends the line.
+    `q` = quote still open from the previous line. Returns (segments, quote open at line end, unquoted `<` offsets)."""
+    out, cur, top, i = [], [], set(), 0
     while i < len(ln):
         c = ln[i]
         if c == "\\" and q != "'" and i + 1 < len(ln):
             cur.append(ln[i:i + 2])
             i += 2
             continue
+        was = q
         if q:
             q = "" if c == q else q
         elif c in "'\"":
@@ -110,10 +120,12 @@ def _segs(ln):
             cur = []
             i += 1 if c == ";" else 2
             continue
+        if c == "<" and not (was or q):
+            top.add(i)
         cur.append(c)
         i += 1
     out.append("".join(cur))
-    return out
+    return out, q, top
 # --- end later-line marker ---
 # pi only: `echo "[pl-skip:...]"` / `[pl-model:...]` / `[pl-agent:...]` at the command start (it has no Bash description).
 DECL_MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl-(?:skip|model|agent):""")

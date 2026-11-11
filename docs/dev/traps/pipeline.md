@@ -8,6 +8,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: `MARK` matches only at the command start, so `cd …\n…\necho "[pl-end:security-checks/<last>]"` left `end` 0, no ledger row, no report.
   - ⇒ `mark_match` also takes a later line that is `echo`/`printf` of a marker (heredoc bodies skipped; first marker wins); the pi request text (84j · 84l) asks for each marker as its own single-line command.
   - ⇒ One-line commands too (`cd X; echo "[pl:..]"`): each line is split on top-level `;` `&&` `||` (`_segs`, quotes respected) and every segment after line 1's first gets the same `echo`/`printf` rule; piped args (`a | grep "[pl:"`) never count.
+  - ⇒ The quote state carries across lines: a segment that starts inside a quote opened on an earlier line (a multi-line `git commit -m "…"` body) is text. A heredoc starts only at an unquoted `<<` outside `$((..))` — `echo "a <<EOF"` used to hide every later marker.
   - ⚠Never accept a bare, `#` or mid-text marker on later lines (`grep "[pl:"`, doc text); keep the block identical in both hooks. `tests/test_pl_multiline_mark.py`.
 
 - **Evaluation «Ask AI» left no trace after a page reload** (48i `plEvalFixSend` · `plEvalFixRec`, `pl_reqs`).

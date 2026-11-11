@@ -59,6 +59,22 @@ class MarkMatch(unittest.TestCase):
                       'ls # ; echo "[pl:p/s]"', 'ls\na | echo "[pl:p/s]"'):
                 self.assertIsNone(mm(c), c)
 
+    def test_quote_spans_lines(self):   # a marker line inside a multi-line quoted string is text, not a marker
+        for mod in (M, F):
+            mm = mod.mark_match
+            for c in ('git commit -m "subject\necho "[pl:p/s]"', "git commit -m 'a\necho [pl-end:p/s]\nb'",
+                      'x="a\nb; echo [pl:p/s]"'):
+                self.assertIsNone(mm(c), c)
+            self.assertEqual(mm('git commit -m "a\nb"\necho "[pl-end:p/s]"').group(4), "s")   # after the quote closes
+            self.assertEqual(mm('x="a\nb"; echo "[pl:p/s]"').group(3), "p")
+
+    def test_heredoc_only_unquoted(self):   # `<<` inside quotes or $((..)) does not start a heredoc
+        for mod in (M, F):
+            mm = mod.mark_match
+            self.assertEqual(mm('echo "a <<EOF"\necho "[pl-end:p/s]"').group(4), "s")
+            self.assertEqual(mm('x=$((a<<b))\necho "[pl-end:p/s]"').group(4), "s")
+            self.assertIsNone(mm("cat <<EOF\necho \"[pl-end:p/s]\"\nEOF x"))
+
 
 class Hooks(unittest.TestCase):
     def setUp(self):
