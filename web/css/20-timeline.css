@@ -78,7 +78,7 @@ html[data-ui][data-theme=light] .tlp.c6{color:#5c5a12}
 .tlrs .tlnm > b > .tlp{flex-shrink:1;max-width:100%}
 .tlb:hover{filter:brightness(1.25)}
 .tlt{position:relative;flex:1 1 auto;height:24px;background:#11161d;border-radius:5px;
-  border:1px solid #1a212b;overflow:hidden}
+  border:1px solid #262f3c;overflow:hidden}
 .tlk{position:absolute;top:0;bottom:0;width:1px;background:#1e2530}
 /* ── Time cursor — one vertical line through "that moment" ──────────────────
    ⚠Bar highlight (.tlbon) is decided **geometrically** (does the bar's offsetLeft..+offsetWidth cover
@@ -300,8 +300,12 @@ html[data-theme=light] .tlnm u.tlwtc,html[data-ui=next][data-theme=light] .tlnm 
    it also hid the state glyph (span.tlsi) inside the name cell (measured 2026-09-03: glyph 0x0 · display:none).
    That single character was the cause of the "not showing" report. */
 .tlrs .tlnm > span{display:none}
-.tlrs{padding:4px 0;border-bottom:1px solid #1a212b;margin:9px 0 3px}
-.tlrs:first-child{margin-top:0}
+/* ⚠The divider sits above each session group, not under the session row: under the row it split a session from its
+   own agent rows and left neighbouring sessions joined. #1a212b on #0d1014 was too faint to see; agent rows get a
+   tint so a group reads as one block. */
+.tlrs{padding:4px 0;border-top:1px solid #303b4b;margin:9px 0 3px;padding-top:10px}
+.tlrs:first-child{margin-top:0;border-top:0;padding-top:4px}
+.tlrk{background:#8ab4f80a}
 /* ⚠Stretch so empty space in a tall session row's name cell (pipeline strip) hits the work-log handler, not the pin toggle; align-content keeps wrapped lines centered. */
 .tlrs > .tlnm{align-self:stretch;align-content:center}
 /* Branch — agents under a session */
@@ -390,7 +394,9 @@ html[data-ui=next][data-theme=light] .tlnm .tlpar.tlagt{color:var(--nx-t1)}
 .tlwtg:hover,.tlwtg:focus-visible{background:#1a2433;color:#cfe0ff}
 .tlwtn{font-style:normal;font-weight:500;color:#7d90ab;font-size:11px;flex:0 0 auto}
 .tlwta{font-style:normal;flex:0 0 auto;font-size:10px;font-weight:700;color:#0d1014;background:#f0b357;border-radius:8px;padding:0 5px}
-.tlrw{padding:4px 0;border-bottom:1px solid #1a212b;margin:9px 0 3px;cursor:default}
+.tlrw{padding:10px 0 4px;border-top:1px solid #303b4b;margin:9px 0 3px;cursor:default}
+.tlrw:first-child{border-top:0;padding-top:4px;margin-top:0}
+.tlrw + .tlrs{border-top:0;padding-top:4px;margin-top:3px}
 .tlrw:first-child{margin-top:0}
 .tlrw .tlnm b{color:#9aa7b8}
 .tlrs.tlrwk{margin-top:2px}
