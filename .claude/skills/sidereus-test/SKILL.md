@@ -23,7 +23,8 @@ spec.loader.exec_module(cs)
 
 ```
 bash tests/run.sh                                     # all
-/usr/bin/python3 -m unittest tests.test_quota -v      # one file
+bash tests/run.sh tests/test_quota.py                 # one or more files (run as modules)
+/usr/bin/python3 -m unittest tests.test_quota -v      # one file, same thing
 ```
 
 - Loader: `load()` in `tests/_load.py` · `sidereus("burn")` — runs the importlib recipe above only once.

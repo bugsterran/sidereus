@@ -7,4 +7,17 @@ export TZ="${TZ-UTC}" LC_ALL="${LC_ALL-C.UTF-8}" PYTHONIOENCODING=utf-8
 if [ -z "$TESTS_SERIAL" ] && [ $# -eq 0 ]; then
   exec "${PYTHON:-/usr/bin/python3}" tests/run_parallel.py
 fi
+# File arguments (tests/test_x.py) are run as modules: passed to discover they became its start
+# directory and failed with «Start directory is not importable». Other arguments (-p, -k ...) still go to discover.
+mods=()
+for a in "$@"; do
+  case "$a" in
+    *.py) [ -f "$a" ] || { echo "no such test file: $a" >&2; exit 2; }
+          m="${a#./}"; m="${m%.py}"; mods+=("${m//\//.}") ;;
+    *) mods=(); break ;;
+  esac
+done
+if [ ${#mods[@]} -gt 0 ]; then
+  exec "${PYTHON:-/usr/bin/python3}" -m unittest -v "${mods[@]}"
+fi
 exec "${PYTHON:-/usr/bin/python3}" -m unittest discover -s tests -t . -v "$@"
