@@ -10,6 +10,7 @@ from tests._load import sidereus
 
 pi = sidereus("plat_pi")
 st = sidereus("ext_store")
+life = sidereus("ext_life")
 pr = sidereus("ext_presence")
 te = sidereus("timeline_ext")
 
@@ -103,7 +104,7 @@ class PiRows(unittest.TestCase):
         self.assertEqual(len(self._pres()), 1)
         with mock.patch.object(st, "time", types.SimpleNamespace(time=lambda: NOW)), \
                 mock.patch.object(st, "_ext_save_locked", lambda: None):
-            st.ext_dismiss(SID)
+            life.ext_dismiss(SID)
         pr._PRES_MEMO.clear()
         self.assertEqual(self._pres(), [])
 

@@ -5,6 +5,7 @@ from tests._load import sidereus
 
 ext = sidereus("ext")
 st = sidereus("ext_store")
+life = sidereus("ext_life")
 gm = sidereus("plat_gemini")
 
 NOW = 1790000000.0
@@ -38,7 +39,7 @@ class PidlessIdle(unittest.TestCase):
 
     def state_at(self, t):
         self.clock[0] = t
-        st.ext_gone_check(t)
+        life.ext_gone_check(t)
         return st._ext[("cursor", "c1")]["state"]
 
     def test_pidless_idle_31min_done(self):

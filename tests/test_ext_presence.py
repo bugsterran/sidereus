@@ -9,6 +9,7 @@ from tests._load import sidereus
 
 ext = sidereus("ext")
 st = sidereus("ext_store")
+life = sidereus("ext_life")
 pr = sidereus("ext_presence")
 
 NOW = 1800000000.0
@@ -122,7 +123,7 @@ class Presence(unittest.TestCase):
         t0 = st.time.time
         st.time.time = lambda: NOW
         try:
-            self.assertEqual(st.ext_dismiss(SID), 1)
+            self.assertEqual(life.ext_dismiss(SID), 1)
         finally:
             st._ext_save_locked, st.time.time = o, t0
         self.assertEqual([r["plat"] for r in self.rows()], ["cp"])

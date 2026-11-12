@@ -71,7 +71,7 @@ class ChildTokStore(unittest.TestCase):
                   mock.patch.object(st, "_ext_save_locked", lambda: None),
                   mock.patch.object(PI, "session_msgs", lambda path: None),
                   mock.patch.object(ext, "adapter_scan", lambda mod, since: []),
-                  mock.patch.object(st.plat_copilot, "msgs_since", lambda since=0.0: {})):
+                  mock.patch.object(sidereus("plat_copilot"), "msgs_since", lambda since=0.0: {})):
             p.start()
             self.addCleanup(p.stop)
         for d in (st._ext, st._runs, st._tok, st._hooktok, st._ext_ended):

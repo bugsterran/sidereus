@@ -1,7 +1,7 @@
 """Copilot CLI presence and token counts from its own record folder (no hooks needed):
 `<root>/session-state/<uuid>/workspace.yaml` (presence) and `events.jsonl` (usage, quota).
 
-Read by sidereus/ext_presence.py and sidereus/ext_store.py — ⚠not an adapter (`ext_store.PLAT_MODS` stays Gemini + Codex).
+Read by sidereus/ext_presence.py and sidereus/ext_side.py — ⚠not an adapter (`ext_store.PLAT_MODS` stays Gemini + Codex).
 ⚠Metadata only: workspace.yaml is parsed line by line through `_KEYS`; `name` / `summary*` lines are dropped
 before anything is kept. In events.jsonl only lines starting with `_USE_PFX` are json-parsed; the quota is cut out
 of `model.model_call_success` lines (which carry request/response content) by `raw_decode` from its key, never by

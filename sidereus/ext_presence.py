@@ -13,6 +13,7 @@ from sidereus.timefmt import iso_local
 from sidereus import plat_copilot, plat_cursor, plat_pi
 from sidereus import ext_store   # module access: tests patch `ext_store._pid_start`
 from sidereus.ext_store import EXT_PLAT, EXT_EV_N, _ext, _ext_lock, _sid_ok, _tok_sum, ext_ended
+from sidereus import ext_side
 from sidereus.ext import ROLL_WIN_S, ext_work
 from sidereus.adapter import adapter_scan
 from sidereus import live_probe, term   # module access: tests patch `_ps_snap_cache` / `_probe_cwd`
@@ -115,7 +116,7 @@ def _row(plat, c, now):
     first = float(c.get("start") or last)
     sid = c["sid"]
     pi = plat == "pi"
-    tk = _tok_sum(c.get("msgs") or {}) if pi else ext_store.ext_side_tok(plat, sid) or {}   # Copilot usage records; Cursor stays 0 here
+    tk = _tok_sum(c.get("msgs") or {}) if pi else ext_side.ext_side_tok(plat, sid) or {}   # Copilot usage records; Cursor stays 0 here
     row = {
         "id": "", "sid": "", "project": "?", "gotPrompt": 0,
         "creq": 0, "burn": 0, "rpm": 0, "cwd": "", "branch": "",

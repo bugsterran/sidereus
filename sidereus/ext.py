@@ -1,5 +1,6 @@
 """External CLI agent sessions (Gemini CLI, Codex CLI) fed by hooks — views: rows, work panel, child runs,
-today usage, hook-settings check. The store (registry, ingest, persistence, token store) is sidereus/ext_store.py."""
+today usage, hook-settings check. The store (registry, ingest, persistence, token store) is sidereus/ext_store.py;
+side token readers are sidereus/ext_side.py and session exits (gone check, dismiss) sidereus/ext_life.py."""
 import json
 import math
 import os
@@ -18,10 +19,10 @@ from sidereus import plat_pi   # module access: tests patch `plat_pi.ext_rev` / 
 # ⚠Patch store internals (`_ext_save_locked`, `_runs_save_locked`, `EXT_FILE`/`EXT_RUNS_FILE`, `_pid_start`) on `ext_store`.
 from sidereus.ext_store import (PLAT_MODS, EXT_PLAT, EXT_EV_N, EXT_RATE_WIN, _ext_lock, _ext,
                              _ext_stat, _runs, _tok_lock, _tok, _ext_prune_locked, ext_ingest,
-                             ext_gone_check, ext_dismiss, ext_tok_refresh, _tok_sum, ext_tok,
-                             EXT_ENDED_KEEP_S, EXT_DONE_KEEP_S, PIDLESS_IDLE_SEC, ext_ended,
-                             ext_hook_msgs, ext_hook_cwds,
-                             ext_side_msgs, ext_side_sess, ext_side_tok)
+                             ext_tok_refresh, _tok_sum, ext_tok,
+                             EXT_ENDED_KEEP_S, EXT_DONE_KEEP_S, PIDLESS_IDLE_SEC, ext_ended)
+from sidereus.ext_side import ext_hook_msgs, ext_hook_cwds, ext_side_msgs, ext_side_sess, ext_side_tok
+from sidereus.ext_life import ext_gone_check, ext_dismiss
 
 
 EXT_NAME = {m.KEY: m.NAME for m in PLAT_MODS.values()}

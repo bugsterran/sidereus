@@ -8,6 +8,7 @@ from tests._clock import NOW, frozen
 from tests._load import sidereus
 
 st = sidereus("ext_store")
+life = sidereus("ext_life")   # reads store names as ext_store.X, so patches on `st` still apply
 
 IDLE = 30 * 3600
 
@@ -44,7 +45,7 @@ class TtlPid(unittest.TestCase):
     def test_live_pid_idle_kept(self):
         st._ext[("cursor", "a")] = _row(pid=12089)
         with frozen(st):
-            st.ext_gone_check(NOW)
+            life.ext_gone_check(NOW)
             with st._ext_lock:
                 st._ext_prune_locked(NOW)
         self.assertIn(("cursor", "a"), st._ext)
@@ -53,12 +54,12 @@ class TtlPid(unittest.TestCase):
     def test_dead_pid_gone_then_folded(self):
         st._ext[("gemini", "b")] = _row(pid=99698)
         self.dead.add(99698)
-        st.ext_gone_check(NOW)
+        life.ext_gone_check(NOW)
         self.assertEqual(st._ext[("gemini", "b")]["state"], "gone")
         with st._ext_lock:
             st._ext_prune_locked(NOW)
         self.assertIn(("gemini", "b"), st._ext)       # kept as gone during the grace
-        st.ext_gone_check(NOW + st.EXT_GONE_GRACE_S + 1)
+        life.ext_gone_check(NOW + st.EXT_GONE_GRACE_S + 1)
         v = st._ext[("gemini", "b")]                  # archived: folded as ended, pid dropped
         self.assertEqual((v["state"], v["endWhy"], v["ended"], v.get("pid")), ("done", "pid", NOW, None))
 
@@ -79,11 +80,11 @@ class TtlPid(unittest.TestCase):
 
     def test_win_dead_pid_gone_then_folded(self):
         self._win_ingest("w1", False)
-        st.ext_gone_check(NOW)
+        life.ext_gone_check(NOW)
         self.assertEqual(st._ext[("codex", "w1")]["state"], "gone")
-        st.ext_gone_check(NOW + st.EXT_GONE_GRACE_S + 1)
+        life.ext_gone_check(NOW + st.EXT_GONE_GRACE_S + 1)
         self.assertEqual(st._ext[("codex", "w1")]["state"], "done")
-        st.ext_gone_check(NOW + st.EXT_DONE_KEEP_S + 1)
+        life.ext_gone_check(NOW + st.EXT_DONE_KEEP_S + 1)
         with st._ext_lock:
             st._ext_prune_locked(NOW + st.EXT_DONE_KEEP_S + 1)
         self.assertNotIn(("codex", "w1"), st._ext)
@@ -91,7 +92,7 @@ class TtlPid(unittest.TestCase):
     def test_win_live_pid_idle_wait_kept(self):
         self._win_ingest("w2", True)
         with frozen(st):
-            st.ext_gone_check(NOW)
+            life.ext_gone_check(NOW)
             with st._ext_lock:
                 st._ext_prune_locked(NOW)
         self.assertEqual(st._ext[("codex", "w2")]["state"], "wait")
@@ -109,7 +110,7 @@ class TtlPid(unittest.TestCase):
         self._win_ingest("w4", True)                  # a slow ps on the last event must not drop a live pid
         with frozen(st):
             st.ext_ingest({"platform": "codex", "session_id": "w4", "event": "Stop", "ts": NOW - 3600})
-            st.ext_gone_check(NOW + st.PIDLESS_IDLE_SEC + 1)
+            life.ext_gone_check(NOW + st.PIDLESS_IDLE_SEC + 1)
         v = st._ext[("codex", "w4")]
         self.assertEqual((v["pid"], v["pstart"], v["state"]), (4321, "Sat Oct 24 17:00:00 2026", "wait"))
 

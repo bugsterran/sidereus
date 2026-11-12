@@ -1,6 +1,7 @@
 """External CLI session store: platform registry, hook-event ingest, persistence (ext-sessions.json,
-ext-runs.json, ext-hooktok.json), child runs, liveness (pid/silence) and the per-session token store.
-Views over it (rows, work panel, children, today usage, hook check) live in sidereus/ext.py, which re-exports
+ext-runs.json, ext-hooktok.json), child runs, pid probes and the per-session token store.
+Side token readers (hook tokens, Copilot records) live in sidereus/ext_side.py; liveness exits (ext_gone_check,
+ext_dismiss) in sidereus/ext_life.py. Views over it (rows, work panel, children, today usage, hook check) live in sidereus/ext.py, which re-exports
 the names other modules import from `sidereus.ext`.
 ⚠Owns EXT_FILE/EXT_RUNS_FILE/EXT_HOOKTOK_FILE and every writer of them - tests/_load.py redirects them on this module."""
 import json
@@ -13,7 +14,7 @@ from sidereus.config import DATA_DIR, pid_alive
 from sidereus import config   # module access: tests patch `config.IS_WIN` / `config.win_pid_start`
 from sidereus.warn import warn_once
 from sidereus.bus import _atomic_write
-from sidereus import plat_codex, plat_gemini, plat_copilot, plat_pi
+from sidereus import plat_codex, plat_gemini, plat_pi
 from sidereus.adapter import adapter_register
 
 
@@ -276,57 +277,6 @@ def _hooktok_note_locked(plat, sid, req, cwd, ts):
     return True
 
 
-def ext_hook_msgs(since=0.0):
-    """{(plat, sid): {gen_id: (in, out, cache, 0, ts, model, None)}} for generations at or after `since` —
-    the `_tok_sum` message shape (cache = read + write; cost unknown)."""
-    out = {}
-    with _ext_lock:
-        items = [(k, dict(e.get("gens") or {})) for k, e in _hooktok.items()]
-    for k, gens in items:
-        plat, _s, sid = k.partition("|")
-        ms = {g: (v[0], v[1], v[2] + v[3], 0, float(v[4]), v[5], None) for g, v in gens.items()
-              if float(v[4]) >= since}
-        if ms:
-            out[(plat, sid)] = ms
-    return out
-
-
-def ext_hook_cwds():
-    """{(plat, sid): cwd} for every session with stored hook tokens."""
-    with _ext_lock:
-        return {tuple(k.partition("|")[::2]): str(e.get("cwd") or "") for k, e in _hooktok.items()}
-
-
-def ext_side_msgs(since=0.0):
-    """`ext_hook_msgs` plus Copilot usage records (plat_copilot) — tokens of platforms outside `PLAT_MODS`.
-    ⚠A record replaces a hook entry with the same key, never adds to it."""
-    out = ext_hook_msgs(since)
-    for sid, ms in plat_copilot.msgs_since(since).items():
-        out.setdefault((plat_copilot.PLAT, sid), {}).update(ms)
-    return out
-
-
-def ext_side_sess(plat, sid):
-    """One session's side messages (same merge as `ext_side_msgs`); {} for anything but Copilot and pi children."""
-    if plat not in (plat_copilot.PLAT, "pi"):
-        return {}
-    with _ext_lock:
-        e = _hooktok.get(plat + "|" + str(sid))
-        ms = {g: (v[0], v[1], v[2] + v[3], 0, float(v[4]), v[5], None) for g, v in ((e or {}).get("gens") or {}).items()}
-    ms.update(plat_copilot.usage_msgs(sid) if plat == plat_copilot.PLAT else {})
-    return ms
-
-
-def ext_side_tok(plat, sid):
-    """`ext_tok` shape (total + latest model) from `ext_side_sess`, or None when empty."""
-    ms = ext_side_sess(plat, sid)
-    if not ms:
-        return None
-    s = _tok_sum(ms)
-    s["model"] = max(ms.values(), key=lambda v: v[4])[5]
-    return s
-
-
 def _run_note_locked(plat, sid, v, ev, ts):
     """Mirror one parented session's metadata into `_runs`. Returns True when the file should be written."""
     par = v.get("parent") or ""
@@ -498,78 +448,6 @@ def _pid_gone(pid, pstart):
         if now_start is not None and now_start != pstart:
             return True
     return False
-
-
-def ext_gone_check(now=None):
-    """Mark sessions whose CLI died (pid) or fell silent while busy (no pid) as gone; fold them after
-    `EXT_GONE_GRACE_S` like a SessionEnd. History/timeline data stays (runs end at the last event)."""
-    now = now or time.time()
-    with _ext_lock:
-        if _ext_dedupe_locked():                  # rows saved before the dedupe existed
-            _ext_save_locked()
-        due = [(k, v["pid"], v.get("pstart") or "") for k, v in _ext.items()
-               if v.get("pid") and not v.get("gone")
-               and now - float(v.get("pidAt") or 0) >= EXT_PID_EVERY_S]
-        for k, _p, _s in due:
-            _ext[k]["pidAt"] = now
-    dead = {k: pid for k, pid, ps in due if _pid_gone(pid, ps)}   # outside the lock: may run `ps`
-    changed = runs = False
-    with _ext_lock:
-        for k, v in list(_ext.items()):
-            try:
-                last = float(v.get("lastSeen") or 0)
-            except (TypeError, ValueError):
-                last = 0.0
-            if not v.get("gone"):
-                why = ""
-                if k in dead and v.get("pid") == dead[k] and last <= now:
-                    why = "pid"
-                elif not v.get("pid") and v.get("state") in ("think", "tool") and now - last > EXT_SILENT_S:
-                    why = "silent"
-                if not why and not v.get("pid") and v.get("state") == "wait" and not v.get("blocked") \
-                        and now - last > PIDLESS_IDLE_SEC:
-                    v["state"] = "done"
-                    changed = True
-                if why:
-                    v.update(goneFrom=v.get("state") or "", state="gone", goneWhy=why, blocked=False, tool="",
-                             gone=now if why == "pid" else last + EXT_SILENT_S)
-                    changed = True
-                    if v.get("parent"):
-                        _run_note_locked(k[0], k[1], v, "Gone", last)
-                        runs = True
-            if v.get("gone") and now - float(v["gone"]) > EXT_GONE_GRACE_S:
-                _run_note_locked(k[0], k[1], v, "SessionEnd", last)
-                _end_locked(k, v, float(v["gone"]), v.get("goneWhy") or "pid")
-                changed = True
-                runs = runs or bool(v.get("parent"))
-        if runs:
-            _runs_save_locked()
-        if changed:
-            _ext_save_locked()
-
-
-def ext_dismiss(sid):
-    """Person dismissed a pid-less pending row (liveness unknown, never pruned): drop it from the store like a SessionEnd.
-    ⚠pid rows are refused — ext_gone_check owns their exit. A live CLI's next event re-creates the row. -> rows removed."""
-    if not isinstance(sid, str) or not _sid_ok(sid):
-        return 0
-    n = 0
-    with _ext_lock:
-        now = time.time()
-        if not any(k[1] == sid for k in _ext):   # a record-file-only row (Codex rollout, Cursor/Copilot folder): hide it for its window
-            for p in ("codex", "cursor", "copilot", "pi"):
-                _ended_note_locked((p, sid), now)
-            n += 1
-        for k, v in list(_ext.items()):
-            if k[1] == sid and not v.get("pid") and _pending(v):
-                _ext.pop(k, None)
-                _ended_note_locked(k, now)
-                if _run_note_locked(k[0], k[1], v, "SessionEnd", float(v.get("lastSeen") or 0)):
-                    _runs_save_locked()
-                n += 1
-        if n:
-            _ext_save_locked()
-    return n
 
 
 # ── per-session token totals from the CLI's own record file ───────────────────

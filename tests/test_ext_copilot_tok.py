@@ -11,6 +11,7 @@ from tests._load import sidereus
 
 ext = sidereus("ext")
 st = sidereus("ext_store")
+side = sidereus("ext_side")
 pr = sidereus("ext_presence")
 te = sidereus("timeline_ext")
 cp = sidereus("plat_copilot")
@@ -104,10 +105,10 @@ class CopilotTok(unittest.TestCase):
     def test_hooktok_and_record_not_double_counted(self):
         st._hooktok["copilot|" + SID] = {"cwd": "/w/cp", "gens": {"u1": [100, 50, 900, 0, NOW - 120, "gpt-6-luna"]}}
         self.assertEqual(ext.ext_usage_today(now=NOW)["cp"]["tok"], 3120)
-        self.assertEqual(st.ext_side_tok("copilot", SID)["tok"], 3120)
+        self.assertEqual(side.ext_side_tok("copilot", SID)["tok"], 3120)
 
     def test_cursor_unchanged(self):
-        self.assertIsNone(st.ext_side_tok("cursor", SID))
+        self.assertIsNone(side.ext_side_tok("cursor", SID))
 
 
 if __name__ == "__main__":
