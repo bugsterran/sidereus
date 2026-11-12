@@ -50,6 +50,7 @@ OC_SENT = {
 }
 OC_LB_RISE_PP = 15   # R1 loop-back rise (percentage points) that flags a pipeline; provisional, to be set from 30-day data
 # R1 one verdict per pipeline, English source. ⚠Keyed twice: web PLE_VD carries the same sentences; change both.
+# ⚠pl_too_few spells OC_VERDICT_MIN_RUNS as «5» here, in PLE_VD and in the ko dictionary; change all three with it.
 OC_VERDICT = {
     "pl_broke": "A pass from this pipeline broke later.",
     "pl_too_few": "Fewer than 5 runs in the last 30 days, too few to judge.",

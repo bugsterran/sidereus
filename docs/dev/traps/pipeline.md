@@ -7,6 +7,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **Pipeline verdict sentences are keyed twice** (sidereus/pl_outcome.py `OC_VERDICT` · web `PLE_VD`).
   - Cause: the weekly report writes the English sentence from `OC_VERDICT`; the panel shows its own copy keyed by the same id.
   - ⇒ Change an id or sentence in both places in one change; guides live in `docs/verdicts/<id>.md` (+ `.ko.md`), `healthy` has none.
+  - ⚠`pl_too_few` writes `OC_VERDICT_MIN_RUNS` as the literal «5» in `OC_VERDICT`, `PLE_VD` and `I18N.ko`; change the constant and all three sentences together.
   - ⚠Missing earlier runs (`prev.n` 0) is unknown, never a 0% baseline for the loop-back rise. `tests/test_pl_outcome_verdict.py`.
 
 - **A pi run never closed: `[pl-end:...]` sat on a later line of a multi-line bash command** (hooks/pl_flow.py · pl_mark.py `mark_match`).
