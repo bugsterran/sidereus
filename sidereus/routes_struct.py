@@ -2,9 +2,10 @@
 Also owns `_q1`/`_exc_err`/`_exc_msg` (routes_get imports them back, so no circular import)."""
 from urllib.parse import parse_qs
 
-from sidereus.structure import structure, structure_src, structure_pair
+from sidereus.structure import structure, structure_src, structure_pair, _struct_src_root
 from sidereus.structure_tree import structure_file, structure_img, structure_tree
 from sidereus.arch_map import files as arch_files, load as arch_load, security_report as arch_secreport, brief_html as arch_brief
+from sidereus import arch_brief as AB
 
 # ⚠brief.html is agent-written HTML: no script, no fetch, sandboxed even when opened directly in a tab.
 BRIEF_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox"
@@ -115,6 +116,8 @@ class _StructRoutes:
         q = parse_qs(u.query)
         try:
             out = arch_load(_q1(q, "path") or None)
+            if out.get("ok"):   # «Ask the session to draw»: HEAD's store dir + schema, None = no finished map at HEAD
+                out["ask"] = AB.ask_info(_struct_src_root(_q1(q, "path") or None), out["head"]) if out.get("head") else None
         except Exception as e:
             out = {"ok": False, **_exc_msg(e)}
         self._raw_json(200, out)

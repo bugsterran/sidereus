@@ -4,15 +4,7 @@
 Checked against a v2 map.json (store/external kinds) and verify.json (edge verdicts); principle evidence is a file:line
 at the commit. Called from sidereus/arch_brief.py when brief.json has v:2; v1 stays in arch_brief.py unchanged.
 Stdlib only, imports arch_verify only; metadata only (ids, names, file:line — never cited source text).
-
-brief.json v2: {v:2, repo, commit, title<=60, what<=120, heads?:{arch, legend}<=40,
-  actors:[{id, name<=30}] 1..2, screens:[{id, name<=40, note<=80, role<=100, modules:[ids] 1..}] 1..2,
-  system:{name<=40, components:[{id, name<=40, note<=80, role<=100, modules:[ids] 1..}
-                                | {id, name<=40, note<=80, role<=100, pkgs:[{name<=24, note?<=40, modules:[ids] 1..}] 2..6}] 3..7
-                                (<= 1 with pkgs),
-          principles:[{text<=100, evidence:{file, line}}] 2..4},
-  externals:[{id, name<=40, role<=100, uses:[{name<=30, note?<=40}] 1..3, modules:[ids] 1..}] 1..4,
-  arrows:[{from, to, label<=32, use?:1..3, edges:[map edge index] 1..5}] <=12}
+Schema: FORMAT below (the one schema text; also sent with an «Ask the session to draw» request). Optional `layout`: arch_brief_layout.
 """
 from sidereus import arch_verify as AV
 
@@ -20,7 +12,22 @@ ACTOR_MAX, SCREEN_MAX, COMP_MIN, COMP_MAX, PKG_MIN, PKG_MAX = 2, 2, 3, 7, 2, 6
 PRIN_MIN, PRIN_MAX, EXT_MAX, USE_MAX, ARROW_MAX, AEDGE_MAX = 2, 4, 4, 3, 12, 5
 TITLE_MAX, WHAT_MAX, HEAD_MAX, ACTOR_NAME_MAX, NAME_MAX, NOTE_MAX, ROLE_MAX = 60, 120, 40, 30, 40, 80, 100
 PKG_NAME_MAX, PKG_NOTE_MAX, USE_NAME_MAX, USE_NOTE_MAX, LABEL_MAX, PRIN_TEXT_MAX = 24, 40, 30, 40, 32, 100
-_KEYS = {"v", "repo", "commit", "title", "what", "heads", "actors", "screens", "system", "externals", "arrows"}
+_KEYS = {"v", "repo", "commit", "title", "what", "heads", "actors", "screens", "system", "externals", "arrows", "layout"}
+# ⚠Built from the caps above, so the schema text a session is sent cannot drift from what shape_errors refuses.
+FORMAT = """brief.json v2: {v:2, repo, commit, title<=%(t)d, what<=%(w)d, heads?:{arch, legend}<=%(h)d,
+  actors:[{id, name<=%(an)d}] 1..%(a)d, screens:[{id, name<=%(n)d, note<=%(no)d, role<=%(r)d, modules:[ids] 1..}] 1..%(s)d,
+  system:{name<=%(n)d, components:[{id, name<=%(n)d, note<=%(no)d, role<=%(r)d, modules:[ids] 1..}
+                                | {id, name<=%(n)d, note<=%(no)d, role<=%(r)d, pkgs:[{name<=%(pn)d, note?<=%(pt)d, modules:[ids] 1..}] %(p0)d..%(p1)d}] %(c0)d..%(c1)d
+                                (<= 1 with pkgs),
+          principles:[{text<=%(pr)d, evidence:{file, line}}] %(r0)d..%(r1)d},
+  externals:[{id, name<=%(n)d, role<=%(r)d, uses:[{name<=%(un)d, note?<=%(ut)d}] 1..%(u)d, modules:[ids] 1..}] 1..%(e)d,
+  arrows:[{from, to, label<=%(l)d, use?:1..%(u)d, edges:[map edge index] 1..%(ae)d}] <=%(ar)d, layout?}
+modules = map.json module ids (stores/external systems only in externals); edges = verified map.json edges joining the two boxes;
+evidence = file:line at the commit.
+""" % {"t": TITLE_MAX, "w": WHAT_MAX, "h": HEAD_MAX, "an": ACTOR_NAME_MAX, "a": ACTOR_MAX, "n": NAME_MAX, "no": NOTE_MAX,
+       "r": ROLE_MAX, "s": SCREEN_MAX, "pn": PKG_NAME_MAX, "pt": PKG_NOTE_MAX, "p0": PKG_MIN, "p1": PKG_MAX, "c0": COMP_MIN,
+       "c1": COMP_MAX, "pr": PRIN_TEXT_MAX, "r0": PRIN_MIN, "r1": PRIN_MAX, "un": USE_NAME_MAX, "ut": USE_NOTE_MAX, "u": USE_MAX,
+       "e": EXT_MAX, "l": LABEL_MAX, "ae": AEDGE_MAX, "ar": ARROW_MAX}
 V2_MAP = "v2 overview needs a v2 map (store/external kinds); run arch-map"
 
 _line, _int, ID_RE = AV._line, AV._int, AV.ID_RE

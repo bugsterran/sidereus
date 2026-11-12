@@ -1,5 +1,5 @@
-"""arch_brief: --pre pointer, brief.json gate (ids, verified edges, evidence lines at the commit), brief.html on pass.
-Temp git repo + temp store (ARCH_DIR patched on arch_verify)."""
+"""arch_brief: --pre pointer, brief.json gate (ids, verified edges, evidence lines at the commit), brief.html on pass;
+--check --commit (R3, no pointer) with «drawn by». Temp git repo + temp store (ARCH_DIR patched on arch_verify)."""
 import copy
 import importlib.util
 import io
@@ -13,6 +13,8 @@ from contextlib import redirect_stdout
 from unittest import mock
 
 from tests._load import ROOT, sidereus
+from tests.test_arch_brief_layout import layout
+from tests.test_arch_brief_v2 import COMMIT as V2_COMMIT, Base as V2Base
 
 AV = sidereus("arch_verify")
 AB = sidereus("arch_brief")
@@ -385,6 +387,64 @@ class V1GoldenTest(unittest.TestCase):
         b = self.brief()
         for h in (AB.render(b), sidereus("arch_brief_html").render(b)):
             self.assertEqual(hashlib.sha256(h.encode("utf-8")).hexdigest(), self.GOLDEN)
+
+
+class CheckCommitTest(V2Base):
+    """R3: --check gates an explicit commit for the session asked to draw; `by` reaches brief.ok.json and the page."""
+    SID = "0a1b2c3d-1111-2222"
+
+    def setUp(self):
+        super().setUp()
+        self.put("map.json", self.map2())
+        self.put("verify.json", self.verdict())
+        self.put(AV.BRIEF_JSON, self.brief())
+        for obj, k in ((AB, "last"), (AB, "_pointer")):   # ⚠the shared pointer is never read or written by --check
+            p = mock.patch.object(obj, k, side_effect=AssertionError("pointer touched"))
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_r3_check_uses_explicit_commit_and_records_by(self):
+        rc, line = cli("--check", "--repo", self.repo, "--commit", V2_COMMIT, "--by", self.SID)
+        self.assertEqual(rc, 0, line)
+        self.assertFalse(os.path.exists(os.path.join(self.store, AV.BRIEF_LAST)))
+        ok = AV.read_json(os.path.join(self.d, AV.BRIEF_OK))
+        self.assertEqual((ok["commit"], ok["by"]), (V2_COMMIT, self.SID))
+        with open(os.path.join(self.d, AV.BRIEF_HTML), encoding="utf-8") as f:
+            h = f.read()
+        self.assertIn("· drawn by %s</small>" % self.SID, h)
+
+    def test_r3_check_without_by(self):
+        rc, line = cli("--check", "--repo", self.repo, "--commit", V2_COMMIT)
+        self.assertEqual(rc, 0, line)
+        self.assertNotIn("by", AV.read_json(os.path.join(self.d, AV.BRIEF_OK)))
+        with open(os.path.join(self.d, AV.BRIEF_HTML), encoding="utf-8") as f:
+            self.assertNotIn("drawn by", f.read())
+
+    def test_r3_bad_args_refused(self):
+        for argv in (("--check", "--repo", self.repo, "--commit", V2_COMMIT[:7]),
+                     ("--check", "--repo", self.repo, "--commit", V2_COMMIT, "--by", "not a sid"),
+                     ("--check", "--repo", self.repo, "--commit", V2_COMMIT, "--by", self.SID + "\n"),
+                     ("--check", "--repo", self.repo),
+                     ("--check", "--repo", self.repo, "--commit", V2_COMMIT, "--sid", self.SID)):
+            self.assertEqual(cli(*argv)[0], 2, argv)
+        self.assertFalse(os.path.exists(os.path.join(self.d, AV.BRIEF_OK)))
+        self.assertEqual(AB.run(self.repo, V2_COMMIT, "<b>")[0], 2)
+
+    def test_r4_layout_gated(self):
+        b = self.brief()
+        b["layout"] = layout()
+        self.put(AV.BRIEF_JSON, b)
+        rc, line = AB.run(self.repo, V2_COMMIT, self.SID)
+        self.assertEqual(rc, 0, line)
+        self.assertIn("· layout ·", line)
+        with open(os.path.join(self.d, AV.BRIEF_HTML), encoding="utf-8") as f:
+            self.assertIn('data-layout="1"', f.read())
+        b["layout"]["boxes"]["svc"] = [200, 150, 200, 60]
+        self.put(AV.BRIEF_JSON, b)
+        rc, line = AB.run(self.repo, V2_COMMIT, self.SID)
+        self.assertEqual(rc, 1)
+        self.assertIn("layout box api: overlaps svc", line)
+        self.assertFalse(os.path.exists(os.path.join(self.d, AV.BRIEF_OK)))
 
 
 class PipelineFileTest(unittest.TestCase):

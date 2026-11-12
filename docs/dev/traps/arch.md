@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Structure tab (Architecture · Size)
 
+- **A session asked to draw the overview gates with `--check --commit`, never `--last`** (`scripts/arch_brief.py`, `arch_brief.ask_info`).
+  - Cause: `--last` reads `ARCH_DIR/_brief_last.json`, which any other run's `--pre` rewrites; a drawing session could gate another repo or commit.
+  - ⇒ The ask carries the store dir and commit; `--check --repo <p> --commit <sha> [--by <sid>]` reads and writes no pointer, `--by` uses `bus.RELAY_SID` and lands in `brief.ok.json` and the «drawn by» line.
+  - ⚠A hand `layout` is checked only after the v2 content passes (`arch_brief_layout`); without it the automatic figure stays byte-identical (sha pinned in `tests/test_arch_brief_layout.py`). Test: `tests/test_arch_brief.py` `CheckCommitTest`.
+
 - **Store «Data path» counts only modules named in a flow's ok steps** (`web/js/84jb-structure-arch-datapath.js` `archDataPath`).
   - Cause: flow steps are the only verified evidence that an entry point reaches a module; anything else is inference.
   - ⇒ A flow reaches store S when an ok step touches M and an ok `read`/`write` edge M->S exists; est edge or est step marks the route «estimate», one non-est route wins.

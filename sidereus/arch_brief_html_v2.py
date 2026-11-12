@@ -607,14 +607,14 @@ def legend(b):
     return "\n".join(out)
 
 
-def render(b):
-    """brief.html text for a gate-checked v2 brief (schema: sidereus/arch_brief_v2.py)."""
+def render(b, by="", fig=None):
+    """brief.html of a gate-checked v2 brief; fig = a hand-layout svg (arch_brief_layout), by = drawing session id."""
     heads = b.get("heads") or {}
     return "\n".join([
         "<!doctype html>", '<html><head><meta charset="utf-8">',
         "<title>%s</title>" % e(b["title"]), "<style>%s</style>" % CSS, "</head><body><main>",
         "<h1>%s</h1>" % e(b["title"]),
-        '<p class="lead">%s<small>commit %s</small></p>' % (e(b["what"]), e(str(b.get("commit") or "")[:7])),
-        '<section class="arch"><h2>%s</h2><div class="fig">' % e(heads.get("arch") or "Architecture"), figure(b), "</div></section>",
+        '<p class="lead">%s<small>commit %s%s</small></p>' % (e(b["what"]), e(str(b.get("commit") or "")[:7]), " · drawn by " + e(by) if by else ""),
+        '<section class="arch"><h2>%s</h2><div class="fig">' % e(heads.get("arch") or "Architecture"), figure(b) if fig is None else fig, "</div></section>",
         '<section class="roles"><h2>%s</h2>' % e(heads.get("legend") or "Components"), legend(b), "</section>",
         "</main></body></html>", ""])

@@ -219,6 +219,68 @@ class _Stub(RS._StructRoutes):
         self.code, self.raw = code, json.loads(json.dumps(out))
 
 
+class Ask(Base):
+    """R2: /api/arch `ask` = {dir, commit, fmt} at HEAD with a finished map, None without (never an empty path)."""
+    def setUp(self):
+        super().setUp()
+        for obj, k, v in ((AV, "ARCH_DIR", self.arch), (RS, "_struct_src_root", AM._struct_src_root),
+                          (RS, "arch_load", lambda p: {"ok": True, "head": HEAD})):
+            p = mock.patch.object(obj, k, v)
+            p.start()
+            self.addCleanup(p.stop)
+
+    def put_map(self, commit=HEAD):
+        m = {"v": 2, "repo": self.repo, "commit": commit, "groups": [{"id": "g", "name": "G"}],
+             "modules": [{"id": "a", "name": "A", "path": "a", "kind": "module", "layer": "api", "group": "g"},
+                         {"id": "b", "name": "B", "path": "b", "kind": "module", "layer": "service", "group": "g"}],
+             "edges": [{"from": "a", "to": "b", "kind": "call", "label": "", "evidence": [{"file": "a/x.py", "line": 1, "symbol": "f"}]}]}
+        self.assertEqual(AV.schema_errors(m, self.repo, commit), [])
+        d = AV.store_dir(self.repo, commit)
+        os.makedirs(d, exist_ok=True)
+        for name, doc in (("map.json", m), ("verify.json", {"commit": commit, "edges": [{"i": 0, "ok": True}]})):
+            with open(os.path.join(d, name), "w", encoding="utf-8") as f:
+                json.dump(doc, f)
+        return d
+
+    def ask(self, path=None):
+        h = _Stub()
+        h._g_arch(urlparse("/api/arch?path=%s" % quote(path or self.repo)))
+        self.assertEqual(h.code, 200)
+        return h.raw
+
+    def test_r2_ask_at_head_with_map(self):
+        d = self.put_map()
+        a = self.ask()["ask"]
+        self.assertEqual((a["dir"], a["commit"]), (d, HEAD))
+        sb2, sal = sidereus("arch_brief_v2"), sidereus("arch_brief_layout")
+        self.assertEqual(a["fmt"], sb2.FORMAT + sal.FORMAT)
+        self.assertIn("brief.json v2", a["fmt"])
+        self.assertIn("layout?", a["fmt"])
+
+    def test_r2_no_map_is_none(self):
+        self.assertIsNone(self.ask()["ask"])
+        self.put_map(OLD)   # an older commit's map does not answer HEAD
+        self.assertIsNone(self.ask()["ask"])
+
+    def test_r2_no_head_is_none(self):
+        self.put_map()
+        with mock.patch.object(RS, "arch_load", lambda p: {"ok": True, "head": ""}):
+            self.assertIsNone(self.ask()["ask"])
+
+    def test_r2_symlinked_store_dir_refused(self):
+        real = os.path.join(self.tmp, "real")
+        with mock.patch.object(AV, "ARCH_DIR", real):
+            d = self.put_map()
+        kd = os.path.join(self.arch, AV.repo_key(self.repo))
+        os.makedirs(kd)
+        os.symlink(d, os.path.join(kd, HEAD))
+        self.assertIsNone(self.ask()["ask"])
+
+    def test_r2_failed_load_has_no_ask(self):
+        with mock.patch.object(RS, "arch_load", lambda p: {"ok": False, "msg": "x"}):
+            self.assertNotIn("ask", self.ask())
+
+
 class Route(Base):
     def get(self, path, commit):
         h = _Stub()

@@ -10,7 +10,9 @@ brief.json v1: {v:1, repo, commit, title<=80, heads?:{arch<=40, route<=40}, band
   boxes:[{id, name<=40, band, note?<=80, modules:[map ids] 1..}] 1..12,
   arrows:[{from, to, label?<=40, edges:[map.json edge index] 1..5}] <=24,
   route: {na:<=120} | {by<=80, rows:[{when<=80, goes<=120, box?, evidence:{file, line}}] 1..16}}
-brief.json v2 (containment: screens · components · externals · principles): schema, check and renderer in arch_brief_v2 / arch_brief_html_v2.
+brief.json v2 (containment: screens · components · externals · principles): schema, check and renderer in arch_brief_v2 / arch_brief_html_v2;
+optional hand `layout` in arch_brief_layout. «Ask the session to draw» (`ask_info`) hands a session the store dir and FORMAT;
+its gate run is `--check --commit` (never the shared `_brief_last.json` pointer).
 """
 import hashlib
 import json
@@ -18,8 +20,10 @@ import os
 import subprocess
 
 from sidereus import arch_verify as AV
+from sidereus.bus import RELAY_SID
 from sidereus import arch_brief_html as AH
 from sidereus import arch_brief_html_v2 as AH2
+from sidereus import arch_brief_layout as AL
 from sidereus import arch_brief_v2 as B2
 
 BOX_MAX, BAND_MAX, ARROW_MAX, AEDGE_MAX, ROW_MAX = 12, 4, 24, 5, 16
@@ -209,32 +213,52 @@ def check(b, m, v, tree, read):
     return errs, len(mids - set(owner))
 
 
-def render(b):
+def render(b, by=""):
     """brief.html text for a gate-checked brief. ⚠v1 bytes are sha-gated (tests): the v1 path stays AH.render."""
-    return AH2.render(b) if b.get("v") == 2 else AH.render(b)
+    if b.get("v") != 2:
+        return AH.render(b)
+    return AH2.render(b, by, AL.figure(b) if "layout" in b else None)
 
 
-def run(repo, commit):
-    """Gate: check S/brief.json; on pass write S/brief.html then S/brief.ok.json {v, sha256, commit}, on FAIL remove
-    a stale brief.ok.json. (rc, one line). ⚠Only this writes brief.ok.json: an html without a matching one is not gated."""
+def ask_info(root, head):
+    """`ask` of /api/arch: {dir, commit, fmt} for a session asked to draw HEAD's overview, None when HEAD has no finished
+    arch-map result or its store dir is not a plain directory (same symlink rule as arch_map._brief_file)."""
+    if not root or not (isinstance(head, str) and AV.COMMIT_RE.fullmatch(head)) or _map_ready(root, head) is None:
+        return None
+    kd = os.path.join(os.path.realpath(AV.ARCH_DIR), AV.repo_key(root))
+    d = os.path.join(kd, head)
+    if os.path.islink(kd) or os.path.islink(d) or os.path.realpath(d) != d or not os.path.isdir(d):
+        return None
+    return {"dir": d, "commit": head, "fmt": B2.FORMAT + AL.FORMAT}
+
+
+def run(repo, commit, by=""):
+    """Gate: check S/brief.json; on pass write S/brief.html then S/brief.ok.json {v, sha256, commit, by?}, on FAIL remove
+    a stale brief.ok.json. (rc, one line). ⚠Only this writes brief.ok.json: an html without a matching one is not gated.
+    by = id of the session that drew it (bus.RELAY_SID), shown as «drawn by»."""
+    if by and not (isinstance(by, str) and RELAY_SID.fullmatch(by)):
+        return 2, "arch_brief: --by is not a session id"
     repo = os.path.realpath(repo)
     try:
         d = AV.store_dir(repo, commit)
     except ValueError as e:
         return 1, "arch_brief: %s" % e
     ok_fp = os.path.join(d, AV.BRIEF_OK)
-    rc, line, html_text = _gate(repo, commit, d)
+    rc, line, html_text = _gate(repo, commit, d, by)
     if rc:
         if os.path.lexists(ok_fp):
             os.remove(ok_fp)   # an OSError here propagates: a stamp that cannot be removed must not look valid
         return rc, line
     data = html_text.encode("utf-8")
     AV._write(os.path.join(d, AV.BRIEF_HTML), html_text)
-    AV._write(ok_fp, json.dumps({"v": 1, "sha256": hashlib.sha256(data).hexdigest(), "commit": commit}) + "\n")
+    ok = {"v": 1, "sha256": hashlib.sha256(data).hexdigest(), "commit": commit}
+    if by:
+        ok["by"] = by
+    AV._write(ok_fp, json.dumps(ok) + "\n")
     return rc, line
 
 
-def _gate(repo, commit, d):
+def _gate(repo, commit, d, by=""):
     """(rc, line, html text or None) — writes nothing."""
     mv = _map_ready(repo, commit)
     if mv is None:
@@ -250,9 +274,11 @@ def _gate(repo, commit, d):
         errs = ["v1 brief.json: redraw as v2"]
     if not errs:
         errs, unc = check(b, m, v, *_reader(repo, commit))
+    if not errs and "layout" in b:   # coordinates only after the content passed: geometry needs valid ids and arrows
+        errs = AL.shape_errors(b["layout"], b) or AL.geom_errors(b["layout"], b)
     if errs:
         return 1, "arch_brief: FAIL: %s%s" % ("; ".join(errs[:5]), " (+%d more)" % (len(errs) - 5) if len(errs) > 5 else ""), None
-    return 0, "arch_brief: %s · %s" % (B2.ok_line(b, unc), os.path.join(d, AV.BRIEF_HTML)), render(b)
+    return 0, "arch_brief: %s%s · %s" % (B2.ok_line(b, unc), " · layout" if "layout" in b else "", os.path.join(d, AV.BRIEF_HTML)), render(b, by)
 
 
 def check_v1(repo, commit, b, m, v):

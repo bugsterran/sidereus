@@ -1,4 +1,4 @@
-"""Pipeline run requests the page sent (arch-map diagram, arch-brief overview, security-checks, security-fix), plain DMs (checks-fix, eval-fix, redcheck) and «Stop» instructions.
+"""Pipeline run requests the page sent (arch-map diagram, arch-brief overview, security-checks, security-fix), plain DMs (checks-fix, eval-fix, redcheck, brief-ask) and «Stop» instructions.
 
 DATA_DIR/plreq.json {"v": 1, "reqs": [{id, repo, pipeline, sid, to, mid, at, name? (eval-fix, redcheck), stage? (redcheck), keys? + closed? (security-fix),
 stop?: {mid, at}}]} keeps who received a
@@ -21,9 +21,11 @@ from sidereus.pl_runs import RENAMED   # core copy; pipeline_schema is feature-o
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
-PIPELINES = ("arch-map", "arch-brief", "security-checks", "security-fix", "checks-fix", "eval-fix", "redcheck")   # checks-fix: old plain records stay readable · arch-brief ends on brief.ok.json (arch_map.result_at)
-PLAIN = ("checks-fix", "eval-fix", "redcheck")   # redcheck = «Request a red check» DM (the session runs it; the viewer never does) · a plain fix DM: sent/gone only, no run tracking, no stop marker (exclude-list: _state also gets other pipeline names)
+PIPELINES = ("arch-map", "arch-brief", "security-checks", "security-fix", "checks-fix", "eval-fix", "redcheck", "brief-ask")   # checks-fix: old plain records stay readable · arch-brief ends on brief.ok.json (arch_map.result_at)
+PLAIN = ("checks-fix", "eval-fix", "redcheck", "brief-ask")   # redcheck = «Request a red check» DM (the session runs it; the viewer never does) · a plain fix DM: sent/gone only, no run tracking, no stop marker (exclude-list: _state also gets other pipeline names)
 RUNS = tuple(p for p in PIPELINES if p not in PLAIN)
+# Plain DM -> pipeline whose newer repo-wide gate result answers it (brief-ask = «Ask the session to draw», ends on brief.ok.json).
+DONE_BY = {"checks-fix": "security-checks", "brief-ask": "arch-brief"}
 REQ_MAX = 50              # records kept, newest
 REQ_KEEP_S = 7 * 86400    # older records dropped
 REPO_MAX = 300
@@ -314,8 +316,8 @@ def _state(r, row, arch, until=0.0):
     until = `at` of a newer request of the same pipeline to the same session (0 = none): runs from then on answer that one."""
     alive = isinstance(row, dict) and row.get("state") not in ("done", "gone")
     if r["pipeline"] in PLAIN:   # a fix request has no run to track: delivery/ack is read from ACK on the page
-        # ⚠checks-fix only: a newer security-checks result is its re-scan; eval-fix has no such repo-wide end signal.
-        if r["pipeline"] == "checks-fix" and arch_map.result_at("security-checks", r["repo"]) > r["at"]:
+        # ⚠DONE_BY only: eval-fix and redcheck have no repo-wide end signal.
+        if r["pipeline"] in DONE_BY and arch_map.result_at(DONE_BY[r["pipeline"]], r["repo"]) > r["at"]:
             return "done", ""
         return ("sent" if alive else "gone"), ""
     run = _pick_run(r, row, until)
