@@ -13,11 +13,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: «Working now» lists a session's live CLI children (pi subagents, `gemini -p`, `codex exec`) under its card, and a session running two or more at once shows «parallel ×N» there and on its sessions row.
 - Sessions: a pi session logged in to Anthropic with OAuth is billed to extra usage (credits), not the plan's 5h limit; its row shows a «Credits» chip with its tokens in the current 5h window, and Attention lists «Spending credits» while it spends.
 
+### Changed
+
+- Timeline: each session group has a visible divider above it, and its agent rows are lightly tinted, so a session and its agents read as one block and neighbouring sessions no longer run together.
+
 ### Fixed
 
 - Status bar: the credit line no longer disappears when extra usage is disabled or used up; it stays with «off» and the reason.
 - Sessions: pi subagent child lines show their tokens instead of 0; the Sidereus pi extension now reports each child reply's token counts (run `/reload` in open pi sessions to load it).
 - Attention: «Spending credits» and the «Credits» chip no longer show while extra usage is off; pi's requests then draw on the plan's 5h limit, not credits.
+- Status bar: the Korean label for «Machine busy» (load above twice the CPU count) now reads as overload, with the number named as load average; the English text is unchanged.
+- Tests: `bash tests/run.sh tests/test_x.py` runs that file instead of failing with «Start directory is not importable»; other arguments still go to unittest discover.
 
 ## [0.18.0] - 2026-11-12
 
