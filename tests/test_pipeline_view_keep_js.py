@@ -105,6 +105,31 @@ class ViewKeep(unittest.TestCase):
           console.log(JSON.stringify([a === v0, JSON.stringify(E.view) === v0, E.first, E.sel.id === E.G.nodes[4].id]));""")
         self.assertEqual(out, [True, True, False, True])
 
+    # Four unplaced stages (auto layout = our own wrap) on a 560x300 canvas: a 300px card wraps 1 column, 184px cards 2x2.
+    FOUR = "PLS.file = Object.assign(JSON.parse(%s), { ok: true, sha: 'f4' }); cv.clientWidth = 560; cv.clientHeight = 300;" % json.dumps(json.dumps(
+        dict(P, stages=P["stages"][:4])))
+
+    def test_cards_shrink_after_click_rewrap_our_layout(self):
+        # ⚠plgPush only pushes right: without a re-flow the chain kept the 1-column pitch of the wide card after any click
+        fresh = run(self.FOUR + """
+          const E = plEnt(PLS.file); E.G.wd = { n1: 184 }; plAfterPaint(box);
+          console.log(JSON.stringify(E.G.nodes.map(n => n.ui.x)));""")
+        shrink = """
+          const E = plEnt(PLS.file); E.G.wd = { n1: 300 }; plAfterPaint(box); const a = E.G.nodes.map(n => n.ui.x);
+          E.first = %s; E.G.wd = { n1: 184 }; plGwFit();
+          console.log(JSON.stringify([a, E.G.nodes.map(n => n.ui.x), E.laid, plgKey(E.G) === E.base]));"""
+        first, out = run(self.FOUR + shrink % "true"), run(self.FOUR + shrink % "false")
+        self.assertEqual(out[0], [44, 44, 44, 44])
+        self.assertEqual(len(set(out[1])), len(set(fresh)))   # 2 columns, like a fresh 184px layout
+        self.assertEqual(out[1:], [first[1], True, True])   # same re-flow as before the click; the draft stays clean
+        # a selected node defers it (a poll never moves what the person picked); the next fit after deselect re-flows
+        sel = run(self.FOUR + """
+          const E = plEnt(PLS.file); E.G.wd = { n1: 300 }; plAfterPaint(box);
+          E.first = false; E.sel = { k: 'n', id: 'n2' }; E.G.wd = { n1: 184 }; plGwFit(); const a = E.G.nodes.map(n => n.ui.x);
+          E.sel = null; plGwFit();
+          console.log(JSON.stringify([a, E.G.nodes.map(n => n.ui.x), plgKey(E.G) === E.base]));""")
+        self.assertEqual(sel, [[44, 44, 44, 44], first[1], True])
+
     def test_touched_view_not_refitted(self):
         out = run(self.SIX + """
           plAfterPaint(box); const E = plCurEnt();

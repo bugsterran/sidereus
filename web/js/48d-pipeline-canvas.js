@@ -450,7 +450,8 @@ function plGwFit(){
   }
   // ⚠Re-fit only when the canvas size changed: plGwFit runs on every paint (node click, poll) and must not move the zoom.
   // Card sizes count only while E.first: any click/pick clears it, so a later poll never moves a view the user acted on.
-  if(E && cv && E.view && !E.touched && cv.clientWidth && (E.fitK !== plFitKey(E, cv) || (E.first && E.szK !== plSizeKey(E)))){
+  // ⚠Our own wrap (E.laid) re-flows on a card-size change once nothing is selected (stale szK defers it): plgPush never pulls cards back.
+  if(E && cv && E.view && !E.touched && cv.clientWidth && (E.fitK !== plFitKey(E, cv) || ((E.first || (E.laid && !E.sel)) && E.szK !== plSizeKey(E)))){
     const clean = plgKey(E.G) === E.base;
     if(E.laid) plWrapBest(E, cv, false); else plFit(E, cv, false);
     if(E.laid && clean) E.base = plgKey(E.G);   // our own layout never makes the draft dirty
