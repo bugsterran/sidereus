@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Timeline: a pipeline run between stages no longer reads «Aborted» while its session waits on its own background command, subagent or workflow; the line names what it waits on.
 - Status bar: the credit line no longer disappears when extra usage is disabled or used up; it stays with «off» and the reason.
 - Sessions: pi subagent child lines show their tokens instead of 0; the Sidereus pi extension now reports each child reply's token counts (run `/reload` in open pi sessions to load it).
 - Attention: «Spending credits» and the «Credits» chip no longer show while extra usage is off; pi's requests then draw on the plan's 5h limit, not credits.
