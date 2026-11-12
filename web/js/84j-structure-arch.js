@@ -125,13 +125,13 @@ function archDevListHtml(edges, names, p, devAt, sn, op){
 // Pure: DM body the person previews; names the pipeline and the target repo, read-only by contract.
 // Mailbox wire text in the same format as 48b pipeline run requests, not UI.
 // ⚠Absolute paths under the Sidereus repo (home): the recipient may run in another repo, where relative ones miss.
-function archDmBody(name, repo, home, verb, cx, o){   // verb = archReqOf(d).vb (wire text, default generate) · cx = non-Claude recipient (cand.sh) · o = {head(h), reread}: another pipeline's lines (84m), shared tail
-  const h = home ? String(home).replace(/\/+$/, '') + '/' : '';
+function archDmBody(name, repo, home, verb, cx, o, lang){   // verb = archReqOf(d).vb (wire text, default generate) · cx = non-Claude recipient (cand.sh) · o = {head(h), reread}: another pipeline's lines (84m), shared tail · lang = viewer LANG
+  const h = home ? String(home).replace(/\/+$/, '') + '/' : '', ln = lang === 'ko' ? 'Korean' : 'English';
   return (o ? o.head(h) : 'Pipeline ' + name + ' run — request: «' + repo + ': ' + (verb || 'generate') + ' architecture diagram»\n'
     + 'Target repository: ' + repo + '\n'
     + 'Read-only: never write to the repository — write only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ (key: pipeline rules)\n'
     + 'Pipeline: ' + h + '.claude/pipelines/' + name + '.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증 → 개요 그리기 → 개요 검증)\n'   // stage titles verbatim: [pl:] tags match them
-    + 'Gate: python3 ' + h + 'scripts/arch_verify.py --last (Windows: py ' + h + 'scripts/arch_verify.py --last); overview: python3 ' + h + 'scripts/arch_brief.py --last (Windows: py ' + h + 'scripts/arch_brief.py --last)')   // ⚠page has no server-OS signal: both forms
+    + 'Gate: python3 ' + h + 'scripts/arch_verify.py --last (Windows: py ' + h + 'scripts/arch_verify.py --last); overview: python3 ' + h + 'scripts/arch_brief.py --last (Windows: py ' + h + 'scripts/arch_brief.py --last)') + '\nLanguage: ' + ln + ' — write all human text in map.json, flows.json and brief.json (names, labels, notes, titles, route text) in ' + ln + '; ids, paths and code symbols stay as-is'   // ⚠page has no server-OS signal: both forms · Language line: pipeline tasks read it (none = English); preview and send pass the same LANG
     // ⚠No Agent tool outside Claude Code: stages are lit by a leading shell marker (hooks/pl_mark.py --platform <cli> MARK).
     + (cx ? '\nRun the stages yourself in this session, in order (no subagents). Start each stage with a shell command echo "[pl:' + name + '/<stage title>]" and end it with echo "[pl-end:' + name + '/<stage title>]" ("|fail" before "]" when its gate failed); echo "[pl:-]" clears. Run each marker as its own single-line shell command, never inside a longer script.'
       + ' At each stage start re-read only the files the previous stage wrote (' + (o ? 'for ' + name + ': ' + o.reread : 'for arch-map: plan.json, then map.json, then flows.json, then S/map.json and S/verify.json, then S/brief.json') + '); do not rely on earlier stage context.'   // ⚠one Codex context holds every stage: stale earlier reads leak into later stages
@@ -183,7 +183,7 @@ function archReqHtml(req, repo, home, cands, busy, d){
   return '<div class=archreq role=group aria-label="' + esc(T('Request preview')) + '"><div class=archrqh><b>' + esc(T(rk.lb)) + '</b>'
     + '<label>' + esc(T('To session')) + ' <select data-ars>' + (cands.length ? cands.map(c => '<option value="' + esc(c.sid) + '"' + (c.sid === req.sid ? ' selected' : '') + '>'
       + esc((c.sh && typeof platName === 'function' ? platName(c.plat) + ' · ' : '') + (c.dir ? c.dir + ' · ' : '') + sid8(c.sid) + (c.model ? ' · ' + c.model : '') + (c.id ? ' · ' + c.id : '')) + '</option>').join('') : '<option value="">' + esc(T('None')) + '</option>')
-    + '</select></label></div><pre class=archdm>' + esc(archDmBody(ARCH_PL, repo, home, rk.vb, !!(cur && cur.sh))) + '</pre>' + plCxHint(cur) + '<div class=archrqb>'
+    + '</select></label></div><pre class=archdm>' + esc(archDmBody(ARCH_PL, repo, home, rk.vb, !!(cur && cur.sh), null, LANG)) + '</pre>' + plCxHint(cur) + '<div class=archrqb>'
     + '<button type=button class="wkrgb archok" data-argo' + (why || busy ? ' disabled' : '') + (why ? ' title="' + esc(why) + '"' : '') + '>' + esc(T(busy ? 'Sending…' : 'Confirm — send')) + '</button>'
     + '<button type=button class=wkrgb data-arx>' + esc(T('Cancel')) + '</button>' + (why ? '<span class=archwhy>' + esc(why) + '</span>' : '') + '</div></div>';
 }
@@ -575,7 +575,7 @@ async function archSend(){
   if(!cur || !cur.login || archRunOf(q.p) || (typeof archReqBusy === 'function' && archReqBusy(q.p, ARCH_PL))) return false;
   q.busy = true; paintStruct();
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, body: archDmBody(ARCH_PL, q.p, home, archReqOf(d).vb, !!cur.sh), relay: true, sid: cur.sid, thread: 'pipeline:' + ARCH_PL,
+    const j = await postJSON('/api/dm', { to: cur.id, body: archDmBody(ARCH_PL, q.p, home, archReqOf(d).vb, !!cur.sh, null, LANG), relay: true, sid: cur.sid, thread: 'pipeline:' + ARCH_PL,
       plreq: { kind: 'req', pipeline: ARCH_PL, repo: q.p } });   // server records who received it (state `plReq`)
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');   // ⚠ok first: nothing went out, remember nothing
     const m = plMem(); m[cur.sid] = { name: ARCH_PL, at: Date.now() }; lsSetJson('sidereus.plrun', m);   // same lighting memo as 48b plRunSend

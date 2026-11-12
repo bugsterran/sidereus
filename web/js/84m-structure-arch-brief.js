@@ -54,13 +54,13 @@ function archXFix(p, cands){
   else if(q && cands.length && !cands.some(c => c.sid === q.sid)) q.sid = cands[0].sid;
 }
 // Pure: mailbox wire text (English, not UI) — arch-map's tail (stage tags) via 84j archDmBody; stage titles verbatim: [pl:] tags match them.
-function archBriefDmBody(repo, home, cx){
+function archBriefDmBody(repo, home, cx, lang){   // lang = viewer LANG (preview and send pass the same)
   return archDmBody(ARCH_BRIEF_PL, repo, home, '', cx, { reread: 'S/map.json and S/verify.json, then S/brief.json', head: h =>
     'Pipeline arch-brief run — request: «' + repo + ': draw architecture overview»\n'
     + 'Target repository: ' + repo + '\n'
     + 'Read-only: never write to the repository — write only S/brief.json, S = the store dir printed by stage 준비\n'
     + 'Pipeline: ' + h + '.claude/pipelines/arch-brief.json (준비 → 개요 그리기 → 검증)\n'
-    + 'Gate: python3 ' + h + 'scripts/arch_brief.py --last (Windows: py ' + h + 'scripts/arch_brief.py --last)' });
+    + 'Gate: python3 ' + h + 'scripts/arch_brief.py --last (Windows: py ' + h + 'scripts/arch_brief.py --last)' }, lang);
 }
 // Pure: preview of the arch-brief request (rule 7: Sidereus composes it, so preview + confirm); '' without one.
 function archBriefReqHtml(q, repo, home, cands){
@@ -69,7 +69,7 @@ function archBriefReqHtml(q, repo, home, cands){
   return '<div class=archreq role=group aria-label="' + esc(T('Request preview')) + '"><div class=archrqh><b>' + esc(T('Simple overview')) + '</b>'
     + '<label>' + esc(T('To session')) + ' <select data-arbs>' + (cands.length ? cands.map(c => '<option value="' + esc(c.sid) + '"' + (c.sid === q.sid ? ' selected' : '') + '>'
       + esc((c.sh && typeof platName === 'function' ? platName(c.plat) + ' · ' : '') + (c.dir ? c.dir + ' · ' : '') + sid8(c.sid) + (c.model ? ' · ' + c.model : '') + (c.id ? ' · ' + c.id : '')) + '</option>').join('') : '<option value="">' + esc(T('None')) + '</option>')
-    + '</select></label></div><pre class=archdm>' + esc(archBriefDmBody(repo, home, !!(cur && cur.sh))) + '</pre>' + (typeof plCxHint === 'function' ? plCxHint(cur) : '') + '<div class=archrqb>'
+    + '</select></label></div><pre class=archdm>' + esc(archBriefDmBody(repo, home, !!(cur && cur.sh), LANG)) + '</pre>' + (typeof plCxHint === 'function' ? plCxHint(cur) : '') + '<div class=archrqb>'
     + '<button type=button class="wkrgb archok" data-arbgo' + (why || q.busy ? ' disabled' : '') + (why ? ' title="' + esc(why) + '"' : '') + '>' + esc(T(q.busy ? 'Sending…' : 'Confirm — send')) + '</button>'
     + '<button type=button class=wkrgb data-arbx>' + esc(T('Cancel')) + '</button>' + (why ? '<span class=archwhy>' + esc(why) + '</span>' : '') + '</div></div>';
 }
@@ -86,7 +86,7 @@ async function archBriefSend(){
   if(!cur || archWhyOff(home, cs, cur) || archBriefBusy(q.p) || !archXHead(d)) return false;
   q.busy = true; paintStruct();
   try{
-    const j = await postJSON('/api/dm', { to: cur.id, sid: cur.sid, relay: true, thread: 'pipeline:' + ARCH_BRIEF_PL, body: archBriefDmBody(q.p, home, !!cur.sh),
+    const j = await postJSON('/api/dm', { to: cur.id, sid: cur.sid, relay: true, thread: 'pipeline:' + ARCH_BRIEF_PL, body: archBriefDmBody(q.p, home, !!cur.sh, LANG),
       plreq: { kind: 'req', pipeline: ARCH_BRIEF_PL, repo: q.p } });   // server records who received it (state `plReq`)
     if(!j || !j.ok) throw new Error((j && (j.error || j.err)) || '?');   // ⚠ok first: nothing went out, remember nothing
     const m = plMem(); m[cur.sid] = { name: ARCH_BRIEF_PL, at: Date.now() }; lsSetJson('sidereus.plrun', m);   // same lighting memo as 48b plRunSend

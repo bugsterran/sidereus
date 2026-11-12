@@ -12,7 +12,7 @@ class RunShFileArgs(unittest.TestCase):
     def _run(self, *args):
         env = dict(os.environ, PYTHON=sys.executable)
         return subprocess.run(["bash", "tests/run.sh", *args], cwd=ROOT, env=env,
-                              capture_output=True, text=True, timeout=60)
+                              capture_output=True, text=True, encoding="utf-8", timeout=60)
 
     def test_file_path_runs_module(self):
         r = self._run("tests/test_light_contrast_css.py")

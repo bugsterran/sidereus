@@ -505,3 +505,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `svg { min-width: 900px }` is wider than the `.fig` inner width at a 900px viewport (900 - 32 padding - 2 border = 866), so the figure scrolled inside its box.
 - ⇒ `min-width: 840px` — still stops the 1200-wide viewBox shrinking to unreadable text on phones.
 - ⚠Keep min-width at or below 866 while main padding and the 900px floor stay; `tests/test_arch_brief_html.py` checks it. Stored briefs keep the old CSS until regenerated.
+
+## Overview bands and arrows said nothing (`sidereus/arch_brief.py` `check`, `sidereus/arch_brief_html.py` `figure`)
+- Cause: the overview's language and naming were left to the model; one band held one same-named box and 7 of 24 arrows repeated "auth and mail".
+- ⇒ The gate refuses a band whose only box has its name (strip + casefold) and 4+ arrows into one box with the same label; a shared dependency goes in the band's `note` (<=80), drawn under the band name.
+- ⚠A note-less brief must render byte-identical (CSS rule and taller head only with a note): stored brief.html is sha256-gated.

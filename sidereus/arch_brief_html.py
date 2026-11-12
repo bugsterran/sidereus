@@ -10,6 +10,7 @@ import html
 W = 1200                  # SVG view width
 PAD = 24                  # outer padding inside the figure
 BAND_HEAD = 30            # band label strip above its boxes
+NOTE_HEAD = 16            # extra strip for a band note (only on bands that have one)
 BOX_H = 84
 GAP_X, GAP_Y = 28, 34     # gaps between boxes; GAP_Y also leaves room for arrow labels between rows
 BAND_GAP = 26
@@ -46,6 +47,8 @@ td.n { color: var(--muted); width: 40px; }
 td.ev { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
 .by { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
 """
+# ⚠Added only when a band has a note: a note-less brief must keep its bytes (stored briefs are sha256-gated).
+NOTE_CSS = ".t-band-note { font-size: 12px; fill: var(--muted); }\n"
 
 
 def e(s):
@@ -114,13 +117,42 @@ def _title_w(s):
     return sum(14 if ord(c) >= 0x1100 else 9 for c in s) + len(s) // 2 + 6
 
 
+def _note_w(s):
+    """Estimated .t-band-note (12px) width."""
+    return int(_text_w(s) * 12 / 11) + 1
+
+
+def _notes(grid):
+    """{band id: drawn note} — fitted so the strip ends 40px before the first box's right edge.
+    ⚠Wider, and every first-row box falls back to full-top attach points: arrows from above cross the note."""
+    out = {}
+    for b, rows in grid:
+        if b.get("note"):
+            room = W - 2 * PAD - 32
+            if rows:
+                x, w = rows[0][0][1], rows[0][0][2]
+                room = min(room, x + w - 40 - 4 - (PAD + 16))
+            out[b["id"]] = _fit(b["note"], room - 1, 12)
+    return out
+
+
+def _head_w(b, notes):
+    """Width of a band's title strip: the wider of its name and its drawn note."""
+    n = notes.get(b["id"])
+    return max(_title_w(b["name"]), _note_w(n)) if n else _title_w(b["name"])
+
+
+def _head_h(b):
+    return BAND_HEAD + (NOTE_HEAD if b.get("note") else 0)
+
+
 def _plan(brief, grid):
     """Per drawn arrow: rows, sides, attach x, vertical lane x; plus the arrows using each gap (gap g = above row g)."""
-    where, rowlist, rows3 = {}, [], []
+    where, rowlist, rows3, notes = {}, [], [], _notes(grid)
     for b, rows in grid:
         for r, row in enumerate(rows):
             # ⚠A first row's top attach points and any vertical through the band cross its title strip: keep x past it.
-            block = (PAD + 16 - 4, PAD + 16 + _title_w(b["name"]) + 4) if r == 0 else None
+            block = (PAD + 16 - 4, PAD + 16 + _head_w(b, notes) + 4) if r == 0 else None
             for bid, x, w in row:
                 where[bid] = (len(rowlist), x, w, block)
             rowlist.append(row)
@@ -261,7 +293,7 @@ def _geom(brief):
     lane_y[0] = lanes_at(0, 0)
     y, gi, bottom = max(PAD, need(0)), 0, PAD
     for b, rows in grid:
-        top, ry = y, y + BAND_HEAD
+        top, ry = y, y + _head_h(b)
         for r, row in enumerate(rows):
             if r:
                 lane_y[gi] = lanes_at(gi, ry)
@@ -342,7 +374,8 @@ def routes(brief):
         pts[k] = out
         verts += [(k, q[0], min(q[1], r[1]), max(q[1], r[1])) for q, r in zip(out, out[1:]) if q[0] == r[0]]
     horiz = [(k, min(q[0], r[0]), max(q[0], r[0]), q[1]) for k, out in pts.items() for q, r in zip(out, out[1:]) if q[1] == r[1]]
-    titles = [(PAD + 16, y + 8, _title_w(b["name"]), 15) for b, y, _bh in bands]
+    notes = _notes(_grid(brief))
+    titles = [(PAD + 16, y + 8, _head_w(b, notes), 15 + _head_h(b) - BAND_HEAD) for b, y, _bh in bands]
     placed, boxes, res = [], list(pos.values()), {}
 
     def score(k, r):
@@ -396,13 +429,17 @@ def routes(brief):
 
 def figure(brief):
     pos, bands, H = layout(brief)
+    notes = _notes(_grid(brief))
     out = ['<svg viewBox="0 0 %d %d" role="img" aria-label="%s">' % (W, H, e(brief.get("title"))),
            '<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
            'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs>']
     for k, (b, y, h) in enumerate(bands):
+        note = ('<text x="%d" y="%d" class="t-band-note">%s</text>' % (PAD + 16, y + 20 + NOTE_HEAD + 1,
+                                                                        e(notes[b["id"]]))
+                if b.get("note") else "")
         out.append('<g data-band="%s"><rect x="%d" y="%d" width="%d" height="%d" rx="12" fill="#f1f5f9" stroke="#94a3b8"/>'
-                   '<text x="%d" y="%d" class="t-band">%s</text></g>' % (e(b["id"]), PAD, y, W - 2 * PAD, h, PAD + 16, y + 20,
-                                                                         e(b["name"])))
+                   '<text x="%d" y="%d" class="t-band">%s</text>%s</g>' % (e(b["id"]), PAD, y, W - 2 * PAD, h, PAD + 16, y + 20,
+                                                                           e(b["name"]), note))
     band_ix = {b["id"]: k for k, b in enumerate(brief["bands"])}
     for x in brief["boxes"]:
         bx, by, bw, bh = pos[x["id"]]
@@ -457,7 +494,8 @@ def render(brief):
     c7 = str(brief.get("commit") or "")[:7]
     return "\n".join([
         "<!doctype html>", '<html><head><meta charset="utf-8">',
-        "<title>%s</title>" % e(brief.get("title")), "<style>%s</style>" % CSS, "</head><body><main>",
+        "<title>%s</title>" % e(brief.get("title")),
+        "<style>%s</style>" % (CSS + (NOTE_CSS if any(b.get("note") for b in brief["bands"]) else "")), "</head><body><main>",
         "<h1>%s</h1>" % e(brief.get("title")), '<p class="lead">commit %s</p>' % e(c7),
         '<section class="arch"><h2>%s</h2><div class="fig">' % e(heads.get("arch") or "Architecture"),
         figure(brief), "</div></section>",

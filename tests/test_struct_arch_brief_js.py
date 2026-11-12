@@ -98,9 +98,18 @@ class ArchBriefJs(unittest.TestCase):
         self.assertEqual(lines[2], "Read-only: never write to the repository — write only S/brief.json, S = the store dir printed by stage 준비")
         self.assertEqual(lines[3], "Pipeline: /sid/.claude/pipelines/arch-brief.json (준비 → 개요 그리기 → 검증)")
         self.assertEqual(lines[4], "Gate: python3 /sid/scripts/arch_brief.py --last (Windows: py /sid/scripts/arch_brief.py --last)")
-        self.assertIn("[pl:arch-brief/<stage title>] (not [pl:-])", lines[5])
+        self.assertTrue(lines[5].startswith("Language: English — "))   # R1: no lang argument = English
+        self.assertIn("[pl:arch-brief/<stage title>] (not [pl:-])", lines[6])
         self.assertIn("(for arch-brief: S/map.json and S/verify.json, then S/brief.json)", cx)
         self.assertNotIn("arch-map", cx)
+
+    def test_brief_dm_body_language_r1(self):
+        """R1: the overview request names the viewer language (ko -> Korean, en -> English) after the gate line."""
+        ko, en = run("[archBriefDmBody('/r', '/sid/', false, 'ko'), archBriefDmBody('/r', '/sid/', false, 'en')]")
+        self.assertEqual(ko.split("\n")[5], "Language: Korean — write all human text in map.json, flows.json and brief.json "
+                         "(names, labels, notes, titles, route text) in Korean; ids, paths and code symbols stay as-is")
+        self.assertTrue(en.split("\n")[5].startswith("Language: English — "))
+        self.assertTrue(en.split("\n")[5].endswith(" in English; ids, paths and code symbols stay as-is"))
 
     def test_preview_confirm_gated(self):
         """R2: preview shows recipient + text; confirm disabled while the recipient is not logged in."""
@@ -110,6 +119,7 @@ class ArchBriefJs(unittest.TestCase):
         self.assertIn("data-arbs", ok)
         self.assertIn("r · s1234567 · mb", ok)
         self.assertIn("Pipeline arch-brief run", ok)
+        self.assertIn("Language: Korean — ", ok)   # R1: preview uses the viewer LANG ('ko' here), as the sent body does
         self.assertIn("data-arbgo>", ok)
         self.assertIn("data-arbgo disabled", off)
 

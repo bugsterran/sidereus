@@ -428,6 +428,18 @@ class StructArch(unittest.TestCase):
         self.assertIn('value="p2" selected>r · p2', r[2])  # folder name in the label
         self.assertIn(">other · z1", r[2])
 
+    def test_dm_body_language_r1(self):
+        # R1: ko -> Korean, en -> English, on the line after the gates; the preview carries the same bytes as the sent body
+        r = run("console.log(JSON.stringify([archDmBody('arch-map', '/r', '/sidereus/', 'update', false, null, 'ko'),"
+                " archDmBody('arch-map', '/r', '/sidereus/', 'update', false, null, 'en')]));")
+        self.assertEqual(r[0].split("\n")[5], ARCH_DM_LANG % ("Korean", "Korean"))
+        self.assertEqual(r[1].split("\n")[5], ARCH_DM_LANG % ("English", "English"))
+        self.assertEqual(r[1], ARCH_DM_CC + ARCH_DM_TAG)
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84j-structure-arch.js"), encoding="utf-8") as f:
+            src = f.read()
+        self.assertIn("archDmBody(ARCH_PL, repo, home, rk.vb, !!(cur && cur.sh), null, LANG)", src)   # preview
+        self.assertIn("archDmBody(ARCH_PL, q.p, home, archReqOf(d).vb, !!cur.sh, null, LANG)", src)   # sent body
+
     def test_dm_body_codex_markers(self):
         r = run("console.log(JSON.stringify([archDmBody('arch-map', '/r', '/sidereus/', 'update', false), archDmBody('arch-map', '/r', '/sidereus/', 'update'),"
                 " archDmBody('arch-map', '/r', '/sidereus/', 'update', true)]));")
@@ -494,12 +506,16 @@ class StructArch(unittest.TestCase):
         self.assertEqual(r, [1, "r-codex"])
 
 
+# R1: the request names the viewer language; the pipeline tasks read this line for human text
+ARCH_DM_LANG = ("Language: %s — write all human text in map.json, flows.json and brief.json "
+                "(names, labels, notes, titles, route text) in %s; ids, paths and code symbols stay as-is")
 # frozen output of archDmBody for a Claude recipient (all six stages, map gate then overview gate)
 ARCH_DM_CC = ("Pipeline arch-map run — request: «/r: update architecture diagram»\nTarget repository: /r\n"
               "Read-only: never write to the repository — write only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ (key: pipeline rules)\n"
               "Pipeline: /sidereus/.claude/pipelines/arch-map.json (읽기 계획 → 모듈 그리기 → 흐름 그리기 → 검증 → 개요 그리기 → 개요 검증)\n"
               "Gate: python3 /sidereus/scripts/arch_verify.py --last (Windows: py /sidereus/scripts/arch_verify.py --last); "
-              "overview: python3 /sidereus/scripts/arch_brief.py --last (Windows: py /sidereus/scripts/arch_brief.py --last)")
+              "overview: python3 /sidereus/scripts/arch_brief.py --last (Windows: py /sidereus/scripts/arch_brief.py --last)\n"
+              + ARCH_DM_LANG % ("English", "English"))   # no lang argument = English
 # ⚠a Claude recipient in another repo tagged every dispatch [pl:-] without it, so no run was recorded
 ARCH_DM_TAG = ("\nTag each stage dispatch description with [pl:arch-map/<stage title>] (not [pl:-]); "
                "a stage you run yourself: Bash description with the same tag.")

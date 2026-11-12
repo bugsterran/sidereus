@@ -8,6 +8,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 P = os.path.join(ROOT, ".claude", "pipelines", "arch-map.json")
 TITLES = ["읽기 계획", "모듈 그리기", "흐름 그리기", "검증", "개요 그리기", "개요 검증"]
 MODELS = ["opus", "opus", "opus", "sonnet", "opus", "sonnet"]
+BRIEF = os.path.join(ROOT, ".claude", "pipelines", "arch-brief.json")
+LANG_TASK = "Human text: the request's Language line (none = English)."
+LANG_RULE = "Language: all human text in map/flows/brief.json (not ids, paths, symbols) follows the request's Language line (none = English)."
+NAMING = ("Box and band names say what each does for a non-developer, not package- or code-style names; no band with one same-name box; "
+          "for what all areas use (login, permissions, mail), a band note, not repeated arrows into one shared box.")
 
 
 class ArchMapPipelineV2Test(unittest.TestCase):
@@ -68,6 +73,26 @@ class ArchMapPipelineV2Test(unittest.TestCase):
         self.assertEqual(self.st["개요 검증"]["gate"], b["검증"]["gate"])
         schema = re.search(r"Write S/brief\.json only: (\{v:1.*?1\.\.16\}\})", b["개요 그리기"]["task"]).group(1)
         self.assertIn(schema, self.st["개요 그리기"]["task"])
+
+    def test_language_line_r1(self):
+        # R1: human text follows the request's Language line, not map.json's label language
+        with open(BRIEF, encoding="utf-8") as f:
+            b = json.load(f)
+        bt = {s["title"]: s for s in b["stages"]}
+        for t in (self.st["모듈 그리기"], self.st["흐름 그리기"], self.st["개요 그리기"], bt["개요 그리기"]):
+            self.assertIn(LANG_TASK, t["task"])
+        for r in (self.d["rules"], b["rules"]):
+            self.assertIn(LANG_RULE, r)
+        for x in [self.d["rules"], b["rules"]] + [s["task"] for s in self.d["stages"] + b["stages"]]:
+            self.assertNotIn("label language", x)
+
+    def test_overview_naming_and_band_note_r3_r4(self):
+        # R4: names a non-developer reads; R3: a band note instead of repeated arrows into one shared box
+        with open(BRIEF, encoding="utf-8") as f:
+            bt = {s["title"]: s for s in json.load(f)["stages"]}
+        for t in (self.st["개요 그리기"]["task"], bt["개요 그리기"]["task"]):
+            self.assertIn(NAMING, t)
+            self.assertIn("bands:[{id, name<=40, note?<=80}]", t)
 
     def test_request_lists_every_title(self):
         # the request text names every stage verbatim ([pl:] tags match them)

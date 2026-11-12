@@ -301,6 +301,47 @@ class GateTest(Base):
             rc, line, _d = self.gate(b)
             self.assertEqual(rc, 1, line)
 
+    def test_r2_band_with_one_same_named_box_fails(self):
+        b = self.brief()
+        b["bands"][0]["name"] = " web "   # strip + casefold match on the box «Web»
+        rc, line, _d = self.gate(b)
+        self.assertEqual(rc, 1, line)
+        self.assertIn("band front", line)
+
+    def test_r2_two_box_band_passes(self):
+        b = self.brief()
+        b["bands"][0]["name"] = "Web"
+        b["boxes"][1]["band"] = "front"
+        b["bands"] = b["bands"][:1]
+        rc, line, _d = self.gate(b)
+        self.assertEqual(rc, 0, line)
+
+    def _labelled(self, n):
+        b = self.brief()
+        b["arrows"] = [{"from": "web", "to": "data", "label": "Auth " if k % 2 else "auth", "edges": [0]} for k in range(n)]
+        return b
+
+    def test_r3_four_same_labels_into_one_box_fail(self):
+        rc, line, _d = self.gate(self._labelled(4))
+        self.assertEqual(rc, 1, line)
+        self.assertIn("box data: 4 arrows labelled «auth»", line)
+
+    def test_r3_three_same_labels_pass(self):
+        rc, line, _d = self.gate(self._labelled(3))
+        self.assertEqual(rc, 0, line)
+
+    def test_r3_band_note(self):
+        b = self.brief()
+        b["bands"][1]["note"] = "every area uses login, permissions, mail"
+        rc, line, d = self.gate(b)
+        self.assertEqual(rc, 0, line)
+        with open(os.path.join(d, AV.BRIEF_HTML), encoding="utf-8") as f:
+            self.assertIn("every area uses login, permissions, mail", f.read())
+        b["bands"][1]["note"] = "x" * 81
+        rc, line, _d = self.gate(b)
+        self.assertEqual(rc, 1, line)
+        self.assertIn("band:", line)
+
     def test_no_map_result(self):
         rc, line = AB.run(self.repo, self.commit)
         self.assertEqual(rc, 1)

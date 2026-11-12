@@ -1,4 +1,5 @@
 """arch_brief_html: two sections, self-contained (no script/src/href/URL), escaping, box cap, n/a row, deterministic bytes."""
+import hashlib
 import re
 import unittest
 
@@ -215,6 +216,47 @@ class RenderTest(unittest.TestCase):
         h = AH.render(brief())
         rule = re.search(r"\nsvg\s*\{([^}]*)\}", h).group(1)
         self.assertLessEqual(int(re.search(r"min-width:\s*(\d+)px", rule).group(1)), 866)
+
+    def test_r3_band_note_under_name(self):
+        b = brief()
+        b["bands"][0]["note"] = "every area uses <login> & mail"
+        h = AH.render(b)
+        name_y = int(re.search(r'y="(\d+)" class="t-band">Screens<', h).group(1))
+        note_y = int(re.search(r'y="(\d+)" class="t-band-note">every area uses &lt;login&gt; &amp; mail<', h).group(1))
+        self.assertGreater(note_y, name_y)
+        self.assertNotIn("<login>", h)
+        self.assertIn(".t-band-note", h)
+        _pos, bands, _h = AH.layout(brief())
+        pos, bands2, _h = AH.layout(b)
+        top = [x["id"] for x in b["boxes"] if x["band"] == "top"]
+        self.assertEqual(pos[top[0]][1] - bands2[0][1], AH.BAND_HEAD + AH.NOTE_HEAD)   # head grew for the note
+        self.assertGreater(bands2[0][2], bands[0][2])
+        self.assertEqual(pos[top[0]][1] - bands2[0][1] - AH.NOTE_HEAD, _pos[top[0]][1] - bands[0][1])
+
+    def test_r3_long_note_no_arrow_crosses_it(self):
+        # A full-width note pushed every first-row attach point back to the whole top edge: arrows from above crossed it.
+        b = brief(6)
+        b["arrows"] = [{"from": "b%d" % k, "to": "b%d" % (k + 1), "label": "x%d" % k, "edges": [k]} for k in (0, 2, 4)]
+        long = "\uac00" * 80
+        b["bands"][1]["note"] = long
+        h = AH.render(b)
+        drawn = AH._notes(AH._grid(b))["low"]
+        self.assertTrue(drawn.endswith("\u2026") and len(drawn) < len(long))
+        m = re.search(r'x="(\d+)" y="(\d+)" class="t-band-note">([^<]*)<', h)
+        self.assertEqual(m.group(3), drawn)
+        x0, base = int(m.group(1)), int(m.group(2))
+        note = (x0, base - 12, x0 + AH._note_w(drawn), base + 3)
+        for k, (pts, _d, _lx, _ly) in AH.routes(b).items():
+            for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
+                hit = min(x1, x2) <= note[2] and note[0] <= max(x1, x2) and min(y1, y2) <= note[3] and note[1] <= max(y1, y2)
+                self.assertFalse(hit, "arrow %d crosses the note" % k)
+
+    def test_r3_noteless_bytes_unchanged(self):
+        # Pins the note-less output from before band notes existed (stored briefs are sha256-gated).
+        h = AH.render(brief(7))
+        self.assertNotIn("t-band-note", h)
+        self.assertEqual(hashlib.sha256(h.encode("utf-8")).hexdigest(),
+                         "1a1c00ca468d0478ad1e19c5d2c915faaf7ce631dadcde6c0f019c84e79fdee8")
 
     def test_deterministic(self):
         self.assertEqual(AH.render(brief(7)).encode("utf-8"), AH.render(brief(7)).encode("utf-8"))

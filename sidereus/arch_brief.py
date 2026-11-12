@@ -6,7 +6,7 @@ then writes `brief.html` (sidereus/arch_brief_html.py). Same store dir as arch-m
 Pointer: ARCH_DIR/_brief_last.json {repo, commit, ok} — arch-map's _last.json is never touched.
 CLI wrapper: scripts/arch_brief.py. Stdlib only; metadata only (ids, names, file:line — never cited source text).
 
-brief.json v1: {v:1, repo, commit, title<=80, heads?:{arch<=40, route<=40}, bands:[{id, name<=40}] 1..4 top to bottom,
+brief.json v1: {v:1, repo, commit, title<=80, heads?:{arch<=40, route<=40}, bands:[{id, name<=40, note?<=80}] 1..4 top to bottom,
   boxes:[{id, name<=40, band, note?<=80, modules:[map ids] 1..}] 1..12,
   arrows:[{from, to, label?<=40, edges:[map.json edge index] 1..5}] <=24,
   route: {na:<=120} | {by<=80, rows:[{when<=80, goes<=120, box?, evidence:{file, line}}] 1..16}}
@@ -21,9 +21,14 @@ from sidereus import arch_brief_html as AH
 
 BOX_MAX, BAND_MAX, ARROW_MAX, AEDGE_MAX, ROW_MAX = 12, 4, 24, 5, 16
 TITLE_MAX, NAME_MAX, NOTE_MAX, HEAD_MAX, WHEN_MAX, GOES_MAX, NA_MAX, BY_MAX = 80, 40, 80, 40, 80, 120, 120, 80
+SAME_LABEL_MAX = 4        # arrows into one box sharing a label: from here on the gate refuses them
 _KEYS = {"v", "repo", "commit", "title", "heads", "bands", "boxes", "arrows", "route"}
 
 _line, _int, ID_RE = AV._line, AV._int, AV.ID_RE
+
+
+def _fold(s):
+    return s.strip().casefold()
 
 
 def _pointer(repo, commit, ok):
@@ -101,9 +106,10 @@ def shape_errors(b, repo, commit):
         errs.append("arrows: at most %d" % ARROW_MAX)
         arrows = []
     for x in bands:
-        if not isinstance(x, dict) or set(x) != {"id", "name"} or not (isinstance(x["id"], str) and ID_RE.fullmatch(x["id"])) \
-                or not _line(x["name"], NAME_MAX):
-            errs.append("band: {id, name<=%d}" % NAME_MAX)
+        if not isinstance(x, dict) or set(x) - {"id", "name", "note"} or not {"id", "name"} <= set(x) \
+                or not (isinstance(x["id"], str) and ID_RE.fullmatch(x["id"])) or not _line(x["name"], NAME_MAX) \
+                or ("note" in x and not _line(x["note"], NOTE_MAX)):
+            errs.append("band: {id, name<=%d, note?<=%d}" % (NAME_MAX, NOTE_MAX))
     for x in boxes:
         if not isinstance(x, dict) or set(x) - {"id", "name", "band", "note", "modules"} \
                 or not (isinstance(x.get("id"), str) and ID_RE.fullmatch(x["id"])) or not _line(x.get("name"), NAME_MAX) \
@@ -159,6 +165,20 @@ def check(b, m, v, tree, read):
                 errs.append("module %s in two boxes (%s, %s)" % (i, owner[i], x["id"]))
             else:
                 owner[i] = x["id"]
+    # A band that only repeats its one box's name, or 4+ same-labelled arrows into one box, says nothing a band note can't.
+    for x in b["bands"]:
+        mine = [y for y in b["boxes"] if y["band"] == x["id"]]
+        if len(mine) == 1 and _fold(mine[0]["name"]) == _fold(x["name"]):
+            errs.append("band %s «%s»: holds one box with its own name — merge it into another band or name the band for "
+                        "what the box does" % (x["id"], x["name"]))
+    same = {}
+    for a in b.get("arrows", []):
+        if a.get("label") and _fold(a["label"]):
+            k = (a["to"], _fold(a["label"]))
+            same[k] = same.get(k, 0) + 1
+    for (to, lab), n in sorted(same.items()):
+        if n >= SAME_LABEL_MAX:
+            errs.append("box %s: %d arrows labelled «%s» — use a band note instead" % (to, n, lab))
     ok_ix = set(e["i"] for e in v["edges"] if isinstance(e, dict) and e.get("ok") is True and _int(e.get("i")))
     for a in b.get("arrows", []):
         tag = "arrow %s->%s" % (a["from"], a["to"])
