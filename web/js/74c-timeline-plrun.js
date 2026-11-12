@@ -12,9 +12,11 @@ function tlPlRun(g, L){
   const sids = new Set(((g && g.items) || []).map(x => x && x.sid).filter(Boolean));
   if(!sids.size) return null;
   const all = [];
-  (SESS || []).forEach(x => { if(x && sids.has(x.sid)) (x.plrun || []).forEach(r => { if(r && r.name) all.push({ sid: x.sid, r }); }); });
+  // w = what the session's finished turn still waits on (its own background command, subagent or workflow; 20 waitOnLabel).
+  // ⚠Between stages no stage is «run» while main waits on its own build: without w an unended run read «Aborted».
+  (SESS || []).forEach(x => { if(x && sids.has(x.sid)){ const w = typeof waitOnLabel === 'function' ? waitOnLabel(x, x.state) : ''; (x.plrun || []).forEach(r => { if(r && r.name) all.push({ sid: x.sid, r, w }); }); } });
   const newest = (a, b) => (b.r.t1 || 0) - (a.r.t1 || 0);
-  const open = all.filter(o => !o.r.end && plPrLive(o.r)).sort(newest);
+  const open = all.filter(o => !o.r.end && (plPrLive(o.r) || o.w)).sort(newest);
   const w0 = (L && L.t0) || 0;
   const done = all.filter(o => !open.includes(o) && (o.r.t1 || 0) >= w0).sort(newest);
   const top = open.length ? open.slice(0, TLPL_MAX) : done.slice(0, 1);
@@ -40,7 +42,7 @@ function tlPlOne(o, fin, g, L){
   const lt = plPrLt(pr, stages, ((L && L.now) || Date.now() / 1000) * 1000);
   // ⚠An ended run must not look live: a stage left at «run» shows its closed outcome.
   if(fin) Object.keys(lt).forEach(t => { if(lt[t].st === 'run'){ lt[t].st = 'done'; lt[t].cut = 1; lt[t].w1 = (S[plTk(t)] && (S[plTk(t)].t1 || S[plTk(t)].t0)) || lt[t].w0; } });
-  return { sid: o.sid, pr, proj, name: pr.name, titles: stages.map(s => s.title), lt, fin, now: (L && L.now) || Date.now() / 1000 };
+  return { sid: o.sid, pr, proj, name: pr.name, titles: stages.map(s => s.title), lt, fin, w: fin ? '' : o.w || '', now: (L && L.now) || Date.now() / 1000 };
 }
 // plOc (48d) picks the stage context.
 function tlPlOc(st){ return st === 'wait' ? T('Waiting') : (PL_OUTCOME[st] ? plOc(st) : T('Waiting')); }
@@ -225,7 +227,8 @@ function tlPlLine(r, id, more, ev, shown){
   // Live label names every running stage (parallel stages), elapsed = the longest; else the stage that finished last.
   const runT = r.fin ? [] : r.titles.filter(t => r.lt[t] && r.lt[t].st === 'run'), nm = runT.length ? runT : cur ? [cur] : [];
   const sec = nm.reduce((m, t) => Math.max(m, r.lt[t].sec || 0), 0);
-  const now = r.fin ? tlPlEnd(r, cur) : nm.length ? '<i class=tlpc><strong>' + esc(nm.map(plgShow).join(' · ')) + '</strong>' + (sec > 0 ? ' · ' + esc(ago(sec)) : '') + '</i>' : '';
+  const wt = !r.fin && !runT.length && r.w ? ' · ' + esc(r.w) : '';   // open between stages: name what the session waits on
+  const now = r.fin ? tlPlEnd(r, cur) : nm.length ? '<i class=tlpc><strong>' + esc(nm.map(plgShow).join(' · ')) + '</strong>' + (sec > 0 ? ' · ' + esc(ago(sec)) : '') + wt + '</i>' : '';
   const m = more ? '<i class=tlplm title="' + esc(T('Other pipelines running in the same session')) + '">+' + more + '</i>' : '';
   const lab = r.name + ' · ' + (r.fin ? T('Finished run') : T('Running', 'stage')) + ' — ' + T('Click to open it in the pipeline view');
   return '<div class="tlpl tlpl-' + tlPlSt(r) + (r.fin ? ' fin' : '') + '" role=button tabindex=0 id="' + esc(id) + '"'

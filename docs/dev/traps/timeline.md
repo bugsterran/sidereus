@@ -329,3 +329,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Fix: `nWork` also counts a session `waitOnLabel` names (background command, own subagents, running workflow) — the same rule as the drawer's work count (`sesCount`).
 - ⚠No 600 s mute for that branch: the background command is a live process, not a stale row.
 - ★`tests/test_mainview_tab_dot_js.py` `test_waiting_on_background_command_lights_dot`.
+
+### Run line read «Aborted» while main waited on its own background command
+- Cause: `tlPlRun` (74c-timeline-plrun.js) kept a run open only while a stage was «run» (`plPrLive`); between stages (one done, the next sent back or not yet dispatched) main waiting on its own build has no live stage, so an unended run fell to «⏸ Aborted».
+- Fix: an unended run whose session `waitOnLabel` names (background command, own subagents, running workflow) stays open, and its line adds that label after the current stage.
+- ⚠Only runs with no `end`: a run the server closed (commit, Stop, 30 min with no evidence) still reads ended.
+- ★`tests/test_tl_plrun_js.py` `test_open_run_waiting_on_own_command_is_not_aborted`.

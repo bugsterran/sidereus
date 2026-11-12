@@ -31,7 +31,7 @@ PRE = "\n".join([
 ])
 
 
-def _run(sess, expr, feats=None, g=None, pls=None, attn=None):
+def _run(sess, expr, feats=None, g=None, pls=None, attn=None, extra=""):
     g = g or {"cwd": "/p", "items": [{"sid": "s1"}]}
     src = "\n".join([PRE, "const FEATS = " + json.dumps(feats or {}) + ";", "const SESS = " + json.dumps(sess) + ";",
                      "const ATTN = " + json.dumps(attn) + ";",
@@ -42,6 +42,7 @@ def _run(sess, expr, feats=None, g=None, pls=None, attn=None):
                      "const g = " + json.dumps(g) + ";",
                      "const L = { t0: 1000, now: 3000, pct: v => (v - 1000) / 20 };",
                      "PLS.data = " + json.dumps(pls or {}) + ";",
+                     extra,
                      "const pl = tlPlRun(g, L);",
                      "console.log(JSON.stringify(" + expr + "));"])
     r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
@@ -166,6 +167,19 @@ console.log(JSON.stringify({ order: tlPlDrop(sts), nn: segs.filter(s => s.c.has(
         h = _run([{"sid": "s1", "plrun": [OPEN]}], "tlPlStrip(pl)")
         self.assertNotIn("tlpe", h)
         self.assertIn("<i class=tlpc><strong>구현</strong> · 28분</i>", h)
+
+    def test_open_run_waiting_on_own_command_is_not_aborted(self):
+        # Between stages (no stage «run») while main waits on its own background command: still open, never «Aborted».
+        mid = _pr("mid", 1500, 0, {"수정": {"o": "done", "t0": 1100, "t1": 1300}, "검증": {"o": "back", "t0": 1300, "t1": 1500}})
+        wl = js_fn("wfRunning") + "\n" + js_fn("waitOnLabel")
+        h = _run([{"sid": "s1", "state": "wait", "bgs": [{"id": "b1"}], "plrun": [mid]}], "[pl.runs[0].fin, tlPlStrip(pl)]", extra=wl)
+        self.assertFalse(h[0])
+        self.assertNotIn("tlpe-stop", h[1])
+        self.assertIn("· 명령 작업 완료 대기</i>", h[1])
+        # Same run with nothing left to wait on reads ended, as before.
+        h = _run([{"sid": "s1", "state": "wait", "plrun": [mid]}], "[pl.runs[0].fin, tlPlStrip(pl)]", extra=wl)
+        self.assertTrue(h[0])
+        self.assertIn("tlpe-stop", h[1])
 
     def test_end_label_en(self):
         src = "\n".join([js_fn("tlPlEnd"), "const LANG = 'en'; const T = s => s; const KE = (k, e) => e;",
