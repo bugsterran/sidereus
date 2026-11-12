@@ -82,7 +82,7 @@ R.en = sbBusyHtml(busy({top: Object.assign({}, top, {repo: 'proj', unowned: null
         self.assertIn("mostly proj · CPU 187%", en)
         self.assertIn("Load is above twice the CPU count", en)
         self.assertNotIn("answering slowly", en)
-        self.assertIn("기계 바쁨 · 부하 30", self.R["mbKo"])
+        self.assertIn("시스템 과부하 · 평균 부하 30", self.R["mbKo"])
         self.assertIn("주로 a&lt;b&gt;", self.R["mbKo"])
 
     def test_load_under_or_unknown_ncpu_is_quiet(self):
@@ -93,7 +93,7 @@ R.en = sbBusyHtml(busy({top: Object.assign({}, top, {repo: 'proj', unowned: null
         self.assertTrue(self.R["both"]["delayed"])
         h = self.R["bothHtml"]
         self.assertIn("데이터 수신 지연 · 12초 전", h)
-        self.assertNotIn("기계 바쁨", h)
+        self.assertNotIn("시스템 과부하", h)
         self.assertIn("부하 30", h)   # load stays in the tooltip
         self.assertIn("주로 a&lt;b&gt;", h)
 

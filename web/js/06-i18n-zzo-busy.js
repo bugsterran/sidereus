@@ -8,7 +8,7 @@ Object.assign(I18N.ko, {
   'mostly {r}': '주로 {r}',
   'CPU {c}% · {m} GB': 'CPU {c}% · {m} GB',
   'processes:': '프로세스:',
-  'Machine busy · load {n}': '기계 바쁨 · 부하 {n}',
+  'Machine busy · load {n}': '시스템 과부하 · 평균 부하 {n}',
   'Load is above twice the CPU count': '부하가 CPU 수의 2배를 넘음',
   'outside Claude sessions: CPU {c}% · {m} GB': 'Claude 세션 밖: CPU {c}% · {m} GB',
 });
