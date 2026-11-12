@@ -491,6 +491,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Never share a lane between arrows in one gap: a label's free band is exactly its lane's 16px, and no box may sit within 18px of a lane.
 - ⇒ `_order` sorts each gap's lanes by stub-over-run/label crossings; first-row top attach points and vertical lanes stay past the band title (`_title_w`); a label with no free run spot sits beside its own vertical (a taller gap frees nothing: stubs span the gap). ★same brief: labels crossed 1 → 0, band titles struck 2/4 → 0, segment crossings 55 → 35, height 1032 unchanged.
 
+## «Simple» off while an older map had a passed brief (`sidereus/arch_map.py` `load`, `web/js/84m-structure-arch-brief.js` `archXMenu`)
+- Cause: `brief` was looked up for HEAD only, so a map a few commits behind showed «Simple» disabled although its own commit's brief.html had passed the gate.
+- ⇒ `load` falls back to the shown map commit's brief when HEAD has none; the menu item adds «HEAD is N commits ahead» like «Detailed». New overview requests still need the map at HEAD.
+- ⚠Do not stamp the served brief.html: its bytes must equal the gate's sha256, so the commit note lives in the menu only. Tests `test_older_map_offers_its_own_brief`, `test_older_map_brief_link_says_head_moved`.
+
 ## Overview page scrolled sideways at 900px (`sidereus/arch_brief_html.py` CSS `td.ev`)
 - Cause: `td.ev` had `white-space: nowrap`; an evidence `file:line` is one unbreakable token, so the auto-layout decision table could not shrink below it. ★900px viewport: scrollWidth 935 → 900.
 - ⇒ `td.ev` uses `overflow-wrap: anywhere` with normal wrapping (needs both; either alone kept 935).

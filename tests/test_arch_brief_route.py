@@ -127,10 +127,30 @@ class BriefHtml(Base):
 class LoadBrief(Base):
     def test_head_brief_only(self):
         self.assertIsNone(AM.load(self.repo)["brief"])
-        self.put(OLD)   # an older commit's brief is never offered for HEAD
+        self.put(OLD)   # no map at OLD: an older commit's brief alone is never offered
         self.assertIsNone(AM.load(self.repo)["brief"])
         fp = self.put(HEAD)
         self.assertEqual(AM.load(self.repo)["brief"], {"commit": HEAD, "file": fp})
+
+    def test_older_map_offers_its_own_brief(self):
+        """A shown older map (newest map commit != HEAD) offers that commit's gate-passed brief; HEAD's wins when both exist."""
+        d = os.path.join(self.arch, AV.repo_key(self.repo), OLD)
+        os.makedirs(d, exist_ok=True)
+        for n in ("map.json", "verify.json"):
+            open(os.path.join(d, n), "w", encoding="utf-8").close()
+        with mock.patch.object(AM, "schema_errors", lambda m, r, c: []), \
+                mock.patch.object(AM, "read_json", lambda p: {"v": 2, "edges": [], "modules": [], "groups": []}), \
+                mock.patch.object(AM, "render_md", lambda m, v: ""), mock.patch.object(AM, "behind_of", lambda r, c: 4), \
+                mock.patch.object(AM, "load_flows", lambda *a: []), mock.patch.object(AM, "load_checks", lambda *a: None), \
+                mock.patch.object(AM, "_prov", lambda *a: None), mock.patch.object(AM, "_brief_bytes", lambda r, c: (c + ".html", b"x") if c in self.has else None):
+            self.has = ()
+            self.assertIsNone(AM.load(self.repo)["brief"])
+            self.has = (OLD,)
+            out = AM.load(self.repo)
+            self.assertTrue(out["stale"])
+            self.assertEqual(out["brief"], {"commit": OLD, "file": OLD + ".html"})
+            self.has = (OLD, HEAD)
+            self.assertEqual(AM.load(self.repo)["brief"]["commit"], HEAD)
 
     def test_symlinked_head_brief_not_offered(self):
         tgt = os.path.join(self.tmp, "t.html")

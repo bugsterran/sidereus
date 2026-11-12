@@ -146,7 +146,8 @@ def load(path):
                 v=m["v"], groups=groups, modules=mods, edges=edges,
                 rate=rate if isinstance(rate, (int, float)) and not isinstance(rate, bool) else None,
                 md=md, style=_style(v.get("style")), dev=_dev(v.get("dev"), edges), flows=load_flows(d, m, root, commit),
-                checks=load_checks(root, d, m, head), prov=_prov(root, commit, d))
+                checks=load_checks(root, d, m, head), prov=_prov(root, commit, d),
+                brief=base["brief"] or (_brief(root, commit) if stale else None))   # older map: its own passed brief, stamped in the menu
 
 
 def _brief_file(root, commit):
@@ -180,7 +181,7 @@ def _brief_bytes(root, commit):
 
 
 def _brief(root, head):
-    """`brief` of /api/arch: the HEAD commit's gate-passed overview only (not the newest map's), None when there is none."""
+    """`brief` of /api/arch: `commit`'s gate-passed overview, None when there is none (load: HEAD first, then the shown older map)."""
     b = _brief_bytes(root, head)
     return {"commit": head, "file": b[0]} if b else None
 

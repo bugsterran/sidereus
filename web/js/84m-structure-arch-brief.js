@@ -24,8 +24,11 @@ function archXBtn(d, p){
 // Pure: «Simple» is a real link when the brief exists (the browser opens it), else a request button; «Detailed» downloads (84m2).
 function archXMenu(d, p){
   const href = archBriefHref(d, p), busy = !href && archBriefBusy(p), lb = esc(T('Simple', 'arch export'));
+  // ⚠An older map's brief opens too (same as «Detailed»), so it says how far HEAD moved; the served bytes are gate-fixed and carry no stamp.
+  const old = href && d.head && String(d.brief.commit) !== d.head
+    ? (typeof d.behind === 'number' ? TV({msg: d.behind === 1 ? 'HEAD is {n} commit ahead' : 'HEAD is {n} commits ahead', vars: {n: d.behind}}) : T('stale')) : '';
   const s = href ? '<a role=menuitem class="wkrgb archxi" data-arxc target=_blank rel="noopener noreferrer" href="' + esc(href) + '" title="'
-      + esc(T('Open the big-picture overview in a new tab') + '\n' + String(d.brief.file)) + '">' + lb + '</a>'
+      + esc(T('Open the big-picture overview in a new tab') + (old ? ' · ' + old : '') + '\n' + String(d.brief.file)) + '">' + lb + (old ? ' <small>' + esc(old) + '</small>' : '') + '</a>'
     : '<button type=button role=menuitem class="wkrgb archxi" data-arxs' + (busy || !archXHead(d) ? ' disabled' : '') + ' title="'
       + esc(T(busy ? 'An overview run is in progress' : !archXHead(d) ? 'Draw the architecture map for the current commit first'
               : 'No overview for this commit yet — ask a session to draw one')) + '">' + lb + '</button>';

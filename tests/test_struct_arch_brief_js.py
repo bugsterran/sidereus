@@ -1,5 +1,5 @@
 """84m: structure «Architecture» header «Export HTML» menu (R1) — «Simple» opens the HEAD brief.html or previews an arch-brief
-request (R2); disabled without a HEAD map (R4); run end re-fetches."""
+request (R2); an older map opens its own brief, stamped with how far HEAD moved; run end re-fetches."""
 import json
 import shutil
 import subprocess
@@ -10,7 +10,7 @@ from tests._load import js_fn
 from tests._node import node_e
 
 PRE = "\n".join([
-    "let LANG = 'ko';", i18n_prelude("LANG", ("T",)),
+    "let LANG = 'ko';", i18n_prelude("LANG", ("T", "TV")),
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
     "function sid8(s){ return String(s).slice(0, 8); } function mboxIn(x){ return !!x.mbox; }",
     "const ARCH_BRIEF_PL = 'arch-brief';",
@@ -71,6 +71,16 @@ class ArchBriefJs(unittest.TestCase):
         self.assertIn("data-arxd", h)
         self.assertIn(">상세</button>", h)
         self.assertNotIn("data-arxs", h)
+
+    def test_older_map_brief_link_says_head_moved(self):
+        """An older shown map with its own brief: «Simple» is a link stamped with how far HEAD moved; a HEAD brief has no stamp."""
+        d = dict(MAP, stale=True, head="b" * 40, behind=4, brief={"commit": C, "file": "/st/brief.html"})
+        old, cur = run("[(ARCH.xm = '/r', archXBtn(%s, '/r')), archXBtn(%s, '/r')]" % (json.dumps(d), json.dumps(dict(MAP, brief={"commit": C, "file": "/st/brief.html"}))))
+        self.assertIn('commit=' + C + '"', old)
+        self.assertIn("<small>", old)
+        self.assertIn("4", old.split("<small>", 1)[1].split("</small>", 1)[0])
+        self.assertNotIn("data-arxs", old)
+        self.assertNotIn("<small>", cur)
 
     def test_menu_without_brief_requests(self):
         """R2: no brief -> «Simple» is a request button, disabled while a brief run is live."""
