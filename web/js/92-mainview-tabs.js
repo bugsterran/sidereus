@@ -27,7 +27,9 @@ function buildMv(){
   const nRun = (SESS||[]).reduce((a,x) => a + (x.sub||[]).length, 0);
   // A main session working without subagents or an open run lit no tab, so the screen looked idle while work went on.
   // Same «working» rule as the session list (tool/think); past 600s it is muted there (may be stuck), so it does not light here either.
-  const nWork = (SESS||[]).filter(x => x && (x.state === 'tool' || x.state === 'think') && !(x.ageSec >= 600)).length;
+  // A finished turn still waiting on its own background command or workflow (waitOnLabel, as in the drawer count) is working too:
+  // a session running only a shell build lit nothing. No 600s mute there — the command is a live process, not a stale row.
+  const nWork = (SESS||[]).filter(x => x && (((x.state === 'tool' || x.state === 'think') && !(x.ageSec >= 600)) || waitOnLabel(x, x.state))).length;
   let nPl = 0; try{ const kn = plKnown(); nPl = plLiveN(plLiveProjs(SESS, plMem(), kn), kn); if(nPl && !kn && FEATS.pipeline !== false) plLoadProjs(); }catch(e){ softErr('plLiveProjs', e); }   // pipe tab dot (48-pipeline.js)
   let nMsg = 0; try{ nMsg = (mainView === 'chat') ? 0 : chatNew(); }catch(e){ softErr('chatNew', e); }
   let kbN = 0;   // shortcut digit = position in the row (98-a11y.js reads the same order)

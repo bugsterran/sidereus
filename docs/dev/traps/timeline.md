@@ -323,3 +323,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Worktree rows carry the main repo's project name, so a «worktree» tag (`.tlwtc`, name + path in its title) sits at the right edge of the name cell (`b:has(> u.tlwtc){flex-grow:1}` + `margin-left:auto`). Same tag on Pipelines «Working now» rows (48j) and the Sessions list (`.swt`). ⚠The <1100 rule that hides name-cell chips excludes `.tlwtc` — it is the only thing telling sibling rows apart.
 - ⚠`tlWtOf` matches only a cwd inside `wt.root` (same rule as 40bb `sessWtGroups`): a non-git cwd gets `wt` from the repo it last touched (`sessions.py _row_repos_wt`) and nested under a main repo with no session.
 - Test `tests/test_tl_wt_nest_js.py`.
+
+### Timeline tab dot stayed dark while a session ran only a background command
+- Cause: `buildMv` (92-mainview-tabs.js) counted running subagents and `tool`/`think` sessions only; a turn that ended while its own background shell build ran (`bgs`) is `wait`, so nothing lit and the screen read as idle.
+- Fix: `nWork` also counts a session `waitOnLabel` names (background command, own subagents, running workflow) — the same rule as the drawer's work count (`sesCount`).
+- ⚠No 600 s mute for that branch: the background command is a live process, not a stale row.
+- ★`tests/test_mainview_tab_dot_js.py` `test_waiting_on_background_command_lights_dot`.

@@ -24,7 +24,7 @@ function setHtml(e, h){ HTML = h; return true; }
 
 
 def dot(sess):
-    js = STUB + js_fn("buildMv") + "\nSESS = " + json.dumps(sess) + "; buildMv();" \
+    js = STUB + js_fn("wfRunning") + js_fn("waitOnLabel") + js_fn("buildMv") +"\nSESS = " + json.dumps(sess) + "; buildMv();" \
         "const m = HTML.match(/data-mv=\"time\"[^]*?<\\/button>/)[0]; const t = m.match(/class=mvdot title=\"([^\"]*)\"/);" \
         "console.log(JSON.stringify(t ? t[1] : null));"
     r = subprocess.run(node_e(js), capture_output=True, text=True, timeout=20, encoding="utf-8")
@@ -41,6 +41,11 @@ class TimelineTabDot(unittest.TestCase):
     def test_subagents_and_sessions_both_named(self):
         t = dot([{"state": "tool", "ageSec": 5, "sub": [{}, {}]}])
         self.assertEqual(t, "2 subagents running · 1 sessions working")
+
+    def test_waiting_on_background_command_lights_dot(self):
+        # A turn ended while a background shell build runs: the session is working, not idle (even past 600s).
+        self.assertEqual(dot([{"state": "wait", "ageSec": 900, "sub": [], "bgs": [{"lab": "Bash", "min": 4}]}]),
+                         "1 sessions working")
 
     def test_idle_or_stale_stays_dark(self):
         self.assertIsNone(dot([{"state": "wait", "ageSec": 5, "sub": []}, {"state": "think", "ageSec": 900, "sub": []}]))
