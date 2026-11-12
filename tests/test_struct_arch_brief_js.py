@@ -100,14 +100,16 @@ class ArchBriefJs(unittest.TestCase):
         self.assertEqual(lines[4], "Gate: python3 /sid/scripts/arch_brief.py --last (Windows: py /sid/scripts/arch_brief.py --last)")
         self.assertTrue(lines[5].startswith("Language: English — "))   # R1: no lang argument = English
         self.assertIn("[pl:arch-brief/<stage title>] (not [pl:-])", lines[6])
+        # R2/R3: the overview cites map edges only, so a Codex stage re-reads no flows files
         self.assertIn("(for arch-brief: S/map.json and S/verify.json, then S/brief.json)", cx)
+        self.assertNotIn("flows", cx.split("re-read only")[1].split(")")[0])
         self.assertNotIn("arch-map", cx)
 
     def test_brief_dm_body_language_r1(self):
         """R1: the overview request names the viewer language (ko -> Korean, en -> English) after the gate line."""
         ko, en = run("[archBriefDmBody('/r', '/sid/', false, 'ko'), archBriefDmBody('/r', '/sid/', false, 'en')]")
         self.assertEqual(ko.split("\n")[5], "Language: Korean — write all human text in map.json, flows.json and brief.json "
-                         "(names, labels, notes, titles, route text) in Korean; ids, paths and code symbols stay as-is")
+                         "(names, labels, notes, titles, roles) in Korean; ids, paths and code symbols stay as-is")
         self.assertTrue(en.split("\n")[5].startswith("Language: English — "))
         self.assertTrue(en.split("\n")[5].endswith(" in English; ids, paths and code symbols stay as-is"))
 

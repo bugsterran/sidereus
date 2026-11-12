@@ -98,11 +98,15 @@ class Base(unittest.TestCase):
                                                           "evidence": {"file": "app/main.py", "line": 1}}]}}
 
     def gate(self, b):
+        """v1 rules only (shape + check_v1): the gate itself refuses every v1 brief (R4)."""
         d = self.put_map()
         with open(os.path.join(d, AV.BRIEF_JSON), "w", encoding="utf-8") as f:
             json.dump(b, f)
-        rc, line = AB.run(self.repo, self.commit)
-        return rc, line, d
+        m, v = AV.read_json(os.path.join(d, "map.json")), AV.read_json(os.path.join(d, "verify.json"))
+        errs, unc = AB.shape_errors(b, self.repo, self.commit), 0
+        if not errs:
+            errs, unc = AB.check_v1(self.repo, self.commit, b, m, v)
+        return (1 if errs else 0), "; ".join(errs) or "uncovered modules %d" % unc, d
 
 
 class PreTest(Base):
@@ -142,28 +146,26 @@ class GateTest(Base):
         self.assertIn(needle, line)
         self.assertFalse(os.path.exists(os.path.join(d, AV.BRIEF_HTML)))
 
-    def test_valid_writes_html(self):
+    def test_valid_v1_rules(self):
         rc, line, d = self.gate(self.brief())
         self.assertEqual(rc, 0, line)
         self.assertIn("uncovered modules 0", line)
-        with open(os.path.join(d, AV.BRIEF_HTML), encoding="utf-8") as f:
-            self.assertIn('data-box="web"', f.read())
+        self.assertIn('data-box="web"', AB.render(self.brief()))
 
-    def test_ok_stamp_matches_html(self):
-        import hashlib
-        rc, line, d = self.gate(self.brief())
-        self.assertEqual(rc, 0, line)
-        with open(os.path.join(d, AV.BRIEF_HTML), "rb") as f:
-            sha = hashlib.sha256(f.read()).hexdigest()
-        self.assertEqual(AV.read_json(os.path.join(d, AV.BRIEF_OK)), {"v": 1, "sha256": sha, "commit": self.commit})
+    def test_r4_run_refuses_valid_v1(self):
+        # R4: a v1 brief skips the v2 rules, so the gate refuses it and writes neither html nor stamp
+        _rc, _line, d = self.gate(self.brief())
+        rc, line = AB.run(self.repo, self.commit)
+        self.assertEqual(rc, 1, line)
+        self.assertIn("v1 brief.json: redraw as v2", line)
+        self.assertFalse(os.path.exists(os.path.join(d, AV.BRIEF_HTML)))
+        self.assertFalse(os.path.exists(os.path.join(d, AV.BRIEF_OK)))
 
     def test_fail_removes_stale_ok(self):
-        rc, _line, d = self.gate(self.brief())
-        self.assertEqual(rc, 0)
-        self.assertTrue(os.path.exists(os.path.join(d, AV.BRIEF_OK)))
-        b = self.brief()
-        b["boxes"][0]["modules"] = ["ghost"]
-        self.assertEqual(self.gate(b)[0], 1)
+        _rc, _line, d = self.gate(self.brief())
+        with open(os.path.join(d, AV.BRIEF_OK), "w", encoding="utf-8") as f:
+            f.write("{}")
+        self.assertEqual(AB.run(self.repo, self.commit)[0], 1)
         self.assertFalse(os.path.exists(os.path.join(d, AV.BRIEF_OK)))
         os.remove(os.path.join(d, AV.BRIEF_JSON))   # unreadable brief.json fails the same way
         with open(os.path.join(d, AV.BRIEF_OK), "w", encoding="utf-8") as f:
@@ -192,13 +194,14 @@ class GateTest(Base):
         b["boxes"][1]["id"] = "web"
         self.fails(b, "duplicate box id web")
 
-    def test_valid_via_last(self):
+    def test_r4_v1_via_last_refused(self):
         self.put_map()
         with open(os.path.join(AV.store_dir(self.repo, self.commit), AV.BRIEF_JSON), "w", encoding="utf-8") as f:
             json.dump(self.brief(), f)
         self.assertEqual(cli("--pre", "--repo", self.repo)[0], 0)
         rc, line = cli("--last")
-        self.assertEqual(rc, 0, line)
+        self.assertEqual(rc, 1, line)   # R4: v1 is refused by the gate
+        self.assertIn("redraw as v2", line)
 
     def test_uncovered_is_advisory(self):
         b = self.brief()
@@ -262,6 +265,21 @@ class GateTest(Base):
         b = self.brief()
         b["route"]["rows"][0]["evidence"]["file"] = "app/nope.py"
         self.fails(b, "not in the commit")
+
+    def test_evidence_strings_unchanged_via_helper(self):
+        # v1 route rows and v2 principles share arch_brief_v2._ev_errors; the v1 wording stays byte-for-byte
+        b = self.brief()
+        m = {"modules": [{"id": "app"}, {"id": "lib"}, {"id": "pg"}], "edges": []}
+        b["arrows"] = []
+        cases = [("../x", 1, {"app/main.py"}, "route row 1: unsafe evidence path"),
+                 ("app/main.py", 1, None, "route row 1: commit tree unreadable"),
+                 ("app/nope.py", 1, {"app/main.py"}, "route row 1: app/nope.py not in the commit"),
+                 ("app/gone.py", 1, {"app/gone.py"}, "route row 1: app/gone.py unreadable"),
+                 ("app/main.py", 4, {"app/main.py"}, "route row 1: app/main.py:4 outside 1..3")]
+        for f, ln, tree, want in cases:
+            b["route"]["rows"][0]["evidence"] = {"file": f, "line": ln}
+            errs, _u = AB.check(b, m, {"edges": []}, tree, lambda rel: ["a", "b", "c"] if rel == "app/main.py" else None)
+            self.assertEqual(errs, [want])
 
     def test_evidence_line_range(self):
         for ln in (0, self.main_lines + 1):
@@ -333,10 +351,9 @@ class GateTest(Base):
     def test_r3_band_note(self):
         b = self.brief()
         b["bands"][1]["note"] = "every area uses login, permissions, mail"
-        rc, line, d = self.gate(b)
+        rc, line, _d = self.gate(b)
         self.assertEqual(rc, 0, line)
-        with open(os.path.join(d, AV.BRIEF_HTML), encoding="utf-8") as f:
-            self.assertIn("every area uses login, permissions, mail", f.read())
+        self.assertIn("every area uses login, permissions, mail", AB.render(b))
         b["bands"][1]["note"] = "x" * 81
         rc, line, _d = self.gate(b)
         self.assertEqual(rc, 1, line)
@@ -346,6 +363,28 @@ class GateTest(Base):
         rc, line = AB.run(self.repo, self.commit)
         self.assertEqual(rc, 1)
         self.assertIn("run arch-map first", line)
+
+
+class V1GoldenTest(unittest.TestCase):
+    # ⚠Stored v1 briefs are sha256-stamped: the v2 overview must not move one byte of the v1 render.
+    GOLDEN = "8f858d185a543329e3411a3a8cb6b8593e4ccde36b81a89596d918f6e498641b"
+
+    def brief(self):
+        return {"v": 1, "repo": "/r", "commit": "c" * 40, "title": "Golden <v1>", "heads": {"arch": "Arch", "route": "Order"},
+                "bands": [{"id": "front", "name": "Front"}, {"id": "back", "name": "Back", "note": "shared services"}],
+                "boxes": [{"id": "web", "name": "Web", "band": "front", "modules": ["app"]},
+                          {"id": "api", "name": "API & jobs", "band": "front", "note": "routes", "modules": ["api"]},
+                          {"id": "data", "name": "Data", "band": "back", "modules": ["lib", "pg"]}],
+                "arrows": [{"from": "web", "to": "data", "label": "calls", "edges": [0]},
+                           {"from": "api", "to": "data", "edges": [1, 2]}],
+                "route": {"by": "path", "rows": [{"when": "/api/*", "goes": "API", "box": "api",
+                                                  "evidence": {"file": "app/main.py", "line": 3}}]}}
+
+    def test_v1_render_bytes_unchanged(self):
+        import hashlib
+        b = self.brief()
+        for h in (AB.render(b), sidereus("arch_brief_html").render(b)):
+            self.assertEqual(hashlib.sha256(h.encode("utf-8")).hexdigest(), self.GOLDEN)
 
 
 class PipelineFileTest(unittest.TestCase):

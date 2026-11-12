@@ -11,8 +11,7 @@ MODELS = ["opus", "opus", "opus", "sonnet", "opus", "sonnet"]
 BRIEF = os.path.join(ROOT, ".claude", "pipelines", "arch-brief.json")
 LANG_TASK = "Human text: the request's Language line (none = English)."
 LANG_RULE = "Language: all human text in map/flows/brief.json (not ids, paths, symbols) follows the request's Language line (none = English)."
-NAMING = ("Box and band names say what each does for a non-developer, not package- or code-style names; no band with one same-name box; "
-          "for what all areas use (login, permissions, mail), a band note, not repeated arrows into one shared box.")
+PRE = "Run `/usr/bin/python3 scripts/arch_brief.py --pre --repo <repo>` → S; on a miss stop. "
 
 
 class ArchMapPipelineV2Test(unittest.TestCase):
@@ -71,8 +70,10 @@ class ArchMapPipelineV2Test(unittest.TestCase):
             b = {s["title"]: s for s in json.load(f)["stages"]}
         self.assertEqual(self.st["개요 검증"]["task"], b["검증"]["task"])
         self.assertEqual(self.st["개요 검증"]["gate"], b["검증"]["gate"])
-        schema = re.search(r"Write S/brief\.json only: (\{v:1.*?1\.\.16\}\})", b["개요 그리기"]["task"]).group(1)
+        schema = re.search(r"Write S/brief\.json only: (\{v:2, .*?\] <=12\})", b["개요 그리기"]["task"]).group(1)
         self.assertIn(schema, self.st["개요 그리기"]["task"])
+        # one rule, one place: arch-map's draw task is arch-brief's verbatim after its --pre sentence
+        self.assertEqual(self.st["개요 그리기"]["task"], PRE + b["개요 그리기"]["task"])
 
     def test_language_line_r1(self):
         # R1: human text follows the request's Language line, not map.json's label language
@@ -86,13 +87,26 @@ class ArchMapPipelineV2Test(unittest.TestCase):
         for x in [self.d["rules"], b["rules"]] + [s["task"] for s in self.d["stages"] + b["stages"]]:
             self.assertNotIn("label language", x)
 
-    def test_overview_naming_and_band_note_r3_r4(self):
-        # R4: names a non-developer reads; R3: a band note instead of repeated arrows into one shared box
+    def test_overview_v2_caps_r1_to_r5(self):
+        # R1 title+what; R2 3..7 components, <=1 pkgs, 1..4 externals with 1..3 uses; R3 labelled arrows on map edges, <=12; R4 2..4 principles with file:line
         with open(BRIEF, encoding="utf-8") as f:
-            bt = {s["title"]: s for s in json.load(f)["stages"]}
+            b = json.load(f)
+        bt = {s["title"]: s for s in b["stages"]}
         for t in (self.st["개요 그리기"]["task"], bt["개요 그리기"]["task"]):
-            self.assertIn(NAMING, t)
-            self.assertIn("bands:[{id, name<=40, note?<=80}]", t)
+            for w in ("title<=60, what<=120", "] 3..7 (<=1 with pkgs)", "uses:[{name<=30,note?<=40}] 1..3", "modules:[ids] 1..}] 1..4",
+                      "principles:[{text<=100,evidence:{file,line}}] 2..4}", "label<=32 required", "edges:[map edge index] 1..5}] <=12}",
+                      "main DB too", "No request sequence/route table.",
+                      "heads: plain nouns (Architecture), no sentences/legends.", "one per box pair; use on each into externals"):
+                self.assertIn(w, t)
+            for w in ("bands:", "boxes:", "route:", "v:1", "flows", "spine"):
+                self.assertNotIn(w, t)
+        for t in (self.st["개요 검증"]["task"], bt["검증"]["task"]):
+            for w in ("3..7 components", "1..4 externals", "1..3 uses", "2..4 principles", "<=12 arrows", "outside externals",
+                      "without label", "actor endpoint", "absent at the commit", "redraw as v2"):
+                self.assertIn(w, t)
+        self.assertNotIn("flows", b["rules"].split("Needs")[1].split("\n")[0])   # R3: the overview reads map + verify only
+        self.assertIn("Overview stages write only S/brief.json", self.d["rules"])
+        self.assertNotIn("decision order", b["use"])
 
     def test_request_lists_every_title(self):
         # the request text names every stage verbatim ([pl:] tags match them)

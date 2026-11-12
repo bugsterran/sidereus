@@ -476,7 +476,7 @@ class StructArch(unittest.TestCase):
                 "console.log(JSON.stringify([h, POSTS[0][1].body]));")
         self.assertIn("[pl:arch-map/", r[1])
         self.assertIn("re-read only the files the previous stage wrote (for arch-map: plan.json, then map.json, then flows.json, "
-                      "then S/map.json and S/verify.json, then S/brief.json)", r[1])
+                      "then S/map.json and S/verify.json, then S/brief.json)", r[1])   # R3: overview reads no flows
         self.assertIn("Run all stages back to back in this turn: do not end the turn or report between stages", r[1])
         self.assertIn(r[1].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;").replace("'", "&#39;"), r[0])
 
@@ -508,7 +508,7 @@ class StructArch(unittest.TestCase):
 
 # R1: the request names the viewer language; the pipeline tasks read this line for human text
 ARCH_DM_LANG = ("Language: %s — write all human text in map.json, flows.json and brief.json "
-                "(names, labels, notes, titles, route text) in %s; ids, paths and code symbols stay as-is")
+                "(names, labels, notes, titles, roles) in %s; ids, paths and code symbols stay as-is")
 # frozen output of archDmBody for a Claude recipient (all six stages, map gate then overview gate)
 ARCH_DM_CC = ("Pipeline arch-map run — request: «/r: update architecture diagram»\nTarget repository: /r\n"
               "Read-only: never write to the repository — write only under ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<commit>/ (key: pipeline rules)\n"

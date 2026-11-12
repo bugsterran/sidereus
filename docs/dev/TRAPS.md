@@ -4,7 +4,7 @@ Do not step on these again. One file per area under [traps/](traps/); read the a
 
 | File | Area |
 |---|---|
-| [traps/arch.md](traps/arch.md) | Structure tab: architecture map, flows, arch_verify, Size treemap, language plug-ins |
+| [traps/arch.md](traps/arch.md) | Structure tab: architecture map, flows, arch_verify, overview v1/v2 (principle evidence, v1 sha gate), Size treemap, language plug-ins |
 | [traps/timeline.md](traps/timeline.md) | Timeline rows, bars, sleep/idle bands, replay, «Changes» rail |
 | [traps/quota.md](traps/quota.md) | Quota, burndown, saver mode, token and usage accounting |
 | [traps/sessions.md](traps/sessions.md) | Session state, subagents, external CLIs, permission badges, work-log popup and diff window |

@@ -510,3 +510,13 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: the overview's language and naming were left to the model; one band held one same-named box and 7 of 24 arrows repeated "auth and mail".
 - ⇒ The gate refuses a band whose only box has its name (strip + casefold) and 4+ arrows into one box with the same label; a shared dependency goes in the band's `note` (<=80), drawn under the band name.
 - ⚠A note-less brief must render byte-identical (CSS rule and taller head only with a note): stored brief.html is sha256-gated.
+
+## Overview v2 principle evidence: unreadable tree is unknown, not missing (`sidereus/arch_brief_v2.py` `_ev_errors`)
+- Cause: each design principle cites a file:line at the commit; a git timeout or unreadable tree used to read like a missing file.
+- ⇒ One helper `_ev_errors` checks every {file, line} evidence (v2 principles and v1 route rows): unsafe path · «commit tree unreadable» · «not in the commit» · «unreadable» · «outside 1..N».
+- ⚠Never fold tree None into «not in the commit»; v1 error strings must stay byte-identical. Tests `test_r4_unreadable_tree_is_unknown_not_missing`, `test_evidence_strings_unchanged_via_helper`.
+
+## Overview v1 render bytes are sha-gated (`sidereus/arch_brief.py` `render`, `sidereus/arch_brief_html.py`)
+- Cause: stored brief.html files are served only when their bytes match the gate's `brief.ok.json` sha256; any v1 renderer change breaks every stored v1 brief.
+- ⇒ v2 lives in `arch_brief_v2` / `arch_brief_html_v2`; `arch_brief.render` dispatches on `v` and the v1 path stays `arch_brief_html.render`. `brief.ok.json` stays `{v:1, sha256, commit}` for both. The gate refuses a new v1 brief.json («redraw as v2»): it would skip the v2 rules.
+- ⚠Never touch the v1 path for a v2 need. `tests/test_arch_brief.py` `V1GoldenTest` pins the v1 sha.

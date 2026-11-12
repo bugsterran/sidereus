@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Timeline: each session group has a visible divider above it, and its agent rows are lightly tinted, so a session and its agents read as one block and neighbouring sessions no longer run together.
 - Structure: overviews and maps are written in the viewer's language, and the overview gate refuses a band holding one box with the band's own name and 4 or more same-labelled arrows into one box (a band note — shown under the band name — says it instead).
+- Structure: the overview («Export HTML › Simple») is now a build-structure figure — the system box with 3-7 components and 2-4 design principles (each citing a file:line), 1-4 external systems with their uses, labelled arrows on verified map edges, and a legend of each box's role; the route table is gone. Older overviews must be redrawn.
 
 ### Fixed
 

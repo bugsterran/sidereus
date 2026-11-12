@@ -10,6 +10,7 @@ brief.json v1: {v:1, repo, commit, title<=80, heads?:{arch<=40, route<=40}, band
   boxes:[{id, name<=40, band, note?<=80, modules:[map ids] 1..}] 1..12,
   arrows:[{from, to, label?<=40, edges:[map.json edge index] 1..5}] <=24,
   route: {na:<=120} | {by<=80, rows:[{when<=80, goes<=120, box?, evidence:{file, line}}] 1..16}}
+brief.json v2 (containment: screens · components · externals · principles): schema, check and renderer in arch_brief_v2 / arch_brief_html_v2.
 """
 import hashlib
 import json
@@ -18,6 +19,8 @@ import subprocess
 
 from sidereus import arch_verify as AV
 from sidereus import arch_brief_html as AH
+from sidereus import arch_brief_html_v2 as AH2
+from sidereus import arch_brief_v2 as B2
 
 BOX_MAX, BAND_MAX, ARROW_MAX, AEDGE_MAX, ROW_MAX = 12, 4, 24, 5, 16
 TITLE_MAX, NAME_MAX, NOTE_MAX, HEAD_MAX, WHEN_MAX, GOES_MAX, NA_MAX, BY_MAX = 80, 40, 80, 40, 80, 120, 120, 80
@@ -81,6 +84,8 @@ def shape_errors(b, repo, commit):
     """Schema errors of brief.json (no map/commit checks)."""
     if not isinstance(b, dict):
         return ["brief.json is not an object"]
+    if b.get("v") == 2 and _int(b.get("v")):
+        return B2.shape_errors(b, repo, commit)
     errs = []
     if set(b) - _KEYS:
         errs.append("unknown keys %s" % sorted(set(b) - _KEYS))
@@ -144,6 +149,8 @@ def shape_errors(b, repo, commit):
 def check(b, m, v, tree, read):
     """(errors, uncovered module count) for a shape-valid brief. `tree` = set of paths at the commit (None = unreadable);
     `read(rel)` = lines of rel at the commit (None = unreadable)."""
+    if b.get("v") == 2:
+        return B2.check(b, m, v, tree, read)
     errs = []
     mids = set(d["id"] for d in m["modules"])
     bands = set()
@@ -198,21 +205,13 @@ def check(b, m, v, tree, read):
     for k, row in enumerate((b["route"].get("rows") or []), 1):
         if "box" in row and row["box"] not in boxes:
             errs.append("route row %d: unknown box %s" % (k, row["box"]))
-        rel = AV.safe_rel(row["evidence"]["file"])
-        ln = row["evidence"]["line"]
-        if not rel:
-            errs.append("route row %d: unsafe evidence path" % k)
-        elif tree is None:
-            errs.append("route row %d: commit tree unreadable" % k)   # unknown, said as such — not «file missing»
-        elif rel not in tree:
-            errs.append("route row %d: %s not in the commit" % (k, rel))
-        else:
-            lines = read(rel)
-            if lines is None:
-                errs.append("route row %d: %s unreadable" % (k, rel))
-            elif not 1 <= ln <= len(lines):
-                errs.append("route row %d: %s:%d outside 1..%d" % (k, rel, ln, len(lines)))
+        errs += B2._ev_errors("route row %d" % k, row["evidence"], tree, read)   # one evidence rule for v1 and v2
     return errs, len(mids - set(owner))
+
+
+def render(b):
+    """brief.html text for a gate-checked brief. ⚠v1 bytes are sha-gated (tests): the v1 path stays AH.render."""
+    return AH2.render(b) if b.get("v") == 2 else AH.render(b)
 
 
 def run(repo, commit):
@@ -246,24 +245,34 @@ def _gate(repo, commit, d):
     except (OSError, ValueError) as e:
         return 1, "arch_brief: FAIL: brief.json unreadable (%s)" % type(e).__name__, None
     errs = shape_errors(b, repo, commit)
+    # ⚠A new v1 brief would skip the v2 rules (containment, labelled arrows, principles); stored v1 html is served by sha only.
+    if not errs and b.get("v") != 2:
+        errs = ["v1 brief.json: redraw as v2"]
     if not errs:
-        try:
-            tree = AV._tree(repo, commit)
-        except (subprocess.SubprocessError, OSError):
-            tree = None
-        memo = {}
-
-        def read(rel):
-            if rel not in memo:
-                try:
-                    memo[rel] = AV._show(repo, commit, rel)
-                except (subprocess.SubprocessError, OSError):
-                    memo[rel] = None
-            return memo[rel]
-        errs, unc = check(b, m, v, tree, read)
+        errs, unc = check(b, m, v, *_reader(repo, commit))
     if errs:
         return 1, "arch_brief: FAIL: %s%s" % ("; ".join(errs[:5]), " (+%d more)" % (len(errs) - 5) if len(errs) > 5 else ""), None
-    rows = b["route"].get("rows")
-    return 0, "arch_brief: ok · %d boxes · %d arrows · %s · uncovered modules %d · %s" % (
-        len(b["boxes"]), len(b.get("arrows", [])), "%d route rows" % len(rows) if rows else "route n/a", unc,
-        os.path.join(d, AV.BRIEF_HTML)), AH.render(b)
+    return 0, "arch_brief: %s · %s" % (B2.ok_line(b, unc), os.path.join(d, AV.BRIEF_HTML)), render(b)
+
+
+def check_v1(repo, commit, b, m, v):
+    """check() of a v1 brief with the tree/read of the commit — kept for the v1 rules' tests; the gate refuses v1."""
+    return check(b, m, v, *_reader(repo, commit))
+
+
+def _reader(repo, commit):
+    """(tree, read) at the commit: tree None = unreadable; read(rel) -> lines or None (memoised)."""
+    try:
+        tree = AV._tree(repo, commit)
+    except (subprocess.SubprocessError, OSError):
+        tree = None
+    memo = {}
+
+    def read(rel):
+        if rel not in memo:
+            try:
+                memo[rel] = AV._show(repo, commit, rel)
+            except (subprocess.SubprocessError, OSError):
+                memo[rel] = None
+        return memo[rel]
+    return tree, read
