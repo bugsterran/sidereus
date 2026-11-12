@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Structure tab (Architecture · Size)
 
+- **Store «Data path» counts only modules named in a flow's ok steps** (`web/js/84jb-structure-arch-datapath.js` `archDataPath`).
+  - Cause: flow steps are the only verified evidence that an entry point reaches a module; anything else is inference.
+  - ⇒ A flow reaches store S when an ok step touches M and an ok `read`/`write` edge M->S exists; est edge or est step marks the route «estimate», one non-est route wins.
+  - ⚠Do not walk the call graph from step modules to stores: it would list entry points no verified flow proves. Test: `tests/test_struct_arch_datapath_js.py`.
+
 - **«Export HTML» › «Detailed» must inline computed styles, not copy CSS** (`web/js/84m2-structure-arch-export.js`).
   - Cause: the map's look comes from ancestor-scoped rules (`.archdg[data-fv] .mmdfl{visibility:hidden}`) and CSS variables (`--mmd-tx`); a copied stylesheet outside `.archtab` draws every hidden label and loses the theme.
   - ⇒ `archXInline` writes allow-listed computed props per element; `archXClean` drops script/style/foreignObject, on*/data-*/xmlns, non-`#` href and resets the root size to the viewBox (zoom 1x).

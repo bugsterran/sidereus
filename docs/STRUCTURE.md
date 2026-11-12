@@ -40,6 +40,7 @@ flowchart LR
 - Modules sit in layers (entry → UI → API → service → domain → shared → infra → data), grouped inside each layer.
 - Edges: `import`, `call`, `config`, `di`, plus `read`/`write`/`serve`/`event`. Lines: call solid, read violet, write amber, event dashed. Every edge cites `file:line:symbol`.
 - Flows: one per entry point (HTTP route, CLI command, job, event, hook, MCP tool), up to 40, 40 steps each. A flow starts at its entry's handler and adds the module's other handlers; when entries share a module, those go into the first flow only, and past 40 steps the shallowest are kept.
+- Data path: a store's detail lists the entry points whose flow writes it («Written by») or reads it («Read by»). A flow counts when a module named in one of its verified steps has a verified `write`/`read` edge to the store; a route through an estimated step or edge is marked «estimate». Click a row to open that flow. A store no flow reaches says «No entry point reaches this store»; maps without flows have no such section.
 
 ## How it is checked
 

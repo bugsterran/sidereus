@@ -240,6 +240,7 @@ function archDetHtml(d, sel, names, nx, ro){
         + '<b>' + esc((x.f.ok ? '✓ ' : '✗ ') + (x.f.name || x.f.id)) + '</b>'
         + (x.on < x.n ? '<small>' + esc(T('{a}/{b} steps on this view').replace('{a}', x.on).replace('{b}', x.n)) + '</small>' : '') + '</button></li>'; }).join('') + '</ul>'
       : '<div class=archevn>' + esc(T('No flow passes through this module')) + '</div>')
+    + (typeof archDataPathHtml === 'function' ? archDataPathHtml(d, m, o.lit) : '')   // 84jb: stores only, '' otherwise
     + archFilesSec(d, m) + '</div></aside>';   // relations first, the file list last
 }
 // Path level / up: overview stays (cached svg, no re-layout), members light up; scroll is kept by archPaint.
