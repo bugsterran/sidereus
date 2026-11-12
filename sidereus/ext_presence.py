@@ -141,6 +141,9 @@ def _row(plat, c, now):
     })
     if pi:   # the pi mailbox id (`pi:<cwd>` or <folder>-pi), never the Claude id; "" made room members show the Claude logo
         row["mbox"], row["mboxSrc"] = mbox_pi(cwd)
+        cr = plat_pi.credit(c.get("msgs"))   # Anthropic OAuth spend; tok is filled by state._who_pi
+        if cr:
+            row["credit"] = cr
     return row
 
 

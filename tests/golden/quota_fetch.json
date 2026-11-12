@@ -1800,8 +1800,10 @@
      "at": 1790000000,
      "cur": "EUR",
      "limit": 5000,
+     "on": true,
      "pct": 24.0,
-     "used": 1234
+     "used": 1234,
+     "why": null
     },
     "five_hour": {
      "keptAt": 1789999900,
@@ -1902,8 +1904,10 @@
       "at": 1790000000,
       "cur": "EUR",
       "limit": 5000,
+      "on": true,
       "pct": 24.0,
-      "used": 1234
+      "used": 1234,
+      "why": null
      },
      "five_hour": {
       "keptAt": 1789999900,
@@ -2106,8 +2110,10 @@
      "at": 1790000000,
      "cur": "EUR",
      "limit": 5000,
+     "on": true,
      "pct": 24.0,
-     "used": 1234
+     "used": 1234,
+     "why": null
     },
     "five_hour": {
      "pct": 42.5,
@@ -2196,8 +2202,10 @@
       "at": 1790000000,
       "cur": "EUR",
       "limit": 5000,
+      "on": true,
       "pct": 24.0,
-      "used": 1234
+      "used": 1234,
+      "why": null
      },
      "five_hour": {
       "pct": 42.5,
@@ -2241,6 +2249,15 @@
    "acct": "A",
    "at": 1790000000.0,
    "data": {
+    "extra": {
+     "at": 1790000000,
+     "cur": "USD",
+     "limit": null,
+     "on": false,
+     "pct": null,
+     "used": null,
+     "why": null
+    },
     "five_hour": {
      "pct": 42.5,
      "resets_at": "2027-01-01T00:00:00+00:00"
@@ -2301,6 +2318,9 @@
     null
    ],
    [
+    "time"
+   ],
+   [
     "enter"
    ],
    [
@@ -2321,6 +2341,15 @@
     "slot_set",
     "data",
     {
+     "extra": {
+      "at": 1790000000,
+      "cur": "USD",
+      "limit": null,
+      "on": false,
+      "pct": null,
+      "used": null,
+      "why": null
+     },
      "five_hour": {
       "pct": 42.5,
       "resets_at": "2027-01-01T00:00:00+00:00"
@@ -2366,8 +2395,10 @@
      "at": 1790000000,
      "cur": "USD",
      "limit": 5000,
+     "on": true,
      "pct": 24.0,
-     "used": 1234
+     "used": 1234,
+     "why": null
     },
     "five_hour": {
      "pct": 42.5,
@@ -2451,8 +2482,10 @@
       "at": 1790000000,
       "cur": "USD",
       "limit": 5000,
+      "on": true,
       "pct": 24.0,
-      "used": 1234
+      "used": 1234,
+      "why": null
      },
      "five_hour": {
       "pct": 42.5,
@@ -2883,8 +2916,10 @@
      "at": 1790000000,
      "cur": "EUR",
      "limit": 5000,
+     "on": true,
      "pct": 24.0,
-     "used": 1234
+     "used": 1234,
+     "why": null
     },
     "five_hour": {
      "keptAt": 1789996400,
@@ -2979,8 +3014,10 @@
       "at": 1790000000,
       "cur": "EUR",
       "limit": 5000,
+      "on": true,
       "pct": 24.0,
-      "used": 1234
+      "used": 1234,
+      "why": null
      },
      "five_hour": {
       "keptAt": 1789996400,

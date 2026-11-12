@@ -97,6 +97,8 @@ h2.sesh{margin-top:13px;padding-top:11px;border-top:1px solid #1a1f28}
     .sz{font-size:10px;color:#7e8896;margin-left:4px}
     .sz.hot{color:#f59e0b;font-weight:600}
     .sk{font-size:10px;color:#7e8896;margin-left:4px}
+    /* «Credits» chip: an alert, so never in SX_DROP (40ba); warning color as `.sz.hot` */
+    .scr{font-size:10px;color:#f59e0b;font-weight:600;margin-left:4px;flex:0 0 auto;white-space:nowrap}
     /* Leftover badge — no new color, reuses the existing warning color (#f59e0b, same as `.sz.hot`) */
     .swr{font-size:10px;color:#f59e0b;font-weight:600;margin-left:4px;flex:0 0 auto;cursor:pointer}
     .swr:hover{text-decoration:underline}

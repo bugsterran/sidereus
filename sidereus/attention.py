@@ -10,9 +10,12 @@ from sidereus import file_owner as _fo
 from sidereus.bgtasks import BG_IDLE_S, BG_LONG_S
 
 # ⛔Metadata only: every `why` is built here from tool names, counts and minutes — never task/reply/card text.
-# ★Points decided 2026-09-23 (user). No quota-share signal: not actionable per session.
-ATT_PTS = {"blocked": 100, "ask": 90, "conflict": 85, "mailidle": 75, "abort": 70, "ctx95": 65, "fail": 60, "wreck": 60,
-           "stall": 55, "loop": 50, "toolfail": 45, "bgidle": 30, "bglong": 30, "ctx85": 25, "done": 20, "bgdone": 15}
+# ★Points decided 2026-09-23. No quota-share ranking; `credit` = a session that spends Anthropic plan/credits outside
+#   Claude Code (pi OAuth row `credit`), shown while it is spending — actionable per session.
+ATT_PTS = {"blocked": 100, "ask": 90, "conflict": 85, "credit": 80, "mailidle": 75, "abort": 70, "ctx95": 65, "fail": 60,
+           "wreck": 60, "stall": 55, "loop": 50, "toolfail": 45, "bgidle": 30, "bglong": 30, "ctx85": 25, "done": 20,
+           "bgdone": 15}
+ATT_CREDIT_S = 300          # «Spending credits» while the newest anthropic/ entry is this recent
 ATT_FAIL_CARD_S = 1800      # failure alert card counts for 30 min at most ...
 # ... and clears once the same session shows real activity (row ageSec =
 #   transcript actAt, noise-free — not poll time) past the failure time + this grace. Covers Mac sleep: no activity
@@ -263,6 +266,10 @@ def _row_sigs(r, now):
         sg.append(_sig("ask", "질문 대기", t0))
     if st == "abort":
         sg.append(_sig("abort", "중단됨 — 다시 지시 필요", t0))
+    cr = r.get("credit")
+    la = int(cr.get("lastAt") or 0) if isinstance(cr, dict) else 0
+    if live and la > 0 and now - la <= ATT_CREDIT_S:
+        sg.append(_sig("credit", "%d" % max(0, int(now - la)), la))   # why = seconds since the last spend (numbers only)
     win = r.get("win") or 0
     if live and win:
         pct = int((r.get("ctx") or 0) * 100 / win)

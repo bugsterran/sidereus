@@ -307,3 +307,8 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - Cause: every spawned stub appended a line to one shared log file; the pi extension spawns hooks fire-and-forget, and Windows O_APPEND is seek-then-write, so concurrent writers overwrote each other and `json.loads` failed.
 - ⇒ One file per record (`time_ns`-pid-counter-uuid name, `.tmp` then `os.replace` to `.json`) in a log dir, read back sorted — same scheme as `put()` in `tests/test_pi_extension.py`. Regression `StubConcurrentWrites`.
 - ⚠Never share one append-mode log file between concurrently spawned test stubs; macOS/Linux appends hide the race.
+
+## pi «Credits» chip can be a false positive (`sidereus/plat_pi.py` `auth_kinds` · `sidereus/ext_presence.py` `_row`)
+- Cause: the chip means «`auth.json` has `anthropic` with `type: oauth`» plus `anthropic/` entries in the session file; pi falls back to the `ANTHROPIC_API_KEY` env var, which Sidereus cannot see, so an API-key-billed session can still show the chip.
+- ⇒ No auth file or a non-`oauth` type = no chip (unknown is never treated as api_key or oauth). Tests `tests/test_pi_credit.py`, `tests/test_attention_credit.py`.
+- ⚠`auth.json` holds tokens: keep only each entry's `type` (memo included), report parse errors by exception type name only.

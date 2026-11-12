@@ -197,6 +197,12 @@ Sessions record the requests you gave them with the Sidereus MCP to-do tool (ope
 
 The saver verdict changes only when the projection is more than 3 minutes past a boundary.
 
+### Credits
+
+- A session from an external CLI (pi) signed in with Anthropic OAuth gets a «Credits» chip in its row, with the tokens it used in this 5-hour window.
+- The quota popover keeps the credit line when credits are disabled or exhausted: it shows «off» and the reason the API gave. The line is hidden only when the account has no credit data at all.
+- While such a session spends credits, «Spending credits» appears in Attention.
+
 ## Stop two agents editing the same file
 
 ![Branches tab with worktree cards](images/branches-en.png)

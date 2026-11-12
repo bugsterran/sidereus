@@ -110,7 +110,12 @@ function sessUsage(x){
   const size = x.bytes ? '<span class="sz'+(big?' hot':'')+'" title="'+esc(T('Transcript ')+sz(x.bytes)
     +(big ? T(' — over 500M. The longer a session runs, the more context each turn carries (a new session may be cheaper)') : ''))
     +'">'+sz(x.bytes)+'</span>' : '';
-  return ctx + size + cost + extTokChip(x) + model;
+  // pi on Anthropic OAuth billed to extra usage: server sends credit {lastAt, tok, roll?}; absent = no chip.
+  // ⚠Class scr, never sk: sk is in SX_DROP and narrow rows would hide this alert.
+  const c = (x.credit && typeof x.credit === 'object') ? x.credit : null;
+  const cred = c ? '<span class=scr title="'+esc(T(c.roll ? 'Billed to extra usage (credits) — tokens in the rolling last 5h'
+      : 'Billed to extra usage (credits) — tokens in the current 5h window'))+'">'+esc(T('Credits'))+' '+esc(fmtTok(+c.tok || 0))+'</span>' : '';
+  return ctx + size + cost + extTokChip(x) + cred + model;
 }
 // Work group: error · leftovers · pipeline chip (sessIdRow appends «To-do n», 40c).
 function sessWorkBadges(x){

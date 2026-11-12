@@ -155,6 +155,8 @@ Sidereus is both the shown name and the code name (package, MCP, launchd label, 
 | `06-i18n-zzp-wt.js` | `I18N.ko` for the sessions-list worktree groups (40bb caret, header row, «{n} in Attention») and the timeline worktree caret (74/74b). | | |
 | `06-i18n-zzm-plstart.js` | `I18N.ko` for the Pipelines «Get started» checklist (48l) and «Request a red check» (48m). | | |
 | `06-i18n-zzs-plverdict.js` | `I18N.ko` for the pipeline verdict sentences of the «Result layer» (48i `PLE_VD`). Test `tests/test_pl_verdict_js.py`. | | |
+| `06-i18n-zzu-credit.js` | `I18N.ko` for the credit line's «off» tooltip (55a `creditRow`, `extra.on === false`). Test `tests/test_quota_extra_off.py`. | | |
+| `06-i18n-zzv-credit-row.js` | `I18N.ko` for the «Credits» session-row chip (40ba `creditChip`) and the «Spending credits» attention signal. | | |
 | `06-i18n-zzj-copilot.js` | `I18N.ko` for the Copilot quota piece (`extQuotaStr`, 46) in the status bar (60) and «By platform». | | |
 | `06-i18n-zzc-ci.js` | `I18N.ko` for the Harness «After push (CI)» checkpoint and its «Holding: CI streak n/5» line (47b). | | |
 | `06-i18n-zzd-selfcheck.js` | `I18N.ko` for the Harness «Guard self-check» table (47f). | | |

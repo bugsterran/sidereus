@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Pipelines: each pipeline gets one verdict from its 30-day result (a pass broke, too few runs, review loop-backs rose, or healthy); the weekly report writes it right after the date, with «Next step» guides for the three warnings.
 - Pipelines: «Working now» lists a session's live CLI children (pi subagents, `gemini -p`, `codex exec`) under its card, and a session running two or more at once shows «parallel ×N» there and on its sessions row.
+- Sessions: a pi session logged in to Anthropic with OAuth is billed to extra usage (credits), not the plan's 5h limit; its row shows a «Credits» chip with its tokens in the current 5h window, and Attention lists «Spending credits» while it spends.
+
+### Fixed
+
+- Status bar: the credit line no longer disappears when extra usage is disabled or used up; it stays with «off» and the reason.
 
 ## [0.18.0] - 2026-11-12
 

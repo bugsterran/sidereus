@@ -13,11 +13,14 @@ import json
 import math
 import os
 import re
+import stat
 import threading
+import time
 
 from sidereus import config   # module access: tests patch `config.ASSET_DIR`
 from sidereus.ident import _proj_name, _real_home
 from sidereus.transcript import iso_epoch
+from sidereus.warn import warn_once
 
 PLAT = "pi"              # hook `platform` value
 KEY = "pi"               # row `plat` key (same as the logo `AILG.pi`)
@@ -215,6 +218,41 @@ def newest(cwd):
     return None
 
 
+PATH_MISS_S = 30        # a sid with no file yet is looked up again after this long (no glob per poll)
+PATH_MEMO_N = 256
+_path_memo = {}         # sid -> (path, 0) hit | ("", t) miss
+
+
+def sid_path(sid, cwd=""):
+    """Session file of `sid` (`<ts>_<sid>.jsonl`), or "" — for hook rows: the pi extension sends no transcript_path.
+    The cwd folder first, then every folder; memoised (a hit while the file exists, a miss for PATH_MISS_S)."""
+    if not _sid_ok(sid):
+        return ""
+    now = time.time()
+    with _lock:
+        m = _path_memo.get(sid)
+    if m and (m[0] and os.path.isfile(m[0]) and path_ok(m[0]) or not m[0] and 0 <= now - m[1] < PATH_MISS_S):
+        return m[0]
+    base = os.path.join(root(), "sessions")
+    pats = [os.path.join(glob.escape(base), "*", "*_" + sid + ".jsonl")]   # ⚠_sid_ok: no glob metacharacters
+    if isinstance(cwd, str) and cwd and "\0" not in cwd and len(cwd) <= 4096:   # ⚠hook cwd is stored raw
+        pats.insert(0, os.path.join(glob.escape(os.path.join(base, folder(cwd))), "*_" + sid + ".jsonl"))
+    p = ""
+    try:
+        for pat in pats:
+            hits = [h for h in glob.glob(pat) if path_ok(h)]
+            if hits:
+                p = max(hits)
+                break
+    except (OSError, ValueError):   # ⚠a raise here would drop every later row in ext_rows' loop-wide except
+        p = ""
+    with _lock:
+        if len(_path_memo) >= PATH_MEMO_N:
+            _path_memo.clear()
+        _path_memo[sid] = (p, 0) if p else ("", now)
+    return p
+
+
 def one(sid):
     """Row of one session by sid (any age), or None. File name first, then every file (a custom header id)."""
     if not _sid_ok(sid):
@@ -255,6 +293,58 @@ def who_5h(start, now):
             e["tok"] += n
             e["sids"][r["sid"]] = e["sids"].get(r["sid"], 0) + n
     return out
+
+
+AUTH_MAX = 64 << 10      # auth.json bytes read at most (larger -> unknown)
+_AUTH_KEY = re.compile(r"[a-z0-9_-]{1,40}")
+_AUTH = {}               # memo: {"key": (mtime, size), "kinds": {provider: type}}
+
+
+def auth_kinds():
+    """{provider: login type} from `<root()>/auth.json` (e.g. {"anthropic": "oauth"}), or {} when missing/unreadable.
+    ⚠Credential file: only each entry's `type` string is kept; tokens never leave this function (not even in the memo)."""
+    p = os.path.join(root(), "auth.json")
+    try:
+        st = os.stat(p)
+    except OSError:
+        return {}
+    key = (st.st_mtime, st.st_size)
+    with _lock:
+        if _AUTH.get("key") == key:
+            return dict(_AUTH["kinds"])
+    kinds = {}
+    if st.st_size <= AUTH_MAX and stat.S_ISREG(st.st_mode):   # ⚠a FIFO/device would block or stream
+        try:
+            with open(p, "rb") as f:
+                if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):   # swapped after the stat
+                    raise OSError("not a regular file")
+                d = json.loads(f.read(AUTH_MAX + 1).decode("utf-8"))
+            for k, v in (d.items() if isinstance(d, dict) else ()):
+                t = v.get("type") if isinstance(v, dict) else None
+                if isinstance(k, str) and _AUTH_KEY.fullmatch(k) and isinstance(t, str) and 0 < len(t) <= 20:
+                    kinds[k] = t
+            d = None
+        except (OSError, ValueError, RecursionError) as e:
+            # ⚠type name only: a JSON error message can quote file bytes (a token)
+            warn_once("pi-auth", "Could not read pi auth file ({err})", vars={"err": type(e).__name__})
+            kinds = {}
+    with _lock:
+        _AUTH["key"], _AUTH["kinds"] = key, kinds
+    return dict(kinds)
+
+
+def credit_last(msgs):
+    """Time of the newest `anthropic/` entry in a session's per-request tuples, or 0."""
+    return max([t[4] for t in (msgs or {}).values() if str(t[5]).startswith("anthropic/")] or [0])
+
+
+def credit(msgs):
+    """Row `credit` ({"lastAt": int}) when pi is logged in to Anthropic with OAuth and `msgs` has anthropic/ entries, else None.
+    One rule for hook rows (ext.ext_rows) and hook-less rows (ext_presence._row)."""
+    if auth_kinds().get("anthropic") != "oauth":
+        return None
+    la = credit_last(msgs)
+    return {"lastAt": int(la)} if la > 0 else None
 
 
 def _rev_of(kind, path, fn):

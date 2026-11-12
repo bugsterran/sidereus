@@ -25,7 +25,7 @@ function creditExact(c, cur){
 function creditPct(p){ return p == null || !isFinite(p) ? '—' : Math.max(0, p).toFixed(2) + '%'; }
 function creditRow(q){
   const ex = q && q.extra;
-  if(!(ex && (ex.pct!=null || ex.used!=null))) return '';
+  if(!(ex && (ex.pct!=null || ex.used!=null || ex.on === false))) return '';   // off with no amounts still shows «off»
   const p = ex.pct==null ? null : Math.round(ex.pct);
   // ★`≈` = an **approximation reconstructed as ratio × monthly limit** (header path · server `_quota_probe_hdr`).
   // Headers carry only the ratio, no cents — looking like an exact value would be a lie.
@@ -41,9 +41,14 @@ function creditRow(q){
     ? ' <span class="qold'+(cage>=1800?' qhot':'')+'" title="'+esc(T('Credit comes only from the official API (extra_usage) — this value freezes when the lookup is blocked'))+'">'
         + TV({msg: 'as of {t}', vars: {t: AGO(ageU(cage,0,true))}}) + '</span>'
     : '';
-  return esc(T('Credit')) + ' ' + (p!=null ? gauge(p)+'<b class="'+qcls(p)+'">'+esc(creditPct(ex.pct))+'</b> ' : '')
-    + '<span class=qamt title="'+esc(T('Extra usage (credit) — official extra_usage · against the monthly limit'))+'">'
-    + ap + creditExact(ex.used, ex.cur) + (ex.limit!=null ? '/'+creditExact(ex.limit, ex.cur) : T(' used')) + '</span>'
+  // ⚠`on === false` = credits disabled/exhausted: keep the line with an «off» mark; undefined (old cache, demo) = on.
+  const off = ex.on === false
+    ? ' <b class=qhot title="'+esc(T('Credits are turned off for this account — usage stops at the limit'))+'">'+esc(T('off'))+'</b>'
+        + (ex.why ? ' <span class=qold>'+esc(String(ex.why))+'</span>' : '')
+    : '';
+  return esc(T('Credit')) + off + ' ' + (p!=null ? gauge(p)+'<b class="'+qcls(p)+'">'+esc(creditPct(ex.pct))+'</b> ' : '')
+    + (ex.on === false && ex.used==null && ex.limit==null ? '' : '<span class=qamt title="'+esc(T('Extra usage (credit) — official extra_usage · against the monthly limit'))+'">'
+    + ap + creditExact(ex.used, ex.cur) + (ex.limit!=null ? '/'+creditExact(ex.limit, ex.cur) : T(' used')) + '</span>')
     + (ex.limit!=null && ex.used!=null
         ? '<span class="'+(p!=null&&p>=90?'qhot':'')+'">'+ap+creditExact(ex.limit-ex.used, ex.cur)+T(' left')+'</span>' : '')
     + cold;
@@ -165,7 +170,7 @@ function buildQuota(u, q){
   buildQuotaLocal(u, q);
 }
 // ★Credit badge — says only **whether money is being spent right now** (2026-09-09).
-// Both conditions required: (a) `quota.extra` exists (= extra_usage.is_enabled) (b) 5h limit at 100%.
+// Both conditions required: (a) `quota.extra` exists and is not off (`on !== false` = extra_usage.is_enabled) (b) 5h limit at 100%.
 // ⚠Turning on with (a) alone is a lie — `is_enabled` means "credits are allowed", not "in use".
 // While limit remains, credits do not decrease.
 // {meter, left, tip} when credits are in use; null otherwise. Shared by the drawer badge and the status bar.
@@ -176,7 +181,7 @@ function creditInfo(q){
   // never holds — when the 5h cell went empty on 429, the badge went off with it.
   // ⚠Subscription seats still require **5h 100%**. `is_enabled` means "can use", not "in use".
   const meter = ex && typeof ex.seat === 'string' && ex.seat.indexOf('usage_based') >= 0;
-  if(!(ex && (meter || (fh && fh.pct != null && fh.pct >= 100)))) return null;
+  if(!(ex && ex.on !== false && (meter || (fh && fh.pct != null && fh.pct >= 100)))) return null;
   // exact like the badge beside it (fmtMoney rounded $100.13 to $100); `≈` on header-path ratios (creditRow)
   const money = c => (ex.approx ? '≈' : '') + creditExact(c, ex.cur);
   const left = (ex.limit!=null && ex.used!=null) ? creditExact(ex.limit-ex.used, ex.cur)+T(' left') : creditExact(ex.used, ex.cur)+T(' used');   // exact, matches usedOf beside it

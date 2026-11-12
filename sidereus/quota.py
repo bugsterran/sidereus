@@ -87,7 +87,9 @@ def _quota_interval_base():
         #   `QUOTA_SLOW_S` (300 s), while what actually moves is credit —
         #   measured at that moment: screen 26.435% (300 s old) · API at the same time 27.145%. $1.42 went out in 5 min.
         #   ⇒ On that seat check every 60 s. In 1 min drift is under 0.2%, so the integer % does not diverge.
-        if (d.get("extra") or {}).get("pct") is not None and "usage_based" in (_cc_seat() or ""):
+        # ⚠Disabled credits (`on` False) are kept for display but do not move — no fast poll for them.
+        _ex = d.get("extra") or {}
+        if _ex.get("pct") is not None and _ex.get("on") is not False and "usage_based" in (_cc_seat() or ""):
             return 60
         pct = ((d.get("five_hour") or {}).get("pct")) or 0
         for lim, sec in QUOTA_STEPS:

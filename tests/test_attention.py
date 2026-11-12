@@ -66,7 +66,7 @@ class Base(unittest.TestCase):
 
 class TestPoints(Base):
     def test_point_table(self):
-        self.assertEqual(att.ATT_PTS, {"blocked": 100, "ask": 90, "conflict": 85, "mailidle": 75, "abort": 70, "ctx95": 65, "fail": 60,
+        self.assertEqual(att.ATT_PTS, {"blocked": 100, "ask": 90, "conflict": 85, "credit": 80, "mailidle": 75, "abort": 70, "ctx95": 65, "fail": 60,
                                        "wreck": 60, "stall": 55, "loop": 50, "toolfail": 45, "bgidle": 30, "bglong": 30,
                                        "ctx85": 25, "done": 20, "bgdone": 15})
 

@@ -293,7 +293,10 @@ def ext_rows():
             elif st == "done" and not v.get("pid") and now - (last + PIDLESS_IDLE_SEC) > EXT_DONE_KEEP_S:
                 continue                          # pid-less idle cutoff: folded as long as an ended row (R2)
             # ⚠No age cap on ask/blocked: a pending request leaves only on the CLI's own event or a dead pid (ext_gone_check).
-            ext_tok_refresh(plat, sid, v.get("transcript_path") or "")
+            tpath = v.get("transcript_path") or ""
+            if plat == "pi" and not tpath:   # ⚠the pi extension sends no transcript_path: find the file by sid
+                tpath = plat_pi.sid_path(sid, cwd)
+            ext_tok_refresh(plat, sid, tpath)
             tk = ext_tok(plat, sid) or ext_side_tok(plat, sid) or {}   # Copilot: no transcript_path, tokens from its records
             row = {
                 "id": "", "sid": "", "project": "?", "gotPrompt": 0,
@@ -337,6 +340,10 @@ def ext_rows():
                 row["mbox"], row["mboxSrc"] = mbox_codex(cwd)
             elif plat == "pi":    # pi logs in as `pi:<cwd>` or <folder>-pi (gemini_mailbox_mcp.sh pi), not the Claude id
                 row["mbox"], row["mboxSrc"] = mbox_pi(cwd)
+                # same rule as the hook-less row; session_msgs hits plat_pi's (size, mtime) cache filled by ext_tok_refresh
+                cr = plat_pi.credit(plat_pi.session_msgs(tpath))
+                if cr:
+                    row["credit"] = cr
             plm = None if dead or v.get("goneWhy") else plm_of(sid, now)   # shell-marker [pl:] stage; added only when live, like Claude rows
             if plm and st in ("wait", "abort") and _stop_after(v, now - plm.get("age", 0)):
                 plm = None   # ⚠turn ended after the mark: a held (45-min) shell marker would keep the stage «running»

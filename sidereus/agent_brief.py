@@ -231,6 +231,8 @@ def _why_en(s):
         return "Done · waiting for input %s %s" % (n, "s" if w.endswith("초") else "min")  # ⚠server sends seconds under 60 s
     if k == "bgdone":
         return "%s agent completion(s) unread" % n
+    if k == "credit":   # why = seconds since the last anthropic/ spend (numbers only)
+        return "Spending credits" + (" · %ss ago" % n if n else "")
     if k == "gone":
         return "Disconnected?" if w.endswith("?") else "Disconnected"
     if k == "conflict":

@@ -1,6 +1,7 @@
 """OAuth usage fetch (split out of sidereus/quota.py for the size cap): `_quota_fetch` and its `_qf_*` phases.
 State stays owned by `quota` (`_quota`/`_quota_lock`/`_quota_retry_after`, mutated in place here). ⚠Tests patch these names on this module."""
 import json
+import re
 import time
 from sidereus.config import IS_MAC
 from sidereus.warn import exc_name, warn_once
@@ -85,20 +86,33 @@ def _qf_parse(body):
         #   "used up" and nowhere showed how much was actually being spent (2026-09-09).
         #   ⚠Amounts are in **cents (minor unit)** — the CLI puts `spendLimitCents`·`usedCents` into these fields as-is.
         ex = body.get("extra_usage")
-        if isinstance(ex, dict) and ex.get("is_enabled"):
+        # ⚠Disabled is not absent: an exhausted/disabled credit line is kept with `on: False` and its reason
+        #   (`why`, a short code only); the line disappears only when `extra_usage` is missing.
+        if isinstance(ex, dict):
             # ★`at` is **the time this credit value was actually received** (2026-09-11). The payload `at` is
             #   refreshed whenever OMC refreshes 5h, but credits do not come through that path (OMC's cache has
             #   no credit slot), so **the amount looked "just now" while hours stale** — for the screen to state
             #   age, the slot needs its own timestamp (same reason as `keptAt` for 5h·7d).
             out["extra"] = {"pct": ex.get("utilization"), "used": ex.get("used_credits"),
                             "limit": ex.get("monthly_limit"), "cur": ex.get("currency") or "USD",
-                            "at": int(time.time())}
+                            "at": int(time.time()),
+                            "on": bool(ex.get("is_enabled")), "why": _qf_why(ex.get("disabled_reason"))}
     except Exception as e:
         warn_once("quota-shape",
                   "Could not parse the quota response ({err}) — usage is empty", vars={"err": type(e).__name__})
         _qf_err("shape " + type(e).__name__)
         return None
     return out
+
+
+_QF_WHY_RE = re.compile(r"[A-Za-z0-9_ .-]{1,60}")
+
+
+def _qf_why(v):
+    """`disabled_reason` as a short code (<=60 chars of [A-Za-z0-9_ .-]) or None — never free text on the page."""
+    if isinstance(v, str) and _QF_WHY_RE.fullmatch(v):
+        return v
+    return None
 
 
 def _qf_carry(out, prev, prev_at, _now):

@@ -172,15 +172,39 @@ def _used5_one(usg, who, now=None):
 WHO_TOP = 6   # same cut as usage.quota_who(top=6)
 
 
-def _who_pi(who, now=None):
+CREDIT_ROLL_S = 5 * 3600   # credit window when QWHO has no 5h start: rolling, flagged `roll`
+
+
+def _credit_tok(sessions, pi, roll):
+    """Set row `credit.tok` from pi_who_5h's per-sid sums (read before the WHO_TOP cut, so every sid counts)."""
+    by = {}
+    for e in pi.values():
+        for s, t in (e.get("sids") or {}).items():
+            by[s] = by.get(s, 0) + t
+    for i, r in enumerate(sessions):
+        if isinstance(r, dict) and isinstance(r.get("credit"), dict):
+            c = dict(r["credit"], tok=int(by.get(r.get("sid"), 0)))
+            if roll:
+                c["roll"] = 1
+            sessions[i] = dict(r, credit=c)   # ⚠copy: rows are shared with the cached snapshot (mail_idle does the same)
+
+
+def _who_pi(who, now=None, sessions=None):
     """Add pi rows (provider anthropic, inside who.start..now) to «Who is using the 5h» of the account QWHO shows.
     ⚠Any `acct`: QWHO shows the account in use (usage._who_window); pi's Claude login is assumed to be that one.
     ⚠`total` is a local sum (Claude transcripts via used5, else OTel), so pi is not in it: pi adds to total.
-    Re-sorts, cuts at WHO_TOP and folds the overflow into others/othersTok so rows + othersTok == total."""
-    if not who or not who.get("start"):
+    Re-sorts, cuts at WHO_TOP and folds the overflow into others/othersTok so rows + othersTok == total.
+    Rows of `sessions` with `credit` get `credit.tok` for the same window (rolling 5h when QWHO has no start)."""
+    start = float(who["start"]) if who and who.get("start") else 0.0
+    cr = [r for r in (sessions if isinstance(sessions, list) else ()) if isinstance(r, dict) and isinstance(r.get("credit"), dict)]
+    if not start and not cr:
         return who
     now = time.time() if now is None else now
-    pi = pi_who_5h(float(who["start"]), now)
+    pi = pi_who_5h(start or now - CREDIT_ROLL_S, now)
+    if cr:
+        _credit_tok(sessions, pi, not start)
+    if not start:
+        return who
     add = [{"name": nm, "tok": e["tok"], "n": len(e["sids"]), "plat": "pi",
             "sids": [{"sid": _sid8(s), "tok": t} for s, t in sorted(e["sids"].items(), key=lambda x: -x[1])[:5]]}
            for nm, e in pi.items() if e.get("tok")]
@@ -274,7 +298,8 @@ def _state_poll(since=0, ncards=50, acks_v=""):
     _fh = (_q0 or {}).get("five_hour") or {}
     _who = _piece("quotaWho", quota_who, None, _q0)
     _usg, _who = _piece("used5", _used5_one, (_usg, _who), _usg, _who)   # one 5h «used» figure on every surface
-    _who = _piece("quotaWhoPi", _who_pi, _who, _who)   # pi's Anthropic-billed use in the same window
+    _sessions = list(_sessions) if isinstance(_sessions, list) else _sessions   # ⚠_who_pi replaces credit rows by index: never in the cached snapshot's list
+    _who = _piece("quotaWhoPi", _who_pi, _who, _who, None, _sessions)   # pi's Anthropic-billed use in the same window (+ row credit.tok)
     _arun = _piece("archRun", arch_runs, {}, _sessions)
     _srun = _piece("secRun", sec_runs, {}, _sessions)
     _brun = _piece("briefRun", brief_runs, {}, _sessions)

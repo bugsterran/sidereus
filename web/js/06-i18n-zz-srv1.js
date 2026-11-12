@@ -46,6 +46,7 @@ Object.assign(I18N.ko, {
   "Could not link commits to sessions ({err})": "커밋-세션 연결을 만들지 못했습니다({err})",
   "Could not build the pipeline run model ({err})": "파이프라인 실행 모델을 만들지 못했습니다({err})",
   "Could not build external session rows ({err})": "외부 세션 행을 만들지 못했습니다({err})",
+  "Could not read pi auth file ({err})": "pi 인증 파일을 읽지 못했습니다({err})",
   "{plat} usage check failed ({err}) — hook check skipped": "{plat} 사용 여부 확인 실패({err}) — 훅 점검을 건너뜁니다",
   "Could not save the external session list ({err}) — it is lost on restart": "외부 세션 목록을 저장하지 못했습니다({err}) — 재시작하면 사라집니다",
   "Could not save the child-run list ({err})": "하위 실행 목록을 저장하지 못했습니다({err})",
