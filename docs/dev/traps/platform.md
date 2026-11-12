@@ -312,3 +312,9 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - Cause: the chip means «`auth.json` has `anthropic` with `type: oauth`» plus `anthropic/` entries in the session file; pi falls back to the `ANTHROPIC_API_KEY` env var, which Sidereus cannot see, so an API-key-billed session can still show the chip.
 - ⇒ No auth file or a non-`oauth` type = no chip (unknown is never treated as api_key or oauth). Tests `tests/test_pi_credit.py`, `tests/test_attention_credit.py`.
 - ⚠`auth.json` holds tokens: keep only each entry's `type` (memo included), report parse errors by exception type name only.
+
+## pi subagent children showed 0 tokens (`ext-hooks/pi-extension.ts` `message_end` · `sidereus/ext_store.py` `ext_ingest` Usage)
+- Cause: a `pi --mode json -p --no-session` child writes no session file (★20/20 runs in ext-runs.json had none), and tokens were read only from files.
+- ⇒ A child's extension sends a pi-only `Usage` event per assistant message (counts, generation id, model); stored in `_hooktok` only for a live pi row whose parent is a known pi row. Tests `tests/test_pi_child_tok.py`.
+- ⚠Never accept `Usage` for a session with a record file (parents, Claude-parented pi): file and hook counts would double. Never send it as `Stop` (flips row state per message).
+- ⚠`_run_note_locked` runs under `_ext_lock`: read `_hooktok` directly, never via `ext_side_sess`/`ext_side_tok` (non-reentrant lock, deadlock).

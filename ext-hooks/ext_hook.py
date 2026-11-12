@@ -95,6 +95,8 @@ for _p in ("copilot", "cursor", "cline", "windsurf", "warp", "trae", "zed", "gro
            "deepseek", "qwen", "kimi", "mistral", "ollama", "perplexity",
            "huggingface", "meta", "openrouter", "pi"):   # ⚠exclude Claude - Sidereus already sees it via transcripts
     EVENTS.setdefault(_p, dict(EVENTS["codex"]))
+# pi only: a subagent child has no session file, so its extension sends per-message token counts as `Usage`.
+EVENTS["pi"]["Usage"] = "Usage"
 
 
 def log(msg):
@@ -150,7 +152,8 @@ def build(platform, data, event_override=None):
                 out["cwd"] = r
                 break
     # Cursor writes no record file, so its stop hook is the only token source: counts and generation id only.
-    if platform == "cursor" and raw == "stop":
+    # A pi `-p --no-session` child is the same case; its extension sends the same keys on `Usage`.
+    if (platform == "cursor" and raw == "stop") or (platform == "pi" and raw == "Usage"):
         usage = {}
         for src, dst in (("input_tokens", "in"), ("output_tokens", "out"),
                          ("cache_read_tokens", "cr"), ("cache_write_tokens", "cw")):

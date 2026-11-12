@@ -495,6 +495,7 @@ servers to `<agent dir>/mcp.json` (mailbox through `gemini_mailbox_mcp.sh pi`; n
 | `tool_call` | `ext_hook.py` PreToolUse; bash also `pl_mark.py` · `pl_flow.py` |
 | `tool_execution_end` | `ext_hook.py` PostToolUse; bash also `pl_flow.py` |
 | `ui_prompt_start` · `agent_settled` · `session_shutdown` | Notification · Stop · SessionEnd |
+| `message_end` (subagent child only, assistant messages) | `ext_hook.py` Usage — token counts, generation id, model |
 | `session_start` · `agent_settled` | start the mail waiter `ext-hooks/pi_wake.py <sid> <cwd>` (one per session) |
 | `input` · `before_agent_start` · `agent_start` · `session_shutdown` | stop the mail waiter |
 

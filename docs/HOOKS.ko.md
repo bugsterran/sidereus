@@ -468,6 +468,7 @@ CLI 가 `ext-hooks/ext_hook.py --platform <key>` 를 실행하면, 스크립트�
 | `tool_call` | `ext_hook.py` PreToolUse; bash 는 `pl_mark.py` · `pl_flow.py` 도 |
 | `tool_execution_end` | `ext_hook.py` PostToolUse; bash 는 `pl_flow.py` 도 |
 | `ui_prompt_start` · `agent_settled` · `session_shutdown` | Notification · Stop · SessionEnd |
+| `message_end` (서브에이전트 자식만, assistant 메시지) | `ext_hook.py` Usage — 토큰 수, generation id, 모델 |
 | `session_start` · `agent_settled` | 메일 대기자 `ext-hooks/pi_wake.py <sid> <cwd>` 시작 (세션당 하나) |
 | `input` · `before_agent_start` · `agent_start` · `session_shutdown` | 메일 대기자 중지 |
 

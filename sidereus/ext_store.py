@@ -82,12 +82,9 @@ _HOST = socket.gethostname()
 
 def _ext_save_locked():
     """tmp + `os.replace` — dying midway leaves no half-written file. ⚠Call while holding `_ext_lock`."""
-    recs = []
-    for (plat, sid), v in _ext.items():
-        recs.append(dict(v, platform=plat, session_id=sid))
+    recs = [dict(v, platform=plat, session_id=sid) for (plat, sid), v in _ext.items()]
     try:
-        _atomic_write(EXT_FILE, json.dumps(recs, ensure_ascii=False).encode("utf-8"),
-                      tmp=EXT_FILE + ".tmp")
+        _atomic_write(EXT_FILE, json.dumps(recs, ensure_ascii=False).encode("utf-8"), tmp=EXT_FILE + ".tmp")
     except OSError as e:
         warn_once("ext-save", "Could not save the external session list ({err}) — it is lost on restart",
                   vars={"err": str(e)})
@@ -134,11 +131,8 @@ def _ext_load():
         for r in recs:
             if not isinstance(r, dict):
                 continue
-            plat = str(r.get("platform") or "")
-            sid = str(r.get("session_id") or "")
-            if not sid or plat not in EXT_PLAT:
-                continue
-            if _ext_aged_out(r, now):
+            plat, sid = str(r.get("platform") or ""), str(r.get("session_id") or "")
+            if not sid or plat not in EXT_PLAT or _ext_aged_out(r, now):
                 continue
             r.pop("platform", None)
             r.pop("session_id", None)
@@ -164,8 +158,7 @@ _agent_ok = lambda s: s.isascii() and _sid_ok(s, "._-")   # pi subagent name [A-
 
 def _runs_save_locked():
     try:
-        _atomic_write(EXT_RUNS_FILE, json.dumps(_runs, ensure_ascii=False).encode("utf-8"),
-                      tmp=EXT_RUNS_FILE + ".tmp")
+        _atomic_write(EXT_RUNS_FILE, json.dumps(_runs, ensure_ascii=False).encode("utf-8"), tmp=EXT_RUNS_FILE + ".tmp")
     except OSError as e:
         warn_once("ext-runs-save", "Could not save the child-run list ({err})", vars={"err": str(e)})
 
@@ -208,8 +201,7 @@ _hooktok = {}                       # "plat|sid" → {"cwd", "gens": {gen_id: [i
 
 def _hooktok_save_locked():
     try:
-        _atomic_write(EXT_HOOKTOK_FILE, json.dumps(_hooktok, ensure_ascii=False).encode("utf-8"),
-                      tmp=EXT_HOOKTOK_FILE + ".tmp")
+        _atomic_write(EXT_HOOKTOK_FILE, json.dumps(_hooktok, ensure_ascii=False).encode("utf-8"), tmp=EXT_HOOKTOK_FILE + ".tmp")
     except OSError as e:
         # Reuses the ext-save template so no new I18N.ko entry is needed.
         warn_once("ext-hooktok-save", "Could not save the external session list ({err}) — it is lost on restart",
@@ -315,13 +307,13 @@ def ext_side_msgs(since=0.0):
 
 
 def ext_side_sess(plat, sid):
-    """One session's side messages (same merge as `ext_side_msgs`); {} for anything but Copilot."""
-    if plat != plat_copilot.PLAT:
+    """One session's side messages (same merge as `ext_side_msgs`); {} for anything but Copilot and pi children."""
+    if plat not in (plat_copilot.PLAT, "pi"):
         return {}
     with _ext_lock:
         e = _hooktok.get(plat + "|" + str(sid))
         ms = {g: (v[0], v[1], v[2] + v[3], 0, float(v[4]), v[5], None) for g, v in ((e or {}).get("gens") or {}).items()}
-    ms.update(plat_copilot.usage_msgs(sid))
+    ms.update(plat_copilot.usage_msgs(sid) if plat == plat_copilot.PLAT else {})
     return ms
 
 
@@ -353,7 +345,8 @@ def _run_note_locked(plat, sid, v, ev, ts):
     r["state"] = "done" if ev == "SessionEnd" else (v.get("state") or "wait")
     if ev == "SessionEnd":
         ext_tok_refresh(plat, sid, v.get("transcript_path") or "")
-        tk = ext_tok(plat, sid) or {}
+        g = list(((_hooktok.get(plat + "|" + sid) or {}).get("gens") or {}).values())   # pi child: no file, hook counts
+        tk = ext_tok(plat, sid) or ({"tok": sum(sum(x[:4]) for x in g), "model": max(g, key=lambda x: x[4])[5]} if g else {})
         if tk.get("tok"):
             r["tok"] = int(tk["tok"])
         if not r.get("model") and tk.get("model"):
@@ -380,6 +373,13 @@ def ext_ingest(req):
     key = (plat, sid)
     with _ext_lock:
         _ext_prune_locked(now)
+        if ev == "Usage":   # ⚠counts only, no row state; only a live pi child of a known pi parent (a file would double)
+            cur, par = _ext.get(key) or {}, str(req.get("parent") or "")
+            if plat != "pi" or not par or cur.get("parent") != par or cur.get("ended") or ("pi", par) not in _ext \
+                    or not _hooktok_note_locked(plat, sid, req, cur.get("cwd") or "", ts):
+                return False, "usage refused"
+            _hooktok_save_locked()
+            return True, "usage"
         if ev == "SessionEnd":
             _ended_note_locked(key, now)
             if (cur := _ext.get(key)) is not None and not cur.get("ended"):   # repeated SessionEnd on a folded row: no-op

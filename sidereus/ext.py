@@ -70,6 +70,8 @@ def ext_usage_today(now=None):
                 d.setdefault(m, v)
     for k, msgs in ext_side_msgs(min(mid, win)).items():   # hook-sent tokens (Cursor) + Copilot usage records
         sess.setdefault(k, {}).update(msgs)
+        if k[0] in PLAT_MODS:                # ingest keeps hook counts of adapter platforms for subagent children only
+            subs.add(k)
     out = {}
     for (plat, _sid), msgs in sess.items():
         s = _tok_sum(msgs, mid)
@@ -420,7 +422,7 @@ def ext_children(rows, now=None):
             plat = r.get("plat") or "gemini"
             if lv:
                 ext_tok_refresh(plat, sid, lv.get("transcript_path") or "")
-            tk = ext_tok(plat, sid) or {}
+            tk = ext_tok(plat, sid) or ext_side_tok(plat, sid) or {}   # a pi `-p --no-session` child: hook-sent counts
             st = (lv.get("state") if lv else "") or r.get("state") or "done"
             end = float((lv or {}).get("lastSeen") or r.get("end") or now)
             start = float(r.get("start") or end)

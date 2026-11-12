@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Status bar: the credit line no longer disappears when extra usage is disabled or used up; it stays with «off» and the reason.
+- Sessions: pi subagent child lines show their tokens instead of 0; the Sidereus pi extension now reports each child reply's token counts (run `/reload` in open pi sessions to load it).
 
 ## [0.18.0] - 2026-11-12
 

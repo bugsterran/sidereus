@@ -1,6 +1,7 @@
 // Sidereus extension for pi (https://pi.dev): forwards session/tool events to the Sidereus hook scripts.
 // Installed by Settings › "Diagnostics" › "Connect" (sidereus/hook_connect_pi.py renders the three placeholders below).
-// ⚠Metadata only: payloads carry session id, cwd, event, tool name and the extension rev; only the bash command goes to pl_mark/pl_flow.
+// ⚠Metadata only: payloads carry session id, cwd, event, tool name and the extension rev (a child adds token counts
+//   and model); only the bash command goes to pl_mark/pl_flow.
 //   Prompt text and tool results are never sent.
 // ⚠Never throws: every handler is wrapped, a missing Python or a slow script only drops that one event.
 // Mail wake: one ext-hooks/pi_wake.py child per instance waits on the mailbox (no model turn while waiting) and asks
@@ -295,6 +296,23 @@ export default function (pi: any) {
     const command = commands.has(id) ? commands.get(id) : String(event?.args?.command ?? "");
     commands.delete(id);
     run("hooks/pl_flow.py", Object.assign(base(ctx, "PostToolUse"), { tool_name: tool, tool_input: { command } }));
+  });
+
+  // ⚠A `pi -p --no-session` child writes no session file, so its token counts ride a pi-only Usage event (counts,
+  //   generation id, model only; parents read their file and never send it). Not Stop: that would flip row state per message.
+  let gens = 0;
+  const genBase = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  on("message_end", async (event, ctx) => {
+    const m = event?.message;
+    const u = m?.usage;
+    if (!CHILD || m?.role !== "assistant" || !u || typeof u !== "object") return;
+    const rid = typeof m.responseId === "string" && /^[\w-]{1,64}$/.test(m.responseId) ? m.responseId : "";
+    const p: any = Object.assign(base(ctx, "Usage"), {
+      generation_id: rid || `${genBase}-${++gens}`,
+      input_tokens: u.input, output_tokens: u.output, cache_read_tokens: u.cacheRead, cache_write_tokens: u.cacheWrite,
+    });
+    if (typeof m.model === "string" && m.model) p.model = m.model.slice(0, 40);
+    send(p);
   });
 
   on("ui_prompt_start", async (_event, ctx) => { send(base(ctx, "Notification")); });
