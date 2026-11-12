@@ -175,6 +175,20 @@ WHO_TOP = 6   # same cut as usage.quota_who(top=6)
 CREDIT_ROLL_S = 5 * 3600   # credit window when QWHO has no 5h start: rolling, flagged `roll`
 
 
+def _credit_off(sessions, q0):
+    """Drop row `credit` while the account's extra usage is off (`quota.extra.on is False`).
+    ⚠With credits off, pi's OAuth requests still succeed, so they draw on the plan's 5h limit, not credits — the
+    «Credits» chip and «Spending credits» signal would be false. Unknown `on` (None/missing) keeps the row: missing a
+    real credit spend costs money, a stale chip does not. ⚠`extra` is the primary account; pi's login is assumed to be
+    that account (same assumption as _who_pi)."""
+    ex = (q0 or {}).get("extra") if isinstance(q0, dict) else None
+    if not (isinstance(ex, dict) and ex.get("on") is False) or not isinstance(sessions, list):
+        return sessions
+    # ⚠copy: rows are shared with the cached snapshot
+    return [{k: v for k, v in r.items() if k != "credit"} if isinstance(r, dict) and "credit" in r else r
+            for r in sessions]
+
+
 def _credit_tok(sessions, pi, roll):
     """Set row `credit.tok` from pi_who_5h's per-sid sums (read before the WHO_TOP cut, so every sid counts)."""
     by = {}
@@ -294,6 +308,7 @@ def _state_poll(since=0, ncards=50, acks_v=""):
     # ── assembling the dict itself needs no lock (only consistency at the moment each piece is read mattered)
     # unread mail on a session nothing will wake -> row mailIdle; needs the cursors/acks/rooms read above (bus lines from its parse cache)
     _sessions = _piece("mailIdle", mail_idle_annotate, _sessions, _sessions, None, _cursors, _acks, _rooms)
+    _sessions = _piece("creditOff", _credit_off, _sessions, _sessions, _q0)   # before attention: it reads row `credit`
     _attn = _piece("attention", attention, None, _sessions, _cards, _q0, _cread, _cread_ids)
     _fh = (_q0 or {}).get("five_hour") or {}
     _who = _piece("quotaWho", quota_who, None, _q0)

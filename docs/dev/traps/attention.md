@@ -4,6 +4,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Alarms, cards, health strip, attention
 
+- ⚠**«Spending credits» must not fire while credits are off** (2026-11-12). `plat_pi.credit` only checks pi's Anthropic OAuth login and recent `anthropic/` replies; with `quota.extra.on == false` those requests still succeed and draw on the plan's 5h limit. ★Live: two pi rows flagged while `extra.on` was false, their latest requests succeeding with no error. ⇒ `state._credit_off` drops row `credit` before `attention` (chip and signal both go). ⚠Only an explicit `False` drops it — unknown `on` keeps the warning. Test: `test_credit_off.py`.
 - ⚠**«... done N unread» (bgdone) clears on its own once the session carries on** (2026-10-21). Same rule as failure cards: `_card_sigs` drops an `agent`/`bgdone` card when the owning row's last activity is past card time + `ATT_RESUME_GRACE_S` (`_resumed`).
   - ⚠A card whose `sid` differs from the owning row never counts as resumed. «Seen» / read keys are unchanged.
 - ⚠**«Mail waiting · session idle» is only for `state == wait` with no fresh wake lock** (2026-10-20). A `.wake/<sid>.lock` touched within 15 s (`sessions.WAKE_STALE_S`) means a waiter holds the session for mail, not idle; a working session reads its mail at turn end. ⇒ `mail_idle.annotate` skips both and counts only unacked/undelivered posts past the cursor, older than `mail_idle_min` (default 10). ⚠Counts and age only — never subject or body. Test: `test_mail_idle.py`.
