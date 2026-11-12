@@ -120,7 +120,7 @@ function sessWorkBadges(x){
   const wrk = (x.wreck > 0)
     ? '<span class=swr data-wreck="'+esc(x.cwd)+'" title="'+esc(TV({msg: '{n} files touched by an interrupted subagent are still uncommitted — you decide whether to finish or revert. Click to open the diff', vars: {n: x.wreck}}))
       +'">'+T('Leftover ')+x.wreck+'</span>' : '';
-  return errb + wrk + sessPlChip(x);
+  return errb + wrk + (typeof gmsParChip === 'function' ? gmsParChip(x, 'sgpar') : '') + sessPlChip(x);   // child CLIs running at once (40b)
 }
 // Action group: resume copy · terminal jump.
 function sessActs(x){

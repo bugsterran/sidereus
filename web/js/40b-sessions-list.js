@@ -208,6 +208,25 @@ function sessGms(list){
                   g.tok ? fmtTok(g.tok) + ' ' + T('Tokens') : '', st].filter(Boolean).join(' · ')};
   });
 }
+// Live child CLI runs of a session, one per child sid — the one predicate behind the drawer chip, the «Working now» card and plNowSt.
+// ⚠A child seen twice (two polls/sources) counts once; a row without gms is [] (no marker), never a «×0».
+function gmsLive(x){
+  const seen = {};
+  return ((x && x.gms) || []).filter(g => {
+    if(!g || g.done) return false;
+    const k = g.sid || '';
+    if(!k) return true;
+    return seen[k] ? false : (seen[k] = true);
+  });
+}
+function gmsRun(x){ return gmsLive(x).filter(g => g.run); }
+// «parallel ×N» chip when 2+ children of this session run at once; cls = the host's chip class.
+function gmsParChip(x, cls){
+  const n = gmsRun(x).length;
+  if(n < 2) return '';
+  const s = TV({msg: 'parallel ×{n}', vars: {n: n}});
+  return '<span class="gmspar' + (cls ? ' ' + cls : '') + '" title="' + esc(s) + '">' + esc(s) + '</span>';
+}
 // ★Workflow-tool runs (2026-09-26): agents under subagents/workflows/ were invisible. One collapsible node per run —
 //   «Workflow sidereus-change ▰▰▱▱ 1/4 · Implement · 4m · 11M tokens», children = journal labels. Metadata only.
 const wfFold = new Set();   // run ids the user collapsed (the list re-renders every poll, so <details> state lives here)

@@ -46,13 +46,26 @@ function plNowAgentRows(x){
   const runOf = a => { const d = plDescStage(a.lab); return d && names.includes(d.name) ? d.name : ''; };
   return names.map(n => plNowAgents(x, a => runOf(a) === n, 'plnagrn', T('Subagents of pipeline run') + ': ' + n)).join('') + plNowAgents(x, a => !runOf(a));
 }
+// Live child CLI runs (40b gmsLive) under the card, same row shape as a subagent: logo = child platform · label = cmd/CLI name · running dot.
+// ⚠Metadata only (rule 1): label, model, time, tokens — never task/prompt. No data-pntid: a click picks the parent's run only, no popup.
+function plNowGms(x){
+  const all = typeof gmsLive === 'function' ? gmsLive(x) : [];
+  const ord = all.filter(g => g.run).concat(all.filter(g => !g.run)), shown = ord.slice(0, PLNOW_AGMAX), more = ord.length - shown.length;   // cap drops idle children first
+  if(!shown.length) return '';
+  return '<div class=plnag>' + shown.map((c, i) => {
+    const lab = c.cmd || platName(c.plat), tip = [lab, c.model || '', ago(Math.max(0, c.dur || 0)), c.tok ? fmtTok(c.tok) : '', T(c.run ? 'Running' : 'Idle')].filter(Boolean).join(' · ');
+    const g = { sess: false, type: lab, plat: c.plat || '', br: i === shown.length - 1 && !more ? '└' : '├', items: [{}] };
+    return '<button type=button class="plnagr tlnm' + (c.run ? '' : ' quiet') + '" data-pnagc="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '"><b>' + tlAgNmB(g, !!c.run) + '</b></button>';
+  }).join('') + (more > 0 ? '<div class=plnagm>' + esc(TV({msg: '+{n} more', vars: {n: more}})) + '</div>' : '') + '</div>';
+}
 // Status: need = blocked on the person · work = a turn is running, or (turn ended, 'wait') its open run / a live subagent / an open bg task still works · idle = else.
 // ⚠One predicate for the row, the rail dot and the canvas (plPrLive): state alone read «Idle» while tagged background work ran.
 function plNowSt(x){
   if(x.blocked || x.state === 'ask') return 'need';
   if(['tool', 'think', 'run', 'sent', 'stopping'].includes(x.state)) return 'work';
   const run = (x.plrun || []).some(r => r && !r.end && plPrLive(r)), sub = (x.sub || []).some(a => a && (a.busy || !(a.idle > PLNOW_QUIET)));
-  return run || sub || (x.bgs || []).length ? 'work' : 'idle';
+  const gms = typeof gmsRun === 'function' && gmsRun(x).length > 0;   // a running child CLI (only g.run counts; idle children do not)
+  return run || sub || gms || (x.bgs || []).length ? 'work' : 'idle';
 }
 const PLNOW_ST = { work: 'Working', need: 'Needs you', idle: 'Idle' };
 // Plain-text run summary for the row's aria-label (the visible summary carries its state by colour/dot too).
@@ -79,7 +92,8 @@ function plNowList(ss){
     const on = !!PLS.nowSid && x.sid === PLS.nowSid, k = plNowSt(x), it = { cwd: x.cwd || '', plat: x.plat || '', state: k === 'work' && x.state === 'wait' ? 'run' : x.state, blocked: x.blocked, idle: x.ageSec };   // dot agrees with plNowSt (list item only, x untouched)
     const st = T(PLNOW_ST[k]), al = [x.project || '', st, plNowRunTxt(x)].filter(Boolean).join(' · ');   // ⚠project is user data: never through T()
     return '<div class="plnlr' + (on ? ' on' : '') + '"><button type=button class="plnli tlnm' + (on ? ' on' : '') + '" data-pncwd="' + esc(x.cwd || '') + '" data-pnplat="' + esc(x.plat || '') + '" title="' + esc((x.project || '') + '\n' + st) + '" aria-label="' + esc(al) + '"'
-      + (on ? ' aria-current=true' : '') + '>' + tlSessNmB({ sess: true, cwd: x.cwd || '', plat: x.plat || '', proj: x.project || '', items: [it], wtKid: typeof tlWtOf === 'function' && tlWtOf(x.cwd || '') ? 1 : 0 }, it, 0, 0, true) + plNowRun(x, k) + '</button>' + plNowAgentRows(x) + '</div>';
+      + (on ? ' aria-current=true' : '') + '>' + tlSessNmB({ sess: true, cwd: x.cwd || '', plat: x.plat || '', proj: x.project || '', items: [it], wtKid: typeof tlWtOf === 'function' && tlWtOf(x.cwd || '') ? 1 : 0 }, it, 0, 0, true)
+      + (typeof gmsParChip === 'function' ? gmsParChip(x, 'plngpar') : '') + plNowRun(x, k) + '</button>' + plNowAgentRows(x) + (typeof plNowGms === 'function' ? plNowGms(x) : '') + '</div>';   // typeof: harnesses load plNowList alone
   }).join('') + hc + '</aside>';
 }
 // List | run view; the list width uses the 81i grip (key sidereus.plmd, px).

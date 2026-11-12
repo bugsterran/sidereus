@@ -199,6 +199,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ Watch canvas | result pane | «Running N» card take shares of the free height (48k `plWatchFit`, ls `sidereus.plwv`, two grips), never their content; the card is always present.
 - ⇒ Subagents appear only as the session's live subagent tree (48j `plNowAgents`, max 6 + «+N more»); no per-row Timeline link.
 - ⚠Never size the list by its content or render it only when sessions exist.
+- ⇒ Child CLI runs (`x.gms`) sit under the card as `plNowGms` rows (no `data-pntid`: click = parent run, no popup); «parallel ×N» and `plNowSt` read one predicate, 40b `gmsLive`/`gmsRun` (deduped by child sid, only `g.run` counts). ⚠Never count `gms` elsewhere or show ×0. Test: `tests/test_pl_now_gms_js.py`.
 
 ## Watch/Edit split (48k `PLMODE`/`plModeSet`/`plWatchOn`, 48h `plRO`)
 
