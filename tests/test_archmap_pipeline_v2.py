@@ -110,7 +110,7 @@ class ArchMapPipelineV2Test(unittest.TestCase):
 
     def test_request_lists_every_title(self):
         # the request text names every stage verbatim ([pl:] tags match them)
-        with open(os.path.join(ROOT, "web", "js", "84j-structure-arch.js"), encoding="utf-8") as f:
+        with open(os.path.join(ROOT, "web", "js", "84jc-structure-arch-request.js"), encoding="utf-8") as f:
             src = f.read()
         self.assertIn("'.json (" + " → ".join(TITLES) + ")\\n'", src)
 

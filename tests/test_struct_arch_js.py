@@ -26,7 +26,9 @@ def _read(p):
 
 _SRC_P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84j-structure-arch.js")
 _SRC = _read(_SRC_P)
-SEND = re.search(r"^async function archSend\(.*?^}", _SRC, re.S | re.M).group(0)   # js_fn matches plain `function` only
+_REQ = _read(_SRC_P.replace("84j-structure-arch.js", "84jc-structure-arch-request.js"))   # request/preview/send split out of 84j
+_GRAPH = _read(_SRC_P.replace("84j-structure-arch.js", "84jd-structure-arch-graph.js"))   # pure mermaid source split out of 84j
+SEND = re.search(r"^async function archSend\(.*?^}", _REQ, re.S | re.M).group(0)   # js_fn matches plain `function` only
 PRE = "\n".join([
     "const LANG = 'ko';", i18n_prelude("LANG", ("T", "KE", "U", "TV")), "function sid8(s){ return String(s).slice(0, 8); }",
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
@@ -115,8 +117,8 @@ class StructArch(unittest.TestCase):
         for t in ("Direct reference", "Estimated", "External", "incoming", "calls, 2 steps down", "unrelated, dimmed"):
             self.assertIn(t, leg)
         # the diagram draws pairs with -.-> (e-dot) / --> (e-solid) and externals as ([..]) (s-stadium); hover tags .arin/.arout under svg.archdim
-        self.assertIn("(p.est ? '-.->' : '-->')", _SRC)
-        self.assertIn("m.kind === 'external' ? '(['", _SRC)
+        self.assertIn("(p.est ? '-.->' : '-->')", _GRAPH)
+        self.assertIn("m.kind === 'external' ? '(['", _GRAPH)
         self.assertIn("g.classList.toggle('arin', a); g.classList.toggle('arout', b);", _SRC)
         self.assertIn("svg.classList.toggle('archdim', !!S);", _SRC)
         css = _read(os.path.join(os.path.dirname(os.path.dirname(_SRC_P)), "css", "79-structure-arch.css"))
@@ -435,7 +437,7 @@ class StructArch(unittest.TestCase):
         self.assertEqual(r[0].split("\n")[5], ARCH_DM_LANG % ("Korean", "Korean"))
         self.assertEqual(r[1].split("\n")[5], ARCH_DM_LANG % ("English", "English"))
         self.assertEqual(r[1], ARCH_DM_CC + ARCH_DM_TAG)
-        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84j-structure-arch.js"), encoding="utf-8") as f:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "js", "84jc-structure-arch-request.js"), encoding="utf-8") as f:
             src = f.read()
         self.assertIn("archDmBody(ARCH_PL, repo, home, rk.vb, !!(cur && cur.sh), null, LANG)", src)   # preview
         self.assertIn("archDmBody(ARCH_PL, q.p, home, archReqOf(d).vb, !!cur.sh, null, LANG)", src)   # sent body

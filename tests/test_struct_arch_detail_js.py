@@ -1,5 +1,5 @@
 """84j3 module detail on the Architecture map (R1-R4): side panel fields and neighbour tree, flows through a module and their
-highlight, path bar + one-level-up chain + Esc guards, no view movement; plus 84j archReduce keeping cross-layer pairs."""
+highlight, path bar + one-level-up chain + Esc guards, no view movement; plus 84jd archReduce keeping cross-layer pairs."""
 import json
 import os
 import re
@@ -17,6 +17,8 @@ with open(DET_P, encoding="utf-8") as fh:
     DET = fh.read()
 with open(os.path.join(WEB, "js", "84j-structure-arch.js"), encoding="utf-8") as fh:
     J = fh.read()
+with open(os.path.join(WEB, "js", "84jd-structure-arch-graph.js"), encoding="utf-8") as fh:
+    JD = fh.read()   # archPairs/archReduce/archSrc split out of 84j
 DET_FNS = re.findall(r"^function (\w+)\(", DET, re.M)
 CONSTS = "\n".join(re.findall(r"^const ARCH_NBR_\w+ = .*$", DET, re.M))
 # Fake svg: nodes [data-p] and edge groups .mmdfe with a Set-backed classList (enough for archHovPaint / archLitPaint).
@@ -253,7 +255,7 @@ class ArchReduceLayers(unittest.TestCase):
         self.assertEqual(r[0], ["u1>u2", "u2>u3", "u3>ep"])     # reduction unchanged: the est shortcut u1->ep is hidden
         self.assertIn('data-ae="3"', r[1])                      # ...but u1's panel lists u1 -> ep
         self.assertIn("<b>ep</b>", r[1])
-        self.assertNotIn("p.x", J)                              # no cross-layer exemption in archReduce
+        self.assertNotIn("p.x", JD)                             # no cross-layer exemption in archReduce
 
 
 if __name__ == "__main__":
