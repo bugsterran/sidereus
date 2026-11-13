@@ -21,7 +21,18 @@ function archAskOk(d){
 }
 // Pure: owning sessions = live sessions whose cwd is the repo itself (84j archCands group 0).
 function archOwners(cands){ return (cands || []).filter(c => c && c.g === 0); }
-function archBriefBusy(p){ return !!((typeof archReqLive === 'function' && archReqLive(archReqLast(p, ARCH_ASK_PL))) || (BRIEFRUN && BRIEFRUN[p])); }   // ⚠'sent' counts: a second request waits for done/gone
+// arch-brief pipeline-file requests (Pipelines «Run», or sent from Structure before «Ask the session to draw»): ⚠their record still needs
+// its row and «Stop» here, and a live one blocks a new ask like a brief-ask does.
+const ARCH_BRIEF_PL = 'arch-brief';
+// Which request record the brief slot shows: a live one over a finished one, then the newer; brief-ask when neither exists.
+function archBriefPl(p){
+  if(typeof archReqLast !== 'function') return ARCH_ASK_PL;
+  const a = archReqLast(p, ARCH_ASK_PL), b = archReqLast(p, ARCH_BRIEF_PL);
+  if(!b) return ARCH_ASK_PL;
+  if(!a || archReqLive(b) !== archReqLive(a)) return !a || archReqLive(b) ? ARCH_BRIEF_PL : ARCH_ASK_PL;
+  return archReqMs(b) > archReqMs(a) ? ARCH_BRIEF_PL : ARCH_ASK_PL;
+}
+function archBriefBusy(p){ return !!((typeof archReqLive === 'function' && (archReqLive(archReqLast(p, ARCH_ASK_PL)) || archReqLive(archReqLast(p, ARCH_BRIEF_PL)))) || (BRIEFRUN && BRIEFRUN[p])); }   // ⚠'sent' counts: a second request waits for done/gone
 // Pure: header button (disabled with the reason when there is no HEAD map) + its menu while ARCH.xm === p (absolute: the header never shifts).
 function archXBtn(d, p){
   const ok = archXOk(d), open = ok && !!p && ARCH.xm === p;
@@ -49,7 +60,7 @@ function archXMenu(d, p){
 }
 // Paint signature part (84j archPaint): menu, ask preview, request record and server run.
 function archXSig(p){
-  return JSON.stringify([ARCH.xm === p, ARCH.breq || null, typeof archReqLast === 'function' ? archReqLast(p, ARCH_ASK_PL) : null, !!(BRIEFRUN && BRIEFRUN[p])]);
+  return JSON.stringify([ARCH.xm === p, ARCH.breq || null, typeof archReqLast === 'function' ? [archReqLast(p, ARCH_ASK_PL), archReqLast(p, ARCH_BRIEF_PL)] : null, !!(BRIEFRUN && BRIEFRUN[p])]);
 }
 // ⚠95-poll repaints Structure only on a session change and archTick watches arch-map: without this Sent → Done never shows.
 let ARCH_BRIEF_SIG = '';
@@ -98,7 +109,7 @@ function archBriefReqHtml(q, repo, home, cands, ask){
 // Slot under the header (84j .archck): request row (84l2) + the open preview.
 function archBriefSlot(p, home, cands){
   const q = ARCH.breq && ARCH.breq.p === p ? ARCH.breq : null, d = ARCH.cache && ARCH.cache[p], pv = q ? archBriefReqHtml(q, p, home, archOwners(cands), d && d.ask) : '';
-  return typeof archReqSlot === 'function' ? archReqSlot(p, ARCH_ASK_PL, pv, pv) : pv;
+  return typeof archReqSlot === 'function' ? archReqSlot(p, archBriefPl(p), pv, pv) : pv;
 }
 // Guard + send: only the preview's confirm calls this (no auto-send).
 async function archBriefSend(){

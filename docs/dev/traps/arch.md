@@ -531,3 +531,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: stored brief.html files are served only when their bytes match the gate's `brief.ok.json` sha256; any v1 renderer change breaks every stored v1 brief.
 - ⇒ v2 lives in `arch_brief_v2` / `arch_brief_html_v2`; `arch_brief.render` dispatches on `v` and the v1 path stays `arch_brief_html.render`. `brief.ok.json` stays `{v:1, sha256, commit}` for both. The gate refuses a new v1 brief.json («redraw as v2»): it would skip the v2 rules.
 - ⚠Never touch the v1 path for a v2 need. `tests/test_arch_brief.py` `V1GoldenTest` pins the v1 sha.
+
+## arch-brief request record lost its row and «Stop» (`web/js/84m-structure-arch-brief.js` `archBriefPl`)
+- Cause: «Ask the session to draw» moved the Structure slot to `brief-ask` records only; an `arch-brief` pipeline-file request (Pipelines «Run», or one sent from Structure before) had no row, so no «Stop».
+- ⇒ The slot shows whichever record is live (then the newer); a live `arch-brief` record also blocks a new ask (`archBriefBusy`), and `archXSig` watches both.
+- ★`tests/test_struct_arch_brief_js.py` `test_arch_brief_pipeline_record_keeps_row_and_stop`.

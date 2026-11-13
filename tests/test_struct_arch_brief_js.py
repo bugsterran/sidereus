@@ -13,7 +13,7 @@ PRE = "\n".join([
     "let LANG = 'ko';", i18n_prelude("LANG", ("T", "TV")),
     "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c]));",
     "function sid8(s){ return String(s).slice(0, 8); } function mboxIn(x){ return !!x.mbox; }",
-    "const ARCH_ASK_PL = 'brief-ask';",
+    "const ARCH_ASK_PL = 'brief-ask', ARCH_BRIEF_PL = 'arch-brief';",
 ])
 FNS = ("archBriefHref", "archXOk", "archXHead", "archAskOk", "archOwners", "archBase", "archCands", "archHome", "archBriefBusy", "archXBtn", "archXMenu",
        "archAskBody", "archNoHome", "archWhyOff", "archBriefReqHtml")
@@ -201,6 +201,30 @@ process.stdout.write(JSON.stringify([b0, b1, b3, s0 !== s1, s1 !== s2]));"""
         r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
         self.assertEqual(r.returncode, 0, r.stderr.decode())
         self.assertEqual(json.loads(r.stdout), [False, True, False, True, True])
+
+    def test_arch_brief_pipeline_record_keeps_row_and_stop(self):
+        """A live arch-brief pipeline-file request (Pipelines «Run», or sent before brief-ask) keeps its row + «Stop» and blocks a new ask."""
+        js = PRE + "\nlet BRIEFRUN = {}; const ARCH = {xm: '', breq: null, req: null, pstop: null, cache: {}}; let PLREQ = {};\n" + "\n".join(js_fn(n) for n in (
+            "archBriefPl", "archBriefBusy", "archXSig", "archBriefSlot", "archReqMs", "archReqRows", "archReqLive", "archReqLast", "archReqStopOk",
+            "archReqWho", "archReqRowHtml", "archReqSlot")) + """
+const ARCH_REQ_KEEP_MS = 3600000, ARCH_REQ_LBL = {sent: 'Sent', run: 'Running', stopping: 'Stopping', stopped: 'Stopped', done: 'Done', gone: 'No session'};
+const now = Date.now(), row = (id, pl, st, at) => ({id, pipeline: pl, state: st, stage: 'draw', at, to: 'mb', sid: 'sid12345678'});
+PLREQ = {'/r': [row('b1', 'arch-brief', 'run', now - 60000)]};
+const live = [archBriefPl('/r'), archBriefBusy('/r'), archBriefSlot('/r', '', [])];
+PLREQ = {'/r': [row('b1', 'arch-brief', 'run', now - 60000), row('a1', 'brief-ask', 'done', now)]};
+const liveOverDone = archBriefPl('/r');
+PLREQ = {'/r': [row('b1', 'arch-brief', 'done', now - 60000), row('a1', 'brief-ask', 'done', now)]};
+const newer = [archBriefPl('/r'), archBriefBusy('/r')];
+PLREQ = {};
+process.stdout.write(JSON.stringify([live, liveOverDone, newer, archBriefPl('/r')]));"""
+        r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+        self.assertEqual(r.returncode, 0, r.stderr.decode())
+        live, live_over_done, newer, empty = json.loads(r.stdout)
+        self.assertEqual(live[:2], ["arch-brief", True])
+        self.assertIn('data-arstop="b1"', live[2])
+        self.assertEqual(live_over_done, "arch-brief")
+        self.assertEqual(newer, ["brief-ask", False])
+        self.assertEqual(empty, "brief-ask")
 
     def test_menu_wrapper_not_clipped(self):
         """R1: the span wrapper overrides 40-tokens `.wvh span{overflow:hidden}`, or the menu is clipped away."""
