@@ -7,7 +7,7 @@ import os
 import re
 import unittest
 
-from tests._load import ROOT, js_all, js_fn
+from tests._load import ROOT, js_fn
 from tests.test_pipeline_graph import P, _js
 
 FNS = ("plEntKey", "plEnt", "plCurEnt", "plViewCarry", "plResetEnt", "plFit", "plFitKey", "plSizeKey", "plFitRaw", "plCvNeed", "plWrapCols",
@@ -15,12 +15,6 @@ FNS = ("plEntKey", "plEnt", "plCurEnt", "plViewCarry", "plResetEnt", "plFit", "p
        "plNowPickApply", "plZFloor", "plSaveStages", "plPlaced")
 ASYNC = ("plSave",)   # js_fn matches `function name(` only
 
-
-def _async_fn(name):
-    m = re.compile(r"^async function " + name + r"\(.*?^}", re.S | re.M).search(js_all())
-    if m is None:
-        raise LookupError("web/js: no top-level async function " + name)
-    return m.group(0)
 
 STUBS = r"""
 const PL_ZMIN = 0.8, PL_ZFIT = 0.4, PL_SPLIT = { v: '--plpanh', key: 'sidereus.plpanh', min: 200, cv: 200 };
@@ -43,7 +37,7 @@ const box = { querySelector(s){ return s === '.plcv' ? cv : null; } };
 
 
 def run(body):
-    src = "\n".join([js_fn(f) for f in FNS] + [_async_fn(f) for f in ASYNC])
+    src = "\n".join([js_fn(f) for f in FNS] + [js_fn(f) for f in ASYNC])
     # count centre/fit calls without changing what they do
     spy = ("const _c = plCentre; plCentre = function(){ CENTRES++; return _c.apply(null, arguments); };"
            "const _f = plFit; plFit = function(){ FITS++; return _f.apply(null, arguments); };")

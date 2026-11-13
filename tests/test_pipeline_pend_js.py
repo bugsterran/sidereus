@@ -1,11 +1,10 @@
 """«Pipelines» jump before the project list loads (plOvPick + plLoadProjs): the picked project survives the list load."""
 import json
-import re
 import shutil
 import subprocess
 import unittest
 
-from tests._load import js_all, js_fn
+from tests._load import js_fn
 from tests._node import node_e
 
 PRE = "\n".join([
@@ -16,7 +15,7 @@ PRE = "\n".join([
 
 
 def run(body):   # js_fn only finds plain `function`, so the async loader is cut out here
-    js = PRE + "\n" + js_fn("plProjGo") + "\n" + js_fn("plOvPick") + "\n" + js_fn("plOvSid") + "\n" + js_fn("plNowLive") + "\n" + re.search(r"^async function plLoadProjs\(.*?^}$", js_all(), re.M | re.S).group(0) + "\n(async () => {" + body + "})();"
+    js = PRE + "\n" + js_fn("plProjGo") + "\n" + js_fn("plOvPick") + "\n" + js_fn("plOvSid") + "\n" + js_fn("plNowLive") + "\n" + js_fn("plLoadProjs") + "\n(async () => {" + body + "})();"
     r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     if r.returncode != 0:
         raise AssertionError(r.stderr.decode())

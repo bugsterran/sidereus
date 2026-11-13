@@ -1,12 +1,11 @@
 """«Force delete» for a schema-breaking pipeline file (48 plBody / plDelete): button, preview, guard.
 Pure functions under node with stubs; no live files, no network."""
 import json
-import re
 import shutil
 import subprocess
 import unittest
 
-from tests._load import js_all, js_fn
+from tests._load import js_fn
 from tests._node import node_e
 
 STUBS = """
@@ -24,13 +23,8 @@ async function postJSON(u, b){ POSTS.push([u, b]); return b.dry ? { ok: true, pa
 """
 
 
-def _async_fn(name):
-    m = re.search(r"^async function " + name + r"\([\s\S]*?^}$", js_all(), re.M)
-    return m.group(0)
-
-
 def _run(body):
-    code = STUBS + js_fn("plBody") + "\n" + js_fn("plDelPrev") + "\n" + _async_fn("plDelete") + "\n(async () => {" + body + "})();"
+    code = STUBS + js_fn("plBody") + "\n" + js_fn("plDelPrev") + "\n" + js_fn("plDelete") + "\n(async () => {" + body + "})();"
     r = subprocess.run(node_e(code), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     if r.returncode != 0:
         raise AssertionError(r.stderr.decode())

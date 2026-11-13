@@ -4,13 +4,8 @@ import shutil
 import subprocess
 import unittest
 
-from tests._load import js_all, js_fn
+from tests._load import js_fn
 from tests._node import node_e
-
-
-def _async_fn(name):
-    import re   # js_fn only matches plain `function`
-    return re.compile(r"^async function " + name + r"\(.*?^}", re.S | re.M).search(js_all()).group(0)
 
 
 def _node(js):
@@ -29,7 +24,7 @@ class Hydrate(unittest.TestCase):
               "const BUS=[{id:'a',t:1e7,body:'A'},{id:'b',t:5e7,body:'B'}];"
               "function getJSON(u){ calls++; const q=new URLSearchParams(u.split('?')[1]), lo=+q.get('after'), hi=+q.get('before');"
               "return new Promise(r=>setTimeout(()=>r({messages:BUS.filter(x=>x.t>lo&&x.t<hi)}),5)); }"
-              + _async_fn("hydrate") +
+              + js_fn("hydrate") +
               "(async()=>{ const p1=hydrate([MSGS[0]]), p2=hydrate([MSGS[1]]);"
               "const n=[await p1, await p2]; process.stdout.write(JSON.stringify({n, calls, b:MSGS.map(m=>m.body||null), s:MSGS.filter(m=>m.stub).length})); })();")
         out = _node(js)
@@ -39,7 +34,7 @@ class Hydrate(unittest.TestCase):
         self.assertEqual(out["n"], [1, 1])
 
     def test_older_click_reentry_guard(self):
-        src = _async_fn("olderClick")
+        src = js_fn("olderClick")
         self.assertIn("if(olderBusy) return;", src)
         self.assertLess(src.index("await hydrate(next)"), src.index("shownN+=SHOW_STEP"))
 

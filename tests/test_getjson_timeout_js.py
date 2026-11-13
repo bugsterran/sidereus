@@ -6,19 +6,15 @@ import shutil
 import subprocess
 import unittest
 
-from tests._load import js_all
+from tests._load import js_all, js_fn
 from tests._node import node_e
-
-
-def _async_fn(name):
-    return re.compile(r"^async function " + name + r"\(.*?^}", re.S | re.M).search(js_all()).group(0)
 
 
 def _live_src():
     m = re.search(r"^let liveBusy = false;$", js_all(), re.M)
     if m is None:
         raise AssertionError("46-tokens-tab.js: liveBusy guard missing")
-    return "let liveBusy = false;\n" + _async_fn("loadLive")
+    return "let liveBusy = false;\n" + js_fn("loadLive")
 
 
 JS = r"""
@@ -61,7 +57,7 @@ class GetJSONTimeout(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         live = _live_src().replace("{timeout: 10000}", "{timeout: 30}")
-        src = _async_fn("getJSON") + "\n" + live + "\n" + JS
+        src = js_fn("getJSON") + "\n" + live + "\n" + JS
         r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         if r.returncode != 0:
             raise AssertionError(r.stderr)

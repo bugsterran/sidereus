@@ -1,22 +1,14 @@
 """Pipelines: folder-picker error path stops before the success branch (48f plBrLoad), .error/.why reasons reach TE()
 (48-pipeline.js plRemove), and a poll repaint keeps focus on a focused list row (paintPipe/plFocusKey). Run under node with stubs."""
 import json
-import os
-import re
 import subprocess
 import unittest
 
 from tests._i18n_js import i18n_prelude
-from tests._load import ROOT, js_fn
+from tests._load import js_fn
 from tests._node import node_e
 
 _ESC = "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;'})[c]);\n"
-
-
-def _afn(file, name):
-    with open(os.path.join(ROOT, "web", "js", file), encoding="utf-8") as f:
-        src = f.read()
-    return re.search(r"^async function " + name + r"\(.*?^}", src, re.S | re.M).group(0)
 
 
 def _run(src):
@@ -33,7 +25,7 @@ function lsSet(){ SETS++; }
 function plBrPaint(){ PAINTS++; }
 const document = { querySelector(){ return null; } };
 const fetch = async () => ({ json: async () => (%s) });
-""" % json.dumps(reply) + _afn("48f-pipeline-browse.js", "plBrLoad") + """
+""" % json.dumps(reply) + js_fn("plBrLoad") + """
 (async () => {
   PLBR = { path: '/h/old', busy: false, msg: '' };
   await plBrLoad('/h/old', false);
@@ -59,7 +51,7 @@ class ErrorField(unittest.TestCase):
 let SAID = '';
 const confirm = () => true, alert = s => { SAID = s; };
 async function plProjPost(){ return %s; }
-""" % json.dumps(reply) + _afn("48-pipeline.js", "plRemove") + """
+""" % json.dumps(reply) + js_fn("plRemove") + """
 (async () => { await plRemove('/p'); console.log(JSON.stringify(SAID)); })();
 """)
 

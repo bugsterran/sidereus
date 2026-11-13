@@ -88,19 +88,20 @@ def js_all():
 
 
 def js_fn(name):
-    """Top-level `function name(...)` source, found by name across all web/js files.
+    """Top-level `function name(...)` or `async function name(...)` source, found by name across all web/js files.
     ⚠Looked up by name, not file, so splitting a JS file does not break the test."""
     if name in _JS_FN:
         return _JS_FN[name]
     import re
     src = js_all()
-    m = re.search(r"^function " + name + r"\(.*$", src, re.M)
+    head = r"^(?:async )?function " + name + r"\("
+    m = re.search(head + r".*$", src, re.M)
     if m is None:
         raise LookupError("web/js: no top-level function " + name)
     if m.group(0).count("{") == m.group(0).count("}"):   # one-liner
         out = m.group(0)
     else:
-        out = re.compile(r"^function " + name + r"\(.*?^}", re.S | re.M).search(src, m.start()).group(0)
+        out = re.compile(head + r".*?^}", re.S | re.M).search(src, m.start()).group(0)
     _JS_FN[name] = out
     return out
 

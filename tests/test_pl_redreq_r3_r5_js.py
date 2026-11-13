@@ -26,7 +26,7 @@ const document = { querySelector: q => ({ scrollIntoView: o => SCROLLS.push([q, 
 def _run(body):
     src = js_all()
     decl = re.search(r"^let PLRR = .*$", src, re.M).group(0) + "\n" + re.search(r"^const PLRR_OFF = .*$", src, re.M).group(0)
-    send = re.search(r"^async function plRedReqSend\([\s\S]*?^}$", src, re.M).group(0)
+    send = js_fn("plRedReqSend")
     code = STUBS + decl + "\n" + "\n".join(js_fn(n) for n in ("plRedReqState", "plRedReqBody", "plRedReqBtn", "plRedReqHtml", "plRedReqCmd", "plRedReqReveal")) \
         + "\n" + send + "\n(async () => {" + body + "})();"
     r = subprocess.run(node_e(code), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)

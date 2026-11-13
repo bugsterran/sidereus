@@ -35,7 +35,7 @@ def run(body):
     consts = "\n".join(re.search(r"^const " + n + r"\b.*?;$", src, re.M | re.S).group(0)
                        for n in ("ATTN_APOL", "ATTN_LIST_ONLY", "ATTN_ACK_TOL", "ATTN_LBL", "ATTN_AFTER", "ATTN_BG_KINDS"))
     lets = "\n".join(re.search(r"^let " + n + r" = .*?;$", src, re.M).group(0) for n in ("attnRp", "attnAsk"))
-    send = re.search(r"^async function attnAskSend\(.*?^}$", src, re.M | re.S).group(0)   # js_fn skips async
+    send = js_fn("attnAskSend")
     js = STUBS + consts + "\n" + lets + "\n" + send + "\n" + "\n".join(js_fn(n) for n in FNS) + "\n(async () => {\n" + body + "\n})();"
     return json.loads(subprocess.run(node_e(js), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
 

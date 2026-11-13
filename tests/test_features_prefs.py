@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from tests._load import load, sidereus, js_fn, js_all
+from tests._load import load, sidereus, js_fn
 from tests.test_prefs import get, ORIGIN, _ENV_CLEAR
 from tests.test_routes_post import post, EVIL
 from tests.test_features import _m
@@ -83,12 +83,6 @@ class FeaturePrefs(unittest.TestCase):
         self.assertFalse(os.path.exists(self.path))
 
 
-def _async_fn(name):
-    """Top-level `async function name(...)` source (js_fn matches plain `function` only)."""
-    import re
-    return re.compile(r"^async function " + name + r"\(.*?^}", re.S | re.M).search(js_all()).group(0)
-
-
 JS = r"""
 const R = {}, deps = {retro: ['hist', 'failures'], hist: [], a: ['b'], b: ['a']};
 R.on = mpfEff({retro: true, hist: true}, deps, 'retro');
@@ -145,7 +139,7 @@ class FeaturePaneJs(unittest.TestCase):
                 "const cfgOpt = (k, v, l) => '<button data-v=' + v + '>' + l + '</button>';\n")
         js = ("(async () => { const R = {}; mpfAct('harness:1'); mpfAct('pipeline:0'); R.pane = mpfPane();"
               " await mpfAct('save'); R.sent = SENT; process.stdout.write(JSON.stringify(R)); })();")
-        src = stub + "\n".join(js_fn(f) for f in ("mpfRows", "mpfWant", "mpfEff", "mpfShown", "mpfPane", "mpfAct")) + "\n" + _async_fn("mpfSave") + "\n" + js
+        src = stub + "\n".join(js_fn(f) for f in ("mpfRows", "mpfWant", "mpfEff", "mpfShown", "mpfPane", "mpfAct")) + "\n" + js_fn("mpfSave") + "\n" + js
         r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         R = json.loads(r.stdout)
@@ -162,7 +156,7 @@ class FeaturePaneJs(unittest.TestCase):
                 "const cfgOpt = (k, v, l) => '<button data-v=' + v + '>' + l + '</button>';\n")
         js = ("(async () => { const R = {}; mpfAct('pipeline:0'); R.pane = mpfPane();"
               " await mpfAct('save'); R.sent = SENT; R.after = mpfPane(); process.stdout.write(JSON.stringify(R)); })();")
-        src = stub + "\n".join(js_fn(f) for f in ("mpfRows", "mpfWant", "mpfEff", "mpfShown", "mpfPane", "mpfAct")) + "\n" + _async_fn("mpfSave") + "\n" + js
+        src = stub + "\n".join(js_fn(f) for f in ("mpfRows", "mpfWant", "mpfEff", "mpfShown", "mpfPane", "mpfAct")) + "\n" + js_fn("mpfSave") + "\n" + js
         r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
         self.assertEqual(r.returncode, 0, r.stderr)
         R = json.loads(r.stdout)
