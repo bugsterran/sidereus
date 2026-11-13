@@ -83,8 +83,8 @@ class PlWatchSnap(unittest.TestCase):
 
     def test_fit_snaps_after_the_last_apply(self):
         fit = js_fn("plWatchFit")
-        self.assertIn("plWSnap(g, oc, s);", fit)
-        self.assertLess(fit.index("if(over > 0)"), fit.index("plWSnap(g, oc, s);"))
+        self.assertIn("plWSnap(g, oc, s, need(A));", fit)
+        self.assertLess(fit.index("if(over > 0)"), fit.index("plWSnap(g, oc, s, need(A));"))
         self.assertIn("if(!p || PLWDRAG) return s;", js_fn("plWSnap"))
         self.assertIn("r.getClientRects()", js_fn("plWLines"))   # measured line boxes, not a fixed px step
 

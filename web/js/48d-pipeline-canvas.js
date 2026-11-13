@@ -319,6 +319,8 @@ function plRulesRead(pan){
 // does not fit at the floor wraps into rows, and what still does not fit pans (★2026-10-01 live check: 7 stages fitted to 54% were unreadable).
 // `relayout` = positions are ours (file had none, or «Arrange»): re-flow the chain for this canvas width first.
 const PL_ZFIT = 0.4;   // PL_ZFIT = the zoom buttons' floor (manual − only)
+// Watch auto-fit floor: ★54% (2026-10-01) was unreadable, 74-79% first-paint wraps were accepted; below it the canvas pans.
+const PL_ZWATCH = 0.7;
 // ⚠Auto-fit floor: 100% at a >= 1100px window, 90% below — fitting further shrank card text to ~11px.
 function plZFloor(){ return typeof innerWidth === 'number' && innerWidth > 0 && innerWidth < 1100 ? 0.9 : 1; }
 // keepZ («Arrange»): re-flow for the width visible at the current zoom and keep it — snapping to 100% pushed stages off-canvas.
@@ -362,7 +364,9 @@ function plFit(E, cv, relayout, keepZ, ctr){
   }
   const V = plVG(E), w = Math.max(...V.nodes.map(n => n.ui.x + plgW(G, n.id)), PLG_W) + PLG_X0, top = Math.min(...G.nodes.map(n => n.ui.y), PLG_Y0);
   const bot = Math.max(...G.nodes.map(n => n.ui.y + plgH(G, n.id))) + PLG_LANE * (G.loops.length + 1);
-  const z = z0 || Math.max(plZFloor(), Math.min(1, relayout ? cw / w : Math.min(cw / w, ch / (bot - top + 2 * PLG_Y0))));
+  let z = z0 || Math.max(plZFloor(), Math.min(1, relayout ? cw / w : Math.min(cw / w, ch / (bot - top + 2 * PLG_Y0))));
+  // ⚠Watch stacks canvas | pane | card with no page scroll, so a floored zoom hid the lower wrapped rows: there, fit both axes down to PL_ZWATCH (plWatchLay).
+  if(!z0 && cv.closest && cv.closest('.plgw.plwt')) z = plWatchLay(G, cw, ch, false).z;
   E.view = { x: 0, y: Math.max(Math.round(Math.max(0, 30 - top) * z), Math.round(Math.min(ch / 6 - (top + PLG_H / 2) * z, (ch - (bot - top) * z) / 2 - top * z))), z };
   if(ctr) E.ctrd = true;
   if(ctr || E.first || E.ctrd) plCentre(E, cv, true);
@@ -391,7 +395,22 @@ function plCvNeed(G, cw, vh){
   const hh = bot - top + 2 * PLG_Y0, z = Math.max(plZFloor(), Math.min(1, plFitRaw(G, cw, Infinity)));
   return Math.max(200, Math.min(cap, Math.ceil(hh * z + 8)));
 }
-function plWrapCols(G, cw, ch){
+// Watch fit for canvas width cw and graph room H (px): {c, z, need}. pick = our own wrap (choose columns), else keep G's layout.
+// ⚠Columns, zoom and canvas need come from one pass over H (the largest canvas Watch can give): a need taken from the current
+// layout never grew the canvas for a 2-row layout, and a floor picked for height alone pushed cards past the right edge.
+function plWatchLay(G, cw, H, pick){
+  const n = plgOrder(G).order.length, fs = {};
+  const fit = T => [Math.min(1, plFitRaw(T, cw, H)), plFitRaw(T, cw, Infinity), H / plFitRaw(T, Infinity, H)];   // [zoom, width fit, graph height]
+  let c = 0, b = null;
+  if(pick && n){
+    for(let k = n; k >= 1; k--){ const T = JSON.parse(JSON.stringify(G)); plgLayout(T, 28, k); fs[k] = fit(T); if(!b || fs[k][0] > b[0] + 1e-6){ b = fs[k]; c = k; } }   // ties keep fewer rows
+    if(b[0] < PL_ZWATCH){ c = 1; for(let k = n; k >= 1; k--) if(fs[k][1] >= PL_ZWATCH){ c = k; break; } b = fs[c]; }   // most columns readable at the floor; rows pan
+  } else b = fit(G);
+  const z = Math.min(Math.max(PL_ZWATCH, b[0]), b[1]);   // never past the right edge
+  return { c: c, z: z, need: Math.max(0, Math.min(H, Math.ceil(b[2] * z) + 8)) };
+}
+function plWrapCols(G, cw, ch, wt){
+  if(wt) return plWatchLay(G, cw, ch, true).c;
   const n = plgOrder(G).order.length;
   let best = n, bz = -1, wide = 0;
   // One row readable at >= the floor wins (same rule as plgCols); max-zoom search alone wrapped 4 stages into 3+1 at 1440.
@@ -413,7 +432,7 @@ function plWrapCols(G, cw, ch){
 function plWrapBest(E, cv, keepZ, ctr){
   if(!cv || !cv.clientWidth || !E.G.nodes.length) return;
   const cw = cv.clientWidth, ch = cv.clientHeight || 400, z0 = E.view ? E.view.z : 0;
-  plgLayout(E.G, 28, plWrapCols(E.G, cw, ch));
+  plgLayout(E.G, 28, plWrapCols(E.G, cw, ch, !!(cv.closest && cv.closest('.plgw.plwt'))));
   E.laid = true;
   plFit(E, cv, false, !!(keepZ && z0 && z0 <= plFitRaw(E.G, cw, ch) + 1e-6), ctr);
 }
@@ -446,7 +465,9 @@ function plGwFit(){
     row = plCvNeed(E.G, cv.clientWidth, innerHeight) + (cvw.clientHeight - cv.clientHeight);
     if(!wt && (+lsGet(PL_SPLIT.key, 0) || (PLDRAG && PLDRAG.k === 'split'))) g.style.removeProperty('--plcvh'); else if(!wt) g.style.setProperty('--plcvh', Math.round(row) + 'px');
   }
-  if(wt) plWatchFit(g, fd, h);   // 48k: canvas · pane · Running card heights, proportional, no page scroll
+  // 48k: canvas · pane · Running card heights, proportional, no page scroll; needAt(largest canvas row) = this paint's canvas min.
+  const strip = cv && cvw ? cvw.clientHeight - cv.clientHeight : 0;
+  if(wt) plWatchFit(g, fd, h, E && cv && cvw ? (R => strip + plWatchLay(E.G, cv.clientWidth, R - strip, !!E.laid).need) : 0);
   else {
     const floor = Math.round(row) + 426;   // canvas row + 6px handle + 420px pane row (43-pipeline.css)
     g.style.height = Math.max(floor, h) + 'px';

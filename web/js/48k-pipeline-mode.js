@@ -122,6 +122,7 @@ function plWatchPane(E, d, lv, lt){
 // ⚠Mins canvas 260 · pane 80 · card 84 (header + 2 rows; 48 clipped the 2nd row); the whole stack ends at the feed bottom (plGwFit passes h) and never scrolls the page.
 const PLW_MIN = [260, 80, 84], PLW_GRIP = 24, PLW_DEF = [0.75, 0.14, 0.11];   // default shares of the free height; a longer pane/card scrolls inside
 let PLWDRAG = null;
+let PLWUSER = false;   // a grip drag/key on this page load: the person's split wins over the canvas need (memory only; a reload clears it)
 const PLW_STEP = 24;   // keyboard step, same as the session drawer grips (41 SESDR_STEP)
 // aria-valuenow = the boundary position as a percent of the stack (p: under the canvas, r: under the pane); plWApply keeps it live.
 function plWGrip(k){
@@ -136,12 +137,14 @@ function plWatchOv(ov){
 function plWShares(){ const v = lsJson('sidereus.plwv', null); return Array.isArray(v) && v.length === 3 && v.every(x => typeof x === 'number' && x > 0 && x < 1) ? v : null; }
 // Heights [canvas, pane, card] for free height A; F = saved shares (else PLW_DEF).
 // Mins win over shares; when the canvas would drop under its min, the card then the pane give way first.
-function plWSizes(A, F){
+// m = this paint's canvas need (plWatchFit needAt): raises the canvas min up to A - pane min - card min; ⚠never saved into the shares.
+function plWSizes(A, F, m){
+  const c0 = Math.max(PLW_MIN[0], Math.min(m || 0, A - PLW_MIN[1] - PLW_MIN[2]));
   const s = (F || PLW_DEF).map(f => Math.round(f * A));
   s[1] = Math.max(PLW_MIN[1], s[1]); s[2] = Math.max(PLW_MIN[2], s[2]);
-  let d = PLW_MIN[0] - (A - s[1] - s[2]);
+  let d = c0 - (A - s[1] - s[2]);
   for(const i of [2, 1]){ if(d <= 0) break; const r = Math.min(d, s[i] - PLW_MIN[i]); s[i] -= r; d -= r; }
-  s[0] = Math.max(PLW_MIN[0], A - s[1] - s[2]);
+  s[0] = Math.max(c0, A - s[1] - s[2]);
   return s;
 }
 function plWApply(g, oc, s){
@@ -160,9 +163,10 @@ function plWNow(g, oc){ return [parseFloat(g.style.getPropertyValue('--plcvh')) 
 function plWSave(s){
   const A = s[0] + s[1] + s[2];
   if(A > 0) lsSetJson('sidereus.plwv', s.map(x => +(x / A).toFixed(4)));
+  PLWUSER = true;   // drag end and arrow keys both land here
   if(typeof plFitSoon === 'function') plFitSoon();   // re-fit the graph to the new canvas height
 }
-function plWReset(){ lsDel('sidereus.plwv'); if(typeof plFitSoon === 'function') plFitSoon(); }
+function plWReset(){ lsDel('sidereus.plwv'); PLWUSER = false; if(typeof plFitSoon === 'function') plFitSoon(); }   // default sizes include the need minimum again
 // Keyboard twin of the drag: ArrowUp/ArrowDown move the boundary PLW_STEP px, Home = default.
 function plWKey(e){
   const gr = e.target && e.target.closest && e.target.closest('.plw .plwgr');
@@ -197,7 +201,7 @@ function plWLines(p){
   }
   return out;
 }
-function plWSnap(g, oc, s){
+function plWSnap(g, oc, s, m){
   const p = oc && g.querySelector(':scope>.plwp');
   if(!p || PLWDRAG) return s;
   const B = p.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(p).borderBottomWidth) || 0);
@@ -209,28 +213,31 @@ function plWSnap(g, oc, s){
     const grow = plWSnapGrow(lines, B);
     if(!(grow > 0) || grow > PLW_SNAP_MAX) return s;
     if(s[2] - grow >= PLW_MIN[2]) t = [s[0], s[1] + grow, s[2] - grow];
-    else if(s[0] - grow >= PLW_MIN[0]) t = [s[0] - grow, s[1] + grow, s[2]];
+    else if(s[0] - grow >= Math.max(PLW_MIN[0], m || 0)) t = [s[0] - grow, s[1] + grow, s[2]];   // never under the canvas need
     else return s;
   }
   plWApply(g, oc, t);
   return t;
 }
-function plWatchFit(g, fd, h){
+// needAt(R) = canvas row the graph needs when the canvas row may grow to R (48d plWatchLay), or 0.
+function plWatchFit(g, fd, h, needAt){
   if(PLWDRAG) return;
+  // ⚠the person's split wins: a need minimum snapped their resize back; plFit's Watch zoom still fits the canvas they set
+  const need = A => PLWUSER || !needAt ? 0 : needAt(A - PLW_MIN[1] - PLW_MIN[2]);
   g.style.height = '';
   const nl = document.querySelector('.plw .plnl:not(.plnlc)'), oc = document.querySelector('.plw .plwov');
   if(nl) nl.style.minHeight = '';   // ⚠a kept card height from the last fit would count as overflow below
-  // Sizes come from shares only (never from content), so polls never move the canvas.
+  // Sizes come from shares + the graph's need (layout and card sizes only, never live content), so polls never move the canvas.
   const F = plWShares(), end = oc || g, pb = parseFloat(getComputedStyle(fd).paddingBottom) || 0;
   let A = h - 2 * PLW_GRIP;
-  let s = plWSizes(A, F);
+  let s = plWSizes(A, F, need(A));
   plWApply(g, oc, s);
   // Close the gap to the feed bottom (h is the shared estimate), then take back anything that overflows (Run panel, a note): no page scroll.
   const slack = Math.floor(fd.getBoundingClientRect().bottom - pb - end.getBoundingClientRect().bottom) - 2;
-  if(slack > 0){ A += slack; s = plWSizes(A, F); plWApply(g, oc, s); }
+  if(slack > 0){ A += slack; s = plWSizes(A, F, need(A)); plWApply(g, oc, s); }
   const over = fd.scrollHeight - fd.clientHeight;
-  if(over > 0){ A -= over; s = plWSizes(A, F); plWApply(g, oc, s); }
-  plWSnap(g, oc, s);
+  if(over > 0){ A -= over; s = plWSizes(A, F, need(A)); plWApply(g, oc, s); }
+  plWSnap(g, oc, s, need(A));
   if(nl) nl.style.minHeight = Math.max(0, Math.round(end.getBoundingClientRect().bottom - nl.getBoundingClientRect().top)) + 'px';
 }
 document.addEventListener('pointerdown', e => {

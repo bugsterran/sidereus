@@ -283,7 +283,7 @@ class PlMode(unittest.TestCase):
         self.assertIn(".plgw.plwt{grid-template-rows:var(--plcvh,clamp(260px,34vh,700px)) 24px var(--plwph,auto);height:auto", css)
         self.assertIn(".plwgr{position:relative;height:24px;cursor:ns-resize", css)
         self.assertIn(".plwov{overflow:auto;", css)
-        self.assertIn("if(wt) plWatchFit(g, fd, h);", js_fn("plGwFit"))
+        self.assertIn("if(wt) plWatchFit(g, fd, h, E && cv && cvw ? (R => strip + plWatchLay(E.G, cv.clientWidth, R - strip, !!E.laid).need) : 0);", js_fn("plGwFit"))   # the need row = canvas min
         fit = js_fn("plWatchFit")
         self.assertIn("if(PLWDRAG) return;", fit)
         self.assertNotIn("scrollHeight }", fit)                                    # sizes from shares only, never from content
