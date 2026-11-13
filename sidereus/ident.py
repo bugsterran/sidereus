@@ -160,7 +160,8 @@ def mbox_of(cwd):
 def mbox_codex(cwd):
     """(id, source) of a Codex session — same rule as hooks/invite_notice.py `codex_id`.
     ⚠Not mbox_of: identity.json[cwd] is the Claude id of that folder, so a Codex row there would get the Claude mailbox."""
-    if not cwd:
+    # ⚠realpath raises on NUL on newer builds, and one raise in ext_rows drops every external row.
+    if not cwd or "\0" in cwd:
         return "", "none"
     ident = _load("identity.json", {})
     ident = ident if isinstance(ident, dict) else {}
@@ -180,7 +181,8 @@ def mbox_pi(cwd):
     (the id `gemini_mailbox_mcp.sh pi` logs in as and pi_wake waits on).
     ⚠Not mbox_of: identity.json[cwd] is the Claude id; composer and run pickers would address the Claude session.
     An explicit `pi:<cwd>` entry may name a Claude-owned id (role takeover); the folder fallback may not."""
-    if not cwd:
+    # ⚠Same NUL guard as mbox_codex: realpath raises on NUL on newer builds.
+    if not cwd or "\0" in cwd:
         return "", "none"
     ident = _load("identity.json", {})
     ident = ident if isinstance(ident, dict) else {}

@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Sessions: an external CLI session whose folder path holds a NUL byte no longer hides every pi and Codex row on Python 3.12+ and Windows; that session just gets no mailbox id.
 - Pipelines: a session whose Agent tool sends no `effort` can declare `[pl-effort:<name>/<stage>=inherit]` instead of being denied on every stage that sets an effort (plugin 0.9.3).
 - Pipelines: a wrapped canvas no longer keeps the wide gaps of a card that shrank after you clicked it; an untouched view re-wraps when card widths change, and waits while a stage is selected.
 - Pipelines: in Watch, a chain wrapped into several rows no longer hides its lower rows or cards past the right edge; the canvas grows to the rows it needs (until you drag a divider) and zooms out to no less than 70%, and only what still does not fit pans.

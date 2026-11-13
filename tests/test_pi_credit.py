@@ -38,7 +38,9 @@ class Base(unittest.TestCase):
         self.root = os.path.join(self.tmp, "agent")
         os.makedirs(os.path.join(self.root, "sessions"))
         self.p = [mock.patch.object(pi, "root", lambda: self.root),
-                  mock.patch.object(pres, "mbox_pi", lambda cwd: ("", "none"))]
+                  mock.patch.object(pres, "mbox_pi", lambda cwd: ("", "none")),
+                  # ext_rows imports its own name; patching only pres let it read the live identity.json
+                  mock.patch.object(ext, "mbox_pi", lambda cwd: ("", "none"))]
         for p in self.p:
             p.start()
         pi._cache.clear()
