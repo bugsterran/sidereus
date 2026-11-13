@@ -87,5 +87,29 @@ class AgentsMinute(unittest.TestCase):
         self.assertEqual((live_probe.time, live_probe.subprocess, live_probe._av_accounts), before)
 
 
+class LiveMemory(unittest.TestCase):
+    """Live memory = macOS footprint (RSS swings with page compression); RSS only as the fallback."""
+
+    def _run(self, out):
+        from unittest import mock
+        res = mock.Mock(stdout=out)
+        return mock.patch.object(pb.subprocess, "run", return_value=res)
+
+    def test_footprint_parsed_on_macos(self):
+        from unittest import mock
+        with mock.patch.object(pb.sys, "platform", "darwin"), self._run("pid 1\nFootprint: 250 MB\n"):
+            self.assertEqual(pb.footprint_mb(1), 250)
+
+    def test_footprint_none_off_macos_or_unreadable(self):
+        from unittest import mock
+        with mock.patch.object(pb.sys, "platform", "linux"), self._run("Footprint: 250 MB"):
+            self.assertIsNone(pb.footprint_mb(1))
+        with mock.patch.object(pb.sys, "platform", "darwin"), self._run(""):
+            self.assertIsNone(pb.footprint_mb(1))
+
+    def test_live_memory_budget_is_footprint_scale(self):
+        self.assertEqual(pb.LIVE_BUDGETS["rss"], 300)
+
+
 if __name__ == "__main__":
     unittest.main()

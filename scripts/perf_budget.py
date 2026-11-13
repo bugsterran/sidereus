@@ -7,6 +7,7 @@
 Last line: `perf_budget: N budgets, K over — rss 98MB/… · warm p90 12ms/… · cold 340ms/… · agents 1/min/2`.
 Stdlib only, Python 3.9.
 """
+import importlib.util
 import json
 import math
 import os
@@ -28,7 +29,11 @@ LIVE_PORT = 8799
 DEMO_FLOORS = {"warm": 50, "cold": 250}
 DEMO_BUDGETS = {"rss": 130, "warm": max(2 * 5, DEMO_FLOORS["warm"]), "cold": max(2 * 11, DEMO_FLOORS["cold"]), "agents": 2}
 # Live viewer budgets from the issue (#24); cold cannot be measured on an already-running server ⇒ skipped there.
-LIVE_BUDGETS = {"rss": 200, "warm": 300, "cold": 2000, "agents": 2}
+# ⚠Live memory is the macOS footprint, not ps RSS: RSS drops compressed pages and swung 174-286 MB while the
+#   footprint held 233-250 MB (same process, 40-68 min). Off macOS it falls back to RSS.
+# ★2026-11-14 live footprint 233-250 MB, flat (no leak; boot peak 408 MB released); tool index ~60 MB of 126 MB
+#   traced Python heap ⇒ 300 MB (~1.2x). The old 200 came from a 166 MB maxrss that was not the live viewer.
+LIVE_BUDGETS = {"rss": 300, "warm": 300, "cold": 2000, "agents": 2}
 UNITS = {"rss": "MB", "warm": "ms", "cold": "ms", "agents": "/min"}
 LABELS = {"rss": "rss", "warm": "warm p90", "cold": "cold", "agents": "agents"}
 ORDER = ("rss", "warm", "cold", "agents")
@@ -280,13 +285,33 @@ def _listen_pid(port):
         return None
 
 
+def _parse_footprint():
+    spec = importlib.util.spec_from_file_location("mem_sample", os.path.join(ROOT, "scripts", "mem_sample.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.parse_footprint
+
+
+def footprint_mb(pid):
+    """macOS `footprint <pid>` in MB (the Activity Monitor «Memory» value), or None elsewhere / unreadable."""
+    if sys.platform != "darwin":
+        return None
+    try:
+        out = subprocess.run(["footprint", str(pid)], capture_output=True, text=True, timeout=20).stdout  # nosec B607 -- system tool, PATH lookup like ps
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return _parse_footprint()(out)
+
+
 def run_live():
-    """Read-only: GET /api/state on the running viewer and the RSS of its listener. Writes nothing."""
+    """Read-only: GET /api/state on the running viewer and the memory of its listener. Writes nothing.
+    -> (values, memory label): footprint on macOS, RSS when footprint is unavailable."""
     url = "http://127.0.0.1:%d/api/state" % LIVE_PORT
     vals = {"warm": warm_p90(url), "cold": None, "agents": None}
     pid = _listen_pid(LIVE_PORT)
-    vals["rss"] = rss_mb(pid) if pid else None
-    return vals
+    fp = footprint_mb(pid) if pid else None
+    vals["rss"] = fp if fp is not None else (rss_mb(pid) if pid else None)
+    return vals, ("footprint" if fp is not None else "rss")
 
 
 def main(argv):
@@ -295,12 +320,12 @@ def main(argv):
         return 0
     t0 = time.time()
     if "--live" in argv:
-        vals = run_live()
+        vals, mem_label = run_live()
         notes = {"cold": "skipped (running server)", "agents": "skipped (live)"}
         if vals["rss"] is None:
             notes["rss"] = "skipped (Windows)" if os.name == "nt" else "skipped (no listener pid)"
         # ⚠A plain GET /api/state is answered from the server's cache ⇒ live warm p90 is informational only.
-        print(last_line(vals, LIVE_BUDGETS, notes, {"warm": "warm p90 (cached)"}))
+        print(last_line(vals, LIVE_BUDGETS, notes, {"warm": "warm p90 (cached)", "rss": mem_label}))
         return exit_code(vals, LIVE_BUDGETS)
     vals, why = run_demo()
     if vals is None:
