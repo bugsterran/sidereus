@@ -37,6 +37,8 @@ if os.path.basename(sys.argv[0]) == "pi_wake.py":
         wl({"end": "term"})
         os._exit(0)
     signal.signal(signal.SIGTERM, term)
+    if sys.argv[3:] == ["quiet"]:   # PI_TEST_QUIET_DELAY: a slow quiet-waiter start, as on a loaded Windows runner
+        time.sleep(float(os.environ.get("PI_TEST_QUIET_DELAY") or 0))
     k = 0
     try:
         for x in os.listdir(wlog):
@@ -231,7 +233,8 @@ const n = (k) => (r) => r.filter((x) => k in x).length;
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 if (scenario === "wake") {
   await handlers.session_start({ reason: "startup" }, ctx);
-  await until((r) => n("ack")(r) >= 1);
+  // ⚠Busy: wait for the quiet re-arm's spawn record too, or shutdown kills it before it starts (slow CI).
+  await until((r) => n("ack")(r) >= 1 && (busy !== "1" || n("spawn")(r) >= 2));
 } else if (scenario === "cap") {
   await handlers.session_start({ reason: "startup" }, ctx);
   await until((r) => n("ack")(r) >= 1);
@@ -293,8 +296,9 @@ class PiExtensionWake(unittest.TestCase):
         self.wlog = os.path.join(self.d, "wake")
         os.makedirs(self.wlog)
 
-    def wake(self, scenario, mode="block", busy=False, cap=None):
-        env = dict(os.environ, PI_TEST_LOG=self.log, PI_TEST_WLOG=self.wlog, PI_TEST_WAKE=mode)
+    def wake(self, scenario, mode="block", busy=False, cap=None, quiet_delay=0):
+        env = dict(os.environ, PI_TEST_LOG=self.log, PI_TEST_WLOG=self.wlog, PI_TEST_WAKE=mode,
+                   PI_TEST_QUIET_DELAY=str(quiet_delay))
         env.pop("SIDEREUS_MAIL_WAIT_MAX", None)
         if cap is not None:
             env["SIDEREUS_MAIL_WAIT_MAX"] = str(cap)
@@ -321,6 +325,12 @@ class PiExtensionWake(unittest.TestCase):
         spawns = [x for x in rows if "spawn" in x]
         self.assertEqual([x["argv"] for x in spawns], [["sess-0001", "/tmp/proj"],
                                                        ["sess-0001", "/tmp/proj", "quiet"]])
+
+    def test_R4_refused_wake_rearms_quiet_slow_start(self):
+        # A quiet waiter slower to start than the driver's fixed pause is still recorded before shutdown.
+        _, rows = self.wake("wake", "wake", busy=True, quiet_delay=0.5)
+        self.assertEqual([x["argv"] for x in rows if "spawn" in x], [["sess-0001", "/tmp/proj"],
+                                                                     ["sess-0001", "/tmp/proj", "quiet"]])
 
     def test_agent_settled_replaces_quiet_waiter(self):
         _, rows = self.wake("settle", "wake", busy=True)
