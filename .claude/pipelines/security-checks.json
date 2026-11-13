@@ -11,6 +11,7 @@
       "title": "보안 검사",
       "agent": "general-purpose",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run `/usr/bin/python3 scripts/arch_checks.py --repo <repo> --category security` once from this repository (it detects the scanners, runs each with a timeout and writes checks-security.json). Online lookups (npm audit, osv-scanner, semgrep registry packs) run by default after a reachability probe; offline they are reported skipped. Add `--offline` only when the request asks for no network. Add `--images` only when the request asks to include images. Add `--no-tests` only when the request asks to skip test code. Report its printed line only. Do not rerun with other options, do not run any tool yourself, do not fix findings.",
       "gate": "/usr/bin/python3 scripts/arch_checks.py --verify --last --category security"
     },
@@ -18,6 +19,7 @@
       "title": "위협 모델 리뷰",
       "agent": "general-purpose",
       "model": "opus",
+      "effort": "high",
       "task": "Orchestrator: session has a security-review subagent for THIS repo? Bash `[pl-agent:security-checks/위협 모델 리뷰=<agent>]`, then use it. Read `<repo>/.oss-scanner/threat_model.md` or `<repo>/threat_model.md`. Neither: print exactly `no threat model — copy <sidereus>/templates/oss-scanner/ to <repo>/.oss-scanner/` (<sidereus> = this repo), then a default lens: authz bypass (IDOR, no checks), injection (SQL incl. MyBatis `${}`, command, path), secrets/config, SSRF, unsafe deserialize/files, business-state skips. A = `/usr/bin/python3 scripts/arch_checks.py --repo <repo>`: (1) `A --log-show` = open findings; each fixed at HEAD: `A --mark <slug>@<file> resolved`; NEVER mark false-positive, propose it. (2) Rate in-scope parts by its severity rubric; new findings to `A --log-review` as TSV `sev<TAB>file:line<TAB>slug<TAB>description` (sev critical..low; stable kebab slug). Never quote source or secrets; no edits, runs, no installs. Report per-severity counts (unverified), resolved, FP proposals."
     }
   ]

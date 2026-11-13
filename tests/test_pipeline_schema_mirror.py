@@ -4,6 +4,7 @@ import copy
 import glob
 import json
 import os
+import re
 import shutil
 import subprocess
 import unittest
@@ -81,6 +82,12 @@ CASES = [  # (label, mutation, expected valid)
     ("guards extra", _set(("guards", "x"), 1), False), ("guards maxLoopBacks 11", _set(("guards", "maxLoopBacks"), 11), False),
     ("requireGates ungraded", _set(("guards", "requireGates"), ["설계"]), False), ("requireGates missing", _set(("guards", "requireGates"), ["없음"]), False),
     ("custom 12", _custom(12), True), ("custom 13", _custom(13), False),
+] + [  # R1: effort on a stage or defaults is one of five values; absent = today's behaviour
+    ("stage effort " + v, _set(S1 + ("effort",), v), True) for v in ("low", "medium", "high", "xhigh", "max")
+] + [("defaults effort " + v, _set(("defaults", "effort"), v), True) for v in ("low", "max")] + [
+    ("stage effort bad", _set(S1 + ("effort",), "ultra"), False), ("stage effort null", _set(S1 + ("effort",), None), False),
+    ("stage effort case", _set(S1 + ("effort",), "High"), False), ("stage effort num", _set(S1 + ("effort",), 1), False),
+    ("defaults effort bad", _set(("defaults", "effort"), "none"), False), ("defaults effort empty", _set(("defaults", "effort"), ""), False),
 ]
 
 
@@ -116,6 +123,19 @@ class SchemaMirror(unittest.TestCase):
             pe = PS.validate(P, "x")
             self.assertEqual(not pe, want, (label, pe))
             self.assertEqual(not je, want, (label, je))
+
+    def test_effort_errors_and_literal_agree(self):
+        # R1: same error strings on both sides, and EFFORTS is the same literal in the schema and the runner
+        bad = copy.deepcopy(BASE)
+        bad["stages"][1]["effort"] = "ultra"
+        bad["defaults"]["effort"] = "ultra"
+        want = ["defaults.effort: low|medium|high|xhigh|max", "stages[1].effort"]
+        self.assertEqual(PS.validate(bad, "x"), want)
+        self.assertEqual(_runner([["x", bad]])[0], want)
+        with open(RUNNER, encoding="utf-8") as f:
+            m = re.search(r"^const EFFORTS = (\[.*\])$", f.read(), re.M)
+        self.assertEqual(tuple(json.loads(m.group(1).replace("'", '"'))), PS.EFFORTS)
+        self.assertEqual(PS.EFFORTS, ("low", "medium", "high", "xhigh", "max"))
 
     def test_repo_pipelines_agree(self):
         files = sorted(p for p in glob.glob(os.path.join(ROOT, ".claude", "pipelines", "*.json")) if not os.path.basename(p).startswith("_"))

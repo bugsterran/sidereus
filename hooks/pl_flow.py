@@ -3,9 +3,9 @@
 
 PreToolUse (Task|Agent|SendMessage, Bash): a `[pl:<name>/<stage>]` tag opens/advances a run in
 <data dir>/plmark/<session_id>.runs.json and denies: a jump past unrun, undeclared stages · an unknown stage title ·
-an Agent/Task whose subagent_type or model is not the stage's · an untagged SendMessage while a run is open.
-Bash descriptions `[pl-skip:<name>/<stage>]`, `[pl-model:<name>/<stage>=<model>]` and `[pl-agent:<name>/<stage>=<agent>]`
-declare a skip / model override / subagent_type override.
+an Agent/Task whose subagent_type, model or effort is not the stage's · an untagged SendMessage while a run is open.
+Bash descriptions `[pl-skip:<name>/<stage>]`, `[pl-model:<name>/<stage>=<model>]`, `[pl-agent:<name>/<stage>=<agent>]` and
+`[pl-effort:<name>/<stage>=<level>]` declare a skip / model override / subagent_type override / effort override.
 Per-stage outcome `st` = {title: {s: run|done|skip|back|fail, t0, t1, n}} (n = dispatches).
 Denies on a run: `deny` = count, `dl` = last DL_MAX {t, title, c} with c in DENY_CODES.
 PostToolUse (Task|Agent|SendMessage): when the stage's dispatches are back, adds «PASS → next … / FAIL → …» context.
@@ -42,6 +42,8 @@ EDITS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 END_TAG = re.compile(r"\[pl-end:([a-z0-9-]{1,40})/([^\]\n|]{1,40})\]")
 MODEL_TAG = re.compile(r"\[pl-model:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=([A-Za-z0-9._-]{1,40})\]")
 AGENT_TAG = re.compile(r"\[pl-agent:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=([A-Za-z0-9._:-]{1,64})\]")
+EFFORTS = ("low", "medium", "high", "xhigh", "max")   # ⚠same set as the pipeline schema's stage/defaults "effort"
+EFFORT_TAG = re.compile(r"\[pl-effort:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=(low|medium|high|xhigh|max)\]")
 # Renamed recommended stage titles (old -> new): old tags and legacy files map to the new title. ⚠Same map in sidereus/pipeline_schema.py RENAMED.
 RENAMED = {"최종 검증": "재검증"}
 CLAUDE_DIR = None    # None = $CLAUDE_CONFIG_DIR or HOME_DIR/.claude (user agents); patched in tests
@@ -127,8 +129,8 @@ def _segs(ln, q=""):
     out.append("".join(cur))
     return out, q, top
 # --- end later-line marker ---
-# pi only: `echo "[pl-skip:...]"` / `[pl-model:...]` / `[pl-agent:...]` at the command start (it has no Bash description).
-DECL_MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl-(?:skip|model|agent):""")
+# pi only: `echo "[pl-skip:...]"` / `[pl-model:...]` / `[pl-agent:...]` / `[pl-effort:...]` at the command start (it has no Bash description).
+DECL_MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl-(?:skip|model|agent|effort):""")
 IDLE_S = 6 * 3600     # a run untouched this long is over; the next tag opens a new one
 LOST_S = 45 * 60      # ⚠a dispatch refused or failed before running gets no Post; its slice is presumed lost after this
 LOCK_WAIT_S, LOCK_STALE_S = 2.0, 5.0
@@ -612,7 +614,7 @@ def _installed(agent, dirs):
 
 
 def _fit(ev, tool, name, s, r, dirs):
-    """(code "agent"|"model", deny reason) when an Agent/Task does not use the stage's agent and model, else None.
+    """(code "agent"|"model", deny reason) when an Agent/Task does not use the stage's agent, model and effort, else None.
     ⚠An omitted model is a mismatch: the run record cannot tell which model the agent file picks."""
     if tool not in ("Agent", "Task"):
         return None
@@ -624,17 +626,27 @@ def _fit(ev, tool, name, s, r, dirs):
     m = r["models"].get(s["title"]) or s.get("model")
     m = m.strip().lower() if isinstance(m, str) else ""
     got = ti.get("model").strip().lower() if isinstance(ti.get("model"), str) else ""
-    if ok_ag and (not m or m == "inherit" or got == m):
+    e = (r.get("efforts") or {}).get(s["title"]) or s.get("effort")   # R2: same rule as model; no effort = not checked
+    e = e.strip().lower() if isinstance(e, str) and e.strip().lower() in EFFORTS else ""
+    ge = ti.get("effort").strip().lower() if isinstance(ti.get("effort"), str) else ""
+    if ok_ag and (not m or m == "inherit" or got == m) and (not e or ge == e):
         return None
     exp = "subagent_type %s" % (want if want not in NO_AGENT else sub)
     if want not in NO_AGENT and not _installed(want, dirs):
         exp += " (not installed: general-purpose also accepted)"
     if m and m != "inherit":
         exp += " and model %s" % m
+    has = "subagent_type %s, model %s" % (sub[:64], got[:40] or "(none)")
+    tm, ta = "[pl-model:%s/%s=<model>]" % (name, s["title"]), "[pl-agent:%s/%s=<agent>]" % (name, s["title"])
+    what, decl = "model or agent", "%s or %s" % (tm, ta)
+    if e:   # ⚠only when the stage has an effort: the no-effort message stays byte-identical
+        exp += " and effort %s" % e
+        has += ", effort %s" % (ge[:10] or "(none)")
+        what = "model, agent or effort"
+        decl = "%s, %s or [pl-effort:%s/%s=<level>]" % (tm, ta, name, s["title"])
     return ("model" if ok_ag else "agent",
-            "[pl:%s/%s] expects %s; this call has subagent_type %s, model %s. Dispatch again with those, or declare "
-            "another model or agent first with a Bash description [pl-model:%s/%s=<model>] or [pl-agent:%s/%s=<agent>]."
-            % (name, s["title"], exp, sub[:64], got[:40] or "(none)", name, s["title"], name, s["title"]))
+            "[pl:%s/%s] expects %s; this call has %s. Dispatch again with those, or declare "
+            "another %s first with a Bash description %s." % (name, s["title"], exp, has, what, decl))
 
 
 def _open_run(path, now):
@@ -799,6 +811,10 @@ def _stages(cwd, name):
             d = json.load(f)
         st = [_ren_stage(s) for s in d["stages"] if isinstance(s, dict) and isinstance(s.get("title"), str)]
         after = [a for a in (d.get("after") or []) if isinstance(a, str)]
+        de = (d.get("defaults") or {}).get("effort") if isinstance(d.get("defaults"), dict) else None
+        for s in st if de in EFFORTS else ():   # defaults.effort fills stages without one; model untouched
+            if not s.get("effort"):
+                s["effort"] = de
     except Exception:
         return None
     return (st, after) if st else None
@@ -883,7 +899,8 @@ def _plain_next(st, i):
 
 def _new_run(cwd, now):
     return {"cwd": cwd, "t0": now, "t1": now, "cur": "", "done": [], "inflight": {}, "ret": "",
-            "loops": {}, "skipok": [], "end": 0, "st": {}, "models": {}, "agents": {}, "lb": [], "deny": 0, "dl": []}
+            "loops": {}, "skipok": [], "end": 0, "st": {}, "models": {}, "agents": {}, "efforts": {}, "lb": [], "deny": 0,
+            "dl": []}
 
 
 DENY_CODES = ("jump", "agent", "model", "tag", "stage", "stop", "gate", "skipgate")   # gate/skipgate: pl_guard requireGates; same set as sidereus/harness_flow.py HF_DENY_CODES
@@ -1156,7 +1173,7 @@ def _step(name, s):
     if len(s["title"].strip()) > TITLE_MAX:
         return _long_note(name, [s["title"]])
     out = "[pl:%s/%s] · agent %s" % (name, s["title"], s.get("agent") or "-")
-    for k in ("model", "skill", "gate"):
+    for k in ("model", "effort", "skill", "gate"):
         if isinstance(s.get(k), str) and s.get(k):
             out += " · %s %s" % (k, s[k])
     if s.get("agent") == "main":
@@ -1359,7 +1376,7 @@ def _run_of(d, name, cwd, now, fresh=True):
         if isinstance(old, dict):
             _archive(d, name, old)
         r = _new_run(cwd, now)
-    for k in ("st", "models", "agents", "loops", "inflight"):
+    for k in ("st", "models", "agents", "efforts", "loops", "inflight"):
         if not isinstance(r.get(k), dict):
             r[k] = {}
     for k in ("skipok", "lb"):
@@ -1384,11 +1401,12 @@ def _skip_ends(st, r):
 
 
 def _declare(ev, cwd, path, desc, now):
-    """Bash `[pl-skip:name/stage]` / `[pl-model:name/stage=model]` / `[pl-agent:name/stage=agent]`: record on the run;
+    """Bash `[pl-skip:name/stage]` / `[pl-model:name/stage=model]` / `[pl-agent:name/stage=agent]` / `[pl-effort:name/stage=level]`: record on the run;
     deny reason for an unknown stage, else None. Only the stage title and model/agent name are stored, never the reason text."""
     decl = [(m.group(1), _ren(m.group(2).strip()), None, None) for m in SKIP_TAG.finditer(desc)]
     decl += [(m.group(1), _ren(m.group(2).strip()), m.group(3), None) for m in MODEL_TAG.finditer(desc)]
     decl += [(m.group(1), _ren(m.group(2).strip()), "*", m.group(3)) for m in AGENT_TAG.finditer(desc)]   # "*" = agent only
+    decl += [(m.group(1), _ren(m.group(2).strip()), "+", m.group(3)) for m in EFFORT_TAG.finditer(desc)]   # "+" = effort level
     decl += [(m.group(1), _ren(m.group(2).strip()), "", None) for m in END_TAG.finditer(desc)]   # "" = close the run
     for name, title, model, agent in decl:
         old = _load(path)["runs"].get(name)
@@ -1434,6 +1452,8 @@ def _declare(ev, cwd, path, desc, now):
                     r["end"] = now
                     _ledger_add(r, name, now)
                     _closed(proj, name, repo=r.get("repo"))
+            elif model == "+":
+                r["efforts"][title] = agent
             elif agent is not None:
                 r["agents"][title] = agent
             else:

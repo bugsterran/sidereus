@@ -14,11 +14,13 @@
     },
     {
       "title": "리뷰",
-      "agent": "sidereus-reviewer"
+      "agent": "sidereus-reviewer",
+      "effort": "high"
     },
     {
       "title": "리뷰-확인",
       "agent": "sidereus-review-verifier",
+      "effort": "high",
       "task": "Try to disprove each 리뷰 finding against the code, git blame and git log -L. Report only confirmed findings ranked by severity, plus one line per finding: id, rule, verdict (confirmed|disproved|pre-existing). Change nothing."
     }
   ]

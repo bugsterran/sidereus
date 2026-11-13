@@ -11,11 +11,13 @@
       "agent": "sidereus-verifier",
       "gate": "scripts/check.sh --full",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run the full test suite before any change and record the result as the baseline. Change nothing."
     },
     {
       "title": "계획",
       "agent": "sidereus-designer",
+      "effort": "high",
       "task": "Plan the refactoring as small behaviour-preserving steps, each one testable on its own."
     },
     {
@@ -29,11 +31,13 @@
       "agent": "sidereus-verifier",
       "gate": "scripts/check.sh --full",
       "model": "sonnet",
+      "effort": "low",
       "onFail": { "goto": "리팩토링", "max": 2 }
     },
     {
       "title": "리뷰",
       "agent": "sidereus-reviewer",
+      "effort": "high",
       "onFail": { "goto": "리팩토링", "max": 1 }
     }
   ]

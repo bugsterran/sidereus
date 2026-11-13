@@ -137,8 +137,9 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
   tagging the current stage's `onFail.goto` counts a loop round and returns to it (or `onFail.then`).
 - Pre: a tagged Agent/Task must pass the stage's agent as `subagent_type` and its model as `model`, or it is denied
   (when the stage names a model, omitting `model` is a mismatch; `inherit`, a `main` stage and a stage agent that is not installed, where
-  `general-purpose` is accepted, are exempt). A Bash description `[pl-model:<name>/<stage>=<model>]` or
-  `[pl-agent:<name>/<stage>=<agent>]` declares another model or agent for that stage of the run.
+  `general-purpose` is accepted, are exempt). A stage `effort` is checked the same way against the call's `effort`.
+  A Bash description `[pl-model:<name>/<stage>=<model>]`, `[pl-effort:<name>/<stage>=<level>]` or
+  `[pl-agent:<name>/<stage>=<agent>]` declares another model, effort or agent for that stage of the run.
 - Post: when the stage's last slice returns, adds `PASS → next: [pl:…] · agent · model · skill · gate` and, for a stage
   with `onFail`, the FAIL round line. A background dispatch says «when it finishes»; its Post (the only one it gets)
   takes its slice off the in-flight count but does not mark the stage done. After the last stage it ends the run and

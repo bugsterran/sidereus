@@ -587,6 +587,30 @@ class Routes(unittest.TestCase):
         with open(self.file, encoding="utf-8") as f:
             self.assertNotIn("model", json.load(f)["stages"][2])
 
+    def test_stage_effort_save_and_list(self):
+        # R3: effort goes through the model path — dry diff, then write with a backup; the listing carries it back
+        edit = {"stages": {"검증": {"effort": "high"}}, "defaults": {"effort": "low"}}
+        code, out, _ = self._save(dict(edit, dry=True))
+        self.assertEqual(code, 200, out)
+        self.assertIn('+      "effort": "high",', out["diff"])
+        code, out, _ = self._save(dict(edit, dry=False))
+        self.assertEqual(code, 200, out)
+        with open(out["backup"], encoding="utf-8") as f:
+            self.assertEqual(f.read(), self.raw)
+        with open(self.file, encoding="utf-8") as f:
+            new = json.load(f)
+        self.assertEqual(list(new["stages"][2])[:4], ["title", "agent", "model", "effort"])
+        self.assertEqual(list(new["defaults"]), ["model", "effort", "retry"])
+        row = self._list()["pipelines"][0]
+        self.assertEqual((row["stages"][2]["effort"], row["defaults"]["effort"]), ("high", "low"))
+        self.assertNotIn("effort", row["stages"][0])
+        code, out, _ = self._save({"stages": {"검증": {"effort": ""}}, "defaults": {"effort": ""}, "dry": False})
+        self.assertEqual(code, 200, out)
+        with open(self.file, encoding="utf-8") as f:
+            self.assertEqual(f.read(), self.raw)          # "" drops both keys again
+        for body in ({"stages": {"검증": {"effort": "ultra"}}}, {"defaults": {"effort": "none"}}):
+            self.assertEqual(self._save(dict(body, dry=False))[0], 400, body)
+
     def test_refusals(self):
         for body in ({"stages": {"리뷰": {"task": "x"}}}, {"stages": {"리뷰": {"model": "gpt"}}},
                      {"stages": {"리뷰": {"agent": "Bad Name"}}}, {"stages": {"배포": {"model": "opus"}}},

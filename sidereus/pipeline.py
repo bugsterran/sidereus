@@ -87,7 +87,7 @@ def _sha(raw):
 
 
 # Stage keys in file order for new keys (existing stages keep their own order — minimal diffs).
-STAGE_KEYS = ("title", "agent", "task", "model", "skill", "retry", "gate", "parallel", "produces", "fanout", "onError",
+STAGE_KEYS = ("title", "agent", "task", "model", "effort", "skill", "retry", "gate", "parallel", "produces", "fanout", "onError",
               "onFail", "onlyOnJump", "ui")
 _FAIL_KEYS = ("goto", "max", "then", "stopOn")
 TITLE_MAX = 24              # a title typed in Sidereus; ⚠files may hold up to 40 (schema), only new titles are capped
@@ -221,7 +221,7 @@ def _row(proj, n):
     if raw is not None:
         row["sha"] = _sha(raw)
     if not errs:
-        row.update(title=P["title"], use=P.get("use", ""), rules=P.get("rules", ""), guards=P.get("guards") or {}, defaults={"model": P["defaults"]["model"], "retry": P["defaults"]["retry"]},
+        row.update(title=P["title"], use=P.get("use", ""), rules=P.get("rules", ""), guards=P.get("guards") or {}, defaults={k: P["defaults"][k] for k in ("model", "effort", "retry") if k in P["defaults"]},
                    stages=[_stage_row(s) for s in P["stages"]], after=len(P.get("after") or []))
     return row
 
@@ -318,15 +318,30 @@ def _draft_row(P, **kw):
                 stages=[_stage_row(x) for x in P["stages"]], after=0, **kw)
 
 
+def _put(d, key, val, after):
+    """d[key] = val in place: "" drops it, a new key goes right after the first present `after` key (else last)."""
+    if val == "":
+        d.pop(key, None)
+    elif key in d:
+        d[key] = val
+    else:
+        items = list(d.items())
+        k = next((i + 1 for a in after for i, (x, _) in enumerate(items) if x == a), len(items))
+        d.clear()
+        d.update(items[:k] + [(key, val)] + items[k:])
+
+
 def _apply(P, req):
-    """New dict with the allowed edits applied; ValueError on anything else. `model: ""` = drop stage.model."""
+    """New dict with the allowed edits applied; ValueError on anything else. `model: ""` / `effort: ""` = drop the key."""
     new = json.loads(json.dumps(P))
     dm = req.get("defaults")
     if dm is not None:
-        if not isinstance(dm, dict) or set(dm) - {"model"}:
-            raise ValueError("defaults: only model may change")
+        if not isinstance(dm, dict) or set(dm) - {"model", "effort"}:
+            raise ValueError("defaults: only model and effort may change")
         if "model" in dm:
             new["defaults"]["model"] = dm["model"]
+        if "effort" in dm:
+            _put(new["defaults"], "effort", dm["effort"], ("model",))
     edits = req.get("stages") or {}
     if not isinstance(edits, dict):
         raise ValueError("stages must be {title: {agent, model, title}}")
@@ -334,21 +349,15 @@ def _apply(P, req):
     for t, e in edits.items():
         if t not in by:
             raise ValueError("no stage %s" % str(t)[:40])
-        if not isinstance(e, dict) or set(e) - {"agent", "model", "title"}:
-            raise ValueError("stage %s: only agent, model and title may change" % t)
+        if not isinstance(e, dict) or set(e) - {"agent", "model", "effort", "title"}:
+            raise ValueError("stage %s: only agent, model, effort and title may change" % t)
         s = by[t]
         if "agent" in e:
             s["agent"] = e["agent"]
-        if "model" in e:
-            if e["model"] == "":
-                s.pop("model", None)
-            elif "model" in s:
-                s["model"] = e["model"]
-            else:   # keep the file's key order: model goes right after agent
-                items = list(s.items())
-                k = [a for a, _ in items].index("agent") + 1
-                s.clear()
-                s.update(items[:k] + [("model", e["model"])] + items[k:])
+        if "model" in e:   # keep the file's key order: model right after agent, effort right after model
+            _put(s, "model", e["model"], ("agent",))
+        if "effort" in e:
+            _put(s, "effort", e["effort"], ("model", "agent"))
     ren = {}
     for t, e in edits.items():
         if "title" in e:
@@ -374,14 +383,16 @@ def _empty(v):
 
 
 def _replace(P, req):
-    """Canvas save: the whole stage list (+ defaults model/retry) replaces the file's; name/v/title/after are kept.
+    """Canvas save: the whole stage list (+ defaults model/effort/retry) replaces the file's; name/v/title/after are kept.
     Only schema keys pass (`instr` -> `task`); empty values drop the key. ValueError on shape errors."""
     new = json.loads(json.dumps(P))
     dm = req.get("defaults")
     if dm is not None:
-        if not isinstance(dm, dict) or set(dm) - {"model", "retry"}:
-            raise ValueError("defaults: only model and retry may change")
-        new["defaults"].update(dm)
+        if not isinstance(dm, dict) or set(dm) - {"model", "effort", "retry"}:
+            raise ValueError("defaults: only model, effort and retry may change")
+        new["defaults"].update({k: v for k, v in dm.items() if k != "effort"})
+        if "effort" in dm:
+            _put(new["defaults"], "effort", dm["effort"], ("model",))
     # user-written config; "" drops the key, a new key goes after title (use before rules)
     for key, r in [(x, req[x]) for x in ("use", "rules") if x in req]:
         if not isinstance(r, str):
@@ -445,7 +456,7 @@ def _replace(P, req):
 
 def save(req):
     """(code, body) for POST /api/pipelines/save {proj, name, base, dry, defaults?, stages?}. ⚠Caller checks Origin.
-    `stages` list = canvas save (whole stage list); dict = per-stage agent/model edits (step 2a)."""
+    `stages` list = canvas save (whole stage list); dict = per-stage agent/model/effort edits (step 2a)."""
     if not isinstance(req, dict):
         return 400, {"ok": False, "err": "bad body"}
     proj, name = req.get("proj"), req.get("name")

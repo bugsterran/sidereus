@@ -11,6 +11,7 @@
       "title": "준비",
       "agent": "general-purpose",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run `/usr/bin/python3 scripts/osv_rules.py --unjudged --repo <repo>` once from the Sidereus repository. Report the listed ids and packages only. If it lists nothing, report `nothing to judge` and stop: the orchestrator skips the remaining stage. If it fails, report the error line; never treat a failure as an empty list. Change nothing.",
       "ui": { "x": 44, "y": 24 }
     },
@@ -18,6 +19,7 @@
       "title": "트리아지",
       "agent": "general-purpose",
       "model": "opus",
+      "effort": "high",
       "task": "For each id from the previous stage only: read the advisory's preconditions on osv.dev (https://osv.dev/vulnerability/<id>) and its GHSA page. Group ids whose precondition is the same feature. Per group, choose fixed-string patterns that code using the feature would contain (class names, XML tags, annotations, config keys); prefer recall over precision. Write one rule per group: `/usr/bin/python3 scripts/osv_rules.py --append '<rule json>'` with today's date in `at` and the advisory URL in `src`. An id you cannot decide (deployment-dependent precondition, no code signal) gets no rule. Report one line per rule (name, ids) and one line `id — reason` per undecided id. No code lines in the report.",
       "gate": "/usr/bin/python3 scripts/osv_rules.py --check",
       "retry": 1,

@@ -225,7 +225,9 @@ function plLabType(lab){ const l = lab || '', i = l.indexOf(': '); return i > 0 
 // itself with the Agent tool; loop-backs and retries continue the same agent with SendMessage instead of spawning a new one.
 function plDmDirect(p, req, models, dt){
   const ovr = models || {}, used = p.stages.map(s => s.title);
-  const steps = p.stages.map((s, i) => (i + 1) + '. ' + s.title + ' — agent ' + s.agent + ' · model ' + (ovr[s.title] || s.model || p.defaults.model) + (s.skill ? ' · skill ' + s.skill : '')
+  // ⚠hooks/pl_flow.py fills a valid defaults.effort into stages without one and enforces it: name the effective level.
+  const de = p.defaults && p.defaults.effort && PLG_EFFORTS.includes(p.defaults.effort) ? p.defaults.effort : '';
+  const steps = p.stages.map((s, i) => (i + 1) + '. ' + s.title + ' — agent ' + s.agent + ' · model ' + (ovr[s.title] || s.model || p.defaults.model) + (s.effort || de ? ' · effort ' + (s.effort || de) : '') + (s.skill ? ' · skill ' + s.skill : '')
     + (s.retry != null ? ' · retry ' + s.retry : '') + (s.gate ? ' · gate `' + s.gate + '`' : '') + (s.parallel ? ' · parallel ' + s.parallel : '')
     + (s.produces ? ' · produces slices' : '') + (s.fanout ? ' · fanout slices' : '') + (s.onlyOnJump ? ' · only after a loop-back' : '')
     + (s.onFail ? ' · onFail → ' + s.onFail.goto + ' (max ' + s.onFail.max + (s.onFail.then ? ', then ' + s.onFail.then : '') + ')' : '')).join('\n');
@@ -237,7 +239,7 @@ function plDmDirect(p, req, models, dt){
   // Sent text read by an AI session, not UI: English, never through T(); stage titles stay verbatim because [pl:] tags match them.
   return 'Pipeline ' + p.name + ' run (session runs it) — request: «' + req + '»\n'
     + 'Run .claude/pipelines/' + p.name + '.json yourself with the Agent tool (not the Workflow tool). Stages in order:\n' + steps + '\n'
-    + mtag + 'Each stage: Agent(subagent_type = its agent, model unless inherit, description starting with "[pl:' + p.name + '/<stage title>]" — Sidereus lights stages from it), '
+    + mtag + 'Each stage: Agent(subagent_type = its agent, model unless inherit, ' + (de || p.stages.some(s => s.effort) ? 'effort when the stage sets one, ' : '') + 'description starting with "[pl:' + p.name + '/<stage title>]" — Sidereus lights stages from it), '
     + 'prompt = the default instruction for the title + the stage "task" + the pipeline "rules" + this request + earlier stage summaries and changed files'
     + (p.stages.some(s => s.skill) ? ' + for a stage with a skill: "Follow the <skill> skill." (load it with the Skill tool first)' : '') + '. '
     + 'Each stage returns status PASS/FAIL, summary, findings (file/line/text), changed files.\n'

@@ -53,7 +53,7 @@ class Flow(unittest.TestCase):
             f.write(body if isinstance(body, str) else json.dumps(body, ensure_ascii=False))
 
     def _ev(self, event, stage, tool="Agent", resp=None, bg=False, text=" secret task text", sub=None, model=None,
-            raw=None):
+            raw=None, effort=None):
         key = "summary" if tool == "SendMessage" else "description"
         ti = {key: raw if raw is not None else "[pl:%s/%s]%s" % (N, stage, text)}
         if tool in ("Agent", "Task"):   # default = the stage's own agent and model (the compliant call)
@@ -64,6 +64,8 @@ class Flow(unittest.TestCase):
                 ti["subagent_type"] = sub
             if model:
                 ti["model"] = model
+            if effort:
+                ti["effort"] = effort
         if bg:
             ti["run_in_background"] = True
         ev = {"hook_event_name": event, "tool_name": tool, "session_id": SID, "cwd": self.proj, "tool_input": ti}
@@ -809,6 +811,73 @@ class Flow(unittest.TestCase):
         self.assertIsNotNone(self.pre("검증"))                # stage default no longer matches
         self.assertIsNone(self.pre("검증", model="opus"))
         self.assertIsNone(self.pre("구현", tool="SendMessage"))   # SendMessage: no agent/model check
+
+    def _effort_pipe(self, stage_effort=None, default=None):
+        st = [dict(x) for x in PIPE["stages"]]
+        if stage_effort:
+            st[2]["effort"] = stage_effort   # 검증
+        body = dict(PIPE, stages=st)
+        if default:
+            body["defaults"] = {"effort": default}
+        self._pipe(body)
+        self.assertIsNone(self.pre("설계", effort=default)), self.post("설계")
+        self.assertIsNone(self.pre("구현", effort=default)), self.post("구현")
+
+    def test_effort_tuple(self):
+        self.assertEqual(H.EFFORTS, ("low", "medium", "high", "xhigh", "max"))   # R2: same set as the schema (R1)
+
+    def test_effort_mismatch_denied_as_model(self):   # R2
+        self._effort_pipe("medium")
+        for eff in (None, "high"):   # missing, then different
+            o = self.pre("검증", effort=eff)
+            self.assertEqual(o["permissionDecision"], "deny")
+            self.assertIn("and model sonnet and effort medium;", o["permissionDecisionReason"])
+            self.assertIn("effort %s." % (eff or "(none)"), o["permissionDecisionReason"])
+            self.assertIn("[pl-effort:%s/검증=<level>]" % N, o["permissionDecisionReason"])
+        self.assertEqual([e["c"] for e in self.run_()["dl"]], ["model", "model"])
+        self.assertIsNone(self.pre("검증", effort="Medium"))   # case-insensitive match passes
+
+    def test_effort_override_bash(self):   # R2: [pl-effort:] overrides the stage effort for this run
+        self._effort_pipe("medium")
+        self.assertIsNone(self.bash("[pl-effort:%s/검증=high] secret" % N))
+        self.assertEqual(self.run_()["efforts"], {"검증": "high"})
+        self.assertIsNotNone(self.pre("검증", effort="medium"))
+        self.assertIsNone(self.pre("검증", effort="high"))
+        self.assertIsNone(self.bash("[pl-effort:%s/검증=huge] x" % N))   # not a level: no declaration
+        self.assertEqual(self.run_()["efforts"], {"검증": "high"})
+
+    def test_effort_override_without_stage_effort(self):   # R2: a declared effort is checked even if the stage has none
+        self._effort_pipe()
+        self.assertIsNone(self.bash("[pl-effort:%s/검증=low] x" % N))
+        self.assertIsNotNone(self.pre("검증"))
+        self.assertIsNone(self.pre("검증", effort="low"))
+
+    def test_no_effort_not_checked(self):   # R2: a stage with no effort is not checked
+        self._effort_pipe()
+        self.assertIsNone(self.pre("검증", effort="max"))
+        o = self.pre("검증", model="opus")   # the no-effort message is unchanged
+        self.assertNotIn("effort", o["permissionDecisionReason"])
+        self.assertIn("declare another model or agent first with a Bash description [pl-model:%s/검증=<model>] or "
+                      "[pl-agent:%s/검증=<agent>]." % (N, N), o["permissionDecisionReason"])
+
+    def test_effort_defaults_inherited(self):   # R2: defaults.effort fills stages without one
+        self._effort_pipe(default="low")
+        self.assertIsNotNone(self.pre("검증"))
+        self.assertIsNone(self.pre("검증", effort="low"))
+        st, _ = H._stages(self.proj, N)
+        self.assertEqual(st[2].get("model"), "sonnet")   # model untouched
+        self._pipe(dict(PIPE, defaults={"effort": "low"},
+                        stages=[dict(PIPE["stages"][0], effort="high")] + PIPE["stages"][1:]))
+        self.assertEqual([x.get("effort") for x in H._stages(self.proj, N)[0]][:2], ["high", "low"])
+        self._pipe(dict(PIPE, defaults={"effort": "huge"}))
+        self.assertIsNone(H._stages(self.proj, N)[0][0].get("effort"))   # invalid default ignored
+
+    def test_step_shows_effort(self):   # R2: the next: hint names the effort
+        self.assertEqual(H._step(N, {"title": "검증", "agent": "a", "model": "sonnet", "effort": "low", "gate": "g"}),
+                         "[pl:%s/검증] · agent a · model sonnet · effort low · gate g" % N)
+
+    def test_pi_effort_declaration(self):   # R2: pi echo form accepts pl-effort
+        self.assertTrue(H.DECL_MARK.match('echo "[pl-effort:%s/검증=high]"' % N))
 
     def test_agent_override(self):
         ag = os.path.join(self.proj, ".claude", "agents")

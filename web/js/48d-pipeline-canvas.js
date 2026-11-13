@@ -153,7 +153,11 @@ function plNodeHtml(E, n, bad, lt, cdy){   // cdy = 48c plgChipDy offset (status
   const chips = plFlagChips(n);
   // Model line: «inherit» (on the stage or via defaults) reads as the session's model, not a raw config word.
   const inh = !eff || eff === 'inherit', mtx = inh ? T('Session model') : n.model || T('default', 'short') + ' (' + G.defaults.model + ')';
-  const mln = '<div class=plnm' + (inh ? ' title="' + esc(T("No model set; the stage uses the session's model")) + '"' : '') + '>' + esc(mtx) + warn + '</div>';
+  // Effort: the stage's own, else a valid defaults.effort (hooks/pl_flow.py enforces it per stage) shown like a default model; neither = session effort, nothing shown.
+  const def = !n.effort && G.defaults.effort && PLG_EFFORTS.includes(G.defaults.effort) ? G.defaults.effort : '', ev = n.effort || def;
+  const etp = ev ? TV({ msg: 'Reasoning effort: {v}', vars: { v: ev } }) : '';
+  const efx = etp ? '<span class=pleff title="' + esc(etp) + '" aria-label="' + esc(etp) + '"> · ' + esc(n.effort || T('default', 'short') + ' (' + def + ')') + '</span>' : '';
+  const mln = '<div class=plnm' + (inh ? ' title="' + esc(T("No model set; the stage uses the session's model")) + '"' : '') + '>' + esc(mtx) + efx + warn + '</div>';
   const ngt = T('No check command runs after this stage — nothing machine-checks it');
   const unv = String(n.gate || '').trim() ? '' : '<span class=plunv title="' + esc(ngt) + '" aria-label="' + esc(T('No gate') + ' — ' + ngt) + '">' + esc(T('No gate')) + '</span>';   // pairs with the «Gate» chip; judgment stages are expected here
   const oc = L && PL_OUTCOME[L.st] ? plOc(L.st) + (L.why ? ' (' + L.why + ')' : '') : '', lsTxt = L ? [oc, L.n ? T('Agents') + ' ' + L.n + ' · ' + ago(L.sec) : L.st === 'run' && L.sec > 0 ? ago(L.sec) : oc ? '' : T('Waiting')].filter(Boolean).join(' · ') : '';
@@ -228,6 +232,8 @@ function plGrpOpts(L, cur, outLab, biLab){
   const grp = (g, lab) => { const G = L.filter(a => a.grp === g); return G.length ? '<optgroup label="' + esc(T(lab)) + '">' + G.map(opt).join('') + '</optgroup>' : ''; };
   return L.filter(a => a.grp === 'out').map(opt).join('') + grp('own', 'This project') + grp('bi', biLab || 'Built-in');
 }
+// Effort picker: '' = no key (plField deletes it) = the session's effort, then PLG_EFFORTS.
+function plEffOpts(cur){ return plOpt('', T('Session effort'), cur) + PLG_EFFORTS.map(v => plOpt(v, v, cur)).join(''); }
 function plAgOpts(ags, agents, cur){ return plGrpOpts(ags, cur, n => plAgMissing(n, agents) ? 'not installed → general-purpose' : 'outside this project'); }
 function plSkOpts(sks, skills, cur){ return plGrpOpts(sks, cur, n => (skills || []).some(k => k && k.name === n) ? 'outside this project' : 'not installed', 'General'); }
 function plPanel(E, d){
@@ -240,6 +246,7 @@ function plPanel(E, d){
     h = '<div class=plph><input class=plti data-plti maxlength=24 value="' + esc(n.title) + '" aria-label="' + esc(T('Stage name')) + '" title="' + esc(T('Rename the stage — loop-backs follow; saved with «Save»')) + '"><button class=wkrgb data-pldel>' + esc(T('Delete')) + '</button></div>'
       + plRow('Agent', '<select data-plf=agent>' + plAgOpts(ags, d.agents, n.agent) + '</select>')
       + plRow('Model', '<select data-plf=model>' + plOpt('', T('default', 'short') + ' (' + G.defaults.model + ')', n.model || '') + models.map(m => plOpt(m, m, n.model || '')).join('') + '</select>')
+      + plRow('Effort', '<select data-plf=effort>' + plEffOpts(n.effort || '') + '</select>')
       + plRow('Skill', '<select data-plf=skill>' + plOpt('', T('none'), n.skill || '') + plSkOpts(sks, d.skills, n.skill || '') + '</select>')
       + plRow('Retry', '<select data-plf=retry>' + plOpt('', T('default', 'short') + ' (' + G.defaults.retry + ')', n.retry == null ? '' : n.retry) + [0, 1, 2, 3].map(k => plOpt(k, k, n.retry == null ? '' : n.retry)).join('') + '</select>')
       + plRow(T('Order'), (o => '<span class=plcol><button class=wkrgb data-plmv=-1' + (!o || o[0] === n.id ? ' disabled' : '') + '>◀</button><button class=wkrgb data-plmv=1'

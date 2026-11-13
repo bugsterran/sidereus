@@ -116,6 +116,8 @@ if (Array.isArray(P.stages)) P.stages.forEach(s => { if (s && typeof s === 'obje
 if (P.guards && Array.isArray(P.guards.requireGates)) P.guards.requireGates = P.guards.requireGates.map(ren)
 
 const errs = []
+// Optional reasoning effort (stage/defaults). ⚠Inside the validate block (pipeline_check.mjs runs it alone); same literal as sidereus/pipeline_schema.py EFFORTS.
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max']
 const isInt = (x, lo, hi) => Number.isInteger(x) && x >= lo && x <= hi
 const oneLine = (x, max) => typeof x === 'string' && x.length <= max && !/[\r\n]/.test(x)
 if (P.v !== 1) errs.push('v must be 1')
@@ -126,6 +128,7 @@ if (P.rules !== undefined && (typeof P.rules !== 'string' || P.rules.length > 20
 if (P.after !== undefined && !(Array.isArray(P.after) && P.after.every(x => oneLine(x, 200)))) errs.push('after: array of one-line strings')
 const D = P.defaults || {}
 if (!MODELS.includes(D.model)) errs.push('defaults.model: inherit|opus|sonnet|haiku')
+if (D.effort !== undefined && !EFFORTS.includes(D.effort)) errs.push('defaults.effort: low|medium|high|xhigh|max')
 if (!isInt(D.retry, 0, 3)) errs.push('defaults.retry: 0..3')
 const S = Array.isArray(P.stages) ? P.stages : []
 if (!S.length || S.length > 20) errs.push('stages: 1..20')
@@ -142,6 +145,7 @@ S.forEach((s, i) => {
   if ('skill' in s && (typeof s.skill !== 'string' || !/^[a-z0-9-]{1,60}$/.test(s.skill))) errs.push(`${at}.skill: ^[a-z0-9-]{1,60}$`)
   if (s.task !== undefined && (typeof s.task !== 'string' || s.task.length > 1000)) errs.push(`${at}.task: string <= 1000`)
   if (s.model !== undefined && !MODELS.includes(s.model)) errs.push(`${at}.model`)
+  if (s.effort !== undefined && !EFFORTS.includes(s.effort)) errs.push(`${at}.effort`)
   if (s.retry !== undefined && !isInt(s.retry, 0, 3)) errs.push(`${at}.retry: 0..3`)
   if (s.parallel !== undefined && !isInt(s.parallel, 1, 16)) errs.push(`${at}.parallel: 1..16`)
   if (s.gate !== undefined && !(oneLine(s.gate, 200) && s.gate)) errs.push(`${at}.gate: one line, 1..200 chars`)
@@ -257,6 +261,7 @@ const opts = (st, label) => {
   const m = OVR[st.title] || st.model || D.model
   const o = { schema: resultSchema(st), phase: PHASE[st.title], label }
   if (m !== 'inherit') o.model = m
+  // ⚠effort is validated but not passed: the Workflow agent() opts do not document an effort option.
   return o
 }
 const call = async (st, prompt, label) => {

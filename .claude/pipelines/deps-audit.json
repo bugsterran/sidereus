@@ -16,6 +16,7 @@
       "title": "점검",
       "agent": "sidereus-verifier",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run `/usr/bin/python3 scripts/arch_checks.py --repo <this repo> --category security` once from this repository: it runs the security scanners and the dependency/runtime audit (scripts/deps_audit.py) and writes one Markdown report. Its printed summary line ends with `· report <name>` (plus `· deps N FAIL/M WARN`); the report is ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<name> (find it with `ls ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/*/<name>`). Read it and report as findings every FAIL/WARN line of «Dependencies and runtimes» (item and detail only) and every scanner finding (rule id, file:line, severity); name tools that were skipped, missing or failed. List OK lines in summary. Change nothing; do not rerun.",
       "ui": { "x": 44, "y": 24 }
     },
@@ -23,6 +24,7 @@
       "title": "트리아지",
       "agent": "sidereus-reviewer",
       "model": "opus",
+      "effort": "high",
       "task": "For each finding decide: action now, owner decision, or no action. Give the risk and what must not change. A runtime switch is always an owner decision (summary, not a slice). Slices only for approved, minimal work: EOL table/date refresh in scripts/deps_audit.py, code fixes for deprecations, removing a foreign import. Change nothing.",
       "produces": "slices",
       "ui": { "x": 292, "y": 24 }
@@ -40,6 +42,7 @@
       "title": "검증",
       "agent": "sidereus-verifier",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run the gate once and report each failing step as a finding with file/line. Do not fix anything.",
       "gate": "scripts/check.sh --full",
       "onFail": { "goto": "업데이트", "max": 2 },

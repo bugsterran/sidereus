@@ -103,8 +103,10 @@ class PlMode(unittest.TestCase):
                 " ag: [{aid: 'a1', tid: 't1', lab: 'impl: [pl:chg/Implement] SECRET-DESC', t0: 1, t1: 31}]}};"
                 "const x = {targ: 'SECRET-TARG', prompt: 'SECRET-PROMPT'};"
                 "const none = plWatchPane({G: E.G, sel: null}, {}, null, {Implement: {st: 'wait'}});"
-                "console.log(JSON.stringify([plWatchPane(E, {}, {sid: 's1'}, lt), none]));")
-        pane, none = h
+                "const n1 = {id: 'n1', title: 'I', agent: 'impl', model: 'opus', effort: 'high'}, n2 = {id: 'n2', title: 'J', agent: 'impl', effort: 'low'};"
+                "console.log(JSON.stringify([plWatchPane(E, {}, {sid: 's1'}, lt), none,"
+                " [plWatchPane({G: {nodes: [n1]}, sel: {k: 'n', id: 'n1'}}, {}, null, {}), plWatchCards({G: {nodes: [n1, n2]}}, null, {I: {st: 'run'}, J: {st: 'run'}})]]));")
+        pane, none, e = h
         self.assertIn("OC-done", pane)
         self.assertIn("↺ 1", pane)
         self.assertIn("Agents 2", pane)
@@ -115,6 +117,9 @@ class PlMode(unittest.TestCase):
         self.assertNotIn("SECRET-PROMPT", pane)
         self.assertIn("impl<span class=plwad>SECRET-DESC</span>", pane)     # one-line task label beside the type (metadata)
         self.assertIn("Click a stage to see its result", none)
+        self.assertIn("<small>impl · opus</small>", pane)                      # R3: no effort key, no effort shown
+        self.assertIn("<small>impl · opus · high</small>", e[0])            # R3: agent · model · effort
+        self.assertIn("<small>impl · low</small>", e[1])
         s = _src("web/js/48k-pipeline-mode.js")
         self.assertIn("plOpenWork(t.dataset.plwsid, t.dataset.plwtid)", s)
 

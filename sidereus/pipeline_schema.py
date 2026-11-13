@@ -12,6 +12,8 @@ SLOT_PREFIX = "사용자 단계"
 RENAMED = {"최종 검증": "재검증"}
 CUSTOM_MAX = 12
 MODELS = ("inherit", "opus", "sonnet", "haiku")
+# Claude Code reasoning effort per stage/default; optional. ⚠Same literal as the runner's EFFORTS (validate block).
+EFFORTS = ("low", "medium", "high", "xhigh", "max")
 _NAME = re.compile(r"[a-z0-9-]{1,40}")      # ⚠fullmatch only: Python `$` also matches before a trailing "\n"
 _AGENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,59}")   # built-in agent types are capitalised (Explore, Plan)
 _SKILL = re.compile(r"[a-z0-9-]{1,60}")
@@ -93,6 +95,8 @@ def validate(P, name):
     D =P.get("defaults") if isinstance(P.get("defaults"), dict) else {}
     if D.get("model") not in MODELS:
         errs.append("defaults.model: inherit|opus|sonnet|haiku")
+    if "effort" in D and D["effort"] not in EFFORTS:
+        errs.append("defaults.effort: low|medium|high|xhigh|max")
     if not _is_int(D.get("retry"), 0, 3):
         errs.append("defaults.retry: 0..3")
     S = P["stages"] if isinstance(P.get("stages"), list) else []
@@ -124,6 +128,8 @@ def validate(P, name):
             errs.append(at + ".task: string <= 1000")
         if "model" in s and s["model"] not in MODELS:
             errs.append(at + ".model")
+        if "effort" in s and s["effort"] not in EFFORTS:
+            errs.append(at + ".effort")
         if "retry" in s and not _is_int(s["retry"], 0, 3):
             errs.append(at + ".retry: 0..3")
         if "parallel" in s and not _is_int(s["parallel"], 1, 16):

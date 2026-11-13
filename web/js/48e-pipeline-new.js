@@ -230,7 +230,7 @@ function plDraftText(name, desc, agents, titles, wf, proj, ctx){
     : 'Pipeline draft request — \'' + desc + '\'\n'
       + 'Write .claude/pipelines/' + name + '.json in this project for that purpose. Do not run it and do not commit.\n')
     + 'Schema v1: {"v":1,"name":"' + name + '","title":"<one line>","rules"?:"<lines>","defaults":{"model":"inherit|opus|sonnet|haiku","retry":0-3},'
-    + '"stages":[{"title","agent","task"?,"model"?,"retry"?,"gate"?:"<one-line command the stage runs>","parallel"?:1-16,"produces"?:"slices","fanout"?:"slices",'
+    + '"stages":[{"title","agent","task"?,"model"?,"effort"?:"low|medium|high|xhigh|max","retry"?,"gate"?:"<one-line command the stage runs>","parallel"?:1-16,"produces"?:"slices","fanout"?:"slices",'
     + '"onFail"?:{"goto":"<earlier title>","max":1-5,"then"?:"<later title>"},"onError"?:"stop|continue","onlyOnJump"?:true}]}\n'
     + 'Recommended stage titles (each at most once, array order = run order): ' + titles.join(' · ') + '\n' + tl
     + 'Each has a built-in default instruction; "task" is only appended as extra instructions. Any other one-line title (<= 40 chars, at most 12) is a custom stage and needs a "task".\n'

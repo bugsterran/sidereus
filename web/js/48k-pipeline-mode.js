@@ -91,7 +91,7 @@ function plWatchCards(E, lv, lt){
   return '<div class="plpan plwp"><div class=plwcs>' + ns.map(n => {
     const ar = sid ? plStageAgents(lt, n.title, now).filter(a => a.run).map(a => plWBtn(sid, lx, a)).join('') : '';
     return '<div class=plwc role=button tabindex=0 data-plwn="' + esc(n.id) + '" title="' + esc(T('Show the result of this stage')) + '"><div class=plwch><i class=plrtdot></i><b>' + esc(plgShow(n.title)) + '</b>'
-      + (n.agent || n.model ? '<small>' + esc((n.agent || '') + (n.model ? ' · ' + n.model : '')) + '</small>' : '') + '</div>' + (ar ? '<div class=plwas>' + ar + '</div>' : '') + '</div>';
+      + (n.agent || n.model || n.effort ? '<small>' + esc([n.agent, n.model, n.effort].filter(Boolean).join(' · ')) + '</small>' : '') + '</div>' + (ar ? '<div class=plwas>' + ar + '</div>' : '') + '</div>';
   }).join('') + '</div></div>';
 }
 // Result of the selected stage from data already on the page: run row (48b plStageRows), gate evidence (48f plEvLine), agents → work log.
@@ -114,7 +114,7 @@ function plWatchPane(E, d, lv, lt){
   const ar = ags.filter(a => a.run).map(plwBtn).join(''), af = ags.filter(a => !a.run).map(plwBtn).join('');
   const ab = (ar ? '<div class=plwas>' + ar + '</div>' : '') + (af ? '<div class="plwas plwdn"><span class=plwal>' + esc(T('Done')) + '</span>' + af + '</div>' : '');
   const ad = n.agent ? plAgDesc(n.agent) : '';
-  return '<div class="plpan plwp"><div class=plph><b>' + esc(plgShow(n.title)) + '</b><small>' + esc((n.agent || '') + (n.model ? ' · ' + n.model : '')) + '</small>' + (ad ? '<small class=plphd title="' + esc(ad) + '">' + esc(ad) + '</small>' : '') + '</div>' + st
+  return '<div class="plpan plwp"><div class=plph><b>' + esc(plgShow(n.title)) + '</b><small>' + esc([n.agent, n.model, n.effort].filter(Boolean).join(' · ')) + '</small>' + (ad ? '<small class=plphd title="' + esc(ad) + '">' + esc(ad) + '</small>' : '') + '</div>' + st
     + (ev || '<div class=hidnote>' + esc(T('No gate evidence for this stage yet')) + '</div>') + gate + ab + '</div>';
 }
 // Watch is three stacked regions: canvas | result pane | «Running N» card, split by two drag grips (p, r).

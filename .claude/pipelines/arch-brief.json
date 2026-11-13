@@ -10,6 +10,7 @@
       "title": "준비",
       "agent": "general-purpose",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run `/usr/bin/python3 scripts/arch_brief.py --pre --repo <repo>` once (from the Sidereus folder) and report its line verbatim. On a miss it says to run arch-map first; stop there and edit nothing.",
       "gate": "/usr/bin/python3 scripts/arch_brief.py --ready"
     },
@@ -23,6 +24,7 @@
       "title": "검증",
       "agent": "general-purpose",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run the gate once and report its printed line verbatim. It fails on unknown ids or keys; caps (3..7 components, <=1 with pkgs, 1..4 externals, 1..3 uses, 2..4 principles, <=12 arrows); a store/external map module outside externals; an arrow without label, with an unverified edge or one not joining its boxes, or with an actor endpoint; a use outside its external's uses; principle evidence missing or file:line absent at the commit; a v1 brief or v1 map («redraw as v2»). On pass it writes S/brief.html and S/brief.ok.json (sha256 of that html). Do not edit brief.json.",
       "gate": "/usr/bin/python3 scripts/arch_brief.py --last",
       "onFail": { "goto": "개요 그리기", "max": 1 }

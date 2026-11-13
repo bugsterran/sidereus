@@ -91,8 +91,16 @@ lang_register("rust", {"exts": (".rs",), "scan": rs_scan,
 ```
 
 - 최상위 키: `v`, `name`, `title`, `use`(한 줄 120자까지, `pipelines_brief.py` 가 읽고 파이프라인 화면에도 뜬다), `rules`, `after`, `defaults`, `guards`(`requireGates`, `maxLoopBacks`), `stages`.
-- 단계 키: `title`, `agent`, `model`(`inherit|opus|sonnet|haiku`), `skill`, `task`, `gate`, `produces`/`fanout`, `parallel`,
+- 단계 키: `title`, `agent`, `model`(`inherit|opus|sonnet|haiku`), `effort`(`low|medium|high|xhigh|max`), `skill`, `task`, `gate`, `produces`/`fanout`, `parallel`,
   `retry`, `onError`(`stop|continue`), `onFail {goto, max 1..5, then?, stopOn?}`, `onlyOnJump`, `ui`.
+- `effort` 는 선택이고 `model` 처럼 검사한다. 세션이 Agent 도구의 `effort` 로 넘기고, 다르면 `pl_flow.py` 가
+  거절한다. 고르는 기준([model config](https://code.claude.com/docs/en/model-config.md)):
+
+  | `effort` | 단계 |
+  |---|---|
+  | `low` | 기계가 채점하는 게이트(테스트·검사·스캐너)만 돌리고 출력을 보고한다 |
+  | `high` | 판단: 진단·설계·리뷰·트리아지·계획 |
+  | 비움 | 그 밖의 단계. 세션의 effort 를 따른다 |
 - `pipeline_schema.STAGE_TITLES` 밖의 제목은 사용자 단계다(1–40자, `task` 필요).
 - «AI 설정 점검»(`STAGE_TITLES` 의 추천 제목 그대로): 프로젝트의 AI 설정(AGENTS.md/CLAUDE.md, 에이전트, 스킬, 훅, `.mcp.json`, 단계 지시)을 읽기만 하며 점검한다. 지적은 file:line.
 - «프롬프트 검증»(`STAGE_TITLES` 의 추천 제목 그대로): 지정한 에이전트·스킬 프롬프트를 합성 입력으로 돌려, 약속한 것과 맞는지 프롬프트별 통과/실패로 보고한다.

@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Runs, stage hooks and evaluation
 
+- **Stage `effort` is enforced only on direct runs** (hooks/pl_flow.py · `.claude/workflows/*.js`).
+  - An effort mismatch is denied and logged under deny code `model` (no new code), so harness_flow and report counts keep their meaning.
+  - ⚠The Workflow runner does not pass effort (`agent()` opts do not document it); only a pipeline run directly with the Agent tool gets the stage effort.
+  - ⚠Never add a separate deny code for effort without updating every deny-code count in the same change.
+
 - **Pipeline verdict sentences are keyed twice** (sidereus/pl_outcome.py `OC_VERDICT` · web `PLE_VD`).
   - Cause: the weekly report writes the English sentence from `OC_VERDICT`; the panel shows its own copy keyed by the same id.
   - ⇒ Change an id or sentence in both places in one change; guides live in `docs/verdicts/<id>.md` (+ `.ko.md`), `healthy` has none.

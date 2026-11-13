@@ -61,6 +61,44 @@ const document = {addEventListener(){}};
 """
 
 
+class EffortEdits(unittest.TestCase):
+    """R1/R3: stage and defaults `effort` round-trip through _apply (per-stage edit) and _replace (canvas save)."""
+    PL = sidereus("pipeline")
+
+    def test_apply_order_and_drop(self):
+        P = TP._copy()
+        new = self.PL._apply(P, {"stages": {"검증": {"effort": "max"}, "구현": {"effort": "low"}}, "defaults": {"effort": "high"}})
+        self.assertEqual(list(new["stages"][2]), ["title", "agent", "model", "effort", "onFail"])   # right after model
+        self.assertEqual(list(new["stages"][1])[:3], ["title", "agent", "effort"])                 # no model: after agent
+        self.assertEqual(list(new["defaults"]), ["model", "effort", "retry"])
+        new = self.PL._apply(new, {"stages": {"구현": {"model": "opus"}}})
+        self.assertEqual(list(new["stages"][1])[:4], ["title", "agent", "model", "effort"])
+        back = self.PL._apply(new, {"stages": {"검증": {"effort": ""}, "구현": {"effort": "", "model": ""}}, "defaults": {"effort": ""}})
+        self.assertEqual(back, P)
+        for req in ({"stages": {"검증": {"task": "x"}}}, {"defaults": {"retry": 1}}):
+            with self.assertRaises(ValueError):
+                self.PL._apply(P, req)
+
+    def test_replace_round_trip(self):
+        P = TP._copy()
+        rows = [self.PL._stage_row(s) for s in P["stages"]]
+        rows[2]["effort"], rows[0]["effort"] = "xhigh", "medium"
+        new = self.PL._replace(P, {"stages": rows, "defaults": {"model": "inherit", "retry": 0, "effort": "max"}})
+        self.assertEqual(new["stages"][2]["effort"], "xhigh")
+        self.assertLess(list(new["stages"][2]).index("model"), list(new["stages"][2]).index("effort"))
+        self.assertEqual(list(new["defaults"]), ["model", "effort", "retry"])
+        self.assertEqual(self.PL._stage_row(new["stages"][2])["effort"], "xhigh")
+        fresh = self.PL._replace(P, {"stages": rows[:2] + [{"title": "검증", "effort": "low", "model": "opus", "agent": "v"}]})
+        self.assertEqual(list(fresh["stages"][2])[:4], ["title", "agent", "model", "effort"])   # file order kept, the new key after
+        rows[2]["effort"], rows[0]["effort"] = "", ""
+        back = self.PL._replace(new, {"stages": rows, "defaults": {"effort": ""}})
+        self.assertEqual(back, P)
+        with self.assertRaises(ValueError):
+            self.PL._replace(P, {"stages": [dict(rows[0], effortLevel="high")]})
+        with self.assertRaises(ValueError):
+            self.PL._replace(P, {"stages": rows, "defaults": {"effortLevel": "high"}})
+
+
 class ApplyJs(unittest.TestCase):
     def _html(self, d):
         with open(_F, encoding="utf-8") as f:

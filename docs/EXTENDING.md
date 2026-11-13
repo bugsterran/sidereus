@@ -93,8 +93,16 @@ Internals: [dev/PIPELINE.md](dev/PIPELINE.md). Review pipelines per CLI, with te
 ```
 
 - Top keys: `v`, `name`, `title`, `use` (one line, up to 120 characters; read by `pipelines_brief.py` and shown on the Pipelines screen), `rules`, `after`, `defaults`, `guards` (`requireGates`, `maxLoopBacks`), `stages`.
-- Stage keys: `title`, `agent`, `model` (`inherit|opus|sonnet|haiku`), `skill`, `task`, `gate`, `produces`/`fanout`,
+- Stage keys: `title`, `agent`, `model` (`inherit|opus|sonnet|haiku`), `effort` (`low|medium|high|xhigh|max`), `skill`, `task`, `gate`, `produces`/`fanout`,
   `parallel`, `retry`, `onError` (`stop|continue`), `onFail {goto, max 1..5, then?, stopOn?}`, `onlyOnJump`, `ui`.
+- `effort` is optional and validated like `model`; the session passes it as the Agent tool's `effort`, and
+  `pl_flow.py` denies a different one. Choosing it ([model config](https://code.claude.com/docs/en/model-config.md)):
+
+  | `effort` | Stage |
+  |---|---|
+  | `low` | only runs a machine-scored gate (tests, checks, a scanner) and reports its output |
+  | `high` | judgment: diagnosis, design, review, triage, planning |
+  | empty | everything else; the session's effort applies |
 - Titles outside `pipeline_schema.STAGE_TITLES` are custom stages (1–40 chars, need `task`).
 - «AI config review» and «Prompt check» are recommended titles in `STAGE_TITLES`; the file stores their Korean form (see [EXTENDING.ko](EXTENDING.ko.md)).
 - «AI config review»: read-only review of the project's AI config (AGENTS.md/CLAUDE.md, agents, skills, hooks, `.mcp.json`, stage tasks) — findings with file:line.

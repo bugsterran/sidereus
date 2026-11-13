@@ -131,8 +131,9 @@ Agent/Task/SendMessage 는 지운다. 파이프라인, 단계, 시각, cwd 만 �
   `onFail.goto` 로 돌아가면 반복 한 번으로 세고 끝나면 그 단계(또는 `onFail.then`)로 돌아온다.
 - Pre: 태그 붙은 Agent/Task 는 단계 에이전트를 `subagent_type` 으로, 단계 모델을 `model` 로 넘겨야 하고 아니면 거절된다
   (단계에 모델이 적혀 있으면 `model` 을 빼도 불일치로 본다. `inherit`, `main` 단계, 단계 에이전트가 설치되지 않아 `general-purpose` 를 받는 경우는 예외).
-  Bash 설명 `[pl-model:<name>/<stage>=<model>]` · `[pl-agent:<name>/<stage>=<agent>]` 로 그 실행의 그 단계에만 다른
-  모델·에이전트를 선언한다.
+  단계 `effort` 도 같은 방식으로 호출의 `effort` 와 맞춰 본다.
+  Bash 설명 `[pl-model:<name>/<stage>=<model>]` · `[pl-effort:<name>/<stage>=<level>]` · `[pl-agent:<name>/<stage>=<agent>]` 로 그 실행의 그 단계에만 다른
+  모델·effort·에이전트를 선언한다.
 - Post: 단계의 마지막 조각이 돌아오면 `PASS → next: [pl:…] · agent · model · skill · gate` 를, `onFail` 이 있는 단계면
   FAIL 반복 줄을 붙인다. 백그라운드 호출은 «끝나면» 으로 말하고, 그 호출이 받는 유일한 Post 에서 진행 중 조각 수를
   하나 줄인다(단계를 끝냄으로 표시하지는 않는다). 마지막 단계 뒤엔 실행을 닫고 `after` 를 알린다.

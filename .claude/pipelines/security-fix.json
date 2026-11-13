@@ -17,6 +17,7 @@
       "title": "재검사",
       "agent": "general-purpose",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run `/usr/bin/python3 scripts/arch_checks.py --repo <repo> --category security` once from the Sidereus repository (this pipeline's repo). Report its printed line only. Do not fix findings, do not run any tool yourself.",
       "gate": "/usr/bin/python3 scripts/arch_checks.py --verify --last --category security",
       "onFail": { "goto": "수정", "max": 2 }
@@ -25,6 +26,7 @@
       "title": "리뷰",
       "agent": "Explore",
       "model": "opus",
+      "effort": "high",
       "task": "Read-only: review the fix commit diff in the target repo against each requested finding. For each: is the cause fixed, not hidden (suppression, ignore entry, disabled rule, moved code)? Did behaviour change beyond the fix? Make no edits. Report one line per finding: fixed · hidden · not fixed, plus any regression risk."
     }
   ]

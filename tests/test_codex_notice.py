@@ -28,9 +28,10 @@ WAKE_EN_CC = ("New mail wakes this session via the Stop hook (mailbox_wake) — 
               " When woken, read it with mailbox_inbox.")
 HOW_CC = ("Default = run the pipeline directly: follow .claude/pipelines/<name>.json yourself with the Agent tool "
           "(stage order, agent, model, skill, gate, onFail; a stage skill means its prompt says Follow the <skill> skill.); "
-          "start each stage's Agent description with [pl:<name>/<stage title>] and pass its agent/model as "
-          "subagent_type/model. Skip a stage only after a Bash described [pl-skip:<name>/<stage title>] <reason>; "
-          "another model: [pl-model:<name>/<stage title>=<model>]; another agent: [pl-agent:<name>/<stage title>=<agent>]. In a run, SendMessage summaries start with the "
+          "start each stage's Agent description with [pl:<name>/<stage title>] and pass its agent/model/effort as "
+          "subagent_type/model/effort. Skip a stage only after a Bash described [pl-skip:<name>/<stage title>] <reason>; "
+          "another model: [pl-model:<name>/<stage title>=<model>]; another effort: [pl-effort:<name>/<stage title>=<level>]; "
+          "another agent: [pl-agent:<name>/<stage title>=<agent>]. In a run, SendMessage summaries start with the "
           "stage tag or [pl:-]. A stage whose agent is not installed runs as general-purpose with the same task.")
 CLAUDE_ONLY = ("mailbox_wake", "Monitor", "Agent tool", "subagent_type", "SendMessage", "AskUserQuestion")
 
@@ -118,6 +119,7 @@ class BriefCodex(unittest.TestCase):
         t = self.run_hook([])
         self.assertEqual(pb.HOW, HOW_CC)
         self.assertEqual(t, "Pipelines in this project (.claude/pipelines/):\n- change — Change · stages: Build\n" + pb.PICK + "\n" + HOW_CC)
+        self.assertLessEqual(len(t.encode("utf-8")), pb.MAX_BYTES)   # R2: the effort wording keeps the brief under its cap
 
     def test_codex_wording(self):
         t = self.run_hook(["--platform", "codex"])

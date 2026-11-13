@@ -25,6 +25,7 @@ Object.assign(I18N.ko, {
   'Open this failure in Harness report': '이 실패를 하네스 리포트에서 열기',   // 48f plEvLine link
   'No gate': '게이트 없음', 'No check command runs after this stage — nothing machine-checks it': '이 단계 뒤에 실행되는 검증 명령이 없습니다 — 기계가 채점하지 않습니다',   // 48d plNodeHtml, pairs with «Gate»
   'Session model': '세션 모델 따름', "No model set; the stage uses the session's model": '모델을 지정하지 않음 — 이 단계는 세션의 모델을 씁니다',   // 48d plModelLine
+  'Reasoning effort: {v}': '추론 강도: {v}', 'Session effort': '세션 강도 따름', '{t}: the effort is not valid': '{t}: 추론 강도가 올바르지 않습니다',   // 48d plNodeHtml · plEffOpts, 48c plgCheck
   'No gate command — nothing machine-checks this stage': '게이트 명령 없음 — 이 단계는 기계가 채점하지 않습니다',
   'Gates {n}/{m}': '게이트 {n}/{m}', 'Stages machine-checked by a gate command: {n} of {m}': '게이트 명령이 기계로 채점하는 단계: {m}개 중 {n}개',
   '{n}/{m} done': '{n}/{m} 완료',

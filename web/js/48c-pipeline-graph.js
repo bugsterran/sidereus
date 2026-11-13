@@ -18,7 +18,9 @@ function plgFreeTitle(G, t){
 }
 function plgTplShow(title){ const d = PLG_TPL_NAMES[LANG] || {}; return Object.prototype.hasOwnProperty.call(d, title) ? d[title] : title; }
 const PLG_MODELS = ['inherit', 'opus', 'sonnet', 'haiku'];
-const PLG_KEYS = ['title', 'agent', 'instr', 'model', 'skill', 'retry', 'gate', 'parallel', 'produces', 'fanout', 'onError', 'onlyOnJump', 'ui'];
+// Stage reasoning effort; no key = the session's effort. Same list as sidereus/pipeline.py.
+const PLG_EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
+const PLG_KEYS = ['title', 'agent', 'instr', 'model', 'effort', 'skill', 'retry', 'gate', 'parallel', 'produces', 'fanout', 'onError', 'onlyOnJump', 'ui'];
 const PLG_W = 184, PLG_H = 100, PLG_GX = 64, PLG_X0 = 44, PLG_Y0 = 24, PLG_LANE = 34, PLG_ROWTOL = 30;   // ROWTOL = plgRows middle-line tolerance   // X0 leaves a left gutter for cross-row loop-backs   // node size · gaps · loop-back lane spacing
 function plgFrom(p){
   const S = p.stages || [], ids = S.map((s, i) => 'n' + (i + 1));
@@ -33,7 +35,7 @@ function plgFrom(p){
   const loops = S.map((s, i) => s.onFail ? Object.assign({ from: ids[i], to: byT(s.onFail.goto), max: s.onFail.max },
     s.onFail.then ? { then: s.onFail.then } : {}, s.onFail.stopOn !== undefined ? { stopOn: s.onFail.stopOn.slice() } : {}) : null).filter(Boolean);
   return { nodes, flow: ids.slice(1).map((id, i) => [ids[i], id]), loops,
-    defaults: { model: p.defaults.model, retry: p.defaults.retry }, use: p.use || '', rules: p.rules || '', guards: JSON.parse(JSON.stringify(p.guards || {})), seq: S.length };
+    defaults: Object.assign({ model: p.defaults.model, retry: p.defaults.retry }, p.defaults.effort ? { effort: p.defaults.effort } : {}), use: p.use || '', rules: p.rules || '', guards: JSON.parse(JSON.stringify(p.guards || {})), seq: S.length };   // ⚠Save posts G.defaults: dropping effort here would erase defaults.effort
 }
 function plgNode(G, id){ return G.nodes.find(n => n.id === id) || null; }
 // Node width = its content, measured by the canvas (48d plMeasure) into G.wd {id: px}; PLG_W until then. ⚠G.wd is never saved.
@@ -91,6 +93,7 @@ function plgCheck(G){
     if(G.nodes.filter(y => y.title === t).length > 1) bad(x.id, TV({ msg: '{t}: the same stage name appears twice', vars: { t: plgShow(t) } }));
     if(!/^[A-Za-z0-9][A-Za-z0-9_-]{0,59}$/.test(x.agent || '')) bad(x.id, TV({ msg: '{t}: the agent name is not valid', vars: { t: plgShow(t) } }));
     if(x.model && !PLG_MODELS.includes(x.model)) bad(x.id, TV({ msg: '{t}: the model is not valid', vars: { t: plgShow(t) } }));
+    if(x.effort && !PLG_EFFORTS.includes(x.effort)) bad(x.id, TV({ msg: '{t}: the effort is not valid', vars: { t: plgShow(t) } }));
     if(x.skill && !/^[a-z0-9-]{1,60}$/.test(x.skill)) bad(x.id, TV({ msg: '{t}: the skill name is not valid', vars: { t: plgShow(t) } }));
     if(!int(x.retry, 0, 3)) bad(x.id, TV({ msg: '{t}: retries: 0–3', vars: { t: plgShow(t) } }));
     if(!int(x.parallel, 1, 16)) bad(x.id, TV({ msg: '{t}: parallel runs: 1–16', vars: { t: plgShow(t) } }));

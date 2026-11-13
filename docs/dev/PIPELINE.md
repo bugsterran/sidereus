@@ -36,7 +36,7 @@ Review in sidereus-change is two stages (find/verify split, https://claude.dev/b
 { v:1, name (== file stem), title, use?: one line <= 120, rules?, after?[],
   guards?:{ requireGates?: [<stage title with a graded gate>], maxLoopBacks?: 1..10 },   // enforced by hooks/pl_guard.py
   defaults:{ model: inherit|opus|sonnet|haiku, retry: 0..3 },
-  stages:[{ title, agent, task?, model?, skill?, retry?, gate?, parallel?: 1..16,
+  stages:[{ title, agent, task?, model?, effort?: low|medium|high|xhigh|max, skill?, retry?, gate?, parallel?: 1..16,
             produces?: "slices", fanout?: "slices",
             onFail?: { goto: <earlier title>, max: 1..5, then?: <later title>, stopOn?: [] | ["unrelated"] },
             onError?: stop|continue, onlyOnJump? }] }
@@ -107,7 +107,7 @@ The name list ends with a «Workflow» group: one button per Workflow-tool run i
 ## Session brief (SessionStart hook)
 
 ★2026-10-02 owner-approved: new pipelines reach sessions automatically. `hooks/pipelines_brief.py` reads `<cwd>/.claude/pipelines/*.json` and adds one line per pipeline (`name — title · when: <use> · stages: A → B` + `· missing agents (run as general-purpose): x` when a stage agent is neither builtin nor in project/user `.claude/agents/*.md`) + the «run it directly, tag `[pl:<name>/<stage title>]`, pass agent/model, declare skips» line as `additionalContext`.
-- Enforcement (`hooks/pl_flow.py` PreToolUse): undeclared jump denied every time (declare with a Bash description `[pl-skip:<name>/<stage>] <reason>`) · Agent/Task with another `subagent_type` (general-purpose accepted when the stage agent is not installed) or `model` (omitted = mismatch; override `[pl-model:<name>/<stage>=<model>]`; agent override `[pl-agent:<name>/<stage>=<agent>]`) denied · unknown stage title denied · untagged SendMessage denied while a run is open (45 min). Outcome per stage in `plmark/<sid>.runs.json` `runs[name].st` = `{title: {s: run|done|skip|back|fail, t0, t1, n}}` (`back` = onFail loop-back, canvas «Sent back» ↺, becomes `done` when the stage passes later; `fail` = shell `[pl-end:…|fail]` only). «Apply» off = no deny.
+- Enforcement (`hooks/pl_flow.py` PreToolUse): undeclared jump denied every time (declare with a Bash description `[pl-skip:<name>/<stage>] <reason>`) · Agent/Task with another `subagent_type` (general-purpose accepted when the stage agent is not installed) or `model` (omitted = mismatch; override `[pl-model:<name>/<stage>=<model>]`) or `effort` (override `[pl-effort:<name>/<stage>=<level>]`; agent override `[pl-agent:<name>/<stage>=<agent>]`) denied · unknown stage title denied · untagged SendMessage denied while a run is open (45 min). Outcome per stage in `plmark/<sid>.runs.json` `runs[name].st` = `{title: {s: run|done|skip|back|fail, t0, t1, n}}` (`back` = onFail loop-back, canvas «Sent back» ↺, becomes `done` when the stage passes later; `fail` = shell `[pl-end:…|fail]` only). «Apply» off = no deny.
 - Run boundary: a new run opens on a tag after `end`, after 6 h idle, or when the first stage is tagged (Pre or `[pl-skip:]`) while the open run is past it — that run is closed (cur «run» → done) first. A re-mark at cur and a declared loop-back to the first stage (cur's `onFail.goto`, pending `ret`) stay in the run. Replaced runs: `runs.json` `past[name]`, oldest first, `PAST_MAX` = 5, only `st lb cur end t0 t1` (`PAST_KEYS`: what pl_runs reads; runs.json over its read cap parses as nothing).
 - In-flight + untagged Bash: `runs[name].inflight[title]` drops by one on every Post of that stage, background included (a background dispatch gets only that one Post; skipping it leaked the count). An untagged main-session Bash Pre (no `[pl:-]`/`[pl-`) while a run is open gets `additionalContext` naming the run and stage, never a deny; `runs[name].nudge_t` limits it to once per `NUDGE_S` = 600 s, saved under the lock before printing (lock/save fails = silent).
 - HEAD stamps: `runs[name].h0` = short HEAD of `r.proj`'s repo at run start, `h1` = at the latest stage change (`_head`, 1 s timeout, one git call per transition; absent when git fails). ⚠Never stamped in `_commit_close` (Pre fires before the commit exists).
@@ -184,6 +184,7 @@ Borrowed into the schema:
 - ⇒ Step 2 UI: model `<select>` per stage box (inherit · opus · sonnet · haiku), saved with diff + confirm.
 - ⇒ Run-time override: «Run» may pass `args.models = {"<stage title>": "<model>"}` for one run only; the JSON is not changed.
 - ⚠Lower a model only on machine-judged stages (gates, lookups); design · diagnosis · review stay on the strong model (global rule 2026-09-10).
+- `stage.effort` (optional, else `defaults.effort`; empty = session effort): Sidereus' own pipelines set `low` on gate-only stages and `high` on judgment stages ([EXTENDING](../EXTENDING.md), [model config](https://code.claude.com/docs/en/model-config.md)). Precedence: env `CLAUDE_CODE_EFFORT_LEVEL` > Agent `effort` > agent frontmatter `effort` > session; an unsupported level falls back to the highest supported one below it.
 
 ## arch-map: architecture style
 

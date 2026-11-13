@@ -16,6 +16,7 @@
     {
       "title": "대조",
       "agent": "Explore",
+      "effort": "high",
       "task": "Check every command, path, file name, option and claim in the draft against the repo (read-only). Report each mismatch as a finding: draft line, what the repo says, file:line. PASS when none remain. Change nothing.",
       "ui": { "x": 292, "y": 24, "color": "#5899f3" }
     },

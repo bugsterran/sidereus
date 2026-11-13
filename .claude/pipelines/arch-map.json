@@ -10,6 +10,7 @@
       "title": "읽기 계획",
       "agent": "general-purpose",
       "model": "opus",
+      "effort": "high",
       "task": "commit = HEAD sha. Write S/plan.json: {v:2, repo:<realpath>, commit, base, arch:{style:layered|modular|apps|routes|feature-pkgs|feature-folders|crates|mvvm|hexagonal|library|other, framework:str<=80, units:str<=120, evidence:[1..5 files]}, groups:[{id, name<=60, file}], modules:[{id, path, globs}], entries:[{id, ext:http|hook|mcp|cli|file|job, file}], stores:[{id, ext:store|file|queue|db, file}], changed:[ids]}. groups = boundary cuts; file = proof. With an FE, http entries = FE screens (one per screen/feature: router path -> page module, file = router line); BE controllers = api modules, not entries; BE http entries only for external callers (server-key API, SPA shell, /_meta), named by route/prefix, never «X controllers (n)». modules = arch units, globs disjoint, no `**`, repo-relative. base = newest older commit dir in S/.. or null; changed = all module ids if no base map v 2, else modules in `git -C <repo> diff --name-only <base>..HEAD`. Write S/../../_last.json = {repo, commit}."
     },
     {
@@ -28,6 +29,7 @@
       "title": "검증",
       "agent": "general-purpose",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run the gate once and report its printed rate, flow line and quality line verbatim; when it fails, also report the schema error line(s) it printed (map.json v 2 keys) verbatim so Draw modules can fix them. It re-reads every cited file at the commit, drops unproven edges, marks unproven flow steps (advisory, never a failure), fails on rules «Quality checks» FAIL items too (report each named flow/edge so Draw modules can fix them), warns (never fails) on (avoid: two flows sharing >=80% of from/to pairs), call edges whose only symbols are accessors (getX/setX/isX/put/get/...: prefer import or cite the real call), modules with no edge and stores with no read/write edge, and writes verify.json + flows.verify.json + map.md. Do not edit map.json or flows.json. Read-only on the target repo; write only under the store dir.",
       "gate": "/usr/bin/python3 scripts/arch_verify.py --last",
       "onFail": { "goto": "모듈 그리기", "max": 1 }
@@ -42,6 +44,7 @@
       "title": "개요 검증",
       "agent": "general-purpose",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run the gate once and report its printed line verbatim. It fails on unknown ids or keys; caps (3..7 components, <=1 with pkgs, 1..4 externals, 1..3 uses, 2..4 principles, <=12 arrows); a store/external map module outside externals; an arrow without label, with an unverified edge or one not joining its boxes, or with an actor endpoint; a use outside its external's uses; principle evidence missing or file:line absent at the commit; a v1 brief or v1 map («redraw as v2»). On pass it writes S/brief.html and S/brief.ok.json (sha256 of that html). Do not edit brief.json.",
       "gate": "/usr/bin/python3 scripts/arch_brief.py --last",
       "onFail": { "goto": "개요 그리기", "max": 1 }

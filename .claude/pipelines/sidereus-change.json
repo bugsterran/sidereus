@@ -22,6 +22,7 @@
     {
       "title": "설계",
       "agent": "sidereus-designer",
+      "effort": "high",
       "task": "Write the spec for the request: summary, rules affected, tests, screen expectations, risk. Put them in summary. Read-only. Consume the request's R1..Rn criteria; each slice names the R ids it covers; tests cite R ids.",
       "produces": "slices",
       "ui": { "x": 267, "y": 35 }
@@ -39,6 +40,7 @@
       "title": "검증",
       "agent": "sidereus-verifier",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run the gate once and report each failing step as a finding with file/line. Do not fix anything.",
       "gate": "scripts/check.sh --full",
       "onFail": { "goto": "구현", "max": 2 },
@@ -48,6 +50,7 @@
       "title": "리뷰-찾기",
       "agent": "sidereus-reviewer",
       "model": "opus",
+      "effort": "high",
       "task": "Find candidate defects in the working-tree diff (git diff + untracked files); follow .claude/review-guide.md. Two reviewers in one message, one lens each: (a) AGENTS.md rules + security (esc, path/arg checks, git_argv, metadata only); (b) logic/behaviour bugs incl. regressions. Every finding = file:line + the rule or failure scenario + a short diff excerpt; style, naming, cleanup and nits are not findings. Report PASS with the candidates; 리뷰-확인 decides. After a loop-back, review only the fix diff. Small change (under ~100 changed lines, no security/metadata path: routes, work.py, MCP, innerHTML, git calls): one reviewer covering both lenses, its FAIL is final, then declare [pl-skip:sidereus-change/리뷰-확인].",
       "onFail": { "goto": "구현", "max": 1, "then": "재검증" },
       "parallel": 2,
@@ -57,6 +60,7 @@
       "title": "리뷰-확인",
       "agent": "sidereus-review-verifier",
       "model": "opus",
+      "effort": "high",
       "task": "Try to disprove each 리뷰-찾기 finding against the code, git blame and git log -L. Tag survivors Important / Nit / Pre-existing, drop Nits, report only confirmed findings ranked by severity, plus one line per finding: id, rule, verdict (confirmed|disproved|pre-existing). status FAIL only on a confirmed Important introduced by this diff; Pre-existing never blocks.",
       "onFail": { "goto": "구현", "max": 1, "then": "재검증" },
       "ui": { "x": 1155, "y": 25 }
@@ -65,6 +69,7 @@
       "title": "재검증",
       "agent": "sidereus-verifier",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run the gate once after the review fix round and report. Do not fix anything.",
       "gate": "scripts/check.sh --full",
       "onlyOnJump": true,

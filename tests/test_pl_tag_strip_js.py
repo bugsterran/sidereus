@@ -1,4 +1,4 @@
-"""Leading pipeline tags ([pl:…] · [pl-skip:…] · [pl-model:…]) are stripped from displayed agent labels only
+"""Leading pipeline tags ([pl:…] · [pl-skip:…] · [pl-model:…] · [pl-effort:…]) are stripped from displayed agent labels only
 (web/js/00-core.js plStrip); the raw label the pipeline matcher reads (48b plDescStage) keeps the tag."""
 import json
 import os
@@ -39,9 +39,9 @@ class PlTagStrip(unittest.TestCase):
     def test_strip_display(self):
         r = run(["[pl:-] ADR 0011 3단계", "general-purpose: [pl:sidereus-change/구현] 슬라이스 A",
                  "[pl-skip:x/리뷰] 불필요", "[pl-model:x/y=opus] go", "Explore: plain desc",
-                 "note [pl:-] mid-text stays", None])
+                 "note [pl:-] mid-text stays", None, "[pl-effort:x/y=low] go"])
         self.assertEqual([x[0] for x in r], ["ADR 0011 3단계", "general-purpose: 슬라이스 A", "불필요", "go",
-                                             "Explore: plain desc", "note [pl:-] mid-text stays", None])
+                                             "Explore: plain desc", "note [pl:-] mid-text stays", None, "go"])   # R3: effort override tag too
         self.assertEqual(r[1][1], "슬라이스 A")     # session-list row text (subLab)
         self.assertEqual(r[0][1], "ADR 0011 3단계")
 

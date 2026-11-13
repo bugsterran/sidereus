@@ -15,6 +15,7 @@
     {
       "title": "점검 계획",
       "agent": "sidereus-designer",
+      "effort": "high",
       "task": "Split the request into independent check areas (e.g. a tab, a write flow, perf, reconnect, i18n). One slice per area: id = area, files = the code files that own it (read-only targets), task = what to exercise, widths/themes/langs, and whether it needs a sandbox. Skip areas checked and unchanged since the last sweep (see git log). Change nothing.",
       "produces": "slices",
       "ui": { "x": 44, "y": 24 }
@@ -30,6 +31,7 @@
     {
       "title": "트리아지",
       "agent": "sidereus-reviewer",
+      "effort": "high",
       "task": "Merge the findings: drop duplicates, taste and anything without evidence; keep defects that are real, reduce code or work, and are cheap to verify. Group the kept ones into fix slices with disjoint files. Owner decisions (rule changes, new features) go in summary, not in slices. Change nothing.",
       "produces": "slices",
       "ui": { "x": 540, "y": 24 }

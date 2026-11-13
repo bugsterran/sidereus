@@ -10,6 +10,7 @@
       "title": "점검",
       "agent": "sidereus-verifier",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run `/usr/bin/python3 scripts/arch_checks.py --repo <this repo> --category security --dev` once from this repository: it runs the security scanners and the dependency/runtime audit (scripts/deps_audit.py, incl. its --dev tooling lines) and writes one Markdown report. Its printed summary line ends with `· report <name>` (plus `· deps N FAIL/M WARN`); the report is ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/<key>/<name> (find it with `ls ${MAILBOX_DIR:-~/.mailbox-mcp}/arch/*/<name>`). Read it and report as findings every FAIL/WARN line of «Dependencies and runtimes» (item and detail only) and every scanner finding (rule id, file:line, severity); name tools that were skipped, missing or failed. List OK lines in summary. Also run `python3 scripts/perf_budget.py --live` once and report its last line (an over-budget value is a finding, not a block). The gate blocks a plugin/ change since the last tag without a VERSION bump. Change nothing; do not rerun.",
       "gate": "python3 scripts/build_plugin.py --version-check",
       "ui": { "x": 44, "y": 24 }
@@ -18,6 +19,7 @@
       "title": "전체 검증",
       "agent": "sidereus-verifier",
       "model": "sonnet",
+      "effort": "low",
       "task": "Run the gate once and report each failing step as a finding with file/line. Do not fix anything.",
       "gate": "scripts/check.sh --full",
       "ui": { "x": 292, "y": 24 }

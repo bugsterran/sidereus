@@ -16,6 +16,7 @@
     {
       "title": "진단",
       "agent": "Explore",
+      "effort": "high",
       "task": "Read-only. Reproduce the reported defect from code and data (the live page read-only, or a demo/fixture). ⚠Confirm the cause of the symptom before naming a fix: reported symptoms often have a different cause. Put in summary: the causal chain with file:line, the minimal fix point (file + function) and the regression test to add. FAIL if the cause is not proven. Change nothing.",
       "ui": { "x": 44, "y": 24 }
     },
