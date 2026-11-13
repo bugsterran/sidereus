@@ -205,6 +205,22 @@ class HttpStepTest(Base):
         self.assertEqual(AF._be_routes(spring, 10), ["/objectchange/"])                      # bare annotation
         self.assertEqual(AF._be_routes(spring, 14), ["/objectchange/"])
 
+    def test_be_routes_same_file_constant(self):
+        java = ["@RequestMapping(BASE)", "public class Ctl {", "  private static final String BASE = \"/api/client\";",
+                "  static final String PATH = \"/config\";", "  @GetMapping(PATH)", "", "", "", "  @GetMapping(value = PATH)",
+                ]
+        self.assertEqual(AF._be_routes(java, 5), ["/api/client/config"])                    # class + method constants
+        self.assertEqual(AF._be_routes(java, 9), ["/api/client/config"])                    # named arg value = CONST
+        other = ["@RequestMapping(BASE)", "class C {", "  static final String BASE = \"/api/client\";",
+                 "  @GetMapping(Api.PATH)"]
+        self.assertEqual(AF._be_routes(other, 4), [])                                        # another file's constant: unknown
+        self.assertTrue(AF.route_match("/api/client/config", AF._be_routes(java, 5)[0]))
+        express = ["const USERS = '/users';", "router.get(USERS, handler)"]
+        self.assertEqual(AF._be_routes(express, 2), ["/users"])
+        twice = ["P = \"/a\"", "P = \"/b\"", "app.get(P)"]
+        self.assertEqual(AF._be_routes(twice, 3), [])                                        # ambiguous: unknown
+        self.assertEqual(AF._be_routes(["if (u == \"/a\") {}", "app.get(u)"], 2), [])      # comparison is not a constant
+
     def test_be_routes_dict_table(self):
         table = ["ROUTES = {", "    \"/api/state\": h_state, '/api/todo': h_todo,", "}"]
         self.assertEqual(AF._be_routes(table, 2), ["/api/state", "/api/todo"])

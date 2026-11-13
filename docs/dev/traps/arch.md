@@ -430,6 +430,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ a quoted leading-slash key after `{`, `,` or line start followed by `:` is a route; only the keys are taken (`_DICT_KEY_RE`).
 - ⚠Do not take every path literal on such a line — a ternary `? "/a" : "/b"` or a path value `"k": "/v"` is not a route (`tests/test_archflow.py` `test_be_routes_dict_table`).
 
+## Flow step to `@GetMapping(PATH)` fails as «noroute» (`arch_flow._be_routes`)
+
+- Cause: only string literals on a mapping line were paths; a constant argument was unknown. ★2026-11-13 a Spring repo's stored flows: 22/23, the one failure a `@GetMapping(PATH)` step; with the fix 23/23.
+- ⇒ A bare identifier argument (method or class mapping) resolves through `_consts`: a path constant assigned once in the same file, on a non-route line.
+- ⚠Never resolve a qualified name (`Api.PATH`), a name assigned two different paths, or a named-arg key (`value =`) — a guessed path lets a wrong route match. Unresolved stays unknown, never "" (`test_be_routes_same_file_constant`).
+
 ## Focus layer must not repaint the overview behind it (`84j archPaint`, `84j3 archLyHtml`)
 
 - Cause: the focus view used to replace the overview in `.archmap`, so closing it re-laid the map out and lost its zoom/scroll.

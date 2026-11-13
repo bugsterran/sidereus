@@ -26,6 +26,31 @@ _CLASS_RE = re.compile(r"\b(?:class|interface|object)\s+[A-Za-z_]")
 _LIT_RE = re.compile(r"([\"'`])(/[^\"'`]*)?\1")
 _BARE_RE = re.compile(r"@[\w.]+\s*(?:\(\s*\))?")
 _PREFIX_RE = re.compile(r"\b(?:url_)?prefix\s*=\s*([\"'])(/[^\"']*)?\1")
+# Path constant declared in the same file (`static final String PATH = "/x";`, `const PATH = '/x'`, `PATH = "/x"`):
+# the whole line is one assignment of a leading-slash literal, so `a == "/x"` or a call argument never counts.
+_CONST_RE = re.compile(r"(?:^|[\s(;,])([A-Za-z_]\w*)\s*(?::\s*[\w.<>\[\]]+\s*)?=\s*([\"'`])(/[^\"'`\s]*)\2\s*;?\s*$")
+# A bare identifier argument: not qualified (`Api.PATH`, `RequestMethod.GET`), not a named-arg key, not a call.
+_ARG_ID_RE = re.compile(r"(?<![\w.$])([A-Za-z_]\w*)(?![\w.])(?!\s*=)(?!\s*\()")
+
+
+def _consts(lines):
+    """{name: path} for path constants declared once in this file. ⚠A name assigned two different paths, or declared
+    on a route line, is dropped: guessing between them would let a wrong route match."""
+    seen = {}
+    for x in lines:
+        if ROUTE_LINE_RE.search(x):
+            continue
+        m = _CONST_RE.search(x)
+        if m:
+            seen.setdefault(m.group(1), set()).add(m.group(3))
+    return {k: next(iter(v)) for k, v in seen.items() if len(v) == 1}
+
+
+def _const_args(x, consts):
+    """Paths of same-file constants passed as bare arguments after the route token on line `x`."""
+    m = ROUTE_LINE_RE.search(x)
+    rest = x[m.end():] if m else ""
+    return [consts[n] for n in _ARG_ID_RE.findall(rest) if n in consts]
 
 
 def _id(x):
@@ -61,7 +86,9 @@ def _be_routes(lines, ln):
     first = next((i for i, x in enumerate(lines) if _CLASS_RE.search(x)), -1)
     # ⚠Only annotations above the class are prefixes: an Express/FastAPI route above a later class is a method path.
     pre_ix = set(i for i in range(max(first, 0)) if ROUTE_LINE_RE.search(lines[i]) and lines[i].lstrip().startswith("@"))
-    prefixes = [m.group(2) or "" for i in sorted(pre_ix) for m in _LIT_RE.finditer(lines[i])]
+    consts = _consts(lines)
+    prefixes = [p for i in sorted(pre_ix)
+                for p in ([m.group(2) or "" for m in _LIT_RE.finditer(lines[i])] or _const_args(lines[i], consts))]
     prefixes += [m.group(2) or "" for x in lines for m in _PREFIX_RE.finditer(x)]
     methods = []
     for i in range(max(0, ln - 1 - AV.ARCH_K), min(len(lines), ln + AV.ARCH_K)):
@@ -72,8 +99,9 @@ def _be_routes(lines, ln):
             methods.append("")
             continue
         keys = [m.group(2) for m in _DICT_KEY_RE.finditer(x)]
-        lits = keys or [m.group(2) or "" for m in _LIT_RE.finditer(x)]
-        # ⚠A non-literal argument (`value = CONST`) is unknown, not "": "" would let the bare class prefix match.
+        lits = keys or [m.group(2) or "" for m in _LIT_RE.finditer(x)] or _const_args(x, consts)
+        # ⚠An unresolved non-literal argument (`value = Api.PATH`) is unknown, not "": "" would let the bare class
+        # prefix match. Only same-file constants resolve; another file's constant stays unknown.
         methods += lits or ([""] if _BARE_RE.fullmatch(x.strip()) else [])
     return [p.rstrip("/") + "/" + mp.lstrip("/") for p in (prefixes or [""]) for mp in methods]
 

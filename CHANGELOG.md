@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: a wrapped canvas no longer keeps the wide gaps of a card that shrank after you clicked it; an untouched view re-wraps when card widths change, and waits while a stage is selected.
 - Pipelines: in Watch, a chain wrapped into several rows no longer hides its lower rows or cards past the right edge; the canvas grows to the rows it needs (until you drag a divider) and zooms out to no less than 70%, and only what still does not fit pans.
 - Pipelines: saving an edit (model, agent, effort) no longer writes the canvas layout re-wrapped for a narrow window into the pipeline file; cards keep their saved positions unless you dragged, arranged or inserted a stage.
+- Structure: an architecture flow step to a route written with a path constant from the same file (`@GetMapping(PATH)`, `router.get(USERS, …)`) now verifies instead of failing as «no route»; a constant from another file still counts as unknown.
 - Timeline: a pipeline run between stages no longer reads «Aborted» while its session waits on its own background command, subagent or workflow; the line names what it waits on.
 - Status bar: the credit line no longer disappears when extra usage is disabled or used up; it stays with «off» and the reason.
 - Sessions: pi subagent child lines show their tokens instead of 0; the Sidereus pi extension now reports each child reply's token counts (run `/reload` in open pi sessions to load it).
