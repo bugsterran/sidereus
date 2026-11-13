@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from unittest import mock
 
+from tests._fs import assert_mode
 from tests._load import sidereus, ROOT
 
 SB = sidereus("sec_sbom")
@@ -396,7 +397,7 @@ class Run(Tmp):
                          [("requirements.txt", "CVE-2018-18074", "requests", "2.19.0", "2.20.0", "high")])
         with open(os.path.join(d, SB.SBOM_FILE), encoding="utf-8") as f:
             self.assertEqual(json.load(f)["bomFormat"], "CycloneDX")
-        self.assertEqual(oct(os.stat(os.path.join(d, SB.SBOM_FILE)).st_mode & 0o777), "0o644")
+        assert_mode(self, os.path.join(d, SB.SBOM_FILE), 0o644)
         self.assertEqual([p["argv"][0] for p in seen], ["/bin/syft", "/bin/grype"])
         self.assertTrue(all(p["cwd"] == p["tmp"] and p["cwd"] != self.repo for p in seen))   # repo config never read
         blob = json.dumps(j)

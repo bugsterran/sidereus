@@ -9,6 +9,8 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
+# ⚠Windows "bash" on PATH can resolve to WSL; run.sh is POSIX-shell only.
+@unittest.skipUnless(os.name == "posix", "POSIX shell script")
 class RunShFileArgs(unittest.TestCase):
     def _run(self, *args):
         env = dict(os.environ, PYTHON=sys.executable)
