@@ -71,6 +71,8 @@ function archAskBody(repo, ask, sid, home, lang){   // lang = viewer LANG (previ
   const a = ask || {}, dir = String(a.dir || '').replace(/[\\/]+$/, ''), c = String(a.commit || ''), r = String(repo || ''), by = String(sid || '');
   const h = home ? String(home).replace(/[\\/]+$/, '') + '/' : '', ln = lang === 'ko' ? 'Korean' : 'English';
   const shq = s => /^[\w@%+=:,.\/-]+$/.test(s) ? s : "'" + s.replace(/'/g, "'\\''") + "'", cmdq = s => /^[\w@%+=:,.\/\\-]+$/.test(s) ? s : '"' + s + '"';   // paths with spaces: POSIX sh · Windows cmd
+  // ⚠cmdq leaves «%» unescaped on purpose: «%%» folds back to «%» only inside a .bat file, so interactive cmd, PowerShell and Git Bash
+  // would get a corrupted path; plain "…" is exact there and wrong only in cmd for a path holding a defined «%NAME%» pair.
   const gate = (py, q) => py + ' ' + q(h + 'scripts/arch_brief.py') + ' --check --repo ' + q(r) + ' --commit ' + q(c) + ' --by ' + q(by);
   return 'Request: draw the architecture overview of ' + r + ' at commit ' + c + '\n'
     + 'Target repository: ' + r + '\nCommit: ' + c + '\n'
