@@ -56,6 +56,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.18.0] - 2026-11-12
 
+**Note:** The Git history was rewritten on 2026-11-11 to remove non-public names. A clone made before then cannot pull: run `git fetch origin && git reset --hard origin/main && git fetch --tags --force` (this discards local changes), or clone again.
+
 **Highlights**
 
 - Platforms: pi connects through «Connect» (hooks, MCP servers, a Sidereus extension), and new mail wakes an idle pi session without a model turn while it waits.
