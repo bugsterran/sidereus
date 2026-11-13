@@ -81,6 +81,12 @@ ACCTS = [{label: 'me', primary: true}]; QLAST.q.accounts = []; R.oneHtml = sblHt
         self.assertNotIn("data-kpi", self.R["oneHtml"])
         self.assertEqual(self.R["oneK"], "")
 
+    def test_bar_names_picked_account(self):
+        # The bar names a picked non-main account (escaped, account colour); following main adds nothing.
+        with open(os.path.join(os.path.dirname(__file__), "..", "web", "js", "60-statusbar.js"), encoding="utf-8") as f:
+            src = f.read()
+        self.assertIn("(kx ? '<small class=\"sbkpi ' + esc(acctCls(kx)) + '\">' + esc(kx) + '</small> ' : '')", src)
+
 
 if __name__ == "__main__":
     unittest.main()

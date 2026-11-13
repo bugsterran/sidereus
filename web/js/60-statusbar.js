@@ -294,7 +294,10 @@ function buildSbar(sv){
       + (e5 ? '\n' + T('left ≈') + ' ' + estLeftTxt(e5) + ' — ' + e5.tip : '')   // same pick as the bar text
       + (!isNaN(ms) ? '\n' + T('Resets', 'card') + ' ' + CLK(new Date(ms)) : '');
     // Claude logo leads the Claude group (5h … 7d); external platforms lead theirs in sbExt.
-    out.push('<span title="' + esc(t5) + '">' + aiLogo('cc').replace(/ title="[^"]*"/, '') + '<b>5h</b> '
+    // A picked non-main account is named on the bar itself: with the name only in the tooltip, an idle account's
+    // «left 100%» read as the main account's quota.
+    out.push('<span title="' + esc(t5) + '">' + aiLogo('cc').replace(/ title="[^"]*"/, '')
+      + (kx ? '<small class="sbkpi ' + esc(acctCls(kx)) + '">' + esc(kx) + '</small> ' : '') + '<b>5h</b> '
       + use(fh.pct, cu0.used_local, '5h', au5)
       + (m != null ? ' <small class="sbd6' + (m < 30 ? ' sbwarn' : '') + '">· ' + esc(T('reset')) + ' ' + esc(LATER(HM(m))) + '</small>' : '') + '</span>');
     // Projected remaining at reset = 100 - burndown projection % (same «left» framing as the 5h segment); colour keyed on used.
