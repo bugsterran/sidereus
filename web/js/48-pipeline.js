@@ -459,6 +459,20 @@ function plRenameWarn(p, lv){
   const gone = (p.stages || []).some(s => !G.nodes.some(n => n.title === s.title));
   return open && gone ? '<div class="hidnote plwarnrun">⚠ ' + esc(T('A run of this pipeline is open — its running tags use the old stage name')) + '</div>' : '';
 }
+// ⚠Display wraps (plWrapBest from plGwFit/plWrapFirst/plAfterPaint) rewrite E.G ui for the window width: unless the person laid
+// the cards out (E.placed: a card drag, «Arrange» or a stage insert), each file stage keeps its file ui so the layout never follows the window size.
+function plSaveStages(E, p, order){
+  const S = plgStages(E.G, order), F = {};
+  if(E.placed || !p.sha) return S;   // no file yet: nothing to keep
+  (p.stages || []).forEach(s => { if(s && s.title) F[s.title] = s; });
+  order.forEach((id, i) => {
+    const n = plgNode(E.G, id), f = n && n.t0 && F[n.t0], c = n && n.ui && n.ui.color;
+    if(!f) return;   // a stage added in this draft keeps its computed ui
+    if(f.ui && typeof f.ui === 'object'){ const u = Object.assign({}, f.ui); delete u.color; if(c) u.color = c; S[i].ui = u; }   // colour is the draft's
+    else if(!c) delete S[i].ui;   // ⚠a colour needs a position: kept with the shown one
+  });
+  return S;
+}
 async function plSave(write){
   const p = plCur();
   if(!p || !plDirty(p.name) || PLS.saving || p.from) return;   // borrowed: saved only in its own project
@@ -466,7 +480,7 @@ async function plSave(write){
   if(chk.errs.length) return;
   PLS.saving = true; PLS.msg = ''; plPaint();
   let r;
-  try{ r = await postJSON('/api/pipelines/save', { proj: PLS.proj, name: p.name, base: p.sha, dry: !write, defaults: E.G.defaults, use: E.G.use || '', rules: E.G.rules, guards: plgGuards(E.G, (PLS.data[PLS.proj]||{}).gate_modes), stages: plgStages(E.G, chk.order) }); }
+  try{ r = await postJSON('/api/pipelines/save', { proj: PLS.proj, name: p.name, base: p.sha, dry: !write, defaults: E.G.defaults, use: E.G.use || '', rules: E.G.rules, guards: plgGuards(E.G, (PLS.data[PLS.proj]||{}).gate_modes), stages: plSaveStages(E, p, chk.order) }); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
   PLS.saving = false;
   if(!r || !r.ok){ PLS.msg = T('Could not save') + ' — ' + (r && (r.err || r.error || r.why) ? TE(r) : '') + (r && r.errs ? ' (' + r.errs.join(' · ') + ')' : ''); PLS.diff = null; }

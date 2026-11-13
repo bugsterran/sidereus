@@ -1,5 +1,7 @@
 function plCvPt(E, cv, e){ const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left - E.view.x) / E.view.z, y: (e.clientY - r.top - E.view.y) / E.view.z }; }
 function plTouch(){ PLS.diff = null; PLS.msg = ''; }
+// The person laid the cards out (drag, «Arrange»): plSaveStages then saves the shown layout. A fresh entry (load/save/Undo) starts unset.
+function plPlaced(E){ if(E) E.placed = true; }
 function plView(E){ return E.view || (E.view = { x: 0, y: 0, z: 1 }); }
 // ⚠Any interaction ends first-open centring: a later re-fit (stage count, height) must not jump the camera.
 function plNoFirst(){ const E = plCurEnt(); if(E) E.first = false; }
@@ -60,7 +62,7 @@ document.addEventListener('pointerup', e => {
     const f = D.moved && D.drop >= 0 && E.G.flow[D.drop];
     if(f && plgInsertAt(E.G, D.n.id, f[0], f[1])){ E.sel = { k: 'n', id: D.n.id }; E.laid = true; E.touched = false; plFit(E, D.cv, true); }   // re-flow like «Arrange»
     if(!D.moved && ((E.lt || {})[D.n.title] || {}).st === 'run'){ plNodeWork(D.n.title, D.el.getBoundingClientRect()); return; }   // lit ● node: no select, no repaint
-    if(!D.moved) E.sel = { k: 'n', id: D.n.id }; else plTouch();
+    if(!D.moved) E.sel = { k: 'n', id: D.n.id }; else { plPlaced(E); plTouch(); }   // moved, pushed and drop-inserted cards are the person's layout
   }
   else if(D.k === 'pan'){ if(!D.moved) E.sel = null; }
   else if(D.k === 'edge'){
@@ -157,7 +159,7 @@ document.addEventListener('click', e => {
   if(pp){
     const id = plgAddTpl(E.G, plgTpl(plCat(), pk2), plAddCtx(), E.sel && E.sel.k === 'n' ? E.sel.id : '');
     if(!id) return;
-    PLPQ = ''; E.sel = { k: 'n', id }; plTouch(); plPaint();   // added: the filtered list restores
+    PLPQ = ''; E.sel = { k: 'n', id }; plPlaced(E); plTouch(); plPaint();   // added: the filtered list restores; ⚠an insert shifts later cards on the shown layout
     plRefocus('[data-plcadd="' + CSS.escape(pk2) + '"]', '.plcadd', '.plpal [data-plnt]');   // the pressed item stays (in use): focus it again
     return;
   }
@@ -168,11 +170,11 @@ document.addEventListener('click', e => {
     if(!t) return;
     if(E.G.nodes.some(n => n.title === t)){ PLS.msg = T('A stage with that name exists') + ': ' + t; plPaint(); return; }
     const at = E.sel && E.sel.k === 'n' ? E.sel.id : '';   // a catalog title takes its agent/model/task/gate/loop; any other title is a bare custom stage
-    PLPQ = ''; E.sel = { k: 'n', id: plgAddTpl(E.G, plgTpl(plCat(), t), plAddCtx(), at) || plgInsert(E.G, t, at) }; plTouch(); plPaint();
+    PLPQ = ''; E.sel = { k: 'n', id: plgAddTpl(E.G, plgTpl(plCat(), t), plAddCtx(), at) || plgInsert(E.G, t, at) }; plPlaced(E); plTouch(); plPaint();
     return;
   }
   // ⚠«Arrange» sets touched: an untouched view is re-fitted by plGwFit after the paint, which would drop the kept zoom.
-  if(e.target.closest('[data-plfit]')){ const w = e.target.closest('.plcvw'); plWrapBest(E, w && w.querySelector('.plcv'), true, true); E.touched = true; plTouch(); plPaint(); return; }   // centred like «Fit to view»: without ctr plFit anchors the chain near the top
+  if(e.target.closest('[data-plfit]')){ const w = e.target.closest('.plcvw'); plWrapBest(E, w && w.querySelector('.plcv'), true, true); E.touched = true; plPlaced(E); plTouch(); plPaint(); return; }   // centred like «Fit to view»: without ctr plFit anchors the chain near the top
   // ⚠«Fit to view» is zoom/pan only: a re-flow (plWrapBest) moved node ui.x/y, marked the draft dirty and disabled «Run».
   if(e.target.closest('[data-plfitv]')){ const w = e.target.closest('.plcvw'); plFit(E, w && w.querySelector('.plcv'), false, false, true); E.touched = true; plPaint(); return; }
   const z = e.target.closest('[data-plz]');
@@ -191,7 +193,7 @@ document.addEventListener('drop', e => {
   const v = e.dataTransfer.getData('text/plain') || '';
   const p = plCvPt(E, cv, e), id = v.startsWith('c:') && plgAddTpl(E.G, plgTpl(plCat(), v.slice(2)), plAddCtx(), { x: p.x - PLG_W / 2, y: p.y - PLG_H / 2 });
   if(!id) return;
-  E.sel = { k: 'n', id }; plTouch(); plPaint();
+  E.sel = { k: 'n', id }; plPlaced(E); plTouch(); plPaint();   // dropped at a point of the shown layout
 });
 // Stage rename in the editor model: loop-back «then» follows (goto is by node id); written by Save → diff → Confirm (server checks again).
 function plRetitle(E, v){

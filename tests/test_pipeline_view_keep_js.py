@@ -4,14 +4,23 @@
 the entry so plAfterPaint ran the first-open fit + centre after a click. Run under node with DOM stubs."""
 import json
 import os
+import re
 import unittest
 
-from tests._load import ROOT, js_fn
+from tests._load import ROOT, js_all, js_fn
 from tests.test_pipeline_graph import P, _js
 
 FNS = ("plEntKey", "plEnt", "plCurEnt", "plViewCarry", "plResetEnt", "plFit", "plFitKey", "plSizeKey", "plFitRaw", "plCvNeed", "plWrapCols",
        "plWrapBest", "plWrapFirst", "plCentre", "plDrawBox", "plVisY", "plApplyView", "plZoomLabel", "plPanH", "plGwFit", "plAfterPaint",
-       "plNowPickApply", "plZFloor")
+       "plNowPickApply", "plZFloor", "plSaveStages", "plPlaced")
+ASYNC = ("plSave",)   # js_fn matches `function name(` only
+
+
+def _async_fn(name):
+    m = re.compile(r"^async function " + name + r"\(.*?^}", re.S | re.M).search(js_all())
+    if m is None:
+        raise LookupError("web/js: no top-level async function " + name)
+    return m.group(0)
 
 STUBS = r"""
 const PL_ZMIN = 0.8, PL_ZFIT = 0.4, PL_SPLIT = { v: '--plpanh', key: 'sidereus.plpanh', min: 200, cv: 200 };
@@ -34,7 +43,7 @@ const box = { querySelector(s){ return s === '.plcv' ? cv : null; } };
 
 
 def run(body):
-    src = "\n".join(js_fn(f) for f in FNS)
+    src = "\n".join([js_fn(f) for f in FNS] + [_async_fn(f) for f in ASYNC])
     # count centre/fit calls without changing what they do
     spy = ("const _c = plCentre; plCentre = function(){ CENTRES++; return _c.apply(null, arguments); };"
            "const _f = plFit; plFit = function(){ FITS++; return _f.apply(null, arguments); };")
@@ -138,6 +147,47 @@ class ViewKeep(unittest.TestCase):
           plGwFit(); plAfterPaint(box);
           console.log(JSON.stringify(E.view));""")
         self.assertEqual(out, {"x": 12, "y": -40, "z": 1.2})
+
+    # Save after a display wrap (canvas 640px): the posted body carries the file's ui unless the person laid the cards out.
+    SAVE = r"""PLS.data = {}; cv.clientWidth = 640; cv.clientHeight = 300; let BODY = null;
+          function plDirty(name){ const E = PLS.g[plEntKey(name)]; return !!E && plgKey(E.G) !== E.base; }
+          function postJSON(u, b){ BODY = b; return Promise.resolve({ ok: true, diff: '' }); }
+          function plPaint(){} function plRefocus(){} function TE(r){ return ''; }
+          plAfterPaint(box); const E = plCurEnt(), F = PLS.file.stages.map(s => s.ui);
+          const wrapped = JSON.stringify(E.G.nodes.map(n => n.ui)) !== JSON.stringify(F);
+          E.G.nodes[1].model = 'opus';"""
+
+    def test_save_after_display_wrap_keeps_file_ui(self):
+        # ⚠plWrapBest writes E.G ui; before the fix the wrapped rows reached the file on any edit
+        out = run(FILE + self.SAVE + """
+          plSave(false).then(() => console.log(JSON.stringify([wrapped, BODY.stages.map(s => s.ui), F, BODY.stages[1].model])));""")
+        self.assertTrue(out[0])
+        self.assertEqual(out[1], out[2])
+        self.assertEqual(out[3], "opus")
+
+    def test_save_after_card_drag_keeps_shown_layout(self):
+        out = run(FILE + self.SAVE + """
+          E.G.nodes[2].ui = Object.assign({}, E.G.nodes[2].ui, { x: E.G.nodes[2].ui.x + 40 }); plPlaced(E);
+          const G = E.G.nodes.map(n => n.ui);
+          plSave(false).then(() => console.log(JSON.stringify([wrapped, BODY.stages.map(s => s.ui), G, F])));""")
+        self.assertTrue(out[0])
+        self.assertEqual(out[1], out[2])
+        self.assertNotEqual(out[1], out[3])
+
+    def test_save_after_insert_keeps_shown_layout(self):
+        # ⚠an insert shifts later cards on the wrapped layout; file ui for them + a wrapped new card overlapped in the file
+        out = run(FILE + self.SAVE + """
+          const id = plgInsert(E.G, 'x', E.G.nodes[1].id); plgNode(E.G, id).instr = 'do x'; plPlaced(E); const G = E.G.nodes.map(n => n.ui);
+          const hit = (a, b) => Math.abs(a.x - b.x) < PLG_W && Math.abs(a.y - b.y) < PLG_H;
+          plSave(false).then(() => { const U = BODY.stages.map(s => s.ui);
+            console.log(JSON.stringify([wrapped, U.length, U.every(u => G.some(g => JSON.stringify(g) === JSON.stringify(u))),
+              U.some((a, i) => U.some((b, j) => i < j && hit(a, b)))])); });""")
+        self.assertEqual(out, [True, 6, True, False])
+        with open(os.path.join(ROOT, "web/js/48d-pipeline-cv-input.js"), encoding="utf-8") as f:
+            L = f.read().split("\n")
+        at = [i for i, ln in enumerate(L) if re.search(r"plgAddTpl\(|plgInsert\(", ln)]
+        self.assertEqual(len(at), 3)   # palette add, typed add, palette drop (drop-insert: the moved drag branch)
+        self.assertEqual([i for i in at if not any("plPlaced(E)" in ln for ln in L[i:i + 3])], [])
 
     def test_reset_click_uses_helper(self):
         with open(os.path.join(ROOT, "web/js/48-pipeline.js"), encoding="utf-8") as f:

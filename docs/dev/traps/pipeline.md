@@ -470,3 +470,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: security-fix/security-checks live in the code dir, so `proj` (where `<name>.json` was found) filed a run on another repo's admin session under the Sidereus project: ledger, report and `plrun` row.
 - Fix: at run start a builtin run gets `repo` once (newest open, fresh plreq.json entry for this sid and pipeline sent after the sid's previous run of it ended, else the cwd git root unless it is a code dir); ledger, `_head`, commit match, `_autoscore` row `proj` and `harness_flow._disk_runs` use `repo or proj`; `scripts/pl_report.py` accepts the code dir's builtin pf.
 - ⚠Never resolve stages, readonly or «Apply» from `repo`, and never spawn `pl_eval` for a builtin (its gates would run in the code dir); nothing is written in the target repo. `tests/test_pl_flow_builtin_repo.py`.
+
+## Saved card layout followed the window width (`web/js/48-pipeline.js` `plSaveStages`)
+- Cause: display wraps (`plWrapBest` from `plGwFit`/`plWrapFirst`/`plAfterPaint`) write `ui` into `E.G` and re-key `E.base`, so any later edit (model, agent) saved the wrapped rows; ★5 stages at y=24 on a 640px canvas were saved as several rows.
+- Fix: `E.placed` is set only by a card drag that moved (incl. pushed or drop-inserted cards), «Arrange» or a stage insert (it shifts later cards) (`plPlaced`); without it each file stage (matched by `t0`) posts its file `ui` (colour from the draft), new stages keep their computed `ui`.
+- ⚠Never set `E.placed` from a fit or wrap, and never carry it in `plViewCarry` (load, save and «Undo» start unset). `tests/test_pipeline_view_keep_js.py` `test_save_after_display_wrap_keeps_file_ui`.

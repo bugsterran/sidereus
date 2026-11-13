@@ -373,8 +373,8 @@ function plFitKey(E, cv){ return cv.clientWidth + 'x' + cv.clientHeight + '/' + 
 // ⚠Measured card sizes: the live run arrives on a later paint and widens cards (184 -> 252px), leaving the first-open fit clipped.
 function plSizeKey(E){ return JSON.stringify([E.G.wd || {}, E.G.ht || {}]); }
 // First paint of saved positions that only fit below the floor (★6 stages: 40% floor showed 3 of 6 at 900px, 5 at 1100px):
-// wrap into the row count that shows the whole chain at the largest zoom — ties keep fewer rows. Display re-flow only:
-// E.laid marks the positions ours, so the draft stays clean.
+// wrap into the row count that shows the whole chain at the largest zoom — ties keep fewer rows. E.laid marks the positions
+// ours, so the draft stays clean. ⚠It still writes E.G ui: plSaveStages sends the file's ui back unless E.placed.
 // Largest zoom at which the whole graph fits the canvas (uncapped; same box as plFit).
 function plFitRaw(G, cw, ch){
   const V = plVG({ G: G }), w = Math.max(...V.nodes.map(m => m.ui.x + plgW(G, m.id)), PLG_W) + PLG_X0;
