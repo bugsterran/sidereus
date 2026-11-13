@@ -274,8 +274,9 @@ function buildSbar(sv){
     const w = k === '7d' && n == null && est0.wk_used != null ? burnWkEst(BURN) : null;
     // main account: measured tokens are the primary's, so only «left ≈» from the main account's own history (est)
     const bm = ma && !kx && typeof burnFor === 'function' ? burnFor() : null;
-    // ⚠A low (own-window) est stays in the layer (sblEst) only — the bar keeps its length.
-    const e = ma ? (bm && !(bm.est && bm.est.low) && (k === '7d' ? burnWkEst(bm) : burnEst(bm, k, null, p))) : w || burnEst(BURN, k, n, p);
+    // ⚠A non-primary main account has no history (only the primary is quota-logged), so a low (own-window) est is all
+    //   it ever gets: show it like any est; low accuracy is stated in the tooltip (burnEstTip), never hidden.
+    const e = ma ? (bm && (k === '7d' ? burnWkEst(bm) : burnEst(bm, k, null, p))) : w || burnEst(BURN, k, n, p);
     // Remaining %; colour still keyed on used (≥70/≥90 used = ≤30/≤10 left). Tooltip keeps used %.
     const u = n != null ? sbt(T('used'), n) : w ? sbt(T('used ≈'), w.used) : a != null ? sbt(T('used ≈'), a) : '';
     // 7d used (.sbd8) goes before ext «Today»; 5h used stays (it is the live cycle).
@@ -326,13 +327,14 @@ function buildSbar(sv){
   }
   if(sd){
     const d = sd.resets_at ? new Date(sd.resets_at) : null;
-    const w7 = wkU == null && est0.wk_used != null ? burnWkEst(BURN) : null;
+    const w7 = wkU == null && est0.wk_used != null ? burnWkEst(BURN) : null, e7m = bmA ? burnWkEst(bmA) : null;   // main: same pick as the bar
     const t7 = T('7-day limit — official usage') + ' ' + (sd.pct == null ? '?' : fmtPct(sd.pct)) + mtip(k7)
       + '\n' + T('Account limit window: from the reset · includes other devices and claude.ai (the Tokens tab «last 7 days» is this PC · calendar days)')
       + (wkU != null ? '\n' + T('Tokens used') + ' ' + fmtTok(wkU) + ' — ' + burnUsedTip() : '')
       + (au7 != null ? '\n' + T('used ≈') + ' ' + fmtTok(au7) : '')
       + (wkU == null && au7 == null && w7 ? '\n' + T('used ≈') + ' ' + fmtTok(w7.used) : '')   // bar's estimate case, so dropping .sbd8 loses nothing
       + (est0.wk_left != null ? '\n' + T('left ≈') + ' ' + estLeftTxt({left: est0.wk_left}) + ' — ' + burnEstTip('7d', est0) : '')
+      + (e7m ? '\n' + T('left ≈') + ' ' + estLeftTxt(e7m) + ' — ' + e7m.tip : '')
       + (d && !isNaN(d) ? '\n' + T('Resets', 'card') + ' ' + RST7(d).abs + ' · ' + RST7(d).rel : '');
     out.push('<span title="' + esc(t7) + '"><b>7d</b> <small class=sbd6>' + esc(T('account')) + '</small> ' + use(sd.pct, wkU, '7d', au7)
       + (d && !isNaN(d) ? ' <small class="sbd6' + (d - now < 6*3600e3 ? ' sbwarn' : '') + '">· ' + esc(T('reset')) + ' ' + esc(RST7(d).rel) + '</small>' : '') + '</span>');   // rel piece only: abs+rel pushed other segments out at 1100 (full text in the title)

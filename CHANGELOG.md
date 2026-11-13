@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Status bar: a main account other than the default one shows «left ≈» again for 5h and 7d; it has no quota history of its own, so its estimate comes from the current window's tokens per 1% and the tooltip says «Not enough history — low accuracy».
+
 ## [0.19.0] - 2026-11-14
 
 **Highlights**

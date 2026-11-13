@@ -167,10 +167,10 @@ class StatusBarFollowsMain(unittest.TestCase):
         self.assertNotIn("used", b3[0])
 
     def test_main_own_used_is_approx(self):
-        b = self.R["b4"]   # main's own hour-bucket sums: «used ≈», never «used», low est keeps «left ≈» out
+        b = self.R["b4"]   # main's own hour-bucket sums: «used ≈», never «used»; a low est still shows «left ≈»
         self.assertIn("used ≈</small> <b>777</b>", b[0]); self.assertIn("<span class=sbd8> <small>· used ≈</small> <b>8888</b></span>", b[1])
         self.assertNotIn("sbd8", b[0])   # 5h used is never dropped
-        self.assertNotIn("<small>· used</small>", self.R["t4"]); self.assertNotIn("left ≈</small>", self.R["t4"])
+        self.assertNotIn("<small>· used</small>", self.R["t4"]); self.assertIn("left ≈</small> <b>9</b>", self.R["t4"])
         self.assertNotIn("5000", self.R["t4"])   # ⚠never the primary's used_local
         self.assertNotIn("left ≈", self.R["b1"][0]); self.assertNotIn("used", self.R["b1"][0])
 

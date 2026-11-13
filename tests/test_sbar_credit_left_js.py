@@ -45,7 +45,11 @@ class SbarCreditLeft(unittest.TestCase):
         self.assertNotRegex(src, r"sbt\(T\('left ≈'\), e\.left\)")
         self.assertNotIn("fmtTok(e5.left)", src)
         self.assertNotIn("fmtTok(est0.wk_left)", src)
-        self.assertEqual(len(re.findall(r"estLeftTxt\(", src)), 3)
+        self.assertNotIn("fmtTok(e7m.left)", src)
+        # Every «left ≈» site (bar, 5h tip, primary 7d tip, main 7d tip) formats its number with estLeftTxt.
+        sites = [ln for ln in src.splitlines() if "T('left ≈')" in ln]
+        self.assertEqual(len(sites), 4)
+        self.assertEqual([ln for ln in sites if not re.search(r"estLeftTxt\(", ln)], [])
 
     def test_credit_seat_rows_have_no_100pct(self):
         rows = self.run_js("""

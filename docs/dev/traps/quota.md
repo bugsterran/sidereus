@@ -56,7 +56,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Never sum the shared projects dir unfiltered for the primary. ⚠Do not use `acct_of(...)[0] == ""` here — it maps unknown to primary, which is the overcount.
 - **Non-primary account had no «left ≈»** (`burn._qb_acct_win`, `usage_index.acct_tokens`, `60b-sbar-layer.js sblEst`).
   - Cause: `quota-log.jsonl` and `burn-hist-cache.json` hold the primary only, so `burn_est` is None for another account and `plan_est` had no `head`; the page skips the window average when a main account is set.
-  - Fix: with no history est, the account body runs `plan_est` on a copy carrying that account's own window per-1% (its sessions' tokens since the 5h/7d start, hour buckets, `low`); the layer shows «≈ N left» per row, the bar stays as it was (history est only).
+  - Fix: with no history est, the account body runs `plan_est` on a copy carrying that account's own window per-1% (its sessions' tokens since the 5h/7d start, hour buckets, `low`); the layer shows «≈ N left» per row and the bar shows the same pick as «left ≈».
+  - ★The bar first kept a low est out (layer only); a non-primary main account never has history, so its bar showed no «left ≈» at all. ⇒ `60-statusbar.js use` shows the low est like any est; low accuracy is in the 5h/7d tooltip once (`burnEstTip`). ⚠Do not hide a low est in the bar again — estimates show and converge with use. Test `test_sbar_main_low_est_js`.
   - ⚠Never put that `head` on the body (saver_cap would read conf high) and never use the primary's per-1% for another account (plans sit 5-9x apart).
   - ⚠Own per-account history is not built: the log has one writer for the primary and `_tok_scan` does not attribute tokens per account.
 - **Main account bar dropped every token figure** (`burn._qb_acct_body`, `60-statusbar.js use`).
