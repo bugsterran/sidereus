@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-14
+
+**Highlights**
+
+- Security checks: syft builds a CycloneDX SBOM per scanned commit and grype checks it for CVEs; the issues window and the Markdown report open with a summary of counts, severities and «upgrade X to Y resolves N».
+- Structure: the overview («Export HTML › Simple») is now a build-structure figure written in the viewer's language; older overviews must be redrawn.
+- Pipelines: stages take an optional reasoning effort next to the model, enforced like the model (`[pl-effort:<name>/<stage>=inherit]` for a client that sends no effort).
+
 ### Added
 
 - Security checks: syft writes a CycloneDX SBOM per scanned commit and grype checks it for CVEs (rows show «package version», beside osv-scanner). Maven versions managed by parent POMs are looked up on Maven Central when online; no build tool is run. The issues window and the Markdown report open with a summary: counts per category (CVE · SAST · Secret · Config), severity totals, the grype DB build time and «upgrade X to Y resolves N» per package.
@@ -21,10 +29,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Timeline: each session group has a visible divider above it, and its agent rows are lightly tinted, so a session and its agents read as one block and neighbouring sessions no longer run together.
 - Structure: overviews and maps are written in the viewer's language, and the overview gate refuses a band holding one box with the band's own name and 4 or more same-labelled arrows into one box (a band note — shown under the band name — says it instead).
 - Structure: the overview («Export HTML › Simple») is now a build-structure figure — the system box with 3-7 components and 2-4 design principles (each citing a file:line), 1-4 external systems with their uses, labelled arrows on verified map edges, and a legend of each box's role; the route table is gone. Older overviews must be redrawn.
+- UI: the count of sessions in the Attention list reads «Attention» everywhere («Attention {n}», «{n} in Attention», «Nothing in Attention») — the Sessions button tooltip, the drawer count, worktree group rows and the timeline worktree caret said «need you» before; «Needs your response» stays for rows that wait on an answer.
 
 ### Fixed
 
 - Sessions: an external CLI session whose folder path holds a NUL byte no longer hides every pi and Codex row on Python 3.12+ and Windows; that session just gets no mailbox id.
+- Checks: `perf_budget.py --live` measures the viewer's macOS footprint against 300 MB instead of ps RSS against 200 MB; RSS left out compressed pages and swung 174-286 MB for one process.
 - Pipelines: a session whose Agent tool sends no `effort` can declare `[pl-effort:<name>/<stage>=inherit]` instead of being denied on every stage that sets an effort (plugin 0.9.3).
 - Pipelines: a wrapped canvas no longer keeps the wide gaps of a card that shrank after you clicked it; an untouched view re-wraps when card widths change, and waits while a stage is selected.
 - Pipelines: in Watch, a chain wrapped into several rows no longer hides its lower rows or cards past the right edge; the canvas grows to the rows it needs (until you drag a divider) and zooms out to no less than 70%, and only what still does not fit pans.
@@ -33,6 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Status bar: when «Show in bar» picks an account other than the main one, the bar names that account before «5h»; before, only the tooltip said whose quota it was, so an idle account's «left 100%» read as the main account's.
 - Structure: an architecture flow step to a route written with a path constant from the same file (`@GetMapping(PATH)`, `router.get(USERS, …)`) now verifies instead of failing as «no route»; a constant from another file still counts as unknown.
 - Timeline: a pipeline run between stages no longer reads «Aborted» while its session waits on its own background command, subagent or workflow; the line names what it waits on.
+- Timeline: the tab dot also lights for a session whose turn ended while its own background command, subagents or workflow still run, instead of reading idle during a long build.
 - Status bar: the credit line no longer disappears when extra usage is disabled or used up; it stays with «off» and the reason.
 - Sessions: pi subagent child lines show their tokens instead of 0; the Sidereus pi extension now reports each child reply's token counts (run `/reload` in open pi sessions to load it).
 - Attention: «Spending credits» and the «Credits» chip no longer show while extra usage is off; pi's requests then draw on the plan's 5h limit, not credits.
@@ -1048,7 +1059,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/bugsterran/sidereus/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/bugsterran/sidereus/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/bugsterran/sidereus/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/bugsterran/sidereus/compare/v0.15.0...v0.16.0
