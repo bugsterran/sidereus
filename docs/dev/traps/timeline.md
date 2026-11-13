@@ -334,4 +334,5 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `tlPlRun` (74c-timeline-plrun.js) kept a run open only while a stage was «run» (`plPrLive`); between stages (one done, the next sent back or not yet dispatched) main waiting on its own build has no live stage, so an unended run fell to «⏸ Aborted».
 - Fix: an unended run whose session `waitOnLabel` names (background command, own subagents, running workflow) stays open, and its line adds that label after the current stage.
 - ⚠Only runs with no `end`: a run the server closed (commit, Stop, 30 min with no evidence) still reads ended.
-- ★`tests/test_tl_plrun_js.py` `test_open_run_waiting_on_own_command_is_not_aborted`.
+- ⚠The wait counts only when tied to the run (`tlPlWaitTied`): timed work (sub/bg `min`) started within `TLPL_STALL_S` of the run's `t1`, untimed work (workflow) only while `t1` is that recent. An unended run is kept 6 h (`PLR_KEEP_S`), so an unrelated later command otherwise hid its «Aborted». Do not bound by `now - t1` alone — a long build launched between stages would fall back to «Aborted».
+- ★`tests/test_tl_plrun_js.py` `test_open_run_waiting_on_own_command_is_not_aborted` · `test_wait_ties_only_work_started_near_the_run`.

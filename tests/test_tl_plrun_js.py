@@ -36,7 +36,7 @@ def _run(sess, expr, feats=None, g=None, pls=None, attn=None, extra=""):
     src = "\n".join([PRE, "const FEATS = " + json.dumps(feats or {}) + ";", "const SESS = " + json.dumps(sess) + ";",
                      "const ATTN = " + json.dumps(attn) + ";",
                      _const("PL_OS"), _const("TLPL_REQ"), _const("TLPL_ICON"), _const("TLPL_EXP"), _const("TLPL_MAX"), "let TLPL_FO = '';",
-                     js_fn("plTk"), js_fn("plPrLive"), js_fn("plPrLt"), js_fn("plAgLabs"), js_fn("plPsOk"), js_fn("tlPlRun"), js_fn("tlPlOne"), js_fn("tlPlLine"), js_fn("tlPlEnd"), js_fn("tlPlExp"), js_fn("tlPlOc"), js_fn("tlPlCur"), js_fn("tlPlSt"), js_fn("tlPlRowCls"),
+                     js_fn("plTk"), js_fn("plPrLive"), js_fn("plPrLt"), js_fn("plAgLabs"), js_fn("plPsOk"), js_fn("tlPlRun"), js_fn("tlPlWaitTied"), js_fn("tlPlOne"), js_fn("tlPlLine"), js_fn("tlPlEnd"), js_fn("tlPlExp"), js_fn("tlPlOc"), js_fn("tlPlCur"), js_fn("tlPlSt"), js_fn("tlPlRowCls"),
                      js_fn("plStepper"), _LEG(), js_fn("tlPlLegend"), js_fn("tlPlLegendFor"), js_fn("tlPlStrip"), _const("TLPL_WMAX"), js_fn("tlPlWork"), js_fn("tlPlBands"), js_fn("tlPlLoad"), js_fn("tlPlEvSig"), js_fn("tlPlEvWatch"),
                      _const("TLPL_EVW"), _const("TLPL_RECENT_S"), _const("TLPL_STALL_S"), _const("TLPL_HK"), js_fn("tlPlHead"), js_fn("tlPlHeadHtml"), js_fn("tlPlHeadBtn"), js_fn("tlPlOffNote"), "let TLPL_HS = [];", "const PLEV = {}; let PAINTS = 0; const tlPlRepaint = () => PAINTS++;",
                      "const g = " + json.dumps(g) + ";",
@@ -180,6 +180,21 @@ console.log(JSON.stringify({ order: tlPlDrop(sts), nn: segs.filter(s => s.c.has(
         h = _run([{"sid": "s1", "state": "wait", "plrun": [mid]}], "[pl.runs[0].fin, tlPlStrip(pl)]", extra=wl)
         self.assertTrue(h[0])
         self.assertIn("tlpe-stop", h[1])
+
+    def test_wait_ties_only_work_started_near_the_run(self):
+        # L.now = 3000, run last touched at 1500. A build started at 1560 (min 24) and still running long after stays tied;
+        # a command started at 3000 for a run abandoned long before is unrelated: the run reads ended, not waiting.
+        wl = js_fn("wfRunning") + "\n" + js_fn("waitOnLabel")
+        mid = _pr("mid", 1500, 0, {"수정": {"o": "done", "t0": 1100, "t1": 1300}, "검증": {"o": "back", "t0": 1300, "t1": 1500}})
+        h = _run([{"sid": "s1", "state": "wait", "bgs": [{"lab": "b", "min": 24}], "plrun": [mid]}], "pl.runs[0].fin", extra=wl)
+        self.assertFalse(h)
+        # Last touched at 1100 (inside the window, 1900 s > TLPL_STALL_S before now).
+        old = _pr("old", 1100, 0, {"수정": {"o": "done", "t0": 1000, "t1": 1050}, "검증": {"o": "back", "t0": 1050, "t1": 1100}})
+        h = _run([{"sid": "s1", "state": "wait", "bgs": [{"lab": "b", "min": 0}], "plrun": [old]}], "pl.runs.map(r => r.fin)", extra=wl)
+        self.assertEqual(h, [True])
+        # Untimed work (no «min») falls back to how recently the run was touched.
+        h = _run([{"sid": "s1", "state": "wait", "bgs": [{"id": "b1"}], "plrun": [old]}], "pl.runs.map(r => r.fin)", extra=wl)
+        self.assertEqual(h, [True])
 
     def test_end_label_en(self):
         src = "\n".join([js_fn("tlPlEnd"), "const LANG = 'en'; const T = s => s; const KE = (k, e) => e;",

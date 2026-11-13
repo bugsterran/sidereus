@@ -14,7 +14,8 @@ function tlPlRun(g, L){
   const all = [];
   // w = what the session's finished turn still waits on (its own background command, subagent or workflow; 20 waitOnLabel).
   // ⚠Between stages no stage is «run» while main waits on its own build: without w an unended run read «Aborted».
-  (SESS || []).forEach(x => { if(x && sids.has(x.sid)){ const w = typeof waitOnLabel === 'function' ? waitOnLabel(x, x.state) : ''; (x.plrun || []).forEach(r => { if(r && r.name) all.push({ sid: x.sid, r, w }); }); } });
+  const now = (L && L.now) || Date.now() / 1000;
+  (SESS || []).forEach(x => { if(x && sids.has(x.sid)){ const w = typeof waitOnLabel === 'function' ? waitOnLabel(x, x.state) : ''; (x.plrun || []).forEach(r => { if(r && r.name) all.push({ sid: x.sid, r, w: w && tlPlWaitTied(x, r, now) ? w : '' }); }); } });
   const newest = (a, b) => (b.r.t1 || 0) - (a.r.t1 || 0);
   const open = all.filter(o => !o.r.end && (plPrLive(o.r) || o.w)).sort(newest);
   const w0 = (L && L.t0) || 0;
@@ -26,6 +27,14 @@ function tlPlRun(g, L){
   // Row status: a failed stage in any shown or folded run wins, then live, else ended.
   const st = runs.concat(ended).some(p => tlPlSt(p) === 'fail') ? 'fail' : open.length ? 'run' : 'fin';
   return { runs, more: Math.max(0, open.length - TLPL_MAX), ended, st, key: top[0].sid };
+}
+// Is the work session x waits on part of run r? ⚠An unended run is kept 6 h (pl_runs PLR_KEEP_S): an unrelated command started
+// hours later must not turn its «Aborted» into a wait. Timed work (sub/bg «min») counts when it started within TLPL_STALL_S of the
+// run's last touch, so a long build launched between stages stays tied; untimed work (workflow) only while the run is that recent.
+function tlPlWaitTied(x, r, now){
+  const t1 = (r && r.t1) || 0, timed = ((x && x.sub) || []).concat((x && x.bgs) || []).filter(v => v && typeof v.min === 'number');
+  if(timed.length && !(typeof wfRunning === 'function' && wfRunning(x))) return timed.some(v => Math.abs(now - v.min * 60 - t1) <= TLPL_STALL_S);
+  return now - t1 <= TLPL_STALL_S;
 }
 // One run -> {sid, pr, proj, name, titles, lt, fin, now (s)}; fin = not live (its stage left at «run» shows the closed outcome).
 function tlPlOne(o, fin, g, L){
