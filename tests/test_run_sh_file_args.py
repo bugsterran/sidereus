@@ -3,6 +3,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -19,6 +20,19 @@ class RunShFileArgs(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr[-500:])
         self.assertNotIn("not importable", r.stderr)
         self.assertIn("Ran 1 test", r.stderr)
+
+    def test_absolute_path_runs_module(self):
+        r = self._run(str(ROOT / "tests" / "test_light_contrast_css.py"))
+        self.assertEqual(r.returncode, 0, r.stderr[-500:])
+        self.assertNotIn("No module named", r.stderr)
+
+    def test_path_outside_repo_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = pathlib.Path(d) / "test_outside.py"
+            p.write_text("", encoding="utf-8")
+            r = self._run(str(p))
+        self.assertEqual(r.returncode, 2, r.stderr[-500:])
+        self.assertIn("outside the repo", r.stderr)
 
     def test_missing_file_is_named(self):
         r = self._run("tests/test_no_such_file.py")

@@ -23,7 +23,7 @@ spec.loader.exec_module(cs)
 
 ```
 bash tests/run.sh                                     # all
-bash tests/run.sh tests/test_quota.py                 # one or more files (run as modules)
+bash tests/run.sh tests/test_quota.py                 # one or more files (run as modules; absolute paths inside the repo work too)
 /usr/bin/python3 -m unittest tests.test_quota -v      # one file, same thing
 ```
 

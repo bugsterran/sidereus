@@ -9,11 +9,16 @@ if [ -z "$TESTS_SERIAL" ] && [ $# -eq 0 ]; then
 fi
 # File arguments (tests/test_x.py) are run as modules: passed to discover they became its start
 # directory and failed with «Start directory is not importable». Other arguments (-p, -k ...) still go to discover.
+# An absolute path passes [ -f ] but would become a module name like «.Users.x.tests.y», so the
+# repo root (logical and physical, after the cd above) is stripped first; one outside the repo is refused.
 mods=()
+root_l="$PWD/"; root_p="$(pwd -P)/"
 for a in "$@"; do
   case "$a" in
     *.py) [ -f "$a" ] || { echo "no such test file: $a" >&2; exit 2; }
-          m="${a#./}"; m="${m%.py}"; mods+=("${m//\//.}") ;;
+          m="${a#"$root_l"}"; m="${m#"$root_p"}"; m="${m#./}"
+          case "$m" in /*) echo "test file outside the repo: $a" >&2; exit 2 ;; esac
+          m="${m%.py}"; mods+=("${m//\//.}") ;;
     *) mods=(); break ;;
   esac
 done
