@@ -19,7 +19,8 @@ class RunShFileArgs(unittest.TestCase):
         r = self._run("tests/test_light_contrast_css.py")
         self.assertEqual(r.returncode, 0, r.stderr[-500:])
         self.assertNotIn("not importable", r.stderr)
-        self.assertIn("Ran 1 test", r.stderr)
+        # Any count: the target file's own test count is not this test's concern.
+        self.assertRegex(r.stderr, r"Ran [1-9]\d* tests?\b")
 
     def test_absolute_path_runs_module(self):
         r = self._run(str(ROOT / "tests" / "test_light_contrast_css.py"))
