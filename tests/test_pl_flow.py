@@ -833,7 +833,8 @@ class Flow(unittest.TestCase):
             self.assertEqual(o["permissionDecision"], "deny")
             self.assertIn("and model sonnet and effort medium;", o["permissionDecisionReason"])
             self.assertIn("effort %s." % (eff or "(none)"), o["permissionDecisionReason"])
-            self.assertIn("[pl-effort:%s/검증=<level>]" % N, o["permissionDecisionReason"])
+            self.assertIn("[pl-effort:%s/검증=<level>] (=inherit if this client sends no effort)" % N,
+                          o["permissionDecisionReason"])
         self.assertEqual([e["c"] for e in self.run_()["dl"]], ["model", "model"])
         self.assertIsNone(self.pre("검증", effort="Medium"))   # case-insensitive match passes
 
@@ -845,6 +846,14 @@ class Flow(unittest.TestCase):
         self.assertIsNone(self.pre("검증", effort="high"))
         self.assertIsNone(self.bash("[pl-effort:%s/검증=huge] x" % N))   # not a level: no declaration
         self.assertEqual(self.run_()["efforts"], {"검증": "high"})
+
+    def test_effort_inherit_unchecks_stage(self):   # a client with no Agent `effort` parameter still has a way through
+        self._effort_pipe("medium")
+        self.assertIsNotNone(self.pre("검증"))   # missing effort = "(none)" = mismatch
+        self.assertIsNone(self.bash("[pl-effort:%s/검증=inherit] x" % N))
+        self.assertEqual(self.run_()["efforts"], {"검증": "inherit"})
+        self.assertIsNone(self.pre("검증"))
+        self.assertIsNone(self.pre("검증", effort="max"))   # not checked at all for this run's stage
 
     def test_effort_override_without_stage_effort(self):   # R2: a declared effort is checked even if the stage has none
         self._effort_pipe()

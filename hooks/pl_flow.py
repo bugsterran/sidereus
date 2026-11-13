@@ -43,7 +43,9 @@ END_TAG = re.compile(r"\[pl-end:([a-z0-9-]{1,40})/([^\]\n|]{1,40})\]")
 MODEL_TAG = re.compile(r"\[pl-model:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=([A-Za-z0-9._-]{1,40})\]")
 AGENT_TAG = re.compile(r"\[pl-agent:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=([A-Za-z0-9._:-]{1,64})\]")
 EFFORTS = ("low", "medium", "high", "xhigh", "max")   # ⚠same set as the pipeline schema's stage/defaults "effort"
-EFFORT_TAG = re.compile(r"\[pl-effort:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=(low|medium|high|xhigh|max)\]")
+# "inherit" = this run does not check the stage's effort: a client whose Agent tool has no `effort` parameter
+# could otherwise never dispatch a stage that sets one (missing key = "(none)" = mismatch).
+EFFORT_TAG = re.compile(r"\[pl-effort:([a-z0-9-]{1,40})/([^\]\n=]{1,40})=(low|medium|high|xhigh|max|inherit)\]")
 # Renamed recommended stage titles (old -> new): old tags and legacy files map to the new title. ⚠Same map in sidereus/pipeline_schema.py RENAMED.
 RENAMED = {"최종 검증": "재검증"}
 CLAUDE_DIR = None    # None = $CLAUDE_CONFIG_DIR or HOME_DIR/.claude (user agents); patched in tests
@@ -643,7 +645,7 @@ def _fit(ev, tool, name, s, r, dirs):
         exp += " and effort %s" % e
         has += ", effort %s" % (ge[:10] or "(none)")
         what = "model, agent or effort"
-        decl = "%s, %s or [pl-effort:%s/%s=<level>]" % (tm, ta, name, s["title"])
+        decl = "%s, %s or [pl-effort:%s/%s=<level>] (=inherit if this client sends no effort)" % (tm, ta, name, s["title"])
     return ("model" if ok_ag else "agent",
             "[pl:%s/%s] expects %s; this call has %s. Dispatch again with those, or declare "
             "another %s first with a Bash description %s." % (name, s["title"], exp, has, what, decl))

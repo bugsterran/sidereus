@@ -139,7 +139,8 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
   (when the stage names a model, omitting `model` is a mismatch; `inherit`, a `main` stage and a stage agent that is not installed, where
   `general-purpose` is accepted, are exempt). A stage `effort` is checked the same way against the call's `effort`.
   A Bash description `[pl-model:<name>/<stage>=<model>]`, `[pl-effort:<name>/<stage>=<level>]` or
-  `[pl-agent:<name>/<stage>=<agent>]` declares another model, effort or agent for that stage of the run.
+  `[pl-agent:<name>/<stage>=<agent>]` declares another model, effort or agent for that stage of the run;
+  `[pl-effort:<name>/<stage>=inherit]` turns the effort check off for that stage (a client whose Agent tool sends no `effort`).
 - Post: when the stage's last slice returns, adds `PASS → next: [pl:…] · agent · model · skill · gate` and, for a stage
   with `onFail`, the FAIL round line. A background dispatch says «when it finishes»; its Post (the only one it gets)
   takes its slice off the in-flight count but does not mark the stage done. After the last stage it ends the run and

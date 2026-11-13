@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Pipelines: a session whose Agent tool sends no `effort` can declare `[pl-effort:<name>/<stage>=inherit]` instead of being denied on every stage that sets an effort (plugin 0.9.3).
 - Pipelines: a wrapped canvas no longer keeps the wide gaps of a card that shrank after you clicked it; an untouched view re-wraps when card widths change, and waits while a stage is selected.
 - Pipelines: in Watch, a chain wrapped into several rows no longer hides its lower rows or cards past the right edge; the canvas grows to the rows it needs (until you drag a divider) and zooms out to no less than 70%, and only what still does not fit pans.
 - Pipelines: saving an edit (model, agent, effort) no longer writes the canvas layout re-wrapped for a narrow window into the pipeline file; cards keep their saved positions unless you dragged, arranged or inserted a stage.

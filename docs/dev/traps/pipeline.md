@@ -486,3 +486,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Cause: one fixed 15pp rise for every pipeline. ★2026-11-13 26 days of runs: chance spread (2 sd) between two 30-day windows = change 11pp · bug-fix 7pp · verify 26pp · quick-fix 0, so verify flagged on noise and a bug-fix doubling (13% -> 25%) passed.
 - ⇒ Flag when the rise >= max(`OC_LB_RISE_MIN_PP` 5, `OC_LB_RISE_SD` 2 x sd), sd from the pooled share and both run counts. Still pure and deterministic; tests pin the bug-fix and verify sized cases.
 - ⚠No earlier runs stays unknown (healthy), never a 0% baseline. The guide `docs/verdicts/pl_loopback(.ko).md` states the rule — change it with the constants.
+
+## A stage effort locked out clients that send no `effort` (`hooks/pl_flow.py` `_fit` · `EFFORT_TAG`)
+- Cause: a missing `effort` in the Agent input reads as "(none)" = mismatch, and `[pl-effort:]` took only the 5 levels; ★33 shipped stages set effort, so an Agent tool without the parameter was denied on every one of them.
+- Fix: `[pl-effort:<name>/<stage>=inherit]` stores `inherit`, which `_fit` drops (not in `EFFORTS`) = that stage is not checked for this run; the deny reason names it.
+- ⚠Never treat a missing `effort` key as unchecked by default (a model could skip the stage effort silently). `tests/test_pl_flow.py` `test_effort_inherit_unchecks_stage`.
