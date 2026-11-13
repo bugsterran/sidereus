@@ -6,6 +6,7 @@ git argv is `rev-parse`, `log --name-only` and `rev-list --ancestry-path`; never
 """
 import hashlib
 import json
+import math
 import os
 import re
 import subprocess
@@ -48,7 +49,11 @@ OC_SENT = {
     "rep": "Latest report {date} · {path}",
     "norep": "No report yet",
 }
-OC_LB_RISE_PP = 15   # R1 loop-back rise (percentage points) that flags a pipeline; provisional, to be set from 30-day data
+# R1 loop-back rise that flags a pipeline: >= max(OC_LB_RISE_MIN_PP, OC_LB_RISE_SD x the chance spread of the two windows).
+# ★2026-11-13 26 days of this repo's runs: chance spread (2 sd) of two 30-day windows = change 11pp, bug-fix 7pp,
+# verify 26pp, quick-fix 0 -- one fixed 15pp flagged verify on noise and missed bug-fix doubling 13% -> 25%.
+OC_LB_RISE_MIN_PP = 5
+OC_LB_RISE_SD = 2
 # R1 one verdict per pipeline, English source. ⚠Keyed twice: web PLE_VD carries the same sentences; change both.
 # ⚠pl_too_few spells OC_VERDICT_MIN_RUNS as «5» here, in PLE_VD and in the ko dictionary; change all three with it.
 OC_VERDICT = {
@@ -411,9 +416,18 @@ def _verdict(c):
     if c["proc"]["runs"] < OC_VERDICT_MIN_RUNS:
         return "pl_too_few"
     cur, prev = c["lb"]["cur"], c["lb"]["prev"]
-    if prev["n"] and _pct(cur) - _pct(prev) >= OC_LB_RISE_PP:   # ⚠no earlier runs is unknown, never a 0% baseline
+    if prev["n"] and cur["n"] and _pct(cur) - _pct(prev) >= lb_rise_pp(cur, prev):   # ⚠no earlier runs is unknown, never a 0% baseline
         return "pl_loopback"
     return "healthy"
+
+
+def lb_rise_pp(cur, prev):
+    """Loop-back rise (pp) that counts as real for these two windows: max(OC_LB_RISE_MIN_PP, OC_LB_RISE_SD x sd) where
+    sd = 100 * sqrt(p(1-p)(1/n_cur + 1/n_prev)), p pooled over both. Few runs widen it; a 0% or 100% pool leaves the floor."""
+    n = cur["n"] + prev["n"]
+    p = (cur["k"] + prev["k"]) / n if n else 0
+    sd = 100 * math.sqrt(p * (1 - p) * (1 / cur["n"] + 1 / prev["n"])) if cur["n"] and prev["n"] else 0
+    return max(OC_LB_RISE_MIN_PP, OC_LB_RISE_SD * sd)
 
 
 def verdict(oc):

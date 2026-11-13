@@ -1,7 +1,7 @@
 # pl_loopback
 
 ## Meaning
-The share of runs that the review stage sent back rose by 15 points or more against the 30 days before.
+The share of runs that the review stage sent back rose against the 30 days before by more than chance explains: at least 5 points, and at least twice the spread expected from the two windows' run counts (fewer runs need a bigger rise).
 
 ## Why it matters
 More work fails review than before, so earlier stages are missing something they used to catch.

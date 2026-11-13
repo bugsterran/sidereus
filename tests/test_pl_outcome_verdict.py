@@ -26,9 +26,20 @@ class Verdict(unittest.TestCase):
         self.assertNotEqual(OC.verdict(oc(runs=5)), "pl_too_few")
 
     def test_r1_loopback_rise_boundary(self):
-        self.assertEqual(OC.OC_LB_RISE_PP, 15)
-        self.assertEqual(OC.verdict(oc(cur=(14, 100), prev=(0, 10))), "healthy")
-        self.assertEqual(OC.verdict(oc(cur=(15, 100), prev=(0, 10))), "pl_loopback")
+        self.assertEqual((OC.OC_LB_RISE_MIN_PP, OC.OC_LB_RISE_SD), (5, 2))
+        # 0% pool: spread 0, the 5pp floor decides
+        self.assertEqual(OC.lb_rise_pp({"n": 100, "k": 0}, {"n": 100, "k": 0}), 5)
+        # bug-fix sized windows (190 runs, ~13%): 2 sd ~7pp, so a 13% -> 25% doubling flags
+        self.assertAlmostEqual(OC.lb_rise_pp({"n": 190, "k": 25}, {"n": 190, "k": 25}), 6.9, 1)
+        self.assertEqual(OC.verdict(oc(cur=(48, 190), prev=(25, 190))), "pl_loopback")
+        # verify sized windows (30 runs, ~42%): 2 sd ~25pp, so a 15pp rise is noise
+        self.assertEqual(OC.verdict(oc(cur=(17, 30), prev=(12, 30))), "healthy")
+        self.assertEqual(OC.verdict(oc(cur=(21, 30), prev=(12, 30))), "pl_loopback")
+
+    def test_r1_loopback_floor_boundary(self):
+        # 0% before: spread from the pooled share; 1000 vs 1000 runs keeps 2 sd under 5, so the floor is the edge
+        self.assertEqual(OC.verdict(oc(cur=(40, 1000), prev=(0, 1000))), "healthy")      # 4pp
+        self.assertEqual(OC.verdict(oc(cur=(50, 1000), prev=(0, 1000))), "pl_loopback")  # 5pp
 
     def test_r1_missing_prev_is_not_zero(self):
         self.assertEqual(OC.verdict(oc(cur=(10, 10), prev=(0, 0))), "healthy")

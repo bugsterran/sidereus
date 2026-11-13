@@ -481,3 +481,8 @@ Moved from «Platform, config, launcher, tests and tooling».
 - Fix: `plWatchLay(G, cw, H, pick)` picks columns, zoom and need in one pass over H = the largest canvas (A - pane min - card min - strip): the column count with the largest min(1, width fit, height fit) (ties keep fewer rows); under `PL_ZWATCH` 0.7 it takes 0.7 with the most columns readable at 0.7 and H, the rest pans. `plWrapCols(.., wt)` and `plFit` read it; the zoom is never above the width fit.
 - ⚠Never take the Watch need from the current wrap (it never grew the canvas for 2 rows), never fit below `PL_ZWATCH` or past the right edge, never write the need into `sidereus.plwv`; outside Watch nothing changes. `tests/test_pipeline_canvas_height_js.py` `test_watch_fixtures_fit_both_axes`.
 - ⚠After a grip drag/key on this page load (`plWSave` sets `PLWUSER`, memory only; `plWReset` clears it) the need minimum is off: the person's split wins and only the zoom fits the canvas they set. `test_watch_grip_resize_wins_over_the_need`.
+
+## Loop-back verdict threshold is per pipeline, not one fixed rise (`pl_outcome.lb_rise_pp`)
+- Cause: one fixed 15pp rise for every pipeline. ★2026-11-13 26 days of runs: chance spread (2 sd) between two 30-day windows = change 11pp · bug-fix 7pp · verify 26pp · quick-fix 0, so verify flagged on noise and a bug-fix doubling (13% -> 25%) passed.
+- ⇒ Flag when the rise >= max(`OC_LB_RISE_MIN_PP` 5, `OC_LB_RISE_SD` 2 x sd), sd from the pooled share and both run counts. Still pure and deterministic; tests pin the bug-fix and verify sized cases.
+- ⚠No earlier runs stays unknown (healthy), never a 0% baseline. The guide `docs/verdicts/pl_loopback(.ko).md` states the rule — change it with the constants.
