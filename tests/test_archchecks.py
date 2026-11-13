@@ -121,7 +121,7 @@ class RunnerTest(Tmp):
         j = AV.read_json(self.fp())
         self.assertEqual((j["commit"], j["dirty"], j["src_changed"]), (C1, False, True))
         self.assertEqual((j["v"], j["files"]), (2, {"a.py": {"critical": 0, "high": 0, "medium": 0, "low": 1}}))
-        self.assertNotIn("secret", json.dumps(j))
+        self.assertNotIn("secret", json.dumps(dict(j, summary=None)))   # summary.cat names the category «secret»
         self.assertEqual(AC.checks_errors(j, self.repo, C1, SC.SEC_IDS), [])
         self.assertEqual(AC.checks_errors(j), ["rules"] + ["tools[%d]" % i for i in range(len(j["tools"]))] + ["items"])   # no ids: nothing accepted
         self.assertEqual(self.main("--verify", "--last", "--category", "security")[0], 0)
@@ -187,7 +187,7 @@ class NoTestsTest(Tmp):
             return {"rc": 1, "out": json.dumps(BANDIT), "err": "", "t0": 0, "ms": 5}
         git = lambda repo, args: (C1 + "\n") if args[0] == "rev-parse" else ""
         self.p = [mock.patch.object(AV, "ARCH_DIR", self.store), mock.patch.object(self.cli, "_git", git),
-                  mock.patch.object(self.cli, "_which", lambda n: "/bin/" + n),
+                  mock.patch.object(self.cli, "_which", lambda n: None if n in ("syft", "grype") else "/bin/" + n),   # sbom: test_sec_sbom
                   mock.patch.object(self.cli, "_probe", lambda: True),
                   mock.patch.object(self.cli, "_exec", ex)]
         for p in self.p:

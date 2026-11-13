@@ -27,4 +27,13 @@ Object.assign(I18N.ko, {
   'Checking': '점검 중',
   'A security check run is in progress for this project — session {s}': '이 프로젝트의 보안 점검이 진행 중입니다 — 세션 {s}',
   'No session of this project is logged in to the mailbox — run this in a terminal:': '이 프로젝트의 세션 중 메일함에 로그인된 것이 없습니다 — 터미널에서 실행하세요:',
+  'ran · {n} components': '실행됨 · 구성 요소 {n}',
+  'Maven versions not resolved (offline)': 'Maven 버전 확인 못 함 (오프라인)',
+  'transitive dependencies not resolved': '전이 의존성 확인 못 함',
+  '{n} Maven versions not resolved': 'Maven 버전 {n}개 미해석',
+  'CVE {c} · SAST {s} · Secret {k} · Config {g}': 'CVE {c} · SAST {s} · 비밀값 {k} · 설정 {g}',
+  'Vulnerability DB built {t}': '취약점 DB 생성 {t}',
+  'upgrade {p} to {v} resolves {n}': '{p} → {v} 업그레이드로 {n}건 해결',
+  'Upgrades {n}': '업그레이드 {n}',
+  '+{n} more|fixes': '외 {n}건',
 });

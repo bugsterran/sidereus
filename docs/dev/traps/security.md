@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Security and privacy
 
+- ★**`grype -q` hides a DB failure** (2026-11-13, grype 0.121.3, `sidereus/sec_sbom.py`). With no usable DB, `-q` exits 1 with empty stdout and stderr, so the run read as «unreadable output», not «DB not available». ⇒ the grype plan runs without `-q` (non-TTY stderr stays empty on success) and `fail_why` matches «failed to load vulnerability db» ⇒ `skipped` `WHY_DB`.
+  - ⚠syft logs nothing when Maven Central is unreachable (with or without `-q`): versions just stay `UNKNOWN`. ⇒ `sbom_doc` counts Maven components (purl `pkg:maven/`) with an empty/UNKNOWN version: note `mvn-unresolved` + row `unresolved`, online or offline (`mvn-offline` still comes from the plan).
+  - ⚠`SYFT_JAVA_MAX_PARENT_RECURSIVE_DEPTH=0` means unlimited: keep `PARENT_DEPTH` positive. Never run mvn/gradle to resolve versions — they execute the repo's build code.
+  - ★syft's transitive resolve ignores Maven scope (syft 1.57.1, a pom with only spring-boot-starter-parent 2.7.18 + starter-web): 69 components incl. junit 3.8.2/4.7/4.11/4.12, ant 1.7.1, log4j 1.2.17, dom4j 1.6.1 — test/optional deps a packaged app does not ship; CycloneDX carries no `scope`. Counts on Maven repos run high; a build-tool resolve would list fewer. ⚠Do not filter by name — there is no scope signal to filter on.
+
 - **A `--no-tests` scan must not resolve findings in test code** (`sidereus/sec_checks.py` `log_view`, `sec_report.scan_pair`). Code scanners never read test paths in that run, so an old test finding is absent without being fixed. ⇒ the scan record carries `notests: true`; such a scan resolves no finding whose file `sec_testpaths.is_test`, and the report's «gone» skips them too.
   - ⚠The runner CLI defaults to include: old pipeline copies, the security-fix re-scan, `release.json` and pi/Codex sessions call it without flags. Only the viewer (or a request) adds `--no-tests`.
   - ⚠Only the code scanners (gitleaks · semgrep · bandit) read the pruned copy; npm audit, osv-scanner and trivy keep the full tree with unchanged argv. Store the count and `PATTERNS` only, never skipped file names.

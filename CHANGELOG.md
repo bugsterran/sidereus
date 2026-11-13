@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Security checks: syft writes a CycloneDX SBOM per scanned commit and grype checks it for CVEs (rows show «package version», beside osv-scanner). Maven versions managed by parent POMs are looked up on Maven Central when online; no build tool is run. The issues window and the Markdown report open with a summary: counts per category (CVE · SAST · Secret · Config), severity totals, the grype DB build time and «upgrade X to Y resolves N» per package.
 - Pipelines: stages take an optional reasoning effort next to the model, shown on the card and editable in the side panel; Sidereus' own pipelines use low for gate-only stages and high for judgment stages.
 - Structure: «Export HTML › Ask the session to draw» relays (preview + confirm) a request to a live session working in that repository to write the overview from its own analysis; the gated overview reads «drawn by <session id>». A brief.json may carry an optional numbers-only `layout` that is drawn as given and refused when boxes overlap, arrow ends leave a box border, labels cover a box or line, or anything leaves the figure.
 - Structure: «Export HTML › Simple» opens an older map's own overview too, marked «HEAD is N commits ahead» like «Detailed»; only a new overview request still needs the map at HEAD.

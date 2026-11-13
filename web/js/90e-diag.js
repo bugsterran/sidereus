@@ -61,6 +61,8 @@ const SEC_CATCH = {
   'osv-scanner': 'Known vulnerabilities in dependencies, read from lockfiles',
   'npm': 'Known vulnerabilities in npm packages (npm audit)',
   'trivy': 'Dockerfile misconfigurations; with --images, known vulnerabilities in base images',
+  'syft': 'Software bill of materials (CycloneDX SBOM) of the packages in the repo',
+  'grype': 'Known vulnerabilities in the SBOM packages, with the version that fixes them',
 };
 const dxOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 // Pure: «Security tools» — installed + version, or this OS's install command with «Copy». Nothing is run or sent.

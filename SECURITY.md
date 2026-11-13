@@ -55,6 +55,14 @@ Each run writes one Markdown report, `arch/<key>/security-report-YYYYMMDD-HHMM.m
 | `osv-scanner` | Known vulnerabilities in dependencies, read from lockfiles | `brew install osv-scanner` · `winget install Google.OSVScanner` | yes |
 | `npm` | Known vulnerabilities in npm packages (npm audit) | `brew install node` · `winget install OpenJS.NodeJS.LTS` | yes |
 | `trivy` | Dockerfile misconfigurations; with --images, known vulnerabilities in base images | `brew install trivy` · `winget install AquaSecurity.Trivy` | only for `--images` (vulnerability DB and registry) |
+| `syft` | Software bill of materials (CycloneDX SBOM) of the packages in the repo | `brew install syft` · `winget install Anchore.Syft` | only for `pom.xml` (Maven Central POMs for parent/BOM versions) |
+| `grype` | Known vulnerabilities in the SBOM packages, with the version that fixes them | `brew install grype` · `winget install Anchore.Grype` | yes (vulnerability DB) |
+
+### SBOM and dependency CVEs (syft, grype)
+
+- syft writes a CycloneDX SBOM of the commit's tracked files to `arch/<key>/<HEAD>/sbom.cdx.json` under `~/.mailbox-mcp`; the Security view shows only its component count. grype matches that SBOM and stores file · package · version · CVE id · severity · fix version, never advisory text.
+- No build tool (Maven, Gradle) is ever run: it would execute the repo's build code. For a `pom.xml`, syft looks up parent and BOM POMs on Maven Central (online only, after the same reachability probe) to fill in managed versions. Offline, syft still runs and the row says the Maven versions were not resolved. A Gradle build without `gradle.lockfile` shows «transitive dependencies not resolved».
+- grype needs its vulnerability DB: offline, or when the DB cannot be loaded, it is «skipped», never «0 issues».
 
 ### Container images (trivy)
 

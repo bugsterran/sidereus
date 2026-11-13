@@ -32,6 +32,8 @@ HINTS = {
     "bandit": ("brew install bandit", "pip install bandit", "pip install bandit"),
     "npm": ("brew install node", "winget install OpenJS.NodeJS.LTS", "nodejs.org"),
     "trivy": ("brew install trivy", "winget install AquaSecurity.Trivy", "aquasecurity.github.io/trivy"),
+    "syft": ("brew install syft", "winget install Anchore.Syft", "github.com/anchore/syft/releases"),
+    "grype": ("brew install grype", "winget install Anchore.Grype", "github.com/anchore/grype/releases"),
 }
 
 
@@ -45,7 +47,12 @@ def install_cmd(tool):
     """This OS's HINTS entry without its trailing « (…)» note: a copyable command (or a URL) for Settings «Security tools»."""
     return re.sub(r" \([^()]*\)$", "", install_hint(tool)[len("install: "):])
 
-SEC_IDS = ("gitleaks", "npm-audit", "osv-scanner", "semgrep", "bandit", "trivy-config", "trivy-image")   # trivy: sec_trivy
+SEC_IDS = ("gitleaks", "npm-audit", "osv-scanner", "semgrep", "bandit", "trivy-config", "trivy-image",   # trivy: sec_trivy
+           "syft", "grype")   # sec_sbom
+# summary category per tool id (build's `summary.cat`); syft finds packages, not issues, so it has none
+CATEGORY = {"gitleaks": "secret", "npm-audit": "cve", "osv-scanner": "cve", "grype": "cve", "trivy-image": "cve",
+            "semgrep": "sast", "bandit": "sast", "trivy-config": "config"}
+CAT_KEYS = ("cve", "sast", "secret", "config")
 SEC_FILE = "checks-security.json"
 SEC_LAST = "_checks_last_security.json"   # {repo, commit} of the newest security run (gate `--verify --last --category security`)
 CATEGORIES = ("security",)

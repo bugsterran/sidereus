@@ -13,6 +13,7 @@ from sidereus.arch_verify import COMMIT_RE, owns, plan_globs, read_json, safe_re
 from sidereus.arch_checks_parse import SEV_RANK, SEVS, clean_help, level, zero
 from sidereus import osv_use as OU
 from sidereus import sec_checks as SC
+from sidereus import sec_sbom as SB
 from sidereus import sec_trivy as ST
 from sidereus import sec_report as SR
 from sidereus import sec_testpaths as TP
@@ -42,7 +43,7 @@ def judge(plan, res, repo):
     if st != "ok":
         return st, why, items, 0
     try:
-        return st, why, items, (ST if plan["id"] in ST.IDS else SC).files(plan, res, repo)
+        return st, why, items, (ST if plan["id"] in ST.IDS else SB if plan["id"] in SB.IDS else SC).files(plan, res, repo)
     except ValueError:
         return st, why, items, 0
 
@@ -52,6 +53,8 @@ def _judge(plan, res, repo):
         return "timeout", "over %d s" % TOOL_TIMEOUT_S, []
     if res.get("rc") == 127 and res.get("nostart"):
         return "fail", "cannot start", []
+    if plan["id"] in SB.IDS:
+        return _judge_sb(plan, res, repo)
     trivy = plan["id"] in ST.IDS
     fw = ST.fail_why(plan, res) if trivy else None
     if fw:   # ⚠auth / not found / DB failures are a per-image reason row, never clean
@@ -80,6 +83,54 @@ def _judge(plan, res, repo):
     return "ok", None, items
 
 
+def _judge_sb(plan, res, repo):
+    """syft: the SBOM file decides (unreadable = fail, no packages = skipped). grype: a DB or network failure is
+    skipped, never ok; matches without a location are dropped and counted in `why`."""
+    rc = res.get("rc")
+    if plan["id"] == "syft":
+        if rc != 0:
+            return "fail", "exit %s" % rc, []
+        s = SB.sbom_state(plan)
+        if s is None:
+            return "fail", SB.WHY_UNREADABLE, []
+        return ("ok", None, []) if s[0] > 0 else ("skipped", SB.WHY_NO_PKGS, [])
+    fw = SB.fail_why(plan, res)
+    if fw:
+        return "skipped", fw, []
+    if SC.net_fail(plan, res):
+        return "skipped", SC.WHY_NET_FAIL, []
+    try:
+        raw = SB.parse_grype(res.get("out") or "")
+    except ValueError:
+        return "fail", "unreadable output (exit %s)" % rc, []
+    if rc not in plan.get("ok_rc", (0,)):
+        return "fail", "exit %s" % rc, []
+    items, lost = [], 0
+    for x in raw:
+        f = rel_path(x["file"], repo, repo) if x["file"] else ""
+        if not f:
+            lost += 1
+            continue
+        if RULE_RE.fullmatch(x["rule"]) and os.path.isfile(os.path.join(repo, f)):
+            items.append(dict(x, file=f, tool=plan["id"]))
+    return "ok", ("%d matches without a file" % lost) if lost else None, items
+
+
+def _summary_of(tools, items):
+    """Top-level `summary`: per-category and per-severity counts from the tool counters (uncapped), grype's DB build
+    time and the grype fix list. ⚠A category or severity total with no tool run ok is null (unknown), never 0."""
+    ok = [t for t in tools if t["status"] == "ok" and t["id"] in SC.CATEGORY]   # ⚠syft finds no issues: never a 0
+    cat = {}
+    for c in SC.CAT_KEYS:
+        ts = [t for t in ok if SC.CATEGORY.get(t["id"]) == c]
+        cat[c] = sum(sum(t["n"][k] for k in SEVS) for t in ts) if ts else None
+    sev = {k: (sum(t["n"][k] for t in ok) if ok else None) for k in SEVS}
+    fx, more = SB.fixes(items)
+    db = next((t["db_built"] for t in tools if t["id"] == "grype" and t.get("db_built")), None)
+    return dict({"cat": cat, "sev": sev, "fixes": fx}, **({"fixes_more": more} if more else {}),
+                **({"db_built": db} if db else {}))
+
+
 def build(repo, commit, dirty, src_changed, at, tools, items, tests_excluded=None):
     """checks.json v2 dict. tools = [{id, rules, status, why?, ms, files, target?, fixable?, waiting?}] (n added here);
     items most severe first, capped. tests_excluded = {n, patterns} of a `--no-tests` run, else the key is absent."""
@@ -103,6 +154,7 @@ def build(repo, commit, dirty, src_changed, at, tools, items, tests_excluded=Non
         for k in ("fixable", "waiting"):
             if _nat(t.get(k)):
                 e[k] = t[k]
+        e.update(_row_extra({k: t[k] for k in ("id",) + SB_ROW_KEYS if t.get(k) is not None}) or {})
         out_t.append(e)
     # ⚠judged-unused findings sort last so the caps keep used / unjudged ones
     its = sorted(items, key=lambda x: ((x.get("use") or {}).get("s") == "unused", SEV_RANK[x["sev"]], x["file"],
@@ -119,8 +171,17 @@ def build(repo, commit, dirty, src_changed, at, tools, items, tests_excluded=Non
                            **({"pkg": x["pkg"]} if x.get("pkg") else {}), **({"cve": x["cve"]} if x.get("cve") else {}),
                            **({"imgs": x["imgs"]} if _nat(x.get("imgs")) and x["imgs"] >= 1 else {}),
                            **({"fix": x["fix"]} if isinstance(x.get("fix"), bool) else {}),
+                           **_ver_keys(x),
                            **({"use": OU.clean_use(x.get("use"))} if OU.clean_use(x.get("use")) else {}))
-                      for x in its], "rules": rules, **({"osv_use": ou} if ou else {}), **({"tests_excluded": _tests_excluded(tests_excluded)} if _tests_excluded(tests_excluded) else {})}
+                      for x in its], "rules": rules, **({"osv_use": ou} if ou else {}), **({"tests_excluded": _tests_excluded(tests_excluded)} if _tests_excluded(tests_excluded) else {}),
+            "summary": _summary_of(out_t, items)}
+
+
+def _ver_keys(x):
+    """Item `ver` / `fixv` (grype items only, VER_RE shape) or {}."""
+    if x.get("tool") != "grype":
+        return {}
+    return {k: x[k] for k in ("ver", "fixv") if isinstance(x.get(k), str) and SB.VER_RE.fullmatch(x[k])}
 
 
 # ── schema (gate) and page loader ──
@@ -148,8 +209,10 @@ def checks_errors(j, repo=None, commit=None, ids=()):
     if not isinstance(j, dict):
         return ["top level must be an object"]
     errs = []
-    if set(j) - {"rules", "tests_excluded", "osv_use"} != {"v", "repo", "commit", "dirty", "src_changed", "at", "tools", "files", "items"}:
+    if set(j) - {"rules", "tests_excluded", "osv_use", "summary"} != {"v", "repo", "commit", "dirty", "src_changed", "at", "tools", "files", "items"}:
         errs.append("keys")
+    if "summary" in j and _summary(j["summary"]) != j["summary"]:
+        errs.append("summary")
     if "tests_excluded" in j and _tests_excluded(j["tests_excluded"]) is None:
         errs.append("tests_excluded")
     if "osv_use" in j and OU.clean_counts(j["osv_use"]) != j["osv_use"]:
@@ -168,7 +231,7 @@ def checks_errors(j, repo=None, commit=None, ids=()):
     if not isinstance(j.get("at"), (int, float)) or isinstance(j.get("at"), bool):
         errs.append("at")
     for i, t in enumerate(j.get("tools") if isinstance(j.get("tools"), list) else [None]):
-        if not (isinstance(t, dict) and set(t) - {"why", "target", "fixable", "waiting"} == {"id", "rules", "status", "ms", "files", "n"}
+        if not (isinstance(t, dict) and set(t) - {"why", "target", "fixable", "waiting"} - set(SB_ROW_KEYS) == {"id", "rules", "status", "ms", "files", "n"}
                 and _row_extra(t) is not None
                 and t["id"] in ids and _nat(t["files"])
                 and t["rules"] in ("project", "default") and t["status"] in STATUSES and _cnt(t["n"])
@@ -199,9 +262,31 @@ def _tests_excluded(v):
     return {"n": v["n"], "patterns": list(ps)}
 
 
+SB_ROW_KEYS = ("components", "notes", "unresolved", "db_built")   # syft: components, notes, unresolved · grype: db_built
+
+
 def _row_extra(t):
-    """Optional tool-row keys (trivy-image: target ref, fixable / waiting counts) validated, or None if any is bad."""
+    """Optional tool-row keys (trivy-image: target ref, fixable / waiting counts; syft: components, notes; grype:
+    db_built) validated, or None if any is bad or sits on another tool's row."""
     e = {}
+    tid = t.get("id")
+    if "components" in t:
+        if tid != "syft" or not _nat(t["components"]):
+            return None
+        e["components"] = t["components"]
+    if "notes" in t:
+        ns = t["notes"]
+        if tid != "syft" or not (isinstance(ns, list) and len(set(ns)) == len(ns) and all(n in SB.NOTES for n in ns)):
+            return None
+        e["notes"] = list(ns)
+    if "unresolved" in t:   # count of Maven components without a version: only beside its note
+        if tid != "syft" or not (_nat(t["unresolved"]) and t["unresolved"] > 0 and "mvn-unresolved" in e.get("notes", ())):
+            return None
+        e["unresolved"] = t["unresolved"]
+    if "db_built" in t:
+        if tid != "grype" or not (isinstance(t["db_built"], str) and SB.ISO_Z_RE.fullmatch(t["db_built"])):
+            return None
+        e["db_built"] = t["db_built"]
     if "target" in t:
         if not (isinstance(t["target"], str) and ST.REF_RE.fullmatch(t["target"])):
             return None
@@ -212,6 +297,39 @@ def _row_extra(t):
                 return None
             e[k] = t[k]
     return e
+
+
+def _nat_or_none(x):
+    return x is None or _nat(x)
+
+
+def _summary(s):
+    """Validated copy of a checks file `summary`, None if any part is off-contract (gate and loader share it)."""
+    if not (isinstance(s, dict) and {"cat", "sev", "fixes"} <= set(s) <= {"cat", "sev", "fixes", "fixes_more", "db_built"}):
+        return None
+    cat, sev, fx = s["cat"], s["sev"], s["fixes"]
+    if not (isinstance(cat, dict) and set(cat) == set(SC.CAT_KEYS) and all(_nat_or_none(cat[k]) for k in SC.CAT_KEYS)
+            and isinstance(sev, dict) and set(sev) == set(SEVS) and all(_nat_or_none(sev[k]) for k in SEVS)
+            and isinstance(fx, list) and len(fx) <= SB.FIXES_MAX):
+        return None
+    out_f = []
+    for f in fx:
+        if not (isinstance(f, dict) and set(f) == {"pkg", "ver", "to", "n", "sev"}
+                and isinstance(f["pkg"], str) and SC.PKG_RE.fullmatch(f["pkg"])
+                and all(isinstance(f[k], str) and SB.VER_RE.fullmatch(f[k]) for k in ("ver", "to"))
+                and _nat(f["n"]) and f["n"] >= 1 and f["sev"] in SEVS):
+            return None
+        out_f.append({k: f[k] for k in ("pkg", "ver", "to", "n", "sev")})
+    out = {"cat": {k: cat[k] for k in SC.CAT_KEYS}, "sev": {k: sev[k] for k in SEVS}, "fixes": out_f}
+    if "fixes_more" in s:
+        if not (_nat(s["fixes_more"]) and s["fixes_more"] > 0 and out_f):
+            return None
+        out["fixes_more"] = s["fixes_more"]
+    if "db_built" in s:
+        if not (isinstance(s["db_built"], str) and SB.ISO_Z_RE.fullmatch(s["db_built"])):
+            return None
+        out["db_built"] = s["db_built"]
+    return out
 
 
 def _rule_key(k, ids=()):
@@ -238,9 +356,12 @@ def _clean_item(x, ids=()):
     us = OU.clean_use(x.get("use")) if x["tool"] == OU.TOOL else None   # usage judgement: osv-scanner items only
     if "use" in x and not us:
         return None
+    vk = _ver_keys(x)   # installed / fix version: grype items only
+    if any(k in x and k not in vk for k in ("ver", "fixv")):
+        return None
     return dict({"tool": x["tool"], "file": f, "line": ln, "rule": r, "sev": sv}, **({"pkg": pk} if "pkg" in x else {}),
                 **({"cve": cv} if "cve" in x else {}), **({"imgs": im} if "imgs" in x else {}),
-                **({"fix": fx} if "fix" in x else {}), **({"use": us} if us else {}))
+                **({"fix": fx} if "fix" in x else {}), **vk, **({"use": us} if us else {}))
 
 
 def aggregate(files, mods, globs):
@@ -328,7 +449,7 @@ def _load_one(root, map_dir, m, head, name, ids):
             why = t.get("why")
             if isinstance(why, str) and why:
                 e["why"] = "".join(ch for ch in why[:WHY_MAX] if ord(ch) >= 32)
-            e.update(_row_extra({k: t[k] for k in ("target", "fixable", "waiting") if k in t}) or {})
+            e.update(_row_extra({k: t[k] for k in ("id", "target", "fixable", "waiting") + SB_ROW_KEYS if k in t}) or {})
             tools.append(e)
     fs = j.get("files") if isinstance(j.get("files"), dict) else {}
     files = {k: _counts(v, j["v"]) for k, v in list(fs.items())[:FILES_MAX] if safe_rel(k) == k and _counts(v, j["v"])}
@@ -362,4 +483,7 @@ def _load_one(root, map_dir, m, head, name, ids):
     ou = OU.clean_counts(j.get("osv_use"))
     if ou:   # ⚠absent = usage not judged (older file or no osv-scanner items): no counts, never zeros
         out["osv_use"] = ou
+    sm = _summary(j.get("summary"))
+    if sm:   # ⚠absent = older file or off-contract: show nothing, never zeros
+        out["summary"] = sm
     return out

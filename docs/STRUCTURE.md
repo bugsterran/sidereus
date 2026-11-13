@@ -50,7 +50,7 @@ flowchart LR
 
 ## Security checks
 
-The `security-checks` pipeline shows gitleaks, npm audit, osv-scanner, semgrep, bandit and trivy findings in the issues window («Top issues N»). trivy checks Dockerfiles by default; base images only with `--images` («Include images»). Test code is excluded by default (`--no-tests`, «Include test code» turns it off); the results show «Test code excluded · N files». ⚠Secret values are never stored.
+The `security-checks` pipeline shows gitleaks, npm audit, osv-scanner, grype, semgrep, bandit and trivy findings in the issues window («Top issues N»). syft writes a CycloneDX SBOM (`arch/<key>/<HEAD>/sbom.cdx.json`, the scanner line shows «ran · N components») and grype checks it for CVEs; grype rows show «package version». The top of the window sums the run: CVE · SAST · Secret · Config counts, severity totals, the grype vulnerability DB build time, and one «upgrade X to Y resolves N» line per vulnerable package (machine-generated from the fix versions). trivy checks Dockerfiles by default; base images only with `--images` («Include images»). Test code is excluded by default (`--no-tests`, «Include test code» turns it off); the results show «Test code excluded · N files». ⚠Secret values are never stored.
 
 Its second stage, «Threat model review», has a model review the code against the repo's threat model (`.oss-scanner/threat_model.md` or `threat_model.md`) and logs findings to `security-log.jsonl`. These findings are model-generated and unverified. Without a threat model the stage prints one line pointing to `templates/oss-scanner/` and passes.
 
@@ -94,6 +94,7 @@ Flows (`sidereus/arch_flow.py`) check every step the same way, but never change 
 
 `scripts/arch_checks.py --repo <repo> --category security [--offline] [--dev]` writes `checks-security.json`: rule, `file:line`, package only (dependency findings add optional `cve`: up to 3 CVE aliases, shown next to the GHSA rule; the finding key stays the rule).
 Each run also writes one Markdown report, `arch/<key>/security-report-YYYYMMDD-HHMM.md` (newest 10 kept): tool status, findings, triage, delta since the previous scan, and the `scripts/deps_audit.py` lines when the repo is this Sidereus checkout (`--dev` adds the dev tooling).
+For a Maven repo with a `pom.xml`, syft looks up versions managed by parent POMs / BOMs on Maven Central (through the same reachability probe); no build tool (Maven, Gradle) is ever run. Offline, syft still runs and the row says «Maven versions not resolved (offline)»; a Gradle build without `gradle.lockfile` shows «transitive dependencies not resolved».
 ⚠Secret values and matched text are never stored; advisory lookups (and semgrep registry packs when there is no local config) run online by default; offline or `--offline` = skipped, never «0 issues».
 
 ### map.json v2

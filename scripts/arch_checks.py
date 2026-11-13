@@ -11,9 +11,12 @@ usage: arch_checks.py (--repo <path> | --last | --verify --last) --category secu
                     arch/deps-last.json (local Python/Node vs latest patch, read by the Harness runtime card).
                     --last = the repo of the last security checks (else of the last map run).
   --category        security (required): gitleaks, npm audit, osv-scanner, semgrep, bandit, trivy (Dockerfile
-                    misconfig; --images adds trivy image on each Dockerfile FROM / compose image:, never built or run).
-                    --only = comma-separated tool ids. Online lookups (npm audit, osv-scanner, semgrep registry
-                    packs) run by default after one reachability probe; unreachable or --offline = skipped.
+                    misconfig; --images adds trivy image on each Dockerfile FROM / compose image:, never built or run),
+                    syft (CycloneDX SBOM, stored as arch/<key>/<HEAD>/sbom.cdx.json) and grype (CVEs of that SBOM).
+                    --only = comma-separated tool ids (grype adds syft). Online lookups (npm audit, osv-scanner,
+                    semgrep registry packs, grype DB, syft's Maven Central POM lookup for pom.xml) run by default after
+                    one reachability probe; unreachable or --offline = skipped (syft runs without network).
+                    No build tool (mvn, gradle) is ever run.
                     --net is accepted as a no-op (older callers).
   --no-tests        gitleaks, semgrep and bandit read a copy without test code (sidereus/sec_testpaths.py); npm audit,
                     osv-scanner and trivy still read the full tree. Default = include (older callers pass no flag).
@@ -24,7 +27,7 @@ usage: arch_checks.py (--repo <path> | --last | --verify --last) --category secu
                     old error|warning read as high|medium).
   --log-show        print open AI review findings (sev, file:line, slug).
   --mark <slug>@<file> resolved|false-positive [--commit <sha>]   mark an AI review finding (default commit: HEAD).
-Prints one summary line. Only file / line / rule / severity (+ package) are stored — never tool message text or secrets.
+Prints one summary line. Only file / line / rule / severity (+ package, version, fix version) are stored — never tool message text or secrets.
 """
 import json
 import os
@@ -45,6 +48,7 @@ from sidereus import osv_use as OU  # noqa: E402
 from sidereus import sec_checks as SC  # noqa: E402
 from sidereus import sec_report as SR  # noqa: E402
 from sidereus import sec_runtime as SRT  # noqa: E402
+from sidereus import sec_sbom as SB  # noqa: E402
 from sidereus import sec_testpaths as TP  # noqa: E402
 from sidereus import sec_trivy as ST  # noqa: E402
 from sidereus.bus import _atomic_write  # noqa: E402
@@ -272,9 +276,10 @@ def _has_files(root):
     return any(fns or any(os.path.islink(os.path.join(dp, d)) for d in dns) for dp, dns, fns in os.walk(root))
 
 
-def _plans(src, net, only, images, code=None):
+def _plans(src, net, only, images, code=None, ident=("", "")):
     """Plans for src; with code (the --no-tests copy) the CODE_IDS plans read code (`root` = code) instead.
-    ⚠Every other plan is built from src exactly as without --no-tests (dependency results must not change)."""
+    ⚠Every other plan is built from src exactly as without --no-tests (dependency results must not change).
+    ident = (repo key, HEAD) names the SBOM; syft/grype come last (grype reads syft's SBOM)."""
     base = SC.detect(src, _which, net)
     if code:
         empty = not _has_files(code)
@@ -291,7 +296,9 @@ def _plans(src, net, only, images, code=None):
             else:   # bandit: Python only under test paths
                 out.append(_tool_skip(p, WHY_NO_PY))
         base = out
-    return [p for p in base + ST.detect(src, _which, net, images) if not only or p["id"] in only]
+    want = set(only) | ({"syft"} if "grype" in only else set()) if only else None   # grype needs syft's SBOM
+    return [p for p in base + ST.detect(src, _which, net, images) + SB.detect(src, _which, net, ident[0], ident[1])
+            if not want or p["id"] in want]
 
 
 def _tool_skip(p, why):
@@ -305,7 +312,7 @@ def run(repo, only=None, offline=False, dev=False, images=False, no_tests=False)
     if not AV.COMMIT_RE.fullmatch(head):
         return 1, "arch_checks: not a git repo with a commit"
     before = _git(repo, ["status", "--porcelain"])   # dirty is info only: the scan reads HEAD's tracked files
-    t_all, tools, items, cache = time.time(), [], [], {}
+    t_all, tools, items, cache, cdx = time.time(), [], [], {}, None
     tmp = tempfile.mkdtemp(prefix="sidereus-checks-")
     # ⚠realpath: macOS /var -> /private/var, else tool paths fail rel_path against src
     src = os.path.realpath(tempfile.mkdtemp(prefix="sidereus-src-"))
@@ -319,10 +326,11 @@ def run(repo, only=None, offline=False, dev=False, images=False, no_tests=False)
                 tx = {"n": TP.prune_copy(src, code), "patterns": list(TP.PATTERNS)}
             except (OSError, shutil.Error):
                 return 1, "arch_checks: copy without test code failed"
-        plans = _plans(src, not offline, only, images, code)
+        ident = (AV.repo_key(repo), head)
+        plans = _plans(src, not offline, only, images, code, ident)
         # ⚠probe only when an online tool would actually run; unreachable re-plans them as skipped, never «0 issues»
         if any(p.get("net") and not p.get("status") for p in plans) and not _probe():
-            plans = _plans(src, False, only, images, code)
+            plans = _plans(src, False, only, images, code, ident)
         sig = (_tree_sig(src), _tree_sig(code) if code else None)
         for p in plans:
             if p.get("status"):
@@ -331,6 +339,15 @@ def run(repo, only=None, offline=False, dev=False, images=False, no_tests=False)
                 continue
             if p.get("src") == "report":
                 p = SC.bind(p, tmp)   # ⚠report lands in tmp only; judge deletes it after reading
+            elif p["id"] in SB.IDS:
+                p = SB.bind(p, tmp)
+                sy = next((t for t in tools if t["id"] == "syft"), None)
+                if p["id"] == "grype":
+                    if not (sy and sy["status"] == "ok" and (sy.get("components") or 0) > 0):
+                        tools.append({"id": "grype", "rules": p["rules"], "status": "skipped", "why": SB.WHY_NO_SBOM,
+                                      "ms": 0, "files": 0})
+                        continue
+                    p = dict(p, sbom_files=sy["files"])   # grype examined the files syft read
             left = AC.TOTAL_S - (time.time() - t_all)
             key = tuple(p["argv"]) + (p["cwd"],)
             if key not in cache:
@@ -352,6 +369,14 @@ def run(repo, only=None, offline=False, dev=False, images=False, no_tests=False)
                    "target": p.get("target")}
             if p.get("target") and st == "ok":
                 row["fixable"], row["waiting"] = ST.counts(its)
+            if p["id"] == "syft":
+                doc = SB.sbom_doc(p) if st == "ok" else None
+                if doc:   # ⚠read before tmp is removed below; written beside the checks file once that is stored
+                    cdx, row["components"] = doc[0], doc[1]
+                    row["unresolved"] = doc[3] or None
+                row["notes"] = SB.notes(p, res, doc[3] if doc else 0) or None
+            elif p["id"] == "grype" and st == "ok":
+                row["db_built"] = SB.db_built(res.get("out"))
             tools.append(row)
             items += its
         items = ST.merge(items)   # one finding per (CVE, package) across images
@@ -369,6 +394,8 @@ def run(repo, only=None, offline=False, dev=False, images=False, no_tests=False)
                   prefix=".arch-", mode=0o644)
     _atomic_write(os.path.join(AV.ARCH_DIR, SC.SEC_LAST), json.dumps({"repo": repo, "commit": head}).encode("utf-8"),
                   prefix=".arch-", mode=0o644)
+    if cdx is not None:   # the SBOM of this commit; only its component count reaches the page
+        _atomic_write(os.path.join(d, SB.SBOM_FILE), cdx, prefix=".arch-", mode=0o644)
     # ⚠an id with a failed row (one image of several) did not fully run: it must not resolve its old findings
     # a not-found image is a per-image reason row, not a failed scan; auth / DB failures still count
     bad = {t["id"] for t in j["tools"] if t["status"] in ("fail", "timeout") and t.get("why") != ST.WHY_NOT_FOUND}
@@ -396,6 +423,9 @@ def summary(j, extra=""):
         ids = [t["id"] for t in j["tools"] if t["status"] == st]
         if ids:
             line += " · %s: %s" % (st, ",".join(ids))
+    comp = next((t.get("components") for t in j["tools"] if t["id"] == "syft" and t["status"] == "ok"), None)
+    if isinstance(comp, int):
+        line += " · sbom %d components" % comp
     return line + extra + (" · source changed by a tool" if j.get("src_changed") else "")
 
 

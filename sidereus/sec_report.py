@@ -22,6 +22,8 @@ KEEP = 10
 MAX_BYTES = 256 * 1024
 ROWS_MAX = 300
 _NET = re.compile(r"offline|network", re.I)
+_ISO_Z = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z")
+CATS = (("cve", "CVE"), ("sast", "SAST"), ("secret", "Secret"), ("config", "Config"))
 
 
 def _cell(s, n=200):
@@ -74,6 +76,36 @@ def _rule(x):
     return " · ".join([str(x.get("rule") or "")] + cv)
 
 
+def _pkg(x):
+    """Package cell; grype items carry the version separately as `ver`."""
+    p, v = x.get("pkg") or "", x.get("ver")
+    return "%s %s" % (p, v) if p and isinstance(v, str) and v else p
+
+
+def _nat(v):
+    return isinstance(v, int) and not isinstance(v, bool) and v >= 0
+
+
+def _summary(s):
+    """Header lines from checks-security.json `summary`; a file without one says so (unknown is not zero)."""
+    if not isinstance(s, dict) or not isinstance(s.get("cat"), dict) or not isinstance(s.get("sev"), dict):
+        return ["- Summary: not recorded (older checks file)"]
+    num = lambda d, k: str(d[k]) if _nat(d.get(k)) else "?"   # ⚠a missing counter shows «?», never 0
+    out = ["- Categories: " + " · ".join("%s %s" % (lb, num(s["cat"], k)) for k, lb in CATS),
+           "- Severity: " + " · ".join("%s %s" % (k, num(s["sev"], k)) for k in SEVS)]
+    if isinstance(s.get("db_built"), str) and _ISO_Z.fullmatch(s["db_built"]):
+        out.append("- Grype DB built: %s" % s["db_built"])
+    for f in (s.get("fixes") if isinstance(s.get("fixes"), list) else [])[:ROWS_MAX]:
+        if not (isinstance(f, dict) and _nat(f.get("n")) and all(isinstance(f.get(k), str) and f[k] for k in ("pkg", "ver", "to"))):
+            continue
+        sev = " (%s)" % f["sev"] if f.get("sev") in SEVS else ""
+        out.append("- upgrade %s %s to %s resolves %d%s" % (_cell(f["pkg"], 100), _cell(f["ver"], 64), _cell(f["to"], 64),
+                                                            f["n"], sev))
+    if _nat(s.get("fixes_more")) and s["fixes_more"] > 0:   # the runner capped the fix list
+        out.append("- +%d more" % s["fixes_more"])
+    return out
+
+
 def _images(tools):
     """«Base images» lines: per image ref, fixable high/critical -> replace the base image; unfixed ones are «waiting»."""
     rows = [t for t in tools if t.get("id") == "trivy-image"]
@@ -104,6 +136,7 @@ def render(j, view, prev_items, cur_items, deps):
         out.append("- Test code excluded: %d files (gitleaks, semgrep, bandit)" % tx["n"])
     if j.get("src_changed"):
         out.append("- ⚠A tool changed files in the repo during the run")
+    out += _summary(j.get("summary"))
     tools = [t for t in j.get("tools") or () if isinstance(t, dict)]
     out += ["", "## Tools", ""]
     if tools:
@@ -129,7 +162,7 @@ def render(j, view, prev_items, cur_items, deps):
         out += ["| Severity | Tool | Rule | Location | Package |", "|---|---|---|---|---|"]
         for x in items[:ROWS_MAX]:
             out.append("| %s | %s | %s | %s | %s |" % (_cell(x.get("sev")), _cell(x.get("tool")), _cell(_rule(x), 100),
-                                                     _loc(x), _cell(x.get("pkg") or "", 100)))
+                                                     _loc(x), _cell(_pkg(x), 100)))
     out += _images(tools)
     v = view or {}
     op, rs, fp = v.get("open") or [], v.get("resolved") or [], v.get("fp") or []

@@ -95,6 +95,41 @@ class Render(unittest.TestCase):
                       SR.render(_j([img(status="skipped", why="add --images")], []), {}, None, None, None))
         self.assertNotIn("## Base images", SR.render(_j(T_ALL, []), {}, None, None, None))
 
+    def test_summary_header(self):   # R6: categories, severity totals, DB build time, fix lines; ver beside pkg
+        s = {"cat": {"cve": 3, "sast": 1, "secret": 0, "config": 2}, "sev": {"critical": 1, "high": 2, "medium": 3, "low": 0},
+             "db_built": "2026-11-10T04:12:30Z",
+             "fixes": [{"pkg": "spring-web", "ver": "5.3.39", "to": "6.1.14", "n": 2, "sev": "critical"},
+                       {"pkg": "a|b", "ver": "1", "to": "2", "n": 1, "sev": "low"},
+                       {"pkg": "bad", "ver": "1", "to": "", "n": 1, "sev": "low"}], "fixes_more": 4}
+        g = {"tool": "grype", "file": "pom.xml", "line": 0, "rule": "CVE-2024-38809", "sev": "critical",
+             "pkg": "spring-web", "ver": "5.3.39", "fixv": "6.1.14"}
+        md = SR.render(dict(_j(T_ALL[:1], [g]), summary=s), {}, None, None, None)
+        for w in ("- Categories: CVE 3 · SAST 1 · Secret 0 · Config 2", "- Severity: critical 1 · high 2 · medium 3 · low 0",
+                  "- Grype DB built: 2026-11-10T04:12:30Z", "- upgrade spring-web 5.3.39 to 6.1.14 resolves 2 (critical)",
+                  "- upgrade a\\|b 1 to 2 resolves 1 (low)", "| pom.xml:0 | spring-web 5.3.39 |"):
+            self.assertIn(w, md)
+        self.assertNotIn("upgrade bad", md)
+        self.assertLess(md.index("- Severity:"), md.index("## Tools"))
+        self.assertLess(md.index("resolves 1 (low)"), md.index("- +4 more"))
+        for bad in (0, True, -1, "4"):
+            self.assertNotIn("more", SR.render(dict(_j(T_ALL[:1], []), summary=dict(s, fixes_more=bad)), {}, None, None, None))
+
+    def test_summary_unknown_not_zero(self):   # R6: no summary or missing counters never read as zeros
+        md = SR.render(_j(T_ALL[:1], []), {}, None, None, None)
+        self.assertIn("- Summary: not recorded (older checks file)", md)
+        self.assertNotIn("Categories:", md)
+        md = SR.render(dict(_j(T_ALL[:1], []), summary={"cat": {"cve": True}, "sev": {"high": 1}, "db_built": 0}),
+                       {}, None, None, None)
+        self.assertIn("- Categories: CVE ? · SAST ? · Secret ? · Config ?", md)
+        self.assertIn("- Severity: critical ? · high 1 · medium ? · low ?", md)
+        self.assertNotIn("Grype DB built", md)
+        nul = {"cat": {"cve": None, "sast": 2, "secret": None, "config": None}, "sev": {k: None for k in SR.SEVS}}
+        md = SR.render(dict(_j(T_ALL[:1], []), summary=nul), {}, None, None, None)   # null = no ok tool covers it
+        self.assertIn("- Categories: CVE ? · SAST 2 · Secret ? · Config ?", md)
+        self.assertIn("- Severity: critical ? · high ? · medium ? · low ?", md)
+        self.assertNotIn("Grype DB built", SR.render(dict(_j(T_ALL[:1], []), summary={"cat": {}, "sev": {}, "db_built": "1970"}),
+                                                     {}, None, None, None))
+
     def test_pipes_escaped(self):
         md = SR.render(_j(T_ALL[:1], [dict(ITEMS[0], file="a|b`c.py")]), {}, None, None, None)
         self.assertIn("a\\|b'c.py:3", md)

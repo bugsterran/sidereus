@@ -50,8 +50,9 @@ class SecTools(unittest.TestCase):
 
     def test_versions_from_layout(self):
         r = self.rows()
-        self.assertEqual([x for x in r], ["gitleaks", "semgrep", "bandit", "osv-scanner", "npm", "trivy"])
+        self.assertEqual([x for x in r], ["gitleaks", "semgrep", "bandit", "osv-scanner", "npm", "trivy", "syft", "grype"])
         self.assertEqual(r["trivy"]["net"], "images")
+        self.assertEqual((r["syft"]["net"], r["grype"]["net"]), ("no", "yes"))
         self.assertEqual(r["gitleaks"], {"id": "gitleaks", "installed": True, "version": "8.18.0", "cmd": None, "net": "no"})
         self.assertEqual(r["npm"]["version"], "10.8.2")
         self.assertEqual(r["semgrep"]["version"], "1.90.0")
@@ -70,6 +71,7 @@ class SecTools(unittest.TestCase):
         self.assertEqual(win["semgrep"]["cmd"], "pip install semgrep")
         self.assertEqual(win["npm"]["cmd"], "winget install OpenJS.NodeJS.LTS")
         self.assertEqual(win["trivy"]["cmd"], "winget install AquaSecurity.Trivy")
+        self.assertEqual((mac["syft"]["cmd"], win["grype"]["cmd"]), ("brew install syft", "winget install Anchore.Grype"))
         self.assertEqual(self.rows(where={}, mac=False)["npm"]["cmd"], "nodejs.org")
 
     def test_install_hint_unchanged(self):

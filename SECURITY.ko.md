@@ -54,6 +54,14 @@
 | `osv-scanner` | 락파일로 읽은 의존성의 알려진 취약점 | `brew install osv-scanner` · `winget install Google.OSVScanner` | 예 |
 | `npm` | npm 패키지의 알려진 취약점 (npm audit) | `brew install node` · `winget install OpenJS.NodeJS.LTS` | 예 |
 | `trivy` | Dockerfile 설정 오류 · --images 를 주면 베이스 이미지의 알려진 취약점 | `brew install trivy` · `winget install AquaSecurity.Trivy` | `--images` 일 때만 (취약점 DB·레지스트리) |
+| `syft` | 저장소 패키지의 소프트웨어 자재 명세서 (CycloneDX SBOM) | `brew install syft` · `winget install Anchore.Syft` | `pom.xml` 일 때만 (부모·BOM 버전을 Maven Central POM 에서 조회) |
+| `grype` | SBOM 패키지의 알려진 취약점과 이를 고치는 버전 | `brew install grype` · `winget install Anchore.Grype` | 예 (취약점 DB) |
+
+### SBOM 과 의존성 CVE (syft, grype)
+
+- syft 는 커밋의 추적 파일로 CycloneDX SBOM 을 만들어 `~/.mailbox-mcp` 아래 `arch/<key>/<HEAD>/sbom.cdx.json` 에 둔다. 보안 화면에는 구성 요소 개수만 나온다. grype 는 그 SBOM 을 대조해 파일 · 패키지 · 버전 · CVE id · 심각도 · 수정 버전만 저장하고, 권고문은 넣지 않는다.
+- 빌드 도구(Maven, Gradle)는 실행하지 않는다 — 저장소의 빌드 코드를 실행하게 된다. `pom.xml` 이면 syft 가 관리 버전을 채우려고 부모·BOM POM 을 Maven Central 에서 조회한다(온라인일 때만, 같은 도달성 확인 뒤). 오프라인이면 syft 는 그대로 돌고, 그 줄에 Maven 버전을 풀지 못했다고 적는다. `gradle.lockfile` 이 없는 Gradle 빌드는 «전이 의존성 미해결» 로 표시한다.
+- grype 는 취약점 DB 가 있어야 한다. 오프라인이거나 DB 를 읽지 못하면 «0건» 이 아니라 «건너뜀» 이다.
 
 ### 컨테이너 이미지 (trivy)
 

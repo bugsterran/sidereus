@@ -22,13 +22,15 @@ function archChkSum(c){
 function archChkStat(t){
   const why = String((t && t.why) || '').trim(), s = String((t && t.status) || '');
   // «ok» alone read as «no findings» next to a non-zero badge; it only means the scanner ran
+  if(s === 'ok' && typeof archChkSbomStat === 'function' && archChkSbomStat(t)) return archChkSbomStat(t);   // 84l6: syft counts components, not findings
   if(s === 'ok'){ const n = (t && t.n) || {}; return T('ran · {n} found').replace('{n}', ['critical', 'high', 'medium', 'low', 'error', 'warning'].reduce((a, k) => a + archChkN(n[k]), 0)); }
   // ⚠Raw text: every caller escapes (button tip); the runner's why already reads «install: …» / the skip reason.
-  if(s === 'missing') return T('not available') + (why ? ': ' + why : '');
-  if(s === 'skipped') return T('skipped') + (why ? ': ' + why : '');
-  if(s === 'timeout') return T('timed out');
-  if(s === 'fail') return T('failed') + (why ? ': ' + why : '');
-  return s || '?';
+  const nt = typeof archChkSbomNotes === 'function' ? archChkSbomNotes(t).map(x => ' · ' + x).join('') : '';   // 84l6: syft notes ride on any status (a skipped row too)
+  if(s === 'missing') return T('not available') + (why ? ': ' + why : '') + nt;
+  if(s === 'skipped') return T('skipped') + (why ? ': ' + why : '') + nt;
+  if(s === 'timeout') return T('timed out') + nt;
+  if(s === 'fail') return T('failed') + (why ? ': ' + why : '') + nt;
+  return (s || '?') + nt;
 }
 // Pure: security object of /api/arch `checks`, or null.
 function archChkSec(d){ const c = d && d.checks; return c && c.security && typeof c.security === 'object' ? c.security : null; }
@@ -54,7 +56,7 @@ function archChkTopBtn(d, p){   // p = repo of the hidden-rule pref, default the
   const old = !!sec.stale, cm = String(sec.commit || '').slice(0, 7), hd = String((d && d.head) || '').slice(0, 7);
   const gap = typeof archChkImgGap === 'function' ? archChkImgGap(sec) : '';
   // ⚠unknown is not clean: scanned but no scanner ran ok gets its own grey «not checked» badge, never «issues 0»
-  const nr = !!archChkScanAt(d) && !archChkTools(sec).some(t => t.status === 'ok');
+  const nr = !!archChkScanAt(d) && !archChkTools(sec).some(t => t.status === 'ok' && t.id !== 'syft');   // ⚠syft lists packages, it checks nothing
   const tip = archChkLast(d).txt + '\n' + (gap ? '⚠ ' + gap + '\n' : '') + (old ? T('Scanned commit {n} · HEAD now {m}').replace('{n}', cm).replace('{m}', hd) + '\n' + T('The security results are older than the code — run the security check again.') + '\n' : '')
     + archChkTools(sec).map(t => (typeof archChkTid === 'function' ? archChkTid(t) : String(t.id)) + ' · ' + archChkStat(t)).join('\n') + (hid.length ? '\n' + T('{n} rules hidden').replace('{n}', hid.length) : '');
   return '<button type=button class="strbg strbg-archcki' + (nr ? ' strbg-archckin" style="--bgc:var(--nx-t2,#aab4c3)' : e ? '' : ' strbg-archckiw') + (old ? ' strbg-cut' : '') + '" data-arck aria-haspopup=dialog title="' + esc(tip) + '">'
@@ -68,10 +70,10 @@ function archChkHelp(c, x){
   const desc = String(r.desc || '').replace(/\s+/g, ' ').trim().slice(0, 140), url = String(r.url || '').trim();
   return { desc, url: /^https:\/\/[^\s"'<>]+$/i.test(url) ? url : '' };
 }
-// Pure: rule label — rule · CVE aliases (dependency findings, ids only) · package; raw text, callers esc().
+// Pure: rule label — rule · CVE aliases (dependency findings, ids only) · package [version]; raw text, callers esc().
 function archChkRule(x, wire){   // wire = mailbox text: English, never T()
   const ni = archChkN(x.imgs), im = (wire ? '{n} images' : T('{n} images')).replace('{n}', ni);   // trivy-image: one CVE merged across base images
-  return [x.rule || ''].concat(Array.isArray(x.cve) ? x.cve.filter(c => typeof c === 'string' && /^CVE-\d{4}-\d{4,7}$/.test(c)) : [], x.pkg ? [x.pkg] : [], ni > 1 ? [im] : []).join(' · ');
+  return [x.rule || ''].concat(Array.isArray(x.cve) ? x.cve.filter(c => typeof c === 'string' && /^CVE-\d{4}-\d{4,7}$/.test(c)) : [], x.pkg ? [x.pkg + (typeof x.ver === 'string' && x.ver ? ' ' + x.ver : '')] : [], ni > 1 ? [im] : []).join(' · ');
 }
 function archChkKey(x){ return [x.tool || '', x.file, parseInt(x.line, 10) || 1, x.rule || ''].join('\t'); }
 // Pure: rule key of an item for the hidden-rule pref ("tool:rule").
@@ -241,7 +243,7 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
   const nl = l => Math.max(0, sm[l[0]] - archChkTop(d).filter(x => (H[archChkRk(x)] || unl.indexOf(x) >= 0) && archChkLv(x.sev) === l && (!S.tool || String(x.tool || '') === S.tool)).length);
   // the severity filter drops the levels it hides, so «Critical only» reads «critical N» alone
   const cnt = (sf === 'critical' ? ['critical'] : sf === 'high' ? ['critical', 'high'] : ['critical', 'high', 'medium', 'low']).map(l => archChkLvLbl(l) + ' ' + nl(l)).join(' · ');
-  const nr = !!sec && !!archChkScanAt(d) && !archChkTools(sec).some(t => t.status === 'ok');   // same «not checked» rule as archChkTopBtn
+  const nr = !!sec && !!archChkScanAt(d) && !archChkTools(sec).some(t => t.status === 'ok' && t.id !== 'syft');   // same «not checked» rule as archChkTopBtn
   const tids = archChkTools(sec).map(t => String(t.id)).concat(archChkTop(d).map(x => String(x.tool || ''))).filter((t, i, a) => t && a.indexOf(t) === i);
   const why = !cands.length ? T('No live session') : !n ? T('Select at least one issue') : '';
   let h = '<div class=ckwh><b>' + esc(T('Top issues {n}').replace('{n}', top.length)) + '</b><span>' + esc(cnt)
@@ -251,6 +253,7 @@ function archChkWinHtml(p, d, S, cands, rcands){   // rcands = run-picker rows (
     // ⚠ no inline reason span here: it pushed «Run security check» alone onto a second line; the reason is the button title
     + '<span class=ckwbtn><button type=button class="archgo' + (S.req ? ' on' : '') + '" data-ckfix' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>' + esc(T('Request fix') + (n ? ' (' + n + ')' : '')) + '</button>'
     + '<button type=button class="archgo' + (S.run ? ' on' : '') + '" data-ckrun aria-expanded=' + (S.run ? 'true' : 'false') + (S.run && S.run.busy ? ' disabled' : '') + '>' + esc(T('Run security check')) + '</button></span></div>';
+  if(typeof archChkSummaryHtml === 'function') h += archChkSummaryHtml(sec, S.sfc);   // 84l6: run summary at the top
   // filter row: view only (R5) — tool ids are tool output, esc'd and never through T()
   h += '<div class=ckwf><select data-cksev aria-label="' + esc(T('Severity')) + '">' + [['all', 'All severities'], ['high', 'High and above'], ['critical', 'Critical only']].map(o => '<option value=' + o[0] + (sf === o[0] ? ' selected' : '') + '>' + esc(T(o[1])) + '</option>').join('')
     + '</select><select data-cktool aria-label="' + esc(T('Tool')) + '"><option value=""' + (S.tool ? '' : ' selected') + '>' + esc(T('All tools')) + '</option>'
@@ -446,7 +449,7 @@ function archChkWinOpen(p){
     + '<body class=ckwin><div id=ckroot></div><script>' + ARCH_CW_JS + '</' + 'script>');
   dc.close();
   strWinTheme(w);
-  ARCH_CW = { p, w, sel: Object.create(null), req: null, sent: '', msg: '', run: null, runSent: null, cp: null, seen: ARCH.cache[p], sev: 'all', tool: '', unz: false };   // filters reset on reopen; unz = «Unused (verified)» group open
+  ARCH_CW = { p, w, sel: Object.create(null), req: null, sent: '', msg: '', run: null, runSent: null, cp: null, seen: ARCH.cache[p], sev: 'all', tool: '', unz: false, sfc: false };   // filters reset on reopen; unz = «Unused (verified)» group open, sfc = «Upgrades» group closed
   try{ w.focus(); }catch(e){ softErr('archck-focus', e); }
   archChkWinPaint();
 }
@@ -506,6 +509,7 @@ function archChkWinEv(e, w){
   let b;
   // ⚠click fires before the native toggle: record the state it is about to take, no repaint (that would undo the toggle)
   if((b = t.closest('[data-ckunused]>summary'))){ S.unz = !b.parentNode.open; return; }
+  if((b = t.closest('[data-cksfix]>summary'))){ S.sfc = !!b.parentNode.open; return; }   // fixes group: open by default, sfc = closed
   if((b = t.closest('[data-ckhide]'))){ const hid = archChkHidden(S.p); archChkSetHidden(S.p, hid.concat([b.dataset.ckhide])); archChkWinPaint(); archChkTabRepaint(); return; }
   if(t.closest('[data-ckunhide]')){ archChkSetHidden(S.p, []); archChkWinPaint(); archChkTabRepaint(); return; }
   if((b = t.closest('[data-ckv]'))){ strPopOpenRel(S.p, b.dataset.af, parseInt(b.dataset.al, 10) || 1, 80, ''); return; }

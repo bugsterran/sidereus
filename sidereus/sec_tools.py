@@ -16,7 +16,7 @@ from sidereus import ident, sec_checks
 # (id, needs network: "no" | "yes" | "registry" = only for semgrep registry packs when the repo has no local rules
 #  | "images" = only for trivy's --images scan: vuln DB and registry pulls)
 TOOLS = (("gitleaks", "no"), ("semgrep", "registry"), ("bandit", "no"), ("osv-scanner", "yes"), ("npm", "yes"),
-         ("trivy", "images"))
+         ("trivy", "images"), ("syft", "no"), ("grype", "yes"))
 VER_RE = re.compile(r"^\d+(\.\d+){0,3}[0-9A-Za-z.+-]{0,16}$")
 _PKG_MAX = 65536
 _GLOB_MAX = 8

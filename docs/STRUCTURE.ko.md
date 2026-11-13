@@ -50,7 +50,7 @@ flowchart LR
 
 ## 보안 검사
 
-`security-checks` 파이프라인이 gitleaks·npm audit·osv-scanner·semgrep·bandit·trivy 결과를 «주요 문제» 창에 보여 준다. trivy 는 기본으로 Dockerfile 만, `--images`(«이미지 포함»)일 때 베이스 이미지까지 검사한다. 테스트 코드는 기본으로 뺀다(`--no-tests`, «테스트 코드도 검사» 로 끔). 결과에 «테스트 코드 제외됨 · N개 파일» 이 보인다. ⚠비밀값은 저장하지 않는다.
+`security-checks` 파이프라인이 gitleaks·npm audit·osv-scanner·grype·semgrep·bandit·trivy 결과를 «주요 문제» 창에 보여 준다. syft 가 CycloneDX SBOM(`arch/<key>/<HEAD>/sbom.cdx.json`)을 쓰고(검사기 줄에 «실행됨 · 구성 요소 N»), grype 가 그 SBOM 의 CVE 를 찾는다. grype 결과는 «패키지 버전» 으로 보인다. 창 맨 위에는 실행 요약이 나온다: CVE · SAST · 비밀값 · 설정 건수, 심각도 합계, grype 취약점 DB 생성 시각, 취약 패키지마다 «X → Y 업그레이드로 N건 해결» 한 줄(수정 버전에서 기계적으로 만든다). trivy 는 기본으로 Dockerfile 만, `--images`(«이미지 포함»)일 때 베이스 이미지까지 검사한다. 테스트 코드는 기본으로 뺀다(`--no-tests`, «테스트 코드도 검사» 로 끔). 결과에 «테스트 코드 제외됨 · N개 파일» 이 보인다. ⚠비밀값은 저장하지 않는다.
 
 두 번째 단계 «위협 모델 리뷰» 는 저장소의 위협 모델(`.oss-scanner/threat_model.md` 또는 `threat_model.md`)을 기준으로 모델이 코드를 검토하고 결과를 `security-log.jsonl` 에 남긴다. 이 결과는 모델이 만든 것이라 검증되지 않았다. 위협 모델이 없으면 `templates/oss-scanner/` 를 가리키는 한 줄만 출력하고 통과한다.
 
@@ -94,6 +94,7 @@ flowchart LR
 
 `scripts/arch_checks.py --repo <저장소> --category security [--offline] [--dev]` 가 `checks-security.json` 에 규칙·`파일:줄`·패키지만 남긴다(의존성 결과는 선택 필드 `cve` 에 CVE 별칭을 최대 3개 더해 GHSA 규칙 옆에 보여 준다. 결과 키는 규칙 그대로).
 매번 Markdown 보고서 하나도 `arch/<key>/security-report-YYYYMMDD-HHMM.md` 로 쓴다(최근 10개 유지): 도구 상태·결과·트리아지·직전 검사 대비 변화, 그리고 대상이 이 Sidereus 저장소일 때 `scripts/deps_audit.py` 결과(`--dev` 면 개발 도구까지).
+`pom.xml` 이 있는 Maven 저장소는 syft 가 부모 POM·BOM 이 관리하는 버전을 Maven Central 에서 조회한다(같은 연결 확인을 거친다). 빌드 도구(Maven·Gradle)는 절대 실행하지 않는다. 오프라인이면 syft 는 그대로 돌고 «Maven 버전 확인 못 함 (오프라인)» 이 붙는다. `gradle.lockfile` 이 없는 Gradle 빌드는 «전이 의존성 확인 못 함» 이 보인다.
 ⚠비밀값·일치 문자열은 저장하지 않는다. 의존성 조회와 semgrep 레지스트리 규칙(로컬 설정이 없을 때)은 기본으로 온라인에서 돈다. 오프라인이거나 `--offline` 이면 «0건» 이 아니라 건너뜀.
 
 ### map.json v2
