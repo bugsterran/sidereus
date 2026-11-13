@@ -153,4 +153,26 @@ if [ $MODE = full ]; then
   ok tests "$sum"
 fi
 
+# 6c. unit tests again on the newest python 3.12+ on PATH (skipped when none is installed)
+# ⚠/usr/bin/python3 3.9.6 swallows errors newer builds raise (os.path.realpath on a NUL path dropped every external
+#   row on 3.12+/Windows): CI was red on every OS for two days while the 3.9-only gate stayed green.
+if [ $MODE = full ]; then
+  PYN=""; for c in python3.15 python3.14 python3.13 python3.12; do command -v "$c" >/dev/null 2>&1 && { PYN=$(command -v "$c"); break; }; done
+  if [ -z "$PYN" ]; then
+    rec tests-new 0; printf '  skip  %-10s %s\n' tests-new "no python 3.12+ on PATH"
+  else
+    PYTHONPYCACHEPREFIX="$TMP/pyc-new" PYTHON="$PYN" bash tests/run.sh >"$TMP/tests-new.log" 2>&1
+    rc=$?
+    sum=$(grep -E '^(Ran [0-9]+ tests|OK|FAILED)' "$TMP/tests-new.log" | tail -2 | tr '\n' ' ')
+    n=$(sed -n 's/^Ran \([0-9][0-9]*\) tests\{0,1\}.*/\1/p' "$TMP/tests-new.log" | tail -1)
+    nf=$(( $(sed -n 's/^FAILED (.*failures=\([0-9][0-9]*\).*/\1/p' "$TMP/tests-new.log" | tail -1) + $(sed -n 's/^FAILED (.*errors=\([0-9][0-9]*\).*/\1/p' "$TMP/tests-new.log" | tail -1) + 0 ))
+    if [ $rc -ne 0 ]; then
+      grep -E '^(FAIL|ERROR): ' "$TMP/tests-new.log" | sort -u | head -30
+      fail tests-new "$(basename "$PYN"): $sum(log $TMP/tests-new.log)"
+    fi
+    need tests-new "unit tests on $(basename "$PYN") (Ran N)" "$n"
+    ok tests-new "$(basename "$PYN"): $sum"
+  fi
+fi
+
 echo "PASS ($MODE) — $(( $(date +%s) - T0 ))s"
