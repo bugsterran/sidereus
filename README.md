@@ -93,7 +93,7 @@ Before you install:
 - On a fresh Mac the first run offers to install the Xcode Command Line Tools; accept and run again.
 - macOS is tested, Windows works with a few gaps, Linux is untested.
 - The viewer is a desktop page laid out for a 1920-pixel-wide window. It stays readable down to 900 pixels; phone screens are not supported.
-- The demo server uses about 50 MB of memory.
+- The demo server uses about 50 MB of memory. A viewer watching real sessions uses about 250 MB (the Memory column in Activity Monitor), with a brief peak near 400 MB at startup.
 - [SECURITY.md](SECURITY.md) and [CONFIG.md](docs/CONFIG.md) describe what Sidereus reads and sends (keychain token for the quota lookup, advisory lookups, keeping the Mac awake), why other accounts on a shared Mac can reach its API, and how to turn each off.
 
 [Getting started](docs/GETTING-STARTED.md) covers the rest: Windows setup, changing the port, manual hooks instead of the plugin, start at login, upgrading and uninstalling.
