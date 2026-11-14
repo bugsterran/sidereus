@@ -1053,12 +1053,94 @@ def _vp_note(r, title, aid):
 
 def _post_ids(r, title, tool, ev, bg):
     """Dispatch Post: count it for this pass (_vp_note) with its agent id (Agent/Task receipt or result, SendMessage
-    `to`); a background agent's id also goes to `ag`, so its later commit matches this stage. Never raises."""
+    `to`); a background agent's id also goes to `ag`, so its later commit matches this stage; the call ran, so its
+    pending Pre is settled (_pend_done). Never raises."""
+    _pend_done(r, ev)
     ti = ev.get("tool_input")
     aid = _bg_aid(ev) if tool in ("Agent", "Task") else ti.get("to") if isinstance(ti, dict) else None
     if bg and tool in ("Agent", "Task"):
         _ag_note(r, title, aid)
     _vp_note(r, title, aid)
+
+
+PEND_MAX = 16             # dispatch tool_use ids awaiting their Post, per run
+PEND_TAIL = 1024 * 1024   # bytes read from the end of the session transcript to find their results
+_TR_ID = re.compile(rb'"tool_use_id":\s*"([0-9A-Za-z_-]{1,64})"')
+
+
+def _pend_add(r, title, tool, ev):
+    """Remember a counted dispatch Pre in r["pend"] as [tool_use_id, stage] (ids and titles only). Never raises."""
+    try:
+        tid = ev.get("tool_use_id")
+        if tool in DISPATCH and isinstance(tid, str) and _AG_ID.fullmatch(tid):
+            pd = [x for x in (r.get("pend") if isinstance(r.get("pend"), list) else []) if isinstance(x, list)]
+            r["pend"] = (pd + [[tid, title]])[-PEND_MAX:]
+    except Exception:
+        pass
+
+
+def _pend_note(r, title, tool, ev, why):
+    """Dispatch-side Pre bookkeeping: take back refused dispatches (_pend_prune), then remember this call unless it
+    was denied (`why`)."""
+    _pend_prune(r, _TP[0] if _TP else None)
+    if not why:
+        _pend_add(r, title, tool, ev)
+
+
+def _pend_done(r, ev):
+    """Dispatch Post: the call ran, so its Pre stays counted; drop its id. Never raises."""
+    try:
+        tid = ev.get("tool_use_id")
+        if isinstance(r.get("pend"), list):
+            r["pend"] = [x for x in r["pend"] if not (isinstance(x, list) and x[:1] == [tid])]
+    except Exception:
+        pass
+
+
+def _results(tp):
+    """tool_use ids with a tool_result in the tail of transcript `tp` (ids only, never the result), or None."""
+    try:
+        with open(tp, "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - PEND_TAIL))
+            data = f.read()
+    except (OSError, TypeError, ValueError):
+        return None
+    ids = set()
+    for line in data.split(b"\n"):
+        if b'"tool_result"' in line:
+            ids.update(m.decode("ascii") for m in _TR_ID.findall(line))
+    return ids
+
+
+def _pend_prune(r, tp):
+    """Pre: take back each pending dispatch that has a result in the transcript but never got a Post — refused before
+    it ran (auto-mode classifier, permission, another hook). Its Pre raised st[stage].n and inflight; left counted, a
+    re-sent dispatch doubled the ledger's n and held back the hand-off of the real Post for LOST_S.
+    ⚠Only at Pre: a call's tool_result is written after its own Post hook, so a pending id with a result at a later Pre
+    is a refused one; a sibling still running has no result yet and is kept. Unreadable transcript = keep.
+    Never raises: this hook runs live."""
+    try:
+        pd = r.get("pend")
+        if not isinstance(pd, list) or not pd or not tp:
+            return
+        done = _results(tp)
+        if done is None:
+            return
+        keep = []
+        for x in pd:
+            if not (isinstance(x, list) and len(x) == 2 and x[0] in done):
+                keep.append(x)
+                continue
+            e = (r.get("st") or {}).get(x[1])
+            if isinstance(e, dict) and int(e.get("n") or 0) > 0:
+                e["n"] = int(e["n"]) - 1
+            fl = r.get("inflight")
+            if isinstance(fl, dict) and int(fl.get(x[1]) or 0) > 0:
+                fl[x[1]] = int(fl[x[1]]) - 1
+        r["pend"] = keep
+    except Exception:
+        pass
 
 
 # Background Agent launch receipt: "agentId: <id>" (text) or "agentId": "<id>" (structured); id only, never the body.
@@ -2434,6 +2516,7 @@ def _flow(plat, ev):
                     r["skipok"].append(x)
                     _mark(r, x, "skip", now)
                 why = _resume_note(r, now, pre(tool, cwd, name, title, st, r, now, True) and None)
+            _pend_note(r, title, tool, ev, why)
             if not why and tool == "SendMessage":
                 ti = ev.get("tool_input")
                 _ag_note(r, title, ti.get("to") if isinstance(ti, dict) else None)

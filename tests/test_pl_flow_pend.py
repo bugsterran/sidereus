@@ -1,0 +1,112 @@
+"""hooks/pl_flow.py refused-dispatch take-back: a dispatch Pre that never gets a Post (auto-mode classifier, permission
+deny) is taken back from st[stage].n and inflight at the next Pre once its tool_result is in the session transcript.
+Tmp dirs only, fixed clock."""
+import io
+import json
+import os
+import unittest
+from unittest import mock
+
+from tests import test_pl_flow as F   # ⚠not `from … import Flow`: its tests would run again here
+from tests._load import sidereus  # noqa: F401  (package bootstrap)
+
+H = F.H
+N, SID = F.N, F.SID
+_Base = type("_Base", (F.Flow,), {k: None for k in dir(F.Flow) if k.startswith("test")})   # helpers only
+
+
+class Pend(_Base):
+    def setUp(self):
+        super().setUp()
+        self.tp = os.path.join(self.tmp, "projects", "p", SID + ".jsonl")
+        os.makedirs(os.path.dirname(self.tp))
+        open(self.tp, "w").close()
+
+    def result(self, tid):
+        """The transcript line Claude Code writes for a finished or refused tool call (body is never read)."""
+        rec = {"type": "user", "message": {"role": "user", "content": [
+            {"tool_use_id": tid, "type": "tool_result", "content": "secret refusal text", "is_error": True}]}}
+        with open(self.tp, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, separators=(",", ":")) + "\n")
+
+    def ev(self, event, stage, tid, tool="Agent", tp=True):
+        s = [x for x in F.PIPE["stages"] if x["title"] == stage][0]
+        ti = {"description": "[pl:%s/%s] task" % (N, stage), "subagent_type": s["agent"]}
+        if s.get("model"):
+            ti["model"] = s["model"]
+        ev = {"hook_event_name": event, "tool_name": tool, "session_id": SID, "cwd": self.proj, "tool_input": ti,
+              "tool_use_id": tid}
+        if tp:
+            ev["transcript_path"] = self.tp
+        if event == "PostToolUse":
+            ev["tool_response"] = {"content": [{"type": "text", "text": "ok"}]}
+        out = io.StringIO()
+        with mock.patch("sys.stdin", io.StringIO(json.dumps(ev))), mock.patch("sys.stdout", out):
+            H.main()
+        v = out.getvalue()
+        return json.loads(v)["hookSpecificOutput"] if v else None
+
+    def test_refused_then_resent_counts_once_and_hands_off(self):
+        """Refused Pre + re-sent Pre + one Post → n 1, nothing left in flight, the Post hands off to the next stage."""
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_A1"))
+        self.result("toolu_A1")                       # the refusal reaches the transcript, no Post
+        self.t += 1
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_A2"))
+        o = self.ev("PostToolUse", "설계", "toolu_A2")
+        self.assertIn("PASS → next", (o or {}).get("additionalContext", ""))
+        r = self.run_()
+        self.assertEqual((r["st"]["설계"]["n"], r["inflight"]["설계"], r["pend"]), (1, 0, []))
+
+    def test_running_sibling_is_kept(self):
+        """Two parallel dispatches with no result yet: the first Post waits for the second, n stays 2."""
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_B1"))
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_B2"))
+        self.assertIsNone(self.ev("PostToolUse", "설계", "toolu_B1"))
+        r = self.run_()
+        self.assertEqual((r["st"]["설계"]["n"], r["inflight"]["설계"], r["pend"]), (2, 1, [["toolu_B2", "설계"]]))
+        o = self.ev("PostToolUse", "설계", "toolu_B2")
+        self.assertIn("PASS → next", (o or {}).get("additionalContext", ""))
+
+    def test_refused_in_earlier_stage_taken_back_at_next_stage(self):
+        """The last dispatch of a stage refused and the run moved on: the next stage's Pre corrects the old n."""
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_C1"))
+        self.ev("PostToolUse", "설계", "toolu_C1")
+        self.t += 1
+        self.assertIsNone(self.ev("PreToolUse", "구현", "toolu_C2"))
+        self.result("toolu_C2")
+        self.t += 1
+        self.assertIsNone(self.ev("PreToolUse", "구현", "toolu_C3"))
+        r = self.run_()
+        self.assertEqual((r["st"]["설계"]["n"], r["st"]["구현"]["n"], r["inflight"]["구현"]), (1, 1, 1))
+
+    def test_unreadable_transcript_keeps_counting(self):
+        """No transcript path: nothing is taken back (the count stays as before)."""
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_D1", tp=False))
+        self.t += 1
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_D2", tp=False))
+        self.assertEqual(self.run_()["st"]["설계"]["n"], 2)
+
+    def test_only_ids_stored(self):
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_E1"))
+        self.result("toolu_E1")
+        self.t += 1
+        self.ev("PreToolUse", "설계", "toolu_E2")
+        with open(os.path.join(self.marks, SID + ".runs.json"), encoding="utf-8") as f:
+            raw = f.read()
+        self.assertNotIn("secret", raw)
+        self.assertEqual(self.run_()["pend"], [["toolu_E2", "설계"]])
+
+    def test_bad_id_not_recorded(self):
+        self.assertIsNone(self.ev("PreToolUse", "설계", "../x y"))
+        self.assertNotIn("pend", self.run_())
+
+    def test_results_reads_ids_only_from_tool_result_lines(self):
+        with open(self.tp, "w", encoding="utf-8") as f:
+            f.write(json.dumps({"type": "progress", "tool_use_id": "toolu_P"}) + "\n")
+        self.result("toolu_Q")
+        self.assertEqual(H._results(self.tp), {"toolu_Q"})
+        self.assertIsNone(H._results(os.path.join(self.tmp, "missing.jsonl")))
+
+
+if __name__ == "__main__":
+    unittest.main()

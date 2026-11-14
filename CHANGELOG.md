@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: in Watch, the «Working now» list ends at the bottom of the view, so the page no longer scrolls a few pixels when banners or «hooks not connected» cards sit above it.
 - Pipelines: in Watch, «Get started» folds to one line («Show list» opens it), so the canvas keeps room for every row at 900 and 1100px.
 - Pipelines: a review stage whose agents all ended with `VERDICT: CLEAN` or `PASS` can no longer loop back to its `onFail.goto` stage; an unknown or blocking verdict still allows it (plugin 0.9.4).
+- Pipelines: a dispatch refused before it ran (for example by the auto-mode classifier) and then sent again no longer counts twice in the stage's dispatches, and no longer holds back the next-stage hand-off when the re-sent call returns (plugin 0.9.5).
 
 ## [0.19.0] - 2026-11-14
 
