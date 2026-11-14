@@ -48,6 +48,7 @@ html[data-theme=light] .plesech{color:#1f7a3f}html[data-theme=light] .plesec-lo 
 /* «Get started» checklist (48l): 4 steps in one row at 1440+, 2x2 below; a step never shrinks below its label */
 .plst{margin:8px 0;padding:8px 10px;border:1px solid #2b3445;border-radius:8px;color:#c7d0dc}
 .plsth{display:flex;align-items:center;gap:8px;margin-bottom:6px}.plsth b{font-weight:600;flex:1}
+.plstf{margin:4px 0;padding:3px 10px}.plstf .plsth{margin:0}.plstn{color:var(--nx-t2);font-weight:400;margin-left:4px}
 .plstl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 12px;margin:0;padding:0;list-style:none}
 @media (max-width:1279px){.plstl{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .plsti{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;line-height:1.4}

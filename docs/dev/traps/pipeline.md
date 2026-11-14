@@ -215,6 +215,7 @@ Moved from «Platform, config, launcher, tests and tooling».
 - ⇒ «Gates n/m» + «Evaluation» come from one helper (48 `plCovEval`) in both modes; Watch shows the panel under its head row.
 - ⚠Watch is the landing view: leaving gate evidence / Evaluation to Edit hid them from the default screen. Do not drop them from Watch again.
 - ⇒ Leaving Edit with unsaved edits keeps them in memory (`PLS.g`, • mark, «Unsaved changes — Edit to save» in Watch).
+- ⚠«Get started» (48l) in Watch is one line (`.plstf`, «Show list» opens it for the session): ★the full list took ~100px and left the canvas 220-246px at 900/1100, row 2 cut 54px under the 70% zoom floor. Do not render it full in Watch again.
 - ⚠A reload still loses unsaved edits; Watch never saves. The tour (98b) never switches the mode: in Edit its 'pl-live' step drops.
 
 ## Canvas row height follows the graph (48d `plCvNeed`/`plGwFit`, 43 `--plcvh`)

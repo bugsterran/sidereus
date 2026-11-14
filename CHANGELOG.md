@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Attention: the «Spending credits» row shows its label in Korean too, instead of a bare number.
 - Structure: the overview («Export HTML › Simple») fits a 900px window without scrolling the figure sideways; existing overviews pick this up when redrawn.
 - Pipelines: in Watch, the «Working now» list ends at the bottom of the view, so the page no longer scrolls a few pixels when banners or «hooks not connected» cards sit above it.
+- Pipelines: in Watch, «Get started» folds to one line («Show list» opens it), so the canvas keeps room for every row at 900 and 1100px.
 
 ## [0.19.0] - 2026-11-14
 

@@ -16,7 +16,8 @@ function lsGet(k, d){ return k in LS ? LS[k] : d; } function lsSet(k, v){ LS[k] 
 function plPaint(){} function plLoadAll(){} function diffHtml(s){ return esc(s); }
 function getJSON(u){ GETS.push(u); return DX_REPLY; }
 const PLST_KEY = 'sidereus.plStartDone';
-let PLST_DX = null, PLST_PV = null;
+let PLST_DX = null, PLST_PV = null, PLST_OPEN = false, WATCH = false;
+function plWatchOn(){ return WATCH; }
 let PLS = { proj: '', projs: { ok: true, projects: [] }, data: {} };
 """
 
@@ -47,6 +48,22 @@ class StartChecklist(unittest.TestCase):
         self.assertEqual(h.count("<li"), 4)
         self.assertNotIn("plsti on", h)
         self.assertEqual(ls, {})
+
+    def test_watch_folds_to_one_line(self):
+        # Watch sizes the canvas to the room left; the full list cut row 2 cards at 900/1100.
+        r = _run("PLST_DX = {on: true}; WATCH = true; const f = plStartList(); PLST_OPEN = true; const o = plStartList();"
+                 " WATCH = false; PLST_OPEN = false; const e = plStartList(); console.log(JSON.stringify([f, o, e]));")
+        f, o, e = r
+        self.assertIn("plstf", f)
+        self.assertIn("1/4", f)
+        self.assertIn("data-plstopen", f)
+        self.assertIn("data-plsthide", f)
+        self.assertEqual(f.count("<li"), 0)
+        self.assertNotIn("plstf", o)
+        self.assertEqual(o.count("<li"), 4)
+        self.assertIn("Hide list", o)
+        self.assertEqual(e.count("<li"), 4)   # Edit mode keeps the full list, no fold button
+        self.assertNotIn("data-plstopen", e)
 
     def test_steps_from_data(self):
         r = _run("const pj = {ok: true, projects: [{path: '/a', n: 1}, {path: '/s', n: 3, self_only: true}]};"

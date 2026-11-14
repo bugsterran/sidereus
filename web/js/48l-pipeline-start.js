@@ -3,6 +3,7 @@
 // ⚠Unknown is not «not done»: a step still loading or an unexpected reply shape hides the list instead of showing a false gap.
 const PLST_KEY = 'sidereus.plStartDone';
 let PLST_DX = null;   // null = not asked · 'busy' · {on: true|false|null}; one lazy GET, never polled
+let PLST_OPEN = false;   // Watch: list folded to one line until «Show list» (session only)
 let PLST_PV = null;   // «Start with recommended setup» preview {proj, policy, busy, diff, files, cmd (null until the first reply), det, err, seq}
 // Pure: Sidereus hooks or plugin seen in a GET /api/diag reply; null = reply without either key (not a diag body).
 function plStartDxOn(d){
@@ -43,12 +44,17 @@ function plStartList(){
   if(st.every(s => s.done === true)){ lsSet(PLST_KEY, '1'); return ''; }
   if(st[2].done && st[3].done === null && typeof plLoadAll === 'function') plLoadAll();   // red counts live in each project's list
   if(st.some(s => s.done === null)) return '';
+  // ⚠Watch sizes the canvas to the room left below this list; the full list (~100px) pushed row 2 under the 70% zoom floor at 900/1100.
+  const wt = typeof plWatchOn === 'function' && plWatchOn(), n = st.filter(s => s.done).length;
+  const hd = '<section class="plst' + (wt && !PLST_OPEN ? ' plstf' : '') + '" aria-label="' + esc(T('Get started')) + '"><div class=plsth><b>' + esc(T('Get started')) + ' <span class=plstn>' + n + '/' + st.length + '</span></b>'
+    + (wt ? '<button type=button class=wkrgb data-plstopen aria-expanded=' + PLST_OPEN + '>' + esc(T(PLST_OPEN ? 'Hide list' : 'Show list')) + '</button>' : '')
+    + '<button type=button class=wkrgb data-plsthide>' + esc(T('Hide')) + '</button></div>';
+  if(wt && !PLST_OPEN) return hd + '</section>';
   const d = PLS.data[PLS.proj], cur = (((PLS.projs || {}).projects) || []).find(x => x.path === PLS.proj);
   const empty = !!(PLS.proj && d && d.ok && !(d.pipelines || []).length && !(cur && cur.self_only));   // starter only on a real project with no pipelines
   const li = st.map((s, i) => '<li class="plsti' + (s.done ? ' on' : '') + '" data-plst="' + s.k + '"><span class=plstm aria-hidden=true>' + (s.done ? '✓' : (i + 1)) + '</span><span class=plstt>' + esc(T(s.en)) + '</span>'
     + (s.k === 'pl' && empty ? '<button type=button class="wkrgb plsv" data-plstgo' + (PLST_PV && PLST_PV.busy ? ' disabled' : '') + '>' + esc(T('Start with recommended setup')) + '</button>' : '') + '</li>').join('');
-  return '<section class=plst aria-label="' + esc(T('Get started')) + '"><div class=plsth><b>' + esc(T('Get started')) + '</b><button type=button class=wkrgb data-plsthide>' + esc(T('Hide')) + '</button></div>'
-    + '<ol class=plstl>' + li + '</ol>' + (empty ? plStartPrev(PLST_PV, PLS.proj) : '') + '</section>';
+  return hd + '<ol class=plstl>' + li + '</ol>' + (empty ? plStartPrev(PLST_PV, PLS.proj) : '') + '</section>';
 }
 // Pure: server dry diff + strict-mode box (unticked by default) + test-command input (gate); nothing is written before «Confirm».
 function plStartPrev(V, proj){
@@ -89,6 +95,7 @@ async function plStartFetch(write){
 document.addEventListener('click', e => {
   const t = e.target && e.target.closest ? e.target : null;
   if(!t || !t.closest('.plst')) return;
+  if(t.closest('[data-plstopen]')){ PLST_OPEN = !PLST_OPEN; plPaint(); return; }
   if(t.closest('[data-plsthide]')){ lsSet(PLST_KEY, '1'); PLST_PV = null; plPaint(); return; }
   if(t.closest('[data-plstgo]')){ if(PLST_PV && PLST_PV.proj === PLS.proj){ if(!PLST_PV.busy){ PLST_PV = null; plPaint(); } return; }   // second press closes the preview
     PLST_PV = { proj: PLS.proj, policy: false, busy: false, diff: null, files: [], cmd: null, det: '', err: '' }; plStartFetch(false); return; }
