@@ -7,6 +7,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - **`os.path.realpath` raises on a NUL path on newer builds only** (`sidereus/ident.py` `mbox_pi` · `mbox_codex`).
   - Cause: 3.12+, Windows and newer 3.9 patches raise ValueError; stock macOS 3.9.6 swallows it in `islink`. A hook cwd with NUL raised in `ext_rows` and its loop-wide except dropped every external row (CI red on all OS, green locally).
   - ⇒ Return «no identity» for a cwd holding `"\0"` before realpath (as `plat_pi.sid_path` does); `tests/test_ident_nul_cwd.py` forces a raising realpath so it fails on any python.
+  - Same cwd also 500'd /api/pipelines and /api/harness/evidence (`pipeline_projects.project_list`) and emptied `review` for every row (`review._roots`) ⇒ both skip a `"\0"` path.
   - ⚠A green local run on /usr/bin/python3 proves nothing for NUL paths — test with a patched realpath or `PYTHON=python3.12`.
 
 - **A HOME override alone does not isolate external CLI hook paths** (`sidereus/ident.py` `_real_home`, `scripts/sweep_world.py`).

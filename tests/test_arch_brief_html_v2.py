@@ -114,10 +114,17 @@ class RenderV2Test(unittest.TestCase):
         self.assertEqual(leg.count("<li>② Use 1 — what it does</li><li>③ Use 2 — what it does</li>"), 3)
         self.assertIn("<li>③ Use 2 — what it does · ← Svc</li>", leg)
         self.assertIn("td.nm { font-weight: 600; width: 200px; white-space: nowrap; }", H2.CSS)
-        self.assertIn("min-width: 900px", H2.CSS)
+        self.assertIn("min-width: 840px", H2.CSS)
         self.assertIn(".fig { border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }", H2.CSS)
         for bad in ("route", "sequence"):
             self.assertNotIn(bad, h.lower())
+
+    def test_svg_min_width_fits_900(self):
+        # .fig inner width at a 900px viewport is 866 (main padding 16+16, border 1+1);
+        # a larger min-width scrolled the figure sideways at a supported width.
+        h = H2.render(brief())
+        rule = re.search(r"\nsvg\s*\{([^}]*)\}", h).group(1)
+        self.assertLessEqual(int(re.search(r"min-width:\s*(\d+)px", rule).group(1)), 866)
 
     def test_r5_max_brief_fits_and_labels_do_not_overlap(self):
         b = big()

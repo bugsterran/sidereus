@@ -13,7 +13,8 @@ AL = sidereus("arch_brief_layout")
 AH2 = sidereus("arch_brief_html_v2")
 AB = sidereus("arch_brief")
 # ⚠sha of AH2.render(brief()) before `layout` existed: the automatic figure must not move a byte.
-AUTO_SHA = "9270eb56f94c06ec2d0273dc34834f8133dd809e0723247274a975fe8167cce8"
+# Re-pinned when the svg min-width went 900px -> 840px (CSS only; figure bytes unchanged).
+AUTO_SHA = "1b7d5c7a068c8bcbd343aaa52369c72f29e553c97d64a1156a51c4efa93f3fac"
 
 
 def layout():

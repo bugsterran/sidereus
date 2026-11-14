@@ -145,6 +145,8 @@ function attnWhy(g){
     if(LANG !== 'en' && bt !== null) return T('waiting for approval');
     if(LANG !== 'en' && w === 'waiting for approval') return T(w);
   }
+  // ⚠credit why is a bare seconds count (no text), so every language takes the label keyed on k.
+  if(g.k === 'credit') return T('Spending credits');
   if(LANG !== 'en') return w;
   const n = (w.match(/(\d+)/) || [])[1] || '';
   switch(g.k){
@@ -165,7 +167,6 @@ function attnWhy(g){
     case 'bglong': { const m = w.match(/(\d+)\D+(\d+)/), q = w.match(/무출력 (\d+)/);
       return m ? 'Long background ' + m[1] + ' · longest ' + U(m[2], 'm') + (q ? ' · ' + q[1] + ' idle' : '') : 'Long background'; }
     case 'gone': return w === '끊김?' ? 'Disconnected?' : 'Disconnected';
-    case 'credit': return 'Spending credits';   // keyed on k only; the Korean why is never parsed
     case 'conflict': { const m = w.match(/파일 (\d+) · (세션|서브에이전트|에이전트) (.*)$/);
       return 'Conflict risk' + (m ? ' · ' + PL(m[1], 'file') + ' · ' + (m[2] === '세션' ? 'sessions ' : 'subagents ') + m[3].replace(/(^|, )메인(?=,|$)/g, '$1main') : ''); }
   }

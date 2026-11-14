@@ -37,9 +37,9 @@ h1 { font-size: 24px; margin: 0 0 4px; }
 h2 { font-size: 17px; margin: 18px 0 8px; }
 .lead { color: var(--muted); margin: 0 0 12px; font-size: 15px; }
 .lead small { font-size: 12px; margin-left: 8px; }
-/* ⚠min-width keeps text legible: below it the figure scrolls inside .fig, never the page */
 .fig { border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
-svg { display: block; width: 100%; min-width: 900px; max-height: 60vh; height: auto; }
+/* min-width keeps box text legible on phones (scrolls inside .fig); it must stay below the .fig inner width at a 900px viewport (900 - 2*16 padding - 2 border = 866) */
+svg { display: block; width: 100%; min-width: 840px; max-height: 60vh; height: auto; }
 svg text { font-family: inherit; fill: var(--text); }
 .t-title { font-size: 14px; font-weight: 700; }
 .t-sys { font-size: 15px; font-weight: 700; fill: var(--muted); }

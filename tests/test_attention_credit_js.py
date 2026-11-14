@@ -23,7 +23,8 @@ def const_src(name):
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class AttentionCreditJs(unittest.TestCase):
     def why(self, lang, w):
-        src = ("let LANG = " + json.dumps(lang) + "; const T = s => s; const UNIT_KO = {m: '\\ubd84'};\n"
+        src = ("let LANG = " + json.dumps(lang) + "; const UNIT_KO = {m: '\\ubd84'};\n"
+               "const T = s => LANG === 'en' ? s : ({'Spending credits': '\\ud06c\\ub808\\ub527 \\uc0ac\\uc6a9 \\uc911'}[s] || s);\n"
                + "\n".join(js_fn(n) for n in ("U", "PL", "attnWhy")) + "\n"
                "process.stdout.write(JSON.stringify(attnWhy({k: 'credit', why: " + json.dumps(w) + "})));")
         return node(src)
@@ -34,9 +35,9 @@ class AttentionCreditJs(unittest.TestCase):
         self.assertIn("'Spending credits': '크레딧 사용 중'", js_all())
 
     def test_R3_why(self):
-        w = "크레딧 사용 중 · 12K"
-        self.assertEqual(self.why("en", w), "Spending credits")
-        self.assertEqual(self.why("ko", w), w)
+        # server why is a bare seconds count (attention.py credit signal); both languages show the label
+        self.assertEqual(self.why("en", "251"), "Spending credits")
+        self.assertEqual(self.why("ko", "251"), "크레딧 사용 중")
 
 
 if __name__ == "__main__":

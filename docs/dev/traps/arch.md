@@ -516,6 +516,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `svg { min-width: 900px }` is wider than the `.fig` inner width at a 900px viewport (900 - 32 padding - 2 border = 866), so the figure scrolled inside its box.
 - ⇒ `min-width: 840px` — still stops the 1200-wide viewBox shrinking to unreadable text on phones.
 - ⚠Keep min-width at or below 866 while main padding and the 900px floor stay; `tests/test_arch_brief_html.py` checks it. Stored briefs keep the old CSS until regenerated.
+- Covers v1 and v2: `sidereus/arch_brief_html_v2.py` had the same `min-width: 900px` (★900 width: `.fig` scrollWidth 900 > clientWidth 866) ⇒ 840px, checked by `tests/test_arch_brief_html_v2.py`.
 
 ## Overview bands and arrows said nothing (`sidereus/arch_brief.py` `check`, `sidereus/arch_brief_html.py` `figure`)
 - Cause: the overview's language and naming were left to the model; one band held one same-named box and 7 of 24 arrows repeated "auth and mail".

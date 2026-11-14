@@ -39,8 +39,9 @@ def project_list():
     out = set(known_projects()) | set(_remembered())
     seen = set()
     for k, r in _allowed_cwds().items():   # never raises: falls back to its last good value
-        out |= set(x for x in (r.get("repos") or []) if isinstance(x, str))
-        seen |= set(x for x in [k, r.get("cwd"), r.get("root")] if isinstance(x, str))
+        # ⚠a NUL path makes realpath raise on newer builds and would 500 every project route
+        out |= set(x for x in (r.get("repos") or []) if isinstance(x, str) and "\0" not in x)
+        seen |= set(x for x in [k, r.get("cwd"), r.get("root")] if isinstance(x, str) and "\0" not in x)
     self_only = ""
     if config.IS_CLONE:   # installed package: not a project
         if os.path.realpath(CODE_DIR) not in set(os.path.realpath(p) for p in out | seen):

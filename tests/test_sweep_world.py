@@ -66,6 +66,9 @@ class SweepWorld(unittest.TestCase):
         self.assertTrue(self.lines[-1].endswith(" start --port 8899"), self.lines[-1])
         self.assertIn("sidereus_cli.py", self.lines[-1])   # quoted on Windows: ...sidereus_cli.py' start
 
+    def test_env_disables_quota_lookup(self):
+        self.assertIn("export SIDEREUS_QUOTA_LOOKUP=0", self.lines)   # sandbox must not read the keychain or call the usage API
+
     def test_refuses_non_empty_and_tool_dirs(self):
         with self.assertRaises(ValueError):
             sw.build(self.out, 8899, NOW)

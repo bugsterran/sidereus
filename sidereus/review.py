@@ -47,7 +47,7 @@ def _roots(r):
     """Git roots a row may review: its cwd's root plus the repos it touched (raw and realpath)."""
     out = set()
     for p in [r.get("cwd") or ""] + list(r.get("repos") or []):
-        if not isinstance(p, str) or not p:
+        if not isinstance(p, str) or not p or "\0" in p:   # ⚠NUL: realpath raises on newer builds, emptying review for all rows
             continue
         root = _git_root(p) or p
         out.add(root)

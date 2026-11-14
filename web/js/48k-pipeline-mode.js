@@ -219,6 +219,12 @@ function plWSnap(g, oc, s, m){
   plWApply(g, oc, t);
   return t;
 }
+// Side list max-height from the measured feed bottom (fb) minus its padding (pb) and the list top; 0 = keep the CSS fallback.
+// ⚠The CSS calc(100vh - 110px) guesses the header height; banners and «hooks not connected» cards above push the list past the feed bottom (page scroll).
+function plWListMax(fb, pb, top){
+  const v = Math.floor(fb - pb - top) - 2;
+  return Number.isFinite(v) ? Math.max(PLW_MIN[2], v) : 0;
+}
 // needAt(R) = canvas row the graph needs when the canvas row may grow to R (48d plWatchLay), or 0.
 function plWatchFit(g, fd, h, needAt){
   if(PLWDRAG) return;
@@ -229,6 +235,7 @@ function plWatchFit(g, fd, h, needAt){
   if(nl) nl.style.minHeight = '';   // ⚠a kept card height from the last fit would count as overflow below
   // Sizes come from shares + the graph's need (layout and card sizes only, never live content), so polls never move the canvas.
   const F = plWShares(), end = oc || g, pb = parseFloat(getComputedStyle(fd).paddingBottom) || 0;
+  if(nl){ const mx = plWListMax(fd.getBoundingClientRect().bottom, pb, nl.getBoundingClientRect().top); nl.style.maxHeight = mx ? mx + 'px' : ''; }   // before the overflow check below
   let A = h - 2 * PLW_GRIP;
   let s = plWSizes(A, F, need(A));
   plWApply(g, oc, s);
