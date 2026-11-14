@@ -30,11 +30,13 @@ function tlPlRun(g, L){
 }
 // Is the work session x waits on part of run r? ⚠An unended run is kept 6 h (pl_runs PLR_KEEP_S): an unrelated command started
 // hours later must not turn its «Aborted» into a wait. Timed work (sub/bg «min») counts when it started within TLPL_STALL_S of the
-// run's last touch, so a long build launched between stages stays tied; untimed work (workflow) only while the run is that recent.
+// run's last touch, so a long build launched between stages stays tied; any work counts while the run itself is that recent.
+// ⚠Recency is OR-ed in, not replaced: a build started before a stage longer than TLPL_STALL_S is far from t1 but still the run's.
 function tlPlWaitTied(x, r, now){
-  const t1 = (r && r.t1) || 0, timed = ((x && x.sub) || []).concat((x && x.bgs) || []).filter(v => v && typeof v.min === 'number');
-  if(timed.length && !(typeof wfRunning === 'function' && wfRunning(x))) return timed.some(v => Math.abs(now - v.min * 60 - t1) <= TLPL_STALL_S);
-  return now - t1 <= TLPL_STALL_S;
+  const t1 = (r && r.t1) || 0;
+  if(now - t1 <= TLPL_STALL_S) return true;
+  const timed = ((x && x.sub) || []).concat((x && x.bgs) || []).filter(v => v && typeof v.min === 'number');
+  return timed.length > 0 && !(typeof wfRunning === 'function' && wfRunning(x)) && timed.some(v => Math.abs(now - v.min * 60 - t1) <= TLPL_STALL_S);
 }
 // One run -> {sid, pr, proj, name, titles, lt, fin, now (s)}; fin = not live (its stage left at «run» shows the closed outcome).
 function tlPlOne(o, fin, g, L){

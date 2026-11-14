@@ -195,6 +195,17 @@ console.log(JSON.stringify({ order: tlPlDrop(sts), nn: segs.filter(s => s.c.has(
         # Untimed work (no «min») falls back to how recently the run was touched.
         h = _run([{"sid": "s1", "state": "wait", "bgs": [{"id": "b1"}], "plrun": [old]}], "pl.runs.map(r => r.fin)", extra=wl)
         self.assertEqual(h, [True])
+        # Timed path alone: run touched 1900 s ago (outside the recency window), build started at 1140, 40 s after t1 -> tied.
+        h = _run([{"sid": "s1", "state": "wait", "bgs": [{"lab": "b", "min": 31}], "plrun": [old]}], "pl.runs.map(r => r.fin)", extra=wl)
+        self.assertEqual(h, [False])
+
+    def test_wait_keeps_recent_run_tied_to_build_started_before_a_long_stage(self):
+        # L.now = 3000. A build started at 0 (min 50), then a 48-min stage ended at t1 = 2900: the build is 2900 s from t1,
+        # outside TLPL_STALL_S, but the run was touched 100 s ago, so the turn waiting on the build keeps the run waiting.
+        wl = js_fn("wfRunning") + "\n" + js_fn("waitOnLabel")
+        rec = _pr("rec", 2900, 0, {"수정": {"o": "done", "t0": 20, "t1": 2900}, "검증": {"o": "back", "t0": 2900, "t1": 2900}})
+        h = _run([{"sid": "s1", "state": "wait", "bgs": [{"lab": "b", "min": 50}], "plrun": [rec]}], "pl.runs.map(r => r.fin)", extra=wl)
+        self.assertEqual(h, [False])
 
     def test_end_label_en(self):
         src = "\n".join([js_fn("tlPlEnd"), "const LANG = 'en'; const T = s => s; const KE = (k, e) => e;",
