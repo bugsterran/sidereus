@@ -79,6 +79,21 @@ class Pend(_Base):
         r = self.run_()
         self.assertEqual((r["st"]["설계"]["n"], r["st"]["구현"]["n"], r["inflight"]["구현"]), (1, 1, 1))
 
+    def test_refused_last_dispatch_taken_back_in_ledger_row(self):
+        """A run closed by a new request right after a refused dispatch: its ledger row does not count the refusal."""
+        import glob
+        os.makedirs(os.path.join(self.proj, ".git"))   # the ledger is written for git repos only
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_F1"))
+        self.ev("PostToolUse", "설계", "toolu_F1")
+        self.t += 1
+        self.assertIsNone(self.ev("PreToolUse", "구현", "toolu_F2"))
+        self.result("toolu_F2")                       # refused; no re-send, the next tag is a new request
+        self.t += 1
+        self.ev("PreToolUse", "설계", "toolu_F3")
+        rows = [json.loads(x) for p in glob.glob(os.path.join(self.tmp, "eval", "*", "runs.jsonl"))
+                for x in open(p, encoding="utf-8")]
+        self.assertEqual([(x["ss"]["설계"]["n"], x["ss"]["구현"]["n"]) for x in rows], [(1, 0)])
+
     def test_unreadable_transcript_keeps_counting(self):
         """No transcript path: nothing is taken back (the count stays as before)."""
         self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_D1", tp=False))

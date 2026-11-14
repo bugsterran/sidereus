@@ -500,5 +500,5 @@ Moved from «Platform, config, launcher, tests and tooling».
 
 ## Refused dispatch left in the stage count (`hooks/pl_flow.py` `_pend_prune`)
 - Cause: `pre()` raises `st[stage].n` and `inflight` for every dispatch Pre; a call refused before it ran (auto-mode classifier, permission, another hook) gets no Post, so the ledger counted the refused try and its re-send (★11-14 live: n=4 for 2 reviewers), and the real Post kept `inflight` at 1 and withheld «PASS → next» for up to LOST_S.
-- Fix: a dispatch Pre records `[tool_use_id, stage]` in `r["pend"]`; its Post removes it. The next Pre reads the session transcript tail (1 MB) and takes back every pending id that already has a `tool_result` line (n and inflight minus 1).
+- Fix: a dispatch Pre records `[tool_use_id, stage]` in `r["pend"]`; its Post removes it. The next Pre reads the session transcript tail (1 MB) and takes back every pending id that already has a `tool_result` line (n and inflight minus 1). `_ledger_add` prunes once more, so a run closed right after a refused last dispatch writes the corrected n.
 - ⚠Prune only at Pre, never at Post: a call's result is written after its own Post hook, so at Post a sibling could look refused. No transcript, no id or id not in the tail = keep the count. Store ids and titles only, never the result text. `tests/test_pl_flow_pend.py`.

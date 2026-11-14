@@ -555,6 +555,8 @@ def _ledger_add(r, name, now):
     """Append ended run `r` as {name, t0, end, lb, deny, dc, h0, h1, ss}. ⚠Titles, counts and hashes only, never tool
     input; only for a git repo (the result layer needs one); fail-silent — this hook runs live."""
     try:
+        if isinstance(r, dict):   # a refused last dispatch has no later Pre of this run to take it back
+            _pend_prune(r, _TP[0] if _TP else None)
         proj = (r.get("repo") or r.get("proj")) if isinstance(r, dict) else None   # repo = builtin run's filing dir
         if not (isinstance(proj, str) and os.path.isabs(proj) and isinstance(name, str) and _PLNAME.fullmatch(name)):
             return
@@ -1118,7 +1120,8 @@ def _pend_prune(r, tp):
     it ran (auto-mode classifier, permission, another hook). Its Pre raised st[stage].n and inflight; left counted, a
     re-sent dispatch doubled the ledger's n and held back the hand-off of the real Post for LOST_S.
     ⚠Only at Pre: a call's tool_result is written after its own Post hook, so a pending id with a result at a later Pre
-    is a refused one; a sibling still running has no result yet and is kept. Unreadable transcript = keep.
+    is a refused one; a sibling still running has no result yet and is kept. Also when a run ends (_ledger_add): the
+    boundary is a later Pre, and post() ends a run only once nothing of the stage is in flight. Unreadable = keep.
     Never raises: this hook runs live."""
     try:
         pd = r.get("pend")
