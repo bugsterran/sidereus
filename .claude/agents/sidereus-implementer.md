@@ -42,6 +42,7 @@ model: opus
 - Poll rebuilds keep UI state: scroll, focus, selection, tooltip and the current project survive a re-render; a late in-flight response for an old selection is discarded.
 - Symlinks: refuse only what the rule refuses (a symlinked target file); a symlinked parent or repo root is resolved, not silently replaced or 404'd.
 - Shell text: parsing a command line handles newlines, `&&`/`;`, heredoc bodies and `cd`.
+- Every CLI path: a change to session rows, tags, chips or parent links reaches every adapter that feeds those rows (Claude Code, pi, Codex, Gemini, Cursor, Copilot) — hooked and rollout rows, subagent parent sid, stage/skip tag parsing. A branch that only handles Claude Code is a defect unless the spec says so. ★11-09..11-13: pi left out in 3 of 16 loop-back runs, the largest class this list did not name.
 
 ## Report (≤8 lines)
 ```
