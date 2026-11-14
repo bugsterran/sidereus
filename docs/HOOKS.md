@@ -135,6 +135,9 @@ loop rounds, times; never descriptions or output). ⚠Never `<session_id>.json`,
 - Pre: a tag opens a run (none open, last one ended, or idle over 6 h). A jump forward past unrun stages
   (`onlyOnJump` stages excepted) is denied once per skipped stage; dispatching again passes. Earlier stages always pass;
   tagging the current stage's `onFail.goto` counts a loop round and returns to it (or `onFail.then`).
+- Pre: that loop-back is denied when every agent of the current stage's pass ended its report with `VERDICT: CLEAN` or
+  `VERDICT: PASS` (read from the end of each subagent transcript; only agent ids and the count of returned dispatches are stored);
+  a `BLOCKING`/`FAIL`, a missing or unreadable verdict, or an agent still running leaves it allowed.
 - Pre: a tagged Agent/Task must pass the stage's agent as `subagent_type` and its model as `model`, or it is denied
   (when the stage names a model, omitting `model` is a mismatch; `inherit`, a `main` stage and a stage agent that is not installed, where
   `general-purpose` is accepted, are exempt). A stage `effort` is checked the same way against the call's `effort`.

@@ -20,7 +20,7 @@ MARKET = os.path.join(ROOT, ".claude-plugin", "marketplace.json")
 
 NAME = "sidereus"   # plugin + marketplace name (public)
 MCP_NAME = "sidereus"   # tools are mcp__sidereus__* in configs and hooks
-VERSION = "0.9.3"
+VERSION = "0.9.4"
 AUTHOR = "bugsterran"
 DESC = ("Sidereus for Claude Code: mailbox invites and stop-hook relay, pipeline brief, shared-file edit notice, "
         "pipeline stage marks and hand-offs, and the Sidereus MCP server (one write tool: To-do labels). "

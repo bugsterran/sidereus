@@ -1012,8 +1012,19 @@ AG_IDS_MAX = 8   # continued-agent ids kept per stage
 _AG_ID = re.compile(r"[0-9A-Za-z_-]{1,64}")
 
 
+def _vp(r, title):
+    """This pass's verdict record of `title`: r["vp"][title] = {a: agent ids, n: dispatches} (ids and a count only).
+    ⚠Kept out of r["st"]: _mark rebuilds those dicts and their key set is the stage-outcome schema."""
+    vp = r["vp"] if isinstance(r.get("vp"), dict) else {}
+    r["vp"] = vp
+    p = vp.get(title)
+    if not isinstance(p, dict):
+        p = vp[title] = {}
+    return p
+
+
 def _ag_note(r, title, to):
-    """Record a SendMessage target id under `title` (an agent dispatched for another stage, continued into this one);
+    """Record a SendMessage target or background agent id under `title` in `ag` (commit matching);
     ⚠ids only — never the message. Never raises: this hook runs live."""
     try:
         e = r["st"].get(title)
@@ -1023,6 +1034,31 @@ def _ag_note(r, title, to):
         e["ag"] = ids[-AG_IDS_MAX:]
     except Exception:
         pass
+
+
+def _vp_note(r, title, aid):
+    """Count one returned dispatch of `title`'s pass in r["vp"] (n += 1) and record its agent id when known.
+    ⚠Counted at Post, never Pre: a refused or cancelled dispatch (permission deny, classifier re-send) runs Pre but
+    gets no Post, and counting it left n above the ids for good (unknown, so a passing review still looped back).
+    A Post without an id still raises n (unknown = allow). Never raises: this hook runs live."""
+    try:
+        p = _vp(r, title)
+        p["n"] = int(p.get("n") or 0) + 1
+        if isinstance(aid, str) and _AG_ID.fullmatch(aid):
+            pa = [x for x in (p.get("a") if isinstance(p.get("a"), list) else []) if x != aid] + [aid]
+            p["a"] = pa[-AG_IDS_MAX:]   # ⚠capped: more dispatches than ids reads as unknown, never as a pass
+    except Exception:
+        pass
+
+
+def _post_ids(r, title, tool, ev, bg):
+    """Dispatch Post: count it for this pass (_vp_note) with its agent id (Agent/Task receipt or result, SendMessage
+    `to`); a background agent's id also goes to `ag`, so its later commit matches this stage. Never raises."""
+    ti = ev.get("tool_input")
+    aid = _bg_aid(ev) if tool in ("Agent", "Task") else ti.get("to") if isinstance(ti, dict) else None
+    if bg and tool in ("Agent", "Task"):
+        _ag_note(r, title, aid)
+    _vp_note(r, title, aid)
 
 
 # Background Agent launch receipt: "agentId: <id>" (text) or "agentId": "<id>" (structured); id only, never the body.
@@ -1044,6 +1080,72 @@ def _bg_aid(ev):
         return m.group(1) if m and _AG_ID.fullmatch(m.group(1)) else None
     except Exception:
         return None
+
+
+# Review verdict line of the reviewer / review-verifier report formats (.claude/agents/sidereus-review*.md).
+VERDICT_RE = re.compile(r"^VERDICT:\s*(CLEAN|BLOCKING|PASS|FAIL)\b", re.M)
+VERDICT_OK = ("CLEAN", "PASS")
+VERDICT_TAIL = 256 * 1024   # bytes read from the end of one subagent transcript
+VERDICT_DENY = ("%s: every agent returned a passing verdict; loop back only on a confirmed Important — fix minors "
+                "with quick-fix after the run closes.")
+
+
+def _agent_verdict(fp):
+    """Last «VERDICT: <word>» of the final report in subagent transcript `fp`, or None (cut, still running, a prompt
+    not answered yet, no verdict line). ⚠Returns the word only; the report text is never kept. Raises OSError."""
+    with open(fp, "rb") as f:
+        f.seek(0, 2)
+        size = f.tell()
+        f.seek(max(0, size - VERDICT_TAIL))
+        lines = f.read().split(b"\n")
+    for raw in reversed(lines[1:] if size > VERDICT_TAIL else lines):   # ⚠the first tail line is cut mid-record
+        try:
+            e = json.loads(raw)
+        except ValueError:
+            continue
+        m = e.get("message") if isinstance(e, dict) else None
+        c = m.get("content") if isinstance(m, dict) else None
+        if e.get("type") == "user":
+            if isinstance(c, list) and any(isinstance(b, dict) and b.get("type") == "tool_result" for b in c):
+                continue
+            return None   # a SendMessage continuation not answered yet: the older report is stale
+        if e.get("type") != "assistant":
+            continue   # ⚠attachment / api-request-blob records also carry assistant-shaped messages
+        bs = [b for b in c if isinstance(b, dict)] if isinstance(c, list) else []
+        hb = [b.get("input") for b in bs if b.get("type") == "tool_use" and b.get("name") == "SubagentHandback"]
+        if hb:
+            txt = hb[-1].get("message") if isinstance(hb[-1], dict) else None
+        elif any(b.get("type") == "tool_use" for b in bs):
+            return None   # last call is another tool: still running
+        else:
+            txt = c if isinstance(c, str) else "\n".join(
+                b["text"] for b in bs if b.get("type") == "text" and isinstance(b.get("text"), str))
+        found = VERDICT_RE.findall(txt) if isinstance(txt, str) else []
+        return found[-1] if found else None
+    return None
+
+
+def _verdict_pass(r, title):
+    """True only when every agent dispatched in the current pass of `title` (r["vp"][title]: n dispatches, a ids)
+    ended with VERDICT: CLEAN or PASS. ⚠Unknown is never a pass: no transcript, an id missing, still running or no
+    verdict line = False (the loop-back stays allowed). Pure read; never raises — this hook runs live."""
+    try:
+        e = r["vp"].get(title) if isinstance(r.get("vp"), dict) else None
+        tp = _TP[0] if _TP else None
+        if not isinstance(e, dict) or not tp:
+            return False
+        pa, pn = e.get("a"), e.get("n")
+        if not isinstance(pa, list) or not isinstance(pn, int) or pn < 1 or len(set(pa)) != pn:
+            return False
+        d = os.path.join(tp[:-len(".jsonl")], "subagents")   # same layout as _stage_tokens
+        for aid in pa:
+            if not (isinstance(aid, str) and _AG_ID.fullmatch(aid)):
+                return False
+            if _agent_verdict(os.path.join(d, "agent-%s.jsonl" % aid)) not in VERDICT_OK:
+                return False
+        return True
+    except Exception:
+        return False
 
 
 def _cm_stage(r, name, ev):
@@ -1121,8 +1223,10 @@ def pre(tool, cwd, name, title, st, r, now, shell=False, sh_decl=False):
     t = _idx(st, title)
     c = _idx(st, r["cur"])
     if 0 <= t < c:
-        _reopen(st, r, t)
         f = _onfail(st[c])
+        if f and f["goto"] == title and _verdict_pass(r, r["cur"]):
+            return VERDICT_DENY % r["cur"]   # R1: before any state change; an unknown verdict never gets here (R2)
+        _reopen(st, r, t)
         if f and f["goto"] == title:
             r["loops"][r["cur"]] = int(r["loops"].get(r["cur"]) or 0) + 1
             _lb(r, r["cur"], title, now)
@@ -1138,8 +1242,14 @@ def pre(tool, cwd, name, title, st, r, now, shell=False, sh_decl=False):
     count = tool in DISPATCH or shell
     old = r["st"].get(title)
     again = isinstance(old, dict) and (old.get("s") in ("done", "back", "skip", "fail") or title != r["cur"])
+    # R4: a new round (entered from another stage, or after back/fail/skip) decides on its own verdicts only.
+    # ⚠Not on a re-dispatch of a finished current stage (sequential reviewers): dropping the first one's verdict
+    #   could turn a BLOCKING round into a pass; keeping it can only keep the loop-back allowed.
+    newround = isinstance(old, dict) and (old.get("s") in ("back", "skip", "fail") or title != r["cur"])
     if count or title != r["cur"] or title not in r["st"]:
         _mark(r, title, "run", now, 1 if count else 0)
+    if newround and isinstance(r.get("vp"), dict):
+        r["vp"].pop(title, None)
     if again and r["st"][title]["t0"] != now:
         e = r["st"][title]
         _ps(e, old)
@@ -2286,8 +2396,7 @@ def _flow(plat, ev):
                 text = text if plat in EMIT else None
             else:
                 bg = _is_bg(ev)
-                if bg and tool in ("Agent", "Task"):   # a background agent's later commit then matches this stage by id
-                    _ag_note(r, title, _bg_aid(ev))
+                _post_ids(r, title, tool, ev, bg)
                 text = post(name, title, st, after, r, bg, now)
             if r.get("end"):   # post() ended the run (last stage back)
                 _closed(r.get("proj") or proj, name, repo=r.get("repo"))
