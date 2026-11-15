@@ -20,12 +20,43 @@ _CD = re.compile(r"(?:^|[;&|(\n])\s*cd\s+" + _WORD)
 _VALUED = ("-o", "--push-option", "--repo", "--receive-pack", "--exec")
 
 
+def _mask(cmd):
+    """`cmd` with every character inside quotes (and each backslash-escaped one) replaced by `_`, same length.
+    Patterns are searched here and words taken from `cmd` at the same offsets.
+    ⚠Searching the raw text read `git commit -m "fix; cd /x" && git push` as a push run in /x."""
+    out, q, esc = [], "", False
+    for ch in cmd:
+        if esc:
+            out.append("_")
+            esc = False
+        elif q:
+            if q == '"' and ch == "\\":
+                esc = True
+                out.append("_")
+            elif ch == q:
+                q = ""
+                out.append(ch)
+            else:
+                out.append("_")
+        elif ch == "\\":
+            esc = True
+            out.append(ch)
+        else:
+            if ch in "'\"":
+                q = ch
+            out.append(ch)
+    return "".join(out)
+
+
 def pushed_branch(cmd, current):
     """Branch a `git push` command sends, or None when it is not a branch push."""
-    m = _PUSH.search(cmd or "")
+    cmd = cmd or ""
+    mk = _mask(cmd)
+    m = _PUSH.search(mk)
     if not m:
         return None
-    rest = re.split(r"[;&|]", cmd[m.end():], maxsplit=1)[0]
+    sep = re.search(r"[;&|]", mk[m.end():])
+    rest = cmd[m.end():m.end() + sep.start()] if sep else cmd[m.end():]
     try:
         args = shlex.split(rest)
     except ValueError:
@@ -57,17 +88,19 @@ def pushed_branch(cmd, current):
 def pushed_dir(cmd):
     """Directory the push runs in when the command moves there (`git -C d push`, or the last `cd d` before the
     push), else None. ⚠Without it a push of another repo was resolved in the event cwd (wrong sha, wrong CI)."""
-    m = _PUSH.search(cmd or "")
+    cmd = cmd or ""
+    mk = _mask(cmd)
+    m = _PUSH.search(mk)
     if not m:
         return None
     cds = []
-    for c in _CD.finditer(cmd[:m.start()]):
+    for c in _CD.finditer(mk[:m.start()]):
         # ⚠A `cd` in a subshell closed before the push does not move it: `(cd /x && make) && git push`.
-        if c.group(0).lstrip().startswith("(") and ")" in cmd[c.end():m.start()]:
+        if c.group(0).lstrip().startswith("(") and ")" in mk[c.end():m.start()]:
             continue
-        cds.append(_word(c.group(1)))
+        cds.append(_word(cmd[c.start(1):c.end(1)]))
     cd = cds[-1] if cds else None
-    d = _word(m.group(1)) if m.group(1) else cd
+    d = _word(cmd[m.start(1):m.end(1)]) if m.group(1) else cd
     if d and cd and m.group(1) and not os.path.isabs(d):
         d = os.path.join(cd, d)  # a relative `-C` is taken from the directory the earlier `cd` moved to
     return d or None
@@ -83,6 +116,14 @@ def _word(w):
     except ValueError:
         return None
     return os.path.expanduser(os.path.expandvars(w)) or None
+
+
+def _code(s):
+    """`s` as a markdown code span whose fence is longer than any backtick run inside it (CommonMark).
+    ⚠A single-backtick span ended at a backtick in the branch name and cut the command the session runs."""
+    fence = "`" * (max((len(r) for r in re.findall(r"`+", s)), default=0) + 1)
+    pad = " " if s[:1] == "`" or s[-1:] == "`" else ""
+    return fence + pad + s + pad + fence
 
 
 def _git(cwd, *argv):
@@ -117,11 +158,11 @@ def main():
     sha = _git(cwd, "rev-parse", "--verify", "--quiet", branch + "^{commit}")
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         return
-    msg = ("Pushed %s (%s). Run `bash scripts/ci_wait.sh %s %s` once with run_in_background "
+    msg = ("Pushed %s (%s). Run %s once with run_in_background "
            "and report its verdict line when it finishes; on FAIL list the failing tests and "
            "fix through quick-fix (cause known) or sidereus-bugfix."
            # ⚠Quoted: git ref names may hold `$(...)` or backticks, and the session runs this line in a shell.
-           % (branch, sha[:8], sha, shlex.quote(branch)))
+           % (_code(branch), sha[:8], _code("bash scripts/ci_wait.sh %s %s" % (sha, shlex.quote(branch)))))
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse",
                                              "additionalContext": msg}}))
 

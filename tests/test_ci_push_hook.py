@@ -38,6 +38,13 @@ class PushedBranch(unittest.TestCase):
         self.assertIsNone(self.b("git push origin :old"))
         self.assertIsNone(self.b("git push origin +:old"))
 
+    def test_separators_inside_quotes(self):
+        # A `;` or `&&` inside a quoted message is not a command boundary.
+        self.assertEqual(self.b('git commit -m "note; git push origin other" && git push origin dev'), "dev")
+        self.assertIsNone(self.b('git commit -m "a && git push origin x"'))
+        self.assertEqual(self.b('git push -o "a;b" origin main'), "main")
+        self.assertEqual(self.b(r'echo \"; git push origin dev'), "dev")  # escaped quote opens no string
+
     def test_pushed_dir(self):
         d = H.pushed_dir
         self.assertIsNone(d("git push origin dev"))
@@ -58,6 +65,9 @@ class PushedBranch(unittest.TestCase):
         self.assertEqual(d("cd && git push"), os.path.expanduser("~"))     # bare cd = home
         with mock.patch.dict(os.environ, {"SIDEREUS_T_DIR": "/proj"}):
             self.assertEqual(d('cd "$SIDEREUS_T_DIR" && git push'), "/proj")
+        self.assertIsNone(d('git commit -m "fix; cd /x for y" && git push'))     # cd inside a quoted message
+        self.assertEqual(d("git commit -m 'a && cd /x y' && cd /a && git push"), "/a")
+        self.assertEqual(d('cd "/a;b" && git push'), "/a;b")
 
 
 class Main(unittest.TestCase):
@@ -80,7 +90,14 @@ class Main(unittest.TestCase):
         b = "a$(id)`x`"
         msg = self.run_main("git push origin '%s'" % b, {("/repo", "rev-parse", "--abbrev-ref", "HEAD"): "dev",
                                                           ("/repo", "rev-parse", "--verify", "--quiet", b + "^{commit}"): self.SHA})
-        self.assertIn("ci_wait.sh %s 'a$(id)`x`'`" % self.SHA, msg)
+        # The code span fence outgrows the backticks in the branch, so the command is not cut at `x`.
+        self.assertIn("``bash scripts/ci_wait.sh %s 'a$(id)`x`'``" % self.SHA, msg)
+        self.assertIn("Pushed `` a$(id)`x` ``", msg)
+
+    def test_code_span(self):
+        self.assertEqual(H._code("dev"), "`dev`")
+        self.assertEqual(H._code("a``b"), "```a``b```")
+        self.assertEqual(H._code("`x"), "`` `x ``")
 
     def test_other_repo_gets_no_hint(self):
         git = {("/repo", "rev-parse", "--show-toplevel"): "/repo", ("/other", "rev-parse", "--show-toplevel"): "/other",
