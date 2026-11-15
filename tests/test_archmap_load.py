@@ -192,7 +192,7 @@ class LoadTest(unittest.TestCase):
         step = {"from": "a", "to": "db", "label": "query", "evidence": {"file": "a/x.py", "line": 3, "symbol": "Pool"}}
         fl = {"id": "login", "name": "Login", "entry": {"kind": "http", "label": "POST /login"}, "steps": [step, dict(step, est=1)]}
         f = {"v": 1, "repo": self.repo, "commit": C1, "flows": [fl, dict(fl, id="bad", entry={"kind": "rpc", "label": "x"})]}
-        v = {"v": 1, "commit": C1, "flows": [{"id": "login", "ok": True, "steps": [{"ok": True, "why": None}]}], "body": "never shown"}
+        v = {"v": 1, "vv": sidereus("arch_flow").VERIFIER_V, "commit": C1, "flows": [{"id": "login", "ok": True, "steps": [{"ok": True, "why": None}]}], "body": "never shown"}
         self.put_flows(C1, f, v)
         out = AM.load(self.repo)
         self.assertEqual([x["id"] for x in out["flows"]], ["login"])      # broken flow dropped alone

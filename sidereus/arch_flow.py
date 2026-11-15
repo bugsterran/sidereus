@@ -12,6 +12,9 @@ import subprocess
 from sidereus import arch_verify as AV
 
 FLOW_MAX, STEP_MAX = 40, 40
+# ⚠Stored verdicts are keyed by commit only: bump this whenever why()/http_ok/_be_routes or any rule changes a verdict,
+# so flows.verify.json written by the old logic reads «unchecked» until the gate is re-run.
+VERIFIER_V = 2
 ENTRY_KINDS = ("http", "cli", "job", "event", "hook", "mcp")
 ENTRY_MAX = 80
 WHYS = ("nomod", "owner", "overlap", "nofile", "range", "nosym", "bad", "nodef", "noroute")
@@ -266,7 +269,7 @@ def run(repo, commit):
     res = verify_flows(repo, commit, m, flows, AV.plan_globs(plan))
     steps = [s for x in res for s in x["steps"]]
     passed = sum(1 for s in steps if s["ok"])
-    v = {"v": 1, "commit": commit, "total": len(steps), "passed": passed,
+    v = {"v": 1, "vv": VERIFIER_V, "commit": commit, "total": len(steps), "passed": passed,
          "rate": round(passed / len(steps), 4) if steps else 1.0, "flows": res, "dropped": dropped}
     AV._write(os.path.join(d, "flows.verify.json"), json.dumps(v, ensure_ascii=False) + "\n")
     line = " · flows %d/%d (steps %d/%d)" % (sum(1 for x in res if x["ok"]), len(res), passed, len(steps))
@@ -288,7 +291,8 @@ def load_flows(d, m, root, commit):
     except (OSError, ValueError):
         v = {}
     vs = {}
-    if isinstance(v, dict) and v.get("commit") == commit and isinstance(v.get("flows"), list):
+    # A verdict from older verifier logic (vv absent or different) is not trusted: it falls through to "unchecked".
+    if isinstance(v, dict) and v.get("commit") == commit and v.get("vv") == VERIFIER_V and isinstance(v.get("flows"), list):
         for x in v["flows"]:
             if isinstance(x, dict) and isinstance(x.get("id"), str) and isinstance(x.get("steps"), list):
                 vs.setdefault(x["id"], x["steps"])

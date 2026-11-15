@@ -243,10 +243,22 @@ class HttpStepTest(Base):
         self.assertEqual(kept[0]["steps"][0]["to_evidence"], good["to_evidence"])
         d = self.put(self.fl([flow([self.hop(2, "/api/objectchange/")])]))
         with open(os.path.join(d, "flows.verify.json"), "w", encoding="utf-8") as f:
-            json.dump({"commit": C, "flows": [{"id": "login", "steps": [{"ok": False, "why": "noroute"}]}]}, f)
+            json.dump({"commit": C, "vv": AF.VERIFIER_V, "flows": [{"id": "login", "steps": [{"ok": False, "why": "noroute"}]}]}, f)
         out = AF.load_flows(d, self.m, self.repo, C)
         self.assertEqual(out[0]["steps"][0]["why"], "noroute")
         self.assertNotIn("to_evidence", out[0]["steps"][0])
+
+    def test_load_flows_ignores_old_verifier_version(self):
+        d = self.put(self.fl([flow([self.hop(2, "/api/objectchange/")])]))
+        base = {"v": 1, "commit": C, "flows": [{"id": "login", "steps": [{"ok": False, "why": "noroute"}]}]}
+
+        def why(**kw):
+            with open(os.path.join(d, "flows.verify.json"), "w", encoding="utf-8") as f:
+                json.dump(dict(base, **kw), f)
+            return AF.load_flows(d, self.m, self.repo, C)[0]["steps"][0]["why"]
+        self.assertEqual(why(), "unchecked")                          # written before vv existed
+        self.assertEqual(why(vv=AF.VERIFIER_V - 1), "unchecked")      # older verifier logic
+        self.assertEqual(why(vv=AF.VERIFIER_V), "noroute")            # current logic: verdict used
 
 
 class RunTest(Base):
@@ -265,7 +277,8 @@ class RunTest(Base):
         self.assertEqual(AF.run(self.repo, C), " · flows 1/2 (steps 3/4) · 1 flow(s) dropped")
         with open(os.path.join(d, "flows.verify.json"), encoding="utf-8") as f:
             v = json.load(f)
-        self.assertEqual((v["v"], v["commit"], v["total"], v["passed"], v["rate"], v["dropped"]), (1, C, 4, 3, 0.75, 1))
+        self.assertEqual((v["v"], v["vv"], v["commit"], v["total"], v["passed"], v["rate"], v["dropped"]),
+                         (1, AF.VERIFIER_V, C, 4, 3, 0.75, 1))
         self.assertEqual(v["flows"][1], {"id": "f2", "ok": False, "steps": [{"ok": True, "why": None}, {"ok": False, "why": "nosym"}]})
         self.put(self.fl([flow([good])], extra=1))
         self.assertEqual(AF.run(self.repo, C), " · flows ignored (invalid)")

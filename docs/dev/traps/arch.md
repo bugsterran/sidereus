@@ -436,6 +436,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ A bare identifier argument (method or class mapping) resolves through `_consts`: a path constant assigned once in the same file, on a non-route line.
 - ⚠Never resolve a qualified name (`Api.PATH`), a name assigned two different paths, or a named-arg key (`value =`) — a guessed path lets a wrong route match. Unresolved stays unknown, never "" (`test_be_routes_same_file_constant`).
 
+## Stored flow verdicts outlive a verifier fix (`arch_flow.VERIFIER_V`, `load_flows`)
+
+- Cause: `flows.verify.json` was trusted when only `commit` matched, so a store written before the `_be_routes` constant fix kept showing «noroute» for a step that now passes.
+- ⇒ `run()` writes `vv: VERIFIER_V`; `load_flows` reads a verdict with `vv` absent or different as «unchecked» until the gate is re-run.
+- ⚠Bump `VERIFIER_V` with every change to `why()`/`http_ok`/`_be_routes` or any rule that changes a verdict (`test_load_flows_ignores_old_verifier_version`).
+
 ## Focus layer must not repaint the overview behind it (`84j archPaint`, `84j3 archLyHtml`)
 
 - Cause: the focus view used to replace the overview in `.archmap`, so closing it re-laid the map out and lost its zoom/scroll.
