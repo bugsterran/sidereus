@@ -57,7 +57,8 @@ class PushedBranch(unittest.TestCase):
     def test_pushed_dir_shell_forms(self):
         from unittest import mock
         d = H.pushed_dir
-        self.assertEqual(d("cd /a && git -C sub push"), "/a/sub")         # relative -C after a cd
+        # os.path.join: on Windows the joined path uses a backslash, which git accepts as well.
+        self.assertEqual(d("cd /a && git -C sub push"), os.path.join("/a", "sub"))  # relative -C after a cd
         self.assertEqual(d("cd /a && git -C /b push"), "/b")
         self.assertIsNone(d("(cd /x && make) && git push"))               # subshell cd does not move the push
         self.assertEqual(d("(cd /x && git push)"), "/x")                   # push inside the same subshell
@@ -80,6 +81,8 @@ class Main(unittest.TestCase):
         from unittest import mock
         ev = {"tool_input": {"command": cmd}, "tool_response": {}, "cwd": "/repo"}
         out = io.StringIO()
+        # Keys normalised the same way as the cwd: on Windows normpath turns "/repo" into "\\repo".
+        git = {(os.path.normpath(k[0]),) + k[1:]: v for k, v in git.items()}
         with mock.patch.object(H, "_git", lambda cwd, *a: git.get((os.path.normpath(cwd),) + a, "")), \
                 mock.patch("sys.stdin", io.StringIO(json.dumps(ev))), mock.patch("sys.stdout", out):
             H.main()
