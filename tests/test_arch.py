@@ -21,7 +21,7 @@ PY_FILE_CAP = 620
 JS_FILE_CAP = 700
 PY_FUNC_CAP = 130
 # Outside STAGE3's import order: loaded lazily by main() under --demo only.
-LAZY_ONLY = {"demo", "demo_data", "demo_git", "demo_rel", "demo_tools"}
+LAZY_ONLY = {"demo", "demo_data", "demo_git", "demo_rel", "demo_retro", "demo_tools", "demo_http"}
 # The only places allowed to build a ["git", ...] argv.
 GIT_ARGV_OWNERS = {("sidereus/gitinfo.py", "git_argv"), ("sidereus/gitinfo.py", "_git_run"),
                    ("sidereus/gitinfo.py", "_git_run_capped"), ("sidereus/gitinfo.py", "_git_version"),
