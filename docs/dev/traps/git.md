@@ -153,3 +153,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: the row took `gitBranch` from the transcript; Claude Code keeps an isolation worktree's `worktree-agent-<id>` there after the session is back in the main checkout, so the chip paired main's live `↑1 ~2` with another branch's name.
 - ⇒ `git_branch(cwd, fallback)` reads the branch from the `## ` header of the same cached `status --branch` call (no extra fork); the transcript value is used only when git never answered. Test `tests/test_git_branch_live.py`.
 - ⚠A detached HEAD returns "", never the transcript name.
+
+## CI wait hint after a push (`scripts/ci_push_hook.py`)
+- Cause: the hint was built from the raw push command: the branch went unquoted into a shell line the session runs (git ref names allow `$(...)` and backticks), `-o ci.skip origin dev` read «origin» as the branch, `:old` (delete) asked for a CI wait, and `cd /other && git push` resolved the sha in the event cwd.
+- ⇒ `shlex.quote(branch)` in the suggested command; values of `-o`/`--push-option`/`--repo`/`--receive-pack`/`--exec` are skipped; a refspec starting with `:` is no branch push; `pushed_dir` follows `git -C d` or the last `cd d` before the push and gives no hint when that toplevel is not this repo.
+- ⚠Never return None for every `cd`/`-C` push: `cd <this repo> && git push` is the common shape and must still hint. `tests/test_ci_push_hook.py`.
