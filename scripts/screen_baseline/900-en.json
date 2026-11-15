@@ -140,7 +140,6 @@
    "# <ap>",
    "# <ap>",
    "# <ap>",
-   "# <ap>",
    "Tokens",
    "#t",
    "▾",
@@ -1123,12 +1122,14 @@
    "For your information #",
    "cart-roundingbugfix/cart-roundingConflict risk · # file · sessions #t#bea, cd#ed# +# more#t agoWork logdiffCopy resume commandTerminalReplyAsk to checkDoneLaterLive state — clears when resolved⋯",
    "acme-webfeature/checkout-redesignConflict risk · # file · sessions #t#bea, cd#ed#t agoWork logdiffCopy resume commandTerminalReplyDoneLaterLive state — clears when resolved⋯",
+   "acme-webSpending creditsjust nowWork logCopy commandReplyDoneLaterLive state — clears when resolved⋯",
    "invoice-pdffeature/invoice-pdfContext #% +# more#t agoWork logdiffCopy resume commandTerminalReplyDoneLaterLive state — clears when resolved⋯"
   ],
   "rattn": [
    "billing-apiAwaiting answer#t ago",
    "cart-roundingConflict risk#t ago",
    "acme-webConflict risk#t ago",
+   "acme-webSpending creditsjust now",
    "invoice-pdfContext #%#t ago"
   ],
   "pop:diff": [

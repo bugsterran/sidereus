@@ -319,6 +319,11 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - ⇒ No auth file or a non-`oauth` type = no chip (unknown is never treated as api_key or oauth). Tests `tests/test_pi_credit.py`, `tests/test_attention_credit.py`.
 - ⚠`auth.json` holds tokens: keep only each entry's `type` (memo included), report parse errors by exception type name only.
 
+## Demo world showed no credits (`sidereus/demo.py` `PI_CREDIT` · `World.attention` · `demo_data` `quota`)
+- Cause: the demo builds rows and attention by hand (it never runs `state._credit_off` or `attention._row_sigs`), and no demo row had `credit`, so sweeps never saw the «Credits» chip or «Spending credits».
+- ⇒ The demo pi row gets `credit` (`plat_pi.credit` shape), `World.attention` a matching `credit` row (why = bare seconds), demo quota an `extra` block with `on: True`.
+- ⚠Set `credit` on the appended row, never on `PI_ROW`: `test_pi_row_matches_ext_rows` pins `PI_ROW` to the `ext_rows` key set, which has no `credit` off Anthropic OAuth.
+
 ## pi subagent children showed 0 tokens (`ext-hooks/pi-extension.ts` `message_end` · `sidereus/ext_store.py` `ext_ingest` Usage)
 - Cause: a `pi --mode json -p --no-session` child writes no session file (★20/20 runs in ext-runs.json had none), and tokens were read only from files.
 - ⇒ A child's extension sends a pi-only `Usage` event per assistant message (counts, generation id, model); stored in `_hooktok` only for a live pi row whose parent is a known pi row. Tests `tests/test_pi_child_tok.py`.

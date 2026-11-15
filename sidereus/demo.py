@@ -38,6 +38,7 @@ CART_BG_LONG = {"n": 2, "long": 1, "max": 41 * 60}   # `npm run dev` open 41 min
 PI_SID = _uuid(random.Random(SEED + 31))   # hook-fed pi row (ext.py ext_rows key set), extension older than the template
 PI_ROW = dict(GEM_ROW, id=PI_SID[:8], sid=PI_SID, project="acme-web", kind="pi", plat="pi",
               model="anthropic/claude-sonnet-4-5", state="tool", otelEv="tool", tool="Bash", targ="", goneWhy="", pid=0, extOld="reload")
+PI_CREDIT = lambda now: {"lastAt": int(now) - 45, "tok": 1_240_000}   # «Credits» chip + «Spending credits» attention
 # Agent team led by the billing session (agents.team_info shape).
 TEAM = {"members": [{"name": "api-dev", "st": "run", "model": "sonnet-5", "tsub": "Retry queue for webhooks", "unread": 0},
                     {"name": "reviewer", "st": "done", "model": "opus-5", "tsub": "", "unread": 1},
@@ -344,7 +345,9 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
                 **({"acct": "work", "acctDir": "/home/demo/.claude-work"} if s["k"] in ("docs", "search") else {})}))
         sessions.append(dict(GEM_ROW, cwd=REPOS["docs-site"][0], ageSec=140))   # one external CLI (Gemini) row
         sessions.append(dict(CU_ROW, cwd=REPOS["acme-web"][0], ageSec=310))   # hook-less Cursor / Copilot rows
-        sessions.append(dict(PI_ROW, cwd=REPOS["acme-web"][0], ageSec=45))   # hook-fed pi row, «Old extension»
+        # hook-fed pi row, «Old extension»; on Anthropic OAuth its spend is billed as credits (plat_pi.credit shape),
+        # set here and not on PI_ROW so the shared row keeps the ext_rows key set
+        sessions.append(dict(PI_ROW, cwd=REPOS["acme-web"][0], ageSec=45, credit=PI_CREDIT(now)))
         sessions.append(dict(CP_ROW, cwd=REPOS["billing-api"][0], ageSec=520))
         acks = {}
         names = [s["mbox"] for s in self.sess]
@@ -417,6 +420,9 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
             (c, 85, [("conflict", why_c, 85, a - 5 * 60),
                      ("bglong", "장기 백그라운드 1개 · 최장 41분 · 무출력 1개", 30, now - CART_BG_LONG["max"])]),
             (w, 85, [("conflict", why_c, 85, a - 5 * 60)]),
+            # pi row spending credits (attention._row_sigs: why = bare seconds since the last spend)
+            ({"sid": PI_SID, "cwd": REPOS["acme-web"][0], "repo": "acme-web", "branch": PI_ROW.get("branch", "")}, 80,
+             [("credit", "%d" % (now - PI_CREDIT(now)["lastAt"]), 80, PI_CREDIT(now)["lastAt"])]),
             (i, 25, [("ctx85", "컨텍스트 87%", 25, now - bs[i["id"]]["ageSec"]),
                      ("done", "작업 끝 · 입력 대기 %d분" % (bs[i["id"]]["ageSec"] // 60), 20, now - bs[i["id"]]["ageSec"])]),
         ]

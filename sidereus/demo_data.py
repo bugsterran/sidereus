@@ -134,6 +134,8 @@ class _WorldPanels:
                               "leftSec": reset - now, "_reset": reset},
                 "seven_day": {"pct": 38.0, "resets_at": datetime.fromtimestamp(wk_reset, timezone.utc).isoformat(),
                               "leftSec": wk_reset - now},
+                # Credits on (quota_fetch extra shape) so the demo pi row keeps its «Credits» chip (state._credit_off).
+                "extra": {"pct": 12.0, "used": 6.0, "limit": 50.0, "cur": "USD", "at": now - 40, "on": True, "why": None},
                 # One extra signed-in root so the popover's «Other accounts» rows show in the demo.
                 "accounts": [{"label": "work", "age": 60, "err": None,
                               "five_hour": {"pct": 22.0, "resets_at": datetime.fromtimestamp(reset + 50 * 60, timezone.utc).isoformat(),

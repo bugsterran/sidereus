@@ -111,7 +111,9 @@ class SameKeysAsRealBuilders(_Patch):
         self.assertEqual(real["extOld"], "reload")
         mine = [r for r in self.world().state()["sessions"] if r["plat"] == "pi"]
         self.assertEqual(len(mine), 1)
-        self.assertEqual(set(mine[0]), set(real))
+        # `credit` is added by plat_pi.credit only for pi on Anthropic OAuth; the demo row carries it for the chip.
+        self.assertEqual(set(mine[0]) - {"credit"}, set(real))
+        self.assertEqual(set(mine[0]["credit"]), {"lastAt", "tok"})
         self.assertEqual(mine[0]["extOld"], "reload")
         self.assertEqual(dd.GEM_ROW["extOld"], "")
 
