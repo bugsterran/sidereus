@@ -1,6 +1,6 @@
 """hooks/pl_flow.py refused-dispatch take-back: a dispatch Pre that never gets a Post (auto-mode classifier, permission
-deny) is taken back from st[stage].n and inflight at the next Pre once its tool_result is in the session transcript.
-Tmp dirs only, fixed clock."""
+deny) is taken back from st[stage].n and inflight at the next dispatch Pre or Post once its tool_result is in the
+session transcript. Tmp dirs only, fixed clock."""
 import io
 import json
 import os
@@ -66,6 +66,27 @@ class Pend(_Base):
         self.assertEqual((r["st"]["설계"]["n"], r["inflight"]["설계"], r["pend"]), (2, 1, [["toolu_B2", "설계"]]))
         o = self.ev("PostToolUse", "설계", "toolu_B2")
         self.assertIn("PASS → next", (o or {}).get("additionalContext", ""))
+
+    def test_refused_sibling_taken_back_at_post(self):
+        """Batch of two, B refused (result, no Post) and last: A's Post hands off without waiting for a later Pre."""
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_G1"))
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_G2"))
+        self.result("toolu_G2")
+        o = self.ev("PostToolUse", "설계", "toolu_G1")
+        self.assertIn("PASS → next", (o or {}).get("additionalContext", ""))
+        r = self.run_()
+        self.assertEqual((r["st"]["설계"]["n"], r["inflight"]["설계"], r["pend"]), (1, 0, []))
+
+    def test_posted_sibling_not_taken_back_at_post(self):
+        """B ran (own Post, then its result): A's Post must not take B back a second time."""
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_H1"))
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_H2"))
+        self.assertIsNone(self.ev("PostToolUse", "설계", "toolu_H2"))
+        self.result("toolu_H2")
+        o = self.ev("PostToolUse", "설계", "toolu_H1")
+        self.assertIn("PASS → next", (o or {}).get("additionalContext", ""))
+        r = self.run_()
+        self.assertEqual((r["st"]["설계"]["n"], r["inflight"]["설계"], r["pend"]), (2, 0, []))
 
     def test_refused_in_earlier_stage_taken_back_at_next_stage(self):
         """The last dispatch of a stage refused and the run moved on: the next stage's Pre corrects the old n."""

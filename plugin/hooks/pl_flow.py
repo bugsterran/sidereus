@@ -1056,8 +1056,10 @@ def _vp_note(r, title, aid):
 def _post_ids(r, title, tool, ev, bg):
     """Dispatch Post: count it for this pass (_vp_note) with its agent id (Agent/Task receipt or result, SendMessage
     `to`); a background agent's id also goes to `ag`, so its later commit matches this stage; the call ran, so its
-    pending Pre is settled (_pend_done). Never raises."""
+    pending Pre is settled (_pend_done), and siblings refused in the same batch are taken back before post() counts
+    what is left (_pend_prune). Never raises."""
     _pend_done(r, ev)
+    _pend_prune(r, _TP[0] if _TP else None)   # ⚠a refused last call of a batch gets no later Pre to take it back
     ti = ev.get("tool_input")
     aid = _bg_aid(ev) if tool in ("Agent", "Task") else ti.get("to") if isinstance(ti, dict) else None
     if bg and tool in ("Agent", "Task"):
@@ -1116,12 +1118,13 @@ def _results(tp):
 
 
 def _pend_prune(r, tp):
-    """Pre: take back each pending dispatch that has a result in the transcript but never got a Post — refused before
-    it ran (auto-mode classifier, permission, another hook). Its Pre raised st[stage].n and inflight; left counted, a
-    re-sent dispatch doubled the ledger's n and held back the hand-off of the real Post for LOST_S.
-    ⚠Only at Pre: a call's tool_result is written after its own Post hook, so a pending id with a result at a later Pre
-    is a refused one; a sibling still running has no result yet and is kept. Also when a run ends (_ledger_add): the
-    boundary is a later Pre, and post() ends a run only once nothing of the stage is in flight. Unreadable = keep.
+    """Pre and dispatch Post: take back each pending dispatch that has a result in the transcript but never got a Post —
+    refused before it ran (auto-mode classifier, permission, another hook). Its Pre raised st[stage].n and inflight;
+    left counted, a re-sent dispatch doubled the ledger's n and held back the hand-off of the real Post for LOST_S.
+    ⚠A call's tool_result is written after its own Post hook (★7456/7456 Agent/Task/SendMessage calls), so a pending
+    id with a result is a refused one and a sibling still running has none yet and is kept (★0/4846 sibling pairs had
+    a result before that sibling's Post). At Post the caller drops its own id first (_pend_done). Pre and run end
+    (_ledger_add) stay the fallback: 2/61 refusals landed after the last sibling's Post. Unreadable = keep.
     Never raises: this hook runs live."""
     try:
         pd = r.get("pend")
