@@ -20,7 +20,7 @@ class Pend(_Base):
         super().setUp()
         self.tp = os.path.join(self.tmp, "projects", "p", SID + ".jsonl")
         os.makedirs(os.path.dirname(self.tp))
-        open(self.tp, "w").close()
+        open(self.tp, "w", encoding="utf-8").close()
 
     def result(self, tid):
         """The transcript line Claude Code writes for a finished or refused tool call (body is never read)."""
