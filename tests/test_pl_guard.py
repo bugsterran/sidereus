@@ -263,9 +263,11 @@ class Guard(unittest.TestCase):
 
 class Modes(unittest.TestCase):
     def test_deny_codes_equal(self):
-        from sidereus import harness_flow
+        from sidereus import harness_flow, pl_outcome
         self.assertEqual(H.DENY_CODES, harness_flow.HF_DENY_CODES)
+        self.assertEqual(H.DENY_CODES, pl_outcome.OC_DENY_CODES)   # ⚠a code missing here is dropped from ledger dc
         self.assertIn("stop", H.DENY_CODES)
+        self.assertIn("verdict", H.DENY_CODES)
 
     def test_mirror_equal(self):
         self.assertEqual(G.GATE_MODES, pipeline_schema.GATE_MODES)

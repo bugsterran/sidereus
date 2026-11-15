@@ -85,7 +85,7 @@ class Verdict(_Base):
         return bool(o) and o.get("permissionDecision") == "deny"
 
     def test_r1_all_passing_background_reviewers_deny_loop_back(self):
-        """R1: CLEAN + PASS handbacks → goto Pre denied, run state unchanged except the jump deny count."""
+        """R1: CLEAN + PASS handbacks → goto Pre denied, run state unchanged except one «verdict» deny (not «jump»)."""
         self.to_review()
         self.agent("a1", _handback("VERDICT: CLEAN"))
         self.agent("a2", _handback("VERDICT: PASS"))
@@ -100,7 +100,7 @@ class Verdict(_Base):
         r = self.run_()
         for k in ("lb", "loops", "ret", "cur", "st", "vp", "skipok"):
             self.assertEqual(r.get(k), before.get(k), k)
-        self.assertEqual((r["deny"], r["dl"][-1]["c"]), (int(before.get("deny") or 0) + 1, "jump"))
+        self.assertEqual((r["deny"], r["dl"][-1]["c"]), (int(before.get("deny") or 0) + 1, "verdict"))
 
     def test_r1_foreground_reviewers_ids_from_post(self):
         """R1: foreground Agent Posts carry the id too; they never enter `ag` (commit matching stays bg-only)."""

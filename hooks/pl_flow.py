@@ -907,7 +907,7 @@ def _new_run(cwd, now):
             "dl": []}
 
 
-DENY_CODES = ("jump", "agent", "model", "tag", "stage", "stop", "gate", "skipgate")   # gate/skipgate: pl_guard requireGates; same set as sidereus/harness_flow.py HF_DENY_CODES
+DENY_CODES = ("jump", "agent", "model", "tag", "stage", "stop", "gate", "skipgate", "verdict")   # gate/skipgate: pl_guard requireGates; same set as sidereus/harness_flow.py HF_DENY_CODES
 DL_MAX = 20   # deny log entries kept per run
 
 
@@ -2530,7 +2530,7 @@ def _flow(plat, ev):
                 r["tail"] = title
                 r["st"][title]["t1"] = now
             if why:
-                _deny_note(r, title, "jump", now)
+                _deny_note(r, title, "verdict" if why == VERDICT_DENY % r.get("cur") else "jump", now)   # ⚠cur unchanged on deny
                 out = {"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                               "permissionDecision": "deny", "permissionDecisionReason": why}}
         _save(path, d)

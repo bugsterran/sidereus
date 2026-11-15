@@ -332,7 +332,7 @@ const HN_CP = { hooks: ['Before edit', 'hooks', 'Pipeline hook (hooks/pl_flow.py
 const HN_CPK = ['hooks', 'fast', 'full', 'ci', 'other', 'person'];
 // hooks/pl_flow.py deny codes, shown as T(x, 'flow'); unknown codes are never shown raw.
 const HN_GD = { jump: 'Stage jump', agent: 'Wrong agent', model: 'Wrong model', tag: 'Missing tag', stage: 'Unknown stage', stop: 'Stopped',
-  gate: 'Commit before gate', skipgate: 'Required gate skipped' };
+  gate: 'Commit before gate', skipgate: 'Required gate skipped', verdict: 'Loop-back after a pass' };
 function hnN(x){ const n = Number(x); return isFinite(n) && n > 0 ? Math.floor(n) : 0; }
 function hnMs(ts){ let t = Number(ts); if(!isFinite(t)) t = Date.parse(ts); return isFinite(t) && t ? (t < 1e12 ? t * 1000 : t) : 0; }
 function hnRep(d){
