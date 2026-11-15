@@ -136,6 +136,9 @@ DECL_MARK = re.compile(r"""^\s*(?:echo\s+|#\s*|:\s+)?["']?\[pl-(?:skip|model|age
 IDLE_S = 6 * 3600     # a run untouched this long is over; the next tag opens a new one
 LOST_S = 45 * 60      # ⚠a dispatch refused or failed before running gets no Post; its slice is presumed lost after this
 LOCK_WAIT_S, LOCK_STALE_S = 2.0, 5.0
+# ⚠Post waits longer than Pre: a lost dispatch Post can make the review-verdict gate deny a valid loop-back.
+# Kept below the 5 s hook timeout of every registration (plugin hooks.json, settings.json), so no stale takeover here.
+POST_LOCK_WAIT_S = 4.5
 NUDGE_S = 600         # at most one untagged-Bash reminder per open run in this window
 # Async receipts: Agent run_in_background launch, SendMessage resume / queue (same texts sidereus/bgtasks_parse.py reads).
 BG_RE = re.compile(r"async_launched|Async agent launched|Resuming agent|resumed from transcript|resumedAgentId|"
@@ -827,11 +830,11 @@ def _stages(cwd, name):
 class _Lock(object):
     """O_CREAT|O_EXCL lockfile (portable); a lock older than LOCK_STALE_S is taken over."""
 
-    def __init__(self, path):
-        self.path, self.ok = path + ".lock", False
+    def __init__(self, path, wait=None):
+        self.path, self.ok, self.wait = path + ".lock", False, wait
 
     def __enter__(self):
-        end = time.monotonic() + LOCK_WAIT_S
+        end = time.monotonic() + (LOCK_WAIT_S if self.wait is None else self.wait)
         while True:
             try:
                 os.close(os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
@@ -2468,7 +2471,7 @@ def _flow(plat, ev):
         return
     os.makedirs(MARK_DIR, exist_ok=True)
     out = None
-    with _Lock(path) as lk:
+    with _Lock(path, POST_LOCK_WAIT_S if event == "PostToolUse" else None) as lk:
         if not lk.ok:
             _why(ev, "lock")
             return

@@ -136,6 +136,40 @@ class Pend(_Base):
         self.assertIsNone(self.ev("PreToolUse", "설계", "../x y"))
         self.assertNotIn("pend", self.run_())
 
+    def _hold_lock(self, secs):
+        """A live holder: a fresh lockfile (younger than LOCK_STALE_S) removed by a thread after `secs`."""
+        import threading
+        os.makedirs(self.marks, exist_ok=True)
+        lp = os.path.join(self.marks, SID + ".runs.json.lock")
+        open(lp, "w", encoding="utf-8").close()
+        th = threading.Timer(secs, os.remove, (lp,))
+        th.start()
+        self.addCleanup(th.join)
+        return th
+
+    def test_post_outwaits_a_live_lock_holder(self):
+        """A dispatch Post blocked past LOCK_WAIT_S by a live holder still records vp n and clears pend."""
+        self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_L1"))
+        with mock.patch.object(H, "LOCK_WAIT_S", 0.2), mock.patch.object(H, "POST_LOCK_WAIT_S", 0.9), \
+                mock.patch.object(H, "LOCK_STALE_S", 5.0):
+            self._hold_lock(0.5)
+            o = self.ev("PostToolUse", "설계", "toolu_L1")
+        self.assertIn("PASS → next", (o or {}).get("additionalContext", ""))
+        r = self.run_()
+        self.assertEqual((r["vp"]["설계"]["n"], r["inflight"]["설계"], r["pend"]), (1, 0, []))
+
+    def test_pre_still_gives_up_after_lock_wait(self):
+        """Pre keeps LOCK_WAIT_S: with the lock held it records nothing and returns before the holder lets go."""
+        import time
+        with mock.patch.object(H, "LOCK_WAIT_S", 0.2), mock.patch.object(H, "POST_LOCK_WAIT_S", 0.9), \
+                mock.patch.object(H, "LOCK_STALE_S", 5.0):
+            self._hold_lock(0.5)
+            t0 = time.monotonic()
+            self.assertIsNone(self.ev("PreToolUse", "설계", "toolu_L2"))
+            took = time.monotonic() - t0
+        self.assertLess(took, 0.45)
+        self.assertNotIn(N, H._load(os.path.join(self.marks, SID + ".runs.json"))["runs"])   # nothing recorded
+
     def test_results_reads_ids_only_from_tool_result_lines(self):
         with open(self.tp, "w", encoding="utf-8") as f:
             f.write(json.dumps({"type": "progress", "tool_use_id": "toolu_P"}) + "\n")
