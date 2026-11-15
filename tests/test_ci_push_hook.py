@@ -36,6 +36,7 @@ class PushedBranch(unittest.TestCase):
         self.assertEqual(self.b("git push --push-option ci.skip origin main"), "main")
         self.assertEqual(self.b("git push --repo origin origin dev"), "dev")
         self.assertIsNone(self.b("git push origin :old"))
+        self.assertIsNone(self.b("git push origin +:old"))
 
     def test_pushed_dir(self):
         d = H.pushed_dir
@@ -45,6 +46,18 @@ class PushedBranch(unittest.TestCase):
         self.assertEqual(d("cd '/a b' && git push"), "/a b")
         self.assertEqual(d("git push origin dev && cd /later"), None)
         self.assertEqual(d("cd ~/x && git push"), os.path.expanduser("~/x"))
+
+    def test_pushed_dir_shell_forms(self):
+        from unittest import mock
+        d = H.pushed_dir
+        self.assertEqual(d("cd /a && git -C sub push"), "/a/sub")         # relative -C after a cd
+        self.assertEqual(d("cd /a && git -C /b push"), "/b")
+        self.assertIsNone(d("(cd /x && make) && git push"))               # subshell cd does not move the push
+        self.assertEqual(d("(cd /x && git push)"), "/x")                   # push inside the same subshell
+        self.assertEqual(d("cd /a && (cd /x && make) && git push"), "/a")
+        self.assertEqual(d("cd && git push"), os.path.expanduser("~"))     # bare cd = home
+        with mock.patch.dict(os.environ, {"SIDEREUS_T_DIR": "/proj"}):
+            self.assertEqual(d('cd "$SIDEREUS_T_DIR" && git push'), "/proj")
 
 
 class Main(unittest.TestCase):

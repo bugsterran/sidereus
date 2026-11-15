@@ -42,7 +42,7 @@ def pushed_branch(cmd, current):
             pos.append(a)
     if len(pos) < 2:  # `git push` or `git push origin` sends the current branch
         return current
-    if pos[1].startswith(":"):  # `:old` = delete refspec, nothing to build
+    if pos[1].lstrip("+").startswith(":"):  # `:old` / `+:old` = delete refspec, nothing to build
         return None
     ref = pos[1].split(":")[-1].lstrip("+")
     if ref.startswith("refs/heads/"):
@@ -60,18 +60,29 @@ def pushed_dir(cmd):
     m = _PUSH.search(cmd or "")
     if not m:
         return None
-    if m.group(1):
-        d = m.group(1)
-    else:
-        cds = _CD.findall(cmd[:m.start()])
-        if not cds:
-            return None
-        d = cds[-1]
+    cds = []
+    for c in _CD.finditer(cmd[:m.start()]):
+        # ⚠A `cd` in a subshell closed before the push does not move it: `(cd /x && make) && git push`.
+        if c.group(0).lstrip().startswith("(") and ")" in cmd[c.end():m.start()]:
+            continue
+        cds.append(_word(c.group(1)))
+    cd = cds[-1] if cds else None
+    d = _word(m.group(1)) if m.group(1) else cd
+    if d and cd and m.group(1) and not os.path.isabs(d):
+        d = os.path.join(cd, d)  # a relative `-C` is taken from the directory the earlier `cd` moved to
+    return d or None
+
+
+def _word(w):
+    """One captured shell word as a path: unquoted, `~`/`$VAR` expanded; a bare `cd` (next token is an
+    operator, e.g. `cd && git push`) means the home directory, like the shell."""
+    if w[:1] in ("&", ";", "|", ")"):
+        return os.path.expanduser("~")
     try:
-        d = (shlex.split(d) or [""])[0]
+        w = (shlex.split(w) or [""])[0]
     except ValueError:
         return None
-    return os.path.expanduser(d) or None
+    return os.path.expanduser(os.path.expandvars(w)) or None
 
 
 def _git(cwd, *argv):
