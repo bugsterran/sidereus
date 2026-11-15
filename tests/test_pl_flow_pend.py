@@ -158,6 +158,17 @@ class Pend(_Base):
         r = self.run_()
         self.assertEqual((r["vp"]["설계"]["n"], r["inflight"]["설계"], r["pend"]), (1, 0, []))
 
+    def test_post_lock_wait_fits_hook_timeout(self):
+        """Post wait + worst interpreter start leaves at least 0.5 s for the work after the lock inside the hook
+        timeout (a hook killed while holding the lock blocks every Pre until LOCK_STALE_S)."""
+        self.assertLessEqual(H.POST_LOCK_WAIT_S + H.START_MAX_S + 0.5, H.HOOK_TIMEOUT_S)
+        self.assertGreater(H.POST_LOCK_WAIT_S, H.LOCK_WAIT_S)
+        with open(os.path.join(os.path.dirname(H.__file__), "..", "plugin", "hooks", "hooks.json"), encoding="utf-8") as f:
+            outs = [h.get("timeout") for g in json.load(f)["hooks"].get("PostToolUse", []) for h in g.get("hooks", [])
+                    if "pl_flow.py" in (h.get("command") or "")]
+        self.assertTrue(outs)
+        self.assertTrue(all(t == H.HOOK_TIMEOUT_S for t in outs), outs)
+
     def test_pre_still_gives_up_after_lock_wait(self):
         """Pre keeps LOCK_WAIT_S: with the lock held it records nothing and returns before the holder lets go."""
         import time

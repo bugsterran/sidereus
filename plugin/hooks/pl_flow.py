@@ -137,8 +137,11 @@ IDLE_S = 6 * 3600     # a run untouched this long is over; the next tag opens a 
 LOST_S = 45 * 60      # ⚠a dispatch refused or failed before running gets no Post; its slice is presumed lost after this
 LOCK_WAIT_S, LOCK_STALE_S = 2.0, 5.0
 # ⚠Post waits longer than Pre: a lost dispatch Post can make the review-verdict gate deny a valid loop-back.
-# Kept below the 5 s hook timeout of every registration (plugin hooks.json, settings.json), so no stale takeover here.
-POST_LOCK_WAIT_S = 4.5
+# Budget inside the 5 s hook timeout: wait + interpreter start (up to 1.5 s on Windows, plugin/hooks/pyrun.sh) + the
+# work after the lock; a hook killed while holding the lock leaves it until LOCK_STALE_S and Pres fail open meanwhile.
+# A lock already older than LOCK_STALE_S is still taken over during this wait (the usual stale rule).
+POST_LOCK_WAIT_S = 3.0
+HOOK_TIMEOUT_S, START_MAX_S = 5.0, 1.5   # registration timeout · worst interpreter start; pinned by a test
 NUDGE_S = 600         # at most one untagged-Bash reminder per open run in this window
 # Async receipts: Agent run_in_background launch, SendMessage resume / queue (same texts sidereus/bgtasks_parse.py reads).
 BG_RE = re.compile(r"async_launched|Async agent launched|Resuming agent|resumed from transcript|resumedAgentId|"
