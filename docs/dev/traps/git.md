@@ -167,5 +167,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Never search the raw text again or shorten the mask: the offsets only line up while both strings have the same length.
 - Cause: `git push ... | tail` exits 0 when the push fails (status of the last command), so `is_error` stayed false and the session was sent to wait on CI for a commit that never left.
 - ⇒ git's own failure lines in stdout/stderr (`error: ` · `fatal: ` · `! [rejected]` · `! [remote rejected]`) also mean no hint.
+- Cause: `^v\d` read branches like `v2-redesign` as tags, an auto-backgrounded push (`backgroundTaskId`, no result yet) was announced as pushed, and `git push origin a b` hinted only `a`.
+- ⇒ A tag is version-shaped (`^v\d+\.\d+`); `backgroundTaskId` means no hint; `pushed_branches` returns every branch and each gets its own hint line.
 - ⚠Match the `error: ` prefix only: a localized git keeps it but translates «failed to push» (★a ko-locale push refused by the pre-push leak scan was announced as «Pushed»).
 - ⚠Do not drop the `is_error` check for this: a push that fails before printing (killed, timeout) has only the status.

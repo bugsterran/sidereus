@@ -54,20 +54,41 @@ def _mask(cmd):
 
 
 def pushed_branch(cmd, current):
-    """Branch a `git push` command sends, or None when it is not a branch push."""
+    """First branch a `git push` command sends, or None when it is not a branch push."""
+    b = pushed_branches(cmd, current)
+    return b[0] if b else None
+
+
+def _ref_branch(spec, current):
+    """Branch one push refspec sends, or None (delete, tag, empty)."""
+    if spec.lstrip("+").startswith(":"):  # `:old` / `+:old` = delete refspec, nothing to build
+        return None
+    ref = spec.split(":")[-1].lstrip("+")
+    if ref.startswith("refs/heads/"):
+        ref = ref[len("refs/heads/"):]
+    if ref == "HEAD":
+        return current
+    # ⚠Only a version-shaped name (`v1.2`, `v0.20.0`) is a tag: a bare `^v\d` skipped branches like `v2-redesign`.
+    if ref.startswith("refs/tags/") or re.match(r"^v\d+\.\d+", ref):
+        return None
+    return ref or None
+
+
+def pushed_branches(cmd, current):
+    """Every branch a `git push` command sends, in order (`git push origin a b` sends both); [] when none."""
     cmd = cmd or ""
     mk = _mask(cmd)
     m = _PUSH.search(mk)
     if not m:
-        return None
+        return []
     sep = re.search(r"[;&|]", mk[m.end():])
     rest = cmd[m.end():m.end() + sep.start()] if sep else cmd[m.end():]
     try:
         args = shlex.split(rest)
     except ValueError:
-        return None
+        return []
     if any(a in ("--tags", "--delete", "-d", "--dry-run", "-n") for a in args):
-        return None
+        return []
     pos, skip = [], False
     for a in args:
         if skip:
@@ -77,17 +98,13 @@ def pushed_branch(cmd, current):
         elif not a.startswith("-"):
             pos.append(a)
     if len(pos) < 2:  # `git push` or `git push origin` sends the current branch
-        return current
-    if pos[1].lstrip("+").startswith(":"):  # `:old` / `+:old` = delete refspec, nothing to build
-        return None
-    ref = pos[1].split(":")[-1].lstrip("+")
-    if ref.startswith("refs/heads/"):
-        ref = ref[len("refs/heads/"):]
-    if ref == "HEAD":
-        return current
-    if ref.startswith("refs/tags/") or re.match(r"^v\d", ref):
-        return None
-    return ref or None
+        return [current] if current else []
+    out = []
+    for spec in pos[1:]:
+        b = _ref_branch(spec, current)
+        if b and b not in out:
+            out.append(b)
+    return out
 
 
 def pushed_dir(cmd):
@@ -149,6 +166,10 @@ def main():
     resp = ev.get("tool_response") or {}
     if isinstance(resp, dict) and (resp.get("interrupted") or resp.get("is_error")):
         return
+    # A long push moved to the background by Claude Code has not finished yet (backgroundTaskId, no exit code):
+    # «Pushed» here would send the session to wait on CI for a commit that may never leave.
+    if isinstance(resp, dict) and resp.get("backgroundTaskId"):
+        return
     if isinstance(resp, dict) and _FAILED.search("%s\n%s" % (resp.get("stdout") or "", resp.get("stderr") or "")):
         return
     cwd = ev.get("cwd") or "."
@@ -159,19 +180,20 @@ def main():
         cwd = os.path.join(cwd, d)
         if not top or _git(cwd, "rev-parse", "--show-toplevel") != top:
             return
-    branch = pushed_branch(cmd, _git(cwd, "rev-parse", "--abbrev-ref", "HEAD"))
-    if not branch:
+    msgs = []
+    for branch in pushed_branches(cmd, _git(cwd, "rev-parse", "--abbrev-ref", "HEAD")):
+        sha = _git(cwd, "rev-parse", "--verify", "--quiet", branch + "^{commit}")
+        if not re.fullmatch(r"[0-9a-f]{40}", sha):
+            continue
+        msgs.append("Pushed %s (%s). Run %s once with run_in_background "
+                    "and report its verdict line when it finishes; on FAIL list the failing tests and "
+                    "fix through quick-fix (cause known) or sidereus-bugfix."
+                    # ⚠Quoted: git ref names may hold `$(...)` or backticks, and the session runs this line in a shell.
+                    % (_code(branch), sha[:8], _code("bash scripts/ci_wait.sh %s %s" % (sha, shlex.quote(branch)))))
+    if not msgs:
         return
-    sha = _git(cwd, "rev-parse", "--verify", "--quiet", branch + "^{commit}")
-    if not re.fullmatch(r"[0-9a-f]{40}", sha):
-        return
-    msg = ("Pushed %s (%s). Run %s once with run_in_background "
-           "and report its verdict line when it finishes; on FAIL list the failing tests and "
-           "fix through quick-fix (cause known) or sidereus-bugfix."
-           # ⚠Quoted: git ref names may hold `$(...)` or backticks, and the session runs this line in a shell.
-           % (_code(branch), sha[:8], _code("bash scripts/ci_wait.sh %s %s" % (sha, shlex.quote(branch)))))
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse",
-                                             "additionalContext": msg}}))
+                                             "additionalContext": "\n".join(msgs)}}))
 
 
 if __name__ == "__main__":

@@ -38,6 +38,17 @@ class PushedBranch(unittest.TestCase):
         self.assertIsNone(self.b("git push origin :old"))
         self.assertIsNone(self.b("git push origin +:old"))
 
+    def test_v_digit_branch_is_not_a_tag(self):
+        # only a version-shaped name is a tag; `v2-redesign` is a branch
+        self.assertEqual(self.b("git push origin v2-redesign"), "v2-redesign")
+        self.assertIsNone(self.b("git push origin v0.20.0"))
+        self.assertIsNone(self.b("git push origin v1.2"))
+
+    def test_several_branches(self):
+        self.assertEqual(H.pushed_branches("git push origin a b", "dev"), ["a", "b"])
+        self.assertEqual(H.pushed_branches("git push origin dev main v0.20.0 :old", "dev"), ["dev", "main"])
+        self.assertEqual(H.pushed_branches("git push --tags", "dev"), [])
+
     def test_separators_inside_quotes(self):
         # A `;` or `&&` inside a quoted message is not a command boundary.
         self.assertEqual(self.b('git commit -m "note; git push origin other" && git push origin dev'), "dev")
@@ -128,6 +139,20 @@ class Main(unittest.TestCase):
                                         {"stdout": "", "stderr": "error: failed to push some refs to 'x'"}))
         ok = "To example.invalid:r.git\n   1111111..2222222  dev -> dev"
         self.assertIn("ci_wait.sh", self.run_main(cmd, git, {"stdout": ok, "stderr": ""}))
+
+    def test_auto_backgrounded_push_gets_no_hint(self):
+        # a long push moved to the background has no result yet
+        git = {("/repo", "rev-parse", "--abbrev-ref", "HEAD"): "dev",
+               ("/repo", "rev-parse", "--verify", "--quiet", "dev^{commit}"): self.SHA}
+        self.assertIsNone(self.run_main("git push origin dev", git, {"stdout": "", "stderr": "", "backgroundTaskId": "b1"}))
+
+    def test_two_branches_get_two_hints(self):
+        git = {("/repo", "rev-parse", "--abbrev-ref", "HEAD"): "dev",
+               ("/repo", "rev-parse", "--verify", "--quiet", "dev^{commit}"): self.SHA,
+               ("/repo", "rev-parse", "--verify", "--quiet", "main^{commit}"): self.SHA}
+        out = self.run_main("git push origin dev main", git)
+        self.assertIn("ci_wait.sh %s dev`" % self.SHA, out)
+        self.assertIn("ci_wait.sh %s main`" % self.SHA, out)
 
 
 if __name__ == "__main__":
