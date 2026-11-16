@@ -56,7 +56,8 @@ class Base(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def p(self, rel):
-        return os.path.join(self.repo, rel)
+        # ⚠normpath like the indexer: a joined "sub/b.js" keeps «/» on Windows while the key reads «sub\b.js»
+        return os.path.normpath(os.path.join(self.repo, rel))
 
     def main(self, sid, lines):
         with open(os.path.join(self.proj, "-repo", sid + ".jsonl"), "a", encoding="utf-8") as f:
