@@ -73,7 +73,8 @@ class SessionReposSymlink(unittest.TestCase):
 
 class PiAbsPath(unittest.TestCase):
     def test_relative_outside_home(self):
-        self.assertEqual(gi.pi_abs_path("a.py", "/opt/x"), "/opt/x/a.py")
+        # ⚠Expected value goes through normpath: on Windows the result is native (`\opt\x\a.py`), not POSIX.
+        self.assertEqual(gi.pi_abs_path("a.py", "/opt/x"), os.path.normpath("/opt/x/a.py"))
 
     def test_relative_without_cwd(self):
         self.assertEqual(gi.pi_abs_path("a.py", ""), "")
