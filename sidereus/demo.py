@@ -35,6 +35,11 @@ WF_AGENTS = [("Design", "Spec the search result page", "done", 28, 23, 1_800_000
 CART_BGS = [{"lab": "npm run dev", "min": 41}, {"lab": "npm test -- --watch cart", "min": 18}]
 CART_BG_IDLE = {"n": 2, "idle": 1, "max": 1500}
 CART_BG_LONG = {"n": 2, "long": 1, "max": 41 * 60}   # `npm run dev` open 41 min
+# Invoice session: its turn ended while its own test command runs, between two pipeline stages (Timeline waits on a command).
+# ⚠`min` grows with now: a fixed 16 untied the command from the run (74c tlPlWaitTied, 30 min) and the strip read «Aborted».
+INV_BGS = lambda now, a: [{"lab": "pytest tests/pdf", "min": max(1, (int(now) - (a - 16 * 60)) // 60)}]
+INV_REP = {"n": 9, "tool": "Bash"}   # same call 9x in a row (attention «loop», ATT_LOOP_N = 8)
+SEARCH_FAIL = {"n": 5, "tool": "Edit"}   # same tool error 5x on the search session (attention «toolfail»)
 PI_SID = _uuid(random.Random(SEED + 31))   # hook-fed pi row (ext.py ext_rows key set), extension older than the template
 PI_ROW = dict(GEM_ROW, id=PI_SID[:8], sid=PI_SID, project="acme-web", kind="pi", plat="pi",
               model="anthropic/claude-sonnet-4-5", state="tool", otelEv="tool", tool="Bash", targ="", goneWhy="", pid=0, extOld="reload")
@@ -257,7 +262,9 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
 
     def pl_runs(self, k):
         """pl_runs.pl_model-shaped `plrun` of session `k` (only "web"): change-flow «Design» ✓ → «Implement» ✓ (2nd pass after a «Review» loop-back) → «Verify» run;
-        plus open `hotfix` («Implement» run) and ended `release-check`."""
+        plus open `hotfix` («Implement» run) and ended `release-check`. "inv" has one open run between stages (`_inv_run`)."""
+        if k == "inv":
+            return self._inv_run()
         if k != "web":
             return []
         s, now, a, r = self.by["web"], self.now(), self.a, random.Random(SEED + 31)   # own rng: keeps self.rng unchanged  # nosec B311 -- seeded demo data / retry jitter, not a secret
@@ -287,6 +294,21 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
                  "t0": a - 40 * 60, "t1": now - 60, "stages": hot},
                 {"name": "release-check", "proj": s["cwd"], "sid": s["sid"], "cur": "리뷰", "end": a - 152 * 60,
                  "t0": a - 200 * 60, "t1": a - 152 * 60, "stages": rel}]
+
+    def _inv_run(self):
+        """Open run of the invoice session with no stage «run»: «Implement» done, the session waits on its own command (INV_BGS)."""
+        s, a, r = self.by["inv"], self.a, random.Random(SEED + 37)   # own rng: web run ids stay the same  # nosec B311 -- seeded demo data / retry jitter, not a secret
+
+        def ag(lab, t0, t1):
+            return {"aid": "a" + _hex(r, 16), "tid": "toolu_" + _hex(r, 24), "lab": lab, "run": False, "t0": t0, "t1": t1}
+        st = {"설계": {"o": "done", "n": 1, "t0": a - 58 * 60, "t1": a - 46 * 60, "from": {},
+                       "ag": [ag("Plan: Invoice PDF export", a - 58 * 60, a - 46 * 60)]},
+              "구현": {"o": "done", "n": 1, "t0": a - 44 * 60, "t1": a - 15 * 60, "from": {},
+                       "ag": [ag("general-purpose: Tax line snapshot tests", a - 44 * 60, a - 15 * 60)]}}
+        # ⚠proj = the billing main checkout: demo /api/pipelines answers 400 for the invoice worktree.
+        bill = self.by["bill"]["cwd"]
+        return [{"name": "invoice-change", "proj": bill, "sid": s["sid"], "cur": "구현", "end": 0,
+                 "t0": a - 58 * 60, "t1": a - 15 * 60, "stages": st}]
 
     def wf_tl_rows(self, t0):
         """Timeline rows for the workflow run — same shape as timeline._tl_wf_rows (run row + one row per agent)."""
@@ -326,7 +348,8 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
                 "rpm": round(2 + (len(s["mbox"]) % 5) * 1.3, 1), "cwd": s["cwd"], "root": s["cwd"], "branch": s["branch"],
                 # same shape as sessions._session_row: targ only for an Agent call (rule 1)
                 "tool": s["tool"], "targ": s["targ"] if s["tool"] in ("Agent", "Task") else "",
-                "sub": sub, "bgs": CART_BGS if s["k"] == "cart" else [], "mon": [], "wf": self.wf_runs(s["k"]),
+                "sub": sub, "bgs": CART_BGS if s["k"] == "cart" else INV_BGS(now, a) if s["k"] == "inv" else [],
+                "mon": [], "wf": self.wf_runs(s["k"]),
                 "runmin": {"sub": len(sub), "bg": 0} if sub else {}, "kind": "system", "ageSec": age, "cmp": None, "humanAt": 0, "tailAt": 0,
                 "bytes": s["ctx"] * 40, "repos": [s["cwd"]],   # like git toplevel: a worktree session's repo is its worktree
                 "wt": {"root": s["cwd"], "main": "" if s["cwd"] == REPOS[s["repo"]][0] else REPOS[s["repo"]][0],
@@ -338,7 +361,7 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
                 **({"bgLong": CART_BG_LONG} if s["k"] == "cart" else {}),
                 "state": s["state"], "blocked": "", "pmode": "default", "otel": True,
                 "otelEv": "tool_result" if s["state"] in ("think", "tool") else "", "otelAt": 0,
-                "err": False, "rep": {"n": 1, "tool": s["tool"] or "Read"}, "plat": "cc",
+                "err": False, "rep": INV_REP if s["k"] == "inv" else {"n": 1, "tool": s["tool"] or "Read"}, "plat": "cc",
                 # same as term.term_attach (added in state(), not _session_row): None once done
                 "term": None if s["state"] == "done" else {"app": "iterm", "tty": "ttys%03d" % (i + 1)},
                 # two sessions from an extra Claude root (sessions._row_acct shape)
@@ -426,9 +449,12 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
             # pi row spending credits (attention._row_sigs: v.s = seconds since the last spend)
             ({"sid": PI_SID, "cwd": REPOS["acme-web"][0], "repo": "acme-web", "branch": PI_ROW.get("branch", "")}, 80,
              [("credit", "Spending credits · %ds ago" % ps, {"s": ps}, 80, PI_CREDIT(now)["lastAt"])]),
-            (i, 25, [("ctx85", "Context 87%", {"pct": 87}, 25, now - ia),
-                     ("done", "Done · waiting for input " + ("%d min" % (ia // 60) if ia >= 60 else "%d s" % ia), {"s": ia}, 20,
-                      now - ia)]),
+            # loop from the row's `rep` (score = top pts + 5 per extra, like attention._rank); no «done»: its open command (bgs) suppresses it
+            (i, 55, [("loop", "Same call repeated %d× · %s" % (INV_REP["n"], INV_REP["tool"]), dict(INV_REP), 50, now - ia),
+                     ("ctx85", "Context 87%", {"pct": 87}, 25, now - ia)]),
+            # toolfail from the tool-failure index (attention._toolfail_sigs: since = last failure)
+            (self.by["search"], 45, [("toolfail", "Same error repeated %d× · %s" % (SEARCH_FAIL["n"], SEARCH_FAIL["tool"]),
+                                      dict(SEARCH_FAIL), 45, now - 150)]),
         ]
         out = []
         for s, score, sg in rows:

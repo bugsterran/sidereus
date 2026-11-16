@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: flow steps with no current verdict (an older verifier or a missing verdict file) show as «Not checked» in grey with «?» in the flow picker instead of as red failures; step tooltips show the translated reason instead of a raw code.
 - Branches: repos worked on only from pi, Codex, Cursor or Copilot sessions now appear in the repository picker and in work units; for pi, repos it edited outside its working directory count too.
 - Conflicts: files edited from pi sessions now count for file ownership, so «Conflict risk», the file owners in Branches and the `sidereus_file_peers` tool see them.
+- Demo: the demo world now shows the loop and tool-failure attention rows, a pipeline run waiting on a command, the folded «Get started» checklist in Pipelines Watch (3 of 4 steps done) and a «Loop-back after a pass» (`verdict`) block in Harness.
 
 ## [0.19.0] - 2026-11-14
 

@@ -10,7 +10,7 @@ from urllib.parse import parse_qs
 from sidereus.demo_data import HOOKS_CONNECT, MSG_FIRST
 from sidereus.demo_rel import _ARCH_COMMIT, _ARCH_MODS, demo_arch, demo_file, demo_src, demo_tree   # structure arch/tree payloads
 from sidereus.verdict_guide import load as verdict_guide
-from sidereus.demo_tools import _demo_eval, _demo_harness, _demo_pl_evidence, _demo_pipelines, _demo_prefs, _demo_tools   # tools/harness/prefs payloads
+from sidereus.demo_tools import _demo_diag, _demo_eval, _demo_harness, _demo_pl_evidence, _demo_pipelines, _demo_prefs, _demo_tools   # tools/harness/prefs/diag payloads
 
 
 # ─────────────────────────────────────────────── HTTP glue
@@ -96,6 +96,8 @@ def respond(world, path, u):
         return 200, {"ok": True, "plats": [dict(x) for x in HOOKS_CONNECT]}
     if path == "/api/prefs":     # ⚠the bare {"ok": True} fallback lacks `keys` — «Preferences» showed a red read error
         return 200, _demo_prefs()
+    if path == "/api/diag":
+        return 200, _demo_diag()
     if path == "/api/structure":
         return 200, {"ok": False, "msg": "The Size view is not available in demo mode"}   # Architecture view works in demo
     if path == "/api/arch":

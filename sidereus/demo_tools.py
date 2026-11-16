@@ -40,6 +40,17 @@ def _demo_prefs():
             "otel": {"value": "http://127.0.0.1:8799", "ok": True}, "features": feats}
 
 
+# GET /api/diag in the hook_diag.diag() shape: the bundled plugin enabled, nothing else found.
+# ⚠The bare {"ok": True} fallback has no `plugins`/`sidereus`, so the «Get started» checklist read step 1 as unknown and hid.
+DEMO_DIAG = {"ok": True, "overlaps": [], "sidereus": {}, "silent": [], "shadow": [],
+             "plugins": [{"name": "sidereus", "market": "sidereus", "version": "0.9.5", "accts": ["primary"], "on": True,
+                          "known": True, "checked": True}]}
+
+
+def _demo_diag():
+    return json.loads(json.dumps(DEMO_DIAG))
+
+
 def _demo_tools(a, path, tid):
     rows = [{"id": "%s:%012x" % (k, i + 1), "kind": k, "name": n, "scope": sc, "proj": pj, "path": p, "bytes": b,
              "tok": int(round(b / 3.5)), "on": on, "ro": ro, "uses": us, "last": int(a - lh * H) if us else 0,
@@ -183,11 +194,14 @@ def _demo_runtime(a):
 
 
 def _demo_flow_runs(a):
-    """Invented plmark run for the «What is guarding» strip: one skip, one loop-back, one denied stage jump and one denied gate skip."""
+    """Invented plmark run for the «What is guarding» strip: one skip, one loop-back, one denied stage jump, one denied gate skip
+    and one denied loop-back after a passing review verdict."""
     st = lambda s, t0, t1, n=1: {"s": s, "t0": a - t0 * H, "t1": a - t1 * H, "n": n}
+    # ⚠`verdict` stays last: _demo_cost_runs copies dl[0]/dl[1] only, so «Gate cost» is unchanged by it
     return [{"sid": "d3m0f10w0000", "name": "change-flow", "t0": a - 2.0 * H, "t1": a - 0.41 * H, "end": a - 0.41 * H,
-             "h0": "b71e04d", "h1": "3f9c2ab", "deny": 2, "dl": [{"c": "jump", "t": a - 1.8 * H, "title": "검증"},
-                                                                 {"c": "skipgate", "t": a - 0.6 * H, "title": "리뷰"}],
+             "h0": "b71e04d", "h1": "3f9c2ab", "deny": 3, "dl": [{"c": "jump", "t": a - 1.8 * H, "title": "검증"},
+                                                                 {"c": "skipgate", "t": a - 0.6 * H, "title": "리뷰"},
+                                                                 {"c": "verdict", "t": a - 0.45 * H, "title": "리뷰"}],
              "st": {"설계": st("skip", 2.0, 2.0, 0), "구현": st("done", 1.9, 1.0, 2), "검증": st("done", 1.3, 0.5, 2),
                     "리뷰": st("done", 0.5, 0.42)},
              "lb": [{"f": "검증", "g": "구현", "n": 1, "t": a - 1.2 * H}]}]
@@ -252,8 +266,9 @@ def _demo_pl_evidence(a):
 
 
 # «Pipelines» definition for the demo plrun (demo.World.pl_runs): same titles, so the timeline strip opens a populated view.
+# `red` 0 = no stage red-checked yet: the «Get started» checklist shows 3/4 instead of hiding on an unknown step.
 DEMO_PIPE = {"name": "change-flow", "ok": True, "errs": [], "sha": "0d1e2m3o4p5i6p7e", "title": "Change — acme-web",
-             "use": "", "rules": "", "defaults": {"model": "inherit", "retry": 0}, "after": 1, "stages": [
+             "use": "", "rules": "", "defaults": {"model": "inherit", "retry": 0}, "after": 1, "red": 0, "stages": [
                  {"title": "설계", "agent": "planner", "model": "opus", "produces": "slices", "ui": {"x": 44, "y": 24}},
                  {"title": "구현", "agent": "implementer", "fanout": "slices", "gate": "npm test", "ui": {"x": 292, "y": 24}},
                  {"title": "검증", "agent": "verifier", "model": "sonnet", "gate": "npm run check",
@@ -303,15 +318,17 @@ def _demo_pipelines(proj, demo_proj, empty_proj=None):
 
 # GET /api/pipelines/eval for the demo: a fixed pl_eval_view.body() result (core may not import the pipeline
 # feature; tests/test_pl_eval_view.py asserts it still equals body() of the inputs). Invented counts.
-DEMO_EVAL = {"ok": True, "graded": {"n": 1, "m": 4, "unred": 1, "unstable": ["검증"]},
+# ⚠No stage red "pass": DEMO_PIPE `red` counts the same verdicts (pipeline._red_counts) and must stay 0 for «Get started».
+DEMO_EVAL = {"ok": True, "graded": {"n": 0, "m": 4, "unred": 2, "unstable": ["검증"]},
              "stages": [{"title": "설계", "catch": None, "red": "none", "unstable": False, "ci": None, "agree": None},
-                        {"title": "구현", "catch": {"caught": 7, "n": 8}, "red": "pass", "unstable": False,
+                        {"title": "구현", "catch": {"caught": 7, "n": 8}, "red": "fail", "unstable": False,
                          "ci": {"lo": 53, "hi": 98}, "agree": {"k": 3, "n": 3}},
                         {"title": "검증", "catch": {"caught": 5, "n": 6}, "red": "none", "unstable": True,
                          "ci": {"lo": 44, "hi": 97}, "agree": {"k": 2, "n": 3}},
                         {"title": "리뷰", "catch": None, "red": "skip", "unstable": False, "ci": None, "agree": None}],
              "holdout": {"n": 12, "caught": 10, "ci": {"lo": 55, "hi": 95}}, "commit": "3f9c2ab0d1e2",
-             "sugg": [{"code": "unstable", "stage": "검증", "mode": "fast"},
+             "sugg": [{"code": "tighten-gate", "stage": "구현", "mode": "fast", "flags": "--fast", "tpl": ""},   # = suggest() (b) for the red "fail"
+                      {"code": "unstable", "stage": "검증", "mode": "fast"},
                       {"code": "redcheck", "stage": "검증", "cmd": ""}],   # cmd filled per request from the demo project path
              "security": {"n": 5, "m": 7, "checks": [
                  {"id": "security-policy", "v": "fail"}, {"id": "license", "v": "pass"}, {"id": "pinned-deps", "v": "pass"},

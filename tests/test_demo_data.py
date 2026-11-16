@@ -161,7 +161,8 @@ class SameKeysAsRealBuilders(_Patch):
 
     def test_plrun_stack_keys(self):
         # Stacked demo runs (2 open + 1 ended) keep pl_model's row/stage/agent key sets.
-        (row,) = [r for r in self.world().state()["sessions"] if r.get("plrun")]
+        w = self.world()
+        (row,) = [r for r in w.state()["sessions"] if r.get("plrun") and r["sid"] == w.by["web"]["sid"]]   # inv has its own run
         pl = row["plrun"]
         self.assertEqual([(r["name"], bool(r["end"])) for r in pl],
                          [("change-flow", False), ("hotfix", False), ("release-check", True)])

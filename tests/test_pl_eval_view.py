@@ -144,8 +144,8 @@ class EvalApi(unittest.TestCase):
         from sidereus import demo_tools as d
         ev = {"stages": [{"title": "구현", "n": 8, "caught": 7}, {"title": "검증", "n": 6, "caught": 5}],
               "holdout": {"n": 12, "caught": 10}}
-        red = {"구현": {"verdict": "pass"}, "검증": {"verdict": "none"}, "리뷰": {"verdict": "skip"}}
-        sg = [d.DEMO_EVAL["sugg"][0], {"code": "redcheck", "stage": "검증",
+        red = {"구현": {"verdict": "fail"}, "검증": {"verdict": "none"}, "리뷰": {"verdict": "skip"}}
+        sg = [d.DEMO_EVAL["sugg"][0], d.DEMO_EVAL["sugg"][1], {"code": "redcheck", "stage": "검증",
                                        "cmd": self.v.redcheck_cmd("/demo", "change-flow", "검증", code_dir="/sidereus", nt=False)}]
         ag = {"구현": {"k": 3, "n": 3}, "검증": {"k": 2, "n": 3}}
         want = self.v.body("change-flow", ["설계", "구현", "검증", "리뷰"], ev, red, d.DEMO_EVAL["graded"], "3f9c2ab0d1e2", sg, ag,

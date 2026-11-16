@@ -27,6 +27,7 @@
    "billing-api",
    "invoice-pdf",
    "worktree",
+   "Working · Implement",
    "search-index",
    "worktree",
    "└─",
@@ -55,6 +56,9 @@
    "Running · #t#bea · Verify · Agents # · # done · #t",
    "✎ Edit",
    "▶ Run",
+   "Get started #",
+   "Show list",
+   "Hide",
    "Fit to view",
    "−",
    "#%",
@@ -181,7 +185,6 @@
    "# <ap>",
    "# <ap>",
    "# <ap>",
-   "# <ap>",
    "Tokens",
    "#t",
    "▾",
@@ -287,6 +290,10 @@
    "invoice-pdf",
    "#t active",
    "worktree",
+   "Design",
+   "Implement",
+   "Implement · #t · Command waiting on work",
+   "gate PASS · # tests · screen #",
    "└─",
    "Invoice PDF layout",
    "general-purpose",
@@ -1226,14 +1233,16 @@
    "cart-roundingbugfix/cart-roundingConflict risk · # file · sessions #t#bea, cd#ed# +# more#t agoWork logdiffCopy resume commandTerminalReplyAsk to checkDoneLaterLive state — clears when resolved⋯",
    "acme-webfeature/checkout-redesignConflict risk · # file · sessions #t#bea, cd#ed#t agoWork logdiffCopy resume commandTerminalReplyDoneLaterLive state — clears when resolved⋯",
    "acme-webSpending creditsjust nowWork logCopy commandReplyDoneLaterLive state — clears when resolved⋯",
-   "invoice-pdffeature/invoice-pdfContext #% +# more#t agoWork logdiffCopy resume commandTerminalReplyDoneLaterLive state — clears when resolved⋯"
+   "invoice-pdffeature/invoice-pdfSame action repeated #× · Bash +# more#t agoWork logdiffCopy resume commandTerminalReplyDoneLaterLive state — clears when resolved⋯",
+   "search-indexfeature/search-indexSame error repeated #× · Edit#t agoWork logCopy resume commandTerminalReplyDoneLaterLive state — clears when resolved⋯"
   ],
   "rattn": [
    "billing-apiAwaiting answer#t ago",
    "cart-roundingConflict risk#t ago",
    "acme-webConflict risk#t ago",
    "acme-webSpending creditsjust now",
-   "invoice-pdfContext #%#t ago"
+   "invoice-pdfRepeated calls#t ago",
+   "search-indexTool failures#t ago"
   ],
   "pop:diff": [
    "acme-web changes",
