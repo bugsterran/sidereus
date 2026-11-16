@@ -16,6 +16,7 @@ from sidereus.ext_store import EXT_PLAT, EXT_EV_N, _ext, _ext_lock, _sid_ok, _to
 from sidereus import ext_side
 from sidereus.ext import ROLL_WIN_S, ext_work
 from sidereus.adapter import adapter_scan
+from sidereus.gitinfo import cwd_git
 from sidereus import live_probe, term   # module access: tests patch `_ps_snap_cache` / `_probe_cwd`
 
 PRES_MODS = {plat_cursor.PLAT: plat_cursor, plat_copilot.PLAT: plat_copilot, plat_pi.PLAT: plat_pi}
@@ -124,12 +125,13 @@ def _row(plat, c, now):
         "runmin": {}, "kind": "", "ageSec": 0, "bytes": 0, "repos": [],
         "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": "",
         "win": 0, "winSrc": "", "winN": 0,
-        "git": "", "state": "unknown", "blocked": "",
+        "git": "", "wt": None, "state": "unknown", "blocked": "",
         "otel": False, "otelEv": "", "otelAt": 0, "err": False, "plat": EXT_PLAT[plat],
     }
     row.update({
         "id": _sid8(sid), "sid": sid, "project": _proj_name(cwd) or "?", "cwd": cwd,
-        "branch": str(c.get("branch") or "")[:200],
+        # branch · git · repos · wt, same as Claude rows (Branches picker); pi edits outside cwd add repos
+        **cwd_git(cwd, c.get("branch"), c.get("path") if pi and plat_pi.path_ok(c.get("path")) else ""),
         "model": str((c.get("model") if pi else tk.get("model")) or "")[:40], "tok": tk.get("tok", 0),
         "tokSplit": {k: tk.get(k, 0) for k in ("in", "out", "cache", "thought")},
         "estCost": tk.get("cost") if pi else None, "costMiss": tk.get("costMiss", 0),

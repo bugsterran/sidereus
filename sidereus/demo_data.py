@@ -33,7 +33,7 @@ GEM_ROW = {
     "creq": 0, "burn": 0, "rpm": 0, "cwd": "", "branch": "", "tool": "", "targ": "", "sub": [], "bgs": [],
     "mon": [], "runmin": {"sub": 0, "bg": 0, "run": 38}, "kind": "gemini", "ageSec": 0, "bytes": 0, "repos": [],
     "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": "gemini-2.5-pro", "win": 0, "winSrc": "", "winN": 0,
-    "git": "", "state": "wait", "blocked": "", "otel": True, "otelEv": "wait", "otelAt": 0,
+    "git": "", "wt": None, "state": "wait", "blocked": "", "otel": True, "otelEv": "wait", "otelAt": 0,
     "err": False, "plat": "gm", "tok": 1_284_600, "tokSplit": {"in": 402_100, "out": 61_300, "cache": 779_800, "thought": 41_400},
     "estCost": 1.63, "costMiss": 0, "hooksOff": False, "extOld": "",   # gemini-2.5-pro rates on tokSplit, all requests under 200k
 }
@@ -45,7 +45,7 @@ def _nohook_row(plat, kind, sid, project, model, run):
             "cwd": "", "branch": "", "tool": "", "targ": "", "sub": [], "bgs": [], "mon": [],
             "runmin": {"sub": 0, "bg": 0, "run": run}, "kind": kind, "ageSec": 0, "bytes": 0, "repos": [],
             "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": model, "win": 0, "winSrc": "", "winN": 0,
-            "git": "", "state": "unknown", "blocked": "", "otel": False, "otelEv": "", "otelAt": 0,
+            "git": "", "wt": None, "state": "unknown", "blocked": "", "otel": False, "otelEv": "", "otelAt": 0,
             "err": False, "plat": plat, "tok": 0, "tokSplit": {"in": 0, "out": 0, "cache": 0, "thought": 0},
             "estCost": None, "costMiss": 0, "goneWhy": "", "pid": 0, "rollout": True, "hooksOff": False, "extOld": ""}
 

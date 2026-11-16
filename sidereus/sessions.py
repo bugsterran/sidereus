@@ -11,7 +11,7 @@ from sidereus.transcript import EXITED, _continued, _model_label  # noqa: F401 (
 from sidereus.ident import _proj_name, _proj_root, _sid8, mbox_of
 from sidereus.live import (_MBOX_LAB_RE, _blocked, _ctx_window, _model_win, _parse_cache,
     _live_retired, _parse_lock, live_cwds, mailbox_watches, sid_alive)
-from sidereus.gitinfo import _git_state, _wt_of, git_branch, session_repos
+from sidereus.gitinfo import _git_state, _wt_of, git_branch, repos_wt, session_repos
 from sidereus.agents import WF_HIST_N, WF_HIST_S, WF_KEEP_S, _DESC_TOOLS, _bg_show, _subs_mt, _subs_newer, plm_of, team_info, wf_public, wf_runs
 from sidereus.usage_index import _uidx, _uidx_lock
 from sidereus.cards import _WRECK_BY_CWD, _note_lock, _recent_transcripts
@@ -372,13 +372,8 @@ def _session_row(fp, mt, now, live, p, stale=False):
 
 
 def _row_repos_wt(cwd, repos):
-    """repos (git repos touched, most recent first) + wt (Branches tab work unit + sidebar worktree chip)."""
-    wt = _wt_of(cwd)
-    # ⚠A non-git cwd working in linked worktrees nests under its main repo via repos[0]; a plain repo there is not a worktree.
-    if wt is None and repos:
-        alt = _wt_of(repos[0])
-        wt = alt if alt and alt.get("main") else None
-    return {"repos": repos, "wt": wt}
+    """repos + wt — the rule lives in gitinfo.repos_wt (ext rows share it); this module's `_wt_of` is what tests patch."""
+    return repos_wt(cwd, repos, _wt_of)
 
 
 def _row_acct(sid, fp):

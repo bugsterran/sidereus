@@ -10,6 +10,7 @@ from sidereus.bus import _load, codex_cursor, codex_id_ok, codex_ok_set
 from sidereus.ident import _proj_name, _sid8, mbox_codex, mbox_pi
 from sidereus.timefmt import iso_local
 from sidereus.adapter import adapter_scan
+from sidereus.gitinfo import cwd_git
 from sidereus import live_probe   # module access: `_ps_snap_cache` is read at call time (tests patch it)
 from sidereus.agents import plm_of
 from sidereus.pl_runs import pl_act, pl_model
@@ -181,7 +182,7 @@ def ext_rollout_rows(now=None):
                 "runmin": {}, "kind": "", "ageSec": 0, "bytes": 0, "repos": [],
                 "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": "",
                 "win": 0, "winSrc": "", "winN": 0,
-                "git": "", "state": "unknown", "blocked": "",
+                "git": "", "wt": None, "state": "unknown", "blocked": "",
                 "otel": False, "otelEv": "", "otelAt": 0, "err": False, "plat": EXT_PLAT["codex"],
             }
             row.update({
@@ -194,6 +195,7 @@ def ext_rollout_rows(now=None):
                 "runmin": {"sub": 0, "bg": 0, "run": max(0, int((last - first) / 60))},
                 "kind": "codex", "goneWhy": "", "pid": 0, "rollout": True, "hooksOff": False, "extOld": "",
             })
+            row.update(cwd_git(cwd))              # branch · git · repos · wt, same as Claude rows (Branches picker)
             row["mbox"], row["mboxSrc"] = mbox_codex(cwd)
             rows.append(row)
     except Exception as e:                        # the rest of the list must survive
@@ -308,7 +310,7 @@ def ext_rows():
                 "runmin": {}, "kind": "", "ageSec": 0, "bytes": 0, "repos": [],
                 "mbox": "", "mboxSrc": "", "cost": 0, "ctx": 0, "model": "",
                 "win": 0, "winSrc": "", "winN": 0,
-                "git": "", "state": "unknown", "blocked": "",
+                "git": "", "wt": None, "state": "unknown", "blocked": "",
                 "otel": False, "otelEv": "", "otelAt": 0, "err": False, "plat": EXT_PLAT[plat],
             }
             row.update({
@@ -339,6 +341,8 @@ def ext_rows():
                 "hooksOff": False,        # hooks fired, so they are on; same key set as rollout rows
                 "extOld": _ext_old(plat, v, dead),   # pi only: "reload" | "connect" | ""
             })
+            # branch · git · repos · wt, same as Claude rows (Branches picker); pi edits outside cwd add repos
+            row.update(cwd_git(cwd, "", tpath if plat == "pi" and plat_pi.path_ok(tpath) else ""))
             if plat == "codex":   # Codex hooks log in under their own <folder>-codex id
                 row["mbox"], row["mboxSrc"] = mbox_codex(cwd)
             elif plat == "pi":    # pi logs in as `pi:<cwd>` or <folder>-pi (gemini_mailbox_mcp.sh pi), not the Claude id

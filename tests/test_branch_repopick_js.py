@@ -53,6 +53,15 @@ class BranchRepoPick(unittest.TestCase):
         self.assertEqual(r["load"], [True])
         self.assertEqual(r["after"], ["/w/b", "", None, None, "sidereus.brrecent"])
 
+    def test_pi_row_with_git_fields_listed(self):
+        # External rows now carry branch + repos (ext.cwd_git); a non-git row (branch '') adds no cwd.
+        src = ("let SESS = [{plat: 'pi', cwd: '/w/pi/sub', branch: 'feature/x', repos: ['/w/pi']},"
+               "{plat: 'cx', cwd: '/w/plain', branch: '', repos: []}];\n" + js_fn("brRepos")
+               + "\nprocess.stdout.write(JSON.stringify(brRepos()));")
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(json.loads(r.stdout), ["/w/pi/sub", "/w/pi"])
+
 
 if __name__ == "__main__":
     unittest.main()

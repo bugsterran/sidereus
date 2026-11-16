@@ -230,14 +230,24 @@ def _extra_paths(blob, cmd, cwd):
     home = _HOME.rstrip(os.sep) + os.sep
     return [d for d in out if os.path.normpath(d).startswith(home)]
 
+def _rel_paths(rel, cwd):
+    """cwd-relative tool paths (pi) joined to cwd, kept only inside the user's home like `_extra_paths`."""
+    home = _HOME.rstrip(os.sep) + os.sep
+    out = [os.path.normpath(os.path.join(cwd, r)) for r in rel] if cwd and os.path.isabs(cwd) else []
+    return [d for d in out if d.startswith(home)]
+
 # ⚠`_git_root` used to live here (inferior version: `.git` directory only · 8-level climb cap · `_ROOT_CACHE`).
 #   The version around :1600 redefined the same name later and **the later one won** — this one was never called.
 #   Deleted 2026-09-21. The live version also accepts worktrees (`.git` is a file) and has no climb limit.
 
 
+_PI_EDIT_TOOLS = ("edit", "write")   # pi built-ins that change a file (`{path}`); read/bash are not edits
+
+
 def _tool_inputs(fp, offset):
-    """(items, offset reached, restarted): (path blob, command) of each tool_use in the complete lines after
-    byte `offset`; a file shorter than `offset` was rewritten, so it is read from 0 and `restarted` is True."""
+    """(items, offset reached, restarted): (path blob, command, cwd-relative paths) of each tool call in the complete
+    lines after byte `offset`; a file shorter than `offset` was rewritten, so it is read from 0 and `restarted` is True.
+    Claude `tool_use` blocks and pi `toolCall` edit/write blocks (only their `path`; bodies are never kept)."""
     out = []
     with open(fp, "rb") as f:
         restarted = os.fstat(f.fileno()).st_size < offset
@@ -248,7 +258,7 @@ def _tool_inputs(fp, offset):
             if not raw.endswith(b"\n"):
                 break                        # partial last line: re-read it next scan
             offset += len(raw)
-            if b'"tool_use"' not in raw:
+            if b'"tool_use"' not in raw and b'"toolCall"' not in raw:
                 continue                     # cheap filter: a large transcript is mostly text/results
             try:
                 c = (json.loads(raw).get("message") or {}).get("content")
@@ -257,11 +267,21 @@ def _tool_inputs(fp, offset):
             if not isinstance(c, list):
                 continue
             for blk in c:
-                if not isinstance(blk, dict) or blk.get("type") != "tool_use":
+                if not isinstance(blk, dict):
+                    continue
+                if blk.get("type") == "toolCall" and blk.get("name") in _PI_EDIT_TOOLS:
+                    a = blk.get("arguments") if isinstance(blk.get("arguments"), dict) else {}
+                    pth = a.get("path") if isinstance(a.get("path"), str) else ""
+                    if pth.startswith(("/", "~")):
+                        out.append((pth, "", ()))
+                    elif pth:
+                        out.append(("", "", (pth,)))   # pi allows cwd-relative paths; joined in session_repos
+                    continue
+                if blk.get("type") != "tool_use":
                     continue
                 inp = blk.get("input") if isinstance(blk.get("input"), dict) else {}
                 blob = " ".join(str(inp.get(k) or "") for k in ("file_path", "path", "notebook_path", "command"))
-                out.append((blob, str(inp.get("command") or "")))
+                out.append((blob, str(inp.get("command") or ""), ()))
     return out, offset, restarted
 
 
@@ -280,8 +300,8 @@ def session_repos(fp, mt, cwd):
         items, offset, restarted = _tool_inputs(fp, offset)
         if restarted:
             recent = []
-        for blob, cmd in items:
-            for d in [m.group(0) for m in _PATH_RE.finditer(blob)] + _extra_paths(blob, cmd, cwd):
+        for blob, cmd, rel in items:
+            for d in [m.group(0) for m in _PATH_RE.finditer(blob)] + _extra_paths(blob, cmd, cwd) + _rel_paths(rel, cwd):
                 r = _git_root(d if os.path.isdir(d) else os.path.dirname(d))
                 if r:
                     if r in recent:
@@ -433,3 +453,32 @@ def _wt_of(cwd):
         _WTOF.clear()
     _WTOF[cwd] = (time.time(), val)
     return val
+
+
+def repos_wt(cwd, repos, wt_of=None):
+    """repos (git repos touched, most recent first) + wt (Branches tab work unit + sidebar worktree chip)."""
+    wt_of = wt_of or _wt_of
+    wt = wt_of(cwd)
+    # ⚠A non-git cwd working in linked worktrees nests under its main repo via repos[0]; a plain repo there is not a worktree.
+    if wt is None and repos:
+        alt = wt_of(repos[0])
+        wt = alt if alt and alt.get("main") else None
+    return {"repos": repos, "wt": wt}
+
+
+def cwd_git(cwd, branch="", fp=""):
+    """branch · git · repos · wt of an external CLI row from its cwd — the helpers Claude rows use.
+    `fp` = a session file in a shape `_tool_inputs` reads (pi): its edit/write paths add repos outside the cwd.
+    ⚠Without this, pi/Codex/Cursor/Copilot rows never reached the Branches repo picker or its work units."""
+    fb = str(branch or "")[:200]
+    if not isinstance(cwd, str) or not cwd or not os.path.isdir(cwd):   # no git fork for an empty or vanished cwd
+        return {"branch": fb, "git": "", "repos": [], "wt": None}
+    root = _git_root(cwd)
+    repos = [root] if root else []
+    try:   # ⚠a raise here would drop every later row in ext_rows' loop-wide except
+        mt = os.path.getmtime(fp) if fp and os.path.isfile(fp) else None
+    except (OSError, TypeError, ValueError):
+        mt = None                                # missing/unreadable session file: the cwd root alone
+    if mt is not None:
+        repos = session_repos(fp, mt, cwd) or repos   # cwd root first, incremental, cached per file; OSError kept inside
+    return dict(repos_wt(cwd, repos), branch=git_branch(cwd, fb), git=_git_state(cwd))

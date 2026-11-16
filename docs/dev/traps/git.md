@@ -4,6 +4,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Branch tab, board, git and worktrees
 
+- ★**External CLI sessions never reached the Branches repo picker** (2026-11-16 · pi in a git repo on a feature branch was missing). Cause: `ext_rows`, `ext_rollout_rows` and `ext_presence._row` hard-coded `branch: ""`, `repos: []`, `git: ""` and no `wt`; `brRepos` (88) lists a cwd only with `branch`, plus `repos`.
+  - ⇒ All three call `gitinfo.cwd_git(cwd, branch, fp)`: `git_branch` · `_git_state` · cwd root, plus for pi the session file (`plat_pi.path_ok`) through `session_repos`, whose `_tool_inputs` also reads pi `toolCall` edit/write `path` (relative ones joined to cwd) · `wt` by the shared `repos_wt` rule. No git fork for an empty or missing cwd. Tests `tests/test_ext_repos.py` · `tests/test_branch_repopick_js.py`.
+  - ⚠A new external row builder must call `cwd_git` too, and every ext row (and demo `GEM_ROW` / `_nohook_row`) keeps the `wt` key. pi read/bash paths are not edits and stay out; only the path is kept, never arguments' content.
 - ★**«Closes #N» in a dev commit closes an issue early or hits the wrong one** (2026-11-04). Cause: GitHub acts on closing keywords when the commit reaches `main`, and a Sidereus to-do number written as `#64` names an unrelated issue.
   - ⇒ `.githooks/commit-msg` → `scripts/commit_msg_check.py check(msg, staged)`: closing keywords (`close[sd]`/`fix(e[sd])`/`resolve[sd]`, optional `:` and `owner/repo`) are allowed only when `CHANGELOG.md` is staged (the release commit); otherwise «use Refs #N». Comment lines (`#…`) are ignored as git does. The regex lives only there.
   - ⚠`commit -v` puts the diff after the scissors line `# --- >8 ---`; cut there first, or a staged `+Fixes #3` is refused. A message-only `--amend` of the release commit stages nothing ⇒ with an empty stage, HEAD's files (`diff-tree -r HEAD`) count. Test `tests/test_commit_msg_check.py`.
