@@ -128,11 +128,11 @@ class TestCardSignals(Base):
 
     def test_fail_kind_and_count(self):
         one = [{"kind": "fcheck", "cwd": "/w/p", "at": iso(NOW - 60)}]
-        self.check("fail", sess(age=400), {"kind": "fcheck", "n": 1}, "Failure alert", one)
+        self.check("fail", sess(age=400), {"kind": "fcheck", "n": 1}, "Cause needs a look", one)   # one alert names its kind
         three = [{"kind": k, "cwd": "/w/p", "at": iso(NOW - s)} for k, s in (("fcheck", 300), ("fcut", 200), ("fwreck", 100))]
         self.check("fail", sess(age=400), {"kind": "fwreck", "n": 3}, "Failure alert (3)", three)
-        for k, want in (("fail", "fail"), ("flimit", "flimit"), ("fzzz", "fail")):
-            self.check("fail", sess(age=400), {"kind": want, "n": 1}, "Failure alert",
+        for k, want, why in (("fail", "fail", "Failure alert"), ("flimit", "flimit", "Stopped by limit"), ("fzzz", "fail", "Failure alert")):
+            self.check("fail", sess(age=400), {"kind": want, "n": 1}, why,
                        [{"kind": k, "cwd": "/w/p", "at": iso(NOW - 60)}])
 
     def test_bgdone_sources(self):

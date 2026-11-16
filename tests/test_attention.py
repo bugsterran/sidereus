@@ -255,7 +255,7 @@ class TestCards(Base):
         c = {"kind": "fcheck", "cwd": "/w/p/sub/dir", "at": iso(now - 60)}
         row = self.one(sess("a", cwd="/w/p"), [c])
         self.assertEqual(row["sigs"][0]["k"], "fail")
-        self.assertEqual(row["why"], "Failure alert")
+        self.assertEqual(row["why"], "Cause needs a look")
 
     def test_prefix_is_path_boundary(self):
         c = {"kind": "fcheck", "cwd": "/w/pother", "at": iso(NOW - 60)}

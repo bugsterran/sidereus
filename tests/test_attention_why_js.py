@@ -25,10 +25,10 @@ CASES = [
     ("loop", {"n": 6, "tool": None}, "%s 같은 호출 %d회 반복" % ("도구", 6), "Same action repeated 6×"),
     ("toolfail", {"n": 4, "tool": "Read"}, "같은 오류 %d회 반복 · %s" % (4, "Read"), "Same error repeated 4× · Read"),
     ("toolfail", {"n": 4, "tool": None}, "같은 오류 %d회 반복 · %s" % (4, "도구"), "Same error repeated 4×"),
-    ("fail", {"kind": "flimit", "n": 1}, "한도로 멈춤", "Failure alert"),
+    ("fail", {"kind": "flimit", "n": 1}, "한도로 멈춤", "Stopped by limit"),   # one alert names its kind in en too
     ("fail", {"kind": "fcut", "n": 3}, "바깥 원인으로 끊김" + " 등 %d건" % 3, "Failure alert (3)"),
     ("fail", {"kind": "fcheck", "n": 2}, "원인 확인 필요" + " 등 %d건" % 2, "Failure alert (2)"),
-    ("fail", {"kind": "fwreck", "n": 1}, "반쯤 고친 파일", "Failure alert"),
+    ("fail", {"kind": "fwreck", "n": 1}, "반쯤 고친 파일", "Half-edited files"),
     ("fail", {"kind": "fail", "n": 1}, "실패 알림", "Failure alert"),
     ("fail", {"kind": "fail", "n": 5}, "실패 알림 등 5건", "Failure alert (5)"),
     ("mailidle", {"n": 2, "m": 12}, "메일 %d통 대기 · 세션 쉼 %d분" % (2, 12), "Mail waiting · session idle · 2 messages · 12m"),

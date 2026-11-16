@@ -151,8 +151,8 @@ def _why(k, v):
         return "Same call repeated %d×" % v["n"] + _tool_tail(v["tool"])
     if k == "toolfail":
         return "Same error repeated %d×" % v["n"] + _tool_tail(v["tool"])
-    if k == "fail":
-        return "Failure alert" + (" (%d)" % v["n"] if v["n"] > 1 else "")
+    if k == "fail":   # one alert names its kind, like the screen (17-attention.js); several fold to a count
+        return "Failure alert (%d)" % v["n"] if v["n"] > 1 else _FAIL_TITLE.get(v.get("kind"), "Failure alert")
     if k == "mailidle":
         return "Mail waiting · session idle · %d message(s) · %d min" % (v["n"], v["m"])
     if k == "bglong":

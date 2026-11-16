@@ -165,10 +165,10 @@ function attnWhy(g){
     // ⚠Unknown tool (null): en drops it, ko names the generic word.
     case 'loop': return F(T('Same action repeated {n}×{tl}', 'why'), { n: v.n, tl: v.tool ? ' · ' + v.tool : '', tool: v.tool || T('tool', 'why') });
     case 'toolfail': return F(T('Same error repeated {n}×{tl}', 'why'), { n: v.n, tl: v.tool ? ' · ' + v.tool : '', tool: v.tool || T('tool', 'why') });
-    case 'fail': {   // en names no failure kind; ko shows the kind's title
+    case 'fail': {   // one alert names its kind in every language (a bare «Failure alert» told an en reader less than ko); several fold to a count
       const tk = { flimit: 'Stopped by limit', fcut: 'Cut by external cause', fcheck: 'Cause needs a look', fwreck: 'Half-edited files' };
       const title = Object.prototype.hasOwnProperty.call(tk, v.kind) ? T(tk[v.kind]) : T('Failure alert', 'why');
-      return v.n > 1 ? F(T('Failure alert ({n})', 'why'), { n: v.n, title }) : LANG === 'en' ? T('Failure alert', 'why') : title;
+      return v.n > 1 ? F(T('Failure alert ({n})', 'why'), { n: v.n, title }) : title;
     }
     case 'mailidle': return F(T('Mail waiting · session idle · {msgs} · {age}', 'why'), { n: v.n, msgs: v.n == null ? null : PL(v.n, 'message'), age: UM(v.m, 'm') });
     case 'done': return F(T('Done · waiting for input {age}', 'why'), { age: v.s == null ? null : v.s < 60 ? U(v.s, 's') : U(Math.floor(v.s / 60), 'm') });   // ⚠seconds under 60 s
