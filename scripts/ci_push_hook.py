@@ -20,7 +20,9 @@ _CD = re.compile(r"(?:^|[;&|(\n])\s*cd\s+" + _WORD)
 _VALUED = ("-o", "--push-option", "--repo", "--receive-pack", "--exec")
 # git's own failure lines for a push. ⚠`git push ... | tail` exits 0 when the push fails (the pipe takes the
 # last command's status), so `is_error` alone sent the session to wait on CI for a commit that never left.
-_FAILED = re.compile(r"^(?:error: failed to push|fatal: |\s*! \[(?:remote )?rejected\])", re.M)
+# ⚠Match the `error: ` prefix, not «failed to push»: a localized git translates the text but keeps the prefix
+# (a ko locale printed `error: <Korean text>` and the hook still announced «Pushed»).
+_FAILED = re.compile(r"^(?:error: |fatal: |\s*! \[(?:remote )?rejected\])", re.M)
 
 
 def _mask(cmd):

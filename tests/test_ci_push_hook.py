@@ -121,7 +121,8 @@ class Main(unittest.TestCase):
         cmd = "git push origin dev 2>&1 | tail -3"
         for out in (" ! [rejected]        dev -> dev (fetch first)\nerror: failed to push some refs to 'x'",
                     " ! [remote rejected] dev -> dev (pre-receive hook declined)",
-                    "fatal: Authentication failed for 'https://example.invalid/r.git/'"):
+                    "fatal: Authentication failed for 'https://example.invalid/r.git/'",
+                    "leakscan: 12 outgoing commits, 1 hits\nerror: 레퍼런스 push failed (localized)"):
             self.assertIsNone(self.run_main(cmd, git, {"stdout": out, "stderr": ""}), out)
         self.assertIsNone(self.run_main("git push origin dev | tail -3", git,
                                         {"stdout": "", "stderr": "error: failed to push some refs to 'x'"}))

@@ -166,5 +166,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ Patterns are matched on `_mask` (quoted and escaped characters replaced, same length) and words taken from the raw text at the same offsets; `_code` fences with one backtick more than the longest run inside.
 - ⚠Never search the raw text again or shorten the mask: the offsets only line up while both strings have the same length.
 - Cause: `git push ... | tail` exits 0 when the push fails (status of the last command), so `is_error` stayed false and the session was sent to wait on CI for a commit that never left.
-- ⇒ git's own failure lines in stdout/stderr (`error: failed to push` · `fatal: ` · `! [rejected]` · `! [remote rejected]`) also mean no hint.
+- ⇒ git's own failure lines in stdout/stderr (`error: ` · `fatal: ` · `! [rejected]` · `! [remote rejected]`) also mean no hint.
+- ⚠Match the `error: ` prefix only: a localized git keeps it but translates «failed to push» (★a ko-locale push refused by the pre-push leak scan was announced as «Pushed»).
 - ⚠Do not drop the `is_error` check for this: a push that fails before printing (killed, timeout) has only the status.
