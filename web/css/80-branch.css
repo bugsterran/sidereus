@@ -46,7 +46,9 @@ html[data-ui=next] .brsvg.dim path.hl{stroke-width:2.6}
   text-overflow:ellipsis;white-space:nowrap}
 .brf.brl{background:#1d2b42;border-color:#3f6ea8;color:#bcd4f5}
 .brf.brm{background:none;border-color:#3a4a63;color:#8b95a7}
-.brf.brh{background:#3a2e14;border-color:#e0b45f;color:#e6c887;font-weight:600}
+/* ⚠`.brh` is also the section-heading class (40-tokens.css: display:flex; margin-bottom:6px). On a chip that made it a
+   flex container, where text-overflow does not apply: the HEAD branch chip was cut without an ellipsis. */
+.brf.brh{background:#3a2e14;border-color:#e0b45f;color:#e6c887;font-weight:600;display:inline-block;margin-bottom:0}
 /* ★«feature/checkout-redesign» chip was 162/148px clipped in the side pane: wrap there, never ellipsise. */
 #brpan .brf{flex-shrink:1;min-width:0;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;max-width:100%}
 .brlg{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:6px 0 8px;
@@ -117,7 +119,8 @@ html.brpgr .brpan{border-left-color:var(--nx-t3,#3a4657)}
 .brdf:hover{background:#1b2231}
 .brdf.on{background:#1d2b42;box-shadow:inset 3px 0 0 #58a6ff}
 .brdf b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400;color:#c3ccda}
-.brdf em{font-style:normal;color:#6b7688;font-size:10px}
+/* sha · age never wraps: the subject <b> (min-width 0) gives way instead; it broke mid-token at every width. */
+.brdf em{flex:0 0 auto;white-space:nowrap;font-style:normal;color:#6b7688;font-size:10px}
 .brdf .ba{color:#7fbf7f;font-size:10.5px}
 .brdf .bd{color:#cf8a8a;font-size:10.5px}
 /* Work unit rows (worktree <-> sessions) in the branch pane. State dot uses the --nx palette. */

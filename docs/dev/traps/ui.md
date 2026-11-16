@@ -281,3 +281,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: the dot counted only `SESS[].sub`; a session working in its own turn (state `tool`/`think`, no subagent, no open run) lit no tab, so the screen looked idle.
 - ⇒ `buildMv` (92) also counts `tool`/`think` sessions under 600 s idle; the tooltip names both counts.
 - ⚠Keep the 600 s cut in step with the session list mute rule (40b) — a stale «working» row must not light the tab.
+
+## Branch chip `.brh` collides with the section heading `.brh` (`web/css/80-branch.css`)
+- Cause: `.brh` is both the HEAD-colour chip modifier and the section heading (`40-tokens.css`: `display:flex; margin-bottom:6px`), so the HEAD branch chip became a flex container, where `text-overflow:ellipsis` does not apply (★1100 px: 193 px name cut at 128 px with no ellipsis).
+- ⇒ `.brf.brh` sets `display:inline-block; margin-bottom:0`. Side-pane commit rows: `.brdf em` is `nowrap` + `flex:0 0 auto`, so «sha · age» never breaks mid-token (★was 39 px tall, two lines, at every width).
+- ⚠A new chip modifier must not reuse a layout class name; grep `web/css` for the bare class first.
