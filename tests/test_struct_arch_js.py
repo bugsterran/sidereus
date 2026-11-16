@@ -15,7 +15,8 @@ FNS = ["mboxIn", "strHdBadge", "archRate", "archHeadNote", "archProvNote", "arch
        "archNoHome", "archWhyOff", "archReqOf", "archReqBtn", "archReqHtml", "archPaint", "archIsTest", "archMq", "archPairs", "archReduce", "archRanks", "archSrc", "archBarHtml", "archKey", "archWaitHtml", "archDiagram", "archHov", "archHovPaint",
        "archSentRun", "archSentPh", "archEl", "archSentDone", "archSentHtml", "archSentFin", "archTick", "archBase", "archRunOf", "archRunEl", "archRunHtml", "archStatusHtml", "archLegHtml", "hhmm",
        "archStyleName", "archRoleName", "archFwParts", "archStyleParts", "archStyleNote", "archScrollPut", "archDgClick", "archFitOf",
-       "archHasLayers", "archEntPair", "archBandHubs", "archBandSrc", "archBandFix", "archBandHint", "archFront", "archKindMap", "archKindLegHtml"]   # 84j2 (archPaint calls them)
+       "archHasLayers", "archEntPair", "archBandHubs", "archBandSrc", "archBandFix", "archBandHint", "archFront", "archKindMap", "archKindLegHtml",   # 84j2 (archPaint calls them)
+       "archFlowSt", "archFlowRate", "archFlowTick"]   # 84k step verdicts (84j3 archLitSet / archDetHtml call them)
 FNS.append("plCxHint")   # 48b: Codex recipient hint (archReqHtml calls it)
 FNS.append("archDevListHtml")   # deviation filter list (archPaint calls it)
 FNS += ["archLyHtml", "archLyZoomPut", "archLyZoom", "archLyClose"]   # focus layer (archPaint / click / Esc call them)
@@ -770,7 +771,7 @@ class ArchMdRender(unittest.TestCase):
         self.assertEqual(out[7:], [3, 4])                  # overview: 3 pairs, 4 modules (gates hidden)
 
 
-FLOW_FNS = ["archFlowKind", "archFlowName", "archFlowAt", "archFlowCur", "archFlowPick", "archFlowRate", "archFlowSrc", "archFlowGraph", "archFlowLay", "archFlowSvg", "archFlowMark",
+FLOW_FNS = ["archFlowKind", "archFlowWhy", "archFlowTip", "archFlowRateText", "archFlowName", "archFlowAt", "archFlowCur", "archFlowPick", "archFlowSrc", "archFlowGraph", "archFlowLay", "archFlowSvg", "archFlowMark",
             "archFlowRow", "archFlowBody", "archFlowOpen", "archFlowClick", "archFlowEntries", "archFlowBtn", "archFlowSet",
             "archLitOrder", "archLitNext", "archOffCount", "archLitText", "archScrollAt", "archViewRect", "archLitCount", "archLitGo", "archLitGoBtn",
             "codeBlock", "mmdLabel", "mmdSplit", "mmdChain", "mmdParse", "mmdTw", "mmdBox", "mmdSeqParse", "mmdSeqLayout", "mmdSeqSvg", "mmdBlock"]
@@ -795,7 +796,7 @@ function el(map){ return { closest(sel){ return Object.prototype.hasOwnProperty.
 
 def run_flow(body):
     ksrc = _read(_SRC_P.replace("84j-structure-arch.js", "84k-structure-arch-flow.js"))
-    kinds = "\n".join(re.search(r"^const ARCH_(?:FLOW_KIND|LITGO) = .*$".replace("(?:FLOW_KIND|LITGO)", n), ksrc, re.M).group(0) for n in ("FLOW_KIND", "LITGO"))
+    kinds = "\n".join(re.search(r"^const ARCH_(?:FLOW_KIND|LITGO) = .*?;$".replace("(?:FLOW_KIND|LITGO)", n), ksrc, re.M | re.S).group(0) for n in ("FLOW_KIND", "FLOW_WHY", "LITGO"))
     js = "\n".join([PRE, FAKE, kinds] + [js_fn(n) for n in FNS + FLOW_FNS] + ["(async () => {", body, "})().catch(e => { console.error(e); process.exit(1); });"])
     r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     if r.returncode != 0:
@@ -844,7 +845,7 @@ class ArchFlow(unittest.TestCase):
         self.assertIn("작업", h)                               # entry kind translated by key
         self.assertEqual(r[1], ["0", "1", "2"])               # item 0 = entry arrow
         self.assertEqual(r[2], ["archfx"])                    # step 1 -> data-i 2
-        self.assertEqual(r[3], ["증명 안 됨: nosym"])
+        self.assertEqual(r[3], ["증명 안 됨: 줄 근처에 심볼 없음"])   # reason label, never the raw code
         self.assertEqual(r[4], [])
 
     def test_layout_width_fits_self_label_and_caps_names(self):

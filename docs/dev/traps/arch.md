@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Structure tab (Architecture · Size)
 
+- **A flow step with why `unchecked` is unknown, not failed** (`web/js/84k-structure-arch-flow.js` `archFlowSt`).
+  - Cause: a stale `VERIFIER_V` or a missing verdict sets every step `ok:false, why:"unchecked"`; reading `!ok` as failure drew a whole repo's flows red with ✗.
+  - ⇒ `archFlowSt` returns `ok` / `unk` / `bad`; only `bad` gets `.archfx`, a red rate and ✗; `unk` is «?» and a grey «Not checked» badge. Tooltips go through `archFlowWhy` (translated label, «Unknown reason» for an unknown code).
+  - ⚠Never test `s.ok` alone for red, and never print `s.why` raw. Test: `tests/test_struct_arch_flow_unchecked_js.py`.
+
 - **A session asked to draw the overview gates with `--check --commit`, never `--last`** (`scripts/arch_brief.py`, `arch_brief.ask_info`).
   - Cause: `--last` reads `ARCH_DIR/_brief_last.json`, which any other run's `--pre` rewrites; a drawing session could gate another repo or commit.
   - ⇒ The ask carries the store dir and commit; `--check --repo <p> --commit <sha> [--by <sid>]` reads and writes no pointer, `--by` uses `bus.RELAY_SID` and lands in `brief.ok.json` and the «drawn by» line.

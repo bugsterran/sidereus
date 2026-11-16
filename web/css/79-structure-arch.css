@@ -225,6 +225,7 @@ html[data-ui] .archsent .wkrgb.archstop:hover{background:color-mix(in srgb,var(-
 .archmap .mmdfe[data-k=entry] .mmde{stroke-width:1}
 .archfr{font-size:12px;color:var(--nx-ok,#71c269)}
 .archfr.bad{color:var(--nx-err,#f45460)}
+.archfr.unk{color:var(--nx-t2,#aab4c3)}   /* steps without a current verdict: neither proven green nor failed red */
 @media (min-width:1061px){.archbody:has(.archfdg){grid-template-columns:minmax(0,1fr) minmax(240px,280px)}}   /* flow view: the diagram gets the width; below 1061 the list stacks */
 /* ⚠flow panel is ~254px here: hint on its own wrapping line, title one line with ellipsis, ↻ stays beside the title */
 @media (min-width:1061px){.archbody:has(.archfdg) .archsh{flex-wrap:wrap;row-gap:2px}

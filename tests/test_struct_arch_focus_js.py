@@ -133,7 +133,7 @@ def render(body, M, E, G, flows=None):
     js = "\n".join([MPRE, "const MMD_BUDGET = 1e9, MMD_UNCROSS = 1e9, ARCH_DIR = 'TB'; let ERR = null; function softErr(t, e){ ERR = String(e); }",
                     "function codeBlock(s){ return s; }", ROUTER] + [js_fn(f) for f in MFNS]
                    + [js_fn(n) for n in ("archIsTest", "archMq", "archPairs", "archReduce", "archSrc", "archRanks", "archMmd", "archFlowEntries")]
-                   + [L2, FOC, "\n".join(js_fn(n) for n in ("archOwn", "archLitSet")),
+                   + [L2, FOC, "\n".join(js_fn(n) for n in ("archOwn", "archFlowSt", "archLitSet")),
                       "const M = " + json.dumps(M) + ", E = " + json.dumps(E) + ", GR = " + json.dumps(G) + ", D = {modules: M, edges: E, flows: "
                       + json.dumps(FLOWS if flows is None else flows) + "};", body])
     r = subprocess.run(node_e(js), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)

@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pipelines: a review stage whose agents all ended with `VERDICT: CLEAN` or `PASS` can no longer loop back to its `onFail.goto` stage; an unknown or blocking verdict still allows it (plugin 0.9.4).
 - Pipelines: a dispatch refused before it ran (for example by the auto-mode classifier) and then sent again no longer counts twice in the stage's dispatches, and no longer holds back the next-stage hand-off when the re-sent call returns (plugin 0.9.5).
 - Attention: in English, the «Same error repeated» and «Same action repeated» rows no longer end with the Korean word for "tool" when the tool is unknown; a named tool is still shown.
+- Structure: flow steps with no current verdict (an older verifier or a missing verdict file) show as «Not checked» in grey with «?» in the flow picker instead of as red failures; step tooltips show the translated reason instead of a raw code.
 
 ## [0.19.0] - 2026-11-14
 

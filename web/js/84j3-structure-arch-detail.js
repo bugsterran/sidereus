@@ -42,7 +42,7 @@ function archLitSet(d, q){
     const ens = typeof archFlowEntries === 'function' ? archFlowEntries(d, mods, !!q.tests) : [];
     fs.forEach(id => {
       const f = ((d && d.flows) || []).find(y => y && String(y.id) === id), st = (f && f.steps) || [];
-      st.forEach(s => { if(!s) return; [s.from, s.to].forEach(k => { if(archOwn(ix, k)) n.add(ix[k]); }); pair(s.from, s.to, e); if(!s.ok) pair(s.from, s.to, x); });
+      st.forEach(s => { if(!s) return; [s.from, s.to].forEach(k => { if(archOwn(ix, k)) n.add(ix[k]); }); pair(s.from, s.to, e); if(archFlowSt(s) === 'bad') pair(s.from, s.to, x); });   // 84k: an unchecked step (no verdict) is not red .archfx
       const s0 = st[0] && st[0].from;
       if(archOwn(ix, s0)) ens.forEach(en => { if(en.flows.indexOf(id) >= 0){ n.add(en.k); e.add(en.k + '\u0001' + ix[s0]); } });
     });
@@ -237,7 +237,7 @@ function archDetHtml(d, sel, names, nx, ro){
     + '<div class=archdh><b>' + esc(T('Flows through here')) + '</b></div>'
     + (fv.length ? '<ul class=archfv>' + fv.map(x => { const on = o.lit != null && String(o.lit) === String(x.f.id);
       return '<li><button type=button data-arfx="' + esc(x.f.id) + '" aria-pressed=' + (on ? 'true' : 'false') + (on ? ' class=on' : '') + '>'
-        + '<b>' + esc((x.f.ok ? '✓ ' : '✗ ') + (x.f.name || x.f.id)) + '</b>'
+        + '<b>' + esc(archFlowTick(x.f) + (x.f.name || x.f.id)) + '</b>'
         + (x.on < x.n ? '<small>' + esc(T('{a}/{b} steps on this view').replace('{a}', x.on).replace('{b}', x.n)) + '</small>' : '') + '</button></li>'; }).join('') + '</ul>'
       : '<div class=archevn>' + esc(T('No flow passes through this module')) + '</div>')
     + (typeof archDataPathHtml === 'function' ? archDataPathHtml(d, m, o.lit) : '')   // 84jb: stores only, '' otherwise

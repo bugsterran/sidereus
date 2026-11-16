@@ -3,6 +3,15 @@
 // ⚠Evidence is file:line:symbol only; code opens on click through 81 strPopOpenRel, like the edge evidence in 84j.
 const ARCH_FLOW_KIND = { http: 'HTTP', cli: 'CLI', job: 'Job', event: 'Event', hook: 'Hook', mcp: 'MCP' };
 function archFlowKind(k){ k = String(k || ''); return Object.prototype.hasOwnProperty.call(ARCH_FLOW_KIND, k) ? T(ARCH_FLOW_KIND[k], 'arch flow kind') : k; }
+// Step verdict codes (sidereus/arch_flow.py WHYS + «unchecked») as short labels; ⚠an unknown code reads «Unknown reason», never the raw code.
+const ARCH_FLOW_WHY = { nomod: 'Module not in the map', owner: 'File outside the module', overlap: 'File in several modules', nofile: 'File not found',
+  range: 'Line out of range', nosym: 'Symbol not near the line', bad: 'Invalid file path', nodef: 'Symbol not defined in the target',
+  noroute: 'No matching route in the target', unchecked: 'Not checked yet' };
+function archFlowWhy(w){ w = String(w || ''); return T(Object.prototype.hasOwnProperty.call(ARCH_FLOW_WHY, w) ? ARCH_FLOW_WHY[w] : 'Unknown reason', 'arch why'); }
+// Pure: 'ok' proven · 'unk' no current verdict (why «unchecked»: stale or missing flows.verify.json — unknown, not failed) · 'bad' failed.
+function archFlowSt(s){ return s && s.ok ? 'ok' : s && s.why === 'unchecked' ? 'unk' : 'bad'; }
+// Pure: picker mark — ✗ when a step really failed, ? when some are only unchecked, ✓ when all are proven.
+function archFlowTick(fl){ const r = archFlowRate(fl); return r.x ? '✗ ' : r.u ? '? ' : '✓ '; }
 // Pure: usable flows of map d and the index of the one picked for project p (-1 = module map; a flow gone from a rebuilt map falls back).
 function archFlowAt(d, p){
   const fls = (d && Array.isArray(d.flows) ? d.flows : []).filter(f => f && f.id != null && Array.isArray(f.steps));
@@ -11,13 +20,13 @@ function archFlowAt(d, p){
 }
 // The picked flow of the project on screen, or null.
 function archFlowCur(p){ const a = archFlowAt(ARCH.cache[p], p); return a.fi >= 0 ? a.fls[a.fi] : null; }
-// Pure: «Flows» select — «Module diagram» + every flow name with ✓ (all steps proven) / ✗. Names are agent data: esc, never T().
+// Pure: «Flows» select — «Module diagram» + every flow name with its archFlowTick mark. Names are agent data: esc, never T().
 // id = lit flow on the map (or the sequence one); then «Clear flow» + «Sequence diagram» (pressed = seq, the sequence view is open).
 function archFlowPick(fls, id, seq){
   if(!fls || !fls.length) return '';
   const on = id != null && id !== '' && fls.some(f => String(f.id) === String(id));
   return '<label class=archfl>' + esc(T('Flows')) + ' <select data-arfl><option value="">' + esc(T('Module diagram')) + '</option>'
-    + fls.map(f => '<option value="' + esc(f.id) + '"' + (on && String(f.id) === String(id) ? ' selected' : '') + '>' + esc((f.ok ? '✓ ' : '✗ ') + (f.name || f.id)) + '</option>').join('')
+    + fls.map(f => '<option value="' + esc(f.id) + '"' + (on && String(f.id) === String(id) ? ' selected' : '') + '>' + esc(archFlowTick(f) + (f.name || f.id)) + '</option>').join('')
     + '</select></label>' + (on ? '<button type=button class="archfbt' + (seq ? ' on' : '') + '" data-arseq="' + esc(id) + '" aria-pressed=' + (seq ? 'true' : 'false') + '>' + esc(T('Sequence diagram')) + '</button>'
     + '<button type=button class=archfbt data-arlitx>' + esc(T('Clear flow')) + '</button>'
     + (seq ? '' : '<button type=button class=archfbt data-arlitn>' + esc(T('Next lit')) + '</button><span class=archlitc data-arlitc role=status hidden></span>') : '');   // count filled by archLitCount
@@ -40,8 +49,8 @@ function archFlowEntries(d, mods, tests){
 }
 // Pure: module display name; own keys only, so an id like «constructor» never reads the prototype.
 function archFlowName(names, id){ id = String(id == null ? '' : id); return names && Object.prototype.hasOwnProperty.call(names, id) && names[id] ? String(names[id]) : id; }
-// Pure: proven step count.
-function archFlowRate(fl){ const s = (fl && fl.steps) || []; return { a: s.filter(x => x && x.ok).length, b: s.length }; }
+// Pure: proven (a) of all (b) steps, failed (x) and unchecked (u) counts.
+function archFlowRate(fl){ const s = ((fl && fl.steps) || []).map(archFlowSt), n = k => s.filter(x => x === k).length; return { a: n('ok'), b: s.length, x: n('bad'), u: n('unk') }; }
 // Pure: mermaid source. Participants pN in first-seen order; item 0 = entry -> first module, step i = item i + 1.
 // autonumber comes after the entry arrow so the diagram numbers match the step rows (step i = i + 1).
 // ⚠Labels lose [<>#\r\n;]: mmdSeqParse decodes #NN; entities and splits on lines, so these would change the drawing.
@@ -78,7 +87,10 @@ function archFlowSvg(fl, names, fi){
   }catch(e){ if(typeof softErr === 'function') softErr('archflow', e); }
   return '';
 }
-// After paint: failed steps get .archfx and an SVG <title> with the gate's reason (text node, no markup).
+// Pure: tooltip of an unproven step — the reason label, never the raw code.
+function archFlowTip(s){ return archFlowSt(s) === 'unk' ? archFlowWhy('unchecked') : T('Not proven: {why}').replace('{why}', archFlowWhy(s && s.why)); }
+// After paint: failed steps get .archfx (red) and every unproven step an SVG <title> with the reason (text node, no markup).
+// Unchecked steps keep the dashed -->> arrow (not proven) but no .archfx: no verdict is not a failure.
 // ⚠data-i = step index + 1: item 0 is the synthetic entry arrow.
 function archFlowMark(svg, fl){
   if(!svg || !fl) return 0;
@@ -88,26 +100,33 @@ function archFlowMark(svg, fl){
     const g = svg.querySelector('g.mmdsqm[data-i="' + (i + 1) + '"]');
     if(!g) return;
     const t = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-    t.textContent = T('Not proven: {why}').replace('{why}', String(s.why || '?'));
-    g.classList.add('archfx'); g.insertBefore(t, g.firstChild); n++;
+    t.textContent = archFlowTip(s);
+    if(archFlowSt(s) === 'bad'){ g.classList.add('archfx'); n++; }
+    g.insertBefore(t, g.firstChild);
   });
   return n;
 }
 // Pure: one step row — number, from → to, badges, label, then its evidence (84j archEvHtml).
 function archFlowRow(s, names, i){
-  const nm = id => archFlowName(names, id), why = T('Not proven: {why}').replace('{why}', String(s.why || '?'));
-  return '<li class="arche archfs' + (s.ok ? '' : ' bad') + '"><button type=button class=archeb data-afs="' + i + '" title="' + esc(T('View code')) + '">'
+  const nm = id => archFlowName(names, id), st = archFlowSt(s), why = archFlowTip(s);
+  return '<li class="arche archfs' + (st === 'ok' ? '' : st === 'unk' ? ' unk' : ' bad') + '"><button type=button class=archeb data-afs="' + i + '" title="' + esc(T('View code')) + '">'
     + '<span class=archen><em class=archio>' + (i + 1) + '</em><b>' + esc(nm(s.from)) + '</b><i>→</i><b>' + esc(nm(s.to)) + '</b></span>'
     + '<span class=archem>' + (s.est ? '<em class="archbg archest" title="' + esc(T('Evidence is inferred, not a direct reference')) + '">' + esc(T('estimate')) + '</em>' : '')
-    + (s.ok ? '' : '<em class="archbg archbad" title="' + esc(why) + '">' + esc(T('Check failed')) + '</em>') + '</span>'
+    + (st === 'ok' ? '' : st === 'unk' ? '<em class="archbg archunk" title="' + esc(why) + '">' + esc(T('Not checked')) + '</em>'   // neutral .archbg grey
+      : '<em class="archbg archbad" title="' + esc(why) + '">' + esc(T('Check failed')) + '</em>') + '</span>'
     + (s.label ? '<span class=archel>' + esc(s.label) + '</span>' : '') + '</button>' + archEvHtml([s.evidence], 'f' + i) + '</li>';
+}
+// Pure: toolbar count — «Not checked» when no step has a verdict, else «a/b proven» plus the unchecked count.
+function archFlowRateText(r){
+  if(r.b && r.u === r.b) return T('Not checked');
+  return T('{a}/{b} steps proven').replace('{a}', r.a).replace('{b}', r.b) + (r.u ? ' · ' + T('{n} not checked').replace('{n}', r.u) : '');
 }
 // Pure: body of the flow view — toolbar (picker, entry kind + label, proven count), diagram, step list.
 function archFlowBody(fls, fi, names){
   const fl = fls[fi], r = archFlowRate(fl), en = fl.entry || {}, svg = archFlowSvg(fl, names, fi);
   return '<div class=archbody><div class=archmap><div class=archtop><div class="archbar on">' + archFlowPick(fls, fl.id, true)
     + (en.kind ? '<em class=archk>' + esc(archFlowKind(en.kind)) + '</em>' : '') + '<span class=archhint>' + esc(en.label || '') + '</span>'
-    + '<span class="archfr' + (r.a < r.b ? ' bad' : '') + '">' + esc(T('{a}/{b} steps proven').replace('{a}', r.a).replace('{b}', r.b)) + '</span></div></div>'   // .archtop: sticky like the map's
+    + '<span class="archfr' + (r.x ? ' bad' : r.u ? ' unk' : '') + '">' + esc(archFlowRateText(r)) + '</span></div></div>'   // .archtop: sticky like the map's
     + '<div class=archfdg>' + (svg ? '<div class=mmd><div class=mmdv>' + svg + '</div></div>' : mmdBlock(archFlowSrc(fl, names))) + '</div></div>'
     + '<aside class=archside><div class=archsh><b>' + esc(fl.name || fl.id) + '</b><span>' + esc(T('Click for evidence · click evidence for code')) + '</span>'
     + '<button type=button class=archrf data-arf title="' + esc(T('Reload now')) + '">↻</button></div>'
