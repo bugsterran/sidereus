@@ -18,6 +18,27 @@ from sidereus.live import _sid_transcript, agent_view
 #   ⚠Never call `wreckage()` from a request thread (cold 0.93 s · warm 0.015 s, measured 2026-09-23).
 #   `_fail_loop` (60 s) already warms the same data, so compute it **there, once** ⇒ zero polling cost.
 _WRECK_BY_CWD = {}
+# Same wreckage split by owning session: sid ("" = owner unknown) -> {cwd: (dirty, newest at)}; filled with the map above.
+_WRECK_BY_SID = {}
+
+
+def wreck_of(sid, cwd, listed):
+    """(dirty, newest at) of the wreckage one session row shows, or None when the split knows nothing for sid/cwd.
+
+    Owned wreckage goes only to its owner row; wreckage with no owner sid, or whose owner is not in `listed`
+    (gone or unknown), falls back to every row in its cwd so nothing is lost. Session rows and attention both call this."""
+    hit, n, at = False, 0, 0
+    for s, by in list(_WRECK_BY_SID.items()):   # ⚠snapshot: _fail_loop updates the map while requests read it
+        if s and s == sid:
+            parts = list(by.values())
+        elif cwd in by:
+            hit = True                            # cwd has wreckage: a listed other owner's share stays 0 here
+            parts = [by[cwd]] if not s or s not in listed else []
+        else:
+            continue
+        for d, a in parts:
+            hit, n, at = True, n + d, max(at, a)
+    return (n, at) if hit else None
 
 
 # ── task-complete cards ───────────────────────────────────────────────────────

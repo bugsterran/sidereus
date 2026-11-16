@@ -9,7 +9,7 @@ from sidereus.transcript import _iso_ts
 from sidereus.ident import _sid8
 from sidereus.gitinfo import DIFF_TIMEOUT, _git_run
 from sidereus.steps import _open_or_tail, _work_scan
-from sidereus.cards import _WRECK_BY_CWD, _card_add
+from sidereus.cards import _WRECK_BY_CWD, _WRECK_BY_SID, _card_add
 # ⚠Split 2026-09-24: the scan (grading, signatures, _fail_read/_fail_events, _FAIL_EV/_FAIL_LOCK) lives in
 #   failures_scan and owns that state. Re-exported here for retro/attention/chat_server; patch scan internals there.
 from sidereus.failures_scan import (
@@ -267,7 +267,7 @@ def _fail_alert(ev):
 
 _WRECK_CARDED = {}            # wreckage tid -> time its card was made
 _WRECK_SEEDED = [False]       # same seeding rule as `_FAIL_SEEDED` — no flood of old wreckage on server start
-_WRECK_AT = {}                # cwd -> newest dirty wreckage time (epoch); attention clears `wreck` once the session moved past it
+_WRECK_AT = {}                # cwd -> newest dirty wreckage time (epoch); attention clears `wreck` once the session moved past it (fallback when cards.wreck_of has no split)
 
 
 def _wreck_cards(rows):
@@ -428,7 +428,7 @@ def wreckage(hours=FAIL_HOURS):
                      "tid": ev["tid"], "at": ev["at"], "ago": int(now - ev["at"]),
                      "sig": ev["sig"], "type": ev.get("type") or "agent",
                      "desc": ev.get("adesc") or "", "proj": ev.get("proj") or "",
-                     "cwd": ev.get("cwd") or "",
+                     "cwd": ev.get("cwd") or "", "sid": ev.get("sid") or "",   # owning session (metadata)
                      "steps": tr["steps"], "nstep": tr["nstep"], "ran": tr["ran"],
                      "files": out, "nfile": len(out), "dirty": nd, "unk": unk})
     rows.sort(key=lambda x: (-x["dirty"], -(x["then"] or 0), -x["at"]))
@@ -441,7 +441,7 @@ def wreckage(hours=FAIL_HOURS):
 
 def _wreck_by_cwd():
     """`_fail_loop` only — fold wreckage by session cwd. On failure keep the old value (never wipe to 0)."""
-    got, at = {}, {}
+    got, at, own = {}, {}, {}
     rows = wreckage(FAIL_HOURS).get("rows", [])
     for r in rows:
         d = r.get("dirty") or 0
@@ -449,10 +449,16 @@ def _wreck_by_cwd():
         if d and c:
             got[c] = got.get(c, 0) + d
             at[c] = max(at.get(c, 0), r.get("at") or 0)
+            by = own.setdefault(r.get("sid") or "", {})   # per-owner split read by cards.wreck_of
+            p = by.get(c, (0, 0))
+            by[c] = (p[0] + d, max(p[1], r.get("at") or 0))
     _WRECK_BY_CWD.update(got)   # update then prune: clear() first let a poll see an empty map (badge off for a cycle)
     for c in [k for k in list(_WRECK_BY_CWD) if k not in got]:
         _WRECK_BY_CWD.pop(c, None)
     _WRECK_AT.update(at)
     for c in [k for k in list(_WRECK_AT) if k not in at]:
         _WRECK_AT.pop(c, None)
+    _WRECK_BY_SID.update(own)   # inner dicts are fresh per pass, never mutated after publish
+    for c in [k for k in list(_WRECK_BY_SID) if k not in own]:
+        _WRECK_BY_SID.pop(c, None)
     return rows

@@ -4,7 +4,7 @@ import threading
 import time
 from sidereus.transcript import iso_epoch
 from sidereus.ident import _sid8
-from sidereus.cards import cards_read, cards_read_ids
+from sidereus.cards import cards_read, cards_read_ids, wreck_of
 from sidereus import failures as _fl
 from sidereus import file_owner as _fo
 from sidereus.bgtasks import BG_IDLE_S, BG_LONG_S
@@ -303,7 +303,7 @@ def _collect(rows, cards, now, read, rid):
     return extra
 
 
-def _row_sigs(r, now):
+def _row_sigs(r, now, listed=None):
     """Signals read off the session row itself."""
     st, age = r.get("state") or "", int(r.get("ageSec") or 0)
     t0, live = now - age, st not in ("done", "gone")
@@ -333,9 +333,12 @@ def _row_sigs(r, now):
             sg.append(_sig("ctx95", {"pct": pct}, t0))
         elif pct >= 85:
             sg.append(_sig("ctx85", {"pct": pct}, t0))
-    wat = (getattr(_fl, "_WRECK_AT", None) or {}).get(r.get("cwd") or "", 0)
-    if int(r.get("wreck") or 0) > 0 and not _resumed(r, wat, now):
-        sg.append(_sig("wreck", {"n": int(r["wreck"])}, t0))
+    # ⚠Owner split first: a cwd-wide count raised `wreck` on idle non-owner rows that never resume to clear it.
+    w = wreck_of(r.get("sid") or "", r.get("cwd") or "", listed or set())
+    wn, wat = (int(r.get("wreck") or 0), (getattr(_fl, "_WRECK_AT", None) or {}).get(r.get("cwd") or "", 0)) \
+        if w is None else w
+    if int(r.get("wreck") or 0) > 0 and wn > 0 and not _resumed(r, wat, now):
+        sg.append(_sig("wreck", {"n": wn}, t0))
     # parent "waiting" = its own turn is the pending tool or it is idle, and it has not written for 5 min
     subs = [s for s in (r.get("sub") or []) if isinstance(s, dict)]
     idle = max([int(s.get("idle") or 0) for s in subs] or [0])
@@ -378,8 +381,9 @@ def _row_sigs(r, now):
 def _rank(rows, extra, now):
     """Rows with at least one signal, scored and sorted."""
     out = []
+    listed = {r.get("sid") for r in rows if r.get("sid")}   # wreck owner lookup (cards.wreck_of)
     for r in rows:
-        sg = _row_sigs(r, now)
+        sg = _row_sigs(r, now, listed)
         sg.extend(extra.get(id(r), ()))
         if not sg:
             continue

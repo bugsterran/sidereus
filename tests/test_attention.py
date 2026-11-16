@@ -7,6 +7,7 @@ import json
 import threading
 import unittest
 from datetime import datetime
+from unittest import mock
 
 from tests import _clock
 from tests._clock import NOW
@@ -416,6 +417,26 @@ class TestResume(Base):
         self.assertEqual(self.kinds(sess("a", age=100, wreck=2)), [])
         fl._WRECK_AT.clear()                  # unknown time -> old behavior (stays while dirty)
         self.assertEqual(self.kinds(sess("a", age=100, wreck=2)), ["wreck"])
+
+    def wreck_kinds(self, split):
+        # two idle rows in one cwd, both last active before the wreck; returns {sid: has wreck}
+        fl._WRECK_AT["/w/p"] = NOW - 600
+        with mock.patch.dict(cards._WRECK_BY_SID, split, clear=True):
+            rows = self.run_att([sess("a", age=900, wreck=2), sess("b", age=900, wreck=2)])
+        return {r["sid"]: [s["k"] for s in r["sigs"]] == ["wreck"] for r in rows}
+
+    def test_wreck_only_on_owner(self):
+        self.assertEqual(self.wreck_kinds({"a": {"/w/p": (2, NOW - 600)}}), {"a": True})
+
+    def test_wreck_without_owner_sid_stays_cwd_wide(self):
+        self.assertEqual(self.wreck_kinds({"": {"/w/p": (2, NOW - 600)}}), {"a": True, "b": True})
+
+    def test_wreck_owner_not_listed_falls_back_to_cwd(self):
+        self.assertEqual(self.wreck_kinds({"gone": {"/w/p": (2, NOW - 600)}}), {"a": True, "b": True})
+
+    def test_wreck_owner_at_clears_owner(self):
+        with mock.patch.dict(cards._WRECK_BY_SID, {"a": {"/w/p": (2, NOW - 600)}}, clear=True):
+            self.assertEqual(self.kinds(sess("a", age=100, wreck=2)), [])
 
     def test_blocked_ask_unaffected(self):
         cards = [self.card(600)]

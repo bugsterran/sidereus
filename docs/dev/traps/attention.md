@@ -215,3 +215,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ Every sig carries a nested `v` (counts, minutes, seconds, tool names, sid8, agent types; tool/lab `null` = unknown tool / main unit) and an English `why` built from k + v in one place (`attention._why`) = the MCP text as-is; the page renders its own label from k + v. `blocked` has no `v` (why = perm_marks label). Row tail is « +N more». `tests/test_attention_why_v.py`.
 - ⚠Never parse `why` on any client — read `v`. ⚠`v` is metadata only (never task, card or error text). ⚠New per-signal data goes in `v`, not a new top-level sig key (tests pin the sig key set). ⚠`demo.py` writes the same shape as literals (stdlib only): change both.
 - ⚠Ties that used to sort on Korean strings keep their pick through explicit ranks (`_FAIL_ORD`, `_SRC_ORD`, unknown tool `(1, "")` above `(0, name)`), never a Korean sort key: `attention.py` holds no Hangul at all (`test_attention_source_has_no_hangul`).
+
+## «Half-edited files» raised on every session in the folder (`cards.wreck_of`, `failures._wreck_by_cwd`)
+
+- Cause: wreckage was folded per cwd, so every row in that folder got `wreck`, and idle non-owner rows never resumed to clear it.
+- ⇒ wreckage rows carry the owning session `sid`; `_WRECK_BY_SID` splits them per owner and `cards.wreck_of` (used by `sessions._wreck_stamp` and attention) gives owned wreckage only to its owner row. `tests/test_attention.py` `test_wreck_*`, `tests/test_races.py`.
+- ⚠Wreckage with no sid, or whose owner is not a listed row, stays cwd-wide — dropping it would hide leftovers whose owner is gone.

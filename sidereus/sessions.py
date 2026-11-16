@@ -14,7 +14,7 @@ from sidereus.live import (_MBOX_LAB_RE, _blocked, _ctx_window, _model_win, _par
 from sidereus.gitinfo import _git_state, _wt_of, git_branch, repos_wt, session_repos
 from sidereus.agents import WF_HIST_N, WF_HIST_S, WF_KEEP_S, _DESC_TOOLS, _bg_show, _subs_mt, _subs_newer, plm_of, team_info, wf_public, wf_runs
 from sidereus.usage_index import _uidx, _uidx_lock
-from sidereus.cards import _WRECK_BY_CWD, _note_lock, _recent_transcripts
+from sidereus.cards import _WRECK_BY_CWD, _note_lock, _recent_transcripts, wreck_of
 from sidereus.usage import _sid_proj
 from sidereus.otel import OTEL_TRUST_S, _otel_state
 from sidereus.projcost import _projcost_of
@@ -362,6 +362,7 @@ def _session_row(fp, mt, now, live, p, stale=False):
         #   `sessions()` hands `task` to the transition check server-side only (to skip /exit·/clear); cards carry no text.
         "git": _git_state(p.get("cwd")),  # unpushed·dirty — how far the output got
         # ★Leftovers — count of uncommitted files left by dead agents in this cwd. Reads only the value stamped by `_fail_loop` (60s).
+        #   ⚠cwd total here; `_wreck_stamp` narrows it to the owner session once every row is listed.
         "wreck": _WRECK_BY_CWD.get(p.get("cwd") or "", 0),
         **_row_status(st0, o, p, now, mt),
         "err": bool(p.get("err")),
@@ -369,6 +370,15 @@ def _session_row(fp, mt, now, live, p, stale=False):
         "plat": "cc",                     # ★platform marker — the only key separating external CLI rows (`ext_rows`)
         **_row_acct(p.get("sid") or os.path.basename(fp)[:-6], fp),
     }
+
+
+def _wreck_stamp(rows):
+    """Row `wreck` = only the wreckage this session owns, plus unowned/orphan wreckage in its cwd (rule: cards.wreck_of)."""
+    listed = {r.get("sid") for r in rows if r.get("sid")}
+    for r in rows:
+        w = wreck_of(r.get("sid") or "", r.get("cwd") or "", listed)
+        if w is not None:                 # None = no per-session split known: keep the cwd total
+            r["wreck"] = w[0]
 
 
 def _row_repos_wt(cwd, repos):
@@ -461,6 +471,7 @@ def _sessions(max_age_h, cap):
             said.append({"task": p.get("task") or ""})   # server-side only: end-command check in _note_transition
     except Exception as e:                        # emptying silently would be misread as "no sessions"
         warn_once("sessions", "Could not read session state ({err})", vars={"err": f"{type(e).__name__}: {e}"})
+    _wreck_stamp(out)
     # ★Sort by state first — the purpose of the screen is "is it my turn", so those rows must be on top.
     # ★Transition decisions happen **inside a dedicated lock** (2026-09-07). This spot reads-and-modifies `_prev_state`, so
     #   overlapping shows the same card twice. Previously `state()`'s `_lock` happened to serialize polls, but

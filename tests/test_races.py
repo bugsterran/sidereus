@@ -92,6 +92,16 @@ class WreckRefreshTests(unittest.TestCase):
             m.clear()
             m.update(saved)
 
+    def test_owner_sid_split(self):
+        rows = [{"dirty": 2, "cwd": "/a", "sid": "s1", "at": 10}, {"dirty": 1, "cwd": "/a", "sid": "s1", "at": 30},
+                {"dirty": 4, "cwd": "/a", "at": 20}]
+        with mock.patch.dict(F._WRECK_BY_CWD, {}, clear=True), mock.patch.dict(F._WRECK_AT, {}, clear=True), \
+                mock.patch.dict(F._WRECK_BY_SID, {"old": {"/x": (1, 1)}}, clear=True), \
+                mock.patch.object(F, "wreckage", lambda hrs: {"rows": rows}):
+            F._wreck_by_cwd()
+            self.assertEqual(dict(F._WRECK_BY_SID), {"s1": {"/a": (3, 30)}, "": {"/a": (4, 20)}})
+            self.assertEqual((dict(F._WRECK_BY_CWD), dict(F._WRECK_AT)), ({"/a": 7}, {"/a": 30}))
+
 
 if __name__ == "__main__":
     unittest.main()
