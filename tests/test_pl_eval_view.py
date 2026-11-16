@@ -174,7 +174,7 @@ def _node(body, lang="en"):
                                          "plEvalFixRec", "archChkFixRecHtml", "archReqRows", "archReqLive", "archReqMs", "archReqWho", "sid8", "hhmm"))
     with open(os.path.join(ROOT, "web", "js", "48i-pipeline-eval.js"), encoding="utf-8") as fh:
         src = fh.read()
-    sg = src[src.index("const PLE_SG = "):src.index("function plEvalSgList")]
+    sg = src[src.index("const PLE_SG = "):src.index("function plEvalSgList")]   # includes PLE_SG_BARE
     red = "const PLE_RED = { pass: 'pass', fail: 'fail', skip: 'skip' };\n" + sg + \
         "\nconst archChkCandLabel = c => c.sid; const plEvalCands = () => [{sid: 's<1>', login: true, id: 'm'}];"
     with open(os.path.join(ROOT, "web", "js", "84l2-structure-arch-req.js"), encoding="utf-8") as fh:
@@ -333,6 +333,17 @@ class SuggestUi(unittest.TestCase):
         ko = _node("console.log(JSON.stringify(plEvalPanel(%s)));" % json.dumps(SG_EV), lang="ko")
         self.assertIn("red 확인 필요", ko)
         self.assertIn("직접 고치기", ko)
+
+    def test_tighten_without_mode_has_no_dash(self):
+        # a gate with no recorded mode (`npm test`): no «(-)» tail in either language; a moded gate keeps its flags
+        q = ("console.log(JSON.stringify([plEvalSgEn({code: 'tighten-gate', stage: 'b', mode: '', flags: '', tpl: ''}),"
+             " plEvalSgEn({code: 'tighten-gate', stage: 'c', mode: 'fast', flags: '--fast', tpl: ''}),"
+             " TV(plEvalSgMsg({code: 'tighten-gate', stage: 'b', mode: '', flags: ''}, null))]));")
+        bare, fast, _ = _node(q)
+        self.assertEqual(bare, "Stage b: the gate stayed green on a broken repo — tighten it")
+        self.assertEqual(fast, "Stage c: the gate stayed green on a broken repo — tighten it (--fast)")
+        ko = _node(q, lang="ko")[2]
+        self.assertEqual(ko, "b 단계: 망가진 저장소에서도 게이트가 통과했습니다 — 조이세요")
 
     def test_skip_why_tooltip(self):
         ev = dict(EV, stages=[{"title": "y", "catch": None, "red": "skip", "unstable": False, "why": "gate <b>failed</b> clean"}],

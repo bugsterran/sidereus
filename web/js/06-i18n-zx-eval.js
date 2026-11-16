@@ -21,6 +21,7 @@ Object.assign(I18N.ko, {
   'Select at least one suggestion': '제안을 하나 이상 고르세요',
   'Stage {stage} has no gate and missed {kind} cases — add a gate like «{tpl}»': '{stage} 단계에 게이트가 없어 {kind} 사례를 놓쳤습니다 — «{tpl}» 같은 게이트를 넣으세요',
   'Stage {stage}: the gate stayed green on a broken repo — tighten it ({flags})': '{stage} 단계: 망가진 저장소에서도 게이트가 통과했습니다 — 조이세요 ({flags})',
+  'Stage {stage}: the gate stayed green on a broken repo — tighten it': '{stage} 단계: 망가진 저장소에서도 게이트가 통과했습니다 — 조이세요',
   'Stage {stage}: the gate passed and failed on the same commit — pin tool versions, rerun to confirm': '{stage} 단계: 같은 커밋에서 게이트가 통과와 실패를 오갔습니다 — 도구 버전을 고정하고 다시 돌려 확인하세요',
   'Holdout cases were missed and there is no review or test stage — add «{tpl}»': '홀드아웃 사례를 놓쳤고 리뷰·테스트 단계가 없습니다 — «{tpl}» 를 넣으세요',
   'Stage {stage}: red check needed — run {cmd}': '{stage} 단계: red 확인 필요 — {cmd} 실행',

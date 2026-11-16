@@ -35,10 +35,12 @@ const PLE_SG = { 'add-gate': 'Stage {stage} has no gate and missed {kind} cases 
   'unstable': 'Stage {stage}: the gate passed and failed on the same commit — pin tool versions, rerun to confirm',
   'add-review': 'Holdout cases were missed and there is no review or test stage — add «{tpl}»',
   'redcheck': 'Stage {stage}: red check needed — run {cmd}' };
+// A gate with no recorded mode (e.g. `npm test`) has no flags to name: drop the «({flags})» tail instead of printing «(-)».
+const PLE_SG_BARE = { 'tighten-gate': 'Stage {stage}: the gate stayed green on a broken repo — tighten it' };
 function plEvalSgList(ev){ return (ev && Array.isArray(ev.sugg) ? ev.sugg : []).filter(s => s && PLE_SG[s.code]); }
 function plEvalSgMsg(s, cat){
   const tp = s.tpl && typeof plgTpl === 'function' ? plgTpl(cat, s.tpl) : null, tn = tp && tp.title ? (LANG === 'en' && tp.title.en) || tp.title.ko : s.tpl;
-  return { msg: PLE_SG[s.code], vars: { stage: String(s.stage || ''), kind: String(s.kind || ''), tpl: String(tn || ''), flags: String(s.flags || s.mode || '-'), cmd: String(s.cmd || '') } };
+  return { msg: (!s.flags && !s.mode && PLE_SG_BARE[s.code]) || PLE_SG[s.code], vars: { stage: String(s.stage || ''), kind: String(s.kind || ''), tpl: String(tn || ''), flags: String(s.flags || s.mode || '-'), cmd: String(s.cmd || '') } };
 }
 function plEvalSgEn(s){ const m = plEvalSgMsg(s, null); return m.msg.replace(/\{(\w+)\}/g, (a, k) => m.vars[k]); }   // mailbox wire text stays English
 // Pure: «Suggestions» block — one checkbox each, «Fix it myself» per row, «Ask AI» relays the ticked ones (preview + confirm).
