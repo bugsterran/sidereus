@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-16
+
+**Highlights**
+
+- Branches and Conflicts: repos and files worked on from pi, Codex, Cursor or Copilot sessions now show in the repository picker, work units and file ownership («Conflict risk», `sidereus_file_peers`).
+- Pipelines: a failed check run on uncommitted work no longer turns every pipeline's verdict to `pl_broke`, and a review stage whose agents all passed can no longer loop back.
+- Attention: «Half-edited files» goes only to the session that left the files, instead of every session in that folder.
+
+### Added
+
+- Scripts: `scripts/ci_wait.sh` waits for one commit's CI run and prints «CI PASS» / «CI FAIL» with the failing jobs and tests; `scripts/ci_push_hook.py`, a PostToolUse hook for a project's `settings.local.json`, asks the session to run it in the background after a branch push. Tag-only, delete, dry-run, failed and other-repo pushes get no hint; the hook never waits or uses the network.
+
+### Changed
+
+- Checks: `check.sh --full` runs the unit tests a second time on the newest python 3.12+ on PATH (the first run stays on 3.9), and prints a visible skip when none is installed.
+
 ### Fixed
 
 - Status bar: a main account other than the default one shows «left ≈» again for 5h and 7d; it has no quota history of its own, so its estimate comes from the current window's tokens per 1% and the tooltip says «Not enough history — low accuracy».
@@ -13,14 +29,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Structure: the overview («Export HTML › Simple») fits a 900px window without scrolling the figure sideways; existing overviews pick this up when redrawn.
 - Pipelines: in Watch, the «Working now» list ends at the bottom of the view, so the page no longer scrolls a few pixels when banners or «hooks not connected» cards sit above it.
 - Pipelines: in Watch, «Get started» folds to one line («Show list» opens it), so the canvas keeps room for every row at 900 and 1100px.
-- Pipelines: a review stage whose agents all ended with `VERDICT: CLEAN` or `PASS` can no longer loop back to its `onFail.goto` stage; an unknown or blocking verdict still allows it (plugin 0.9.4).
-- Pipelines: a dispatch refused before it ran (for example by the auto-mode classifier) and then sent again no longer counts twice in the stage's dispatches, and no longer holds back the next-stage hand-off when the re-sent call returns (plugin 0.9.5).
+- Pipelines: a review stage whose agents all ended with `VERDICT: CLEAN` or `PASS` can no longer loop back to its `onFail.goto` stage; an unknown or blocking verdict still allows it, so review agents that do not end with a `VERDICT:` line are never gated (plugin 0.9.4).
+- Pipelines: a dispatch refused before it ran (for example by the auto-mode classifier) and then sent again no longer counts twice in the stage's dispatches, and no longer holds back the next-stage hand-off when the re-sent call returns; a run closed right after such a refusal writes the corrected count too (plugin 0.9.5).
 - Attention: in English, the «Same error repeated» and «Same action repeated» rows no longer end with the Korean word for "tool" when the tool is unknown; a named tool is still shown.
 - Structure: flow steps with no current verdict (an older verifier or a missing verdict file) show as «Not checked» in grey with «?» in the flow picker instead of as red failures; step tooltips show the translated reason instead of a raw code.
 - Branches: repos worked on only from pi, Codex, Cursor or Copilot sessions now appear in the repository picker and in work units; for pi, repos it edited outside its working directory count too.
 - Conflicts: files edited from pi sessions now count for file ownership, so «Conflict risk», the file owners in Branches and the `sidereus_file_peers` tool see them.
-- Demo: the demo world now shows the loop and tool-failure attention rows, a pipeline run waiting on a command, the folded «Get started» checklist in Pipelines Watch (3 of 4 steps done) and a «Loop-back after a pass» (`verdict`) block in Harness.
+- Demo: the demo world now shows the loop and tool-failure attention rows, a pipeline run waiting on a command, the folded «Get started» checklist in Pipelines Watch (3 of 4 steps done) and a «Loop-back after a pass» (`verdict`) block in Harness; its pi row spends credits, so the «Credits» chip and the «Spending credits» row show as well.
 - Pipelines: a failed check run on uncommitted work no longer marks every earlier pass as broken, so one red run mid-change no longer turns the verdict to `pl_broke` for every pipeline; a failed check on committed code still does.
+- Pipelines: when one of several Agent calls sent in one message is refused before it runs, the stage no longer counts it and the «PASS → next» hand-off is no longer held back after the other calls return (plugin 0.9.7).
+- Pipelines: a dispatch whose PostToolUse hook found the run lock busy is no longer lost, so a blocking reviewer's verdict still counts at the loop-back gate; the wait stays inside the hook timeout (plugin 0.9.9).
+- Pipelines: a loop-back refused because every reviewer passed is recorded as «Loop-back after a pass» in the Harness report instead of «Stage jump»; records written before keep «Stage jump» (plugin 0.9.6).
+- Pipelines: the tighten-gate suggestion for a gate with no recorded mode (for example `npm test`) ends at «tighten it» instead of «tighten it (-)».
+- Timeline: a run touched recently keeps waiting on a build started before a long stage, instead of reading «Aborted» a minute later.
+- Attention: «Half-edited files» shows only on the row of the session that left the files (the whole folder only when that session is unknown or not listed), so idle sessions in the same folder no longer hold it and the card stays with its owner.
 
 ## [0.19.0] - 2026-11-14
 
@@ -1078,7 +1100,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/bugsterran/sidereus/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/bugsterran/sidereus/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/bugsterran/sidereus/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/bugsterran/sidereus/compare/v0.16.0...v0.17.0
