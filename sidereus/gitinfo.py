@@ -8,6 +8,7 @@ import threading
 import time
 from sidereus.warn import warn_once
 from sidereus.ident import _git_walk
+from sidereus.memo import BoundedMemo
 
 
 _git_cache = {}                 # cwd -> (lookup time, marker, TTL for this entry)
@@ -362,6 +363,11 @@ DIFF_TIMEOUT = 6            # some repos have slow git (a big working tree next 
 
 _GITROOT = {}
 GITROOT_MAX = 512
+# ⚠A miss is kept only for GITROOT_MISS_TTL: forever hid a later `git init`/clone from the Branches picker,
+# uncached it walked the fs per external row on every poll (cwd_git). Same shape as ident._PROJ_MISS.
+GITROOT_MISS_TTL = 30
+_GITROOT_MISS = BoundedMemo(GITROOT_MAX)   # dir -> True, stamped with the GITROOT_MISS_TTL time bucket
+_mono = time.monotonic                     # patched by tests (never the real clock there)
 
 
 def _git_root(d):
@@ -372,9 +378,13 @@ def _git_root(d):
         return ""
     if d in _GITROOT:
         return _GITROOT[d]
+    tick = int(_mono() // GITROOT_MISS_TTL)
+    if _GITROOT_MISS.get(d, stamp=tick) is not None:
+        return ""
     hit = _git_walk(d)                      # walk lives in ident (loads earlier, _proj_name needs it); cache stays here
     if not hit:
-        return ""                           # ⚠misses are not cached: a later `git init`/clone in that dir must show
+        _GITROOT_MISS.put(d, True, stamp=tick)
+        return ""
     if len(_GITROOT) >= GITROOT_MAX:        # API routes add arbitrary dirs — drop the oldest half
         for k in list(_GITROOT)[:GITROOT_MAX // 2]:
             _GITROOT.pop(k, None)

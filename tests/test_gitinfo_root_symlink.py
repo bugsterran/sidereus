@@ -1,4 +1,4 @@
-"""gitinfo: a git-root miss is not cached, session repos dedupe by realpath, pi relative paths outside home resolve.
+"""gitinfo: a git-root miss is cached only for GITROOT_MISS_TTL, session repos dedupe by realpath, pi relative paths outside home resolve.
 Temp dirs only: _HOME and _PATH_RE are patched to point inside a temp "home"."""
 import json
 import os
@@ -15,21 +15,40 @@ def tu(**inp):
     return json.dumps({"message": {"content": [{"type": "tool_use", "name": "Edit", "input": inp}]}})
 
 
-class GitRootMissNotCached(unittest.TestCase):
+class GitRootMissTtl(unittest.TestCase):
     def setUp(self):
-        self.saved = dict(gi._GITROOT)
+        self.saved = (dict(gi._GITROOT), dict(gi._GITROOT_MISS), gi._mono)
         gi._GITROOT.clear()
+        gi._GITROOT_MISS.clear()
+        self.now = [1000.0]
+        gi._mono = lambda: self.now[0]
         self.d = os.path.realpath(tempfile.mkdtemp(prefix="sidereus-gr-"))
 
     def tearDown(self):
         gi._GITROOT.clear()
-        gi._GITROOT.update(self.saved)
+        gi._GITROOT.update(self.saved[0])
+        gi._GITROOT_MISS.clear()
+        gi._GITROOT_MISS.update(self.saved[1])
+        gi._mono = self.saved[2]
         shutil.rmtree(self.d, ignore_errors=True)
 
-    def test_git_init_after_miss_is_seen(self):
+    def test_git_init_after_miss_is_seen_after_ttl(self):
         self.assertEqual(gi._git_root(self.d), "")
         os.makedirs(os.path.join(self.d, ".git"))
+        self.now[0] += gi.GITROOT_MISS_TTL
         self.assertEqual(gi._git_root(self.d), self.d)
+
+    def test_miss_is_cached_inside_the_window(self):
+        # a miss must not walk the fs again on every poll (cwd_git runs per external row)
+        self.assertEqual(gi._git_root(self.d), "")
+        walks = []
+        real = gi._git_walk
+        gi._git_walk = lambda d: walks.append(d) or real(d)
+        try:
+            self.assertEqual(gi._git_root(self.d), "")
+        finally:
+            gi._git_walk = real
+        self.assertEqual(walks, [])
 
 
 class SessionReposSymlink(unittest.TestCase):
