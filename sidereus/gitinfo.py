@@ -253,13 +253,15 @@ def pi_edit_path(blk):
 
 
 def pi_abs_path(pth, cwd):
-    """Absolute target of a pi edit path: `/` as is, `~` expanded, cwd-relative via `_rel_paths`; "" if unresolvable."""
+    """Absolute target of a pi edit path: `/` as is, `~` expanded, cwd-relative joined to an absolute cwd; "" if unresolvable."""
     if pth.startswith("/"):
         return os.path.normpath(pth)
     if pth.startswith("~"):
         p = os.path.expanduser(pth)
         return os.path.normpath(p) if os.path.isabs(p) else ""
-    return next(iter(_rel_paths((pth,), cwd)), "") if pth else ""
+    if pth and cwd and os.path.isabs(cwd):
+        return os.path.normpath(os.path.join(cwd, pth))   # ⚠not `_rel_paths`: its home filter guards the repo allow-list only
+    return ""
 
 
 def _tool_inputs(fp, offset):
@@ -302,6 +304,18 @@ def _tool_inputs(fp, offset):
     return out, offset, restarted
 
 
+def _drop_same(roots, r, memo):
+    """Remove from `roots` every root that is `r` by realpath (a repo reached through a symlink is one repo)."""
+    # ⚠Dedupe key only: the kept string stays as seen, so the cwd's root still equals the row's cwd prefix.
+    #   `memo` (one per scan) keeps it to one realpath per distinct root, not one per path x root.
+    def key(x):
+        if x not in memo:
+            memo[x] = os.path.realpath(x)
+        return memo[x]
+    rr = key(r)
+    roots[:] = [x for x in roots if x != r and key(x) != rr]
+
+
 def session_repos(fp, mt, cwd):
     """Git repos this session touched. The cwd's repo goes first, then the most recently seen."""
     # ⚠Keyed by fp alone: an (fp, mtime) key grew on every write by an active session, and the bulk evict
@@ -313,6 +327,7 @@ def session_repos(fp, mt, cwd):
     # ⚠Incremental, not a tail window: a 1.5MB tail dropped repos edited earlier in a 27MB transcript.
     #   First scan reads the whole file; later scans only the appended bytes (from 0 if the file shrank).
     offset, recent = (hit[2], list(hit[3])) if hit is not None else (0, [])
+    memo = {}
     try:
         items, offset, restarted = _tool_inputs(fp, offset)
         if restarted:
@@ -321,8 +336,7 @@ def session_repos(fp, mt, cwd):
             for d in [m.group(0) for m in _PATH_RE.finditer(blob)] + _extra_paths(blob, cmd, cwd) + _rel_paths(rel, cwd):
                 r = _git_root(d if os.path.isdir(d) else os.path.dirname(d))
                 if r:
-                    if r in recent:
-                        recent.remove(r)
+                    _drop_same(recent, r, memo)
                     recent.insert(0, r)      # most recently seen first
         del recent[32:]                      # bound the remembered list; only 8 are shown
     except OSError:
@@ -333,8 +347,7 @@ def session_repos(fp, mt, cwd):
     # ★Put the cwd's repo first. The UI opens the first tab by default.
     own = _git_root(cwd) if cwd else ""
     if own:
-        if own in roots:
-            roots.remove(own)
+        _drop_same(roots, own, memo)
         roots.insert(0, own)
     roots = roots[:8]                        # cap — a longer list is harder to choose from
     while len(_REPO_CACHE) >= _REPO_CACHE_MAX:
@@ -360,6 +373,8 @@ def _git_root(d):
     if d in _GITROOT:
         return _GITROOT[d]
     hit = _git_walk(d)                      # walk lives in ident (loads earlier, _proj_name needs it); cache stays here
+    if not hit:
+        return ""                           # ⚠misses are not cached: a later `git init`/clone in that dir must show
     if len(_GITROOT) >= GITROOT_MAX:        # API routes add arbitrary dirs — drop the oldest half
         for k in list(_GITROOT)[:GITROOT_MAX // 2]:
             _GITROOT.pop(k, None)

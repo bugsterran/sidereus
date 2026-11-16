@@ -269,7 +269,7 @@ class TestPi(Base):
         os.makedirs(self.pi_dir)
         saved = (pp.root, gi_mod._HOME, fo.FO_FIRST_BYTES)
         pp.root = lambda: self.pi_root
-        gi_mod._HOME = self.tmp                  # relative pi paths are kept only inside home
+        gi_mod._HOME = self.tmp                  # home filter applies to session_repos only, not to edit paths
         fo._FO_PIH.clear()
 
         def undo():
@@ -298,7 +298,8 @@ class TestPi(Base):
                                                 pi_edit(self.now - 60, "sub/b.js", name="write"),
                                                 pi_edit(self.now - 60, "../../escape.py")])
         idx = fo.index(self.now)
-        self.assertEqual(set(idx), {self.p("sub/b.js")})          # outside home is dropped
+        esc = os.path.normpath(os.path.join(self.repo, "../../escape.py"))
+        self.assertEqual(set(idx), {self.p("sub/b.js"), esc})     # joined to cwd like an absolute Claude edit, home or not
         self.assertEqual(idx[self.p("sub/b.js")][("P", fo.FO_MAIN)]["cwd"], self.repo)
 
     def test_cwd_only_in_header_outside_tail(self):
