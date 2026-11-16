@@ -240,6 +240,83 @@ class TestAttentionSignal(unittest.TestCase):
         self.assertEqual(out[0]["why"], "Conflict risk · 1 file(s) · subagents main, Explore")
 
 
+pp = sidereus("plat_pi")
+gi_mod = sidereus("gitinfo")
+
+
+def pi_head(sid, cwd, ts, **kw):
+    h = {"type": "session", "id": sid, "cwd": cwd, "timestamp": utc(ts)}
+    h.update(kw)
+    return json.dumps(h)
+
+
+def pi_edit(ts, path, name="edit"):
+    return json.dumps({"type": "message", "id": "e1", "parentId": "e0", "timestamp": utc(ts),
+                       "message": {"role": "assistant", "content": [
+                           {"type": "text", "text": "BODY-TEXT"},
+                           {"type": "toolCall", "id": "c1", "name": name,
+                            "arguments": {"path": path, "oldText": "OLD-SECRET", "newText": "NEW-SECRET"}}]}})
+
+
+class TestPi(Base):
+    """pi session files feed the same ownership index (header id/cwd + edit/write paths only)."""
+
+    def setUp(self):
+        super().setUp()
+        self.pi_root = os.path.join(self.tmp, "pi")
+        self.pi_dir = os.path.join(self.pi_root, "sessions", "--repo--")
+        os.makedirs(self.pi_dir)
+        saved = (pp.root, gi_mod._HOME, fo.FO_FIRST_BYTES)
+        pp.root = lambda: self.pi_root
+        gi_mod._HOME = self.tmp                  # relative pi paths are kept only inside home
+        fo._FO_PIH.clear()
+
+        def undo():
+            pp.root, gi_mod._HOME, fo.FO_FIRST_BYTES = saved
+            fo._FO_PIH.clear()
+        self.addCleanup(undo)
+
+    def pi(self, name, lines):
+        with open(os.path.join(self.pi_dir, name), "a", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+
+    def test_pi_and_claude_same_file_is_conflict(self):
+        self.pi("2026-01-01T00-00-00_P.jsonl", [pi_head("P", self.repo, self.now - 900),
+                                                pi_edit(self.now - 100, self.p("a.py"))])
+        self.main("s1", [edit_line(self.now - 50, "Edit", self.p("a.py"))])
+        cf = fo.conflicts(live("s1", "P"), self.now)
+        self.assertEqual(len(cf), 1)
+        self.assertEqual(cf[0]["sids"], ["P", "s1"])
+        self.assertEqual(cf[0]["units"], [("P", fo.FO_MAIN), ("s1", fo.FO_MAIN)])
+        # metadata only: no text block or edit body is kept anywhere in the stores
+        self.assertNotIn("SECRET", repr((fo._FO, fo._FO_N, fo._FO_PIH)))
+        self.assertNotIn("BODY-TEXT", repr((fo._FO, fo._FO_N, fo._FO_PIH)))
+
+    def test_relative_path_joins_header_cwd(self):
+        self.pi("2026-01-01T00-00-00_P.jsonl", [pi_head("P", self.repo, self.now - 900),
+                                                pi_edit(self.now - 60, "sub/b.js", name="write"),
+                                                pi_edit(self.now - 60, "../../escape.py")])
+        idx = fo.index(self.now)
+        self.assertEqual(set(idx), {self.p("sub/b.js")})          # outside home is dropped
+        self.assertEqual(idx[self.p("sub/b.js")][("P", fo.FO_MAIN)]["cwd"], self.repo)
+
+    def test_cwd_only_in_header_outside_tail(self):
+        fo.FO_FIRST_BYTES = 2000                 # first read takes the tail only; header is not in it
+        pad = [json.dumps({"type": "message", "id": "x%d" % i, "timestamp": utc(self.now - 500),
+                           "message": {"role": "user", "content": "p" * 200}}) for i in range(40)]
+        self.pi("2026-01-01T00-00-00_fileid.jsonl", [pi_head("", self.repo, self.now - 900)] + pad
+                + [pi_edit(self.now - 30, "a.py")])
+        own = fo.index(self.now)[self.p("a.py")]
+        self.assertEqual(set(own), {("fileid", fo.FO_MAIN)})      # header id invalid: file-name id, not the basename
+        self.assertEqual(own[("fileid", fo.FO_MAIN)]["cwd"], self.repo)
+
+    def test_clone_skips_copied_parent_entries(self):
+        self.pi("2026-01-01T00-00-00_C.jsonl", [pi_head("C", self.repo, self.now - 300, parentSession="/x/p.jsonl"),
+                                                pi_edit(self.now - 600, self.p("a.py")),
+                                                pi_edit(self.now - 60, self.p("b.js"))])
+        self.assertEqual(set(fo.index(self.now)), {self.p("b.js")})
+
+
 class CacheBounds(unittest.TestCase):
     """_FO_GIT and gitinfo._GITROOT take arbitrary keys from API routes; both must stay bounded."""
 

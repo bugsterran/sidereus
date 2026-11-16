@@ -3,7 +3,8 @@
 Records: `<agent dir>/sessions/--<cwd>--/<timestamp>_<id>.jsonl` — line 1 is the `session` header (id, cwd, timestamp),
 then tree entries (`message`, `model_change`, `usage`, `compaction`, `branch_summary`, ...).
 ⚠Metadata only: header id/cwd/timestamp, entry ids and times, provider/model, token counts, cost and tool names.
-Message content, tool arguments, tool output, thinking, summaries, session names and system sections are never read.
+Message content, tool output, thinking, summaries, session names and system sections are never read; of tool arguments
+only the `path` of edit/write calls is read (gitinfo session repos, file_owner ownership).
 ⚠No hooks yet: rows come from the files alone (ext_presence), so state is always unknown; a running `pi` process
 in the same cwd keeps its newest file listed past the window and gives the row its pid (ext_presence._pi_procs).
 """
@@ -28,6 +29,7 @@ NAME = "Pi"
 CHILD_LABEL = "pi -p"    # a run launched from a Claude session's Bash
 SCAN_MAX = 64 << 20      # skip session files larger than this
 TOOLS_N = 50             # tool names kept per session (timeline label, work panel)
+HEAD_MAX = 64 << 10      # bytes read for the line-1 header alone (read_head)
 _TOOL = re.compile(r"^[A-Za-z0-9_.:-]{1,40}$")
 _lock = threading.Lock()
 _cache = {}              # path -> ((size, mtime), parsed | None)
@@ -147,13 +149,30 @@ def _parsed(path, st):
     return r
 
 
-def _row(path, st, r):
-    h = r["head"]
-    sid = h.get("id")
+def sid_of(path, head):
+    """Session id: header `id`, else the `<id>` of file name `<timestamp>_<id>.jsonl`; "" when neither is valid."""
+    sid = head.get("id") if isinstance(head, dict) else None
     if not _sid_ok(sid):
         sid = os.path.basename(path)[:-6].split("_", 1)[-1]   # file name = <timestamp>_<id>
-        if not _sid_ok(sid):
-            return None
+    return sid if _sid_ok(sid) else ""
+
+
+def read_head(path):
+    """Line-1 `session` header dict of a session file, or None (only this line is read; HEAD_MAX caps it)."""
+    try:
+        with open(path, "rb") as f:
+            ln = f.readline(HEAD_MAX)
+        o = json.loads(ln) if ln.endswith(b"\n") else None
+    except (OSError, ValueError):
+        return None
+    return o if isinstance(o, dict) and o.get("type") == "session" else None
+
+
+def _row(path, st, r):
+    h = r["head"]
+    sid = sid_of(path, h)
+    if not sid:
+        return None
     # ⚠cwd only from the header: the `--<cwd>--` folder name is lossy (`/`, `\`, `:` all became `-`).
     cwd = h.get("cwd") if isinstance(h.get("cwd"), str) else ""
     ts = h.get("timestamp")

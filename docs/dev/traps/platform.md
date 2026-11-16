@@ -329,3 +329,9 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - ⇒ A child's extension sends a pi-only `Usage` event per assistant message (counts, generation id, model); stored in `_hooktok` only for a live pi row whose parent is a known pi row. Tests `tests/test_pi_child_tok.py`.
 - ⚠Never accept `Usage` for a session with a record file (parents, Claude-parented pi): file and hook counts would double. Never send it as `Stop` (flips row state per message).
 - ⚠`_run_note_locked` runs under `_ext_lock`: read `_hooktok` directly, never via `ext_side_sess`/`ext_side_tok` (non-reentrant lock, deadlock).
+
+## pi edits were invisible to file ownership (`sidereus/file_owner.py` `_scan` · `_pi_edits` · `_pi_who`)
+- Cause: `_scan` globbed only Claude transcripts and `_edits` read only `tool_use`, so a pi session editing a shared file showed «edited by 0 unit(s)» and no conflict.
+- ⇒ pi session files (`plat_pi.root()/sessions/*/*.jsonl`, `plat_pi.path_ok`) feed the same stores; owner = (header id or file-name id via `plat_pi.sid_of`, `main`); edit/write `path` parsed by `gitinfo.pi_edit_path`/`pi_abs_path` (shared with session repos). Tests `tests/test_file_owner.py` (TestPi).
+- ⚠cwd is only on line 1 and live files are 9-13 MB: read it with `plat_pi.read_head` (cached in `_FO_PIH`), never from the tail. A /clone or /fork copies parent entries: skip those older than the header time.
+- ⚠Path only: never keep `oldText`/`newText`/content. A pi owner has no Claude project dir, so the git rail gives it no `tid` (main unit).

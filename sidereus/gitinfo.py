@@ -244,6 +244,24 @@ def _rel_paths(rel, cwd):
 _PI_EDIT_TOOLS = ("edit", "write")   # pi built-ins that change a file (`{path}`); read/bash are not edits
 
 
+def pi_edit_path(blk):
+    """`arguments.path` of a pi edit/write `toolCall` block, else "" (shared with file_owner; bodies are never read)."""
+    if not isinstance(blk, dict) or blk.get("type") != "toolCall" or blk.get("name") not in _PI_EDIT_TOOLS:
+        return ""
+    a = blk.get("arguments") if isinstance(blk.get("arguments"), dict) else {}
+    return a.get("path") if isinstance(a.get("path"), str) else ""
+
+
+def pi_abs_path(pth, cwd):
+    """Absolute target of a pi edit path: `/` as is, `~` expanded, cwd-relative via `_rel_paths`; "" if unresolvable."""
+    if pth.startswith("/"):
+        return os.path.normpath(pth)
+    if pth.startswith("~"):
+        p = os.path.expanduser(pth)
+        return os.path.normpath(p) if os.path.isabs(p) else ""
+    return next(iter(_rel_paths((pth,), cwd)), "") if pth else ""
+
+
 def _tool_inputs(fp, offset):
     """(items, offset reached, restarted): (path blob, command, cwd-relative paths) of each tool call in the complete
     lines after byte `offset`; a file shorter than `offset` was rewritten, so it is read from 0 and `restarted` is True.
@@ -269,9 +287,8 @@ def _tool_inputs(fp, offset):
             for blk in c:
                 if not isinstance(blk, dict):
                     continue
-                if blk.get("type") == "toolCall" and blk.get("name") in _PI_EDIT_TOOLS:
-                    a = blk.get("arguments") if isinstance(blk.get("arguments"), dict) else {}
-                    pth = a.get("path") if isinstance(a.get("path"), str) else ""
+                if blk.get("type") == "toolCall":
+                    pth = pi_edit_path(blk)
                     if pth.startswith(("/", "~")):
                         out.append((pth, "", ()))
                     elif pth:

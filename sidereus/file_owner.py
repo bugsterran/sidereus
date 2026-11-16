@@ -1,15 +1,17 @@
-"""Who edited which file: Edit/Write/MultiEdit/NotebookEdit targets from session + subagent transcripts (metadata only)."""
+"""Who edited which file: Edit/Write/MultiEdit/NotebookEdit targets from session + subagent transcripts, and pi
+edit/write targets from pi session files (metadata only)."""
 import glob
 import json
 import os
 import threading
 import time
+from sidereus import plat_pi   # module access: tests patch `plat_pi.root`
 from sidereus.redact import redact
 from sidereus.transcript import CLAUDE_PROJECTS, _line_ts, _tail_incr
 from sidereus.agents import sub_globs, sub_sess_dir
 from sidereus.claude_roots import projects_dirs
 from sidereus.ident import _sid8
-from sidereus.gitinfo import _git_root
+from sidereus.gitinfo import _git_root, pi_abs_path, pi_edit_path
 from sidereus.steps import _edit_target
 from sidereus.sessions import sessions_snapshot
 from sidereus.git import wt_files
@@ -34,6 +36,7 @@ _FO_N = {}                       # fp -> {abs path: [edit ts, ...]} pruned to FO
 FO_N_MAX = 500                   # timestamps kept per (transcript, path): a runaway loop must not grow memory unbounded
 _FO_GIT = {}                     # repo root -> (at, set of abs paths uncommitted)
 FO_GIT_MAX = 512
+_FO_PIH = {}                     # pi session fp -> (sid, cwd, since) from its line-1 header (pruned with _FO)
 # index() memo: one /api/state poll calls index() 4x (conflicts + review._owned per item); rebuild only when a scan
 # committed (gen), the stores were swapped, or the advancing cut would drop an entry (nxt) — same output as a rebuild.
 _FO_IDX = {"gen": 0, "key": None, "now": 0.0, "nxt": 0.0, "out": {}}
@@ -60,6 +63,46 @@ def _edits(lines):
             p = inp.get("file_path") or inp.get("notebook_path") or ""
             if isinstance(p, str) and os.path.isabs(p) and ts:   # isabs: Windows edits are `C:\...`
                 out.append((os.path.normpath(p), ts))
+    return out
+
+
+def _pi_edits(lines, cwd, since=0.0):
+    """[(abs path, ts)] of pi edit/write toolCalls (path only); entries older than `since` were copied by /clone or /fork."""
+    out = []
+    for ln in lines:
+        if '"toolCall"' not in ln:
+            continue
+        try:
+            e = json.loads(ln)
+        except Exception:
+            continue
+        m = e.get("message") if isinstance(e, dict) else None
+        c = m.get("content") if isinstance(m, dict) else None
+        if not isinstance(c, list):
+            continue
+        ts = _line_ts(e, 0)
+        if not ts or ts < since:
+            continue
+        for it in c:
+            p = pi_abs_path(pi_edit_path(it), cwd)
+            if p:
+                out.append((p, ts))
+    return out
+
+
+def _pi_who(fp):
+    """(sid, cwd, since) of a pi session file, cached per file. ⚠cwd is only on line 1 (a live file's tail never has it)."""
+    with _FO_LOCK:
+        hit = _FO_PIH.get(fp)
+    if hit:
+        return hit
+    h = plat_pi.read_head(fp)
+    if h is None:
+        return "", "", 0.0                   # no header (yet): no owner, re-read next scan
+    cwd = h.get("cwd") if isinstance(h.get("cwd"), str) and os.path.isabs(h.get("cwd")) else ""
+    out = (plat_pi.sid_of(fp, h), cwd, _line_ts(h, 0.0) if h.get("parentSession") else 0.0)
+    with _FO_LOCK:
+        _FO_PIH[fp] = out
     return out
 
 
@@ -99,8 +142,11 @@ def _scan(now=None):
         pats = []
         for root in projects_dirs(CLAUDE_PROJECTS):   # ⚠extra account roots add a glob + stat pass each
             pats += [(os.path.join(root, "*", "*.jsonl"), False)] + [(p, True) for p in sub_globs(root)]
+        pats.append((os.path.join(glob.escape(plat_pi.root()), "sessions", "*", "*.jsonl"), "pi"))
         for pat, sub in pats:
             for fp in glob.glob(pat):
+                if sub == "pi" and not plat_pi.path_ok(fp):
+                    continue                 # symlink out of the pi sessions folder
                 try:
                     if os.path.getmtime(fp) < cut:
                         continue
@@ -116,12 +162,19 @@ def _scan(now=None):
                 per = {} if reset or per0 is None else dict(per0)
                 cnt = {} if reset or per0 is None else {p: list(v) for p, v in (_FO_N.get(fp) or {}).items()
                                                         if isinstance(v, list)}
-                for p, ts in _edits(lines):
+                if sub == "pi":
+                    if reset:
+                        with _FO_LOCK:
+                            _FO_PIH.pop(fp, None)
+                    psid, pcwd, since = _pi_who(fp)
+                    edits, who = _pi_edits(lines, pcwd, since), (psid, FO_MAIN, "", "", pcwd)
+                else:
+                    edits, who = _edits(lines), (who0 if who0 and who0[4] else _who(fp, sub, lines))
+                for p, ts in edits:
                     if ts >= cut:
                         cnt.setdefault(p, []).append(ts)
                     if ts >= cut and ts > per.get(p, 0):
                         per[p] = ts
-                who = who0 if who0 and who0[4] else _who(fp, sub, lines)
                 per = {p: t for p, t in per.items() if t >= cut}
                 # Per-edit timestamps, not a running total: a total never ages out, so a file touched daily read
                 # as the multi-day sum. index() recounts against its own cut.
@@ -135,6 +188,7 @@ def _scan(now=None):
                 for k in ("off", "per", "who"):
                     _FO[k].pop(fp, None)
                 _FO_N.pop(fp, None)
+                _FO_PIH.pop(fp, None)
             _FO["at"] = now
             _FO_IDX["gen"] += 1
     finally:

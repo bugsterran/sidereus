@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Attention: in English, the «Same error repeated» and «Same action repeated» rows no longer end with the Korean word for "tool" when the tool is unknown; a named tool is still shown.
 - Structure: flow steps with no current verdict (an older verifier or a missing verdict file) show as «Not checked» in grey with «?» in the flow picker instead of as red failures; step tooltips show the translated reason instead of a raw code.
 - Branches: repos worked on only from pi, Codex, Cursor or Copilot sessions now appear in the repository picker and in work units; for pi, repos it edited outside its working directory count too.
+- Conflicts: files edited from pi sessions now count for file ownership, so «Conflict risk», the file owners in Branches and the `sidereus_file_peers` tool see them.
 
 ## [0.19.0] - 2026-11-14
 
