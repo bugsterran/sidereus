@@ -330,6 +330,11 @@ class WreckCardTests(CardFlowBase):
             self.assertIn(k, c["extra"], k)
         self.assertEqual((c["extra"]["tid"], c["extra"]["n"], c["extra"]["label"]), ("w2", 2, "Explore"))
 
+    def test_card_carries_owner_sid(self):
+        F._wreck_cards([])
+        F._wreck_cards([self._row(sid="S1"), self._row(tid="w2")])
+        self.assertEqual(sorted(c["extra"]["sid"] for c in self.added), ["", "S1"])
+
     def test_clean_or_tidless_rows_skipped(self):
         F._wreck_cards([])
         F._wreck_cards([self._row(dirty=0), self._row(tid="")])

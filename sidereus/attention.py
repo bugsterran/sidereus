@@ -213,6 +213,9 @@ def _card_sigs(extra, cards, own, now, read, rid, by_sid=None):
         k, cw = c.get("kind") or "", c.get("cwd") or ""
         # An «ask» card belongs to its own session, not to the newest row of the cwd.
         r = (by_sid or {}).get(c.get("sid") or "") if k == "ask" else own(cw)
+        # «Half-edited files» goes to its owner row like `cards.wreck_of`; an unlisted owner falls back to own(cw)
+        if k == "fwreck":
+            r = (by_sid or {}).get(c.get("sid") or "") or r
         if r is None:
             continue
         at = _card_ts(c)

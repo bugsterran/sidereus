@@ -221,3 +221,4 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: wreckage was folded per cwd, so every row in that folder got `wreck`, and idle non-owner rows never resumed to clear it.
 - ⇒ wreckage rows carry the owning session `sid`; `_WRECK_BY_SID` splits them per owner and `cards.wreck_of` (used by `sessions._wreck_stamp` and attention) gives owned wreckage only to its owner row. `tests/test_attention.py` `test_wreck_*`, `tests/test_races.py`.
 - ⚠Wreckage with no sid, or whose owner is not a listed row, stays cwd-wide — dropping it would hide leftovers whose owner is gone.
+- ⚠The `fwreck` card carries the same owner `sid` and `_card_sigs` routes it to that row (fallback `own(cw)`); routed by cwd alone it split from the `wreck` signal and the newest row's activity cleared the owner's card. `test_fwreck_card_goes_to_owner_session`.

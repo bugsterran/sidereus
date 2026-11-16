@@ -285,7 +285,8 @@ def _wreck_cards(rows):
         _card_add("fwreck", r.get("proj") or "", FAIL_ALERT_TITLE["fwreck"],
                   "Cut off midway, %d half-edited files left — revert or have it continue" % n,
                   r.get("cwd") or "",
-                  {"tid": tid, "n": n, "sig": r.get("sig") or "", "label": r.get("type") or "서브에이전트",
+                  # sid = owning session, so attention puts the card on the same row as the `wreck` signal
+                  {"tid": tid, "n": n, "sig": r.get("sig") or "", "sid": r.get("sid") or "", "label": r.get("type") or "서브에이전트",
                    "ekind": "agent",
                    "why": "Files left uncommitted — per git status (a hint, not proof)"})
     if len(_WRECK_CARDED) > 3000:

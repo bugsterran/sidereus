@@ -305,6 +305,16 @@ class TestCards(Base):
         out = self.run_att([sess("old", cwd="/w/p", age=500), sess("new", cwd="/w/p", age=20)], [c])
         self.assertEqual([r["sid"] for r in out], ["new"])
 
+    def test_fwreck_card_goes_to_owner_session(self):
+        rows = lambda: [sess("old", cwd="/w/p", age=500), sess("new", cwd="/w/p", age=20)]
+        c = {"kind": "fwreck", "cwd": "/w/p", "sid": "old", "at": iso(NOW - 60)}
+        self.assertEqual([r["sid"] for r in self.run_att(rows(), [c])], ["old"])
+        # owner not listed (gone or unknown): same fallback as cards.wreck_of -> newest row of the cwd
+        self.assertEqual([r["sid"] for r in self.run_att(rows(), [dict(c, sid="gone")])], ["new"])
+        # a non-owner's later activity does not drop the owner's card
+        late = dict(c, at=iso(NOW - 200))
+        self.assertEqual([r["sid"] for r in self.run_att(rows(), [late])], ["old"])
+
     def test_same_kind_cards_fold(self):
         now = NOW
         cards = [{"kind": k, "cwd": "/w/p", "at": iso(now - s)} for k, s in
