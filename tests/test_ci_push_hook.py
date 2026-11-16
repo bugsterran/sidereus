@@ -75,11 +75,11 @@ class Main(unittest.TestCase):
     """main() with git stubbed: {(cwd, argv...): stdout}."""
     SHA = "a" * 40
 
-    def run_main(self, cmd, git):
+    def run_main(self, cmd, git, resp=None):
         import io
         import json
         from unittest import mock
-        ev = {"tool_input": {"command": cmd}, "tool_response": {}, "cwd": "/repo"}
+        ev = {"tool_input": {"command": cmd}, "tool_response": resp or {}, "cwd": "/repo"}
         out = io.StringIO()
         # Keys normalised the same way as the cwd: on Windows normpath turns "/repo" into "\\repo".
         git = {(os.path.normpath(k[0]),) + k[1:]: v for k, v in git.items()}
@@ -113,6 +113,20 @@ class Main(unittest.TestCase):
         git = {("/repo", "rev-parse", "--show-toplevel"): "/repo", ("/repo", "rev-parse", "--abbrev-ref", "HEAD"): "dev",
                ("/repo", "rev-parse", "--verify", "--quiet", "dev^{commit}"): self.SHA}
         self.assertIn("ci_wait.sh %s dev`" % self.SHA, self.run_main("cd /repo && git push origin dev", git))
+
+    def test_failed_push_behind_a_pipe_gets_no_hint(self):
+        # `| tail` makes the command exit 0, so is_error stays false; git's own failure lines decide.
+        git = {("/repo", "rev-parse", "--abbrev-ref", "HEAD"): "dev",
+               ("/repo", "rev-parse", "--verify", "--quiet", "dev^{commit}"): self.SHA}
+        cmd = "git push origin dev 2>&1 | tail -3"
+        for out in (" ! [rejected]        dev -> dev (fetch first)\nerror: failed to push some refs to 'x'",
+                    " ! [remote rejected] dev -> dev (pre-receive hook declined)",
+                    "fatal: Authentication failed for 'https://example.invalid/r.git/'"):
+            self.assertIsNone(self.run_main(cmd, git, {"stdout": out, "stderr": ""}), out)
+        self.assertIsNone(self.run_main("git push origin dev | tail -3", git,
+                                        {"stdout": "", "stderr": "error: failed to push some refs to 'x'"}))
+        ok = "To example.invalid:r.git\n   1111111..2222222  dev -> dev"
+        self.assertIn("ci_wait.sh", self.run_main(cmd, git, {"stdout": ok, "stderr": ""}))
 
 
 if __name__ == "__main__":

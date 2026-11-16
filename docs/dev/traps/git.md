@@ -159,3 +159,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ `shlex.quote(branch)` in the suggested command; values of `-o`/`--push-option`/`--repo`/`--receive-pack`/`--exec` are skipped; a refspec starting with `:` is no branch push; `pushed_dir` follows `git -C d` or the last `cd d` before the push and gives no hint when that toplevel is not this repo.
 - ⚠Never return None for every `cd`/`-C` push: `cd <this repo> && git push` is the common shape and must still hint. `tests/test_ci_push_hook.py`.
 - ⇒ Shell forms the dir must follow like the shell: `+:old` is a delete too; a relative `-C` joins the earlier `cd`; a `cd` in a subshell closed before the push is ignored; `$VAR` is expanded; bare `cd` = home. ★Before, each of these dropped the hint for a push of this repo (or asked for a deleted branch).
+- Cause: `git push ... | tail` exits 0 when the push fails (status of the last command), so `is_error` stayed false and the session was sent to wait on CI for a commit that never left.
+- ⇒ git's own failure lines in stdout/stderr (`error: failed to push` · `fatal: ` · `! [rejected]` · `! [remote rejected]`) also mean no hint.
+- ⚠Do not drop the `is_error` check for this: a push that fails before printing (killed, timeout) has only the status.

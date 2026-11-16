@@ -18,6 +18,9 @@ _PUSH = re.compile(r"(?:^|[;&|(\n])\s*git\s+(?:-C\s+" + _WORD + r"\s+)?push\b")
 _CD = re.compile(r"(?:^|[;&|(\n])\s*cd\s+" + _WORD)
 # Options whose value is the next word; ⚠without skipping it `-o ci.skip origin dev` read «origin» as the branch.
 _VALUED = ("-o", "--push-option", "--repo", "--receive-pack", "--exec")
+# git's own failure lines for a push. ⚠`git push ... | tail` exits 0 when the push fails (the pipe takes the
+# last command's status), so `is_error` alone sent the session to wait on CI for a commit that never left.
+_FAILED = re.compile(r"^(?:error: failed to push|fatal: |\s*! \[(?:remote )?rejected\])", re.M)
 
 
 def _mask(cmd):
@@ -143,6 +146,8 @@ def main():
     cmd = (ev.get("tool_input") or {}).get("command") or ""
     resp = ev.get("tool_response") or {}
     if isinstance(resp, dict) and (resp.get("interrupted") or resp.get("is_error")):
+        return
+    if isinstance(resp, dict) and _FAILED.search("%s\n%s" % (resp.get("stdout") or "", resp.get("stderr") or "")):
         return
     cwd = ev.get("cwd") or "."
     d = pushed_dir(cmd)
