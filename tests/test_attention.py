@@ -315,6 +315,16 @@ class TestCards(Base):
         late = dict(c, at=iso(NOW - 200))
         self.assertEqual([r["sid"] for r in self.run_att(rows(), [late])], ["old"])
 
+    def test_other_fail_cards_go_to_owner_session(self):
+        rows = lambda: [sess("old", cwd="/w/p", age=500), sess("new", cwd="/w/p", age=20)]
+        for k in ("fcut", "fcheck", "flimit"):
+            c = {"kind": k, "cwd": "/w/p", "sid": "old", "at": iso(NOW - 60)}
+            self.assertEqual([r["sid"] for r in self.run_att(rows(), [c])], ["old"], k)
+            self.assertEqual([r["sid"] for r in self.run_att(rows(), [dict(c, sid="gone")])], ["new"], k)
+            # the owner carried on after the failure: the card clears instead of waiting out the card window
+            done = dict(c, at=iso(NOW - 600))
+            self.assertEqual(self.run_att([sess("old", cwd="/w/p", age=60), sess("new", cwd="/w/p", age=20)], [done]), [], k)
+
     def test_same_kind_cards_fold(self):
         now = NOW
         cards = [{"kind": k, "cwd": "/w/p", "at": iso(now - s)} for k, s in
