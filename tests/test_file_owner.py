@@ -318,6 +318,44 @@ class TestPi(Base):
                                                 pi_edit(self.now - 60, self.p("b.js"))])
         self.assertEqual(set(fo.index(self.now)), {self.p("b.js")})
 
+    def test_subagent_child_edits_get_a_sub_unit(self):
+        # pi `subagent` children run with --no-session: their edits exist only inside the parent's toolResult line
+        sub = pi_subagent(self.now - 40, "call-9", "worker", [self.p("a.py"), "sub/b.js"])
+        lines = [pi_head("P", self.repo, self.now - 900), sub]
+        got = fo._pi_edits(lines, self.repo)
+        self.assertEqual(sorted(got), sorted([(self.p("a.py"), self.now - 40, "call-9", "worker"),
+                                              (self.p("sub/b.js"), self.now - 40, "call-9", "worker")]))
+        self.pi("2026-01-01T00-00-00_P.jsonl", lines)
+        idx = fo.index(self.now)
+        self.assertEqual(set(idx), {self.p("a.py"), self.p("sub/b.js")})
+        u = idx[self.p("sub/b.js")][("P", "call-9")]
+        self.assertEqual((u["agent"], u["cwd"], u["n"]), ("worker", self.repo, 1))
+        self.assertNotIn("CHILD-SECRET", repr((fo._FO, fo._FO_N, fo._FO_PIH)))
+        # the child unit leaves with its session file (no "off" entry of its own)
+        os.remove(os.path.join(self.pi_dir, "2026-01-01T00-00-00_P.jsonl"))
+        fo._FO["at"] = 0.0
+        self.assertEqual(fo.index(self.now + 1), {})
+        self.assertFalse([k for k in fo._FO["per"] if fo.FO_SEP in k])
+
+    def test_subagent_child_paths_reach_tool_inputs(self):
+        fp = os.path.join(self.pi_dir, "s.jsonl")
+        self.pi("s.jsonl", [pi_head("P", self.repo, self.now - 900),
+                            pi_subagent(self.now - 40, "call-9", "worker", [self.p("a.py"), "sub/b.js"])])
+        items, _off, _r = gi_mod._tool_inputs(fp, 0)
+        self.assertEqual(items, [(self.p("a.py"), "", ()), ("", "", ("sub/b.js",))])
+
+
+def pi_subagent(ts, call_id, agent, paths):
+    """A parent's `subagent` toolResult line whose child made one edit/write per path (shape of pi's subagent extension)."""
+    calls = [{"type": "toolCall", "id": "k%d" % i, "name": "edit" if i % 2 == 0 else "write",
+              "arguments": {"path": p, "content": "CHILD-SECRET"}} for i, p in enumerate(paths)]
+    res = {"agent": agent, "agentSource": "user", "task": "CHILD-SECRET", "exitCode": 0,
+           "messages": [{"role": "assistant", "content": [{"type": "text", "text": "CHILD-SECRET"}] + calls}]}
+    return json.dumps({"type": "message", "id": "r1", "parentId": "e0", "timestamp": utc(ts),
+                       "message": {"role": "toolResult", "toolCallId": call_id, "toolName": "subagent",
+                                   "content": [{"type": "text", "text": "CHILD-SECRET"}],
+                                   "details": {"mode": "single", "results": [res]}}})
+
 
 class CacheBounds(unittest.TestCase):
     """_FO_GIT and gitinfo._GITROOT take arbitrary keys from API routes; both must stay bounded."""

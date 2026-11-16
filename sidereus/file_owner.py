@@ -11,7 +11,7 @@ from sidereus.transcript import CLAUDE_PROJECTS, _line_ts, _tail_incr
 from sidereus.agents import sub_globs, sub_sess_dir
 from sidereus.claude_roots import projects_dirs
 from sidereus.ident import _sid8
-from sidereus.gitinfo import _git_root, pi_abs_path, pi_edit_path
+from sidereus.gitinfo import _git_root, pi_abs_path, pi_child_edits, pi_edit_path
 from sidereus.steps import _edit_target
 from sidereus.sessions import sessions_snapshot
 from sidereus.git import wt_files
@@ -26,6 +26,7 @@ FO_FIRST_BYTES = 1_000_000  # first read of a transcript takes its last 1 MB onl
 FO_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 FO_MAIN = "main"            # aid of the session's own (orchestrator) transcript
 FO_LAB_MAX = 24             # agent label cap in the attention row
+FO_SEP = "\0"               # store key of a pi child unit = session file + FO_SEP + aid (children have no file)
 # ★2026-09-24 (coordinator): ownership unit = (parent sid, aid) — sibling subagents of one orchestrator editing the same
 #   file concurrently was today's real case; counting per parent sid hid it. A unit is live only while its session row is
 #   live and (for a subagent) it is still in the row's `sub` list (bgtasks done rule: notice / end_turn + quiet / boot).
@@ -67,26 +68,31 @@ def _edits(lines):
 
 
 def _pi_edits(lines, cwd, since=0.0):
-    """[(abs path, ts)] of pi edit/write toolCalls (path only); entries older than `since` were copied by /clone or /fork."""
+    """[(abs path, ts, aid, agent)] of pi edit/write toolCalls (path only): aid FO_MAIN for the session's own calls, the
+    `subagent` toolCallId for its children's (agent = `results[].agent`, cwd = the parent's); entries older than `since`
+    were copied by /clone or /fork."""
     out = []
     for ln in lines:
         if '"toolCall"' not in ln:
-            continue
+            continue                         # a subagent toolResult with child edits holds `"toolCall"` too
         try:
             e = json.loads(ln)
         except Exception:
             continue
         m = e.get("message") if isinstance(e, dict) else None
-        c = m.get("content") if isinstance(m, dict) else None
-        if not isinstance(c, list):
+        if not isinstance(m, dict):
             continue
         ts = _line_ts(e, 0)
         if not ts or ts < since:
             continue
-        for it in c:
+        for it in m.get("content") if isinstance(m.get("content"), list) else ():
             p = pi_abs_path(pi_edit_path(it), cwd)
             if p:
-                out.append((p, ts))
+                out.append((p, ts, FO_MAIN, ""))
+        for aid, agent, pth in pi_child_edits(m):
+            p = pi_abs_path(pth, cwd)
+            if p:
+                out.append((p, ts, aid, agent or "agent"))
     return out
 
 
@@ -138,7 +144,7 @@ def _scan(now=None):
         return
     try:
         cut = now - FO_KEEP_S
-        seen, upd, drop = set(), {}, []
+        seen, upd, drop, resets = set(), {}, [], set()
         pats = []
         for root in projects_dirs(CLAUDE_PROJECTS):   # ⚠extra account roots add a glob + stat pass each
             pats += [(os.path.join(root, "*", "*.jsonl"), False)] + [(p, True) for p in sub_globs(root)]
@@ -159,32 +165,51 @@ def _scan(now=None):
                 if s is None:
                     drop.append(fp)
                     continue
-                per = {} if reset or per0 is None else dict(per0)
-                cnt = {} if reset or per0 is None else {p: list(v) for p, v in (_FO_N.get(fp) or {}).items()
-                                                        if isinstance(v, list)}
                 if sub == "pi":
                     if reset:
+                        resets.add(fp)
                         with _FO_LOCK:
                             _FO_PIH.pop(fp, None)
                     psid, pcwd, since = _pi_who(fp)
-                    edits, who = _pi_edits(lines, pcwd, since), (psid, FO_MAIN, "", "", pcwd)
+                    groups = {fp: ((psid, FO_MAIN, "", "", pcwd), [])}
+                    # A pi child unit gets its own store key (fp + FO_SEP + aid) so index() sees it as (sid, aid).
+                    for p, ts, aid, agent in _pi_edits(lines, pcwd, since):
+                        key = fp if aid == FO_MAIN else fp + FO_SEP + aid
+                        g = groups.setdefault(key, ((psid, aid, agent, "", pcwd), []))
+                        g[1].append((p, ts))
+                        if agent and agent not in g[0][2].split(", "):   # parallel/chain: one call, several agents
+                            groups[key] = ((psid, aid, g[0][2] + ", " + agent, "", pcwd), g[1])
                 else:
-                    edits, who = _edits(lines), (who0 if who0 and who0[4] else _who(fp, sub, lines))
-                for p, ts in edits:
-                    if ts >= cut:
-                        cnt.setdefault(p, []).append(ts)
-                    if ts >= cut and ts > per.get(p, 0):
-                        per[p] = ts
-                per = {p: t for p, t in per.items() if t >= cut}
-                # Per-edit timestamps, not a running total: a total never ages out, so a file touched daily read
-                # as the multi-day sum. index() recounts against its own cut.
-                upd[fp] = ((s, e), per, who, {p: [t for t in v if t >= cut][-FO_N_MAX:]
-                                              for p, v in cnt.items() if p in per})
+                    groups = {fp: ((who0 if who0 and who0[4] else _who(fp, sub, lines)), _edits(lines))}
+                for key, (who, edits) in groups.items():
+                    with _FO_LOCK:
+                        p0 = per0 if key == fp else _FO["per"].get(key)
+                    per = {} if reset or p0 is None else dict(p0)
+                    cnt = {} if reset or p0 is None else {p: list(v) for p, v in (_FO_N.get(key) or {}).items()
+                                                          if isinstance(v, list)}
+                    for p, ts in edits:
+                        if ts >= cut:
+                            cnt.setdefault(p, []).append(ts)
+                        if ts >= cut and ts > per.get(p, 0):
+                            per[p] = ts
+                    per = {p: t for p, t in per.items() if t >= cut}
+                    # Per-edit timestamps, not a running total: a total never ages out, so a file touched daily read
+                    # as the multi-day sum. index() recounts against its own cut.
+                    upd[key] = ((s, e) if key == fp else None, per, who,
+                                {p: [t for t in v if t >= cut][-FO_N_MAX:] for p, v in cnt.items() if p in per})
         with _FO_LOCK:
-            for fp, (off, per, who, cnt) in upd.items():
-                _FO["off"][fp], _FO["per"][fp], _FO["who"][fp] = off, per, who
-                _FO_N[fp] = cnt
-            for fp in [f for f in _FO["off"] if f not in seen] + drop:
+            gone = set([f for f in _FO["off"] if f not in seen] + drop)
+            # ⚠Child keys have no "off" entry: they leave with their session file (gone) or its rewrite (resets).
+            for key in [k for k in _FO["per"] if FO_SEP in k and k.split(FO_SEP, 1)[0] in gone | resets]:
+                for k in ("per", "who"):
+                    _FO[k].pop(key, None)
+                _FO_N.pop(key, None)
+            for key, (off, per, who, cnt) in upd.items():
+                if off is not None:
+                    _FO["off"][key] = off
+                _FO["per"][key], _FO["who"][key] = per, who
+                _FO_N[key] = cnt
+            for fp in gone:
                 for k in ("off", "per", "who"):
                     _FO[k].pop(fp, None)
                 _FO_N.pop(fp, None)

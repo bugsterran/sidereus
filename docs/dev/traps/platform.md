@@ -335,3 +335,8 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - ⇒ pi session files (`plat_pi.root()/sessions/*/*.jsonl`, `plat_pi.path_ok`) feed the same stores; owner = (header id or file-name id via `plat_pi.sid_of`, `main`); edit/write `path` parsed by `gitinfo.pi_edit_path`/`pi_abs_path` (shared with session repos). Tests `tests/test_file_owner.py` (TestPi).
 - ⚠cwd is only on line 1 and live files are 9-13 MB: read it with `plat_pi.read_head` (cached in `_FO_PIH`), never from the tail. A /clone or /fork copies parent entries: skip those older than the header time.
 - ⚠Path only: never keep `oldText`/`newText`/content. A pi owner has no Claude project dir, so the git rail gives it no `tid` (main unit).
+
+## pi subagent children's edits had no file owner (`sidereus/file_owner.py` `_pi_edits` · `gitinfo.pi_child_edits` · `_tool_inputs`)
+- Cause: a `pi --mode json -p --no-session` child writes no session file; its edit/write calls exist only in the parent's `subagent` toolResult line (`message.details.results[].messages[].content[]`), which `_pi_edits` skipped (★session 01a1e376: 27 child calls on 17 files, 2 of 17 owned).
+- ⇒ `gitinfo.pi_child_edits` walks those calls for both `_pi_edits` and `_tool_inputs`; paths join the parent's cwd (results carry none); unit = (parent sid, subagent toolCallId), agent = `results[].agent`, stored under key `fp + FO_SEP + aid`. Tests `tests/test_file_owner.py` (`test_subagent_child_*`).
+- ⚠Child keys have no `off` entry: drop them with their session file (gone or rewritten), never by the `off`-based unseen sweep alone.

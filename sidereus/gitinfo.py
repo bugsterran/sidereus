@@ -253,6 +253,28 @@ def pi_edit_path(blk):
     return a.get("path") if isinstance(a.get("path"), str) else ""
 
 
+def pi_child_edits(msg):
+    """[(toolCallId, agent, raw path)] of edit/write calls made by the children of a pi `subagent` toolResult message.
+    ⚠Children run with `--no-session` (no file of their own): their calls exist only at
+    `message.details.results[].messages[].content[]` of the parent's line; results carry no cwd (use the parent's)."""
+    if not isinstance(msg, dict) or msg.get("role") != "toolResult" or msg.get("toolName") != "subagent":
+        return []
+    d = msg.get("details") if isinstance(msg.get("details"), dict) else {}
+    aid = msg.get("toolCallId") if isinstance(msg.get("toolCallId"), str) and msg.get("toolCallId") else "subagent"
+    out = []
+    for r in d.get("results") if isinstance(d.get("results"), list) else ():
+        if not isinstance(r, dict) or not isinstance(r.get("messages"), list):
+            continue
+        agent = r.get("agent") if isinstance(r.get("agent"), str) else ""
+        for m in r["messages"]:
+            c = m.get("content") if isinstance(m, dict) else None
+            for blk in c if isinstance(c, list) else ():
+                pth = pi_edit_path(blk)
+                if pth:
+                    out.append((aid, agent, pth))
+    return out
+
+
 def pi_abs_path(pth, cwd):
     """Absolute target of a pi edit path: `/` as is, `~` expanded, cwd-relative joined to an absolute cwd; "" if unresolvable."""
     if pth.startswith("/"):
@@ -282,26 +304,28 @@ def _tool_inputs(fp, offset):
             if b'"tool_use"' not in raw and b'"toolCall"' not in raw:
                 continue                     # cheap filter: a large transcript is mostly text/results
             try:
-                c = (json.loads(raw).get("message") or {}).get("content")
+                m = json.loads(raw).get("message") or {}
+                c = m.get("content")
             except Exception:
                 continue
-            if not isinstance(c, list):
-                continue
-            for blk in c:
+            # pi subagent children's edits (their lines contain `"toolCall"`, so the cheap filter keeps them)
+            pis = [p for _a, _g, p in pi_child_edits(m)]
+            for blk in c if isinstance(c, list) else ():
                 if not isinstance(blk, dict):
                     continue
                 if blk.get("type") == "toolCall":
-                    pth = pi_edit_path(blk)
-                    if pth.startswith(("/", "~")):
-                        out.append((pth, "", ()))
-                    elif pth:
-                        out.append(("", "", (pth,)))   # pi allows cwd-relative paths; joined in session_repos
+                    pis.append(pi_edit_path(blk))
                     continue
                 if blk.get("type") != "tool_use":
                     continue
                 inp = blk.get("input") if isinstance(blk.get("input"), dict) else {}
                 blob = " ".join(str(inp.get(k) or "") for k in ("file_path", "path", "notebook_path", "command"))
                 out.append((blob, str(inp.get("command") or ""), ()))
+            for pth in pis:
+                if pth.startswith(("/", "~")):
+                    out.append((pth, "", ()))
+                elif pth:
+                    out.append(("", "", (pth,)))   # pi allows cwd-relative paths; joined in session_repos
     return out, offset, restarted
 
 
