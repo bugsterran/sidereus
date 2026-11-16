@@ -23,6 +23,10 @@ FO_KEEP_S = 86400           # ownership kept 24 h
 FO_CONFLICT_S = 1800        # two live sessions editing the same uncommitted file within 30 min = conflict risk
 FO_TTL = 10                 # rescan transcripts at most every 10 s (state() polls every few seconds)
 FO_FIRST_BYTES = 1_000_000  # first read of a transcript takes its last 1 MB only (then incremental); older edits are missed
+# ⚠pi embeds each `subagent` child transcript in one parent line (~0.5 MB each), so a 1 MB first read held at most two lines
+#   and lost every child edit before it after a restart (★live 4.9 MB transcript: 2 of 17 files owned at 1 MB, 17 of 17
+#   at full read). pi session files are few (one per session, mtime within FO_KEEP_S), so a larger window is affordable.
+FO_FIRST_BYTES_PI = 16_000_000
 FO_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 FO_MAIN = "main"            # aid of the session's own (orchestrator) transcript
 FO_LAB_MAX = 24             # agent label cap in the attention row
@@ -161,7 +165,7 @@ def _scan(now=None):
                 seen.add(fp)
                 with _FO_LOCK:
                     prev, per0, who0 = _FO["off"].get(fp), _FO["per"].get(fp), _FO["who"].get(fp)
-                lines, s, e, reset = _tail_incr(fp, FO_FIRST_BYTES, prev)
+                lines, s, e, reset = _tail_incr(fp, FO_FIRST_BYTES_PI if sub == "pi" else FO_FIRST_BYTES, prev)
                 if s is None:
                     drop.append(fp)
                     continue

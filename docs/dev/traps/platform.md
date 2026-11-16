@@ -340,3 +340,8 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - Cause: a `pi --mode json -p --no-session` child writes no session file; its edit/write calls exist only in the parent's `subagent` toolResult line (`message.details.results[].messages[].content[]`), which `_pi_edits` skipped (★session 01a1e376: 27 child calls on 17 files, 2 of 17 owned).
 - ⇒ `gitinfo.pi_child_edits` walks those calls for both `_pi_edits` and `_tool_inputs`; paths join the parent's cwd (results carry none); unit = (parent sid, subagent toolCallId), agent = `results[].agent`, stored under key `fp + FO_SEP + aid`. Tests `tests/test_file_owner.py` (`test_subagent_child_*`).
 - ⚠Child keys have no `off` entry: drop them with their session file (gone or rewritten), never by the `off`-based unseen sweep alone.
+
+## pi child edits lost on a cold read (`sidereus/file_owner.py` `FO_FIRST_BYTES_PI`)
+- Cause: the first read of a transcript takes its last `FO_FIRST_BYTES` (1 MB), and a pi `subagent` result line embeds the child transcript (~0.5 MB), so after a restart every child edit before the last two lines was missed (★live 4.9 MB transcript: 2 of 17 files owned).
+- ⇒ pi session files get their own first-read window `FO_FIRST_BYTES_PI` (16 MB); Claude transcripts keep 1 MB. Test `test_pi_first_read_window_is_wider_than_claude`.
+- ⚠Tests that need the pi header outside the tail must shrink `FO_FIRST_BYTES_PI`, not `FO_FIRST_BYTES`.

@@ -267,13 +267,13 @@ class TestPi(Base):
         self.pi_root = os.path.join(self.tmp, "pi")
         self.pi_dir = os.path.join(self.pi_root, "sessions", "--repo--")
         os.makedirs(self.pi_dir)
-        saved = (pp.root, gi_mod._HOME, fo.FO_FIRST_BYTES)
+        saved = (pp.root, gi_mod._HOME, fo.FO_FIRST_BYTES, fo.FO_FIRST_BYTES_PI)
         pp.root = lambda: self.pi_root
         gi_mod._HOME = self.tmp                  # home filter applies to session_repos only, not to edit paths
         fo._FO_PIH.clear()
 
         def undo():
-            pp.root, gi_mod._HOME, fo.FO_FIRST_BYTES = saved
+            pp.root, gi_mod._HOME, fo.FO_FIRST_BYTES, fo.FO_FIRST_BYTES_PI = saved
             fo._FO_PIH.clear()
         self.addCleanup(undo)
 
@@ -303,7 +303,7 @@ class TestPi(Base):
         self.assertEqual(idx[self.p("sub/b.js")][("P", fo.FO_MAIN)]["cwd"], self.repo)
 
     def test_cwd_only_in_header_outside_tail(self):
-        fo.FO_FIRST_BYTES = 2000                 # first read takes the tail only; header is not in it
+        fo.FO_FIRST_BYTES_PI = 2000              # first read takes the tail only; header is not in it
         pad = [json.dumps({"type": "message", "id": "x%d" % i, "timestamp": utc(self.now - 500),
                            "message": {"role": "user", "content": "p" * 200}}) for i in range(40)]
         self.pi("2026-01-01T00-00-00_fileid.jsonl", [pi_head("", self.repo, self.now - 900)] + pad
@@ -336,6 +336,16 @@ class TestPi(Base):
         fo._FO["at"] = 0.0
         self.assertEqual(fo.index(self.now + 1), {})
         self.assertFalse([k for k in fo._FO["per"] if fo.FO_SEP in k])
+
+    def test_pi_first_read_window_is_wider_than_claude(self):
+        # a child result line older than the Claude-sized first read must still be owned after a restart
+        fo.FO_FIRST_BYTES = 2000
+        pad = [json.dumps({"type": "message", "id": "x%d" % i, "timestamp": utc(self.now - 30),
+                           "message": {"role": "user", "content": "p" * 200}}) for i in range(40)]
+        self.pi("2026-01-01T00-00-00_P.jsonl", [pi_head("P", self.repo, self.now - 900),
+                                                pi_subagent(self.now - 40, "call-1", "worker", [self.p("a.py")])]
+                + pad)
+        self.assertEqual(set(fo.index(self.now)[self.p("a.py")]), {("P", "call-1")})
 
     def test_subagent_child_paths_reach_tool_inputs(self):
         fp = os.path.join(self.pi_dir, "s.jsonl")
