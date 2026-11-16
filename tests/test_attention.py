@@ -18,7 +18,7 @@ parse = sidereus("parse")
 cards = sidereus("cards")
 
 ROW_KEYS = {"sid", "cwd", "project", "branch", "score", "why", "since", "sigs"}
-SIG_KEYS = {"k", "why", "pts", "since"}
+SIG_KEYS = {"k", "why", "pts", "since", "v"}
 
 
 def iso(ts):
@@ -98,7 +98,7 @@ class TestPoints(Base):
         row = self.one(sess("a", state="ask", ctx=96, win=100, wreck=1))
         self.assertEqual(row["score"], 90 + 5 * 2)
         self.assertEqual(row["sigs"][0]["k"], "ask")
-        self.assertTrue(row["why"].endswith(" 외 2"))
+        self.assertTrue(row["why"].endswith(" +2 more"))
 
     def test_no_signal_no_row(self):
         self.assertEqual(self.run_att([sess("a")]), [])
@@ -141,9 +141,9 @@ class TestDone(Base):
 
     def test_label_under_a_minute(self):
         why = self.one(sess("a", state="wait", age=20))["sigs"][0]["why"]
-        self.assertNotIn("0분", why)
-        self.assertIn("20초", why)
-        self.assertIn("2분", self.one(sess("a", state="wait", age=150))["sigs"][0]["why"])
+        self.assertNotIn("0 min", why)
+        self.assertIn("20 s", why)
+        self.assertIn("2 min", self.one(sess("a", state="wait", age=150))["sigs"][0]["why"])
 
     def test_not_with_sub_or_bgs(self):
         self.assertNotIn("done", self.kinds(sess("a", state="wait", age=600, sub=[{"idle": 1}])))
@@ -155,7 +155,7 @@ class TestMailIdle(Base):
         row = self.one(sess("a", state="wait", age=10, mailIdle={"n": 3, "age": 720}))  # under the done floor: mailidle alone
         sg = [s for s in row["sigs"] if s["k"] == "mailidle"][0]
         self.assertEqual((sg["pts"], row["score"]), (75, 75))
-        self.assertEqual(sg["why"], "메일 3통 대기 · 세션 쉼 12분")
+        self.assertEqual(sg["why"], "Mail waiting · session idle · 3 message(s) · 12 min")
         self.assertEqual(set(sg), SIG_KEYS)
         self.assertEqual(self.kinds(sess("a", state="tool", age=30, mailIdle={"n": 3, "age": 720})), [])
 
@@ -165,7 +165,7 @@ class TestBgIdle(Base):
         bi = {"n": 3, "idle": 2, "max": 1500}
         row = self.one(sess("a", state="tool", age=30, bgs=[{}, {}, {}], bgIdle=bi))
         sg = [s for s in row["sigs"] if s["k"] == "bgidle"][0]
-        self.assertEqual((sg["pts"], sg["why"], sg["since"]), (30, "백그라운드 셸 3개 · 무출력 2개 · 최장 25분", int(NOW) - 1500))
+        self.assertEqual((sg["pts"], sg["why"], sg["since"]), (30, "3 background shell(s) · 2 idle · longest 25 min", int(NOW) - 1500))
         self.assertEqual(set(sg), SIG_KEYS)
         for st in ("gone", "done"):
             self.assertNotIn("bgidle", self.kinds(sess("a", state=st, age=30, bgIdle=bi)))
@@ -173,7 +173,7 @@ class TestBgIdle(Base):
 
     def test_R4_old_shell_still_counts(self):
         row = self.one(sess("a", state="wait", age=10, bgIdle={"n": 1, "idle": 1, "max": 3 * 3600}))
-        self.assertIn("최장 180분", [s for s in row["sigs"] if s["k"] == "bgidle"][0]["why"])
+        self.assertIn("longest 180 min", [s for s in row["sigs"] if s["k"] == "bgidle"][0]["why"])
 
 
 class TestBgLong(Base):
@@ -183,7 +183,7 @@ class TestBgLong(Base):
         row = self.one(sess("a", state="tool", age=30, bgLong=self.BL))
         sg = [s for s in row["sigs"] if s["k"] == "bglong"]
         self.assertEqual(len(sg), 1)
-        self.assertEqual((sg[0]["pts"], sg[0]["why"], sg[0]["since"]), (30, "장기 백그라운드 1개 · 최장 31분", int(NOW) - 31 * 60))
+        self.assertEqual((sg[0]["pts"], sg[0]["why"], sg[0]["since"]), (30, "Long background 1 · longest 31 min", int(NOW) - 31 * 60))
         self.assertEqual(set(sg[0]), SIG_KEYS)
 
     def test_bglong_absorbs_bgidle(self):
@@ -191,13 +191,13 @@ class TestBgLong(Base):
         ks = self.kinds(sess("a", state="tool", age=30, bgLong=self.BL, bgIdle=bi))
         self.assertEqual(ks, ["bglong"])
         why = self.one(sess("a", state="tool", age=30, bgLong=self.BL, bgIdle=bi))["why"]
-        self.assertEqual(why, "장기 백그라운드 1개 · 최장 31분 · 무출력 1개")
+        self.assertEqual(why, "Long background 1 · longest 31 min · 1 idle")
 
     def test_bgidle_only_unchanged(self):
         bi = {"n": 3, "idle": 2, "max": 1500}
         row = self.one(sess("a", state="tool", age=30, bgIdle=bi))
         self.assertEqual([s["k"] for s in row["sigs"]], ["bgidle"])
-        self.assertEqual(row["why"], "백그라운드 셸 3개 · 무출력 2개 · 최장 25분")
+        self.assertEqual(row["why"], "3 background shell(s) · 2 idle · longest 25 min")
 
     def test_not_live_none(self):
         for st in ("gone", "done"):
@@ -239,7 +239,7 @@ class TestStall(Base):
         self.assertEqual(self.kinds(sess("a", state="tool", age=299, sub=sub)), [])
         row = self.one(sess("a", state="tool", age=300, sub=sub))
         self.assertEqual([s["k"] for s in row["sigs"]], ["stall"])
-        self.assertIn("30분", row["why"])
+        self.assertIn("30 min", row["why"])
 
     def test_sub_idle_below_threshold(self):
         self.assertEqual(self.kinds(sess("a", state="tool", age=900, sub=[{"idle": 1799}])), [])
@@ -254,7 +254,7 @@ class TestCards(Base):
         c = {"kind": "fcheck", "cwd": "/w/p/sub/dir", "at": iso(now - 60)}
         row = self.one(sess("a", cwd="/w/p"), [c])
         self.assertEqual(row["sigs"][0]["k"], "fail")
-        self.assertEqual(row["why"], "원인 확인 필요")
+        self.assertEqual(row["why"], "Failure alert")
 
     def test_prefix_is_path_boundary(self):
         c = {"kind": "fcheck", "cwd": "/w/pother", "at": iso(NOW - 60)}
@@ -269,10 +269,10 @@ class TestCards(Base):
         c = {"kind": "ask", "cwd": "/w/p", "sid": "a", "project": "p", "at": iso(NOW - 120)}
         row = self.one(sess("a", state="think", age=5, humanAt=int(NOW - 600)), [c])
         self.assertEqual([s["k"] for s in row["sigs"]], ["ask"])
-        self.assertEqual((row["sigs"][0]["pts"], row["sigs"][0]["why"]), (90, "질문 대기 · 이후 작업 계속"))
+        self.assertEqual((row["sigs"][0]["pts"], row["sigs"][0]["why"]), (90, "Asked a question · kept working since"))
         # a row that is itself asking keeps the plain label
         live = self.one(sess("a", state="ask", humanAt=0), [c])
-        self.assertEqual(live["sigs"][0]["why"], "질문 대기")
+        self.assertEqual(live["sigs"][0]["why"], "Asked a question")
         # a newer row of the same cwd does not take it
         out = self.run_att([sess("a", state="think", age=5, humanAt=0, tailAt=int(NOW - 3600)),
                             sess("b", state="run", age=1)], [c])
@@ -311,7 +311,7 @@ class TestCards(Base):
         row = self.one(sess("a", age=400), cards)     # last activity before every card
         self.assertEqual([s["k"] for s in row["sigs"]], ["fail"])
         self.assertEqual(row["score"], 60)
-        self.assertEqual(row["why"], "반쯤 고친 파일 등 3건")
+        self.assertEqual(row["why"], "Failure alert (3)")
         self.assertEqual(row["since"], int(datetime.fromisoformat(iso(now - 300)).timestamp()))
 
     def test_bgdone_fold_and_read_filter(self):
@@ -321,12 +321,12 @@ class TestCards(Base):
                  {"kind": "bgdone", "cwd": "/w/p", "at": a2, "project": "p"}]
         row = self.one(sess("a", age=200), cards)
         self.assertEqual([s["k"] for s in row["sigs"]], ["bgdone"])
-        self.assertEqual(row["why"], "백그라운드·서브에이전트 완료 2건 미확인")
+        self.assertEqual(row["why"], "2 agent completion(s) unread")
         # read watermark hides both; read_ids hides one
         rows = att.attention([sess("a", age=200)], cards, read=a2, read_ids=[])["rows"]
         self.assertEqual(rows, [])
         rows = att.attention([sess("a", age=200)], cards, read="", read_ids=["%s|agent|p" % a1])["rows"]
-        self.assertIn("1건", rows[0]["why"])
+        self.assertIn("1 agent", rows[0]["why"])
 
     def test_bgdone_keys_round_trip_through_mark_cards_read(self):
         # The row's «Seen» posts sig.keys to /api/cards/read -> mark_cards_read; the next attention() has no bgdone.
@@ -363,7 +363,7 @@ class TestBgdoneResume(Base):
 
     def test_R1_only_resumed_cards_dropped(self):
         row = self.one(sess("a", age=300), [self.card(600), self.card(250, "bgdone")])
-        self.assertEqual(row["sigs"][0]["why"], "백그라운드 완료 1건 미확인")
+        self.assertEqual(row["sigs"][0]["why"], "1 agent completion(s) unread")
 
     def test_R2_no_later_activity_stays(self):
         self.assertEqual(self.kinds(sess("a", age=900), [self.card(600)]), ["bgdone"])
@@ -446,7 +446,7 @@ class TestToolfail(Base):
         self.assertEqual(idx["/w/p"][0][:2], (4, "Grep"))
         row = self.one(sess("a"))
         self.assertEqual(row["sigs"][0]["k"], "toolfail")
-        self.assertEqual(row["why"], "같은 오류 4회 반복 · Grep")
+        self.assertEqual(row["why"], "Same error repeated 4× · Grep")
         self.assertEqual(row["score"], 45)
 
     def test_three_identical_none(self):
@@ -523,7 +523,7 @@ class TestTailRep(unittest.TestCase):
         try:
             self.assertEqual(base.kinds(sess("a", rep={"n": 7, "tool": "Bash"})), [])
             row = base.one(sess("a", rep={"n": 8, "tool": "Bash"}))
-            self.assertEqual(row["why"], "Bash 같은 호출 8회 반복")
+            self.assertEqual(row["why"], "Same call repeated 8× · Bash")
             self.assertEqual(base.kinds(sess("a", state="done", rep={"n": 20, "tool": "Bash"})), [])
         finally:
             base.tearDown()

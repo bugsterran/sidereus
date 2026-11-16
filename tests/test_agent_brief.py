@@ -200,10 +200,11 @@ class TestAttention(Patch):
         self.patch(ab, "cards", lambda n: [])
         self.patch(ab, "quota", lambda: {})
         self.patch(ab, "attention", lambda r, c, q: {"rows": [{"sid": "aaaaaaaa-1", "project": "repo", "branch": "m",
-                                                               "why": "질문 대기", "score": 90, "cwd": ROOT,
-                                                               "sigs": [{"k": "ask"}]}]})
+                                                               "why": "Asked a question", "score": 90, "cwd": ROOT,
+                                                               "sigs": [{"k": "ask", "why": "Asked a question",
+                                                                         "v": {"kept": False}}]}]})
         out = ab.brief_attention(rows=[])
-        # MCP output is English: why is rebuilt from the signal kinds, not the Korean screen label.
+        # MCP output is the signal's English why, field by field (no v, no cwd).
         self.assertEqual(out["rows"], [{"sid8": "aaaaaaaa", "project": "repo", "branch": "m", "why": "Asked a question",
                                         "score": 90}])
 
@@ -266,26 +267,28 @@ class TestRoutes(unittest.TestCase):
 
 
 class TestWhyEveryKind(unittest.TestCase):
+    # One sample v per kind; a new ATT_PTS kind without a sample (and an attention._why branch) fails here.
+    V = {"gone": {"q": False}, "ask": {"kept": False}, "abort": {}, "ctx95": {"pct": 96}, "ctx85": {"pct": 88},
+         "wreck": {"n": 2}, "stall": {"m": 30}, "loop": {"n": 8, "tool": None}, "toolfail": {"n": 4, "tool": "Bash"},
+         "fail": {"kind": "fcut", "n": 2}, "mailidle": {"n": 3, "m": 7}, "bglong": {"n": 2, "m": 41, "idle": 0},
+         "bgidle": {"n": 2, "idle": 1, "m": 9}, "done": {"s": 30}, "bgdone": {"n": 1, "src": ["bg"]},
+         "conflict": {"files": 2, "sids": ["aaaaaaaa", "bbbbbbbb"]}, "credit": {"s": 5}}
+
     def test_every_attention_kind_has_english_label(self):
-        # ATT_PTS is indexed by every kind _sig() can emit, so a new kind without a _why_en branch fails here.
         att = sidereus("attention")
-        whys = {"mailidle": "메일 3통 대기 · 세션 쉼 7분", "bgidle": "백그라운드 셸 2개 · 무출력 1개 · 최장 9분"}
-        for k in att.ATT_PTS:
-            out = ab._why_en({"k": k, "why": whys.get(k, "x 1")})
+        self.assertEqual(set(self.V) | {"blocked"}, set(att.ATT_PTS) | {"gone"})   # gone has its own pts=10
+        for k, v in self.V.items():
+            out = att._why(k, v)
             self.assertTrue(out and out != k, k)
-            self.assertFalse(any("가" <= ch <= "힣" for ch in out), (k, out))
-        self.assertEqual(ab._why_en({"k": "mailidle", "why": whys["mailidle"]}),
-                         "Mail waiting · session idle · 3 message(s) · 7 min")
-        self.assertEqual(ab._why_en({"k": "bgidle", "why": whys["bgidle"]}),
-                         "2 background shell(s) · 1 idle · longest 9 min")
-        self.assertEqual(ab._why_en({"k": "bgidle", "why": ""}), "Idle shells")
-        self.assertEqual(ab._why_en({"k": "bglong", "why": "장기 백그라운드 2개 · 최장 41분"}),
-                         "Long background 2 · longest 41 min")
-        self.assertEqual(ab._why_en({"k": "bglong", "why": "장기 백그라운드 1개 · 최장 41분 · 무출력 1개"}),
-                         "Long background 1 · longest 41 min · 1 idle")
-        self.assertEqual(ab._why_en({"k": "bglong", "why": ""}), "Long background shells")
-        self.assertEqual(ab._why_en({"k": "done", "why": "작업 끝 · 입력 대기 30초"}), "Done · waiting for input 30 s")
-        self.assertEqual(ab._why_en({"k": "done", "why": "작업 끝 · 입력 대기 5분"}), "Done · waiting for input 5 min")
+            self.assertFalse(any("\uac00" <= ch <= "\ud7a3" for ch in out), (k, out))
+            self.assertEqual(ab._why_en({"k": k, "why": out, "v": v}), out)
+        self.assertEqual(att._why("bglong", {"n": 1, "m": 41, "idle": 1}), "Long background 1 · longest 41 min · 1 idle")
+        self.assertEqual(att._why("done", {"s": 300}), "Done · waiting for input 5 min")
+
+    def test_blocked_and_missing_why(self):
+        self.assertEqual(ab._why_en({"k": "blocked", "why": "Bash waiting for approval"}), "Waiting for permission")
+        self.assertEqual(ab._why_en({"k": "ask"}), "ask")
+        self.assertEqual(ab._why_en({}), "needs attention")
 
 
 if __name__ == "__main__":

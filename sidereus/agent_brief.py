@@ -6,7 +6,6 @@ A session can ASK Sidereus instead of the user watching the screen.
   subagent `now` lines or card bodies. Every output dict is built field by field here (no row passthrough).
 """
 import os
-import re
 import time
 from sidereus.ident import _sid8
 from sidereus.gitinfo import _wt_of
@@ -182,70 +181,13 @@ def brief_file(path, cwd="", rows=None, now=None):
             "liveSids": sorted({e["sid8"] for e in eds if e["live"]})}
 
 
-def _num(w, pat, g=1):
-    m = re.search(pat, w)
-    return m.group(g) if m else ""
-
-
-def _tool_tail(tool):
-    return " · " + tool if tool and tool != "도구" else ""
-
-
 def _why_en(s):
-    """English label for one attention signal. ⚠attention.py builds `why` in Korean for the page; this mirrors the
-    page's English rebuild (web/js/17-attention.js attnWhy) — per k, pulling only numbers/tool names out of it."""
-    k, w = s.get("k") or "", s.get("why") or ""
-    n = _num(w, r"(\d+)")
+    """English label for one attention signal: attention.py already builds `why` in English from k + v (one place).
+    ⚠blocked keeps the perm_marks label as `why`; MCP shows the fixed phrase."""
+    k = s.get("k") or ""
     if k == "blocked":
         return "Waiting for permission"
-    if k == "ask":
-        return "Asked a question" + (" · kept working since" if w.endswith(" · 이후 작업 계속") else "")
-    if k == "abort":
-        return "Interrupted — needs a new instruction"
-    if k == "ctx95":
-        return "Context %s%% — auto-compact soon" % n
-    if k == "ctx85":
-        return "Context %s%%" % n
-    if k == "wreck":
-        return "Leftover edits" + (" in %s files" % n if n else "")
-    if k == "stall":
-        return "Subagent silent %s min · parent waiting" % n
-    # ⚠attention.py's unknown-tool fallback is the Korean source word for "tool"; drop it (as attnWhy does) rather than leak Hangul.
-    if k == "loop":
-        m = re.match(r"^(.*?) 같은 호출 (\d+)회", w)
-        return "Same call repeated " + (m.group(2) + "×" + _tool_tail(m.group(1)) if m else "%s×" % n)
-    if k == "toolfail":
-        m = re.search(r"(\d+)회 반복 · (.*)$", w)
-        return "Same error repeated " + (m.group(1) + "×" + _tool_tail(m.group(2)) if m else "%s×" % n)
-    if k == "fail":
-        c = _num(w, r"등 (\d+)건")
-        return "Failure alert" + (" (%s)" % c if c else "")
-    if k == "mailidle":
-        m = re.search(r"(\d+)\D+(\d+)", w)
-        return "Mail waiting · session idle" + (" · %s message(s) · %s min" % (m.group(1), m.group(2)) if m else "")
-    if k == "bgidle":
-        m = re.search(r"(\d+)\D+(\d+)\D+(\d+)", w)
-        return "%s background shell(s) · %s idle · longest %s min" % m.groups() if m else "Idle shells"
-    if k == "bglong":
-        m = re.search(r"(\d+)\D+(\d+)", w)
-        if not m:
-            return "Long background shells"
-        q = _num(w, r"무출력 (\d+)")
-        return "Long background %s · longest %s min" % m.groups() + (" · %s idle" % q if q else "")
-    if k == "done":
-        return "Done · waiting for input %s %s" % (n, "s" if w.endswith("초") else "min")  # ⚠server sends seconds under 60 s
-    if k == "bgdone":
-        return "%s agent completion(s) unread" % n
-    if k == "credit":   # why = seconds since the last anthropic/ spend (numbers only)
-        return "Spending credits" + (" · %ss ago" % n if n else "")
-    if k == "gone":
-        return "Disconnected?" if w.endswith("?") else "Disconnected"
-    if k == "conflict":
-        m = re.search(r"파일 (\d+) · (세션|서브에이전트|에이전트) (.*)$", w)
-        return "Conflict risk" + (" · %s file(s) · %s %s" % (m.group(1), "sessions" if m.group(2) == "세션" else "subagents",
-                                                           re.sub(r"(^|, )메인(?=,|$)", r"\1main", m.group(3)))
-                                  if m else "")
-    return k or "needs attention"
+    return s.get("why") or k or "needs attention"
 
 
 def brief_attention(rows=None):

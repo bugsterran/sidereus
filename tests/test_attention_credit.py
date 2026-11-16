@@ -18,7 +18,8 @@ class TestCreditSignal(unittest.TestCase):
     def test_recent_spend_listed(self):
         s = self.sigs(row(60))
         self.assertEqual(len(s), 1)
-        self.assertEqual((s[0]["pts"], s[0]["since"], s[0]["why"]), (80, int(NOW - 60), "60"))
+        self.assertEqual((s[0]["pts"], s[0]["since"], s[0]["why"]), (80, int(NOW - 60), "Spending credits · 60s ago"))
+        self.assertEqual(s[0]["v"], {"s": 60})
 
     def test_stopped_spend_drops(self):
         self.assertEqual(self.sigs(row(400)), [])

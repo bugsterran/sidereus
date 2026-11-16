@@ -161,7 +161,7 @@ class TestConflict(Base):
         self.sub("s1", "x", "general-purpose", [edit_line(self.now - 100, "Edit", self.p("a.py"))])
         self.main("s1", [edit_line(self.now - 50, "Edit", self.p("a.py"))])
         cf = fo.conflicts(live("s1", subs=("x",)), self.now)
-        self.assertEqual([c["labs"] for c in cf], [["메인", "general-purpose"]])
+        self.assertEqual([c["labs"] for c in cf], [[None, "general-purpose"]])
 
     def test_label_is_agent_type_never_description(self):
         lab = fo.unit_label(("s", "x"), {"desc": "Uncommitted file owners and conflict alert", "agent": "gp"})
@@ -229,15 +229,15 @@ class TestAttentionSignal(unittest.TestCase):
         self.assertEqual(len(out), 1)
         self.assertEqual(out[0]["sid"], "bbbbbbbb-2")
         self.assertEqual(out[0]["sigs"][0]["k"], "conflict")
-        self.assertEqual(out[0]["why"], "충돌 위험 · 파일 2 · 세션 aaaaaaaa, bbbbbbbb")
+        self.assertEqual(out[0]["why"], "Conflict risk · 2 file(s) · sessions aaaaaaaa, bbbbbbbb")
         self.assertLess(att.ATT_PTS["conflict"], att.ATT_PTS["ask"])
 
     def test_within_one_session_names_agents(self):
-        g = {"sids": ["aaaaaaaa-1"], "labs": ["메인", "Explore"], "files": ["/r/a"], "since": self.now - 60,
+        g = {"sids": ["aaaaaaaa-1"], "labs": [None, "Explore"], "files": ["/r/a"], "since": self.now - 60,
              "last": self.now - 5, "by": "aaaaaaaa-1"}
         att._conflicts = lambda rows, now: [g]
         out = att.attention(live("aaaaaaaa-1"), [], read="", read_ids=[])["rows"]
-        self.assertEqual(out[0]["why"], "충돌 위험 · 파일 1 · 서브에이전트 메인, Explore")
+        self.assertEqual(out[0]["why"], "Conflict risk · 1 file(s) · subagents main, Explore")
 
 
 class CacheBounds(unittest.TestCase):

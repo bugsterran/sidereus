@@ -1,9 +1,25 @@
-// Korean for the attention-row lifetime note (17-attention.js attnLife) and the mailidle reason (attnWhy).
+// Korean for the attention-row lifetime note (17-attention.js attnLife) and the attention reasons (attnWhy).
 Object.assign(I18N.ko, {
   'Live state — clears when resolved': '지금 상태 — 풀리면 사라짐',
   'at {t}': '{t} 발생', 'clears when work resumes': '다시 일하면 사라짐', '≤{n} min left': '최대 {n}분 남음',
-  'Mail waiting · session idle': '메일 대기 · 세션 쉼', 'Mail waiting': '메일 대기',
+  'Mail waiting': '메일 대기',
   'Idle shells': '무출력 셸',
   'Long background': '장기 백그라운드', 'Ask to check': '확인 요청', 'Check requested': '확인 요청함',
   'Preview a one-line request to check its background task, then confirm to send': '백그라운드 작업을 확인해 달라는 한 줄 요청을 미리 보고, 확인하면 보냅니다',
+  // attnWhy reason templates (slots filled after T(); a slot may be en-only or ko-only)
+  'Awaiting answer · kept working|why': '질문 대기 · 이후 작업 계속',
+  'Interrupted — needs a new instruction|why': '중단됨 — 다시 지시 필요',
+  'Context {pct}% — auto-compact soon|why': '컨텍스트 {pct}% — 곧 자동 압축', 'Context {pct}%|why': '컨텍스트 {pct}%',
+  'Leftover edits in {n} files|why': '반쯤 고친 파일 {n}개',
+  'Subagent stalled {age} · parent waiting|why': '서브에이전트 {age} 무기록 · 부모 대기',
+  'tool|why': '도구',
+  'Same action repeated {n}×{tl}|why': '{tool} 같은 호출 {n}회 반복', 'Same error repeated {n}×{tl}|why': '같은 오류 {n}회 반복 · {tool}',
+  'Failure alert|why': '실패 알림', 'Failure alert ({n})|why': '{title} 등 {n}건',
+  'Mail waiting · session idle · {msgs} · {age}|why': '메일 {n}통 대기 · 세션 쉼 {age}',
+  'Done · waiting for input {age}|why': '작업 끝 · 입력 대기 {age}',
+  '{done} unread|why': '{src} 완료 {n}건 미확인',
+  '{shells} · {idle} idle · longest {age}|why': '백그라운드 셸 {n}개 · 무출력 {idle}개 · 최장 {age}',
+  'Long background {n} · longest {age}|why': '장기 백그라운드 {n}개 · 최장 {age}', '{idle} idle|why': '무출력 {idle}개',
+  'Conflict risk · {fl} · sessions {who}|why': '충돌 위험 · 파일 {n} · 세션 {who}',
+  'Conflict risk · {fl} · subagents {who}|why': '충돌 위험 · 파일 {n} · 서브에이전트 {who}',
 });

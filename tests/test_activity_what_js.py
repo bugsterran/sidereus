@@ -27,14 +27,19 @@ def run(lang, expr):
 
 class ActWhat(unittest.TestCase):
     def test_ctx_shows_real_percent(self):
+        self.assertEqual(run("ko", "actWhat({}, 'ctx85', 'x', {pct: 87})"), "컨텍스트 87%")
+        self.assertEqual(run("en", "actWhat({}, 'ctx95', 'x', {pct: 96})"), "Context 96%")
+
+    def test_ctx_cached_row_without_v_reads_why(self):
         self.assertEqual(run("ko", "actWhat({}, 'ctx85', '컨텍스트 87%')"), "컨텍스트 87%")
-        self.assertEqual(run("en", "actWhat({}, 'ctx95', '컨텍스트 96% — 곧 자동 압축')"), "Context 96%")
+        self.assertEqual(run("en", "actWhat({}, 'ctx95', 'Context 96% — auto-compact soon')"), "Context 96%")
 
     def test_ctx_without_why_falls_back_to_label(self):
         self.assertEqual(run("ko", "actWhat({}, 'ctx85')"), "컨텍스트 85%↑")
 
     def test_ask_wording_matches_strip(self):
-        self.assertEqual(run("en", "attnWhy({k: 'ask', why: '질문 대기'})"), "Awaiting answer")
+        self.assertEqual(run("en", "attnWhy({k: 'ask', why: 'x', v: {kept: false}})"), "Awaiting answer")
+        self.assertEqual(run("ko", "attnWhy({k: 'ask', why: 'x', v: {kept: false}})"), "질문 대기")
 
 
 class LowRowCss(unittest.TestCase):

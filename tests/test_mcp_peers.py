@@ -99,11 +99,15 @@ class TestBriefFileSids(Patch):
 
 class TestEnglish(Patch):
     def test_attention_why_english(self):
-        rows = [{"sid": "aaaaaaaa-1", "project": "r", "branch": "main", "score": 25, "why": "작업 끝 · 입력 대기 12분 외 1",
-                 "sigs": [{"k": "done", "why": "작업 끝 · 입력 대기 12분"}, {"k": "ctx85", "why": "컨텍스트 88%"}]},
-                {"sid": "cccccccc-2", "project": "r", "sigs": [{"k": "loop", "why": "Bash 같은 호출 9회 반복"}]},
+        # attention.py builds the English why from k + v; brief_attention passes it through and adds the tail.
+        rows = [{"sid": "aaaaaaaa-1", "project": "r", "branch": "main", "score": 25, "why": "Done · waiting for input 12 min +1 more",
+                 "sigs": [{"k": "done", "why": "Done · waiting for input 12 min", "v": {"s": 720}},
+                          {"k": "ctx85", "why": "Context 88%", "v": {"pct": 88}}]},
+                {"sid": "cccccccc-2", "project": "r",
+                 "sigs": [{"k": "loop", "why": "Same call repeated 9× · Bash", "v": {"n": 9, "tool": "Bash"}}]},
                 {"sid": "dddddddd-3", "project": "r",
-                 "sigs": [{"k": "conflict", "why": "충돌 위험 · 파일 2 · 서브에이전트 메인, general-purpose"}]}]
+                 "sigs": [{"k": "conflict", "why": "Conflict risk · 2 file(s) · subagents main, general-purpose",
+                           "v": {"files": 2, "labs": [None, "general-purpose"]}}]}]
         self.patch(ab, "attention", lambda *a, **k: {"rows": rows})
         self.patch(ab, "cards", lambda n=50: [])
         self.patch(ab, "quota", lambda: {})

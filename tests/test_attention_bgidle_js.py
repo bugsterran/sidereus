@@ -5,10 +5,12 @@ import shutil
 import subprocess
 import unittest
 
+from tests._i18n_js import i18n_switch
 from tests._load import js_all, js_fn
 from tests._node import node_e
 
-WHY = "백그라운드 셸 3개 · 무출력 2개 · 최장 25분"
+WHY = "백그라운드 셸 3개 · 무출력 2개 · 최장 25분"   # sidereus/attention.py former Korean why for V
+V = {"n": 3, "idle": 2, "m": 25}
 
 
 def node(src):
@@ -25,22 +27,22 @@ def const_src(name):
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
 class BgIdleJs(unittest.TestCase):
-    def why(self, lang, w, k="bgidle"):
-        src = ("let LANG = " + json.dumps(lang) + "; const T = s => s; const UNIT_KO = {m: '\\ubd84'};\n"
-               + "\n".join(js_fn(n) for n in ("U", "PL", "attnWhy")) + "\n"
-               "process.stdout.write(JSON.stringify(attnWhy({k: " + json.dumps(k) + ", why: " + json.dumps(w) + "})));")
+    def why(self, lang, v, k="bgidle"):
+        src = ("let LANG = " + json.dumps(lang) + ";\n" + i18n_switch(("T", "TV", "U", "PL")) + js_fn("attnWhy") + "\n"
+               "process.stdout.write(JSON.stringify(attnWhy({k: " + json.dumps(k) + ", v: " + json.dumps(v) + "})));")
         return node(src)
 
     def test_R2_en_why(self):
-        self.assertEqual(self.why("en", WHY), "3 background shells · 2 idle · longest 25m")
-        self.assertEqual(self.why("en", WHY.replace("셸 3개", "셸 1개")), "1 background shell · 2 idle · longest 25m")
-        self.assertEqual(self.why("ko", WHY), WHY)
+        self.assertEqual(self.why("en", V), "3 background shells · 2 idle · longest 25m")
+        self.assertEqual(self.why("en", dict(V, n=1)), "1 background shell · 2 idle · longest 25m")
+        self.assertEqual(self.why("ko", V), WHY)
 
     def test_bglong_en_why(self):
-        w = "장기 백그라운드 2개 · 최장 45분"
-        self.assertEqual(self.why("en", w, "bglong"), "Long background 2 · longest 45m")
-        self.assertEqual(self.why("en", w + " · 무출력 1개", "bglong"), "Long background 2 · longest 45m · 1 idle")
-        self.assertEqual(self.why("ko", w, "bglong"), w)
+        w, v = "장기 백그라운드 2개 · 최장 45분", {"n": 2, "m": 45, "idle": 0}
+        self.assertEqual(self.why("en", v, "bglong"), "Long background 2 · longest 45m")
+        self.assertEqual(self.why("en", dict(v, idle=1), "bglong"), "Long background 2 · longest 45m · 1 idle")
+        self.assertEqual(self.why("ko", v, "bglong"), w)
+        self.assertEqual(self.why("ko", dict(v, idle=1), "bglong"), w + " · 무출력 1개")
         self.assertIn("bglong:'Long background'", const_src("ATTN_LBL"))
 
     def test_R2_label(self):

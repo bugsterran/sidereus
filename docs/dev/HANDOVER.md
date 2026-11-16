@@ -362,7 +362,7 @@ Kept as recorded. Written against the single-file `chat_server.py`: `:NNNN` line
 - `17-attention.js`·`62-attention.css`, source `/api/state.attention` (sidereus/attention.py). Right under the Claude sessions heading in the sidebar, 5 rows + `+N more`.
 - Tab title `[N]`·top bar «Need you N» = `attnBadgeN()` (top signal not list·not snoozed). The old blocked/question/abort/85% cells merged into this one.
 - Signal k → APOL kind (`ATTN_APOL`): hide removes the signal, list keeps the row but excludes it from the badge. `done` is always list.
-- ★list rows (incl. `done`·`bgdone`) are not drawn at all. Row/button click = acknowledge → `mbAttnAck` {sid: `sid|sorted k|top since`}; it reappears when the key changes (new signal·new since). Snooze is behind `⋯`. The server `why` is Korean, so English mode rebuilds it from k + numbers in `attnWhy`.
+- ★list rows (incl. `done`·`bgdone`) are not drawn at all. Row/button click = acknowledge → `mbAttnAck` {sid: `sid|sorted k|top since`}; it reappears when the key changes (new signal·new since). Snooze is behind `⋯`. The server `why` is English (= MCP text); the page renders every label from k + `v` (traps/attention.md «Attention `why` wire contract»).
 - Snooze `mbAttnSnooze` {`sid|k`: expiry ms | 'clear'} — a newly raised higher signal wakes it and deletes the entry. 'clear' is deleted when that k goes away.
 - `buildAlarm` (15-alarms.js) calls `buildAttn()`·`attnTitle()` directly — 17 comes later in file order, so only runtime calls work.
 

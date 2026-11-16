@@ -209,10 +209,10 @@ def _hot(units, live, now):
 
 
 def unit_label(u, o):
-    """Short metadata label of a unit: subagent type, capped; the orchestrator is «main».
+    """Short metadata label of a unit: subagent type, capped; None = the orchestrator (main unit; the client names it).
     ⚠Never the description: it is task text and this label reaches MCP callers via the attention `why`."""
     if u[1] == FO_MAIN:
-        return "메인"
+        return None
     lab = (o.get("agent") or "agent").strip()
     return lab if len(lab) <= FO_LAB_MAX else lab[:FO_LAB_MAX - 1] + "…"
 

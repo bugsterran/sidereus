@@ -208,3 +208,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: the only shell signal was «Idle shells» (output-file mtime > 15 min); a shell that keeps printing never went idle, so a forgotten long-running shell stayed invisible.
 - ⇒ `bg_long` counts open `bg` rows by launch time (row slot 2, > `BG_LONG_S` 30 min, launches before boot skipped); attention emits one `bglong` sig per session and folds the idle count into its why (« · N idle» in English), so bgidle is not listed twice. `tests/test_bglong.py`, `tests/test_attention.py` `TestBgLong`.
 - ⚠Launch time only — no stat, no output read, no shell label in `why`. ⚠Only a shown bglong absorbs bgidle: a bglong cleared by input must not hide a shell that went idle later.
+
+## Attention `why` wire contract (`attention._sig`/`_why`, `agent_brief._why_en`)
+
+- Cause: the server sent Korean `why` and both the page (`attnWhy`) and MCP (`_why_en`) regex-parsed numbers back out of it; a wording change silently broke the English labels, and the unknown-tool word leaked Hangul.
+- ⇒ Every sig carries a nested `v` (counts, minutes, seconds, tool names, sid8, agent types; tool/lab `null` = unknown tool / main unit) and an English `why` built from k + v in one place (`attention._why`) = the MCP text as-is; the page renders its own label from k + v. `blocked` has no `v` (why = perm_marks label). Row tail is « +N more». `tests/test_attention_why_v.py`.
+- ⚠Never parse `why` on any client — read `v`. ⚠`v` is metadata only (never task, card or error text). ⚠New per-signal data goes in `v`, not a new top-level sig key (tests pin the sig key set). ⚠`demo.py` writes the same shape as literals (stdlib only): change both.

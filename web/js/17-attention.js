@@ -133,7 +133,9 @@ function attnPolOf(k){
   if(Array.isArray(m)){ const v = m.map(apolOf); return v.includes('badge') ? 'badge' : (v.includes('list') ? 'list' : 'hide'); }
   return apolOf(m);
 }
-// ⚠Server `why` is Korean; in English rebuild it per k, pulling numbers/tool names out of the Korean text.
+// Reason text from the server's structured `v` (sidereus/attention.py); every language renders it from k + v.
+// ⚠Slots are filled after T() with a replace callback: values (tool names, sid8s, agent labels) are user data, may hold `$&`, never go through T().
+// No `v` (rows cached before the switch) = the server's `why`, unchanged. A missing number shows as '?', never 0.
 function attnWhy(g){
   const w = g.why || '';
   if(g.k === 'blocked' && w === 'subagent waiting for approval') return T(w);   // fixed perm_marks label, both languages
@@ -144,32 +146,46 @@ function attnWhy(g){
     if(bt) return bt + ' ' + T('waiting for approval');
     if(LANG !== 'en' && bt !== null) return T('waiting for approval');
     if(LANG !== 'en' && w === 'waiting for approval') return T(w);
+    return LANG === 'en' ? 'Waiting for permission' : w;
   }
-  // ⚠credit why is a bare seconds count (no text), so every language takes the label keyed on k.
+  // credit shows only the label keyed on k in every language; the seconds since the last spend (v.s) are not shown here.
   if(g.k === 'credit') return T('Spending credits');
-  if(LANG !== 'en') return w;
-  const n = (w.match(/(\d+)/) || [])[1] || '';
+  const v = g.v && typeof g.v === 'object' ? g.v : null;
+  if(!v) return w;
+  const F = (s, o) => s.replace(/\{(\w+)\}/g, (all, k) => { const x = Object.prototype.hasOwnProperty.call(o, k) ? o[k] : null; return x == null ? '?' : String(x); });
+  const UM = (n, u) => n == null ? null : U(n, u);
   switch(g.k){
-    case 'blocked': return 'Waiting for permission';
-    case 'ask': return / · 이후 작업 계속$/.test(w) ? 'Awaiting answer · kept working' : 'Awaiting answer';   // card-held ask: session worked on after asking
-    case 'abort': return 'Interrupted — needs a new instruction';
-    case 'ctx95': return 'Context ' + n + '% — auto-compact soon';
-    case 'ctx85': return 'Context ' + n + '%';
-    case 'wreck': return 'Leftover edits' + (n ? ' in ' + n + ' files' : '');
-    case 'stall': return 'Subagent stalled ' + U(n, 'm') + ' · parent waiting';
-    // ⚠The server's unknown-tool fallback is the Korean source word for "tool"; drop it rather than leak Hangul into en.
-    case 'loop': { const m = w.match(/^(.*?) 같은 호출 (\d+)회/); return 'Same action repeated ' + (m ? m[2] + '×' + (m[1] && m[1] !== '도구' ? ' · ' + m[1] : '') : n + '×'); }
-    case 'toolfail': { const m = w.match(/(\d+)회 반복 · (.*)$/); return 'Same error repeated ' + (m ? m[1] + '×' + (m[2] && m[2] !== '도구' ? ' · ' + m[2] : '') : n + '×'); }
-    case 'fail': { const m = w.match(/등 (\d+)건/); return 'Failure alert' + (m ? ' (' + m[1] + ')' : ''); }
-    case 'mailidle': { const m = w.match(/(\d+)\D+(\d+)/); return T('Mail waiting · session idle') + (m ? ' · ' + PL(m[1], 'message') + ' · ' + U(m[2], 'm') : ''); }
-    case 'done': return 'Done · waiting for input ' + U(n, /초$/.test(w) ? 's' : 'm');   // ⚠server sends seconds under 60 s
-    case 'bgdone': return PL(n, 'agent completion') + ' unread';
-    case 'bgidle': { const m = w.match(/(\d+)\D+(\d+)\D+(\d+)/); return m ? PL(m[1], 'background shell') + ' · ' + m[2] + ' idle · longest ' + U(m[3], 'm') : 'Idle shells'; }
-    case 'bglong': { const m = w.match(/(\d+)\D+(\d+)/), q = w.match(/무출력 (\d+)/);
-      return m ? 'Long background ' + m[1] + ' · longest ' + U(m[2], 'm') + (q ? ' · ' + q[1] + ' idle' : '') : 'Long background'; }
-    case 'gone': return w === '끊김?' ? 'Disconnected?' : 'Disconnected';
-    case 'conflict': { const m = w.match(/파일 (\d+) · (세션|서브에이전트|에이전트) (.*)$/);
-      return 'Conflict risk' + (m ? ' · ' + PL(m[1], 'file') + ' · ' + (m[2] === '세션' ? 'sessions ' : 'subagents ') + m[3].replace(/(^|, )메인(?=,|$)/g, '$1main') : ''); }
+    case 'gone': return v.q ? T('Disconnected?') : T('Disconnected');
+    case 'ask': return v.kept ? T('Awaiting answer · kept working', 'why') : T('Awaiting answer');   // card-held ask: session worked on after asking
+    case 'abort': return T('Interrupted — needs a new instruction', 'why');
+    case 'ctx95': return F(T('Context {pct}% — auto-compact soon', 'why'), v);
+    case 'ctx85': return F(T('Context {pct}%', 'why'), v);
+    case 'wreck': return F(T('Leftover edits in {n} files', 'why'), v);
+    case 'stall': return F(T('Subagent stalled {age} · parent waiting', 'why'), { age: UM(v.m, 'm') });
+    // ⚠Unknown tool (null): en drops it, ko names the generic word.
+    case 'loop': return F(T('Same action repeated {n}×{tl}', 'why'), { n: v.n, tl: v.tool ? ' · ' + v.tool : '', tool: v.tool || T('tool', 'why') });
+    case 'toolfail': return F(T('Same error repeated {n}×{tl}', 'why'), { n: v.n, tl: v.tool ? ' · ' + v.tool : '', tool: v.tool || T('tool', 'why') });
+    case 'fail': {   // en names no failure kind; ko shows the kind's title
+      const tk = { flimit: 'Stopped by limit', fcut: 'Cut by external cause', fcheck: 'Cause needs a look', fwreck: 'Half-edited files' };
+      const title = Object.prototype.hasOwnProperty.call(tk, v.kind) ? T(tk[v.kind]) : T('Failure alert', 'why');
+      return v.n > 1 ? F(T('Failure alert ({n})', 'why'), { n: v.n, title }) : LANG === 'en' ? T('Failure alert', 'why') : title;
+    }
+    case 'mailidle': return F(T('Mail waiting · session idle · {msgs} · {age}', 'why'), { n: v.n, msgs: v.n == null ? null : PL(v.n, 'message'), age: UM(v.m, 'm') });
+    case 'done': return F(T('Done · waiting for input {age}', 'why'), { age: v.s == null ? null : v.s < 60 ? U(v.s, 's') : U(Math.floor(v.s / 60), 'm') });   // ⚠seconds under 60 s
+    case 'bgdone': {   // fixed order: background, then subagent
+      const src = Array.isArray(v.src) ? v.src : [];
+      const lab = (src.includes('bg') ? [T('Background')] : []).concat(src.includes('agent') ? [T('Subagent')] : []).join('·');
+      return F(T('{done} unread', 'why'), { n: v.n, done: v.n == null ? null : PL(v.n, 'agent completion'), src: lab });
+    }
+    case 'bgidle': return F(T('{shells} · {idle} idle · longest {age}', 'why'), { n: v.n, idle: v.idle, shells: v.n == null ? null : PL(v.n, 'background shell'), age: UM(v.m, 'm') });
+    case 'bglong': return F(T('Long background {n} · longest {age}', 'why'), { n: v.n, age: UM(v.m, 'm') })
+      + (v.idle > 0 ? ' · ' + F(T('{idle} idle', 'why'), v) : '');
+    case 'conflict': {   // sids = several sessions; else labs of one session's units (null = the main unit)
+      const ss = Array.isArray(v.sids) && v.sids.length ? v.sids : null;
+      const who = ss ? ss.join(', ') : (Array.isArray(v.labs) ? v.labs : []).map(x => x == null ? T('main') : String(x)).join(', ');
+      const o = { n: v.files, fl: v.files == null ? null : PL(v.files, 'file'), who };
+      return F(ss ? T('Conflict risk · {fl} · sessions {who}', 'why') : T('Conflict risk · {fl} · subagents {who}', 'why'), o);
+    }
   }
   return w;
 }

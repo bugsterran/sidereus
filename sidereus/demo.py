@@ -414,21 +414,25 @@ class World(_WorldPanels, _WorldGit, _WorldRetro):
         a, now = self.a, self.now()
         bs = {s["id"]: s for s in sessions}
         w, c, b, i = self.by["web"], self.by["cart"], self.by["bill"], self.by["inv"]
-        why_c = "충돌 위험 · 파일 1 · 세션 %s, %s" % (w["id"], c["id"])
+        # ⚠Same wire shape as attention._sig: English `why` (attention._why text) + nested `v`; demo stays stdlib-only, so literals.
+        cf = ("conflict", "Conflict risk · 1 file(s) · sessions %s, %s" % (w["id"], c["id"]),
+              {"files": 1, "sids": [w["id"], c["id"]]}, 85, a - 5 * 60)
+        ps, ia = now - PI_CREDIT(now)["lastAt"], bs[i["id"]]["ageSec"]
         rows = [
-            (b, 90, [("ask", "질문 대기", 90, now - bs[b["id"]]["ageSec"])]),
-            (c, 85, [("conflict", why_c, 85, a - 5 * 60),
-                     ("bglong", "장기 백그라운드 1개 · 최장 41분 · 무출력 1개", 30, now - CART_BG_LONG["max"])]),
-            (w, 85, [("conflict", why_c, 85, a - 5 * 60)]),
-            # pi row spending credits (attention._row_sigs: why = bare seconds since the last spend)
+            (b, 90, [("ask", "Asked a question", {"kept": False}, 90, now - bs[b["id"]]["ageSec"])]),
+            (c, 85, [cf, ("bglong", "Long background 1 · longest 41 min · 1 idle", {"n": 1, "m": 41, "idle": 1}, 30,
+                          now - CART_BG_LONG["max"])]),
+            (w, 85, [cf]),
+            # pi row spending credits (attention._row_sigs: v.s = seconds since the last spend)
             ({"sid": PI_SID, "cwd": REPOS["acme-web"][0], "repo": "acme-web", "branch": PI_ROW.get("branch", "")}, 80,
-             [("credit", "%d" % (now - PI_CREDIT(now)["lastAt"]), 80, PI_CREDIT(now)["lastAt"])]),
-            (i, 25, [("ctx85", "컨텍스트 87%", 25, now - bs[i["id"]]["ageSec"]),
-                     ("done", "작업 끝 · 입력 대기 %d분" % (bs[i["id"]]["ageSec"] // 60), 20, now - bs[i["id"]]["ageSec"])]),
+             [("credit", "Spending credits · %ds ago" % ps, {"s": ps}, 80, PI_CREDIT(now)["lastAt"])]),
+            (i, 25, [("ctx85", "Context 87%", {"pct": 87}, 25, now - ia),
+                     ("done", "Done · waiting for input " + ("%d min" % (ia // 60) if ia >= 60 else "%d s" % ia), {"s": ia}, 20,
+                      now - ia)]),
         ]
         out = []
         for s, score, sg in rows:
-            sigs = [{"k": k, "why": why, "pts": p, "since": int(t)} for k, why, p, t in sg]
+            sigs = [{"k": k, "why": why, "pts": p, "since": int(t), "v": v} for k, why, v, p, t in sg]
             out.append({"sid": s["sid"], "cwd": s["cwd"], "project": s["repo"], "branch": s["branch"],
                         "score": score, "why": sigs[0]["why"], "since": sigs[0]["since"], "sigs": sigs})
         return {"at": now, "rows": out}

@@ -28,16 +28,17 @@ function actNeedOf(x, am, gone){
   if(x.state === 'ask') return { k: 'ask', i: -1 };
   return a || null;
 }
-function actWhat(x, need, why){
+function actWhat(x, need, why, v){
   if(need === 'blocked') return T('Blocked') + (x.tool ? ' · ' + x.tool : '');
-  const pc = (need === 'ctx85' || need === 'ctx95') && ((why || '').match(/(\d+)%/) || [])[1];   // real % (as the ctx chip), not the 85/95 threshold
+  // real % (as the ctx chip), not the 85/95 threshold; v.pct from the server, `why` digits for rows cached without v
+  const pc = (need === 'ctx85' || need === 'ctx95') && (v && v.pct != null ? String(v.pct) : ((why || '').match(/(\d+)%/) || [])[1]);
   if(pc) return T('Context') + ' ' + pc + '%';
   return attnLbl(need);                                // every rail pill carries a needs-me kind
 }
 function actRows(){
   const am = new Map(), gone = new Map();
   try{ const ar = attnRows();
-    ar.shown.forEach((r, i) => { if(!r.badge) return; const v = { k: r.top.k, i, tone: attnTone(r.score), since: r.since, why: r.top.why };   // attnSess matching: sid, else cwd
+    ar.shown.forEach((r, i) => { if(!r.badge) return; const v = { k: r.top.k, i, tone: attnTone(r.score), since: r.since, why: r.top.why, v: r.top.v };   // attnSess matching: sid, else cwd
     if(r.r.sid) am.set(r.r.sid, v); else if(r.r.cwd) am.set('c:' + r.r.cwd, v); });
     // Rows with a visible signal that attnRows left out of shown and low = acked (Done) or snoozed (Later).
     const kept = new Set(ar.shown.concat(ar.low || []).map(r => r.r));
@@ -50,7 +51,7 @@ function actRows(){
   for(const x of SESS || []){
     const n = actNeedOf(x, am, gone);
     if(n){ const a = n.tone ? n : am.get(x.sid) || am.get('c:' + x.cwd) || {};   // blocked/ask still take the drawer row's tier + age
-      nd.push({ x, need: n.k, rank: n.i, tone: a.tone || (n.k === 'blocked' ? 'err' : 'warn'), since: a.since || 0, why: a.why }); continue; }      // even a done session, so the count matches the header chip
+      nd.push({ x, need: n.k, rank: n.i, tone: a.tone || (n.k === 'blocked' ? 'err' : 'warn'), since: a.since || 0, why: a.why, v: a.v }); continue; }      // even a done session, so the count matches the header chip
     if(x.state === 'done' || x.state === 'gone') continue;
     // ⚠Same split as sesCount() (41-sesdrawer): ask/abort need the user — unless marked Done/Later in the attention list.
     if((x.state === 'ask' || x.state === 'abort') && !actGone(x, gone)) nd.push({ x, need: x.state, rank: 1e6, tone: 'warn' });
@@ -71,7 +72,7 @@ function actPillEl(k){
 function actAgeTxt(x, since){ return since ? agoAt(since) : actDur(actAge(x)); }
 function actFill(e, p){
   e.classList.toggle('need', !!p.need); actAttr(e, 'data-st', p.need || p.x.state || 'unknown'); actAttr(e, 'data-tone', p.need ? p.tone || 'warn' : '');
-  actSet(e.children[1], actProj(p.x)); actSet(e.children[2], actWhat(p.x, p.need, p.why)); actSet(e.children[3], actAgeTxt(p.x, p.need && p.since));
+  actSet(e.children[1], actProj(p.x)); actSet(e.children[2], actWhat(p.x, p.need, p.why, p.v)); actSet(e.children[3], actAgeTxt(p.x, p.need && p.since));
 }
 function actPaint(){
   const d = actData = actRows(), rl = document.getElementById('rattnl');
@@ -156,9 +157,9 @@ function actGo(k){
 // Hover card — same look as the timeline card (.tlhc); metadata rows only.
 function actHovHtml(k){
   const x = actMap.get(k); if(!x) return '';
-  const p = (actData && actData.pills || []).find(q => actKey(q.x) === k), need = p ? p.need : '', why = p ? p.why : '';
+  const p = (actData && actData.pills || []).find(q => actKey(q.x) === k), need = p ? p.need : '', why = p ? p.why : '', wv = p ? p.v : null;
   const rows = [], add = (a, v) => { if(v) rows.push('<dt>' + esc(T(a)) + '</dt><dd>' + v + '</dd>'); };
-  add('Status', esc(actWhat(x, need, why)));
+  add('Status', esc(actWhat(x, need, why, wv)));
   add('State since', esc(CLK(actStart(x))) + ' <s>· ' + esc(actDur(actAge(x))) + '</s>');
   add('Session', esc(sid8(x.sid || x.id || '')));
   add('Model', esc(x.model || ''));
