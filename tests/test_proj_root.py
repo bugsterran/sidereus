@@ -23,6 +23,13 @@ class ProjRoot(unittest.TestCase):
         old = dict(ident._PROJ_ROOT)
         ident._PROJ_ROOT.clear()
         self.addCleanup(lambda: (ident._PROJ_ROOT.clear(), ident._PROJ_ROOT.update(old)))
+        old_miss = dict(ident._PROJ_MISS)
+        ident._PROJ_MISS.clear()
+        self.addCleanup(lambda: (ident._PROJ_MISS.clear(), ident._PROJ_MISS.update(old_miss)))
+        self.now = [1000.0]
+        p = mock.patch.object(ident, "_mono", lambda: self.now[0])
+        p.start()
+        self.addCleanup(p.stop)
 
     def mk(self, *parts):
         p = os.path.join(self.tmp, *parts)
@@ -59,6 +66,16 @@ class ProjRoot(unittest.TestCase):
                 mock.patch.object(ident, "_proj_root", lambda c: c):
             self.assertEqual(ident._proj_name("C:\\w\\repo-a"), "repo-a")
             self.assertEqual(ident._proj_name("C:\\w\\proj-C\\admin\\.claude\\worktrees\\agent-x"), "proj-C/admin")
+
+    def test_git_init_after_miss_is_seen_after_ttl(self):
+        d = self.mk("late", "sub")
+        self.assertEqual(self.proj(d), ("sub", d))
+        self.mk("late", ".git")
+        self.assertEqual(self.proj(d), ("sub", d))          # miss still cached inside the TTL (no walk per row)
+        self.now[0] += ident.PROJ_MISS_TTL
+        root = os.path.join(self.tmp, "late")
+        self.assertEqual(self.proj(d), ("late", root))       # was stuck on "sub" until restart
+        self.assertEqual(ident._PROJ_ROOT.get(d), root)       # a hit is kept without TTL
 
     def test_outside_git_unchanged(self):
         d = self.mk("plain", "backup")

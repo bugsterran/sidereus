@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shutil
+import time
 from sidereus.config import IS_MAC, IS_WIN, claude_json
 from sidereus.bus import _load, codex_env_ok
 from sidereus.memo import BoundedMemo
@@ -233,7 +234,12 @@ def _cwd_from_slug(dirname):
 
 
 PROJ_ROOT_MAX = 512
-_PROJ_ROOT = BoundedMemo(PROJ_ROOT_MAX)   # cwd -> project root (no TTL, like gitinfo._GITROOT)
+_PROJ_ROOT = BoundedMemo(PROJ_ROOT_MAX)   # cwd -> project root, hits only (no TTL, like gitinfo._GITROOT)
+# ⚠A miss (no usable git root) is kept only for PROJ_MISS_TTL: cached forever, a later `git init`/clone above the
+# cwd never renamed the project until restart. Not uncached either — _proj_root runs per row on every state().
+PROJ_MISS_TTL = 30
+_PROJ_MISS = BoundedMemo(PROJ_ROOT_MAX)   # cwd -> cwd, stamped with the PROJ_MISS_TTL time bucket
+_mono = time.monotonic                    # patched by tests (never the real clock there)
 
 
 def _git_walk(d):
@@ -257,14 +263,17 @@ def _proj_root(cwd):
     if not cwd or not os.path.isabs(cwd):
         return cwd or ""
     hit = _PROJ_ROOT.get(cwd)
-    if hit is None:
-        r = _git_walk(cwd)
-        if r and os.path.dirname(r) != r and os.path.normpath(r) != os.path.normpath(_real_home()):
-            hit = r
-        else:
-            hit = cwd
-        _PROJ_ROOT.put(cwd, hit)
-    return hit
+    if hit is not None:
+        return hit
+    tick = int(_mono() // PROJ_MISS_TTL)
+    if _PROJ_MISS.get(cwd, stamp=tick) is not None:
+        return cwd
+    r = _git_walk(cwd)
+    if r and os.path.dirname(r) != r and os.path.normpath(r) != os.path.normpath(_real_home()):
+        _PROJ_ROOT.put(cwd, r)
+        return r
+    _PROJ_MISS.put(cwd, cwd, stamp=tick)
+    return cwd
 
 
 def _proj_name(cwd):

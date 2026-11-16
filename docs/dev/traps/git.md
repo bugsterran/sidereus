@@ -83,6 +83,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⇒ Removed the earlier one (`.git` directory only · 8 levels up · `_ROOT_CACHE`). The live one accepts
   worktrees (`.git` is a file) and has no climb limit. ⚠Before editing, count definitions with `grep -n "^def name"`.
   - ⚠Negative lookups are not cached in `_GITROOT`: a dir that gets `git init`/clone mid-session must reach the Branches picker. `tests/test_gitinfo_root_symlink.py`.
+  - Cause: `ident._PROJ_ROOT` cached a miss (no git root, or the home dotfiles root) forever, so a session in a subfolder kept its folder name as project after `git init`/clone above it, until restart.
+  - ⇒ Hits stay in `_PROJ_ROOT` (no TTL); a miss goes to `_PROJ_MISS` for `PROJ_MISS_TTL` (30 s, monotonic bucket). `tests/test_proj_root.py`.
+  - ⚠Do not drop the miss cache like `_GITROOT` did: `_proj_root` runs per row on every `state()` (42 call sites), so an uncached miss is an fs walk per row per poll.
   - ⚠Session repo roots are realpath-deduped only in `session_repos` (`_drop_same`, kept string as seen), not in `_git_root`/`ident._git_walk` — callers rely on symlink-prefixed paths.
   - ⚠`pi_abs_path` joins a relative path to any absolute cwd; the home filter stays in `_rel_paths` (repo allow-list), not in file ownership.
 - ★**Session git marks take a single `status --branch` — `_git_state()` (`sidereus/gitinfo.py`)**
