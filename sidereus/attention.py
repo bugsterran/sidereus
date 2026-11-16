@@ -41,10 +41,9 @@ _TF_NAME = re.compile(r"^(?:InputValidationError: )?([\w.-]{2,60}) (?:was called
 ATT_DONE_S = (15, 7200)     # done & waiting: state "wait" already needs a turn-end marker; the floor only debounces a quick reply-then-type
 # Failure card kinds -> English title (page label source); an unknown f-kind folds into "fail".
 # ⚠Tie-break ranks that keep the pre-`v` picks: cards with the same `at` sorted by their former (Korean) title codepoints,
-#   and an unknown tool (None) compares as its former fallback word, which sorts above ASCII tool names.
+#   and an unknown tool (None) outranks every named tool on an equal count, as its former fallback word sorted above ASCII names.
 _FAIL_ORD = ("fcut", "fwreck", "fail", "fcheck", "flimit")
 _SRC_ORD = ("bg", "agent")
-_TF_UNKNOWN_KEY = "도구"
 _FAIL_TITLE = {"flimit": "Stopped by limit", "fcut": "Cut by external cause",
                "fcheck": "Cause needs a look", "fwreck": "Half-edited files", "fail": "Failure alert"}
 _TF = {"at": 0.0, "idx": {}}
@@ -261,7 +260,7 @@ def _toolfail_sigs(extra, own, now):
         if r is None or r.get("state") == "done":
             continue
         # several signatures/subdir cwds under one session: keep the worst (⚠never compare None with str)
-        n, tool, t1 = max(reps, key=lambda x: (x[0], _TF_UNKNOWN_KEY if x[1] is None else x[1], x[2]))
+        n, tool, t1 = max(reps, key=lambda x: (x[0], (1, "") if x[1] is None else (0, x[1]), x[2]))
         grp2 = extra.setdefault(id(r), [])
         old = [s for s in grp2 if s["k"] == "toolfail"]
         if old and old[0]["v"]["n"] >= n:

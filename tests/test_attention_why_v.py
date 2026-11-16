@@ -173,6 +173,12 @@ class TestTieBreaks(Base):
               {"kind": "bgdone", "cwd": "/w/p", "at": at, "project": "p"}]
         self.assertEqual(self.sig("bgdone", sess(age=200), cs)["keys"], ["%s|bgdone|p" % at, "%s|agent|p" % at])
 
+    def test_attention_source_has_no_hangul(self):
+        # English-source module: Korean lives only in I18N.ko, so even a sort key must not be a Korean literal.
+        import re
+        with open(att.__file__, encoding="utf-8") as f:
+            self.assertEqual(re.findall(r"[가-힣]+", f.read()), [])
+
 
 class TestConflict(Base):
     def go(self, g, sids):
