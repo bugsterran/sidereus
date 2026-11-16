@@ -71,6 +71,7 @@ class ScanClosesFile(WorkAcct):
         saved = wk.SESS_TAIL
         wk.SESS_TAIL = 0
         try:
+            gc.collect()   # ⚠collect earlier tests' garbage first (e.g. HTTPError bodies) so only session_work's leaks are judged
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
                 self.assertTrue(wk.session_work("/x", sid="abcdef12-0000")["ok"])
