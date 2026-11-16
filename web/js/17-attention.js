@@ -157,8 +157,9 @@ function attnWhy(g){
     case 'ctx85': return 'Context ' + n + '%';
     case 'wreck': return 'Leftover edits' + (n ? ' in ' + n + ' files' : '');
     case 'stall': return 'Subagent stalled ' + U(n, 'm') + ' · parent waiting';
-    case 'loop': { const m = w.match(/^(.*?) 같은 호출 (\d+)회/); return 'Same action repeated ' + (m ? m[2] + '× · ' + m[1] : n + '×'); }
-    case 'toolfail': { const m = w.match(/(\d+)회 반복 · (.*)$/); return 'Same error repeated ' + (m ? m[1] + '× · ' + m[2] : n + '×'); }
+    // ⚠The server's unknown-tool fallback is the Korean source word for "tool"; drop it rather than leak Hangul into en.
+    case 'loop': { const m = w.match(/^(.*?) 같은 호출 (\d+)회/); return 'Same action repeated ' + (m ? m[2] + '×' + (m[1] && m[1] !== '도구' ? ' · ' + m[1] : '') : n + '×'); }
+    case 'toolfail': { const m = w.match(/(\d+)회 반복 · (.*)$/); return 'Same error repeated ' + (m ? m[1] + '×' + (m[2] && m[2] !== '도구' ? ' · ' + m[2] : '') : n + '×'); }
     case 'fail': { const m = w.match(/등 (\d+)건/); return 'Failure alert' + (m ? ' (' + m[1] + ')' : ''); }
     case 'mailidle': { const m = w.match(/(\d+)\D+(\d+)/); return T('Mail waiting · session idle') + (m ? ' · ' + PL(m[1], 'message') + ' · ' + U(m[2], 'm') : ''); }
     case 'done': return 'Done · waiting for input ' + U(n, /초$/.test(w) ? 's' : 'm');   // ⚠server sends seconds under 60 s

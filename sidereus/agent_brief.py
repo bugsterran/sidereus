@@ -187,6 +187,10 @@ def _num(w, pat, g=1):
     return m.group(g) if m else ""
 
 
+def _tool_tail(tool):
+    return " · " + tool if tool and tool != "도구" else ""
+
+
 def _why_en(s):
     """English label for one attention signal. ⚠attention.py builds `why` in Korean for the page; this mirrors the
     page's English rebuild (web/js/17-attention.js attnWhy) — per k, pulling only numbers/tool names out of it."""
@@ -206,12 +210,13 @@ def _why_en(s):
         return "Leftover edits" + (" in %s files" % n if n else "")
     if k == "stall":
         return "Subagent silent %s min · parent waiting" % n
+    # ⚠attention.py's unknown-tool fallback is the Korean source word for "tool"; drop it (as attnWhy does) rather than leak Hangul.
     if k == "loop":
         m = re.match(r"^(.*?) 같은 호출 (\d+)회", w)
-        return "Same call repeated " + ("%s× · %s" % (m.group(2), m.group(1)) if m else "%s×" % n)
+        return "Same call repeated " + (m.group(2) + "×" + _tool_tail(m.group(1)) if m else "%s×" % n)
     if k == "toolfail":
         m = re.search(r"(\d+)회 반복 · (.*)$", w)
-        return "Same error repeated " + ("%s× · %s" % (m.group(1), m.group(2)) if m else "%s×" % n)
+        return "Same error repeated " + (m.group(1) + "×" + _tool_tail(m.group(2)) if m else "%s×" % n)
     if k == "fail":
         c = _num(w, r"등 (\d+)건")
         return "Failure alert" + (" (%s)" % c if c else "")
