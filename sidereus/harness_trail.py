@@ -129,6 +129,8 @@ def _evidence_state(p, later):
     ok = set(n for n, rc in p["steps"] if rc == 0)
     st, steps, at = "held", [], 0
     for r in later:
+        if r["rc"] != 0 and r["dirty"]:
+            continue   # ⚠a dirty tree holds the next change's uncommitted work, code the PASS never saw: its red is not this PASS breaking
         if r["rc"] != 0:
             hit = [n for n, rc in r["steps"] if rc != 0 and n in ok]
             if hit and st != "broke":
@@ -212,7 +214,7 @@ def report(rows, repo, git=True):
     """{counts: {caught, held, again, reverted, gone, unchecked, checked}, incidents, checkpoints: {fast|full|other|ci: {runs, caught, listed}}, since} from
     newest-first evidence rows of `repo`. caught = every FAIL→PASS pair; incidents = the newest TR_INC_MAX pairs, each with
     its PASS state (states() rules) — the state counts tally those incidents only and sum to len(incidents)
-    (again = broke | refixed: a later same-mode FAIL of an overlapping step, step-level only). since = oldest row ts read.
+    (again = broke | refixed: a later clean same-mode FAIL of an overlapping step, step-level only). since = oldest row ts read.
     ⚠A git miss or exhausted budget turns a clean «held» into «unchecked» (never «held») and the result is not cached;
     git=False (demo) keeps the evidence-only state."""
     rows = sorted((r for r in (_norm(x, ci=True) for x in (rows if isinstance(rows, list) else [])) if r), key=lambda r: r["ts"])

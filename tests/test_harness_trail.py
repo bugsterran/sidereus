@@ -92,6 +92,20 @@ class TrailTest(unittest.TestCase):
         h = TR.trail(_newest_first(*(rows + [_row(4, "fast", 0)])), "/r", git=False)["held"]
         self.assertEqual([x["state"] for x in h], ["held", "refixed"])
 
+    def test_dirty_fail_does_not_break_clean_pass(self):
+        p = _row(1, "full", 0, steps=[("screen", 0)])
+        dirty = _row(2, "full", 1, dirty=True, steps=[("screen", 1)])
+        h = TR.trail(_newest_first(p, dirty), "/r", git=False)["held"][0]
+        self.assertEqual((h["state"], h["steps"], h["at"]), ("held", [], 0))
+        h = TR.trail(_newest_first(p, dirty, _row(3, "full", 1, steps=[("screen", 1)])), "/r", git=False)["held"][0]
+        self.assertEqual((h["state"], h["steps"], h["at"]), ("broke", ["screen"], 3))   # a clean FAIL still breaks it
+
+    def test_dirty_fail_after_broke_keeps_refix(self):
+        rows = [_row(1, "full", 0, steps=[("screen", 0)]), _row(2, "full", 1, steps=[("screen", 1)]),
+                _row(3, "full", 0, steps=[("screen", 0)]), _row(4, "full", 1, dirty=True, steps=[("screen", 1)])]
+        h = TR.trail(_newest_first(*rows), "/r", git=False)["held"]
+        self.assertEqual([x["state"] for x in h], ["held", "refixed"])
+
     def test_non_overlapping_fail_holds(self):
         rows = [_row(1, "fast", 0, steps=[("tests", 0)]), _row(2, "fast", 1, steps=[("lint", 1)])]
         self.assertEqual(TR.trail(_newest_first(*rows), "/r", git=False)["held"][0]["state"], "held")

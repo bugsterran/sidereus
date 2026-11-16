@@ -4,6 +4,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Runs, stage hooks and evaluation
 
+- **A dirty-tree FAIL marked every earlier PASS «broke»** (sidereus/harness_trail.py `_evidence_state`).
+  - Cause: any later same-mode FAIL on an overlapping step broke a PASS, including a FAIL run on uncommitted work of the next change. ★2026-11-16: all 54 `full` PASSes of 30 days read «broke» from one dirty `screen` FAIL (head a68160f4, before its baseline update), so `pl_outcome` gave `pl_broke` for sidereus-change, sidereus-bugfix and quick-fix.
+  - ⇒ A FAIL row with `dirty` True is skipped: it neither breaks a PASS nor turns «refixed» back into «broke»; a clean FAIL keeps the old rule.
+  - ⚠Never count a dirty FAIL against an earlier PASS — it tests code that PASS never saw. `tests/test_harness_trail.py` `test_dirty_fail_does_not_break_clean_pass`.
+
 - **Stage `effort` is enforced only on direct runs** (hooks/pl_flow.py · `.claude/workflows/*.js`).
   - An effort mismatch is denied and logged under deny code `model` (no new code), so harness_flow and report counts keep their meaning.
   - ⚠The Workflow runner does not pass effort (`agent()` opts do not document it); only a pipeline run directly with the Agent tool gets the stage effort.

@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Branches: repos worked on only from pi, Codex, Cursor or Copilot sessions now appear in the repository picker and in work units; for pi, repos it edited outside its working directory count too.
 - Conflicts: files edited from pi sessions now count for file ownership, so «Conflict risk», the file owners in Branches and the `sidereus_file_peers` tool see them.
 - Demo: the demo world now shows the loop and tool-failure attention rows, a pipeline run waiting on a command, the folded «Get started» checklist in Pipelines Watch (3 of 4 steps done) and a «Loop-back after a pass» (`verdict`) block in Harness.
+- Pipelines: a failed check run on uncommitted work no longer marks every earlier pass as broken, so one red run mid-change no longer turns the verdict to `pl_broke` for every pipeline; a failed check on committed code still does.
 
 ## [0.19.0] - 2026-11-14
 
