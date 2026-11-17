@@ -58,7 +58,8 @@ class AgentViewAccounts(unittest.TestCase):
         roots = types.SimpleNamespace(accounts=lambda: [dict(a) for a in self.accs], SCAN_HOME=HOME)
         base_env = {"PATH": "/bin", "CLAUDE_CONFIG_DIR": PRIM}
         self.signed = {PRIM, WORK, DEFAULT}
-        for name, val in (("_av_signed_in", lambda d: d in self.signed),
+        # ⚠_av_accounts passes realpath(dir): on Windows "/nohome/x" becomes "D:\\nohome\\x", so compare realpaths.
+        for name, val in (("_av_signed_in", lambda d: d in {os.path.realpath(s) for s in self.signed}),
                           ("time", self.clock), ("subprocess", self.sub), ("claude_roots", roots),
                           ("warn_once", lambda key, msg, **kw: None), ("bin_path", lambda n: n),
                           ("bin_forget", lambda n: None), ("rich_env", lambda: dict(base_env)),
