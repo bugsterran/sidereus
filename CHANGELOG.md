@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Mailbox: a long room owner id no longer pushes the room name out of the Participants panel, and every member in the room header shrinks with its own ellipsis instead of earlier ones hiding the rest.
 - Mailbox: an empty room says «no messages yet» instead of «No messages match.» when no search is on.
 - Settings: the pi «Connect» row names the folder or file that is actually a symlink, not always `mcp.json`.
+- Sessions: the session-liveness lookup no longer runs `claude agents --json` in an extra account folder that Claude Code has never run in; the CLI wrote `.claude.json` and `backups/` there, and the new file made that folder count as signed in.
 
 ### Fixed
 
