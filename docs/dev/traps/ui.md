@@ -284,5 +284,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## Branch chip `.brh` collides with the section heading `.brh` (`web/css/80-branch.css`)
 - Cause: `.brh` is both the HEAD-colour chip modifier and the section heading (`40-tokens.css`: `display:flex; margin-bottom:6px`), so the HEAD branch chip became a flex container, where `text-overflow:ellipsis` does not apply (★1100 px: 193 px name cut at 128 px with no ellipsis).
-- ⇒ `.brf.brh` sets `display:inline-block; margin-bottom:0`. Side-pane commit rows: `.brdf em` is `nowrap` + `flex:0 0 auto`, so «sha · age» never breaks mid-token (★was 39 px tall, two lines, at every width).
+- ⇒ `.brf.brh` sets `display:inline-block; margin-bottom:0`. Side-pane commit rows: `.brdf[data-bpp] em` is `nowrap` + `flex:0 0 auto`, so «sha · age» never breaks mid-token (★was 39 px tall, two lines, at every width).
+- ⚠Never put that `nowrap` on bare `.brdf em`. Worktree file rows (89 `data-wkd`) hold status + ⚠ + up to 4 owner chips in the same `em`, as adjacent spans with no break point (★4 chips = 315 px: path 0 px and row overflow in the 300 px pane). ⇒ `.brdf[data-wkd] em` is a wrapping flex box, `max-width:62%` (★path 106 px, no overflow).
 - ⚠A new chip modifier must not reuse a layout class name; grep `web/css` for the bare class first.
