@@ -322,7 +322,8 @@ def _tool_inputs(fp, offset):
                 blob = " ".join(str(inp.get(k) or "") for k in ("file_path", "path", "notebook_path", "command"))
                 out.append((blob, str(inp.get("command") or ""), ()))
             for pth in pis:
-                if pth.startswith(("/", "~")):
+                # ⚠isabs too: a Windows `C:\...` path is absolute and belongs in the blob slot, like a Claude tool_use path
+                if pth.startswith(("/", "~")) or os.path.isabs(pth):
                     out.append((pth, "", ()))
                 elif pth:
                     out.append(("", "", (pth,)))   # pi allows cwd-relative paths; joined in session_repos

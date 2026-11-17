@@ -92,6 +92,8 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⚠Not in `_git_root`/`ident._git_walk` — callers rely on symlink-prefixed paths; the kept string is the cwd's spelling.
 - ★**`pi_abs_path` joins a relative path to any absolute cwd**
   ⚠The home filter stays in `_rel_paths` (repo allow-list), not in file ownership.
+- ★**`_tool_inputs` sorts a pi path as absolute by `/`·`~` or `os.path.isabs`**
+  ⚠Prefix-only put a Windows `C:\...` path in the cwd-relative slot (★CI windows 3.9/3.12 `test_subagent_child_paths_reach_tool_inputs` red on 2b3ea7cd). Keep `isabs`.
 - ★**Session git marks take a single `status --branch` — `_git_state()` (`sidereus/gitinfo.py`)**
   (2026-09-21 · found while measuring `_ps_snap()` above). Each session called `status --porcelain -uno` and
   `rev-list --count @{u}..HEAD` separately: **12 forks per refresh** (6 sessions × 2).
