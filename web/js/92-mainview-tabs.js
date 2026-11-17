@@ -392,10 +392,39 @@ function buildRooms(){
   const who = c.who.slice(0, 8);
   if(!setHtml(el, '<button class="rm rmback" title="'+esc(T('Back to the room list'))+'">'+esc(T('← Rooms'))+'</button>'
     + '<b class=rmname title="'+esc(rcLabel(c))+'">'+esc(rcLabel(c))+'</b>'
-    + '<span class=rmmem title="'+esc(c.who.join(', '))+'"><i>'+esc((c.who.length === 1 ? T('{n} person') : T('{n} people')).replace('{n}', c.who.length))+'</i>'
+    + '<span class=rmmem data-n='+c.who.length+' title="'+esc(c.who.join(', '))+'"><i>'+esc((c.who.length === 1 ? T('{n} person') : T('{n} people')).replace('{n}', c.who.length))+'</i>'
     + who.map(w => '<span class=rmw'+nmSty(w)+'>'+rcWho(w)+'</span>').join('')
-    + (c.who.length > who.length ? '<i>+'+(c.who.length - who.length)+'</i>' : '')+'</span>')) return;   // unchanged: keep the handler
+    + '<i class=rmmore></i></span>')) return;   // unchanged: keep the handler
   el.querySelector('.rmback').onclick = () => rcOpen('all');
+  rcFitMemWatch(el);
+  rcFitMem(el);
+}
+// ⚠Members only shrank (min 2.5em each), so 8 members at 1440 still overflowed the strip and the last ones were clipped
+// with no sign. Measure at natural width, drop members from the end until the strip fits, and count them in «+N».
+function rcFitMem(el){
+  const s = el && el.querySelector('.rmmem[data-n]'), more = s && s.querySelector('.rmmore');
+  if(!s || !more || !s.clientWidth) return;   // hidden toolbar: refit when the observer sees it again
+  const ws = [...s.querySelectorAll('.rmw')], total = +s.dataset.n || ws.length;
+  let shown = ws.length;
+  const put = () => { const n = total - shown; more.style.display = n > 0 ? '' : 'none'; more.textContent = '+' + n; };
+  ws.forEach(w => { w.style.display = ''; });
+  s.classList.add('rmfit');                   // natural widths while measuring
+  put();
+  while(shown > 1 && s.scrollWidth > s.clientWidth + 1){ ws[--shown].style.display = 'none'; put(); }
+  s.classList.remove('rmfit');                // one long remaining member may still shrink with its ellipsis
+}
+// ⚠The strip's room changes with the window and with the filter chips beside it; refit only when either width moves
+// (refitting changes .rooms itself, so observing it would re-trigger).
+function rcFitMemWatch(el){
+  const bar = el.parentElement, tabs = document.getElementById('tabs');
+  if(el._rmro || !bar || !window.ResizeObserver) return;
+  let last = '';
+  el._rmro = new ResizeObserver(() => {
+    const k = bar.clientWidth + ':' + (tabs ? tabs.offsetWidth : 0);
+    if(k !== last){ last = k; rcFitMem(el); }
+  });
+  el._rmro.observe(bar);
+  if(tabs) el._rmro.observe(tabs);
 }
 function buildTabs(){
   // ★Rooms were removed from this row — `buildRooms` above owns places. What remains here is **filters within the chosen place**.

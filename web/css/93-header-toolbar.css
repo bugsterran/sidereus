@@ -53,6 +53,8 @@ html[data-ui=next] .tbs > .rooms > .rmmem > :last-child{min-width:0;overflow:hid
 /* ⚠Only the last member shrank, so an earlier long id clipped mid-word and hid the rest; every member shrinks with its own ellipsis */
 html[data-ui=next] .tbs > .rooms > .rmmem > .rmw{flex:0 1 auto;min-width:2.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-ui=next] .tbs > .rooms > .rmmem > i{flex-shrink:0}
+/* rcFitMem measures members at their natural width while this class is on */
+html[data-ui=next] .tbs > .rooms > .rmmem.rmfit > .rmw{flex-shrink:0;min-width:auto}
 /* ⚠The name keeps its width (base .rmname has min-width:0, so it shrank first); the 200px cap keeps the ellipsis for long names */
 html[data-ui=next] .tbs > .rooms > .rmname{flex-shrink:0;max-width:200px}
 html[data-ui=next] #tbchat > .tbr{flex-shrink:0}

@@ -291,3 +291,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⇒ `.tvwt td.tvwp` / `.tvwt td.tvwfs` wrap (`41-tools.css`). ⚠A per-cell override needs `td.<class>` specificity.
 - ★**Header room member strip: only the last member shrank** — an earlier long id clipped mid-word and hid the rest.
   ⇒ every `.rmw` shrinks with its own ellipsis, min 2.5em (`93-header-toolbar.css`). Participants room rows: owner column `minmax(0,max-content)`, name ≥ 80px (`90-main-ui.css`).
+- ★**Shrinking alone is not enough: 8 members at 1440 sat at 31px each and still overflowed** — the last 2.5 members and the «+N» were clipped with no sign.
+  ⇒ `rcFitMem` (`92-mainview-tabs.js`) measures at natural width (`.rmfit`), drops members from the end until the strip fits and counts them in `.rmmore` «+N»; a ResizeObserver on the toolbar and `#tabs` refits.
+  ⚠Do not observe `.rooms` itself — the refit resizes it and re-triggers.
