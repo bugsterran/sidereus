@@ -81,7 +81,7 @@ About 135 modules in `sidereus/`, listed low to high in `refactor/STAGE3.md` wit
   by `structure_plug.plug_load()`, never by name ([EXTENDING](EXTENDING.md)).
 - ⚠Each global has one owning module. Never rebind an imported name; change it in the owner. Shared containers are
   mutated in place.
-- ⚠Tests patch the module that reads a name (`sidereus.live_probe._av_cache`), not `chat_server`.
+- ⚠Tests patch the module that reads a name (`sidereus.live_agents._av_cache`), not `chat_server`.
 
 ## Relay
 

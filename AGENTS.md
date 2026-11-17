@@ -2,7 +2,7 @@
 
 Session control screen. `http://127.0.0.1:8799` · started by launchd `io.sidereus.viewer` (label = `<launchd_label_prefix>.viewer`; `python3 mailbox_config.py --label viewer` prints it).
 **`chat_server.py` = entry point** (~250 lines: `Handler` core (send · guards · dispatch) · `main()` — route bodies are `sidereus/routes_get.py`·`routes_post.py`, `state()` is `sidereus/state.py`, PAGE assembly is `sidereus/page.py`) · **Python body is `sidereus/<domain>.py`**
-(176 modules · order and ownership rules in `refactor/STAGE3.md`) · ⚠each global is owned by **one module only** — don't reassign another module's name, fix it in the owning module · **the screen is `web/`** — `index.html` (skeleton, `@@INCLUDE file@@` placeholders) +
+(177 modules · order and ownership rules in `refactor/STAGE3.md`) · ⚠each global is owned by **one module only** — don't reassign another module's name, fix it in the owning module · **the screen is `web/`** — `index.html` (skeleton, `@@INCLUDE file@@` placeholders) +
 `app-head.js` · `css/NN-*.css` · `js/NN-*.js` (per feature, `@@INCLUDE js/*.js@@` = concatenated in name order · NN is the order).
 The server reads them at import and assembles an **inline PAGE with the same bytes** as before (`_load_page`). Feature ↔ file map: `docs/dev/FILEMAP.md` (was the web/ file map section of `VIEWER-HANDOVER.md`).
 ⚠Split JS files **only at top-level statement boundaries** (each file passes `node --check` on its own) · removing/adding a trailing newline changes the PAGE bytes.
@@ -59,7 +59,7 @@ stderr    viewer.err                # ★append-only — old lines are fossils
      - A session's own hook (`ext-hooks/codex_wake.py`) may start one turn on its own thread via the Codex app-server daemon socket (documented methods; the socket path is undocumented) after mail arrives; the Sidereus server never connects to app-server, spawns, or injects.
      - The pi extension (`ext-hooks/pi-extension.ts`, the session's own code inside pi) may start one turn on its own session via pi's documented `sendUserMessage` after mail arrives (waiter child `ext-hooks/pi_wake.py`); the Sidereus server never spawns, connects or injects. Owner-approved.
      - The viewer's own structure warm-up worker (`python -m sidereus.structure_warm`, same interpreter, reads repos and writes only the structure cache, timeout-killed) is allowed; spawning or attaching to agent CLIs stays forbidden.
-     - `claude agents --json` (read-only listing, never starts or attaches to a session) is allowed for liveness (`sidereus/live_probe.py`; off macOS it is the only liveness source).
+     - `claude agents --json` (read-only listing, never starts or attaches to a session) is allowed for liveness (`sidereus/live_agents.py`; off macOS it is the only liveness source).
    - Rule 1 (metadata only) still holds — relaying goes outward; bringing conversation onto the page is still not allowed.
    - **Writing tool config is allowed** (owner decision — the feature set outgrew a read-only limit).
      Targets are only skill · agent · command files · MCP servers · hook settings (`~/.claude/` · project `.claude/` · `.mcp.json`).

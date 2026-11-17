@@ -8,7 +8,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠`command` must stay the last column — it holds spaces; any column after it is swallowed into the command. Adding a column = insert it before `command` and bump the split count.
   - ⚠Rows stay `(pid, ppid, cmd)` 3-tuples (~10 callers unpack them); pcpu/rss go to `_ps_res` for `proc_load`. pcpu may use a decimal comma.
 - ★**The `claude agents` budget (≤ 2/min) holds only in registry-signature mode** (2026-10-25, #24, `scripts/perf_budget.py`). ★sessions/ present: 1 spawn per simulated minute.
-  - ⚠No `<config dir>/sessions/` dir ⇒ `_av_registry_sig` returns None ⇒ plain `AGENTS_TTL` 8 s ≈ 7.5 spawns/min (sidereus/live_probe.py `_av_one`).
+  - ⚠No `<config dir>/sessions/` dir ⇒ `_av_registry_sig` returns None ⇒ plain `AGENTS_TTL` 8 s ≈ 7.5 spawns/min (sidereus/live_agents.py `_av_one`).
   - ⇒ The budget run writes a `sessions/<pid>.json` first; never call `agent_view(ttl=…)` from a poll path.
   - ⚠`--live` warm p90 is a plain GET served from cache (★2 ms) — labelled `warm p90 (cached)`, informational, not a state() cost.
 - ★**Boot warm-up threads ran in parallel and spiked memory** (2026-10-22, #20, `sidereus/boot_queue.py`): ★peak ~478 MB parallel vs ~301 MB serial.
@@ -81,7 +81,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⇒ Incremental `_today_files`: per file inode + byte offset (kept at the last newline) + first-seen responses; a pass reads only appended bytes in 4 MB chunks, `b'"usage"'` filtered before decode. ★tracemalloc, 53 MB fixture: 152 MB → 14 MB first pass, 0.7 MB unchanged pass. Tests `tests/test_today_incremental.py`.
   ⚠Responses are deduplicated across files at aggregation (glob order), not per pass — a global seen-set kept across passes would undercount after a file reset. ⚠Reset only on inode change or shrink; the day rollover clears the cache.
 - ★**`claude agents --json` spawned every 11-18 s** (2026-10-13; 8 in 2 min, 120-157 MB RSS per child, one per account) — an 8 s TTL on the 2.5 s state poll.
-  ⇒ `sidereus/live_probe.py` `_av_registry_sig`: re-run only when the CLI's registry `<config dir>/sessions/<pid>.json` changes in (pid · sessionId · cwd · pid alive), else at `AGENTS_MAX_AGE` 60 s. Estimate ~7.5/min per account → ~1/min + session events. Tests `tests/test_live_probe.py` `AgentViewSignatureTest`.
+  ⇒ `sidereus/live_agents.py` `_av_registry_sig`: re-run only when the CLI's registry `<config dir>/sessions/<pid>.json` changes in (pid · sessionId · cwd · pid alive), else at `AGENTS_MAX_AGE` 60 s. Estimate ~7.5/min per account → ~1/min + session events. Tests `tests/test_live_probe.py` `AgentViewSignatureTest`.
   ⚠Never put `status`/`updatedAt` in the signature (they change every turn). ⚠No registry dir ⇒ plain `AGENTS_TTL`; the failure backoff (`AGENTS_FAIL_TTL`) still wins over a signature change.
   ⚠Off macOS (no `ps` snapshot) this listing is the only liveness source (`live.py` `_live_official_only`), so the 120-157 MB per-account spike lands on Windows/Linux every run — watch for low-memory or many-account reports before widening the cadence.
 - **`X-Build-Time` header** (`chat_server.py` `_send`, value `sidereus/page.py` `BUILD_TIME` = `<UTC assembly time> <PAGE_BUILD>`): identifies the running page for the push gate. ⚠Set once at import — the value changes only on a restart, not on a `web/` edit.

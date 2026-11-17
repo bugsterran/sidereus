@@ -12,7 +12,8 @@ from sidereus.warn import warn_once
 from sidereus.bus import _load, _save_json
 # bg argv markers + spawner walk are owned by live (its path-slot claim needs the same walk; live must not import term)
 from sidereus.live import BG_HOST_ARG, _orphan_spawner, _spawner_pid
-from sidereus.live_probe import _UUID_RE, _av_cache, _ps_snap_cache, _ps_snap, agent_view, is_claude_argv
+from sidereus.live_probe import _UUID_RE, _ps_snap_cache, _ps_snap, is_claude_argv
+from sidereus.live_agents import _av_cache, agent_view
 
 TERM_CFG_FILE = "term-cfg.json"            # under DATA_DIR, via bus._load/_save_json
 TERM_APPS = ("auto", "iterm", "apple", "orca", "off")
@@ -328,7 +329,7 @@ def _resolve_ext(r, snap, force=True):
 
 
 def term_attach(rows):
-    """Set `row["term"] = {app, tty}` (or None) on rows. ⚠Reads live_probe's caches only — never forks them.
+    """Set `row["term"] = {app, tty}` (or None) on rows. ⚠Reads live_probe/live_agents caches only — never forks them.
     External rows: stored hook pid, else the cached cwd fallback (`_probe_cwd`, at most one lsof per TTL)."""
     snap = _ps_snap_cache[1]
     sp = _sid_pids(_av_cache[1], snap)

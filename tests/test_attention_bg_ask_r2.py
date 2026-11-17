@@ -15,6 +15,7 @@ from tests._load import load, sidereus
 load()
 live = sidereus("live")
 lp = sidereus("live_probe")
+la = sidereus("live_agents")
 sessions = sidereus("sessions")
 notes = sidereus("notes")
 
@@ -30,10 +31,10 @@ class R2BgAsk(unittest.TestCase):
     def setUp(self):
         self.saved = (live._live_cache, list(lp._live_sids), set(live._live_retired[0]))
         self.addCleanup(self._restore)
-        for p in (mock.patch.dict(live._av_argv, clear=True), mock.patch.dict(lp._av_held, clear=True),
-                  mock.patch.dict(lp._av_sigs), mock.patch.object(lp, "_av_cache", [0.0, None]),
-                  mock.patch.object(lp, "_av_fail", [0.0]), mock.patch.object(lp, "warn_once", lambda *a, **k: None),
-                  mock.patch.object(lp, "bin_path", lambda n: "claude")):
+        for p in (mock.patch.dict(live._av_argv, clear=True), mock.patch.dict(la._av_held, clear=True),
+                  mock.patch.dict(la._av_sigs), mock.patch.object(la, "_av_cache", [0.0, None]),
+                  mock.patch.object(la, "_av_fail", [0.0]), mock.patch.object(la, "warn_once", lambda *a, **k: None),
+                  mock.patch.object(la, "bin_path", lambda n: "claude")):
             p.start()
             self.addCleanup(p.stop)
 
@@ -48,13 +49,13 @@ class R2BgAsk(unittest.TestCase):
             if rows is None:
                 raise subprocess.TimeoutExpired("claude", 6)
             return types.SimpleNamespace(stdout=json.dumps(rows), returncode=0)
-        lp._av_fail[0] = 0.0                               # no negative cache between the scripted lookups
-        with _clock.frozen(lp), mock.patch.object(lp.subprocess, "run", run):
-            return lp._av_one({}, lp._av_cache, lp._av_fail, 0, None)
+        la._av_fail[0] = 0.0                               # no negative cache between the scripted lookups
+        with _clock.frozen(lp, la), mock.patch.object(la.subprocess, "run", run):
+            return la._av_one({}, la._av_cache, la._av_fail, 0, None)
 
     def _outage(self):
         """The lookup fails past AGENTS_STALE_S: the cached answer is cut and the view is unknown."""
-        lp._av_cache[0], lp._av_fail[0] = NOW - lp.AGENTS_STALE_S - 1, 0.0
+        la._av_cache[0], la._av_fail[0] = NOW - la.AGENTS_STALE_S - 1, 0.0
         av = self._ask(None)
         self.assertIsNone(av)
         return av
@@ -63,7 +64,7 @@ class R2BgAsk(unittest.TestCase):
         """Run live_cwds() once on the given process snapshot and official view."""
         pmap = {str(p): CWD for p, _pp, _c in snap}
         live._live_cache = (0.0, None)
-        with _clock.frozen(live, lp), \
+        with _clock.frozen(live, lp, la), \
                 mock.patch.object(live, "IS_MAC", True), \
                 mock.patch.object(live, "_ps_snap", lambda *a, **k: snap), \
                 mock.patch.object(live, "agent_view", lambda *a, **k: av), \
@@ -127,7 +128,7 @@ class R2BgAsk(unittest.TestCase):
         self.assertTrue(alive[JOB])
         # never answered (the lookup failed from the start): nothing beyond today's argv guess
         live._av_argv.clear()
-        lp._av_held.clear()
+        la._av_held.clear()
         out, alive = self._live(snap, self._outage())
         self.assertFalse(alive[JOB])
         self.assertTrue(alive[OLD])                        # today's argv-label fallback, unchanged

@@ -165,7 +165,7 @@ def _wait_tcp(port, secs):
 def simulate_agents(lv, cfg_dir, seconds=60.0, tick=2.5, per_tick=3, on_tick=None):
     """Count `claude agents --json` spawns while agent_view() runs `per_tick` times per poll over `seconds`.
 
-    Clock, spawner, accounts and caches are swapped on `lv` (sidereus.live_probe) and restored after.
+    Clock, spawner, accounts and caches are swapped on `lv` (sidereus.live_agents) and restored after.
     `on_tick(t)` runs before each poll (tests change the registry there)."""
     clock, calls = [1000.0], [0]
 
@@ -216,11 +216,11 @@ def simulate_agents(lv, cfg_dir, seconds=60.0, tick=2.5, per_tick=3, on_tick=Non
 
 def _agents_child(cfg_dir):
     sys.path.insert(0, ROOT)
-    from sidereus import live_probe
+    from sidereus import live_agents
     os.makedirs(os.path.join(cfg_dir, "sessions"), exist_ok=True)
     with open(os.path.join(cfg_dir, "sessions", "%d.json" % os.getpid()), "w", encoding="utf-8") as f:
         json.dump({"pid": os.getpid(), "sessionId": "perf-budget", "cwd": cfg_dir}, f)
-    print(simulate_agents(live_probe, cfg_dir))
+    print(simulate_agents(live_agents, cfg_dir))
 
 
 def _agents_per_min(env, cfg_dir):

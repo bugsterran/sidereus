@@ -2,7 +2,7 @@
 reported by agent_view_unknown() instead of hiding the others. Single account = one call, env unchanged.
 
 No live processes, clock or account dirs: subprocess, time, warn_once, bin_path, rich_env and claude_roots are
-replaced on the live_probe module.
+replaced on the live_agents module.
 """
 import json
 import os
@@ -14,6 +14,7 @@ from unittest import mock
 from tests._load import sidereus
 
 lp = sidereus("live_probe")
+la = sidereus("live_agents")
 
 HOME = "/nohome"
 PRIM = HOME + "/.claude-main"
@@ -62,91 +63,94 @@ class AgentViewAccounts(unittest.TestCase):
                           ("warn_once", lambda key, msg, **kw: None), ("bin_path", lambda n: n),
                           ("bin_forget", lambda n: None), ("rich_env", lambda: dict(base_env)),
                           ("_slow_why", lambda: [])):
-            p = mock.patch.object(lp, name, val)
+            p = mock.patch.object(la, name, val)
             p.start()
             self.addCleanup(p.stop)
+        p = mock.patch.object(lp, "time", self.clock)    # `_stale_mark` stays in live_probe and reads its clock
+        p.start()
+        self.addCleanup(p.stop)
         self.kicks = []
 
         def spawn(fn):                  # background refresh runs inline, so the cache is filled when kick returns
             self.kicks.append(fn)
             fn()
-        p = mock.patch.object(lp._AV_BG, "spawn", spawn)
+        p = mock.patch.object(la._AV_BG, "spawn", spawn)
         p.start()
         self.addCleanup(p.stop)
-        saved = (list(lp._av_cache), list(lp._av_fail), dict(lp._av_acct), set(lp._av_unknown), dict(lp._stale))
+        saved = (list(la._av_cache), list(la._av_fail), dict(la._av_acct), set(la._av_unknown), dict(lp._stale))
 
         def restore():
-            lp._av_cache[:], lp._av_fail[:] = saved[0], saved[1]
-            lp._av_acct.clear(), lp._av_acct.update(saved[2])
-            lp._av_unknown.clear(), lp._av_unknown.update(saved[3])
+            la._av_cache[:], la._av_fail[:] = saved[0], saved[1]
+            la._av_acct.clear(), la._av_acct.update(saved[2])
+            la._av_unknown.clear(), la._av_unknown.update(saved[3])
             lp._stale.clear(), lp._stale.update(saved[4])
         self.addCleanup(restore)
-        lp._av_cache[:] = [0.0, None]
-        lp._av_fail[:] = [0.0]
-        lp._av_acct.clear()
-        lp._av_unknown.clear()
+        la._av_cache[:] = [0.0, None]
+        la._av_fail[:] = [0.0]
+        la._av_acct.clear()
+        la._av_unknown.clear()
 
     def two(self):
         self.accs.append({"dir": WORK, "label": "work", "primary": False})
 
     def test_single_account_one_call_env_unchanged(self):
         self.sub.outs[PRIM] = _rows(1)
-        self.assertEqual(set(lp.agent_view()), {"1"})
+        self.assertEqual(set(la.agent_view()), {"1"})
         self.assertEqual(len(self.sub.calls), 1)
         self.assertEqual(self.sub.calls[0][1], {"PATH": "/bin", "CLAUDE_CONFIG_DIR": PRIM})
-        self.assertEqual(lp.agent_view_unknown(), set())
+        self.assertEqual(la.agent_view_unknown(), set())
 
     def test_union_of_accounts(self):
         self.two()
         self.sub.outs[PRIM] = _rows(1)
         self.sub.outs[WORK] = _rows(2, 3)
-        self.assertEqual(set(lp.agent_view()), {"1", "2", "3"})
-        self.assertEqual(lp.agent_view_unknown(), set())
-        self.assertEqual(lp._av_cache[1], lp.agent_view())   # term.py reads the merged view here
+        self.assertEqual(set(la.agent_view()), {"1", "2", "3"})
+        self.assertEqual(la.agent_view_unknown(), set())
+        self.assertEqual(la._av_cache[1], la.agent_view())   # term.py reads the merged view here
 
     def test_duplicate_realpath_asked_once(self):
         self.accs.append({"dir": PRIM, "label": "again", "primary": False})
         self.sub.outs[PRIM] = _rows(1)
-        lp.agent_view()
+        la.agent_view()
         self.assertEqual(len(self.sub.calls), 1)
 
     def test_one_failing_keeps_others_and_is_negative_cached(self):
         self.two()
         self.sub.outs[PRIM] = _rows(1)
         self.sub.outs[WORK] = _real_sp.TimeoutExpired("claude", 6)
-        self.assertEqual(set(lp.agent_view()), {"1"})
-        self.assertEqual(lp.agent_view_unknown(), {"work"})
+        self.assertEqual(set(la.agent_view()), {"1"})
+        self.assertEqual(la.agent_view_unknown(), {"work"})
         n = len(self.sub.calls)
-        self.clock.t += lp.AGENTS_TTL + 1                      # primary refreshes, dead account does not fork
-        lp.agent_view()
+        self.clock.t += la.AGENTS_TTL + 1                      # primary refreshes, dead account does not fork
+        la.agent_view()
         self.assertEqual([c[1].get("CLAUDE_CONFIG_DIR") for c in self.sub.calls[n:]], [PRIM])
 
     def test_stale_value_served_and_refreshed_in_background(self):
         self.sub.outs[PRIM] = _rows(1)
-        lp.agent_view()                                          # cold start: inline, no background run
+        la.agent_view()                                          # cold start: inline, no background run
         self.assertEqual((len(self.sub.calls), len(self.kicks)), (1, 0))
         self.sub.outs[PRIM] = _rows(2)
-        self.clock.t += lp.AGENTS_MAX_AGE + 1                    # stale but younger than AGENTS_STALE_S
-        with mock.patch.object(lp._AV_BG, "spawn", lambda fn: self.kicks.append(fn)):   # refresh not run yet
-            self.assertEqual(set(lp.agent_view()), {"1"})        # last value, no CLI call on the request path
-            self.assertEqual(set(lp.agent_view()), {"1"})        # second request while running: no second kick
+        self.clock.t += la.AGENTS_MAX_AGE + 1                    # stale but younger than AGENTS_STALE_S
+        with mock.patch.object(la._AV_BG, "spawn", lambda fn: self.kicks.append(fn)):   # refresh not run yet
+            self.assertEqual(set(la.agent_view()), {"1"})        # last value, no CLI call on the request path
+            self.assertEqual(set(la.agent_view()), {"1"})        # second request while running: no second kick
         self.assertEqual((len(self.sub.calls), len(self.kicks)), (1, 1))
-        lp._AV_BG._on.clear()
+        la._AV_BG._on.clear()
         self.kicks[0]()                                          # the background run lands
-        self.assertEqual(set(lp.agent_view()), {"2"})
+        self.assertEqual(set(la.agent_view()), {"2"})
 
     def test_all_failing_is_none(self):
         self.two()
         self.sub.outs[PRIM] = ValueError("x")
         self.sub.outs[WORK] = ValueError("x")
-        self.assertIsNone(lp.agent_view())
-        self.assertEqual(lp.agent_view_unknown(), {"", "work"})
+        self.assertIsNone(la.agent_view())
+        self.assertEqual(la.agent_view_unknown(), {"", "work"})
 
     def test_default_dir_runs_without_config_var(self):
         self.accs.append({"dir": DEFAULT, "label": "default", "primary": False})
         self.sub.outs[PRIM] = _rows(1)
         self.sub.outs[""] = _rows(9)
-        self.assertEqual(set(lp.agent_view()), {"1", "9"})
+        self.assertEqual(set(la.agent_view()), {"1", "9"})
         self.assertNotIn("CLAUDE_CONFIG_DIR", self.sub.calls[1][1])
 
     def test_never_signed_in_dir_is_not_asked(self):
@@ -154,15 +158,15 @@ class AgentViewAccounts(unittest.TestCase):
         self.two()
         self.signed.discard(WORK)
         self.sub.outs[PRIM] = _rows(1)
-        self.assertEqual(set(lp.agent_view()), {"1"})
+        self.assertEqual(set(la.agent_view()), {"1"})
         self.assertEqual([c[1].get("CLAUDE_CONFIG_DIR") for c in self.sub.calls], [PRIM])
-        self.assertEqual(lp.agent_view_unknown(), set())
+        self.assertEqual(la.agent_view_unknown(), set())
 
     def test_never_signed_in_dir_does_not_hide_failed_primary(self):
         self.two()
         self.signed.discard(WORK)
         self.sub.outs[PRIM] = ValueError("x")
-        self.assertIsNone(lp.agent_view())                      # unknown, not a false "no sessions"
+        self.assertIsNone(la.agent_view())                      # unknown, not a false "no sessions"
 
 
 if __name__ == "__main__":

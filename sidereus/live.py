@@ -1,5 +1,6 @@
 """Live session detection: live_cwds, mailbox watchers, parse cache.
-Probes (staleness, sid lookups, official session list, ps snapshot, tool-busy) live in `sidereus/live_probe.py`;
+Probes (staleness, sid lookups, ps snapshot, tool-busy) live in `sidereus/live_probe.py`, the official session list in
+`sidereus/live_agents.py`;
 context-window learning in `sidereus/live_win.py`."""
 import json
 import os
@@ -13,12 +14,13 @@ from sidereus.warn import warn_once
 from sidereus.memo import BoundedMemo, on_request_path, serve_last
 from sidereus.transcript import _continued
 from sidereus.ident import _slug
-# ⚠Probes (staleness, sid lookups, agent_view, _ps_snap, tool_busy/_blocked) live in sidereus/live_probe.py; re-exported here
-#   for importers (sessions, cards, notes, work, history) and for live_cwds/watchers. Patch probe internals on live_probe.
+# ⚠Probes (staleness, sid lookups, _ps_snap, tool_busy/_blocked) live in sidereus/live_probe.py, agent_view in live_agents.py;
+#   re-exported here for importers and for live_cwds/watchers. Patch probe internals on the owning module.
 from sidereus.live_probe import (LIVE_STALE_S, _STALE_LABEL, _STALE_SHOW_S, _UUID_RE, _blocked, _live_pid_cwd,
     _live_sids, _ps_snap, _sid_claim_stale, _sid_transcript, _slow_why, _stale, _stale_clear, _stale_lock,
-    _stale_mark, agent_view, is_claude_argv, sid_alive, sid_alive_stale)
-from sidereus import live_probe as _lp
+    _stale_mark, is_claude_argv, sid_alive, sid_alive_stale)
+from sidereus.live_agents import agent_view
+from sidereus import live_agents as _la
 # ⚠Window learning lives in sidereus/live_win.py (re-exported for chat_server/sessions/recent). Patch its state there.
 from sidereus.live_win import _ctx_window, _model_win, _win_ev, _win_load, _win_loop  # noqa: F401
 # ⚠`claude -c` claims and the newest-transcript lookup live in sidereus/live_cont.py; patch them there.
@@ -197,10 +199,10 @@ AV_HOLD_MAX = 256
 
 
 def _av_key_unknown(key):
-    """Is this account's official lookup unknown now (`live_probe._av_held` key: "" single, else realpath)?"""
+    """Is this account's official lookup unknown now (`live_agents._av_held` key: "" single, else realpath)?"""
     if not key:
-        return _lp._av_cache[1] is None
-    c = _lp._av_acct.get(key)
+        return _la._av_cache[1] is None
+    c = _la._av_acct.get(key)
     return c is None or c[0][1] is None
 
 
@@ -216,7 +218,7 @@ def _live_held(snap, av):
         if p in cmds and (p in _av_argv or len(_av_argv) < AV_HOLD_MAX):
             _av_argv[p] = cmds[p]
     out = {}
-    for key, view in list(_lp._av_held.items()):
+    for key, view in list(_la._av_held.items()):
         if not _av_key_unknown(key):
             continue
         for p, it in (view or {}).items():
@@ -340,9 +342,9 @@ def _live_bg_hosts(snap, av, claimed):
 
 
 def _reg_dirs():
-    """Every account's session registry dir `<cfg>/sessions` (same roots as `live_probe.agent_view`)."""
-    return [os.path.join(d or _lp.rich_env().get("CLAUDE_CONFIG_DIR") or os.path.join(claude_roots.SCAN_HOME, ".claude"),
-                         "sessions") for _l, d, _p in _lp._av_accounts()]
+    """Every account's session registry dir `<cfg>/sessions` (same roots as `live_agents.agent_view`)."""
+    return [os.path.join(d or _la.rich_env().get("CLAUDE_CONFIG_DIR") or os.path.join(claude_roots.SCAN_HOME, ".claude"),
+                         "sessions") for _l, d, _p in _la._av_accounts()]
 
 
 def _live_parked(pmap, av, claimed):

@@ -80,7 +80,7 @@ flowchart LR
   import 하지 않고 `structure_plug.plug_load()` 가 불러온다([EXTENDING](EXTENDING.ko.md)).
 - ⚠전역 이름마다 주인 모듈이 하나다. import 한 이름에 다시 대입하지 말고 주인 모듈에서 바꾼다. 함께 쓰는 컨테이너는
   제자리에서 고친다.
-- ⚠테스트는 그 이름을 읽는 모듈에서 패치한다(`sidereus.live_probe._av_cache`). `chat_server` 에서 하지 않는다.
+- ⚠테스트는 그 이름을 읽는 모듈에서 패치한다(`sidereus.live_agents._av_cache`). `chat_server` 에서 하지 않는다.
 
 ## 전달
 

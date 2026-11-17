@@ -255,7 +255,7 @@ def primary_owned(sid, fp):
 
 def registry_sig(cfg_dir):
     """Cheap signature of one account's session registry (no subprocess), or None when it cannot be read.
-    ⚠Field choice and why: the AGENTS_MAX_AGE comment in `live_probe` (used as its `_av_registry_sig`)."""
+    ⚠Field choice and why: the AGENTS_MAX_AGE comment in `live_agents` (used as its `_av_registry_sig`)."""
     if not cfg_dir:
         return None
     sig = []

@@ -2,7 +2,7 @@
 success / stale fallback / negative cache, tool_busy, _blocked, sid transcript lookups and sid_alive.
 
 No live processes, clock or transcripts: subprocess, time, IS_MAC, warn_once, bin_path, rich_env and
-CLAUDE_PROJECTS are replaced on the live_probe module; the sid tests use a temp projects dir.
+CLAUDE_PROJECTS are replaced on the live_probe/live_agents modules; the sid tests use a temp projects dir.
 """
 import json
 import os
@@ -15,7 +15,8 @@ from unittest import mock
 from tests._load import sidereus
 
 lp = sidereus("live_probe")
-_REAL_SIG = lp._av_registry_sig     # captured before _Base patches it out
+la = sidereus("live_agents")
+_REAL_SIG = la._av_registry_sig     # captured before _Base patches it out
 
 
 class _Clock:
@@ -51,10 +52,16 @@ class _Base(unittest.TestCase):
                           ("warn_once", lambda key, msg, **kw: self.warns.append(key)),
                           ("bin_path", lambda n: n), ("bin_forget", lambda n: None), ("rich_env", lambda: {}),
                           ("_slow_why", lambda en=False: ""), ("_av_registry_sig", lambda d: None)):
-            p = mock.patch.object(lp, name, val)
-            p.start()
-            self.addCleanup(p.stop)
-        lists = (lp._av_cache, lp._av_fail, lp._ps_snap_cache, lp._ps_res, lp._ps_snap_fail,
+            held = False
+            for mod in (lp, la):           # the official lookup moved to live_agents; patch whichever holds the name
+                if hasattr(mod, name):
+                    held = True
+                    p = mock.patch.object(mod, name, val)
+                    p.start()
+                    self.addCleanup(p.stop)
+            if not held:                   # a stale name would leave the real subprocess/time in place silently
+                raise AttributeError(name)
+        lists = (la._av_cache, la._av_fail, lp._ps_snap_cache, lp._ps_res, lp._ps_snap_fail,
                  lp._sid_file, lp._sid_stale, lp._live_sids)
         saved = [list(x) for x in lists]
         busy, stale = lp._busy_cache, dict(lp._stale)
@@ -68,8 +75,8 @@ class _Base(unittest.TestCase):
             lp._stale.clear()
             lp._stale.update(stale)
         self.addCleanup(restore)
-        lp._av_cache[:] = [0.0, None]
-        lp._av_fail[:] = [0.0]
+        la._av_cache[:] = [0.0, None]
+        la._av_fail[:] = [0.0]
         lp._ps_snap_cache[:] = [0.0, None]
         lp._ps_res[:] = [0.0, {}]
         lp._ps_snap_fail[:] = [0.0, None]
@@ -117,63 +124,63 @@ class PsSnapTest(_Base):
 class AgentViewTest(_Base):
     def test_success_keys_by_pid_string(self):
         self.sub.outs["claude"] = json.dumps([{"pid": 12, "sessionId": "a"}, {"pid": None}, "junk", {"x": 1}])
-        out = lp.agent_view()
+        out = la.agent_view()
         self.assertEqual(out, {"12": {"pid": 12, "sessionId": "a"}})
         self.assertEqual(self.sub.calls[0], ["claude", "agents", "--json"])
-        self.clock.t += lp.AGENTS_TTL - 1
-        self.assertIs(lp.agent_view(), out)
+        self.clock.t += la.AGENTS_TTL - 1
+        self.assertIs(la.agent_view(), out)
         self.assertEqual(len(self.sub.calls), 1)
 
     def test_empty_stdout_is_empty_view(self):
         self.sub.outs["claude"] = ""
-        self.assertEqual(lp.agent_view(), {})
+        self.assertEqual(la.agent_view(), {})
         self.assertEqual(self.warns, [])
 
     def test_nonzero_exit_is_unknown_not_empty(self):
         self.sub.outs["claude"] = (1, "")
-        self.assertIsNone(lp.agent_view())
+        self.assertIsNone(la.agent_view())
         self.assertEqual(self.warns, ["agents"])
         prev = {"1": {"pid": 1}}
-        lp._av_cache[:] = [self.clock.t - 20, prev]
-        lp._av_fail[:] = [0.0]
-        self.assertIs(lp.agent_view(ttl=0), prev)          # held answer, not {}
+        la._av_cache[:] = [self.clock.t - 20, prev]
+        la._av_fail[:] = [0.0]
+        self.assertIs(la.agent_view(ttl=0), prev)          # held answer, not {}
         self.sub.outs["claude"] = (0, "[]")
-        lp._av_fail[:] = [0.0]
-        self.assertEqual(lp.agent_view(ttl=0), {})
+        la._av_fail[:] = [0.0]
+        self.assertEqual(la.agent_view(ttl=0), {})
 
     def test_non_list_without_prev_is_unknown_and_negative_cached(self):
         self.sub.outs["claude"] = '{"pid": 1}'
-        self.assertIsNone(lp.agent_view())
+        self.assertIsNone(la.agent_view())
         self.assertEqual(self.warns, ["agents"])
         self.assertNotIn("agents", lp._stale)
-        self.clock.t += lp.AGENTS_FAIL_TTL - 1
-        self.assertIsNone(lp.agent_view(ttl=0))
+        self.clock.t += la.AGENTS_FAIL_TTL - 1
+        self.assertIsNone(la.agent_view(ttl=0))
         self.assertEqual(len(self.sub.calls), 1, "failure within AGENTS_FAIL_TTL must not fork again")
 
     def test_failure_with_fresh_prev_falls_back_and_marks_stale(self):
         prev = {"1": {"pid": 1}}
-        lp._av_cache[:] = [self.clock.t - 20, prev]
+        la._av_cache[:] = [self.clock.t - 20, prev]
         self.sub.outs["claude"] = _real_sp.TimeoutExpired("claude", 6)
-        self.assertIs(lp.agent_view(ttl=0), prev)
+        self.assertIs(la.agent_view(ttl=0), prev)
         self.assertEqual(self.warns, ["agents-slow"])
         self.assertIn("agents", lp._stale)
         self.clock.t += 1
-        self.assertIs(lp.agent_view(ttl=0), prev)          # negative cache still serves the fallback
+        self.assertIs(la.agent_view(ttl=0), prev)          # negative cache still serves the fallback
         self.assertEqual(len(self.sub.calls), 1)
 
     def test_failure_with_old_prev_is_unknown(self):
-        lp._av_cache[:] = [self.clock.t - lp.AGENTS_STALE_S - 1, {"1": {}}]
+        la._av_cache[:] = [self.clock.t - la.AGENTS_STALE_S - 1, {"1": {}}]
         self.sub.outs["claude"] = ValueError("x")
-        self.assertIsNone(lp.agent_view(ttl=0))
-        self.assertEqual(lp._av_cache, [0.0, None])
+        self.assertIsNone(la.agent_view(ttl=0))
+        self.assertEqual(la._av_cache, [0.0, None])
         self.assertEqual(self.warns, ["agents"])
 
     def test_recovery_lifts_negative_cache_and_stale(self):
-        lp._av_fail[0] = self.clock.t - lp.AGENTS_FAIL_TTL - 1
+        la._av_fail[0] = self.clock.t - la.AGENTS_FAIL_TTL - 1
         lp._stale["agents"] = (1.0, 2.0)
         self.sub.outs["claude"] = "[]"
-        self.assertEqual(lp.agent_view(ttl=0), {})
-        self.assertEqual(lp._av_fail, [0.0])
+        self.assertEqual(la.agent_view(ttl=0), {})
+        self.assertEqual(la._av_fail, [0.0])
         self.assertNotIn("agents", lp._stale)
 
 
@@ -186,12 +193,12 @@ class AgentViewSignatureTest(_Base):
         self.addCleanup(shutil.rmtree, self.cfg, True)
         os.mkdir(os.path.join(self.cfg, "sessions"))
         self.alive = {"11"}
-        for mod, name, val in ((lp, "_av_registry_sig", _REAL_SIG), (lp.claude_roots, "pid_alive", lambda pid: str(pid) in self.alive),
-                               (lp, "_av_accounts", lambda: [("", self.cfg, True)])):
+        for mod, name, val in ((la, "_av_registry_sig", _REAL_SIG), (la.claude_roots, "pid_alive", lambda pid: str(pid) in self.alive),
+                               (la, "_av_accounts", lambda: [("", self.cfg, True)])):
             p = mock.patch.object(mod, name, val)
             p.start()
             self.addCleanup(p.stop)
-        p = mock.patch.dict(lp._av_sigs, clear=True)
+        p = mock.patch.dict(la._av_sigs, clear=True)
         p.start()
         self.addCleanup(p.stop)
         self.reg(11, "s1")
@@ -208,53 +215,53 @@ class AgentViewSignatureTest(_Base):
         return self._ns
 
     def test_unchanged_signature_within_max_age_does_not_spawn(self):
-        lp.agent_view()
+        la.agent_view()
         self.reg(11, "s1", status="busy")          # status churn is not part of the signature
-        self.clock.t += lp.AGENTS_MAX_AGE - 1
-        lp.agent_view()
+        self.clock.t += la.AGENTS_MAX_AGE - 1
+        la.agent_view()
         self.assertEqual(len(self.sub.calls), 1)
 
     def test_signature_change_spawns_at_once(self):
-        lp.agent_view()
+        la.agent_view()
         self.clock.t += 1
         self.reg(11, "s2")                         # /clear: same pid, new sessionId
-        lp.agent_view()
+        la.agent_view()
         self.assertEqual(len(self.sub.calls), 2)
         self.reg(12, "s3")                         # a new session starts
-        lp.agent_view()
+        la.agent_view()
         self.assertEqual(len(self.sub.calls), 3)
         self.alive.discard("11")                   # a crash leaves the file but the pid is gone
-        lp.agent_view()
+        la.agent_view()
         self.assertEqual(len(self.sub.calls), 4)
-        lp.agent_view()
+        la.agent_view()
         self.assertEqual(len(self.sub.calls), 4)
 
     def test_max_age_spawns(self):
-        lp.agent_view()
-        self.clock.t += lp.AGENTS_MAX_AGE
-        lp.agent_view()
+        la.agent_view()
+        self.clock.t += la.AGENTS_MAX_AGE
+        la.agent_view()
         self.assertEqual(len(self.sub.calls), 2)
 
     def test_failure_backoff_kept_despite_signature_change(self):
         self.sub.outs["claude"] = _real_sp.TimeoutExpired("claude", 6)
-        self.assertIsNone(lp.agent_view())
+        self.assertIsNone(la.agent_view())
         self.reg(12, "s3")
-        self.clock.t += lp.AGENTS_FAIL_TTL - 1
-        self.assertIsNone(lp.agent_view())
+        self.clock.t += la.AGENTS_FAIL_TTL - 1
+        self.assertIsNone(la.agent_view())
         self.assertEqual(len(self.sub.calls), 1, "a signature change must not bypass the negative cache")
         self.clock.t += 2
         self.sub.outs["claude"] = "[]"
-        self.assertEqual(lp.agent_view(), {})
+        self.assertEqual(la.agent_view(), {})
         self.assertEqual(len(self.sub.calls), 2)
 
     def test_no_registry_falls_back_to_plain_ttl(self):
         shutil.rmtree(os.path.join(self.cfg, "sessions"))
-        lp.agent_view()
-        self.clock.t += lp.AGENTS_TTL - 1
-        lp.agent_view()
+        la.agent_view()
+        self.clock.t += la.AGENTS_TTL - 1
+        la.agent_view()
         self.assertEqual(len(self.sub.calls), 1)
         self.clock.t += 1
-        lp.agent_view()
+        la.agent_view()
         self.assertEqual(len(self.sub.calls), 2)
 
 

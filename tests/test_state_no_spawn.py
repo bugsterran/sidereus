@@ -11,6 +11,7 @@ from tests._load import sidereus
 
 st = sidereus("state")
 lp = sidereus("live_probe")
+la = sidereus("live_agents")
 live = sidereus("live")
 SC = sidereus("sessions_health")
 
@@ -41,15 +42,16 @@ class StateNoSpawn(unittest.TestCase):
             return rows
 
         def cards(n=50):
-            self.seen["av"] = lp.agent_view()
+            self.seen["av"] = la.agent_view()
             return []
         patches = [
             (lp, "subprocess", self.sub), (live, "subprocess", self.sub), (lp, "IS_MAC", True), (live, "IS_MAC", True),
             (lp, "warn_once", lambda *a, **k: None), (live, "warn_once", lambda *a, **k: None),
-            (lp, "bin_path", lambda n: n), (lp, "rich_env", lambda: {}), (lp, "_av_registry_sig", lambda d: None),
-            (lp, "_av_accounts", lambda: [("", "/acct", True)]), (lp, "_sid_transcript", lambda sid: ""),
+            (la, "subprocess", self.sub), (la, "warn_once", lambda *a, **k: None),
+            (la, "bin_path", lambda n: n), (la, "rich_env", lambda: {}), (la, "_av_registry_sig", lambda d: None),
+            (la, "_av_accounts", lambda: [("", "/acct", True)]), (lp, "_sid_transcript", lambda sid: ""),
             (lp, "_busy_cache", (0.0, {})), (lp, "_busy_shells", {"/r": ["7"]}), (lp, "_starts_cache", (0.0, (), None)),
-            (lp, "_av_cache", [0.0, None]), (lp, "_av_fail", [0.0]), (lp, "_av_held", {}), (lp, "_stale", {}),
+            (la, "_av_cache", [0.0, None]), (la, "_av_fail", [0.0]), (la, "_av_held", {}), (lp, "_stale", {}),
             (lp, "_ps_snap_cache", [0.0, None]), (lp, "_ps_snap_fail", [0.0, None]),
             (live, "_mon_cache", [0.0, None]), (live, "_live_cache", (0.0, set())),
             (SC, "clear_links", lambda: []),
@@ -86,7 +88,7 @@ class StateNoSpawn(unittest.TestCase):
 
     def test_stale_values_served_while_refresh_blocks(self):
         now = time.time()
-        lp._av_cache[:] = [now - 30, {"9": {"sessionId": "s1"}}]
+        la._av_cache[:] = [now - 30, {"9": {"sessionId": "s1"}}]
         lp._busy_cache = (now - 5, {"/r": True})
         live._mon_cache[:] = [now - 10, {"/t.jsonl": []}]
         t0 = time.monotonic()
@@ -98,7 +100,7 @@ class StateNoSpawn(unittest.TestCase):
         self.assertEqual(self.seen["mon"], {"/t.jsonl": []})
 
     def test_held_ps_lock_does_not_block_request(self):
-        with lp._ps_snap_lock, lp._av_lock:     # a background collector mid-spawn
+        with lp._ps_snap_lock, la._av_lock:     # a background collector mid-spawn
             t0 = time.monotonic()
             st.state()
             self.assertLess(time.monotonic() - t0, 1.0)

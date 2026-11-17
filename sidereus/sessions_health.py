@@ -9,7 +9,7 @@ from sidereus.warn import SOFT_WIN_S, WARN_TTL_S, _SOFT, _THREAD_DEAD, _WARN_LOG
 from sidereus.ident import _sid8
 from sidereus.live import (_STALE_LABEL, _STALE_SHOW_S, _sid_claim_stale, _stale, _stale_lock, agent_view,
                         mailbox_watches, sid_alive)
-from sidereus.live_probe import agent_view_unknown
+from sidereus.live_agents import agent_view_unknown
 from sidereus.ext import ext_hook_check
 from sidereus.sess_clear import clear_links
 

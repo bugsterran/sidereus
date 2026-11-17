@@ -92,9 +92,9 @@ class Refresher:
 
 
 # ★Load 105-135 on 12 CPUs (2026-11-04): /api/state stalled 30-60 s; `sample` showed 9 request threads parked on
-#   live_probe's `_ps_snap_lock`/`_av_lock` behind spawns (ps 4 s, claude agents 6 s cap). ⇒ Inside `request_path()`
+#   live_probe's `_ps_snap_lock` / live_agents' `_av_lock` behind spawns (ps 4 s, claude agents 6 s cap). ⇒ Inside `request_path()`
 #   a probe never spawns or takes those locks: it kicks one off-thread refresh per key and serves its last value.
-#   ⚠Background collectors (sessions refresh, term, live_probe._AV_BG) run outside the flag and spawn as before.
+#   ⚠Background collectors (sessions refresh, term, live_agents._AV_BG) run outside the flag and spawn as before.
 _req = threading.local()
 _PROBE_BG = Refresher()
 PROBE_ERR = {}               # probe key -> last exception its background refresh raised (kept off the thread's stderr)

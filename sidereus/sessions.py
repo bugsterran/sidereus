@@ -4,7 +4,7 @@ import re
 import threading
 import time
 from sidereus.config import DATA_DIR, IS_MAC
-from sidereus.live_probe import agent_view_unknown
+from sidereus.live_agents import agent_view_unknown
 from sidereus import claude_roots
 from sidereus.warn import warn_once
 from sidereus.transcript import EXITED, _continued, _model_label  # noqa: F401 (EXITED re-exported)

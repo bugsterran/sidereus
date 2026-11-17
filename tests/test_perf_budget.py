@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 from tests._load import sidereus  # noqa: F401  (puts the repo on sys.path)
-from sidereus import live_probe
+from sidereus import live_agents
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("perf_budget", os.path.join(os.path.dirname(HERE), "scripts", "perf_budget.py"))
@@ -70,7 +70,7 @@ class AgentsMinute(unittest.TestCase):
             json.dump({"pid": pid, "sessionId": sid, "cwd": self.d}, f)
 
     def test_unchanged_registry_one_spawn(self):
-        self.assertEqual(pb.simulate_agents(live_probe, self.d), 1.0)
+        self.assertEqual(pb.simulate_agents(live_agents, self.d), 1.0)
 
     def test_registry_change_spawns_again(self):
         done = []
@@ -79,12 +79,12 @@ class AgentsMinute(unittest.TestCase):
             if t >= 30 and not done:
                 done.append(t)
                 self._put("s2")              # /clear: same pid, new sessionId
-        self.assertEqual(pb.simulate_agents(live_probe, self.d, on_tick=tick), 2.0)
+        self.assertEqual(pb.simulate_agents(live_agents, self.d, on_tick=tick), 2.0)
 
     def test_restores_module(self):
-        before = (live_probe.time, live_probe.subprocess, live_probe._av_accounts)
-        pb.simulate_agents(live_probe, self.d, seconds=5)
-        self.assertEqual((live_probe.time, live_probe.subprocess, live_probe._av_accounts), before)
+        before = (live_agents.time, live_agents.subprocess, live_agents._av_accounts)
+        pb.simulate_agents(live_agents, self.d, seconds=5)
+        self.assertEqual((live_agents.time, live_agents.subprocess, live_agents._av_accounts), before)
 
 
 class LiveMemory(unittest.TestCase):

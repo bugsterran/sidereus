@@ -169,7 +169,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠**Unverified**: the `quota-429` soft path was checked only by AST, **never exercised through the real `_quota_loop`.**
   - Side note, not fixed: `mailbox_watches()` calls `live_cwds()` again and the failure path does not refresh the
     cache time, so `live-slow` can fire **twice in one poll**.
-- **Live sessions of another account flagged «status uncertain»** (`live_probe.agent_view`, `sessions_health`).
+- **Live sessions of another account flagged «status uncertain»** (`live_agents.agent_view`, `sessions_health`).
   - Cause: `claude agents --json` lists only the sessions of its own `CLAUDE_CONFIG_DIR`; one lookup missed every other account, so selfcheck (2) called them ghosts.
   - ⇒ One lookup per `claude_roots.accounts()` dir (dedup by realpath), merged by pid, each with its own last-good and negative cache; `agent_view_unknown()` names the failed accounts and selfcheck skips their rows.
   - ⇒ Strip shows only `BANNER_KEEP` keys, each with an action clause; every other warning goes to `health().diag` (not drawn).

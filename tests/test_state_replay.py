@@ -24,6 +24,7 @@ load()
 live = sidereus("live")
 live_cont = sidereus("live_cont")
 lp = sidereus("live_probe")
+la = sidereus("live_agents")
 sessions = sidereus("sessions")
 notes = sidereus("notes")
 otel = sidereus("otel")
@@ -76,7 +77,7 @@ def _empty_blocks(obj):
 
 
 class _FakeSub(object):
-    """subprocess stand-in for live_probe: `claude agents --json` prints that account's stdout, or the binary is missing.
+    """subprocess stand-in for live_agents: `claude agents --json` prints that account's stdout, or the binary is missing.
 
     `out` = {CLAUDE_CONFIG_DIR or None (primary): stdout or None}, or one stdout for every account."""
     TimeoutExpired = _real_sp.TimeoutExpired
@@ -122,7 +123,7 @@ class StateReplay(unittest.TestCase):
 
     def _reset_state(self):
         """Clear every per-process cache the state path reads; dicts/sets/lists restored after the case."""
-        lists = ((lp, "_av_cache", [0.0, None]), (lp, "_av_fail", [0.0]), (lp, "_live_sids", [0.0, set()]),
+        lists = ((la, "_av_cache", [0.0, None]), (la, "_av_fail", [0.0]), (lp, "_live_sids", [0.0, set()]),
                  (lp, "_live_pid_cwd", [0.0, {}]), (lp, "_sid_file", [0.0, {}]), (lp, "_sid_stale", [0.0, {}]),
                  (lp, "_ps_snap_cache", [0.0, None]), (lp, "_ps_snap_fail", [0.0, None]),
                  (agents, "_BOOT", [NOW - 86400]), (live, "_live_retired", [set()]))
@@ -130,7 +131,7 @@ class StateReplay(unittest.TestCase):
             cur = getattr(mod, name)
             self.addCleanup(cur.__setitem__, slice(None), list(cur))
             cur[:] = init
-        for mod, name in ((lp, "_av_sigs"), (lp, "_av_acct"), (lp, "_av_unknown"), (lp, "_stale"),
+        for mod, name in ((la, "_av_sigs"), (la, "_av_acct"), (la, "_av_unknown"), (lp, "_stale"),
                           (agents, "_AGENT_META"), (bgtasks, "_bg_offset"), (bgp, "_bg_open"),
                           (bgp, "_bg_open_at"), (bgp, "_bg_seeded"), (bgp, "_bg_finished")):
             cur = getattr(mod, name)
@@ -151,7 +152,7 @@ class StateReplay(unittest.TestCase):
         for a in accs:
             ad = os.path.join(tmp, ".claude-" + a["label"])
             os.makedirs(os.path.join(ad, "projects"))
-            # A case account is signed in: live_probe skips a config dir without .claude.json (CLI never ran there).
+            # A case account is signed in: live_agents skips a config dir without .claude.json (CLI never ran there).
             with open(os.path.join(ad, ".claude.json"), "w", encoding="utf-8") as f:
                 f.write("{}")
             dirs[a["label"]] = ad
@@ -210,10 +211,13 @@ class StateReplay(unittest.TestCase):
             self._patch(mod, "warn_once", lambda *a, **k: None)
         self._patch(live, "_live_pid_cwds", lambda pids: {p: pcwd[p] for p in pids if p in pcwd})
         self._patch(lp, "subprocess", _FakeSub(out))
-        self._patch(lp, "bin_path", lambda n: "claude")
-        self._patch(lp, "bin_forget", lambda n: None)        # ⚠in-memory only, stubbed so no real cache is touched
-        self._patch(lp, "rich_env", lambda: {"PATH": "/usr/bin"})
+        self._patch(la, "subprocess", _FakeSub(out))
+        self._patch(la, "warn_once", lambda *a, **k: None)
+        self._patch(la, "bin_path", lambda n: "claude")
+        self._patch(la, "bin_forget", lambda n: None)        # ⚠in-memory only, stubbed so no real cache is touched
+        self._patch(la, "rich_env", lambda: {"PATH": "/usr/bin"})
         self._patch(lp, "_slow_why", lambda: [])
+        self._patch(la, "_slow_why", lambda: [])
         self._patch(claude_roots, "pid_alive", lambda pid: str(pid) in alive)   # read by registry_sig
         busy = case.get("busy")
         self._patch(lp, "tool_busy", lambda ttl=2: busy)
@@ -235,7 +239,7 @@ class StateReplay(unittest.TestCase):
         name = os.path.basename(d)
         by_fp = {v: k for k, v in fps.items()}
         got = {}
-        with _clock.frozen(sessions, notes, otel, live, lp, bgtasks, bgp, agents, transcript, claude_roots):
+        with _clock.frozen(sessions, notes, otel, live, lp, la, bgtasks, bgp, agents, transcript, claude_roots):
             lv = live.live_cwds(ttl=0)
             # ⚠same decision as sessions._sessions: blind accounts off macOS, then _live_slot over newest-first rows
             blind = sessions.agent_view_unknown() if case.get("os", "mac") != "mac" else set()

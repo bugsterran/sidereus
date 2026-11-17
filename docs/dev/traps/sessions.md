@@ -346,7 +346,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 ## Background job's open question shows as ended while `claude agents` times out (`live._live_held`)
 
 - Cause: a bg job's argv is `--resume OLD.jsonl`; with its account's official lookup unknown, the argv guess bound the pid to OLD, the live sid lost the same-cwd path slot to a newer transcript and `_live_slot` forced `done` (attention drops `ask` on done).
-- ⇒ `live_probe._av_held` keeps each account's last successful answer; while that account is unknown, `_live_held` reuses its pid -> sessionId pairs only for pids still in the ps snapshot with the argv they had when an answer named them (ps has no start time). Test `tests/test_attention_bg_ask_r2.py`.
+- ⇒ `live_agents._av_held` keeps each account's last successful answer; while that account is unknown, `_live_held` reuses its pid -> sessionId pairs only for pids still in the ps snapshot with the argv they had when an answer named them (ps has no start time). Test `tests/test_attention_bg_ask_r2.py`.
 - ⚠A pid that left the snapshot or changed argv is dropped for good; an account that answered is never second-guessed. ⚠Do not loosen `stale` in `_live_slot` instead (dead-session ghosts). ⚠Known gap: a bg job started during the outage was never in an answer and still falls to the argv guess.
 
 ## `claude -c` after /exit reads EXITED until the first new line (`live_cont._cont_claim`)
@@ -356,13 +356,13 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Do not change the EXITED branch of `_live_slot` / `transcript._continued` instead (a dead /exit file would hold the slot forever). ⚠Known gap: ps has no start time — a `-c` pid first seen after a newer same-cwd session exited claims that newer sid.
 - ⚠Known gap: the newest-transcript lookup spans every account root, so a `-c` pid the official answer misses can claim another account's newer same-cwd sid. Left as is: binding a pid to its account needs process-env inspection.
 
-## `claude agents --json` exit code ignored made every open session read ended (`live_probe._av_fetch`)
+## `claude agents --json` exit code ignored made every open session read ended (`live_agents._av_fetch`)
 
 - Cause: a non-zero exit with empty stdout parsed as `[]` = «no sessions», so off macOS (no ps fallback) every open row ended.
 - ⇒ `returncode != 0` raises into the failure branch: negative cache + held last answer, else unknown (`None`). Test `tests/test_live_probe.py` (`test_nonzero_exit_is_unknown_not_empty`).
 - ⚠Do not map a failed lookup to `{}` — empty means «answered, none running»; unknown must stay `None`.
 
-## `claude agents --json` wrote into a never-used account folder (`live_probe._av_accounts`)
+## `claude agents --json` wrote into a never-used account folder (`live_agents._av_accounts`)
 
 - Cause: an extra account with `projects/` but no `.claude.json` was still asked with `CLAUDE_CONFIG_DIR=<dir>`; the CLI creates `.claude.json` and `backups/` there (★2026-11-17: an empty dir got a 304 B `.claude.json` + one backup, answer `[]`), and the new file then makes `claude_roots` treat a registry folder as signed in.
 - ⇒ `_av_accounts` leaves out an extra dir where `_av_signed_in(d)` is false: not called, not ok, not unknown. Tests `tests/test_agent_view_accounts.py` (`test_never_signed_in_dir_*`).
