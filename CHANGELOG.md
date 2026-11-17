@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-17
+
+### Fixed
+
+- Attention: «Stopped by limit», «Cut by external cause» and «Cause needs a look» cards go to the row of the session that hit them, so its resume clears them instead of the card waiting out its 30 minutes on the newest row of the folder.
+- Attention: a single failure alert names its kind in English too («Stopped by limit», «Half-edited files», ...) instead of a bare «Failure alert», on screen and in the `sidereus_attention` reason; several still fold to «Failure alert (n)».
+- Branches: a folder that becomes a repository after it was first seen (`git init`, clone) now reaches the repository picker within 30 seconds instead of only after a restart.
+- Sessions: a session in a subfolder picks up its project name within 30 seconds after a `git init` or clone above it, instead of keeping the folder name until a restart.
+- Branches: a repository reached both through a symlink and through its real path is listed once in the repository picker.
+- Conflicts: pi edits given as a path relative to the session's folder now get a file owner, like absolute ones; on Windows a `C:\...` pi path is read as absolute.
+- Conflicts: files edited by pi `subagent` children now count for file ownership as their own units labelled with the child agent, including after a restart on long pi sessions.
+- Branches: the HEAD branch chip ends with an ellipsis when it is cut, and a commit's sha and age in the side pane stay on one line.
+- Branches: a worktree file row with several owner chips wraps the chips instead of squeezing the path to nothing in the side pane.
+
 ## [0.20.0] - 2026-11-16
 
 **Highlights**
@@ -1100,7 +1114,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - launchd labels default to neutral `io.sidereus.*`, overridable per install (`launchd_labels` in `config.local.json`).
 - Optional hook `hooks/file_peers_notice.py` (PreToolUse, Edit/Write): one metadata line when another live session recently edited the file; never blocks. Enable steps in GETTING-STARTED.
 
-[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/bugsterran/sidereus/compare/v0.21.0...HEAD
+[0.21.0]: https://github.com/bugsterran/sidereus/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/bugsterran/sidereus/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/bugsterran/sidereus/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/bugsterran/sidereus/compare/v0.17.0...v0.18.0
