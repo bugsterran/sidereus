@@ -32,6 +32,10 @@ function featsApply(f){
   if(mainView === 'pipe') try{ plPaint(); }catch(e){ softErr('featsPipe', e); }
   try{ paintCfg(); }catch(e){ softErr('featsCfg', e); }   // no-op while Settings is closed
 }
+// Reconnected: a shown Timeline error note (tlErr, 70) would otherwise wait for tlAuto, or forever under «Manual».
+function pollReconnTl(){
+  if(tlErr && mainView === 'time' && !document.hidden) try{ loadTl(true); }catch(e){ softErr('pollReconnTl', e); }
+}
 async function poll(first){
   if(pollBusy && !first){   // Previous request not finished — skip this tick; a long wait refreshes «Data delayed» (60)
     // ⚠Also while CONN.slow: a timed-out poll resets pend, so the age froze for the first SB_POLL_SLOW_MS of the next request.
@@ -60,7 +64,7 @@ async function poll(first){
     SRVLOAD = s && s.srvLoad && typeof s.srvLoad === 'object' ? s.srvLoad : null;   // absent on an old server
     document.documentElement.classList.remove('agstale');
     document.getElementById('dot').classList.remove('off');
-    if(wasDown) loadWku(true);     // token figures were held from before the outage — refresh them now, not 30s later
+    if(wasDown){ loadWku(true); pollReconnTl(); }     // token figures and a Timeline error note were held from before the outage — refresh now
     if(s.cfg&&Array.isArray(s.cfg.stripPrefixes)) STRIP_PREFIXES=s.cfg.stripPrefixes;
     if(s.cfg) CFG = s.cfg;
     if(s.cfg) termCfg(s.cfg.termApp);   // «Terminal link» setting (88d-term.js)

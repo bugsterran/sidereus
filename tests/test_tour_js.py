@@ -24,7 +24,7 @@ const R = {};
 
 
 def run(body):
-    fns = "".join(js_fn(n) + "\n" for n in ("tourPlan", "tourShouldAuto", "tourPluginLines", "tourStepper", "tourBody", "tourEnd", "tourClick", "tourPlEdit", "plNowShown", "demoCmd", "tourEditExists", "tourNowFolded"))
+    fns = "".join(js_fn(n) + "\n" for n in ("tourPlan", "tourShouldAuto", "tourPluginLines", "tourStepper", "tourBody", "tourEnd", "tourClick", "tourPlEdit", "plNowShown", "demoCmd", "tourEditExists", "tourNewExists", "tourNowFolded"))
     code = STUB + STEPS + "\n" + KEY + "\n" + fns + body + "\nprocess.stdout.write(JSON.stringify(R));"
     r = subprocess.run(node_e(code), capture_output=True, text=True, timeout=20, encoding="utf-8")
     if r.returncode != 0:
@@ -55,11 +55,12 @@ R.nostrip = tourPlan({}, noStrip, 2).find(p => p.id === 'pl-live');
 R.nostripBody = tourBody(R.nostrip, '').h;
 R.liveSpot = tourBody({id: 'pl-live', mode: 'spot'}, '');
 var plNowFolded = () => true; R.liveFolded = tourBody({id: 'pl-live', mode: 'spot'}, ''); plNowFolded = () => false;   // under 1000px: dot rail
-let editEl = {};   // «Edit» in the DOM; null = no project picked
-document = {querySelector: s => s === '[data-plmode=edit]:not([disabled])' ? editEl : null};
+let editEl = {}, newEl = null;   // «Edit» / «+ New ▾» in the DOM; both null = no project picked
+document = {querySelector: s => s === '[data-plmode=edit]:not([disabled])' ? editEl : s === '[data-plnewm]' ? newEl : null};
 R.startSpot = tourBody({id: 'pl-start', mode: 'spot'}, '').h;
 R.startOff = tourBody({id: 'pl-start', mode: 'centre'}, '').h;   // present but off screen
-editEl = null; R.startMiss = tourBody({id: 'pl-start', mode: 'centre'}, '').h;
+editEl = null; newEl = {}; R.startNew = tourBody({id: 'pl-start', mode: 'spot'}, '').h;   // no pipeline / Edit / workflow / borrowed
+newEl = null; R.startMiss = tourBody({id: 'pl-start', mode: 'centre'}, '').h;
 R.missing = tourPlan({}, none, 2).map(p => p.mode);
 R.auto = {first: tourShouldAuto(false, false, ''), done: tourShouldAuto(true, false, ''), wd: tourShouldAuto(false, true, ''),
           q0: tourShouldAuto(false, false, '?tour=0'), q1: tourShouldAuto(true, true, '?tour=1')};
@@ -140,6 +141,19 @@ R.finish = {writes: writes.slice(), tabs: tabs.slice(), hidden: root.hidden};
         # «Edit» exists but is outside the viewport (centred bubble): the text still says to press it.
         self.assertIn("«편집» 을 누른 뒤", self.R["startOff"])
         self.assertNotIn("프로젝트를 고르거나 여세요", self.R["startOff"])
+
+    def test_pl_start_new_only_opens_new_menu(self):
+        # Only «+ New ▾» drawn (48 plBody: no pipeline, Edit open, workflow, borrowed): open it, no «Edit», no project picker.
+        self.assertIn("«+ 새로 만들기 ▾» 를 열고", self.R["startNew"])
+        self.assertNotIn("편집", self.R["startNew"])
+        self.assertNotIn("프로젝트를 고르거나 여세요", self.R["startNew"])
+
+    def test_tour_go_switches_tab_both_ways(self):
+        # Back from Structure must return to Pipelines: no forward-only guard before setMainView.
+        go = js_fn("tourGo")
+        self.assertRegex(go, r"^function tourGo\(i\)")
+        self.assertNotIn("fwd", go)
+        self.assertIn("setMainView(st.tab)", go)
 
     def test_missing_targets_all_centred(self):
         self.assertEqual(set(self.R["missing"]), {"centre"})
@@ -236,6 +250,11 @@ class TourDrift(unittest.TestCase):
     def test_step_selectors_are_built_by_the_page(self):
         sels = re.findall(r"\b(?:sel|also): '([^']+)'", STEPS)
         self.assertGreaterEqual(len(sels), 4)
+        # Step 4 spotlights the Architecture head row (drawn by every arch state via 80 head()), not the whole body.
+        self.assertIn(".archtab .strh", sels)
+        self.assertNotIn(".archtab", sels)
+        self.assertRegex(self.code, r"'<div class=\"strtab archtab\">' \+ head\(")
+        self.assertRegex(self.code, r"class=\"wvh wvht strh\"")
         for sel in sels:
             for kind, name in re.findall(r"([#.]|\[)([\w-]+)", sel):
                 if kind == "#":

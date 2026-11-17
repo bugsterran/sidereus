@@ -1,13 +1,13 @@
 // First-visit coach-mark tour (six steps over the live screen). Pipeline steps are the centrepiece (accent badge, richer bubble).
 //   ⚠Never scrolls (no scrollIntoView/scrollTo): a target outside the viewport counts as missing and the step is centred.
-//   ⚠Tabs change only on «Next»; the tab open before the tour is restored on finish/skip.
+//   ⚠Next and Back both switch to the step's tab; the tab open before the tour is restored on finish/skip.
 //   ⚠Commands are copy-only — Sidereus never spawns a process (AGENTS.md rule 7).
 // Pipelines lead (first screen); Timeline comes last as the evidence view.
 const TOUR_STEPS = [
   {id: 'pl-what',  feat: 'pipeline', pl: 1},
   {id: 'pl-live',  tab: 'pipe',   sel: '#feed .plnl', feat: 'pipeline', pl: 1},   // ⚠block root only — its inner classes change
-  {id: 'pl-start', tab: 'pipe',   sel: '[data-plmode=edit]:not([disabled]), [data-plnewm]', feat: 'pipeline', pl: 1},   // ⚠«+ New ▾» exists only in Edit: Watch spotlights «Edit»
-  {id: 'arch',     tab: 'struct', sel: '.archtab'},   // ⚠never calls setStrMode — the user's structure mode stays
+  {id: 'pl-start', tab: 'pipe',   sel: '[data-plmode=edit]:not([disabled]), [data-plnewm]', feat: 'pipeline', pl: 1},   // ⚠Watch has «Edit» but no «+ New ▾»; no pipeline / Edit / workflow / borrowed rows have «+ New ▾» only
+  {id: 'arch',     tab: 'struct', sel: '.archtab .strh'},   // head row (every arch state draws it): the whole .archtab left no room for the bubble · ⚠never calls setStrMode
   {id: 'time',     tab: 'time',   sel: '#feed .tlr.tlrs'},
   {id: 'done'},
 ];
@@ -78,8 +78,9 @@ function tourBody(p, dir){
   if(p.id === 'pl-live') return {t: 'Working now', h: (p.mode === 'spot' ? '' : tourStepper())
     + P(tourNowFolded() ? 'The dots on the left are the sessions at work right now — hover one for its run and stage, click it (or «›» «Expand list») to open the list'
       : '«Working now» on the left lists the sessions at work right now, each with its run and stage — click one to open its pipeline run')};
-  // ⚠No project picked (first run): «Edit» is missing, so the text points at the project picker instead.
-  //   Decided by DOM presence, not p.mode: an «Edit» that exists but is off screen is centred yet still pressable.
+  // ⚠Decided by DOM presence, not p.mode: a target that exists but is off screen is centred yet still pressable.
+  //   «+ New ▾» without «Edit» (no pipeline, Edit open, workflow, borrowed) ⇒ open it directly; neither ⇒ no project picked yet.
+  if(p.id === 'pl-start' && !tourEditExists() && tourNewExists()) return {t: 'Your first pipeline', h: P('Open «+ New ▾» and start with «Start from a template» › «Review only» (2 stages) · if writing one is hard, pick «Ask AI for a draft» there')};
   if(p.id === 'pl-start' && !tourEditExists()) return {t: 'Your first pipeline', h: P('Pick or open a project in the Pipelines head row first — then «Edit» › «+ New ▾» starts your first pipeline')};
   if(p.id === 'pl-start') return {t: 'Your first pipeline', h: P('Press «Edit», then open «+ New ▾» and start with «Start from a template» › «Review only» (2 stages) · if writing one is hard, pick «Ask AI for a draft» there')};
   if(p.id === 'arch') return {t: 'Structure › Architecture', h: P('Architecture — a module diagram drawn by an agent; only edges that pass the evidence check remain')};
@@ -90,6 +91,7 @@ function tourHas(sel){ return !!tourRect(sel); }
 // Under 1000px the list is a dot rail (48j plNowFolded), so step 'pl-live' describes the dots instead.
 function tourNowFolded(){ try{ return typeof plNowFolded === 'function' && plNowFolded(); }catch(e){ softErr('tourNowFold', e); return false; } }
 function tourEditExists(){ try{ return !!document.querySelector('[data-plmode=edit]:not([disabled])'); }catch(e){ softErr('tourEdit', e); return false; } }
+function tourNewExists(){ try{ return !!document.querySelector('[data-plnewm]'); }catch(e){ softErr('tourNew', e); return false; } }
 // ⚠48k plNowShown, not !plWatchOn: no pipeline yet (first run) or the workflow view still shows the list.
 function tourPlEdit(){ try{ return typeof plNowShown === 'function' && !plNowShown(); }catch(e){ softErr('tourPlMode', e); return false; } }
 function tourCur(){
@@ -136,11 +138,11 @@ function tourPaint(){
   const f = bub.querySelector('[data-tour="' + fk + '"]') || bub.querySelector('[data-tour=next]');
   if(f) f.focus({preventScroll: true});
 }
-function tourGo(i, fwd){
+function tourGo(i){
   if(i < 0 || i >= tourList.length) return;
   tourI = i;
   const st = TOUR_STEPS.find(s => s.id === tourList[i].id);
-  if(fwd && st && st.tab && mainView !== st.tab) try{ setMainView(st.tab); }catch(e){ softErr('tourTab', e); }
+  if(st && st.tab && mainView !== st.tab) try{ setMainView(st.tab); }catch(e){ softErr('tourTab', e); }
   tourSpot = undefined;   // force a full paint for the new step
   tourPaint();
 }
@@ -161,7 +163,7 @@ function tourOpen(i){
   tourList = tourPlan(FEATS, tourHas, (SESS || []).length, tourPlEdit());
   root.hidden = false;
   clearInterval(tourTimer); tourTimer = setInterval(tourPlace, 400);   // polls re-render targets every 2.5s
-  tourGo(Math.max(0, Math.min(i || 0, tourList.length - 1)), false);
+  tourGo(Math.max(0, Math.min(i || 0, tourList.length - 1)));
 }
 function tourEnd(){
   const root = document.getElementById('tour'); if(!root || root.hidden) return;
@@ -181,9 +183,9 @@ function tourClick(e){
   const b = e.target.closest('[data-tour]'); if(!b) return;
   const a = b.dataset.tour;
   if(a === 'skip') tourEnd();
-  else if(a === 'prev') tourGo(tourI - 1, false);
+  else if(a === 'prev') tourGo(tourI - 1);
   else if(tourI >= tourList.length - 1) tourEnd();
-  else tourGo(tourI + 1, true);
+  else tourGo(tourI + 1);
 }
 // ⚠Window capture runs before the document-level handlers (08-ui-kit Esc, 98-a11y shortcuts, ⌘K) — the tour owns the keyboard.
 addEventListener('keydown', e => {
@@ -191,8 +193,8 @@ addEventListener('keydown', e => {
   const bub = document.querySelector('#tour .tourbub'), k = e.key;
   e.stopPropagation();
   if(k === 'Escape'){ e.preventDefault(); tourEnd(); return; }
-  if(k === 'ArrowRight'){ e.preventDefault(); if(tourI < tourList.length - 1) tourGo(tourI + 1, true); return; }
-  if(k === 'ArrowLeft'){ e.preventDefault(); tourGo(tourI - 1, false); return; }
+  if(k === 'ArrowRight'){ e.preventDefault(); if(tourI < tourList.length - 1) tourGo(tourI + 1); return; }
+  if(k === 'ArrowLeft'){ e.preventDefault(); tourGo(tourI - 1); return; }
   if(k === 'Tab'){
     e.preventDefault();
     const fs = [...bub.querySelectorAll('button')], n = fs.length, j = fs.indexOf(document.activeElement);

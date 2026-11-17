@@ -151,6 +151,9 @@ class StateReplay(unittest.TestCase):
         for a in accs:
             ad = os.path.join(tmp, ".claude-" + a["label"])
             os.makedirs(os.path.join(ad, "projects"))
+            # A case account is signed in: live_probe skips a config dir without .claude.json (CLI never ran there).
+            with open(os.path.join(ad, ".claude.json"), "w", encoding="utf-8") as f:
+                f.write("{}")
             dirs[a["label"]] = ad
             rows.append({"dir": ad, "label": a["label"], "primary": bool(a.get("primary"))})
         by_real = {os.path.realpath(r["dir"]): r for r in rows}

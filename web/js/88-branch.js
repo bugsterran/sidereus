@@ -78,7 +78,7 @@ function loadBr(force){
   if(!brRepo){
     // ★Before the first state arrives, "no repo" flashed for 1-2 s (2026-09-23) — stay in loading; poll() calls back.
     if(!STATE_IN){ BR = null; return paintBr(); }
-    BR = { ok: false, msg: T('No git repository in the session list yet') };
+    BR = { ok: false, empty: true, msg: T('No git repository in the session list yet') };   // empty = neutral note, not an error (BR is replaced once a repo loads)
     // Right after boot `SESS` is empty — look once more (not polling)
     if(!brRetry){ brRetry = 1; setTimeout(() => { if(mainView === 'br') loadBr(force); }, 1200); }
     return paintBr();
@@ -133,7 +133,8 @@ function brStatusHtml(){
   if(brBusy || !BR) return '<div class=brtab>' + brHeadHtml(esc(T('Loading…')))
       + '<div class=strload><b>' + esc(T('Reading branches…')) + '</b><br>' + esc(T('Up to 80 commits are scanned.')) + '</div></div>';
   return '<div class=brtab>' + brHeadHtml('')
-      + '<div class="tlhd cwerr">' + esc(BR.msg || T('Not ready yet')) + '</div></div>';
+      + (BR.empty ? '<div class=hidnote>' + esc(BR.msg) + '</div></div>'
+        : '<div class="tlhd cwerr">' + esc(BR.msg || T('Not ready yet')) + '</div></div>');
 }
 function brDetachedHtml(){
   if(BR.unborn) return '<div class=strpnw>' + esc(T('Empty repository')) + ' — ' + esc(T('no commits yet')) + '</div>';

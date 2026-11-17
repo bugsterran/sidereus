@@ -12,6 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Mailbox: an empty room says «no messages yet» instead of «No messages match.» when no search is on.
 - Settings: the pi «Connect» row names the folder or file that is actually a symlink, not always `mcp.json`.
 - Sessions: the session-liveness lookup no longer runs `claude agents --json` in an extra account folder that Claude Code has never run in; the CLI wrote `.claude.json` and `backups/` there, and the new file made that folder count as signed in.
+- Tour: the «Your first pipeline» step tells you to open «+ New ▾» when that button is already on screen instead of asking you to pick a project first, «Back» returns to the step's own tab, and the Structure step points at the view's head row so its bubble no longer covers the whole view.
+- Timeline: after the connection comes back, «Could not fetch — showing the last data received» clears at once instead of waiting for the next refresh (never, with «Manual»).
+- Branches: with no repository yet, the empty note is grey like the other tabs' empty states instead of red error text.
 
 ### Fixed
 
