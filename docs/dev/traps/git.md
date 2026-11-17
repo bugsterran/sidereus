@@ -88,6 +88,10 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   ⇒ Hits stay in `_GITROOT`/`_PROJ_ROOT` (no TTL); a miss goes to `_GITROOT_MISS`/`_PROJ_MISS` stamped with a
   30 s monotonic bucket (`GITROOT_MISS_TTL`/`PROJ_MISS_TTL`). `tests/test_gitinfo_root_symlink.py` · `tests/test_proj_root.py`.
   ⚠Do not drop either miss cache, and do not make it permanent.
+- ★**A late `git init` reached an idle session's row after 229.9 s, not 30 s — `session_repos` cache hit · `brPoll`**
+  Cause: a hit on unchanged transcript mtime returned cached roots without re-asking `_git_root(cwd)`; an open Branches tab retried «No git repository» only once.
+  ⇒ A hit whose cached own root is empty re-asks `_git_root(cwd)` and puts it first; `brPoll` calls `loadBr` while `brRepo` is empty. `tests/test_session_repos_late_init.py` · `tests/test_branch_poll_js.py`.
+  ⚠Do not change `GIT_NOREPO_TTL` (300 s) for this, and do not let `brPoll` fetch once a repo is chosen.
 - ★**Session repo roots dedupe by realpath in `session_repos` only (`_drop_same`)**
   ⚠Not in `_git_root`/`ident._git_walk` — callers rely on symlink-prefixed paths; the kept string is the cwd's spelling.
 - ★**`pi_abs_path` joins a relative path to any absolute cwd**

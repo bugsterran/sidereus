@@ -200,7 +200,7 @@ def git_branch(cwd, fallback=""):
 #   So **paths actually touched in the transcript** are collected and folded into git roots.
 #   No config list: where a session touched is already in its trace, and hand-written lists
 #   go stale. The security condition holds too — **paths never touched cannot be opened.**
-_REPO_CACHE = {}          # transcript path -> (mtime, [git roots]), LRU order (oldest first)
+_REPO_CACHE = {}          # transcript path -> (mtime, [git roots], offset, recent, cwd's own root), LRU order (oldest first)
 _REPO_CACHE_MAX = 128
 # Home parent comes from expanduser (`/Users` on macOS, `/home` on Linux); on macOS the pattern is byte-identical to the old literal.
 def _path_re(base, win=os.sep == "\\"):
@@ -348,6 +348,15 @@ def session_repos(fp, mt, cwd):
     #   threw out stable sessions too, forcing 1.5MB tail re-reads (~11ms each, 322ms spikes with 5 active).
     hit = _REPO_CACHE.pop(fp, None)
     if hit is not None and hit[0] == mt:
+        # ⚠An idle session's mtime never changes, so a cwd that became a repo later (`git init`) must be re-asked
+        #   here or the row keeps repos=[] until the next write; _git_root's 30 s miss cache keeps this cheap.
+        if cwd and not hit[4]:
+            own = _git_root(cwd)
+            if own:
+                roots = list(hit[1])
+                _drop_same(roots, own, {})
+                roots.insert(0, own)
+                hit = (mt, roots[:8], hit[2], hit[3], own)
         _REPO_CACHE[fp] = hit                # reinsert = most recently used
         return hit[1]
     # ⚠Incremental, not a tail window: a 1.5MB tail dropped repos edited earlier in a 27MB transcript.
@@ -378,7 +387,7 @@ def session_repos(fp, mt, cwd):
     roots = roots[:8]                        # cap — a longer list is harder to choose from
     while len(_REPO_CACHE) >= _REPO_CACHE_MAX:
         _REPO_CACHE.pop(next(iter(_REPO_CACHE)), None)   # least recently used
-    _REPO_CACHE[fp] = (mt, roots, offset, recent)
+    _REPO_CACHE[fp] = (mt, roots, offset, recent, own)
     return roots
 
 

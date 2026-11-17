@@ -60,6 +60,12 @@ function brLanes(commits){
 let brWaitN = 0;
 const brBad = new Set();   // repos that answered 400/403 this page load — never fallen back to twice (no ping-pong)
 function brForget(p){ if(tabGet('mbBrRepo', '') === p) tabDel('mbBrRepo'); }
+// Per poll: an open tab left on «No git repository» picks up a repo that appeared later (loadBr's own retry runs once).
+// ⚠Only while brRepo is empty — once a repo is chosen this never fetches again (/api/branches forks git).
+function brPoll(){
+  if(mainView !== 'br' || ISPOP || ISWP || brRepo || brBusy) return;
+  if(brRepos().length) loadBr(false);
+}
 // ⚠Read the body **regardless of status code** — 403 (not in list) and 400 (missing path) carry the reason in the body.
 function loadBr(force){
   // ⚠A saved repo is checked against the session list before any fetch — a stale one (repo gone, session closed) used to 400 on every load.

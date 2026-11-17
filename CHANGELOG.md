@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Branches: a `git init` above an idle session's folder now reaches the repository picker within 30 seconds too (it waited for the session's next write, 230 s in a sweep), and an open Branches tab left on «No git repository in the session list yet» loads the repository as soon as one appears instead of only after a reload.
+
 ## [0.21.0] - 2026-11-17
 
 ### Fixed
