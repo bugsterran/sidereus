@@ -51,7 +51,9 @@ html[data-ui=next] .nxr{display:grid;grid-template-columns:10px minmax(0,1fr) 60
 html[data-ui=next] .nxr:hover{background:var(--nx-hover)}
 html[data-ui=next] .nxr.nxh{border-top:0;padding-top:0;font-size:11px;color:var(--nx-t3)}
 html[data-ui=next] .nxr.nxh:hover{background:none}
-html[data-ui=next] .nxr.nxrm{grid-template-columns:minmax(0,1fr) auto 40px}
+/* ⚠An `auto` owner column never shrank: a long owner id pushed the room name to 0 px and overflowed .pside */
+html[data-ui=next] .nxr.nxrm{grid-template-columns:minmax(80px,1fr) minmax(0,max-content) 40px}
+html[data-ui=next] .nxr.nxrm > .nxm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-ui=next] .nxr.nxrm.on{box-shadow:inset 2px 0 0 var(--nx-info)}
 html[data-ui=next] .nxn{min-width:0}
 html[data-ui=next] .nxn :is(b,small){display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

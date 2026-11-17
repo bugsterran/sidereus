@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Tools: flag chips («duplicate», «similar», «unused») wrap instead of hiding behind an ellipsis, and long paths wrap so the file name at the end stays visible.
+- Mailbox: a long room owner id no longer pushes the room name out of the Participants panel, and every member in the room header shrinks with its own ellipsis instead of earlier ones hiding the rest.
+- Mailbox: an empty room says «no messages yet» instead of «No messages match.» when no search is on.
+- Settings: the pi «Connect» row names the folder or file that is actually a symlink, not always `mcp.json`.
+
+### Fixed
+
 - Branches: a `git init` above an idle session's folder now reaches the repository picker within 30 seconds too (it waited for the session's next write, 230 s in a sweep), and an open Branches tab left on «No git repository in the session list yet» loads the repository as soon as one appears instead of only after a reload.
 
 ## [0.21.0] - 2026-11-17

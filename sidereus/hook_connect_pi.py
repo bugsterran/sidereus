@@ -249,7 +249,10 @@ def row():
         can, why = False, hc.SYMLINK
     elif can and want is None:
         can, why = False, "no ext-hooks"
-    out = {"plat": PLAT, "name": plat_pi.NAME, "state": state, "file": hc._shown(fs["mcp"]), "can": can, "why": why,
+    # ⚠A symlink refusal names the linked path (mcp.json, the extension file or its folder), not always mcp.json.
+    shown = next((p for p in (fs["mcp"], fs["ts"], os.path.dirname(fs["ts"])) if os.path.islink(p)), fs["mcp"]) \
+        if why == hc.SYMLINK else fs["mcp"]
+    out = {"plat": PLAT, "name": plat_pi.NAME, "state": state, "file": hc._shown(shown), "can": can, "why": why,
            "approve": ""}
     if hc._ev(why):
         out["vars"] = hc._ev(why)

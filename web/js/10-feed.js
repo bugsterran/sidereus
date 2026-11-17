@@ -272,7 +272,8 @@ function full(){                      // full re-render only when filters/sort c
   const stubs=q ? MSGS.filter(m => m.stub) : MSGS.filter(m => m.stub && (par.has(m.id) || list.includes(m)));   // search needs every body
   if(stubs.length) hydrate(stubs).then(n => { if(n){ const stick=atBottom(); full(); if(stick) toBottom(false); } });
   document.getElementById('cnt').textContent=cntText(all.length, hidden ? list.length : 0);
-  if(!all.length){ feed.innerHTML='<div class=empty>'+T('No messages match.')+'</div>'; return; }
+  // An empty room with no search is "no messages yet" (same words as its card), not a failed match.
+  if(!all.length){ feed.innerHTML='<div class=empty>'+T(q ? 'No messages match.' : 'no messages yet')+'</div>'; return; }
   let h='';
   // ★The button is not shown from the start (2026-08-21) — it appears when scrolling up **reaches the end**.
   //   Normally only recent conversation shows cleanly; the option appears only when you mean to go back.

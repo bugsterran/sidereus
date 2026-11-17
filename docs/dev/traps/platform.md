@@ -345,3 +345,5 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - Cause: the first read of a transcript takes its last `FO_FIRST_BYTES` (1 MB), and a pi `subagent` result line embeds the child transcript (~0.5 MB), so after a restart every child edit before the last two lines was missed (★live 4.9 MB transcript: 2 of 17 files owned).
 - ⇒ pi session files get their own first-read window `FO_FIRST_BYTES_PI` (16 MB); Claude transcripts keep 1 MB. Test `test_pi_first_read_window_is_wider_than_claude`.
 - ⚠Tests that need the pi header outside the tail must shrink `FO_FIRST_BYTES_PI`, not `FO_FIRST_BYTES`.
+- ★**pi Connect row named mcp.json for any symlink refusal** — `_linked` checks mcp.json, the extension file and its folder, but the row's `file` was always mcp.json.
+  ⇒ a symlink refusal shows the first linked path (`hook_connect_pi.row`, `test_symlink_row_names_the_linked_path`).

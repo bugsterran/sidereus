@@ -287,3 +287,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ `.brf.brh` sets `display:inline-block; margin-bottom:0`. Side-pane commit rows: `.brdf[data-bpp] em` is `nowrap` + `flex:0 0 auto`, so «sha · age» never breaks mid-token (★was 39 px tall, two lines, at every width).
 - ⚠Never put that `nowrap` on bare `.brdf em`. Worktree file rows (89 `data-wkd`) hold status + ⚠ + up to 4 owner chips in the same `em`, as adjacent spans with no break point (★4 chips = 315 px: path 0 px and row overflow in the 300 px pane). ⇒ `.brdf[data-wkd] em` is a wrapping flex box, `max-width:62%` (★path 106 px, no overflow).
 - ⚠A new chip modifier must not reuse a layout class name; grep `web/css` for the bare class first.
+- ★**`.tvwt td` nowrap outranks single-class cell rules (Tools table)** — `.tvwfs{white-space:normal}` lost, so flag chips hid behind an ellipsis (58 at 900 en) and paths lost their file name at the cut.
+  ⇒ `.tvwt td.tvwp` / `.tvwt td.tvwfs` wrap (`41-tools.css`). ⚠A per-cell override needs `td.<class>` specificity.
+- ★**Header room member strip: only the last member shrank** — an earlier long id clipped mid-word and hid the rest.
+  ⇒ every `.rmw` shrinks with its own ellipsis, min 2.5em (`93-header-toolbar.css`). Participants room rows: owner column `minmax(0,max-content)`, name ≥ 80px (`90-main-ui.css`).

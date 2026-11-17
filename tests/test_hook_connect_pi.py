@@ -165,6 +165,17 @@ class HookConnectPi(unittest.TestCase):
         self.assertEqual(HP.connect({"plat": "pi", "dry": True})[0], 400)
         self.assertEqual(os.listdir(ext), [])
 
+    def test_symlink_row_names_the_linked_path(self):
+        self._put("{}")                                   # mcp.json is a regular file
+        ext = os.path.join(self.tmp, "ext")
+        os.makedirs(ext)
+        os.symlink(ext, os.path.dirname(self.files["ts"]))
+        r = HP.row()[0]
+        self.assertEqual(r["why"], HC.SYMLINK)
+        self.assertEqual(r["file"], os.path.join("~", ".pi", "agent", "extensions"))
+        os.remove(os.path.dirname(self.files["ts"]))      # no link: the row keeps naming mcp.json
+        self.assertEqual(HP.row()[0]["file"], os.path.join("~", ".pi", "agent", "mcp.json"))
+
     def test_second_write_failure_keeps_first_backup(self):
         os.makedirs(os.path.dirname(self.files["mcp"]), exist_ok=True)
         with open(self.files["mcp"], "w", encoding="utf-8") as f:

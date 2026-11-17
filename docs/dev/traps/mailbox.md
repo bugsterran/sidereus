@@ -121,3 +121,5 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★**An idle pi session dropped out of the mailbox after 1 h.** Cause: a refused wake («no»: cap, busy, pending input) ended the `pi_wake.py` waiter and only `agent_settled` re-armed it, which an idle session never fires; no waiter = no `.watch` beat, so `STALE_S` pruned the presence.
   - ⇒ On «no» the extension re-arms with argv `quiet`: the first check takes the pending mail's newest `t` as a floor; only newer mail wakes. Heartbeat and `LIFE_S` are unchanged. `agent_settled` replaces a quiet waiter with a normal one.
   - ⚠Never re-arm a normal waiter after «no»: the refused mail is still unmarked and fires again within `FIRST_S` (1 s), a loop. ⚠The floor comes from the first check, mail or not — a floor taken at a later first hit swallows new mail. Tests `test_pi_wake.test_quiet_*`, `test_pi_extension.test_R4_refused_wake_rearms_quiet`.
+- ★**An empty room read «No messages match.» with no search** — `10-feed.js` used the search-miss text for every empty list.
+  ⇒ no search = «no messages yet» (same key as the room card). ⚠Keep «No messages match.» for a search with no hits.

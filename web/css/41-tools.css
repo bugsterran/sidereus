@@ -15,6 +15,9 @@
 .tvwt .brd{max-width:none}
 .tvwt .brn{overflow:hidden;text-overflow:ellipsis}
 .tvwt .tvwp{font-family:var(--mono,monospace)}
+/* ⚠`.tvwt td` nowrap outranks single-class rules: paths wrap so the file name at the end stays visible, flag chips wrap instead of hiding */
+.tvwt td.tvwp{white-space:normal;overflow-wrap:anywhere}
+.tvwt td.tvwfs{white-space:normal}
 .tvwr{cursor:pointer}
 .tvwj{color:#6b7688}
 /* ⚠Scoped [data-ui=next][data-ui] so the 00-core twin skips it (the twin's --nx-panel hover was 1.07:1); t1 tint works on either theme */
@@ -33,7 +36,7 @@
 .tvwv{margin:8px 0 4px;border:1px solid #232c38;border-radius:7px;background:#11161e;padding:0 10px 8px}
 .tvwt td.tvwvc{white-space:normal;overflow:visible;padding:0 0 4px}
 .tvwv .brh2{margin:8px 0 6px;border-top:0;padding-top:0}
-.tvwv .brh2 i{margin-left:0;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tvwv .brh2 i{margin-left:0;flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
 .tvwx{margin-left:auto;flex:0 0 auto}
 .tvwpre{margin:0;max-height:360px;overflow:auto;font-family:var(--mono,monospace);font-size:11px;line-height:1.5;
   color:#c3ccda;white-space:pre-wrap;overflow-wrap:anywhere}
