@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Tools: flag chips («duplicate», «similar», «unused») wrap instead of hiding behind an ellipsis, and long paths wrap so the file name at the end stays visible.
-- Mailbox: a long room owner id no longer pushes the room name out of the Participants panel, and every member in the room header shrinks with its own ellipsis instead of earlier ones hiding the rest.
+- Mailbox: a long room owner id no longer pushes the room name out of the Participants panel, and members in the room header that do not fit are counted in «+N» instead of being cut off.
 - Mailbox: an empty room says «no messages yet» instead of «No messages match.» when no search is on.
 - Settings: the pi «Connect» row names the folder or file that is actually a symlink, not always `mcp.json`.
 - Sessions: the session-liveness lookup no longer runs `claude agents --json` in an extra account folder that Claude Code has never run in; the CLI wrote `.claude.json` and `backups/` there, and the new file made that folder count as signed in.
