@@ -362,6 +362,12 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ `returncode != 0` raises into the failure branch: negative cache + held last answer, else unknown (`None`). Test `tests/test_live_probe.py` (`test_nonzero_exit_is_unknown_not_empty`).
 - ⚠Do not map a failed lookup to `{}` — empty means «answered, none running»; unknown must stay `None`.
 
+## `claude agents --json` wrote into a never-used account folder (`live_probe._av_accounts`)
+
+- Cause: an extra account with `projects/` but no `.claude.json` was still asked with `CLAUDE_CONFIG_DIR=<dir>`; the CLI creates `.claude.json` and `backups/` there (★2026-11-17: an empty dir got a 304 B `.claude.json` + one backup, answer `[]`), and the new file then makes `claude_roots` treat a registry folder as signed in.
+- ⇒ `_av_accounts` leaves out an extra dir where `_av_signed_in(d)` is false: not called, not ok, not unknown. Tests `tests/test_agent_view_accounts.py` (`test_never_signed_in_dir_*`).
+- ⚠Do not count the skipped account as an empty answer: with a failed primary that would turn `None` (unknown) into `{}` (none running). The default `~/.claude` runs with the variable unset and keeps `~/.claude.json` outside, so it is not checked.
+
 ## «Compacting» marker can be orphaned or hidden (`compact_marks.compacting`)
 
 - Cause: hooks/compact_mark.py writes `compacting/<sid>.json` on PreCompact and removes it on PostCompact; a crash, kill or failed compaction never fires PostCompact and leaves the marker behind.

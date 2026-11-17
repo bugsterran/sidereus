@@ -56,7 +56,9 @@ class AgentViewAccounts(unittest.TestCase):
         self.accs = [{"dir": PRIM, "label": "main", "primary": True}]
         roots = types.SimpleNamespace(accounts=lambda: [dict(a) for a in self.accs], SCAN_HOME=HOME)
         base_env = {"PATH": "/bin", "CLAUDE_CONFIG_DIR": PRIM}
-        for name, val in (("time", self.clock), ("subprocess", self.sub), ("claude_roots", roots),
+        self.signed = {PRIM, WORK, DEFAULT}
+        for name, val in (("_av_signed_in", lambda d: d in self.signed),
+                          ("time", self.clock), ("subprocess", self.sub), ("claude_roots", roots),
                           ("warn_once", lambda key, msg, **kw: None), ("bin_path", lambda n: n),
                           ("bin_forget", lambda n: None), ("rich_env", lambda: dict(base_env)),
                           ("_slow_why", lambda: [])):
@@ -146,6 +148,21 @@ class AgentViewAccounts(unittest.TestCase):
         self.sub.outs[""] = _rows(9)
         self.assertEqual(set(lp.agent_view()), {"1", "9"})
         self.assertNotIn("CLAUDE_CONFIG_DIR", self.sub.calls[1][1])
+
+    def test_never_signed_in_dir_is_not_asked(self):
+        # The CLI would create .claude.json + backups/ in a dir it never ran in; such a dir runs nothing.
+        self.two()
+        self.signed.discard(WORK)
+        self.sub.outs[PRIM] = _rows(1)
+        self.assertEqual(set(lp.agent_view()), {"1"})
+        self.assertEqual([c[1].get("CLAUDE_CONFIG_DIR") for c in self.sub.calls], [PRIM])
+        self.assertEqual(lp.agent_view_unknown(), set())
+
+    def test_never_signed_in_dir_does_not_hide_failed_primary(self):
+        self.two()
+        self.signed.discard(WORK)
+        self.sub.outs[PRIM] = ValueError("x")
+        self.assertIsNone(lp.agent_view())                      # unknown, not a false "no sessions"
 
 
 if __name__ == "__main__":

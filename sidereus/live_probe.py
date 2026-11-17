@@ -49,8 +49,7 @@ _stale_lock = threading.Lock()
 _stale = {}                 # collector key -> (last success time, last fallback time)
 _STALE_LABEL = {"agents": "official sessions", "live": "processes", "mon": "watch processes", "busy": "tool runs"}
 _STALE_SHOW_S = 15          # show only fallbacks taken within this window (poll 2.5 s — six polls).
-#                             ⚠Without it a collector "never called again" (tool_busy is called conditionally)
-#                               stays stale forever.
+#                             ⚠Without it a collector "never called again" (tool_busy is called conditionally) stays stale forever.
 
 
 def _stale_mark(key, at):
@@ -247,6 +246,10 @@ def _av_fallback(now, cache=None):
     return None
 
 
+def _av_signed_in(d):
+    return os.path.isfile(os.path.join(d, ".claude.json"))     # CLAUDE_CONFIG_DIR=d keeps .claude.json in d
+
+
 def _av_accounts():
     """[(label, dir, primary)] deduped by realpath, primary first; just the primary when the account list fails."""
     try:
@@ -254,9 +257,11 @@ def _av_accounts():
     except Exception:
         accs = []
     out, seen = [], set()
+    deflt = os.path.realpath(os.path.join(claude_roots.SCAN_HOME, ".claude"))   # runs unset: ~/.claude.json is outside
     for a in accs:
         rd = os.path.realpath(a.get("dir") or "")
-        if rd in seen:
+        # ⚠No .claude.json = the CLI never ran there (nothing to list), and asking would create it + backups/.
+        if rd in seen or (not a.get("primary") and rd != deflt and not _av_signed_in(rd)):
             continue
         seen.add(rd)
         out.append(("" if a.get("primary") else (a.get("label") or ""), a.get("dir") or "", bool(a.get("primary"))))
@@ -267,8 +272,7 @@ def agent_view(ttl=None):
     """`claude agents --json` per account, merged → {pid(str): entry}. **None** only when every account is unknown.
 
     ★None = "could not ask" — the caller falls back to the old inference. `{}` = "no sessions running".
-    ⚠Single account: one call with today's env and caches, unchanged.
-    `ttl=None` = registry-signature mode (above); an explicit ttl is a plain TTL as before.
+    ⚠Single account: one call with today's env and caches, unchanged. `ttl=None` = registry-signature mode (above); an explicit ttl is a plain TTL as before.
     """
     accs = _av_accounts()
     if len(accs) == 1:
@@ -345,8 +349,7 @@ def _av_fetch(env, cache, fail, skey, sig, sig_key, fresh):
         try:
             r = subprocess.run([bin_path("claude"), "agents", "--json"],
                                capture_output=True, text=True, encoding="utf-8", errors="replace",
-                               timeout=AGENTS_TIMEOUT,
-                               env=env)
+                               timeout=AGENTS_TIMEOUT, env=env)
             # ⚠rc != 0 with empty stdout would parse as [] = «no sessions» and end every open row; it is unknown.
             if r.returncode != 0:
                 raise RuntimeError("exit %s" % r.returncode)
@@ -405,9 +408,8 @@ def _av_fetch(env, cache, fail, skey, sig, sig_key, fresh):
 #     on argv[0] — measured 2026-09-21: of 626 processes, 4 by comm · 4 by argv[0], **0 difference**; `comm` values
 #     contain spaces (measured `/Applications/…/Google Chrome Helper`), so one line with `command` breaks parsing.
 PS_SNAP_TTL = 2.0              # shorter than the poll (2.5 s) — reused within a poll, retaken on the next
-PS_SNAP_FAIL_TTL = 4.0         # ★failures cached this long — equal to the `ps` timeout (4 s). The 3 calls within
-                               # a poll fork only once. ⚠Do not make it equal to the success TTL (2 s):
-                               # then one poll could incur another 4 s call.
+PS_SNAP_FAIL_TTL = 4.0         # ★failures cached this long — equal to the `ps` timeout (4 s). The 3 calls within a poll
+                               # fork only once. ⚠Do not make it equal to the success TTL (2 s): then one poll could incur another 4 s call.
 _ps_snap_cache = [0.0, None]   # (success time, [(pid, ppid, command), ...])
 _ps_res = [0.0, {}]            # (success time, {pid: (pcpu, rss_kb)}) — raw strings for proc_load, same stamp as the cache
 _ps_snap_fail = [0.0, None]    # (failure time, its exception) — the contract is "raise", so the exception is cached, not a value
