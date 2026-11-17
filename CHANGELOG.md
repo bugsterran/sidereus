@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+
+- The viewer page no longer allows arbitrary inline scripts: its Content-Security-Policy lists the hash of each of its own inline scripts instead of `'unsafe-inline'`, so markup that slips past escaping (an `onerror=` attribute, an injected `<script>`) does not run.
+
 ### Fixed
 
 - Tools: flag chips («duplicate», «similar», «unused») wrap instead of hiding behind an ellipsis, and long paths wrap so the file name at the end stays visible.

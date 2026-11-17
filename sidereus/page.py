@@ -1,4 +1,5 @@
 """Page assembly (split out of chat_server.py 2026-09-24): web/index.html + `@@INCLUDE` parts -> one inline PAGE, and PAGE_BUILD."""
+import base64
 import glob
 import hashlib
 import json
@@ -45,6 +46,36 @@ PAGE = _load_page()
 #   and the user experienced it as "sessions do not show" (server and API were fine). Removes a spot that goes stale silently.
 PAGE_BUILD = hashlib.sha256(PAGE.encode("utf-8")).hexdigest()[:12]
 PAGE = PAGE.replace("__PAGE_BUILD__", PAGE_BUILD)
+
+# CSP script-src hashes (routes_get.PAGE_CSP): one per attribute-less inline <script> in PAGE, then the issues-window script.
+# ⚠Computed after the __PAGE_BUILD__ replace — 00-core.js carries that marker inside the inline script.
+# ⚠Never count `<script` occurrences: a JS string literal in 84l-structure-arch-checks.js holds one; the
+#   non-greedy match consumes it inside the enclosing script, as the HTML parser does.
+_INLINE_SCRIPT = re.compile(r"<script>(.*?)</script[\s/>]", re.S | re.I)
+# ⚠The popup script is document.write()n into an about:blank window that inherits this CSP; it must stay an
+#   escape-free double-quoted literal so the Python capture equals the JS value.
+_ARCH_CW_JS = re.compile(r'const ARCH_CW_JS = "([^"\\]*)";')
+
+
+def _csp_hash(text):
+    # ⚠The HTML parser turns CRLF and lone CR into LF before hashing; an autocrlf checkout would otherwise blank the page.
+    norm = text.replace("\r\n", "\n").replace("\r", "\n")
+    return "'sha256-%s'" % base64.b64encode(hashlib.sha256(norm.encode("utf-8")).digest()).decode("ascii")
+
+
+def _script_hashes(page):
+    norm = page.replace("\r\n", "\n").replace("\r", "\n")
+    out = [_csp_hash(m.group(1)) for m in _INLINE_SCRIPT.finditer(norm)]
+    if not out:
+        raise RuntimeError("chat_server: PAGE has no inline <script> to hash for the CSP")
+    cw = _ARCH_CW_JS.search(norm)
+    if not cw:
+        raise RuntimeError("chat_server: ARCH_CW_JS literal not found (or holds an escape/quote); the issues window would be blocked by the CSP")
+    out.append(_csp_hash(cw.group(1)))
+    return tuple(out)
+
+
+PAGE_SCRIPT_HASHES = _script_hashes(PAGE)
 # X-Build-Time header value: when (UTC) and which page this process assembled, so a push gate can check the running build was seen on screen.
 BUILD_TIME = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) + " " + PAGE_BUILD
 

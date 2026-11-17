@@ -38,7 +38,7 @@ from sidereus.retro import retro
 from sidereus.review import review_files
 from sidereus.todo import todo_get
 from sidereus.agent_brief import brief_attention, brief_file, brief_peers
-from sidereus.page import BUILD_TIME, PAGE, PAGE_BUILD, PWA_FILES, pwa_reply
+from sidereus.page import BUILD_TIME, PAGE, PAGE_BUILD, PAGE_SCRIPT_HASHES, PWA_FILES, pwa_reply
 from sidereus.state import _state_body
 from sidereus.state_v1 import build as state_v1
 from sidereus.quota import quota
@@ -60,10 +60,13 @@ def hook_state():
 _PAGE_RAW = PAGE.encode("utf-8")
 _PAGE_GZ = [None]      # compressed once per process, on the first gzip request
 # Anti-framing + same-origin-only loads for every HTML route (/, /diff, /work, /brdiff all use _page_reply).
-# ⚠'unsafe-inline' in script/style: PAGE is one inline document with onclick= attributes and style= everywhere.
+# script-src = 'self' + one hash per inline PAGE script and the issues-window script (sidereus/page.py PAGE_SCRIPT_HASHES),
+#   so injected markup cannot run script.
+# ⚠Any on*= attribute, javascript: URL or new inline/popup script is blocked unless page.py hashes it.
+# ⚠'unsafe-inline' stays in style-src only: style= attributes are used everywhere.
 # ⚠img-src data: — the favicon (index.html, FAV_DOT swap in 15-alarms.js) is a data: SVG. No blob:/web fonts are used.
 # ⚠Adding an external host (CDN, update check, other port) means widening this string — see docs/dev/traps/security.md «CSP: adding an external source».
-PAGE_CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+PAGE_CSP = ("default-src 'self'; script-src 'self' " + " ".join(PAGE_SCRIPT_HASHES) + "; style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; "
             "base-uri 'none'; form-action 'self'; object-src 'none'")
 

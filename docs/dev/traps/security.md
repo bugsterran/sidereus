@@ -79,6 +79,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Same-origin only: a CDN script/font, a fetch to another host or port (OTel collector, update check), or an `<iframe>` is silently blocked; the console shows the CSP violation.
   - ⇒ widen the one directive that needs it in `PAGE_CSP` with a `⚠` comment on why. `img-src data:` is the favicon swap (`15-alarms.js`).
   - ⚠Never drop `frame-ancestors 'none'` / `X-Frame-Options: DENY` (clickjacking on Send/Apply buttons) or `connect-src 'self'`.
+- **CSP script-src is hash-based** (`sidereus/page.py` `PAGE_SCRIPT_HASHES` → `routes_get.PAGE_CSP`): no `'unsafe-inline'`, so injected `<img onerror>` markup cannot run.
+  - ⇒ hashes = each attribute-less inline `<script>` in PAGE (after the `__PAGE_BUILD__` replace) + the issues-window script `ARCH_CW_JS` (document.write()n into an about:blank popup that inherits the CSP).
+  - ⇒ CRLF and lone CR are normalised to LF before hashing, as the HTML parser does (an autocrlf checkout would otherwise blank the page).
+  - ⚠A new inline or popup `<script>` needs a hash in page.py; `on*=` attributes and `javascript:` URLs are blocked — bind handlers with `el.onclick = …`.
+  - ⚠`ARCH_CW_JS` must stay an escape-free double-quoted literal; import raises if it is missing. `style-src` keeps `'unsafe-inline'`. Test: `tests/test_page_csp.py`.
 - **Draft strip «Session received» reads ack `who` only** (`48e plDraftSteps`). ⚠Never read or render ack `note` (reply text, rule 1); `hooked`/`delivered` do not mean the session read it. Test `tests/test_pipeline_draft.py` checks a sentinel note never reaches the HTML.
 - **Image endpoint `GET /api/structure/img`** (`sidereus/structure_tree.py` `structure_img`, inline Markdown images): same guards as `/api/structure/file` (allow-list root · listing · realpath under root · ~/.claude · secret names).
   - ⚠The extension is checked on the realpath too: `a.png` symlinked to a text or secret file would otherwise be served as an image.

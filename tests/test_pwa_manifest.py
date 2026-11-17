@@ -13,6 +13,7 @@ demo = sidereus("demo")
 
 PATHS = {"/manifest.webmanifest": "application/manifest+json", "/icon.svg": "image/svg+xml",
          "/icon-192.png": "image/png", "/icon-512.png": "image/png"}
+# Every directive but script-src (hash-based, tests/test_page_csp.py) must stay as below (R4).
 CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
        "img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; "
        "base-uri 'none'; form-action 'self'; object-src 'none'")
@@ -64,7 +65,11 @@ class PwaManifest(unittest.TestCase):
 
     def test_page_links_manifest_and_csp_unchanged(self):
         self.assertIn("<link rel=manifest href=/manifest.webmanifest>", pg.PAGE)
-        self.assertEqual(rg.PAGE_CSP, CSP)
+        new, old = rg.PAGE_CSP.split("; "), CSP.split("; ")
+        self.assertEqual(len(new), len(old))
+        for n, o in zip(new, old):
+            if not o.startswith("script-src "):
+                self.assertEqual(n, o)
 
     def test_core_routes(self):
         for p in PATHS:
