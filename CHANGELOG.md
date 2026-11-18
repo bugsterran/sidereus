@@ -5,38 +5,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-18
+
+**Highlights**
+
+- Security: the viewer page no longer runs arbitrary inline scripts; its Content-Security-Policy allows only the hashes of its own inline scripts, so markup that slips past escaping does not run.
+- Attention: failure cards («Stopped by limit», «Cut by external cause», «Cause needs a look») go to the session that hit them and clear when it resumes, and a single failure alert names its kind instead of a bare «Failure alert».
+- Branches and Conflicts: a folder that becomes a repository later (`git init`, clone) reaches the repository picker within 30 seconds without a restart, a symlinked repository is listed once, and pi edits by relative path or by `subagent` children get a file owner.
+
 ### Security
 
 - The viewer page no longer allows arbitrary inline scripts: its Content-Security-Policy lists the hash of each of its own inline scripts instead of `'unsafe-inline'`, so markup that slips past escaping (an `onerror=` attribute, an injected `<script>`) does not run.
 
 ### Fixed
 
+- Attention: «Stopped by limit», «Cut by external cause» and «Cause needs a look» cards go to the row of the session that hit them, so its resume clears them instead of the card waiting out its 30 minutes on the newest row of the folder.
+- Attention: a single failure alert names its kind in English too («Stopped by limit», «Half-edited files», ...) instead of a bare «Failure alert», on screen and in the `sidereus_attention` reason; several still fold to «Failure alert (n)».
+- Branches: a folder that becomes a repository after it was first seen (`git init`, clone), including one above an idle session's folder, now reaches the repository picker within 30 seconds instead of only after a restart, and an open Branches tab left on «No git repository in the session list yet» loads the repository as soon as one appears instead of only after a reload.
+- Branches: a repository reached both through a symlink and through its real path is listed once in the repository picker.
+- Branches: the HEAD branch chip ends with an ellipsis when it is cut, and a commit's sha and age in the side pane stay on one line.
+- Branches: a worktree file row with several owner chips wraps the chips instead of squeezing the path to nothing in the side pane.
+- Branches: with no repository yet, the empty note is grey like the other tabs' empty states instead of red error text.
+- Conflicts: pi edits given as a path relative to the session's folder now get a file owner, like absolute ones; on Windows a `C:\...` pi path is read as absolute.
+- Conflicts: files edited by pi `subagent` children now count for file ownership as their own units labelled with the child agent, including after a restart on long pi sessions.
+- Sessions: a session in a subfolder picks up its project name within 30 seconds after a `git init` or clone above it, instead of keeping the folder name until a restart.
+- Sessions: the session-liveness lookup no longer runs `claude agents --json` in an extra account folder that Claude Code has never run in; the CLI wrote `.claude.json` and `backups/` there, and the new file made that folder count as signed in.
+- Timeline: after the connection comes back, «Could not fetch — showing the last data received» clears at once instead of waiting for the next refresh (never, with «Manual»).
 - Tools: flag chips («duplicate», «similar», «unused») wrap instead of hiding behind an ellipsis, and long paths wrap so the file name at the end stays visible.
 - Mailbox: a long room owner id no longer pushes the room name out of the Participants panel, and members in the room header that do not fit are counted in «+N» instead of being cut off.
 - Mailbox: an empty room says «no messages yet» instead of «No messages match.» when no search is on.
 - Settings: the pi «Connect» row names the folder or file that is actually a symlink, not always `mcp.json`.
-- Sessions: the session-liveness lookup no longer runs `claude agents --json` in an extra account folder that Claude Code has never run in; the CLI wrote `.claude.json` and `backups/` there, and the new file made that folder count as signed in.
 - Tour: the «Your first pipeline» step tells you to open «+ New ▾» when that button is already on screen instead of asking you to pick a project first, «Back» returns to the step's own tab, and the Structure step points at the view's head row so its bubble no longer covers the whole view.
-- Timeline: after the connection comes back, «Could not fetch — showing the last data received» clears at once instead of waiting for the next refresh (never, with «Manual»).
-- Branches: with no repository yet, the empty note is grey like the other tabs' empty states instead of red error text.
-
-### Fixed
-
-- Branches: a `git init` above an idle session's folder now reaches the repository picker within 30 seconds too (it waited for the session's next write, 230 s in a sweep), and an open Branches tab left on «No git repository in the session list yet» loads the repository as soon as one appears instead of only after a reload.
-
-## [0.21.0] - 2026-11-17
-
-### Fixed
-
-- Attention: «Stopped by limit», «Cut by external cause» and «Cause needs a look» cards go to the row of the session that hit them, so its resume clears them instead of the card waiting out its 30 minutes on the newest row of the folder.
-- Attention: a single failure alert names its kind in English too («Stopped by limit», «Half-edited files», ...) instead of a bare «Failure alert», on screen and in the `sidereus_attention` reason; several still fold to «Failure alert (n)».
-- Branches: a folder that becomes a repository after it was first seen (`git init`, clone) now reaches the repository picker within 30 seconds instead of only after a restart.
-- Sessions: a session in a subfolder picks up its project name within 30 seconds after a `git init` or clone above it, instead of keeping the folder name until a restart.
-- Branches: a repository reached both through a symlink and through its real path is listed once in the repository picker.
-- Conflicts: pi edits given as a path relative to the session's folder now get a file owner, like absolute ones; on Windows a `C:\...` pi path is read as absolute.
-- Conflicts: files edited by pi `subagent` children now count for file ownership as their own units labelled with the child agent, including after a restart on long pi sessions.
-- Branches: the HEAD branch chip ends with an ellipsis when it is cut, and a commit's sha and age in the side pane stay on one line.
-- Branches: a worktree file row with several owner chips wraps the chips instead of squeezing the path to nothing in the side pane.
 
 ## [0.20.0] - 2026-11-16
 
