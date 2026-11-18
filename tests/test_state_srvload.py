@@ -132,6 +132,10 @@ class SrvLoad(unittest.TestCase):
         p = mock.patch("os.cpu_count", lambda: 12)   # no live machine facts
         p.start()
         self.addCleanup(p.stop)
+        # ⚠proc_load.top() reads a module-global ps cache that an earlier test's sessions thread may have filled
+        p = mock.patch.object(st.proc_load, "top", lambda: None)
+        p.start()
+        self.addCleanup(p.stop)
         for k, v in readers.items():
             p = mock.patch.object(st, k, v)
             p.start()

@@ -20,6 +20,7 @@ HC = sidereus("hook_connect")
 CX = sidereus("ctxsrc")
 CR = sidereus("claude_roots")
 TV = sidereus("toolinv")
+PP = sidereus("pipeline_projects")
 
 # ⚠Odd indentation and an env secret outside `hooks`: both must survive byte-for-byte, the secret masked in the diff.
 USER_TEXT = """{
@@ -92,6 +93,9 @@ class HookRemove(unittest.TestCase):
                   mock.patch.object(CX, "CLAUDE_PROJECTS", os.path.join(t, "projects")), mock.patch.object(CX, "_git_root", lambda c: ""),
                   mock.patch.object(CR, "accounts", lambda: [{"dir": self.cd, "label": "Main", "primary": True}]),
                   mock.patch.object(TV, "known_projects", lambda: [self.proj]),
+                  # ⚠pipelines() checks proj via pipeline_projects' own known_projects copy and _allowed_cwds (live sessions + ps thread)
+                  mock.patch.object(PP, "known_projects", lambda: [self.proj]), mock.patch.object(PP, "_remembered", lambda: []),
+                  mock.patch.object(PP, "_allowed_cwds", lambda: {}),
                   mock.patch.object(HC, "TRASH_DIR", self.trash),
                   mock.patch.object(H, "_proj_ok", lambda p: p == self.proj), mock.patch.object(H, "tool_uses", lambda d: {}),
                   mock.patch.object(H, "scanning", lambda: False), mock.patch.object(H, "mcp_status", lambda d: {}),
