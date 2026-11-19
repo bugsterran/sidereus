@@ -304,3 +304,6 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Skip Enter while `e.isComposing` or `keyCode === 229` (Safari): the Korean IME commit Enter would otherwise submit a half-typed syllable.
 - ⚠Esc during composition only ends the composition (native `prompt()` did the same); closing dropped the typed text. The dialog `cancel` event has no `isComposing`, so the input's `data-ime` flag (compositionstart/end) answers there (`test_prompt_ime_escape_keeps_dialog`).
 - ⚠Read `inp.value` before `close()` and clear it after; the typed value is set and read with `.value` only, never `innerHTML`.
+- ⚠Chrome may close a modal `<dialog>` itself, with no `cancel`, after repeated prevented cancels (3rd Esc during IME composition). The typed prompt text is lost and this cannot be prevented.
+  ⇒ a `close` listener only clears the stuck `UCF` (else every later dialog resolves «Cancel» as `ucf-busy`); it skips while `d.open`, since our own `close()` queues a close event that can land after a reopen (`test_forced_close_without_cancel_clears_state`).
+- ⚠`ucfKey` uses `stopImmediatePropagation`, not `stopPropagation`: the 98b tour keydown is on the same window-capture target and would still run.

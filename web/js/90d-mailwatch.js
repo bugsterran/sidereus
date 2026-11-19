@@ -82,7 +82,9 @@ function mwMount(){
   const h = mwPane();
   if(h) pn.insertAdjacentHTML('beforeend', h);
 }
-async function mwSave(){
+// ⚠One write per action: a second Save during the confirm/POST opened a second dialog and POSTed twice (mpOnce, 90b).
+function mwSave(){ return mpOnce('mw', mwSaveRun); }
+async function mwSaveRun(){
   const sv = mwSaved(), w = mwWant();
   if(!sv || !w) return;
   const ch = mwDiff(sv, w);

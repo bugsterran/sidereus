@@ -21,7 +21,8 @@ FNS = ("cfgFocusSel", "ucfEl", "uiConfirm", "uiPrompt", "uiAlert", "ucfOpen", "u
 FAKE = r"""
 function T(s){ return s; }
 const ERRS = []; function softErr(t){ ERRS.push(t); }
-const window = {ls: [], addEventListener(t, f, c){ this.ls.push([t, f.name, c === true]); }};
+const window = {ls: [], fs: [], addEventListener(t, f, c){ this.ls.push([t, f.name, c === true]); this.fs.push([t, f]); },
+  dispatch(t, e){ for(const [u, f] of this.fs){ if(u === t) f(e); if(e.sip) break; } }};   // one target: only immediate stop halts it
 var document = null;
 function cmp(el, s){
   if(!el || !el.tagName) return false;
@@ -265,7 +266,40 @@ SCENARIOS = r"""
   ucfKey(ev({key: 'Escape'})); await p3;
   R.alert = a; }
 
-R.listeners = window.ls;
+R.listeners = window.ls.slice();
+
+// A2: a later window-capture keydown listener (98b tour) on the same target is not reached while the dialog is open
+{ newDoc(); let hits = 0; window.addEventListener('keydown', function tourKey(){ hits++; }, true);
+  const p = uiConfirm('T'); window.dispatch('keydown', ev({key: 'ArrowDown'})); window.dispatch('keydown', ev({key: 'Tab'}));
+  const open = hits; ucfKey(ev({key: 'Escape'})); await p;
+  window.dispatch('keydown', ev({key: 'ArrowDown'}));
+  R.later = {open, closed: hits}; }
+
+// A1: Chrome closes the modal itself with no cancel event -> resolves «Cancel», UCF cleared, the next dialog opens
+{ const D = newDoc(); let got = 'pending'; const p = uiPrompt('T', {value: 'typed'}); p.then(v => { got = v; });
+  const d = D.getElementById('ucf'); d.querySelector('.ucfi').fire('compositionstart', {});
+  d.close(); d.fire('close', ev({type: 'close'})); await p;
+  const a = {got, ucf: UCF === null};
+  let g2 = 'pending'; const p2 = uiConfirm('next'); p2.then(v => { g2 = v; });
+  a.next = {open: d.open, title: d.querySelector('.ucft').textContent};
+  // our own close() queues a close event; it lands after the same dialog reopened and must not close it
+  d.fire('close', ev({type: 'close'})); await tick(); a.stale = {g2, open: d.open};
+  ucfKey(ev({key: 'Escape'})); await p2; a.after = g2;
+  const p3 = uiConfirm('c'); d.close(); d.fire('close', ev({type: 'close'})); a.confirm = await p3;
+  R.forced = a; }
+
+// A3: a press on the dialog box itself (target = dialog) keeps focus on the input; a press on a button keeps its default
+{ const D = newDoc(); const p = uiPrompt('T'); const d = D.getElementById('ucf'), ok = d.querySelector('[data-ucf="1"]');
+  const pd = ev({type: 'pointerdown', target: d}), md = ev({type: 'mousedown', target: d}), mb = ev({type: 'mousedown', target: ok}),
+    cl = ev({type: 'click', target: d});
+  [pd, md, mb, cl].forEach(ucfPtr);
+  R.press = {pd: [pd.pd, md.pd, mb.pd, cl.pd], sp: [pd.sp, md.sp, mb.sp], open: d.open};
+  ucfKey(ev({key: 'Escape'})); await p; }
+
+// B1: a reopened long body starts at the top
+{ const D = newDoc(); const b = ucfEl().querySelector('.ucfb'); b.over = true;
+  const p = uiConfirm('T', {body: 'long'}); b.scrollTop = 300; ucfKey(ev({key: 'Escape'})); await p;
+  const p2 = uiConfirm('T', {body: 'long'}); R.scroll = b.scrollTop; ucfKey(ev({key: 'Escape'})); await p2; }
 """
 
 
@@ -310,6 +344,21 @@ class UiConfirm(unittest.TestCase):
         want = {("keydown", "ucfKey", True)} | {(t, "ucfPtr", True) for t in
                                                 ("pointerdown", "mousedown", "pointerup", "mouseup", "click", "auxclick")}
         self.assertEqual(ls, want)
+
+    def test_later_window_capture_keydown_not_reached(self):
+        # ⚠stopPropagation does not stop other listeners on the same target (98b tour's window-capture keydown).
+        self.assertEqual(self.R["later"], {"open": 0, "closed": 1})
+
+    def test_forced_close_without_cancel_clears_state(self):
+        # ⚠Chrome closes the modal on its own after repeated prevented cancels; a stuck UCF made every later dialog ucf-busy.
+        self.assertEqual(self.R["forced"], {"got": None, "ucf": True, "next": {"open": True, "title": "next"},
+                                            "stale": {"g2": "pending", "open": True}, "after": False, "confirm": False})
+
+    def test_press_on_dialog_box_keeps_focus(self):
+        self.assertEqual(self.R["press"], {"pd": [True, True, False, False], "sp": [True, True, True], "open": True})
+
+    def test_reopened_body_scrolled_to_top(self):
+        self.assertEqual(self.R["scroll"], 0)
 
     def test_r3_overflowing_body_in_tab_cycle(self):
         self.assertEqual(self.R["over"], {"tabindex": "0", "cyc": ["cancel", "ok", "body", "cancel", "body", "ok", "cancel"],

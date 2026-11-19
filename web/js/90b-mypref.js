@@ -318,6 +318,9 @@ async function mpCcSetRun(key, val){
   try{ r = await postJSON('/api/prefs/set', {key: key, value: val}); }catch(e){ r = e.body || {ok: false, err: String((e && e.message) || e)}; }
   if(!(r && r.ok)){ MPERR[key] = mpSrvErr(r); if(raw != null) MPDRAFT[key] = raw; paintCfg(); return; }
   delete MPERR[key]; delete MPDRAFT[key]; MPDONE[key] = 2; it.value = r.value;
+  // ⚠Mirror written extras too: a stale cc_accts made mpAcctOn flip to «Per account» until the 3 s re-read.
+  const ck = key === 'cc_auto_compact' ? 'auto' : 'window', ex = Array.isArray(MPSRV.cc_accts) ? MPSRV.cc_accts : [];
+  (Array.isArray(r.files) ? r.files : []).forEach(f => { if(f && f.status === 'written') ex.forEach(x => { if(x.path === f.path) x[ck] = r.value; }); });
   if(r.hist_err) MPERR[key] = T('Applied, but the auto-compact history was not updated') + ': ' + TE(r.hist_err);
   const miss = (Array.isArray(r.files) ? r.files : []).filter(f => f && (f.status === 'skipped' || f.status === 'failed'));
   if(miss.length){

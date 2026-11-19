@@ -13,7 +13,7 @@ JS = os.path.join(ROOT, "web", "js")
 WEB = os.path.join(ROOT, "web")
 
 # The 7 named functions that used window.confirm (97-saved-views.js holds the other 2, in anonymous handlers).
-FNS = ("plRemove", "plApplySet", "mwSave", "mpSrvSetRun", "mpAcctApplyRun", "mpCcSetRun", "mpUiResetRun")
+FNS = ("plRemove", "plApplySet", "mwSaveRun","mpSrvSetRun", "mpAcctApplyRun", "mpCcSetRun", "mpUiResetRun")
 
 
 def _code(path):

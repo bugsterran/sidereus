@@ -1,4 +1,4 @@
-"""Settings writes run once per action (web/js/90b-mypref.js mpOnce) and focus survives a paintCfg repaint
+"""Settings writes run once per action (web/js/90b-mypref.js mpOnce, 90d-mailwatch.js mwSave) and focus survives a paintCfg repaint
 (web/js/90-settings.js cfgFocusSel/cfgFocusBack). Fake DOM, stubbed uiConfirm/postJSON; no live files or network."""
 import json
 import os
@@ -20,7 +20,7 @@ const c = {T, softErr: () => {}, UIS: {getItem: () => null, setItem(){}, removeI
   uiConfirm: async (t, o) => { CONF.push(t); await null; return true; },   // R4: async like the shared dialog, so a double-click overlaps the pending confirm
   postJSON: async (u, b) => { POSTS.push([u, b.key, b.dry === true]); await null;
     return b.key === 'cc_accounts' ? {ok: true, files: [{label: 'w', path: '/w', status: b.dry ? 'change' : 'written', before: {auto: true, window: null}, after: {auto: false, window: null}}]}
-      : {ok: true, value: b.key === 'cc_auto_compact' ? false : 9}; }};
+      : {ok: true, value: b.key === 'cc_auto_compact' ? false : 9, files: [{label: 'p', path: '/p', status: 'written'}, {label: 'w', path: '/w', status: 'written'}]}; }};
 vm.createContext(c);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'web', 'js', '90b-mypref.js'), 'utf8'), c);
 const srv = () => vm.runInContext("MPSRV = {ok: true, cc_path: '/p', keys: {cc_auto_compact: {value: true, path: '/p'}, cc_compact_window: {value: null, path: '/p'},"
@@ -29,6 +29,7 @@ const srv = () => vm.runInContext("MPSRV = {ok: true, cc_path: '/p', keys: {cc_a
   srv(); const A = vm.runInContext('mpActs()', c);
   await Promise.all([A.mpcc('cc_auto_compact:off'), A.mpcc('cc_auto_compact:off')]);   // double-click
   R.cc = [CONF.length, POSTS.slice()]; CONF.length = 0; POSTS.length = 0;
+  R.ccAcctOn = vm.runInContext('mpAcctOn()', c);   // B3: written extras mirrored, so no flip to «Per account» before the re-read timer
   srv(); await Promise.all([A.mpacs(), A.mpacs()]);
   R.acct = [CONF.length, POSTS.slice()]; CONF.length = 0; POSTS.length = 0;
   srv(); await Promise.all([A.mps('port:reset'), A.mps('port:reset')]);
@@ -74,6 +75,33 @@ class SettingsOnce(unittest.TestCase):
         self.assertEqual(R["acct"], [1, [["/api/prefs/set", "cc_accounts", True], ["/api/prefs/set", "cc_accounts", False]]])
         self.assertEqual(R["srv"], [1, [["/api/prefs/set", "port", False]]])
         self.assertEqual(R["again"], [1, 1, 0])
+        self.assertFalse(R["ccAcctOn"])
+
+    def test_mailwatch_save_once(self):
+        src = "const MPBUSY = {};\n" + "\n".join(js_fn(f) for f in ("mpOnce", "mwSave", "mwSaveRun")) + r"""
+const POSTS = [], CONF = [];
+let MW_PEND = {mode: 'off', projects: {}}, MW_NOTE = null, MPSRV = {ok: true}, DONE = null;
+const T = s => s, TE = String, mwSaved = () => ({mode: 'on', projects: {}}), mwWant = () => MW_PEND,
+  mwDiff = () => ['x'], mwRepaint = () => {};
+const uiConfirm = async () => { CONF.push(1); await null; return true; };
+const postJSON = (u, b) => { POSTS.push(b.key); return new Promise(r => { DONE = r; }); };
+(async () => {
+  const p = mwSave(); for(let i = 0; i < 5; i++) await null;
+  const first = POSTS.length;
+  await mwSave();                                         // second Save while the POST is pending
+  const R = {first: first, pend: [CONF.length, POSTS.length]};
+  DONE({ok: true}); await p;
+  R.after = [vm_busy(), MW_NOTE && MW_NOTE.ok];
+  process.stdout.write(JSON.stringify(R));
+})();
+function vm_busy(){ return Object.keys(MPBUSY).length; }
+"""
+        r = subprocess.run(node_e(src), capture_output=True, text=True, timeout=20, encoding="utf-8")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        R = json.loads(r.stdout)
+        self.assertEqual(R["first"], 1)
+        self.assertEqual(R["pend"], [1, 1])                   # no second dialog, no second POST
+        self.assertEqual(R["after"], [0, 1])                  # flag released, save applied
 
     def test_focus_survives_repaint(self):
         src = FOCUS + r"""

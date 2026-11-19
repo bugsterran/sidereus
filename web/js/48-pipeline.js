@@ -386,12 +386,17 @@ async function plApplySet(mode){
   const lab = m => { const r = PL_APPLY.find(x => x[0] === m); return r ? T(r[1]) : String(m || ''); };
   if(!await uiConfirm(T('Change how sessions apply pipelines? Applies to sessions started after the change.'),
     {body: proj + '\n' + lab(a.mode) + ' → ' + lab(mode), ok: T('Change')})) return false;
-  if(PLS.proj !== proj || PLS.data[proj] !== d) return false;   // ⚠the dialog does not block polls: a poll may switch/reload the project meanwhile, never write one the dialog did not show
+  // ⚠polls re-list (new object) while the dialog is open: write only if the project and its mode still match what the dialog showed
+  const cur = PLS.data[proj], ca = cur && cur.ok && cur.apply;
+  if(PLS.proj !== proj || !ca || ca.mode !== a.mode){
+    await uiAlert(T('The pipeline view changed while the dialog was open. Nothing was changed.'));
+    return false;
+  }
   let r;
   try{ r = await postJSON('/api/pipelines/apply', { proj: proj, mode: mode }); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
   if(!r || !r.ok){ await uiAlert(T('Could not change it'), {body: r && (r.err || r.error || r.why) ? TE(r) : ''}); return false; }
-  d.apply = r.apply;
+  (PLS.data[proj] || cur).apply = r.apply;
   plPaint();
   return true;
 }

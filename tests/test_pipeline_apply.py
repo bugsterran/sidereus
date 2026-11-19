@@ -164,6 +164,25 @@ class ApplyJs(unittest.TestCase):
                         "[ok, POSTS.length, OPT.body.split('\\n')[0], PLS.data['/w/a'].apply.mode, PLS.data['/w/b'].apply.mode]))); }, 0);")
         self.assertEqual(out, [False, 0, "/w/a", "auto", "auto"])
 
+    _PENDING = ("let res; globalThis.uiConfirm = () => new Promise(r => { res = r; }); const p = plApplySet('off');"
+                "setTimeout(() => { %s; res(true); p.then(ok => console.log(JSON.stringify([ok, POSTS, ALERTS.length, PLS.data['/w/a'].apply.mode]))); }, 0);")
+
+    def test_reload_same_mode_while_pending_posts(self):
+        # A 20 s re-list replaces PLS.data[proj] during the dialog; same mode -> the write goes through onto the new object.
+        ok, posts, alerts, mode = self._run(self._PENDING % "PLS.data['/w/a'] = {ok: true, apply: {mode: 'auto', global: 'auto', own: null}}")
+        self.assertIs(ok, True)
+        self.assertEqual(posts, [["/api/pipelines/apply", {"proj": "/w/a", "mode": "off"}]])
+        self.assertEqual((alerts, mode), (0, "off"))
+
+    def test_reload_mode_changed_while_pending_alerts(self):
+        # The mode changed elsewhere during the dialog: no write, and the person is told instead of a silent drop.
+        ok, posts, alerts, mode = self._run(self._PENDING % "PLS.data['/w/a'] = {ok: true, apply: {mode: 'ask', global: 'auto', own: 'ask'}}")
+        self.assertEqual((ok, posts, alerts, mode), (False, [], 1, "ask"))
+
+    def test_project_switched_while_pending_alerts(self):
+        ok, posts, alerts, mode = self._run(self._PENDING % "PLS.data['/w/b'] = {ok: true, apply: {mode: 'auto'}}; PLS.proj = '/w/b'")
+        self.assertEqual((ok, posts, alerts, mode), (False, [], 1, "auto"))
+
     def test_server_error_shows_ui_alert(self):
         # R4: a refused apply goes through the shared one-button dialog (title + detail), never window.alert.
         out = self._run("globalThis.uiConfirm = async () => true; postJSON = async () => ({ok: false, err: 'busy'});"

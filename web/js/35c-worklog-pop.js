@@ -1,4 +1,4 @@
-// ★One popup helper for the work log, session diff and branch file diff (2026-09-23 user: regular windows, several at once).
+// One popup helper for the work log, session diff and branch file diff: regular windows, several open at once.
 //   Name per item -> re-click focuses that window; new ones cascade 30px and wrap after 8. POPS drops closed windows.
 const POPS = {};
 function popName(pre, s){ return pre + String(s || '').replace(/[^A-Za-z0-9]/g, '_').slice(-120); }

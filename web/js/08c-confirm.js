@@ -20,6 +20,9 @@ function ucfEl(){
   const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'wkrgb archok'; ok.setAttribute('data-ucf', '1');
   a.appendChild(no); a.appendChild(ok); d.appendChild(t); d.appendChild(b); d.appendChild(i); d.appendChild(a);
   d.addEventListener('cancel', e => { e.preventDefault(); if(!ucfIme()) ucfDone(false); });   // native Esc path (close watcher)
+  // ⚠Chrome may close the modal itself (no cancel) after repeated prevented cancels; clear UCF or every later dialog is ucf-busy.
+  //   `!d.open` skips the queued close event of our own close() when the same dialog was already reopened.
+  d.addEventListener('close', () => { if(UCF && UCF.d === d && !d.open) ucfDone(false); });
   // ⚠Appended to <body>, never inside #cfgm: paintCfg rewrites #cfgbox while the dialog is open.
   document.body.appendChild(d);
   return d;
@@ -52,6 +55,7 @@ function ucfOpen(title, o, mode){
     UCF = {res, d, opener, sels, mode, inp};
     try{ d.showModal(); }
     catch(e){ softErr('ucf', e); UCF = null; res(nil); return; }   // a failed open is «Cancel»: nothing is written or sent
+    body.scrollTop = 0;   // the element is reused: a long body would reopen at the previous scroll offset
     // An overflowing body (long settings diff at 900 wide) joins the Tab cycle so arrows/PageDown can scroll it; measured after showModal (laid out).
     if(!body.hidden && body.scrollHeight > body.clientHeight + 1) body.setAttribute('tabindex', '0'); else body.removeAttribute('tabindex');
     if(mode === 'prompt'){ inp.focus(); inp.select(); }
@@ -83,7 +87,8 @@ function ucfKey(e){
   // ⚠Esc while an IME is composing only cancels the composition (as native prompt() did); closing would drop the typed text.
   if(e.key === 'Escape' && (e.isComposing || e.keyCode === 229 || ucfIme())){ e.stopImmediatePropagation(); return; }
   if(e.key === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); ucfDone(false); return; }
-  e.stopPropagation();   // Enter/Space/arrows/PageDown keep their default: activate the button or scroll the body
+  // Enter/Space/arrows/PageDown keep their default: activate the button or scroll the body.
+  e.stopImmediatePropagation();   // ⚠other window-capture keydown handlers (98b tour) share this target; stopPropagation would not stop them
   // ⚠Enter in the input submits (there is no <form>); an IME commit Enter (isComposing, or keyCode 229 in Safari) only ends composition.
   if(e.key === 'Enter' && UCF.mode === 'prompt' && document.activeElement === UCF.inp && !e.isComposing && e.keyCode !== 229){
     e.preventDefault(); ucfDone(true); return;
@@ -100,6 +105,8 @@ function ucfKey(e){
 function ucfPtr(e){
   if(!UCF) return;
   e.stopPropagation();
+  // A press on the dialog box itself (padding/backdrop) would move focus off the input to the dialog; keep it where it is.
+  if((e.type === 'pointerdown' || e.type === 'mousedown') && e.target === UCF.d) e.preventDefault();
   if(e.type !== 'click') return;
   const b = e.target && e.target.closest ? e.target.closest('#ucf [data-ucf]') : null;   // backdrop click: target is the dialog -> nothing
   if(b) ucfDone(b.getAttribute('data-ucf') === '1');
