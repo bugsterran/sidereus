@@ -210,6 +210,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Evidence counts only inside the edge's owner module (`from`; `to` when `from` is external; plan.json globs, else `path`) — symbol-only matching passed 48/48 live.
   - ⚠Labels swap `" | < > # & \`` for look-alikes, never `#NN;` entities — the page's flowchart parser (81e) shows those raw.
   - ⚠`arch_map` copies `ARCH_DIR` by value: tests patch `arch_map.ARCH_DIR` and `arch_verify.ARCH_DIR` separately.
+  - ⚠`arch_track` (runs) holds its own `ARCH_DIR` copy too: a run test that patches only `arch_map.ARCH_DIR` reads the live store and can pass vacuously. It reads `SIDEREUS_ROOT`/`_REQ_SRC` as `arch_map.<name>` at call time — never from-import them.
 - **Check runner: spawning and stored fields** (`arch_checks`, `scripts/arch_checks.py`).
   - ⚠Sidereus never runs a tool (rule 7): `sidereus/arch_checks.py` has no subprocess; only the pipeline runner spawns, in its own process group (killed whole on timeout).
   - ⚠Only file / line / rule / severity (+ package) are stored — `checks_errors` refuses unknown keys and `load_checks` re-drops bad rules and `..` paths.
@@ -342,11 +343,11 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: a request sent from a «stale» map already has modules on screen; «has modules» would close it at once.
   - ⇒ `ARCH.sent.base` keeps the commit on screen at send ('' when empty); done = modules + commit ≠ base. The completion notice is `note()`.
   - ⚠Not `toast(c)`: card toasts are server bell history and their click posts a read key to `/api/cards/read`.
-- **arch-map runs from a project with its own pipelines leave no `plrun`** (`sidereus/arch_map.py` `runs`, `48h-pipeline-sidereus.js`).
+- **arch-map runs from a project with its own pipelines leave no `plrun`** (`sidereus/arch_track.py` `runs`, `48h-pipeline-sidereus.js`).
   - Cause: `hooks/pl_flow.py:137` never borrows another project's pipelines when the cwd has its own, so arch-map (defined in the Sidereus repo) gets no runs.json entry.
   - ⇒ Sidereus derives the run from live `[pl:arch-map/…]` stage tags (sub · plm · Agent targ) + the pending store dir → state `archRun`.
   - ⚠Do not «fix» it by writing pipeline files into the user's project.
-- **A finished arch-map run kept showing «Analysing · 4/4 · Verify»** (`sidereus/arch_map.py` `_finished`).
+- **A finished arch-map run kept showing «Analysing · 4/4 · Verify»** (`sidereus/arch_track.py` `_finished`).
   - Cause: the orchestrating session stays busy with other work, so its signs (closed run's plm, lingering labels) plus the 180s carry-over kept the run alive; nothing looked at the gate result.
   - ⇒ A run ends once the target store has a verify.json newer than every start sign of the run, and the run record closed after it or no tagged subagent / Agent call is live. The carry-over skips such runs.
   - ⚠Do not compare against the fallback t0 (`now` on first sight): only real start signs (plrun t0, sub age, pending plan.json, carried t0) may keep a run alive past a result.
@@ -502,7 +503,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⇒ `archFhPaths` returns `wd` = `(ports on the busiest side + 1) * ARCH_FH.PS` (10px) per box; `archFhRoute` sets that as `min-width` (past the CSS `max-width:220px`) and re-measures. ★12 badged ends on a 60px box: step 4.6px → 10px.
 - ⚠Only grows: a box whose ports already fit keeps its size. Bundled links count as one port.
 
-## arch-map run ended at verify.json while its overview stages still ran (`sidereus/arch_map.py` `_late_titles`, `_end_at`)
+## arch-map run ended at verify.json while its overview stages still ran (`sidereus/arch_track.py` `_late_titles`, `_end_at`)
 - Cause: arch-map now ends with Draw overview / Verify overview; the run-end checks (`_finished`, stage gap, `_closed_by_result`) treated verify.json as the end, so the run vanished (and «Simple» stayed absent) mid-overview.
 - ⇒ From the arch_verify-gated stage on, a run ends only on a `brief.ok.json` newer than verify.json; a pipeline file without later stages keeps ending on verify.json. Provenance and request closure still use verify.json.
 - ⚠Never make the overview gate a map gate: a failed overview leaves the verified map valid.

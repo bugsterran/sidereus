@@ -15,9 +15,9 @@ ROW = {"sid": SID, "project": "repo", "state": "think"}
 
 class _Base(unittest.TestCase):
     def setUp(self):
-        self.res = {}   # pipeline -> result time arch_map.result_at reports
+        self.res = {}   # pipeline -> result time arch_track.result_at reports
         for obj, k, v in ((PQ, "PLREQ_PATH", None), (PQ, "PLSTOP_DIR", None), (PQ, "_MEM", []), (PQ, "_now", lambda: NOW),
-                          (PQ.arch_map, "result_at", lambda pl, root: self.res.get(pl, 0.0))):
+                          (PQ.arch_track, "result_at", lambda pl, root: self.res.get(pl, 0.0))):
             p = mock.patch.object(obj, k, v)
             p.start()
             self.addCleanup(p.stop)

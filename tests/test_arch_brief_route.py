@@ -13,6 +13,7 @@ from urllib.parse import urlparse, quote
 from tests._load import sidereus
 
 AM = sidereus("arch_map")
+AR = sidereus("arch_track")
 AV = sidereus("arch_verify")
 RS = sidereus("routes_struct")
 HEAD, OLD = "a" * 40, "b" * 40
@@ -172,8 +173,9 @@ class BriefRuns(Base):
         os.makedirs(os.path.join(self.home, ".claude", "pipelines"))
         with open(os.path.join(self.home, ".claude", "pipelines", "arch-brief.json"), "w", encoding="utf-8") as f:
             json.dump({"stages": [{"title": "draft"}, {"title": "gate"}]}, f)
-        for p in (mock.patch.object(AM, "SIDEREUS_ROOT", self.home), mock.patch.object(AM, "_BRIEF_SEEN", {}),
-                  mock.patch.object(AM, "_RUN_SEEN", {}), mock.patch.object(AM, "_REQ_SRC", None)):
+        for p in (mock.patch.object(AM, "SIDEREUS_ROOT", self.home), mock.patch.object(AR, "_BRIEF_SEEN", {}),
+                  mock.patch.object(AR, "_RUN_SEEN", {}), mock.patch.object(AM, "_REQ_SRC", None),
+                  mock.patch.object(AR, "ARCH_DIR", self.arch)):
             p.start()
             self.p.append(p)
 
@@ -184,17 +186,17 @@ class BriefRuns(Base):
         n = self.NOW
         pr = [{"name": "arch-brief", "end": 0, "cur": "gate", "t0": n - 20, "t1": n + 6}]
         s = self.row(plrun=pr)
-        self.assertEqual(AM.brief_runs([s], n + 10), {self.repo: {"stage": "gate", "n": 2, "of": 2, "t0": n - 20, "sid": "s1"}})
-        self.assertEqual(AM.runs([s], n + 10), {})   # arch-map untouched
+        self.assertEqual(AR.brief_runs([s], n + 10), {self.repo: {"stage": "gate", "n": 2, "of": 2, "t0": n - 20, "sid": "s1"}})
+        self.assertEqual(AR.runs([s], n + 10), {})   # arch-map untouched
         fp = self.put(HEAD)
         okp = os.path.join(os.path.dirname(fp), AV.BRIEF_OK)
         os.utime(okp, (n + 20, n + 20))
-        self.assertEqual(AM.result_at(AM.BRIEF_PL, self.repo), n + 20)
-        self.assertEqual(AM.brief_runs([s], n + 30), {})
+        self.assertEqual(AR.result_at(AR.BRIEF_PL, self.repo), n + 20)
+        self.assertEqual(AR.brief_runs([s], n + 30), {})
 
     def test_state_piece(self):
         st = __import__("tests._load", fromlist=["sidereus"]).sidereus("state")
-        self.assertIs(st.brief_runs, AM.brief_runs)
+        self.assertIs(st.brief_runs, AR.brief_runs)
         import inspect
         src = inspect.getsource(st)   # built once as _brun: plReq reuses it for the arch-brief request row
         self.assertIn('_brun = _piece("briefRun", brief_runs', src)

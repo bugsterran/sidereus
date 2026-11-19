@@ -6,8 +6,9 @@ Pure and stdlib only; numbers only — every text drawn comes from the gate-chec
 """
 from sidereus.arch_schema import _int
 from sidereus.arch_brief_html import e, _text_w
-from sidereus.arch_brief_html_v2 import (GRP_H, GRP_HEAD, IN_W, PKG_GX, PKG_H, PR_LINE, _actor_w, _box, _d, _ext, _ext_text,
-                                         _fit_lines, _group, _hit, _principle)
+from sidereus.arch_brief_geom import (GRP_H, IN_W, PKG_GX, PKG_H, PR_LINE, _actor_w, _ext_text, _fit_lines, _hit,
+                                      _principle)
+from sidereus.arch_brief_html_v2 import _box, _d, _ext, _group
 
 W_MIN, W_MAX, H_MIN, H_MAX = 600, 2400, 300, 3000
 PTS_MIN, PTS_MAX = 2, 8
@@ -130,7 +131,7 @@ def prin_rect(b, lay):
 
 
 def _ext_rows(x, r):
-    """(use row centres, needed height) of an external drawn at r — the same arithmetic as arch_brief_html_v2._geom."""
+    """(use row centres, needed height) of an external drawn at r — the same arithmetic as arch_brief_geom._geom."""
     head, uses = _ext_text(x)
     hh = 12 + (head[1] + 3) * len(head[0])
     rhs = [6 + (u[1] + 3) * len(u[0]) for u in uses]

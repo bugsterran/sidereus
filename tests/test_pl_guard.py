@@ -243,7 +243,7 @@ class Guard(unittest.TestCase):
         PR, PQ = sidereus("pl_runs"), sidereus("pl_reqs")
         row = PR.pl_runs_of("", 1000.0, _raw={N: r})[0]
         rec = {"pipeline": N, "at": 900.0, "sid": SID, "repo": "/repo", "stop": {"mid": "m", "at": 995.0}}
-        with mock.patch.object(PQ.arch_map, "_closed_by_result", return_value=False):
+        with mock.patch.object(PQ.arch_track, "_closed_by_result", return_value=False):
             self.assertEqual(PQ._state(rec, {"state": "idle", "plrun": [row]}, None)[0], "stopped")
 
     def test_skips_without_stop_keep_main_stage_open(self):

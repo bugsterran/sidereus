@@ -44,7 +44,7 @@ sessions · live · attention · cards · bus/chat · dm · otel · hook · term
 | tools | /api/tools* | — | — |
 | tokens | /api/wkuse | wkuse_loop, projcost_loop | — |
 | failures | /api/failures, /api/wreckage | fail_loop | — |
-| struct | /api/structure* (5) · /api/arch (verified module map + process flows, `arch_map.py` + `arch_verify.py` + `arch_flow.py`, pipeline `arch-map`; UI 84j/84k) | struct_warm | `struct_mark_act` marker (chat_server page GET · POST /api/act, core) · demo_rel.py |
+| struct | /api/structure* (5) · /api/arch (verified module map + process flows, `arch_map.py` + `arch_verify.py` + `arch_flow.py`, runs `arch_track.py`, pipeline `arch-map`; UI 84j/84k) | struct_warm | `struct_mark_act` marker (chat_server page GET · POST /api/act, core) · demo_rel.py |
 | br | /api/branches, /api/git/*, /api/review* | br_boot_warm_start | state.py:14,18 · file_owner.py:13 `wt_files` (peers MCP) · commit_link.py:17 |
 | timeline | /api/agents/timeline | tl_warm | burn.py:11 · usage.py:317 · hard fallback view `time` (90b-mypref.js:26) |
 

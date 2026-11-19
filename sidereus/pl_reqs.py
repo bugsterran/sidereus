@@ -15,13 +15,13 @@ import time
 
 from sidereus.config import DATA_DIR
 from sidereus.bus import RELAY_SID, _atomic_write
-from sidereus import arch_map, gitinfo
+from sidereus import arch_map, arch_track, gitinfo
 from sidereus.memo import Refresher
 from sidereus.pl_runs import RENAMED   # core copy; pipeline_schema is feature-owned (test_arch feature_couplings)
 
 PLREQ_PATH = os.path.join(DATA_DIR, "plreq.json")   # None = memory only (--demo)
 PLSTOP_DIR = os.path.join(DATA_DIR, "plstop")       # None = no marker writes (--demo)
-PIPELINES = ("arch-map", "arch-brief", "security-checks", "security-fix", "checks-fix", "eval-fix", "redcheck", "brief-ask")   # checks-fix: old plain records stay readable · arch-brief ends on brief.ok.json (arch_map.result_at)
+PIPELINES = ("arch-map", "arch-brief", "security-checks", "security-fix", "checks-fix", "eval-fix", "redcheck", "brief-ask")   # checks-fix: old plain records stay readable · arch-brief ends on brief.ok.json (arch_track.result_at)
 PLAIN = ("checks-fix", "eval-fix", "redcheck", "brief-ask")   # redcheck = «Request a red check» DM (the session runs it; the viewer never does) · a plain fix DM: sent/gone only, no run tracking, no stop marker (exclude-list: _state also gets other pipeline names)
 RUNS = tuple(p for p in PIPELINES if p not in PLAIN)
 # Plain DM -> pipeline whose newer repo-wide gate result answers it (brief-ask = «Ask the session to draw», ends on brief.ok.json).
@@ -237,11 +237,11 @@ def stops(now):
     return [{"sid8": r["sid"][:8], "pipeline": r["pipeline"], "at": r["stop"]["at"]} for r in recs if r.get("stop")]
 
 
-REQ_TARGET_S = 6 * 3600   # = arch_map.ARCH_PEND_S: an older request no longer names a session's run target
+REQ_TARGET_S = 6 * 3600   # = arch_track.ARCH_PEND_S: an older request no longer names a session's run target
 
 
 def req_repo(sid, pipeline, now):
-    """Repo of the newest unstopped request of pipeline sent to sid within REQ_TARGET_S, "" if none (arch_map._target)."""
+    """Repo of the newest unstopped request of pipeline sent to sid within REQ_TARGET_S, "" if none (arch_track._target)."""
     with _LOCK:
         recs = _read(now)
     for r in recs:
@@ -317,7 +317,7 @@ def _state(r, row, arch, until=0.0):
     alive = isinstance(row, dict) and row.get("state") not in ("done", "gone")
     if r["pipeline"] in PLAIN:   # a fix request has no run to track: delivery/ack is read from ACK on the page
         # ⚠DONE_BY only: eval-fix and redcheck have no repo-wide end signal.
-        if r["pipeline"] in DONE_BY and arch_map.result_at(DONE_BY[r["pipeline"]], r["repo"]) > r["at"]:
+        if r["pipeline"] in DONE_BY and arch_track.result_at(DONE_BY[r["pipeline"]], r["repo"]) > r["at"]:
             return "done", ""
         return ("sent" if alive else "gone"), ""
     run = _pick_run(r, row, until)
@@ -328,7 +328,7 @@ def _state(r, row, arch, until=0.0):
     ended = run is not None and bool(_num(run.get("end")) or _num(run.get("stop")))
     # ⚠Codex leaves a record at end 0: a result newer than its last sign ends it unless the tracked run still runs it.
     mine = isinstance(arch, dict) and arch.get("sid") == r["sid"]
-    ended = ended or (run is not None and not mine and arch_map._closed_by_result(run, r["repo"], r["pipeline"]))
+    ended = ended or (run is not None and not mine and arch_track._closed_by_result(run, r["repo"], r["pipeline"]))
     stage = (run.get("cur") if run is not None and isinstance(run.get("cur"), str) else "") or ""
     is_open = alive and run is not None and not ended
     if alive and isinstance(arch, dict) and arch.get("sid") == r["sid"] and not ended:
@@ -340,7 +340,7 @@ def _state(r, row, arch, until=0.0):
     if ended or until:   # superseded: the session took the newer request, so the older one no longer waits
         return "done", ""
     # ⚠Codex / hookless runs leave no plrun: the repo's gate result written after the request is the only end signal.
-    if run is None and arch_map.result_at(r["pipeline"], r["repo"]) > r["at"]:
+    if run is None and arch_track.result_at(r["pipeline"], r["repo"]) > r["at"]:
         return "done", ""
     return ("sent" if alive else "gone"), ""
 

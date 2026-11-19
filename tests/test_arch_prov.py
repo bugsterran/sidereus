@@ -11,6 +11,7 @@ from tests._load import sidereus
 
 AP = sidereus("arch_prov")
 AM = sidereus("arch_map")
+AR = sidereus("arch_track")
 AV = sidereus("arch_verify")
 PL = sidereus("pl_runs")
 W = sidereus("work")
@@ -56,7 +57,8 @@ class ProvTest(unittest.TestCase):
                   mock.patch.object(W, "_sid_path", lambda cwd, sid: self.paths.get(sid, "")),
                   mock.patch.object(CR, "projects_dirs", lambda primary: [self.projects]),
                   mock.patch.object(AV, "ARCH_DIR", os.path.join(self.tmp, "arch")),
-                  mock.patch.object(AM, "ARCH_DIR", os.path.join(self.tmp, "arch"))]
+                  mock.patch.object(AM, "ARCH_DIR", os.path.join(self.tmp, "arch")),
+                  mock.patch.object(AR, "ARCH_DIR", os.path.join(self.tmp, "arch"))]
         for p in self.p:
             p.start()
 
@@ -165,9 +167,9 @@ class ProvTest(unittest.TestCase):
         self.assertIsNone(AP.load_prov(self.repo, C1, T + 200))
 
     def test_r1_runs_records_from_session_row(self):
-        # R1: arch_map.runs() records when a tracked run ends with a verify.json newer than its t0.
+        # R1: arch_track.runs() records when a tracked run ends with a verify.json newer than its t0.
         self.cc_session(SID, [])
-        d = os.path.join(AM.ARCH_DIR, AV.repo_key(self.repo), C1)
+        d = os.path.join(AR.ARCH_DIR, AV.repo_key(self.repo), C1)
         os.makedirs(d)
         with open(os.path.join(d, "verify.json"), "w", encoding="utf-8") as f:
             f.write("{}")
@@ -176,28 +178,28 @@ class ProvTest(unittest.TestCase):
                "plm": {"name": "arch-map", "title": VER, "age": 100}, "plrun": []}
         seen = {self.repo: {"stage": VER, "sid": SID, "t0": T, "at": T + 100}}
         # SIDEREUS_ROOT without a pipeline file = map-only arch-map, so verify.json ends the run
-        with mock.patch.object(AM, "_RUN_SEEN", seen), mock.patch.object(AM, "_titles", lambda: []), \
+        with mock.patch.object(AR, "_RUN_SEEN", seen), mock.patch.object(AR, "_titles", lambda: []), \
                 mock.patch.object(AM, "SIDEREUS_ROOT", self.sidereus), \
-                mock.patch.object(AM, "_target", lambda s, now, pl="arch-map": (self.repo, 0.0)):
-            AM.runs([row], now=T + 250)
+                mock.patch.object(AR, "_target", lambda s, now, pl="arch-map": (self.repo, 0.0)):
+            AR.runs([row], now=T + 250)
         self.assertEqual(AP.get(self.repo, C1, T + 200)["sid"], SID)
 
     def test_r1_records_after_overview_gate(self):
         # with overview stages the run (and its provenance) ends on brief.ok.json, not on verify.json
         self.cc_session(SID, [])
-        d = os.path.join(AM.ARCH_DIR, AV.repo_key(self.repo), C1)
+        d = os.path.join(AR.ARCH_DIR, AV.repo_key(self.repo), C1)
         os.makedirs(d)
-        for name, t in (("verify.json", T + 150), (AM.BRIEF_OK, T + 200)):
+        for name, t in (("verify.json", T + 150), (AR.BRIEF_OK, T + 200)):
             with open(os.path.join(d, name), "w", encoding="utf-8") as f:
                 f.write("{}")
             os.utime(os.path.join(d, name), (t, t))
         row = {"sid": SID, "plat": "cc", "cwd": self.repo, "model": "opus-4-1", "state": "think", "tool": "",
                "plm": {"name": "arch-map", "title": "개요 검증", "age": 100}, "plrun": []}
         seen = {self.repo: {"stage": "개요 검증", "sid": SID, "t0": T, "at": T + 100}}
-        with mock.patch.object(AM, "_RUN_SEEN", seen), mock.patch.object(AM, "_titles", lambda: []), \
-                mock.patch.object(AM, "_late_titles", lambda: frozenset((VER, "개요 그리기", "개요 검증"))), \
-                mock.patch.object(AM, "_target", lambda s, now, pl="arch-map": (self.repo, 0.0)):
-            AM.runs([row], now=T + 250)
+        with mock.patch.object(AR, "_RUN_SEEN", seen), mock.patch.object(AR, "_titles", lambda: []), \
+                mock.patch.object(AR, "_late_titles", lambda: frozenset((VER, "개요 그리기", "개요 검증"))), \
+                mock.patch.object(AR, "_target", lambda s, now, pl="arch-map": (self.repo, 0.0)):
+            AR.runs([row], now=T + 250)
         self.assertEqual(AP.get(self.repo, C1, T + 150)["sid"], SID)
 
     def test_r1_fallback_matches_non_sidereus_repo(self):
@@ -227,7 +229,7 @@ class ProvTest(unittest.TestCase):
     def test_r1_runs_records_when_signs_are_gone(self):
         # R1: usual end — verify.json written, agent gone, plrun closed, marker cleared: no sign, the gap loop records.
         self.cc_session(SID, [])
-        d = os.path.join(AM.ARCH_DIR, AV.repo_key(self.repo), C1)
+        d = os.path.join(AR.ARCH_DIR, AV.repo_key(self.repo), C1)
         os.makedirs(d)
         with open(os.path.join(d, "verify.json"), "w", encoding="utf-8") as f:
             f.write("{}")
@@ -235,8 +237,8 @@ class ProvTest(unittest.TestCase):
         row = {"sid": SID, "plat": "cc", "cwd": self.repo, "model": "opus-4-1", "state": "wait", "tool": "",
                "plrun": [{"name": "arch-map", "end": T + 210, "t0": T, "t1": T + 210, "cur": VER}]}
         seen = {self.repo: {"stage": VER, "sid": SID, "t0": T, "at": T + 230}}
-        with mock.patch.object(AM, "_RUN_SEEN", seen), mock.patch.object(AM, "_titles", lambda: []):
-            self.assertEqual(AM.runs([row], now=T + 250), {})
+        with mock.patch.object(AR, "_RUN_SEEN", seen), mock.patch.object(AR, "_titles", lambda: []):
+            self.assertEqual(AR.runs([row], now=T + 250), {})
         self.assertEqual(AP.get(self.repo, C1, T + 200)["sid"], SID)
 
     def cross(self, sid, agents, run):

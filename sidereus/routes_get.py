@@ -19,7 +19,7 @@ from sidereus.toolidx import scanning as tools_scanning
 from sidereus.toolinv import scan_items, tool_file
 from sidereus.pipeline import pipelines, runs_here as pipeline_runs_here
 from sidereus.sessions import sessions_snapshot
-from sidereus.arch_map import ARCH_PL, seen_runs as arch_seen_runs
+from sidereus.arch_track import ARCH_PL, seen_runs as arch_seen_runs
 from sidereus.pipeline_projects import browse_dirs as pipeline_dirs, recent_dirs as pipeline_recent_dirs
 from sidereus.pl_eval_view import pl_eval as pipeline_eval
 from sidereus.harness_plat import harness_evidence_only, harness_plat, harness_plat_file

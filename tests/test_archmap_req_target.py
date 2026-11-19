@@ -1,4 +1,4 @@
-"""arch_map.runs + pl_reqs.view: a run requested for a repo only its subagents touched (not in the row's cwd/repos)
+"""arch_track.runs + pl_reqs.view: a run requested for a repo only its subagents touched (not in the row's cwd/repos)
 ends once that repo's verify.json is written, even while the plrun stays open at «검증» hold and the session is busy."""
 import os
 import shutil
@@ -9,6 +9,7 @@ from unittest import mock
 from tests._load import sidereus
 
 AM = sidereus("arch_map")
+AR = sidereus("arch_track")
 AV = sidereus("arch_verify")
 PL = sidereus("pl_reqs")
 C1 = "b" * 40
@@ -30,8 +31,8 @@ class ReqTargetTest(unittest.TestCase):
         self.store = os.path.join(self.tmp, "store")
         self.mem = [{"id": "m1", "repo": self.target, "pipeline": "arch-map", "sid": SID, "to": "orch", "mid": "m1",
                      "at": REQ_AT}]
-        self.p = [mock.patch.object(AM, "ARCH_DIR", self.store), mock.patch.object(AM, "SIDEREUS_ROOT", self.home),
-                  mock.patch.object(AM, "_titles", lambda: list(TITLES)), mock.patch.object(AM, "_RUN_SEEN", {}),
+        self.p = [mock.patch.object(AR, "ARCH_DIR", self.store), mock.patch.object(AM, "SIDEREUS_ROOT", self.home),
+                  mock.patch.object(AR, "_titles", lambda: list(TITLES)), mock.patch.object(AR, "_RUN_SEEN", {}),
                   mock.patch.object(PL, "PLREQ_PATH", None), mock.patch.object(PL, "PLSTOP_DIR", None),
                   mock.patch.object(PL, "_MEM", self.mem), mock.patch.object(PL, "_now", lambda: NOW)]
         for p in self.p:
@@ -61,23 +62,23 @@ class ReqTargetTest(unittest.TestCase):
 
     def test_finished_agent_ends_run_and_request(self):
         s = self.row()
-        arch = AM.runs([s], NOW)
+        arch = AR.runs([s], NOW)
         self.assertEqual(arch, {})
         v = PL.view([s], arch, {}, NOW)
         self.assertEqual(v[self.target][0]["state"], "done")
 
     def test_running_agent_keeps_request_open(self):
         s = self.row(ag_run=True)
-        self.assertFalse(AM._closed_by_result(s["plrun"][0], self.target))
+        self.assertFalse(AR._closed_by_result(s["plrun"][0], self.target))
         s["sub"] = [{"lab": "general-purpose: [pl:arch-map/검증] verify", "min": 1}]
-        arch = AM.runs([s], NOW)
+        arch = AR.runs([s], NOW)
         self.assertEqual(list(arch), [self.target])
         self.assertEqual(PL.view([s], arch, {}, NOW)[self.target][0]["state"], "run")
 
     def test_no_request_falls_back_to_cwd(self):
         del self.mem[:]
         s = self.row()
-        self.assertEqual(list(AM.runs([s], NOW)), [self.cwd])
+        self.assertEqual(list(AR.runs([s], NOW)), [self.cwd])
 
 
 if __name__ == "__main__":

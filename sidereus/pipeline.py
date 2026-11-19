@@ -234,7 +234,7 @@ def _strs(v):
 
 
 def runs_here(proj, rows, arch, arch_name):
-    """[(pipeline name, [owner hint projects])] of runs attached to `proj`: the Sidereus tool run on it (`arch` = arch_map
+    """[(pipeline name, [owner hint projects])] of runs attached to `proj`: the Sidereus tool run on it (`arch` = arch_track
     seen_runs, hints = its session's cwd + repos) and plrun runs of sessions whose cwd is `proj` (hints = run proj, cwd, repos).
     ⚠cwd only for plrun: a session listing Sidereus in `repos` would otherwise lend every pipeline it runs to Sidereus.
     Builtin names (security-fix) attach by the run's recorded proj (its target repo) instead: the session's cwd is elsewhere."""

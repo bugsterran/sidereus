@@ -118,7 +118,7 @@ flowchart LR
 
 ### 파일
 
-`sidereus/arch_map.py`(`/api/arch`) · `arch_verify.py`(연결 검증, 저장) · `arch_flow.py`(흐름) · `arch_schema.py`(map.json 형식) ·
+`sidereus/arch_map.py`(`/api/arch`) · `arch_track.py`(진행 중 실행) · `arch_verify.py`(연결 검증, 저장) · `arch_flow.py`(흐름) · `arch_schema.py`(map.json 형식) ·
 `structure.py`, `structure_scan.py`, `structure_lang*.py`, `structure_plug.py`(트리맵) · `structure_tree.py`(소스 창) ·
 `arch_checks.py`(보안 검사 결과) · `web/js/80`–`84k-structure*.js`, `web/js/84l-structure-arch-checks.js` ·
 `scripts/arch_checks.py`(보안 검사 실행).

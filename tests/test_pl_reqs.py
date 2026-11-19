@@ -11,6 +11,7 @@ from tests._load import sidereus
 
 PQ = sidereus("pl_reqs")
 AM = sidereus("arch_map")
+AR = sidereus("arch_track")
 SID = "0a1b2c3d-0000"
 NOW = 1_000_000.0
 REPO = "/tmp/repo"  # nosec B108 -- fake path, never touched
@@ -35,7 +36,7 @@ class _Base(unittest.TestCase):
             p.start()
             self.addCleanup(p.stop)
         self.store = os.path.join(self.tmp, "arch")
-        p = mock.patch.object(AM, "ARCH_DIR", self.store)   # gate results: tmp store, never the live one
+        p = mock.patch.object(AR, "ARCH_DIR", self.store)   # gate results: tmp store, never the live one
         p.start()
         self.addCleanup(p.stop)
 
@@ -145,10 +146,10 @@ class ChecksFixTest(_Base):
         self.assertEqual(st([]), "gone")
         d = os.path.join(self.store, AM.repo_key(REPO))
         os.makedirs(d)
-        with open(os.path.join(d, AM.SEC_LOG_FILE), "w", encoding="utf-8") as f:
+        with open(os.path.join(d, AR.SEC_LOG_FILE), "w", encoding="utf-8") as f:
             f.write(json.dumps({"v": 1, "at": NOW - 10, "src": "review"}) + "\n")
         self.assertEqual(st([row]), "sent")                               # older result: not the re-scan
-        with open(os.path.join(d, AM.SEC_LOG_FILE), "a", encoding="utf-8") as f:
+        with open(os.path.join(d, AR.SEC_LOG_FILE), "a", encoding="utf-8") as f:
             f.write(json.dumps({"v": 1, "at": NOW + 400, "src": "review"}) + "\n")
         self.assertEqual(st([row]), "done")
         self.assertEqual(st([]), "done")
@@ -171,7 +172,7 @@ class ChecksFixTest(_Base):
     def test_r2_newer_result_is_done(self):
         self.req(pipeline="checks-fix", mid="f1")
         self.git = ["b2b2b2b\t%d\n" % (NOW + 5)]
-        with mock.patch.object(AM, "result_at", lambda pl, repo: NOW + 100 if pl == "security-checks" else 0.0):
+        with mock.patch.object(AR, "result_at", lambda pl, repo: NOW + 100 if pl == "security-checks" else 0.0):
             v = self.fix_rows()["checks-fix"]
         self.assertEqual(v["state"], "done")
 
@@ -352,10 +353,10 @@ class ViewStateTest(_Base):
         self.assertEqual(sec([]), ("gone", ""))
         d = os.path.join(self.store, AM.repo_key(REPO))
         os.makedirs(d)
-        with open(os.path.join(d, AM.SEC_LOG_FILE), "w", encoding="utf-8") as f:
+        with open(os.path.join(d, AR.SEC_LOG_FILE), "w", encoding="utf-8") as f:
             f.write(json.dumps({"v": 1, "at": NOW + 300, "src": "scan"}) + "\n")
         self.assertEqual(sec([row]), ("sent", ""))                       # stage 1's scan record is not the end
-        with open(os.path.join(d, AM.SEC_LOG_FILE), "a", encoding="utf-8") as f:
+        with open(os.path.join(d, AR.SEC_LOG_FILE), "a", encoding="utf-8") as f:
             f.write(json.dumps({"v": 1, "at": NOW + 400, "src": "review"}) + "\n")
         self.assertEqual(sec([row]), ("done", ""))
 
@@ -421,7 +422,7 @@ class SecurityFixTest(_Base):
     def test_r4_done_needs_review_stage(self):
         self.send()
         run = {"name": "security-fix", "t0": NOW + 5, "end": NOW + 900, "cur": "재검사", "stages": {"수정": {"o": "done"}, "재검사": {"o": "fail"}}}
-        with mock.patch.object(AM, "result_at", lambda pl, repo: NOW + 100):   # a newer scan alone is no reviewed fix
+        with mock.patch.object(AR, "result_at", lambda pl, repo: NOW + 100):   # a newer scan alone is no reviewed fix
             v = PQ.view([self.row(run)], {})[REPO][0]
             self.assertEqual((v["state"], v["reviewOk"]), ("sent", False))
             self.assertNotIn("closed", self.stored()[0])

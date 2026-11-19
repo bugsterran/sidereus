@@ -9,6 +9,7 @@ from unittest import mock
 from tests._load import sidereus
 
 H2 = sidereus("arch_brief_html_v2")
+G = sidereus("arch_brief_geom")
 AH = sidereus("arch_brief_html")
 
 
@@ -131,7 +132,7 @@ class RenderV2Test(unittest.TestCase):
         h = H2.render(b)
         H = int(re.search(r'<svg viewBox="0 0 1200 (\d+)"', h).group(1))
         self.assertLessEqual(H, 780)
-        rt, _g = H2.routes(b)
+        rt, _g = G.routes(b)
         self.assertEqual(len(rt), COMP_ARROWS)
         boxes = [(lx - lw // 2, ly - 11, lw, 13) for _pts, lx, ly, lw in rt.values()]
         for i, p in enumerate(boxes):
@@ -197,11 +198,11 @@ class RenderV2Test(unittest.TestCase):
             for p in real(*a):
                 n[0] += 1
                 yield p
-        with mock.patch.object(H2.itertools, "permutations", counting):
-            rt, g = H2.routes(b)
+        with mock.patch.object(G.itertools, "permutations", counting):
+            rt, g = G.routes(b)
         self.assertEqual([len(x) for x in g["gaps"]], [0, 7, 5, 0])
         self.assertLess(n[0], 100000)
-        self.assertEqual(H2._crossings(dict((k, (v[0], None, 0)) for k, v in rt.items())), 4)
+        self.assertEqual(G._crossings(dict((k, (v[0], None, 0)) for k, v in rt.items())), 4)
 
     def test_r3_screen_to_screen_not_bundled(self):
         # R3: web->console is not a link to the system: neither screen's vertical carries it; the legend still does

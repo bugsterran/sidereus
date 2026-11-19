@@ -119,7 +119,7 @@ class OpenRun(unittest.TestCase):
 
     def _req_state(self, r):
         rec = {"pipeline": N, "at": NOW - 890, "sid": SID, "repo": "/repo"}
-        with mock.patch.object(PQ.arch_map, "_closed_by_result", return_value=False):
+        with mock.patch.object(PQ.arch_track, "_closed_by_result", return_value=False):
             return PQ._state(rec, {"state": "idle", "plrun": [r]}, None)[0]
 
     def test_fin_closes_when_agents_finished(self):

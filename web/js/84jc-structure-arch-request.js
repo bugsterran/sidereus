@@ -80,7 +80,7 @@ function archSentPh(p){
   return q.act ? 'run' : 'sent';
 }
 function archEl(q, now){ return ago(Math.max(0, Math.floor((now - q.at) / 1000))); }
-// Server-side run in progress for p (state `archRun`, sidereus/arch_map.runs; ARCHRUN in 00-core): survives reload, ends with the run.
+// Server-side run in progress for p (state `archRun`, sidereus/arch_track.runs; ARCHRUN in 00-core): survives reload, ends with the run.
 // pl: pipeline name (default arch-map); security-checks = state `secRun` (SECRUN, 84l ARCH_SEC_PL). ⚠typeof: tests define ARCHRUN only.
 function archRunOf(p, pl){ const M = !pl || pl === ARCH_PL ? ARCHRUN : pl === 'security-checks' && typeof SECRUN !== 'undefined' ? SECRUN : null;
   const r = p && M && M[p]; return r && typeof r === 'object' && r.stage ? r : null; }

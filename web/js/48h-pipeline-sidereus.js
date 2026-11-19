@@ -1,6 +1,6 @@
 // «Pipelines» tab: a Sidereus-owned tool pipeline (arch-map) running on this project, shown read-only.
 // The definition lives in the Sidereus repo (84j archHome), never in the target project; nothing here edits or runs it.
-// ⚠Run state = state `archRun` (sidereus/arch_map.runs) via 84j archRunOf; the hook keeps no plrun for such sessions.
+// ⚠Run state = state `archRun` (sidereus/arch_track.runs) via 84j archRunOf; the hook keeps no plrun for such sessions.
 let PLAG = false;   // the «arch-map · Sidereus» chip is open
 function plAgSet(on){ PLAG = !!on; }
 function plAgHome(){ return SIDEREUS_DIR || (typeof archHome === 'function' ? archHome(null) : ''); }
