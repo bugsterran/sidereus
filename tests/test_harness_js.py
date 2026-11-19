@@ -13,7 +13,7 @@ from tests._node import node_e
 _F = os.path.join(ROOT, "web", "js", "47b-harness.js")
 _STUB = """
 const NOW = 1790000000000; Date.now = () => NOW;   // fixed clock: HN.at below is set from NOW, so the data reads as fresh
-var LANG = 'ko', mainView = 'pipe', PLVIEW = 'harness', TKVIEW = 'use', SESS = [], URLS = [], PAINTS = 0;
+var LANG = 'ko', mainView = 'pipe', PLVIEW = 'harness', SESS = [], URLS = [], PAINTS = 0;
 const PLS = {proj: '/w/a'};
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
 function stamp(s){ return 'T' + s; } function fmtTok(n){ return String(n); }
@@ -528,7 +528,8 @@ class Harness(unittest.TestCase):
             tk = f.read()
         with open(os.path.join(ROOT, "web", "js", "48-pipeline.js"), encoding="utf-8") as f:
             pl = f.read()
-        self.assertIn("const TKVIEWS = ['use', 'tools', 'conn'];", tk)   # «Connections» = 47k-mcpconn.js
+        self.assertNotIn("TKVIEW", tk)   # Tools/Connections moved to the pipeline tab
+        self.assertIn("const PLVIEWS = ['pipe', 'harness', 'tools', 'conn'];", pl)
         self.assertNotIn("paintHarness", tk)
         self.assertIn("data-plv", pl)
         self.assertIn("FEATS.harness === false", pl)   # toggle hidden when the feature is off

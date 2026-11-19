@@ -80,7 +80,7 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - «After push (CI)» (`gh run watch`) appears once the evidence hook has recorded a `gh run watch <id> --exit-status` (or `gh run view … --exit-status`) result; a red CI run fixed by a later green one is an incident card like the others. «Holding: CI streak n/5» counts the newest green CI runs in a row; a red run resets it. Sidereus never calls `gh` or GitHub itself.
 - A «A person» card shows the pipeline name, when the run ended, the commits made in that run and the `tests/` files those commits touched («test that now guards it»); none = «no guarding test». If git could not be read it says «commits unavailable».
 - One card per catch, newest first: red run (time · hash · exit code · failures) → fix commits → green run → held/reverted. A checkpoint that ran but caught nothing is one quiet card «ran n times, caught 0».
-- «Check results» under the cards counts flagged config rows; click «problems» / «to check» to step through them in Tools › «Config map».
+- «Check results» under the cards counts flagged config rows; click «problems» / «to check» to step through them in Pipelines › Tools › «Config map».
 - Hook rows can carry two cost flags from hook-run records of the covered period. Slow means one event and subject averaged 1000 ms or more per firing; the row shows the average and the run count, and when two or more hooks share that event and subject it says how many hooks the time combines. No visible effect means 50 or more firings (the threshold the server uses) that never blocked and never printed anything. Side effects such as file writes are not visible here, so that flag is a prompt to check, not proof the hook is useless. A hook that telemetry saw fire but that has no cost record shows a muted line saying time and effect are not measured yet; it is not a verdict and never reads as clean.
 - «Remove» on a user or project hook chip in «Config map» previews the settings file with only that entry taken out; «Apply» backs the file up to `tool-trash/` and writes it, then the result line names the backup. Plugin hooks have «How to turn off» instead: the plugin name and `/plugin disable <name>` to copy. Plugin files are never written.
 - «Next step» (folded, under a flagged config row, a «Re-fixed» / «Reverted» / «Unverified (uncommitted)» card or a «Required gate skipped» chip): «Meaning», «Why it matters», «Who acts» (yourself · hand to an AI session · owner decision) and «Next step», one line each, from `docs/verdicts/<id>.md`. «Yourself» names one command or setting (e.g. `/hooks`); «Owner decision» adds «Safe to ignore when»; «Hand to an AI session» has «Draft instruction»: preview the text (verdict id, file, counts — no conversation content; names a matching pipeline such as `sidereus-bugfix` when the project has it), pick a session, «Confirm — send» relays it through the mailbox. Sidereus fixes nothing itself.
@@ -94,6 +94,22 @@ Three stacked parts: canvas | selected stage's result | «Running N» card.
 - «Details» › «Results»: recorded check runs, newest first (with [`ev_hook.py`](HOOKS.md#ev_hookpy), test/build/lint commands from any project).
 
 ⚠ Without Claude Code telemetry, hooks that print nothing leave no record: «no record» does not mean «never ran». With telemetry on ([CONFIG.md](CONFIG.md)), every Claude Code hook gets a full run count, and one that ran 0 times over 3+ covered days is flagged «did not run in N days».
+
+### Pipelines › Tools
+
+Pick **Tools** in the view switch («Pipelines | Harness report | Tools | Connections»). It stays there when the Harness report is turned off. A saved Token › Tools view or old link opens here once.
+
+- Skills, agents, commands, MCP servers and hooks with 30-day use; «Config map» (folded, open state remembered) on top shows the pipeline project's hook flow, rule files, agents ↔ pipelines, MCP servers and skills; click a «problems» / «to check» count to step through.
+
+### Pipelines › Connections
+
+Pick **Connections** in the same switch to see which MCP servers one session can reach. A saved Token › Connections view or old link opens here once.
+
+- The strip on top lists live sessions from every CLI. The picked session sits in the centre of the orbit, with one node per MCP server it can load (user, project for its folder, plugin). claude.ai connectors fold into one node; click it to open them as an outer ring.
+- Each node shows that session's own state: **Connected** (green), **Failed** (red, error code only), **Login needed** (a connector that offers only its sign-in tools) and **Unknown** (grey, no record yet). Edge width follows the session's call count, and a call in the last 15 minutes draws moving dots (still when reduced motion is on).
+- Codex records a server only when it is called, so a configured server it has not used stays Unknown. pi counts calls through the Sidereus pi extension from the moment it sees the session; Connected/Failed needs the current extension (Settings › Diagnostics › «Connect», then `/reload` in pi).
+- Click a node (or drag it onto the centre for Task) to act on it. **Task**, **Diagnose** and **Restart** write a short mailbox message to that session; you see the text first and nothing is sent until you press **Confirm — send**. Sent requests appear in the request log.
+- **Reconnect** (or **Login steps**) only shows the steps for that CLI with a Copy button. Sidereus never reconnects, restarts or starts an MCP server itself, and never reads tool arguments, results or error text.
 
 ## Read the code structure
 
@@ -218,19 +234,8 @@ Sessions can check this themselves with the MCP tool `sidereus_file_peers` ([MCP
 ![Tokens tab](images/tokens-en.png)
 
 - Tokens: usage by model and project, running subagents, «Daily» (tokens, cost, top 2 projects per day; today's cost excludes the live share) and «Top 5 costly runs».
-- Tools: skills, agents, commands, MCP servers and hooks with 30-day use; «Config map» (folded, open state remembered) on top shows the pipeline project's hook flow, rule files, agents ↔ pipelines, MCP servers and skills; click a «problems» / «to check» count to step through.
 - Insights, for longer periods: «Tool ranking», «Time spent», «Cache rewrites», «Activity by hour» and «Models» (last 8 days), «Hook cost» (per event type, scripts are not named).
 - With 2+ accounts the picker scopes only the period totals (Tokens) and the OTel cards (Insights); live figures stay all accounts.
-
-### Tokens › Connections
-
-Pick **Connections** next to Usage and Tools to see which MCP servers one session can reach.
-
-- The strip on top lists live sessions from every CLI. The picked session sits in the centre of the orbit, with one node per MCP server it can load (user, project for its folder, plugin). claude.ai connectors fold into one node; click it to open them as an outer ring.
-- Each node shows that session's own state: **Connected** (green), **Failed** (red, error code only), **Login needed** (a connector that offers only its sign-in tools) and **Unknown** (grey, no record yet). Edge width follows the session's call count, and a call in the last 15 minutes draws moving dots (still when reduced motion is on).
-- Codex records a server only when it is called, so a configured server it has not used stays Unknown. pi counts calls through the Sidereus pi extension from the moment it sees the session; Connected/Failed needs the current extension (Settings › Diagnostics › «Connect», then `/reload` in pi).
-- Click a node (or drag it onto the centre for Task) to act on it. **Task**, **Diagnose** and **Restart** write a short mailbox message to that session; you see the text first and nothing is sent until you press **Confirm — send**. Sent requests appear in the request log.
-- **Reconnect** (or **Login steps**) only shows the steps for that CLI with a Copy button. Sidereus never reconnects, restarts or starts an MCP server itself, and never reads tool arguments, results or error text.
 
 ## Chat rooms
 

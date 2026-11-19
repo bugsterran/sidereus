@@ -1,4 +1,4 @@
-// «Tools» view of the token tab (46-tokens-tab.js TKVIEW) — read-only list of skills/agents/commands/MCP/hooks.
+// «Tools» view of the pipeline tab (48-pipeline.js PLVIEW 'tools') — read-only list of skills/agents/commands/MCP/hooks.
 // ⚠Metadata only: the list shows names, paths, sizes, counts; config text appears only after a row click (/api/tools/file).
 let TOOLS = null, toolsAt = 0, toolsBusy = false, TOOLF = null;   // TOOLF = {id, name, path, text|err} of the opened row
 const TOOL_KINDS = [['skill', 'Skills'], ['agent', 'Agents'], ['cmd', 'Commands'], ['mcp', 'MCP servers'], ['hook', 'Hooks']];
@@ -11,8 +11,8 @@ async function loadTools(force){
   try{ TOOLS = await getJSON('/api/tools?days=30'); }
   catch(e){ TOOLS = { ok: false, msg: fetchErrMsg(e) }; }
   toolsBusy = false;
-  if(mainView === 'token' && TKVIEW === 'tools') paintToken();
-  if(TOOLS && TOOLS.scanning) setTimeout(() => { if(mainView === 'token' && TKVIEW === 'tools') loadTools(true); }, 5000);   // partial counts: poll while visible
+  if(mainView === 'pipe' && PLVIEW === 'tools') plPaint();
+  if(TOOLS && TOOLS.scanning) setTimeout(() => { if(mainView === 'pipe' && PLVIEW === 'tools') loadTools(true); }, 5000);   // partial counts: poll while visible
 }
 function tvwRow(r){
   const sc = TOOL_SCOPE[r.scope] ? T(TOOL_SCOPE[r.scope]) : r.scope;
@@ -67,21 +67,21 @@ function paintTools(box){
   box.innerHTML = h;
 }
 async function tvwOpen(id){
-  if(TOOLF && TOOLF.id === id){ TOOLF = null; paintToken(); return; }
+  if(TOOLF && TOOLF.id === id){ TOOLF = null; plPaint(); return; }
   const r = ((TOOLS && TOOLS.items) || []).find(x => x.id === id);
   if(!r) return;
   TOOLF = { id, name: r.name, path: r.path, text: null };
-  paintToken();
+  plPaint();
   let v;
   try{ v = await getJSON('/api/tools/file?id=' + encodeURIComponent(id)); }
   catch(e){ v = { ok: false, msg: e && e.status === 404 ? T('No such item.') : fetchErrMsg(e) }; }
   if(!TOOLF || TOOLF.id !== id) return;
   if(v && v.ok) TOOLF.text = String(v.text || ''); else TOOLF.err = (v && v.msg) || T('Could not read');
-  paintToken();
+  plPaint();
 }
 document.addEventListener('click', e => {
   if(!e.target.closest) return;
-  if(e.target.closest('[data-tvwx]')){ TOOLF = null; paintToken(); return; }
+  if(e.target.closest('[data-tvwx]')){ TOOLF = null; plPaint(); return; }
   const r = e.target.closest('.tvwr[data-tid]');
   if(r) tvwOpen(r.dataset.tid);
 });

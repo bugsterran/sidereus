@@ -1,6 +1,6 @@
-/* Token tab «Tool» view (web/js/47-tools.js) + the «Usage | Tools» switch (46-tokens-tab.js tkViewSeg) */
+/* Pipeline tab «Tools» view (web/js/47-tools.js) + the view switch buttons (48-pipeline.js plViewSeg) */
 .tkvs{display:flex;gap:4px;margin:0 0 10px}
-.tbs > .tkvs{margin:0}   /* Usage|Tools and Pipelines|Harness sit in the header toolbar slot (#tbar) */
+.tbs > .tkvs{margin:0}   /* Pipelines|Harness report|Tools|Connections sit in the header toolbar slot (#tbar) */
 .tvw .hidnote{margin:4px 0}
 .tvwg{margin-bottom:6px}
 .tvwt{table-layout:fixed}

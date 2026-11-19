@@ -19,13 +19,14 @@ def run(body):
     return json.loads(r.stdout)
 
 
-def boot(hash_, own=None, ui=None, popup=False):
-    """Evaluate the 05-i18n mainView IIFE against a stubbed location/storage."""
+def boot(hash_, own=None, ui=None, popup=False, full=False):
+    """Evaluate the 05-i18n mainView IIFE against a stubbed location/storage; full = [mainView, mvTkMoved, tabSet calls]."""
     iife = re.search(r"^let mainView = \(\(\) => \{.*?\}\)\(\);", js_all(), re.S | re.M).group(0)
-    body = ("const location = {hash: %s}, UIS = %s, OWN = %s;\n" % (json.dumps(hash_), json.dumps(ui or {}), json.dumps(own or {}))
-            + "const ISPOP = %s, ISWP = false, ISBP = false;\n" % ("true" if popup else "false")
+    body = ("const location = {hash: %s}, UIS = %s, OWN = %s, SETS = [];\n" % (json.dumps(hash_), json.dumps(ui or {}), json.dumps(own or {}))
+            + "const ISPOP = %s, ISWP = false, ISBP = false;\nlet mvTkMoved = '';\n" % ("true" if popup else "false")
             + "function tabOwn(k){ return Object.prototype.hasOwnProperty.call(OWN, k) ? OWN[k] : null; }\n"
-            + iife + "\nprocess.stdout.write(JSON.stringify(mainView));")
+            + "function tabSet(k, v){ SETS.push([k, v]); return true; }\n"
+            + iife + "\nprocess.stdout.write(JSON.stringify(%s));" % ("[mainView, mvTkMoved, SETS]" if full else "mainView"))
     return run(body)
 
 
@@ -55,6 +56,20 @@ class MainViewHash(unittest.TestCase):
 
     def test_popup_ignores_hash(self):
         self.assertEqual(boot("#structure", own={"mbMainView": "chat"}, popup=True), "chat")
+
+    def test_r3_stored_tokens_tools_lands_on_pipelines(self):
+        self.assertEqual(boot("", ui={"mbMainView": "token", "sidereus.tkview": "tools"}, full=True),
+                         ["pipe", "tools", [["mbMainView", "pipe"]]])
+        self.assertEqual(boot("#tokens", ui={"sidereus.tkview": "conn"}, full=True), ["pipe", "conn", [["mbMainView", "pipe"]]])
+
+    def test_r3_usage_and_other_tabs_unchanged(self):
+        self.assertEqual(boot("#tokens", ui={"sidereus.tkview": "use"}, full=True), ["token", "", []])
+        self.assertEqual(boot("#tokens", full=True), ["token", "", []])   # bare #tokens with no stored view still opens Usage
+        self.assertEqual(boot("", ui={"mbMainView": "time", "sidereus.tkview": "tools"}, full=True), ["time", "", []])
+
+    def test_r3_pipelines_off_keeps_token(self):
+        self.assertEqual(boot("", ui={"mbMainView": "token", "sidereus.tkview": "tools", "mbTabsOff": '["pipe"]'}, full=True),
+                         ["token", "", []])
 
     def test_sync_uses_replace_state_and_skips_popups(self):
         tpl = ("let mainView = 'br'; const ISPOP = %s, ISWP = false, ISBP = false, calls = [];\n"

@@ -67,7 +67,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠Same family (2026-09-26): the work log's `.wvh` was 31.67px while `.aghd` is sticky at `top:66px` (=34+32), so log text showed through a 0.33px gap. ⇒ `.wvh:has(+ .aghd){box-sizing:border-box;min-height:32px}` (`40-tokens.css`). When changing a sticky head's height, check the `top` of the layer below.
 - **One header→content divider** (2026-10-13). Cause: tab captions `.wvh.wvht` drew a second full-width rule under the header rule, and `.brep`/`.rcw` top padding doubled the 12px gap (24–26px).
   - ⇒ Only the header's `var(--nx-rule)` line, then `#feed`'s 12px. `.wvh.wvht{border-bottom-width:0}`; the timeline keeps its line as the axis top (`:has(+ .tlaxr)`). `.brep`/`.rcw` have no top padding.
-  - ⇒ Sub-view switches (Tokens «Usage | Tools», Pipelines «Pipelines | Harness») go in `#tbar` via `tbSet('token')`/`tbSlot('pipe')`, never in the body.
+  - ⇒ Sub-view switches (Pipelines «Pipelines | Harness report | Tools | Connections») go in `#tbar` via `tbSlot('pipe')`, never in the body.
   - ⚠The sticky caption has no bottom edge while stuck (accepted); a new caption/toolbar row must not add its own rule.
 - ★**Right session column → top-right drawer** (2026-09-24). Default is no column; the header «Session» button (`#sesb`, badge = running tool/think · needs-me sessions `attnBadgeN`) opens it. `#lstog` · `body.lsoff/lson` are gone.
   - ⇒ State `sidereus.sespin` (1 = pinned = the old right column) · `sidereus.sesdr` (1 = drawer open). Old `sidereusLsOff` is migrated once ('0' → pinned, else → drawer) then deleted. `sidereus.wkside` shows only when pinned.
@@ -307,3 +307,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ⚠Chrome may close a modal `<dialog>` itself, with no `cancel`, after repeated prevented cancels (3rd Esc during IME composition). The typed prompt text is lost and this cannot be prevented.
   ⇒ a `close` listener only clears the stuck `UCF` (else every later dialog resolves «Cancel» as `ucf-busy`); it skips while `d.open`, since our own `close()` queues a close event that can land after a reopen (`test_forced_close_without_cancel_clears_state`).
 - ⚠`ucfKey` uses `stopImmediatePropagation`, not `stopPropagation`: the 98b tour keydown is on the same window-capture target and would still run.
+
+## Old Token › Tools/Connections redirect depends on load order (`05-i18n.js` mainView · `48-pipeline.js` PLVIEW · `46-tokens-tab.js`)
+- Cause: «Tools» and «Connections» moved from the Token tab to Pipelines; a stored `sidereus.tkview` of `tools`/`conn` (or `#tokens` with it) must land on Pipelines › that view, but 46 deletes `sidereus.tkview` at load.
+- ⇒ 05 resolves `mainView` to 'pipe' and sets `mvTkMoved`; 46 then deletes the old key; 48 (loads after 46) seeds `PLVIEW` from `mvTkMoved`, never the key, and saves `sidereus.plview`. 05 also calls `tabSet('mbMainView','pipe')`.
+- ⚠Without that `tabSet`, the stored tab stays 'token' and the tkview is gone, so a second reload opens Token › Usage.
+- ⚠Only 05 reads `sidereus.tkview`, and it must stay before 46; reading the key in any file after 46 loses the redirect.

@@ -7,10 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Tokens tab «Connections»: pick a live session to see an orbit of the MCP servers it can load, each with that session's own state (connected, failed with its error code, login needed, unknown), call count and last call; Claude Code, Codex and pi (pi through the Sidereus pi extension, including calls made inside `codemode`). A node offers «Task», «Diagnose» and «Restart» as a mailbox message shown before it is sent and kept in a request log, and «Reconnect» as per-CLI steps with Copy. Sidereus never reconnects or restarts a server itself.
+- Pipelines tab «Connections»: pick a live session to see an orbit of the MCP servers it can load, each with that session's own state (connected, failed with its error code, login needed, unknown), call count and last call; Claude Code, Codex and pi (pi through the Sidereus pi extension, including calls made inside `codemode`). A node offers «Task», «Diagnose» and «Restart» as a mailbox message shown before it is sent and kept in a request log, and «Reconnect» as per-CLI steps with Copy. Sidereus never reconnects or restarts a server itself.
 
 ### Changed
 
+- «Tools» moved from the Tokens tab to the Pipelines tab, whose view switch now reads «Pipelines | Harness report | Tools | Connections» (Tools and Connections stay when the Harness report is off); the Tokens tab shows token usage only, and a saved Tokens › Tools view or old link opens Pipelines › Tools.
 - Confirmations (pipeline «Remove» and apply mode, «Preferences» server, Claude Code and display-reset settings, mailbox watch, «Saved views» delete and overwrite) open an in-page dialog instead of the browser's `confirm()` box: translated labels, follows the theme, keeps Tab inside, Esc cancels, focus returns to the control that opened it, and long bodies wrap and scroll. The «Saved views» «Save» name and the timeline range «Custom…» hours use the same dialog instead of the browser's `prompt()` box (Enter saves, Esc cancels).
 - Error messages (a mailbox message that could not be sent, a failed pipeline «Remove» or apply-mode change, a blocked work-log popup) show in the same in-page dialog with one «Close» button instead of the browser's `alert()` box.
 

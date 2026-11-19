@@ -200,6 +200,8 @@ function TN(s){
 }
 // Pipelines-first: nothing saved / invalid / old 'work' (now a modal) lands on Pipelines; Timeline only if pipe was feature-off.
 // ⚠mbTabsOff = tabs whose feature was off at the last poll (92 buildMv); without it a remembered tab calls its 404 route.
+// mvTkMoved = 'tools'|'conn' when an old Tokens › Tools/Connections state was redirected to Pipelines (read by 48 PLVIEW; 46 then deletes the key).
+let mvTkMoved = '';
 let mainView = (() => { try { const off = JSON.parse(UIS.mbTabsOff || '[]'), ok = v => !(Array.isArray(off) && off.includes(v)) && (v === 'chat' || v === 'time'
                                       || v === 'token' || v === 'struct'
                                       || v === 'br' || v === 'hist' || v === 'retro' || v === 'pipe');
@@ -210,7 +212,10 @@ let mainView = (() => { try { const off = JSON.parse(UIS.mbTabsOff || '[]'), ok 
                               const h = (typeof mvHashKey !== 'function' || typeof ISPOP === 'undefined' || ISPOP || ISWP || ISBP) ? null : mvHashKey(location.hash);
                               const o = tabOwn('mbMainView'), s = UIS.mbStartView, v = ok(h) ? h : ok(o) ? o : ok(s) ? s : UIS.mbMainView;
                               // ⚠'fail' (tab removed 2026-09-23, now alerts) is not listed -> default tab.
-                              return ok(v) ? v : ok('pipe') ? 'pipe' : 'time'; }
+                              const r = ok(v) ? v : ok('pipe') ? 'pipe' : 'time', tk = UIS['sidereus.tkview'];   // ⚠property access: tests stub UIS as a plain object
+                              if(r === 'token' && (tk === 'tools' || tk === 'conn') && ok('pipe')){
+                                mvTkMoved = tk; if(typeof tabSet === 'function') tabSet('mbMainView', 'pipe'); return 'pipe'; }
+                              return r; }
                         catch(e){ return 'pipe'; } })();
 if(document.documentElement) document.documentElement.dataset.mv = mainView;   // same hook setMainView keeps current (75-structure.css)
 let place='all';                // 'all' | 'dm' | 'room:<name>'

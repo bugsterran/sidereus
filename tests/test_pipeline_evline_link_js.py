@@ -69,8 +69,9 @@ class EvLineLink(unittest.TestCase):
         handler = re.search(r"document\.addEventListener\('click', e => \{\n  const b = e\.target\.closest && e\.target\.closest\('\.wkrgb\[data-plv\]'\);.*?\n\}\);",
                             _read("web/js/48-pipeline.js"), re.S).group(0)
         src = r"""
-let PLVIEW = 'pipe', GO = [], PAINTS = 0, RAF = [];
-const FEATS = {}, PLS = { proj: '/p', sel: 'a' }, LS = {};
+let PLVIEW = 'pipe', GO = [], PAINTS = 0, RAF = [], mainView = 'pipe';
+const FEATS = {}, PLS = { proj: '/p', sel: 'a' }, LS = {}, PLVIEWS = ['pipe', 'harness', 'tools', 'conn'];
+function setMainView(){ throw new Error('already on the tab'); }
 const fd = { scrollTop: 640 };
 const H = {};
 const document = { getElementById: id => id === 'feed' ? fd : null, addEventListener: (t, f) => { H[t] = f; }, activeElement: null };
@@ -81,7 +82,7 @@ let CLR = 0;
 function hnGo(k){ GO.push(k); }
 function hnGoClear(){ CLR++; }
 function plPaint(){ PAINTS++; fd.scrollTop = 0; }   // innerHTML rebuild resets the feed scroll
-""" + js_fn("plPipeTopSave") + "\n" + js_fn("plPipeTopRestore") + "\n" + js_fn("plGoHarness") + "\n" + handler + r"""
+""" + js_fn("plPipeTopSave") + "\n" + js_fn("plPipeTopRestore") + "\n" + js_fn("plGoHarness") + "\n" + js_fn("plSetView") + "\n" + handler + r"""
 plGoHarness('fast|900');
 const mid = [PLVIEW, LS['sidereus.plview'], GO.slice(), PLS.pipeTop, fd.scrollTop, CLR];
 const btn = { dataset: { plv: 'pipe' } };

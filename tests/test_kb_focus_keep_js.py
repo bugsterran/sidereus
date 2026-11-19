@@ -12,9 +12,7 @@ def src(rel):
 
 class KbFocusKeep(unittest.TestCase):
     def test_segment_toggles_refocus(self):
-        t = src("web/js/46-tokens-tab.js")
         self.assertIn("function kbHold(", src("web/js/08-ui-kit.js"))
-        self.assertIn("kbHold('.wkrgb[data-tv].on')", t)
         self.assertIn("kbHold('.wkrgb[data-plv].on')", src("web/js/48-pipeline.js"))
         self.assertIn("kbHold('#strmd button[data-md]')", src("web/js/81-structure-panel.js"))
         a = src("web/js/84j-structure-arch.js")

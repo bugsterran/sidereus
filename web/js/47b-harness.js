@@ -87,7 +87,7 @@ function hnVdGo(lvl){
   const w = document.querySelector('.hnw');
   if(!(w && w.classList && w.classList.contains('hncfgw'))){
     HN.cfgOpen = true; lsSet('sidereus.hncfg', '1');
-    TKVIEW = 'tools'; lsSet('sidereus.tkview', TKVIEW); setMainView('token');
+    plSetView('tools');
     (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : setTimeout)(() => hnVdStep(lvl));
     return;
   }
@@ -250,14 +250,14 @@ async function hnLoad(proj, force){
   if(v && v.scanning) setTimeout(() => { if(FEATS.harness !== false && hnShown() && PLS.proj === proj && HN.plat === plat) hnLoad(proj, true); }, 5000);
 }
 // Harness data shows in two places: the Harness report and the Tools view's «Config map».
-function hnShown(){ return (mainView === 'pipe' && PLVIEW === 'harness') || (mainView === 'token' && TKVIEW === 'tools'); }
+function hnShown(){ return mainView === 'pipe' && (PLVIEW === 'harness' || PLVIEW === 'tools'); }
 function hnRepaint(poll){
   if(mainView === 'pipe' && PLVIEW === 'harness') plPaint(poll);
-  else if(mainView === 'token' && TKVIEW === 'tools' && typeof paintToken === 'function'){
+  else if(mainView === 'pipe' && PLVIEW === 'tools'){
     // ⚠Same guards as plPaint: a poll rebuild drops keyboard focus and an open title tooltip inside the map.
     const fe = document.activeElement;
     if(poll && ((fe && fe.closest && fe.closest('.hncfgw')) || (document.querySelector && document.querySelector('.hncfgw [title]:hover')))) return;
-    paintToken();
+    plPaint(poll);
   }
 }
 function hnSetPlat(p){
@@ -519,7 +519,7 @@ async function hnOpen(ref, nm){
   else strPopTextSet({ key, name: nm, path: '', text: T('Could not read') + ((v && v.msg) ? ' — ' + hnMsg(v.msg) : ''), lang: '' });
 }
 function hnCardName(el){ const n = el.querySelector('.hncn, .hnan, .hnp'); return n ? n.textContent : ''; }
-// Count buttons jump to the token tab's «Tools» list; cards with a ref open their file.
+// Count buttons jump to the pipeline tab's «Tools» list; cards with a ref open their file.
 document.addEventListener('click', e => {
   if(!e.target.closest) return;
   if(HN.go && e.target.closest('.hnw')){   // the highlight lasts until the next click in the view
@@ -545,7 +545,7 @@ document.addEventListener('click', e => {
   const c = e.target.closest('[data-hntools]');
   if(!c || !c.closest('.hnw')) return;
   if(c.closest('.hncfgw')){ const g = document.querySelector('.tvwg'); if(g && g.scrollIntoView) g.scrollIntoView({ block: 'nearest' }); return; }   // already in Tools: the list sits below
-  TKVIEW = 'tools'; lsSet('sidereus.tkview', TKVIEW); setMainView('token');
+  plSetView('tools');
 });
 document.addEventListener('keydown', e => {
   const r = e.key === 'Enter' && e.target.closest && e.target.closest('.hnw [data-hnref]');

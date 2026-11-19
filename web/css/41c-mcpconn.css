@@ -1,4 +1,4 @@
-/* Token tab «Connections» view (47k-mcpconn.js orbit · 47l-mcpconn-side.js side column). Colours are --nx-* roles, so light (91-light.css) follows.
+/* Pipeline tab «Connections» view (47k-mcpconn.js orbit · 47l-mcpconn-side.js side column). Colours are --nx-* roles, so light (91-light.css) follows.
    ⚠Every rule is scoped html[data-ui=next]: the 00-core twin generator skips it (no +1px ladder, no colour remap). Sizes stay >= 12px (fsApply floor). */
 html[data-ui=next] .mcpc{container-type:inline-size;display:flex;flex-direction:column;gap:10px;min-width:0;padding:0 0 14px}
 html[data-ui=next] .mcpc .hidnote{margin:0}

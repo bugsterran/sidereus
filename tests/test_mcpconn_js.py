@@ -1,4 +1,4 @@
-"""Token tab «Connections» view (web/js/47k-mcpconn.js · 47l-mcpconn-side.js): R1 orbit + fold · R2 state/edge/live/motion ·
+"""Pipeline tab «Connections» view (web/js/47k-mcpconn.js · 47l-mcpconn-side.js): R1 orbit + fold · R2 state/edge/live/motion ·
 R4 composed text and confirm-only send · R5 reconnect steps per CLI, no send. Pure functions under node, stubs only."""
 import json
 import os
@@ -26,7 +26,7 @@ def _read(p):
 _PRE = ("let LANG = 'ko';\n" + i18n_switch(("T", "TV", "U", "AGO")) +
         "const LST = {}, POSTS = [], COPIES = [], NOTES = [], STORE = {};\n"
         "const document = {addEventListener(t, f){ (LST[t] = LST[t] || []).push(f); }, querySelector(){ return null; }, getElementById(){ return null; }, activeElement: null};\n"
-        "let setInterval = () => 0, mainView = 'x', TKVIEW = 'x';\n"
+        "let setInterval = () => 0, mainView = 'x', PLVIEW = 'x';\n"
         "const esc = s => String(s).replace(/[&<>\"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;'}[c]));\n"
         "function lsGet(k, d){ return Object.prototype.hasOwnProperty.call(STORE, k) ? STORE[k] : d; }\n"
         "function lsSet(k, v){ STORE[k] = v; return true; }\n"
@@ -75,11 +75,12 @@ class McpConnJs(unittest.TestCase):
         for p in _FS + [os.path.join(_JS, "06-i18n-zzx-mcpconn.js"), os.path.join(_JS, "46-tokens-tab.js")]:
             subprocess.run(["node", "--check", p], check=True)
 
-    def test_R1_conn_view_in_token_tab(self):
-        s = _read(os.path.join(_JS, "46-tokens-tab.js"))
-        self.assertIn("const TKVIEWS = ['use', 'tools', 'conn'];", s)
+    def test_R1_conn_view_in_pipeline_tab(self):
+        s = _read(os.path.join(_JS, "48-pipeline.js"))
+        self.assertIn("const PLVIEWS = ['pipe', 'harness', 'tools', 'conn'];", s)
         self.assertIn("['conn', 'Connections']", s)
-        self.assertIn("if(TKVIEW === 'conn'){ paintMcpConn(box); return; }", s)
+        self.assertIn("if(PLVIEW === 'conn'){ paintMcpConn(box); return true; }", s)
+        self.assertNotIn("paintMcpConn", _read(os.path.join(_JS, "46-tokens-tab.js")))
 
     def test_R1_strip_live_sessions_all_clis(self):
         out = _js("SESS = [{sid: 'a', plat: 'cc', state: 'think'}, {sid: 'b', plat: 'pi', state: 'wait'}, {sid: 'c', plat: 'cx', state: 'idle'},"

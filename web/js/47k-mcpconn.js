@@ -1,4 +1,4 @@
-// «Connections» view of the token tab (46 TKVIEW 'conn'): one live session at the centre, one node per MCP server it can load
+// «Connections» view of the pipeline tab (48 PLVIEW 'conn'): one live session at the centre, one node per MCP server it can load
 // (GET /api/mcp-conn, sidereus/mcp_conn.py); side panel, actions and request log are 47l.
 // ⚠Metadata only: server names, scope, state words, error codes, counts and times — never tool arguments, results or error text.
 const MCPC = {sid: lsGet('sidereus.mcpcsid', ''), sel: '', filt: '', cloudOpen: false, act: {}, note: {}, data: null, err: '',
@@ -54,7 +54,7 @@ async function loadMcpConn(sid, force){
   mcpcRepaint();
   if(MCPC.data && MCPC.data.scanning) setTimeout(() => { if(mcpcShown() && MCPC.sid === sid) loadMcpConn(sid, true); }, 5000);
 }
-function mcpcShown(){ return typeof mainView !== 'undefined' && mainView === 'token' && typeof TKVIEW !== 'undefined' && TKVIEW === 'conn'; }
+function mcpcShown(){ return typeof mainView !== 'undefined' && mainView === 'pipe' && typeof PLVIEW !== 'undefined' && PLVIEW === 'conn'; }
 function mcpcRepaint(){
   if(!mcpcShown()) return;
   const box = document.getElementById('feed');
@@ -203,13 +203,13 @@ function paintMcpConn(box){
     + '<div class=mcpcg><div class=mcpcl>' + mcpcStage(row, d, W, H) + mcpcLegend() + '</div>'
     + '<div class=mcpcside>' + (typeof mcpcSideHtml === 'function' ? mcpcSideHtml(d, row) : '') + '</div></div>';
   const root = box.firstElementChild;
-  // ⚠#feed is shared with Usage/Tools (they write innerHTML): morph only inside our own root, never setHtml(box).
+  // ⚠#feed is shared with Pipelines/Tools (they write innerHTML): morph only inside our own root, never setHtml(box).
   if(root && root.classList && root.classList.contains('mcpc') && box.children.length === 1) morphHtml(root, h);
   else { box.innerHTML = '<div class=mcpc></div>'; morphHtml(box.firstElementChild, h); }
   const st = box.querySelector('.mcpc .mcpcst');
   if(st && st.clientWidth > 0 && (Math.abs(st.clientWidth - W) > 2 || Math.abs(st.clientHeight - H) > 2)) requestAnimationFrame(mcpcRepaint);
 }
-// Poll while visible (the 30 s token poll repaints too; this keeps a 15-min live window honest).
+// Poll while visible (the pipeline tab's state poll repaints too, 48b plPoll; this keeps a 15-min live window honest).
 if(typeof setInterval === 'function') setInterval(() => { if(mcpcShown() && !(typeof document !== 'undefined' && document.hidden)) loadMcpConn(MCPC.sid, true); }, 20000);
 let MCPC_RZ = 0;
 if(typeof window !== 'undefined' && window.addEventListener) window.addEventListener('resize', () => {

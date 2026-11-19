@@ -1,19 +1,5 @@
-// «Usage | Tools | Connections» view switch for the token tab (default «Usage»; tools = 47-tools.js, connections = 47k-mcpconn.js). ⚠A stored 'pipe'/'harness' (moved to their own tab) falls back to 'use'.
-const TKVIEWS = ['use', 'tools', 'conn'];
-let TKVIEW = TKVIEWS.includes(lsGet('sidereus.tkview', 'use')) ? lsGet('sidereus.tkview', 'use') : 'use';
-function tkViewSeg(){
-  return '<div class=tkvs>' + [['use', 'Usage'], ['tools', 'Tools'], ['conn', 'Connections']].map(([k, en]) => '<button class="wkrgb'
-    + (k === TKVIEW ? ' on" aria-pressed="true' : '" aria-pressed="false') + '" data-tv="' + k + '">' + esc(T(en)) + '</button>').join('') + '</div>';
-}
-document.addEventListener('click', e => {
-  const b = e.target.closest && e.target.closest('.wkrgb[data-tv]');
-  if(!b || b.dataset.tv === TKVIEW) return;
-  const hadF = document.activeElement === b;
-  TKVIEW = TKVIEWS.includes(b.dataset.tv) ? b.dataset.tv : 'use';
-  lsSet('sidereus.tkview', TKVIEW);
-  paintToken();
-  if(hadF) kbHold('.wkrgb[data-tv].on');   // ⚠the repaint drops focus to <body> (08 kbHold)
-});
+// Tokens tab = usage only. ⚠Tools/Connections moved to Pipelines (48 PLVIEWS); only 05 reads an old `sidereus.tkview` (before this delete), 48 reads 05 mvTkMoved.
+if(lsGet('sidereus.tkview', null) !== null) lsDel('sidereus.tkview');
 function tkBar(v, mx, col){
   return '<span class=brb><i style="width:'
       + Math.max(1, Math.min(100, v / Math.max(1, mx) * 100)).toFixed(1) + '%;background:'+col+'"></i></span>';
@@ -29,9 +15,7 @@ function paintToken(){
   const box = document.getElementById('feed');
   if(!box) return;
   // ⚠Period buttons sit in the «Period totals» title line they control (the header toolbar was ~360px above it); clicks stay delegated (.wkrgb).
-  tbSet('token', tkViewSeg());   // sub-view switch lives in the header toolbar slot, like Branches/Insights
-  if(TKVIEW === 'tools'){ paintTools(box); return; }
-  if(TKVIEW === 'conn'){ paintMcpConn(box); return; }
+  tbSet('token', '');   // no sub-view switch: clears the toolbar slot
   const wkrName = {1: 'Day', 7: 'Week', 30: 'Month'};   // D/W/M alone is no accessible name
   const wkrBtns = [1,7,30].map(x => '<button class="wkrgb'
     + (x === WKRANGE ? ' on' : '') + '" data-r="' + x + '" aria-pressed="' + (x === WKRANGE) + '" aria-label="' + esc(T(wkrName[x]))

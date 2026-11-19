@@ -1,5 +1,5 @@
 """One header-to-content divider: tab captions (.wvh.wvht) draw no rule except the timeline axis top,
-no extra top padding before the first content, and the Tokens/Pipelines sub-view switches live in #tbar.
+no extra top padding before the first content, and the Pipelines sub-view switch lives in #tbar (Tokens has none).
 Static source reads only."""
 import os
 import re
@@ -33,12 +33,10 @@ class TabDivider(unittest.TestCase):
         self.assertIn(".brep{container-type:inline-size;padding:0 0 14px}", src("web/css/40-tokens.css"))
         self.assertIn(".rcw{padding:0 4px 20px}", src("web/css/50-layout-feed.css"))
 
-    def test_token_segment_in_toolbar(self):
+    def test_r2_token_has_no_segment(self):
         s = src("web/js/46-tokens-tab.js")
-        self.assertRegex(s, r"tbSet\('token',[^;]*tkViewSeg\(\)")
-        for rel in ("web/js/46-tokens-tab.js", "web/js/47-tools.js"):
-            self.assertBodyFree(src(rel), "tkViewSeg", rel)
-        self.assertIn("aria-pressed", s)
+        self.assertNotIn("tkViewSeg", s)   # Tools/Connections moved to the Pipelines switch
+        self.assertIn("tbSet('token', '')", s)   # the toolbar slot is cleared, not left with a stale switch
 
     def test_pipeline_segment_in_toolbar(self):
         s = src("web/js/48-pipeline.js")
