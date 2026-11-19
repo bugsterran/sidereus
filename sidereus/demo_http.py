@@ -10,7 +10,8 @@ from urllib.parse import parse_qs
 from sidereus.demo_data import HOOKS_CONNECT, MSG_FIRST
 from sidereus.demo_rel import _ARCH_COMMIT, _ARCH_MODS, demo_arch, demo_file, demo_src, demo_tree   # structure arch/tree payloads
 from sidereus.verdict_guide import load as verdict_guide
-from sidereus.demo_tools import _demo_diag, _demo_eval, _demo_harness, _demo_pl_evidence, _demo_pipelines, _demo_prefs, _demo_tools   # tools/harness/prefs/diag payloads
+from sidereus.demo_tools import (_demo_diag, _demo_eval, _demo_harness, _demo_mcp_conn, _demo_pl_evidence, _demo_pipelines,
+                                 _demo_prefs, _demo_tools)   # tools/harness/prefs/diag/mcp-conn payloads
 
 
 # ─────────────────────────────────────────────── HTTP glue
@@ -82,6 +83,8 @@ def respond(world, path, u):
         return 200, w.session_context(_q(u, "cwd"))
     if path.startswith("/api/tools"):
         return _demo_tools(w.a, path, _q(u, "id"))
+    if path == "/api/mcp-conn":   # rows of the demo screen itself, so pi and unsupported CLIs answer as live does
+        return _demo_mcp_conn(w.now(), _q(u, "sid"), w.state(0, 1).get("sessions") or [])
     if path == "/api/pipelines":
         return _demo_pipelines(_q(u, "proj"), w.by["web"]["cwd"], w.by["bill"]["cwd"])
     if path == "/api/pipelines/eval":

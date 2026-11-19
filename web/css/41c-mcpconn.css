@@ -1,0 +1,154 @@
+/* Token tab «Connections» view (47k-mcpconn.js orbit · 47l-mcpconn-side.js side column). Colours are --nx-* roles, so light (91-light.css) follows.
+   ⚠Every rule is scoped html[data-ui=next]: the 00-core twin generator skips it (no +1px ladder, no colour remap). Sizes stay >= 12px (fsApply floor). */
+html[data-ui=next] .mcpc{container-type:inline-size;display:flex;flex-direction:column;gap:10px;min-width:0;padding:0 0 14px}
+html[data-ui=next] .mcpc .hidnote{margin:0}
+html[data-ui=next] .mcpcstrip{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+html[data-ui=next] .mcpcss{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0;max-width:240px;padding:5px 10px;border:1px solid var(--nx-rule);
+  border-radius:6px;background:var(--nx-panel);color:var(--nx-t1);font:inherit;font-size:12.5px;cursor:pointer;text-align:left}
+html[data-ui=next] .mcpcss:hover{background:var(--nx-hover)}
+html[data-ui=next] .mcpcss.on{border-color:var(--nx-active);background:color-mix(in srgb,var(--nx-active) 12%,var(--nx-panel))}
+html[data-ui=next] .mcpcsh{display:flex;align-items:center;gap:5px;min-width:0;max-width:100%}
+html[data-ui=next] .mcpcsh b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpcsh .ailg svg{width:13px;height:13px}
+html[data-ui=next] .mcpcsm{max-width:100%;font-size:12px;color:var(--nx-t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpcsd{flex:none;width:7px;height:7px;border-radius:50%;background:var(--nx-idle)}
+html[data-ui=next] .mcpcsd.run{background:var(--nx-ok)}
+html[data-ui=next] .mcpcsd.wait{background:var(--nx-warn)}
+/* Orbit (flex 1) + side column; the side narrows, then wraps below, then goes to one column (container widths, not viewport).
+   ★#feed measured 1840 · 1360 · 1020 · 820 px at 1920 · 1440 · 1100 · 900 viewports. */
+html[data-ui=next] .mcpcg{display:flex;gap:14px;align-items:flex-start;min-width:0}
+html[data-ui=next] .mcpcl{flex:1 1 auto;min-width:0}
+html[data-ui=next] .mcpcside{flex:0 0 420px;min-width:0;display:flex;flex-direction:column;gap:10px}
+@container (max-width:1500px){ html[data-ui=next] .mcpcside{flex-basis:360px} }
+@container (max-width:1100px){
+  html[data-ui=next] .mcpcg{flex-direction:column;align-items:stretch}
+  html[data-ui=next] .mcpcside{flex:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+}
+@container (max-width:860px){
+  html[data-ui=next] .mcpcside{grid-template-columns:minmax(0,1fr)}
+  html[data-ui=next] .mcpcst{height:520px}
+  html[data-ui=next] .mcpcn{width:120px}
+}
+html[data-ui=next] .mcpcst{position:relative;height:620px;overflow:hidden;border:1px solid var(--nx-rule);border-radius:8px;
+  background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--nx-active) 10%,transparent),transparent 55%),var(--nx-panel)}
+html[data-ui=next] .mcpcsky{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+html[data-ui=next] .mcpce{fill:none;stroke:var(--nx-idle);opacity:.6}
+html[data-ui=next] .mcpce.st-ok{stroke:color-mix(in srgb,var(--nx-ok) 45%,transparent);opacity:1}   /* connected, not called by this session: faint green */
+html[data-ui=next] .mcpce.st-ok.used,html[data-ui=next] .mcpce.st-cl.used{stroke:var(--nx-ok);opacity:1}
+html[data-ui=next] .mcpce.st-fail{stroke:var(--nx-err);stroke-dasharray:4 4;opacity:1}
+html[data-ui=next] .mcpce.st-auth{stroke:var(--nx-warn);stroke-dasharray:2 5;opacity:1}
+html[data-ui=next] .mcpce.st-cl{stroke:color-mix(in srgb,var(--nx-info) 50%,transparent);opacity:1}
+html[data-ui=next] .mcpce.out{opacity:.55}
+html[data-ui=next] .mcpce.dim{opacity:.15}
+/* Live edge: round zero-length dashes on a pathLength=100 path, 6 dots, one pass per 4.5 s. ⚠Pale tint: ok-green dots vanished on the ok-green edge. */
+html[data-ui=next] .mcpcfl{fill:none;stroke:color-mix(in srgb,var(--nx-ok) 40%,#fff);stroke-width:7;stroke-linecap:round;stroke-dasharray:0 16.667;animation:mcpcflow 4.5s linear infinite}
+@keyframes mcpcflow{to{stroke-dashoffset:-100}}
+@media (prefers-reduced-motion:reduce){html[data-ui=next] .mcpcfl{animation:none}}
+html[data-ui=next] .mcpccore{position:absolute;z-index:1;width:150px;height:150px;box-sizing:border-box;padding:10px;border-radius:50%;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;background:var(--nx-panel);
+  border:2px solid var(--nx-active);box-shadow:0 0 0 8px color-mix(in srgb,var(--nx-active) 12%,transparent)}
+html[data-ui=next] .mcpccore b{max-width:128px;font-size:17px;font-weight:800;color:var(--nx-active);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpccore span{max-width:128px;font-size:12px;color:var(--nx-t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpccore em{font-style:normal;font-size:12px;color:var(--nx-ok)}
+html[data-ui=next] .mcpccore.can{border-style:dashed}
+html[data-ui=next] .mcpccore.over{box-shadow:0 0 0 6px color-mix(in srgb,var(--nx-active) 14%,transparent),0 0 30px var(--nx-active)}
+html[data-ui=next] .mcpcmsg{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);max-width:90%;font-size:13px;color:var(--nx-t2);text-align:center}
+/* Nodes are <button>s centred on their point (box above the label). */
+html[data-ui=next] .mcpcn{position:absolute;z-index:2;width:136px;transform:translate(-50%,-14px);display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:2px 4px;background:none;border:0;border-radius:6px;color:var(--nx-t3);font:inherit;text-align:center;cursor:pointer}
+html[data-ui=next] .mcpcn:focus-visible{outline:2px solid var(--nx-info);outline-offset:2px}
+html[data-ui=next] .mcpcb{flex:none;box-sizing:border-box;width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--nx-idle);border-radius:4px;background:var(--nx-bg)}
+html[data-ui=next] .mcpcb i{width:10px;height:10px;border-radius:2px;background:var(--nx-rule)}
+html[data-ui=next] .mcpct{max-width:100%;font-size:13px;font-weight:700;color:var(--nx-t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpcu{max-width:100%;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpcn .mcpct,html[data-ui=next] .mcpcn .mcpcu{box-sizing:border-box;padding:0 4px;border-radius:3px;background:color-mix(in srgb,var(--nx-panel) 88%,transparent)}   /* an edge into a top node ran through its label */
+html[data-ui=next] .mcpcn.st-ok .mcpcb{border-color:var(--nx-ok)}
+html[data-ui=next] .mcpcn.st-ok .mcpcb i{background:var(--nx-ok)}
+html[data-ui=next] .mcpcn.st-ok .mcpct{color:var(--nx-t1)}
+html[data-ui=next] .mcpcn.st-ok .mcpcu{color:var(--nx-ok)}
+html[data-ui=next] .mcpcn.used .mcpcb{width:30px;height:30px;box-shadow:0 0 0 4px color-mix(in srgb,var(--nx-ok) 20%,transparent)}
+html[data-ui=next] .mcpcn.used .mcpcb i{width:14px;height:14px}
+html[data-ui=next] .mcpcn.st-fail .mcpcb{border-color:var(--nx-err)}
+html[data-ui=next] .mcpcn.st-fail .mcpcb i{background:var(--nx-err)}
+html[data-ui=next] .mcpcn.st-fail .mcpct{color:var(--nx-err)}
+html[data-ui=next] .mcpcn.st-auth .mcpcb{border-style:dashed;border-color:var(--nx-warn)}
+html[data-ui=next] .mcpcn.st-auth .mcpcb i{background:none}
+html[data-ui=next] .mcpcn.st-auth .mcpcu{color:var(--nx-warn)}
+html[data-ui=next] .mcpcn.sel .mcpcb{outline:2px solid var(--nx-info);outline-offset:3px}
+html[data-ui=next] .mcpcn.sel .mcpct{color:var(--nx-info)}
+html[data-ui=next] .mcpcn.dim{opacity:.25}
+html[data-ui=next] .mcpcn.small{width:104px}
+html[data-ui=next] .mcpcn.small .mcpct{font-size:12px;font-weight:600}
+html[data-ui=next] .mcpccl .mcpcb{width:34px;height:34px;border-radius:50%;border-color:var(--nx-info);font-size:12px;font-weight:700;color:var(--nx-info)}
+html[data-ui=next] .mcpccl .mcpct,html[data-ui=next] .mcpccl .mcpcu{color:var(--nx-info)}
+html[data-ui=next] .mcpccl.open .mcpcb{background:color-mix(in srgb,var(--nx-info) 14%,var(--nx-bg))}
+html[data-ui=next] .mcpcn.st-fail .mcpcu{overflow:visible;white-space:normal}   /* ⚠the error code is never cut (ellipsis is for the server name only) */
+html[data-ui=next] .mcpcbad{display:inline-block;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;white-space:normal;padding:0 5px;border-radius:3px;font-size:12px;font-weight:700;font-family:var(--mono,ui-monospace,Menlo,monospace);
+  color:var(--nx-err);background:color-mix(in srgb,var(--nx-err) 16%,transparent)}
+html[data-ui=next] .mcpcleg{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 2px 0;font-size:12px;color:var(--nx-t3)}
+html[data-ui=next] .mcpclk{display:inline-block;box-sizing:border-box;width:11px;height:11px;margin-right:5px;vertical-align:-1px;border:2px solid var(--nx-idle);border-radius:2px}
+html[data-ui=next] .mcpclk.st-ok{border-color:var(--nx-ok);background:var(--nx-ok)}
+html[data-ui=next] .mcpclk.used{box-shadow:0 0 0 3px color-mix(in srgb,var(--nx-ok) 25%,transparent)}
+html[data-ui=next] .mcpclk.st-fail{border-color:var(--nx-err);background:var(--nx-err)}
+html[data-ui=next] .mcpclk.st-auth{border-color:var(--nx-warn);border-style:dashed}
+html[data-ui=next] .mcpclf{color:var(--nx-ok)}
+/* Side cards */
+html[data-ui=next] .mcpccard{min-width:0;padding:10px 12px;border:1px solid var(--nx-rule);border-radius:8px;background:var(--nx-panel)}
+html[data-ui=next] .mcpccard h4{display:flex;align-items:center;gap:8px;min-width:0;margin:0 0 8px;font-size:13px}
+html[data-ui=next] .mcpccard h4::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--nx-active)}
+html[data-ui=next] .mcpccard h4 span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpccard h4 i{flex:none;margin-left:auto;font-style:normal;font-weight:400;font-size:12px;color:var(--nx-t3)}
+html[data-ui=next] .mcpctiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+html[data-ui=next] .mcpctile{min-width:0;padding:6px 4px;border:1px solid var(--nx-rule);border-radius:6px;background:var(--nx-hover);color:var(--nx-t1);font:inherit;text-align:center;cursor:pointer}
+html[data-ui=next] .mcpctile b{display:block;font-size:20px}
+html[data-ui=next] .mcpctile span{display:block;font-size:12px;color:var(--nx-t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpctile.st-ok b{color:var(--nx-ok)}
+html[data-ui=next] .mcpctile.st-fail b{color:var(--nx-err)}
+html[data-ui=next] .mcpctile.st-auth b{color:var(--nx-warn)}
+html[data-ui=next] .mcpctile.st-unknown b{color:var(--nx-t3)}
+html[data-ui=next] .mcpctile.on{border-color:var(--nx-info);outline:1px solid var(--nx-info)}
+html[data-ui=next] .mcpctile:disabled{cursor:default;opacity:.6}
+html[data-ui=next] .mcpcprob{margin-top:8px;font-size:12.5px}
+html[data-ui=next] .mcpcprob div{display:flex;gap:8px;min-width:0;padding:4px 0;border-bottom:1px solid var(--nx-rule)}
+html[data-ui=next] .mcpcprob b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpcprob code{color:var(--nx-err);font-size:12px}
+html[data-ui=next] .mcpcprob i{flex:none;margin-left:auto;font-style:normal;color:var(--nx-t3)}
+html[data-ui=next] .mcpcbars{display:flex;flex-direction:column;gap:2px}
+html[data-ui=next] .mcpcbar{display:grid;grid-template-columns:minmax(0,120px) minmax(0,1fr) auto;gap:8px;align-items:center;padding:3px 2px;border:0;border-radius:4px;
+  background:none;color:var(--nx-t1);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
+html[data-ui=next] .mcpcbar:hover,html[data-ui=next] .mcpcbar.on{background:color-mix(in srgb,var(--nx-info) 12%,transparent)}
+html[data-ui=next] .mcpcbn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpcbr{height:7px;border-radius:2px;background:var(--nx-hover);overflow:hidden}
+html[data-ui=next] .mcpcbr i{display:block;height:100%;background:var(--nx-ok)}
+html[data-ui=next] .mcpcbc{font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:12px;color:var(--nx-t3);text-align:right;white-space:nowrap}
+html[data-ui=next] .mcpcr{display:flex;gap:8px;min-width:0;margin:3px 0;font-size:12.5px}
+html[data-ui=next] .mcpcr > span:first-child{flex:none;width:84px;color:var(--nx-t3)}
+html[data-ui=next] .mcpcr > span:last-child{min-width:0;overflow-wrap:anywhere}
+html[data-ui=next] .mcpcsl.st-ok{color:var(--nx-ok)}
+html[data-ui=next] .mcpcsl.st-fail,html[data-ui=next] .mcpcerr{color:var(--nx-err)}
+html[data-ui=next] .mcpcsl.st-auth{color:var(--nx-warn)}
+html[data-ui=next] .mcpcsl.st-unknown{color:var(--nx-t3)}
+html[data-ui=next] .mcpcerr{font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:12px}
+html[data-ui=next] .mcpcacts{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 8px}
+html[data-ui=next] .mcpcbtn{padding:4px 10px;border:1px solid var(--nx-rule);border-radius:4px;background:var(--nx-hover);color:var(--nx-t1);font:inherit;font-size:12.5px;cursor:pointer}
+html[data-ui=next] .mcpcbtn:focus-visible,html[data-ui=next] .mcpctile:focus-visible,html[data-ui=next] .mcpcbar:focus-visible,html[data-ui=next] .mcpcss:focus-visible{outline:2px solid var(--nx-info);outline-offset:1px}
+html[data-ui=next] .mcpcbtn.on{border-color:var(--nx-active);color:var(--nx-active);background:color-mix(in srgb,var(--nx-active) 10%,var(--nx-panel))}
+html[data-ui=next] .mcpcbtn:disabled{opacity:.45;cursor:not-allowed}
+html[data-ui=next] .mcpcnote{width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--nx-field);border-radius:4px;background:var(--nx-bg);color:var(--nx-t1);font:inherit;font-size:13px}
+html[data-ui=next] .mcpcto{margin:6px 0 2px;font-size:12px;color:var(--nx-t3);overflow-wrap:anywhere}
+html[data-ui=next] .mcpcto b{color:var(--nx-t1)}
+html[data-ui=next] .mcpcpv{max-height:30vh;overflow:auto;margin:4px 0;padding:8px;border:1px solid var(--nx-rule);border-radius:4px;background:var(--nx-bg);color:var(--nx-t1);
+  font:12px/1.5 var(--mono,ui-monospace,Menlo,monospace);white-space:pre-wrap;overflow-wrap:anywhere}
+html[data-ui=next] .mcpcwhy{margin:4px 0;font-size:12px;line-height:1.6;color:var(--nx-t3)}
+html[data-ui=next] .mcpcwhy.err{color:var(--nx-err)}
+html[data-ui=next] .mcpcgo{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}   /* «Confirm — send» = shared .wkrgb.archok primary look (05-controls.css) */
+html[data-ui=next] .mcpcsteps{margin:6px 0 8px;padding-left:20px;font-size:12.5px;line-height:1.8;overflow-wrap:anywhere}
+html[data-ui=next] .mcpcsteps code{font-family:var(--mono,ui-monospace,Menlo,monospace);font-size:12px;padding:0 4px;border-radius:3px;background:var(--nx-hover)}
+html[data-ui=next] .mcpclog{font:12px/1.9 var(--mono,ui-monospace,Menlo,monospace)}
+html[data-ui=next] .mcpclog div{display:flex;gap:10px;min-width:0;border-bottom:1px solid var(--nx-rule)}
+html[data-ui=next] .mcpclt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-ui=next] .mcpclog b{flex:none;margin-left:auto;font-weight:600}
+html[data-ui=next] .mcpclog .ok{color:var(--nx-ok)}
+html[data-ui=next] .mcpclog .bad{color:var(--nx-err)}
+html[data-ui=next] .mcpcempty{font-size:12px;line-height:1.7;color:var(--nx-t3)}

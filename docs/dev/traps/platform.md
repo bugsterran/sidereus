@@ -347,3 +347,23 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - ⚠Tests that need the pi header outside the tail must shrink `FO_FIRST_BYTES_PI`, not `FO_FIRST_BYTES`.
 - ★**pi Connect row named mcp.json for any symlink refusal** — `_linked` checks mcp.json, the extension file and its folder, but the row's `file` was always mcp.json.
   ⇒ a symlink refusal shows the first linked path (`hook_connect_pi.row`, `test_symlink_row_names_the_linked_path`).
+
+## Codex logs no MCP startup connection (`sidereus/mcp_conn.py` Codex branch)
+- Cause: a Codex rollout records an MCP server only when a tool call completes (`item_completed`, `item.type == "McpToolCall"`, ★38 calls measured: 35 completed / 3 failed); there is no connect or handshake event.
+- ⇒ A configured server (`config.toml` `[mcp_servers.*]`) with no call in this session is `unknown`, never connected or failed. Calls count once per `item.id`, even when the same rollout sits in `sessions/` and `archived_sessions/`.
+- ⚠Do not read «no call» as «not connected» or show 0; read only `item.id`/`server`/`status` + timestamp, never `arguments`/`result`/`error`.
+
+## pi MCP calls run inside `codemode` (`sidereus/mcp_conn.py` pi branch)
+- Cause: pi tools are `mcp__<server>__<tool>`, but in this setup the model calls them only through `codemode`, so the session file holds `toolName: "codemode"` and no per-server call or status.
+- ⇒ pi nodes list `~/.pi/agent/mcp.json` names (+ project `.pi/mcp.json` only when `trust.json` trusts the cwd or its git root), state `unknown`, count `null` (`counts: false`).
+- ⚠Never run `pi mcp list` to fill the gap (rule 7: no spawn); never show 0 calls for pi.
+
+## claude.ai connectors waiting for login look connected (`sidereus/toolidx_fmt.py` `_conns_of`)
+- Cause: an unauthenticated `claude_ai_*` connector still adds tools in `deferred_tools_delta`, but only `authenticate`/`complete_authentication`.
+- ⇒ That case emits `mcpauth:<srv>` instead of `mcp:<srv>`; `session_mcp` turns it into state `auth` (login needed) unless a later call exists; `_mcp_compute` skips non-`mcp:` keys.
+- ⚠Never count an `mcpauth:` key as a connect in `mcp_status` or the Harness `mcp_fail` check.
+
+## A `TI_CACHE_V` bump costs one cold rescan (`sidereus/toolidx.py` `TI_CACHE_V`, now 6)
+- Cause: `_load_disk` drops `toolidx-cache.json` when its version differs, so the first start after the bump re-reads 90 days of transcripts (★10-03: 4.64 GB · 3,970 files · 21.6 s).
+- ⇒ The rescan runs once in the background; «Tools»/«Harness»/«Connections» show scanning until it ends, later starts load the cache.
+- ⚠Bump only when the stored event shape changes (v6: `mcpauth:` keys); a stale cache otherwise serves old keys silently.

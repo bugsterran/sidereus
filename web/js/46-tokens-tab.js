@@ -1,8 +1,8 @@
-// «Usage | Tools» view switch for the token tab (default «Usage»; tools = 47-tools.js). ⚠A stored 'pipe'/'harness' (moved to their own tab) falls back to 'use'.
-const TKVIEWS = ['use', 'tools'];
+// «Usage | Tools | Connections» view switch for the token tab (default «Usage»; tools = 47-tools.js, connections = 47k-mcpconn.js). ⚠A stored 'pipe'/'harness' (moved to their own tab) falls back to 'use'.
+const TKVIEWS = ['use', 'tools', 'conn'];
 let TKVIEW = TKVIEWS.includes(lsGet('sidereus.tkview', 'use')) ? lsGet('sidereus.tkview', 'use') : 'use';
 function tkViewSeg(){
-  return '<div class=tkvs>' + [['use', 'Usage'], ['tools', 'Tools']].map(([k, en]) => '<button class="wkrgb'
+  return '<div class=tkvs>' + [['use', 'Usage'], ['tools', 'Tools'], ['conn', 'Connections']].map(([k, en]) => '<button class="wkrgb'
     + (k === TKVIEW ? ' on" aria-pressed="true' : '" aria-pressed="false') + '" data-tv="' + k + '">' + esc(T(en)) + '</button>').join('') + '</div>';
 }
 document.addEventListener('click', e => {
@@ -31,6 +31,7 @@ function paintToken(){
   // ⚠Period buttons sit in the «Period totals» title line they control (the header toolbar was ~360px above it); clicks stay delegated (.wkrgb).
   tbSet('token', tkViewSeg());   // sub-view switch lives in the header toolbar slot, like Branches/Insights
   if(TKVIEW === 'tools'){ paintTools(box); return; }
+  if(TKVIEW === 'conn'){ paintMcpConn(box); return; }
   const wkrName = {1: 'Day', 7: 'Week', 30: 'Month'};   // D/W/M alone is no accessible name
   const wkrBtns = [1,7,30].map(x => '<button class="wkrgb'
     + (x === WKRANGE ? ' on' : '') + '" data-r="' + x + '" aria-pressed="' + (x === WKRANGE) + '" aria-label="' + esc(T(wkrName[x]))

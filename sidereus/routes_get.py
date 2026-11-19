@@ -17,6 +17,7 @@ from sidereus.recent import recent_sessions
 from sidereus.ctxsrc import session_context
 from sidereus.toolidx import scanning as tools_scanning
 from sidereus.toolinv import scan_items, tool_file
+from sidereus.mcp_conn import conn as mcp_conn
 from sidereus.pipeline import pipelines, runs_here as pipeline_runs_here
 from sidereus.sessions import sessions_snapshot
 from sidereus.arch_track import ARCH_PL, seen_runs as arch_seen_runs
@@ -179,6 +180,14 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
         q = parse_qs(u.query)
         try:
             code, out = session_context(_q1(q, "cwd"), _q1(q, "sid"))
+        except Exception as e:
+            code, out = 500, {"ok": False, **_exc_msg(e)}
+        self._raw_json(code, out)
+
+    def _g_mcp_conn(self, u):
+        # Token tab «Connections» — server names, states, error codes, counts; never config values or call content
+        try:
+            code, out = 200, mcp_conn(_q1(parse_qs(u.query), "sid"))
         except Exception as e:
             code, out = 500, {"ok": False, **_exc_msg(e)}
         self._raw_json(code, out)
@@ -472,7 +481,7 @@ class _GetRoutes(_StructRoutes, _GitRoutes, _UsageRoutes):
         "/api/retro": _g_retro, "/api/review": _g_review, "/api/history": _g_history, "/api/history/units": _g_history_units,
         "/api/sessions/recent": _g_sessions_recent, "/api/prefs": _g_prefs, "/api/ui-prefs.js": _g_ui_prefs, "/api/ui-prefs": _g_ui_prefs,
         "/api/session/context": _g_session_context,
-        "/api/tools": _g_tools, "/api/tools/file": _g_tools_file,
+        "/api/tools": _g_tools, "/api/tools/file": _g_tools_file, "/api/mcp-conn": _g_mcp_conn,
         "/api/pipelines": _g_pipelines, "/api/pipelines/projects/dirs": _g_pipeline_dirs, "/api/pipelines/eval": _g_pipeline_eval, "/api/harness": _g_harness, "/api/harness/file": _g_harness_file, "/api/harness/evidence": _g_harness_evidence, "/api/verdict-guide": _g_verdict_guide, "/api/diag": _g_diag, "/api/sec-tools": _g_sec_tools, "/api/hooks/connect": _g_hooks_connect,
         "/api/agents/timeline": _g_timeline, "/api/failures": _g_failures, "/api/wreckage": _g_failures,
         "/api/session/work": _g_session_work, "/api/ext/work": _g_ext_work, "/api/git/file": _GitRoutes._g_git_file, "/api/git/diff": _GitRoutes._g_git_diff,

@@ -209,6 +209,27 @@ class ToolIdxTest(unittest.TestCase):
         self.assertNotIn("tool:mcp__old__x", u)                                   # each call by its own timestamp
         self.assertEqual(u["tool:mcp__docs__search"]["n"], 2)   # toolu_1 in two files (and twice in one) counts once
 
+    def test_R2_conns_auth_key(self):
+        def delta(*added):
+            return {"type": "attachment", "attachment": {"type": "deferred_tools_delta", "addedNames": list(added)}}
+        self.assertEqual(ti._conns_of(delta("mcp__claude_ai_Drive__authenticate", "mcp__claude_ai_Drive__complete_authentication",
+                                            "mcp__claude_ai_Cal__authenticate", "mcp__claude_ai_Cal__list", "mcp__web__go", "Read")),
+                         ["mcp:claude_ai_Cal", "mcp:web", "mcpauth:claude_ai_Drive"])
+        self.assertEqual(ti._conns_of({"type": "attachment", "attachment": {"type": "deferred_tools_delta",
+                                                                            "readdedNames": ["mcp__x__authenticate"]}}), ["mcpauth:x"])
+
+    def test_mcp_status_ignores_auth_keys(self):
+        d = NOW - 86400
+        self._write(os.path.join(self.tmp, "-p3", "a.jsonl"), [
+            {"type": "attachment", "timestamp": _iso(d - 900), "attachment": {
+                "type": "deferred_tools_delta", "failedMcpServers": [{"name": "claude.ai Drive", "errorCode": "AUTH"}]}},
+            {"type": "attachment", "timestamp": _iso(d), "attachment": {
+                "type": "deferred_tools_delta", "addedNames": ["mcp__claude_ai_Drive__authenticate"]}}])
+        ti.tool_uses(30, now=NOW)
+        st = ti.mcp_status(30, now=NOW)
+        self.assertEqual(st["mcp:claude_ai_Drive"]["status"], "fail")   # a sign-in prompt is not a connect
+        self.assertFalse([k for k in st if not k.startswith("mcp:")])
+
     def test_mcp_connect_clears_failure(self):
         d = NOW - 86400
 

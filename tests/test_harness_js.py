@@ -528,7 +528,7 @@ class Harness(unittest.TestCase):
             tk = f.read()
         with open(os.path.join(ROOT, "web", "js", "48-pipeline.js"), encoding="utf-8") as f:
             pl = f.read()
-        self.assertIn("const TKVIEWS = ['use', 'tools'];", tk)
+        self.assertIn("const TKVIEWS = ['use', 'tools', 'conn'];", tk)   # «Connections» = 47k-mcpconn.js
         self.assertNotIn("paintHarness", tk)
         self.assertIn("data-plv", pl)
         self.assertIn("FEATS.harness === false", pl)   # toggle hidden when the feature is off

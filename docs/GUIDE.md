@@ -222,6 +222,16 @@ Sessions can check this themselves with the MCP tool `sidereus_file_peers` ([MCP
 - Insights, for longer periods: «Tool ranking», «Time spent», «Cache rewrites», «Activity by hour» and «Models» (last 8 days), «Hook cost» (per event type, scripts are not named).
 - With 2+ accounts the picker scopes only the period totals (Tokens) and the OTel cards (Insights); live figures stay all accounts.
 
+### Tokens › Connections
+
+Pick **Connections** next to Usage and Tools to see which MCP servers one session can reach.
+
+- The strip on top lists live sessions from every CLI. The picked session sits in the centre of the orbit, with one node per MCP server it can load (user, project for its folder, plugin). claude.ai connectors fold into one node; click it to open them as an outer ring.
+- Each node shows that session's own state: **Connected** (green), **Failed** (red, error code only), **Login needed** (a connector that offers only its sign-in tools) and **Unknown** (grey, no record yet). Edge width follows the session's call count, and a call in the last 15 minutes draws moving dots (still when reduced motion is on).
+- Codex records a server only when it is called, so a configured server it has not used stays Unknown. pi shows its configured servers as Unknown with no counts.
+- Click a node (or drag it onto the centre for Task) to act on it. **Task**, **Diagnose** and **Restart** write a short mailbox message to that session; you see the text first and nothing is sent until you press **Confirm — send**. Sent requests appear in the request log.
+- **Reconnect** (or **Login steps**) only shows the steps for that CLI with a Copy button. Sidereus never reconnects, restarts or starts an MCP server itself, and never reads tool arguments, results or error text.
+
 ## Chat rooms
 
 The Chat tab lists mailbox rooms as cards. Click a card to read its posts and post to it; DMs to a session work the same way.

@@ -358,3 +358,33 @@ def _demo_eval(proj, demo_proj, name):
                 "python3", os.path.join(os.path.dirname(demo_proj), "sidereus", "scripts", "pl_eval.py"), "redcheck",
                 "--pipeline", os.path.join(demo_proj, ".claude", "pipelines", nm + ".json"), "--stage", s["stage"], "--repo", demo_proj))
     return 200, b
+
+
+# Demo GET /api/mcp-conn servers (mcp_conn.conn shape): (name, scope, plug, transport, state, err, calls, last call min ago)
+DEMO_MCP_CC = [
+    ("docs-search", "user", "", "stdio", "ok", "", 41, 4), ("issue-tracker", "project", "", "http", "ok", "", 6, 95),
+    ("metrics", "user", "", "stdio", "fail", "CONNECT_TIMEOUT", 0, 0), ("browser", "plugin", "browser", "stdio", "unknown", "", 0, 0),
+    ("claude_ai_Calendar", "cloud", "", "", "ok", "", 3, 30), ("claude_ai_Drive", "cloud", "", "", "auth", "", 0, 0),
+]
+DEMO_MCP_PI = [("docs-search", "user", "stdio"), ("repo-notes", "project", "stdio")]
+
+
+def _demo_mcp_conn(now, sid, rows):
+    """Demo GET /api/mcp-conn body for a session on the demo screen — invented server names only."""
+    row = next((r for r in rows if sid and r.get("sid") == sid), None)
+    if row is None:
+        return 200, {"ok": False, "msg": "Only sessions shown on screen can be opened.", "vars": {}}
+    plat, servers = row.get("plat") or "", []
+    if plat == "cc":
+        k = sum(map(ord, sid)) % 3          # vary the counts per session so the strip shows different orbits
+        for nm, sc, pl, tr, st, err, n, ago in DEMO_MCP_CC:
+            n = n * (k + 1) // 2 if n else 0
+            servers.append({"name": nm, "scope": sc, "plug": pl, "transport": tr, "on": True, "state": st, "err": err,
+                            "at": int(now - (ago or 60) * 60) if st != "unknown" else 0, "n": n,
+                            "last": int(now - ago * 60) if n else 0})
+    elif plat == "pi":
+        servers = [{"name": nm, "scope": sc, "plug": "", "transport": tr, "on": True, "state": "unknown", "err": "",
+                    "at": 0, "n": None, "last": None} for nm, sc, tr in DEMO_MCP_PI]
+    return 200, {"ok": True, "now": int(now), "sid": sid, "plat": plat, "supported": plat in ("cc", "cx", "pi"),
+                 "counts": plat in ("cc", "cx"), "scanning": False, "checked": int(now), "servers": servers,
+                 "totals": dict((s, sum(1 for x in servers if x["state"] == s)) for s in ("ok", "fail", "auth", "unknown"))}

@@ -25,33 +25,31 @@ from sidereus import boot_queue
 from sidereus.transcript import CLAUDE_PROJECTS, iso_epoch
 from sidereus.agents import sub_globs
 from sidereus.claude_roots import projects_dirs
-from sidereus.toolidx_fmt import _Rows, _arr, _canon, _ent_ref, _merge_sorted, _num, _write_rows, hook_hash   # hook_hash re-exported for harness
+from sidereus.toolidx_fmt import (TI_NAME_MAX, _AUTH_TOOLS, _Rows, _arr, _canon, _conns_of, _ent_ref, _fails_of, _merge_sorted, _num,
+                                  _write_rows, hook_hash, sess_status)   # hook_hash re-exported for harness
 
 TI_MAX_DAYS = 90             # widest window the screen can ask for; older files are not read
 TI_TTL_S = 30                # result cache per `days`
 TI_STALE_MAX_S = 10 * TI_TTL_S   # ⚠past this a stale result is recomputed synchronously, so a failing revalidate surfaces
-TI_NAME_MAX = 120            # keys are names, not text — cap anything odd
 TI_BUDGET = 32 << 20         # bytes read per request / per background slice (first full scan is ~GBs)
 TI_CHUNK_MIN = 1 << 20
 TI_BG = True                 # tests turn the background warm thread off
 # ★10-03: cold scan of 90 days = 4.64 GB / 3,970 files / 22 s, so «Loading» showed for that long after every restart.
 #   The cache (36.8 MB JSON, 0.23 s to load) brings a restart down to reading only the tails appended since the last save.
 TI_CACHE = os.path.join(DATA_DIR, "toolidx-cache.json")
-# 5: header line + one JSON line per file `[path, sz, off, [keys], ids, ts, ki, fail, conn]`, the three arrays
+# 6: `conn` may hold `mcpauth:` keys (sign-in-only connectors) · 5: header line + one JSON line per file `[path, sz, off, [keys], ids, ts, ki, fail, conn]`, the three arrays
 #   base64 little-endian (int64 id hash · float64 ts · uint32 index into that row's keys); loaded line by line.
 #   4: "ev" grouped by key ({key: [[id strings], [ts]]}) · 3: `tool:` events deduped by id · 2: per-file "tools".
 #   ★10-13: v3 (one 80 MB JSON, 894k events, 80% hook runs) peaked at 489 MB in json.load; v4 see `_load_disk`.
-TI_CACHE_V = 5
+TI_CACHE_V = 6
 TI_SAVE_S = 120              # at most one save per this many seconds (★10-05: a dump is 0.31 s under the lock)
 _TI_ROOT = CLAUDE_PROJECTS   # ⚠disk cache only for the real projects dir — tests patch CLAUDE_PROJECTS and get no disk I/O
 _TI_HINT = (b"mcp__", b'"Skill"', b'"Task"', b'"Agent"', b"<command-name>", b'"hook_success"', b'"hook_additional_context"', b'"failedMcpServers"')
 _HOOK_TYPES = {"hook_success": "hook:", "hook_additional_context": "hookctx:"}   # ⚠one run writes both records: kept apart, not summed
 _CMD_RE = re.compile(r"<command-name>/?([^<\s]{1,120})</command-name>")
-_ERR_RE = re.compile(r"[A-Z_]{1,24}")
 # Tool names for hook-matcher checks, read off the raw line (no JSON parse: most tool lines carry no _TI_HINT).
 _TOOL_RE = re.compile(rb'"type":\s?"tool_use",\s?"id":\s?"([^"]{1,80})",\s?"name":\s?"([A-Za-z0-9_.:-]{1,120})"')
 _TS_RE = re.compile(rb'"timestamp":\s?"([^"]{1,40})"')
-_SRV_RE = re.compile(r"[^A-Za-z0-9_-]")   # config name -> tool-name prefix form (`claude.ai X` -> `claude_ai_X`)
 _HDR_RE = re.compile(rb'\{\s*"v"\s*:\s*(\d{1,4})\s*[,}]')
 # path -> {"sz", "off", "ids"/"ts"/"ki": parallel arrays (id hash, epoch, key index), "lo"/"hi": ts range,
 #          "mc": {mcp key: newest call ts}, "fail": {mcp key: (ts, code)}, "conn": {mcp key: ts}}
@@ -72,6 +70,8 @@ TI_SORT_CHUNK = 1 << 17      # ids per sorted run in `_reindex` (bounds its tran
 _INF = float("inf")
 _TI_RES = {}                 # days -> (computed at, result); only complete results are cached
 _TI_MCP = {}                 # days -> (computed at, mcp_status result)
+_TI_SESS = {}                # sid -> last session_mcp result (served while the lock is busy)
+TI_SESS_WAIT, TI_SESS_N = 0.5, 64   # session_mcp lock wait (s) · results kept for that fallback
 _TI_STATE = {"pending": False, "bg": None, "loaded": False, "dirty": False, "saved": 0.0, "rv": False}
 _TI_LOCK = threading.Lock()
 
@@ -90,8 +90,8 @@ def _key_of(block):
     nm = str(block.get("name") or "")
     inp = block.get("input") if isinstance(block.get("input"), dict) else {}
     if nm.startswith("mcp__"):
-        srv = nm[5:].split("__", 1)[0]
-        return "mcp:" + srv if srv else ""
+        srv, _, tool = nm[5:].partition("__")   # ⚠a sign-in tool call is not call evidence: own `mcpauth:` key
+        return ("mcpauth:" if tool in _AUTH_TOOLS else "mcp:") + srv if srv else ""
     if nm == "Skill":
         sk = inp.get("skill") or inp.get("command")
         return "skill:" + str(sk).lstrip("/") if isinstance(sk, str) and sk.strip() else ""
@@ -126,33 +126,6 @@ def _line_events(d):
         if m:
             out.append(("cmd#" + str(d["uuid"]), "cmd:" + m.group(1)))
     return out
-
-
-def _fails_of(d):
-    """[(mcp key, errorCode)] reported failed by one record. ⚠Only `name`/`errorCode` are read — `error` is free text."""
-    a = d.get("attachment")
-    if d.get("type") != "attachment" or not isinstance(a, dict) or not isinstance(a.get("failedMcpServers"), list):
-        return []
-    out = []
-    for s in a["failedMcpServers"]:
-        nm = s.get("name") if isinstance(s, dict) else None
-        if isinstance(nm, str) and nm.strip():
-            code = str(s.get("errorCode") or "")[:24]
-            out.append(("mcp:" + _SRV_RE.sub("_", nm.strip())[:TI_NAME_MAX - 4], code if _ERR_RE.fullmatch(code) else ""))
-    return out
-
-
-def _conns_of(d):
-    """[mcp key] whose tools a `deferred_tools_delta` record adds — the server connected at that time."""
-    a = d.get("attachment")
-    if d.get("type") != "attachment" or not isinstance(a, dict) or a.get("type") != "deferred_tools_delta":
-        return []
-    out = set()
-    for k in ("addedNames", "readdedNames"):
-        for nm in a.get(k) if isinstance(a.get(k), list) else ():
-            if isinstance(nm, str) and nm.startswith("mcp__") and nm[5:].split("__", 1)[0]:
-                out.add("mcp:" + nm[5:].split("__", 1)[0][:TI_NAME_MAX - 4])
-    return sorted(out)
 
 
 def _new_ent(sz=-1, off=0):
@@ -574,7 +547,7 @@ def _mcp_compute(cut):
     for ent in _TI_FILES.values():
         calls = dict((k, ts) for k, ts in ent["mc"].items() if ts >= cut)   # newest call per file: same max as all calls >= cut
         for k, ts in ent.get("conn", {}).items():
-            if ts >= cut:
+            if ts >= cut and k.startswith("mcp:"):   # ⚠`mcpauth:` = sign-in tools only, not a connect
                 calls[k] = max(calls.get(k, 0.0), ts)
         fails = dict((k, v) for k, v in ent.get("fail", {}).items() if v[0] >= cut)
         for k in set(calls) | set(fails):
@@ -592,6 +565,39 @@ def _mcp_compute(cut):
     return out
 
 
+def session_mcp(sid, cut, now=None):
+    """One session's own MCP evidence (its transcript + subagent files, events deduped by id, at/after `cut`):
+    {"uses": {key: {n, last}}, "st": {key: {status: ok|fail|auth, err, fail_at, ok_at}}, "auth": {key: ts}, "scanning"}."""
+    tool_uses(30, now)                       # advance the index first (bounded by TI_BUDGET)
+    if not _TI_LOCK.acquire(timeout=TI_SESS_WAIT):
+        return dict(_TI_SESS.get(sid) or {"uses": {}, "st": {}, "auth": {}}, scanning=True)
+    try:
+        sub, seen, uses, mc, conn, auth, fail = os.sep + sid + os.sep + "subagents" + os.sep, set(), {}, {}, {}, {}, {}
+        for fp, e in _TI_FILES.items():
+            if os.path.basename(fp) != sid + ".jsonl" and sub not in fp:
+                continue
+            for x, t, g in zip(e["ids"], e["ts"], e["ki"]):
+                k = _TI_KEYS[g]
+                if t >= cut and k.startswith("mcp:") and x not in seen:   # ⚠a subagent file may repeat a parent id
+                    seen.add(x)
+                    u = uses.setdefault(k, {"n": 0, "last": 0})
+                    u["n"], u["last"], mc[k] = u["n"] + 1, max(u["last"], int(t)), max(mc.get(k, 0.0), t)
+            for k, t in e.get("conn", {}).items():
+                m, k = (auth if k.startswith("mcpauth:") else conn), "mcp:" + k.partition(":")[2]
+                if t >= cut:
+                    m[k] = max(m.get(k, 0.0), t)
+            for k, v in e.get("fail", {}).items():
+                if v[0] >= cut and v[0] >= fail.get(k, (0.0, ""))[0]:
+                    fail[k] = v
+        out = {"uses": uses, "st": sess_status(mc, conn, auth, fail), "auth": dict((k, int(t)) for k, t in auth.items())}
+        if len(_TI_SESS) >= TI_SESS_N:
+            _TI_SESS.pop(next(iter(_TI_SESS)))
+        _TI_SESS[sid] = out
+    finally:
+        _TI_LOCK.release()
+    return dict(out, scanning=scanning())
+
+
 def reset():
     """Drop every cache (tests)."""
     global _TI_SEEN
@@ -604,4 +610,5 @@ def reset():
         _TI_DUP.clear()
         _TI_RES.clear()
         _TI_MCP.clear()
+        _TI_SESS.clear()
         _TI_STATE.update(pending=False, loaded=False, dirty=False, saved=0.0, rv=False)
