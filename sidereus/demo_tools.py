@@ -367,6 +367,53 @@ DEMO_MCP_CC = [
     ("claude_ai_Calendar", "cloud", "", "", "ok", "", 3, 30), ("claude_ai_Drive", "cloud", "", "", "auth", "", 0, 0),
 ]
 DEMO_MCP_PI = [("docs-search", "user", "stdio"), ("repo-notes", "project", "stdio")]
+# Demo `kinds` (mcp_conn._cc_kinds shape): (name, kind, scope, plug, calls, last call min ago) — invented names only
+DEMO_KIND_SK = [
+    ("release-notes", "skill", "user", "", 6, 12), ("lint-fix", "skill", "user", "", 2, 90), ("changelog", "skill", "user", "", 0, 0),
+    ("pr-summary", "skill", "user", "", 0, 0), ("api-docs", "skill", "project", "", 3, 40), ("db-migrate", "skill", "project", "", 0, 0),
+    ("ui-review", "skill", "project", "", 1, 200), ("browser:screenshot", "skill", "plugin", "browser", 1, 25),
+    ("browser:record", "skill", "plugin", "browser", 0, 0), ("browser:trace", "skill", "plugin", "browser", 0, 0),
+    ("diagram", "skill", "user", "", 0, 0), ("frontend-design", "skill", "seen", "", 2, 300),
+    ("ship", "cmd", "user", "", 4, 8), ("deploy-check", "cmd", "project", "", 0, 0),
+]
+DEMO_KIND_AG = [("code-reviewer", "project", 5, 20), ("test-writer", "project", 2, 60), ("doc-writer", "project", 0, 0),
+                ("perf-probe", "project", 0, 0), ("general-purpose", "seen", 3, 15)]
+# (event, scope, matchers, [(hookName, runs)], last run min ago)
+DEMO_KIND_HK = [("PreToolUse", "user", ["Bash", "Edit|Write"], [("PreToolUse:Bash", 31), ("PreToolUse:Edit", 12)], 2),
+                ("PostToolUse", "project", ["Write"], [("PostToolUse:Write", 9)], 3), ("Stop", "user", [""], [("Stop", 14)], 1),
+                ("SessionStart", "plugin", [""], [("SessionStart:startup", 1), ("SessionStart:resume", 1)], 240),
+                ("UserPromptSubmit", "user", [""], [], 0)]
+
+
+def _demo_kinds(now, k):
+    """Demo `kinds` for a Claude Code session; the k == 2 session gets 60 skills (layout check with many nodes)."""
+    proj, home = "~/src/acme-web/.claude", "~/.claude"
+    plug = home + "/plugins/cache/demo/%s/1.0"
+
+    def base(sc, pl):
+        return proj if sc == "project" else plug % pl if sc == "plugin" else home
+
+    def last(n, ago):
+        return int(now - ago * 60) if n else 0
+    sk = [{"name": nm, "kind": kd, "scope": sc, "plug": pl, "n": n * (k + 1) // 2, "last": last(n * (k + 1) // 2, ago),
+           "path": "" if sc == "seen" else base(sc, pl) + ("/commands/%s.md" % nm if kd == "cmd" else
+                                                            "/skills/%s/SKILL.md" % nm.split(":")[-1])}
+          for nm, kd, sc, pl, n, ago in DEMO_KIND_SK]
+    if k == 2:
+        sk += [{"name": "toolkit:task-%02d" % i, "kind": "skill", "scope": "plugin", "plug": "toolkit", "n": int(i % 7 == 0),
+                "last": last(i % 7 == 0, i), "path": plug % "toolkit" + "/skills/task-%02d/SKILL.md" % i} for i in range(1, 49)]
+    ag = [{"name": nm, "scope": sc, "plug": "", "path": "" if sc == "seen" else proj + "/agents/%s.md" % nm, "n": n,
+           "last": last(n, ago)} for nm, sc, n, ago in DEMO_KIND_AG]
+    hk = []
+    for ev, sc, ms, subs, ago in DEMO_KIND_HK:
+        p = base(sc, "guard") + ("/hooks/hooks.json" if sc == "plugin" else "/settings.json")
+        n = sum(r for _h, r in subs)
+        hk.append({"name": ev, "scope": sc, "plug": "guard" if sc == "plugin" else "", "path": p, "n": n, "last": last(n, ago),
+                   "files": [{"scope": sc, "path": p, "matcher": m} for m in ms],
+                   "subs": [{"name": h, "n": r, "last": last(r, ago)} for h, r in subs]})
+    order = ("project", "user", "plugin", "cloud", "seen")   # = mcp_conn.MC_SCOPES display order
+    return dict((kd, {"supported": True, "more": 0, "items": sorted(rows, key=lambda r: (order.index(r["scope"]), r["plug"], r["name"].lower()))})
+                for kd, rows in (("skill", sk), ("agent", ag), ("hook", hk)))
 
 
 def _demo_mcp_conn(now, sid, rows):
@@ -375,8 +422,10 @@ def _demo_mcp_conn(now, sid, rows):
     if row is None:
         return 200, {"ok": False, "msg": "Only sessions shown on screen can be opened.", "vars": {}}
     plat, servers = row.get("plat") or "", []
+    kinds = dict((kd, {"supported": False, "items": [], "more": 0}) for kd in ("skill", "agent", "hook"))   # = mcp_conn._kinds_none
     if plat == "cc":
         k = sum(map(ord, sid)) % 3          # vary the counts per session so the strip shows different orbits
+        kinds = _demo_kinds(now, k)
         for nm, sc, pl, tr, st, err, n, ago in DEMO_MCP_CC:
             n = n * (k + 1) // 2 if n else 0
             servers.append({"name": nm, "scope": sc, "plug": pl, "transport": tr, "on": True, "state": st, "err": err,
@@ -387,4 +436,5 @@ def _demo_mcp_conn(now, sid, rows):
                     "at": 0, "n": None, "last": None} for nm, sc, tr in DEMO_MCP_PI]
     return 200, {"ok": True, "now": int(now), "sid": sid, "plat": plat, "supported": plat in ("cc", "cx", "pi"),
                  "counts": plat in ("cc", "cx"), "since": 0, "scanning": False, "checked": int(now), "servers": servers,
-                 "totals": dict((s, sum(1 for x in servers if x["state"] == s)) for s in ("ok", "fail", "auth", "unknown"))}
+                 "totals": dict((s, sum(1 for x in servers if x["state"] == s)) for s in ("ok", "fail", "auth", "unknown")),
+                 "kinds": kinds}

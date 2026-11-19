@@ -103,13 +103,20 @@ Pick **Tools** in the view switch («Pipelines | Harness report | Tools | Connec
 
 ### Pipelines › Connections
 
-Pick **Connections** in the same switch to see which MCP servers one session can reach. A saved Token › Connections view or old link opens here once.
+Pick **Connections** in the same switch to see what one session can reach: MCP servers, skills, agents and hooks. A saved Token › Connections view or old link opens here once.
 
 - The strip on top lists live sessions from every CLI. The picked session sits in the centre of the orbit, with one node per MCP server it can load (user, project for its folder, plugin). claude.ai connectors fold into one node; click it to open them as an outer ring. The orbit fills the window height; when there are more servers than fit on a ring, nodes spread over a staggered grid around the centre (the view grows and scrolls rather than overlapping names).
 - Each node shows that session's own state: **Connected** (green), **Failed** (red, error code only), **Login needed** (a connector that offers only its sign-in tools) and **Unknown** (grey, no record yet). Edge width follows the session's call count, and a call in the last 15 minutes draws moving dots (still when reduced motion is on).
 - Codex records a server only when it is called, so a configured server it has not used stays Unknown. pi counts calls through the Sidereus pi extension from the moment it sees the session; Connected/Failed needs the current extension (Settings › Diagnostics › «Connect», then `/reload` in pi).
 - Click a node (or drag it onto the centre for Task) to act on it. **Task**, **Diagnose** and **Restart** write a short mailbox message to that session; you see the text first and nothing is sent until you press **Confirm — send**. Sent requests appear in the request log.
 - **Reconnect** (or **Login steps**) only shows the steps for that CLI with a Copy button. Sidereus never reconnects, restarts or starts an MCP server itself, and never reads tool arguments, results or error text.
+- The chips above the orbit («MCP | Skills | Agents | Hooks») switch what the nodes are; each shows its count and the choice is remembered. MCP is the default and works as described above.
+- **Skills**: one node per skill or slash command the Claude Code session can load (user, project for its folder, enabled plugin), with this session's call count and last call. A skill the session called that is not on disk still appears as seen in its records; built-in slash commands such as `/clear` are not shown.
+- **Agents**: one node per agent the session can load, plus built-in agents (such as Explore) it ran.
+- **Hooks**: one node per hook event (PreToolUse, Stop, ...) with this session's run count. The card lists the files that configure the event (with matcher) and the runs per hook. The hook command and its output are never read or shown.
+- Items this session has not used are dimmed, not hidden; the side card lists what it used («Called by this session», for hooks «Run by this session»). Past 150 items in one kind, used items stay and a note says how many were left out.
+- Clicking a skill, agent or hook node shows its scope, file and counts with one action, **Task** (same preview and **Confirm — send**). Diagnose, Restart and Reconnect are for MCP servers only.
+- Skills, agents and hooks are read for Claude Code only. On Codex, pi and other CLIs those chips show «Not read for this CLI yet».
 
 ## Read the code structure
 

@@ -72,6 +72,7 @@ _TI_RES = {}                 # days -> (computed at, result); only complete resu
 _TI_MCP = {}                 # days -> (computed at, mcp_status result)
 _TI_SESS = {}                # sid -> last session_mcp result (served while the lock is busy)
 TI_SESS_WAIT, TI_SESS_N = 0.5, 64   # session_mcp lock wait (s) · results kept for that fallback
+TI_SESS_PRE = ("mcp:", "skill:", "agent:", "cmd:", "hook:")   # session_mcp keys; ⚠"hook:" never matches hookc:/hookctx: (same run again)
 _TI_STATE = {"pending": False, "bg": None, "loaded": False, "dirty": False, "saved": 0.0, "rv": False}
 _TI_LOCK = threading.Lock()
 
@@ -566,22 +567,25 @@ def _mcp_compute(cut):
 
 
 def session_mcp(sid, cut, now=None):
-    """One session's own MCP evidence (its transcript + subagent files, events deduped by id, at/after `cut`):
-    {"uses": {key: {n, last}}, "st": {key: {status: ok|fail|auth, err, fail_at, ok_at}}, "auth": {key: ts}, "scanning"}."""
+    """One session's own evidence (transcript + subagent files, deduped by id, at/after `cut`): {"uses": {mcp key: {n, last}},
+    "kinds": {skill:/agent:/cmd:/hook: key: {n, last}}, "st": {key: {status, err, fail_at, ok_at}}, "auth": {key: ts}, "scanning"}."""
     tool_uses(30, now)                       # advance the index first (bounded by TI_BUDGET)
     if not _TI_LOCK.acquire(timeout=TI_SESS_WAIT):
-        return dict(_TI_SESS.get(sid) or {"uses": {}, "st": {}, "auth": {}}, scanning=True)
+        return dict(_TI_SESS.get(sid) or {"uses": {}, "kinds": {}, "st": {}, "auth": {}}, scanning=True)
     try:
-        sub, seen, uses, mc, conn, auth, fail = os.sep + sid + os.sep + "subagents" + os.sep, set(), {}, {}, {}, {}, {}
+        sub, seen, uses, kinds, mc, conn, auth, fail = os.sep + sid + os.sep + "subagents" + os.sep, set(), {}, {}, {}, {}, {}, {}
         for fp, e in _TI_FILES.items():
             if os.path.basename(fp) != sid + ".jsonl" and sub not in fp:
                 continue
             for x, t, g in zip(e["ids"], e["ts"], e["ki"]):
                 k = _TI_KEYS[g]
-                if t >= cut and k.startswith("mcp:") and x not in seen:   # ⚠a subagent file may repeat a parent id
+                if t >= cut and k.startswith(TI_SESS_PRE) and x not in seen:   # ⚠a subagent file may repeat a parent id
                     seen.add(x)
-                    u = uses.setdefault(k, {"n": 0, "last": 0})
-                    u["n"], u["last"], mc[k] = u["n"] + 1, max(u["last"], int(t)), max(mc.get(k, 0.0), t)
+                    m = k.startswith("mcp:")
+                    u = (uses if m else kinds).setdefault(k, {"n": 0, "last": 0})
+                    u["n"], u["last"] = u["n"] + 1, max(u["last"], int(t))
+                    if m:
+                        mc[k] = max(mc.get(k, 0.0), t)
             for k, t in e.get("conn", {}).items():
                 m, k = (auth if k.startswith("mcpauth:") else conn), "mcp:" + k.partition(":")[2]
                 if t >= cut:
@@ -589,7 +593,7 @@ def session_mcp(sid, cut, now=None):
             for k, v in e.get("fail", {}).items():
                 if v[0] >= cut and v[0] >= fail.get(k, (0.0, ""))[0]:
                     fail[k] = v
-        out = {"uses": uses, "st": sess_status(mc, conn, auth, fail), "auth": dict((k, int(t)) for k, t in auth.items())}
+        out = {"uses": uses, "kinds": kinds, "st": sess_status(mc, conn, auth, fail), "auth": dict((k, int(t)) for k, t in auth.items())}
         if len(_TI_SESS) >= TI_SESS_N:
             _TI_SESS.pop(next(iter(_TI_SESS)))
         _TI_SESS[sid] = out

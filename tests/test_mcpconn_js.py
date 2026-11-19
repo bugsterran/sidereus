@@ -12,7 +12,7 @@ from tests._node import node_e
 from tests._i18n_js import i18n_switch
 
 _JS = os.path.join(ROOT, "web", "js")
-_FS = [os.path.join(_JS, f) for f in ("47k-mcpconn.js", "47l-mcpconn-side.js")]
+_FS = [os.path.join(_JS, f) for f in ("47k-mcpconn.js", "47l-mcpconn-side.js", "47m-mcpconn-kinds.js")]
 _CSS = os.path.join(ROOT, "web", "css", "41c-mcpconn.css")
 HANGUL = re.compile("[가-힣ㄱ-ㆎ]")
 

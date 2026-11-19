@@ -4,7 +4,8 @@
   Config values (command/args/env/url/headers), Claude Code failure text and Codex `arguments`/`result`/`error`
   are never read into a result.
 ⚠Files only: never runs `claude mcp`, `pi mcp list` or an MCP server, never connects to one (AGENTS.md rule 7).
-Claude Code: config from `toolinv._raw_items` + per-session evidence from `toolidx.session_mcp`.
+Claude Code: config from `toolinv._raw_items` + per-session evidence from `toolidx.session_mcp`; the same two reads
+  feed `kinds` (skills + slash commands, agents, hook events: names · scope · abbreviated path · matcher · counts).
 Codex: config.toml `[mcp_servers.*]` names + the session's rollout `item_completed` McpToolCall items (server/status only).
 pi: mcp.json names + per-server calls from the Sidereus pi extension (`ext_store.ext_mcp`; pi's session file shows
   only `codemode`). ok/fail needs the extension's `is_error` flag; a hook-less row or an older extension = unknown.
@@ -16,7 +17,7 @@ import re
 import threading
 import time
 
-from sidereus import ext_store, plat_codex, plat_pi, toolidx, toolinv
+from sidereus import ctxsrc, ext_store, plat_codex, plat_pi, toolidx, toolinv
 from sidereus.gitinfo import _git_root
 from sidereus.sessions import sessions_rows
 from sidereus.toolidx_fmt import _SRV_RE
@@ -30,6 +31,9 @@ MC_JSON_MAX = 1 << 20        # mcp.json / trust.json bytes read at most (larger 
 MC_PLATS = ("cc", "cx", "pi")
 MC_SCOPES = ("project", "user", "plugin", "cloud", "seen")
 MC_STATES = ("ok", "fail", "auth", "unknown")
+MC_KINDS = ("skill", "agent", "hook")   # `kinds` block; the Skills chip also holds slash commands (kind cmd)
+MC_KIND_MAX = 150            # nodes per kind; used items are kept first, `more` = dropped count
+MC_SUB_MAX, MC_FILE_MAX = 20, 10   # hook node: hookName rows · configured entries listed
 _NAME_OK = re.compile(r"[^\x00-\x1f\x7f]{1,%d}" % MC_NAME_MAX)
 # "body": sid -> (computed at, body) · "cx": rollout path -> {"sz", "off", "ev": {call id: (server, ok, ts)}}
 _MC_CACHE = {"body": {}, "cx": {}}
@@ -96,14 +100,17 @@ def _cc_state(keys, st, auth):
     return best or ("unknown", "", 0)
 
 
-def _cc(sid, cwd, now):
-    ev = toolidx.session_mcp(sid, now - MC_DAYS * 86400, now)
+def _loadable(it, cw):
+    """Item a session in realpath `cw` loads: user · enabled plugin · project whose proj is exactly cwd (every kind)."""
+    return bool(it["scope"] == "user" or (it["scope"] == "plugin" and it["on"])
+                or (it["scope"] == "project" and cw and it["proj"] and os.path.realpath(it["proj"]) == cw))
+
+
+def _cc(ev, raw, cwd):
     uses, st, auth = ev.get("uses") or {}, ev.get("st") or {}, ev.get("auth") or {}
     cw = os.path.realpath(cwd) if cwd else ""
     rank = {"project": 0, "user": 1, "plugin": 2}
-    items = [it for it in toolinv._raw_items() if it["kind"] == "mcp" and (
-        it["scope"] == "user" or (it["scope"] == "plugin" and it["on"])
-        or (it["scope"] == "project" and cw and it["proj"] and os.path.realpath(it["proj"]) == cw))]
+    items = [it for it in raw if it["kind"] == "mcp" and _loadable(it, cw)]
     rows, used, names = [], set(), set()
     for it in sorted(items, key=lambda x: rank.get(x["scope"], 3)):   # ⚠project config wins over a user server of that name
         nm = str(it["name"])[:MC_NAME_MAX]
@@ -122,6 +129,107 @@ def _cc(sid, cwd, now):
         rows.append(_row(nm, "cloud" if nm.startswith("claude_ai_") else "seen", "", "", True, *_cc_state([k], st, auth),
                          n=int(u.get("n") or 0), last=int(u.get("last") or 0)))
     return rows, bool(ev.get("scanning")), True
+
+
+def _sum(use, keys):
+    us = [use.get(k) or {} for k in keys]
+    return sum(int(u.get("n") or 0) for u in us), max([int(u.get("last") or 0) for u in us] or [0])
+
+
+def _mirror(ks):
+    """skill:<n> <-> cmd:<n>: Claude Code calls a skill and a slash command of one name through the same Skill tool."""
+    return list(dict.fromkeys(ks + [("cmd:" if k.startswith("skill:") else "skill:") + k.partition(":")[2]
+                                    for k in ks if k.startswith(("skill:", "cmd:"))]))
+
+
+def _md_rows(items, use, pre):
+    """Skill/cmd (pre "skill:") or agent (pre "agent:") rows, one per name: project > user > plugin, skill before cmd.
+    Keys = toolinv ukey + ukeys (+ the skill/cmd mirror). Keys of no loadable item: `skill:`/`agent:` -> scope seen;
+    `cmd:` dropped (built-ins such as /clear). ⚠Names, scope, abbreviated path and counts only — never file text."""
+    rows, names, used, sk = [], set(), set(), pre == "skill:"
+    for it in sorted(items, key=lambda x: (MC_SCOPES.index(x["scope"]), x["kind"] != "skill")):
+        nm = str(it["name"])[:MC_NAME_MAX]
+        ks = [k for k in [it["ukey"]] + list(it.get("ukeys") or []) if k]
+        ks = _mirror(ks) if sk else ks
+        used.update(ks)
+        if nm in names:
+            continue
+        names.add(nm)
+        n, last = _sum(use, ks)
+        r = {"name": nm, "scope": it["scope"], "plug": _plug_name(it["base"]) if it["scope"] == "plugin" else "",
+             "path": toolinv._abbrev(it["path"]), "n": n, "last": last}
+        rows.append(dict(r, kind=it["kind"]) if sk else r)
+    for k in sorted(k for k in use if k.startswith(pre) and k not in used):
+        nm = k[len(pre):][:MC_NAME_MAX]
+        if nm in names or not _NAME_OK.fullmatch(nm or "\0"):
+            continue
+        names.add(nm)
+        n, last = _sum(use, _mirror([k]) if sk else [k])
+        r = {"name": nm, "scope": "seen", "plug": "", "path": "", "n": n, "last": last}
+        rows.append(dict(r, kind="skill") if sk else r)
+    return rows
+
+
+def _hook_rows(items, use):
+    """One node per hook event: configured entries (scope · path · matcher) + this session's runs per hookName.
+    ⚠Counts `hook:` keys only — `hookc:`/`hookctx:` are the same run recorded again. Never the command or its output."""
+    evs = {}
+    for it in sorted(items, key=lambda x: MC_SCOPES.index(x["scope"])):
+        e, g = str(it["key"][1])[:MC_NAME_MAX], it.get("entry") or {}
+        plug = _plug_name(os.path.dirname(os.path.dirname(it["file"]))) if it["scope"] == "plugin" else ""
+        d = evs.setdefault(e, {"name": e, "scope": it["scope"], "plug": plug, "path": toolinv._abbrev(it["path"]),
+                               "files": [], "subs": {}, "n": 0, "last": 0})
+        m = g.get("matcher") if isinstance(g, dict) else None
+        if len(d["files"]) < MC_FILE_MAX:
+            d["files"].append({"scope": it["scope"], "path": toolinv._abbrev(it["path"]),
+                               "matcher": m[:MC_NAME_MAX] if isinstance(m, str) else ""})
+    for k, u in use.items():
+        hn = k[5:][:MC_NAME_MAX]
+        if not (k.startswith("hook:") and _NAME_OK.fullmatch(hn or "\0")):
+            continue
+        e = hn.partition(":")[0]
+        d = evs.get(e) or evs.setdefault(e, {"name": e, "scope": "seen", "plug": "", "path": "", "files": [], "subs": {},
+                                             "n": 0, "last": 0})
+        n, last = int(u.get("n") or 0), int(u.get("last") or 0)
+        d["n"], d["last"], d["subs"][hn] = d["n"] + n, max(d["last"], last), {"name": hn, "n": n, "last": last}
+    for d in evs.values():
+        d["subs"] = sorted(d["subs"].values(), key=lambda s: (-s["n"], s["name"]))[:MC_SUB_MAX]
+    return list(evs.values())
+
+
+def _kind_cap(rows):
+    """Display order (scope, plug, name) so nodes do not jump on a poll; past MC_KIND_MAX the used items stay, `more` = dropped."""
+    rows.sort(key=lambda r: (MC_SCOPES.index(r["scope"]), r["plug"], r["name"].lower()))
+    if len(rows) > MC_KIND_MAX:
+        keep = set(id(r) for r in sorted(rows, key=lambda r: -r["n"])[:MC_KIND_MAX])   # stable: ties keep display order
+        out = [r for r in rows if id(r) in keep]
+        return {"supported": True, "items": out, "more": len(rows) - len(out)}
+    return {"supported": True, "items": rows, "more": 0}
+
+
+def _plug_on_dirs():
+    """realpaths of enabled plugin dirs. ⚠toolinv marks every plugin hook on (the Tools view), so the hook filter is here."""
+    us = toolinv._read_json(os.path.join(ctxsrc.CLAUDE_DIR, "settings.json"))
+    return set(os.path.realpath(d) for _lb, d, on in toolinv._plugins(us) if on)
+
+
+def _cc_kinds(ev, raw, cwd):
+    """`kinds` block of a Claude Code session: skills (+ slash commands), agents and hook events it loads, with its own counts."""
+    use, cw = ev.get("kinds") or {}, os.path.realpath(cwd) if cwd else ""
+    items = [it for it in raw if it["kind"] in ("skill", "cmd", "agent", "hook") and _loadable(it, cw)
+             and (it["kind"] == "hook" or it["on"])]   # skillOverrides off / sidereus-off = not loadable
+    if any(it["kind"] == "hook" and it["scope"] == "plugin" for it in items):
+        on = _plug_on_dirs()
+        items = [it for it in items if not (it["kind"] == "hook" and it["scope"] == "plugin")
+                 or os.path.realpath(os.path.dirname(os.path.dirname(it["file"]))) in on]
+    return {"skill": _kind_cap(_md_rows([it for it in items if it["kind"] in ("skill", "cmd")], use, "skill:")),
+            "agent": _kind_cap(_md_rows([it for it in items if it["kind"] == "agent"], use, "agent:")),
+            "hook": _kind_cap(_hook_rows([it for it in items if it["kind"] == "hook"], use))}
+
+
+def _kinds_none():
+    """Codex / pi / other CLIs: skills, agents and hooks are not read yet — unknown, never an empty zero."""
+    return dict((k, {"supported": False, "items": [], "more": 0}) for k in MC_KINDS)
 
 
 def _cx_files(sid):
@@ -254,9 +362,11 @@ def conn(sid):
     if hit and 0 <= now - hit[0] < MC_TTL_S:
         return dict(hit[1], now=int(now))
     plat, cwd = str(row.get("plat") or ""), str(row.get("cwd") or "")
-    servers, scanning, counts, since = [], False, False, 0
+    servers, scanning, counts, since, kinds = [], False, False, 0, _kinds_none()
     if plat == "cc":
-        servers, scanning, counts = _cc(sid, cwd, now)
+        ev, raw = toolidx.session_mcp(sid, now - MC_DAYS * 86400, now), toolinv._raw_items()   # one read each for every kind
+        servers, scanning, counts = _cc(ev, raw, cwd)
+        kinds = _cc_kinds(ev, raw, cwd)
     elif plat == "cx":
         servers, scanning, counts = _cx(sid, cwd)
     elif plat == "pi":
@@ -265,7 +375,7 @@ def conn(sid):
     body = {"ok": True, "now": int(now), "sid": sid, "plat": plat, "supported": plat in MC_PLATS, "counts": counts,
             "since": since,   # >0: counts began then, not at session start (pi record from an older viewer)
             "scanning": scanning, "checked": int(now), "servers": servers,
-            "totals": dict((k, sum(1 for s in servers if s["state"] == k)) for k in MC_STATES)}
+            "totals": dict((k, sum(1 for s in servers if s["state"] == k)) for k in MC_STATES), "kinds": kinds}
     if not scanning:
         _cap_put(_MC_CACHE["body"], sid, (now, body))
     return body

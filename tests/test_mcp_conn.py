@@ -114,7 +114,8 @@ class McpConnTest(unittest.TestCase):
         self.assertEqual((by["tracker"]["state"], by["tracker"]["n"]), ("unknown", 0))   # configured, no evidence: never ok
         self.assertEqual(b["totals"], {"ok": 4, "fail": 0, "auth": 0, "unknown": 1})
         self.assertNotIn(SECRET, json.dumps(b))
-        self.assertEqual(set(b), {"ok", "now", "sid", "plat", "supported", "counts", "since", "scanning", "checked", "servers", "totals"})
+        self.assertEqual(set(b), {"ok", "now", "sid", "plat", "supported", "counts", "since", "scanning", "checked", "servers", "totals",
+                                  "kinds"})
         self.assertEqual(set(b["servers"][0]), {"name", "scope", "plug", "transport", "on", "state", "err", "at", "n", "last"})
 
     def test_R1_key_forms_match_harness(self):
@@ -281,8 +282,20 @@ class McpConnTest(unittest.TestCase):
         rows = [{"sid": "d-cc", "plat": "cc"}, {"sid": "d-pi", "plat": "pi"}, {"sid": "d-gm", "plat": "gm"}]
         code, b = dt._demo_mcp_conn(NOW, "d-cc", rows)
         self.assertEqual((code, set(b), set(b["servers"][0])),
-                         (200, {"ok", "now", "sid", "plat", "supported", "counts", "since", "scanning", "checked", "servers", "totals"},
-                          {"name", "scope", "plug", "transport", "on", "state", "err", "at", "n", "last"}))
+                         (200, {"ok", "now", "sid", "plat", "supported", "counts", "since", "scanning", "checked", "servers", "totals",
+                                "kinds"}, {"name", "scope", "plug", "transport", "on", "state", "err", "at", "n", "last"}))
+        kd = b["kinds"]
+        self.assertEqual((set(kd), set(kd["skill"])), (set(MC.MC_KINDS), {"supported", "items", "more"}))
+        self.assertEqual(set(kd["skill"]["items"][0]), {"name", "kind", "scope", "plug", "path", "n", "last"})   # = test_mcp_conn_kinds live shape
+        self.assertEqual(set(kd["agent"]["items"][0]), {"name", "scope", "plug", "path", "n", "last"})
+        self.assertEqual(set(kd["hook"]["items"][0]), {"name", "scope", "plug", "path", "files", "subs", "n", "last"})
+        self.assertEqual((set(kd["hook"]["items"][0]["files"][0]), set(kd["hook"]["items"][0]["subs"][0])),
+                         ({"scope", "path", "matcher"}, {"name", "n", "last"}))
+        self.assertTrue(all(type(r["n"]) is int for k in MC.MC_KINDS for r in kd[k]["items"]))
+        self.assertTrue(any(len(dt._demo_mcp_conn(NOW, s, [{"sid": s, "plat": "cc"}])[1]["kinds"]["skill"]["items"]) >= 60
+                            for s in ("a", "b", "c")))   # one cc session per k carries the 60-skill layout case
+        for s in ("d-pi", "d-gm"):
+            self.assertEqual(dt._demo_mcp_conn(NOW, s, rows)[1]["kinds"], MC._kinds_none())
         self.assertEqual(set(s["state"] for s in b["servers"]), set(MC.MC_STATES))
         self.assertEqual(set(s["n"] for s in dt._demo_mcp_conn(NOW, "d-pi", rows)[1]["servers"]), {None})
         self.assertFalse(dt._demo_mcp_conn(NOW, "d-gm", rows)[1]["supported"])

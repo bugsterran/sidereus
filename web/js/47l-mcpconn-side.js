@@ -21,6 +21,7 @@ function mcpcActOf(srv){
   return acts.includes(cur) ? cur : st === 'fail' ? 'diag' : st === 'auth' ? 'reconn' : acts[0];
 }
 function mcpcDropTask(name){
+  if(mcpcKindOf(MCPC.data) !== 'mcp') return;   // kind items offer «Task» only; ⚠a same-named MCP server keeps its own action
   const d = MCPC.data, srv = d && d.ok ? (d.servers || []).find(s => s && s.name === name) : null;
   if(srv && mcpcActs(srv).includes('task')) MCPC.act[name] = 'task';
 }
@@ -144,33 +145,40 @@ function mcpcLogAdd(it){
 }
 function mcpcLogCard(){
   const l = mcpcLogGet();
-  const body = l.length ? '<div class=mcpclog>' + l.map(x => '<div><span>' + esc(hhmm(x.at)) + '</span><span class=mcpclt>' + esc(mcpcActLbl(x.a, '')) + ' · ' + esc(x.s)
+  const kl = x => x.k && x.k !== 'mcp' && MCPC_KINDS.includes(x.k) ? esc(mcpcKindLbl(x.k)) + ' · ' : '';
+  const body = l.length ? '<div class=mcpclog>' + l.map(x => '<div><span>' + esc(hhmm(x.at)) + '</span><span class=mcpclt>' + kl(x) + esc(mcpcActLbl(x.a, '')) + ' · ' + esc(x.s)
     + ' → ' + esc(String(x.sid || '')) + '</span><b class="' + (x.ok ? 'ok' : 'bad') + '">' + esc(x.ok ? T('Sent', 'mcp') : T('Failed', 'mcp')) + '</b></div>').join('') + '</div>'
     : '<div class=mcpcempty>' + esc(T('None yet')) + '</div>';
   return mcpcCard(T('Request log'), T('mailbox'), body);
 }
-function mcpcSideHtml(d, row){ return mcpcStateCard(d) + mcpcCallsCard(d) + mcpcDetailCard(d, row) + mcpcLogCard(); }
-// Mailbox thread label; ⚠must match sidereus/bus.py DM_THREAD (<= 60 chars of [\w .·:-]) or /api/dm refuses the send.
-function mcpcThread(name){ return ('mcp:' + String(name || '').replace(/[^\w .·:-]/g, '-')).slice(0, 60); }
+function mcpcSideHtml(d, row){
+  const kd = mcpcKindOf(d);
+  if(kd !== 'mcp') return mcpcKindSide(d, row, kd) + mcpcLogCard();
+  return mcpcStateCard(d) + mcpcCallsCard(d) + mcpcDetailCard(d, row) + mcpcLogCard();
+}
+// Mailbox thread label (pre = 'mcp' or the kind); ⚠must match sidereus/bus.py DM_THREAD (<= 60 chars of [\w .·:-]) or /api/dm refuses the send.
+function mcpcThread(name, pre){ return ((pre || 'mcp') + ':' + String(name || '').replace(/[^\w .·:-]/g, '-')).slice(0, 60); }
 // The only sender. ⚠Recipient = the session's logged-in mailbox id (mboxIn); the body is recomputed from the same inputs the preview showed.
+// A kind item (47m) sends «Task» only; its note key is kind:name so a same-named MCP server keeps its own draft.
 async function mcpcSend(){
-  const d = MCPC.data, name = MCPC.sel, row = mcpcRow(MCPC.sid);
-  const srv = d && d.ok && d.sid === MCPC.sid ? (d.servers || []).find(s => s && s.name === name) : null;
-  if(MCPC.sending || !srv || !row || !(typeof mboxIn === 'function' && mboxIn(row))) return false;
-  const act = mcpcActOf(srv), n = mcpcNote(MCPC.note[name]);
+  const d = MCPC.data, name = MCPC.sel, row = mcpcRow(MCPC.sid), kd = mcpcKindOf(d), mine = !!(d && d.ok && d.sid === MCPC.sid);
+  const it = mine && kd !== 'mcp' ? mcpcKindFind(d, kd, name) : null;
+  const srv = mine && kd === 'mcp' ? (d.servers || []).find(s => s && s.name === name) : null;
+  if(MCPC.sending || !(srv || it) || !row || !(typeof mboxIn === 'function' && mboxIn(row))) return false;
+  const act = it ? 'task' : mcpcActOf(srv), n = mcpcNote(MCPC.note[it ? kd + ':' + name : name]);
   if(!MCPC_SENDS.includes(act) || (act === 'task' && !n)) return false;
-  const body = mcpcBody(act, srv, row, n);
+  const body = it ? mcpcKindBody(kd, it, n) : mcpcBody(act, srv, row, n);
   MCPC.sending = true; MCPC.msg = ''; mcpcRepaint();
   let ok = false;
   try{
-    const j = await postJSON('/api/dm', {to: row.mbox, body, relay: true, sid: row.sid, thread: mcpcThread(name)});
+    const j = await postJSON('/api/dm', {to: row.mbox, body, relay: true, sid: row.sid, thread: mcpcThread(name, it ? kd : 'mcp')});
     ok = !!(j && j.ok);
     if(!ok) MCPC.msg = T('Could not send') + ': ' + String((j && (j.error || j.err)) || '?');
   }catch(e){ MCPC.msg = T('Could not send') + ': ' + (e && e.body && (e.body.error || e.body.err || e.body.msg) ? String(e.message) : fetchErrMsg(e)); }
   MCPC.sending = false;
-  mcpcLogAdd({a: act, s: name, sid: sid8(row.sid), at: Math.floor(Date.now() / 1000), ok});
+  mcpcLogAdd({a: act, s: name, sid: sid8(row.sid), at: Math.floor(Date.now() / 1000), ok, k: it ? kd : 'mcp'});
   if(ok){
-    MCPC.note[name] = '';
+    MCPC.note[it ? kd + ':' + name : name] = '';
     const i = document.querySelector('.mcpc .mcpcnote'); if(i) i.value = '';   // ⚠morph keeps a typed value: clear the property
   }
   mcpcRepaint();

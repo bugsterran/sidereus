@@ -1,8 +1,11 @@
 // «Connections» view of the pipeline tab (48 PLVIEW 'conn'): one live session at the centre, one node per MCP server it can load
 // (GET /api/mcp-conn, sidereus/mcp_conn.py); side panel, actions and request log are 47l.
 // ⚠Metadata only: server names, scope, state words, error codes, counts and times — never tool arguments, results or error text.
+// Kind chips: MCP (this file) or skills / agents / hooks from the `kinds` block (47m); the pick persists across sessions.
+const MCPC_KINDS = ['mcp', 'skill', 'agent', 'hook'];
 const MCPC = {sid: lsGet('sidereus.mcpcsid', ''), sel: '', filt: '', cloudOpen: false, act: {}, note: {}, data: null, err: '',
-  busy: '', wh: [0, 0], drag: '', sending: false, msg: '', log: null, cp: '', failAt: {}};
+  busy: '', wh: [0, 0], drag: '', sending: false, msg: '', log: null, cp: '', failAt: {}, kind: lsGet('sidereus.mcpckind', 'mcp')};
+if(!MCPC_KINDS.includes(MCPC.kind)) MCPC.kind = 'mcp';
 const MCPC_LIVE_S = 900;   // a call this recent (server clock) draws flowing dots
 const MCPC_BACKOFF_MS = 10000;   // ⚠after a failed load, repaints do not refetch (each paint calls loadMcpConn: a tight loop otherwise)
 // Live strip: every CLI; ⚠ended rows ('done'/'gone') never come back from a stale pick.
@@ -31,6 +34,25 @@ function mcpcAgo(ts, now){
   return AGO(ago(Math.max(0, Math.floor(n - t))));
 }
 function mcpcSidOk(d, sid){ return !!(d && d.sid === sid); }
+function mcpcKindLbl(k){ return k === 'skill' ? T('Skills') : k === 'agent' ? T('Agents') : k === 'hook' ? T('Hooks') : 'MCP'; }
+// Kind drawn now: an answer without a `kinds` block (older server) draws MCP only; the stored pick is kept for the next answer.
+function mcpcKindOf(d){
+  const k = MCPC.kind;
+  if(k === 'mcp' || !MCPC_KINDS.includes(k) || typeof mcpcKindStage !== 'function') return 'mcp';
+  return d && d.ok && !(d.kinds && typeof d.kinds === 'object') ? 'mcp' : k;
+}
+// Chip count: MCP servers or kind items (+ dropped by the cap); ⚠unread or unsupported = «—», never 0.
+function mcpcKindCount(d, k){
+  if(!(d && d.ok)) return '—';
+  if(k === 'mcp') return d.supported === false ? '—' : String((d.servers || []).filter(s => s && s.name).length);
+  const b = d.kinds && typeof d.kinds === 'object' ? d.kinds[k] : null;
+  return b && b.supported !== false && Array.isArray(b.items) ? String(b.items.length + (+b.more > 0 ? +b.more : 0)) : '—';
+}
+function mcpcKindsHtml(d){
+  const cur = mcpcKindOf(d), old = !!(d && d.ok && !(d.kinds && typeof d.kinds === 'object'));
+  return '<div class=mcpckinds role=group aria-label="' + esc(T('Kind')) + '">' + MCPC_KINDS.map(k => '<button type=button class="mcpck' + (k === cur ? ' on' : '')
+    + '" data-mcpck="' + k + '" aria-pressed="' + (k === cur) + '"' + (old && k !== 'mcp' ? ' disabled' : '') + '><span>' + esc(mcpcKindLbl(k)) + '</span><b>' + esc(mcpcKindCount(d, k)) + '</b></button>').join('') + '</div>';
+}
 // Drops a late reply for an old pick; a failed refresh keeps the last good answer for the same session and says so.
 async function loadMcpConn(sid, force){
   if(!sid) return;
@@ -76,9 +98,9 @@ function mcpcClamp(v, lo, hi){ return hi < lo ? (lo + hi) / 2 : Math.max(lo, Mat
 // Rings while every label fits; otherwise a staggered grid of label-sized cells around the core, nearest cells first
 // (local servers nearest, connectors outside them), assigned clockwise. Cells cannot collide; mcpcGrowH grows the
 // stage until there are enough of them. fit = no label overlaps.
-function mcpcGeo(W, H, nIn, nOut){
+function mcpcGeo(W, H, nIn, nOut, wide){
   // ⚠hw is the 136px node (41c): the 120px narrow rule follows the .mcpc container, not this stage width, so never assume it.
-  const cx = W / 2, cy = H / 2, hw = 68;
+  const cx = W / 2, cy = H / 2, hw = wide ? 84 : 68;   // wide = the 168px kind node (41c .mcpcn.kind)
   // Radii follow the stage (its height fits the feed) with the ellipse capped at 1.5:1, so a tall stage is not a ring in a corner.
   const RY = H * 0.34, R = Math.min(W * 0.34, RY * 1.5), R2Y = H * 0.45, R2 = Math.min(W * 0.46, R2Y * 1.5);
   const at = (i, n, rx, ry, off, w) => {
@@ -103,16 +125,21 @@ function mcpcGeo(W, H, nIn, nOut){
   return {cx, cy, inner: pick(cells.slice(0, nIn)), outer: pick(cells.slice(nIn, nIn + nOut)), fit: cells.length >= nIn + nOut};
 }
 // Overlapping label boxes among placed nodes (box = w wide, 84 tall: the measured 72..82 px of icon + name + status line).
+// Node name: long names step the font down (41c .mcpct.l1..l3) before any ellipsis; the title keeps the full name.
+function mcpcLabelHtml(s){
+  const n = String(s).length, l = n <= 14 ? '' : n <= 17 ? ' l1' : n <= 20 ? ' l2' : ' l3';
+  return '<span class="mcpct' + l + '">' + esc(s) + '</span>';
+}
 function mcpcHits(ps, w){
   let n = 0;
   for(let i = 0; i < ps.length; i++) for(let j = i + 1; j < ps.length; j++)
     if(Math.abs(ps[i].x - ps[j].x) < w && Math.abs(ps[i].y - ps[j].y) < 84) n++;
   return n;
 }
-// Taller stage (60px steps, cap 4000) until every label fits; the feed scrolls instead of names piling up.
-function mcpcGrowH(W, H, nIn, nOut){
-  for(let h = H; h < 4000; h += 60) if(mcpcGeo(W, h, nIn, nOut).fit) return h;
-  return 4000;
+// Taller stage (60px steps, cap 8000: 150 wide kind nodes at 900px need ~4200) until every label fits; the feed scrolls instead of names piling up.
+function mcpcGrowH(W, H, nIn, nOut, wide){
+  for(let h = H; h < 8000; h += 60) if(mcpcGeo(W, h, nIn, nOut, wide).fit) return h;
+  return 8000;
 }
 function mcpcPath(x, y, cx, cy, a){
   const r = v => Math.round(v * 10) / 10;
@@ -139,7 +166,7 @@ function mcpcNode(s, p, d, now, small){
     + (d.counts !== false && s.n != null ? ' · ' + T('{n} calls').replace('{n}', String(+s.n || 0)) : '');
   return '<button type=button class="mcpcn st-' + st + (used ? ' used' : '') + (sel ? ' sel' : '') + (small ? ' small' : '') + (dim ? ' dim' : '')
     + '" data-mcpcn="' + esc(s.name) + '" draggable="true" aria-pressed="' + sel + '" style="left:' + Math.round(p.x) + 'px;top:' + Math.round(p.y) + 'px"'
-    + ' title="' + esc(tip) + '"><span class=mcpcb><i></i></span><span class=mcpct>' + esc(s.name) + '</span><span class=mcpcu>'
+    + ' title="' + esc(tip) + '"><span class=mcpcb><i></i></span>' + mcpcLabelHtml(s.name) + '<span class=mcpcu>'
     + mcpcNodeUse(s, d, now) + '</span></button>';
 }
 function mcpcFold(cloud, p){
@@ -180,13 +207,17 @@ function mcpcCoreName(s){
 }
 // Core subtitle. ⚠No counts (pi) or every server unknown = «Unknown n», never «0 connected · 0 failed».
 function mcpcCoreSum(d){
+  const kd = mcpcKindOf(d);
+  if(kd !== 'mcp') return typeof mcpcKindSum === 'function' ? mcpcKindSum(d, kd) : '';
   if(!d || !d.ok || d.supported === false || typeof mcpcTotals !== 'function') return '';
   const tot = mcpcTotals(d), all = (d.servers || []).filter(s => s && s.name).length;
   if(!all) return '';
   if(d.counts === false || tot.unknown >= all) return T('{n} unknown').replace('{n}', String(tot.unknown));
   return T('{a} connected · {b} failed').replace('{a}', String(tot.ok)).replace('{b}', String(tot.fail));
 }
-function mcpcLegend(){
+function mcpcLegend(d){
+  const kd = mcpcKindOf(d);
+  if(kd !== 'mcp' && typeof mcpcKindLegend === 'function') return mcpcKindLegend(kd);
   const k = (c, t) => '<span><i class="mcpclk ' + c + '"></i>' + esc(t) + '</span>';
   return '<div class=mcpcleg>' + k('st-ok', T('Connected', 'mcp')) + k('st-ok used', T('Called by this session (larger · thicker edge)'))
     + k('st-fail', T('Failed', 'mcp')) + k('st-auth', T('Login needed')) + k('st-unknown', T('Unknown', 'mcp'))
@@ -194,10 +225,11 @@ function mcpcLegend(){
 }
 // Stage: SVG edges under absolutely placed <button> nodes, positions in stage pixels (measured; 41c fixes the height).
 function mcpcStage(row, d, W, H){
-  const g0 = {cx: W / 2, cy: H / 2};
+  const g0 = {cx: W / 2, cy: H / 2}, kd = mcpcKindOf(d);
   let msg = '';
   if(!d) msg = MCPC.err ? T('Could not read MCP connections') + ' — ' + MCPC.err : T('Loading…');
   else if(!d.ok) msg = (typeof TV === 'function' && d.msg ? TV(d) : '') || T('Could not read MCP connections');
+  else if(kd !== 'mcp') return mcpcKindStage(row, d, W, H, kd);
   else if(d.supported === false) msg = T('MCP connections are not read for this CLI yet');
   const hs = ' style="height:' + Math.round(H) + 'px"';
   if(msg) return '<div class=mcpcst' + hs + '><svg class=mcpcsky viewBox="0 0 ' + W + ' ' + H + '" aria-hidden=true></svg>' + mcpcCore(row, d, g0)
@@ -232,8 +264,9 @@ function mcpcFitH(box, st){
 function mcpcSize(box, d){
   const st = box.querySelector && box.querySelector('.mcpc .mcpcst'), w = box.clientWidth || 1200;
   const W = st && st.clientWidth > 0 ? st.clientWidth : Math.max(320, w > 1500 ? w - 434 : w > 1100 ? w - 374 : w - 2);   // same breakpoints as 41c
-  const sp = d && d.ok && d.supported !== false ? mcpcSplit(d.servers) : null;
+  const kd = mcpcKindOf(d), sp = kd === 'mcp' && d && d.ok && d.supported !== false ? mcpcSplit(d.servers) : null;
   const H = mcpcFitH(box, st);
+  if(kd !== 'mcp') return [W, d && d.ok ? mcpcGrowH(W, H, mcpcKindItems(d, kd).length, 0, true) : H];
   return [W, sp ? mcpcGrowH(W, H, sp.local.length + (sp.cloud.length ? 1 : 0), MCPC.cloudOpen ? sp.cloud.length : 0) : H];
 }
 function paintMcpConn(box){
@@ -241,14 +274,15 @@ function paintMcpConn(box){
   if(!rows.length){ box.innerHTML = '<div class=mcpc><div class=hidnote>' + esc(T('No live session')) + '</div></div>'; return; }
   if(!rows.some(x => x.sid === MCPC.sid)) mcpcPick(rows[0].sid);
   const row = mcpcRow(MCPC.sid), d = mcpcSidOk(MCPC.data, MCPC.sid) ? MCPC.data : null;
-  if(MCPC.sel && !(d && d.ok && (d.servers || []).some(s => s && s.name === MCPC.sel))) MCPC.sel = d ? '' : MCPC.sel;
+  const kd = mcpcKindOf(d), has = n => kd === 'mcp' ? (d.servers || []).some(s => s && s.name === n) : mcpcKindItems(d, kd).some(x => x.name === n);
+  if(MCPC.sel && !(d && d.ok && has(MCPC.sel))) MCPC.sel = d ? '' : MCPC.sel;
   loadMcpConn(MCPC.sid, false);
   const [W, H] = mcpcSize(box, d);
   MCPC.wh = [W, H];
   const h = mcpcStrip(rows)
     + (d && d.scanning ? '<div class=hidnote>' + esc(T('Reading records…')) + '</div>' : '')
     + (d && MCPC.err ? '<div class=hidnote>' + esc(T('Could not refresh — showing the last answer')) + ' (' + esc(MCPC.err) + ')</div>' : '')
-    + '<div class=mcpcg><div class=mcpcl>' + mcpcStage(row, d, W, H) + mcpcLegend() + '</div>'
+    + '<div class=mcpcg><div class=mcpcl>' + mcpcKindsHtml(d) + mcpcStage(row, d, W, H) + mcpcLegend(d) + '</div>'
     + '<div class=mcpcside>' + (typeof mcpcSideHtml === 'function' ? mcpcSideHtml(d, row) : '') + '</div></div>';
   const root = box.firstElementChild;
   // ⚠#feed is shared with Pipelines/Tools (they write innerHTML): morph only inside our own root, never setHtml(box).
@@ -270,6 +304,13 @@ if(typeof document !== 'undefined' && document.addEventListener){
     if(!root) return;
     const s = t.closest('[data-mcpcs]');
     if(s){ const had = document.activeElement === s; mcpcPick(s.dataset.mcpcs); mcpcRepaint(); if(had) kbHold('.mcpc .mcpcss.on'); return; }
+    const kc = t.closest('[data-mcpck]');
+    if(kc){
+      const k = kc.dataset.mcpck;
+      if(!MCPC_KINDS.includes(k)) return;
+      MCPC.kind = k; MCPC.sel = ''; MCPC.filt = ''; MCPC.msg = ''; lsSet('sidereus.mcpckind', k);
+      mcpcRepaint(); kbHold('.mcpc [data-mcpck][aria-pressed="true"]'); return;
+    }
     if(t.closest('[data-mcpcc]')){ MCPC.cloudOpen = !MCPC.cloudOpen; mcpcRepaint(); kbHold('.mcpc [data-mcpcc]'); return; }
     const n = t.closest('[data-mcpcn]');
     if(n){ MCPC.sel = MCPC.sel === n.dataset.mcpcn ? '' : n.dataset.mcpcn; MCPC.msg = ''; mcpcRepaint(); return; }

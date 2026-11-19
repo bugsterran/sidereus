@@ -348,6 +348,11 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - ★**pi Connect row named mcp.json for any symlink refusal** — `_linked` checks mcp.json, the extension file and its folder, but the row's `file` was always mcp.json.
   ⇒ a symlink refusal shows the first linked path (`hook_connect_pi.row`, `test_symlink_row_names_the_linked_path`).
 
+## Hook runs counted twice or three times (`sidereus/toolidx.py` `session_mcp` · `TI_SESS_PRE`)
+- Cause: one hook run writes `hook:<name>`, `hookc:<name>#<hash>` (per command hash) and, when it adds context, `hookctx:<name>` — the same run recorded again.
+- ⇒ «Connections» Hooks counts `hook:` keys only (`TI_SESS_PRE` prefix `"hook:"` excludes the other two); a test asserts `hookc:`/`hookctx:` add nothing.
+- ⚠Never widen the prefix to `"hook"` or sum the three key forms.
+
 ## Codex logs no MCP startup connection (`sidereus/mcp_conn.py` Codex branch)
 - Cause: a Codex rollout records an MCP server only when a tool call completes (`item_completed`, `item.type == "McpToolCall"`, ★38 calls measured: 35 completed / 3 failed); there is no connect or handshake event.
 - ⇒ A configured server (`config.toml` `[mcp_servers.*]`) with no call in this session is `unknown`, never connected or failed. Calls count once per `item.id`, even when the same rollout sits in `sessions/` and `archived_sessions/`.
