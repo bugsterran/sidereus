@@ -259,8 +259,29 @@ class McpConnJs(unittest.TestCase):
 
     def test_error_badge_not_clipped(self):
         css = _read(_CSS)
-        self.assertIn(".mcpcn.st-fail .mcpcu{overflow:visible;white-space:normal}", css)
-        self.assertRegex(css, r"\.mcpcbad\{[^}]*overflow-wrap:anywhere")
+        self.assertIn(".mcpcn.st-fail .mcpcu{overflow:visible}", css)
+        self.assertRegex(css, r"\.mcpcbad\{[^}]*white-space:nowrap")           # one line, never CONNECTION_CLOS / ED
+        self.assertNotRegex(css, r"\.mcpcbad\{[^}]*overflow-wrap")
+        self.assertIn(".mcpcn.st-fail{width:max-content;", css)                 # the failed node grows to fit the code
+
+    def test_many_servers_never_overlap(self):
+        # Rings while labels fit, the staggered grid past that; the stage grows instead of labels piling up.
+        out = _js("const R = []; for(const [W, H] of [[1402, 834], [1000, 620], [700, 520]]) for(const [a, b] of [[8, 0], [16, 0], [24, 0], [40, 0], [60, 0], [16, 17], [30, 30]]){"
+                  " const w = 68, h = mcpcGrowH(W, H, a, b), g = mcpcGeo(W, h, a, b), all = g.inner.concat(g.outer);"
+                  " R.push([W, H, a, b, h, g.inner.length, g.outer.length, mcpcHits(all, w * 2), all.filter(p => p.x - w < 0 || p.x + w > W || p.y - 14 < 0 || p.y + 68 > h).length]); }"
+                  " console.log(JSON.stringify(R))")
+        for W, H, a, b, h, ni, no, hits, outside in out:
+            self.assertEqual((ni, no, hits, outside), (a, b, 0, 0), (W, H, a, b, h))
+            self.assertGreaterEqual(h, H)
+        grown = dict(((W, a, b), h) for W, H, a, b, h, *_ in out)
+        self.assertEqual(grown[(1402, 16, 0)], 834)                             # a normal count keeps the fitted height
+        self.assertGreater(grown[(700, 60, 0)], 520)                            # a narrow stage with many servers grows
+
+    def test_stage_height_fits_feed(self):
+        out = _js("const B = (w, h) => ({clientWidth: w, clientHeight: h, scrollTop: 0, querySelector(){ return null; }});"
+                  " console.log(JSON.stringify([mcpcFitH(B(1840, 936), null), mcpcFitH(B(1840, 400), null), mcpcFitH(B(1840, 3000), null),"
+                  " mcpcFitH(B(1000, 936), null), mcpcFitH(B(800, 936), null)]))")
+        self.assertEqual(out, [820, 520, 1000, 620, 520])                        # 936 - 70 top - 46 legend; side column below = fixed
 
     def test_unknown_not_zero(self):
         out = _js("console.log(JSON.stringify([mcpcStateCard(null), mcpcCallsCard(Object.assign({}, %s, {counts: false})), mcpcAgo(0, 100)]))"
