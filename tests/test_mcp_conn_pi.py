@@ -23,7 +23,7 @@ class PiMcp(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="sidereus-mcpi-")
         os.makedirs(os.path.join(self.tmp, "pi"))
-        with open(os.path.join(self.tmp, "pi", "mcp.json"), "w") as f:
+        with open(os.path.join(self.tmp, "pi", "mcp.json"), "w", encoding="utf-8") as f:
             json.dump({"mcpServers": {"mailbox": {"command": "x", "env": {"K": SECRET}}, "docs": {"url": "u"}}}, f)
         self.saved = [(ST, "_ext_save_locked", ST._ext_save_locked), (ST, "_runs_save_locked", ST._runs_save_locked),
                       (PP, "root", PP.root), (MC, "sessions_rows", MC.sessions_rows), (MC, "_now", MC._now),
