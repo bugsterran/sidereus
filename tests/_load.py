@@ -42,6 +42,10 @@ def load():
         ql = importlib.import_module("sidereus.quota_local")   # owner of the OMC paths and their writer
         ql.OMC_CACHE = os.path.join(tmp, "omc-usage-cache.json")
         ql.OMC_CACHE5 = os.path.join(tmp, "omc-usage-cache-anthropic.json")
+        # ⚠~/.claude.json readers (account/plan scope, context sources): unredirected, a test that reaches
+        # _cc_scope or ctxsrc without its own patch reads the live file. A missing file = signed-out defaults.
+        ql.CLAUDE_CONF = os.path.join(tmp, "no-claude.json")
+        importlib.import_module("sidereus.ctxsrc").CLAUDE_JSON = os.path.join(tmp, "no-claude.json")
         importlib.import_module("sidereus.otel").OTEL_TDAY_FILE = os.path.join(tmp, "otel-tools.json")
         importlib.import_module("sidereus.otel_cache").OC_FILE = os.path.join(tmp, "otel-cache.json")
         importlib.import_module("sidereus.otel_hooks").OH_FILE = os.path.join(tmp, "otel-hooks.json")
