@@ -12,12 +12,14 @@ function ucfEl(){
   const t = document.createElement('div'); t.id = 'ucft'; t.className = 'ucft';
   const b = document.createElement('div'); b.id = 'ucfb'; b.className = 'ucfb';
   const i = document.createElement('input'); i.id = 'ucfi'; i.className = 'ucfi'; i.type = 'text'; i.hidden = true;
+  i.addEventListener('compositionstart', () => { i.setAttribute('data-ime', '1'); });
+  i.addEventListener('compositionend', () => { i.removeAttribute('data-ime'); });
   i.setAttribute('aria-labelledby', 'ucft'); i.setAttribute('autocomplete', 'off');
   const a = document.createElement('div'); a.className = 'ucfa';
   const no = document.createElement('button'); no.type = 'button'; no.className = 'wkrgb'; no.setAttribute('data-ucf', '0');
   const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'wkrgb archok'; ok.setAttribute('data-ucf', '1');
   a.appendChild(no); a.appendChild(ok); d.appendChild(t); d.appendChild(b); d.appendChild(i); d.appendChild(a);
-  d.addEventListener('cancel', e => { e.preventDefault(); ucfDone(false); });   // native Esc path (close watcher)
+  d.addEventListener('cancel', e => { e.preventDefault(); if(!ucfIme()) ucfDone(false); });   // native Esc path (close watcher)
   // ⚠Appended to <body>, never inside #cfgm: paintCfg rewrites #cfgbox while the dialog is open.
   document.body.appendChild(d);
   return d;
@@ -74,8 +76,12 @@ function ucfDone(v){
 }
 // ⚠Window capture runs before the document capture handlers (08-ui-kit popover Esc/outside click, 41 drawer pointerdown,
 //   42 hover Esc, 48e Esc) — without this they would close panels behind the dialog on a click or Esc inside it.
+// The cancel event carries no isComposing, so the input's own composition flag answers for it.
+function ucfIme(){ return !!(UCF && UCF.mode === 'prompt' && UCF.inp && UCF.inp.getAttribute('data-ime')); }
 function ucfKey(e){
   if(!UCF) return;
+  // ⚠Esc while an IME is composing only cancels the composition (as native prompt() did); closing would drop the typed text.
+  if(e.key === 'Escape' && (e.isComposing || e.keyCode === 229 || ucfIme())){ e.stopImmediatePropagation(); return; }
   if(e.key === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); ucfDone(false); return; }
   e.stopPropagation();   // Enter/Space/arrows/PageDown keep their default: activate the button or scroll the body
   // ⚠Enter in the input submits (there is no <form>); an IME commit Enter (isComposing, or keyCode 229 in Safari) only ends composition.

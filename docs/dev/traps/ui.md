@@ -302,4 +302,5 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `uiPrompt` reuses the confirm dialog, where «Cancel» holds initial focus and Enter keeps the button default; with no `<form>`, Enter in the input would do nothing, and a key handler keyed on focus could answer «Cancel».
 - ⇒ `ucfKey` submits on Enter only while the input is focused in prompt mode (`preventDefault`, `ucfDone(true)`); the input, not «Cancel», gets initial focus.
 - ⚠Skip Enter while `e.isComposing` or `keyCode === 229` (Safari): the Korean IME commit Enter would otherwise submit a half-typed syllable.
+- ⚠Esc during composition only ends the composition (native `prompt()` did the same); closing dropped the typed text. The dialog `cancel` event has no `isComposing`, so the input's `data-ime` flag (compositionstart/end) answers there (`test_prompt_ime_escape_keeps_dialog`).
 - ⚠Read `inp.value` before `close()` and clear it after; the typed value is set and read with `.value` only, never `innerHTML`.

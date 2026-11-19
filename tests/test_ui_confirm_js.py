@@ -14,7 +14,7 @@ import unittest
 from tests._load import ROOT, js_all, js_fn
 from tests._node import node_e
 
-FNS = ("cfgFocusSel", "ucfEl", "uiConfirm", "uiPrompt", "uiAlert", "ucfOpen", "ucfDone", "ucfKey", "ucfPtr")
+FNS = ("cfgFocusSel", "ucfEl", "uiConfirm", "uiPrompt", "uiAlert", "ucfOpen", "ucfDone", "ucfIme", "ucfKey", "ucfPtr")
 
 # Minimal DOM: compound selectors (tag #id .class [attr] [attr="v"] :not([disabled])) joined by descendant spaces.
 # ⚠A modal dialog makes everything outside it inert: focus() there is a no-op, so refocus-before-close would fail.
@@ -214,6 +214,16 @@ SCENARIOS = r"""
   p = uiPrompt('T'); const empty = D.querySelector('#ucf .ucfi').value; ucfPtr(ev({type: 'click', target: D.querySelector('#ucf [data-ucf="1"]')})); out.push(await p);
   R.pcancel = {out, empty}; }
 
+// prompt: Esc while an IME is composing only ends the composition; the dialog stays open with the typed text
+{ const D = newDoc(); let got = 'pending';
+  const p = uiPrompt('T', {value: 'a'}); p.then(v => { got = v; });
+  const d = D.getElementById('ucf'), inp = d.querySelector('.ucfi');
+  const e1 = ev({key: 'Escape', isComposing: true}), e2 = ev({key: 'Escape', keyCode: 229}); ucfKey(e1); ucfKey(e2);
+  inp.fire('compositionstart', {}); d.fire('cancel', ev({type: 'cancel'})); await tick();
+  const mid = {got, open: d.open, value: inp.value, pd: [e1.pd, e2.pd]};
+  inp.fire('compositionend', {}); ucfKey(ev({key: 'Escape'})); await p;
+  R.pime = {mid, after: got, flag: inp.getAttribute('data-ime')}; }
+
 // prompt R3: Tab input -> Cancel -> OK -> input, Shift+Tab back, focus outside -> Cancel; Enter on «Cancel» keeps its default
 { const D = newDoc(); const p = uiPrompt('T', {value: 'z'}); const d = D.getElementById('ucf'), inp = d.querySelector('.ucfi'), bs = d.querySelectorAll('[data-ucf]');
   const nm = () => D.activeElement === inp ? 'inp' : D.activeElement === bs[0] ? 'cancel' : D.activeElement === bs[1] ? 'ok' : '?';
@@ -324,6 +334,11 @@ class UiConfirm(unittest.TestCase):
 
     def test_r3_prompt_cancel_paths_null(self):
         self.assertEqual(self.R["pcancel"], {"out": [None, None, None, "a", ""], "empty": ""})
+
+    def test_prompt_ime_escape_keeps_dialog(self):
+        # ⚠Esc during IME composition must not drop the typed text (keydown flags and the native cancel path).
+        self.assertEqual(self.R["pime"], {"mid": {"got": "pending", "open": True, "value": "a", "pd": [False, False]},
+                                          "after": None, "flag": None})
 
     def test_r3_prompt_tab_cycle(self):
         self.assertEqual(self.R["ptab"], {"cyc": ["inp", "cancel", "ok", "inp", "ok", "cancel"],
