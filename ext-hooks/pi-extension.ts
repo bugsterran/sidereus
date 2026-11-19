@@ -290,7 +290,8 @@ export default function (pi: any) {
   on("tool_execution_end", async (event, ctx) => {
     const tool = String(event?.toolName || "");
     if (tool === "subagent") closeSub(String(event?.toolCallId || ""));
-    send(Object.assign(base(ctx, "PostToolUse"), { tool_name: tool }));
+    // is_error: the documented boolean only (never the result) - per-server MCP ok/fail in the Connections view.
+    send(Object.assign(base(ctx, "PostToolUse"), { tool_name: tool, is_error: event?.isError === true }));
     if (tool !== "bash") return;
     const id = String(event?.toolCallId || "");
     const command = commands.has(id) ? commands.get(id) : String(event?.args?.command ?? "");

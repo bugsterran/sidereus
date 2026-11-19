@@ -5,6 +5,7 @@ ext_dismiss) in sidereus/ext_life.py. Views over it (rows, work panel, children,
 the names other modules import from `sidereus.ext`.
 ⚠Owns EXT_FILE/EXT_RUNS_FILE/EXT_HOOKTOK_FILE and every writer of them - tests/_load.py redirects them on this module."""
 import json
+import re
 import os
 import socket
 import subprocess
@@ -306,6 +307,48 @@ def _run_note_locked(plat, sid, v, ev, ts):
     return new or ev in ("SessionEnd", "Stop")
 
 
+EXT_MCP_N = 32      # MCP servers counted per session
+_MCP_TOOL = re.compile(r"mcp__([A-Za-z0-9_.-]{1,64}?)__[^\x00-\x1f\x7f]{1,80}")
+
+
+def _mcp_note(v, ev, tool, ts, is_err=None):
+    """Per-server MCP call count + last ok/failed end for the «Connections» view (`ext_mcp`).
+    ★pi records MCP calls only as `codemode` in its session file; its extension `tool_call` / `tool_execution_end`
+    still fire per MCP call with `mcp__<server>__<tool>`, and the 20-event ring is too short to count from.
+    `mcpFrom` = first event seen with this code: counts are whole only when it is not after `firstSeen`.
+    `is_err` is a bool only from an extension that sends it; anything else leaves ok/fail unknown.
+    ⚠Server name, count, times and that bool only — never tool input or result."""
+    if "mcp" not in v or not isinstance(v.get("mcp"), dict):
+        v["mcp"], v["mcpFrom"] = {}, ts
+    m = _MCP_TOOL.fullmatch(str(tool or "")) if ev in ("PreToolUse", "PostToolUse") else None
+    if not m:
+        return
+    srv, mm = m.group(1), v["mcp"]
+    if srv not in mm and len(mm) >= EXT_MCP_N:
+        return
+    h = dict(mm[srv]) if isinstance(mm.get(srv), dict) else {"n": 0}
+    if ev == "PreToolUse":
+        h["n"], h["last"] = int(h.get("n") or 0) + 1, ts
+    elif isinstance(is_err, bool):
+        h["fail_at" if is_err else "ok_at"] = ts
+    mm[srv] = h
+
+
+def ext_mcp(plat, sid):
+    """`(servers, since)` — `{server: {n, last, ok_at?, fail_at?}}` copy for one hook session, or `(None, 0)` when it has
+    no record from this code. `since` = 0 when counted from the session's first event, else the time counting began."""
+    with _ext_lock:
+        v = _ext.get((plat, sid)) or {}
+        mm = v.get("mcp") if isinstance(v.get("mcp"), dict) else None
+        if mm is None:
+            return None, 0
+        try:
+            frm, first = float(v.get("mcpFrom") or 0), float(v.get("firstSeen") or 0)
+        except (TypeError, ValueError):
+            frm, first = time.time(), 0.0
+        return {k: dict(h) for k, h in mm.items() if isinstance(h, dict)}, (0 if frm <= first + 1 else int(frm))
+
+
 def ext_ingest(req):
     """Apply one `/api/hook` event to the registry — unknown keys ignored. Returns `(ok, reason)`."""
     plat = str(req.get("platform") or "").strip().lower()
@@ -379,6 +422,7 @@ def ext_ingest(req):
         evs = v.get("ev") if isinstance(v.get("ev"), list) else []
         evs.append({"e": ev[:40], "tool": str(req.get("tool_name") or "")[:60], "t": ts})
         v["ev"] = evs[-EXT_EV_N:]
+        _mcp_note(v, ev, req.get("tool_name"), ts, req.get("is_error"))
         v["lastSeen"] = ts
         v["firstSeen"] = v.get("firstSeen") or ts
         _ext[key] = v

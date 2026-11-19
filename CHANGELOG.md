@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Tokens tab «Connections»: pick a live session to see an orbit of the MCP servers it can load, each with that session's own state (connected, failed with its error code, login needed, unknown), call count and last call; Claude Code, Codex and pi. A node offers «Task», «Diagnose» and «Restart» as a mailbox message shown before it is sent and kept in a request log, and «Reconnect» as per-CLI steps with Copy. Sidereus never reconnects or restarts a server itself.
+- Tokens tab «Connections»: pick a live session to see an orbit of the MCP servers it can load, each with that session's own state (connected, failed with its error code, login needed, unknown), call count and last call; Claude Code, Codex and pi (pi through the Sidereus pi extension, including calls made inside `codemode`). A node offers «Task», «Diagnose» and «Restart» as a mailbox message shown before it is sent and kept in a request log, and «Reconnect» as per-CLI steps with Copy. Sidereus never reconnects or restarts a server itself.
 
 ### Changed
 

@@ -11,6 +11,7 @@ Object.assign(I18N.ko, {
   'Actions': '조치',
   'Called by this session (larger · thicker edge)': '이 세션이 호출함 (크게 · 굵은 선)',
   'calls · last': '호출 수 · 마지막',
+  'calls since {t} · last': '{t}부터 호출 수 · 마지막',
   'Checked {t}': '{t} 확인',
   'Checked': '확인',
   'claude.ai connectors': 'claude.ai 커넥터',

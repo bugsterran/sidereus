@@ -114,7 +114,7 @@ class McpConnTest(unittest.TestCase):
         self.assertEqual((by["tracker"]["state"], by["tracker"]["n"]), ("unknown", 0))   # configured, no evidence: never ok
         self.assertEqual(b["totals"], {"ok": 4, "fail": 0, "auth": 0, "unknown": 1})
         self.assertNotIn(SECRET, json.dumps(b))
-        self.assertEqual(set(b), {"ok", "now", "sid", "plat", "supported", "counts", "scanning", "checked", "servers", "totals"})
+        self.assertEqual(set(b), {"ok", "now", "sid", "plat", "supported", "counts", "since", "scanning", "checked", "servers", "totals"})
         self.assertEqual(set(b["servers"][0]), {"name", "scope", "plug", "transport", "on", "state", "err", "at", "n", "last"})
 
     def test_R1_key_forms_match_harness(self):
@@ -281,7 +281,7 @@ class McpConnTest(unittest.TestCase):
         rows = [{"sid": "d-cc", "plat": "cc"}, {"sid": "d-pi", "plat": "pi"}, {"sid": "d-gm", "plat": "gm"}]
         code, b = dt._demo_mcp_conn(NOW, "d-cc", rows)
         self.assertEqual((code, set(b), set(b["servers"][0])),
-                         (200, {"ok", "now", "sid", "plat", "supported", "counts", "scanning", "checked", "servers", "totals"},
+                         (200, {"ok", "now", "sid", "plat", "supported", "counts", "since", "scanning", "checked", "servers", "totals"},
                           {"name", "scope", "plug", "transport", "on", "state", "err", "at", "n", "last"}))
         self.assertEqual(set(s["state"] for s in b["servers"]), set(MC.MC_STATES))
         self.assertEqual(set(s["n"] for s in dt._demo_mcp_conn(NOW, "d-pi", rows)[1]["servers"]), {None})

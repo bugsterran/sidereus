@@ -112,7 +112,9 @@ function mcpcCallsCard(d){
       + '<span class=mcpcbc>' + String(+s.n) + ' · ' + esc(mcpcAgo(s.last, now)) + '</span></button>').join('') + '</div>'
       : em(T('This session has not called an MCP server yet'));
   }
-  return mcpcCard(T('MCP this session called'), T('calls · last'), body);
+  // since > 0: counting began mid-session (pi record kept by an older viewer), so the numbers are not the whole session.
+  const sub = d && +d.since > 0 ? T('calls since {t} · last').replace('{t}', () => mcpcAgo(d.since, +d.now || 0)) : T('calls · last');
+  return mcpcCard(T('MCP this session called'), sub, body);
 }
 function mcpcDetailCard(d, row){
   const srv = d && d.ok && MCPC.sel ? (d.servers || []).find(s => s && s.name === MCPC.sel) : null;

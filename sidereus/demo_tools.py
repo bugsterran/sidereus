@@ -386,5 +386,5 @@ def _demo_mcp_conn(now, sid, rows):
         servers = [{"name": nm, "scope": sc, "plug": "", "transport": tr, "on": True, "state": "unknown", "err": "",
                     "at": 0, "n": None, "last": None} for nm, sc, tr in DEMO_MCP_PI]
     return 200, {"ok": True, "now": int(now), "sid": sid, "plat": plat, "supported": plat in ("cc", "cx", "pi"),
-                 "counts": plat in ("cc", "cx"), "scanning": False, "checked": int(now), "servers": servers,
+                 "counts": plat in ("cc", "cx"), "since": 0, "scanning": False, "checked": int(now), "servers": servers,
                  "totals": dict((s, sum(1 for x in servers if x["state"] == s)) for s in ("ok", "fail", "auth", "unknown"))}

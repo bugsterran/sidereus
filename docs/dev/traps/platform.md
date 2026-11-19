@@ -353,10 +353,11 @@ Also `47g` `hnNxCands` and `48i` `plEvalRecips` (pass `all`): a non-Claude pick 
 - ⇒ A configured server (`config.toml` `[mcp_servers.*]`) with no call in this session is `unknown`, never connected or failed. Calls count once per `item.id`, even when the same rollout sits in `sessions/` and `archived_sessions/`.
 - ⚠Do not read «no call» as «not connected» or show 0; read only `item.id`/`server`/`status` + timestamp, never `arguments`/`result`/`error`.
 
-## pi MCP calls run inside `codemode` (`sidereus/mcp_conn.py` pi branch)
-- Cause: pi tools are `mcp__<server>__<tool>`, but in this setup the model calls them only through `codemode`, so the session file holds `toolName: "codemode"` and no per-server call or status.
-- ⇒ pi nodes list `~/.pi/agent/mcp.json` names (+ project `.pi/mcp.json` only when `trust.json` trusts the cwd or its git root), state `unknown`, count `null` (`counts: false`).
-- ⚠Never run `pi mcp list` to fill the gap (rule 7: no spawn); never show 0 calls for pi.
+## pi MCP calls run inside `codemode` (`sidereus/ext_store.py` `_mcp_note` → `mcp_conn._pi`)
+- Cause: pi tools are `mcp__<server>__<tool>`, but the model calls them through `codemode`, so the session file holds only `toolName: "codemode"`. The extension `tool_call`/`tool_execution_end` still fire per MCP call (pi docs/mcp.md), and the 20-event ring was too short to count from.
+- ⇒ `ext_store` keeps per-server `{n, last, ok_at, fail_at}` (≤ `EXT_MCP_N`) from extension events; ok/fail comes only from the `is_error` bool the extension sends on PostToolUse (`ext_hook.py` forwards that bool, nothing else).
+- ⇒ A record kept by an older viewer started counting mid-session: body `since` = `mcpFrom` (0 when `mcpFrom` ≤ `firstSeen`) and the calls card says «calls since …», so the numbers never pass for the whole session. Tests `tests/test_mcp_conn_pi.py`, `tests/test_mcpconn_js.py`.
+- ⚠An older installed extension sends no `is_error`: state stays `unknown` until «Connect» and `/reload`. Never run `pi mcp list` to fill the gap (rule 7: no spawn); never store the tool result.
 
 ## claude.ai connectors waiting for login look connected (`sidereus/toolidx_fmt.py` `_conns_of`)
 - Cause: an unauthenticated `claude_ai_*` connector still adds tools in `deferred_tools_delta`, but only `authenticate`/`complete_authentication`.

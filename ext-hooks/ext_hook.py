@@ -176,6 +176,9 @@ def build(platform, data, event_override=None):
     rev = data.get("ext_rev")
     if platform == "pi" and isinstance(rev, str) and len(rev) == 12 and all(c in "0123456789abcdef" for c in rev):
         out["ext_rev"] = rev
+    # pi tool end: the documented isError bool only (per-server MCP ok/fail); never the result itself.
+    if platform == "pi" and raw == "PostToolUse" and isinstance(data.get("is_error"), bool):
+        out["is_error"] = data["is_error"]
     pid, start, why = cli_pid_ex()
     if pid:
         out["pid"] = pid

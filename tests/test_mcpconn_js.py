@@ -269,6 +269,13 @@ class McpConnJs(unittest.TestCase):
         self.assertIn("서버별 호출이 없습니다", out[1])
         self.assertEqual(out[2], "—")
 
+    def test_partial_counts_say_since(self):
+        out = _js("console.log(JSON.stringify([mcpcCallsCard(Object.assign({}, %s, {since: 0})), mcpcCallsCard(Object.assign({}, %s, {since: 1})), T('calls since {t} · last')]))"
+                  % (json.dumps(_DATA), json.dumps(_DATA)))
+        self.assertIn("호출 수 · 마지막", out[0])
+        self.assertNotIn("부터", out[0])
+        self.assertIn(out[2].split("{t}")[1].split(" ·")[0], out[1])        # "since" wording shown for a partial record
+
 
 if __name__ == "__main__":
     unittest.main()

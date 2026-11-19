@@ -6,7 +6,8 @@
 ⚠Files only: never runs `claude mcp`, `pi mcp list` or an MCP server, never connects to one (AGENTS.md rule 7).
 Claude Code: config from `toolinv._raw_items` + per-session evidence from `toolidx.session_mcp`.
 Codex: config.toml `[mcp_servers.*]` names + the session's rollout `item_completed` McpToolCall items (server/status only).
-pi: mcp.json names only — pi records no per-server call or status, so state stays unknown and counts null.
+pi: mcp.json names + per-server calls from the Sidereus pi extension (`ext_store.ext_mcp`; pi's session file shows
+  only `codemode`). ok/fail needs the extension's `is_error` flag; a hook-less row or an older extension = unknown.
 """
 import glob
 import json
@@ -15,7 +16,7 @@ import re
 import threading
 import time
 
-from sidereus import plat_codex, plat_pi, toolidx, toolinv
+from sidereus import ext_store, plat_codex, plat_pi, toolidx, toolinv
 from sidereus.gitinfo import _git_root
 from sidereus.sessions import sessions_rows
 from sidereus.toolidx_fmt import _SRV_RE
@@ -210,7 +211,18 @@ def _pi_trusted(r, cwd):
     return any(v is True and isinstance(k, str) and os.path.isabs(k) and os.path.realpath(k) in want for k, v in tr.items())
 
 
-def _pi(cwd):
+def _pi_row(nm, scope, tr, on, h, counts):
+    """ok/fail = the newer of the extension's last ok / failed end; calls without an end flag stay unknown."""
+    ok, fl = float(h.get("ok_at") or 0), float(h.get("fail_at") or 0)
+    st = "fail" if fl > ok else "ok" if ok else "unknown"
+    n = int(h.get("n") or 0) if counts else None
+    last = int(h["last"]) if h.get("last") else None
+    return _row(nm, scope, "", tr, on, st, "", max(ok, fl), n, last)
+
+
+def _pi(sid, cwd):
+    use, since = ext_store.ext_mcp("pi", sid)     # from the Sidereus pi extension; a hook-less row has none
+    counts, use = use is not None, use or {}
     r = plat_pi.root()
     srcs = [("user", os.path.join(r, "mcp.json"))]
     if cwd and _pi_trusted(r, cwd):     # pi loads a project mcp.json only after the folder is trusted
@@ -223,8 +235,12 @@ def _pi(cwd):
                 continue
             seen.add(nm)
             e = ms[nm] if isinstance(ms[nm], dict) else {}
-            rows.append(_row(nm, scope, "", _transport(e), not (e.get("disabled") is True or e.get("enabled") is False)))
-    return rows, False, False
+            rows.append(_pi_row(nm, scope, _transport(e), not (e.get("disabled") is True or e.get("enabled") is False),
+                                use.get(nm) or {}, counts))
+    for nm in sorted(use):              # called but not in a readable mcp.json
+        if nm not in seen and _NAME_OK.fullmatch(nm):
+            rows.append(_pi_row(nm, "seen", "", True, use[nm], counts))
+    return rows, False, counts, since
 
 
 def conn(sid):
@@ -238,15 +254,16 @@ def conn(sid):
     if hit and 0 <= now - hit[0] < MC_TTL_S:
         return dict(hit[1], now=int(now))
     plat, cwd = str(row.get("plat") or ""), str(row.get("cwd") or "")
-    servers, scanning, counts = [], False, False
+    servers, scanning, counts, since = [], False, False, 0
     if plat == "cc":
         servers, scanning, counts = _cc(sid, cwd, now)
     elif plat == "cx":
         servers, scanning, counts = _cx(sid, cwd)
     elif plat == "pi":
-        servers, scanning, counts = _pi(cwd)
+        servers, scanning, counts, since = _pi(sid, cwd)
     servers.sort(key=lambda s: (MC_SCOPES.index(s["scope"]), s["plug"], s["name"].lower()))
     body = {"ok": True, "now": int(now), "sid": sid, "plat": plat, "supported": plat in MC_PLATS, "counts": counts,
+            "since": since,   # >0: counts began then, not at session start (pi record from an older viewer)
             "scanning": scanning, "checked": int(now), "servers": servers,
             "totals": dict((k, sum(1 for s in servers if s["state"] == k)) for k in MC_STATES)}
     if not scanning:
