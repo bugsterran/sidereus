@@ -8,9 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Confirmations (pipeline «Remove» and apply mode, «Preferences» server, Claude Code and display-reset settings, mailbox watch, «Saved views» delete and overwrite) open an in-page dialog instead of the browser's `confirm()` box: translated labels, follows the theme, keeps Tab inside, Esc cancels, focus returns to the control that opened it, and long bodies wrap and scroll. The «Saved views» «Save» name and the timeline range «Custom…» hours use the same dialog instead of the browser's `prompt()` box (Enter saves, Esc cancels).
+- Error messages (a mailbox message that could not be sent, a failed pipeline «Remove» or apply-mode change, a blocked work-log popup) show in the same in-page dialog with one «Close» button instead of the browser's `alert()` box.
 
 ### Fixed
 
+- In-page dialogs: Esc while an input method is composing ends the composition and keeps a text prompt open with what was typed, as the browser's `prompt()` did; a plain Esc afterwards still cancels.
 - In-page dialogs: closing one by pressing Esc repeatedly while typing with an input method no longer leaves every later dialog refused until a reload; the guided tour no longer takes the dialog's keys; a click outside keeps focus in the text field; a reopened dialog starts at the top. A pipeline apply-mode change confirmed while the list refreshed is written when nothing changed, and says so when it was refused. The mailbox watch «Save» writes once on a double click, a same-for-all «Auto-compact» save no longer flips the pane to «Per account» for a moment, and a long unbroken name no longer runs out of the toast.
 
 ## [0.21.0] - 2026-11-18
