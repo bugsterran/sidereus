@@ -27,3 +27,28 @@ DATA_TMP = tempfile.mkdtemp(prefix="sidereus-data-")
 os.environ["MAILBOX_DIR"] = DATA_TMP
 with open(os.path.join(DATA_TMP, "config.local.json"), "w", encoding="utf-8") as _f:
     _f.write("{}\n")   # empty config = defaults, without the «not found» warning
+
+# ⚠No live machine probes in any test process: a background sessions refresh once ran a real `ps`, its rows stayed in
+# live_probe's module cache and a later test in the same parallel group read them (srvLoad.top became a live dict).
+# Stubbing per test missed every path nobody thought to stub, so the refusal sits on subprocess.run itself.
+# ⇒ The commands below raise FileNotFoundError (the «tool not installed» path every caller already handles).
+# Tests that exercise a probe fake `subprocess` or `_ps_snap` on the module under test, which bypasses this.
+import subprocess as _sp  # noqa: E402
+
+_LIVE_PROBES = frozenset(("ps", "pgrep", "lsof", "sysctl", "security", "osascript", "open", "claude"))
+_real_run = _sp.run
+
+
+class LiveProbeBlocked(FileNotFoundError):
+    """A test reached a live process/system probe that it did not fake."""
+
+
+def _guarded_run(*a, **k):
+    argv = a[0] if a else k.get("args")
+    head = argv if isinstance(argv, str) else (argv[0] if argv else "")
+    if not k.get("shell") and os.path.basename(os.fsdecode(head)) in _LIVE_PROBES:
+        raise LiveProbeBlocked("live probe blocked in tests: %s" % os.path.basename(os.fsdecode(head)))
+    return _real_run(*a, **k)
+
+
+_sp.run = _guarded_run

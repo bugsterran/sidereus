@@ -29,6 +29,7 @@ bash tests/run.sh tests/test_quota.py                 # one or more files (run a
 
 - Loader: `load()` in `tests/_load.py` · `sidereus("burn")` — runs the importlib recipe above only once.
 - ⚠Tests never use live files, the clock or the network — monkeypatch the module attributes of any function that reads or writes.
+  Live process probes (`ps`, `lsof`, `sysctl`, `claude`, ...) already raise `FileNotFoundError` in every test process (`tests/__init__.py`); a test of a probe fakes `subprocess` or `_ps_snap` on its module.
 - Always `/usr/bin/python3` (3.9.6, what launchd runs).
 
 ## Frozen clock

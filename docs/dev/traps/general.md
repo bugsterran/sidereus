@@ -100,5 +100,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⚠A module whose wait loop computes a `time.time()` deadline never times out under `frozen` (the test waits for the stub instead) — give it a ticking clock that starts at `NOW` and advances by `time.monotonic()` (`tests/test_sessions_cached.py` `_TickingTime`).
 - ⚠**A test module importing `sidereus` before `tests._load` read the live data dir** — `sidereus.config.DATA_DIR` froze on `~/.mailbox-mcp` for the process and `ext_store`/`bgtasks_parse` loaded the real `ext-sessions.json`, `bg-alive.json` at import.
   - ⇒ The isolation env (`MAILBOX_DIR` temp, `CODEX_HOME`, `SIDEREUS_HOOK_NO_PID`) lives in `tests/__init__.py`, which runs before any `tests.*` module; guard `tests/test_import_isolation.py`. ⚠Do not move it back into `_load.py` only.
+- ⚠**A background sessions refresh in a test ran real `ps`** and its rows stayed in `live_probe`'s module cache; a later test in the same parallel group read a live `srvLoad.top` (1df17add). Per-test stubs kept missing paths.
+  - ★2026-11-19: a full run still reached `sysctl` 4×, `ps` 1×, `claude agents --json` 1× (bg-refresh thread) unfaked.
+  - ⇒ `tests/__init__.py` wraps `subprocess.run`: `ps pgrep lsof sysctl security osascript open claude` raise `FileNotFoundError` (the «not installed» path); guard `tests/test_live_probe_guard.py`. Tests of a probe fake `subprocess`/`_ps_snap` on the module.
+  - ⚠Do not add a probe command to an allow-list to make a test pass — fake it in that test.
 - ⚠**A key added to one session-row producer passed `--fast`** — `--fast` ran no unit tests, so a key added to rollout rows only (90d92de5) broke `test_ext_rollout`/`test_demo_data` under `--full` after the commit.
   - ⇒ `scripts/check.sh` step `rows` runs those two key-set tests in every mode (~0.3 s). ⚠Keep it to key-set tests; heavier tests belong in `--full`.
