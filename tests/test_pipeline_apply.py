@@ -121,7 +121,7 @@ class ApplyJs(unittest.TestCase):
         # Pipelines are per project: Apply always posts {proj, mode}, and other projects' cache stays.
         with open(_F, encoding="utf-8") as f:
             src = (_STUB + i18n_prelude("'ko'", ("T", "TV", "U")) + f.read()
-                   + "\nlet POSTS = [], ASKED = []; globalThis.uiConfirm = async (t, o) => { ASKED.push(t + '\\n' + o.body); return true; }; globalThis.alert = () => {};"
+                   + "\nlet POSTS = [], ASKED = []; globalThis.uiConfirm = async (t, o) => { ASKED.push(t + '\\n' + o.body); return true; }; globalThis.uiAlert = async () => {};"
                    "\nasync function postJSON(u, b){ POSTS.push([u, b]); return {ok: true, apply: {mode: b.mode}}; } function plPaint(){}"
                    "\nPLS.proj = '/w/a'; PLS.data = {'/w/a': {ok: true, apply: {mode: 'auto', global: 'auto', own: null}}, '/w/b': {ok: true}};"
                    "\nplApplySet('off').then(ok => console.log(JSON.stringify([ok, POSTS, Object.keys(PLS.data), ASKED[0]])));")
@@ -133,8 +133,8 @@ class ApplyJs(unittest.TestCase):
 
     def _run(self, tail):
         with open(_F, encoding="utf-8") as f:
-            src = (_STUB + i18n_prelude("'ko'", ("T", "TV", "U")) + f.read()
-                   + "\nlet POSTS = [], PAINTS = 0; globalThis.alert = () => {};"
+            src = (_STUB + i18n_prelude("'ko'", ("T", "TV", "U", "TE")) + f.read()
+                   + "\nlet POSTS = [], PAINTS = 0, ALERTS = []; globalThis.uiAlert = async (t, o) => { ALERTS.push([t, o && o.body]); };"
                    "\nasync function postJSON(u, b){ POSTS.push([u, b]); return {ok: true, apply: {mode: b.mode}}; } function plPaint(){ PAINTS++; }"
                    "\nPLS.proj = '/w/a'; PLS.data = {'/w/a': {ok: true, apply: {mode: 'auto', global: 'auto', own: null}}};\n" + tail)
         return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
@@ -163,6 +163,17 @@ class ApplyJs(unittest.TestCase):
                         "setTimeout(() => { PLS.proj = '/w/b'; res(true); p.then(ok => console.log(JSON.stringify("
                         "[ok, POSTS.length, OPT.body.split('\\n')[0], PLS.data['/w/a'].apply.mode, PLS.data['/w/b'].apply.mode]))); }, 0);")
         self.assertEqual(out, [False, 0, "/w/a", "auto", "auto"])
+
+    def test_server_error_shows_ui_alert(self):
+        # R4: a refused apply goes through the shared one-button dialog (title + detail), never window.alert.
+        out = self._run("globalThis.uiConfirm = async () => true; postJSON = async () => ({ok: false, err: 'busy'});"
+                        "plApplySet('off').then(ok => console.log(JSON.stringify([ok, ALERTS, PAINTS])));")
+        ok, alerts, paints = out
+        self.assertIs(ok, False)
+        self.assertEqual(len(alerts), 1)
+        self.assertEqual(alerts[0][1], "busy")
+        self.assertNotIn("—", alerts[0][0])
+        self.assertEqual(paints, 0)
 
 
 if __name__ == "__main__":

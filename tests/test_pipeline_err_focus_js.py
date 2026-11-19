@@ -49,17 +49,17 @@ class ErrorField(unittest.TestCase):
     def _remove(self, reply):
         return _run(_ESC + i18n_prelude("'en'", ("T", "TE")) + """
 let SAID = '';
-const uiConfirm = async () => true, alert = s => { SAID = s; };
+const uiConfirm = async () => true, uiAlert = async (t, o) => { SAID = t + '\\n' + ((o && o.body) || ''); };
 async function plProjPost(){ return %s; }
 """ % json.dumps(reply) + js_fn("plRemove") + """
 (async () => { await plRemove('/p'); console.log(JSON.stringify(SAID)); })();
 """)
 
     def test_error_only_reply_shows_reason(self):
-        self.assertIn("disk is full", self._remove({"ok": False, "error": "disk is full"}))
+        self.assertEqual(self._remove({"ok": False, "error": "disk is full"}), "Could not remove\ndisk is full")
 
     def test_why_only_reply_shows_reason(self):
-        self.assertIn("not a project", self._remove({"ok": False, "why": "not a project"}))
+        self.assertEqual(self._remove({"ok": False, "why": "not a project"}), "Could not remove\nnot a project")
 
 
 _DOM = r"""

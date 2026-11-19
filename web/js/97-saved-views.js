@@ -72,9 +72,9 @@ function vwPaint(){
 }
 const vwb = document.getElementById('vwb');
 if(vwb) vwb.onclick = (e) => { e.stopPropagation(); vwOpen = !vwOpen; vwPaint(); };
-const vwsave = document.getElementById('vwsave');
-if(vwsave) vwsave.onclick = async () => {
-  const name = (prompt(T('Name for the current filter combination?'), '') || '').trim().slice(0, VW_NAME_MAX);
+// Name asked through the shared dialog (08c uiPrompt); null (Cancel/Esc) or blank saves nothing.
+async function vwSaveRun(){
+  const name = ((await uiPrompt(T('Name for the current filter combination?'), {ok: T('Save'), maxlength: VW_NAME_MAX})) || '').trim().slice(0, VW_NAME_MAX);
   if(!name) return;
   const arr = vwLoad(), at = arr.findIndex(x => x.n === name);
   // Over the cap, **do not drop silently** — write in one line what to do
@@ -85,12 +85,14 @@ if(vwsave) vwsave.onclick = async () => {
   if(at >= 0) arr[at] = rec; else arr.push(rec);
   vwStore(arr); vwOpen = false; vwPaint();
   note((at >= 0 ? T('Overwrote view “{n}”') : T('Saved view “{n}”')).replace('{n}', () => name));
-};
+}
+const vwsave = document.getElementById('vwsave');
+if(vwsave) vwsave.onclick = vwSaveRun;
 // Close on outside click. ⚠An element removed from the DOM by a redraw is not 'outside' (same trap as the alarm window)
 addEventListener('click', (e) => {
   if(!vwOpen) return;
   if(!document.contains(e.target)) return;
-  if(e.target.closest && e.target.closest('dialog')) return;   // ⚠a uiConfirm button click is not 'outside' (the popup stays open, as with window.confirm)
+  if(e.target.closest && e.target.closest('dialog')) return;   // ⚠a shared-dialog (08c) button click is not 'outside' (the popup stays open behind it)
   const p = document.getElementById('vwpop');
   if(p && !p.contains(e.target)){ vwOpen = false; vwPaint(); }
 });

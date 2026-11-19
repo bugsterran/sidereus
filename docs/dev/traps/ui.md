@@ -297,3 +297,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - ★**Shrinking alone is not enough: 8 members at 1440 sat at 31px each and still overflowed** — the last 2.5 members and the «+N» were clipped with no sign.
   ⇒ `rcFitMem` (`92-mainview-tabs.js`) measures at natural width (`.rmfit`), drops members from the end until the strip fits and counts them in `.rmmore` «+N»; a ResizeObserver on the toolbar and `#tabs` refits.
   ⚠Do not observe `.rooms` itself — the refit resizes it and re-triggers.
+
+## Enter in the shared dialog's input must submit, not press «Cancel» (`web/js/08c-confirm.js`)
+- Cause: `uiPrompt` reuses the confirm dialog, where «Cancel» holds initial focus and Enter keeps the button default; with no `<form>`, Enter in the input would do nothing, and a key handler keyed on focus could answer «Cancel».
+- ⇒ `ucfKey` submits on Enter only while the input is focused in prompt mode (`preventDefault`, `ucfDone(true)`); the input, not «Cancel», gets initial focus.
+- ⚠Skip Enter while `e.isComposing` or `keyCode === 229` (Safari): the Korean IME commit Enter would otherwise submit a half-typed syllable.
+- ⚠Read `inp.value` before `close()` and clear it after; the typed value is set and read with `.value` only, never `innerHTML`.

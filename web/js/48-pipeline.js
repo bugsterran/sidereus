@@ -253,7 +253,7 @@ async function plAddGo(path){
 async function plRemove(path){
   if(!await uiConfirm(T('Remove from the list? (folder and files stay)'), {body: path, ok: T('Remove')})) return;
   const r = await plProjPost('/api/pipelines/projects/remove', path);
-  if(!r.ok) alert(T('Could not remove') + ((r.err || r.error || r.why) ? ' — ' + TE(r) : ''));
+  if(!r.ok) await uiAlert(T('Could not remove'), {body: (r.err || r.error || r.why) ? TE(r) : ''});
 }
 function plCur(){
   const d = PLS.data[PLS.proj];
@@ -390,7 +390,7 @@ async function plApplySet(mode){
   let r;
   try{ r = await postJSON('/api/pipelines/apply', { proj: proj, mode: mode }); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
-  if(!r || !r.ok){ alert(T('Could not change it') + (r && (r.err || r.error || r.why) ? ' — ' + TE(r) : '')); return false; }
+  if(!r || !r.ok){ await uiAlert(T('Could not change it'), {body: r && (r.err || r.error || r.why) ? TE(r) : ''}); return false; }
   d.apply = r.apply;
   plPaint();
   return true;

@@ -1,7 +1,9 @@
 """uiConfirm (web/js/08c-confirm.js): one native <dialog> confirm in a fake DOM.
 R2: Tab/Shift+Tab stay on its two buttons, Esc = «Cancel» and stops propagation, page clicks are swallowed, focus returns to
 the opener (re-found through cfgFocusSel when a repaint detached it). R3: title/body via textContent, ok label/danger,
-CSS wraps and scrolls a long body and follows the --nx-* tokens."""
+CSS wraps and scrolls a long body and follows the --nx-* tokens.
+uiPrompt / uiAlert (prompt run R3): the typed value is .value data only, Enter submits (not during IME composition), Tab cycles
+input -> Cancel -> OK, every cancel path resolves null; alert hides Cancel and keeps focus on its one button."""
 import json
 import os
 import re
@@ -12,7 +14,7 @@ import unittest
 from tests._load import ROOT, js_all, js_fn
 from tests._node import node_e
 
-FNS = ("cfgFocusSel", "ucfEl", "uiConfirm", "ucfDone", "ucfKey", "ucfPtr")
+FNS = ("cfgFocusSel", "ucfEl", "uiConfirm", "uiPrompt", "uiAlert", "ucfOpen", "ucfDone", "ucfKey", "ucfPtr")
 
 # Minimal DOM: compound selectors (tag #id .class [attr] [attr="v"] :not([disabled])) joined by descendant spaces.
 # ⚠A modal dialog makes everything outside it inert: focus() there is a no-op, so refocus-before-close would fail.
@@ -43,7 +45,7 @@ function match(el, sel){
   return !ps.length;
 }
 class El {
-  constructor(tag){ this.tagName = tag.toUpperCase(); this.attrs = {}; this.kids = []; this.parentNode = null; this._t = ''; this.hidden = false; this.ls = {}; }
+  constructor(tag){ this.tagName = tag.toUpperCase(); this.attrs = {}; this.kids = []; this.parentNode = null; this._t = ''; this.hidden = false; this.ls = {}; this.value = ''; this.selected = false; }
   get id(){ return this.attrs.id || ''; } set id(v){ this.attrs.id = String(v); }
   get className(){ return this.attrs['class'] || ''; } set className(v){ this.attrs['class'] = String(v); }
   get classList(){ const me = this; return {
@@ -62,6 +64,7 @@ class El {
   get isConnected(){ let n = this; while(n.parentNode) n = n.parentNode; return n === document.documentElement; }
   get textContent(){ return this._t; } set textContent(v){ this._t = String(v); }
   set innerHTML(v){ throw new Error('innerHTML written'); }
+  select(){ this.selected = true; }
   focus(){ if(!this.isConnected || (document._modal && !document._modal.contains(this))) return; document.activeElement = this; }
   all(){ const out = []; const w = n => n.kids.forEach(k => { out.push(k); w(k); }); w(this); return out; }
   querySelectorAll(s){ return this.all().filter(e => match(e, s)); }
@@ -188,6 +191,70 @@ SCENARIOS = r"""
   R.short = {tabindex: b.getAttribute('tabindex'), cyc: cyc2};
   ucfKey(ev({key: 'Escape'})); await p2; }
 
+// prompt R3: input shown, focused and selected; value/maxlength/inputmode set; IME Enter ignored; Enter resolves the raw value
+{ const D = newDoc(), op = btn({'data-x': 'p'}); D.body.appendChild(op); op.focus();
+  let got = 'pending'; const p = uiPrompt('Name?', {value: 'v0', ok: 'Save', maxlength: 60, inputmode: 'decimal'}); p.then(v => { got = v; });
+  const d = D.getElementById('ucf'), inp = d.querySelector('.ucfi'), bs = d.querySelectorAll('[data-ucf]');
+  const o = {role: d.getAttribute('role'), hidden: inp.hidden, focus: D.activeElement === inp, sel: inp.selected, value: inp.value,
+    max: inp.getAttribute('maxlength'), im: inp.getAttribute('inputmode'), lab: inp.getAttribute('aria-labelledby'),
+    type: inp.getAttribute('type'), id: inp.id, order: d.kids.map(k => k.className), labels: bs.map(b => b.textContent), cancelHidden: bs[0].hidden};
+  inp.value = '  <b>x</b>  ';
+  const c1 = ev({key: 'Enter', isComposing: true}), c2 = ev({key: 'Enter', keyCode: 229}); ucfKey(c1); ucfKey(c2); await tick();
+  o.composing = {got, pd: [c1.pd, c2.pd], sp: [c1.sp, c2.sp], open: d.open};
+  const k = ev({key: 'Enter'}); ucfKey(k); await p;
+  o.enter = {got, pd: k.pd, open: d.open, cleared: inp.value, back: D.activeElement === op};
+  R.prompt = o; }
+
+// prompt R3: Esc, native cancel and «Cancel» click resolve null; ok click resolves the value; no value -> empty input
+{ const D = newDoc(), out = [];
+  let p = uiPrompt('T', {value: 'a'}); ucfKey(ev({key: 'Escape'})); out.push(await p);
+  p = uiPrompt('T', {value: 'a'}); D.getElementById('ucf').fire('cancel', ev({type: 'cancel'})); out.push(await p);
+  p = uiPrompt('T', {value: 'a'}); ucfPtr(ev({type: 'click', target: D.querySelector('#ucf [data-ucf="0"]')})); out.push(await p);
+  p = uiPrompt('T', {value: 'a'}); ucfPtr(ev({type: 'click', target: D.querySelector('#ucf [data-ucf="1"]')})); out.push(await p);
+  p = uiPrompt('T'); const empty = D.querySelector('#ucf .ucfi').value; ucfPtr(ev({type: 'click', target: D.querySelector('#ucf [data-ucf="1"]')})); out.push(await p);
+  R.pcancel = {out, empty}; }
+
+// prompt R3: Tab input -> Cancel -> OK -> input, Shift+Tab back, focus outside -> Cancel; Enter on «Cancel» keeps its default
+{ const D = newDoc(); const p = uiPrompt('T', {value: 'z'}); const d = D.getElementById('ucf'), inp = d.querySelector('.ucfi'), bs = d.querySelectorAll('[data-ucf]');
+  const nm = () => D.activeElement === inp ? 'inp' : D.activeElement === bs[0] ? 'cancel' : D.activeElement === bs[1] ? 'ok' : '?';
+  const cyc = [nm()], tab = sh => { ucfKey(ev({key: 'Tab', shiftKey: sh})); cyc.push(nm()); };
+  tab(false); tab(false); tab(false); tab(true);
+  D.activeElement = D.body; tab(false);
+  const k = ev({key: 'Enter'}); ucfKey(k);
+  R.ptab = {cyc, enter: [k.pd, k.sp], open: d.open};
+  ucfKey(ev({key: 'Escape'})); await p; }
+
+// prompt R3: busy and a failed showModal resolve null; a confirm opened after a prompt hides the input and resolves a boolean
+{ const D = newDoc(); const p1 = uiPrompt('first');
+  const b1 = await uiPrompt('second'), b2 = await uiConfirm('third'), b3 = await uiAlert('fourth');
+  ucfKey(ev({key: 'Escape'})); await p1;
+  const d = D.getElementById('ucf'), inp = d.querySelector('.ucfi'), sm = d.showModal;
+  d.showModal = () => { throw new Error('nope'); };
+  const f1 = await uiPrompt('x', {value: 'q'}), f2 = await uiConfirm('x'), f3 = await uiAlert('x');
+  d.showModal = sm;
+  const p2 = uiConfirm('again', {ok: 'Go'}), bs = d.querySelectorAll('[data-ucf]');
+  const st = {hidden: inp.hidden, value: inp.value, max: inp.getAttribute('maxlength'), im: inp.getAttribute('inputmode'),
+    role: d.getAttribute('role'), focus: D.activeElement === bs[0]};
+  ucfKey(ev({key: 'Tab'})); st.tab = D.activeElement === bs[1];
+  ucfKey(ev({key: 'Tab'})); st.tab2 = D.activeElement === bs[0];
+  ucfPtr(ev({type: 'click', target: bs[1]})); const v = await p2;
+  R.pmode = {busy: [b1, b2, b3 === undefined ? 'undef' : b3], fail: [f1, f2, f3 === undefined ? 'undef' : f3], st, v}; }
+
+// alert: «Cancel» hidden, «Close» default focused, Tab stays on it, ok click and Esc resolve undefined; next confirm shows Cancel again
+{ const D = newDoc(), out = []; let p = uiAlert('Failed', {body: 'why'}); const d = D.getElementById('ucf'), bs = d.querySelectorAll('[data-ucf]');
+  const a = {cancelHidden: bs[0].hidden, inpHidden: d.querySelector('.ucfi').hidden, labels: bs.map(b => b.textContent),
+    focus: D.activeElement === bs[1], role: d.getAttribute('role'), body: d.querySelector('.ucfb').textContent};
+  ucfKey(ev({key: 'Tab'})); const t1 = D.activeElement === bs[1];
+  ucfKey(ev({key: 'Tab', shiftKey: true})); const t2 = D.activeElement === bs[1];
+  D.activeElement = D.body; ucfKey(ev({key: 'Tab'})); const t3 = D.activeElement === bs[1];
+  a.tab = [t1, t2, t3];
+  ucfPtr(ev({type: 'click', target: bs[1]})); out.push(await p);
+  p = uiAlert('x', {ok: 'OK'}); a.ok = bs[1].textContent; ucfKey(ev({key: 'Escape'})); out.push(await p);
+  a.out = out.map(v => v === undefined ? 'undef' : v);
+  const p3 = uiConfirm('c'); a.after = {cancelHidden: bs[0].hidden, labels: bs.map(b => b.textContent)};
+  ucfKey(ev({key: 'Escape'})); await p3;
+  R.alert = a; }
+
 R.listeners = window.ls;
 """
 
@@ -246,6 +313,36 @@ class UiConfirm(unittest.TestCase):
                                           "b": {"hidden": True, "dng": False, "n": 1}})
 
 
+    def test_r3_prompt_input_focused_and_enter_returns_raw_value(self):
+        o = self.R["prompt"]
+        self.assertEqual({k: o[k] for k in o if k not in ("composing", "enter")},
+                         {"role": "dialog", "hidden": False, "focus": True, "sel": True, "value": "v0", "max": "60",
+                          "im": "decimal", "lab": "ucft", "type": "text", "id": "ucfi",
+                          "order": ["ucft", "ucfb", "ucfi", "ucfa"], "labels": ["Cancel", "Save"], "cancelHidden": False})
+        self.assertEqual(o["composing"], {"got": "pending", "pd": [False, False], "sp": [True, True], "open": True})
+        self.assertEqual(o["enter"], {"got": "  <b>x</b>  ", "pd": True, "open": False, "cleared": "", "back": True})
+
+    def test_r3_prompt_cancel_paths_null(self):
+        self.assertEqual(self.R["pcancel"], {"out": [None, None, None, "a", ""], "empty": ""})
+
+    def test_r3_prompt_tab_cycle(self):
+        self.assertEqual(self.R["ptab"], {"cyc": ["inp", "cancel", "ok", "inp", "ok", "cancel"],
+                                          "enter": [False, True], "open": True})
+
+    def test_r3_prompt_busy_fail_and_confirm_reuse(self):
+        o = self.R["pmode"]
+        self.assertEqual(o["busy"], [None, False, "undef"])
+        self.assertEqual(o["fail"], [None, False, "undef"])
+        self.assertEqual(o["st"], {"hidden": True, "value": "", "max": None, "im": None, "role": "alertdialog",
+                                   "focus": True, "tab": True, "tab2": True})
+        self.assertIs(o["v"], True)
+
+    def test_alert_one_button(self):
+        self.assertEqual(self.R["alert"], {"cancelHidden": True, "inpHidden": True, "labels": ["Cancel", "Close"], "focus": True,
+                                           "role": "alertdialog", "body": "why", "tab": [True, True, True], "ok": "OK",
+                                           "out": ["undef", "undef"], "after": {"cancelHidden": False, "labels": ["Cancel", "Confirm"]}})
+
+
 class ConfirmCss(unittest.TestCase):
     """R3: long body wraps/scrolls at 900 wide, colours from theme tokens, no 00-core twins."""
     @classmethod
@@ -263,6 +360,16 @@ class ConfirmCss(unittest.TestCase):
         for d in ("white-space:pre-wrap", "overflow-wrap:anywhere", "overflow:auto", "max-height:calc(100vh - 220px)"):
             self.assertIn(d, b)
         self.assertIn("width:min(560px,calc(100vw - 32px))", self.rule("html[data-ui] .ucf"))
+
+    def test_r3_prompt_input_rules(self):
+        i = self.rule("html[data-ui] .ucf .ucfi")
+        for d in ("display:block", "width:100%", "border:1px solid var(--nx-rule)", "background:var(--nx-bg)",
+                  "color:var(--nx-t1)", "font:inherit"):
+            self.assertIn(d, i)
+        self.assertIn("display:none", self.rule("html[data-ui] .ucf .ucfi[hidden]"))
+        self.assertIn("display:none", self.rule("html[data-ui] .ucf [data-ucf][hidden]"))
+        self.assertIn("var(--nx-info)", self.rule("html[data-ui] .ucf .ucfi:focus-visible"))
+        self.assertNotRegex(re.sub(r"/\*.*?\*/", "", self.css, flags=re.S), r"#[0-9a-fA-F]{3,8}\b")
 
     def test_r3_theme_tokens_and_data_ui_scope(self):
         box = self.rule("html[data-ui] .ucf")

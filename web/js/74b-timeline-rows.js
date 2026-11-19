@@ -321,16 +321,22 @@ document.addEventListener('keydown', e => {
   const q = (e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('#tlq');
   if(q){ e.preventDefault(); tlqToggle(q); }
 });
+// Range «Custom…»: hours asked through the shared dialog (08c uiPrompt), clamped to 0.5-168 and rounded to 0.1.
+// ⚠A poll repaint can replace #tlselh while the dialog is open, so the revert re-finds the live select.
+async function tlCustomHours(sh){
+  const v = await uiPrompt(T('How many hours to show? (0.5 - 168)'), {value: String(tlHours), ok: T('Apply'), inputmode: 'decimal'});
+  const n2 = Math.min(168, Math.max(0.5, parseFloat(v)));
+  if(!v || !isFinite(n2)){ (document.getElementById('tlselh') || sh).value = String(tlHours); return; }   // Revert on cancel
+  tlHours = Math.round(n2 * 10) / 10;
+  lsSet('mbTlHours', tlHours);
+  loadTl(true);
+}
 // Toolbar controls (range · refresh · replay) — the markup is tlCtlHtml, set into the tbSet slot before this runs.
 function tlWireCtl(apFo){
   const sh = document.getElementById('tlselh');
   if(sh) sh.onchange = () => {
-    if(sh.value === 'custom'){
-      const v = prompt(T('How many hours to show? (0.5 - 168)'), String(tlHours));
-      const n2 = Math.min(168, Math.max(0.5, parseFloat(v)));
-      if(!v || !isFinite(n2)){ sh.value = String(tlHours); return; }   // Revert on cancel
-      tlHours = Math.round(n2 * 10) / 10;
-    } else tlHours = +sh.value;
+    if(sh.value === 'custom'){ tlCustomHours(sh); return; }
+    tlHours = +sh.value;
     lsSet('mbTlHours', tlHours);
     loadTl(true); };
   const sa = document.getElementById('tlsel');

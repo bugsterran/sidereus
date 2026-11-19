@@ -10,7 +10,12 @@ html[data-ui] .ucf .ucft{font-size:14px;font-weight:600;margin:0 0 8px;overflow-
 html[data-ui] .ucf .ucfb{margin:0 0 14px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:calc(100vh - 220px);overflow:auto;color:var(--nx-t2)}
 html[data-ui] .ucf .ucfb[hidden]{display:none}
 html[data-ui] .ucf .ucfb:focus-visible{outline:2px solid var(--nx-info);outline-offset:2px}   /* tabindex only while it overflows (08c) */
+/* uiPrompt input (08c): hidden in confirm/alert mode; `font:inherit` so typed text matches the dialog font. */
+html[data-ui] .ucf .ucfi{display:block;box-sizing:border-box;width:100%;margin:0 0 14px;padding:6px 8px;border:1px solid var(--nx-rule);border-radius:6px;background:var(--nx-bg);color:var(--nx-t1);font:inherit}
+html[data-ui] .ucf .ucfi[hidden]{display:none}
+html[data-ui] .ucf .ucfi:focus-visible{outline:2px solid var(--nx-info);outline-offset:1px}
 html[data-ui] .ucf .ucfa{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+html[data-ui] .ucf [data-ucf][hidden]{display:none}   /* alert mode hides «Cancel» */
 /* Danger ok: --nx-bg text on --nx-err (★dark 5.9:1 · grey 5.1 · blue 5.5 · light 5.5); white on dark --nx-err was 3.3. */
 html[data-ui][data-ui][data-ui] .ucf .wkrgb.archok.dng:not([disabled]){background:var(--nx-err);border-color:var(--nx-err);color:var(--nx-bg)}
 html[data-ui][data-ui][data-ui] .ucf .wkrgb.archok.dng:not([disabled]):hover{background:color-mix(in srgb,var(--nx-err) 88%,var(--nx-t1));color:var(--nx-bg)}

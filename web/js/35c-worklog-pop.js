@@ -22,7 +22,7 @@ function popOpen(url, name, w, h){
 // ⚠Blocked popup must not fail silently: a toast with a link the user can click (a user gesture the blocker allows).
 function popBlocked(url, name){
   const box = document.getElementById('toasts');
-  if(!box){ alert(T('Popup blocked — allow popups for this site.')); return; }
+  if(!box){ uiAlert(T('Popup blocked — allow popups for this site.'), {body: ''}); return; }
   const el = document.createElement('div');
   el.className = 'toast tnote';
   el.innerHTML = esc(T('Popup blocked — allow popups for this site.')) + ' <a href="' + esc(url)
