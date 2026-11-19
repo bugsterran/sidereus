@@ -277,6 +277,12 @@ class McpConnJs(unittest.TestCase):
         self.assertEqual(grown[(1402, 16, 0)], 834)                             # a normal count keeps the fitted height
         self.assertGreater(grown[(700, 60, 0)], 520)                            # a narrow stage with many servers grows
 
+    def test_core_name_never_cut(self):
+        out = _js("console.log(JSON.stringify(['proj', 'demo-long-project', 'a-very-long-project-name-x'].map(mcpcCoreName)))")
+        self.assertEqual(out, ["<b>proj</b>", "<b class=l2>demo-long-project</b>", "<b class=l3>a-very-long-project-name-x</b>"])
+        css = _read(_CSS)
+        self.assertNotRegex(css, r"\.mcpccore b\{[^}]*(ellipsis|nowrap)")      # the full name shows, smaller or wrapped
+
     def test_stage_height_fits_feed(self):
         out = _js("const B = (w, h) => ({clientWidth: w, clientHeight: h, scrollTop: 0, querySelector(){ return null; }});"
                   " console.log(JSON.stringify([mcpcFitH(B(1840, 936), null), mcpcFitH(B(1840, 400), null), mcpcFitH(B(1840, 3000), null),"

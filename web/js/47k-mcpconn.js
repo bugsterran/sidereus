@@ -169,9 +169,14 @@ function mcpcCore(row, d, g){
   const pl = typeof platName === 'function' ? platName(row.plat) : String(row.plat || '');
   const sum = mcpcCoreSum(d);
   return '<div class=mcpccore data-mcpccore style="left:' + Math.round(g.cx) + 'px;top:' + Math.round(g.cy) + 'px" title="' + esc(T('Drop a node here to draft a task')) + '">'
-    + '<b>' + esc(row.project || sid8(row.sid)) + '</b><span>' + esc(pl) + ' · ' + esc(sid8(row.sid)) + '</span>'
+    + mcpcCoreName(row.project || sid8(row.sid)) + '<span>' + esc(pl) + ' · ' + esc(sid8(row.sid)) + '</span>'
     + (row.model ? '<span>' + esc(row.model) + '</span>' : '')
     + (sum ? '<em>' + esc(sum) + '</em>' : '') + '</div>';
+}
+// ⚠The project name is never cut: longer names step the font down (41c .mcpccore b.l1..l3) and then wrap.
+function mcpcCoreName(s){
+  const n = String(s).length, l = n <= 12 ? '' : n <= 15 ? ' class=l1' : n <= 20 ? ' class=l2' : ' class=l3';
+  return '<b' + l + '>' + esc(s) + '</b>';
 }
 // Core subtitle. ⚠No counts (pi) or every server unknown = «Unknown n», never «0 connected · 0 failed».
 function mcpcCoreSum(d){
