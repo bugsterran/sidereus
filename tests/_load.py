@@ -39,8 +39,9 @@ def load():
         importlib.import_module("sidereus.burn").QB_LIM_CACHE = os.path.join(tmp, "qb-lim-cache.json")
         q = importlib.import_module("sidereus.quota")
         q.QUOTA_CACHE = os.path.join(tmp, "quota-cache.json")
-        q.OMC_CACHE = os.path.join(tmp, "omc-usage-cache.json")
-        q.OMC_CACHE5 = os.path.join(tmp, "omc-usage-cache-anthropic.json")
+        ql = importlib.import_module("sidereus.quota_local")   # owner of the OMC paths and their writer
+        ql.OMC_CACHE = os.path.join(tmp, "omc-usage-cache.json")
+        ql.OMC_CACHE5 = os.path.join(tmp, "omc-usage-cache-anthropic.json")
         importlib.import_module("sidereus.otel").OTEL_TDAY_FILE = os.path.join(tmp, "otel-tools.json")
         importlib.import_module("sidereus.otel_cache").OC_FILE = os.path.join(tmp, "otel-cache.json")
         importlib.import_module("sidereus.otel_hooks").OH_FILE = os.path.join(tmp, "otel-hooks.json")

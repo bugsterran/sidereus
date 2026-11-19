@@ -1,6 +1,6 @@
-"""Primary OMC cache is ignored when another account writes it through a shared `plugins` dir (sidereus/quota.py).
+"""Primary OMC cache is ignored when another account writes it through a shared `plugins` dir (sidereus/quota_local.py).
 
-Roots, account uuids, clock and cache paths are patched on `quota`/`quota_roots`/`claude_roots`. Temp dirs only.
+Roots, account uuids, clock and cache paths are patched on `quota_local`/`quota_roots`/`claude_roots`. Temp dirs only.
 """
 import json
 import os
@@ -11,7 +11,7 @@ import unittest
 
 from tests import _load
 
-q = _load.sidereus("quota")
+ql = _load.sidereus("quota_local")
 qr = _load.sidereus("quota_roots")
 cr = _load.sidereus("claude_roots")
 
@@ -26,15 +26,15 @@ class OmcSharedTests(unittest.TestCase):
         os.makedirs(self.omc)
         self.roots = [{"dir": self.prim, "label": "main", "primary": True}]
         self.saved = {}
-        self._patch(q, OMC_CACHE=os.path.join(self.omc, ".usage-cache.json"),
+        self._patch(ql, OMC_CACHE=os.path.join(self.omc, ".usage-cache.json"),
                     OMC_CACHE5=os.path.join(self.omc, ".usage-cache-anthropic.json"),
                     time=types.SimpleNamespace(time=lambda: NOW), _cc_account=lambda: "uuid-prim",
                     _omc_trust={"at": 0.0, "foreign": None}, warn_once=lambda *a, **k: None)
         self._patch(qr, _uuid_cache={})
         self._patch(cr, accounts=lambda: [dict(r) for r in self.roots])
-        with open(q.OMC_CACHE5, "w", encoding="utf-8") as f:
+        with open(ql.OMC_CACHE5, "w", encoding="utf-8") as f:
             json.dump({"timestamp": 1, "data": {"fiveHourPercent": 55, "weeklyPercent": 9}, "error": False}, f)
-        os.utime(q.OMC_CACHE5, (NOW - 5, NOW - 5))
+        os.utime(ql.OMC_CACHE5, (NOW - 5, NOW - 5))
 
     def tearDown(self):
         for (m, k), v in self.saved.items():
@@ -59,30 +59,30 @@ class OmcSharedTests(unittest.TestCase):
 
     def test_shared_plugins_other_account_ignored(self):
         self._other("uuid-other", shared=True)
-        self.assertIsNone(q._quota_from_omc())
-        self.assertEqual(q._omc_trust["foreign"], "work")
+        self.assertIsNone(ql._quota_from_omc())
+        self.assertEqual(ql._omc_trust["foreign"], "work")
 
     def test_shared_foreign_warns_once_across_rechecks(self):
         calls = []
-        self._patch(q, warn_once=lambda *a, **k: calls.append(a[0]))
+        self._patch(ql, warn_once=lambda *a, **k: calls.append(a[0]))
         self._other("uuid-other", shared=True)
         for _ in range(3):
-            q._omc_trust["at"] = 0.0          # expire the TTL so each call re-checks
-            self.assertEqual(q._omc_shared_foreign(), "work")
+            ql._omc_trust["at"] = 0.0          # expire the TTL so each call re-checks
+            self.assertEqual(ql._omc_shared_foreign(), "work")
         self.assertEqual(calls, ["omc-shared-foreign"])
 
     def test_shared_plugins_same_account_used(self):
         self._other("uuid-prim", shared=True)
-        self.assertEqual(q._quota_from_omc()["data"]["five_hour"]["pct"], 55)
+        self.assertEqual(ql._quota_from_omc()["data"]["five_hour"]["pct"], 55)
 
     def test_separate_plugins_used(self):
         self._other("uuid-other", shared=False)
-        self.assertEqual(q._quota_from_omc()["data"]["five_hour"]["pct"], 55)
+        self.assertEqual(ql._quota_from_omc()["data"]["five_hour"]["pct"], 55)
 
     def _written(self):
-        os.remove(q.OMC_CACHE5)
-        q._omc_cache_write({"five_hour": {"pct": 12, "resets_at": "r"}, "at": 1})
-        return os.path.exists(q.OMC_CACHE5)
+        os.remove(ql.OMC_CACHE5)
+        ql._omc_cache_write({"five_hour": {"pct": 12, "resets_at": "r"}, "at": 1})
+        return os.path.exists(ql.OMC_CACHE5)
 
     def test_shared_foreign_no_write(self):
         self._other("uuid-other", shared=True)
@@ -97,7 +97,7 @@ class OmcSharedTests(unittest.TestCase):
         self.assertTrue(self._written())
 
     def test_single_root_used(self):
-        self.assertEqual(q._quota_from_omc()["data"]["five_hour"]["pct"], 55)
+        self.assertEqual(ql._quota_from_omc()["data"]["five_hour"]["pct"], 55)
 
 
 if __name__ == "__main__":

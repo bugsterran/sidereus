@@ -10,6 +10,7 @@ import re
 import subprocess
 
 from sidereus import arch_verify as AV
+from sidereus import arch_sym as SYM
 
 FLOW_MAX, STEP_MAX = 40, 40
 # ⚠Stored verdicts are keyed by commit only: bump this whenever why()/http_ok/_be_routes or any rule changes a verdict,
@@ -201,11 +202,11 @@ def verify_flows(repo, commit, m, flows, globs=None):
     def defined(to, sym, rel):
         # Base result per (to, sym); only the Java fallback depends on the evidence file (it must name the type).
         if (to, sym) not in dmemo:
-            dmemo[(to, sym)] = AV.defined_base(sym, owned(to), read, grep)
+            dmemo[(to, sym)] = SYM.defined_base(sym, owned(to), read, grep)
         if dmemo[(to, sym)] or not rel:
             return dmemo[(to, sym)]
         if (to, sym, rel) not in jmemo:
-            jmemo[(to, sym, rel)] = AV.java_generated(sym, owned(to), read, grep, read(rel), facts)
+            jmemo[(to, sym, rel)] = SYM.java_generated(sym, owned(to), read, grep, read(rel), facts)
         return jmemo[(to, sym, rel)]
 
     def why(s):
@@ -220,7 +221,7 @@ def verify_flows(repo, commit, m, flows, globs=None):
         # Estimated (config/DI) steps and routes skip nodef, as config/di edges and URL symbols do in the map.
         both = s["from"] != s["to"] and mods[s["from"]].get("kind") == "module" and mods[s["to"]].get("kind") == "module"
         if w == "" and both and not s.get("est") and not AV.is_route(x["symbol"]) \
-                and not AV.defined_or_alias(x["symbol"], rel, read, lambda y: defined(s["to"], y, rel),
+                and not SYM.defined_or_alias(x["symbol"], rel, read, lambda y: defined(s["to"], y, rel),
                                            lambda: owned(s["to"])):
             return "nodef"
         # An HTTP hop (est or not) must cite the BE mapping in `to` whose route matches the FE URL.

@@ -320,7 +320,8 @@ def _who_scan(start):
     Mirrors `_tok_events` (same picks, same nb/lim so `_SEG_RAW` is shared) but keeps the owning
     session id: `<sid>.jsonl`, and its subagent files fold into that sid (same as OTel)."""
     from sidereus.timeline import _tl_pick, _sess_segments, _SEG_WIN, SEG_CAP_BYTES   # lazy: timeline imports usage
-    from sidereus.agents import _agent_meta, wf_agent_files
+    from sidereus.agents import _agent_meta
+    from sidereus.agents_wf import wf_agent_files
     ev, seen, cov = [], set(), start
 
     def one(f, sid, **kw):

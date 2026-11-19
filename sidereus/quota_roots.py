@@ -19,8 +19,8 @@ from sidereus.bus import _atomic_write
 from sidereus import claude_roots
 from sidereus.transcript import _iso_ts
 from sidereus.warn import exc_name, warn_once
-from sidereus.quota import (OMC_FRESH_S, QUOTA_MAX_BACKOFF, QUOTA_URL, _cc_account, _min_iso, _quota_interval,
-                         _quota_lookup_on)
+from sidereus.quota_local import OMC_FRESH_S, _cc_account
+from sidereus.quota import QUOTA_MAX_BACKOFF, QUOTA_URL, _min_iso, _quota_interval, _quota_lookup_on
 
 USER_HOME = os.path.expanduser("~")    # ⚠tests patch this to a tmp dir
 SVC = "Claude Code-credentials"
@@ -65,7 +65,7 @@ def _root_uuid(d):
         uid = ((j.get("oauthAccount") or {}).get("accountUuid") or None) if isinstance(j, dict) else None
     except (OSError, ValueError, AttributeError):
         # ⚠Claude Code rewrites this file often; a read mid-write must keep the last known uuid (same rule as
-        #   quota._cc_account). Returning None flipped the shared-plugins check off for one TTL, so the other
+        #   quota_local._cc_account). Returning None flipped the shared-plugins check off for one TTL, so the other
         #   account's OMC cache was trusted and the soft warning was logged again on every flip back.
         return hit[1] if hit else None
     _uuid_cache[p] = (mt, uid)
@@ -236,7 +236,7 @@ def _omc_read(d):
 
 
 def _omc_write(d, data, at):
-    """Same payload shape as `quota._omc_cache_write` (sidereus marker, so our own reader skips it)."""
+    """Same payload shape as `quota_local._omc_cache_write` (sidereus marker, so our own reader skips it)."""
     p = _omc_path(d)
     fh, sd = (data or {}).get("five_hour") or {}, (data or {}).get("seven_day") or {}
     if not p or fh.get("pct") is None:

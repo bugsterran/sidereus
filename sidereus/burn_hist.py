@@ -21,7 +21,8 @@ from sidereus.bus import _atomic_write
 from sidereus.transcript import CLAUDE_PROJECTS, iso_epoch
 from sidereus.claude_roots import primary_owned
 from sidereus.agents import sub_sess_dir
-from sidereus.quota import QUOTA_LOG, _plan_code
+from sidereus.quota_local import _plan_code
+from sidereus.quota import QUOTA_LOG
 from sidereus.burn_calc import QBURN_WIN, _qburn_cycles
 
 HIST_TTL = 1800          # s between background passes (brief: >= 10 min)

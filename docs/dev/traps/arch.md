@@ -234,7 +234,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - ⇒ Such a step needs `to_evidence` (the BE mapping line, a file owned by `to` only); `_be_routes` joins class/`prefix=` prefixes with method paths within ±ARCH_K and `route_match` compares from the end.
   - ⚠The suffix match is a heuristic (base paths, params, open `/x/` + id tails), not router resolution. ⚠Express mounts (`app.use('/api', router)`) in another file are not resolved.
   - Stores drawn before this check have no FE->BE steps, so nothing regresses; redraw the map to get them.
-- **Arch `nodef` missed class attributes, import aliases and file names** (2026-10-12, `arch_verify.defined_in`).
+- **Arch `nodef` missed class attributes, import aliases and file names** (2026-10-12, `arch_sym.defined_in`).
   - ★9/87 flow steps of the Sidereus map were false `nodef`: `_GET_ROUTES` (class-body attr), `pipeline_save` (`save as pipeline_save`), `index.html` (cut to `html`).
   - ⇒ (`ast`, .py only, unparsable = no) class-body Assign/AnnAssign/def counts; an import `X as sym` in the evidence file checks `X` in `to` only when its module is a file of `to`; a symbol equal to an owned file's name/path is defined.
   - ⚠Shared by map edges and flow steps (`defined_or_alias`) — change it once. Negative tests: undefined attr, alias to a missing name, file not in `to`.

@@ -407,7 +407,7 @@ Kept as recorded. Written against the single-file `chat_server.py`: `:NNNN` line
 
 ### Workflow-tool agents were invisible (2026-09-26)
 - Cause: they live at `<session>/subagents/workflows/wf_<id>/agent-*.jsonl` (+ `journal.jsonl`, meta without `toolUseId`); every scan globbed `subagents/*.jsonl` and derived the project/sid at a fixed depth.
-- Fix: `sidereus/agents.py` `sub_globs`/`sub_paths`/`sub_sess_dir` (usage index, burn, commit link, file owner, failures) · `wf_runs` → session row `wf` (tree node «Workflow name ▰▱ done/total») and timeline run row (`kind:"wf"`, children `par`=`wf:<id>`).
+- Fix: `sidereus/agents.py` `sub_globs`/`sub_paths`/`sub_sess_dir` (usage index, burn, commit link, file owner, failures) · `sidereus/agents_wf.py` `wf_runs` → session row `wf` (tree node «Workflow name ▰▱ done/total») and timeline run row (`kind:"wf"`, children `par`=`wf:<id>`).
 - ⚠Never read journal `result` payloads or the Workflow args — only type/agentId/label/phase and the script basename. ⚠Never derive project/sid with `dirname(dirname(…))` — use `sub_sess_dir`. Test `tests/test_workflow_runs.py`.
 - State: a live run (`wf[].run`) reads «Workflow running» (`20-session-state.js` `wfRunning`/`waitOnLabel`) in the list, timeline, activity pills and header count; `sidereus/attention.py` emits no `done` while it runs (a Workflow call returns at launch, so the parent sits in `wait`).
 - Run row = one line «title [Workflow] [n/m] [phase]» (+ red «N failed»); time/tokens only on the bar (`70-timeline-state.js` `tlAgNm`). ⚠The old 3-line wrap came from `.tlnm b{display:flex}` hitting `<b class=wfn>` — don't put the run title in a bare `<b>` inside `.tlnm`.

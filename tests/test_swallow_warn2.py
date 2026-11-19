@@ -12,6 +12,7 @@ from tests import _load
 ag = _load.sidereus("agents")
 fl = _load.sidereus("failures")
 qu = _load.sidereus("quota")
+ql = _load.sidereus("quota_local")
 bus = _load.sidereus("bus")
 ts = _load.sidereus("timeline_scan")
 ss = _load.sidereus("structure_cache")
@@ -67,7 +68,8 @@ class FaultsWarn(unittest.TestCase):
         saved = qu._qlog_last[0]
         qu._qlog_last[0] = None
         try:
-            with _Patch(qu, _open_append=no_disk, _cc_account=lambda: None) as got:
+            with _Patch(ql, _cc_account=lambda: None), \
+                    _Patch(qu, _open_append=no_disk, _cc_account=lambda: None) as got:   # `_plan_code` reads quota_local
                 qu._quota_log({"five_hour": {"pct": 1}}, 1, "t")
         finally:
             qu._qlog_last[0] = saved

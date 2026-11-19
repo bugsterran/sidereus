@@ -10,7 +10,8 @@ from sidereus.transcript import _tail_incr, iso_epoch
 from sidereus.usage import _anchors
 from sidereus.timeline import _tok_events
 from sidereus.usage_index import acct_tokens
-from sidereus.quota import QUOTA_LOG, _cc_account, quota, quota_calibrating
+from sidereus.quota_local import _cc_account
+from sidereus.quota import QUOTA_LOG, quota, quota_calibrating
 from sidereus.quota_roots import _conf_path, quota_accounts, ring_last, row_usable, same_labels
 from sidereus import boot_queue, claude_roots, ui_prefs
 # Pure math owned by burn_calc; the ones only tests read are re-exported too.
@@ -275,7 +276,7 @@ def _qb_acct_key(label):
     try:
         with open(_conf_path(d), encoding="utf-8") as f:
             oa = json.load(f).get("oauthAccount") or {}
-        uid, plan = oa.get("accountUuid"), oa.get("userRateLimitTier") or oa.get("organizationType")   # = quota._plan_code
+        uid, plan = oa.get("accountUuid"), oa.get("userRateLimitTier") or oa.get("organizationType")   # = quota_local._plan_code
     except (OSError, ValueError, AttributeError):
         return None
     return "%s|%s" % (uid, plan) if isinstance(uid, str) and uid and isinstance(plan, str) and plan else None

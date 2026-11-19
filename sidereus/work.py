@@ -10,7 +10,8 @@ from sidereus.ident import _proj_name, _sid8, _slug
 from sidereus.live import _sid_transcript
 from sidereus.steps import (AGENT_SAYS_MAX, AGENT_STEPS_MAX, SESS_TAIL, _cap_edit_bodies, _open_or_tail,
     _res_is_code, _work_scan)
-from sidereus.agents import _agent_meta, _wf_meta, wf_agent_files
+from sidereus.agents import _agent_meta
+from sidereus.agents_wf import _wf_meta, wf_agent_files
 from sidereus.sessions import sessions_rows
 from sidereus.redact import redact_work
 

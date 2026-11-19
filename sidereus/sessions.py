@@ -12,7 +12,8 @@ from sidereus.ident import _proj_name, _proj_root, _sid8, mbox_of
 from sidereus.live import (_MBOX_LAB_RE, _blocked, _ctx_window, _model_win, _parse_cache,
     _live_retired, _parse_lock, live_cwds, mailbox_watches, sid_alive)
 from sidereus.gitinfo import _git_state, _wt_of, git_branch, repos_wt, session_repos
-from sidereus.agents import WF_HIST_N, WF_HIST_S, WF_KEEP_S, _DESC_TOOLS, _bg_show, _subs_mt, _subs_newer, plm_of, team_info, wf_public, wf_runs
+from sidereus.agents import _DESC_TOOLS, _bg_show, _subs_mt, _subs_newer, plm_of
+from sidereus.agents_wf import WF_HIST_N, WF_HIST_S, WF_KEEP_S, team_info, wf_public, wf_runs
 from sidereus.usage_index import _uidx, _uidx_lock
 from sidereus.cards import _WRECK_BY_CWD, _note_lock, _recent_transcripts, wreck_of
 from sidereus.usage import _sid_proj
@@ -217,7 +218,7 @@ def _wf_tok(fp):
 def _wf_sets(fp, now, dead):
     """(wf, wfh): `wf` = running runs + ones finished within WF_KEEP_S (tree, «Running», attention, saver read it);
     `wfh` = older finished runs within WF_HIST_S, newest first, at most WF_HIST_N, never `run` (pipeline-tab Workflow view only).
-    ⚠Metadata only — labels/phases/counts/times/tokens; journal result text never leaves agents.wf_runs."""
+    ⚠Metadata only — labels/phases/counts/times/tokens; journal result text never leaves agents_wf.wf_runs."""
     sd = fp[:-len(".jsonl")] if fp.endswith(".jsonl") else fp
     if not os.path.isdir(os.path.join(sd, "subagents", "workflows")):
         return [], []
@@ -235,7 +236,7 @@ def _wf_sets(fp, now, dead):
 
 
 def _team_row(fp):
-    """Agent-team node when this session leads one (agents.team_info; metadata only)."""
+    """Agent-team node when this session leads one (agents_wf.team_info; metadata only)."""
     try:
         return team_info(fp[:-len(".jsonl")] if fp.endswith(".jsonl") else fp)
     except Exception as e:

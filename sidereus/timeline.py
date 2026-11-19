@@ -10,7 +10,8 @@ from sidereus import boot_queue
 from sidereus import claude_roots
 from sidereus.transcript import CLAUDE_PROJECTS, _tail_bytes
 from sidereus.ident import _proj_name, _sid8, _slug
-from sidereus.agents import _agent_fin, _agent_last, _agent_meta, _agent_tools, wf_agent_files, wf_runs
+from sidereus.agents import _agent_fin, _agent_last, _agent_meta, _agent_tools
+from sidereus.agents_wf import wf_agent_files, wf_runs
 from sidereus.sessions import sessions_cached, sessions_rows
 from sidereus.sess_clear import clear_of
 from sidereus.timeline_ext import _plat_tl_rows

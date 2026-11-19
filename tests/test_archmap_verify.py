@@ -15,6 +15,7 @@ from tests._load import ROOT, sidereus, js_fn
 from tests._node import node_e
 
 AV = sidereus("arch_verify")
+SYM = sidereus("arch_sym")
 FIX = os.path.join(ROOT, "tests", "fixtures", "archmap_repo")
 # ⚠Setup git must not read the user's global/system config (hooks, signing, templates).
 GENV = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1", GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid",
@@ -271,9 +272,9 @@ class OverlapDefTest(Base):
 
     def test_git_error_is_not_defined(self):
         with mock.patch.object(AV, "_git_run_capped", side_effect=OSError):
-            self.assertFalse(AV.defined_in("connect", {}, {"lib/db.py"}, lambda f: ["def connect():"],
+            self.assertFalse(SYM.defined_in("connect", {}, {"lib/db.py"}, lambda f: ["def connect():"],
                                            lambda s: AV._grep(self.repo, self.commit, s)))
-        self.assertTrue(AV.defined_in("a.connect", {}, {"lib/db.py"}, lambda f: ["def connect():"], lambda s: ["lib/db.py"]))
+        self.assertTrue(SYM.defined_in("a.connect", {}, {"lib/db.py"}, lambda f: ["def connect():"], lambda s: ["lib/db.py"]))
 
     def test_class_attr_alias_and_file_name(self):
         src = {"lib/r.py": ["class R:", "    \"\"\"", "    FOO = 1", "    \"\"\"", "    D = {", "    BAR: 1,", "    }",
@@ -284,7 +285,7 @@ class OverlapDefTest(Base):
                             "import other.m as o_m", "with open('f') as w_sym:", "    pass", "# from lib.p import z as c_sym",
                             "s = 'from lib.p import z as s_sym'"]}
         rd = lambda f: src.get(f, [])
-        di = lambda s, files: AV.defined_in(s, {}, files, rd, lambda q: sorted(files))
+        di = lambda s, files: SYM.defined_in(s, {}, files, rd, lambda q: sorted(files))
         self.assertEqual([di(s, {"lib/r.py"}) for s in ("ROUTES", "N", "go", "LOCAL", "FOO", "BAR", "MISSING")],
                          [True, True, True, False, False, False, False])   # function local, docstring, dict key
         self.assertFalse(di("ROUTES", {"lib/bad.py"}))        # does not parse
@@ -293,7 +294,7 @@ class OverlapDefTest(Base):
         self.assertTrue(di("web/index.html", {"web/index.html"}))
         self.assertFalse(di("main.html", {"web/index.html"}))  # a file name not in `to`
         defs, lib = {"save", "put"}, {"lib/p.py", "app/q.py"}
-        doa = lambda s, files=lib: AV.defined_or_alias(s, "app/x.py", rd, lambda y: y in defs, lambda: files)
+        doa = lambda s, files=lib: SYM.defined_or_alias(s, "app/x.py", rd, lambda y: y in defs, lambda: files)
         self.assertEqual([doa(s) for s in ("p_save", "q_put", "w_sym", "c_sym", "s_sym", "o_m", "other")],
                          [True, True, False, False, False, False, False])
         self.assertFalse(doa("p_save", {"lib/z.py"}))          # alias whose module is not in `to`
@@ -312,8 +313,8 @@ class OverlapDefTest(Base):
                "app/Use.java": ["UserDto d = svc.get();", "d.name(); d.ids(); list.size();", "Ent e; Bare b; Fld f; Off o;"],
                "app/Other.java": ["list.size(); x.name();"]}
         rd = lambda f: src.get(f, [])
-        gr = lambda q: [f for f, ls in sorted(src.items()) if AV._word_re(q).search("\n".join(ls))]
-        di = lambda s, files, ev="app/Use.java": AV.defined_in(s, {}, set(files), rd, gr, rd(ev) if ev else None)
+        gr = lambda q: [f for f, ls in sorted(src.items()) if SYM._word_re(q).search("\n".join(ls))]
+        di = lambda s, files, ev="app/Use.java": SYM.defined_in(s, {}, set(files), rd, gr, rd(ev) if ev else None)
         dto = ["api/Dto.java"]
         self.assertEqual([di(s, dto) for s in ("name", "ids", "size", "String")], [True, True, True, False])
         self.assertEqual([di("name", dto, "app/Other.java"), di("name", dto, None)], [False, False])  # type not named
@@ -330,7 +331,7 @@ class OverlapDefTest(Base):
         hit = ["def connect(x):", "export async function connect() {", "public static int connect(String a) throws E {",
                "connect = 1", "connect: int", "const connect = () => 1"]
         miss = ["    return connect(x)", "if (connect(x)) {", "x = connect()", "connect == 1", "conn = connect"]
-        rx = AV._def_re("connect")
+        rx = SYM._def_re("connect")
         self.assertEqual([bool(rx.search(x)) for x in hit], [True] * len(hit))
         self.assertEqual([bool(rx.search(x)) for x in miss], [False] * len(miss))
 
@@ -338,7 +339,7 @@ class OverlapDefTest(Base):
         hit = ["  post: <T>(url: string, body?: object) =>", "  post(url) {", "  post: async (x) =>",
                "  post: function (x) {", "post: (x) => x"]
         miss = ["  post: string", "  post: vi.fn()", "  post: client.post", "  x: post(a)"]
-        rx = AV._def_re("post")
+        rx = SYM._def_re("post")
         self.assertEqual([bool(rx.search(x)) for x in hit], [True] * len(hit))
         self.assertEqual([bool(rx.search(x)) for x in miss], [False] * len(miss))
 
@@ -348,7 +349,7 @@ class OverlapDefTest(Base):
         miss = ["    return getX(a);", "    List<String> x = getX(a);", "  getX(a);", "  new getX(a);",
                 "  throw getX(a);", "  await getX(a);", "  yield getX(a);", "  else getX(a);", "  case getX(a);",
                 "  x.y = getX(a);"]
-        rx = AV._def_re("getX")
+        rx = SYM._def_re("getX")
         self.assertEqual([bool(rx.search(x)) for x in hit], [True] * len(hit))
         self.assertEqual([bool(rx.search(x)) for x in miss], [False] * len(miss))
 

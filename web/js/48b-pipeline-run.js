@@ -1,6 +1,6 @@
 // «Pipelines» «Run» + live lighting (docs/dev/PIPELINE.md steps 2–3). Extends 48-pipeline.js.
 // «Run» = DM preview a person confirms (relay via /api/dm, nothing auto-sent); lighting reads SESS[].wf rows only
-// (agents.wf_runs allow-list: phase/label/state/times) — ⚠never wf_<id>.json (rule 1).
+// (agents_wf.wf_runs allow-list: phase/label/state/times) — ⚠never wf_<id>.json (rule 1).
 const PL_MEM_MS = 2 * 3600 * 1000;           // DM'd pipeline name per session, kept 2 h (PIPELINE.md Known limits)
 const PL_RETRY_RE = / retry \d+$/;           // runner label for a retry launch (pipeline.js withRetry)
 let PLRUN = null;                            // open run panel {name, sid, req, models:{title: model}, busy}

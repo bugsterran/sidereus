@@ -1,5 +1,5 @@
 // «Workflow» view of the pipeline tab: Workflow-tool runs (SESS[].wf) drawn read-only, opened from the name list (PLS.wf).
-// Metadata only (rule 1): phase titles, one-line agent labels, states, times — the agents.wf_runs allow-list.
+// Metadata only (rule 1): phase titles, one-line agent labels, states, times — the agents_wf.wf_runs allow-list.
 // ⚠Runs named 'pipeline' are the pipeline runner: they light the pipeline canvas (48b plLight) and are never listed here.
 // Live/just-finished runs (`wf`) + older finished ones (`wfh`, sessions._wf_sets: 6 h, newest 10) — ⚠only this view reads `wfh`.
 function wfAll(x){ return (x && x.wf || []).concat(x && x.wfh || []); }
@@ -36,7 +36,7 @@ function wfRunNameOf(tid, par){
   const x = (typeof SESS !== 'undefined' && SESS || []).find(s => s && s.sid === sid), r = x && wfAll(x).find(q => q && q.id === id);
   return (r && r.name) || '';
 }
-// Terminal-style run summary: finished / started agents · elapsed since run start · tokens (run.tok from agents.wf_runs, 0 = omitted).
+// Terminal-style run summary: finished / started agents · elapsed since run start · tokens (run.tok from agents_wf.wf_runs, 0 = omitted).
 function wfSum(run, now){
   const ags = (run && run.agents) || [], sec = Math.max(0, Math.round(((run && run.run) ? now : (run && run.end) || 0) - ((run && run.start) || 0)));
   return { done: ags.filter(a => a && a.st === 'done').length, total: ags.length, sec, tok: +(run && run.tok) || 0 };

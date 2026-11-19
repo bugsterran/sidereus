@@ -12,6 +12,7 @@ from tests.test_saver_quota_js import i18n
 from tests._node import node_e
 
 q = sidereus("quota")
+ql = sidereus("quota_local")
 h = sidereus("burn_hist")
 b = sidereus("burn")
 
@@ -50,7 +51,8 @@ class Log(_P):
     def test_row_carries_plan_and_plan_change_logs(self):
         p = os.path.join(self.d, "quota-log.jsonl")
         acct = {"at": 0, "mt": 0, "id": "A", "seat": None, "tier": "default_claude_pro", "org": "claude_x"}
-        self.patch(q, QUOTA_LOG=p, _cc_account=lambda: "A", _acct=acct, _qlog_last=[None])
+        self.patch(q, QUOTA_LOG=p, _cc_account=lambda: "A", _qlog_last=[None])
+        self.patch(ql, _cc_account=lambda: "A", _acct=acct)     # `_plan_code` reads its own module's bindings
         d = {"five_hour": {"pct": 10, "resets_at": "x"}, "seven_day": {"pct": 2}}
         q._quota_log(d, NOW, "t")
         q._quota_log(d, NOW, "t")                                 # unchanged: deduped
@@ -60,7 +62,7 @@ class Log(_P):
             rows = [json.loads(ln) for ln in f]
         self.assertEqual([r["plan"] for r in rows], ["default_claude_pro", "default_claude_max_5x"])
         acct["tier"] = None
-        self.assertEqual(q._plan_code(), "claude_x")              # org when no tier
+        self.assertEqual(ql._plan_code(), "claude_x")              # org when no tier
 
 
 class Split(_P):

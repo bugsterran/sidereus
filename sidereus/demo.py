@@ -23,7 +23,7 @@ from sidereus.demo_http import respond   # noqa: F401  install() + tests
 
 DEMO_OLD = 240   # > MSG_FIRST - 8 so the oldest posts go out as stubs
 
-# Workflow run under the search session (agents.wf_runs shape): (phase, label, st, start_min_ago, end_min_ago|None, tok)
+# Workflow run under the search session (agents_wf.wf_runs shape): (phase, label, st, start_min_ago, end_min_ago|None, tok)
 WF_AGENTS = [("Design", "Spec the search result page", "done", 28, 23, 1_800_000),
              ("Implement", "Result list component", "done", 22, 14, 4_200_000),
              ("Implement", "Query parser for filters", "done", 22, 12, 3_100_000),
@@ -44,7 +44,7 @@ PI_SID = _uuid(random.Random(SEED + 31))   # hook-fed pi row (ext.py ext_rows ke
 PI_ROW = dict(GEM_ROW, id=PI_SID[:8], sid=PI_SID, project="acme-web", kind="pi", plat="pi",
               model="anthropic/claude-sonnet-4-5", state="tool", otelEv="tool", tool="Bash", targ="", goneWhy="", pid=0, extOld="reload")
 PI_CREDIT = lambda now: {"lastAt": int(now) - 45, "tok": 1_240_000}   # «Credits» chip + «Spending credits» attention
-# Agent team led by the billing session (agents.team_info shape).
+# Agent team led by the billing session (agents_wf.team_info shape).
 TEAM = {"members": [{"name": "api-dev", "st": "run", "model": "sonnet-5", "tsub": "Retry queue for webhooks", "unread": 0},
                     {"name": "reviewer", "st": "done", "model": "opus-5", "tsub": "", "unread": 1},
                     {"name": "test-writer", "st": "idle", "model": "sonnet-5", "tsub": "Contract tests for refunds", "unread": 2}],

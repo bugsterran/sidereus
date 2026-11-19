@@ -118,7 +118,7 @@ A diagram without layers draws the older call-depth layout and says «No layers 
 
 ### Files
 
-`sidereus/arch_map.py` (`/api/arch`) · `arch_track.py` (runs in progress) · `arch_verify.py` (edge check, store) · `arch_flow.py` (flows) · `arch_schema.py` (map.json format) ·
+`sidereus/arch_map.py` (`/api/arch`) · `arch_track.py` (runs in progress) · `arch_verify.py` (edge check, store) · `arch_sym.py` (symbol definitions) · `arch_flow.py` (flows) · `arch_schema.py` (map.json format) ·
 `structure.py`, `structure_scan.py`, `structure_lang*.py`, `structure_plug.py` (treemap) · `structure_tree.py`
 (source window) · `arch_checks.py` (security check results) · `web/js/80`–`84k-structure*.js`, `web/js/84l-structure-arch-checks.js` ·
 `scripts/arch_checks.py` (security check runner).

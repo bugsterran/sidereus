@@ -10,7 +10,7 @@ from tests._load import sidereus
 
 R = sidereus("redact")
 bp = sidereus("bgtasks_parse")
-ag = sidereus("agents")
+aw = sidereus("agents_wf")
 rc = sidereus("recent")
 sv = sidereus("state_v1")
 rg = sidereus("routes_get")
@@ -50,7 +50,7 @@ class LabelRedact(unittest.TestCase):
         with os.fdopen(fd, "w") as f:
             f.write(json.dumps({"type": "started", "agentId": "w1", "label": URL, "phase": "p"}) + "\n")
         try:
-            lab = ag._wf_journal(fp)["ag"]["w1"]["lab"]
+            lab = aw._wf_journal(fp)["ag"]["w1"]["lab"]
         finally:
             os.unlink(fp)
         self.assertNotIn(PW, lab)

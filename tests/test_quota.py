@@ -11,6 +11,7 @@ from tests import _load
 b = _load.sidereus("burn")
 bw = _load.sidereus("burn_week")
 q = _load.sidereus("quota")
+ql = _load.sidereus("quota_local")
 
 NOW = 1_800_000_000.0
 H = 3600.0
@@ -585,12 +586,14 @@ class ProbeSwitchCase(unittest.TestCase):
         import tempfile
         with tempfile.TemporaryDirectory() as t:
             missing = self.os.path.join(t, "oh-my-claudecode")
-            self.p.set(OMC_CACHE=self.os.path.join(missing, ".usage-cache.json"))
-            q._omc_cache_write({"five_hour": {"pct": 10}, "at": 1})
+            pl = _Patch(ql)                  # the OMC paths and writer live in quota_local
+            self.addCleanup(pl.undo)
+            pl.set(OMC_CACHE=self.os.path.join(missing, ".usage-cache.json"), _cc_account=lambda: None)
+            ql._omc_cache_write({"five_hour": {"pct": 10}, "at": 1})
             self.assertFalse(self.os.path.exists(missing))
             self.os.mkdir(missing)
-            q._omc_cache_write({"five_hour": {"pct": 10}, "at": 1})
-            self.assertTrue(self.os.path.exists(q.OMC_CACHE))
+            ql._omc_cache_write({"five_hour": {"pct": 10}, "at": 1})
+            self.assertTrue(self.os.path.exists(ql.OMC_CACHE))
 
 
 if __name__ == "__main__":

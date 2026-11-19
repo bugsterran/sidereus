@@ -8,11 +8,11 @@ from sidereus.bus import _atomic_write
 from sidereus.transcript import _iso_ts
 from sidereus.usage import (ANCHOR_FILE, USAGE_BACKFILL_S, _anchors, _usage_backfill, _usage_load,
     _usage_save, usage)
-from sidereus.quota import (OMC_FRESH_S, QUOTA_HDR_EVERY_S, QUOTA_HOLD_EVERY_S, _hdr_at,
-    _cc_scope, _omc_cache_write, _quota, _quota_from_omc, _quota_interval, _quota_load,
+from sidereus.quota_local import OMC_FRESH_S, _cc_scope, _omc_cache_write, _quota_from_omc, _scope_moved
+from sidereus.quota import (QUOTA_HDR_EVERY_S, QUOTA_HOLD_EVERY_S, _hdr_at,
+    _quota, _quota_interval, _quota_load,
     _quota_lock, _quota_probe_hdr, _quota_retry_after, _quota_save, _wait_hint, quota)
 from sidereus.quota_fetch import _quota_fetch
-from sidereus.quota import _scope_moved
 from sidereus.quota_roots import tick as _acc_tick
 
 # ⚠Log a 429 only once the last success is this old. Routine 429 retries recover within minutes and
@@ -138,7 +138,7 @@ def _quota_loop():
     """Quota poller — **Sidereus is the only poller** (reversed 2026-09-04).
 
     The order flipped: it used to be `OMC cache → API on failure`, now it is `API → OMC cache on failure`.
-    Reason and measurements are in the `_omc_cache_write` comment above — in short, **OMC also got 429s yet
+    Reason and measurements are in the `quota_local._omc_cache_write` comment — in short, **OMC also got 429s yet
     knocked more often with its 15s failure TTL**, so the two split the limit and both starved.
     Now we call every 60s, and in between write the last success to the cache in OMC format every 10s —
     OMC passes its 30s TTL and skips its own call. Only on failure do we pick up a value OMC fetched itself."""
@@ -229,7 +229,7 @@ def _quota_try_omc(st):
     #   can spread up to 15 min, so if OMC (or Claude Code itself) gets through even once in between,
     #   that value must not be missed — `fresh_s` grows with `fail` up to 30 min.
     #   Why safe: adoption still requires passing the `o["at"] > our last value` gate below, so
-    #   widening never goes back to an older value (see `_quota_from_omc` comment above).
+    #   widening never goes back to an older value (see the `quota_local._quota_from_omc` docstring).
     o = _quota_from_omc(fresh_s=min(1800, OMC_FRESH_S + st[0] * 180))
     if o:
         with _quota_lock:

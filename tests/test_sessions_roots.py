@@ -102,11 +102,11 @@ class LookupTest(RootsBase):
             self.assertIn(old, got)
 
     def test_team_root_follows_transcript_root(self):
-        ag = _load.sidereus("agents")
+        aw = _load.sidereus("agents_wf")
         sd = os.path.join(self.wp, SLUG, SID)
         _w(os.path.join(self.work, "tasks", SID, "1.json"),
            json.dumps({"id": "1", "subject": "s", "status": "pending", "owner": "x"}), mt=NOW - 10)
-        t = ag.team_info(sd, now=NOW)
+        t = aw.team_info(sd, now=NOW)
         self.assertIsNotNone(t)
         self.assertEqual(t["total"], 1)
 

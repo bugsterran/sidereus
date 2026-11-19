@@ -1,4 +1,4 @@
-"""Plan metadata (`quota._cc_plan`) and the account-stamped 5h limit cache (`burn._qb_lim_*`).
+"""Plan metadata (`quota_local._cc_plan`) and the account-stamped 5h limit cache (`burn._qb_lim_*`).
 No live files: ~/.claude.json and qb-lim-cache.json point at temp files; `_tok_events`/`_anchors` are patched."""
 import json
 import os
@@ -8,7 +8,7 @@ import unittest
 
 from tests._load import sidereus
 
-q = sidereus("quota")
+ql = sidereus("quota_local")
 b = sidereus("burn")
 
 
@@ -35,12 +35,12 @@ class Plan(_Patch):
             json.dump({"oauthAccount": {"accountUuid": "u1", "emailAddress": "x@y", "organizationName": "Org",
                                         "userRateLimitTier": "default_claude_max_5x", "seatTier": "team_tier_1",
                                         "organizationType": "claude_team"}}, f)
-        self.patch(q, CLAUDE_CONF=p, _acct={"at": 0, "mt": 0, "id": None, "seat": None, "tier": None, "org": None})
-        self.assertEqual(q._cc_plan(), {"tier": "default_claude_max_5x", "seat": "team_tier_1", "org": "claude_team"})
+        self.patch(ql, CLAUDE_CONF=p, _acct={"at": 0, "mt": 0, "id": None, "seat": None, "tier": None, "org": None})
+        self.assertEqual(ql._cc_plan(), {"tier": "default_claude_max_5x", "seat": "team_tier_1", "org": "claude_team"})
 
     def test_unknown_is_none(self):
-        self.patch(q, _cc_account=lambda: None, _acct={"at": 0, "mt": 0, "id": None, "seat": None, "tier": None, "org": None})
-        self.assertIsNone(q._cc_plan())
+        self.patch(ql, _cc_account=lambda: None, _acct={"at": 0, "mt": 0, "id": None, "seat": None, "tier": None, "org": None})
+        self.assertIsNone(ql._cc_plan())
 
 
 class LimStale(_Patch):

@@ -16,6 +16,7 @@ from tests import _load
 u = _load.sidereus("usage")
 b = _load.sidereus("burn")
 q = _load.sidereus("quota")
+ql = _load.sidereus("quota_local")
 bus = _load.sidereus("bus")
 
 
@@ -99,6 +100,7 @@ class AtomicSaves(unittest.TestCase):
         with open(path, "w", encoding="utf-8") as f:
             f.write((row + "\n") * (400_000 // len(row) + 50))
         self.patch(q, QUOTA_LOG=path, _qlog_last=[None], _cc_account=lambda: "acct")
+        self.patch(ql, _cc_account=lambda: "acct")     # `_plan_code` must not read the live ~/.claude.json
 
         def log(i):
             q._quota_log({"five_hour": {"pct": i, "resets_at": "r%d" % i},
@@ -204,7 +206,7 @@ class ScopeMoved(unittest.TestCase):
     """Quota cache scope = account@organization: an org switch on the same account drops the old org's 5h/7d."""
 
     def test_scope_rules(self):
-        from sidereus.quota import _scope_moved
+        from sidereus.quota_local import _scope_moved
         self.assertTrue(_scope_moved("A@org1", "A@org2"))      # same account, new organization
         self.assertFalse(_scope_moved("A@org1", "A@org1"))
         self.assertTrue(_scope_moved("A", "A@org1"))            # older cache with a bare uuid: org unknown, refetch

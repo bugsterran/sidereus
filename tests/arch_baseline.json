@@ -26,7 +26,7 @@
   "git_wt.wt_orders -> git",
   "git_wt.wt_signals -> git",
   "git_wt.wt_signals -> quota",
-  "quota._omc_shared_foreign -> quota_roots",
+  "quota_local._omc_shared_foreign -> quota_roots",
   "usage._who_scan -> timeline"
  ],
  "ownership": [

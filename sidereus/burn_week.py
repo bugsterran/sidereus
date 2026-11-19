@@ -5,7 +5,8 @@ from sidereus.warn import warn_once
 from sidereus.transcript import _tail_incr
 from sidereus.usage import usage
 from sidereus.timeline import _tok_events
-from sidereus.quota import QUOTA_LOG, _cc_account, quota
+from sidereus.quota_local import _cc_account
+from sidereus.quota import QUOTA_LOG, quota
 from sidereus.burn_calc import _qwk_span, qb_unc
 
 QBURN_NB = 400_000      # first-read tail cap — same as `_quota_log`'s trim cap (= effectively everything)

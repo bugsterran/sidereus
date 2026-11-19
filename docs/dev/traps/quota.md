@@ -28,7 +28,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
   - Cause: `brief_quota()` read only the primary's `quota()`/`quota_burn()`/`_saver_view()`, so `sidereus_quota` reported the primary account to every session.
   - Fix: `?dir=` (the session's config dir) is realpath-matched like `/api/quota/burn`; non-primary reads its `quota_accounts()` row + `quota_burn_acct` + `_saver_views()[label]`. Output names the account in `acct` (label).
   - ⚠Unknown dir = `{ok:false, err:"unknown account"}`, an unmeasured extra = `ok:false, err:"not measured"` — never the primary's numbers. `used5Tok` is None for non-primary.
-- **Primary OMC cache written by another account** (`sidereus/quota.py` `_omc_shared_foreign`).
+- **Primary OMC cache written by another account** (`sidereus/quota_local.py` `_omc_shared_foreign`).
   - Cause: OMC picks its cache from `CLAUDE_CONFIG_DIR/plugins` and keys keychain logins by nothing, so a profile whose `plugins` symlinks to the primary's writes its own account's 5h/7d into the primary's file.
   - Fix: if a non-primary root's `plugins` realpath equals ours and its `accountUuid` differs from the primary's, `_quota_from_omc` returns None (our own fetch only) and `_omc_cache_write` skips (else their HUD shows our quota); checked every 30 s, `warn_once` `omc-shared-foreign`.
   - ⚠Same account or unknown uuid on either side = cache still trusted (unknown is not a mismatch).
@@ -547,7 +547,7 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 ## Organization switch kept the old org's 7d 100%
 - Cause: the cache guard compared `accountUuid` only; switching organization keeps it, so the new seat's null windows lost to the old org's carried values until their reset.
 - ★2026-11-09: same account moved to an enterprise usage-based org (credits 140/60000 USD received) while the screen held 7d 100% with `keptAt`, 12 h to reset.
-- ⇒ `quota._cc_scope()` = `accountUuid@organizationUuid`; `_scope_moved` guards `_qf_store`, the OMC credit carry and `_quota_load`. A stored bare uuid (older cache) counts as moved: it cannot say which org it came from (refetched once).
+- ⇒ `quota_local._cc_scope()` = `accountUuid@organizationUuid`; `_scope_moved` guards `_qf_store`, the OMC credit carry and `_quota_load`. A stored bare uuid (older cache) counts as moved: it cannot say which org it came from (refetched once).
 - ⚠The quota log and burn history keep the bare uuid plus plan code — do not switch them to the scope (history would split on every upgrade).
 
 ## Usage-billed seat showed «5h left 100%» in the status bar

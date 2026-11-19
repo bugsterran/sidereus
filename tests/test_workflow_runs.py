@@ -14,6 +14,7 @@ from tests._load import load, sidereus
 
 load()
 ag = sidereus("agents")
+AW = sidereus("agents_wf")
 S = sidereus("sessions")
 T = sidereus("timeline")
 UI = sidereus("usage_index")
@@ -66,13 +67,13 @@ class WorkflowRuns(unittest.TestCase):
                 f.write(_usage_line(now - 100 + i, "m" + aid, 100 * (i + 1)))
             with open(os.path.join(self.rd, "agent-%s.meta.json" % aid), "w", encoding="utf-8") as f:
                 json.dump({"agentType": "general-purpose", "description": "meta " + aid, "workflowPhase": "X"}, f)
-        ag._WF_NAME.clear()
-        ag._WF_JOURNAL.clear()
+        AW._WF_NAME.clear()
+        AW._WF_JOURNAL.clear()
         self.files = {aid: os.path.join(self.rd, "agent-%s.jsonl" % aid) for aid in ("a1", "a2", "a3")}
         for dp, _, fs in os.walk(self.root):        # liveness is mtime vs now: stamp the fixture at _clock.NOW
             for n in fs:
                 os.utime(os.path.join(dp, n), (NOW, NOW))
-        clk = _clock.frozen(ag, S, T, UI, CL, FS, WM, sidereus("attention"))
+        clk = _clock.frozen(ag, AW, S, T, UI, CL, FS, WM, sidereus("attention"))
         clk.__enter__()
         self.addCleanup(clk.__exit__, None, None, None)
         # ⚠boot_time() reads the live kern.boottime; a fixture stamped at _clock.NOW predates it and reads as orphaned
@@ -81,8 +82,8 @@ class WorkflowRuns(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)
-        ag._WF_NAME.clear()
-        ag._WF_JOURNAL.clear()
+        AW._WF_NAME.clear()
+        AW._WF_JOURNAL.clear()
 
     def test_paths_cover_both_layouts_without_overlap(self):
         got = sorted(ag.sub_paths(self.root))
@@ -100,11 +101,11 @@ class WorkflowRuns(unittest.TestCase):
         with mock.patch.object(CL, "CL_ROOT", self.root):
             self.assertIn(self.files["a3"], CL._cl_paths())
         self.assertEqual(FS._fail_sub_id(self.files["a1"]), (self.sd, "a1"))
-        self.assertEqual(sorted(ag.wf_agent_files(self.sd)), sorted(self.files.values()))
+        self.assertEqual(sorted(AW.wf_agent_files(self.sd)), sorted(self.files.values()))
 
     def test_run_grouping_progress_and_name(self):
         tok = {self.files["a1"]: 10, self.files["a2"]: 20, self.files["a3"]: 5}
-        runs = ag.wf_runs(self.sd, tokf=tok.get)
+        runs = AW.wf_runs(self.sd, tokf=tok.get)
         self.assertEqual(len(runs), 1)
         r = runs[0]
         self.assertEqual((r["id"], r["name"], r["phase"]), ("wf_abc123-d10", "sidereus-change", "Implement"))
@@ -118,8 +119,8 @@ class WorkflowRuns(unittest.TestCase):
             f.write(json.dumps({"type": "user", "message": {"content": [{"type": "tool_result", "content":
                     "Transcript dir: %s\nScript file: %s/workflows/scripts/sidereus-wf-livecheck-wf_abc123-d10.js\nRun ID: wf_abc123-d10"
                     % (self.rd, self.sd)}]}}) + "\n")
-        ag._WF_NAME.clear()
-        self.assertEqual(ag.wf_runs(self.sd)[0]["name"], "sidereus-wf-livecheck")
+        AW._WF_NAME.clear()
+        self.assertEqual(AW.wf_runs(self.sd)[0]["name"], "sidereus-wf-livecheck")
 
     def test_session_payload_is_metadata_only(self):
         idx = {"files": {self.files["a1"]: {"h": {"1": {"m": [1, 2, 3, 4]}}}}}
@@ -151,21 +152,21 @@ class WorkflowRuns(unittest.TestCase):
         self.assertEqual([(r["id"], r["run"]) for r in wfh], [("wf_abc123-d10", False)])
         self.assertNotIn(SECRET, json.dumps(wfh))
         self.assertNotIn("_file", json.dumps(wfh))
-        self.assertEqual(S._wf_sets(self.sd + ".jsonl", t0 + ag.WF_HIST_S + 60, False), ([], []))
+        self.assertEqual(S._wf_sets(self.sd + ".jsonl", t0 + AW.WF_HIST_S + 60, False), ([], []))
         wf, wfh = S._wf_sets(self.sd + ".jsonl", t0 + 60, False)  # just finished: short window only, not duplicated
         self.assertEqual(([r["id"] for r in wf], wfh), (["wf_abc123-d10"], []))
 
     def test_history_is_capped_newest_first_and_never_live(self):
         t0 = 1700000000.0
-        for i in range(ag.WF_HIST_N + 2):
+        for i in range(AW.WF_HIST_N + 2):
             shutil.copytree(self.rd, self.rd + "-%02d" % i)
             for n in os.listdir(self.rd + "-%02d" % i):
                 os.utime(os.path.join(self.rd + "-%02d" % i, n), (t0 + i, t0 + i))
         for n in os.listdir(self.rd):
             os.utime(os.path.join(self.rd, n), (t0 - 10, t0 - 10))
         _, wfh = S._wf_sets(self.sd + ".jsonl", t0 + 3600, False)
-        self.assertEqual(len(wfh), ag.WF_HIST_N)
-        self.assertEqual(wfh[0]["id"], "wf_abc123-d10-%02d" % (ag.WF_HIST_N + 1))
+        self.assertEqual(len(wfh), AW.WF_HIST_N)
+        self.assertEqual(wfh[0]["id"], "wf_abc123-d10-%02d" % (AW.WF_HIST_N + 1))
         self.assertEqual([r["end"] for r in wfh], sorted((r["end"] for r in wfh), reverse=True))
         # dead session: nothing live, a fresh run is history and drawn as done
         self._age_all(t0 + 3590)
@@ -176,7 +177,7 @@ class WorkflowRuns(unittest.TestCase):
     def test_pipeline_runner_runs_stay_out_of_history(self):
         t0 = 1700000000.0
         self._age_all(t0)
-        with mock.patch.object(ag, "_wf_name", lambda sd, rd: "pipeline"):
+        with mock.patch.object(AW, "_wf_name", lambda sd, rd: "pipeline"):
             self.assertEqual(S._wf_sets(self.sd + ".jsonl", t0 + 3600, False), ([], []))
 
     def test_running_workflow_is_not_the_humans_turn(self):
@@ -230,7 +231,7 @@ class WorkflowPhases(unittest.TestCase):
             f.write(text)
 
     def _run(self):
-        runs = ag.wf_runs(self.sd, now=self.now)
+        runs = AW.wf_runs(self.sd, now=self.now)
         self.assertEqual(len(runs), 1)
         return runs[0]
 
@@ -241,7 +242,7 @@ class WorkflowPhases(unittest.TestCase):
                      "const BODY = '%s'\n" % (BODY_SENTINEL, BODY_SENTINEL))
         r = self._run()
         self.assertEqual(r["phases"], ["Design", 'Ver"ify `q`', "Ship é", "Implement"])
-        blob = json.dumps(ag.wf_public([r]))
+        blob = json.dumps(AW.wf_public([r]))
         self.assertNotIn(BODY_SENTINEL, blob)
         self.assertNotIn(SECRET, blob)
 

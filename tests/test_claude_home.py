@@ -30,9 +30,9 @@ class ClaudeHomeTest(unittest.TestCase):
                        CODEX_HOME=os.path.join(os.devnull, "no-codex-home"))
             with open(os.path.join(data, "config.local.json"), "w", encoding="utf-8") as f:
                 f.write("{}\n")
-            code = ("import json, sidereus.transcript as t, sidereus.ctxsrc as c, sidereus.burn_scan as b, sidereus.quota as q;"
+            code = ("import json, sidereus.transcript as t, sidereus.ctxsrc as c, sidereus.burn_scan as b, sidereus.quota_local as ql;"
                     "print(json.dumps([t.CLAUDE_PROJECTS, c.CLAUDE_DIR, c.CLAUDE_JSON, b.CLAUDE_SETTINGS,"
-                    " q.CLAUDE_CONF, q.OMC_CACHE]))")
+                    " ql.CLAUDE_CONF, ql.OMC_CACHE]))")
             out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, env=env, capture_output=True,
                                  text=True, timeout=60, encoding="utf-8")
             self.assertEqual(out.returncode, 0, out.stderr[-2000:])

@@ -12,6 +12,7 @@ from tests._load import load, sidereus
 
 load()
 ag = sidereus("agents")
+aw = sidereus("agents_wf")
 S = sidereus("sessions")
 
 SID = "ec5938f2-0000-1111-2222-333344445555"
@@ -47,7 +48,7 @@ class AgentTeam(unittest.TestCase):
             with open(os.path.join(sub, "agent-a%d.jsonl" % n), "w", encoding="utf-8") as f:
                 f.write(json.dumps({"type": "assistant", "message": {"content": [blk]}}) + "\n")
         ag._AGENT_META.clear()
-        self.p = mock.patch.object(ag, "TEAM_ROOT", self.home)
+        self.p = mock.patch.object(aw, "TEAM_ROOT", self.home)
         self.p.start()
 
     def tearDown(self):
@@ -56,7 +57,7 @@ class AgentTeam(unittest.TestCase):
         shutil.rmtree(self.home, ignore_errors=True)
 
     def test_team_node(self):
-        t = ag.team_info(self.sd)
+        t = aw.team_info(self.sd)
         self.assertEqual((t["done"], t["total"]), (1, 4))
         self.assertEqual(t["tasks"], {"pending": 2, "in_progress": 1, "completed": 1})
         by = {m["name"]: m for m in t["members"]}
@@ -74,7 +75,7 @@ class AgentTeam(unittest.TestCase):
         self.assertNotIn(SECRET_T, blob)
 
     def test_no_team_and_quiet_team(self):
-        self.assertIsNone(ag.team_info(os.path.join(self.home, "projects", "-w-repo", "other-sid")))
+        self.assertIsNone(aw.team_info(os.path.join(self.home, "projects", "-w-repo", "other-sid")))
         old = time.time() - 7200
         for root, _d, fs in os.walk(self.home):
             for fn in fs:
@@ -86,7 +87,7 @@ class AgentTeam(unittest.TestCase):
         for root, _d, fs in os.walk(self.home):
             for fn in fs:
                 os.utime(os.path.join(root, fn), (old, old))
-        self.assertIsNone(ag.team_info(self.sd))
+        self.assertIsNone(aw.team_info(self.sd))
 
 
 if __name__ == "__main__":

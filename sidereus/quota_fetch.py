@@ -6,7 +6,8 @@ import time
 from sidereus.config import IS_MAC
 from sidereus.warn import exc_name, warn_once
 from sidereus.transcript import _iso_ts
-from sidereus.quota import QUOTA_URL, _cc_scope, _scope_moved, _oauth_miss, _oauth_token, _quota, _quota_lock, _quota_lookup_on, _quota_retry_after
+from sidereus.quota_local import _cc_scope, _scope_moved
+from sidereus.quota import QUOTA_URL, _oauth_miss, _oauth_token, _quota, _quota_lock, _quota_lookup_on, _quota_retry_after
 
 
 QF_ERR_KEYS = ("Quota lookup is turned off in settings (quota_lookup)",

@@ -9,7 +9,7 @@ from unittest import mock
 from tests._load import sidereus
 
 L = sidereus("structure_lang")
-V = sidereus("arch_verify")
+V = sidereus("arch_sym")
 B = sidereus("bus")
 
 # Invalid escapes: SyntaxWarning on 3.12+ (printed to viewer.err as `<unknown>:N:`).
@@ -34,7 +34,7 @@ class UserSrcSyntaxWarning(unittest.TestCase):
         fns = self._strict(lambda: L._struct_py_fns(SRC))
         self.assertEqual([f["name"] for f in fns], ["f"])
 
-    def test_arch_verify_parses_silently(self):
+    def test_arch_sym_parses_silently(self):
         V._py_ast.cache_clear()
         self.assertIsNotNone(self._strict(lambda: V._py_ast(SRC + "# av\n")))
 

@@ -131,7 +131,7 @@ class WindowsPaths(unittest.TestCase):
         self.assertEqual((sorted(fp for _t, fp in runs), tot), (sorted(fp for fp, _h in items[:2]), 30))
 
     def test_workflow_name_from_escaped_windows_paths(self):
-        ag = sidereus("agents")
+        aw = sidereus("agents_wf")
         d = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, d, True)
         sess = os.path.join(d, "s1")
@@ -139,8 +139,8 @@ class WindowsPaths(unittest.TestCase):
                                            "Script file: C:\\repo\\.claude\\workflows\\sidereus-change.js\nRun ID: wf_ab"}
         with open(sess + ".jsonl", "w", encoding="utf-8") as f:
             f.write(json.dumps(line) + "\n")
-        with mock.patch.object(ag, "os", _NtOs()):
-            self.assertEqual(ag._wf_name(sess, "C:\\u\\s1\\subagents\\workflows\\wf_ab"), "sidereus-change")
+        with mock.patch.object(aw, "os", _NtOs()):
+            self.assertEqual(aw._wf_name(sess, "C:\\u\\s1\\subagents\\workflows\\wf_ab"), "sidereus-change")
 
     def test_mail_watch_prefix_ignores_case_and_separator(self):
         pf = sidereus("prefs")
