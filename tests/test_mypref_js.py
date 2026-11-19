@@ -59,7 +59,7 @@ R.srvErr = [Y.mpSrvErr('port must be an integer 1024..65535'), Y.mpSrvErr('weird
 // «Preferences» Claude Code pane + confirm with other accounts' settings.json (stub renderers; no DOM)
 Object.assign(c, {esc: s => String(s).replace(/</g, '&lt;'), cfgSet: (a, b, x) => '[' + a + '|' + b + '|' + x + ']', cfgSeg: (a, x) => x,
   cfgOpt: (a, v, l, on) => '<' + v + (on ? '*' : '') + '>', paintCfg: () => {}, fmtTok: String,
-  confirm: m => { c.CONF = m; return false; }, postJSON: async () => ({ok: true})});
+  uiConfirm: async (t, o) => { c.CONF = o.body; return false; }, postJSON: async () => ({ok: true})});
 const cc = (accts) => { vm.runInContext('MPSRV = ' + JSON.stringify({ok: true, cc_path: '/p/settings.json',
   keys: {cc_auto_compact: {value: true, path: '/p/settings.json'}, cc_compact_window: {value: 450000, path: '/p/settings.json'}}}) + ';'
   + (accts ? 'MPSRV.cc_accts = ' + JSON.stringify(accts) + ';' : '') + "MPERR = {}; MPDONE = {}; MPACON = null; MPACD = {}; MPANOTE = '';", c); return vm.runInContext('mpCcPane()', c); };
@@ -121,6 +121,30 @@ R.omRow = vm.runInContext('mpMainAcctRow()', c); R.omAct = 'mpom' in A;
 """
 
 TABS = ['pipe', 'time', 'struct', 'br', 'token', 'hist', 'retro', 'chat']
+
+# R4: server setting via the shared uiConfirm; Cancel/Esc = old false branch, nothing posted before it resolves.
+SRV = i18n_prelude("'en'", ("T", "KE", "TE")) + r"""
+const fs = require('fs'), vm = require('vm'), path = require('path');
+const R = {}, POSTS = [], ASK = [];
+let PAINTS = 0, ANSWER = null;
+const c = {T, TE, softErr: () => {}, UIS: {getItem: () => null, setItem(){}, removeItem(){}}, esc: String, setTimeout: () => 0,
+  paintCfg: () => { PAINTS++; }, document: {documentElement: {dataset: {}}, getElementById: () => null, querySelector: () => ({value: '9000'})},
+  uiConfirm: (t, o) => { ASK.push([t, o]); return new Promise(r => { ANSWER = r; }); },
+  postJSON: async (u, b) => { POSTS.push([u, b]); return {ok: true, value: b.value}; }};
+vm.createContext(c);
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'web', 'js', '90b-mypref.js'), 'utf8'), c);
+const srv = () => vm.runInContext("MPSRV = {ok: true, keys: {port: {value: 8800, default: 8799, src: 'file'}}}; MPDRAFT.port = '9000';", c);
+(async () => {
+  srv(); let p = vm.runInContext("mpSrvSet('port', false)", c); await null; await null;
+  R.pending = [ASK.length, POSTS.length, PAINTS, ASK[0][1].ok, /8800\n→ 9000/.test(ASK[0][1].body)];
+  ANSWER(false); await p;
+  R.cancel = [POSTS.length, PAINTS, vm.runInContext("'port' in MPDRAFT", c), vm.runInContext('Object.keys(MPBUSY).length', c)];
+  srv(); ASK.length = 0; PAINTS = 0; p = vm.runInContext("mpSrvSet('port', false)", c); await null;
+  ANSWER(true); await p;
+  R.ok = [ASK.length, POSTS.map(x => [x[0], x[1].key, x[1].value]), PAINTS];
+  process.stdout.write(JSON.stringify(R));
+})();
+"""
 
 
 @unittest.skipUnless(shutil.which("node"), "node not installed")
@@ -261,6 +285,17 @@ class MyPref(unittest.TestCase):
 
     def test_server_error_korean(self):
         self.assertEqual(self.R["srvErr"], ["저장 실패: 1024~65535 사이 정수를 적으세요", "저장 실패: weird"])
+
+
+@unittest.skipUnless(shutil.which("node"), "node not installed")
+class SrvConfirm(unittest.TestCase):
+    def test_server_setting_confirm_branches(self):
+        r = subprocess.run(node_e("const ROOT = %s;\n" % json.dumps(ROOT) + SRV), capture_output=True, text=True, timeout=20, encoding="utf-8")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        R = json.loads(r.stdout)
+        self.assertEqual(R["pending"], [1, 0, 0, "Change", True])   # dialog open: no POST, no repaint yet
+        self.assertEqual(R["cancel"], [0, 1, False, 0])              # Cancel/Esc: draft dropped, repainted once, nothing posted
+        self.assertEqual(R["ok"], [1, [["/api/prefs/set", "port", 9000]], 1])
 
 
 if __name__ == "__main__":

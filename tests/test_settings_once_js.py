@@ -1,5 +1,5 @@
 """Settings writes run once per action (web/js/90b-mypref.js mpOnce) and focus survives a paintCfg repaint
-(web/js/90-settings.js cfgFocusSel/cfgFocusBack). Fake DOM, stubbed confirm/postJSON; no live files or network."""
+(web/js/90-settings.js cfgFocusSel/cfgFocusBack). Fake DOM, stubbed uiConfirm/postJSON; no live files or network."""
 import json
 import os
 import shutil
@@ -17,7 +17,7 @@ const fs = require('fs'), vm = require('vm'), path = require('path');
 const R = {}, CONF = [], POSTS = [];
 const c = {T, softErr: () => {}, UIS: {getItem: () => null, setItem(){}, removeItem(){}}, esc: String, paintCfg: () => {},
   setTimeout: () => 0, document: {documentElement: {dataset: {}}, getElementById: () => null, querySelector: () => null},
-  confirm: m => { CONF.push(m); return true; },
+  uiConfirm: async (t, o) => { CONF.push(t); await null; return true; },   // R4: async like the shared dialog, so a double-click overlaps the pending confirm
   postJSON: async (u, b) => { POSTS.push([u, b.key, b.dry === true]); await null;
     return b.key === 'cc_accounts' ? {ok: true, files: [{label: 'w', path: '/w', status: b.dry ? 'change' : 'written', before: {auto: true, window: null}, after: {auto: false, window: null}}]}
       : {ok: true, value: b.key === 'cc_auto_compact' ? false : 9}; }};

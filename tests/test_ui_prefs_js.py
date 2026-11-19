@@ -85,20 +85,20 @@ b = boot({mbTone: 'grey'}, null, 200, false, '?view=x', SS); b.U.mbTone = 'blue'
 b = boot(null, {mbTone: 'blue'}, 200, false, '?nosave=1', SS); b.run(); R.nsMig = b.posts.length;
 const SS2 = {getItem: () => null, setItem(){}};
 b = boot({mbTone: 'grey'}, null, 200, false, '?nosave=10', SS2); b.U.mbTone = 'blue'; b.run(); R.nsOff = [b.posts.length, b.hide.length];
-// 5. «설정 초기화»: confirm → POST reset once → UIS emptied, tab state cleared, reload; later writes never post
+// 5. «Reset display settings»: uiConfirm → POST reset once → UIS emptied, tab state cleared, reload; later writes never post
 (async () => {
   b = boot({mbTone: 'grey', 'sidereus.q': '1'});
   const calls = [], c = b.c;
-  Object.assign(c, {T: s => s, KE: (k) => k, esc: s => String(s), softErr(){}, confirm: () => true, paintCfg(){}, MPERR_SEEN: 0,
+  Object.assign(c, {T: s => s, KE: (k) => k, esc: s => String(s), softErr(){}, uiConfirm: async (t, o) => { R.resetOpt = o; return true; }, paintCfg(){}, MPERR_SEEN: 0,
     postJSON: async (url, body) => { calls.push(['post', url, body]); return {ok: true}; },
     sessionStorage: {clear(){ calls.push(['ss']); }}, location: {reload(){ calls.push(['reload']); }}});
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'web', 'js', '90b-mypref.js'), 'utf8') + ';this.ACTS = mpActs(); this.RESET = mpUiReset;', c);
   await c.RESET();
   R.reset = [calls, Object.keys(b.U).length, b.U.mbTone === undefined];
   b.U.after = '1'; b.run(); b.hide.forEach(f => f()); R.resetPosts = b.posts.length;
-  // cancelled confirm = no request
+  // cancelled (Cancel/Esc) confirm = no request
   const b2 = boot({mbTone: 'grey'}), calls2 = [];
-  Object.assign(b2.c, {T: s => s, KE: (k) => k, esc: s => String(s), softErr(){}, confirm: () => false, paintCfg(){},
+  Object.assign(b2.c, {T: s => s, KE: (k) => k, esc: s => String(s), softErr(){}, uiConfirm: async () => false, paintCfg(){},
     postJSON: async (url) => { calls2.push(url); return {ok: true}; }, sessionStorage: {clear(){}}, location: {reload(){ calls2.push('reload'); }}});
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'web', 'js', '90b-mypref.js'), 'utf8') + ';this.RESET = mpUiReset;', b2.c);
   await b2.c.RESET();
@@ -271,6 +271,7 @@ class UiPrefs(unittest.TestCase):
         self.assertEqual(calls, [["post", "/api/ui-prefs/reset", {}], ["ss"], ["reload"]])
         self.assertEqual([n, gone, self.R["resetPosts"]], [0, True, 0])
         self.assertEqual(self.R["cancel"], [[], "grey"])
+        self.assertEqual(self.R["resetOpt"], {"ok": "Reset", "danger": True})   # R1/R3: shared confirm, destructive styling
 
 
 if __name__ == "__main__":

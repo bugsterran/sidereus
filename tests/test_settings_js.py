@@ -53,10 +53,10 @@ R.modePick = row(vm.runInContext('cfgPaneSv()', c), '작동 모드');
 c.SVSW = {mode: 'pace', until: '18:30', goal: null};
 R.modePace = row(vm.runInContext('cfgPaneSv()', c), '작동 모드');
 vm.runInContext("cfgActs().svm('auto')", c);
-// «목표 한도 도달 시» saves on click like the other saver rows: confirm must not be called
-c.confirm = () => { throw new Error('confirm called'); };
+// «목표 한도 도달 시» saves on click like the other saver rows: uiConfirm must not be called
+let UIC = 0; c.uiConfirm = async () => { UIC++; return false; };
 vm.runInContext("cfgActs().svl('block')", c);
-R.svSent = sent;
+R.svSent = sent; R.svConf = UIC;
 vm.runInContext('SVOK = 1', c);
 R.svOk = vm.runInContext('cfgPaneSv()', c);
 vm.runInContext("SVOK = 0; SVERR = '저장 실패: x'", c);
@@ -133,6 +133,7 @@ class SettingsPane(unittest.TestCase):
         self.assertIn('value="18:30"', pace)
         self.assertIn('data-svp="clear"', pace)
         self.assertEqual(self.R["svSent"], [{"mode": "auto"}, {"limit": "block"}])   # picking 목표 시각 sends nothing; limit saves on click
+        self.assertEqual(self.R["svConf"], 0)
 
     def test_saver_saved_note(self):
         self.assertIn("— 적용됨 · 모든 세션", self.R["svOk"])

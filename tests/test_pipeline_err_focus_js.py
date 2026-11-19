@@ -49,7 +49,7 @@ class ErrorField(unittest.TestCase):
     def _remove(self, reply):
         return _run(_ESC + i18n_prelude("'en'", ("T", "TE")) + """
 let SAID = '';
-const confirm = () => true, alert = s => { SAID = s; };
+const uiConfirm = async () => true, alert = s => { SAID = s; };
 async function plProjPost(){ return %s; }
 """ % json.dumps(reply) + js_fn("plRemove") + """
 (async () => { await plRemove('/p'); console.log(JSON.stringify(SAID)); })();

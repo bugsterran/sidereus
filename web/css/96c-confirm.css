@@ -1,0 +1,16 @@
+/* Shared confirm (08c-confirm.js): native <dialog> in the top layer; colours from --nx-* so dark and light both follow.
+   ⚠Every selector carries [data-ui] so 00-core does not emit resized/retoned twins (it would turn the backdrop light). */
+html[data-ui] .ucf{box-sizing:border-box;width:min(560px,calc(100vw - 32px));max-width:none;max-height:calc(100vh - 32px);margin:auto;
+  padding:16px 18px 14px;border:1px solid var(--nx-rule);border-radius:10px;background:var(--nx-panel);color:var(--nx-t1);
+  box-shadow:var(--nx-shadow);font:13px/1.55 var(--nx-sans)}
+html[data-ui] .ucf::backdrop{background:rgba(0,0,0,.55)}
+html[data-ui][data-theme=light] .ucf::backdrop{background:rgba(18,22,30,.4)}
+html[data-ui] .ucf .ucft{font-size:14px;font-weight:600;margin:0 0 8px;overflow-wrap:anywhere}
+/* ⚠Multi-line settings diffs: keep line breaks, break long paths anywhere, scroll instead of pushing the buttons off-screen. */
+html[data-ui] .ucf .ucfb{margin:0 0 14px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:calc(100vh - 220px);overflow:auto;color:var(--nx-t2)}
+html[data-ui] .ucf .ucfb[hidden]{display:none}
+html[data-ui] .ucf .ucfb:focus-visible{outline:2px solid var(--nx-info);outline-offset:2px}   /* tabindex only while it overflows (08c) */
+html[data-ui] .ucf .ucfa{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+/* Danger ok: --nx-bg text on --nx-err (★dark 5.9:1 · grey 5.1 · blue 5.5 · light 5.5); white on dark --nx-err was 3.3. */
+html[data-ui][data-ui][data-ui] .ucf .wkrgb.archok.dng:not([disabled]){background:var(--nx-err);border-color:var(--nx-err);color:var(--nx-bg)}
+html[data-ui][data-ui][data-ui] .ucf .wkrgb.archok.dng:not([disabled]):hover{background:color-mix(in srgb,var(--nx-err) 88%,var(--nx-t1));color:var(--nx-bg)}

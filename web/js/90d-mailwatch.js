@@ -1,5 +1,5 @@
 // Settings «Preferences» › «Mailbox watch»: config `mailbox_watch` {mode, projects} (sidereus/prefs.py), read by the SessionStart hook.
-// Mounted by observing #cfgbox (90-settings.js paintCfg rebuilds it); own delegated handlers, saved via /api/prefs/set after confirm().
+// Mounted by observing #cfgbox (90-settings.js paintCfg rebuilds it); own delegated handlers, saved via /api/prefs/set after uiConfirm (08c).
 let MW_PEND = null, MW_NOTE = null, MW_PROJS = null, MW_LD = false;   // pending {mode, projects} · {err|ok} · /api/pipelines projects
 function mwSaved(){ const v = MPSRV && MPSRV.ok && MPSRV.mailbox_watch; return v ? { mode: v.mode, projects: Object.assign({}, v.projects) } : null; }
 function mwWant(){ return MW_PEND || mwSaved(); }
@@ -86,7 +86,8 @@ async function mwSave(){
   const sv = mwSaved(), w = mwWant();
   if(!sv || !w) return;
   const ch = mwDiff(sv, w);
-  if(!ch.length || !confirm(T('Change mailbox watch? Applies to sessions started after the change.') + '\n\n' + ch.join('\n'))) return;
+  if(!ch.length) return;
+  if(!await uiConfirm(T('Change mailbox watch? Applies to sessions started after the change.'), {body: ch.join('\n'), ok: T('Change')})) return;
   const dflt = w.mode === 'on' && !Object.keys(w.projects).length;
   const body = dflt ? { key: 'mailbox_watch', reset: true } : { key: 'mailbox_watch', value: w };   // default = drop the key (missing = on)
   let r = null;

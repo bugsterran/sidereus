@@ -121,7 +121,7 @@ class ApplyJs(unittest.TestCase):
         # Pipelines are per project: Apply always posts {proj, mode}, and other projects' cache stays.
         with open(_F, encoding="utf-8") as f:
             src = (_STUB + i18n_prelude("'ko'", ("T", "TV", "U")) + f.read()
-                   + "\nlet POSTS = [], ASKED = []; globalThis.confirm = m => { ASKED.push(m); return true; }; globalThis.alert = () => {};"
+                   + "\nlet POSTS = [], ASKED = []; globalThis.uiConfirm = async (t, o) => { ASKED.push(t + '\\n' + o.body); return true; }; globalThis.alert = () => {};"
                    "\nasync function postJSON(u, b){ POSTS.push([u, b]); return {ok: true, apply: {mode: b.mode}}; } function plPaint(){}"
                    "\nPLS.proj = '/w/a'; PLS.data = {'/w/a': {ok: true, apply: {mode: 'auto', global: 'auto', own: null}}, '/w/b': {ok: true}};"
                    "\nplApplySet('off').then(ok => console.log(JSON.stringify([ok, POSTS, Object.keys(PLS.data), ASKED[0]])));")
@@ -130,6 +130,39 @@ class ApplyJs(unittest.TestCase):
         self.assertEqual(posts, [["/api/pipelines/apply", {"proj": "/w/a", "mode": "off"}]])
         self.assertEqual(keys, ["/w/a", "/w/b"])
         self.assertIn("/w/a", asked)
+
+    def _run(self, tail):
+        with open(_F, encoding="utf-8") as f:
+            src = (_STUB + i18n_prelude("'ko'", ("T", "TV", "U")) + f.read()
+                   + "\nlet POSTS = [], PAINTS = 0; globalThis.alert = () => {};"
+                   "\nasync function postJSON(u, b){ POSTS.push([u, b]); return {ok: true, apply: {mode: b.mode}}; } function plPaint(){ PAINTS++; }"
+                   "\nPLS.proj = '/w/a'; PLS.data = {'/w/a': {ok: true, apply: {mode: 'auto', global: 'auto', own: null}}};\n" + tail)
+        return json.loads(subprocess.run(node_e(src), capture_output=True, text=True, check=True, encoding="utf-8").stdout)
+
+    def test_cancel_returns_false_no_post(self):
+        # R4: Cancel/Esc of the shared confirm runs the old false branch: returns false, nothing posted or repainted.
+        ok, posts, paints, mode = self._run("globalThis.uiConfirm = async () => false;"
+                                            "plApplySet('off').then(ok => console.log(JSON.stringify([ok, POSTS, PAINTS, PLS.data['/w/a'].apply.mode])));")
+        self.assertIs(ok, False)
+        self.assertEqual(posts, [])
+        self.assertEqual(paints, 0)
+        self.assertEqual(mode, "auto")
+
+    def test_no_post_while_confirm_pending(self):
+        # R4: nothing is written before the confirm resolves; the OK label is T('Change').
+        out = self._run("let res, OPT; globalThis.uiConfirm = (t, o) => { OPT = o; return new Promise(r => { res = r; }); };"
+                        "const p = plApplySet('off');"
+                        "setTimeout(() => { const before = POSTS.length; res(true); p.then(ok => console.log(JSON.stringify([before, POSTS.length, ok, OPT.ok]))); }, 0);")
+        self.assertEqual(out[:3], [0, 1, True])
+        self.assertEqual(out[3], "바꾸기")
+
+    def test_project_switched_while_pending_no_post(self):
+        # R4: a poll switches PLS.proj while the dialog is open; OK must not write a project the dialog never showed.
+        out = self._run("let res, OPT; globalThis.uiConfirm = (t, o) => { OPT = o; return new Promise(r => { res = r; }); };"
+                        "PLS.data['/w/b'] = {ok: true, apply: {mode: 'auto'}}; const p = plApplySet('off');"
+                        "setTimeout(() => { PLS.proj = '/w/b'; res(true); p.then(ok => console.log(JSON.stringify("
+                        "[ok, POSTS.length, OPT.body.split('\\n')[0], PLS.data['/w/a'].apply.mode, PLS.data['/w/b'].apply.mode]))); }, 0);")
+        self.assertEqual(out, [False, 0, "/w/a", "auto", "auto"])
 
 
 if __name__ == "__main__":

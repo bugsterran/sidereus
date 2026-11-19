@@ -251,7 +251,7 @@ async function plAddGo(path){
   return r;
 }
 async function plRemove(path){
-  if(!confirm(T('Remove from the list? (folder and files stay)') + '\n' + path)) return;
+  if(!await uiConfirm(T('Remove from the list? (folder and files stay)'), {body: path, ok: T('Remove')})) return;
   const r = await plProjPost('/api/pipelines/projects/remove', path);
   if(!r.ok) alert(T('Could not remove') + ((r.err || r.error || r.why) ? ' — ' + TE(r) : ''));
 }
@@ -381,13 +381,14 @@ function plApplySeg(d){
 }
 // Pipelines are per project, so «Apply» always writes this project's mode (the server keeps its global default untouched).
 async function plApplySet(mode){
-  const d = PLS.data[PLS.proj], a = d && d.ok && d.apply;
+  const proj = PLS.proj, d = PLS.data[proj], a = d && d.ok && d.apply;
   if(!a) return;
   const lab = m => { const r = PL_APPLY.find(x => x[0] === m); return r ? T(r[1]) : String(m || ''); };
-  if(!confirm(T('Change how sessions apply pipelines? Applies to sessions started after the change.')
-    + '\n\n' + PLS.proj + '\n' + lab(a.mode) + ' → ' + lab(mode))) return false;
+  if(!await uiConfirm(T('Change how sessions apply pipelines? Applies to sessions started after the change.'),
+    {body: proj + '\n' + lab(a.mode) + ' → ' + lab(mode), ok: T('Change')})) return false;
+  if(PLS.proj !== proj || PLS.data[proj] !== d) return false;   // ⚠the dialog does not block polls: a poll may switch/reload the project meanwhile, never write one the dialog did not show
   let r;
-  try{ r = await postJSON('/api/pipelines/apply', { proj: PLS.proj, mode: mode }); }
+  try{ r = await postJSON('/api/pipelines/apply', { proj: proj, mode: mode }); }
   catch(x){ r = x.body || { ok: false, err: String((x && x.message) || x) }; }
   if(!r || !r.ok){ alert(T('Could not change it') + (r && (r.err || r.error || r.why) ? ' — ' + TE(r) : '')); return false; }
   d.apply = r.apply;

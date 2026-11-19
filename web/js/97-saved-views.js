@@ -62,25 +62,25 @@ function vwPaint(){
     vwOpen = false; vwPaint();
     if(it) vwApply(it);
   });
-  p.querySelectorAll('.vwx').forEach(el => el.onclick = (e) => {
+  p.querySelectorAll('.vwx').forEach(el => el.onclick = async (e) => {
     e.stopPropagation();
     const arr = vwLoad(), i = +el.dataset.x, it = arr[i];
     if(!it) return;
-    if(!confirm(T('Delete view “{n}”?').replace('{n}', () => (it.n||'')))) return;
+    if(!await uiConfirm(T('Delete view “{n}”?').replace('{n}', () => (it.n||'')), {ok: T('Delete'), danger: true})) return;
     arr.splice(i, 1); vwStore(arr); vwPaint();
   });
 }
 const vwb = document.getElementById('vwb');
 if(vwb) vwb.onclick = (e) => { e.stopPropagation(); vwOpen = !vwOpen; vwPaint(); };
 const vwsave = document.getElementById('vwsave');
-if(vwsave) vwsave.onclick = () => {
+if(vwsave) vwsave.onclick = async () => {
   const name = (prompt(T('Name for the current filter combination?'), '') || '').trim().slice(0, VW_NAME_MAX);
   if(!name) return;
   const arr = vwLoad(), at = arr.findIndex(x => x.n === name);
   // Over the cap, **do not drop silently** — write in one line what to do
   if(at < 0 && arr.length >= VW_MAX){
     note(T('Already {n} saved views — delete one and save again').replace('{n}', VW_MAX)); return; }
-  if(at >= 0 && !confirm(T('A view with this name exists — overwrite it?'))) return;
+  if(at >= 0 && !await uiConfirm(T('A view with this name exists — overwrite it?'), {ok: T('Overwrite'), danger: true})) return;
   const rec = {v:VW_V, n:name, s:vwSnap()};
   if(at >= 0) arr[at] = rec; else arr.push(rec);
   vwStore(arr); vwOpen = false; vwPaint();
@@ -90,6 +90,7 @@ if(vwsave) vwsave.onclick = () => {
 addEventListener('click', (e) => {
   if(!vwOpen) return;
   if(!document.contains(e.target)) return;
+  if(e.target.closest && e.target.closest('dialog')) return;   // ⚠a uiConfirm button click is not 'outside' (the popup stays open, as with window.confirm)
   const p = document.getElementById('vwpop');
   if(p && !p.contains(e.target)){ vwOpen = false; vwPaint(); }
 });

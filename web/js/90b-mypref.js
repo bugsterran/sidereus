@@ -134,7 +134,7 @@ async function mpSrvSetRun(key, reset){
       + '\n' + T('Sessions already running report to the new port after they restart');
   } else if(ot) extra = '\n\n' + T('OTEL_EXPORTER_OTLP_ENDPOINT was set by hand, so it is left as is') + ': ' + ot;
   const lab = T((MP_SRV_LAB[key] || [key])[0]) + (MP_SRV_LAB[key] ? ' (' + key + ')' : '');   // screen label first, raw key after
-  if(!confirm(T('Change this server setting? It applies after a restart.') + '\n\n' + lab + '\n' + mpShow(it.value) + '\n→ ' + after + extra)){ delete MPDRAFT[key]; paintCfg(); return; }
+  if(!await uiConfirm(T('Change this server setting? It applies after a restart.'), {body: lab + '\n' + mpShow(it.value) + '\n→ ' + after + extra, ok: T('Change')})){ delete MPDRAFT[key]; paintCfg(); return; }
   let r = null;
   try{ r = await postJSON('/api/prefs/set', body); }catch(e){ r = e.body || {ok: false, err: String((e && e.message) || e)}; }
   if(!reset && !(r && r.ok)){ const el = document.querySelector('#cfgbox [data-mpin="' + key + '"]'); if(el) MPDRAFT[key] = el.value; }   // refused by the server: keep the text too
@@ -253,7 +253,7 @@ async function mpAcctApplyRun(){
   const skTxt = sk.map(f => nm(f) + '\n' + T('skipped') + ': ' + (f.err ? TE(f) : '?'));
   if(!ch.length){ MPANOTE = [T('No account changed')].concat(sk.map(f => nm(f) + ' ' + T('skipped') + ': ' + (f.err ? TE(f) : '?'))).join(' · '); paintCfg(); return; }
   const msg = ch.map(f => nm(f) + '\n' + mpAcctFmt(f.before) + ' → ' + mpAcctFmt(f.after)).concat(skTxt).join('\n\n');
-  if(!confirm(T('Change this Claude Code setting? It applies from new sessions.') + '\n\n' + msg)){ paintCfg(); return; }
+  if(!await uiConfirm(T('Change this Claude Code setting? It applies from new sessions.'), {body: msg, ok: T('Change')})){ paintCfg(); return; }
   const r = await post(false);
   if(!(r && r.ok)){ MPERR.cc_accounts = mpSrvErr(r); paintCfg(); return; }
   const out = Array.isArray(r.files) ? r.files : [], wr = out.filter(f => f && f.status === 'written');
@@ -312,7 +312,7 @@ async function mpCcSetRun(key, val){
     : show(cur(x)) + '\n→ ' + show(val)));   // accounts already at the new value are left out
   const msg = !accts.length ? (MPSRV.cc_path || it.path || '') + '\n' + lab + '\n' + show(it.value) + '\n→ ' + show(val)
     : lab + '\n\n' + [(MPSRV.cc_path || it.path || '') + '\n' + show(it.value) + '\n→ ' + show(val)].concat(blocks).join('\n\n');
-  if(!confirm(T('Change this Claude Code setting? It applies from new sessions.') + '\n\n' + msg)){
+  if(!await uiConfirm(T('Change this Claude Code setting? It applies from new sessions.'), {body: msg, ok: T('Change')})){
     delete MPDRAFT[key]; paintCfg(); return; }
   let r = null;
   try{ r = await postJSON('/api/prefs/set', {key: key, value: val}); }catch(e){ r = e.body || {ok: false, err: String((e && e.message) || e)}; }
@@ -410,7 +410,7 @@ function cfgPaneMe(){
 // ⚠rvnotes drafts and notification keys live in localStorage and are left alone; UIS.wipe() stops any later POST.
 function mpUiReset(){ return mpOnce('uireset', mpUiResetRun); }
 async function mpUiResetRun(){
-  if(!confirm(T('Return display settings (sizes, filters, selected tabs and so on) to their initial state? The current settings are moved to the backup folder.'))) return;
+  if(!await uiConfirm(T('Return display settings (sizes, filters, selected tabs and so on) to their initial state? The current settings are moved to the backup folder.'), {ok: T('Reset'), danger: true})) return;
   let r = null;
   try{ r = await postJSON('/api/ui-prefs/reset', {}); }catch(e){ r = e.body || {ok: false, err: String((e && e.message) || e)}; }
   if(!(r && r.ok)){ MPERR.uireset = mpSrvErr(r); paintCfg(); return; }

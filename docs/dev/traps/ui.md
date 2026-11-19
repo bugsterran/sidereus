@@ -4,6 +4,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 
 ## UI kit, CSS, layout, header, i18n
 
+- ⚠**Shared confirm (`08c-confirm.js`) listens on window capture, not on the dialog.** Document capture handlers (08-ui-kit popover outside-click/Esc, 41 drawer pointerdown, 42 hover Esc, 48e Esc) run before any listener on the dialog and would close panels behind it.
+  - ⇒ `ucfKey`/`ucfPtr` stop propagation at window capture while open; Esc also `stopImmediatePropagation` + `preventDefault`.
+  - ⚠`cfgBind` repaints `#cfgbox` while it is open and detaches the opener ⇒ `ucfDone` re-finds it by the `cfgFocusSel` selectors taken at open; close first (a modal makes the page inert, focus there is a no-op), resolve last.
 - ⚠**Default tab is Pipelines, fallback stays Timeline.** Nothing saved / invalid opens `pipe` (05-i18n.js `mainView`), but `pipe` is feature-gated, so `time` remains the unhideable lock (`mpTabs`), the `setMainView`/`buildMv` fallback and the boot choice when `mbTabsOff` lists `pipe`. ⚠Do not make `pipe` the fallback or the lock — a feature-off pipe would open a 404 tab.
 - ⚠**`.open` in 60-sessions.css was an unscoped pill rule** (2026-10-13, fixed). It matched any element with an `open` class: `#rail.open` got its border (1px shift) and `#alarm.open` painted alarm text gold. ⇒ Scoped to `span.open` (the «Awaiting reply» pill, 10-feed.js); the 93b-rail.css reset is gone. ⚠Never style a bare state class (`.open`, `.on`) globally — prefix it with its element/component.
 - **Font sizes are rewritten in place once, last** (`fsApply`, 00-core.js). Every px `font-size` becomes `calc(max(12, ladder)px * var(--fs,1))`; px `line-height` below the new size becomes `max(Npx, 1.2em)`.

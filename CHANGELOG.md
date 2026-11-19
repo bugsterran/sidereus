@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Confirmations (pipeline «Remove» and apply mode, «Preferences» server, Claude Code and display-reset settings, mailbox watch, «Saved views» delete and overwrite) open an in-page dialog instead of the browser's `confirm()` box: translated labels, follows the theme, keeps Tab inside, Esc cancels, focus returns to the control that opened it, and long bodies wrap and scroll.
+
 ## [0.21.0] - 2026-11-18
 
 **Highlights**
