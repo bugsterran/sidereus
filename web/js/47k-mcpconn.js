@@ -154,16 +154,18 @@ function mcpcEdge(s, p, g, now, dim, outer){
   return '<path class="' + cls + '" d="' + d + '" stroke-width="' + mcpcEdgeW(n) + '"/>'
     + (mcpcLive(s.last, now) && !dim ? '<path class=mcpcfl d="' + d + '" pathLength="100"/>' : '');
 }
+// Count text: English singular for 1 («1 call»); callers pass the T('{n} calls')/T('{n} runs') literal so i18n_check still sees it.
+function mcpcCount(n, txt, one){ return LANG === 'en' ? PL(n, one) : txt.replace('{n}', String(n)); }
 function mcpcNodeUse(s, d, now){
   const st = mcpcStKey(s.state);
   if(st === 'fail') return '<span class=mcpcbad>' + esc(s.err || 'FAIL') + '</span>';
-  if(d.counts !== false && +s.n > 0) return esc(T('{n} calls').replace('{n}', String(+s.n))) + ' · ' + esc(mcpcAgo(s.last, now));
+  if(d.counts !== false && +s.n > 0) return esc(mcpcCount(+s.n, T('{n} calls'), 'call')) + ' · ' + esc(mcpcAgo(s.last, now));
   return esc(mcpcStLbl(st));
 }
 function mcpcNode(s, p, d, now, small){
   const st = mcpcStKey(s.state), used = d.counts !== false && +s.n > 0, sel = MCPC.sel === s.name, dim = !!MCPC.filt && MCPC.filt !== st;
   const tip = s.name + ' — ' + mcpcStLbl(st) + (s.err ? ' (' + s.err + ')' : '')
-    + (d.counts !== false && s.n != null ? ' · ' + T('{n} calls').replace('{n}', String(+s.n || 0)) : '');
+    + (d.counts !== false && s.n != null ? ' · ' + mcpcCount(+s.n || 0, T('{n} calls'), 'call') : '');
   return '<button type=button class="mcpcn st-' + st + (used ? ' used' : '') + (sel ? ' sel' : '') + (small ? ' small' : '') + (dim ? ' dim' : '')
     + '" data-mcpcn="' + esc(s.name) + '" draggable="true" aria-pressed="' + sel + '" style="left:' + Math.round(p.x) + 'px;top:' + Math.round(p.y) + 'px"'
     + ' title="' + esc(tip) + '"><span class=mcpcb><i></i></span>' + mcpcLabelHtml(s.name) + '<span class=mcpcu>'
@@ -172,10 +174,13 @@ function mcpcNode(s, p, d, now, small){
 function mcpcFold(cloud, p){
   const nA = cloud.filter(s => mcpcStKey(s.state) === 'auth').length, nOk = cloud.filter(s => mcpcStKey(s.state) === 'ok').length;
   const dim = !!MCPC.filt && !cloud.some(s => mcpcStKey(s.state) === MCPC.filt);
+  // ⚠A 104..128px node cannot hold both counts: the line shows login-needed when any (else connected); the title keeps the full line.
+  const full = T('{a} connected · {b} login needed').replace('{a}', String(nOk)).replace('{b}', String(nA));
+  const line = nA > 0 ? T('{b} login needed').replace('{b}', String(nA)) : T('{a} connected').replace('{a}', String(nOk));
   return '<button type=button class="mcpcn mcpccl' + (MCPC.cloudOpen ? ' open' : '') + (dim ? ' dim' : '') + '" data-mcpcc aria-expanded="' + MCPC.cloudOpen
-    + '" style="left:' + Math.round(p.x) + 'px;top:' + Math.round(p.y) + 'px" title="' + esc(T(MCPC.cloudOpen ? 'Collapse' : 'Expand to the outer ring'))
-    + '"><span class=mcpcb>' + cloud.length + '</span><span class=mcpct>' + esc(T('claude.ai connectors')) + '</span><span class=mcpcu>'
-    + esc(T('{a} connected · {b} login needed').replace('{a}', String(nOk)).replace('{b}', String(nA))) + '</span></button>';
+    + '" style="left:' + Math.round(p.x) + 'px;top:' + Math.round(p.y) + 'px" title="' + esc(T('claude.ai connectors') + ' — ' + full + ' · ' + T(MCPC.cloudOpen ? 'Collapse' : 'Expand to the outer ring'))
+    + '"><span class=mcpcb>' + cloud.length + '</span>' + mcpcLabelHtml(T('claude.ai connectors')) + '<span class=mcpcu>'
+    + esc(line) + '</span></button>';
 }
 function mcpcFoldEdge(cloud, p, g, now){
   const n = cloud.reduce((a, s) => a + (+s.n > 0 ? +s.n : 0), 0), live = cloud.some(s => mcpcLive(s.last, now));

@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- «Session tools»: the «claude.ai connectors» node no longer cuts its name and status in English; it shows the login-needed count and keeps the full line in its tooltip. Small nodes step their name size down before cutting it, and a single count reads «1 call» / «1 run».
+- In-page dialogs: after a confirmed change redraws the screen (pipeline apply mode, timeline «Custom…» hours), keyboard focus returns to the redrawn control instead of the page; in a text prompt, a click on the title or body text keeps the cursor in the field.
 - «Tools» lists the hooks of a disabled plugin as off, as its skills and MCP servers already were.
 - In-page dialogs: Esc while an input method is composing ends the composition and keeps a text prompt open with what was typed, as the browser's `prompt()` did; a plain Esc afterwards still cancels.
 - In-page dialogs: closing one by pressing Esc repeatedly while typing with an input method no longer leaves every later dialog refused until a reload; the guided tour no longer takes the dialog's keys; a click outside keeps focus in the text field; a reopened dialog starts at the top. A pipeline apply-mode change confirmed while the list refreshed is written when nothing changed, and says so when it was refused. The mailbox watch «Save» writes once on a double click, a same-for-all «Auto-compact» save no longer flips the pane to «Per account» for a moment, and a long unbroken name no longer runs out of the toast.

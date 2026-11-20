@@ -23,7 +23,7 @@ def _read(p):
 
 
 # Stubs: listeners recorded per type, POSTS = every POST, COPIES = every copy; no timers, no DOM.
-_PRE = ("let LANG = 'ko';\n" + i18n_switch(("T", "TV", "U", "AGO")) +
+_PRE = ("let LANG = 'ko';\n" + i18n_switch(("T", "TV", "U", "AGO", "PL")) +
         "const LST = {}, POSTS = [], COPIES = [], NOTES = [], STORE = {};\n"
         "const document = {addEventListener(t, f){ (LST[t] = LST[t] || []).push(f); }, querySelector(){ return null; }, getElementById(){ return null; }, activeElement: null};\n"
         "let setInterval = () => 0, mainView = 'x', TLVIEW = 'x';\n"
@@ -312,6 +312,33 @@ class McpConnJs(unittest.TestCase):
         self.assertIn("호출 수 · 마지막", out[0])
         self.assertNotIn("부터", out[0])
         self.assertIn(out[2].split("{t}")[1].split(" ·")[0], out[1])        # "since" wording shown for a partial record
+
+
+    def test_cloud_fold_fits_node(self):
+        # 128px fold: stepped name font, one count on the status line (login-needed first), full line in the title.
+        cl = [s for s in _DATA["servers"] if s["scope"] == "cloud"]
+        out = _js("LANG = 'en'; const p = {x: 1, y: 1}, C = %s;"
+                  " console.log(JSON.stringify([mcpcFold(C, p), mcpcFold([C[0]], p), (LANG = 'ko', mcpcFold(C, p))]))" % json.dumps(cl))
+        self.assertIn('<span class="mcpct l2">claude.ai connectors</span>', out[0])
+        self.assertIn("<span class=mcpcu>1 login needed</span>", out[0])
+        self.assertRegex(out[0], r'title="[^"]*1 connected · 1 login needed')
+        self.assertIn("<span class=mcpcu>1 connected</span>", out[1])
+        self.assertIn("<span class=mcpcu>로그인 필요 1</span>", out[2])
+
+    def test_count_singular_in_english(self):
+        out = _js("LANG = 'en'; const r = [1, 2].map(n => [mcpcCount(n, T('{n} calls'), 'call'), mcpcKindUse('hook', {n: n, last: 0}, 0)]);"
+                  " LANG = 'ko'; r.push([mcpcCount(1, T('{n} calls'), 'call')]); console.log(JSON.stringify(r))")
+        self.assertEqual(out[0][0], "1 call")
+        self.assertTrue(out[0][1].startswith("1 run "), out[0][1])
+        self.assertEqual(out[1][0], "2 calls")
+        self.assertTrue(out[1][1].startswith("2 runs "), out[1][1])
+        self.assertEqual(out[2][0], "호출 1")
+
+    def test_small_node_label_steps_down(self):
+        css = _read(_CSS)
+        base = css.index(".mcpcn.small .mcpct{")
+        for lv in ("l1", "l2", "l3"):
+            self.assertGreater(css.index(".mcpcn.small .mcpct.%s{" % lv), base)      # same specificity +1 class, after the small base
 
 
 if __name__ == "__main__":

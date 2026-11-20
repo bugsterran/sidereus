@@ -17,7 +17,7 @@ function mcpcKindName(k, it){ return k === 'skill' && it.kind === 'cmd' ? '/' + 
 function mcpcKindUse(k, it, now){
   if(it.n == null) return T('not recorded');
   if(!(+it.n > 0)) return T('Not used');
-  return T(k === 'hook' ? '{n} runs' : '{n} calls').replace('{n}', String(+it.n)) + ' · ' + mcpcAgo(it.last, now);
+  return (k === 'hook' ? mcpcCount(+it.n, T('{n} runs'), 'run') : mcpcCount(+it.n, T('{n} calls'), 'call')) + ' · ' + mcpcAgo(it.last, now);
 }
 // Node label: a plugin item drops its «plugin:» prefix (every node of one plugin read the same once cut; the title and
 // the detail card keep the full name), and long labels step the font down (41c .mcpct.l1..l3) instead of being cut.

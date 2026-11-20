@@ -121,7 +121,7 @@ function mcpcDetailCard(d, row){
   const srv = d && d.ok && MCPC.sel ? (d.servers || []).find(s => s && s.name === MCPC.sel) : null;
   if(!srv) return mcpcCard(T('Server'), '', '<div class=mcpcempty>' + esc(T('Click a node for its state and actions; drag it onto the session to draft a task.')) + '</div>', 'mcpcdet');
   const st = mcpcStKey(srv.state), now = +d.now || 0, act = mcpcActOf(srv), r = (l, v) => '<div class=mcpcr><span>' + esc(l) + '</span><span>' + v + '</span></div>';
-  const use = d.counts === false || srv.n == null ? esc(T('not recorded')) : esc(T('{n} calls').replace('{n}', String(+srv.n || 0))) + (+srv.last > 0 ? ' · ' + esc(mcpcAgo(srv.last, now)) : '');
+  const use = d.counts === false || srv.n == null ? esc(T('not recorded')) : esc(mcpcCount(+srv.n || 0, T('{n} calls'), 'call')) + (+srv.last > 0 ? ' · ' + esc(mcpcAgo(srv.last, now)) : '');
   const body = r(T('State'), '<b class="mcpcsl st-' + st + '">' + esc(mcpcStLbl(st)) + '</b>' + (srv.err ? ' <code class=mcpcerr>' + esc(srv.err) + '</code>' : ''))
     + r(T('Checked'), esc(mcpcAgo(srv.at, now)))
     + r(T('This session'), use)

@@ -35,6 +35,7 @@ function ucfOpen(title, o, mode){
   o = o || {};
   const nil = mode === 'prompt' ? null : mode === 'alert' ? undefined : false;
   if(UCF){ softErr('ucf-busy', 'dialog while another is open'); return Promise.resolve(nil); }   // never stack: the first answer would be lost
+  ucfRefocusStop();   // a pending refocus from the previous dialog must not pull focus out of this one
   const d = ucfEl(), bs = d.querySelectorAll('[data-ucf]'), body = d.querySelector('.ucfb'), inp = d.querySelector('.ucfi');
   d.setAttribute('role', mode === 'prompt' ? 'dialog' : 'alertdialog');
   d.querySelector('.ucft').textContent = String(title == null ? '' : title);
@@ -77,6 +78,44 @@ function ucfDone(v){
   }
   if(f && f.focus) try{ f.focus({preventScroll: true}); }catch(e){ softErr('ucf', e); }
   st.res(out);
+  // ⚠Callers repaint after the await (plPaint, loadTl) and remove the node just focused -> focus falls to BODY; re-find its twin.
+  if(st.sels.length) ucfRefocus(st.sels);
+}
+// Refocus window after a close: on each DOM mutation, while focus sits on BODY/null, focus the first enabled `sels` twin.
+//   Ends on a focusin it did not cause, any pointerdown, a new dialog, or after 3 s.
+let UCFR = null;
+function ucfRefocus(sels){
+  ucfRefocusStop();
+  if(typeof MutationObserver !== 'function' || !document.body) return;
+  const r = {sels, self: false, obs: null, timer: 0};
+  r.off = e => { if(!(e.type === 'focusin' && r.self)) ucfRefocusStop(); };
+  r.obs = new MutationObserver(() => {
+    if(UCF || UCFR !== r){ ucfRefocusStop(); return; }
+    const a = document.activeElement;
+    if(a && a !== document.body) return;   // the person (or a caller) already put focus somewhere: never steal it
+    for(const s of r.sels){
+      const n = document.querySelector(s + ':not([disabled])');
+      if(!n) continue;
+      r.self = true;
+      try{ n.focus({preventScroll: true}); }catch(e){ softErr('ucf', e); }
+      finally{ r.self = false; }
+      return;
+    }
+  });
+  r.obs.observe(document.body, {childList: true, subtree: true});
+  document.addEventListener('focusin', r.off, true);
+  document.addEventListener('pointerdown', r.off, true);
+  r.timer = setTimeout(ucfRefocusStop, 3000);
+  UCFR = r;
+}
+function ucfRefocusStop(){
+  const r = UCFR;
+  if(!r) return;
+  UCFR = null;
+  r.obs.disconnect();
+  clearTimeout(r.timer);
+  document.removeEventListener('focusin', r.off, true);
+  document.removeEventListener('pointerdown', r.off, true);
 }
 // ⚠Window capture runs before the document capture handlers (08-ui-kit popover Esc/outside click, 41 drawer pointerdown,
 //   42 hover Esc, 48e Esc) — without this they would close panels behind the dialog on a click or Esc inside it.
@@ -102,11 +141,16 @@ function ucfKey(e){
   const n = i < 0 ? bs.indexOf(btns[0]) : (i + (e.shiftKey ? bs.length - 1 : 1)) % bs.length;   // focus outside (BODY) -> first button
   bs[n].focus();
 }
+function ucfPtrKeep(t){
+  if(!UCF || UCF.mode !== 'prompt' || !t || t === UCF.inp || !UCF.d.contains(t)) return false;
+  return !(t.closest && t.closest('[data-ucf]'));   // buttons keep their default press
+}
 function ucfPtr(e){
   if(!UCF) return;
   e.stopPropagation();
   // A press on the dialog box itself (padding/backdrop) would move focus off the input to the dialog; keep it where it is.
-  if((e.type === 'pointerdown' || e.type === 'mousedown') && e.target === UCF.d) e.preventDefault();
+  //   Prompt: the title/body text too, or Enter (input-only) stops submitting; confirm/alert keep their text selectable.
+  if((e.type === 'pointerdown' || e.type === 'mousedown') && (e.target === UCF.d || ucfPtrKeep(e.target))) e.preventDefault();
   if(e.type !== 'click') return;
   const b = e.target && e.target.closest ? e.target.closest('#ucf [data-ucf]') : null;   // backdrop click: target is the dialog -> nothing
   if(b) ucfDone(b.getAttribute('data-ucf') === '1');

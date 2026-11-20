@@ -87,6 +87,9 @@ html[data-ui=next] .mcpct.l1{font-size:12px}
 html[data-ui=next] .mcpct.l2{font-size:11px}
 html[data-ui=next] .mcpct.l3{font-size:10.5px}   /* kind labels step down before any ellipsis (47m mcpcKindLabel) */
 html[data-ui=next] .mcpcn.small .mcpct{font-size:12px;font-weight:600}
+html[data-ui=next] .mcpcn.small .mcpct.l1{font-size:11.5px}   /* ⚠must follow the small rule, which out-specifies .mcpct.l1..l3 */
+html[data-ui=next] .mcpcn.small .mcpct.l2{font-size:11px}
+html[data-ui=next] .mcpcn.small .mcpct.l3{font-size:10.5px}
 html[data-ui=next] .mcpccl .mcpcb{width:34px;height:34px;border-radius:50%;border-color:var(--nx-info);font-size:12px;font-weight:700;color:var(--nx-info)}
 html[data-ui=next] .mcpccl .mcpct,html[data-ui=next] .mcpccl .mcpcu{color:var(--nx-info)}
 html[data-ui=next] .mcpccl.open .mcpcb{background:color-mix(in srgb,var(--nx-info) 14%,var(--nx-bg))}

@@ -4,6 +4,7 @@ Object.assign(I18N.ko, {
   'Connected|mcp': '연결됨', 'Failed|mcp': '실패', 'Unknown|mcp': '기록 없음', 'Login needed': '로그인 필요', 'Restart|mcp': '재시작', 'Sent|mcp': '보냄',
   '{a} connected · {b} failed': '연결 {a} · 실패 {b}',
   '{a} connected · {b} login needed': '연결 {a} · 로그인 필요 {b}',
+  '{a} connected': '연결 {a}', '{b} login needed': '로그인 필요 {b}',
   '{n} calls': '호출 {n}',
   '{n} unknown': '기록 없음 {n}',
   'A session cannot reconnect an MCP server by itself — a person does it in that terminal. Sidereus never touches the terminal.':

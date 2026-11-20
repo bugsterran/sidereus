@@ -14,7 +14,8 @@ import unittest
 from tests._load import ROOT, js_all, js_fn
 from tests._node import node_e
 
-FNS = ("cfgFocusSel", "ucfEl", "uiConfirm", "uiPrompt", "uiAlert", "ucfOpen", "ucfDone", "ucfIme", "ucfKey", "ucfPtr")
+FNS = ("cfgFocusSel", "ucfEl", "uiConfirm", "uiPrompt", "uiAlert", "ucfOpen", "ucfDone", "ucfRefocus", "ucfRefocusStop", "ucfIme", "ucfKey",
+       "ucfPtrKeep", "ucfPtr")
 
 # Minimal DOM: compound selectors (tag #id .class [attr] [attr="v"] :not([disabled])) joined by descendant spaces.
 # ⚠A modal dialog makes everything outside it inert: focus() there is a no-op, so refocus-before-close would fail.
@@ -24,6 +25,10 @@ const ERRS = []; function softErr(t){ ERRS.push(t); }
 const window = {ls: [], fs: [], addEventListener(t, f, c){ this.ls.push([t, f.name, c === true]); this.fs.push([t, f]); },
   dispatch(t, e){ for(const [u, f] of this.fs){ if(u === t) f(e); if(e.sip) break; } }};   // one target: only immediate stop halts it
 var document = null;
+// MutationObserver fires only on an explicit mutate() (the browser batches it into a microtask after the repaint).
+const MOS = []; class MutationObserver { constructor(cb){ this.cb = cb; this.on = false; MOS.push(this); }
+  observe(){ this.on = true; } disconnect(){ this.on = false; } }
+function mutate(){ MOS.filter(m => m.on).forEach(m => m.cb([])); }
 function cmp(el, s){
   if(!el || !el.tagName) return false;
   const en = /:not\(\[disabled\]\)/.test(s); s = s.replace(/:not\(\[disabled\]\)/g, '');
@@ -84,9 +89,12 @@ function newDoc(){
   document = {documentElement: html, body, activeElement: body, _modal: null,
     createElement: t => t === 'dialog' ? new Dlg() : new El(t),
     getElementById: id => html.all().find(e => e.id === id) || null,
-    querySelector: s => html.querySelector(s), querySelectorAll: s => html.querySelectorAll(s)};
+    querySelector: s => html.querySelector(s), querySelectorAll: s => html.querySelectorAll(s), ls: [],
+    addEventListener(t, f, c){ this.ls.push([t, f, c]); },
+    removeEventListener(t, f, c){ this.ls = this.ls.filter(x => !(x[0] === t && x[1] === f && x[2] === c)); },
+    fire(t, e){ this.ls.filter(x => x[0] === t).forEach(x => x[1](e)); }};
   html.appendChild(body);
-  UCF = null;
+  ucfRefocusStop(); UCF = null;
   return document;
 }
 function ev(o){ return Object.assign({pd: false, sp: false, sip: false, preventDefault(){ this.pd = true; },
@@ -98,7 +106,7 @@ const tick = () => new Promise(r => setTimeout(r, 0));
 
 def _run(body):
     src = js_all()
-    let_ucf = re.search(r"^let UCF\b.*$", src, re.M).group(0)
+    let_ucf = re.search(r"^let UCF\b.*$", src, re.M).group(0) + "\n" + re.search(r"^let UCFR\b.*$", src, re.M).group(0)
     reg = re.search(r"^if\(typeof window !== 'undefined' && window\.addEventListener\)\{\n  window\.addEventListener\('keydown', ucfKey.*?^}",
                     src, re.M | re.S).group(0)
     js = (let_ucf + "\n" + FAKE + "\n".join(js_fn(n) for n in FNS) + "\n" + reg + "\n"
@@ -300,6 +308,44 @@ R.listeners = window.ls.slice();
 { const D = newDoc(); const b = ucfEl().querySelector('.ucfb'); b.over = true;
   const p = uiConfirm('T', {body: 'long'}); b.scrollTop = 300; ucfKey(ev({key: 'Escape'})); await p;
   const p2 = uiConfirm('T', {body: 'long'}); R.scroll = b.scrollTop; ucfKey(ev({key: 'Escape'})); await p2; }
+
+// A1 (refocus window): the caller repaints after the await and drops the refocused opener -> its twin gets focus
+{ const D = newDoc(), box = new El('div'); D.body.appendChild(box);
+  const op = btn({'data-pl': 'set'}); box.appendChild(op); op.focus();
+  const p = uiConfirm('T'); ucfPtr(ev({type: 'click', target: D.querySelector('#ucf [data-ucf="1"]')})); await p;
+  const back = D.activeElement === op;
+  box.removeChild(op); D.activeElement = D.body; mutate(); const none = D.activeElement === D.body;   // no twin yet
+  const twin = btn({'data-pl': 'set'}); box.appendChild(twin); mutate();
+  const a = {back, none, twin: D.activeElement === twin, live: UCFR !== null};
+  ucfRefocusStop(); a.stopped = {ucfr: UCFR === null, ls: D.ls.length, obs: MOS.filter(m => m.on).length};
+  R.refocus = a; }
+
+// A1: focus the person already moved is never stolen; a foreign focusin / pointerdown / next dialog ends the window
+{ const D = newDoc(), box = new El('div'); D.body.appendChild(box);
+  const op = btn({'data-pl': 'run'}), other = btn({'data-o': '1'}); box.appendChild(op); box.appendChild(other); op.focus();
+  let p = uiConfirm('T'); ucfKey(ev({key: 'Escape'})); await p;
+  other.focus(); box.removeChild(op); const twin = btn({'data-pl': 'run'}); box.appendChild(twin); mutate();
+  const a = {kept: D.activeElement === other, live: UCFR !== null};
+  D.fire('focusin', {type: 'focusin', target: other}); a.focusin = UCFR === null;
+  D.activeElement = D.body; mutate(); a.after = D.activeElement === D.body;
+  twin.focus(); p = uiConfirm('T'); ucfKey(ev({key: 'Escape'})); await p;
+  D.fire('pointerdown', {type: 'pointerdown', target: D.body}); a.pointer = UCFR === null;
+  twin.focus(); p = uiConfirm('T'); ucfKey(ev({key: 'Escape'})); await p;
+  const p2 = uiConfirm('next'); a.reopen = UCFR === null; ucfKey(ev({key: 'Escape'})); await p2;
+  ucfRefocusStop();
+  R.nosteal = a; }
+
+// A2: prompt mode keeps focus on the input when the title/body text is pressed; confirm keeps text selectable
+{ const D = newDoc(); let p = uiPrompt('T', {body: 'why'}); const d = D.getElementById('ucf');
+  const t = d.querySelector('.ucft'), b = d.querySelector('.ucfb'), inp = d.querySelector('.ucfi'), ok = d.querySelector('[data-ucf="1"]');
+  const es = [ev({type: 'pointerdown', target: b}), ev({type: 'mousedown', target: t}), ev({type: 'pointerdown', target: inp}),
+    ev({type: 'pointerdown', target: ok}), ev({type: 'pointerdown', target: D.body}), ev({type: 'click', target: b})];
+  es.forEach(ucfPtr); const prompt = es.map(e => e.pd), open = d.open;
+  ucfKey(ev({key: 'Escape'})); await p;
+  p = uiConfirm('T', {body: 'why'}); const cs = [ev({type: 'pointerdown', target: b}), ev({type: 'mousedown', target: t})];
+  cs.forEach(ucfPtr); ucfKey(ev({key: 'Escape'})); await p;
+  ucfRefocusStop();
+  R.ptext = {prompt, open, confirm: cs.map(e => e.pd)}; }
 """
 
 
@@ -356,6 +402,20 @@ class UiConfirm(unittest.TestCase):
 
     def test_press_on_dialog_box_keeps_focus(self):
         self.assertEqual(self.R["press"], {"pd": [True, True, False, False], "sp": [True, True, True], "open": True})
+
+    def test_refocus_twin_after_caller_repaint(self):
+        # ⚠Callers repaint after the await (plPaint, loadTl): the refocused opener is removed and focus fell to BODY.
+        self.assertEqual(self.R["refocus"], {"back": True, "none": True, "twin": True, "live": True,
+                                             "stopped": {"ucfr": True, "ls": 0, "obs": 0}})
+
+    def test_refocus_never_steals_and_ends(self):
+        self.assertEqual(self.R["nosteal"], {"kept": True, "live": True, "focusin": True, "after": True,
+                                             "pointer": True, "reopen": True})
+
+    def test_prompt_text_press_keeps_input_focus(self):
+        # Enter submits only from the input: a press on the title/body must not move focus off it (prompt only).
+        self.assertEqual(self.R["ptext"], {"prompt": [True, True, False, False, False, False], "open": True,
+                                           "confirm": [False, False]})
 
     def test_reopened_body_scrolled_to_top(self):
         self.assertEqual(self.R["scroll"], 0)

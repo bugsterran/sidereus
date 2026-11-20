@@ -334,3 +334,9 @@ Conventions (entry shape, `★` `⚠` `⇒`, `§N`, `:NNNN`): [TRAPS.md](../TRAP
 - Cause: `mpOrder` appended every key missing from `mbTabs` last, so moving Tools in `MP_TABS` changed nothing on a screen whose order was saved before Tools existed.
 - ⇒ A missing key goes right after its stock predecessor in the saved order; with no predecessor saved it is appended (`test_r1_old_saved_order_gets_tools_below_structure` · `test_tabs_normalise`).
 - ⚠Shortcut digits follow the rail position (`buildMv` kbN): inserting a tab shifts every later tab's digit.
+
+## Focus after a confirmed dialog that repaints (`08c-confirm.js` ucfRefocus)
+- Cause: `ucfDone` focused the opener and then resolved; the caller's repaint after its `await` (`plPaint`, `loadTl`) removed that node, so focus fell to BODY.
+- ⇒ After resolving, a capped window (one MutationObserver, 3 s) focuses the first enabled `sels` twin only while focus is on BODY/null (`test_refocus_twin_after_caller_repaint`).
+- ⚠It ends on any focusin it did not cause, a pointerdown or a new dialog — never steal focus the person moved (`test_refocus_never_steals_and_ends`).
+- ⚠Prompt mode keeps the input focused on presses on title/body text (`ucfPtrKeep`); confirm/alert keep text selectable.
